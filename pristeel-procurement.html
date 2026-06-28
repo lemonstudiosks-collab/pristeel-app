@@ -1511,21 +1511,40 @@ function renderDashOffers(){
   var el=document.getElementById('dash-offers');
   if(!el)return;
   if(offers.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnje oferte e regjistruar.</div>';return;}
-  el.innerHTML=offers.map(function(o){
-    var isOurs=o.supplier&&o.supplier.toLowerCase().indexOf('pristeel')>-1;
+  
+  var producers=offers.filter(function(o){return o.supplier&&o.supplier.indexOf('PRODHUES')>-1;});
+  var rawmats=offers.filter(function(o){return o.supplier&&o.supplier.indexOf('LENDE E PARE')>-1;});
+  var ours=offers.filter(function(o){return o.supplier&&o.supplier.indexOf('OFERTA JONE')>-1;});
+  var other=offers.filter(function(o){return o.supplier&&o.supplier.indexOf('PRODHUES')===-1&&o.supplier.indexOf('LENDE E PARE')===-1&&o.supplier.indexOf('OFERTA JONE')===-1;});
+
+  function offerCard(o){
+    var isOurs=o.supplier&&o.supplier.indexOf('OFERTA JONE')>-1;
     var bg=isOurs?'rgba(184,115,51,0.08)':'var(--bg2)';
     var border=isOurs?'1px solid var(--bronze)':'0.5px solid var(--border)';
-    var badge=isOurs?'<span style="background:var(--bronze);color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;margin-left:8px">OFERTA JONË</span>':'';
-    var totalStr=o.totalEur>0?('→ <strong>'+o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</strong>'):'';
+    var priceStr=o.price>0?('<strong style="font-size:15px;color:'+(isOurs?'var(--bronze)':'var(--text)')+'">'+o.price.toFixed(3)+' EUR/kg</strong>'):'';
+    var totalStr=o.totalEur>0?(' &nbsp;→&nbsp; <strong>'+o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</strong>'):'';
+    var name=o.supplier.replace('PRODHUES — ','').replace('LENDE E PARE — ','').replace('OFERTA JONE — ','');
     return '<div style="padding:12px 16px;border-radius:8px;margin-bottom:8px;background:'+bg+';border:'+border+'">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center">'
-      +'<div><strong style="font-size:13px">'+o.supplier+'</strong>'+badge+'</div>'
-      +'<div style="font-size:13px">'+o.price.toFixed(3)+' EUR/kg '+totalStr+'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
+      +'<div style="font-size:13px;font-weight:600;flex:1">'+name+'</div>'
+      +'<div style="text-align:right;white-space:nowrap">'+priceStr+totalStr+'</div>'
       +'</div>'
-      +(o.notes?'<div style="font-size:12px;color:var(--text3);margin-top:4px">'+o.notes+'</div>':'')
-      +'<div style="font-size:11px;color:var(--text3);margin-top:4px">'+o.inco+' | '+o.cert+(o.delivery?' | '+o.delivery+' javë':'')+'</div>'
+      +(o.inco||o.cert?'<div style="font-size:11px;color:var(--text3);margin-top:4px">'+(o.inco||'')+(o.delivery?' | '+o.delivery+' javë':'')+(o.cert?' | '+o.cert:'')+'</div>':'')
+      +(o.notes?'<div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5">'+o.notes+'</div>':'')
       +'</div>';
-  }).join('');
+  }
+
+  function section(title,arr,color){
+    if(arr.length===0)return '';
+    return '<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:'+color+';margin:12px 0 6px">'+title+' ('+arr.length+')</div>'
+      +arr.map(offerCard).join('');
+  }
+
+  el.innerHTML=
+    section('Prodhuesit',producers,'var(--bronze)')+
+    section('Furnitoret e lendes se pare',rawmats,'var(--text3)')+
+    section('Ofertat tona per klientin',ours,'#1a6b4a)')+
+    section('Te tjera',other,'var(--text2)');
 }
 function deleteProject(id){
   if(!confirm('Fshi projektin? Nuk kthehet.'))return;
