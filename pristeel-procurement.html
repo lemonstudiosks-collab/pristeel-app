@@ -1028,35 +1028,75 @@ function updOffer(id,f,v){const o=offers.find(o=>o.id===id);if(o)o[f]=['priceKg'
 function renderOffers(){
   const incos=['EXW','FCA','CPT','CIP','DAP','DPU','DDP','FOB','CFR','CIF'];
   const certs=['EN 10204 3.1','EN 10204 3.2','EN 10204 2.2',''];
-  document.getElementById('offer-list').innerHTML=offers.map((o,i)=>`
-    <div style="background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border-left:2px solid ${o.source==='pdf'?'var(--bronze)':'var(--border2)'}">
-      <div class="flex justify-between items-center mb-12">
-        <div class="flex items-center gap-8">
-          <span style="font-weight:600;font-size:13px">${o.supplier||'Oferta '+(i+1)}</span>
-          ${o.source==='pdf'?'<span class="badge badge-amber">PDF</span>':'<span class="badge badge-gray">Manual</span>'}
-          ${o.cat==='producer'?'<span class="badge badge-amber">Prodhues</span>':'<span class="badge badge-gray">Lëndë e parë</span>'}
-          ${o.confidence==='high'?'<span style="width:8px;height:8px;border-radius:50%;background:#1a6b4a;display:inline-block" title="Konfidencë e lartë"></span>':o.confidence==='medium'?'<span style="width:8px;height:8px;border-radius:50%;background:#BA7517;display:inline-block" title="Konfidencë mesatare"></span>':''}
+  document.getElementById('offer-list').innerHTML=offers.map((o,i)=>{
+    // Color coding by type
+    var isOutgoing=o.offerType==='outgoing'||o.supplier.indexOf('OFERTA JONE')>-1;
+    var isIncoming=!isOutgoing;
+    var borderColor=isOutgoing?'#B87333':'#1C2333';
+    var headerBg=isOutgoing?'rgba(184,115,51,0.12)':'rgba(28,35,51,0.06)';
+    var badge=isOutgoing
+      ?'<span style="background:#B87333;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600">OFERTA JONË → KLIENTIT</span>'
+      :'<span style="background:#1C2333;color:#fff;font-size:10px;padding:2px 8px;border-radius:4px">OFERTË E MARRË</span>';
+    var suppName=o.supplier.replace('PRODHUES — ','').replace('LENDE E PARE — ','').replace('OFERTA JONE — ','');
+
+    return `<div style="border-radius:var(--radius-lg);margin-bottom:12px;border:1.5px solid ${borderColor};overflow:hidden">
+      <div style="padding:12px 16px;background:${headerBg};display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${badge}
+          <strong style="font-size:13px">${suppName}</strong>
         </div>
-        <button class="btn btn-danger btn-sm" onclick="remOffer(${o.id})">✕</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:18px;font-weight:700;color:${isOutgoing?'#B87333':'var(--text)'}">${o.priceKg>0?o.priceKg.toFixed(3)+' EUR/kg':''}</span>
+          ${o.totalEur>0?`<span style="font-size:13px;color:var(--text2)">→ <strong>${o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} EUR</strong></span>`:''}
+          <button onclick="delOffer(${o.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
+        </div>
       </div>
-      <div class="field-group fg-2">
-        <div><label class="lbl">Furnitori</label><input type="text" value="${o.supplier}" placeholder="Emri" onchange="updOffer(${o.id},'supplier',this.value)"></div>
-        <div><label class="lbl">Çmimi €/kg</label><input type="number" value="${o.priceKg}" step="0.001" onchange="updOffer(${o.id},'priceKg',this.value)"></div>
+      <div style="padding:14px 16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="lbl">Furnitori / Prodhuesi</label>
+            <input type="text" value="${o.supplier}" style="font-size:12px" onchange="updOffer(${o.id},'supplier',this.value)">
+          </div>
+          <div>
+            <label class="lbl">Çmimi EUR/kg</label>
+            <input type="number" value="${o.priceKg||''}" step="0.001" placeholder="0.000" onchange="updOffer(${o.id},'priceKg',this.value);updOffer(${o.id},'price',this.value)">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="lbl">Total EUR</label>
+            <input type="number" value="${o.totalEur||''}" step="0.01" placeholder="0.00" onchange="updOffer(${o.id},'totalEur',this.value)">
+          </div>
+          <div>
+            <label class="lbl">Afati (javë)</label>
+            <input type="number" value="${o.delivery||''}" placeholder="0" onchange="updOffer(${o.id},'delivery',this.value)">
+          </div>
+          <div>
+            <label class="lbl">Prejardhja e çelikut</label>
+            <select onchange="updOffer(${o.id},'origin',this.value)">
+              ${['','EU (Gjermani/Austri)','EU (Itali/Spanjë)','Maqedoni e Veriut','Shqipëri','Kosovë','Turqi','Serbi','Ukrainë','Rusi','Kinë','Tjetër'].map(c=>`<option${(o.origin||''===c)?' selected':''}>${c}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="lbl">Incoterms</label>
+            <select onchange="updOffer(${o.id},'inco',this.value)">${incos.map(c=>`<option${c===o.inco?' selected':''}>${c}</option>`).join('')}</select>
+          </div>
+          <div>
+            <label class="lbl">Certifikata</label>
+            <select onchange="updOffer(${o.id},'cert',this.value)">${certs.map(c=>`<option${c===o.cert?' selected':''}>${c||'—'}</option>`).join('')}</select>
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Çmimet per pozicion / Shenime</label>
+          <textarea style="min-height:60px;font-size:12px;font-family:monospace" onchange="updOffer(${o.id},'notes',this.value)">${o.notes||''}</textarea>
+        </div>
       </div>
-      <div class="field-group fg-3">
-        <div><label class="lbl">Afati (javë)</label><input type="number" value="${o.delivery}" onchange="updOffer(${o.id},'delivery',this.value)"></div>
-        <div><label class="lbl">Incoterms</label><select onchange="updOffer(${o.id},'inco',this.value)">${incos.map(t=>`<option${t===o.inco?' selected':''}>${t}</option>`).join('')}</select></div>
-        <div><label class="lbl">Certifikata</label><select onchange="updOffer(${o.id},'cert',this.value)">${certs.map(c=>`<option${c===o.cert?' selected':''}>${c||'—'}</option>`).join('')}</select></div>
-      </div>
-      <div><label class="lbl">Shënime</label><input type="text" value="${o.notes}" placeholder="Kushte speciale, MOQ, etj." onchange="updOffer(${o.id},'notes',this.value)"></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   document.getElementById('offer-count').textContent=offers.length+' oferta';
 }
-
-// ── RANKING ───────────────────────────────────────────
-const INCO_SCORE={DDP:100,DPU:90,DAP:85,CIP:70,CPT:65,CIF:60,CFR:55,FOB:40,FCA:35,EXW:20};
-const CERT_SCORE={'EN 10204 3.2':100,'EN 10204 3.1':70,'EN 10204 2.2':40,'':20};
-
 function updateW(sid,lid){document.getElementById(lid).textContent=document.getElementById(sid).value+'%';}
 
 function calcRanking(){
@@ -1467,12 +1507,20 @@ function loadProject(id){
   }).then(function(dbOffers){
     if(!dbOffers)return;
     // Load offers into local array
-    offers=dbOffers.map(function(o,i){return{
-      id:i+1,supplier:o.supplier||'',priceKg:parseFloat(o.price_kg)||0,price:parseFloat(o.price_kg)||0,
-      delivery:parseInt(o.delivery_weeks)||0,inco:o.incoterms||'DAP',
-      cert:o.cert||'',notes:o.notes||'',score:parseFloat(o.score)||0,
-      totalEur:parseFloat(o.total_eur)||0
-    };});
+    offers=dbOffers.map(function(o,i){
+      // Detect offer type from supplier name
+      var sup=o.supplier||'';
+      var type='incoming'; // default: offer coming TO pristeel
+      if(sup.indexOf('OFERTA JONE')>-1) type='outgoing'; // pristeel sending to client
+      return{
+        id:i+1,supplier:sup,priceKg:parseFloat(o.price_kg)||0,price:parseFloat(o.price_kg)||0,
+        delivery:parseInt(o.delivery_weeks)||0,inco:o.incoterms||'DAP',
+        cert:o.cert||'',notes:o.notes||'',score:parseFloat(o.score)||0,
+        totalEur:parseFloat(o.total_eur)||0,
+        offerType:type,
+        origin:o.origin||''
+      };
+    });
     // Show project dashboard
     showProjectDashboard(projData);
   }).catch(function(e){alert('Gabim: '+e.message);});
@@ -1511,39 +1559,43 @@ function renderDashOffers(){
   var el=document.getElementById('dash-offers');
   if(!el)return;
   if(offers.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnje oferte e regjistruar.</div>';return;}
-  
-  var producers=offers.filter(function(o){return o.supplier&&o.supplier.indexOf('PRODHUES')>-1;});
-  var rawmats=offers.filter(function(o){return o.supplier&&o.supplier.indexOf('LENDE E PARE')>-1;});
-  var ours=offers.filter(function(o){return o.supplier&&o.supplier.indexOf('OFERTA JONE')>-1;});
-  var other=offers.filter(function(o){return o.supplier&&o.supplier.indexOf('PRODHUES')===-1&&o.supplier.indexOf('LENDE E PARE')===-1&&o.supplier.indexOf('OFERTA JONE')===-1;});
 
   function offerCard(o){
-    var isOurs=o.supplier&&o.supplier.indexOf('OFERTA JONE')>-1;
-    var bg=isOurs?'rgba(184,115,51,0.08)':'var(--bg2)';
-    var border=isOurs?'1px solid var(--bronze)':'0.5px solid var(--border)';
-    var priceStr=(o.priceKg||o.price)>0?('<strong style="font-size:15px;color:'+(isOurs?'var(--bronze)':'var(--text)')+'">'+(o.priceKg||o.price).toFixed(3)+' EUR/kg</strong>'):'';
-    var totalStr=o.totalEur>0?(' &nbsp;→&nbsp; <strong>'+o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</strong>'):'';
+    var isOutgoing=o.offerType==='outgoing'||o.supplier.indexOf('OFERTA JONE')>-1;
+    var borderColor=isOutgoing?'#B87333':'#1C2333';
+    var headerBg=isOutgoing?'rgba(184,115,51,0.12)':'rgba(28,35,51,0.06)';
+    var badge=isOutgoing
+      ?'<span style="background:#B87333;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px">OFERTA JONË</span>'
+      :'<span style="background:#1C2333;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px">E MARRË</span>';
     var name=o.supplier.replace('PRODHUES — ','').replace('LENDE E PARE — ','').replace('OFERTA JONE — ','');
-    return '<div style="padding:12px 16px;border-radius:8px;margin-bottom:8px;background:'+bg+';border:'+border+'">'
-      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
-      +'<div style="font-size:13px;font-weight:600;flex:1">'+name+'</div>'
-      +'<div style="text-align:right;white-space:nowrap">'+priceStr+totalStr+'</div>'
+    var priceStr=o.priceKg>0?('<strong style="font-size:14px;color:'+(isOutgoing?'#B87333':'var(--text)')+'">'+o.priceKg.toFixed(3)+' EUR/kg</strong>'):'';
+    var totalStr=o.totalEur>0?(' → <strong>'+o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</strong>'):'';
+    return '<div style="padding:10px 14px;border-radius:8px;margin-bottom:8px;border:1.5px solid '+borderColor+';background:'+headerBg+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+      +'<div style="display:flex;align-items:center;gap:6px">'+badge+'<strong style="font-size:13px">'+name+'</strong></div>'
+      +'<div>'+priceStr+totalStr+'</div>'
       +'</div>'
-      +(o.inco||o.cert?'<div style="font-size:11px;color:var(--text3);margin-top:4px">'+(o.inco||'')+(o.delivery?' | '+o.delivery+' javë':'')+(o.cert?' | '+o.cert:'')+'</div>':'')
+      +(o.origin?'<div style="font-size:11px;color:var(--text3);margin-top:3px">🏭 Prejardhja: '+o.origin+'</div>':'')
+      +(o.inco||o.delivery?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(o.inco||'')+(o.delivery?' | '+o.delivery+' javë':'')+(o.cert?' | '+o.cert:'')+'</div>':'')
       +(o.notes?'<div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5">'+o.notes+'</div>':'')
       +'</div>';
   }
 
+  var outgoing=offers.filter(function(o){return o.offerType==='outgoing'||o.supplier.indexOf('OFERTA JONE')>-1;});
+  var incoming=offers.filter(function(o){return o.offerType!=='outgoing'&&o.supplier.indexOf('OFERTA JONE')===-1;});
+  var producers=incoming.filter(function(o){return o.supplier.indexOf('PRODHUES')>-1;});
+  var rawmats=incoming.filter(function(o){return o.supplier.indexOf('LENDE E PARE')>-1;});
+  var other=incoming.filter(function(o){return o.supplier.indexOf('PRODHUES')===-1&&o.supplier.indexOf('LENDE E PARE')===-1;});
+
   function section(title,arr,color){
     if(arr.length===0)return '';
-    return '<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:'+color+';margin:12px 0 6px">'+title+' ('+arr.length+')</div>'
-      +arr.map(offerCard).join('');
+    return '<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:'+color+';margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border)">'+title+' ('+arr.length+')</div>'+arr.map(offerCard).join('');
   }
 
   el.innerHTML=
-    section('Prodhuesit',producers,'var(--bronze)')+
+    section('Ofertat tona per klientin',outgoing,'#B87333')+
+    section('Prodhuesit',producers,'#1C2333')+
     section('Furnitoret e lendes se pare',rawmats,'var(--text3)')+
-    section('Ofertat tona per klientin',ours,'#1a6b4a)')+
     section('Te tjera',other,'var(--text2)');
 }
 function deleteProject(id){
