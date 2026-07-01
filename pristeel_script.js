@@ -1,11 +1,9 @@
 // =========================================================================
-// 1. KONFIGURIMI I FIXUAR I PLATFORMËS (SUPABASE & GEMINI)
+// 1. KONFIGURIMI I GEMINI (Përdorim variablat e HTML-së tuaj për Supabase)
 // =========================================================================
-const _SB_URL = "https://isymxqfqzkchbsrbhucf.supabase.co"; // URL e saktë nga HTML-ja jote
-const _SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM";
 const GEMINI_API_KEY = "AQ.Ab8RN6Lvz-UHiQmQ3E2olN6t_hMwd58pjfBTq1A7U1Y9KaNdyg"; 
 
-// Overrajdojmë funksionin e vjetër startParsing() që thërret butoni në HTML
+// Overrajdojmë funksionin startParsing që thërret butoni yt në HTML
 async function startParsing() {
     const textarea = document.getElementById('i-text');
     const text = textarea ? textarea.value.trim() : "";
@@ -15,11 +13,11 @@ async function startParsing() {
         return;
     }
 
-    // Shfaqim kartelën e animacionit të ngarkimit në HTML
+    // Shfaqim kartelën e animacionit në HTML
     const parsingCard = document.getElementById('parsing-card');
     if (parsingCard) parsingCard.classList.remove('hidden');
 
-    // Animojmë hapat vizualë në ekran fiks siç e ka HTML jote
+    // Ndryshojmë hapat vizualë në ekran fiks siç e ka HTML jote
     const steps = [
         {n:'st1', d:'st1d', msg:'Teksti u lexua me sukses.', p:25},
         {n:'st2', d:'st2d', msg:'Lidhja me Gemini AI u realizua...', p:50},
@@ -28,7 +26,7 @@ async function startParsing() {
     ];
 
     for (let i = 0; i < steps.length; i++) {
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => setTimeout(r, 200));
         const elNum = document.getElementById(steps[i].n);
         const elDet = document.getElementById(steps[i].d);
         if (elNum) { elNum.className = 'step-num done'; elNum.textContent = '✓'; }
@@ -53,7 +51,7 @@ async function startParsing() {
                 sasia: parseInt(item.sasia) || 1
             }));
 
-            // Ekzekutojmë dërgimin në databazë përmes urës standarde të Supabase Rest
+            // Përdorim _SB_URL dhe _SB_KEY direkt nga HTML jote pa i ri-deklaruar këtu!
             await fetch(_SB_URL + '/rest/v1/bom_items', {
                 method: 'POST',
                 headers: {
@@ -65,19 +63,19 @@ async function startParsing() {
             });
         }
 
-        // Finalizojmë animacionin e progresit
+        // Finalizojmë progresin
         const prog = document.getElementById('prog');
         if (prog) prog.style.width = '100%';
         const st4d = document.getElementById('st4d');
         if (st4d) st4d.textContent = 'Analiza dhe ruajtja përfundoi me sukses!';
 
-        // Ndryshojmë pamjen te tab-i BOM fiks sipas funksionit showPage të HTML-së tuaj
         setTimeout(() => {
             if (parsingCard) parsingCard.classList.add('hidden');
-            // Mbushim variablin global të HTML-së tuaj bomRows që tabela të mos mbetet bosh në ekran
+            
+            // Mbushim masivin global bomRows të HTML-së tënde që të shfaqen në tabelë
             bomRows = listaMaterialeve.map((item, index) => ({
                 id: Date.now() + index,
-                pos: item.pozicioni || (index + 1),
+                pos: index + 1,
                 profile: (item.dimensionet ? item.dimensionet.split(' ')[0] : 'HEA'),
                 dim: (item.dimensionet ? item.dimensionet.replace(/^[a-zA-Z]+/, '').trim() : '300'),
                 grade: item.materiali || 'S355JR',
@@ -90,12 +88,11 @@ async function startParsing() {
                 conf: 'high'
             }));
             
-            // Thërrasim funksionet e uebfaqes tuaj për të hapur faqen dhe vizatuar tabelën në ekran
+            // Hapim faqen dhe vizatojmë tabelën duke përdorur funksionet e HTML-së tënde
             showPage('bom');
             if (typeof renderBom === 'function') renderBom();
-            // Fshijmë tekstin e mbetur në kuti
             if (textarea) textarea.value = '';
-        }, 1000);
+        }, 800);
 
     } catch (error) {
         console.error("Gabim gjatë ekzekutimit:", error);
@@ -105,7 +102,7 @@ async function startParsing() {
 }
 
 // =========================================================================
-// 2. FUNKSIONI STRUKTURUES I REALE I KËRKESËS GEMINI API
+// 2. FUNKSIONI STRUKTURUES I KËRKESËS GEMINI API
 // =========================================================================
 async function thirrGeminiAPI(teksti) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
