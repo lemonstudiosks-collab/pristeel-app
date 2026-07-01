@@ -1,9 +1,10 @@
 // =========================================================================
-// 1. KONFIGURIMI I PLATFORMËS (SUPABASE DHE GEMINI API) - VENDOSUR NGA AI
+// 1. KONFIGURIMI I PLATFORMËS (SUPABASE DHE GEMINI API)
 // =========================================================================
 const SUPABASE_URL = "https://ismxqfqzkchbsrbhucf.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM";
-const GEMINI_API_KEY = "AQ.Ab8RN6LdbL37xbG-gpc9kJpD6an6MT8VLn8qMhp9Q67n4recuw";
+const GEMINI_API_KEY = "AQ.Ab8RN6LdbL37xbG-gpc9kJpD6an6MT8VLn8qMhp9Q67n4recuw"; 
+
 // Inicializimi i klientit të Supabase
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
@@ -11,7 +12,7 @@ const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_U
 const pristeelDelay = ms => new Promise(res => setTimeout(res, ms));
 
 // =========================================================================
-// 2. NGARKIMI I FAQES DHE LIDHJA E BUTONAVE (EVENT LISTENERS)
+// 2. NGARKIMI I FAQES DHE LIDHJA E BUTONAVE
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
     if (!supabaseClient) {
@@ -104,10 +105,11 @@ async function analizoDheBartoTeBOM(event) {
 }
 
 // =========================================================================
-// 4. THIRRJA E MODELIT GEMINI (ME RETRY LOGIC / EXPONENTIAL BACKOFF)
+// 4. THIRRJA E MODELIT GEMINI (RREGULLUAR PËR ÇELËSAT E RINJ 'AQ.')
 // =========================================================================
 async function thirrGeminiAPI(tekstiPerAnalize) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+    // E pastruam linkun nga çelësi dhe vendosëm modelin më stabil '1.5-flash'
+    const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
     
     const promptSistemit = `Je një inxhinier prokurimi profesionist për platformën PRISTEEL. 
 Detyra jote është të lexosh tekstin e paorganizuar që vjen nga një projekt, vizatim CAD apo specifikim teknik i çelikut.
@@ -138,12 +140,16 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
         try {
             const response = await fetch(url, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": GEMINI_API_KEY  // <--- Çelësi AQ i fshehur sipas rregullave të Google
+                },
                 body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
-                throw new Error(`Gabim nga serveri i Google: ${response.statusText}`);
+                const statusText = await response.text();
+                throw new Error(`Google API Gabim (${response.status}): ${statusText}`);
             }
 
             const result = await response.json();
@@ -154,13 +160,12 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
             }
 
             tekstNgaAI = tekstNgaAI.replace(/```json/g, "").replace(/```/g, "").trim();
-            
             return JSON.parse(tekstNgaAI);
 
         } catch (error) {
             tentimi++;
             if (tentimi >= 5) {
-                throw new Error("Lidhja me inteligjencën artificiale dështoi.");
+                throw new Error("Lidhja me AI dështoi: " + error.message);
             }
             await pristeelDelay(vonesat[tentimi - 1]);
         }
@@ -168,7 +173,7 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
 }
 
 // =========================================================================
-// 5. NAVIGIMI DHE PËRDITËSIMI I PAMJES (BOM DASHBOARD)
+// 5. NAVIGIMI DHE PËRDITËSIMI I PAMJES
 // =========================================================================
 async function ndryshoFaqenAktive(emriFaqes, emriProjektit) {
     const menute = document.querySelectorAll(".prosesi div, .prosesi li, .prosesi a, .sidebar a");
