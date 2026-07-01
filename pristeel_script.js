@@ -34,6 +34,8 @@ async function analizoDheBartoTeBOM(event) {
 
         if (!tekstiRaw) {
             alert("Ju lutem futni tekstin e materialit!");
+            butoni.innerText = tekstiOrigjinal;
+            butoni.disabled = false;
             return;
         }
 
@@ -48,14 +50,14 @@ async function analizoDheBartoTeBOM(event) {
                     dimensionet: item.dimensionet || "-", 
                     sasia: parseInt(item.sasia) || 1 
                 }]);
-                if (error) console.error("Gabim gjatë ruajtjes në Supabase:", error);
+                if (error) console.error("Gabim te Supabase:", error);
             }
         }
         
-        ndryshoFaqenAktive("BOM", emriProjektit);
+        ndryshoFaqenAktive(emriProjektit);
     } catch (gabimi) {
         console.error(gabimi);
-        alert("Gabim gjatë procesit: " + gabimi.message);
+        alert("Gabim: " + gabimi.message);
     } finally {
         butoni.innerText = tekstiOrigjinal;
         butoni.disabled = false;
@@ -63,7 +65,7 @@ async function analizoDheBartoTeBOM(event) {
 }
 
 // =========================================================================
-// 4. THIRRJA E GEMINI 1.5 FLASH (STRUKTURA E GATSHME)
+// 4. THIRRJA E GEMINI 1.5 FLASH
 // =========================================================================
 async function thirrGeminiAPI(teksti) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -76,49 +78,43 @@ async function thirrGeminiAPI(teksti) {
         body: JSON.stringify({
             contents: [{
                 role: "user",
-                parts: [{ text: `${promptSistemit}\n\nTeksti për analizë:\n${teksti}` }]
+                parts: [{ text: `${promptSistemit}\n\nTeksti:\n${teksti}` }]
             }]
         })
     });
 
     if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`Google API refuzoi kërkesën: ${errText}`);
+        throw new Error(`Google Error: ${errText}`);
     }
     
     const result = await response.json();
     let tekstNgaAI = result.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!tekstNgaAI) throw new Error("Përgjigjja e AI erdhi e zbrazët.");
+    if (!tekstNgaAI) throw new Error("Përgjigjja e AI është e zbrazët.");
 
-    // Pastrimi i çdo kodi markdown nëse AI harron dhe e shton atë
     tekstNgaAI = tekstNgaAI.replace(/```json/g, "").replace(/```/g, "").trim();
-    
     return JSON.parse(tekstNgaAI);
 }
 
 // =========================================================================
-// 5. PËRDITËSIMI I PAMJES
+// 5. PËRDITËSIMI I PAMJES (RREGULLUAR)
 // =========================================================================
-async function ndryshoFaqenAktive(emri, emriProjektit) {
+async function ndryshoFaqenAktive(emriProjektit) {
     if (supabaseClient) {
         const { data } = await supabaseClient.from('bom_items').select('*').eq('project_name', emriProjektit);
         
-        // Seksionet vizuale
         const secImport = document.querySelector(".import-dokument-container") || document.getElementById("importSection") || document.querySelector(".main-content > div");
         const secBOM = document.querySelector(".bom-container") || document.getElementById("bomSection") || document.getElementById("bom-section");
 
-        if (secImport) secImport.style.style.display = "none";
-        
-        // Nëse seksioni i BOM ekziston, e shfaqim dhe mbushim tabelën
-        if (secBOM) {
-            secBOM.style.display = "block";
-        }
+        // RREGULLIMI: Hoqëm .style e tepërt që rrëzonte kodin
+        if (secImport) secImport.style.display = "none";
+        if (secBOM) secBOM.style.display = "block";
         
         const tbody = document.querySelector("table tbody") || document.getElementById("tabelaBOMBody");
         if (tbody && data) {
             tbody.innerHTML = data.map(item => `
-                <tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                     <td style="padding: 12px; color: #fff;">${item.pozicioni}</td>
                     <td style="padding: 12px; color: #fff; font-weight: bold;">${item.materiali}</td>
                     <td style="padding: 12px; color: #a0aec0;">${item.dimensionet}</td>
