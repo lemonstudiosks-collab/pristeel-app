@@ -1,12 +1,21 @@
 // =========================================================================
-// PRISTEEL — OVERRIDE DHE FIXER AUTOMATIK
+// PRISTEEL — OVERRIDE DHE FIXER AUTOMATIK (VERSIONI ME FURNITORË)
 // =========================================================================
 
-// Ky funksion do të ekzekutohet automatikisht sapo të ngarkohet faqja
 (function() {
-    console.log("PRISTEEL: Duke aplikuar arnimin e sistemeve...");
+    console.log("PRISTEEL: Duke aplikuar arnimin e sistemeve dhe furnitorëve...");
 
-    // 1. ZËVENDËSIMI I PLOTË I FUNKSIONIT TË NCOMENTIMIT TË PROJEKTEVE (Zgjedh gabimin project_id)
+    // Lista zyrtare e furnitorëve të tu të paracaktuar
+    const furnitoretPristeel = [
+        { name: "Eurosteel", email: "info@eurosteel.com", phone: "" },
+        { name: "Aktiva MK", email: "info@aktiva.com.mk", phone: "" },
+        { name: "Galvasteel", email: "info@galvasteel.com", phone: "" },
+        { name: "IGM Trade", email: "info@igm.com.mk", phone: "" },
+        { name: "Makstil", email: "info@makstil.com", phone: "" },
+        { name: "MTA", email: "info@mta-ks.com", phone: "" }
+    ];
+
+    // 1. ZËVENDËSIMI I FUNKSIONIT TË NGARKIMIT TË PROJEKTEVE
     window.loadProject = function(id) {
         var projData = null;
         if (typeof supaFetch !== 'function') return alert('Supabase nuk është gati.');
@@ -20,7 +29,6 @@
             if(document.getElementById('i-location')) document.getElementById('i-location').value = p.location || '';
             if(document.getElementById('i-deadline')) document.getElementById('i-deadline').value = p.deadline || '';
             
-            // KORRIGJIMI: Filtrojmë me project_name sepse project_id nuk ekziston në Supabase
             return supaFetch('bom_items?project_name=eq.' + encodeURIComponent(p.name) + '&order=created_at.asc');
         }).then(function(items) {
             if (!items) return;
@@ -44,10 +52,14 @@
                 };
             });
             
-            // Mbushim automatikisht furnitorët lokalë që RFQ të mos jetë bosh
-            if (typeof defaultSuppliers !== 'undefined') {
-                suppliers = [...defaultSuppliers.map(s => ({ ...s, id: Date.now() + Math.random() }))];
-            }
+            // KORRIGJIMI ME FORCË: Mbushim listën e furnitorëve globalë direkt nga kodi jonë
+            suppliers = furnitoretPristeel.map((s, idx) => ({
+                id: Date.now() + idx,
+                name: s.name,
+                email: s.email,
+                phone: s.phone
+            }));
+            if (typeof renderSuppliers === 'function') renderSuppliers();
             
             if (typeof showProjectDashboard === 'function') showProjectDashboard(projData);
         }).catch(function(e) {
@@ -55,7 +67,7 @@
         });
     };
 
-    // 2. KORRIGJIMI I FUNKSIONIT STARTPARSING (Përpunimi i AI me Groq)
+    // 2. KORRIGJIMI I FUNKSIONIT STARTPARSING (Groq AI)
     window.startParsing = async function() {
         const textarea = document.getElementById('i-text');
         const text = textarea ? textarea.value.trim() : "";
@@ -100,6 +112,14 @@
                 conf: 'high'
             }));
 
+            // Mbushim furnitorët edhe kur bëhet analizë e re tekstesh
+            suppliers = furnitoretPristeel.map((s, idx) => ({
+                id: Date.now() + idx,
+                name: s.name,
+                email: s.email,
+                phone: s.phone
+            }));
+
             showPage('bom');
             if (typeof renderBom === 'function') renderBom();
             if (textarea) textarea.value = '';
@@ -110,5 +130,5 @@
         }
     };
 
-    console.log("PRISTEEL: Arnimi u aplikua me sukses në prapaskenë!");
+    console.log("PRISTEEL: Arnimi i plotë me Furnitorë u aplikua në server!");
 })();
