@@ -8,7 +8,7 @@ const GEMINI_API_KEY = "AQ.Ab8RN6Lvz-UHiQmQ3E2olN6t_hMwd58pjfBTq1A7U1Y9KaNdyg";
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // =========================================================================
-// 2. NGARKIMI I FAQES DHE LIDHJA E BUTONAVE
+// 2. INITIALIZIMI
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
     const btnAnalizo = document.querySelector(".btn-analizo") || document.getElementById("btnAnalizo") || document.querySelector("button"); 
@@ -34,8 +34,6 @@ async function analizoDheBartoTeBOM(event) {
 
         if (!tekstiRaw) {
             alert("Ju lutem futni tekstin e materialit!");
-            butoni.innerText = tekstiOrigjinal;
-            butoni.disabled = false;
             return;
         }
 
@@ -43,21 +41,20 @@ async function analizoDheBartoTeBOM(event) {
 
         if (supabaseClient && lista && lista.length > 0) {
             for (let item of lista) {
-                const { error } = await supabaseClient.from('bom_items').insert([{ 
+                await supabaseClient.from('bom_items').insert([{ 
                     project_name: emriProjektit, 
                     pozicioni: item.pozicioni || "-", 
                     materiali: item.materiali || "-", 
                     dimensionet: item.dimensionet || "-", 
                     sasia: parseInt(item.sasia) || 1 
                 }]);
-                if (error) console.error("Gabim te Supabase:", error);
             }
         }
         
         ndryshoFaqenAktive(emriProjektit);
     } catch (gabimi) {
         console.error(gabimi);
-        alert("Gabim: " + gabimi.message);
+        alert("Gabim kritik: " + gabimi.message);
     } finally {
         butoni.innerText = tekstiOrigjinal;
         butoni.disabled = false;
@@ -65,40 +62,51 @@ async function analizoDheBartoTeBOM(event) {
 }
 
 // =========================================================================
-// 4. THIRRJA E GEMINI 1.5 FLASH
+// 4. METODA REALE PËR KTHIMIN E JSON NGA GEMINI
 // =========================================================================
 async function thirrGeminiAPI(teksti) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    
-    const promptSistemit = `Je një inxhinier prokurimi. Nxirr nga teksti pozicionet, llojin e materialit, dimensionet dhe sasinë. Kthe VETËM një JSON array të pastër pa thonjëza markdown, si ky format: [{"pozicioni": "Pos. 1", "materiali": "S235JR", "dimensionet": "IPE 200", "sasia": 1}]`;
 
     const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             contents: [{
-                role: "user",
-                parts: [{ text: `${promptSistemit}\n\nTeksti:\n${teksti}` }]
-            }]
+                parts: [{ text: `Analizo këtë tekst prokurimi çeliku dhe nxirr të dhënat si JSON Array. Teksti:\n${teksti}` }]
+            }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            pozicioni: { type: "string" },
+                            materiali: { type: "string" },
+                            dimensionet: { type: "string" },
+                            sasia: { type: "integer" }
+                        },
+                        required: ["pozicioni", "materiali", "dimensionet", "sasia"]
+                    }
+                }
+            }
         })
     });
 
     if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`Google Error: ${errText}`);
+        throw new Error(`Google API refuzim: ${errText}`);
     }
     
     const result = await response.json();
-    let tekstNgaAI = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    const tekstNgaAI = result.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!tekstNgaAI) throw new Error("Përgjigjja e AI është e zbrazët.");
-
-    tekstNgaAI = tekstNgaAI.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(tekstNgaAI);
+    if (!tekstNgaAI) throw new Error("AI nuk ktheu asnjë të dhënë.");
+    return JSON.parse(tekstNgaAI.trim());
 }
 
 // =========================================================================
-// 5. PËRDITËSIMI I PAMJES (RREGULLUAR)
+// 5. PËRDITËSIMI I SAKTI I PAMJES
 // =========================================================================
 async function ndryshoFaqenAktive(emriProjektit) {
     if (supabaseClient) {
@@ -107,11 +115,10 @@ async function ndryshoFaqenAktive(emriProjektit) {
         const secImport = document.querySelector(".import-dokument-container") || document.getElementById("importSection") || document.querySelector(".main-content > div");
         const secBOM = document.querySelector(".bom-container") || document.getElementById("bomSection") || document.getElementById("bom-section");
 
-        // RREGULLIMI: Hoqëm .style e tepërt që rrëzonte kodin
         if (secImport) secImport.style.display = "none";
         if (secBOM) secBOM.style.display = "block";
         
-        const tbody = document.querySelector("table tbody") || document.getElementById("tabelaBOMBody");
+        const tbody = document.querySelector("table tbody") || document.getElementById("tabelaBOMBody") || document.querySelector(".tabela-bom-items tbody");
         if (tbody && data) {
             tbody.innerHTML = data.map(item => `
                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
