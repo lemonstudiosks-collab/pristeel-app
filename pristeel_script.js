@@ -3,9 +3,8 @@
 // =========================================================================
 // KUJDES: Zëvendëso këto vlera me çelësat e tu realë!
 const SUPABASE_URL = "https://ismxqfqzkchbsrbhucf.supabase.co"; 
-const SUPABASE_ANON_KEY = "VENDOS_KËTU_ANON_KEY_TË_SUPABASE";
-const GEMINI_API_KEY = "VENDOS_KËTU_API_KEY_TË_GEMINI"; 
-
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM";
+const GEMINI_API_KEY = "AQ.Ab8RN6KCom9Q_VMHVuuhDBSoE0ML48EbznisCDFMRJlnWYP-w";
 // Inicializimi i klientit të Supabase
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
