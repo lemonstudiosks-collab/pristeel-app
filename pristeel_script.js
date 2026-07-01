@@ -3,8 +3,7 @@
 // =========================================================================
 const SUPABASE_URL = "https://ismxqfqzkchbsrbhucf.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM";
-const GEMINI_API_KEY = "AQ.Ab8RN6JLaFm4-zPgaGqxCxLdBz3wgivf0d9eSH5AITUESTjLzw"; 
-
+const GEMINI_API_KEY = "AQ.Ab8RN6LdbL37xbG-gpc9kJpD6an6MT8VLn8qMhp9Q67n4recuw";
 // Inicializimi i klientit të Supabase
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
