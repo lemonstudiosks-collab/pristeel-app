@@ -3,25 +3,22 @@
 // =========================================================================
 const SUPABASE_URL = "https://ismxqfqzkchbsrbhucf.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM";
-
-// Çelësi yt i saktë nga screenshot-i i fundit:
 const GEMINI_API_KEY = "AQ.Ab8RN6JLaFm4-zPgaGqxCxLdBz3wgivf0d9eSH5AITUESTjLzw"; 
 
 // Inicializimi i klientit të Supabase
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-// Ndihmës për vonesat (përdoret për Exponential Backoff gjatë thirrjes së AI)
-const delay = ms => new Promise(res => setTimeout(res, ms));
+// E emëruam 'pristeelDelay' që të mos përplaset me kodin tënd të vjetër në HTML
+const pristeelDelay = ms => new Promise(res => setTimeout(res, ms));
 
 // =========================================================================
 // 2. NGARKIMI I FAQES DHE LIDHJA E BUTONAVE (EVENT LISTENERS)
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
     if (!supabaseClient) {
-        console.error("Supabase nuk u ngarkua! Kontrollo nëse ke shtuar CDN-in e Supabase.");
+        console.error("Supabase nuk u ngarkua!");
     }
 
-    // Gjejmë butonin "Analizo me AI"
     const btnAnalizo = document.querySelector(".btn-analizo") || 
                        document.getElementById("btnAnalizo") || 
                        document.querySelector("button.btn-primary") ||
@@ -164,9 +161,9 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
         } catch (error) {
             tentimi++;
             if (tentimi >= 5) {
-                throw new Error("Lidhja me inteligjencën artificiale dështoi pas disa tentimesh.");
+                throw new Error("Lidhja me inteligjencën artificiale dështoi.");
             }
-            await delay(vonesat[tentimi - 1]);
+            await pristeelDelay(vonesat[tentimi - 1]);
         }
     }
 }
@@ -221,9 +218,7 @@ function ndërtoTabelenBOM(teDhenat) {
                        document.getElementById("tabelaBOMBody") ||
                        document.querySelector("table tbody"); 
                        
-    if (!tabelaBody) {
-        return;
-    }
+    if (!tabelaBody) return;
 
     tabelaBody.innerHTML = ""; 
 
@@ -260,7 +255,5 @@ function shfaqMesazhGabimi(mesazhi) {
 
     document.body.appendChild(errorBox);
 
-    setTimeout(() => {
-        errorBox.remove();
-    }, 5000);
+    setTimeout(() => { errorBox.remove(); }, 5000);
 }
