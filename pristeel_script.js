@@ -1,10 +1,12 @@
 // =========================================================================
-// 1. KONFIGURIMI I PLATFORMËS (SUPABASE DHE GEMINI API)
+// 1. KONFIGURIMI I PLATFORMËS (SUPABASE DHE GEMINI API) - VENDOSUR NGA AI
 // =========================================================================
-// KUJDES: Zëvendëso këto vlera me çelësat e tu realë!
 const SUPABASE_URL = "https://ismxqfqzkchbsrbhucf.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM";
-const GEMINI_API_KEY = "AQ.Ab8RN6KCom9Q_VMHVuuhDBSoE0ML48EbznisCDFMRJlnWYP-w";
+
+// Çelësi yt i saktë nga screenshot-i i fundit:
+const GEMINI_API_KEY = "AQ.Ab8RN6JLaFm4-zPgaGqxCxLdBz3wgivf0d9eSH5AITUESTjLzw"; 
+
 // Inicializimi i klientit të Supabase
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
@@ -16,19 +18,18 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
     if (!supabaseClient) {
-        console.error("Supabase nuk u ngarkua! Kontrollo nëse ke shtuar CDN-in e Supabase në index.html ose pristeel-procurement.html.");
+        console.error("Supabase nuk u ngarkua! Kontrollo nëse ke shtuar CDN-in e Supabase.");
     }
 
     // Gjejmë butonin "Analizo me AI"
     const btnAnalizo = document.querySelector(".btn-analizo") || 
                        document.getElementById("btnAnalizo") || 
                        document.querySelector("button.btn-primary") ||
-                       document.querySelector("button"); // Fallback te butoni i parë
+                       document.querySelector("button"); 
 
     if (btnAnalizo) {
         btnAnalizo.addEventListener("click", analizoDheBartoTeBOM);
     } else {
-        // Provë rezervë nëse butoni nuk gjehet direkt
         const gjitheButonat = document.querySelectorAll("button");
         gjitheButonat.forEach(btn => {
             if (btn.innerText.toLowerCase().includes("analizo")) {
@@ -52,15 +53,13 @@ async function analizoDheBartoTeBOM(event) {
     butoni.disabled = true;
 
     try {
-        // I. Merr tekstin e paorganizuar nga kutia e tekstit (Textarea)
         const textarea = document.querySelector("textarea") || document.querySelector(".teksti-raw");
         const tekstiRaw = textarea ? textarea.value : "";
         
-        // II. Merr emrin e projektit nga inputi
         const inputProjektit = document.querySelector('input[placeholder*="STACON"]') || 
                                document.querySelector('.emri-projektit') ||
                                document.getElementById("emriProjektit") ||
-                               document.querySelector('input[type="text"]'); // Fallback te inputi i parë i tekstit
+                               document.querySelector('input[type="text"]'); 
         
         const emriProjektit = inputProjektit && inputProjektit.value.trim() !== "" ? inputProjektit.value : "Projekt i Ri Çeliku";
 
@@ -71,14 +70,12 @@ async function analizoDheBartoTeBOM(event) {
             return;
         }
 
-        // III. Thirrja e Gemini API me Exponential Backoff (Maksimumi 5 tentime)
         const listaBOMStrukturuar = await thirrGeminiAPI(tekstiRaw);
 
         if (!listaBOMStrukturuar || listaBOMStrukturuar.length === 0) {
             throw new Error("AI nuk arriti të nxjerrë asnjë pozicion të vlefshëm.");
         }
 
-        // IV. Ruajtja e të dhënave në tabelën e Supabase `bom_items`
         if (supabaseClient) {
             for (let item of listaBOMStrukturuar) {
                 const { error } = await supabaseClient
@@ -99,7 +96,6 @@ async function analizoDheBartoTeBOM(event) {
             }
         }
 
-        // V. Ndryshimi i pamjes vizuale (Navigimi automatik te tab-i BOM)
         ndryshoFaqenAktive("BOM", emriProjektit);
 
     } catch (gabimi) {
@@ -135,13 +131,12 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
             parts: [{ text: promptSistemit }]
         },
         generationConfig: {
-            responseMimeType: "application/json" // Siguron që Gemini të kthejë vetëm strukturë JSON
+            responseMimeType: "application/json" 
         }
     };
 
-    // Implementimi i Exponential Backoff (Rregulla e API-së)
     let tentimi = 0;
-    const vonesat = [1000, 2000, 4000, 8000, 16000]; // 1s, 2s, 4s, 8s, 16s
+    const vonesat = [1000, 2000, 4000, 8000, 16000]; 
 
     while (tentimi < 5) {
         try {
@@ -162,7 +157,6 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
                 throw new Error("Përgjigjja e AI është e zbrazët.");
             }
 
-            // Pastrojmë kodin në rast se ka thonjëza markdown aksidentale
             tekstNgaAI = tekstNgaAI.replace(/```json/g, "").replace(/```/g, "").trim();
             
             return JSON.parse(tekstNgaAI);
@@ -170,7 +164,7 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
         } catch (error) {
             tentimi++;
             if (tentimi >= 5) {
-                throw new Error("Lidhja me inteligjencën artificiale dështoi pas disa tentimesh. Ju lutem kontrolloni internetin ose API Key-n tuaj.");
+                throw new Error("Lidhja me inteligjencën artificiale dështoi pas disa tentimesh.");
             }
             await delay(vonesat[tentimi - 1]);
         }
@@ -181,7 +175,6 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
 // 5. NAVIGIMI DHE PËRDITËSIMI I PAMJES (BOM DASHBOARD)
 // =========================================================================
 async function ndryshoFaqenAktive(emriFaqes, emriProjektit) {
-    // 1. Përditëso menunë aktive në shiritin anësor (Sidebar)
     const menute = document.querySelectorAll(".prosesi div, .prosesi li, .prosesi a, .sidebar a");
     menute.forEach(m => {
         if (m.innerText.toLowerCase().includes(emriFaqes.toLowerCase())) {
@@ -191,7 +184,6 @@ async function ndryshoFaqenAktive(emriFaqes, emriProjektit) {
         }
     });
 
-    // 2. Lexojmë të dhënat e sapokrijuara nga Supabase
     if (supabaseClient) {
         const { data: bomItems, error } = await supabaseClient
             .from('bom_items')
@@ -199,15 +191,14 @@ async function ndryshoFaqenAktive(emriFaqes, emriProjektit) {
             .eq('project_name', emriProjektit);
 
         if (error) {
-            console.error("Gabim gjatë leximit të të dhënave nga Supabase:", error);
+            console.error("Gabim gjatë leximit të të dhënave:", error);
             return;
         }
 
-        // 3. Shfaqim panelin e BOM dhe fshehim panelin e Importit
         const seksioniImport = document.getElementById("importSection") || 
                                document.querySelector(".import-dokument-container") || 
                                document.getElementById("import-section") ||
-                               document.querySelector(".main-content > div"); // Fallback te div-i i parë i përmbajtjes
+                               document.querySelector(".main-content > div"); 
 
         const seksioniBOM = document.getElementById("bomSection") || 
                              document.querySelector(".bom-container") || 
@@ -216,29 +207,25 @@ async function ndryshoFaqenAktive(emriFaqes, emriProjektit) {
         if (seksioniImport) seksioniImport.style.display = "none";
         if (seksioniBOM) {
             seksioniBOM.style.display = "block";
-            // Ndërtojmë dhe shfaqim tabelën vizualisht
             ndërtoTabelenBOM(bomItems);
         } else {
-            // Nëse nuk keni ndarë akoma seksionet me ID, shfaqim të dhënat në konsolë
             console.log("Të dhënat e nxjerra për BOM:", bomItems);
             shfaqMesazhGabimi("Të dhënat u ruajtën! Por seksioni 'BOM' në HTML duhet të ketë id='bomSection' që të shfaqet automatikisht.");
         }
     }
 }
 
-// Ndërton rreshtat e tabelës te faqja BOM
 function ndërtoTabelenBOM(teDhenat) {
     const tabelaBody = document.querySelector("#tabelaBOM tbody") || 
                        document.querySelector(".tabela-bom-items") || 
                        document.getElementById("tabelaBOMBody") ||
-                       document.querySelector("table tbody"); // Fallback te trupi i parë i tabelës
+                       document.querySelector("table tbody"); 
                        
     if (!tabelaBody) {
-        console.error("Nuk u gjet tabela ku duhet të vendosen materialet e BOM-it!");
         return;
     }
 
-    tabelaBody.innerHTML = ""; // Pastrojmë rreshtat testues ekzistues
+    tabelaBody.innerHTML = ""; 
 
     if (teDhenat.length === 0) {
         tabelaBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px;">Nuk u gjet asnjë material për këtë projekt.</td></tr>`;
@@ -258,7 +245,6 @@ function ndërtoTabelenBOM(teDhenat) {
     });
 }
 
-// Funksion i thjeshtë për të shfaqur mesazhet e gabimit pa përdorur alert()
 function shfaqMesazhGabimi(mesazhi) {
     const errorBox = document.createElement("div");
     errorBox.style.position = "fixed";
