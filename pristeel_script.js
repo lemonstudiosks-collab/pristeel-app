@@ -6,7 +6,7 @@ const SUPABASE_URL = "https://ismxqfqzkchbsrbhucf.supabase.co";
 const SUPABASE_ANON_KEY = "VENDOS_KËTU_ANON_KEY_TË_SUPABASE";
 const GEMINI_API_KEY = "VENDOS_KËTU_API_KEY_TË_GEMINI"; 
 
-// Inicializimi i klientit të Supabase (Sigurohu që ke bllokun e Supabase CDN në HTML)
+// Inicializimi i klientit të Supabase
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 // Ndihmës për vonesat (përdoret për Exponential Backoff gjatë thirrjes së AI)
@@ -17,16 +17,25 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
     if (!supabaseClient) {
-        console.error("Supabase nuk u ngarkua! Kontrollo nëse ke shtuar CDN-in e Supabase në index.html.");
+        console.error("Supabase nuk u ngarkua! Kontrollo nëse ke shtuar CDN-in e Supabase në index.html ose pristeel-procurement.html.");
     }
 
     // Gjejmë butonin "Analizo me AI"
     const btnAnalizo = document.querySelector(".btn-analizo") || 
                        document.getElementById("btnAnalizo") || 
+                       document.querySelector("button.btn-primary") ||
                        document.querySelector("button"); // Fallback te butoni i parë
 
     if (btnAnalizo) {
         btnAnalizo.addEventListener("click", analizoDheBartoTeBOM);
+    } else {
+        // Provë rezervë nëse butoni nuk gjehet direkt
+        const gjitheButonat = document.querySelectorAll("button");
+        gjitheButonat.forEach(btn => {
+            if (btn.innerText.toLowerCase().includes("analizo")) {
+                btn.addEventListener("click", analizoDheBartoTeBOM);
+            }
+        });
     }
 });
 
@@ -51,7 +60,9 @@ async function analizoDheBartoTeBOM(event) {
         // II. Merr emrin e projektit nga inputi
         const inputProjektit = document.querySelector('input[placeholder*="STACON"]') || 
                                document.querySelector('.emri-projektit') ||
-                               document.getElementById("emriProjektit");
+                               document.getElementById("emriProjektit") ||
+                               document.querySelector('input[type="text"]'); // Fallback te inputi i parë i tekstit
+        
         const emriProjektit = inputProjektit && inputProjektit.value.trim() !== "" ? inputProjektit.value : "Projekt i Ri Çeliku";
 
         if (!tekstiRaw || tekstiRaw.trim() === "") {
@@ -160,10 +171,8 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
         } catch (error) {
             tentimi++;
             if (tentimi >= 5) {
-                // Nëse dështojnë të gjitha tentimet, shfaqim gabimin përfundimtar
                 throw new Error("Lidhja me inteligjencën artificiale dështoi pas disa tentimesh. Ju lutem kontrolloni internetin ose API Key-n tuaj.");
             }
-            // Presim para se të provojmë përsëri (backoff)
             await delay(vonesat[tentimi - 1]);
         }
     }
@@ -174,7 +183,7 @@ Formati i kthimit duhet të jetë ekzaktësisht kështu:
 // =========================================================================
 async function ndryshoFaqenAktive(emriFaqes, emriProjektit) {
     // 1. Përditëso menunë aktive në shiritin anësor (Sidebar)
-    const menute = document.querySelectorAll(".prosesi div, .prosesi li, .prosesi a");
+    const menute = document.querySelectorAll(".prosesi div, .prosesi li, .prosesi a, .sidebar a");
     menute.forEach(m => {
         if (m.innerText.toLowerCase().includes(emriFaqes.toLowerCase())) {
             m.classList.add("active");
@@ -196,14 +205,24 @@ async function ndryshoFaqenAktive(emriFaqes, emriProjektit) {
         }
 
         // 3. Shfaqim panelin e BOM dhe fshehim panelin e Importit
-        const seksioniImport = document.getElementById("importSection") || document.querySelector(".import-dokument-container") || document.getElementById("import-section");
-        const seksioniBOM = document.getElementById("bomSection") || document.querySelector(".bom-container") || document.getElementById("bom-section");
+        const seksioniImport = document.getElementById("importSection") || 
+                               document.querySelector(".import-dokument-container") || 
+                               document.getElementById("import-section") ||
+                               document.querySelector(".main-content > div"); // Fallback te div-i i parë i përmbajtjes
+
+        const seksioniBOM = document.getElementById("bomSection") || 
+                             document.querySelector(".bom-container") || 
+                             document.getElementById("bom-section");
 
         if (seksioniImport) seksioniImport.style.display = "none";
         if (seksioniBOM) {
             seksioniBOM.style.display = "block";
             // Ndërtojmë dhe shfaqim tabelën vizualisht
             ndërtoTabelenBOM(bomItems);
+        } else {
+            // Nëse nuk keni ndarë akoma seksionet me ID, shfaqim të dhënat në konsolë
+            console.log("Të dhënat e nxjerra për BOM:", bomItems);
+            shfaqMesazhGabimi("Të dhënat u ruajtën! Por seksioni 'BOM' në HTML duhet të ketë id='bomSection' që të shfaqet automatikisht.");
         }
     }
 }
@@ -212,7 +231,8 @@ async function ndryshoFaqenAktive(emriFaqes, emriProjektit) {
 function ndërtoTabelenBOM(teDhenat) {
     const tabelaBody = document.querySelector("#tabelaBOM tbody") || 
                        document.querySelector(".tabela-bom-items") || 
-                       document.getElementById("tabelaBOMBody");
+                       document.getElementById("tabelaBOMBody") ||
+                       document.querySelector("table tbody"); // Fallback te trupi i parë i tabelës
                        
     if (!tabelaBody) {
         console.error("Nuk u gjet tabela ku duhet të vendosen materialet e BOM-it!");
