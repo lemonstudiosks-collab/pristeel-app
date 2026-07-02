@@ -1,317 +1,65 @@
 <!DOCTYPE html>
 <html lang="sq">
 <head>
-  <meta charset="UTF-8">
-  <title>PRISTEEL — Procurement Platform</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-      --bg-dark: #0f111a;
-      --card-bg: #1e2235;
-      --accent-blue: #2563eb;
-      --accent-green: #16a34a;
-      --text-main: #f1f5f9;
-      --text-muted: #64748b;
-      --border-color: #2e344d;
-      --danger: #dc2626;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text-main); display: flex; min-height: 100vh; }
-    
-    /* SIDEBAR */
-    .sidebar { width: 260px; background-color: #161925; border-right: 1px solid var(--border-color); padding: 24px; display: flex; flex-direction: column; gap: 8px; }
-    .sidebar h2 { font-size: 20px; font-weight: 800; color: #fff; text-align: center; margin-bottom: 4px; letter-spacing: 1px; }
-    .sidebar .version { font-size: 11px; color: var(--text-muted); text-align: center; margin-bottom: 24px; }
-    .nav-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: none; border: none; color: var(--text-muted); font-size: 14px; font-weight: 500; border-radius: 8px; cursor: pointer; text-align: left; transition: all 0.2s; width: 100%; }
-    .nav-btn:hover, .nav-btn.active { background-color: #222638; color: #fff; }
-    .nav-btn.active { border-left: 4px solid var(--accent-blue); padding-left: 12px; }
-    
-    /* MAIN CONTENT */
-    .content-area { flex: 1; padding: 40px; overflow-y: auto; }
-    .page-title { font-size: 24px; font-weight: 700; margin-bottom: 24px; color: #fff; }
-    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .card-title { font-size: 14px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; }
-    
-    /* LAYOUTS & FORMS */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-    .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-    .form-group label { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    input, textarea, select { background-color: #161925; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: #fff; font-size: 14px; width: 100%; transition: border-color 0.2s; }
-    input:focus, textarea:focus, select:focus { border-color: var(--accent-blue); outline: none; }
-    
-    /* BUTTONS */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: background-color 0.2s; color: #fff; }
-    .btn-primary { background-color: var(--accent-blue); } .btn-primary:hover { background-color: #1d4ed8; }
-    .btn-success { background-color: var(--accent-green); } .btn-success:hover { background-color: #15803d; }
-    .btn-danger { background-color: var(--danger); } .btn-danger:hover { background-color: #b91c1c; }
-    .btn-secondary { background-color: #2e344d; color: var(--text-main); } .btn-secondary:hover { background-color: #3b4263; }
-    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
-    .hidden { display: none !important; }
-    
-    /* TABLES & ITEMS */
-    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-    th { background-color: #161925; color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; padding: 12px; text-align: left; border-bottom: 2px solid var(--border-color); }
-    td { padding: 14px 12px; font-size: 14px; border-bottom: 1px solid var(--border-color); }
-    tr:hover td { background-color: #222638; }
-    .project-card { display: flex; justify-content: space-between; align-items: center; padding: 16px; background-color: #161925; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; }
-    .rfq-box { background-color: #161925; border: 1px solid var(--border-color); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-  </style>
-</head>
-<body>
-
-  <div class="sidebar">
-    <h2>PRISTEEL</h2>
-    <div class="version">Procurement Platform v24</div>
-    <button class="nav-btn active" id="b-import" onclick="switchPage('import')">📥 Import Dokument</button>
-    <button class="nav-btn" id="b-dashboard" onclick="switchPage('dashboard')">📋 Dashboard Projekti</button>
-    <button class="nav-btn" id="b-bom" onclick="switchPage('bom')">⚙️ Specifikimi i Materialit</button>
-    <button class="nav-btn" id="b-rfq" onclick="switchPage('rfq')">✉️ Gjenero RFQ</button>
-    <div style="flex: 1;"></div>
-    <button class="nav-btn" id="b-settings" onclick="switchPage('settings')">⚙️ Cilësimet</button>
-  </div>
-
-  <div class="content-area">
-    
-    <div id="p-import" class="page">
-      <h1 class="page-title">Detajet e Projektit</h1>
-      <div class="card">
-        <div class="form-group">
-          <label>Emri i Projektit / Ndërtesës</label>
-          <input type="text" id="i-projname" placeholder="p.sh. Sportska Sala">
-        </div>
-        <div class="grid-2">
-          <div class="form-group"><label>Klienti / GU</label><input type="text" id="i-client" placeholder="p.sh. STACON GmbH"></div>
-          <div class="form-group"><label>Referenca</label><input type="text" id="i-ref" placeholder="p.sh. PST-2026-001"></div>
-        </div>
-        <div class="grid-3">
-          <div class="form-group"><label>Afati i Dorëzimit</label><input type="date" id="i-deadline"></div>
-          <div class="form-group"><label>Vendi i Dorëzimit</label><input type="text" id="i-location" placeholder="p.sh. Frankfurt, DE"></div>
-          <div class="form-group"><label>Vlera e Parashikuar (EUR)</label><input type="number" id="i-budget" value="0"></div>
-        </div>
-        <div class="form-group">
-          <label>Dokumenti (Copy-Paste nga PDF, Email, ose çdo burim)</label>
-          <textarea id="i-text" rows="8" placeholder="Ngjitni specifikimet këtu..."></textarea>
-        </div>
-        <div style="display: flex; gap: 12px;">
-          <button class="btn btn-primary" onclick="startParsing()">⚡ Analizo me AI</button>
-          <button class="btn btn-success" onclick="saveProjectToCloud()">💾 Ruaj projektin ne cloud</button>
-        </div>
-      </div>
-      
-      <h2 class="page-title" style="margin-top: 40px;">Projektet e Ruajtura</h2>
-      <div id="project-list-container"></div>
-    </div>
-
-    <div id="p-dashboard" class="page hidden">
-      <h1 class="page-title">Dashboard i Projektit</h1>
-      <div class="card grid-2">
-        <div>
-          <h3 style="margin-bottom: 12px;">Detajet</h3>
-          <p style="margin-bottom: 6px;"><strong>Projekti:</strong> <span id="d-name">-</span></p>
-          <p style="margin-bottom: 6px;"><strong>Klienti:</strong> <span id="d-client">-</span></p>
-          <p style="margin-bottom: 6px;"><strong>Lokacioni:</strong> <span id="d-loc">-</span></p>
-        </div>
-        <div style="text-align: right;">
-          <button class="btn btn-primary" onclick="switchPage('bom')">Shko te BOM ➔</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="p-bom" class="page hidden">
-      <h1 class="page-title">Specifikimi i Materialit (BOM)</h1>
-      <div class="card" style="overflow-x: auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Pos</th><th>Profil</th><th>Dimenzioni</th><th>Grade</th><th>Standard</th><th>Gjatësi (mm)</th><th>Copa</th><th>Pesha (kg)</th><th>Sipërfaqja</th><th>Certifikatë</th>
-            </tr>
-          </thead>
-          <tbody id="bom-table-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="p-rfq" class="page hidden">
-      <h1 class="page-title">Gjenerimi i RFQ-ve për Furnitorët</h1>
-      <div id="rfq-list-container"></div>
-    </div>
-
-    <div id="p-settings" class="page hidden">
-      <h1 class="page-title">Cilësimet</h1>
-      <div class="card">
-        <div class="form-group">
-          <label>Groq API Key (gsk_...)</label>
-          <input type="password" id="s-apikey" onchange="localStorage.setItem('pristeel_apikey', this.value.trim())">
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-<script>
-  let bomRows = [];
-  let _curProjId = null;
-
-  const defaultSuppliers = [
-    { name: "Eurosteel", email: "info@eurosteel.com" },
-    { name: "Aktiva MK", email: "info@aktiva.com.mk" },
-    { name: "Galvasteel", email: "info@galvasteel.com" },
-    { name: "IGM Trade", email: "info@igm.com.mk" },
-    { name: "Makstil", email: "info@makstil.com" },
-    { name: "MTA", email: "info@mta-ks.com" }
-  ];
-
-  const SUPABASE_URL = "https://isymxqfqzkchbsrbhucf.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk1MDczMTksImV4cCI6MjAzNTA4MzMxOX0.6XW-tq_4XyVfS2u-p7XyZ6X-4XyVfS2u-p7XyZ6X-4X";
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  function switchPage(pId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('p-' + pId).classList.remove('hidden');
-    document.getElementById('b-' + pId).classList.add('active');
-    if(pId === 'rfq') renderRfq();
-  }
-
-  window.onload = function() {
-    if(document.getElementById('s-apikey')) {
-      document.getElementById('s-apikey').value = localStorage.getItem('pristeel_apikey') || '';
-    }
-    fetchProjects();
-  };
-
-  async function fetchProjects() {
-    try {
-      const { data, error } = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false });
-      if(error) return;
-      const container = document.getElementById('project-list-container');
-      if(!container) return;
-      container.innerHTML = '';
-      data.forEach(p => {
-        const div = document.createElement('div');
-        div.className = 'project-card';
-        div.innerHTML = `
-          <div><strong>${p.name}</strong> <span style="color:var(--text-muted); font-size:13px;">(${p.client || '-'})</span></div>
-          <div style="display:flex; gap:8px;">
-            <button class="btn btn-primary btn-sm" onclick="loadProject('${p.id}')">Hap</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteProject('${p.id}', '${p.name}')">Fshij</button>
-          </div>`;
-        container.appendChild(div);
-      });
-    } catch(e) { console.error(e); }
-  }
-
-  async function loadProject(id) {
-    try {
-      const { data: projs } = await supabaseClient.from('projects').select('*').eq('id', id);
-      if(!projs || projs.length === 0) return;
-      const p = projs[0]; _curProjId = id;
-
-      document.getElementById('i-projname').value = p.name || '';
-      document.getElementById('i-client').value = p.client || '';
-      document.getElementById('i-ref').value = p.ref || '';
-      document.getElementById('i-location').value = p.location || '';
-      document.getElementById('i-deadline').value = p.deadline || '';
-
-      document.getElementById('d-name').innerText = p.name || '-';
-      document.getElementById('d-client').innerText = p.client || '-';
-      document.getElementById('d-loc').innerText = p.location || '-';
-
-      const { data: items } = await supabaseClient.from('bom_items').select('*').eq('project_name', p.name);
-      bomRows = (items || []).map((r, i) => ({
-        pos: i+1, profile: r.profile, dim: r.dim, grade: r.grade, std: r.std, lenMm: r.len_mm, pcs: r.pcs, kg: r.kg, surface: r.surface, cert: r.cert
-      }));
-
-      renderBomTable();
-      switchPage('dashboard');
-    } catch(err) { console.error(err); }
-  }
-
-  async function saveProjectToCloud() {
-    const name = document.getElementById('i-projname').value.trim();
-    if(!name) return alert('Vendosni emrin e projektit!');
-    
-    try {
-      const { data } = await supabaseClient.from('projects').insert([{
-        name: name, client: document.getElementById('i-client').value, ref: document.getElementById('i-ref').value, location: document.getElementById('i-location').value, deadline: document.getElementById('i-deadline').value
-      }]).select();
-      
-      if(data && bomRows.length > 0) {
-        const ins = bomRows.map(r => ({ project_name: name, profile: r.profile, dim: r.dim, grade: r.grade, std: r.std, len_mm: r.lenMm, pcs: r.pcs, kg: r.kg, surface: r.surface, cert: r.cert }));
-        await supabaseClient.from('bom_items').insert(ins);
-      }
-      alert('Projekti u ruajt me sukses!');
-      fetchProjects();
-    } catch(e) { alert('Gabim gjatë ruajtjes.'); }
-  }
-
-  async function deleteProject(id, name) {
-    if(!confirm('A jeni të sigurt që dëshironi ta fshini projektin ' + name + '?')) return;
-    try {
-      await supabaseClient.from('projects').delete().eq('id', id);
-      await supabaseClient.from('bom_items').delete().eq('project_name', name);
-      fetchProjects();
-    } catch(e) { console.error(e); }
-  }
-
-  async function startParsing() {
-    const text = document.getElementById('i-text').value.trim();
-    const apiKey = localStorage.getItem('pristeel_apikey');
-    if(!text || !apiKey) return alert('Mungon teksti ose API Key!');
-
-    try {
-      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: `Extract steel profiles as JSON array: [{"profile_type":"HEA","dimension":"240","steel_grade":"S355JR","standard":"EN 10025-2","length_mm":12000,"quantity_pieces":10,"quantity_kg":4000,"surface_treatment":"none","certification":"EN 10204 3.1"}]. Text:\n${text}` }],
-          temperature: 0
-        })
-      });
-      const d = await resp.json();
-      let raw = d.choices[0].message.content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      const items = JSON.parse(raw);
-
-      bomRows = items.map((it, i) => ({
-        pos: i + 1, profile: it.profile_type, dim: it.dimension, grade: it.steel_grade, std: it.standard, lenMm: it.length_mm, pcs: it.quantity_pieces, kg: it.quantity_kg, surface: it.surface_treatment, cert: it.certification
-      }));
-
-      renderBomTable();
-      switchPage('bom');
-    } catch(e) { alert('Gabim gjatë analizës së AI.'); }
-  }
-
-  function renderBomTable() {
-    const tbody = document.getElementById('bom-table-body');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    bomRows.forEach(r => {
-      tbody.innerHTML += `<tr><td>${r.pos}</td><td><strong>${r.profile}</strong></td><td>${r.dim}</td><td>${r.grade}</td><td>${r.std}</td><td>${r.lenMm}</td><td>${r.pcs}</td><td><strong>${r.kg} kg</strong></td><td>${r.surface}</td><td>${r.cert}</td></tr>`;
-    });
-  }
-
-  function renderRfq() {
-    const container = document.getElementById('rfq-list-container');
-    if(!container) return;
-    container.innerHTML = '';
-    if(bomRows.length === 0) { container.innerHTML = '<p>Nuk ka materiale në BOM.</p>'; return; }
-
-    let matText = "";
-    bomRows.forEach(r => { matText += `- Pos. ${r.pos}: ${r.profile} ${r.dim}, ${r.grade}, L=${r.lenMm}mm, ${r.pcs} copë (${r.kg} kg)\n`; });
-    const pName = document.getElementById('i-projname').value || "Projekt i Ri";
-
-    defaultSuppliers.forEach(s => {
-      const div = document.createElement('div');
-      div.className = 'rfq-box';
-      div.innerHTML = `
-        <h3>${s.name} (${s.email})</h3>
-        <textarea rows="6" readonly style="margin-top:10px; background:#0f111a;">I nderuari ekip i ${s.name},\n\nJu lutem na dërgoni ofertën për projektin "${pName}":\n\n${matText}\nMe respekt,\nPRISTEEL.</textarea>
-        <button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="navigator.clipboard.writeText(this.previousElementSibling.value); alert('Kopjuar!')">📋 Kopjo Email</button>`;
-      container.appendChild(div);
-    });
-  }
-</script>
-</body>
-</html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRISTEEL — Procurement Platform</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Bebas+Neue&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F7F8FA;--bg2:#EFF1F5;--bg3:#E8EBF0;
+  --bg-card:#FFFFFF;--bg-hover:#EFF1F5;
+  --text:#1A1F2E;--text2:#5A6478;--text3:#9AA3B2;
+  --border:#E4E7ED;--border2:#CDD2DC;
+  --bronze:#B87333;--bronze-light:#CA8E55;--bronze-dark:#8A5220;
+  --bronze-bg:rgba(184,115,51,0.09);--bronze-text:#7A4510;
+  --green:#1a6b4a;--green-bg:rgba(26,107,74,0.09);--green-text:#1a6b4a;
+  --red:#c0392b;--red-bg:rgba(192,57,43,0.09);--red-text:#c0392b;
+  --blue:#2563EB;--blue-bg:rgba(37,99,235,0.09);--blue-text:#2563EB;
+  --radius:6px;--radius-lg:10px;
+}
+body{font-family:'Inter',sans-serif;background:#F7F8FA;color:var(--text);font-size:14px;line-height:1.5}
+/* LAYOUT */
+.app-shell{display:flex;min-height:100vh}
+.sidebar{width:220px;background:#1C2333;border-right:none;box-shadow:2px 0 8px rgba(0,0,0,0.08);padding:0;flex-shrink:0;display:flex;flex-direction:column}
+.sidebar-logo{padding:20px 20px 18px;border-bottom:0.5px solid #8A5220}
+.logo-mark{font-family:'Bebas Neue',sans-serif;font-size:28px;font-weight:400;color:var(--bronze);letter-spacing:2px;line-height:1}
+.logo-sub{font-size:10px;color:#707070;margin-top:4px;letter-spacing:1.5px;text-transform:uppercase}
+.sidebar-nav{padding:12px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:#8A95A8;font-size:12px;font-weight:500;transition:all .2s;border-left:2px solid transparent;letter-spacing:.3px}
+.nav-item:hover{background:rgba(184,115,51,0.12);color:#d0d0d0;border-left-color:#666}
+.nav-item.active{background:rgba(184,115,51,0.15);color:#ffffff;border-left-color:var(--bronze)}
+.nav-item svg{stroke:#909090}
+.nav-item.active svg{stroke:#ffffff}.nav-item:hover svg{stroke:#ffffff}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-section{color:#4a7090 !important;font-size:9px;font-weight:600;color:#505050;letter-spacing:1.5px;padding:20px 20px 6px;text-transform:uppercase}
+.sidebar-footer{padding:16px 20px;border-top:0.5px solid #8A5220;font-size:10px;color:#606060;letter-spacing:.3px}
+.main{flex:1;overflow-y:auto}
+.topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:.2px}
+.topbar-sub{font-size:11px;color:var(--text3);margin-top:2px;letter-spacing:.3px;text-transform:uppercase}
+.content{padding:24px 28px}
+/* PAGES */
+.page{display:none}
+.page.active{display:block}
+/* CARDS */
+.card{background:var(--bg-card);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;letter-spacing:.3px}
+/* FORMS */
+.field-group{display:grid;gap:12px;margin-bottom:14px}
+.fg-2{grid-template-columns:1fr 1fr}
+.fg-3{grid-template-columns:1fr 1fr 1fr}
+.fg-4{grid-template-columns:1fr 1fr 1fr 1fr}
+label.lbl{font-size:10px;font-weight:600;color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.8px}
+input[type=text],input[type=email],input[type=number],input[type=date],select,textarea{
+  width:100%;padding:8px 10px;border:0.5px solid var(--border);border-radius:var(--radius);
+  font-size:13px;color:var(--text);background:var(--bg);transition:border .2s;outline:none;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 0 0 3px rgba(184,115,51,.12)}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+textarea{resize:vertical;min-height:90px;line-height:1.6}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--border2);background:transparent;color:var(--text2);transition:all .2s;letter-spacing:.3px}
+.btn:hover{background:var(--bg-hover);color:var(--text);border-color:var(--border2)}
+.btn-primary{background:var(--bronze);color:#fff;border-color:transparent;font-weight:600;letter-spacing:.5px}
