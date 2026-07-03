@@ -293,6 +293,13 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
   <div id="bom-issues" class="warn-box hidden"></div>
 
+  <div class="card" style="margin-bottom:12px">
+    <div class="field-group fg-2">
+      <div><label class="lbl">Pesha e kontraktuar / nga Werkvertrag (kg) — opsionale, për kontroll</label><input type="number" id="bom-expected-kg" placeholder="p.sh. 37466.4" oninput="renderBom()"></div>
+      <div style="align-self:end"><div id="bom-checksum" style="font-weight:600;padding:8px 0"></div></div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="flex justify-between items-center mb-12">
       <div class="card-title" style="margin:0">Lista e materialeve (BOM)</div>
@@ -907,7 +914,7 @@ async function startParsing(){
 
 Project: ${proj}
 Client: ${client}
-Document: ${text.slice(0,3000)}
+Document: ${text.slice(0,14000)}
 
 JSON format:
 {"project_summary":"brief description","detected_language":"de or en","confidence":"high or medium or low","issues":[],"items":[{"pos":1,"description_raw":"original line or part code","profile_type":"HEA or HEB or IPE or RHS or SHS or CHS or PLATE or FLAT or ANGLE or TUBE or ALUMINUM or MACHINED_PART or OTHER","dimension":"e.g. 300, or drawing layout size","steel_grade":"material grade e.g. S355JR or EN-AW 5083","standard":"standard e.g. EN 10025-2 or ISO 2768","length_mm":0,"quantity_pieces":1,"quantity_kg":0.06,"surface_treatment":"none or galvanized","certification":"EN 10204 3.1 or null","notes":""}]}
@@ -944,6 +951,11 @@ Rules:
       console.error('Parse error:', e, 'Raw:', raw);
       parsed={confidence:'low',issues:['JSON invalid — provo sërish: '+e.message],items:[],project_summary:''};
     }
+    if(text.length>14000){
+      parsed.issues=parsed.issues||[];
+      parsed.issues.push(`Dokumenti ka ${text.length} karaktere — vetëm 14000 të parat u dërguan te AI. Ndaje dokumentin dhe ngarko pjesën tjetër veç e veç, ose verifiko manualisht që nuk mungon asnjë pozicion nga fundi i dokumentit.`);
+      parsed.confidence = 'medium';
+    }
     applyParsedBom(parsed);
   }catch(err){
     document.getElementById('st4d').textContent='Gabim: '+err.message+'. Kontrollo API Key te Cilësimet.';
@@ -951,48 +963,85 @@ Rules:
   }
 }
 
+// Identifies "the same physical part" regardless of which upload it came from,
+// so re-parsing a document (or uploading a second file for the same project)
+// increases the piece count of an existing row instead of creating a duplicate.
+function bomKey(r){
+  return [
+    (r.profile||'').trim().toUpperCase(),
+    (r.dim||'').toString().trim().toLowerCase(),
+    parseInt(r.lenMm)||0,
+    (r.grade||'').trim().toUpperCase()
+  ].join('|');
+}
+
 function applyParsedBom(parsed){
   const items=parsed.items||[];
-  const startPos = bomRows.length;
+  const seenKeys=[]; // keys touched in this pass, to report how many were merged vs new
 
-  const newRows=items.map((it,i)=>{
+  items.forEach((it,i)=>{
     const pcs=it.quantity_pieces||1;
-    const tableKg=calcKg(it.profile_type,it.dimension,it.length_mm||0,pcs); // physics table: kg/m x m x pcs, always trusted when available
-    let kg;
-    if(tableKg>0){
-      kg=tableKg; // HEA/HEB/IPE -- never trust AI math here, table is deterministic
+    const tablePerPiece=calcKg(it.profile_type,it.dimension,it.length_mm||0,1); // kg for ONE piece, physics table
+    let kgUnit;
+    if(tablePerPiece>0){
+      kgUnit=tablePerPiece; // HEA/HEB/IPE -- never trust AI math here, table is deterministic
     } else if(it.quantity_kg){
       // Non-standard profile (PLATE/RHS/CHS/ANGLE/TUBE): AI sometimes returns the LINE TOTAL
-      // instead of per-piece weight. If treating it as per-piece and multiplying by pcs would
-      // give an implausibly heavy single piece, assume AI already gave the total instead.
-      const asPerPieceTotal=+(it.quantity_kg*pcs).toFixed(2);
-      const asAlreadyTotal=+it.quantity_kg.toFixed(2);
-      kg = (pcs>1 && it.quantity_kg>3000) ? asAlreadyTotal : asPerPieceTotal;
+      // instead of the per-piece weight. If treating it as per-piece would give an implausibly
+      // heavy single piece, assume the AI already gave the total instead and divide it down.
+      kgUnit = (pcs>1 && it.quantity_kg>3000) ? +(it.quantity_kg/pcs).toFixed(3) : +it.quantity_kg.toFixed(3);
     } else {
-      kg=0;
+      kgUnit=0;
     }
-    return{
-    id:Date.now()+i+Math.random(),
-    pos:startPos + i + 1,
-    raw:it.description_raw||'',
-    profile:it.profile_type||'OTHER',
-    dim:it.dimension||'',
-    grade:it.steel_grade||'',
-    std:it.standard||'',
-    lenMm:it.length_mm||0,
-    pcs:pcs,
-    kg:kg,
-    surface:it.surface_treatment||'none',
-    cert:it.certification||'EN 10204 3.1',
-    notes:it.notes||'',
-    conf:it.confidence||'high'
-  };});
 
-  bomRows = [...bomRows, ...newRows];
+    const candidate={
+      profile: it.profile_type||'OTHER',
+      dim: it.dimension||'',
+      lenMm: it.length_mm||0,
+      grade: it.steel_grade||''
+    };
+    const key=bomKey(candidate);
+    const existing=bomRows.find(r=>bomKey(r)===key);
+
+    if(existing){
+      // Same profile+dimension+length+grade already in the BOM (typically: the same
+      // document parsed twice, or a second file listing the same part) -> merge quantities
+      // instead of inserting a duplicate line.
+      existing.pcs = (existing.pcs||0) + pcs;
+      existing.kg = +((existing.kgUnit||0) * existing.pcs).toFixed(2);
+      if(it.notes) existing.notes = existing.notes ? existing.notes+' · '+it.notes : it.notes;
+      seenKeys.push('merged');
+    } else {
+      bomRows.push({
+        id:Date.now()+i+Math.random(),
+        pos:0, // reassigned below, after merge, so numbering is always contiguous
+        raw:it.description_raw||'',
+        profile:candidate.profile,
+        dim:candidate.dim,
+        grade:candidate.grade,
+        std:it.standard||'',
+        lenMm:candidate.lenMm,
+        pcs:pcs,
+        kgUnit:kgUnit,        // kg for ONE piece -- the single source of truth for weight
+        kg:+(kgUnit*pcs).toFixed(2), // TOTAL kg = kgUnit × pcs, always derived, never edited directly
+        surface:it.surface_treatment||'none',
+        cert:it.certification||'EN 10204 3.1',
+        notes:it.notes||'',
+        conf:it.confidence||'high'
+      });
+      seenKeys.push('new');
+    }
+  });
+
+  bomRows.forEach((r,i)=>r.pos=i+1); // keep Pos contiguous after merges
 
   const totalKg=bomRows.reduce((s,r)=>s+(parseFloat(r.kg)||0),0);
   const issues=parsed.issues||[];
   const lowCount=bomRows.filter(r=>r.conf==='low').length;
+  const mergedCount=seenKeys.filter(k=>k==='merged').length;
+  if(mergedCount>0){
+    issues.push(`${mergedCount} pozicion(e) u identifikuan si të njëjta me rreshta ekzistuese (profil+dimension+gjatësi+gradë) dhe u bashkuan (COPË u rrit), nuk u shtuan si rreshta të dyfishtë.`);
+  }
 
   document.getElementById('bom-summary').style.display='grid';
   document.getElementById('m-pos').textContent=bomRows.length;
@@ -1038,7 +1087,7 @@ function renderBom(){
       <td><input type="text" value="${r.std}" onchange="updRow(${r.id},'std',this.value)" style="font-size:11px"></td>
       <td><input type="number" value="${r.lenMm}" onchange="updRow(${r.id},'lenMm',+this.value)"></td>
       <td><input type="number" value="${r.pcs}" onchange="updRow(${r.id},'pcs',+this.value)"></td>
-      <td style="color:var(--text3);font-size:12px">${kgPerM(r.profile,r.dim)||'?'}</td>
+      <td><input type="number" step="0.001" value="${r.kgUnit??''}" title="Kg për 1 copë. Nëse profili ka tabelë fizike (HEA/HEB/IPE...), rillogaritet automatikisht kur ndryshon dimensioni/gjatësia." onchange="updRow(${r.id},'kgUnit',+this.value)" style="width:70px"></td>
       <td style="font-weight:600">${r.kg}</td>
       <td><select onchange="updRow(${r.id},'surface',this.value)">${sel(SURFACES,r.surface)}</select></td>
       <td><select onchange="updRow(${r.id},'cert',this.value)">${sel(CERTS,r.cert)}</select></td>
@@ -1047,19 +1096,47 @@ function renderBom(){
   const tot=bomRows.reduce((s,r)=>s+(parseFloat(r.kg)||0),0);
   document.getElementById('bom-total-kg').textContent=tot.toFixed(2);
   document.getElementById('bom-total-rows').textContent=bomRows.length;
+
+  const expEl=document.getElementById('bom-expected-kg');
+  const cs=document.getElementById('bom-checksum');
+  if(expEl && cs){
+    const expected=parseFloat(expEl.value);
+    if(expected>0){
+      const diff=tot-expected;
+      const pct=Math.abs(diff)/expected*100;
+      if(pct<=1){
+        cs.style.color='var(--green,#1a7f37)';
+        cs.textContent=`✓ Përputhet me kontratën (diferencë ${diff.toFixed(1)} kg, ${pct.toFixed(2)}%)`;
+      } else {
+        cs.style.color='var(--red,#c92a2a)';
+        cs.textContent=`⚠ MOSPËRPUTHJE: BOM = ${tot.toFixed(1)} kg vs kontrata = ${expected.toFixed(1)} kg (diferencë ${diff.toFixed(1)} kg, ${pct.toFixed(1)}%) — mos vazhdo te Kalkulatori/Oferta pa e sqaruar.`;
+      }
+    } else {
+      cs.style.color='var(--text3,#888)';
+      cs.textContent='Fut peshën e kontraktuar për kontroll automatik kundrejt totalit të BOM.';
+    }
+  }
 }
 
 function updRow(id,f,v){
   const r=bomRows.find(r=>r.id===id);if(!r)return;
   r[f]=v;
-  if(['profile','dim','lenMm','pcs'].includes(f) && r.profile !== 'ALUMINUM' && r.profile !== 'MACHINED_PART'){
-    const a=calcKg(r.profile,r.dim,r.lenMm,r.pcs);if(a>0)r.kg=a;
+  // For table-based profiles (HEA/HEB/IPE...), changing profile/dim/length is deterministic
+  // physics -> recompute kgUnit (kg for ONE piece) from the table, overriding any manual value.
+  if(['profile','dim','lenMm'].includes(f) && r.profile !== 'ALUMINUM' && r.profile !== 'MACHINED_PART'){
+    const tablePerPiece=calcKg(r.profile,r.dim,r.lenMm,1);
+    if(tablePerPiece>0) r.kgUnit=tablePerPiece;
   }
+  // TOTAL kg is ALWAYS kgUnit × pcs -- never a separately stored/editable number, so it can
+  // never drift out of sync when pcs, length, or kg/copë are edited (this was the root cause
+  // of "Total kg" staying frozen after changing Copë for non-tabulated profiles like PLATE/OTHER).
+  r.kg = +((+r.kgUnit||0) * (+r.pcs||0)).toFixed(2);
   renderBom();
 }
 function remRow(id){bomRows=bomRows.filter(r=>r.id!==id);renderBom();}
 function addBomRow(){
-  bomRows.push({id:Date.now(),pos:bomRows.length+1,raw:'',profile:'HEA',dim:'300',grade:'S355JR',std:'EN 10025-2',lenMm:12000,pcs:1,kg:calcKg('HEA','300',12000,1),surface:'none',cert:'EN 10204 3.1',notes:'',conf:'high'});
+  const kgUnit=calcKg('HEA','300',12000,1);
+  bomRows.push({id:Date.now(),pos:bomRows.length+1,raw:'',profile:'HEA',dim:'300',grade:'S355JR',std:'EN 10025-2',lenMm:12000,pcs:1,kgUnit:kgUnit,kg:+(kgUnit*1).toFixed(2),surface:'none',cert:'EN 10204 3.1',notes:'',conf:'high'});
   renderBom();
 }
 // RREGULLUAR EKSPORTI PËR TË MBËSHTETUR EDHE PESHA ME DHJETORE
@@ -1680,7 +1757,13 @@ function loadProject(id){
     return supaFetch('bom_items?project_id=eq.'+id+'&order=created_at.asc');
   }).then(function(items){
     if(!items)return;
-    bomRows=items.map(function(r,i){return{id:i+1,pos:i+1,profile:r.profile,dim:r.dim,grade:r.grade,std:r.std,lenMm:r.len_mm,pcs:r.pcs,kg:parseFloat(r.kg)||0,surface:r.surface||'C3 Sa2.5 200μm 3-slojni',cert:r.cert||'EN 10204 3.1'};});
+    bomRows=items.map(function(r,i){
+      var pcs=parseInt(r.pcs)||1, kg=parseFloat(r.kg)||0;
+      // kg_unit isn't persisted in Supabase yet (see note in code comments) -- derive it from
+      // the saved total so editing after reload still recomputes correctly (kgUnit×pcs).
+      var kgUnit=pcs>0?+(kg/pcs).toFixed(3):0;
+      return{id:i+1,pos:i+1,profile:r.profile,dim:r.dim,grade:r.grade,std:r.std,lenMm:r.len_mm,pcs:pcs,kgUnit:kgUnit,kg:kg,surface:r.surface||'C3 Sa2.5 200μm 3-slojni',cert:r.cert||'EN 10204 3.1'};
+    });
     renderBom();
     return supaFetch('offers?project_id=eq.'+_curProjId+'&order=created_at.asc');
   }).then(function(dbOffers){
