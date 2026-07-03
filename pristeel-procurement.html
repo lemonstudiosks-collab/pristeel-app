@@ -185,6 +185,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <svg viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg>
       Faturat
     </div>
+    <div class="nav-item" onclick="showPage('finance')">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Financat
+    </div>
     <div class="nav-section">Cilësimet</div>
     <div class="nav-item" onclick="showPage('settings')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -552,6 +556,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="card"><div class="card-title">Kushtet</div>
       <div class="field-group fg-2"><div><label class="lbl">Incoterms</label><select id="iv-inc"><option>DAP</option><option>DDP</option><option>EXW</option></select></div><div><label class="lbl">Vendi i dorëzimit</label><input type="text" id="iv-loc" placeholder="Hamburg, DE"></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Afati i pagesës</label><input type="text" id="iv-pay" value="30 Tage netto"></div><div><label class="lbl">Certifikata</label><select id="iv-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="iv-vat" onchange="toggleVatRate('iv')"><option value="0" selected>Pa TVSH (Eksport 0%)</option><option value="1">Me TVSH (shitje/vendore)</option></select></div><div id="iv-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="iv-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
       <div><label class="lbl">Shënime</label><textarea id="iv-not" style="min-height:50px"></textarea></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="genInvoiceOut()">Gjenero Faturën</button><button class="btn btn-success" onclick="saveInvoiceOut()">💾 Ruaj</button></div>
@@ -572,7 +577,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="card"><div class="card-title">Fatura e furnitorit / prodhuesit</div>
       <div class="field-group fg-2"><div><label class="lbl">Furnitori</label><input type="text" id="ivin-sup" list="ivin-sup-list" placeholder="Eurosteel Shpk"><datalist id="ivin-sup-list"></datalist></div><div><label class="lbl">Nr. faturës (i tyre)</label><input type="text" id="ivin-nr" placeholder="ES-2026-0042"></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Data</label><input type="date" id="ivin-date"></div><div><label class="lbl">Projekti / Porosia</label><input type="text" id="ivin-proj" placeholder="p.sh. STACON D-22/26"></div></div>
-      <div class="field-group fg-2"><div><label class="lbl">Shuma</label><input type="number" step="0.01" id="ivin-amt" placeholder="0.00"></div><div><label class="lbl">Valuta</label><select id="ivin-cur"><option>EUR</option><option>USD</option><option>MKD</option><option>ALL</option></select></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Shuma (Bruto, ashtu siç është në faturë)</label><input type="number" step="0.01" id="ivin-amt" placeholder="0.00"></div><div><label class="lbl">Valuta</label><select id="ivin-cur" onchange="toggleFxRate()"><option>EUR</option><option>USD</option><option>MKD</option><option>ALL</option></select></div></div>
+      <div class="field-group fg-2" id="ivin-fx-wrap" style="display:none"><div><label class="lbl">Kursi i këmbimit → EUR (1 [valuta] = ? EUR)</label><input type="number" step="0.0001" id="ivin-fx" placeholder="p.sh. 0.0165 për MKD"></div><div></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="ivin-vat" onchange="toggleVatRate('ivin')"><option value="0" selected>Pa TVSH / 0%</option><option value="1">Me TVSH (shuma është Bruto)</option></select></div><div id="ivin-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="ivin-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
       <div><label class="lbl">Shënime</label><textarea id="ivin-not" style="min-height:50px"></textarea></div>
       <div class="field-group"><div><label class="lbl">Ngarko faturën (PDF/JPG/PNG)</label><input type="file" id="ivin-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleInvInFile(this.files[0])"></div></div>
       <div id="ivin-file-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
@@ -584,6 +591,66 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
   </div>
   <div class="card"><div class="card-title">Faturat e regjistruara (Furnitorë)</div><div id="iv-in-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
+  </div>
+</div>
+
+<div id="page-finance" class="page">
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="btn btn-sm" id="fin-tab-tax" onclick="finSwitchTab('tax')">Përmbledhja Tatimore</button>
+    <button class="btn btn-sm" id="fin-tab-aging" onclick="finSwitchTab('aging')">Afatet e Pagesave</button>
+    <button class="btn btn-sm" id="fin-tab-bg" onclick="finSwitchTab('bg')">Garanci Bankare</button>
+    <button class="btn btn-sm" id="fin-tab-oc" onclick="finSwitchTab('oc')">Kosto të tjera</button>
+  </div>
+
+  <!-- ═══ PAYMENT AGING ═══ -->
+  <div id="fin-view-aging" style="display:none">
+    <div class="card"><div class="card-title">Faturat e papaguara / me vonesë</div><div id="fin-aging-list"></div></div>
+  </div>
+
+  <!-- ═══ TAX / PROFIT SUMMARY ═══ -->
+  <div id="fin-view-tax">
+    <div class="card">
+      <div class="card-title">Periudha</div>
+      <div class="field-group fg-2">
+        <div><label class="lbl">Viti</label><select id="fin-year"></select></div>
+        <div><label class="lbl">Periudha</label><select id="fin-period"><option value="year">Viti i plotë</option><option value="1">Tremujori 1 (Jan–Mar)</option><option value="2">Tremujori 2 (Prill–Qer)</option><option value="3">Tremujori 3 (Korrik–Shtator)</option><option value="4">Tremujori 4 (Tetor–Dhjetor)</option></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="calcTaxSummary()">Llogarit</button>
+      <button class="btn btn-sm" onclick="exportTaxSummaryCsv()">⬇ Eksporto CSV</button>
+    </div>
+    <div id="fin-tax-result"></div>
+    <div class="card" style="font-size:12px;color:var(--text3);line-height:1.7">
+      <strong style="color:var(--text)">Shënim:</strong> Kjo është një vlerësim orientues bazuar në faturat dhe kostot e regjistruara në platformë (norma standarde në Kosovë: TVSH 18% / 8% e reduktuar / 0% eksport; Tatimi mbi Fitimin e Korporatave 10% mbi fitimin neto). Nuk zëvendëson këshillën e kontabilistit/tatimorit — për pagesat tremujore paradhënëse në ATK dhe deklarimet zyrtare, konsultohu me kontabilistin.
+    </div>
+  </div>
+
+  <!-- ═══ BANK GUARANTEES ═══ -->
+  <div id="fin-view-bg" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card"><div class="card-title">Regjistro Garanci Bankare</div>
+        <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="bg-proj" placeholder="p.sh. STACON D-22/26"></div><div><label class="lbl">Banka</label><input type="text" id="bg-bank" placeholder="ProCredit Bank"></div></div>
+        <div class="field-group fg-2"><div><label class="lbl">Lloji i garancisë</label><select id="bg-type"><option>Garanci Avansi</option><option>Garanci Performance</option><option>Garanci Tenderi</option><option>Tjetër</option></select></div><div><label class="lbl">Statusi</label><select id="bg-status"><option value="aktive">Aktive</option><option value="lëshuar">Lëshuar/Mbyllur</option><option value="skaduar">Skaduar</option></select></div></div>
+        <div class="field-group fg-2"><div><label class="lbl">Shuma e garantuar (EUR)</label><input type="number" step="0.01" id="bg-amt" oninput="calcBgFee()" placeholder="0.00"></div><div><label class="lbl">Komisioni (%)</label><input type="number" step="0.01" id="bg-feerate" oninput="calcBgFee()" placeholder="p.sh. 1.5"></div></div>
+        <div class="field-group fg-2"><div><label class="lbl">Komisioni (EUR) — llogaritet automatikisht, mund të ndryshohet</label><input type="number" step="0.01" id="bg-fee"></div><div></div></div>
+        <div class="field-group fg-2"><div><label class="lbl">Data e lëshimit</label><input type="date" id="bg-issue"></div><div><label class="lbl">Data e skadimit</label><input type="date" id="bg-expiry"></div></div>
+        <div><label class="lbl">Shënime</label><textarea id="bg-notes" style="min-height:50px"></textarea></div>
+        <button class="btn btn-success" onclick="saveBankGuarantee()">💾 Ruaj Garancinë</button>
+      </div>
+      <div class="card"><div class="card-title">Garancitë e regjistruara</div><div id="bg-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
+    </div>
+  </div>
+
+  <!-- ═══ OTHER OPERATING COSTS ═══ -->
+  <div id="fin-view-oc" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card"><div class="card-title">Regjistro Kosto Operative</div>
+        <div class="field-group fg-2"><div><label class="lbl">Kategoria</label><select id="oc-cat"><option>Logjistikë/Transport</option><option>Qira</option><option>Paga</option><option>Kontabilitet/Ligjore</option><option>Komisione bankare</option><option>Marketing</option><option>Tjetër</option></select></div><div><label class="lbl">Data</label><input type="date" id="oc-date"></div></div>
+        <div class="field-group fg-2"><div><label class="lbl">Shuma (EUR, Neto)</label><input type="number" step="0.01" id="oc-amt" placeholder="0.00"></div><div><label class="lbl">Projekti (opsionale)</label><input type="text" id="oc-proj" placeholder="p.sh. RSB Hamburg"></div></div>
+        <div><label class="lbl">Përshkrimi</label><textarea id="oc-desc" style="min-height:50px"></textarea></div>
+        <button class="btn btn-success" onclick="saveOtherCost()">💾 Ruaj Koston</button>
+      </div>
+      <div class="card"><div class="card-title">Kostot e regjistruara</div><div id="oc-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
+    </div>
   </div>
 </div>
 
@@ -697,6 +764,7 @@ const pageMeta={
   kalkulator:{title:'Kalkulator Çmimi',sub:'Llogarit çmimin e shitjes'},
   oferta:{title:'Oferta Komerciale',sub:'Gjenero ofertë profesionale'},
   invoices:{title:'Faturat',sub:'Faturat tona dhe faturat e furnitorëve'},
+  finance:{title:'Financat',sub:'Garanci bankare, kosto operative dhe llogaritja e tatimeve'},
   settings:{title:'Cilësimet',sub:'API Key, profili dhe furnitorët e paracaktuar'}
 };
 
@@ -705,7 +773,7 @@ function showPage(p){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   const items=document.querySelectorAll('.nav-item');
-  const order=['import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','settings'];
+  const order=['import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','finance','settings'];
   const idx=order.indexOf(p);
   if(items[idx])items[idx].classList.add('active');
   document.getElementById('page-title').textContent=pageMeta[p].title;
@@ -716,6 +784,7 @@ function showPage(p){
   if(p==='ranking'){calcRanking();}
   if(p==='kalkulator')calcPrice();
   if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
+  if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
   if(p==='settings')renderSettings();
 }
 
@@ -1731,6 +1800,11 @@ const INV_LABELS={
   sr:{t:'FAKTURA',to:'Za:',at:'Pažnja:',ad:'Adresa:',on:'Broj fakture:',da:'Datum:',pr:'Projekat:',rf:'Referenca:',ps:'POZICIJE',pos:'Poz.',desc:'Opis',qty:'Kom.',kgc:'Količina (kg)',pk:'Cena/kg',sum:'Iznos',tq:'Ukupna količina:',tp:'Ukupan iznos:',vat:'PDV:',vatnote:'Izvoz — PDV 0% (nije uključen u cenu, prema važećem zakonu)',cd:'USLOVI PLAĆANJA',dl:'Uslov isporuke:',pm:'Rok plaćanja:',ct:'Sertifikat:',rm:'Napomene:',bk:'Bankovni podaci',bn:'Banka:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'S poštovanjem',fnr:'PIB:'}
 };
 
+function toggleVatRate(prefix){
+  const on=document.getElementById(prefix+'-vat').value==='1';
+  document.getElementById(prefix+'-vat-rate-wrap').style.display=on?'':'none';
+}
+
 function invSwitchTab(tab){
   document.getElementById('inv-view-out').style.display = tab==='out' ? '' : 'none';
   document.getElementById('inv-view-in').style.display = tab==='in' ? '' : 'none';
@@ -1788,6 +1862,10 @@ function genInvoiceOut(){
 
   const totKg=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0);},0);
   const totAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  const vatOn=document.getElementById('iv-vat').value==='1';
+  const vatRate=vatOn?(parseFloat(document.getElementById('iv-vat-rate').value)||0):0;
+  const vatAmt=totAmt*vatRate/100;
+  const grossAmt=totAmt+vatAmt;
 
   const rowsHtml=invoiceItems.map(function(it,i){
     return '<tr><td>'+(i+1)+'</td><td>'+(it.desc||'')+'</td><td style="text-align:right">'+(it.pcs||0)+'</td><td style="text-align:right">'+(it.kg||0).toLocaleString('de-DE',{maximumFractionDigits:2})+'</td><td style="text-align:right">'+(it.priceKg||0).toFixed(3)+'</td><td style="text-align:right;font-weight:600">'+((it.kg||0)*(it.priceKg||0)).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
@@ -1810,8 +1888,8 @@ function genInvoiceOut(){
       +'<thead><tr style="background:#F7F8FA;border-bottom:2px solid #E4E7ED"><th style="padding:6px;text-align:left">'+lb.pos+'</th><th style="padding:6px;text-align:left">'+lb.desc+'</th><th style="padding:6px;text-align:right">'+lb.qty+'</th><th style="padding:6px;text-align:right">'+lb.kgc+'</th><th style="padding:6px;text-align:right">'+lb.pk+'</th><th style="padding:6px;text-align:right">'+lb.sum+'</th></tr></thead>'
       +'<tbody>'+rowsHtml+'</tbody>'
     +'</table>'
-    +'<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><table style="font-size:13px"><tr><td style="padding:3px 12px 3px 0">'+lb.tq+'</td><td style="text-align:right;font-weight:600">'+totKg.toLocaleString('de-DE',{maximumFractionDigits:0})+' kg</td></tr><tr><td style="padding:3px 12px 3px 0">'+lb.vat+'</td><td style="text-align:right">0,00 EUR</td></tr><tr style="border-top:2px solid #1A1F2E"><td style="padding:6px 12px 3px 0;font-weight:700">'+lb.tp+'</td><td style="text-align:right;font-weight:700;font-size:15px;padding-top:6px">'+totAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr></table></div>'
-    +'<div style="font-size:11px;color:#B87333;font-weight:600;margin-bottom:16px">'+lb.vatnote+'</div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><table style="font-size:13px"><tr><td style="padding:3px 12px 3px 0">'+lb.tq+'</td><td style="text-align:right;font-weight:600">'+totKg.toLocaleString('de-DE',{maximumFractionDigits:0})+' kg</td></tr><tr><td style="padding:3px 12px 3px 0">Zwischensumme (Netto):</td><td style="text-align:right">'+totAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr><tr><td style="padding:3px 12px 3px 0">'+lb.vat+(vatOn?' ('+vatRate+'%)':'')+'</td><td style="text-align:right">'+vatAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr><tr style="border-top:2px solid #1A1F2E"><td style="padding:6px 12px 3px 0;font-weight:700">'+lb.tp+'</td><td style="text-align:right;font-weight:700;font-size:15px;padding-top:6px">'+grossAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr></table></div>'
+    +(vatOn?'':'<div style="font-size:11px;color:#B87333;font-weight:600;margin-bottom:16px">'+lb.vatnote+'</div>')
     +'<div style="font-size:12px;line-height:1.8"><strong>'+lb.cd+'</strong><br>'+lb.dl+' '+inc+(loc?' '+loc:'')+'<br>'+lb.pm+' '+pay+(cer?'<br>'+lb.ct+' '+cer:'')+(not?'<br>'+lb.rm+' '+not:'')+'</div>'
     +bankRows
     +'<div style="margin-top:32px;font-size:12px">'+lb.gr+'<br><br>'+(settings.contact||'Arianit Vllahiu')+' — '+(settings.title||'Founder & CEO')+'<br>'+(settings.company||'PRISTEEL Sh.p.k.')+' | '+(settings.email||'sales@prissteel.com')+'</div>'
@@ -1835,15 +1913,24 @@ function saveInvoiceOut(){
   if(!nr){alert('Shkruaj numrin e faturës.');return;}
   const totKg=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0);},0);
   const totAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  const vatOn=document.getElementById('iv-vat').value==='1';
+  const vatRate=vatOn?(parseFloat(document.getElementById('iv-vat-rate').value)||0):0;
+  const vatAmt=totAmt*vatRate/100;
+  const grossAmt=totAmt+vatAmt;
   const payload={
     invoice_nr:nr, lang:document.getElementById('iv-lang').value, date:document.getElementById('iv-date').value||null,
     project:document.getElementById('iv-proj').value, ref:document.getElementById('iv-ref').value,
     client:document.getElementById('iv-cli').value, contact:document.getElementById('iv-con').value, address:document.getElementById('iv-adr').value,
     items:invoiceItems, total_kg:totKg, total_price:+totAmt.toFixed(2), currency:'EUR',
+    vat_applicable:vatOn, vat_rate:vatRate, net_amount:+totAmt.toFixed(2), vat_amount:+vatAmt.toFixed(2), gross_amount:+grossAmt.toFixed(2),
     incoterms:document.getElementById('iv-inc').value, delivery_location:document.getElementById('iv-loc').value,
     payment_terms:document.getElementById('iv-pay').value, certificate:document.getElementById('iv-cer').value, notes:document.getElementById('iv-not').value
   };
   supaFetch('invoices_out','POST',payload).then(function(){alert('Fatura u ruajt!');loadInvoicesOut();}).catch(function(e){alert('Gabim (a ekziston tabela invoices_out në Supabase?): '+e.message);});
+}
+function parseDueDays(terms){
+  const m=(terms||'').match(/(\d+)/);
+  return m ? parseInt(m[1],10) : 30;
 }
 function loadInvoicesOut(){
   const el=document.getElementById('iv-out-list');
@@ -1851,12 +1938,26 @@ function loadInvoicesOut(){
   supaFetch('invoices_out?order=created_at.desc&limit=50').then(function(rows){
     invoicesOutList=rows||[];
     if(rows.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë faturë e ruajtur.</div>';return;}
+    const today=new Date();
     el.innerHTML=rows.map(function(r){
+      let agingHtml='';
+      if(!r.paid && r.date){
+        const due=new Date(r.date);
+        due.setDate(due.getDate()+parseDueDays(r.payment_terms));
+        const daysOver=Math.round((today-due)/86400000);
+        if(daysOver>0) agingHtml=' <span style="color:var(--red-text);font-weight:700">('+daysOver+' ditë vonesë)</span>';
+        else agingHtml=' <span style="color:var(--text3)">(afati: '+due.toLocaleDateString('de-DE')+')</span>';
+      }
+      const paidBadge=r.paid ? ' <span style="color:var(--green-text);font-weight:700">✓ Paguar</span>' : agingHtml;
       return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
-        +'<div><strong>'+r.invoice_nr+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.client||'')+' · '+(r.project||'')+' · '+(r.total_price||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span></div>'
-        +'<button class="btn btn-danger btn-sm" onclick="deleteInvoiceOut(\''+r.id+'\')">Fshij</button></div>';
+        +'<div><strong>'+r.invoice_nr+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.client||'')+' · '+(r.project||'')+' · '+(r.gross_amount||r.total_price||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span>'+paidBadge+'</div>'
+        +'<div style="display:flex;gap:6px">'+(r.paid?'':'<button class="btn btn-sm" onclick="markInvoicePaid(\''+r.id+'\')">Shëno Paguar</button>')+'<button class="btn btn-danger btn-sm" onclick="deleteInvoiceOut(\''+r.id+'\')">Fshij</button></div></div>';
     }).join('');
+    renderAgingReport();
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela invoices_out mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
+}
+function markInvoicePaid(id){
+  supaFetch('invoices_out?id=eq.'+id,'PATCH',{paid:true,paid_date:new Date().toISOString().slice(0,10)}).then(function(){loadInvoicesOut();}).catch(function(e){alert('Gabim: '+e.message);});
 }
 function deleteInvoiceOut(id){
   if(!confirm('Fshi faturën?'))return;
@@ -1876,13 +1977,27 @@ function handleInvInFile(f){
   r.onerror=function(){status.textContent='Gabim gjatë leximit të skedarit.';};
   r.readAsDataURL(f);
 }
+function toggleFxRate(){
+  const cur=document.getElementById('ivin-cur').value;
+  document.getElementById('ivin-fx-wrap').style.display = cur==='EUR' ? 'none' : '';
+}
 function saveInvoiceIn(){
   const sup=document.getElementById('ivin-sup').value.trim();
   if(!sup){alert('Shkruaj emrin e furnitorit.');return;}
+  const amt=parseFloat(document.getElementById('ivin-amt').value)||0;
+  const cur=document.getElementById('ivin-cur').value;
+  const fxRate=cur==='EUR' ? 1 : (parseFloat(document.getElementById('ivin-fx').value)||1);
+  const vatOn=document.getElementById('ivin-vat').value==='1';
+  const vatRate=vatOn?(parseFloat(document.getElementById('ivin-vat-rate').value)||0):0;
+  // Shuma e futur konsiderohet Bruto nëse ka TVSH; Neto llogaritet mbrapsht, pastaj konvertohet në EUR.
+  const netAmtOrig=vatOn ? amt/(1+vatRate/100) : amt;
+  const vatAmtOrig=amt-netAmtOrig;
+  const netAmtEur=netAmtOrig*fxRate;
   const payload={
     supplier:sup, supplier_invoice_nr:document.getElementById('ivin-nr').value, date:document.getElementById('ivin-date').value||null,
-    project:document.getElementById('ivin-proj').value, amount:parseFloat(document.getElementById('ivin-amt').value)||0,
-    currency:document.getElementById('ivin-cur').value, notes:document.getElementById('ivin-not').value,
+    project:document.getElementById('ivin-proj').value, amount:amt,
+    vat_applicable:vatOn, vat_rate:vatRate, vat_amount:+vatAmtOrig.toFixed(2),
+    currency:cur, exchange_rate:fxRate, net_amount:+netAmtEur.toFixed(2), notes:document.getElementById('ivin-not').value,
     file_name:ivinFileData?ivinFileData.name:null, file_type:ivinFileData?ivinFileData.type:null, file_base64:ivinFileData?ivinFileData.base64:null
   };
   supaFetch('invoices_in','POST',payload).then(function(){
@@ -1935,6 +2050,229 @@ function renderInvoiceComparison(){
 }
 
 window.addEventListener('load',function(){setTimeout(function(){loadInvoicesOut();loadInvoicesIn();},900);});
+
+// ══════════════════════════════════════════════════════
+// ── FINANCAT (bank guarantees, other costs, tax summary) ──
+// ══════════════════════════════════════════════════════
+let bankGuaranteesList=[];
+let otherCostsList=[];
+
+function finSwitchTab(tab){
+  document.getElementById('fin-view-tax').style.display = tab==='tax' ? '' : 'none';
+  document.getElementById('fin-view-aging').style.display = tab==='aging' ? '' : 'none';
+  document.getElementById('fin-view-bg').style.display = tab==='bg' ? '' : 'none';
+  document.getElementById('fin-view-oc').style.display = tab==='oc' ? '' : 'none';
+  document.getElementById('fin-tab-tax').className = 'btn btn-sm' + (tab==='tax' ? ' btn-primary' : '');
+  document.getElementById('fin-tab-aging').className = 'btn btn-sm' + (tab==='aging' ? ' btn-primary' : '');
+  document.getElementById('fin-tab-bg').className = 'btn btn-sm' + (tab==='bg' ? ' btn-primary' : '');
+  document.getElementById('fin-tab-oc').className = 'btn btn-sm' + (tab==='oc' ? ' btn-primary' : '');
+  if(tab==='aging')renderAgingReport();
+}
+
+function renderAgingReport(){
+  const el=document.getElementById('fin-aging-list');
+  if(!el)return;
+  const today=new Date();
+  const unpaid=invoicesOutList.filter(function(r){return !r.paid;});
+  if(unpaid.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Nuk ka fatura të papaguara të regjistruara.</div>';return;}
+  const rows=unpaid.map(function(r){
+    let daysOver=null;
+    if(r.date){
+      const due=new Date(r.date);
+      due.setDate(due.getDate()+parseDueDays(r.payment_terms));
+      daysOver=Math.round((today-due)/86400000);
+    }
+    return {r:r, daysOver:daysOver};
+  }).sort(function(a,b){return (b.daysOver||-9999)-(a.daysOver||-9999);});
+  const overdueTotal=rows.filter(function(x){return x.daysOver>0;}).reduce(function(s,x){return s+(parseFloat(x.r.gross_amount)||parseFloat(x.r.total_price)||0);},0);
+  el.innerHTML='<div style="font-size:13px;margin-bottom:10px"><strong>Totali me vonesë: </strong><span style="color:var(--red-text);font-weight:700">'+overdueTotal.toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span></div>'
+    +rows.map(function(x){
+      const r=x.r;
+      const statusHtml=x.daysOver===null?'<span style="color:var(--text3)">(pa datë)</span>':(x.daysOver>0?'<span style="color:var(--red-text);font-weight:700">'+x.daysOver+' ditë vonesë</span>':'<span style="color:var(--text3)">'+(-x.daysOver)+' ditë deri në afat</span>');
+      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
+        +'<div><strong>'+r.invoice_nr+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.client||'')+' · '+(r.project||'')+' · '+(r.gross_amount||r.total_price||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span> '+statusHtml+'</div>'
+        +'<button class="btn btn-sm" onclick="markInvoicePaid(\''+r.id+'\')">Shëno Paguar</button></div>';
+    }).join('');
+}
+
+function initFinYearSelect(){
+  const sel=document.getElementById('fin-year');
+  if(!sel || sel.options.length)return;
+  const cy=new Date().getFullYear();
+  for(let y=cy+1;y>=cy-4;y--){sel.innerHTML+='<option value="'+y+'"'+(y===cy?' selected':'')+'>'+y+'</option>';}
+}
+
+// ── Bank guarantees ────────────────────────────────────
+function calcBgFee(){
+  const amt=parseFloat(document.getElementById('bg-amt').value)||0;
+  const rate=parseFloat(document.getElementById('bg-feerate').value)||0;
+  document.getElementById('bg-fee').value=(amt*rate/100).toFixed(2);
+}
+function saveBankGuarantee(){
+  const bank=document.getElementById('bg-bank').value.trim();
+  if(!bank){alert('Shkruaj emrin e bankës.');return;}
+  const payload={
+    project:document.getElementById('bg-proj').value, bank_name:bank, guarantee_type:document.getElementById('bg-type').value,
+    amount_guaranteed:parseFloat(document.getElementById('bg-amt').value)||0, fee_rate_pct:parseFloat(document.getElementById('bg-feerate').value)||0,
+    fee_amount:parseFloat(document.getElementById('bg-fee').value)||0, issue_date:document.getElementById('bg-issue').value||null,
+    expiry_date:document.getElementById('bg-expiry').value||null, status:document.getElementById('bg-status').value, notes:document.getElementById('bg-notes').value
+  };
+  supaFetch('bank_guarantees','POST',payload).then(function(){
+    alert('Garancia u ruajt!');
+    ['bg-proj','bg-bank','bg-amt','bg-feerate','bg-fee','bg-issue','bg-expiry','bg-notes'].forEach(function(id){document.getElementById(id).value='';});
+    loadBankGuarantees();
+  }).catch(function(e){alert('Gabim (a ekziston tabela bank_guarantees në Supabase?): '+e.message);});
+}
+function loadBankGuarantees(){
+  const el=document.getElementById('bg-list');
+  if(!el)return;
+  supaFetch('bank_guarantees?order=expiry_date.asc&limit=100').then(function(rows){
+    bankGuaranteesList=rows||[];
+    if(rows.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë garanci e regjistruar.</div>';return;}
+    const today=new Date();
+    el.innerHTML=rows.map(function(r){
+      let expiryWarn='';
+      if(r.expiry_date && r.status==='aktive'){
+        const days=Math.round((new Date(r.expiry_date)-today)/86400000);
+        if(days<0) expiryWarn=' <span style="color:var(--red-text);font-weight:700">(SKADUAR)</span>';
+        else if(days<30) expiryWarn=' <span style="color:var(--red-text);font-weight:700">('+days+' ditë deri në skadim)</span>';
+      }
+      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
+        +'<div><strong>'+r.bank_name+'</strong> · '+(r.guarantee_type||'')+' <span style="color:var(--text3);font-size:12px">'+(r.project||'')+' · '+(parseFloat(r.amount_guaranteed)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR garantim · komision '+(parseFloat(r.fee_amount)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span>'+expiryWarn+'</div>'
+        +'<button class="btn btn-danger btn-sm" onclick="deleteBankGuarantee(\''+r.id+'\')">Fshij</button></div>';
+    }).join('');
+  }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela bank_guarantees mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
+}
+function deleteBankGuarantee(id){
+  if(!confirm('Fshi garancinë?'))return;
+  supaFetch('bank_guarantees?id=eq.'+id,'DELETE').then(function(){loadBankGuarantees();}).catch(function(e){alert('Gabim: '+e.message);});
+}
+
+// ── Other operating costs ──────────────────────────────
+function saveOtherCost(){
+  const amt=parseFloat(document.getElementById('oc-amt').value)||0;
+  if(!amt){alert('Shkruaj shumën.');return;}
+  const payload={
+    category:document.getElementById('oc-cat').value, description:document.getElementById('oc-desc').value,
+    project:document.getElementById('oc-proj').value, amount:amt, date:document.getElementById('oc-date').value||null
+  };
+  supaFetch('other_costs','POST',payload).then(function(){
+    alert('Kostoja u ruajt!');
+    ['oc-amt','oc-proj','oc-desc'].forEach(function(id){document.getElementById(id).value='';});
+    loadOtherCosts();
+  }).catch(function(e){alert('Gabim (a ekziston tabela other_costs në Supabase?): '+e.message);});
+}
+function loadOtherCosts(){
+  const el=document.getElementById('oc-list');
+  if(!el)return;
+  supaFetch('other_costs?order=date.desc&limit=200').then(function(rows){
+    otherCostsList=rows||[];
+    if(rows.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë kosto e regjistruar.</div>';return;}
+    el.innerHTML=rows.map(function(r){
+      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
+        +'<div><strong>'+r.category+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.description||'')+' · '+(r.project||'')+' · '+(parseFloat(r.amount)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR · '+(r.date||'')+'</span></div>'
+        +'<button class="btn btn-danger btn-sm" onclick="deleteOtherCost(\''+r.id+'\')">Fshij</button></div>';
+    }).join('');
+  }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela other_costs mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
+}
+function deleteOtherCost(id){
+  if(!confirm('Fshi koston?'))return;
+  supaFetch('other_costs?id=eq.'+id,'DELETE').then(function(){loadOtherCosts();}).catch(function(e){alert('Gabim: '+e.message);});
+}
+
+// ── Tax / profit summary ───────────────────────────────
+function periodRange(year,period){
+  if(period==='year') return {from:year+'-01-01', to:year+'-12-31'};
+  const q=parseInt(period,10);
+  const startM=(q-1)*3+1, endM=q*3;
+  const lastDay=new Date(year,endM,0).getDate();
+  return {from:year+'-'+String(startM).padStart(2,'0')+'-01', to:year+'-'+String(endM).padStart(2,'0')+'-'+lastDay};
+}
+function inRange(dateStr,from,to){
+  if(!dateStr)return false;
+  return dateStr>=from && dateStr<=to;
+}
+function calcTaxSummary(){
+  initFinYearSelect();
+  const year=document.getElementById('fin-year').value||new Date().getFullYear();
+  const period=document.getElementById('fin-period').value;
+  const r=periodRange(year,period);
+
+  const outInRange=invoicesOutList.filter(function(x){return inRange(x.date,r.from,r.to);});
+  const inInRange=invoicesInList.filter(function(x){return inRange(x.date,r.from,r.to);});
+  const bgInRange=bankGuaranteesList.filter(function(x){return inRange(x.issue_date,r.from,r.to);});
+  const ocInRange=otherCostsList.filter(function(x){return inRange(x.date,r.from,r.to);});
+
+  const revenue=outInRange.reduce(function(s,x){return s+(parseFloat(x.net_amount)||parseFloat(x.total_price)||0);},0);
+  const supplierCosts=inInRange.reduce(function(s,x){return s+(parseFloat(x.net_amount)||parseFloat(x.amount)||0);},0);
+  const bgFees=bgInRange.reduce(function(s,x){return s+(parseFloat(x.fee_amount)||0);},0);
+  const otherCosts=ocInRange.reduce(function(s,x){return s+(parseFloat(x.amount)||0);},0);
+  const totalCosts=supplierCosts+bgFees+otherCosts;
+  const grossProfit=revenue-totalCosts;
+  const profitTax=grossProfit>0 ? grossProfit*0.10 : 0;
+  const netProfit=grossProfit-profitTax;
+
+  const vatOut=outInRange.reduce(function(s,x){return s+(parseFloat(x.vat_amount)||0);},0);
+  const vatIn=inInRange.reduce(function(s,x){return s+(parseFloat(x.vat_amount)||0);},0);
+  const vatBalance=vatOut-vatIn;
+
+  const row=function(label,val,bold,color){
+    return '<tr'+(bold?' style="border-top:2px solid var(--border);font-weight:700"':'')+'><td style="padding:6px 0">'+label+'</td><td style="padding:6px 0;text-align:right;'+(color?'color:'+color:'')+'">'+val.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr>';
+  };
+  document.getElementById('fin-tax-result').innerHTML =
+    '<div class="card"><div class="card-title">Rezultati — '+(period==='year'?'Viti '+year:'Tremujori '+period+' / '+year)+'</div>'
+    +'<table style="width:100%;font-size:14px">'
+      +row('Të ardhurat neto (faturat tona, '+outInRange.length+')',revenue)
+      +row('− Kostot e furnitorëve/prodhimit (neto, '+inInRange.length+')',-supplierCosts)
+      +row('− Komisionet e garancive bankare ('+bgInRange.length+')',-bgFees)
+      +row('− Kosto të tjera operative ('+ocInRange.length+')',-otherCosts)
+      +row('= Fitimi bruto (para tatimit)',grossProfit,true,grossProfit>=0?'var(--green-text)':'var(--red-text)')
+      +row('− Tatimi mbi Fitimin (10%, vlerësim)',-profitTax)
+      +row('= Fitimi neto (pas tatimit)',netProfit,true,netProfit>=0?'var(--green-text)':'var(--red-text)')
+    +'</table>'
+    +'</div>'
+    +'<div class="card"><div class="card-title">TVSH (nëse ka fatura me TVSH të aplikueshme)</div>'
+    +'<table style="width:100%;font-size:14px">'
+      +row('TVSH e mbledhur nga shitjet',vatOut)
+      +row('TVSH e paguar te furnitorët',vatIn)
+      +row('= Bilanci i TVSH-së ('+(vatBalance>=0?'për pagesë në ATK':'për kthim')+')',Math.abs(vatBalance),true)
+    +'</table>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:8px">Shumica e shitjeve tuaja janë eksporte me TVSH 0% — ky bilanc është relevant vetëm nëse ka pasur shitje/blerje vendore me TVSH.</div>'
+    +'</div>';
+
+  window._lastTaxSummary={
+    label:(period==='year'?'Viti '+year:'Tremujori '+period+'-'+year), year:year, period:period,
+    revenue:revenue, supplierCosts:supplierCosts, bgFees:bgFees, otherCosts:otherCosts,
+    grossProfit:grossProfit, profitTax:profitTax, netProfit:netProfit, vatOut:vatOut, vatIn:vatIn, vatBalance:vatBalance
+  };
+}
+
+function exportTaxSummaryCsv(){
+  if(!window._lastTaxSummary){calcTaxSummary();}
+  const s=window._lastTaxSummary;
+  if(!s){alert('Llogarit fillimisht përmbledhjen.');return;}
+  const rows=[
+    ['Periudha',s.label],
+    ['Te ardhurat neto (EUR)',s.revenue.toFixed(2)],
+    ['Kostot e furnitoreve (neto, EUR)',s.supplierCosts.toFixed(2)],
+    ['Komisionet e garancive bankare (EUR)',s.bgFees.toFixed(2)],
+    ['Kosto te tjera operative (EUR)',s.otherCosts.toFixed(2)],
+    ['Fitimi bruto (EUR)',s.grossProfit.toFixed(2)],
+    ['Tatimi mbi Fitimin 10% (EUR)',s.profitTax.toFixed(2)],
+    ['Fitimi neto (EUR)',s.netProfit.toFixed(2)],
+    ['TVSH e mbledhur (EUR)',s.vatOut.toFixed(2)],
+    ['TVSH e paguar (EUR)',s.vatIn.toFixed(2)],
+    ['Bilanci TVSH (EUR)',s.vatBalance.toFixed(2)]
+  ];
+  const csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='PRISTEEL-Tatime-'+s.label.replace(/\s+/g,'_')+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
+window.addEventListener('load',function(){setTimeout(function(){initFinYearSelect();},900);});
 
 </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
