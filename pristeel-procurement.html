@@ -1604,11 +1604,12 @@ if(!parsed.total_weight_kg || parsed.total_weight_kg===0){
     document.getElementById('pdf-drop').style.borderColor='var(--green)';
 
     
-      let pKg = parsed.price_per_kg||0;
-if(pKg===0 && parsed.total_weight_kg>0 && parsed.fabrication_total>0){
+ let pKg = 0;
+if(parsed.total_weight_kg>0 && parsed.fabrication_total>0){
   pKg = parsed.fabrication_total/parsed.total_weight_kg;
-  }
-  const grandTotal = (parsed.fabrication_total||0) + (parsed.transport_cost||0);
+} else {
+  pKg = parsed.price_per_kg||0;
+}  const grandTotal = (parsed.fabrication_total||0) + (parsed.transport_cost||0);
 
 offers.push({
   id:Date.now(),
