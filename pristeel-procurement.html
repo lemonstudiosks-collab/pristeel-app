@@ -1583,18 +1583,17 @@ Rules:
     try{
       const start=raw.indexOf('{');const end=raw.lastIndexOf('}');
       parsed=JSON.parse(raw.slice(start,end+1));
-      if(!parsed.transport_cost || parsed.transport_cost===0){
-  const m = text.match(/Amount\s*B[^\d]*(\d[\d.,]*)/i);
-  if(m) parsed.transport_cost = parseFloat(m[1].replace(/\./g,'').replace(',','.'));
+  const mA=text.match(/Amount\s*A\D{0,15}?([\d.,]+)/i);
+if(mA) parsed.fabrication_total=parseFloat(mA[1].replace(/\./g,'').replace(',','.'));
+
+const mSum=text.match(/Summary\s*A\+B[^\d]*([\d.,]+)/i);
+if(mSum && parsed.fabrication_total>0){
+  const grand=parseFloat(mSum[1].replace(/\./g,'').replace(',','.'));
+  parsed.transport_cost=grand-parsed.fabrication_total;
 }
-if(!parsed.fabrication_total || parsed.fabrication_total===0){
-  const m2 = text.match(/Amount\s*A[^\d]*(\d[\d.,]*)/i);
-  if(m2) parsed.fabrication_total = parseFloat(m2[1].replace(/\./g,'').replace(',','.'));
-}
-if(!parsed.total_weight_kg || parsed.total_weight_kg===0){
-  const m3 = text.match(/Total\s*Weight[^\d]*(\d[\d.,]*)/i);
-  if(m3) parsed.total_weight_kg = parseFloat(m3[1].replace(/\./g,''));
-}
+
+const mW=text.match(/(\d{4,7})\s+\1(?!\d)/);
+if(mW) parsed.total_weight_kg=parseFloat(mW[1]);
     }catch{
       document.getElementById('pdf-status').textContent='⚠ Nuk u lexua saktë — provo të ngjitësh tekstin manualisht.';
       return;
