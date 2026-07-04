@@ -984,7 +984,7 @@ Rules:
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:8000,temperature:0,messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows that look similar to each other.'},{role:'user',content:prompt}]})    });
+      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0,messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows that look similar to each other.'},{role:'user',content:prompt}]})    });
     const data=await resp.json();
     document.getElementById('prog').style.width='100%';
     document.getElementById('st4').textContent='✓';
@@ -1573,7 +1573,7 @@ Rules:
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1000,temperature:0,
+      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:1000,temperature:0,
         messages:[{role:'system',content:'You are a steel procurement AI. Respond with valid JSON only.'},{role:'user',content:prompt}]})
     });
     const data=await resp.json();
