@@ -922,6 +922,9 @@ JSON format:
 Rules:
 - This can be a structured multi-line steel list OR multiple sequential technical drawings separated by boundaries.
 - For each component/profile technical drawing, extract it as ONE separate item position in the array.
+- CRITICAL — NEVER MERGE OR SKIP ROWS: the source table can contain many rows that look identical or near-identical (same profile, same dimension, same length, same weight) because the same part is listed multiple times, in different batches, or with different piece counts per row. EVERY row in the table is a separate, real line item and MUST become a separate entry in "items", even if it is a perfect duplicate of the row before or after it. Do NOT treat repeated rows as redundant. Do NOT summarize, deduplicate, or collapse multiple rows into one — the "quantity_pieces" of each row must exactly match the "Stk." / "Stück" / "Menge" / "Qty" value printed on that exact row, nothing more.
+- Count the total number of data rows in the source table (excluding header rows and "SUMME"/"Zwischensumme"/"Übertrag"/"Gesamtsumme" subtotal rows) and make sure "items" has exactly that many entries.
+- If the document has subtotal lines (e.g. "SUMME BL15 ... 4614.6" or "Gesamtsumme: 37466.4"), do NOT use them as items — they are checksums only. After extracting all rows, verify that the sum of (quantity_pieces × quantity_kg) for the rows belonging to each subtotal group equals that subtotal. If any group's sum does not match its printed subtotal, add a clear note to "issues" naming the group and the discrepancy — this usually means a row was missed.
 - CRITICAL: "quantity_kg" MUST be the weight of exactly ONE SINGLE PIECE, never the total for all pieces combined. If the document states "Gewicht: 84,5 kg/Stk" or "kg/pc", that per-piece value IS quantity_kg — do NOT multiply it by quantity_pieces yourself. If the document only gives a total weight for the whole line (e.g. "Gesamtgewicht: 2028 kg" for 24 pieces), divide by quantity_pieces first to get the per-piece value before writing quantity_kg.
 - Extract the net weight from the 'Weight' or 'Gewicht' fields if available (convert to kg per single piece, e.g. 0.060), map the alloy/material to 'steel_grade', and the part ID or outline size to 'dimension'.
 - Return ONLY valid JSON object.`;
@@ -932,8 +935,7 @@ Rules:
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:4000,temperature:0,messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown.'},{role:'user',content:prompt}]})
-    });
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:8000,temperature:0,messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows that look similar to each other.'},{role:'user',content:prompt}]})    });
     const data=await resp.json();
     document.getElementById('prog').style.width='100%';
     document.getElementById('st4').textContent='✓';
