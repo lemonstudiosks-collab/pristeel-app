@@ -1589,18 +1589,25 @@ Rules:
     document.getElementById('pdf-status').textContent='✓ Oferta u analizua — u shtua te lista.';
     document.getElementById('pdf-drop').style.borderColor='var(--green)';
 
-    offers.push({
-      id:Date.now(),
-      supplier:parsed.supplier||supplier,
-      cat:cat,
-      priceKg:parsed.price_per_kg||0,
-      delivery:parsed.delivery_weeks||0,
-      inco:parsed.incoterms||'EXW',
-      cert:parsed.certification||'',
-      validity:parsed.validity_days||30,
-      notes:(parsed.notes||'')+(parsed.incoterms_location?' — '+parsed.incoterms_location:''),
-      confidence:parsed.confidence||'medium',
-      source:'pdf'
+    
+      let pKg = parsed.price_per_kg||0;
+if(pKg===0 && parsed.total_weight_kg>0 && parsed.total_price>0){
+  pKg = parsed.total_price/parsed.total_weight_kg;
+}
+offers.push({
+  id:Date.now(),
+  supplier:parsed.supplier||supplier,
+  cat:cat,
+  priceKg:pKg,
+  totalEur:parsed.total_price||0,
+  delivery:parsed.delivery_weeks||0,
+  inco:parsed.incoterms||'EXW',
+  cert:parsed.certification||'',
+  validity:parsed.validity_days||30,
+  notes:(parsed.notes||'')+(parsed.incoterms_location?' — '+parsed.incoterms_location:''),
+  confidence:parsed.confidence||'medium',
+  source:'pdf'
+});
     });
     renderOffers();
 
