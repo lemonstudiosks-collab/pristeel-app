@@ -565,6 +565,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div class="field-group fg-2"><div><label class="lbl">Afati i pagesës</label><input type="text" id="iv-pay" value="30 Tage netto"></div><div><label class="lbl">Certifikata</label><select id="iv-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
       <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="iv-vat" onchange="toggleVatRate('iv')"><option value="0" selected>Pa TVSH (Eksport 0%)</option><option value="1">Me TVSH (shitje/vendore)</option></select></div><div id="iv-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="iv-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
       <div><label class="lbl">Shënime</label><textarea id="iv-not" style="min-height:50px"></textarea></div>
+      <div class="field-group"><div><label class="lbl">Bashkëngjit kontratën/dokumentin (PDF, Word, Excel, Pages, JPG, PNG) — opsionale</label><input type="file" id="ivout-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="handleInvOutFile(this.files[0])"></div></div>
+<div id="ivout-file-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="genInvoiceOut()">Gjenero Faturën</button><button class="btn btn-success" onclick="saveInvoiceOut()">💾 Ruaj</button></div>
   </div>
@@ -588,7 +590,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div class="field-group fg-2" id="ivin-fx-wrap" style="display:none"><div><label class="lbl">Kursi i këmbimit → EUR (1 [valuta] = ? EUR)</label><input type="number" step="0.0001" id="ivin-fx" placeholder="p.sh. 0.0165 për MKD"></div><div></div></div>
       <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="ivin-vat" onchange="toggleVatRate('ivin')"><option value="0" selected>Pa TVSH / 0%</option><option value="1">Me TVSH (shuma është Bruto)</option></select></div><div id="ivin-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="ivin-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
       <div><label class="lbl">Shënime</label><textarea id="ivin-not" style="min-height:50px"></textarea></div>
-      <div class="field-group"><div><label class="lbl">Ngarko faturën (PDF/JPG/PNG)</label><input type="file" id="ivin-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleInvInFile(this.files[0])"></div></div>
+      <div class="field-group"><div><label class="lbl">Ngarko faturën (PDF, Word, Excel, Pages, JPG, PNG)</label><input type="file" id="ivin-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="handleInvInFile(this.files[0])"></div></div>
       <div id="ivin-file-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
       <button class="btn btn-success" onclick="saveInvoiceIn()">💾 Ruaj Faturën e Furnitorit</button>
     </div>
@@ -598,6 +600,15 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
   </div>
   <div class="card"><div class="card-title">Faturat e regjistruara (Furnitorë)</div><div id="iv-in-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
+  <div class="card"><div class="card-title">Kontratat (Werkvertrag, Nënkontrata, etj.)</div>
+  <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="ctr-proj" placeholder="p.sh. STACON D-22/26"></div><div><label class="lbl">Lloji i kontratës</label><select id="ctr-type"><option>Werkvertrag (Blerësi)</option><option>Nënkontratë (Furnitori)</option><option>NDA</option><option>Tjetër</option></select></div></div>
+  <div class="field-group fg-2"><div><label class="lbl">Pala tjetër</label><input type="text" id="ctr-party" placeholder="p.sh. STACON GmbH ose Eurosteel"></div><div><label class="lbl">Data</label><input type="date" id="ctr-date"></div></div>
+  <div><label class="lbl">Shënime</label><textarea id="ctr-not" style="min-height:50px"></textarea></div>
+  <div class="field-group"><div><label class="lbl">Ngarko skedarin (PDF, Word, Excel, Pages, JPG, PNG)</label><input type="file" id="ctr-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="handleContractFile(this.files[0])"></div></div>
+  <div id="ctr-file-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
+  <button class="btn btn-success" onclick="saveContract()">💾 Ruaj Kontratën</button>
+</div>
+<div class="card"><div class="card-title">Kontratat e ruajtura</div><div id="ctr-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
   </div>
 </div>
 
@@ -790,7 +801,7 @@ function showPage(p){
   if(p==='offers')renderOffers();
   if(p==='ranking'){calcRanking();}
   if(p==='kalkulator')calcPrice();
-  if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
+  if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadContracts();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
   if(p==='settings')renderSettings();
 }
@@ -2050,9 +2061,14 @@ function saveInvoiceOut(){
     items:invoiceItems, total_kg:totKg, total_price:+totAmt.toFixed(2), currency:'EUR',
     vat_applicable:vatOn, vat_rate:vatRate, net_amount:+totAmt.toFixed(2), vat_amount:+vatAmt.toFixed(2), gross_amount:+grossAmt.toFixed(2),
     incoterms:document.getElementById('iv-inc').value, delivery_location:document.getElementById('iv-loc').value,
-    payment_terms:document.getElementById('iv-pay').value, certificate:document.getElementById('iv-cer').value, notes:document.getElementById('iv-not').value
+    payment_terms:document.getElementById('iv-pay').value, certificate:document.getElementById('iv-cer').value, notes:document.getElementById('iv-not').value,
+    file_name:ivoutFileData?ivoutFileData.name:null, file_type:ivoutFileData?ivoutFileData.type:null, file_base64:ivoutFileData?ivoutFileData.base64:null
   };
-  supaFetch('invoices_out','POST',payload).then(function(){alert('Fatura u ruajt!');loadInvoicesOut();}).catch(function(e){alert('Gabim (a ekziston tabela invoices_out në Supabase?): '+e.message);});
+  supaFetch('invoices_out','POST',payload).then(function(){
+    alert('Fatura u ruajt!');
+    document.getElementById('ivout-file').value='';document.getElementById('ivout-file-status').textContent='';ivoutFileData=null;
+    loadInvoicesOut();
+  }).catch(function(e){alert('Gabim (a ekziston tabela invoices_out në Supabase?): '+e.message);});
 }
 function parseDueDays(terms){
   const m=(terms||'').match(/(\d+)/);
@@ -2077,7 +2093,7 @@ function loadInvoicesOut(){
       const paidBadge=r.paid ? ' <span style="color:var(--green-text);font-weight:700">✓ Paguar</span>' : agingHtml;
       return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
         +'<div><strong>'+r.invoice_nr+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.client||'')+' · '+(r.project||'')+' · '+(r.gross_amount||r.total_price||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span>'+paidBadge+'</div>'
-        +'<div style="display:flex;gap:6px">'+(r.paid?'':'<button class="btn btn-sm" onclick="markInvoicePaid(\''+r.id+'\')">Shëno Paguar</button>')+'<button class="btn btn-danger btn-sm" onclick="deleteInvoiceOut(\''+r.id+'\')">Fshij</button></div></div>';
+        +'<div style="display:flex;gap:6px">'+(r.file_base64?'<button class="btn btn-sm" onclick="viewInvOut(\''+r.id+'\')">Shiko</button>':'')+(r.paid?'':'<button class="btn btn-sm" onclick="markInvoicePaid(\''+r.id+'\')">Shëno Paguar</button>')+'<button class="btn btn-danger btn-sm" onclick="deleteInvoiceOut(\''+r.id+'\')">Fshij</button></div></div>';
     }).join('');
     renderAgingReport();
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela invoices_out mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
@@ -2090,7 +2106,89 @@ function deleteInvoiceOut(id){
   supaFetch('invoices_out?id=eq.'+id,'DELETE').then(function(){loadInvoicesOut();}).catch(function(e){alert('Gabim: '+e.message);});
 }
 
-// ── INCOMING: file handling ────────────────────────────
+function viewOrDownloadFile(fileName, fileType, fileBase64){
+  if(!fileBase64) return;
+  if(fileType==='application/pdf'){
+    const w=window.open();
+    w.document.write('<iframe src="'+fileBase64+'" style="width:100%;height:100vh;border:none"></iframe>');
+  } else if((fileType||'').indexOf('image/')===0){
+    const w=window.open();
+    w.document.write('<img src="'+fileBase64+'" style="max-width:100%">');
+  } else {
+    const a=document.createElement('a');
+    a.href=fileBase64; a.download=fileName||'file';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+}
+function handleInvOutFile(f){
+  if(!f)return;
+  const status=document.getElementById('ivout-file-status');
+  status.textContent='Duke lexuar...';
+  const r=new FileReader();
+  r.onload=function(e){
+    ivoutFileData={name:f.name,type:f.type,base64:e.target.result};
+    status.textContent='✓ '+f.name+' ('+Math.round(f.size/1024)+' KB)';
+  };
+  r.onerror=function(){status.textContent='Gabim gjatë leximit të skedarit.';};
+  r.readAsDataURL(f);
+}
+function viewInvOut(id){
+  const r=invoicesOutList.find(function(x){return x.id===id;});
+  if(!r) return;
+  viewOrDownloadFile(r.file_name, r.file_type, r.file_base64);
+}
+
+function handleContractFile(f){
+  if(!f)return;
+  const status=document.getElementById('ctr-file-status');
+  status.textContent='Duke lexuar...';
+  const r=new FileReader();
+  r.onload=function(e){
+    contractFileData={name:f.name,type:f.type,base64:e.target.result};
+    status.textContent='✓ '+f.name+' ('+Math.round(f.size/1024)+' KB)';
+  };
+  r.onerror=function(){status.textContent='Gabim gjatë leximit të skedarit.';};
+  r.readAsDataURL(f);
+}
+function saveContract(){
+  const proj=document.getElementById('ctr-proj').value.trim();
+  const party=document.getElementById('ctr-party').value.trim();
+  if(!proj||!party){alert('Shkruaj projektin dhe palën tjetër.');return;}
+  const payload={
+    project:proj, contract_type:document.getElementById('ctr-type').value, party:party,
+    date:document.getElementById('ctr-date').value||null, notes:document.getElementById('ctr-not').value,
+    file_name:contractFileData?contractFileData.name:null, file_type:contractFileData?contractFileData.type:null, file_base64:contractFileData?contractFileData.base64:null
+  };
+  supaFetch('contracts','POST',payload).then(function(){
+    alert('Kontrata u ruajt!');
+    document.getElementById('ctr-proj').value='';document.getElementById('ctr-party').value='';document.getElementById('ctr-not').value='';document.getElementById('ctr-file').value='';
+    document.getElementById('ctr-file-status').textContent='';contractFileData=null;
+    loadContracts();
+  }).catch(function(e){alert('Gabim (a ekziston tabela contracts në Supabase?): '+e.message);});
+}
+function loadContracts(){
+  const el=document.getElementById('ctr-list');
+  if(!el)return;
+  supaFetch('contracts?order=created_at.desc&limit=100').then(function(rows){
+    contractsList=rows||[];
+    if(rows.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë kontratë e ruajtur.</div>';return;}
+    el.innerHTML=rows.map(function(r){
+      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
+        +'<div><strong>'+(r.contract_type||'')+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.party||'')+' · '+(r.project||'')+(r.date?' · '+r.date:'')+'</span></div>'
+        +'<div style="display:flex;gap:6px">'+(r.file_base64?'<button class="btn btn-sm" onclick="viewContract(\''+r.id+'\')">Shiko</button>':'')+'<button class="btn btn-danger btn-sm" onclick="deleteContract(\''+r.id+'\')">Fshij</button></div></div>';
+    }).join('');
+  }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela contracts mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
+}
+function viewContract(id){
+  const r=contractsList.find(function(x){return x.id===id;});
+  if(!r) return;
+  viewOrDownloadFile(r.file_name, r.file_type, r.file_base64);
+}
+function deleteContract(id){
+  if(!confirm('Fshi kontratën?'))return;
+  supaFetch('contracts?id=eq.'+id,'DELETE').then(function(){loadContracts();}).catch(function(e){alert('Gabim: '+e.message);});
+}
+
 function handleInvInFile(f){
   if(!f)return;
   const status=document.getElementById('ivin-file-status');
@@ -2115,7 +2213,6 @@ function saveInvoiceIn(){
   const fxRate=cur==='EUR' ? 1 : (parseFloat(document.getElementById('ivin-fx').value)||1);
   const vatOn=document.getElementById('ivin-vat').value==='1';
   const vatRate=vatOn?(parseFloat(document.getElementById('ivin-vat-rate').value)||0):0;
-  // Shuma e futur konsiderohet Bruto nëse ka TVSH; Neto llogaritet mbrapsht, pastaj konvertohet në EUR.
   const netAmtOrig=vatOn ? amt/(1+vatRate/100) : amt;
   const vatAmtOrig=amt-netAmtOrig;
   const netAmtEur=netAmtOrig*fxRate;
@@ -2150,10 +2247,8 @@ function loadInvoicesIn(){
 }
 function viewInvIn(id){
   const r=invoicesInList.find(function(x){return x.id===id;});
-  if(!r||!r.file_base64)return;
-  const w=window.open();
-  if(r.file_type==='application/pdf'){w.document.write('<iframe src="'+r.file_base64+'" style="width:100%;height:100vh;border:none"></iframe>');}
-  else{w.document.write('<img src="'+r.file_base64+'" style="max-width:100%">');}
+  if(!r) return;
+  viewOrDownloadFile(r.file_name, r.file_type, r.file_base64);
 }
 function deleteInvoiceIn(id){
   if(!confirm('Fshi faturën e furnitorit?'))return;
