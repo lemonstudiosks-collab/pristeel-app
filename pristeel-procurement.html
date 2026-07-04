@@ -1558,15 +1558,17 @@ Supplier: ${supplier}
 Document text: ${text.slice(0,3000)}
 
 JSON format:
-{"supplier":"${supplier}","price_per_kg":0.00,"price_currency":"EUR","price_basis":"per_kg or per_ton or per_piece","delivery_weeks":0,"incoterms":"EXW or DAP or DDP or CIF etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","validity_days":30,"min_order_kg":0,"total_price":0,"notes":"any special conditions","confidence":"high or medium or low"}
-
+{"supplier":"${supplier}","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"price_per_kg":0.00,"price_currency":"EUR","delivery_weeks":0,"incoterms":"EXW or DAP or DDP or CIF etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","validity_days":30,"notes":"any special conditions","confidence":"high or medium or low"}
 Rules:
-- price_per_kg: always convert to EUR/kg (if per ton divide by 1000)
+
+- fabrication_total: sum of all fabrication/material/erection line items ONLY (exclude transport/logistics/packaging)
+- transport_cost: sum of ALL transport, logistics, packaging, wood/crating line items
+- price_per_kg: fabrication_total / total_weight_kg (transport-i NUK përfshihet)
+- If multiple transport lines exist, sum them all into transport_cost
 - incoterms: normalize (ab Werk=EXW, frei Haus=DDP, franco=DDP)
 - If price not found set to 0
 - Extract delivery time in weeks
 - Return ONLY the JSON`;
-
   try{
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -1591,15 +1593,17 @@ Rules:
 
     
       let pKg = parsed.price_per_kg||0;
-if(pKg===0 && parsed.total_weight_kg>0 && parsed.total_price>0){
-  pKg = parsed.total_price/parsed.total_weight_kg;
-}
+if(pKg===0 && parsed.total_weight_kg>0 && parsed.fabrication_total>0){
+  pKg = parsed.fabrication_total/parsed.total_weight_kg;
+  }
+  const grandTotal = (parsed.fabrication_total||0) + (parsed.transport_cost||0);
+
 offers.push({
   id:Date.now(),
   supplier:parsed.supplier||supplier,
   cat:cat,
   priceKg:pKg,
-  totalEur:parsed.total_price||0,
+ totalEur:grandTotal||parsed.total_price||0,
   delivery:parsed.delivery_weeks||0,
   inco:parsed.incoterms||'EXW',
   cert:parsed.certification||'',
