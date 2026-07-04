@@ -887,9 +887,52 @@ async function handleFiles(files){
 }
 
 // ── AI PARSING ────────────────────────────────────────
+  function deterministicParseGermanMengenliste(text){
+  if(!/Ges\.?\s*Gew/i.test(text) || !(/MATERIALAUSZUG/i.test(text) || /MENGENLISTE/i.test(text))) return null;
+  const lines = text.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  const rowRe = /^(\d+)\s+([A-Za-zÄÖÜäöü]+[\dXx.,]+)\s+(\S+)\s+([\d.,]+)\s*\*?\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s*(.*)$/;
+  const skipRe = /^(SUMME|Zwischensumme|Gesamtsumme|Übertrag|Stk\.?$)/i;
+  const num = s => { const str=String(s).trim(); return str.includes(',') ? (parseFloat(str.replace(/\./g,'').replace(',','.'))||0) : (parseFloat(str)||0); };
+  const items=[];
+  for(const line of lines){
+    if(skipRe.test(line)) continue;
+    const m = line.match(rowRe);
+    if(!m) continue;
+    const stk=m[1], profilRaw=m[2], gute=m[3], lenMm=m[4], gewicht=m[5], bem=m[8];
+    const profMatch = profilRaw.match(/^([A-Za-z]+)([\dXx.,]+)$/);
+    const prefix = profMatch ? profMatch[1].toUpperCase() : profilRaw.toUpperCase();
+    const dim = profMatch ? profMatch[2].toUpperCase() : '';
+    const profileMap = {BL:'PLATE',HEA:'HEA',HEB:'HEB',IPE:'IPE',RHS:'RHS',SHS:'SHS',CHS:'CHS',L:'ANGLE'};
+    items.push({description_raw:line,profile_type:profileMap[prefix]||'OTHER',dimension:dim||profilRaw,steel_grade:gute,standard:'',length_mm:Math.round(num(lenMm)),quantity_pieces:Math.round(num(stk)),quantity_kg:num(gewicht),surface_treatment:'none',certification:'EN 10204 3.1',notes:bem||'',confidence:'high'});
+  }
+  if(items.length < 3) return null;
+  const totalCalc = items.reduce((s,it)=>s + (it.quantity_pieces*it.quantity_kg),0);
+  const gesamtMatch = text.match(/Gesamtsumme:?\s*([\d.,]+)/i) || text.match(/Zwischensumme:?\s*([\d.,]+)/i);
+  const issues=[];
+  if(gesamtMatch){
+    const declared = num(gesamtMatch[1]);
+    const delta = Math.abs(totalCalc-declared);
+    if(delta > Math.max(2, declared*0.001)){
+      issues.push(`KUJDES: totali i llogaritur (${totalCalc.toFixed(1)} kg) ndryshon nga Gesamtsumme e dokumentit (${declared.toFixed(1)} kg) me ${delta.toFixed(1)} kg — verifiko manualisht.`);
+    }
+  } else {
+    issues.push('Dokumenti s\'ka rresht "Gesamtsumme" të lexueshëm për verifikim automatik.');
+  }
+  return {project_summary:'Ekstraktim deterministik (jo-AI) nga format Materialauszug/Mengenliste',detected_language:'de',confidence:issues.length?'medium':'high',issues,items};
+}
 async function startParsing(){
   const text=document.getElementById('i-text').value.trim();
   if(text.length<5){alert('Ngjit tekstin e dokumentit ose ngarko skedar PDF/TXT/CSV.');return;}
+  const detResult = deterministicParseGermanMengenliste(text);
+  if(detResult){
+    document.getElementById('parsing-card').classList.remove('hidden');
+    ['st1','st2','st3','st4'].forEach(id=>{document.getElementById(id).className='step-num done';document.getElementById(id).textContent='✓';});
+    document.getElementById('st1d').textContent='Format i njohur (Materialauszug/Mengenliste) — llogaritur matematikisht nga teksti, pa AI.';
+    document.getElementById('st4d').textContent=detResult.issues.length?detResult.issues.join(' | '):'Verifikuar 100% kundrejt Gesamtsumme të dokumentit.';
+    document.getElementById('prog').style.width='100%';
+    applyParsedBom(detResult);
+    return;
+  }
   document.getElementById('parsing-card').classList.remove('hidden');
 
   const steps=[
