@@ -556,6 +556,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div class="field-group fg-2"><div><label class="lbl">Lloji i faturës</label><select id="iv-type" onchange="toggleAdvanceType()"><option value="standard">Fatura Standarde</option><option value="advance">Fatura e Avansit (Vorausrechnung)</option><option value="final">Fatura Përfundimtare (Schlussrechnung)</option></select></div><div id="iv-advance-pct-wrap" style="display:none"><label class="lbl">Përqindja e avansit (%)</label><input type="number" id="iv-advance-pct" value="30" step="1" oninput="calcAdvancePreview()"></div></div>
       <div class="field-group fg-2" id="iv-advance-val-wrap" style="display:none"><div><label class="lbl">Vlera e kontratës (bazë, EUR)</label><input type="number" id="iv-contract-value" step="0.01" oninput="calcAdvancePreview()"></div><div><label class="lbl">Shuma e avansit (EUR)</label><input type="text" id="iv-advance-amt" readonly style="background:var(--bg2)"></div></div>
       <div id="iv-advance-btn-wrap" style="display:none;margin-bottom:10px"><button class="btn btn-sm" onclick="addAdvanceLineItem()">+ Shto si rresht në faturë</button></div>
+      <div class="field-group"><div><label class="lbl">Zgjidh Projektin (shkarko nga BOM) — opsionale</label><select id="iv-proj-select" onchange="selectProjectForInvoiceOut(this.value)"><option value="">— Zgjidh projekt të ruajtur —</option></select></div></div>
       <div class="field-group"><div><label class="lbl">Projekti</label><input type="text" id="iv-proj" placeholder="p.sh. Lagerhalle Hamburg"></div></div>
     </div>
     <div class="card"><div class="card-title">Blerësi</div>
@@ -571,6 +572,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div class="field-group fg-2"><div><label class="lbl">Incoterms</label><select id="iv-inc"><option>DAP</option><option>DDP</option><option>EXW</option></select></div><div><label class="lbl">Vendi i dorëzimit</label><input type="text" id="iv-loc" placeholder="Hamburg, DE"></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Afati i pagesës</label><input type="text" id="iv-pay" list="iv-pay-options" value="30 Tage netto"><datalist id="iv-pay-options"><option value="30 Tage netto"><option value="14 Tage netto"><option value="60 Tage netto"><option value="Vorauskasse 100%"><option value="30% Anzahlung, 70% bei Lieferung"><option value="50% Anzahlung, 50% bei Lieferung"><option value="Zahlung bei Abholung"></datalist></div><div><label class="lbl">Certifikata</label><select id="iv-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
       <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="iv-vat" onchange="toggleVatRate('iv')"><option value="0" selected>Pa TVSH (Eksport 0%)</option><option value="1">Me TVSH (shitje/vendore)</option></select></div><div id="iv-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="iv-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Data e Afatit (Due Date) — manuale, opsionale</label><input type="date" id="iv-due-date"></div><div><label class="lbl">Shuma Totale e Faturës (Bruto) — override manual, opsionale</label><input type="number" step="0.01" id="iv-total-override" placeholder="Lëre bosh për llogaritje automatike nga pozicionet"></div></div>
       <div><label class="lbl">Shënime</label><textarea id="iv-not" style="min-height:50px"></textarea></div>
       <div class="field-group"><div><label class="lbl">Bashkëngjit kontratën/dokumentin (PDF, Word, Excel, Pages, JPG, PNG) — opsionale</label><input type="file" id="ivout-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="handleInvOutFile(this.files[0])"></div></div>
 <div id="ivout-file-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
@@ -592,10 +594,13 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
     <div class="card"><div class="card-title">Fatura e furnitorit / prodhuesit</div>
       <div class="field-group fg-2"><div><label class="lbl">Furnitori</label><input type="text" id="ivin-sup" list="ivin-sup-list" placeholder="Eurosteel Shpk"><datalist id="ivin-sup-list"></datalist></div><div><label class="lbl">Nr. faturës (i tyre)</label><input type="text" id="ivin-nr" placeholder="ES-2026-0042"></div></div>
+      <div class="field-group"><div><label class="lbl">Zgjidh Projektin (shkarko nga BOM) — opsionale</label><select id="ivin-proj-select" onchange="selectProjectForInvoiceIn(this.value)"><option value="">— Zgjidh projekt të ruajtur —</option></select></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Data</label><input type="date" id="ivin-date"></div><div><label class="lbl">Projekti / Porosia</label><input type="text" id="ivin-proj" placeholder="p.sh. STACON D-22/26"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Lloji i faturës</label><select id="ivin-type"><option value="standard">Fatura Standarde</option><option value="advance">Fatura e Avansit</option><option value="final">Fatura Përfundimtare</option></select></div><div><label class="lbl">Afati i pagesës</label><input type="text" id="ivin-pay" list="ivin-pay-options" value="30 Tage netto"><datalist id="ivin-pay-options"><option value="30 Tage netto"><option value="14 Tage netto"><option value="60 Tage netto"><option value="Parapagim / Vorauskasse"><option value="Pagesë në dorëzim"></datalist></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Shuma (Bruto, ashtu siç është në faturë)</label><input type="number" step="0.01" id="ivin-amt" placeholder="0.00"></div><div><label class="lbl">Valuta</label><select id="ivin-cur" onchange="toggleFxRate()"><option>EUR</option><option>USD</option><option>MKD</option><option>ALL</option></select></div></div>
       <div class="field-group fg-2" id="ivin-fx-wrap" style="display:none"><div><label class="lbl">Kursi i këmbimit → EUR (1 [valuta] = ? EUR)</label><input type="number" step="0.0001" id="ivin-fx" placeholder="p.sh. 0.0165 për MKD"></div><div></div></div>
       <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="ivin-vat" onchange="toggleVatRate('ivin')"><option value="0" selected>Pa TVSH / 0%</option><option value="1">Me TVSH (shuma është Bruto)</option></select></div><div id="ivin-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="ivin-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Data e Afatit (Due Date) — manuale, opsionale</label><input type="date" id="ivin-due-date"></div><div></div></div>
       <div><label class="lbl">Shënime</label><textarea id="ivin-not" style="min-height:50px"></textarea></div>
       <div class="field-group"><div><label class="lbl">Ngarko faturën (PDF, Word, Excel, Pages, JPG, PNG)</label><input type="file" id="ivin-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="handleInvInFile(this.files[0])"></div></div>
       <div id="ivin-file-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
@@ -822,7 +827,7 @@ function showPage(p){
   if(p==='offers')renderOffers();
   if(p==='ranking'){calcRanking();}
   if(p==='kalkulator')calcPrice();
-  if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadContracts();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
+  if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadContracts();loadProjectOptionsForInvoices();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
   if(p==='settings')renderSettings();
 }
@@ -2063,6 +2068,37 @@ function invSwitchTab(tab){
   document.getElementById('inv-tab-in').className = 'btn btn-sm' + (tab==='in' ? ' btn-primary' : '');
 }
 
+let invoiceProjectsList=[];
+function loadProjectOptionsForInvoices(){
+  supaFetch('projects?order=created_at.desc&limit=100').then(function(projects){
+    invoiceProjectsList=projects||[];
+    const opts='<option value="">— Zgjidh projekt të ruajtur —</option>'+invoiceProjectsList.map(function(p){return '<option value="'+p.id+'">'+p.name+(p.client?' — '+p.client:'')+'</option>';}).join('');
+    const s1=document.getElementById('iv-proj-select'); if(s1) s1.innerHTML=opts;
+    const s2=document.getElementById('ivin-proj-select'); if(s2) s2.innerHTML=opts;
+  }).catch(function(e){console.error('loadProjectOptionsForInvoices:',e);});
+}
+function selectProjectForInvoiceOut(id){
+  if(!id)return;
+  const p=invoiceProjectsList.find(function(x){return x.id===id;});
+  if(p){
+    document.getElementById('iv-proj').value=p.name||'';
+    if(p.client) document.getElementById('iv-cli').value=p.client;
+    if(p.ref) document.getElementById('iv-ref').value=p.ref;
+    if(p.location) document.getElementById('iv-loc').value=p.location;
+  }
+  supaFetch('bom_items?project_id=eq.'+id+'&order=created_at.asc').then(function(items){
+    if(!items||items.length===0){alert('Projekti u zgjodh, por s\'ka pozicione BOM të ruajtura për të.');return;}
+    invoiceItems=items.map(function(r){
+      return{desc:r.profile+' '+r.dim+(r.grade?', '+r.grade:'')+(r.std?', '+r.std:''),pcs:r.pcs||0,kg:parseFloat(r.kg)||0,priceKg:0};
+    });
+    renderInvItems();
+  }).catch(function(e){alert('Gabim gjatë ngarkimit të BOM: '+e.message);});
+}
+function selectProjectForInvoiceIn(id){
+  if(!id)return;
+  const p=invoiceProjectsList.find(function(x){return x.id===id;});
+  if(p) document.getElementById('ivin-proj').value=p.name||'';
+}
 // ── OUTGOING: line items ──────────────────────────────
 function loadInvItemsFromBom(){
   if(bomRows.length===0){alert('BOM është bosh.');return;}
@@ -2118,9 +2154,11 @@ function genInvoiceOut(){
   const not=document.getElementById('iv-not').value||'';
 
   const totKg=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0);},0);
-  const totAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  let totAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
   const vatOn=document.getElementById('iv-vat').value==='1';
   const vatRate=vatOn?(parseFloat(document.getElementById('iv-vat-rate').value)||0):0;
+  const overrideGross=parseFloat(document.getElementById('iv-total-override').value)||0;
+  if(overrideGross>0){ totAmt = vatOn ? overrideGross/(1+vatRate/100) : overrideGross; }
   const vatAmt=totAmt*vatRate/100;
   const grossAmt=totAmt+vatAmt;
 
@@ -2170,9 +2208,11 @@ function saveInvoiceOut(){
   const nr=document.getElementById('iv-nr').value.trim();
   if(!nr){alert('Shkruaj numrin e faturës.');return;}
   const totKg=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0);},0);
-  const totAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  let totAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
   const vatOn=document.getElementById('iv-vat').value==='1';
   const vatRate=vatOn?(parseFloat(document.getElementById('iv-vat-rate').value)||0):0;
+  const overrideGross=parseFloat(document.getElementById('iv-total-override').value)||0;
+  if(overrideGross>0){ totAmt = vatOn ? overrideGross/(1+vatRate/100) : overrideGross; }
   const vatAmt=totAmt*vatRate/100;
   const grossAmt=totAmt+vatAmt;
   const payload={
@@ -2186,6 +2226,7 @@ function saveInvoiceOut(){
     invoice_type:document.getElementById('iv-type')?document.getElementById('iv-type').value:'standard',
     contract_value:document.getElementById('iv-contract-value')?(parseFloat(document.getElementById('iv-contract-value').value)||null):null,
     advance_pct:document.getElementById('iv-advance-pct')?(parseFloat(document.getElementById('iv-advance-pct').value)||null):null,
+    due_date:document.getElementById('iv-due-date')?(document.getElementById('iv-due-date').value||null):null,
     file_name:ivoutFileData?ivoutFileData.name:null, file_type:ivoutFileData?ivoutFileData.type:null, file_base64:ivoutFileData?ivoutFileData.base64:null
   };
   supaFetch('invoices_out','POST',payload).then(function(){
@@ -2207,9 +2248,9 @@ function loadInvoicesOut(){
     const today=new Date();
     el.innerHTML=rows.map(function(r){
       let agingHtml='';
-      if(!r.paid && r.date){
-        const due=new Date(r.date);
-        due.setDate(due.getDate()+parseDueDays(r.payment_terms));
+      if(!r.paid && (r.date||r.due_date)){
+        const due=r.due_date ? new Date(r.due_date) : new Date(r.date);
+        if(!r.due_date) due.setDate(due.getDate()+parseDueDays(r.payment_terms));
         const daysOver=Math.round((today-due)/86400000);
         if(daysOver>0) agingHtml=' <span style="color:var(--red-text);font-weight:700">('+daysOver+' ditë vonesë)</span>';
         else agingHtml=' <span style="color:var(--text3)">(afati: '+due.toLocaleDateString('de-DE')+')</span>';
@@ -2343,6 +2384,9 @@ function saveInvoiceIn(){
   const payload={
     supplier:sup, supplier_invoice_nr:document.getElementById('ivin-nr').value, date:document.getElementById('ivin-date').value||null,
     project:document.getElementById('ivin-proj').value, amount:amt,
+    invoice_type:document.getElementById('ivin-type')?document.getElementById('ivin-type').value:'standard',
+    payment_terms:document.getElementById('ivin-pay')?document.getElementById('ivin-pay').value:'',
+    due_date:document.getElementById('ivin-due-date')?(document.getElementById('ivin-due-date').value||null):null,
     vat_applicable:vatOn, vat_rate:vatRate, vat_amount:+vatAmtOrig.toFixed(2),
     currency:cur, exchange_rate:fxRate, net_amount:+netAmtEur.toFixed(2), notes:document.getElementById('ivin-not').value,
     file_name:ivinFileData?ivinFileData.name:null, file_type:ivinFileData?ivinFileData.type:null, file_base64:ivinFileData?ivinFileData.base64:null
@@ -2361,13 +2405,27 @@ function loadInvoicesIn(){
   supaFetch('invoices_in?order=created_at.desc&limit=100').then(function(rows){
     invoicesInList=rows||[];
     if(rows.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë faturë e regjistruar.</div>';return;}
+    const today=new Date();
     el.innerHTML=rows.map(function(r){
+      let agingHtml='';
+      if(!r.paid && (r.date||r.due_date)){
+        const due=r.due_date ? new Date(r.due_date) : new Date(r.date);
+        if(!r.due_date) due.setDate(due.getDate()+parseDueDays(r.payment_terms));
+        const daysOver=Math.round((today-due)/86400000);
+        if(daysOver>0) agingHtml=' <span style="color:var(--red-text);font-weight:700">('+daysOver+' ditë vonesë)</span>';
+        else agingHtml=' <span style="color:var(--text3)">(afati: '+due.toLocaleDateString('de-DE')+')</span>';
+      }
+      const paidBadge=r.paid ? ' <span style="color:var(--green-text);font-weight:700">✓ Paguar</span>' : agingHtml;
+      const typeBadge = r.invoice_type && r.invoice_type!=='standard' ? ' <span style="color:var(--bronze);font-size:11px">['+(r.invoice_type==='advance'?'Avans':'Përfundimtare')+']</span>' : '';
       return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
-        +'<div><strong>'+r.supplier+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.supplier_invoice_nr||'')+' · '+(r.project||'')+' · '+(r.amount||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' '+(r.currency||'EUR')+'</span></div>'
-        +'<div style="display:flex;gap:6px">'+(r.file_base64?'<button class="btn btn-sm" onclick="viewInvIn(\''+r.id+'\')">Shiko</button>':'')+'<button class="btn btn-danger btn-sm" onclick="deleteInvoiceIn(\''+r.id+'\')">Fshij</button></div></div>';
+        +'<div><strong>'+r.supplier+'</strong>'+typeBadge+' <span style="color:var(--text3);font-size:12px">'+(r.supplier_invoice_nr||'')+' · '+(r.project||'')+' · '+(r.amount||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' '+(r.currency||'EUR')+'</span>'+paidBadge+'</div>'
+        +'<div style="display:flex;gap:6px">'+(r.file_base64?'<button class="btn btn-sm" onclick="viewInvIn(\''+r.id+'\')">Shiko</button>':'')+(r.paid?'':'<button class="btn btn-sm" onclick="markInvoiceInPaid(\''+r.id+'\')">Shëno Paguar</button>')+'<button class="btn btn-danger btn-sm" onclick="deleteInvoiceIn(\''+r.id+'\')">Fshij</button></div></div>';
     }).join('');
     renderInvoiceComparison();
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela invoices_in mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
+}
+function markInvoiceInPaid(id){
+  supaFetch('invoices_in?id=eq.'+id,'PATCH',{paid:true,paid_date:new Date().toISOString().slice(0,10)}).then(function(){loadInvoicesIn();}).catch(function(e){alert('Gabim: '+e.message);});
 }
 function viewInvIn(id){
   const r=invoicesInList.find(function(x){return x.id===id;});
@@ -2422,9 +2480,9 @@ function renderAgingReport(){
   if(unpaid.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Nuk ka fatura të papaguara të regjistruara.</div>';return;}
   const rows=unpaid.map(function(r){
     let daysOver=null;
-    if(r.date){
-      const due=new Date(r.date);
-      due.setDate(due.getDate()+parseDueDays(r.payment_terms));
+    if(r.date||r.due_date){
+      const due=r.due_date ? new Date(r.due_date) : new Date(r.date);
+      if(!r.due_date) due.setDate(due.getDate()+parseDueDays(r.payment_terms));
       daysOver=Math.round((today-due)/86400000);
     }
     return {r:r, daysOver:daysOver};
