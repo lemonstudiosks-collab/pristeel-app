@@ -1609,6 +1609,7 @@ if(parsed.total_weight_kg>0 && parsed.fabrication_total>0){
 } else {
   pKg = parsed.price_per_kg||0;
 }  const grandTotal = (parsed.fabrication_total||0) + (parsed.transport_cost||0);
+    alert('fabrication_total='+parsed.fabrication_total+' | transport_cost='+parsed.transport_cost+' | grandTotal='+grandTotal);
 
 offers.push({
   id:Date.now(),
