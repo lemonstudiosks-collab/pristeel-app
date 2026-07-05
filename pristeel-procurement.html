@@ -1625,6 +1625,7 @@ if(parsed.total_weight_kg>0 && parsed.fabrication_total>0){
 }  const grandTotal = (parsed.fabrication_total||0) + (parsed.transport_cost||0);
   
 
+var offerNotes=(parsed.notes||'')+(parsed.incoterms_location?' — '+parsed.incoterms_location:'');
 offers.push({
   id:Date.now(),
   supplier:parsed.supplier||supplier,
@@ -1635,10 +1636,27 @@ offers.push({
   inco:parsed.incoterms||'EXW',
   cert:parsed.certification||'',
   validity:parsed.validity_days||30,
-  notes:(parsed.notes||'')+(parsed.incoterms_location?' — '+parsed.incoterms_location:''),
+  notes:offerNotes,
   confidence:parsed.confidence||'medium',
   source:'pdf'
 });
+
+    // Persist to Supabase so the offer survives reload/navigation and shows up in Ranking after loadProject().
+    if(_curProjId){
+      supaFetch('offers','POST',{
+        project_id:_curProjId,
+        supplier:parsed.supplier||supplier,
+        price_kg:pKg,
+        total_eur:grandTotal||parsed.total_price||0,
+        delivery_weeks:parsed.delivery_weeks||0,
+        incoterms:parsed.incoterms||'EXW',
+        cert:parsed.certification||'',
+        notes:offerNotes,
+        origin:cat||''
+      }).catch(function(e){console.error('Ruajtja e ofertes deshtoi:',e);document.getElementById('pdf-status').textContent='⚠ Oferta u shtua lokalisht, por ruajtja në cloud dështoi: '+e.message;});
+    } else {
+      document.getElementById('pdf-status').textContent='✓ Oferta u analizua — u shtua te lista. Kujdes: projekti s\'është ruajtur në cloud ende, oferta humbet nëse rifreskon faqen.';
+    }
 
     renderOffers();
 
@@ -1793,9 +1811,10 @@ setTimeout(function(){
 var _SB_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
 var _SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM';
 function supaFetch(path,method,body){
+  method=method||'GET';
   return fetch(_SB_URL+'/rest/v1/'+path,{
-    method:method||'GET',
-    headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json','Prefer':method==='POST'?'return=representation':''},
+    method:method,
+    headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json','Prefer':(method==='POST'||method==='PATCH')?'return=representation':''},
     body:body?JSON.stringify(body):undefined
   }).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});return r.text();}).then(function(t){return t?JSON.parse(t):[];});
 }
@@ -1805,12 +1824,17 @@ function saveProject(){
   if(!name){alert('Shkruaj emrin e projektit fillimisht.');return;}
   var btn=document.getElementById('btn-save-proj');
   var orig=btn.textContent; btn.textContent='Duke ruajtur...'; btn.disabled=true;
-  supaFetch('projects','POST',{name:name,client:document.getElementById('i-client').value||'',ref:document.getElementById('i-ref').value||'',location:document.getElementById('i-location').value||'',deadline:document.getElementById('i-deadline').value||''})
-  .then(function(proj){
-    _curProjId=proj[0].id;
+  var payload={name:name,client:document.getElementById('i-client').value||'',ref:document.getElementById('i-ref').value||'',location:document.getElementById('i-location').value||'',deadline:document.getElementById('i-deadline').value||''};
+  var isUpdate=!!_curProjId;
+  var req=isUpdate?supaFetch('projects?id=eq.'+_curProjId,'PATCH',payload):supaFetch('projects','POST',payload);
+  req.then(function(proj){
+    if(!isUpdate)_curProjId=proj[0].id;
     if(bomRows.length>0){
       var items=bomRows.map(function(r){return{project_id:_curProjId,profile:r.profile,dim:r.dim,grade:r.grade,std:r.std,len_mm:parseInt(r.lenMm)||0,pcs:parseInt(r.pcs)||0,kg:parseFloat(r.kg)||0,surface:r.surface,cert:r.cert};});
-      return supaFetch('bom_items','POST',items);
+      // Wipe existing BOM rows for this project first so repeat saves never duplicate line items.
+      return supaFetch('bom_items?project_id=eq.'+_curProjId,'DELETE').then(function(){
+        return supaFetch('bom_items','POST',items);
+      });
     }
   }).then(function(){
     btn.textContent='U ruajt!'; btn.style.color='var(--green-text)';
@@ -2543,5 +2567,3 @@ window.addEventListener('load',function(){setTimeout(function(){initFinYearSelec
 
 </body>
 </html>
- 
-
