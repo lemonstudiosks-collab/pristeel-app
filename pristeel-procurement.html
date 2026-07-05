@@ -570,6 +570,11 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
     <div class="card"><div class="card-title">Kushtet</div>
       <div class="field-group fg-2"><div><label class="lbl">Incoterms</label><select id="iv-inc"><option>DAP</option><option>DDP</option><option>EXW</option></select></div><div><label class="lbl">Vendi i dorëzimit</label><input type="text" id="iv-loc" placeholder="Hamburg, DE"></div></div>
+      <div class="field-group"><div><label class="lbl">Transporti (EUR) — nëse llogaritet ndaras nga materiali</label><input type="number" step="0.01" id="iv-transport" value="0"></div></div>
+      <div style="margin-bottom:6px"><label class="lbl">Kosto të Tjera (Bankare, Projektim, Sigurim, etj.) — opsionale</label></div>
+      <div style="margin-bottom:8px"><button class="btn btn-sm" onclick="addExtraCost('out')">+ Shto kosto</button></div>
+      <div class="tbl-wrap" style="margin-bottom:12px"><table class="tbl"><thead><tr><th>Përshkrimi</th><th style="width:110px">Shuma EUR</th><th style="width:36px"></th></tr></thead><tbody id="iv-extra-body"></tbody></table></div>
+      <datalist id="extra-cost-suggestions"><option value="Garanci Bankare"><option value="Projektim / Inxhinierim (nga ana jonë)"><option value="Sigurimi i Ngarkesës"><option value="Montimi në Vendngjarje"><option value="Kosto Doganore / Certifikime"><option value="Paketim Special / Krejtim"><option value="Letër Kredie (LC) / Kompensim Bankar"><option value="Kosto Transferi Bankar"></datalist>
       <div class="field-group fg-2"><div><label class="lbl">Afati i pagesës</label><input type="text" id="iv-pay" list="iv-pay-options" value="30 Tage netto"><datalist id="iv-pay-options"><option value="30 Tage netto"><option value="14 Tage netto"><option value="60 Tage netto"><option value="Vorauskasse 100%"><option value="30% Anzahlung, 70% bei Lieferung"><option value="50% Anzahlung, 50% bei Lieferung"><option value="Zahlung bei Abholung"></datalist></div><div><label class="lbl">Certifikata</label><select id="iv-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
       <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="iv-vat" onchange="toggleVatRate('iv')"><option value="0" selected>Pa TVSH (Eksport 0%)</option><option value="1">Me TVSH (shitje/vendore)</option></select></div><div id="iv-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="iv-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Data e Afatit (Due Date) — manuale, opsionale</label><input type="date" id="iv-due-date"></div><div><label class="lbl">Shuma Totale e Faturës (Bruto) — override manual, opsionale</label><input type="number" step="0.01" id="iv-total-override" placeholder="Lëre bosh për llogaritje automatike nga pozicionet"></div></div>
@@ -601,6 +606,14 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div class="field-group fg-2" id="ivin-fx-wrap" style="display:none"><div><label class="lbl">Kursi i këmbimit → EUR (1 [valuta] = ? EUR)</label><input type="number" step="0.0001" id="ivin-fx" placeholder="p.sh. 0.0165 për MKD"></div><div></div></div>
       <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="ivin-vat" onchange="toggleVatRate('ivin')"><option value="0" selected>Pa TVSH / 0%</option><option value="1">Me TVSH (shuma është Bruto)</option></select></div><div id="ivin-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="ivin-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Data e Afatit (Due Date) — manuale, opsionale</label><input type="date" id="ivin-due-date"></div><div></div></div>
+      <div style="margin-bottom:6px"><label class="lbl">Zbërthimi i Çmimit (Kg / Çmimi/kg) — opsionale, për referencë kostoje</label></div>
+      <div style="margin-bottom:8px"><button class="btn btn-sm" onclick="addInvInItem()">+ Shto rresht</button></div>
+      <div class="tbl-wrap" style="margin-bottom:6px"><table class="tbl" id="ivin-items-tbl"><thead><tr><th>Përshkrimi</th><th style="width:90px">Kg</th><th style="width:90px">Çmimi/kg</th><th style="width:100px">Shuma EUR</th><th style="width:36px"></th></tr></thead><tbody id="ivin-items-body"></tbody></table></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Rreshtat janë vetëm referencë kostoje — "Shuma (Bruto)" më lart mbetet gjithmonë shifra zyrtare e faturës.</div>
+      <div class="field-group"><div><label class="lbl">Transporti (EUR) — nëse faturohet/llogaritet ndaras</label><input type="number" step="0.01" id="ivin-transport" value="0"></div></div>
+      <div style="margin-bottom:6px"><label class="lbl">Kosto të Tjera (Bankare, Doganë, etj.) — opsionale</label></div>
+      <div style="margin-bottom:8px"><button class="btn btn-sm" onclick="addExtraCost('in')">+ Shto kosto</button></div>
+      <div class="tbl-wrap" style="margin-bottom:12px"><table class="tbl"><thead><tr><th>Përshkrimi</th><th style="width:110px">Shuma EUR</th><th style="width:36px"></th></tr></thead><tbody id="ivin-extra-body"></tbody></table></div>
       <div><label class="lbl">Shënime</label><textarea id="ivin-not" style="min-height:50px"></textarea></div>
       <div class="field-group"><div><label class="lbl">Ngarko faturën (PDF, Word, Excel, Pages, JPG, PNG)</label><input type="file" id="ivin-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="handleInvInFile(this.files[0])"></div></div>
       <div id="ivin-file-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
@@ -2019,11 +2032,61 @@ let invoicesInList=[];
 let ivinFileData=null; // {name, type, base64}
 
 const INV_LABELS={
-  de:{t:'RECHNUNG',to:'An:',at:'z.Hd.:',ad:'Adresse:',on:'Rechnungsnummer:',da:'Datum:',pr:'Projekt:',rf:'Referenz:',ps:'POSITIONEN',pos:'Pos.',desc:'Beschreibung',qty:'Stk.',kgc:'Menge (kg)',pk:'Preis/kg',sum:'Betrag',tq:'Gesamtmenge:',tp:'Gesamtbetrag:',vat:'MwSt.:',vatnote:'Export — MwSt. 0% (nicht im Preis enthalten, Reverse-Charge / steuerfreie Ausfuhrlieferung gem. geltendem Recht)',cd:'ZAHLUNGSBEDINGUNGEN',dl:'Lieferbedingung:',pm:'Zahlungsziel:',ct:'Zertifikat:',rm:'Bemerkungen:',bk:'Bankverbindung',bn:'Bank:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'Mit freundlichen Grüßen',fnr:'Steuernummer:'},
-  en:{t:'INVOICE',to:'To:',at:'Attn:',ad:'Address:',on:'Invoice number:',da:'Date:',pr:'Project:',rf:'Reference:',ps:'POSITIONS',pos:'Pos.',desc:'Description',qty:'Pcs.',kgc:'Quantity (kg)',pk:'Price/kg',sum:'Amount',tq:'Total quantity:',tp:'Total amount:',vat:'VAT:',vatnote:'Export — VAT 0% (not included in price, reverse-charge / tax-free export supply per applicable law)',cd:'PAYMENT TERMS',dl:'Delivery term:',pm:'Payment due:',ct:'Certificate:',rm:'Remarks:',bk:'Bank details',bn:'Bank:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'Best regards',fnr:'Tax number:'},
-  sq:{t:'FATURË',to:'Për:',at:'Vëmendje:',ad:'Adresa:',on:'Nr. faturës:',da:'Data:',pr:'Projekti:',rf:'Referenca:',ps:'POZICIONET',pos:'Poz.',desc:'Përshkrimi',qty:'Copë',kgc:'Sasia (kg)',pk:'Çmimi/kg',sum:'Shuma',tq:'Sasia totale:',tp:'Shuma totale:',vat:'TVSH:',vatnote:'Eksport — TVSH 0% (nuk është përfshirë në çmim, sipas legjislacionit në fuqi)',cd:'KUSHTET E PAGESËS',dl:'Kushti i dorëzimit:',pm:'Afati i pagesës:',ct:'Certifikata:',rm:'Shënime:',bk:'Të dhënat bankare',bn:'Banka:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'Me respekt',fnr:'Nr. Fiskal:'},
-  sr:{t:'FAKTURA',to:'Za:',at:'Pažnja:',ad:'Adresa:',on:'Broj fakture:',da:'Datum:',pr:'Projekat:',rf:'Referenca:',ps:'POZICIJE',pos:'Poz.',desc:'Opis',qty:'Kom.',kgc:'Količina (kg)',pk:'Cena/kg',sum:'Iznos',tq:'Ukupna količina:',tp:'Ukupan iznos:',vat:'PDV:',vatnote:'Izvoz — PDV 0% (nije uključen u cenu, prema važećem zakonu)',cd:'USLOVI PLAĆANJA',dl:'Uslov isporuke:',pm:'Rok plaćanja:',ct:'Sertifikat:',rm:'Napomene:',bk:'Bankovni podaci',bn:'Banka:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'S poštovanjem',fnr:'PIB:'}
+  de:{t:'RECHNUNG',to:'An:',at:'z.Hd.:',ad:'Adresse:',on:'Rechnungsnummer:',da:'Datum:',pr:'Projekt:',rf:'Referenz:',ps:'POSITIONEN',pos:'Pos.',desc:'Beschreibung',qty:'Stk.',kgc:'Menge (kg)',pk:'Preis/kg',sum:'Betrag',tq:'Gesamtmenge:',tp:'Gesamtbetrag:',vat:'MwSt.:',vatnote:'Export — MwSt. 0% (nicht im Preis enthalten, Reverse-Charge / steuerfreie Ausfuhrlieferung gem. geltendem Recht)',cd:'ZAHLUNGSBEDINGUNGEN',dl:'Lieferbedingung:',pm:'Zahlungsziel:',ct:'Zertifikat:',rm:'Bemerkungen:',bk:'Bankverbindung',bn:'Bank:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'Mit freundlichen Grüßen',fnr:'Steuernummer:',ms:'Zwischensumme Material:',tr:'Transport:',oc:'Sonstige Kosten:'},
+  en:{t:'INVOICE',to:'To:',at:'Attn:',ad:'Address:',on:'Invoice number:',da:'Date:',pr:'Project:',rf:'Reference:',ps:'POSITIONS',pos:'Pos.',desc:'Description',qty:'Pcs.',kgc:'Quantity (kg)',pk:'Price/kg',sum:'Amount',tq:'Total quantity:',tp:'Total amount:',vat:'VAT:',vatnote:'Export — VAT 0% (not included in price, reverse-charge / tax-free export supply per applicable law)',cd:'PAYMENT TERMS',dl:'Delivery term:',pm:'Payment due:',ct:'Certificate:',rm:'Remarks:',bk:'Bank details',bn:'Bank:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'Best regards',fnr:'Tax number:',ms:'Material subtotal:',tr:'Transport:',oc:'Other costs:'},
+  sq:{t:'FATURË',to:'Për:',at:'Vëmendje:',ad:'Adresa:',on:'Nr. faturës:',da:'Data:',pr:'Projekti:',rf:'Referenca:',ps:'POZICIONET',pos:'Poz.',desc:'Përshkrimi',qty:'Copë',kgc:'Sasia (kg)',pk:'Çmimi/kg',sum:'Shuma',tq:'Sasia totale:',tp:'Shuma totale:',vat:'TVSH:',vatnote:'Eksport — TVSH 0% (nuk është përfshirë në çmim, sipas legjislacionit në fuqi)',cd:'KUSHTET E PAGESËS',dl:'Kushti i dorëzimit:',pm:'Afati i pagesës:',ct:'Certifikata:',rm:'Shënime:',bk:'Të dhënat bankare',bn:'Banka:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'Me respekt',fnr:'Nr. Fiskal:',ms:'Nënshuma Materiali:',tr:'Transporti:',oc:'Kosto të tjera:'},
+  sr:{t:'FAKTURA',to:'Za:',at:'Pažnja:',ad:'Adresa:',on:'Broj fakture:',da:'Datum:',pr:'Projekat:',rf:'Referenca:',ps:'POZICIJE',pos:'Poz.',desc:'Opis',qty:'Kom.',kgc:'Količina (kg)',pk:'Cena/kg',sum:'Iznos',tq:'Ukupna količina:',tp:'Ukupan iznos:',vat:'PDV:',vatnote:'Izvoz — PDV 0% (nije uključen u cenu, prema važećem zakonu)',cd:'USLOVI PLAĆANJA',dl:'Uslov isporuke:',pm:'Rok plaćanja:',ct:'Sertifikat:',rm:'Napomene:',bk:'Bankovni podaci',bn:'Banka:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'S poštovanjem',fnr:'PIB:',ms:'Međuzbir materijala:',tr:'Transport:',oc:'Ostali troškovi:'}
 };
+
+const EXTRA_COST_SUGGESTIONS=['Garanci Bankare','Projektim / Inxhinierim (nga ana jonë)','Sigurimi i Ngarkesës','Montimi në Vendngjarje','Kosto Doganore / Certifikime','Paketim Special / Krejtim','Letër Kredie (LC) / Kompensim Bankar','Kosto Transferi Bankar'];
+let extraCostsOut=[];
+let extraCostsIn=[];
+function addExtraCost(which){
+  const arr=which==='out'?extraCostsOut:extraCostsIn;
+  arr.push({desc:'',amount:0});
+  renderExtraCosts(which);
+}
+function remExtraCost(which,i){
+  const arr=which==='out'?extraCostsOut:extraCostsIn;
+  arr.splice(i,1);
+  renderExtraCosts(which);
+}
+function updExtraCost(which,i,f,v){
+  const arr=which==='out'?extraCostsOut:extraCostsIn;
+  arr[i][f]=(f==='desc')?v:(parseFloat(v)||0);
+  renderExtraCosts(which);
+}
+function renderExtraCosts(which){
+  const arr=which==='out'?extraCostsOut:extraCostsIn;
+  const tb=document.getElementById(which==='out'?'iv-extra-body':'ivin-extra-body');
+  if(!tb)return;
+  tb.innerHTML=arr.map(function(it,i){
+    return '<tr>'
+      +'<td><input type="text" list="extra-cost-suggestions" value="'+(it.desc||'').replace(/"/g,'&quot;')+'" onchange="updExtraCost(\''+which+'\','+i+',\'desc\',this.value)"></td>'
+      +'<td><input type="number" step="0.01" value="'+it.amount+'" onchange="updExtraCost(\''+which+'\','+i+',\'amount\',this.value)"></td>'
+      +'<td><button class="btn btn-danger btn-sm" onclick="remExtraCost(\''+which+'\','+i+')">✕</button></td>'
+      +'</tr>';
+  }).join('');
+}
+let invInItems=[];
+function addInvInItem(){invInItems.push({desc:'',kg:0,priceKg:0});renderInvInItems();}
+function remInvInItem(i){invInItems.splice(i,1);renderInvInItems();}
+function updInvInItem(i,f,v){invInItems[i][f]=(f==='desc')?v:(parseFloat(v)||0);renderInvInItems();}
+function renderInvInItems(){
+  const tb=document.getElementById('ivin-items-body');
+  if(!tb)return;
+  tb.innerHTML=invInItems.map(function(it,i){
+    const amt=(it.kg*it.priceKg).toFixed(2);
+    return '<tr>'
+      +'<td><input type="text" value="'+(it.desc||'').replace(/"/g,'&quot;')+'" onchange="updInvInItem('+i+',\'desc\',this.value)"></td>'
+      +'<td><input type="number" value="'+it.kg+'" onchange="updInvInItem('+i+',\'kg\',this.value)"></td>'
+      +'<td><input type="number" step="0.001" value="'+it.priceKg+'" onchange="updInvInItem('+i+',\'priceKg\',this.value)"></td>'
+      +'<td style="font-weight:600">'+amt+'</td>'
+      +'<td><button class="btn btn-danger btn-sm" onclick="remInvInItem('+i+')">✕</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
 
 const INVOICE_TYPE_TITLES={
   standard:{de:'RECHNUNG',en:'INVOICE',sq:'FATURË',sr:'FAKTURA'},
@@ -2098,6 +2161,13 @@ function selectProjectForInvoiceIn(id){
   if(!id)return;
   const p=invoiceProjectsList.find(function(x){return x.id===id;});
   if(p) document.getElementById('ivin-proj').value=p.name||'';
+  supaFetch('bom_items?project_id=eq.'+id+'&order=created_at.asc').then(function(items){
+    if(!items||items.length===0)return;
+    invInItems=items.map(function(r){
+      return{desc:r.profile+' '+r.dim+(r.grade?', '+r.grade:'')+(r.std?', '+r.std:''),kg:parseFloat(r.kg)||0,priceKg:0};
+    });
+    renderInvInItems();
+  }).catch(function(e){console.error('selectProjectForInvoiceIn bom_items:',e);});
 }
 // ── OUTGOING: line items ──────────────────────────────
 function loadInvItemsFromBom(){
@@ -2154,13 +2224,20 @@ function genInvoiceOut(){
   const not=document.getElementById('iv-not').value||'';
 
   const totKg=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0);},0);
-  let totAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  const matAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  const transportAmt=parseFloat(document.getElementById('iv-transport').value)||0;
+  const extraTotalOut=extraCostsOut.reduce(function(s,x){return s+(parseFloat(x.amount)||0);},0);
+  let totAmt=matAmt+transportAmt+extraTotalOut;
   const vatOn=document.getElementById('iv-vat').value==='1';
   const vatRate=vatOn?(parseFloat(document.getElementById('iv-vat-rate').value)||0):0;
   const overrideGross=parseFloat(document.getElementById('iv-total-override').value)||0;
   if(overrideGross>0){ totAmt = vatOn ? overrideGross/(1+vatRate/100) : overrideGross; }
   const vatAmt=totAmt*vatRate/100;
   const grossAmt=totAmt+vatAmt;
+  const breakdownRows = (transportAmt>0 || extraTotalOut>0) ?
+    ('<tr><td style="padding:3px 12px 3px 0">'+lb.ms+'</td><td style="text-align:right">'+matAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr>'
+    +(transportAmt>0?'<tr><td style="padding:3px 12px 3px 0">'+lb.tr+'</td><td style="text-align:right">'+transportAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr>':'')
+    +(extraTotalOut>0?'<tr><td style="padding:3px 12px 3px 0">'+lb.oc+'</td><td style="text-align:right">'+extraTotalOut.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr>':'')) : '';
 
   const rowsHtml=invoiceItems.map(function(it,i){
     return '<tr><td>'+(i+1)+'</td><td>'+(it.desc||'')+'</td><td style="text-align:right">'+(it.pcs||0)+'</td><td style="text-align:right">'+(it.kg||0).toLocaleString('de-DE',{maximumFractionDigits:2})+'</td><td style="text-align:right">'+(it.priceKg||0).toFixed(3)+'</td><td style="text-align:right;font-weight:600">'+((it.kg||0)*(it.priceKg||0)).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
@@ -2184,7 +2261,7 @@ function genInvoiceOut(){
       +'<thead><tr style="background:#F7F8FA;border-bottom:2px solid #E4E7ED"><th style="padding:6px;text-align:left">'+lb.pos+'</th><th style="padding:6px;text-align:left">'+lb.desc+'</th><th style="padding:6px;text-align:right">'+lb.qty+'</th><th style="padding:6px;text-align:right">'+lb.kgc+'</th><th style="padding:6px;text-align:right">'+lb.pk+'</th><th style="padding:6px;text-align:right">'+lb.sum+'</th></tr></thead>'
       +'<tbody>'+rowsHtml+'</tbody>'
     +'</table>'
-    +'<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><table style="font-size:13px"><tr><td style="padding:3px 12px 3px 0">'+lb.tq+'</td><td style="text-align:right;font-weight:600">'+totKg.toLocaleString('de-DE',{maximumFractionDigits:0})+' kg</td></tr><tr><td style="padding:3px 12px 3px 0">Zwischensumme (Netto):</td><td style="text-align:right">'+totAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr><tr><td style="padding:3px 12px 3px 0">'+lb.vat+(vatOn?' ('+vatRate+'%)':'')+'</td><td style="text-align:right">'+vatAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr><tr style="border-top:2px solid #1A1F2E"><td style="padding:6px 12px 3px 0;font-weight:700">'+lb.tp+'</td><td style="text-align:right;font-weight:700;font-size:15px;padding-top:6px">'+grossAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr></table></div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><table style="font-size:13px"><tr><td style="padding:3px 12px 3px 0">'+lb.tq+'</td><td style="text-align:right;font-weight:600">'+totKg.toLocaleString('de-DE',{maximumFractionDigits:0})+' kg</td></tr>'+breakdownRows+'<tr><td style="padding:3px 12px 3px 0">Zwischensumme (Netto):</td><td style="text-align:right">'+totAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr><tr><td style="padding:3px 12px 3px 0">'+lb.vat+(vatOn?' ('+vatRate+'%)':'')+'</td><td style="text-align:right">'+vatAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr><tr style="border-top:2px solid #1A1F2E"><td style="padding:6px 12px 3px 0;font-weight:700">'+lb.tp+'</td><td style="text-align:right;font-weight:700;font-size:15px;padding-top:6px">'+grossAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr></table></div>'
     +(vatOn?'':'<div style="font-size:11px;color:#B87333;font-weight:600;margin-bottom:16px">'+lb.vatnote+'</div>')
     +'<div style="font-size:12px;line-height:1.8"><strong>'+lb.cd+'</strong><br>'+lb.dl+' '+inc+(loc?' '+loc:'')+'<br>'+lb.pm+' '+pay+(cer?'<br>'+lb.ct+' '+cer:'')+(not?'<br>'+lb.rm+' '+not:'')+'</div>'
     +bankRows
@@ -2208,7 +2285,10 @@ function saveInvoiceOut(){
   const nr=document.getElementById('iv-nr').value.trim();
   if(!nr){alert('Shkruaj numrin e faturës.');return;}
   const totKg=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0);},0);
-  let totAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  const matAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  const transportAmt=parseFloat(document.getElementById('iv-transport').value)||0;
+  const extraTotalOut=extraCostsOut.reduce(function(s,x){return s+(parseFloat(x.amount)||0);},0);
+  let totAmt=matAmt+transportAmt+extraTotalOut;
   const vatOn=document.getElementById('iv-vat').value==='1';
   const vatRate=vatOn?(parseFloat(document.getElementById('iv-vat-rate').value)||0):0;
   const overrideGross=parseFloat(document.getElementById('iv-total-override').value)||0;
@@ -2227,11 +2307,13 @@ function saveInvoiceOut(){
     contract_value:document.getElementById('iv-contract-value')?(parseFloat(document.getElementById('iv-contract-value').value)||null):null,
     advance_pct:document.getElementById('iv-advance-pct')?(parseFloat(document.getElementById('iv-advance-pct').value)||null):null,
     due_date:document.getElementById('iv-due-date')?(document.getElementById('iv-due-date').value||null):null,
+    transport_cost:transportAmt, extra_costs:extraCostsOut,
     file_name:ivoutFileData?ivoutFileData.name:null, file_type:ivoutFileData?ivoutFileData.type:null, file_base64:ivoutFileData?ivoutFileData.base64:null
   };
   supaFetch('invoices_out','POST',payload).then(function(){
     alert('Fatura u ruajt!');
     document.getElementById('ivout-file').value='';document.getElementById('ivout-file-status').textContent='';ivoutFileData=null;
+    document.getElementById('iv-transport').value='0';extraCostsOut=[];renderExtraCosts('out');
     loadInvoicesOut();
   }).catch(function(e){alert('Gabim (a ekziston tabela invoices_out në Supabase?): '+e.message);});
 }
@@ -2373,7 +2455,11 @@ function toggleFxRate(){
 function saveInvoiceIn(){
   const sup=document.getElementById('ivin-sup').value.trim();
   if(!sup){alert('Shkruaj emrin e furnitorit.');return;}
-  const amt=parseFloat(document.getElementById('ivin-amt').value)||0;
+  const itemsAmt=invInItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+  let amt=parseFloat(document.getElementById('ivin-amt').value)||0;
+  if(amt<=0 && itemsAmt>0) amt=itemsAmt;
+  const transportAmt=parseFloat(document.getElementById('ivin-transport').value)||0;
+  const extraTotalIn=extraCostsIn.reduce(function(s,x){return s+(parseFloat(x.amount)||0);},0);
   const cur=document.getElementById('ivin-cur').value;
   const fxRate=cur==='EUR' ? 1 : (parseFloat(document.getElementById('ivin-fx').value)||1);
   const vatOn=document.getElementById('ivin-vat').value==='1';
@@ -2387,6 +2473,7 @@ function saveInvoiceIn(){
     invoice_type:document.getElementById('ivin-type')?document.getElementById('ivin-type').value:'standard',
     payment_terms:document.getElementById('ivin-pay')?document.getElementById('ivin-pay').value:'',
     due_date:document.getElementById('ivin-due-date')?(document.getElementById('ivin-due-date').value||null):null,
+    items:invInItems, transport_cost:transportAmt, extra_costs:extraCostsIn,
     vat_applicable:vatOn, vat_rate:vatRate, vat_amount:+vatAmtOrig.toFixed(2),
     currency:cur, exchange_rate:fxRate, net_amount:+netAmtEur.toFixed(2), notes:document.getElementById('ivin-not').value,
     file_name:ivinFileData?ivinFileData.name:null, file_type:ivinFileData?ivinFileData.type:null, file_base64:ivinFileData?ivinFileData.base64:null
@@ -2396,6 +2483,7 @@ function saveInvoiceIn(){
     document.getElementById('ivin-sup').value='';document.getElementById('ivin-nr').value='';document.getElementById('ivin-proj').value='';
     document.getElementById('ivin-amt').value='';document.getElementById('ivin-not').value='';document.getElementById('ivin-file').value='';
     document.getElementById('ivin-file-status').textContent='';ivinFileData=null;
+    document.getElementById('ivin-transport').value='0';invInItems=[];extraCostsIn=[];renderInvInItems();renderExtraCosts('in');
     loadInvoicesIn();
   }).catch(function(e){alert('Gabim (a ekziston tabela invoices_in në Supabase?): '+e.message);});
 }
@@ -2444,7 +2532,10 @@ function renderInvoiceComparison(){
   const outMatch=invoicesOutList.filter(function(r){return (r.project||'').toLowerCase().indexOf(proj)>-1;});
   const inMatch=invoicesInList.filter(function(r){return (r.project||'').toLowerCase().indexOf(proj)>-1;});
   const outTot=outMatch.reduce(function(s,r){return s+(parseFloat(r.total_price)||0);},0);
-  const inTot=inMatch.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0);
+  const inTot=inMatch.reduce(function(s,r){
+    const extraSum=(r.extra_costs||[]).reduce(function(a,x){return a+(parseFloat(x.amount)||0);},0);
+    return s+(parseFloat(r.amount)||0)+(parseFloat(r.transport_cost)||0)+extraSum;
+  },0);
   const margin=outTot-inTot;
   el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">'
     +'<div style="background:var(--bg2);padding:10px;border-radius:8px"><div style="color:var(--text3);font-size:11px;text-transform:uppercase">Faturuar klientit ('+outMatch.length+')</div><div style="font-size:18px;font-weight:700">'+outTot.toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</div></div>'
