@@ -553,6 +553,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="card"><div class="card-title">Të dhënat e faturës</div>
       <div class="field-group fg-2"><div><label class="lbl">Nr. faturës</label><input type="text" id="iv-nr" placeholder="PST-INV-2026-001"></div><div><label class="lbl">Data</label><input type="date" id="iv-date"></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Gjuha</label><select id="iv-lang"><option value="de">Gjermanisht</option><option value="en">Anglisht</option><option value="sq">Shqip</option><option value="sr">Serbisht</option></select></div><div><label class="lbl">Referenca (Oferta/Porosia)</label><input type="text" id="iv-ref" placeholder="ANF-2026-001"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Lloji i faturës</label><select id="iv-type" onchange="toggleAdvanceType()"><option value="standard">Fatura Standarde</option><option value="advance">Fatura e Avansit (Vorausrechnung)</option><option value="final">Fatura Përfundimtare (Schlussrechnung)</option></select></div><div id="iv-advance-pct-wrap" style="display:none"><label class="lbl">Përqindja e avansit (%)</label><input type="number" id="iv-advance-pct" value="30" step="1" oninput="calcAdvancePreview()"></div></div>
+      <div class="field-group fg-2" id="iv-advance-val-wrap" style="display:none"><div><label class="lbl">Vlera e kontratës (bazë, EUR)</label><input type="number" id="iv-contract-value" step="0.01" oninput="calcAdvancePreview()"></div><div><label class="lbl">Shuma e avansit (EUR)</label><input type="text" id="iv-advance-amt" readonly style="background:var(--bg2)"></div></div>
+      <div id="iv-advance-btn-wrap" style="display:none;margin-bottom:10px"><button class="btn btn-sm" onclick="addAdvanceLineItem()">+ Shto si rresht në faturë</button></div>
       <div class="field-group"><div><label class="lbl">Projekti</label><input type="text" id="iv-proj" placeholder="p.sh. Lagerhalle Hamburg"></div></div>
     </div>
     <div class="card"><div class="card-title">Blerësi</div>
@@ -566,7 +569,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
     <div class="card"><div class="card-title">Kushtet</div>
       <div class="field-group fg-2"><div><label class="lbl">Incoterms</label><select id="iv-inc"><option>DAP</option><option>DDP</option><option>EXW</option></select></div><div><label class="lbl">Vendi i dorëzimit</label><input type="text" id="iv-loc" placeholder="Hamburg, DE"></div></div>
-      <div class="field-group fg-2"><div><label class="lbl">Afati i pagesës</label><input type="text" id="iv-pay" value="30 Tage netto"></div><div><label class="lbl">Certifikata</label><select id="iv-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Afati i pagesës</label><input type="text" id="iv-pay" list="iv-pay-options" value="30 Tage netto"><datalist id="iv-pay-options"><option value="30 Tage netto"><option value="14 Tage netto"><option value="60 Tage netto"><option value="Vorauskasse 100%"><option value="30% Anzahlung, 70% bei Lieferung"><option value="50% Anzahlung, 50% bei Lieferung"><option value="Zahlung bei Abholung"></datalist></div><div><label class="lbl">Certifikata</label><select id="iv-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
       <div class="field-group fg-2"><div><label class="lbl">TVSH</label><select id="iv-vat" onchange="toggleVatRate('iv')"><option value="0" selected>Pa TVSH (Eksport 0%)</option><option value="1">Me TVSH (shitje/vendore)</option></select></div><div id="iv-vat-rate-wrap" style="display:none"><label class="lbl">Norma TVSH</label><select id="iv-vat-rate"><option value="18">18%</option><option value="8">8% (e reduktuar)</option></select></div></div>
       <div><label class="lbl">Shënime</label><textarea id="iv-not" style="min-height:50px"></textarea></div>
       <div class="field-group"><div><label class="lbl">Bashkëngjit kontratën/dokumentin (PDF, Word, Excel, Pages, JPG, PNG) — opsionale</label><input type="file" id="ivout-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="handleInvOutFile(this.files[0])"></div></div>
@@ -2017,6 +2020,37 @@ const INV_LABELS={
   sr:{t:'FAKTURA',to:'Za:',at:'Pažnja:',ad:'Adresa:',on:'Broj fakture:',da:'Datum:',pr:'Projekat:',rf:'Referenca:',ps:'POZICIJE',pos:'Poz.',desc:'Opis',qty:'Kom.',kgc:'Količina (kg)',pk:'Cena/kg',sum:'Iznos',tq:'Ukupna količina:',tp:'Ukupan iznos:',vat:'PDV:',vatnote:'Izvoz — PDV 0% (nije uključen u cenu, prema važećem zakonu)',cd:'USLOVI PLAĆANJA',dl:'Uslov isporuke:',pm:'Rok plaćanja:',ct:'Sertifikat:',rm:'Napomene:',bk:'Bankovni podaci',bn:'Banka:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'S poštovanjem',fnr:'PIB:'}
 };
 
+const INVOICE_TYPE_TITLES={
+  standard:{de:'RECHNUNG',en:'INVOICE',sq:'FATURË',sr:'FAKTURA'},
+  advance:{de:'VORAUSRECHNUNG',en:'ADVANCE INVOICE',sq:'FATURA E AVANSIT',sr:'AVANSNA FAKTURA'},
+  final:{de:'SCHLUSSRECHNUNG',en:'FINAL INVOICE',sq:'FATURA PËRFUNDIMTARE',sr:'KONAČNA FAKTURA'}
+};
+const ADV_NOTE_TXT={de:'Diese Rechnung deckt ',en:'This invoice covers ',sr:'Ova faktura pokriva ',sq:'Kjo faturë mbulon '};
+const ADV_NOTE_TXT2={de:'% des Gesamtwertes des Vertrages (','en':'% of the total contract value (',sr:'% od ukupne vrednosti ugovora (',sq:'% të vlerës totale të kontratës ('};
+function toggleAdvanceType(){
+  const t=document.getElementById('iv-type').value;
+  const show = t==='advance';
+  document.getElementById('iv-advance-pct-wrap').style.display = show?'':'none';
+  document.getElementById('iv-advance-val-wrap').style.display = show?'':'none';
+  document.getElementById('iv-advance-btn-wrap').style.display = show?'':'none';
+  if(show) calcAdvancePreview();
+}
+function calcAdvancePreview(){
+  const val=parseFloat(document.getElementById('iv-contract-value').value)||0;
+  const pct=parseFloat(document.getElementById('iv-advance-pct').value)||0;
+  const amt=val*pct/100;
+  document.getElementById('iv-advance-amt').value = amt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR';
+}
+function addAdvanceLineItem(){
+  const val=parseFloat(document.getElementById('iv-contract-value').value)||0;
+  const pct=parseFloat(document.getElementById('iv-advance-pct').value)||0;
+  if(!val||!pct){alert('Shkruaj vlerën e kontratës dhe përqindjen fillimisht.');return;}
+  const amt=val*pct/100;
+  const ref=document.getElementById('iv-ref').value||'';
+  invoiceItems.push({desc:'Fatura e avansit — '+pct+'% e vlerës së kontratës'+(ref?' (Kontrata/Referenca: '+ref+')':''),pcs:1,kg:1,priceKg:+amt.toFixed(2)});
+  renderInvItems();
+  alert('Rreshti u shtua në tabelën e pozicioneve. Kliko "Gjenero Faturën" për të parë preview-n.');
+}
 function toggleVatRate(prefix){
   const on=document.getElementById(prefix+'-vat').value==='1';
   document.getElementById(prefix+'-vat-rate-wrap').style.display=on?'':'none';
@@ -2063,6 +2097,12 @@ function renderInvItems(){
 function genInvoiceOut(){
   const lang=document.getElementById('iv-lang').value;
   const lb=INV_LABELS[lang]||INV_LABELS.de;
+  const invType=document.getElementById('iv-type')?document.getElementById('iv-type').value:'standard';
+  const titleTxt=(INVOICE_TYPE_TITLES[invType]&&INVOICE_TYPE_TITLES[invType][lang])||lb.t;
+  const contractVal=document.getElementById('iv-contract-value')?(parseFloat(document.getElementById('iv-contract-value').value)||0):0;
+  const advPct=document.getElementById('iv-advance-pct')?(parseFloat(document.getElementById('iv-advance-pct').value)||0):0;
+  const advNoteHtml = (invType==='advance' && contractVal>0) ?
+    ('<div style="font-size:11px;color:#5A6478;margin-bottom:12px">'+(ADV_NOTE_TXT[lang]||ADV_NOTE_TXT.de)+advPct+(ADV_NOTE_TXT2[lang]||ADV_NOTE_TXT2.de)+contractVal.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR).</div>') : '';
   const nr=document.getElementById('iv-nr').value||'PST-INV-2026-001';
   const dt=document.getElementById('iv-date').value;
   const dts=dt?(new Date(dt).toLocaleDateString('de-DE')):'';
@@ -2096,7 +2136,8 @@ function genInvoiceOut(){
       +'<img src="'+LOGO_BASE64+'" style="height:38px" alt="PRISTEEL">'
       +'<div style="text-align:right;font-size:11px;color:#5A6478">'+(settings.company||'PRISTEEL Sh.p.k.')+'<br>'+(settings.address||'Prishtinë, Kosovë')+'<br>'+(settings.email||'sales@prissteel.com')+(settings.taxNr?'<br>'+lb.fnr+' '+settings.taxNr:'')+'</div>'
     +'</div>'
-    +'<h2 style="font-size:20px;letter-spacing:1px;border-bottom:2px solid #B87333;padding-bottom:8px;margin-bottom:16px">'+lb.t+'</h2>'
+    +'<h2 style="font-size:20px;letter-spacing:1px;border-bottom:2px solid #B87333;padding-bottom:8px;margin-bottom:16px">'+titleTxt+'</h2>'
+    +advNoteHtml
     +'<div style="display:flex;justify-content:space-between;margin-bottom:16px">'
       +'<div><strong>'+lb.to+'</strong> '+cli+'<br>'+(con?lb.at+' '+con+'<br>':'')+(adr?lb.ad+' '+adr:'')+'</div>'
       +'<div style="text-align:right">'+lb.on+' <strong>'+nr+'</strong><br>'+lb.da+' '+dts+(proj?'<br>'+lb.pr+' '+proj:'')+(ref?'<br>'+lb.rf+' '+ref:'')+'</div>'
@@ -2142,6 +2183,9 @@ function saveInvoiceOut(){
     vat_applicable:vatOn, vat_rate:vatRate, net_amount:+totAmt.toFixed(2), vat_amount:+vatAmt.toFixed(2), gross_amount:+grossAmt.toFixed(2),
     incoterms:document.getElementById('iv-inc').value, delivery_location:document.getElementById('iv-loc').value,
     payment_terms:document.getElementById('iv-pay').value, certificate:document.getElementById('iv-cer').value, notes:document.getElementById('iv-not').value,
+    invoice_type:document.getElementById('iv-type')?document.getElementById('iv-type').value:'standard',
+    contract_value:document.getElementById('iv-contract-value')?(parseFloat(document.getElementById('iv-contract-value').value)||null):null,
+    advance_pct:document.getElementById('iv-advance-pct')?(parseFloat(document.getElementById('iv-advance-pct').value)||null):null,
     file_name:ivoutFileData?ivoutFileData.name:null, file_type:ivoutFileData?ivoutFileData.type:null, file_base64:ivoutFileData?ivoutFileData.base64:null
   };
   supaFetch('invoices_out','POST',payload).then(function(){
