@@ -1567,7 +1567,7 @@ Rules:
 - If multiple transport lines exist, sum them all into transport_cost
 - incoterms: normalize (ab Werk=EXW, frei Haus=DDP, franco=DDP)
 - If price not found set to 0
-- Extract delivery time in weeks
+- Extract delivery time in weeks. delivery_weeks is ONLY the production/delivery time — NEVER confuse it with "validity of the offer" (validity_days is a separate field). If no explicit delivery/production time in weeks is stated anywhere, set delivery_weeks to 0.
 - Return ONLY the JSON`;
   try{
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -1583,10 +1583,10 @@ Rules:
     try{
       const start=raw.indexOf('{');const end=raw.lastIndexOf('}');
       parsed=JSON.parse(raw.slice(start,end+1));
-  const mA=text.match(/Amount\s*A\D{0,15}?([\d.,]+)/i);
+  const mA=text.match(/Amount\s*A[\s\S]{0,40}?([\d.,]+)/i);
 if(mA) parsed.fabrication_total=parseFloat(mA[1].replace(/\./g,'').replace(',','.'));
 
-const mSum=text.match(/Summary\s*A\+B[^\d]*([\d.,]+)/i);
+const mSum=text.match(/Summary\s*A\+B[\s\S]{0,60}?([\d.,]+)/i);
 if(mSum && parsed.fabrication_total>0){
   const grand=parseFloat(mSum[1].replace(/\./g,'').replace(',','.'));
   parsed.transport_cost=grand-parsed.fabrication_total;
