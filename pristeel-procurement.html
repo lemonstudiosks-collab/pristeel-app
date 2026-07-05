@@ -29,7 +29,8 @@ body{font-family:'Inter',sans-serif;background:#FAF7F2;color:var(--text);font-si
 .sidebar-nav{padding:12px 0;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:#6B5F4E;font-size:12px;font-weight:500;transition:all .2s;border-left:2px solid transparent;letter-spacing:.3px}
 .nav-item:hover{background:rgba(193,101,58,0.10);color:#3B332A;border-left-color:var(--bronze-light)}
-.nav-item.active{background:var(--bronze);color:#ffffff;border-left-color:var(--bronze-dark)}
+.nav-item.active{background:var(--page-accent,var(--bronze));color:#ffffff;border-left-color:var(--page-accent,var(--bronze-dark))}
+.page-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;background:var(--page-accent,var(--bronze));vertical-align:middle}
 .nav-item svg{stroke:#8A7B65}
 .nav-item.active svg{stroke:#ffffff}.nav-item:hover svg{stroke:#3B332A}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -203,11 +204,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
 <div class="topbar">
   <div>
-    <div class="topbar-title" id="page-title">Import Dokument</div>
+    <div class="topbar-title"><span class="page-dot" id="page-dot"></span><span id="page-title">Import Dokument</span></div>
     <div class="topbar-sub" id="page-sub">Ngarko ose ngjit dokumentin e blerësit</div>
   </div>
   <div class="flex gap-8 items-center">
     <span class="badge badge-gray" id="proj-badge">Pa projekt</span>
+    <button class="btn btn-sm btn-primary" onclick="saveProject(this)" title="Ruaj projektin, BOM-in dhe ofertat aktuale në cloud">💾 Ruaj</button>
     <button class="btn btn-sm" onclick="newProject()">+ Projekt i ri</button>
   </div>
 </div>
@@ -257,7 +259,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:0">
-    <button id="btn-save-proj" class="btn btn-primary" style="justify-content:center" onclick="saveProject()">
+    <button id="btn-save-proj" class="btn btn-primary" style="justify-content:center" onclick="saveProject(this)">
       <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
       Ruaj projektin ne cloud
     </button>
@@ -786,6 +788,18 @@ const pageMeta={
   settings:{title:'Cilësimet',sub:'API Key, profili dhe furnitorët e paracaktuar'}
 };
 
+var PAGE_COLORS={
+  import:'#C1653A',   // bronze - brand default
+  bom:'#2F6F4F',      // green
+  rfq:'#2A5C8A',      // blue
+  offers:'#B8860B',   // gold/amber
+  ranking:'#7A3E9D',  // purple
+  kalkulator:'#5C6B73', // slate
+  oferta:'#A63446',   // red
+  invoices:'#1C6E8C', // teal
+  finance:'#1D9E75',  // emerald
+  settings:'#6b6b6b'  // gray
+};
 function showPage(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
@@ -794,6 +808,7 @@ function showPage(p){
   const order=['import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','finance','settings'];
   const idx=order.indexOf(p);
   if(items[idx])items[idx].classList.add('active');
+  document.documentElement.style.setProperty('--page-accent',PAGE_COLORS[p]||PAGE_COLORS.import);
   document.getElementById('page-title').textContent=pageMeta[p].title;
   document.getElementById('page-sub').textContent=pageMeta[p].sub;
   if(p==='bom')renderBom();
@@ -1819,10 +1834,10 @@ function supaFetch(path,method,body){
   }).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});return r.text();}).then(function(t){return t?JSON.parse(t):[];});
 }
 var _curProjId=null;
-function saveProject(){
+function saveProject(triggerBtn){
   var name=document.getElementById('i-projname').value;
-  if(!name){alert('Shkruaj emrin e projektit fillimisht.');return;}
-  var btn=document.getElementById('btn-save-proj');
+  if(!name){alert('Shkruaj emrin e projektit fillimisht (te Import Dokument).');return;}
+  var btn=triggerBtn||document.getElementById('btn-save-proj');
   var orig=btn.textContent; btn.textContent='Duke ruajtur...'; btn.disabled=true;
   var payload={name:name,client:document.getElementById('i-client').value||'',ref:document.getElementById('i-ref').value||'',location:document.getElementById('i-location').value||'',deadline:document.getElementById('i-deadline').value||''};
   var isUpdate=!!_curProjId;
