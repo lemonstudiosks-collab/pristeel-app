@@ -2101,6 +2101,7 @@ function toggleAdvanceType(){
   document.getElementById('iv-advance-pct-wrap').style.display = show?'':'none';
   document.getElementById('iv-advance-val-wrap').style.display = show?'':'none';
   document.getElementById('iv-advance-btn-wrap').style.display = show?'':'none';
+  document.getElementById('iv-total-override').value='';
   if(show) calcAdvancePreview();
 }
 function calcAdvancePreview(){
@@ -2240,7 +2241,7 @@ function genInvoiceOut(){
     +(extraTotalOut>0?'<tr><td style="padding:3px 12px 3px 0">'+lb.oc+'</td><td style="text-align:right">'+extraTotalOut.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr>':'')) : '';
 
   const rowsHtml=invoiceItems.map(function(it,i){
-    return '<tr><td>'+(i+1)+'</td><td>'+(it.desc||'')+'</td><td style="text-align:right">'+(it.pcs||0)+'</td><td style="text-align:right">'+(it.kg||0).toLocaleString('de-DE',{maximumFractionDigits:2})+'</td><td style="text-align:right">'+(it.priceKg||0).toFixed(3)+'</td><td style="text-align:right;font-weight:600">'+((it.kg||0)*(it.priceKg||0)).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
+    return '<tr><td style="padding:5px 6px">'+(i+1)+'</td><td style="padding:5px 6px">'+(it.desc||'')+'</td><td style="padding:5px 6px;text-align:right">'+(it.pcs||0)+'</td><td style="padding:5px 6px;text-align:right">'+(it.kg||0).toLocaleString('de-DE',{maximumFractionDigits:2})+'</td><td style="padding:5px 6px;text-align:right">'+(it.priceKg||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:3})+'</td><td style="padding:5px 6px;text-align:right;font-weight:600">'+((it.kg||0)*(it.priceKg||0)).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
   }).join('');
 
   const bankRows = settings.bankName ? ('<div style="margin-top:16px;font-size:12px;line-height:1.8"><strong>'+lb.bk+'</strong><br>'+lb.bn+' '+(settings.bankName||'')+'<br>'+lb.ib+' '+(settings.iban||'')+'<br>'+lb.sw+' '+(settings.swift||'')+'</div>') : '';
