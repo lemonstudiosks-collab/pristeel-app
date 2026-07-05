@@ -904,22 +904,31 @@ async function handleFiles(files){
 }
 
 // ── AI PARSING ────────────────────────────────────────
-  function deterministicParseGermanMengenliste(text){
-if(!/Ges\.?\s*Gew/i.test(text) || !(/MATERIALAUSZUG/i.test(text) || /MENGENLISTE/i.test(text))) return null;
-  const rowRe = /(\d+)\s{2,}([A-Za-zÄÖÜäöü]+[\dXx.]+)\s{2,}(\S+)\s{2,}(\d+)\s{2,}(?:\*\s{2,})?(\d+\.\d+)\s+(\d+\.\d+)\s{2,}(\d+\.\d+)\s{2,}(.+?)(?=\s{2,}\d+\s{2,}[A-Za-zÄÖÜäöü]+[\dXx.]+\s{2,}\S|\s{2,}(?:SUMME|Zwischensumme|Übertrag|Gesamtsumme)|$)/g;
+ function deterministicParseGermanMengenliste(rawText){
+  if(!/Ges\.?\s*Gew/i.test(rawText) || !(/MATERIALAUSZUG/i.test(rawText) || /MENGENLISTE/i.test(rawText))) return null;
+  const text = rawText.replace(/\s+/g, ' ').trim();
+  const rowRe = /(\d+)\s+([A-Za-zÄÖÜäöü]+[\dXx.]+)\s+(\S+)\s+(\d+)\s+(?:\*\s+)?(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(.+?)(?=\s+\d+\s+[A-Za-zÄÖÜäöü]+[\dXx.]+\s+\S|\s+(?:SUMME|Zwischensumme|Übertrag|Gesamtsumme)|$)/g;
   const num = s => { const str=String(s).trim(); return str.includes(',') ? (parseFloat(str.replace(/\./g,'').replace(',','.'))||0) : (parseFloat(str)||0); };
   const items=[];
   let m;
   while((m=rowRe.exec(text))){
-    const stk=m[1], profilRaw=m[2], gute=m[3], lenMm=m[4], gewicht=m[6], bem=m[8];
+    const stk=Math.round(num(m[1])), profilRaw=m[2], gute=m[3], lenMm=m[4], numA=num(m[5]), numB=num(m[6]), bem=m[8];
+    let perPiece;
+    if(stk<=1){ perPiece = numA; }
+    else {
+      const errA = Math.abs(stk*numA - numB);
+      const errB = Math.abs(stk*numB - numA);
+      perPiece = errA <= errB ? numA : numB;
+    }
     const profMatch = profilRaw.match(/^([A-Za-z]+)([\dXx.]+)$/);
     const prefix = profMatch ? profMatch[1].toUpperCase() : profilRaw.toUpperCase();
     const dim = profMatch ? profMatch[2].toUpperCase() : '';
     const profileMap = {BL:'PLATE',HEA:'HEA',HEB:'HEB',IPE:'IPE',RHS:'RHS',SHS:'SHS',CHS:'CHS',L:'ANGLE'};
-    items.push({description_raw:m[0].trim(),profile_type:profileMap[prefix]||'OTHER',dimension:dim||profilRaw,steel_grade:gute,standard:'',length_mm:Math.round(num(lenMm)),quantity_pieces:Math.round(num(stk)),quantity_kg:num(gewicht),surface_treatment:'none',certification:'EN 10204 3.1',notes:(bem||'').trim(),confidence:'high'});
+    items.push({description_raw:m[0].trim(),profile_type:profileMap[prefix]||'OTHER',dimension:dim||profilRaw,steel_grade:gute,standard:'',length_mm:Math.round(num(lenMm)),quantity_pieces:stk,quantity_kg:perPiece,surface_treatment:'none',certification:'EN 10204 3.1',notes:(bem||'').trim(),confidence:'high'});
   }
   if(items.length < 3) return null;
-  const totalCalc = items.reduce((s,it)=>s + (it.quantity_pieces*it.quantity_kg),0);  const gesamtMatch = text.match(/Gesamtsumme:?\s*([\d.,]+)/i) || text.match(/Zwischensumme:?\s*([\d.,]+)/i);
+  const totalCalc = items.reduce((s,it)=>s + (it.quantity_pieces*it.quantity_kg),0);
+  const gesamtMatch = text.match(/Gesamtsumme:?\s*([\d.,]+)/i) || text.match(/Zwischensumme:?\s*([\d.,]+)/i);
   const issues=[];
   if(gesamtMatch){
     const declared = num(gesamtMatch[1]);
@@ -931,8 +940,7 @@ if(!/Ges\.?\s*Gew/i.test(text) || !(/MATERIALAUSZUG/i.test(text) || /MENGENLISTE
     issues.push('Dokumenti s\'ka rresht "Gesamtsumme" të lexueshëm për verifikim automatik.');
   }
   return {project_summary:'Ekstraktim deterministik (jo-AI) nga format Materialauszug/Mengenliste',detected_language:'de',confidence:issues.length?'medium':'high',issues,items};
-}
-async function startParsing(){
+}async function startParsing(){
   const text=document.getElementById('i-text').value.trim();
   if(text.length<5){alert('Ngjit tekstin e dokumentit ose ngarko skedar PDF/TXT/CSV.');return;}
   const detResult = deterministicParseGermanMengenliste(text);
