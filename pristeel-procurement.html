@@ -46,7 +46,10 @@ body{font-family:'Inter',sans-serif;background:#FAF7F2;color:var(--text);font-si
 /* CARDS */
 .card{background:var(--bg-card);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:16px;transition:border-color .2s}
 .card:hover{border-color:var(--border2)}
-.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;letter-spacing:.3px}
+.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;letter-spacing:.3px;border-left:3px solid var(--page-accent,var(--bronze));padding-left:10px}
+.topbar{border-bottom:2px solid var(--page-accent,var(--border))!important}
+.btn-primary{background:var(--page-accent,var(--bronze))!important}
+.btn-primary:hover{filter:brightness(1.12)}
 /* FORMS */
 .field-group{display:grid;gap:12px;margin-bottom:14px}
 .fg-2{grid-template-columns:1fr 1fr}
