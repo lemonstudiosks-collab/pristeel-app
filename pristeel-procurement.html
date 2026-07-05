@@ -825,7 +825,6 @@ const dz=document.getElementById('drop-zone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files.length)handleFiles(e.dataTransfer.files);});
-
 async function extractTextFromPDF(file) {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -833,10 +832,18 @@ async function extractTextFromPDF(file) {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    const pageText = textContent.items.map(item => item.str).join(" ");
+    const lineMap = {};
+    textContent.items.forEach(it => {
+      const key = Math.round(it.transform[5]);
+      if (!lineMap[key]) lineMap[key] = [];
+      lineMap[key].push({ x: it.transform[4], str: it.str });
+    });
+    const lines = Object.keys(lineMap).map(Number).sort((a, b) => b - a);
+    const pageText = lines.map(y => lineMap[y].sort((a, b) => a.x - b.x).map(it => it.str).join(" ")).join("\n");
     fullText += pageText + "\n";
   }
   return fullText;
+}
 }
 
 async function handleFiles(files){
@@ -1609,7 +1616,7 @@ if(parsed.total_weight_kg>0 && parsed.fabrication_total>0){
 } else {
   pKg = parsed.price_per_kg||0;
 }  const grandTotal = (parsed.fabrication_total||0) + (parsed.transport_cost||0);
-    alert('fabrication_total='+parsed.fabrication_total+' | transport_cost='+parsed.transport_cost+' | grandTotal='+grandTotal);
+  
 
 offers.push({
   id:Date.now(),
