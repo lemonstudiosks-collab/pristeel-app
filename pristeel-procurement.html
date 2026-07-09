@@ -196,6 +196,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Financat
     </div>
+    <div class="nav-item" onclick="showPage('qendra')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v5"/><circle cx="17" cy="15" r="2"/></svg>
+      Qendra
+    </div>
     <div class="nav-section">Cilësimet</div>
     <div class="nav-item" onclick="showPage('settings')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -741,6 +745,28 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   </div>
 </div>
 
+<div id="page-qendra" class="page">
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start">
+    <div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin:0">Oferta &amp; PDF nga Gmail</div>
+          <button class="btn btn-sm" onclick="loadQInbox()">Rifresko</button>
+        </div>
+        <div id="q-inbox"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Pipeline (HubSpot)</div>
+        <div id="q-deals"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Agjenda — 30 dit&euml;t e ardhshme</div>
+      <div id="q-agenda"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
+    </div>
+  </div>
+</div>
+
 <div id="page-settings" class="page">
   <div class="card">
     <div class="card-title">API Configuration</div>
@@ -813,6 +839,7 @@ const pageMeta={
   oferta:{title:'Oferta Komerciale',sub:'Gjenero ofertë profesionale'},
   invoices:{title:'Faturat',sub:'Faturat tona dhe faturat e furnitorëve'},
   finance:{title:'Financat',sub:'Garanci bankare, kosto operative dhe llogaritja e tatimeve'},
+  qendra:{title:'Qendra',sub:'Gmail, Kalendari dhe HubSpot — të gjitha në një vend'},
   settings:{title:'Cilësimet',sub:'API Key, profili dhe furnitorët e paracaktuar'}
 };
 
@@ -826,6 +853,7 @@ var PAGE_COLORS={
   oferta:'#9A5D50',   // soft terracotta
   invoices:'#3E7383', // muted teal
   finance:'#4E7A62',  // sage
+  qendra:'#526E85',   // calm steel blue
   settings:'#77828B'  // gray
 };
 function showPage(p){
@@ -833,7 +861,7 @@ function showPage(p){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   const items=document.querySelectorAll('.nav-item');
-  const order=['import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','finance','settings'];
+  const order=['import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','finance','qendra','settings'];
   const idx=order.indexOf(p);
   if(items[idx])items[idx].classList.add('active');
   document.documentElement.style.setProperty('--page-accent',PAGE_COLORS[p]||PAGE_COLORS.import);
@@ -846,6 +874,7 @@ function showPage(p){
   if(p==='kalkulator')calcPrice();
   if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadContracts();loadProjectOptionsForInvoices();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
+  if(p==='qendra'){loadQInbox();loadQAgenda();loadQDeals();}
   if(p==='settings')renderSettings();
 }
 
@@ -2949,6 +2978,71 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars){
     +'<button class="btn btn-sm btn-primary" onclick="closeOverview();loadProject(\''+id+'\')">Puno me projektin</button>'
     +'</div>';
   document.getElementById('ov-body').innerHTML=h;
+}
+// ── QENDRA: Gmail inbox / Agjenda / HubSpot pipeline ────
+function qOpenPdf(id){
+  supaFetch('offers_inbox?id=eq.'+id+'&select=file_base64,file_name').then(function(rows){
+    var r=rows[0]; if(!r||!r.file_base64){alert('PDF mungon.');return;}
+    var byteString=atob(r.file_base64);
+    var bytes=new Uint8Array(byteString.length);
+    for(var i=0;i<byteString.length;i++)bytes[i]=byteString.charCodeAt(i);
+    var url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+    window.open(url,'_blank');
+  }).catch(function(e){alert('Gabim: '+e.message);});
+}
+function qMarkProcessed(id){
+  supaFetch('offers_inbox?id=eq.'+id,'PATCH',{processed:true}).then(loadQInbox).catch(function(e){alert('Gabim: '+e.message);});
+}
+function loadQInbox(){
+  var el=document.getElementById('q-inbox'); if(!el)return;
+  supaFetch('offers_inbox?select=id,sender,subject,received_at,file_name,processed&order=received_at.desc&limit=40').then(function(rows){
+    var open=rows.filter(function(r){return !r.processed;});
+    var done=rows.filter(function(r){return r.processed;}).slice(0,5);
+    if(rows.length===0){el.innerHTML='<div class="ov-empty">Asnj&euml; email i kapur ende. Sinkronizimi vrapon &ccedil;do 15 min nga Apps Script.</div>';return;}
+    function row(r){
+      var d=r.received_at?new Date(r.received_at).toLocaleDateString('sq')+' '+new Date(r.received_at).toLocaleTimeString('sq',{hour:'2-digit',minute:'2-digit'}):'';
+      return '<div class="ov-row'+(r.processed?'':' inn')+'" style="'+(r.processed?'opacity:.55':'')+'">'
+        +'<div style="min-width:0"><strong style="font-size:12.5px">'+(r.subject||'(pa subjekt)')+'</strong>'
+        +'<div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(r.sender||'')+' &middot; '+d+' &middot; '+(r.file_name||'')+'</div></div>'
+        +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +'<button class="btn btn-sm" style="padding:3px 10px;min-width:0" onclick="qOpenPdf(\''+r.id+'\')">PDF</button>'
+        +(r.processed?'':'<button class="btn btn-sm" style="padding:3px 10px;min-width:0" onclick="qMarkProcessed(\''+r.id+'\')" title="Sheno si te procesuar">&#10003;</button>')
+        +'</div></div>';
+    }
+    el.innerHTML=(open.length?open.map(row).join(''):'<div class="ov-empty">T&euml; gjitha t&euml; procesuara.</div>')
+      +(done.length?'<div style="font-size:10px;color:var(--text3);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.8px">T&euml; procesuara s&euml; fundmi</div>'+done.map(row).join(''):'');
+  }).catch(function(){el.innerHTML='<div class="ov-empty">Tabela offers_inbox mungon n&euml; Supabase — ekzekuto SQL-n&euml; e sinkronizimit.</div>';});
+}
+function loadQAgenda(){
+  var el=document.getElementById('q-agenda'); if(!el)return;
+  supaFetch('agenda_events?order=start_time.asc&limit=40').then(function(rows){
+    if(rows.length===0){el.innerHTML='<div class="ov-empty">Asnj&euml; event i sinkronizuar ende.</div>';return;}
+    var today=new Date().toDateString();
+    el.innerHTML=rows.map(function(r){
+      var st=r.start_time?new Date(r.start_time):null;
+      var isToday=st&&st.toDateString()===today;
+      var dLbl=st?st.toLocaleDateString('sq',{weekday:'short',day:'numeric',month:'short'})+' &middot; '+st.toLocaleTimeString('sq',{hour:'2-digit',minute:'2-digit'}):'';
+      return '<div class="ov-row" style="'+(isToday?'border-left:3px solid var(--copper);background:var(--copper-bg)':'')+'">'
+        +'<div style="min-width:0"><strong style="font-size:12.5px">'+(r.title||'')+'</strong>'
+        +'<div style="font-size:11px;color:var(--text3)">'+dLbl+(isToday?' &middot; <strong style="color:var(--bronze-text)">SOT</strong>':'')+'</div></div></div>';
+    }).join('');
+  }).catch(function(){el.innerHTML='<div class="ov-empty">Tabela agenda_events mungon n&euml; Supabase — ekzekuto SQL-n&euml; e sinkronizimit.</div>';});
+}
+function loadQDeals(){
+  var el=document.getElementById('q-deals'); if(!el)return;
+  supaFetch('crm_deals?order=amount.desc&limit=40').then(function(rows){
+    rows=rows.filter(function(r){return (r.dealstage||'').indexOf('closedlost')===-1;});
+    if(rows.length===0){el.innerHTML='<div class="ov-empty">Asnj&euml; deal i sinkronizuar ende (kontrollo HS_TOKEN n&euml; Apps Script).</div>';return;}
+    var tot=rows.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0);
+    el.innerHTML='<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+rows.length+' deals aktive &middot; vlera totale <strong>'+ovFmt(tot)+' &euro;</strong></div>'
+      +rows.map(function(r){
+        var won=(r.dealstage||'').indexOf('closedwon')>-1;
+        return '<div class="ov-row"><div style="min-width:0"><strong style="font-size:12.5px">'+(r.dealname||'')+'</strong>'
+          +'<div style="font-size:11px;color:var(--text3)">'+(r.closedate||'')+'</div></div>'
+          +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><strong>'+((parseFloat(r.amount)||0)>0?ovFmt(r.amount)+' &euro;':'&mdash;')+'</strong>'
+          +(won?'<span class="ov-badge g">FITUAR</span>':'')+'</div></div>';
+      }).join('');
+  }).catch(function(){el.innerHTML='<div class="ov-empty">Tabela crm_deals mungon n&euml; Supabase — ekzekuto SQL-n&euml; e sinkronizimit.</div>';});
 }
 </script>
 
