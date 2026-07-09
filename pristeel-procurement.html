@@ -760,9 +760,16 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div id="q-deals"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">Agjenda — 30 dit&euml;t e ardhshme</div>
-      <div id="q-agenda"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
+    <div>
+      <div class="card">
+        <div class="card-title">Direktoria (HubSpot)</div>
+        <input id="q-dir-input" onkeyup="qDirSearch()" placeholder="K&euml;rko kompani ose kontakt — emri, emaili, domain..." style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:8px;font-size:13px;background:var(--bg-card);margin-bottom:10px">
+        <div id="q-dir-results"><div class="ov-empty">Shkruaj t&euml; pakt&euml;n 2 shkronja...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Agjenda — 30 dit&euml;t e ardhshme</div>
+        <div id="q-agenda"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
+      </div>
     </div>
   </div>
 </div>
@@ -2895,13 +2902,26 @@ function openOverview(id){
       Promise.resolve(p),Promise.resolve(res[1]||[]),Promise.resolve(res[2]||[]),
       supaFetch('invoices_out?project=ilike.'+q).catch(function(){return[];}),
       supaFetch('invoices_in?project=ilike.'+q).catch(function(){return[];}),
-      supaFetch('bank_guarantees?project=ilike.'+q).catch(function(){return[];})
-    ]).then(function(all){renderOverviewModal(id,all[0],all[1],all[2],all[3],all[4],all[5]);});
+      supaFetch('bank_guarantees?project=ilike.'+q).catch(function(){return[];}),
+      supaFetch('crm_deals?select=dealname,amount,dealstage,closedate,description&limit=300').catch(function(){return[];})
+    ]).then(function(all){renderOverviewModal(id,all[0],all[1],all[2],all[3],all[4],all[5],all[6]);});
   }).catch(function(e){
     document.getElementById('ov-body').innerHTML='<div class="ov-empty" style="color:var(--red-text)">Gabim gjat&euml; ngarkimit: '+e.message+'</div>';
   });
 }
-function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars){
+var HS_STAGES={appointmentscheduled:'Kontakt i par\u00EB',qualifiedtobuy:'I kualifikuar',presentationscheduled:'Ofert\u00EB/Prezantim',decisionmakerboughtin:'Negociata',contractsent:'Kontrata d\u00EBrguar',closedwon:'FITUAR',closedlost:'HUMBUR',stage_0:'Faza 0',stage_1:'Faza 1'};
+function hsStageLbl(s){return HS_STAGES[s]||s||'';}
+function ovMatchDeal(projName,deals){
+  function toks(s){return (s||'').toLowerCase().replace(/[^a-z0-9\u00E7\u00EB\/\-\s]/g,' ').split(/\s+/).filter(function(w){return w.length>=3;});}
+  var pt=toks(projName);var best=null,bestScore=1;
+  deals.forEach(function(d){
+    var dt=toks(d.dealname);var score=0;
+    pt.forEach(function(w){if(dt.indexOf(w)>-1)score++;});
+    if(score>bestScore){bestScore=score;best=d;}
+  });
+  return best;
+}
+function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals){
   document.getElementById('ov-title').textContent=p.name||'Pa emer';
   document.getElementById('ov-client').textContent=(p.client||'')+(p.location?' \u00B7 '+p.location:'');
   var inn=offs.filter(function(o){return (o.supplier||'').indexOf('OFERTA JONE')===-1;});
@@ -2967,6 +2987,17 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars){
     if(invOutSum>0||invInSum>0){h+='<div style="font-size:12px;color:var(--text2);margin-top:8px;text-align:right">Faturuar: <strong>'+ovFmt(invOutSum)+' \u20AC</strong> \u00B7 Kosto furnitor\u00EBsh: <strong>'+ovFmt(invInSum)+' \u20AC</strong></div>';}
   }
   h+='</div>';
+  var deal=ovMatchDeal(p.name,crmDeals||[]);
+  if(deal){
+    var won=(deal.dealstage||'').indexOf('closedwon')>-1;
+    h+='<div class="ov-sec"><h3>CRM (HubSpot)</h3>'
+      +'<div class="ov-row"><div style="min-width:0"><strong style="font-size:12.5px">'+(deal.dealname||'')+'</strong>'
+      +'<div style="font-size:11px;color:var(--text3)">'+(deal.closedate?'Afati: '+deal.closedate:'')+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><strong>'+((parseFloat(deal.amount)||0)>0?ovFmt(deal.amount)+' \u20AC':'')+'</strong>'
+      +'<span class="ov-badge '+(won?'g':'n')+'">'+hsStageLbl(deal.dealstage)+'</span></div></div>'
+      +(deal.description?'<div style="font-size:11.5px;color:var(--text2);line-height:1.6;white-space:pre-wrap;max-height:180px;overflow-y:auto;background:var(--bg2);border-radius:7px;padding:10px 12px;margin-top:6px">'+deal.description.replace(/</g,'&lt;')+'</div>':'')
+      +'</div>';
+  }
   if(guars.length){
     h+='<div class="ov-sec"><h3>Garancit\u00EB bankare</h3>'+guars.map(function(g){
       return '<div class="ov-row"><div><strong>'+(g.bank_name||'')+'</strong> <span style="color:var(--text3);font-size:11px">'+(g.guarantee_type||'')+' \u00B7 skadon '+(g.expiry_date||'\u2014')+'</span></div>'
@@ -3028,21 +3059,54 @@ function loadQAgenda(){
     }).join('');
   }).catch(function(){el.innerHTML='<div class="ov-empty">Tabela agenda_events mungon n&euml; Supabase — ekzekuto SQL-n&euml; e sinkronizimit.</div>';});
 }
+var _qDeals=[];
+function qToggleDeal(i){
+  var el=document.getElementById('q-deal-desc-'+i);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
 function loadQDeals(){
   var el=document.getElementById('q-deals'); if(!el)return;
-  supaFetch('crm_deals?order=amount.desc&limit=40').then(function(rows){
+  supaFetch('crm_deals?select=dealname,amount,dealstage,closedate,description&order=amount.desc&limit=100').then(function(rows){
     rows=rows.filter(function(r){return (r.dealstage||'').indexOf('closedlost')===-1;});
+    _qDeals=rows;
     if(rows.length===0){el.innerHTML='<div class="ov-empty">Asnj&euml; deal i sinkronizuar ende (kontrollo HS_TOKEN n&euml; Apps Script).</div>';return;}
     var tot=rows.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0);
     el.innerHTML='<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+rows.length+' deals aktive &middot; vlera totale <strong>'+ovFmt(tot)+' &euro;</strong></div>'
-      +rows.map(function(r){
+      +rows.map(function(r,i){
         var won=(r.dealstage||'').indexOf('closedwon')>-1;
-        return '<div class="ov-row"><div style="min-width:0"><strong style="font-size:12.5px">'+(r.dealname||'')+'</strong>'
+        return '<div class="ov-row" style="cursor:pointer;flex-wrap:wrap" onclick="qToggleDeal('+i+')" title="Kliko p&euml;r detajet">'
+          +'<div style="min-width:0;flex:1"><strong style="font-size:12.5px">'+(r.dealname||'')+'</strong>'
           +'<div style="font-size:11px;color:var(--text3)">'+(r.closedate||'')+'</div></div>'
           +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><strong>'+((parseFloat(r.amount)||0)>0?ovFmt(r.amount)+' &euro;':'&mdash;')+'</strong>'
-          +(won?'<span class="ov-badge g">FITUAR</span>':'')+'</div></div>';
+          +'<span class="ov-badge '+(won?'g':'n')+'">'+hsStageLbl(r.dealstage)+'</span></div>'
+          +(r.description?'<div id="q-deal-desc-'+i+'" style="display:none;flex-basis:100%;font-size:11.5px;color:var(--text2);line-height:1.6;white-space:pre-wrap;max-height:220px;overflow-y:auto;background:var(--bg2);border-radius:7px;padding:10px 12px;margin-top:8px">'+r.description.replace(/</g,'&lt;')+'</div>':'')
+          +'</div>';
       }).join('');
   }).catch(function(){el.innerHTML='<div class="ov-empty">Tabela crm_deals mungon n&euml; Supabase — ekzekuto SQL-n&euml; e sinkronizimit.</div>';});
+}
+var _qDirTimer=null;
+function qDirSearch(){
+  clearTimeout(_qDirTimer);
+  _qDirTimer=setTimeout(function(){
+    var q=(document.getElementById('q-dir-input').value||'').trim();
+    var el=document.getElementById('q-dir-results');
+    if(q.length<2){el.innerHTML='<div class="ov-empty">Shkruaj t&euml; pakt&euml;n 2 shkronja...</div>';return;}
+    var enc='*'+encodeURIComponent(q)+'*';
+    Promise.all([
+      supaFetch('crm_companies?or=(name.ilike.'+enc+',domain.ilike.'+enc+')&limit=8').catch(function(){return[];}),
+      supaFetch('crm_contacts?or=(firstname.ilike.'+enc+',lastname.ilike.'+enc+',email.ilike.'+enc+',company.ilike.'+enc+')&limit=8').catch(function(){return[];})
+    ]).then(function(res){
+      var comps=res[0]||[],cons=res[1]||[];
+      if(!comps.length&&!cons.length){el.innerHTML='<div class="ov-empty">Asgj&euml; e gjetur p&euml;r "'+q.replace(/</g,'&lt;')+'".</div>';return;}
+      var h='';
+      if(comps.length)h+='<div style="font-size:10px;color:var(--text3);margin:4px 0 6px;text-transform:uppercase;letter-spacing:.8px">Kompani</div>'
+        +comps.map(function(c){return '<div class="ov-row"><div><strong style="font-size:12.5px">'+(c.name||'')+'</strong><div style="font-size:11px;color:var(--text3)">'+(c.domain||'')+(c.city?' &middot; '+c.city:'')+'</div></div></div>';}).join('');
+      if(cons.length)h+='<div style="font-size:10px;color:var(--text3);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.8px">Kontakte</div>'
+        +cons.map(function(c){return '<div class="ov-row"><div style="min-width:0"><strong style="font-size:12.5px">'+((c.firstname||'')+' '+(c.lastname||'')).trim()+'</strong><div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(c.jobtitle?c.jobtitle+' &middot; ':'')+(c.company||'')+'</div></div>'
+          +(c.email?'<a href="mailto:'+c.email+'" style="font-size:11.5px;color:var(--bronze-text);flex-shrink:0" onclick="event.stopPropagation()">'+c.email+'</a>':'')+'</div>';}).join('');
+      el.innerHTML=h;
+    });
+  },300);
 }
 </script>
 
