@@ -542,7 +542,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div>
 <div class="card" style="border:1px solid var(--bronze)">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin:0;color:var(--bronze)">Preview</div><div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="copyOfer()">Kopjo</button><button class="btn btn-sm btn-primary" onclick="printOfer()">PDF</button></div></div>
-<div id="of-pre" style="font-size:11px;font-family:Courier New,monospace;background:var(--bg2);border-radius:var(--radius);padding:14px;line-height:1.7;color:var(--text);white-space:pre-wrap;min-height:400px;border-left:2px solid var(--bronze);max-height:600px;overflow-y:auto">Ploteso te dhenat dhe kliko Gjenero...</div>
+<div id="of-pre" style="background:#fff;border-radius:var(--radius);padding:28px;min-height:400px;max-height:700px;overflow-y:auto;border:1px solid var(--border);box-shadow:0 1px 8px rgba(28,35,51,0.06);color:#1A1F2E">Ploteso te dhenat dhe kliko Gjenero...</div>
 </div>
 </div>
 </div>
@@ -595,7 +595,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div>
     <div class="card" style="border:1px solid var(--bronze)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin:0;color:var(--bronze)">Preview</div><button class="btn btn-sm btn-primary" onclick="printInvoiceOut()">PDF / Printo</button></div>
-      <div id="iv-preview" style="min-height:400px;max-height:700px;overflow-y:auto;border-left:2px solid var(--bronze);padding:14px;background:#fff">Plotëso të dhënat dhe kliko Gjenero...</div>
+      <div id="iv-preview" style="min-height:400px;max-height:700px;overflow-y:auto;padding:28px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 8px rgba(28,35,51,0.06)">Plotëso të dhënat dhe kliko Gjenero...</div>
     </div>
   </div>
   </div>
@@ -825,7 +825,7 @@ function kgPerM(p,d){const t=PW[p?.toUpperCase()];return t&&t[parseInt(d)]||0;}
 function calcKg(p,d,l,n){const w=kgPerM(p,d);return w?+(w*(l/1000)*n).toFixed(1):0;}
 
 let bomRows=[], suppliers=[], offers=[];
-let settings={company:'PRISTEEL Sh.p.k.',email:'sales@prissteel.com',contact:'Arianit Vllahiu',title:'Founder & CEO',address:'',taxNr:'',bankName:'',iban:'',swift:''};
+let settings={company:'PRISTEEL Sh.p.k.',email:'sales@prissteel.com',contact:'Arianit Vllahiu',title:'Founder & CEO',address:'Rr. Tringe Smajli nr.16, 10000 Prishtinë, Kosovë',taxNr:'811361089',bankName:'ProCredit Bank Kosovo J.S.C',iban:'XK05 1110 3671 3800 0174',swift:'MBKOXKPRXXX'};
 let defaultSuppliers=[
   {id:1,name:'Eurosteel Shpk',email:'info@eurosteel.al',country:'Albania',lang:'en',cat:'producer'},
   {id:2,name:'AKTIVA MK',email:'info@aktiva.mk',country:'N. Macedonia',lang:'en',cat:'producer'},
@@ -1819,59 +1819,139 @@ function loadOfData(){
   var sv=parseFloat(sell)||0;
   if(sv>0)document.getElementById('of-pr').value=sv.toFixed(3);
 }
+// ── PRISTEEL DOCUMENT DESIGN SYSTEM (Oferta + Fatura) ──
+var PST_DOC_CSS = "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1A1F2E;font-size:12.5px;line-height:1.55;max-width:840px;margin:0 auto";
+function pstDocHeader(docType, docNr){
+  return '<div style="display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:16px;border-bottom:3px solid #B87333;margin-bottom:22px">'
+    +'<img src="'+LOGO_BASE64+'" style="height:44px" alt="PRISTEEL">'
+    +'<div style="text-align:right"><div style="font-size:22px;font-weight:700;letter-spacing:3px;color:#1C2333">'+docType+'</div>'
+    +'<div style="font-size:13px;color:#B87333;font-weight:600;letter-spacing:1px;margin-top:2px">'+docNr+'</div></div>'
+  +'</div>';
+}
+function pstPartyBox(label, lines){
+  return '<div style="flex:1;min-width:240px;background:#F8F6F3;border:1px solid #EAE5DE;border-radius:8px;padding:14px 16px">'
+    +'<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#B87333;margin-bottom:8px">'+label+'</div>'
+    +'<div style="font-size:12px;line-height:1.7">'+lines.filter(Boolean).join('<br>')+'</div>'
+  +'</div>';
+}
+function pstMetaRow(pairs){
+  var cells = pairs.filter(function(p){return p[1];}).map(function(p){
+    return '<div style="min-width:120px"><div style="font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#8A8378">'+p[0]+'</div>'
+      +'<div style="font-size:12.5px;font-weight:600;color:#1C2333;margin-top:2px">'+p[1]+'</div></div>';
+  }).join('');
+  return '<div style="display:flex;flex-wrap:wrap;gap:14px 28px;margin:18px 0;padding:12px 16px;border-left:3px solid #B87333;background:#FCFBF9">'+cells+'</div>';
+}
+function pstSectionTitle(t){
+  return '<div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1C2333;margin:22px 0 8px;padding-bottom:5px;border-bottom:1px solid #E8E4DE">'+t+'</div>';
+}
+function pstSignature(lb_gr){
+  return '<div style="margin-top:34px;font-size:12.5px;line-height:1.7">'+lb_gr+',<br><br>'
+    +'<strong>'+(settings.contact||'Arianit Vllahiu')+'</strong> — '+(settings.title||'Founder & CEO')+'<br>'
+    +'<span style="color:#8A8378">'+(settings.company||'PRISTEEL Sh.p.k.')+' · '+(settings.email||'sales@prissteel.com')+'</span></div>';
+}
+function pstDocFooter(){
+  return '<div style="margin-top:28px;padding-top:12px;border-top:1px solid #E8E4DE;display:flex;justify-content:space-between;font-size:10px;color:#8A8378;letter-spacing:.4px">'
+    +'<div>'+(settings.company||'PRISTEEL Sh.p.k.')+' · '+(settings.address||'Rr. Tringe Smajli nr.16, 10000 Prishtinë, Kosovë')+'</div>'
+    +'<div>Business Nr. '+(settings.taxNr||'811361089')+' · www.prissteel.com</div>'
+  +'</div>';
+}
+function pstFmt(n,dec){return (n||0).toLocaleString('de-DE',{minimumFractionDigits:(dec==null?2:dec),maximumFractionDigits:(dec==null?2:dec)});}
+
+var OF_LABELS={
+  de:{t:'ANGEBOT',from:'Anbieter',to:'Kunde',at:'z.Hd.',on:'Angebots-Nr.',da:'Datum',pr:'Projekt',rf:'Ihre Referenz',vl:'Gültigkeit',dy:' Tage',ps:'Positionen',hn:'Pos.',hp:'Profil',hg:'Güte',hs:'Stk.',hq:'Menge (kg)',tq:'Gesamtmenge',up:'Einheitspreis',tp:'Gesamtpreis (Netto)',cd:'Konditionen',dl:'Lieferzeit',wk:' Wochen',pm:'Zahlungsbedingungen',ct:'Zertifikat',ic:'Lieferbedingung',rm:'Bemerkungen',gr:'Mit freundlichen Grüßen',greet:'Sehr geehrte Damen und Herren,',intro:'vielen Dank für Ihre Anfrage und das damit verbundene Interesse an unseren Leistungen. Gerne unterbreiten wir Ihnen hiermit unser freibleibendes Angebot:'},
+  en:{t:'QUOTATION',from:'Supplier',to:'Customer',at:'Attn.',on:'Quotation No.',da:'Date',pr:'Project',rf:'Your Reference',vl:'Validity',dy:' days',ps:'Positions',hn:'Pos.',hp:'Profile',hg:'Grade',hs:'Pcs.',hq:'Quantity (kg)',tq:'Total quantity',up:'Unit price',tp:'Total price (net)',cd:'Conditions',dl:'Delivery time',wk:' weeks',pm:'Payment terms',ct:'Certificate',ic:'Delivery term',rm:'Remarks',gr:'Best regards',greet:'Dear Sir or Madam,',intro:'thank you for your inquiry and your interest in our services. We are pleased to submit our non-binding offer:'},
+  sq:{t:'OFERTË',from:'Ofruesi',to:'Klienti',at:'Vëmendje',on:'Nr. i ofertës',da:'Data',pr:'Projekti',rf:'Referenca juaj',vl:'Validiteti',dy:' ditë',ps:'Pozicionet',hn:'Poz.',hp:'Profili',hg:'Grada',hs:'Copë',hq:'Sasia (kg)',tq:'Sasia totale',up:'Çmimi për njësi',tp:'Çmimi total (neto)',cd:'Kushtet',dl:'Afati i dorëzimit',wk:' javë',pm:'Kushtet e pagesës',ct:'Certifikata',ic:'Kushti i dorëzimit',rm:'Shënime',gr:'Me respekt',greet:'Të nderuar,',intro:'ju faleminderit për kërkesën tuaj dhe interesimin për shërbimet tona. Me kënaqësi ju paraqesim ofertën tonë:'},
+  sr:{t:'PONUDA',from:'Ponuđač',to:'Kupac',at:'Pažnja',on:'Broj ponude',da:'Datum',pr:'Projekat',rf:'Vaša referenca',vl:'Važnost',dy:' dana',ps:'Pozicije',hn:'Poz.',hp:'Profil',hg:'Kvalitet',hs:'Kom.',hq:'Količina (kg)',tq:'Ukupna količina',up:'Jedinična cena',tp:'Ukupna cena (neto)',cd:'Uslovi',dl:'Rok isporuke',wk:' nedelja',pm:'Uslovi plaćanja',ct:'Sertifikat',ic:'Uslov isporuke',rm:'Napomene',gr:'S poštovanjem',greet:'Poštovani,',intro:'hvala vam na upitu i interesovanju za naše usluge. Sa zadovoljstvom vam dostavljamo našu neobavezujuću ponudu:'}
+};
+
 function genOfer(){
   var lang=(document.getElementById('of-lang')||{value:'de'}).value;
+  var lb=OF_LABELS[lang]||OF_LABELS.de;
   var nr=document.getElementById('of-nr').value||'PST-OFF-2026-001';
   var dt=document.getElementById('of-date').value;
-  var proj=document.getElementById('of-proj').value||'[Projekt]';
+  var dts=dt?(new Date(dt).toLocaleDateString('de-DE')):'';
+  var proj=document.getElementById('of-proj').value||'';
   var ref=document.getElementById('of-ref').value||'';
   var cli=document.getElementById('of-cli').value||'[Kunde]';
-  var con=document.getElementById('of-con').value||'-';
+  var con=document.getElementById('of-con').value||'';
   var adr=document.getElementById('of-adr').value||'';
   var pr=parseFloat(document.getElementById('of-pr').value)||0;
   var kg=parseFloat(document.getElementById('of-kg').value)||0;
   var inc=document.getElementById('of-inc').value;
-  var loc=document.getElementById('of-loc').value||'[Lieferort]';
-  var del=document.getElementById('of-del').value||'6-8';
+  var loc=document.getElementById('of-loc').value||'';
+  var del=document.getElementById('of-del').value||'-';
   var val=document.getElementById('of-val').value||'30';
-  var pay=document.getElementById('of-pay').value||'30 Tage netto';
+  var pay=document.getElementById('of-pay').value||'';
   var cer=document.getElementById('of-cer').value;
   var not=document.getElementById('of-not').value||'';
-  var tot=(pr*kg).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
-  var dts=dt?(new Date(dt).toLocaleDateString('de-DE')):'';
-  var L='================================================================';
-  var l='----------------------------------------------------------------';
-  var LB={
-    de:{t:'ANGEBOT',to:'An:',at:'z.Hd.:',ad:'Adresse:',on:'Angebotsnummer:',da:'Datum:',pr:'Projekt:',rf:'Ihre Referenz:',vl:'Gultigkeit:',dy:' Tage',ps:'POSITIONEN',tq:'Gesamtmenge:',pc:'PREIS',up:'Einheitspreis:',tp:'Gesamtpreis:',cd:'KONDITIONEN',dl:'Lieferzeit:',wk:' Wochen',pm:'Zahlungsbedingungen:',ct:'Zertifikat:',rm:'Bemerkungen:',gr:'Mit freundlichen Grussen',hd:'  Nr  Profil               Gute        Stk.       Menge'},
-    en:{t:'QUOTATION',to:'To:',at:'Attn:',ad:'Address:',on:'Quotation Nr.:',da:'Date:',pr:'Project:',rf:'Your Reference:',vl:'Validity:',dy:' days',ps:'POSITIONS',tq:'Total quantity:',pc:'PRICING',up:'Unit price:',tp:'Total price:',cd:'CONDITIONS',dl:'Delivery:',wk:' weeks',pm:'Payment terms:',ct:'Certificate:',rm:'Remarks:',gr:'Best regards',hd:'  Nr  Profile              Grade       Pcs.       Quantity'},
-    sq:{t:'OFERTE',to:'Per:',at:'Vemendje:',ad:'Adresa:',on:'Nr. ofertes:',da:'Data:',pr:'Projekti:',rf:'Referenca juaj:',vl:'Validiteti:',dy:' dite',ps:'POZICIONET',tq:'Totali:',pc:'CMIMI',up:'Cmimi for njesi:',tp:'Cmimi total:',cd:'KUSHTET',dl:'Afati:',wk:' jave',pm:'Kushtet e pageses:',ct:'Certifikata:',rm:'Shenime:',gr:'Me respekt',hd:'  Nr  Profili              Grada       Cope       Sasia'},
-    sr:{t:'PONUDA',to:'Za:',at:'Paznja:',ad:'Adresa:',on:'Broj ponude:',da:'Datum:',pr:'Projekat:',rf:'Vasa referenca:',vl:'Vaznost:',dy:' dana',ps:'POZICIJE',tq:'Ukupno:',pc:'CENA',up:'Jedinicna cena:',tp:'Ukupna cena:',cd:'USLOVI',dl:'Rok isporuke:',wk:' nedelja',pm:'Uslovi placanja:',ct:'Sertifikat:',rm:'Napomene:',gr:'S postovanjem',hd:'  Nr  Profil               Kvalitet    Kom.       Kolicina'}
-  };
-  var lb=LB[lang]||LB['de'];
-  var pos='';
+  var tot=pr*kg;
+
+  // positions table (from BOM if present, otherwise a single summary line)
+  var rows='';
   if(bomRows.length>0){
-    pos=bomRows.map(function(r,i){
-      var kgs=(parseFloat(r.kg)||0).toLocaleString('de-DE',{maximumFractionDigits:0});
-      var prf=r.profile+' '+r.dim; while(prf.length<18)prf+=' '; prf=prf.substring(0,18);
-      var grd=r.grade||''; while(grd.length<10)grd+=' '; grd=grd.substring(0,10);
-      var pc=String(r.pcs||0); while(pc.length<4)pc=' '+pc;
-      while(kgs.length<8)kgs=' '+kgs;
-      return '  '+(i<9?'0':'')+(i+1)+'  '+prf+'  '+grd+'  '+pc+' Stk.  '+kgs+' kg';
-    }).join('\n');
-  } else {pos='  [Kliko Ngarko nga BOM per te shtuar pozicionet]';}
-  var kgstr=kg.toLocaleString('de-DE',{maximumFractionDigits:0});
-  while(kgstr.length<8)kgstr=' '+kgstr;
-  var txt=lb.t+'\n'+L+'\n\nPRISTEEL Sh.p.k.\nPrishtine, Kosovo\nE-Mail: sales@prissteel.com\n\n'+l+'\n'+lb.to+'                    '+cli+'\n'+lb.at+'                 '+con+'\n'+lb.ad+'               '+adr+'\n'+l+'\n'+lb.on+'        '+nr+'\n'+lb.da+'                 '+dts+'\n'+lb.pr+'               '+proj+(ref?'\n'+lb.rf+'         '+ref:'')+'\n'+lb.vl+'            '+val+lb.dy+'\n'+L+'\n'+lb.ps+':\n'+l+'\n'+lb.hd+'\n'+l+'\n'+pos+'\n'+l+'\n  '+lb.tq+'                             '+kgstr+' kg\n'+L+'\n'+lb.pc+':\n  '+lb.up+'    '+pr.toFixed(3)+' EUR/kg\n  '+lb.tp+'      '+tot+' EUR\n  Incoterms:        '+inc+' '+loc+'\n  '+lb.ct+'       '+cer+'\n'+L+'\n'+lb.cd+':\n  '+lb.dl+'          '+del+lb.wk+'\n  '+lb.pm+' '+pay+(not?'\n  '+lb.rm+'         '+not:'')+'\n'+l+'\n'+lb.gr+'\n\nArianit Vllahiu - Founder & CEO\nPRISTEEL Sh.p.k. | sales@prissteel.com';
-  document.getElementById('of-pre').textContent=txt;
+    rows=bomRows.map(function(r,i){
+      var bg=i%2?'#FAF8F5':'#fff';
+      return '<tr style="background:'+bg+'">'
+        +'<td style="padding:7px 10px;color:#8A8378">'+(i+1<10?'0':'')+(i+1)+'</td>'
+        +'<td style="padding:7px 10px;font-weight:600">'+r.profile+' '+r.dim+'</td>'
+        +'<td style="padding:7px 10px">'+(r.grade||'')+(r.std?' · '+r.std:'')+'</td>'
+        +'<td style="padding:7px 10px;text-align:right">'+(r.pcs||0)+'</td>'
+        +'<td style="padding:7px 10px;text-align:right;font-weight:600">'+pstFmt(parseFloat(r.kg)||0,0)+'</td>'
+      +'</tr>';
+    }).join('');
+  } else {
+    rows='<tr><td style="padding:7px 10px;color:#8A8378">01</td><td style="padding:7px 10px;font-weight:600" colspan="2">'+(proj||'Stahlbau / Konstruktion')+'</td><td style="padding:7px 10px;text-align:right">—</td><td style="padding:7px 10px;text-align:right;font-weight:600">'+pstFmt(kg,0)+'</td></tr>';
+  }
+
+  var html='<div style="'+PST_DOC_CSS+'">'
+    +pstDocHeader(lb.t, nr)
+    +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px">'
+      +pstPartyBox(lb.from,[ '<strong>'+(settings.company||'PRISTEEL Sh.p.k.')+'</strong>', settings.address||'Rr. Tringe Smajli nr.16, 10000 Prishtinë', 'Kosovë · Business Nr. '+(settings.taxNr||'811361089'), settings.email||'sales@prissteel.com' ])
+      +pstPartyBox(lb.to,[ '<strong>'+cli+'</strong>', con?(lb.at+' '+con):'', adr ])
+    +'</div>'
+    +pstMetaRow([[lb.on,nr],[lb.da,dts],[lb.pr,proj],[lb.rf,ref],[lb.vl,val+lb.dy]])
+    +'<div style="margin:16px 0 4px;font-size:12.5px">'+(con?lb.at.replace('.','')+' '+con+',':lb.greet)+'<br>'+lb.intro+'</div>'
+    +pstSectionTitle(lb.ps)
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#1C2333;color:#fff">'
+        +'<th style="padding:8px 10px;text-align:left;font-weight:600;letter-spacing:.5px">'+lb.hn+'</th>'
+        +'<th style="padding:8px 10px;text-align:left;font-weight:600;letter-spacing:.5px">'+lb.hp+'</th>'
+        +'<th style="padding:8px 10px;text-align:left;font-weight:600;letter-spacing:.5px">'+lb.hg+'</th>'
+        +'<th style="padding:8px 10px;text-align:right;font-weight:600;letter-spacing:.5px">'+lb.hs+'</th>'
+        +'<th style="padding:8px 10px;text-align:right;font-weight:600;letter-spacing:.5px">'+lb.hq+'</th>'
+      +'</tr></thead><tbody>'+rows+'</tbody>'
+      +'<tfoot><tr style="border-top:2px solid #1C2333"><td colspan="4" style="padding:8px 10px;font-weight:700;text-align:right">'+lb.tq+'</td><td style="padding:8px 10px;text-align:right;font-weight:700">'+pstFmt(kg,0)+' kg</td></tr></tfoot>'
+    +'</table>'
+    +'<div style="display:flex;justify-content:flex-end;margin-top:16px">'
+      +'<div style="min-width:300px;background:#F8F6F3;border:1px solid #EAE5DE;border-radius:8px;padding:14px 18px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.up+'</span><span style="font-weight:600">'+pr.toFixed(3).replace('.',',')+' EUR/kg</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.ic+'</span><span style="font-weight:600">'+inc+(loc?' '+loc:'')+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;padding:8px 0 2px;margin-top:6px;border-top:2px solid #B87333"><span style="font-weight:700">'+lb.tp+'</span><span style="font-weight:700;font-size:16px;color:#B87333">'+pstFmt(tot)+' EUR</span></div>'
+      +'</div>'
+    +'</div>'
+    +pstSectionTitle(lb.cd)
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 28px;font-size:12px">'
+      +'<div><span style="color:#8A8378">'+lb.dl+':</span> <strong>'+del+lb.wk+'</strong></div>'
+      +'<div><span style="color:#8A8378">'+lb.pm+':</span> <strong>'+pay+'</strong></div>'
+      +'<div><span style="color:#8A8378">'+lb.ct+':</span> <strong>'+cer+'</strong></div>'
+      +'<div><span style="color:#8A8378">'+lb.vl+':</span> <strong>'+val+lb.dy+'</strong></div>'
+    +'</div>'
+    +(not?'<div style="margin-top:12px;font-size:12px;background:#FCFBF9;border-left:3px solid #B87333;padding:10px 14px"><strong style="color:#B87333">'+lb.rm+':</strong> '+not.replace(/\n/g,'<br>')+'</div>':'')
+    +pstSignature(lb.gr)
+    +pstDocFooter()
+  +'</div>';
+
+  document.getElementById('of-pre').innerHTML=html;
 }
 function copyOfer(){
-  navigator.clipboard.writeText(document.getElementById('of-pre').textContent).then(function(){alert('Oferta u kopjua!');});
+  var el=document.getElementById('of-pre');
+  navigator.clipboard.writeText(el.innerText).then(function(){alert('Oferta u kopjua (si tekst)!');});
 }
 function printOfer(){
-  var txt=document.getElementById('of-pre').textContent;
-  var safe=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  var content=document.getElementById('of-pre').innerHTML;
+  if(!content||content.indexOf('Ploteso')>-1){alert('Gjenero ofertën fillimisht.');return;}
   var w=window.open('','_blank');
-  var h='<!DOCTYPE html><html><head><title>Oferta PRISTEEL</title><style>body{font-family:Courier New,monospace;font-size:12px;line-height:1.8;margin:40px}@media print{body{margin:20px}}</style></head><body><pre>'+safe+'</pre></body></html>';
+  var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Oferta PRISTEEL</title><style>body{margin:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'+content+'</body></html>';
   w.document.write(h);w.document.close();
   setTimeout(function(){w.print();},400);
 }
@@ -2080,6 +2160,41 @@ const INV_LABELS={
   sr:{t:'FAKTURA',to:'Za:',at:'Pažnja:',ad:'Adresa:',on:'Broj fakture:',da:'Datum:',pr:'Projekat:',rf:'Referenca:',ps:'POZICIJE',pos:'Poz.',desc:'Opis',qty:'Kom.',kgc:'Količina (kg)',pk:'Cena/kg',sum:'Iznos',tq:'Ukupna količina:',tp:'Ukupan iznos:',vat:'PDV:',vatnote:'Izvoz — PDV 0% (nije uključen u cenu, prema važećem zakonu)',cd:'USLOVI PLAĆANJA',dl:'Uslov isporuke:',pm:'Rok plaćanja:',ct:'Sertifikat:',rm:'Napomene:',bk:'Bankovni podaci',bn:'Banka:',ib:'IBAN:',sw:'SWIFT/BIC:',gr:'S poštovanjem',fnr:'PIB:',ms:'Međuzbir materijala:',tr:'Transport:',oc:'Ostali troškovi:'}
 };
 
+// ── TË DHËNAT BANKARE (ProCredit Bank Kosovo — të plota, gjithmonë në faturë) ──
+const PST_BANK={
+  holder:'PRI Steel SH.P.K.',
+  holderAddr:'Tringe Smajli, Hy.1/Obj.1/Nr.16, 10000 Prishtinë, Republika e Kosovës',
+  iban:'XK05 1110 3671 3800 0174',
+  bank:'ProCredit Bank Kosovo J.S.C',
+  bankAddr:'Str. George Bush No. 26, 10000 Prishtina, Kosovo',
+  swift:'MBKOXKPRXXX',
+  corr:'ProCredit Bank AG, Frankfurt am Main, Germany',
+  corrSwift:'PRCBDEFFXXX',
+  cur:'EUR · USD · CHF · GBP'
+};
+const BANK_LABELS={
+  de:{bk:'Bankverbindung',ah:'Kontoinhaber',ad:'Adresse',bn:'Bank',ba:'Bankadresse',ib:'IBAN',sw:'SWIFT / BIC',cb:'Korrespondenzbank',cs:'SWIFT (Korrespondenzbank)',cu:'Währungen'},
+  en:{bk:'Bank details',ah:'Account holder',ad:'Address',bn:'Bank',ba:'Bank address',ib:'IBAN',sw:'SWIFT / BIC',cb:'Correspondent bank',cs:'SWIFT (correspondent)',cu:'Currencies'},
+  sq:{bk:'Të dhënat bankare',ah:'Mbajtësi i llogarisë',ad:'Adresa',bn:'Banka',ba:'Adresa e bankës',ib:'IBAN',sw:'SWIFT / BIC',cb:'Banka korrespondente',cs:'SWIFT (korrespondente)',cu:'Valutat'},
+  sr:{bk:'Bankovni podaci',ah:'Vlasnik računa',ad:'Adresa',bn:'Banka',ba:'Adresa banke',ib:'IBAN',sw:'SWIFT / BIC',cb:'Korespondentna banka',cs:'SWIFT (korespondentna)',cu:'Valute'}
+};
+function pstBankBlock(lang){
+  var b=BANK_LABELS[lang]||BANK_LABELS.de;
+  function row(k,v,strong){return '<div style="display:flex;gap:10px;padding:2.5px 0;font-size:11.5px"><span style="min-width:170px;color:#8A8378">'+k+'</span><span style="'+(strong?'font-weight:700;letter-spacing:.5px':'font-weight:500')+'">'+v+'</span></div>';}
+  return '<div style="margin-top:20px;background:#F8F6F3;border:1px solid #EAE5DE;border-radius:8px;padding:14px 18px">'
+    +'<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#B87333;margin-bottom:8px">'+b.bk+'</div>'
+    +row(b.ah,PST_BANK.holder,true)
+    +row(b.ad,PST_BANK.holderAddr)
+    +row(b.ib,PST_BANK.iban,true)
+    +row(b.bn,PST_BANK.bank)
+    +row(b.ba,PST_BANK.bankAddr)
+    +row(b.sw,PST_BANK.swift,true)
+    +'<div style="border-top:1px dashed #DDD6CC;margin:7px 0"></div>'
+    +row(b.cb,PST_BANK.corr)
+    +row(b.cs,PST_BANK.corrSwift,true)
+    +row(b.cu,PST_BANK.cur)
+  +'</div>';
+}
 const EXTRA_COST_SUGGESTIONS=['Garanci Bankare','Projektim / Inxhinierim (nga ana jonë)','Sigurimi i Ngarkesës','Montimi në Vendngjarje','Kosto Doganore / Certifikime','Paketim Special / Krejtim','Letër Kredie (LC) / Kompensim Bankar','Kosto Transferi Bankar'];
 let extraCostsOut=[];
 let extraCostsIn=[];
@@ -2283,32 +2398,67 @@ function genInvoiceOut(){
     +(extraTotalOut>0?'<tr><td style="padding:3px 12px 3px 0">'+lb.oc+'</td><td style="text-align:right">'+extraTotalOut.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr>':'')) : '';
 
   const rowsHtml=invoiceItems.map(function(it,i){
-    return '<tr><td style="padding:5px 6px">'+(i+1)+'</td><td style="padding:5px 6px">'+(it.desc||'')+'</td><td style="padding:5px 6px;text-align:right">'+(it.pcs||0)+'</td><td style="padding:5px 6px;text-align:right">'+(it.kg||0).toLocaleString('de-DE',{maximumFractionDigits:2})+'</td><td style="padding:5px 6px;text-align:right">'+(it.priceKg||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:3})+'</td><td style="padding:5px 6px;text-align:right;font-weight:600">'+((it.kg||0)*(it.priceKg||0)).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td></tr>';
+    const bg=i%2?'#FAF8F5':'#fff';
+    return '<tr style="background:'+bg+'">'
+      +'<td style="padding:7px 10px;color:#8A8378">'+(i+1<10?'0':'')+(i+1)+'</td>'
+      +'<td style="padding:7px 10px;font-weight:600">'+(it.desc||'')+'</td>'
+      +'<td style="padding:7px 10px;text-align:right">'+(it.pcs||0)+'</td>'
+      +'<td style="padding:7px 10px;text-align:right">'+pstFmt(it.kg||0,0)+'</td>'
+      +'<td style="padding:7px 10px;text-align:right">'+(it.priceKg||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:3})+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;font-weight:700">'+pstFmt((it.kg||0)*(it.priceKg||0))+'</td>'
+    +'</tr>';
   }).join('');
 
-  const bankRows = settings.bankName ? ('<div style="margin-top:16px;font-size:12px;line-height:1.8"><strong>'+lb.bk+'</strong><br>'+lb.bn+' '+(settings.bankName||'')+'<br>'+lb.ib+' '+(settings.iban||'')+'<br>'+lb.sw+' '+(settings.swift||'')+'</div>') : '';
+  function totRow(k,v,opts){
+    opts=opts||{};
+    return '<div style="display:flex;justify-content:space-between;gap:24px;font-size:12px;padding:3px 0'+(opts.top?';margin-top:6px;border-top:2px solid #B87333;padding-top:8px':'')+'">'
+      +'<span style="'+(opts.big?'font-weight:700':'color:#8A8378')+'">'+k+'</span>'
+      +'<span style="'+(opts.big?'font-weight:700;font-size:16px;color:#B87333':'font-weight:600')+'">'+v+'</span></div>';
+  }
+  let totalsBox='<div style="min-width:320px;background:#F8F6F3;border:1px solid #EAE5DE;border-radius:8px;padding:14px 18px">'
+    +totRow(lb.tq,pstFmt(totKg,0)+' kg');
+  if(transportAmt>0||extraTotalOut>0){
+    totalsBox+=totRow(lb.ms,pstFmt(matAmt)+' EUR');
+    if(transportAmt>0)totalsBox+=totRow(lb.tr,pstFmt(transportAmt)+' EUR');
+    if(extraTotalOut>0)totalsBox+=totRow(lb.oc,pstFmt(extraTotalOut)+' EUR');
+  }
+  totalsBox+=totRow('Netto:',pstFmt(totAmt)+' EUR')
+    +totRow(lb.vat+(vatOn?' ('+vatRate+'%)':''),pstFmt(vatAmt)+' EUR')
+    +totRow(lb.tp,pstFmt(grossAmt)+' EUR',{top:true,big:true})
+  +'</div>';
 
   const html =
-    '<div style="font-family:Inter,Arial,sans-serif;color:#1A1F2E;font-size:13px;line-height:1.6">'
-    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px">'
-      +'<img src="'+LOGO_BASE64+'" style="height:38px" alt="PRISTEEL">'
-      +'<div style="text-align:right;font-size:11px;color:#5A6478">'+(settings.company||'PRISTEEL Sh.p.k.')+'<br>'+(settings.address||'Prishtinë, Kosovë')+'<br>'+(settings.email||'sales@prissteel.com')+(settings.taxNr?'<br>'+lb.fnr+' '+settings.taxNr:'')+'</div>'
+    '<div style="'+PST_DOC_CSS+'">'
+    +pstDocHeader(titleTxt, nr)
+    +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px">'
+      +pstPartyBox((INV_LABELS[lang]||INV_LABELS.de).to.replace(':',''),[ '<strong>'+cli+'</strong>', con?(lb.at+' '+con):'', adr?adr:'' ])
+      +pstPartyBox('PRISTEEL',[ '<strong>'+(settings.company||'PRISTEEL Sh.p.k.')+'</strong>', settings.address||'Rr. Tringe Smajli nr.16, 10000 Prishtinë, Kosovë', (lb.fnr+' '+(settings.taxNr||'811361089')), settings.email||'sales@prissteel.com' ])
     +'</div>'
-    +'<h2 style="font-size:20px;letter-spacing:1px;border-bottom:2px solid #B87333;padding-bottom:8px;margin-bottom:16px">'+titleTxt+'</h2>'
+    +pstMetaRow([[lb.on.replace(':',''),nr],[lb.da.replace(':',''),dts],[lb.pr.replace(':',''),proj],[lb.rf.replace(':',''),ref]])
     +advNoteHtml
-    +'<div style="display:flex;justify-content:space-between;margin-bottom:16px">'
-      +'<div><strong>'+lb.to+'</strong> '+cli+'<br>'+(con?lb.at+' '+con+'<br>':'')+(adr?lb.ad+' '+adr:'')+'</div>'
-      +'<div style="text-align:right">'+lb.on+' <strong>'+nr+'</strong><br>'+lb.da+' '+dts+(proj?'<br>'+lb.pr+' '+proj:'')+(ref?'<br>'+lb.rf+' '+ref:'')+'</div>'
-    +'</div>'
-    +'<table style="width:100%;border-collapse:collapse;margin-bottom:6px;font-size:12px">'
-      +'<thead><tr style="background:#F7F8FA;border-bottom:2px solid #E4E7ED"><th style="padding:6px;text-align:left">'+lb.pos+'</th><th style="padding:6px;text-align:left">'+lb.desc+'</th><th style="padding:6px;text-align:right">'+lb.qty+'</th><th style="padding:6px;text-align:right">'+lb.kgc+'</th><th style="padding:6px;text-align:right">'+lb.pk+'</th><th style="padding:6px;text-align:right">'+lb.sum+'</th></tr></thead>'
-      +'<tbody>'+rowsHtml+'</tbody>'
+    +pstSectionTitle(lb.ps)
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="background:#1C2333;color:#fff">'
+        +'<th style="padding:8px 10px;text-align:left;font-weight:600">'+lb.pos+'</th>'
+        +'<th style="padding:8px 10px;text-align:left;font-weight:600">'+lb.desc+'</th>'
+        +'<th style="padding:8px 10px;text-align:right;font-weight:600">'+lb.qty+'</th>'
+        +'<th style="padding:8px 10px;text-align:right;font-weight:600">'+lb.kgc+'</th>'
+        +'<th style="padding:8px 10px;text-align:right;font-weight:600">'+lb.pk+'</th>'
+        +'<th style="padding:8px 10px;text-align:right;font-weight:600">'+lb.sum+'</th>'
+      +'</tr></thead><tbody>'+rowsHtml+'</tbody>'
     +'</table>'
-    +'<div style="display:flex;justify-content:flex-end;margin-bottom:16px"><table style="font-size:13px"><tr><td style="padding:3px 12px 3px 0">'+lb.tq+'</td><td style="text-align:right;font-weight:600">'+totKg.toLocaleString('de-DE',{maximumFractionDigits:0})+' kg</td></tr>'+breakdownRows+'<tr><td style="padding:3px 12px 3px 0">Zwischensumme (Netto):</td><td style="text-align:right">'+totAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr><tr><td style="padding:3px 12px 3px 0">'+lb.vat+(vatOn?' ('+vatRate+'%)':'')+'</td><td style="text-align:right">'+vatAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr><tr style="border-top:2px solid #1A1F2E"><td style="padding:6px 12px 3px 0;font-weight:700">'+lb.tp+'</td><td style="text-align:right;font-weight:700;font-size:15px;padding-top:6px">'+grossAmt.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td></tr></table></div>'
-    +(vatOn?'':'<div style="font-size:11px;color:#B87333;font-weight:600;margin-bottom:16px">'+lb.vatnote+'</div>')
-    +'<div style="font-size:12px;line-height:1.8"><strong>'+lb.cd+'</strong><br>'+lb.dl+' '+inc+(loc?' '+loc:'')+'<br>'+lb.pm+' '+pay+(cer?'<br>'+lb.ct+' '+cer:'')+(not?'<br>'+lb.rm+' '+not:'')+'</div>'
-    +bankRows
-    +'<div style="margin-top:32px;font-size:12px">'+lb.gr+'<br><br>'+(settings.contact||'Arianit Vllahiu')+' — '+(settings.title||'Founder & CEO')+'<br>'+(settings.company||'PRISTEEL Sh.p.k.')+' | '+(settings.email||'sales@prissteel.com')+'</div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-top:16px">'+totalsBox+'</div>'
+    +(vatOn?'':'<div style="font-size:11px;color:#B87333;font-weight:600;margin-top:10px">'+lb.vatnote+'</div>')
+    +pstSectionTitle(lb.cd)
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 28px;font-size:12px">'
+      +'<div><span style="color:#8A8378">'+lb.dl+'</span> <strong>'+inc+(loc?' '+loc:'')+'</strong></div>'
+      +'<div><span style="color:#8A8378">'+lb.pm+'</span> <strong>'+pay+'</strong></div>'
+      +(cer?'<div><span style="color:#8A8378">'+lb.ct+'</span> <strong>'+cer+'</strong></div>':'')
+    +'</div>'
+    +(not?'<div style="margin-top:12px;font-size:12px;background:#FCFBF9;border-left:3px solid #B87333;padding:10px 14px"><strong style="color:#B87333">'+lb.rm+'</strong> '+not.replace(/\n/g,'<br>')+'</div>':'')
+    +pstBankBlock(lang)
+    +pstSignature(lb.gr)
+    +pstDocFooter()
     +'</div>';
 
   document.getElementById('iv-preview').innerHTML=html;
@@ -2318,7 +2468,7 @@ function printInvoiceOut(){
   const content=document.getElementById('iv-preview').innerHTML;
   if(!content || content.indexOf('Plotëso')>-1){alert('Gjenero faturën fillimisht.');return;}
   const w=window.open('','_blank');
-  const h='<!DOCTYPE html><html><head><title>Fatura PRISTEEL</title><style>body{margin:40px}@media print{body{margin:15px}}</style></head><body>'+content+'</body></html>';
+  const h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Fatura PRISTEEL</title><style>body{margin:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'+content+'</body></html>';
   w.document.write(h);w.document.close();
   setTimeout(function(){w.print();},400);
 }
