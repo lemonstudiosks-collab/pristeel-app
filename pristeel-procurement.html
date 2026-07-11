@@ -536,7 +536,34 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div class="field-group fg-2"><div><label class="lbl">Zinktimi EUR/kg (ops.)</label><input type="number" id="of-zn" step="0.001" placeholder="0.000"></div><div><label class="lbl">Transporti EUR total (ops.)</label><input type="number" id="of-tr" step="0.01" placeholder="0.00"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Incoterms</label><select id="of-inc"><option>DAP</option><option>DDP</option><option>EXW</option></select></div><div><label class="lbl">Vendi</label><input type="text" id="of-loc" placeholder="Hamburg, DE"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Afati jave</label><input type="number" id="of-del" placeholder="6"></div><div><label class="lbl">Validiteti dite</label><input type="number" id="of-val" value="30"></div></div>
-<div class="field-group fg-2"><div><label class="lbl">Pagesa</label><input type="text" id="of-pay" value="30 Tage netto"></div><div><label class="lbl">Certifikata</label><select id="of-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
+<div class="field-group fg-2"><div><label class="lbl">Pagesa</label><select id="of-pay-preset" onchange="payPresetChanged()">
+<option value="net30">30 Tage netto</option>
+<option value="net14">14 Tage netto</option>
+<option value="net60">60 Tage netto</option>
+<option value="vor100">100% Vorauskasse</option>
+<option value="p5050">50% Anzahlung / 50% vor Lieferung</option>
+<option value="p603010">60% / 30% / 10% (30 ditë pas)</option>
+<option value="p306010">30% / 60% / 10% (30 ditë pas)</option>
+<option value="custom">Vetjake (%)...</option>
+</select></div><div><label class="lbl">Certifikata</label><select id="of-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
+<div id="of-pay-custom" style="display:none;background:var(--bg2);border-radius:var(--radius);padding:10px;margin-bottom:10px">
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+    <input type="number" id="of-pc1" value="60" min="0" max="100" style="width:60px" oninput="updatePaySum()"><span style="font-size:12px">%</span>
+    <select id="of-pe1" style="flex:1"><option value="order">Anzahlung bei Auftragserteilung</option><option value="beforeDel">vor Lieferung</option><option value="onDel">bei Lieferung</option><option value="afterDel">X Tage nach Lieferung</option><option value="afterInv">nach Rechnungserhalt</option></select>
+    <input type="number" id="of-pd1" value="0" min="0" style="width:60px" title="Ditë" oninput="updatePaySum()">
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+    <input type="number" id="of-pc2" value="30" min="0" max="100" style="width:60px" oninput="updatePaySum()"><span style="font-size:12px">%</span>
+    <select id="of-pe2" style="flex:1"><option value="beforeDel">vor Lieferung</option><option value="order">Anzahlung bei Auftragserteilung</option><option value="onDel">bei Lieferung</option><option value="afterDel">X Tage nach Lieferung</option><option value="afterInv">nach Rechnungserhalt</option></select>
+    <input type="number" id="of-pd2" value="0" min="0" style="width:60px" title="Ditë" oninput="updatePaySum()">
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+    <input type="number" id="of-pc3" value="10" min="0" max="100" style="width:60px" oninput="updatePaySum()"><span style="font-size:12px">%</span>
+    <select id="of-pe3" style="flex:1"><option value="afterDel">X Tage nach Lieferung</option><option value="order">Anzahlung bei Auftragserteilung</option><option value="beforeDel">vor Lieferung</option><option value="onDel">bei Lieferung</option><option value="afterInv">nach Rechnungserhalt</option></select>
+    <input type="number" id="of-pd3" value="30" min="0" style="width:60px" title="Ditë" oninput="updatePaySum()">
+  </div>
+  <div style="font-size:12px;font-weight:600" id="of-pay-sum">Σ = 100% ✓</div>
+</div>
 <div><label class="lbl">Shenime</label><textarea id="of-not" style="min-height:50px"></textarea></div></div>
 <div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-sm" style="flex:0" onclick="loadOfData()">Ngarko nga BOM</button><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="genOfer()">Gjenero Oferten</button></div>
 </div>
@@ -562,6 +589,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="card"><div class="card-title">Të dhënat e faturës</div>
       <div class="field-group fg-2"><div><label class="lbl">Nr. faturës</label><input type="text" id="iv-nr" placeholder="PST-INV-2026-001"></div><div><label class="lbl">Data</label><input type="date" id="iv-date"></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Gjuha</label><select id="iv-lang"><option value="de">Gjermanisht</option><option value="en">Anglisht</option><option value="sq">Shqip</option><option value="sr">Serbisht</option></select></div><div><label class="lbl">Referenca (Oferta/Porosia)</label><input type="text" id="iv-ref" placeholder="ANF-2026-001"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Nga oferta (regjistri)</label><select id="iv-from-quo" onchange="quoSelected()"><option value="">— zgjidh ofertën —</option></select></div><div><label class="lbl">Kësti sipas planit të pagesës</label><select id="iv-milestone" onchange="milestoneSelected()"><option value="">—</option></select></div></div>
       <div class="field-group fg-2"><div><label class="lbl">Lloji i faturës</label><select id="iv-type" onchange="toggleAdvanceType()"><option value="standard">Fatura Standarde</option><option value="advance">Fatura e Avansit (Vorausrechnung)</option><option value="final">Fatura Përfundimtare (Schlussrechnung)</option></select></div><div id="iv-advance-pct-wrap" style="display:none"><label class="lbl">Përqindja e avansit (%)</label><input type="number" id="iv-advance-pct" value="30" step="1" oninput="calcAdvancePreview()"></div></div>
       <div class="field-group fg-2" id="iv-advance-val-wrap" style="display:none"><div><label class="lbl">Vlera e kontratës (bazë, EUR)</label><input type="number" id="iv-contract-value" step="0.01" oninput="calcAdvancePreview()"></div><div><label class="lbl">Shuma e avansit (EUR)</label><input type="text" id="iv-advance-amt" readonly style="background:var(--bg2)"></div></div>
       <div id="iv-advance-btn-wrap" style="display:none;margin-bottom:10px"><button class="btn btn-sm" onclick="addAdvanceLineItem()">+ Shto si rresht në faturë</button></div>
@@ -1899,6 +1927,97 @@ function loadOfData(){
   var sv=parseFloat(sell)||0;
   if(sv>0)document.getElementById('of-pr').value=sv.toFixed(3);
 }
+// ── PLANI I PAGESËS (preset + % këste, tekst multilingual, rrjedh te faturat) ──
+var PAY_PRESETS={
+  net30:[{pct:100,ev:'net',days:30}], net14:[{pct:100,ev:'net',days:14}], net60:[{pct:100,ev:'net',days:60}],
+  vor100:[{pct:100,ev:'vor'}],
+  p5050:[{pct:50,ev:'order'},{pct:50,ev:'beforeDel'}],
+  p603010:[{pct:60,ev:'order'},{pct:30,ev:'beforeDel'},{pct:10,ev:'afterDel',days:30}],
+  p306010:[{pct:30,ev:'order'},{pct:60,ev:'beforeDel'},{pct:10,ev:'afterDel',days:30}]
+};
+var PAY_EV={
+  de:{order:'Anzahlung bei Auftragserteilung',beforeDel:'vor Lieferung',onDel:'bei Lieferung',afterDel:'{d} Tage nach Lieferung',afterInv:'nach Rechnungserhalt',net:'{d} Tage netto',vor:'Vorauskasse'},
+  en:{order:'advance payment upon order',beforeDel:'before delivery',onDel:'upon delivery',afterDel:'{d} days after delivery',afterInv:'upon receipt of invoice',net:'net {d} days',vor:'payment in advance'},
+  sq:{order:'avans me porosinë',beforeDel:'para dorëzimit',onDel:'me dorëzim',afterDel:'{d} ditë pas dorëzimit',afterInv:'me pranimin e faturës',net:'{d} ditë neto',vor:'parapagim'},
+  sr:{order:'avans pri porudžbini',beforeDel:'pre isporuke',onDel:'pri isporuci',afterDel:'{d} dana nakon isporuke',afterInv:'po prijemu fakture',net:'{d} dana neto',vor:'avansno plaćanje'}
+};
+function buildPayPlan(){
+  var preset=(document.getElementById('of-pay-preset')||{value:'net30'}).value;
+  if(preset!=='custom') return PAY_PRESETS[preset]||PAY_PRESETS.net30;
+  var plan=[];
+  for(var i=1;i<=3;i++){
+    var pct=parseFloat((document.getElementById('of-pc'+i)||{value:0}).value)||0;
+    if(pct<=0) continue;
+    var ev=(document.getElementById('of-pe'+i)||{value:'order'}).value;
+    var days=parseInt((document.getElementById('of-pd'+i)||{value:0}).value)||0;
+    var m={pct:pct,ev:ev}; if(ev==='afterDel'||ev==='net') m.days=days||30;
+    plan.push(m);
+  }
+  return plan.length?plan:PAY_PRESETS.net30;
+}
+function payPlanText(plan, lang){
+  var ev=PAY_EV[lang]||PAY_EV.de;
+  if(plan.length===1 && plan[0].pct===100 && (plan[0].ev==='net'||plan[0].ev==='vor')){
+    return ev[plan[0].ev].replace('{d}', plan[0].days||30);
+  }
+  return plan.map(function(m){
+    return m.pct+' % '+(ev[m.ev]||m.ev).replace('{d}', m.days||30);
+  }).join(' / ');
+}
+function payPresetChanged(){
+  var c=document.getElementById('of-pay-custom');
+  if(c) c.style.display = document.getElementById('of-pay-preset').value==='custom' ? '' : 'none';
+  updatePaySum();
+}
+function updatePaySum(){
+  var el=document.getElementById('of-pay-sum'); if(!el) return;
+  var plan=buildPayPlan();
+  var s=plan.reduce(function(a,m){return a+m.pct;},0);
+  el.textContent='Σ = '+s+'%'+(s===100?' ✓':' ⚠ duhet 100%');
+  el.style.color = s===100 ? 'var(--green)' : '#C0392B';
+}
+// ── FATURA ← OFERTA: tërheqja e planit nga regjistri ──
+var _quoDocs=[];
+function loadQuoRegistry(){
+  supaFetch('documents_registry?series=eq.QUO&order=created_at.desc&limit=25','GET').then(function(rows){
+    _quoDocs=rows||[];
+    var sel=document.getElementById('iv-from-quo'); if(!sel) return;
+    var cur=sel.value;
+    sel.innerHTML='<option value="">— zgjidh ofertën —</option>'+_quoDocs.map(function(d,i){
+      return '<option value="'+i+'">'+d.doc_nr+' — '+(d.client||'')+(d.total_eur?(' — '+parseFloat(d.total_eur).toLocaleString('de-DE')+' €'):'')+'</option>';
+    }).join('');
+    sel.value=cur;
+  }).catch(function(){});
+}
+function quoSelected(){
+  var i=document.getElementById('iv-from-quo').value;
+  var ms=document.getElementById('iv-milestone');
+  ms.innerHTML='<option value="">—</option>';
+  if(i==='') return;
+  var d=_quoDocs[parseInt(i)]; if(!d) return;
+  if(d.total_eur){ var cv=document.getElementById('iv-contract-value'); if(cv) cv.value=parseFloat(d.total_eur); }
+  var cliF=document.getElementById('iv-cli'); if(cliF&&!cliF.value.trim()&&d.client) cliF.value=d.client;
+  var prjF=document.getElementById('iv-proj'); if(prjF&&!prjF.value.trim()&&d.project) prjF.value=d.project;
+  var plan=d.payment_plan||[];
+  ms.innerHTML='<option value="">—</option>'+plan.map(function(m,idx){
+    return '<option value="'+idx+'">Kësti '+(idx+1)+': '+m.pct+' % — '+(PAY_EV.de[m.ev]||m.ev).replace('{d}',m.days||30)+'</option>';
+  }).join('');
+  if(typeof calcAdvancePreview==='function') try{calcAdvancePreview();}catch(e){}
+}
+function milestoneSelected(){
+  var qi=document.getElementById('iv-from-quo').value, mi=document.getElementById('iv-milestone').value;
+  if(qi===''||mi==='') return;
+  var d=_quoDocs[parseInt(qi)]; var plan=d.payment_plan||[]; var m=plan[parseInt(mi)]; if(!m) return;
+  var isLast = parseInt(mi)===plan.length-1 && plan.length>1;
+  var typeSel=document.getElementById('iv-type');
+  typeSel.value = isLast ? 'final' : 'advance';
+  toggleAdvanceType();
+  if(!isLast){
+    document.getElementById('iv-advance-pct').value=m.pct;
+    if(d.total_eur) document.getElementById('iv-contract-value').value=parseFloat(d.total_eur);
+    try{calcAdvancePreview();}catch(e){}
+  }
+}
 // ── NUMERIMI AUTOMATIK I DOKUMENTEVE (PST-QUO / PST-INV / PST-OC / PST-RFQ) ──
 function nextDocNr(series){
   var yr = new Date().getFullYear();
@@ -1913,12 +2032,13 @@ function prefillDocNr(series, fieldId){
   if(!f || f.value.trim()) return;
   nextDocNr(series).then(function(d){ if(!f.value.trim()) f.value = d.nr; }).catch(function(){});
 }
-function registerDocNr(series, nr, project, client, totalEur){
+function registerDocNr(series, nr, project, client, totalEur, payPlan){
   var m = nr.match(/PST-[A-Z]+-(\d{4})-(\d{1,4})/);
   if(!m) return Promise.resolve();
   return supaFetch('documents_registry','POST',{
     series:series, year:parseInt(m[1]), seq:parseInt(m[2]), doc_nr:nr,
-    project:project||'', client:client||'', total_eur:totalEur||null
+    project:project||'', client:client||'', total_eur:totalEur||null,
+    payment_plan:payPlan||null
   }).catch(function(e){});
 }
 // ── PRISTEEL DOCUMENT DESIGN SYSTEM (Oferta + Fatura) ──
@@ -1957,13 +2077,24 @@ function pstDocFooter(){
     +'<div>Business Nr. '+(settings.taxNr||'811361089')+' · www.prissteel.com</div>'
   +'</div>';
 }
+function pstSalutation(con, lb){
+  if(!con) return lb.greet;
+  var c=con.trim();
+  if(/^(Herr|Mr\.?|Z\.|Zoti)\s/i.test(c)) return (lb.salM||lb.greet).replace('%s',c)+',';
+  if(/^(Frau|Mrs\.?|Ms\.?|Znj\.?|Zonja)\s/i.test(c)) return (lb.salF||lb.greet).replace('%s',c)+',';
+  return (lb.salM||lb.greet).replace('%s',c)+',';
+}
+function pstDelTxt(del, lb){
+  if(!del || del==='-' ) return lb.nv||'n.V.';
+  return isNaN(parseFloat(del)) ? del : del+lb.wk;
+}
 function pstFmt(n,dec){return (n||0).toLocaleString('de-DE',{minimumFractionDigits:(dec==null?2:dec),maximumFractionDigits:(dec==null?2:dec)});}
 
 var OF_LABELS={
-  de:{stx:'Stahlbau / Fertigung',znx:'Feuerverzinkung (DIN EN ISO 1461)',trx:'Transport',t:'ANGEBOT',from:'Anbieter',to:'Kunde',at:'z.Hd.',on:'Angebots-Nr.',da:'Datum',pr:'Projekt',rf:'Ihre Referenz',vl:'Gültigkeit',dy:' Tage',ps:'Positionen',hn:'Pos.',hp:'Profil',hg:'Güte',hs:'Stk.',hq:'Menge (kg)',tq:'Gesamtmenge',up:'Einheitspreis',tp:'Gesamtpreis (Netto)',cd:'Konditionen',dl:'Lieferzeit',wk:' Wochen',pm:'Zahlungsbedingungen',ct:'Zertifikat',ic:'Lieferbedingung',rm:'Bemerkungen',gr:'Mit freundlichen Grüßen',greet:'Sehr geehrte Damen und Herren,',intro:'vielen Dank für Ihre Anfrage und das damit verbundene Interesse an unseren Leistungen. Gerne unterbreiten wir Ihnen hiermit unser freibleibendes Angebot:'},
-  en:{stx:'Steel fabrication',znx:'Hot-dip galvanizing (EN ISO 1461)',trx:'Transport',t:'QUOTATION',from:'Supplier',to:'Customer',at:'Attn.',on:'Quotation No.',da:'Date',pr:'Project',rf:'Your Reference',vl:'Validity',dy:' days',ps:'Positions',hn:'Pos.',hp:'Profile',hg:'Grade',hs:'Pcs.',hq:'Quantity (kg)',tq:'Total quantity',up:'Unit price',tp:'Total price (net)',cd:'Conditions',dl:'Delivery time',wk:' weeks',pm:'Payment terms',ct:'Certificate',ic:'Delivery term',rm:'Remarks',gr:'Best regards',greet:'Dear Sir or Madam,',intro:'thank you for your inquiry and your interest in our services. We are pleased to submit our non-binding offer:'},
-  sq:{stx:'Konstruksioni / fabrikimi',znx:'Zinktimi në të nxehtë (EN ISO 1461)',trx:'Transporti',t:'OFERTË',from:'Ofruesi',to:'Klienti',at:'Vëmendje',on:'Nr. i ofertës',da:'Data',pr:'Projekti',rf:'Referenca juaj',vl:'Validiteti',dy:' ditë',ps:'Pozicionet',hn:'Poz.',hp:'Profili',hg:'Grada',hs:'Copë',hq:'Sasia (kg)',tq:'Sasia totale',up:'Çmimi për njësi',tp:'Çmimi total (neto)',cd:'Kushtet',dl:'Afati i dorëzimit',wk:' javë',pm:'Kushtet e pagesës',ct:'Certifikata',ic:'Kushti i dorëzimit',rm:'Shënime',gr:'Me respekt',greet:'Të nderuar,',intro:'ju faleminderit për kërkesën tuaj dhe interesimin për shërbimet tona. Me kënaqësi ju paraqesim ofertën tonë:'},
-  sr:{stx:'Čelična konstrukcija',znx:'Toplo cinkovanje (EN ISO 1461)',trx:'Transport',t:'PONUDA',from:'Ponuđač',to:'Kupac',at:'Pažnja',on:'Broj ponude',da:'Datum',pr:'Projekat',rf:'Vaša referenca',vl:'Važnost',dy:' dana',ps:'Pozicije',hn:'Poz.',hp:'Profil',hg:'Kvalitet',hs:'Kom.',hq:'Količina (kg)',tq:'Ukupna količina',up:'Jedinična cena',tp:'Ukupna cena (neto)',cd:'Uslovi',dl:'Rok isporuke',wk:' nedelja',pm:'Uslovi plaćanja',ct:'Sertifikat',ic:'Uslov isporuke',rm:'Napomene',gr:'S poštovanjem',greet:'Poštovani,',intro:'hvala vam na upitu i interesovanju za naše usluge. Sa zadovoljstvom vam dostavljamo našu neobavezujuću ponudu:'}
+  de:{salM:'Sehr geehrter %s',salF:'Sehr geehrte %s',nv:'nach Vereinbarung',stx:'Stahlbau / Fertigung',znx:'Feuerverzinkung (DIN EN ISO 1461)',trx:'Transport',t:'ANGEBOT',from:'Anbieter',to:'Kunde',at:'z.Hd.',on:'Angebots-Nr.',da:'Datum',pr:'Projekt',rf:'Ihre Referenz',vl:'Gültigkeit',dy:' Tage',ps:'Positionen',hn:'Pos.',hp:'Profil',hg:'Güte',hs:'Stk.',hq:'Menge (kg)',tq:'Gesamtmenge',up:'Einheitspreis',tp:'Gesamtpreis (Netto)',cd:'Konditionen',dl:'Lieferzeit',wk:' Wochen',pm:'Zahlungsbedingungen',ct:'Zertifikat',ic:'Lieferbedingung',rm:'Bemerkungen',gr:'Mit freundlichen Grüßen',greet:'Sehr geehrte Damen und Herren,',intro:'vielen Dank für Ihre Anfrage und das damit verbundene Interesse an unseren Leistungen. Gerne unterbreiten wir Ihnen hiermit unser freibleibendes Angebot:'},
+  en:{salM:'Dear %s',salF:'Dear %s',nv:'to be agreed',stx:'Steel fabrication',znx:'Hot-dip galvanizing (EN ISO 1461)',trx:'Transport',t:'QUOTATION',from:'Supplier',to:'Customer',at:'Attn.',on:'Quotation No.',da:'Date',pr:'Project',rf:'Your Reference',vl:'Validity',dy:' days',ps:'Positions',hn:'Pos.',hp:'Profile',hg:'Grade',hs:'Pcs.',hq:'Quantity (kg)',tq:'Total quantity',up:'Unit price',tp:'Total price (net)',cd:'Conditions',dl:'Delivery time',wk:' weeks',pm:'Payment terms',ct:'Certificate',ic:'Delivery term',rm:'Remarks',gr:'Best regards',greet:'Dear Sir or Madam,',intro:'thank you for your inquiry and your interest in our services. We are pleased to submit our non-binding offer:'},
+  sq:{salM:'I nderuar %s',salF:'E nderuara %s',nv:'sipas marrëveshjes',stx:'Konstruksioni / fabrikimi',znx:'Zinktimi në të nxehtë (EN ISO 1461)',trx:'Transporti',t:'OFERTË',from:'Ofruesi',to:'Klienti',at:'Vëmendje',on:'Nr. i ofertës',da:'Data',pr:'Projekti',rf:'Referenca juaj',vl:'Validiteti',dy:' ditë',ps:'Pozicionet',hn:'Poz.',hp:'Profili',hg:'Grada',hs:'Copë',hq:'Sasia (kg)',tq:'Sasia totale',up:'Çmimi për njësi',tp:'Çmimi total (neto)',cd:'Kushtet',dl:'Afati i dorëzimit',wk:' javë',pm:'Kushtet e pagesës',ct:'Certifikata',ic:'Kushti i dorëzimit',rm:'Shënime',gr:'Me respekt',greet:'Të nderuar,',intro:'ju faleminderit për kërkesën tuaj dhe interesimin për shërbimet tona. Me kënaqësi ju paraqesim ofertën tonë:'},
+  sr:{salM:'Poštovani %s',salF:'Poštovana %s',nv:'po dogovoru',stx:'Čelična konstrukcija',znx:'Toplo cinkovanje (EN ISO 1461)',trx:'Transport',t:'PONUDA',from:'Ponuđač',to:'Kupac',at:'Pažnja',on:'Broj ponude',da:'Datum',pr:'Projekat',rf:'Vaša referenca',vl:'Važnost',dy:' dana',ps:'Pozicije',hn:'Poz.',hp:'Profil',hg:'Kvalitet',hs:'Kom.',hq:'Količina (kg)',tq:'Ukupna količina',up:'Jedinična cena',tp:'Ukupna cena (neto)',cd:'Uslovi',dl:'Rok isporuke',wk:' nedelja',pm:'Uslovi plaćanja',ct:'Sertifikat',ic:'Uslov isporuke',rm:'Napomene',gr:'S poštovanjem',greet:'Poštovani,',intro:'hvala vam na upitu i interesovanju za naše usluge. Sa zadovoljstvom vam dostavljamo našu neobavezujuću ponudu:'}
 };
 
 function genOfer(){
@@ -1971,12 +2102,13 @@ function genOfer(){
   var lb=OF_LABELS[lang]||OF_LABELS.de;
   var nr=document.getElementById('of-nr').value||'PST-OFF-2026-001';
   var dt=document.getElementById('of-date').value;
-  var dts=dt?(new Date(dt).toLocaleDateString('de-DE')):'';
+  var dts=dt?(new Date(dt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})):'';
   var proj=document.getElementById('of-proj').value||'';
   var ref=document.getElementById('of-ref').value||'';
   var cli=document.getElementById('of-cli').value||'[Kunde]';
   var con=document.getElementById('of-con').value||'';
   var adr=document.getElementById('of-adr').value||'';
+  var em=(document.getElementById('of-em')||{value:''}).value||'';
   var pr=parseFloat(document.getElementById('of-pr').value)||0;
   var kg=parseFloat(document.getElementById('of-kg').value)||0;
   var zn=parseFloat((document.getElementById('of-zn')||{value:0}).value)||0;
@@ -1985,7 +2117,8 @@ function genOfer(){
   var loc=document.getElementById('of-loc').value||'';
   var del=document.getElementById('of-del').value||'-';
   var val=document.getElementById('of-val').value||'30';
-  var pay=document.getElementById('of-pay').value||'';
+  var payPlan=buildPayPlan();
+  var pay=payPlanText(payPlan, lang);
   var cer=document.getElementById('of-cer').value;
   var not=document.getElementById('of-not').value||'';
   var tot=pr*kg + zn*kg + tr;
@@ -2011,10 +2144,10 @@ function genOfer(){
     +pstDocHeader(lb.t, nr)
     +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px">'
       +pstPartyBox(lb.from,[ '<strong>'+(settings.company||'PRISTEEL Sh.p.k.')+'</strong>', settings.address||'Rr. Tringe Smajli nr.16, 10000 Prishtinë', 'Kosovë · Business Nr. '+(settings.taxNr||'811361089'), settings.email||'sales@prissteel.com' ])
-      +pstPartyBox(lb.to,[ '<strong>'+cli+'</strong>', con?(lb.at+' '+con):'', adr ])
+      +pstPartyBox(lb.to,[ '<strong>'+cli+'</strong>', con?(lb.at+' '+con):'', adr, em ])
     +'</div>'
     +pstMetaRow([[lb.on,nr],[lb.da,dts],[lb.pr,proj],[lb.rf,ref],[lb.vl,val+lb.dy]])
-    +'<div style="margin:16px 0 4px;font-size:12.5px">'+(con?lb.at.replace('.','')+' '+con+',':lb.greet)+'<br>'+lb.intro+'</div>'
+    +'<div style="margin:16px 0 4px;font-size:12.5px">'+pstSalutation(con,lb)+'<br>'+lb.intro+'</div>'
     +pstSectionTitle(lb.ps)
     +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
       +'<thead><tr style="background:#1C2333;color:#fff">'
@@ -2028,16 +2161,16 @@ function genOfer(){
     +'</table>'
     +'<div style="display:flex;justify-content:flex-end;margin-top:16px">'
       +'<div style="min-width:300px;background:#F8F6F3;border:1px solid #EAE5DE;border-radius:8px;padding:14px 18px">'
-        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.stx+' ('+pr.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600">'+pstFmt(pr*kg)+' EUR</span></div>'
-        +(zn>0?'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.znx+' ('+zn.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600">'+pstFmt(zn*kg)+' EUR</span></div>':'')
-        +(tr>0?'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.trx+'</span><span style="font-weight:600">'+pstFmt(tr)+' EUR</span></div>':'')
-        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.ic+'</span><span style="font-weight:600">'+inc+(loc?' '+loc:'')+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.stx+' ('+pr.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(pr*kg)+' EUR</span></div>'
+        +(zn>0?'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.znx+' ('+zn.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(zn*kg)+' EUR</span></div>':'')
+        +(tr>0?'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.trx+'</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(tr)+' EUR</span></div>':'')
+        +'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.ic+'</span><span style="font-weight:600">'+inc+(loc?' '+loc:'')+'</span></div>'
         +'<div style="display:flex;justify-content:space-between;padding:8px 0 2px;margin-top:6px;border-top:2px solid #B87333"><span style="font-weight:700">'+lb.tp+'</span><span style="font-weight:700;font-size:16px;color:#B87333">'+pstFmt(tot)+' EUR</span></div>'
       +'</div>'
     +'</div>'
     +pstSectionTitle(lb.cd)
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 28px;font-size:12px">'
-      +'<div><span style="color:#8A8378">'+lb.dl+':</span> <strong>'+del+lb.wk+'</strong></div>'
+      +'<div><span style="color:#8A8378">'+lb.dl+':</span> <strong>'+pstDelTxt(del,lb)+'</strong></div>'
       +'<div><span style="color:#8A8378">'+lb.pm+':</span> <strong>'+pay+'</strong></div>'
       +'<div><span style="color:#8A8378">'+lb.ct+':</span> <strong>'+cer+'</strong></div>'
       +'<div><span style="color:#8A8378">'+lb.vl+':</span> <strong>'+val+lb.dy+'</strong></div>'
@@ -2059,7 +2192,7 @@ function printOfer(){
   var _nr=document.getElementById('of-nr').value.trim();
   var _pr=parseFloat(document.getElementById('of-pr').value)||0, _kg=parseFloat(document.getElementById('of-kg').value)||0;
   var _zn=parseFloat((document.getElementById('of-zn')||{value:0}).value)||0, _tr=parseFloat((document.getElementById('of-tr')||{value:0}).value)||0;
-  if(_nr) registerDocNr('QUO', _nr, document.getElementById('of-proj').value||'', document.getElementById('of-cli').value||'', _pr*_kg+_zn*_kg+_tr);
+  if(_nr) registerDocNr('QUO', _nr, document.getElementById('of-proj').value||'', document.getElementById('of-cli').value||'', _pr*_kg+_zn*_kg+_tr, buildPayPlan());
   var w=window.open('','_blank');
   var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Oferta PRISTEEL</title><style>body{margin:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'+content+'</body></html>';
   w.document.write(h);w.document.close();
@@ -2479,12 +2612,13 @@ function genInvoiceOut(){
     ('<div style="font-size:11px;color:#5A6478;margin-bottom:12px">'+(ADV_NOTE_TXT[lang]||ADV_NOTE_TXT.de)+advPct+(ADV_NOTE_TXT2[lang]||ADV_NOTE_TXT2.de)+contractVal.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR).</div>') : '';
   const nr=document.getElementById('iv-nr').value||'PST-INV-2026-001';
   const dt=document.getElementById('iv-date').value;
-  const dts=dt?(new Date(dt).toLocaleDateString('de-DE')):'';
+  const dts=dt?(new Date(dt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})):'';
   const proj=document.getElementById('iv-proj').value||'';
   const ref=document.getElementById('iv-ref').value||'';
   const cli=document.getElementById('iv-cli').value||'';
   const con=document.getElementById('iv-con').value||'';
   const adr=document.getElementById('iv-adr').value||'';
+  const ivem=(document.getElementById('iv-em')||{value:''}).value||'';
   const inc=document.getElementById('iv-inc').value;
   const loc=document.getElementById('iv-loc').value||'';
   const pay=document.getElementById('iv-pay').value||'';
@@ -2541,7 +2675,7 @@ function genInvoiceOut(){
     '<div style="'+PST_DOC_CSS+'">'
     +pstDocHeader(titleTxt, nr)
     +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px">'
-      +pstPartyBox((INV_LABELS[lang]||INV_LABELS.de).to.replace(':',''),[ '<strong>'+cli+'</strong>', con?(lb.at+' '+con):'', adr?adr:'' ])
+      +pstPartyBox((INV_LABELS[lang]||INV_LABELS.de).to.replace(':',''),[ '<strong>'+cli+'</strong>', con?(lb.at+' '+con):'', adr?adr:'', ivem ])
       +pstPartyBox('PRISTEEL',[ '<strong>'+(settings.company||'PRISTEEL Sh.p.k.')+'</strong>', settings.address||'Rr. Tringe Smajli nr.16, 10000 Prishtinë, Kosovë', (lb.fnr+' '+(settings.taxNr||'811361089')), settings.email||'sales@prissteel.com' ])
     +'</div>'
     +pstMetaRow([[lb.on.replace(':',''),nr],[lb.da.replace(':',''),dts],[lb.pr.replace(':',''),proj],[lb.rf.replace(':',''),ref]])
@@ -3092,7 +3226,7 @@ if(typeof showPage==='function'){
     _showPageOrig(p);
     try{
       if(p==='oferta') prefillDocNr('QUO','of-nr');
-      if(p==='invoices') prefillDocNr('INV','iv-nr');
+      if(p==='invoices'){ prefillDocNr('INV','iv-nr'); loadQuoRegistry(); }
     }catch(e){}
   };
 }
