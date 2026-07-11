@@ -1518,12 +1518,42 @@ function copyRfq(btn,enc){
 }
 
 // ── OFFERS ────────────────────────────────────────────
+function bomTotalKg(){return +(bomRows.reduce((s,r)=>s+(parseFloat(r.kg)||0),0)).toFixed(1);}
 function addOffer(){
-  offers.push({id:Date.now(),supplier:'',priceKg:0,delivery:4,inco:'EXW',cert:'EN 10204 3.1',validity:30,notes:''});
+  offers.push({id:Date.now(),supplier:'',priceKg:0,zincKg:0,transportEur:0,vatPct:0,kg:bomTotalKg(),totalEur:0,delivery:4,inco:'EXW',cert:'EN 10204 3.1',validity:30,notes:'',dbId:null});
   renderOffers();
 }
 function remOffer(id){offers=offers.filter(o=>o.id!==id);renderOffers();}
-function updOffer(id,f,v){const o=offers.find(o=>o.id===id);if(o)o[f]=['priceKg','delivery','validity'].includes(f)?parseFloat(v)||0:v;}
+function delOffer(id){
+  const o=offers.find(x=>x.id===id);
+  if(o&&o.dbId){ supaFetch('offers?id=eq.'+o.dbId,'DELETE').catch(function(e){console.error(e);}); }
+  offers=offers.filter(x=>x.id!==id);renderOffers();
+}
+function recalcOffer(o){
+  if((o.kg||0)>0){ o.totalEur=+(((o.priceKg||0)+(o.zincKg||0))*(o.kg||0)+(o.transportEur||0)).toFixed(2); }
+}
+function offerGross(o){return +((o.totalEur||0)*(1+(o.vatPct||0)/100)).toFixed(2);}
+var _offerSaveTimers={};
+function scheduleOfferSave(o){
+  if(!_curProjId) return;
+  clearTimeout(_offerSaveTimers[o.id]);
+  _offerSaveTimers[o.id]=setTimeout(function(){ saveOfferDb(o); },900);
+}
+function saveOfferDb(o){
+  if(!_curProjId) return;
+  const payload={project_id:_curProjId,supplier:o.supplier||'',price_kg:o.priceKg||0,total_eur:o.totalEur||0,
+    delivery_weeks:o.delivery||0,incoterms:o.inco||'EXW',cert:o.cert||'',notes:o.notes||'',origin:o.origin||'',
+    zinc_kg:o.zincKg||0,transport_eur:o.transportEur||0,vat_pct:o.vatPct||0,qty_kg:o.kg||0};
+  const req=o.dbId?supaFetch('offers?id=eq.'+o.dbId,'PATCH',payload):supaFetch('offers','POST',payload);
+  req.then(function(rows){ if(!o.dbId&&rows&&rows[0]) o.dbId=rows[0].id; }).catch(function(e){console.error('Ruajtja e ofertes:',e);});
+}
+function updOffer(id,f,v){
+  const o=offers.find(o=>o.id===id);if(!o)return;
+  o[f]=['priceKg','delivery','validity','kg','zincKg','transportEur','vatPct','totalEur'].includes(f)?parseFloat(v)||0:v;
+  if(['priceKg','zincKg','kg','transportEur'].includes(f)) recalcOffer(o);
+  if(['priceKg','zincKg','kg','transportEur','vatPct','totalEur'].includes(f)) renderOffers();
+  scheduleOfferSave(o);
+}
 function renderOffers(){
   const incos=['EXW','FCA','CPT','CIP','DAP','DPU','DDP','FOB','CFR','CIF'];
   const certs=['EN 10204 3.1','EN 10204 3.2','EN 10204 2.2',''];
@@ -1546,7 +1576,7 @@ function renderOffers(){
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <span style="font-size:18px;font-weight:700;color:${isOutgoing?'#B87333':'var(--text)'}">${o.priceKg>0?o.priceKg.toFixed(3)+' EUR/kg':''}</span>
-          ${o.totalEur>0?`<span style="font-size:13px;color:var(--text2)">→ <strong>${o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} EUR</strong></span>`:''}
+          ${o.totalEur>0?`<span style="font-size:13px;color:var(--text2)">→ <strong>${o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} EUR</strong>${(o.vatPct||0)>0?` <span style="font-size:11px">(+${o.vatPct}% TVSH = ${offerGross(o).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})})</span>`:''}</span>`:''}
           <button onclick="delOffer(${o.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
         </div>
       </div>
@@ -1563,9 +1593,33 @@ function renderOffers(){
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label class="lbl">Total EUR</label>
-            <input type="number" value="${o.totalEur||''}" step="0.01" placeholder="0.00" onchange="updOffer(${o.id},'totalEur',this.value)">
+            <label class="lbl">Sasia (kg)</label>
+            <input type="number" value="${o.kg||''}" step="1" placeholder="${bomTotalKg()||0}" onchange="updOffer(${o.id},'kg',this.value)">
           </div>
+          <div>
+            <label class="lbl">Zinktimi EUR/kg</label>
+            <input type="number" value="${o.zincKg||''}" step="0.001" placeholder="0.000" onchange="updOffer(${o.id},'zincKg',this.value)">
+          </div>
+          <div>
+            <label class="lbl">Transporti EUR</label>
+            <input type="number" value="${o.transportEur||''}" step="0.01" placeholder="0.00" onchange="updOffer(${o.id},'transportEur',this.value)">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="lbl">TVSH %</label>
+            <select onchange="updOffer(${o.id},'vatPct',this.value)">${[0,8,18].map(v=>`<option value="${v}"${(o.vatPct||0)===v?' selected':''}>${v===0?'0% (jashtë Kosovës / import)':v+'% (Kosovë)'}</option>`).join('')}</select>
+          </div>
+          <div>
+            <label class="lbl">Total EUR (neto${(o.kg||0)>0?' — auto':''})</label>
+            <input type="number" value="${o.totalEur||''}" step="0.01" placeholder="0.00" ${(o.kg||0)>0?'readonly style="background:var(--bg2)"':''} onchange="updOffer(${o.id},'totalEur',this.value)">
+          </div>
+          <div>
+            <label class="lbl">Total me TVSH (bruto)</label>
+            <input type="text" value="${offerGross(o)?offerGross(o).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR':''}" readonly style="background:var(--bg2);font-weight:600">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label class="lbl">Afati (javë)</label>
             <input type="number" value="${o.delivery||''}" placeholder="0" onchange="updOffer(${o.id},'delivery',this.value)">
@@ -1839,7 +1893,8 @@ offers.push({
         incoterms:parsed.incoterms||'EXW',
         cert:parsed.certification||'',
         notes:offerNotes,
-        origin:cat||''
+        origin:cat||'',
+        zinc_kg:0,transport_eur:0,vat_pct:0,qty_kg:parsed.total_kg||0
       }).catch(function(e){console.error('Ruajtja e ofertes deshtoi:',e);document.getElementById('pdf-status').textContent='⚠ Oferta u shtua lokalisht, por ruajtja në cloud dështoi: '+e.message;});
     } else {
       document.getElementById('pdf-status').textContent='✓ Oferta u analizua — u shtua te lista. Kujdes: projekti s\'është ruajtur në cloud ende, oferta humbet nëse rifreskon faqen.';
@@ -2304,10 +2359,12 @@ function loadProject(id){
       var type='incoming'; // default: offer coming TO pristeel
       if(sup.indexOf('OFERTA JONE')>-1) type='outgoing'; // pristeel sending to client
       return{
-        id:i+1,supplier:sup,priceKg:parseFloat(o.price_kg)||0,price:parseFloat(o.price_kg)||0,
+        id:i+1,dbId:o.id,supplier:sup,priceKg:parseFloat(o.price_kg)||0,price:parseFloat(o.price_kg)||0,
         delivery:parseInt(o.delivery_weeks)||0,inco:o.incoterms||'DAP',
         cert:o.cert||'',notes:o.notes||'',score:parseFloat(o.score)||0,
         totalEur:parseFloat(o.total_eur)||0,
+        kg:parseFloat(o.qty_kg)||0,zincKg:parseFloat(o.zinc_kg)||0,
+        transportEur:parseFloat(o.transport_eur)||0,vatPct:parseFloat(o.vat_pct)||0,
         offerType:type,
         origin:o.origin||''
       };
