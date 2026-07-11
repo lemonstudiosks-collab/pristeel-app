@@ -542,8 +542,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <option value="net60">60 Tage netto</option>
 <option value="vor100">100% Vorauskasse</option>
 <option value="p5050">50% Anzahlung / 50% vor Lieferung</option>
-<option value="p603010">60% / 30% / 10% (30 ditë pas)</option>
-<option value="p306010">30% / 60% / 10% (30 ditë pas)</option>
+<option value="p603010">60% Anzahlung / 30% vor Lieferung / 10% (30 Tage)</option>
+<option value="p306010">30% Anzahlung / 60% vor Lieferung / 10% (30 Tage)</option>
 <option value="custom">Vetjake (%)...</option>
 </select></div><div><label class="lbl">Certifikata</label><select id="of-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
 <div id="of-pay-custom" style="display:none;background:var(--bg2);border-radius:var(--radius);padding:10px;margin-bottom:10px">
@@ -1083,7 +1083,7 @@ async function handleFiles(files){
 
     items.push({
       description_raw: line, pos: pos,
-      profile_type: ptype, dimension: dim||profilRaw, profil_full: profilRaw.toUpperCase(),
+      profile_type: ptype, dimension: profilRaw.toUpperCase(), profil_full: profilRaw.toUpperCase(),
       steel_grade: gute, standard:'', length_mm: lenMm,
       quantity_pieces: stk, quantity_kg: perPiece, row_total_kg: rowTotal,
       surface_treatment:'none', certification:'EN 10204 3.1',
@@ -2068,7 +2068,7 @@ function pstSectionTitle(t){
 }
 function pstSignature(lb_gr){
   return '<div style="margin-top:34px;font-size:12.5px;line-height:1.7">'+lb_gr+',<br><br>'
-    +'<strong>'+(settings.contact||'Arianit Vllahiu')+'</strong> — '+(settings.title||'Founder & CEO')+'<br>'
+    +'<strong>'+(settings.contact||'Arianit Vllahiu')+'</strong><br>'
     +'<span style="color:#8A8378">'+(settings.company||'PRISTEEL Sh.p.k.')+' · '+(settings.email||'sales@prissteel.com')+'</span></div>';
 }
 function pstDocFooter(){
@@ -2076,6 +2076,18 @@ function pstDocFooter(){
     +'<div>'+(settings.company||'PRISTEEL Sh.p.k.')+' · '+(settings.address||'Rr. Tringe Smajli nr.16, 10000 Prishtinë, Kosovë')+'</div>'
     +'<div>Business Nr. '+(settings.taxNr||'811361089')+' · www.prissteel.com</div>'
   +'</div>';
+}
+var PST_TYPE_LABELS={
+  de:{PLATE:'Blech',ANGLE:'Winkel',FLAT:'Flachstahl',TUBE:'Rohr',OTHER:'Profil',ALUMINUM:'Aluminium',MACHINED_PART:'Frästeil'},
+  en:{PLATE:'Plate',ANGLE:'Angle',FLAT:'Flat bar',TUBE:'Tube',OTHER:'Profile',ALUMINUM:'Aluminium',MACHINED_PART:'Machined part'},
+  sq:{PLATE:'Llamarinë',ANGLE:'Profil këndor',FLAT:'Shufër e sheshtë',TUBE:'Gyp',OTHER:'Profil',ALUMINUM:'Alumin',MACHINED_PART:'Pjesë e përpunuar'},
+  sr:{PLATE:'Lim',ANGLE:'Ugaonik',FLAT:'Flah',TUBE:'Cev',OTHER:'Profil',ALUMINUM:'Aluminijum',MACHINED_PART:'Mašinski deo'}
+};
+function pstBomName(r, lang){
+  var d=(r.dim||'').trim();
+  if(/^[A-Za-z]/.test(d)) return d; // emërtim i plotë (HE160B, BL2*50, U160, QRO150*5)
+  var t=(PST_TYPE_LABELS[lang]||PST_TYPE_LABELS.de)[r.profile];
+  return (t||r.profile)+' '+d;
 }
 function pstSalutation(con, lb){
   if(!con) return lb.greet;
@@ -2130,7 +2142,7 @@ function genOfer(){
       var bg=i%2?'#FAF8F5':'#fff';
       return '<tr style="background:'+bg+'">'
         +'<td style="padding:7px 10px;color:#8A8378">'+(i+1<10?'0':'')+(i+1)+'</td>'
-        +'<td style="padding:7px 10px;font-weight:600">'+r.profile+' '+r.dim+'</td>'
+        +'<td style="padding:7px 10px;font-weight:600">'+pstBomName(r,lang)+'</td>'
         +'<td style="padding:7px 10px">'+(r.grade||'')+(r.std?' · '+r.std:'')+'</td>'
         +'<td style="padding:7px 10px;text-align:right">'+(r.pcs||0)+'</td>'
         +'<td style="padding:7px 10px;text-align:right;font-weight:600">'+pstFmt(parseFloat(r.kg)||0,0)+'</td>'
