@@ -533,6 +533,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div><label class="lbl">Adresa</label><input type="text" id="of-adr" placeholder="Musterstr. 1, 20000 Hamburg"></div></div>
 <div class="card"><div class="card-title">Kushtet komerciale</div>
 <div class="field-group fg-2"><div><label class="lbl">Cmimi EUR/kg</label><input type="number" id="of-pr" step="0.001" placeholder="0.000"></div><div><label class="lbl">Total kg</label><input type="number" id="of-kg" placeholder="0"></div></div>
+<div class="field-group fg-2"><div><label class="lbl">Zinktimi EUR/kg (ops.)</label><input type="number" id="of-zn" step="0.001" placeholder="0.000"></div><div><label class="lbl">Transporti EUR total (ops.)</label><input type="number" id="of-tr" step="0.01" placeholder="0.00"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Incoterms</label><select id="of-inc"><option>DAP</option><option>DDP</option><option>EXW</option></select></div><div><label class="lbl">Vendi</label><input type="text" id="of-loc" placeholder="Hamburg, DE"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Afati jave</label><input type="number" id="of-del" placeholder="6"></div><div><label class="lbl">Validiteti dite</label><input type="number" id="of-val" value="30"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Pagesa</label><input type="text" id="of-pay" value="30 Tage netto"></div><div><label class="lbl">Certifikata</label><select id="of-cer"><option>EN 10204 3.1</option><option>EN 10204 3.2</option></select></div></div>
@@ -985,41 +986,107 @@ async function handleFiles(files){
 // ── AI PARSING ────────────────────────────────────────
  function deterministicParseGermanMengenliste(rawText){
   if(!/Ges\.?\s*Gew/i.test(rawText) || !(/MATERIALAUSZUG/i.test(rawText) || /MENGENLISTE/i.test(rawText))) return null;
-  const text = rawText.replace(/\s+/g, ' ').trim();
-  const rowRe = /(\d+)\s+([A-Za-zÄÖÜäöü]+[\dXx.]+)\s+(\S+)\s+(\d+)\s+(?:\*\s+)?(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(.+?)(?=\s+\d+\s+[A-Za-zÄÖÜäöü]+[\dXx.]+\s+\S|\s+(?:SUMME|Zwischensumme|Übertrag|Gesamtsumme)|$)/g;
   const num = s => { const str=String(s).trim(); return str.includes(',') ? (parseFloat(str.replace(/\./g,'').replace(',','.'))||0) : (parseFloat(str)||0); };
-  const items=[];
-  let m;
-  while((m=rowRe.exec(text))){
-    const stk=Math.round(num(m[1])), profilRaw=m[2], gute=m[3], lenMm=m[4], numA=num(m[5]), numB=num(m[6]), bem=m[8];
-    let perPiece;
-    if(stk<=1){ perPiece = numA; }
-    else {
-      const errA = Math.abs(stk*numA - numB);
-      const errB = Math.abs(stk*numB - numA);
-      perPiece = errA <= errB ? numA : numB;
+  const lines = rawText.split(/\r?\n/);
+  const items=[]; const sums=[]; let gesamt=null; let curBatch=[];
+
+  const PROF='([A-Za-zÄÖÜäöü]{1,4}\\d[\\d]*(?:[*xX/.][\\d]+)*[A-Za-z]?(?:\\-[A-Za-z0-9]+)?)';
+  // new format: Pos Stk Profil Güte Länge [*] n1 n2 [n3] Bemerkung...
+  const reNew = new RegExp('^\\s*(\\d{1,6})\\s+(\\d{1,4})\\s+'+PROF+'\\s+(\\S+)\\s+(\\d{1,6})\\s*(\\*?)\\s+([\\d.,]+)\\s+([\\d.,]+)(?:\\s+([\\d.,]+))?\\s*(.*)$');
+  // old format: Stk Profil Güte Länge [*] n1 n2 n3 Bemerkung...
+  const reOld = new RegExp('^\\s*(\\d{1,4})\\s+'+PROF+'\\s+(\\S+)\\s+(\\d{1,6})\\s*(\\*?)\\s+([\\d.,]+)\\s+([\\d.,]+)(?:\\s+([\\d.,]+))?\\s*(.*)$');
+  const reSum = new RegExp('^\\s*SUMME\\s+'+PROF+'\\s+(\\S+)\\s+([\\d.,]+)\\s+([\\d.,]+)(?:\\s+([\\d.,]+))?');
+
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!line) continue;
+    const g = line.match(/^Gesamtsumme:?\s*([\d.,]+)/i);
+    if(g){ gesamt = num(g[1]); continue; }
+    if(/^(Zwischensumme|Übertrag|Uebertrag|Pos\.|MENGENLISTE|\*\s*S)/i.test(line)) continue;
+    const sm = line.match(reSum);
+    if(sm){ sums.push({profil:sm[1].toUpperCase(), gute:sm[2], lenMm:num(sm[3]), kg:num(sm[4]), batch:curBatch}); curBatch=[]; continue; }
+
+    let m = line.match(reNew), pos, stk, profilRaw, gute, lenMm, saege, n1, n2, n3, bem;
+    if(m){
+      pos=m[1]; stk=Math.round(num(m[2])); profilRaw=m[3]; gute=m[4]; lenMm=Math.round(num(m[5]));
+      saege=m[6]==='*'; n1=num(m[7]); n2=num(m[8]); n3=(m[9]!==undefined&&m[9]!=='')?num(m[9]):null; bem=(m[10]||'').trim();
+    } else {
+      m = line.match(reOld);
+      if(!m) continue;
+      pos=''; stk=Math.round(num(m[1])); profilRaw=m[2]; gute=m[3]; lenMm=Math.round(num(m[4]));
+      saege=m[5]==='*'; n1=num(m[6]); n2=num(m[7]); n3=(m[8]!==undefined&&m[8]!=='')?num(m[8]):null; bem=(m[9]||'').trim();
     }
-    const profMatch = profilRaw.match(/^([A-Za-z]+)([\dXx.]+)$/);
-    const prefix = profMatch ? profMatch[1].toUpperCase() : profilRaw.toUpperCase();
-    const dim = profMatch ? profMatch[2].toUpperCase() : '';
-    const profileMap = {BL:'PLATE',HEA:'HEA',HEB:'HEB',IPE:'IPE',RHS:'RHS',SHS:'SHS',CHS:'CHS',L:'ANGLE'};
-    items.push({description_raw:m[0].trim(),profile_type:profileMap[prefix]||'OTHER',dimension:dim||profilRaw,steel_grade:gute,standard:'',length_mm:Math.round(num(lenMm)),quantity_pieces:stk,quantity_kg:perPiece,surface_treatment:'none',certification:'EN 10204 3.1',notes:(bem||'').trim(),confidence:'high'});
+    if(stk<=0) continue;
+
+    // Determine row TOTAL kg (Ges.Gew.) robustly, independent of column order:
+    let rowTotal;
+    const bemNumMatch = bem.match(/([\d.,]+)\s*$/);
+    const bemNum = bemNumMatch ? num(bemNumMatch[1]) : null;
+    if(saege && bemNum!==null){
+      // Sägelänge layout: n1=Gewicht/Stk, n2=Ges.Fl, trailing number in Bemerkung = Ges.Gew
+      rowTotal = bemNum;
+      bem = bem.replace(/[\d.,]+\s*$/,'').trim();
+      // sanity: if wildly inconsistent, fall back to stk*n1
+      if(rowTotal < stk*n1*0.5 || rowTotal > stk*n1*2) rowTotal = +(stk*n1).toFixed(1);
+    } else if(stk===1){
+      rowTotal = n1; // n1==n2 for Stk=1 in both orders
+    } else {
+      const errA = Math.abs(stk*n2 - n1); // hypothesis: n1=total, n2=per-piece
+      const errB = Math.abs(stk*n1 - n2); // hypothesis: n2=total, n1=per-piece
+      rowTotal = errA <= errB ? n1 : n2;
+    }
+    const perPiece = +(rowTotal/stk).toFixed(4);
+
+    // profile mapping
+    const pm = profilRaw.match(/^([A-Za-zÄÖÜäöü]+)(.*)$/);
+    let prefix = pm ? pm[1].toUpperCase() : profilRaw.toUpperCase();
+    let dim = pm ? pm[2].toUpperCase() : '';
+    let ptype = 'OTHER';
+    if(prefix==='HE'){ const s=dim.match(/([ABM])$/); ptype = s ? ('HE'+s[1]) : 'HEB'; }
+    else if(prefix==='HEA'||prefix==='HEB'||prefix==='HEM') ptype=prefix;
+    else if(prefix==='IPE') ptype='IPE';
+    else if(prefix==='QRO') ptype='SHS';
+    else if(prefix==='RRO') ptype='RHS';
+    else if(prefix==='RO') ptype='CHS';
+    else if(prefix==='BL') ptype='PLATE';
+    else if(prefix==='FL') ptype='FLAT';
+    else if(prefix==='L') ptype='ANGLE';
+    else if(prefix==='U'||prefix==='UNP'||prefix==='UPE') ptype='OTHER';
+
+    items.push({
+      description_raw: line, pos: pos,
+      profile_type: ptype, dimension: dim||profilRaw, profil_full: profilRaw.toUpperCase(),
+      steel_grade: gute, standard:'', length_mm: lenMm,
+      quantity_pieces: stk, quantity_kg: perPiece, row_total_kg: rowTotal,
+      surface_treatment:'none', certification:'EN 10204 3.1',
+      notes: bem, confidence:'high'
+    });
+    curBatch.push(items.length-1);
   }
   if(items.length < 3) return null;
-  const totalCalc = items.reduce((s,it)=>s + (it.quantity_pieces*it.quantity_kg),0);
-  const gesamtMatch = text.match(/Gesamtsumme:?\s*([\d.,]+)/i) || text.match(/Zwischensumme:?\s*([\d.,]+)/i);
+
   const issues=[];
-  if(gesamtMatch){
-    const declared = num(gesamtMatch[1]);
-    const delta = Math.abs(totalCalc-declared);
-    if(delta > Math.max(2, declared*0.001)){
-      issues.push(`KUJDES: totali i llogaritur (${totalCalc.toFixed(1)} kg) ndryshon nga Gesamtsumme e dokumentit (${declared.toFixed(1)} kg) me ${delta.toFixed(1)} kg — verifiko manualisht.`);
-    }
-  } else {
-    issues.push('Dokumenti s\'ka rresht "Gesamtsumme" të lexueshëm për verifikim automatik.');
+  // group validation vs SUMME lines
+  let groupsOk=0, groupsBad=0;
+  for(const s of sums){
+    const grpTotal = (s.batch||[]).reduce((a,idx)=>a+items[idx].row_total_kg,0);
+    const delta = Math.abs(grpTotal - s.kg);
+    if(delta > Math.max(0.5, s.kg*0.01)){ groupsBad++; issues.push(`Grupi ${s.profil} ${s.gute}: llogaritur ${grpTotal.toFixed(1)} kg vs SUMME ${s.kg.toFixed(1)} kg (Δ ${delta.toFixed(1)})`); }
+    else groupsOk++;
   }
-  return {project_summary:'Ekstraktim deterministik (jo-AI) nga format Materialauszug/Mengenliste',detected_language:'de',confidence:issues.length?'medium':'high',issues,items};
-}async function startParsing(){
+  const totalCalc = items.reduce((a,it)=>a+it.row_total_kg,0);
+  if(gesamt!==null){
+    const delta = Math.abs(totalCalc-gesamt);
+    if(delta > Math.max(2, gesamt*0.002)) issues.push(`KUJDES: totali i llogaritur (${totalCalc.toFixed(1)} kg) vs Gesamtsumme (${gesamt.toFixed(1)} kg) — Δ ${delta.toFixed(1)} kg.`);
+  } else issues.push('S\'u gjet rresht "Gesamtsumme" për verifikim.');
+
+  return {
+    project_summary:`Ekstraktim deterministik v2 — ${items.length} pozicione, ${totalCalc.toFixed(1)} kg`+(gesamt!==null?` (Gesamtsumme dok: ${gesamt.toFixed(1)} kg)`:'')+`, grupe SUMME: ${groupsOk} OK / ${groupsBad} mospërputhje`,
+    detected_language:'de', confidence: issues.length?'medium':'high', issues, items,
+    _totalCalc: totalCalc, _gesamt: gesamt, _sumsCount: sums.length
+  };
+}
+async function startParsing(){
   const text=document.getElementById('i-text').value.trim();
   if(text.length<5){alert('Ngjit tekstin e dokumentit ose ngarko skedar PDF/TXT/CSV.');return;}
   const detResult = deterministicParseGermanMengenliste(text);
@@ -1052,55 +1119,68 @@ async function handleFiles(files){
   const proj=document.getElementById('i-projname').value||'Projekt';
   const client=document.getElementById('i-client').value||'';
 
-  const prompt=`Extract material procurement positions from this document or technical drawing and return ONLY a JSON object. No explanation, no markdown, no code fences. Start your response with { and end with }.
+  const apiKey=localStorage.getItem('pristeel_apikey')||'';
+  if(!apiKey){document.getElementById('st1d').textContent='Mungon Groq API Key — shko te Cilësimet.';document.getElementById('parsing-card').classList.add('hidden');return;}
 
-Project: ${proj}
-Client: ${client}
-Document: ${text.slice(0,14000)}
+  // ── CHUNKING: split at line boundaries, ~11k chars per chunk ──
+  function chunkTextByLines(t, size){
+    const out=[]; let cur='';
+    for(const ln of t.split('\n')){
+      if(cur.length + ln.length + 1 > size && cur){ out.push(cur); cur=''; }
+      cur += ln + '\n';
+    }
+    if(cur.trim()) out.push(cur);
+    return out.slice(0, 12); // siguri: max 12 copa (~130k karaktere)
+  }
+  const chunks = chunkTextByLines(text, 11000);
+  if(text.length > 132000){
+    alert('Dokumenti është shumë i madh ('+text.length+' karaktere) — do të parsohen vetëm ~132.000 të parat. Ndaje dokumentin.');
+  }
 
-JSON format:
-{"project_summary":"brief description","detected_language":"de or en","confidence":"high or medium or low","issues":[],"items":[{"pos":1,"description_raw":"original line or part code","profile_type":"HEA or HEB or IPE or RHS or SHS or CHS or PLATE or FLAT or ANGLE or TUBE or ALUMINUM or MACHINED_PART or OTHER","dimension":"e.g. 300, or drawing layout size","steel_grade":"material grade e.g. S355JR or EN-AW 5083","standard":"standard e.g. EN 10025-2 or ISO 2768","length_mm":0,"quantity_pieces":1,"quantity_kg":0.06,"surface_treatment":"none or galvanized","certification":"EN 10204 3.1 or null","notes":""}]}
-
-Rules:
+  const jsonFormat = `{"project_summary":"brief description","detected_language":"de or en","confidence":"high or medium or low","issues":[],"items":[{"pos":1,"description_raw":"original line or part code","profile_type":"HEA or HEB or IPE or RHS or SHS or CHS or PLATE or FLAT or ANGLE or TUBE or ALUMINUM or MACHINED_PART or OTHER","dimension":"e.g. 300, or drawing layout size","steel_grade":"material grade e.g. S355JR or EN-AW 5083","standard":"standard e.g. EN 10025-2 or ISO 2768","length_mm":0,"quantity_pieces":1,"quantity_kg":0.06,"surface_treatment":"none or galvanized","certification":"EN 10204 3.1 or null","notes":""}]}`;
+  const rules = `Rules:
 - This can be a structured multi-line steel list OR multiple sequential technical drawings separated by boundaries.
 - For each component/profile technical drawing, extract it as ONE separate item position in the array.
-- CRITICAL — NEVER MERGE OR SKIP ROWS: the source table can contain many rows that look identical or near-identical (same profile, same dimension, same length, same weight) because the same part is listed multiple times, in different batches, or with different piece counts per row. EVERY row in the table is a separate, real line item and MUST become a separate entry in "items", even if it is a perfect duplicate of the row before or after it. Do NOT treat repeated rows as redundant. Do NOT summarize, deduplicate, or collapse multiple rows into one — the "quantity_pieces" of each row must exactly match the "Stk." / "Stück" / "Menge" / "Qty" value printed on that exact row, nothing more.
-- Count the total number of data rows in the source table (excluding header rows and "SUMME"/"Zwischensumme"/"Übertrag"/"Gesamtsumme" subtotal rows) and make sure "items" has exactly that many entries.
-- If the document has subtotal lines (e.g. "SUMME BL15 ... 4614.6" or "Gesamtsumme: 37466.4"), do NOT use them as items — they are checksums only. After extracting all rows, verify that the sum of (quantity_pieces × quantity_kg) for the rows belonging to each subtotal group equals that subtotal. If any group's sum does not match its printed subtotal, add a clear note to "issues" naming the group and the discrepancy — this usually means a row was missed.
-- CRITICAL: "quantity_kg" MUST be the weight of exactly ONE SINGLE PIECE, never the total for all pieces combined. If the document states "Gewicht: 84,5 kg/Stk" or "kg/pc", that per-piece value IS quantity_kg — do NOT multiply it by quantity_pieces yourself. If the document only gives a total weight for the whole line (e.g. "Gesamtgewicht: 2028 kg" for 24 pieces), divide by quantity_pieces first to get the per-piece value before writing quantity_kg.
-- Extract the net weight from the 'Weight' or 'Gewicht' fields if available (convert to kg per single piece, e.g. 0.060), map the alloy/material to 'steel_grade', and the part ID or outline size to 'dimension'.
-- Return ONLY valid JSON object.`;
+- CRITICAL — NEVER MERGE OR SKIP ROWS: every data row in the source table is a separate, real line item and MUST become a separate entry in "items", even if it looks identical to a neighbouring row. The "quantity_pieces" of each row must exactly match the "Stk." / "Stück" / "Menge" / "Qty" value printed on that exact row.
+- Skip header rows and "SUMME"/"Zwischensumme"/"Übertrag"/"Gesamtsumme" subtotal rows — they are checksums, not items.
+- CRITICAL: "quantity_kg" MUST be the weight of exactly ONE SINGLE PIECE, never the total for all pieces. If the document gives only a total per line, divide by quantity_pieces first.
+- Return ONLY valid JSON object. Start with { and end with }.`;
+
+  const merged={project_summary:'',detected_language:'de',confidence:'high',issues:[],items:[]};
 
   try{
-    const apiKey=localStorage.getItem('pristeel_apikey')||'';
-    if(!apiKey){document.getElementById('st1d').textContent='Mungon Groq API Key — shko te Cilësimet.';document.getElementById('parsing-card').classList.add('hidden');return;}
-    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0,messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows that look similar to each other.'},{role:'user',content:prompt}]})    });
-    const data=await resp.json();
+    for(let ci=0; ci<chunks.length; ci++){
+      document.getElementById('st3d').textContent='Duke analizuar pjesën '+(ci+1)+' nga '+chunks.length+'...';
+      document.getElementById('prog').style.width=Math.round(45+50*(ci/chunks.length))+'%';
+      const prompt='Extract material procurement positions from this document PART '+(ci+1)+' of '+chunks.length+' and return ONLY a JSON object. No explanation, no markdown.\n\nProject: '+proj+'\nClient: '+client+'\nDocument part:\n'+chunks[ci]+'\n\nJSON format:\n'+jsonFormat+'\n\n'+rules;
+      const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+        body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0,messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows.'},{role:'user',content:prompt}]})
+      });
+      const data=await resp.json();
+      const raw=data.choices?.[0]?.message?.content||data.error?.message||'';
+      try{
+        let jsonStr=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+        const s=jsonStr.indexOf('{'), e=jsonStr.lastIndexOf('}');
+        if(s!==-1&&e!==-1) jsonStr=jsonStr.slice(s,e+1);
+        const p=JSON.parse(jsonStr);
+        if(Array.isArray(p.items)) merged.items=merged.items.concat(p.items);
+        if(p.issues&&p.issues.length) merged.issues=merged.issues.concat(p.issues.map(x=>'[Pjesa '+(ci+1)+'] '+x));
+        if(!merged.project_summary&&p.project_summary) merged.project_summary=p.project_summary;
+        if(p.confidence==='low') merged.confidence='low';
+        else if(p.confidence==='medium'&&merged.confidence!=='low') merged.confidence='medium';
+      }catch(pe){
+        merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': JSON invalid ('+pe.message+') — pozicionet e kësaj pjese mund të mungojnë, verifiko manualisht.');
+        merged.confidence='medium';
+      }
+      if(ci+1<chunks.length) await delay(400);
+    }
     document.getElementById('prog').style.width='100%';
     document.getElementById('st4').textContent='✓';
-    document.getElementById('st4d').textContent='Analiza u kompletua.';
-    const raw=data.choices?.[0]?.message?.content||data.error?.message||'';
-    let parsed;
-    try{
-      let jsonStr = raw;
-      jsonStr = jsonStr.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-      const start = jsonStr.indexOf('{');
-      const end = jsonStr.lastIndexOf('}');
-      if(start !== -1 && end !== -1) jsonStr = jsonStr.slice(start, end+1);
-      parsed = JSON.parse(jsonStr);
-    } catch(e){
-      console.error('Parse error:', e, 'Raw:', raw);
-      parsed={confidence:'low',issues:['JSON invalid — provo sërish: '+e.message],items:[],project_summary:''};
-    }
-    if(text.length>14000){
-      parsed.issues=parsed.issues||[];
-      parsed.issues.push(`Dokumenti ka ${text.length} karaktere — vetëm 14000 të parat u dërguan te AI. Ndaje dokumentin dhe ngarko pjesën tjetër veç e veç, ose verifiko manualisht që nuk mungon asnjë pozicion nga fundi i dokumentit.`);
-      parsed.confidence = 'medium';
-    }
-    applyParsedBom(parsed);
+    document.getElementById('st4d').textContent='Analiza u kompletua — '+merged.items.length+' pozicione nga '+chunks.length+' pjesë.';
+    if(chunks.length>1) merged.project_summary=(merged.project_summary||'')+' [Dokument i madh: '+text.length+' karaktere, '+chunks.length+' pjesë të analizuara]';
+    applyParsedBom(merged);
   }catch(err){
     document.getElementById('st4d').textContent='Gabim: '+err.message+'. Kontrollo API Key te Cilësimet.';
     applyParsedBom({confidence:'low',issues:['Lidhja dështoi'],items:[],project_summary:''});
@@ -1819,6 +1899,28 @@ function loadOfData(){
   var sv=parseFloat(sell)||0;
   if(sv>0)document.getElementById('of-pr').value=sv.toFixed(3);
 }
+// ── NUMERIMI AUTOMATIK I DOKUMENTEVE (PST-QUO / PST-INV / PST-OC / PST-RFQ) ──
+function nextDocNr(series){
+  var yr = new Date().getFullYear();
+  return supaFetch('documents_registry?series=eq.'+series+'&year=eq.'+yr+'&order=seq.desc&limit=1','GET')
+    .then(function(rows){
+      var next = rows.length ? (rows[0].seq+1) : 1;
+      return {nr:'PST-'+series+'-'+yr+'-'+String(next).padStart(3,'0'), seq:next, year:yr};
+    });
+}
+function prefillDocNr(series, fieldId){
+  var f = document.getElementById(fieldId);
+  if(!f || f.value.trim()) return;
+  nextDocNr(series).then(function(d){ if(!f.value.trim()) f.value = d.nr; }).catch(function(){});
+}
+function registerDocNr(series, nr, project, client, totalEur){
+  var m = nr.match(/PST-[A-Z]+-(\d{4})-(\d{1,4})/);
+  if(!m) return Promise.resolve();
+  return supaFetch('documents_registry','POST',{
+    series:series, year:parseInt(m[1]), seq:parseInt(m[2]), doc_nr:nr,
+    project:project||'', client:client||'', total_eur:totalEur||null
+  }).catch(function(e){});
+}
 // ── PRISTEEL DOCUMENT DESIGN SYSTEM (Oferta + Fatura) ──
 var PST_DOC_CSS = "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1A1F2E;font-size:12.5px;line-height:1.55;max-width:840px;margin:0 auto";
 function pstDocHeader(docType, docNr){
@@ -1858,10 +1960,10 @@ function pstDocFooter(){
 function pstFmt(n,dec){return (n||0).toLocaleString('de-DE',{minimumFractionDigits:(dec==null?2:dec),maximumFractionDigits:(dec==null?2:dec)});}
 
 var OF_LABELS={
-  de:{t:'ANGEBOT',from:'Anbieter',to:'Kunde',at:'z.Hd.',on:'Angebots-Nr.',da:'Datum',pr:'Projekt',rf:'Ihre Referenz',vl:'Gültigkeit',dy:' Tage',ps:'Positionen',hn:'Pos.',hp:'Profil',hg:'Güte',hs:'Stk.',hq:'Menge (kg)',tq:'Gesamtmenge',up:'Einheitspreis',tp:'Gesamtpreis (Netto)',cd:'Konditionen',dl:'Lieferzeit',wk:' Wochen',pm:'Zahlungsbedingungen',ct:'Zertifikat',ic:'Lieferbedingung',rm:'Bemerkungen',gr:'Mit freundlichen Grüßen',greet:'Sehr geehrte Damen und Herren,',intro:'vielen Dank für Ihre Anfrage und das damit verbundene Interesse an unseren Leistungen. Gerne unterbreiten wir Ihnen hiermit unser freibleibendes Angebot:'},
-  en:{t:'QUOTATION',from:'Supplier',to:'Customer',at:'Attn.',on:'Quotation No.',da:'Date',pr:'Project',rf:'Your Reference',vl:'Validity',dy:' days',ps:'Positions',hn:'Pos.',hp:'Profile',hg:'Grade',hs:'Pcs.',hq:'Quantity (kg)',tq:'Total quantity',up:'Unit price',tp:'Total price (net)',cd:'Conditions',dl:'Delivery time',wk:' weeks',pm:'Payment terms',ct:'Certificate',ic:'Delivery term',rm:'Remarks',gr:'Best regards',greet:'Dear Sir or Madam,',intro:'thank you for your inquiry and your interest in our services. We are pleased to submit our non-binding offer:'},
-  sq:{t:'OFERTË',from:'Ofruesi',to:'Klienti',at:'Vëmendje',on:'Nr. i ofertës',da:'Data',pr:'Projekti',rf:'Referenca juaj',vl:'Validiteti',dy:' ditë',ps:'Pozicionet',hn:'Poz.',hp:'Profili',hg:'Grada',hs:'Copë',hq:'Sasia (kg)',tq:'Sasia totale',up:'Çmimi për njësi',tp:'Çmimi total (neto)',cd:'Kushtet',dl:'Afati i dorëzimit',wk:' javë',pm:'Kushtet e pagesës',ct:'Certifikata',ic:'Kushti i dorëzimit',rm:'Shënime',gr:'Me respekt',greet:'Të nderuar,',intro:'ju faleminderit për kërkesën tuaj dhe interesimin për shërbimet tona. Me kënaqësi ju paraqesim ofertën tonë:'},
-  sr:{t:'PONUDA',from:'Ponuđač',to:'Kupac',at:'Pažnja',on:'Broj ponude',da:'Datum',pr:'Projekat',rf:'Vaša referenca',vl:'Važnost',dy:' dana',ps:'Pozicije',hn:'Poz.',hp:'Profil',hg:'Kvalitet',hs:'Kom.',hq:'Količina (kg)',tq:'Ukupna količina',up:'Jedinična cena',tp:'Ukupna cena (neto)',cd:'Uslovi',dl:'Rok isporuke',wk:' nedelja',pm:'Uslovi plaćanja',ct:'Sertifikat',ic:'Uslov isporuke',rm:'Napomene',gr:'S poštovanjem',greet:'Poštovani,',intro:'hvala vam na upitu i interesovanju za naše usluge. Sa zadovoljstvom vam dostavljamo našu neobavezujuću ponudu:'}
+  de:{stx:'Stahlbau / Fertigung',znx:'Feuerverzinkung (DIN EN ISO 1461)',trx:'Transport',t:'ANGEBOT',from:'Anbieter',to:'Kunde',at:'z.Hd.',on:'Angebots-Nr.',da:'Datum',pr:'Projekt',rf:'Ihre Referenz',vl:'Gültigkeit',dy:' Tage',ps:'Positionen',hn:'Pos.',hp:'Profil',hg:'Güte',hs:'Stk.',hq:'Menge (kg)',tq:'Gesamtmenge',up:'Einheitspreis',tp:'Gesamtpreis (Netto)',cd:'Konditionen',dl:'Lieferzeit',wk:' Wochen',pm:'Zahlungsbedingungen',ct:'Zertifikat',ic:'Lieferbedingung',rm:'Bemerkungen',gr:'Mit freundlichen Grüßen',greet:'Sehr geehrte Damen und Herren,',intro:'vielen Dank für Ihre Anfrage und das damit verbundene Interesse an unseren Leistungen. Gerne unterbreiten wir Ihnen hiermit unser freibleibendes Angebot:'},
+  en:{stx:'Steel fabrication',znx:'Hot-dip galvanizing (EN ISO 1461)',trx:'Transport',t:'QUOTATION',from:'Supplier',to:'Customer',at:'Attn.',on:'Quotation No.',da:'Date',pr:'Project',rf:'Your Reference',vl:'Validity',dy:' days',ps:'Positions',hn:'Pos.',hp:'Profile',hg:'Grade',hs:'Pcs.',hq:'Quantity (kg)',tq:'Total quantity',up:'Unit price',tp:'Total price (net)',cd:'Conditions',dl:'Delivery time',wk:' weeks',pm:'Payment terms',ct:'Certificate',ic:'Delivery term',rm:'Remarks',gr:'Best regards',greet:'Dear Sir or Madam,',intro:'thank you for your inquiry and your interest in our services. We are pleased to submit our non-binding offer:'},
+  sq:{stx:'Konstruksioni / fabrikimi',znx:'Zinktimi në të nxehtë (EN ISO 1461)',trx:'Transporti',t:'OFERTË',from:'Ofruesi',to:'Klienti',at:'Vëmendje',on:'Nr. i ofertës',da:'Data',pr:'Projekti',rf:'Referenca juaj',vl:'Validiteti',dy:' ditë',ps:'Pozicionet',hn:'Poz.',hp:'Profili',hg:'Grada',hs:'Copë',hq:'Sasia (kg)',tq:'Sasia totale',up:'Çmimi për njësi',tp:'Çmimi total (neto)',cd:'Kushtet',dl:'Afati i dorëzimit',wk:' javë',pm:'Kushtet e pagesës',ct:'Certifikata',ic:'Kushti i dorëzimit',rm:'Shënime',gr:'Me respekt',greet:'Të nderuar,',intro:'ju faleminderit për kërkesën tuaj dhe interesimin për shërbimet tona. Me kënaqësi ju paraqesim ofertën tonë:'},
+  sr:{stx:'Čelična konstrukcija',znx:'Toplo cinkovanje (EN ISO 1461)',trx:'Transport',t:'PONUDA',from:'Ponuđač',to:'Kupac',at:'Pažnja',on:'Broj ponude',da:'Datum',pr:'Projekat',rf:'Vaša referenca',vl:'Važnost',dy:' dana',ps:'Pozicije',hn:'Poz.',hp:'Profil',hg:'Kvalitet',hs:'Kom.',hq:'Količina (kg)',tq:'Ukupna količina',up:'Jedinična cena',tp:'Ukupna cena (neto)',cd:'Uslovi',dl:'Rok isporuke',wk:' nedelja',pm:'Uslovi plaćanja',ct:'Sertifikat',ic:'Uslov isporuke',rm:'Napomene',gr:'S poštovanjem',greet:'Poštovani,',intro:'hvala vam na upitu i interesovanju za naše usluge. Sa zadovoljstvom vam dostavljamo našu neobavezujuću ponudu:'}
 };
 
 function genOfer(){
@@ -1877,6 +1979,8 @@ function genOfer(){
   var adr=document.getElementById('of-adr').value||'';
   var pr=parseFloat(document.getElementById('of-pr').value)||0;
   var kg=parseFloat(document.getElementById('of-kg').value)||0;
+  var zn=parseFloat((document.getElementById('of-zn')||{value:0}).value)||0;
+  var tr=parseFloat((document.getElementById('of-tr')||{value:0}).value)||0;
   var inc=document.getElementById('of-inc').value;
   var loc=document.getElementById('of-loc').value||'';
   var del=document.getElementById('of-del').value||'-';
@@ -1884,7 +1988,7 @@ function genOfer(){
   var pay=document.getElementById('of-pay').value||'';
   var cer=document.getElementById('of-cer').value;
   var not=document.getElementById('of-not').value||'';
-  var tot=pr*kg;
+  var tot=pr*kg + zn*kg + tr;
 
   // positions table (from BOM if present, otherwise a single summary line)
   var rows='';
@@ -1924,7 +2028,9 @@ function genOfer(){
     +'</table>'
     +'<div style="display:flex;justify-content:flex-end;margin-top:16px">'
       +'<div style="min-width:300px;background:#F8F6F3;border:1px solid #EAE5DE;border-radius:8px;padding:14px 18px">'
-        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.up+'</span><span style="font-weight:600">'+pr.toFixed(3).replace('.',',')+' EUR/kg</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.stx+' ('+pr.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600">'+pstFmt(pr*kg)+' EUR</span></div>'
+        +(zn>0?'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.znx+' ('+zn.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600">'+pstFmt(zn*kg)+' EUR</span></div>':'')
+        +(tr>0?'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.trx+'</span><span style="font-weight:600">'+pstFmt(tr)+' EUR</span></div>':'')
         +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.ic+'</span><span style="font-weight:600">'+inc+(loc?' '+loc:'')+'</span></div>'
         +'<div style="display:flex;justify-content:space-between;padding:8px 0 2px;margin-top:6px;border-top:2px solid #B87333"><span style="font-weight:700">'+lb.tp+'</span><span style="font-weight:700;font-size:16px;color:#B87333">'+pstFmt(tot)+' EUR</span></div>'
       +'</div>'
@@ -1950,6 +2056,10 @@ function copyOfer(){
 function printOfer(){
   var content=document.getElementById('of-pre').innerHTML;
   if(!content||content.indexOf('Ploteso')>-1){alert('Gjenero ofertën fillimisht.');return;}
+  var _nr=document.getElementById('of-nr').value.trim();
+  var _pr=parseFloat(document.getElementById('of-pr').value)||0, _kg=parseFloat(document.getElementById('of-kg').value)||0;
+  var _zn=parseFloat((document.getElementById('of-zn')||{value:0}).value)||0, _tr=parseFloat((document.getElementById('of-tr')||{value:0}).value)||0;
+  if(_nr) registerDocNr('QUO', _nr, document.getElementById('of-proj').value||'', document.getElementById('of-cli').value||'', _pr*_kg+_zn*_kg+_tr);
   var w=window.open('','_blank');
   var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Oferta PRISTEEL</title><style>body{margin:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'+content+'</body></html>';
   w.document.write(h);w.document.close();
@@ -2465,6 +2575,7 @@ function genInvoiceOut(){
 }
 
 function printInvoiceOut(){
+  try{var _inr=document.getElementById('iv-nr').value.trim(); if(_inr) registerDocNr('INV', _inr, document.getElementById('iv-proj')?document.getElementById('iv-proj').value:'', document.getElementById('iv-cli')?document.getElementById('iv-cli').value:'', null);}catch(e){}
   const content=document.getElementById('iv-preview').innerHTML;
   if(!content || content.indexOf('Plotëso')>-1){alert('Gjenero faturën fillimisht.');return;}
   const w=window.open('','_blank');
@@ -2973,6 +3084,18 @@ window.addEventListener('load',function(){setTimeout(function(){initFinYearSelec
   }
 },{passive:true});
 
+
+// ── AUTO-PREFILL i numrave te dokumenteve ──
+if(typeof showPage==='function'){
+  var _showPageOrig=showPage;
+  showPage=function(p){
+    _showPageOrig(p);
+    try{
+      if(p==='oferta') prefillDocNr('QUO','of-nr');
+      if(p==='invoices') prefillDocNr('INV','iv-nr');
+    }catch(e){}
+  };
+}
 </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
