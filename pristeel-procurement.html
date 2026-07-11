@@ -525,7 +525,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div>
 <div class="card"><div class="card-title">Te dhenat e ofertes</div>
 <div class="field-group fg-2"><div><label class="lbl">Nr. ofertes</label><input type="text" id="of-nr" placeholder="PST-OFF-2026-001"></div><div><label class="lbl">Data</label><input type="date" id="of-date"></div></div>
-<div class="field-group fg-2"><div><label class="lbl">Gjuha</label><select id="of-lang"><option value="de">Gjermanisht</option><option value="en">Anglisht</option><option value="sq">Shqip</option><option value="sr">Serbisht</option></select></div><div></div></div>
+<div class="field-group fg-2"><div><label class="lbl">Gjuha</label><select id="of-lang"><option value="de">Gjermanisht</option><option value="en">Anglisht</option><option value="sq">Shqip</option><option value="sr">Serbisht</option></select></div><div><label class="lbl">Detajimi i pozicioneve</label><select id="of-mode"><option value="grouped">Grupuar sipas profilit (rekomanduar)</option><option value="types">Vetëm kategoritë (Träger, Bleche...)</option><option value="none">Pa tabelë — vetëm përshkrimi</option><option value="full">Të gjitha pozicionet (lista e plotë)</option></select></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="of-proj" placeholder="p.sh. Lagerhalle Hamburg"></div><div><label class="lbl">Ref. klientit</label><input type="text" id="of-ref" placeholder="ANF-2026-001"></div></div></div>
 <div class="card"><div class="card-title">Klienti</div>
 <div class="field-group"><div><label class="lbl">Kompania</label><input type="text" id="of-cli" placeholder="STACON GmbH"></div></div>
@@ -2132,6 +2132,30 @@ function pstDocFooter(){
     +'<div>Business Nr. '+(settings.taxNr||'811361089')+' · www.prissteel.com</div>'
   +'</div>';
 }
+var PST_CAT_LABELS={
+  de:{beam:'Träger (HE/IPE)',hollow:'Hohlprofile (QRO/RRO/CHS)',plate:'Bleche',angle:'Winkel',flat:'Flachstahl',other:'Sonstige Profile (U u.a.)'},
+  en:{beam:'Beams (HE/IPE)',hollow:'Hollow sections (SHS/RHS/CHS)',plate:'Plates',angle:'Angles',flat:'Flat bars',other:'Other profiles (U etc.)'},
+  sq:{beam:'Trarë (HE/IPE)',hollow:'Profile të zbrazëta (QRO/RRO)',plate:'Llamarina',angle:'Profile këndore',flat:'Shufra të sheshta',other:'Profile të tjera (U etj.)'},
+  sr:{beam:'Nosači (HE/IPE)',hollow:'Šuplji profili (QRO/RRO)',plate:'Limovi',angle:'Ugaonici',flat:'Flah',other:'Ostali profili (U i dr.)'}
+};
+function pstBomFamily(r, lang){
+  var n=pstBomName(r,lang);
+  var m=n.match(/^(BL)\s*([\d]+)(?:[*xX]([\d]+))?/i);
+  if(m){
+    var a=parseInt(m[2]), b=m[3]?parseInt(m[3]):a;
+    return 'BL'+Math.min(a,b);
+  }
+  return n;
+}
+function pstBomCategory(r){
+  var p=(r.profile||'').toUpperCase();
+  if(p==='HEA'||p==='HEB'||p==='HEM'||p==='IPE'||p==='HE') return 'beam';
+  if(p==='SHS'||p==='RHS'||p==='CHS'||p==='TUBE') return 'hollow';
+  if(p==='PLATE') return 'plate';
+  if(p==='ANGLE') return 'angle';
+  if(p==='FLAT') return 'flat';
+  return 'other';
+}
 var PST_TYPE_LABELS={
   de:{PLATE:'Blech',ANGLE:'Winkel',FLAT:'Flachstahl',TUBE:'Rohr',OTHER:'Profil',ALUMINUM:'Aluminium',MACHINED_PART:'Frästeil'},
   en:{PLATE:'Plate',ANGLE:'Angle',FLAT:'Flat bar',TUBE:'Tube',OTHER:'Profile',ALUMINUM:'Aluminium',MACHINED_PART:'Machined part'},
@@ -2190,23 +2214,44 @@ function genOfer(){
   var not=document.getElementById('of-not').value||'';
   var tot=pr*kg + zn*kg + tr;
 
-  // positions table (from BOM if present, otherwise a single summary line)
+  // positions table: mode-driven (grouped / types / none / full)
+  var mode=(document.getElementById('of-mode')||{value:'grouped'}).value;
   var rows='';
-  if(bomRows.length>0){
-    rows=bomRows.map(function(r,i){
-      var bg=i%2?'#FAF8F5':'#fff';
-      return '<tr style="background:'+bg+'">'
-        +'<td style="padding:7px 10px;color:#8A8378">'+(i+1<10?'0':'')+(i+1)+'</td>'
-        +'<td style="padding:7px 10px;font-weight:600">'+pstBomName(r,lang)+'</td>'
-        +'<td style="padding:7px 10px">'+(r.grade||'')+(r.std?' · '+r.std:'')+'</td>'
-        +'<td style="padding:7px 10px;text-align:right">'+(r.pcs||0)+'</td>'
-        +'<td style="padding:7px 10px;text-align:right;font-weight:600">'+pstFmt(parseFloat(r.kg)||0,0)+'</td>'
-      +'</tr>';
-    }).join('');
-  } else {
-    rows='<tr><td style="padding:7px 10px;color:#8A8378">01</td><td style="padding:7px 10px;font-weight:600" colspan="2">'+(proj||'Stahlbau / Konstruktion')+'</td><td style="padding:7px 10px;text-align:right">—</td><td style="padding:7px 10px;text-align:right;font-weight:600">'+pstFmt(kg,0)+'</td></tr>';
+  function rowHtml(i, name, grade, pcs, kgTot){
+    var bg=i%2?'#FAF8F5':'#fff';
+    return '<tr style="background:'+bg+'">'
+      +'<td style="padding:7px 10px;color:#8A8378">'+(i+1<10?'0':'')+(i+1)+'</td>'
+      +'<td style="padding:7px 10px;font-weight:600">'+name+'</td>'
+      +'<td style="padding:7px 10px">'+grade+'</td>'
+      +'<td style="padding:7px 10px;text-align:right">'+(pcs||'—')+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;font-weight:600">'+pstFmt(kgTot,0)+'</td>'
+    +'</tr>';
   }
-
+  if(bomRows.length>0 && mode!=='none'){
+    if(mode==='full'){
+      rows=bomRows.map(function(r,i){
+        return rowHtml(i, pstBomName(r,lang), (r.grade||'')+(r.std?' · '+r.std:''), r.pcs||0, parseFloat(r.kg)||0);
+      }).join('');
+    } else {
+      var groups={}, order=[];
+      bomRows.forEach(function(r){
+        var key = mode==='grouped' ? pstBomFamily(r,lang) : pstBomCategory(r);
+        if(!groups[key]){ groups[key]={pcs:0,kg:0,grades:{}}; order.push(key); }
+        groups[key].pcs += (r.pcs||0);
+        groups[key].kg  += (parseFloat(r.kg)||0);
+        if(r.grade) groups[key].grades[r.grade]=1;
+      });
+      order.sort(function(a,b){ return groups[b].kg - groups[a].kg; });
+      rows=order.map(function(key,i){
+        var g=groups[key];
+        var name = mode==='grouped' ? key : ((PST_CAT_LABELS[lang]||PST_CAT_LABELS.de)[key]||key);
+        var grades=Object.keys(g.grades).slice(0,3).join(' / ');
+        return rowHtml(i, name, grades, g.pcs, g.kg);
+      }).join('');
+    }
+  } else {
+    rows=rowHtml(0, proj||'Stahlbau / Konstruktion', '', 0, kg).replace('>0<','>—<');
+  }
   var html='<div style="'+PST_DOC_CSS+'">'
     +pstDocHeader(lb.t, nr)
     +'<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:4px">'
