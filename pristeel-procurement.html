@@ -1615,6 +1615,7 @@ function renderOffers(){
             <input type="number" value="${o.transportEur||''}" step="0.01" placeholder="0.00" onchange="updOffer(${o.id},'transportEur',this.value)">
           </div>
         </div>
+        ${Array.isArray(o.positions)&&o.positions.length?`<details style="margin-bottom:10px;background:var(--bg2);border-radius:var(--radius);padding:8px 10px"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--bronze)">Pozicionet e ofertës (${o.positions.length})</summary><table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px">${o.positions.map((p,pi)=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:3px 6px;color:var(--text3)">${pi+1}</td><td style="padding:3px 6px">${p.desc||''}</td><td style="padding:3px 6px;text-align:right;white-space:nowrap">${p.qty?(p.qty.toLocaleString('de-DE')+' '+(p.unit||'')):''}</td><td style="padding:3px 6px;text-align:right;white-space:nowrap">${p.unit_price?p.unit_price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:3})+' €':''}</td><td style="padding:3px 6px;text-align:right;font-weight:600;white-space:nowrap">${p.total?p.total.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':''}</td></tr>`).join('')}</table></details>`:''}
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label class="lbl">TVSH %</label>
@@ -1820,10 +1821,10 @@ async function parseOffer(){
   const prompt=`Extract offer/quotation data from this supplier document and return ONLY a JSON object. No explanation, no markdown, no code fences. Start with { and end with }.
 
 Supplier: ${supplier}
-Document text: ${text.slice(0,3000)}
+Document text: ${text.slice(0,9000)}
 
 JSON format:
-{"supplier":"${supplier}","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"price_per_kg":0.00,"price_currency":"EUR","delivery_weeks":0,"incoterms":"EXW or DAP or DDP or CIF etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","validity_days":30,"notes":"any special conditions","confidence":"high or medium or low"}
+{"supplier":"${supplier}","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"price_per_kg":0.00,"price_currency":"EUR","delivery_weeks":0,"incoterms":"EXW or DAP or DDP or CIF etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","validity_days":30,"notes":"any special conditions","confidence":"high or medium or low","positions":[{"desc":"exact line item description","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}
 Rules:
 
 - fabrication_total: sum of all fabrication/material/erection line items ONLY (exclude transport/logistics/packaging)
@@ -1833,13 +1834,14 @@ Rules:
 - incoterms: normalize (ab Werk=EXW, frei Haus=DDP, franco=DDP)
 - If price not found set to 0
 - Extract delivery time in weeks. delivery_weeks is ONLY the production/delivery time — NEVER confuse it with "validity of the offer" (validity_days is a separate field). If no explicit delivery/production time in weeks is stated anywhere, set delivery_weeks to 0.
+- positions: EVERY priced line item from the offer table as a SEPARATE entry, in document order, with its own unit price — NEVER merge line items or average prices. Text-only note lines get qty=0, unit_price=0.
 - Return ONLY the JSON`;
   try{
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:1000,temperature:0,
-        messages:[{role:'system',content:'You are a steel procurement AI. Respond with valid JSON only.'},{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,
+        messages:[{role:'system',content:'You are a steel procurement AI. Respond with valid JSON only. Never merge or average line items.'},{role:'user',content:prompt}]})
     });
     const data=await resp.json();
     document.getElementById('pdf-prog').style.width='100%';
@@ -1904,7 +1906,8 @@ offers.push({
         cert:parsed.certification||'',
         notes:offerNotes,
         origin:cat||'',
-        zinc_kg:0,transport_eur:0,vat_pct:0,qty_kg:parsed.total_kg||0
+        zinc_kg:0,transport_eur:0,vat_pct:0,qty_kg:parsed.total_weight_kg||parsed.total_kg||0,
+        positions:(Array.isArray(parsed.positions)&&parsed.positions.length)?parsed.positions:null
       }).catch(function(e){console.error('Ruajtja e ofertes deshtoi:',e);document.getElementById('pdf-status').textContent='⚠ Oferta u shtua lokalisht, por ruajtja në cloud dështoi: '+e.message;});
     } else {
       document.getElementById('pdf-status').textContent='✓ Oferta u analizua — u shtua te lista. Kujdes: projekti s\'është ruajtur në cloud ende, oferta humbet nëse rifreskon faqen.';
@@ -2100,11 +2103,21 @@ function prefillDocNr(series, fieldId){
 function registerDocNr(series, nr, project, client, totalEur, payPlan){
   var m = nr.match(/PST-[A-Z]+-(\d{4})-(\d{1,4})/);
   if(!m) return Promise.resolve();
-  return supaFetch('documents_registry','POST',{
-    series:series, year:parseInt(m[1]), seq:parseInt(m[2]), doc_nr:nr,
+  var payload={series:series, year:parseInt(m[1]), seq:parseInt(m[2]), doc_nr:nr,
     project:project||'', client:client||'', total_eur:totalEur||null,
-    payment_plan:payPlan||null
-  }).catch(function(e){});
+    payment_plan:payPlan||null, project_id:(typeof _curProjId!=='undefined'&&_curProjId)?_curProjId:null};
+  return supaFetch('documents_registry?doc_nr=eq.'+encodeURIComponent(nr),'GET').then(function(rows){
+    if(rows&&rows.length){
+      var ex=rows[0];
+      var sameCli=(ex.client||'').toLowerCase().slice(0,8)===(client||'').toLowerCase().slice(0,8);
+      if(!sameCli){
+        alert('\u26A0 NUMRI '+nr+' \u00CBSHT\u00CB I Z\u00CBN\u00CB!\n\nI takon: '+(ex.client||'?')+' \u2014 '+(ex.project||'')+'\n\nDokumenti NUK u regjistrua. P\u00EBrdor numrin e radh\u00EBs (fshi fush\u00EBn e numrit dhe rihap modulin p\u00EBr auto-numrin).');
+        return Promise.reject('doc_nr collision');
+      }
+      return supaFetch('documents_registry?doc_nr=eq.'+encodeURIComponent(nr),'PATCH',{total_eur:payload.total_eur,payment_plan:payload.payment_plan,project:payload.project,project_id:payload.project_id});
+    }
+    return supaFetch('documents_registry','POST',payload);
+  }).catch(function(e){ if(e!=='doc_nr collision') console.error('Regjistrimi i numrit:',e); });
 }
 // ── PRISTEEL DOCUMENT DESIGN SYSTEM (Oferta + Fatura) ──
 var PST_DOC_CSS = "font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#1A1F2E;font-size:12.5px;line-height:1.55;max-width:840px;margin:0 auto";
@@ -2329,6 +2342,12 @@ function genOfer(){
         +oferPos.map(function(p,i){
           var bg=i%2?'#FAF8F5':'#fff';
           var un=(OF_UNITS[p.unit]||OF_UNITS.kg)[lang]||p.unit;
+          if(!(p.qty>0)&&!(p.price>0)){
+            return '<tr style="background:'+bg+'">'
+              +'<td style="padding:7px 10px;color:#8A8378">'+(i+1)+'.0</td>'
+              +'<td style="padding:7px 10px;font-style:italic;color:#5A554C" colspan="5">'+(p.desc||'')+'</td>'
+            +'</tr>';
+          }
           return '<tr style="background:'+bg+'">'
             +'<td style="padding:7px 10px;color:#8A8378">'+(i+1)+'.0</td>'
             +'<td style="padding:7px 10px;font-weight:600">'+(p.desc||'')+'</td>'
@@ -2502,7 +2521,7 @@ function loadProject(id){
         delivery:parseInt(o.delivery_weeks)||0,inco:o.incoterms||'DAP',
         cert:o.cert||'',notes:o.notes||'',score:parseFloat(o.score)||0,
         totalEur:parseFloat(o.total_eur)||0,
-        kg:parseFloat(o.qty_kg)||0,zincKg:parseFloat(o.zinc_kg)||0,
+        kg:parseFloat(o.qty_kg)||0,zincKg:parseFloat(o.zinc_kg)||0,positions:o.positions||null,
         transportEur:parseFloat(o.transport_eur)||0,vatPct:parseFloat(o.vat_pct)||0,
         offerType:type,
         origin:o.origin||''
@@ -3518,8 +3537,9 @@ function openOverview(id){
       supaFetch('invoices_out?project=ilike.'+q).catch(function(){return[];}),
       supaFetch('invoices_in?project=ilike.'+q).catch(function(){return[];}),
       supaFetch('bank_guarantees?project=ilike.'+q).catch(function(){return[];}),
-      supaFetch('crm_deals?select=dealname,amount,dealstage,closedate,description&limit=300').catch(function(){return[];})
-    ]).then(function(all){renderOverviewModal(id,all[0],all[1],all[2],all[3],all[4],all[5],all[6]);});
+      supaFetch('crm_deals?select=dealname,amount,dealstage,closedate,description&limit=300').catch(function(){return[];}),
+      supaFetch('documents_registry?series=eq.QUO&project_id=eq.'+id+'&order=seq.asc').catch(function(){return[];})
+    ]).then(function(all){renderOverviewModal(id,all[0],all[1],all[2],all[3],all[4],all[5],all[6],all[7]);});
   }).catch(function(e){
     document.getElementById('ov-body').innerHTML='<div class="ov-empty" style="color:var(--red-text)">Gabim gjat&euml; ngarkimit: '+e.message+'</div>';
   });
@@ -3536,11 +3556,17 @@ function ovMatchDeal(projName,deals){
   });
   return best;
 }
-function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals){
+function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes){
   document.getElementById('ov-title').textContent=p.name||'Pa emer';
   document.getElementById('ov-client').textContent=(p.client||'')+(p.location?' \u00B7 '+p.location:'');
   var inn=offs.filter(function(o){return (o.supplier||'').indexOf('OFERTA JONE')===-1;});
   var out=offs.filter(function(o){return (o.supplier||'').indexOf('OFERTA JONE')>-1;});
+  (ourQuotes||[]).forEach(function(q){
+    out.push({supplier:q.doc_nr, total_eur:q.total_eur,
+      notes:(q.created_at?new Date(q.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+' \u00B7 ':'')
+        +(q.payment_plan?q.payment_plan.map(function(m){return m.pct+'%';}).join('/'):''),
+      incoterms:''});
+  });
   var totKg=bom.reduce(function(s,r){return s+(parseFloat(r.kg)||0);},0);
   var innVals=inn.map(function(o){return parseFloat(o.total_eur)||0;}).filter(function(v){return v>0;});
   var bestIn=innVals.length?Math.min.apply(null,innVals):0;
