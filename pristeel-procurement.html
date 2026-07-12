@@ -1528,6 +1528,107 @@ function copyRfq(btn,enc){
 }
 
 // ── OFFERS ────────────────────────────────────────────
+// ── POZICIONET E OFERTAVE TË FURNITORËVE (orig + rabat + negociuar) ──
+var SUP_UNITS={kg:'kg',m2:'m²',pc:'copë',lkw:'LKW',ls:'pauschal'};
+function supNormPos(p){
+  // migrim: pozicionet e AI ({desc,qty,unit,unit_price,total}) → modeli i plotë
+  if(p.price_orig===undefined) p.price_orig=parseFloat(p.unit_price)||parseFloat(p.price)||0;
+  if(p.unit===undefined||!SUP_UNITS[p.unit]){
+    var u=String(p.unit||'').toLowerCase();
+    p.unit = u.indexOf('kg')>-1?'kg' : (u.indexOf('m2')>-1||u.indexOf('m²')>-1)?'m2' : (u.indexOf('lkw')>-1||u.indexOf('truck')>-1)?'lkw' : (u.indexOf('ls')>-1||u.indexOf('pausch')>-1)?'ls' : (p.qty>0?'pc':'ls');
+  }
+  if(p.qty===undefined) p.qty=parseFloat(p.qty)||0;
+  if(p.total_orig===undefined) p.total_orig=(p.total!==undefined&&p.total!==null)?(parseFloat(p.total)||0):supAuto(p.qty,p.unit,p.price_orig);
+  if(p.discMode===undefined) p.discMode='eur';
+  if(p.disc===undefined) p.disc=0;
+  if(p.price_neg===undefined||p.price_neg===null) p.price_neg=p.price_orig;
+  return p;
+}
+function supAuto(qty,unit,price){ return unit==='ls' ? (price||0) : +((qty||0)*(price||0)).toFixed(2); }
+function supPosNegTotal(p){ return supAuto(p.qty,p.unit,p.price_neg); }
+function supPosOrigTotal(p){ return (p.toManual&&p.total_orig!=null)?p.total_orig:supAuto(p.qty,p.unit,p.price_orig); }
+function recalcOfferFromPositions(o){
+  if(!Array.isArray(o.positions)||!o.positions.length){ recalcOffer(o); return; }
+  o.positions.forEach(supNormPos);
+  var neg=0, orig=0, kgQty=0, kgNeg=0;
+  o.positions.forEach(function(p){
+    var tn=supPosNegTotal(p), to=supPosOrigTotal(p);
+    neg+=tn; orig+=to;
+    if(p.unit==='kg'){ kgQty+=(p.qty||0); kgNeg+=tn; }
+  });
+  o.totalEur=+neg.toFixed(2);
+  o._totalOrig=+orig.toFixed(2);
+  if(kgQty>0){ o.priceKg=+(kgNeg/kgQty).toFixed(3); o.kg=+kgQty.toFixed(1); }
+}
+function addSupPos(oid){
+  var o=offers.find(x=>x.id===oid); if(!o) return;
+  if(!Array.isArray(o.positions)) o.positions=[];
+  o.positions.push({desc:'',qty:0,unit:'kg',price_orig:0,discMode:'eur',disc:0,price_neg:0,total_orig:0});
+  renderOffers();
+}
+function remSupPos(oid,pi){
+  var o=offers.find(x=>x.id===oid); if(!o||!o.positions) return;
+  o.positions.splice(pi,1);
+  if(!o.positions.length) o.positions=null;
+  recalcOfferFromPositions(o); renderOffers(); scheduleOfferSave(o);
+}
+function updSupPos(oid,pi,f,v){
+  var o=offers.find(x=>x.id===oid); if(!o||!o.positions) return;
+  var p=supNormPos(o.positions[pi]);
+  if(f==='desc'||f==='unit'||f==='discMode'){ p[f]=v; }
+  else p[f]=parseFloat(v)||0;
+  if(f==='disc'||f==='discMode'){
+    p.price_neg = p.discMode==='pct' ? +(p.price_orig*(1-(p.disc||0)/100)).toFixed(4) : +(p.price_orig-(p.disc||0)).toFixed(4);
+  }
+  if(f==='price_neg'){
+    p.disc = p.discMode==='pct' ? +((1-(p.price_neg/(p.price_orig||1)))*100).toFixed(3) : +((p.price_orig-p.price_neg)).toFixed(4);
+  }
+  if(f==='price_orig'&&(!p.disc)) p.price_neg=p.price_orig;
+  if(f==='total_orig') p.toManual=true;
+  if(f==='qty'&&!p.toManual) p.total_orig=supAuto(p.qty,p.unit,p.price_orig);
+  recalcOfferFromPositions(o); renderOffers(); scheduleOfferSave(o);
+}
+function supPosEditor(o){
+  if(!Array.isArray(o.positions)||!o.positions.length) return '';
+  o.positions.forEach(supNormPos);
+  var locked=!!o.dbId&&!o._unlockOrig;
+  var rows=o.positions.map(function(p,pi){
+    var tn=supPosNegTotal(p);
+    return '<tr style="border-bottom:1px solid var(--border)">'
+      +'<td style="padding:3px 4px;color:var(--text3)">'+(pi+1)+'</td>'
+      +'<td style="padding:3px 4px"><input type="text" value="'+String(p.desc||'').replace(/"/g,'&quot;')+'" '+(locked?'readonly style="background:var(--bg2);width:100%"':'style="width:100%"')+' onchange="updSupPos('+o.id+','+pi+',\'desc\',this.value)"></td>'
+      +'<td style="padding:3px 4px"><input type="number" step="0.01" value="'+(p.qty||'')+'" '+(locked?'readonly style="background:var(--bg2);width:75px"':'style="width:75px"')+' onchange="updSupPos('+o.id+','+pi+',\'qty\',this.value)"></td>'
+      +'<td style="padding:3px 4px"><select '+(locked?'disabled ':'')+'style="width:80px" onchange="updSupPos('+o.id+','+pi+',\'unit\',this.value)">'+Object.keys(SUP_UNITS).map(function(u){return '<option value="'+u+'"'+(p.unit===u?' selected':'')+'>'+SUP_UNITS[u]+'</option>';}).join('')+'</select></td>'
+      +'<td style="padding:3px 4px"><input type="number" step="0.001" value="'+(p.price_orig||'')+'" '+(locked?'readonly style="background:var(--bg2);width:80px"':'style="width:80px"')+' onchange="updSupPos('+o.id+','+pi+',\'price_orig\',this.value)" title="Çmimi origjinal"></td>'
+      +'<td style="padding:3px 4px;white-space:nowrap"><input type="number" step="0.001" value="'+(p.disc||'')+'" style="width:60px" onchange="updSupPos('+o.id+','+pi+',\'disc\',this.value)" title="Rabati"><select style="width:44px" onchange="updSupPos('+o.id+','+pi+',\'discMode\',this.value)"><option value="eur"'+(p.discMode!=='pct'?' selected':'')+'>€</option><option value="pct"'+(p.discMode==='pct'?' selected':'')+'>%</option></select></td>'
+      +'<td style="padding:3px 4px"><input type="number" step="0.001" value="'+(p.price_neg||'')+'" style="width:80px;font-weight:600" onchange="updSupPos('+o.id+','+pi+',\'price_neg\',this.value)" title="Çmimi i negociuar"></td>'
+      +'<td style="padding:3px 4px;text-align:right;font-weight:600;white-space:nowrap">'+tn.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+      +'<td style="padding:3px 4px"><button onclick="remSupPos('+o.id+','+pi+')" style="background:none;border:none;color:var(--text3);cursor:pointer">×</button></td>'
+    +'</tr>';
+  }).join('');
+  var orig=o._totalOrig||0, neg=o.totalEur||0, sav=+(orig-neg).toFixed(2);
+  var kgQty=o.positions.reduce(function(s,p){return s+(p.unit==='kg'?(p.qty||0):0);},0);
+  var kgNeg=o.positions.reduce(function(s,p){return s+(p.unit==='kg'?supPosNegTotal(p):0);},0);
+  return '<div style="background:var(--bg2);border-radius:var(--radius);padding:10px;margin-bottom:10px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+      +'<span style="font-size:12px;font-weight:700;color:var(--bronze)">POZICIONET E FURNITORIT</span>'
+      +'<span style="display:flex;gap:6px;align-items:center">'
+        +(o.dbId?'<label style="font-size:11px;color:var(--text3)"><input type="checkbox" '+(o._unlockOrig?'checked':'')+' onchange="var x=offers.find(q=>q.id==='+o.id+');x._unlockOrig=this.checked;renderOffers()"> zhblloko origjinalet</label>':'')
+        +'<button class="btn btn-sm" onclick="addSupPos('+o.id+')">+ Shto pozicion</button>'
+      +'</span>'
+    +'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:11.5px">'
+      +'<tr style="color:var(--text3)"><th style="text-align:left;padding:3px 4px">#</th><th style="text-align:left;padding:3px 4px">Përshkrimi</th><th style="text-align:left;padding:3px 4px">Sasia</th><th style="text-align:left;padding:3px 4px">Njësia</th><th style="text-align:left;padding:3px 4px">Çm. orig.</th><th style="text-align:left;padding:3px 4px">Rabat</th><th style="text-align:left;padding:3px 4px">Çm. neg.</th><th style="text-align:right;padding:3px 4px">Totali neg.</th><th></th></tr>'
+      +rows
+    +'</table>'
+    +'<div style="display:flex;justify-content:flex-end;gap:18px;margin-top:8px;font-size:12px;flex-wrap:wrap">'
+      +'<span style="color:var(--text3)">Origjinal: <strong>'+orig.toLocaleString('de-DE',{minimumFractionDigits:2})+' €</strong></span>'
+      +'<span>Negociuar: <strong style="color:var(--bronze)">'+neg.toLocaleString('de-DE',{minimumFractionDigits:2})+' €</strong></span>'
+      +'<span style="color:'+(sav>0?'var(--green-text,#1E8E3E)':'var(--text3)')+'">Kursim: <strong>'+(sav>0?'−':'')+Math.abs(sav).toLocaleString('de-DE',{minimumFractionDigits:2})+' €</strong></span>'
+      +(kgQty>0?'<span style="color:var(--text3)">Ø çelik: <strong>'+(kgNeg/kgQty).toFixed(3).replace('.',',')+' €/kg</strong> ('+kgQty.toLocaleString('de-DE')+' kg)</span>':'')
+    +'</div>'
+  +'</div>';
+}
 function bomTotalKg(){return +(bomRows.reduce((s,r)=>s+(parseFloat(r.kg)||0),0)).toFixed(1);}
 function addOffer(){
   offers.push({id:Date.now(),supplier:'',priceKg:0,zincKg:0,transportEur:0,vatPct:0,kg:bomTotalKg(),totalEur:0,delivery:4,inco:'EXW',cert:'EN 10204 3.1',validity:30,notes:'',dbId:null});
@@ -1553,14 +1654,15 @@ function saveOfferDb(o){
   if(!_curProjId) return;
   const payload={project_id:_curProjId,supplier:o.supplier||'',price_kg:o.priceKg||0,total_eur:o.totalEur||0,
     delivery_weeks:o.delivery||0,incoterms:o.inco||'EXW',cert:o.cert||'',notes:o.notes||'',origin:o.origin||'',
-    zinc_kg:o.zincKg||0,transport_eur:o.transportEur||0,vat_pct:o.vatPct||0,qty_kg:o.kg||0};
+    zinc_kg:o.zincKg||0,transport_eur:o.transportEur||0,vat_pct:o.vatPct||0,qty_kg:o.kg||0,
+    positions:(Array.isArray(o.positions)&&o.positions.length)?o.positions:null};
   const req=o.dbId?supaFetch('offers?id=eq.'+o.dbId,'PATCH',payload):supaFetch('offers','POST',payload);
   req.then(function(rows){ if(!o.dbId&&rows&&rows[0]) o.dbId=rows[0].id; }).catch(function(e){console.error('Ruajtja e ofertes:',e);});
 }
 function updOffer(id,f,v){
   const o=offers.find(o=>o.id===id);if(!o)return;
   o[f]=['priceKg','delivery','validity','kg','zincKg','transportEur','vatPct','totalEur'].includes(f)?parseFloat(v)||0:v;
-  if(['priceKg','zincKg','kg','transportEur'].includes(f)) recalcOffer(o);
+  if(['priceKg','zincKg','kg','transportEur'].includes(f)){ if(Array.isArray(o.positions)&&o.positions.length) recalcOfferFromPositions(o); else recalcOffer(o); }
   if(['priceKg','zincKg','kg','transportEur','vatPct','totalEur'].includes(f)) renderOffers();
   scheduleOfferSave(o);
 }
@@ -1615,7 +1717,7 @@ function renderOffers(){
             <input type="number" value="${o.transportEur||''}" step="0.01" placeholder="0.00" onchange="updOffer(${o.id},'transportEur',this.value)">
           </div>
         </div>
-        ${Array.isArray(o.positions)&&o.positions.length?`<details style="margin-bottom:10px;background:var(--bg2);border-radius:var(--radius);padding:8px 10px"><summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--bronze)">Pozicionet e ofertës (${o.positions.length})</summary><table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px">${o.positions.map((p,pi)=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:3px 6px;color:var(--text3)">${pi+1}</td><td style="padding:3px 6px">${p.desc||''}</td><td style="padding:3px 6px;text-align:right;white-space:nowrap">${p.qty?(p.qty.toLocaleString('de-DE')+' '+(p.unit||'')):''}</td><td style="padding:3px 6px;text-align:right;white-space:nowrap">${p.unit_price?p.unit_price.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:3})+' €':''}</td><td style="padding:3px 6px;text-align:right;font-weight:600;white-space:nowrap">${p.total?p.total.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':''}</td></tr>`).join('')}</table></details>`:''}
+        ${supPosEditor(o)}
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label class="lbl">TVSH %</label>
@@ -1623,7 +1725,7 @@ function renderOffers(){
           </div>
           <div>
             <label class="lbl">Total EUR (neto${(o.kg||0)>0?' — auto':''})</label>
-            <input type="number" value="${o.totalEur||''}" step="0.01" placeholder="0.00" ${(o.kg||0)>0?'readonly style="background:var(--bg2)"':''} onchange="updOffer(${o.id},'totalEur',this.value)">
+            <input type="number" value="${o.totalEur||''}" step="0.01" placeholder="0.00" ${((o.kg||0)>0||(Array.isArray(o.positions)&&o.positions.length))?'readonly style="background:var(--bg2)"':''} onchange="updOffer(${o.id},'totalEur',this.value)">
           </div>
           <div>
             <label class="lbl">Total me TVSH (bruto)</label>
@@ -2526,6 +2628,7 @@ function loadProject(id){
         offerType:type,
         origin:o.origin||''
       };
+    }).map(function(r){ if(Array.isArray(r.positions)&&r.positions.length){ recalcOfferFromPositions(r); } return r;
     });
     // Show project dashboard
     showProjectDashboard(projData);
