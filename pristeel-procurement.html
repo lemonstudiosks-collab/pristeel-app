@@ -534,6 +534,16 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div class="card"><div class="card-title">Kushtet komerciale</div>
 <div class="field-group fg-2"><div><label class="lbl">Cmimi EUR/kg</label><input type="number" id="of-pr" step="0.001" placeholder="0.000"></div><div><label class="lbl">Total kg</label><input type="number" id="of-kg" placeholder="0"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Zinktimi EUR/kg (ops.)</label><input type="number" id="of-zn" step="0.001" placeholder="0.000"></div><div><label class="lbl">Transporti EUR total (ops.)</label><input type="number" id="of-tr" step="0.01" placeholder="0.00"></div></div>
+<div style="background:var(--bg2);border-radius:var(--radius);padding:10px;margin-bottom:10px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <span style="font-size:12px;font-weight:700;color:var(--bronze)">POZICIONET E OFERTËS (manuale — kanë përparësi ndaj çmimeve lart)</span>
+    <span style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="buildOferPosFromQuick()">Auto nga çmimet</button>
+      <button class="btn btn-sm" onclick="addOferPos()">+ Pozicion</button>
+    </span>
+  </div>
+  <div id="of-pos-list" style="font-size:12px;color:var(--text3)">Pa pozicione manuale — oferta ndërtohet nga çmimet lart (kg / zinktim / transport).</div>
+</div>
 <div class="field-group fg-2"><div><label class="lbl">Incoterms</label><select id="of-inc"><option>DAP</option><option>DDP</option><option>EXW</option></select></div><div><label class="lbl">Vendi</label><input type="text" id="of-loc" placeholder="Hamburg, DE"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Afati jave</label><input type="number" id="of-del" placeholder="6"></div><div><label class="lbl">Validiteti dite</label><input type="number" id="of-val" value="30"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Pagesa</label><select id="of-pay-preset" onchange="payPresetChanged()">
@@ -2132,6 +2142,49 @@ function pstDocFooter(){
     +'<div>Business Nr. '+(settings.taxNr||'811361089')+' · www.prissteel.com</div>'
   +'</div>';
 }
+// ── POZICIONET MANUALE TË OFERTËS ──
+var oferPos=[];
+var OF_UNITS={kg:{de:'kg',en:'kg',sq:'kg',sr:'kg'},pc:{de:'Stk.',en:'pcs',sq:'copë',sr:'kom'},ls:{de:'pauschal',en:'lump sum',sq:'shumë fikse',sr:'paušal'},m:{de:'m',en:'m',sq:'m',sr:'m'},h:{de:'Std.',en:'h',sq:'orë',sr:'čas'}};
+var OF_POS_LB={de:{hd:'Beschreibung',hm:'Menge',he:'Einheit',hup:'Einheitspreis',hgp:'Gesamtpreis',mu:'Materialübersicht (informativ)'},
+en:{hd:'Description',hm:'Qty',he:'Unit',hup:'Unit price',hgp:'Total price',mu:'Material overview (informative)'},
+sq:{hd:'Përshkrimi',hm:'Sasia',he:'Njësia',hup:'Çmimi/njësi',hgp:'Totali',mu:'Pasqyra e materialit (informative)'},
+sr:{hd:'Opis',hm:'Količina',he:'Jedinica',hup:'Jed. cena',hgp:'Ukupno',mu:'Pregled materijala (informativno)'}};
+function oferPosTotal(p){ return p.unit==='ls' ? (p.price||0) : (p.qty||0)*(p.price||0); }
+function oferPosSum(){ return +(oferPos.reduce(function(s,p){return s+oferPosTotal(p);},0)).toFixed(2); }
+function addOferPos(d){ oferPos.push(d||{desc:'',qty:0,unit:'kg',price:0}); renderOferPos(); }
+function remOferPos(i){ oferPos.splice(i,1); renderOferPos(); }
+function updOferPos(i,f,v){ oferPos[i][f]=(f==='desc'||f==='unit')?v:(parseFloat(v)||0); if(f!=='desc') renderOferPos(); }
+function buildOferPosFromQuick(){
+  var pr=parseFloat(document.getElementById('of-pr').value)||0;
+  var kg=parseFloat(document.getElementById('of-kg').value)||0;
+  var zn=parseFloat(document.getElementById('of-zn').value)||0;
+  var tr=parseFloat(document.getElementById('of-tr').value)||0;
+  var lang=(document.getElementById('of-lang')||{value:'de'}).value;
+  var lb=OF_LABELS[lang]||OF_LABELS.de;
+  oferPos=[];
+  if(pr>0&&kg>0) oferPos.push({desc:lb.stx,qty:kg,unit:'kg',price:pr});
+  if(zn>0&&kg>0) oferPos.push({desc:lb.znx,qty:kg,unit:'kg',price:zn});
+  if(tr>0) oferPos.push({desc:lb.trx,qty:1,unit:'ls',price:tr});
+  renderOferPos();
+}
+function renderOferPos(){
+  var el=document.getElementById('of-pos-list'); if(!el) return;
+  if(!oferPos.length){ el.innerHTML='Pa pozicione manuale — oferta ndërtohet nga çmimet lart (kg / zinktim / transport).'; return; }
+  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<tr style="color:var(--text3)"><th style="text-align:left;padding:3px">Përshkrimi</th><th style="width:90px;padding:3px">Sasia</th><th style="width:90px;padding:3px">Njësia</th><th style="width:100px;padding:3px">Çmimi/njësi</th><th style="width:110px;text-align:right;padding:3px">Total</th><th style="width:26px"></th></tr>'
+    +oferPos.map(function(p,i){
+      return '<tr>'
+        +'<td style="padding:3px"><input type="text" value="'+String(p.desc||'').replace(/"/g,'&quot;')+'" onchange="updOferPos('+i+',\'desc\',this.value)" style="width:100%"></td>'
+        +'<td style="padding:3px"><input type="number" step="0.01" value="'+(p.qty||'')+'" onchange="updOferPos('+i+',\'qty\',this.value)" style="width:100%"></td>'
+        +'<td style="padding:3px"><select onchange="updOferPos('+i+',\'unit\',this.value)" style="width:100%">'+Object.keys(OF_UNITS).map(function(u){return '<option value="'+u+'"'+(p.unit===u?' selected':'')+'>'+OF_UNITS[u].sq+'</option>';}).join('')+'</select></td>'
+        +'<td style="padding:3px"><input type="number" step="0.001" value="'+(p.price||'')+'" onchange="updOferPos('+i+',\'price\',this.value)" style="width:100%"></td>'
+        +'<td style="padding:3px;text-align:right;font-weight:600">'+oferPosTotal(p).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+        +'<td style="padding:3px"><button onclick="remOferPos('+i+')" style="background:none;border:none;color:var(--text3);cursor:pointer">×</button></td>'
+      +'</tr>';
+    }).join('')
+    +'<tr><td colspan="4" style="text-align:right;font-weight:700;padding:5px">Σ</td><td style="text-align:right;font-weight:700;padding:5px">'+oferPosSum().toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td><td></td></tr>'
+  +'</table>';
+}
 var PST_CAT_LABELS={
   de:{beam:'Träger (HE/IPE)',hollow:'Hohlprofile (QRO/RRO/CHS)',plate:'Bleche',angle:'Winkel',flat:'Flachstahl',other:'Sonstige Profile (U u.a.)'},
   en:{beam:'Beams (HE/IPE)',hollow:'Hollow sections (SHS/RHS/CHS)',plate:'Plates',angle:'Angles',flat:'Flat bars',other:'Other profiles (U etc.)'},
@@ -2212,7 +2265,9 @@ function genOfer(){
   var pay=payPlanText(payPlan, lang);
   var cer=document.getElementById('of-cer').value;
   var not=document.getElementById('of-not').value||'';
-  var tot=pr*kg + zn*kg + tr;
+  var usePos = oferPos.length>0;
+  var tot = usePos ? oferPosSum() : (pr*kg + zn*kg + tr);
+  var plb = OF_POS_LB[lang]||OF_POS_LB.de;
 
   // positions table: mode-driven (grouped / types / none / full)
   var mode=(document.getElementById('of-mode')||{value:'grouped'}).value;
@@ -2260,7 +2315,44 @@ function genOfer(){
     +'</div>'
     +pstMetaRow([[lb.on,nr],[lb.da,dts],[lb.pr,proj],[lb.rf,ref],[lb.vl,val+lb.dy]])
     +'<div style="margin:16px 0 4px;font-size:12.5px">'+pstSalutation(con,lb)+'<br>'+lb.intro+'</div>'
-    +pstSectionTitle(lb.ps)
+    +(usePos ?
+      pstSectionTitle(lb.ps)
+      +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<thead><tr style="background:#1C2333;color:#fff">'
+          +'<th style="padding:8px 10px;text-align:left;font-weight:600">'+lb.hn+'</th>'
+          +'<th style="padding:8px 10px;text-align:left;font-weight:600">'+plb.hd+'</th>'
+          +'<th style="padding:8px 10px;text-align:right;font-weight:600">'+plb.hm+'</th>'
+          +'<th style="padding:8px 10px;text-align:left;font-weight:600">'+plb.he+'</th>'
+          +'<th style="padding:8px 10px;text-align:right;font-weight:600">'+plb.hup+'</th>'
+          +'<th style="padding:8px 10px;text-align:right;font-weight:600">'+plb.hgp+'</th>'
+        +'</tr></thead><tbody>'
+        +oferPos.map(function(p,i){
+          var bg=i%2?'#FAF8F5':'#fff';
+          var un=(OF_UNITS[p.unit]||OF_UNITS.kg)[lang]||p.unit;
+          return '<tr style="background:'+bg+'">'
+            +'<td style="padding:7px 10px;color:#8A8378">'+(i+1)+'.0</td>'
+            +'<td style="padding:7px 10px;font-weight:600">'+(p.desc||'')+'</td>'
+            +'<td style="padding:7px 10px;text-align:right;white-space:nowrap">'+(p.unit==='ls'?'—':pstFmt(p.qty||0,(p.qty%1?2:0)))+'</td>'
+            +'<td style="padding:7px 10px">'+un+'</td>'
+            +'<td style="padding:7px 10px;text-align:right;white-space:nowrap">'+(p.price||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:3})+' €'+(p.unit!=='ls'?'/'+un:'')+'</td>'
+            +'<td style="padding:7px 10px;text-align:right;font-weight:700;white-space:nowrap">'+pstFmt(oferPosTotal(p))+' €</td>'
+          +'</tr>';
+        }).join('')
+        +'</tbody></table>'
+      +(bomRows.length>0 && mode!=='none' && mode!=='full' ?
+          pstSectionTitle(plb.mu)
+          +'<table style="width:100%;border-collapse:collapse;font-size:11px">'
+            +'<thead><tr style="background:#F0EDE8;color:#1C2333">'
+              +'<th style="padding:6px 10px;text-align:left;font-weight:600">'+lb.hn+'</th>'
+              +'<th style="padding:6px 10px;text-align:left;font-weight:600">'+lb.hp+'</th>'
+              +'<th style="padding:6px 10px;text-align:left;font-weight:600">'+lb.hg+'</th>'
+              +'<th style="padding:6px 10px;text-align:right;font-weight:600">'+lb.hs+'</th>'
+              +'<th style="padding:6px 10px;text-align:right;font-weight:600">'+lb.hq+'</th>'
+            +'</tr></thead><tbody>'+rows+'</tbody>'
+            +'<tfoot><tr style="border-top:2px solid #1C2333"><td colspan="4" style="padding:6px 10px;font-weight:700;text-align:right">'+lb.tq+'</td><td style="padding:6px 10px;text-align:right;font-weight:700">'+pstFmt(kg,0)+' kg</td></tr></tfoot>'
+          +'</table>' : '')
+    :
+      pstSectionTitle(lb.ps)
     +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
       +'<thead><tr style="background:#1C2333;color:#fff">'
         +'<th style="padding:8px 10px;text-align:left;font-weight:600;letter-spacing:.5px">'+lb.hn+'</th>'
@@ -2271,11 +2363,12 @@ function genOfer(){
       +'</tr></thead><tbody>'+rows+'</tbody>'
       +'<tfoot><tr style="border-top:2px solid #1C2333"><td colspan="4" style="padding:8px 10px;font-weight:700;text-align:right">'+lb.tq+'</td><td style="padding:8px 10px;text-align:right;font-weight:700">'+pstFmt(kg,0)+' kg</td></tr></tfoot>'
     +'</table>'
+    )
     +'<div style="display:flex;justify-content:flex-end;margin-top:16px">'
       +'<div style="min-width:300px;background:#F8F6F3;border:1px solid #EAE5DE;border-radius:8px;padding:14px 18px">'
-        +'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.stx+' ('+pr.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(pr*kg)+' EUR</span></div>'
-        +(zn>0?'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.znx+' ('+zn.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(zn*kg)+' EUR</span></div>':'')
-        +(tr>0?'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.trx+'</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(tr)+' EUR</span></div>':'')
+        +(usePos?'':'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.stx+' ('+pr.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(pr*kg)+' EUR</span></div>')
+        +(!usePos&&zn>0?'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.znx+' ('+zn.toFixed(2).replace('.',',')+' EUR/kg)</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(zn*kg)+' EUR</span></div>':'')
+        +(!usePos&&tr>0?'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.trx+'</span><span style="font-weight:600;white-space:nowrap">'+pstFmt(tr)+' EUR</span></div>':'')
         +'<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;padding:3px 0"><span style="color:#8A8378">'+lb.ic+'</span><span style="font-weight:600">'+inc+(loc?' '+loc:'')+'</span></div>'
         +'<div style="display:flex;justify-content:space-between;padding:8px 0 2px;margin-top:6px;border-top:2px solid #B87333"><span style="font-weight:700">'+lb.tp+'</span><span style="font-weight:700;font-size:16px;color:#B87333">'+pstFmt(tot)+' EUR</span></div>'
       +'</div>'
@@ -2304,7 +2397,8 @@ function printOfer(){
   var _nr=document.getElementById('of-nr').value.trim();
   var _pr=parseFloat(document.getElementById('of-pr').value)||0, _kg=parseFloat(document.getElementById('of-kg').value)||0;
   var _zn=parseFloat((document.getElementById('of-zn')||{value:0}).value)||0, _tr=parseFloat((document.getElementById('of-tr')||{value:0}).value)||0;
-  if(_nr) registerDocNr('QUO', _nr, document.getElementById('of-proj').value||'', document.getElementById('of-cli').value||'', _pr*_kg+_zn*_kg+_tr, buildPayPlan());
+  var _tot = oferPos.length>0 ? oferPosSum() : (_pr*_kg+_zn*_kg+_tr);
+  if(_nr) registerDocNr('QUO', _nr, document.getElementById('of-proj').value||'', document.getElementById('of-cli').value||'', _tot, buildPayPlan());
   var w=window.open('','_blank');
   var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Oferta PRISTEEL</title><style>body{margin:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'+content+'</body></html>';
   w.document.write(h);w.document.close();
