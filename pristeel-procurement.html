@@ -3755,7 +3755,11 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes
   //    jo çmimi minimal absolut i furnitorit (i cili mund të mos përfshijë zinktim/transport) ──
   var supplierRows=inn.map(function(o){
     var kg=parseFloat(o.qty_kg)||0, pk=parseFloat(o.price_kg)||0, zk=parseFloat(o.zinc_kg)||0, te=parseFloat(o.transport_eur)||0;
-    return {steel: kg>0?pk*kg:0, zinc: (kg>0&&zk>0)?zk*kg:0, transport: te>0?te:0, hasSteel:pk>0&&kg>0, hasZinc:zk>0&&kg>0, hasTransport:te>0};
+    // Nese furnitori s'e ka shenuar sasine, perdor peshen e BOM-it te projektit (rasti tipik:
+    // furnitori i zinktimit jep vetem EUR/kg, sasia nenkuptohet = e gjithe konstruksioni).
+    var kgEff = kg>0 ? kg : totKg;
+    return {steel: pk>0?pk*kgEff:0, zinc: zk>0?zk*kgEff:0, transport: te>0?te:0,
+            hasSteel:pk>0&&kgEff>0, hasZinc:zk>0&&kgEff>0, hasTransport:te>0};
   });
   function bestOf(rows,key,hasKey){
     var v=rows.filter(function(r){return r[hasKey];}).map(function(r){return r[key];});
