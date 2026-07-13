@@ -8,14 +8,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Bebas+Neue&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F5F7F8;--bg2:#ECF0F2;--bg3:#E2E8EB;
-  --bg-card:#FFFFFF;--bg-hover:#ECF0F2;
-  --text:#28323B;--text2:#5D6B76;--text3:#96A3AD;
-  --border:#E3E8EC;--border2:#CDD6DC;
-  --bronze:#44677B;--bronze-light:#5D8299;--bronze-dark:#324D5D;
+  --bg:#FBFAF8;--bg2:#F4F2EE;--bg3:#EBE7E1;
+  --bg-card:#FFFFFF;--bg-hover:#F7F5F2;
+  --text:#2E2C28;--text2:#6B665E;--text3:#A39C92;
+  --border:#EDEAE4;--border2:#DDD8D0;
+  --bronze:#B87333;--bronze-light:#C98F55;--bronze-dark:#96551F;
   --bronze-bg:rgba(68,103,123,0.10);--bronze-text:#324D5D;
   --copper:#B0714C;--copper-bg:rgba(176,113,76,0.10);
-  --green:#3E7A5E;--green-bg:rgba(62,122,94,0.10);--green-text:#33654E;
+  --green:#4F8A5B;--green-bg:rgba(79,138,91,0.09);--green-text:#3E6E48;
   --red:#B0554A;--red-bg:rgba(176,85,74,0.10);--red-text:#9A473D;
   --blue:#4A6FA5;--blue-bg:rgba(74,111,165,0.10);--blue-text:#3E5D8A;
   --radius:8px;--radius-lg:12px;
@@ -26,20 +26,20 @@ button,input,select,textarea{font-family:inherit}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#CDD6DC;border-radius:6px}::-webkit-scrollbar-track{background:transparent}
 /* LAYOUT */
 .app-shell{display:flex;min-height:100vh}
-.sidebar{width:220px;background:#26333D;border-right:none;box-shadow:2px 0 10px rgba(20,30,38,0.15);padding:0;flex-shrink:0;display:flex;flex-direction:column}
+.sidebar{width:220px;background:#1C2333;border-right:none;box-shadow:2px 0 10px rgba(28,35,51,0.12);padding:0;flex-shrink:0;display:flex;flex-direction:column}
 .sidebar-logo{padding:20px 20px 18px;border-bottom:1px solid rgba(255,255,255,0.08)}
 .logo-mark{font-family:'Bebas Neue',sans-serif;font-size:28px;font-weight:400;color:#D3936A;letter-spacing:2px;line-height:1}
 .logo-sub{font-size:10px;color:#8FA0AC;margin-top:4px;letter-spacing:1.5px;text-transform:uppercase}
 .sidebar-nav{padding:12px 0;flex:1}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:#AEBDC8;font-size:12px;font-weight:500;transition:all .2s;border-left:2px solid transparent;letter-spacing:.3px}
-.nav-item:hover{background:rgba(255,255,255,0.06);color:#FFFFFF;border-left-color:rgba(211,147,106,0.6)}
-.nav-item.active{background:rgba(255,255,255,0.09);color:#FFFFFF;border-left-color:var(--page-accent,#D3936A)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:#B4AFA6;font-size:12px;font-weight:500;transition:all .2s;border-left:2px solid transparent;letter-spacing:.3px}
+.nav-item:hover{background:rgba(184,115,51,0.12);color:#FFFFFF;border-left-color:rgba(184,115,51,0.7)}
+.nav-item.active{background:rgba(184,115,51,0.18);color:#FFFFFF;border-left-color:var(--page-accent,#B87333)}
 .page-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;background:var(--page-accent,var(--bronze));vertical-align:middle}
 .nav-item svg{stroke:#7E909D}
 .nav-item.active svg{stroke:#ffffff}.nav-item:hover svg{stroke:#FFFFFF}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .nav-section{color:#6E8090 !important;font-size:9px;font-weight:600;letter-spacing:1.5px;padding:20px 20px 6px;text-transform:uppercase}
-.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08);font-size:10px;color:#7E909D;letter-spacing:.3px}.main{flex:1;overflow-y:auto}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.08);font-size:10px;color:#8A8378;letter-spacing:.3px}.main{flex:1;overflow-y:auto}
 .topbar{background:var(--bg);border-bottom:0.5px solid var(--border);padding:14px 28px;display:flex;justify-content:space-between;align-items:center}
 .topbar-title{font-size:15px;font-weight:600;color:var(--text);letter-spacing:.2px}
 .topbar-sub{font-size:11px;color:var(--text3);margin-top:2px;letter-spacing:.3px;text-transform:uppercase}
@@ -143,6 +143,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 .api-note{background:rgba(184,115,51,0.08);border:0.5px solid var(--bronze-dark);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--bronze-text);margin-bottom:16px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 </script>
@@ -252,7 +254,13 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div style="font-size:12px;color:var(--text3)">PDF · Excel · Word · CSV · TXT — LV, BOM, Stückliste, tender documents</div>
     </div>
 
-    <div style="text-align:center;padding:12px 0;font-size:12px;color:var(--text3)">— ose ngjit tekstin direkt —</div>
+    <div style="display:flex;gap:10px;align-items:center;justify-content:center;padding:12px 0">
+      <button class="btn btn-sm" onclick="pickFromDrive()" style="display:flex;align-items:center;gap:7px">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7.7 3h8.6l4.7 8.1-4.3 7.4H7.3L3 11.1z"/><path d="M3 11.1h18M7.7 3l4.3 8.1M16.3 3l-4.3 8.1"/></svg>
+        Merr nga Google Drive
+      </button>
+      <span style="font-size:12px;color:var(--text3)">— ose ngjit tekstin direkt —</span>
+    </div>
 
     <div>
       <label class="lbl">Teksti nga dokumenti (copy-paste nga PDF, email, ose çdo burim)</label>
@@ -823,6 +831,17 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <input type="password" id="s-apikey" placeholder="gsk_..." oninput="saveApiKey()"></div>
     </div>
     <div id="key-status" class="text-sm text-muted mt-8"></div>
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:700;color:var(--bronze);margin-bottom:6px">GOOGLE DRIVE (opsionale)</div>
+      <div class="api-note" style="margin-bottom:10px">Për të marrë dokumente direkt nga Drive. Krijo falas te <strong>console.cloud.google.com</strong>: aktivizo <em>Google Drive API</em> + <em>Google Picker API</em> → Credentials → krijo <em>API Key</em> dhe <em>OAuth Client ID (Web)</em>. Te "Authorized JavaScript origins" shto: <code>https://lemonstudiosks-collab.github.io</code></div>
+      <div class="field-group fg-2">
+        <div><label class="lbl">Google Client ID</label>
+          <input type="text" id="s-gclient" placeholder="....apps.googleusercontent.com" oninput="saveGoogleKeys()"></div>
+        <div><label class="lbl">Google API Key</label>
+          <input type="password" id="s-gapikey" placeholder="AIza..." oninput="saveGoogleKeys()"></div>
+      </div>
+      <div id="gkey-status" class="text-sm text-muted"></div>
+    </div>
   </div>
   <div class="card">
     <div class="card-title">Profili i kompanisë</div>
@@ -912,8 +931,9 @@ function showPage(p){
   const idx=order.indexOf(p);
   if(items[idx])items[idx].classList.add('active');
   document.documentElement.style.setProperty('--page-accent',PAGE_COLORS[p]||PAGE_COLORS.import);
-  document.getElementById('page-title').textContent=pageMeta[p].title;
-  document.getElementById('page-sub').textContent=pageMeta[p].sub;
+  var meta=pageMeta[p]||{title:'',sub:''};
+  document.getElementById('page-title').textContent=meta.title;
+  document.getElementById('page-sub').textContent=meta.sub;
   if(p==='bom')renderBom();
   if(p==='rfq'){renderSuppliers();updateRfqCount();}
   if(p==='offers')renderOffers();
@@ -929,18 +949,85 @@ function updateProjBadge(){
   const v=document.getElementById('i-projname').value;
   document.getElementById('proj-badge').textContent=v||'Pa projekt';
 }
+var _curProjId=null;
+// ── PASTRIM I PLOTË I HAPËSIRËS SË PUNËS ──
+// Çdo rrugë që ndërron projekt DUHET ta thërrasë këtë. Pa të, të dhënat e projektit
+// të mëparshëm (BOM, ofertat, pozicionet) rrjedhin te projekti i ri.
+// ── GOOGLE DRIVE: merr dokumentet direkt (PDF/Excel/Word/CSV) ──
+var _gDriveToken=null, _gPickerReady=false;
+function gLoadPicker(cb){
+  if(_gPickerReady){cb();return;}
+  gapi.load('picker', function(){ _gPickerReady=true; cb(); });
+}
+function pickFromDrive(){
+  var cid=localStorage.getItem('pristeel_gclient')||'';
+  var key=localStorage.getItem('pristeel_gapikey')||'';
+  if(!cid||!key){
+    alert('Konfiguro Google Drive fillimisht:\n\nCilësimet → Google Drive Client ID + API Key\n\n(Krijohen falas te console.cloud.google.com — Drive API + Picker API)');
+    showPage('settings'); return;
+  }
+  var launch=function(token){
+    _gDriveToken=token;
+    gLoadPicker(function(){
+      var view=new google.picker.DocsView(google.picker.ViewId.DOCS)
+        .setIncludeFolders(true).setSelectFolderEnabled(false)
+        .setMimeTypes('application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.google-apps.spreadsheet,application/vnd.google-apps.document');
+      var picker=new google.picker.PickerBuilder()
+        .addView(view).setOAuthToken(token).setDeveloperKey(key)
+        .setCallback(driveCallback).build();
+      picker.setVisible(true);
+    });
+  };
+  if(_gDriveToken){ launch(_gDriveToken); return; }
+  var tc=google.accounts.oauth2.initTokenClient({
+    client_id:cid, scope:'https://www.googleapis.com/auth/drive.readonly',
+    callback:function(r){ if(r.access_token) launch(r.access_token); else alert('Autorizimi dështoi.'); }
+  });
+  tc.requestAccessToken();
+}
+async function driveCallback(data){
+  if(data.action!==google.picker.Action.PICKED) return;
+  var doc=data.docs[0];
+  var dz=document.getElementById('dz-title');
+  if(dz) dz.textContent='Duke marrë "'+doc.name+'" nga Drive...';
+  try{
+    var isNative=doc.mimeType.indexOf('application/vnd.google-apps')===0;
+    var url = isNative
+      ? 'https://www.googleapis.com/drive/v3/files/'+doc.id+'/export?mimeType='+(doc.mimeType.indexOf('spreadsheet')>-1?'text/csv':'text/plain')
+      : 'https://www.googleapis.com/drive/v3/files/'+doc.id+'?alt=media';
+    var resp=await fetch(url,{headers:{Authorization:'Bearer '+_gDriveToken}});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    var blob=await resp.blob();
+    var fname=doc.name+(isNative?(doc.mimeType.indexOf('spreadsheet')>-1?'.csv':'.txt'):'');
+    var file=new File([blob], fname, {type:blob.type||'application/octet-stream'});
+    if(dz) dz.textContent='Tërhiq skedarin këtu ose kliko';
+    handleFiles([file]); // e njejta rrjedhe si ngarkimi manual
+  }catch(e){
+    alert('Gabim nga Drive: '+e.message);
+    if(dz) dz.textContent='Tërhiq skedarin këtu ose kliko';
+  }
+}
+function resetWorkspace(){
+  _curProjId=null;
+  bomRows=[]; suppliers=[]; offers=[];
+  if(typeof oferPos!=='undefined') oferPos=[];
+  if(typeof invoiceItems!=='undefined') invoiceItems=[];
+  ['i-projname','i-client','i-ref','i-location','i-deadline','i-value','i-text',
+   'of-nr','of-proj','of-ref','of-cli','of-con','of-em','of-adr','of-pr','of-kg','of-zn','of-tr','of-loc','of-not',
+   'iv-nr','iv-cli','iv-proj'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.value='';
+  });
+  try{ renderBom(); }catch(e){}
+  try{ renderOffers(); }catch(e){}
+  try{ renderOferPos(); }catch(e){}
+  try{ updateProjBadge(); }catch(e){}
+  var sl=document.getElementById('of-saved-list'); if(sl) sl.innerHTML='';
+  var pv=document.getElementById('of-pre'); if(pv) pv.innerHTML='Ploteso te dhenat dhe kliko Gjenero...';
+}
 function newProject(){
   if(confirm('Fillo projekt të ri? Të dhënat aktuale do të fshihen.')){
-    bomRows=[];suppliers=[];offers=[];
-    _curProjId=null; // KRITIKE: pa këtë, "Ruaj" mbishkruante projektin e fundit të hapur!
-    document.getElementById('i-projname').value='';
-    document.getElementById('i-client').value='';
-    document.getElementById('i-ref').value='';
-    document.getElementById('i-location').value='';
-    document.getElementById('i-deadline').value='';
-    var iv=document.getElementById('i-value'); if(iv) iv.value='';
-    document.getElementById('i-text').value='';
-    updateProjBadge();showPage('import');
+    resetWorkspace();
+    showPage('import');
   }
 }
 
@@ -1848,6 +1935,13 @@ function saveApiKey(){
   localStorage.setItem('pristeel_apikey',k);
   document.getElementById('key-status').textContent=k?'✓ API Key e ruajtur në browser':'API Key u fshi.';
 }
+function saveGoogleKeys(){
+  var c=document.getElementById('s-gclient').value.trim();
+  var k=document.getElementById('s-gapikey').value.trim();
+  localStorage.setItem('pristeel_gclient',c);
+  localStorage.setItem('pristeel_gapikey',k);
+  document.getElementById('gkey-status').textContent=(c&&k)?'✓ Google Drive i konfiguruar':'Plotëso të dyja fushat për ta aktivizuar Drive.';
+}
 function saveSettings(){
   settings={company:document.getElementById('s-company').value,email:document.getElementById('s-email').value,contact:document.getElementById('s-contact').value,title:document.getElementById('s-title').value,address:document.getElementById('s-address').value,taxNr:document.getElementById('s-taxnr').value,bankName:document.getElementById('s-bankname').value,iban:document.getElementById('s-iban').value,swift:document.getElementById('s-swift').value};
   localStorage.setItem('pristeel_settings',JSON.stringify(settings));
@@ -1861,6 +1955,10 @@ function updDefaultSupplier(id,f,v){const s=defaultSuppliers.find(s=>s.id===id);
 function renderSettings(){
   const k=localStorage.getItem('pristeel_apikey')||'';
   if(k)document.getElementById('s-apikey').value=k;
+  var gc=localStorage.getItem('pristeel_gclient')||'', gk=localStorage.getItem('pristeel_gapikey')||'';
+  var gce=document.getElementById('s-gclient'), gke=document.getElementById('s-gapikey');
+  if(gce) gce.value=gc; if(gke) gke.value=gk;
+  var gs=document.getElementById('gkey-status'); if(gs) gs.textContent=(gc&&gk)?'✓ Google Drive i konfiguruar':'';
   document.getElementById('s-company').value=settings.company||'PRISTEEL Sh.p.k.';
   document.getElementById('s-email').value=settings.email||'sales@prissteel.com';
   document.getElementById('s-contact').value=settings.contact||'Arianit Vllahiu';
@@ -2619,7 +2717,7 @@ function supaFetch(path,method,body){
     body:body?JSON.stringify(body):undefined
   }).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});return r.text();}).then(function(t){return t?JSON.parse(t):[];});
 }
-var _curProjId=null;
+// _curProjId deklarohet lart (shih resetWorkspace)
 function saveProject(triggerBtn){
   var name=document.getElementById('i-projname').value;
   if(!name){alert('Shkruaj emrin e projektit fillimisht (te Import Dokument).');return;}
@@ -2667,8 +2765,9 @@ function loadProjectList(){
 }
 function loadProject(id){
   var projData=null;
+  resetWorkspace(); // KRITIKE: pastro te dhenat e projektit te meparshem para ngarkimit
   supaFetch('projects?id=eq.'+id).then(function(projs){
-    var p=projs[0]; if(!p)return;
+    var p=projs[0]; if(!p){alert('Projekti nuk u gjet.');return;}
     projData=p; _curProjId=id;
     document.getElementById('i-projname').value=p.name||'';
     document.getElementById('i-client').value=p.client||'';
@@ -2785,6 +2884,7 @@ function renderDashOffers(){
     section('Te tjera',other,'var(--text2)');
 }
 function deleteProject(id){
+  if(_curProjId===id) resetWorkspace();
   if(!confirm('Fshi projektin? Nuk kthehet.'))return;
   supaFetch('projects?id=eq.'+id,'DELETE').then(function(){loadProjectList();}).catch(function(e){alert('Gabim: '+e.message);});
 }
