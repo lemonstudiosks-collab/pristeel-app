@@ -1612,6 +1612,8 @@ function generateRfqs(){
       body=`Subject: ${s.cat==='producer'?'Fabrication RFQ':'Material RFQ'} – ${proj} | ${totalKgStr} kg | Ref: ${ref}\n\nDear Sir/Madam,\n\n${s.cat==='producer'?'We kindly request your quotation for the fabrication of the following items:':'We require the following materials and request your quotation:'}\n\n${lines}\n\n---\nPlease provide:\n- ${s.cat==='producer'?'Fabrication price':'Price'} per kg (${inco}, ${location})\n- Delivery time in weeks\n- Certificate: ${cert}\n- Offer validity: ${valid_days} days\n---\n\nRequired delivery: ${deadline}\nPayment terms: ${payment}\nReference: ${ref}\n\nBest regards,\n\n${contact}\nPRISTEEL Sh.p.k. | www.prissteel.com`;
     }
     const enc=btoa(unescape(encodeURIComponent(body)));
+    var _sm=body.match(/^(?:Betreff|Subject|Subjekti|Predmet):\s*(.+)$/m);
+    var subj=_sm?_sm[1].trim():(proj+' — RFQ');
     return `<div style="border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:12px">
       <div class="flex justify-between items-center mb-12">
         <div class="flex items-center gap-8">
@@ -1621,8 +1623,8 @@ function generateRfqs(){
           <span class="badge badge-gray">${s.country}</span>
         </div>
         <div class="flex gap-8">
-          <button class="btn btn-sm" onclick="copyRfq(this,'${enc}')">Kopjo email</button>
-          <a class="btn btn-sm" href="https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to=${encodeURIComponent(s.email)}&su=${encodeURIComponent(proj)}&body=${encodeURIComponent(body)}" target="_blank">Hap në Gmail</a>
+          <button class="btn btn-sm" onclick="copyRfq(this,'${enc}')">Kopjo</button>
+          <a class="btn btn-sm" href="https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to=${encodeURIComponent(s.email)}&su=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" target="_blank" onclick="logRfqSent('${encodeURIComponent(s.name)}','${encodeURIComponent(s.email)}','${lang}','${encodeURIComponent(subj)}','${enc}')">Dërgo & regjistro</a>
         </div>
       </div>
       <div class="rfq-email-body">${body}</div>
@@ -1630,6 +1632,76 @@ function generateRfqs(){
   }).join('');
 }
 
+// ══ RFQ: REGJISTRIM + NDJEKJE AUTOMATIKE ══
+function logRfqSent(nameEnc, emailEnc, lang, subjEnc, bodyEnc){
+  var name=decodeURIComponent(nameEnc), email=decodeURIComponent(emailEnc), subj=decodeURIComponent(subjEnc);
+  var body=''; try{ body=decodeURIComponent(escape(atob(bodyEnc))); }catch(e){}
+  var proj=document.getElementById('i-projname').value||'';
+  supaFetch('rfq_log','POST',{
+    project_id:_curProjId||null, project_name:proj,
+    supplier_name:name, supplier_email:email, lang:lang||'en',
+    subject:subj, body:body, sent_at:new Date().toISOString(), status:'sent'
+  }).then(function(){
+    // krijo edhe kartë oferte bosh, që projekti ta dijë se pritet përgjigje
+    if(_curProjId){
+      supaFetch('offers','POST',{project_id:_curProjId, supplier:name, price_kg:0, total_eur:0,
+        qty_kg:0, zinc_kg:0, transport_eur:0, vat_pct:0,
+        notes:'RFQ dërguar '+new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+' — pritet çmimi.'}).catch(function(){});
+    }
+    if(typeof loadCockpit==='function') loadCockpit();
+  }).catch(function(e){console.error('logRfqSent:',e);});
+}
+// Harto ndjekjen (follow-up) në gjuhën e RFQ-së origjinale
+var FU_TXT={
+  de:{s:'Erinnerung: Angebotsanfrage %s',b:'Sehr geehrte Damen und Herren,\n\nam %d haben wir Ihnen eine Anfrage zu %s übermittelt.\n\nDa uns bislang keine Rückmeldung vorliegt, möchten wir höflich nachfassen. Können Sie uns mitteilen, ob und bis wann wir mit einem Angebot rechnen dürfen?\n\nFür Rückfragen stehen wir Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com'},
+  en:{s:'Follow-up: Request for quotation %s',b:'Dear Sir or Madam,\n\non %d we sent you a request for quotation regarding %s.\n\nAs we have not yet received a reply, we would kindly like to follow up. Could you let us know whether and by when we may expect your offer?\n\nWe remain at your disposal for any questions.\n\nBest regards,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com'},
+  sq:{s:'Përkujtesë: Kërkesë për ofertë %s',b:'Të nderuar,\n\nmë %d ju dërguam një kërkesë për ofertë lidhur me %s.\n\nMeqë ende nuk kemi marrë përgjigje, dëshirojmë të bëjmë një përkujtesë. A mund të na njoftoni nëse dhe deri kur mund ta presim ofertën tuaj?\n\nMbetemi në dispozicion për çdo pyetje.\n\nMe respekt,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com'},
+  sr:{s:'Podsetnik: Zahtev za ponudu %s',b:'Poštovani,\n\ndana %d poslali smo Vam zahtev za ponudu u vezi sa %s.\n\nBudući da još nismo dobili odgovor, ljubazno Vas podsećamo. Možete li nam javiti da li i do kada možemo očekivati Vašu ponudu?\n\nStojimo Vam na raspolaganju za sva pitanja.\n\nS poštovanjem,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com'}
+};
+function buildFollowup(r){
+  var t=FU_TXT[r.lang]||FU_TXT.en;
+  var d=r.sent_at?new Date(r.sent_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  var proj=r.project_name||'';
+  return {subject:t.s.replace('%s',proj?('— '+proj):''), body:t.b.replace('%d',d).replace('%s',proj)};
+}
+function sendFollowup(id, email, lang, projName, sentAt){
+  var fu=buildFollowup({lang:lang, project_name:decodeURIComponent(projName), sent_at:sentAt});
+  window.open('https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(email)
+    +'&su='+encodeURIComponent(fu.subject)+'&body='+encodeURIComponent(fu.body),'_blank');
+  supaFetch('rfq_log?id=eq.'+id,'PATCH',{
+    followup_count:1, last_followup_at:new Date().toISOString()
+  }).then(function(){ if(typeof loadCockpit==='function') loadCockpit(); }).catch(function(){});
+}
+function markRfqReplied(id){
+  supaFetch('rfq_log?id=eq.'+id,'PATCH',{status:'replied', replied_at:new Date().toISOString()})
+    .then(function(){ if(typeof loadCockpit==='function') loadCockpit(); }).catch(function(){});
+}
+// ══ NDJEKJA E OFERTAVE TONA (klienti hesht) ══
+var QFU_TXT={
+  de:{s:'Nachfassen: Unser Angebot %n — %p',
+      b:'Sehr geehrte Damen und Herren,\n\nam %d haben wir Ihnen unser Angebot %n für das Projekt %p (Gesamtsumme: %t) übermittelt.\n\nGerne möchten wir uns erkundigen, ob Ihnen unser Angebot vorliegt und ob noch Fragen offen sind. Selbstverständlich stehen wir für technische Rückfragen oder eine Anpassung des Leistungsumfangs zur Verfügung.\n\nÜber eine kurze Rückmeldung zum weiteren Vorgehen würden wir uns freuen.\n\nMit freundlichen Grüßen\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com | www.prissteel.com'},
+  en:{s:'Follow-up: our quotation %n — %p',
+      b:'Dear Sir or Madam,\n\non %d we submitted our quotation %n for the project %p (total: %t).\n\nWe would like to kindly enquire whether our offer has reached you and whether any questions remain open. We are of course available for technical clarifications or adjustments to the scope of supply.\n\nWe would appreciate a brief update on the next steps.\n\nBest regards,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com | www.prissteel.com'},
+  sq:{s:'Ndjekje: oferta jonë %n — %p',
+      b:'Të nderuar,\n\nmë %d ju dërguam ofertën tonë %n për projektin %p (totali: %t).\n\nDëshirojmë të pyesim nëse oferta ju ka mbërritur dhe nëse ka mbetur ndonjë paqartësi. Natyrisht jemi në dispozicion për sqarime teknike ose përshtatje të përmbajtjes.\n\nDo ta vlerësonim një përgjigje të shkurtër për hapat e mëtejshëm.\n\nMe respekt,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com | www.prissteel.com'},
+  sr:{s:'Podsetnik: naša ponuda %n — %p',
+      b:'Poštovani,\n\ndana %d dostavili smo Vam našu ponudu %n za projekat %p (ukupno: %t).\n\nŽeleli bismo da se raspitamo da li ste primili ponudu i da li ima otvorenih pitanja. Naravno, stojimo na raspolaganju za tehnička pojašnjenja ili prilagođavanje obima isporuke.\n\nBili bismo zahvalni na kratkom odgovoru o daljim koracima.\n\nS poštovanjem,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com | www.prissteel.com'}
+};
+function followupQuote(docNr, clientEnc, emailEnc, totalEur, dateIso, langEnc, projEnc){
+  var lang=decodeURIComponent(langEnc||'de'); if(!QFU_TXT[lang]) lang='de';
+  var t=QFU_TXT[lang];
+  var d=dateIso?new Date(dateIso).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  var proj=decodeURIComponent(projEnc||'');
+  var tot=totalEur?parseFloat(totalEur).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR':'';
+  var subj=t.s.replace('%n',docNr).replace('%p',proj);
+  var body=t.b.replace('%d',d).replace('%n',docNr).replace('%p',proj).replace('%t',tot);
+  var email=decodeURIComponent(emailEnc||'');
+  window.open('https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com'
+    +(email?'&to='+encodeURIComponent(email):'')
+    +'&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body),'_blank');
+  supaFetch('documents_registry?doc_nr=eq.'+encodeURIComponent(docNr),'PATCH',
+    {offer_state:null}).catch(function(){}); // s'e prek gjendjen, vetëm shënon ndjekjen ne notes nese duhet
+}
 function copyRfq(btn,enc){
   const text=decodeURIComponent(escape(atob(enc)));
   navigator.clipboard.writeText(text).then(()=>{btn.textContent='✓ Kopjuar';setTimeout(()=>btn.textContent='Kopjo email',2000);});
@@ -2357,7 +2429,7 @@ function loadSavedQuotesForProject(){
     _savedQuotesList=rows||[];
     if(!rows||!rows.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">Ende s\u2019ka oferta të ruajtura për këtë projekt.</div>'; return; }
     el.innerHTML=rows.map(function(r,i){
-      var dt=r.created_at?new Date(r.created_at).toLocaleDateString('de-DE'):'';
+      var dt=r.created_at?new Date(r.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--bg-card)">'
         +'<div><strong style="font-size:12.5px">'+r.doc_nr+'</strong> <span style="font-size:11px;color:var(--text3)">'+(r.total_eur?parseFloat(r.total_eur).toLocaleString('de-DE')+' € · ':'')+dt+'</span></div>'
         +'<button class="btn btn-sm" onclick="applyOfferFormState(_savedQuotesList['+i+'].offer_state)">Edito</button>'
@@ -3290,7 +3362,7 @@ function loadInvoicesOut(){
         if(!r.due_date) due.setDate(due.getDate()+parseDueDays(r.payment_terms));
         const daysOver=Math.round((today-due)/86400000);
         if(daysOver>0) agingHtml=' <span style="color:var(--red-text);font-weight:700">('+daysOver+' ditë vonesë)</span>';
-        else agingHtml=' <span style="color:var(--text3)">(afati: '+due.toLocaleDateString('de-DE')+')</span>';
+        else agingHtml=' <span style="color:var(--text3)">(afati: '+due.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+')</span>';
       }
       const paidBadge=r.paid ? ' <span style="color:var(--green-text);font-weight:700">✓ Paguar</span>' : agingHtml;
       return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
@@ -3463,7 +3535,7 @@ function loadInvoicesIn(){
         if(!r.due_date) due.setDate(due.getDate()+parseDueDays(r.payment_terms));
         const daysOver=Math.round((today-due)/86400000);
         if(daysOver>0) agingHtml=' <span style="color:var(--red-text);font-weight:700">('+daysOver+' ditë vonesë)</span>';
-        else agingHtml=' <span style="color:var(--text3)">(afati: '+due.toLocaleDateString('de-DE')+')</span>';
+        else agingHtml=' <span style="color:var(--text3)">(afati: '+due.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+')</span>';
       }
       const paidBadge=r.paid ? ' <span style="color:var(--green-text);font-weight:700">✓ Paguar</span>' : agingHtml;
       const typeBadge = r.invoice_type && r.invoice_type!=='standard' ? ' <span style="color:var(--bronze);font-size:11px">['+(r.invoice_type==='advance'?'Avans':'Përfundimtare')+']</span>' : '';
@@ -3810,6 +3882,52 @@ function ovFmt(n){return (parseFloat(n)||0).toLocaleString('de-DE',{minimumFract
 function ovKg(n){return (parseFloat(n)||0).toLocaleString('de-DE',{maximumFractionDigits:1});}
 function closeOverview(){document.getElementById('ov-backdrop').style.display='none';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeOverview();});
+// ══ ARKIVI I DOKUMENTEVE TË PROJEKTIT ══
+var DOC_TYPES={oferte:'Ofertë',kontrate:'Kontratë',nenkontrate:'Nënkontratë',fature:'Faturë',pagese:'Pagesë',teknik:'Dokument teknik',certifikate:'Certifikatë',tjeter:'Tjetër'};
+var DOC_ICONS={oferte:'📄',kontrate:'📝',nenkontrate:'🤝',fature:'🧾',pagese:'💰',teknik:'📐',certifikate:'🏅',tjeter:'📎'};
+var DOC_STATUS={draft:'Draft',derguar:'Dërguar',nenshkruar:'Nënshkruar',paguar:'Paguar',skaduar:'Skaduar'};
+function loadProjectDocs(pid){
+  supaFetch('project_docs?project_id=eq.'+pid+'&order=doc_date.asc').then(function(rows){
+    var el=document.getElementById('ov-docs'); if(!el) return;
+    if(!rows||!rows.length){ el.innerHTML='<div class="ov-empty">Asnjë dokument i arkivuar.</div>'; return; }
+    el.innerHTML=rows.map(function(d){
+      var col=(d.status==='paguar'||d.status==='nenshkruar')?'var(--green-text)':(d.status==='skaduar'?'#C0392B':'var(--text3)');
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--bg-card)">'
+        +'<div style="min-width:0;flex:1">'
+          +'<div style="font-size:12.5px;font-weight:600">'+(DOC_ICONS[d.doc_type]||'📎')+' '+(d.doc_nr?d.doc_nr+' — ':'')+d.title+'</div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:1px">'+(DOC_TYPES[d.doc_type]||d.doc_type)
+            +(d.party?' · '+d.party:'')+(d.doc_date?' · '+new Date(d.doc_date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'')+'</div>'
+          +(d.notes?'<div style="font-size:10.5px;color:var(--text3);margin-top:2px;font-style:italic">'+d.notes+'</div>':'')
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0">'
+          +(d.amount_eur?'<div style="font-size:12.5px;font-weight:700">'+parseFloat(d.amount_eur).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €</div>':'')
+          +(d.status?'<div style="font-size:10.5px;color:'+col+';font-weight:600">'+(DOC_STATUS[d.status]||d.status)+'</div>':'')
+          +(d.drive_url?'<a href="'+d.drive_url+'" target="_blank" style="font-size:10.5px;color:var(--bronze)">Hap</a>':'')
+        +'</div>'
+        +'<button onclick="delProjectDoc(\''+d.id+'\',\''+pid+'\')" style="background:none;border:none;color:var(--text3);cursor:pointer;flex-shrink:0">×</button>'
+      +'</div>';
+    }).join('');
+  }).catch(function(){});
+}
+function addProjectDoc(pid){
+  var title=prompt('Titulli i dokumentit:'); if(!title) return;
+  var types=Object.keys(DOC_TYPES).map(function(k,i){return (i+1)+'. '+DOC_TYPES[k];}).join('\n');
+  var ti=prompt('Lloji:\n'+types,'1');
+  var dtype=Object.keys(DOC_TYPES)[parseInt(ti)-1]||'tjeter';
+  var nr=prompt('Numri i dokumentit (ops.):','')||null;
+  var party=prompt('Pala (klient/furnitor):','')||null;
+  var dd=prompt('Data (VVVV-MM-DD):', new Date().toISOString().slice(0,10))||null;
+  var amt=prompt('Shuma EUR (ops.):','');
+  var st=prompt('Statusi: draft / derguar / nenshkruar / paguar / skaduar','derguar')||null;
+  var url=prompt('Link Google Drive (ops.):','')||null;
+  supaFetch('project_docs','POST',{project_id:pid, doc_type:dtype, doc_nr:nr, title:title, party:party,
+    doc_date:dd, amount_eur:amt?parseFloat(amt):null, status:st, drive_url:url})
+    .then(function(){ loadProjectDocs(pid); }).catch(function(e){alert('Gabim: '+e.message);});
+}
+function delProjectDoc(id,pid){
+  if(!confirm('Fshi këtë dokument nga arkivi?')) return;
+  supaFetch('project_docs?id=eq.'+id,'DELETE').then(function(){ loadProjectDocs(pid); }).catch(function(){});
+}
 function openOverview(id){
   var bd=document.getElementById('ov-backdrop');
   bd.style.display='flex';
@@ -3926,6 +4044,10 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes
       +'<div style="text-align:right;flex-shrink:0"><strong>'+(t>0?ovFmt(t)+' \u20AC':'\u2014')+'</strong>'
       +'<div style="font-size:11px;color:var(--text3)">'+(pk>0?pk.toFixed(2)+' \u20AC/kg \u00B7 ':'')+(o.incoterms||'')+(o.origin?' \u00B7 '+o.origin:'')+'</div></div></div>';
   }).join(''):'<div class="ov-empty">Ende asnj\u00EB ofert\u00EB e regjistruar.</div>')+'</div>';
+  h+='<div class="ov-sec"><h3>Dokumentet e projektit</h3>'
+    +'<div style="margin-bottom:8px"><button class="btn btn-sm" onclick="addProjectDoc(\''+id+'\')">+ Shto dokument</button></div>'
+    +'<div id="ov-docs"><div style="font-size:12px;color:var(--text3)">Duke ngarkuar...</div></div></div>';
+  loadProjectDocs(id);
   h+='<div class="ov-sec"><h3>Ofertat tona (PRISTEEL)</h3>'+(out.length?out.map(function(o){
     var t=parseFloat(o.total_eur)||0;
     return '<div class="ov-row out"><div style="min-width:0"><strong>'+(o.supplier||'').replace('OFERTA JONE','').replace(/^[\s\-\u2014>]+/,'')+'</strong>'
@@ -4078,6 +4200,18 @@ function ckCard(sev, icon, title, detail, actionLabel, actionFn){
     +(actionFn?'<button class="btn btn-sm" style="flex-shrink:0" onclick="'+actionFn+'">'+actionLabel+'</button>':'')
   +'</div>';
 }
+// ── AFATE KRITIKE TË REGJISTRUARA ──
+window.PST_DEADLINES=[
+  {date:'2026-07-18', warn:14, icon:'🏅',
+   title:'ISO 9001 e Eurosteel skadon',
+   detail:'Certifikata 3550062 skadon 18.07.2026 — brenda afatit të prodhimit të STACON D-22/26. Kërko rinovimin nga Ermali para dorëzimit.'},
+  {date:'2026-09-25', warn:21, icon:'🚚',
+   title:'Dorëzimi STACON D-22/26 (KW 38-39)',
+   detail:'Afati i dorëzimit DAP Hamburg Finkenwerder. Kontrollo prodhimin te Eurosteel.'},
+  {date:'2026-08-27', warn:14, icon:'📋',
+   title:'Dokumentacioni i cilësisë STACON — para ngarkimit',
+   detail:'11 dokumente të detyrueshme (EN 10204 3.1, Welding Book, VT/UT, Wiegeprotokoll, CE, EUR.1). Mungesa bllokon këstin 2 (26.212,50 €).'}
+];
 async function loadCockpit(){
   var el=document.getElementById('q-cockpit'); if(!el) return;
   el.innerHTML='<div style="color:var(--text3);font-size:12px">Duke analizuar...</div>';
@@ -4089,9 +4223,11 @@ async function loadCockpit(){
       supaFetch('documents_registry?series=eq.QUO&order=created_at.desc&limit=50').catch(function(){return[];}),
       supaFetch('offers?select=id,supplier,project_id,price_kg,total_eur,notes,created_at&limit=200').catch(function(){return[];}),
       supaFetch('projects?select=id,name,client&limit=100').catch(function(){return[];}),
-      supaFetch('invoices_out?select=invoice_nr,client,due_date,paid,total_net&limit=100').catch(function(){return[];})
+      supaFetch('invoices_out?select=invoice_nr,client,due_date,paid,total_net&limit=100').catch(function(){return[];}),
+      supaFetch('rfq_log?status=eq.sent&order=sent_at.asc&limit=100').catch(function(){return[];}),
+      supaFetch('project_docs?select=id,project_id,doc_type,doc_nr,title,status,amount_eur,notes&limit=200').catch(function(){return[];})
     ]);
-    var inbox=res[0]||[], quotes=res[1]||[], offs=res[2]||[], projs=res[3]||[], invs=res[4]||[];
+    var inbox=res[0]||[], quotes=res[1]||[], offs=res[2]||[], projs=res[3]||[], invs=res[4]||[], rfqs=res[5]||[], docs=res[6]||[];
     var pName={}; projs.forEach(function(p){ pName[p.id]=p.name; });
 
     // ── 1. Email-e të paanalizuara ──
@@ -4108,9 +4244,11 @@ async function loadCockpit(){
       var age=ckDaysBetween(today, new Date(q.created_at));
       if(age>=7 && age<=90){
         stats.amber++;
+        var st=q.offer_state||{};
         cards.push(ckCard(age>=14?'red':'amber','⏰', q.doc_nr+' — '+age+' ditë pa përgjigje',
           (q.client||'')+' · '+(q.total_eur?parseFloat(q.total_eur).toLocaleString('de-DE')+' €':'')+' — koha për ndjekje.',
-          'Hap projektin', q.project_id?"loadProject('"+q.project_id+"');showPage('oferta')":''));
+          'Harto ndjekjen',
+          "followupQuote('"+q.doc_nr+"','"+encodeURIComponent(q.client||'')+"','"+encodeURIComponent(st.em||'')+"','"+(q.total_eur||'')+"','"+q.created_at+"','"+encodeURIComponent(st.lang||'de')+"','"+encodeURIComponent(q.project||'')+"')"));
       }
     });
 
@@ -4148,6 +4286,34 @@ async function loadCockpit(){
         cards.push(ckCard('amber','📤', e.length+' furnitorë pa përgjigje — '+(pName[pid]||''),
           e.slice(0,3).join(', ')+(e.length>3?' +'+(e.length-3):'')+' — kërkesa dërguar, çmimi mungon.',
           'Hap','openOverview(\''+pid+'\')'));
+      }
+    });
+
+    // ── 4b. RFQ pa përgjigje — ndjekje automatike ──
+    rfqs.forEach(function(r){
+      if(!r.sent_at) return;
+      var age=ckDaysBetween(today, new Date(r.sent_at));
+      var fu=r.followup_count||0;
+      if(age>=3 && fu===0){
+        stats.amber++;
+        cards.push(ckCard(age>=7?'red':'amber','📧', r.supplier_name+' — '+age+' ditë pa përgjigje',
+          (r.project_name||'')+' · RFQ dërguar '+new Date(r.sent_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+' — dërgo përkujtesë.',
+          'Përkujtesë','sendFollowup(\''+r.id+'\',\''+r.supplier_email+'\',\''+(r.lang||'en')+'\',\''+encodeURIComponent(r.project_name||'')+'\',\''+r.sent_at+'\')'));
+      } else if(age>=10 && fu>=1){
+        stats.red++;
+        cards.push(ckCard('red','🚫', r.supplier_name+' — hesht edhe pas përkujtesës ('+age+' ditë)',
+          (r.project_name||'')+' — merr furnitor alternativ ose telefono.',
+          'Shëno përgjigje','markRfqReplied(\''+r.id+'\')'));
+      }
+    });
+
+    // ── 4c. Afate kritike (certifikata, garanci, dorezime) ──
+    (window.PST_DEADLINES||[]).forEach(function(dl){
+      var d=ckDaysBetween(new Date(dl.date), today);
+      if(d<=dl.warn && d>=-30){
+        stats[d<=3?'red':'amber']++;
+        cards.push(ckCard(d<=3?'red':'amber', dl.icon||'⚠', dl.title+(d>=0?' — '+d+' ditë':' — SKADOI para '+Math.abs(d)+' ditësh'),
+          dl.detail, dl.action||'', dl.fn||''));
       }
     });
 
