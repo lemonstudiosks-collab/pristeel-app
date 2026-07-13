@@ -525,7 +525,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div>
 <div class="card"><div class="card-title">Te dhenat e ofertes</div>
 <div class="field-group fg-2"><div><label class="lbl">Nr. ofertes</label><input type="text" id="of-nr" placeholder="PST-OFF-2026-001"></div><div><label class="lbl">Data</label><input type="date" id="of-date"></div></div>
-<div class="field-group fg-2"><div><label class="lbl">Gjuha</label><select id="of-lang"><option value="de">Gjermanisht</option><option value="en">Anglisht</option><option value="sq">Shqip</option><option value="sr">Serbisht</option></select></div><div><label class="lbl">Detajimi i pozicioneve</label><select id="of-mode"><option value="grouped">Grupuar sipas profilit (rekomanduar)</option><option value="types">Vetëm kategoritë (Träger, Bleche...)</option><option value="none">Pa tabelë — vetëm përshkrimi</option><option value="full">Të gjitha pozicionet (lista e plotë)</option></select></div></div>
+<div class="field-group fg-2"><div><label class="lbl">Gjuha</label><select id="of-lang"><option value="de">🇩🇪 Gjermanisht (Deutsch)</option><option value="en">🇬🇧 Anglisht (English)</option><option value="sq">🇦🇱 Shqip</option><option value="sr">🇷🇸 Serbisht (Srpski, latinicë)</option></select></div><div><label class="lbl">Detajimi i pozicioneve</label><select id="of-mode"><option value="grouped">Grupuar sipas profilit (rekomanduar)</option><option value="types">Vetëm kategoritë (Träger, Bleche...)</option><option value="none">Pa tabelë — vetëm përshkrimi</option><option value="full">Të gjitha pozicionet (lista e plotë)</option></select></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="of-proj" placeholder="p.sh. Lagerhalle Hamburg"></div><div><label class="lbl">Ref. klientit</label><input type="text" id="of-ref" placeholder="ANF-2026-001"></div></div></div>
 <div class="card"><div class="card-title">Klienti</div>
 <div class="field-group"><div><label class="lbl">Kompania</label><input type="text" id="of-cli" placeholder="STACON GmbH"></div></div>
@@ -929,8 +929,18 @@ function updateProjBadge(){
   document.getElementById('proj-badge').textContent=v||'Pa projekt';
 }
 function newProject(){
-  if(confirm('Fillo projekt të ri? Të dhënat aktuale do të fshihen.'))
-    {bomRows=[];suppliers=[];offers=[];document.getElementById('i-projname').value='';document.getElementById('i-client').value='';document.getElementById('i-text').value='';updateProjBadge();showPage('import');}
+  if(confirm('Fillo projekt të ri? Të dhënat aktuale do të fshihen.')){
+    bomRows=[];suppliers=[];offers=[];
+    _curProjId=null; // KRITIKE: pa këtë, "Ruaj" mbishkruante projektin e fundit të hapur!
+    document.getElementById('i-projname').value='';
+    document.getElementById('i-client').value='';
+    document.getElementById('i-ref').value='';
+    document.getElementById('i-location').value='';
+    document.getElementById('i-deadline').value='';
+    var iv=document.getElementById('i-value'); if(iv) iv.value='';
+    document.getElementById('i-text').value='';
+    updateProjBadge();showPage('import');
+  }
 }
 
 // ── TEXT COUNTER ──────────────────────────────────────
@@ -2557,6 +2567,11 @@ function saveProject(triggerBtn){
   var isUpdate=!!_curProjId;
   var req=isUpdate?supaFetch('projects?id=eq.'+_curProjId,'PATCH',payload):supaFetch('projects','POST',payload);
   req.then(function(proj){
+    if(isUpdate && (!proj || proj.length===0)){
+      // Projekti me këtë _curProjId nuk ekziston më (u fshi ndërkohë) — vetë-shërohet: krijo si projekt të ri
+      // në vend që të shkruajë bom_items "orfanë" me project_id inekzistent.
+      return supaFetch('projects','POST',payload).then(function(p2){ isUpdate=false; _curProjId=p2[0].id; proj=p2; });
+    }
     if(!isUpdate)_curProjId=proj[0].id;
     if(bomRows.length>0){
       var items=bomRows.map(function(r){return{project_id:_curProjId,profile:r.profile,dim:r.dim,grade:r.grade,std:r.std,len_mm:parseInt(r.lenMm)||0,pcs:parseInt(r.pcs)||0,kg:parseFloat(r.kg)||0,surface:r.surface,cert:r.cert};});
@@ -3768,6 +3783,86 @@ function qOpenPdf(id){
 function qMarkProcessed(id){
   supaFetch('offers_inbox?id=eq.'+id,'PATCH',{processed:true}).then(loadQInbox).catch(function(e){alert('Gabim: '+e.message);});
 }
+// ── ANALIZO OFERTËN NGA INBOX-I DIREKT (email → pozicione → projekt) ──
+function qGuessProjectMatch(subject, sender, projects){
+  var s=(subject||'').toLowerCase(), se=(sender||'').toLowerCase();
+  var best=null,bestScore=0;
+  projects.forEach(function(p){
+    var name=(p.name||'').toLowerCase(), client=(p.client||'').toLowerCase();
+    var score=0;
+    name.split(/[\s\-–—.,()]+/).forEach(function(w){ if(w.length>3 && (s.indexOf(w)>-1)) score+=2; });
+    if(client && (s.indexOf(client.split(' ')[0])>-1 || se.indexOf(client.split(' ')[0])>-1)) score+=3;
+    if(score>bestScore){bestScore=score;best=p;}
+  });
+  return bestScore>=2 ? best : null;
+}
+async function qAnalyzeOffer(inboxId, subject, sender){
+  var apiKey=localStorage.getItem('pristeel_apikey')||'';
+  if(!apiKey){alert('Mungon Groq API Key — shko te Cilësimet fillimisht.');return;}
+  var btn=event&&event.target; var origTxt=btn?btn.textContent:'';
+  if(btn){btn.textContent='Duke lexuar...';btn.disabled=true;}
+  try{
+    var rows=await supaFetch('offers_inbox?id=eq.'+inboxId+'&select=file_base64,file_name');
+    var rec=rows&&rows[0]; if(!rec||!rec.file_base64){alert('Nuk u gjet file-i i bashkangjitur.');return;}
+    var byteChars=atob(rec.file_base64.replace(/^data:.*;base64,/,''));
+    var bytes=new Uint8Array(byteChars.length);
+    for(var i=0;i<byteChars.length;i++) bytes[i]=byteChars.charCodeAt(i);
+    if(btn) btn.textContent='Duke ekstraktuar tekstin...';
+    var pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+    var text='';
+    for(var pg=1; pg<=pdf.numPages; pg++){
+      var page=await pdf.getPage(pg);
+      var content=await page.getTextContent();
+      text+=content.items.map(function(it){return it.str;}).join(' ')+'\n';
+    }
+    if(text.trim().length<20){alert('PDF-ja duket bosh ose e skanuar (pa tekst) — hape manualisht dhe kopjo tekstin te moduli Oferta.');return;}
+
+    if(btn) btn.textContent='Duke gjetur projektin...';
+    var projects=await supaFetch('projects?order=created_at.desc&limit=50');
+    var guess=qGuessProjectMatch(subject, sender, projects);
+    var projNames=projects.map(function(p,i){return (i+1)+'. '+p.name+(p.client?' — '+p.client:'');}).join('\n');
+    var promptTxt='Email: "'+subject+'" nga '+sender+'\n\n'+(guess?'Rekomandimi: "'+guess.name+'"\n\n':'')+'Cilit projekt i takon kjo ofertë? Shkruaj numrin nga lista, ose 0 nëse asnjë:\n\n'+projNames;
+    var choice=prompt(promptTxt, guess?String(projects.indexOf(guess)+1):'0');
+    if(choice===null){if(btn){btn.textContent=origTxt;btn.disabled=false;}return;}
+    var idx=parseInt(choice)-1;
+    var proj=projects[idx];
+    if(!proj){alert('S’u zgjodh projekt — analiza u anulua. Krijoje projektin fillimisht te Import Dokument.');if(btn){btn.textContent=origTxt;btn.disabled=false;}return;}
+
+    var supplierGuess=(sender.match(/@([a-zA-Z0-9\-]+)\./)||[])[1]||sender.split('<')[0].trim()||'Furnitori';
+    if(btn) btn.textContent='Duke analizuar me AI...';
+    var prompt2='Extract offer/quotation data from this supplier document and return ONLY a JSON object. No explanation, no markdown, no code fences. Start with { and end with }.\n\nSupplier: '+supplierGuess+'\nDocument text: '+text.slice(0,9000)+'\n\nJSON format:\n{"supplier":"'+supplierGuess+'","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"price_per_kg":0.00,"price_currency":"EUR","delivery_weeks":0,"incoterms":"EXW or DAP or DDP or CIF etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","validity_days":30,"notes":"any special conditions","confidence":"high or medium or low","positions":[{"desc":"exact line item description","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}\nRules:\n- positions: EVERY priced line item as a SEPARATE entry, in document order, own unit price — NEVER merge or average.\n- fabrication_total: sum of fabrication/material/erection items ONLY (exclude transport).\n- Return ONLY the JSON';
+    var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,
+        messages:[{role:'system',content:'You are a steel procurement AI. Respond with valid JSON only. Never merge or average line items.'},{role:'user',content:prompt2}]})
+    });
+    var data=await resp.json();
+    var raw=data.choices&&data.choices[0]&&data.choices[0].message.content||'';
+    var s=raw.indexOf('{'), e=raw.lastIndexOf('}');
+    var parsed=JSON.parse(raw.slice(s,e+1));
+
+    var kgTotal=parseFloat(parsed.total_weight_kg)||0;
+    var fabTotal=parseFloat(parsed.fabrication_total)||0;
+    var transp=parseFloat(parsed.transport_cost)||0;
+    var priceKg = kgTotal>0 ? +(fabTotal/kgTotal).toFixed(3) : 0;
+
+    await supaFetch('offers','POST',{
+      project_id:proj.id, supplier:parsed.supplier||supplierGuess,
+      price_kg:priceKg, total_eur:fabTotal+transp, qty_kg:kgTotal,
+      delivery_weeks:parseInt(parsed.delivery_weeks)||0, incoterms:parsed.incoterms||'',
+      cert:parsed.certification||'', notes:(parsed.notes||'')+' | Auto nga email: '+subject,
+      origin:'producer', zinc_kg:0, transport_eur:transp, vat_pct:0,
+      positions:(Array.isArray(parsed.positions)&&parsed.positions.length)?parsed.positions:null
+    });
+    await supaFetch('offers_inbox?id=eq.'+inboxId,'PATCH',{processed:true});
+    alert('U regjistrua te projekti "'+proj.name+'": '+(parsed.supplier||supplierGuess)+' — '+(fabTotal+transp).toLocaleString('de-DE')+' EUR');
+    loadQInbox();
+  }catch(err){
+    alert('Gabim gjatë analizës: '+err.message);
+  }finally{
+    if(btn){btn.textContent=origTxt;btn.disabled=false;}
+  }
+}
 function loadQInbox(){
   var el=document.getElementById('q-inbox'); if(!el)return;
   supaFetch('offers_inbox?select=id,sender,subject,received_at,file_name,processed&order=received_at.desc&limit=40').then(function(rows){
@@ -3781,7 +3876,8 @@ function loadQInbox(){
         +'<div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(r.sender||'')+' &middot; '+d+' &middot; '+(r.file_name||'')+'</div></div>'
         +'<div style="display:flex;gap:6px;flex-shrink:0">'
         +'<button class="btn btn-sm" style="padding:3px 10px;min-width:0" onclick="qOpenPdf(\''+r.id+'\')">PDF</button>'
-        +(r.processed?'':'<button class="btn btn-sm" style="padding:3px 10px;min-width:0" onclick="qMarkProcessed(\''+r.id+'\')" title="Sheno si te procesuar">&#10003;</button>')
+        +(r.processed?'':'<button class="btn btn-sm btn-primary" style="padding:3px 10px;min-width:0" onclick="qAnalyzeOffer(\''+r.id+'\',\''+String(r.subject||'').replace(/'/g,"&apos;")+'\',\''+String(r.sender||'').replace(/'/g,"&apos;")+'\')" title="Analizo dhe lidhe me projekt">Analizo</button>')
+        +(r.processed?'':'<button class="btn btn-sm" style="padding:3px 10px;min-width:0" onclick="qMarkProcessed(\''+r.id+'\')" title="Sheno si te procesuar pa e analizuar">&#10003;</button>')
         +'</div></div>';
     }
     el.innerHTML=(open.length?open.map(row).join(''):'<div class="ov-empty">T&euml; gjitha t&euml; procesuara.</div>')
