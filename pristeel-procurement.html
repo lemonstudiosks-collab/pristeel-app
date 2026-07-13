@@ -525,6 +525,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div>
 <div class="card"><div class="card-title">Te dhenat e ofertes</div>
 <div class="field-group fg-2"><div><label class="lbl">Nr. ofertes</label><input type="text" id="of-nr" placeholder="PST-OFF-2026-001"></div><div><label class="lbl">Data</label><input type="date" id="of-date"></div></div>
+<div id="of-saved-list" style="margin-bottom:14px"></div>
 <div class="field-group fg-2"><div><label class="lbl">Gjuha</label><select id="of-lang"><option value="de">🇩🇪 Gjermanisht (Deutsch)</option><option value="en">🇬🇧 Anglisht (English)</option><option value="sq">🇦🇱 Shqip</option><option value="sr">🇷🇸 Serbisht (Srpski, latinicë)</option></select></div><div><label class="lbl">Detajimi i pozicioneve</label><select id="of-mode"><option value="grouped">Grupuar sipas profilit (rekomanduar)</option><option value="types">Vetëm kategoritë (Träger, Bleche...)</option><option value="none">Pa tabelë — vetëm përshkrimi</option><option value="full">Të gjitha pozicionet (lista e plotë)</option></select></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="of-proj" placeholder="p.sh. Lagerhalle Hamburg"></div><div><label class="lbl">Ref. klientit</label><input type="text" id="of-ref" placeholder="ANF-2026-001"></div></div></div>
 <div class="card"><div class="card-title">Klienti</div>
@@ -2198,6 +2199,64 @@ function milestoneSelected(){
     try{calcAdvancePreview();}catch(e){}
   }
 }
+// ── RUAJTJA / RIKTHIMI I PLOTË I OFERTËS (të gjitha fushat + pozicionet) ──
+function collectOfferFormState(){
+  var g=function(id){var e=document.getElementById(id);return e?e.value:'';};
+  return {
+    lang:g('of-lang'), date:g('of-date'), mode:g('of-mode'),
+    proj:g('of-proj'), ref:g('of-ref'), cli:g('of-cli'), con:g('of-con'), em:g('of-em'), adr:g('of-adr'),
+    pr:g('of-pr'), kg:g('of-kg'), zn:g('of-zn'), tr:g('of-tr'),
+    inc:g('of-inc'), loc:g('of-loc'), del:g('of-del'), val:g('of-val'),
+    payPreset:g('of-pay-preset'), pc1:g('of-pc1'), pe1:g('of-pe1'), pd1:g('of-pd1'),
+    pc2:g('of-pc2'), pe2:g('of-pe2'), pd2:g('of-pd2'), pc3:g('of-pc3'), pe3:g('of-pe3'), pd3:g('of-pd3'),
+    cer:g('of-cer'), not:g('of-not'),
+    oferPos: JSON.parse(JSON.stringify(oferPos||[]))
+  };
+}
+function applyOfferFormState(st){
+  if(!st) return;
+  var s=function(id,v){var e=document.getElementById(id); if(e&&v!==undefined) e.value=v;};
+  s('of-lang',st.lang); s('of-date',st.date); s('of-mode',st.mode);
+  s('of-proj',st.proj); s('of-ref',st.ref); s('of-cli',st.cli); s('of-con',st.con); s('of-em',st.em); s('of-adr',st.adr);
+  s('of-pr',st.pr); s('of-kg',st.kg); s('of-zn',st.zn); s('of-tr',st.tr);
+  s('of-inc',st.inc); s('of-loc',st.loc); s('of-del',st.del); s('of-val',st.val);
+  s('of-pay-preset',st.payPreset); s('of-pc1',st.pc1); s('of-pe1',st.pe1); s('of-pd1',st.pd1);
+  s('of-pc2',st.pc2); s('of-pe2',st.pe2); s('of-pd2',st.pd2); s('of-pc3',st.pc3); s('of-pe3',st.pe3); s('of-pd3',st.pd3);
+  s('of-cer',st.cer); s('of-not',st.not);
+  oferPos=Array.isArray(st.oferPos)?st.oferPos:[];
+  payPresetChanged(); renderOferPos(); genOfer();
+}
+function offerRevenueBreakdown(st){
+  var pr=parseFloat(st.pr)||0, kg=parseFloat(st.kg)||0, zn=parseFloat(st.zn)||0, tr=parseFloat(st.tr)||0;
+  if(Array.isArray(st.oferPos)&&st.oferPos.length){
+    var steel=0,zinc=0,transport=0,other=0;
+    st.oferPos.forEach(function(p){
+      var d=(p.desc||'').toLowerCase();
+      var t=p.unit==='ls'?(p.price||0):(p.qty||0)*(p.price||0);
+      if(d.indexOf('transport')>-1||d.indexOf('lkw')>-1) transport+=t;
+      else if(d.indexOf('zink')>-1||d.indexOf('galvan')>-1||d.indexOf('verzink')>-1) zinc+=t;
+      else if(p.unit==='kg') steel+=t;
+      else other+=t;
+    });
+    return {steel:steel, zinc:zinc, transport:transport, other:other, kg:kg};
+  }
+  return {steel:pr*kg, zinc:zn*kg, transport:tr, other:0, kg:kg};
+}
+var _savedQuotesList=[];
+function loadSavedQuotesForProject(){
+  var el=document.getElementById('of-saved-list'); if(!el||!_curProjId) return;
+  supaFetch('documents_registry?series=eq.QUO&project_id=eq.'+_curProjId+'&order=seq.desc').then(function(rows){
+    _savedQuotesList=rows||[];
+    if(!rows||!rows.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">Ende s\u2019ka oferta të ruajtura për këtë projekt.</div>'; return; }
+    el.innerHTML=rows.map(function(r,i){
+      var dt=r.created_at?new Date(r.created_at).toLocaleDateString('de-DE'):'';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--bg-card)">'
+        +'<div><strong style="font-size:12.5px">'+r.doc_nr+'</strong> <span style="font-size:11px;color:var(--text3)">'+(r.total_eur?parseFloat(r.total_eur).toLocaleString('de-DE')+' € · ':'')+dt+'</span></div>'
+        +'<button class="btn btn-sm" onclick="applyOfferFormState(_savedQuotesList['+i+'].offer_state)">Edito</button>'
+      +'</div>';
+    }).join('');
+  }).catch(function(){el.innerHTML='';});
+}
 // ── NUMERIMI AUTOMATIK I DOKUMENTEVE (PST-QUO / PST-INV / PST-OC / PST-RFQ) ──
 function nextDocNr(series){
   var yr = new Date().getFullYear();
@@ -2212,12 +2271,13 @@ function prefillDocNr(series, fieldId){
   if(!f || f.value.trim()) return;
   nextDocNr(series).then(function(d){ if(!f.value.trim()) f.value = d.nr; }).catch(function(){});
 }
-function registerDocNr(series, nr, project, client, totalEur, payPlan){
+function registerDocNr(series, nr, project, client, totalEur, payPlan, offerState, revenueBreakdown){
   var m = nr.match(/PST-[A-Z]+-(\d{4})-(\d{1,4})/);
   if(!m) return Promise.resolve();
   var payload={series:series, year:parseInt(m[1]), seq:parseInt(m[2]), doc_nr:nr,
     project:project||'', client:client||'', total_eur:totalEur||null,
-    payment_plan:payPlan||null, project_id:(typeof _curProjId!=='undefined'&&_curProjId)?_curProjId:null};
+    payment_plan:payPlan||null, project_id:(typeof _curProjId!=='undefined'&&_curProjId)?_curProjId:null,
+    offer_state:offerState||null, revenue_breakdown:revenueBreakdown||null};
   return supaFetch('documents_registry?doc_nr=eq.'+encodeURIComponent(nr),'GET').then(function(rows){
     if(rows&&rows.length){
       var ex=rows[0];
@@ -2529,7 +2589,9 @@ function printOfer(){
   var _pr=parseFloat(document.getElementById('of-pr').value)||0, _kg=parseFloat(document.getElementById('of-kg').value)||0;
   var _zn=parseFloat((document.getElementById('of-zn')||{value:0}).value)||0, _tr=parseFloat((document.getElementById('of-tr')||{value:0}).value)||0;
   var _tot = oferPos.length>0 ? oferPosSum() : (_pr*_kg+_zn*_kg+_tr);
-  if(_nr) registerDocNr('QUO', _nr, document.getElementById('of-proj').value||'', document.getElementById('of-cli').value||'', _tot, buildPayPlan());
+  var _state = collectOfferFormState();
+  var _brk = offerRevenueBreakdown(_state);
+  if(_nr) registerDocNr('QUO', _nr, document.getElementById('of-proj').value||'', document.getElementById('of-cli').value||'', _tot, buildPayPlan(), _state, _brk).then(function(){ loadSavedQuotesForProject(); });
   var w=window.open('','_blank');
   var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Oferta PRISTEEL</title><style>body{margin:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'+content+'</body></html>';
   w.document.write(h);w.document.close();
@@ -3572,6 +3634,7 @@ if(typeof showPage==='function'){
     try{
       if(p==='oferta') prefillDocNr('QUO','of-nr');
       if(p==='invoices'){ prefillDocNr('INV','iv-nr'); loadQuoRegistry(); }
+      if(p==='oferta'){ loadSavedQuotesForProject(); }
     }catch(e){}
   };
 }
@@ -3686,11 +3749,31 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes
       incoterms:''});
   });
   var totKg=bom.reduce(function(s,r){return s+(parseFloat(r.kg)||0);},0);
-  var innVals=inn.map(function(o){return parseFloat(o.total_eur)||0;}).filter(function(v){return v>0;});
-  var bestIn=innVals.length?Math.min.apply(null,innVals):0;
   var outVals=out.map(function(o){return parseFloat(o.total_eur)||0;}).filter(function(v){return v>0;});
   var bestOut=outVals.length?Math.max.apply(null,outVals):0;
-  var margin=(bestIn>0&&bestOut>0)?bestOut-bestIn:null;
+  // ── Marzha SIPAS KOMPONENTËVE: kosto çeliku, zinktimi, transporti krahasohen veç,
+  //    jo çmimi minimal absolut i furnitorit (i cili mund të mos përfshijë zinktim/transport) ──
+  var supplierRows=inn.map(function(o){
+    var kg=parseFloat(o.qty_kg)||0, pk=parseFloat(o.price_kg)||0, zk=parseFloat(o.zinc_kg)||0, te=parseFloat(o.transport_eur)||0;
+    return {steel: kg>0?pk*kg:0, zinc: (kg>0&&zk>0)?zk*kg:0, transport: te>0?te:0, hasSteel:pk>0&&kg>0, hasZinc:zk>0&&kg>0, hasTransport:te>0};
+  });
+  function bestOf(rows,key,hasKey){
+    var v=rows.filter(function(r){return r[hasKey];}).map(function(r){return r[key];});
+    return v.length?Math.min.apply(null,v):null;
+  }
+  var steelCost=bestOf(supplierRows,'steel','hasSteel');
+  var zincCost=bestOf(supplierRows,'zinc','hasZinc');
+  var transportCost=bestOf(supplierRows,'transport','hasTransport');
+  var latestQuoteBrk=(ourQuotes&&ourQuotes.length)?ourQuotes[ourQuotes.length-1].revenue_breakdown:null;
+  var bestIn=(steelCost||0)+(zincCost||0)+(transportCost||0);
+  var missing=[];
+  if(latestQuoteBrk){
+    if(latestQuoteBrk.zinc>0 && !zincCost) missing.push('zinktim');
+    if(latestQuoteBrk.transport>0 && !transportCost) missing.push('transport');
+  }
+  if(!steelCost) missing.unshift('çelik');
+  var margin=(bestOut>0 && steelCost && missing.filter(function(m){return m!=='zinktim'&&m!=='transport';}).length===0 && missing.length===0)?bestOut-bestIn:null;
+  var marginPartial=(bestOut>0 && steelCost && missing.length>0)?bestOut-bestIn:null;
   var paidCnt=invOut.filter(function(i){return i.paid;}).length;
   var invOutSum=invOut.reduce(function(s,i){return s+(parseFloat(i.total_price)||0);},0);
   var invInSum=invIn.reduce(function(s,i){return s+(parseFloat(i.amount)||0);},0);
@@ -3713,10 +3796,14 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes
   }).join('')+'</div>';
   h+='<div class="ov-kpi">'
     +'<div><div class="k">Pesha (BOM)</div><div class="v">'+(totKg>0?ovKg(totKg)+' kg':'\u2014')+'</div></div>'
-    +'<div><div class="k">Kosto e furnitorit (m\u00EB e mira)</div><div class="v">'+(bestIn>0?ovFmt(bestIn)+' \u20AC':'\u2014')+'</div></div>'
+    +'<div><div class="k">Kosto (\u00E7elik'+(zincCost?' + zinktim':'')+(transportCost?' + transport':'')+')</div><div class="v">'+(bestIn>0?ovFmt(bestIn)+' \u20AC':'\u2014')+'</div></div>'
     +'<div><div class="k">Oferta jon\u00EB</div><div class="v">'+(bestOut>0?ovFmt(bestOut)+' \u20AC':'\u2014')+'</div></div>'
-    +'<div><div class="k">Marzha bruto</div><div class="v" style="color:'+(margin===null?'var(--text3)':(margin>=0?'var(--green-text)':'var(--red-text)'))+'">'+(margin===null?'\u2014':ovFmt(margin)+' \u20AC ('+(bestOut>0?((margin/bestOut)*100).toFixed(1):'0')+'%)')+'</div></div>'
-    +'</div>';
+    +'<div><div class="k">Marzha bruto</div><div class="v" style="color:'+(margin===null?(marginPartial===null?'var(--text3)':'#C0392B'):(margin>=0?'var(--green-text)':'var(--red-text)'))+'">'
+      +(margin!==null?ovFmt(margin)+' \u20AC ('+((margin/bestOut)*100).toFixed(1)+'%)'
+        :(marginPartial!==null?'~'+ovFmt(marginPartial)+' \u20AC (e PAPLOT\u00CB \u2014 mungon '+missing.join(', ')+')'
+        :'\u2014'))+'</div></div>'
+    +'</div>'
+    +(missing.length?'<div style="font-size:11px;color:#C0392B;margin-top:-6px;margin-bottom:10px">\u26A0 Marzha reale s\u2019dihet ende \u2014 kërkohet ofertë/kosto e '+missing.join(' dhe ')+' për ta llogaritur saktë.</div>':'');
   h+='<div class="ov-sec"><h3>Ofertat nga furnitor\u00EBt</h3>'+(inn.length?inn.map(function(o){
     var t=parseFloat(o.total_eur)||0,pk=parseFloat(o.price_kg)||0;
     return '<div class="ov-row inn"><div style="min-width:0"><strong>'+(o.supplier||'')+'</strong>'
