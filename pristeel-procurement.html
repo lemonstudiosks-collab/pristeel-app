@@ -794,12 +794,22 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div id="page-qendra" class="page">
+  <div class="card" style="border-left:3px solid var(--bronze);margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="card-title" style="margin:0">Çfarë kërkon vëmendjen sot</div>
+      <button class="btn btn-sm" onclick="loadCockpit()">Rifresko</button>
+    </div>
+    <div id="q-cockpit"><div style="color:var(--text3);font-size:12px">Duke analizuar...</div></div>
+  </div>
   <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start">
     <div>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <div class="card-title" style="margin:0">Oferta &amp; PDF nga Gmail</div>
-          <button class="btn btn-sm" onclick="loadQInbox()">Rifresko</button>
+          <span style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-primary" onclick="qAnalyzeAll()" id="q-analyze-all">Analizo të gjitha</button>
+            <button class="btn btn-sm" onclick="loadQInbox()">Rifresko</button>
+          </span>
         </div>
         <div id="q-inbox"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
       </div>
@@ -3735,6 +3745,7 @@ if(typeof showPage==='function'){
       if(p==='oferta') prefillDocNr('QUO','of-nr');
       if(p==='invoices'){ prefillDocNr('INV','iv-nr'); loadQuoRegistry(); }
       if(p==='oferta'){ loadSavedQuotesForProject(); }
+      if(p==='qendra'){ loadCockpit(); }
     }catch(e){}
   };
 }
@@ -4053,6 +4064,182 @@ async function qAnalyzeOffer(inboxId, subject, sender){
   }finally{
     if(btn){btn.textContent=origTxt;btn.disabled=false;}
   }
+}
+// ══════════════════════════════════════════════════════════════
+// KOKPITI — platforma analizon vetë dhe të thotë çfarë kërkon veprim
+// ══════════════════════════════════════════════════════════════
+function ckDaysBetween(a,b){ return Math.round((a-b)/86400000); }
+function ckCard(sev, icon, title, detail, actionLabel, actionFn){
+  var col = sev==='red' ? '#C0392B' : (sev==='amber' ? '#B87333' : 'var(--text3)');
+  var bg  = sev==='red' ? 'rgba(192,57,43,0.06)' : (sev==='amber' ? 'rgba(184,115,51,0.07)' : 'var(--bg2)');
+  return '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;background:'+bg+';border-left:2px solid '+col+';margin-bottom:6px">'
+    +'<div style="min-width:0"><div style="font-size:12.5px;font-weight:600;color:'+col+'">'+icon+' '+title+'</div>'
+    +'<div style="font-size:11.5px;color:var(--text2);margin-top:1px">'+detail+'</div></div>'
+    +(actionFn?'<button class="btn btn-sm" style="flex-shrink:0" onclick="'+actionFn+'">'+actionLabel+'</button>':'')
+  +'</div>';
+}
+async function loadCockpit(){
+  var el=document.getElementById('q-cockpit'); if(!el) return;
+  el.innerHTML='<div style="color:var(--text3);font-size:12px">Duke analizuar...</div>';
+  var today=new Date(); today.setHours(0,0,0,0);
+  var cards=[], stats={red:0,amber:0};
+  try{
+    var res=await Promise.all([
+      supaFetch('offers_inbox?processed=eq.false&select=id&limit=200').catch(function(){return[];}),
+      supaFetch('documents_registry?series=eq.QUO&order=created_at.desc&limit=50').catch(function(){return[];}),
+      supaFetch('offers?select=id,supplier,project_id,price_kg,total_eur,notes,created_at&limit=200').catch(function(){return[];}),
+      supaFetch('projects?select=id,name,client&limit=100').catch(function(){return[];}),
+      supaFetch('invoices_out?select=invoice_nr,client,due_date,paid,total_net&limit=100').catch(function(){return[];})
+    ]);
+    var inbox=res[0]||[], quotes=res[1]||[], offs=res[2]||[], projs=res[3]||[], invs=res[4]||[];
+    var pName={}; projs.forEach(function(p){ pName[p.id]=p.name; });
+
+    // ── 1. Email-e të paanalizuara ──
+    if(inbox.length>0){
+      stats.amber++;
+      cards.push(ckCard('amber','📥', inbox.length+' dokumente nga Gmail presin analizë',
+        'Ofertat e furnitorëve nuk hyjnë në llogaritje derisa të analizohen.',
+        'Analizo të gjitha','qAnalyzeAll()'));
+    }
+
+    // ── 2. Ofertat tona pa përgjigje > 7 ditë ──
+    quotes.forEach(function(q){
+      if(!q.created_at) return;
+      var age=ckDaysBetween(today, new Date(q.created_at));
+      if(age>=7 && age<=90){
+        stats.amber++;
+        cards.push(ckCard(age>=14?'red':'amber','⏰', q.doc_nr+' — '+age+' ditë pa përgjigje',
+          (q.client||'')+' · '+(q.total_eur?parseFloat(q.total_eur).toLocaleString('de-DE')+' €':'')+' — koha për ndjekje.',
+          'Hap projektin', q.project_id?"loadProject('"+q.project_id+"');showPage('oferta')":''));
+      }
+    });
+
+    // ── 3. Kosto që mungojnë (marzha e panjohur) ──
+    var byProj={};
+    offs.forEach(function(o){
+      if(!o.project_id) return;
+      if(!byProj[o.project_id]) byProj[o.project_id]={steel:false,zinc:false,transport:false,empty:[]};
+      var pk=parseFloat(o.price_kg)||0, zk=parseFloat(o.zinc_kg)||0, te=parseFloat(o.transport_eur)||0;
+      if(pk>0) byProj[o.project_id].steel=true;
+      if(zk>0) byProj[o.project_id].zinc=true;
+      if(te>0) byProj[o.project_id].transport=true;
+      if(pk===0&&zk===0&&te===0&&(parseFloat(o.total_eur)||0)===0) byProj[o.project_id].empty.push(o.supplier);
+    });
+    quotes.forEach(function(q){
+      if(!q.project_id || !q.revenue_breakdown) return;
+      var b=q.revenue_breakdown, p=byProj[q.project_id];
+      if(!p) return;
+      var miss=[];
+      if(b.zinc>0 && !p.zinc) miss.push('zinktim');
+      if(b.transport>0 && !p.transport) miss.push('transport');
+      if(miss.length){
+        stats.red++;
+        cards.push(ckCard('red','⚠', 'Marzha e panjohur: '+(pName[q.project_id]||q.doc_nr),
+          'Ke ofertuar '+miss.join(' dhe ')+' pa e ditur koston reale. Rrezik humbjeje.',
+          'Shiko','openOverview(\''+q.project_id+'\')'));
+      }
+    });
+
+    // ── 4. Furnitorë që s'kanë kthyer çmim ──
+    Object.keys(byProj).forEach(function(pid){
+      var e=byProj[pid].empty;
+      if(e.length){
+        stats.amber++;
+        cards.push(ckCard('amber','📤', e.length+' furnitorë pa përgjigje — '+(pName[pid]||''),
+          e.slice(0,3).join(', ')+(e.length>3?' +'+(e.length-3):'')+' — kërkesa dërguar, çmimi mungon.',
+          'Hap','openOverview(\''+pid+'\')'));
+      }
+    });
+
+    // ── 5. Fatura të papaguara / të vonuara ──
+    invs.forEach(function(iv){
+      if(iv.paid || !iv.due_date) return;
+      var d=ckDaysBetween(today, new Date(iv.due_date));
+      if(d>0){
+        stats.red++;
+        cards.push(ckCard('red','💰', iv.invoice_nr+' — vonesë '+d+' ditë',
+          (iv.client||'')+' · '+(iv.total_net?parseFloat(iv.total_net).toLocaleString('de-DE')+' €':'')+' — kërko pagesën.',
+          'Faturat','showPage(\'invoices\')'));
+      } else if(d>=-3){
+        stats.amber++;
+        cards.push(ckCard('amber','💰', iv.invoice_nr+' — skadon për '+Math.abs(d)+' ditë',
+          (iv.client||''),'Faturat','showPage(\'invoices\')'));
+      }
+    });
+
+    if(!cards.length){
+      el.innerHTML='<div style="padding:14px;text-align:center;color:var(--green-text);font-size:13px">✓ Gjithçka në rregull — asnjë veprim urgjent.</div>';
+      return;
+    }
+    el.innerHTML='<div style="font-size:11px;color:var(--text3);margin-bottom:8px">'
+      +(stats.red?'<span style="color:#C0392B;font-weight:700">'+stats.red+' urgjente</span> · ':'')
+      +(stats.amber?stats.amber+' për vëmendje':'')+'</div>'+cards.join('');
+  }catch(e){
+    el.innerHTML='<div style="color:#C0392B;font-size:12px">Gabim: '+e.message+'</div>';
+  }
+}
+// ══ ANALIZË MASIVE E INBOX-IT ══
+async function qAnalyzeAll(){
+  var apiKey=localStorage.getItem('pristeel_apikey')||'';
+  if(!apiKey){alert('Mungon Groq API Key — Cilësimet.');return;}
+  var btn=document.getElementById('q-analyze-all');
+  var rows=await supaFetch('offers_inbox?processed=eq.false&select=id,sender,subject,file_name&order=received_at.desc&limit=60');
+  if(!rows||!rows.length){alert('Asnjë dokument i paanalizuar.');return;}
+  if(!confirm('Do të analizohen '+rows.length+' dokumente. Ato që lidhen qartë me një projekt regjistrohen vetë; të tjerat të pyesin. Vazhdo?')) return;
+  var projects=await supaFetch('projects?order=created_at.desc&limit=50');
+  var ok=0, skip=0, fail=0;
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i];
+    if(btn) btn.textContent='('+(i+1)+'/'+rows.length+')...';
+    try{
+      var guess=qGuessProjectMatch(r.subject, r.sender, projects);
+      if(!guess){ skip++; continue; } // pa përputhje të qartë → lihet për shqyrtim manual
+      var done=await qAnalyzeOne(r.id, r.subject, r.sender, guess, apiKey);
+      if(done) ok++; else fail++;
+    }catch(e){ fail++; }
+  }
+  if(btn) btn.textContent='Analizo të gjitha';
+  alert('U analizuan: '+ok+' të regjistruara automatikisht\n'+skip+' kërkojnë zgjedhje manuale (kliko "Analizo" te rreshti)\n'+(fail?fail+' dështuan':''));
+  loadQInbox(); loadCockpit();
+}
+async function qAnalyzeOne(inboxId, subject, sender, proj, apiKey){
+  var rows=await supaFetch('offers_inbox?id=eq.'+inboxId+'&select=file_base64');
+  var rec=rows&&rows[0]; if(!rec||!rec.file_base64) return false;
+  var bc=atob(rec.file_base64.replace(/^data:.*;base64,/,''));
+  var bytes=new Uint8Array(bc.length);
+  for(var i=0;i<bc.length;i++) bytes[i]=bc.charCodeAt(i);
+  var pdf=await pdfjsLib.getDocument({data:bytes}).promise;
+  var text='';
+  for(var pg=1; pg<=Math.min(pdf.numPages,8); pg++){
+    var page=await pdf.getPage(pg);
+    var c=await page.getTextContent();
+    text+=c.items.map(function(it){return it.str;}).join(' ')+'\n';
+  }
+  if(text.trim().length<20) return false;
+  var supplierGuess=(sender.match(/@([a-zA-Z0-9\-]+)\./)||[])[1]||'Furnitori';
+  var prompt='Extract offer data. ONLY JSON.\nSupplier: '+supplierGuess+'\nText: '+text.slice(0,9000)
+    +'\n\n{"supplier":"","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"delivery_weeks":0,"incoterms":"","certification":"","validity_days":30,"notes":"","positions":[{"desc":"","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}\nRules: every priced line separate, never merge/average. fabrication_total excludes transport. ONLY JSON.';
+  var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+    body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,
+      messages:[{role:'system',content:'Steel procurement AI. Valid JSON only. Never merge line items.'},{role:'user',content:prompt}]})
+  });
+  var data=await resp.json();
+  var raw=(data.choices&&data.choices[0]&&data.choices[0].message.content)||'';
+  var s=raw.indexOf('{'), e=raw.lastIndexOf('}');
+  if(s<0||e<0) return false;
+  var p=JSON.parse(raw.slice(s,e+1));
+  var kg=parseFloat(p.total_weight_kg)||0, fab=parseFloat(p.fabrication_total)||0, tr=parseFloat(p.transport_cost)||0;
+  await supaFetch('offers','POST',{
+    project_id:proj.id, supplier:p.supplier||supplierGuess,
+    price_kg:kg>0?+(fab/kg).toFixed(3):0, total_eur:fab+tr, qty_kg:kg,
+    delivery_weeks:parseInt(p.delivery_weeks)||0, incoterms:p.incoterms||'',
+    cert:p.certification||'', notes:(p.notes||'')+' | Auto: '+subject,
+    origin:'producer', zinc_kg:0, transport_eur:tr, vat_pct:0,
+    positions:(Array.isArray(p.positions)&&p.positions.length)?p.positions:null
+  });
+  await supaFetch('offers_inbox?id=eq.'+inboxId,'PATCH',{processed:true});
+  return true;
 }
 function loadQInbox(){
   var el=document.getElementById('q-inbox'); if(!el)return;
