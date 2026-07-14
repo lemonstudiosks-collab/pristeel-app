@@ -26,48 +26,73 @@ button,input,select,textarea{font-family:inherit}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#CDD6DC;border-radius:6px}::-webkit-scrollbar-track{background:transparent}
 /* LAYOUT */
 .app-shell{display:flex;min-height:100vh}
-/* ══ QENDRA — tabela e kontrollit e fabrikës ══ */
-.q-gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:16px}
-.q-gauge{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease}
-.q-gauge:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(46,44,40,0.07)}
-.q-gauge::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gc,#B87333)}
-.q-gauge-top{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:7px}
-.q-gauge-lbl{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--text3);font-weight:600}
-.q-gauge-ico{font-size:15px;opacity:.85}
-.q-gauge-val{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:.95;letter-spacing:.5px;color:var(--gc,#B87333)}
-.q-gauge-sub{font-size:10.5px;color:var(--text3);margin-top:3px}
-.q-gauge-bar{height:3px;border-radius:2px;background:var(--bg3);margin-top:8px;overflow:hidden}
-.q-gauge-fill{height:100%;background:var(--gc,#B87333);border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+/* ══ QENDRA — projekti është njësia ══ */
+.hub-top{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding:4px 2px 20px;border-bottom:1px solid var(--border);margin-bottom:22px;flex-wrap:wrap}
+.hub-eyebrow{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--text3);font-weight:600;margin-bottom:6px}
+.hub-headline{font-size:22px;font-weight:680;color:var(--text);letter-spacing:-.3px;line-height:1.25}
+.hub-sub{font-size:12.5px;color:var(--text2);margin-top:4px}
+.hub-stats{display:flex;gap:26px;flex-shrink:0}
+.hub-stat-v{font-size:20px;font-weight:680;color:var(--text);letter-spacing:-.3px;line-height:1.1}
+.hub-stat-l{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--text3);margin-top:3px;font-weight:600}
 
-.q-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:16px;position:relative;overflow:hidden}
-.q-panel::before{content:'';position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,#C0392B 0%,#B87333 45%,#C98F55 70%,#E8E3DB 100%)}
-.q-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.q-panel-title{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:var(--text)}
-.q-flame{font-size:17px;display:inline-block}
-@keyframes qpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.14);opacity:.82}}
-.q-flame.hot{animation:qpulse 1.9s ease-in-out infinite}
-.q-loading{font-size:12px;color:var(--text3);padding:6px 0}
+.hub-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:26px;align-items:start}
+@media(max-width:1100px){.hub-grid{grid-template-columns:1fr}}
+.hub-sec{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text3);font-weight:700;margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.hub-load{font-size:12px;color:var(--text3);padding:14px 2px}
+.hub-none{font-size:12px;color:var(--text3);padding:16px 2px;font-style:italic}
 
-/* Kartat e veprimeve */
-.q-task{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;margin-bottom:7px;border:1px solid var(--border);background:var(--bg-card);transition:all .16s ease;position:relative}
-.q-task:hover{border-color:var(--tc,#B87333);background:var(--bg-hover);transform:translateX(2px)}
-.q-task-ico{width:34px;height:34px;flex-shrink:0;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--tbg,rgba(184,115,51,.1))}
-.q-task-body{flex:1;min-width:0}
-.q-task-title{font-size:12.5px;font-weight:650;color:var(--text);line-height:1.35}
-.q-task-sub{font-size:11px;color:var(--text2);margin-top:2px;line-height:1.45}
-.q-task-meta{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
-.q-chip{font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:20px;background:var(--tbg,rgba(184,115,51,.12));color:var(--tc,#B87333);white-space:nowrap}
-.q-days{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1;color:var(--tc,#B87333)}
+/* Karta e projektit */
+.pj{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:box-shadow .2s ease,border-color .2s ease}
+.pj:hover{box-shadow:0 3px 14px rgba(46,44,40,.07);border-color:var(--border2)}
+.pj-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:14px 16px 12px;cursor:pointer}
+.pj-name{font-size:13.5px;font-weight:650;color:var(--text);line-height:1.35}
+.pj-client{font-size:11.5px;color:var(--text3);margin-top:2px}
+.pj-val{font-size:15px;font-weight:680;color:var(--text);white-space:nowrap;letter-spacing:-.2px}
+.pj-margin{font-size:11px;margin-top:2px;text-align:right;white-space:nowrap}
 
-.q-empty{text-align:center;padding:26px 16px}
-.q-empty-ico{font-size:34px;margin-bottom:8px;opacity:.75}
-.q-empty-t{font-size:13.5px;font-weight:650;color:var(--green-text)}
-.q-empty-s{font-size:11.5px;color:var(--text3);margin-top:3px}
+/* Rrjedha e projektit — hapat */
+.pj-flow{display:flex;align-items:center;gap:0;padding:0 16px 13px}
+.pj-step{flex:1;position:relative;text-align:center}
+.pj-step::before{content:'';position:absolute;top:5px;left:-50%;right:50%;height:1px;background:var(--border2)}
+.pj-step:first-child::before{display:none}
+.pj-step.done::before{background:var(--text2)}
+.pj-dot{width:11px;height:11px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);margin:0 auto 6px;position:relative;z-index:1}
+.pj-step.done .pj-dot{background:var(--text);border-color:var(--text)}
+.pj-step.now .pj-dot{background:var(--bg-card);border:2px solid var(--bronze);box-shadow:0 0 0 3px rgba(184,115,51,.14)}
+.pj-lbl{font-size:9.5px;letter-spacing:.4px;color:var(--text3);text-transform:uppercase;font-weight:600}
+.pj-step.done .pj-lbl,.pj-step.now .pj-lbl{color:var(--text2)}
+.pj-step.now .pj-lbl{color:var(--bronze);font-weight:700}
 
-.q-group{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--text3);font-weight:700;margin:14px 0 7px;display:flex;align-items:center;gap:8px}
-.q-group::after{content:'';flex:1;height:1px;background:var(--border)}
-.q-group:first-child{margin-top:0}
-@media (prefers-reduced-motion:reduce){.q-flame.hot{animation:none}.q-task:hover,.q-gauge:hover{transform:none}}
+/* Rreshtat e ngjarjeve brenda projektit */
+.pj-body{border-top:1px solid var(--border);background:var(--bg2);padding:10px 16px 12px;display:none}
+.pj.open .pj-body{display:block}
+.pj-row{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:12px;border-bottom:1px solid rgba(0,0,0,.035)}
+.pj-row:last-child{border-bottom:none}
+.pj-row-ico{width:18px;text-align:center;flex-shrink:0;opacity:.75;font-size:12px}
+.pj-row-txt{flex:1;min-width:0;color:var(--text2)}
+.pj-row-txt b{color:var(--text);font-weight:600}
+.pj-row-act{flex-shrink:0;font-size:11px;color:var(--bronze);cursor:pointer;font-weight:600;white-space:nowrap}
+.pj-row-act:hover{text-decoration:underline}
+.pj-warn{color:#A33}
+
+/* Agjenda */
+.ag{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ag:last-child{border-bottom:none}
+.ag-when{flex-shrink:0;width:44px;text-align:right}
+.ag-d{font-size:14px;font-weight:680;color:var(--text);line-height:1.1}
+.ag-m{font-size:9.5px;text-transform:uppercase;color:var(--text3);letter-spacing:.6px;font-weight:600}
+.ag-body{flex:1;min-width:0;border-left:2px solid var(--border2);padding-left:11px}
+.ag.urgent .ag-body{border-left-color:#A33}
+.ag-t{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.35}
+.ag-s{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* Inbox */
+.ib{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
+.ib:last-child{border-bottom:none}
+.ib-body{flex:1;min-width:0}
+.ib-from{font-weight:600;color:var(--text);font-size:12px}
+.ib-sub{color:var(--text3);font-size:11px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.pj{transition:none}}
 
 .sidebar{width:220px;background:#F6F3EF;border-right:1px solid #E8E3DB;box-shadow:none;padding:0;flex-shrink:0;display:flex;flex-direction:column}
 .sidebar-logo{padding:20px 20px 18px;border-bottom:1px solid #E8E3DB}
@@ -853,47 +878,37 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div id="page-qendra" class="page">
-  <!-- BARRA E MATËSVE -->
-  <div id="q-gauges" class="q-gauges"></div>
-
-  <!-- PANELI I VEPRIMEVE -->
-  <div class="q-panel">
-    <div class="q-panel-head">
-      <div class="q-panel-title">
-        <span class="q-flame" id="q-flame">🔥</span>
-        <span id="q-greet">Ora e ndërrimit</span>
-      </div>
-      <button class="btn btn-sm" onclick="loadCockpit()">Rifresko</button>
+  <!-- Rreshti i sipërm: fokusi i sotëm -->
+  <div class="hub-top">
+    <div class="hub-today">
+      <div class="hub-eyebrow">Sot · <span id="hub-date"></span></div>
+      <div class="hub-headline" id="hub-headline">Duke lexuar…</div>
+      <div class="hub-sub" id="hub-sub"></div>
     </div>
-    <div id="q-cockpit"><div class="q-loading">Duke lexuar matësit…</div></div>
+    <div class="hub-stats" id="hub-stats"></div>
   </div>
-  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start">
+
+  <div class="hub-grid">
+    <!-- KOLONA E MAJTË: projektet -->
     <div>
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div class="card-title" style="margin:0">Oferta &amp; PDF nga Gmail</div>
-          <span style="display:flex;gap:6px">
-            <button class="btn btn-sm btn-primary" onclick="qAnalyzeAll()" id="q-analyze-all">Analizo të gjitha</button>
-            <button class="btn btn-sm" onclick="loadQInbox()">Rifresko</button>
-          </span>
-        </div>
-        <div id="q-inbox"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
+      <div class="hub-sec">
+        <span>Projektet aktive</span>
+        <button class="btn btn-sm" onclick="loadHub()">Rifresko</button>
       </div>
-      <div class="card">
-        <div class="card-title">Pipeline (HubSpot)</div>
-        <div id="q-deals"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
-      </div>
+      <div id="hub-projects"><div class="hub-load">Duke ngarkuar projektet…</div></div>
     </div>
+
+    <!-- KOLONA E DJATHTË: agjenda + inbox -->
     <div>
-      <div class="card">
-        <div class="card-title">Direktoria (HubSpot)</div>
-        <input id="q-dir-input" onkeyup="qDirSearch()" placeholder="K&euml;rko kompani ose kontakt — emri, emaili, domain..." style="width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:8px;font-size:13px;background:var(--bg-card);margin-bottom:10px">
-        <div id="q-dir-results"><div class="ov-empty">Shkruaj t&euml; pakt&euml;n 2 shkronja...</div></div>
+      <div class="hub-sec"><span>Kalendari</span>
+        <a class="btn btn-sm" href="https://calendar.google.com/calendar/r" target="_blank">Hap</a>
       </div>
-      <div class="card">
-        <div class="card-title">Agjenda — 30 dit&euml;t e ardhshme</div>
-        <div id="q-agenda"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
+      <div id="hub-agenda"><div class="hub-load">Duke lexuar kalendarin…</div></div>
+
+      <div class="hub-sec" style="margin-top:22px"><span>Nga Gmail</span>
+        <button class="btn btn-sm" id="q-analyze-all" onclick="qAnalyzeAll()">Analizo të gjitha</button>
       </div>
+      <div id="hub-inbox"><div class="hub-load">Duke lexuar…</div></div>
     </div>
   </div>
 </div>
@@ -4391,224 +4406,200 @@ function gcalLink(title, details, dateISO, durMin){
 function addToCalendar(title, details, dateISO){
   window.open(gcalLink(title, details, dateISO, 30),'_blank');
 }
-function ckCard(sev, icon, title, detail, actionLabel, actionFn, calTitle, calDetails, calDate){
-  var C={red:{c:'#C0392B',bg:'rgba(192,57,43,.10)'},amber:{c:'#B87333',bg:'rgba(184,115,51,.12)'},cool:{c:'#6E8B6E',bg:'rgba(110,139,110,.12)'}};
-  var s=C[sev]||C.amber;
-  var m=String(title).match(/—\s*(\d+)\s*ditë/);
-  var days=m?m[1]:null;
-  var chip = sev==='red' ? 'URGJENT' : (sev==='cool' ? 'INFO' : 'SOT');
-  return '<div class="q-task" style="--tc:'+s.c+';--tbg:'+s.bg+'"'+(actionFn?' onclick="'+actionFn.replace(/"/g,'&quot;')+'" style="cursor:pointer;--tc:'+s.c+';--tbg:'+s.bg+'"':'')+'>'
-    +'<div class="q-task-ico">'+icon+'</div>'
-    +'<div class="q-task-body">'
-      +'<div class="q-task-title">'+title+'</div>'
-      +'<div class="q-task-sub">'+detail+'</div>'
-    +'</div>'
-    +'<div class="q-task-meta">'
-      +(days?'<div class="q-days">'+days+'<span style="font-size:10px;letter-spacing:.5px"> DITË</span></div>':'<div class="q-chip">'+chip+'</div>')
-      +(actionFn?'<div class="q-chip">'+(actionLabel||'Hap')+' →</div>':'')
-      +(calDate?'<div class="q-chip" style="background:var(--bg3);color:var(--text2)" onclick="event.stopPropagation();addToCalendar(\''+String(calTitle||title).replace(/'/g,"\\'")+'\',\''+String(calDetails||detail).replace(/'/g,"\\'")+'\',\''+calDate+'\')" title="Shto në Google Calendar">📅</div>':'')
-    +'</div>'
-  +'</div>';
+// ── AFATE KRITIKE ──
+window.PST_DEADLINES=[
+  {date:'2026-07-18', title:'ISO 9001 e Eurosteel skadon', project:'STACON',
+   detail:'Bllokon kestin 2 (26.212,50 EUR). Kerko rinovimin nga Ermali.'},
+  {date:'2026-08-27', title:'Dokumentacioni i cilesise — para ngarkimit', project:'STACON',
+   detail:'11 dokumente sipas Nenit 5.'},
+  {date:'2026-09-25', title:'Dorezimi DAP Hamburg (KW 38-39)', project:'STACON',
+   detail:'Afati kontraktual.'}
+];
+function hDays(a,b){ return Math.round((a-b)/86400000); }
+function hFmt(n){ return (parseFloat(n)||0).toLocaleString('de-DE',{maximumFractionDigits:0}); }
+function hEsc(s){ return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function gcalLink(title, details, dateISO, durMin){
+  var d=new Date(dateISO), pad=function(n){return String(n).padStart(2,'0');};
+  var fmt=function(x){ return x.getUTCFullYear()+pad(x.getUTCMonth()+1)+pad(x.getUTCDate())+'T'+pad(x.getUTCHours())+pad(x.getUTCMinutes())+'00Z'; };
+  var end=new Date(d.getTime()+(durMin||30)*60000);
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)
+    +'&details='+encodeURIComponent(details||'')+'&dates='+fmt(d)+'/'+fmt(end)+'&ctz=Europe/Belgrade';
 }
-function ckGauge(lbl, val, sub, color, icon, pct){
-  return '<div class="q-gauge" style="--gc:'+color+'">'
-    +'<div class="q-gauge-top"><span class="q-gauge-lbl">'+lbl+'</span><span class="q-gauge-ico">'+icon+'</span></div>'
-    +'<div class="q-gauge-val">'+val+'</div>'
-    +'<div class="q-gauge-sub">'+sub+'</div>'
-    +(pct!==null&&pct!==undefined?'<div class="q-gauge-bar"><div class="q-gauge-fill" style="width:'+Math.min(100,Math.max(2,pct))+'%"></div></div>':'')
-  +'</div>';
-}
-function ckGreeting(red, total){
-  var h=new Date().getHours();
-  var t = h<11?'Mirëmëngjes':(h<18?'Mirëdita':(h<22?'Mirëmbrëma':'Natë e vonë'));
-  if(red>0) return t+' — '+red+(red===1?' zjarr për ta shuar':' zjarre për t\'i shuar');
-  if(total>0) return t+' — '+total+(total===1?' punë e vogël':' punë të vogla');
-  return t+' — furra punon qetë';
-}
-async function loadCockpit(){
-  var el=document.getElementById('q-cockpit'); if(!el) return;
-  el.innerHTML='<div style="color:var(--text3);font-size:12px">Duke analizuar...</div>';
+function addToCalendar(t,d,iso){ window.open(gcalLink(t,d,iso,30),'_blank'); }
+
+var PJ_STEPS=[{k:'bom',l:'BOM'},{k:'rfq',l:'RFQ'},{k:'kosto',l:'Kosto'},{k:'oferte',l:'Oferte'},{k:'pagese',l:'Pagese'}];
+
+async function loadHub(){
+  var elP=document.getElementById('hub-projects'), elA=document.getElementById('hub-agenda'), elI=document.getElementById('hub-inbox');
+  if(!elP) return;
   var today=new Date(); today.setHours(0,0,0,0);
-  var cards=[], stats={red:0,amber:0};
+  var dEl=document.getElementById('hub-date');
+  if(dEl) dEl.textContent=today.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long'});
   try{
     var res=await Promise.all([
-      supaFetch('offers_inbox?processed=eq.false&select=id&limit=200').catch(function(){return[];}),
-      supaFetch('documents_registry?series=eq.QUO&order=created_at.desc&limit=50').catch(function(){return[];}),
-      supaFetch('offers?select=id,supplier,project_id,price_kg,total_eur,notes,created_at&limit=200').catch(function(){return[];}),
-      supaFetch('projects?select=id,name,client&limit=100').catch(function(){return[];}),
-      supaFetch('invoices_out?select=invoice_nr,client,due_date,paid,total_net&limit=100').catch(function(){return[];}),
-      supaFetch('rfq_log?status=eq.sent&order=sent_at.asc&limit=100').catch(function(){return[];}),
-      supaFetch('project_docs?select=id,project_id,doc_type,doc_nr,title,status,amount_eur,notes&limit=200').catch(function(){return[];})
+      supaFetch('projects?order=created_at.desc&limit=40').catch(function(){return[];}),
+      supaFetch('documents_registry?series=eq.QUO&order=created_at.desc&limit=60').catch(function(){return[];}),
+      supaFetch('offers?limit=250').catch(function(){return[];}),
+      supaFetch('bom_items?select=project_id,kg&limit=2000').catch(function(){return[];}),
+      supaFetch('invoices_out?limit=100').catch(function(){return[];}),
+      supaFetch('rfq_log?limit=120').catch(function(){return[];}),
+      supaFetch('project_docs?select=id,project_id,doc_type,title,status&limit=200').catch(function(){return[];}),
+      supaFetch('offers_inbox?processed=eq.false&select=id,sender,subject,received_at&order=received_at.desc&limit=8').catch(function(){return[];})
     ]);
-    var inbox=res[0]||[], quotes=res[1]||[], offs=res[2]||[], projs=res[3]||[], invs=res[4]||[], rfqs=res[5]||[], docs=res[6]||[];
-    var pName={}; projs.forEach(function(p){ pName[p.id]=p.name; });
+    var projs=res[0]||[], quotes=res[1]||[], offs=res[2]||[], boms=res[3]||[],
+        invs=res[4]||[], rfqs=res[5]||[], docs=res[6]||[], inbox=res[7]||[];
 
-    // ── 1. Email-e të paanalizuara ──
-    if(inbox.length>0){
-      stats.amber++;
-      cards.push(ckCard('amber','📥', inbox.length+' dokumente nga Gmail presin analizë',
-        'Ofertat e furnitorëve nuk hyjnë në llogaritje derisa të analizohen.',
-        'Analizo të gjitha','qAnalyzeAll()'));
+    var bomKg={}, bomN={};
+    boms.forEach(function(b){ if(!b.project_id) return;
+      bomKg[b.project_id]=(bomKg[b.project_id]||0)+(parseFloat(b.kg)||0);
+      bomN[b.project_id]=(bomN[b.project_id]||0)+1; });
+
+    var pipeline=0, urgentList=[];
+    var cards=projs.map(function(p){
+      var q=quotes.filter(function(x){return x.project_id===p.id;});
+      var myOffer=q.length?q[0]:null;
+      var so=offs.filter(function(x){return x.project_id===p.id;});
+      var priced=so.filter(function(x){return (parseFloat(x.total_eur)||0)>0||(parseFloat(x.price_kg)||0)>0;});
+      var silent=so.filter(function(x){return (parseFloat(x.total_eur)||0)===0&&(parseFloat(x.price_kg)||0)===0;});
+      var pr=rfqs.filter(function(x){return x.project_id===p.id;});
+      var pn=(p.name||'').toLowerCase().slice(0,10);
+      var pinv=invs.filter(function(x){return (x.project||'').toLowerCase().indexOf(pn)>-1;});
+      var pdocs=docs.filter(function(x){return x.project_id===p.id;});
+      var paid=pinv.filter(function(x){return x.paid;});
+      var kg=bomKg[p.id]||0;
+
+      var cSteel=null,cZinc=null,cTrans=null;
+      so.forEach(function(o){
+        var okg=parseFloat(o.qty_kg)||kg, pk=parseFloat(o.price_kg)||0, zk=parseFloat(o.zinc_kg)||0, te=parseFloat(o.transport_eur)||0;
+        if(pk>0&&okg>0){var v=pk*okg; if(cSteel===null||v<cSteel)cSteel=v;}
+        if(zk>0&&okg>0){var z=zk*okg; if(cZinc===null||z<cZinc)cZinc=z;}
+        if(te>0&&(cTrans===null||te<cTrans))cTrans=te;
+      });
+      var sell=myOffer?(parseFloat(myOffer.total_eur)||0):0;
+      var cost=(cSteel||0)+(cZinc||0)+(cTrans||0);
+      var brk=myOffer&&myOffer.revenue_breakdown?myOffer.revenue_breakdown:null;
+      var missing=[];
+      if(brk){ if(brk.zinc>0&&!cZinc)missing.push('zinktim'); if(brk.transport>0&&!cTrans)missing.push('transport'); }
+      if(!cSteel) missing.unshift('celik');
+      var marg=(sell>0&&cost>0&&!missing.length)?((sell-cost)/sell*100):null;
+      if(sell>0&&!paid.length) pipeline+=sell;
+
+      var st={bom:kg>0, rfq:pr.length>0||so.length>0, kosto:priced.length>0&&!missing.length, oferte:!!myOffer, pagese:paid.length>0};
+      var nowIdx=PJ_STEPS.length;
+      for(var i2=0;i2<PJ_STEPS.length;i2++){ if(!st[PJ_STEPS[i2].k]){ nowIdx=i2; break; } }
+
+      var rows=[];
+      if(kg>0) rows.push({i:'\u2699',t:'<b>'+(bomN[p.id]||0)+' pozicione</b> \u00B7 '+hFmt(kg)+' kg'});
+      if(myOffer){
+        var os=myOffer.offer_state||{};
+        var age=myOffer.created_at?hDays(today,new Date(myOffer.created_at)):0;
+        rows.push({i:'\u25CF',t:'<b>'+myOffer.doc_nr+'</b> \u2014 '+hFmt(myOffer.total_eur)+' \u20AC \u00B7 derguar '+(myOffer.created_at?new Date(myOffer.created_at).toLocaleDateString('de-DE'):'')+(age>=7?' \u00B7 '+age+' dite pa pergjigje':''),
+          w:age>=14,
+          a:'Ndjekje', f:"followupQuote('"+myOffer.doc_nr+"','"+encodeURIComponent(myOffer.client||'')+"','"+encodeURIComponent(os.em||'')+"','"+(myOffer.total_eur||'')+"','"+myOffer.created_at+"','"+encodeURIComponent(os.lang||'de')+"','"+encodeURIComponent(myOffer.project||'')+"')"});
+      }
+      priced.forEach(function(o){
+        var bits=[];
+        if(parseFloat(o.price_kg)>0) bits.push(parseFloat(o.price_kg).toFixed(2).replace('.',',')+' \u20AC/kg');
+        if(parseFloat(o.zinc_kg)>0) bits.push('zinktim '+parseFloat(o.zinc_kg).toFixed(2).replace('.',','));
+        if(parseFloat(o.transport_eur)>0) bits.push('transport '+hFmt(o.transport_eur)+' \u20AC');
+        rows.push({i:'\u25AA',t:'<b>'+(o.supplier||'').split('(')[0].trim()+'</b> \u2014 '+(bits.join(' \u00B7 ')||hFmt(o.total_eur)+' \u20AC')});
+      });
+      silent.forEach(function(o){
+        var rr=pr.filter(function(x){return (x.supplier_name||'').slice(0,8)===(o.supplier||'').slice(0,8);})[0];
+        var ag=rr&&rr.sent_at?hDays(today,new Date(rr.sent_at)):null;
+        rows.push({i:'\u25CB',w:ag!==null&&ag>=3,t:'<b>'+(o.supplier||'').split('(')[0].trim()+'</b> \u2014 pa cmim'+(ag!==null?' \u00B7 '+ag+' dite':''),
+          a:rr?'Perkujto':'', f:rr?"sendFollowup('"+rr.id+"','"+rr.supplier_email+"','"+(rr.lang||'en')+"','"+encodeURIComponent(rr.project_name||'')+"','"+rr.sent_at+"')":''});
+      });
+      if(missing.length&&sell>0) rows.push({i:'\u26A0',w:true,t:'<b>Marzha e panjohur</b> \u2014 mungon kosto e '+missing.join(' dhe ')});
+      pinv.forEach(function(iv){
+        rows.push({i:iv.paid?'\u2713':'\u25B3',t:'<b>'+iv.invoice_nr+'</b> \u2014 '+hFmt(iv.gross_amount||iv.total_price)+' \u20AC \u00B7 '+(iv.paid?'paguar '+(iv.paid_date?new Date(iv.paid_date).toLocaleDateString('de-DE'):''):'e hapur')});
+      });
+      pdocs.filter(function(d){return d.doc_type==='kontrate'||d.doc_type==='nenkontrate';}).forEach(function(d){
+        rows.push({i:'\u25A0',t:'<b>'+d.title+'</b> \u00B7 '+(d.status||'')});
+      });
+      (window.PST_DEADLINES||[]).forEach(function(dl){
+        if(!dl.project||(p.name||'').toUpperCase().indexOf(dl.project.toUpperCase())===-1) return;
+        var dd=hDays(new Date(dl.date), today);
+        if(dd<-30||dd>60) return;
+        if(dd<=7) urgentList.push({t:dl.title,p:p.name,d:dd});
+        rows.push({i:'\u25C6',w:dd<=7,t:'<b>'+dl.title+'</b> \u2014 '+(dd>=0?dd+' dite':'skaduar')+' \u00B7 '+dl.detail,
+          a:'Kalendar', f:"addToCalendar('"+hEsc(dl.title)+"','"+hEsc(dl.detail)+"','"+new Date(dl.date).toISOString()+"')"});
+      });
+
+      var mCol=marg===null?'var(--text3)':(marg<6?'#A33':(marg<10?'var(--text2)':'var(--green-text)'));
+      return '<div class="pj" id="pj-'+p.id+'">'
+        +'<div class="pj-head" onclick="document.getElementById(\'pj-'+p.id+'\').classList.toggle(\'open\')">'
+          +'<div style="min-width:0"><div class="pj-name">'+(p.name||'Pa emer')+'</div>'
+          +'<div class="pj-client">'+((p.client||'').split(',')[0])+(kg>0?' \u00B7 '+hFmt(kg)+' kg':'')+'</div></div>'
+          +'<div style="text-align:right;flex-shrink:0">'
+            +(sell>0?'<div class="pj-val">'+hFmt(sell)+' \u20AC</div>':'<div class="pj-val" style="color:var(--text3)">\u2014</div>')
+            +'<div class="pj-margin" style="color:'+mCol+'">'+(marg!==null?'marzha '+marg.toFixed(1).replace('.',',')+'%':(missing.length&&sell>0?'marzha e panjohur':'&nbsp;'))+'</div>'
+          +'</div></div>'
+        +'<div class="pj-flow">'+PJ_STEPS.map(function(s,i3){
+            var cls=st[s.k]?'done':(i3===nowIdx?'now':'');
+            return '<div class="pj-step '+cls+'"><div class="pj-dot"></div><div class="pj-lbl">'+s.l+'</div></div>';
+          }).join('')+'</div>'
+        +'<div class="pj-body">'+(rows.length?rows.map(function(r){
+            return '<div class="pj-row"><span class="pj-row-ico">'+r.i+'</span>'
+              +'<span class="pj-row-txt'+(r.w?' pj-warn':'')+'">'+r.t+'</span>'
+              +(r.a&&r.f?'<span class="pj-row-act" onclick="event.stopPropagation();'+r.f.replace(/"/g,'&quot;')+'">'+r.a+' \u2192</span>':'')
+            +'</div>';
+          }).join(''):'<div class="hub-none">Ende pa aktivitet.</div>')
+        +'<div style="margin-top:9px;display:flex;gap:7px">'
+        +'<button class="btn btn-sm" onclick="event.stopPropagation();loadProject(\''+p.id+'\')">Puno me projektin</button>'
+        +'<button class="btn btn-sm" onclick="event.stopPropagation();openOverview(\''+p.id+'\')">Pasqyra</button></div>'
+        +'</div></div>';
+    });
+    elP.innerHTML=cards.length?cards.join(''):'<div class="hub-none">Ende pa projekte.</div>';
+
+    var hl=document.getElementById('hub-headline'), hs=document.getElementById('hub-sub');
+    if(hl){
+      if(urgentList.length){ hl.textContent=urgentList[0].t;
+        hs.textContent=urgentList[0].p+' \u00B7 '+(urgentList[0].d>=0?urgentList[0].d+' dite':'ka skaduar')+(urgentList.length>1?' \u2014 dhe '+(urgentList.length-1)+' te tjera':''); }
+      else if(inbox.length){ hl.textContent=inbox.length+' dokumente presin analize';
+        hs.textContent='Ofertat e furnitoreve nuk hyjne ne llogaritje derisa te analizohen.'; }
+      else { hl.textContent='Asgje urgjente'; hs.textContent='Kohe e mire per te kontaktuar bleres te rinj.'; }
+    }
+    var hst=document.getElementById('hub-stats');
+    if(hst){
+      var paidTot=invs.filter(function(i4){return i4.paid;}).reduce(function(s,i5){return s+(parseFloat(i5.gross_amount)||parseFloat(i5.total_price)||0);},0);
+      hst.innerHTML='<div><div class="hub-stat-v">'+hFmt(pipeline)+' \u20AC</div><div class="hub-stat-l">Ne pritje</div></div>'
+        +'<div><div class="hub-stat-v">'+hFmt(paidTot)+' \u20AC</div><div class="hub-stat-l">Arketuar</div></div>'
+        +'<div><div class="hub-stat-v">'+projs.length+'</div><div class="hub-stat-l">Projekte</div></div>';
     }
 
-    // ── 2. Ofertat tona pa përgjigje > 7 ditë ──
-    quotes.forEach(function(q){
-      if(!q.created_at) return;
-      var age=ckDaysBetween(today, new Date(q.created_at));
-      if(age>=7 && age<=90){
-        stats.amber++;
-        var st=q.offer_state||{};
-        var tmr=new Date(today.getTime()+86400000); tmr.setHours(10,0,0,0);
-        cards.push(ckCard(age>=14?'red':'amber','⏰', q.doc_nr+' — '+age+' ditë pa përgjigje',
-          (q.client||'')+' · '+(q.total_eur?parseFloat(q.total_eur).toLocaleString('de-DE')+' €':'')+' — koha për ndjekje.',
-          'Harto ndjekjen',
-          "followupQuote('"+q.doc_nr+"','"+encodeURIComponent(q.client||'')+"','"+encodeURIComponent(st.em||'')+"','"+(q.total_eur||'')+"','"+q.created_at+"','"+encodeURIComponent(st.lang||'de')+"','"+encodeURIComponent(q.project||'')+"')",
-          'Ndjekje: '+(q.client||'')+' — '+q.doc_nr,
-          'Ofertë '+q.doc_nr+' ('+(q.total_eur?parseFloat(q.total_eur).toLocaleString('de-DE')+' EUR':'')+') pa përgjigje '+age+' ditë. Kontakt: '+(st.em||''),
-          tmr.toISOString()));
-      }
-    });
-
-    // ── 3. Kosto që mungojnë (marzha e panjohur) ──
-    var byProj={};
-    offs.forEach(function(o){
-      if(!o.project_id) return;
-      if(!byProj[o.project_id]) byProj[o.project_id]={steel:false,zinc:false,transport:false,empty:[]};
-      var pk=parseFloat(o.price_kg)||0, zk=parseFloat(o.zinc_kg)||0, te=parseFloat(o.transport_eur)||0;
-      if(pk>0) byProj[o.project_id].steel=true;
-      if(zk>0) byProj[o.project_id].zinc=true;
-      if(te>0) byProj[o.project_id].transport=true;
-      if(pk===0&&zk===0&&te===0&&(parseFloat(o.total_eur)||0)===0) byProj[o.project_id].empty.push(o.supplier);
-    });
-    quotes.forEach(function(q){
-      if(!q.project_id || !q.revenue_breakdown) return;
-      var b=q.revenue_breakdown, p=byProj[q.project_id];
-      if(!p) return;
-      var miss=[];
-      if(b.zinc>0 && !p.zinc) miss.push('zinktim');
-      if(b.transport>0 && !p.transport) miss.push('transport');
-      if(miss.length){
-        stats.red++;
-        cards.push(ckCard('red','⚠', 'Marzha e panjohur: '+(pName[q.project_id]||q.doc_nr),
-          'Ke ofertuar '+miss.join(' dhe ')+' pa e ditur koston reale. Rrezik humbjeje.',
-          'Shiko','openOverview(\''+q.project_id+'\')'));
-      }
-    });
-
-    // ── 4. Furnitorë që s'kanë kthyer çmim ──
-    Object.keys(byProj).forEach(function(pid){
-      var e=byProj[pid].empty;
-      if(e.length){
-        stats.amber++;
-        cards.push(ckCard('amber','📤', e.length+' furnitorë pa përgjigje — '+(pName[pid]||''),
-          e.slice(0,3).join(', ')+(e.length>3?' +'+(e.length-3):'')+' — kërkesa dërguar, çmimi mungon.',
-          'Hap','openOverview(\''+pid+'\')'));
-      }
-    });
-
-    // ── 4b. RFQ pa përgjigje — ndjekje automatike ──
-    rfqs.forEach(function(r){
-      if(!r.sent_at) return;
-      var age=ckDaysBetween(today, new Date(r.sent_at));
-      var fu=r.followup_count||0;
-      if(age>=3 && fu===0){
-        stats.amber++;
-        var tmr2=new Date(today.getTime()+86400000); tmr2.setHours(9,30,0,0);
-        cards.push(ckCard(age>=7?'red':'amber','📧', r.supplier_name+' — '+age+' ditë pa përgjigje',
-          (r.project_name||'')+' · RFQ dërguar '+new Date(r.sent_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+' — dërgo përkujtesë.',
-          'Përkujtesë','sendFollowup(\''+r.id+'\',\''+r.supplier_email+'\',\''+(r.lang||'en')+'\',\''+encodeURIComponent(r.project_name||'')+'\',\''+r.sent_at+'\')',
-          'Përkujtesë: '+r.supplier_name,
-          'RFQ për '+(r.project_name||'')+' dërguar '+new Date(r.sent_at).toLocaleDateString('de-DE')+' — pa përgjigje. Kontakt: '+r.supplier_email,
-          tmr2.toISOString()));
-      } else if(age>=10 && fu>=1){
-        stats.red++;
-        cards.push(ckCard('red','🚫', r.supplier_name+' — hesht edhe pas përkujtesës ('+age+' ditë)',
-          (r.project_name||'')+' — merr furnitor alternativ ose telefono.',
-          'Shëno përgjigje','markRfqReplied(\''+r.id+'\')'));
-      }
-    });
-
-    // ── 4c. Afate kritike (certifikata, garanci, dorezime) ──
-    (window.PST_DEADLINES||[]).forEach(function(dl){
-      var d=ckDaysBetween(new Date(dl.date), today);
-      if(d<=dl.warn && d>=-30){
-        stats[d<=3?'red':'amber']++;
-        var dlDate=new Date(dl.date); dlDate.setHours(9,0,0,0);
-        cards.push(ckCard(d<=3?'red':'amber', dl.icon||'⚠', dl.title+(d>=0?' — '+d+' ditë':' — SKADOI para '+Math.abs(d)+' ditësh'),
-          dl.detail, dl.action||'', dl.fn||'',
-          dl.title, dl.detail, dlDate.toISOString()));
-      }
-    });
-
-    // ── 4d. Oferta pa rezultat te regjistruar (platforma s'meson pa keto) ──
-    var oldQuotes=quotes.filter(function(q){
-      if(!q.created_at) return false;
-      return ckDaysBetween(today,new Date(q.created_at))>=30;
-    });
-    if(oldQuotes.length>=2){
-      stats.amber++;
-      cards.push(ckCard('amber','🎓', oldQuotes.length+' oferta të vjetra pa rezultat',
-        'Regjistro fituar/humbur — Këshilltari i Çmimit mëson vetëm nga rezultatet e mbyllura.',
-        'Regjistro','showPage(\'oferta\');recordOutcome()'));
+    if(elA){
+      var ev=[];
+      (window.PST_DEADLINES||[]).forEach(function(dl){
+        var dd=hDays(new Date(dl.date), today);
+        if(dd>=-3&&dd<=45) ev.push({date:new Date(dl.date),t:dl.title,s:(dl.project||'')+' \u00B7 '+dl.detail,u:dd<=7});
+      });
+      quotes.forEach(function(qq){
+        if(!qq.created_at) return;
+        var ag2=hDays(today,new Date(qq.created_at));
+        if(ag2>=7) ev.push({date:new Date(today.getTime()+86400000),
+          t:'Ndjekje: '+(qq.client||'').split(' ')[0]+' \u2014 '+qq.doc_nr,
+          s:hFmt(qq.total_eur)+' \u20AC \u00B7 '+ag2+' dite pa pergjigje', u:ag2>=21});
+      });
+      ev.sort(function(a,b){return a.date-b.date;});
+      elA.innerHTML=ev.length?ev.slice(0,7).map(function(e){
+        return '<div class="ag'+(e.u?' urgent':'')+'">'
+          +'<div class="ag-when"><div class="ag-d">'+e.date.getDate()+'</div>'
+          +'<div class="ag-m">'+e.date.toLocaleDateString('de-DE',{month:'short'}).replace('.','')+'</div></div>'
+          +'<div class="ag-body"><div class="ag-t">'+e.t+'</div><div class="ag-s">'+e.s+'</div></div></div>';
+      }).join(''):'<div class="hub-none">Asnje afat ne 45 ditet e ardhshme.</div>';
     }
-
-    // ── 5. Fatura të papaguara / të vonuara ──
-    invs.forEach(function(iv){
-      if(iv.paid || !iv.due_date) return;
-      var d=ckDaysBetween(today, new Date(iv.due_date));
-      if(d>0){
-        stats.red++;
-        cards.push(ckCard('red','💰', iv.invoice_nr+' — vonesë '+d+' ditë',
-          (iv.client||'')+' · '+(iv.total_net?parseFloat(iv.total_net).toLocaleString('de-DE')+' €':'')+' — kërko pagesën.',
-          'Faturat','showPage(\'invoices\')'));
-      } else if(d>=-3){
-        stats.amber++;
-        cards.push(ckCard('amber','💰', iv.invoice_nr+' — skadon për '+Math.abs(d)+' ditë',
-          (iv.client||''),'Faturat','showPage(\'invoices\')'));
-      }
-    });
-
-    // ══ MATËSIT ══
-    var g=document.getElementById('q-gauges');
-    if(g){
-      var pipeline=quotes.filter(function(q){return !q.decided_at;})
-        .reduce(function(s,q){return s+(parseFloat(q.total_eur)||0);},0);
-      var unpaid=invs.filter(function(i){return !i.paid;})
-        .reduce(function(s,i){return s+(parseFloat(i.gross_amount)||parseFloat(i.total_price)||0);},0);
-      var paidSum=invs.filter(function(i){return i.paid;})
-        .reduce(function(s,i){return s+(parseFloat(i.gross_amount)||parseFloat(i.total_price)||0);},0);
-      var waiting=rfqs.length;
-      var fmtK=function(n){ return n>=1000 ? Math.round(n/1000)+'k' : Math.round(n); };
-      g.innerHTML=
-         ckGauge('Në zjarr','€ '+fmtK(pipeline), quotes.filter(function(q){return !q.decided_at;}).length+' oferta te klientët','#B87333','🔥', Math.min(100,pipeline/8000))
-        +ckGauge('Pritet çmimi', waiting, waiting===1?'furnitor hesht':'furnitorë heshtin','#C98F55','📮', waiting*22)
-        +ckGauge('Pa analizuar', inbox.length, 'dokumente nga Gmail','#8C7A5B','📥', Math.min(100,inbox.length*2))
-        +ckGauge('Për t\'u arkëtuar', unpaid>0?('€ '+fmtK(unpaid)):'—', unpaid>0?'fatura të hapura':'asnjë faturë e hapur', unpaid>0?'#C0392B':'#A39C92','⏳', unpaid>0?Math.min(100,unpaid/500):null)
-        +ckGauge('Arkëtuar','€ '+fmtK(paidSum), 'deri tani','#6E8B6E','✅', paidSum>0?100:0);
+    if(elI){
+      elI.innerHTML=inbox.length?inbox.map(function(r){
+        var from=(r.sender||'').replace(/<.*/,'').replace(/"/g,'').trim()||r.sender;
+        return '<div class="ib"><span style="opacity:.55">\u25AB</span><div class="ib-body">'
+          +'<div class="ib-from">'+from+'</div><div class="ib-sub">'+(r.subject||'')+'</div></div>'
+          +'<span class="pj-row-act" onclick="qAnalyzeOffer(\''+r.id+'\',\''+hEsc(r.subject)+'\',\''+hEsc(r.sender)+'\')">Analizo</span></div>';
+      }).join(''):'<div class="hub-none">Inbox-i i paster.</div>';
     }
-    var redCount=cards.filter(function(c){return c.indexOf('#C0392B')>-1;}).length;
-    var fl=document.getElementById('q-flame');
-    if(fl){ fl.textContent = redCount>0?'🔥':'⚙️'; fl.className='q-flame'+(redCount>0?' hot':''); }
-    var gr=document.getElementById('q-greet');
-    if(gr) gr.textContent=ckGreeting(redCount, cards.length);
-
-    if(!cards.length){
-      el.innerHTML='<div class="q-empty"><div class="q-empty-ico">☕</div>'
-        +'<div class="q-empty-t">Asgjë nuk digjet</div>'
-        +'<div class="q-empty-s">Të gjitha afatet nën kontroll. Kohë për të kontaktuar blerës të rinj.</div></div>';
-      return;
-    }
-    // grupo: urgjente vs te tjera
-    var reds=[], others=[];
-    cards.forEach(function(c){ (c.indexOf('#C0392B')>-1?reds:others).push(c); });
-    var h='';
-    if(reds.length) h+='<div class="q-group">Digjet tani</div>'+reds.join('');
-    if(others.length) h+='<div class="q-group">Kërkon vëmendje</div>'+others.join('');
-    el.innerHTML=h;
-  }catch(e){
-    el.innerHTML='<div style="color:#C0392B;font-size:12px">Gabim: '+e.message+'</div>';
-  }
+  }catch(e){ elP.innerHTML='<div class="hub-none" style="color:#A33">Gabim: '+e.message+'</div>'; }
 }
+var loadCockpit=loadHub;
 // ══ ANALIZË MASIVE E INBOX-IT ══
 async function qAnalyzeAll(){
   var apiKey=localStorage.getItem('pristeel_apikey')||'';
