@@ -534,6 +534,22 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div class="card"><div class="card-title">Te dhenat e ofertes</div>
 <div class="field-group fg-2"><div><label class="lbl">Nr. ofertes</label><input type="text" id="of-nr" placeholder="PST-OFF-2026-001"></div><div><label class="lbl">Data</label><input type="date" id="of-date"></div></div>
 <div id="of-saved-list" style="margin-bottom:14px"></div>
+<div class="card" style="border-left:3px solid var(--bronze);margin-bottom:14px;padding:12px 16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <span style="font-size:12px;font-weight:700;color:var(--bronze)">KËSHILLTARI I ÇMIMIT</span>
+    <span style="display:flex;gap:6px">
+      <button class="btn btn-sm" onclick="recordOutcome()">Regjistro rezultatin</button>
+      <button class="btn btn-sm btn-primary" onclick="runPriceAdvisor()">Analizo çmimin</button>
+    </span>
+  </div>
+  <div id="price-advisor" style="font-size:12px;color:var(--text3)">Fut vendin, tipin e punës dhe koston → propozimi bazohet në historikun tënd real (fituar/humbur).</div>
+</div>
+<div class="field-group fg-4" style="margin-bottom:10px">
+  <div><label class="lbl">Vendi</label><select id="pa-country"><option value="DE">🇩🇪 Gjermani</option><option value="AT">🇦🇹 Austri</option><option value="CH">🇨🇭 Zvicër</option><option value="ME">🇲🇪 Mal i Zi</option><option value="RS">🇷🇸 Serbi</option><option value="XK">🇽🇰 Kosovë</option><option value="AL">🇦🇱 Shqipëri</option></select></div>
+  <div><label class="lbl">Tipi i punës</label><select id="pa-type"><option value="stahlbau">Konstruksion çeliku</option><option value="stahlbau+verzinkt">Çelik + zinktim</option><option value="bleche">Llamarina/dysheme</option><option value="spezial">Speciale/inox</option><option value="mast">Shtylla/traversa</option></select></div>
+  <div><label class="lbl">EXC</label><select id="pa-exc"><option>EXC2</option><option>EXC3</option><option>EXC4</option></select></div>
+  <div><label class="lbl">Kostoja jote €/kg</label><input type="number" id="pa-cost" step="0.001" placeholder="2.000"></div>
+</div>
 <div class="field-group fg-2"><div><label class="lbl">Gjuha</label><select id="of-lang"><option value="de">🇩🇪 Gjermanisht (Deutsch)</option><option value="en">🇬🇧 Anglisht (English)</option><option value="sq">🇦🇱 Shqip</option><option value="sr">🇷🇸 Serbisht (Srpski, latinicë)</option></select></div><div><label class="lbl">Detajimi i pozicioneve</label><select id="of-mode"><option value="grouped">Grupuar sipas profilit (rekomanduar)</option><option value="types">Vetëm kategoritë (Träger, Bleche...)</option><option value="none">Pa tabelë — vetëm përshkrimi</option><option value="full">Të gjitha pozicionet (lista e plotë)</option></select></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="of-proj" placeholder="p.sh. Lagerhalle Hamburg"></div><div><label class="lbl">Ref. klientit</label><input type="text" id="of-ref" placeholder="ANF-2026-001"></div></div></div>
 <div class="card"><div class="card-title">Klienti</div>
@@ -2378,6 +2394,125 @@ function milestoneSelected(){
     if(d.total_eur) document.getElementById('iv-contract-value').value=parseFloat(d.total_eur);
     try{calcAdvancePreview();}catch(e){}
   }
+}
+// ══════════════════════════════════════════════════════════
+// KËSHILLTARI I ÇMIMIT — mëson nga historiku real (fituar/humbur)
+// ══════════════════════════════════════════════════════════
+function paFmt(n,d){ return (n||0).toLocaleString('de-DE',{minimumFractionDigits:d||2,maximumFractionDigits:d||2}); }
+function paBadge(txt,col){ return '<span style="background:'+col+';color:#fff;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600">'+txt+'</span>'; }
+async function runPriceAdvisor(){
+  var el=document.getElementById('price-advisor');
+  var country=(document.getElementById('pa-country')||{value:'DE'}).value;
+  var wtype=(document.getElementById('pa-type')||{value:'stahlbau'}).value;
+  var exc=(document.getElementById('pa-exc')||{value:'EXC2'}).value;
+  var cost=parseFloat((document.getElementById('pa-cost')||{value:0}).value)||0;
+  var kg=parseFloat((document.getElementById('of-kg')||{value:0}).value)||0;
+  el.innerHTML='<div style="color:var(--text3)">Duke analizuar historikun...</div>';
+  try{
+    var rows=await supaFetch('price_history?country=eq.'+country+'&order=quoted_at.desc&limit=50');
+    if(!rows||!rows.length){ el.innerHTML='<div style="color:var(--text3)">Ende s\u2019ka histori për '+country+'. Regjistro ofertat e mbyllura që platforma të mësojë.</div>'; return; }
+
+    // filtro sipas tipit (afersisht) — perndryshe merr te gjitha te vendit
+    var same=rows.filter(function(r){ return (r.work_type||'').indexOf(wtype.split('+')[0])>-1; });
+    var pool=same.length>=2?same:rows;
+
+    var won=pool.filter(function(r){return r.outcome==='fituar';});
+    var lost=pool.filter(function(r){return r.outcome==='humbur' && r.loss_reason==='cmimi';});
+    var pend=pool.filter(function(r){return r.outcome==='pritje';});
+
+    var maxWon = won.length ? Math.max.apply(null, won.map(function(r){return parseFloat(r.our_price_kg)||0;})) : null;
+    var minLost = lost.length ? Math.min.apply(null, lost.map(function(r){return parseFloat(r.our_price_kg)||0;})) : null;
+
+    // ── PROPOZIMI ──
+    var lo, hi, basis;
+    if(maxWon!==null && minLost!==null){
+      // kemi te dy kufijte: dritarja e fitimit
+      lo = maxWon; hi = minLost*0.94; // rri 6% nen cmimin qe humbi
+      basis='Dritarja mes çmimit më të lartë të fituar ('+paFmt(maxWon,3)+') dhe çmimit që humbi ('+paFmt(minLost,3)+').';
+    } else if(minLost!==null){
+      lo = minLost*0.82; hi = minLost*0.92;
+      basis='Bazuar në humbjen: rri 8–18% nën '+paFmt(minLost,3)+' €/kg.';
+    } else if(maxWon!==null){
+      lo = maxWon; hi = maxWon*1.15;
+      basis='Bazuar në fitoren me '+paFmt(maxWon,3)+' €/kg (mund të provosh pak më lart).';
+    } else {
+      var avg=pool.reduce(function(s,r){return s+(parseFloat(r.our_price_kg)||0);},0)/pool.length;
+      lo=avg*0.92; hi=avg*1.05;
+      basis='Ende pa rezultate të mbyllura — mesatarja e ofertave: '+paFmt(avg,3)+' €/kg.';
+    }
+    if(cost>0 && lo<cost*1.06) lo=cost*1.06; // asnjehere nen 6% marzhe
+
+    var mid=(lo+hi)/2;
+    var mLo = cost>0 ? ((lo-cost)/lo*100) : null;
+    var mHi = cost>0 ? ((hi-cost)/hi*100) : null;
+    var mMid = cost>0 ? ((mid-cost)/mid*100) : null;
+
+    var h='<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">'
+      +'<div style="flex:1;min-width:200px;background:var(--bg2);border-radius:8px;padding:10px 14px">'
+        +'<div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Propozimi</div>'
+        +'<div style="font-size:19px;font-weight:700;color:var(--bronze);margin-top:2px">'+paFmt(lo,2)+' – '+paFmt(hi,2)+' €/kg</div>'
+        +(mMid!==null?'<div style="font-size:11px;color:var(--text2);margin-top:2px">Marzha: '+paFmt(mLo,1)+'% – '+paFmt(mHi,1)+'%'+(kg>0?' · fitimi '+paFmt((mid-cost)*kg,0)+' €':'')+'</div>':'')
+      +'</div>';
+    if(kg>0 && cost>0){
+      h+='<div style="flex:1;min-width:180px;background:var(--bg2);border-radius:8px;padding:10px 14px">'
+        +'<div style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase">Në mesin e dritares</div>'
+        +'<div style="font-size:19px;font-weight:700;margin-top:2px">'+paFmt(mid*kg,0)+' €</div>'
+        +'<div style="font-size:11px;color:var(--text2);margin-top:2px">'+paFmt(mid,3)+' €/kg · '+kg.toLocaleString('de-DE',{maximumFractionDigits:0})+' kg</div>'
+      +'</div>';
+    }
+    h+='</div>';
+    h+='<div style="font-size:11.5px;color:var(--text2);margin-bottom:8px">'+basis+'</div>';
+
+    // ── DËSHMITË ──
+    h+='<div style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">Dëshmitë nga historiku</div>';
+    var ev=[];
+    won.forEach(function(r){ ev.push({p:parseFloat(r.our_price_kg),b:paBadge('FITUAR','#4F8A5B'),n:r.project_name,m:r.margin_pct}); });
+    lost.forEach(function(r){ ev.push({p:parseFloat(r.our_price_kg),b:paBadge('HUMBUR — ÇMIMI','#C0392B'),n:r.project_name,m:r.margin_pct}); });
+    pend.forEach(function(r){ ev.push({p:parseFloat(r.our_price_kg),b:paBadge('PRITJE','#A39C92'),n:r.project_name,m:r.margin_pct}); });
+    ev.sort(function(a,b){return a.p-b.p;});
+    h+=ev.map(function(e){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;background:var(--bg-card);border:1px solid var(--border);margin-bottom:3px">'
+        +'<div style="min-width:0;font-size:11.5px">'+e.b+' <span style="margin-left:6px">'+e.n+'</span></div>'
+        +'<div style="flex-shrink:0;font-weight:700;font-size:12px">'+paFmt(e.p,3)+' €/kg'+(e.m?' <span style="font-weight:400;color:var(--text3)">('+paFmt(e.m,1)+'%)</span>':'')+'</div>'
+      +'</div>';
+    }).join('');
+
+    // ── ALARMET ──
+    if(cost>0){
+      var curPrice=parseFloat((document.getElementById('of-pr')||{value:0}).value)||0;
+      var warn=[];
+      if(curPrice>0){
+        var curM=(curPrice-cost)/curPrice*100;
+        if(minLost!==null && curPrice>=minLost) warn.push('⚠ Çmimi yt aktual ('+paFmt(curPrice,3)+') është në nivelin që HUMBI te '+lost[0].project_name+'. Rrezik i lartë humbjeje.');
+        else if(curPrice>hi) warn.push('⚠ Çmimi yt ('+paFmt(curPrice,3)+') është mbi dritaren e propozuar — rrezik konkurrues.');
+        if(curM<6) warn.push('⚠ Marzha '+paFmt(curM,1)+'% — nën pragun e sigurt 6%. Një gabim peshimi ose kurs valutor të çon në humbje.');
+      }
+      if(warn.length) h+='<div style="margin-top:8px;font-size:11.5px;color:#C0392B;line-height:1.6">'+warn.join('<br>')+'</div>';
+    }
+    el.innerHTML=h;
+  }catch(e){ el.innerHTML='<div style="color:#C0392B">Gabim: '+e.message+'</div>'; }
+}
+// Regjistro rezultatin e nje oferte (fituar/humbur) — platforma meson prej ketij hapi
+function recordOutcome(){
+  var nr=prompt('Numri i ofertës (p.sh. PST-QUO-2026-011):'); if(!nr) return;
+  var oc=prompt('Rezultati: fituar / humbur / pritje','fituar'); if(!oc) return;
+  var reason=null;
+  if(oc==='humbur') reason=prompt('Arsyeja: cmimi / afati / teknik / tjeter','cmimi');
+  var compPrice=null;
+  if(oc==='humbur'&&reason==='cmimi'){
+    var cp=prompt('Nëse e di çmimin e konkurrentit (€/kg), shkruaje (ose lëre bosh):','');
+    if(cp) compPrice=parseFloat(cp);
+  }
+  supaFetch('price_history?project_name=ilike.*'+encodeURIComponent(nr.replace(/PST-QUO-\d{4}-/,''))+'*','GET').then(function(){
+    return supaFetch('documents_registry?doc_nr=eq.'+encodeURIComponent(nr),'GET');
+  }).then(function(rows){
+    if(!rows||!rows.length){alert('Nuk u gjet oferta '+nr);return;}
+    var q=rows[0];
+    return supaFetch('price_history?project_name=eq.'+encodeURIComponent(q.project||''),'PATCH',{
+      outcome:oc, loss_reason:reason, competitor_price_kg:compPrice, decided_at:new Date().toISOString().slice(0,10)
+    });
+  }).then(function(){ alert('U regjistrua. Këshilltari do ta përdorë këtë në propozimet e ardhshme.'); })
+   .catch(function(e){alert('Gabim: '+e.message);});
 }
 // ── RUAJTJA / RIKTHIMI I PLOTË I OFERTËS (të gjitha fushat + pozicionet) ──
 function collectOfferFormState(){
@@ -4316,6 +4451,18 @@ async function loadCockpit(){
           dl.detail, dl.action||'', dl.fn||''));
       }
     });
+
+    // ── 4d. Oferta pa rezultat te regjistruar (platforma s'meson pa keto) ──
+    var oldQuotes=quotes.filter(function(q){
+      if(!q.created_at) return false;
+      return ckDaysBetween(today,new Date(q.created_at))>=30;
+    });
+    if(oldQuotes.length>=2){
+      stats.amber++;
+      cards.push(ckCard('amber','🎓', oldQuotes.length+' oferta të vjetra pa rezultat',
+        'Regjistro fituar/humbur — Këshilltari i Çmimit mëson vetëm nga rezultatet e mbyllura.',
+        'Regjistro','showPage(\'oferta\');recordOutcome()'));
+    }
 
     // ── 5. Fatura të papaguara / të vonuara ──
     invs.forEach(function(iv){
