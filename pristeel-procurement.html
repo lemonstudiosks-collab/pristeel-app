@@ -55,6 +55,27 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 .hub-load,.hub-none{font-size:12px;color:var(--text3);padding:14px 2px}
 .hub-none{font-style:italic}
 
+/* Detyrat */
+.tk{display:flex;align-items:flex-start;gap:11px;padding:11px 12px;border:1px solid var(--border);border-radius:9px;
+    margin-bottom:7px;background:#fff;box-shadow:var(--sh-1);transition:all .16s ease}
+.tk:hover{box-shadow:var(--sh-2);border-color:var(--border2)}
+.tk.urgent{border-left:3px solid var(--red-text)}
+.tk.soon{border-left:3px solid var(--bronze)}
+.tk-box{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:4px;flex-shrink:0;margin-top:1px;
+        cursor:pointer;transition:all .15s ease;display:flex;align-items:center;justify-content:center}
+.tk-box:hover{border-color:var(--text);background:var(--bg2)}
+.tk-body{flex:1;min-width:0}
+.tk-t{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.35}
+.tk-s{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.45}
+.tk-p{font-size:10.5px;color:var(--text3);margin-top:3px}
+.tk-when{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.tk-d{font-size:11px;font-weight:650;white-space:nowrap}
+.tk-act{font-size:10.5px;color:var(--text3);cursor:pointer;padding:2px 7px;border-radius:5px;border:1px solid transparent;transition:all .15s}
+.tk:hover .tk-act{color:var(--bronze);border-color:var(--border2)}
+.tk-act:hover{background:var(--bronze);color:#fff!important;border-color:var(--bronze)}
+.tk-done{opacity:.45}
+.tk-done .tk-t{text-decoration:line-through}
+
 /* Karta e projektit */
 .pj{background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:9px;overflow:hidden;
     box-shadow:var(--sh-1);transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease}
@@ -127,7 +148,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 .nav-item.active{background:var(--bg2);color:var(--text);font-weight:650;border-left-color:var(--text)}
 .page-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;background:var(--page-accent,var(--bronze));vertical-align:middle}
 .nav-item svg{stroke:var(--text3)}
-.nav-item.active svg{stroke:#ffffff}.nav-item:hover svg{stroke:#FFFFFF}
+.nav-item.active svg{stroke:var(--text)}.nav-item:hover svg{stroke:var(--text)}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .nav-section{color:var(--text3) !important;font-size:9px;font-weight:600;letter-spacing:1.5px;padding:20px 20px 6px;text-transform:uppercase}
 .sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);letter-spacing:.3px}.main{flex:1;overflow-y:auto}
@@ -252,8 +273,16 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="logo-sub">Procurement Platform v1.0</div>
   </div>
   <div class="sidebar-nav">
+    <div style="padding:14px 16px 6px">
+      <button class="btn btn-primary" style="width:100%;justify-content:center;gap:6px" onclick="newProject()">+ Projekt i ri</button>
+    </div>
+    <div class="nav-section">Puna</div>
+    <div class="nav-item active" onclick="showPage('qendra')">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Detyrat
+    </div>
     <div class="nav-section">Procesi</div>
-    <div class="nav-item active" onclick="showPage('import')">
+    <div class="nav-item" onclick="showPage('import')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Import dokument
     </div>
@@ -290,10 +319,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Financat
     </div>
-    <div class="nav-item" onclick="showPage('qendra')">
-      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v5"/><circle cx="17" cy="15" r="2"/></svg>
-      Qendra
-    </div>
     <div class="nav-section">Cilësimet</div>
     <div class="nav-item" onclick="showPage('settings')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -321,7 +346,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
 <div class="content">
 
-<div id="page-import" class="page active">
+<div id="page-import" class="page">
 
   <div class="card">
     <div class="card-title">Informacioni i projektit</div>
@@ -901,7 +926,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   </div>
 </div>
 
-<div id="page-qendra" class="page">
+<div id="page-qendra" class="page active">
   <!-- Rreshti i sipërm: fokusi i sotëm -->
   <div class="hub-top">
     <div class="hub-today">
@@ -913,9 +938,15 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   </div>
 
   <div class="hub-grid">
-    <!-- KOLONA E MAJTË: projektet -->
+    <!-- KOLONA E MAJTË: detyrat + projektet -->
     <div>
       <div class="hub-sec">
+        <span>Detyrat</span>
+        <button class="btn btn-sm" onclick="addTask()">+ Detyrë</button>
+      </div>
+      <div id="hub-tasks"><div class="hub-load">Duke ngarkuar…</div></div>
+
+      <div class="hub-sec" style="margin-top:24px">
         <span>Projektet aktive</span>
         <button class="btn btn-sm" onclick="loadHub()">Rifresko</button>
       </div>
@@ -1020,7 +1051,7 @@ const pageMeta={
   oferta:{title:'Oferta Komerciale',sub:'Gjenero ofertë profesionale'},
   invoices:{title:'Faturat',sub:'Faturat tona dhe faturat e furnitorëve'},
   finance:{title:'Financat',sub:'Garanci bankare, kosto operative dhe llogaritja e tatimeve'},
-  qendra:{title:'Qendra',sub:'Gmail, Kalendari dhe HubSpot — të gjitha në një vend'},
+  qendra:{title:'Detyrat',sub:'Çfarë duhet bërë — projektet, afatet dhe emailet'},
   settings:{title:'Cilësimet',sub:'API Key, profili dhe furnitorët e paracaktuar'}
 };
 
@@ -1034,7 +1065,7 @@ function showPage(p){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   const items=document.querySelectorAll('.nav-item');
-  const order=['import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','finance','qendra','settings'];
+  const order=['qendra','import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','finance','settings'];
   const idx=order.indexOf(p);
   if(items[idx])items[idx].classList.add('active');
   document.documentElement.style.setProperty('--page-accent',PAGE_COLORS[p]||PAGE_COLORS.import);
@@ -4445,7 +4476,54 @@ function addToCalendar(t,d,iso){ window.open(gcalLink(t,d,iso,30),'_blank'); }
 
 var PJ_STEPS=[{k:'bom',l:'BOM'},{k:'rfq',l:'RFQ'},{k:'kosto',l:'Kosto'},{k:'oferte',l:'Oferte'},{k:'pagese',l:'Pagese'}];
 
+async function loadTasks(){
+  var el=document.getElementById('hub-tasks'); if(!el) return;
+  var today=new Date(); today.setHours(0,0,0,0);
+  try{
+    var rows=await supaFetch('tasks?status=eq.hapur&order=due_date.asc&limit=30');
+    var projs=await supaFetch('projects?select=id,name&limit=50').catch(function(){return[];});
+    var pN={}; projs.forEach(function(p){ pN[p.id]=p.name; });
+    if(!rows||!rows.length){ el.innerHTML='<div class="hub-none">Asnjë detyrë e hapur. Shto një me "+ Detyrë".</div>'; return; }
+    el.innerHTML=rows.map(function(t){
+      var d=hDays(new Date(t.due_date), today);
+      var cls = d<=2?'urgent':(d<=7?'soon':'');
+      var col = d<0?'var(--red-text)':(d<=2?'var(--red-text)':(d<=7?'var(--bronze)':'var(--text3)'));
+      var when = d<0?('vonuar '+Math.abs(d)+' d'):(d===0?'SOT':(d===1?'nesër':d+' ditë'));
+      var mail = t.contact_email ? '<span class="tk-act" onclick="event.stopPropagation();window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(t.contact_email)+'&su='+encodeURIComponent(t.title)+'\',\'_blank\')">Email →</span>' : '';
+      return '<div class="tk '+cls+'" id="tk-'+t.id+'">'
+        +'<div class="tk-box" onclick="doneTask(\''+t.id+'\')" title="Shëno si të kryer"></div>'
+        +'<div class="tk-body">'
+          +'<div class="tk-t">'+t.title+'</div>'
+          +(t.detail?'<div class="tk-s">'+t.detail+'</div>':'')
+          +(t.project_id&&pN[t.project_id]?'<div class="tk-p">'+pN[t.project_id]+'</div>':'')
+        +'</div>'
+        +'<div class="tk-when">'
+          +'<div class="tk-d" style="color:'+col+'">'+when+'</div>'
+          +'<div style="font-size:10px;color:var(--text3)">'+new Date(t.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+'</div>'
+          +mail
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }catch(e){ el.innerHTML='<div class="hub-none">Tabela "tasks" mungon — ekzekuto SQL-në.</div>'; }
+}
+function doneTask(id){
+  var el=document.getElementById('tk-'+id);
+  if(el) el.classList.add('tk-done');
+  supaFetch('tasks?id=eq.'+id,'PATCH',{status:'kryer',done_at:new Date().toISOString()})
+    .then(function(){ setTimeout(loadTasks,350); }).catch(function(){});
+}
+function addTask(){
+  var t=prompt('Detyra:'); if(!t) return;
+  var dd=prompt('Afati (VVVV-MM-DD):', new Date(Date.now()+86400000).toISOString().slice(0,10)); if(!dd) return;
+  var det=prompt('Detaje (ops.):','')||null;
+  var em=prompt('Email kontakti (ops.):','')||null;
+  supaFetch('tasks','POST',{title:t, due_date:dd, detail:det, contact_email:em,
+    project_id:(typeof _curProjId!=='undefined'?_curProjId:null),
+    priority:'normal', source:'manual'})
+    .then(loadTasks).catch(function(e){alert('Gabim: '+e.message);});
+}
 async function loadHub(){
+  loadTasks();
   var elP=document.getElementById('hub-projects'), elA=document.getElementById('hub-agenda'), elI=document.getElementById('hub-inbox');
   if(!elP) return;
   var today=new Date(); today.setHours(0,0,0,0);
@@ -4460,10 +4538,11 @@ async function loadHub(){
       supaFetch('invoices_out?limit=100').catch(function(){return[];}),
       supaFetch('rfq_log?limit=120').catch(function(){return[];}),
       supaFetch('project_docs?select=id,project_id,doc_type,title,status&limit=200').catch(function(){return[];}),
-      supaFetch('offers_inbox?processed=eq.false&select=id,sender,subject,received_at&order=received_at.desc&limit=8').catch(function(){return[];})
+      supaFetch('offers_inbox?processed=eq.false&select=id,sender,subject,received_at&order=received_at.desc&limit=8').catch(function(){return[];}),
+      supaFetch('bank_guarantees?limit=30').catch(function(){return[];})
     ]);
     var projs=res[0]||[], quotes=res[1]||[], offs=res[2]||[], boms=res[3]||[],
-        invs=res[4]||[], rfqs=res[5]||[], docs=res[6]||[], inbox=res[7]||[];
+        invs=res[4]||[], rfqs=res[5]||[], docs=res[6]||[], inbox=res[7]||[], gars=res[8]||[];
 
     var bomKg={}, bomN={};
     boms.forEach(function(b){ if(!b.project_id) return;
@@ -4479,7 +4558,12 @@ async function loadHub(){
       var silent=so.filter(function(x){return (parseFloat(x.total_eur)||0)===0&&(parseFloat(x.price_kg)||0)===0;});
       var pr=rfqs.filter(function(x){return x.project_id===p.id;});
       var pn=(p.name||'').toLowerCase().slice(0,10);
-      var pinv=invs.filter(function(x){return (x.project||'').toLowerCase().indexOf(pn)>-1;});
+      var pkw=(p.name||'').toLowerCase().split(/[\s\-—]+/).filter(function(w){return w.length>4;});
+      var pinv=invs.filter(function(x){
+        var pj=(x.project||'').toLowerCase();
+        if(pj.indexOf(pn)>-1) return true;
+        return pkw.some(function(w){ return pj.indexOf(w)>-1; });
+      });
       var pdocs=docs.filter(function(x){return x.project_id===p.id;});
       var paid=pinv.filter(function(x){return x.paid;});
       var kg=bomKg[p.id]||0;
@@ -4532,6 +4616,12 @@ async function loadHub(){
       });
       pdocs.filter(function(d){return d.doc_type==='kontrate'||d.doc_type==='nenkontrate';}).forEach(function(d){
         rows.push({i:'\u25A0',t:'<b>'+d.title+'</b> \u00B7 '+(d.status||'')});
+      });
+      gars.filter(function(g){ return g.project_id===p.id || (g.project||'').toLowerCase().indexOf(pn)>-1; }).forEach(function(g){
+        var gd=g.expiry_date?hDays(new Date(g.expiry_date), today):null;
+        rows.push({i:'\u25C7', w:gd!==null&&gd<=30,
+          t:'<b>Garanci bankare</b> \u2014 '+hFmt(g.amount_guaranteed)+' \u20AC \u00B7 '+(g.bank_name||'')
+            +(g.expiry_date?' \u00B7 skadon '+new Date(g.expiry_date).toLocaleDateString('de-DE')+(gd!==null?' ('+gd+' dite)':''):'')});
       });
       (window.PST_DEADLINES||[]).forEach(function(dl){
         if(!dl.project||(p.name||'').toUpperCase().indexOf(dl.project.toUpperCase())===-1) return;
