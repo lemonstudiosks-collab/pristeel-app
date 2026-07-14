@@ -53,6 +53,79 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 @media(max-width:1100px){.hub-grid{grid-template-columns:1fr}}
 .hub-sec{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text3);font-weight:700;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border)}
 .hub-load,.hub-none{font-size:12px;color:var(--text3);padding:14px 2px}
+/* ══ KARTAT E QENDRES ══ */
+.hcards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:1250px){.hcards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.hcards{grid-template-columns:1fr}}
+.hcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 16px 14px;cursor:pointer;transition:box-shadow .16s,transform .16s,border-color .16s;display:flex;flex-direction:column;min-height:128px;position:relative}
+.hcard:hover{box-shadow:0 6px 18px rgba(0,0,0,.07);transform:translateY(-2px);border-color:#d4d4d4}
+.hcard.risk{border-color:#e5b4b4}
+.hcard.risk:hover{border-color:#d98080;box-shadow:0 6px 18px rgba(180,40,40,.10)}
+.hcard.risk .hc-when{color:var(--red-text)}
+.hcard.soon .hc-when{color:var(--bronze)}
+.hc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.hc-when{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);white-space:nowrap}
+.hc-date{font-size:10px;color:var(--text3);margin-top:2px;text-align:right}
+.hc-t{font-size:14px;font-weight:650;color:var(--text);line-height:1.3;letter-spacing:-.2px}
+.hc-s{font-size:11.5px;color:var(--text2);line-height:1.45;margin-top:6px;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;padding-top:9px;border-top:1px solid var(--border)}
+.hc-p{font-size:10px;color:var(--text3);letter-spacing:.4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hc-btn{font-size:10.5px;font-weight:600;color:var(--bronze);cursor:pointer;white-space:nowrap;padding:2px 0}
+.hc-btn:hover{text-decoration:underline}
+.hc-done{width:16px;height:16px;border:1.5px solid #cfcfcf;border-radius:4px;cursor:pointer;flex-shrink:0;transition:.14s}
+.hc-done:hover{border-color:var(--bronze);background:rgba(166,95,46,.07)}
+.hcard.gone{opacity:.25;transform:scale(.97)}
+/* projekt-kartat */
+.pcard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:box-shadow .16s,transform .16s,border-color .16s;min-height:128px;display:flex;flex-direction:column}
+.pcard:hover{box-shadow:0 6px 18px rgba(0,0,0,.07);transform:translateY(-2px);border-color:#d4d4d4}
+.pcard.new{border-style:dashed;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-weight:600}
+.pcard.new:hover{border-color:var(--bronze);color:var(--bronze);border-style:dashed}
+.pc-c{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);font-weight:700;margin-bottom:5px}
+.pc-n{font-size:14px;font-weight:650;color:var(--text);line-height:1.3;letter-spacing:-.2px}
+.pc-m{font-size:11px;color:var(--text2);margin-top:5px;flex:1}
+.pc-steps{display:flex;gap:5px;margin-top:11px;padding-top:10px;border-top:1px solid var(--border)}
+.pc-st{flex:1;text-align:center;font-size:9px;letter-spacing:.5px;text-transform:uppercase;font-weight:700;color:#d0d0d0;padding:4px 0;border-radius:4px;background:#f7f7f7}
+.pc-st.done{color:#8a8a8a;background:#efefef}
+.pc-st.now{color:#fff;background:var(--bronze)}
+/* navigim-kartat */
+.ncards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1250px){.ncards{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.ncards{grid-template-columns:repeat(2,1fr)}}
+.ncard{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 15px;cursor:pointer;transition:box-shadow .16s,transform .16s,border-color .16s;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ncard:hover{box-shadow:0 5px 14px rgba(0,0,0,.06);transform:translateY(-2px);border-color:var(--bronze)}
+.ncard:hover .nc-t{color:var(--bronze)}
+.nc-t{font-size:13px;font-weight:650;color:var(--text);transition:.14s;letter-spacing:-.1px}
+.nc-s{font-size:10.5px;color:var(--text3);margin-top:2px}
+.nc-b{font-size:11px;font-weight:700;color:var(--bronze);background:rgba(166,95,46,.09);padding:3px 8px;border-radius:20px;white-space:nowrap}
+/* ══ KONTAKTET ══ */
+.cflt{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.cf{padding:6px 13px;border:1px solid var(--border);border-radius:20px;font-size:11.5px;font-weight:600;color:var(--text2);cursor:pointer;background:#fff;transition:.14s;white-space:nowrap}
+.cf:hover{border-color:var(--bronze);color:var(--bronze)}
+.cf.on{background:var(--bronze);color:#fff;border-color:var(--bronze)}
+#c-search{flex:1;min-width:180px;padding:7px 12px;border:1px solid var(--border);border-radius:20px;font-size:12.5px;font-family:inherit}
+#c-search:focus{outline:none;border-color:var(--bronze)}
+.ctab{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ctab th{text-align:left;padding:10px 13px;font-size:9.5px;letter-spacing:1.1px;text-transform:uppercase;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border);background:#fbfbfb;white-space:nowrap}
+.ctab td{padding:11px 13px;border-bottom:1px solid #f1f1f1;vertical-align:top}
+.ctab tbody tr{cursor:pointer;transition:background .12s}
+.ctab tbody tr:hover{background:#fafafa}
+.ctab tbody tr:last-child td{border-bottom:none}
+.c-nm{font-weight:650;color:var(--text)}
+.c-co{font-size:11px;color:var(--text3);margin-top:2px}
+.c-em{color:var(--bronze);font-size:11.5px}
+.c-miss{color:var(--red-text);font-size:11px;font-style:italic}
+.c-tag{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:#f2f2f2;color:#777;margin-right:4px;margin-bottom:3px}
+.c-tag.mill{background:#eef4f8;color:#3d6b8a}
+.c-tag.fab{background:#f5f0ea;color:#8a6b3d}
+.c-tag.trd{background:#f0f2ee;color:#5f7050}
+.c-tag.gal{background:#f2eef5;color:#6b4d8a}
+.c-tag.cli{background:#fdf1e8;color:var(--bronze)}
+.c-imp{display:flex;gap:2px}
+.c-dot{width:6px;height:6px;border-radius:50%;background:#e2e2e2}
+.c-dot.f{background:var(--bronze)}
+.c-conf{font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;font-weight:700}
+.c-conf.v{color:#4a8a5c}.c-conf.p{color:var(--bronze)}.c-conf.u{color:#bbb}
+
 .hub-none{font-style:italic}
 
 /* Detyrat */
@@ -280,6 +353,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="nav-item active" onclick="showPage('qendra')">
       <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       Detyrat
+    </div>
+    <div class="nav-item" onclick="showPage('contacts')">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Kontaktet
     </div>
     <div class="nav-section">Procesi</div>
     <div class="nav-item" onclick="showPage('import')">
@@ -927,7 +1004,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div id="page-qendra" class="page active">
-  <!-- Rreshti i sipërm: fokusi i sotëm -->
   <div class="hub-top">
     <div class="hub-today">
       <div class="hub-eyebrow">Sot · <span id="hub-date"></span></div>
@@ -937,35 +1013,33 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="hub-stats" id="hub-stats"></div>
   </div>
 
-  <div class="hub-grid">
-    <!-- KOLONA E MAJTË: detyrat + projektet -->
-    <div>
-      <div class="hub-sec">
-        <span>Detyrat</span>
-        <button class="btn btn-sm" onclick="addTask()">+ Detyrë</button>
-      </div>
-      <div id="hub-tasks"><div class="hub-load">Duke ngarkuar…</div></div>
-
-      <div class="hub-sec" style="margin-top:24px">
-        <span>Projektet aktive</span>
-        <button class="btn btn-sm" onclick="loadHub()">Rifresko</button>
-      </div>
-      <div id="hub-projects"><div class="hub-load">Duke ngarkuar projektet…</div></div>
-    </div>
-
-    <!-- KOLONA E DJATHTË: agjenda + inbox -->
-    <div>
-      <div class="hub-sec"><span>Kalendari</span>
-        <a class="btn btn-sm" href="https://calendar.google.com/calendar/r" target="_blank">Hap</a>
-      </div>
-      <div id="hub-agenda"><div class="hub-load">Duke lexuar kalendarin…</div></div>
-
-      <div class="hub-sec" style="margin-top:22px"><span>Nga Gmail</span>
-        <button class="btn btn-sm" id="q-analyze-all" onclick="qAnalyzeAll()">Analizo të gjitha</button>
-      </div>
-      <div id="hub-inbox"><div class="hub-load">Duke lexuar…</div></div>
-    </div>
+  <div class="hub-sec"><span>Detyrat</span>
+    <button class="btn btn-sm" onclick="addTask()">+ Detyrë</button>
   </div>
+  <div id="hub-tasks" class="hcards"><div class="hub-load">Duke ngarkuar…</div></div>
+
+  <div class="hub-sec" style="margin-top:26px"><span>Projektet aktive</span>
+    <button class="btn btn-sm" onclick="loadHub()">Rifresko</button>
+  </div>
+  <div id="hub-projects" class="hcards"><div class="hub-load">Duke ngarkuar…</div></div>
+
+  <div class="hub-sec" style="margin-top:26px"><span>Shko te</span></div>
+  <div class="ncards" id="hub-nav"></div>
+</div>
+
+<div id="page-contacts" class="page">
+  <div class="cflt">
+    <input type="text" id="c-search" placeholder="Kërko emër, kompani, email…" oninput="renderContacts()">
+    <div class="cf on" data-f="all" onclick="cFilter(this)">Të gjithë</div>
+    <div class="cf" data-f="steel_mill" onclick="cFilter(this)">Fabrika</div>
+    <div class="cf" data-f="fabricator" onclick="cFilter(this)">Prodhues</div>
+    <div class="cf" data-f="trader" onclick="cFilter(this)">Tregtarë</div>
+    <div class="cf" data-f="galvanizer" onclick="cFilter(this)">Zinktim</div>
+    <div class="cf" data-f="client" onclick="cFilter(this)">Klientë</div>
+    <div class="cf" data-f="mro" onclick="cFilter(this)">MRO</div>
+    <button class="btn btn-sm btn-primary" onclick="addContact()" style="margin-left:auto">+ Kontakt</button>
+  </div>
+  <div id="c-body"><div class="hub-load">Duke ngarkuar kontaktet…</div></div>
 </div>
 
 <div id="page-settings" class="page">
@@ -1052,20 +1126,21 @@ const pageMeta={
   invoices:{title:'Faturat',sub:'Faturat tona dhe faturat e furnitorëve'},
   finance:{title:'Financat',sub:'Garanci bankare, kosto operative dhe llogaritja e tatimeve'},
   qendra:{title:'Detyrat',sub:'Çfarë duhet bërë — projektet, afatet dhe emailet'},
+  contacts:{title:'Kontaktet',sub:'Partnerët, furnitorët dhe klientët — të gjithë në një vend'},
   settings:{title:'Cilësimet',sub:'API Key, profili dhe furnitorët e paracaktuar'}
 };
 
 var PAGE_COLORS={
   import:'#A65F2E',bom:'#A65F2E',rfq:'#A65F2E',offers:'#A65F2E',ranking:'#A65F2E',
   kalkulator:'#A65F2E',oferta:'#A65F2E',invoices:'#A65F2E',finance:'#A65F2E',
-  qendra:'#A65F2E',settings:'#A65F2E'
+  qendra:'#A65F2E',contacts:'#A65F2E',settings:'#A65F2E'
 };
 function showPage(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
   const items=document.querySelectorAll('.nav-item');
-  const order=['qendra','import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','finance','settings'];
+  const order=['qendra','contacts','import','bom','rfq','offers','ranking','kalkulator','oferta','invoices','finance','settings'];
   const idx=order.indexOf(p);
   if(items[idx])items[idx].classList.add('active');
   document.documentElement.style.setProperty('--page-accent',PAGE_COLORS[p]||PAGE_COLORS.import);
@@ -1080,6 +1155,7 @@ function showPage(p){
   if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadContracts();loadProjectOptionsForInvoices();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
   if(p==='qendra'){loadQInbox();loadQAgenda();loadQDeals();}
+  if(p==='contacts')loadContacts();
   if(p==='settings')renderSettings();
 }
 
@@ -4480,32 +4556,134 @@ async function loadTasks(){
   var el=document.getElementById('hub-tasks'); if(!el) return;
   var today=new Date(); today.setHours(0,0,0,0);
   try{
-    var rows=await supaFetch('tasks?status=eq.hapur&order=due_date.asc&limit=30');
-    var projs=await supaFetch('projects?select=id,name&limit=50').catch(function(){return[];});
+    var rows=await supaFetch('tasks?status=eq.hapur&order=due_date.asc&limit=12');
+    var projs=await supaFetch('projects?select=id,name&limit=60').catch(function(){return[];});
     var pN={}; projs.forEach(function(p){ pN[p.id]=p.name; });
-    if(!rows||!rows.length){ el.innerHTML='<div class="hub-none">Asnjë detyrë e hapur. Shto një me "+ Detyrë".</div>'; return; }
+    if(!rows||!rows.length){ el.innerHTML='<div class="hub-none">Asnjë detyrë e hapur.</div>'; return; }
     el.innerHTML=rows.map(function(t){
       var d=hDays(new Date(t.due_date), today);
-      var cls = d<=2?'urgent':(d<=7?'soon':'');
-      var col = d<0?'var(--red-text)':(d<=2?'var(--red-text)':(d<=7?'var(--bronze)':'var(--text3)'));
-      var when = d<0?('vonuar '+Math.abs(d)+' d'):(d===0?'SOT':(d===1?'nesër':d+' ditë'));
-      var mail = t.contact_email ? '<span class="tk-act" onclick="event.stopPropagation();window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(t.contact_email)+'&su='+encodeURIComponent(t.title)+'\',\'_blank\')">Email →</span>' : '';
-      return '<div class="tk '+cls+'" id="tk-'+t.id+'">'
-        +'<div class="tk-box" onclick="doneTask(\''+t.id+'\')" title="Shëno si të kryer"></div>'
-        +'<div class="tk-body">'
-          +'<div class="tk-t">'+t.title+'</div>'
-          +(t.detail?'<div class="tk-s">'+t.detail+'</div>':'')
-          +(t.project_id&&pN[t.project_id]?'<div class="tk-p">'+pN[t.project_id]+'</div>':'')
+      var cls = (d<=2)?'risk':((d<=7)?'soon':'');
+      var when = d<0?('VONUAR '+Math.abs(d)+'D'):(d===0?'SOT':(d===1?'NESËR':d+' DITË'));
+      var dt=new Date(t.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
+      var act = t.contact_email
+        ? '<span class="hc-btn" onclick="event.stopPropagation();window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(t.contact_email)+'&su='+encodeURIComponent(t.title)+'\',\'_blank\')">Email →</span>'
+        : '<span class="hc-btn" onclick="event.stopPropagation();addToCalendar(\''+String(t.title).replace(/'/g,"\\'")+'\',\''+t.due_date+'\')">Kalendar →</span>';
+      return '<div class="hcard '+cls+'" id="tk-'+t.id+'">'
+        +'<div class="hc-top">'
+          +'<div class="hc-done" onclick="event.stopPropagation();doneTask(\''+t.id+'\')" title="Shëno si të kryer"></div>'
+          +'<div><div class="hc-when">'+when+'</div><div class="hc-date">'+dt+'</div></div>'
         +'</div>'
-        +'<div class="tk-when">'
-          +'<div class="tk-d" style="color:'+col+'">'+when+'</div>'
-          +'<div style="font-size:10px;color:var(--text3)">'+new Date(t.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+'</div>'
-          +mail
+        +'<div class="hc-t">'+esc(t.title)+'</div>'
+        +(t.detail?'<div class="hc-s">'+esc(t.detail)+'</div>':'<div class="hc-s"></div>')
+        +'<div class="hc-foot">'
+          +'<span class="hc-p">'+(t.project_id&&pN[t.project_id]?esc(pN[t.project_id]):'—')+'</span>'
+          +act
         +'</div>'
       +'</div>';
     }).join('');
-  }catch(e){ el.innerHTML='<div class="hub-none">Tabela "tasks" mungon — ekzekuto SQL-në.</div>'; }
+  }catch(e){ el.innerHTML='<div class="hub-none">Gabim: '+e.message+'</div>'; }
 }
+function esc(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ══════════════ KONTAKTET ══════════════ */
+var _contacts=[], _cFilter='all';
+var BT_LBL={steel_mill:'Fabrikë',trader:'Tregtar',fabricator:'Prodhues',galvanizer:'Zinktim',machining:'Makineri',consumables:'MRO',client:'Klient',authority:'Autoritet'};
+var BT_CLS={steel_mill:'mill',trader:'trd',fabricator:'fab',galvanizer:'gal',client:'cli'};
+
+async function loadContacts(){
+  var el=document.getElementById('c-body'); if(!el) return;
+  el.innerHTML='<div class="hub-load">Duke ngarkuar kontaktet…</div>';
+  try{
+    var ps=await supaFetch('partners?select=*&order=importance.desc,name.asc&limit=300');
+    var cs=await supaFetch('partner_contacts?select=*&limit=500');
+    var byP={}; cs.forEach(function(c){ (byP[c.partner_id]=byP[c.partner_id]||[]).push(c); });
+    _contacts=ps.map(function(p){ p._c=byP[p.id]||[]; return p; });
+    renderContacts();
+  }catch(e){ el.innerHTML='<div class="hub-none">Gabim: '+e.message+'</div>'; }
+}
+function cFilter(el){
+  document.querySelectorAll('.cf').forEach(function(x){x.classList.remove('on');});
+  el.classList.add('on'); _cFilter=el.dataset.f; renderContacts();
+}
+function renderContacts(){
+  var el=document.getElementById('c-body'); if(!el) return;
+  var q=(document.getElementById('c-search').value||'').toLowerCase().trim();
+  var rows=_contacts.filter(function(p){
+    if(_cFilter==='mro'){ if(!(p.categories||[]).some(function(c){return c==='mro'||c==='hardware';})) return false; }
+    else if(_cFilter!=='all' && p.business_type!==_cFilter) return false;
+    if(!q) return true;
+    var hay=(p.name+' '+(p.country||'')+' '+(p.city||'')+' '+(p.industry_note||'')+' '+
+      p._c.map(function(c){return c.full_name+' '+(c.email||'');}).join(' ')).toLowerCase();
+    return hay.indexOf(q)>-1;
+  });
+  if(!rows.length){ el.innerHTML='<div class="hub-none">Asnjë rezultat.</div>'; return; }
+  var h='<table class="ctab"><thead><tr>'
+    +'<th style="width:26%">Partneri</th><th style="width:24%">Kontakti</th><th style="width:20%">Email</th>'
+    +'<th style="width:14%">Biznesi</th><th style="width:8%">Rëndësia</th><th style="width:8%">Të dhënat</th>'
+    +'</tr></thead><tbody>';
+  rows.forEach(function(p){
+    var pri=p._c.filter(function(c){return c.is_primary;})[0]||p._c[0];
+    var extra=p._c.length>1?' <span style="color:var(--text3);font-size:10px">+'+(p._c.length-1)+'</span>':'';
+    var em=pri&&pri.email?'<span class="c-em">'+esc(pri.email)+'</span>':'<span class="c-miss">mungon</span>';
+    var dots=''; for(var k=1;k<=5;k++) dots+='<span class="c-dot'+(k<=(p.importance||0)?' f':'')+'"></span>';
+    var cf=p.data_confidence||'unverified';
+    var cfc=cf==='verified'?'v':(cf==='partial'?'p':'u');
+    var cfl=cf==='verified'?'✓':(cf==='partial'?'~':'?');
+    var bt=p.business_type||'';
+    h+='<tr onclick="cDetail(\''+p.id+'\')">'
+      +'<td><div class="c-nm">'+esc(p.name)+'</div><div class="c-co">'+esc([p.city,p.country].filter(Boolean).join(', '))+'</div></td>'
+      +'<td>'+(pri?'<div class="c-nm" style="font-weight:600">'+esc(pri.full_name)+extra+'</div>'
+             +(pri.role?'<div class="c-co">'+esc(pri.role)+'</div>':''):'<span class="c-miss">—</span>')+'</td>'
+      +'<td>'+em+'</td>'
+      +'<td><span class="c-tag '+(BT_CLS[bt]||'')+'">'+(BT_LBL[bt]||bt||'—')+'</span></td>'
+      +'<td><div class="c-imp">'+dots+'</div></td>'
+      +'<td><span class="c-conf '+cfc+'">'+cfl+'</span></td>'
+    +'</tr>';
+  });
+  el.innerHTML=h+'</tbody></table>';
+}
+function cDetail(id){
+  var p=_contacts.filter(function(x){return x.id===id;})[0]; if(!p) return;
+  var L=[];
+  L.push(p.name.toUpperCase());
+  L.push('─────────────────────────────');
+  if(p.business_type) L.push('Biznesi:  '+(BT_LBL[p.business_type]||p.business_type));
+  if(p.city||p.country) L.push('Vendi:    '+[p.city,p.country].filter(Boolean).join(', '));
+  if(p.industry_note) L.push('\n'+p.industry_note);
+  if((p.categories||[]).length) L.push('\nKategoritë:  '+p.categories.join(', '));
+  if((p.grades||[]).length)     L.push('Klasat:      '+p.grades.join(', '));
+  if((p.class_approval||[]).length) L.push('Miratim kl.: '+p.class_approval.join(', '));
+  if(p.cbam_eur_per_t)   L.push('CBAM:        ~'+p.cbam_eur_per_t+' €/t');
+  if(p.price_indicative) L.push('Çmimi:       '+p.price_indicative);
+  L.push('\nKONTAKTET');
+  p._c.forEach(function(c){
+    L.push('  • '+c.full_name+(c.is_primary?' (kryesor)':'')
+      +(c.role?'  — '+c.role:'')
+      +'\n    '+(c.email||'⚠ EMAIL MUNGON')
+      +(c.email_alt?'\n    '+c.email_alt:'')
+      +(c.phone?'\n    '+c.phone:''));
+  });
+  if(p.importance_reason) L.push('\nRËNDËSIA ('+p.importance+'/5)\n  '+p.importance_reason);
+  if(p.notes) L.push('\nSHËNIME\n  '+p.notes);
+  alert(L.join('\n'));
+}
+function addContact(){
+  var n=prompt('Emri i kompanisë:'); if(!n) return;
+  var bt=prompt('Lloji (steel_mill / trader / fabricator / galvanizer / client / consumables):','fabricator'); if(!bt) return;
+  var co=prompt('Vendi (XK/MK/AL/TR/HR/DE/NL):','')||null;
+  var fn=prompt('Emri i kontaktit:')||null;
+  var em=prompt('Email:')||null;
+  var ph=prompt('Telefon (ops.):')||null;
+  supaFetch('partners','POST',{name:n,business_type:bt,country:co,relation:['supplier'],
+    importance:3,stage:'active',data_confidence:'unverified',source:'manual'})
+  .then(function(){ return supaFetch('partners?select=id&name=eq.'+encodeURIComponent(n)+'&limit=1'); })
+  .then(function(r){
+    if(!fn||!r||!r.length) return;
+    return supaFetch('partner_contacts','POST',{partner_id:r[0].id,full_name:fn,email:em,phone:ph,is_primary:true,source:'manual'});
+  })
+  .then(loadContacts).catch(function(e){alert('Gabim: '+e.message);});
+}
+
 function doneTask(id){
   var el=document.getElementById('tk-'+id);
   if(el) el.classList.add('tk-done');
@@ -4524,7 +4702,7 @@ function addTask(){
 }
 async function loadHub(){
   loadTasks();
-  var elP=document.getElementById('hub-projects'), elA=document.getElementById('hub-agenda'), elI=document.getElementById('hub-inbox');
+  var elP=document.getElementById('hub-projects');
   if(!elP) return;
   var today=new Date(); today.setHours(0,0,0,0);
   var dEl=document.getElementById('hub-date');
@@ -4633,29 +4811,23 @@ async function loadHub(){
       });
 
       var mCol=marg===null?'var(--text3)':(marg<6?'#A33':(marg<10?'var(--text2)':'var(--green-text)'));
-      return '<div class="pj" id="pj-'+p.id+'">'
-        +'<div class="pj-head" onclick="document.getElementById(\'pj-'+p.id+'\').classList.toggle(\'open\')">'
-          +'<div style="min-width:0"><div class="pj-name">'+(p.name||'Pa emer')+'</div>'
-          +'<div class="pj-client">'+((p.client||'').split(',')[0])+(kg>0?' \u00B7 '+hFmt(kg)+' kg':'')+'</div></div>'
-          +'<div style="text-align:right;flex-shrink:0">'
-            +(sell>0?'<div class="pj-val">'+hFmt(sell)+' \u20AC</div>':'<div class="pj-val" style="color:var(--text3)">\u2014</div>')
-            +'<div class="pj-margin" style="color:'+mCol+'">'+(marg!==null?'marzha '+marg.toFixed(1).replace('.',',')+'%':(missing.length&&sell>0?'marzha e panjohur':'&nbsp;'))+'</div>'
-          +'</div></div>'
-        +'<div class="pj-flow">'+PJ_STEPS.map(function(s,i3){
+      var warn=rows.filter(function(r){return r.w;}).length;
+      return '<div class="pcard" onclick="openOverview(\''+p.id+'\')">'
+        +'<div class="pc-c">'+esc((p.client||'').split(',')[0])+'</div>'
+        +'<div class="pc-n">'+esc(p.name||'Pa emer')+'</div>'
+        +'<div class="pc-m">'
+          +(sell>0?'<b>'+hFmt(sell)+' €</b>':'<span style="color:var(--text3)">pa oferte</span>')
+          +(kg>0?' · '+hFmt(kg)+' kg':'')
+          +(marg!==null?'<br><span style="color:'+mCol+'">marzha '+marg.toFixed(1).replace('.',',')+'%</span>':'')
+          +(warn?'<br><span style="color:var(--red-text)">⚠ '+warn+' çështje</span>':'')
+        +'</div>'
+        +'<div class="pc-steps">'+PJ_STEPS.map(function(s,i3){
             var cls=st[s.k]?'done':(i3===nowIdx?'now':'');
-            return '<div class="pj-step '+cls+'"><div class="pj-dot"></div><div class="pj-lbl">'+s.l+'</div></div>';
+            return '<div class="pc-st '+cls+'">'+s.l+'</div>';
           }).join('')+'</div>'
-        +'<div class="pj-body">'+(rows.length?rows.map(function(r){
-            return '<div class="pj-row"><span class="pj-row-ico">'+r.i+'</span>'
-              +'<span class="pj-row-txt'+(r.w?' pj-warn':'')+'">'+r.t+'</span>'
-              +(r.a&&r.f?'<span class="pj-row-act" onclick="event.stopPropagation();'+r.f.replace(/"/g,'&quot;')+'">'+r.a+' \u2192</span>':'')
-            +'</div>';
-          }).join(''):'<div class="hub-none">Ende pa aktivitet.</div>')
-        +'<div style="margin-top:9px;display:flex;gap:7px">'
-        +'<button class="btn btn-sm" onclick="event.stopPropagation();loadProject(\''+p.id+'\')">Puno me projektin</button>'
-        +'<button class="btn btn-sm" onclick="event.stopPropagation();openOverview(\''+p.id+'\')">Pasqyra</button></div>'
-        +'</div></div>';
+      +'</div>';
     });
+    cards.push('<div class="pcard new" onclick="showPage(\'import\')">+ Projekt i ri</div>');
     elP.innerHTML=cards.length?cards.join(''):'<div class="hub-none">Ende pa projekte.</div>';
 
     var hl=document.getElementById('hub-headline'), hs=document.getElementById('hub-sub');
@@ -4674,34 +4846,30 @@ async function loadHub(){
         +'<div><div class="hub-stat-v">'+projs.length+'</div><div class="hub-stat-l">Projekte</div></div>';
     }
 
-    if(elA){
-      var ev=[];
-      (window.PST_DEADLINES||[]).forEach(function(dl){
-        var dd=hDays(new Date(dl.date), today);
-        if(dd>=-3&&dd<=45) ev.push({date:new Date(dl.date),t:dl.title,s:(dl.project||'')+' \u00B7 '+dl.detail,u:dd<=7});
-      });
-      quotes.forEach(function(qq){
-        if(!qq.created_at) return;
-        var ag2=hDays(today,new Date(qq.created_at));
-        if(ag2>=7) ev.push({date:new Date(today.getTime()+86400000),
-          t:'Ndjekje: '+(qq.client||'').split(' ')[0]+' \u2014 '+qq.doc_nr,
-          s:hFmt(qq.total_eur)+' \u20AC \u00B7 '+ag2+' dite pa pergjigje', u:ag2>=21});
-      });
-      ev.sort(function(a,b){return a.date-b.date;});
-      elA.innerHTML=ev.length?ev.slice(0,7).map(function(e){
-        return '<div class="ag'+(e.u?' urgent':'')+'">'
-          +'<div class="ag-when"><div class="ag-d">'+e.date.getDate()+'</div>'
-          +'<div class="ag-m">'+e.date.toLocaleDateString('de-DE',{month:'short'}).replace('.','')+'</div></div>'
-          +'<div class="ag-body"><div class="ag-t">'+e.t+'</div><div class="ag-s">'+e.s+'</div></div></div>';
-      }).join(''):'<div class="hub-none">Asnje afat ne 45 ditet e ardhshme.</div>';
-    }
-    if(elI){
-      elI.innerHTML=inbox.length?inbox.map(function(r){
-        var from=(r.sender||'').replace(/<.*/,'').replace(/"/g,'').trim()||r.sender;
-        return '<div class="ib"><span style="opacity:.55">\u25AB</span><div class="ib-body">'
-          +'<div class="ib-from">'+from+'</div><div class="ib-sub">'+(r.subject||'')+'</div></div>'
-          +'<span class="pj-row-act" onclick="qAnalyzeOffer(\''+r.id+'\',\''+hEsc(r.subject)+'\',\''+hEsc(r.sender)+'\')">Analizo</span></div>';
-      }).join(''):'<div class="hub-none">Inbox-i i paster.</div>';
+    var nv=document.getElementById('hub-nav');
+    if(nv){
+      var openTasks=(await supaFetch('tasks?status=eq.hapur&select=id').catch(function(){return[];})).length;
+      var upcoming=(window.PST_DEADLINES||[]).filter(function(dl){
+        var dd=hDays(new Date(dl.date), today); return dd>=0&&dd<=30; }).length;
+      var pendRfq=rfqs.filter(function(r){return r.status==='sent'||r.status==='pending'||r.status==='planned';}).length;
+      var pendQuo=quotes.filter(function(q){ return !invs.some(function(i6){return (i6.project||'')===(q.project||'');}); }).length;
+      var N=[
+        {t:'Kontaktet',s:'Partnerë, furnitorë, klientë',p:'contacts',b:''},
+        {t:'Ofertat',s:'Të dërguara, në pritje',p:'oferta',b:pendQuo?pendQuo:''},
+        {t:'RFQ',s:'Kërkesa te furnitorët',p:'rfq',b:pendRfq?pendRfq:''},
+        {t:'Inbox',s:'Dokumente pa analizuar',p:'import',b:inbox.length?inbox.length:''},
+        {t:'BOM',s:'Lista e materialit',p:'bom',b:''},
+        {t:'Krahasimi',s:'Ranking i furnitorëve',p:'ranking',b:''},
+        {t:'Faturat',s:'Të hyra dhe dalje',p:'invoices',b:''},
+        {t:'Kalendari',s:upcoming?upcoming+' afate në 30 ditë':'Afatet',p:'',b:'',u:'https://calendar.google.com/calendar/r'}
+      ];
+      nv.innerHTML=N.map(function(n){
+        var act=n.u?'window.open(\''+n.u+'\',\'_blank\')':'showPage(\''+n.p+'\')';
+        return '<div class="ncard" onclick="'+act+'">'
+          +'<div><div class="nc-t">'+n.t+'</div><div class="nc-s">'+n.s+'</div></div>'
+          +(n.b?'<div class="nc-b">'+n.b+'</div>':'')
+        +'</div>';
+      }).join('');
     }
   }catch(e){ elP.innerHTML='<div class="hub-none" style="color:#A33">Gabim: '+e.message+'</div>'; }
 }
