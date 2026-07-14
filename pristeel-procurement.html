@@ -4376,7 +4376,22 @@ async function qAnalyzeOffer(inboxId, subject, sender){
 // KOKPITI — platforma analizon vetë dhe të thotë çfarë kërkon veprim
 // ══════════════════════════════════════════════════════════════
 function ckDaysBetween(a,b){ return Math.round((a-b)/86400000); }
-function ckCard(sev, icon, title, detail, actionLabel, actionFn){
+// ── KALENDARI: krijo ngjarje me nje klik (Google Calendar template link) ──
+function gcalLink(title, details, dateISO, durMin){
+  var d=new Date(dateISO);
+  var pad=function(n){return String(n).padStart(2,'0');};
+  var fmt=function(x){ return x.getUTCFullYear()+pad(x.getUTCMonth()+1)+pad(x.getUTCDate())+'T'+pad(x.getUTCHours())+pad(x.getUTCMinutes())+'00Z'; };
+  var end=new Date(d.getTime()+(durMin||30)*60000);
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    +'&text='+encodeURIComponent(title)
+    +'&details='+encodeURIComponent(details||'')
+    +'&dates='+fmt(d)+'/'+fmt(end)
+    +'&ctz=Europe/Belgrade';
+}
+function addToCalendar(title, details, dateISO){
+  window.open(gcalLink(title, details, dateISO, 30),'_blank');
+}
+function ckCard(sev, icon, title, detail, actionLabel, actionFn, calTitle, calDetails, calDate){
   var C={red:{c:'#C0392B',bg:'rgba(192,57,43,.10)'},amber:{c:'#B87333',bg:'rgba(184,115,51,.12)'},cool:{c:'#6E8B6E',bg:'rgba(110,139,110,.12)'}};
   var s=C[sev]||C.amber;
   var m=String(title).match(/—\s*(\d+)\s*ditë/);
@@ -4391,6 +4406,7 @@ function ckCard(sev, icon, title, detail, actionLabel, actionFn){
     +'<div class="q-task-meta">'
       +(days?'<div class="q-days">'+days+'<span style="font-size:10px;letter-spacing:.5px"> DITË</span></div>':'<div class="q-chip">'+chip+'</div>')
       +(actionFn?'<div class="q-chip">'+(actionLabel||'Hap')+' →</div>':'')
+      +(calDate?'<div class="q-chip" style="background:var(--bg3);color:var(--text2)" onclick="event.stopPropagation();addToCalendar(\''+String(calTitle||title).replace(/'/g,"\\'")+'\',\''+String(calDetails||detail).replace(/'/g,"\\'")+'\',\''+calDate+'\')" title="Shto në Google Calendar">📅</div>':'')
     +'</div>'
   +'</div>';
 }
@@ -4442,10 +4458,14 @@ async function loadCockpit(){
       if(age>=7 && age<=90){
         stats.amber++;
         var st=q.offer_state||{};
+        var tmr=new Date(today.getTime()+86400000); tmr.setHours(10,0,0,0);
         cards.push(ckCard(age>=14?'red':'amber','⏰', q.doc_nr+' — '+age+' ditë pa përgjigje',
           (q.client||'')+' · '+(q.total_eur?parseFloat(q.total_eur).toLocaleString('de-DE')+' €':'')+' — koha për ndjekje.',
           'Harto ndjekjen',
-          "followupQuote('"+q.doc_nr+"','"+encodeURIComponent(q.client||'')+"','"+encodeURIComponent(st.em||'')+"','"+(q.total_eur||'')+"','"+q.created_at+"','"+encodeURIComponent(st.lang||'de')+"','"+encodeURIComponent(q.project||'')+"')"));
+          "followupQuote('"+q.doc_nr+"','"+encodeURIComponent(q.client||'')+"','"+encodeURIComponent(st.em||'')+"','"+(q.total_eur||'')+"','"+q.created_at+"','"+encodeURIComponent(st.lang||'de')+"','"+encodeURIComponent(q.project||'')+"')",
+          'Ndjekje: '+(q.client||'')+' — '+q.doc_nr,
+          'Ofertë '+q.doc_nr+' ('+(q.total_eur?parseFloat(q.total_eur).toLocaleString('de-DE')+' EUR':'')+') pa përgjigje '+age+' ditë. Kontakt: '+(st.em||''),
+          tmr.toISOString()));
       }
     });
 
@@ -4493,9 +4513,13 @@ async function loadCockpit(){
       var fu=r.followup_count||0;
       if(age>=3 && fu===0){
         stats.amber++;
+        var tmr2=new Date(today.getTime()+86400000); tmr2.setHours(9,30,0,0);
         cards.push(ckCard(age>=7?'red':'amber','📧', r.supplier_name+' — '+age+' ditë pa përgjigje',
           (r.project_name||'')+' · RFQ dërguar '+new Date(r.sent_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+' — dërgo përkujtesë.',
-          'Përkujtesë','sendFollowup(\''+r.id+'\',\''+r.supplier_email+'\',\''+(r.lang||'en')+'\',\''+encodeURIComponent(r.project_name||'')+'\',\''+r.sent_at+'\')'));
+          'Përkujtesë','sendFollowup(\''+r.id+'\',\''+r.supplier_email+'\',\''+(r.lang||'en')+'\',\''+encodeURIComponent(r.project_name||'')+'\',\''+r.sent_at+'\')',
+          'Përkujtesë: '+r.supplier_name,
+          'RFQ për '+(r.project_name||'')+' dërguar '+new Date(r.sent_at).toLocaleDateString('de-DE')+' — pa përgjigje. Kontakt: '+r.supplier_email,
+          tmr2.toISOString()));
       } else if(age>=10 && fu>=1){
         stats.red++;
         cards.push(ckCard('red','🚫', r.supplier_name+' — hesht edhe pas përkujtesës ('+age+' ditë)',
@@ -4509,8 +4533,10 @@ async function loadCockpit(){
       var d=ckDaysBetween(new Date(dl.date), today);
       if(d<=dl.warn && d>=-30){
         stats[d<=3?'red':'amber']++;
+        var dlDate=new Date(dl.date); dlDate.setHours(9,0,0,0);
         cards.push(ckCard(d<=3?'red':'amber', dl.icon||'⚠', dl.title+(d>=0?' — '+d+' ditë':' — SKADOI para '+Math.abs(d)+' ditësh'),
-          dl.detail, dl.action||'', dl.fn||''));
+          dl.detail, dl.action||'', dl.fn||'',
+          dl.title, dl.detail, dlDate.toISOString()));
       }
     });
 
