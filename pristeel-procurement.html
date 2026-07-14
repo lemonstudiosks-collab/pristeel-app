@@ -26,6 +26,49 @@ button,input,select,textarea{font-family:inherit}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#CDD6DC;border-radius:6px}::-webkit-scrollbar-track{background:transparent}
 /* LAYOUT */
 .app-shell{display:flex;min-height:100vh}
+/* ══ QENDRA — tabela e kontrollit e fabrikës ══ */
+.q-gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:16px}
+.q-gauge{position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease}
+.q-gauge:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(46,44,40,0.07)}
+.q-gauge::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gc,#B87333)}
+.q-gauge-top{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:7px}
+.q-gauge-lbl{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--text3);font-weight:600}
+.q-gauge-ico{font-size:15px;opacity:.85}
+.q-gauge-val{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:.95;letter-spacing:.5px;color:var(--gc,#B87333)}
+.q-gauge-sub{font-size:10.5px;color:var(--text3);margin-top:3px}
+.q-gauge-bar{height:3px;border-radius:2px;background:var(--bg3);margin-top:8px;overflow:hidden}
+.q-gauge-fill{height:100%;background:var(--gc,#B87333);border-radius:2px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+
+.q-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:16px;position:relative;overflow:hidden}
+.q-panel::before{content:'';position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,#C0392B 0%,#B87333 45%,#C98F55 70%,#E8E3DB 100%)}
+.q-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.q-panel-title{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:var(--text)}
+.q-flame{font-size:17px;display:inline-block}
+@keyframes qpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.14);opacity:.82}}
+.q-flame.hot{animation:qpulse 1.9s ease-in-out infinite}
+.q-loading{font-size:12px;color:var(--text3);padding:6px 0}
+
+/* Kartat e veprimeve */
+.q-task{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:10px;margin-bottom:7px;border:1px solid var(--border);background:var(--bg-card);transition:all .16s ease;position:relative}
+.q-task:hover{border-color:var(--tc,#B87333);background:var(--bg-hover);transform:translateX(2px)}
+.q-task-ico{width:34px;height:34px;flex-shrink:0;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--tbg,rgba(184,115,51,.1))}
+.q-task-body{flex:1;min-width:0}
+.q-task-title{font-size:12.5px;font-weight:650;color:var(--text);line-height:1.35}
+.q-task-sub{font-size:11px;color:var(--text2);margin-top:2px;line-height:1.45}
+.q-task-meta{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.q-chip{font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:20px;background:var(--tbg,rgba(184,115,51,.12));color:var(--tc,#B87333);white-space:nowrap}
+.q-days{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1;color:var(--tc,#B87333)}
+
+.q-empty{text-align:center;padding:26px 16px}
+.q-empty-ico{font-size:34px;margin-bottom:8px;opacity:.75}
+.q-empty-t{font-size:13.5px;font-weight:650;color:var(--green-text)}
+.q-empty-s{font-size:11.5px;color:var(--text3);margin-top:3px}
+
+.q-group{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--text3);font-weight:700;margin:14px 0 7px;display:flex;align-items:center;gap:8px}
+.q-group::after{content:'';flex:1;height:1px;background:var(--border)}
+.q-group:first-child{margin-top:0}
+@media (prefers-reduced-motion:reduce){.q-flame.hot{animation:none}.q-task:hover,.q-gauge:hover{transform:none}}
+
 .sidebar{width:220px;background:#F6F3EF;border-right:1px solid #E8E3DB;box-shadow:none;padding:0;flex-shrink:0;display:flex;flex-direction:column}
 .sidebar-logo{padding:20px 20px 18px;border-bottom:1px solid #E8E3DB}
 .logo-mark{font-family:'Bebas Neue',sans-serif;font-size:28px;font-weight:400;color:#B87333;letter-spacing:2px;line-height:1}
@@ -810,12 +853,19 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div id="page-qendra" class="page">
-  <div class="card" style="border-left:3px solid var(--bronze);margin-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="card-title" style="margin:0">Çfarë kërkon vëmendjen sot</div>
+  <!-- BARRA E MATËSVE -->
+  <div id="q-gauges" class="q-gauges"></div>
+
+  <!-- PANELI I VEPRIMEVE -->
+  <div class="q-panel">
+    <div class="q-panel-head">
+      <div class="q-panel-title">
+        <span class="q-flame" id="q-flame">🔥</span>
+        <span id="q-greet">Ora e ndërrimit</span>
+      </div>
       <button class="btn btn-sm" onclick="loadCockpit()">Rifresko</button>
     </div>
-    <div id="q-cockpit"><div style="color:var(--text3);font-size:12px">Duke analizuar...</div></div>
+    <div id="q-cockpit"><div class="q-loading">Duke lexuar matësit…</div></div>
   </div>
   <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;align-items:start">
     <div>
@@ -4327,26 +4377,38 @@ async function qAnalyzeOffer(inboxId, subject, sender){
 // ══════════════════════════════════════════════════════════════
 function ckDaysBetween(a,b){ return Math.round((a-b)/86400000); }
 function ckCard(sev, icon, title, detail, actionLabel, actionFn){
-  var col = sev==='red' ? '#C0392B' : (sev==='amber' ? '#B87333' : 'var(--text3)');
-  var bg  = sev==='red' ? 'rgba(192,57,43,0.06)' : (sev==='amber' ? 'rgba(184,115,51,0.07)' : 'var(--bg2)');
-  return '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;background:'+bg+';border-left:2px solid '+col+';margin-bottom:6px">'
-    +'<div style="min-width:0"><div style="font-size:12.5px;font-weight:600;color:'+col+'">'+icon+' '+title+'</div>'
-    +'<div style="font-size:11.5px;color:var(--text2);margin-top:1px">'+detail+'</div></div>'
-    +(actionFn?'<button class="btn btn-sm" style="flex-shrink:0" onclick="'+actionFn+'">'+actionLabel+'</button>':'')
+  var C={red:{c:'#C0392B',bg:'rgba(192,57,43,.10)'},amber:{c:'#B87333',bg:'rgba(184,115,51,.12)'},cool:{c:'#6E8B6E',bg:'rgba(110,139,110,.12)'}};
+  var s=C[sev]||C.amber;
+  var m=String(title).match(/—\s*(\d+)\s*ditë/);
+  var days=m?m[1]:null;
+  var chip = sev==='red' ? 'URGJENT' : (sev==='cool' ? 'INFO' : 'SOT');
+  return '<div class="q-task" style="--tc:'+s.c+';--tbg:'+s.bg+'"'+(actionFn?' onclick="'+actionFn.replace(/"/g,'&quot;')+'" style="cursor:pointer;--tc:'+s.c+';--tbg:'+s.bg+'"':'')+'>'
+    +'<div class="q-task-ico">'+icon+'</div>'
+    +'<div class="q-task-body">'
+      +'<div class="q-task-title">'+title+'</div>'
+      +'<div class="q-task-sub">'+detail+'</div>'
+    +'</div>'
+    +'<div class="q-task-meta">'
+      +(days?'<div class="q-days">'+days+'<span style="font-size:10px;letter-spacing:.5px"> DITË</span></div>':'<div class="q-chip">'+chip+'</div>')
+      +(actionFn?'<div class="q-chip">'+(actionLabel||'Hap')+' →</div>':'')
+    +'</div>'
   +'</div>';
 }
-// ── AFATE KRITIKE TË REGJISTRUARA ──
-window.PST_DEADLINES=[
-  {date:'2026-07-18', warn:14, icon:'🏅',
-   title:'ISO 9001 e Eurosteel skadon',
-   detail:'Certifikata 3550062 skadon 18.07.2026 — brenda afatit të prodhimit të STACON D-22/26. Kërko rinovimin nga Ermali para dorëzimit.'},
-  {date:'2026-09-25', warn:21, icon:'🚚',
-   title:'Dorëzimi STACON D-22/26 (KW 38-39)',
-   detail:'Afati i dorëzimit DAP Hamburg Finkenwerder. Kontrollo prodhimin te Eurosteel.'},
-  {date:'2026-08-27', warn:14, icon:'📋',
-   title:'Dokumentacioni i cilësisë STACON — para ngarkimit',
-   detail:'11 dokumente të detyrueshme (EN 10204 3.1, Welding Book, VT/UT, Wiegeprotokoll, CE, EUR.1). Mungesa bllokon këstin 2 (26.212,50 €).'}
-];
+function ckGauge(lbl, val, sub, color, icon, pct){
+  return '<div class="q-gauge" style="--gc:'+color+'">'
+    +'<div class="q-gauge-top"><span class="q-gauge-lbl">'+lbl+'</span><span class="q-gauge-ico">'+icon+'</span></div>'
+    +'<div class="q-gauge-val">'+val+'</div>'
+    +'<div class="q-gauge-sub">'+sub+'</div>'
+    +(pct!==null&&pct!==undefined?'<div class="q-gauge-bar"><div class="q-gauge-fill" style="width:'+Math.min(100,Math.max(2,pct))+'%"></div></div>':'')
+  +'</div>';
+}
+function ckGreeting(red, total){
+  var h=new Date().getHours();
+  var t = h<11?'Mirëmëngjes':(h<18?'Mirëdita':(h<22?'Mirëmbrëma':'Natë e vonë'));
+  if(red>0) return t+' — '+red+(red===1?' zjarr për ta shuar':' zjarre për t\'i shuar');
+  if(total>0) return t+' — '+total+(total===1?' punë e vogël':' punë të vogla');
+  return t+' — furra punon qetë';
+}
 async function loadCockpit(){
   var el=document.getElementById('q-cockpit'); if(!el) return;
   el.innerHTML='<div style="color:var(--text3);font-size:12px">Duke analizuar...</div>';
@@ -4480,13 +4542,43 @@ async function loadCockpit(){
       }
     });
 
+    // ══ MATËSIT ══
+    var g=document.getElementById('q-gauges');
+    if(g){
+      var pipeline=quotes.filter(function(q){return !q.decided_at;})
+        .reduce(function(s,q){return s+(parseFloat(q.total_eur)||0);},0);
+      var unpaid=invs.filter(function(i){return !i.paid;})
+        .reduce(function(s,i){return s+(parseFloat(i.gross_amount)||parseFloat(i.total_price)||0);},0);
+      var paidSum=invs.filter(function(i){return i.paid;})
+        .reduce(function(s,i){return s+(parseFloat(i.gross_amount)||parseFloat(i.total_price)||0);},0);
+      var waiting=rfqs.length;
+      var fmtK=function(n){ return n>=1000 ? Math.round(n/1000)+'k' : Math.round(n); };
+      g.innerHTML=
+         ckGauge('Në zjarr','€ '+fmtK(pipeline), quotes.filter(function(q){return !q.decided_at;}).length+' oferta te klientët','#B87333','🔥', Math.min(100,pipeline/8000))
+        +ckGauge('Pritet çmimi', waiting, waiting===1?'furnitor hesht':'furnitorë heshtin','#C98F55','📮', waiting*22)
+        +ckGauge('Pa analizuar', inbox.length, 'dokumente nga Gmail','#8C7A5B','📥', Math.min(100,inbox.length*2))
+        +ckGauge('Për t\'u arkëtuar', unpaid>0?('€ '+fmtK(unpaid)):'—', unpaid>0?'fatura të hapura':'asnjë faturë e hapur', unpaid>0?'#C0392B':'#A39C92','⏳', unpaid>0?Math.min(100,unpaid/500):null)
+        +ckGauge('Arkëtuar','€ '+fmtK(paidSum), 'deri tani','#6E8B6E','✅', paidSum>0?100:0);
+    }
+    var redCount=cards.filter(function(c){return c.indexOf('#C0392B')>-1;}).length;
+    var fl=document.getElementById('q-flame');
+    if(fl){ fl.textContent = redCount>0?'🔥':'⚙️'; fl.className='q-flame'+(redCount>0?' hot':''); }
+    var gr=document.getElementById('q-greet');
+    if(gr) gr.textContent=ckGreeting(redCount, cards.length);
+
     if(!cards.length){
-      el.innerHTML='<div style="padding:14px;text-align:center;color:var(--green-text);font-size:13px">✓ Gjithçka në rregull — asnjë veprim urgjent.</div>';
+      el.innerHTML='<div class="q-empty"><div class="q-empty-ico">☕</div>'
+        +'<div class="q-empty-t">Asgjë nuk digjet</div>'
+        +'<div class="q-empty-s">Të gjitha afatet nën kontroll. Kohë për të kontaktuar blerës të rinj.</div></div>';
       return;
     }
-    el.innerHTML='<div style="font-size:11px;color:var(--text3);margin-bottom:8px">'
-      +(stats.red?'<span style="color:#C0392B;font-weight:700">'+stats.red+' urgjente</span> · ':'')
-      +(stats.amber?stats.amber+' për vëmendje':'')+'</div>'+cards.join('');
+    // grupo: urgjente vs te tjera
+    var reds=[], others=[];
+    cards.forEach(function(c){ (c.indexOf('#C0392B')>-1?reds:others).push(c); });
+    var h='';
+    if(reds.length) h+='<div class="q-group">Digjet tani</div>'+reds.join('');
+    if(others.length) h+='<div class="q-group">Kërkon vëmendje</div>'+others.join('');
+    el.innerHTML=h;
   }catch(e){
     el.innerHTML='<div style="color:#C0392B;font-size:12px">Gabim: '+e.message+'</div>';
   }
