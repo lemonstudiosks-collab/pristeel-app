@@ -3280,6 +3280,19 @@ function deleteProject(id){
   supaFetch('projects?id=eq.'+id,'DELETE').then(function(){loadProjectList();}).catch(function(e){alert('Gabim: '+e.message);});
 }
 window.addEventListener('load',function(){setTimeout(loadProjectList,800);});
+// Faqja e pare eshte Detyrat (qendra) — ngarkoje sapo hapet platforma
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    var qp=document.getElementById('page-qendra');
+    if(qp && qp.classList.contains('active')){
+      // vendos titullin e sakte + ngarko te dhenat
+      var m=(typeof pageMeta!=='undefined'&&pageMeta.qendra)?pageMeta.qendra:{title:'Detyrat',sub:''};
+      var t=document.getElementById('page-title'), s=document.getElementById('page-sub');
+      if(t) t.textContent=m.title; if(s) s.textContent=m.sub;
+      if(typeof loadHub==='function') loadHub();
+    }
+  }, 600);
+});
 
 // ══════════════════════════════════════════════════════
 // ── FATURAT (INVOICING) ─────────────────────────────────
