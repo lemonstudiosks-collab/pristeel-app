@@ -4139,7 +4139,6 @@ if(typeof showPage==='function'){
       if(p==='oferta') prefillDocNr('QUO','of-nr');
       if(p==='invoices'){ prefillDocNr('INV','iv-nr'); loadQuoRegistry(); }
       if(p==='oferta'){ loadSavedQuotesForProject(); }
-      if(p==='qendra'){ loadCockpit(); }
     }catch(e){}
   };
 }
@@ -4628,6 +4627,12 @@ function renderContacts(){
     return ((c.company||'')+' '+(c.person||'')+' '+(c.email||'')+' '+(c.country||'')).toLowerCase().indexOf(q)>-1;
   });
   if(!list.length){ el.innerHTML='<div class="hub-none">Asnjë kontakt.'+(q?' Ndrysho kërkimin.':' Shto një me "+ Kontakt".')+'</div>'; return; }
+  // Numerues te tabet
+  var nAll=_contacts.length, nCli=_contacts.filter(function(c){return c.kind==='client';}).length, nSup=_contacts.filter(function(c){return c.kind==='supplier';}).length;
+  var bA=document.getElementById('ct-tab-all'), bC=document.getElementById('ct-tab-client'), bS=document.getElementById('ct-tab-supplier');
+  if(bA) bA.textContent='Të gjithë ('+nAll+')';
+  if(bC) bC.textContent='Klientë ('+nCli+')';
+  if(bS) bS.textContent='Furnitorë ('+nSup+')';
   el.innerHTML=list.map(function(c){
     var flag={DE:'🇩🇪',AT:'🇦🇹',CH:'🇨🇭',ME:'🇲🇪',RS:'🇷🇸',XK:'🇽🇰',AL:'🇦🇱',MK:'🇲🇰'}[c.country]||'';
     return '<div class="ct">'
@@ -4641,6 +4646,7 @@ function renderContacts(){
       +'<span class="ct-tag '+c.kind+'">'+(c.kind==='client'?'Klient':'Furnitor')+'</span>'
       +'<div class="ct-acts">'
         +(c.email?'<div class="ct-ic" title="Email" onclick="window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(c.email)+'\',\'_blank\')">✉</div>':'')
+        +(c.hubspot_url?'<div class="ct-ic" title="Hap në HubSpot" onclick="window.open(\''+c.hubspot_url+'\',\'_blank\')" style="font-weight:700;font-size:11px">H</div>':'')
         +'<div class="ct-ic" title="Ndrysho" onclick="editContact(\''+c.id+'\')">✎</div>'
       +'</div>'
     +'</div>';
@@ -4664,7 +4670,9 @@ function editContact(id){
     .then(loadContacts).catch(function(e){alert('Gabim: '+e.message);});
 }
 function syncHubspot(){
-  alert('Sinkronizimi me HubSpot do të aktivizohet pasi të lidhet konektori. Do të sjellë kontaktet dhe deal-et automatikisht.');
+  if(confirm('Kontaktet e HubSpot sinkronizohen përmes Claude (MCP). Për të parë të gjitha 745 kontaktet, hap HubSpot direkt.\n\nHap HubSpot tani?')){
+    window.open('https://app.hubspot.com/contacts/147958987/objects/0-1/views/all/list','_blank');
+  }
 }
 
 async function loadHub(){
