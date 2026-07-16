@@ -1019,7 +1019,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <button class="seg-btn" id="ct-tab-client" onclick="filterContacts('client')">Klientë</button>
       <button class="seg-btn" id="ct-tab-supplier" onclick="filterContacts('supplier')">Furnitorë</button>
     </div>
-    <input type="text" id="ct-search" placeholder="Kërko emër, kompani, email…" oninput="renderContacts()"
+    <input type="text" id="ct-search" placeholder="Kërko emër, kompani, email…" autocomplete="off" name="pristeel-ct-search-noauto" oninput="renderContacts()"
       style="flex:1;min-width:200px">
     <button class="btn btn-primary btn-sm" onclick="addContact()">+ Kontakt</button>
     <button class="btn btn-sm" onclick="syncHubspot()" id="ct-hubspot">↺ HubSpot</button>
@@ -4602,6 +4602,7 @@ function addTask(){
 var _contacts=[], _ctFilter='all';
 async function loadContacts(){
   var el=document.getElementById('contacts-list'); if(!el) return;
+  var sb=document.getElementById('ct-search'); if(sb) sb.value='';  // pastro kerkimin e mbetur
   try{
     _contacts=await supaFetch('contacts?order=kind.asc,company.asc&limit=300')||[];
     renderContacts();
