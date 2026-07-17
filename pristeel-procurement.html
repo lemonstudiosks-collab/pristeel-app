@@ -360,11 +360,13 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
 <div class="main">
 
-<div id="modbar" style="display:none;align-items:center;gap:10px;padding:9px 18px;color:#fff;font-size:13px">
-  <span onclick="goHome()" style="cursor:pointer;display:flex;align-items:center" title="Kthehu te modulet">
-    <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2"><circle cx="5" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="19" cy="5" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="19" r="1.6"/><circle cx="12" cy="19" r="1.6"/><circle cx="19" cy="19" r="1.6"/></svg>
+<div id="modbar" style="display:none;align-items:center;gap:10px;padding:8px 14px;color:#fff;font-size:13px">
+  <span onclick="goHome()" style="cursor:pointer;display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.18);padding:6px 13px;border-radius:8px;font-size:12px;font-weight:600" title="Kthehu te modulet"
+    onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.18)'">
+    <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    Të gjitha modulet
   </span>
-  <span id="modbar-icon" style="display:flex;align-items:center"></span>
+  <span id="modbar-icon" style="display:flex;align-items:center;margin-left:4px"></span>
   <span id="modbar-name" style="font-weight:600"></span>
   <span id="modbar-crumb" style="opacity:.75;font-size:12px"></span>
 </div>
@@ -384,9 +386,55 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div class="content">
 
 <div id="page-home" class="page active">
-  <div id="home-greet" style="text-align:center;font-size:13px;color:var(--text3);margin:18px 0 22px"></div>
+  <div id="home-greet" style="text-align:center;font-size:13px;color:var(--text3);margin:14px 0 16px"></div>
+  <div id="home-clocks" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
   <div id="home-grid" class="home-grid"></div>
-  <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:20px">Kliko një modul për të hyrë — çdo modul përmban vetëm faqet e veta</div>
+  <div id="home-pulse" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:22px"></div>
+  <div id="home-quote" style="text-align:center;margin-top:18px"></div>
+  <div id="home-radio" style="display:flex;align-items:center;justify-content:center;gap:12px;margin:18px auto 0;max-width:440px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:10px 16px">
+    <svg id="radio-logo" viewBox="0 0 24 24" style="width:26px;height:26px;flex-shrink:0">
+      <rect x="3" y="12" width="3" height="8" rx="1" fill="#A65F2E"><animate attributeName="height" values="8;8;8" dur="1s" repeatCount="indefinite"/></rect>
+      <rect x="8" y="8" width="3" height="12" rx="1" fill="#A65F2E" opacity=".75"/>
+      <rect x="13" y="5" width="3" height="15" rx="1" fill="#A65F2E"/>
+      <rect x="18" y="10" width="3" height="10" rx="1" fill="#A65F2E" opacity=".75"/>
+    </svg>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Radio</div>
+      <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+        <option value="0">Chill / Fokus</option>
+        <option value="1">Chill Soul & Blues</option>
+        <option value="2">Chill Neoclassical</option>
+        <option value="3">Ambient</option>
+        <option value="4">80s & 90s</option>
+        <option value="5">Rock Anthems (U2 etj.)</option>
+      </select>
+    </div>
+    <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:38px;height:38px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
+      <svg id="radio-play-ic" viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
+    </span>
+    <audio id="radio-audio" preload="none"></audio>
+  </div>
+  <svg viewBox="0 0 680 112" style="display:block;width:100%;max-width:760px;margin:10px auto 0" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="#A65F2E" stroke-width="1.2" fill="none" opacity=".5">
+      <path d="M40 105 L40 72 L72 54 L72 72 L104 54 L104 72 L136 54 L136 72 L168 54 L168 105"/>
+      <line x1="72" y1="72" x2="72" y2="105"/><line x1="104" y1="72" x2="104" y2="105"/><line x1="136" y1="72" x2="136" y2="105"/>
+      <rect x="52" y="86" width="14" height="19"/><rect x="116" y="86" width="14" height="19"/>
+      <line x1="240" y1="105" x2="240" y2="32"/><line x1="272" y1="105" x2="272" y2="32"/><line x1="304" y1="105" x2="304" y2="32"/><line x1="336" y1="105" x2="336" y2="32"/>
+      <line x1="240" y1="32" x2="336" y2="32"/><line x1="240" y1="56" x2="336" y2="56"/><line x1="240" y1="80" x2="336" y2="80"/>
+      <line x1="240" y1="56" x2="272" y2="32"/><line x1="272" y1="80" x2="304" y2="56"/><line x1="304" y1="105" x2="336" y2="80"/>
+      <line x1="240" y1="80" x2="272" y2="56"/>
+      <line x1="400" y1="105" x2="400" y2="16"/><line x1="406" y1="105" x2="406" y2="16"/>
+      <line x1="400" y1="96" x2="406" y2="88"/><line x1="406" y1="96" x2="400" y2="88"/><line x1="400" y1="76" x2="406" y2="68"/><line x1="406" y1="76" x2="400" y2="68"/><line x1="400" y1="56" x2="406" y2="48"/><line x1="406" y1="56" x2="400" y2="48"/><line x1="400" y1="36" x2="406" y2="28"/><line x1="406" y1="36" x2="400" y2="28"/>
+      <line x1="368" y1="20" x2="478" y2="20"/><line x1="403" y1="8" x2="368" y2="20"/><line x1="403" y1="8" x2="478" y2="20"/><line x1="403" y1="8" x2="403" y2="16"/>
+      <line x1="452" y1="20" x2="452" y2="58"/><path d="M448 58 h8 l-4 7 z"/>
+      <rect x="500" y="66" width="120" height="39"/>
+      <path d="M500 66 L560 46 L620 66"/>
+      <line x1="530" y1="66" x2="530" y2="105"/><line x1="560" y1="66" x2="560" y2="105"/><line x1="590" y1="66" x2="590" y2="105"/>
+      <rect x="510" y="82" width="12" height="23"/><rect x="598" y="82" width="12" height="23"/>
+      <line x1="636" y1="105" x2="636" y2="34"/><line x1="646" y1="105" x2="646" y2="34"/><line x1="636" y1="34" x2="646" y2="34"/><line x1="634" y1="42" x2="648" y2="42"/>
+    </g>
+    <text x="340" y="110" text-anchor="middle" style="font-size:10px;letter-spacing:3.5px;fill:#A65F2E;opacity:.75;font-family:Inter,sans-serif">STEEL IS OUR BUSINESS</text>
+  </svg>
 </div>
 
 <div id="page-import" class="page">
@@ -1176,11 +1224,120 @@ function goHome(){
   renderSideNav(null,null);
   renderHome();
 }
+var HOME_CITIES=[
+  {n:'Prishtinë',tz:'Europe/Belgrade',lat:42.66,lon:21.17},
+  {n:'München',tz:'Europe/Berlin',lat:48.14,lon:11.58,work:true},
+  {n:'London',tz:'Europe/London',lat:51.51,lon:-0.13,work:true}
+];
+var HOME_QUOTES=[
+  'Qualität ist kein Zufall — sie ist das Ergebnis harter Arbeit.',
+  'Çeliku kalitet në zjarr, njeriu në punë.',
+  'Wer aufhört, besser zu werden, hat aufgehört, gut zu sein.',
+  'Puna e mirë flet vetë.',
+  'Zweimal messen, einmal schneiden.',
+  'Kush punon me nder, ndërton për breza.',
+  'Stahl verzeiht keine Fehler — Präzision ist alles.',
+  'Suksesi është shuma e përpjekjeve të vogla, të përsëritura çdo ditë.',
+  'Vertrauen ist die härteste Währung im Geschäft.',
+  'Themelet e forta nuk duken, por mbajnë gjithçka.'
+];
+var RADIO_CHANNELS=[
+  {n:'Chill / Fokus',url:'https://ice1.somafm.com/groovesalad-128-mp3'},
+  {n:'Chill Soul & Blues',url:'https://ice1.somafm.com/7soul-128-mp3'},
+  {n:'Chill Neoclassical',url:'https://stream.srg-ssr.ch/m/rsc_de/mp3_128'},
+  {n:'Ambient',url:'https://ice1.somafm.com/deepspaceone-128-mp3'},
+  {n:'80s & 90s',url:'https://ice1.somafm.com/u80s-128-mp3'},
+  {n:'Rock Anthems (U2 etj.)',url:'https://stream.radioparadise.com/rock-128'}
+];
+var _radioOn=false;
+function radioEl(){ return document.getElementById('radio-audio'); }
+function radioSetCh(){
+  var i=parseInt(document.getElementById('radio-ch').value,10)||0;
+  localStorage.setItem('pristeel_radio_ch',i);
+  var a=radioEl(); if(!a) return;
+  var wasOn=_radioOn;
+  a.src=RADIO_CHANNELS[i].url;
+  if(wasOn){ a.play().catch(function(){}); }
+}
+function radioToggle(){
+  var a=radioEl(); if(!a) return;
+  if(!a.src){ radioSetCh(); }
+  if(_radioOn){ a.pause(); _radioOn=false; }
+  else { a.play().catch(function(){alert('Streami nuk u hap — provo kanal tjetër.');}); _radioOn=true; }
+  var ic=document.getElementById('radio-play-ic');
+  if(ic) ic.innerHTML=_radioOn
+    ?'<rect x="5" y="4" width="4.5" height="16" rx="1" fill="#fff"/><rect x="14.5" y="4" width="4.5" height="16" rx="1" fill="#fff"/>'
+    :'<polygon points="6,4 20,12 6,20" fill="#fff"/>';
+  var lg=document.getElementById('radio-logo');
+  if(lg){
+    lg.innerHTML=_radioOn
+      ?'<rect x="3" y="12" width="3" rx="1" fill="#A65F2E" height="8"><animate attributeName="height" values="8;14;6;12;8" dur="0.9s" repeatCount="indefinite"/><animate attributeName="y" values="12;6;14;8;12" dur="0.9s" repeatCount="indefinite"/></rect><rect x="8" y="8" width="3" rx="1" fill="#A65F2E" opacity=".75" height="12"><animate attributeName="height" values="12;6;15;9;12" dur="0.8s" repeatCount="indefinite"/><animate attributeName="y" values="8;14;5;11;8" dur="0.8s" repeatCount="indefinite"/></rect><rect x="13" y="5" width="3" rx="1" fill="#A65F2E" height="15"><animate attributeName="height" values="15;9;13;7;15" dur="1s" repeatCount="indefinite"/><animate attributeName="y" values="5;11;7;13;5" dur="1s" repeatCount="indefinite"/></rect><rect x="18" y="10" width="3" rx="1" fill="#A65F2E" opacity=".75" height="10"><animate attributeName="height" values="10;14;7;12;10" dur="0.85s" repeatCount="indefinite"/><animate attributeName="y" values="10;6;13;8;10" dur="0.85s" repeatCount="indefinite"/></rect>'
+      :'<rect x="3" y="12" width="3" height="8" rx="1" fill="#A65F2E"/><rect x="8" y="8" width="3" height="12" rx="1" fill="#A65F2E" opacity=".75"/><rect x="13" y="5" width="3" height="15" rx="1" fill="#A65F2E"/><rect x="18" y="10" width="3" height="10" rx="1" fill="#A65F2E" opacity=".75"/>';
+  }
+}
+function radioInit(){
+  var sel=document.getElementById('radio-ch'); if(!sel) return;
+  var saved=parseInt(localStorage.getItem('pristeel_radio_ch')||'0',10);
+  if(saved>=0&&saved<RADIO_CHANNELS.length) sel.value=saved;
+}
+var _homeWx={}, _homeChf=null, _homeClockTimer=null;
+function homeTickClocks(){
+  HOME_CITIES.forEach(function(c,i){
+    var el=document.getElementById('hc-time-'+i); if(!el) return;
+    var now=new Date();
+    var t=new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:c.tz}).format(now);
+    el.textContent=t;
+    var h=parseInt(new Intl.DateTimeFormat('en-GB',{hour:'2-digit',hour12:false,timeZone:c.tz}).format(now),10);
+    var dow=new Intl.DateTimeFormat('en-GB',{weekday:'short',timeZone:c.tz}).format(now);
+    var isWork=c.work && ['Sat','Sun'].indexOf(dow)===-1 && h>=8 && h<17;
+    var wl=document.getElementById('hc-work-'+i);
+    if(wl) wl.innerHTML=isWork?' · <span style="color:var(--green-text)">orar pune</span>':'';
+  });
+}
+function homeLoadWeather(){
+  HOME_CITIES.forEach(function(c,i){
+    fetch('https://api.open-meteo.com/v1/forecast?latitude='+c.lat+'&longitude='+c.lon+'&current_weather=true')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d&&d.current_weather){
+          var el=document.getElementById('hc-wx-'+i);
+          if(el) el.textContent=Math.round(d.current_weather.temperature)+'°C';
+        }
+      }).catch(function(){});
+  });
+  fetch('https://api.frankfurter.app/latest?from=EUR&to=USD')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d&&d.rates&&d.rates.USD){
+        var e=document.getElementById('pulse-kurs'),le=document.getElementById('pulsel-kurs');
+        if(e) e.textContent=d.rates.USD.toFixed(4);
+        if(le) le.textContent='1 € në USD';
+      }
+    }).catch(function(){});
+}
 function renderHome(){
   var el=document.getElementById('home-grid'); if(!el) return;
   var g=document.getElementById('home-greet');
   var dt=new Date().toLocaleDateString('sq-AL',{weekday:'long',day:'numeric',month:'long'});
   if(g) g.textContent=dt.charAt(0).toUpperCase()+dt.slice(1);
+  var ck=document.getElementById('home-clocks');
+  if(ck) ck.innerHTML=HOME_CITIES.map(function(c,i){
+    return '<div style="text-align:center;background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 16px;min-width:104px">'
+      +'<div style="font-size:15px;font-weight:650" id="hc-time-'+i+'">--:--</div>'
+      +'<div style="font-size:10px;color:var(--text3)">'+c.n+'<span id="hc-work-'+i+'"></span></div>'
+      +'<div style="font-size:10.5px;color:var(--text2);margin-top:2px" id="hc-wx-'+i+'">…</div>'
+    +'</div>';
+  }).join('');
+  homeTickClocks();
+  if(_homeClockTimer) clearInterval(_homeClockTimer);
+  _homeClockTimer=setInterval(homeTickClocks,30000);
+  homeLoadWeather();
+  radioInit();
+  var q=document.getElementById('home-quote');
+  if(q){
+    var doy=Math.floor((Date.now()-new Date(new Date().getFullYear(),0,0))/86400000);
+    q.innerHTML='<div style="font-size:12.5px;color:var(--text2);font-style:italic">&ldquo;'+HOME_QUOTES[doy%HOME_QUOTES.length]+'&rdquo;</div>';
+  }
   el.innerHTML=MODULES.map(function(m){
     return '<div class="mod-tile" onclick="showPage(\''+m.pages[0]+'\')">'
       +'<div class="mod-ic" style="background:'+m.bg+'">'+tintSvg(m.ic,m.c)+'</div>'
@@ -1188,8 +1345,20 @@ function renderHome(){
       +'<div class="mod-stat" id="modstat-'+m.id+'"></div>'
     +'</div>';
   }).join('');
+  var pu=document.getElementById('home-pulse');
+  if(pu) pu.innerHTML=['tonazh','rfq','oferta','kurs'].map(function(k){
+    return '<div style="background:var(--bg2);border-radius:9px;padding:9px 18px;text-align:center;min-width:96px">'
+      +'<div style="font-size:16px;font-weight:650" id="pulse-'+k+'">—</div>'
+      +'<div style="font-size:10px;color:var(--text3)" id="pulsel-'+k+'"></div></div>';
+  }).join('');
+  function setPulse(k,v,l,c){var e=document.getElementById('pulse-'+k),le=document.getElementById('pulsel-'+k);if(e){e.textContent=v;if(c)e.style.color=c;}if(le)le.textContent=l;}
   var today=new Date().toISOString().slice(0,10);
   try{
+  supaFetch('bom_items?select=kg').then(function(r){
+    if(r){var t=0;r.forEach(function(x){t+=(parseFloat(x.kg)||0);});setPulse('tonazh',(t/1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,'.')+' t','në BOM aktive','#993C1D');}
+  }).catch(function(){});
+  supaFetch('rfq_log?select=id').then(function(r){ if(r)setPulse('rfq',r.length,'RFQ dërguar'); }).catch(function(){});
+  supaFetch('offers_inbox?processed=eq.false&select=id').then(function(r){ if(r)setPulse('oferta',r.length,'email për analizë'); }).catch(function(){});
   supaFetch('tasks?status=eq.hapur&due_date=lte.'+today+'&select=id').then(function(r){
     var e=document.getElementById('modstat-detyrat'); if(e&&r) e.textContent=r.length?(r.length+' sot'):'asnjë sot';
     if(e&&r&&r.length) e.style.color='#993C1D';
