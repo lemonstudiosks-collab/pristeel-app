@@ -92,26 +92,44 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 .ct-ic:hover{border-color:var(--bronze);color:var(--bronze);background:var(--bronze-bg)}
 
 /* Detyrat */
-.tk{display:flex;align-items:flex-start;gap:11px;padding:11px 12px;border:1px solid var(--border);border-radius:9px;
-    margin-bottom:7px;background:#fff;box-shadow:var(--sh-1);transition:all .16s ease}
+#hub-tasks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:760px){#hub-tasks{grid-template-columns:1fr}}
+.tk{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border:1px solid var(--border);border-radius:7px;
+    background:#fff;box-shadow:var(--sh-1);transition:all .16s ease;cursor:pointer;min-width:0}
 .tk:hover{box-shadow:var(--sh-2);border-color:var(--border2)}
-.tk.urgent{border-left:3px solid var(--red-text)}
-.tk.soon{border-left:3px solid var(--bronze)}
-.tk-box{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:4px;flex-shrink:0;margin-top:1px;
+.tk.cat-klient{border-left:3px solid var(--bronze);border-right:3px solid var(--bronze)}
+.tk.cat-furnitor{border-left:3px solid #46647A;border-right:3px solid #46647A}
+.tk.cat-intern{border-left:3px solid var(--text3);border-right:3px solid var(--text3)}
+.tk-cat-ic{flex-shrink:0;margin-top:1px;width:15px;height:15px;stroke-width:1.8;fill:none}
+.tk.cat-klient .tk-cat-ic{stroke:var(--bronze-dark)}
+.tk.cat-furnitor .tk-cat-ic{stroke:#2C4A5E}
+.tk.cat-intern .tk-cat-ic{stroke:var(--text3)}
+.tk-box{width:15px;height:15px;border:1.5px solid var(--border2);border-radius:4px;flex-shrink:0;margin-top:1px;
         cursor:pointer;transition:all .15s ease;display:flex;align-items:center;justify-content:center}
 .tk-box:hover{border-color:var(--text);background:var(--bg2)}
 .tk-body{flex:1;min-width:0}
-.tk-t{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.35}
+.tk-t{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tk-auto{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;color:#fff;background:var(--bronze);border-radius:3px;padding:1px 5px;margin-right:5px;vertical-align:middle}
-.tk-s{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.45}
-.tk-p{font-size:10.5px;color:var(--text3);margin-top:3px}
-.tk-when{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
-.tk-d{font-size:11px;font-weight:650;white-space:nowrap}
-.tk-act{font-size:10.5px;color:var(--text3);cursor:pointer;padding:2px 7px;border-radius:5px;border:1px solid transparent;transition:all .15s}
+.tk-s{font-size:10px;color:var(--text3);margin-top:2px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-p{font-size:10px;color:var(--text3);margin-top:2px}
+.tk-when{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.tk-d{font-size:10.5px;font-weight:650;white-space:nowrap}
+.tk-udot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.tk-act{font-size:10px;color:var(--text3);cursor:pointer;padding:2px 6px;border-radius:5px;border:1px solid transparent;transition:all .15s}
 .tk:hover .tk-act{color:var(--bronze);border-color:var(--border2)}
 .tk-act:hover{background:var(--bronze);color:#fff!important;border-color:var(--bronze)}
 .tk-done{opacity:.45}
 .tk-done .tk-t{text-decoration:line-through}
+.tk-toast{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--green-bg);border-radius:8px;font-size:11.5px;color:var(--green-text);margin-bottom:10px;cursor:pointer}
+.tk-legend{display:flex;gap:16px;font-size:11px;color:var(--text2);margin:2px 0 16px}
+.tk-legend span{display:flex;align-items:center;gap:5px}
+.tk-legend svg{width:13px;height:13px;stroke-width:1.8;fill:none}
+.pst-modal-bg{position:fixed;inset:0;background:rgba(26,26,25,.35);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px}
+.pst-modal{background:#fff;border-radius:12px;max-width:520px;width:100%;max-height:82vh;overflow:auto;box-shadow:var(--sh-3)}
+.pst-modal-hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pst-modal-bd{padding:18px 20px}
+.pst-modal-x{cursor:pointer;color:var(--text3);font-size:18px;line-height:1;padding:2px 6px}
+.pst-modal-x:hover{color:var(--text)}
 
 /* Karta e projektit */
 .pj{background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:9px;overflow:hidden;
@@ -317,6 +335,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </button>
     </div>
 
+    <div class="nav-section" style="margin-top:0">Përmbledhje</div>
     <div class="nav-item active" onclick="showPage('qendra')">
       <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       Detyrat
@@ -324,10 +343,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="nav-item" onclick="showPage('import')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       Projektet
-    </div>
-    <div class="nav-item" onclick="showPage('contacts')">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Kontaktet
     </div>
 
     <div class="nav-section">Hapat e projektit</div>
@@ -356,6 +371,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       6 · Faturat
     </div>
 
+    <div class="nav-section">Të dhëna</div>
+    <div class="nav-item" onclick="showPage('contacts')">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Kontaktet
+    </div>
+
     <div class="nav-section">Veglat</div>
     <div class="nav-item" onclick="showPage('kalkulator')">
       <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
@@ -365,6 +386,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Financat
     </div>
+
+    <div class="nav-section">Sistemi</div>
     <div class="nav-item" onclick="showPage('settings')">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Cilësimet
@@ -1077,8 +1100,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Furnitorët e paracaktuar</div>
-    <div class="text-sm text-muted mb-12">Këta furnitorë do të shfaqen automatikisht te RFQ.</div>
+    <div class="card-title">Furnitorët rezervë (backup)</div>
+    <div class="text-sm text-muted mb-12">RFQ tani i propozon automatikisht furnitorët nga faqja "Furnitorët" (sipas kategorisë/gradës së BOM-it). Kjo listë përdoret vetëm nëse s'gjendet asnjë furnitor i përshtatshëm atje.</div>
     <div id="default-suppliers"></div>
     <button class="btn btn-sm mt-12" onclick="addDefaultSupplier()">+ Shto furnitor</button>
   </div>
@@ -1537,7 +1560,26 @@ function bomKey(r){
   ].join('|');
 }
 
-function applyParsedBom(parsed){
+var PROFILE_TO_CAT={PLATE:'heavy_plate',FLAT:'heavy_plate',HEA:'profiles',HEB:'profiles',IPE:'profiles',RHS:'profiles',SHS:'profiles',CHS:'profiles',ANGLE:'profiles',TUBE:'tubes',ALUMINUM:'profiles',MACHINED_PART:'fabrication'};
+async function matchPartnersForBom(rows){
+  try{
+    var cats={};
+    rows.forEach(function(r){ var c=PROFILE_TO_CAT[r.profile]; if(c) cats[c]=true; });
+    var catList=Object.keys(cats);
+    if(!catList.length) return [];
+    var partners=await supaFetch('partners?relation=cs.{supplier}&categories=ov.{'+catList.join(',')+'}&stage=eq.active&select=id,name,categories&order=importance.desc');
+    if(!partners||!partners.length) return [];
+    var ids=partners.map(function(p){return p.id;});
+    var contacts=await supaFetch('partner_contacts?partner_id=in.('+ids.join(',')+')&select=partner_id,email,language,is_primary').catch(function(){return[];});
+    return partners.map(function(p){
+      var pc=contacts.filter(function(c){return c.partner_id===p.id;});
+      var primary=pc.filter(function(c){return c.is_primary;})[0]||pc[0]||{};
+      var isRaw=(p.categories||[]).some(function(c){return c==='heavy_plate'||c==='sheet'||c==='profiles'||c==='tubes';});
+      return {id:Date.now()+Math.random(), name:p.name, email:primary.email||'', country:'', lang:primary.language||'en', cat:isRaw?'rawmat':'producer'};
+    });
+  }catch(e){ console.error('matchPartnersForBom', e); return []; }
+}
+async function applyParsedBom(parsed){
   const items=parsed.items||[];
   const seenKeys=[]; // keys touched in this pass, to report how many were merged vs new
 
@@ -1616,7 +1658,10 @@ function applyParsedBom(parsed){
     document.getElementById('bom-issues').innerHTML='⚠ '+issues.map(i=>'<span>'+i+'</span>').join(' &nbsp;·&nbsp; ');
   }
 
-  if(suppliers.length===0)suppliers=[...defaultSuppliers.map(s=>({...s,id:Date.now()+Math.random()}))];
+  if(suppliers.length===0){
+    var matched=await matchPartnersForBom(bomRows);
+    suppliers = matched.length ? matched : [...defaultSuppliers.map(s=>({...s,id:Date.now()+Math.random()}))];
+  }
 
   document.getElementById('i-text').value = '';
   document.getElementById('char-count').textContent = '0 karaktere';
@@ -2222,10 +2267,11 @@ function saveSettings(){
 }
 function addDefaultSupplier(){
   defaultSuppliers.push({id:Date.now(),name:'',email:'',country:'',lang:'en'});
-  renderSettings();
+  saveDefaultSuppliers();renderSettings();
 }
-function remDefaultSupplier(id){defaultSuppliers=defaultSuppliers.filter(s=>s.id!==id);renderSettings();}
-function updDefaultSupplier(id,f,v){const s=defaultSuppliers.find(s=>s.id===id);if(s)s[f]=v;}
+function remDefaultSupplier(id){defaultSuppliers=defaultSuppliers.filter(s=>s.id!==id);saveDefaultSuppliers();renderSettings();}
+function updDefaultSupplier(id,f,v){const s=defaultSuppliers.find(s=>s.id===id);if(s)s[f]=v;saveDefaultSuppliers();}
+function saveDefaultSuppliers(){localStorage.setItem('pristeel_default_suppliers',JSON.stringify(defaultSuppliers));}
 function renderSettings(){
   const k=localStorage.getItem('pristeel_apikey')||'';
   if(k)document.getElementById('s-apikey').value=k;
@@ -2417,6 +2463,8 @@ offers.push({
 // ── INIT ─────────────────────────────────────────────
 const saved=localStorage.getItem('pristeel_settings');
 if(saved){const s=JSON.parse(saved);Object.assign(settings,s);}
+const savedSup=localStorage.getItem('pristeel_default_suppliers');
+if(savedSup){try{const ds=JSON.parse(savedSup); if(Array.isArray(ds)&&ds.length) defaultSuppliers=ds;}catch(e){}}
 </script>
 
 <script>
@@ -4617,6 +4665,13 @@ async function autoGenerateFollowups(){
   }catch(e){ console.error('autoGenerateFollowups', e); }
 }
 
+var TK_ICON={
+  klient:'<svg class="tk-cat-ic" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>',
+  furnitor:'<svg class="tk-cat-ic" viewBox="0 0 24 24"><rect x="3" y="9" width="7" height="12"/><path d="M10 21V7l6-4v18"/><path d="M16 21v-9h5v9"/></svg>',
+  intern:'<svg class="tk-cat-ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>'
+};
+var TK_LABEL={klient:'Klient',furnitor:'Furnitor',intern:'Intern'};
+var _tkCache={};
 async function loadTasks(){
   var el=document.getElementById('hub-tasks'); if(!el) return;
   var today=new Date(); today.setHours(0,0,0,0);
@@ -4624,15 +4679,17 @@ async function loadTasks(){
     var rows=await supaFetch('tasks?status=eq.hapur&order=due_date.asc&limit=30');
     var projs=await supaFetch('projects?select=id,name&limit=50').catch(function(){return[];});
     var pN={}; projs.forEach(function(p){ pN[p.id]=p.name; });
+    _tkCache={}; rows.forEach(function(t){ _tkCache[t.id]=t; _tkCache[t.id]._projName=pN[t.project_id]||''; });
     if(!rows||!rows.length){ el.innerHTML='<div class="hub-none">Asnjë detyrë e hapur. Shto një me "+ Detyrë".</div>'; return; }
     el.innerHTML=rows.map(function(t){
       var d=hDays(new Date(t.due_date), today);
-      var cls = d<=2?'urgent':(d<=7?'soon':'');
       var col = d<0?'var(--red-text)':(d<=2?'var(--red-text)':(d<=7?'var(--bronze)':'var(--text3)'));
       var when = d<0?('vonuar '+Math.abs(d)+' d'):(d===0?'SOT':(d===1?'nesër':d+' ditë'));
+      var cat = t.category||'intern';
       var mail = t.contact_email ? '<span class="tk-act" onclick="event.stopPropagation();window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(t.contact_email)+'&su='+encodeURIComponent(t.title)+'\',\'_blank\')">Email →</span>' : '';
-      return '<div class="tk '+cls+'" id="tk-'+t.id+'">'
-        +'<div class="tk-box" onclick="doneTask(\''+t.id+'\')" title="Shëno si të kryer"></div>'
+      return '<div class="tk cat-'+cat+'" id="tk-'+t.id+'" onclick="openTaskDetail(\''+t.id+'\')">'
+        +'<div class="tk-box" onclick="event.stopPropagation();doneTask(\''+t.id+'\')" title="Shëno si të kryer"></div>'
+        +(TK_ICON[cat]||'')
         +'<div class="tk-body">'
           +'<div class="tk-t">'+(t.source==='auto_followup'?'<span class="tk-auto">AUTO</span> ':'')+t.title.replace('[AUTO] ','')+'</div>'
           +(t.detail?'<div class="tk-s">'+t.detail+'</div>':'')
@@ -4640,25 +4697,68 @@ async function loadTasks(){
         +'</div>'
         +'<div class="tk-when">'
           +'<div class="tk-d" style="color:'+col+'">'+when+'</div>'
-          +'<div style="font-size:10px;color:var(--text3)">'+new Date(t.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+'</div>'
+          +'<div style="font-size:9.5px;color:var(--text3)">'+new Date(t.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+'</div>'
           +mail
         +'</div>'
       +'</div>';
-    }).join('');
+    }).join('')
+    +'<div class="tk-legend">'
+      +'<span>'+TK_ICON.klient+' Klient/Projekt</span>'
+      +'<span>'+TK_ICON.furnitor+' Furnitor</span>'
+      +'<span>'+TK_ICON.intern+' Intern</span>'
+    +'</div>';
   }catch(e){ el.innerHTML='<div class="hub-none">Tabela "tasks" mungon — ekzekuto SQL-në.</div>'; }
 }
+function openTaskDetail(id){
+  var t=_tkCache[id]; if(!t) return;
+  var cat=t.category||'intern';
+  var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='pst-tk-modal';
+  bg.onclick=function(e){ if(e.target===bg) closeTaskDetail(); };
+  bg.innerHTML='<div class="pst-modal">'
+    +'<div class="pst-modal-hd"><div>'
+      +'<div style="font-size:14px;font-weight:650">'+t.title.replace('[AUTO] ','')+'</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:3px">'+TK_LABEL[cat]+(t._projName?' · '+t._projName:'')+'</div>'
+    +'</div><span class="pst-modal-x" onclick="closeTaskDetail()">✕</span></div>'
+    +'<div class="pst-modal-bd">'
+      +(t.detail?'<div style="font-size:12.5px;color:var(--text2);margin-bottom:14px;line-height:1.5">'+t.detail+'</div>':'')
+      +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Afati</td><td style="text-align:right">'+new Date(t.due_date).toLocaleDateString('de-DE')+'</td></tr>'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Prioriteti</td><td style="text-align:right">'+(t.priority||'normal')+'</td></tr>'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Burimi</td><td style="text-align:right">'+(t.source==='auto_followup'?'Automatik (ndjekje RFQ)':'Manual')+'</td></tr>'
+        +(t.contact_email?'<tr><td style="color:var(--text3);padding:5px 0">Kontakti</td><td style="text-align:right">'+t.contact_email+'</td></tr>':'')
+      +'</table>'
+      +'<div style="display:flex;gap:8px;margin-top:18px">'
+        +(t.project_id?'<button class="btn btn-sm" style="flex:1" onclick="closeTaskDetail();openProjectDetail(\''+t.project_id+'\')">Hap projektin →</button>':'')
+        +(t.contact_email?'<button class="btn btn-sm" style="flex:1" onclick="window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(t.contact_email)+'&su='+encodeURIComponent(t.title)+'\',\'_blank\')">Email →</button>':'')
+        +'<button class="btn btn-primary btn-sm" style="flex:1" onclick="doneTask(\''+t.id+'\');closeTaskDetail()">Shëno të kryer</button>'
+      +'</div>'
+    +'</div></div>';
+  document.body.appendChild(bg);
+}
+function closeTaskDetail(){ var m=document.getElementById('pst-tk-modal'); if(m) m.remove(); }
 function doneTask(id){
   var el=document.getElementById('tk-'+id);
   if(el) el.classList.add('tk-done');
   supaFetch('tasks?id=eq.'+id,'PATCH',{status:'kryer',done_at:new Date().toISOString()})
-    .then(function(){ setTimeout(loadTasks,350); }).catch(function(){});
+    .then(function(){
+      var host=document.getElementById('hub-tasks');
+      if(host){
+        var t=document.createElement('div'); t.className='tk-toast';
+        t.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Detyra u mbyll — arkivuar te "Kryer sot"';
+        host.parentNode.insertBefore(t, host);
+        setTimeout(function(){ t.remove(); }, 4000);
+      }
+      setTimeout(loadTasks,350);
+    }).catch(function(){});
 }
 function addTask(){
   var t=prompt('Detyra:'); if(!t) return;
   var dd=prompt('Afati (VVVV-MM-DD):', new Date(Date.now()+86400000).toISOString().slice(0,10)); if(!dd) return;
   var det=prompt('Detaje (ops.):','')||null;
   var em=prompt('Email kontakti (ops.):','')||null;
-  supaFetch('tasks','POST',{title:t, due_date:dd, detail:det, contact_email:em,
+  var cat=prompt('Kategoria — shkruaj: klient / furnitor / intern','intern');
+  if(!cat||['klient','furnitor','intern'].indexOf(cat.trim().toLowerCase())===-1) cat='intern'; else cat=cat.trim().toLowerCase();
+  supaFetch('tasks','POST',{title:t, due_date:dd, detail:det, contact_email:em, category:cat,
     project_id:(typeof _curProjId!=='undefined'?_curProjId:null),
     priority:'normal', source:'manual'})
     .then(loadTasks).catch(function(e){alert('Gabim: '+e.message);});
@@ -4776,10 +4876,11 @@ async function loadHub(){
       supaFetch('rfq_log?limit=120').catch(function(){return[];}),
       supaFetch('project_docs?select=id,project_id,doc_type,title,status&limit=200').catch(function(){return[];}),
       supaFetch('offers_inbox?processed=eq.false&select=id,sender,subject,received_at&order=received_at.desc&limit=8').catch(function(){return[];}),
+      supaFetch('offers_inbox?select=id,sender,subject,received_at,processed&order=received_at.desc&limit=300').catch(function(){return[];}),
       supaFetch('bank_guarantees?limit=30').catch(function(){return[];})
     ]);
     var projs=res[0]||[], quotes=res[1]||[], offs=res[2]||[], boms=res[3]||[],
-        invs=res[4]||[], rfqs=res[5]||[], docs=res[6]||[], inbox=res[7]||[], gars=res[8]||[];
+        invs=res[4]||[], rfqs=res[5]||[], docs=res[6]||[], inbox=res[7]||[], allEmails=res[8]||[], gars=res[9]||[];
 
     var bomKg={}, bomN={};
     boms.forEach(function(b){ if(!b.project_id) return;
@@ -4804,6 +4905,15 @@ async function loadHub(){
       var pdocs=docs.filter(function(x){return x.project_id===p.id;});
       var paid=pinv.filter(function(x){return x.paid;});
       var kg=bomKg[p.id]||0;
+
+      var supDomains=pr.map(function(x){var e=(x.supplier_email||'').split('@')[1]; return e?e.toLowerCase():null;}).filter(Boolean);
+      var clientKw=((p.client||'').split(/[,(]/)[0]||'').toLowerCase().trim();
+      var pemails=allEmails.filter(function(m){
+        var s=(m.sender||'').toLowerCase();
+        if(supDomains.some(function(d){return s.indexOf(d)>-1;})) return true;
+        if(clientKw&&clientKw.length>4&&s.indexOf(clientKw.split(' ')[0])>-1) return true;
+        return false;
+      }).slice(0,5);
 
       var cSteel=null,cZinc=null,cTrans=null;
       so.forEach(function(o){
@@ -4882,12 +4992,21 @@ async function loadHub(){
             var cls=st[s.k]?'done':(i3===nowIdx?'now':'');
             return '<div class="pj-step '+cls+'"><div class="pj-dot"></div><div class="pj-lbl">'+s.l+'</div></div>';
           }).join('')+'</div>'
-        +'<div class="pj-body">'+(rows.length?rows.map(function(r){
+        +'<div class="pj-body">'
+        +(pemails.length?'<div style="font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--text3);margin:2px 0 6px">EMAILAT E LIDHUR ('+pemails.length+')</div>'
+          +pemails.map(function(m){
+            var from=(m.sender||'').replace(/<.*/,'').replace(/"/g,'').trim()||m.sender;
+            return '<div class="pj-row"><span class="pj-row-ico">✉</span><span class="pj-row-txt"><b>'+from+'</b> — '+(m.subject||'')+'</span></div>';
+          }).join('')+'<div style="margin-bottom:10px"></div>':'')
+        +(rows.length?rows.map(function(r){
             return '<div class="pj-row"><span class="pj-row-ico">'+r.i+'</span>'
               +'<span class="pj-row-txt'+(r.w?' pj-warn':'')+'">'+r.t+'</span>'
               +(r.a&&r.f?'<span class="pj-row-act" onclick="event.stopPropagation();'+r.f.replace(/"/g,'&quot;')+'">'+r.a+' \u2192</span>':'')
             +'</div>';
           }).join(''):'<div class="hub-none">Ende pa aktivitet.</div>')
+        +'<div style="font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--text3);margin:12px 0 6px">SHËNIME</div>'
+        +'<textarea id="pj-notes-'+p.id+'" placeholder="Shto shënim për këtë projekt…" style="width:100%;min-height:50px;font-size:11.5px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;resize:vertical" onclick="event.stopPropagation()">'+(p.notes||'')+'</textarea>'
+        +'<div style="margin-top:6px"><button class="btn btn-sm" onclick="event.stopPropagation();saveProjectNotes(\''+p.id+'\')">Ruaj shënimin</button></div>'
         +'<div style="margin-top:9px;display:flex;gap:7px">'
         +'<button class="btn btn-sm" onclick="event.stopPropagation();loadProject(\''+p.id+'\')">Puno me projektin</button>'
         +'<button class="btn btn-sm" onclick="event.stopPropagation();openOverview(\''+p.id+'\')">Pasqyra</button></div>'
@@ -4941,6 +5060,19 @@ async function loadHub(){
       }).join(''):'<div class="hub-none">Inbox-i i paster.</div>';
     }
   }catch(e){ elP.innerHTML='<div class="hub-none" style="color:#A33">Gabim: '+e.message+'</div>'; }
+}
+function saveProjectNotes(id){
+  var ta=document.getElementById('pj-notes-'+id); if(!ta) return;
+  supaFetch('projects?id=eq.'+id,'PATCH',{notes:ta.value})
+    .then(function(){ ta.style.borderColor='var(--green-text)'; setTimeout(function(){ta.style.borderColor='var(--border)';},900); })
+    .catch(function(e){alert('Gabim: '+e.message);});
+}
+function openProjectDetail(projectId){
+  showPage('qendra');
+  setTimeout(function(){
+    var el=document.getElementById('pj-'+projectId);
+    if(el){ el.classList.add('open'); el.scrollIntoView({behavior:'smooth',block:'start'}); }
+  }, 250);
 }
 var loadCockpit=loadHub;
 // ══ ANALIZË MASIVE E INBOX-IT ══
