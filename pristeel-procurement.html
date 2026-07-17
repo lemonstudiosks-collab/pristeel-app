@@ -102,6 +102,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 .tk-box:hover{border-color:var(--text);background:var(--bg2)}
 .tk-body{flex:1;min-width:0}
 .tk-t{font-size:12.5px;font-weight:600;color:var(--text);line-height:1.35}
+.tk-auto{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;color:#fff;background:var(--bronze);border-radius:3px;padding:1px 5px;margin-right:5px;vertical-align:middle}
 .tk-s{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.45}
 .tk-p{font-size:10.5px;color:var(--text3);margin-top:3px}
 .tk-when{flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
@@ -4551,6 +4552,71 @@ function addToCalendar(t,d,iso){ window.open(gcalLink(t,d,iso,30),'_blank'); }
 
 var PJ_STEPS=[{k:'bom',l:'BOM'},{k:'rfq',l:'RFQ'},{k:'kosto',l:'Kosto'},{k:'oferte',l:'Oferte'},{k:'pagese',l:'Pagese'}];
 
+// ══════════════════════════════════════════════
+// AUTO-FOLLOWUP — skanon ofertat (documents_registry) dhe
+// kerkesat te furnitoret (rfq_log), krijon vetë detyra ne
+// "tasks" per ato qe nuk kane pergjigje mbi X dite, pa nderhyrje manuale.
+// ══════════════════════════════════════════════
+var FOLLOWUP_DAYS_QUOTE = 5;   // oferta te klienti - pas ktyre diteve pa pergjigje
+var FOLLOWUP_DAYS_RFQ   = 5;   // kerkese te furnitori - pas ktyre diteve pa pergjigje
+var FOLLOWUP_REPEAT_DAYS= 5;   // sa dite mes dy detyrave follow-up per te njejtin doc/rfq
+
+async function autoGenerateFollowups(){
+  var today=new Date();
+  try{
+    var res=await Promise.all([
+      supaFetch('documents_registry?series=eq.QUO&order=created_at.asc&limit=200').catch(function(){return[];}),
+      supaFetch('rfq_log?order=sent_at.asc&limit=300').catch(function(){return[];}),
+      supaFetch('tasks?source=eq.auto_followup&status=eq.hapur&select=title,detail&limit=200').catch(function(){return[];})
+    ]);
+    var quotes=res[0]||[], rfqs=res[1]||[], existing=res[2]||[];
+    var existingKeys={};
+    existing.forEach(function(t){ existingKeys[t.title]=true; });
+    var toInsert=[];
+
+    quotes.forEach(function(q){
+      var st=q.followup_status||'open';
+      if(st==='won'||st==='lost'||st==='superseded') return;
+      var base=q.last_followup_at?new Date(q.last_followup_at):new Date(q.created_at);
+      var age=hDays(today, base);
+      if(age<FOLLOWUP_DAYS_QUOTE) return;
+      var key='[AUTO] Ndjekje ofertë: '+q.doc_nr;
+      if(existingKeys[key]) return;
+      var os=q.offer_state||{};
+      toInsert.push({
+        title:key,
+        detail:(q.project||'')+' — '+hFmt(q.total_eur)+' € · dërguar '+new Date(q.created_at).toLocaleDateString('de-DE')+' · '+age+' ditë pa përgjigje'+(os.con?(' · '+os.con):''),
+        due_date:today.toISOString().slice(0,10),
+        priority: age>=14?'e larte':'mesatare',
+        status:'hapur', source:'auto_followup',
+        contact_email: os.em||null,
+        project_id: q.project_id||null
+      });
+    });
+
+    rfqs.forEach(function(r){
+      if(r.status==='replied'||r.status==='won'||r.status==='lost'||r.status==='planned') return;
+      if(!r.sent_at) return;
+      var base=r.last_followup_at?new Date(r.last_followup_at):new Date(r.sent_at);
+      var age=hDays(today, base);
+      if(age<FOLLOWUP_DAYS_RFQ) return;
+      var key='[AUTO] Ndjekje furnitor: '+(r.supplier_name||r.supplier_email||r.id);
+      if(existingKeys[key]) return;
+      toInsert.push({
+        title:key,
+        detail:(r.project_name||'')+' — kërkesë dërguar '+new Date(r.sent_at).toLocaleDateString('de-DE')+' · '+age+' ditë pa përgjigje'+(r.followup_count?(' · '+r.followup_count+' ndjekje të bëra'):''),
+        due_date:today.toISOString().slice(0,10),
+        priority:'mesatare',
+        status:'hapur', source:'auto_followup',
+        contact_email: r.supplier_email||null,
+        project_id: r.project_id||null
+      });
+    });
+
+    if(toInsert.length) await supaFetch('tasks','POST',toInsert);
+  }catch(e){ console.error('autoGenerateFollowups', e); }
+}
+
 async function loadTasks(){
   var el=document.getElementById('hub-tasks'); if(!el) return;
   var today=new Date(); today.setHours(0,0,0,0);
@@ -4568,7 +4634,7 @@ async function loadTasks(){
       return '<div class="tk '+cls+'" id="tk-'+t.id+'">'
         +'<div class="tk-box" onclick="doneTask(\''+t.id+'\')" title="Shëno si të kryer"></div>'
         +'<div class="tk-body">'
-          +'<div class="tk-t">'+t.title+'</div>'
+          +'<div class="tk-t">'+(t.source==='auto_followup'?'<span class="tk-auto">AUTO</span> ':'')+t.title.replace('[AUTO] ','')+'</div>'
           +(t.detail?'<div class="tk-s">'+t.detail+'</div>':'')
           +(t.project_id&&pN[t.project_id]?'<div class="tk-p">'+pN[t.project_id]+'</div>':'')
         +'</div>'
@@ -4693,6 +4759,7 @@ function syncHubspot(){
 }
 
 async function loadHub(){
+  await autoGenerateFollowups();
   loadTasks();
   var elP=document.getElementById('hub-projects'), elA=document.getElementById('hub-agenda'), elI=document.getElementById('hub-inbox');
   if(!elP) return;
