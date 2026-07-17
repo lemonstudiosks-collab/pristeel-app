@@ -318,6 +318,23 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+/* ── ODOO-STYLE MODULE SYSTEM ── */
+.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:760px;margin:0 auto}
+@media(max-width:760px){.home-grid{grid-template-columns:repeat(2,1fr)}}
+.mod-tile{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 10px;text-align:center;cursor:pointer;transition:all .16s ease}
+.mod-tile:hover{box-shadow:var(--sh-2);border-color:var(--border2);transform:translateY(-2px)}
+.mod-ic{width:46px;height:46px;border-radius:12px;margin:0 auto 9px;display:flex;align-items:center;justify-content:center}
+.mod-ic svg{width:23px;height:23px;fill:none;stroke-width:1.8}
+.mod-name{font-size:12.5px;font-weight:600;color:var(--text)}
+.mod-stat{font-size:10px;color:var(--text3);margin-top:3px;min-height:13px}
+.side-mod-hd{display:flex;align-items:center;gap:8px;padding:12px 16px 8px;font-size:12px;font-weight:700}
+.side-mod-hd svg{width:15px;height:15px;fill:none;stroke-width:2}
+.side-home-lnk{display:flex;align-items:center;gap:7px;padding:8px 16px;font-size:11px;color:var(--text3);cursor:pointer}
+.side-home-lnk:hover{color:var(--text)}
+.side-home-lnk svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2}
+#modbar svg{flex-shrink:0}
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -334,64 +351,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         Projekt i ri
       </button>
     </div>
-
-    <div class="nav-section" style="margin-top:0">Përmbledhje</div>
-    <div class="nav-item active" onclick="showPage('qendra')">
-      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      Detyrat
-    </div>
-    <div class="nav-item" onclick="showPage('import')">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Projektet
-    </div>
-
-    <div class="nav-section">Hapat e projektit</div>
-    <div class="nav-item" onclick="showPage('bom')">
-      <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      1 · Lista e materialeve
-    </div>
-    <div class="nav-item" onclick="showPage('rfq')">
-      <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-      2 · Kërkesa furnitorëve
-    </div>
-    <div class="nav-item" onclick="showPage('offers')">
-      <svg viewBox="0 0 24 24"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
-      3 · Çmimet e furnitorëve
-    </div>
-    <div class="nav-item" onclick="showPage('ranking')">
-      <svg viewBox="0 0 24 24"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>
-      4 · Krahasimi
-    </div>
-    <div class="nav-item" onclick="showPage('oferta')">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      5 · Oferta për klientin
-    </div>
-    <div class="nav-item" onclick="showPage('invoices')">
-      <svg viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg>
-      6 · Faturat
-    </div>
-
-    <div class="nav-section">Të dhëna</div>
-    <div class="nav-item" onclick="showPage('contacts')">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Kontaktet
-    </div>
-
-    <div class="nav-section">Veglat</div>
-    <div class="nav-item" onclick="showPage('kalkulator')">
-      <svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>
-      Kalkulatori
-    </div>
-    <div class="nav-item" onclick="showPage('finance')">
-      <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      Financat
-    </div>
-
-    <div class="nav-section">Sistemi</div>
-    <div class="nav-item" onclick="showPage('settings')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Cilësimet
-    </div>
+    <div id="side-nav"></div>
   </div>
   <div class="sidebar-footer">
     PRISTEEL Sh.p.k. &copy; 2026<br>sales@prissteel.com
@@ -399,6 +359,15 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div class="main">
+
+<div id="modbar" style="display:none;align-items:center;gap:10px;padding:9px 18px;color:#fff;font-size:13px">
+  <span onclick="goHome()" style="cursor:pointer;display:flex;align-items:center" title="Kthehu te modulet">
+    <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2"><circle cx="5" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="19" cy="5" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="19" r="1.6"/><circle cx="12" cy="19" r="1.6"/><circle cx="19" cy="19" r="1.6"/></svg>
+  </span>
+  <span id="modbar-icon" style="display:flex;align-items:center"></span>
+  <span id="modbar-name" style="font-weight:600"></span>
+  <span id="modbar-crumb" style="opacity:.75;font-size:12px"></span>
+</div>
 
 <div class="topbar">
   <div>
@@ -413,6 +382,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div class="content">
+
+<div id="page-home" class="page active">
+  <div id="home-greet" style="text-align:center;font-size:13px;color:var(--text3);margin:18px 0 22px"></div>
+  <div id="home-grid" class="home-grid"></div>
+  <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:20px">Kliko një modul për të hyrë — çdo modul përmban vetëm faqet e veta</div>
+</div>
 
 <div id="page-import" class="page">
 
@@ -994,7 +969,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   </div>
 </div>
 
-<div id="page-qendra" class="page active">
+<div id="page-qendra" class="page">
   <!-- Rreshti i sipërm: fokusi i sotëm -->
   <div class="hub-top">
     <div class="hub-today">
@@ -1140,21 +1115,100 @@ const pageMeta={
   settings:{title:'Cilësimet',sub:'API Key, Google Drive, HubSpot, profili'}
 };
 
-var PAGE_COLORS={
-  import:'#A65F2E',bom:'#A65F2E',rfq:'#A65F2E',offers:'#A65F2E',ranking:'#A65F2E',
-  kalkulator:'#A65F2E',oferta:'#A65F2E',invoices:'#A65F2E',finance:'#A65F2E',
-  qendra:'#A65F2E',contacts:'#A65F2E',settings:'#A65F2E'
+var MODULES=[
+ {id:'detyrat',name:'Detyrat',c:'#993C1D',mid:'#B8461F',bg:'#FAECE7',pages:['qendra'],
+  ic:'<svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>'},
+ {id:'projektet',name:'Projektet',c:'#3C3489',mid:'#534AB7',bg:'#EEEDFE',pages:['import'],
+  ic:'<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>'},
+ {id:'prokurimi',name:'Prokurimi',c:'#085041',mid:'#0F6E56',bg:'#E1F5EE',pages:['bom','rfq','offers','ranking'],
+  ic:'<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1.5"/><circle cx="19" cy="21" r="1.5"/><path d="M2 3h3l2.6 12.6a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/></svg>'},
+ {id:'shitjet',name:'Shitjet',c:'#0C447C',mid:'#185FA5',bg:'#E6F1FB',pages:['oferta','invoices'],
+  ic:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>'},
+ {id:'kontaktet',name:'Kontaktet',c:'#72243E',mid:'#993556',bg:'#FBEAF0',pages:['contacts'],
+  ic:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
+ {id:'financat',name:'Financat',c:'#27500A',mid:'#3B6D11',bg:'#EAF3DE',pages:['finance'],
+  ic:'<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'},
+ {id:'kalkulatori',name:'Kalkulatori',c:'#633806',mid:'#854F0B',bg:'#FAEEDA',pages:['kalkulator'],
+  ic:'<svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>'},
+ {id:'cilesimet',name:'Cilësimet',c:'#444441',mid:'#5F5E5A',bg:'#F1EFE8',pages:['settings'],
+  ic:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
+];
+var PAGE_NAV={qendra:'Detyrat',import:'Projektet',bom:'1 · BOM',rfq:'2 · RFQ',offers:'3 · Çmimet',ranking:'4 · Krahasimi',oferta:'Oferta klientit',invoices:'Faturat',contacts:'Kontaktet',finance:'Financat',kalkulator:'Kalkulatori',settings:'Cilësimet'};
+var PAGE_ICON={
+ bom:'<svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+ rfq:'<svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+ offers:'<svg viewBox="0 0 24 24"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>',
+ ranking:'<svg viewBox="0 0 24 24"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>',
+ oferta:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+ invoices:'<svg viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/></svg>'
 };
+function moduleOf(p){ for(var i=0;i<MODULES.length;i++) if(MODULES[i].pages.indexOf(p)>-1) return MODULES[i]; return null; }
+function tintSvg(svg,color){ return svg.replace('<svg','<svg style="stroke:'+color+'"'); }
+function renderSideNav(mod,activePage){
+  var el=document.getElementById('side-nav'); if(!el) return;
+  if(!mod){ el.innerHTML=''; return; }
+  var h='<div class="side-home-lnk" onclick="goHome()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Të gjitha modulet</div>'
+    +'<div class="side-mod-hd" style="color:'+mod.c+'">'+tintSvg(mod.ic,mod.c)+mod.name+'</div>';
+  mod.pages.forEach(function(p){
+    var ic=PAGE_ICON[p]||mod.ic;
+    h+='<div class="nav-item'+(p===activePage?' active':'')+'" onclick="showPage(\''+p+'\')">'+ic+PAGE_NAV[p]+'</div>';
+  });
+  el.innerHTML=h;
+}
+function applyModuleChrome(p){
+  var mod=moduleOf(p);
+  var mb=document.getElementById('modbar');
+  if(mod){
+    mb.style.display='flex'; mb.style.background=mod.mid;
+    document.getElementById('modbar-icon').innerHTML=tintSvg(mod.ic,'#fff').replace('<svg','<svg width="16" height="16"');
+    document.getElementById('modbar-name').textContent=mod.name;
+    document.getElementById('modbar-crumb').textContent=mod.pages.length>1?('/ '+(PAGE_NAV[p]||'')):'';
+    document.documentElement.style.setProperty('--page-accent',mod.mid);
+  } else { mb.style.display='none'; }
+  renderSideNav(mod,p);
+}
+function goHome(){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-home').classList.add('active');
+  document.getElementById('modbar').style.display='none';
+  document.getElementById('page-title').textContent='PRISTEEL';
+  document.getElementById('page-sub').textContent='Zgjidh një modul për të filluar';
+  renderSideNav(null,null);
+  renderHome();
+}
+function renderHome(){
+  var el=document.getElementById('home-grid'); if(!el) return;
+  var g=document.getElementById('home-greet');
+  var dt=new Date().toLocaleDateString('sq-AL',{weekday:'long',day:'numeric',month:'long'});
+  if(g) g.textContent=dt.charAt(0).toUpperCase()+dt.slice(1);
+  el.innerHTML=MODULES.map(function(m){
+    return '<div class="mod-tile" onclick="showPage(\''+m.pages[0]+'\')">'
+      +'<div class="mod-ic" style="background:'+m.bg+'">'+tintSvg(m.ic,m.c)+'</div>'
+      +'<div class="mod-name">'+m.name+'</div>'
+      +'<div class="mod-stat" id="modstat-'+m.id+'"></div>'
+    +'</div>';
+  }).join('');
+  var today=new Date().toISOString().slice(0,10);
+  try{
+  supaFetch('tasks?status=eq.hapur&due_date=lte.'+today+'&select=id').then(function(r){
+    var e=document.getElementById('modstat-detyrat'); if(e&&r) e.textContent=r.length?(r.length+' sot'):'asnjë sot';
+    if(e&&r&&r.length) e.style.color='#993C1D';
+  }).catch(function(){});
+  supaFetch('projects?select=id').then(function(r){
+    var e=document.getElementById('modstat-projektet'); if(e&&r) e.textContent=r.length+' aktive';
+  }).catch(function(){});
+  supaFetch('offers_inbox?processed=eq.false&select=id').then(function(r){
+    var e=document.getElementById('modstat-prokurimi'); if(e&&r) e.textContent=r.length?(r.length+' email për analizë'):'BOM · RFQ · Çmimet';
+  }).catch(function(){});
+  }catch(e){}
+  var st={shitjet:'Oferta · Fatura',kontaktet:'Klientë · Furnitorë',financat:'Garanci · Kosto',kalkulatori:'Çmimi €/kg',cilesimet:'Firma · API · Backup'};
+  Object.keys(st).forEach(function(k){ var e=document.getElementById('modstat-'+k); if(e&&!e.textContent) e.textContent=st[k]; });
+}
 function showPage(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
-  // Gjej butonin sipas onclick-ut (jo indeksit) — i qendrueshem ndaj rirenditjes
-  document.querySelectorAll('.nav-item').forEach(function(it){
-    var oc=it.getAttribute('onclick')||'';
-    if(oc.indexOf("showPage('"+p+"')")>-1) it.classList.add('active');
-  });
-  document.documentElement.style.setProperty('--page-accent',PAGE_COLORS[p]||PAGE_COLORS.import);
+  applyModuleChrome(p);
   var meta=pageMeta[p]||{title:'',sub:''};
   document.getElementById('page-title').textContent=meta.title;
   document.getElementById('page-sub').textContent=meta.sub;
@@ -3330,18 +3384,9 @@ function deleteProject(id){
   supaFetch('projects?id=eq.'+id,'DELETE').then(function(){loadProjectList();}).catch(function(e){alert('Gabim: '+e.message);});
 }
 window.addEventListener('load',function(){setTimeout(loadProjectList,800);});
-// Faqja e pare eshte Detyrat (qendra) — ngarkoje sapo hapet platforma
+// Faqja e pare eshte rrjeti i moduleve (stil Odoo)
 window.addEventListener('load',function(){
-  setTimeout(function(){
-    var qp=document.getElementById('page-qendra');
-    if(qp && qp.classList.contains('active')){
-      // vendos titullin e sakte + ngarko te dhenat
-      var m=(typeof pageMeta!=='undefined'&&pageMeta.qendra)?pageMeta.qendra:{title:'Detyrat',sub:''};
-      var t=document.getElementById('page-title'), s=document.getElementById('page-sub');
-      if(t) t.textContent=m.title; if(s) s.textContent=m.sub;
-      if(typeof loadHub==='function') loadHub();
-    }
-  }, 600);
+  setTimeout(function(){ if(typeof goHome==='function') goHome(); }, 300);
 });
 
 // ══════════════════════════════════════════════════════
