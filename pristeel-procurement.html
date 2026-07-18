@@ -341,9 +341,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div style="width:300px;text-align:center">
     <div style="font-size:21px;font-weight:700;color:#A65F2E;letter-spacing:.5px">PRISTEEL</div>
     <div style="font-size:12px;color:#96948F;margin-bottom:26px">Procurement Platform</div>
-    <form id="auth-form" autocomplete="on" onsubmit="doLogin();return false;">
-    <input type="email" id="auth-email" name="pristeel-login-email" placeholder="email@prissteel.com" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:100%;padding:10px 12px;margin-bottom:8px;border:1px solid #DEDCD9;border-radius:8px;font-size:13px;box-sizing:border-box">
-    <input type="password" id="auth-pass" name="pristeel-login-pass" placeholder="Fjalëkalimi" autocomplete="current-password" style="width:100%;padding:10px 12px;margin-bottom:14px;border:1px solid #DEDCD9;border-radius:8px;font-size:13px;box-sizing:border-box">
+    <form id="auth-form" autocomplete="off" onsubmit="doLogin();return false;">
+    <input type="text" id="auth-email" name="pst_ident_9f3a" placeholder="email@prissteel.com" autocomplete="off" data-lpignore="true" data-form-type="other" autocapitalize="off" autocorrect="off" spellcheck="false" style="width:100%;padding:10px 12px;margin-bottom:8px;border:1px solid #DEDCD9;border-radius:8px;font-size:13px;box-sizing:border-box">
+    <input type="password" id="auth-pass" name="pst_secret_9f3a" placeholder="Fjalëkalimi" autocomplete="new-password" data-lpignore="true" style="width:100%;padding:10px 12px;margin-bottom:14px;border:1px solid #DEDCD9;border-radius:8px;font-size:13px;box-sizing:border-box">
     <button type="submit" style="width:100%;padding:10px;background:#A65F2E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Hyr</button>
     </form>
     <div id="auth-err" style="color:#A33A2E;font-size:11.5px;margin-top:10px;min-height:14px"></div>
@@ -3434,6 +3434,24 @@ async function authRefreshIfNeeded(){
     return authGetSession();
   }catch(e){ return null; }
 }
+// Mbrojtje kunder autofill-it te gabuar te Chrome/Safari:
+// nese shfletuesi mbush me force fushen me tekst qe s'eshte email, pastroje.
+function scrubAutofill(){
+  var e=document.getElementById('auth-email');
+  if(!e) return;
+  var v=e.value||'';
+  if(v && (v.length>60 || v.indexOf('@')===-1)){ e.value=''; }
+}
+(function(){
+  var tries=0;
+  var iv=setInterval(function(){
+    scrubAutofill();
+    if(++tries>20) clearInterval(iv); // ~4 sekonda mbrojtje pas hapjes
+  },200);
+  document.addEventListener('DOMContentLoaded',scrubAutofill);
+  window.addEventListener('load',function(){ setTimeout(scrubAutofill,50); setTimeout(scrubAutofill,400); setTimeout(scrubAutofill,1200); });
+})();
+
 function startApp(){
   document.getElementById('auth-gate').style.display='none';
   document.getElementById('app-shell-root').style.display='';
