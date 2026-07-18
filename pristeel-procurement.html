@@ -197,7 +197,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 .sidebar-logo{padding:20px 20px 18px;border-bottom:1px solid var(--border)}
 .logo-mark{font-family:'Bebas Neue',sans-serif;font-size:28px;font-weight:400;color:var(--text);letter-spacing:2px;line-height:1}
 .logo-sub{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:1.5px;text-transform:uppercase}
-.sidebar-nav{padding:12px 0;flex:1}
+.sidebar-nav{padding:12px 0;flex:1;display:flex;flex-direction:column}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:var(--text2);font-size:12px;font-weight:500;transition:all .2s;border-left:2px solid transparent;letter-spacing:.3px}
 .nav-item:hover{background:var(--bg2);color:var(--text);border-left-color:var(--border2)}
 .nav-item.active{background:var(--bg2);color:var(--text);font-weight:650;border-left-color:var(--text)}
@@ -320,20 +320,22 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
 /* ── ODOO-STYLE MODULE SYSTEM ── */
-.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:760px;margin:0 auto}
-@media(max-width:760px){.home-grid{grid-template-columns:repeat(2,1fr)}}
-.mod-tile{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 10px;text-align:center;cursor:pointer;transition:all .16s ease}
+.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:900px;margin:0 auto}
+@media(max-width:900px){.home-grid{grid-template-columns:repeat(2,1fr)}}
+.mod-tile{background:#fff;border:1px solid var(--border);border-radius:14px;padding:26px 12px;text-align:center;cursor:pointer;transition:all .16s ease}
 .mod-tile:hover{box-shadow:var(--sh-2);border-color:var(--border2);transform:translateY(-2px)}
-.mod-ic{width:46px;height:46px;border-radius:12px;margin:0 auto 9px;display:flex;align-items:center;justify-content:center}
-.mod-ic svg{width:23px;height:23px;fill:none;stroke-width:1.8}
-.mod-name{font-size:12.5px;font-weight:600;color:var(--text)}
-.mod-stat{font-size:10px;color:var(--text3);margin-top:3px;min-height:13px}
+.mod-ic{width:58px;height:58px;border-radius:15px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center}
+.mod-ic svg{width:29px;height:29px;fill:none;stroke-width:1.8}
+.mod-name{font-size:14px;font-weight:600;color:var(--text)}
+.mod-stat{font-size:11px;color:var(--text3);margin-top:4px;min-height:14px}
 .side-mod-hd{display:flex;align-items:center;gap:8px;padding:12px 16px 8px;font-size:12px;font-weight:700}
 .side-mod-hd svg{width:15px;height:15px;fill:none;stroke-width:2}
 .side-home-lnk{display:flex;align-items:center;gap:7px;padding:8px 16px;font-size:11px;color:var(--text3);cursor:pointer}
 .side-home-lnk:hover{color:var(--text)}
 .side-home-lnk svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2}
 #modbar svg{flex-shrink:0}
+@keyframes wxfall{to{transform:translateY(190px)}}
+@keyframes wxdrift{to{transform:translateX(560px)}}
 </style>
 </head>
 <body>
@@ -364,6 +366,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </button>
     </div>
     <div id="side-nav"></div>
+    <div id="side-panel" style="margin-top:auto;padding:14px 16px 8px"></div>
   </div>
   <div class="sidebar-footer">
     PRISTEEL Sh.p.k. &copy; 2026<br>sales@prissteel.com
@@ -402,7 +405,40 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div id="home-clocks" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
   <div id="home-grid" class="home-grid"></div>
   <div id="home-pulse" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:22px"></div>
-  <div id="home-quote" style="text-align:center;margin-top:18px"></div>
+
+  <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:22px auto 0;max-width:900px">
+    <div id="wx-card" style="flex:1;min-width:300px;max-width:440px;background:linear-gradient(160deg,#F7FAFC 0%,#EDF3F7 100%);border:1px solid var(--border);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden">
+      <div id="wx-fx" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+      <div style="position:relative;display:flex;align-items:center;gap:14px">
+        <div id="wx-icon" style="width:62px;height:62px;flex-shrink:0"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:var(--text3);letter-spacing:.4px">PRISHTINË</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span id="wx-temp" style="font-size:30px;font-weight:650;line-height:1.1">—</span>
+            <span id="wx-desc" style="font-size:12px;color:var(--text2)"></span>
+          </div>
+          <div id="wx-meta" style="font-size:10.5px;color:var(--text3);margin-top:3px"></div>
+        </div>
+      </div>
+      <div id="wx-days" style="position:relative;display:flex;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06)"></div>
+    </div>
+
+    <div style="flex:1;min-width:300px;max-width:440px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:12.5px;font-weight:650">Stivo trarët</div>
+        <div style="font-size:10.5px;color:var(--text3)">Rekordi: <span id="game-best">0</span></div>
+      </div>
+      <div style="font-size:10.5px;color:var(--text3);margin-bottom:10px">Kap trarët që bien — 30 sekonda pushim</div>
+      <canvas id="game-canvas" width="380" height="150" style="width:100%;height:150px;background:var(--bg2);border-radius:9px;display:block;cursor:pointer"></canvas>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:9px">
+        <button onclick="gameStart()" id="game-btn" style="padding:6px 16px;background:#A65F2E;color:#fff;border:none;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer">Luaj</button>
+        <span style="font-size:10.5px;color:var(--text3)">Pikë: <b id="game-score">0</b></span>
+        <span style="font-size:10.5px;color:var(--text3);margin-left:auto" id="game-time"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="home-quote" style="text-align:center;margin-top:22px"></div>
   <div id="home-radio" style="display:flex;align-items:center;justify-content:center;gap:12px;margin:18px auto 0;max-width:440px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:10px 16px">
     <svg id="radio-logo" viewBox="0 0 24 24" style="width:26px;height:26px;flex-shrink:0">
       <rect x="3" y="12" width="3" height="8" rx="1" fill="#A65F2E"><animate attributeName="height" values="8;8;8" dur="1s" repeatCount="indefinite"/></rect>
@@ -426,7 +462,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </span>
     <audio id="radio-audio" preload="none"></audio>
   </div>
-  <svg viewBox="0 0 680 112" style="display:block;width:100%;max-width:760px;margin:10px auto 0" xmlns="http://www.w3.org/2000/svg">
+  <svg viewBox="0 0 680 132" style="display:block;width:100%;max-width:900px;margin:22px auto 0" xmlns="http://www.w3.org/2000/svg">
     <g stroke="#A65F2E" stroke-width="1.2" fill="none" opacity=".5">
       <path d="M40 105 L40 72 L72 54 L72 72 L104 54 L104 72 L136 54 L136 72 L168 54 L168 105"/>
       <line x1="72" y1="72" x2="72" y2="105"/><line x1="104" y1="72" x2="104" y2="105"/><line x1="136" y1="72" x2="136" y2="105"/>
@@ -445,7 +481,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <rect x="510" y="82" width="12" height="23"/><rect x="598" y="82" width="12" height="23"/>
       <line x1="636" y1="105" x2="636" y2="34"/><line x1="646" y1="105" x2="646" y2="34"/><line x1="636" y1="34" x2="646" y2="34"/><line x1="634" y1="42" x2="648" y2="42"/>
     </g>
-    <text x="340" y="110" text-anchor="middle" style="font-size:10px;letter-spacing:3.5px;fill:#A65F2E;opacity:.75;font-family:Inter,sans-serif">STEEL IS OUR BUSINESS</text>
+    <text x="340" y="126" text-anchor="middle" style="font-size:11px;letter-spacing:4px;fill:#A65F2E;opacity:.75;font-family:Inter,sans-serif">STEEL IS OUR BUSINESS</text>
   </svg>
 </div>
 
@@ -1204,6 +1240,37 @@ var PAGE_ICON={
 };
 function moduleOf(p){ for(var i=0;i<MODULES.length;i++) if(MODULES[i].pages.indexOf(p)>-1) return MODULES[i]; return null; }
 function tintSvg(svg,color){ return svg.replace('<svg','<svg style="stroke:'+color+'"'); }
+function renderSidePanel(){
+  var el=document.getElementById('side-panel'); if(!el) return;
+  var today=new Date().toISOString().slice(0,10);
+  el.innerHTML='<div style="border-top:1px solid var(--border);padding-top:12px">'
+    +'<div style="font-size:9.5px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:8px">VËMENDJE</div>'
+    +'<div id="sp-body" style="font-size:10.5px;color:var(--text3)">…</div></div>';
+  var body=document.getElementById('sp-body');
+  Promise.all([
+    supaFetch('tasks?status=eq.hapur&due_date=lte.'+today+'&select=title,due_date&order=due_date.asc&limit=3').catch(function(){return [];}),
+    supaFetch('offers_inbox?processed=eq.false&select=id').catch(function(){return [];}),
+    supaFetch('rfq_log?select=id').catch(function(){return [];})
+  ]).then(function(r){
+    var tasks=r[0]||[], inbox=r[1]||[], rfq=r[2]||[];
+    var h='';
+    if(tasks.length){
+      tasks.forEach(function(t){
+        var od=t.due_date&&t.due_date<today;
+        h+='<div onclick="showPage(\'qendra\')" style="display:flex;gap:6px;align-items:flex-start;padding:5px 0;cursor:pointer;border-bottom:1px solid var(--border)">'
+          +'<span style="width:5px;height:5px;border-radius:50%;background:'+(od?'#A33A2E':'#A65F2E')+';margin-top:5px;flex-shrink:0"></span>'
+          +'<span style="line-height:1.35;color:var(--text2)">'+(t.title||'(pa titull)').slice(0,42)+'</span></div>';
+      });
+    } else {
+      h+='<div style="padding:5px 0;color:var(--green-text)">Asnjë detyrë e vonuar</div>';
+    }
+    h+='<div style="margin-top:10px;display:flex;justify-content:space-between;font-size:10px">'
+      +'<span>Email pa analizë</span><b style="color:'+(inbox.length?'#A65F2E':'var(--text3)')+'">'+inbox.length+'</b></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:3px">'
+      +'<span>RFQ dërguar</span><b>'+rfq.length+'</b></div>';
+    if(body) body.innerHTML=h;
+  }).catch(function(){ if(body) body.innerHTML='<div style="color:var(--text3)">—</div>'; });
+}
 function renderSideNav(mod,activePage){
   var el=document.getElementById('side-nav'); if(!el) return;
   if(!mod){ el.innerHTML=''; return; }
@@ -1292,6 +1359,132 @@ function radioInit(){
   var saved=parseInt(localStorage.getItem('pristeel_radio_ch')||'0',10);
   if(saved>=0&&saved<RADIO_CHANNELS.length) sel.value=saved;
 }
+// ── MOTI (karte e vecante me efekte) ──────────────────
+var WX_CODES={0:['Kthjellët','sun'],1:['Pjesërisht kthjellët','sun'],2:['Me re','cloud'],3:['I vranët','cloud'],
+45:['Mjegull','fog'],48:['Mjegull','fog'],51:['Shi i imët','rain'],53:['Shi i imët','rain'],55:['Shi i imët','rain'],
+61:['Shi','rain'],63:['Shi','rain'],65:['Shi i fortë','rain'],66:['Shi i ngrirë','rain'],67:['Shi i ngrirë','rain'],
+71:['Borë','snow'],73:['Borë','snow'],75:['Borë e madhe','snow'],77:['Borë','snow'],
+80:['Rrebeshe','rain'],81:['Rrebeshe','rain'],82:['Rrebesh i fortë','rain'],85:['Rrebesh bore','snow'],86:['Rrebesh bore','snow'],
+95:['Stuhi','storm'],96:['Stuhi','storm'],99:['Stuhi','storm']};
+function wxIconSvg(kind){
+  var b='<svg viewBox="0 0 64 64" style="width:100%;height:100%">';
+  if(kind==='sun') return b+'<circle cx="32" cy="32" r="13" fill="#E8A33D"><animate attributeName="r" values="13;14;13" dur="3s" repeatCount="indefinite"/></circle><g stroke="#E8A33D" stroke-width="3" stroke-linecap="round"><line x1="32" y1="6" x2="32" y2="14"/><line x1="32" y1="50" x2="32" y2="58"/><line x1="6" y1="32" x2="14" y2="32"/><line x1="50" y1="32" x2="58" y2="32"/><line x1="14" y1="14" x2="19" y2="19"/><line x1="45" y1="45" x2="50" y2="50"/><line x1="14" y1="50" x2="19" y2="45"/><line x1="45" y1="19" x2="50" y2="14"/><animateTransform attributeName="transform" type="rotate" from="0 32 32" to="360 32 32" dur="40s" repeatCount="indefinite"/></g></svg>';
+  if(kind==='cloud') return b+'<g fill="#96A5B0"><ellipse cx="26" cy="36" rx="16" ry="11"/><ellipse cx="40" cy="33" rx="13" ry="10"/><ellipse cx="33" cy="28" rx="11" ry="9"/><animateTransform attributeName="transform" type="translate" values="0 0;3 -1;0 0" dur="5s" repeatCount="indefinite"/></g></svg>';
+  if(kind==='rain') return b+'<g fill="#7A8B96"><ellipse cx="26" cy="28" rx="15" ry="10"/><ellipse cx="39" cy="26" rx="12" ry="9"/></g><g stroke="#4E93C4" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="42" x2="19" y2="52"><animate attributeName="opacity" values="1;0;1" dur="1.1s" repeatCount="indefinite"/></line><line x1="32" y1="42" x2="29" y2="52"><animate attributeName="opacity" values="0;1;0" dur="1.1s" repeatCount="indefinite"/></line><line x1="42" y1="42" x2="39" y2="52"><animate attributeName="opacity" values="1;0;1" dur="1.4s" repeatCount="indefinite"/></line></g></svg>';
+  if(kind==='snow') return b+'<g fill="#96A5B0"><ellipse cx="26" cy="28" rx="15" ry="10"/><ellipse cx="39" cy="26" rx="12" ry="9"/></g><g fill="#7FB4D8"><circle cx="22" cy="46" r="2.6"><animate attributeName="cy" values="42;54" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="2.4s" repeatCount="indefinite"/></circle><circle cx="33" cy="48" r="2.6"><animate attributeName="cy" values="42;54" dur="2.9s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="2.9s" repeatCount="indefinite"/></circle><circle cx="43" cy="45" r="2.6"><animate attributeName="cy" values="42;54" dur="2.1s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="2.1s" repeatCount="indefinite"/></circle></g></svg>';
+  if(kind==='storm') return b+'<g fill="#66757F"><ellipse cx="26" cy="27" rx="15" ry="10"/><ellipse cx="39" cy="25" rx="12" ry="9"/></g><polygon points="32,38 25,52 31,52 27,60 40,45 33,45 38,38" fill="#E8A33D"><animate attributeName="opacity" values="1;.25;1" dur="1.6s" repeatCount="indefinite"/></polygon></svg>';
+  return b+'<g fill="#AEB8C0" opacity=".85"><rect x="12" y="26" width="40" height="3.4" rx="1.7"><animate attributeName="x" values="12;16;12" dur="4s" repeatCount="indefinite"/></rect><rect x="14" y="34" width="36" height="3.4" rx="1.7"><animate attributeName="x" values="14;10;14" dur="4.6s" repeatCount="indefinite"/></rect><rect x="12" y="42" width="40" height="3.4" rx="1.7"><animate attributeName="x" values="12;17;12" dur="5.2s" repeatCount="indefinite"/></rect></g></svg>';
+}
+function wxParticles(kind){
+  var fx=document.getElementById('wx-fx'); if(!fx) return;
+  var h='';
+  if(kind==='rain'||kind==='storm'){
+    for(var i=0;i<16;i++){
+      var l=Math.random()*100, d=(0.7+Math.random()*0.7).toFixed(2), dl=(Math.random()*1.5).toFixed(2);
+      h+='<span style="position:absolute;left:'+l.toFixed(1)+'%;top:-12px;width:1.5px;height:14px;background:linear-gradient(#4E93C4,transparent);opacity:.45;animation:wxfall '+d+'s linear '+dl+'s infinite"></span>';
+    }
+  } else if(kind==='snow'){
+    for(var j=0;j<14;j++){
+      var l2=Math.random()*100, d2=(3+Math.random()*3).toFixed(2), dl2=(Math.random()*3).toFixed(2);
+      h+='<span style="position:absolute;left:'+l2.toFixed(1)+'%;top:-8px;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 3px rgba(120,160,190,.5);opacity:.75;animation:wxfall '+d2+'s linear '+dl2+'s infinite"></span>';
+    }
+  } else if(kind==='sun'){
+    h+='<span style="position:absolute;top:-40px;right:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(232,163,61,.16),transparent 70%)"></span>';
+  } else if(kind==='cloud'||kind==='fog'){
+    h+='<span style="position:absolute;top:8px;left:-60px;width:130px;height:34px;border-radius:34px;background:rgba(255,255,255,.55);animation:wxdrift 26s linear infinite"></span>'
+      +'<span style="position:absolute;top:52px;left:-90px;width:100px;height:26px;border-radius:26px;background:rgba(255,255,255,.4);animation:wxdrift 34s linear 4s infinite"></span>';
+  }
+  fx.innerHTML=h;
+}
+function loadWeatherCard(){
+  var lat=42.66, lon=21.17;
+  fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(!d||!d.current_weather) return;
+      var cw=d.current_weather, info=WX_CODES[cw.weathercode]||['—','cloud'];
+      var ic=document.getElementById('wx-icon'); if(ic) ic.innerHTML=wxIconSvg(info[1]);
+      var t=document.getElementById('wx-temp'); if(t) t.textContent=Math.round(cw.temperature)+'°';
+      var ds=document.getElementById('wx-desc'); if(ds) ds.textContent=info[0];
+      var mt=document.getElementById('wx-meta');
+      if(mt) mt.textContent='Erë '+Math.round(cw.windspeed)+' km/h';
+      wxParticles(info[1]);
+      var dl=document.getElementById('wx-days');
+      if(dl&&d.daily&&d.daily.time){
+        var names=['Die','Hën','Mar','Mër','Enj','Pre','Sht'];
+        var h='';
+        for(var i=1;i<Math.min(5,d.daily.time.length);i++){
+          var dt=new Date(d.daily.time[i]);
+          var wi=WX_CODES[d.daily.weather_code[i]]||['','cloud'];
+          h+='<div style="flex:1;text-align:center">'
+            +'<div style="font-size:10px;color:var(--text3)">'+names[dt.getDay()]+'</div>'
+            +'<div style="width:26px;height:26px;margin:2px auto">'+wxIconSvg(wi[1])+'</div>'
+            +'<div style="font-size:10.5px;font-weight:600">'+Math.round(d.daily.temperature_2m_max[i])+'°</div>'
+            +'<div style="font-size:9.5px;color:var(--text3)">'+Math.round(d.daily.temperature_2m_min[i])+'°</div>'
+          +'</div>';
+        }
+        dl.innerHTML=h;
+      }
+    }).catch(function(){});
+}
+
+// ── LOJA "Stivo trarët" ───────────────────────────────
+var _g={run:false,score:0,beams:[],cart:0,t:0,raf:null,iv:null};
+function gameStart(){
+  var c=document.getElementById('game-canvas'); if(!c) return;
+  if(_g.run){ gameStop(); return; }
+  _g.run=true; _g.score=0; _g.beams=[]; _g.t=30; _g.cart=c.width/2;
+  document.getElementById('game-btn').textContent='Ndalo';
+  document.getElementById('game-score').textContent='0';
+  var ctx=c.getContext('2d');
+  c.onmousemove=function(e){ var r=c.getBoundingClientRect(); _g.cart=(e.clientX-r.left)*(c.width/r.width); };
+  c.ontouchmove=function(e){ e.preventDefault(); var r=c.getBoundingClientRect(); _g.cart=(e.touches[0].clientX-r.left)*(c.width/r.width); };
+  _g.iv=setInterval(function(){
+    _g.t--; var te=document.getElementById('game-time'); if(te) te.textContent=_g.t+'s';
+    if(_g.t<=0) gameStop();
+  },1000);
+  var lastSpawn=0;
+  function loop(ts){
+    if(!_g.run) return;
+    if(ts-lastSpawn>620){
+      lastSpawn=ts;
+      var types=[['HEA',34,'#A65F2E'],['IPE',26,'#7A8B96'],['L',20,'#0F6E56']];
+      var tp=types[Math.floor(Math.random()*3)];
+      _g.beams.push({x:20+Math.random()*(c.width-60),y:-14,w:tp[1],label:tp[0],col:tp[2],v:1.3+Math.random()*1.4});
+    }
+    ctx.clearRect(0,0,c.width,c.height);
+    // karroca
+    ctx.fillStyle='#3D3B37';
+    var cw=54, cx=Math.max(cw/2,Math.min(c.width-cw/2,_g.cart));
+    ctx.fillRect(cx-cw/2,c.height-16,cw,7);
+    ctx.beginPath(); ctx.arc(cx-15,c.height-6,5,0,7); ctx.arc(cx+15,c.height-6,5,0,7); ctx.fill();
+    for(var i=_g.beams.length-1;i>=0;i--){
+      var b=_g.beams[i]; b.y+=b.v;
+      ctx.fillStyle=b.col; ctx.fillRect(b.x,b.y,b.w,7);
+      ctx.fillStyle='#fff'; ctx.font='7px Inter,sans-serif'; ctx.fillText(b.label,b.x+3,b.y+5.5);
+      if(b.y>c.height-22 && b.y<c.height-8 && b.x+b.w>cx-cw/2 && b.x<cx+cw/2){
+        _g.score++; document.getElementById('game-score').textContent=_g.score;
+        _g.beams.splice(i,1);
+      } else if(b.y>c.height){ _g.beams.splice(i,1); }
+    }
+    _g.raf=requestAnimationFrame(loop);
+  }
+  _g.raf=requestAnimationFrame(loop);
+}
+function gameStop(){
+  _g.run=false;
+  if(_g.raf) cancelAnimationFrame(_g.raf);
+  if(_g.iv) clearInterval(_g.iv);
+  var btn=document.getElementById('game-btn'); if(btn) btn.textContent='Luaj';
+  var te=document.getElementById('game-time'); if(te) te.textContent='';
+  var best=parseInt(localStorage.getItem('pristeel_game_best')||'0',10);
+  if(_g.score>best){ localStorage.setItem('pristeel_game_best',_g.score); best=_g.score; }
+  var be=document.getElementById('game-best'); if(be) be.textContent=best;
+  var c=document.getElementById('game-canvas');
+  if(c){ var ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
+    ctx.fillStyle='#96948F'; ctx.font='12px Inter,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(_g.score>0?('Pikë: '+_g.score):'Kliko "Luaj" për të filluar',c.width/2,c.height/2); ctx.textAlign='left'; }
+}
 var _homeWx={}, _homeChf=null, _homeClockTimer=null;
 function homeTickClocks(){
   HOME_CITIES.forEach(function(c,i){
@@ -1344,7 +1537,11 @@ function renderHome(){
   if(_homeClockTimer) clearInterval(_homeClockTimer);
   _homeClockTimer=setInterval(homeTickClocks,30000);
   homeLoadWeather();
+  loadWeatherCard();
   radioInit();
+  var gb=document.getElementById('game-best');
+  if(gb) gb.textContent=localStorage.getItem('pristeel_game_best')||'0';
+  if(typeof gameStop==='function' && !_g.run) gameStop();
   var q=document.getElementById('home-quote');
   if(q){
     var doy=Math.floor((Date.now()-new Date(new Date().getFullYear(),0,0))/86400000);
@@ -3459,6 +3656,7 @@ function startApp(){
   var foot=document.querySelector('.sidebar-footer');
   if(foot) foot.innerHTML='PRISTEEL Sh.p.k. &copy; 2026<br>'+(s&&s.email?s.email:'sales@prissteel.com')+' · <span style="cursor:pointer;text-decoration:underline" onclick="doLogout()">dil</span>';
   if(typeof goHome==='function') goHome();
+  if(typeof renderSidePanel==='function') renderSidePanel();
   if(typeof loadProjectList==='function') loadProjectList();
 }
 window.addEventListener('load', async function(){
