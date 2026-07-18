@@ -5283,7 +5283,7 @@ async function loadContacts(){
   var el=document.getElementById('contacts-list'); if(!el) return;
   var sb=document.getElementById('ct-search'); if(sb) sb.value='';  // pastro kerkimin e mbetur
   try{
-    _contacts=await supaFetch('contacts?order=kind.asc,company.asc&limit=500')||[];
+    _contacts=await supaFetch('contacts?order=kind.asc,company.asc&limit=2000')||[];
     renderContactStats();
     renderContacts();
   }catch(e){ el.innerHTML='<div class="hub-none">Tabela "contacts" mungon — ekzekuto SQL-në.</div>'; }
