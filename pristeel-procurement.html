@@ -337,7 +337,17 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </style>
 </head>
 <body>
-<div class="app-shell">
+<div id="auth-gate" style="position:fixed;inset:0;background:#fff;z-index:9999;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif">
+  <div style="width:300px;text-align:center">
+    <div style="font-size:21px;font-weight:700;color:#A65F2E;letter-spacing:.5px">PRISTEEL</div>
+    <div style="font-size:12px;color:#96948F;margin-bottom:26px">Procurement Platform</div>
+    <input type="email" id="auth-email" placeholder="email@prissteel.com" autocomplete="username" style="width:100%;padding:10px 12px;margin-bottom:8px;border:1px solid #DEDCD9;border-radius:8px;font-size:13px;box-sizing:border-box">
+    <input type="password" id="auth-pass" placeholder="Fjalëkalimi" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:10px 12px;margin-bottom:14px;border:1px solid #DEDCD9;border-radius:8px;font-size:13px;box-sizing:border-box">
+    <button onclick="doLogin()" style="width:100%;padding:10px;background:#A65F2E;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Hyr</button>
+    <div id="auth-err" style="color:#A33A2E;font-size:11.5px;margin-top:10px;min-height:14px"></div>
+  </div>
+</div>
+<div class="app-shell" id="app-shell-root" style="display:none">
 
 <div class="sidebar">
   <div class="sidebar-logo">
@@ -3373,13 +3383,86 @@ setTimeout(function(){
 // ── SUPABASE ─────────────────────────────────────────
 var _SB_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
 var _SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM';
+
+// ── AUTH (Supabase Auth — login real, jo kozmetik) ────
+function authSaveSession(s){
+  localStorage.setItem('pristeel_session', JSON.stringify({
+    access_token:s.access_token, refresh_token:s.refresh_token,
+    expires_at: Date.now() + ((s.expires_in||3600)*1000) - 30000,
+    email: s.user && s.user.email
+  }));
+}
+function authGetSession(){
+  try{ return JSON.parse(localStorage.getItem('pristeel_session')||'null'); }catch(e){ return null; }
+}
+function doLogin(){
+  var email=document.getElementById('auth-email').value.trim();
+  var pass=document.getElementById('auth-pass').value;
+  var err=document.getElementById('auth-err'); err.textContent='';
+  if(!email||!pass){ err.textContent='Plotëso email dhe fjalëkalimin.'; return; }
+  fetch(_SB_URL+'/auth/v1/token?grant_type=password',{
+    method:'POST',
+    headers:{'apikey':_SB_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify({email:email,password:pass})
+  }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok, d:d}; }); })
+  .then(function(res){
+    if(!res.ok || !res.d.access_token){ err.textContent='Email ose fjalëkalim i gabuar.'; return; }
+    authSaveSession(res.d);
+    startApp();
+  }).catch(function(){ err.textContent='Gabim lidhjeje. Provo përsëri.'; });
+}
+function doLogout(){
+  localStorage.removeItem('pristeel_session');
+  location.reload();
+}
+async function authRefreshIfNeeded(){
+  var s=authGetSession();
+  if(!s || !s.refresh_token) return null;
+  if(Date.now() < s.expires_at) return s;
+  try{
+    var r=await fetch(_SB_URL+'/auth/v1/token?grant_type=refresh_token',{
+      method:'POST',
+      headers:{'apikey':_SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({refresh_token:s.refresh_token})
+    });
+    if(!r.ok) return null;
+    var d=await r.json();
+    if(!d.access_token) return null;
+    authSaveSession(d);
+    return authGetSession();
+  }catch(e){ return null; }
+}
+function startApp(){
+  document.getElementById('auth-gate').style.display='none';
+  document.getElementById('app-shell-root').style.display='';
+  var s=authGetSession();
+  var foot=document.querySelector('.sidebar-footer');
+  if(foot) foot.innerHTML='PRISTEEL Sh.p.k. &copy; 2026<br>'+(s&&s.email?s.email:'sales@prissteel.com')+' · <span style="cursor:pointer;text-decoration:underline" onclick="doLogout()">dil</span>';
+  if(typeof goHome==='function') goHome();
+  if(typeof loadProjectList==='function') loadProjectList();
+}
+window.addEventListener('load', async function(){
+  var s=await authRefreshIfNeeded();
+  if(s){ startApp(); }
+  else{
+    localStorage.removeItem('pristeel_session');
+    document.getElementById('auth-gate').style.display='flex';
+    document.getElementById('app-shell-root').style.display='none';
+  }
+});
+
 function supaFetch(path,method,body){
   method=method||'GET';
+  var s=authGetSession();
+  var token=(s&&s.access_token)?s.access_token:_SB_KEY;
   return fetch(_SB_URL+'/rest/v1/'+path,{
     method:method,
-    headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+_SB_KEY,'Content-Type':'application/json','Prefer':(method==='POST'||method==='PATCH')?'return=representation':''},
+    headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':(method==='POST'||method==='PATCH')?'return=representation':''},
     body:body?JSON.stringify(body):undefined
-  }).then(function(r){if(!r.ok)return r.text().then(function(e){throw new Error(e);});return r.text();}).then(function(t){return t?JSON.parse(t):[];});
+  }).then(function(r){
+    if(r.status===401){ localStorage.removeItem('pristeel_session'); location.reload(); }
+    if(!r.ok)return r.text().then(function(e){throw new Error(e);});return r.text();
+  }).then(function(t){return t?JSON.parse(t):[];});
 }
 // _curProjId deklarohet lart (shih resetWorkspace)
 function saveProject(triggerBtn){
@@ -3553,10 +3636,7 @@ function deleteProject(id){
   supaFetch('projects?id=eq.'+id,'DELETE').then(function(){loadProjectList();}).catch(function(e){alert('Gabim: '+e.message);});
 }
 window.addEventListener('load',function(){setTimeout(loadProjectList,800);});
-// Faqja e pare eshte rrjeti i moduleve (stil Odoo)
-window.addEventListener('load',function(){
-  setTimeout(function(){ if(typeof goHome==='function') goHome(); }, 300);
-});
+// Shenim: goHome() thirret tashme brenda startApp() pas kycjes se suksesshme (shih bllokun AUTH me lart)
 
 // ══════════════════════════════════════════════════════
 // ── FATURAT (INVOICING) ─────────────────────────────────
