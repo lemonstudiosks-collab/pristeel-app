@@ -450,31 +450,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   </div>
 
   <div id="home-quote" style="text-align:center;margin-top:22px"></div>
-  <div id="home-radio" style="display:flex;align-items:center;justify-content:center;gap:12px;margin:18px auto 0;max-width:440px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:10px 16px">
-    <svg id="radio-logo" viewBox="0 0 24 24" style="width:26px;height:26px;flex-shrink:0">
-      <rect x="3" y="12" width="3" height="8" rx="1" fill="#A65F2E"><animate attributeName="height" values="8;8;8" dur="1s" repeatCount="indefinite"/></rect>
-      <rect x="8" y="8" width="3" height="12" rx="1" fill="#A65F2E" opacity=".75"/>
-      <rect x="13" y="5" width="3" height="15" rx="1" fill="#A65F2E"/>
-      <rect x="18" y="10" width="3" height="10" rx="1" fill="#A65F2E" opacity=".75"/>
-    </svg>
-    <div style="flex:1;min-width:0">
-      <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Radio</div>
-      <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
-        <option value="0">Piano — melodi të bukura</option>
-        <option value="1">Neoclassical — modern</option>
-        <option value="2">Kinematike — film scores</option>
-        <option value="3">Ambient — hapësirë e qetë</option>
-        <option value="4">Ambient — teksture e ngrohtë</option>
-        <option value="5">Downtempo — puls i butë</option>
-        <option value="6">Dreamy — melodi eterike</option>
-        <option value="7">Jazz instrumental</option>
-        <option value="8">Natyrë — qetësi</option>
-      </select>
-    </div>
-    <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:38px;height:38px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
-      <svg id="radio-play-ic" viewBox="0 0 24 24" style="width:16px;height:16px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
-    </span>
-    <audio id="radio-audio" preload="none"></audio>
   </div>
   <svg viewBox="0 0 680 132" style="display:block;width:100%;max-width:900px;margin:22px auto 0" xmlns="http://www.w3.org/2000/svg">
     <g stroke="#A65F2E" stroke-width="1.2" fill="none" opacity=".5">
