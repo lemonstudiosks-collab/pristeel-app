@@ -406,35 +406,46 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div id="home-grid" class="home-grid"></div>
   <div id="home-pulse" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:22px"></div>
 
-  <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:22px auto 0;max-width:900px">
-    <div id="wx-card" style="flex:1;min-width:300px;max-width:440px;background:linear-gradient(160deg,#F7FAFC 0%,#EDF3F7 100%);border:1px solid var(--border);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden">
-      <div id="wx-fx" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
-      <div style="position:relative;display:flex;align-items:center;gap:14px">
-        <div id="wx-icon" style="width:62px;height:62px;flex-shrink:0"></div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:11px;color:var(--text3);letter-spacing:.4px">PRISHTINË</div>
-          <div style="display:flex;align-items:baseline;gap:8px">
-            <span id="wx-temp" style="font-size:30px;font-weight:650;line-height:1.1">—</span>
-            <span id="wx-desc" style="font-size:12px;color:var(--text2)"></span>
-          </div>
-          <div id="wx-meta" style="font-size:10.5px;color:var(--text3);margin-top:3px"></div>
-        </div>
+  <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:20px auto 0;max-width:720px">
+    <div style="flex:1;min-width:280px;max-width:340px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 15px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+        <div style="font-size:12px;font-weight:650">Stivo trarët</div>
+        <div style="font-size:10px;color:var(--text3)">Rekordi: <span id="game-best">0</span></div>
       </div>
-      <div id="wx-days" style="position:relative;display:flex;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06)"></div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">30 sekonda pushim</div>
+      <canvas id="game-canvas" width="380" height="92" style="width:100%;height:92px;background:var(--bg2);border-radius:8px;display:block;cursor:pointer"></canvas>
+      <div style="display:flex;align-items:center;gap:9px;margin-top:8px">
+        <button onclick="gameStart()" id="game-btn" style="padding:5px 14px;background:#A65F2E;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Luaj</button>
+        <span style="font-size:10px;color:var(--text3)">Pikë: <b id="game-score">0</b></span>
+        <span style="font-size:10px;color:var(--text3);margin-left:auto" id="game-time"></span>
+      </div>
     </div>
 
-    <div style="flex:1;min-width:300px;max-width:440px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 18px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <div style="font-size:12.5px;font-weight:650">Stivo trarët</div>
-        <div style="font-size:10.5px;color:var(--text3)">Rekordi: <span id="game-best">0</span></div>
+    <div id="home-radio" style="flex:1;min-width:280px;max-width:340px;display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 15px">
+      <svg id="radio-logo" viewBox="0 0 24 24" style="width:24px;height:24px;flex-shrink:0">
+        <rect x="3" y="12" width="3" height="8" rx="1" fill="#A65F2E"><animate attributeName="height" values="8;8;8" dur="1s" repeatCount="indefinite"/></rect>
+        <rect x="8" y="8" width="3" height="12" rx="1" fill="#A65F2E" opacity=".75"/>
+        <rect x="13" y="5" width="3" height="15" rx="1" fill="#A65F2E"/>
+        <rect x="18" y="10" width="3" height="10" rx="1" fill="#A65F2E" opacity=".75"/>
+      </svg>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Radio</div>
+        <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:10.5px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
+          <option value="0">Piano — melodi të bukura</option>
+          <option value="1">Neoclassical — modern</option>
+          <option value="2">Kinematike — film scores</option>
+          <option value="3">Ambient — hapësirë e qetë</option>
+          <option value="4">Ambient — teksture e ngrohtë</option>
+          <option value="5">Downtempo — puls i butë</option>
+          <option value="6">Dreamy — melodi eterike</option>
+          <option value="7">Jazz instrumental</option>
+          <option value="8">Natyrë — qetësi</option>
+        </select>
       </div>
-      <div style="font-size:10.5px;color:var(--text3);margin-bottom:10px">Kap trarët që bien — 30 sekonda pushim</div>
-      <canvas id="game-canvas" width="380" height="150" style="width:100%;height:150px;background:var(--bg2);border-radius:9px;display:block;cursor:pointer"></canvas>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:9px">
-        <button onclick="gameStart()" id="game-btn" style="padding:6px 16px;background:#A65F2E;color:#fff;border:none;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer">Luaj</button>
-        <span style="font-size:10.5px;color:var(--text3)">Pikë: <b id="game-score">0</b></span>
-        <span style="font-size:10.5px;color:var(--text3);margin-left:auto" id="game-time"></span>
-      </div>
+      <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
+        <svg id="radio-play-ic" viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
+      </span>
+      <audio id="radio-audio" preload="none"></audio>
     </div>
   </div>
 
