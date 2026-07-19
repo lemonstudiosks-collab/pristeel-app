@@ -286,6 +286,16 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 .score-row:last-child{border:none}
 .score-bar-bg{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
 .score-bar-fill{height:6px;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+/* KERKIM SHTETESH (RFQ dhe kudo tjeter) */
+.ctry-wrap{position:relative}
+.ctry-drop{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);
+  border-radius:8px;margin-top:3px;max-height:230px;overflow-y:auto;z-index:200;box-shadow:0 8px 24px rgba(20,25,30,.14)}
+.ctry-drop.on{display:block}
+.ctry-item{padding:7px 11px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:7px}
+.ctry-item:hover{background:var(--bg2)}
+.ctry-code{color:var(--text3);font-size:11px}
+.ctry-empty{padding:9px 11px;font-size:12px;color:var(--text3)}
+
 /* RFQ EMAIL */
 .rfq-email-body{font-size:12px;font-family:'Courier New',monospace;background:var(--bg2);border-radius:var(--radius);padding:16px;line-height:1.8;color:var(--text2);white-space:pre-wrap;word-break:break-word;border:0.5px solid var(--border);max-height:280px;overflow-y:auto;border-left:2px solid var(--bronze)}
 /* CONF DOT */
@@ -1236,6 +1246,60 @@ const ANGLE_UNEQ_KG={
 // Shufer e plote rrumbullake dhe katrore (EN 10060 / 10059) — kg/m, çelesi = diametri/brinja ne mm
 const ROUND_BAR_KG={6:0.226,8:0.402,10:0.628,12:0.905,13:1.06,14:1.23,15:1.41,16:1.61,18:2.04,19:2.27,20:2.51,22:3.04,24:3.62,25:3.93,28:4.93,30:5.65,32:6.43,35:7.70,36:8.14,38:9.07,40:10.1,42:11.1,45:12.7,48:14.5,50:15.7,55:19.0,60:22.6,65:26.5,70:30.8,75:35.3,80:40.2,85:45.4,90:50.9,100:62.8,110:76.0,120:90.5,130:106,140:123,150:141,160:161,170:182,180:204,190:227,200:251};
 const SQUARE_BAR_KG={6:0.288,8:0.512,10:0.800,12:1.15,13:1.35,14:1.57,16:2.05,18:2.59,19:2.89,20:3.20,22:3.87,25:5.00,28:6.27,30:7.20,32:8.19,35:9.80,38:11.6,40:12.8,45:16.2,50:20.0,55:24.2,60:28.8,65:33.8,70:39.2,75:45.0,80:51.2,90:64.8,100:80.0,110:96.8,120:115,130:135};
+
+// Lista e shteteve me flamuj — e perbashket per RFQ, ofertat dhe cdo pjese tjeter te platformes.
+// Kosova gjithmone e para (nuk anashkalohet kurre).
+var COUNTRIES = [
+  {c:'XK',n:'Kosovë',f:'🇽🇰'},
+  {c:'AL',n:'Shqipëri',f:'🇦🇱'},
+  {c:'MK',n:'Maqedoni e Veriut',f:'🇲🇰'},
+  {c:'RS',n:'Serbi',f:'🇷🇸'},
+  {c:'ME',n:'Mali i Zi',f:'🇲🇪'},
+  {c:'BA',n:'Bosnjë dhe Hercegovinë',f:'🇧🇦'},
+  {c:'HR',n:'Kroaci',f:'🇭🇷'},
+  {c:'SI',n:'Slloveni',f:'🇸🇮'},
+  {c:'BG',n:'Bullgari',f:'🇧🇬'},
+  {c:'RO',n:'Rumani',f:'🇷🇴'},
+  {c:'GR',n:'Greqi',f:'🇬🇷'},
+  {c:'TR',n:'Turqi',f:'🇹🇷'},
+  {c:'DE',n:'Gjermani',f:'🇩🇪'},
+  {c:'AT',n:'Austri',f:'🇦🇹'},
+  {c:'CH',n:'Zvicër',f:'🇨🇭'},
+  {c:'IT',n:'Itali',f:'🇮🇹'},
+  {c:'FR',n:'Francë',f:'🇫🇷'},
+  {c:'NL',n:'Holandë',f:'🇳🇱'},
+  {c:'BE',n:'Belgjikë',f:'🇧🇪'},
+  {c:'LU',n:'Luksemburg',f:'🇱🇺'},
+  {c:'GB',n:'Mbretëria e Bashkuar',f:'🇬🇧'},
+  {c:'IE',n:'Irlandë',f:'🇮🇪'},
+  {c:'PL',n:'Poloni',f:'🇵🇱'},
+  {c:'CZ',n:'Çeki',f:'🇨🇿'},
+  {c:'SK',n:'Sllovaki',f:'🇸🇰'},
+  {c:'HU',n:'Hungari',f:'🇭🇺'},
+  {c:'UA',n:'Ukrainë',f:'🇺🇦'},
+  {c:'RU',n:'Rusi',f:'🇷🇺'},
+  {c:'ES',n:'Spanjë',f:'🇪🇸'},
+  {c:'PT',n:'Portugali',f:'🇵🇹'},
+  {c:'SE',n:'Suedi',f:'🇸🇪'},
+  {c:'NO',n:'Norvegji',f:'🇳🇴'},
+  {c:'DK',n:'Danimarkë',f:'🇩🇰'},
+  {c:'FI',n:'Finlandë',f:'🇫🇮'},
+  {c:'CN',n:'Kinë',f:'🇨🇳'},
+  {c:'IN',n:'Indi',f:'🇮🇳'},
+  {c:'US',n:'ShBA',f:'🇺🇸'},
+  {c:'AE',n:'Emiratet e Bashkuara Arabe',f:'🇦🇪'},
+  {c:'EG',n:'Egjipt',f:'🇪🇬'},
+  {c:'SA',n:'Arabia Saudite',f:'🇸🇦'}
+];
+function countryByCode(v){
+  if(!v) return null;
+  var s=String(v).trim().toLowerCase();
+  return COUNTRIES.filter(function(x){ return x.c.toLowerCase()===s || x.n.toLowerCase()===s; })[0]||null;
+}
+function countryLabel(v){
+  var c=countryByCode(v);
+  return c ? (c.f+' '+c.n) : (v||'');
+}
 
 let bomRows=[], suppliers=[], offers=[];
 let settings={company:'PRISTEEL Sh.p.k.',email:'sales@prissteel.com',contact:'Arianit Vllahiu',title:'Founder & CEO',address:'Rr. Tringe Smajli nr.16, 10000 Prishtinë, Kosovë',taxNr:'811361089',bankName:'ProCredit Bank Kosovo J.S.C',iban:'XK05 1110 3671 3800 0174',swift:'MBKOXKPRXXX'};
@@ -2254,6 +2318,80 @@ function copyBomTsv(){
 }
 function goToRfq(){if(bomRows.length===0){alert('BOM është bosh.');return;}showPage('rfq');}
 
+// ── KERKIM FURNITORESH (RFQ) ──────────────────────────
+var _rfqSupCache=null;
+async function rfqLoadSupplierNames(){
+  if(_rfqSupCache) return _rfqSupCache;
+  var byName={};
+  try{
+    var a=await supaFetch("contacts?kind=eq.supplier&select=company,country&order=company.asc&limit=1000")||[];
+    a.forEach(function(x){ if(x.company) byName[x.company.trim().toLowerCase()]={name:x.company.trim(),country:x.country||''}; });
+  }catch(e){}
+  try{
+    var b=await supaFetch("partners?relation=cs.{supplier}&select=name,country&order=name.asc&limit=1000")||[];
+    b.forEach(function(x){
+      if(!x.name) return;
+      var k=x.name.trim().toLowerCase();
+      if(!byName[k]) byName[k]={name:x.name.trim(),country:x.country||''};
+      else if(!byName[k].country&&x.country) byName[k].country=x.country;
+    });
+  }catch(e){}
+  _rfqSupCache=Object.keys(byName).map(function(k){return byName[k];})
+    .sort(function(a,b){return a.name.localeCompare(b.name);});
+  return _rfqSupCache;
+}
+async function rfqSupFilter(supId){
+  var inp=document.getElementById('supq-'+supId), drop=document.getElementById('supd-'+supId);
+  if(!inp||!drop) return;
+  var all=await rfqLoadSupplierNames();
+  var q=(inp.value||'').toLowerCase().trim();
+  var list=all.filter(function(x){ return !q || x.name.toLowerCase().indexOf(q)>-1; }).slice(0,60);
+  drop.innerHTML=list.map(function(x){
+    var lbl=(x.name+'').replace(/"/g,'&quot;');
+    return '<div class="ctry-item" onmousedown="rfqSupPick('+supId+',&quot;'+lbl+'&quot;,&quot;'+(x.country||'')+'&quot;)">'
+      +x.name+(x.country?' <span class="ctry-code">('+x.country+')</span>':'')+'</div>';
+  }).join('')||'<div class="ctry-empty">Asnjë përputhje — shkruaj emrin për ta regjistruar si të ri</div>';
+  drop.classList.add('on');
+  updSupplier(supId,'name',inp.value); // ruaj gjithcka qe shkruhet, edhe nese s'zgjidhet nga lista
+}
+function rfqSupPick(supId, name, country){
+  var inp=document.getElementById('supq-'+supId), drop=document.getElementById('supd-'+supId);
+  if(inp) inp.value=name;
+  if(drop) drop.classList.remove('on');
+  updSupplier(supId,'name',name);
+  if(country){
+    updSupplier(supId,'country',country);
+    var ci=document.getElementById('ctryq-'+supId);
+    if(ci) ci.value=countryLabel(country);
+  }
+}
+
+// ── KERKIM SHTETESH (RFQ) ─────────────────────────────
+function ctryFilter(supId){
+  var inp=document.getElementById('ctryq-'+supId), drop=document.getElementById('ctryd-'+supId);
+  if(!inp||!drop) return;
+  var q=(inp.value||'').toLowerCase().trim();
+  // nese teksti eshte tashme nje shtet i zgjedhur (me flamur), shfaq krejt listen
+  var isPicked = COUNTRIES.some(function(x){ return (x.f+' '+x.n)===inp.value; });
+  var list=COUNTRIES.filter(function(x){
+    if(!q||isPicked) return true;
+    return x.n.toLowerCase().indexOf(q)>-1 || x.c.toLowerCase().indexOf(q)>-1;
+  });
+  drop.innerHTML=list.map(function(x){
+    return '<div class="ctry-item" onmousedown="ctryPick('+supId+',\''+x.c+'\')">'
+      +'<span style="font-size:15px;line-height:1">'+x.f+'</span> '+x.n+' <span class="ctry-code">('+x.c+')</span></div>';
+  }).join('')||'<div class="ctry-empty">Asnjë përputhje</div>';
+  drop.classList.add('on');
+}
+function ctryPick(supId, code){
+  var c=COUNTRIES.filter(function(x){return x.c===code;})[0];
+  if(!c) return;
+  var inp=document.getElementById('ctryq-'+supId), drop=document.getElementById('ctryd-'+supId);
+  if(inp) inp.value=c.f+' '+c.n;
+  if(drop) drop.classList.remove('on');
+  updSupplier(supId,'country',c.c); // ruajme kodin (XK, DE...), shfaqim emrin me flamur
+}
+
 // ── SUPPLIERS ─────────────────────────────────────────
 function addSupplier(){
   suppliers.push({id:Date.now(),name:'',country:'',lang:'en',cat:'producer',contacts:[{name:'',email:''}]});
@@ -2301,8 +2439,18 @@ function renderSuppliers(){
     if(!s.contacts||!s.contacts.length) s.contacts=[{name:'',email:''}];
     return `<div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
       <div style="display:grid;grid-template-columns:2fr 1fr 70px 80px auto;gap:8px;align-items:center">
-        <input type="text" value="${s.name}" placeholder="Emri i kompanisë" onchange="updSupplier(${s.id},'name',this.value)">
-        <input type="text" value="${s.country}" placeholder="Shteti" onchange="updSupplier(${s.id},'country',this.value)">
+        <div class="ctry-wrap">
+          <input type="text" id="supq-${s.id}" autocomplete="off" value="${s.name}" placeholder="Kërko ose shkruaj emrin e kompanisë…"
+            oninput="rfqSupFilter(${s.id})" onfocus="rfqSupFilter(${s.id})"
+            onblur="setTimeout(function(){var d=document.getElementById('supd-${s.id}');if(d)d.classList.remove('on');},180)">
+          <div class="ctry-drop" id="supd-${s.id}"></div>
+        </div>
+        <div class="ctry-wrap">
+          <input type="text" id="ctryq-${s.id}" autocomplete="off" value="${countryLabel(s.country)}" placeholder="Kërko shtetin…"
+            oninput="ctryFilter(${s.id})" onfocus="ctryFilter(${s.id})"
+            onblur="setTimeout(function(){var d=document.getElementById('ctryd-${s.id}');if(d)d.classList.remove('on');},180)">
+          <div class="ctry-drop" id="ctryd-${s.id}"></div>
+        </div>
         <select onchange="updSupplier(${s.id},'lang',this.value)">
           <option value="de"${s.lang==='de'?' selected':''}>DE</option>
           <option value="en"${s.lang==='en'?' selected':''}>EN</option>

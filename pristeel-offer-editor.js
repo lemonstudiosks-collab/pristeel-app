@@ -100,48 +100,8 @@ document.head.appendChild(css);
 // ── GJENDJA ─────────────────────────────────────────────────
 var S = { id:null, projectId:null, pos:[], suppliers:[], projects:[] };
 
-var COUNTRIES = [
-  {c:'XK',n:'Kosovë',f:'🇽🇰'},
-  {c:'AL',n:'Shqipëri',f:'🇦🇱'},
-  {c:'MK',n:'Maqedoni e Veriut',f:'🇲🇰'},
-  {c:'RS',n:'Serbi',f:'🇷🇸'},
-  {c:'ME',n:'Mali i Zi',f:'🇲🇪'},
-  {c:'BA',n:'Bosnjë dhe Hercegovinë',f:'🇧🇦'},
-  {c:'HR',n:'Kroaci',f:'🇭🇷'},
-  {c:'SI',n:'Slloveni',f:'🇸🇮'},
-  {c:'BG',n:'Bullgari',f:'🇧🇬'},
-  {c:'RO',n:'Rumani',f:'🇷🇴'},
-  {c:'GR',n:'Greqi',f:'🇬🇷'},
-  {c:'TR',n:'Turqi',f:'🇹🇷'},
-  {c:'DE',n:'Gjermani',f:'🇩🇪'},
-  {c:'AT',n:'Austri',f:'🇦🇹'},
-  {c:'CH',n:'Zvicër',f:'🇨🇭'},
-  {c:'IT',n:'Itali',f:'🇮🇹'},
-  {c:'FR',n:'Francë',f:'🇫🇷'},
-  {c:'NL',n:'Holandë',f:'🇳🇱'},
-  {c:'BE',n:'Belgjikë',f:'🇧🇪'},
-  {c:'LU',n:'Luksemburg',f:'🇱🇺'},
-  {c:'GB',n:'Mbretëria e Bashkuar',f:'🇬🇧'},
-  {c:'IE',n:'Irlandë',f:'🇮🇪'},
-  {c:'PL',n:'Poloni',f:'🇵🇱'},
-  {c:'CZ',n:'Çeki',f:'🇨🇿'},
-  {c:'SK',n:'Sllovaki',f:'🇸🇰'},
-  {c:'HU',n:'Hungari',f:'🇭🇺'},
-  {c:'UA',n:'Ukrainë',f:'🇺🇦'},
-  {c:'RU',n:'Rusi',f:'🇷🇺'},
-  {c:'ES',n:'Spanjë',f:'🇪🇸'},
-  {c:'PT',n:'Portugali',f:'🇵🇹'},
-  {c:'SE',n:'Suedi',f:'🇸🇪'},
-  {c:'NO',n:'Norvegji',f:'🇳🇴'},
-  {c:'DK',n:'Danimarkë',f:'🇩🇰'},
-  {c:'FI',n:'Finlandë',f:'🇫🇮'},
-  {c:'CN',n:'Kinë',f:'🇨🇳'},
-  {c:'IN',n:'Indi',f:'🇮🇳'},
-  {c:'US',n:'ShBA',f:'🇺🇸'},
-  {c:'AE',n:'Emiratet e Bashkuara Arabe',f:'🇦🇪'},
-  {c:'EG',n:'Egjipt',f:'🇪🇬'},
-  {c:'SA',n:'Arabia Saudite',f:'🇸🇦'}
-];
+// COUNTRIES tani eshte global ne pristeel-procurement.html (perdoret nga RFQ dhe kudo tjeter).
+// Kjo kopje lokale u hoq per te shmangur dyfishimin/mospershtatjen mes dy listave.
 
 function n(v){ var x = parseFloat(String(v==null?'':v).replace(',','.')); return isNaN(x)?0:x; }
 function fmt(v,d){ return (parseFloat(v)||0).toLocaleString('de-DE',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}); }
