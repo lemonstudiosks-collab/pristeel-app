@@ -392,13 +392,17 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="topbar-sub" id="page-sub">Ngarko ose ngjit dokumentin e blerësit</div>
   </div>
   <div class="flex gap-8 items-center">
-    <span id="wx-mini" title="Moti — Prishtinë" style="display:none;align-items:center;gap:6px;font-size:11.5px;color:var(--text2);padding:4px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);cursor:default;white-space:nowrap">
+    <span id="wx-mini" title="Moti — Prishtinë" style="display:none;position:relative;align-items:center;gap:6px;font-size:11.5px;color:var(--text2);padding:4px 10px;margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);cursor:default;white-space:nowrap"
+      onmouseenter="var p=document.getElementById('wx-pop');if(p)p.style.display='block'"
+      onmouseleave="var p=document.getElementById('wx-pop');if(p)p.style.display='none'">
       <span id="wx-icon" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0"></span>
       <b id="wx-temp" style="font-weight:650;color:var(--text)">—</b>
       <span id="wx-desc" style="color:var(--text3)"></span>
+      <div id="wx-pop" style="display:none;position:absolute;top:calc(100% + 7px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(20,25,30,.14);padding:11px 13px;z-index:200;min-width:190px">
+        <div id="wx-meta" style="font-size:10px;color:var(--text3);margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--border)"></div>
+        <div id="wx-days" style="display:flex;gap:9px"></div>
+      </div>
     </span>
-    <span id="wx-meta" style="display:none"></span>
-    <span id="wx-days" style="display:none"></span>
     <span id="wx-fx" style="display:none"></span>
     <span class="badge badge-gray" id="proj-badge">Pa projekt</span>
     <button class="btn btn-sm btn-primary" onclick="saveProject(this)" title="Ruaj projektin, BOM-in dhe ofertat aktuale në cloud">💾 Ruaj</button>
