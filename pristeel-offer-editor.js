@@ -232,8 +232,8 @@ function shell(){
 }
 
 // ── POZICIONET ────────────────────────────────────────────────
-var KIND_LABELS = {other:'—', plate:'Pllakë', ihprofile:'Profil I/H', hollow:'Tub/Kuti', angle:'Kënd', flat:'Sheshtë'};
-var KIND_ICON = {other:'•', plate:'▭', ihprofile:'I', hollow:'▢', angle:'∟', flat:'▬'};
+var KIND_LABELS = {other:'—', plate:'Pllakë', ihprofile:'Profil I/H', hollow:'Tub/Kuti', angle:'Kënd', flat:'Sheshtë', bar:'Shufër e plotë'};
+var KIND_ICON = {other:'•', plate:'▭', ihprofile:'I', hollow:'▢', angle:'∟', flat:'▬', bar:'●'};
 
 function rowHtml(p, i){
   var orig = n(p.price_orig != null ? p.price_orig : p.unit_price);
@@ -255,7 +255,7 @@ function rowHtml(p, i){
 
 function calcBoxHtml(p, i){
   var s = p.spec || {kind:'other'};
-  var kindOpts = ['other','plate','ihprofile','hollow','angle','flat'].map(function(k){
+  var kindOpts = ['other','plate','ihprofile','hollow','angle','flat','bar'].map(function(k){
     return '<option value="'+k+'"'+(s.kind===k?' selected':'')+'>'+KIND_LABELS[k]+'</option>';
   }).join('');
   var dens = s.dens!=null ? s.dens : 7.85;
@@ -287,8 +287,16 @@ function calcBoxHtml(p, i){
       +'<div><label>Gjatësia (mm)</label><input class="num" value="'+(s.length||'')+'" oninput="pstSpec('+i+',\'length\',this.value)" placeholder="6000"></div>'
       +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
   } else if(s.kind==='angle'){
-    f += '<div><label>Krahët a×b (mm)</label><input value="'+esc(s.AB||'')+'" oninput="pstSpec('+i+',\'AB\',this.value)" placeholder="100x100"></div>'
+    f += '<div><label>Krahët a×b (mm) — a=b nëse i barabartë</label><input value="'+esc(s.AB||'')+'" oninput="pstSpec('+i+',\'AB\',this.value)" placeholder="100x100 ose 100x65"></div>'
       +'<div><label>Trashësia t (mm)</label><input class="num" value="'+(s.t||'')+'" oninput="pstSpec('+i+',\'t\',this.value)" placeholder="10"></div>'
+      +'<div><label>Grada</label><input value="'+esc(s.grade||'')+'" oninput="pstSpec('+i+',\'grade\',this.value)" placeholder="S355"></div>'
+      +'<div><label>Gjatësia (mm)</label><input class="num" value="'+(s.length||'')+'" oninput="pstSpec('+i+',\'length\',this.value)" placeholder="6000"></div>'
+      +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
+  } else if(s.kind==='bar'){
+    f += '<div><label>Forma</label><select onchange="pstSpec('+i+',\'forma\',this.value)">'
+        +'<option value="round"'+(s.forma!=='square'?' selected':'')+'>Rrumbullake</option>'
+        +'<option value="square"'+(s.forma==='square'?' selected':'')+'>Katrore</option></select></div>'
+      +'<div><label>'+(s.forma==='square'?'Brinja (mm)':'Diametri (mm)')+'</label><input class="num" value="'+(s.D||'')+'" oninput="pstSpec('+i+',\'D\',this.value)" placeholder="25"></div>'
       +'<div><label>Grada</label><input value="'+esc(s.grade||'')+'" oninput="pstSpec('+i+',\'grade\',this.value)" placeholder="S355"></div>'
       +'<div><label>Gjatësia (mm)</label><input class="num" value="'+(s.length||'')+'" oninput="pstSpec('+i+',\'length\',this.value)" placeholder="6000"></div>'
       +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
@@ -314,7 +322,7 @@ function calcBoxHtml(p, i){
 function calcResInner(i, s, w){
   var badge = w.isExact
     ? '<span style="color:var(--green-text);font-size:10.5px">✓ tabelë e saktë</span>'
-    : '<span style="color:var(--text3);font-size:10.5px">≈ vlerësim gjeometrik</span>';
+    : '<span style="color:var(--text3);font-size:10.5px">≈ formulë standarde gjeometrike (~1-2%)</span>';
   return '<span>Pesha e llogaritur: <b>'+fmt(w.perPc,1)+' kg/copë</b> × '+(s.pcs||0)+' copë &nbsp;'+badge+'</span>'
     + '<span style="display:flex;gap:8px;align-items:center"><b>'+fmt(w.total,1)+' kg total</b>'
     + '<button class="btn btn-primary btn-sm" onclick="pstApplySpec('+i+')">Apliko te pozicioni</button></span>';
@@ -345,13 +353,24 @@ function calcSpecWeight(s){
   } else if(s.kind==='angle'){
     var ab=(s.AB||'').toLowerCase().split('x').map(function(x){return parseFloat(x)||0;});
     var a=ab[0]||0, b=ab[1]||ab[0]||0, ta=n(s.t);
-    var exact = (a===b && typeof ANGLE_EQ_KG!=='undefined') ? ANGLE_EQ_KG[a+'_'+ta] : null;
+    var exact = (a===b) ? (typeof ANGLE_EQ_KG!=='undefined' && ANGLE_EQ_KG[a+'_'+ta])
+                         : (typeof ANGLE_UNEQ_KG!=='undefined' && (ANGLE_UNEQ_KG[a+'_'+b+'_'+ta] || ANGLE_UNEQ_KG[b+'_'+a+'_'+ta]));
     if(exact){
       perPc = exact*(n(s.length)/1000);
     } else {
       isExact = false;
-      var areaA = ta*(a+b-ta); // mm2, formule gjeometrike (rezerve — kende te pabarabarta ose permasa jo standarde)
+      var areaA = ta*(a+b-ta); // mm2, formule gjeometrike (rezerve — permasa jo standarde)
       perPc = Math.max(areaA,0)*n(s.length)*k;
+    }
+  } else if(s.kind==='bar'){
+    var tbl = s.forma==='square' ? SQUARE_BAR_KG : ROUND_BAR_KG;
+    var wpmB = (typeof tbl!=='undefined') ? tbl[Math.round(n(s.D))] : null;
+    if(wpmB){
+      perPc = wpmB*(n(s.length)/1000);
+    } else {
+      isExact = false; // permase jo standarde -- formule gjeometrike rezerve
+      var D=n(s.D);
+      perPc = s.forma==='square' ? (D*D*n(s.length)*k) : (Math.PI/4*D*D*n(s.length)*k);
     }
   } else if(s.kind==='flat'){
     perPc = n(s.W)*n(s.T)*n(s.length)*k;
@@ -365,6 +384,7 @@ function specDesc(s){
   if(s.kind==='ihprofile') return (s.profile||'')+' '+(s.dim||'')+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
   if(s.kind==='hollow') return (s.forma==='round'?'Tub Ø'+(s.OD||0):'Kuti '+(s.HW||''))+' × t'+(s.t||0)+'mm'+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
   if(s.kind==='angle') return 'Kënd '+(s.AB||'')+' × t'+(s.t||0)+'mm'+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
+  if(s.kind==='bar') return (s.forma==='square'?'Shufër katrore '+(s.D||0)+'×'+(s.D||0):'Shufër rrumbullake Ø'+(s.D||0))+'mm'+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
   if(s.kind==='flat') return 'Sheshtë '+(s.W||0)+'×'+(s.T||0)+'mm'+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
   return '';
 }
