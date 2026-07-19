@@ -305,25 +305,33 @@ function calcBoxHtml(p, i){
   f += '</div>';
   if(s.kind!=='other'){
     var w = calcSpecWeight(s);
-    f += '<div class="oe-calcres"><span>Pesha e llogaritur: <b>'+fmt(w.perPc,1)+' kg/copë</b> × '+(s.pcs||0)+' copë</span>'
-      + '<span style="display:flex;gap:8px;align-items:center"><b>'+fmt(w.total,1)+' kg total</b>'
-      + '<button class="btn btn-primary btn-sm" onclick="pstApplySpec('+i+')">Apliko te pozicioni</button></span></div>';
+    f += '<div class="oe-calcres">'+calcResInner(i,s,w)+'</div>';
   }
   f += '</div>';
   return f;
 }
 
+function calcResInner(i, s, w){
+  var badge = w.isExact
+    ? '<span style="color:var(--green-text);font-size:10.5px">✓ tabelë e saktë</span>'
+    : '<span style="color:var(--text3);font-size:10.5px">≈ vlerësim gjeometrik</span>';
+  return '<span>Pesha e llogaritur: <b>'+fmt(w.perPc,1)+' kg/copë</b> × '+(s.pcs||0)+' copë &nbsp;'+badge+'</span>'
+    + '<span style="display:flex;gap:8px;align-items:center"><b>'+fmt(w.total,1)+' kg total</b>'
+    + '<button class="btn btn-primary btn-sm" onclick="pstApplySpec('+i+')">Apliko te pozicioni</button></span>';
+}
+
 // densiteti: çeliku 7.85 kg/dm3 = 7.85e-6 kg/mm3
 function calcSpecWeight(s){
   var dens = (s.dens!=null && s.dens!=='') ? n(s.dens) : 7.85;
-  var k = dens*1e-6, pcs = n(s.pcs)||0, perPc=0;
+  var k = dens*1e-6, pcs = n(s.pcs)||0, perPc=0, isExact=true;
   if(s.kind==='plate'){
-    perPc = n(s.L)*n(s.W)*n(s.T)*k;
+    perPc = n(s.L)*n(s.W)*n(s.T)*k; // gjeometri e sakte (kuti e plote)
   } else if(s.kind==='ihprofile'){
-    var wpm = kgPerM(s.profile, s.dim); // kg/m nga tabela ekzistuese e BOM-it
+    var wpm = kgPerM(s.profile, s.dim); // kg/m nga tabela EN 10365
     perPc = wpm ? wpm*(n(s.length)/1000) : 0;
+    isExact = !!wpm;
   } else if(s.kind==='hollow'){
-    var t=n(s.t);
+    var t=n(s.t); isExact=false;
     if(s.forma==='round'){
       var od=n(s.OD);
       var area = Math.PI*Math.max(od-t,0)*t; // mm2, formule e thjeshtuar per profil rrumbullak bosh
@@ -337,13 +345,19 @@ function calcSpecWeight(s){
   } else if(s.kind==='angle'){
     var ab=(s.AB||'').toLowerCase().split('x').map(function(x){return parseFloat(x)||0;});
     var a=ab[0]||0, b=ab[1]||ab[0]||0, ta=n(s.t);
-    var areaA = ta*(a+b-ta); // mm2, formule e thjeshtuar per profil kendor (L)
-    perPc = Math.max(areaA,0)*n(s.length)*k;
+    var exact = (a===b && typeof ANGLE_EQ_KG!=='undefined') ? ANGLE_EQ_KG[a+'_'+ta] : null;
+    if(exact){
+      perPc = exact*(n(s.length)/1000);
+    } else {
+      isExact = false;
+      var areaA = ta*(a+b-ta); // mm2, formule gjeometrike (rezerve — kende te pabarabarta ose permasa jo standarde)
+      perPc = Math.max(areaA,0)*n(s.length)*k;
+    }
   } else if(s.kind==='flat'){
     perPc = n(s.W)*n(s.T)*n(s.length)*k;
   }
   perPc = +perPc.toFixed(2);
-  return { perPc:perPc, total:+(perPc*pcs).toFixed(1) };
+  return { perPc:perPc, total:+(perPc*pcs).toFixed(1), isExact:isExact };
 }
 
 function specDesc(s){
@@ -379,9 +393,7 @@ function updateCalcResult(i){
   var row = document.getElementById('oe-calcrow'+i); if(!row) return;
   var res = row.querySelector('.oe-calcres'); if(!res) return;
   var w = calcSpecWeight(s);
-  res.innerHTML = '<span>Pesha e llogaritur: <b>'+fmt(w.perPc,1)+' kg/copë</b> × '+(s.pcs||0)+' copë</span>'
-    + '<span style="display:flex;gap:8px;align-items:center"><b>'+fmt(w.total,1)+' kg total</b>'
-    + '<button class="btn btn-primary btn-sm" onclick="pstApplySpec('+i+')">Apliko te pozicioni</button></span>';
+  res.innerHTML = calcResInner(i, s, w);
 }
 function refreshRow(i){
   var wrap = document.getElementById('oe-calcrow'+i);
