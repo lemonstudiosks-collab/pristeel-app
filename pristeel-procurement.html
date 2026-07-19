@@ -5050,13 +5050,20 @@ function qGuessProjectMatch(subject, sender, projects){
   var s=(subject||'').toLowerCase(), se=(sender||'').toLowerCase();
   var best=null,bestScore=0;
   projects.forEach(function(p){
-    var name=(p.name||'').toLowerCase(), client=(p.client||'').toLowerCase();
+    var name=(p.name||'').toLowerCase(), client=(p.client||'').toLowerCase(), ref=(p.ref||'').toLowerCase();
     var score=0;
+    if(ref && ref.length>4 && s.indexOf(ref)>-1) score+=10; // referenca PST-RFQ-... ne subjekt -- shenja me e sigurte, RFQ-te tona e ruajne ne fund
     name.split(/[\s\-–—.,()]+/).forEach(function(w){ if(w.length>3 && (s.indexOf(w)>-1)) score+=2; });
     if(client && (s.indexOf(client.split(' ')[0])>-1 || se.indexOf(client.split(' ')[0])>-1)) score+=3;
     if(score>bestScore){bestScore=score;best=p;}
   });
-  return bestScore>=2 ? best : null;
+  return {match:bestScore>=4?best:null, strong:bestScore>=10};
+}
+var GENERIC_MAIL_DOMAINS=['gmail','googlemail','outlook','hotmail','yahoo','icloud','live','prissteel','pristeel'];
+function qGuessSupplierName(sender){
+  var dom=(sender.match(/@([a-zA-Z0-9\-]+)\./)||[])[1]||'';
+  if(dom && GENERIC_MAIL_DOMAINS.indexOf(dom.toLowerCase())===-1) return dom;
+  return ''; // bosh = 'nuk dihet', mos e perdor domenin si emer furnitori
 }
 async function qAnalyzeOffer(inboxId, subject, sender){
   var apiKey=localStorage.getItem('pristeel_apikey')||'';
@@ -5083,14 +5090,14 @@ async function qAnalyzeOffer(inboxId, subject, sender){
     var projects=await supaFetch('projects?order=created_at.desc&limit=50');
     var guess=qGuessProjectMatch(subject, sender, projects);
     var projNames=projects.map(function(p,i){return (i+1)+'. '+p.name+(p.client?' — '+p.client:'');}).join('\n');
-    var promptTxt='Email: "'+subject+'" nga '+sender+'\n\n'+(guess?'Rekomandimi: "'+guess.name+'"\n\n':'')+'Cilit projekt i takon kjo ofertë? Shkruaj numrin nga lista, ose 0 nëse asnjë:\n\n'+projNames;
-    var choice=prompt(promptTxt, guess?String(projects.indexOf(guess)+1):'0');
+    var promptTxt='Email: "'+subject+'" nga '+sender+'\n\n'+(guess.match?'Rekomandimi: "'+guess.match.name+'"\n\n':'')+'Cilit projekt i takon kjo ofertë? Shkruaj numrin nga lista, ose 0 nëse asnjë:\n\n'+projNames;
+    var choice=prompt(promptTxt, guess.match?String(projects.indexOf(guess.match)+1):'0');
     if(choice===null){if(btn){btn.textContent=origTxt;btn.disabled=false;}return;}
     var idx=parseInt(choice)-1;
     var proj=projects[idx];
     if(!proj){alert('S’u zgjodh projekt — analiza u anulua. Krijoje projektin fillimisht te Import Dokument.');if(btn){btn.textContent=origTxt;btn.disabled=false;}return;}
 
-    var supplierGuess=(sender.match(/@([a-zA-Z0-9\-]+)\./)||[])[1]||sender.split('<')[0].trim()||'Furnitori';
+    var supplierGuess=qGuessSupplierName(sender)||sender.split('<')[0].trim()||'Furnitori (kontrollo emrin)';
     if(btn) btn.textContent='Duke analizuar me AI...';
     var prompt2='Extract offer/quotation data from this supplier document and return ONLY a JSON object. No explanation, no markdown, no code fences. Start with { and end with }.\n\nSupplier: '+supplierGuess+'\nDocument text: '+text.slice(0,9000)+'\n\nJSON format:\n{"supplier":"'+supplierGuess+'","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"price_per_kg":0.00,"price_currency":"EUR","delivery_weeks":0,"incoterms":"EXW or DAP or DDP or CIF etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","validity_days":30,"notes":"any special conditions","confidence":"high or medium or low","positions":[{"desc":"exact line item description","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}\nRules:\n- positions: EVERY priced line item as a SEPARATE entry, in document order, own unit price — NEVER merge or average.\n- fabrication_total: sum of fabrication/material/erection items ONLY (exclude transport).\n- Return ONLY the JSON';
     var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -5657,8 +5664,8 @@ async function qAnalyzeAll(){
     if(btn) btn.textContent='('+(i+1)+'/'+rows.length+')...';
     try{
       var guess=qGuessProjectMatch(r.subject, r.sender, projects);
-      if(!guess){ skip++; continue; } // pa përputhje të qartë → lihet për shqyrtim manual
-      var done=await qAnalyzeOne(r.id, r.subject, r.sender, guess, apiKey);
+      if(!guess.strong){ skip++; continue; } // vetem referenca RFQ ne subjekt = perputhje e sigurte per shkrim te heshtur; gjithcka tjeter -> shqyrtim manual me "Analizo" te rreshti
+      var done=await qAnalyzeOne(r.id, r.subject, r.sender, guess.match, apiKey);
       if(done) ok++; else fail++;
     }catch(e){ fail++; }
   }
@@ -5680,7 +5687,8 @@ async function qAnalyzeOne(inboxId, subject, sender, proj, apiKey){
     text+=c.items.map(function(it){return it.str;}).join(' ')+'\n';
   }
   if(text.trim().length<20) return false;
-  var supplierGuess=(sender.match(/@([a-zA-Z0-9\-]+)\./)||[])[1]||'Furnitori';
+  var supplierGuess=qGuessSupplierName(sender);
+  if(!supplierGuess) return false; // domen gjenerik (gmail/prissteel etj.) -- s'ka emer te besueshem furnitori, lehe per rishikim manual
   var prompt='Extract offer data. ONLY JSON.\nSupplier: '+supplierGuess+'\nText: '+text.slice(0,9000)
     +'\n\n{"supplier":"","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"delivery_weeks":0,"incoterms":"","certification":"","validity_days":30,"notes":"","positions":[{"desc":"","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}\nRules: every priced line separate, never merge/average. fabrication_total excludes transport. ONLY JSON.';
   var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
