@@ -690,7 +690,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div class="card">
     <div class="flex justify-between items-center mb-12">
       <div class="card-title" style="margin:0">Ofertat e ruajtura</div>
-      <button class="btn btn-sm" onclick="addOffer()">+ Shto manualish</button>
+      <button class="btn btn-sm" onclick="addOffer()">+ Shto manualisht</button>
     </div>
     <div id="offer-list"></div>
     <div class="mt-16 flex justify-between items-center">
@@ -2009,13 +2009,9 @@ function bomKey(r){
 }
 
 var PROFILE_TO_CAT={PLATE:'heavy_plate',FLAT:'heavy_plate',HEA:'profiles',HEB:'profiles',IPE:'profiles',RHS:'profiles',SHS:'profiles',CHS:'profiles',ANGLE:'profiles',TUBE:'tubes',ALUMINUM:'profiles',MACHINED_PART:'fabrication'};
-async function matchPartnersForBom(rows){
+async function loadAllPartners(){
   try{
-    var cats={};
-    rows.forEach(function(r){ var c=PROFILE_TO_CAT[r.profile]; if(c) cats[c]=true; });
-    var catList=Object.keys(cats);
-    if(!catList.length) return [];
-    var partners=await supaFetch('partners?relation=cs.{supplier}&categories=ov.{'+catList.join(',')+'}&stage=eq.active&select=id,name,categories&order=importance.desc');
+    var partners=await supaFetch('partners?relation=cs.{supplier}&stage=eq.active&select=id,name,categories&order=importance.desc');
     if(!partners||!partners.length) return [];
     var ids=partners.map(function(p){return p.id;});
     var contacts=await supaFetch('partner_contacts?partner_id=in.('+ids.join(',')+')&select=partner_id,full_name,email,language,is_primary').catch(function(){return[];});
@@ -2026,8 +2022,10 @@ async function matchPartnersForBom(rows){
       if(!contactList.length) contactList=[{name:'',email:''}];
       return {id:Date.now()+Math.random(), name:p.name, country:'', lang:(pc[0]&&pc[0].language)||'en', cat:isRaw?'rawmat':'producer', contacts:contactList};
     });
-  }catch(e){ console.error('matchPartnersForBom', e); return []; }
+  }catch(e){ console.error('loadAllPartners', e); return []; }
 }
+// Ruajtur për pajtueshmëri: quhet ende nga applyParsedBom, por tani thjesht sjell listën e plotë.
+async function matchPartnersForBom(rows){ return loadAllPartners(); }
 async function applyParsedBom(parsed){
   const items=parsed.items||[];
   const seenKeys=[]; // keys touched in this pass, to report how many were merged vs new
@@ -2608,7 +2606,7 @@ function renderOffers(){
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
             <label class="lbl">Sasia (kg)</label>
-            <input type="number" value="${o.kg||''}" step="1" placeholder="${bomTotalKg()||0}" onchange="updOffer(${o.id},'kg',this.value)">
+            <input type="number" value="${o.kg||''}" step="1" placeholder="p.sh. ${Math.round(bomTotalKg()||0)}" onchange="updOffer(${o.id},'kg',this.value)">
           </div>
           <div>
             <label class="lbl">Zinktimi EUR/kg</label>
@@ -3803,6 +3801,10 @@ function loadProject(id){
       return{id:i+1,pos:i+1,profile:r.profile,dim:r.dim,grade:r.grade,std:r.std,lenMm:r.len_mm,pcs:pcs,kgUnit:kgUnit,kg:kg,surface:r.surface||'C3 Sa2.5 200μm 3-slojni',cert:r.cert||'EN 10204 3.1'};
     });
     renderBom();
+    return loadAllPartners();
+  }).then(function(sups){
+    suppliers=sups||[];
+    renderSuppliers();
     return supaFetch('offers?project_id=eq.'+_curProjId+'&order=created_at.asc');
   }).then(function(dbOffers){
     if(!dbOffers)return;
