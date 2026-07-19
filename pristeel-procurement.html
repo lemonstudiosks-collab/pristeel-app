@@ -1427,13 +1427,14 @@ function loadWeatherCard(){
       if(dl&&d.daily&&d.daily.time){
         var names=['Die','Hën','Mar','Mër','Enj','Pre','Sht'];
         var h='';
-        for(var i=1;i<Math.min(5,d.daily.time.length);i++){
+        for(var i=1;i<Math.min(4,d.daily.time.length);i++){
           var dt=new Date(d.daily.time[i]);
           var wi=WX_CODES[d.daily.weather_code[i]]||['','cloud'];
-          h+='<div style="flex:1;text-align:center">'
-            +'<div style="font-size:10px;color:var(--text3)">'+names[dt.getDay()]+'</div>'
-            +'<div style="width:26px;height:26px;margin:2px auto">'+wxIconSvg(wi[1])+'</div>'
-            +'<div style="font-size:10.5px;font-weight:600">'+Math.round(d.daily.temperature_2m_max[i])+'°</div>'
+          var icon=wxIconSvg(wi[1]).replace(/width="\d+"/,'width="22"').replace(/height="\d+"/,'height="22"');
+          h+='<div style="flex:1;text-align:center;min-width:52px">'
+            +'<div style="font-size:9.5px;color:var(--text3);font-weight:600;letter-spacing:.3px">'+names[dt.getDay()]+'</div>'
+            +'<div style="width:22px;height:22px;margin:3px auto">'+icon+'</div>'
+            +'<div style="font-size:11px;font-weight:650;color:var(--text)">'+Math.round(d.daily.temperature_2m_max[i])+'°</div>'
             +'<div style="font-size:9.5px;color:var(--text3)">'+Math.round(d.daily.temperature_2m_min[i])+'°</div>'
           +'</div>';
         }
