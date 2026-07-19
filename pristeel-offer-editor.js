@@ -356,6 +356,7 @@ function specDesc(s){
 }
 
 window.pstToggleCalc = function(i){
+  syncRowsFromDom();
   var row = document.getElementById('oe-calcrow'+i);
   if(!row) return;
   row.classList.toggle('hidden');
@@ -382,6 +383,7 @@ function updateCalcResult(i){
   res.innerHTML = calcResInner(i, s, w);
 }
 function refreshRow(i){
+  syncRowsFromDom(); // mos humb çka eshte shkruar ne rreshtat e tjere
   var wrap = document.getElementById('oe-calcrow'+i);
   var wasOpen = wrap && !wrap.classList.contains('hidden');
   renderRows();
@@ -390,6 +392,7 @@ function refreshRow(i){
 }
 window.pstApplySpec = function(i){
   if(!S.pos[i] || !S.pos[i].spec) return;
+  syncRowsFromDom(); // ruaj çmimet e shkruara para se te aplikohet pesha
   var s = S.pos[i].spec;
   var w = calcSpecWeight(s);
   S.pos[i].qty = w.total;
@@ -397,7 +400,29 @@ window.pstApplySpec = function(i){
   var d = specDesc(s);
   if(d) S.pos[i].desc = d;
   renderRows();
+  var wrap = document.getElementById('oe-calcrow'+i);
+  if(wrap) wrap.classList.remove('hidden'); // mbaje kalkulatorin hapur pas aplikimit
 };
+
+// KRITIKE: para çdo rirenderi, lexo vlerat aktuale nga fushat e DOM-it ne S.pos.
+// Pa kete, çdo gje e shkruar por e pa-"commit"-uar (p.sh. kur klikohet '+ Shto pozicion'
+// direkt pa e lene fushen) humbiste ne rirenderin qe pason.
+function syncRowsFromDom(){
+  var el = document.getElementById('oe-rows');
+  if(!el) return;
+  var rows = el.querySelectorAll('tr:not(.oe-calcrow)');
+  rows.forEach(function(tr, i){
+    if(!S.pos[i]) return;
+    var inputs = tr.querySelectorAll('input');
+    if(inputs.length >= 5){
+      S.pos[i].desc       = inputs[0].value;
+      S.pos[i].qty        = n(inputs[1].value);
+      S.pos[i].unit       = inputs[2].value;
+      S.pos[i].price_orig = n(inputs[3].value);
+      S.pos[i].price_neg  = n(inputs[4].value);
+    }
+  });
+}
 
 function renderRows(){
   var el = document.getElementById('oe-rows');
@@ -407,6 +432,7 @@ function renderRows(){
 }
 
 window.pstAddPos = function(){
+  syncRowsFromDom(); // ruaj çka eshte shkruar deri tani para se te rindertohet tabela
   S.pos.push({desc:'',qty:'',unit:'kg',price_orig:'',price_neg:''});
   renderRows();
   setTimeout(function(){
@@ -417,7 +443,7 @@ window.pstAddPos = function(){
   }, 40);
 };
 
-window.pstDelPos = function(i){ S.pos.splice(i,1); renderRows(); };
+window.pstDelPos = function(i){ syncRowsFromDom(); S.pos.splice(i,1); renderRows(); };
 
 window.pstPos = function(i, k, v){
   if(!S.pos[i]) return;
@@ -655,6 +681,7 @@ document.addEventListener('keydown', function(e){
 
 // ── RUAJTJA ─────────────────────────────────────────────────
 window.pstSaveOffer = async function(){
+  syncRowsFromDom(); // KRITIKE: kap edhe rreshtin qe sapo eshte shkruar pa e lene fushen
   var sup = (document.getElementById('oe-sup').value||'').trim() || (document.getElementById('oe-sup-q').value||'').trim();
   if(!sup){ msg('Shkruaj ose zgjidh furnitorin.','err'); return; }
 
