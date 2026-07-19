@@ -1396,6 +1396,15 @@ function wxParticles(kind){
   }
   fx.innerHTML=h;
 }
+var _wxTimer=null;
+function wxAutoStart(){
+  loadWeatherCard();
+  if(_wxTimer) clearInterval(_wxTimer);
+  _wxTimer=setInterval(loadWeatherCard, 1800000);
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){setTimeout(wxAutoStart,1200);});
+else setTimeout(wxAutoStart,1200);
+
 function loadWeatherCard(){
   var lat=42.66, lon=21.17;
   fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5')
