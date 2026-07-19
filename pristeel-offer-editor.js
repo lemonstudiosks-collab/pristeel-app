@@ -154,22 +154,24 @@ function shell(){
    +'</div>'
 
    +'<div class="oe-sec">Pozicionet</div>'
+   +'<div style="font-size:11px;color:var(--text3);margin:-4px 0 9px">'
+     +'Çdo rresht = një pozicion me sasinë dhe çmimin e vet. Totalet mblidhen vetë poshtë.</div>'
    +'<div style="overflow-x:auto"><table class="oe-tbl"><thead><tr>'
-     +'<th style="width:9%">Lloji</th><th style="width:25%">Përshkrimi</th><th style="width:10%">Sasia</th><th style="width:7%">Njësia</th>'
-     +'<th style="width:13%">Çmimi €/njësi</th><th style="width:13%">Pas negocimit €</th>'
+     +'<th style="width:3%">#</th><th style="width:9%">Lloji</th><th style="width:23%">Përshkrimi</th><th style="width:10%">Sasia</th><th style="width:7%">Njësia</th>'
+     +'<th style="width:12%">Çmimi €/njësi</th><th style="width:12%">Pas negocimit €</th>'
      +'<th style="width:14%;text-align:right">Totali €</th><th style="width:4%"></th>'
    +'</tr></thead><tbody id="oe-rows"></tbody></table></div>'
    +'<div class="oe-add" onclick="pstAddPos()">+ Shto pozicion</div>'
 
    +'<div class="oe-sec">Kostot shtesë dhe kushtet</div>'
    +'<div class="oe-g oe-g4">'
-     +'<div class="oe-f"><label>Zinktim EUR/kg</label><input id="oe-zinc" class="num" oninput="pstCalc()" placeholder="0.00"></div>'
+     +'<div class="oe-f"><label>Zinktim EUR/kg</label><input id="oe-zinc" class="num" oninput="pstCalc()" placeholder="0.00">'
+       +'<div class="oe-hint" id="oe-zinc-hint">Aplikohet mbi tonazhin total</div></div>'
      +'<div class="oe-f"><label>Transport EUR</label><input id="oe-transp" class="num" oninput="pstCalc()" placeholder="0"></div>'
-     +'<div class="oe-f"><label>Tonazhi kg</label><input id="oe-qty" class="num" oninput="pstCalc()" placeholder="0"></div>'
+     +'<div class="oe-f"><label>Afati (javë)</label><input id="oe-weeks" class="num" placeholder="0"></div>'
      +'<div class="oe-f"><label>TVSH %</label><input id="oe-vat" class="num" oninput="pstCalc()" placeholder="0"></div>'
    +'</div>'
    +'<div class="oe-g oe-g4" style="margin-top:11px">'
-     +'<div class="oe-f"><label>Afati (javë)</label><input id="oe-weeks" class="num" placeholder="0"></div>'
      +'<div class="oe-f"><label>Incoterms</label><select id="oe-inco">'
        +'<option value="">—</option><option>EXW</option><option>FCA</option><option>FOB</option>'
        +'<option>CFR</option><option>CIF</option><option>CPT</option><option>DAP</option>'
@@ -179,6 +181,9 @@ function shell(){
        +'<input id="oe-origin-q" autocomplete="off" placeholder="Kërko shtetin…" oninput="pstCountryFilter(\'oe-origin\')" onfocus="pstCountryFilter(\'oe-origin\')" onblur="setTimeout(function(){var d=document.getElementById(\'oe-origin-drop\');if(d)d.classList.remove(\'on\');},180)">'
        +'<input type="hidden" id="oe-origin">'
        +'<div class="oe-drop" id="oe-origin-drop"></div></div>'
+     +'<div class="oe-f"><label>Tonazhi total</label>'
+       +'<input id="oe-qty" class="num" readonly style="background:var(--bg2);font-weight:600" placeholder="0">'
+       +'<div class="oe-hint">Mblidhet vetë nga pozicionet në kg</div></div>'
    +'</div>'
    +'<div class="oe-f" style="margin-top:11px"><label>Shënime</label>'
      +'<textarea id="oe-notes" placeholder="Kushte pagese, vlefshmëria, kufizime…"></textarea></div>'
@@ -206,6 +211,7 @@ function rowHtml(p, i){
   var kind = (p.spec && p.spec.kind) || 'other';
   var kindTxt = kind==='other' ? 'Lloji' : KIND_LABELS[kind];
   return '<tr>'
+    +'<td style="color:var(--text3);font-size:11px;text-align:center">'+(i+1)+'</td>'
     +'<td><div class="oe-kindbtn'+(kind!=='other'?' set':'')+'" title="Kliko për të llogaritur peshën (pllakë, profil, tub, kënd, shufër)" onclick="pstToggleCalc('+i+')">'
       +KIND_ICON[kind]+'<span class="kb-txt">'+kindTxt+'</span></div></td>'
     +'<td><input value="'+esc(p.desc)+'" oninput="pstPos('+i+',\'desc\',this.value)" placeholder="Përshkrimi"></td>'
@@ -216,7 +222,7 @@ function rowHtml(p, i){
     +'<td class="oe-tot" id="oe-t'+i+'">'+fmt(tot,2)+' €</td>'
     +'<td><span class="oe-del" onclick="pstDelPos('+i+')">×</span></td>'
   +'</tr>'
-  +'<tr class="oe-calcrow hidden" id="oe-calcrow'+i+'"><td></td><td colspan="7">'+calcBoxHtml(p,i)+'</td></tr>';
+  +'<tr class="oe-calcrow hidden" id="oe-calcrow'+i+'"><td></td><td colspan="8">'+calcBoxHtml(p,i)+'</td></tr>';
 }
 
 function calcBoxHtml(p, i){
@@ -457,15 +463,19 @@ window.pstPos = function(i, k, v){
 
 // ── LLOGARITJA ──────────────────────────────────────────────
 window.pstCalc = function(){
-  var orig=0, neg=0;
+  var orig=0, neg=0, kgTotal=0;
   S.pos.forEach(function(p){
     var q=n(p.qty), po=n(p.price_orig), pn=n(p.price_neg)||po;
     orig += q*po; neg += q*pn;
+    // tonazhi = shuma e sasive te pozicioneve qe jane ne kg (jo cope/ls/m2)
+    if((p.unit||'').trim().toLowerCase()==='kg') kgTotal += q;
   });
   var zinc=n(document.getElementById('oe-zinc') && document.getElementById('oe-zinc').value);
-  var qty =n(document.getElementById('oe-qty')  && document.getElementById('oe-qty').value);
   var tr  =n(document.getElementById('oe-transp')&&document.getElementById('oe-transp').value);
   var vat =n(document.getElementById('oe-vat')  && document.getElementById('oe-vat').value);
+  var qty = kgTotal; // llogaritur, jo i shkruar me dore
+  var qtyEl=document.getElementById('oe-qty');
+  if(qtyEl) qtyEl.value = qty ? fmt(qty,1) : '';
   var zincT = zinc*qty;
   var net = neg + zincT + tr;
   var vatA = net*vat/100;
@@ -634,7 +644,7 @@ window.pstOpenOffer = async function(offerId, projectId){
       document.getElementById('oe-proj').value  = o.project_id||'';
       document.getElementById('oe-zinc').value   = o.zinc_kg||'';
       document.getElementById('oe-transp').value = o.transport_eur||'';
-      document.getElementById('oe-qty').value    = o.qty_kg||'';
+      // 'oe-qty' (tonazhi) nuk mbushet me dore -- llogaritet vete nga pozicionet te pstCalc()
       document.getElementById('oe-vat').value    = o.vat_pct||'';
       document.getElementById('oe-weeks').value  = o.delivery_weeks||'';
       document.getElementById('oe-inco').value   = o.incoterms||'';
@@ -696,14 +706,14 @@ window.pstSaveOffer = async function(){
 
   var neg = pos.reduce(function(s,p){ return s+p.total_neg; },0);
   var zinc=n(document.getElementById('oe-zinc').value);
-  var qty =n(document.getElementById('oe-qty').value);
   var tr  =n(document.getElementById('oe-transp').value);
-  var net = neg + zinc*qty + tr;
 
   var steel = pos.filter(function(p){ return (p.unit||'').toLowerCase()==='kg'; });
   var steelKg  = steel.reduce(function(s,p){ return s+p.qty; },0);
   var steelEur = steel.reduce(function(s,p){ return s+p.total_neg; },0);
-  var pkg = steelKg>0 ? steelEur/steelKg : (qty>0 ? net/qty : null);
+  var qty = steelKg; // tonazhi vjen nga pozicionet ne kg, jo nga fushe e vecante
+  var net = neg + zinc*qty + tr;
+  var pkg = steelKg>0 ? steelEur/steelKg : null;
 
   var rec = {
     supplier: sup,
