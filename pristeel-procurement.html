@@ -690,7 +690,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div class="card">
     <div class="flex justify-between items-center mb-12">
       <div class="card-title" style="margin:0">Ofertat e ruajtura</div>
-      <button class="btn btn-sm" onclick="addOffer()">+ Shto manualisht</button>
+      <button class="btn btn-sm" onclick="pstOpenOffer(null,_curProjId)">+ Shto manualisht</button>
     </div>
     <div id="offer-list"></div>
     <div class="mt-16 flex justify-between items-center">
@@ -2619,6 +2619,32 @@ function updOffer(id,f,v){
   if(['priceKg','zincKg','kg','transportEur','vatPct','totalEur'].includes(f)) renderOffers();
   scheduleOfferSave(o);
 }
+function mapDbOffers(dbOffers){
+  return (dbOffers||[]).map(function(o,i){
+    var sup=o.supplier||'';
+    var type='incoming';
+    if(sup.indexOf('OFERTA JONE')>-1) type='outgoing';
+    return{
+      id:i+1,dbId:o.id,supplier:sup,priceKg:parseFloat(o.price_kg)||0,price:parseFloat(o.price_kg)||0,
+      delivery:parseInt(o.delivery_weeks)||0,inco:o.incoterms||'DAP',
+      cert:o.cert||'',notes:o.notes||'',score:parseFloat(o.score)||0,
+      totalEur:parseFloat(o.total_eur)||0,
+      kg:parseFloat(o.qty_kg)||0,zincKg:parseFloat(o.zinc_kg)||0,positions:o.positions||null,
+      transportEur:parseFloat(o.transport_eur)||0,vatPct:parseFloat(o.vat_pct)||0,
+      offerType:type,
+      origin:o.origin||''
+    };
+  }).map(function(r){ if(Array.isArray(r.positions)&&r.positions.length){ recalcOfferFromPositions(r); } return r; });
+}
+// E thirrur nga editori i ofertave (pristeel-offer-editor.js) pas çdo ruajtjeje/fshirjeje,
+// qe lista "Ofertat e ruajtura" te rifreskohet menjehere nga baza (jo vetem nga memoria e vjeter).
+function loadOffers(){
+  if(!_curProjId) return Promise.resolve();
+  return supaFetch('offers?project_id=eq.'+_curProjId+'&order=created_at.asc').then(function(dbOffers){
+    offers = mapDbOffers(dbOffers);
+    renderOffers();
+  }).catch(function(e){ console.error('loadOffers:', e); });
+}
 function renderOffers(){
   const incos=['EXW','FCA','CPT','CIP','DAP','DPU','DDP','FOB','CFR','CIF'];
   const certs=['EN 10204 3.1','EN 10204 3.2','EN 10204 2.2',''];
@@ -2642,6 +2668,7 @@ function renderOffers(){
         <div style="display:flex;gap:6px;align-items:center">
           <span style="font-size:18px;font-weight:700;color:${isOutgoing?'#B87333':'var(--text)'}">${o.priceKg>0?o.priceKg.toFixed(3)+' EUR/kg':''}</span>
           ${o.totalEur>0?`<span style="font-size:13px;color:var(--text2)">→ <strong>${o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} EUR</strong>${(o.vatPct||0)>0?` <span style="font-size:11px">(+${o.vatPct}% TVSH = ${offerGross(o).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})})</span>`:''}</span>`:''}
+          ${o.dbId?`<button onclick="pstOpenOffer('${o.dbId}',_curProjId)" class="btn btn-sm" style="font-size:11px;padding:3px 9px">Redakto (pozicione, pllakë, profil…)</button>`:''}
           <button onclick="delOffer(${o.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
         </div>
       </div>

@@ -752,53 +752,12 @@ window.pstDeleteOffer = async function(){
   }catch(e){ msg('Gabim: '+e.message,'err'); }
 };
 
-// ── BUTONAT NË FAQEN E OFERTAVE ─────────────────────────────
-function addButtons(){
-  var pg = document.getElementById('page-offers');
-  if(!pg) return false;
-  if(!document.getElementById('oe-newbtn')){
-    var hd = pg.querySelector('.page-header, .card-title, h2, .flex');
-    var b = document.createElement('button');
-    b.id = 'oe-newbtn';
-    b.className = 'btn btn-primary btn-sm';
-    b.textContent = '+ Ofertë manuale';
-    b.style.marginLeft = '8px';
-    b.onclick = function(){ window.pstOpenOffer(null, null); };
-    if(hd) hd.appendChild(b); else pg.insertBefore(b, pg.firstChild);
-  }
-  return true;
-}
-
-// Shto butonin "Redakto" te çdo kartë oferte
-function decorateOfferCards(){
-  document.querySelectorAll('[data-offer-id]').forEach(function(el){
-    if(el.querySelector('.oe-editbtn')) return;
-    var id = el.getAttribute('data-offer-id');
-    var b = document.createElement('span');
-    b.className = 'oe-editbtn';
-    b.textContent = 'Redakto';
-    b.onclick = function(e){ e.stopPropagation(); window.pstOpenOffer(id, null); };
-    var t = el.querySelector('.card-title, .offer-title, h3, .flex');
-    (t || el).appendChild(b);
-  });
-}
-
-function init(){
-  var t = 0;
-  var iv = setInterval(function(){
-    addButtons();
-    decorateOfferCards();
-    if(++t > 60) clearInterval(iv);
-  }, 900);
-  if(typeof window.showPage === 'function' && !window.showPage.__oe){
-    var orig = window.showPage;
-    window.showPage = function(p){
-      orig.apply(this, arguments);
-      if(p==='offers') setTimeout(function(){ addButtons(); decorateOfferCards(); }, 300);
-    };
-    window.showPage.__oe = true;
-  }
-}
+// ── SHENIM: Butoni "+ Shto manualisht" dhe "Redakto" tani jane lidhur DIREKT
+// ne pristeel-procurement.html (renderOffers() dhe butoni te 'page-offers'),
+// jo me nepermjet ketij mekanizmi te vjeter te "gjetjes automatike" te elementeve
+// (i cili ishte i brishte dhe e injektonte butonin ne vend te gabuar). E lame
+// ketu vetem per referencë historike, i çaktivizuar plotesisht.
+function init(){ /* qellimisht bosh */ }
 
 if(document.readyState === 'loading'){
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 900); });
