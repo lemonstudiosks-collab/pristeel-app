@@ -1421,7 +1421,8 @@ function loadWeatherCard(){
       var t=document.getElementById('wx-temp'); if(t) t.textContent=Math.round(cw.temperature)+'°';
       var ds=document.getElementById('wx-desc'); if(ds) ds.textContent=info[0];
       var mt=document.getElementById('wx-meta');
-      if(mt) mt.textContent='Erë '+Math.round(cw.windspeed)+' km/h';
+      if(mt) mt.innerHTML='<b style="color:var(--text2);font-weight:650">Prishtinë</b> · '
+        +info[0]+' · erë '+Math.round(cw.windspeed)+' km/h';
       wxParticles(info[1]);
       var dl=document.getElementById('wx-days');
       if(dl&&d.daily&&d.daily.time){
