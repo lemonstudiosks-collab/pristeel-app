@@ -270,7 +270,7 @@ function calcBoxHtml(p, i){
       +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
   } else if(s.kind==='ihprofile'){
     f += '<div><label>Profili</label><select onchange="pstSpec('+i+',\'profile\',this.value)">'
-        +['HEA','HEB','IPE'].map(function(x){return '<option'+(s.profile===x?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'
+        +['HEA','HEB','HEM','IPE','IPN','UPN','UPE'].map(function(x){return '<option'+(s.profile===x?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'
       +'<div><label>Dimensioni</label><input value="'+esc(s.dim||'')+'" oninput="pstSpec('+i+',\'dim\',this.value)" placeholder="200"></div>'
       +'<div><label>Grada</label><input value="'+esc(s.grade||'')+'" oninput="pstSpec('+i+',\'grade\',this.value)" placeholder="S355JR"></div>'
       +'<div><label>Gjatësia (mm)</label><input class="num" value="'+(s.length||'')+'" oninput="pstSpec('+i+',\'length\',this.value)" placeholder="6000"></div>'

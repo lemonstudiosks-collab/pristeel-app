@@ -1180,7 +1180,15 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
 </div></div></div><script>
 // ── DATA ──────────────────────────────────────────────
-const PW={HEA:{100:16.7,120:19.9,140:24.7,160:30.4,180:35.5,200:42.3,220:50.5,240:60.3,260:68.2,280:76.4,300:88.3,320:97.6,340:105,360:112,400:125,450:140,500:155,550:166,600:178},HEB:{100:20.4,120:26.7,140:33.7,160:42.6,180:51.2,200:61.3,220:71.5,240:83.2,260:93,280:103,300:117,320:127,340:134,360:142,400:155,450:171,500:187,550:199,600:212},IPE:{80:6,100:8.1,120:10.4,140:12.9,160:15.8,180:18.8,200:22.4,220:26.2,240:30.7,270:36.1,300:42.2,330:49.1,360:57.1,400:66.3,450:77.6,500:90.7,550:106,600:122}};
+const PW={
+  HEA:{100:17.0,120:20.3,140:25.1,160:31.0,180:36.2,200:43.1,220:51.5,240:61.5,260:69.5,280:77.8,300:90.0,320:99.5,340:107,360:114,400:127,450:142,500:158,550:169,600:181,650:193,700:208,800:229,900:256,1000:277},
+  HEB:{100:20.8,120:27.2,140:34.4,160:43.4,180:52.2,200:62.5,220:72.8,240:84.8,260:94.8,280:105,300:119,320:129,340:137,360:145,400:158,450:174,500:191,550:203,600:216,650:229,700:245,800:267,900:297,1000:320},
+  HEM:{100:42.6,120:53.1,140:64.4,160:77.6,180:90.6,200:105,220:120,240:160,260:176,280:192,300:242,320:250,340:253,360:255,400:261,450:268,500:275,550:284,600:291,650:299,700:306,800:323,900:339,1000:355},
+  IPE:{80:6.11,100:8.26,120:10.6,140:13.1,160:16.1,180:19.2,200:22.8,220:26.7,240:31.3,270:36.8,300:43.0,330:50.1,360:58.2,400:67.6,450:79.1,500:92.4,550:108,600:125},
+  IPN:{80:6.06,100:8.50,120:11.3,140:14.6,160:18.2,180:22.3,200:26.7,220:31.6,240:36.9,260:42.7,280:48.8,300:55.2,320:62.2,340:69.3,360:77.6,380:85.6,400:94.2},
+  UPN:{80:8.82,100:10.8,120:13.6,140:16.3,160:19.2,180:22.4,200:25.7,220:30.0,240:33.8,260:38.6,280:42.7,300:47.0,320:60.6,350:61.8,380:64.3,400:73.2},
+  UPE:{80:9.05,100:11.1,120:13.5,140:16.0,160:19.0,180:22.0,200:25.3,220:29.4,240:34.0,270:39.5,300:45.3,330:54.2,360:62.3,400:73.5}
+};
 function kgPerM(p,d){const t=PW[p?.toUpperCase()];return t&&t[parseInt(d)]||0;}
 function calcKg(p,d,l,n){const w=kgPerM(p,d);return w?+(w*(l/1000)*n).toFixed(1):0;}
 
@@ -2008,7 +2016,7 @@ function bomKey(r){
   ].join('|');
 }
 
-var PROFILE_TO_CAT={PLATE:'heavy_plate',FLAT:'heavy_plate',HEA:'profiles',HEB:'profiles',IPE:'profiles',RHS:'profiles',SHS:'profiles',CHS:'profiles',ANGLE:'profiles',TUBE:'tubes',ALUMINUM:'profiles',MACHINED_PART:'fabrication'};
+var PROFILE_TO_CAT={PLATE:'heavy_plate',FLAT:'heavy_plate',HEA:'profiles',HEB:'profiles',HEM:'profiles',IPE:'profiles',IPN:'profiles',UPN:'profiles',UPE:'profiles',RHS:'profiles',SHS:'profiles',CHS:'profiles',ANGLE:'profiles',TUBE:'tubes',ALUMINUM:'profiles',MACHINED_PART:'fabrication'};
 async function loadAllPartners(){
   try{
     var partners=await supaFetch('partners?relation=cs.{supplier}&stage=eq.active&select=id,name,categories&order=importance.desc');
@@ -2122,7 +2130,7 @@ async function applyParsedBom(parsed){
 function delay(ms){return new Promise(r=>setTimeout(r,ms));}
 
 // ── BOM ───────────────────────────────────────────────
-const PROFILES=['HEA','HEB','IPE','RHS','SHS','CHS','PLATE','FLAT','ANGLE','TUBE','ALUMINUM','MACHINED_PART','OTHER'];
+const PROFILES=['HEA','HEB','HEM','IPE','IPN','UPN','UPE','RHS','SHS','CHS','PLATE','FLAT','ANGLE','TUBE','ALUMINUM','MACHINED_PART','OTHER'];
 const GRADES=['S235JR','S275JR','S355JR','S355J2','S420ML','S460ML','S690QL','EN-AW 5083',''];
 const STDS=['EN 10025-2','EN 10219','EN 10210','EN 10162','EN 10029','ISO 2768-mk',''];
 const CERTS=['EN 10204 3.1','EN 10204 3.2','EN 10204 2.2',''];
