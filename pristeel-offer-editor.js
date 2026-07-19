@@ -71,11 +71,64 @@ css.textContent = `
   cursor:pointer;padding:3px 9px;border:1px solid var(--border);border-radius:6px;
   background:#fff;transition:all .14s ease;margin-left:6px}
 .oe-editbtn:hover{color:var(--bronze);border-color:var(--bronze)}
+.oe-combo{position:relative}
+.oe-drop{display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);
+  border-radius:8px;margin-top:3px;max-height:230px;overflow-y:auto;z-index:50;box-shadow:0 8px 24px rgba(20,25,30,.14)}
+.oe-drop.on{display:block}
+.oe-drop-item{padding:7px 11px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:7px}
+.oe-drop-item:hover{background:var(--bg2)}
+.oe-drop-c{color:var(--text3);font-size:11px}
+.oe-drop-new{color:var(--bronze);font-weight:600;border-top:1px solid var(--border)}
+.oe-drop-empty{padding:9px 11px;font-size:12px;color:var(--text3)}
+.oe-flag{font-size:15px;line-height:1}
 `;
 document.head.appendChild(css);
 
 // ── GJENDJA ─────────────────────────────────────────────────
 var S = { id:null, projectId:null, pos:[], suppliers:[], projects:[] };
+
+var COUNTRIES = [
+  {c:'XK',n:'Kosovë',f:'🇽🇰'},
+  {c:'AL',n:'Shqipëri',f:'🇦🇱'},
+  {c:'MK',n:'Maqedoni e Veriut',f:'🇲🇰'},
+  {c:'RS',n:'Serbi',f:'🇷🇸'},
+  {c:'ME',n:'Mali i Zi',f:'🇲🇪'},
+  {c:'BA',n:'Bosnjë dhe Hercegovinë',f:'🇧🇦'},
+  {c:'HR',n:'Kroaci',f:'🇭🇷'},
+  {c:'SI',n:'Slloveni',f:'🇸🇮'},
+  {c:'BG',n:'Bullgari',f:'🇧🇬'},
+  {c:'RO',n:'Rumani',f:'🇷🇴'},
+  {c:'GR',n:'Greqi',f:'🇬🇷'},
+  {c:'TR',n:'Turqi',f:'🇹🇷'},
+  {c:'DE',n:'Gjermani',f:'🇩🇪'},
+  {c:'AT',n:'Austri',f:'🇦🇹'},
+  {c:'CH',n:'Zvicër',f:'🇨🇭'},
+  {c:'IT',n:'Itali',f:'🇮🇹'},
+  {c:'FR',n:'Francë',f:'🇫🇷'},
+  {c:'NL',n:'Holandë',f:'🇳🇱'},
+  {c:'BE',n:'Belgjikë',f:'🇧🇪'},
+  {c:'LU',n:'Luksemburg',f:'🇱🇺'},
+  {c:'GB',n:'Mbretëria e Bashkuar',f:'🇬🇧'},
+  {c:'IE',n:'Irlandë',f:'🇮🇪'},
+  {c:'PL',n:'Poloni',f:'🇵🇱'},
+  {c:'CZ',n:'Çeki',f:'🇨🇿'},
+  {c:'SK',n:'Sllovaki',f:'🇸🇰'},
+  {c:'HU',n:'Hungari',f:'🇭🇺'},
+  {c:'UA',n:'Ukrainë',f:'🇺🇦'},
+  {c:'RU',n:'Rusi',f:'🇷🇺'},
+  {c:'ES',n:'Spanjë',f:'🇪🇸'},
+  {c:'PT',n:'Portugali',f:'🇵🇹'},
+  {c:'SE',n:'Suedi',f:'🇸🇪'},
+  {c:'NO',n:'Norvegji',f:'🇳🇴'},
+  {c:'DK',n:'Danimarkë',f:'🇩🇰'},
+  {c:'FI',n:'Finlandë',f:'🇫🇮'},
+  {c:'CN',n:'Kinë',f:'🇨🇳'},
+  {c:'IN',n:'Indi',f:'🇮🇳'},
+  {c:'US',n:'ShBA',f:'🇺🇸'},
+  {c:'AE',n:'Emiratet e Bashkuara Arabe',f:'🇦🇪'},
+  {c:'EG',n:'Egjipt',f:'🇪🇬'},
+  {c:'SA',n:'Arabia Saudite',f:'🇸🇦'}
+];
 
 function n(v){ var x = parseFloat(String(v==null?'':v).replace(',','.')); return isNaN(x)?0:x; }
 function fmt(v,d){ return (parseFloat(v)||0).toLocaleString('de-DE',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}); }
@@ -96,15 +149,20 @@ function shell(){
 
    +'<div class="oe-sec">Furnitori dhe projekti</div>'
    +'<div class="oe-g oe-g2">'
-     +'<div class="oe-f"><label>Furnitori</label>'
-       +'<select id="oe-sup" onchange="pstSupChange()"></select>'
-       +'<div class="oe-hint">Zgjidh ose shto të ri</div></div>'
+     +'<div class="oe-f oe-combo"><label>Furnitori</label>'
+       +'<input id="oe-sup-q" autocomplete="off" placeholder="Shkruaj për të kërkuar…" oninput="pstSupFilter()" onfocus="pstSupFilter()" onblur="setTimeout(function(){var d=document.getElementById(\'oe-sup-drop\');if(d)d.classList.remove(\'on\');},180)">'
+       +'<input type="hidden" id="oe-sup">'
+       +'<div class="oe-drop" id="oe-sup-drop"></div>'
+       +'<div class="oe-hint">Kërko te lista, ose shkruaj emër të ri për ta regjistruar</div></div>'
      +'<div class="oe-f"><label>Projekti</label><select id="oe-proj"></select></div>'
    +'</div>'
    +'<div class="oe-newsup" id="oe-newsup">'
      +'<div class="oe-g oe-g3">'
        +'<div class="oe-f"><label>Emri i furnitorit *</label><input id="ns-name" placeholder="p.sh. Makstil AD"></div>'
-       +'<div class="oe-f"><label>Vendi</label><input id="ns-country" placeholder="MK"></div>'
+       +'<div class="oe-f oe-combo"><label>Vendi</label>'
+         +'<input id="ns-country-q" autocomplete="off" placeholder="Kërko shtetin…" oninput="pstCountryFilter(\'ns\')" onfocus="pstCountryFilter(\'ns\')" onblur="setTimeout(function(){var d=document.getElementById(\'ns-country-drop\');if(d)d.classList.remove(\'on\');},180)">'
+         +'<input type="hidden" id="ns-country">'
+         +'<div class="oe-drop" id="ns-country-drop"></div></div>'
        +'<div class="oe-f"><label>Email</label><input id="ns-email" placeholder="info@..."></div>'
      +'</div>'
      +'<div class="oe-g oe-g3" style="margin-top:10px">'
@@ -140,7 +198,10 @@ function shell(){
        +'<option>CFR</option><option>CIF</option><option>CPT</option><option>DAP</option>'
        +'<option>DDP</option><option>DAT</option></select></div>'
      +'<div class="oe-f"><label>Certifikata</label><input id="oe-cert" placeholder="EN 1090 EXC3, 3.1…"></div>'
-     +'<div class="oe-f"><label>Prejardhja</label><input id="oe-origin" placeholder="MK, TR, XK…"></div>'
+     +'<div class="oe-f oe-combo"><label>Prejardhja</label>'
+       +'<input id="oe-origin-q" autocomplete="off" placeholder="Kërko shtetin…" oninput="pstCountryFilter(\'oe-origin\')" onfocus="pstCountryFilter(\'oe-origin\')" onblur="setTimeout(function(){var d=document.getElementById(\'oe-origin-drop\');if(d)d.classList.remove(\'on\');},180)">'
+       +'<input type="hidden" id="oe-origin">'
+       +'<div class="oe-drop" id="oe-origin-drop"></div></div>'
    +'</div>'
    +'<div class="oe-f" style="margin-top:11px"><label>Shënime</label>'
      +'<textarea id="oe-notes" placeholder="Kushte pagese, vlefshmëria, kufizime…"></textarea></div>'
@@ -238,16 +299,37 @@ window.pstCalc = function(){
   el.innerHTML = h;
 };
 
-// ── FURNITORI I RI ──────────────────────────────────────────
-window.pstSupChange = function(){
-  var s = document.getElementById('oe-sup');
-  var box = document.getElementById('oe-newsup');
-  if(s.value === '__new__'){ box.classList.add('on'); setTimeout(function(){ document.getElementById('ns-name').focus(); },40); }
-  else box.classList.remove('on');
+// ── FURNITORI: KËRKIM LIVE (BASHKON contacts + partners) ────
+function renderSupDrop(q){
+  var drop = document.getElementById('oe-sup-drop');
+  if(!drop) return;
+  q = (q||'').toLowerCase().trim();
+  var list = S.suppliers.filter(function(x){ return !q || x.company.toLowerCase().indexOf(q)>-1; }).slice(0,80);
+  var html = list.map(function(x){
+    return '<div class="oe-drop-item" onmousedown="pstSupPick('+JSON.stringify(x.company).replace(/"/g,'&quot;')+')">'
+      + esc(x.company) + (x.country?' <span class="oe-drop-c">('+esc(x.country)+')</span>':'') + '</div>';
+  }).join('');
+  html += '<div class="oe-drop-item oe-drop-new" onmousedown="pstSupNew()">+ Furnitor i ri'+(q?': "'+esc(document.getElementById('oe-sup-q').value)+'"':'…')+'</div>';
+  drop.innerHTML = html || '<div class="oe-drop-empty">Asnjë përputhje — shto si të ri më poshtë</div>';
+  drop.classList.add('on');
+}
+window.pstSupFilter = function(){ renderSupDrop(document.getElementById('oe-sup-q').value); };
+window.pstSupPick = function(name){
+  document.getElementById('oe-sup').value = name;
+  document.getElementById('oe-sup-q').value = name;
+  document.getElementById('oe-sup-drop').classList.remove('on');
+  document.getElementById('oe-newsup').classList.remove('on');
+};
+window.pstSupNew = function(){
+  var typed = (document.getElementById('oe-sup-q').value||'').trim();
+  document.getElementById('oe-sup').value = '';
+  document.getElementById('oe-sup-drop').classList.remove('on');
+  document.getElementById('oe-newsup').classList.add('on');
+  document.getElementById('ns-name').value = typed;
+  setTimeout(function(){ document.getElementById('ns-name').focus(); },40);
 };
 window.pstCancelNewSupplier = function(){
   document.getElementById('oe-newsup').classList.remove('on');
-  document.getElementById('oe-sup').value = '';
 };
 window.pstSaveNewSupplier = async function(){
   var name = (document.getElementById('ns-name').value||'').trim();
@@ -258,40 +340,64 @@ window.pstSaveNewSupplier = async function(){
       person:(document.getElementById('ns-person').value||'').trim()||null,
       email:(document.getElementById('ns-email').value||'').trim()||null,
       phone:(document.getElementById('ns-phone').value||'').trim()||null,
-      country:(document.getElementById('ns-country').value||'').trim()||null,
+      country:((document.getElementById('ns-country').value||'').trim() || (document.getElementById('ns-country-q').value||'').trim())||null,
       notes:(document.getElementById('ns-cat').value||'').trim()||null
     };
     await supaFetch('contacts','POST',rec);
     await loadSuppliers();
-    var s = document.getElementById('oe-sup');
-    s.value = name;
+    document.getElementById('oe-sup').value = name;
+    document.getElementById('oe-sup-q').value = name;
     document.getElementById('oe-newsup').classList.remove('on');
-    ['ns-name','ns-person','ns-email','ns-phone','ns-country','ns-cat'].forEach(function(id){
+    ['ns-name','ns-person','ns-email','ns-phone','ns-cat'].forEach(function(id){
       var e=document.getElementById(id); if(e) e.value='';
     });
+    var nc=document.getElementById('ns-country'), ncq=document.getElementById('ns-country-q');
+    if(nc) nc.value=''; if(ncq) ncq.value='';
     msg('Furnitori "'+name+'" u shtua.','ok');
   }catch(e){ msg('Gabim: '+e.message,'err'); }
 };
 
 async function loadSuppliers(){
+  var byName = {};
   try{
-    var r = await supaFetch("contacts?kind=eq.supplier&select=company,person,country&order=company.asc&limit=1000");
-    S.suppliers = r||[];
-  }catch(e){ S.suppliers = []; }
-  var s = document.getElementById('oe-sup');
-  if(!s) return;
-  var cur = s.value;
-  var seen = {};
-  s.innerHTML = '<option value="">— zgjidh —</option>'
-    + S.suppliers.filter(function(x){
-        if(!x.company || seen[x.company]) return false;
-        seen[x.company]=1; return true;
-      }).map(function(x){
-        return '<option value="'+esc(x.company)+'">'+esc(x.company)+(x.country?' ('+esc(x.country)+')':'')+'</option>';
-      }).join('')
-    + '<option value="__new__">+ Furnitor i ri…</option>';
-  if(cur) s.value = cur;
+    var a = await supaFetch("contacts?kind=eq.supplier&select=company,person,country&order=company.asc&limit=1000") || [];
+    a.forEach(function(x){ if(x.company) byName[x.company.trim().toLowerCase()] = {company:x.company.trim(), country:x.country||''}; });
+  }catch(e){}
+  try{
+    var b = await supaFetch("partners?relation=cs.{supplier}&select=name,country&order=name.asc&limit=1000") || [];
+    b.forEach(function(x){
+      if(!x.name) return;
+      var k = x.name.trim().toLowerCase();
+      if(!byName[k]) byName[k] = {company:x.name.trim(), country:x.country||''};
+      else if(!byName[k].country && x.country) byName[k].country = x.country;
+    });
+  }catch(e){}
+  S.suppliers = Object.keys(byName).map(function(k){ return byName[k]; }).sort(function(a,b){ return a.company.localeCompare(b.company); });
 }
+
+// ── SHTETET: KËRKIM LIVE (me flamuj, Kosova gjithmonë e përfshirë) ──
+function renderCountryDrop(prefix, q){
+  var drop = document.getElementById(prefix+'-country-drop');
+  if(!drop) return;
+  q = (q||'').toLowerCase().trim();
+  var list = COUNTRIES.filter(function(x){ return !q || x.n.toLowerCase().indexOf(q)>-1 || x.c.toLowerCase().indexOf(q)>-1; });
+  drop.innerHTML = list.map(function(x){
+    return '<div class="oe-drop-item" onmousedown="pstCountryPick(\''+prefix+'\',\''+x.c+'\')">'
+      + '<span class="oe-flag">'+x.f+'</span> '+esc(x.n)+' <span class="oe-drop-c">('+x.c+')</span></div>';
+  }).join('') || '<div class="oe-drop-empty">Asnjë përputhje</div>';
+  drop.classList.add('on');
+}
+window.pstCountryFilter = function(prefix){ renderCountryDrop(prefix, document.getElementById(prefix+'-country-q').value); };
+window.pstCountryPick = function(prefix, code){
+  var ctry = COUNTRIES.filter(function(x){ return x.c===code; })[0];
+  if(!ctry) return;
+  var hidden = document.getElementById(prefix==='oe-origin'?'oe-origin':'ns-country');
+  var visible = document.getElementById(prefix+'-country-q');
+  // 'ns-country' (furnitori i ri) ruan kodin (si te dhënat ekzistuese te 'contacts'); 'oe-origin' ruan emrin (si te dhënat ekzistuese te 'offers')
+  hidden.value = prefix==='oe-origin' ? ctry.n : ctry.c;
+  visible.value = ctry.f+' '+ctry.n;
+  document.getElementById(prefix+'-country-drop').classList.remove('on');
+};
 
 async function loadProjects(){
   try{
@@ -331,14 +437,8 @@ window.pstOpenOffer = async function(offerId, projectId){
       var o = r && r[0];
       if(!o){ msg('Oferta nuk u gjet.','err'); return; }
       var supName = (o.supplier||'').split('(')[0].trim();
-      var sel = document.getElementById('oe-sup');
-      var found = Array.prototype.some.call(sel.options, function(op){ return op.value===supName; });
-      if(!found && supName){
-        var op = document.createElement('option');
-        op.value = supName; op.textContent = supName;
-        sel.insertBefore(op, sel.options[1]);
-      }
-      sel.value = supName;
+      document.getElementById('oe-sup').value = supName;
+      document.getElementById('oe-sup-q').value = supName;
       document.getElementById('oe-proj').value  = o.project_id||'';
       document.getElementById('oe-zinc').value   = o.zinc_kg||'';
       document.getElementById('oe-transp').value = o.transport_eur||'';
@@ -348,6 +448,8 @@ window.pstOpenOffer = async function(offerId, projectId){
       document.getElementById('oe-inco').value   = o.incoterms||'';
       document.getElementById('oe-cert').value   = o.cert||'';
       document.getElementById('oe-origin').value = o.origin||'';
+      var origCtry = COUNTRIES.filter(function(x){ return x.n===o.origin||x.c===o.origin; })[0];
+      document.getElementById('oe-origin-q').value = origCtry ? (origCtry.f+' '+origCtry.n) : (o.origin||'');
       document.getElementById('oe-notes').value  = o.notes||'';
       document.getElementById('oe-sub').textContent =
         (o.created_at ? 'Krijuar '+new Date(o.created_at).toLocaleDateString('de-DE') : '');
@@ -386,8 +488,8 @@ document.addEventListener('keydown', function(e){
 
 // ── RUAJTJA ─────────────────────────────────────────────────
 window.pstSaveOffer = async function(){
-  var sup = document.getElementById('oe-sup').value;
-  if(!sup || sup==='__new__'){ msg('Zgjidh furnitorin.','err'); return; }
+  var sup = (document.getElementById('oe-sup').value||'').trim() || (document.getElementById('oe-sup-q').value||'').trim();
+  if(!sup){ msg('Shkruaj ose zgjidh furnitorin.','err'); return; }
 
   var pos = S.pos.filter(function(p){ return (p.desc||'').trim() || n(p.qty); })
     .map(function(p){
@@ -421,7 +523,7 @@ window.pstSaveOffer = async function(){
     delivery_weeks: parseInt(document.getElementById('oe-weeks').value,10) || null,
     incoterms: document.getElementById('oe-inco').value || null,
     cert: (document.getElementById('oe-cert').value||'').trim() || null,
-    origin: (document.getElementById('oe-origin').value||'').trim() || null,
+    origin: ((document.getElementById('oe-origin').value||'').trim() || (document.getElementById('oe-origin-q').value||'').trim()) || null,
     notes: (document.getElementById('oe-notes').value||'').trim() || null
   };
 
