@@ -378,6 +378,27 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div id="side-nav"></div>
     <div id="side-panel" style="margin-top:auto;padding:14px 16px 8px"></div>
   </div>
+  <!-- RADIO KOMPAKTE — e dukshme ne cdo faqe, kontrollon te njejtin audio si karta e faqes hyrese -->
+  <div id="side-radio" style="padding:9px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:9px">
+    <span id="side-radio-btn" onclick="radioToggle()" title="Luaj / Ndalo radion"
+      style="cursor:pointer;width:29px;height:29px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg id="side-radio-ic" viewBox="0 0 24 24" style="width:12px;height:12px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
+    </span>
+    <select id="side-radio-ch" onchange="radioSetChFrom('side-radio-ch')" title="Zgjidh kanalin"
+      style="flex:1;min-width:0;font-size:10px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text2)">
+      <option value="0">Piano</option>
+      <option value="1">Neoclassical</option>
+      <option value="2">Kinematike</option>
+      <option value="3">Ambient — qetë</option>
+      <option value="4">Ambient — ngrohtë</option>
+      <option value="5">Downtempo</option>
+      <option value="6">Dreamy</option>
+      <option value="7">Jazz</option>
+      <option value="8">Natyrë</option>
+    </select>
+    <!-- Elementi audio jeton KETU (jo brenda ndonje faqeje), qe muzika te mos nderpritet kur ndryshon faqja -->
+    <audio id="radio-audio" preload="none"></audio>
+  </div>
   <div class="sidebar-footer">
     PRISTEEL Sh.p.k. &copy; 2026<br>sales@prissteel.com
   </div>
@@ -467,7 +488,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
         <svg id="radio-play-ic" viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
       </span>
-      <audio id="radio-audio" preload="none"></audio>
     </div>
   </div>
 
@@ -1450,23 +1470,44 @@ var RADIO_CHANNELS=[
 ];
 var _radioOn=false;
 function radioEl(){ return document.getElementById('radio-audio'); }
-function radioSetCh(){
-  var i=parseInt(document.getElementById('radio-ch').value,10)||0;
+// Sinkronizon te dy zgjedhesit e kanalit (faqja hyrese + sidebar) me vleren aktuale
+function radioSyncCh(i){
+  ['radio-ch','side-radio-ch'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el && String(el.value)!==String(i)) el.value=String(i);
+  });
+}
+// Thirret kur ndryshohet kanali nga cilido zgjedhes
+function radioSetChFrom(srcId){
+  var src=document.getElementById(srcId); if(!src) return;
+  var i=parseInt(src.value,10)||0;
+  radioSyncCh(i);
   localStorage.setItem('pristeel_radio_ch',i);
   var a=radioEl(); if(!a) return;
   var wasOn=_radioOn;
   a.src=RADIO_CHANNELS[i].url;
   if(wasOn){ a.play().catch(function(){}); }
 }
+function radioSetCh(){ radioSetChFrom('radio-ch'); }
 function radioToggle(){
   var a=radioEl(); if(!a) return;
-  if(!a.src){ radioSetCh(); }
+  if(!a.src){
+    var i=parseInt(localStorage.getItem('pristeel_radio_ch')||'0',10)||0;
+    a.src=RADIO_CHANNELS[i].url;
+    radioSyncCh(i);
+  }
   if(_radioOn){ a.pause(); _radioOn=false; }
   else { a.play().catch(function(){alert('Streami nuk u hap — provo kanal tjetër.');}); _radioOn=true; }
-  var ic=document.getElementById('radio-play-ic');
-  if(ic) ic.innerHTML=_radioOn
-    ?'<rect x="5" y="4" width="4.5" height="16" rx="1" fill="#fff"/><rect x="14.5" y="4" width="4.5" height="16" rx="1" fill="#fff"/>'
-    :'<polygon points="6,4 20,12 6,20" fill="#fff"/>';
+  radioPaintIcons();
+}
+// Vizaton ikonat play/pause te te dy kontrollet + ekualizatorin e faqes hyrese
+function radioPaintIcons(){
+  var playIc='<polygon points="6,4 20,12 6,20" fill="#fff"/>';
+  var pauseIc='<rect x="5" y="4" width="4.5" height="16" rx="1" fill="#fff"/><rect x="14.5" y="4" width="4.5" height="16" rx="1" fill="#fff"/>';
+  ['radio-play-ic','side-radio-ic'].forEach(function(id){
+    var ic=document.getElementById(id);
+    if(ic) ic.innerHTML=_radioOn?pauseIc:playIc;
+  });
   var lg=document.getElementById('radio-logo');
   if(lg){
     lg.innerHTML=_radioOn
@@ -1475,9 +1516,9 @@ function radioToggle(){
   }
 }
 function radioInit(){
-  var sel=document.getElementById('radio-ch'); if(!sel) return;
   var saved=parseInt(localStorage.getItem('pristeel_radio_ch')||'0',10);
-  if(saved>=0&&saved<RADIO_CHANNELS.length) sel.value=saved;
+  if(saved>=0&&saved<RADIO_CHANNELS.length) radioSyncCh(saved);
+  radioPaintIcons();
 }
 // ── MOTI (karte e vecante me efekte) ──────────────────
 var WX_CODES={0:['Kthjellët','sun'],1:['Pjesërisht kthjellët','sun'],2:['Me re','cloud'],3:['I vranët','cloud'],
