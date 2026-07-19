@@ -742,7 +742,13 @@ window.pstSaveOffer = async function(){
       if(typeof loadOffers==='function') loadOffers();
       else if(typeof showPage==='function') showPage('offers');
     }, 550);
-  }catch(e){ msg('Gabim: '+e.message,'err'); }
+  }catch(e){
+    if(String(e.message||e).indexOf('SESSION_EXPIRED')>-1){
+      msg('Sesioni skadoi — oferta u ruajt lokalisht. Ri-kyçu dhe do të rikthehet automatikisht.','err');
+      return;
+    }
+    msg('Gabim: '+e.message,'err');
+  }
 };
 
 window.pstDeleteOffer = async function(){

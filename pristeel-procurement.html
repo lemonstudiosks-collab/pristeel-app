@@ -3928,6 +3928,7 @@ function doLogin(){
     if(!res.ok || !res.d.access_token){ err.textContent='Email ose fjalëkalim i gabuar.'; return; }
     authSaveSession(res.d);
     startApp();
+    setTimeout(function(){ if(typeof recoverUnsavedWork==='function') recoverUnsavedWork(); }, 1200);
   }).catch(function(){ err.textContent='Gabim lidhjeje. Provo përsëri.'; });
 }
 function doLogout(){
@@ -3989,18 +3990,71 @@ window.addEventListener('load', async function(){
   }
 });
 
-function supaFetch(path,method,body){
+async function supaFetch(path,method,body){
   method=method||'GET';
+  // Rifresko tokenin nese ka skaduar (parandalon humbjen e punes ne mes te veprimit)
   var s=authGetSession();
+  if(s && s.refresh_token && s.expires_at && Date.now() >= s.expires_at){
+    try{ await authRefreshIfNeeded(); s=authGetSession(); }catch(e){}
+  }
   var token=(s&&s.access_token)?s.access_token:_SB_KEY;
-  return fetch(_SB_URL+'/rest/v1/'+path,{
+  var r=await fetch(_SB_URL+'/rest/v1/'+path,{
     method:method,
     headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json','Prefer':(method==='POST'||method==='PATCH')?'return=representation':''},
     body:body?JSON.stringify(body):undefined
-  }).then(function(r){
-    if(r.status===401){ localStorage.removeItem('pristeel_session'); location.reload(); }
-    if(!r.ok)return r.text().then(function(e){throw new Error(e);});return r.text();
-  }).then(function(t){return t?JSON.parse(t):[];});
+  });
+  if(r.status===401){
+    // Provo edhe nje here me token te rifreskuar para se te dorezohemi
+    var s2=null;
+    try{ s2=await authRefreshIfNeeded(); }catch(e){}
+    if(s2 && s2.access_token){
+      r=await fetch(_SB_URL+'/rest/v1/'+path,{
+        method:method,
+        headers:{'apikey':_SB_KEY,'Authorization':'Bearer '+s2.access_token,'Content-Type':'application/json','Prefer':(method==='POST'||method==='PATCH')?'return=representation':''},
+        body:body?JSON.stringify(body):undefined
+      });
+    }
+  }
+  if(r.status===401){
+    // KRITIKE: mos bej location.reload() -- kjo humbte krejt punen e pashkruar.
+    // Ruaj veprimin lokalisht qe te rikthehet pas ri-kycjes.
+    try{
+      if(body) localStorage.setItem('pristeel_unsaved_'+Date.now(), JSON.stringify({path:path,method:method,body:body,at:new Date().toISOString()}));
+    }catch(e){}
+    throw new Error('SESSION_EXPIRED');
+  }
+  if(!r.ok){ var t=await r.text(); throw new Error(t); }
+  var txt=await r.text();
+  return txt?JSON.parse(txt):[];
+}
+// Rikthen punen e paruajtur pas ri-kycjes (nese ka)
+function recoverUnsavedWork(){
+  var keys=[];
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(k&&k.indexOf('pristeel_unsaved_')===0) keys.push(k);
+  }
+  if(!keys.length) return;
+  if(!confirm('U gjet punë e paruajtur nga sesioni i mëparshëm ('+keys.length+' veprim(e)). Ta provojmë ruajtjen tani?')){
+    if(confirm('Ta fshijmë përfundimisht?')) keys.forEach(function(k){localStorage.removeItem(k);});
+    return;
+  }
+  var done=0, failed=0;
+  var chain=Promise.resolve();
+  keys.forEach(function(k){
+    chain=chain.then(function(){
+      var rec=null;
+      try{ rec=JSON.parse(localStorage.getItem(k)); }catch(e){ localStorage.removeItem(k); return; }
+      if(!rec||!rec.path) { localStorage.removeItem(k); return; }
+      return supaFetch(rec.path, rec.method, rec.body)
+        .then(function(){ done++; localStorage.removeItem(k); })
+        .catch(function(){ failed++; });
+    });
+  });
+  chain.then(function(){
+    if(done||failed) alert('Rikthimi përfundoi: '+done+' u ruajtën'+(failed?', '+failed+' dështuan (mbeten të ruajtura lokalisht)':'')+'.');
+    if(typeof loadProjectList==='function') loadProjectList();
+  });
 }
 // _curProjId deklarohet lart (shih resetWorkspace)
 function saveProject(triggerBtn){
