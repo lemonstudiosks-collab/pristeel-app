@@ -2018,12 +2018,13 @@ async function matchPartnersForBom(rows){
     var partners=await supaFetch('partners?relation=cs.{supplier}&categories=ov.{'+catList.join(',')+'}&stage=eq.active&select=id,name,categories&order=importance.desc');
     if(!partners||!partners.length) return [];
     var ids=partners.map(function(p){return p.id;});
-    var contacts=await supaFetch('partner_contacts?partner_id=in.('+ids.join(',')+')&select=partner_id,email,language,is_primary').catch(function(){return[];});
+    var contacts=await supaFetch('partner_contacts?partner_id=in.('+ids.join(',')+')&select=partner_id,full_name,email,language,is_primary').catch(function(){return[];});
     return partners.map(function(p){
-      var pc=contacts.filter(function(c){return c.partner_id===p.id;});
-      var primary=pc.filter(function(c){return c.is_primary;})[0]||pc[0]||{};
+      var pc=contacts.filter(function(c){return c.partner_id===p.id;}).sort(function(a,b){return (b.is_primary?1:0)-(a.is_primary?1:0);});
       var isRaw=(p.categories||[]).some(function(c){return c==='heavy_plate'||c==='sheet'||c==='profiles'||c==='tubes';});
-      return {id:Date.now()+Math.random(), name:p.name, email:primary.email||'', country:'', lang:primary.language||'en', cat:isRaw?'rawmat':'producer'};
+      var contactList=pc.filter(function(c){return c.email;}).map(function(c){return {name:c.full_name||'',email:c.email};});
+      if(!contactList.length) contactList=[{name:'',email:''}];
+      return {id:Date.now()+Math.random(), name:p.name, country:'', lang:(pc[0]&&pc[0].language)||'en', cat:isRaw?'rawmat':'producer', contacts:contactList};
     });
   }catch(e){ console.error('matchPartnersForBom', e); return []; }
 }
@@ -2108,7 +2109,7 @@ async function applyParsedBom(parsed){
 
   if(suppliers.length===0){
     var matched=await matchPartnersForBom(bomRows);
-    suppliers = matched.length ? matched : [...defaultSuppliers.map(s=>({...s,id:Date.now()+Math.random()}))];
+    suppliers = matched.length ? matched : [...defaultSuppliers.map(s=>({id:Date.now()+Math.random(),name:s.name,country:s.country||'',lang:s.lang||'en',cat:s.cat||'producer',contacts:[{name:'',email:s.email||''}]}))];
   }
 
   document.getElementById('i-text').value = '';
@@ -2204,39 +2205,69 @@ function goToRfq(){if(bomRows.length===0){alert('BOM është bosh.');return;}sho
 
 // ── SUPPLIERS ─────────────────────────────────────────
 function addSupplier(){
-  suppliers.push({id:Date.now(),name:'',email:'',country:'',lang:'en',cat:'producer'});
+  suppliers.push({id:Date.now(),name:'',country:'',lang:'en',cat:'producer',contacts:[{name:'',email:''}]});
   renderSuppliers();
 }
 function addSupplierCat(cat){
-  suppliers.push({id:Date.now(),name:'',email:'',country:'',lang:'en',cat:cat});
+  suppliers.push({id:Date.now(),name:'',country:'',lang:'en',cat:cat,contacts:[{name:'',email:''}]});
   renderSuppliers();
 }
 function remSupplier(id){suppliers=suppliers.filter(s=>s.id!==id);renderSuppliers();updateRfqCount();}
 function updSupplier(id,f,v){const s=suppliers.find(s=>s.id===id);if(s)s[f]=v;updateRfqCount();}
+function addSupplierContact(id){
+  const s=suppliers.find(s=>s.id===id); if(!s) return;
+  if(!s.contacts) s.contacts=[];
+  s.contacts.push({name:'',email:''});
+  renderSuppliers();
+}
+function remSupplierContact(id,idx){
+  const s=suppliers.find(s=>s.id===id); if(!s) return;
+  s.contacts.splice(idx,1);
+  if(s.contacts.length===0) s.contacts.push({name:'',email:''});
+  renderSuppliers(); updateRfqCount();
+}
+function updSupplierContact(id,idx,f,v){
+  const s=suppliers.find(s=>s.id===id); if(!s||!s.contacts||!s.contacts[idx]) return;
+  s.contacts[idx][f]=v; updateRfqCount();
+}
 function updateRfqCount(){
-  const n=suppliers.filter(s=>s.name&&s.email).length;
-  document.getElementById('rfq-count').textContent=n+' furnitorë të gatshëm';
+  const n=suppliers.reduce((sum,s)=>sum+(s.name?(s.contacts||[]).filter(c=>c.name&&c.email).length:0),0);
+  document.getElementById('rfq-count').textContent=n+' kontakte të gatshme';
 }
 function renderSuppliers(){
   const producers=suppliers.filter(s=>s.cat==='producer');
   const rawmats=suppliers.filter(s=>s.cat==='rawmat');
 
+  function contactRow(s,c,idx){
+    return `<div style="display:grid;grid-template-columns:1fr 1.3fr 28px;gap:8px;align-items:center;padding:4px 0 4px 20px">
+      <input type="text" value="${c.name}" placeholder="Emri i personit përgjegjës" onchange="updSupplierContact(${s.id},${idx},'name',this.value)">
+      <input type="email" value="${c.email}" placeholder="email@company.com" onchange="updSupplierContact(${s.id},${idx},'email',this.value)">
+      <button class="btn btn-sm btn-danger" style="${s.contacts.length<=1?'visibility:hidden':''}" onclick="remSupplierContact(${s.id},${idx})">✕</button>
+    </div>`;
+  }
+
   function supplierRow(s){
-    return `<div style="display:grid;grid-template-columns:2fr 2fr 1fr 70px 80px auto;gap:8px;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border)">
-      <input type="text" value="${s.name}" placeholder="Emri" onchange="updSupplier(${s.id},'name',this.value)">
-      <input type="email" value="${s.email}" placeholder="rfq@company.com" onchange="updSupplier(${s.id},'email',this.value)">
-      <input type="text" value="${s.country}" placeholder="Shteti" onchange="updSupplier(${s.id},'country',this.value)">
-      <select onchange="updSupplier(${s.id},'lang',this.value)">
-        <option value="de"${s.lang==='de'?' selected':''}>DE</option>
-        <option value="en"${s.lang==='en'?' selected':''}>EN</option>
-        <option value="sq"${s.lang==='sq'?' selected':''}>SQ</option>
-        <option value="sr"${s.lang==='sr'?' selected':''}>SR</option>
-      </select>
-      <select onchange="updSupplier(${s.id},'cat',this.value)">
-        <option value="producer"${s.cat==='producer'?' selected':''}>Prodhues</option>
-        <option value="rawmat"${s.cat==='rawmat'?' selected':''}>Lëndë e parë</option>
-      </select>
-      <button class="btn btn-danger" onclick="remSupplier(${s.id})">✕</button>
+    if(!s.contacts||!s.contacts.length) s.contacts=[{name:'',email:''}];
+    return `<div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
+      <div style="display:grid;grid-template-columns:2fr 1fr 70px 80px auto;gap:8px;align-items:center">
+        <input type="text" value="${s.name}" placeholder="Emri i kompanisë" onchange="updSupplier(${s.id},'name',this.value)">
+        <input type="text" value="${s.country}" placeholder="Shteti" onchange="updSupplier(${s.id},'country',this.value)">
+        <select onchange="updSupplier(${s.id},'lang',this.value)">
+          <option value="de"${s.lang==='de'?' selected':''}>DE</option>
+          <option value="en"${s.lang==='en'?' selected':''}>EN</option>
+          <option value="sq"${s.lang==='sq'?' selected':''}>SQ</option>
+          <option value="sr"${s.lang==='sr'?' selected':''}>SR</option>
+        </select>
+        <select onchange="updSupplier(${s.id},'cat',this.value)">
+          <option value="producer"${s.cat==='producer'?' selected':''}>Prodhues</option>
+          <option value="rawmat"${s.cat==='rawmat'?' selected':''}>Lëndë e parë</option>
+        </select>
+        <button class="btn btn-danger" onclick="remSupplier(${s.id})">✕</button>
+      </div>
+      ${s.contacts.map((c,idx)=>contactRow(s,c,idx)).join('')}
+      <div style="padding-left:20px;margin-top:2px">
+        <button class="btn btn-sm" style="font-size:11px" onclick="addSupplierContact(${s.id})">+ Shto person kontakti</button>
+      </div>
     </div>`;
   }
 
@@ -2260,8 +2291,14 @@ function renderSuppliers(){
 
 // ── RFQ GENERATION ────────────────────────────────────
 function generateRfqs(){
-  const valid=suppliers.filter(s=>s.name&&s.email);
-  if(valid.length===0){alert('Shto të paktën një furnitor me emër dhe email.');return;}
+  const valid=[];
+  suppliers.forEach(s=>{
+    if(!s.name) return;
+    (s.contacts||[]).forEach(c=>{
+      if(c.name&&c.email) valid.push({company:s.name,country:s.country,lang:s.lang,cat:s.cat,contactName:c.name,email:c.email});
+    });
+  });
+  if(valid.length===0){alert('Shto të paktën një furnitor me emër kompanie, person kontakti dhe email.');return;}
   if(bomRows.length===0){alert('BOM është bosh. Shko te BOM Nicë.');return;}
 
   const proj=document.getElementById('i-projname').value||'Projekt';
@@ -2302,14 +2339,14 @@ function generateRfqs(){
     return `<div style="border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:12px">
       <div class="flex justify-between items-center mb-12">
         <div class="flex items-center gap-8">
-          <strong style="font-size:14px">${s.name}</strong>
-          <span style="font-size:12px;color:var(--text3)">${s.email}</span>
+          <strong style="font-size:14px">${s.company}</strong>
+          <span style="font-size:12px;color:var(--text3)">${s.contactName} · ${s.email}</span>
           <span class="badge badge-blue">${lang.toUpperCase()}</span>
           <span class="badge badge-gray">${s.country}</span>
         </div>
         <div class="flex gap-8">
           <button class="btn btn-sm" onclick="copyRfq(this,'${enc}')">Kopjo</button>
-          <a class="btn btn-sm" href="https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to=${encodeURIComponent(s.email)}&su=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" target="_blank" onclick="logRfqSent('${encodeURIComponent(s.name)}','${encodeURIComponent(s.email)}','${lang}','${encodeURIComponent(subj)}','${enc}')">Dërgo & regjistro</a>
+          <a class="btn btn-sm" href="https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to=${encodeURIComponent(s.email)}&su=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}" target="_blank" onclick="logRfqSent('${encodeURIComponent(s.company+' — '+s.contactName)}','${encodeURIComponent(s.email)}','${lang}','${encodeURIComponent(subj)}','${enc}')">Dërgo & regjistro</a>
         </div>
       </div>
       <div class="rfq-email-body">${body}</div>
