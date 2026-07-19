@@ -41,11 +41,14 @@ css.textContent = `
 .oe-tbl th{text-align:left;padding:7px 8px;font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;
   color:var(--text3);font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap}
 .oe-tbl td{padding:4px 5px;border-bottom:1px solid var(--border)}
-.oe-tbl input,.oe-tbl select{width:100%;padding:5px 7px;border:1px solid transparent;
-  border-radius:5px;font-size:12px;background:transparent;color:var(--text);font-family:inherit}
-.oe-tbl input:hover,.oe-tbl select:hover{border-color:var(--border)}
-.oe-tbl input:focus,.oe-tbl select:focus{outline:none;border-color:var(--bronze);background:#fff}
+.oe-tbl input,.oe-tbl select{width:100%;padding:6px 8px;border:1px solid var(--border);
+  border-radius:6px;font-size:12px;background:#fff;color:var(--text);font-family:inherit}
+.oe-tbl input:hover,.oe-tbl select:hover{border-color:var(--text3)}
+.oe-tbl input:focus,.oe-tbl select:focus{outline:none;border-color:var(--bronze);
+  box-shadow:0 0 0 2px rgba(166,95,46,.12)}
 .oe-tbl input.num{text-align:right}
+.oe-tbl input.price{background:#FFFDF9;border-color:#E8DCCF;font-weight:600}
+.oe-tbl input.price:focus{background:#fff}
 .oe-tbl tr:hover{background:var(--bg2)}
 .oe-del{cursor:pointer;color:var(--text3);font-size:15px;padding:2px 7px;border-radius:5px;line-height:1}
 .oe-del:hover{color:var(--red-text);background:var(--red-bg)}
@@ -81,11 +84,12 @@ css.textContent = `
 .oe-drop-new{color:var(--bronze);font-weight:600;border-top:1px solid var(--border)}
 .oe-drop-empty{padding:9px 11px;font-size:12px;color:var(--text3)}
 .oe-flag{font-size:15px;line-height:1}
-.oe-kindbtn{width:30px;height:30px;border:1.5px solid var(--border);border-radius:7px;background:#fff;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3);
-  transition:all .12s ease}
-.oe-kindbtn:hover{border-color:var(--bronze);color:var(--bronze)}
-.oe-kindbtn.set{border-color:var(--bronze);background:var(--bronze-bg);color:var(--bronze);font-weight:700}
+.oe-kindbtn{width:100%;min-width:74px;height:38px;border:1.5px solid var(--bronze);border-radius:8px;
+  background:var(--bronze-bg);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;
+  font-size:15px;color:var(--bronze);font-weight:700;transition:all .12s ease;padding:0 8px}
+.oe-kindbtn:hover{background:var(--bronze);color:#fff}
+.oe-kindbtn .kb-txt{font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;font-weight:700}
+.oe-kindbtn.set{background:var(--bronze);color:#fff}
 .oe-calcrow.hidden{display:none}
 .oe-calcbox{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin:2px 0 8px}
 .oe-calcgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end}
@@ -151,9 +155,9 @@ function shell(){
 
    +'<div class="oe-sec">Pozicionet</div>'
    +'<div style="overflow-x:auto"><table class="oe-tbl"><thead><tr>'
-     +'<th style="width:3%"></th><th style="width:29%">Përshkrimi</th><th style="width:11%">Sasia</th><th style="width:8%">Njësia</th>'
-     +'<th style="width:12%">Çmim origjinal</th><th style="width:12%">Pas negocimit</th>'
-     +'<th style="width:13%">Totali</th><th style="width:4%"></th>'
+     +'<th style="width:9%">Lloji</th><th style="width:25%">Përshkrimi</th><th style="width:10%">Sasia</th><th style="width:7%">Njësia</th>'
+     +'<th style="width:13%">Çmimi €/njësi</th><th style="width:13%">Pas negocimit €</th>'
+     +'<th style="width:14%;text-align:right">Totali €</th><th style="width:4%"></th>'
    +'</tr></thead><tbody id="oe-rows"></tbody></table></div>'
    +'<div class="oe-add" onclick="pstAddPos()">+ Shto pozicion</div>'
 
@@ -200,14 +204,16 @@ function rowHtml(p, i){
   var neg  = n(p.price_neg  != null ? p.price_neg  : orig);
   var tot  = n(p.qty) * neg;
   var kind = (p.spec && p.spec.kind) || 'other';
+  var kindTxt = kind==='other' ? 'Lloji' : KIND_LABELS[kind];
   return '<tr>'
-    +'<td><div class="oe-kindbtn'+(kind!=='other'?' set':'')+'" title="Zgjidh llojin (pllakë, profil, tub…)" onclick="pstToggleCalc('+i+')">'+KIND_ICON[kind]+'</div></td>'
+    +'<td><div class="oe-kindbtn'+(kind!=='other'?' set':'')+'" title="Kliko për të llogaritur peshën (pllakë, profil, tub, kënd, shufër)" onclick="pstToggleCalc('+i+')">'
+      +KIND_ICON[kind]+'<span class="kb-txt">'+kindTxt+'</span></div></td>'
     +'<td><input value="'+esc(p.desc)+'" oninput="pstPos('+i+',\'desc\',this.value)" placeholder="Përshkrimi"></td>'
     +'<td><input class="num" value="'+(p.qty||'')+'" oninput="pstPos('+i+',\'qty\',this.value)" placeholder="0"></td>'
     +'<td><input value="'+esc(p.unit)+'" oninput="pstPos('+i+',\'unit\',this.value)" placeholder="kg"></td>'
-    +'<td><input class="num" value="'+(orig||'')+'" oninput="pstPos('+i+',\'price_orig\',this.value)" placeholder="0.00"></td>'
-    +'<td><input class="num" value="'+(neg||'')+'" oninput="pstPos('+i+',\'price_neg\',this.value)" placeholder="0.00"></td>'
-    +'<td class="oe-tot" id="oe-t'+i+'">'+fmt(tot,2)+'</td>'
+    +'<td><input class="num price" value="'+(orig||'')+'" oninput="pstPos('+i+',\'price_orig\',this.value)" placeholder="0.00"></td>'
+    +'<td><input class="num price" value="'+(neg||'')+'" oninput="pstPos('+i+',\'price_neg\',this.value)" placeholder="0.00"></td>'
+    +'<td class="oe-tot" id="oe-t'+i+'">'+fmt(tot,2)+' €</td>'
     +'<td><span class="oe-del" onclick="pstDelPos('+i+')">×</span></td>'
   +'</tr>'
   +'<tr class="oe-calcrow hidden" id="oe-calcrow'+i+'"><td></td><td colspan="7">'+calcBoxHtml(p,i)+'</td></tr>';
@@ -419,7 +425,7 @@ window.pstPos = function(i, k, v){
   if(k === 'price_orig' && !n(S.pos[i].price_neg)) S.pos[i].price_neg = n(v);
   var orig = n(S.pos[i].price_orig), neg = n(S.pos[i].price_neg) || orig;
   var t = document.getElementById('oe-t'+i);
-  if(t) t.textContent = fmt(n(S.pos[i].qty)*neg, 2);
+  if(t) t.textContent = fmt(n(S.pos[i].qty)*neg, 2)+' €';
   pstCalc();
 };
 
