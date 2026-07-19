@@ -81,6 +81,19 @@ css.textContent = `
 .oe-drop-new{color:var(--bronze);font-weight:600;border-top:1px solid var(--border)}
 .oe-drop-empty{padding:9px 11px;font-size:12px;color:var(--text3)}
 .oe-flag{font-size:15px;line-height:1}
+.oe-kindbtn{width:30px;height:30px;border:1.5px solid var(--border);border-radius:7px;background:#fff;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3);
+  transition:all .12s ease}
+.oe-kindbtn:hover{border-color:var(--bronze);color:var(--bronze)}
+.oe-kindbtn.set{border-color:var(--bronze);background:var(--bronze-bg);color:var(--bronze);font-weight:700}
+.oe-calcrow.hidden{display:none}
+.oe-calcbox{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin:2px 0 8px}
+.oe-calcgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end}
+@media(max-width:900px){.oe-calcgrid{grid-template-columns:repeat(3,1fr)}}
+.oe-calcgrid label{display:block;font-size:9.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--text3);font-weight:600;margin-bottom:3px}
+.oe-calcgrid input,.oe-calcgrid select{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px}
+.oe-calcres{margin-top:9px;padding-top:9px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.oe-calcres b{font-size:14px;color:var(--bronze)}
 `;
 document.head.appendChild(css);
 
@@ -178,7 +191,7 @@ function shell(){
 
    +'<div class="oe-sec">Pozicionet</div>'
    +'<div style="overflow-x:auto"><table class="oe-tbl"><thead><tr>'
-     +'<th style="width:32%">Përshkrimi</th><th style="width:11%">Sasia</th><th style="width:8%">Njësia</th>'
+     +'<th style="width:3%"></th><th style="width:29%">Përshkrimi</th><th style="width:11%">Sasia</th><th style="width:8%">Njësia</th>'
      +'<th style="width:12%">Çmim origjinal</th><th style="width:12%">Pas negocimit</th>'
      +'<th style="width:13%">Totali</th><th style="width:4%"></th>'
    +'</tr></thead><tbody id="oe-rows"></tbody></table></div>'
@@ -218,12 +231,17 @@ function shell(){
    +'</div></div>';
 }
 
-// ── POZICIONET ──────────────────────────────────────────────
+// ── POZICIONET ────────────────────────────────────────────────
+var KIND_LABELS = {other:'—', plate:'Pllakë', ihprofile:'Profil I/H', hollow:'Tub/Kuti', angle:'Kënd', flat:'Sheshtë'};
+var KIND_ICON = {other:'•', plate:'▭', ihprofile:'I', hollow:'▢', angle:'∟', flat:'▬'};
+
 function rowHtml(p, i){
   var orig = n(p.price_orig != null ? p.price_orig : p.unit_price);
   var neg  = n(p.price_neg  != null ? p.price_neg  : orig);
   var tot  = n(p.qty) * neg;
+  var kind = (p.spec && p.spec.kind) || 'other';
   return '<tr>'
+    +'<td><div class="oe-kindbtn'+(kind!=='other'?' set':'')+'" title="Zgjidh llojin (pllakë, profil, tub…)" onclick="pstToggleCalc('+i+')">'+KIND_ICON[kind]+'</div></td>'
     +'<td><input value="'+esc(p.desc)+'" oninput="pstPos('+i+',\'desc\',this.value)" placeholder="Përshkrimi"></td>'
     +'<td><input class="num" value="'+(p.qty||'')+'" oninput="pstPos('+i+',\'qty\',this.value)" placeholder="0"></td>'
     +'<td><input value="'+esc(p.unit)+'" oninput="pstPos('+i+',\'unit\',this.value)" placeholder="kg"></td>'
@@ -231,13 +249,162 @@ function rowHtml(p, i){
     +'<td><input class="num" value="'+(neg||'')+'" oninput="pstPos('+i+',\'price_neg\',this.value)" placeholder="0.00"></td>'
     +'<td class="oe-tot" id="oe-t'+i+'">'+fmt(tot,2)+'</td>'
     +'<td><span class="oe-del" onclick="pstDelPos('+i+')">×</span></td>'
-  +'</tr>';
+  +'</tr>'
+  +'<tr class="oe-calcrow hidden" id="oe-calcrow'+i+'"><td></td><td colspan="7">'+calcBoxHtml(p,i)+'</td></tr>';
 }
+
+function calcBoxHtml(p, i){
+  var s = p.spec || {kind:'other'};
+  var kindOpts = ['other','plate','ihprofile','hollow','angle','flat'].map(function(k){
+    return '<option value="'+k+'"'+(s.kind===k?' selected':'')+'>'+KIND_LABELS[k]+'</option>';
+  }).join('');
+  var dens = s.dens!=null ? s.dens : 7.85;
+  var f = '<div class="oe-calcbox"><div class="oe-calcgrid">'
+    +'<div><label>Lloji</label><select onchange="pstSpecKind('+i+',this.value)">'+kindOpts+'</select></div>';
+
+  if(s.kind==='plate'){
+    f += '<div><label>Grada</label><input value="'+esc(s.grade||'')+'" oninput="pstSpec('+i+',\'grade\',this.value)" placeholder="S355J2"></div>'
+      +'<div><label>L (mm)</label><input class="num" value="'+(s.L||'')+'" oninput="pstSpec('+i+',\'L\',this.value)" placeholder="12000"></div>'
+      +'<div><label>W (mm)</label><input class="num" value="'+(s.W||'')+'" oninput="pstSpec('+i+',\'W\',this.value)" placeholder="2500"></div>'
+      +'<div><label>T (mm)</label><input class="num" value="'+(s.T||'')+'" oninput="pstSpec('+i+',\'T\',this.value)" placeholder="10"></div>'
+      +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
+  } else if(s.kind==='ihprofile'){
+    f += '<div><label>Profili</label><select onchange="pstSpec('+i+',\'profile\',this.value)">'
+        +['HEA','HEB','IPE'].map(function(x){return '<option'+(s.profile===x?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'
+      +'<div><label>Dimensioni</label><input value="'+esc(s.dim||'')+'" oninput="pstSpec('+i+',\'dim\',this.value)" placeholder="200"></div>'
+      +'<div><label>Grada</label><input value="'+esc(s.grade||'')+'" oninput="pstSpec('+i+',\'grade\',this.value)" placeholder="S355JR"></div>'
+      +'<div><label>Gjatësia (mm)</label><input class="num" value="'+(s.length||'')+'" oninput="pstSpec('+i+',\'length\',this.value)" placeholder="6000"></div>'
+      +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
+  } else if(s.kind==='hollow'){
+    f += '<div><label>Forma</label><select onchange="pstSpec('+i+',\'forma\',this.value)">'
+        +'<option value="rect"'+(s.forma!=='round'?' selected':'')+'>Drejtkëndore/Katrore</option>'
+        +'<option value="round"'+(s.forma==='round'?' selected':'')+'>Rrumbullak</option></select></div>'
+      +(s.forma==='round'
+        ? '<div><label>OD (mm)</label><input class="num" value="'+(s.OD||'')+'" oninput="pstSpec('+i+',\'OD\',this.value)" placeholder="114.3"></div>'
+        : '<div><label>H×W (mm)</label><input value="'+esc(s.HW||'')+'" oninput="pstSpec('+i+',\'HW\',this.value)" placeholder="100x100"></div>')
+      +'<div><label>Trashësia t (mm)</label><input class="num" value="'+(s.t||'')+'" oninput="pstSpec('+i+',\'t\',this.value)" placeholder="4"></div>'
+      +'<div><label>Grada</label><input value="'+esc(s.grade||'')+'" oninput="pstSpec('+i+',\'grade\',this.value)" placeholder="S355"></div>'
+      +'<div><label>Gjatësia (mm)</label><input class="num" value="'+(s.length||'')+'" oninput="pstSpec('+i+',\'length\',this.value)" placeholder="6000"></div>'
+      +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
+  } else if(s.kind==='angle'){
+    f += '<div><label>Krahët a×b (mm)</label><input value="'+esc(s.AB||'')+'" oninput="pstSpec('+i+',\'AB\',this.value)" placeholder="100x100"></div>'
+      +'<div><label>Trashësia t (mm)</label><input class="num" value="'+(s.t||'')+'" oninput="pstSpec('+i+',\'t\',this.value)" placeholder="10"></div>'
+      +'<div><label>Grada</label><input value="'+esc(s.grade||'')+'" oninput="pstSpec('+i+',\'grade\',this.value)" placeholder="S355"></div>'
+      +'<div><label>Gjatësia (mm)</label><input class="num" value="'+(s.length||'')+'" oninput="pstSpec('+i+',\'length\',this.value)" placeholder="6000"></div>'
+      +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
+  } else if(s.kind==='flat'){
+    f += '<div><label>Gjerësia W (mm)</label><input class="num" value="'+(s.W||'')+'" oninput="pstSpec('+i+',\'W\',this.value)" placeholder="100"></div>'
+      +'<div><label>Trashësia T (mm)</label><input class="num" value="'+(s.T||'')+'" oninput="pstSpec('+i+',\'T\',this.value)" placeholder="10"></div>'
+      +'<div><label>Grada</label><input value="'+esc(s.grade||'')+'" oninput="pstSpec('+i+',\'grade\',this.value)" placeholder="S355"></div>'
+      +'<div><label>Gjatësia (mm)</label><input class="num" value="'+(s.length||'')+'" oninput="pstSpec('+i+',\'length\',this.value)" placeholder="6000"></div>'
+      +'<div><label>Copë</label><input class="num" value="'+(s.pcs||'')+'" oninput="pstSpec('+i+',\'pcs\',this.value)" placeholder="1"></div>';
+  }
+  if(s.kind!=='other'){
+    f += '<div><label>Densiteti kg/dm³</label><input class="num" value="'+dens+'" oninput="pstSpec('+i+',\'dens\',this.value)" placeholder="7.85"></div>';
+  }
+  f += '</div>';
+  if(s.kind!=='other'){
+    var w = calcSpecWeight(s);
+    f += '<div class="oe-calcres"><span>Pesha e llogaritur: <b>'+fmt(w.perPc,1)+' kg/copë</b> × '+(s.pcs||0)+' copë</span>'
+      + '<span style="display:flex;gap:8px;align-items:center"><b>'+fmt(w.total,1)+' kg total</b>'
+      + '<button class="btn btn-primary btn-sm" onclick="pstApplySpec('+i+')">Apliko te pozicioni</button></span></div>';
+  }
+  f += '</div>';
+  return f;
+}
+
+// densiteti: çeliku 7.85 kg/dm3 = 7.85e-6 kg/mm3
+function calcSpecWeight(s){
+  var dens = (s.dens!=null && s.dens!=='') ? n(s.dens) : 7.85;
+  var k = dens*1e-6, pcs = n(s.pcs)||0, perPc=0;
+  if(s.kind==='plate'){
+    perPc = n(s.L)*n(s.W)*n(s.T)*k;
+  } else if(s.kind==='ihprofile'){
+    var wpm = kgPerM(s.profile, s.dim); // kg/m nga tabela ekzistuese e BOM-it
+    perPc = wpm ? wpm*(n(s.length)/1000) : 0;
+  } else if(s.kind==='hollow'){
+    var t=n(s.t);
+    if(s.forma==='round'){
+      var od=n(s.OD);
+      var area = Math.PI*Math.max(od-t,0)*t; // mm2, formule e thjeshtuar per profil rrumbullak bosh
+      perPc = area*n(s.length)*k;
+    } else {
+      var hw=(s.HW||'').toLowerCase().split('x').map(function(x){return parseFloat(x)||0;});
+      var H=hw[0]||0, W=hw[1]||hw[0]||0;
+      var area2 = 2*t*(H+W-2*t); // mm2, formule e thjeshtuar per RHS/SHS
+      perPc = Math.max(area2,0)*n(s.length)*k;
+    }
+  } else if(s.kind==='angle'){
+    var ab=(s.AB||'').toLowerCase().split('x').map(function(x){return parseFloat(x)||0;});
+    var a=ab[0]||0, b=ab[1]||ab[0]||0, ta=n(s.t);
+    var areaA = ta*(a+b-ta); // mm2, formule e thjeshtuar per profil kendor (L)
+    perPc = Math.max(areaA,0)*n(s.length)*k;
+  } else if(s.kind==='flat'){
+    perPc = n(s.W)*n(s.T)*n(s.length)*k;
+  }
+  perPc = +perPc.toFixed(2);
+  return { perPc:perPc, total:+(perPc*pcs).toFixed(1) };
+}
+
+function specDesc(s){
+  if(s.kind==='plate') return 'Pllakë'+(s.grade?' '+s.grade:'')+' '+(s.L||0)+'×'+(s.W||0)+'×'+(s.T||0)+' mm';
+  if(s.kind==='ihprofile') return (s.profile||'')+' '+(s.dim||'')+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
+  if(s.kind==='hollow') return (s.forma==='round'?'Tub Ø'+(s.OD||0):'Kuti '+(s.HW||''))+' × t'+(s.t||0)+'mm'+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
+  if(s.kind==='angle') return 'Kënd '+(s.AB||'')+' × t'+(s.t||0)+'mm'+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
+  if(s.kind==='flat') return 'Sheshtë '+(s.W||0)+'×'+(s.T||0)+'mm'+(s.grade?' — '+s.grade:'')+' · L='+(s.length||0)+'mm';
+  return '';
+}
+
+window.pstToggleCalc = function(i){
+  var row = document.getElementById('oe-calcrow'+i);
+  if(!row) return;
+  row.classList.toggle('hidden');
+};
+window.pstSpecKind = function(i, kind){
+  if(!S.pos[i]) return;
+  S.pos[i].spec = S.pos[i].spec || {};
+  S.pos[i].spec.kind = kind;
+  refreshRow(i);
+};
+window.pstSpec = function(i, k, v){
+  if(!S.pos[i]) return;
+  S.pos[i].spec = S.pos[i].spec || {kind:'other'};
+  S.pos[i].spec[k] = v;
+  if(k==='forma'){ refreshRow(i); return; } // ndryshon vete fushat (OD kunder H×W), duhet rirendero
+  updateCalcResult(i);
+};
+function updateCalcResult(i){
+  var s = S.pos[i] && S.pos[i].spec;
+  if(!s || s.kind==='other') return;
+  var row = document.getElementById('oe-calcrow'+i); if(!row) return;
+  var res = row.querySelector('.oe-calcres'); if(!res) return;
+  var w = calcSpecWeight(s);
+  res.innerHTML = '<span>Pesha e llogaritur: <b>'+fmt(w.perPc,1)+' kg/copë</b> × '+(s.pcs||0)+' copë</span>'
+    + '<span style="display:flex;gap:8px;align-items:center"><b>'+fmt(w.total,1)+' kg total</b>'
+    + '<button class="btn btn-primary btn-sm" onclick="pstApplySpec('+i+')">Apliko te pozicioni</button></span>';
+}
+function refreshRow(i){
+  var wrap = document.getElementById('oe-calcrow'+i);
+  var wasOpen = wrap && !wrap.classList.contains('hidden');
+  renderRows();
+  var newWrap = document.getElementById('oe-calcrow'+i);
+  if(newWrap && wasOpen) newWrap.classList.remove('hidden');
+}
+window.pstApplySpec = function(i){
+  if(!S.pos[i] || !S.pos[i].spec) return;
+  var s = S.pos[i].spec;
+  var w = calcSpecWeight(s);
+  S.pos[i].qty = w.total;
+  S.pos[i].unit = 'kg';
+  var d = specDesc(s);
+  if(d) S.pos[i].desc = d;
+  renderRows();
+};
 
 function renderRows(){
   var el = document.getElementById('oe-rows');
   if(!el) return;
-  el.innerHTML = S.pos.map(rowHtml).join('');
+  el.innerHTML = S.pos.map(function(p,i){ return rowHtml(p,i); }).join('');
   pstCalc();
 }
 
@@ -245,9 +412,10 @@ window.pstAddPos = function(){
   S.pos.push({desc:'',qty:'',unit:'kg',price_orig:'',price_neg:''});
   renderRows();
   setTimeout(function(){
-    var rows = document.querySelectorAll('#oe-rows tr');
+    var rows = document.querySelectorAll('#oe-rows tr:not(.oe-calcrow)');
     var last = rows[rows.length-1];
-    if(last) last.querySelector('input').focus();
+    var inp = last && last.querySelector('input');
+    if(inp) inp.focus();
   }, 40);
 };
 
@@ -460,7 +628,8 @@ window.pstOpenOffer = async function(offerId, projectId){
           qty:  p.qty||p.quantity||'',
           unit: p.unit||'',
           price_orig: p.price_orig!=null ? p.price_orig : (p.unit_price||''),
-          price_neg:  p.price_neg !=null ? p.price_neg  : (p.unit_price||p.price_orig||'')
+          price_neg:  p.price_neg !=null ? p.price_neg  : (p.unit_price||p.price_orig||''),
+          spec: p.spec || null
         };
       }) : [];
       if(!S.pos.length && (o.price_kg || o.total_eur)){
@@ -495,7 +664,8 @@ window.pstSaveOffer = async function(){
     .map(function(p){
       var po = n(p.price_orig), pn = n(p.price_neg)||po;
       return { desc:(p.desc||'').trim(), qty:n(p.qty), unit:(p.unit||'').trim(),
-               price_orig:po, price_neg:pn, total_orig:n(p.qty)*po, total_neg:n(p.qty)*pn };
+               price_orig:po, price_neg:pn, total_orig:n(p.qty)*po, total_neg:n(p.qty)*pn,
+               spec: p.spec||null };
     });
   if(!pos.length){ msg('Shto të paktën një pozicion.','err'); return; }
 
