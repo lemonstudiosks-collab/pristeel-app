@@ -1403,7 +1403,9 @@ function loadWeatherCard(){
     .then(function(d){
       if(!d||!d.current_weather) return;
       var cw=d.current_weather, info=WX_CODES[cw.weathercode]||['—','cloud'];
-      var ic=document.getElementById('wx-icon'); if(ic) ic.innerHTML=wxIconSvg(info[1]);
+      var mini=document.getElementById('wx-mini'); if(mini) mini.style.display='flex';
+      var ic=document.getElementById('wx-icon');
+      if(ic){ ic.innerHTML=wxIconSvg(info[1]).replace(/width="\d+"/,'width="18"').replace(/height="\d+"/,'height="18"'); }
       var t=document.getElementById('wx-temp'); if(t) t.textContent=Math.round(cw.temperature)+'°';
       var ds=document.getElementById('wx-desc'); if(ds) ds.textContent=info[0];
       var mt=document.getElementById('wx-meta');
