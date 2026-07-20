@@ -999,11 +999,65 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div id="page-finance" class="page">
-  <div style="display:flex;gap:8px;margin-bottom:16px">
+  <!-- KATROREt E FINANCAVE -->
+  <div id="fin-hub" class="card">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:14px" id="fin-hub-grid"></div>
+  </div>
+
+  <div id="fin-tabs" style="display:none;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-sm" onclick="finShowHub()">&larr; Të gjitha</button>
+    <button class="btn btn-sm" id="fin-tab-inv" onclick="finSwitchTab('inv')">Faturat</button>
+    <button class="btn btn-sm" id="fin-tab-exp" onclick="finSwitchTab('exp')">Shpenzimet operative</button>
+    <button class="btn btn-sm" id="fin-tab-atk" onclick="finSwitchTab('atk')">Tatimet (ATK)</button>
     <button class="btn btn-sm" id="fin-tab-tax" onclick="finSwitchTab('tax')">Përmbledhja Tatimore</button>
     <button class="btn btn-sm" id="fin-tab-aging" onclick="finSwitchTab('aging')">Afatet e Pagesave</button>
     <button class="btn btn-sm" id="fin-tab-bg" onclick="finSwitchTab('bg')">Garanci Bankare</button>
     <button class="btn btn-sm" id="fin-tab-oc" onclick="finSwitchTab('oc')">Kosto të tjera</button>
+  </div>
+
+  <!-- ═══ FATURAT (te gjitha, me statuse) ═══ -->
+  <div id="fin-view-inv" style="display:none">
+    <div class="card">
+      <div class="flex justify-between items-center mb-12">
+        <div class="card-title" style="margin:0">Të gjitha faturat</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="finInvFilter('all')" id="fi-all">Të gjitha</button>
+          <button class="btn btn-sm" onclick="finInvFilter('unpaid')" id="fi-unpaid">Të papaguara</button>
+          <button class="btn btn-sm" onclick="finInvFilter('overdue')" id="fi-overdue">Me vonesë</button>
+          <button class="btn btn-sm" onclick="finInvFilter('paid')" id="fi-paid">Të paguara</button>
+        </div>
+      </div>
+      <div id="fin-inv-sum" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px"></div>
+      <div id="fin-inv-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ SHPENZIMET OPERATIVE ═══ -->
+  <div id="fin-view-exp" style="display:none">
+    <div class="card">
+      <div class="flex justify-between items-center mb-12">
+        <div class="card-title" style="margin:0">Shpenzimet operative</div>
+        <button class="btn btn-primary btn-sm" onclick="expOpenForm()" style="background:var(--bronze);border-color:var(--bronze)">+ Shto shpenzim</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--text3);margin-bottom:12px">
+        Rryma, uji, nafta, qiraja, telefoni — shpenzime që deklarohen para ATK-së si të njohura.</div>
+      <div id="exp-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px"></div>
+      <div id="fin-exp-sum" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px"></div>
+      <div id="fin-exp-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TATIMET ATK ═══ -->
+  <div id="fin-view-atk" style="display:none">
+    <div class="card">
+      <div class="flex justify-between items-center mb-12">
+        <div class="card-title" style="margin:0">Detyrimet tatimore — ATK</div>
+        <button class="btn btn-primary btn-sm" onclick="atkOpenForm()" style="background:var(--bronze);border-color:var(--bronze)">+ Regjistro detyrim</button>
+      </div>
+      <div id="atk-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px"></div>
+      <div id="fin-atk-types" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px;margin-bottom:16px"></div>
+      <div id="fin-atk-list"></div>
+    </div>
   </div>
 
   <!-- ═══ PAYMENT AGING ═══ -->
@@ -1038,7 +1092,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div class="field-group fg-2"><div><label class="lbl">Komisioni (EUR) — llogaritet automatikisht, mund të ndryshohet</label><input type="number" step="0.01" id="bg-fee"></div><div></div></div>
         <div class="field-group fg-2"><div><label class="lbl">Data e lëshimit</label><input type="date" id="bg-issue"></div><div><label class="lbl">Data e skadimit</label><input type="date" id="bg-expiry"></div></div>
         <div><label class="lbl">Shënime</label><textarea id="bg-notes" style="min-height:50px"></textarea></div>
-        <button class="btn btn-success" onclick="saveBankGuarantee()">💾 Ruaj Garancinë</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-success" id="bg-save-btn" onclick="saveBankGuarantee()">💾 Ruaj Garancinë</button>
+          <button class="btn btn-sm" id="bg-cancel-btn" onclick="bgCancelEdit()" style="display:none">Anulo redaktimin</button>
+        </div>
       </div>
       <div class="card"><div class="card-title">Garancitë e regjistruara</div><div id="bg-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
     </div>
@@ -1051,7 +1108,15 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div class="field-group fg-2"><div><label class="lbl">Kategoria</label><select id="oc-cat"><option>Logjistikë/Transport</option><option>Qira</option><option>Paga</option><option>Kontabilitet/Ligjore</option><option>Komisione bankare</option><option>Marketing</option><option>Tjetër</option></select></div><div><label class="lbl">Data</label><input type="date" id="oc-date"></div></div>
         <div class="field-group fg-2"><div><label class="lbl">Shuma (EUR, Neto)</label><input type="number" step="0.01" id="oc-amt" placeholder="0.00"></div><div><label class="lbl">Projekti (opsionale)</label><input type="text" id="oc-proj" placeholder="p.sh. RSB Hamburg"></div></div>
         <div><label class="lbl">Përshkrimi</label><textarea id="oc-desc" style="min-height:50px"></textarea></div>
-        <button class="btn btn-success" onclick="saveOtherCost()">💾 Ruaj Koston</button>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Pozicionet shtesë</span>
+            <button class="btn btn-sm" onclick="ocAddPos()" style="font-size:11px">+ Shto pozicion</button>
+          </div>
+          <div id="oc-positions"></div>
+          <div id="oc-pos-total" style="text-align:right;font-size:12px;font-weight:650;margin-top:8px;color:var(--bronze)"></div>
+        </div>
+        <button class="btn btn-success" onclick="saveOtherCost()" style="margin-top:12px">💾 Ruaj Koston</button>
       </div>
       <div class="card"><div class="card-title">Kostot e regjistruara</div><div id="oc-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
     </div>
@@ -4992,6 +5057,37 @@ function calcBgFee(){
   const rate=parseFloat(document.getElementById('bg-feerate').value)||0;
   document.getElementById('bg-fee').value=(amt*rate/100).toFixed(2);
 }
+var _bgEditId=null; // nese eshte i vendosur, jemi ne modalitet redaktimi
+function bgEdit(id){
+  var r=(bankGuaranteesList||[]).filter(function(x){return String(x.id)===String(id);})[0];
+  if(!r){alert('Garancia nuk u gjet.');return;}
+  _bgEditId=id;
+  document.getElementById('bg-proj').value=r.project||'';
+  document.getElementById('bg-bank').value=r.bank_name||'';
+  document.getElementById('bg-type').value=r.guarantee_type||'';
+  document.getElementById('bg-amt').value=r.amount_guaranteed||'';
+  document.getElementById('bg-feerate').value=r.fee_rate_pct||'';
+  document.getElementById('bg-fee').value=r.fee_amount||'';
+  document.getElementById('bg-issue').value=r.issue_date||'';
+  document.getElementById('bg-expiry').value=r.expiry_date||'';
+  document.getElementById('bg-status').value=r.status||'aktive';
+  document.getElementById('bg-notes').value=r.notes||'';
+  var btn=document.getElementById('bg-save-btn');
+  if(btn) btn.textContent='💾 Ruaj ndryshimet';
+  var cancel=document.getElementById('bg-cancel-btn');
+  if(cancel) cancel.style.display='';
+  var card=document.getElementById('bg-proj'); if(card) card.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function bgCancelEdit(){
+  _bgEditId=null;
+  ['bg-proj','bg-bank','bg-amt','bg-feerate','bg-fee','bg-issue','bg-expiry','bg-notes'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.value='';
+  });
+  var btn=document.getElementById('bg-save-btn');
+  if(btn) btn.textContent='💾 Ruaj Garancinë';
+  var cancel=document.getElementById('bg-cancel-btn');
+  if(cancel) cancel.style.display='none';
+}
 function saveBankGuarantee(){
   const bank=document.getElementById('bg-bank').value.trim();
   if(!bank){alert('Shkruaj emrin e bankës.');return;}
@@ -5001,11 +5097,18 @@ function saveBankGuarantee(){
     fee_amount:parseFloat(document.getElementById('bg-fee').value)||0, issue_date:document.getElementById('bg-issue').value||null,
     expiry_date:document.getElementById('bg-expiry').value||null, status:document.getElementById('bg-status').value, notes:document.getElementById('bg-notes').value
   };
-  supaFetch('bank_guarantees','POST',payload).then(function(){
-    alert('Garancia u ruajt!');
-    ['bg-proj','bg-bank','bg-amt','bg-feerate','bg-fee','bg-issue','bg-expiry','bg-notes'].forEach(function(id){document.getElementById(id).value='';});
+  var isEdit=!!_bgEditId;
+  if(!confirm(isEdit
+      ? 'A jeni i sigurt që doni t\'i ruani ndryshimet në këtë garanci?'
+      : 'A jeni i sigurt që doni ta ruani këtë garanci bankare?')) return;
+  var req=isEdit
+    ? supaFetch('bank_guarantees?id=eq.'+_bgEditId,'PATCH',payload)
+    : supaFetch('bank_guarantees','POST',payload);
+  req.then(function(){
+    alert(isEdit?'Ndryshimet u ruajtën!':'Garancia u ruajt!');
+    bgCancelEdit();
     loadBankGuarantees();
-  }).catch(function(e){alert('Gabim (a ekziston tabela bank_guarantees në Supabase?): '+e.message);});
+  }).catch(function(e){alert('Gabim: '+e.message);});
 }
 function loadBankGuarantees(){
   const el=document.getElementById('bg-list');
@@ -5023,7 +5126,9 @@ function loadBankGuarantees(){
       }
       return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
         +'<div><strong>'+r.bank_name+'</strong> · '+(r.guarantee_type||'')+' <span style="color:var(--text3);font-size:12px">'+(r.project||'')+' · '+(parseFloat(r.amount_guaranteed)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR garantim · komision '+(parseFloat(r.fee_amount)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span>'+expiryWarn+'</div>'
-        +'<button class="btn btn-danger btn-sm" onclick="deleteBankGuarantee(\''+r.id+'\')">Fshij</button></div>';
+        +'<div style="display:flex;gap:6px;flex-shrink:0">'
+        +'<button class="btn btn-sm" onclick="bgEdit(\''+r.id+'\')">Redakto</button>'
+        +'<button class="btn btn-danger btn-sm" onclick="deleteBankGuarantee(\''+r.id+'\')">Fshij</button></div></div>';
     }).join('');
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela bank_guarantees mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
 }
@@ -5033,18 +5138,57 @@ function deleteBankGuarantee(id){
 }
 
 // ── Other operating costs ──────────────────────────────
+// ── POZICIONET SHTESE TE KOSTOVE ──────────────────────────
+var _ocPos=[];
+function ocAddPos(){
+  _ocPos.push({desc:'',amount:''});
+  ocRenderPos();
+}
+function ocDelPos(i){ _ocPos.splice(i,1); ocRenderPos(); }
+function ocUpdPos(i,f,v){
+  if(!_ocPos[i]) return;
+  _ocPos[i][f]= f==='amount' ? (parseFloat(String(v).replace(',','.'))||0) : v;
+  ocPosTotal();
+}
+function ocPosTotal(){
+  var el=document.getElementById('oc-pos-total'); if(!el) return;
+  var main=parseFloat(document.getElementById('oc-amt').value)||0;
+  var extra=_ocPos.reduce(function(s,p){return s+(parseFloat(p.amount)||0);},0);
+  el.textContent = (main+extra)>0
+    ? 'Totali: '+(main+extra).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' € ('+(_ocPos.length+1)+' pozicion(e))'
+    : '';
+}
+function ocRenderPos(){
+  var el=document.getElementById('oc-positions'); if(!el) return;
+  el.innerHTML=_ocPos.map(function(p,i){
+    return '<div style="display:grid;grid-template-columns:1fr 110px 30px;gap:7px;margin-bottom:6px;align-items:center">'
+      +'<input type="text" value="'+String(p.desc||'').replace(/"/g,'&quot;')+'" placeholder="Përshkrimi i pozicionit" oninput="ocUpdPos('+i+',\'desc\',this.value)" style="font-size:12px;padding:6px 8px">'
+      +'<input type="number" step="0.01" value="'+(p.amount||'')+'" placeholder="0.00" oninput="ocUpdPos('+i+',\'amount\',this.value)" style="font-size:12px;padding:6px 8px;text-align:right">'
+      +'<button class="btn btn-sm" onclick="ocDelPos('+i+')" style="padding:4px 7px;font-size:12px">✕</button></div>';
+  }).join('');
+  ocPosTotal();
+}
 function saveOtherCost(){
   const amt=parseFloat(document.getElementById('oc-amt').value)||0;
-  if(!amt){alert('Shkruaj shumën.');return;}
-  const payload={
-    category:document.getElementById('oc-cat').value, description:document.getElementById('oc-desc').value,
-    project:document.getElementById('oc-proj').value, amount:amt, date:document.getElementById('oc-date').value||null
-  };
-  supaFetch('other_costs','POST',payload).then(function(){
-    alert('Kostoja u ruajt!');
+  const extra=_ocPos.filter(function(p){return (p.desc||'').trim()||parseFloat(p.amount);});
+  if(!amt && !extra.length){alert('Shkruaj shumën ose shto të paktën një pozicion.');return;}
+  const cat=document.getElementById('oc-cat').value;
+  const proj=document.getElementById('oc-proj').value;
+  const dt=document.getElementById('oc-date').value||null;
+  const desc=document.getElementById('oc-desc').value;
+  const total=amt+extra.reduce(function(s,p){return s+(parseFloat(p.amount)||0);},0);
+  if(!confirm('A jeni i sigurt që doni t\'i ruani këto kosto?\n\nTotali: '+total.toLocaleString('de-DE',{minimumFractionDigits:2})+' € në '+(extra.length+(amt?1:0))+' pozicion(e).')) return;
+  var payloads=[];
+  if(amt) payloads.push({category:cat, description:desc, project:proj, amount:amt, date:dt});
+  extra.forEach(function(p){
+    payloads.push({category:cat, description:(p.desc||'').trim()||desc, project:proj, amount:parseFloat(p.amount)||0, date:dt});
+  });
+  Promise.all(payloads.map(function(pl){ return supaFetch('other_costs','POST',pl); })).then(function(){
+    alert(payloads.length+' kosto u ruajt(ën)!');
     ['oc-amt','oc-proj','oc-desc'].forEach(function(id){document.getElementById(id).value='';});
+    _ocPos=[]; ocRenderPos();
     loadOtherCosts();
-  }).catch(function(e){alert('Gabim (a ekziston tabela other_costs në Supabase?): '+e.message);});
+  }).catch(function(e){alert('Gabim: '+e.message);});
 }
 function loadOtherCosts(){
   const el=document.getElementById('oc-list');
@@ -6223,5 +6367,6 @@ function qDirSearch(){
 <script src="pristeel-roles.js"></script>
 <script src="pristeel-export.js"></script>
 <script src="pristeel-offer-editor.js"></script>
+<script src="pristeel-finance.js"></script>
 </body>
 </html>
