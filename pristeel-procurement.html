@@ -540,7 +540,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   </svg>
 </div>
 
-<div id="page-import" class="page">
+<div id="page-newproject" class="page">
 
   <div class="card">
     <div class="card-title">Informacioni i projektit</div>
@@ -605,10 +605,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </button>
     <div></div>
   </div>
-  <div class="card" style="margin-top:0">
-    <div class="card-title">Projektet e ruajtura</div>
-    <div id="project-list"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
-  </div>
 
   <div id="parsing-card" class="card hidden">
     <div class="card-title">AI po analizon dokumentin...</div>
@@ -621,6 +617,16 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="prog-bar mt-12"><div class="prog-fill" id="prog" style="width:0%"></div></div>
   </div>
 
+</div>
+
+<div id="page-import" class="page">
+  <div class="card">
+    <div class="flex justify-between items-center mb-12">
+      <div class="card-title" style="margin:0">Projektet</div>
+      <button class="btn btn-primary btn-sm" onclick="showPage('newproject')" style="background:var(--bronze);border-color:var(--bronze)">+ Projekt i ri</button>
+    </div>
+    <div id="project-list"><div style="color:var(--text3);font-size:12px">Duke ngarkuar...</div></div>
+  </div>
 </div>
 
 <div id="page-bom" class="page">
@@ -679,6 +685,17 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div id="page-rfq" class="page">
+
+  <div class="card">
+    <div class="card-title">Dokumente shtesë (opsionale)</div>
+    <div style="font-size:11.5px;color:var(--text3);margin-bottom:10px">
+      Ngarko specifikime, vizatime ose lista shtesë që duhet t'u dërgohen furnitorëve.</div>
+    <div id="rfq-upload"></div>
+    <div id="rfq-upload-text" style="display:none;margin-top:10px">
+      <label class="lbl">Teksti i nxjerrë</label>
+      <textarea id="rfq-doc-text" style="min-height:80px" placeholder="Teksti nga dokumenti do të shfaqet këtu…"></textarea>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-title">Parametrat e RFQ</div>
@@ -777,12 +794,28 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div id="offer-list"></div>
     <div class="mt-16 flex justify-between items-center">
       <div class="text-sm text-muted" id="offer-count">0 oferta</div>
-      <button class="btn btn-primary" onclick="showPage('ranking')">Shko te Ranking →</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="goToClientOffer()" style="border-color:var(--bronze);color:var(--bronze)">Përgatit ofertën tonë</button>
+        <button class="btn btn-primary" onclick="showPage('ranking')">Shko te Ranking →</button>
+      </div>
     </div>
   </div>
 </div>
 
 <div id="page-ranking" class="page">
+
+  <div class="card" style="border-left:3px solid var(--bronze)">
+    <div class="flex justify-between items-center">
+      <div>
+        <div style="font-size:13px;font-weight:650;color:var(--text)">Gati për ofertën tonë?</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:2px">
+          Pasi ke krahasuar furnitorët, kalo te përgatitja e ofertës komerciale për klientin.</div>
+      </div>
+      <button class="btn btn-primary" onclick="goToClientOffer()" style="background:var(--bronze);border-color:var(--bronze);flex-shrink:0">
+        Përgatit ofertën tonë →
+      </button>
+    </div>
+  </div>
 
   <div class="card">
     <div class="card-title">Peshat e vlerësimit</div>
@@ -1452,7 +1485,8 @@ let defaultSuppliers=[
 // ── NAVIGATION ────────────────────────────────────────
 const pageMeta={
   'offer-archive':{title:'Arkivi i ofertave',sub:'Të gjitha ofertat me numër rendor · kopjo për ofertë të re'},
-  import:{title:'Projektet',sub:'Fillo projekt të ri ose hap një ekzistues'},
+  newproject:{title:'Projekt i ri',sub:'Fut të dhënat dhe ngarko dokumentin e blerësit'},
+  import:{title:'Projektet',sub:'Projektet aktive dhe në pritje'},
   contacts:{title:'Kontaktet',sub:'Klientë dhe furnitorë — të sinkronizuar me HubSpot'},
   bom:{title:'1 · Lista e materialeve',sub:'Fut ose verifiko listën e materialeve (BOM)'},
   rfq:{title:'2 · Kërkesa për furnitorët',sub:'Gjenero dhe dërgo RFQ te furnitorët'},
@@ -1595,6 +1629,81 @@ function showModuleHub(mod){
   renderSideNav(mod,null);
   return true;
 }
+// Kalon te përgatitja e ofertës komerciale, duke bartur të dhënat e projektit aktual
+function goToClientOffer(){
+  showPage('oferta');
+  setTimeout(function(){
+    // Numër pasues gjithmonë
+    if(typeof fillOfferNr==='function') fillOfferNr(false);
+    // Bart të dhënat e projektit nëse fushat janë bosh
+    function setIfEmpty(id,v){
+      var e=document.getElementById(id);
+      if(e && !e.value && v) e.value=v;
+    }
+    var pn=document.getElementById('i-projname'), pc=document.getElementById('i-client');
+    setIfEmpty('of-project', pn?pn.value:'');
+    setIfEmpty('of-client', pc?pc.value:'');
+    var d=document.getElementById('of-date');
+    if(d && !d.value) d.value=new Date().toISOString().slice(0,10);
+    // Bart tonazhin nga BOM nëse ekziston
+    if(typeof bomTotalKg==='function'){
+      var kg=bomTotalKg();
+      if(kg>0) setIfEmpty('of-totalkg', Math.round(kg));
+    }
+  }, 240);
+}
+
+// ── KATRORET E NGARKIMIT (te ripërdorshëm në çdo faqe) ────
+// targetId = ID e elementit ku vendosen; onDone = funksion që merr tekstin e nxjerrë
+function uploadBoxesHtml(prefix){
+  return '<div class="src-grid">'
+    +'<div class="src-box" onclick="document.getElementById(\''+prefix+'-file\').click()">'
+      +'<input type="file" id="'+prefix+'-file" style="display:none" accept=".pdf,.xlsx,.xls,.csv,.txt,.docx,.doc" multiple'
+      +' onchange="uploadBoxHandle(\''+prefix+'\',this.files)">'
+      +'<svg class="src-ico" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>'
+      +'<div class="src-title" id="'+prefix+'-title">Nga kompjuteri</div>'
+      +'<div class="src-sub">Tërhiq ose kliko · PDF, Excel, Word, CSV</div>'
+    +'</div>'
+    +'<div class="src-box" onclick="uploadBoxDrive(\''+prefix+'\')">'
+      +'<svg class="src-ico" viewBox="0 0 24 24" style="stroke-width:1.4"><path d="M7.7 3h8.6l4.7 8.1-4.3 7.4H7.3L3 11.1z"/><path d="M3 11.1h18M7.7 3l4.3 8.1M16.3 3l-4.3 8.1"/></svg>'
+      +'<div class="src-title">Nga Google Drive</div>'
+      +'<div class="src-sub">Zgjidh një skedar direkt nga Drive</div>'
+    +'</div></div>';
+}
+var _uploadTargets={}; // prefix -> callback
+function mountUploadBoxes(containerId, prefix, onText){
+  var el=document.getElementById(containerId); if(!el) return;
+  el.innerHTML=uploadBoxesHtml(prefix);
+  if(typeof onText==='function') _uploadTargets[prefix]=onText;
+}
+function uploadBoxHandle(prefix, files){
+  if(!files||!files.length) return;
+  var t=document.getElementById(prefix+'-title');
+  if(t) t.textContent='Duke lexuar '+files[0].name+'…';
+  var cb=_uploadTargets[prefix];
+  // Përdor të njëjtin lexues si te faqja e projekteve
+  if(typeof readFileText==='function'){
+    readFileText(files[0]).then(function(txt){
+      if(t) t.textContent=files[0].name;
+      if(cb) cb(txt, files[0]);
+    }).catch(function(e){
+      if(t) t.textContent='Nga kompjuteri';
+      alert('Nuk u lexua skedari: '+e.message);
+    });
+  } else {
+    var fr=new FileReader();
+    fr.onload=function(){ if(t) t.textContent=files[0].name; if(cb) cb(String(fr.result||''), files[0]); };
+    fr.onerror=function(){ if(t) t.textContent='Nga kompjuteri'; alert('Nuk u lexua skedari.'); };
+    fr.readAsText(files[0]);
+  }
+}
+function uploadBoxDrive(prefix){
+  if(typeof pickFromDrive==='function'){
+    try{ pickFromDrive(prefix); return; }catch(e){}
+  }
+  alert('Google Drive nuk është konfiguruar ende. Shto Client ID te Cilësimet.');
+}
+
 // ── ARKIVI I OFERTAVE ─────────────────────────────────────
 var _oaRows=[];
 function oaLoad(){
@@ -1647,6 +1756,7 @@ function oaRender(){
 function oaNew(){
   if(typeof resetOfferForm==='function') try{ resetOfferForm(); }catch(e){}
   showPage('oferta');
+  setTimeout(function(){ if(typeof fillOfferNr==='function') fillOfferNr(true); },260);
 }
 function oaOpen(id){
   var r=_oaRows.filter(function(x){return String(x.id)===String(id);})[0];
@@ -1683,14 +1793,7 @@ function oaApplyState(r, copyMode){
   setv('of-cost', st.cost);
   if(copyMode){
     // Numër i ri dhe datë sot — kjo është ofertë e re, jo e njëjta
-    var el=document.getElementById('of-nr');
-    if(el){
-      var y=new Date().getFullYear();
-      var m=String(new Date().getMonth()+1).padStart(2,'0');
-      var maxSeq=0;
-      _oaRows.forEach(function(x){ if((x.year===y) && x.seq>maxSeq) maxSeq=x.seq; });
-      el.value='PST-OFF-'+y+'-'+m+'-'+String(maxSeq+1).padStart(3,'0');
-    }
+    if(typeof fillOfferNr==='function') fillOfferNr(true);
     var d=document.getElementById('of-date');
     if(d) d.value=new Date().toISOString().slice(0,10);
     setTimeout(function(){ alert('Oferta u kopjua. Kontrollo të dhënat dhe kliko Gjenero.'); },150);
@@ -2103,6 +2206,19 @@ function showPage(p){
   if(p==='bom')renderBom();
   if(p==='rfq'){renderSuppliers();updateRfqCount();}
   if(p==='offer-archive'){ if(typeof oaLoad==='function') oaLoad(); }
+  if(p==='oferta'){ if(typeof fillOfferNr==='function') setTimeout(function(){fillOfferNr(false);},120); }
+  if(p==='import'){ if(typeof loadProjectList==='function') loadProjectList(); }
+  if(p==='rfq'){
+    if(typeof mountUploadBoxes==='function' && !document.querySelector('#rfq-upload .src-grid')){
+      mountUploadBoxes('rfq-upload','rfqdoc',function(txt){
+        var box=document.getElementById('rfq-upload-text');
+        var ta=document.getElementById('rfq-doc-text');
+        if(ta) ta.value=txt||'';
+        if(box) box.style.display='';
+      });
+    }
+  }
+  if(p==='newproject'){ if(typeof resetWorkspace==='function') resetWorkspace(); }
   if(p==='offers'){renderOffers(); if(typeof renderSideOffers==='function') renderSideOffers();}
   else if(typeof renderSidePanel==='function' && p!=='offers') renderSidePanel();
   if(p==='ranking'){calcRanking();}
@@ -2196,7 +2312,7 @@ function resetWorkspace(){
 function newProject(){
   if(confirm('Fillo projekt të ri? Të dhënat aktuale do të fshihen.')){
     resetWorkspace();
-    showPage('import');
+    showPage('newproject');
   }
 }
 
@@ -2230,6 +2346,31 @@ async function extractTextFromPDF(file) {
   return fullText;
 }
 
+// Lexon një skedar (PDF/Excel/CSV/TXT) dhe kthen tekstin — i përbashkët për të gjitha faqet
+async function readFileText(f){
+  if(f.name.match(/\.(txt|csv)$/i)){
+    return await new Promise(function(resolve){
+      var r=new FileReader(); r.onload=function(e){resolve(String(e.target.result||'').slice(0,15000));}; r.readAsText(f);
+    });
+  }
+  if(f.type==='application/pdf' || f.name.match(/\.pdf$/i)){
+    return await extractTextFromPDF(f);
+  }
+  if(f.name.match(/\.(xlsx|xls)$/i)){
+    var buf=await f.arrayBuffer();
+    var wb=XLSX.read(buf,{type:'array'});
+    var xlText='';
+    wb.SheetNames.forEach(function(name){
+      xlText+='\n=== Sheet: '+name+' ===\n';
+      xlText+=XLSX.utils.sheet_to_csv(wb.Sheets[name],{blankrows:false});
+    });
+    return xlText.slice(0,15000);
+  }
+  // fallback: tekst i thjeshtë
+  return await new Promise(function(resolve){
+    var r=new FileReader(); r.onload=function(e){resolve(String(e.target.result||'').slice(0,15000));}; r.readAsText(f);
+  });
+}
 async function handleFiles(files){
   if(!files || files.length === 0)return;
   dz.style.borderColor='var(--bronze)';
@@ -4226,11 +4367,29 @@ function printOfer(){
   w.document.write(h);w.document.close();
   setTimeout(function(){w.print();},400);
 }
+// Gjeneron numrin pasues të ofertës duke lexuar bazën — funksionon nga çdo dritare
+async function nextOfferNr(){
+  var y=new Date().getFullYear();
+  var m=String(new Date().getMonth()+1).padStart(2,'0');
+  var maxSeq=0;
+  try{
+    var rows=await supaFetch('documents_registry?series=eq.QUO&year=eq.'+y+'&select=seq,doc_nr&order=seq.desc&limit=1');
+    if(rows && rows.length) maxSeq=parseInt(rows[0].seq,10)||0;
+  }catch(e){ console.warn('nextOfferNr:',e); }
+  return {nr:'PST-OFF-'+y+'-'+m+'-'+String(maxSeq+1).padStart(3,'0'), seq:maxSeq+1, year:y};
+}
+// Mbush fushën e numrit me numrin pasues (nëse është bosh ose kërkohet detyrimisht)
+async function fillOfferNr(force){
+  var el=document.getElementById('of-nr');
+  if(!el) return;
+  if(el.value && !force) return;
+  var x=await nextOfferNr();
+  el.value=x.nr;
+}
 setTimeout(function(){
   var d=document.getElementById('of-date');
   if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);
-  var n=document.getElementById('of-nr');
-  if(n&&!n.value){var y=new Date().getFullYear();var m=String(new Date().getMonth()+1).padStart(2,'0');n.value='PST-OFF-'+y+'-'+m+'-001';}
+  fillOfferNr(false);
   if(typeof pageMeta!=='undefined'){
     pageMeta.kalkulator={title:'Kalkulator Cmimi',sub:'Llogarit cmimin e shitjes'};
     pageMeta.oferta={title:'Oferta Komerciale',sub:'Gjenero oferte profesionale'};
