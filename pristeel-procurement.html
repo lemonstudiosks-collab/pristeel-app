@@ -375,6 +375,26 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         Projekt i ri
       </button>
     </div>
+    <div id="side-quick" style="padding:0 16px 4px">
+      <div onclick="showPage('offer-archive')" title="Të gjitha ofertat me numër rendor"
+        style="border:2px solid #A65F2E;border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
+        <div style="font-size:11.5px;font-weight:650;color:#A65F2E">📄 Ofertat</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Arkivi me numër rendor</div>
+      </div>
+      <div onclick="showPage('invoices')" title="Faturat hyrëse (nga furnitorët)"
+        style="border:2px solid #185FA5;border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
+        <div style="font-size:11.5px;font-weight:650;color:#185FA5">📥 Faturat hyrëse</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Nga furnitorët</div>
+      </div>
+      <div onclick="showPage('invoices')" title="Faturat dalëse (te klientët)"
+        style="border:2px solid #0F6E56;border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
+        <div style="font-size:11.5px;font-weight:650;color:#0F6E56">📤 Faturat dalëse</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Te klientët</div>
+      </div>
+    </div>
     <div id="side-nav"></div>
     <div id="side-panel" style="margin-top:auto;padding:14px 16px 8px"></div>
   </div>
@@ -411,6 +431,11 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.18)'">
     <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
     Të gjitha modulet
+  </span>
+  <span id="modbar-back" onclick="goBack()" style="cursor:pointer;display:none;align-items:center;gap:5px;background:rgba(255,255,255,.18);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600" title="Një hap mbrapa"
+    onmouseover="this.style.background='rgba(255,255,255,.3)'" onmouseout="this.style.background='rgba(255,255,255,.18)'">
+    <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.4"><polyline points="15 18 9 12 15 6"/></svg>
+    Mbrapa
   </span>
   <span id="modbar-icon" style="display:flex;align-items:center;margin-left:4px"></span>
   <span id="modbar-name" style="font-weight:600"></span>
@@ -525,7 +550,17 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div><label class="lbl">Referenca</label><input type="text" id="i-ref" placeholder="p.sh. PST-2026-001"></div>
     </div>
     <div class="field-group fg-3">
-      <div><label class="lbl">Afati i dorëzimit</label><input type="date" id="i-deadline"></div>
+      <div><label class="lbl">Afati i dorëzimit</label>
+        <div style="display:flex;gap:7px;align-items:center">
+          <input type="date" id="i-deadline" oninput="deadlineSyncFromDate()" style="flex:1">
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+            <input type="number" id="i-deadline-weeks" min="0" step="1" placeholder="0" title="Numri i javëve nga sot"
+              oninput="deadlineSyncFromWeeks()" style="width:58px;text-align:center">
+            <span style="font-size:11px;color:var(--text3);white-space:nowrap">javë</span>
+          </div>
+        </div>
+        <div id="i-deadline-hint" style="font-size:10.5px;color:var(--text3);margin-top:3px"></div>
+      </div>
       <div><label class="lbl">Vendi i dorëzimit</label><input type="text" id="i-location" placeholder="p.sh. Frankfurt, DE"></div>
       <div><label class="lbl">Vlera e parashikuar (EUR)</label><input type="number" id="i-value" placeholder="0"></div>
     </div>
@@ -682,6 +717,21 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div id="module-hub" class="page"></div>
+
+<div id="page-offer-archive" class="page">
+  <div class="card">
+    <div class="flex justify-between items-center mb-12">
+      <div class="card-title" style="margin:0">Arkivi i ofertave</div>
+      <div style="display:flex;gap:7px;align-items:center">
+        <input type="text" id="oa-search" placeholder="Kërko klient, nr., projekt…" oninput="oaRender()" style="font-size:12px;padding:6px 10px;width:210px">
+        <button class="btn btn-primary btn-sm" onclick="oaNew()" style="background:var(--bronze);border-color:var(--bronze)">+ Ofertë e re</button>
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--text3);margin-bottom:12px">
+      Të gjitha ofertat e lëshuara, të renditura me numër rendor. Kliko <strong>Kopjo</strong> për të krijuar një ofertë të re bazuar në një ekzistuese.</div>
+    <div id="oa-list"><div style="color:var(--text3);font-size:12px">Duke ngarkuar…</div></div>
+  </div>
+</div>
 
 <div id="page-offers" class="page">
 
@@ -1401,6 +1451,7 @@ let defaultSuppliers=[
 
 // ── NAVIGATION ────────────────────────────────────────
 const pageMeta={
+  'offer-archive':{title:'Arkivi i ofertave',sub:'Të gjitha ofertat me numër rendor · kopjo për ofertë të re'},
   import:{title:'Projektet',sub:'Fillo projekt të ri ose hap një ekzistues'},
   contacts:{title:'Kontaktet',sub:'Klientë dhe furnitorë — të sinkronizuar me HubSpot'},
   bom:{title:'1 · Lista e materialeve',sub:'Fut ose verifiko listën e materialeve (BOM)'},
@@ -1540,8 +1591,147 @@ function showModuleHub(mod){
   });
   h+='</div>';
   main.innerHTML='<div class="card">'+h+'</div>';
+  navPush({t:'hub',v:mod.id});
   renderSideNav(mod,null);
   return true;
+}
+// ── ARKIVI I OFERTAVE ─────────────────────────────────────
+var _oaRows=[];
+function oaLoad(){
+  var el=document.getElementById('oa-list'); if(!el) return;
+  el.innerHTML='<div style="color:var(--text3);font-size:12px">Duke ngarkuar…</div>';
+  supaFetch('documents_registry?series=eq.QUO&order=created_at.desc&limit=300').then(function(rows){
+    _oaRows=rows||[];
+    oaRender();
+  }).catch(function(e){
+    el.innerHTML='<div style="color:#C62828;font-size:12px">Gabim: '+e.message+'</div>';
+  });
+}
+var OA_STATUS={open:{n:'Në pritje',c:'#E8A33D',bg:'#FFF8E1'},won:{n:'Fituar',c:'#2E7D32',bg:'#E8F5E9'},
+               lost:{n:'Humbur',c:'#C62828',bg:'#FFEBEE'},superseded:{n:'Zëvendësuar',c:'#78909C',bg:'#ECEFF1'}};
+function oaRender(){
+  var el=document.getElementById('oa-list'); if(!el) return;
+  var q=((document.getElementById('oa-search')||{}).value||'').toLowerCase().trim();
+  var rows=_oaRows.filter(function(r){
+    if(!q) return true;
+    return ((r.doc_nr||'')+' '+(r.client||'')+' '+(r.project||'')).toLowerCase().indexOf(q)>-1;
+  });
+  if(!rows.length){ el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:10px 0">'+(q?'Asnjë përputhje.':'Asnjë ofertë e regjistruar ende.')+'</div>'; return; }
+  el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.5px">'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border);width:42px">Nr.</th>'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Dokumenti</th>'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Klienti</th>'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Projekti</th>'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Data</th>'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right">Vlera</th>'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Statusi</th>'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)"></th></tr></thead><tbody>'
+    +rows.map(function(r,i){
+      var st=OA_STATUS[r.followup_status||'open']||OA_STATUS.open;
+      var dt=r.created_at?new Date(r.created_at).toLocaleDateString('sq-AL'):'';
+      return '<tr style="border-bottom:1px solid var(--border)">'
+        +'<td style="padding:7px 8px;color:var(--text3);font-weight:600">'+(i+1)+'</td>'
+        +'<td style="padding:7px 8px;font-weight:650">'+(r.doc_nr||'')+'</td>'
+        +'<td style="padding:7px 8px">'+(r.client||'—')+'</td>'
+        +'<td style="padding:7px 8px;color:var(--text3)">'+(r.project||'—')+'</td>'
+        +'<td style="padding:7px 8px;color:var(--text3)">'+dt+'</td>'
+        +'<td style="padding:7px 8px;text-align:right;font-weight:650">'+((parseFloat(r.total_eur)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}))+' €</td>'
+        +'<td style="padding:7px 8px"><span style="background:'+st.bg+';color:'+st.c+';font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px">'+st.n+'</span></td>'
+        +'<td style="padding:7px 8px;white-space:nowrap">'
+          +'<button class="btn btn-sm" style="font-size:10px;padding:3px 9px" onclick="oaCopy(\''+r.id+'\')" title="Krijo ofertë të re bazuar në këtë">Kopjo</button> '
+          +'<button class="btn btn-sm" style="font-size:10px;padding:3px 8px" onclick="oaOpen(\''+r.id+'\')" title="Hap ofertën">Hap</button>'
+        +'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function oaNew(){
+  if(typeof resetOfferForm==='function') try{ resetOfferForm(); }catch(e){}
+  showPage('oferta');
+}
+function oaOpen(id){
+  var r=_oaRows.filter(function(x){return String(x.id)===String(id);})[0];
+  if(!r){alert('Oferta nuk u gjet.');return;}
+  showPage('oferta');
+  setTimeout(function(){ oaApplyState(r, false); }, 250);
+}
+function oaCopy(id){
+  var r=_oaRows.filter(function(x){return String(x.id)===String(id);})[0];
+  if(!r){alert('Oferta nuk u gjet.');return;}
+  if(!confirm('A jeni i sigurt që doni të krijoni një ofertë të re bazuar në '+(r.doc_nr||'këtë ofertë')+'?\n\nTë dhënat do të kopjohen, por numri i ofertës do të jetë i ri.')) return;
+  showPage('oferta');
+  setTimeout(function(){ oaApplyState(r, true); }, 250);
+}
+// Mbush formën e ofertës nga një regjistrim ekzistues. copyMode=true → numër i ri, datë sot.
+function oaApplyState(r, copyMode){
+  var st=r.offer_state||{};
+  function setv(id,v){ var e=document.getElementById(id); if(e && v!=null && v!=='') e.value=v; }
+  // Fushat kryesore (emrat e ID-ve sipas formës ekzistuese te 'oferta')
+  setv('of-client', st.client || r.client);
+  setv('of-contact', st.contact);
+  setv('of-email', st.email);
+  setv('of-address', st.address);
+  setv('of-project', st.project || r.project);
+  setv('of-ref', st.ref);
+  setv('of-pricekg', st.priceKg);
+  setv('of-totalkg', st.totalKg);
+  setv('of-zinc', st.zinc);
+  setv('of-transport', st.transport);
+  setv('of-lang', st.lang);
+  setv('of-country', st.country);
+  setv('of-worktype', st.workType);
+  setv('of-exc', st.exc);
+  setv('of-cost', st.cost);
+  if(copyMode){
+    // Numër i ri dhe datë sot — kjo është ofertë e re, jo e njëjta
+    var el=document.getElementById('of-nr');
+    if(el){
+      var y=new Date().getFullYear();
+      var m=String(new Date().getMonth()+1).padStart(2,'0');
+      var maxSeq=0;
+      _oaRows.forEach(function(x){ if((x.year===y) && x.seq>maxSeq) maxSeq=x.seq; });
+      el.value='PST-OFF-'+y+'-'+m+'-'+String(maxSeq+1).padStart(3,'0');
+    }
+    var d=document.getElementById('of-date');
+    if(d) d.value=new Date().toISOString().slice(0,10);
+    setTimeout(function(){ alert('Oferta u kopjua. Kontrollo të dhënat dhe kliko Gjenero.'); },150);
+  } else {
+    setv('of-nr', r.doc_nr);
+    var dd=document.getElementById('of-date');
+    if(dd && r.created_at) dd.value=String(r.created_at).slice(0,10);
+  }
+}
+
+// ── HISTORIKU I NAVIGIMIT ─────────────────────────────────
+var _navHist=[];
+function navPush(entry){
+  var last=_navHist[_navHist.length-1];
+  if(last && last.t===entry.t && last.v===entry.v) return; // mos dublo
+  _navHist.push(entry);
+  if(_navHist.length>40) _navHist.shift();
+  navPaintBack();
+}
+function navPaintBack(){
+  var b=document.getElementById('modbar-back');
+  if(b) b.style.display=_navHist.length>1?'flex':'none';
+}
+function goBack(){
+  if(_navHist.length<2){ goHome(); return; }
+  _navHist.pop();                          // hiq vendndodhjen aktuale
+  var prev=_navHist[_navHist.length-1];    // shko te e mëparshmja
+  if(!prev){ goHome(); return; }
+  if(prev.t==='home'){ _navHist=[]; goHome(); return; }
+  if(prev.t==='hub'){
+    var mod=MODULES.filter(function(m){return m.id===prev.v;})[0];
+    _navHist.pop(); // do rishtohet nga showModuleHub
+    if(mod) openModuleHub(mod.id); else goHome();
+    return;
+  }
+  if(prev.t==='page'){
+    _navHist.pop(); // do rishtohet nga showPage
+    showPage(prev.v);
+    return;
+  }
+  goHome();
 }
 function openModuleHub(modId){
   var mod=MODULES.filter(function(m){return m.id===modId;})[0];
@@ -1574,6 +1764,8 @@ function applyModuleChrome(p){
   renderSideNav(mod,p);
 }
 function goHome(){
+  _navHist=[{t:'home',v:''}];
+  navPaintBack();
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-home').classList.add('active');
   document.getElementById('modbar').style.display='none';
@@ -1903,12 +2095,14 @@ function showPage(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   document.getElementById('page-'+p).classList.add('active');
+  navPush({t:'page',v:p});
   applyModuleChrome(p);
   var meta=pageMeta[p]||{title:'',sub:''};
   document.getElementById('page-title').textContent=meta.title;
   document.getElementById('page-sub').textContent=meta.sub;
   if(p==='bom')renderBom();
   if(p==='rfq'){renderSuppliers();updateRfqCount();}
+  if(p==='offer-archive'){ if(typeof oaLoad==='function') oaLoad(); }
   if(p==='offers'){renderOffers(); if(typeof renderSideOffers==='function') renderSideOffers();}
   else if(typeof renderSidePanel==='function' && p!=='offers') renderSidePanel();
   if(p==='ranking'){calcRanking();}
@@ -4201,6 +4395,28 @@ function recoverUnsavedWork(){
   });
 }
 // _curProjId deklarohet lart (shih resetWorkspace)
+// ── AFATI: sinkronizim date <-> jave ──────────────────────
+function deadlineSyncFromWeeks(){
+  var w=parseInt(document.getElementById('i-deadline-weeks').value,10);
+  var d=document.getElementById('i-deadline');
+  var hint=document.getElementById('i-deadline-hint');
+  if(isNaN(w)||w<0){ if(hint) hint.textContent=''; return; }
+  var dt=new Date(); dt.setDate(dt.getDate()+w*7);
+  d.value=dt.toISOString().slice(0,10);
+  if(hint) hint.textContent=w+' javë nga sot → '+dt.toLocaleDateString('sq-AL',{day:'numeric',month:'long',year:'numeric'});
+}
+function deadlineSyncFromDate(){
+  var v=document.getElementById('i-deadline').value;
+  var wEl=document.getElementById('i-deadline-weeks');
+  var hint=document.getElementById('i-deadline-hint');
+  if(!v){ if(wEl) wEl.value=''; if(hint) hint.textContent=''; return; }
+  var days=Math.round((new Date(v)-new Date(new Date().toISOString().slice(0,10)))/86400000);
+  var w=Math.round(days/7);
+  if(wEl) wEl.value=w>=0?w:'';
+  if(hint) hint.textContent=days>=0
+    ? '≈ '+w+' javë ('+days+' ditë) nga sot'
+    : 'Afati ka kaluar para '+Math.abs(days)+' ditësh';
+}
 function saveProject(triggerBtn){
   var name=document.getElementById('i-projname').value;
   if(!name){alert('Shkruaj emrin e projektit fillimisht (te Import Dokument).');return;}
@@ -4236,29 +4452,65 @@ function projColor(id){
   for(var i=0;i<s.length;i++) h=((h<<5)-h+s.charCodeAt(i))|0;
   return PROJ_COLORS[Math.abs(h)%PROJ_COLORS.length];
 }
+var PROJ_STATUS={
+  aktiv:  {n:'Aktiv',    c:'#2E7D32', bg:'#E8F5E9'},
+  pritje: {n:'Në pritje',c:'#E8A33D', bg:'#FFF8E1'},
+  mbyllur:{n:'Mbyllur',  c:'#546E7A', bg:'#ECEFF1'},
+  humbur: {n:'Humbur',   c:'#C62828', bg:'#FFEBEE'}
+};
+function projCardHtml(p){
+  var dt=p.created_at?new Date(p.created_at).toLocaleDateString('sq'):'';
+  var col=projColor(p.id);
+  var st=PROJ_STATUS[p.status||'pritje']||PROJ_STATUS.pritje;
+  return '<div onclick="loadProject(\x27'+p.id+'\x27)" title="Kliko për të punuar në këtë projekt"'
+    +' style="position:relative;border:2.5px solid '+col+';border-radius:12px;padding:14px 15px 13px;cursor:pointer;'
+    +'background:#fff;transition:box-shadow .15s,transform .1s;min-height:112px;display:flex;flex-direction:column"'
+    +' onmouseover="this.style.boxShadow=\x270 5px 18px rgba(30,40,50,.14)\x27;this.style.transform=\x27translateY(-1px)\x27"'
+    +' onmouseout="this.style.boxShadow=\x27none\x27;this.style.transform=\x27none\x27">'
+    +'<div style="position:absolute;top:0;left:0;right:0;height:5px;background:'+col+';border-radius:9px 9px 0 0"></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-top:5px">'
+      +'<div style="font-size:13.5px;font-weight:650;color:var(--text);line-height:1.3">'+(p.name||'(pa emër)')+'</div>'
+      +'<span style="background:'+st.bg+';color:'+st.c+';font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap;flex-shrink:0">'+st.n+'</span>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:4px;flex:1">'+(p.client||'')+'</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px">'
+      +'<span style="font-size:10.5px;color:var(--text3)">'+dt+'</span>'
+      +'<span style="display:flex;gap:4px;align-items:center">'
+        +'<select onclick="event.stopPropagation()" onchange="event.stopPropagation();projSetStatus(\x27'+p.id+'\x27,this.value)"'
+        +' style="font-size:9.5px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;color:var(--text3)">'
+          +Object.keys(PROJ_STATUS).map(function(k){
+            return '<option value="'+k+'"'+((p.status||'pritje')===k?' selected':'')+'>'+PROJ_STATUS[k].n+'</option>';
+          }).join('')
+        +'</select>'
+        +'<button onclick="event.stopPropagation();deleteProject(\x27'+p.id+'\x27)" title="Fshi projektin"'
+        +' style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 3px;line-height:1">&#x2715;</button>'
+      +'</span>'
+    +'</div></div>';
+}
+function projSetStatus(id,status){
+  supaFetch('projects?id=eq.'+id,'PATCH',{status:status})
+    .then(function(){ loadProjectList(); })
+    .catch(function(e){ alert('Gabim: '+e.message); });
+}
 function loadProjectList(){
   var list=document.getElementById('project-list');
   if(!list)return;
-  supaFetch('projects?order=created_at.desc&limit=60').then(function(projects){
+  supaFetch('projects?order=created_at.desc&limit=80').then(function(projects){
     if(projects.length===0){list.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">Asnjë projekt i ruajtur.</div>';return;}
-    list.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">'
-      +projects.map(function(p){
-        var dt=p.created_at?new Date(p.created_at).toLocaleDateString('sq'):'';
-        var col=projColor(p.id);
-        return '<div onclick="loadProject(\x27'+p.id+'\x27)" title="Kliko për të punuar në këtë projekt"'
-          +' style="position:relative;border:2.5px solid '+col+';border-radius:12px;padding:14px 15px 13px;cursor:pointer;'
-          +'background:#fff;transition:box-shadow .15s,transform .1s;min-height:104px;display:flex;flex-direction:column"'
-          +' onmouseover="this.style.boxShadow=\x270 5px 18px rgba(30,40,50,.14)\x27;this.style.transform=\x27translateY(-1px)\x27"'
-          +' onmouseout="this.style.boxShadow=\x27none\x27;this.style.transform=\x27none\x27">'
-          +'<div style="position:absolute;top:0;left:0;right:0;height:5px;background:'+col+';border-radius:9px 9px 0 0"></div>'
-          +'<div style="font-size:13.5px;font-weight:650;color:var(--text);margin-top:5px;line-height:1.3">'+(p.name||'(pa emër)')+'</div>'
-          +'<div style="font-size:11px;color:var(--text3);margin-top:4px;flex:1">'+(p.client||'')+'</div>'
-          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px">'
-            +'<span style="font-size:10.5px;color:var(--text3)">'+dt+'</span>'
-            +'<button onclick="event.stopPropagation();deleteProject(\x27'+p.id+'\x27)" title="Fshi projektin"'
-            +' style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:0 3px;line-height:1">&#x2715;</button>'
-          +'</div></div>';
-      }).join('')+'</div>';
+    var aktiv=projects.filter(function(p){return (p.status||'pritje')==='aktiv';});
+    var pritje=projects.filter(function(p){return (p.status||'pritje')==='pritje';});
+    var tjere=projects.filter(function(p){var s=p.status||'pritje';return s!=='aktiv'&&s!=='pritje';});
+    var grid='display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px';
+    function section(title,arr,color){
+      if(!arr.length) return '';
+      return '<div style="margin-bottom:18px">'
+        +'<div style="font-size:11px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.6px;margin-bottom:9px">'
+        +title+' <span style="color:var(--text3);font-weight:600">('+arr.length+')</span></div>'
+        +'<div style="'+grid+'">'+arr.map(projCardHtml).join('')+'</div></div>';
+    }
+    list.innerHTML=section('Projekte aktive',aktiv,'#2E7D32')
+      +section('Në pritje — ofertë e dërguar',pritje,'#E8A33D')
+      +section('Të mbyllura / humbura',tjere,'#546E7A');
   }).catch(function(e){console.error('loadProjectList:',e);});
 }
 function loadProject(id){
