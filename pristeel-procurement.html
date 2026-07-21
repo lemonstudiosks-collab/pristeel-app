@@ -132,7 +132,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 .pst-modal-x:hover{color:var(--text)}
 
 /* Karta e projektit */
-.pj{background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:9px;overflow:hidden;
+.pj{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:10px;margin-bottom:9px;overflow:hidden;
     box-shadow:var(--sh-1);transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease}
 .pj:hover{box-shadow:var(--sh-3);border-color:var(--border2);transform:translateY(-1px)}
 .pj.open{box-shadow:var(--sh-2)}
@@ -215,11 +215,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 .page{display:none}
 .page.active{display:block}
 /* CARDS */
-.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:16px;box-shadow:var(--sh-1);transition:box-shadow .18s ease,border-color .18s ease}
-.card:hover{box-shadow:var(--sh-2);border-color:var(--border2)}
-.card:hover{border-color:var(--border2)}
-.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;letter-spacing:.3px;border-left:3px solid var(--page-accent,var(--bronze));padding-left:10px}
-.topbar{border-bottom:2px solid var(--page-accent,var(--border))!important}
+.card{background:var(--bg-card);border:none;border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(26,26,25,.07),0 1px 2px rgba(26,26,25,.05);transition:box-shadow .18s ease}
+.card:hover{box-shadow:0 3px 8px rgba(26,26,25,.10),0 1px 3px rgba(26,26,25,.06)}
+
+.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;letter-spacing:.3px;}
+.topbar{border-bottom:1px solid var(--border)!important}
 .btn-primary{background:var(--page-accent,var(--bronze))!important}
 .btn-primary:hover{filter:brightness(1.12)}
 /* FORMS */
@@ -262,7 +262,7 @@ table.tbl td input:hover,table.tbl td select:hover{border-color:var(--border2);b
 table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);background:var(--bg);outline:none}
 /* METRICS */
 .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.metric{background:var(--bg2);border-radius:var(--radius);padding:16px 18px;border:0.5px solid var(--border);position:relative;overflow:hidden}
+.metric{background:var(--bg2);border-radius:var(--radius);padding:16px 18px;border:none;box-shadow:0 1px 2px rgba(26,26,25,.06);position:relative;overflow:hidden}
 .metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--bronze),rgba(184,115,51,0))}
 .metric-val{font-size:24px;font-weight:700;color:var(--text);line-height:1;font-family:'Bebas Neue',sans-serif;letter-spacing:1px}
 .metric-lbl{font-size:10px;color:var(--text3);margin-top:6px;text-transform:uppercase;letter-spacing:.8px}
@@ -297,7 +297,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 .ctry-empty{padding:9px 11px;font-size:12px;color:var(--text3)}
 
 /* RFQ EMAIL */
-.rfq-email-body{font-size:12px;font-family:'Courier New',monospace;background:var(--bg2);border-radius:var(--radius);padding:16px;line-height:1.8;color:var(--text2);white-space:pre-wrap;word-break:break-word;border:0.5px solid var(--border);max-height:280px;overflow-y:auto;border-left:2px solid var(--bronze)}
+.rfq-email-body{font-size:12px;font-family:'Courier New',monospace;background:var(--bg2);border-radius:var(--radius);padding:16px;line-height:1.8;color:var(--text2);white-space:pre-wrap;word-break:break-word;border:0.5px solid var(--border);max-height:280px;overflow-y:auto}
 /* CONF DOT */
 .cdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
 .cdot-h{background:#1D9E75}.cdot-m{background:#BA7517}.cdot-l{background:#E24B4A}
@@ -316,9 +316,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 .fw-500{font-weight:500}.fw-600{font-weight:600}
 .hidden{display:none!important}
 .divider{height:0.5px;background:var(--border);margin:16px 0}
-.warn-box{background:rgba(184,115,51,0.1);border:0.5px solid var(--bronze-dark);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--bronze-text);margin-bottom:12px}
-.success-box{background:var(--green-bg);border:0.5px solid var(--green);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--green-text);margin-bottom:12px}
-.api-note{background:rgba(184,115,51,0.08);border:0.5px solid var(--bronze-dark);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--bronze-text);margin-bottom:16px}
+.warn-box{background:rgba(184,115,51,0.1);border:none;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--bronze-text);margin-bottom:12px}
+.success-box{background:var(--green-bg);border:none;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--green-text);margin-bottom:12px}
+.api-note{background:rgba(184,115,51,0.08);border:none;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--bronze-text);margin-bottom:16px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 <script src="https://apis.google.com/js/api.js"></script>
@@ -332,7 +332,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 /* ── ODOO-STYLE MODULE SYSTEM ── */
 .home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:900px;margin:0 auto}
 @media(max-width:900px){.home-grid{grid-template-columns:repeat(2,1fr)}}
-.mod-tile{background:#fff;border:1px solid var(--border);border-radius:14px;padding:26px 12px;text-align:center;cursor:pointer;transition:all .16s ease}
+.mod-tile{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:14px;padding:26px 12px;text-align:center;cursor:pointer;transition:all .16s ease}
 .mod-tile:hover{box-shadow:var(--sh-2);border-color:var(--border2);transform:translateY(-2px)}
 .mod-ic{width:58px;height:58px;border-radius:15px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center}
 .mod-ic svg{width:29px;height:29px;fill:none;stroke-width:1.8}
@@ -377,19 +377,19 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
     <div id="side-quick" style="padding:0 16px 4px">
       <div onclick="showPage('offer-archive')" title="Të gjitha ofertat me numër rendor"
-        style="border:2px solid #A65F2E;border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
         <div style="font-size:11.5px;font-weight:650;color:#A65F2E">📄 Ofertat</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Arkivi me numër rendor</div>
       </div>
       <div onclick="showPage('invoices')" title="Faturat hyrëse (nga furnitorët)"
-        style="border:2px solid #185FA5;border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
         <div style="font-size:11.5px;font-weight:650;color:#185FA5">📥 Faturat hyrëse</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Nga furnitorët</div>
       </div>
       <div onclick="showPage('invoices')" title="Faturat dalëse (te klientët)"
-        style="border:2px solid #0F6E56;border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
         <div style="font-size:11.5px;font-weight:650;color:#0F6E56">📤 Faturat dalëse</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Te klientët</div>
@@ -460,7 +460,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </div>
     </span>
     <span id="wx-fx" style="display:none"></span>
-    <span class="badge badge-gray" id="proj-badge">Pa projekt</span>
+    <span class="badge badge-gray" id="proj-badge" style="display:none">Pa projekt</span>
+    <select id="global-proj" title="Projekti aktiv — vlen për të gjitha modulet" onchange="if(this.value){loadProject(this.value)}" style="max-width:230px;padding:6px 10px;border:none;box-shadow:0 1px 2px rgba(26,26,25,.10);border-radius:8px;background:var(--bg2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer"><option value="">— Projekti aktiv —</option></select>
     <button class="btn btn-sm btn-primary" onclick="saveProject(this)" title="Ruaj projektin, BOM-in dhe ofertat aktuale në cloud">💾 Ruaj</button>
     <button class="btn btn-sm" onclick="newProject()">+ Projekt i ri</button>
   </div>
@@ -4627,6 +4628,7 @@ function saveProject(triggerBtn){
     btn.textContent='U ruajt!'; btn.style.color='var(--green-text)';
     setTimeout(function(){btn.textContent=orig;btn.disabled=false;btn.style.color='';},2500);
     loadProjectList();
+    if(typeof loadGlobalProjSel==='function') loadGlobalProjSel();
   }).catch(function(e){alert('Gabim: '+e.message);btn.textContent=orig;btn.disabled=false;});
 }
 // Paleta e ngjyrave per katroret e projekteve — çdo projekt merr nje ngjyre te qendrueshme
@@ -4703,6 +4705,7 @@ function loadProject(id){
   supaFetch('projects?id=eq.'+id).then(function(projs){
     var p=projs[0]; if(!p){alert('Projekti nuk u gjet.');return;}
     projData=p; _curProjId=id;
+    var _gp=document.getElementById('global-proj'); if(_gp && _gp.value!==String(id)){ if(![].some.call(_gp.options,function(o){return o.value===String(id);})){var _o=document.createElement('option');_o.value=id;_o.textContent=p.name||'Projekt';_gp.appendChild(_o);} _gp.value=id; }
     document.getElementById('i-projname').value=p.name||'';
     document.getElementById('i-client').value=p.client||'';
     document.getElementById('i-ref').value=p.ref||'';
@@ -4826,7 +4829,23 @@ function deleteProject(id){
   if(!confirm('Fshi projektin? Nuk kthehet.'))return;
   supaFetch('projects?id=eq.'+id,'DELETE').then(function(){loadProjectList();}).catch(function(e){alert('Gabim: '+e.message);});
 }
-window.addEventListener('load',function(){setTimeout(loadProjectList,800);});
+window.addEventListener('load',function(){setTimeout(loadProjectList,800);setTimeout(loadGlobalProjSel,1100);});
+function loadGlobalProjSel(){
+  var gp=document.getElementById('global-proj'); if(!gp) return;
+  supaFetch('projects?select=id,name,status&order=created_at.desc&limit=120').then(function(ps){
+    if(!ps) return;
+    var cur=_curProjId?String(_curProjId):'';
+    function grp(label,arr){ if(!arr.length) return '';
+      return '<optgroup label="'+label+'">'+arr.map(function(x){
+        return '<option value="'+x.id+'"'+(String(x.id)===cur?' selected':'')+'>'+(x.name||'Pa emër').replace(/</g,'&lt;')+'</option>';
+      }).join('')+'</optgroup>'; }
+    var akt=ps.filter(function(x){return (x.status||'pritje')==='aktiv';});
+    var pri=ps.filter(function(x){return (x.status||'pritje')==='pritje';});
+    var tj=ps.filter(function(x){var st=x.status||'pritje';return st!=='aktiv'&&st!=='pritje';});
+    gp.innerHTML='<option value="">— Projekti aktiv —</option>'+grp('Aktive',akt)+grp('Në pritje',pri)+grp('Të mbyllura',tj);
+    if(cur) gp.value=cur;
+  }).catch(function(){});
+}
 // Shenim: goHome() thirret tashme brenda startApp() pas kycjes se suksesshme (shih bllokun AUTH me lart)
 
 // ══════════════════════════════════════════════════════
