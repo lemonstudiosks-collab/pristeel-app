@@ -332,6 +332,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 /* ── ODOO-STYLE MODULE SYSTEM ── */
 .home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:900px;margin:0 auto}
 @media(max-width:900px){.home-grid{grid-template-columns:repeat(2,1fr)}}
+.flow-step{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text3);cursor:pointer;padding:5px 10px;border-radius:7px;white-space:nowrap;transition:background .15s}
+.flow-step:hover{background:var(--bg2)}
+.flow-step.on{color:var(--text);background:var(--bronze-bg)}
+.flow-step .fn{width:18px;height:18px;border-radius:50%;background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.flow-step.on .fn{background:var(--bronze);color:#fff}
+.flow-arrow{color:var(--border2);font-size:12px;flex-shrink:0}
 .mod-tile{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:14px;padding:26px 12px;text-align:center;cursor:pointer;transition:all .16s ease}
 .mod-tile:hover{box-shadow:var(--sh-2);border-color:var(--border2);transform:translateY(-2px)}
 .mod-ic{width:58px;height:58px;border-radius:15px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center}
@@ -468,6 +474,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div class="content">
+<div id="flow-bar" style="display:none"></div>
 
 <div id="page-home" class="page active">
   <div id="home-greet" style="text-align:center;font-size:13px;color:var(--text3);margin:14px 0 16px"></div>
@@ -475,46 +482,51 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div id="home-grid" class="home-grid"></div>
   <div id="home-pulse" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:22px"></div>
 
-  <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:20px auto 0;max-width:720px">
-    <div style="flex:1;min-width:280px;max-width:340px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 15px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
-        <div style="font-size:12px;font-weight:650">Stivo trarët</div>
-        <div style="font-size:10px;color:var(--text3)">Rekordi: <span id="game-best">0</span></div>
+  <!-- Radio + loja: hequr nga qendra e faqes; jetojne ne panelin e vogel me ikona ne qoshe (poshte-djathtas) -->
+  <div id="util-fab" style="position:fixed;right:18px;bottom:18px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+    <div id="util-panel" style="display:none;background:#fff;border:none;box-shadow:0 6px 20px rgba(26,26,25,.16);border-radius:12px;padding:13px 15px;width:280px;margin-bottom:2px">
+      <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+        <svg id="radio-logo" viewBox="0 0 24 24" style="width:22px;height:22px;flex-shrink:0">
+          <rect x="3" y="12" width="3" height="8" rx="1" fill="#A65F2E"><animate attributeName="height" values="8;8;8" dur="1s" repeatCount="indefinite"/></rect>
+          <rect x="8" y="8" width="3" height="12" rx="1" fill="#A65F2E" opacity=".75"/>
+          <rect x="13" y="5" width="3" height="15" rx="1" fill="#A65F2E"/>
+          <rect x="18" y="10" width="3" height="10" rx="1" fill="#A65F2E" opacity=".75"/>
+        </svg>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Radio</div>
+          <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:10.5px;padding:3px 6px;border:none;box-shadow:0 1px 2px rgba(26,26,25,.08);border-radius:6px;background:var(--bg2)">
+            <option value="0">Piano — melodi të bukura</option>
+            <option value="1">Neoclassical — modern</option>
+            <option value="2">Kinematike — film scores</option>
+            <option value="3">Ambient — hapësirë e qetë</option>
+            <option value="4">Ambient — teksture e ngrohtë</option>
+            <option value="5">Downtempo — puls i butë</option>
+            <option value="6">Dreamy — melodi eterike</option>
+            <option value="7">Jazz instrumental</option>
+            <option value="8">Natyrë — qetësi</option>
+          </select>
+        </div>
+        <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:32px;height:32px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
+          <svg id="radio-play-ic" viewBox="0 0 24 24" style="width:13px;height:13px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
+        </span>
       </div>
-      <div style="font-size:10px;color:var(--text3);margin-bottom:8px">30 sekonda pushim</div>
-      <canvas id="game-canvas" width="380" height="92" style="width:100%;height:92px;background:var(--bg2);border-radius:8px;display:block;cursor:pointer"></canvas>
-      <div style="display:flex;align-items:center;gap:9px;margin-top:8px">
-        <button onclick="gameStart()" id="game-btn" style="padding:5px 14px;background:#A65F2E;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Luaj</button>
-        <span style="font-size:10px;color:var(--text3)">Pikë: <b id="game-score">0</b></span>
-        <span style="font-size:10px;color:var(--text3);margin-left:auto" id="game-time"></span>
+      <div style="border-top:1px solid var(--border);padding-top:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+          <div style="font-size:11px;font-weight:650">Stivo trarët</div>
+          <div style="font-size:9.5px;color:var(--text3)">Rekordi: <span id="game-best">0</span></div>
+        </div>
+        <canvas id="game-canvas" width="380" height="72" style="width:100%;height:72px;background:var(--bg2);border-radius:8px;display:block;cursor:pointer"></canvas>
+        <div style="display:flex;align-items:center;gap:9px;margin-top:6px">
+          <button onclick="gameStart()" id="game-btn" style="padding:4px 12px;background:#A65F2E;color:#fff;border:none;border-radius:6px;font-size:10.5px;font-weight:600;cursor:pointer">Luaj</button>
+          <span style="font-size:9.5px;color:var(--text3)">Pikë: <b id="game-score">0</b></span>
+          <span style="font-size:9.5px;color:var(--text3);margin-left:auto" id="game-time"></span>
+        </div>
       </div>
     </div>
-
-    <div id="home-radio" style="flex:1;min-width:280px;max-width:340px;display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 15px">
-      <svg id="radio-logo" viewBox="0 0 24 24" style="width:24px;height:24px;flex-shrink:0">
-        <rect x="3" y="12" width="3" height="8" rx="1" fill="#A65F2E"><animate attributeName="height" values="8;8;8" dur="1s" repeatCount="indefinite"/></rect>
-        <rect x="8" y="8" width="3" height="12" rx="1" fill="#A65F2E" opacity=".75"/>
-        <rect x="13" y="5" width="3" height="15" rx="1" fill="#A65F2E"/>
-        <rect x="18" y="10" width="3" height="10" rx="1" fill="#A65F2E" opacity=".75"/>
-      </svg>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Radio</div>
-        <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:10.5px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg2)">
-          <option value="0">Piano — melodi të bukura</option>
-          <option value="1">Neoclassical — modern</option>
-          <option value="2">Kinematike — film scores</option>
-          <option value="3">Ambient — hapësirë e qetë</option>
-          <option value="4">Ambient — teksture e ngrohtë</option>
-          <option value="5">Downtempo — puls i butë</option>
-          <option value="6">Dreamy — melodi eterike</option>
-          <option value="7">Jazz instrumental</option>
-          <option value="8">Natyrë — qetësi</option>
-        </select>
-      </div>
-      <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:34px;height:34px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
-        <svg id="radio-play-ic" viewBox="0 0 24 24" style="width:14px;height:14px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
-      </span>
-    </div>
+    <button onclick="var p=document.getElementById('util-panel');p.style.display=p.style.display==='none'?'block':'none';" title="Radio & pushim"
+      style="width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 3px 10px rgba(26,26,25,.16);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center">
+      <svg viewBox="0 0 24 24" style="width:19px;height:19px;stroke:#A65F2E;fill:none;stroke-width:1.8"><rect x="3" y="12" width="3" height="8"/><rect x="8" y="8" width="3" height="12"/><rect x="13" y="5" width="3" height="15"/><rect x="18" y="10" width="3" height="10"/></svg>
+    </button>
   </div>
 
   <div id="home-quote" style="text-align:center;margin-top:22px"></div>
@@ -1543,8 +1555,9 @@ function renderSideOffers(){
     var col=isOut?'#A65F2E':projColor(o.dbId||o.supplier||'');
     var nm=(o.supplier||'').replace('PRODHUES — ','').replace('LENDE E PARE — ','').replace('OFERTA JONE — ','');
     h+='<div onclick="'+(o.dbId?'pstOpenOffer(\''+o.dbId+'\',_curProjId)':'showPage(\'offers\')')+'" title="'+nm.replace(/"/g,'')+'"'
-      +' style="border:2px solid '+col+';border-left-width:4px;border-radius:8px;padding:6px 8px;cursor:pointer;background:#fff;transition:box-shadow .12s"'
-      +' onmouseover="this.style.boxShadow=\'0 2px 8px rgba(30,40,50,.13)\'" onmouseout="this.style.boxShadow=\'none\'">'
+      +' style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.08);border-radius:8px;padding:6px 8px 6px 10px;cursor:pointer;background:#fff;transition:box-shadow .12s;position:relative"'
+      +' onmouseover="this.style.boxShadow=\'0 3px 8px rgba(26,26,25,.14)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(26,26,25,.08)\'">'
+      +'<span style="position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:'+col+'"></span>'
       +'<div style="font-size:10.5px;font-weight:650;color:var(--text);line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+nm+'</div>'
       +(o.totalEur>0?'<div style="font-size:9.5px;color:'+col+';font-weight:600;margin-top:2px">'+o.totalEur.toLocaleString('de-DE',{maximumFractionDigits:0})+' €</div>':'')
       +'</div>';
@@ -2231,6 +2244,29 @@ function showPage(p){
   if(p==='qendra'){loadHub();}
   if(p==='contacts'){loadContacts();}
   if(p==='settings')renderSettings();
+  renderFlowBar(p);
+}
+// ── SHIRITI I RRJEDHËS: tregon gjithmonë ku je brenda ciklit te projektit dhe lejon kalim direkt ──
+var FLOW_STEPS=[
+  {p:'bom',l:'BOM'},{p:'rfq',l:'RFQ'},{p:'offers',l:'Ofertat'},{p:'ranking',l:'Krahasimi'},
+  {p:'kalkulator',l:'Çmimi'},{p:'oferta',l:'Oferta jonë'},{p:'invoices',l:'Faturat'}
+];
+function renderFlowBar(activePage){
+  var el=document.getElementById('flow-bar'); if(!el) return;
+  var idx=-1; for(var i=0;i<FLOW_STEPS.length;i++) if(FLOW_STEPS[i].p===activePage) idx=i;
+  if(idx===-1 || !_curProjId){ el.style.display='none'; return; }
+  var nm=(document.getElementById('i-projname')||{}).value||'';
+  var h='<div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;padding:9px 4px 13px;'
+    +'border-bottom:1px solid var(--border);margin-bottom:14px">'
+    +'<span style="font-size:10.5px;color:var(--text3);font-weight:700;margin-right:8px;white-space:nowrap">'
+    +(nm?nm.replace(/</g,'&lt;'):'Projekti')+' &middot;</span>';
+  FLOW_STEPS.forEach(function(s,i){
+    h+='<div class="flow-step'+(i===idx?' on':'')+'" onclick="showPage(\''+s.p+'\')">'
+      +'<span class="fn">'+(i+1)+'</span>'+s.l+'</div>';
+    if(i<FLOW_STEPS.length-1) h+='<span class="flow-arrow">&#8594;</span>';
+  });
+  h+='</div>';
+  el.innerHTML=h; el.style.display='block';
 }
 
 function updateProjBadge(){
