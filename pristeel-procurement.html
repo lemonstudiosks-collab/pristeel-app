@@ -1575,7 +1575,7 @@ var MODULES=[
   ic:'<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>'},
  {id:'prokurimi',name:'Prokurimi',c:'#085041',mid:'#0F6E56',bg:'#E1F5EE',pages:['bom','rfq','offers','ranking'],
   ic:'<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1.5"/><circle cx="19" cy="21" r="1.5"/><path d="M2 3h3l2.6 12.6a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/></svg>'},
- {id:'shitjet',name:'Shitjet',c:'#0C447C',mid:'#185FA5',bg:'#E6F1FB',pages:['oferta','invoices','contracts'],
+ {id:'shitjet',name:'Shitjet',c:'#0C447C',mid:'#185FA5',bg:'#E6F1FB',pages:['oferta','invoices','contracts','offer-archive','library'],
   ic:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>'},
  {id:'kontaktet',name:'Kontaktet',c:'#72243E',mid:'#993556',bg:'#FBEAF0',pages:['contacts'],
   ic:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
@@ -4554,16 +4554,27 @@ function copyOfer(){
 }
 // Eksporton nje element HTML si PDF real (pa dialogun e printimit -> pa header/footer/URL te shtuar nga browser-i)
 function pstExportPdf(innerHtml, filename){
+  // SHENIM: html2canvas (perdorur nga html2pdf.js) prodhon PDF bosh ne Safari kur elementi
+  // qe fotografon eshte jashte ekranit (left:-9999px). Zgjidhje: e vendosim BRENDA ekranit
+  // (0,0) por e mbulojme me nje overlay sipër, dhe presim nje "frame" para se ta fotografojme.
+  var overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:#fff;z-index:99998;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3, #666);font-family:Inter,sans-serif';
+  overlay.textContent='Duke krijuar PDF-në…';
   var host=document.createElement('div');
-  host.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff';
+  host.style.cssText='position:fixed;left:0;top:0;width:794px;background:#fff;z-index:99997';
   host.innerHTML='<div style="padding:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact">'+innerHtml+'</div>';
   document.body.appendChild(host);
+  document.body.appendChild(overlay);
   var opt={margin:0,filename:filename,image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2,useCORS:true},
+    html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff'},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
     pagebreak:{mode:['css','legacy']}};
-  html2pdf().set(opt).from(host).save().then(function(){document.body.removeChild(host);})
-    .catch(function(e){document.body.removeChild(host);alert('Gabim gjatë krijimit të PDF-së: '+e.message);});
+  function cleanup(){ if(host.parentNode) document.body.removeChild(host); if(overlay.parentNode) document.body.removeChild(overlay); }
+  // presim dy "frame"-e (layout+paint) para se ta fotografojme, ndryshe permbajtja e sapo-shtuar mund te kapet bosh
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    html2pdf().set(opt).from(host).save().then(cleanup)
+      .catch(function(e){ cleanup(); alert('Gabim gjatë krijimit të PDF-së: '+e.message); });
+  }); });
 }
 function printOfer(){
   var content=document.getElementById('of-pre').innerHTML;
