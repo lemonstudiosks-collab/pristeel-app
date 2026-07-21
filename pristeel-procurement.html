@@ -4414,6 +4414,19 @@ function copyOfer(){
   var el=document.getElementById('of-pre');
   navigator.clipboard.writeText(el.innerText).then(function(){alert('Oferta u kopjua (si tekst)!');});
 }
+// Eksporton nje element HTML si PDF real (pa dialogun e printimit -> pa header/footer/URL te shtuar nga browser-i)
+function pstExportPdf(innerHtml, filename){
+  var host=document.createElement('div');
+  host.style.cssText='position:fixed;left:-9999px;top:0;width:794px;background:#fff';
+  host.innerHTML='<div style="padding:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact">'+innerHtml+'</div>';
+  document.body.appendChild(host);
+  var opt={margin:0,filename:filename,image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+    pagebreak:{mode:['css','legacy']}};
+  html2pdf().set(opt).from(host).save().then(function(){document.body.removeChild(host);})
+    .catch(function(e){document.body.removeChild(host);alert('Gabim gjatë krijimit të PDF-së: '+e.message);});
+}
 function printOfer(){
   var content=document.getElementById('of-pre').innerHTML;
   if(!content||content.indexOf('Ploteso')>-1){alert('Gjenero ofertën fillimisht.');return;}
@@ -4424,10 +4437,8 @@ function printOfer(){
   var _state = collectOfferFormState();
   var _brk = offerRevenueBreakdown(_state);
   if(_nr) registerDocNr('QUO', _nr, document.getElementById('of-proj').value||'', document.getElementById('of-cli').value||'', _tot, buildPayPlan(), _state, _brk).then(function(){ loadSavedQuotesForProject(); });
-  var w=window.open('','_blank');
-  var h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Oferta PRISTEEL</title><style>body{margin:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'+content+'</body></html>';
-  w.document.write(h);w.document.close();
-  setTimeout(function(){w.print();},400);
+  var fn='Oferta_PRISTEEL'+(_nr?'_'+_nr.replace(/[^A-Za-z0-9_-]/g,''):'')+'.pdf';
+  pstExportPdf(content, fn);
 }
 // Gjeneron numrin pasues të ofertës duke lexuar bazën — funksionon nga çdo dritare
 async function nextOfferNr(){
@@ -5213,10 +5224,9 @@ function printInvoiceOut(){
   try{var _inr=document.getElementById('iv-nr').value.trim(); if(_inr) registerDocNr('INV', _inr, document.getElementById('iv-proj')?document.getElementById('iv-proj').value:'', document.getElementById('iv-cli')?document.getElementById('iv-cli').value:'', null);}catch(e){}
   const content=document.getElementById('iv-preview').innerHTML;
   if(!content || content.indexOf('Plotëso')>-1){alert('Gjenero faturën fillimisht.');return;}
-  const w=window.open('','_blank');
-  const h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Fatura PRISTEEL</title><style>body{margin:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'+content+'</body></html>';
-  w.document.write(h);w.document.close();
-  setTimeout(function(){w.print();},400);
+  var _inr2=document.getElementById('iv-nr').value.trim();
+  var fn='Fatura_PRISTEEL'+(_inr2?'_'+_inr2.replace(/[^A-Za-z0-9_-]/g,''):'')+'.pdf';
+  pstExportPdf(content, fn);
 }
 
 // ── OUTGOING: save / load / delete (Supabase) ─────────
@@ -5813,6 +5823,7 @@ if(typeof showPage==='function'){
 }
 </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <!-- ── PASQYRA E PROJEKTIT (overview modal) ─────────────── -->
 <style>

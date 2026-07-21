@@ -246,14 +246,18 @@ window.pstExecReport = async function(){
         +'<div>Gjeneruar automatikisht nga Procurement Platform</div>'
       +'</div></div>';
 
-    var w = window.open('','_blank');
-    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8">'
-      +'<title>PRISTEEL — Raport Ekzekutiv</title>'
-      +'<style>body{margin:34px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-      +'@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'
-      + html + '</body></html>');
-    w.document.close();
-    setTimeout(function(){ w.print(); }, 500);
+    if(typeof pstExportPdf==='function'){
+      pstExportPdf(html, 'PRISTEEL_Raport_Ekzekutiv_'+stamp()+'.pdf');
+    } else {
+      var w = window.open('','_blank');
+      w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8">'
+        +'<title>PRISTEEL — Raport Ekzekutiv</title>'
+        +'<style>body{margin:34px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+        +'@media print{body{margin:10mm}}@page{size:A4;margin:12mm}</style></head><body>'
+        + html + '</body></html>');
+      w.document.close();
+      setTimeout(function(){ w.print(); }, 500);
+    }
     closeExport();
   }catch(e){ alert('Gabim: '+e.message); }
 };
