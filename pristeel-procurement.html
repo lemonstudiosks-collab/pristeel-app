@@ -4581,51 +4581,91 @@ function copyOfer(){
   var el=document.getElementById('of-pre');
   navigator.clipboard.writeText(el.innerText).then(function(){alert('Oferta u kopjua (si tekst)!');});
 }
-// Eksporton nje element HTML si PDF. Nese html2pdf mungon ose deshton -> kthehet te printimi.
+// Eksporton preview-in si PDF. Strategjia:
+//  1) html2pdf (foto e faqes) — nese eshte i ngarkuar
+//  2) nese canvas del bosh ose biblioteka mungon -> printim me iframe (rezerve e sigurt)
 function pstExportPdf(innerHtml, filename){
+  var dbg = [];
+  function log(m){ dbg.push(m); console.log('[PDF] '+m); }
+
   if(typeof html2pdf!=='function'){
-    console.warn('html2pdf mungon — po perdoret printimi');
+    log('html2pdf MUNGON (CDN i bllokuar?) -> printim');
     pstPrintFallback(innerHtml, filename);
     return;
   }
+  log('html2pdf i gatshem');
+
   var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:#fff;z-index:99998;display:flex;align-items:center;justify-content:center;font-size:14px;color:#666;font-family:Inter,sans-serif';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,.97);z-index:99998;display:flex;align-items:center;justify-content:center;font-size:14px;color:#666;font-family:Inter,sans-serif';
   overlay.textContent='Duke krijuar PDF-në…';
   var host=document.createElement('div');
   host.style.cssText='position:fixed;left:0;top:0;width:794px;background:#fff;z-index:99997';
-  host.innerHTML='<div style="padding:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact">'+innerHtml+'</div>';
+  host.innerHTML='<div style="padding:36px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact">'+innerHtml+'</div>';
   document.body.appendChild(host);
   document.body.appendChild(overlay);
-  function cleanup(){ if(host.parentNode) document.body.removeChild(host); if(overlay.parentNode) document.body.removeChild(overlay); }
-  function failOver(e){
-    cleanup();
-    console.error('html2pdf deshtoi:', e);
-    if(confirm('Krijimi i PDF-së dështoi.\nTa provojmë me printimin e browser-it?')) pstPrintFallback(innerHtml, filename);
+  function cleanup(){
+    if(host.parentNode) document.body.removeChild(host);
+    if(overlay.parentNode) document.body.removeChild(overlay);
   }
-  var imgs=host.querySelectorAll('img');
-  var pending=0, started=false;
-  function proceed(){
-    if(started) return; started=true;
-    var opt={margin:0,filename:filename,image:{type:'jpeg',quality:0.98},
-      html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy']}};
-    requestAnimationFrame(function(){ requestAnimationFrame(function(){
-      try{
-        html2pdf().set(opt).from(host).save().then(cleanup).catch(failOver);
-      }catch(e){ failOver(e); }
-    }); });
+
+  // Verifikon qe html2canvas prodhon vertet permbajtje (jo kanavace bosh)
+  function canvasHasContent(cv){
+    try{
+      var ctx=cv.getContext('2d');
+      var w=cv.width, h=cv.height;
+      if(!w||!h) return false;
+      // Kontrollo disa zona; nese te gjitha jane te bardha -> bosh
+      var spots=[[w*0.5,h*0.08],[w*0.25,h*0.2],[w*0.5,h*0.35],[w*0.5,h*0.5],[w*0.3,h*0.65]];
+      for(var i=0;i<spots.length;i++){
+        var d=ctx.getImageData(spots[i][0]|0, spots[i][1]|0, 1, 1).data;
+        if(d[0]<245 || d[1]<245 || d[2]<245) return true; // gjeti piksel jo-te-bardhe
+      }
+      return false;
+    }catch(e){ return true; } // s'e lexon dot -> supozo se ka permbajtje
   }
-  Array.prototype.forEach.call(imgs, function(im){
-    if(im.complete && im.naturalWidth>0) return;
-    pending++;
-    im.addEventListener('load', function(){ if(--pending<=0) proceed(); });
-    im.addEventListener('error',function(){ if(--pending<=0) proceed(); });
-  });
-  if(pending===0) proceed();
-  setTimeout(proceed, 2500);
+
+  setTimeout(function(){
+    if(typeof html2canvas!=='function'){
+      log('html2canvas mungon -> printim');
+      cleanup(); pstPrintFallback(innerHtml, filename); return;
+    }
+    html2canvas(host, {scale:2, useCORS:true, allowTaint:true, backgroundColor:'#ffffff', logging:false})
+      .then(function(canvas){
+        log('canvas '+canvas.width+'x'+canvas.height);
+        if(!canvasHasContent(canvas)){
+          log('canvas BOSH -> printim');
+          cleanup(); pstPrintFallback(innerHtml, filename); return;
+        }
+        var img=canvas.toDataURL('image/jpeg', 0.95);
+        var jsPDFctor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        if(!jsPDFctor){
+          log('jsPDF mungon -> printim');
+          cleanup(); pstPrintFallback(innerHtml, filename); return;
+        }
+        var pdf=new jsPDFctor({unit:'mm', format:'a4', orientation:'portrait'});
+        var pw=210, ph=297;
+        var iw=pw, ih=canvas.height*pw/canvas.width;
+        var y=0, left=ih;
+        pdf.addImage(img,'JPEG',0,0,iw,ih);
+        left-=ph;
+        while(left>0.5){                 // faqe shtese nese oferta eshte e gjate
+          y-=ph;
+          pdf.addPage();
+          pdf.addImage(img,'JPEG',0,y,iw,ih);
+          left-=ph;
+        }
+        pdf.save(filename);
+        log('PDF u ruajt: '+filename);
+        cleanup();
+      })
+      .catch(function(e){
+        log('html2canvas deshtoi: '+(e&&e.message));
+        cleanup();
+        pstPrintFallback(innerHtml, filename);
+      });
+  }, 350);
 }
-// Printim me iframe (rezerve) — dritarja e re bllokohet nga Safari dhe del bosh
+// Printim me iframe — rezerve e sigurt (dritarja e re bllokohet nga Safari)
 function pstPrintFallback(innerHtml, title){
   var old=document.getElementById('pst-print-frame');
   if(old && old.parentNode) old.parentNode.removeChild(old);
@@ -4639,18 +4679,18 @@ function pstPrintFallback(innerHtml, title){
     +'<style>@page{size:A4;margin:12mm}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'
     +'"Segoe UI",Helvetica,Arial,sans-serif;color:#1A1F2E;-webkit-print-color-adjust:exact;'
     +'print-color-adjust:exact}table{border-collapse:collapse}</style></head><body>'
-    +'<div style="padding:24px">'+innerHtml+'</div></body></html>');
+    +'<div style="padding:20px">'+innerHtml+'</div></body></html>');
   doc.close();
   var fired=false;
   function go(){
     if(fired) return; fired=true;
     try{ f.contentWindow.focus(); f.contentWindow.print(); }
-    catch(e){ alert('Printimi dështoi. Provo butonin "Kopjo".'); }
-    setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 3000);
+    catch(e){ alert('Printimi dështoi. Përdor butonin "Kopjo".'); }
+    setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 4000);
   }
-  if(doc.readyState==='complete') setTimeout(go,400);
-  else f.onload=function(){ setTimeout(go,400); };
-  setTimeout(go, 1500);
+  if(doc.readyState==='complete') setTimeout(go,500);
+  else f.onload=function(){ setTimeout(go,500); };
+  setTimeout(go, 1800);
 }
 function printOfer(){
   var content=document.getElementById('of-pre').innerHTML;
