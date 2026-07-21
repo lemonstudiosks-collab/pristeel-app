@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="sq">
 <head>
+<!-- html2pdf: ngarkohet ne head qe te jete gati kur klikohet PDF. Nese CDN-ja e pare deshton, provohet e dyta. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+if(typeof html2pdf!=='function'){
+  document.write('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"><\/scr'+'ipt>');
+}
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PRISTEEL — Procurement Platform</title>
@@ -4574,29 +4581,76 @@ function copyOfer(){
   var el=document.getElementById('of-pre');
   navigator.clipboard.writeText(el.innerText).then(function(){alert('Oferta u kopjua (si tekst)!');});
 }
-// Eksporton nje element HTML si PDF real (pa dialogun e printimit -> pa header/footer/URL te shtuar nga browser-i)
+// Eksporton nje element HTML si PDF. Nese html2pdf mungon ose deshton -> kthehet te printimi.
 function pstExportPdf(innerHtml, filename){
-  // SHENIM: html2canvas (perdorur nga html2pdf.js) prodhon PDF bosh ne Safari kur elementi
-  // qe fotografon eshte jashte ekranit (left:-9999px). Zgjidhje: e vendosim BRENDA ekranit
-  // (0,0) por e mbulojme me nje overlay sipër, dhe presim nje "frame" para se ta fotografojme.
+  if(typeof html2pdf!=='function'){
+    console.warn('html2pdf mungon — po perdoret printimi');
+    pstPrintFallback(innerHtml, filename);
+    return;
+  }
   var overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:#fff;z-index:99998;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3, #666);font-family:Inter,sans-serif';
+  overlay.style.cssText='position:fixed;inset:0;background:#fff;z-index:99998;display:flex;align-items:center;justify-content:center;font-size:14px;color:#666;font-family:Inter,sans-serif';
   overlay.textContent='Duke krijuar PDF-në…';
   var host=document.createElement('div');
   host.style.cssText='position:fixed;left:0;top:0;width:794px;background:#fff;z-index:99997';
   host.innerHTML='<div style="padding:36px;-webkit-print-color-adjust:exact;print-color-adjust:exact">'+innerHtml+'</div>';
   document.body.appendChild(host);
   document.body.appendChild(overlay);
-  var opt={margin:0,filename:filename,image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff'},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-    pagebreak:{mode:['css','legacy']}};
   function cleanup(){ if(host.parentNode) document.body.removeChild(host); if(overlay.parentNode) document.body.removeChild(overlay); }
-  // presim dy "frame"-e (layout+paint) para se ta fotografojme, ndryshe permbajtja e sapo-shtuar mund te kapet bosh
-  requestAnimationFrame(function(){ requestAnimationFrame(function(){
-    html2pdf().set(opt).from(host).save().then(cleanup)
-      .catch(function(e){ cleanup(); alert('Gabim gjatë krijimit të PDF-së: '+e.message); });
-  }); });
+  function failOver(e){
+    cleanup();
+    console.error('html2pdf deshtoi:', e);
+    if(confirm('Krijimi i PDF-së dështoi.\nTa provojmë me printimin e browser-it?')) pstPrintFallback(innerHtml, filename);
+  }
+  var imgs=host.querySelectorAll('img');
+  var pending=0, started=false;
+  function proceed(){
+    if(started) return; started=true;
+    var opt={margin:0,filename:filename,image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',logging:false},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']}};
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      try{
+        html2pdf().set(opt).from(host).save().then(cleanup).catch(failOver);
+      }catch(e){ failOver(e); }
+    }); });
+  }
+  Array.prototype.forEach.call(imgs, function(im){
+    if(im.complete && im.naturalWidth>0) return;
+    pending++;
+    im.addEventListener('load', function(){ if(--pending<=0) proceed(); });
+    im.addEventListener('error',function(){ if(--pending<=0) proceed(); });
+  });
+  if(pending===0) proceed();
+  setTimeout(proceed, 2500);
+}
+// Printim me iframe (rezerve) — dritarja e re bllokohet nga Safari dhe del bosh
+function pstPrintFallback(innerHtml, title){
+  var old=document.getElementById('pst-print-frame');
+  if(old && old.parentNode) old.parentNode.removeChild(old);
+  var f=document.createElement('iframe');
+  f.id='pst-print-frame';
+  f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(f);
+  var doc=f.contentWindow.document;
+  doc.open();
+  doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+(title||'PRISTEEL')+'</title>'
+    +'<style>@page{size:A4;margin:12mm}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'
+    +'"Segoe UI",Helvetica,Arial,sans-serif;color:#1A1F2E;-webkit-print-color-adjust:exact;'
+    +'print-color-adjust:exact}table{border-collapse:collapse}</style></head><body>'
+    +'<div style="padding:24px">'+innerHtml+'</div></body></html>');
+  doc.close();
+  var fired=false;
+  function go(){
+    if(fired) return; fired=true;
+    try{ f.contentWindow.focus(); f.contentWindow.print(); }
+    catch(e){ alert('Printimi dështoi. Provo butonin "Kopjo".'); }
+    setTimeout(function(){ if(f.parentNode) f.parentNode.removeChild(f); }, 3000);
+  }
+  if(doc.readyState==='complete') setTimeout(go,400);
+  else f.onload=function(){ setTimeout(go,400); };
+  setTimeout(go, 1500);
 }
 function printOfer(){
   var content=document.getElementById('of-pre').innerHTML;
@@ -6114,7 +6168,6 @@ if(typeof showPage==='function'){
 }
 </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <!-- ── PASQYRA E PROJEKTIT (overview modal) ─────────────── -->
 <style>
