@@ -400,6 +400,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div style="font-size:11.5px;font-weight:650;color:#0F6E56">📤 Faturat dalëse</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Te klientët</div>
       </div>
+      <div onclick="showPage('contracts')" title="Kontratat — Werkvertrag, Nënkontrata, NDA"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
+        <div style="font-size:11.5px;font-weight:650;color:#534AB7">📑 Kontratat</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Werkvertrag, Nënkontrata, NDA</div>
+      </div>
     </div>
     <div id="side-nav"></div>
     <div id="side-panel" style="margin-top:auto;padding:14px 16px 8px"></div>
@@ -1083,6 +1089,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div class="card"><div class="card-title">Faturat e regjistruara (Furnitorë)</div><div id="iv-in-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
   
   </div>
+</div>
+
+<div id="page-contracts" class="page">
   <div class="card"><div class="card-title">Kontratat (Werkvertrag, Nënkontrata, etj.)</div>
   <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="ctr-proj" placeholder="p.sh. STACON D-22/26"></div><div><label class="lbl">Lloji i kontratës</label><select id="ctr-type"><option>Werkvertrag (Blerësi)</option><option>Nënkontratë (Furnitori)</option><option>NDA</option><option>Tjetër</option></select></div></div>
   <div class="field-group fg-2"><div><label class="lbl">Pala tjetër</label><input type="text" id="ctr-party" placeholder="p.sh. STACON GmbH ose Eurosteel"></div><div><label class="lbl">Data</label><input type="date" id="ctr-date"></div></div>
@@ -1508,6 +1517,7 @@ const pageMeta={
   kalkulator:{title:'Kalkulatori',sub:'Llogarit çmimin e shitjes'},
   oferta:{title:'5 · Oferta për klientin',sub:'Gjenero ofertë profesionale në 4 gjuhë'},
   invoices:{title:'6 · Faturat',sub:'Faturat tona dhe të furnitorëve'},
+  contracts:{title:'Kontratat',sub:'Werkvertrag, Nënkontrata, NDA'},
   finance:{title:'Financat',sub:'Garanci bankare, kosto operative, tatimet'},
   qendra:{title:'Detyrat',sub:'Çfarë duhet bërë sot — projektet, afatet, emailet'},
   settings:{title:'Cilësimet',sub:'API Key, Google Drive, HubSpot, profili'}
@@ -1520,7 +1530,7 @@ var MODULES=[
   ic:'<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>'},
  {id:'prokurimi',name:'Prokurimi',c:'#085041',mid:'#0F6E56',bg:'#E1F5EE',pages:['bom','rfq','offers','ranking'],
   ic:'<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1.5"/><circle cx="19" cy="21" r="1.5"/><path d="M2 3h3l2.6 12.6a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6"/></svg>'},
- {id:'shitjet',name:'Shitjet',c:'#0C447C',mid:'#185FA5',bg:'#E6F1FB',pages:['oferta','invoices'],
+ {id:'shitjet',name:'Shitjet',c:'#0C447C',mid:'#185FA5',bg:'#E6F1FB',pages:['oferta','invoices','contracts'],
   ic:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>'},
  {id:'kontaktet',name:'Kontaktet',c:'#72243E',mid:'#993556',bg:'#FBEAF0',pages:['contacts'],
   ic:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
@@ -1531,7 +1541,7 @@ var MODULES=[
  {id:'cilesimet',name:'Cilësimet',c:'#444441',mid:'#5F5E5A',bg:'#F1EFE8',pages:['settings'],
   ic:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
 ];
-var PAGE_NAV={qendra:'Detyrat',import:'Projektet',bom:'1 · BOM',rfq:'2 · RFQ',offers:'3 · Çmimet',ranking:'4 · Krahasimi',oferta:'Oferta klientit',invoices:'Faturat',contacts:'Kontaktet',finance:'Financat',kalkulator:'Kalkulatori',settings:'Cilësimet'};
+var PAGE_NAV={qendra:'Detyrat',import:'Projektet',bom:'1 · BOM',rfq:'2 · RFQ',offers:'3 · Çmimet',ranking:'4 · Krahasimi',oferta:'Oferta klientit',invoices:'Faturat',contracts:'Kontratat',contacts:'Kontaktet',finance:'Financat',kalkulator:'Kalkulatori',settings:'Cilësimet'};
 var PAGE_ICON={
  bom:'<svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
  rfq:'<svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
@@ -1542,6 +1552,49 @@ var PAGE_ICON={
 };
 function moduleOf(p){ for(var i=0;i<MODULES.length;i++) if(MODULES[i].pages.indexOf(p)>-1) return MODULES[i]; return null; }
 function tintSvg(svg,color){ return svg.replace('<svg','<svg style="stroke:'+color+'"'); }
+function closePstOffer(){ var m=document.getElementById('pst-of-modal'); if(m) m.remove(); }
+// Katrori i ofertes ne sidebar (Çmimi/Krahasimi) -> hap kete modal kompakt, VETEM PER LEXIM.
+// Editim lejohet vetem duke bere "Kopjo" (krijon nje oferte te re, editueshme, me numer te ri).
+function pstOpenOffer(dbId, projId){
+  var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='pst-of-modal';
+  bg.onclick=function(e){ if(e.target===bg) closePstOffer(); };
+  bg.innerHTML='<div class="pst-modal" style="max-width:560px"><div class="pst-modal-bd"><div class="hub-load">Duke ngarkuar ofertën…</div></div></div>';
+  document.body.appendChild(bg);
+  supaFetch('documents_registry?id=eq.'+dbId+'&limit=1').then(function(rows){
+    var r=(rows||[])[0], card=bg.querySelector('.pst-modal');
+    if(!r){ card.innerHTML='<div class="pst-modal-bd">Oferta nuk u gjet.</div>'; return; }
+    var st=r.offer_state||{}; var pos=st.oferPos||[];
+    var posHtml=pos.length
+      ? '<table style="width:100%;font-size:11.5px;border-collapse:collapse;margin-top:8px">'
+        +'<thead><tr style="text-align:left;color:var(--text3)"><th style="padding:4px 6px">Përshkrimi</th>'
+        +'<th style="padding:4px 6px;text-align:right">Sasia</th><th style="padding:4px 6px;text-align:right">Çmimi</th>'
+        +'<th style="padding:4px 6px;text-align:right">Vlera</th></tr></thead><tbody>'
+        +pos.map(function(p){
+          return '<tr style="border-top:1px solid var(--border)"><td style="padding:4px 6px">'+(p.desc||p.d||p.name||'')+'</td>'
+            +'<td style="padding:4px 6px;text-align:right">'+(p.qty||p.q||p.kg||'')+'</td>'
+            +'<td style="padding:4px 6px;text-align:right">'+(p.price||p.pr||'')+'</td>'
+            +'<td style="padding:4px 6px;text-align:right;font-weight:600">'+(p.total||p.t||'')+'</td></tr>';
+        }).join('')+'</tbody></table>'
+      : '<div style="color:var(--text3);font-size:12px;margin-top:6px">Pa pozicione të veçanta (çmim i vetëm/kg).</div>';
+    var st2=OA_STATUS[r.followup_status||'open']||OA_STATUS.open;
+    card.innerHTML='<div class="pst-modal-hd"><div>'
+        +'<div style="font-size:14px;font-weight:650">'+(r.doc_nr||'')+'</div>'
+        +'<div style="font-size:11px;color:var(--text3);margin-top:3px">'+(r.client||'—')+' · '+(r.project||'—')+'</div>'
+      +'</div><span class="pst-modal-x" onclick="closePstOffer()">✕</span></div>'
+      +'<div class="pst-modal-bd">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+        +'<div style="font-size:22px;font-weight:700;color:var(--bronze)">'+((parseFloat(r.total_eur)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}))+' €</div>'
+        +'<span style="background:'+st2.bg+';color:'+st2.c+';font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:5px">'+st2.n+'</span>'
+      +'</div>'
+      +posHtml
+      +'<div style="display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px">'
+        +'<button class="btn btn-sm btn-primary" style="flex:1" onclick="closePstOffer();oaCopy(\''+r.id+'\')">Kopjo si ofertë e re</button>'
+        +'<button class="btn btn-sm" onclick="closePstOffer();showPage(\'offer-archive\')">Arkivi i plotë →</button>'
+      +'</div>'
+      +'<div style="font-size:10.5px;color:var(--text3);margin-top:10px">Oferta e dërguar te blerësi nuk mund të editohet — përdor "Kopjo" për një version të ri, editueshëm.</div>'
+      +'</div>';
+  }).catch(function(e){ bg.querySelector('.pst-modal').innerHTML='<div class="pst-modal-bd" style="color:#C62828">Gabim: '+e.message+'</div>'; });
+}
 // Katroret e ofertave ne sidebar (kur je te faqja e Çmimeve)
 function renderSideOffers(){
   var el=document.getElementById('side-panel'); if(!el) return;
@@ -1780,19 +1833,20 @@ function oaNew(){
 }
 var _oaEditingId=null;
 function oaOpen(id){
-  var r=_oaRows.filter(function(x){return String(x.id)===String(id);})[0];
-  if(!r){alert('Oferta nuk u gjet.');return;}
-  if(!r.offer_state){ alert('Kjo ofertë nuk ka të dhëna të ruajtura për t\'u hapur.'); return; }
-  showPage('oferta');
-  setTimeout(function(){
-    applyOfferFormState(r.offer_state);
-    var el=document.getElementById('of-nr'); if(el) el.value=r.doc_nr||'';
-    _oaEditingId=r.id;
-  }, 300);
+  // Ofertat e regjistruara (te derguara) hapen VETEM PER LEXIM - editim vetem permes "Kopjo"
+  pstOpenOffer(id, null);
 }
 function oaCopy(id){
-  var r=_oaRows.filter(function(x){return String(x.id)===String(id);})[0];
-  if(!r){alert('Oferta nuk u gjet.');return;}
+  var r=(_oaRows||[]).filter(function(x){return String(x.id)===String(id);})[0];
+  if(!r){
+    supaFetch('documents_registry?id=eq.'+id+'&limit=1').then(function(rows){
+      var r2=(rows||[])[0];
+      if(!r2){alert('Oferta nuk u gjet.');return;}
+      _oaRows=(_oaRows||[]).concat([r2]);
+      oaCopy(id);
+    }).catch(function(e){alert('Gabim: '+e.message);});
+    return;
+  }
   var st=r.offer_state||{};
   var nFields=Object.keys(st).length;
   var nPos=(st.oferPos&&st.oferPos.length)||0;
@@ -2239,7 +2293,8 @@ function showPage(p){
   else if(typeof renderSidePanel==='function' && p!=='offers') renderSidePanel();
   if(p==='ranking'){calcRanking();}
   if(p==='kalkulator')calcPrice();
-  if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadContracts();loadProjectOptionsForInvoices();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
+  if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadProjectOptionsForInvoices();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
+  if(p==='contracts'){loadContracts();}
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
   if(p==='qendra'){loadHub();}
   if(p==='contacts'){loadContacts();}
@@ -6447,6 +6502,9 @@ function renderContacts(){
     return ((c.company||'')+' '+(c.person||'')+' '+(c.email||'')+' '+(c.country||'')).toLowerCase().indexOf(q)>-1;
   });
   if(!list.length){ el.innerHTML='<div class="hub-none">Asnjë kontakt.'+(q?' Ndrysho kërkimin.':' Shto një me "+ Kontakt".')+'</div>'; return; }
+  list=list.slice().sort(function(a,b){
+    return (a.person||a.company||'').localeCompare(b.person||b.company||'','sq',{sensitivity:'base'});
+  });
   // Numerues te tabet
   var nAll=_contacts.length, nCli=_contacts.filter(function(c){return c.kind==='client';}).length, nSup=_contacts.filter(function(c){return c.kind==='supplier';}).length;
   var bA=document.getElementById('ct-tab-all'), bC=document.getElementById('ct-tab-client'), bS=document.getElementById('ct-tab-supplier');
