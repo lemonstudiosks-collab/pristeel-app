@@ -971,7 +971,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div style="font-size:12px;font-weight:600" id="of-pay-sum">Σ = 100% ✓</div>
 </div>
 <div><label class="lbl">Shenime</label><textarea id="of-not" style="min-height:50px"></textarea></div></div>
-<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-sm" style="flex:0" onclick="loadOfData()">Ngarko nga BOM</button><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="genOfer()">Gjenero Oferten</button></div>
+<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-sm" style="flex:0" onclick="loadOfData()">Ngarko nga BOM</button><button class="btn btn-primary" style="flex:1;justify-content:center" onclick="genOfer()">Gjenero Oferten</button><button class="btn" style="flex:0;background:var(--bronze);border-color:var(--bronze);color:#fff;white-space:nowrap" onclick="saveOfferState()">💾 Ruaj ofertën</button></div>
 </div>
 <div>
 <div class="card" style="border:1px solid var(--bronze)">
@@ -1739,9 +1739,15 @@ function oaRender(){
     +rows.map(function(r,i){
       var st=OA_STATUS[r.followup_status||'open']||OA_STATUS.open;
       var dt=r.created_at?new Date(r.created_at).toLocaleDateString('sq-AL'):'';
+      var os=r.offer_state||{};
+      var nf=Object.keys(os).length, np=(os.oferPos&&os.oferPos.length)||0;
+      var full=(nf>=8);
+      var badge=full
+        ? '<span title="Të dhëna të plota — kopjimi jep ofertë identike" style="color:#2E7D32;font-size:11px">●</span>'
+        : '<span title="Të dhëna të pjesshme ('+nf+' fusha) — kopjimi jep vetëm ato" style="color:#E8A33D;font-size:11px">●</span>';
       return '<tr style="border-bottom:1px solid var(--border)">'
         +'<td style="padding:7px 8px;color:var(--text3);font-weight:600">'+(i+1)+'</td>'
-        +'<td style="padding:7px 8px;font-weight:650">'+(r.doc_nr||'')+'</td>'
+        +'<td style="padding:7px 8px;font-weight:650">'+badge+' '+(r.doc_nr||'')+(np?' <span style="color:var(--text3);font-weight:400;font-size:10px">('+np+' poz.)</span>':'')+'</td>'
         +'<td style="padding:7px 8px">'+(r.client||'—')+'</td>'
         +'<td style="padding:7px 8px;color:var(--text3)">'+(r.project||'—')+'</td>'
         +'<td style="padding:7px 8px;color:var(--text3)">'+dt+'</td>'
@@ -1773,19 +1779,30 @@ function oaOpen(id){
 function oaCopy(id){
   var r=_oaRows.filter(function(x){return String(x.id)===String(id);})[0];
   if(!r){alert('Oferta nuk u gjet.');return;}
-  if(!r.offer_state){ alert('Kjo ofertë nuk ka të dhëna të ruajtura për t\'u kopjuar.'); return; }
-  if(!confirm('A jeni i sigurt që doni të krijoni një kopje të '+(r.doc_nr||'kësaj oferte')+'?\n\nTë gjitha të dhënat kopjohen të njëjta — vetëm numri dhe data janë të reja.')) return;
+  var st=r.offer_state||{};
+  var nFields=Object.keys(st).length;
+  var nPos=(st.oferPos&&st.oferPos.length)||0;
+  var warn='';
+  if(nFields<8 || nPos===0){
+    warn='\n\nKUJDES: kjo ofertë u ruajt para se të rregullohej ruajtja e plotë, prandaj ka vetëm '
+      +nFields+' fusha'+(nPos?'':' dhe asnjë pozicion')+'. Kopja do të ketë vetëm ato të dhëna.';
+  }
+  if(!confirm('A jeni i sigurt që doni të krijoni një kopje të '+(r.doc_nr||'kësaj oferte')+'?'
+    +'\n\nTë dhënat kopjohen të njëjta — vetëm numri dhe data janë të reja.'+warn)) return;
   showPage('oferta');
   setTimeout(async function(){
-    applyOfferFormState(r.offer_state);          // gjendja e plotë, ashtu siç ishte
+    applyOfferFormState(st);
+    function fillIfEmpty(id,v){ var e=document.getElementById(id); if(e&&!e.value&&v) e.value=v; }
+    fillIfEmpty('of-cli', r.client);
+    fillIfEmpty('of-proj', r.project);
     var x=(typeof nextOfferNr==='function') ? await nextOfferNr() : null;
     var el=document.getElementById('of-nr');
-    if(el && x) el.value=x.nr;                   // vetëm numri i ri
+    if(el && x) el.value=x.nr;
     var d=document.getElementById('of-date');
-    if(d) d.value=new Date().toISOString().slice(0,10);  // dhe data e sotme
+    if(d) d.value=new Date().toISOString().slice(0,10);
     _oaEditingId=null;
     if(typeof genOfer==='function') genOfer();
-    alert('Kopja u krijua me numrin '+(x?x.nr:'e ri')+'.\nTë dhënat janë të njëjta — ndryshoji si të duash dhe kliko Gjenero.');
+    alert('Kopja u krijua me numrin '+(x?x.nr:'e ri')+'.\nNdryshoji të dhënat si të duash, pastaj kliko "Ruaj ofertën".');
   }, 300);
 }
 
@@ -3125,8 +3142,9 @@ function followupQuote(docNr, clientEnc, emailEnc, totalEur, dateIso, langEnc, p
   window.open('https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com'
     +(email?'&to='+encodeURIComponent(email):'')
     +'&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body),'_blank');
+  // Shëno vetëm ndjekjen — MOS e prek offer_state (më parë e vendoste null dhe fshinte gjendjen e ofertës)
   supaFetch('documents_registry?doc_nr=eq.'+encodeURIComponent(docNr),'PATCH',
-    {offer_state:null}).catch(function(){}); // s'e prek gjendjen, vetëm shënon ndjekjen ne notes nese duhet
+    {last_followup_at:new Date().toISOString()}).catch(function(){});
 }
 function copyRfq(btn,enc){
   const text=decodeURIComponent(escape(atob(enc)));
@@ -4181,6 +4199,28 @@ var OF_LABELS={
   sr:{salM:'Poštovani %s',salF:'Poštovana %s',nv:'po dogovoru',stx:'Čelična konstrukcija',znx:'Toplo cinkovanje (EN ISO 1461)',trx:'Transport',t:'PONUDA',from:'Ponuđač',to:'Kupac',at:'Pažnja',on:'Broj ponude',da:'Datum',pr:'Projekat',rf:'Vaša referenca',vl:'Važnost',dy:' dana',ps:'Pozicije',hn:'Poz.',hp:'Profil',hg:'Kvalitet',hs:'Kom.',hq:'Količina (kg)',tq:'Ukupna količina',up:'Jedinična cena',tp:'Ukupna cena (neto)',cd:'Uslovi',dl:'Rok isporuke',wk:' nedelja',pm:'Uslovi plaćanja',ct:'Sertifikat',ic:'Uslov isporuke',rm:'Napomene',gr:'S poštovanjem',greet:'Poštovani,',intro:'hvala vam na upitu i interesovanju za naše usluge. Sa zadovoljstvom vam dostavljamo našu neobavezujuću ponudu:'}
 };
 
+// Ruan gjendjen e PLOTË të ofertës në regjistër — pa pasur nevojë të gjenerosh PDF.
+// Kjo është ajo që bën kopjimin të funksionojë më vonë.
+function saveOfferState(){
+  var nr=(document.getElementById('of-nr').value||'').trim();
+  if(!nr){ alert('Shkruaj numrin e ofertës para se ta ruash.'); return; }
+  var cli=(document.getElementById('of-cli').value||'').trim();
+  if(!cli){ alert('Shkruaj klientin para se ta ruash.'); return; }
+  if(!confirm('A jeni i sigurt që doni ta ruani ofertën '+nr+'?')) return;
+  var pr=parseFloat(document.getElementById('of-pr').value)||0;
+  var kg=parseFloat(document.getElementById('of-kg').value)||0;
+  var zn=parseFloat((document.getElementById('of-zn')||{value:0}).value)||0;
+  var tr=parseFloat((document.getElementById('of-tr')||{value:0}).value)||0;
+  var tot=(typeof oferPos!=='undefined' && oferPos.length>0) ? oferPosSum() : (pr*kg+zn*kg+tr);
+  var state=collectOfferFormState();
+  var brk=offerRevenueBreakdown(state);
+  registerDocNr('QUO', nr, document.getElementById('of-proj').value||'', cli, tot, buildPayPlan(), state, brk)
+    .then(function(){
+      alert('Oferta '+nr+' u ruajt me të gjitha të dhënat.\nTani mund ta kopjosh nga Arkivi i ofertave.');
+      if(typeof loadSavedQuotesForProject==='function') loadSavedQuotesForProject();
+    })
+    .catch(function(e){ alert('Gabim gjatë ruajtjes: '+e.message); });
+}
 function genOfer(){
   var lang=(document.getElementById('of-lang')||{value:'de'}).value;
   var lb=OF_LABELS[lang]||OF_LABELS.de;
