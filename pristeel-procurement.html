@@ -388,13 +388,13 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div style="font-size:11.5px;font-weight:650;color:#A65F2E">📄 Ofertat</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Arkivi me numër rendor</div>
       </div>
-      <div onclick="showPage('invoices')" title="Faturat hyrëse (nga furnitorët)"
+      <div onclick="showPage('invoices');invSwitchTab('in')" title="Faturat hyrëse (nga furnitorët)"
         style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
         <div style="font-size:11.5px;font-weight:650;color:#185FA5">📥 Faturat hyrëse</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Nga furnitorët</div>
       </div>
-      <div onclick="showPage('invoices')" title="Faturat dalëse (te klientët)"
+      <div onclick="showPage('invoices');invSwitchTab('out')" title="Faturat dalëse (te klientët)"
         style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
         <div style="font-size:11.5px;font-weight:650;color:#0F6E56">📤 Faturat dalëse</div>
@@ -405,6 +405,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
         <div style="font-size:11.5px;font-weight:650;color:#534AB7">📑 Kontratat</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Werkvertrag, Nënkontrata, NDA</div>
+      </div>
+      <div onclick="showPage('newproject')" title="Ngarko skedar nga kompjuteri ose Google Drive"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
+        <div style="font-size:11.5px;font-weight:650;color:#854F0B">📂 Skedarët</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Kompjuteri ose Google Drive</div>
       </div>
     </div>
     <div id="side-nav"></div>
@@ -1058,7 +1064,14 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
   <!-- ═══ INCOMING INVOICES (from suppliers) ═══ -->
   <div id="inv-view-in" style="display:none">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div class="card-title" style="margin:0">Faturat e regjistruara (Furnitorë)</div>
+      <button class="btn btn-sm btn-primary" onclick="var w=document.getElementById('ivin-form-wrap');w.style.display=w.style.display==='none'?'grid':'none';" style="background:var(--bronze);border-color:var(--bronze)">+ Faturë e re</button>
+    </div>
+  </div>
+  <div class="card"><div id="iv-in-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
+  <div id="ivin-form-wrap" style="display:none;grid-template-columns:1fr 1fr;gap:16px">
     <div class="card"><div class="card-title">Fatura e furnitorit / prodhuesit</div>
       <div class="field-group fg-2"><div><label class="lbl">Furnitori</label><input type="text" id="ivin-sup" list="ivin-sup-list" placeholder="Eurosteel Shpk"><datalist id="ivin-sup-list"></datalist></div><div><label class="lbl">Nr. faturës (i tyre)</label><input type="text" id="ivin-nr" placeholder="ES-2026-0042"></div></div>
       <div class="field-group"><div><label class="lbl">Zgjidh Projektin (shkarko nga BOM) — opsionale</label><select id="ivin-proj-select" onchange="selectProjectForInvoiceIn(this.value)"><option value="">— Zgjidh projekt të ruajtur —</option></select></div></div>
@@ -1086,8 +1099,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div id="iv-comparison" style="font-size:13px"></div>
     </div>
   </div>
-  <div class="card"><div class="card-title">Faturat e regjistruara (Furnitorë)</div><div id="iv-in-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
-  
   </div>
 </div>
 
@@ -1297,7 +1308,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <!-- KOLONA E DJATHTË: agjenda + inbox -->
     <div>
       <div class="hub-sec"><span>Kalendari</span>
-        <a class="btn btn-sm" href="https://calendar.google.com/calendar/r" target="_blank">Hap</a>
+        <span style="display:flex;gap:5px">
+          <button class="btn btn-sm" id="gcal-connect-btn" onclick="connectGoogleCalendar()" title="Lidh me Google Calendar për evente reale">🔗 Lidh</button>
+          <a class="btn btn-sm" href="https://calendar.google.com/calendar/r" target="_blank">Hap</a>
+        </span>
       </div>
       <div id="hub-agenda"><div class="hub-load">Duke lexuar kalendarin…</div></div>
 
@@ -2385,6 +2399,43 @@ async function driveCallback(data){
     alert('Gabim nga Drive: '+e.message);
     if(dz) dz.textContent='Tërhiq skedarin këtu ose kliko';
   }
+}
+// ── GOOGLE CALENDAR: evente reale ne Qendra (perdor te njejtin Client ID si Drive, scope shtese) ──
+var _gCalToken=null, _gCalEvents=null;
+function connectGoogleCalendar(){
+  var cid=localStorage.getItem('pristeel_gclient')||'';
+  if(!cid){
+    alert('Konfiguro fillimisht Google Client ID:\n\nCilësimet → Google Drive Client ID\n\n(E njëjta që përdoret për Drive — krijohet falas te console.cloud.google.com. Duhet vetëm të aktivizosh edhe "Google Calendar API" te i njëjti projekt.)');
+    showPage('settings'); return;
+  }
+  var btn=document.getElementById('gcal-connect-btn'); if(btn) btn.textContent='...';
+  var tc=google.accounts.oauth2.initTokenClient({
+    client_id:cid, scope:'https://www.googleapis.com/auth/calendar.readonly',
+    callback:async function(r){
+      if(!r.access_token){ alert('Autorizimi dështoi.'); if(btn) btn.textContent='🔗 Lidh'; return; }
+      _gCalToken=r.access_token;
+      if(btn){ btn.textContent='✓ I lidhur'; btn.disabled=true; }
+      await loadHub();
+    }
+  });
+  tc.requestAccessToken();
+}
+async function fetchGoogleCalendarEvents(){
+  if(!_gCalToken) return [];
+  try{
+    var timeMin=new Date().toISOString();
+    var timeMax=new Date(Date.now()+45*86400000).toISOString();
+    var url='https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin='+encodeURIComponent(timeMin)
+      +'&timeMax='+encodeURIComponent(timeMax)+'&singleEvents=true&orderBy=startTime&maxResults=20';
+    var resp=await fetch(url,{headers:{Authorization:'Bearer '+_gCalToken}});
+    if(!resp.ok) return [];
+    var data=await resp.json();
+    return (data.items||[]).map(function(e){
+      var start=(e.start&&(e.start.dateTime||e.start.date))||null;
+      if(!start) return null;
+      return {date:new Date(start), t:'📅 '+(e.summary||'(pa titull)'), s:e.location||'Google Calendar', u:false};
+    }).filter(Boolean);
+  }catch(err){ return []; }
 }
 function resetWorkspace(){
   _curProjId=null;
@@ -5431,12 +5482,39 @@ function loadContracts(){
     contractsList=rows||[];
     if(rows.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë kontratë e ruajtur.</div>';return;}
     el.innerHTML=rows.map(function(r){
-      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
-        +'<div><strong>'+(r.contract_type||'')+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.party||'')+' · '+(r.project||'')+(r.date?' · '+r.date:'')+'</span></div>'
-        +'<div style="display:flex;gap:6px">'+(r.file_base64?'<button class="btn btn-sm" onclick="viewContract(\''+r.id+'\')">Shiko</button>':'')+'<button class="btn btn-danger btn-sm" onclick="deleteContract(\''+r.id+'\')">Fshij</button></div></div>';
+      return '<div class="project-card" onclick="openContractDetail(\''+r.id+'\')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:8px;margin-bottom:8px;transition:box-shadow .13s" onmouseover="this.style.boxShadow=\'0 3px 8px rgba(26,26,25,.13)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(26,26,25,.07)\'">'
+        +'<div><strong>'+(r.contract_type||'')+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.party||'')+' · '+(r.project||'')+(r.date?' · '+r.date:'')+(r.file_base64?' · 📎':'')+'</span></div>'
+        +'<div style="display:flex;gap:6px"><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteContract(\''+r.id+'\')">Fshij</button></div></div>';
     }).join('');
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela contracts mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
 }
+function openContractDetail(id){
+  const r=contractsList.find(function(x){return x.id===id;});
+  if(!r) return;
+  var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='pst-ctr-modal';
+  bg.onclick=function(e){ if(e.target===bg) closeContractDetail(); };
+  bg.innerHTML='<div class="pst-modal">'
+    +'<div class="pst-modal-hd"><div>'
+      +'<div style="font-size:14px;font-weight:650">'+(r.contract_type||'')+'</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:3px">'+(r.party||'—')+(r.project?' · '+r.project:'')+'</div>'
+    +'</div><span class="pst-modal-x" onclick="closeContractDetail()">✕</span></div>'
+    +'<div class="pst-modal-bd">'
+      +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Projekti</td><td style="text-align:right">'+(r.project||'—')+'</td></tr>'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Pala tjetër</td><td style="text-align:right">'+(r.party||'—')+'</td></tr>'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Lloji</td><td style="text-align:right">'+(r.contract_type||'—')+'</td></tr>'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Data</td><td style="text-align:right">'+(r.date||'—')+'</td></tr>'
+      +'</table>'
+      +(r.notes?'<div style="font-size:12.5px;color:var(--text2);margin-top:12px;line-height:1.5;border-top:1px solid var(--border);padding-top:10px">'+r.notes.replace(/\n/g,'<br>')+'</div>':'')
+      +'<div style="display:flex;gap:8px;margin-top:16px">'
+        +(r.file_base64?'<button class="btn btn-sm btn-primary" style="flex:1" onclick="viewOrDownloadFile(\''+(r.file_name||'').replace(/'/g,"\\'")+'\',\''+(r.file_type||'')+'\',contractsList.find(function(x){return x.id===\''+r.id+'\';}).file_base64)">📎 Shiko / Shkarko skedarin</button>'
+          :'<div style="flex:1;font-size:11.5px;color:var(--text3);align-self:center">Asnjë skedar i bashkëngjitur.</div>')
+        +'<button class="btn btn-danger btn-sm" onclick="closeContractDetail();deleteContract(\''+r.id+'\')">Fshij</button>'
+      +'</div>'
+    +'</div></div>';
+  document.body.appendChild(bg);
+}
+function closeContractDetail(){ var m=document.getElementById('pst-ctr-modal'); if(m) m.remove(); }
 function viewContract(id){
   const r=contractsList.find(function(x){return x.id===id;});
   if(!r) return;
@@ -6738,6 +6816,7 @@ async function loadHub(){
           t:'Ndjekje: '+(qq.client||'').split(' ')[0]+' \u2014 '+qq.doc_nr,
           s:hFmt(qq.total_eur)+' \u20AC \u00B7 '+ag2+' dite pa pergjigje', u:ag2>=21});
       });
+      if(_gCalToken){ var gcalEv=await fetchGoogleCalendarEvents(); ev=ev.concat(gcalEv); }
       ev.sort(function(a,b){return a.date-b.date;});
       elA.innerHTML=ev.length?ev.slice(0,7).map(function(e){
         return '<div class="ag'+(e.u?' urgent':'')+'">'
