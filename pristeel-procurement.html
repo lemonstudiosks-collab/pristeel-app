@@ -406,7 +406,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div style="font-size:11.5px;font-weight:650;color:#534AB7">📑 Kontratat</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Werkvertrag, Nënkontrata, NDA</div>
       </div>
-      <div onclick="showPage('newproject')" title="Ngarko skedar nga kompjuteri ose Google Drive"
+      <div onclick="showPage('library')" title="Ngarko skedar nga kompjuteri ose Google Drive"
         style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
         <div style="font-size:11.5px;font-weight:650;color:#854F0B">📂 Skedarët</div>
@@ -1347,6 +1347,28 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div id="contacts-list"><div class="hub-load">Duke ngarkuar kontaktet…</div></div>
 </div>
 
+<div id="page-library" class="page">
+  <div class="card">
+    <div class="card-title">Skedarët</div>
+    <div style="font-size:11.5px;color:var(--text3);margin-bottom:12px">Çdo skedar që ngarkon këtu (nga kompjuteri ose Google Drive) ruhet dhe listohet poshtë — i pavarur nga projektet.</div>
+    <div class="src-grid">
+      <div class="src-box" id="lib-drop-zone" onclick="document.getElementById('lib-f-input').click()">
+        <input type="file" id="lib-f-input" multiple onchange="handleLibraryFiles(this.files)">
+        <svg class="src-ico" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        <div class="src-title" id="lib-dz-title">Nga kompjuteri</div>
+        <div class="src-sub">Tërhiq ose kliko · çdo lloj skedari</div>
+      </div>
+      <div class="src-box" onclick="pickFromDriveToLibrary()">
+        <svg class="src-ico" viewBox="0 0 24 24" style="stroke-width:1.4"><path d="M7.7 3h8.6l4.7 8.1-4.3 7.4H7.3L3 11.1z"/><path d="M3 11.1h18M7.7 3l4.3 8.1M16.3 3l-4.3 8.1"/></svg>
+        <div class="src-title">Nga Google Drive</div>
+        <div class="src-sub">Zgjidh një skedar direkt nga Drive</div>
+      </div>
+    </div>
+    <div id="lib-upload-status" style="font-size:11.5px;color:var(--text3);margin-top:8px"></div>
+  </div>
+  <div class="card"><div class="card-title">Skedarët e ruajtur</div><div id="lib-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
+</div>
+
 <div id="page-settings" class="page">
   <div class="card">
     <div class="card-title">API Configuration</div>
@@ -1540,6 +1562,7 @@ const pageMeta={
   oferta:{title:'5 · Oferta për klientin',sub:'Gjenero ofertë profesionale në 4 gjuhë'},
   invoices:{title:'6 · Faturat',sub:'Faturat tona dhe të furnitorëve'},
   contracts:{title:'Kontratat',sub:'Werkvertrag, Nënkontrata, NDA'},
+  library:{title:'Skedarët',sub:'Kompjuteri ose Google Drive — biblioteka e dokumenteve'},
   finance:{title:'Financat',sub:'Garanci bankare, kosto operative, tatimet'},
   qendra:{title:'Detyrat',sub:'Çfarë duhet bërë sot — projektet, afatet, emailet'},
   settings:{title:'Cilësimet',sub:'API Key, Google Drive, HubSpot, profili'}
@@ -1563,7 +1586,7 @@ var MODULES=[
  {id:'cilesimet',name:'Cilësimet',c:'#444441',mid:'#5F5E5A',bg:'#F1EFE8',pages:['settings'],
   ic:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
 ];
-var PAGE_NAV={qendra:'Detyrat',import:'Projektet',bom:'1 · BOM',rfq:'2 · RFQ',offers:'3 · Çmimet',ranking:'4 · Krahasimi',oferta:'Oferta klientit',invoices:'Faturat',contracts:'Kontratat',contacts:'Kontaktet',finance:'Financat',kalkulator:'Kalkulatori',settings:'Cilësimet'};
+var PAGE_NAV={qendra:'Detyrat',import:'Projektet',bom:'1 · BOM',rfq:'2 · RFQ',offers:'3 · Çmimet',ranking:'4 · Krahasimi',oferta:'Oferta klientit',invoices:'Faturat',contracts:'Kontratat',library:'Skedarët',contacts:'Kontaktet',finance:'Financat',kalkulator:'Kalkulatori',settings:'Cilësimet'};
 var PAGE_ICON={
  bom:'<svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
  rfq:'<svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
@@ -2317,6 +2340,7 @@ function showPage(p){
   if(p==='kalkulator')calcPrice();
   if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadProjectOptionsForInvoices();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
   if(p==='contracts'){loadContracts();}
+  if(p==='library'){loadLibraryFiles();}
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
   if(p==='qendra'){loadHub();}
   if(p==='contacts'){loadContacts();}
@@ -5529,7 +5553,93 @@ function openContractDetail(id){
     +'</div></div>';
   document.body.appendChild(bg);
 }
-function closeContractDetail(){ var m=document.getElementById('pst-ctr-modal'); if(m) m.remove(); }
+// ── SKEDARËT: biblioteke e pergjithshme dokumentesh (e pavarur nga projektet) ──
+var libraryList=[];
+function fileToBase64(file){
+  return new Promise(function(resolve,reject){
+    var r=new FileReader();
+    r.onload=function(e){resolve(e.target.result);};
+    r.onerror=function(){reject(new Error('Leximi i skedarit dështoi.'));};
+    r.readAsDataURL(file);
+  });
+}
+async function handleLibraryFiles(files){
+  if(!files||!files.length) return;
+  var status=document.getElementById('lib-upload-status');
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    if(status) status.textContent='Duke ngarkuar "'+f.name+'"...';
+    try{
+      var b64=await fileToBase64(f);
+      await supaFetch('files','POST',{file_name:f.name,file_type:f.type||'application/octet-stream',file_base64:b64,size_kb:Math.round(f.size/1024)});
+    }catch(e){
+      if(status) status.textContent='Gabim me "'+f.name+'": '+e.message;
+      alert('Gabim (a ekziston tabela "files" në Supabase?): '+e.message);
+      return;
+    }
+  }
+  if(status) status.textContent='✓ U ngarkua.';
+  document.getElementById('lib-f-input').value='';
+  loadLibraryFiles();
+}
+function pickFromDriveToLibrary(){
+  var cid=localStorage.getItem('pristeel_gclient')||'';
+  var key=localStorage.getItem('pristeel_gapikey')||'';
+  if(!cid||!key){ alert('Konfiguro fillimisht Google Drive te Cilësimet.'); showPage('settings'); return; }
+  var launch=function(token){
+    _gDriveToken=token;
+    gLoadPicker(function(){
+      var view=new google.picker.DocsView(google.picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false);
+      var picker=new google.picker.PickerBuilder().addView(view).setOAuthToken(token).setDeveloperKey(key)
+        .setCallback(driveCallbackToLibrary).build();
+      picker.setVisible(true);
+    });
+  };
+  if(_gDriveToken){ launch(_gDriveToken); return; }
+  var tc=google.accounts.oauth2.initTokenClient({
+    client_id:cid, scope:'https://www.googleapis.com/auth/drive.readonly',
+    callback:function(r){ if(r.access_token) launch(r.access_token); else alert('Autorizimi dështoi.'); }
+  });
+  tc.requestAccessToken();
+}
+async function driveCallbackToLibrary(data){
+  if(data.action!==google.picker.Action.PICKED) return;
+  var doc=data.docs[0];
+  var status=document.getElementById('lib-upload-status');
+  if(status) status.textContent='Duke marrë "'+doc.name+'" nga Drive...';
+  try{
+    var isNative=doc.mimeType.indexOf('application/vnd.google-apps')===0;
+    var url = isNative
+      ? 'https://www.googleapis.com/drive/v3/files/'+doc.id+'/export?mimeType=application/pdf'
+      : 'https://www.googleapis.com/drive/v3/files/'+doc.id+'?alt=media';
+    var resp=await fetch(url,{headers:{Authorization:'Bearer '+_gDriveToken}});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    var blob=await resp.blob();
+    var fname=doc.name+(isNative?'.pdf':'');
+    var file=new File([blob], fname, {type:blob.type||doc.mimeType});
+    if(status) status.textContent='';
+    await handleLibraryFiles([file]);
+  }catch(e){
+    alert('Gabim nga Drive: '+e.message);
+    if(status) status.textContent='';
+  }
+}
+function loadLibraryFiles(){
+  var el=document.getElementById('lib-list'); if(!el) return;
+  supaFetch('files?order=created_at.desc&limit=200').then(function(rows){
+    libraryList=rows||[];
+    if(!rows.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë skedar i ruajtur ende.</div>'; return; }
+    el.innerHTML=rows.map(function(r){
+      return '<div class="project-card" onclick="viewOrDownloadFile(\''+(r.file_name||'').replace(/'/g,"\\'")+'\',\''+(r.file_type||'')+'\',libraryList.find(function(x){return x.id===\''+r.id+'\';}).file_base64)" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:8px;margin-bottom:8px;transition:box-shadow .13s" onmouseover="this.style.boxShadow=\'0 3px 8px rgba(26,26,25,.13)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(26,26,25,.07)\'">'
+        +'<div><strong>'+(r.file_name||'')+'</strong> <span style="color:var(--text3);font-size:11.5px">'+(r.size_kb?r.size_kb+' KB':'')+(r.created_at?' · '+new Date(r.created_at).toLocaleDateString('sq-AL'):'')+'</span></div>'
+        +'<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLibraryFile(\''+r.id+'\')">Fshij</button></div>';
+    }).join('');
+  }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela "files" mungon në Supabase ende. Krijoje me SQL (kërkoji Claude-it query-n) — kolonat: file_name text, file_type text, file_base64 text, size_kb int, created_at timestamptz default now().</div>';});
+}
+function deleteLibraryFile(id){
+  if(!confirm('Fshi këtë skedar?'))return;
+  supaFetch('files?id=eq.'+id,'DELETE').then(function(){loadLibraryFiles();}).catch(function(e){alert('Gabim: '+e.message);});
+}
 function viewContract(id){
   const r=contractsList.find(function(x){return x.id===id;});
   if(!r) return;
