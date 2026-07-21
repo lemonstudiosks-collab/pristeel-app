@@ -1758,50 +1758,35 @@ function oaNew(){
   showPage('oferta');
   setTimeout(function(){ if(typeof fillOfferNr==='function') fillOfferNr(true); },260);
 }
+var _oaEditingId=null;
 function oaOpen(id){
   var r=_oaRows.filter(function(x){return String(x.id)===String(id);})[0];
   if(!r){alert('Oferta nuk u gjet.');return;}
+  if(!r.offer_state){ alert('Kjo ofertë nuk ka të dhëna të ruajtura për t\'u hapur.'); return; }
   showPage('oferta');
-  setTimeout(function(){ oaApplyState(r, false); }, 250);
+  setTimeout(function(){
+    applyOfferFormState(r.offer_state);
+    var el=document.getElementById('of-nr'); if(el) el.value=r.doc_nr||'';
+    _oaEditingId=r.id;
+  }, 300);
 }
 function oaCopy(id){
   var r=_oaRows.filter(function(x){return String(x.id)===String(id);})[0];
   if(!r){alert('Oferta nuk u gjet.');return;}
-  if(!confirm('A jeni i sigurt që doni të krijoni një ofertë të re bazuar në '+(r.doc_nr||'këtë ofertë')+'?\n\nTë dhënat do të kopjohen, por numri i ofertës do të jetë i ri.')) return;
+  if(!r.offer_state){ alert('Kjo ofertë nuk ka të dhëna të ruajtura për t\'u kopjuar.'); return; }
+  if(!confirm('A jeni i sigurt që doni të krijoni një kopje të '+(r.doc_nr||'kësaj oferte')+'?\n\nTë gjitha të dhënat kopjohen të njëjta — vetëm numri dhe data janë të reja.')) return;
   showPage('oferta');
-  setTimeout(function(){ oaApplyState(r, true); }, 250);
-}
-// Mbush formën e ofertës nga një regjistrim ekzistues. copyMode=true → numër i ri, datë sot.
-function oaApplyState(r, copyMode){
-  var st=r.offer_state||{};
-  function setv(id,v){ var e=document.getElementById(id); if(e && v!=null && v!=='') e.value=v; }
-  // Fushat kryesore (emrat e ID-ve sipas formës ekzistuese te 'oferta')
-  setv('of-client', st.client || r.client);
-  setv('of-contact', st.contact);
-  setv('of-email', st.email);
-  setv('of-address', st.address);
-  setv('of-project', st.project || r.project);
-  setv('of-ref', st.ref);
-  setv('of-pricekg', st.priceKg);
-  setv('of-totalkg', st.totalKg);
-  setv('of-zinc', st.zinc);
-  setv('of-transport', st.transport);
-  setv('of-lang', st.lang);
-  setv('of-country', st.country);
-  setv('of-worktype', st.workType);
-  setv('of-exc', st.exc);
-  setv('of-cost', st.cost);
-  if(copyMode){
-    // Numër i ri dhe datë sot — kjo është ofertë e re, jo e njëjta
-    if(typeof fillOfferNr==='function') fillOfferNr(true);
+  setTimeout(async function(){
+    applyOfferFormState(r.offer_state);          // gjendja e plotë, ashtu siç ishte
+    var x=(typeof nextOfferNr==='function') ? await nextOfferNr() : null;
+    var el=document.getElementById('of-nr');
+    if(el && x) el.value=x.nr;                   // vetëm numri i ri
     var d=document.getElementById('of-date');
-    if(d) d.value=new Date().toISOString().slice(0,10);
-    setTimeout(function(){ alert('Oferta u kopjua. Kontrollo të dhënat dhe kliko Gjenero.'); },150);
-  } else {
-    setv('of-nr', r.doc_nr);
-    var dd=document.getElementById('of-date');
-    if(dd && r.created_at) dd.value=String(r.created_at).slice(0,10);
-  }
+    if(d) d.value=new Date().toISOString().slice(0,10);  // dhe data e sotme
+    _oaEditingId=null;
+    if(typeof genOfer==='function') genOfer();
+    alert('Kopja u krijua me numrin '+(x?x.nr:'e ri')+'.\nTë dhënat janë të njëjta — ndryshoji si të duash dhe kliko Gjenero.');
+  }, 300);
 }
 
 // ── HISTORIKU I NAVIGIMIT ─────────────────────────────────
