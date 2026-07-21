@@ -417,25 +417,35 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div id="side-panel" style="margin-top:auto;padding:14px 16px 8px"></div>
   </div>
   <!-- RADIO KOMPAKTE — e dukshme ne cdo faqe, kontrollon te njejtin audio si karta e faqes hyrese -->
-  <div id="side-radio" style="padding:9px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:9px">
-    <span id="side-radio-btn" onclick="radioToggle()" title="Luaj / Ndalo radion"
-      style="cursor:pointer;width:29px;height:29px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <svg id="side-radio-ic" viewBox="0 0 24 24" style="width:12px;height:12px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
-    </span>
-    <select id="side-radio-ch" onchange="radioSetChFrom('side-radio-ch')" title="Zgjidh kanalin"
-      style="flex:1;min-width:0;font-size:10px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text2)">
-      <option value="0">Piano</option>
-      <option value="1">Neoclassical</option>
-      <option value="2">Kinematike</option>
-      <option value="3">Ambient — qetë</option>
-      <option value="4">Ambient — ngrohtë</option>
-      <option value="5">Downtempo</option>
-      <option value="6">Dreamy</option>
-      <option value="7">Jazz</option>
-      <option value="8">Natyrë</option>
-    </select>
-    <!-- Elementi audio jeton KETU (jo brenda ndonje faqeje), qe muzika te mos nderpritet kur ndryshon faqja -->
-    <audio id="radio-audio" preload="none"></audio>
+  <div id="side-radio" style="padding:9px 16px;border-top:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:9px">
+      <span id="side-radio-btn" onclick="radioToggle()" title="Hap / mbyll muzikën"
+        style="cursor:pointer;width:29px;height:29px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg id="side-radio-ic" viewBox="0 0 24 24" style="width:12px;height:12px;fill:#fff"><polygon points="6,4 20,12 6,20"/></svg>
+      </span>
+      <select id="side-radio-ch" onchange="radioSetChFrom('side-radio-ch')" title="Zgjidh playlistën"
+        style="flex:1;min-width:0;font-size:10px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text2)">
+        <option value="0">Piano — copëza të bukura</option>
+        <option value="1">Neoclassical — chill</option>
+        <option value="2">Piano — fokus i thellë</option>
+        <option value="3">Ambient — relaksim</option>
+        <option value="4">Klasike — koha e punës</option>
+        <option value="5">Piano moderne</option>
+        <option value="6">Kinematike — film scores</option>
+        <option value="7">Jazz — instrumental</option>
+        <option value="8">Fokus — pa fjalë</option>
+      </select>
+    </div>
+    <!-- Player-i Spotify jeton KETU (jashte faqeve), qe muzika te mos nderpritet kur ndryshon faqja -->
+    <div id="spotify-box" style="display:none;margin-top:8px">
+      <div id="spotify-now" style="font-size:9.5px;color:var(--text3);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <iframe id="spotify-frame" style="border-radius:10px;width:100%;height:152px;border:0"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        loading="lazy"></iframe>
+      <div style="font-size:9px;color:var(--text3);margin-top:3px;line-height:1.35">
+        Me Spotify Premium (i kyçur në këtë browser) luan i plotë; përndryshe 30 sekonda për këngë.
+      </div>
+    </div>
   </div>
   <div class="sidebar-footer">
     PRISTEEL Sh.p.k. &copy; 2026<br>sales@prissteel.com
@@ -505,17 +515,17 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
           <rect x="18" y="10" width="3" height="10" rx="1" fill="#A65F2E" opacity=".75"/>
         </svg>
         <div style="flex:1;min-width:0">
-          <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Radio</div>
+          <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Muzikë</div>
           <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:10.5px;padding:3px 6px;border:none;box-shadow:0 1px 2px rgba(26,26,25,.08);border-radius:6px;background:var(--bg2)">
-            <option value="0">Piano — melodi të bukura</option>
-            <option value="1">Neoclassical — modern</option>
-            <option value="2">Kinematike — film scores</option>
-            <option value="3">Ambient — hapësirë e qetë</option>
-            <option value="4">Ambient — teksture e ngrohtë</option>
-            <option value="5">Downtempo — puls i butë</option>
-            <option value="6">Dreamy — melodi eterike</option>
-            <option value="7">Jazz instrumental</option>
-            <option value="8">Natyrë — qetësi</option>
+            <option value="0">Piano — copëza të bukura</option>
+            <option value="1">Neoclassical — chill</option>
+            <option value="2">Piano — fokus i thellë</option>
+            <option value="3">Ambient — relaksim</option>
+            <option value="4">Klasike — koha e punës</option>
+            <option value="5">Piano moderne — instrumentale</option>
+            <option value="6">Kinematike — film scores</option>
+            <option value="7">Jazz — instrumental i qetë</option>
+            <option value="8">Fokus — pa fjalë</option>
           </select>
         </div>
         <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:32px;height:32px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
@@ -2009,47 +2019,68 @@ var HOME_QUOTES=[
   'Vertrauen ist die härteste Währung im Geschäft.',
   'Themelet e forta nuk duken, por mbajnë gjithçka.'
 ];
+// Playlista Spotify — piano, neoklasike, ambient instrumentale.
+// Luajnë të plota nëse je i kyçur në Spotify Premium në të njëjtin browser;
+// përndryshe luajnë pjesë 30-sekondëshe.
 var RADIO_CHANNELS=[
-  {n:'Piano — melodi të bukura',url:'https://stream.klassikradio.de/piano/mp3-192/stream.klassikradio.de/'},
-  {n:'Neoclassical — modern',url:'https://stream.klassikradio.de/chillout/mp3-192/stream.klassikradio.de/'},
-  {n:'Kinematike — film scores',url:'https://stream.klassikradio.de/movie/mp3-192/stream.klassikradio.de/'},
-  {n:'Ambient — hapësirë e qetë',url:'https://ice1.somafm.com/dronezone-128-mp3'},
-  {n:'Ambient — teksture e ngrohtë',url:'https://ice1.somafm.com/deepspaceone-128-mp3'},
-  {n:'Downtempo — puls i butë',url:'https://ice1.somafm.com/groovesalad-128-mp3'},
-  {n:'Dreamy — melodi eterike',url:'https://ice1.somafm.com/lush-128-mp3'},
-  {n:'Jazz instrumental',url:'https://ice1.somafm.com/sonicuniverse-128-mp3'},
-  {n:'Natyrë — qetësi',url:'https://stream.klassikradio.de/nature/mp3-192/stream.klassikradio.de/'}
+  {n:'Piano — copëza të bukura',        id:'37i9dQZF1DX4sWSpwq3LiO'},
+  {n:'Neoclassical — chill',            id:'37i9dQZF1DX7Ocjwqjkhc0'},
+  {n:'Piano — fokus i thellë',          id:'37i9dQZF1DX2PQZjMjFXAI'},
+  {n:'Ambient — relaksim',              id:'37i9dQZF1DX3Ogo9pFvBkY'},
+  {n:'Klasike — koha e punës',          id:'37i9dQZF1DWWEJlAGA9gs0'},
+  {n:'Piano moderne — instrumentale',   id:'37i9dQZF1DX0jgyAiPl8Af'},
+  {n:'Kinematike — film scores',        id:'37i9dQZF1DX1tz6EDao8it'},
+  {n:'Jazz — instrumental i qetë',      id:'37i9dQZF1DXbITWG1ZJKYt'},
+  {n:'Fokus — pa fjalë',                id:'37i9dQZF1DWZeKCadgRdKQ'}
 ];
 var _radioOn=false;
-function radioEl(){ return document.getElementById('radio-audio'); }
-// Sinkronizon te dy zgjedhesit e kanalit (faqja hyrese + sidebar) me vleren aktuale
+// Vendos playlistën aktuale në player-in Spotify (iframe).
+// Player-i jeton në sidebar, jashtë faqeve, që muzika të mos ndërpritet kur ndërron faqe.
 function radioSyncCh(i){
   ['radio-ch','side-radio-ch'].forEach(function(id){
     var el=document.getElementById(id);
     if(el && String(el.value)!==String(i)) el.value=String(i);
   });
 }
-// Thirret kur ndryshohet kanali nga cilido zgjedhes
+function radioLoadCh(i, autoplay){
+  var f=document.getElementById('spotify-frame');
+  if(!f) return;
+  var ch=RADIO_CHANNELS[i]; if(!ch) return;
+  f.src='https://open.spotify.com/embed/playlist/'+ch.id
+    +'?utm_source=generator&theme=0'+(autoplay?'&autoplay=1':'');
+  var lbl=document.getElementById('spotify-now');
+  if(lbl) lbl.textContent=ch.n;
+  _radioOn=!!autoplay;
+  radioPaintIcons();
+}
 function radioSetChFrom(srcId){
   var src=document.getElementById(srcId); if(!src) return;
   var i=parseInt(src.value,10)||0;
   radioSyncCh(i);
   localStorage.setItem('pristeel_radio_ch',i);
-  var a=radioEl(); if(!a) return;
-  var wasOn=_radioOn;
-  a.src=RADIO_CHANNELS[i].url;
-  if(wasOn){ a.play().catch(function(){}); }
+  radioLoadCh(i, true);   // ndërrimi i kanalit e hap player-in me atë playlistë
+  radioShow(true);
 }
 function radioSetCh(){ radioSetChFrom('radio-ch'); }
+// Shfaq/fsheh panelin e player-it (iframe-i mbetet i ngarkuar që muzika të vazhdojë)
+function radioShow(on){
+  var box=document.getElementById('spotify-box');
+  if(box) box.style.display = on ? '' : 'none';
+}
 function radioToggle(){
-  var a=radioEl(); if(!a) return;
-  if(!a.src){
+  var box=document.getElementById('spotify-box');
+  var visible = box && box.style.display!=='none';
+  if(!visible){
     var i=parseInt(localStorage.getItem('pristeel_radio_ch')||'0',10)||0;
-    a.src=RADIO_CHANNELS[i].url;
     radioSyncCh(i);
+    var f=document.getElementById('spotify-frame');
+    if(f && !f.src) radioLoadCh(i, false);   // ngarko pa e nisur — nisja bëhet me butonin brenda player-it
+    radioShow(true);
+    _radioOn=true;
+  } else {
+    radioShow(false);
+    _radioOn=false;
   }
-  if(_radioOn){ a.pause(); _radioOn=false; }
-  else { a.play().catch(function(){alert('Streami nuk u hap — provo kanal tjetër.');}); _radioOn=true; }
   radioPaintIcons();
 }
 // Vizaton ikonat play/pause te te dy kontrollet + ekualizatorin e faqes hyrese
@@ -2070,6 +2101,8 @@ function radioPaintIcons(){
 function radioInit(){
   var saved=parseInt(localStorage.getItem('pristeel_radio_ch')||'0',10);
   if(saved>=0&&saved<RADIO_CHANNELS.length) radioSyncCh(saved);
+  var lbl=document.getElementById('spotify-now');
+  if(lbl && RADIO_CHANNELS[saved]) lbl.textContent=RADIO_CHANNELS[saved].n;
   radioPaintIcons();
 }
 // ── MOTI (karte e vecante me efekte) ──────────────────
