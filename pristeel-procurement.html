@@ -4643,7 +4643,14 @@ function scrubAutofill(){
     if(++tries>20) clearInterval(iv); // ~4 sekonda mbrojtje pas hapjes
   },200);
   document.addEventListener('DOMContentLoaded',scrubAutofill);
-  window.addEventListener('load',function(){ setTimeout(scrubAutofill,50); setTimeout(scrubAutofill,400); setTimeout(scrubAutofill,1200); });
+  // ── Google Drive/Calendar: parametra parazgjedhur (te njejtat per te gjitha pajisjet) ──
+// Kredencialet e Google per aplikacione klienti (JS) jane te dizajnuara per t'u perfshire ne kod
+// dhe kufizohen nga vete Google Cloud (website restriction + API restriction), jo nga fshehja.
+(function(){
+  if(!localStorage.getItem('pristeel_gclient')) localStorage.setItem('pristeel_gclient','302636648860-k52uqtm01pscj7kvls7klushlvm3n3rb.apps.googleusercontent.com');
+  if(!localStorage.getItem('pristeel_gapikey')) localStorage.setItem('pristeel_gapikey','AIzaSyC6QHRAMYvwrgtC-kHbigdRYh58Xu6lzew');
+})();
+window.addEventListener('load',function(){ setTimeout(scrubAutofill,50); setTimeout(scrubAutofill,400); setTimeout(scrubAutofill,1200); });
 })();
 
 function startApp(){
