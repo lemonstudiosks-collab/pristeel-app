@@ -1303,13 +1303,13 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div class="hub-grid">
     <!-- KOLONA E MAJTË: detyrat + projektet -->
     <div>
-      <div class="hub-sec">
+      <div class="hub-sec" title="Detyra konkrete me afat (jo projekte) — p.sh. 'thirr klientin', 'dërgo ofertën'">
         <span>Detyrat</span>
         <button class="btn btn-sm" onclick="addTask()">+ Detyrë</button>
       </div>
       <div id="hub-tasks"><div class="hub-load">Duke ngarkuar…</div></div>
 
-      <div class="hub-sec" style="margin-top:24px">
+      <div class="hub-sec" style="margin-top:24px" title="Të gjitha projektet aktive me statusin e tyre — kliko një kartë për ta zgjeruar">
         <span>Projektet aktive</span>
         <button class="btn btn-sm" onclick="loadHub()">Rifresko</button>
       </div>
@@ -2026,16 +2026,16 @@ var HOME_QUOTES=[
 // Stream-e radio falas — pa kyçje, pa abonim, luajnë për këdo.
 // Burime të ndryshme: nëse njëri s'punon, të tjerët vazhdojnë.
 var RADIO_CHANNELS=[
-  {n:'Piano — Klassik Radio',     url:'https://stream.klassikradio.de/piano/mp3-192/stream.klassikradio.de/'},
-  {n:'Neoclassical — modern',     url:'https://stream.klassikradio.de/chillout/mp3-192/stream.klassikradio.de/'},
-  {n:'Kinematike — film scores',  url:'https://stream.klassikradio.de/movie/mp3-192/stream.klassikradio.de/'},
-  {n:'Klasike — Venice Classic',  url:'https://uk2.streamingpulse.com/ssl/vcr1'},
   {n:'Ambient — hapësirë e qetë', url:'https://ice1.somafm.com/dronezone-128-mp3'},
-  {n:'Ambient — i ngrohtë',       url:'https://ice1.somafm.com/deepspaceone-128-mp3'},
   {n:'Downtempo — puls i butë',   url:'https://ice1.somafm.com/groovesalad-128-mp3'},
   {n:'Dreamy — eterik',           url:'https://ice1.somafm.com/lush-128-mp3'},
   {n:'Jazz instrumental',         url:'https://ice1.somafm.com/sonicuniverse-128-mp3'},
-  {n:'Natyrë — qetësi',           url:'https://stream.klassikradio.de/nature/mp3-192/stream.klassikradio.de/'}
+  {n:'Ambient — i ngrohtë',       url:'https://ice1.somafm.com/deepspaceone-128-mp3'},
+  {n:'Lounge — retro elegante',   url:'https://ice1.somafm.com/illstreet-128-mp3'},
+  {n:'Spy Jazz — kinematike',     url:'https://ice1.somafm.com/secretagent-128-mp3'},
+  {n:'Mellow — relaks',           url:'https://stream.radioparadise.com/mellow-128'},
+  {n:'Klasike — Venice Classic',  url:'https://uk2.streamingpulse.com/ssl/vcr1'},
+  {n:'Natyrë — qetësi',           url:'https://ice1.somafm.com/spacestation-128-mp3'}
 ];
 var _radioOn=false;
 function radioEl(){ return document.getElementById('radio-audio'); }
@@ -2100,6 +2100,26 @@ function radioInit(){
   var saved=parseInt(localStorage.getItem('pristeel_radio_ch')||'0',10);
   if(saved>=0&&saved<RADIO_CHANNELS.length) radioSyncCh(saved);
   radioPaintIcons();
+  var a=radioEl();
+  if(a && !a._pristeelErrBound){
+    a._pristeelErrBound=true;
+    a._skipCount=0;
+    a.addEventListener('error',function(){
+      if(!_radioOn) return; // gabim para se te fillonte riprodhimi manual — mos vepro
+      a._skipCount=(a._skipCount||0)+1;
+      if(a._skipCount>RADIO_CHANNELS.length){ // te gjitha kanalet deshtuan njeren pas tjetres
+        _radioOn=false; radioPaintIcons();
+        alert('Asnjë kanal radio s\u2019u hap tani — provo më vonë.');
+        return;
+      }
+      var cur=parseInt(localStorage.getItem('pristeel_radio_ch')||'0',10)||0;
+      var next=(cur+1)%RADIO_CHANNELS.length;
+      localStorage.setItem('pristeel_radio_ch',next);
+      radioSyncCh(next);
+      a.src=RADIO_CHANNELS[next].url;
+      radioPlay(a,next);
+    });
+  }
 }
 // ── MOTI (karte e vecante me efekte) ──────────────────
 var WX_CODES={0:['Kthjellët','sun'],1:['Pjesërisht kthjellët','sun'],2:['Me re','cloud'],3:['I vranët','cloud'],
@@ -3517,6 +3537,7 @@ function mapDbOffers(dbOffers){
       kg:parseFloat(o.qty_kg)||0,zincKg:parseFloat(o.zinc_kg)||0,positions:o.positions||null,
       transportEur:parseFloat(o.transport_eur)||0,vatPct:parseFloat(o.vat_pct)||0,
       offerType:type,
+      createdAt:o.created_at||null,
       origin:o.origin||''
     };
   }).map(function(r){ if(Array.isArray(r.positions)&&r.positions.length){ recalcOfferFromPositions(r); } return r; });
@@ -3549,6 +3570,7 @@ function renderOffers(){
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           ${badge}
           <strong style="font-size:13px">${suppName}</strong>
+          ${o.createdAt?`<span style="font-size:10.5px;color:var(--text3)">${new Date(o.createdAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>`:''}
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <span style="font-size:18px;font-weight:700;color:${isOutgoing?'#B87333':'var(--text)'}">${o.priceKg>0?o.priceKg.toFixed(3)+' EUR/kg':''}</span>
@@ -5025,7 +5047,7 @@ function projCardHtml(p){
   var dt=p.created_at?new Date(p.created_at).toLocaleDateString('sq'):'';
   var col=projColor(p.id);
   var st=PROJ_STATUS[p.status||'pritje']||PROJ_STATUS.pritje;
-  return '<div onclick="loadProject(\x27'+p.id+'\x27)" title="Kliko për të punuar në këtë projekt"'
+  return '<div onclick="openOverview(\x27'+p.id+'\x27)" title="Kliko për të hapur pasqyrën e plotë të projektit"'
     +' style="position:relative;border:2.5px solid '+col+';border-radius:12px;padding:14px 15px 13px;cursor:pointer;'
     +'background:#fff;transition:box-shadow .15s,transform .1s;min-height:112px;display:flex;flex-direction:column"'
     +' onmouseover="this.style.boxShadow=\x270 5px 18px rgba(30,40,50,.14)\x27;this.style.transform=\x27translateY(-1px)\x27"'
@@ -5623,9 +5645,10 @@ function loadInvoicesOut(){
         else agingHtml=' <span style="color:var(--text3)">(afati: '+due.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+')</span>';
       }
       const paidBadge=r.paid ? ' <span style="color:var(--green-text);font-weight:700">✓ Paguar</span>' : agingHtml;
-      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
-        +'<div><strong>'+r.invoice_nr+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.client||'')+' · '+(r.project||'')+' · '+(r.gross_amount||r.total_price||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span>'+paidBadge+'</div>'
-        +'<div style="display:flex;gap:6px">'+(r.file_base64?'<button class="btn btn-sm" onclick="viewInvOut(\''+r.id+'\')">Shiko</button>':'')+(r.paid?'':'<button class="btn btn-sm" onclick="markInvoicePaid(\''+r.id+'\')">Shëno Paguar</button>')+'<button class="btn btn-danger btn-sm" onclick="deleteInvoiceOut(\''+r.id+'\')">Fshij</button></div></div>';
+      const dt=r.date?new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer" onclick="openInvoiceDetail(\'out\',\''+r.id+'\')" title="Kliko për të hapur faturën">'
+        +'<div><strong>'+r.invoice_nr+'</strong> <span style="color:var(--text3);font-size:12px">'+dt+' · '+(r.client||'')+' · '+(r.project||'')+' · '+(r.gross_amount||r.total_price||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span>'+paidBadge+'</div>'
+        +'<div style="display:flex;gap:6px" onclick="event.stopPropagation()">'+(r.paid?'':'<button class="btn btn-sm" onclick="markInvoicePaid(\''+r.id+'\')">Shëno Paguar</button>')+'</div></div>';
     }).join('');
     renderAgingReport();
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela invoices_out mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
@@ -5675,6 +5698,41 @@ function viewInvOut(id){
   const r=invoicesOutList.find(function(x){return x.id===id;});
   if(!r) return;
   viewOrDownloadFile(r.file_name, r.file_type, r.file_base64);
+}
+function closeInvoiceDetail(){ var bg=document.getElementById('inv-detail-modal'); if(bg) bg.remove(); }
+function openInvoiceDetail(type,id){
+  var list = type==='out' ? invoicesOutList : invoicesInList;
+  var r = list.find(function(x){return String(x.id)===String(id);});
+  if(!r){ alert('Fatura nuk u gjet.'); return; }
+  var dt=r.date?new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+  var due=r.due_date?new Date(r.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+  var title = type==='out' ? (r.invoice_nr||'Faturë dalëse') : (r.supplier||'Faturë hyrëse');
+  var amount = type==='out' ? (r.gross_amount||r.total_price||0) : (r.amount||0);
+  var curr = type==='out' ? 'EUR' : (r.currency||'EUR');
+  var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='inv-detail-modal';
+  bg.onclick=function(e){ if(e.target===bg) closeInvoiceDetail(); };
+  bg.innerHTML='<div class="pst-modal" style="max-width:520px">'
+    +'<div class="pst-modal-hd"><div>'
+      +'<div style="font-size:14px;font-weight:650">'+title+'</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:3px">'+(r.project||'—')+'</div>'
+    +'</div><span class="pst-modal-x" onclick="closeInvoiceDetail()">✕</span></div>'
+    +'<div class="pst-modal-bd">'
+    +'<div style="font-size:22px;font-weight:700;color:var(--bronze);margin-bottom:10px">'+parseFloat(amount).toLocaleString('de-DE',{minimumFractionDigits:2})+' '+curr+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px">'
+      +(type==='out'?'<div><div style="color:var(--text3);font-size:10.5px">NR. FATURËS</div><div>'+(r.invoice_nr||'—')+'</div></div>':'<div><div style="color:var(--text3);font-size:10.5px">NR. FURNITORIT</div><div>'+(r.supplier_invoice_nr||'—')+'</div></div>')
+      +'<div><div style="color:var(--text3);font-size:10.5px">DATA</div><div>'+dt+'</div></div>'
+      +(type==='out'?'<div><div style="color:var(--text3);font-size:10.5px">KLIENTI</div><div>'+(r.client||'—')+'</div></div>':'<div><div style="color:var(--text3);font-size:10.5px">FURNITORI</div><div>'+(r.supplier||'—')+'</div></div>')
+      +'<div><div style="color:var(--text3);font-size:10.5px">AFATI I PAGESËS</div><div>'+due+'</div></div>'
+      +'<div><div style="color:var(--text3);font-size:10.5px">STATUSI</div><div>'+(r.paid?'✓ Paguar'+(r.paid_date?' ('+new Date(r.paid_date).toLocaleDateString('de-DE')+')':''):'E hapur')+'</div></div>'
+      +(r.payment_terms?'<div><div style="color:var(--text3);font-size:10.5px">KUSHTET</div><div>'+r.payment_terms+'</div></div>':'')
+    +'</div>'
+    +(r.notes?'<div style="margin-top:12px;font-size:12px;color:var(--text2);background:var(--bg2);border-radius:7px;padding:9px 11px;white-space:pre-wrap">'+String(r.notes).replace(/</g,'&lt;')+'</div>':'')
+    +'<div style="display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px">'
+      +(r.file_base64?'<button class="btn btn-sm btn-primary" style="flex:1" onclick="'+(type==='out'?'viewInvOut':'viewInvIn')+'(\''+r.id+'\')">Hap PDF-në / skedarin</button>':'<div style="font-size:11.5px;color:var(--text3);flex:1">Pa skedar bashkangjitur.</div>')
+      +(r.paid?'':'<button class="btn btn-sm" onclick="'+(type==='out'?'markInvoicePaid':'markInvoiceInPaid')+'(\''+r.id+'\');closeInvoiceDetail()">Shëno Paguar</button>')
+    +'</div>'
+    +'</div></div>';
+  document.body.appendChild(bg);
 }
 
 function handleContractFile(f){
@@ -5910,9 +5968,10 @@ function loadInvoicesIn(){
       }
       const paidBadge=r.paid ? ' <span style="color:var(--green-text);font-weight:700">✓ Paguar</span>' : agingHtml;
       const typeBadge = r.invoice_type && r.invoice_type!=='standard' ? ' <span style="color:var(--bronze);font-size:11px">['+(r.invoice_type==='advance'?'Avans':'Përfundimtare')+']</span>' : '';
-      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
-        +'<div><strong>'+r.supplier+'</strong>'+typeBadge+' <span style="color:var(--text3);font-size:12px">'+(r.supplier_invoice_nr||'')+' · '+(r.project||'')+' · '+(r.amount||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' '+(r.currency||'EUR')+'</span>'+paidBadge+'</div>'
-        +'<div style="display:flex;gap:6px">'+(r.file_base64?'<button class="btn btn-sm" onclick="viewInvIn(\''+r.id+'\')">Shiko</button>':'')+(r.paid?'':'<button class="btn btn-sm" onclick="markInvoiceInPaid(\''+r.id+'\')">Shëno Paguar</button>')+'<button class="btn btn-danger btn-sm" onclick="deleteInvoiceIn(\''+r.id+'\')">Fshij</button></div></div>';
+      const dt=r.date?new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer" onclick="openInvoiceDetail(\'in\',\''+r.id+'\')" title="Kliko për të hapur faturën">'
+        +'<div><strong>'+r.supplier+'</strong>'+typeBadge+' <span style="color:var(--text3);font-size:12px">'+dt+' · '+(r.supplier_invoice_nr||'')+' · '+(r.project||'')+' · '+(r.amount||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' '+(r.currency||'EUR')+'</span>'+paidBadge+'</div>'
+        +'<div style="display:flex;gap:6px" onclick="event.stopPropagation()">'+(r.paid?'':'<button class="btn btn-sm" onclick="markInvoiceInPaid(\''+r.id+'\')">Shëno Paguar</button>')+'</div></div>';
     }).join('');
     renderInvoiceComparison();
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela invoices_in mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
@@ -7120,8 +7179,8 @@ async function loadHub(){
         +'<textarea id="pj-notes-'+p.id+'" placeholder="Shto shënim për këtë projekt…" style="width:100%;min-height:50px;font-size:11.5px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;resize:vertical" onclick="event.stopPropagation()">'+(p.notes||'')+'</textarea>'
         +'<div style="margin-top:6px"><button class="btn btn-sm" onclick="event.stopPropagation();saveProjectNotes(\''+p.id+'\')">Ruaj shënimin</button></div>'
         +'<div style="margin-top:9px;display:flex;gap:7px">'
-        +'<button class="btn btn-sm" onclick="event.stopPropagation();loadProject(\''+p.id+'\')">Puno me projektin</button>'
-        +'<button class="btn btn-sm" onclick="event.stopPropagation();openOverview(\''+p.id+'\')">Pasqyra</button></div>'
+        +'<button class="btn btn-sm" onclick="event.stopPropagation();loadProject(\''+p.id+'\')" title="Hap hapësirën e punës (BOM, RFQ, Çmimet, Oferta) për të vazhduar punën në këtë projekt">Puno me projektin</button>'
+        +'<button class="btn btn-sm" onclick="event.stopPropagation();openOverview(\''+p.id+'\')" title="Hap pasqyrën e plotë të projektit: të gjitha ofertat, faturat, dokumentet dhe marzha, vetëm për këtë projekt">Pasqyra</button></div>'
         +'</div></div>';
     });
     elP.innerHTML=cards.length?cards.join(''):'<div class="hub-none">Ende pa projekte.</div>';
@@ -7181,11 +7240,7 @@ function saveProjectNotes(id){
     .catch(function(e){alert('Gabim: '+e.message);});
 }
 function openProjectDetail(projectId){
-  showPage('qendra');
-  setTimeout(function(){
-    var el=document.getElementById('pj-'+projectId);
-    if(el){ el.classList.add('open'); el.scrollIntoView({behavior:'smooth',block:'start'}); }
-  }, 250);
+  openOverview(projectId);
 }
 var loadCockpit=loadHub;
 // ══ ANALIZË MASIVE E INBOX-IT ══
