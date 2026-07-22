@@ -389,6 +389,18 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </button>
     </div>
     <div id="side-quick" style="padding:0 16px 4px">
+      <div onclick="goToClientOffer()" title="Fillo një ofertë të re për klientin"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#12513B;margin-bottom:7px;transition:box-shadow .13s"
+        onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.22)'" onmouseout="this.style.boxShadow='none'">
+        <div style="font-size:11.5px;font-weight:650;color:#fff">✚ Gjenero Ofertë</div>
+        <div style="font-size:9.5px;color:rgba(255,255,255,.75);margin-top:1px">Ofertë e re për klientin</div>
+      </div>
+      <div onclick="showPage('invoices')" title="Fillo një faturë të re"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#0C3D6B;margin-bottom:7px;transition:box-shadow .13s"
+        onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.22)'" onmouseout="this.style.boxShadow='none'">
+        <div style="font-size:11.5px;font-weight:650;color:#fff">✚ Gjenero Faturë</div>
+        <div style="font-size:9.5px;color:rgba(255,255,255,.75);margin-top:1px">Faturë e re</div>
+      </div>
       <div onclick="showPage('offer-archive')" title="Të gjitha ofertat me numër rendor"
         style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
@@ -432,15 +444,15 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </span>
       <select id="side-radio-ch" onchange="radioSetChFrom('side-radio-ch')" title="Zgjidh kanalin"
         style="flex:1;min-width:0;font-size:10px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text2)">
-        <option value="0">Piano — Klassik Radio</option>
-        <option value="1">Neoclassical — modern</option>
-        <option value="2">Kinematike — film scores</option>
-        <option value="3">Klasike — Venice Classic</option>
-        <option value="4">Ambient — hapësirë e qetë</option>
-        <option value="5">Ambient — i ngrohtë</option>
-        <option value="6">Downtempo — puls i butë</option>
-        <option value="7">Dreamy — eterik</option>
-        <option value="8">Jazz instrumental</option>
+        <option value="0">Ambient — hapësirë e qetë</option>
+        <option value="1">Downtempo — puls i butë</option>
+        <option value="2">Dreamy — eterik</option>
+        <option value="3">Jazz instrumental</option>
+        <option value="4">Ambient — i ngrohtë</option>
+        <option value="5">Lounge — retro elegante</option>
+        <option value="6">Spy Jazz — kinematike</option>
+        <option value="7">Mellow — relaks</option>
+        <option value="8">Klasike — Venice Classic</option>
         <option value="9">Natyrë — qetësi</option>
       </select>
     </div>
@@ -517,15 +529,15 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div style="flex:1;min-width:0">
           <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Radio</div>
           <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:10.5px;padding:3px 6px;border:none;box-shadow:0 1px 2px rgba(26,26,25,.08);border-radius:6px;background:var(--bg2)">
-            <option value="0">Piano — Klassik Radio</option>
-            <option value="1">Neoclassical — modern</option>
-            <option value="2">Kinematike — film scores</option>
-            <option value="3">Klasike — Venice Classic</option>
-            <option value="4">Ambient — hapësirë e qetë</option>
-            <option value="5">Ambient — i ngrohtë</option>
-            <option value="6">Downtempo — puls i butë</option>
-            <option value="7">Dreamy — eterik</option>
-            <option value="8">Jazz instrumental</option>
+                        <option value="0">Ambient — hapësirë e qetë</option>
+            <option value="1">Downtempo — puls i butë</option>
+            <option value="2">Dreamy — eterik</option>
+            <option value="3">Jazz instrumental</option>
+            <option value="4">Ambient — i ngrohtë</option>
+            <option value="5">Lounge — retro elegante</option>
+            <option value="6">Spy Jazz — kinematike</option>
+            <option value="7">Mellow — relaks</option>
+            <option value="8">Klasike — Venice Classic</option>
             <option value="9">Natyrë — qetësi</option>
           </select>
         </div>
@@ -1611,6 +1623,18 @@ function tintSvg(svg,color){ return svg.replace('<svg','<svg style="stroke:'+col
 function closePstOffer(){ var m=document.getElementById('pst-of-modal'); if(m) m.remove(); }
 // Katrori i ofertes ne sidebar (Çmimi/Krahasimi) -> hap kete modal kompakt, VETEM PER LEXIM.
 // Editim lejohet vetem duke bere "Kopjo" (krijon nje oferte te re, editueshme, me numer te ri).
+function printHtmlBlock(title, bodyHtml){
+  var w=window.open('','_blank','width=800,height=900');
+  if(!w){ alert('Browseri bllokoi dritaren e printimit — lejo popup-et për këtë faqe.'); return; }
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+String(title||'PRISTEEL').replace(/</g,'&lt;')+'</title>'
+    +'<style>body{font-family:Arial,Helvetica,sans-serif;color:#1A1A19;padding:30px;max-width:760px;margin:0 auto}'
+    +'h1{font-size:16px;margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}'
+    +'th,td{padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}th{text-align:left;color:#666;font-size:10px;text-transform:uppercase}'
+    +'.tot{font-size:20px;font-weight:700;margin:10px 0}</style></head><body>'
+    +bodyHtml+'</body></html>');
+  w.document.close();
+  setTimeout(function(){ w.focus(); w.print(); },300);
+}
 function pstOpenOffer(dbId, projId){
   var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='pst-of-modal';
   bg.onclick=function(e){ if(e.target===bg) closePstOffer(); };
@@ -1645,6 +1669,7 @@ function pstOpenOffer(dbId, projId){
       +posHtml
       +'<div style="display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px">'
         +'<button class="btn btn-sm btn-primary" style="flex:1" onclick="closePstOffer();oaCopy(\''+r.id+'\')">Kopjo si ofertë e re</button>'
+        +'<button class="btn btn-sm" onclick="printHtmlBlock(\''+String(r.doc_nr||'Oferte').replace(/'/g,"")+'\',document.getElementById(\'pst-of-modal\').querySelector(\'.pst-modal-bd\').innerHTML)">Printo</button>'
         +'<button class="btn btn-sm" onclick="closePstOffer();showPage(\'offer-archive\')">Arkivi i plotë →</button>'
       +'</div>'
       +'<div style="font-size:10.5px;color:var(--text3);margin-top:10px">Oferta e dërguar te blerësi nuk mund të editohet — përdor "Kopjo" për një version të ri, editueshëm.</div>'
@@ -1747,10 +1772,64 @@ function showModuleHub(mod){
       +'</div>';
   });
   h+='</div>';
-  main.innerHTML='<div class="card">'+h+'</div>';
+  if(mod.id==='prokurimi'){
+    main.innerHTML='<div class="card" style="margin-bottom:16px"><div id="proc-directory"><div class="hub-load">Duke ngarkuar drejtorinë e furnitorëve…</div></div></div><div class="card">'+h+'</div>';
+    loadProcurementDirectory();
+  } else {
+    main.innerHTML='<div class="card">'+h+'</div>';
+  }
   navPush({t:'hub',v:mod.id});
   renderSideNav(mod,null);
   return true;
+}
+var PROC_GROUPS=[
+  {k:'prodhues',n:'Prodhues (Fabrikim)',cats:['fabrication']},
+  {k:'celik',n:'Furnitorë Çeliku',cats:['heavy_plate','profiles','sheet','tubes']},
+  {k:'tjera',n:'Furnitorë të Tjerë (mbulesa, hardware, zinktim…)',cats:['mro','hardware','coating','galvanizing']}
+];
+function procStartRfq(name,cat,email,contactName){
+  if(!_curProjId){ alert('Zgjidh ose krijo një projekt fillimisht (nga "Projektet"), pastaj shto furnitorin te RFQ.'); return; }
+  suppliers.push({id:Date.now(),name:name||'',country:'',lang:'en',cat:(cat==='fabrication'?'producer':'rawmat'),
+    contacts:[{name:contactName||'',email:email||''}]});
+  showPage('rfq');
+  setTimeout(function(){ renderSuppliers(); updateRfqCount(); },80);
+}
+function loadProcurementDirectory(){
+  var el=document.getElementById('proc-directory'); if(!el) return;
+  supaFetch('partners?relation=cs.{supplier}&stage=eq.active&select=id,name,country,city,categories,business_type&order=importance.desc&limit=200').then(function(partners){
+    if(!partners||!partners.length){ el.innerHTML='<div style="color:var(--text3);font-size:12px">Ende s\u2019ka furnitorë të regjistruar në drejtori.</div>'; return; }
+    var ids=partners.map(function(p){return p.id;});
+    return supaFetch('partner_contacts?partner_id=in.('+ids.join(',')+')&select=partner_id,full_name,email,is_primary').catch(function(){return[];})
+      .then(function(contacts){
+        var cById={}; (contacts||[]).forEach(function(c){ (cById[c.partner_id]=cById[c.partner_id]||[]).push(c); });
+        function primaryContact(pid){
+          var arr=(cById[pid]||[]).filter(function(c){return c.email;});
+          arr.sort(function(a,b){return (b.is_primary?1:0)-(a.is_primary?1:0);});
+          return arr[0]||null;
+        }
+        var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+          +'<div style="font-size:13px;font-weight:700;color:var(--bronze)">DREJTORIA E FURNITORËVE ('+partners.length+')</div>'
+          +'<div style="font-size:10.5px;color:var(--text3)">Kliko "Fillo RFQ" për ta shtuar te kërkesa e projektit aktual</div></div>'
+          +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px">';
+        PROC_GROUPS.forEach(function(g){
+          var list=partners.filter(function(p){return (p.categories||[]).some(function(c){return g.cats.indexOf(c)>-1;});});
+          h+='<div><div style="font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--text3);text-transform:uppercase;margin-bottom:7px">'+g.n+' ('+list.length+')</div>';
+          if(!list.length){ h+='<div style="font-size:11.5px;color:var(--text3)">Asnjë ende.</div>'; }
+          list.slice(0,25).forEach(function(p){
+            var c=primaryContact(p.id);
+            h+='<div style="border:0.5px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--bg2)">'
+              +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px">'
+                +'<div style="min-width:0"><div style="font-size:12px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.name||'')+'</div>'
+                +'<div style="font-size:10.5px;color:var(--text3)">'+([p.city,p.country].filter(Boolean).join(', ')||'—')+(c?' · '+(c.full_name||c.email):'')+'</div></div>'
+                +'<button class="btn btn-sm" style="font-size:10px;padding:3px 8px;flex-shrink:0" onclick="procStartRfq(\''+String(p.name||'').replace(/'/g,"")+'\',\''+((p.categories||[])[0]||'')+'\',\''+(c?String(c.email||'').replace(/'/g,""):'')+'\',\''+(c?String(c.full_name||'').replace(/'/g,""):'')+'\')">Fillo RFQ</button>'
+              +'</div></div>';
+          });
+          h+='</div>';
+        });
+        h+='</div>';
+        el.innerHTML=h;
+      });
+  }).catch(function(e){ el.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim gjatë ngarkimit të drejtorisë: '+e.message+'</div>'; });
 }
 // Kalon te përgatitja e ofertës komerciale, duke bartur të dhënat e projektit aktual
 function goToClientOffer(){
@@ -1868,7 +1947,7 @@ function oaRender(){
       var badge=full
         ? '<span title="Të dhëna të plota — kopjimi jep ofertë identike" style="color:#2E7D32;font-size:11px">●</span>'
         : '<span title="Të dhëna të pjesshme ('+nf+' fusha) — kopjimi jep vetëm ato" style="color:#E8A33D;font-size:11px">●</span>';
-      return '<tr style="border-bottom:1px solid var(--border)">'
+      return '<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="oaOpen(\''+r.id+'\')" title="Kliko për të hapur ofertën e ruajtur">'
         +'<td style="padding:7px 8px;color:var(--text3);font-weight:600">'+(i+1)+'</td>'
         +'<td style="padding:7px 8px;font-weight:650">'+badge+' '+(r.doc_nr||'')+(np?' <span style="color:var(--text3);font-weight:400;font-size:10px">('+np+' poz.)</span>':'')+'</td>'
         +'<td style="padding:7px 8px">'+(r.client||'—')+'</td>'
@@ -1876,7 +1955,7 @@ function oaRender(){
         +'<td style="padding:7px 8px;color:var(--text3)">'+dt+'</td>'
         +'<td style="padding:7px 8px;text-align:right;font-weight:650">'+((parseFloat(r.total_eur)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}))+' €</td>'
         +'<td style="padding:7px 8px"><span style="background:'+st.bg+';color:'+st.c+';font-size:10px;font-weight:600;padding:3px 8px;border-radius:5px">'+st.n+'</span></td>'
-        +'<td style="padding:7px 8px;white-space:nowrap">'
+        +'<td style="padding:7px 8px;white-space:nowrap" onclick="event.stopPropagation()">'
           +'<button class="btn btn-sm" style="font-size:10px;padding:3px 9px" onclick="oaCopy(\''+r.id+'\')" title="Krijo ofertë të re bazuar në këtë">Kopjo</button> '
           +'<button class="btn btn-sm" style="font-size:10px;padding:3px 8px" onclick="oaOpen(\''+r.id+'\')" title="Hap ofertën">Hap</button>'
         +'</td></tr>';
@@ -5021,15 +5100,15 @@ function projColor(id){
 // ── RRJEDHA E PIPELINE-IT (9 hapat, lidhur me projects.pipeline_stage) ──
 // Vetëm etiketimi/fazat janë të reja; ofertat/faturat (documents_registry, invoices_in/out) mbeten të pandryshuara.
 var PIPELINE_STAGES=[
-  {id:'rfq_in',              n:'RFQ-Eingang',                d:'Kërkesa e klientit me specifikat'},
-  {id:'technical_review',    n:'Technische Prüfung',         d:'Analiza inxhinierike e specifikave'},
-  {id:'supplier_selection',  n:'Herstellerauswahl',          d:'Zgjedhja e prodhuesit nga rrjeti · kontrolluar nga PRISTEEL'},
-  {id:'pricing',             n:'Preisfindung',               d:'Përcaktimi i çmimit final drejt klientit'},
-  {id:'client_offer',        n:'Angebot & Bestätigung',      d:'Oferta drejt klientit dhe konfirmimi i porosisë'},
-  {id:'commercial',          n:'Kommerzielle Abwicklung',    d:'Kontrata dhe pagesat (ProCredit Bank)'},
-  {id:'production_control',  n:'Produktionskoordination',    d:'Zeichnungen + kontroll i prodhimit · kontrolluar nga PRISTEEL'},
-  {id:'factory_audit',       n:'Werksaudit-Begleitung',      d:'Shoqërimi i klientit në auditimin e uzinës · kontrolluar nga PRISTEEL'},
-  {id:'transport',           n:'Transport & Lieferung',      d:'Dërgesa DAP/DDP direkt te baustela + faturat'}
+  {id:'rfq_in',              n:'Kërkesa e Klientit (RFQ)',       d:'Kërkesa e klientit me specifikat'},
+  {id:'technical_review',    n:'Verifikimi Teknik',              d:'Analiza inxhinierike e specifikave'},
+  {id:'supplier_selection',  n:'Zgjedhja e Prodhuesit',          d:'Zgjedhja e prodhuesit nga rrjeti · kontrolluar nga PRISTEEL'},
+  {id:'pricing',             n:'Përcaktimi i Çmimit',            d:'Përcaktimi i çmimit final drejt klientit'},
+  {id:'client_offer',        n:'Oferta & Konfirmimi',            d:'Oferta drejt klientit dhe konfirmimi i porosisë'},
+  {id:'commercial',          n:'Përpunimi Komercial',            d:'Kontrata dhe pagesat (ProCredit Bank)'},
+  {id:'production_control',  n:'Koordinimi i Prodhimit',         d:'Zeichnungen + kontroll i prodhimit · kontrolluar nga PRISTEEL'},
+  {id:'factory_audit',       n:'Shoqërimi në Auditim',           d:'Shoqërimi i klientit në auditimin e uzinës · kontrolluar nga PRISTEEL'},
+  {id:'transport',           n:'Transporti & Dërgesa',           d:'Dërgesa DAP/DDP direkt te baustela + faturat'}
 ];
 function pipelineIdx(stageId){ for(var i=0;i<PIPELINE_STAGES.length;i++) if(PIPELINE_STAGES[i].id===stageId) return i; return 0; }
 function projSetPipelineStage(id,stage){
@@ -5047,12 +5126,14 @@ function projCardHtml(p){
   var dt=p.created_at?new Date(p.created_at).toLocaleDateString('sq'):'';
   var col=projColor(p.id);
   var st=PROJ_STATUS[p.status||'pritje']||PROJ_STATUS.pritje;
+  var isLost=p.status==='humbur';
+  var topCol=isLost?'#C62828':col;
   return '<div onclick="openOverview(\x27'+p.id+'\x27)" title="Kliko për të hapur pasqyrën e plotë të projektit"'
     +' style="position:relative;border:2.5px solid '+col+';border-radius:12px;padding:14px 15px 13px;cursor:pointer;'
-    +'background:#fff;transition:box-shadow .15s,transform .1s;min-height:112px;display:flex;flex-direction:column"'
+    +'background:#fff;transition:box-shadow .15s,transform .1s;min-height:112px;display:flex;flex-direction:column'+(isLost?';opacity:.72':'')+'"'
     +' onmouseover="this.style.boxShadow=\x270 5px 18px rgba(30,40,50,.14)\x27;this.style.transform=\x27translateY(-1px)\x27"'
     +' onmouseout="this.style.boxShadow=\x27none\x27;this.style.transform=\x27none\x27">'
-    +'<div style="position:absolute;top:0;left:0;right:0;height:5px;background:'+col+';border-radius:9px 9px 0 0"></div>'
+    +'<div style="position:absolute;top:0;left:0;right:0;height:5px;background:'+topCol+';border-radius:9px 9px 0 0"></div>'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-top:5px">'
       +'<div style="font-size:13.5px;font-weight:650;color:var(--text);line-height:1.3">'+(p.name||'(pa emër)')+'</div>'
       +'<span style="background:'+st.bg+';color:'+st.c+';font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap;flex-shrink:0">'+st.n+'</span>'
@@ -5729,6 +5810,7 @@ function openInvoiceDetail(type,id){
     +(r.notes?'<div style="margin-top:12px;font-size:12px;color:var(--text2);background:var(--bg2);border-radius:7px;padding:9px 11px;white-space:pre-wrap">'+String(r.notes).replace(/</g,'&lt;')+'</div>':'')
     +'<div style="display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px">'
       +(r.file_base64?'<button class="btn btn-sm btn-primary" style="flex:1" onclick="'+(type==='out'?'viewInvOut':'viewInvIn')+'(\''+r.id+'\')">Hap PDF-në / skedarin</button>':'<div style="font-size:11.5px;color:var(--text3);flex:1">Pa skedar bashkangjitur.</div>')
+      +'<button class="btn btn-sm" onclick="printHtmlBlock(\''+title.replace(/'/g,"")+'\',document.getElementById(\'inv-detail-modal\').querySelector(\'.pst-modal-bd\').innerHTML)">Printo</button>'
       +(r.paid?'':'<button class="btn btn-sm" onclick="'+(type==='out'?'markInvoicePaid':'markInvoiceInPaid')+'(\''+r.id+'\');closeInvoiceDetail()">Shëno Paguar</button>')
     +'</div>'
     +'</div></div>';
