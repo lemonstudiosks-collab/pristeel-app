@@ -2500,6 +2500,89 @@ function renderHome(){
   var st={shitjet:'Oferta · Fatura',kontaktet:'Klientë · Furnitorë',financat:'Garanci · Kosto',kalkulatori:'Çmimi €/kg',cilesimet:'Firma · API · Backup'};
   Object.keys(st).forEach(function(k){ var e=document.getElementById('modstat-'+k); if(e&&!e.textContent) e.textContent=st[k]; });
 }
+// ── COMMAND PALETTE (Ctrl+K / Cmd+K) — kërkim global, si te Odoo ──
+var CMDK_STATIC=[
+  {icon:'📋',label:'Detyrat (hub-i kryesor)',run:function(){showPage('qendra');}},
+  {icon:'📁',label:'Projektet',run:function(){showPage('import');}},
+  {icon:'➕',label:'Projekt i ri',run:function(){showPage('newproject');}},
+  {icon:'🧾',label:'Prokurimi · BOM',run:function(){showPage('bom');}},
+  {icon:'📤',label:'Prokurimi · RFQ',run:function(){showPage('rfq');}},
+  {icon:'📥',label:'Prokurimi · Ofertat e furnitorëve',run:function(){showPage('offers');}},
+  {icon:'📊',label:'Prokurimi · Krahasimi',run:function(){showPage('ranking');}},
+  {icon:'💶',label:'Kalkulatori i çmimit',run:function(){showPage('kalkulator');}},
+  {icon:'📄',label:'Arkivi i ofertave',run:function(){showPage('offer-archive');}},
+  {icon:'✍️',label:'Gjenero Ofertë e re',run:function(){goToClientOffer();}},
+  {icon:'💳',label:'Faturat hyrëse',run:function(){showPage('invoices');invSwitchTab('in');}},
+  {icon:'💳',label:'Faturat dalëse',run:function(){showPage('invoices');invSwitchTab('out');}},
+  {icon:'📑',label:'Kontratat',run:function(){showPage('contracts');}},
+  {icon:'📂',label:'Skedarët',run:function(){showPage('library');}},
+  {icon:'👥',label:'Kontaktet',run:function(){showPage('contacts');}},
+  {icon:'💰',label:'Financat',run:function(){showPage('finance');}},
+  {icon:'⚙️',label:'Cilësimet',run:function(){showPage('settings');}}
+];
+var _cmdkSel=0, _cmdkItems=[], _cmdkTimer=null;
+function openCmdK(){
+  var bg=document.getElementById('cmdk-bg'); if(!bg) return;
+  bg.style.display='block';
+  var inp=document.getElementById('cmdk-input'); inp.value=''; inp.focus();
+  cmdkFilter();
+}
+function closeCmdK(){
+  var bg=document.getElementById('cmdk-bg'); if(bg) bg.style.display='none';
+}
+function cmdkRenderResults(items){
+  _cmdkItems=items; _cmdkSel=0;
+  var el=document.getElementById('cmdk-results');
+  if(!items.length){ el.innerHTML='<div style="padding:14px 12px;color:var(--text3);font-size:12.5px">Asnjë përputhje.</div>'; return; }
+  el.innerHTML=items.map(function(it,i){
+    return '<div class="cmdk-item" data-i="'+i+'" onclick="cmdkExecute('+i+')" onmouseenter="_cmdkSel='+i+';cmdkHighlight()"'
+      +' style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer'+(i===0?';background:var(--bg2)':'')+'">'
+      +'<span style="font-size:15px">'+(it.icon||'📌')+'</span>'
+      +'<span style="font-size:13px">'+it.label+'</span>'
+      +(it.sub?'<span style="font-size:10.5px;color:var(--text3);margin-left:auto">'+it.sub+'</span>':'')
+    +'</div>';
+  }).join('');
+}
+function cmdkHighlight(){
+  document.querySelectorAll('#cmdk-results .cmdk-item').forEach(function(el,i){
+    el.style.background=(i===_cmdkSel)?'var(--bg2)':'transparent';
+  });
+}
+function cmdkExecute(i){
+  var it=_cmdkItems[i]; if(!it) return;
+  closeCmdK();
+  it.run();
+}
+function cmdkFilter(){
+  var q=(document.getElementById('cmdk-input').value||'').toLowerCase().trim();
+  clearTimeout(_cmdkTimer);
+  var staticMatches=CMDK_STATIC.filter(function(c){return !q||c.label.toLowerCase().indexOf(q)>-1;}).slice(0,8);
+  if(!q){ cmdkRenderResults(staticMatches); return; }
+  cmdkRenderResults(staticMatches);
+  _cmdkTimer=setTimeout(function(){
+    supaFetch('projects?or=(name.ilike.*'+encodeURIComponent(q)+'*,client.ilike.*'+encodeURIComponent(q)+'*)&select=id,name,client&limit=6')
+      .then(function(rows){
+        var projMatches=(rows||[]).map(function(p){
+          return {icon:'📁',label:p.name||'(pa emër)',sub:p.client||'',run:function(){openOverview(p.id);}};
+        });
+        cmdkRenderResults(projMatches.concat(staticMatches));
+      }).catch(function(){});
+  },200);
+}
+function cmdkKeyNav(ev){
+  if(ev.key==='Escape'){ closeCmdK(); return; }
+  if(ev.key==='ArrowDown'){ ev.preventDefault(); _cmdkSel=Math.min(_cmdkSel+1,_cmdkItems.length-1); cmdkHighlight(); return; }
+  if(ev.key==='ArrowUp'){ ev.preventDefault(); _cmdkSel=Math.max(_cmdkSel-1,0); cmdkHighlight(); return; }
+  if(ev.key==='Enter'){ ev.preventDefault(); cmdkExecute(_cmdkSel); return; }
+}
+document.addEventListener('keydown',function(ev){
+  if((ev.metaKey||ev.ctrlKey)&&ev.key.toLowerCase()==='k'){
+    ev.preventDefault();
+    var bg=document.getElementById('cmdk-bg');
+    if(bg && bg.style.display==='block') closeCmdK(); else openCmdK();
+  }
+});
+
 function showPage(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
@@ -7626,5 +7709,17 @@ function qDirSearch(){
 <script src="pristeel-export.js"></script>
 <script src="pristeel-offer-editor.js"></script>
 <script src="pristeel-finance.js"></script>
+<div id="cmdk-bg" style="display:none;position:fixed;inset:0;background:rgba(26,26,25,.35);z-index:900;padding:10vh 20px 0" onclick="if(event.target===this) closeCmdK()">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden">
+    <input id="cmdk-input" type="text" placeholder="Kërko projekt, klient, faqe… (Esc për të mbyllur)" autocomplete="off"
+      style="width:100%;border:none;padding:16px 18px;font-size:15px;outline:none;border-bottom:1px solid var(--border)"
+      oninput="cmdkFilter()" onkeydown="cmdkKeyNav(event)">
+    <div id="cmdk-results" style="max-height:50vh;overflow-y:auto;padding:6px"></div>
+  </div>
+</div>
+<div onclick="openCmdK()" title="Kërko gjithçka (Ctrl+K / ⌘K)"
+  style="position:fixed;right:22px;bottom:22px;z-index:400;background:#fff;border:1px solid var(--border);border-radius:22px;padding:9px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 3px 14px rgba(20,25,30,.12);font-size:12px;color:var(--text2)">
+  <span>🔍</span><span>Kërko</span><span style="background:var(--bg2);border-radius:5px;padding:1px 6px;font-size:10px;color:var(--text3);font-family:monospace">⌘K</span>
+</div>
 </body>
 </html>
