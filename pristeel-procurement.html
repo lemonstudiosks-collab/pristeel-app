@@ -1636,7 +1636,7 @@ function printHtmlBlock(title, bodyHtml){
   w.document.close();
   setTimeout(function(){ w.focus(); w.print(); },300);
 }
-function pstOpenOffer(dbId, projId){
+function oaOpenQuoteModal(dbId){
   var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='pst-of-modal';
   bg.onclick=function(e){ if(e.target===bg) closePstOffer(); };
   bg.innerHTML='<div class="pst-modal" style="max-width:560px"><div class="pst-modal-bd"><div class="hub-load">Duke ngarkuar ofertën…</div></div></div>';
@@ -1981,8 +1981,7 @@ function oaRender(){
     +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Projekti</th>'
     +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Data</th>'
     +'<th style="padding:7px 8px;border-bottom:1px solid var(--border);text-align:right">Vlera</th>'
-    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Statusi</th>'
-    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)"></th></tr></thead><tbody>'
+    +'<th style="padding:7px 8px;border-bottom:1px solid var(--border)">Statusi</th></tr></thead><tbody>'
     +rows.map(function(r,i){
       var st=OA_STATUS[r.followup_status||'open']||OA_STATUS.open;
       var dt=r.created_at?new Date(r.created_at).toLocaleDateString('sq-AL'):'';
@@ -2001,11 +2000,7 @@ function oaRender(){
         +'<td style="padding:7px 8px;text-align:right;font-weight:650">'+((parseFloat(r.total_eur)||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}))+' €</td>'
         +'<td style="padding:7px 8px" onclick="event.stopPropagation()"><select onchange="oaSetFollowupStatus(\''+r.id+'\',this.value,\''+String(r.project||'').replace(/'/g,"")+'\',\''+String(r.client||'').replace(/'/g,"")+'\')" style="font-size:10px;font-weight:600;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:'+st.bg+';color:'+st.c+'">'
           +Object.keys(OA_STATUS).map(function(k){return '<option value="'+k+'"'+((r.followup_status||'open')===k?' selected':'')+'>'+OA_STATUS[k].n+'</option>';}).join('')
-        +'</select></td>'
-        +'<td style="padding:7px 8px;white-space:nowrap" onclick="event.stopPropagation()">'
-          +'<button class="btn btn-sm" style="font-size:10px;padding:3px 9px" onclick="oaCopy(\''+r.id+'\')" title="Krijo ofertë të re bazuar në këtë">Kopjo</button> '
-          +'<button class="btn btn-sm" style="font-size:10px;padding:3px 8px" onclick="oaOpen(\''+r.id+'\')" title="Hap ofertën">Hap</button>'
-        +'</td></tr>';
+        +'</select></td></tr>';
     }).join('')+'</tbody></table></div>';
 }
 function oaSetFollowupStatus(id,val,proj,client){
@@ -2040,7 +2035,7 @@ function oaNew(){
 var _oaEditingId=null;
 function oaOpen(id){
   // Ofertat e regjistruara (te derguara) hapen VETEM PER LEXIM - editim vetem permes "Kopjo"
-  pstOpenOffer(id, null);
+  oaOpenQuoteModal(id);
 }
 function oaCopy(id){
   var r=(_oaRows||[]).filter(function(x){return String(x.id)===String(id);})[0];
