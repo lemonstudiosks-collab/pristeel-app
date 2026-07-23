@@ -444,16 +444,13 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </span>
       <select id="side-radio-ch" onchange="radioSetChFrom('side-radio-ch')" title="Zgjidh kanalin"
         style="flex:1;min-width:0;font-size:10px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text2)">
-        <option value="0">Ambient — hapësirë e qetë</option>
-        <option value="1">Downtempo — puls i butë</option>
-        <option value="2">Dreamy — eterik</option>
-        <option value="3">Jazz instrumental</option>
-        <option value="4">Ambient — i ngrohtë</option>
-        <option value="5">Lounge — retro elegante</option>
-        <option value="6">Spy Jazz — kinematike</option>
-        <option value="7">Mellow — relaks</option>
-        <option value="8">Klasike — Venice Classic</option>
-        <option value="9">Natyrë — qetësi</option>
+        <option value="0">Piano e qetë</option>
+        <option value="1">Piano & Ambient</option>
+        <option value="2">Chill modern</option>
+        <option value="3">Ambient i qetë</option>
+        <option value="4">Ambient i ngrohtë</option>
+        <option value="5">Chill dreamy</option>
+        <option value="6">Chill mellow</option>
       </select>
     </div>
     <!-- Elementi audio jeton KETU (jashte faqeve), qe muzika te mos nderpritet kur ndryshon faqja -->
@@ -529,16 +526,13 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div style="flex:1;min-width:0">
           <div style="font-size:11.5px;font-weight:650;color:var(--text)">PRISTEEL Radio</div>
           <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:10.5px;padding:3px 6px;border:none;box-shadow:0 1px 2px rgba(26,26,25,.08);border-radius:6px;background:var(--bg2)">
-                        <option value="0">Ambient — hapësirë e qetë</option>
-            <option value="1">Downtempo — puls i butë</option>
-            <option value="2">Dreamy — eterik</option>
-            <option value="3">Jazz instrumental</option>
-            <option value="4">Ambient — i ngrohtë</option>
-            <option value="5">Lounge — retro elegante</option>
-            <option value="6">Spy Jazz — kinematike</option>
-            <option value="7">Mellow — relaks</option>
-            <option value="8">Klasike — Venice Classic</option>
-            <option value="9">Natyrë — qetësi</option>
+                        <option value="0">Piano e qetë</option>
+            <option value="1">Piano & Ambient</option>
+            <option value="2">Chill modern</option>
+            <option value="3">Ambient i qetë</option>
+            <option value="4">Ambient i ngrohtë</option>
+            <option value="5">Chill dreamy</option>
+            <option value="6">Chill mellow</option>
           </select>
         </div>
         <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:32px;height:32px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
@@ -2182,16 +2176,13 @@ var HOME_QUOTES=[
 // Stream-e radio falas — pa kyçje, pa abonim, luajnë për këdo.
 // Burime të ndryshme: nëse njëri s'punon, të tjerët vazhdojnë.
 var RADIO_CHANNELS=[
-  {n:'Ambient — hapësirë e qetë', url:'https://ice1.somafm.com/dronezone-128-mp3'},
-  {n:'Downtempo — puls i butë',   url:'https://ice1.somafm.com/groovesalad-128-mp3'},
-  {n:'Dreamy — eterik',           url:'https://ice1.somafm.com/lush-128-mp3'},
-  {n:'Jazz instrumental',         url:'https://ice1.somafm.com/sonicuniverse-128-mp3'},
-  {n:'Ambient — i ngrohtë',       url:'https://ice1.somafm.com/deepspaceone-128-mp3'},
-  {n:'Lounge — retro elegante',   url:'https://ice1.somafm.com/illstreet-128-mp3'},
-  {n:'Spy Jazz — kinematike',     url:'https://ice1.somafm.com/secretagent-128-mp3'},
-  {n:'Mellow — relaks',           url:'https://stream.radioparadise.com/mellow-128'},
-  {n:'Klasike — Venice Classic',  url:'https://uk2.streamingpulse.com/ssl/vcr1'},
-  {n:'Natyrë — qetësi',           url:'https://ice1.somafm.com/spacestation-128-mp3'}
+  {n:'Piano e qetë',          url:'https://peacefulpiano.stream.publicradio.org/peacefulpiano.mp3'},
+  {n:'Piano & Ambient',       url:'https://relax.stream.publicradio.org/relax.mp3'},
+  {n:'Chill modern',          url:'https://ice.somafm.com/groovesalad'},
+  {n:'Ambient i qetë',        url:'https://ice.somafm.com/dronezone'},
+  {n:'Ambient i ngrohtë',     url:'https://ice.somafm.com/deepspaceone'},
+  {n:'Chill dreamy',          url:'https://ice.somafm.com/lush'},
+  {n:'Chill mellow',          url:'https://stream.radioparadise.com/mellow-128'}
 ];
 var _radioOn=false;
 function radioEl(){ return document.getElementById('radio-audio'); }
