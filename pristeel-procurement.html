@@ -1049,6 +1049,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div class="field-group fg-2" id="iv-advance-val-wrap" style="display:none"><div><label class="lbl">Vlera e kontratës (bazë, EUR)</label><input type="number" id="iv-contract-value" step="0.01" oninput="calcAdvancePreview()"></div><div><label class="lbl">Shuma e avansit (EUR)</label><input type="text" id="iv-advance-amt" readonly style="background:var(--bg2)"></div></div>
       <div id="iv-advance-btn-wrap" style="display:none;margin-bottom:10px"><button class="btn btn-sm" onclick="addAdvanceLineItem()">+ Shto si rresht në faturë</button></div>
       <div class="field-group"><div><label class="lbl">Zgjidh Projektin (shkarko nga BOM) — opsionale</label><select id="iv-proj-select" onchange="selectProjectForInvoiceOut(this.value)"><option value="">— Zgjidh projekt të ruajtur —</option></select></div></div>
+      <div id="iv-balance-info" style="display:none;font-size:11.5px;background:var(--bg2);border-radius:7px;padding:8px 11px;margin-bottom:10px"></div>
       <div class="field-group"><div><label class="lbl">Projekti</label><input type="text" id="iv-proj" placeholder="p.sh. Lagerhalle Hamburg"></div></div>
     </div>
     <div class="card"><div class="card-title">Blerësi</div>
@@ -5728,6 +5729,22 @@ function selectProjectForInvoiceOut(id){
     if(p.ref) document.getElementById('iv-ref').value=p.ref;
     if(p.location) document.getElementById('iv-loc').value=p.location;
   }
+  var balEl=document.getElementById('iv-balance-info');
+  Promise.all([
+    supaFetch('invoices_out?project=eq.'+encodeURIComponent(p?p.name||'':'')+'&select=gross_amount,total_price,paid').catch(function(){return[];}),
+    supaFetch('documents_registry?series=eq.QUO&project_id=eq.'+id+'&order=created_at.desc&limit=1&select=total_eur').catch(function(){return[];})
+  ]).then(function(res){
+    var prevInv=res[0]||[], lastQuote=(res[1]||[])[0];
+    var invoicedSum=prevInv.reduce(function(s,i){return s+(parseFloat(i.gross_amount)||parseFloat(i.total_price)||0);},0);
+    if(!balEl) return;
+    if(!lastQuote && !prevInv.length){ balEl.style.display='none'; return; }
+    var contractVal=lastQuote?parseFloat(lastQuote.total_eur)||0:null;
+    var remaining=contractVal!=null?(contractVal-invoicedSum):null;
+    balEl.style.display='block';
+    balEl.innerHTML='<strong>Faturimi për këtë projekt:</strong> '
+      +(prevInv.length?prevInv.length+' faturë(a) të lëshuara deri tani, gjithsej <strong>'+invoicedSum.toLocaleString('de-DE',{minimumFractionDigits:2})+' €</strong>':'ende asnjë faturë e lëshuar')
+      +(contractVal!=null?(' · Vlera e ofertës: <strong>'+contractVal.toLocaleString('de-DE',{minimumFractionDigits:2})+' €</strong> · Mbetet pa faturuar: <strong style="color:'+(remaining>0?'var(--bronze)':'var(--green-text)')+'">'+remaining.toLocaleString('de-DE',{minimumFractionDigits:2})+' €</strong>'):'');
+  }).catch(function(){ if(balEl) balEl.style.display='none'; });
   supaFetch('bom_items?project_id=eq.'+id+'&order=created_at.asc').then(function(items){
     if(!items||items.length===0){alert('Projekti u zgjodh, por s\'ka pozicione BOM të ruajtura për të.');return;}
     invoiceItems=items.map(function(r){
