@@ -1820,14 +1820,42 @@ function showModuleHub(mod){
   });
   h+='</div>';
   if(mod.id==='prokurimi'){
-    main.innerHTML='<div class="card" style="margin-bottom:16px"><div id="proc-directory"><div class="hub-load">Duke ngarkuar drejtorinë e furnitorëve…</div></div></div><div class="card">'+h+'</div>';
+    main.innerHTML='<div class="card" style="margin-bottom:16px">'+h+'</div>'
+      +'<div class="card" style="margin-bottom:16px"><div id="proc-recent-offers"><div class="hub-load">Duke ngarkuar ofertat e fundit…</div></div></div>'
+      +'<div class="card"><div id="proc-directory"><div class="hub-load">Duke ngarkuar drejtorinë e furnitorëve…</div></div></div>';
     loadProcurementDirectory();
+    loadRecentSupplierOffers();
   } else {
     main.innerHTML='<div class="card">'+h+'</div>';
   }
   navPush({t:'hub',v:mod.id});
   renderSideNav(mod,null);
   return true;
+}
+function loadRecentSupplierOffers(){
+  var el=document.getElementById('proc-recent-offers'); if(!el) return;
+  Promise.all([
+    supaFetch('offers?select=id,supplier,price_kg,qty_kg,total_eur,project_id,created_at&order=created_at.desc&limit=15').catch(function(){return[];}),
+    supaFetch('projects?select=id,name,client').catch(function(){return[];})
+  ]).then(function(res){
+    var rows=(res[0]||[]).filter(function(r){return (r.supplier||'').indexOf('OFERTA JONE')===-1;});
+    var projs=res[1]||[];
+    var pById={}; projs.forEach(function(p){pById[p.id]=p;});
+    if(!rows.length){ el.innerHTML='<div style="font-size:12px;color:var(--text3)">Ende s\u2019ka oferta të regjistruara nga furnitorët.</div>'; return; }
+    el.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<div style="font-size:13px;font-weight:700;color:var(--bronze)">OFERTAT E FUNDIT NGA FURNITORËT</div>'
+      +'<div style="font-size:10.5px;color:var(--text3)">Kliko për të hapur projektin përkatës</div></div>'
+      +rows.map(function(r){
+        var pr=pById[r.project_id];
+        var dt=r.created_at?new Date(r.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+        return '<div onclick="'+(r.project_id?'loadProject(\''+r.project_id+'\')':'')+'" title="'+(pr?'Hap projektin: '+pr.name:'Pa projekt të lidhur')+'"'
+          +' style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);'+(r.project_id?'cursor:pointer':'')+'">'
+          +'<div style="min-width:0"><strong style="font-size:12.5px">'+(r.supplier||'(pa emër)')+'</strong> '
+            +'<span style="font-size:11px;color:var(--text3)">'+(r.price_kg?parseFloat(r.price_kg).toFixed(3)+' €/kg · ':'')+(pr?pr.name:'<em>pa projekt të lidhur</em>')+'</span></div>'
+          +'<span style="font-size:10.5px;color:var(--text3);flex-shrink:0;margin-left:10px">'+dt+'</span>'
+        +'</div>';
+      }).join('');
+  }).catch(function(e){ el.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim: '+e.message+'</div>'; });
 }
 var PROC_GROUPS=[
   {k:'prodhues',n:'Prodhues (Fabrikim)',cats:['fabrication']},
@@ -5512,32 +5540,11 @@ function loadProject(id){
 }
 
 function showProjectDashboard(p){
-  // Show project overview page
-  var dash=document.getElementById('project-dashboard');
-  if(!dash){
-    showPage('bom');
-    return;
-  }
-  // Populate dashboard
-  document.getElementById('dash-title').textContent=p.name||'';
-  document.getElementById('dash-client').textContent=p.client||'';
-  document.getElementById('dash-ref').textContent=p.ref||'';
-  document.getElementById('dash-location').textContent=p.location||'';
-  document.getElementById('dash-deadline').textContent=p.deadline||'';
-  document.getElementById('dash-notes').textContent=p.notes||'';
-  if(p.notes){document.getElementById('dash-notes-card').style.display='';}
-  // BOM summary
-  var totalKg=bomRows.reduce(function(s,r){return s+(parseFloat(r.kg)||0);},0);
-  var bomSum=document.getElementById('dash-bom-summary');
-  if(bomSum){
-    bomSum.innerHTML='<div style="font-size:24px;font-weight:700;color:var(--bronze);font-family:Bebas Neue,sans-serif">'+totalKg.toLocaleString('de-DE',{maximumFractionDigits:0})+' kg</div>'
-      +'<div style="color:var(--text3);font-size:11px;margin-bottom:8px">'+bomRows.length+' pozicione</div>'
-      +bomRows.slice(0,5).map(function(r){return '<div style="font-size:12px;padding:2px 0;border-bottom:0.5px solid var(--border)">'+r.profile+' '+r.dim+' &nbsp;<span style="color:var(--text3)">'+r.pcs+' cop &middot; '+(parseFloat(r.kg)||0).toLocaleString('de-DE',{maximumFractionDigits:0})+' kg</span></div>';}).join('')
-      +(bomRows.length>5?'<div style="font-size:11px;color:var(--text3);margin-top:4px">... dhe '+( bomRows.length-5)+' pozicione te tjera</div>':'');
-  }
-  // Render offers table
-  renderDashOffers();
-  showPage('dashboard');
+  // Faqja e vjeter "Dashboard" (para se te kishim rrjedhen me hapa 1-7) eshte lene mbrapa
+  // qellimisht - shkaktonte mospershtatje (te dhena te ndryshme nga hapi "3 - Çmimet").
+  // Gjithmone hyjme te hapi 1 (BOM), i cili eshte plotesisht i lidhur me projektin (_curProjId).
+  renderDashOffers(); // mbahet per pajtueshmeri, s'perdoret ne UI aktive
+  showPage('bom');
 }
 
 function renderDashOffers(){
