@@ -478,11 +478,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         style="flex:1;min-width:0;font-size:10px;padding:4px 5px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text2)">
         <option value="0">Piano e qetë</option>
         <option value="1">Piano & Ambient</option>
-        <option value="2">Chill modern</option>
-        <option value="3">Ambient i qetë</option>
-        <option value="4">Ambient i ngrohtë</option>
-        <option value="5">Chill dreamy</option>
-        <option value="6">Chill mellow</option>
+        <option value="2">Chamber — violinë & çelo</option>
+        <option value="3">Klasike e zgjedhur</option>
+        <option value="4">Qetësi e thellë</option>
       </select>
     </div>
     <!-- Elementi audio jeton KETU (jashte faqeve), qe muzika te mos nderpritet kur ndryshon faqja -->
@@ -572,11 +570,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
           <select id="radio-ch" onchange="radioSetCh()" style="width:100%;margin-top:3px;font-size:10.5px;padding:3px 6px;border:none;box-shadow:0 1px 2px rgba(26,26,25,.08);border-radius:6px;background:var(--bg2)">
                         <option value="0">Piano e qetë</option>
             <option value="1">Piano & Ambient</option>
-            <option value="2">Chill modern</option>
-            <option value="3">Ambient i qetë</option>
-            <option value="4">Ambient i ngrohtë</option>
-            <option value="5">Chill dreamy</option>
-            <option value="6">Chill mellow</option>
+            <option value="2">Chamber — violinë & çelo</option>
+            <option value="3">Klasike e zgjedhur</option>
+            <option value="4">Qetësi e thellë</option>
           </select>
         </div>
         <span id="radio-btn" onclick="radioToggle()" style="cursor:pointer;width:32px;height:32px;border-radius:50%;background:#A65F2E;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="Play / Pause">
@@ -2409,11 +2405,9 @@ var HOME_QUOTES=[
 var RADIO_CHANNELS=[
   {n:'Piano e qetë',          url:'https://peacefulpiano.stream.publicradio.org/peacefulpiano.mp3'},
   {n:'Piano & Ambient',       url:'https://relax.stream.publicradio.org/relax.mp3'},
-  {n:'Chill modern',          url:'https://ice1.somafm.com/groovesalad-128-mp3'},
-  {n:'Ambient i qetë',        url:'https://ice1.somafm.com/dronezone-128-mp3'},
-  {n:'Ambient i ngrohtë',     url:'https://ice1.somafm.com/deepspaceone-128-mp3'},
-  {n:'Chill dreamy',          url:'https://ice1.somafm.com/lush-128-mp3'},
-  {n:'Chill mellow',          url:'https://stream.radioparadise.com/mellow-128'}
+  {n:'Chamber — violinë & çelo', url:'https://chambermusic.stream.publicradio.org/chambermusic.mp3'},
+  {n:'Klasike e zgjedhur',    url:'https://favorites.stream.publicradio.org/favorites.mp3'},
+  {n:'Qetësi e thellë',       url:'https://lullabies.stream.publicradio.org/lullabies.mp3'}
 ];
 var _radioOn=false;
 function radioEl(){ return document.getElementById('radio-audio'); }
@@ -2714,7 +2708,7 @@ function renderHome(){
     {label:'Oltiani',  email:'oltian.vllahiu@prissteel.com',  color:'#0F6E56'},
     {label:'Sales',    email:'sales@prissteel.com',           color:'#A65F2E'}
   ].map(function(o){
-    return '<a href="mailto:'+o.email+'" title="Dërgo email te '+o.email+'"'
+    return '<a href="https://mail.google.com/mail/?view=cm&authuser='+encodeURIComponent(o.email)+'&fs=1" target="_blank" title="Hap Gmail si '+o.email+' dhe fillo email të ri"'
       +' style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 18px;min-width:150px;text-decoration:none;cursor:pointer;transition:box-shadow .13s"'
       +' onmouseover="this.style.boxShadow=\'0 4px 14px rgba(20,25,30,.12)\'" onmouseout="this.style.boxShadow=\'none\'">'
       +'<span style="width:32px;height:32px;border-radius:8px;background:'+o.color+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
