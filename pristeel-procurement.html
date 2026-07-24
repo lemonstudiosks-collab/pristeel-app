@@ -2028,6 +2028,11 @@ function uploadBoxHandle(prefix, files){
       if(t) t.textContent=files[0].name;
       if(cb) cb(txt, files[0]);
     }).catch(function(e){
+      if(e && e.scannedPdf){
+        if(t) t.textContent='⚠ '+files[0].name+' — PDF i skanuar, pa tekst';
+        alert('Ky PDF duket i skanuar/foto (pa "shtresë teksti") — kompjuteri s\'mund të nxjerrë tekst prej tij automatikisht.\n\nZgjidhje: hape PDF-në, përzgjidh tekstin (Cmd/Ctrl+A), kopjoje (Cmd/Ctrl+C), dhe ngjite manualisht te kutia e tekstit.');
+        return;
+      }
       if(t) t.textContent='Nga kompjuteri';
       alert('Nuk u lexua skedari: '+e.message);
     });
@@ -2889,6 +2894,12 @@ async function extractTextFromPDF(file) {
     const pageText = lines.map(y => lineMap[y].sort((a, b) => a.x - b.x).map(it => it.str).join(" ")).join("\n");
     fullText += pageText + "\n";
   }
+  if(fullText.trim().length<15){
+    // PDF pa "shtresë teksti" (p.sh. skanim/foto) - pdf.js s'ka OCR, s'mund te nxjerre asgje.
+    var err=new Error('SCANNED_PDF_NO_TEXT');
+    err.scannedPdf=true;
+    throw err;
+  }
   return fullText;
 }
 
@@ -2940,7 +2951,11 @@ async function handleFiles(files){
         combinedText += text;
       } catch (err) {
         console.error(err);
-        alert("Gabim gjatë leximit të PDF: " + f.name);
+        if(err && err.scannedPdf){
+          alert('"'+f.name+'" duket i skanuar/foto (pa tekst të lexueshëm) — ngjite tekstin manualisht në vend të ngarkimit.');
+        } else {
+          alert("Gabim gjatë leximit të PDF: " + f.name);
+        }
       }
     } else if(f.name.match(/\.(xlsx|xls)$/i)){
       try {
@@ -3489,9 +3504,13 @@ function updateRfqCount(){
   const n=suppliers.reduce((sum,s)=>sum+(s.name?(s.contacts||[]).filter(c=>c.name&&c.email).length:0),0);
   document.getElementById('rfq-count').textContent=n+' kontakte të gatshme';
 }
+var _supFilterQ='';
 function renderSuppliers(){
-  const producers=suppliers.filter(s=>s.cat==='producer');
-  const rawmats=suppliers.filter(s=>s.cat==='rawmat');
+  var fq=(_supFilterQ||'').toLowerCase().trim();
+  const producers=suppliers.filter(s=>s.cat==='producer' && (!fq || (s.name||'').toLowerCase().indexOf(fq)>-1));
+  const rawmats=suppliers.filter(s=>s.cat==='rawmat' && (!fq || (s.name||'').toLowerCase().indexOf(fq)>-1));
+  const producersAll=suppliers.filter(s=>s.cat==='producer').length;
+  const rawmatsAll=suppliers.filter(s=>s.cat==='rawmat').length;
 
   function contactRow(s,c,idx){
     return `<div style="display:grid;grid-template-columns:1fr 1.3fr 28px;gap:8px;align-items:center;padding:4px 0 4px 20px">
@@ -3537,16 +3556,24 @@ function renderSuppliers(){
   }
 
   document.getElementById('supplier-list').innerHTML=`
+    <div style="margin-bottom:14px">
+      <div class="ctry-wrap">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text3)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="sup-filter-inp" value="${(_supFilterQ||'').replace(/"/g,'&quot;')}" placeholder="Kërko furnitor/prodhues të listuar (fillo me shkronjën e parë)…"
+          oninput="_supFilterQ=this.value;renderSuppliers();setTimeout(function(){var e=document.getElementById('sup-filter-inp');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length);}},0)"
+          style="padding-left:32px;width:100%">
+      </div>
+    </div>
     <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:600;color:var(--bronze);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-        <span>Prodhuesit (${producers.length})</span>
+        <span>Prodhuesit (${producers.length}${fq&&producers.length!==producersAll?' / '+producersAll:''})</span>
         <button class="btn btn-sm" onclick="addSupplierCat('producer')" style="font-size:11px">+ Shto prodhues</button>
       </div>
-      ${producers.map(supplierRow).join('')}
+      ${producers.map(supplierRow).join('')||(fq?'<div style="font-size:11.5px;color:var(--text3);padding:6px 0">Asnjë prodhues nuk përputhet me "'+fq+'".</div>':'')}
     </div>
     <div>
       <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-        <span>Furnitorët e lëndës së parë (${rawmats.length})</span>
+        <span>Furnitorët e lëndës së parë (${rawmats.length}${fq&&rawmats.length!==rawmatsAll?' / '+rawmatsAll:''})</span>
         <button class="btn btn-sm" onclick="addSupplierCat('rawmat')" style="font-size:11px">+ Shto furnitor</button>
       </div>
       ${rawmats.map(supplierRow).join('')}
@@ -4122,7 +4149,15 @@ async function handleOfferFile(f){
       document.getElementById('pdf-text').value = text;
     } catch (err) {
       console.error(err);
+      if(err && err.scannedPdf){
+        document.getElementById('pdf-dz-title').textContent='⚠ '+f.name+' — PDF i skanuar, pa tekst';
+        alert('Ky PDF duket i skanuar/foto (pa "shtresë teksti") — kompjuteri s\'mund të nxjerrë tekst prej tij automatikisht.\n\nZgjidhje: hape PDF-në, përzgjidh tekstin (Cmd/Ctrl+A), kopjoje (Cmd/Ctrl+C), dhe ngjite te kutia "Teksti i ofertës" më poshtë.');
+        if(pdfDrop) pdfDrop.style.borderColor='#C62828';
+        return;
+      }
       alert("Gabim gjatë leximit të PDF së ofertës.");
+      document.getElementById('pdf-dz-title').textContent='Tërhiq ofertën PDF këtu ose kliko';
+      return;
     }
   }
   document.getElementById('pdf-dz-title').textContent='✓ '+f.name;
