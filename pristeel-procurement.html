@@ -523,6 +523,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <a href="https://app.hubspot.com/contacts/147958987" target="_blank" title="Hap HubSpot" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#FF7A59;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="#fff"><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="6" cy="6" r="2.2"/><path d="M6 8v8M8 6h8" stroke="#fff" stroke-width="2" fill="none"/></svg>
     </a>
+    <a href="https://www.prissteel.com" target="_blank" title="Hap faqen prissteel.com" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#0C447C;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
+    </a>
     <span id="wx-mini" title="Moti — Prishtinë" style="display:none;position:relative;align-items:center;gap:6px;font-size:11.5px;color:var(--text2);padding:4px 10px;margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);cursor:default;white-space:nowrap"
       onmouseenter="var p=document.getElementById('wx-pop');if(p)p.style.display='block'"
       onmouseleave="var p=document.getElementById('wx-pop');if(p)p.style.display='none'">
@@ -2272,10 +2275,10 @@ var HOME_QUOTES=[
 var RADIO_CHANNELS=[
   {n:'Piano e qetë',          url:'https://peacefulpiano.stream.publicradio.org/peacefulpiano.mp3'},
   {n:'Piano & Ambient',       url:'https://relax.stream.publicradio.org/relax.mp3'},
-  {n:'Chill modern',          url:'https://ice.somafm.com/groovesalad'},
-  {n:'Ambient i qetë',        url:'https://ice.somafm.com/dronezone'},
-  {n:'Ambient i ngrohtë',     url:'https://ice.somafm.com/deepspaceone'},
-  {n:'Chill dreamy',          url:'https://ice.somafm.com/lush'},
+  {n:'Chill modern',          url:'https://ice1.somafm.com/groovesalad-128-mp3'},
+  {n:'Ambient i qetë',        url:'https://ice1.somafm.com/dronezone-128-mp3'},
+  {n:'Ambient i ngrohtë',     url:'https://ice1.somafm.com/deepspaceone-128-mp3'},
+  {n:'Chill dreamy',          url:'https://ice1.somafm.com/lush-128-mp3'},
   {n:'Chill mellow',          url:'https://stream.radioparadise.com/mellow-128'}
 ];
 var _radioOn=false;
@@ -5413,10 +5416,11 @@ function projSetPipelineStage(id,stage){
     .catch(function(e){ alert('Gabim: '+e.message); });
 }
 var PROJ_STATUS={
-  aktiv:  {n:'Aktiv',    c:'#2E7D32', bg:'#E8F5E9'},
-  pritje: {n:'Në pritje',c:'#E8A33D', bg:'#FFF8E1'},
-  mbyllur:{n:'Mbyllur',  c:'#546E7A', bg:'#ECEFF1'},
-  humbur: {n:'Humbur',   c:'#C62828', bg:'#FFEBEE'}
+  aktiv:    {n:'Aktiv',     c:'#2E7D32', bg:'#E8F5E9'},
+  pritje:   {n:'Në pritje', c:'#E8A33D', bg:'#FFF8E1'},
+  realizuar:{n:'Realizuar', c:'#0C7C7C', bg:'#E0F5F3'},
+  mbyllur:  {n:'Mbyllur',   c:'#546E7A', bg:'#ECEFF1'},
+  humbur:   {n:'Humbur',    c:'#C62828', bg:'#FFEBEE'}
 };
 function projCardHtml(p){
   var dt=p.created_at?new Date(p.created_at).toLocaleDateString('sq'):'';
@@ -5642,8 +5646,19 @@ function renderDashOffers(){
 }
 function deleteProject(id){
   if(_curProjId===id) resetWorkspace();
-  if(!confirm('Fshi projektin? Nuk kthehet.'))return;
-  supaFetch('projects?id=eq.'+id,'DELETE').then(function(){loadProjectList();}).catch(function(e){alert('Gabim: '+e.message);});
+  var p=(window._allProjectsCache||[]).find(function(x){return x.id===id;});
+  var nm=p?p.name:'këtë projekt';
+  if(!confirm('A jeni VËRTET i sigurt që doni të fshini "'+nm+'"?\n\nKy veprim fshin projektin dhe ofertat e furnitorëve të lidhura me të. BOM, ofertat e dërguara (Arkivi), faturat dhe kontratat e ruajtura MË PARË mbeten të ruajtura, por humbin lidhjen me këtë projekt.\n\nS\'ka rrugë kthimi.')) return;
+  var typed=prompt('Për të konfirmuar, shkruaj fjalën FSHIJ (me shkronja të mëdha):');
+  if(typed!=='FSHIJ'){ alert('Anulluar — fjala s\'u shkrua saktë.'); return; }
+  supaFetch('offers_inbox?project_id=eq.'+id,'PATCH',{project_id:null}).catch(function(){}).then(function(){
+    return supaFetch('projects?id=eq.'+id,'DELETE');
+  }).then(function(){
+    if(typeof closeOverview==='function') closeOverview();
+    alert('Projekti u fshi.');
+    loadProjectList();
+    if(typeof loadHub==='function') loadHub();
+  }).catch(function(e){alert('Gabim: '+e.message);});
 }
 window.addEventListener('load',function(){setTimeout(loadProjectList,800);setTimeout(loadGlobalProjSel,1100);});
 function loadGlobalProjSel(){
@@ -7048,6 +7063,7 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes
     }).join('')+'</div>';
   }
   h+='<div class="ov-foot">'
+    +'<button class="btn btn-sm" style="color:var(--red-text);margin-right:auto" onclick="deleteProject(\''+id+'\')" title="Fshij plotësisht këtë projekt">Fshij projektin</button>'
     +'<button class="btn btn-sm" onclick="closeOverview()">Mbyll</button>'
     +'<button class="btn btn-sm btn-primary" onclick="closeOverview();loadProject(\''+id+'\')">Puno me projektin</button>'
     +'</div>';
