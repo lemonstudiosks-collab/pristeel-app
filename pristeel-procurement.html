@@ -485,6 +485,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div class="topbar-sub" id="page-sub">Ngarko ose ngjit dokumentin e blerësit</div>
   </div>
   <div class="flex gap-8 items-center">
+    <a href="https://calendar.google.com/calendar/u/0/r" target="_blank" title="Hap Google Calendar" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#1A73E8;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+    </a>
+    <a href="https://app.hubspot.com/contacts/147958987" target="_blank" title="Hap HubSpot" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#FF7A59;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="#fff"><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="6" cy="6" r="2.2"/><path d="M6 8v8M8 6h8" stroke="#fff" stroke-width="2" fill="none"/></svg>
+    </a>
     <span id="wx-mini" title="Moti — Prishtinë" style="display:none;position:relative;align-items:center;gap:6px;font-size:11.5px;color:var(--text2);padding:4px 10px;margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);cursor:default;white-space:nowrap"
       onmouseenter="var p=document.getElementById('wx-pop');if(p)p.style.display='block'"
       onmouseleave="var p=document.getElementById('wx-pop');if(p)p.style.display='none'">
@@ -7295,6 +7301,14 @@ function renderContactStats(){
     +'</div>';
   }).join('');
 }
+function ctAvatarHtml(name, company){
+  var s=(name||company||'').trim();
+  if(!s){
+    return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>';
+  }
+  var parts=s.split(/\s+/);
+  return ((parts[0]||'')[0]+(parts[1]?parts[1][0]:'')).toUpperCase();
+}
 function renderContacts(){
   var el=document.getElementById('contacts-list'); if(!el) return;
   var q=((document.getElementById('ct-search')||{}).value||'').toLowerCase();
@@ -7315,22 +7329,89 @@ function renderContacts(){
   if(bS) bS.textContent='Furnitorë ('+nSup+')';
   el.innerHTML=list.map(function(c){
     var flag={DE:'🇩🇪',AT:'🇦🇹',CH:'🇨🇭',ME:'🇲🇪',RS:'🇷🇸',XK:'🇽🇰',AL:'🇦🇱',MK:'🇲🇰'}[c.country]||'';
-    return '<div class="ct">'
-      +'<div class="ct-avatar">'+ctInitials(c.person,c.company)+'</div>'
+    return '<div class="ct" onclick="openContactModal(\''+c.id+'\')" style="cursor:pointer" title="Kliko për ta hapur kontaktin">'
+      +'<div class="ct-avatar">'+ctAvatarHtml(c.person,c.company)+'</div>'
       +'<div class="ct-body">'
-        +'<div class="ct-name">'+(c.person||c.company)+(flag?' <span style="font-size:11px">'+flag+'</span>':'')+'</div>'
-        +'<div class="ct-co">'+(c.person?c.company:'')+(c.role?' · '+c.role:'')+'</div>'
+        +'<div class="ct-name">'+(c.person||c.company||'(pa emër)')+(flag?' <span style="font-size:11px">'+flag+'</span>':'')+'</div>'
+        +'<div class="ct-co">'+(c.person?c.company||'':'')+(c.role?' · '+c.role:'')+'</div>'
         +'<div class="ct-meta">'+(c.email?'<span>✉ '+c.email+'</span>':'')+(c.phone?'<span>☎ '+c.phone+'</span>':'')+'</div>'
         +(c.notes?'<div style="font-size:10.5px;color:var(--text3);margin-top:3px;font-style:italic">'+c.notes+'</div>':'')
       +'</div>'
       +'<span class="ct-tag '+c.kind+'">'+(c.kind==='client'?'Klient':'Furnitor')+'</span>'
-      +'<div class="ct-acts">'
-        +(c.email?'<div class="ct-ic" title="Email" onclick="window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(c.email)+'\',\'_blank\')">✉</div>':'')
-        +(c.hubspot_url?'<div class="ct-ic" title="Hap në HubSpot" onclick="window.open(\''+c.hubspot_url+'\',\'_blank\')" style="font-weight:700;font-size:11px">H</div>':'')
-        +'<div class="ct-ic" title="Ndrysho" onclick="editContact(\''+c.id+'\')">✎</div>'
-      +'</div>'
     +'</div>';
   }).join('');
+}
+function closeContactModal(){ var bg=document.getElementById('contact-modal'); if(bg) bg.remove(); }
+function ctSaveField(id,field,val){
+  var patch={}; patch[field]=val||null;
+  supaFetch('contacts?id=eq.'+id,'PATCH',patch).then(function(){
+    var c=_contacts.find(function(x){return x.id===id;}); if(c) c[field]=val||null;
+    renderContacts();
+  }).catch(function(e){alert('Gabim: '+e.message);});
+}
+function ctAddActivity(id){
+  var typeEl=document.getElementById('ct-act-type'), textEl=document.getElementById('ct-act-text');
+  var type=typeEl?typeEl.value:'note', text=(textEl?textEl.value:'').trim();
+  if(!text) return;
+  supaFetch('contact_activities','POST',{contact_id:id,type:type,text:text}).then(function(){
+    if(textEl) textEl.value='';
+    supaFetch('contacts?id=eq.'+id,'PATCH',{last_contact:new Date().toISOString().slice(0,10)}).catch(function(){});
+    ctLoadActivities(id);
+  }).catch(function(e){alert('Gabim: '+e.message);});
+}
+function ctLoadActivities(id){
+  var el=document.getElementById('ct-act-list'); if(!el) return;
+  supaFetch('contact_activities?contact_id=eq.'+id+'&order=created_at.desc&limit=50').then(function(rows){
+    if(!rows||!rows.length){ el.innerHTML='<div style="font-size:11.5px;color:var(--text3);padding:6px 0">Ende s\u2019ka aktivitete të regjistruara.</div>'; return; }
+    var typeIcon={call:'☎',email:'✉',meeting:'👥',note:'📝'};
+    el.innerHTML=rows.map(function(a){
+      var dt=a.created_at?new Date(a.created_at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+      return '<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">'
+        +'<span style="font-size:13px;flex-shrink:0">'+(typeIcon[a.type]||'📝')+'</span>'
+        +'<div style="min-width:0"><div style="font-size:12px;color:var(--text)">'+String(a.text||'').replace(/</g,'&lt;')+'</div>'
+        +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+dt+'</div></div></div>';
+    }).join('');
+  }).catch(function(){el.innerHTML='';});
+}
+function openContactModal(id){
+  var c=_contacts.find(function(x){return x.id===id;}); if(!c){alert('Kontakti nuk u gjet.');return;}
+  var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='contact-modal';
+  bg.onclick=function(e){ if(e.target===bg) closeContactModal(); };
+  function fld(label,field,val,type){
+    return '<div style="margin-bottom:9px"><label class="lbl" style="font-size:10px">'+label+'</label>'
+      +'<input type="'+(type||'text')+'" value="'+String(val||'').replace(/"/g,'&quot;')+'" onchange="ctSaveField(\''+id+'\',\''+field+'\',this.value)" style="width:100%;font-size:12.5px;padding:6px 9px;border:1px solid var(--border);border-radius:6px"></div>';
+  }
+  var infoHtml='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+      +'<div style="font-size:15px;font-weight:700">'+(c.person||c.company||'(pa emër)')+'</div>'
+      +'<span class="ct-tag '+c.kind+'" style="position:static">'+(c.kind==='client'?'Klient':'Furnitor')+'</span>'
+    +'</div>'
+    +fld('Personi','person',c.person)
+    +fld('Kompania','company',c.company)
+    +fld('Email','email',c.email,'email')
+    +fld('Telefoni','phone',c.phone)
+    +fld('Roli','role',c.role)
+    +fld('Vendi (DE/AT/CH/XK/AL/MK/ME/RS)','country',c.country)
+    +'<label class="lbl" style="font-size:10px">Shënime</label>'
+    +'<textarea onchange="ctSaveField(\''+id+'\',\'notes\',this.value)" style="width:100%;min-height:70px;font-size:12px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;resize:vertical">'+String(c.notes||'').replace(/</g,'&lt;')+'</textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:12px">'
+      +(c.email?'<button class="btn btn-sm" onclick="window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(c.email)+'\',\'_blank\')">✉ Dërgo Email</button>':'')
+      +(c.hubspot_url?'<button class="btn btn-sm" onclick="window.open(\''+c.hubspot_url+'\',\'_blank\')">Hap në HubSpot</button>':'')
+    +'</div>';
+  var actHtml='<div style="font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:8px">Aktiviteti</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px">'
+      +'<select id="ct-act-type" style="font-size:11.5px;padding:6px 7px;border:1px solid var(--border);border-radius:6px">'
+        +'<option value="note">📝 Shënim</option><option value="call">☎ Telefonatë</option><option value="email">✉ Email</option><option value="meeting">👥 Takim</option>'
+      +'</select>'
+      +'<input id="ct-act-text" type="text" placeholder="Shto aktivitet…" style="flex:1;font-size:12px;padding:6px 9px;border:1px solid var(--border);border-radius:6px" onkeydown="if(event.key===\'Enter\')ctAddActivity(\''+id+'\')">'
+      +'<button class="btn btn-sm btn-primary" onclick="ctAddActivity(\''+id+'\')">Shto</button>'
+    +'</div>'
+    +'<div id="ct-act-list" style="max-height:260px;overflow-y:auto"><div class="hub-load">Duke ngarkuar…</div></div>';
+  bg.innerHTML='<div class="pst-modal" style="max-width:760px"><div class="pst-modal-hd"><div><div style="font-size:14px;font-weight:650">Kontakti</div></div><span class="pst-modal-x" onclick="closeContactModal()">✕</span></div>'
+    +'<div class="pst-modal-bd" style="display:grid;grid-template-columns:1fr 1fr;gap:22px">'
+    +'<div>'+infoHtml+'</div><div>'+actHtml+'</div>'
+    +'</div></div>';
+  document.body.appendChild(bg);
+  ctLoadActivities(id);
 }
 function addContact(){
   var kind=prompt('Lloji: client / supplier','client'); if(!kind) return;
