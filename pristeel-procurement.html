@@ -604,9 +604,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
   <div id="home-quote" style="text-align:center;margin-top:22px"></div>
   <div style="max-width:980px;margin:26px auto 0;padding:0 20px">
-    <div style="text-align:center;font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:14px">PROFILET QË PËRPUNOJMË</div>
+    <div style="text-align:center;font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:14px">PROFILET QË PËRPUNOJMË · kliko për specifikat</div>
     <svg viewBox="0 0 980 210" style="display:block;width:100%" xmlns="http://www.w3.org/2000/svg">
-      <g fill="none" stroke="#A65F2E" stroke-width="1.6" stroke-linejoin="round">
+      <g fill="none" stroke="#787E85" stroke-width="1.6" stroke-linejoin="round">
         <!-- 1. PLLAKË -->
         <g transform="translate(20,40)">
           <rect x="0" y="34" width="82" height="14"/>
@@ -630,7 +630,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         </g>
         <!-- 4. UPN / U-profil -->
         <g transform="translate(380,10)">
-          <path d="M0 0 H14 V71 H60 V90 H0 Z" transform="translate(0,0)"/>
           <path d="M0 0 H14 V71 H60 V80 H24 V9 H0 Z"/>
         </g>
         <!-- 5. L - Kënddrejtë (barazkrahësh) -->
@@ -654,7 +653,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
           <line x1="60" y1="0" x2="0" y2="60" stroke-width="0.8" opacity=".45"/>
         </g>
         <!-- 9. Skelë / konstruksion (mbetur si element atmosfere, i thjeshtuar) -->
-        <g transform="translate(870,15)" opacity=".55">
+        <g transform="translate(870,15)" opacity=".5">
           <path d="M0 85 L0 55 L25 40 L25 55 L50 40 L50 85"/>
           <line x1="25" y1="55" x2="25" y2="85"/>
         </g>
@@ -678,6 +677,16 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <text x="800" y="124" text-anchor="middle" style="font-size:8.5px;fill:var(--text3)">EN 10210 · S355J2H</text>
       </g>
       <text x="490" y="185" text-anchor="middle" style="font-size:11px;letter-spacing:4px;fill:#A65F2E;opacity:.75;font-family:Inter,sans-serif">STEEL IS OUR BUSINESS</text>
+      <g fill="transparent" style="cursor:pointer">
+        <rect x="0"   y="0" width="110" height="140" onclick="openProfileInfo('pllake')"><title>Pllakë</title></rect>
+        <rect x="110" y="0" width="120" height="140" onclick="openProfileInfo('hea_heb')"><title>HEA / HEB</title></rect>
+        <rect x="230" y="0" width="120" height="140" onclick="openProfileInfo('ipn_ipe')"><title>IPN / IPE</title></rect>
+        <rect x="350" y="0" width="100" height="140" onclick="openProfileInfo('upn')"><title>UPN (U)</title></rect>
+        <rect x="450" y="0" width="90"  height="140" onclick="openProfileInfo('l')"><title>L (Kënd)</title></rect>
+        <rect x="540" y="0" width="95"  height="140" onclick="openProfileInfo('rhs')"><title>Tub katror</title></rect>
+        <rect x="635" y="0" width="105" height="140" onclick="openProfileInfo('chs')"><title>Tub rrumbullak</title></rect>
+        <rect x="740" y="0" width="110" height="140" onclick="openProfileInfo('rhs2')"><title>RHS</title></rect>
+      </g>
     </svg>
   </div>
 </div>
@@ -1989,6 +1998,72 @@ function loadProcurementDirectory(){
         el.innerHTML=h;
       });
   }).catch(function(e){ el.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim gjatë ngarkimit të drejtorisë: '+e.message+'</div>'; });
+}
+// ── SPECIFIKAT E PROFILEVE (referencë e përgjithshme sipas EN — verifiko me tabelën zyrtare për precizitet) ──
+var PROFILE_DATA={
+  pllake:{n:'Pllakë', std:'EN 10025-2', grades:'S235JR, S275JR, S355JR/J0/J2',
+    desc:'Fletë çeliku e sheshtë, prodhohet e nxehtë (hot-rolled). Përdoret për struktura, pllaka bazamenti, saldime.',
+    weight:'Pesha llogaritet: trashësia (mm) × 7.85 kg/m² (dendësia e çelikut). P.sh. pllakë 10mm = 78.5 kg/m².',
+    sizes:[['5 mm','39.3 kg/m²'],['10 mm','78.5 kg/m²'],['15 mm','117.8 kg/m²'],['20 mm','157.0 kg/m²'],['25 mm','196.3 kg/m²']],
+    cert:'EN 10204 3.1 (standarde) ose 3.2 (me palë të tretë) — zakonisht kërkohet për projekte DACH.'},
+  hea_heb:{n:'HEA / HEB (trarë I me fllanxha të gjera)', std:'EN 10365', grades:'S235JR, S275JR, S355JR/J0/J2',
+    desc:'HEA — më i lehtë, fllanxha më të holla. HEB — më i rëndë, fllanxha më të trasha, ngarkesa më e madhe. Përdoren si kolona dhe trarë kryesorë.',
+    weight:'Nga ~16 kg/m (HEA100) deri mbi 300 kg/m (HEB600+), varësisht nga madhësia.',
+    sizes:[['HEA100','16.7 kg/m'],['HEA160','30.4 kg/m'],['HEA200','42.3 kg/m'],['HEB100','20.4 kg/m'],['HEB160','42.6 kg/m'],['HEB200','61.3 kg/m']],
+    cert:'EN 10204 3.1, shpesh me kërkesë për CE marking (EN 1090-2 EXC2-4).'},
+  ipn_ipe:{n:'IPN / IPE (trarë I klasik)', std:'EN 10034 (IPE) · standard historik (IPN)', grades:'S235JR, S275JR, S355JR/J0/J2',
+    desc:'IPN — fllanxha të pjerrëta (standard i vjetër, ende në përdorim rajonal). IPE — fllanxha paralele, standard modern evropian. Trarë me ngarkesa mesatare.',
+    weight:'Nga ~8 kg/m (IPE100) deri mbi 150 kg/m (IPE600).',
+    sizes:[['IPE100','8.1 kg/m'],['IPE160','15.8 kg/m'],['IPE200','22.4 kg/m'],['IPE300','42.2 kg/m'],['IPN160','17.9 kg/m'],['IPN200','26.2 kg/m']],
+    cert:'EN 10204 3.1.'},
+  upn:{n:'UPN (profil U)', std:'EN 10365', grades:'S235JR, S275JR, S355JR/J0/J2',
+    desc:'Profil në formë U/kanal, i hapur në një anë. Përdoret për korniza, mbajtëse anësore, struktura dytësore.',
+    weight:'Nga ~5 kg/m (UPN50) deri mbi 50 kg/m (UPN300+).',
+    sizes:[['UPN80','8.64 kg/m'],['UPN100','10.6 kg/m'],['UPN140','16.0 kg/m'],['UPN160','18.8 kg/m'],['UPN200','25.3 kg/m']],
+    cert:'EN 10204 3.1.'},
+  l:{n:'L (Kënddrejtë / Kënd)', std:'EN 10056', grades:'S235JR, S275JR, S355JR',
+    desc:'Profil këndor, barazkrahësh (equal) ose pabarazkrahësh (unequal). Përdoret për konstruksione dytësore, mbajtëse, korniza, ura kabllosh.',
+    weight:'Varet nga përmasat e krahëve dhe trashësia — nga ~2 kg/m deri mbi 30 kg/m.',
+    sizes:[['L50x50x5','3.77 kg/m'],['L60x60x6','5.42 kg/m'],['L80x80x8','9.63 kg/m'],['L100x100x10','14.9 kg/m']],
+    cert:'EN 10204 2.2 ose 3.1.'},
+  rhs:{n:'Tub katror / drejtkëndor (RHS/SHS)', std:'EN 10219 (i ftohtë) / EN 10210 (i nxehtë)', grades:'S235JRH, S355J2H',
+    desc:'Profil i zbrazët katror ose drejtkëndor, saldim gjatësor. Përdoret për kolona, konstruksione hapësinore, façada.',
+    weight:'Varet nga përmasa e jashtme dhe trashësia e murit — nga ~2 kg/m deri mbi 40 kg/m.',
+    sizes:[['40x40x3','3.25 kg/m'],['60x60x4','6.71 kg/m'],['80x80x4','9.16 kg/m'],['100x100x5','14.4 kg/m']],
+    cert:'EN 10204 3.1, shpesh EN 1090-2 EXC2-3.'},
+  chs:{n:'Tub rrumbullak (CHS)', std:'EN 10219 (i ftohtë) / EN 10210 (i nxehtë)', grades:'S235JRH, S355J2H',
+    desc:'Profil i zbrazët rrumbullak. Përdoret për shtylla, parmakë, konstruksione tubulare, sisteme MEP.',
+    weight:'Varet nga diametri i jashtëm dhe trashësia e murit.',
+    sizes:[['Ø48.3x3.2','3.61 kg/m'],['Ø60.3x3.6','5.03 kg/m'],['Ø76.1x4.0','7.11 kg/m'],['Ø114.3x5.0','13.5 kg/m']],
+    cert:'EN 10204 3.1.'},
+  rhs2:{n:'RHS — variant shtesë', std:'EN 10210', grades:'S355J2H',
+    desc:'I njëjti familje si Tub katror/drejtkëndor (RHS) — përdoret këtu për seksione më të mëdha, tipike për kolona kryesore.',
+    weight:'Nga ~10 kg/m deri mbi 100 kg/m, varësisht nga seksioni.',
+    sizes:[['120x120x6','20.9 kg/m'],['150x150x8','34.6 kg/m'],['200x200x10','57.4 kg/m']],
+    cert:'EN 10204 3.1, EN 1090-2.'}
+};
+function closeProfileInfo(){ var bg=document.getElementById('profile-info-modal'); if(bg) bg.remove(); }
+function openProfileInfo(key){
+  var d=PROFILE_DATA[key]; if(!d) return;
+  var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='profile-info-modal';
+  bg.onclick=function(e){ if(e.target===bg) closeProfileInfo(); };
+  bg.innerHTML='<div class="pst-modal" style="max-width:480px">'
+    +'<div class="pst-modal-hd"><div><div style="font-size:14.5px;font-weight:700">'+d.n+'</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:3px">'+d.std+'</div></div>'
+      +'<span class="pst-modal-x" onclick="closeProfileInfo()">✕</span></div>'
+    +'<div class="pst-modal-bd">'
+    +'<div style="font-size:12.5px;color:var(--text2);margin-bottom:12px;line-height:1.5">'+d.desc+'</div>'
+    +'<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Cilësitë e disponueshme</div>'
+    +'<div style="font-size:12.5px;margin-bottom:14px">'+d.grades+'</div>'
+    +'<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Pesha (kg/m) — vlera orientuese</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:10px">'
+      +d.sizes.map(function(s){return '<tr><td style="padding:4px 0;border-bottom:1px solid var(--border)">'+s[0]+'</td><td style="padding:4px 0;border-bottom:1px solid var(--border);text-align:right;font-weight:650">'+s[1]+'</td></tr>';}).join('')
+    +'</table>'
+    +'<div style="font-size:10.5px;color:var(--text3);margin-bottom:10px">'+d.weight+'</div>'
+    +'<div style="font-size:11px;color:var(--text2);background:var(--bg2);border-radius:7px;padding:8px 10px">📋 <strong>Certifikimi tipik:</strong> '+d.cert+'</div>'
+    +'<div style="font-size:9.5px;color:var(--text3);margin-top:10px;font-style:italic">Vlerat janë referencë e përgjithshme — verifikoje gjithmonë me tabelën zyrtare EN ose me furnitorin para ofertimit final.</div>'
+    +'</div></div>';
+  document.body.appendChild(bg);
 }
 function closeSupplierModal(){ var bg=document.getElementById('supplier-modal'); if(bg) bg.remove(); }
 function supplierModalSendGmail(email,subj){
