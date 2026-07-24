@@ -390,46 +390,67 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
     <div id="side-quick" style="padding:0 16px 4px">
       <div onclick="goToClientOffer()" title="Fillo një ofertë të re për klientin"
-        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#12513B;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#12513B;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.22)'" onmouseout="this.style.boxShadow='none'">
-        <div style="font-size:11.5px;font-weight:650;color:#fff">✚ Gjenero Ofertë</div>
-        <div style="font-size:9.5px;color:rgba(255,255,255,.75);margin-top:1px">Ofertë e re për klientin</div>
+        <span style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        </span>
+        <div><div style="font-size:11.5px;font-weight:650;color:#fff">Gjenero Ofertë</div>
+        <div style="font-size:9.5px;color:rgba(255,255,255,.75);margin-top:1px">Ofertë e re për klientin</div></div>
       </div>
       <div onclick="showPage('invoices')" title="Fillo një faturë të re"
-        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#0C3D6B;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#0C3D6B;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.22)'" onmouseout="this.style.boxShadow='none'">
-        <div style="font-size:11.5px;font-weight:650;color:#fff">✚ Gjenero Faturë</div>
-        <div style="font-size:9.5px;color:rgba(255,255,255,.75);margin-top:1px">Faturë e re</div>
+        <span style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2z"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+        </span>
+        <div><div style="font-size:11.5px;font-weight:650;color:#fff">Gjenero Faturë</div>
+        <div style="font-size:9.5px;color:rgba(255,255,255,.75);margin-top:1px">Faturë e re</div></div>
       </div>
       <div onclick="showPage('offer-archive')" title="Të gjitha ofertat me numër rendor"
-        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
-        <div style="font-size:11.5px;font-weight:650;color:#A65F2E">📄 Ofertat</div>
-        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Arkivi me numër rendor</div>
+        <span style="width:26px;height:26px;border-radius:7px;background:#A65F2E1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#A65F2E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </span>
+        <div><div style="font-size:11.5px;font-weight:650;color:#A65F2E">Ofertat</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Arkivi me numër rendor</div></div>
       </div>
       <div onclick="showPage('invoices');invSwitchTab('in')" title="Faturat hyrëse (nga furnitorët)"
-        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
-        <div style="font-size:11.5px;font-weight:650;color:#185FA5">📥 Faturat hyrëse</div>
-        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Nga furnitorët</div>
+        <span style="width:26px;height:26px;border-radius:7px;background:#185FA51a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#185FA5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+        </span>
+        <div><div style="font-size:11.5px;font-weight:650;color:#185FA5">Faturat hyrëse</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Nga furnitorët</div></div>
       </div>
       <div onclick="showPage('invoices');invSwitchTab('out')" title="Faturat dalëse (te klientët)"
-        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
-        <div style="font-size:11.5px;font-weight:650;color:#0F6E56">📤 Faturat dalëse</div>
-        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Te klientët</div>
+        <span style="width:26px;height:26px;border-radius:7px;background:#0F6E561a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0F6E56" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v5"/><path d="m22 12-4.5 4.5L15 14"/><path d="M3 12v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/></svg>
+        </span>
+        <div><div style="font-size:11.5px;font-weight:650;color:#0F6E56">Faturat dalëse</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Te klientët</div></div>
       </div>
       <div onclick="showPage('contracts')" title="Kontratat — Werkvertrag, Nënkontrata, NDA"
-        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
-        <div style="font-size:11.5px;font-weight:650;color:#534AB7">📑 Kontratat</div>
-        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Werkvertrag, Nënkontrata, NDA</div>
+        <span style="width:26px;height:26px;border-radius:7px;background:#534AB71a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#534AB7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="m9 14 2 2 4-4"/></svg>
+        </span>
+        <div><div style="font-size:11.5px;font-weight:650;color:#534AB7">Kontratat</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Werkvertrag, Nënkontrata, NDA</div></div>
       </div>
       <div onclick="showPage('library')" title="Ngarko skedar nga kompjuteri ose Google Drive"
-        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s"
+        style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
-        <div style="font-size:11.5px;font-weight:650;color:#854F0B">📂 Skedarët</div>
-        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Kompjuteri ose Google Drive</div>
+        <span style="width:26px;height:26px;border-radius:7px;background:#854F0B1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#854F0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </span>
+        <div><div style="font-size:11.5px;font-weight:650;color:#854F0B">Skedarët</div>
+        <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Kompjuteri ose Google Drive</div></div>
       </div>
       <div onclick="window.open('https://ec.europa.eu/taxation_customs/dds2/taric/quota_consultation.jsp','_blank')" title="Kontrollo kuotat doganore të BE (TARIC) — hapet në faqen zyrtare të Komisionit Evropian"
         style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
@@ -1722,7 +1743,7 @@ function renderSidePanel(){
   var el=document.getElementById('side-panel'); if(!el) return;
   var today=new Date().toISOString().slice(0,10);
   el.innerHTML='<div style="border-top:1px solid var(--border);padding-top:12px">'
-    +'<div style="font-size:9.5px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:8px">VËMENDJE</div>'
+    +'<div style="font-size:9.5px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:9px">VËMENDJE</div>'
     +'<div id="sp-body" style="font-size:10.5px;color:var(--text3)">…</div></div>';
   var body=document.getElementById('sp-body');
   Promise.all([
@@ -1731,21 +1752,28 @@ function renderSidePanel(){
     supaFetch('rfq_log?select=id').catch(function(){return [];})
   ]).then(function(r){
     var tasks=r[0]||[], inbox=r[1]||[], rfq=r[2]||[];
+    var clockIc='<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>';
     var h='';
     if(tasks.length){
       tasks.forEach(function(t){
         var od=t.due_date&&t.due_date<today;
-        h+='<div onclick="showPage(\'qendra\')" style="display:flex;gap:6px;align-items:flex-start;padding:5px 0;cursor:pointer;border-bottom:1px solid var(--border)">'
-          +'<span style="width:5px;height:5px;border-radius:50%;background:'+(od?'#A33A2E':'#A65F2E')+';margin-top:5px;flex-shrink:0"></span>'
+        h+='<div onclick="showPage(\'qendra\')" style="display:flex;gap:6px;align-items:flex-start;padding:6px 0;cursor:pointer;border-bottom:1px solid var(--border);color:'+(od?'#A33A2E':'var(--text2)')+'">'
+          +clockIc
           +'<span style="line-height:1.35;color:var(--text2)">'+(t.title||'(pa titull)').slice(0,42)+'</span></div>';
       });
     } else {
-      h+='<div style="padding:5px 0;color:var(--green-text)">Asnjë detyrë e vonuar</div>';
+      h+='<div style="display:flex;gap:6px;align-items:center;padding:6px 0;color:var(--green-text)">'
+        +'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
+        +'<span>Asnjë detyrë e vonuar</span></div>';
     }
-    h+='<div style="margin-top:10px;display:flex;justify-content:space-between;font-size:10px">'
-      +'<span>Email pa analizë</span><b style="color:'+(inbox.length?'#A65F2E':'var(--text3)')+'">'+inbox.length+'</b></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:3px">'
-      +'<span>RFQ dërguar</span><b>'+rfq.length+'</b></div>';
+    h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">'
+        +'<span style="display:flex;align-items:center;gap:5px;color:var(--text3)"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Email pa analizë</span>'
+        +'<b style="color:'+(inbox.length?'#A65F2E':'var(--text3)')+'">'+inbox.length+'</b></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">'
+        +'<span style="display:flex;align-items:center;gap:5px;color:var(--text3)"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>RFQ dërguar</span>'
+        +'<b style="color:var(--text2)">'+rfq.length+'</b></div>'
+    +'</div>';
     if(body) body.innerHTML=h;
   }).catch(function(){ if(body) body.innerHTML='<div style="color:var(--text3)">—</div>'; });
 }
