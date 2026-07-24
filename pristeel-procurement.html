@@ -6923,6 +6923,19 @@ function ovMatchDeal(projName,deals){
 function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes){
   document.getElementById('ov-title').textContent=p.name||'Pa emer';
   document.getElementById('ov-client').textContent=(p.client||'')+(p.location?' \u00B7 '+p.location:'');
+  (function(){
+    var st=PROJ_STATUS[p.status||'pritje']||PROJ_STATUS.pritje;
+    var wrap=document.getElementById('ov-status-wrap');
+    if(!wrap){
+      wrap=document.createElement('div');
+      wrap.id='ov-status-wrap';
+      wrap.style.cssText='margin-top:6px';
+      document.getElementById('ov-client').insertAdjacentElement('afterend',wrap);
+    }
+    wrap.innerHTML='<select onchange="projSetStatus(\''+id+'\',this.value)" style="font-size:11px;font-weight:650;padding:3px 8px;border-radius:6px;border:1px solid '+st.c+'44;background:'+st.bg+';color:'+st.c+'">'
+      +Object.keys(PROJ_STATUS).map(function(k){return '<option value="'+k+'"'+((p.status||'pritje')===k?' selected':'')+'>'+PROJ_STATUS[k].n+'</option>';}).join('')
+      +'</select>';
+  })();
   var inn=offs.filter(function(o){return (o.supplier||'').indexOf('OFERTA JONE')===-1;});
   var out=offs.filter(function(o){return (o.supplier||'').indexOf('OFERTA JONE')>-1;});
   (ourQuotes||[]).forEach(function(q){
