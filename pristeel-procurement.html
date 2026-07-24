@@ -1797,9 +1797,26 @@ function procStartRfq(name,cat,email,contactName){
 }
 function loadProcurementDirectory(){
   var el=document.getElementById('proc-directory'); if(!el) return;
-  supaFetch('partners?relation=cs.{supplier}&stage=eq.active&select=id,name,country,city,categories,business_type,website,certifications,payment_terms,lead_time_days,notes&order=importance.desc&limit=200').then(function(partners){
+  Promise.all([
+    supaFetch('partners?relation=cs.{supplier}&stage=eq.active&select=id,name,country,city,categories,business_type,website,certifications,payment_terms,lead_time_days,notes&order=importance.desc&limit=200'),
+    supaFetch('offers?select=supplier,price_kg,delivery_weeks,created_at&order=created_at.desc&limit=500').catch(function(){return[];})
+  ]).then(function(res){
+    var partners=res[0], offerRows=res[1]||[];
     if(!partners||!partners.length){ el.innerHTML='<div style="color:var(--text3);font-size:12px">Ende s\u2019ka furnitorë të regjistruar në drejtori.</div>'; return; }
     window._procPartners=partners;
+    // Grupo ofertat historike sipas emrit te furnitorit (perputhje jo case-sensitive, permban emrin)
+    function offerStatsFor(name){
+      if(!name) return null;
+      var n=name.toLowerCase();
+      var matches=offerRows.filter(function(o){ return o.supplier && o.supplier.toLowerCase().indexOf(n)>-1; });
+      if(!matches.length) return null;
+      var prices=matches.map(function(o){return parseFloat(o.price_kg)||0;}).filter(function(x){return x>0;});
+      var weeks=matches.map(function(o){return parseFloat(o.delivery_weeks)||0;}).filter(function(x){return x>0;});
+      var avgP=prices.length?(prices.reduce(function(a,b){return a+b;},0)/prices.length):null;
+      var avgW=weeks.length?(weeks.reduce(function(a,b){return a+b;},0)/weeks.length):null;
+      var last=matches[0]&&matches[0].created_at?new Date(matches[0].created_at):null;
+      return {count:matches.length, avgP:avgP, avgW:avgW, last:last};
+    }
     var ids=partners.map(function(p){return p.id;});
     return supaFetch('partner_contacts?partner_id=in.('+ids.join(',')+')&select=partner_id,full_name,email,phone,role,is_primary').catch(function(){return[];})
       .then(function(contacts){
@@ -1820,10 +1837,13 @@ function loadProcurementDirectory(){
           if(!list.length){ h+='<div style="font-size:11.5px;color:var(--text3)">Asnjë ende.</div>'; }
           list.slice(0,25).forEach(function(p){
             var c=primaryContact(p.id);
+            var st=offerStatsFor(p.name);
             h+='<div onclick="openSupplierModal(\''+p.id+'\')" title="Kliko për ta hapur furnitorin" style="cursor:pointer;border:0.5px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--bg2)">'
               +'<div style="display:flex;justify-content:space-between;align-items:center;gap:6px">'
                 +'<div style="min-width:0"><div style="font-size:12px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(p.name||'')+'</div>'
-                +'<div style="font-size:10.5px;color:var(--text3)">'+([p.city,p.country].filter(Boolean).join(', ')||'—')+(c?' · '+(c.full_name||c.email):'')+'</div></div>'
+                +'<div style="font-size:10.5px;color:var(--text3)">'+([p.city,p.country].filter(Boolean).join(', ')||'—')+(c?' · '+(c.full_name||c.email):'')+'</div>'
+                +(st?'<div style="font-size:10px;color:var(--text3);margin-top:3px">'+st.count+' oferta të mëparshme'+(st.avgP?' · ~'+st.avgP.toFixed(2)+' €/kg mesatarisht':'')+(st.avgW?' · ~'+st.avgW.toFixed(1)+' javë':'')+'</div>':'')
+                +'</div>'
                 +'<span style="font-size:10px;color:var(--text3);flex-shrink:0">Hap →</span>'
               +'</div></div>';
           });
