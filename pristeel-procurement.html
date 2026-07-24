@@ -539,7 +539,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </span>
     <span id="wx-fx" style="display:none"></span>
     <span class="badge badge-gray" id="proj-badge" style="display:none">Pa projekt</span>
-    <select id="global-proj" title="Projekti aktiv — vlen për të gjitha modulet" onchange="if(this.value){loadProject(this.value)}" style="max-width:230px;padding:6px 10px;border:none;box-shadow:0 1px 2px rgba(26,26,25,.10);border-radius:8px;background:var(--bg2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer"><option value="">— Projekti aktiv —</option></select>
+    <span style="display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--bronze);border-radius:9px;padding:4px 10px 4px 8px;box-shadow:0 1px 3px rgba(26,26,25,.08)">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--bronze)" stroke-width="2" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <select id="global-proj" title="Projekti aktiv — vlen për të gjitha modulet" onchange="if(this.value){loadProject(this.value)}" style="max-width:230px;padding:2px 4px;border:none;background:transparent;color:var(--text);font-size:12.5px;font-weight:650;cursor:pointer"><option value="">— Projekti aktiv —</option></select>
+    </span>
     <button class="btn btn-sm btn-primary" onclick="saveProject(this)" title="Ruaj projektin, BOM-in dhe ofertat aktuale në cloud">💾 Ruaj</button>
     <button class="btn btn-sm" onclick="newProject()">+ Projekt i ri</button>
   </div>
@@ -7948,7 +7951,7 @@ function qDirSearch(){
   </div>
 </div>
 <div onclick="openCmdK()" title="Kërko gjithçka (Ctrl+K / ⌘K)"
-  style="position:fixed;right:22px;bottom:22px;z-index:400;background:#fff;border:1px solid var(--border);border-radius:22px;padding:9px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 3px 14px rgba(20,25,30,.12);font-size:12px;color:var(--text2)">
+  style="position:fixed;left:22px;bottom:22px;z-index:400;background:#fff;border:1px solid var(--border);border-radius:22px;padding:9px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 3px 14px rgba(20,25,30,.12);font-size:12px;color:var(--text2)">
   <span>🔍</span><span>Kërko</span><span style="background:var(--bg2);border-radius:5px;padding:1px 6px;font-size:10px;color:var(--text3);font-family:monospace">⌘K</span>
 </div>
 </body>
