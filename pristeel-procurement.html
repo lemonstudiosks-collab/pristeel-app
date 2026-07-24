@@ -2710,29 +2710,22 @@ function renderHome(){
   }).join('');
   var pu=document.getElementById('home-pulse');
   if(pu) pu.innerHTML=[
-    {k:'projekte',act:"showPage('import')"},
-    {k:'rfq',act:"showPage('rfq')"},
-    {k:'oferta',act:"showPage('offer-archive')"},
-    {k:'fatura',act:"showPage('invoices')"}
+    {label:'Arianiti', email:'arianit.vllahiu@prissteel.com', color:'#0C447C'},
+    {label:'Oltiani',  email:'oltian.vllahiu@prissteel.com',  color:'#0F6E56'},
+    {label:'Sales',    email:'sales@prissteel.com',           color:'#A65F2E'}
   ].map(function(o){
-    return '<div onclick="'+o.act+'" style="background:var(--bg2);border-radius:9px;padding:9px 18px;text-align:center;min-width:96px;cursor:pointer" title="Kliko për të hapur">'
-      +'<div style="font-size:16px;font-weight:650" id="pulse-'+o.k+'">—</div>'
-      +'<div style="font-size:10px;color:var(--text3)" id="pulsel-'+o.k+'"></div></div>';
+    return '<a href="mailto:'+o.email+'" title="Dërgo email te '+o.email+'"'
+      +' style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 18px;min-width:150px;text-decoration:none;cursor:pointer;transition:box-shadow .13s"'
+      +' onmouseover="this.style.boxShadow=\'0 4px 14px rgba(20,25,30,.12)\'" onmouseout="this.style.boxShadow=\'none\'">'
+      +'<span style="width:32px;height:32px;border-radius:8px;background:'+o.color+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>'
+      +'</span>'
+      +'<div style="text-align:left"><div style="font-size:13px;font-weight:650;color:var(--text)">'+o.label+'</div>'
+      +'<div style="font-size:9.5px;color:var(--text3)">'+o.email+'</div></div>'
+    +'</a>';
   }).join('');
-  function setPulse(k,v,l,c){var e=document.getElementById('pulse-'+k),le=document.getElementById('pulsel-'+k);if(e){e.textContent=v;if(c)e.style.color=c;}if(le)le.textContent=l;}
   var today=new Date().toISOString().slice(0,10);
   try{
-  supaFetch('projects?status=eq.aktiv&select=id').then(function(r){ if(r)setPulse('projekte',r.length,'projekte aktive'); }).catch(function(){});
-  supaFetch('rfq_log?select=id').then(function(r){ if(r)setPulse('rfq',r.length,'RFQ dërguar'); }).catch(function(){});
-  supaFetch('documents_registry?series=eq.QUO&or=(followup_status.is.null,followup_status.eq.open)&select=id').then(function(r){ setPulse('oferta',r?r.length:0,'oferta pa vendim',(r&&r.length)?'#A65F2E':null); }).catch(function(){});
-  supaFetch('invoices_out?paid=eq.false&select=id,due_date,date,payment_terms').then(function(r){
-    var od=(r||[]).filter(function(i){
-      var due=i.due_date?new Date(i.due_date):(i.date?new Date(i.date):null);
-      if(!due) return false;
-      return due<new Date();
-    });
-    setPulse('fatura',od.length,'fatura të vonuara',od.length?'#C62828':null);
-  }).catch(function(){});
   supaFetch('tasks?status=eq.hapur&due_date=lte.'+today+'&select=id').then(function(r){
     var e=document.getElementById('modstat-detyrat'); if(e&&r) e.textContent=r.length?(r.length+' sot'):'asnjë sot';
     if(e&&r&&r.length) e.style.color='#993C1D';
