@@ -1099,7 +1099,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div>
 <div class="card"><div class="card-title">Cmimi i blerjes</div>
 <div class="field-group"><div><label class="lbl">Cmimi blerjes EUR/kg</label><input type="number" id="k-buy" step="0.001" placeholder="0.000" oninput="calcPrice()"></div><div><label class="lbl">Total kg nga BOM</label><input type="number" id="k-kg" step="1" placeholder="0" oninput="calcPrice()"></div></div>
-<div class="field-group fg-2"><div><label class="lbl">Incoterms blerje</label><select id="k-buy-inco" onchange="calcPrice()"><option>EXW</option><option>DAP</option><option>DDP</option></select></div><div><label class="lbl">Valuta</label><select id="k-currency"><option>EUR</option><option>CHF</option><option>USD</option></select></div></div></div>
+<div class="field-group fg-2"><div><label class="lbl">Incoterms blerje</label><select id="k-buy-inco" onchange="calcPrice()"><option>EXW</option><option>DAP</option><option>DDP</option></select></div><div><label class="lbl">Valuta</label><select id="k-currency" onchange="calcPrice()"><option>EUR</option><option>CHF</option><option>USD</option></select></div></div>
+<div class="field-group fg-2" style="margin-top:8px"><div><label class="lbl">Njësia e çmimit</label><select id="k-unit" onchange="calcPrice()"><option value="kg">për kg</option><option value="cope">për copë</option><option value="set">për set</option></select></div><div></div></div></div>
 <div class="card"><div class="card-title">Kostot shtese</div>
 <div class="field-group fg-2"><div><label class="lbl">Transport EUR/kg</label><input type="number" id="k-tr" step="0.001" value="0.05" oninput="calcPrice()"></div><div><label class="lbl">Inspektim EUR/kg</label><input type="number" id="k-ins" step="0.001" value="0.01" oninput="calcPrice()"></div></div>
 <div class="field-group fg-2"><div><label class="lbl">Zhdoganim EUR/kg</label><input type="number" id="k-cus" step="0.001" value="0" oninput="calcPrice()"></div><div><label class="lbl">Tjera EUR/kg</label><input type="number" id="k-oth" step="0.001" value="0" oninput="calcPrice()"></div></div></div>
@@ -1112,8 +1113,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div class="card" style="border:1px solid var(--bronze)">
 <div class="card-title" style="color:var(--bronze)">Cmimi i ofertes</div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-<div style="background:var(--bg2);border-radius:var(--radius);padding:14px;text-align:center"><div id="k-op" style="font-size:26px;font-weight:700;color:var(--bronze);font-family:Bebas Neue,sans-serif">0.000</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-top:4px">EUR/kg oferte</div></div>
-<div style="background:var(--bg2);border-radius:var(--radius);padding:14px;text-align:center"><div id="k-ot" style="font-size:26px;font-weight:700;color:var(--text);font-family:Bebas Neue,sans-serif">0</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-top:4px">EUR total</div></div>
+<div style="background:var(--bg2);border-radius:var(--radius);padding:14px;text-align:center"><div id="k-op" style="font-size:26px;font-weight:700;color:var(--bronze);font-family:Bebas Neue,sans-serif">0.000</div><div id="k-op-label" style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-top:4px">EUR/kg oferte</div></div>
+<div style="background:var(--bg2);border-radius:var(--radius);padding:14px;text-align:center"><div id="k-ot" style="font-size:26px;font-weight:700;color:var(--text);font-family:Bebas Neue,sans-serif">0</div><div id="k-ot-label" style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-top:4px">EUR total</div></div>
 </div>
 <div style="border-top:0.5px solid var(--border);padding-top:10px">
 <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:0.5px solid var(--border)"><span style="color:var(--text2)">Cmimi blerjes</span><span id="k-rb">0.000</span></div>
@@ -1125,8 +1126,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div style="margin-top:10px;background:var(--bg2);border-radius:var(--radius);padding:12px">
 <div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Fitimi PRISTEEL</div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
-<div><div id="k-pk" style="font-size:16px;font-weight:700;color:var(--green-text)">0.000</div><div style="font-size:10px;color:var(--text3)">EUR/kg</div></div>
-<div><div id="k-pt" style="font-size:16px;font-weight:700;color:var(--green-text)">0</div><div style="font-size:10px;color:var(--text3)">EUR total</div></div>
+<div><div id="k-pk" style="font-size:16px;font-weight:700;color:var(--green-text)">0.000</div><div id="k-pk-u" style="font-size:10px;color:var(--text3)">EUR/kg</div></div>
+<div><div id="k-pt" style="font-size:16px;font-weight:700;color:var(--green-text)">0</div><div id="k-pt-u" style="font-size:10px;color:var(--text3)">EUR total</div></div>
 <div><div id="k-pp" style="font-size:16px;font-weight:700;color:var(--green-text)">0%</div><div style="font-size:10px;color:var(--text3)">margin</div></div>
 </div></div>
 <div id="k-sum" style="margin-top:10px;padding:8px 12px;background:rgba(184,115,51,0.08);border-radius:var(--radius);font-size:12px;color:var(--bronze-text)">Fut cmimin e blerjes per te filluar.</div>
@@ -4908,6 +4909,9 @@ function calcPrice(){
   var cus=parseFloat(document.getElementById('k-cus').value)||0;
   var oth=parseFloat(document.getElementById('k-oth').value)||0;
   var mrg=parseFloat(document.getElementById('k-mrg').value)||12;
+  var cur=(document.getElementById('k-currency')||{}).value||'EUR';
+  var unit=(document.getElementById('k-unit')||{}).value||'kg';
+  var U=cur+'/'+unit; // p.sh. "USD/set"
   var ex=tr+ins+cus+oth;
   var cost=b+ex;
   var ma=cost*(mrg/100);
@@ -4919,17 +4923,21 @@ function calcPrice(){
   function fk(n){return n>=1000?Math.round(n).toLocaleString('de-DE'):String(Math.round(n));}
   document.getElementById('k-op').textContent=f(sell);
   document.getElementById('k-ot').textContent=fk(tot);
-  document.getElementById('k-rb').textContent=f(b)+' EUR/kg';
-  document.getElementById('k-re').textContent=f(ex)+' EUR/kg';
-  document.getElementById('k-rc').textContent=f(cost)+' EUR/kg';
-  document.getElementById('k-rm').textContent=f(ma)+' EUR/kg ('+mrg+'%)';
-  document.getElementById('k-rf').textContent=f(sell)+' EUR/kg';
+  document.getElementById('k-rb').textContent=f(b)+' '+U;
+  document.getElementById('k-re').textContent=f(ex)+' '+U;
+  document.getElementById('k-rc').textContent=f(cost)+' '+U;
+  document.getElementById('k-rm').textContent=f(ma)+' '+U+' ('+mrg+'%)';
+  document.getElementById('k-rf').textContent=f(sell)+' '+U;
   document.getElementById('k-pk').textContent=f(ma);
   document.getElementById('k-pt').textContent=fk(prof);
   document.getElementById('k-pp').textContent=mrg+'%';
+  // Përditëso etiketat e njësisë në UI
+  var opLabel=document.getElementById('k-op-label'); if(opLabel) opLabel.textContent=U+' oferte';
+  var otLabel=document.getElementById('k-ot-label'); if(otLabel) otLabel.textContent=cur+' total';
+  ['k-pk-u','k-pt-u'].forEach(function(idu){var e=document.getElementById(idu);if(e)e.textContent=(idu==='k-pk-u'?U:cur+' total');});
   var si=document.getElementById('k-sinco').value;
   var bi=document.getElementById('k-buy-inco').value;
-  if(b>0){document.getElementById('k-sum').textContent='Blerje: '+f(b)+' EUR/kg '+bi+' / Shitje: '+f(sell)+' EUR/kg '+si+' / Fitim: '+fk(prof)+' EUR';}
+  if(b>0){document.getElementById('k-sum').textContent='Blerje: '+f(b)+' '+U+' '+bi+' / Shitje: '+f(sell)+' '+U+' '+si+' / Fitim: '+fk(prof)+' '+cur;}
 }
 function loadBomKg(){
   var tot=bomRows.reduce(function(s,r){return s+(parseFloat(r.kg)||0);},0);
