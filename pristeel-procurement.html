@@ -608,7 +608,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
   <div id="home-quote" style="text-align:center;margin-top:12px;font-size:12px"></div>
   <div style="max-width:1040px;margin:12px auto 0;padding:0 20px">
-    <div style="text-align:center;font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px">HANGAR INDUSTRIAL ÇELIKU — kalo me maus mbi çdo element</div>
+    <div style="text-align:center;font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px">HANGAR INDUSTRIAL ÇELIKU — profile, nyje (ankera·bulona·fllanxha) &amp; finishe (zink·ngjyrë·zjarr) — kalo me maus</div>
     <div style="display:flex;gap:20px;align-items:flex-start">
       <div style="flex:1;min-width:0">
         <svg viewBox="0 0 640 360" style="display:block;width:100%" xmlns="http://www.w3.org/2000/svg" id="hangar-svg">
@@ -704,6 +704,40 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
             <line class="pel" x1="304" y1="270" x2="336" y2="270"/>
             <line class="pel" x1="304" y1="285" x2="336" y2="285"/>
             <line class="pel" x1="304" y1="300" x2="336" y2="300"/>
+          </g>
+          <!-- ANKERA THEMELI (nën pllakat e bazamentit) -->
+          <g data-prof="anker">
+            <path class="pel" d="M82 330 V344 M92 330 V344 M87 344 h-8 M92 344 h8" stroke-width="2.2"/>
+            <path class="pel" d="M548 330 V344 M558 330 V344 M553 344 h-8 M558 344 h8" stroke-width="2.2"/>
+            <circle class="pfill" cx="82" cy="326" r="2.4"/><circle class="pfill" cx="92" cy="326" r="2.4"/>
+            <circle class="pfill" cx="548" cy="326" r="2.4"/><circle class="pfill" cx="558" cy="326" r="2.4"/>
+          </g>
+          <!-- FLLANXHA LIDHËSE (te nyja kolonë-trarë) -->
+          <g data-prof="fllanxha">
+            <rect class="pfill" x="72" y="86" width="30" height="7"/>
+            <rect class="pfill" x="538" y="86" width="30" height="7"/>
+            <rect class="pfill" x="308" y="146" width="28" height="7"/>
+          </g>
+          <!-- BULONA (te fllanxhat) -->
+          <g data-prof="bulon">
+            <circle class="pfill" cx="78" cy="89" r="1.8"/><circle class="pfill" cx="96" cy="89" r="1.8"/>
+            <circle class="pfill" cx="544" cy="89" r="1.8"/><circle class="pfill" cx="562" cy="89" r="1.8"/>
+            <circle class="pfill" cx="314" cy="149" r="1.8"/><circle class="pfill" cx="330" cy="149" r="1.8"/>
+          </g>
+          <!-- ZONA FINISHI: GALVANIZIM (kolona e majtë, gri-zink) -->
+          <g data-prof="fin_zink">
+            <rect x="74" y="150" width="26" height="80" rx="3" fill="#8B98A5" opacity="0.28" stroke="#8B98A5" stroke-width="1.2" style="cursor:pointer"/>
+            <text x="87" y="245" text-anchor="middle" style="font-size:7px;fill:#5B6B7A;font-family:Inter,sans-serif;pointer-events:none">ZINK</text>
+          </g>
+          <!-- ZONA FINISHI: NGJYRË STANDARDE (kolona qendrore, bronz i lehtë) -->
+          <g data-prof="fin_ngjyre">
+            <rect x="308" y="155" width="24" height="95" rx="3" fill="#A65F2E" opacity="0.22" stroke="#A65F2E" stroke-width="1.2" style="cursor:pointer"/>
+            <text x="320" y="270" text-anchor="middle" style="font-size:7px;fill:#8A4E26;font-family:Inter,sans-serif;pointer-events:none">RAL</text>
+          </g>
+          <!-- ZONA FINISHI: KUNDËR ZJARRIT (kolona e djathtë, e kuqe-portokalli) -->
+          <g data-prof="fin_zjarr">
+            <rect x="540" y="150" width="26" height="80" rx="3" fill="#D9663A" opacity="0.24" stroke="#D9663A" stroke-width="1.2" style="cursor:pointer"/>
+            <text x="553" y="245" text-anchor="middle" style="font-size:6.5px;fill:#B24A22;font-family:Inter,sans-serif;pointer-events:none">R90</text>
           </g>
           <text x="320" y="352" text-anchor="middle" style="font-size:10px;letter-spacing:4px;fill:#A65F2E;opacity:.7;font-family:Inter,sans-serif">STEEL IS OUR BUSINESS</text>
         </svg>
@@ -1870,25 +1904,42 @@ function spLoadFx(){
     el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD',rate?rate.toFixed(4):'—',rate?('1 € = '+rate.toFixed(4)+' $'):'i padisponueshëm');
   }).catch(function(){ el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD','—','offline'); });
 }
+function steelPrices(){
+  var def=[
+    {k:'hrc', n:'HRC (rrotull e nxehtë)', v:'620'},
+    {k:'pllaka', n:'Pllaka (Blech)', v:'700'},
+    {k:'profile', n:'Profile (HEA/IPE/UPN)', v:'760'},
+    {k:'tuba', n:'Tuba (RHS/CHS)', v:'850'}
+  ];
+  try{ var s=JSON.parse(localStorage.getItem('pristeel_steel_prices')||'null'); if(s&&s.length) return s; }catch(e){}
+  return def;
+}
+function editSteelPrices(){
+  var p=steelPrices();
+  var nv=[];
+  for(var i=0;i<p.length;i++){
+    var r=prompt('Çmimi për '+p[i].n+' (€/tonë):', p[i].v);
+    if(r===null) return; // anulim
+    nv.push({k:p[i].k, n:p[i].n, v:String(r).replace(/[^0-9.]/g,'')||p[i].v});
+  }
+  localStorage.setItem('pristeel_steel_prices', JSON.stringify(nv));
+  spLoadSteel();
+}
 function spLoadSteel(){
   var el=document.getElementById('sp-steel'); if(!el) return;
-  // Çmime orientuese EU (€/t) — referencë tregu, jo live. Përditësohen manualisht sipas tregut.
-  var prices=[
-    {n:'HRC (rrotull e nxehtë)', v:'~620 €/t'},
-    {n:'Pllaka (Blech)',         v:'~700 €/t'},
-    {n:'Profile (HEA/IPE/UPN)',  v:'~760 €/t'},
-    {n:'Tuba (RHS/CHS)',         v:'~850 €/t'}
-  ];
+  var prices=steelPrices();
   var ic='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#993C1D" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 9l-6 6-4-4-3 3"/></svg>';
+  var pen='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#993C1D" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
   el.innerHTML='<div style="background:var(--bg2);border-radius:9px;padding:8px 10px">'
     +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">'
       +'<span style="width:24px;height:24px;border-radius:6px;background:#993C1D1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ic+'</span>'
-      +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;line-height:1.2">Çmime orientuese<br><span style="font-size:8.5px">tregu EU · €/tonë</span></div>'
+      +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;line-height:1.2;flex:1">Çmime orientuese<br><span style="font-size:8.5px">tregu EU · €/tonë</span></div>'
+      +'<span onclick="editSteelPrices()" title="Përditëso çmimet" style="cursor:pointer;padding:3px;border-radius:5px" onmouseover="this.style.background=\'#993C1D1a\'" onmouseout="this.style.background=\'transparent\'">'+pen+'</span>'
     +'</div>'
     +prices.map(function(p){
       return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;padding:2.5px 0;border-top:1px solid var(--border)">'
         +'<span style="color:var(--text3)">'+p.n+'</span>'
-        +'<b style="color:var(--text);font-size:11px">'+p.v+'</b></div>';
+        +'<b style="color:var(--text);font-size:11px">~'+p.v+' €/t</b></div>';
     }).join('')
     +'</div>';
 }
@@ -2132,7 +2183,37 @@ var PROFILE_DATA={
     desc:'Profil n\u00eb form\u00eb Z, i formuar n\u00eb t\u00eb ftoht\u00eb. Mbajt\u00ebse \u00e7atie & muri (Pfetten/Riegel), sisteme mbulese fletore.',
     weight:'I leht\u00eb \u2014 nga ~2 kg/m deri ~6 kg/m.',
     sizes:[['Z100\u00d72.0','2.85 kg/m'],['Z150\u00d72.5','4.42 kg/m'],['Z200\u00d73.0','6.28 kg/m']],
-    cert:'EN 10204 2.2 \u00b7 shpesh i galvanizuar Z275.'}
+    cert:'EN 10204 2.2 \u00b7 shpesh i galvanizuar Z275.'},
+  anker:{n:'Ankera themeli (Ankerbolzen)', std:'EN 1090-2 \u00b7 ETA (p.sh. HILTI/Peikko)', grades:'8.8, 10.9 \u00b7 M16\u2013M64',
+    desc:'Shufra t\u00eb ankeruara n\u00eb beton q\u00eb lidhin kolonat \u00e7elik me themelin. Tipe: t\u00eb lakuara (L/J), me pllak\u00eb, ose ankera kimik\u00eb/t\u00eb para-fiksuar.',
+    weight:'Sipas diametrit + gjat\u00ebsis\u00eb s\u00eb ankerimit (embedment).',
+    sizes:[['M16','~1.6 kg/cop\u00eb'],['M24','~3.5 kg/cop\u00eb'],['M30','~6 kg/cop\u00eb'],['M42','~14 kg/cop\u00eb']],
+    cert:'ETA + DoP \u00b7 mbrojtje kund\u00ebr korrozionit (galvanizim/inox).'},
+  bulon:{n:'Bulona konstruktiv\u00eb (Schrauben)', std:'EN 14399 (HV/HR) \u00b7 EN 15048 (SB)', grades:'8.8, 10.9 \u00b7 M12\u2013M36',
+    desc:'Lidh\u00ebse t\u00eb \u00e7\u00ebliktura t\u00eb elementeve. HV/HR = para-ngarkim i lart\u00eb (preloaded) p\u00ebr lidhje t\u00eb rr\u00ebshqitje-rezistente. Set: bulon + dado + rondele.',
+    weight:'M20\u00d770 ~0.28 kg/set \u00b7 varet nga gjat\u00ebsia.',
+    sizes:[['M12','8.8 / 10.9'],['M16','8.8 / 10.9'],['M20','8.8 / 10.9'],['M24','8.8 / 10.9'],['M30','10.9']],
+    cert:'EN 14399-1 \u00b7 CE \u00b7 galvanizim i nxeht\u00eb ose inox A2/A4.'},
+  fllanxha:{n:'Fllanxha lidh\u00ebse (Stirnplatte/Flansch)', std:'EN 1090-2 \u00b7 EN 10025', grades:'S235, S355 \u00b7 pllak\u00eb 10\u201340 mm',
+    desc:'Pllaka t\u00eb salduara n\u00eb fund t\u00eb trar\u00ebve/kolonave q\u00eb lidhen me bulona (lidhje me fllanx\u00eb \u2014 Stirnplattenverbindung). Baz\u00eb p\u00ebr montim t\u00eb shpejt\u00eb n\u00eb kantier.',
+    weight:'Sipas pllak\u00ebs: p.sh. 300\u00d7200\u00d720 mm ~9.4 kg/cop\u00eb.',
+    sizes:[['t=12 mm','montim i leht\u00eb'],['t=20 mm','standard'],['t=30 mm','ngarkes\u00eb e lart\u00eb'],['t=40 mm','kolona kryesore']],
+    cert:'EN 10204 3.1 \u00b7 saldim sipas EN 1090-2 EXC2-4.'},
+  fin_zink:{n:'Finish: Galvanizim i nxeht\u00eb (Feuerverzinkung)', std:'DIN EN ISO 1461', grades:'Trash\u00ebsi shtres\u00eb 45\u201385 \u00b5m',
+    desc:'Zhytje n\u00eb zink t\u00eb shkri\u00ebr (~450\u00b0C). Mbrojtje maksimale kund\u00ebr korrozionit (klasa C3\u2013C5), jetëgjat\u00ebsi 25\u2013100+ vjet. Pamje karakteristike gri metalike.',
+    weight:'Shton ~3\u20135% pesh\u00eb (shtresa zink).',
+    sizes:[['C3 (urban)','45 \u00b5m'],['C4 (industrial)','65 \u00b5m'],['C5 (detar/kimik)','85 \u00b5m']],
+    cert:'DIN EN ISO 1461 \u00b7 Facility 03 (Galvanizim).'},
+  fin_ngjyre:{n:'Finish: Ngjyros\u00eb standarde (Pulverbeschichtung)', std:'ISO 12944 \u00b7 EN 15773', grades:'Sistem 2\u20133 shtresa',
+    desc:'Bojatisje me pluhur elektrostatik ose baz\u00eb l\u00ebng\u00ebt. RAL sipas k\u00ebrkes\u00ebs. Estetik\u00eb + mbrojtje. Shpesh mbi galvanizim (sistem Duplex) p\u00ebr jet\u00ebgjat\u00ebsi maksimale.',
+    weight:'Shton pesh\u00eb minimale (~60\u2013120 \u00b5m shtres\u00eb).',
+    sizes:[['C2\u2013C3','1 shtres\u00eb'],['C4','2 shtresa'],['Duplex','zink + ngjyr\u00eb']],
+    cert:'ISO 12944-5 \u00b7 RAL \u00b7 Facility 03 (Powder coating).'},
+  fin_zjarr:{n:'Finish: Mbrojtje kund\u00ebr zjarrit (Brandschutz)', std:'EN 13381-8 \u00b7 ETAG 018', grades:'R30 / R60 / R90 / R120',
+    desc:'Bojatisje intumeshente (fry\u00ebse) q\u00eb n\u00eb temperatur\u00eb t\u00eb lart\u00eb fryhet dhe izolon \u00e7elikun. Rezistenc\u00eb ndaj zjarrit 30\u2013120 min. Ngjyr\u00eb tipike e bardh\u00eb/gri.',
+    weight:'Trash\u00ebsia sipas R-value + faktorit t\u00eb seksionit.',
+    sizes:[['R30','~0.5 mm'],['R60','~1.2 mm'],['R90','~2.0 mm'],['R120','~3.0 mm']],
+    cert:'EN 13381-8 \u00b7 ETA \u00b7 certifikat\u00eb aplikimi.'}
 };
 function closeProfileInfo(){ var bg=document.getElementById('profile-info-modal'); if(bg) bg.remove(); }
 function profile3dSvg(key){
@@ -2150,13 +2231,22 @@ function profile3dSvg(key){
     pllake:'<polygon points="25,45 95,45 105,52 35,52" fill="'+c3+'"/><rect x="35" y="52" width="70" height="10" fill="'+c+'"/><polygon points="25,45 25,55 35,62 35,52" fill="'+c2+'"/>',
     z_profil:'<rect x="40" y="20" width="35" height="7" fill="'+c3+'"/><rect x="68" y="20" width="7" height="60" fill="'+c+'"/><rect x="40" y="73" width="35" height="7" fill="'+c+'"/>',
     t_profil:'<polygon points="30,25 90,25 100,33 40,33" fill="'+c3+'"/><rect x="40" y="33" width="60" height="8" fill="'+c+'"/><rect x="63" y="41" width="10" height="38" fill="'+c+'"/>',
-    flach:'<polygon points="30,40 95,40 105,47 40,47" fill="'+c3+'"/><rect x="40" y="47" width="65" height="14" fill="'+c+'"/><polygon points="30,40 30,54 40,61 40,47" fill="'+c2+'"/>'
+    flach:'<polygon points="30,40 95,40 105,47 40,47" fill="'+c3+'"/><rect x="40" y="47" width="65" height="14" fill="'+c+'"/><polygon points="30,40 30,54 40,61 40,47" fill="'+c2+'"/>',
+    anker:'<rect x="58" y="20" width="8" height="45" fill="'+c+'"/><rect x="55" y="18" width="14" height="6" fill="'+c3+'"/><path d="M58 65 Q58 78 70 78" fill="none" stroke="'+c+'" stroke-width="8"/><rect x="50" y="72" width="45" height="6" fill="'+c2+'" opacity=".4"/>',
+    bulon:'<polygon points="45,25 75,25 82,32 52,32" fill="'+c3+'"/><rect x="52" y="32" width="30" height="12" fill="'+c+'"/><polygon points="45,25 45,37 52,44 52,32" fill="'+c2+'"/><rect x="60" y="44" width="14" height="34" fill="'+c+'"/><path d="M60 48h14M60 54h14M60 60h14M60 66h14M60 72h14" stroke="'+c2+'" stroke-width="1"/>',
+    fllanxha:'<polygon points="35,30 90,30 100,38 45,38" fill="'+c3+'"/><rect x="45" y="38" width="55" height="12" fill="'+c+'"/><polygon points="35,30 35,42 45,50 45,38" fill="'+c2+'"/><circle cx="55" cy="44" r="2.5" fill="#fff" opacity=".5"/><circle cx="72" cy="44" r="2.5" fill="#fff" opacity=".5"/><circle cx="89" cy="44" r="2.5" fill="#fff" opacity=".5"/>',
+    fin_zink:'<polygon points="40,30 85,30 95,38 50,38" fill="#9BA8B5"/><rect x="50" y="38" width="45" height="40" fill="#8B98A5"/><polygon points="40,30 40,70 50,78 50,38" fill="#6B7A88"/><rect x="56" y="45" width="8" height="8" fill="#fff" opacity=".25"/><rect x="70" y="55" width="8" height="8" fill="#fff" opacity=".2"/>',
+    fin_ngjyre:'<polygon points="40,30 85,30 95,38 50,38" fill="'+c3+'"/><rect x="50" y="38" width="45" height="40" fill="'+c+'"/><polygon points="40,30 40,70 50,78 50,38" fill="'+c2+'"/>',
+    fin_zjarr:'<polygon points="40,30 85,30 95,38 50,38" fill="#E88A5C"/><rect x="50" y="38" width="45" height="40" fill="#D9663A"/><polygon points="40,30 40,70 50,78 50,38" fill="#B24A22"/><path d="M62 44 q4 6 0 12 q-4 6 0 12" fill="none" stroke="#fff" stroke-width="1.5" opacity=".4"/>'
   };
   var body=shapes[key]||shapes[({hem:'hea_heb',l_uneq:'l'})[key]]||shapes.hea_heb;
   return '<svg viewBox="0 0 130 100" style="width:100%;height:88px">'+body+'</svg>';
 }
 function hangarPanelFill(key){
   var d=PROFILE_DATA[key]; var el=document.getElementById('hangar-panel-inner'); if(!d||!el) return;
+  window._hangarCurrentKey=key;
+  el.style.cursor='pointer';
+  el.onclick=function(){ openProfileInfo(key); };
   el.innerHTML='<div style="background:var(--bg2);border-radius:8px;padding:4px;margin-bottom:8px">'+profile3dSvg(key)+'</div>'
     +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">'+d.n+'</div>'
     +'<div style="font-size:10px;color:var(--bronze-text);margin-bottom:8px">'+d.std+'</div>'
@@ -2167,7 +2257,7 @@ function hangarPanelFill(key){
     +'<table style="width:100%;border-collapse:collapse;font-size:10.5px">'
       +d.sizes.slice(0,4).map(function(s){return '<tr><td style="padding:2px 0;border-bottom:1px solid var(--border)">'+s[0]+'</td><td style="padding:2px 0;border-bottom:1px solid var(--border);text-align:right;font-weight:650">'+s[1]+'</td></tr>';}).join('')
     +'</table>'
-    +'<div style="font-size:10px;color:var(--text3);margin-top:8px">Kliko p\u00ebr detajet e plota \u2192</div>';
+    +'<div style="font-size:10px;color:var(--bronze-text);font-weight:650;margin-top:8px">Kliko për detajet e plota →</div>';
 }
 function initHangar(){
   var svg=document.getElementById('hangar-svg'); if(!svg) return;
@@ -8311,7 +8401,7 @@ function qDirSearch(){
   </div>
 </div>
 <div onclick="openCmdK()" title="Kërko gjithçka (Ctrl+K / ⌘K)"
-  style="position:fixed;left:22px;bottom:22px;z-index:400;background:#fff;border:1px solid var(--border);border-radius:22px;padding:9px 16px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:0 3px 14px rgba(20,25,30,.12);font-size:12px;color:var(--text2)">
+  style="position:fixed;left:18px;bottom:18px;z-index:400;background:#fff;border:1px solid var(--border);border-radius:22px;padding:8px 14px;display:flex;align-items:center;gap:7px;cursor:pointer;box-shadow:0 3px 14px rgba(20,25,30,.12);font-size:12px;color:var(--text2)">
   <span>🔍</span><span>Kërko</span><span style="background:var(--bg2);border-radius:5px;padding:1px 6px;font-size:10px;color:var(--text3);font-family:monospace">⌘K</span>
 </div>
 </body>
