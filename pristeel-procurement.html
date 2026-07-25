@@ -815,7 +815,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
       Ruaj projektin ne cloud
     </button>
-    <div></div>
+    <button class="btn btn-success" style="justify-content:center" onclick="continueToBom()" title="Vazhdo te lista e materialeve (BOM) — shto pozicionet vetë">
+      Vazhdo te materialet (BOM) →
+    </button>
   </div>
 
   <div id="parsing-card" class="card hidden">
@@ -3858,6 +3860,23 @@ function copyBomTsv(){
   navigator.clipboard.writeText(h+r).then(()=>alert('Tabela u kopjua — ngjite direkt në Excel.'));
 }
 function goToRfq(){if(bomRows.length===0){alert('BOM është bosh.');return;}showPage('rfq');}
+function continueToBom(){
+  // Vazhdim manual pa dokument: merr detajet e projektit dhe kalon te BOM (bosh, gati për shtim manual)
+  var proj=(document.getElementById('i-projname')||{}).value||'';
+  var client=(document.getElementById('i-client')||{}).value||'';
+  if(!proj.trim()){ alert('Shëno së paku emrin e projektit para se të vazhdosh.'); var f=document.getElementById('i-projname'); if(f) f.focus(); return; }
+  // Trego kartat përmbledhëse të BOM dhe pastro tekstin/upload
+  var bs=document.getElementById('bom-summary'); if(bs) bs.style.display='grid';
+  var pc=document.getElementById('parsing-card'); if(pc) pc.classList.add('hidden');
+  var it=document.getElementById('i-text'); if(it) it.value='';
+  var cc=document.getElementById('char-count'); if(cc) cc.textContent='0 karaktere';
+  // Nëse BOM është plotësisht bosh, shto një rresht të parë gati për plotësim
+  if(typeof renderBom==='function') renderBom();
+  showPage('bom');
+  setTimeout(function(){
+    if(bomRows.length===0 && typeof addBomRow==='function') addBomRow();
+  },150);
+}
 
 // ── KERKIM FURNITORESH (RFQ) ──────────────────────────
 var _rfqSupCache=null;
