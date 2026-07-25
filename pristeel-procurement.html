@@ -3572,7 +3572,7 @@ async function startParsing(){
     if(cur.trim()) out.push(cur);
     return out.slice(0, 12); // siguri: max 12 copa (~130k karaktere)
   }
-  const chunks = chunkTextByLines(text, 11000);
+  const chunks = chunkTextByLines(text, 8000);
   if(text.length > 132000){
     alert('Dokumenti është shumë i madh ('+text.length+' karaktere) — do të parsohen vetëm ~132.000 të parat. Ndaje dokumentin.');
   }
@@ -3599,11 +3599,31 @@ async function startParsing(){
         body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0,messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows.'},{role:'user',content:prompt}]})
       });
       const data=await resp.json();
-      const raw=data.choices?.[0]?.message?.content||data.error?.message||'';
+      // ── Kap gabimet e API-t QARTË (para se të provohet JSON parse) ──
+      if(!resp.ok || data.error){
+        var apiErr=(data.error&&(data.error.message||data.error))||('HTTP '+resp.status);
+        var human=apiErr;
+        if(/too large|context|token/i.test(apiErr)) human='Dokumenti/pjesa është shumë e madhe për modelin AI. Ndaje dokumentin në pjesë më të vogla.';
+        else if(/rate limit|429/i.test(apiErr)) human='Kufiri i shpejtësisë së API u arrit (rate limit). Prit pak minuta dhe provo sërish.';
+        else if(/invalid api key|authentication|401|unauthorized/i.test(apiErr)) human='Groq API Key i pavlefshëm ose skaduar — kontrollo te Cilësimet.';
+        else if(/model|not found|decommission/i.test(apiErr)) human='Modeli AI nuk është i disponueshëm më. Duhet përditësuar modeli te kodi.';
+        merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': '+human+' ('+apiErr+')');
+        merged.confidence='low';
+        if(ci+1<chunks.length) await delay(400);
+        continue;
+      }
+      const raw=data.choices?.[0]?.message?.content||'';
+      if(!raw.trim()){
+        merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': AI nuk ktheu përgjigje (bosh). Provo sërish ose verifiko manualisht.');
+        merged.confidence='medium';
+        if(ci+1<chunks.length) await delay(400);
+        continue;
+      }
       try{
         let jsonStr=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
         const s=jsonStr.indexOf('{'), e=jsonStr.lastIndexOf('}');
         if(s!==-1&&e!==-1) jsonStr=jsonStr.slice(s,e+1);
+        else throw new Error('nuk u gjet JSON në përgjigje');
         const p=JSON.parse(jsonStr);
         if(Array.isArray(p.items)) merged.items=merged.items.concat(p.items);
         if(p.issues&&p.issues.length) merged.issues=merged.issues.concat(p.issues.map(x=>'[Pjesa '+(ci+1)+'] '+x));
