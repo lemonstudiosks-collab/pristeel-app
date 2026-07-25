@@ -530,9 +530,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <a href="https://www.prissteel.com" target="_blank" title="Hap faqen prissteel.com" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#0C447C;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
     </a>
-    <a href="https://www.linkedin.com/in/arjanit-vllahiu" target="_blank" title="Hap profilin tënd LinkedIn" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#0A66C2;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
+    <a href="https://www.linkedin.com/in/arianit-vllahiu-8a779b3b4/" target="_blank" title="Hap profilin tënd LinkedIn" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#0A66C2;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="#fff"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.02 8h4.96v14H.02V8zM8 8h4.75v1.9h.07c.66-1.25 2.27-2.57 4.68-2.57 5 0 5.92 3.29 5.92 7.57V22h-4.96v-6.6c0-1.57-.03-3.6-2.19-3.6-2.2 0-2.53 1.71-2.53 3.48V22H8V8z"/></svg>
     </a>
+    <span onclick="toggleMiniCalc()" title="Kalkulator i shpejtë" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#5A3E85;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="18"/></svg>
+    </span>
     <span id="wx-mini" title="Moti — Prishtinë" style="display:none;position:relative;align-items:center;gap:6px;font-size:11.5px;color:var(--text2);padding:4px 10px;margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);cursor:default;white-space:nowrap"
       onmouseenter="var p=document.getElementById('wx-pop');if(p)p.style.display='block'"
       onmouseleave="var p=document.getElementById('wx-pop');if(p)p.style.display='none'">
@@ -2864,6 +2867,66 @@ var CMDK_STATIC=[
   {icon:'⚙️',label:'Cilësimet',run:function(){showPage('settings');}}
 ];
 var _cmdkSel=0, _cmdkItems=[], _cmdkTimer=null;
+// ── KALKULATOR I THJESHTË ──
+var _mcExpr='', _mcNew=true;
+function toggleMiniCalc(){
+  var el=document.getElementById('mini-calc'); if(!el) return;
+  var showing=el.style.display==='block';
+  el.style.display=showing?'none':'block';
+  if(!showing) mcRenderKeys();
+}
+function mcRenderKeys(){
+  var keys=[['C','⌫','%','÷'],['7','8','9','×'],['4','5','6','−'],['1','2','3','+'],['0','.','=','=']];
+  var el=document.getElementById('mc-keys'); if(!el) return;
+  var html='';
+  keys.forEach(function(row){
+    row.forEach(function(k,idx){
+      // '=' merr 2 kolona ne rreshtin e fundit
+      if(k==='='&&row[idx-1]==='='){ return; }
+      var span=(k==='=')?'grid-column:span 2;':'';
+      var op=['÷','×','−','+','=','C','⌫','%'].indexOf(k)>-1;
+      var bg=(k==='=')?'#5A3E85':(op?'#EDE7F4':'var(--bg2)');
+      var col=(k==='=')?'#fff':(op?'#5A3E85':'var(--text)');
+      html+='<button onclick="mcPress(\''+k+'\')" style="'+span+'border:none;border-radius:8px;padding:11px 0;font-size:15px;font-weight:600;cursor:pointer;background:'+bg+';color:'+col+'">'+k+'</button>';
+    });
+  });
+  el.innerHTML=html;
+}
+function mcPress(k){
+  var d=document.getElementById('mc-display'); if(!d) return;
+  if(k==='C'){ _mcExpr=''; d.value='0'; _mcNew=true; return; }
+  if(k==='⌫'){ _mcExpr=_mcExpr.slice(0,-1); d.value=_mcExpr||'0'; return; }
+  if(k==='='){
+    try{
+      var expr=_mcExpr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/%/g,'/100');
+      if(!/^[-+*/.() 0-9]+$/.test(expr)){ d.value='Gabim'; _mcExpr=''; return; }
+      var r=Function('"use strict";return('+expr+')')();
+      r=Math.round((r+Number.EPSILON)*1e8)/1e8;
+      d.value=String(r); _mcExpr=String(r); _mcNew=true;
+    }catch(e){ d.value='Gabim'; _mcExpr=''; }
+    return;
+  }
+  var opMap={'÷':'÷','×':'×','−':'−','+':'+','%':'%'};
+  if(opMap[k]){ _mcExpr+=k; _mcNew=false; d.value=_mcExpr; return; }
+  // numra dhe pika
+  if(_mcNew && !opMap[k]){ if(k!=='.'){ _mcExpr=''; } _mcNew=false; }
+  _mcExpr+=k; d.value=_mcExpr;
+}
+document.addEventListener('keydown',function(ev){
+  var el=document.getElementById('mini-calc');
+  if(!el||el.style.display!=='block') return;
+  var k=ev.key;
+  if(/[0-9.]/.test(k)) mcPress(k);
+  else if(k==='+') mcPress('+');
+  else if(k==='-') mcPress('−');
+  else if(k==='*') mcPress('×');
+  else if(k==='/') mcPress('÷');
+  else if(k==='Enter'||k==='=') { ev.preventDefault(); mcPress('='); }
+  else if(k==='Backspace') mcPress('⌫');
+  else if(k==='Escape') toggleMiniCalc();
+  else if(k.toLowerCase()==='c') mcPress('C');
+});
+
 function openCmdK(){
   var bg=document.getElementById('cmdk-bg'); if(!bg) return;
   bg.style.display='block';
@@ -8193,6 +8256,16 @@ function qDirSearch(){
 <script src="pristeel-export.js"></script>
 <script src="pristeel-offer-editor.js"></script>
 <script src="pristeel-finance.js"></script>
+<div id="mini-calc" style="display:none;position:fixed;top:70px;right:22px;z-index:850;width:240px;background:#fff;border-radius:14px;box-shadow:0 12px 40px rgba(20,25,30,.25);overflow:hidden;font-family:Inter,sans-serif">
+  <div style="background:#5A3E85;color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-size:12px;font-weight:600">Kalkulator</span>
+    <span onclick="toggleMiniCalc()" style="cursor:pointer;font-size:15px;line-height:1">✕</span>
+  </div>
+  <div style="padding:10px 12px 12px">
+    <input id="mc-display" type="text" readonly value="0" style="width:100%;text-align:right;font-size:22px;font-weight:600;border:none;background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:8px;color:var(--text);outline:none">
+    <div id="mc-keys" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
+  </div>
+</div>
 <div id="cmdk-bg" style="display:none;position:fixed;inset:0;background:rgba(26,26,25,.35);z-index:900;padding:10vh 20px 0" onclick="if(event.target===this) closeCmdK()">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden">
     <input id="cmdk-input" type="text" placeholder="Kërko projekt, klient, faqe… (Esc për të mbyllur)" autocomplete="off"
