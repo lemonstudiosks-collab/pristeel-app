@@ -1562,7 +1562,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div id="page-library" class="page">
   <div class="card">
     <div class="card-title">Skedarët</div>
-    <div style="font-size:11.5px;color:var(--text3);margin-bottom:12px">Çdo skedar që ngarkon këtu (nga kompjuteri ose Google Drive) ruhet dhe listohet poshtë — i pavarur nga projektet.</div>
+    <div style="font-size:11.5px;color:var(--text3);margin-bottom:12px">Ruaj çdo lloj skedari te projekti aktiv: <strong>PDF, foto, CAD (DWG/STEP/STL), Excel, Word, PowerPoint, tekst, ZIP</strong> — nga kompjuteri ose Google Drive. Kur je brenda një projekti, skedarët lidhen automatikisht me të dhe janë të gjithë në një vend.</div>
     <div class="src-grid">
       <div class="src-box" id="lib-drop-zone" onclick="document.getElementById('lib-f-input').click()">
         <input type="file" id="lib-f-input" multiple onchange="handleLibraryFiles(this.files)">
@@ -3164,7 +3164,7 @@ function showPage(p){
   if(p==='kalkulator')calcPrice();
   if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadProjectOptionsForInvoices();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
   if(p==='contracts'){loadContracts();}
-  if(p==='library'){loadLibraryFiles();}
+  if(p==='library'){_libScope=_curProjId?'project':'all';loadLibraryFiles();}
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
   if(p==='qendra'){loadHub();}
   if(p==='contacts'){loadContacts();}
@@ -6795,14 +6795,16 @@ async function handleLibraryFiles(files){
     if(status) status.textContent='Duke ngarkuar "'+f.name+'"...';
     try{
       var b64=await fileToBase64(f);
-      await supaFetch('files','POST',{file_name:f.name,file_type:f.type||'application/octet-stream',file_base64:b64,size_kb:Math.round(f.size/1024)});
+      var payload={file_name:f.name,file_type:f.type||'application/octet-stream',file_base64:b64,size_kb:Math.round(f.size/1024)};
+      if(_curProjId) payload.project_id=_curProjId; // lidh me projektin aktiv nëse ka
+      await supaFetch('files','POST',payload);
     }catch(e){
       if(status) status.textContent='Gabim me "'+f.name+'": '+e.message;
       alert('Gabim (a ekziston tabela "files" në Supabase?): '+e.message);
       return;
     }
   }
-  if(status) status.textContent='✓ U ngarkua.';
+  if(status) status.textContent='✓ U ngarkua'+(_curProjId?' te projekti aktiv.':' (pa projekt).');
   document.getElementById('lib-f-input').value='';
   loadLibraryFiles();
 }
@@ -6848,17 +6850,43 @@ async function driveCallbackToLibrary(data){
     if(status) status.textContent='';
   }
 }
+var _libScope='project'; // 'project' ose 'all'
+function setLibScope(s){ _libScope=s; loadLibraryFiles(); }
 function loadLibraryFiles(){
   var el=document.getElementById('lib-list'); if(!el) return;
-  supaFetch('files?order=created_at.desc&limit=200').then(function(rows){
+  var scopeAll=(_libScope==='all')||!_curProjId;
+  var q='files?order=created_at.desc&limit=300';
+  if(!scopeAll) q='files?project_id=eq.'+_curProjId+'&order=created_at.desc&limit=300';
+  // Toggle-i i shtrirjes
+  var toggle='';
+  if(_curProjId){
+    toggle='<div style="display:flex;gap:6px;margin-bottom:12px">'
+      +'<button onclick="setLibScope(\'project\')" class="btn btn-sm'+(_libScope==='project'?' btn-primary':'')+'" style="font-size:11px">Ky projekt</button>'
+      +'<button onclick="setLibScope(\'all\')" class="btn btn-sm'+(_libScope==='all'?' btn-primary':'')+'" style="font-size:11px">Të gjithë skedarët</button>'
+      +'</div>';
+  }
+  supaFetch(q).then(function(rows){
     libraryList=rows||[];
-    if(!rows.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë skedar i ruajtur ende.</div>'; return; }
-    el.innerHTML=rows.map(function(r){
+    if(!rows.length){ el.innerHTML=toggle+'<div style="color:var(--text3);font-size:13px">'+(scopeAll?'Asnjë skedar i ruajtur ende.':'Asnjë skedar te ky projekt ende. Ngarko dokumente, foto, CAD, Excel, PDF — çdo lloj.')+'</div>'; return; }
+    el.innerHTML=toggle+rows.map(function(r){
+      var icon=fileTypeIcon(r.file_name||'',r.file_type||'');
       return '<div class="project-card" onclick="viewOrDownloadFile(\''+(r.file_name||'').replace(/'/g,"\\'")+'\',\''+(r.file_type||'')+'\',libraryList.find(function(x){return x.id===\''+r.id+'\';}).file_base64)" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:8px;margin-bottom:8px;transition:box-shadow .13s" onmouseover="this.style.boxShadow=\'0 3px 8px rgba(26,26,25,.13)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(26,26,25,.07)\'">'
-        +'<div><strong>'+(r.file_name||'')+'</strong> <span style="color:var(--text3);font-size:11.5px">'+(r.size_kb?r.size_kb+' KB':'')+(r.created_at?' · '+new Date(r.created_at).toLocaleDateString('sq-AL'):'')+'</span></div>'
+        +'<div style="display:flex;align-items:center;gap:10px"><span style="font-size:19px;flex-shrink:0">'+icon+'</span><div><strong>'+(r.file_name||'')+'</strong> <span style="color:var(--text3);font-size:11.5px">'+(r.size_kb?r.size_kb+' KB':'')+(r.created_at?' · '+new Date(r.created_at).toLocaleDateString('sq-AL'):'')+(scopeAll&&r.project_id?' · 📁 projekt':'')+'</span></div></div>'
         +'<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLibraryFile(\''+r.id+'\')">Fshij</button></div>';
     }).join('');
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela "files" mungon në Supabase ende. Krijoje me SQL (kërkoji Claude-it query-n) — kolonat: file_name text, file_type text, file_base64 text, size_kb int, created_at timestamptz default now().</div>';});
+}
+function fileTypeIcon(name,type){
+  var n=(name||'').toLowerCase(), t=(type||'').toLowerCase();
+  if(/\.pdf$/.test(n)||/pdf/.test(t)) return '📄';
+  if(/\.(jpg|jpeg|png|gif|webp|bmp|svg|heic)$/.test(n)||/image/.test(t)) return '🖼️';
+  if(/\.(xls|xlsx|xlsm|csv)$/.test(n)||/sheet|excel|csv/.test(t)) return '📊';
+  if(/\.(ppt|pptx)$/.test(n)||/presentation|powerpoint/.test(t)) return '📽️';
+  if(/\.(doc|docx)$/.test(n)||/word|document/.test(t)) return '📝';
+  if(/\.(dwg|dxf|step|stp|iges|igs|stl|cad|ipt|sldprt|catpart)$/.test(n)) return '📐';
+  if(/\.(zip|rar|7z|tar|gz)$/.test(n)) return '🗜️';
+  if(/\.(txt|md)$/.test(n)||/text/.test(t)) return '📃';
+  return '📎';
 }
 function deleteLibraryFile(id){
   if(!confirm('Fshi këtë skedar?'))return;
