@@ -465,7 +465,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </div>
     </div>
     <div id="side-nav"></div>
-    <div id="side-panel" style="display:none"></div>
+    <div id="side-panel" style="margin-top:auto;padding:10px 16px 10px"></div>
   </div>
   <!-- RADIO KOMPAKTE — e dukshme ne cdo faqe, kontrollon te njejtin audio si karta e faqes hyrese -->
     <div id="side-radio" style="padding:9px 16px;border-top:1px solid var(--border)">
@@ -1839,41 +1839,79 @@ function renderSideOffers(){
 }
 function renderSidePanel(){
   var el=document.getElementById('side-panel'); if(!el) return;
-  var today=new Date().toISOString().slice(0,10);
-  el.innerHTML='<div style="border-top:1px solid var(--border);padding-top:12px">'
-    +'<div style="font-size:9.5px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:9px">VËMENDJE</div>'
-    +'<div id="sp-body" style="font-size:10.5px;color:var(--text3)">…</div></div>';
-  var body=document.getElementById('sp-body');
-  Promise.all([
-    supaFetch('tasks?status=eq.hapur&due_date=lte.'+today+'&select=title,due_date&order=due_date.asc&limit=3').catch(function(){return [];}),
-    supaFetch('offers_inbox?processed=eq.false&select=id').catch(function(){return [];}),
-    supaFetch('rfq_log?select=id').catch(function(){return [];})
-  ]).then(function(r){
-    var tasks=r[0]||[], inbox=r[1]||[], rfq=r[2]||[];
-    var clockIc='<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>';
-    var h='';
-    if(tasks.length){
-      tasks.forEach(function(t){
-        var od=t.due_date&&t.due_date<today;
-        h+='<div onclick="showPage(\'qendra\')" style="display:flex;gap:6px;align-items:flex-start;padding:6px 0;cursor:pointer;border-bottom:1px solid var(--border);color:'+(od?'#A33A2E':'var(--text2)')+'">'
-          +clockIc
-          +'<span style="line-height:1.35;color:var(--text2)">'+(t.title||'(pa titull)').slice(0,42)+'</span></div>';
-      });
-    } else {
-      h+='<div style="display:flex;gap:6px;align-items:center;padding:6px 0;color:var(--green-text)">'
-        +'<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
-        +'<span>Asnjë detyrë e vonuar</span></div>';
-    }
-    h+='<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">'
-        +'<span style="display:flex;align-items:center;gap:5px;color:var(--text3)"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>Email pa analizë</span>'
-        +'<b style="color:'+(inbox.length?'#A65F2E':'var(--text3)')+'">'+inbox.length+'</b></div>'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">'
-        +'<span style="display:flex;align-items:center;gap:5px;color:var(--text3)"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>RFQ dërguar</span>'
-        +'<b style="color:var(--text2)">'+rfq.length+'</b></div>'
+  el.innerHTML='<div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:9px">'
+    +'<div id="sp-fx" class="sp-widget"></div>'
+    +'<div id="sp-steel" class="sp-widget"></div>'
+    +'<div id="sp-price" class="sp-widget"></div>'
+    +'<div id="sp-projects" class="sp-widget"></div>'
+    +'<div id="sp-sync" class="sp-widget"></div>'
     +'</div>';
-    if(body) body.innerHTML=h;
-  }).catch(function(){ if(body) body.innerHTML='<div style="color:var(--text3)">—</div>'; });
+  spLoadFx();
+  spLoadSteel();
+  spLoadPrice();
+  spLoadProjects();
+  spLoadSync();
+}
+function spBox(icon,iconBg,label,value,sub,onclick){
+  return '<div '+(onclick?'onclick="'+onclick+'" style="cursor:pointer;':'style="')
+    +'display:flex;align-items:center;gap:9px;padding:7px 9px;background:var(--bg2);border-radius:9px" '
+    +(onclick?'title="Kliko"':'')+'>'
+    +'<span style="width:28px;height:28px;border-radius:7px;background:'+iconBg+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+icon+'</span>'
+    +'<div style="min-width:0;flex:1">'
+      +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px">'+label+'</div>'
+      +'<div style="font-size:12.5px;font-weight:650;color:var(--text);line-height:1.2">'+value+'</div>'
+      +(sub?'<div style="font-size:9px;color:var(--text3)">'+sub+'</div>':'')
+    +'</div></div>';
+}
+function spLoadFx(){
+  var el=document.getElementById('sp-fx'); if(!el) return;
+  var ic='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+  el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD','…','Duke ngarkuar…');
+  fetch('https://api.frankfurter.app/latest?from=EUR&to=USD').then(function(r){return r.json();}).then(function(d){
+    var rate=d&&d.rates&&d.rates.USD;
+    el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD',rate?rate.toFixed(4):'—',rate?('1 € = '+rate.toFixed(4)+' $'):'i padisponueshëm');
+  }).catch(function(){ el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD','—','offline'); });
+}
+function spLoadSteel(){
+  var el=document.getElementById('sp-steel'); if(!el) return;
+  var ic='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#993C1D" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 9l-6 6-4-4-3 3"/></svg>';
+  // Nuk ka burim falas te besueshem per LME steel spot - shfaqim referencen (perditesohet manualisht ne settings ne te ardhmen)
+  var ref=localStorage.getItem('pristeel_steel_ref')||'~620 €/t';
+  el.innerHTML=spBox(ic,'#993C1D1a','Çeliku (HRC ref.)',ref,'orientues · EU HRC');
+}
+function spLoadPrice(){
+  var el=document.getElementById('sp-price'); if(!el) return;
+  var ic='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#A65F2E" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/></svg>';
+  var kg=localStorage.getItem('pristeel_price_kg')||'';
+  el.innerHTML=spBox(ic,'#A65F2E1a','Çmimi bazë €/kg',kg?(kg+' €/kg'):'— ','nga Kalkulatori',"showPage('kalkulator')");
+}
+function spLoadProjects(){
+  var el=document.getElementById('sp-projects'); if(!el) return;
+  var ic='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0C447C" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+  el.innerHTML=spBox(ic,'#0C447C1a','Projektet','…','',"showPage('import')");
+  supaFetch('projects?select=status').then(function(rows){
+    rows=rows||[];
+    var akt=rows.filter(function(p){return (p.status||'pritje')==='aktiv';}).length;
+    var pri=rows.filter(function(p){return (p.status||'pritje')==='pritje';}).length;
+    var real=rows.filter(function(p){return p.status==='realizuar';}).length;
+    el.innerHTML=spBox(ic,'#0C447C1a','Projektet',akt+' aktive',pri+' në pritje · '+real+' realizuar',"showPage('import')");
+  }).catch(function(){});
+}
+function spLoadSync(){
+  var el=document.getElementById('sp-sync'); if(!el) return;
+  var ic='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#FF7A59" stroke-width="2"><path d="M21 2v6h-6M3 22v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L21 8M21 15a9 9 0 0 1-14.85 3.36L3 16"/></svg>';
+  el.innerHTML=spBox(ic,'#FF7A591a','HubSpot','…','');
+  supaFetch('crm_deals?select=last_synced&order=last_synced.desc&limit=1').then(function(rows){
+    var last=(rows&&rows[0]&&rows[0].last_synced)?new Date(rows[0].last_synced):null;
+    var txt='—', sub='pa të dhëna';
+    if(last){
+      var t=last.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+      var d=last.toLocaleDateString('sq-AL',{day:'2-digit',month:'2-digit'});
+      var todayStr=new Date().toDateString()===last.toDateString();
+      txt='sinkronizuar '+t; sub=todayStr?'sot':d;
+    }
+    el.innerHTML=spBox(ic,'#FF7A591a','HubSpot',txt,sub);
+  }).catch(function(){ el.innerHTML=spBox(ic,'#FF7A591a','HubSpot','offline',''); });
 }
 // Ngjyrat e katroreve per çdo faqe brenda nje moduli
 var PAGE_COLORS={
@@ -2798,6 +2836,7 @@ function renderHome(){
   loadWeatherCard();
   radioInit();
   if(typeof initHangar==='function') initHangar();
+  if(typeof renderSidePanel==='function') renderSidePanel();
   var gb=document.getElementById('game-best');
   if(gb) gb.textContent=localStorage.getItem('pristeel_game_best')||'0';
   if(typeof gameStop==='function' && !_g.run) gameStop();
