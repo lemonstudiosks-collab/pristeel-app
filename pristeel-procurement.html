@@ -1152,7 +1152,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div id="price-advisor" style="font-size:12px;color:var(--text3)">Fut vendin, tipin e punës dhe koston → propozimi bazohet në historikun tënd real (fituar/humbur).</div>
 </div>
 <div class="field-group fg-4" style="margin-bottom:10px">
-  <div><label class="lbl">Vendi</label><select id="pa-country"><option value="DE">🇩🇪 Gjermani</option><option value="AT">🇦🇹 Austri</option><option value="CH">🇨🇭 Zvicër</option><option value="ME">🇲🇪 Mal i Zi</option><option value="RS">🇷🇸 Serbi</option><option value="XK">🇽🇰 Kosovë</option><option value="AL">🇦🇱 Shqipëri</option></select></div>
+  <div><label class="lbl">Vendi</label><select id="pa-country"></select></div>
   <div><label class="lbl">Tipi i punës</label><select id="pa-type"><option value="stahlbau">Konstruksion çeliku</option><option value="stahlbau+verzinkt">Çelik + zinktim</option><option value="bleche">Llamarina/dysheme</option><option value="spezial">Speciale/inox</option><option value="mast">Shtylla/traversa</option></select></div>
   <div><label class="lbl">EXC</label><select id="pa-exc"><option>EXC2</option><option>EXC3</option><option>EXC4</option></select></div>
   <div><label class="lbl">Kostoja jote €/kg</label><input type="number" id="pa-cost" step="0.001" placeholder="2.000"></div>
@@ -1737,8 +1737,66 @@ var COUNTRIES = [
   {c:'US',n:'ShBA',f:'🇺🇸'},
   {c:'AE',n:'Emiratet e Bashkuara Arabe',f:'🇦🇪'},
   {c:'EG',n:'Egjipt',f:'🇪🇬'},
-  {c:'SA',n:'Arabia Saudite',f:'🇸🇦'}
+  {c:'SA',n:'Arabia Saudite',f:'🇸🇦'},
+  {c:'QA',n:'Katar',f:'🇶🇦'},
+  {c:'KW',n:'Kuvajt',f:'🇰🇼'},
+  {c:'OM',n:'Oman',f:'🇴🇲'},
+  {c:'BH',n:'Bahrein',f:'🇧🇭'},
+  {c:'JO',n:'Jordani',f:'🇯🇴'},
+  {c:'IL',n:'Izrael',f:'🇮🇱'},
+  {c:'LB',n:'Liban',f:'🇱🇧'},
+  {c:'IQ',n:'Irak',f:'🇮🇶'},
+  {c:'MA',n:'Marok',f:'🇲🇦'},
+  {c:'DZ',n:'Algjeri',f:'🇩🇿'},
+  {c:'TN',n:'Tunizi',f:'🇹🇳'},
+  {c:'LY',n:'Libi',f:'🇱🇾'},
+  {c:'ZA',n:'Afrika e Jugut',f:'🇿🇦'},
+  {c:'NG',n:'Nigeri',f:'🇳🇬'},
+  {c:'KE',n:'Kenia',f:'🇰🇪'},
+  {c:'ET',n:'Etiopi',f:'🇪🇹'},
+  {c:'CA',n:'Kanada',f:'🇨🇦'},
+  {c:'MX',n:'Meksikë',f:'🇲🇽'},
+  {c:'BR',n:'Brazil',f:'🇧🇷'},
+  {c:'AR',n:'Argjentinë',f:'🇦🇷'},
+  {c:'CL',n:'Kili',f:'🇨🇱'},
+  {c:'CO',n:'Kolumbi',f:'🇨🇴'},
+  {c:'PE',n:'Peru',f:'🇵🇪'},
+  {c:'JP',n:'Japoni',f:'🇯🇵'},
+  {c:'KR',n:'Kore e Jugut',f:'🇰🇷'},
+  {c:'TW',n:'Tajvan',f:'🇹🇼'},
+  {c:'VN',n:'Vietnam',f:'🇻🇳'},
+  {c:'TH',n:'Tajlandë',f:'🇹🇭'},
+  {c:'ID',n:'Indonezi',f:'🇮🇩'},
+  {c:'MY',n:'Malajzi',f:'🇲🇾'},
+  {c:'SG',n:'Singapor',f:'🇸🇬'},
+  {c:'PH',n:'Filipine',f:'🇵🇭'},
+  {c:'PK',n:'Pakistan',f:'🇵🇰'},
+  {c:'BD',n:'Bangladesh',f:'🇧🇩'},
+  {c:'AU',n:'Australi',f:'🇦🇺'},
+  {c:'NZ',n:'Zelandë e Re',f:'🇳🇿'},
+  {c:'EE',n:'Estoni',f:'🇪🇪'},
+  {c:'LV',n:'Letoni',f:'🇱🇻'},
+  {c:'LT',n:'Lituani',f:'🇱🇹'},
+  {c:'IS',n:'Islandë',f:'🇮🇸'},
+  {c:'CY',n:'Qipro',f:'🇨🇾'},
+  {c:'MT',n:'Maltë',f:'🇲🇹'},
+  {c:'GE',n:'Gjeorgji',f:'🇬🇪'},
+  {c:'AZ',n:'Azerbajxhan',f:'🇦🇿'},
+  {c:'AM',n:'Armeni',f:'🇦🇲'},
+  {c:'KZ',n:'Kazakistan',f:'🇰🇿'},
+  {c:'UZ',n:'Uzbekistan',f:'🇺🇿'},
+  {c:'BY',n:'Bjellorusi',f:'🇧🇾'},
+  {c:'MD',n:'Moldavi',f:'🇲🇩'}
 ];
+function fillCountryDropdown(){
+  var sel=document.getElementById('pa-country'); if(!sel) return;
+  if(sel.options.length>5) return;
+  var cur=sel.value||'DE';
+  sel.innerHTML=COUNTRIES.slice().sort(function(a,b){return a.n.localeCompare(b.n,'sq');}).map(function(c){
+    return '<option value="'+c.c+'">'+c.f+' '+c.n+'</option>';
+  }).join('');
+  sel.value=cur;
+}
 function countryByCode(v){
   if(!v) return null;
   var s=String(v).trim().toLowerCase();
@@ -3145,7 +3203,7 @@ function showPage(p){
   if(p==='bom')renderBom();
   if(p==='rfq'){renderSuppliers();updateRfqCount();}
   if(p==='offer-archive'){ if(typeof oaLoad==='function') oaLoad(); }
-  if(p==='oferta'){ if(typeof fillOfferNr==='function') setTimeout(function(){fillOfferNr(false);},120); }
+  if(p==='oferta'){ if(typeof fillOfferNr==='function') setTimeout(function(){fillOfferNr(false);},120); if(typeof fillCountryDropdown==='function') fillCountryDropdown(); }
   if(p==='import'){ if(typeof loadProjectList==='function') loadProjectList(); if(typeof setProjectView==='function') setProjectView(localStorage.getItem('pristeel_proj_view')==='board'?'board':'list'); }
   if(p==='rfq'){
     if(typeof mountUploadBoxes==='function' && !document.querySelector('#rfq-upload .src-grid')){
@@ -3180,7 +3238,8 @@ var FLOW_STEPS=[
   {p:'ranking',  l:'Krahasimi', ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>'},
   {p:'kalkulator',l:'Çmimi',    ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/></svg>'},
   {p:'oferta',   l:'Oferta jonë',ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>'},
-  {p:'invoices', l:'Faturat',   ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2V2l-3 2-3-2-3 2-3-2z"/><path d="M8 8h8M8 12h5"/></svg>'}
+  {p:'invoices', l:'Faturat',   ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2V2l-3 2-3-2-3 2-3-2z"/><path d="M8 8h8M8 12h5"/></svg>'},
+  {p:'library',  l:'Skedarët',  ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg>'}
 ];
 function renderFlowBar(activePage){
   var el=document.getElementById('flow-bar'); if(!el) return;
@@ -3823,14 +3882,16 @@ const SURFACES=['none','C3 Sa2.5 200μm 3-slojni','galvanized','hot-dip galvaniz
 function sel(opts,cur){return opts.map(o=>`<option${o===cur?' selected':''}>${o||'—'}</option>`).join('');}
 
 function renderBom(){
-  document.getElementById('bom-tbody').innerHTML=bomRows.map((r,i)=>`
+  document.getElementById('bom-tbody').innerHTML=bomRows.map((r,i)=>{
+    var isFree=(r.profile==='OTHER'||r.profile==='MACHINED_PART');
+    return `
     <tr>
       <td><span class="cdot ${r.conf==='high'?'cdot-h':r.conf==='medium'?'cdot-m':'cdot-l'}" title="Konfidenca: ${r.conf}"></span></td>
       <td style="color:var(--text3);font-size:11px">${r.pos}</td>
       <td><select onchange="updRow(${r.id},'profile',this.value)">${sel(PROFILES,r.profile)}</select></td>
-      <td><input type="text" value="${r.dim}" onchange="updRow(${r.id},'dim',this.value)" placeholder="300"></td>
-      <td><input type="text" value="${r.grade}" onchange="updRow(${r.id},'grade',this.value)" placeholder="S355JR"></td>
-      <td><input type="text" value="${r.std}" onchange="updRow(${r.id},'std',this.value)" style="font-size:11px"></td>
+      <td${isFree?' colspan="2"':''}><input type="text" value="${(r.dim||'').replace(/"/g,'&quot;')}" onchange="updRow(${r.id},'dim',this.value)" placeholder="${isFree?'Përshkrimi i plotë i materialit (i lirë)':'300'}"${isFree?' style="width:100%;min-width:220px"':''}></td>
+      ${isFree?'':`<td><input type="text" value="${r.grade}" onchange="updRow(${r.id},'grade',this.value)" placeholder="S355JR"></td>`}
+      <td><input type="text" value="${r.std}" onchange="updRow(${r.id},'std',this.value)" style="font-size:11px" placeholder="${isFree?'standard/normë':''}"></td>
       <td><input type="number" value="${r.lenMm}" onchange="updRow(${r.id},'lenMm',+this.value)"></td>
       <td><input type="number" value="${r.pcs}" onchange="updRow(${r.id},'pcs',+this.value)"></td>
       <td><input type="number" step="0.001" value="${r.kgUnit??''}" title="Kg për 1 copë. Nëse profili ka tabelë fizike (HEA/HEB/IPE...), rillogaritet automatikisht kur ndryshon dimensioni/gjatësia." onchange="updRow(${r.id},'kgUnit',+this.value)" style="width:70px"></td>
@@ -3838,7 +3899,7 @@ function renderBom(){
       <td><select onchange="updRow(${r.id},'surface',this.value)">${sel(SURFACES,r.surface)}</select></td>
       <td><select onchange="updRow(${r.id},'cert',this.value)">${sel(CERTS,r.cert)}</select></td>
       <td><button class="btn btn-danger" onclick="remRow(${r.id})">✕</button></td>
-    </tr>`).join('');
+    </tr>`;}).join('');
   const tot=bomRows.reduce((s,r)=>s+(parseFloat(r.kg)||0),0);
   document.getElementById('bom-total-kg').textContent=tot.toFixed(2);
   document.getElementById('bom-total-rows').textContent=bomRows.length;
