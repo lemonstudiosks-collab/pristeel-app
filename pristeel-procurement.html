@@ -337,7 +337,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
 /* ── ODOO-STYLE MODULE SYSTEM ── */
-.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:900px;margin:0 auto}
+.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:900px;margin:0 auto}
 @media(max-width:900px){.home-grid{grid-template-columns:repeat(2,1fr)}}
 .flow-step{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text3);cursor:pointer;padding:5px 10px;border-radius:7px;white-space:nowrap;transition:background .15s}
 .flow-step:hover{background:var(--bg2)}
@@ -345,9 +345,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 .flow-step .fn{width:18px;height:18px;border-radius:50%;background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .flow-step.on .fn{background:var(--bronze);color:#fff}
 .flow-arrow{color:var(--border2);font-size:12px;flex-shrink:0}
-.mod-tile{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:14px;padding:26px 12px;text-align:center;cursor:pointer;transition:all .16s ease}
+.mod-tile{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .16s ease}
 .mod-tile:hover{box-shadow:var(--sh-2);border-color:var(--border2);transform:translateY(-2px)}
-.mod-ic{width:58px;height:58px;border-radius:15px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center}
+.mod-ic{width:46px;height:46px;border-radius:13px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center}
 .mod-ic svg{width:29px;height:29px;fill:none;stroke-width:1.8}
 .mod-name{font-size:14px;font-weight:600;color:var(--text)}
 .mod-stat{font-size:11px;color:var(--text3);margin-top:4px;min-height:14px}
@@ -465,7 +465,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </div>
     </div>
     <div id="side-nav"></div>
-    <div id="side-panel" style="margin-top:auto;padding:14px 16px 8px"></div>
+    <div id="side-panel" style="display:none"></div>
   </div>
   <!-- RADIO KOMPAKTE — e dukshme ne cdo faqe, kontrollon te njejtin audio si karta e faqes hyrese -->
     <div id="side-radio" style="padding:9px 16px;border-top:1px solid var(--border)">
@@ -513,16 +513,25 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div>
     <div class="topbar-title"><span class="page-dot" id="page-dot"></span><span id="page-title">Import Dokument</span></div>
     <div class="topbar-sub" id="page-sub">Ngarko ose ngjit dokumentin e blerësit</div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:7px">
+      <span style="display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--bronze);border-radius:9px;padding:4px 10px 4px 8px;box-shadow:0 1px 3px rgba(26,26,25,.08)">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--bronze)" stroke-width="2" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <select id="global-proj" title="Projekti aktiv — vlen për të gjitha modulet" onchange="if(this.value){loadProject(this.value)}" style="max-width:260px;padding:2px 4px;border:none;background:transparent;color:var(--text);font-size:12.5px;font-weight:650;cursor:pointer"><option value="">— Projekti aktiv —</option></select>
+      </span>
+    </div>
   </div>
   <div class="flex gap-8 items-center">
     <a href="https://calendar.google.com/calendar/u/0/r" target="_blank" title="Hap Google Calendar" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#1A73E8;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="5"/><line x1="16" y1="2" x2="16" y2="5"/><text x="12" y="18" text-anchor="middle" font-size="8" font-weight="700" fill="#fff" stroke="none" font-family="Inter,sans-serif">25</text></svg>
     </a>
     <a href="https://app.hubspot.com/contacts/147958987" target="_blank" title="Hap HubSpot" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#FF7A59;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="#fff"><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="6" cy="6" r="2.2"/><path d="M6 8v8M8 6h8" stroke="#fff" stroke-width="2" fill="none"/></svg>
     </a>
     <a href="https://www.prissteel.com" target="_blank" title="Hap faqen prissteel.com" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#0C447C;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
       <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/arjanit-vllahiu" target="_blank" title="Hap profilin tënd LinkedIn" style="margin-top:14px;width:30px;height:30px;border-radius:8px;background:#0A66C2;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="#fff"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.02 8h4.96v14H.02V8zM8 8h4.75v1.9h.07c.66-1.25 2.27-2.57 4.68-2.57 5 0 5.92 3.29 5.92 7.57V22h-4.96v-6.6c0-1.57-.03-3.6-2.19-3.6-2.2 0-2.53 1.71-2.53 3.48V22H8V8z"/></svg>
     </a>
     <span id="wx-mini" title="Moti — Prishtinë" style="display:none;position:relative;align-items:center;gap:6px;font-size:11.5px;color:var(--text2);padding:4px 10px;margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);cursor:default;white-space:nowrap"
       onmouseenter="var p=document.getElementById('wx-pop');if(p)p.style.display='block'"
@@ -537,10 +546,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </span>
     <span id="wx-fx" style="display:none"></span>
     <span class="badge badge-gray" id="proj-badge" style="display:none">Pa projekt</span>
-    <span style="display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--bronze);border-radius:9px;padding:4px 10px 4px 8px;box-shadow:0 1px 3px rgba(26,26,25,.08)">
-      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--bronze)" stroke-width="2" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-      <select id="global-proj" title="Projekti aktiv — vlen për të gjitha modulet" onchange="if(this.value){loadProject(this.value)}" style="max-width:230px;padding:2px 4px;border:none;background:transparent;color:var(--text);font-size:12.5px;font-weight:650;cursor:pointer"><option value="">— Projekti aktiv —</option></select>
-    </span>
     <button class="btn btn-sm btn-primary" onclick="saveProject(this)" title="Ruaj projektin, BOM-in dhe ofertat aktuale në cloud">💾 Ruaj</button>
     <button class="btn btn-sm" onclick="newProject()">+ Projekt i ri</button>
   </div>
@@ -550,10 +555,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div id="flow-bar" style="display:none"></div>
 
 <div id="page-home" class="page active">
-  <div id="home-greet" style="text-align:center;font-size:13px;color:var(--text3);margin:14px 0 16px"></div>
-  <div id="home-clocks" style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px"></div>
+  <div id="home-greet" style="text-align:center;font-size:12px;color:var(--text3);margin:8px 0 10px"></div>
+  <div id="home-clocks" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
   <div id="home-grid" class="home-grid"></div>
-  <div id="home-pulse" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:22px"></div>
+  <div id="home-pulse" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px"></div>
 
   <!-- Radio + loja: hequr nga qendra e faqes; jetojne ne panelin e vogel me ikona ne qoshe (poshte-djathtas) -->
   <div id="util-fab" style="position:fixed;right:18px;bottom:18px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
@@ -598,18 +603,20 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </button>
   </div>
 
-  <div id="home-quote" style="text-align:center;margin-top:22px"></div>
-  <div style="max-width:1000px;margin:24px auto 0;padding:0 20px">
-    <div style="text-align:center;font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px">HANGAR INDUSTRIAL \u00c7ELIKU \u2014 kalo me maus mbi \u00e7do element</div>
+  <div id="home-quote" style="text-align:center;margin-top:12px;font-size:12px"></div>
+  <div style="max-width:1040px;margin:12px auto 0;padding:0 20px">
+    <div style="text-align:center;font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px">HANGAR INDUSTRIAL ÇELIKU — kalo me maus mbi çdo element</div>
     <div style="display:flex;gap:20px;align-items:flex-start">
       <div style="flex:1;min-width:0">
         <svg viewBox="0 0 640 360" style="display:block;width:100%" xmlns="http://www.w3.org/2000/svg" id="hangar-svg">
           <defs>
             <style>
-              .pel{stroke:#787E85;stroke-width:2.4;fill:none;stroke-linejoin:round;stroke-linecap:round;cursor:pointer;transition:stroke .12s,stroke-width .12s}
-              .pel:hover{stroke:#A65F2E;stroke-width:3.6}
-              .pfill{fill:#787E8510;stroke:#787E85;stroke-width:1.4;cursor:pointer;transition:fill .12s,stroke .12s}
-              .pfill:hover{fill:#A65F2E22;stroke:#A65F2E}
+              .pel{stroke:#787E85;stroke-width:2.4;fill:none;stroke-linejoin:round;stroke-linecap:round;cursor:pointer;transition:stroke .15s,stroke-width .15s,transform .18s;transform-origin:center;transform-box:fill-box}
+              .pel:hover{stroke:#A65F2E;stroke-width:4;transform:translateY(-4px) scale(1.04);filter:drop-shadow(0 4px 6px rgba(166,95,46,.35))}
+              .pfill{fill:#787E8510;stroke:#787E85;stroke-width:1.4;cursor:pointer;transition:fill .15s,stroke .15s,transform .18s,filter .18s;transform-origin:center;transform-box:fill-box}
+              .pfill:hover{fill:#A65F2E22;stroke:#A65F2E;transform:translateY(-4px) scale(1.06);filter:drop-shadow(0 5px 8px rgba(166,95,46,.4))}
+              [data-prof]{transition:transform .18s}
+              [data-prof]:hover{transform:translateY(-3px)}
               .glabel{font-family:Inter,sans-serif;font-size:9px;fill:#9AA0A6;pointer-events:none}
             </style>
           </defs>
@@ -700,8 +707,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </div>
       <div id="hangar-panel" style="flex:0 0 246px;border:1px solid var(--border);border-radius:12px;padding:16px;min-height:220px;background:var(--bg2)">
         <div id="hangar-panel-inner" style="color:var(--text3);font-size:12px;line-height:1.6">
-          <div style="font-size:26px;margin-bottom:6px">\ud83c\udfd7\ufe0f</div>
-          Kalo me maus (ose kliko) mbi \u00e7do element t\u00eb hangarit p\u00ebr t\u00eb par\u00eb profilin, peshat kg/m, cil\u00ebsit\u00eb dhe standardin EN.
+          <div style="font-size:26px;margin-bottom:6px">🏗️</div>
+          Kalo me maus (ose kliko) mbi çdo element të hangarit për të parë profilin, peshat kg/m, cilësitë dhe standardin EN.
         </div>
       </div>
     </div>
@@ -2090,9 +2097,30 @@ var PROFILE_DATA={
     cert:'EN 10204 2.2 \u00b7 shpesh i galvanizuar Z275.'}
 };
 function closeProfileInfo(){ var bg=document.getElementById('profile-info-modal'); if(bg) bg.remove(); }
+function profile3dSvg(key){
+  // Prerje isometrike e thjeshtuar 3D për secilin profil (bronz)
+  var c='#A65F2E', c2='#8A4E26', c3='#C77A45';
+  var shapes={
+    hea_heb:'<polygon points="30,20 90,20 100,32 40,32" fill="'+c3+'"/><polygon points="30,20 30,30 40,42 40,32" fill="'+c2+'"/><rect x="30" y="30" width="10" height="10" fill="'+c+'"/><polygon points="40,32 100,32 100,42 40,42" fill="'+c+'"/><polygon points="58,42 72,42 72,78 58,78" fill="'+c+'"/><polygon points="30,78 90,78 100,90 40,90" fill="'+c3+'"/><polygon points="40,42 40,80 30,78 30,40" fill="'+c2+'"/>',
+    ipn_ipe:'<polygon points="30,20 90,20 100,30 40,30" fill="'+c3+'"/><rect x="40" y="30" width="60" height="8" fill="'+c+'"/><polygon points="60,38 70,38 70,74 60,74" fill="'+c+'"/><polygon points="30,74 90,74 100,84 40,84" fill="'+c3+'"/><polygon points="40,30 40,84 30,82 30,28" fill="'+c2+'"/>',
+    upn:'<polygon points="30,20 40,20 50,30 40,30" fill="'+c3+'"/><rect x="40" y="20" width="10" height="60" fill="'+c+'"/><rect x="40" y="20" width="45" height="8" fill="'+c3+'"/><rect x="40" y="72" width="45" height="8" fill="'+c3+'"/><polygon points="40,20 40,80 30,78 30,18" fill="'+c2+'"/>',
+    l:'<polygon points="35,20 45,20 55,30 45,30" fill="'+c3+'"/><rect x="45" y="20" width="9" height="60" fill="'+c+'"/><rect x="45" y="71" width="45" height="9" fill="'+c+'"/><polygon points="45,20 45,80 35,78 35,18" fill="'+c2+'"/>',
+    rhs:'<polygon points="35,25 85,25 100,38 50,38" fill="'+c3+'"/><rect x="50" y="38" width="50" height="45" fill="'+c+'"/><polygon points="35,25 35,70 50,83 50,38" fill="'+c2+'"/><rect x="60" y="48" width="30" height="25" fill="#fff" opacity=".15"/>',
+    chs:'<ellipse cx="65" cy="35" rx="30" ry="12" fill="'+c3+'"/><path d="M35 35 L35 75 A30 12 0 0 0 95 75 L95 35" fill="'+c+'"/><ellipse cx="65" cy="35" rx="18" ry="7" fill="#fff" opacity=".15"/>',
+    rund:'<ellipse cx="65" cy="30" rx="16" ry="7" fill="'+c3+'"/><path d="M49 30 L49 78 A16 7 0 0 0 81 78 L81 30" fill="'+c+'"/>',
+    vierkant:'<polygon points="50,25 80,25 92,36 62,36" fill="'+c3+'"/><rect x="62" y="36" width="30" height="42" fill="'+c+'"/><polygon points="50,25 50,67 62,78 62,36" fill="'+c2+'"/>',
+    pllake:'<polygon points="25,45 95,45 105,52 35,52" fill="'+c3+'"/><rect x="35" y="52" width="70" height="10" fill="'+c+'"/><polygon points="25,45 25,55 35,62 35,52" fill="'+c2+'"/>',
+    z_profil:'<rect x="40" y="20" width="35" height="7" fill="'+c3+'"/><rect x="68" y="20" width="7" height="60" fill="'+c+'"/><rect x="40" y="73" width="35" height="7" fill="'+c+'"/>',
+    t_profil:'<polygon points="30,25 90,25 100,33 40,33" fill="'+c3+'"/><rect x="40" y="33" width="60" height="8" fill="'+c+'"/><rect x="63" y="41" width="10" height="38" fill="'+c+'"/>',
+    flach:'<polygon points="30,40 95,40 105,47 40,47" fill="'+c3+'"/><rect x="40" y="47" width="65" height="14" fill="'+c+'"/><polygon points="30,40 30,54 40,61 40,47" fill="'+c2+'"/>'
+  };
+  var body=shapes[key]||shapes[({hem:'hea_heb',l_uneq:'l'})[key]]||shapes.hea_heb;
+  return '<svg viewBox="0 0 130 100" style="width:100%;height:88px">'+body+'</svg>';
+}
 function hangarPanelFill(key){
   var d=PROFILE_DATA[key]; var el=document.getElementById('hangar-panel-inner'); if(!d||!el) return;
-  el.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">'+d.n+'</div>'
+  el.innerHTML='<div style="background:var(--bg2);border-radius:8px;padding:4px;margin-bottom:8px">'+profile3dSvg(key)+'</div>'
+    +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">'+d.n+'</div>'
     +'<div style="font-size:10px;color:var(--bronze-text);margin-bottom:8px">'+d.std+'</div>'
     +'<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:8px">'+d.desc+'</div>'
     +'<div style="font-size:9.5px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:3px">Cil\u00ebsit\u00eb</div>'
