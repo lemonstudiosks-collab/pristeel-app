@@ -1844,13 +1844,11 @@ function renderSidePanel(){
     +'<div id="sp-steel" class="sp-widget"></div>'
     +'<div id="sp-price" class="sp-widget"></div>'
     +'<div id="sp-projects" class="sp-widget"></div>'
-    +'<div id="sp-sync" class="sp-widget"></div>'
     +'</div>';
   spLoadFx();
   spLoadSteel();
   spLoadPrice();
   spLoadProjects();
-  spLoadSync();
 }
 function spBox(icon,iconBg,label,value,sub,onclick){
   return '<div '+(onclick?'onclick="'+onclick+'" style="cursor:pointer;':'style="')
@@ -1874,10 +1872,25 @@ function spLoadFx(){
 }
 function spLoadSteel(){
   var el=document.getElementById('sp-steel'); if(!el) return;
-  var ic='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#993C1D" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 9l-6 6-4-4-3 3"/></svg>';
-  // Nuk ka burim falas te besueshem per LME steel spot - shfaqim referencen (perditesohet manualisht ne settings ne te ardhmen)
-  var ref=localStorage.getItem('pristeel_steel_ref')||'~620 €/t';
-  el.innerHTML=spBox(ic,'#993C1D1a','Çeliku (HRC ref.)',ref,'orientues · EU HRC');
+  // Çmime orientuese EU (€/t) — referencë tregu, jo live. Përditësohen manualisht sipas tregut.
+  var prices=[
+    {n:'HRC (rrotull e nxehtë)', v:'~620 €/t'},
+    {n:'Pllaka (Blech)',         v:'~700 €/t'},
+    {n:'Profile (HEA/IPE/UPN)',  v:'~760 €/t'},
+    {n:'Tuba (RHS/CHS)',         v:'~850 €/t'}
+  ];
+  var ic='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#993C1D" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 9l-6 6-4-4-3 3"/></svg>';
+  el.innerHTML='<div style="background:var(--bg2);border-radius:9px;padding:8px 10px">'
+    +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">'
+      +'<span style="width:24px;height:24px;border-radius:6px;background:#993C1D1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ic+'</span>'
+      +'<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;line-height:1.2">Çmime orientuese<br><span style="font-size:8.5px">tregu EU · €/tonë</span></div>'
+    +'</div>'
+    +prices.map(function(p){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:10.5px;padding:2.5px 0;border-top:1px solid var(--border)">'
+        +'<span style="color:var(--text3)">'+p.n+'</span>'
+        +'<b style="color:var(--text);font-size:11px">'+p.v+'</b></div>';
+    }).join('')
+    +'</div>';
 }
 function spLoadPrice(){
   var el=document.getElementById('sp-price'); if(!el) return;
@@ -1896,22 +1909,6 @@ function spLoadProjects(){
     var real=rows.filter(function(p){return p.status==='realizuar';}).length;
     el.innerHTML=spBox(ic,'#0C447C1a','Projektet',akt+' aktive',pri+' në pritje · '+real+' realizuar',"showPage('import')");
   }).catch(function(){});
-}
-function spLoadSync(){
-  var el=document.getElementById('sp-sync'); if(!el) return;
-  var ic='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#FF7A59" stroke-width="2"><path d="M21 2v6h-6M3 22v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.85-3.36L21 8M21 15a9 9 0 0 1-14.85 3.36L3 16"/></svg>';
-  el.innerHTML=spBox(ic,'#FF7A591a','HubSpot','…','');
-  supaFetch('crm_deals?select=last_synced&order=last_synced.desc&limit=1').then(function(rows){
-    var last=(rows&&rows[0]&&rows[0].last_synced)?new Date(rows[0].last_synced):null;
-    var txt='—', sub='pa të dhëna';
-    if(last){
-      var t=last.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-      var d=last.toLocaleDateString('sq-AL',{day:'2-digit',month:'2-digit'});
-      var todayStr=new Date().toDateString()===last.toDateString();
-      txt='sinkronizuar '+t; sub=todayStr?'sot':d;
-    }
-    el.innerHTML=spBox(ic,'#FF7A591a','HubSpot',txt,sub);
-  }).catch(function(){ el.innerHTML=spBox(ic,'#FF7A591a','HubSpot','offline',''); });
 }
 // Ngjyrat e katroreve per çdo faqe brenda nje moduli
 var PAGE_COLORS={
