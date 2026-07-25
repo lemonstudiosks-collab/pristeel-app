@@ -342,7 +342,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 .flow-step{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text3);cursor:pointer;padding:5px 10px;border-radius:7px;white-space:nowrap;transition:background .15s}
 .flow-step:hover{background:var(--bg2)}
 .flow-step.on{color:var(--text);background:var(--bronze-bg)}
-.flow-step .fn{width:18px;height:18px;border-radius:50%;background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.flow-step .fn{width:22px;height:22px;border-radius:50%;background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .flow-step.on .fn{background:var(--bronze);color:#fff}
 .flow-arrow{color:var(--border2);font-size:12px;flex-shrink:0}
 .mod-tile{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .16s ease}
@@ -3157,8 +3157,13 @@ function showPage(p){
 }
 // ── SHIRITI I RRJEDHËS: tregon gjithmonë ku je brenda ciklit te projektit dhe lejon kalim direkt ──
 var FLOW_STEPS=[
-  {p:'bom',l:'BOM'},{p:'rfq',l:'RFQ'},{p:'offers',l:'Ofertat'},{p:'ranking',l:'Krahasimi'},
-  {p:'kalkulator',l:'Çmimi'},{p:'oferta',l:'Oferta jonë'},{p:'invoices',l:'Faturat'}
+  {p:'bom',      l:'BOM',       ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>'},
+  {p:'rfq',      l:'RFQ',       ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg>'},
+  {p:'offers',   l:'Ofertat',   ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>'},
+  {p:'ranking',  l:'Krahasimi', ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>'},
+  {p:'kalkulator',l:'Çmimi',    ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/></svg>'},
+  {p:'oferta',   l:'Oferta jonë',ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>'},
+  {p:'invoices', l:'Faturat',   ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l3-2 3 2 3-2 3 2 3-2V2l-3 2-3-2-3 2-3-2z"/><path d="M8 8h8M8 12h5"/></svg>'}
 ];
 function renderFlowBar(activePage){
   var el=document.getElementById('flow-bar'); if(!el) return;
@@ -3170,10 +3175,11 @@ function renderFlowBar(activePage){
     +'<span style="font-size:10.5px;color:var(--text3);font-weight:700;margin-right:8px;white-space:nowrap">'
     +(nm?nm.replace(/</g,'&lt;'):'Projekti')+' &middot;</span>';
   FLOW_STEPS.forEach(function(s,i){
-    h+='<div class="flow-step'+(i===idx?' on':'')+'" onclick="showPage(\''+s.p+'\')">'
-      +'<span class="fn">'+(i+1)+'</span>'+s.l+'</div>';
+    h+='<div class="flow-step'+(i===idx?' on':'')+'" onclick="showPage(\''+s.p+'\')" title="Kalo te: '+s.l+'">'
+      +'<span class="fn">'+(s.ic||(i+1))+'</span>'+s.l+'</div>';
     if(i<FLOW_STEPS.length-1) h+='<span class="flow-arrow">&#8594;</span>';
   });
+  h+='<span style="font-size:9.5px;color:var(--text3);margin-left:10px;white-space:nowrap;font-style:italic">kliko cilindo hap — je i lirë të kalosh ku të duash</span>';
   h+='</div>';
   el.innerHTML=h; el.style.display='block';
 }
@@ -5886,10 +5892,33 @@ var PIPELINE_STAGES=[
   {id:'transport',           n:'Transporti & Dërgesa',           d:'Dërgesa DAP/DDP direkt te baustela + faturat'}
 ];
 function pipelineIdx(stageId){ for(var i=0;i<PIPELINE_STAGES.length;i++) if(PIPELINE_STAGES[i].id===stageId) return i; return 0; }
+// Fazat kur projekti është VETËM NDËRMJETËSIM TREGTAR (pa prodhim/verifikim teknik/auditim)
+var PIPELINE_STAGES_TRADING=[
+  {id:'rfq_in',       n:'Kërkesa e Klientit (RFQ)', d:'Kërkesa e klientit me specifikat'},
+  {id:'supplier_selection', n:'Zgjedhja e Furnitorit', d:'Zgjedhja e furnitorit/prodhuesit nga rrjeti'},
+  {id:'pricing',      n:'Përcaktimi i Çmimit',      d:'Përcaktimi i çmimit final drejt klientit'},
+  {id:'client_offer', n:'Oferta & Konfirmimi',      d:'Oferta drejt klientit dhe konfirmimi i porosisë'},
+  {id:'commercial',   n:'Përpunimi Komercial',      d:'Kontrata dhe pagesat'},
+  {id:'transport',    n:'Transporti & Dërgesa',     d:'Dërgesa DAP/DDP direkt te baustela + faturat'}
+];
+// Kthen fazat e duhura sipas tipit të projektit (project.deal_type: 'trading' ose 'full')
+function stagesForProject(p){
+  var t=(p&&(p.deal_type||p.project_type))||'';
+  return t==='trading' ? PIPELINE_STAGES_TRADING : PIPELINE_STAGES;
+}
 function projSetPipelineStage(id,stage){
   supaFetch('projects?id=eq.'+id,'PATCH',{pipeline_stage:stage})
     .then(function(){ if(typeof loadProjectList==='function') loadProjectList(); if(typeof openOverview==='function') openOverview(id); })
     .catch(function(e){ alert('Gabim: '+e.message); });
+}
+function projSetDealType(id,type){
+  supaFetch('projects?id=eq.'+id,'PATCH',{deal_type:type})
+    .then(function(){ if(typeof openOverview==='function') openOverview(id); })
+    .catch(function(e){
+      // Nëse kolona 'deal_type' s'ekziston ende në DB, njofto qartë
+      if(/deal_type|column/i.test(e.message||'')) alert('Kolona "deal_type" mungon në databazë. Duhet shtuar: ALTER TABLE projects ADD COLUMN deal_type text;');
+      else alert('Gabim: '+e.message);
+    });
 }
 var PROJ_STATUS={
   aktiv:    {n:'Aktiv',     c:'#2E7D32', bg:'#E8F5E9'},
@@ -7451,6 +7480,9 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes
   var invOutSum=invOut.reduce(function(s,i){return s+(parseFloat(i.total_price)||0);},0);
   var invInSum=invIn.reduce(function(s,i){return s+(parseFloat(i.amount)||0);},0);
   var curStageIdx=pipelineIdx(p.pipeline_stage||'rfq_in');
+  var isTrading=(p.deal_type||p.project_type)==='trading';
+  // Fazat e prodhimit/mbikëqyrjes që NUK zbatohen për ndërmjetësim tregtar
+  var nonTradingStages={technical_review:1, production_control:1, factory_audit:1};
   var stageDet=[
     bom.length?bom.length+' pozicione \u00B7 '+ovKg(totKg)+' kg':'pa specifika ende',
     bom.length?'Specifikat jan\u00EB n\u00EB BOM':'\u2014',
@@ -7464,24 +7496,30 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes
   ];
   var h='';
   h+='<div class="ov-sec" style="padding-top:2px">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
-      +'<h3 style="margin:0">Rrjedha e projektit</h3>'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+        +'<h3 style="margin:0">Rrjedha e projektit</h3>'
+        +'<button onclick="projSetDealType(&apos;'+id+'&apos;,&apos;'+(isTrading?'full':'trading')+'&apos;)" title="Ndrysho tipin e projektit" style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;border:1px solid '+(isTrading?'#A65F2E':'var(--border)')+';background:'+(isTrading?'var(--bronze-bg)':'#fff')+';color:'+(isTrading?'#A65F2E':'var(--text3)')+'">'+(isTrading?'🤝 Tregtar (ndërmjetësim)':'🏭 I plotë (me prodhim)')+'</button>'
+      +'</div>'
       +'<select onchange="projSetPipelineStage(&apos;'+id+'&apos;,this.value)" style="font-size:11px;padding:4px 7px;border:1px solid var(--border);border-radius:6px;color:var(--text2)">'
         +PIPELINE_STAGES.map(function(s,i){return '<option value="'+s.id+'"'+(i===curStageIdx?' selected':'')+'>'+(i+1)+'. '+s.n+'</option>';}).join('')
       +'</select>'
     +'</div>'
     +'<div style="display:flex;flex-direction:column;gap:0">'
     +PIPELINE_STAGES.map(function(s,i){
+      var skip=isTrading && nonTradingStages[s.id];
       var st=i<curStageIdx?'done':(i===curStageIdx?'cur':'todo');
+      if(skip) st='skip';
       var dotBg=st==='done'?'#8A8D91':(st==='cur'?'#A65F2E':'#fff');
-      var dotBorder=st==='todo'?'var(--border)':dotBg;
-      var txtCol=st==='todo'?'var(--text3)':'var(--text)';
-      return '<div style="display:flex;gap:10px;padding:7px 0;'+(i<PIPELINE_STAGES.length-1?'border-left:2px solid '+(st==='todo'?'var(--border)':'#C9CBCE')+';margin-left:9px;padding-left:16px':'margin-left:9px;padding-left:16px')+'">'
-        +'<span style="width:16px;height:16px;border-radius:50%;background:'+dotBg+';border:2px solid '+dotBorder+';flex-shrink:0;margin-left:-25px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700">'+(st==='done'?'\u2713':(i+1))+'</span>'
+      var dotBorder=st==='todo'||st==='skip'?'var(--border)':dotBg;
+      var txtCol=st==='todo'||st==='skip'?'var(--text3)':'var(--text)';
+      var op=skip?'opacity:.5;':'';
+      return '<div style="display:flex;gap:10px;padding:7px 0;'+op+(i<PIPELINE_STAGES.length-1?'border-left:2px solid '+(st==='done'||st==='cur'?'#C9CBCE':'var(--border)')+';margin-left:9px;padding-left:16px':'margin-left:9px;padding-left:16px')+'">'
+        +'<span style="width:16px;height:16px;border-radius:50%;background:'+dotBg+';border:2px solid '+dotBorder+';flex-shrink:0;margin-left:-25px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700">'+(st==='done'?'\u2713':(skip?'\u2013':(i+1)))+'</span>'
         +'<div style="min-width:0;padding-bottom:2px">'
-          +'<div style="font-size:12.5px;font-weight:'+(st==='cur'?'700':'600')+';color:'+(st==='cur'?'#A65F2E':txtCol)+'">'+s.n+(st==='cur'?' <span style="font-size:9.5px;font-weight:700;color:#fff;background:#A65F2E;padding:1px 7px;border-radius:9px;margin-left:4px">AKTIVE</span>':'')+'</div>'
+          +'<div style="font-size:12.5px;font-weight:'+(st==='cur'?'700':'600')+';color:'+(st==='cur'?'#A65F2E':txtCol)+'">'+s.n+(st==='cur'?' <span style="font-size:9.5px;font-weight:700;color:#fff;background:#A65F2E;padding:1px 7px;border-radius:9px;margin-left:4px">AKTIVE</span>':'')+(skip?' <span style="font-size:9px;font-weight:600;color:var(--text3);background:var(--bg2);padding:1px 7px;border-radius:9px;margin-left:4px">nuk zbatohet · ndërmjetësim</span>':'')+'</div>'
           +'<div style="font-size:10.5px;color:var(--text3);margin-top:1px">'+s.d+'</div>'
-          +'<div style="font-size:11px;color:'+(st==='todo'?'var(--text3)':'var(--text2)')+';margin-top:2px">'+stageDet[i]+'</div>'
+          +(skip?'':'<div style="font-size:11px;color:'+(st==='todo'?'var(--text3)':'var(--text2)')+';margin-top:2px">'+stageDet[i]+'</div>')
         +'</div></div>';
     }).join('')
     +'</div></div>';
