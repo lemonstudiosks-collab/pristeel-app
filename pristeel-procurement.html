@@ -3640,6 +3640,13 @@ async function startParsing(){
     document.getElementById('st4').textContent='✓';
     document.getElementById('st4d').textContent='Analiza u kompletua — '+merged.items.length+' pozicione nga '+chunks.length+' pjesë.';
     if(chunks.length>1) merged.project_summary=(merged.project_summary||'')+' [Dokument i madh: '+text.length+' karaktere, '+chunks.length+' pjesë të analizuara]';
+    // Kur s'u gjet asnjë pozicion, jep udhëzim të qartë (shpesh: vizatim CAD/assembly pa tabelë BOM)
+    if(!merged.items.length){
+      var hasApiErr=merged.issues.some(function(x){return /API|rate limit|shumë e madhe|pavlefshëm|model/i.test(x);});
+      if(!hasApiErr){
+        merged.issues.unshift('Nuk u gjet asnjë pozicion materiali. Ky dokument duket si vizatim teknik / assembly drawing (vetëm dimensione dhe pamje 3D, pa tabelë materialesh). Analiza AI punon me LISTA materialesh (BOM/RFQ me kolona: profil, dimension, sasi, peshë). Për këtë lloj vizatimi: shto pozicionet manualisht me "+ Shto rresht", ose ngarko listën e materialeve nëse e ke veçmas.');
+      }
+    }
     applyParsedBom(merged);
   }catch(err){
     document.getElementById('st4d').textContent='Gabim: '+err.message+'. Kontrollo API Key te Cilësimet.';
