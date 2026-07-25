@@ -756,6 +756,21 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
   <div class="card">
     <div class="card-title">Informacioni i projektit</div>
+    <div style="margin-bottom:16px">
+      <label class="lbl" style="display:block;margin-bottom:7px">Tipi i projektit</label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div id="dt-trading" onclick="setNewProjType('trading')" style="cursor:pointer;flex:1;min-width:220px;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;gap:11px;align-items:center;transition:all .14s">
+          <span style="font-size:22px;flex-shrink:0">🤝</span>
+          <div><div style="font-size:13px;font-weight:650;color:var(--text)">Tregtar (ndërmjetësim)</div>
+          <div style="font-size:10.5px;color:var(--text3);margin-top:1px">Vetëm blerje-shitje · pa prodhim, pa mbikëqyrje</div></div>
+        </div>
+        <div id="dt-full" onclick="setNewProjType('full')" style="cursor:pointer;flex:1;min-width:220px;border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;gap:11px;align-items:center;transition:all .14s">
+          <span style="font-size:22px;flex-shrink:0">🏭</span>
+          <div><div style="font-size:13px;font-weight:650;color:var(--text)">I plotë (me prodhim)</div>
+          <div style="font-size:10.5px;color:var(--text3);margin-top:1px">Verifikim teknik · koordinim prodhimi · auditim</div></div>
+        </div>
+      </div>
+    </div>
     <div class="field-group fg-3">
       <div><label class="lbl">Emri i projektit</label><input type="text" id="i-projname" placeholder="p.sh. STACON D-22/26" oninput="updateProjBadge()"></div>
       <div><label class="lbl">Klienti / GU</label><input type="text" id="i-client" placeholder="p.sh. STACON GmbH"></div>
@@ -2926,6 +2941,7 @@ function renderHome(){
   radioInit();
   if(typeof initHangar==='function') initHangar();
   if(typeof renderSidePanel==='function') renderSidePanel();
+  if(typeof setNewProjType==='function') setNewProjType('full');
   var gb=document.getElementById('game-best');
   if(gb) gb.textContent=localStorage.getItem('pristeel_game_best')||'0';
   if(typeof gameStop==='function' && !_g.run) gameStop();
@@ -3305,6 +3321,7 @@ function newProject(){
   if(confirm('Fillo projekt të ri? Të dhënat aktuale do të fshihen.')){
     resetWorkspace();
     showPage('newproject');
+    if(typeof setNewProjType==='function') setNewProjType('full');
   }
 }
 
@@ -3866,6 +3883,16 @@ function copyBomTsv(){
   navigator.clipboard.writeText(h+r).then(()=>alert('Tabela u kopjua — ngjite direkt në Excel.'));
 }
 function goToRfq(){if(bomRows.length===0){alert('BOM është bosh.');return;}showPage('rfq');}
+var _newProjType='full';
+function setNewProjType(t){
+  _newProjType=t;
+  var tr=document.getElementById('dt-trading'), fu=document.getElementById('dt-full');
+  var base='cursor:pointer;flex:1;min-width:220px;border-radius:10px;padding:12px 14px;display:flex;gap:11px;align-items:center;transition:all .14s;';
+  var on='border:1.5px solid #A65F2E;background:var(--bronze-bg);';
+  var off='border:1.5px solid var(--border);background:#fff;';
+  if(tr) tr.style.cssText=base+(t==='trading'?on:off);
+  if(fu) fu.style.cssText=base+(t==='full'?on:off);
+}
 function continueToBom(){
   // Vazhdim manual pa dokument: merr detajet e projektit dhe kalon te BOM (bosh, gati për shtim manual)
   var proj=(document.getElementById('i-projname')||{}).value||'';
@@ -5847,7 +5874,7 @@ function saveProject(triggerBtn){
   if(!name){alert('Shkruaj emrin e projektit fillimisht (te Import Dokument).');return;}
   var btn=triggerBtn||document.getElementById('btn-save-proj');
   var orig=btn.textContent; btn.textContent='Duke ruajtur...'; btn.disabled=true;
-  var payload={name:name,client:document.getElementById('i-client').value||'',ref:document.getElementById('i-ref').value||'',location:document.getElementById('i-location').value||'',deadline:document.getElementById('i-deadline').value||''};
+  var payload={name:name,client:document.getElementById('i-client').value||'',ref:document.getElementById('i-ref').value||'',location:document.getElementById('i-location').value||'',deadline:document.getElementById('i-deadline').value||'',deal_type:(typeof _newProjType!=='undefined'?_newProjType:'full')};
   var isUpdate=!!_curProjId;
   var req=isUpdate?supaFetch('projects?id=eq.'+_curProjId,'PATCH',payload):supaFetch('projects','POST',payload);
   req.then(function(proj){
