@@ -4417,7 +4417,7 @@ function supPosEditor(o){
 }
 function bomTotalKg(){return +(bomRows.reduce((s,r)=>s+(parseFloat(r.kg)||0),0)).toFixed(1);}
 function addOffer(){
-  offers.push({id:Date.now(),supplier:'',priceKg:0,zincKg:0,transportEur:0,vatPct:0,kg:bomTotalKg(),totalEur:0,delivery:4,inco:'EXW',cert:'EN 10204 3.1',validity:30,notes:'',dbId:null});
+  offers.push({id:Date.now(),supplier:'',priceKg:0,zincKg:0,transportEur:0,vatPct:0,kg:bomTotalKg(),totalEur:0,delivery:4,inco:'EXW',cert:'EN 10204 3.1',validity:30,notes:'',currency:'EUR',pricingUnit:'kg',dbId:null});
   renderOffers();
 }
 function remOffer(id){offers=offers.filter(o=>o.id!==id);renderOffers();}
@@ -4441,6 +4441,7 @@ function saveOfferDb(o){
   const payload={project_id:_curProjId,supplier:o.supplier||'',price_kg:o.priceKg||0,total_eur:o.totalEur||0,
     delivery_weeks:o.delivery||0,incoterms:o.inco||'EXW',cert:o.cert||'',notes:o.notes||'',origin:o.origin||'',
     zinc_kg:o.zincKg||0,transport_eur:o.transportEur||0,vat_pct:o.vatPct||0,qty_kg:o.kg||0,
+    currency:o.currency||'EUR',pricing_unit:o.pricingUnit||'kg',
     positions:(Array.isArray(o.positions)&&o.positions.length)?o.positions:null};
   const req=o.dbId?supaFetch('offers?id=eq.'+o.dbId,'PATCH',payload):supaFetch('offers','POST',payload);
   req.then(function(rows){ if(!o.dbId&&rows&&rows[0]) o.dbId=rows[0].id; }).catch(function(e){console.error('Ruajtja e ofertes:',e);});
@@ -4449,7 +4450,7 @@ function updOffer(id,f,v){
   const o=offers.find(o=>o.id===id);if(!o)return;
   o[f]=['priceKg','delivery','validity','kg','zincKg','transportEur','vatPct','totalEur'].includes(f)?parseFloat(v)||0:v;
   if(['priceKg','zincKg','kg','transportEur'].includes(f)){ if(Array.isArray(o.positions)&&o.positions.length) recalcOfferFromPositions(o); else recalcOffer(o); }
-  if(['priceKg','zincKg','kg','transportEur','vatPct','totalEur'].includes(f)) renderOffers();
+  if(['priceKg','zincKg','kg','transportEur','vatPct','totalEur','currency','pricingUnit'].includes(f)) renderOffers();
   scheduleOfferSave(o);
 }
 function mapDbOffers(dbOffers){
@@ -4459,6 +4460,7 @@ function mapDbOffers(dbOffers){
     if(sup.indexOf('OFERTA JONE')>-1) type='outgoing';
     return{
       id:i+1,dbId:o.id,supplier:sup,priceKg:parseFloat(o.price_kg)||0,price:parseFloat(o.price_kg)||0,
+      currency:o.currency||'EUR',pricingUnit:o.pricing_unit||'kg',
       delivery:parseInt(o.delivery_weeks)||0,inco:o.incoterms||'DAP',
       cert:o.cert||'',notes:o.notes||'',score:parseFloat(o.score)||0,
       totalEur:parseFloat(o.total_eur)||0,
@@ -4501,34 +4503,50 @@ function renderOffers(){
           ${o.createdAt?`<span style="font-size:10.5px;color:var(--text3)">${new Date(o.createdAt).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>`:''}
         </div>
         <div style="display:flex;gap:6px;align-items:center">
-          <span style="font-size:18px;font-weight:700;color:${isOutgoing?'#B87333':'var(--text)'}">${o.priceKg>0?o.priceKg.toFixed(3)+' EUR/kg':''}</span>
-          ${o.totalEur>0?`<span style="font-size:13px;color:var(--text2)">→ <strong>${o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} EUR</strong>${(o.vatPct||0)>0?` <span style="font-size:11px">(+${o.vatPct}% TVSH = ${offerGross(o).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})})</span>`:''}</span>`:''}
+          <span style="font-size:18px;font-weight:700;color:${isOutgoing?'#B87333':'var(--text)'}">${o.priceKg>0?o.priceKg.toFixed(3)+' '+(o.currency||'EUR')+'/'+(o.pricingUnit||'kg'):''}</span>
+          ${o.totalEur>0?`<span style="font-size:13px;color:var(--text2)">→ <strong>${o.totalEur.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} ${o.currency||'EUR'}</strong>${(o.vatPct||0)>0?` <span style="font-size:11px">(+${o.vatPct}% TVSH = ${offerGross(o).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})})</span>`:''}</span>`:''}
           ${o.dbId?`<button onclick="pstOpenOffer('${o.dbId}',_curProjId)" class="btn btn-sm" style="font-size:11px;padding:3px 9px">Redakto (pozicione, pllakë, profil…)</button>`:''}
           <button onclick="delOffer(${o.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:0 4px">×</button>
         </div>
       </div>
       <div style="padding:14px 16px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 0.8fr 0.8fr;gap:10px;margin-bottom:10px">
           <div>
             <label class="lbl">Furnitori / Prodhuesi</label>
             <input type="text" value="${o.supplier}" style="font-size:12px" onchange="updOffer(${o.id},'supplier',this.value)">
           </div>
           <div>
-            <label class="lbl">Çmimi EUR/kg</label>
+            <label class="lbl">Çmimi për njësi</label>
             <input type="number" value="${o.priceKg||''}" step="0.001" placeholder="0.000" onchange="updOffer(${o.id},'priceKg',this.value);updOffer(${o.id},'price',this.value)">
+          </div>
+          <div>
+            <label class="lbl">Valuta</label>
+            <select onchange="updOffer(${o.id},'currency',this.value)" style="font-size:12px">
+              <option${(o.currency||'EUR')==='EUR'?' selected':''}>EUR</option>
+              <option${(o.currency||'EUR')==='USD'?' selected':''}>USD</option>
+              <option${(o.currency||'EUR')==='CHF'?' selected':''}>CHF</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Njësia</label>
+            <select onchange="updOffer(${o.id},'pricingUnit',this.value)" style="font-size:12px">
+              <option value="kg"${(o.pricingUnit||'kg')==='kg'?' selected':''}>/kg</option>
+              <option value="cope"${(o.pricingUnit||'kg')==='cope'?' selected':''}>/copë</option>
+              <option value="set"${(o.pricingUnit||'kg')==='set'?' selected':''}>/set</option>
+            </select>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label class="lbl">Sasia (kg)</label>
+            <label class="lbl">Sasia (${(o.pricingUnit||'kg')==='kg'?'kg':(o.pricingUnit==='set'?'set':'copë')})</label>
             <input type="number" value="${o.kg||''}" step="1" placeholder="p.sh. ${Math.round(bomTotalKg()||0)}" onchange="updOffer(${o.id},'kg',this.value)">
           </div>
           <div>
-            <label class="lbl">Zinktimi EUR/kg</label>
+            <label class="lbl">Zinktimi ${o.currency||'EUR'}/kg</label>
             <input type="number" value="${o.zincKg||''}" step="0.001" placeholder="0.000" onchange="updOffer(${o.id},'zincKg',this.value)">
           </div>
           <div>
-            <label class="lbl">Transporti EUR</label>
+            <label class="lbl">Transporti ${o.currency||'EUR'}</label>
             <input type="number" value="${o.transportEur||''}" step="0.01" placeholder="0.00" onchange="updOffer(${o.id},'transportEur',this.value)">
           </div>
         </div>
