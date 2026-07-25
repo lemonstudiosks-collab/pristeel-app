@@ -3173,6 +3173,7 @@ function showPage(p){
 }
 // ── SHIRITI I RRJEDHËS: tregon gjithmonë ku je brenda ciklit te projektit dhe lejon kalim direkt ──
 var FLOW_STEPS=[
+  {p:'newproject',l:'Projekti', ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
   {p:'bom',      l:'BOM',       ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>'},
   {p:'rfq',      l:'RFQ',       ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg>'},
   {p:'offers',   l:'Ofertat',   ic:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>'},
@@ -3184,20 +3185,28 @@ var FLOW_STEPS=[
 function renderFlowBar(activePage){
   var el=document.getElementById('flow-bar'); if(!el) return;
   var idx=-1; for(var i=0;i<FLOW_STEPS.length;i++) if(FLOW_STEPS[i].p===activePage) idx=i;
-  if(idx===-1 || !_curProjId){ el.style.display='none'; return; }
+  // Shfaqet për të gjitha faqet e ciklit të projektit (përfshirë faqen e re) — nuk kërkon më projekt të ruajtur
+  if(idx===-1){ el.style.display='none'; return; }
   var nm=(document.getElementById('i-projname')||{}).value||'';
   var h='<div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap;padding:9px 4px 13px;'
     +'border-bottom:1px solid var(--border);margin-bottom:14px">'
     +'<span style="font-size:10.5px;color:var(--text3);font-weight:700;margin-right:8px;white-space:nowrap">'
-    +(nm?nm.replace(/</g,'&lt;'):'Projekti')+' &middot;</span>';
+    +(nm?nm.replace(/</g,'&lt;'):'Projekt i ri')+' &middot;</span>';
   FLOW_STEPS.forEach(function(s,i){
-    h+='<div class="flow-step'+(i===idx?' on':'')+'" onclick="showPage(\''+s.p+'\')" title="Kalo te: '+s.l+'">'
+    h+='<div class="flow-step'+(i===idx?' on':'')+'" onclick="flowGoto(\''+s.p+'\')" title="Kalo te: '+s.l+'">'
       +'<span class="fn">'+(s.ic||(i+1))+'</span>'+s.l+'</div>';
     if(i<FLOW_STEPS.length-1) h+='<span class="flow-arrow">&#8594;</span>';
   });
   h+='<span style="font-size:9.5px;color:var(--text3);margin-left:10px;white-space:nowrap;font-style:italic">kliko cilindo hap — je i lirë të kalosh ku të duash</span>';
   h+='</div>';
   el.innerHTML=h; el.style.display='block';
+}
+// Kalim i lirë mes hapave — kur del nga faqja e projektit të ri pa ruajtur, ruan njoftimin
+function flowGoto(page){
+  if(page!=='newproject'){
+    // nëse s'ka BOM ende dhe shkon te hapat pas BOM, lejo lirshëm (përdoruesi vendos)
+  }
+  showPage(page);
 }
 
 function updateProjBadge(){
