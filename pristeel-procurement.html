@@ -1378,14 +1378,17 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 
   <!-- ═══ TATIMET ATK ═══ -->
   <div id="fin-view-atk" style="display:none">
-    <div class="card">
-      <div class="flex justify-between items-center mb-12">
-        <div class="card-title" style="margin:0">Detyrimet tatimore — ATK</div>
-        <button class="btn btn-primary btn-sm" onclick="atkOpenForm()" style="background:var(--bronze);border-color:var(--bronze)">+ Regjistro detyrim</button>
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+        <div class="card-title" style="margin:0">Përgatitje për deklarim në ATK</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="lbl" style="margin:0">Muaji</label>
+          <select id="atk-period-month" onchange="renderAtkPreparation()" style="font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:6px"></select>
+          <select id="atk-period-year" onchange="renderAtkPreparation()" style="font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:6px"></select>
+        </div>
       </div>
-      <div id="atk-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px"></div>
-      <div id="fin-atk-types" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:12px;margin-bottom:16px"></div>
-      <div id="fin-atk-list"></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Llogaritje automatike nga faturat e regjistruara — vlerat kopjohen manualisht te portali i ATK-së. TVSH standarde 18%.</div>
+      <div id="atk-prep-body"><div class="hub-load">Duke llogaritur…</div></div>
     </div>
   </div>
 
@@ -7280,16 +7283,112 @@ window.addEventListener('load',function(){setTimeout(function(){loadInvoicesOut(
 let bankGuaranteesList=[];
 let otherCostsList=[];
 
+function renderAtkPreparation(){
+  // Mbush dropdown-et e periudhës nëse janë bosh
+  var mSel=document.getElementById('atk-period-month'), ySel=document.getElementById('atk-period-year');
+  if(mSel && !mSel.options.length){
+    var months=['Janar','Shkurt','Mars','Prill','Maj','Qershor','Korrik','Gusht','Shtator','Tetor','Nëntor','Dhjetor'];
+    var now=new Date();
+    for(var m=0;m<12;m++) mSel.innerHTML+='<option value="'+m+'"'+(m===now.getMonth()?' selected':'')+'>'+months[m]+'</option>';
+    var cy=now.getFullYear();
+    for(var y=cy;y>=cy-3;y--) ySel.innerHTML+='<option value="'+y+'"'+(y===cy?' selected':'')+'>'+y+'</option>';
+  }
+  var body=document.getElementById('atk-prep-body'); if(!body) return;
+  var selM=parseInt(mSel.value), selY=parseInt(ySel.value);
+  body.innerHTML='<div class="hub-load">Duke llogaritur…</div>';
+  Promise.all([
+    supaFetch('invoices_out?select=invoice_nr,client,project,date,total_price,gross_amount,vat_amount,vat_rate,paid').catch(function(){return[];}),
+    supaFetch('invoices_in?select=supplier,project,date,amount,vat_amount,vat_rate').catch(function(){return[];}),
+    supaFetch('bank_guarantees?select=fee_amount,project,created_at').catch(function(){return[];})
+  ]).then(function(res){
+    var inPeriod=function(d){ if(!d) return false; var dt=new Date(d); return dt.getMonth()===selM && dt.getFullYear()===selY; };
+    var out=(res[0]||[]).filter(function(r){return inPeriod(r.date);});
+    var inn=(res[1]||[]).filter(function(r){return inPeriod(r.date);});
+    var guars=(res[2]||[]).filter(function(r){return inPeriod(r.created_at);});
+    // TVSH për fatura dalëse: nga vat_amount ose nga bruto/neto (18% standard)
+    function vatOut1(r){
+      if(r.vat_amount!=null && r.vat_amount!=='') return parseFloat(r.vat_amount)||0;
+      var gross=parseFloat(r.gross_amount)||0, net=parseFloat(r.total_price)||0;
+      if(gross>0 && net>0) return +(gross-net).toFixed(2);
+      var rate=(r.vat_rate!=null?parseFloat(r.vat_rate):18)||18;
+      if(gross>0) return +(gross - gross/(1+rate/100)).toFixed(2);
+      if(net>0) return +(net*rate/100).toFixed(2);
+      return 0;
+    }
+    function netOut1(r){
+      var net=parseFloat(r.total_price)||0; if(net>0) return net;
+      var gross=parseFloat(r.gross_amount)||0; var rate=(r.vat_rate!=null?parseFloat(r.vat_rate):18)||18;
+      if(gross>0) return +(gross/(1+rate/100)).toFixed(2);
+      return 0;
+    }
+    // TVSH për fatura hyrëse: 'amount' është totali (me TVSH). Neto = amount/1.18
+    function vatIn1(r){
+      if(r.vat_amount!=null && r.vat_amount!=='') return parseFloat(r.vat_amount)||0;
+      var amt=parseFloat(r.amount)||0; var rate=(r.vat_rate!=null?parseFloat(r.vat_rate):18)||18;
+      if(amt>0) return +(amt - amt/(1+rate/100)).toFixed(2);
+      return 0;
+    }
+    function netIn1(r){
+      var amt=parseFloat(r.amount)||0; var rate=(r.vat_rate!=null?parseFloat(r.vat_rate):18)||18;
+      if(amt>0) return +(amt/(1+rate/100)).toFixed(2);
+      return 0;
+    }
+    var vatOut=out.reduce(function(s,r){return s+vatOut1(r);},0);
+    var netOut=out.reduce(function(s,r){return s+netOut1(r);},0);
+    var vatIn=inn.reduce(function(s,r){return s+vatIn1(r);},0);
+    var netIn=inn.reduce(function(s,r){return s+netIn1(r);},0);
+    var vatDue=vatOut-vatIn;
+    var guarFees=guars.reduce(function(s,r){return s+(parseFloat(r.fee_amount)||0);},0);
+    function eur(n){return (n||0).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+    var h='';
+    h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px">';
+    h+='<div style="background:var(--bg2);border-radius:10px;padding:13px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">TVSH e dalëse (18%)</div><div style="font-size:19px;font-weight:700;color:#0F6E56;margin-top:3px">'+eur(vatOut)+'</div><div style="font-size:10px;color:var(--text3)">nga '+out.length+' fatura dalëse</div></div>';
+    h+='<div style="background:var(--bg2);border-radius:10px;padding:13px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">TVSH e hyrëse (zbritëse)</div><div style="font-size:19px;font-weight:700;color:#A65F2E;margin-top:3px">'+eur(vatIn)+'</div><div style="font-size:10px;color:var(--text3)">nga '+inn.length+' fatura hyrëse</div></div>';
+    h+='<div style="background:'+(vatDue>=0?'#FDEDEA':'#E8F5EF')+';border-radius:10px;padding:13px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">TVSH për pagesë</div><div style="font-size:19px;font-weight:700;color:'+(vatDue>=0?'#C0392B':'#2E7D5B')+';margin-top:3px">'+eur(Math.abs(vatDue))+'</div><div style="font-size:10px;color:var(--text3)">'+(vatDue>=0?'për të paguar te ATK':'kredi TVSH (në favorin tuaj)')+'</div></div>';
+    h+='</div>';
+    h+='<div style="background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:16px">';
+    h+='<div style="font-size:12px;font-weight:700;margin-bottom:10px">Vlerat për deklaratën e TVSH-së (kopjo te ATK)</div>';
+    h+='<table style="width:100%;font-size:12.5px;border-collapse:collapse">';
+    h+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--text2)">Qarkullimi i tatueshëm (baza, dalëse)</td><td style="padding:6px 0;text-align:right;font-weight:600">'+eur(netOut)+'</td></tr>';
+    h+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--text2)">TVSH e llogaritur (dalëse)</td><td style="padding:6px 0;text-align:right;font-weight:600">'+eur(vatOut)+'</td></tr>';
+    h+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--text2)">Blerjet e tatueshme (baza, hyrëse)</td><td style="padding:6px 0;text-align:right;font-weight:600">'+eur(netIn)+'</td></tr>';
+    h+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:6px 0;color:var(--text2)">TVSH e zbritshme (hyrëse)</td><td style="padding:6px 0;text-align:right;font-weight:600">'+eur(vatIn)+'</td></tr>';
+    h+='<tr style="border-top:2px solid var(--border)"><td style="padding:8px 0;font-weight:700">TVSH për pagesë / (kredi)</td><td style="padding:8px 0;text-align:right;font-weight:700;color:'+(vatDue>=0?'#C0392B':'#2E7D5B')+'">'+eur(vatDue)+'</td></tr>';
+    h+='</table></div>';
+    h+='<div style="font-size:12px;font-weight:700;margin:14px 0 8px">Faturat dalëse ('+out.length+')</div>';
+    if(out.length){
+      h+='<table style="width:100%;font-size:11.5px;border-collapse:collapse"><tr style="color:var(--text3);text-align:left"><th style="padding:4px 0;font-weight:600">Nr.</th><th style="font-weight:600">Klienti</th><th style="font-weight:600">Data</th><th style="text-align:right;font-weight:600">Neto</th><th style="text-align:right;font-weight:600">TVSH</th></tr>';
+      h+=out.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:5px 0">'+(r.invoice_nr||'')+'</td><td>'+(r.client||'')+'</td><td>'+(r.date?new Date(r.date).toLocaleDateString('sq-AL'):'')+'</td><td style="text-align:right">'+eur(netOut1(r))+'</td><td style="text-align:right">'+eur(vatOut1(r))+'</td></tr>';}).join('');
+      h+='</table>';
+    } else { h+='<div style="font-size:11.5px;color:var(--text3)">Asnjë faturë dalëse për këtë muaj.</div>'; }
+    h+='<div style="font-size:12px;font-weight:700;margin:16px 0 8px">Faturat hyrëse ('+inn.length+')</div>';
+    if(inn.length){
+      h+='<table style="width:100%;font-size:11.5px;border-collapse:collapse"><tr style="color:var(--text3);text-align:left"><th style="padding:4px 0;font-weight:600">Furnitori</th><th style="font-weight:600">Data</th><th style="text-align:right;font-weight:600">Neto</th><th style="text-align:right;font-weight:600">TVSH</th></tr>';
+      h+=inn.map(function(r){return '<tr style="border-top:1px solid var(--border)"><td style="padding:5px 0">'+(r.supplier||'')+'</td><td>'+(r.date?new Date(r.date).toLocaleDateString('sq-AL'):'')+'</td><td style="text-align:right">'+eur(netIn1(r))+'</td><td style="text-align:right">'+eur(vatIn1(r))+'</td></tr>';}).join('');
+      h+='</table>';
+    } else { h+='<div style="font-size:11.5px;color:var(--text3)">Asnjë faturë hyrëse për këtë muaj.</div>'; }
+    h+='<div style="font-size:12px;font-weight:700;margin:16px 0 8px">Kostot e garancionit bankar</div>';
+    if(guars.length && guarFees>0){
+      h+='<div style="font-size:11.5px;color:var(--text2)">Tarifa të regjistruara për këtë muaj: <strong>'+eur(guarFees)+'</strong> — kosto e njohur (jo TVSH e zbritshme).</div>';
+    } else {
+      h+='<div style="font-size:11.5px;color:var(--text3);background:#FBF3E0;border-radius:8px;padding:9px 11px">⚠ Pozicion i hapur: kostot e garancionit bankar nuk janë futur ende. Këto shfaqen në pasqyrën bankare. Regjistroji te tabi "Garancitë bankare" me vlerën aktuale, që të hyjnë në kostot e njohura.</div>';
+    }
+    body.innerHTML=h;
+  }).catch(function(e){ body.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim: '+e.message+'</div>'; });
+}
 function finSwitchTab(tab){
   document.getElementById('fin-view-tax').style.display = tab==='tax' ? '' : 'none';
   document.getElementById('fin-view-aging').style.display = tab==='aging' ? '' : 'none';
   document.getElementById('fin-view-bg').style.display = tab==='bg' ? '' : 'none';
   document.getElementById('fin-view-oc').style.display = tab==='oc' ? '' : 'none';
+  var atkView=document.getElementById('fin-view-atk'); if(atkView) atkView.style.display = tab==='atk' ? '' : 'none';
   document.getElementById('fin-tab-tax').className = 'btn btn-sm' + (tab==='tax' ? ' btn-primary' : '');
   document.getElementById('fin-tab-aging').className = 'btn btn-sm' + (tab==='aging' ? ' btn-primary' : '');
   document.getElementById('fin-tab-bg').className = 'btn btn-sm' + (tab==='bg' ? ' btn-primary' : '');
   document.getElementById('fin-tab-oc').className = 'btn btn-sm' + (tab==='oc' ? ' btn-primary' : '');
+  var atkTab=document.getElementById('fin-tab-atk'); if(atkTab) atkTab.className = 'btn btn-sm' + (tab==='atk' ? ' btn-primary' : '');
   if(tab==='aging')renderAgingReport();
+  if(tab==='atk')renderAtkPreparation();
 }
 
 function renderAgingReport(){
