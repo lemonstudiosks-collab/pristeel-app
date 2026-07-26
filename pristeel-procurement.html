@@ -7992,7 +7992,7 @@ async function loadTasks(){
       var col = d<0?'var(--red-text)':(d<=2?'var(--red-text)':(d<=7?'var(--bronze)':'var(--text3)'));
       var when = d<0?('vonuar '+Math.abs(d)+' d'):(d===0?'SOT':(d===1?'nesër':d+' ditë'));
       var cat = t.category||'intern';
-      var mail = t.contact_email ? '<span class="tk-act" onclick="event.stopPropagation();window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(t.contact_email)+'&su='+encodeURIComponent(t.title)+'\',\'_blank\')">Email →</span>' : '';
+      var mail = t.contact_email ? '<span class="tk-act" onclick="event.stopPropagation();taskEmail(\''+t.id+'\')" title="Dërgo email profesional (gjermanisht për DACH)">Email →</span>' : '';
       return '<div class="tk cat-'+cat+'" id="tk-'+t.id+'" onclick="openTaskDetail(\''+t.id+'\')">'
         +'<div class="tk-box" onclick="event.stopPropagation();doneTask(\''+t.id+'\')" title="Shëno si të kryer"></div>'
         +(TK_ICON[cat]||'')
@@ -8036,13 +8036,34 @@ function openTaskDetail(id){
       +'</table>'
       +'<div style="display:flex;gap:8px;margin-top:18px">'
         +(t.project_id?'<button class="btn btn-sm" style="flex:1" onclick="closeTaskDetail();openProjectDetail(\''+t.project_id+'\')">Hap projektin →</button>':'')
-        +(t.contact_email?'<button class="btn btn-sm" style="flex:1" onclick="window.open(\'https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(t.contact_email)+'&su='+encodeURIComponent(t.title)+'\',\'_blank\')">Email →</button>':'')
+        +(t.contact_email?'<button class="btn btn-sm" style="flex:1" onclick="taskEmail(\''+t.id+'\')">Email →</button>':'')
         +'<button class="btn btn-primary btn-sm" style="flex:1" onclick="doneTask(\''+t.id+'\');closeTaskDetail()">Shëno të kryer</button>'
       +'</div>'
     +'</div></div>';
   document.body.appendChild(bg);
 }
 function closeTaskDetail(){ var m=document.getElementById('pst-tk-modal'); if(m) m.remove(); }
+// Email follow-up nga një detyrë — në gjuhën e duhur (gjermanisht default për DACH)
+var TASK_EMAIL_TXT={
+  de:{s:'Nachfassen — %t',b:'Sehr geehrte Damen und Herren,\n\nwir kommen auf unser Anliegen "%t" zurück%p und möchten uns nach dem aktuellen Stand erkundigen.\n\nÜber eine kurze Rückmeldung würden wir uns freuen. Für Rückfragen stehen wir Ihnen gerne zur Verfügung.\n\nMit freundlichen Grüßen\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com | www.prissteel.com'},
+  en:{s:'Follow-up — %t',b:'Dear Sir or Madam,\n\nwe are following up regarding "%t"%p and would like to enquire about the current status.\n\nWe would appreciate a brief update. Please do not hesitate to contact us with any questions.\n\nBest regards,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com | www.prissteel.com'},
+  sq:{s:'Ndjekje — %t',b:'Të nderuar,\n\npo ndjekim çështjen "%t"%p dhe dëshirojmë të pyesim për gjendjen aktuale.\n\nDo ta vlerësonim një përgjigje të shkurtër. Për çdo paqartësi jemi në dispozicion.\n\nMe respekt,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com | www.prissteel.com'},
+  sr:{s:'Podsetnik — %t',b:'Poštovani,\n\nobraćamo Vam se u vezi sa "%t"%p i želeli bismo da se raspitamo o trenutnom statusu.\n\nBili bismo zahvalni na kratkom odgovoru. Za sva pitanja stojimo na raspolaganju.\n\nS poštovanjem,\n\nArianit Vllahiu\nPRISTEEL Sh.p.k. | sales@prissteel.com | www.prissteel.com'}
+};
+function taskEmail(id){
+  var t=_tkCache[id]; if(!t){ return; }
+  // Zgjidh gjuhën: nëse detyra ka gjuhë, përdore; përndryshe gjermanisht (DACH default)
+  var lang=t.lang||'de';
+  if(!TASK_EMAIL_TXT[lang]) lang='de';
+  var tpl=TASK_EMAIL_TXT[lang];
+  var title=(t.title||'').replace('[AUTO] ','').replace(/^Ndjekje ofertë:\s*/i,'').replace(/^Ndjekje furnitor:\s*/i,'');
+  var projName=t._projName||'';
+  var pPart=projName?(lang==='de'?(' (Projekt: '+projName+')'):lang==='en'?(' (project: '+projName+')'):lang==='sr'?(' (projekat: '+projName+')'):(' (projekti: '+projName+')')):'';
+  var subj=tpl.s.replace('%t',title);
+  var body=tpl.b.replace(/%t/g,title).replace('%p',pPart);
+  window.open('https://mail.google.com/mail/?view=cm&authuser=sales%40prissteel.com&to='+encodeURIComponent(t.contact_email||'')
+    +'&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body),'_blank');
+}
 function archiveTask(id){
   var t=_tkCache[id]||{};
   var reason=prompt('Pse po e heq këtë detyrë?\n\n(P.sh. "Projekti u humb për shkak të çmimit", "Nuk aplikohet më", "E zgjidhur jashtë sistemit")\n\nShpjegimi ruhet dhe mund ta shohësh kurdo te arkivi i detyrave.');
