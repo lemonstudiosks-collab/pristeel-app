@@ -2042,10 +2042,10 @@ function spLoadProjects(){
 }
 // Ngjyrat e katroreve per çdo faqe brenda nje moduli
 var PAGE_COLORS={
-  bom:'#9AA0A6', rfq:'#9AA0A6', offers:'#9AA0A6', ranking:'#9AA0A6',
-  oferta:'#9AA0A6', invoices:'#9AA0A6',
-  qendra:'#9AA0A6', import:'#9AA0A6', contacts:'#9AA0A6',
-  finance:'#9AA0A6', kalkulator:'#9AA0A6', settings:'#9AA0A6'
+  bom:'#0C447C', rfq:'#A65F2E', offers:'#0F6E56', ranking:'#5A3E85',
+  oferta:'#B8860B', invoices:'#0C7C7C', library:'#6B4E9E',
+  qendra:'#C0392B', import:'#2E7D5B', contacts:'#6B4E9E',
+  finance:'#0F6E56', kalkulator:'#5A3E85', settings:'#546E7A'
 };
 var PAGE_DESC={
   bom:'Fut ose verifiko listën e materialeve', rfq:'Gjenero dhe dërgo kërkesa te furnitorët',
@@ -2096,6 +2096,16 @@ function showModuleHub(mod){
   return true;
 }
 function loadProcInsights(){
+  // Merr fillimisht listën e items të hequra që t'i përjashtojmë
+  supaFetch('dismissed_items?select=item_type,item_ref&limit=500').catch(function(){return[];}).then(function(dismissed){
+    var isDismissed={};
+    (dismissed||[]).forEach(function(d){ isDismissed[d.item_type+':'+d.item_ref]=true; });
+    window._procDismissed=isDismissed;
+    _loadProcInsightsInner(isDismissed);
+  });
+}
+function _loadProcInsightsInner(isDismissed){
+  isDismissed=isDismissed||{};
   // Panel 1: RFQ pa përgjigje (furnitorë që heshtin — kërkojnë ndjekje)
   var elW=document.getElementById('proc-waiting');
   if(elW){
@@ -2103,7 +2113,7 @@ function loadProcInsights(){
       supaFetch('rfq_log?order=sent_at.asc&limit=100').catch(function(){return[];}),
       supaFetch('projects?select=id,name').catch(function(){return[];})
     ]).then(function(res){
-      var rfqs=(res[0]||[]).filter(function(r){ return r.sent_at && r.status!=='replied' && r.status!=='won' && r.status!=='lost' && r.status!=='planned'; });
+      var rfqs=(res[0]||[]).filter(function(r){ return r.sent_at && r.status!=='replied' && r.status!=='won' && r.status!=='lost' && r.status!=='planned' && !isDismissed['rfq:'+r.id]; });
       var pN={}; (res[1]||[]).forEach(function(p){pN[p.id]=p.name;});
       var today=new Date();
       rfqs.forEach(function(r){ r._age=Math.round((today-new Date(r.sent_at))/86400000); });
@@ -2112,11 +2122,16 @@ function loadProcInsights(){
       if(!rfqs.length){ elW.innerHTML=head+'<div style="font-size:11.5px;color:var(--green-text)">✓ Të gjithë furnitorët janë përgjigjur.</div>'; return; }
       elW.innerHTML=head+rfqs.slice(0,7).map(function(r){
         var col=r._age>=7?'#C0392B':(r._age>=3?'#A65F2E':'var(--text3)');
+        var label=(r.supplier_name||r.supplier_email||'(pa emër)')+' — '+(pN[r.project_id]||'');
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'
           +'<div style="min-width:0"><strong style="font-size:12px">'+(r.supplier_name||r.supplier_email||'(pa emër)')+'</strong>'
             +'<div style="font-size:10px;color:var(--text3)">'+(pN[r.project_id]||'')+'</div></div>'
-          +'<span style="font-size:11px;font-weight:700;color:'+col+';flex-shrink:0;margin-left:8px">'+r._age+' ditë</span></div>';
-      }).join('')+(rfqs.length>7?'<div style="font-size:10px;color:var(--text3);margin-top:6px">+ '+(rfqs.length-7)+' të tjerë</div>':'');
+          +'<span style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:8px">'
+            +'<span style="font-size:11px;font-weight:700;color:'+col+'">'+r._age+' ditë</span>'
+            +'<span onclick="dismissProcItem(\'rfq\',\''+r.id+'\',\''+(r.project_id||'')+'\',\''+encodeURIComponent(label)+'\')" title="Hiqe me shpjegim" style="cursor:pointer;color:var(--text3);font-size:15px">&times;</span>'
+          +'</span></div>';
+      }).join('')+(rfqs.length>7?'<div style="font-size:10px;color:var(--text3);margin-top:6px">+ '+(rfqs.length-7)+' të tjerë</div>':'')
+        +'<div style="margin-top:8px"><span onclick="openProcArchive()" style="font-size:10px;color:var(--bronze-text);cursor:pointer">Shiko të hequrat →</span></div>';
     }).catch(function(e){ elW.innerHTML='<div style="color:var(--red-text);font-size:11px">Gabim: '+e.message+'</div>'; });
   }
   // Panel 2: Projekte që presin çmim (kanë BOM/RFQ por s'kanë ende ofertë furnitori)
@@ -2128,16 +2143,47 @@ function loadProcInsights(){
     ]).then(function(res){
       var projs=res[0]||[];
       var haveOffers={}; (res[1]||[]).forEach(function(o){ if(o.project_id) haveOffers[o.project_id]=true; });
-      var waiting=projs.filter(function(p){ return !haveOffers[p.id]; });
+      var waiting=projs.filter(function(p){ return !haveOffers[p.id] && !isDismissed['nopricing:'+p.id]; });
       var head='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="width:26px;height:26px;border-radius:7px;background:#A65F2E1a;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#A65F2E" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div style="font-size:12.5px;font-weight:700;color:var(--text)">Presin ofertë furnitori</div></div>';
       if(!waiting.length){ elN.innerHTML=head+'<div style="font-size:11.5px;color:var(--green-text)">✓ Çdo projekt aktiv ka së paku një ofertë.</div>'; return; }
       elN.innerHTML=head+waiting.slice(0,7).map(function(p){
-        return '<div onclick="loadProject(\''+p.id+'\')" style="cursor:pointer;padding:6px 0;border-bottom:1px solid var(--border)" title="Hap projektin">'
-          +'<strong style="font-size:12px">'+(p.name||'(pa emër)')+'</strong>'
-          +'<div style="font-size:10px;color:var(--text3)">s\'ka ende ofertë furnitori — dërgo RFQ</div></div>';
-      }).join('')+(waiting.length>7?'<div style="font-size:10px;color:var(--text3);margin-top:6px">+ '+(waiting.length-7)+' të tjerë</div>':'');
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'
+          +'<div onclick="loadProject(\''+p.id+'\')" style="cursor:pointer;min-width:0" title="Hap projektin">'
+            +'<strong style="font-size:12px">'+(p.name||'(pa emër)')+'</strong>'
+            +'<div style="font-size:10px;color:var(--text3)">s\'ka ende ofertë furnitori — dërgo RFQ</div></div>'
+          +'<span onclick="dismissProcItem(\'nopricing\',\''+p.id+'\',\''+p.id+'\',\''+encodeURIComponent(p.name||'')+'\')" title="Hiqe me shpjegim" style="cursor:pointer;color:var(--text3);font-size:15px;flex-shrink:0;margin-left:8px">&times;</span>'
+          +'</div>';
+      }).join('')+(waiting.length>7?'<div style="font-size:10px;color:var(--text3);margin-top:6px">+ '+(waiting.length-7)+' të tjerë</div>':'')
+        +'<div style="margin-top:8px"><span onclick="openProcArchive()" style="font-size:10px;color:var(--bronze-text);cursor:pointer">Shiko të hequrat →</span></div>';
     }).catch(function(e){ elN.innerHTML='<div style="color:var(--red-text);font-size:11px">Gabim: '+e.message+'</div>'; });
   }
+}
+function dismissProcItem(type,ref,projId,labelEnc){
+  var label=decodeURIComponent(labelEnc||'');
+  var reason=prompt('Pse po e heq këtë nga lista?\n\n(P.sh. "Furnitori u përgjigj me telefon", "Projekt i mbyllur", "Nuk na intereson më")\n\nShpjegimi ruhet dhe mund ta shohësh kurdo.');
+  if(reason===null) return;
+  if(!reason.trim()){ alert('Duhet një shpjegim i shkurtër.'); return; }
+  supaFetch('dismissed_items','POST',{
+    item_type:type, item_ref:ref, project_id:projId||null, label:label, reason:reason.trim(), dismissed_by:'admin'
+  }).then(function(){ loadProcInsights(); }).catch(function(e){ alert('Gabim: '+e.message); });
+}
+function openProcArchive(){
+  supaFetch('dismissed_items?order=dismissed_at.desc&limit=200').then(function(rows){
+    rows=rows||[];
+    var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='proc-archive-modal';
+    bg.onclick=function(e){ if(e.target===bg) bg.remove(); };
+    var typeN={rfq:'RFQ pa përgjigje', nopricing:'Presin ofertë'};
+    var body=rows.length?rows.map(function(r){
+      var d=r.dismissed_at?new Date(r.dismissed_at).toLocaleDateString('sq-AL',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+      return '<div style="padding:11px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="font-size:12.5px;font-weight:650;color:var(--text)">'+(r.label||'(pa etiketë)')+' <span style="font-size:9.5px;font-weight:600;color:var(--text3);background:var(--bg2);padding:1px 7px;border-radius:9px;margin-left:4px">'+(typeN[r.item_type]||r.item_type)+'</span></div>'
+        +'<div style="font-size:11.5px;color:var(--bronze-text);margin-top:4px;background:var(--bg2);border-radius:6px;padding:6px 9px"><b>Arsyeja:</b> '+r.reason+'</div>'
+        +'<div style="font-size:9.5px;color:var(--text3);margin-top:3px">Hequr më '+d+'</div></div>';
+    }).join(''):'<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">Asnjë e hequr ende.</div>';
+    bg.innerHTML='<div class="pst-modal" style="max-width:560px"><div class="pst-modal-hd"><div style="font-size:14.5px;font-weight:700">Arkivi i të hequrave — Prokurimi</div><span class="pst-modal-x" onclick="document.getElementById(\'proc-archive-modal\').remove()">✕</span></div>'
+      +'<div class="pst-modal-bd">'+body+'</div></div>';
+    document.body.appendChild(bg);
+  }).catch(function(e){ alert('Gabim: '+e.message); });
 }
 function loadRecentSupplierOffers(){
   var el=document.getElementById('proc-recent-offers'); if(!el) return;
