@@ -36,6 +36,20 @@ button,input,select,textarea{font-family:inherit}
 ::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#CDD6DC;border-radius:6px}::-webkit-scrollbar-track{background:transparent}
 /* LAYOUT */
 .app-shell{display:flex;min-height:100vh}
+/* Kolona e djathtë kontekstuale */
+.rail{width:52px;flex-shrink:0;background:#fff;border-left:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px;transition:width .18s ease;overflow:hidden;position:relative}
+.rail.open{width:340px;align-items:stretch;padding:0}
+.rail-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);flex-shrink:0;transition:background .13s,color .13s}
+.rail-ic:hover{background:var(--bg2);color:var(--text)}
+.rail-ic.active{background:var(--bronze-bg);color:var(--bronze)}
+.rail-panel{display:none;flex-direction:column;height:100vh;position:sticky;top:0}
+.rail.open .rail-collapsed{display:none}
+.rail.open .rail-panel{display:flex}
+.rail-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.rail-body{flex:1;overflow-y:auto;padding:14px 16px}
+.rail-tabs{display:flex;gap:4px;padding:8px 12px 0}
+.rail-tab{flex:1;font-size:11px;font-weight:600;padding:6px 8px;border-radius:7px 7px 0 0;cursor:pointer;text-align:center;color:var(--text3);border-bottom:2px solid transparent}
+.rail-tab.on{color:var(--bronze);border-bottom-color:var(--bronze);background:var(--bronze-bg)}
 /* Rreshtat e tabelave — aktivizohen me maus */
 tbody tr{transition:background .13s ease}
 tbody tr:hover{background:var(--bg2)}
@@ -1643,8 +1657,151 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   </div>
 </div>
 
-</div></div></div><script>
+</div>
+
+<div class="rail" id="right-rail">
+  <div class="rail-collapsed" id="rail-collapsed" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+    <div class="rail-ic" onclick="railOpen('context')" title="Paneli i projektit / alarmet">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </div>
+    <div class="rail-ic" onclick="railOpen('claude')" title="Bisede me Claude">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </div>
+  </div>
+  <div class="rail-panel" id="rail-panel">
+    <div class="rail-hd">
+      <div style="font-size:13px;font-weight:700" id="rail-title">Paneli</div>
+      <span onclick="railClose()" style="cursor:pointer;color:var(--text3);font-size:20px;line-height:1" title="Mbyll">&rsaquo;</span>
+    </div>
+    <div class="rail-tabs">
+      <div class="rail-tab" id="rail-tab-context" onclick="railTab('context')">Projekti / Alarmet</div>
+      <div class="rail-tab" id="rail-tab-claude" onclick="railTab('claude')">Claude</div>
+    </div>
+    <div class="rail-body" id="rail-body"></div>
+  </div>
+</div>
+
+</div></div><script>
 // ── DATA ──────────────────────────────────────────────
+// ══════════ KOLONA E DJATHTË (RAIL) ══════════
+var _railTab='context';
+function railOpen(tab){
+  var r=document.getElementById('right-rail'); if(!r) return;
+  r.classList.add('open');
+  railTab(tab||_railTab);
+}
+function railClose(){
+  var r=document.getElementById('right-rail'); if(r) r.classList.remove('open');
+}
+function railTab(tab){
+  _railTab=tab;
+  document.getElementById('rail-tab-context').className='rail-tab'+(tab==='context'?' on':'');
+  document.getElementById('rail-tab-claude').className='rail-tab'+(tab==='claude'?' on':'');
+  document.getElementById('rail-title').textContent = tab==='claude'?'Bisedë me Claude':'Projekti / Alarmet';
+  if(tab==='context') renderRailContext();
+  else renderRailClaude();
+}
+function renderRailContext(){
+  var el=document.getElementById('rail-body'); if(!el) return;
+  el.innerHTML='<div class="hub-load">Duke ngarkuar…</div>';
+  var pid=(typeof _curProjId!=='undefined')?_curProjId:null;
+  if(pid){
+    // Paneli kontekstual i projektit aktiv
+    Promise.all([
+      supaFetch('projects?id=eq.'+pid+'&select=name,client,pipeline_stage,deal_type,status,deadline').catch(function(){return[];}),
+      supaFetch('offers?project_id=eq.'+pid+'&select=supplier,price_kg,currency').catch(function(){return[];}),
+      supaFetch('invoices_out?project=eq.'+encodeURIComponent('')+'&select=invoice_nr&limit=1').catch(function(){return[];}),
+      supaFetch('files?project_id=eq.'+pid+'&select=file_name,created_at&order=created_at.desc&limit=4').catch(function(){return[];})
+    ]).then(function(res){
+      var p=(res[0]||[])[0]||{};
+      var offs=res[1]||[];
+      var files=res[3]||[];
+      var stageIdx=(typeof pipelineIdx==='function')?pipelineIdx(p.pipeline_stage||'rfq_in'):0;
+      var stages=(typeof PIPELINE_STAGES!=='undefined')?PIPELINE_STAGES:[];
+      var stageName=stages[stageIdx]?stages[stageIdx].n:'';
+      var h='';
+      h+='<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px">'+(p.name||'Projekt')+'</div>';
+      h+='<div style="font-size:11px;color:var(--text3);margin-bottom:12px">'+(p.client||'')+(p.deal_type==='trading'?' · 🤝 Tregtar':' · 🏭 I plotë')+'</div>';
+      // Faza aktuale
+      h+='<div style="background:var(--bronze-bg);border-radius:9px;padding:10px 12px;margin-bottom:12px">'
+        +'<div style="font-size:9.5px;color:var(--bronze-text);text-transform:uppercase;letter-spacing:.4px;font-weight:700">Faza aktuale</div>'
+        +'<div style="font-size:13px;font-weight:650;color:var(--bronze-text);margin-top:2px">'+(stageIdx+1)+'. '+stageName+'</div></div>';
+      // Ofertat
+      h+='<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin:14px 0 7px">Ofertat e furnitorëve ('+offs.length+')</div>';
+      if(offs.length){
+        h+=offs.slice(0,4).map(function(o){return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)"><span>'+(o.supplier||'—')+'</span><span style="font-weight:600">'+(o.price_kg?parseFloat(o.price_kg).toFixed(2)+' '+(o.currency||'EUR'):'')+'</span></div>';}).join('');
+      } else { h+='<div style="font-size:11.5px;color:var(--text3)">Ende s\'ka oferta.</div>'; }
+      // Skedarët e fundit
+      h+='<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin:14px 0 7px">Skedarët e fundit</div>';
+      if(files.length){
+        h+=files.map(function(f){return '<div style="font-size:11.5px;padding:3px 0;color:var(--text2)">📎 '+(f.file_name||'')+'</div>';}).join('');
+      } else { h+='<div style="font-size:11.5px;color:var(--text3)">Ende s\'ka skedarë.</div>'; }
+      // Veprime të shpejta
+      h+='<div style="margin-top:16px;display:flex;flex-direction:column;gap:6px">'
+        +'<button class="btn btn-sm" onclick="openOverview(\''+pid+'\')" style="justify-content:center">Hap detajet e plota</button>'
+        +'<button class="btn btn-sm" onclick="showPage(\'oferta\')" style="justify-content:center">Gjenero ofertë</button>'
+        +'</div>';
+      el.innerHTML=h;
+    }).catch(function(e){ el.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim: '+e.message+'</div>'; });
+  } else {
+    // Feed alarmesh kur s'ka projekt aktiv
+    renderRailAlerts(el);
+  }
+}
+function renderRailAlerts(el){
+  el.innerHTML='<div class="hub-load">Duke ngarkuar alarmet…</div>';
+  var today=new Date();
+  Promise.all([
+    supaFetch('tasks?status=eq.hapur&select=title,due_date,contact_email&order=due_date.asc&limit=8').catch(function(){return[];}),
+    supaFetch('invoices_out?paid=eq.false&select=invoice_nr,client,due_date&order=due_date.asc&limit=5').catch(function(){return[];})
+  ]).then(function(res){
+    var tasks=res[0]||[], unpaid=res[1]||[];
+    var h='<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:8px">Detyrat e afërta</div>';
+    if(tasks.length){
+      h+=tasks.map(function(t){
+        var days=t.due_date?Math.round((new Date(t.due_date)-today)/86400000):null;
+        var col=days!==null&&days<0?'#C0392B':(days!==null&&days<=2?'#A65F2E':'var(--text3)');
+        return '<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-size:12px;color:var(--text)">'+t.title+'</div>'
+          +(days!==null?'<div style="font-size:10px;color:'+col+';font-weight:600">'+(days<0?Math.abs(days)+' ditë vonesë':days===0?'sot':days+' ditë')+'</div>':'')+'</div>';
+      }).join('');
+    } else { h+='<div style="font-size:11.5px;color:var(--green-text)">✓ Asnjë detyrë e hapur.</div>'; }
+    h+='<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin:16px 0 8px">Faturat e papaguara</div>';
+    if(unpaid.length){
+      h+=unpaid.map(function(iv){return '<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="font-size:12px;color:var(--text)">'+(iv.client||iv.invoice_nr)+'</div><div style="font-size:10px;color:var(--text3)">afati: '+(iv.due_date||'—')+'</div></div>';}).join('');
+    } else { h+='<div style="font-size:11.5px;color:var(--green-text)">✓ Asnjë faturë e papaguar.</div>'; }
+    h+='<div style="margin-top:16px"><button class="btn btn-sm" onclick="showPage(\'qendra\')" style="justify-content:center;width:100%">Hap Pasqyrën e plotë</button></div>';
+    el.innerHTML=h;
+  }).catch(function(e){ el.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim: '+e.message+'</div>'; });
+}
+function renderRailClaude(){
+  var el=document.getElementById('rail-body'); if(!el) return;
+  // Kontrollo nëse ka çelës Anthropic te cilësimet
+  var hasKey=false;
+  try{ hasKey = !!(typeof settings!=='undefined' && settings && settings.anthropicKey); }catch(e){}
+  if(hasKey){
+    // Bisedë e plotë (aktivizohet kur ka çelës)
+    el.innerHTML='<div id="rail-chat-msgs" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px"></div>'
+      +'<div style="display:flex;gap:6px"><input id="rail-chat-input" placeholder="Pyet Claude..." style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px" onkeydown="if(event.key===\'Enter\')railChatSend()"><button class="btn btn-sm btn-primary" onclick="railChatSend()">→</button></div>';
+  } else {
+    // Gatshme, por pa çelës — trego udhëzim + link claude.ai
+    el.innerHTML='<div style="text-align:center;padding:20px 8px">'
+      +'<div style="width:44px;height:44px;border-radius:12px;background:var(--bronze-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">'
+        +'<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#A65F2E" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>'
+      +'<div style="font-size:13px;font-weight:650;color:var(--text);margin-bottom:6px">Bisedë me Claude</div>'
+      +'<div style="font-size:11.5px;color:var(--text3);line-height:1.5;margin-bottom:16px">Për të biseduar me Claude direkt nga platforma (që sheh projektet e tua dhe ndihmon me oferta, email-e, analiza), shto çelësin Anthropic te Cilësimet.</div>'
+      +'<button class="btn btn-sm btn-primary" onclick="showPage(\'settings\');railClose()" style="width:100%;justify-content:center;margin-bottom:8px">Shto çelësin Anthropic</button>'
+      +'<a href="https://claude.ai/new" target="_blank" style="display:block;font-size:11.5px;color:var(--bronze-text);text-decoration:none;padding:8px">ose hap claude.ai në dritare të re →</a>'
+      +'</div>';
+  }
+}
+function railChatSend(){
+  var inp=document.getElementById('rail-chat-input'); if(!inp||!inp.value.trim()) return;
+  var msg=inp.value.trim(); inp.value='';
+  var box=document.getElementById('rail-chat-msgs');
+  box.innerHTML+='<div style="align-self:flex-end;background:var(--bronze);color:#fff;padding:7px 11px;border-radius:12px 12px 3px 12px;font-size:12px;max-width:85%">'+msg.replace(/</g,'&lt;')+'</div>';
+  box.innerHTML+='<div style="align-self:flex-start;background:var(--bg2);color:var(--text3);padding:7px 11px;border-radius:12px 12px 12px 3px;font-size:12px">Bisedë me API do aktivizohet kur të shtohet çelësi Anthropic.</div>';
+  box.scrollTop=box.scrollHeight;
+}
 const PW={
   HEA:{100:17.0,120:20.3,140:25.1,160:31.0,180:36.2,200:43.1,220:51.5,240:61.5,260:69.5,280:77.8,300:90.0,320:99.5,340:107,360:114,400:127,450:142,500:158,550:169,600:181,650:193,700:208,800:229,900:256,1000:277},
   HEB:{100:20.8,120:27.2,140:34.4,160:43.4,180:52.2,200:62.5,220:72.8,240:84.8,260:94.8,280:105,300:119,320:129,340:137,360:145,400:158,450:174,500:191,550:203,600:216,650:229,700:245,800:267,900:297,1000:320},
