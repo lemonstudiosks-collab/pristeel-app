@@ -1507,7 +1507,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div>
       <div class="hub-sec" title="Detyra konkrete me afat (jo projekte) — p.sh. 'thirr klientin', 'dërgo ofertën'">
         <span>Detyrat</span>
-        <button class="btn btn-sm" onclick="addTask()">+ Detyrë</button>
+        <span style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="openTaskArchive()" title="Detyrat e hequra me shpjegim">Arkivi</button>
+          <button class="btn btn-sm" onclick="addTask()">+ Detyrë</button>
+        </span>
       </div>
       <div id="hub-tasks"><div class="hub-load">Duke ngarkuar…</div></div>
 
@@ -8002,6 +8005,7 @@ async function loadTasks(){
           +'<div class="tk-d" style="color:'+col+'">'+when+'</div>'
           +'<div style="font-size:9.5px;color:var(--text3)">'+new Date(t.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+'</div>'
           +mail
+          +'<span class="tk-act" onclick="event.stopPropagation();archiveTask(\''+t.id+'\')" title="Hiqe këtë detyrë me një shpjegim (ruhet në arkiv)" style="color:var(--text3);cursor:pointer;font-size:15px;padding:0 4px">&times;</span>'
         +'</div>'
       +'</div>';
     }).join('')
@@ -8039,6 +8043,53 @@ function openTaskDetail(id){
   document.body.appendChild(bg);
 }
 function closeTaskDetail(){ var m=document.getElementById('pst-tk-modal'); if(m) m.remove(); }
+function archiveTask(id){
+  var t=_tkCache[id]||{};
+  var reason=prompt('Pse po e heq këtë detyrë?\n\n(P.sh. "Projekti u humb për shkak të çmimit", "Nuk aplikohet më", "E zgjidhur jashtë sistemit")\n\nShpjegimi ruhet dhe mund ta shohësh kurdo te arkivi i detyrave.');
+  if(reason===null) return;
+  if(!reason.trim()){ alert('Duhet një shpjegim i shkurtër për ta hequr detyrën.'); return; }
+  var payload={
+    original_task_id:id,
+    project_id:t.project_id||null,
+    title:(t.title||'').replace('[AUTO] ',''),
+    detail:t.detail||'',
+    category:t.category||'intern',
+    reason:reason.trim(),
+    archived_by:'admin'
+  };
+  supaFetch('task_archive','POST',payload)
+    .then(function(){ return supaFetch('tasks?id=eq.'+id,'PATCH',{status:'arkivuar',done_at:new Date().toISOString()}); })
+    .then(function(){
+      var el=document.getElementById('tk-'+id); if(el) el.classList.add('tk-done');
+      var host=document.getElementById('hub-tasks');
+      if(host){
+        var tst=document.createElement('div'); tst.className='tk-toast';
+        tst.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg> Detyra u hoq dhe u ruajt në arkiv me shpjegimin.';
+        host.parentNode.insertBefore(tst, host);
+        setTimeout(function(){ tst.remove(); }, 4000);
+      }
+      setTimeout(loadTasks,350);
+    }).catch(function(e){ alert('Gabim: '+e.message); });
+}
+function openTaskArchive(){
+  supaFetch('task_archive?order=archived_at.desc&limit=200').then(function(rows){
+    rows=rows||[];
+    var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='task-archive-modal';
+    bg.onclick=function(e){ if(e.target===bg) bg.remove(); };
+    var body=rows.length?rows.map(function(r){
+      var d=r.archived_at?new Date(r.archived_at).toLocaleDateString('sq-AL',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+      return '<div style="padding:11px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="font-size:13px;font-weight:650;color:var(--text)">'+(r.title||'(pa titull)')+'</div>'
+        +(r.detail?'<div style="font-size:11px;color:var(--text3);margin-top:1px">'+r.detail+'</div>':'')
+        +'<div style="font-size:11.5px;color:var(--bronze-text);margin-top:4px;background:var(--bg2);border-radius:6px;padding:6px 9px"><b>Arsyeja:</b> '+r.reason+'</div>'
+        +'<div style="font-size:9.5px;color:var(--text3);margin-top:3px">Hequr më '+d+'</div>'
+        +'</div>';
+    }).join(''):'<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">Asnjë detyrë e arkivuar ende.</div>';
+    bg.innerHTML='<div class="pst-modal" style="max-width:560px"><div class="pst-modal-hd"><div style="font-size:14.5px;font-weight:700">Arkivi i detyrave të hequra</div><span class="pst-modal-x" onclick="document.getElementById(\'task-archive-modal\').remove()">✕</span></div>'
+      +'<div class="pst-modal-bd">'+body+'</div></div>';
+    document.body.appendChild(bg);
+  }).catch(function(e){ alert('Gabim: '+e.message); });
+}
 function doneTask(id){
   var el=document.getElementById('tk-'+id);
   if(el) el.classList.add('tk-done');
