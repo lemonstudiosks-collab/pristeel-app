@@ -3322,6 +3322,19 @@ function showPage(p){
   if(p==='contacts'){loadContacts();}
   if(p==='settings')renderSettings();
   renderFlowBar(p);
+  injectPageFileBox(p);
+}
+// Vendos kutinë e skedarëve te fundi i faqeve të projektit
+function injectPageFileBox(p){
+  var pagesWithBox={bom:'BOM & specifikat',rfq:'RFQ & dokumente',offers:'Ofertat e furnitorëve',oferta:'Oferta jonë',invoices:'Faturat',ranking:'Krahasimi',kalkulator:'Çmimi'};
+  // Hiq kutitë ekzistuese nga faqet e tjera
+  document.querySelectorAll('[id^="pfb-wrap-"]').forEach(function(el){ el.remove(); });
+  if(!pagesWithBox[p]) return;
+  var pageEl=document.getElementById('page-'+p); if(!pageEl) return;
+  var wrap=document.createElement('div'); wrap.id='pfb-wrap-'+p;
+  wrap.innerHTML=pageFileBoxHtml(p, pagesWithBox[p]);
+  pageEl.appendChild(wrap);
+  loadPageFiles(p);
 }
 // ── SHIRITI I RRJEDHËS: tregon gjithmonë ku je brenda ciklit te projektit dhe lejon kalim direkt ──
 var FLOW_STEPS=[
@@ -6988,6 +7001,53 @@ function fileToBase64(file){
     r.onerror=function(){reject(new Error('Leximi i skedarit dështoi.'));};
     r.readAsDataURL(file);
   });
+}
+// ── KUTIA E SKEDARËVE PËR FAQE (lidhet me projekt + faqe) ──
+function pageFileBoxHtml(pageCtx, titull){
+  return '<div class="card" id="pfb-'+pageCtx+'" style="margin-top:16px">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+      +'<span style="width:26px;height:26px;border-radius:7px;background:#6B4E9E1a;display:flex;align-items:center;justify-content:center">'
+        +'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#6B4E9E" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg></span>'
+      +'<div><div style="font-size:12.5px;font-weight:700;color:var(--text)">'+(titull||'Skedarët e kësaj faqeje')+'</div>'
+      +'<div style="font-size:10px;color:var(--text3)">PDF, foto, CAD, Excel, email — çdo skedar për këtë hap</div></div></div>'
+    +'<label style="display:block;border:1.5px dashed var(--border);border-radius:9px;padding:12px;text-align:center;cursor:pointer;font-size:11.5px;color:var(--text3)" '
+      +'onmouseover="this.style.borderColor=\'#6B4E9E\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
+      +'<input type="file" multiple style="display:none" onchange="handlePageFiles(this.files,\''+pageCtx+'\')">'
+      +'Tërhiq ose kliko për të ngarkuar skedarë</label>'
+    +'<div id="pfb-list-'+pageCtx+'" style="margin-top:10px"></div>'
+  +'</div>';
+}
+async function handlePageFiles(files, pageCtx){
+  if(!files||!files.length) return;
+  if(!_curProjId){ alert('Zgjidh ose ruaj një projekt fillimisht, që skedarët të lidhen me të.'); return; }
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    try{
+      var b64=await fileToBase64(f);
+      await supaFetch('files','POST',{file_name:f.name,file_type:f.type||'application/octet-stream',file_base64:b64,size_kb:Math.round(f.size/1024),project_id:_curProjId,page_context:pageCtx});
+    }catch(e){ alert('Gabim me "'+f.name+'": '+e.message); return; }
+  }
+  loadPageFiles(pageCtx);
+}
+function loadPageFiles(pageCtx){
+  var el=document.getElementById('pfb-list-'+pageCtx); if(!el) return;
+  if(!_curProjId){ el.innerHTML='<div style="font-size:10.5px;color:var(--text3)">Ruaj projektin që të shtosh skedarë.</div>'; return; }
+  supaFetch('files?project_id=eq.'+_curProjId+'&page_context=eq.'+pageCtx+'&order=created_at.desc').then(function(rows){
+    rows=rows||[];
+    if(!rows.length){ el.innerHTML='<div style="font-size:10.5px;color:var(--text3)">Ende asnjë skedar për këtë faqe.</div>'; return; }
+    window['_pfbList_'+pageCtx]=rows;
+    el.innerHTML=rows.map(function(r){
+      var icon=(typeof fileTypeIcon==='function')?fileTypeIcon(r.file_name||'',r.file_type||''):'📎';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'
+        +'<span onclick="viewOrDownloadFile(\''+(r.file_name||'').replace(/\x27/g,"")+'\',\''+(r.file_type||'')+'\',window[\'_pfbList_'+pageCtx+'\'].find(function(x){return x.id===\''+r.id+'\';}).file_base64)" style="cursor:pointer;font-size:11.5px;display:flex;align-items:center;gap:7px;min-width:0"><span>'+icon+'</span><span>'+(r.file_name||'')+'</span> <span style="color:var(--text3);font-size:10px">'+(r.size_kb?r.size_kb+' KB':'')+'</span></span>'
+        +'<span onclick="deletePageFile(\''+r.id+'\',\''+pageCtx+'\')" title="Fshij" style="cursor:pointer;color:var(--text3);font-size:14px;flex-shrink:0;margin-left:8px">&times;</span>'
+        +'</div>';
+    }).join('');
+  }).catch(function(){ el.innerHTML='<div style="font-size:10.5px;color:var(--text3)">—</div>'; });
+}
+function deletePageFile(id,pageCtx){
+  if(!confirm('Fshij këtë skedar?')) return;
+  supaFetch('files?id=eq.'+id,'DELETE').then(function(){ loadPageFiles(pageCtx); }).catch(function(e){ alert('Gabim: '+e.message); });
 }
 async function handleLibraryFiles(files){
   if(!files||!files.length) return;
