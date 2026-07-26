@@ -2084,16 +2084,60 @@ function showModuleHub(mod){
   h+='</div>';
   if(mod.id==='prokurimi'){
     main.innerHTML='<div class="card" style="margin-bottom:16px">'+h+'</div>'
-      +'<div class="card" style="margin-bottom:16px"><div id="proc-recent-offers"><div class="hub-load">Duke ngarkuar ofertat e fundit…</div></div></div>'
+      +'<div id="proc-insights" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px"><div class="card"><div id="proc-waiting" class="hub-load">Duke ngarkuar…</div></div><div class="card"><div id="proc-nopricing" class="hub-load">Duke ngarkuar…</div></div></div>'
       +'<div class="card"><div id="proc-directory"><div class="hub-load">Duke ngarkuar drejtorinë e furnitorëve…</div></div></div>';
     loadProcurementDirectory();
-    loadRecentSupplierOffers();
+    loadProcInsights();
   } else {
     main.innerHTML='<div class="card">'+h+'</div>';
   }
   navPush({t:'hub',v:mod.id});
   renderSideNav(mod,null);
   return true;
+}
+function loadProcInsights(){
+  // Panel 1: RFQ pa përgjigje (furnitorë që heshtin — kërkojnë ndjekje)
+  var elW=document.getElementById('proc-waiting');
+  if(elW){
+    Promise.all([
+      supaFetch('rfq_log?order=sent_at.asc&limit=100').catch(function(){return[];}),
+      supaFetch('projects?select=id,name').catch(function(){return[];})
+    ]).then(function(res){
+      var rfqs=(res[0]||[]).filter(function(r){ return r.sent_at && r.status!=='replied' && r.status!=='won' && r.status!=='lost' && r.status!=='planned'; });
+      var pN={}; (res[1]||[]).forEach(function(p){pN[p.id]=p.name;});
+      var today=new Date();
+      rfqs.forEach(function(r){ r._age=Math.round((today-new Date(r.sent_at))/86400000); });
+      rfqs.sort(function(a,b){return b._age-a._age;});
+      var head='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="width:26px;height:26px;border-radius:7px;background:#C0392B1a;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#C0392B" stroke-width="2"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M12 8v3"/><circle cx="12" cy="13.5" r=".3"/></svg></span><div style="font-size:12.5px;font-weight:700;color:var(--text)">RFQ pa përgjigje</div></div>';
+      if(!rfqs.length){ elW.innerHTML=head+'<div style="font-size:11.5px;color:var(--green-text)">✓ Të gjithë furnitorët janë përgjigjur.</div>'; return; }
+      elW.innerHTML=head+rfqs.slice(0,7).map(function(r){
+        var col=r._age>=7?'#C0392B':(r._age>=3?'#A65F2E':'var(--text3)');
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="min-width:0"><strong style="font-size:12px">'+(r.supplier_name||r.supplier_email||'(pa emër)')+'</strong>'
+            +'<div style="font-size:10px;color:var(--text3)">'+(pN[r.project_id]||'')+'</div></div>'
+          +'<span style="font-size:11px;font-weight:700;color:'+col+';flex-shrink:0;margin-left:8px">'+r._age+' ditë</span></div>';
+      }).join('')+(rfqs.length>7?'<div style="font-size:10px;color:var(--text3);margin-top:6px">+ '+(rfqs.length-7)+' të tjerë</div>':'');
+    }).catch(function(e){ elW.innerHTML='<div style="color:var(--red-text);font-size:11px">Gabim: '+e.message+'</div>'; });
+  }
+  // Panel 2: Projekte që presin çmim (kanë BOM/RFQ por s'kanë ende ofertë furnitori)
+  var elN=document.getElementById('proc-nopricing');
+  if(elN){
+    Promise.all([
+      supaFetch('projects?status=eq.aktiv&select=id,name,pipeline_stage').catch(function(){return[];}),
+      supaFetch('offers?select=project_id').catch(function(){return[];})
+    ]).then(function(res){
+      var projs=res[0]||[];
+      var haveOffers={}; (res[1]||[]).forEach(function(o){ if(o.project_id) haveOffers[o.project_id]=true; });
+      var waiting=projs.filter(function(p){ return !haveOffers[p.id]; });
+      var head='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="width:26px;height:26px;border-radius:7px;background:#A65F2E1a;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#A65F2E" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div style="font-size:12.5px;font-weight:700;color:var(--text)">Presin ofertë furnitori</div></div>';
+      if(!waiting.length){ elN.innerHTML=head+'<div style="font-size:11.5px;color:var(--green-text)">✓ Çdo projekt aktiv ka së paku një ofertë.</div>'; return; }
+      elN.innerHTML=head+waiting.slice(0,7).map(function(p){
+        return '<div onclick="loadProject(\''+p.id+'\')" style="cursor:pointer;padding:6px 0;border-bottom:1px solid var(--border)" title="Hap projektin">'
+          +'<strong style="font-size:12px">'+(p.name||'(pa emër)')+'</strong>'
+          +'<div style="font-size:10px;color:var(--text3)">s\'ka ende ofertë furnitori — dërgo RFQ</div></div>';
+      }).join('')+(waiting.length>7?'<div style="font-size:10px;color:var(--text3);margin-top:6px">+ '+(waiting.length-7)+' të tjerë</div>':'');
+    }).catch(function(e){ elN.innerHTML='<div style="color:var(--red-text);font-size:11px">Gabim: '+e.message+'</div>'; });
+  }
 }
 function loadRecentSupplierOffers(){
   var el=document.getElementById('proc-recent-offers'); if(!el) return;
