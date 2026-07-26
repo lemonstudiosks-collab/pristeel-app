@@ -7229,14 +7229,13 @@ async function handlePageFiles(files, pageCtx){
 function loadPageFiles(pageCtx){
   var el=document.getElementById('pfb-list-'+pageCtx); if(!el) return;
   if(!_curProjId){ el.innerHTML='<div style="font-size:10.5px;color:var(--text3)">Ruaj projektin që të shtosh skedarë.</div>'; return; }
-  supaFetch('files?project_id=eq.'+_curProjId+'&page_context=eq.'+pageCtx+'&order=created_at.desc').then(function(rows){
+  supaFetch('files?select=id,file_name,file_type,size_kb&project_id=eq.'+_curProjId+'&page_context=eq.'+pageCtx+'&order=created_at.desc').then(function(rows){
     rows=rows||[];
     if(!rows.length){ el.innerHTML='<div style="font-size:10.5px;color:var(--text3)">Ende asnjë skedar për këtë faqe.</div>'; return; }
-    window['_pfbList_'+pageCtx]=rows;
     el.innerHTML=rows.map(function(r){
       var icon=(typeof fileTypeIcon==='function')?fileTypeIcon(r.file_name||'',r.file_type||''):'📎';
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'
-        +'<span onclick="viewOrDownloadFile(\''+(r.file_name||'').replace(/\x27/g,"")+'\',\''+(r.file_type||'')+'\',window[\'_pfbList_'+pageCtx+'\'].find(function(x){return x.id===\''+r.id+'\';}).file_base64)" style="cursor:pointer;font-size:11.5px;display:flex;align-items:center;gap:7px;min-width:0"><span>'+icon+'</span><span>'+(r.file_name||'')+'</span> <span style="color:var(--text3);font-size:10px">'+(r.size_kb?r.size_kb+' KB':'')+'</span></span>'
+        +'<span onclick="downloadLibFile(\''+r.id+'\',\''+(r.file_name||'').replace(/'/g,"")+'\',\''+(r.file_type||'')+'\')" style="cursor:pointer;font-size:11.5px;display:flex;align-items:center;gap:7px;min-width:0"><span>'+icon+'</span><span>'+(r.file_name||'')+'</span> <span style="color:var(--text3);font-size:10px">'+(r.size_kb?r.size_kb+' KB':'')+'</span></span>'
         +'<span onclick="deletePageFile(\''+r.id+'\',\''+pageCtx+'\')" title="Fshij" style="cursor:pointer;color:var(--text3);font-size:14px;flex-shrink:0;margin-left:8px">&times;</span>'
         +'</div>';
     }).join('');
@@ -7311,11 +7310,21 @@ async function driveCallbackToLibrary(data){
 }
 var _libScope='project'; // 'project' ose 'all'
 function setLibScope(s){ _libScope=s; loadLibraryFiles(); }
+function downloadLibFile(id, name, type){
+  // Merr file_base64 vetëm për këtë skedar (jo për tërë listën)
+  supaFetch('files?id=eq.'+id+'&select=file_base64&limit=1').then(function(rows){
+    var r=(rows||[])[0];
+    if(!r || !r.file_base64){ alert('Skedari s\'u gjet ose është bosh.'); return; }
+    viewOrDownloadFile(name, type, r.file_base64);
+  }).catch(function(e){ alert('Gabim gjatë shkarkimit: '+((e&&e.message)||e)); });
+}
 function loadLibraryFiles(){
   var el=document.getElementById('lib-list'); if(!el) return;
   var scopeAll=(_libScope==='all')||!_curProjId;
-  var q='files?order=created_at.desc&limit=300';
-  if(!scopeAll) q='files?project_id=eq.'+_curProjId+'&order=created_at.desc&limit=300';
+  // Merr vetëm metadata (jo file_base64 që është i rëndë) — base64 merret veç kur klikohet
+  var cols='select=id,file_name,file_type,size_kb,created_at,project_id';
+  var q='files?'+cols+'&order=created_at.desc&limit=300';
+  if(!scopeAll) q='files?'+cols+'&project_id=eq.'+_curProjId+'&order=created_at.desc&limit=300';
   // Toggle-i i shtrirjes
   var toggle='';
   if(_curProjId){
@@ -7329,11 +7338,18 @@ function loadLibraryFiles(){
     if(!rows.length){ el.innerHTML=toggle+'<div style="color:var(--text3);font-size:13px">'+(scopeAll?'Asnjë skedar i ruajtur ende.':'Asnjë skedar te ky projekt ende. Ngarko dokumente, foto, CAD, Excel, PDF — çdo lloj.')+'</div>'; return; }
     el.innerHTML=toggle+rows.map(function(r){
       var icon=fileTypeIcon(r.file_name||'',r.file_type||'');
-      return '<div class="project-card" onclick="viewOrDownloadFile(\''+(r.file_name||'').replace(/'/g,"\\'")+'\',\''+(r.file_type||'')+'\',libraryList.find(function(x){return x.id===\''+r.id+'\';}).file_base64)" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:8px;margin-bottom:8px;transition:box-shadow .13s" onmouseover="this.style.boxShadow=\'0 3px 8px rgba(26,26,25,.13)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(26,26,25,.07)\'">'
+      return '<div class="project-card" onclick="downloadLibFile(\''+r.id+'\',\''+(r.file_name||'').replace(/'/g,"\\'")+'\',\''+(r.file_type||'')+'\')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:8px;margin-bottom:8px;transition:box-shadow .13s" onmouseover="this.style.boxShadow=\'0 3px 8px rgba(26,26,25,.13)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(26,26,25,.07)\'">'
         +'<div style="display:flex;align-items:center;gap:10px"><span style="font-size:19px;flex-shrink:0">'+icon+'</span><div><strong>'+(r.file_name||'')+'</strong> <span style="color:var(--text3);font-size:11.5px">'+(r.size_kb?r.size_kb+' KB':'')+(r.created_at?' · '+new Date(r.created_at).toLocaleDateString('sq-AL'):'')+(scopeAll&&r.project_id?' · 📁 projekt':'')+'</span></div></div>'
         +'<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLibraryFile(\''+r.id+'\')">Fshij</button></div>';
     }).join('');
-  }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela "files" mungon në Supabase ende. Krijoje me SQL (kërkoji Claude-it query-n) — kolonat: file_name text, file_type text, file_base64 text, size_kb int, created_at timestamptz default now().</div>';});
+  }).catch(function(e){
+    var msg=(e&&e.message)||String(e);
+    el.innerHTML=toggle+'<div style="color:var(--red-text);font-size:12px;background:#FDEDEA;border-radius:8px;padding:12px">'
+      +'<div style="font-weight:600;margin-bottom:5px">Nuk u ngarkuan skedarët.</div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-bottom:8px">'+msg+'</div>'
+      +'<button class="btn btn-sm" onclick="loadLibraryFiles()">Provo përsëri</button>'
+      +'</div>';
+  });
 }
 function fileTypeIcon(name,type){
   var n=(name||'').toLowerCase(), t=(type||'').toLowerCase();
