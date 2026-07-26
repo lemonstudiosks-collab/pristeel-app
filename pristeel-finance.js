@@ -125,20 +125,25 @@ function renderInvoices(){
     var st=invStatus(iv).k;
     return f==='all' || st===f;
   });
-  // Permbledhje
+  // Permbledhje — dalëse (arkëtime) dhe hyrëse (pagesa) ndahen, sepse s'duhen mbledhur bashkë
   if(sum){
-    var tot={paid:0,unpaid:0,overdue:0}, cnt={paid:0,unpaid:0,overdue:0};
-    _invAll.forEach(function(iv){ var k=invStatus(iv).k; tot[k]+=iv.amount; cnt[k]++; });
-    sum.innerHTML=[
-      {k:'paid',   n:'Të paguara',  c:'#2E7D32'},
-      {k:'unpaid', n:'Të papaguara',c:'#E8A33D'},
-      {k:'overdue',n:'Me vonesë',   c:'#C62828'}
-    ].map(function(s){
-      return '<div style="border:2px solid '+s.c+';border-radius:10px;padding:11px 13px;background:#fff">'
-        +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">'+s.n+'</div>'
-        +'<div style="font-size:17px;font-weight:700;color:'+s.c+';margin-top:3px">'+eur(tot[s.k])+'</div>'
-        +'<div style="font-size:10.5px;color:var(--text3)">'+cnt[s.k]+' faturë(a)</div></div>';
-    }).join('');
+    var so={paid:0,unpaid:0,overdue:0}, si={paid:0,unpaid:0,overdue:0};
+    var co={paid:0,unpaid:0,overdue:0}, ci={paid:0,unpaid:0,overdue:0};
+    _invAll.forEach(function(iv){
+      var k=invStatus(iv).k;
+      if(iv.kind==='out'){ so[k]+=iv.amount; co[k]++; }
+      else { si[k]+=iv.amount; ci[k]++; }
+    });
+    function block(title,t,c,accent){
+      return '<div style="border:1px solid var(--border);border-left:3px solid '+accent+';border-radius:10px;padding:11px 13px;background:#fff">'
+        +'<div style="font-size:10px;color:'+accent+';text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-bottom:6px">'+title+'</div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:#2E7D32">Të paguara ('+c.paid+')</span><span style="font-weight:600">'+eur(t.paid)+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:#E8A33D">Të papaguara ('+c.unpaid+')</span><span style="font-weight:600">'+eur(t.unpaid)+'</span></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0"><span style="color:#C62828">Me vonesë ('+c.overdue+')</span><span style="font-weight:600">'+eur(t.overdue)+'</span></div>'
+        +'</div>';
+    }
+    sum.style.gridTemplateColumns='repeat(auto-fit,minmax(230px,1fr))';
+    sum.innerHTML=block('Dalëse · arkëtime',so,co,'#0F6E56')+block('Hyrëse · pagesa',si,ci,'#A65F2E');
   }
   if(!rows.length){ list.innerHTML='<div style="color:var(--text3);font-size:12px;padding:10px 0">Asnjë faturë në këtë kategori.</div>'; return; }
   list.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'

@@ -1419,7 +1419,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card"><div class="card-title">Regjistro Garanci Bankare</div>
         <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="bg-proj" placeholder="p.sh. STACON D-22/26"></div><div><label class="lbl">Banka</label><input type="text" id="bg-bank" placeholder="ProCredit Bank"></div></div>
-        <div class="field-group fg-2"><div><label class="lbl">Lloji i garancisë</label><select id="bg-type"><option>Garanci Avansi</option><option>Garanci Performance</option><option>Garanci Tenderi</option><option>Tjetër</option></select></div><div><label class="lbl">Statusi</label><select id="bg-status"><option value="aktive">Aktive</option><option value="lëshuar">Lëshuar/Mbyllur</option><option value="skaduar">Skaduar</option></select></div></div>
+        <div class="field-group fg-2"><div><label class="lbl">Lloji i garancisë</label><select id="bg-type"><option>Garanci Avansi</option><option>Garanci Performance</option><option>Garanci Tenderi</option><option>Tjetër</option></select></div><div><label class="lbl">Statusi</label><select id="bg-status"><option value="pritje">Në pritje (s'është hapur ende)</option><option value="aktive">Aktive</option><option value="lëshuar">Lëshuar/Mbyllur</option><option value="skaduar">Skaduar</option></select></div></div>
         <div class="field-group fg-2"><div><label class="lbl">Shuma e garantuar (EUR)</label><input type="number" step="0.01" id="bg-amt" oninput="calcBgFee()" placeholder="0.00"></div><div><label class="lbl">Komisioni (%)</label><input type="number" step="0.01" id="bg-feerate" oninput="calcBgFee()" placeholder="p.sh. 1.5"></div></div>
         <div class="field-group fg-2"><div><label class="lbl">Komisioni (EUR) — llogaritet automatikisht, mund të ndryshohet</label><input type="number" step="0.01" id="bg-fee"></div><div></div></div>
         <div class="field-group fg-2"><div><label class="lbl">Data e lëshimit</label><input type="date" id="bg-issue"></div><div><label class="lbl">Data e skadimit</label><input type="date" id="bg-expiry"></div></div>
@@ -7296,15 +7296,21 @@ function renderAtkPreparation(){
   var body=document.getElementById('atk-prep-body'); if(!body) return;
   var selM=parseInt(mSel.value), selY=parseInt(ySel.value);
   body.innerHTML='<div class="hub-load">Duke llogaritur…</div>';
+  function q(url){
+    return Promise.race([
+      supaFetch(url).catch(function(){return[];}),
+      new Promise(function(res){ setTimeout(function(){res([]);}, 8000); })
+    ]);
+  }
   Promise.all([
-    supaFetch('invoices_out?select=invoice_nr,client,project,date,total_price,gross_amount,vat_amount,vat_rate,paid').catch(function(){return[];}),
-    supaFetch('invoices_in?select=supplier,project,date,amount,vat_amount,vat_rate').catch(function(){return[];}),
-    supaFetch('bank_guarantees?select=fee_amount,project,created_at').catch(function(){return[];})
+    q('invoices_out?select=invoice_nr,client,project,date,total_price,gross_amount,vat_amount,vat_rate,paid'),
+    q('invoices_in?select=supplier,project,date,amount,net_amount,vat_amount,vat_rate'),
+    q('bank_guarantees?select=fee_amount,project,created_at,status')
   ]).then(function(res){
     var inPeriod=function(d){ if(!d) return false; var dt=new Date(d); return dt.getMonth()===selM && dt.getFullYear()===selY; };
     var out=(res[0]||[]).filter(function(r){return inPeriod(r.date);});
     var inn=(res[1]||[]).filter(function(r){return inPeriod(r.date);});
-    var guars=(res[2]||[]).filter(function(r){return inPeriod(r.created_at);});
+    var guars=(res[2]||[]).filter(function(r){return inPeriod(r.created_at) && r.status!=='pritje';});
     // TVSH për fatura dalëse: nga vat_amount ose nga bruto/neto (18% standard)
     function vatOut1(r){
       if(r.vat_amount!=null && r.vat_amount!=='') return parseFloat(r.vat_amount)||0;
@@ -7497,8 +7503,11 @@ function loadBankGuarantees(){
         if(days<0) expiryWarn=' <span style="color:var(--red-text);font-weight:700">(SKADUAR)</span>';
         else if(days<30) expiryWarn=' <span style="color:var(--red-text);font-weight:700">('+days+' ditë deri në skadim)</span>';
       }
-      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px">'
-        +'<div><strong>'+r.bank_name+'</strong> · '+(r.guarantee_type||'')+' <span style="color:var(--text3);font-size:12px">'+(r.project||'')+' · '+(parseFloat(r.amount_guaranteed)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR garantim · komision '+(parseFloat(r.fee_amount)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR</span>'+expiryWarn+'</div>'
+      let statusBadge='';
+      var stMap={pritje:{n:'Në pritje',c:'#E8A33D',bg:'#FFF8E1'},aktive:{n:'Aktive',c:'#2E7D32',bg:'#E8F5E9'},'lëshuar':{n:'Lëshuar',c:'#546E7A',bg:'#ECEFF1'},skaduar:{n:'Skaduar',c:'#C62828',bg:'#FFEBEE'}};
+      var stx=stMap[r.status]; if(stx) statusBadge=' <span style="background:'+stx.bg+';color:'+stx.c+';font-size:10px;font-weight:600;padding:2px 8px;border-radius:5px;margin-left:4px">'+stx.n+'</span>';
+      return '<div class="project-card" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:0.5px solid var(--border);border-radius:8px;margin-bottom:8px'+(r.status==='pritje'?';opacity:.75':'')+'">'
+        +'<div><strong>'+r.bank_name+'</strong> · '+(r.guarantee_type||'')+statusBadge+' <span style="color:var(--text3);font-size:12px">'+(r.project||'')+' · '+(parseFloat(r.amount_guaranteed)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR garantim · komision '+(parseFloat(r.fee_amount)||0).toLocaleString('de-DE',{minimumFractionDigits:2})+' EUR'+(r.status==='pritje'?' · <em>s\'është hapur ende</em>':'')+'</span>'+expiryWarn+'</div>'
         +'<div style="display:flex;gap:6px;flex-shrink:0">'
         +'<button class="btn btn-sm" onclick="bgEdit(\''+r.id+'\')">Redakto</button>'
         +'<button class="btn btn-danger btn-sm" onclick="deleteBankGuarantee(\''+r.id+'\')">Fshij</button></div></div>';
