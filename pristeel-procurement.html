@@ -6772,11 +6772,48 @@ function genInvoiceOut(){
 
 function printInvoiceOut(){
   try{var _inr=document.getElementById('iv-nr').value.trim(); if(_inr) registerDocNr('INV', _inr, document.getElementById('iv-proj')?document.getElementById('iv-proj').value:'', document.getElementById('iv-cli')?document.getElementById('iv-cli').value:'', null);}catch(e){}
+  // Lidhje automatike me financat: ruaj faturën te invoices_out nëse s'ekziston ende
+  try{ autoLinkInvoiceToFinance(); }catch(e){}
   const content=document.getElementById('iv-preview').innerHTML;
   if(!content || content.indexOf('Plotëso')>-1){alert('Gjenero faturën fillimisht.');return;}
   var _inr2=document.getElementById('iv-nr').value.trim();
   var fn='Fatura_PRISTEEL'+(_inr2?'_'+_inr2.replace(/[^A-Za-z0-9_-]/g,''):'')+'.pdf';
   pstExportPdf(content, fn);
+}
+// Ruan automatikisht faturën aktuale te invoices_out (financat), nëse s'është ruajtur tashmë
+function autoLinkInvoiceToFinance(){
+  var nr=(document.getElementById('iv-nr')||{}).value; nr=nr?nr.trim():'';
+  if(!nr) return;
+  // Kontrollo nëse ekziston tashmë te invoices_out
+  supaFetch('invoices_out?invoice_nr=eq.'+encodeURIComponent(nr)+'&select=invoice_nr&limit=1').then(function(rows){
+    if(rows && rows.length) return; // ekziston — mos e dyfisho
+    var totKg=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0);},0);
+    var matAmt=invoiceItems.reduce(function(s,it){return s+(parseFloat(it.kg)||0)*(parseFloat(it.priceKg)||0);},0);
+    var transportAmt=parseFloat((document.getElementById('iv-transport')||{}).value)||0;
+    var extraTotalOut=(typeof extraCostsOut!=='undefined'?extraCostsOut:[]).reduce(function(s,x){return s+(parseFloat(x.amount)||0);},0);
+    var totAmt=matAmt+transportAmt+extraTotalOut;
+    var vatOn=(document.getElementById('iv-vat')||{}).value==='1';
+    var vatRate=vatOn?(parseFloat((document.getElementById('iv-vat-rate')||{}).value)||0):0;
+    var overrideGross=parseFloat((document.getElementById('iv-total-override')||{}).value)||0;
+    if(overrideGross>0){ totAmt = vatOn ? overrideGross/(1+vatRate/100) : overrideGross; }
+    var vatAmt=totAmt*vatRate/100;
+    var grossAmt=totAmt+vatAmt;
+    if(totAmt<=0 && grossAmt<=0) return; // pa shumë — mos regjistro bosh
+    var payload={
+      invoice_nr:nr, lang:(document.getElementById('iv-lang')||{}).value||'de', date:(document.getElementById('iv-date')||{}).value||null,
+      project:(document.getElementById('iv-proj')||{}).value||'', ref:(document.getElementById('iv-ref')||{}).value||'',
+      client:(document.getElementById('iv-cli')||{}).value||'', contact:(document.getElementById('iv-con')||{}).value||'', address:(document.getElementById('iv-adr')||{}).value||'',
+      items:invoiceItems, total_kg:totKg, total_price:+totAmt.toFixed(2), currency:'EUR',
+      vat_applicable:vatOn, vat_rate:vatRate, net_amount:+totAmt.toFixed(2), vat_amount:+vatAmt.toFixed(2), gross_amount:+grossAmt.toFixed(2),
+      incoterms:(document.getElementById('iv-inc')||{}).value||'', delivery_location:(document.getElementById('iv-loc')||{}).value||'',
+      payment_terms:(document.getElementById('iv-pay')||{}).value||'', certificate:(document.getElementById('iv-cer')||{}).value||'', notes:(document.getElementById('iv-not')||{}).value||'',
+      due_date:(document.getElementById('iv-due-date')&&document.getElementById('iv-due-date').value)||null,
+      transport_cost:transportAmt, extra_costs:(typeof extraCostsOut!=='undefined'?extraCostsOut:[])
+    };
+    supaFetch('invoices_out','POST',payload).then(function(){
+      if(typeof loadInvoicesOut==='function') loadInvoicesOut();
+    }).catch(function(){});
+  }).catch(function(){});
 }
 
 // ── OUTGOING: save / load / delete (Supabase) ─────────
