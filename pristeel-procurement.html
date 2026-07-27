@@ -1684,6 +1684,26 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div id="contacts-list"><div class="hub-load">Duke ngarkuar kontaktet…</div></div>
 </div>
 
+<div id="page-outreach" class="page">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+    <div class="seg" id="oc-status-tabs">
+      <button class="seg-btn active" data-k="all" onclick="ocFilter('all')">Të gjithë</button>
+      <button class="seg-btn" data-k="Sent" onclick="ocFilter('Sent')">Sent</button>
+      <button class="seg-btn" data-k="Replied" onclick="ocFilter('Replied')">Replied</button>
+      <button class="seg-btn" data-k="Meeting" onclick="ocFilter('Meeting')">Meeting</button>
+      <button class="seg-btn" data-k="Scheduled" onclick="ocFilter('Scheduled')">Scheduled</button>
+      <button class="seg-btn" data-k="Bounced" onclick="ocFilter('Bounced')">Bounced</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text2);cursor:pointer;white-space:nowrap">
+      <input type="checkbox" id="oc-overdue-only" onchange="renderOutreach()"> Vetëm follow-up i kaluar/sot
+    </label>
+    <input type="text" id="oc-search" placeholder="Kërko kompani, email, shënime…" autocomplete="off" name="pristeel-oc-search-noauto" oninput="renderOutreach()" style="flex:1;min-width:200px">
+    <button class="btn btn-sm" onclick="loadOutreach()">↺ Rifresko</button>
+  </div>
+  <div id="oc-stats" style="display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;flex-wrap:wrap"></div>
+  <div id="outreach-list"><div class="hub-load">Duke ngarkuar…</div></div>
+</div>
+
 <div id="page-library" class="page">
   <div class="card">
     <div class="card-title">Skedarët</div>
@@ -2140,6 +2160,7 @@ const pageMeta={
   newproject:{title:'Projekt i ri',sub:'Fut të dhënat dhe ngarko dokumentin e blerësit'},
   import:{title:'Projektet',sub:'Projektet aktive dhe në pritje'},
   contacts:{title:'Kontaktet',sub:'Klientë dhe furnitorë — të sinkronizuar me HubSpot'},
+  outreach:{title:'Outreach',sub:'Pipeline i prospektimit DACH — kompani, statusi, follow-up'},
   bom:{title:'1 · Lista e materialeve',sub:'Fut ose verifiko listën e materialeve (BOM)'},
   rfq:{title:'2 · Kërkesa për furnitorët',sub:'Gjenero dhe dërgo RFQ te furnitorët'},
   offers:{title:'3 · Çmimet e furnitorëve',sub:'Fut çmimet, zinktimin, transportin, TVSH-në'},
@@ -2165,6 +2186,8 @@ var MODULES=[
   ic:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>'},
  {id:'kontaktet',name:'Kontaktet',c:'#6B4E9E',mid:'#9880BE',bg:'#F0EBF7',pages:['contacts'],
   ic:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
+ {id:'outreach',name:'Outreach',c:'#B7791F',mid:'#D2A252',bg:'#FBF1E1',pages:['outreach'],
+  ic:'<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'},
  {id:'financat',name:'Financat',c:'#0F6E56',mid:'#4E9E88',bg:'#E5F3EF',pages:['finance'],
   ic:'<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'},
  {id:'kalkulatori',name:'Kalkulatori',c:'#5A3E85',mid:'#8A6DB5',bg:'#EEE9F5',pages:['kalkulator'],
@@ -2172,14 +2195,15 @@ var MODULES=[
  {id:'cilesimet',name:'Cilësimet',c:'#546E7A',mid:'#8AA0AB',bg:'#ECF0F2',pages:['settings'],
   ic:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
 ];
-var PAGE_NAV={qendra:'Detyrat',import:'Projektet',bom:'1 · BOM',rfq:'2 · RFQ',offers:'3 · Çmimet',ranking:'4 · Krahasimi',oferta:'Oferta klientit',invoices:'Faturat',contracts:'Kontratat',library:'Skedarët',contacts:'Kontaktet',finance:'Financat',kalkulator:'Kalkulatori',settings:'Cilësimet'};
+var PAGE_NAV={qendra:'Detyrat',import:'Projektet',bom:'1 · BOM',rfq:'2 · RFQ',offers:'3 · Çmimet',ranking:'4 · Krahasimi',oferta:'Oferta klientit',invoices:'Faturat',contracts:'Kontratat',library:'Skedarët',contacts:'Kontaktet',outreach:'Outreach',finance:'Financat',kalkulator:'Kalkulatori',settings:'Cilësimet'};
 var PAGE_ICON={
  bom:'<svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
  rfq:'<svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
  offers:'<svg viewBox="0 0 24 24"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>',
  ranking:'<svg viewBox="0 0 24 24"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>',
  oferta:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
- invoices:'<svg viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/></svg>'
+ invoices:'<svg viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-3-2-3 2-3-2-1 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/></svg>',
+ outreach:'<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
 };
 function moduleOf(p){ for(var i=0;i<MODULES.length;i++) if(MODULES[i].pages.indexOf(p)>-1) return MODULES[i]; return null; }
 function tintSvg(svg,color){ return svg.replace('<svg','<svg style="stroke:'+color+'"'); }
@@ -3450,6 +3474,10 @@ function renderHome(){
   supaFetch('offers_inbox?processed=eq.false&select=id').then(function(r){
     var e=document.getElementById('modstat-prokurimi'); if(e&&r) e.textContent=r.length?(r.length+' email për analizë'):'BOM · RFQ · Çmimet';
   }).catch(function(){});
+  supaFetch('outreach_contacts?status=eq.Sent&follow_up_date=lte.'+today+'&select=id').then(function(r){
+    var e=document.getElementById('modstat-outreach'); if(e&&r) e.textContent=r.length?(r.length+' follow-up sot/vonuar'):'pipeline aktual';
+    if(e&&r&&r.length) e.style.color='#993C1D';
+  }).catch(function(){});
   }catch(e){}
   var st={shitjet:'Oferta · Fatura',kontaktet:'Klientë · Furnitorë',financat:'Garanci · Kosto',kalkulatori:'Çmimi €/kg',cilesimet:'Firma · API · Backup'};
   Object.keys(st).forEach(function(k){ var e=document.getElementById('modstat-'+k); if(e&&!e.textContent) e.textContent=st[k]; });
@@ -3632,6 +3660,7 @@ function showPage(p){
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
   if(p==='qendra'){loadHub();}
   if(p==='contacts'){loadContacts();}
+  if(p==='outreach'){loadOutreach();}
   if(p==='settings')renderSettings();
   renderFlowBar(p);
   injectPageFileBox(p);
@@ -9189,6 +9218,127 @@ function syncHubspot(){
   if(confirm('Kontaktet e HubSpot sinkronizohen përmes Claude (MCP). Për të parë të gjitha 745 kontaktet, hap HubSpot direkt.\n\nHap HubSpot tani?')){
     window.open('https://app.hubspot.com/contacts/147958987/objects/0-1/views/all/list','_blank');
   }
+}
+
+// ══════════════════════════════════════════════
+// OUTREACH — pipeline prospektimi DACH (tabela outreach_contacts)
+// ══════════════════════════════════════════════
+var _outreach=[], _ocStatus='all';
+async function loadOutreach(){
+  var el=document.getElementById('outreach-list'); if(!el) return;
+  el.innerHTML='<div class="hub-load">Duke ngarkuar…</div>';
+  try{
+    _outreach=await supaFetch('outreach_contacts?order=follow_up_date.asc.nullslast,master_no.asc&limit=2000')||[];
+    renderOutreachStats();
+    renderOutreach();
+  }catch(e){ el.innerHTML='<div class="hub-none">Tabela "outreach_contacts" mungon ose gabim: '+e.message+'</div>'; }
+}
+function ocFilter(val){
+  _ocStatus=val;
+  document.querySelectorAll('#oc-status-tabs .seg-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-k')===val); });
+  renderOutreach();
+}
+function ocCountryFlag(cc){
+  var m={DE:'🇩🇪',AT:'🇦🇹',CH:'🇨🇭',HR:'🇭🇷',TR:'🇹🇷',GR:'🇬🇷',MK:'🇲🇰',SI:'🇸🇮',NL:'🇳🇱',LU:'🇱🇺',PL:'🇵🇱',IT:'🇮🇹',AL:'🇦🇱',DK:'🇩🇰',BE:'🇧🇪',XK:'🇽🇰',MNE:'🇲🇪',ME:'🇲🇪',FR:'🇫🇷',CZ:'🇨🇿',BG:'🇧🇬'};
+  return m[cc]||'';
+}
+function ocStatusColor(s){
+  var m={Sent:'#5A6472',Replied:'#0F6E56',Meeting:'#6B4E9E',Scheduled:'#A65F2E',Bounced:'#B23B3B','Not Relevant':'#9AA1A8','Not Contacted':'#9AA1A8'};
+  return m[s]||'#5A6472';
+}
+function renderOutreachStats(){
+  var el=document.getElementById('oc-stats'); if(!el) return;
+  var total=_outreach.length;
+  var by=function(s){return _outreach.filter(function(c){return c.status===s;}).length;};
+  var today=new Date().toISOString().slice(0,10);
+  var overdue=_outreach.filter(function(c){return c.follow_up_date && c.follow_up_date<=today && c.status==='Sent';}).length;
+  var cells=[['Gjithsej',total],['Sent',by('Sent')],['Replied',by('Replied')],['Meeting',by('Meeting')],['Bounced',by('Bounced')],['Follow-up i kaluar',overdue]];
+  el.innerHTML=cells.map(function(c,i){
+    return '<div style="flex:1;min-width:90px;padding:12px 14px;'+(i?'border-left:1px solid var(--border)':'')+'">'
+      +'<div style="font-size:19px;font-weight:680;color:'+(c[0]==='Follow-up i kaluar'&&c[1]>0?'#B23B3B':'var(--text)')+';letter-spacing:-.3px">'+c[1]+'</div>'
+      +'<div style="font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);font-weight:600;margin-top:2px">'+c[0]+'</div>'
+    +'</div>';
+  }).join('');
+}
+function renderOutreach(){
+  var el=document.getElementById('outreach-list'); if(!el) return;
+  var q=((document.getElementById('oc-search')||{}).value||'').toLowerCase();
+  var overdueOnly=(document.getElementById('oc-overdue-only')||{}).checked;
+  var today=new Date().toISOString().slice(0,10);
+  var list=_outreach.filter(function(c){
+    if(_ocStatus!=='all' && c.status!==_ocStatus) return false;
+    if(overdueOnly && !(c.follow_up_date && c.follow_up_date<=today && c.status==='Sent')) return false;
+    if(!q) return true;
+    return ((c.company_domain||'')+' '+(c.contact_email||'')+' '+(c.notes||'')+' '+(c.country||'')).toLowerCase().indexOf(q)>-1;
+  });
+  if(!list.length){ el.innerHTML='<div class="hub-none">Asnjë rezultat.'+(q?' Ndrysho kërkimin.':'')+'</div>'; return; }
+  var h='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="text-align:left;border-bottom:1px solid var(--border)">'
+      +'<th style="padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;font-weight:600">Kompania</th>'
+      +'<th style="padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;font-weight:600">Email</th>'
+      +'<th style="padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;font-weight:600">Vendi</th>'
+      +'<th style="padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;font-weight:600">Statusi</th>'
+      +'<th style="padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;font-weight:600">Follow-up</th>'
+      +'<th style="padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;font-weight:600">Shënime</th>'
+    +'</tr></thead><tbody>';
+  h+=list.map(function(c){
+    var fu=c.follow_up_date;
+    var overdue=fu && fu<=today && c.status==='Sent';
+    return '<tr onclick="openOutreachModal('+c.id+')" style="cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'transparent\'">'
+      +'<td style="padding:8px 10px;font-weight:600;color:var(--text)">'+(c.company_domain||'—')+'</td>'
+      +'<td style="padding:8px 10px;color:var(--text2)">'+(c.contact_email||'—')+'</td>'
+      +'<td style="padding:8px 10px">'+ocCountryFlag(c.country)+' '+(c.country||'')+'</td>'
+      +'<td style="padding:8px 10px"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:650;color:#fff;background:'+ocStatusColor(c.status)+'">'+(c.status||'—')+'</span></td>'
+      +'<td style="padding:8px 10px;'+(overdue?'color:#B23B3B;font-weight:700':'color:var(--text3)')+'">'+(fu||'—')+(overdue?' ⚠':'')+'</td>'
+      +'<td style="padding:8px 10px;color:var(--text3);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+String(c.notes||'').replace(/"/g,'&quot;')+'">'+(c.notes||'')+'</td>'
+    +'</tr>';
+  }).join('');
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
+}
+function closeOutreachModal(){ var m=document.getElementById('outreach-modal'); if(m) m.remove(); }
+function ocSaveField(id,field,val){
+  var patch={}; patch[field]=val;
+  supaFetch('outreach_contacts?id=eq.'+id,'PATCH',patch).then(function(){
+    var c=_outreach.find(function(x){return x.id===id;}); if(c) c[field]=val;
+    renderOutreachStats(); renderOutreach();
+  }).catch(function(e){alert('Gabim: '+e.message);});
+}
+function openOutreachModal(id){
+  var c=_outreach.find(function(x){return x.id===id;}); if(!c){alert('Nuk u gjet.');return;}
+  var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='outreach-modal';
+  bg.onclick=function(e){ if(e.target===bg) closeOutreachModal(); };
+  var statusOpts=['Sent','Replied','Meeting','Scheduled','Bounced','Not Relevant','Not Contacted'];
+  var selHtml='<select onchange="ocSaveField('+id+',\'status\',this.value)" style="width:100%;font-size:12.5px;padding:6px 9px;border:1px solid var(--border);border-radius:6px">'
+    +statusOpts.map(function(s){return '<option value="'+s+'"'+(c.status===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select>';
+  var body='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+      +'<div style="font-size:15px;font-weight:700">'+(c.company_domain||'(pa domain)')+'</div>'
+    +'</div>'
+    +'<label class="lbl">Email kontakti</label>'
+    +'<input type="text" value="'+String(c.contact_email||'').replace(/"/g,'&quot;')+'" onchange="ocSaveField('+id+',\'contact_email\',this.value)" style="width:100%;font-size:12.5px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;margin-bottom:9px">'
+    +'<label class="lbl">Vendi</label>'
+    +'<input type="text" value="'+String(c.country||'').replace(/"/g,'&quot;')+'" onchange="ocSaveField('+id+',\'country\',this.value)" style="width:100%;font-size:12.5px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;margin-bottom:9px">'
+    +'<label class="lbl">Statusi</label>'+selHtml
+    +'<div style="display:flex;gap:14px;margin:10px 0">'
+      +['replied','meeting','closed'].map(function(f){
+        return '<label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text2);cursor:pointer;text-transform:capitalize">'
+          +'<input type="checkbox" '+(c[f]?'checked':'')+' onchange="ocSaveField('+id+',\''+f+'\',this.checked)"> '+f+'</label>';
+      }).join('')
+    +'</div>'
+    +'<label class="lbl">Touch 1</label>'
+    +'<input type="date" value="'+(c.touch_1||'')+'" onchange="ocSaveField('+id+',\'touch_1\',this.value||null)" style="width:100%;font-size:12.5px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;margin-bottom:9px">'
+    +'<label class="lbl">Touch 2</label>'
+    +'<input type="date" value="'+(c.touch_2||'')+'" onchange="ocSaveField('+id+',\'touch_2\',this.value||null)" style="width:100%;font-size:12.5px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;margin-bottom:9px">'
+    +'<label class="lbl">Follow-up (data e ardhshme)</label>'
+    +'<input type="date" value="'+(c.follow_up_date||'')+'" onchange="ocSaveField('+id+',\'follow_up_date\',this.value||null)" style="width:100%;font-size:12.5px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;margin-bottom:9px">'
+    +'<label class="lbl">Shënime</label>'
+    +'<textarea onchange="ocSaveField('+id+',\'notes\',this.value)" style="width:100%;min-height:80px;font-size:12px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;resize:vertical">'+String(c.notes||'').replace(/</g,'&lt;')+'</textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:12px">'
+      +(c.contact_email?'<button class="btn btn-sm" onclick="window.open(\'https://mail.google.com/mail/?view=cm&authuser=arianit.vllahiu%40prissteel.com&to='+encodeURIComponent(c.contact_email)+'\',\'_blank\')">✉ Dërgo Email</button>':'')
+    +'</div>';
+  bg.innerHTML='<div class="pst-modal" style="max-width:560px"><div class="pst-modal-hd"><div><div style="font-size:14px;font-weight:650">Kontakti — Outreach</div></div><span class="pst-modal-x" onclick="closeOutreachModal()">✕</span></div>'
+    +'<div class="pst-modal-bd">'+body+'</div></div>';
+  document.body.appendChild(bg);
 }
 
 async function loadHub(){
