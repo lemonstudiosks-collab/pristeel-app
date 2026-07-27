@@ -431,7 +431,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
         <div><div style="font-size:11.5px;font-weight:650;color:#A65F2E">Ofertat</div>
         <div style="font-size:9.5px;color:var(--text3);margin-top:1px">Arkivi me numër rendor</div></div>
       </div>
-      <div onclick="showPage('invoices');invSwitchTab('in')" title="Faturat hyrëse (nga furnitorët)"
+      <div onclick="showPage('finance');setTimeout(function(){finSwitchTab('supp');},80)" title="Faturat hyrëse (nga furnitorët)"
         style="border:none;box-shadow:0 1px 3px rgba(26,26,25,.09);border-radius:9px;padding:9px 11px;cursor:pointer;background:#fff;margin-bottom:7px;transition:box-shadow .13s;display:flex;align-items:center;gap:9px"
         onmouseover="this.style.boxShadow='0 3px 11px rgba(30,40,50,.13)'" onmouseout="this.style.boxShadow='none'">
         <span style="width:26px;height:26px;border-radius:7px;background:#185FA51a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -1235,12 +1235,9 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 </div>
 
 <div id="page-invoices" class="page">
-  <div style="display:flex;gap:8px;margin-bottom:16px">
-    <button class="btn btn-sm" id="inv-tab-out" onclick="invSwitchTab('out')">Faturat Tona</button>
-    <button class="btn btn-sm" id="inv-tab-in" onclick="invSwitchTab('in')">Faturat e Furnitorëve</button>
-  </div>
+  <div class="card"><div class="card-title" style="margin-bottom:8px">Faturat e ruajtura (Tona)</div><div id="iv-out-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
 
-  <!-- ═══ OUTGOING INVOICES (to buyers) ═══ -->
+  <!-- ═══ OUTGOING INVOICES (to buyers) — Shitjet ka vetëm faturat TONA; faturat e furnitorëve janë te Financat ═══ -->
   <div id="inv-view-out">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
   <div>
@@ -1290,8 +1287,157 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
   <div class="card"><div class="card-title">Faturat e ruajtura (Tona)</div><div id="iv-out-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
   </div>
 
-  <!-- ═══ INCOMING INVOICES (from suppliers) ═══ -->
-  <div id="inv-view-in" style="display:none">
+</div>
+
+<div id="page-contracts" class="page">
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-sm" id="ctr-tab-sale" onclick="ctrSwitchTab('sale')">📄 Kontrata e Shitjes</button>
+    <button class="btn btn-sm" id="ctr-tab-prod" onclick="ctrSwitchTab('prod')">🏭 Kontrata e Prodhimit</button>
+    <button class="btn btn-sm" id="ctr-tab-nda" onclick="ctrSwitchTab('nda')">🔒 NDA</button>
+  </div>
+
+  <!-- ═══ KONTRATA E SHITJES (Werkvertrag me blerësin DACH) ═══ -->
+  <div id="ctr-view-sale">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div>
+    <div class="card"><div class="card-title">Të dhënat e kontratës</div>
+      <div class="field-group fg-2"><div><label class="lbl">Kompania (Blerësi)</label><input type="text" id="cs-company" placeholder="p.sh. STACON GmbH & Co. KG"></div><div><label class="lbl">Adresa e Blerësit</label><input type="text" id="cs-address" placeholder="Ohle Kamp 1, 21684 Stade"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Personi kontaktues</label><input type="text" id="cs-contact" placeholder="p.sh. Malte Stechmann, Geschäftsführer"></div><div><label class="lbl">Email</label><input type="email" id="cs-email" placeholder="kontakt@kompania.de"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="cs-project" placeholder="p.sh. Erweiterung Logistik 3.+4. Ebene"></div><div><label class="lbl">Vendi i dorëzimit</label><input type="text" id="cs-location" placeholder="Hamburg, DE"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Nr. i Ofertës/Kontratës</label><input type="text" id="cs-offernr" placeholder="p.sh. D-24/26"></div><div><label class="lbl">Data</label><input type="date" id="cs-date"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Sasia (kg, paraprake)</label><input type="number" id="cs-qty" placeholder="37500"></div><div><label class="lbl">Çmimi/kg (EUR)</label><input type="number" step="0.01" id="cs-priceperkg" placeholder="2.33"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Vlera totale e kontratës (EUR, neto)</label><input type="number" step="0.01" id="cs-value" placeholder="87375.00" oninput="ctrCalcFromValue('sale')"></div><div><label class="lbl">Incoterms</label><select id="cs-incoterm"><option>DAP</option><option>DDP</option><option>EXW</option></select></div></div>
+      <div><label class="lbl">Kushtet e pagesës (specifike për këtë kontratë — modifikohen për çdo kontratë të re)</label>
+        <textarea id="cs-payterms" style="min-height:70px">30% paradhënie pas nënshkrimit të kontratës (garanci bankare e kërkuar)
+30% pas përfundimit të prodhimit dhe dorëzimit të dokumentacionit të cilësisë
+40% brenda 30 ditësh pas dorëzimit</textarea>
+      </div>
+      <div class="field-group"><div><label class="lbl">Gjuha e kontratës</label><select id="cs-lang"><option value="de">Gjermanisht (Werkvertrag)</option><option value="en">Anglisht</option><option value="sq">Shqip</option><option value="sr">Serbisht — model jo ende gati, do të gjenerohet në shqip</option></select></div></div>
+      <div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-primary" onclick="ctrGenerate('sale')">Gjenero Kontratën</button><button class="btn btn-success" onclick="ctrSave('sale')">💾 Ruaj</button></div>
+    </div>
+    <div class="card"><div class="card-title">Ngarko skanimin e nënshkruar (opsionale)</div>
+      <div class="field-group"><div><input type="file" id="cs-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="ctrHandleFile(this.files[0],'sale')"></div></div>
+      <div id="cs-file-status" style="font-size:12px;color:var(--text3)"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card" style="border:1px solid var(--bronze)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin:0;color:var(--bronze)">Paraqitja</div><button class="btn btn-sm btn-primary" onclick="ctrPrint('sale')">PDF / Printo</button></div>
+      <div id="ctr-preview-sale" style="min-height:400px;max-height:700px;overflow-y:auto;padding:28px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 8px rgba(28,35,51,0.06);font-size:12px">Plotëso të dhënat dhe kliko Gjenero...</div>
+    </div>
+  </div>
+  </div>
+  </div>
+
+  <!-- ═══ KONTRATA E PRODHIMIT (Nënkontraktor/Fabrikues) ═══ -->
+  <div id="ctr-view-prod" style="display:none">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div>
+    <div class="card"><div class="card-title">Të dhënat e kontratës</div>
+      <div class="field-group fg-2"><div><label class="lbl">Kompania (Nënkontraktori/Fabrikuesi)</label><input type="text" id="cp-company" placeholder="p.sh. Eurosteel Shpk"></div><div><label class="lbl">Adresa</label><input type="text" id="cp-address" placeholder="Kombinati metalurgjik, 3009 Elbasan"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Personi kontaktues</label><input type="text" id="cp-contact" placeholder="p.sh. Ing. Ermal Rula"></div><div><label class="lbl">Email</label><input type="email" id="cp-email" placeholder="kontakt@fabrika.al"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Projekti / Referenca e blerësit</label><input type="text" id="cp-project" placeholder="p.sh. STACON D-24/26"></div><div><label class="lbl">Vendi i dorëzimit final</label><input type="text" id="cp-location" placeholder="DAP Hamburg Finkenwerder"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Nr. i Ofertës</label><input type="text" id="cp-offernr" placeholder="p.sh. ES160-01/2026"></div><div><label class="lbl">Data</label><input type="date" id="cp-date"></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Sasia (kg, paraprake)</label><input type="number" id="cp-qty" placeholder="37500"></div><div><label class="lbl">Çmimi/kg (EUR)</label><input type="number" step="0.01" id="cp-priceperkg" placeholder="1.85"></div></div>
+      <div class="field-group"><div><label class="lbl">Vlera totale e kontratës (EUR, neto)</label><input type="number" step="0.01" id="cp-value" placeholder="0.00" oninput="ctrCalcFromValue('prod')"></div></div>
+      <div><label class="lbl">Kushtet e pagesës (specifike për këtë kontratë)</label>
+        <textarea id="cp-payterms" style="min-height:70px">30% paradhënie pas nënshkrimit të kontratës
+30% pas përfundimit të prodhimit dhe dorëzimit të dokumentacionit të cilësisë
+40% brenda 30 ditësh pas pagesës finale nga blerësi</textarea>
+      </div>
+      <div class="field-group"><div><label class="lbl">Gjuha e kontratës</label><select id="cp-lang"><option value="sq">Shqip</option><option value="de">Gjermanisht — model jo ende gati, do të gjenerohet në shqip</option><option value="en">Anglisht — model jo ende gati, do të gjenerohet në shqip</option></select></div></div>
+      <div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-primary" onclick="ctrGenerate('prod')">Gjenero Kontratën</button><button class="btn btn-success" onclick="ctrSave('prod')">💾 Ruaj</button></div>
+    </div>
+    <div class="card"><div class="card-title">Ngarko skanimin e nënshkruar (opsionale)</div>
+      <div class="field-group"><div><input type="file" id="cp-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="ctrHandleFile(this.files[0],'prod')"></div></div>
+      <div id="cp-file-status" style="font-size:12px;color:var(--text3)"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card" style="border:1px solid var(--bronze)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin:0;color:var(--bronze)">Paraqitja</div><button class="btn btn-sm btn-primary" onclick="ctrPrint('prod')">PDF / Printo</button></div>
+      <div id="ctr-preview-prod" style="min-height:400px;max-height:700px;overflow-y:auto;padding:28px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 8px rgba(28,35,51,0.06);font-size:12px">Plotëso të dhënat dhe kliko Gjenero...</div>
+    </div>
+  </div>
+  </div>
+  </div>
+
+  <!-- ═══ NDA ═══ -->
+  <div id="ctr-view-nda" style="display:none">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div>
+    <div class="card"><div class="card-title">Të dhënat e NDA-së</div>
+      <div class="field-group fg-2"><div><label class="lbl">Kompania (Pala tjetër)</label><input type="text" id="cn-company" placeholder="p.sh. Sector Construction L.L.C."></div><div><label class="lbl">Adresa</label><input type="text" id="cn-address" placeholder=""></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Personi kontaktues</label><input type="text" id="cn-contact" placeholder=""></div><div><label class="lbl">Email</label><input type="email" id="cn-email" placeholder=""></div></div>
+      <div class="field-group fg-2"><div><label class="lbl">Konteksti / Projekti (opsionale)</label><input type="text" id="cn-project" placeholder="p.sh. bashkëpunim prodhimi"></div><div><label class="lbl">Data</label><input type="date" id="cn-date"></div></div>
+      <div class="field-group"><div><label class="lbl">Gjuha e NDA-së</label><select id="cn-lang"><option value="sq">Shqip</option><option value="de">Gjermanisht — model jo ende gati, do të gjenerohet në shqip</option><option value="en">Anglisht — model jo ende gati, do të gjenerohet në shqip</option></select></div></div>
+      <div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-primary" onclick="ctrGenerate('nda')">Gjenero NDA</button><button class="btn btn-success" onclick="ctrSave('nda')">💾 Ruaj</button></div>
+    </div>
+    <div class="card"><div class="card-title">Ngarko skanimin e nënshkruar (opsionale)</div>
+      <div class="field-group"><div><input type="file" id="cn-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="ctrHandleFile(this.files[0],'nda')"></div></div>
+      <div id="cn-file-status" style="font-size:12px;color:var(--text3)"></div>
+    </div>
+  </div>
+  <div>
+    <div class="card" style="border:1px solid var(--bronze)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin:0;color:var(--bronze)">Paraqitja</div><button class="btn btn-sm btn-primary" onclick="ctrPrint('nda')">PDF / Printo</button></div>
+      <div id="ctr-preview-nda" style="min-height:400px;max-height:700px;overflow-y:auto;padding:28px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 8px rgba(28,35,51,0.06);font-size:12px">Plotëso të dhënat dhe kliko Gjenero...</div>
+    </div>
+  </div>
+  </div>
+  </div>
+
+  <div class="card"><div class="card-title">Skedarë të ndryshëm</div>
+    <div style="font-size:12.5px;color:var(--text3)">Për skedarë që nuk i takojnë një kontrate specifike (certifikata, skica, dokumente shtesë), përdor <a href="javascript:void(0)" onclick="showPage('library')" style="color:var(--bronze);font-weight:600">Skedarët</a> — atje ke një kuti të përgjithshme ngarkimi me drag&drop dhe lidhje me Google Drive.</div>
+  </div>
+
+  <div class="card"><div class="card-title">Kontratat e ruajtura</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px" id="ctr-filter-bar">
+      <button class="btn btn-sm" onclick="ctrFilterList('all')" id="ctr-flt-all">Të gjitha</button>
+      <button class="btn btn-sm" onclick="ctrFilterList('sale')" id="ctr-flt-sale">Shitjes</button>
+      <button class="btn btn-sm" onclick="ctrFilterList('prod')" id="ctr-flt-prod">Prodhimit</button>
+      <button class="btn btn-sm" onclick="ctrFilterList('nda')" id="ctr-flt-nda">NDA</button>
+    </div>
+    <div id="ctr-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div>
+  </div>
+</div>
+<div id="page-finance" class="page">
+  <!-- KATROREt E FINANCAVE -->
+  <div id="fin-hub" class="card">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:14px" id="fin-hub-grid"></div>
+  </div>
+
+  <div id="fin-tabs" style="display:none;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn btn-sm" onclick="finShowHub()">&larr; Të gjitha</button>
+    <button class="btn btn-sm" id="fin-tab-inv" onclick="finSwitchTab('inv')">Faturat</button>
+    <button class="btn btn-sm" id="fin-tab-supp" onclick="finSwitchTab('supp')">Faturat e Furnitorëve</button>
+    <button class="btn btn-sm" id="fin-tab-exp" onclick="finSwitchTab('exp')">Shpenzimet operative</button>
+    <button class="btn btn-sm" id="fin-tab-atk" onclick="finSwitchTab('atk')">Tatimet (ATK)</button>
+    <button class="btn btn-sm" id="fin-tab-tax" onclick="finSwitchTab('tax')">Përmbledhja Tatimore</button>
+    <button class="btn btn-sm" id="fin-tab-aging" onclick="finSwitchTab('aging')">Afatet e Pagesave</button>
+    <button class="btn btn-sm" id="fin-tab-bg" onclick="finSwitchTab('bg')">Garanci Bankare</button>
+    <button class="btn btn-sm" id="fin-tab-oc" onclick="finSwitchTab('oc')">Kosto të tjera</button>
+  </div>
+
+  <!-- ═══ FATURAT (te gjitha, me statuse) ═══ -->
+  <div id="fin-view-inv" style="display:none">
+    <div class="card">
+      <div class="flex justify-between items-center mb-12">
+        <div class="card-title" style="margin:0">Të gjitha faturat</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="finInvFilter('all')" id="fi-all">Të gjitha</button>
+          <button class="btn btn-sm" onclick="finInvFilter('unpaid')" id="fi-unpaid">Të papaguara</button>
+          <button class="btn btn-sm" onclick="finInvFilter('overdue')" id="fi-overdue">Me vonesë</button>
+          <button class="btn btn-sm" onclick="finInvFilter('paid')" id="fi-paid">Të paguara</button>
+        </div>
+      </div>
+      <div id="fin-inv-sum" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px"></div>
+      <div id="fin-inv-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ FATURAT E FURNITORËVE (hyrëse) ═══ -->
+  <div id="fin-view-supp" style="display:none">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
       <div class="card-title" style="margin:0">Faturat e regjistruara (Furnitorë)</div>
@@ -1328,53 +1474,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
   </div>
   </div>
-</div>
-
-<div id="page-contracts" class="page">
-  <div class="card"><div class="card-title">Kontratat (Werkvertrag, Nënkontrata, etj.)</div>
-  <div class="field-group fg-2"><div><label class="lbl">Projekti</label><input type="text" id="ctr-proj" placeholder="p.sh. STACON D-22/26"></div><div><label class="lbl">Lloji i kontratës</label><select id="ctr-type"><option>Werkvertrag (Blerësi)</option><option>Nënkontratë (Furnitori)</option><option>NDA</option><option>Tjetër</option></select></div></div>
-  <div class="field-group fg-2"><div><label class="lbl">Pala tjetër</label><input type="text" id="ctr-party" placeholder="p.sh. STACON GmbH ose Eurosteel"></div><div><label class="lbl">Data</label><input type="date" id="ctr-date"></div></div>
-  <div><label class="lbl">Shënime</label><textarea id="ctr-not" style="min-height:50px"></textarea></div>
-  <div class="field-group"><div><label class="lbl">Ngarko skedarin (PDF, Word, Excel, Pages, JPG, PNG)</label><input type="file" id="ctr-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.pages,.numbers,.csv" onchange="handleContractFile(this.files[0])"></div></div>
-  <div id="ctr-file-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
-  <button class="btn btn-success" onclick="saveContract()">💾 Ruaj Kontratën</button>
-</div>
-<div class="card"><div class="card-title">Kontratat e ruajtura</div><div id="ctr-list"><div style="color:var(--text3);font-size:13px">Duke ngarkuar...</div></div></div>
-</div>
-
-<div id="page-finance" class="page">
-  <!-- KATROREt E FINANCAVE -->
-  <div id="fin-hub" class="card">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:14px" id="fin-hub-grid"></div>
-  </div>
-
-  <div id="fin-tabs" style="display:none;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-    <button class="btn btn-sm" onclick="finShowHub()">&larr; Të gjitha</button>
-    <button class="btn btn-sm" id="fin-tab-inv" onclick="finSwitchTab('inv')">Faturat</button>
-    <button class="btn btn-sm" id="fin-tab-exp" onclick="finSwitchTab('exp')">Shpenzimet operative</button>
-    <button class="btn btn-sm" id="fin-tab-atk" onclick="finSwitchTab('atk')">Tatimet (ATK)</button>
-    <button class="btn btn-sm" id="fin-tab-tax" onclick="finSwitchTab('tax')">Përmbledhja Tatimore</button>
-    <button class="btn btn-sm" id="fin-tab-aging" onclick="finSwitchTab('aging')">Afatet e Pagesave</button>
-    <button class="btn btn-sm" id="fin-tab-bg" onclick="finSwitchTab('bg')">Garanci Bankare</button>
-    <button class="btn btn-sm" id="fin-tab-oc" onclick="finSwitchTab('oc')">Kosto të tjera</button>
-  </div>
-
-  <!-- ═══ FATURAT (te gjitha, me statuse) ═══ -->
-  <div id="fin-view-inv" style="display:none">
-    <div class="card">
-      <div class="flex justify-between items-center mb-12">
-        <div class="card-title" style="margin:0">Të gjitha faturat</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-sm" onclick="finInvFilter('all')" id="fi-all">Të gjitha</button>
-          <button class="btn btn-sm" onclick="finInvFilter('unpaid')" id="fi-unpaid">Të papaguara</button>
-          <button class="btn btn-sm" onclick="finInvFilter('overdue')" id="fi-overdue">Me vonesë</button>
-          <button class="btn btn-sm" onclick="finInvFilter('paid')" id="fi-paid">Të paguara</button>
-        </div>
-      </div>
-      <div id="fin-inv-sum" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px"></div>
-      <div id="fin-inv-list"></div>
-    </div>
-  </div>
 
   <!-- ═══ SHPENZIMET OPERATIVE ═══ -->
   <div id="fin-view-exp" style="display:none">
@@ -1404,6 +1503,11 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       </div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Llogaritje automatike nga faturat e regjistruara — vlerat kopjohen manualisht te portali i ATK-së. TVSH standarde 18%.</div>
       <div id="atk-prep-body"><div class="hub-load">Duke llogaritur…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Dokumentet për ATK (periudha e zgjedhur më lart)</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Të gjitha faturat (tona + furnitorëve) me skedar të bashkëngjitur për muajin/vitin e zgjedhur — gati për t'i shkarkuar dhe dërguar te kontabilisti/ATK.</div>
+      <div id="atk-docs-body"><div class="hub-load">Duke ngarkuar…</div></div>
     </div>
   </div>
 
@@ -3363,7 +3467,7 @@ var CMDK_STATIC=[
   {icon:'💶',label:'Kalkulatori i çmimit',run:function(){showPage('kalkulator');}},
   {icon:'📄',label:'Arkivi i ofertave',run:function(){showPage('offer-archive');}},
   {icon:'✍️',label:'Gjenero Ofertë e re',run:function(){goToClientOffer();}},
-  {icon:'💳',label:'Faturat hyrëse',run:function(){showPage('invoices');invSwitchTab('in');}},
+  {icon:'💳',label:'Faturat hyrëse',run:function(){showPage('finance');setTimeout(function(){finSwitchTab('supp');},80);}},
   {icon:'💳',label:'Faturat dalëse',run:function(){showPage('invoices');invSwitchTab('out');}},
   {icon:'📑',label:'Kontratat',run:function(){showPage('contracts');}},
   {icon:'📂',label:'Skedarët',run:function(){showPage('library');}},
@@ -3523,7 +3627,7 @@ function showPage(p){
   else if(typeof renderSidePanel==='function' && p!=='offers') renderSidePanel();
   if(p==='ranking'){calcRanking();}
   if(p==='kalkulator')calcPrice();
-  if(p==='invoices'){loadInvoicesOut();loadInvoicesIn();loadProjectOptionsForInvoices();const dl=document.getElementById('ivin-sup-list');if(dl)dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');}
+  if(p==='invoices'){loadInvoicesOut();loadProjectOptionsForInvoices();}
   if(p==='contracts'){loadContracts();}
   if(p==='library'){_libScope=_curProjId?'project':'all';loadLibraryFiles();}
   if(p==='finance'){loadBankGuarantees();loadOtherCosts();}
@@ -6778,10 +6882,10 @@ function toggleVatRate(prefix){
 }
 
 function invSwitchTab(tab){
-  document.getElementById('inv-view-out').style.display = tab==='out' ? '' : 'none';
-  document.getElementById('inv-view-in').style.display = tab==='in' ? '' : 'none';
-  document.getElementById('inv-tab-out').className = 'btn btn-sm' + (tab==='out' ? ' btn-primary' : '');
-  document.getElementById('inv-tab-in').className = 'btn btn-sm' + (tab==='in' ? ' btn-primary' : '');
+  // Faqja "Faturat" (Shitjet) ka tani vetëm faturat tona (dalëse).
+  // Faturat e furnitorëve (hyrëse) janë te Financat → "Faturat e Furnitorëve".
+  if(tab==='in'){ showPage('finance'); setTimeout(function(){ if(typeof finSwitchTab==='function') finSwitchTab('supp'); },80); return; }
+  var v=document.getElementById('inv-view-out'); if(v) v.style.display='';
 }
 
 let invoiceProjectsList=[];
@@ -7171,47 +7275,244 @@ function openInvoiceDetail(type,id){
   document.body.appendChild(bg);
 }
 
-function handleContractFile(f){
+// ═══════════════════════════════════════════════════════════════
+// KONTRATAT — sistem me 3 kategori (Shitjes / Prodhimit / NDA)
+// ═══════════════════════════════════════════════════════════════
+var ctrFileData={sale:null,prod:null,nda:null};
+var ctrGeneratedHtml={sale:null,prod:null,nda:null};
+var ctrCurrentFilter='all';
+
+function ctrSwitchTab(tab){
+  ['sale','prod','nda'].forEach(function(t){
+    var v=document.getElementById('ctr-view-'+t); if(v) v.style.display=(t===tab?'':'none');
+    var b=document.getElementById('ctr-tab-'+t); if(b) b.style.background=(t===tab?'var(--bronze)':'');
+    if(b) b.style.color=(t===tab?'#fff':'');
+    if(b) b.style.borderColor=(t===tab?'var(--bronze)':'');
+  });
+}
+
+function ctrHandleFile(f,cat){
   if(!f)return;
-  const status=document.getElementById('ctr-file-status');
-  status.textContent='Duke lexuar...';
-  const r=new FileReader();
+  var statusEl=document.getElementById((cat==='sale'?'cs':cat==='prod'?'cp':'cn')+'-file-status');
+  statusEl.textContent='Duke lexuar...';
+  var r=new FileReader();
   r.onload=function(e){
-    contractFileData={name:f.name,type:f.type,base64:e.target.result};
-    status.textContent='✓ '+f.name+' ('+Math.round(f.size/1024)+' KB)';
+    ctrFileData[cat]={name:f.name,type:f.type,base64:e.target.result};
+    statusEl.textContent='✓ '+f.name+' ('+Math.round(f.size/1024)+' KB)';
   };
-  r.onerror=function(){status.textContent='Gabim gjatë leximit të skedarit.';};
+  r.onerror=function(){statusEl.textContent='Gabim gjatë leximit të skedarit.';};
   r.readAsDataURL(f);
 }
-function saveContract(){
-  const proj=document.getElementById('ctr-proj').value.trim();
-  const party=document.getElementById('ctr-party').value.trim();
-  if(!proj||!party){alert('Shkruaj projektin dhe palën tjetër.');return;}
-  const payload={
-    project:proj, contract_type:document.getElementById('ctr-type').value, party:party,
-    date:document.getElementById('ctr-date').value||null, notes:document.getElementById('ctr-not').value,
-    file_name:contractFileData?contractFileData.name:null, file_type:contractFileData?contractFileData.type:null, file_base64:contractFileData?contractFileData.base64:null
+
+// Kur plotësohet vlera totale e kontratës, llogarit automatikisht çmimin/kg nëse sasia (kg) është dhënë
+function ctrCalcFromValue(cat){
+  var p=cat==='sale'?'cs':cat==='prod'?'cp':'cn';
+  var qtyEl=document.getElementById(p+'-qty'), valEl=document.getElementById(p+'-value'), priceEl=document.getElementById(p+'-priceperkg');
+  if(!qtyEl||!valEl||!priceEl) return;
+  var qty=parseFloat(qtyEl.value)||0, val=parseFloat(valEl.value)||0;
+  if(qty>0 && val>0) priceEl.value=(val/qty).toFixed(2);
+}
+function ctrEsc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ctrFmt(n){ n=parseFloat(n)||0; return n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function ctrPayTermsHtml(txt){
+  return (txt||'').split('\n').filter(function(l){return l.trim();}).map(function(l){return '<div style="margin-bottom:4px">• '+ctrEsc(l)+'</div>';}).join('');
+}
+
+// ── KONTRATA E SHITJES (Werkvertrag / Sales Contract) ──
+function ctrBuildSale(lang,d){
+  var todayStr=d.date?d.date.split('-').reverse().join('.'):'';
+  if(lang==='en'){
+    return '<div style="font-family:Arial,sans-serif;line-height:1.55">'
+    +'<h2 style="text-align:center;margin-bottom:2px">WORK CONTRACT</h2>'
+    +'<div style="text-align:center;color:#666;margin-bottom:18px">Supply of Steel Structures — Offer '+ctrEsc(d.offernr)+'</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:14px"><div><strong>CONTRACTOR</strong><br>PRISteel Sh.p.k.<br>Rr. Tringe Smajli nr. 16<br>10000 Pristina, Kosovo<br>sales@prissteel.com</div>'
+    +'<div><strong>CLIENT</strong><br>'+ctrEsc(d.company)+'<br>'+ctrEsc(d.address)+'<br>Contact: '+ctrEsc(d.contact)+'<br>'+ctrEsc(d.email)+'</div></div>'
+    +'<p><strong>Project:</strong> '+ctrEsc(d.project)+' &nbsp; <strong>Delivery place:</strong> '+ctrEsc(d.location)+'<br><strong>Date:</strong> '+todayStr+'</p>'
+    +'<h3>§1 Subject of Contract</h3><p>The Contractor undertakes to manufacture, coat, and deliver the steel structures described below to the Client, in accordance with EN 1090 execution standards.</p>'
+    +'<table style="width:100%;border-collapse:collapse;margin:10px 0" border="1" cellpadding="6"><tr style="background:#f2f2f2"><th>Description</th><th>Quantity</th><th>Unit price</th><th>Total</th></tr>'
+    +'<tr><td>Steel structure manufacturing</td><td>'+ctrFmt(d.qty)+' kg</td><td>'+ctrFmt(d.priceperkg)+' EUR/kg</td><td>'+ctrFmt(d.value)+' EUR</td></tr></table>'
+    +'<h3>§2 Delivery Terms</h3><p>Incoterms '+ctrEsc(d.incoterm)+', delivery to '+ctrEsc(d.location)+'.</p>'
+    +'<h3>§3 Payment Terms</h3>'+ctrPayTermsHtml(d.payterms)
+    +'<h3>§4 Warranty</h3><p>The Contractor warrants the delivered components against material and manufacturing defects for a period of 5 years and 4 months from formal acceptance.</p>'
+    +'<h3>§5 Governing Law</h3><p>This contract is governed by German law; place of jurisdiction is Hamburg, Germany.</p>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:50px"><div>____________________<br>Oltian Vllahiu, CEO<br>PRISteel Sh.p.k.</div><div>____________________<br>'+ctrEsc(d.contact)+'<br>'+ctrEsc(d.company)+'</div></div>'
+    +'</div>';
+  }
+  if(lang==='de'){
+    return '<div style="font-family:Arial,sans-serif;line-height:1.55">'
+    +'<h2 style="text-align:center;margin-bottom:2px">WERKVERTRAG</h2>'
+    +'<div style="text-align:center;color:#666;margin-bottom:18px">Lieferung von Stahlkonstruktionen — Angebot '+ctrEsc(d.offernr)+'</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:14px"><div><strong>AUFTRAGNEHMER</strong><br>PRISteel Sh.p.k.<br>Rr. Tringe Smajli nr. 16<br>10000 Pristina, Kosovo<br>sales@prissteel.com<br>Vertreten durch: Oltian Vllahiu, CEO</div>'
+    +'<div><strong>AUFTRAGGEBER</strong><br>'+ctrEsc(d.company)+'<br>'+ctrEsc(d.address)+'<br>Kontakt: '+ctrEsc(d.contact)+'<br>'+ctrEsc(d.email)+'</div></div>'
+    +'<p><strong>Projekt:</strong> '+ctrEsc(d.project)+' &nbsp; <strong>Bauort:</strong> '+ctrEsc(d.location)+'<br><strong>Datum:</strong> Pristina, '+todayStr+'</p>'
+    +'<h3>§ 1 – Vertragsgegenstand</h3><p>Der Auftragnehmer verpflichtet sich gegenüber dem Auftraggeber, die nachfolgend beschriebenen Stahlbauteile herzustellen, zu beschichten und gemäß der vereinbarten Lieferbedingung zu liefern, gemäß EN 1090.</p>'
+    +'<table style="width:100%;border-collapse:collapse;margin:10px 0" border="1" cellpadding="6"><tr style="background:#f2f2f2"><th>Beschreibung</th><th>Menge</th><th>Einzelpreis</th><th>Gesamtpreis</th></tr>'
+    +'<tr><td>Herstellung von Stahlkonstruktionen</td><td>'+ctrFmt(d.qty)+' kg</td><td>'+ctrFmt(d.priceperkg)+' EUR/kg</td><td>'+ctrFmt(d.value)+' EUR</td></tr></table>'
+    +'<h3>§ 2 – Lieferbedingungen</h3><p>Lieferbedingung: '+ctrEsc(d.incoterm)+', Lieferung nach '+ctrEsc(d.location)+', gemäß Incoterms® 2020.</p>'
+    +'<h3>§ 3 – Zahlungsbedingungen</h3>'+ctrPayTermsHtml(d.payterms)
+    +'<h3>§ 4 – Gewährleistung</h3><p>Der Auftragnehmer gewährleistet, dass alle gelieferten Bauteile frei von Material- und Herstellungsfehlern sind. Gewährleistungsfrist: 5 Jahre und 4 Monate ab dem Datum der förmlichen Abnahme.</p>'
+    +'<h3>§ 5 – Anwendbares Recht</h3><p>Dieser Vertrag unterliegt dem Recht der Bundesrepublik Deutschland. Gerichtsstand: Hamburg, Deutschland.</p>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:50px"><div>____________________<br>Oltian Vllahiu, CEO<br>PRISteel Sh.p.k.</div><div>____________________<br>'+ctrEsc(d.contact)+'<br>'+ctrEsc(d.company)+'</div></div>'
+    +'</div>';
+  }
+  // Albanian (default / fallback for sr)
+  return '<div style="font-family:Arial,sans-serif;line-height:1.55">'
+  +'<h2 style="text-align:center;margin-bottom:2px">KONTRATË SHITJEJE</h2>'
+  +'<div style="text-align:center;color:#666;margin-bottom:18px">Furnizim me Konstruksione Metalike — Oferta '+ctrEsc(d.offernr)+'</div>'
+  +'<div style="display:flex;justify-content:space-between;margin-bottom:14px"><div><strong>SHITËSI</strong><br>PRISteel Sh.p.k.<br>Rr. Tringe Smajli nr. 16<br>10000 Prishtinë, Kosovë<br>sales@prissteel.com<br>Përfaqësuar nga: Oltian Vllahiu, CEO</div>'
+  +'<div><strong>BLERËSI</strong><br>'+ctrEsc(d.company)+'<br>'+ctrEsc(d.address)+'<br>Kontakti: '+ctrEsc(d.contact)+'<br>'+ctrEsc(d.email)+'</div></div>'
+  +'<p><strong>Projekti:</strong> '+ctrEsc(d.project)+' &nbsp; <strong>Vendi i dorëzimit:</strong> '+ctrEsc(d.location)+'<br><strong>Data:</strong> Prishtinë, '+todayStr+'</p>'
+  +'<h3>Neni 1 – Objekti i Kontratës</h3><p>Shitësi merr përsipër prodhimin, ngjyrosjen dhe dorëzimin e konstruksioneve metalike të përshkruara më poshtë, sipas normave EN 1090.</p>'
+  +'<table style="width:100%;border-collapse:collapse;margin:10px 0" border="1" cellpadding="6"><tr style="background:#f2f2f2"><th>Përshkrimi</th><th>Sasia</th><th>Çmimi/njësi</th><th>Totali</th></tr>'
+  +'<tr><td>Prodhim konstruksioni metalik</td><td>'+ctrFmt(d.qty)+' kg</td><td>'+ctrFmt(d.priceperkg)+' EUR/kg</td><td>'+ctrFmt(d.value)+' EUR</td></tr></table>'
+  +'<h3>Neni 2 – Kushtet e Dorëzimit</h3><p>Kushti i dorëzimit: '+ctrEsc(d.incoterm)+', dorëzim në '+ctrEsc(d.location)+', sipas Incoterms® 2020.</p>'
+  +'<h3>Neni 3 – Kushtet e Pagesës</h3>'+ctrPayTermsHtml(d.payterms)
+  +'<h3>Neni 4 – Garancia</h3><p>Shitësi garanton se elementet e dorëzuara janë të lira nga defekte materiali dhe prodhimi. Afati i garancisë: 5 vite e 4 muaj nga data e pranimit formal.</p>'
+  +'<h3>Neni 5 – E Drejta e Aplikueshme</h3><p>Kjo kontratë rregullohet nga e drejta e vendit të dorëzimit, përveç nëse rënë dakord ndryshe me shkrim.</p>'
+  +'<div style="display:flex;justify-content:space-between;margin-top:50px"><div>____________________<br>Oltian Vllahiu, CEO<br>PRISteel Sh.p.k.</div><div>____________________<br>'+ctrEsc(d.contact)+'<br>'+ctrEsc(d.company)+'</div></div>'
+  +'</div>';
+}
+
+// ── KONTRATA E PRODHIMIT (Nënkontraktor/Fabrikues) ──
+function ctrBuildProd(lang,d){
+  var todayStr=d.date?d.date.split('-').reverse().join('.'):'';
+  return '<div style="font-family:Arial,sans-serif;line-height:1.55">'
+  +'<h2 style="text-align:center;margin-bottom:2px">KONTRATË PRODHIMI DHE DORËZIMI</h2>'
+  +'<div style="text-align:center;color:#666;margin-bottom:18px">Prodhimi i Konstruksioneve Metalike — Oferta '+ctrEsc(d.offernr)+'</div>'
+  +'<div style="display:flex;justify-content:space-between;margin-bottom:14px"><div><strong>KONTRAKTORI</strong><br>PRISteel Sh.p.k.<br>Rr. Tringe Smajli nr. 16<br>10000 Prishtinë, Kosovë<br>sales@prissteel.com<br>Përfaqësuar nga: Oltian Vllahiu, Pronar &amp; CEO</div>'
+  +'<div><strong>NËNKONTRAKTORI</strong><br>'+ctrEsc(d.company)+'<br>'+ctrEsc(d.address)+'<br>Kontakti: '+ctrEsc(d.contact)+'<br>'+ctrEsc(d.email)+'</div></div>'
+  +'<p><strong>Projekti:</strong> '+ctrEsc(d.project)+' &nbsp; <strong>Vendi i dorëzimit final:</strong> '+ctrEsc(d.location)+'<br><strong>Data:</strong> Prishtinë, '+todayStr+'</p>'
+  +'<h3>Preambulë</h3><p>PRISteel Sh.p.k. (Kontraktori) i beson Nënkontraktorit prodhimin e elementeve metalike sipas ofertës së referuar. Marrëdhëniet tregtare të Kontraktorit me blerësin final mbeten të mbrojtura me NDA-në e lidhur paraprakisht ndërmjet palëve.</p>'
+  +'<h3>Neni 1 – Objekti i Kontratës dhe Çmimi</h3>'
+  +'<table style="width:100%;border-collapse:collapse;margin:10px 0" border="1" cellpadding="6"><tr style="background:#f2f2f2"><th>Përshkrimi</th><th>Sasia</th><th>Çmimi/njësi</th><th>Totali</th></tr>'
+  +'<tr><td>Prodhim, ngjyrosje, ngarkim sipas vizatimeve të aprovuara</td><td>'+ctrFmt(d.qty)+' kg</td><td>'+ctrFmt(d.priceperkg)+' EUR/kg</td><td>'+ctrFmt(d.value)+' EUR</td></tr></table>'
+  +'<h3>Neni 2 – Përgjegjësitë Teknike</h3><p>Nënkontraktori merr përsipër përgjegjësinë teknike të plotë për cilësinë, saktësinë dhe afatet e prodhimit, sipas normave EN 1090 dhe certifikatave përkatëse (ISO 3834-2, ISO 9001).</p>'
+  +'<h3>Neni 3 – Kushti i Dorëzimit dhe Afati</h3><p>Dorëzimi: DAP '+ctrEsc(d.location)+'. Transporti dhe sigurimi deri në destinacion janë përgjegjësi e Nënkontraktorit dhe të përfshira në çmim, përveç nëse rënë dakord ndryshe.</p>'
+  +'<h3>Neni 4 – Kushtet e Pagesës</h3>'+ctrPayTermsHtml(d.payterms)
+  +'<h3>Neni 5 – Dokumentacioni i Detyrueshëm i Cilësisë</h3><p>Nënkontraktori dorëzon certifikatat e materialit (EN 10204 Tip 3.1), regjistrin e saldimit (Welding Book), protokollet e kontrollit VT+UT, dhe deklaratën CE, jo më vonë se dita e ngarkimit.</p>'
+  +'<h3>Neni 6 – Përgjegjësia për Defektet</h3><p>Nënkontraktori zgjedh midis riparimit ose zëvendësimit brenda afatit të rënë dakord, në rast defektesh të konstatuara nga Blerësi ose Kontraktori.</p>'
+  +'<h3>Neni 7 – E Drejta e Aplikueshme</h3><p>Kjo kontratë, bashkë me NDA-në, përbën marrëveshjen e plotë midis palëve.</p>'
+  +'<div style="display:flex;justify-content:space-between;margin-top:50px"><div>____________________<br>Oltian Vllahiu<br>Pronar &amp; CEO, PRISteel Sh.p.k.</div><div>____________________<br>'+ctrEsc(d.contact)+'<br>'+ctrEsc(d.company)+'</div></div>'
+  +'</div>';
+}
+
+// ── NDA ──
+function ctrBuildNda(lang,d){
+  var todayStr=d.date?d.date.split('-').reverse().join('.'):'';
+  return '<div style="font-family:Arial,sans-serif;line-height:1.55">'
+  +'<h2 style="text-align:center;margin-bottom:2px">MARRËVESHJE MBI BASHKËPUNIMIN TEKNIK DHE KONFIDENCIALITETIN (NDA)</h2>'
+  +'<div style="text-align:center;color:#666;margin-bottom:18px">'+(d.project?ctrEsc(d.project)+' — ':'')+'Prishtinë, '+todayStr+'</div>'
+  +'<p>Kjo Marrëveshje lidhet midis: <strong>PRISTEEL SH.P.K.</strong> (Rr. Tringe Smajli nr. 16, 10000 Prishtinë, Kosovë — këtu e tutje: Partneri Tregtar) dhe <strong>'+ctrEsc(d.company)+'</strong> ('+ctrEsc(d.address)+', kontakt: '+ctrEsc(d.contact)+', '+ctrEsc(d.email)+' — këtu e tutje: Partneri Prodhues).</p>'
+  +'<h3>Neni 1 – Natyra e Bashkëpunimit</h3><p>Partnerët bashkëpunojnë në projekte industriale, ku Partneri Tregtar sjell kërkesat e blerësve, ndërsa Partneri Prodhues ofron kapacitetet për prodhim, përpunim metalesh dhe montim. Kjo marrëveshje krijon raport Kontraktori–Nënkontraktori, jo shoqëri të përbashkët.</p>'
+  +'<h3>Neni 2 – NDA &amp; Non-Circumvention</h3><p>Të gjitha të dhënat mbi Blerësit e Partnerit Tregtar (emrat, kontaktet, lokacionet, çmimet) konsiderohen Sekret Tregtar. Partneri Prodhues zotohet të mos kontaktojë drejtpërdrejt Blerësit e Partnerit Tregtar. Ky detyrim mbetet në fuqi gjatë bashkëpunimit dhe për 5 vite pas përfundimit të projektit të fundit të përbashkët.</p>'
+  +'<h3>Neni 3 – Standardet e Prodhimit</h3><p>Partneri Prodhues merr përsipër përputhshmërinë me vizatimet teknike dhe standardet e dakorduara, dhe dorëzon dosjen teknike (atestet, certifikatat) pas përfundimit të punës.</p>'
+  +'<h3>Neni 4 – Afatet dhe Përgjegjësia</h3><p>Nëse Partneri Tregtar penalizohet financiarisht nga Blerësi për vonesa ose dështime teknike të Partnerit Prodhues, këto kosto bartën te ky i fundit.</p>'
+  +'<h3>Neni 5 – Qasja në Ambientet e Punës</h3><p>Partneri Tregtar ka të drejtë të inspektojë fabrikën/kantierin. Partneri Prodhues lejon vizita (me njoftim paraprak) të Blerësve për auditim teknik.</p>'
+  +'<h3>Neni 6 – Pronësia Intelektuale</h3><p>Vizatimet dhe specifikimet e dorëzuara nga Partneri Tregtar mbeten pronë e tij dhe s\'mund të përdoren për projekte të tjera.</p>'
+  +'<h3>Neni 7 – Zgjidhja e Mosmarrëveshjeve</h3><p>Kompetente është Gjykata Komerciale në Prishtinë.</p>'
+  +'<div style="display:flex;justify-content:space-between;margin-top:50px"><div>____________________<br>PËR PRISTEEL SH.P.K.</div><div>____________________<br>PËR '+ctrEsc((d.company||'').toUpperCase())+'</div></div>'
+  +'</div>';
+}
+
+function ctrCollect(cat){
+  var p=cat==='sale'?'cs':cat==='prod'?'cp':'cn';
+  var d={
+    company:document.getElementById(p+'-company').value.trim(),
+    address:document.getElementById(p+'-address')?document.getElementById(p+'-address').value.trim():'',
+    contact:document.getElementById(p+'-contact').value.trim(),
+    email:document.getElementById(p+'-email').value.trim(),
+    project:document.getElementById(p+'-project')?document.getElementById(p+'-project').value.trim():'',
+    location:document.getElementById(p+'-location')?document.getElementById(p+'-location').value.trim():'',
+    offernr:document.getElementById(p+'-offernr')?document.getElementById(p+'-offernr').value.trim():'',
+    date:document.getElementById(p+'-date').value||'',
+    qty:document.getElementById(p+'-qty')?document.getElementById(p+'-qty').value:0,
+    priceperkg:document.getElementById(p+'-priceperkg')?document.getElementById(p+'-priceperkg').value:0,
+    value:document.getElementById(p+'-value')?document.getElementById(p+'-value').value:0,
+    incoterm:document.getElementById(p+'-incoterm')?document.getElementById(p+'-incoterm').value:'',
+    payterms:document.getElementById(p+'-payterms')?document.getElementById(p+'-payterms').value:'',
+    lang:document.getElementById(p+'-lang')?document.getElementById(p+'-lang').value:'sq'
+  };
+  return d;
+}
+
+function ctrGenerate(cat){
+  var d=ctrCollect(cat);
+  if(!d.company){alert('Shkruaj emrin e kompanisë.');return;}
+  var html;
+  if(cat==='sale') html=ctrBuildSale(d.lang,d);
+  else if(cat==='prod') html=ctrBuildProd(d.lang,d);
+  else html=ctrBuildNda(d.lang,d);
+  ctrGeneratedHtml[cat]=html;
+  document.getElementById('ctr-preview-'+cat).innerHTML=html;
+}
+
+function ctrPrint(cat){
+  if(!ctrGeneratedHtml[cat]){alert('Gjenero kontratën së pari.');return;}
+  var w=window.open('','_blank');
+  w.document.write('<html><head><title>Kontrata</title></head><body>'+ctrGeneratedHtml[cat]+'</body></html>');
+  w.document.close();
+  setTimeout(function(){w.print();},300);
+}
+
+function ctrSave(cat){
+  var d=ctrCollect(cat);
+  if(!d.company){alert('Shkruaj emrin e kompanisë.');return;}
+  if(!ctrGeneratedHtml[cat]) ctrGenerate(cat);
+  var typeLabel=cat==='sale'?'Kontratë Shitjeje':cat==='prod'?'Kontratë Prodhimi':'NDA';
+  var fd=ctrFileData[cat];
+  var payload={
+    category:cat, contract_type:typeLabel, party:d.company, project:d.project||null,
+    contact_person:d.contact||null, buyer_email:d.email||null, payment_terms:d.payterms||null,
+    language:d.lang, contract_value:parseFloat(d.value)||null, quantity_kg:parseFloat(d.qty)||null,
+    date:d.date||null, generated_html:ctrGeneratedHtml[cat],
+    file_name:fd?fd.name:null, file_type:fd?fd.type:null, file_base64:fd?fd.base64:null
   };
   supaFetch('contracts','POST',payload).then(function(){
     alert('Kontrata u ruajt!');
-    document.getElementById('ctr-proj').value='';document.getElementById('ctr-party').value='';document.getElementById('ctr-not').value='';document.getElementById('ctr-file').value='';
-    document.getElementById('ctr-file-status').textContent='';contractFileData=null;
     loadContracts();
   }).catch(function(e){alert('Gabim (a ekziston tabela contracts në Supabase?): '+e.message);});
 }
+
+function ctrFilterList(cat){
+  ctrCurrentFilter=cat;
+  ['all','sale','prod','nda'].forEach(function(c){
+    var b=document.getElementById('ctr-flt-'+c); if(!b)return;
+    b.style.background=(c===cat?'var(--bronze)':''); b.style.color=(c===cat?'#fff':''); b.style.borderColor=(c===cat?'var(--bronze)':'');
+  });
+  renderContractsList();
+}
+
+function renderContractsList(){
+  var el=document.getElementById('ctr-list');
+  if(!el)return;
+  var rows=contractsList||[];
+  if(ctrCurrentFilter!=='all') rows=rows.filter(function(r){return (r.category||ctrLegacyCategory(r))===ctrCurrentFilter;});
+  if(rows.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë kontratë e ruajtur.</div>';return;}
+  var catIcon={sale:'📄',prod:'🏭',nda:'🔒'};
+  el.innerHTML=rows.map(function(r){
+    var cat=r.category||ctrLegacyCategory(r);
+    return '<div class="project-card" onclick="openContractDetail(\''+r.id+'\')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:8px;margin-bottom:8px;transition:box-shadow .13s" onmouseover="this.style.boxShadow=\'0 3px 8px rgba(26,26,25,.13)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(26,26,25,.07)\'">'
+      +'<div>'+(catIcon[cat]||'📄')+' <strong>'+(r.contract_type||'')+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.party||'')+(r.project?' · '+r.project:'')+(r.date?' · '+r.date:'')+(r.file_base64?' · 📎':'')+'</span></div>'
+      +'<div style="display:flex;gap:6px"><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteContract(\''+r.id+'\')">Fshij</button></div></div>';
+  }).join('');
+}
+// Kontratat e vjetra (para këtij ndryshimi) s'kanë fushën "category" — i klasifikojmë prapa sipas contract_type
+function ctrLegacyCategory(r){
+  var t=(r.contract_type||'').toLowerCase();
+  if(t.indexOf('nda')>=0) return 'nda';
+  if(t.indexOf('nënkontrat')>=0||t.indexOf('prodhim')>=0) return 'prod';
+  return 'sale';
+}
+
 function loadContracts(){
-  const el=document.getElementById('ctr-list');
+  var el=document.getElementById('ctr-list');
   if(!el)return;
   supaFetch('contracts?order=created_at.desc&limit=100').then(function(rows){
     contractsList=rows||[];
-    if(rows.length===0){el.innerHTML='<div style="color:var(--text3);font-size:13px">Asnjë kontratë e ruajtur.</div>';return;}
-    el.innerHTML=rows.map(function(r){
-      return '<div class="project-card" onclick="openContractDetail(\''+r.id+'\')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:8px;margin-bottom:8px;transition:box-shadow .13s" onmouseover="this.style.boxShadow=\'0 3px 8px rgba(26,26,25,.13)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(26,26,25,.07)\'">'
-        +'<div><strong>'+(r.contract_type||'')+'</strong> <span style="color:var(--text3);font-size:12px">'+(r.party||'')+' · '+(r.project||'')+(r.date?' · '+r.date:'')+(r.file_base64?' · 📎':'')+'</span></div>'
-        +'<div style="display:flex;gap:6px"><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteContract(\''+r.id+'\')">Fshij</button></div></div>';
-    }).join('');
+    renderContractsList();
   }).catch(function(e){el.innerHTML='<div style="color:var(--red-text);font-size:12px">Tabela contracts mungon në Supabase ende. Shiko udhëzimet SQL.</div>';});
 }
+function closeContractDetail(){ var bg=document.getElementById('pst-ctr-modal'); if(bg) bg.remove(); }
 function openContractDetail(id){
   const r=contractsList.find(function(x){return x.id===id;});
   if(!r) return;
@@ -7226,12 +7527,16 @@ function openContractDetail(id){
       +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
         +'<tr><td style="color:var(--text3);padding:5px 0">Projekti</td><td style="text-align:right">'+(r.project||'—')+'</td></tr>'
         +'<tr><td style="color:var(--text3);padding:5px 0">Pala tjetër</td><td style="text-align:right">'+(r.party||'—')+'</td></tr>'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Kontakti</td><td style="text-align:right">'+(r.contact_person||'—')+'</td></tr>'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Email</td><td style="text-align:right">'+(r.buyer_email||'—')+'</td></tr>'
         +'<tr><td style="color:var(--text3);padding:5px 0">Lloji</td><td style="text-align:right">'+(r.contract_type||'—')+'</td></tr>'
+        +'<tr><td style="color:var(--text3);padding:5px 0">Vlera</td><td style="text-align:right">'+(r.contract_value?ctrFmt(r.contract_value)+' EUR':'—')+'</td></tr>'
         +'<tr><td style="color:var(--text3);padding:5px 0">Data</td><td style="text-align:right">'+(r.date||'—')+'</td></tr>'
       +'</table>'
-      +(r.notes?'<div style="font-size:12.5px;color:var(--text2);margin-top:12px;line-height:1.5;border-top:1px solid var(--border);padding-top:10px">'+r.notes.replace(/\n/g,'<br>')+'</div>':'')
+      +(r.generated_html?'<div style="font-size:11.5px;color:var(--text2);margin-top:12px;line-height:1.5;border-top:1px solid var(--border);padding-top:10px;max-height:300px;overflow-y:auto">'+r.generated_html+'</div>'
+        :(r.notes?'<div style="font-size:12.5px;color:var(--text2);margin-top:12px;line-height:1.5;border-top:1px solid var(--border);padding-top:10px">'+r.notes.replace(/\n/g,'<br>')+'</div>':''))
       +'<div style="display:flex;gap:8px;margin-top:16px">'
-        +(r.file_base64?'<button class="btn btn-sm btn-primary" style="flex:1" onclick="viewOrDownloadFile(\''+(r.file_name||'').replace(/'/g,"\\'")+'\',\''+(r.file_type||'')+'\',contractsList.find(function(x){return x.id===\''+r.id+'\';}).file_base64)">📎 Shiko / Shkarko skedarin</button>'
+        +(r.file_base64?'<button class="btn btn-sm btn-primary" style="flex:1" onclick="event.stopPropagation();viewOrDownloadFile(\''+(r.file_name||'').replace(/'/g,"\\'")+'\',\''+(r.file_type||'')+'\',contractsList.find(function(x){return x.id===\''+r.id+'\';}).file_base64)">📎 Shiko / Shkarko skedarin</button>'
           :'<div style="flex:1;font-size:11.5px;color:var(--text3);align-self:center">Asnjë skedar i bashkëngjitur.</div>')
         +'<button class="btn btn-danger btn-sm" onclick="closeContractDetail();deleteContract(\''+r.id+'\')">Fshij</button>'
       +'</div>'
@@ -7645,11 +7950,60 @@ function renderAtkPreparation(){
       h+='<div style="font-size:11.5px;color:var(--text3);background:#FBF3E0;border-radius:8px;padding:9px 11px">⚠ Pozicion i hapur: kostot e garancionit bankar nuk janë futur ende. Këto shfaqen në pasqyrën bankare. Regjistroji te tabi "Garancitë bankare" me vlerën aktuale, që të hyjnë në kostot e njohura.</div>';
     }
     body.innerHTML=h;
+    renderAtkDocs(selM,selY,out,inn);
   }).catch(function(e){ body.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim gjatë llogaritjes: '+(e&&e.message||e)+'</div>'; });
  } catch(err){
   var b=document.getElementById('atk-prep-body');
   if(b) b.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim: '+(err&&err.message||err)+'. Provo refresh të fortë (Ctrl+Shift+R).</div>';
  }
+}
+// Kutia me dokumentet (faturat me skedar bashkëngjitur) për periudhën e zgjedhur — gati për ATK/kontabilist
+function renderAtkDocs(selM,selY,outRowsLite,inRowsLite){
+  var el=document.getElementById('atk-docs-body');
+  if(!el) return;
+  el.innerHTML='<div class="hub-load">Duke ngarkuar…</div>';
+  function q(url){
+    return Promise.race([
+      supaFetch(url).catch(function(){return[];}),
+      new Promise(function(res){ setTimeout(function(){res([]);}, 6000); })
+    ]);
+  }
+  Promise.all([
+    q('invoices_out?select=id,invoice_nr,client,project,date,file_name,file_type,file_base64'),
+    q('invoices_in?select=id,supplier,project,date,file_name,file_type,file_base64')
+  ]).then(function(res){
+    var inPeriod=function(d){ if(!d) return false; var dt=new Date(d); return dt.getMonth()===selM && dt.getFullYear()===selY; };
+    var out=(res[0]||[]).filter(function(r){return inPeriod(r.date) && r.file_base64;});
+    var inn=(res[1]||[]).filter(function(r){return inPeriod(r.date) && r.file_base64;});
+    if(!out.length && !inn.length){
+      el.innerHTML='<div style="font-size:11.5px;color:var(--text3)">Asnjë skedar i bashkëngjitur te faturat e këtij muaji.</div>';
+      return;
+    }
+    window._atkDocsList=out.concat(inn);
+    var h='';
+    if(out.length){
+      h+='<div style="font-size:12px;font-weight:700;margin-bottom:6px">Faturat tona (dalëse)</div>';
+      h+=out.map(function(r){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border)">'
+          +'<div style="font-size:12px">📄 '+(r.invoice_nr||'')+' <span style="color:var(--text3)">· '+(r.client||'')+(r.project?' · '+r.project:'')+'</span></div>'
+          +'<button class="btn btn-sm" onclick="atkDownloadDoc(\''+r.id+'\')">⬇ Shkarko</button></div>';
+      }).join('');
+    }
+    if(inn.length){
+      h+='<div style="font-size:12px;font-weight:700;margin:14px 0 6px">Faturat e furnitorëve (hyrëse)</div>';
+      h+=inn.map(function(r){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border)">'
+          +'<div style="font-size:12px">📄 '+(r.supplier||'')+' <span style="color:var(--text3)">'+(r.project?'· '+r.project:'')+'</span></div>'
+          +'<button class="btn btn-sm" onclick="atkDownloadDoc(\''+r.id+'\')">⬇ Shkarko</button></div>';
+      }).join('');
+    }
+    el.innerHTML=h;
+  }).catch(function(e){ el.innerHTML='<div style="color:var(--red-text);font-size:12px">Gabim: '+(e&&e.message||e)+'</div>'; });
+}
+function atkDownloadDoc(id){
+  var r=(window._atkDocsList||[]).find(function(x){return String(x.id)===String(id);});
+  if(!r){alert('Skedari s\'u gjet.');return;}
+  viewOrDownloadFile(r.file_name, r.file_type, r.file_base64);
 }
 function finSwitchTab(tab){
   document.getElementById('fin-view-tax').style.display = tab==='tax' ? '' : 'none';

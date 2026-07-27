@@ -44,6 +44,7 @@ var TAX_TYPES=[
 // ── HUB-I I FINANCAVE ──────────────────────────────────────
 var FIN_TILES=[
   {id:'inv',   n:'Faturat',              d:'Të gjitha faturat me statuse pagese', c:'#185FA5', ic:'🧾'},
+  {id:'supp',  n:'Faturat e Furnitorëve',d:'Regjistrimi dhe krahasimi me furnitorët', c:'#8D6E63', ic:'📥'},
   {id:'exp',   n:'Shpenzimet operative', d:'Rryma, uji, nafta, qiraja, shërbimet', c:'#A65F2E', ic:'📊'},
   {id:'atk',   n:'Tatimet (ATK)',        d:'TVSH, fitimi, pagat, kontributet',    c:'#0F6E56', ic:'🏛️'},
   {id:'tax',   n:'Përmbledhja Tatimore', d:'Vlerësim orientues i detyrimeve',     c:'#2E7D32', ic:'📈'},
@@ -56,7 +57,7 @@ window.finShowHub=function(){
   var hub=document.getElementById('fin-hub'), tabs=document.getElementById('fin-tabs');
   if(hub) hub.style.display='';
   if(tabs) tabs.style.display='none';
-  ['inv','exp','atk','tax','aging','bg','oc'].forEach(function(v){
+  ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(v){
     var el=document.getElementById('fin-view-'+v); if(el) el.style.display='none';
   });
   var g=document.getElementById('fin-hub-grid'); if(!g) return;
@@ -410,10 +411,16 @@ window.finSwitchTab=function(tab){
   var hub=document.getElementById('fin-hub'), tabs=document.getElementById('fin-tabs');
   if(hub) hub.style.display='none';
   if(tabs) tabs.style.display='flex';
-  ['inv','exp','atk','tax','aging','bg','oc'].forEach(function(v){
+  ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(v){
     var el=document.getElementById('fin-view-'+v); if(el) el.style.display=(v===tab)?'':'none';
   });
+  var suppTab=document.getElementById('fin-tab-supp'); if(suppTab) suppTab.className='btn btn-sm'+(tab==='supp'?' btn-primary':'');
   if(tab==='inv') loadAllInvoices();
+  else if(tab==='supp'){
+    if(typeof loadInvoicesIn==='function') loadInvoicesIn();
+    if(typeof loadProjectOptionsForInvoices==='function') loadProjectOptionsForInvoices();
+    var dl=document.getElementById('ivin-sup-list'); if(dl && typeof defaultSuppliers!=='undefined') dl.innerHTML=defaultSuppliers.map(function(s){return '<option value="'+s.name+'">';}).join('');
+  }
   else if(tab==='exp') loadExpenses();
   else if(tab==='atk') loadTaxObligations();
   else if(typeof _origFinSwitch==='function'){
