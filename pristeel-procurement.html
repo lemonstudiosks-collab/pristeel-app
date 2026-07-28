@@ -352,20 +352,20 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
 /* ── ODOO-STYLE MODULE SYSTEM ── */
-.home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:900px;margin:0 auto}
-@media(max-width:900px){.home-grid{grid-template-columns:repeat(2,1fr)}}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;max-width:1120px;margin:0 auto}
+@media(max-width:900px){.home-grid{grid-template-columns:repeat(3,1fr)}}
 .flow-step{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text3);cursor:pointer;padding:5px 10px;border-radius:7px;white-space:nowrap;transition:background .15s}
 .flow-step:hover{background:var(--bg2)}
 .flow-step.on{color:var(--text);background:var(--bronze-bg)}
 .flow-step .fn{width:22px;height:22px;border-radius:50%;background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .flow-step.on .fn{background:var(--bronze);color:#fff}
 .flow-arrow{color:var(--border2);font-size:12px;flex-shrink:0}
-.mod-tile{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .16s ease}
+.mod-tile{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;transition:all .16s ease}
 .mod-tile:hover{box-shadow:var(--sh-2);border-color:var(--border2);transform:translateY(-2px)}
-.mod-ic{width:46px;height:46px;border-radius:13px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center}
-.mod-ic svg{width:29px;height:29px;fill:none;stroke-width:1.8}
-.mod-name{font-size:14px;font-weight:600;color:var(--text)}
-.mod-stat{font-size:11px;color:var(--text3);margin-top:4px;min-height:14px}
+.mod-ic{width:34px;height:34px;border-radius:10px;margin:0 auto 5px;display:flex;align-items:center;justify-content:center}
+.mod-ic svg{width:21px;height:21px;fill:none;stroke-width:1.8}
+.mod-name{font-size:11.5px;font-weight:600;color:var(--text)}
+.mod-stat{font-size:9px;color:var(--text3);margin-top:2px;min-height:11px;line-height:1.3}
 .side-mod-hd{display:flex;align-items:center;gap:8px;padding:12px 16px 8px;font-size:12px;font-weight:700}
 .side-mod-hd svg{width:15px;height:15px;fill:none;stroke-width:2}
 .side-home-lnk{display:flex;align-items:center;gap:7px;padding:8px 16px;font-size:11px;color:var(--text3);cursor:pointer}
@@ -573,10 +573,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div id="flow-bar" style="display:none"></div>
 
 <div id="page-home" class="page active">
-  <div id="home-greet" style="text-align:center;font-size:12px;color:var(--text3);margin:8px 0 10px"></div>
-  <div id="home-clocks" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"></div>
+  <div id="home-greet" style="text-align:center;font-size:11.5px;color:var(--text3);margin:4px 0 7px"></div>
+  <div id="home-clocks" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
   <div id="home-grid" class="home-grid"></div>
-  <div id="home-pulse" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px"></div>
+  <div id="home-pulse" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:9px"></div>
 
   <!-- Radio + loja: hequr nga qendra e faqes; jetojne ne panelin e vogel me ikona ne qoshe (poshte-djathtas) -->
   <div id="util-fab" style="position:fixed;right:18px;bottom:18px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
@@ -621,7 +621,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </button>
   </div>
 
-  <div id="home-quote" style="text-align:center;margin-top:12px;font-size:12px"></div>
+  <div id="home-quote" style="text-align:center;margin-top:6px;font-size:11px"></div>
   <div id="hangar-source-wrap" style="display:none;max-width:1040px;margin:12px auto 0;padding:0 20px">
     <div style="text-align:center;font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px">HANGAR INDUSTRIAL ÇELIKU — profile, nyje (ankera·bulona·fllanxha) &amp; finishe (zink·ngjyrë·zjarr) — kalo me maus</div>
     <div style="display:flex;gap:20px;align-items:flex-start">
@@ -3584,10 +3584,10 @@ function renderHome(){
   if(g) g.textContent=dt.charAt(0).toUpperCase()+dt.slice(1);
   var ck=document.getElementById('home-clocks');
   if(ck) ck.innerHTML=HOME_CITIES.map(function(c,i){
-    return '<div style="text-align:center;background:#fff;border:1px solid var(--border);border-radius:9px;padding:8px 16px;min-width:104px">'
-      +'<div style="font-size:15px;font-weight:650" id="hc-time-'+i+'">--:--</div>'
-      +'<div style="font-size:10px;color:var(--text3)">'+c.n+'<span id="hc-work-'+i+'"></span></div>'
-      +'<div style="font-size:10.5px;color:var(--text2);margin-top:2px" id="hc-wx-'+i+'">…</div>'
+    return '<div style="text-align:center;background:#fff;border:1px solid var(--border);border-radius:9px;padding:5px 12px;min-width:88px">'
+      +'<div style="font-size:13px;font-weight:650" id="hc-time-'+i+'">--:--</div>'
+      +'<div style="font-size:9px;color:var(--text3)">'+c.n+'<span id="hc-work-'+i+'"></span></div>'
+      +'<div style="font-size:9.5px;color:var(--text2);margin-top:1px" id="hc-wx-'+i+'">…</div>'
     +'</div>';
   }).join('');
   homeTickClocks();
@@ -3622,13 +3622,13 @@ function renderHome(){
     {label:'Sales',    email:'sales@prissteel.com',           color:'#A65F2E'}
   ].map(function(o){
     return '<a href="https://mail.google.com/mail/u/?authuser='+encodeURIComponent(o.email)+'" target="_blank" title="Hap inbox-in e '+o.email+'"'
-      +' style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 18px;min-width:150px;text-decoration:none;cursor:pointer;transition:box-shadow .13s"'
+      +' style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:6px 14px;min-width:130px;text-decoration:none;cursor:pointer;transition:box-shadow .13s"'
       +' onmouseover="this.style.boxShadow=\'0 4px 14px rgba(20,25,30,.12)\'" onmouseout="this.style.boxShadow=\'none\'">'
-      +'<span style="width:32px;height:32px;border-radius:8px;background:'+o.color+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-        +'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>'
+      +'<span style="width:26px;height:26px;border-radius:7px;background:'+o.color+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>'
       +'</span>'
-      +'<div style="text-align:left"><div style="font-size:13px;font-weight:650;color:var(--text)">'+o.label+'</div>'
-      +'<div style="font-size:9.5px;color:var(--text3)">'+o.email+'</div></div>'
+      +'<div style="text-align:left"><div style="font-size:11.5px;font-weight:650;color:var(--text)">'+o.label+'</div>'
+      +'<div style="font-size:8.5px;color:var(--text3)">'+o.email+'</div></div>'
     +'</a>';
   }).join('');
   var today=new Date().toISOString().slice(0,10);
