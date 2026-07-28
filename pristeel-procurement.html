@@ -245,6 +245,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--bronze);box-shadow:0 
 /* PAGES */
 .page{display:none}
 .page.active{display:block}
+#page-home.active{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 120px)}
 /* CARDS */
 .card{background:var(--bg-card);border:none;border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(26,26,25,.07),0 1px 2px rgba(26,26,25,.05);transition:box-shadow .18s ease}
 .card:hover{box-shadow:0 3px 8px rgba(26,26,25,.10),0 1px 3px rgba(26,26,25,.06)}
@@ -566,7 +567,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div class="content">
 <div id="flow-bar" style="display:none"></div>
 
-<div id="page-home" class="page active" style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 120px)">
+<div id="page-home" class="page active">
   <div style="display:flex;flex-direction:column;align-items:center;gap:22px">
     <div id="home-clocks" style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap"></div>
     <div id="home-grid" class="home-grid"></div>
