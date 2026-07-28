@@ -575,6 +575,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div id="page-home" class="page active">
   <div id="home-greet" style="text-align:center;font-size:11.5px;color:var(--text3);margin:4px 0 7px"></div>
   <div id="home-clocks" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:8px"></div>
+  <div id="home-kpi" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;max-width:1120px;margin:0 auto 10px"></div>
   <div id="home-grid" class="home-grid"></div>
   <div id="home-pulse" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:9px"></div>
 
@@ -3577,8 +3578,52 @@ function homeLoadWeather(){
       }
     }).catch(function(){});
 }
+// ══════════ KPI + TREGU — rreshti mes ores dhe app-launcher-it (si Odoo/HubSpot dashboard) ══════════
+function homeKpiCard(icon,color,label,valueId,sub){
+  return '<div style="background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(26,26,25,.07);padding:12px 14px;display:flex;align-items:center;gap:11px">'
+    +'<div style="width:38px;height:38px;border-radius:10px;background:'+color+'1a;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">'+icon+'</div>'
+    +'<div style="min-width:0"><div style="font-size:19px;font-weight:700;color:var(--text)" id="'+valueId+'">…</div>'
+    +'<div style="font-size:10px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+(sub?' · '+sub:'')+'</div></div>'
+  +'</div>';
+}
+function renderHomeKpi(){
+  var el=document.getElementById('home-kpi'); if(!el) return;
+  el.innerHTML =
+    homeKpiCard('📋','#993C1D','Detyra sot','kpi-tasks')
+    +homeKpiCard('📁','#0F6E56','Projekte aktive','kpi-projects')
+    +homeKpiCard('📤','#993C1D','Follow-up sot/vonuar','kpi-outreach')
+    +homeKpiCard('📧','#0C447C','Email për analizë','kpi-inbox')
+    +homeKpiCard('🧾','#A65F2E','Faturat pa pagesë','kpi-invoices')
+    +homeKpiCard('🏦','#6B4E9E','Garanci ≤30 ditë','kpi-bg')
+    +homeKpiCard('$','#0F6E56','EUR / USD','kpi-fx')
+    +homeKpiCard('📊','#A65F2E','HRC ~çmimi bazë','kpi-hrc','€/t');
+  var today=new Date().toISOString().slice(0,10);
+  var in30=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+  function setKpi(id,val,warn){ var e=document.getElementById(id); if(!e) return; e.textContent=val; if(warn) e.style.color='#993C1D'; }
+  try{
+    supaFetch('tasks?status=eq.hapur&due_date=lte.'+today+'&select=id').then(function(r){ setKpi('kpi-tasks', r?r.length:0, r&&r.length); }).catch(function(){setKpi('kpi-tasks','—');});
+    supaFetch('projects?select=id').then(function(r){ setKpi('kpi-projects', r?r.length:0); }).catch(function(){setKpi('kpi-projects','—');});
+    supaFetch('outreach_contacts?status=eq.Sent&follow_up_date=lte.'+today+'&select=id').then(function(r){ setKpi('kpi-outreach', r?r.length:0, r&&r.length); }).catch(function(){setKpi('kpi-outreach','—');});
+    supaFetch('offers_inbox?processed=eq.false&select=id').then(function(r){ setKpi('kpi-inbox', r?r.length:0); }).catch(function(){setKpi('kpi-inbox','—');});
+    supaFetch('invoices_out?paid=eq.false&select=id').then(function(r){ setKpi('kpi-invoices', r?r.length:0, r&&r.length); }).catch(function(){setKpi('kpi-invoices','—');});
+    supaFetch('bank_guarantees?status=eq.aktive&expiry_date=lte.'+in30+'&select=id').then(function(r){ setKpi('kpi-bg', r?r.length:0, r&&r.length); }).catch(function(){setKpi('kpi-bg','—');});
+  }catch(e){}
+  fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD').then(function(r){return r.json();}).then(function(d){
+    var rate=d&&d.rates&&d.rates.USD; if(rate) setKpi('kpi-fx', rate.toFixed(4));
+  }).catch(function(){
+    fetch('https://open.er-api.com/v6/latest/EUR').then(function(r){return r.json();}).then(function(d){
+      var rate=d&&d.rates&&d.rates.USD; if(rate) setKpi('kpi-fx', rate.toFixed(4)); else setKpi('kpi-fx','—');
+    }).catch(function(){ setKpi('kpi-fx','—'); });
+  });
+  try{
+    var sp=steelPrices();
+    var hrc=sp.find(function(x){return x.k==='hrc';});
+    setKpi('kpi-hrc', hrc? ('~'+hrc.v+' €/t') : '~620 €/t');
+  }catch(e){ setKpi('kpi-hrc','~620 €/t'); }
+}
 function renderHome(){
   var el=document.getElementById('home-grid'); if(!el) return;
+  renderHomeKpi();
   var g=document.getElementById('home-greet');
   var dt=new Date().toLocaleDateString('sq-AL',{weekday:'long',day:'numeric',month:'long'});
   if(g) g.textContent=dt.charAt(0).toUpperCase()+dt.slice(1);
