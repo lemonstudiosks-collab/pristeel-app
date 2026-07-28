@@ -361,7 +361,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
 /* ── ODOO-STYLE MODULE SYSTEM ── */
-.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;max-width:1120px;margin:0 auto}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;max-width:1200px;margin:0 auto}
 @media(max-width:900px){.home-grid{grid-template-columns:repeat(3,1fr)}}
 .flow-step{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text3);cursor:pointer;padding:5px 10px;border-radius:7px;white-space:nowrap;transition:background .15s}
 .flow-step:hover{background:var(--bg2)}
@@ -369,12 +369,12 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 .flow-step .fn{width:22px;height:22px;border-radius:50%;background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .flow-step.on .fn{background:var(--bronze);color:#fff}
 .flow-arrow{color:var(--border2);font-size:12px;flex-shrink:0}
-.mod-tile{background:#fff;border:none;box-shadow:0 1px 3px rgba(26,26,25,.07);border-radius:14px;padding:15px 10px;text-align:center;cursor:pointer;transition:all .16s ease}
-.mod-tile:hover{box-shadow:var(--sh-2);border-color:var(--border2);transform:translateY(-2px)}
-.mod-ic{width:42px;height:42px;border-radius:12px;margin:0 auto 7px;display:flex;align-items:center;justify-content:center}
-.mod-ic svg{width:26px;height:26px;fill:none;stroke-width:1.8}
-.mod-name{font-size:13px;font-weight:600;color:var(--text)}
-.mod-stat{font-size:10px;color:var(--text3);margin-top:3px;min-height:13px;line-height:1.3}
+.mod-tile{background:#fff;border:none;box-shadow:0 1px 4px rgba(26,26,25,.08);border-radius:16px;padding:26px 16px;text-align:center;cursor:pointer;transition:all .16s ease}
+.mod-tile:hover{box-shadow:var(--sh-2);border-color:var(--border2);transform:translateY(-3px)}
+.mod-ic{width:56px;height:56px;border-radius:15px;margin:0 auto 11px;display:flex;align-items:center;justify-content:center}
+.mod-ic svg{width:32px;height:32px;fill:none;stroke-width:1.7}
+.mod-name{font-size:15px;font-weight:650;color:var(--text)}
+.mod-stat{font-size:11px;color:var(--text3);margin-top:4px;min-height:14px;line-height:1.3}
 .side-mod-hd{display:flex;align-items:center;gap:8px;padding:12px 16px 8px;font-size:12px;font-weight:700}
 .side-mod-hd svg{width:15px;height:15px;fill:none;stroke-width:2}
 .side-home-lnk{display:flex;align-items:center;gap:7px;padding:8px 16px;font-size:11px;color:var(--text3);cursor:pointer}
@@ -566,12 +566,8 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
 <div class="content">
 <div id="flow-bar" style="display:none"></div>
 
-<div id="page-home" class="page active">
-  <div id="home-greet" style="text-align:center;font-size:11.5px;color:var(--text3);margin:4px 0 7px"></div>
-  <div id="home-clocks" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+<div id="page-home" class="page active" style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 120px)">
   <div id="home-grid" class="home-grid"></div>
-  <div id="home-kpi" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;max-width:1120px;margin:10px auto 0"></div>
-  <div id="home-pulse" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:9px"></div>
 
   <!-- Radio + loja: hequr nga qendra e faqes; jetojne ne panelin e vogel me ikona ne qoshe (poshte-djathtas) -->
   <div id="util-fab" style="position:fixed;right:18px;bottom:18px;z-index:500;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
@@ -633,7 +629,6 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </button>
   </div>
 
-  <div id="home-quote" style="text-align:center;margin-top:6px;font-size:11px"></div>
   <div id="hangar-source-wrap" style="display:none;max-width:1040px;margin:12px auto 0;padding:0 20px">
     <div style="text-align:center;font-size:10px;letter-spacing:3px;color:var(--text3);margin-bottom:6px">HANGAR INDUSTRIAL ÇELIKU — profile, nyje (ankera·bulona·fllanxha) &amp; finishe (zink·ngjyrë·zjarr) — kalo me maus</div>
     <div style="display:flex;gap:20px;align-items:flex-start">
@@ -1821,6 +1816,10 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <span style="font-size:17px;line-height:1">🏗️</span>
       <span class="rail-lbl">Profilet</span>
     </div>
+    <div class="rail-ic" onclick="railOpen('market')" title="Tregu — kursi dhe çmimet e çelikut">
+      <span style="font-size:17px;line-height:1">💹</span>
+      <span class="rail-lbl">Tregu</span>
+    </div>
   </div>
   <div class="rail-panel" id="rail-panel">
     <div class="rail-hd">
@@ -1831,6 +1830,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
       <div class="rail-tab" id="rail-tab-context" onclick="railTab('context')">Projekti / Alarmet</div>
       <div class="rail-tab" id="rail-tab-claude" onclick="railTab('claude')">Claude</div>
       <div class="rail-tab" id="rail-tab-profiles" onclick="railTab('profiles')">🏗️</div>
+      <div class="rail-tab" id="rail-tab-market" onclick="railTab('market')">💹</div>
     </div>
     <div class="rail-body" id="rail-body"></div>
   </div>
@@ -1901,9 +1901,11 @@ function railTab(tab){
   document.getElementById('rail-tab-context').className='rail-tab'+(tab==='context'?' on':'');
   document.getElementById('rail-tab-claude').className='rail-tab'+(tab==='claude'?' on':'');
   var pt=document.getElementById('rail-tab-profiles'); if(pt) pt.className='rail-tab'+(tab==='profiles'?' on':'');
-  document.getElementById('rail-title').textContent = tab==='claude'?'Bisedë me Claude':(tab==='profiles'?'Profilet e Çelikut':'Projekti / Alarmet');
+  var mt=document.getElementById('rail-tab-market'); if(mt) mt.className='rail-tab'+(tab==='market'?' on':'');
+  document.getElementById('rail-title').textContent = tab==='claude'?'Bisedë me Claude':(tab==='profiles'?'Profilet e Çelikut':(tab==='market'?'Tregu':'Projekti / Alarmet'));
   if(tab==='context') renderRailContext();
   else if(tab==='profiles') renderRailProfiles();
+  else if(tab==='market') renderRailMarket();
   else renderRailClaude();
 }
 function renderRailContext(){
@@ -2923,6 +2925,39 @@ function hideHangarFloatPopup(){
   },180);
 }
 var _railHangarCloned=false;
+// ══════════ TREGU — kursi EUR/USD + çmimet e çelikut (kolona e djathtë) ══════════
+function renderRailMarket(){
+  var body=document.getElementById('rail-body');
+  if(!body) return;
+  body.innerHTML='<div id="rail-fx" style="margin-bottom:10px"></div><div id="rail-steel"></div>';
+  var fxEl=document.getElementById('rail-fx');
+  fxEl.innerHTML='<div style="background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(26,26,25,.07);padding:14px">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:2px">'
+    +'<span style="width:32px;height:32px;border-radius:9px;background:#0F6E561a;display:flex;align-items:center;justify-content:center;font-size:16px">$</span>'
+    +'<div><div style="font-size:20px;font-weight:700;color:var(--text)" id="rail-fx-val">…</div>'
+    +'<div style="font-size:10px;color:var(--text3)">EUR / USD</div></div></div></div>';
+  fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD').then(function(r){return r.json();}).then(function(d){
+    var rate=d&&d.rates&&d.rates.USD;
+    var e=document.getElementById('rail-fx-val'); if(e) e.textContent=rate?rate.toFixed(4):'—';
+  }).catch(function(){
+    fetch('https://open.er-api.com/v6/latest/EUR').then(function(r){return r.json();}).then(function(d){
+      var rate=d&&d.rates&&d.rates.USD;
+      var e=document.getElementById('rail-fx-val'); if(e) e.textContent=rate?rate.toFixed(4):'—';
+    }).catch(function(){ var e=document.getElementById('rail-fx-val'); if(e) e.textContent='offline'; });
+  });
+  var steelEl=document.getElementById('rail-steel');
+  var prices=steelPrices();
+  steelEl.innerHTML='<div style="background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(26,26,25,.07);padding:14px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.3px">Çmime orientuese · €/tonë</div>'
+      +'<span onclick="editSteelPrices();renderRailMarket();" title="Përditëso çmimet" style="cursor:pointer;padding:3px;border-radius:5px;font-size:13px">✏️</span>'
+    +'</div>'
+    +prices.map(function(p){
+      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px">'
+        +'<span style="color:var(--text2)">'+p.n+'</span><span style="font-weight:700">~'+p.v+' €/t</span></div>';
+    }).join('')
+  +'</div>';
+}
 function renderRailProfiles(){
   var body=document.getElementById('rail-body');
   if(!body) return;
