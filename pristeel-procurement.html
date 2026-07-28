@@ -2314,10 +2314,28 @@ function spLoadFx(){
   var el=document.getElementById('sp-fx'); if(!el) return;
   var ic='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
   el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD','…','Duke ngarkuar…');
-  fetch('https://api.frankfurter.app/latest?from=EUR&to=USD').then(function(r){return r.json();}).then(function(d){
+  function ok(rate,src){ el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD',rate?rate.toFixed(4):'—',rate?('1 € = '+rate.toFixed(4)+' $'):'i padisponueshëm'); }
+  function fail(){ el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD','—','offline'); }
+  // Burimi 1 (kryesor): frankfurter.dev — vazhdimi aktual i frankfurter.app
+  fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD').then(function(r){return r.json();}).then(function(d){
     var rate=d&&d.rates&&d.rates.USD;
-    el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD',rate?rate.toFixed(4):'—',rate?('1 € = '+rate.toFixed(4)+' $'):'i padisponueshëm');
-  }).catch(function(){ el.innerHTML=spBox(ic,'#0F6E561a','EUR / USD','—','offline'); });
+    if(!rate) throw new Error('no rate');
+    ok(rate,'frankfurter.dev');
+  }).catch(function(){
+    // Burimi 2 (fallback): open.er-api.com — pa çelës, falas
+    fetch('https://open.er-api.com/v6/latest/EUR').then(function(r){return r.json();}).then(function(d){
+      var rate=d&&d.rates&&d.rates.USD;
+      if(!rate) throw new Error('no rate');
+      ok(rate,'open.er-api.com');
+    }).catch(function(){
+      // Burimi 3 (fallback i fundit): domeni i vjetër frankfurter.app
+      fetch('https://api.frankfurter.app/latest?from=EUR&to=USD').then(function(r){return r.json();}).then(function(d){
+        var rate=d&&d.rates&&d.rates.USD;
+        if(!rate) throw new Error('no rate');
+        ok(rate,'frankfurter.app');
+      }).catch(fail);
+    });
+  });
 }
 function steelPrices(){
   var def=[
