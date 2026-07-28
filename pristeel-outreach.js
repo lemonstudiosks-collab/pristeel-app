@@ -30,13 +30,23 @@ function renderOutreachStats(){
   var by=function(s){return _outreach.filter(function(c){return c.status===s;}).length;};
   var today=new Date().toISOString().slice(0,10);
   var overdue=_outreach.filter(function(c){return c.follow_up_date && c.follow_up_date<=today && c.status==='Sent';}).length;
-  var cells=[['Gjithsej',total],['Sent',by('Sent')],['Replied',by('Replied')],['Meeting',by('Meeting')],['Bounced',by('Bounced')],['Follow-up i kaluar',overdue]];
+  var cells=[['Gjithsej',total,'all'],['Sent',by('Sent'),'Sent'],['Replied',by('Replied'),'Replied'],['Meeting',by('Meeting'),'Meeting'],['Bounced',by('Bounced'),'Bounced'],['Follow-up i kaluar',overdue,'__overdue']];
   el.innerHTML=cells.map(function(c,i){
-    return '<div style="flex:1;min-width:90px;padding:12px 14px;'+(i?'border-left:1px solid var(--border)':'')+'">'
+    return '<div onclick="ocStatClick(\''+c[2]+'\')" style="flex:1;min-width:90px;padding:12px 14px;cursor:pointer;'+(i?'border-left:1px solid var(--border)':'')+'" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'transparent\'">'
       +'<div style="font-size:19px;font-weight:680;color:'+(c[0]==='Follow-up i kaluar'&&c[1]>0?'#B23B3B':'var(--text)')+';letter-spacing:-.3px">'+c[1]+'</div>'
       +'<div style="font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);font-weight:600;margin-top:2px">'+c[0]+'</div>'
     +'</div>';
   }).join('');
+}
+function ocStatClick(val){
+  var cb=document.getElementById('oc-overdue-only');
+  if(val==='__overdue'){
+    if(cb) cb.checked=true;
+    ocFilter('all');
+  } else {
+    if(cb) cb.checked=false;
+    ocFilter(val);
+  }
 }
 function renderOutreach(){
   var el=document.getElementById('outreach-list'); if(!el) return;
