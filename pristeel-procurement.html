@@ -2841,8 +2841,56 @@ function openSupplierModal(partnerId){
   bg.innerHTML='<div class="pst-modal" style="max-width:820px"><div class="pst-modal-hd"><div><div style="font-size:14px;font-weight:650">Furnitori</div></div><span class="pst-modal-x" onclick="closeSupplierModal()">✕</span></div>'
     +'<div class="pst-modal-bd" style="display:grid;grid-template-columns:1fr 1fr;gap:22px">'
     +'<div>'+infoHtml+'</div><div>'+mailHtml+'</div>'
-    +'</div></div>';
+    +'</div>'
+    +'<div class="pst-modal-bd" style="padding-top:0">'+partnerFileBoxHtml(p.id)+'</div>'
+    +'</div>';
   document.body.appendChild(bg);
+  loadPartnerFiles(p.id);
+}
+// ── KUTIA E SKEDARËVE PËR ÇDO FURNITOR/PRODHUES (Drejtoria e Furnitorëve) ──
+function partnerFileBoxHtml(partnerId){
+  return '<div class="card" id="pfb-partner-'+partnerId+'" style="margin-top:4px">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+      +'<span style="width:26px;height:26px;border-radius:7px;background:#6B4E9E1a;display:flex;align-items:center;justify-content:center">'
+        +'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#6B4E9E" stroke-width="2"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"/></svg></span>'
+      +'<div><div style="font-size:12.5px;font-weight:700;color:var(--text)">Skedarët e këtij furnitori</div>'
+      +'<div style="font-size:10px;color:var(--text3)">Certifikata, katalogë, oferta, korrespondencë — për këtë furnitor specifikisht</div></div></div>'
+    +'<label style="display:block;border:1.5px dashed var(--border);border-radius:9px;padding:12px;text-align:center;cursor:pointer;font-size:11.5px;color:var(--text3)" '
+      +'onmouseover="this.style.borderColor=\'#6B4E9E\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
+      +'<input type="file" multiple style="display:none" onchange="handlePartnerFiles(this.files,\''+partnerId+'\')">'
+      +'Tërhiq ose kliko për të ngarkuar skedarë</label>'
+    +'<div id="pfb-partner-list-'+partnerId+'" style="margin-top:10px"></div>'
+  +'</div>';
+}
+async function handlePartnerFiles(files, partnerId){
+  if(!files||!files.length) return;
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    try{
+      var b64=await fileToBase64(f);
+      await supaFetch('files','POST',{file_name:f.name,file_type:f.type||'application/octet-stream',file_base64:b64,size_kb:Math.round(f.size/1024),partner_id:partnerId,page_context:'partner'});
+    }catch(e){ alert('Gabim me "'+f.name+'" (a ekziston kolona partner_id te files?): '+e.message); return; }
+  }
+  loadPartnerFiles(partnerId);
+}
+function loadPartnerFiles(partnerId){
+  var el=document.getElementById('pfb-partner-list-'+partnerId); if(!el) return;
+  el.innerHTML='<div style="font-size:10.5px;color:var(--text3)">Duke ngarkuar…</div>';
+  supaFetch('files?select=id,file_name,file_type,size_kb&partner_id=eq.'+partnerId+'&order=created_at.desc').then(function(rows){
+    rows=rows||[];
+    if(!rows.length){ el.innerHTML='<div style="font-size:10.5px;color:var(--text3)">Ende asnjë skedar për këtë furnitor.</div>'; return; }
+    el.innerHTML=rows.map(function(r){
+      var icon=(typeof fileTypeIcon==='function')?fileTypeIcon(r.file_name||'',r.file_type||''):'📎';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'
+        +'<span onclick="downloadLibFile(\''+r.id+'\',\''+(r.file_name||'').replace(/'/g,"")+'\',\''+(r.file_type||'')+'\')" style="cursor:pointer;font-size:11.5px;display:flex;align-items:center;gap:7px;min-width:0"><span>'+icon+'</span><span>'+(r.file_name||'')+'</span> <span style="color:var(--text3);font-size:10px">'+(r.size_kb?r.size_kb+' KB':'')+'</span></span>'
+        +'<span onclick="deletePartnerFile(\''+r.id+'\',\''+partnerId+'\')" title="Fshij" style="cursor:pointer;color:var(--text3);font-size:14px;flex-shrink:0;margin-left:8px">&times;</span>'
+        +'</div>';
+    }).join('');
+  }).catch(function(e){ el.innerHTML='<div style="font-size:10.5px;color:var(--text3)">Gabim: '+e.message+'</div>'; });
+}
+function deletePartnerFile(id,partnerId){
+  if(!confirm('Fshij këtë skedar?')) return;
+  supaFetch('files?id=eq.'+id,'DELETE').then(function(){ loadPartnerFiles(partnerId); }).catch(function(e){ alert('Gabim: '+e.message); });
 }
 // Kalon te përgatitja e ofertës komerciale, duke bartur të dhënat e projektit aktual
 function goToClientOffer(){
