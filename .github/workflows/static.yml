@@ -22,8 +22,59 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Kontrollo sintaksen e skedareve .js
+        run: |
+          set -e
+          for f in *.js; do
+            echo "Kontrollo $f"
+            node --check "$f"
+          done
+      - name: Kontrollo sintaksen e <script> inline ne pristeel-procurement.html
+        run: |
+          python3 - <<'EOF'
+          import re, subprocess, sys
+          with open('pristeel-procurement.html', encoding='utf-8') as f:
+              content = f.read()
+          scripts = re.findall(r'<script>(.*?)</script>', content, re.DOTALL)
+          ok = True
+          for i, s in enumerate(scripts):
+              path = f'/tmp/inline_{i}.js'
+              with open(path, 'w', encoding='utf-8') as f:
+                  f.write(s)
+              r = subprocess.run(['node', '--check', path], capture_output=True, text=True)
+              if r.returncode != 0:
+                  print(f'GABIM ne bllokun inline #{i}:')
+                  print(r.stderr)
+                  ok = False
+          if not ok:
+              sys.exit(1)
+          print(f'Te {len(scripts)} blloqet inline OK')
+          EOF
+      - name: Kontrollo balancen e <div>
+        run: |
+          python3 - <<'EOF'
+          import re, sys
+          with open('pristeel-procurement.html', encoding='utf-8') as f:
+              html = f.read()
+          o = len(re.findall(r'<div\b', html))
+          c = len(re.findall(r'</div>', html))
+          print(f'div open={o} close={c}')
+          if o != c:
+              print('GABIM: <div> te pabalancuara!')
+              sys.exit(1)
+          EOF
+
   deploy:
+    needs: syntax-check
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
