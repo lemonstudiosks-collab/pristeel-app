@@ -1282,7 +1282,7 @@ table.tbl td input:focus,table.tbl td select:focus{border-color:var(--bronze);ba
     </div>
     <div class="card"><div class="card-title">Pozicionet e faturës</div>
       <div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-sm" onclick="loadInvItemsFromBom()">Ngarko nga BOM</button><button class="btn btn-sm" onclick="addInvItem()">+ Shto rresht</button></div>
-      <div class="tbl-wrap"><table class="tbl" id="iv-items-tbl"><thead><tr><th>Përshkrimi</th><th style="width:70px">Copë</th><th style="width:90px">Kg total</th><th style="width:90px">Cmimi/kg</th><th style="width:100px">Shuma EUR</th><th style="width:36px"></th></tr></thead><tbody id="iv-items-body"></tbody></table></div>
+      <div class="tbl-wrap"><table class="tbl" id="iv-items-tbl"><thead><tr><th>Përshkrimi</th><th style="width:60px">Copë</th><th style="width:60px">L (mm)</th><th style="width:60px">W (mm)</th><th style="width:50px">T (mm)</th><th style="width:90px">Kg total</th><th style="width:90px">Cmimi/kg</th><th style="width:100px">Shuma EUR</th><th style="width:36px"></th></tr></thead><tbody id="iv-items-body"></tbody></table></div>
     </div>
     <div class="card"><div class="card-title">Kushtet</div>
       <div class="field-group fg-2"><div><label class="lbl">Incoterms</label><select id="iv-inc"><option>DAP</option><option>DDP</option><option>EXW</option></select></div><div><label class="lbl">Vendi i dorëzimit</label><input type="text" id="iv-loc" placeholder="Hamburg, DE"></div></div>
@@ -6115,11 +6115,29 @@ var OF_POS_LB={de:{hd:'Beschreibung',hm:'Menge',he:'Einheit',hup:'Einheitspreis'
 en:{hd:'Description',hm:'Qty',he:'Unit',hup:'Unit price',hgp:'Total price',mu:'Material overview (informative)'},
 sq:{hd:'Përshkrimi',hm:'Sasia',he:'Njësia',hup:'Çmimi/njësi',hgp:'Totali',mu:'Pasqyra e materialit (informative)'},
 sr:{hd:'Opis',hm:'Količina',he:'Jedinica',hup:'Jed. cena',hgp:'Ukupno',mu:'Pregled materijala (informativno)'}};
+// ── Llogaritja e peshës nga përmasat (llamarina/pllaka): Pcs × L(m) × W(m) × T(mm) × 7.85 kg/m²/mm ──
+var STEEL_KG_M2_MM=7.85; // densiteti standard i çelikut: 7.85 kg per m² per mm trashësi
+var MAX_STANDARD_L_MM=12500, MAX_STANDARD_W_MM=2500; // përmasat standarde maksimale të fabrikës (mbi këto = jo-standarde)
+function plateWeightKg(pcs,L,W,T){
+  pcs=parseFloat(pcs)||0; L=parseFloat(L)||0; W=parseFloat(W)||0; T=parseFloat(T)||0;
+  if(!pcs||!L||!W||!T) return 0;
+  return pcs*(L/1000)*(W/1000)*T*STEEL_KG_M2_MM;
+}
+function posIsOversize(p){ return (p.L&&p.L>MAX_STANDARD_L_MM) || (p.W&&p.W>MAX_STANDARD_W_MM); }
 function oferPosTotal(p){ return p.unit==='ls' ? (p.price||0) : (p.qty||0)*(p.price||0); }
 function oferPosSum(){ return +(oferPos.reduce(function(s,p){return s+oferPosTotal(p);},0)).toFixed(2); }
-function addOferPos(d){ oferPos.push(d||{desc:'',qty:0,unit:'kg',price:0}); renderOferPos(); }
+function addOferPos(d){ oferPos.push(d||{desc:'',qty:0,unit:'kg',price:0,pcs:'',L:'',W:'',T:''}); renderOferPos(); }
 function remOferPos(i){ oferPos.splice(i,1); renderOferPos(); }
-function updOferPos(i,f,v){ oferPos[i][f]=(f==='desc'||f==='unit')?v:(parseFloat(v)||0); if(f!=='desc') renderOferPos(); }
+function updOferPos(i,f,v){
+  var p=oferPos[i];
+  if(f==='desc'||f==='unit'){ p[f]=v; }
+  else if(f==='pcs'||f==='L'||f==='W'||f==='T'){
+    p[f]=parseFloat(v)||0;
+    var w=plateWeightKg(p.pcs,p.L,p.W,p.T);
+    if(w>0){ p.qty=+w.toFixed(2); p.unit='kg'; }
+  } else { p[f]=parseFloat(v)||0; }
+  renderOferPos();
+}
 function buildOferPosFromQuick(){
   var pr=parseFloat(document.getElementById('of-pr').value)||0;
   var kg=parseFloat(document.getElementById('of-kg').value)||0;
@@ -6136,20 +6154,29 @@ function buildOferPosFromQuick(){
 function renderOferPos(){
   var el=document.getElementById('of-pos-list'); if(!el) return;
   if(!oferPos.length){ el.innerHTML='Pa pozicione manuale — oferta ndërtohet nga çmimet lart (kg / zinktim / transport).'; return; }
-  el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px">'
-    +'<tr style="color:var(--text3)"><th style="text-align:left;padding:3px">Përshkrimi</th><th style="width:90px;padding:3px">Sasia</th><th style="width:90px;padding:3px">Njësia</th><th style="width:100px;padding:3px">Çmimi/njësi</th><th style="width:110px;text-align:right;padding:3px">Total</th><th style="width:26px"></th></tr>'
+  var anyOversize=oferPos.some(posIsOversize);
+  el.innerHTML=(anyOversize?'<div style="background:#FDECEC;border:1px solid #E0A0A0;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#8C2E2E;font-weight:600">⚠ Një ose më shumë pozicione e kalojnë përmasën standarde të fabrikës (12.5m gjatësi ose 2.5m gjerësi) — kontrollo a duhet çmim/transport special.</div>':'')
+  +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<tr style="color:var(--text3)"><th style="text-align:left;padding:3px">Përshkrimi</th><th style="width:52px;padding:3px" title="Copë">Cop.</th><th style="width:60px;padding:3px" title="Gjatësia mm">L (mm)</th><th style="width:60px;padding:3px" title="Gjerësia mm">W (mm)</th><th style="width:50px;padding:3px" title="Trashësia mm">T (mm)</th><th style="width:80px;padding:3px">Sasia (kg)</th><th style="width:56px;padding:3px">Njësia</th><th style="width:90px;padding:3px">Çmimi/njësi</th><th style="width:100px;text-align:right;padding:3px">Total</th><th style="width:24px"></th></tr>'
     +oferPos.map(function(p,i){
-      return '<tr>'
+      var oversize=posIsOversize(p);
+      var dimMode = (p.pcs||p.L||p.W||p.T);
+      return '<tr'+(oversize?' style="background:#FDECEC"':'')+'>'
         +'<td style="padding:3px"><input type="text" value="'+String(p.desc||'').replace(/"/g,'&quot;')+'" onchange="updOferPos('+i+',\'desc\',this.value)" style="width:100%"></td>'
-        +'<td style="padding:3px"><input type="number" step="0.01" value="'+(p.qty||'')+'" onchange="updOferPos('+i+',\'qty\',this.value)" style="width:100%"></td>'
+        +'<td style="padding:3px"><input type="number" step="1" value="'+(p.pcs||'')+'" onchange="updOferPos('+i+',\'pcs\',this.value)" style="width:100%" title="Numri i copëve"></td>'
+        +'<td style="padding:3px"><input type="number" step="1" value="'+(p.L||'')+'" onchange="updOferPos('+i+',\'L\',this.value)" style="width:100%'+(p.L>MAX_STANDARD_L_MM?';border-color:#C0392B;color:#C0392B;font-weight:700':'')+'" title="Gjatësia në mm"></td>'
+        +'<td style="padding:3px"><input type="number" step="1" value="'+(p.W||'')+'" onchange="updOferPos('+i+',\'W\',this.value)" style="width:100%'+(p.W>MAX_STANDARD_W_MM?';border-color:#C0392B;color:#C0392B;font-weight:700':'')+'" title="Gjerësia në mm"></td>'
+        +'<td style="padding:3px"><input type="number" step="0.1" value="'+(p.T||'')+'" onchange="updOferPos('+i+',\'T\',this.value)" style="width:100%" title="Trashësia në mm"></td>'
+        +'<td style="padding:3px"><input type="number" step="0.01" value="'+(p.qty||'')+'" onchange="updOferPos('+i+',\'qty\',this.value)" style="width:100%;'+(dimMode?'background:var(--bg2);font-weight:650':'')+'" title="'+(dimMode?'E llogaritur automatikisht nga përmasat — mund ta ndryshosh manualisht':'Sasia manuale')+'"></td>'
         +'<td style="padding:3px"><select onchange="updOferPos('+i+',\'unit\',this.value)" style="width:100%">'+Object.keys(OF_UNITS).map(function(u){return '<option value="'+u+'"'+(p.unit===u?' selected':'')+'>'+OF_UNITS[u].sq+'</option>';}).join('')+'</select></td>'
         +'<td style="padding:3px"><input type="number" step="0.001" value="'+(p.price||'')+'" onchange="updOferPos('+i+',\'price\',this.value)" style="width:100%"></td>'
         +'<td style="padding:3px;text-align:right;font-weight:600">'+oferPosTotal(p).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
         +'<td style="padding:3px"><button onclick="remOferPos('+i+')" style="background:none;border:none;color:var(--text3);cursor:pointer">×</button></td>'
       +'</tr>';
     }).join('')
-    +'<tr><td colspan="4" style="text-align:right;font-weight:700;padding:5px">Σ</td><td style="text-align:right;font-weight:700;padding:5px">'+oferPosSum().toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td><td></td></tr>'
-  +'</table>';
+    +'<tr><td colspan="8" style="text-align:right;font-weight:700;padding:5px">Σ</td><td style="text-align:right;font-weight:700;padding:5px">'+oferPosSum().toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR</td><td></td></tr>'
+  +'</table>'
+  +'<div style="font-size:10px;color:var(--text3);margin-top:4px">💡 Fut Copë + L + W + T (mm) → Sasia (kg) llogaritet vetë (formula standarde: 7.85 kg/m² për mm trashësie). Ose lëri bosh dhe fut Sasinë manualisht si më parë.</div>';
 }
 var PST_CAT_LABELS={
   de:{beam:'Träger (HE/IPE)',hollow:'Hohlprofile (QRO/RRO/CHS)',plate:'Bleche',angle:'Winkel',flat:'Flachstahl',other:'Sonstige Profile (U u.a.)'},
@@ -7287,25 +7314,40 @@ function selectProjectForInvoiceIn(id){
 function loadInvItemsFromBom(){
   if(bomRows.length===0){alert('BOM është bosh.');return;}
   invoiceItems=bomRows.map(function(r){
-    return{desc:r.profile+' '+r.dim+(r.grade?', '+r.grade:'')+(r.std?', '+r.std:''),pcs:r.pcs||0,kg:parseFloat(r.kg)||0,priceKg:0};
+    return{desc:r.profile+' '+r.dim+(r.grade?', '+r.grade:'')+(r.std?', '+r.std:''),pcs:r.pcs||0,kg:parseFloat(r.kg)||0,priceKg:0,L:0,W:0,T:0};
   });
   renderInvItems();
 }
-function addInvItem(){invoiceItems.push({desc:'',pcs:0,kg:0,priceKg:0});renderInvItems();}
+function addInvItem(){invoiceItems.push({desc:'',pcs:0,kg:0,priceKg:0,L:0,W:0,T:0});renderInvItems();}
 function remInvItem(i){invoiceItems.splice(i,1);renderInvItems();}
 function updInvItem(i,f,v){
-  invoiceItems[i][f] = (f==='desc') ? v : (parseFloat(v)||0);
+  var it=invoiceItems[i];
+  if(f==='desc'){ it.desc=v; }
+  else {
+    it[f]=parseFloat(v)||0;
+    if(f==='pcs'||f==='L'||f==='W'||f==='T'){
+      var w=plateWeightKg(it.pcs,it.L,it.W,it.T);
+      if(w>0) it.kg=+w.toFixed(2);
+    }
+  }
   renderInvItems();
 }
 function renderInvItems(){
   const tb=document.getElementById('iv-items-body');
   if(!tb)return;
-  tb.innerHTML=invoiceItems.map(function(it,i){
+  var anyOversize=invoiceItems.some(function(it){return (it.L&&it.L>MAX_STANDARD_L_MM)||(it.W&&it.W>MAX_STANDARD_W_MM);});
+  var warnRow=anyOversize?'<tr><td colspan="9" style="background:#FDECEC;color:#8C2E2E;font-weight:600;font-size:11.5px;padding:6px 8px">⚠ Përmasa mbi standard (12.5m gjatësi / 2.5m gjerësi) te një ose më shumë rreshta.</td></tr>':'';
+  tb.innerHTML=warnRow+invoiceItems.map(function(it,i){
     const amt=(it.kg*it.priceKg).toFixed(2);
-    return '<tr>'
+    var oversize=(it.L&&it.L>MAX_STANDARD_L_MM)||(it.W&&it.W>MAX_STANDARD_W_MM);
+    var dimMode=(it.L||it.W||it.T);
+    return '<tr'+(oversize?' style="background:#FDECEC"':'')+'>'
       +'<td><input type="text" value="'+(it.desc||'').replace(/"/g,'&quot;')+'" onchange="updInvItem('+i+',\'desc\',this.value)"></td>'
       +'<td><input type="number" value="'+it.pcs+'" onchange="updInvItem('+i+',\'pcs\',this.value)"></td>'
-      +'<td><input type="number" value="'+it.kg+'" onchange="updInvItem('+i+',\'kg\',this.value)"></td>'
+      +'<td><input type="number" value="'+(it.L||'')+'" onchange="updInvItem('+i+',\'L\',this.value)" style="'+(it.L>MAX_STANDARD_L_MM?'border-color:#C0392B;color:#C0392B;font-weight:700':'')+'"></td>'
+      +'<td><input type="number" value="'+(it.W||'')+'" onchange="updInvItem('+i+',\'W\',this.value)" style="'+(it.W>MAX_STANDARD_W_MM?'border-color:#C0392B;color:#C0392B;font-weight:700':'')+'"></td>'
+      +'<td><input type="number" step="0.1" value="'+(it.T||'')+'" onchange="updInvItem('+i+',\'T\',this.value)"></td>'
+      +'<td><input type="number" value="'+it.kg+'" onchange="updInvItem('+i+',\'kg\',this.value)" style="'+(dimMode?'background:var(--bg2);font-weight:650':'')+'"></td>'
       +'<td><input type="number" step="0.001" value="'+it.priceKg+'" onchange="updInvItem('+i+',\'priceKg\',this.value)"></td>'
       +'<td style="font-weight:600">'+amt+'</td>'
       +'<td><button class="btn btn-danger btn-sm" onclick="remInvItem('+i+')">✕</button></td>'
