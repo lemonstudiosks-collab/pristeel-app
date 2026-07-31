@@ -5,11 +5,24 @@ var _outreach=[], _ocStatus='all';
 async function loadOutreach(){
   var el=document.getElementById('outreach-list'); if(!el) return;
   el.innerHTML='<div class="hub-load">Duke ngarkuar…</div>';
+  // Pastro me force cdo vlere qe browser-i mund ta kete mbushur vete (autofill) —
+  // ndryshe filtri i fsheh te gjitha rreshtat dhe duket sikur faqja s'punon.
+  var sb=document.getElementById('oc-search'); if(sb) sb.value='';
+  var ob=document.getElementById('oc-overdue-only'); if(ob) ob.checked=false;
+  _ocStatus='all';
+  document.querySelectorAll('#oc-status-tabs .seg-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-k')==='all'); });
   try{
     _outreach=await supaFetch('outreach_contacts?order=follow_up_date.asc.nullslast,master_no.asc&limit=2000')||[];
     renderOutreachStats();
     renderOutreach();
   }catch(e){ el.innerHTML='<div class="hub-none">Tabela "outreach_contacts" mungon ose gabim: '+e.message+'</div>'; }
+}
+function ocClearFilters(){
+  var sb=document.getElementById('oc-search'); if(sb) sb.value='';
+  var ob=document.getElementById('oc-overdue-only'); if(ob) ob.checked=false;
+  _ocStatus='all';
+  document.querySelectorAll('#oc-status-tabs .seg-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-k')==='all'); });
+  renderOutreach();
 }
 function ocFilter(val){
   _ocStatus=val;
@@ -59,7 +72,18 @@ function renderOutreach(){
     if(!q) return true;
     return ((c.company_domain||'')+' '+(c.contact_email||'')+' '+(c.notes||'')+' '+(c.country||'')).toLowerCase().indexOf(q)>-1;
   });
-  if(!list.length){ el.innerHTML='<div class="hub-none">Asnjë rezultat.'+(q?' Ndrysho kërkimin.':'')+'</div>'; return; }
+  if(!list.length){
+    var reasons=[];
+    if(_ocStatus!=='all') reasons.push('statusi = <strong>'+_ocStatus+'</strong>');
+    if(overdueOnly) reasons.push('vetëm <strong>follow-up i kaluar/sot</strong>');
+    if(q) reasons.push('kërkimi = <strong>"'+q.replace(/</g,'&lt;')+'"</strong>');
+    el.innerHTML='<div class="hub-none" style="text-align:center;padding:26px 16px">'
+      +'<div style="font-size:13px;margin-bottom:8px">Asnjë rezultat nga <strong>'+_outreach.length+'</strong> kompani të ngarkuara.</div>'
+      +(reasons.length?'<div style="font-size:11.5px;color:var(--text3);margin-bottom:12px">Filtrat aktivë: '+reasons.join(' · ')+'</div>':'<div style="font-size:11.5px;color:var(--text3);margin-bottom:12px">Databaza duket bosh.</div>')
+      +(reasons.length?'<button class="btn btn-sm btn-primary" onclick="ocClearFilters()">Pastro filtrat</button>':'')
+    +'</div>';
+    return;
+  }
   var h='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="text-align:left;border-bottom:1px solid var(--border)">'
       +'<th style="padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;font-weight:600">Kompania</th>'
