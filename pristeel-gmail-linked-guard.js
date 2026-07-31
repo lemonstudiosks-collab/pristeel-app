@@ -92,6 +92,20 @@ async function detectLinkedProject(){
   linkedProjectName=(projects&&projects[0]&&projects[0].name)||'';
 }
 
+function ensureLinkedOption(select){
+  var exists=false;
+  Array.prototype.slice.call(select.options||[]).forEach(function(option){
+    if(String(option.value)===String(linkedProjectId))exists=true;
+  });
+  if(!exists){
+    var option=document.createElement('option');
+    option.value=linkedProjectId;
+    option.textContent=(linkedProjectName||'Projekti i lidhur')+' — i lidhur me këtë email';
+    select.appendChild(option);
+  }
+  select.value=linkedProjectId;
+}
+
 function applyLinkedMode(){
   if(!linkedProjectId)return false;
   var create=document.getElementById('pgi-create');
@@ -100,15 +114,28 @@ function applyLinkedMode(){
   if(!create||!link||!select)return false;
   if(create.dataset.pstLinkedMode==='1')return true;
 
-  select.value=linkedProjectId;
+  ensureLinkedOption(select);
   create.dataset.pstLinkedMode='1';
-  create.textContent='Importo skedarët në projektin e lidhur';
   link.style.display='none';
+
+  var gmailAuth=document.getElementById('pgi-authorize');
+  if(gmailAuth){
+    create.disabled=false;
+    create.textContent='Autorizo Gmail për të ngarkuar skedarët';
+    create.onclick=function(){
+      gmailAuth.click();
+    };
+    setStatus('Së pari autorizo Gmail-in. Pastaj thread-i, skedarët dhe projekti i lidhur do të ngarkohen automatikisht.');
+    return true;
+  }
+
+  create.disabled=false;
+  create.textContent='Importo skedarët në projektin e lidhur';
   create.onclick=async function(){
     if(create.disabled)return;
     try{
       await authorizeDrive(create,'Duke autorizuar Drive…');
-      select.value=linkedProjectId;
+      ensureLinkedOption(select);
       create.disabled=false;
       create.textContent='Importo skedarët në projektin e lidhur';
       link.style.display='';
