@@ -85,6 +85,12 @@ async function ensureProjectFolder(project){
   return {id:folder.id,webViewLink:url};
 }
 
+async function listFolderFiles(folderId){
+  var q="'"+folderId+"' in parents and trashed=false";
+  var r=await drive('/files?q='+encodeURIComponent(q)+'&fields=files(id,name,size)&pageSize=1000');
+  return r.files||[];
+}
+
 function uploadFile(file,folderId,onProgress){
   return new Promise(function(resolve,reject){
     getToken().then(function(t){
@@ -125,16 +131,25 @@ async function importFiles(projectId,files,onStatus){
   var project=await getProject(projectId);
   if(onStatus)onStatus({phase:'folder',message:'Duke përgatitur dosjen e projektit…'});
   var folder=await ensureProjectFolder(project);
-  var uploaded=[];
+  var existing=await listFolderFiles(folder.id),known={};
+  existing.forEach(function(x){known[String(x.name||'')+'|'+String(x.size||0)]=true;});
+  var uploaded=[],skipped=0;
   for(var i=0;i<files.length;i++){
+    var fileKey=String(files[i].name||'')+'|'+String(files[i].size||0);
+    if(known[fileKey]){
+      skipped++;
+      if(onStatus)onStatus({phase:'skip',index:i+1,total:files.length,name:files[i].name,message:'Ekziston tashmë: '+files[i].name});
+      continue;
+    }
     if(onStatus)onStatus({phase:'upload',index:i+1,total:files.length,name:files[i].name,percent:0});
     var result=await uploadFile(files[i],folder.id,function(percent){
       if(onStatus)onStatus({phase:'upload',index:i+1,total:files.length,name:files[i].name,percent:percent});
     });
     uploaded.push(result);
+    known[fileKey]=true;
   }
-  if(onStatus)onStatus({phase:'done',message:uploaded.length+' skedarë u ruajtën në projekt.'});
-  return {uploaded:uploaded.length,folder:folder,files:uploaded};
+  if(onStatus)onStatus({phase:'done',message:uploaded.length+' skedarë u ruajtën në projekt'+(skipped?' · '+skipped+' ekzistonin tashmë.':'.')});
+  return {uploaded:uploaded.length,skipped:skipped,folder:folder,files:uploaded};
 }
 
 window.PSTDriveImport={
