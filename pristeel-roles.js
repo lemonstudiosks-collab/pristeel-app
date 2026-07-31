@@ -71,7 +71,6 @@ function canWrite(){ return myRole && myRole !== 'viewer'; }
 function isAdmin(){ return myRole === 'admin'; }
 
 function applyRole(){
-  // Badge te topbar
   var tb = document.querySelector('.topbar .flex.gap-8');
   if(tb && !document.getElementById('rl-badge')){
     var b = document.createElement('span');
@@ -81,13 +80,11 @@ function applyRole(){
     b.title = ROLE_DESC[myRole] || '';
     tb.insertBefore(b, tb.firstChild);
   }
-  // Footer
   var ft = document.querySelector('.sidebar-footer');
   if(ft && myEmail && ft.innerHTML.indexOf('rl-role-ft') === -1){
     ft.innerHTML += '<br><span id="rl-role-ft" style="font-size:9.5px;letter-spacing:.4px">'
       + (ROLE_LBL[myRole]||'') + '</span>';
   }
-  // Viewer: bllokoj veprimet
   if(!canWrite()) lockUI();
 }
 
@@ -99,17 +96,14 @@ function lockUI(){
     'button[onclick*="del"]','button[onclick*="Del"]',
     'button[onclick*="newProject"]','button[onclick*="generateRfqs"]'
   ];
-  var n = 0;
   sels.forEach(function(s){
     document.querySelectorAll(s).forEach(function(el){
       if(el.classList.contains('rl-lock')) return;
       if(el.id === 'rl-badge') return;
       el.classList.add('rl-lock');
       el.title = 'Vetëm shikim — nuk ke të drejtë ndryshimi';
-      n++;
     });
   });
-  // Banner
   var c = document.querySelector('.content');
   if(c && !document.getElementById('rl-bar')){
     var bar = document.createElement('div');
@@ -122,7 +116,6 @@ function lockUI(){
   }
 }
 
-// Rilidh bllokimin kur ndërrohet faqja
 function watchPages(){
   if(typeof window.showPage !== 'function' || window.showPage.__rl) return false;
   var orig = window.showPage;
@@ -135,7 +128,6 @@ function watchPages(){
   return true;
 }
 
-// ── PANELI I PËRDORUESVE (admin) ────────────────────────────
 function ini(s){
   var p = String(s||'?').trim().split(/\s+/);
   return ((p[0]||'?')[0] + (p[1]?p[1][0]:'')).toUpperCase();
@@ -190,7 +182,6 @@ window.pstSetRole = async function(uid, role){
   }catch(e){ alert('Gabim: '+e.message); }
 };
 
-// ── INIT ────────────────────────────────────────────────────
 function init(){
   var tries = 0;
   var iv = setInterval(function(){
@@ -208,11 +199,12 @@ if(document.readyState === 'loading'){
   setTimeout(init, 900);
 }
 
-// ── MODULI I EMAILAVE TË PROJEKTIT ────────────────────────
+// Gmail intake duhet të marrë gjithmonë versionin më të ri, jo cache-in e Safari-t.
 (function loadProjectEmailsModule(){
   if(document.querySelector('script[data-pst-project-emails]')) return;
   var s=document.createElement('script');
-  s.src='pristeel-project-emails.js';
+  var intake=new URLSearchParams(window.location.search).get('gmail_intake')==='1';
+  s.src='pristeel-project-emails.js?v='+(intake?String(Date.now()):'20260731-6');
   s.defer=true;
   s.setAttribute('data-pst-project-emails','1');
   document.head.appendChild(s);
