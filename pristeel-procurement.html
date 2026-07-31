@@ -5572,14 +5572,17 @@ Supplier: ${supplier}
 Document text: ${text.slice(0,9000)}
 
 JSON format:
-{"supplier":"${supplier}","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"price_per_kg":0.00,"price_currency":"EUR","delivery_weeks":0,"incoterms":"EXW or DAP or DDP or CIF etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","validity_days":30,"notes":"any special conditions","confidence":"high or medium or low","positions":[{"desc":"exact line item description","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}
+{"supplier":"${supplier}","offer_ref":"quotation/offer number or null","contact_person":"person who signed the offer or null","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"price_per_kg":0.00,"price_currency":"EUR","delivery_weeks":0,"delivery_terms":"free text about delivery schedule or null","incoterms":"EXW or FCA or DAP or DDP or CIF or CPT etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","material_standard":"e.g. EN 10025, EN 1090-2 EXC2 or null","steel_grades":"e.g. S235JR, S355J0 or null","validity_days":30,"payment_terms":"exact payment terms as written, e.g. '30% advance with contract signature, 70% before loading' or null","inclusions":["each item explicitly INCLUDED in the price"],"exclusions":["each item explicitly NOT included / excluded from the price"],"notes":"any other special conditions","confidence":"high or medium or low","positions":[{"desc":"exact line item description","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}
 Rules:
 
 - fabrication_total: sum of all fabrication/material/erection line items ONLY (exclude transport/logistics/packaging)
 - transport_cost: sum of ALL transport, logistics, packaging, wood/crating line items
-- price_per_kg: fabrication_total / total_weight_kg (transport-i NUK përfshihet)
+- price_per_kg: if the offer states a single unit price per kg (e.g. "2.03 EUR/kg"), use that value directly
+- If the offer has NO itemised table and only a single €/kg rate, set fabrication_total=0 and total_weight_kg=0 and put the rate in price_per_kg
 - If multiple transport lines exist, sum them all into transport_cost
-- incoterms: normalize (ab Werk=EXW, frei Haus=DDP, franco=DDP)
+- incoterms: normalize (ab Werk=EXW, frei Haus=DDP, franco=DDP). FCA is a valid value — do not convert FCA to EXW.
+- inclusions/exclusions: capture EVERY bullet under "included"/"not included"/"excluded" sections as separate short strings, in the document's own wording. This is critical commercial information — never omit it.
+- payment_terms: capture the full payment schedule verbatim (percentages and their triggers)
 - If price not found set to 0
 - Extract delivery time in weeks. delivery_weeks is ONLY the production/delivery time — NEVER confuse it with "validity of the offer" (validity_days is a separate field). If no explicit delivery/production time in weeks is stated anywhere, set delivery_weeks to 0.
 - positions: EVERY priced line item from the offer table as a SEPARATE entry, in document order, with its own unit price — NEVER merge line items or average prices. Text-only note lines get qty=0, unit_price=0.
@@ -5627,6 +5630,15 @@ if(parsed.total_weight_kg>0 && parsed.fabrication_total>0){
   
 
 var offerNotes=(parsed.notes||'')+(parsed.incoterms_location?' — '+parsed.incoterms_location:'');
+// Perfshi kushtet komerciale ne shenime qe te mos humbin (perveç fushave te dedikuara)
+var incArr=Array.isArray(parsed.inclusions)?parsed.inclusions:[];
+var excArr=Array.isArray(parsed.exclusions)?parsed.exclusions:[];
+if(parsed.payment_terms) offerNotes+='\n\nPAGESA: '+parsed.payment_terms;
+if(incArr.length) offerNotes+='\n\nPËRFSHIHET:\n• '+incArr.join('\n• ');
+if(excArr.length) offerNotes+='\n\nNUK PËRFSHIHET:\n• '+excArr.join('\n• ');
+if(parsed.steel_grades) offerNotes+='\n\nCILËSITË: '+parsed.steel_grades;
+if(parsed.material_standard) offerNotes+='\nSTANDARDI: '+parsed.material_standard;
+if(parsed.delivery_terms) offerNotes+='\nDORËZIMI: '+parsed.delivery_terms;
 offers.push({
   id:Date.now(),
   supplier:parsed.supplier||supplier,
@@ -5638,6 +5650,11 @@ offers.push({
   cert:parsed.certification||'',
   validity:parsed.validity_days||30,
   notes:offerNotes,
+  paymentTerms:parsed.payment_terms||'',
+  inclusions:incArr,
+  exclusions:excArr,
+  offerRef:parsed.offer_ref||'',
+  contactPerson:parsed.contact_person||'',
   confidence:parsed.confidence||'medium',
   source:'pdf'
 });
@@ -5655,6 +5672,13 @@ offers.push({
         notes:offerNotes,
         origin:cat||'',
         zinc_kg:0,transport_eur:0,vat_pct:0,qty_kg:parsed.total_weight_kg||parsed.total_kg||0,
+        payment_terms:parsed.payment_terms||null,
+        inclusions:incArr.length?incArr.join('\n'):null,
+        exclusions:excArr.length?excArr.join('\n'):null,
+        validity_days:parsed.validity_days||null,
+        offer_ref:parsed.offer_ref||null,
+        contact_person:parsed.contact_person||null,
+        raw_text:text.slice(0,20000),
         positions:(Array.isArray(parsed.positions)&&parsed.positions.length)?parsed.positions:null
       }).catch(function(e){console.error('Ruajtja e ofertes deshtoi:',e);document.getElementById('pdf-status').textContent='⚠ Oferta u shtua lokalisht, por ruajtja në cloud dështoi: '+e.message;});
     } else {
@@ -7058,7 +7082,13 @@ function loadProject(id,silent){
         kg:parseFloat(o.qty_kg)||0,zincKg:parseFloat(o.zinc_kg)||0,positions:o.positions||null,
         transportEur:parseFloat(o.transport_eur)||0,vatPct:parseFloat(o.vat_pct)||0,
         offerType:type,
-        origin:o.origin||''
+        origin:o.origin||'',
+        paymentTerms:o.payment_terms||'',
+        inclusions:o.inclusions?String(o.inclusions).split('\n').filter(Boolean):[],
+        exclusions:o.exclusions?String(o.exclusions).split('\n').filter(Boolean):[],
+        validity:o.validity_days||30,
+        offerRef:o.offer_ref||'',
+        contactPerson:o.contact_person||''
       };
     }).map(function(r){ if(Array.isArray(r.positions)&&r.positions.length){ recalcOfferFromPositions(r); } return r;
     });
