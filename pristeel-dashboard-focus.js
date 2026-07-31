@@ -5,7 +5,7 @@
 if(window.__pstDashboardFocusLoaded)return;
 window.__pstDashboardFocusLoaded=true;
 
-var state={view:'today',timer:null,observer:null};
+var state={view:'today',timer:null,moreSignature:''};
 try{state.view=sessionStorage.getItem('pst_dashboard_view')||'today';}catch(e){}
 if(['today','week','overview'].indexOf(state.view)<0)state.view='today';
 
@@ -47,6 +47,7 @@ document.head.appendChild(style);
 function text(id){var el=document.getElementById(id);return el?String(el.textContent||'0').trim():'0';}
 function setView(view){
   if(['today','week','overview'].indexOf(view)<0)view='today';
+  if(state.view!==view)state.moreSignature='';
   state.view=view;
   try{sessionStorage.setItem('pst_dashboard_view',view);}catch(e){}
   var dash=document.querySelector('#page-home .pst-dash');
@@ -84,16 +85,16 @@ function tagPanels(){
   if(actionPanel){
     var title=actionPanel.querySelector('.pst-panel-title');
     var sub=actionPanel.querySelector('.pst-panel-sub');
-    if(title)title.textContent='Çfarë kërkon veprim tani';
-    if(sub)sub.textContent='Tre veprimet me përparësinë më të lartë';
+    if(title&&title.textContent!=='Çfarë kërkon veprim tani')title.textContent='Çfarë kërkon veprim tani';
+    if(sub&&sub.textContent!=='Tre veprimet me përparësinë më të lartë')sub.textContent='Tre veprimet me përparësinë më të lartë';
   }
   var projectPanel=document.querySelector('.pst-focus-panel-projects');
-  if(projectPanel){var pt=projectPanel.querySelector('.pst-panel-title');if(pt)pt.textContent='Projektet në fokus';}
+  if(projectPanel){var pt=projectPanel.querySelector('.pst-panel-title');if(pt&&pt.textContent!=='Projektet në fokus')pt.textContent='Projektet në fokus';}
 }
 
 function syncSummary(){
   var pairs=[['pst-focus-projects','pst-kpi-projects'],['pst-focus-requests','pst-kpi-unmatched'],['pst-focus-rfq','pst-kpi-rfqs'],['pst-focus-tasks','pst-kpi-tasks']];
-  pairs.forEach(function(p){var a=document.getElementById(p[0]);if(a)a.textContent=text(p[1]);});
+  pairs.forEach(function(p){var a=document.getElementById(p[0]),v=text(p[1]);if(a&&a.textContent!==v)a.textContent=v;});
 }
 
 function more(host,cls,label,page){
@@ -102,13 +103,19 @@ function more(host,cls,label,page){
   var el=document.createElement('div');el.className='pst-focus-more '+cls;el.textContent=label;el.addEventListener('click',function(){if(typeof window.pstV2Go==='function')window.pstV2Go(page);});host.appendChild(el);
 }
 function updateMoreLinks(){
+  var ah=document.getElementById('pst-action-list');
+  var ph=document.getElementById('pst-project-list');
+  var dh=document.getElementById('pst-deadline-list');
+  var ac=ah?ah.querySelectorAll(':scope > .pst-action').length:0;
+  var pc=ph?ph.querySelectorAll(':scope > .pst-project').length:0;
+  var dc=dh?dh.querySelectorAll(':scope > .pst-deadline-row').length:0;
+  var signature=[state.view,ac,pc,dc].join('|');
+  if(signature===state.moreSignature)return;
+  state.moreSignature=signature;
   document.querySelectorAll('.pst-focus-more').forEach(function(x){x.remove();});
-  if(state.view==='today'){
-    var ah=document.getElementById('pst-action-list');var ac=ah?ah.querySelectorAll(':scope > .pst-action').length:0;
-    if(ac>3)more(ah,'pst-focus-more-actions','Shiko edhe '+(ac-3)+' veprime','qendra');
+  if(state.view==='today'&&ac>3){
+    more(ah,'pst-focus-more-actions','Shiko edhe '+(ac-3)+' veprime','qendra');
   }else if(state.view==='week'){
-    var ph=document.getElementById('pst-project-list');var pc=ph?ph.querySelectorAll(':scope > .pst-project').length:0;
-    var dh=document.getElementById('pst-deadline-list');var dc=dh?dh.querySelectorAll(':scope > .pst-deadline-row').length:0;
     if(pc>4)more(ph,'pst-focus-more-projects','Shiko të gjitha projektet','import');
     if(dc>4)more(dh,'pst-focus-more-deadlines','Shiko të gjitha afatet','import');
   }
@@ -123,13 +130,11 @@ function apply(){
   syncSummary();
   setView(state.view);
 }
-function schedule(){clearTimeout(state.timer);state.timer=setTimeout(apply,80);}
 function start(){
   var page=document.getElementById('page-home');
   if(!page)return false;
   apply();
-  state.observer=new MutationObserver(schedule);
-  state.observer.observe(page,{childList:true,subtree:true,characterData:true});
+  setInterval(apply,1000);
   return true;
 }
 var tries=0,boot=setInterval(function(){if(start()||++tries>160)clearInterval(boot);},250);
