@@ -17,7 +17,6 @@ var STATIONS=[
 ];
 var audio=new Audio();
 audio.preload='none';
-audio.crossOrigin='anonymous';
 var current=null,playing=false,triedAlt=false;
 
 var style=document.createElement('style');
