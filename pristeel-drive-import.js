@@ -4,30 +4,64 @@
 
 var ROOT_FOLDER_NAME='PRISTEEL — Projektet';
 var DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
+var TOKEN_KEY='pst_drive_token';
+var EXP_KEY='pst_drive_token_exp';
 var token=null, tokenExp=0;
 
 function getKeys(){
   return {clientId:localStorage.getItem('pristeel_gclient')||''};
 }
 
+function restoreToken(){
+  try{
+    var saved=sessionStorage.getItem(TOKEN_KEY)||'';
+    var exp=parseInt(sessionStorage.getItem(EXP_KEY)||'0',10)||0;
+    if(saved&&Date.now()<exp-30000){
+      token=saved;
+      tokenExp=exp;
+      return saved;
+    }
+  }catch(e){}
+  return '';
+}
+
+function saveToken(value,expiresIn){
+  token=value;
+  tokenExp=Date.now()+((expiresIn||3600)-60)*1000;
+  try{
+    sessionStorage.setItem(TOKEN_KEY,token);
+    sessionStorage.setItem(EXP_KEY,String(tokenExp));
+  }catch(e){}
+  return token;
+}
+
 function getToken(){
   return new Promise(function(resolve,reject){
     if(token&&Date.now()<tokenExp){resolve(token);return;}
+    var restored=restoreToken();
+    if(restored){resolve(restored);return;}
     var keys=getKeys();
     if(!keys.clientId){reject(new Error('Mungon Google Client ID te Cilësimet.'));return;}
     if(typeof google==='undefined'||!google.accounts||!google.accounts.oauth2){
       reject(new Error('Google Identity nuk u ngarkua.'));return;
     }
     try{
+      var settled=false;
+      var timeout=setTimeout(function(){
+        if(settled)return;
+        settled=true;
+        reject(new Error('Autorizimi i Google Drive nuk u hap. Lejo pop-up-et dhe provo përsëri.'));
+      },45000);
       var client=google.accounts.oauth2.initTokenClient({
         client_id:keys.clientId,
         scope:DRIVE_SCOPE,
         prompt:'consent',
         callback:function(r){
+          if(settled)return;
+          settled=true;
+          clearTimeout(timeout);
           if(r&&r.access_token){
-            token=r.access_token;
-            tokenExp=Date.now()+((r.expires_in||3600)-60)*1000;
-            resolve(token);
+            resolve(saveToken(r.access_token,r.expires_in));
           }else reject(new Error((r&&r.error_description)||'Autorizimi i Google Drive dështoi.'));
         }
       });
@@ -153,6 +187,7 @@ async function importFiles(projectId,files,onStatus){
 }
 
 window.PSTDriveImport={
+  authorize:getToken,
   importFiles:importFiles,
   ensureProjectFolderById:async function(projectId){return ensureProjectFolder(await getProject(projectId));}
 };
