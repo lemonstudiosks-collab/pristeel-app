@@ -1,0 +1,41 @@
+{
+  "timeZone": "Europe/Belgrade",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly"
+  ],
+  "addOns": {
+    "common": {
+      "name": "PRISTEEL",
+      "logoUrl": "https://lemonstudiosks-collab.github.io/pristeel-app/gmail-addon/pristeel-addon-icon.svg",
+      "openLinkUrlPrefixes": [
+        "https://lemonstudiosks-collab.github.io/pristeel-app/"
+      ],
+      "layoutProperties": {
+        "primaryColor": "#A65F2E",
+        "secondaryColor": "#A65F2E"
+      },
+      "homepageTrigger": {
+        "runFunction": "onHomepage",
+        "enabled": true
+      },
+      "universalActions": [
+        {
+          "label": "Hap PRISTEEL",
+          "openLink": "https://lemonstudiosks-collab.github.io/pristeel-app/pristeel-procurement.html"
+        }
+      ]
+    },
+    "gmail": {
+      "contextualTriggers": [
+        {
+          "unconditional": {},
+          "onTriggerFunction": "onGmailMessageOpen"
+        }
+      ]
+    }
+  }
+}
