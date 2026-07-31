@@ -208,4 +208,14 @@ if(document.readyState === 'loading'){
   setTimeout(init, 900);
 }
 
+// ── MODULI I EMAILAVE TË PROJEKTIT ────────────────────────
+(function loadProjectEmailsModule(){
+  if(document.querySelector('script[data-pst-project-emails]')) return;
+  var s=document.createElement('script');
+  s.src='pristeel-project-emails.js';
+  s.defer=true;
+  s.setAttribute('data-pst-project-emails','1');
+  document.head.appendChild(s);
+})();
+
 })();
