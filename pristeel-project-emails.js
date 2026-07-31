@@ -1,7 +1,14 @@
 /* PRISTEEL email modules bootstrap */
 (function(){
 'use strict';
-var files=['pristeel-email-core.js?v=20260731-2','pristeel-email-outreach.js?v=20260731-2','pristeel-email-project.js?v=20260731-2','pristeel-email-daily.js?v=20260731-2'];
+var files=[
+  'pristeel-email-core.js?v=20260731-3',
+  'pristeel-email-outreach.js?v=20260731-3',
+  'pristeel-email-project.js?v=20260731-3',
+  'pristeel-email-daily.js?v=20260731-3',
+  'pristeel-drive-import.js?v=20260731-3',
+  'pristeel-gmail-intake.js?v=20260731-3'
+];
 function load(i){
   if(i>=files.length)return;
   var s=document.createElement('script');
