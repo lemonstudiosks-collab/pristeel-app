@@ -2,13 +2,14 @@
 (function(){
 'use strict';
 var files=[
-  'pristeel-email-core.js?v=20260731-5',
-  'pristeel-email-outreach.js?v=20260731-5',
-  'pristeel-email-project.js?v=20260731-5',
-  'pristeel-email-daily.js?v=20260731-5',
-  'pristeel-drive-import.js?v=20260731-5',
-  'pristeel-project-attachments.js?v=20260731-5',
-  'pristeel-gmail-intake.js?v=20260731-5'
+  'pristeel-email-core.js?v=20260731-6',
+  'pristeel-email-outreach.js?v=20260731-6',
+  'pristeel-email-project.js?v=20260731-6',
+  'pristeel-email-daily.js?v=20260731-6',
+  'pristeel-drive-import.js?v=20260731-6',
+  'pristeel-project-attachments.js?v=20260731-6',
+  'pristeel-gmail-intake.js?v=20260731-6',
+  'pristeel-gmail-intake-client.js?v=20260731-6'
 ];
 function load(i){
   if(i>=files.length)return;
