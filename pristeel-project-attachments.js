@@ -64,7 +64,7 @@ window.pstImportProjectEmailFiles=async function(pid){
   try{
     if(!A||!window.PSTDriveImport)throw new Error('Modulet Gmail/Drive nuk janë gati.');
     current.token=await A.auth();
-    var rows=await supaFetch('project_emails?project_id=eq.'+encodeURIComponent(pid)+'&direction=eq.incoming&has_attachments=eq.true&select=gmail_message_id&order=sent_at.desc&limit=500');
+    var rows=await supaFetch('project_emails?project_id=eq.'+encodeURIComponent(pid)+'&direction=eq.incoming&select=gmail_message_id&order=sent_at.desc&limit=500');
     var ids=(rows||[]).map(function(x){return x.gmail_message_id;}).filter(function(x,i,a){return x&&a.indexOf(x)===i;});
     var messages=await A.map(ids,5,function(id){return A.gmail('/messages/'+encodeURIComponent(id)+'?format=full',current.token);});
     messages.forEach(function(m){collect(m.payload,m,current.attachments);});
