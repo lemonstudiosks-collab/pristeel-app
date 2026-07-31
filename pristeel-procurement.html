@@ -2655,11 +2655,36 @@ var PROC_GROUPS=[
   {k:'tjera',n:'Furnitorë të Tjerë (mbulesa, hardware, zinktim…)',cats:['mro','hardware','coating','galvanizing']}
 ];
 function procStartRfq(name,cat,email,contactName){
-  if(!_curProjId){ alert('Zgjidh ose krijo një projekt fillimisht (nga "Projektet"), pastaj shto furnitorin te RFQ.'); return; }
+  if(!_curProjId){
+    // Ne vend qe thjesht ta refuzojme, shfaqim liste te projekteve per te zgjedhur
+    supaFetch('projects?select=id,name,status&order=created_at.desc&limit=120').then(function(ps){
+      if(!ps||!ps.length){ alert('Ende s\'ka projekte. Krijo një projekt fillimisht te "Projektet".'); return; }
+      var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='pst-pickproj-modal';
+      bg.onclick=function(e){ if(e.target===bg) bg.remove(); };
+      bg.innerHTML='<div class="pst-modal" style="max-width:460px">'
+        +'<div class="pst-modal-hd"><div><div style="font-size:14px;font-weight:650">Zgjidh projektin</div>'
+        +'<div style="font-size:11px;color:var(--text3);margin-top:3px">Për të cilin projekt ta shtosh '+(name||'këtë furnitor')+' te RFQ?</div></div>'
+        +'<span class="pst-modal-x" onclick="document.getElementById(\'pst-pickproj-modal\').remove()">✕</span></div>'
+        +'<div class="pst-modal-bd">'+ps.map(function(p){
+          var st=(p.status||'pritje');
+          return '<div onclick="pickProjThenRfq(\''+p.id+'\',\''+(name||'').replace(/'/g,"")+'\',\''+(cat||'').replace(/'/g,"")+'\',\''+(email||'').replace(/'/g,"")+'\',\''+(contactName||'').replace(/'/g,"")+'\')" style="cursor:pointer;padding:10px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'transparent\'">'
+            +'<span style="font-size:13px;font-weight:600">'+(p.name||'Pa emër')+'</span>'
+            +'<span style="font-size:10px;color:var(--text3);text-transform:uppercase">'+st+'</span></div>';
+        }).join('')+'</div></div>';
+      document.body.appendChild(bg);
+    }).catch(function(e){ alert('Gabim: '+e.message); });
+    return;
+  }
   suppliers.push({id:Date.now(),name:name||'',country:'',lang:'en',cat:(cat==='fabrication'?'producer':'rawmat'),
     contacts:[{name:contactName||'',email:email||''}]});
   showPage('rfq');
   setTimeout(function(){ renderSuppliers(); updateRfqCount(); },80);
+}
+function pickProjThenRfq(pid,name,cat,email,contactName){
+  var m=document.getElementById('pst-pickproj-modal'); if(m) m.remove();
+  var sm=document.getElementById('supplier-modal'); if(sm) sm.remove();
+  loadProject(pid,true);
+  setTimeout(function(){ procStartRfq(name,cat,email,contactName); },900);
 }
 function loadProcurementDirectory(){
   var el=document.getElementById('proc-directory'); if(!el) return;
@@ -4130,6 +4155,7 @@ async function fetchGoogleCalendarEvents(){
 }
 function resetWorkspace(){
   _curProjId=null;
+  try{ localStorage.removeItem('pristeel_cur_proj'); }catch(e){}
   _ofertaAutoLoadDone=false;
   bomRows=[]; suppliers=[]; offers=[];
   if(typeof oferPos!=='undefined') oferPos=[];
@@ -6987,12 +7013,13 @@ function renderProjectBoard(){
   h+='</div>';
   el.innerHTML=h;
 }
-function loadProject(id){
+function loadProject(id,silent){
   var projData=null;
   resetWorkspace(); // KRITIKE: pastro te dhenat e projektit te meparshem para ngarkimit
   supaFetch('projects?id=eq.'+id).then(function(projs){
     var p=projs[0]; if(!p){alert('Projekti nuk u gjet.');return;}
     projData=p; _curProjId=id;
+    try{ localStorage.setItem('pristeel_cur_proj', String(id)); }catch(e){}
     var _gp=document.getElementById('global-proj'); if(_gp && _gp.value!==String(id)){ if(![].some.call(_gp.options,function(o){return o.value===String(id);})){var _o=document.createElement('option');_o.value=id;_o.textContent=p.name||'Projekt';_gp.appendChild(_o);} _gp.value=id; }
     document.getElementById('i-projname').value=p.name||'';
     document.getElementById('i-client').value=p.client||'';
@@ -7036,7 +7063,8 @@ function loadProject(id){
     }).map(function(r){ if(Array.isArray(r.positions)&&r.positions.length){ recalcOfferFromPositions(r); } return r;
     });
     // Show project dashboard
-    showProjectDashboard(projData);
+    if(!silent) showProjectDashboard(projData);
+    else { if(typeof renderDashOffers==='function') renderDashOffers(); if(typeof loadLibraryFiles==='function' && document.getElementById('lib-list')) loadLibraryFiles(); }
   }).catch(function(e){alert('Gabim: '+e.message);});
 }
 
@@ -7107,7 +7135,19 @@ function deleteProject(id){
     if(typeof loadHub==='function') loadHub();
   }).catch(function(e){alert('Gabim: '+e.message);});
 }
-window.addEventListener('load',function(){setTimeout(loadProjectList,800);setTimeout(loadGlobalProjSel,1100);});
+window.addEventListener('load',function(){setTimeout(loadProjectList,800);setTimeout(loadGlobalProjSel,1100);setTimeout(restoreCurrentProject,1300);});
+// Rikthen projektin aktiv pas rifreskimit te faqes (ndryshe _curProjId humbet dhe
+// Skedaret/RFQ/ngarkimet nuk dine me se cilit projekt i takojne).
+function restoreCurrentProject(){
+  if(_curProjId) return; // tashme i ngarkuar ne kete sesion
+  var saved=null;
+  try{ saved=localStorage.getItem('pristeel_cur_proj'); }catch(e){}
+  if(!saved) return;
+  supaFetch('projects?id=eq.'+saved+'&select=id&limit=1').then(function(rows){
+    if(rows && rows.length) loadProject(saved,true); // ekziston ende -> ringarko pa navigim
+    else { try{ localStorage.removeItem('pristeel_cur_proj'); }catch(e){} } // u fshi ndermjet kohes
+  }).catch(function(){});
+}
 function loadGlobalProjSel(){
   var gp=document.getElementById('global-proj'); if(!gp) return;
   supaFetch('projects?select=id,name,status&order=created_at.desc&limit=120').then(function(ps){
