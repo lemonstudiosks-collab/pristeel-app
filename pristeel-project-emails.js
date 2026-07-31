@@ -1,7 +1,7 @@
 /* PRISTEEL email modules bootstrap */
 (function(){
 'use strict';
-var files=['pristeel-email-core.js','pristeel-email-outreach.js','pristeel-email-project.js'];
+var files=['pristeel-email-core.js?v=20260731-2','pristeel-email-outreach.js?v=20260731-2','pristeel-email-project.js?v=20260731-2','pristeel-email-daily.js?v=20260731-2'];
 function load(i){
   if(i>=files.length)return;
   var s=document.createElement('script');
