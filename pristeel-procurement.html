@@ -9266,13 +9266,55 @@ function renderContactStats(){
   var sup=_contacts.filter(function(c){return c.kind==='supplier';}).length;
   var withHs=_contacts.filter(function(c){return c.hubspot_id;}).length;
   var countries=new Set(_contacts.map(function(c){return c.country;}).filter(Boolean)).size;
-  var cells=[['Gjithsej',_contacts.length],['Klientë',cli],['Furnitorë',sup],['Nga HubSpot',withHs],['Vende',countries]];
+  var cells=[['Gjithsej',_contacts.length,'all'],['Klientë',cli,'client'],['Furnitorë',sup,'supplier'],['Nga HubSpot',withHs,'__hubspot'],['Vende',countries,'__countries']];
   el.innerHTML=cells.map(function(c,i){
-    return '<div style="flex:1;padding:12px 16px;'+(i?'border-left:1px solid var(--border)':'')+'">'
+    return '<div onclick="ctStatClick(\''+c[2]+'\')" style="flex:1;padding:12px 16px;cursor:pointer;transition:background .13s;'+(i?'border-left:1px solid var(--border)':'')+'" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'transparent\'">'
       +'<div style="font-size:20px;font-weight:680;color:var(--text);letter-spacing:-.3px">'+c[1]+'</div>'
       +'<div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);font-weight:600;margin-top:2px">'+c[0]+'</div>'
     +'</div>';
   }).join('');
+}
+// Klikimi mbi kutite e statistikave te Kontaktet -> filtron listen
+function ctStatClick(val){
+  var sb=document.getElementById('ct-search');
+  if(val==='__hubspot'){
+    if(sb) sb.value='';
+    _ctFilter='all';
+    ['all','client','supplier'].forEach(function(x){ var b=document.getElementById('ct-tab-'+x); if(b) b.classList.toggle('active',x==='all'); });
+    _ctOnlyHubspot=true;
+    renderContacts();
+    return;
+  }
+  if(val==='__countries'){ renderCountryBreakdown(); return; }
+  _ctOnlyHubspot=false;
+  if(sb) sb.value='';
+  filterContacts(val);
+}
+var _ctOnlyHubspot=false;
+// Pamje e shkurter: sa kontakte per vend (klikohet nje vend -> filtron)
+function renderCountryBreakdown(){
+  var counts={};
+  _contacts.forEach(function(c){ if(c.country) counts[c.country]=(counts[c.country]||0)+1; });
+  var arr=Object.keys(counts).map(function(k){return [k,counts[k]];}).sort(function(a,b){return b[1]-a[1];});
+  if(!arr.length){ alert('Asnjë kontakt nuk ka vend të regjistruar.'); return; }
+  var bg=document.createElement('div'); bg.className='pst-modal-bg'; bg.id='pst-ctcountry-modal';
+  bg.onclick=function(e){ if(e.target===bg) bg.remove(); };
+  bg.innerHTML='<div class="pst-modal" style="max-width:380px">'
+    +'<div class="pst-modal-hd"><div style="font-size:14px;font-weight:650">Kontaktet sipas vendit</div>'
+    +'<span class="pst-modal-x" onclick="document.getElementById(\'pst-ctcountry-modal\').remove()">✕</span></div>'
+    +'<div class="pst-modal-bd">'+arr.map(function(x){
+      return '<div onclick="ctFilterByCountry(\''+x[0].replace(/\'/g,'')+'\')" style="cursor:pointer;display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'transparent\'">'
+        +'<span style="font-size:13px;font-weight:600">'+x[0]+'</span><span style="font-size:12px;color:var(--text3)">'+x[1]+'</span></div>';
+    }).join('')+'</div></div>';
+  document.body.appendChild(bg);
+}
+function ctFilterByCountry(cc){
+  var m=document.getElementById('pst-ctcountry-modal'); if(m) m.remove();
+  _ctOnlyHubspot=false;
+  _ctFilter='all';
+  ['all','client','supplier'].forEach(function(x){ var b=document.getElementById('ct-tab-'+x); if(b) b.classList.toggle('active',x==='all'); });
+  var sb=document.getElementById('ct-search'); if(sb) sb.value=cc;
+  renderContacts();
 }
 function ctAvatarHtml(name, company){
   var s=(name||company||'').trim();
@@ -9287,10 +9329,21 @@ function renderContacts(){
   var q=((document.getElementById('ct-search')||{}).value||'').toLowerCase();
   var list=_contacts.filter(function(c){
     if(_ctFilter!=='all' && c.kind!==_ctFilter) return false;
+    if(typeof _ctOnlyHubspot!=='undefined' && _ctOnlyHubspot && !c.hubspot_id) return false;
     if(!q) return true;
     return ((c.company||'')+' '+(c.person||'')+' '+(c.email||'')+' '+(c.country||'')).toLowerCase().indexOf(q)>-1;
   });
-  if(!list.length){ el.innerHTML='<div class="hub-none">Asnjë kontakt.'+(q?' Ndrysho kërkimin.':' Shto një me "+ Kontakt".')+'</div>'; return; }
+  if(!list.length){
+    var act=[];
+    if(_ctFilter!=='all') act.push('lloji = <strong>'+_ctFilter+'</strong>');
+    if(typeof _ctOnlyHubspot!=='undefined' && _ctOnlyHubspot) act.push('vetëm <strong>nga HubSpot</strong>');
+    if(q) act.push('kërkimi = <strong>"'+q.replace(/</g,'&lt;')+'"</strong>');
+    el.innerHTML='<div class="hub-none" style="text-align:center;padding:24px 16px">'
+      +'<div style="font-size:13px;margin-bottom:8px">Asnjë kontakt nga <strong>'+_contacts.length+'</strong> gjithsej.</div>'
+      +(act.length?'<div style="font-size:11.5px;color:var(--text3);margin-bottom:12px">Filtrat aktivë: '+act.join(' · ')+'</div><button class="btn btn-sm btn-primary" onclick="ctStatClick(\'all\')">Pastro filtrat</button>':'<div style="font-size:11.5px;color:var(--text3)">Shto një me "+ Kontakt".</div>')
+    +'</div>';
+    return;
+  }
   list=list.slice().sort(function(a,b){
     return (a.person||a.company||'').localeCompare(b.person||b.company||'','sq',{sensitivity:'base'});
   });
