@@ -2,6 +2,7 @@
 (function(){
 'use strict';
 var files=[
+  'pristeel-auth-persistence.js?v=20260801-1',
   'pristeel-single-instance.js?v=20260801-2',
   'pristeel-email-core.js?v=20260801-2',
   'pristeel-gmail-auth-gate.js?v=20260801-1',
@@ -13,6 +14,7 @@ var files=[
   'pristeel-drive-workspace.js?v=20260801-1',
   'pristeel-project-attachments.js?v=20260801-1',
   'pristeel-gmail-intake.js?v=20260801-1',
+  'pristeel-gmail-intake-ux.js?v=20260801-1',
   'pristeel-gmail-intake-client.js?v=20260801-1',
   'pristeel-gmail-linked-guard.js?v=20260801-1',
   'pristeel-gmail-open-project.js?v=20260801-1',
