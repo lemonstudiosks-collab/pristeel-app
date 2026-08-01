@@ -17,6 +17,7 @@ var files=[
   'pristeel-email-relations.js?v=20260801-1',
   'pristeel-project-contacts.js?v=20260801-1',
   'pristeel-email-multi-link-ui.js?v=20260801-1',
+  'pristeel-project-analysis.js?v=20260801-1',
   'pristeel-ui-v2.js?v=20260801-1',
   'pristeel-ui-session.js?v=20260801-1',
   'pristeel-ui-v2-polish.js?v=20260801-1',
