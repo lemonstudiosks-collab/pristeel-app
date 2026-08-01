@@ -9,6 +9,7 @@ var files=[
   'pristeel-email-project.js?v=20260801-1',
   'pristeel-email-daily.js?v=20260801-1',
   'pristeel-drive-import.js?v=20260801-1',
+  'pristeel-drive-intelligence.js?v=20260801-1',
   'pristeel-project-attachments.js?v=20260801-1',
   'pristeel-gmail-intake.js?v=20260801-1',
   'pristeel-gmail-intake-client.js?v=20260801-1',
@@ -18,6 +19,7 @@ var files=[
   'pristeel-project-contacts.js?v=20260801-1',
   'pristeel-email-multi-link-ui.js?v=20260801-1',
   'pristeel-gmail-audit.js?v=20260801-1',
+  'pristeel-project-discovery.js?v=20260801-1',
   'pristeel-groq-rate-limit.js?v=20260801-2',
   'pristeel-project-analysis.js?v=20260801-1',
   'pristeel-project-intelligence-ui.js?v=20260801-2',
@@ -26,7 +28,8 @@ var files=[
   'pristeel-ui-v2-polish.js?v=20260801-1',
   'pristeel-dashboard-focus.js?v=20260801-1',
   'pristeel-utilities.js?v=20260801-1',
-  'pristeel-email-shortcuts.js?v=20260801-1'
+  'pristeel-email-shortcuts.js?v=20260801-1',
+  'pristeel-visual-refresh.js?v=20260801-1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
