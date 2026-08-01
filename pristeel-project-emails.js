@@ -3,22 +3,25 @@
 'use strict';
 var files=[
   'pristeel-single-instance.js?v=20260731-1',
-  'pristeel-email-core.js?v=20260731-16',
-  'pristeel-gmail-auth-gate.js?v=20260731-16',
-  'pristeel-email-outreach.js?v=20260731-16',
-  'pristeel-email-project.js?v=20260731-16',
-  'pristeel-email-daily.js?v=20260731-16',
-  'pristeel-drive-import.js?v=20260731-16',
-  'pristeel-project-attachments.js?v=20260731-16',
-  'pristeel-gmail-intake.js?v=20260731-16',
-  'pristeel-gmail-intake-client.js?v=20260731-16',
-  'pristeel-gmail-linked-guard.js?v=20260731-16',
-  'pristeel-gmail-open-project.js?v=20260731-16',
-  'pristeel-ui-v2.js?v=20260731-4',
-  'pristeel-ui-session.js?v=20260731-4',
-  'pristeel-ui-v2-polish.js?v=20260731-3',
-  'pristeel-dashboard-focus.js?v=20260731-1',
-  'pristeel-utilities.js?v=20260731-1'
+  'pristeel-email-core.js?v=20260801-1',
+  'pristeel-gmail-auth-gate.js?v=20260801-1',
+  'pristeel-email-outreach.js?v=20260801-1',
+  'pristeel-email-project.js?v=20260801-1',
+  'pristeel-email-daily.js?v=20260801-1',
+  'pristeel-drive-import.js?v=20260801-1',
+  'pristeel-project-attachments.js?v=20260801-1',
+  'pristeel-gmail-intake.js?v=20260801-1',
+  'pristeel-gmail-intake-client.js?v=20260801-1',
+  'pristeel-gmail-linked-guard.js?v=20260801-1',
+  'pristeel-gmail-open-project.js?v=20260801-1',
+  'pristeel-email-relations.js?v=20260801-1',
+  'pristeel-project-contacts.js?v=20260801-1',
+  'pristeel-ui-v2.js?v=20260801-1',
+  'pristeel-ui-session.js?v=20260801-1',
+  'pristeel-ui-v2-polish.js?v=20260801-1',
+  'pristeel-dashboard-focus.js?v=20260801-1',
+  'pristeel-utilities.js?v=20260801-1',
+  'pristeel-email-shortcuts.js?v=20260801-1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
