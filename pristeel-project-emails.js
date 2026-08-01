@@ -10,6 +10,7 @@ var files=[
   'pristeel-email-daily.js?v=20260801-1',
   'pristeel-drive-import.js?v=20260801-1',
   'pristeel-drive-intelligence.js?v=20260801-1',
+  'pristeel-drive-workspace.js?v=20260801-1',
   'pristeel-project-attachments.js?v=20260801-1',
   'pristeel-gmail-intake.js?v=20260801-1',
   'pristeel-gmail-intake-client.js?v=20260801-1',
