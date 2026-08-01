@@ -5,6 +5,17 @@
 if(window.__pstSingleInstanceLoaded)return;
 window.__pstSingleInstanceLoaded=true;
 
+/* Gmail intake është një rrjedhë e veçantë. Ajo duhet të qëndrojë e hapur
+   edhe kur platforma kryesore është tashmë e hapur në një tab tjetër. */
+try{
+  var intakeParams=new URLSearchParams(window.location.search);
+  if(intakeParams.get('gmail_intake')==='1'){
+    window.__pstSingleInstanceBypassedForGmail=true;
+    window.name='PRISTEEL_GMAIL_INTAKE';
+    return;
+  }
+}catch(e){}
+
 var CHANNEL_NAME='pristeel-single-instance-v1';
 var OWNER_KEY='pst_single_instance_owner_v1';
 var MESSAGE_KEY='pst_single_instance_message_v1';
