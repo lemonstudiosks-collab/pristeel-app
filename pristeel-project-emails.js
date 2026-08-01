@@ -21,6 +21,7 @@ var files=[
   'pristeel-email-multi-link-ui.js?v=20260801-1',
   'pristeel-gmail-audit.js?v=20260801-1',
   'pristeel-project-discovery.js?v=20260801-1',
+  'pristeel-project-schema-compat.js?v=20260801-1',
   'pristeel-historical-project-audit.js?v=20260801-1',
   'pristeel-groq-rate-limit.js?v=20260801-2',
   'pristeel-project-analysis.js?v=20260801-1',
