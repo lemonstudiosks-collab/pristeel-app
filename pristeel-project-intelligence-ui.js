@@ -1,12 +1,12 @@
-/* PRISTEEL Project Intelligence UI: analiza hapet e para sa here hapet projekti */
+/* PRISTEEL Project Intelligence UI: analiza hapet e para pa bllokuar pasqyrën */
 (function(){
 'use strict';
 if(window.__pstProjectIntelligenceUiLoaded)return;
 window.__pstProjectIntelligenceUiLoaded=true;
 
 var pendingProjectId=null;
-var mountedProjectId=null;
 var observer=null;
+var mountTimer=null;
 
 var css=document.createElement('style');
 css.id='pst-project-intelligence-ui-style';
@@ -38,6 +38,23 @@ function idFrom(v){
 function overviewBody(){
   return document.getElementById('ov-body')||document.querySelector('[data-project-overview-body],.ov-body')
 }
+function baseReady(body){
+  if(!body)return false;
+  var text=String(body.textContent||'').toLowerCase();
+  if(text.indexOf('duke ngarkuar pasqyr')>-1)return false;
+  var children=Array.prototype.slice.call(body.children||[]).filter(function(el){return !el.classList.contains('pst-pi-shell')});
+  return children.length>0
+}
+function inferProjectId(body){
+  if(pendingProjectId)return pendingProjectId;
+  var box=body&&body.querySelector('[id^="pai-"]');
+  if(box)return idFrom(box.id.slice(4));
+  var contact=body&&body.querySelector('[id^="pct-"]');
+  if(contact)return idFrom(contact.id.slice(4));
+  var email=body&&body.querySelector('[id^="pem-"]');
+  if(email)return idFrom(email.id.slice(4));
+  return null
+}
 function section(pid){
   var p=esc(pid);
   return '<div class="pst-pi-shell" id="pst-pi-shell-'+p+'">'
@@ -45,7 +62,7 @@ function section(pid){
     +'<div class="pai-box" id="pai-'+p+'">'
       +'<div class="pai-hd"><div><div class="pai-kicker">Project Intelligence</div><div class="pai-title">Analiza dhe hapat e ardhshëm</div><div class="pai-sub">Emailat, skedarët, kontaktet, ofertat, afatet dhe detyrat analizohen si një projekt i vetëm.</div></div>'
       +'<div class="pai-actions"><button class="pai-btn" id="pai-history-'+p+'" onclick="pstProjectAnalysisHistory(\''+p+'\')">Historiku</button><button class="pai-btn" id="pai-tasks-'+p+'" onclick="pstProjectAnalysisCreateTasks(\''+p+'\')">Krijo detyrat</button><button class="pai-btn primary" id="pai-analyze-'+p+'" onclick="pstAnalyzeProject(\''+p+'\')">Analizo projektin</button></div></div>'
-      +'<div class="pai-state" id="pai-state-'+p+'">Duke ngarkuar…</div><div class="pai-progress" id="pai-progress-'+p+'"><i id="pai-fill-'+p+'"></i></div><div class="pai-body" id="pai-body-'+p+'"></div>'
+      +'<div class="pai-state" id="pai-state-'+p+'">Gati për analizën.</div><div class="pai-progress" id="pai-progress-'+p+'"><i id="pai-fill-'+p+'"></i></div><div class="pai-body" id="pai-body-'+p+'"></div>'
     +'</div></div>'
 }
 function widenOverview(body){
@@ -53,19 +70,23 @@ function widenOverview(body){
   if(!modal&&body.parentElement)modal=body.parentElement;
   if(modal){modal.style.width='min(1180px,96vw)';modal.style.maxWidth='1180px';modal.style.maxHeight='92vh'}
 }
-function autoAnalyzeOnce(pid){
-  var key='pst_pi_auto_'+pid;
-  if(sessionStorage.getItem(key))return;
+function showLoadFallback(pid){
   setTimeout(function(){
+    var state=document.getElementById('pai-state-'+pid);
     var host=document.getElementById('pai-body-'+pid);
-    if(!host||!host.querySelector('.pai-empty')||typeof window.pstAnalyzeProject!=='function')return;
-    sessionStorage.setItem(key,'1');
-    window.pstAnalyzeProject(String(pid))
-  },1100)
+    if(!state||!host)return;
+    if(/ngarkohet/i.test(state.textContent||'')&&!host.children.length){
+      state.textContent='Analiza nuk u ngarkua automatikisht. Mund ta nisësh me butonin Analizo projektin.';
+      state.style.color='#9B6A22';
+      host.innerHTML='<div class="pai-empty"><b>Analiza është gati për t’u nisur</b><p>Pasqyra e projektit u hap normalisht. Kliko butonin më poshtë për të analizuar emailat, dokumentet, ofertat, afatet dhe detyrat.</p><button class="pai-btn primary" onclick="pstAnalyzeProject(\''+esc(pid)+'\')">Analizo të gjithë projektin</button></div>'
+    }
+  },8000)
 }
 function mount(pid){
-  pid=idFrom(pid||pendingProjectId);if(!pid)return false;
-  var body=overviewBody();if(!body)return false;
+  var body=overviewBody();
+  if(!baseReady(body))return false;
+  pid=idFrom(pid||inferProjectId(body));
+  if(!pid)return false;
   pendingProjectId=pid;
   body.classList.add('pst-pi-overview');
   widenOverview(body);
@@ -73,54 +94,37 @@ function mount(pid){
   var shell=document.getElementById('pst-pi-shell-'+pid);
   var existing=document.getElementById('pai-'+pid);
   if(!shell){
-    shell=document.createElement('div');
-    shell.innerHTML=section(pid);
-    shell=shell.firstChild;
+    var holder=document.createElement('div');
+    holder.innerHTML=section(pid);
+    shell=holder.firstChild;
     if(existing){
-      var box=shell.querySelector('.pai-box');
-      if(box)box.replaceWith(existing);
+      var placeholder=shell.querySelector('.pai-box');
+      if(placeholder)placeholder.replaceWith(existing)
     }
   }
   if(body.firstElementChild!==shell)body.insertBefore(shell,body.firstChild);
   body.scrollTop=0;
-  mountedProjectId=pid;
 
-  if(typeof window.pstProjectAnalysisLoad==='function'){
+  if(shell.getAttribute('data-analysis-loaded')!=='1'&&typeof window.pstProjectAnalysisLoad==='function'){
+    shell.setAttribute('data-analysis-loaded','1');
     setTimeout(function(){
-      window.pstProjectAnalysisLoad(String(pid));
-      autoAnalyzeOnce(pid)
-    },80)
+      try{window.pstProjectAnalysisLoad(String(pid));showLoadFallback(pid)}catch(e){
+        var state=document.getElementById('pai-state-'+pid);
+        if(state){state.textContent='Analiza nuk u ngarkua: '+e.message;state.style.color='#A64B42'}
+      }
+    },100)
   }
   return true
 }
 function schedule(pid){
   pid=idFrom(pid);if(pid)pendingProjectId=pid;
+  if(mountTimer)clearTimeout(mountTimer);
   var attempts=0;
   function tryMount(){
-    if(mount(pendingProjectId)||++attempts>30)return;
-    setTimeout(tryMount,100)
+    if(mount(pendingProjectId)||++attempts>100)return;
+    mountTimer=setTimeout(tryMount,100)
   }
-  setTimeout(tryMount,0)
-}
-function wrap(name){
-  var fn=window[name];
-  if(typeof fn!=='function'||fn.__pstProjectIntelligenceUi)return false;
-  var wrapped=function(){
-    var pid=idFrom(arguments[0]);
-    if(pid)pendingProjectId=pid;
-    var result=fn.apply(this,arguments);
-    schedule(pid);
-    return result
-  };
-  wrapped.__pstProjectIntelligenceUi=true;
-  wrapped.__pstProjectIntelligenceOriginal=fn;
-  window[name]=wrapped;
-  return true
-}
-function hookFunctions(){
-  wrap('openOverview');
-  wrap('renderOverviewModal');
-  wrap('pstV2OpenProject')
+  mountTimer=setTimeout(tryMount,50)
 }
 function idFromClick(target){
   var el=target&&target.closest?target.closest('[data-project-id],[data-project],[onclick]'):null;
@@ -134,20 +138,19 @@ function idFromClick(target){
 function observe(){
   if(observer)return;
   observer=new MutationObserver(function(){
-    hookFunctions();
-    if(pendingProjectId&&overviewBody())mount(pendingProjectId)
+    var body=overviewBody();
+    if(body&&baseReady(body))schedule(inferProjectId(body))
   });
   observer.observe(document.documentElement,{childList:true,subtree:true});
-  document.addEventListener('click',function(e){var pid=idFromClick(e.target);if(pid){pendingProjectId=pid;schedule(pid)}},true)
+  document.addEventListener('click',function(e){
+    var pid=idFromClick(e.target);
+    if(pid){pendingProjectId=pid;schedule(pid)}
+  },true)
 }
 function init(){
-  hookFunctions();
   observe();
-  var tries=0,t=setInterval(function(){
-    hookFunctions();
-    if(pendingProjectId&&overviewBody())mount(pendingProjectId);
-    if(++tries>120)clearInterval(t)
-  },500)
+  var body=overviewBody();
+  if(body&&baseReady(body))schedule(inferProjectId(body))
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(init,300)});else setTimeout(init,300)
 })();
