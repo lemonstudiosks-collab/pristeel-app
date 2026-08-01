@@ -87,7 +87,7 @@ select
   pe.project_id::text,
   coalesce(pe.match_method, 'legacy-backfill'),
   coalesce(pe.match_confidence, 100),
-  coalesce(pe.created_at, now()),
+  now(),
   coalesce(pe.updated_at, now())
 from public.project_emails pe
 where pe.project_id is not null
