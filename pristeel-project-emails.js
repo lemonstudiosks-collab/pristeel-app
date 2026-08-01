@@ -32,7 +32,7 @@ var files=[
   'pristeel-dashboard-focus.js?v=20260801-1',
   'pristeel-utilities.js?v=20260801-1',
   'pristeel-email-shortcuts.js?v=20260801-1',
-  'pristeel-visual-refresh.js?v=20260801-1'
+  'pristeel-visual-refresh.js?v=20260801-2'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
