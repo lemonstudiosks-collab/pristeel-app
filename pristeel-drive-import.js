@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 
-var ROOT_FOLDER_NAME='PRISTEEL - Projektet';
+var ROOT_FOLDER_NAME='PRISTEEL — Projektet';
 var DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
 var FOLDER_MIME='application/vnd.google-apps.folder';
 var token='',tokenExp=0,pending=null;
