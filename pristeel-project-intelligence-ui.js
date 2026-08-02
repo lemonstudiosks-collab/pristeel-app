@@ -5,6 +5,7 @@ if(window.__pstProjectIntelligenceUiLoaded)return;
 window.__pstProjectIntelligenceUiLoaded=true;
 
 var pendingProjectId=null;
+var mountedProjectId=null;
 var observer=null;
 var mountTimer=null;
 
@@ -113,7 +114,7 @@ function mount(pid){
 
   var shell=document.getElementById('pst-pi-shell-'+pid);
   var existing=document.getElementById('pai-'+pid);
-  if(!shell){
+  if(!shell||!body.contains(shell)){
     var holder=document.createElement('div');
     holder.innerHTML=section(pid);
     shell=holder.firstChild;
@@ -121,9 +122,9 @@ function mount(pid){
       var placeholder=shell.querySelector('.pai-box');
       if(placeholder)placeholder.replaceWith(existing)
     }
+    body.insertBefore(shell,body.firstChild);
   }
-  if(body.firstElementChild!==shell)body.insertBefore(shell,body.firstChild);
-  body.scrollTop=0;
+  mountedProjectId=pid;
 
   if(shell.getAttribute('data-analysis-loaded')!=='1'&&typeof window.pstProjectAnalysisLoad==='function'){
     shell.setAttribute('data-analysis-loaded','1');
@@ -138,6 +139,12 @@ function mount(pid){
 }
 function schedule(pid){
   pid=idFrom(pid);if(pid)pendingProjectId=pid;
+  var body=overviewBody();
+  var existing=pid&&document.getElementById('pst-pi-shell-'+pid);
+  if(body&&existing&&body.contains(existing)&&mountedProjectId===pid){
+    widenOverview(body);
+    return
+  }
   if(mountTimer)clearTimeout(mountTimer);
   var attempts=0;
   function tryMount(){
@@ -159,7 +166,15 @@ function observe(){
   if(observer)return;
   observer=new MutationObserver(function(){
     var body=overviewBody();
-    if(body&&baseReady(body))schedule(inferProjectId(body))
+    if(!body||!baseReady(body))return;
+    var pid=idFrom(inferProjectId(body));
+    var shell=pid&&document.getElementById('pst-pi-shell-'+pid);
+    if(shell&&body.contains(shell)){
+      mountedProjectId=pid;
+      widenOverview(body);
+      return
+    }
+    schedule(pid)
   });
   observer.observe(document.documentElement,{childList:true,subtree:true});
   document.addEventListener('click',function(e){
