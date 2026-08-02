@@ -11,6 +11,10 @@ var mountTimer=null;
 var css=document.createElement('style');
 css.id='pst-project-intelligence-ui-style';
 css.textContent=`
+#ov-backdrop.pst-ov-scroll{overflow:hidden!important;padding:16px!important}
+#ov-backdrop.pst-ov-scroll .ov-modal{display:flex!important;flex-direction:column!important;min-height:0!important;max-height:calc(100vh - 32px)!important;max-height:calc(100dvh - 32px)!important;overflow:hidden!important}
+#ov-backdrop.pst-ov-scroll .ov-head{flex:0 0 auto}
+#ov-backdrop.pst-ov-scroll #ov-body{flex:1 1 auto;min-height:0;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
 #ov-body.pst-pi-overview{scroll-behavior:smooth}
 #ov-body .pst-pi-shell{margin:0 0 16px;position:relative}
 #ov-body .pst-pi-shell:before{content:"";display:block;height:3px;background:linear-gradient(90deg,#A65F2E,#D39A70 55%,transparent);border-radius:12px 12px 0 0;position:absolute;inset:0 0 auto;z-index:2;pointer-events:none}
@@ -25,6 +29,7 @@ css.textContent=`
 #ov-body .pst-pi-anchor-label{font-size:9px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:#8A4E24}
 #ov-body .pst-pi-anchor-note{font-size:9px;color:var(--text3,#7A8086)}
 @media(max-width:900px){#ov-body .pst-pi-shell .pai-top,#ov-body .pst-pi-shell .pai-grid{grid-template-columns:1fr}}
+@media(max-width:640px){#ov-backdrop.pst-ov-scroll{padding:8px!important}#ov-backdrop.pst-ov-scroll .ov-modal{max-height:calc(100vh - 16px)!important;max-height:calc(100dvh - 16px)!important}}
 `;
 document.head.appendChild(css);
 
@@ -66,9 +71,24 @@ function section(pid){
     +'</div></div>'
 }
 function widenOverview(body){
+  var backdrop=document.getElementById('ov-backdrop');
   var modal=body.closest('.modal-content,.modal-box,.modal-card,.overview-modal,[role="dialog"]');
   if(!modal&&body.parentElement)modal=body.parentElement;
-  if(modal){modal.style.width='min(1180px,96vw)';modal.style.maxWidth='1180px';modal.style.maxHeight='92vh'}
+  if(backdrop)backdrop.classList.add('pst-ov-scroll');
+  if(modal){
+    modal.style.width='min(1180px,96vw)';
+    modal.style.maxWidth='1180px';
+    modal.style.maxHeight='calc(100dvh - 32px)';
+    modal.style.minHeight='0';
+    modal.style.display='flex';
+    modal.style.flexDirection='column';
+    modal.style.overflow='hidden';
+  }
+  body.style.flex='1 1 auto';
+  body.style.minHeight='0';
+  body.style.maxHeight='none';
+  body.style.overflowY='auto';
+  body.style.overflowX='hidden';
 }
 function showLoadFallback(pid){
   setTimeout(function(){
