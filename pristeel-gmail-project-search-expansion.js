@@ -1,4 +1,4 @@
-/* PRISTEEL — zgjeron kërkimin Gmail për ofertat e njohura të projektit SSP Camera Poles */
+/* PRISTEEL - zgjeron kerkimin Gmail per ofertuesit e projektit SSP Camera Poles */
 (function(){
 'use strict';
 if(window.__pstGmailProjectSearchExpansion)return;
@@ -15,11 +15,22 @@ var timer=setInterval(function(){
   if(A.gmail.__pstExpanded)return;
 
   var original=A.gmail;
-  var suppliers=['tsotas@biomek.gr','biomek@biomek.gr','info@zincometal.gr'];
+  var suppliers=[
+    'tsotas@biomek.gr',
+    'biomek@biomek.gr',
+    'info@zincometal.gr',
+    'sales@zincometal.gr'
+  ];
 
   function projectQuery(q){
     var x=String(q||'').toLowerCase();
-    return x.indexOf('camera pole')>-1||x.indexOf('17s-25')>-1||x.indexOf('smartct')>-1||x.indexOf('shtyll')>-1||x.indexOf('bazament')>-1;
+    return x.indexOf('camera pole')>-1||
+      x.indexOf('steel poles')>-1||
+      x.indexOf('rfq - steel poles')>-1||
+      x.indexOf('17s-25')>-1||
+      x.indexOf('smartct')>-1||
+      x.indexOf('shtyll')>-1||
+      x.indexOf('bazament')>-1;
   }
 
   function expandSearchPath(path){
@@ -27,12 +38,18 @@ var timer=setInterval(function(){
     try{
       var u=new URL('https://local.invalid'+path);
       var q=u.searchParams.get('q')||'';
-      if(!projectQuery(q)||q.indexOf('PST_GREECE_EXPANDED')>-1)return path;
-      var extra=['CCTV','Biomek','Greece','Greek','Zincometal'];
+      if(!projectQuery(q))return path;
+      var extra=[
+        '"RFQ - Steel poles"',
+        '"Steel poles"',
+        '"Camera Pole"',
+        'CCTV',
+        'Biomek',
+        'Zincometal',
+        'P26/21659'
+      ];
       suppliers.forEach(function(e){extra.push('from:'+e);extra.push('to:'+e);});
-      var marker=' PST_GREECE_EXPANDED';
-      if(/}\s*$/.test(q))q=q.replace(/}\s*$/,' '+extra.join(' ')+' }'+marker);
-      else q+=' {'+extra.join(' ')+'}'+marker;
+      q+=' {'+extra.join(' ')+'}';
       u.searchParams.set('q',q);
       return u.pathname+'?'+u.searchParams.toString();
     }catch(e){return path;}
@@ -43,13 +60,17 @@ var timer=setInterval(function(){
     return hs.map(function(h){return String(h.name||'')+': '+String(h.value||'');}).join('\n').toLowerCase();
   }
 
+  function belongsToSspSupplierFlow(result){
+    var text=headersText(result)+'\n'+String(result&&result.snippet||'').toLowerCase();
+    if(suppliers.some(function(e){return text.indexOf(e)>-1;}))return true;
+    return /subject:\s*(re:\s*)?rfq\s*-\s*steel poles|camera pole|cctv pole|17s[- ]25|p26\/21659|zincometal|biomek/.test(text);
+  }
+
   A.gmail=async function(path,token){
     var expanded=expandSearchPath(path);
     var result=await original.call(A,expanded,token);
-    if(/\/messages\/[^/?]+\?format=full/.test(String(path||''))){
-      var text=headersText(result);
-      var greek=suppliers.some(function(e){return text.indexOf(e)>-1;})||text.indexOf('p26/21659')>-1;
-      if(greek)result.snippet=String(result.snippet||'')+' Camera Pole CCTV Biomek Greece SSP 17S-25';
+    if(/\/messages\/[^/?]+\?format=full/.test(String(path||''))&&belongsToSspSupplierFlow(result)){
+      result.snippet=String(result.snippet||'')+' SSP Smart City Camera Poles 17S-25 Steel poles Albania supplier quotation';
     }
     return result;
   };
