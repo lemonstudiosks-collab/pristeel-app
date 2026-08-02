@@ -9,7 +9,7 @@ var files=[
   'pristeel-gmail-auth-gate.js?v=20260801-1',
   'pristeel-email-outreach.js?v=20260801-1',
   'pristeel-email-project.js?v=20260801-1',
-  'pristeel-email-daily.js?v=20260801-1',
+  'pristeel-email-daily.js?v=20260802-1',
   'pristeel-drive-import.js?v=20260801-1',
   'pristeel-drive-intelligence.js?v=20260801-1',
   'pristeel-drive-workspace.js?v=20260801-1',
@@ -27,6 +27,7 @@ var files=[
   'pristeel-gmail-audit.js?v=20260801-1',
   'pristeel-project-discovery.js?v=20260801-1',
   'pristeel-project-discovery-create-fix.js?v=20260801-1',
+  'pristeel-supplier-project-guard.js?v=20260802-1',
   'pristeel-project-schema-compat.js?v=20260801-2',
   'pristeel-historical-project-audit.js?v=20260801-1',
   'pristeel-groq-rate-limit.js?v=20260801-2',
@@ -46,13 +47,8 @@ function load(i){
   var s=document.createElement('script');
   s.src=files[i];
   s.defer=true;
-  s.onload=function(){
-    if(!window.__pstAbortBootstrap)load(i+1);
-  };
-  s.onerror=function(){
-    console.error('Nuk u ngarkua moduli:',files[i]);
-    if(!window.__pstAbortBootstrap)load(i+1);
-  };
+  s.onload=function(){if(!window.__pstAbortBootstrap)load(i+1)};
+  s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(!window.__pstAbortBootstrap)load(i+1)};
   document.head.appendChild(s);
 }
 load(0);
