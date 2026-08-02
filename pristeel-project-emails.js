@@ -21,6 +21,7 @@ var files=[
   'pristeel-email-relations.js?v=20260801-1',
   'pristeel-project-contacts.js?v=20260801-1',
   'pristeel-email-multi-link-ui.js?v=20260801-1',
+  'pristeel-project-gmail-collector.js?v=20260802-1',
   'pristeel-gmail-audit.js?v=20260801-1',
   'pristeel-project-discovery.js?v=20260801-1',
   'pristeel-project-discovery-create-fix.js?v=20260801-1',
