@@ -5,6 +5,7 @@ var files=[
   'pristeel-auth-persistence.js?v=20260801-1',
   'pristeel-single-instance.js?v=20260801-2',
   'pristeel-email-core.js?v=20260801-2',
+  'pristeel-project-routing-rules.js?v=20260802-1',
   'pristeel-gmail-project-search-expansion.js?v=20260802-1',
   'pristeel-gmail-auth-gate.js?v=20260801-1',
   'pristeel-email-outreach.js?v=20260801-1',
