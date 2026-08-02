@@ -203,7 +203,7 @@ if(document.readyState === 'loading'){
   if(document.querySelector('script[data-pst-project-emails]')) return;
   var s=document.createElement('script');
   var intake=new URLSearchParams(window.location.search).get('gmail_intake')==='1';
-  s.src='pristeel-project-emails.js?v='+(intake?String(Date.now()):'20260802-6');
+  s.src='pristeel-project-emails.js?v='+(intake?String(Date.now()):'20260802-7');
   s.defer=true;
   s.setAttribute('data-pst-project-emails','1');
   document.head.appendChild(s);
