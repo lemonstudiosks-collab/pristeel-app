@@ -36,6 +36,7 @@ var files=[
   'pristeel-groq-rate-limit.js?v=20260801-2',
   'pristeel-project-analysis.js?v=20260801-1',
   'pristeel-project-intelligence-ui.js?v=20260801-2',
+  'pristeel-project-workspace.js?v=20260802-1',
   'pristeel-ui-v2.js?v=20260801-1',
   'pristeel-ui-session.js?v=20260801-1',
   'pristeel-ui-v2-polish.js?v=20260801-1',
