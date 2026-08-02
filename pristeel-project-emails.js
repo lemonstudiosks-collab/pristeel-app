@@ -44,7 +44,7 @@ var files=[
   'pristeel-utilities.js?v=20260801-1',
   'pristeel-email-shortcuts.js?v=20260801-1',
   'pristeel-visual-refresh.js?v=20260801-2',
-  'pristeel-project-board-layout.js?v=20260802-1'
+  'pristeel-project-board-layout.js?v=20260802-2'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
