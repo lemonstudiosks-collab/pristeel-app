@@ -18,7 +18,12 @@ function esc(value){
 }
 function js(value){return JSON.stringify(String(value==null?'':value));}
 function stages(){return Array.isArray(window.PIPELINE_STAGES)?window.PIPELINE_STAGES:[];}
-function projects(){return Array.isArray(window._allProjectsCache)?window._allProjectsCache:[];}
+function archived(project){
+  var name=String(project&&project.name||'').toLowerCase();
+  var client=String(project&&project.client||'').toLowerCase();
+  return name.indexOf('arkivë ·')===0||name.indexOf('arkive ·')===0||client.indexOf('bashkuar te ')===0;
+}
+function projects(){return (Array.isArray(window._allProjectsCache)?window._allProjectsCache:[]).filter(function(project){return !archived(project);});}
 function stageIndex(stageId){
   var list=stages();
   for(var i=0;i<list.length;i++)if(list[i].id===stageId)return i;
