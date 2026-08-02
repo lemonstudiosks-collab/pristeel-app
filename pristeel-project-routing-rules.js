@@ -1,4 +1,4 @@
-/* PRISTEEL — canonical project routing rules
+/* PRISTEEL - canonical project routing rules
    Enriches master projects with aliases/suppliers and suppresses known supplier-shadow projects.
 */
 (function(){
@@ -16,10 +16,10 @@ function uniq(v){return arr(v).map(String).filter(function(x,i,a){return x&&a.in
 function add(q,key,values){q[key]=uniq(arr(q[key]).concat(values||[]))}
 
 var SSP={
-  aliases:['ssp','sspfz','smart city','smartct','camera pole','camera poles','shtyllat e kamerave','shtyllave te kamerave','steel poles albania','17s 25','pst ssp sc 001 2026'],
+  aliases:['ssp','sspfz','smart city','smartct','camera pole','camera poles','shtyllat e kamerave','shtyllave te kamerave','steel poles albania','rfq steel poles','17s 25','pst ssp sc 001 2026'],
   refs:['17s-25','pst-ssp-sc-001-2026','smartct'],
-  tokens:['camera','poles','pole','smartct','foundations','foundation','bazamentet','bazamenteve','montimi','installation','fabrication','civil','boq','eurosteel','biomek','zincometal','tehnoburimi','vating'],
-  emails:['ermalrula@gmail.com','aldo@rt-grp.com','tani@rt-grp.com','renis.tershana@rt-grp.com','tsotas@biomek.gr','biomek@biomek.gr','info@zincometal.gr','burim.fazliu@tehnoburimi.com','sasa.sacic@tehnoburimi.com','dimitar.zakov@vating.com.mk','varis.mehmeti@sspfz.com','legal@sspfz.com','elvin.luci@sspfz.com','valon@fivainvestment.com','fitim@fivainvestment.com','shpend.kusari@fivainvestment.com'],
+  tokens:['camera','poles','pole','steel poles','rfq','quotation','smartct','foundations','foundation','bazamentet','bazamenteve','montimi','installation','fabrication','civil','boq','eurosteel','biomek','zincometal','tehnoburimi','vating'],
+  emails:['ermalrula@gmail.com','aldo@rt-grp.com','tani@rt-grp.com','renis.tershana@rt-grp.com','tsotas@biomek.gr','biomek@biomek.gr','info@zincometal.gr','sales@zincometal.gr','burim.fazliu@tehnoburimi.com','sasa.sacic@tehnoburimi.com','dimitar.zakov@vating.com.mk','varis.mehmeti@sspfz.com','legal@sspfz.com','elvin.luci@sspfz.com','valon@fivainvestment.com','fitim@fivainvestment.com','shpend.kusari@fivainvestment.com'],
   suppliers:['biomek','eurosteel','r t group','rt group','tehnoburimi','vating','zincometal','mitas','isiklar','elmet']
 };
 function sspMasterScore(q){
