@@ -1,4 +1,4 @@
-/* PRISTEEL — supplier/project guard
+/* PRISTEEL - supplier/project guard
    Preventon ofertat e furnitoreve nga krijimi si projekte te reja.
    Kandidatet e furnitoreve lidhen me projektin ekzistues kur perputhja eshte e sigurt.
 */
@@ -9,6 +9,7 @@ window.__pstSupplierProjectGuardLoaded=true;
 
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com','prissteel@gmail.com'];
 var GENERIC={project:1,projekt:1,projekti:1,steel:1,stahl:1,construction:1,konstruktion:1,offer:1,offerta:1,oferta:1,quotation:1,angebot:1,rfq:1,request:1,reply:1,fwd:1,forwarded:1,email:1,albania:1,shqiperi:1};
+var SSP_SUPPLIERS=['biomek','zincometal','eurosteel','r t group','rt group','tehnoburimi','vating','mitas','isiklar','elmet'];
 
 function arr(v){return Array.isArray(v)?v:[]}
 function enc(v){return encodeURIComponent(String(v==null?'':v))}
@@ -27,7 +28,16 @@ function supplierSignal(c){
   var projectOrder=/(purchase order|bestellung|auftrag|werkvertrag|signed contract|kontrate e nenshkruar|contract award)/.test(t);
   return !!((commercial&&(supplierFlow||supplierReply))&&!projectOrder)
 }
-function sspSignal(c){var t=textOf(c);return /(17s 25|pst ssp sc 001 2026|smartct|smart city|camera pole|camera poles|cctv pole|shtyllat e kamerave|shtyllave te kamerave)/.test(t)}
+function sspSignal(c){
+  var t=textOf(c);
+  if(/17s 25|pst ssp sc 001 2026|smartct|smart city|camera pole|camera poles|cctv pole|shtyllat e kamerave|shtyllave te kamerave/.test(t))return true;
+  return /(rfq steel poles|steel poles)/.test(t)&&/(zincometal|biomek|p26 21659|2147|cctv|camera)/.test(t)
+}
+function supplierShadow(p){
+  var pn=norm((p&&p.name)||''),pc=norm((p&&p.client)||'');
+  var supplier=SSP_SUPPLIERS.some(function(x){return pc.indexOf(x)>-1});
+  return supplier&&/ssp|smart city|smartct|camera pole|steel poles/.test(pn)
+}
 function scoreProject(c,p){
   var ct=textOf(c),pn=norm((p&&p.name)||''),pr=norm((p&&p.ref)||''),pc=norm((p&&p.client)||''),s=0;
   if(c&&c.ref&&pr&&norm(c.ref)===pr)s+=180;
@@ -35,7 +45,8 @@ function scoreProject(c,p){
   if(pn&&ct.indexOf(pn)>-1)s+=110;
   var a=tokens(ct),b=tokens(pn+' '+pr+' '+pc),common=a.filter(function(x){return b.indexOf(x)>-1});
   s+=common.length*18;
-  if(sspSignal(c)&&/(ssp|smart city|camera pole|camera poles)/.test(pn))s+=220;
+  if(sspSignal(c)&&/(ssp|smart city|camera pole|camera poles|steel poles)/.test(pn))s+=220;
+  if(sspSignal(c)&&supplierShadow(p))s-=280;
   return s
 }
 function bestProject(c,projects){var best=null,bestScore=0,second=0;arr(projects).forEach(function(p){var s=scoreProject(c,p);if(s>bestScore){second=bestScore;bestScore=s;best=p}else if(s>second)second=s});return{project:best,score:bestScore,margin:bestScore-second}}
