@@ -5,15 +5,13 @@
 if(window.__pstSingleInstanceLoaded)return;
 window.__pstSingleInstanceLoaded=true;
 
-/* Gmail intake është një rrjedhë e veçantë. Ajo duhet të qëndrojë e hapur
-   edhe kur platforma kryesore është tashmë e hapur në një tab tjetër. */
+/* Edhe hyrja nga Gmail përdor tab-in ekzistues të PRISTEEL-it.
+   Google hap përkohësisht një tab të ri, por ky ia dorëzon kërkesën
+   instancës aktive dhe pastaj mbyllet vetë. */
+var isGmailIntake=false;
 try{
   var intakeParams=new URLSearchParams(window.location.search);
-  if(intakeParams.get('gmail_intake')==='1'){
-    window.__pstSingleInstanceBypassedForGmail=true;
-    window.name='PRISTEEL_GMAIL_INTAKE';
-    return;
-  }
+  isGmailIntake=intakeParams.get('gmail_intake')==='1';
 }catch(e){}
 
 var CHANNEL_NAME='pristeel-single-instance-v1';
@@ -30,7 +28,7 @@ var heartbeatTimer=null;
 var primaryId='';
 var seenMessages={};
 
-try{window.name=APP_WINDOW_NAME;}catch(e){}
+try{window.name=isGmailIntake?'PRISTEEL_GMAIL_HANDOFF':APP_WINDOW_NAME;}catch(e){}
 
 function now(){return Date.now();}
 function jsonParse(value){try{return JSON.parse(value||'null');}catch(e){return null;}}
@@ -110,13 +108,13 @@ function showDuplicateNotice(){
   if(window.closed)return;
   var target=document.body||document.documentElement;
   if(!target)return;
-  document.title='PRISTEEL është tashmë e hapur';
+  document.title='Kërkesa u dërgua te PRISTEEL';
   target.innerHTML=''
     +'<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F6F7F8;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;color:#25282B;padding:24px">'
     +'<div style="width:min(430px,100%);background:#fff;border:1px solid #E6E8EA;border-radius:16px;padding:28px;box-shadow:0 10px 35px rgba(24,30,36,.08);text-align:center">'
     +'<div style="width:44px;height:44px;border-radius:12px;background:#F7EDE5;color:#A65F2E;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:20px;font-weight:750">P</div>'
-    +'<div style="font-size:17px;font-weight:720">PRISTEEL është tashmë e hapur</div>'
-    +'<div style="font-size:12px;line-height:1.6;color:#73797F;margin-top:8px">Kërkesa u dërgua te dritarja ekzistuese. Këtë dritare mund ta mbyllësh.</div>'
+    +'<div style="font-size:17px;font-weight:720">Kërkesa u dërgua te tab-i ekzistues</div>'
+    +'<div style="font-size:12px;line-height:1.6;color:#73797F;margin-top:8px">Kjo dritare mund të mbyllet.</div>'
     +'<button onclick="window.close()" style="margin-top:18px;border:0;border-radius:9px;background:#A65F2E;color:#fff;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer">Mbylle këtë dritare</button>'
     +'</div></div>';
 }
@@ -127,12 +125,13 @@ function becomeDuplicate(){
   var record=getOwner();
   primaryId=primaryId||(record&&record.id)||'';
   send({type:'handoff',to:primaryId,target:location.href});
-  setTimeout(closeDuplicateWindow,40);
-  setTimeout(showDuplicateNotice,450);
+  setTimeout(closeDuplicateWindow,isGmailIntake?120:40);
+  setTimeout(showDuplicateNotice,500);
 }
 function becomeOwner(){
   if(duplicate)return;
   owner=true;
+  try{window.name=APP_WINDOW_NAME;}catch(e){}
   setOwner();
   clearInterval(heartbeatTimer);
   heartbeatTimer=setInterval(setOwner,HEARTBEAT_MS);
