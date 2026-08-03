@@ -52,7 +52,8 @@ var files=[
   'pristeel-invoice-copy-fix.js?v=20260803-1',
   'pristeel-document-center-core.js?v=20260803-1',
   'pristeel-document-adjustments.js?v=20260803-2',
-  'pristeel-dashboard-operations.js?v=20260803-1'
+  'pristeel-dashboard-operations.js?v=20260803-1',
+  'pristeel-document-adjustments-v3.js?v=20260803-1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
