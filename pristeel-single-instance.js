@@ -11,7 +11,7 @@ try{
   var intakeParams=new URLSearchParams(window.location.search);
   if(intakeParams.get('gmail_intake')==='1'){
     window.__pstSingleInstanceBypassedForGmail=true;
-    window.name='PRISTEEL_GMAIL_INTAKE';
+    window.name='PRISTEEL_MAIN';
     return;
   }
 }catch(e){}
