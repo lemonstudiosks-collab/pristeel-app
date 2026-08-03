@@ -53,6 +53,34 @@ function setStatus(msg,color){
   }
 }
 
+/* Pas autorizimit ringarkohet vetëm rrjedha e Gmail intake-it.
+   Nuk rifreskohet e gjithë platforma, sepse reload-i mund ta nxjerrë
+   përdoruesin nga sesioni i PRISTEEL-it. */
+function restartGmailIntake(){
+  return new Promise(function(resolve,reject){
+    var previous=document.getElementById('pgi-bg');
+    if(previous)previous.id='pgi-bg-before-auth';
+
+    var script=document.createElement('script');
+    script.src='pristeel-gmail-intake.js?reauth='+Date.now();
+    script.onload=function(){
+      if(previous&&previous.parentNode)previous.parentNode.removeChild(previous);
+
+      /* Rifresko edhe zbulimin e klientit pasi modali i ri të jetë krijuar. */
+      var clientScript=document.createElement('script');
+      clientScript.src='pristeel-gmail-intake-client.js?reauth='+Date.now();
+      clientScript.onerror=function(){console.warn('Nuk u ringarkua moduli i klientit të Gmail-it.');};
+      document.head.appendChild(clientScript);
+      resolve();
+    };
+    script.onerror=function(){
+      if(previous)previous.id='pgi-bg';
+      reject(new Error('Moduli i Gmail-it nuk u ringarkua. Rifresko faqen dhe provo përsëri.'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
 function injectButton(){
   if(savedToken())return true;
   var footer=document.querySelector('.pgi-ft');
@@ -75,7 +103,7 @@ function injectButton(){
     try{
       await A.authInteractive();
       setStatus('Autorizimi u krye. Po ngarkohet thread-i…','var(--green-text)');
-      window.location.reload();
+      await restartGmailIntake();
     }catch(err){
       button.disabled=false;
       button.textContent='Autorizo Gmail dhe ngarko thread-in';
