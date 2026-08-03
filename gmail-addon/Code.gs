@@ -1,4 +1,4 @@
-var PRISTEEL_APP_URL = 'https://lemonstudiosks-collab.github.io/pristeel-app/pristeel-gmail-launcher.html';
+var PRISTEEL_APP_URL = 'https://lemonstudiosks-collab.github.io/pristeel-app/pristeel-gmail-launcher-v2.html';
 
 function onHomepage() {
   var section = CardService.newCardSection()
