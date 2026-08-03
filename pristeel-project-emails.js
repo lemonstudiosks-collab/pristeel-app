@@ -49,7 +49,9 @@ var files=[
   'pristeel-project-board-layout.js?v=20260802-2',
   'pristeel-project-loss.js?v=20260803-1',
   'pristeel-document-shortcuts.js?v=20260803-1',
-  'pristeel-invoice-copy-fix.js?v=20260803-1'
+  'pristeel-invoice-copy-fix.js?v=20260803-1',
+  'pristeel-document-center-core.js?v=20260803-1',
+  'pristeel-document-adjustments.js?v=20260803-1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
