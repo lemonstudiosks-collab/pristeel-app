@@ -1,8 +1,8 @@
-/* PRISTEEL email modules bootstrap */
+/* PRISTEEL modules bootstrap: stable authentication + production workspace */
 (function(){
 'use strict';
 var files=[
-  'pristeel-supabase-config.js?v=20260804-1',
+  'pristeel-single-instance.js?v=20260804-release1',
   'pristeel-gmail-tab-handoff.js?v=20260803-1',
   'pristeel-email-core.js?v=20260801-2',
   'pristeel-google-workspace-auth.js?v=20260802-2',
@@ -48,19 +48,18 @@ var files=[
   'pristeel-project-loss.js?v=20260803-1',
   'pristeel-document-shortcuts.js?v=20260803-1',
   'pristeel-invoice-copy-fix.js?v=20260803-1',
-  'pristeel-document-center-core.js?v=20260803-1',
-  'pristeel-document-adjustments.js?v=20260803-2',
-  'pristeel-document-adjustments-v3.js?v=20260803-1',
-  'pristeel-workspace-architecture-v1.js?v=20260803-1',
-  'pristeel-workspace-hotfix-v1.js?v=20260804-1'
+  'pristeel-document-center-core.js?v=20260804-release1',
+  'pristeel-document-adjustments-v3.js?v=20260804-release1',
+  'pristeel-workspace-architecture-v1.js?v=20260804-release1',
+  'pristeel-workspace-release-fix.js?v=20260804-release1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
   var s=document.createElement('script');
   s.src=files[i];
   s.defer=true;
-  s.onload=function(){if(!window.__pstAbortBootstrap)load(i+1)};
-  s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(!window.__pstAbortBootstrap)load(i+1)};
+  s.onload=function(){if(!window.__pstAbortBootstrap)load(i+1);};
+  s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(!window.__pstAbortBootstrap)load(i+1);};
   document.head.appendChild(s);
 }
 load(0);
