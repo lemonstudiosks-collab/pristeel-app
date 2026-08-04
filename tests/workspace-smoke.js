@@ -78,7 +78,7 @@ function active(id) {
   load('pristeel-document-center-core.js');
   load('pristeel-document-adjustments-v3.js');
   load('pristeel-workspace-architecture-v1.js');
-  load('pristeel-workspace-release-fix.js');
+  load('pristeel-workspace-release-fix-v2.js');
   await wait(900);
 
   assert.strictEqual(typeof w.pstWorkspaceGo, 'function', 'Workspace router missing');
