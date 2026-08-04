@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>PRISTEEL — Hyrje</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f7fafb;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#20272b;padding:24px}
+    .card{width:min(380px,100%);background:#fff;border:1px solid #dfe8ec;border-radius:18px;padding:30px;box-shadow:0 18px 50px rgba(42,72,84,.10)}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:25px}
+    .mark{width:43px;height:43px;border-radius:13px 13px 13px 5px;background:linear-gradient(145deg,#72aec4,#3e7e96);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:750;box-shadow:0 10px 20px rgba(62,126,150,.22)}
+    .name{font-size:18px;font-weight:760;letter-spacing:.2px}.sub{font-size:11px;color:#858e93;margin-top:2px}
+    label{display:block;font-size:10px;font-weight:750;letter-spacing:.7px;text-transform:uppercase;color:#7b858b;margin:13px 0 6px}
+    input{width:100%;height:44px;border:1px solid #d8e2e6;border-radius:11px;padding:0 12px;font:inherit;font-size:13px;outline:none;background:#fff}
+    input:focus{border-color:#5b9bb3;box-shadow:0 0 0 4px rgba(91,155,179,.12)}
+    button{width:100%;height:44px;border:0;border-radius:11px;margin-top:18px;background:linear-gradient(135deg,#67a8c0,#3f7f98);color:#fff;font-size:13px;font-weight:730;cursor:pointer;box-shadow:0 9px 22px rgba(62,126,150,.20)}
+    button:disabled{opacity:.65;cursor:wait}.msg{min-height:20px;margin-top:12px;font-size:11.5px;line-height:1.45;color:#a33a2e;text-align:center}.hint{font-size:10.5px;color:#8c959a;line-height:1.55;margin-top:18px;text-align:center}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand"><div class="mark">P</div><div><div class="name">PRISTEEL</div><div class="sub">Procurement Platform</div></div></div>
+    <form id="login-form">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" placeholder="email@prissteel.com" required>
+      <label for="password">Fjalëkalimi</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button id="submit" type="submit">Hyr në platformë</button>
+      <div class="msg" id="msg"></div>
+    </form>
+    <div class="hint">Kjo faqe përdor hyrjen direkte të Supabase dhe nuk ruan fjalëkalimin.</div>
+  </main>
+<script>
+(function(){
+'use strict';
+var SB_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM';
+var APP='pristeel-procurement.html?v=20260804-6';
+function clearBrokenGuards(){
+  ['pst_single_instance_owner_v1','pst_single_instance_message_v1','pst_auth_restore_marker_v2','pst_auth_restore_marker_v3'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+  try{sessionStorage.removeItem('pst_single_instance_tab_id_v1');}catch(e){}
+}
+function saveSession(s){
+  var payload={access_token:s.access_token,refresh_token:s.refresh_token,expires_at:Date.now()+((s.expires_in||3600)*1000)-30000,email:s.user&&s.user.email};
+  localStorage.setItem('pristeel_session',JSON.stringify(payload));
+}
+function redirect(){location.replace(APP);}
+clearBrokenGuards();
+try{
+  var existing=JSON.parse(localStorage.getItem('pristeel_session')||'null');
+  if(existing&&existing.access_token&&existing.refresh_token&&Date.now()<Number(existing.expires_at||0)){redirect();return;}
+}catch(e){}
+var form=document.getElementById('login-form'),btn=document.getElementById('submit'),msg=document.getElementById('msg');
+form.addEventListener('submit',async function(ev){
+  ev.preventDefault();msg.textContent='';btn.disabled=true;btn.textContent='Duke hyrë…';
+  var email=document.getElementById('email').value.trim(),password=document.getElementById('password').value;
+  try{
+    var res=await fetch(SB_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password})});
+    var data=await res.json().catch(function(){return{};});
+    if(!res.ok||!data.access_token){throw new Error(data.error_description||data.msg||data.message||'Email ose fjalëkalim i gabuar.');}
+    saveSession(data);redirect();
+  }catch(err){msg.textContent=err&&err.message?err.message:'Gabim lidhjeje. Provo përsëri.';btn.disabled=false;btn.textContent='Hyr në platformë';}
+});
+})();
+</script>
+</body>
+</html>
