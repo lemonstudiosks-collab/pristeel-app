@@ -51,7 +51,7 @@ var files=[
   'pristeel-document-center-core.js?v=20260804-release1',
   'pristeel-document-adjustments-v3.js?v=20260804-release1',
   'pristeel-workspace-architecture-v1.js?v=20260804-release1',
-  'pristeel-workspace-release-fix.js?v=20260804-release1'
+  'pristeel-workspace-release-fix-v2.js?v=20260804-release2'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
