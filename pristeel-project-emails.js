@@ -64,7 +64,8 @@ var files=[
   /* New project-centred workspace and deterministic repair layers */
   'pristeel-workspace-architecture-v1.js?v=20260804-production3',
   'pristeel-workspace-release-fix-v2.js?v=20260804-production3',
-  'pristeel-workspace-runtime-guard.js?v=20260804-production3'
+  'pristeel-workspace-runtime-guard.js?v=20260804-production3',
+  'pristeel-project-status-actions.js?v=20260804-production6'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
