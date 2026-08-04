@@ -62,7 +62,8 @@ var files=[
   'pristeel-project-integrity-ui-v1.js?v=20260804-1',
   'pristeel-project-attachments-relations-v2.js?v=20260804-1',
   'pristeel-project-integrity-safety-v2.js?v=20260804-1',
-  'pristeel-projects-modern-v1.js?v=20260804-1'
+  'pristeel-projects-modern-v1.js?v=20260804-1',
+  'pristeel-modules-unified-v1.js?v=20260804-1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
