@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "node preview-server.mjs",
     "start": "node preview-server.mjs",
-    "check:syntax": "node --check pristeel-project-data-integrity-v1.js && node --check pristeel-project-integrity-ui-v1.js && node --check pristeel-document-routing-integrity-v1.js && node --check pristeel-project-attachments-relations-v2.js && node --check pristeel-project-integrity-safety-v2.js && node --check pristeel-projects-modern-v1.js && node --check pristeel-modules-unified-v1.js",
-    "test": "npm run check:syntax && node tests/workspace-integrity-smoke.js && node tests/workspace-safety-smoke.js && node tests/modules-unified-smoke.js"
+    "check:syntax": "node --check pristeel-email-relation-safety-v2.js && node --check pristeel-project-data-integrity-v1.js && node --check pristeel-project-integrity-ui-v1.js && node --check pristeel-document-routing-integrity-v1.js && node --check pristeel-project-attachments-relations-v2.js && node --check pristeel-project-integrity-safety-v2.js && node --check pristeel-projects-modern-v1.js && node --check pristeel-modules-unified-v1.js",
+    "test": "npm run check:syntax && node tests/email-relation-safety-smoke.js && node tests/workspace-integrity-smoke.js && node tests/workspace-safety-smoke.js && node tests/modules-unified-smoke.js"
   },
   "devDependencies": {
     "jsdom": "^26.1.0"
