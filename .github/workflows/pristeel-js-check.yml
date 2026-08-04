@@ -1,0 +1,23 @@
+name: PRISTEEL JavaScript Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check native login theme
+        run: node --check pristeel-login-theme-v2.js
+      - name: Check multilingual credit and debit notes
+        run: node --check pristeel-document-adjustments-v5-language-v2.js
+      - name: Check module bootstrap
+        run: node --check pristeel-project-emails.js
+      - name: Check document recovery
+        run: node --check pristeel-document-adjustments-v4.js
+      - name: Check workspace runtime guard
+        run: node --check pristeel-workspace-runtime-guard.js
