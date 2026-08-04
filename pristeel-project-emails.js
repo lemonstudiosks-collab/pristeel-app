@@ -57,9 +57,10 @@ var files=[
   'pristeel-document-center-core.js?v=20260804-2',
   'pristeel-document-adjustments-v3.js?v=20260804-2',
 
-  /* New project-centred workspace and deterministic repair layer */
+  /* New project-centred workspace and deterministic repair layers */
   'pristeel-workspace-architecture-v1.js?v=20260804-production3',
-  'pristeel-workspace-release-fix-v2.js?v=20260804-production3'
+  'pristeel-workspace-release-fix-v2.js?v=20260804-production3',
+  'pristeel-workspace-runtime-guard.js?v=20260804-production3'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
