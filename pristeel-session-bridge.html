@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<title>PRISTEEL — Duke hapur platformën</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f9fa;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#20272b;padding:24px}.card{width:min(390px,100%);background:#fff;border:1px solid #dce7eb;border-radius:19px;padding:31px;text-align:center;box-shadow:0 20px 55px rgba(42,72,84,.11)}.mark{width:44px;height:44px;border-radius:14px 14px 14px 5px;background:linear-gradient(145deg,#72aec4,#3e7e96);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:760;margin:0 auto 15px;box-shadow:0 10px 22px rgba(62,126,150,.22)}.title{font-size:17px;font-weight:750}.sub{font-size:11.5px;color:#7f898e;line-height:1.55;margin-top:7px}.error{color:#a33a2e}.ok{color:#2f7657}button{width:100%;height:43px;border:0;border-radius:10px;margin-top:18px;background:linear-gradient(135deg,#67a8c0,#3f7f98);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;display:none}
+</style>
+</head>
+<body>
+<main class="card"><div class="mark">P</div><div class="title">Duke hapur PRISTEEL</div><div class="sub" id="status">Po verifikohet sesioni…</div><button id="retry">Kthehu te hyrja</button></main>
+<script>
+(function(){
+'use strict';
+var status=document.getElementById('status');
+var retry=document.getElementById('retry');
+var APP='pristeel-procurement.html?v=20260804-10';
+function fail(text){status.className='sub error';status.textContent=text;retry.style.display='block';}
+retry.onclick=function(){location.replace('pristeel-login-v2.html?v=20260804-4');};
+try{
+  var handoff=sessionStorage.getItem('pst_login_session_handoff_v1');
+  var local=localStorage.getItem('pristeel_session');
+  var text=handoff||local;
+  if(!text){fail('Sesioni nuk u gjet pas hyrjes.');return;}
+  var session=JSON.parse(text);
+  if(!session||!session.access_token||!session.refresh_token){fail('Sesioni i ruajtur nuk është i plotë.');return;}
+  localStorage.setItem('pristeel_session',JSON.stringify(session));
+  sessionStorage.setItem('pst_login_session_handoff_v1',JSON.stringify(session));
+  var check=JSON.parse(localStorage.getItem('pristeel_session')||'null');
+  if(!check||check.access_token!==session.access_token){fail('Browseri nuk po e ruan sesionin e platformës.');return;}
+  status.className='sub ok';
+  status.textContent='Sesioni u verifikua. Platforma po hapet…';
+  setTimeout(function(){location.replace(APP);},700);
+}catch(e){fail('Gabim gjatë kalimit të sesionit: '+(e&&e.message?e.message:'i panjohur'));}
+})();
+</script>
+</body>
+</html>
