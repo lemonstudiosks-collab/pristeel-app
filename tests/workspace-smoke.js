@@ -123,7 +123,7 @@ function active(id) {
   const actual = w.document.querySelector('#pst-adj-v3-lines input[step="0.001"]');
   assert.ok(actual, 'Actual weight input missing');
   actual.value = '500';
-  actual.dispatchEvent(new w.Event('input', { bubbles: true }));
+  w.pstAdjV3Change(0, 'actual', '500');
   await wait(20);
   const summary = w.document.getElementById('pst-adj-v3-summary').textContent.replace(/\s+/g, ' ');
   assert.ok(summary.includes('49,60') || summary.includes('49.60'), `Credit calculation is wrong: ${summary}`);
