@@ -61,6 +61,7 @@ var files=[
   'pristeel-document-routing-integrity-v1.js?v=20260804-1',
   'pristeel-project-integrity-ui-v1.js?v=20260804-1',
   'pristeel-project-attachments-relations-v2.js?v=20260804-1',
+  'pristeel-project-integrity-safety-v2.js?v=20260804-1',
   'pristeel-projects-modern-v1.js?v=20260804-1'
 ];
 function load(i){
