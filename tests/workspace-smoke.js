@@ -2,6 +2,11 @@ const fs = require('fs');
 const assert = require('assert');
 const { JSDOM } = require('jsdom');
 
+const hardTimeout = setTimeout(() => {
+  console.error('Workspace browser smoke test timed out.');
+  process.exit(2);
+}, 20000);
+
 const legacyPages = ['qendra','import','newproject','bom','rfq','offers','ranking','outreach','finance','contacts','kalkulator','settings','contracts','library','invoices','oferta'];
 const pageHtml = legacyPages.map(id => `<div id="page-${id}" class="page" style="display:none">${id}</div>`).join('');
 const dom = new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2 pst-alive"><div class="app-shell"><aside class="sidebar"><div id="pst-v2-sidebar"></div></aside><main class="main"><div class="content"><div id="page-home" class="page"></div>${pageHtml}</div></main></div><select id="global-proj"></select></body></html>`, {
@@ -69,6 +74,7 @@ function active(id) {
 }
 
 (async () => {
+  console.log('Loading workspace modules…');
   load('pristeel-document-center-core.js');
   load('pristeel-document-adjustments-v3.js');
   load('pristeel-workspace-architecture-v1.js');
@@ -78,14 +84,15 @@ function active(id) {
   assert.strictEqual(typeof w.pstWorkspaceGo, 'function', 'Workspace router missing');
   assert.ok(w.document.getElementById('pst-ws-sidebar'), 'Workspace sidebar missing');
 
+  console.log('Testing Finance and Contacts…');
   w.pstWorkspaceGo('finance');
   await wait(30);
   assert.ok(active('page-finance'), 'Finance route did not open');
-
   w.pstWorkspaceGo('contacts');
   await wait(30);
   assert.ok(active('page-contacts'), 'Contacts route did not open');
 
+  console.log('Testing module launcher…');
   w.pstWorkspaceGo('apps');
   await wait(180);
   const moduleTitle = [...w.document.querySelectorAll('.pst-ws-navbtn span')].find(el => el.textContent.trim() === 'Modulet');
@@ -96,15 +103,18 @@ function active(id) {
   await wait(30);
   assert.ok(active('page-bom'), 'Procurement card did not open BOM');
 
+  console.log('Testing project register…');
   w.pstWorkspaceGo('projects');
   await wait(180);
   assert.ok(w.document.getElementById('pst-release-project-list').textContent.includes('Test Project'), 'Projects did not load');
 
+  console.log('Testing document filters…');
   w.pstOpenDocumentCenter('invoice');
   await wait(180);
   assert.strictEqual(w.document.getElementById('pst-dc-filter').value, 'invoice', 'Invoice filter was not applied');
   assert.strictEqual(w.document.querySelector('.pst-dc-toolbar-title').textContent, 'Faturat', 'Invoice register title is wrong');
 
+  console.log('Testing credit-note weight calculation…');
   await w.pstOpenAdjustment('credit_note', 'invoice-1');
   await wait(100);
   const modalText = w.document.getElementById('pst-adj-bg').textContent;
@@ -118,14 +128,18 @@ function active(id) {
   const summary = w.document.getElementById('pst-adj-v3-summary').textContent.replace(/\s+/g, ' ');
   assert.ok(summary.includes('49,60') || summary.includes('49.60'), `Credit calculation is wrong: ${summary}`);
 
+  console.log('Testing workspace refresh…');
   w.pstWsRefreshHome({ preventDefault() {}, stopPropagation() {} });
   await wait(100);
   assert.ok(w.document.getElementById('page-workspace-home'), 'Home refresh damaged workspace');
 
   console.log('Workspace browser smoke test passed.');
+  clearTimeout(hardTimeout);
   dom.window.close();
+  process.exit(0);
 })().catch(error => {
   console.error(error);
+  clearTimeout(hardTimeout);
   dom.window.close();
   process.exit(1);
 });
