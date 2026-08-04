@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var files=[
-  'pristeel-auth-persistence.js?v=20260801-1',
+  'pristeel-auth-persistence.js?v=20260804-1',
   'pristeel-gmail-tab-handoff.js?v=20260803-1',
   'pristeel-single-instance.js?v=20260804-1',
   'pristeel-email-core.js?v=20260801-2',
