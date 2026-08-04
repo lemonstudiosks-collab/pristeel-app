@@ -57,9 +57,11 @@ var files=[
   'pristeel-dashboard-calm.js?v=20260803-1',
   'pristeel-workspace-architecture-v1.js?v=20260804-1',
   'pristeel-workspace-release-fix-v3.js?v=20260804-2',
-  'pristeel-project-data-integrity-v1.js?v=20260804-1',
+  'pristeel-project-data-integrity-v1.js?v=20260804-2',
   'pristeel-document-routing-integrity-v1.js?v=20260804-1',
-  'pristeel-project-integrity-ui-v1.js?v=20260804-1'
+  'pristeel-project-integrity-ui-v1.js?v=20260804-1',
+  'pristeel-project-attachments-relations-v2.js?v=20260804-1',
+  'pristeel-projects-modern-v1.js?v=20260804-1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
