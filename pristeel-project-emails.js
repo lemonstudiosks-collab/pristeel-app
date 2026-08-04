@@ -54,7 +54,9 @@ var files=[
   'pristeel-document-adjustments.js?v=20260803-2',
   'pristeel-dashboard-operations.js?v=20260803-1',
   'pristeel-document-adjustments-v3.js?v=20260803-1',
-  'pristeel-dashboard-calm.js?v=20260803-1'
+  'pristeel-dashboard-calm.js?v=20260803-1',
+  'pristeel-workspace-architecture-v1.js?v=20260804-1',
+  'pristeel-workspace-brand-v2.js?v=20260804-1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
