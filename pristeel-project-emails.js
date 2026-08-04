@@ -2,7 +2,6 @@
 (function(){
 'use strict';
 var files=[
-  'pristeel-supabase-config.js?v=20260804-1',
   'pristeel-gmail-tab-handoff.js?v=20260803-1',
   'pristeel-email-core.js?v=20260801-2',
   'pristeel-google-workspace-auth.js?v=20260802-2',
@@ -40,19 +39,18 @@ var files=[
   'pristeel-ui-v2.js?v=20260801-1',
   'pristeel-ui-session.js?v=20260801-1',
   'pristeel-ui-v2-polish.js?v=20260801-1',
-  'pristeel-dashboard-action-controls-v2.js?v=20260803-1',
+  'pristeel-dashboard-action-controls-v2.js?v=20260804-2',
   'pristeel-utilities.js?v=20260801-1',
   'pristeel-email-shortcuts.js?v=20260801-1',
   'pristeel-visual-refresh.js?v=20260801-2',
   'pristeel-project-board-layout.js?v=20260802-2',
-  'pristeel-project-loss.js?v=20260803-1',
-  'pristeel-document-shortcuts.js?v=20260803-1',
-  'pristeel-invoice-copy-fix.js?v=20260803-1',
-  'pristeel-document-center-core.js?v=20260803-1',
-  'pristeel-document-adjustments.js?v=20260803-2',
-  'pristeel-document-adjustments-v3.js?v=20260803-1',
-  'pristeel-workspace-architecture-v1.js?v=20260803-1',
-  'pristeel-workspace-hotfix-v1.js?v=20260804-1'
+  'pristeel-project-loss.js?v=20260804-2',
+  'pristeel-document-shortcuts.js?v=20260804-2',
+  'pristeel-invoice-copy-fix.js?v=20260804-2',
+  'pristeel-document-center-core.js?v=20260804-2',
+  'pristeel-document-adjustments-v3.js?v=20260804-2',
+  'pristeel-workspace-architecture-v1.js?v=20260804-2',
+  'pristeel-workspace-hotfix-v1.js?v=20260804-2'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
