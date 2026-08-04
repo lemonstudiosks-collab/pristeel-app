@@ -8,11 +8,15 @@ window.__pstProduction17ControllerLoaded=true;
 var openSeq=0,wrapped=false;
 
 function currentId(){return String(window.__pstCurrentProjectId||window._curProjId||'');}
+function hideNode(node){
+ if(!node||node===document.body)return;
+ var wrap=node.closest('.global-project-selector,.top-project-selector,.project-selector,.project-switcher,.proj-switch,.top-proj');
+ if(!wrap)wrap=node.parentElement;
+ if(wrap&&wrap!==document.body&&wrap.children.length<=4)wrap.style.setProperty('display','none','important');else node.style.setProperty('display','none','important');
+}
 function hideDeadProjectSelector(){
- var s=document.getElementById('global-proj');
- if(!s)return;
- var wrap=s.closest('.global-project-selector,.top-project-selector,.project-selector,.proj-switch')||s.parentElement;
- if(wrap&&wrap!==document.body&&wrap.children.length<=4)wrap.style.display='none';else s.style.display='none';
+ var direct=document.getElementById('global-proj');if(direct)hideNode(direct);
+ document.querySelectorAll('.topbar select[id*="proj"],.topbar select[name*="proj"],.topbar [id*="project-switch"],.topbar [id*="proj-switch"],.topbar [class*="project-switch"],.topbar [class*="proj-switch"]').forEach(hideNode);
 }
 function host(){return document.getElementById('pst-ws-project-tab');}
 function showError(msg){
