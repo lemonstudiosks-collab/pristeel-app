@@ -1,8 +1,11 @@
-/* PRISTEEL email modules bootstrap */
+/* PRISTEEL modules bootstrap — repaired workspace on stable authentication */
 (function(){
 'use strict';
 var files=[
+  /* Authentication remains the native, working platform flow. */
   'pristeel-gmail-tab-handoff.js?v=20260803-1',
+
+  /* Gmail, Drive and project intelligence */
   'pristeel-email-core.js?v=20260801-2',
   'pristeel-google-workspace-auth.js?v=20260802-2',
   'pristeel-project-routing-rules.js?v=20260802-2',
@@ -36,6 +39,8 @@ var files=[
   'pristeel-project-analysis.js?v=20260801-1',
   'pristeel-project-intelligence-ui.js?v=20260802-5',
   'pristeel-project-workspace.js?v=20260802-1',
+
+  /* Existing platform UI */
   'pristeel-ui-v2.js?v=20260801-1',
   'pristeel-ui-session.js?v=20260801-1',
   'pristeel-ui-v2-polish.js?v=20260801-1',
@@ -44,21 +49,28 @@ var files=[
   'pristeel-email-shortcuts.js?v=20260801-1',
   'pristeel-visual-refresh.js?v=20260801-2',
   'pristeel-project-board-layout.js?v=20260802-2',
+
+  /* Commercial and document functions */
   'pristeel-project-loss.js?v=20260804-2',
   'pristeel-document-shortcuts.js?v=20260804-2',
   'pristeel-invoice-copy-fix.js?v=20260804-2',
   'pristeel-document-center-core.js?v=20260804-2',
   'pristeel-document-adjustments-v3.js?v=20260804-2',
-  'pristeel-workspace-architecture-v1.js?v=20260804-2',
-  'pristeel-workspace-release-fix-v2.js?v=20260804-production2'
+
+  /* New project-centred workspace and deterministic repair layer */
+  'pristeel-workspace-architecture-v1.js?v=20260804-production3',
+  'pristeel-workspace-release-fix-v2.js?v=20260804-production3'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
   var s=document.createElement('script');
   s.src=files[i];
   s.defer=true;
-  s.onload=function(){if(!window.__pstAbortBootstrap)load(i+1)};
-  s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(!window.__pstAbortBootstrap)load(i+1)};
+  s.onload=function(){if(!window.__pstAbortBootstrap)load(i+1);};
+  s.onerror=function(){
+    console.error('Nuk u ngarkua moduli:',files[i]);
+    if(!window.__pstAbortBootstrap)load(i+1);
+  };
   document.head.appendChild(s);
 }
 load(0);
