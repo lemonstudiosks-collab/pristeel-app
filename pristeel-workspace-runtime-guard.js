@@ -12,8 +12,7 @@ function loadOnce(src,key){
   s.onerror=function(){console.error('Nuk u ngarkua moduli mbrojtës:',src);};
   document.head.appendChild(s);
 }
-/* These two guards are intentionally loaded after the release workspace. */
-loadOnce('pristeel-project-list-rescue.js?v=20260804-production10','__pstProjectListRescueLoaded');
+/* Project loading is handled directly by the release workspace. */
 loadOnce('pristeel-document-delete-actions.js?v=20260804-production9','__pstDocumentDeleteActionsLoaded');
 
 function legacy(page){
