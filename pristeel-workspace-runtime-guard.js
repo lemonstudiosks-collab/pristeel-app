@@ -6,6 +6,16 @@
 if(window.__pstWorkspaceRuntimeGuardLoaded)return;
 window.__pstWorkspaceRuntimeGuardLoaded=true;
 
+function loadOnce(src,key){
+  if(window[key]||document.querySelector('script[data-pst-runtime="'+key+'"]'))return;
+  var s=document.createElement('script');s.src=src;s.defer=true;s.setAttribute('data-pst-runtime',key);
+  s.onerror=function(){console.error('Nuk u ngarkua moduli mbrojtës:',src);};
+  document.head.appendChild(s);
+}
+/* These two guards are intentionally loaded after the release workspace. */
+loadOnce('pristeel-project-list-rescue.js?v=20260804-production10','__pstProjectListRescueLoaded');
+loadOnce('pristeel-document-delete-actions.js?v=20260804-production9','__pstDocumentDeleteActionsLoaded');
+
 function legacy(page){
   if(typeof window.pstWsLegacy==='function')return window.pstWsLegacy(page);
   if(typeof window.pstV2Go==='function'){window.pstV2Go(page);return true;}
@@ -39,7 +49,7 @@ function moduleAction(name){
 function wire(){
   document.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(btn){
     if(btn.__pstGuardWired)return;btn.__pstGuardWired=true;
-    btn.addEventListener('click',function(ev){
+    btn.addEventListener('click',function(){
       var key=btn.getAttribute('data-key');
       if(!key)return;
       setTimeout(function(){
@@ -75,6 +85,11 @@ function check(){
   if(apps&&text(apps)==='Apps')apps.textContent='Modulet';
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',check);else check();
-var observer=new MutationObserver(check);observer.observe(document.documentElement,{childList:true,subtree:true});
-setInterval(check,2500);
+var scheduled=false;
+var observer=new MutationObserver(function(){
+  if(scheduled)return;scheduled=true;
+  setTimeout(function(){scheduled=false;check();},40);
+});
+observer.observe(document.documentElement,{childList:true,subtree:true});
+setInterval(check,3000);
 })();
