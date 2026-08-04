@@ -1,0 +1,86 @@
+name: PRISTEEL Production Smoke Test
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check JavaScript syntax
+        run: |
+          set -euo pipefail
+          files=(
+            pristeel-project-emails.js
+            pristeel-dashboard-action-controls-v2.js
+            pristeel-project-loss.js
+            pristeel-document-shortcuts.js
+            pristeel-invoice-copy-fix.js
+            pristeel-document-center-core.js
+            pristeel-document-adjustments-v3.js
+            pristeel-workspace-architecture-v1.js
+            pristeel-workspace-release-fix-v2.js
+            tests/workspace-smoke.js
+          )
+          for file in "${files[@]}"; do
+            test -s "$file"
+            node --check "$file"
+          done
+
+      - name: Verify bootstrap references
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const loader = fs.readFileSync('pristeel-project-emails.js', 'utf8');
+          const refs = [...loader.matchAll(/'([^']+\.js)(?:\?[^']*)?'/g)].map(m => m[1]);
+          const missing = refs.filter(file => !fs.existsSync(file));
+          if (missing.length) {
+            console.error('Missing bootstrap files:', missing);
+            process.exit(1);
+          }
+          if (loader.includes("'pristeel-workspace-hotfix-v1.js") || loader.includes("'pristeel-workspace-release-fix.js")) {
+            console.error('Superseded workspace fix is still loaded.');
+            process.exit(1);
+          }
+          if (!loader.includes('pristeel-workspace-release-fix-v2.js')) {
+            console.error('Production workspace fix v2 is not loaded.');
+            process.exit(1);
+          }
+          const forbiddenAuth = ['pristeel-supabase-config.js','pristeel-login.js','pristeel-login-v2.html','pristeel-session-bridge.html'];
+          const loadedForbidden = forbiddenAuth.filter(file => loader.includes(file));
+          if (loadedForbidden.length) {
+            console.error('Experimental auth files are loaded:', loadedForbidden);
+            process.exit(1);
+          }
+          console.log(`Verified ${refs.length} bootstrap references.`);
+          NODE
+
+      - name: Verify stable core and legacy routes
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('pristeel-procurement.html', 'utf8');
+          const auth = ['authGetSession','authSaveSession','authRefreshIfNeeded','pristeel_session'];
+          const pages = ['qendra','import','bom','outreach','finance','contacts','kalkulator','settings','contracts','library'];
+          const missingAuth = auth.filter(x => !html.includes(x));
+          const missingPages = pages.filter(x => !html.includes(`page-${x}`));
+          if (missingAuth.length || missingPages.length) {
+            console.error({ missingAuth, missingPages });
+            process.exit(1);
+          }
+          console.log('Stable authentication and all required routes are present.');
+          NODE
+
+      - name: Install browser test dependency
+        run: npm install --no-save --no-package-lock jsdom@24
+
+      - name: Run browser interaction smoke test
+        run: node tests/workspace-smoke.js
