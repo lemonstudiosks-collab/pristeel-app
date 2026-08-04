@@ -2,7 +2,8 @@
 (function(){
 'use strict';
 var files=[
-  /* Authentication remains the native, working platform flow. */
+  /* Native authentication remains unchanged; only its visual theme is replaced. */
+  'pristeel-login-theme-v2.js?v=20260804-production5',
   'pristeel-gmail-tab-handoff.js?v=20260803-1',
 
   /* Gmail, Drive and project intelligence */
@@ -58,6 +59,7 @@ var files=[
   'pristeel-document-adjustments-v3.js?v=20260804-2',
   'pristeel-document-adjustments-v4.js?v=20260804-production4',
   'pristeel-document-adjustments-v4-ui-fix.js?v=20260804-production4',
+  'pristeel-document-adjustments-v5-language-v2.js?v=20260804-production5',
 
   /* New project-centred workspace and deterministic repair layers */
   'pristeel-workspace-architecture-v1.js?v=20260804-production3',
