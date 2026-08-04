@@ -1,0 +1,8 @@
+{
+  "name": "pristeel-workspace-preview",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "node preview-server.mjs"
+  }
+}
