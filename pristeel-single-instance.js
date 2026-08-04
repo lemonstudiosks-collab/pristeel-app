@@ -19,10 +19,24 @@ try{
 var CHANNEL_NAME='pristeel-single-instance-v1';
 var OWNER_KEY='pst_single_instance_owner_v1';
 var MESSAGE_KEY='pst_single_instance_message_v1';
+var TAB_KEY='pst_single_instance_tab_id_v1';
 var APP_WINDOW_NAME='PRISTEEL_MAIN';
 var HEARTBEAT_MS=1500;
 var OWNER_TTL_MS=9000;
-var instanceId=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+
+/* sessionStorage mbijeton reload-in, por është i ndarë për çdo tab.
+   Kjo bën që refresh-i të njihet si i njëjti tab, jo si instancë e dytë. */
+var instanceId='';
+try{
+  instanceId=sessionStorage.getItem(TAB_KEY)||'';
+  if(!instanceId){
+    instanceId=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+    sessionStorage.setItem(TAB_KEY,instanceId);
+  }
+}catch(e){
+  instanceId=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+}
+
 var channel=null;
 var owner=false;
 var duplicate=false;
@@ -114,10 +128,10 @@ function showDuplicateNotice(){
   target.innerHTML=''
     +'<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F6F7F8;font-family:Inter,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;color:#25282B;padding:24px">'
     +'<div style="width:min(430px,100%);background:#fff;border:1px solid #E6E8EA;border-radius:16px;padding:28px;box-shadow:0 10px 35px rgba(24,30,36,.08);text-align:center">'
-    +'<div style="width:44px;height:44px;border-radius:12px;background:#F7EDE5;color:#A65F2E;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:20px;font-weight:750">P</div>'
+    +'<div style="width:44px;height:44px;border-radius:12px;background:#EAF5F8;color:#3E7E96;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:20px;font-weight:750">P</div>'
     +'<div style="font-size:17px;font-weight:720">PRISTEEL është tashmë e hapur</div>'
     +'<div style="font-size:12px;line-height:1.6;color:#73797F;margin-top:8px">Kërkesa u dërgua te dritarja ekzistuese. Këtë dritare mund ta mbyllësh.</div>'
-    +'<button onclick="window.close()" style="margin-top:18px;border:0;border-radius:9px;background:#A65F2E;color:#fff;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer">Mbylle këtë dritare</button>'
+    +'<button onclick="window.close()" style="margin-top:18px;border:0;border-radius:9px;background:#5B9BB3;color:#fff;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer">Mbylle këtë dritare</button>'
     +'</div></div>';
 }
 function becomeDuplicate(){
