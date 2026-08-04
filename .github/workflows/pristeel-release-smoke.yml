@@ -29,6 +29,7 @@ jobs:
             pristeel-document-adjustments-v3.js
             pristeel-workspace-architecture-v1.js
             pristeel-workspace-release-fix.js
+            tests/workspace-smoke.js
           )
           for file in "${files[@]}"; do
             test -s "$file"
@@ -82,3 +83,9 @@ jobs:
           }
           console.log('All required legacy routes exist.');
           NODE
+
+      - name: Install browser test dependency
+        run: npm install --no-save --no-package-lock jsdom@24
+
+      - name: Run workspace browser interaction test
+        run: node tests/workspace-smoke.js
