@@ -31,11 +31,8 @@ function waitForFinalWorkspace(){
 installBootScreen();
 
 var files=[
-  /* Native authentication remains unchanged; only its visual theme is replaced. */
   'pristeel-login-theme-v2.js?v=20260804-production5',
   'pristeel-gmail-tab-handoff.js?v=20260803-1',
-
-  /* Gmail, Drive and project intelligence */
   'pristeel-email-core.js?v=20260801-2',
   'pristeel-google-workspace-auth.js?v=20260802-2',
   'pristeel-project-routing-rules.js?v=20260802-2',
@@ -69,8 +66,6 @@ var files=[
   'pristeel-project-analysis.js?v=20260801-1',
   'pristeel-project-intelligence-ui.js?v=20260802-5',
   'pristeel-project-workspace.js?v=20260802-1',
-
-  /* Existing platform UI */
   'pristeel-ui-v2.js?v=20260801-1',
   'pristeel-ui-session.js?v=20260801-1',
   'pristeel-ui-v2-polish.js?v=20260801-1',
@@ -79,8 +74,6 @@ var files=[
   'pristeel-email-shortcuts.js?v=20260801-1',
   'pristeel-visual-refresh.js?v=20260801-2',
   'pristeel-project-board-layout.js?v=20260802-2',
-
-  /* Commercial and document functions */
   'pristeel-project-loss.js?v=20260804-2',
   'pristeel-document-shortcuts.js?v=20260804-2',
   'pristeel-invoice-copy-fix.js?v=20260804-2',
@@ -89,20 +82,17 @@ var files=[
   'pristeel-document-adjustments-v4.js?v=20260804-production4',
   'pristeel-document-adjustments-v4-ui-fix.js?v=20260804-production4',
   'pristeel-document-adjustments-v5-language-v2.js?v=20260804-production5',
-
-  /* Project-centred workspace and repairs */
   'pristeel-workspace-architecture-v1.js?v=20260804-production3',
   'pristeel-workspace-release-fix-v2.js?v=20260804-production3',
   'pristeel-workspace-runtime-guard.js?v=20260804-production3',
   'pristeel-project-document-reconciliation.js?v=20260804-production7',
+  'pristeel-project-unified-documents.js?v=20260804-production7',
   'pristeel-project-status-actions.js?v=20260804-production6'
 ];
 function load(i){
   if(window.__pstAbortBootstrap){finishBoot();return;}
   if(i>=files.length){waitForFinalWorkspace();return;}
-  var s=document.createElement('script');
-  s.src=files[i];
-  s.defer=true;
+  var s=document.createElement('script');s.src=files[i];s.defer=true;
   s.onload=function(){if(!window.__pstAbortBootstrap)load(i+1);else finishBoot();};
   s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(!window.__pstAbortBootstrap)load(i+1);else finishBoot();};
   document.head.appendChild(s);
