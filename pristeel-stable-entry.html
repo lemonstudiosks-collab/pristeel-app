@@ -12,22 +12,12 @@
 <script>
 (function(){
 'use strict';
-var FILES=[
- /* Exact URL used by the HTML. */
- 'pristeel-roles.js',
- /* Exact URL loaded by pristeel-roles.js. */
- 'pristeel-project-emails.js?v=20260804-production17',
- 'pristeel-project-family-workspace.js?v=20260804-production17',
- 'pristeel-project-gmail-documents.js?v=20260804-production17',
- 'pristeel-system-health.js?v=20260804-production17',
- 'pristeel-production17-controller.js?v=20260804-production17',
- 'pristeel-project-status-actions.js?v=20260804-production13',
- 'pristeel-projects-modern-list.js?v=20260804-production13',
- 'pristeel-workspace-release-fix-v2.js?v=20260804-production13',
- 'pristeel-workspace-runtime-guard.js?v=20260804-production13',
- 'pristeel-document-center-core.js?v=20260804-2',
- 'pristeel-document-delete-actions.js?v=20260804-production9',
- 'pristeel-document-adjustments-v5-language-v2.js?v=20260804-production5'
+var VERSION='20260804-production18';
+var CHECK=[
+ 'pristeel-procurement.html?source='+VERSION,
+ 'pristeel-roles.js?v='+VERSION,
+ 'pristeel-project-emails.js?v='+VERSION,
+ 'pristeel-project-email-documents-v2.js?v='+VERSION
 ];
 var fill=document.getElementById('fill'),status=document.getElementById('status'),retry=document.getElementById('retry');
 function p(n,t){fill.style.width=Math.max(8,Math.round(n/t*100))+'%';}
@@ -37,13 +27,18 @@ async function clearOld(){
  if('serviceWorker' in navigator){try{var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(function(r){return r.unregister();}));}catch(e){}}
  if(window.caches){try{var keys=await caches.keys();await Promise.all(keys.map(function(k){return caches.delete(k);}));}catch(e){}}
 }
-async function loadFile(path){var r=await fetch(path,{cache:'reload',credentials:'same-origin'});if(!r.ok)throw new Error(path+' ('+r.status+')');await r.arrayBuffer();}
+async function get(path,text){var r=await fetch(path,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(path+' ('+r.status+')');return text?r.text():r.arrayBuffer();}
 async function run(){
- retry.style.display='none';status.className='status';status.textContent='Duke pastruar cache-in…';p(0,FILES.length+1);await clearOld();
- for(var i=0;i<FILES.length;i++){status.textContent='Duke ngarkuar modulet… '+(i+1)+'/'+FILES.length;p(i+1,FILES.length+1);await loadFile(FILES[i]);}
- status.textContent='Platforma është gati.';p(FILES.length+1,FILES.length+1);
- setTimeout(function(){location.replace('pristeel-procurement.html?workspace=20260804-production17');},300);
+ retry.style.display='none';status.className='status';status.textContent='Duke pastruar cache-in…';p(0,CHECK.length+1);await clearOld();
+ for(var i=1;i<CHECK.length;i++){status.textContent='Duke verifikuar modulet… '+i+'/'+(CHECK.length-1);p(i,CHECK.length+1);await get(CHECK[i],false);}
+ status.textContent='Duke hapur platformën…';p(CHECK.length,CHECK.length+1);
+ var html=await get(CHECK[0],true);
+ html=html.replace(/<script\s+src=["']pristeel-roles\.js["']><\/script>/i,'<script src="pristeel-roles.js?v='+VERSION+'"><\/script>');
+ html=html.replace(/<\/body>/i,'<script>window.__PST_STABLE_ENTRY_VERSION="'+VERSION+'";<\/script><script src="pristeel-project-email-documents-v2.js?v='+VERSION+'"><\/script><\/body>');
+ p(CHECK.length+1,CHECK.length+1);status.textContent='Platforma është gati.';
+ history.replaceState({},'',location.pathname+'?workspace='+VERSION);
+ setTimeout(function(){document.open();document.write(html);document.close();},120);
 }
-retry.onclick=run;run().catch(function(e){console.error(e);status.className='status error';status.textContent='Ngarkimi nuk përfundoi. Provo përsëri.';retry.style.display='block';});
+retry.onclick=run;run().catch(function(e){console.error(e);status.className='status error';status.textContent='Ngarkimi nuk përfundoi: '+e.message;retry.style.display='block';});
 })();
 </script></body></html>
