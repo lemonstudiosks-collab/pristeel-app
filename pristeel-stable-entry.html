@@ -15,8 +15,8 @@
 var VERSION='20260804-production18';
 var CHECK=[
  'pristeel-procurement.html?source='+VERSION,
+ 'pristeel-production18-bootstrap.js?v='+VERSION,
  'pristeel-roles.js?v='+VERSION,
- 'pristeel-project-emails.js?v='+VERSION,
  'pristeel-project-email-documents-v2.js?v='+VERSION
 ];
 var fill=document.getElementById('fill'),status=document.getElementById('status'),retry=document.getElementById('retry');
@@ -33,7 +33,7 @@ async function run(){
  for(var i=1;i<CHECK.length;i++){status.textContent='Duke verifikuar modulet… '+i+'/'+(CHECK.length-1);p(i,CHECK.length+1);await get(CHECK[i],false);}
  status.textContent='Duke hapur platformën…';p(CHECK.length,CHECK.length+1);
  var html=await get(CHECK[0],true);
- html=html.replace(/<script\s+src=["']pristeel-roles\.js["']><\/script>/i,'<script src="pristeel-roles.js?v='+VERSION+'"><\/script>');
+ html=html.replace(/<script\s+src=["']pristeel-roles\.js["']><\/script>/i,'<script src="pristeel-production18-bootstrap.js?v='+VERSION+'" data-pst-project-emails="1"><\/script><script src="pristeel-roles.js?v='+VERSION+'"><\/script>');
  html=html.replace(/<\/body>/i,'<script>window.__PST_STABLE_ENTRY_VERSION="'+VERSION+'";<\/script><script src="pristeel-project-email-documents-v2.js?v='+VERSION+'"><\/script><\/body>');
  p(CHECK.length+1,CHECK.length+1);status.textContent='Platforma është gati.';
  history.replaceState({},'',location.pathname+'?workspace='+VERSION);
