@@ -57,6 +57,7 @@ var files=[
   'pristeel-document-center-core.js?v=20260804-2',
   'pristeel-document-adjustments-v3.js?v=20260804-2',
   'pristeel-document-adjustments-v4.js?v=20260804-production4',
+  'pristeel-document-adjustments-v4-ui-fix.js?v=20260804-production4',
 
   /* New project-centred workspace and deterministic repair layers */
   'pristeel-workspace-architecture-v1.js?v=20260804-production3',
