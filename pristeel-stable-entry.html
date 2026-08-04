@@ -21,6 +21,7 @@ var FILES=[
  'pristeel-reconciliation-query-guard.js?v=20260804-production7',
  'pristeel-project-document-reconciliation.js?v=20260804-production7',
  'pristeel-project-unified-documents.js?v=20260804-production7',
+ 'pristeel-unified-documents-action-fix.js?v=20260804-production7',
  'pristeel-project-status-actions.js?v=20260804-production6',
  'pristeel-document-center-core.js?v=20260804-2',
  'pristeel-document-adjustments-v3.js?v=20260804-2',
@@ -34,19 +35,9 @@ var FILES=[
 ];
 var fill=document.getElementById('fill'),status=document.getElementById('status'),retry=document.getElementById('retry');
 function p(n,t){fill.style.width=Math.max(8,Math.round(n/t*100))+'%';}
-async function clearOld(){
- try{localStorage.removeItem('pst_single_instance_owner_v1');localStorage.removeItem('pst_single_instance_message_v1');}catch(e){}
- try{sessionStorage.removeItem('pst_single_instance_tab_id_v1');}catch(e){}
- if('serviceWorker' in navigator){try{var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(function(r){return r.unregister();}));}catch(e){}}
- if(window.caches){try{var keys=await caches.keys();await Promise.all(keys.map(function(k){return caches.delete(k);}));}catch(e){}}
-}
+async function clearOld(){try{localStorage.removeItem('pst_single_instance_owner_v1');localStorage.removeItem('pst_single_instance_message_v1');}catch(e){}try{sessionStorage.removeItem('pst_single_instance_tab_id_v1');}catch(e){}if('serviceWorker' in navigator){try{var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(function(r){return r.unregister();}));}catch(e){}}if(window.caches){try{var keys=await caches.keys();await Promise.all(keys.map(function(k){return caches.delete(k);}));}catch(e){}}}
 async function loadFile(path){var r=await fetch(path,{cache:'reload',credentials:'same-origin'});if(!r.ok)throw new Error(path+' ('+r.status+')');await r.arrayBuffer();}
-async function run(){
- retry.style.display='none';status.className='status';status.textContent='Duke pastruar cache-in…';p(0,FILES.length+1);await clearOld();
- for(var i=0;i<FILES.length;i++){status.textContent='Duke ngarkuar modulet… '+(i+1)+'/'+FILES.length;p(i+1,FILES.length+1);await loadFile(FILES[i]);}
- status.textContent='Platforma është gati.';p(FILES.length+1,FILES.length+1);
- setTimeout(function(){location.replace('pristeel-procurement.html?workspace=20260804-production7');},350);
-}
+async function run(){retry.style.display='none';status.className='status';status.textContent='Duke pastruar cache-in…';p(0,FILES.length+1);await clearOld();for(var i=0;i<FILES.length;i++){status.textContent='Duke ngarkuar modulet… '+(i+1)+'/'+FILES.length;p(i+1,FILES.length+1);await loadFile(FILES[i]);}status.textContent='Platforma është gati.';p(FILES.length+1,FILES.length+1);setTimeout(function(){location.replace('pristeel-procurement.html?workspace=20260804-production7');},350);}
 retry.onclick=run;run().catch(function(e){console.error(e);status.className='status error';status.textContent='Ngarkimi nuk përfundoi. Provo përsëri.';retry.style.display='block';});
 })();
 </script></body></html>
