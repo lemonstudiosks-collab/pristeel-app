@@ -14,7 +14,8 @@
 'use strict';
 var FILES=[
  'pristeel-roles.js',
- 'pristeel-project-emails.js?v=20260804-production15',
+ /* Exact URL loaded by pristeel-roles.js. This must be refreshed, not an alias URL. */
+ 'pristeel-project-emails.js?v=20260804-2',
  'pristeel-login-theme-v2.js?v=20260804-production5',
  'pristeel-workspace-architecture-v1.js?v=20260804-production3',
  'pristeel-workspace-release-fix-v2.js?v=20260804-production13',
@@ -38,7 +39,7 @@ var fill=document.getElementById('fill'),status=document.getElementById('status'
 function p(n,t){fill.style.width=Math.max(8,Math.round(n/t*100))+'%';}
 async function clearOld(){try{localStorage.removeItem('pst_single_instance_owner_v1');localStorage.removeItem('pst_single_instance_message_v1');}catch(e){}try{sessionStorage.removeItem('pst_single_instance_tab_id_v1');}catch(e){}if('serviceWorker' in navigator){try{var regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(function(r){return r.unregister();}));}catch(e){}}if(window.caches){try{var keys=await caches.keys();await Promise.all(keys.map(function(k){return caches.delete(k);}));}catch(e){}}}
 async function loadFile(path){var r=await fetch(path,{cache:'reload',credentials:'same-origin'});if(!r.ok)throw new Error(path+' ('+r.status+')');await r.arrayBuffer();}
-async function run(){retry.style.display='none';status.className='status';status.textContent='Duke pastruar cache-in…';p(0,FILES.length+1);await clearOld();for(var i=0;i<FILES.length;i++){status.textContent='Duke ngarkuar modulet… '+(i+1)+'/'+FILES.length;p(i+1,FILES.length+1);await loadFile(FILES[i]);}status.textContent='Platforma është gati.';p(FILES.length+1,FILES.length+1);setTimeout(function(){location.replace('pristeel-procurement.html?workspace=20260804-production15');},300);}
+async function run(){retry.style.display='none';status.className='status';status.textContent='Duke pastruar cache-in…';p(0,FILES.length+1);await clearOld();for(var i=0;i<FILES.length;i++){status.textContent='Duke ngarkuar modulet… '+(i+1)+'/'+FILES.length;p(i+1,FILES.length+1);await loadFile(FILES[i]);}status.textContent='Platforma është gati.';p(FILES.length+1,FILES.length+1);setTimeout(function(){location.replace('pristeel-procurement.html?workspace=20260804-production16');},300);}
 retry.onclick=run;run().catch(function(e){console.error(e);status.className='status error';status.textContent='Ngarkimi nuk përfundoi. Provo përsëri.';retry.style.display='block';});
 })();
 </script></body></html>
