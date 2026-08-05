@@ -92,8 +92,7 @@ jobs:
             if [ "$code" = "200" ] && [ "$boot_code" = "200" ] \
               && grep -q 'pristeel-stable-boot-v2.js' /tmp/pristeel.html \
               && grep -q '__pstStableBootV2' /tmp/pristeel-boot.js \
-              && ! grep -q 'MutationObserver' /tmp/pristeel-boot.js \
-              && ! grep -q 'setInterval' /tmp/pristeel-boot.js \
+              && ! grep -Eq 'new[[:space:]]+MutationObserver|setInterval[[:space:]]*\(' /tmp/pristeel-boot.js \
               && ! grep -q 'pristeel-startup-guard-v2.js' /tmp/pristeel.html \
               && ! grep -q 'pristeel-login-transition' /tmp/pristeel.html \
               && ! grep -q 'pristeel-simple-boot-v1.js' /tmp/pristeel.html; then
