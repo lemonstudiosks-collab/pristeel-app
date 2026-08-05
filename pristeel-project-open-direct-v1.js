@@ -1,5 +1,6 @@
 /* PRISTEEL direct project opener
  * Keeps project-list clicks synchronous and independent from background observers.
+ * Restores the Gmail collection action only after the selected workspace has opened.
  */
 (function(){
 'use strict';
@@ -30,16 +31,41 @@ function showError(error){
   el.style.cssText='position:fixed;right:20px;bottom:20px;z-index:9000;max-width:420px;padding:11px 14px;border-radius:10px;background:#A64B42;color:#fff;font:650 11px Inter,sans-serif;box-shadow:0 14px 36px rgba(30,40,45,.24)';
   document.body.appendChild(el);setTimeout(function(){if(el.parentNode)el.remove();},5500);
 }
+function ensureGmailButton(id){
+  var actions=document.querySelector('#page-workspace-project .pst-pi-actions')||document.querySelector('.pst-pi-actions');
+  if(!actions)return false;
+  var button=document.getElementById('pst-gmail-collect-project');
+  if(!button){
+    button=document.createElement('button');
+    button.id='pst-gmail-collect-project';
+    button.type='button';
+    button.className='pst-pi-btn';
+    button.textContent='Mblidh nga Gmail';
+    actions.insertBefore(button,actions.lastElementChild||null);
+  }
+  button.dataset.projectId=String(id||window.__pstCurrentProjectId||'');
+  button.onclick=function(){
+    var projectId=String(button.dataset.projectId||window.__pstCurrentProjectId||'');
+    if(typeof window.pstCollectProjectGmail==='function'){
+      window.pstCollectProjectGmail(projectId);
+      return;
+    }
+    showError(new Error('Moduli Gmail nuk është ngarkuar.'));
+  };
+  return true;
+}
 async function open(id){
   if(!id||busy)return;
   busy=true;setContext(id);
   try{
     if(typeof window.pstOpenProjectWorkspace==='function'){
       await window.pstOpenProjectWorkspace(id);
+      ensureGmailButton(id);
       return;
     }
     if(typeof window.loadProject==='function'){
       await window.loadProject(id);
+      ensureGmailButton(id);
       return;
     }
     if(typeof window.openOverview==='function'){
@@ -56,4 +82,5 @@ function click(event){
 }
 document.addEventListener('click',click,true);
 window.pstOpenProjectDirect=open;
+window.pstEnsureProjectGmailButton=ensureGmailButton;
 })();
