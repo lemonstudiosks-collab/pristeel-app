@@ -27,8 +27,8 @@ jobs:
       HUBSPOT_ACCESS_TOKEN: ${{ secrets.HUBSPOT_ACCESS_TOKEN || secrets.HUBSPOT_PRIVATE_APP_TOKEN || secrets.HUBSPOT_TOKEN }}
       HUBSPOT_PORTAL_ID: '147958987'
       SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,13 +38,16 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Detect HubSpot credential
+      - name: Detect credentials
         id: credential
         shell: bash
         run: |
           if [ -z "$HUBSPOT_ACCESS_TOKEN" ]; then
             echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::HubSpot sync is ready but paused because HUBSPOT_ACCESS_TOKEN is not configured."
+            echo "::notice::HubSpot token is not configured."
+          elif [ -z "$SUPABASE_SECRET_KEY" ] && [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Supabase server-side key is not configured."
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
