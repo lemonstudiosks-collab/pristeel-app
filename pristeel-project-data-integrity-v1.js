@@ -6,6 +6,7 @@
 if(window.PSTProjectDataIntegrity)return;
 
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
+var BROAD_TABLES={bom_items:1,rfq_log:1,offers:1,documents_registry:1,project_docs:1,project_attachment_links:1,offers_inbox:1};
 function arr(v){
   if(Array.isArray(v))return v;
   if(!v)return[];
@@ -28,13 +29,57 @@ function safe(path){
 }
 function uniq(rows,key){var seen={};return arr(rows).filter(function(x){var k=String(key(x)||'');if(!k||seen[k])return false;seen[k]=1;return true;});}
 function pattern(name){return '*'+enc(String(name||'').replace(/[*,()]/g,' ').trim())+'*';}
-async function byProject(table,pid,name,order){
+function rowKey(row){return row&&(
+  row.id||row.gmail_message_id||row.document_id||row.doc_nr||row.document_nr||row.invoice_nr||
+  row.file_id||row.drive_file_id||row.file_name||row.filename||row.name||JSON.stringify(row)
+);}
+function flatText(row){
+  if(!row||typeof row!=='object')return norm(row);
+  var fields=['project_id','source_project_id','linked_project_id','project','project_name','project_ref','ref','reference','rfq_ref','request_ref','name','title','subject','description','desc','notes','snippet','file_name','filename','document_name','doc_nr','document_nr','invoice_nr','supplier','supplier_name','origin','source','client','customer','company'];
+  return norm(fields.map(function(k){var v=row[k];return Array.isArray(v)?v.join(' '):(v==null?'':String(v));}).join(' '));
+}
+function dedicatedText(row){
+  return norm(['project','project_name','project_ref','ref','reference','rfq_ref','request_ref','client','customer','company'].map(function(k){return row&&row[k]||'';}).join(' '));
+}
+function projectIdentity(project){
+  var name=norm(project&&project.name),ref=norm(project&&project.ref),client=norm(project&&project.client);
+  var numbers=norm((project&&project.name||'')+' '+(project&&project.ref||'')).match(/\b[a-z]*\d{4,}[a-z0-9_-]*\b/g)||[];
+  var tokens=norm([project&&project.name,project&&project.ref].join(' ')).split(' ').filter(function(x){return x.length>=5&&!/^(projekt|project|anfrage|fertigung|steel|stahl|construction|angebot|offer)$/.test(x);});
+  return{name:name,ref:ref,client:client,numbers:uniq(numbers,function(x){return x;}),tokens:uniq(tokens,function(x){return x;})};
+}
+function relationScore(row,project){
+  if(!row||!project)return 0;
+  var pid=String(project.id||''),idFields=[row.project_id,row.source_project_id,row.linked_project_id,row.parent_project_id].map(String);
+  if(pid&&idFields.indexOf(pid)>-1)return 1000;
+  var i=projectIdentity(project),text=flatText(row),dedicated=dedicatedText(row),score=0;
+  if(i.ref&&i.ref.length>=4&&text.indexOf(i.ref)>-1)score+=260;
+  if(i.name&&i.name.length>=7&&text.indexOf(i.name)>-1)score+=210;
+  if(i.client&&i.client.length>=4){
+    if(dedicated===i.client||dedicated.indexOf(i.client)>-1)score+=140;
+    else if(text.indexOf(i.client)>-1)score+=55;
+  }
+  i.numbers.forEach(function(x){if(text.indexOf(x)>-1)score+=180;});
+  i.tokens.forEach(function(x){if(text.indexOf(x)>-1)score+=/\d/.test(x)?70:24;});
+  if(/offer|ofert|angebot|quotation|quote|rfq|tender/i.test(text)&&i.client&&dedicated.indexOf(i.client)>-1)score+=25;
+  return score;
+}
+async function byProject(table,pid,projectOrName,order){
+  var project=typeof projectOrName==='object'?projectOrName:{id:pid,name:projectOrName||'',ref:'',client:''};
   var tail='&select=*'+(order?'&'+order:'');
-  var rows=await safe(table+'?project_id=eq.'+enc(pid)+tail);
-  if(rows.length||!name)return rows;
-  rows=await safe(table+'?project=ilike.'+pattern(name)+tail);
-  if(rows.length)return rows;
-  return safe(table+'?project_name=ilike.'+pattern(name)+tail);
+  var batches=[];
+  batches.push(await safe(table+'?project_id=eq.'+enc(pid)+tail));
+  if(project.name)batches.push(await safe(table+'?project=ilike.'+pattern(project.name)+tail));
+  if(project.name)batches.push(await safe(table+'?project_name=ilike.'+pattern(project.name)+tail));
+  if(project.ref){
+    batches.push(await safe(table+'?project=ilike.'+pattern(project.ref)+tail));
+    batches.push(await safe(table+'?project_name=ilike.'+pattern(project.ref)+tail));
+  }
+  var rows=uniq([].concat.apply([],batches),rowKey);
+  if(BROAD_TABLES[table]){
+    var broad=await safe(table+'?select=*'+(order?'&'+order:'&limit=3000'));
+    broad.forEach(function(row){if(relationScore(row,project)>=100&&!rows.some(function(x){return String(rowKey(x))===String(rowKey(row));}))rows.push(row);});
+  }
+  return rows;
 }
 async function emails(pid){
   var links=await safe('project_email_links?project_id=eq.'+enc(pid)+'&select=*&order=created_at.desc&limit=5000');
@@ -94,32 +139,39 @@ function matchDeal(project,deals){
   return score?best:null;
 }
 function ourOffer(row){return String(row.series||'').toUpperCase()==='QUO'||/oferta jone|our offer|pristeel/i.test(String(row.supplier||row.origin||row.source||''));}
+function supplierOffer(row){
+  if(!row||ourOffer(row))return false;
+  var text=flatText(row),supplier=String(row.supplier||row.supplier_name||row.company||'').trim();
+  return !!supplier||/offer|ofert|angebot|quotation|quote|rfq response|price proposal/i.test(text);
+}
 async function load(id){
   var p=(await safe('projects?id=eq.'+enc(id)+'&select=*&limit=1'))[0];
   if(!p)throw new Error('Projekti nuk u gjet.');
   var em=await emails(id);
   var out=await Promise.all([
     contacts(id,em.rows),
-    byProject('bom_items',id,p.name,'order=created_at.asc&limit=3000'),
-    byProject('rfq_log',id,p.name,'order=sent_at.desc&limit=3000'),
-    byProject('offers',id,p.name,'order=created_at.desc&limit=3000'),
-    byProject('documents_registry',id,p.name,'order=created_at.desc&limit=3000'),
-    byProject('invoices_out',id,p.name,'order=created_at.desc&limit=3000'),
-    byProject('invoices_in',id,p.name,'order=created_at.desc&limit=3000'),
-    byProject('commercial_adjustments',id,p.name,'order=created_at.desc&limit=3000'),
-    byProject('project_docs',id,p.name,'order=created_at.desc&limit=3000'),
-    byProject('project_attachment_links',id,p.name,'order=created_at.desc&limit=3000'),
-    byProject('offers_inbox',id,p.name,'order=created_at.desc&limit=3000'),
+    byProject('bom_items',id,p,'order=created_at.asc&limit=3000'),
+    byProject('rfq_log',id,p,'order=sent_at.desc&limit=3000'),
+    byProject('offers',id,p,'order=created_at.desc&limit=3000'),
+    byProject('documents_registry',id,p,'order=created_at.desc&limit=3000'),
+    byProject('invoices_out',id,p,'order=created_at.desc&limit=3000'),
+    byProject('invoices_in',id,p,'order=created_at.desc&limit=3000'),
+    byProject('commercial_adjustments',id,p,'order=created_at.desc&limit=3000'),
+    byProject('project_docs',id,p,'order=created_at.desc&limit=3000'),
+    byProject('project_attachment_links',id,p,'order=created_at.desc&limit=3000'),
+    byProject('offers_inbox',id,p,'order=created_at.desc&limit=3000'),
     safe('bank_guarantees?project=ilike.'+pattern(p.name)+'&select=*&order=created_at.desc&limit=500'),
     safe('crm_deals?select=dealname,amount,dealstage,closedate,description,hs_object_id&limit=1500'),
     drive(p)
   ]);
-  var offers=out[3],docs=out[4];
+  var offers=out[3],docs=out[4],projectDocs=out[8],attachmentLinks=out[9],inboxDocs=out[10];
   var ours=docs.filter(ourOffer).concat(offers.filter(ourOffer));
-  var suppliers=offers.filter(function(x){return !ourOffer(x);});
-  var data={project:p,emails:em.rows,emailLinks:em.links,linkedOnly:em.linkedOnly,contacts:out[0],bom:out[1],rfqs:out[2],offers:offers,ourOffers:uniq(ours,function(x){return x.id||x.doc_nr||x.document_nr;}),supplierOffers:suppliers,docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],projectDocs:out[8],attachmentLinks:out[9],inboxDocs:out[10],guarantees:out[11],deals:out[12],drive:out[13]};
+  var supplierPool=offers.concat(inboxDocs,projectDocs,attachmentLinks,docs).filter(supplierOffer);
+  var suppliers=uniq(supplierPool,function(x){return rowKey(x);});
+  var data={project:p,emails:em.rows,emailLinks:em.links,linkedOnly:em.linkedOnly,contacts:out[0],bom:out[1],rfqs:out[2],offers:offers,ourOffers:uniq(ours,function(x){return rowKey(x);}),supplierOffers:suppliers,docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],projectDocs:projectDocs,attachmentLinks:attachmentLinks,inboxDocs:inboxDocs,guarantees:out[11],deals:out[12],drive:out[13]};
   data.deal=matchDeal(p,data.deals);
   data.mailAttachments=data.emails.filter(function(x){return x.has_attachments||arr(x.attachments).length;});
+  data.files=uniq(data.docs.concat(data.projectDocs,data.attachmentLinks,data.inboxDocs,data.drive.rows,data.mailAttachments),rowKey);
   data.integration={
     gmailModule:!!(window.PSTEmail&&window.PSTGoogleWorkspaceAuth),
     gmailLinked:data.emails.length>0,
@@ -130,5 +182,5 @@ async function load(id){
   };
   return data;
 }
-window.PSTProjectDataIntegrity={load:load,arr:arr,enc:enc,safe:safe,byProject:byProject,email:email,external:external};
+window.PSTProjectDataIntegrity={load:load,arr:arr,enc:enc,safe:safe,byProject:byProject,email:email,external:external,relationScore:relationScore};
 })();
