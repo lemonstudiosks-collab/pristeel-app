@@ -1,13 +1,13 @@
 # PRISTEEL direct preview
 
-Status: VERIFIED
+Status: FAILED
 
 Build: success
 
-Deploy: success
+Deploy: cancelled
 
-Run ID: 31007654374
+Run ID: 31007757842
 
 URL: https://lemonstudiosks-collab.github.io/pristeel-app/
 
-Checked at: 2026-08-05T12:54:09Z
+Checked at: 2026-08-05T12:56:58Z
