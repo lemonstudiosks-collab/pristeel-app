@@ -48,3 +48,4 @@ assert.deepStrictEqual(Array.from(deduped, x => x.filename), ['offer.pdf', 'draw
 
 console.log('Bulk Gmail recovery isolation smoke test passed.');
 dom.window.close();
+process.exit(0);
