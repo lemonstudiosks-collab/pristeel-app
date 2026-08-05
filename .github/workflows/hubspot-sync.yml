@@ -37,13 +37,17 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Verify HubSpot credential exists
+      - name: Detect HubSpot credential
+        id: credential
         shell: bash
         run: |
           if [ -z "$HUBSPOT_ACCESS_TOKEN" ]; then
-            echo "HubSpot private-app token is not available to this repository workflow."
-            exit 1
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::HubSpot sync is ready but paused because HUBSPOT_ACCESS_TOKEN is not configured."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Synchronize contacts and deals
+        if: steps.credential.outputs.available == 'true'
         run: node scripts/hubspot-sync.mjs
