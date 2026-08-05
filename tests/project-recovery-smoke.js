@@ -18,23 +18,30 @@ const eurosteel = {
 const staconFile = {
   id: 'file-stacon', project_ref: '260784', project_name: 'STACON', file_name: 'Airbus_H24X_260784_drawings.zip'
 };
+const registryFile = {
+  id: 'registry-file', project_ref: '260784', project_name: 'STACON', file_name: 'STACON_260784_signed_offer.pdf', file_url: 'https://drive.test/file'
+};
 
 w.supaFetch = async path => {
   if (path.startsWith('projects?id=eq.airbus-1')) return [project];
   if (path.startsWith('offers?select=*')) return [eurosteel];
   if (path.startsWith('project_docs?select=*')) return [staconFile];
+  if (path.startsWith('documents_registry?select=*')) return [registryFile];
   if (path.startsWith('contacts?')) return [];
   if (path.startsWith('crm_deals?')) return [];
   return [];
 };
 
 w.eval(fs.readFileSync('pristeel-project-data-integrity-v1.js', 'utf8'));
+w.eval(fs.readFileSync('pristeel-project-file-unifier-v2.js', 'utf8'));
 
 (async () => {
   const data = await w.PSTProjectDataIntegrity.load('airbus-1');
   assert.ok(data.supplierOffers.some(x => x.supplier === 'EUROSTEEL'), 'EUROSTEEL offer was not recovered through project identity');
-  assert.ok(data.projectDocs.some(x => x.file_name.includes('260784')), 'STACON/Airbus file was not recovered through project reference');
+  assert.ok(data.projectDocs.some(x => x.file_name.includes('Airbus_H24X')), 'STACON/Airbus file was not recovered through project reference');
+  assert.ok(data.projectDocs.some(x => x.file_name.includes('signed_offer')), 'File-bearing registry row did not reach the project Files tab');
   assert.ok(data.files.some(x => x.file_name && x.file_name.includes('Airbus_H24X')), 'Recovered project file was not exposed in the unified files collection');
+  assert.ok(data.files.some(x => x.file_name && x.file_name.includes('signed_offer')), 'Registry file was not exposed in the unified files collection');
   assert.ok(w.PSTProjectDataIntegrity.relationScore(eurosteel, project) >= 100, 'Strong project relation score was not produced');
   console.log('Project recovery smoke test passed.');
   dom.window.close();
