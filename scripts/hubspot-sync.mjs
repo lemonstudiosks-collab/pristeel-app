@@ -28,23 +28,14 @@ function numberOrNull(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function isoOrNull(value) {
+function dateOnly(value) {
   if (!value) return null;
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-function dateOnly(value) {
-  const iso = isoOrNull(value);
-  return iso ? iso.slice(0, 10) : null;
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 }
 
 function fullName(properties) {
   return [clean(properties.firstname), clean(properties.lastname)].filter(Boolean).join(' ') || null;
-}
-
-function compactObject(object) {
-  return Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined));
 }
 
 function titleCase(value) {
@@ -52,6 +43,10 @@ function titleCase(value) {
     .replace(/[._-]+/g, ' ')
     .replace(/\b\w/g, character => character.toUpperCase())
     .trim();
+}
+
+function normalized(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 function inferredCompany(email) {
@@ -65,13 +60,13 @@ function inferredPerson(email, hubspotId) {
   return titleCase(local) || `HubSpot kontakt ${hubspotId}`;
 }
 
-function prepareContactInsert(mapped) {
-  return {
-    ...mapped,
-    person: mapped.person || inferredPerson(mapped.email, mapped.hubspot_id),
-    company: mapped.company || inferredCompany(mapped.email),
-    kind: 'client'
-  };
+function compactObject(object) {
+  return Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined));
+}
+
+function filterToColumns(payload, columns) {
+  const allowed = new Set(columns);
+  return Object.fromEntries(Object.entries(payload).filter(([key]) => allowed.has(key)));
 }
 
 export function mapHubSpotContact(record, portalId = '147958987') {
@@ -111,7 +106,7 @@ async function request(url, options = {}, attempts = 5) {
     }
 
     const body = await response.text();
-    lastError = new Error(`${response.status} ${response.statusText}: ${body.slice(0, 500)}`);
+    lastError = new Error(`${response.status} ${response.statusText}: ${body.slice(0, 700)}`);
     if (![429, 500, 502, 503, 504].includes(response.status) || attempt === attempts) break;
 
     const retryAfter = Number(response.headers.get('retry-after'));
@@ -157,13 +152,28 @@ function supabaseHeaders(key, extra = {}) {
   };
 }
 
+async function readTableColumns(table, supabaseUrl, supabaseKey) {
+  const schema = await request(`${supabaseUrl}/rest/v1/`, {
+    headers: supabaseHeaders(supabaseKey, { Accept: 'application/openapi+json' })
+  });
+
+  const properties =
+    schema?.definitions?.[table]?.properties ||
+    schema?.components?.schemas?.[table]?.properties ||
+    {};
+
+  const columns = Object.keys(properties);
+  if (!columns.length) throw new Error(`Could not read schema for ${table}.`);
+  return columns;
+}
+
 async function readExisting(table, select, supabaseUrl, supabaseKey) {
   const url = `${supabaseUrl}/rest/v1/${table}?select=${encodeURIComponent(select)}&limit=10000`;
   return await request(url, { headers: supabaseHeaders(supabaseKey) }) || [];
 }
 
-async function patchRow(table, id, payload, supabaseUrl, supabaseKey) {
-  const url = `${supabaseUrl}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`;
+async function patchRow(table, filterColumn, filterValue, payload, supabaseUrl, supabaseKey) {
+  const url = `${supabaseUrl}/rest/v1/${table}?${encodeURIComponent(filterColumn)}=eq.${encodeURIComponent(filterValue)}`;
   await request(url, {
     method: 'PATCH',
     headers: supabaseHeaders(supabaseKey, { Prefer: 'return=minimal' }),
@@ -175,6 +185,7 @@ async function insertRows(table, rows, conflictColumn, supabaseUrl, supabaseKey)
   if (!rows.length) return;
   const suffix = conflictColumn ? `?on_conflict=${encodeURIComponent(conflictColumn)}` : '';
   const url = `${supabaseUrl}/rest/v1/${table}${suffix}`;
+
   for (let i = 0; i < rows.length; i += 100) {
     await request(url, {
       method: 'POST',
@@ -206,8 +217,8 @@ export async function syncContacts(records, config) {
     config.supabaseKey
   );
 
-  const byHubSpotId = new Map(existing.filter(r => r.hubspot_id).map(r => [String(r.hubspot_id), r]));
-  const byEmail = new Map(existing.filter(r => r.email).map(r => [String(r.email).toLowerCase(), r]));
+  const byHubSpotId = new Map(existing.filter(row => row.hubspot_id).map(row => [String(row.hubspot_id), row]));
+  const byEmail = new Map(existing.filter(row => row.email).map(row => [String(row.email).toLowerCase(), row]));
   const updates = [];
   const inserts = [];
 
@@ -225,39 +236,72 @@ export async function syncContacts(records, config) {
       if (!payload.country) delete payload.country;
       updates.push({ id: current.id, payload });
     } else {
-      inserts.push(prepareContactInsert(mapped));
+      inserts.push({
+        ...mapped,
+        person: mapped.person || inferredPerson(mapped.email, mapped.hubspot_id),
+        company: mapped.company || inferredCompany(mapped.email),
+        kind: 'client'
+      });
     }
   }
 
-  await runPool(updates, item => patchRow('contacts', item.id, item.payload, config.supabaseUrl, config.supabaseKey));
+  await runPool(
+    updates,
+    item => patchRow('contacts', 'id', item.id, item.payload, config.supabaseUrl, config.supabaseKey)
+  );
   await insertRows('contacts', inserts, 'hubspot_id', config.supabaseUrl, config.supabaseKey);
 
-  return { total: records.length, updated: updates.length, inserted: inserts.length };
+  return { total: records.length, updated: updates.length, insertedOrAlreadyPresent: inserts.length };
 }
 
 export async function syncDeals(records, config) {
-  const existing = await readExisting(
-    'crm_deals',
-    'id,hs_object_id',
-    config.supabaseUrl,
-    config.supabaseKey
-  );
+  const columns = await readTableColumns('crm_deals', config.supabaseUrl, config.supabaseKey);
+  const identifierColumn = [
+    'hs_object_id', 'hubspot_id', 'hubspot_deal_id', 'deal_id'
+  ].find(column => columns.includes(column)) || null;
+  const rowKeyColumn = columns.includes('id') ? 'id' : identifierColumn || 'dealname';
+  const select = Array.from(new Set([rowKeyColumn, 'dealname', identifierColumn].filter(Boolean))).join(',');
+  const existing = await readExisting('crm_deals', select, config.supabaseUrl, config.supabaseKey);
 
-  const byHubSpotId = new Map(existing.filter(r => r.hs_object_id).map(r => [String(r.hs_object_id), r]));
+  console.log(`crm_deals HubSpot identifier column: ${identifierColumn || 'none; matching by dealname'}`);
+
+  const byHubSpotId = identifierColumn
+    ? new Map(existing.filter(row => row[identifierColumn]).map(row => [String(row[identifierColumn]), row]))
+    : new Map();
+  const byName = new Map(existing.filter(row => row.dealname).map(row => [normalized(row.dealname), row]));
   const updates = [];
   const inserts = [];
 
   for (const record of records) {
-    const mapped = mapHubSpotDeal(record);
-    const current = byHubSpotId.get(mapped.hs_object_id);
-    if (current) updates.push({ id: current.id, payload: mapped });
-    else inserts.push(mapped);
+    const source = mapHubSpotDeal(record);
+    const hubspotId = source.hs_object_id;
+    delete source.hs_object_id;
+    if (identifierColumn) source[identifierColumn] = hubspotId;
+
+    const payload = filterToColumns(source, columns);
+    const current = identifierColumn
+      ? byHubSpotId.get(hubspotId) || byName.get(normalized(payload.dealname))
+      : byName.get(normalized(payload.dealname));
+
+    if (current) {
+      updates.push({ key: current[rowKeyColumn], payload });
+    } else {
+      inserts.push(payload);
+    }
   }
 
-  await runPool(updates, item => patchRow('crm_deals', item.id, item.payload, config.supabaseUrl, config.supabaseKey));
-  await insertRows('crm_deals', inserts, 'hs_object_id', config.supabaseUrl, config.supabaseKey);
+  await runPool(
+    updates,
+    item => patchRow('crm_deals', rowKeyColumn, item.key, item.payload, config.supabaseUrl, config.supabaseKey)
+  );
+  await insertRows('crm_deals', inserts, null, config.supabaseUrl, config.supabaseKey);
 
-  return { total: records.length, updated: updates.length, inserted: inserts.length };
+  return {
+    total: records.length,
+    identifierColumn: identifierColumn || 'dealname',
+    updated: updates.length,
+    inserted: inserts.length
+  };
 }
 
 export async function runHubSpotSync(env = process.env) {
