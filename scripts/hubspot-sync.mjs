@@ -145,7 +145,7 @@ async function fetchHubSpotObjects(objectType, properties, token) {
     after = page?.paging?.next?.after || null;
   } while (after);
 
-  return output;
+  return Array.from(new Map(output.map(record => [String(record.id), record])).values());
 }
 
 function supabaseHeaders(key, extra = {}) {
@@ -171,13 +171,16 @@ async function patchRow(table, id, payload, supabaseUrl, supabaseKey) {
   });
 }
 
-async function insertRows(table, rows, supabaseUrl, supabaseKey) {
+async function insertRows(table, rows, conflictColumn, supabaseUrl, supabaseKey) {
   if (!rows.length) return;
-  const url = `${supabaseUrl}/rest/v1/${table}`;
+  const suffix = conflictColumn ? `?on_conflict=${encodeURIComponent(conflictColumn)}` : '';
+  const url = `${supabaseUrl}/rest/v1/${table}${suffix}`;
   for (let i = 0; i < rows.length; i += 100) {
     await request(url, {
       method: 'POST',
-      headers: supabaseHeaders(supabaseKey, { Prefer: 'return=minimal' }),
+      headers: supabaseHeaders(supabaseKey, {
+        Prefer: conflictColumn ? 'resolution=ignore-duplicates,return=minimal' : 'return=minimal'
+      }),
       body: JSON.stringify(rows.slice(i, i + 100))
     });
   }
@@ -227,7 +230,7 @@ export async function syncContacts(records, config) {
   }
 
   await runPool(updates, item => patchRow('contacts', item.id, item.payload, config.supabaseUrl, config.supabaseKey));
-  await insertRows('contacts', inserts, config.supabaseUrl, config.supabaseKey);
+  await insertRows('contacts', inserts, 'hubspot_id', config.supabaseUrl, config.supabaseKey);
 
   return { total: records.length, updated: updates.length, inserted: inserts.length };
 }
@@ -252,7 +255,7 @@ export async function syncDeals(records, config) {
   }
 
   await runPool(updates, item => patchRow('crm_deals', item.id, item.payload, config.supabaseUrl, config.supabaseKey));
-  await insertRows('crm_deals', inserts, config.supabaseUrl, config.supabaseKey);
+  await insertRows('crm_deals', inserts, 'hs_object_id', config.supabaseUrl, config.supabaseKey);
 
   return { total: records.length, updated: updates.length, inserted: inserts.length };
 }
