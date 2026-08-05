@@ -29,11 +29,11 @@ const links = [
   { project_id: 'airbus', gmail_message_id: 'm-airbus', gmail_thread_id: 't-airbus' }
 ];
 const inventory = B.buildInventory(projects, emails, links);
-const byId = Object.fromEntries(inventory.map(x => [x.project.id, x]));
-assert.deepStrictEqual(byId.airbus.mails.map(x => x.gmail_message_id), ['m-airbus']);
-assert.deepStrictEqual(byId.d22.mails.map(x => x.gmail_message_id), ['m-d22']);
-assert.deepStrictEqual(byId.tennet.mails.map(x => x.gmail_message_id), ['m-tennet']);
-assert(!byId.airbus.mails.some(x => x.gmail_message_id === 'm-d22'), 'Same-client email leaked into Airbus');
+const byId = Object.fromEntries(Array.from(inventory, x => [x.project.id, x]));
+assert.deepStrictEqual(Array.from(byId.airbus.mails, x => x.gmail_message_id), ['m-airbus']);
+assert.deepStrictEqual(Array.from(byId.d22.mails, x => x.gmail_message_id), ['m-d22']);
+assert.deepStrictEqual(Array.from(byId.tennet.mails, x => x.gmail_message_id), ['m-tennet']);
+assert(!Array.from(byId.airbus.mails).some(x => x.gmail_message_id === 'm-d22'), 'Same-client email leaked into Airbus');
 
 assert.strictEqual(B.skipAttachment({ filename:'smime.p7s', mimeType:'application/pkcs7-signature', body:{ attachmentId:'a', size:1000 } }), true);
 assert.strictEqual(B.skipAttachment({ filename:'image001.png', mimeType:'image/png', headers:[{name:'Content-Disposition',value:'inline'}], body:{ attachmentId:'b', size:12000 } }), true);
@@ -44,7 +44,7 @@ const deduped = B.uniqueFiles([
   { filename:'offer.pdf', size:100, key:'2' },
   { filename:'drawing.pdf', size:200, key:'3' }
 ]);
-assert.deepStrictEqual(deduped.map(x => x.filename), ['offer.pdf', 'drawing.pdf']);
+assert.deepStrictEqual(Array.from(deduped, x => x.filename), ['offer.pdf', 'drawing.pdf']);
 
 console.log('Bulk Gmail recovery isolation smoke test passed.');
 dom.window.close();
