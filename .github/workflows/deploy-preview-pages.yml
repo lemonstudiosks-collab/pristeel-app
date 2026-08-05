@@ -56,6 +56,8 @@ jobs:
           path: _site
 
   deploy:
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -83,26 +85,43 @@ jobs:
           echo "Deployment did not become reachable in time."
           exit 1
 
-      - name: Record verified direct link
+  report:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - deploy
+    steps:
+      - name: Record deployment result
         shell: bash
         env:
-          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
         run: |
           set -euo pipefail
           git clone --branch workspace-v2-safe-build --single-branch "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-repo
           cd status-repo
+          status="FAILED"
+          if [ "$BUILD_RESULT" = "success" ] && [ "$DEPLOY_RESULT" = "success" ]; then
+            status="VERIFIED"
+          fi
           cat > DEPLOYMENT_STATUS.md <<EOF
           # PRISTEEL direct preview
 
-          Status: VERIFIED
+          Status: ${status}
 
-          URL: ${PAGE_URL}
+          Build: ${BUILD_RESULT}
 
-          Verified at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          Deploy: ${DEPLOY_RESULT}
+
+          URL: ${PAGE_URL:-https://lemonstudiosks-collab.github.io/pristeel-app/}
+
+          Checked at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
           EOF
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add DEPLOYMENT_STATUS.md
-          git commit -m 'Record verified PRISTEEL preview link' || exit 0
+          git commit -m 'Record PRISTEEL preview deployment status' || exit 0
           git push origin workspace-v2-safe-build
