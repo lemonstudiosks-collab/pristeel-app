@@ -72,11 +72,13 @@ var files=[
   'pristeel-project-stability-v2.js?v=20260805-2',
   'pristeel-project-linked-gmail-recovery-v2.js?v=20260805-1',
   'pristeel-project-bulk-gmail-recovery-v1.js?v=20260805-1',
-  'pristeel-project-closure-direct-v1.js?v=20260805-1'
+  'pristeel-project-closure-direct-v1.js?v=20260805-1',
+  'pristeel-project-flow-actions-v1.js?v=20260805-1'
 ];
 var completed=false;
 function ready(){
   if(completed)return;completed=true;
+  window.__pstModulesReady=true;
   try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}
 }
 function load(i){
