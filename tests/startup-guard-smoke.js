@@ -52,4 +52,5 @@ async function appCase(){
   await authCase();
   await appCase();
   console.log('Startup guard smoke test passed.');
+  process.exit(0);
 })().catch(error=>{ console.error(error); process.exit(1); });
