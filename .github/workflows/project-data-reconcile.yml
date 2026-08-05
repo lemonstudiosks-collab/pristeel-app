@@ -1,19 +1,13 @@
-name: Project Data Reconcile
+name: Project Data Reconcile (Dry Run Only)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - workspace-v2-safe-build
-    paths:
-      - 'scripts/project-data-reconcile.mjs'
-      - '.github/workflows/project-data-reconcile.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  reconcile:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -23,45 +17,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Reconcile project records
+      - name: Inspect project records without writing
         env:
           SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          APPLY: 'true'
+          APPLY: 'false'
         run: node scripts/project-data-reconcile.mjs | tee project-reconcile-report.json
-      - name: Build readable report
-        if: always()
-        run: |
-          node - <<'NODE'
-          const fs=require('fs');
-          let raw=''; try{raw=fs.readFileSync('project-reconcile-report.json','utf8')}catch(e){}
-          const start=raw.indexOf('{'); const end=raw.lastIndexOf('}');
-          let data={}; try{data=JSON.parse(raw.slice(start,end+1))}catch(e){data={error:String(e),raw:raw.slice(-4000)}}
-          const lines=['# Project data reconciliation','','Generated: '+new Date().toISOString(),'','Projects scanned: '+(data.projects??'unknown'),'Records linked: '+((data.applied||[]).length),'Unresolved records: '+((data.unresolved||[]).length),'Conflicts left untouched: '+((data.conflicts||[]).length),'','## Tables'];
-          for(const [name,stats] of Object.entries(data.tables||{})) lines.push(`- ${name}: ${JSON.stringify(stats)}`);
-          lines.push('','## Linked records');
-          for(const row of (data.applied||[]).slice(0,300)) lines.push(`- ${row.table} / ${row.id} -> ${row.project} (${row.projectId}), score ${row.score}`);
-          lines.push('','## Unresolved records');
-          for(const row of (data.unresolved||[]).slice(0,300)) lines.push(`- ${row.table} / ${row.id}: ${row.label||'(no label)'}; candidates ${JSON.stringify(row.candidates||[])}`);
-          lines.push('','## Conflicts not changed');
-          for(const row of (data.conflicts||[]).slice(0,300)) lines.push(`- ${row.table} / ${row.id}: current ${row.currentProjectId}, suggested ${row.suggestedProjectId}, score ${row.score}`);
-          fs.writeFileSync('PROJECT_DATA_RECONCILIATION.md',lines.join('\n'));
-          NODE
-      - name: Commit reconciliation report
-        if: always()
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add PROJECT_DATA_RECONCILIATION.md
-          git diff --cached --quiet || git commit -m "Update project data reconciliation report"
-          git push origin HEAD:workspace-v2-safe-build
-      - name: Upload reconciliation report
+      - name: Upload dry-run report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: project-reconcile-report
-          path: |
-            project-reconcile-report.json
-            PROJECT_DATA_RECONCILIATION.md
-          retention-days: 14
+          name: project-reconcile-dry-run
+          path: project-reconcile-report.json
+          retention-days: 7
