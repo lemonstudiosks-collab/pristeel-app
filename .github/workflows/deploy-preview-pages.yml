@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - workspace-v2-safe-build
+    paths-ignore:
+      - 'DEPLOYMENT_STATUS.md'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -38,12 +40,15 @@ jobs:
             --exclude 'package-lock.json' \
             --exclude 'package.json' \
             --exclude 'preview-server.mjs' \
-            --exclude '.stackblitzrc'
+            --exclude '.stackblitzrc' \
+            --exclude 'DEPLOYMENT_STATUS.md'
           cp pristeel-procurement.html _site/index.html
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
@@ -60,3 +65,45 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify deployed platform
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 18); do
+            code=$(curl -L -sS -o /tmp/pristeel.html -w '%{http_code}' "$PAGE_URL" || true)
+            if [ "$code" = "200" ] && grep -qi 'PRISTEEL' /tmp/pristeel.html; then
+              echo "Verified $PAGE_URL"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Deployment did not become reachable in time."
+          exit 1
+
+      - name: Record verified direct link
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          git clone --branch workspace-v2-safe-build --single-branch "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-repo
+          cd status-repo
+          cat > DEPLOYMENT_STATUS.md <<EOF
+          # PRISTEEL direct preview
+
+          Status: VERIFIED
+
+          URL: ${PAGE_URL}
+
+          Verified at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add DEPLOYMENT_STATUS.md
+          git commit -m 'Record verified PRISTEEL preview link' || exit 0
+          git push origin workspace-v2-safe-build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
