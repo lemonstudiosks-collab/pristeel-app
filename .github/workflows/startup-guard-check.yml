@@ -1,0 +1,37 @@
+name: Startup and Login Check
+
+on:
+  push:
+    branches:
+      - workspace-v2-safe-build
+    paths:
+      - 'pristeel-startup-guard-v1.js'
+      - 'pristeel-project-emails.js'
+      - 'tests/startup-guard-smoke.js'
+      - '.github/workflows/startup-guard-check.yml'
+      - '.github/workflows/deploy-preview-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  startup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: workspace-v2-safe-build
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Check startup guard syntax
+        run: node --check pristeel-startup-guard-v1.js
+      - name: Test login and current-app reveal
+        run: timeout 40s node tests/startup-guard-smoke.js
+      - name: Verify deployment injection
+        run: |
+          grep -q "pristeel-startup-guard-v1.js" .github/workflows/deploy-preview-pages.yml
+          grep -q "pst:modules-ready" pristeel-project-emails.js
