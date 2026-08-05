@@ -234,7 +234,10 @@ export async function runHubSpotSync(env = process.env) {
   const config = {
     hubspotToken: required('HUBSPOT_ACCESS_TOKEN', env.HUBSPOT_ACCESS_TOKEN),
     supabaseUrl: env.SUPABASE_URL || DEFAULT_SUPABASE_URL,
-    supabaseKey: required('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY', env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY),
+    supabaseKey: required(
+      'SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY',
+      env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY
+    ),
     portalId: env.HUBSPOT_PORTAL_ID || '147958987'
   };
 
