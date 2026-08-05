@@ -71,7 +71,8 @@ var files=[
   'pristeel-project-context-navigation-v1.js?v=20260805-1',
   'pristeel-project-stability-v2.js?v=20260805-2',
   'pristeel-project-linked-gmail-recovery-v2.js?v=20260805-1',
-  'pristeel-project-bulk-gmail-recovery-v1.js?v=20260805-1'
+  'pristeel-project-bulk-gmail-recovery-v1.js?v=20260805-1',
+  'pristeel-project-closure-ux-v1.js?v=20260805-1'
 ];
 var completed=false;
 function ready(){
