@@ -16,8 +16,8 @@ function classify(row){
   var t=title(row);
   if(!t)return'';
   if(/\bnda\b|confidential|konfidencial|non disclosure|moszbulim/.test(t))return'nda';
-  if(/nenkontrat|subcontract|furnitor|supplier|prodhim|production|manufactur/.test(t))return'sub';
-  if(/werkvertrag|bleres|buyer|shitje|sales|client contract|customer contract/.test(t))return'sales';
+  if(/nenkontrat|subcontract|furnitor|supplier|prodhim|production|manufactur/.test(t))return'prod';
+  if(/werkvertrag|bleres|buyer|shitje|sales|client contract|customer contract/.test(t))return'sale';
   return'';
 }
 function typeField(row){
