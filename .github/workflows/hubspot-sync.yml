@@ -1,6 +1,6 @@
 name: HubSpot CRM Sync
 
-# Triggered after HUBSPOT_ACCESS_TOKEN was configured on 2026-08-05.
+# Re-triggered after HUBSPOT_ACCESS_TOKEN and SUPABASE_SECRET_KEY were configured on 2026-08-05.
 on:
   push:
     branches:
