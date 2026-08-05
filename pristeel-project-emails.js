@@ -73,13 +73,19 @@ var files=[
   'pristeel-project-linked-gmail-recovery-v2.js?v=20260805-1',
   'pristeel-project-bulk-gmail-recovery-v1.js?v=20260805-1'
 ];
+var completed=false;
+function ready(){
+  if(completed)return;completed=true;
+  try{if(window.PSTStartupGuard&&typeof window.PSTStartupGuard.modulesReady==='function')window.PSTStartupGuard.modulesReady();}catch(e){console.warn('PRISTEEL startup ready signal:',e);}
+  try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}
+}
 function load(i){
-  if(i>=files.length||window.__pstAbortBootstrap)return;
+  if(i>=files.length||window.__pstAbortBootstrap){ready();return;}
   var s=document.createElement('script');
   s.src=files[i];
   s.defer=true;
-  s.onload=function(){if(!window.__pstAbortBootstrap)load(i+1)};
-  s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(!window.__pstAbortBootstrap)load(i+1)};
+  s.onload=function(){if(window.__pstAbortBootstrap)ready();else load(i+1);};
+  s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(window.__pstAbortBootstrap)ready();else load(i+1);};
   document.head.appendChild(s);
 }
 load(0);
