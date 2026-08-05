@@ -99,6 +99,7 @@ jobs:
           BUILD_RESULT: ${{ needs.build.result }}
           DEPLOY_RESULT: ${{ needs.deploy.result }}
           PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           git clone --branch workspace-v2-safe-build --single-branch "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-repo
@@ -115,6 +116,8 @@ jobs:
           Build: ${BUILD_RESULT}
 
           Deploy: ${DEPLOY_RESULT}
+
+          Run ID: ${RUN_ID}
 
           URL: ${PAGE_URL:-https://lemonstudiosks-collab.github.io/pristeel-app/}
 
