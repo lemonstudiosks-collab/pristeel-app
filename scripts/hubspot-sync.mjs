@@ -5,13 +5,11 @@ const DEFAULT_SUPABASE_URL = 'https://isymxqfqzkchbsrbhucf.supabase.co';
 
 const CONTACT_PROPERTIES = [
   'firstname', 'lastname', 'email', 'phone', 'mobilephone',
-  'company', 'jobtitle', 'country', 'city', 'website',
-  'hs_lastmodifieddate', 'createdate'
+  'company', 'jobtitle', 'country'
 ];
 
 const DEAL_PROPERTIES = [
-  'dealname', 'amount', 'dealstage', 'closedate', 'description',
-  'pipeline', 'hs_lastmodifieddate', 'createdate'
+  'dealname', 'amount', 'dealstage', 'closedate', 'description'
 ];
 
 function required(name, value) {
@@ -59,11 +57,7 @@ export function mapHubSpotContact(record, portalId = '147958987') {
     email: clean(p.email)?.toLowerCase() || null,
     phone: clean(p.phone) || clean(p.mobilephone),
     role: clean(p.jobtitle),
-    country: clean(p.country),
-    city: clean(p.city),
-    website: clean(p.website),
-    hubspot_updated_at: isoOrNull(p.hs_lastmodifieddate),
-    updated_at: new Date().toISOString()
+    country: clean(p.country)
   });
 }
 
@@ -75,10 +69,7 @@ export function mapHubSpotDeal(record) {
     amount: numberOrNull(p.amount),
     dealstage: clean(p.dealstage),
     closedate: dateOnly(p.closedate),
-    description: clean(p.description),
-    pipeline: clean(p.pipeline),
-    hubspot_updated_at: isoOrNull(p.hs_lastmodifieddate),
-    updated_at: new Date().toISOString()
+    description: clean(p.description)
   });
 }
 
@@ -202,7 +193,6 @@ export async function syncContacts(records, config) {
       if (!payload.phone) delete payload.phone;
       if (!payload.role) delete payload.role;
       if (!payload.country) delete payload.country;
-      if (current.kind) delete payload.kind;
       updates.push({ id: current.id, payload });
     } else {
       inserts.push({ ...mapped, kind: 'client' });
