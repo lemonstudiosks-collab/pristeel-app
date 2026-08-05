@@ -47,6 +47,33 @@ function compactObject(object) {
   return Object.fromEntries(Object.entries(object).filter(([, value]) => value !== undefined));
 }
 
+function titleCase(value) {
+  return String(value || '')
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, character => character.toUpperCase())
+    .trim();
+}
+
+function inferredCompany(email) {
+  const domain = clean(email)?.split('@')[1] || '';
+  const root = domain.split('.')[0] || '';
+  return titleCase(root) || 'Pa kompani';
+}
+
+function inferredPerson(email, hubspotId) {
+  const local = clean(email)?.split('@')[0] || '';
+  return titleCase(local) || `HubSpot kontakt ${hubspotId}`;
+}
+
+function prepareContactInsert(mapped) {
+  return {
+    ...mapped,
+    person: mapped.person || inferredPerson(mapped.email, mapped.hubspot_id),
+    company: mapped.company || inferredCompany(mapped.email),
+    kind: 'client'
+  };
+}
+
 export function mapHubSpotContact(record, portalId = '147958987') {
   const p = record.properties || {};
   return compactObject({
@@ -195,7 +222,7 @@ export async function syncContacts(records, config) {
       if (!payload.country) delete payload.country;
       updates.push({ id: current.id, payload });
     } else {
-      inserts.push({ ...mapped, kind: 'client' });
+      inserts.push(prepareContactInsert(mapped));
     }
   }
 
