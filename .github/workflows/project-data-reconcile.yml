@@ -1,0 +1,37 @@
+name: Project Data Reconcile
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - workspace-v2-safe-build
+    paths:
+      - 'scripts/project-data-reconcile.mjs'
+      - '.github/workflows/project-data-reconcile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reconcile project records
+        env:
+          SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APPLY: 'true'
+        run: node scripts/project-data-reconcile.mjs | tee project-reconcile-report.json
+      - name: Upload reconciliation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-reconcile-report
+          path: project-reconcile-report.json
+          retention-days: 14
