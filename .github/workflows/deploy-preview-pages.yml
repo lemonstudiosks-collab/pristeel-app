@@ -48,15 +48,15 @@ jobs:
           path = Path('_site/index.html')
           html = path.read_text(encoding='utf-8')
           marker = '<head>'
-          scripts = '<head>\n<script src="pristeel-startup-guard-v2.js?v=20260805-2"></script>\n<script src="pristeel-login-transition-v1.js?v=20260805-1"></script>'
+          scripts = '<head>\n<script src="pristeel-startup-guard-v2.js?v=20260805-2"></script>\n<script src="pristeel-login-transition-v2.js?v=20260805-2"></script>'
           if marker not in html:
               raise SystemExit('Missing <head> in platform HTML')
           path.write_text(html.replace(marker, scripts, 1), encoding='utf-8')
           PY
           grep -q 'pristeel-startup-guard-v2.js' _site/index.html
-          grep -q 'pristeel-login-transition-v1.js' _site/index.html
+          grep -q 'pristeel-login-transition-v2.js' _site/index.html
           test -s _site/pristeel-startup-guard-v2.js
-          test -s _site/pristeel-login-transition-v1.js
+          test -s _site/pristeel-login-transition-v2.js
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
@@ -91,18 +91,18 @@ jobs:
           for attempt in $(seq 1 18); do
             code=$(curl -L -sS -o /tmp/pristeel.html -w '%{http_code}' "$PAGE_URL" || true)
             startup_code=$(curl -L -sS -o /tmp/pristeel-startup.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-startup-guard-v2.js?v=20260805-2" || true)
-            transition_code=$(curl -L -sS -o /tmp/pristeel-transition.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-login-transition-v1.js?v=20260805-1" || true)
+            transition_code=$(curl -L -sS -o /tmp/pristeel-transition.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-login-transition-v2.js?v=20260805-2" || true)
             if [ "$code" = "200" ] && [ "$startup_code" = "200" ] && [ "$transition_code" = "200" ] \
               && grep -q 'pristeel-startup-guard-v2.js' /tmp/pristeel.html \
-              && grep -q 'pristeel-login-transition-v1.js' /tmp/pristeel.html \
+              && grep -q 'pristeel-login-transition-v2.js' /tmp/pristeel.html \
               && grep -q '__pstStartupGuardV2' /tmp/pristeel-startup.js \
-              && grep -q '__pstLoginTransitionV1' /tmp/pristeel-transition.js; then
-              echo "Verified polished startup and login transition at $PAGE_URL"
+              && grep -q '__pstLoginTransitionV2' /tmp/pristeel-transition.js; then
+              echo "Verified bounded startup and login transition at $PAGE_URL"
               exit 0
             fi
             sleep 10
           done
-          echo "Deployment did not become reachable with login transition in time."
+          echo "Deployment did not become reachable with bounded transition in time."
           exit 1
 
   report:
