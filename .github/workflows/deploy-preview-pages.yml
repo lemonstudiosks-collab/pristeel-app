@@ -87,6 +87,7 @@ jobs:
         shell: bash
         env:
           PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git clone --branch workspace-v2-safe-build --single-branch "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-repo
@@ -105,5 +106,3 @@ jobs:
           git add DEPLOYMENT_STATUS.md
           git commit -m 'Record verified PRISTEEL preview link' || exit 0
           git push origin workspace-v2-safe-build
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
