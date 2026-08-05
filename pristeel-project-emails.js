@@ -69,7 +69,8 @@ var files=[
   'pristeel-modules-unified-v1.js?v=20260804-1',
   'pristeel-ui-corrections-v2.js?v=20260805-1',
   'pristeel-project-context-navigation-v1.js?v=20260805-1',
-  'pristeel-project-stability-v2.js?v=20260805-2'
+  'pristeel-project-stability-v2.js?v=20260805-2',
+  'pristeel-project-linked-gmail-recovery-v2.js?v=20260805-1'
 ];
 function load(i){
   if(i>=files.length||window.__pstAbortBootstrap)return;
