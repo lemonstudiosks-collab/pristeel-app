@@ -26,3 +26,30 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run workspace checks
         run: npm test
+
+  hubspot-sync:
+    if: github.event_name == 'pull_request' && github.head_ref == 'workspace-v2-safe-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HUBSPOT_ACCESS_TOKEN: ${{ secrets.HUBSPOT_ACCESS_TOKEN || secrets.HUBSPOT_PRIVATE_APP_TOKEN || secrets.HUBSPOT_TOKEN }}
+      HUBSPOT_PORTAL_ID: '147958987'
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImlzeW14cWZxemtjaGJzcmJodWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2NDU1NzYsImV4cCI6MjA5ODIyMTU3Nn0.H25Z7TSVv0OD0X1QPqlowAr0uLSo88_Bu7R_cW6KAIM' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify HubSpot credential
+        shell: bash
+        run: |
+          if [ -z "$HUBSPOT_ACCESS_TOKEN" ]; then
+            echo "HubSpot private-app token is missing from repository secrets."
+            exit 1
+          fi
+      - name: Synchronize HubSpot contacts and deals
+        run: node scripts/hubspot-sync.mjs
