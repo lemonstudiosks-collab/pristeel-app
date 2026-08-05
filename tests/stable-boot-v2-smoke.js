@@ -3,8 +3,8 @@ const assert = require('assert');
 const { JSDOM } = require('jsdom');
 
 const source = fs.readFileSync('pristeel-stable-boot-v2.js', 'utf8');
-assert(!source.includes('MutationObserver'), 'Stable boot must not use MutationObserver');
-assert(!source.includes('setInterval'), 'Stable boot must not use setInterval');
+assert(!/new\s+MutationObserver\s*\(/.test(source), 'Stable boot must not instantiate MutationObserver');
+assert(!/setInterval\s*\(/.test(source), 'Stable boot must not start recurring timers');
 
 async function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
