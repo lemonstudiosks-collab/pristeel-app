@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var files=[
-  'pristeel-gmail-tab-handoff.js?v=20260806-1',
+  'pristeel-gmail-tab-handoff.js?v=20260806-2',
   'pristeel-email-core.js?v=20260801-2',
   'pristeel-google-workspace-auth.js?v=20260802-2',
   'pristeel-project-routing-rules.js?v=20260802-2',
