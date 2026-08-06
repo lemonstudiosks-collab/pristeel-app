@@ -8,33 +8,41 @@ const { JSDOM } = require('jsdom');
   const revisionSource = fs.readFileSync('pristeel-gmail-intake-revision-fix-v1.js', 'utf8');
   const bootstrap = fs.readFileSync('pristeel-project-emails.js', 'utf8');
 
-  assert(!/location\.assign\s*\(/.test(handoffSource), 'Gmail handoff must not reload the platform');
-  assert(!/PRISTEEL_MAIN/.test(handoffSource), 'Named-window takeover must stay removed');
-  assert(!/new\s+MutationObserver|setInterval\s*\(/.test(handoffSource), 'Handoff must be bounded and event-driven');
+  assert(!/window\.close\s*\(|\.close\s*\(\)/.test(handoffSource), 'Gmail launch must never close a tab');
+  assert(!/BroadcastChannel|handoff_request|handoff_ack/.test(handoffSource), 'Cross-tab handoff must stay removed');
+  assert(!/location\.assign\s*\(|PRISTEEL_MAIN/.test(handoffSource), 'Gmail launch must not navigate or take over a named window');
+  assert(!/new\s+MutationObserver|setInterval\s*\(/.test(handoffSource), 'Gmail launch must be bounded and direct');
   assert(!/new\s+MutationObserver|setInterval\s*\(/.test(intakeSource), 'Intake must not poll or observe the whole page');
   assert(!/new\s+MutationObserver|setInterval\s*\(/.test(revisionSource), 'Revision selection must be bounded');
 
   ['pristeel-gmail-intake.js', 'pristeel-gmail-intake-ux.js', 'pristeel-gmail-intake-client.js', 'pristeel-gmail-linked-guard.js', 'pristeel-gmail-open-project.js', 'pristeel-gmail-auth-gate.js'].forEach(name => {
     assert(!bootstrap.includes(`'${name}?`), `Legacy Gmail module is still loaded: ${name}`);
   });
+  assert(bootstrap.includes('pristeel-gmail-tab-handoff.js?v=20260806-2'), 'Direct Gmail launch cache version is not active');
   assert(bootstrap.includes('pristeel-gmail-intake-v2.js'), 'Gmail intake v2 is not loaded');
   assert(bootstrap.includes('pristeel-gmail-intake-revision-fix-v1.js'), 'Revision selection fix is not loaded');
 
+  const directUrl = 'https://example.test/pristeel-app/pristeel-procurement.html?gmail_intake=1&gmail_message_id=m1&gmail_thread_id=t1';
   const handoffDom = new JSDOM('<!doctype html><html><body></body></html>', {
     runScripts: 'outside-only',
-    url: 'https://example.test/pristeel-app/'
+    url: directUrl
   });
   const hw = handoffDom.window;
-  let opened = '';
-  hw.focus = () => {};
-  hw.PSTGmailIntakeV2 = { open: target => { opened = target; } };
+  let closeCalls = 0;
+  hw.close = () => { closeCalls += 1; };
   hw.name = 'PRISTEEL_MAIN';
   hw.eval(handoffSource);
-  const target = 'https://example.test/pristeel-app/pristeel-procurement.html?gmail_intake=1&gmail_message_id=m1&gmail_thread_id=t1';
-  assert.strictEqual(hw.PSTGmailHandoffV3.openTarget(target), true, 'Existing platform did not accept Gmail handoff');
-  assert(opened.includes('gmail_message_id=m1'), 'Intake did not open inside the existing platform');
-  assert.strictEqual(hw.name, '', 'Old named-window state was not cleared');
-  assert.strictEqual(hw.location.pathname, '/pristeel-app/', 'Handoff changed the platform path instead of opening in place');
+  assert.strictEqual(closeCalls, 0, 'Direct Gmail launch closed its own tab');
+  assert.strictEqual(hw.name, '', 'Legacy named-window state was not cleared');
+  assert.strictEqual(hw.__pstGmailHandoffPending, false, 'Direct launch was incorrectly left waiting for another tab');
+  assert.strictEqual(hw.__pstAbortBootstrap, false, 'Direct launch aborted the platform bootstrap');
+  assert(hw.__pstPendingGmailIntakeTarget.includes('gmail_message_id=m1'), 'Direct launch did not preserve the Gmail request');
+  assert.strictEqual(hw.location.pathname, '/pristeel-app/pristeel-procurement.html', 'Direct launch changed the platform path');
+
+  let opened = '';
+  hw.PSTGmailIntakeV2 = { open: target => { opened = target; } };
+  assert.strictEqual(hw.PSTGmailHandoffV4.openTarget(directUrl), true, 'Direct intake target was rejected');
+  assert(opened.includes('gmail_thread_id=t1'), 'Direct intake did not open in the current platform tab');
   handoffDom.window.close();
 
   const intakeDom = new JSDOM('<!doctype html><html><body></body></html>', {
@@ -62,5 +70,5 @@ const { JSDOM } = require('jsdom');
   assert.strictEqual(boxes[1].checked, true, 'Newest revision was not selected');
   intakeDom.window.close();
 
-  console.log('Gmail handoff and intake v2 smoke test passed.');
+  console.log('Gmail direct launch and intake v2 smoke test passed.');
 })();
