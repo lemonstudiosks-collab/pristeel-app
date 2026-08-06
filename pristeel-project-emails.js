@@ -4,7 +4,7 @@
 var files=[
   'pristeel-gmail-tab-handoff.js?v=20260806-2',
   'pristeel-email-core.js?v=20260801-2',
-  'pristeel-google-workspace-auth.js?v=20260802-2',
+  'pristeel-google-workspace-auth.js?v=20260806-3',
   'pristeel-project-routing-rules.js?v=20260802-2',
   'pristeel-gmail-project-search-expansion.js?v=20260802-2',
   'pristeel-email-outreach.js?v=20260801-1',
@@ -51,7 +51,7 @@ var files=[
   'pristeel-workspace-release-fix-v3.js?v=20260804-2',
   'pristeel-email-relation-safety-v2.js?v=20260804-1',
   'pristeel-gmail-intake-v2.js?v=20260806-1',
-  'pristeel-gmail-intake-revision-fix-v1.js?v=20260806-1',
+  'pristeel-gmail-intake-revision-fix-v1.js?v=20260806-2',
   'pristeel-contract-classification-v2.js?v=20260805-2',
   'pristeel-project-data-integrity-v1.js?v=20260805-1',
   'pristeel-project-file-unifier-v2.js?v=20260805-1',
