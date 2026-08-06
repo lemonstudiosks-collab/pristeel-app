@@ -70,7 +70,11 @@ var files=[
   'pristeel-project-open-direct-v1.js?v=20260805-2',
   'pristeel-project-contacts-full-v1.js?v=20260805-1',
   'pristeel-dashboard-task-cards-v1.js?v=20260806-3',
-  'pristeel-business-command-center-v1.js?v=20260806-2'
+  'pristeel-business-command-center-v1.js?v=20260806-2',
+  'pristeel-gmail-deep-search-v1.js?v=20260806-1',
+  'pristeel-business-command-center-deep-gmail-v1.js?v=20260806-1',
+  'pristeel-project-command-view-v1.js?v=20260806-1',
+  'pristeel-home-command-center-v2.js?v=20260806-1'
 ];
 var completed=false;
 function ready(){
