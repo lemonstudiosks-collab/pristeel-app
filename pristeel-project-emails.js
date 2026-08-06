@@ -51,6 +51,7 @@ var files=[
   'pristeel-workspace-release-fix-v3.js?v=20260804-2',
   'pristeel-email-relation-safety-v2.js?v=20260804-1',
   'pristeel-gmail-intake-v2.js?v=20260806-1',
+  'pristeel-gmail-intake-revision-fix-v1.js?v=20260806-1',
   'pristeel-contract-classification-v2.js?v=20260805-2',
   'pristeel-project-data-integrity-v1.js?v=20260805-1',
   'pristeel-project-file-unifier-v2.js?v=20260805-1',
