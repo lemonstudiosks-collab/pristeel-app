@@ -27,8 +27,7 @@ const { JSDOM } = require('jsdom');
   </body></html>`, { runScripts: 'outside-only', url: 'https://example.test/' });
 
   const w = dom.window;
-  let openedProject = '';
-  w.pstOpenProjectWorkspace = id => { openedProject = String(id); };
+  w.pstOpenProjectWorkspace = () => {};
   w.open = () => ({ focus() {} });
   w.supaFetch = async path => {
     if (path.startsWith('projects?')) return [{ id:'p1', name:'Geiger Maschinenhaus', client:'Geiger', ref:'GEI-001', status:'aktiv' }];
@@ -36,7 +35,7 @@ const { JSDOM } = require('jsdom');
     if (path.startsWith('project_email_links?')) return [];
     if (path.startsWith('contacts?')) return [{ id:'c1', person:'Florian Kern', email:'florian@example.com', company:'Geiger', role:'Procurement' }];
     if (path.startsWith('project_contacts?')) return [{ project_id:'p1', email:'florian@example.com' }];
-    if (path.startsWith('documents_registry?')) return [{ id:'d1', project_id:'p1', doc_nr:'GEI-Q-01', title:'Transport scope', description:'Delivery and freight scope', drive_url:'https://drive.example/doc' }];
+    if (path.startsWith('documents_registry?')) return [{ id:'d1', project_id:'p1', doc_nr:'GEI-Q-01', title:'Transport cost scope', description:'Delivery, freight and cost scope', drive_url:'https://drive.example/doc' }];
     return [];
   };
 
