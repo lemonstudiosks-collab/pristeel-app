@@ -8,6 +8,7 @@ const { JSDOM } = require('jsdom');
   assert(!/supaFetch\s*\(|fetch\s*\(|new\s+XMLHttpRequest/.test(source), 'Dashboard cards must not query or write data');
   assert(!/(?:window\.)?(?:pstOpenProjectWorkspace|PSTEmail|authGetSession|doLogin)\s*=/.test(source), 'Dashboard cards must not override project, Gmail or login behavior');
   assert(source.includes('#page-workspace-home'), 'Dashboard styling is not scoped to the Workspace home page');
+  assert(source.includes('flex-direction:column'), 'Homepage projects are not configured as a vertical list');
 
   const dom = new JSDOM(`<!doctype html><html><head></head><body>
     <div id="page-workspace-home">
@@ -22,19 +23,33 @@ const { JSDOM } = require('jsdom');
           <span class="pst-ws-action-controls"><button class="old-done">Kryer</button><button class="old-dismiss">Hiqe</button></span>
         </div>
       </div>
-      <div id="pst-ws-home-projects"><div class="pst-ws-empty">Nuk ka projekte aktive.</div></div>
+      <div id="pst-ws-home-projects">
+        <div class="pst-ws-projectcard" onclick="pstOpenProjectWorkspace('project-1')">
+          <div class="pst-ws-projectcard-top">
+            <div>
+              <div class="pst-ws-projectcard-name">411320-KR Maschinenhaus</div>
+              <div class="pst-ws-projectcard-client">Wolff & Müller · PST-2026-041</div>
+            </div>
+            <span class="pst-ws-status" style="--c:#2F7657;--bg:#EAF5EF">Aktiv</span>
+          </div>
+          <div class="pst-ws-projectcard-next"><b>Hapi tjetër:</b> Përgatit ofertën teknike</div>
+        </div>
+      </div>
     </div>
   </body></html>`, { runScripts: 'outside-only', url: 'https://example.test/' });
 
   const w = dom.window;
-  let opened = 0, done = 0, dismissed = 0, projects = 0;
+  let opened = 0, done = 0, dismissed = 0, projects = 0, projectOpened = 0;
   const row = w.document.querySelector('.pst-ws-action');
   const main = row.querySelector('.pst-ws-action-main');
   const doneButton = row.querySelector('.old-done');
   const dismissButton = row.querySelector('.old-dismiss');
+  const projectCard = w.document.querySelector('.pst-ws-projectcard');
+  const projectOnclick = projectCard.getAttribute('onclick');
   main.addEventListener('click', () => { opened += 1; });
   doneButton.addEventListener('click', () => { done += 1; });
   dismissButton.addEventListener('click', () => { dismissed += 1; });
+  projectCard.addEventListener('click', () => { projectOpened += 1; });
   w.pstWorkspaceGo = page => { if (page === 'projects') projects += 1; };
 
   w.eval(source);
@@ -55,12 +70,25 @@ const { JSDOM } = require('jsdom');
   dismissButton.click();
   assert.strictEqual(dismissed, 1, 'Existing dismiss handler was lost');
 
-  assert.strictEqual(w.PSTDashboardTaskCardsV1.decorate(), 0, 'Already enhanced row was decorated twice');
+  assert.strictEqual(w.PSTDashboardTaskCardsV1.enhanceProjectCard(projectCard), true, 'Existing project card was not enhanced');
+  assert.strictEqual(projectCard.getAttribute('onclick'), projectOnclick, 'Project opening handler changed during visual enhancement');
+  assert.strictEqual(projectCard.dataset.pstOriginalProjectName, '411320-KR Maschinenhaus', 'Original project name was not preserved');
+  assert.strictEqual(projectCard.querySelector('.pst-dash-project-value').textContent, 'Wolff & Müller', 'Client is not displayed clearly');
+  assert(projectCard.textContent.includes('PST-2026-041'), 'Project reference was lost');
+  assert(projectCard.querySelector('.pst-dash-project-nexttext').textContent.includes('Përgatit ofertën teknike'), 'Next project action is not displayed clearly');
+  assert(projectCard.querySelector('.pst-ws-status'), 'Existing project status was removed');
+  projectCard.querySelector('.pst-dash-project-open').click();
+  assert.strictEqual(projectOpened, 1, 'Project button no longer reaches the existing card opening handler');
+  assert.strictEqual(w.PSTDashboardTaskCardsV1.enhanceProjectCard(projectCard), false, 'Project card was enhanced twice');
+
+  const projectHost = w.document.getElementById('pst-ws-home-projects');
+  projectHost.innerHTML = '<div class="pst-ws-empty">Nuk ka projekte aktive.</div>';
+  assert.strictEqual(w.PSTDashboardTaskCardsV1.decorate(), 0, 'Already enhanced action row was decorated twice');
   const emptyButton = w.document.querySelector('.pst-dash-projects-open');
   assert(emptyButton, 'Useful projects empty state was not rendered');
   emptyButton.click();
   assert.strictEqual(projects, 1, 'Projects empty-state button did not use the existing navigation');
 
   dom.window.close();
-  console.log('Dashboard task cards isolation smoke test passed.');
+  console.log('Dashboard task and vertical project cards isolation smoke test passed.');
 })();
