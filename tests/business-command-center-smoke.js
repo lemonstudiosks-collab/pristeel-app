@@ -36,6 +36,9 @@ const { JSDOM } = require('jsdom');
     if (path.startsWith('contacts?')) return [{ id:'c1', person:'Florian Kern', email:'florian@example.com', company:'Geiger', role:'Procurement' }];
     if (path.startsWith('project_contacts?')) return [{ project_id:'p1', email:'florian@example.com' }];
     if (path.startsWith('documents_registry?')) return [{ id:'d1', project_id:'p1', doc_nr:'GEI-Q-01', title:'Transport cost scope', description:'Delivery, freight and cost scope', drive_url:'https://drive.example/doc' }];
+    if (path.startsWith('rfq_log?')) return [{ id:'rfq1', project_id:'p1', rfq_ref:'RFQ-GEI-01', subject:'Request for quotation for steel plates', supplier_name:'Steel Supplier' }];
+    if (path.startsWith('offers?')) return [{ id:'o1', project_id:'p1', reference:'OFF-GEI-02', title:'Angebot Montage und Fertigung', supplier:'Aktiva' }];
+    if (path.startsWith('bom_items?')) return [{ id:'b1', project_id:'p1', item_name:'HEA steel profiles', description:'Bill of materials position' }];
     return [];
   };
 
@@ -54,6 +57,22 @@ const { JSDOM } = require('jsdom');
   assert(results.some(r => r.type === 'email' && r.row.gmail_message_id === 'm1'), 'Cross-language keyword search did not find the relevant email');
   assert(results.some(r => r.type === 'document' && r.row.id === 'd1'), 'Universal search did not include project documents');
   assert(results.some(r => r.projectId === 'p1'), 'Search results lost the project relation');
+
+  const requestResults = await w.PSTBusinessCommandCenterV1.search('kerkese per oferte', 'all');
+  const rfq = requestResults.find(r => r.row.id === 'rfq1');
+  assert(rfq, 'Albanian request-for-offer vocabulary did not find the RFQ record');
+  assert(rfq.meta.includes('RFQ'), 'RFQ result was not identified clearly');
+
+  const offerResults = await w.PSTBusinessCommandCenterV1.search('oferte montim', 'all');
+  assert(offerResults.some(r => r.row.id === 'o1'), 'Offer vocabulary did not find the German supplier offer');
+
+  const bomResults = await w.PSTBusinessCommandCenterV1.search('BOM profiles', 'all');
+  assert(bomResults.some(r => r.row.id === 'b1'), 'BOM vocabulary or business record source is missing');
+
+  const groups = w.PSTBusinessCommandCenterV1.tokenGroups('RFQ kërkesë ofertë');
+  assert(groups.some(group => group.includes('request for quotation')), 'RFQ synonym family is missing');
+  assert(groups.some(group => group.includes('request')), 'Request synonym family is missing');
+  assert(groups.some(group => group.includes('angebot')), 'Offer synonym family is missing');
 
   const project = (await w.PSTBusinessCommandCenterV1.search('GEI-001', 'project'))[0];
   assert(project && project.projectId === 'p1', 'Project reference search failed');
