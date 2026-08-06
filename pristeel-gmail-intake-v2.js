@@ -1,0 +1,174 @@
+/* PRISTEEL Gmail intake v2
+ * One authenticated platform tab, one explicit destination project and selected files only.
+ * No observers, polling, automatic project creation or silent multi-project linking.
+ */
+(function(){
+'use strict';
+if(window.__pstGmailIntakeV2)return;
+window.__pstGmailIntakeV2=true;
+
+var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com','prissteel@gmail.com'];
+var state={busy:false,target:'',messageId:'',threadId:'',fallbackSubject:'',fallbackFrom:'',token:'',thread:null,messages:[],attachments:[],projects:[],projectMap:{},associations:{},linkedIds:[],candidate:null,selectedProjectId:'',mode:'unmatched',allowChange:false,meta:null};
+
+function arr(v){return Array.isArray(v)?v:[];}
+function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function enc(v){return encodeURIComponent(String(v==null?'':v));}
+function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9@._+\-]+/g,' ').replace(/\s+/g,' ').trim();}
+function header(payload,name){var hs=arr(payload&&payload.headers),key=String(name||'').toLowerCase();for(var i=0;i<hs.length;i++)if(String(hs[i].name||'').toLowerCase()===key)return hs[i].value||'';return'';}
+function email(v){var m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
+function emails(v){var m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/g)||[];return m.filter(function(x,i,a){return a.indexOf(x)===i;});}
+function external(v){var e=email(v);return !!(e&&INTERNAL.indexOf(e)<0&&!/(no-?reply|mailer-daemon|postmaster|notifications?|dmarc)@/i.test(e));}
+function cleanSubject(v){return String(v||'').replace(/^\s*((re|fw|fwd|wg|aw)\s*:\s*)+/i,'').trim().slice(0,180);}
+function fmtDate(v){var d=new Date(v);return isNaN(d.getTime())?'':d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function fmtBytes(n){n=Number(n||0);if(!n)return'';if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(n<10240?1:0)+' KB';return(n/1048576).toFixed(n<10485760?1:0)+' MB';}
+function uniq(v){return arr(v).map(String).filter(function(x,i,a){return x&&a.indexOf(x)===i;});}
+function db(path,method,body){if(typeof window.supaFetch!=='function')return Promise.reject(new Error('Databaza nuk është gati.'));return window.supaFetch(path,method,body);}
+function dbSafe(path){return db(path).then(arr).catch(function(e){console.warn('PRISTEEL Gmail intake optional query:',path,e);return[];});}
+function inValues(values){return uniq(values).map(function(x){return'"'+String(x).replace(/"/g,'')+'"';}).join(',');}
+function project(id){return state.projectMap[String(id)]||null;}
+function projectName(id){var p=project(id);return p&&p.name||'Projekt i panjohur';}
+function parseTarget(target){var u=new URL(target||location.href,location.href);return{url:u.href,messageId:u.searchParams.get('gmail_message_id')||'',threadId:u.searchParams.get('gmail_thread_id')||'',subject:u.searchParams.get('subject')||'',from:u.searchParams.get('from')||''};}
+function setStatus(text,type){var e=document.getElementById('pgi2-status');if(!e)return;e.textContent=text||'';e.className='pgi2-status'+(type?' '+type:'');}
+function setBusy(on){state.busy=!!on;document.querySelectorAll('#pgi2-bg button,#pgi2-bg select,#pgi2-bg input').forEach(function(el){if(el.id!=='pgi2-close')el.disabled=!!on;});var close=document.getElementById('pgi2-close');if(close)close.disabled=!!on;}
+function cleanUrl(){try{var u=new URL(location.href);['gmail_intake','gmail_message_id','gmail_thread_id','subject','from'].forEach(function(k){u.searchParams.delete(k);});history.replaceState({},'',u.pathname+u.search+u.hash);}catch(e){}}
+function close(){var e=document.getElementById('pgi2-bg');if(e)e.remove();cleanUrl();}
+
+function collectAttachments(part,message,out){
+  if(!part)return;
+  var filename=String(part.filename||'').trim(),disp=header({headers:part.headers||[]},'Content-Disposition').toLowerCase();
+  if(filename&&part.body&&(part.body.attachmentId||part.body.data))out.push({
+    key:message.id+':'+(part.body.attachmentId||filename+':'+out.length),messageId:message.id,threadId:message.threadId,
+    attachmentId:part.body.attachmentId||'',inlineData:part.body.data||'',filename:filename,mimeType:part.mimeType||'application/octet-stream',
+    size:Number(part.body.size||0),sentAt:Number(message.internalDate||0),sender:header(message.payload,'From'),inline:disp.indexOf('inline')>-1
+  });
+  arr(part.parts).forEach(function(child){collectAttachments(child,message,out);});
+}
+function baseName(name){return String(name||'').toLowerCase().replace(/\.[^.]+$/,'').replace(/\bsigned\b|\bfinale?\b|\bapproved\b|\bdraft\b|\bpreliminary\b/g,' ').replace(/\brev(?:ision)?[._ -]*\d+(?:[._-]\d+)?/g,' ').replace(/\bver(?:sion)?[._ -]*\d+(?:[._-]\d+)?/g,' ').replace(/\b\d{1,2}[._-]\d{1,2}[._-]20\d{2}\b/g,' ').replace(/[^a-z0-9à-ž]+/gi,' ').replace(/\s+/g,' ').trim();}
+function rankAttachment(a){var n=String(a.filename||'').toLowerCase(),r=Number(a.sentAt||0)/1e12,m=n.match(/rev(?:ision)?[._ -]*(\d+(?:[._-]\d+)?)/);if(m)r+=parseFloat(m[1].replace('_','.'))*100;var v=n.match(/ver(?:sion)?[._ -]*(\d+(?:[._-]\d+)?)/);if(v)r+=parseFloat(v[1].replace('_','.'))*80;if(/signed|approved/.test(n))r+=10000;if(/final/.test(n))r+=5000;if(/draft|preliminary/.test(n))r-=2000;return r;}
+function junkAttachment(a){var n=String(a.filename||'').toLowerCase(),image=/image\/(png|jpe?g|gif|webp|bmp)/i.test(a.mimeType)||/\.(png|jpe?g|gif|webp|bmp)$/i.test(n);return !!(a.inline||/^~wrd\d+/i.test(n)||/^(image|img)[-_ ]?\d+\.(png|jpe?g|gif|webp|bmp)$/i.test(n)||/^(logo|signature|facebook|linkedin|twitter)[-_ .]/i.test(n)||(image&&a.size>0&&a.size<120000));}
+function prepareAttachments(list){
+  var exact={},groups={};
+  arr(list).forEach(function(a){a.junk=junkAttachment(a);a.duplicate=false;a.recommended=false;var exactKey=String(a.filename||'').toLowerCase()+'|'+String(a.size||0);(exact[exactKey]=exact[exactKey]||[]).push(a);});
+  Object.keys(exact).forEach(function(k){var rows=exact[k].sort(function(a,b){return rankAttachment(b)-rankAttachment(a);});rows.forEach(function(a,i){a.duplicate=i>0;});});
+  arr(list).filter(function(a){return!a.duplicate&&!a.junk;}).forEach(function(a){var key=baseName(a.filename)||String(a.filename||'').toLowerCase();(groups[key]=groups[key]||[]).push(a);});
+  Object.keys(groups).forEach(function(k){var rows=groups[k].sort(function(a,b){return rankAttachment(b)-rankAttachment(a);});rows[0].recommended=true;});
+  return arr(list).sort(function(a,b){return Number(b.recommended)-Number(a.recommended)||Number(a.junk)-Number(b.junk)||Number(b.sentAt)-Number(a.sentAt);});
+}
+function selectedAttachments(){var chosen={};document.querySelectorAll('.pgi2-file:checked').forEach(function(x){chosen[x.value]=1;});return state.attachments.filter(function(a){return chosen[a.key];});}
+function b64Bytes(data){var s=String(data||'').replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';var b=atob(s),out=new Uint8Array(b.length);for(var i=0;i<b.length;i++)out[i]=b.charCodeAt(i);return out;}
+async function attachmentFile(a){var data=a.inlineData;if(!data){var r=await window.PSTEmail.gmail('/messages/'+enc(a.messageId)+'/attachments/'+enc(a.attachmentId),state.token);data=r.data||'';}return new File([b64Bytes(data)],a.filename,{type:a.mimeType||'application/octet-stream'});}
+
+function participants(){var out=[];state.messages.forEach(function(m){[header(m.payload,'From'),header(m.payload,'To'),header(m.payload,'Cc')].forEach(function(v){emails(v).forEach(function(e){if(external(e))out.push(e);});});});return uniq(out);}
+function textCorpus(){return norm(state.messages.map(function(m){return cleanSubject(header(m.payload,'Subject'))+' '+String(m.snippet||'');}).join(' ')+' '+state.attachments.map(function(a){return a.filename;}).join(' '));}
+function subjectCorpus(){return norm(state.messages.map(function(m){return cleanSubject(header(m.payload,'Subject'));}).join(' '));}
+function tokens(v){var stop={project:1,projekt:1,steel:1,stahl:1,construction:1,konstruktion:1,prissteel:1,offer:1,angebot:1,quotation:1,anfrage:1,request:1,client:1,customer:1};return norm(v).split(' ').filter(function(x){return x.length>=5&&!stop[x];}).filter(function(x,i,a){return a.indexOf(x)===i;}).slice(0,18);}
+async function resolveAssociations(){
+  var ids=uniq(state.messages.map(function(m){return m.id;})),threads=uniq(state.messages.map(function(m){return m.threadId;})),rows=[],links=[];
+  for(var i=0;i<ids.length;i+=35){
+    rows=rows.concat(await dbSafe('project_emails?gmail_message_id=in.('+inValues(ids.slice(i,i+35))+')&select=id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,match_method&limit=5000'));
+    links=links.concat(await dbSafe('project_email_links?gmail_message_id=in.('+inValues(ids.slice(i,i+35))+')&select=id,gmail_message_id,gmail_thread_id,project_id,link_method,source&limit=5000'));
+  }
+  for(var j=0;j<threads.length;j+=20){
+    rows=rows.concat(await dbSafe('project_emails?gmail_thread_id=in.('+inValues(threads.slice(j,j+20))+')&project_id=not.is.null&select=id,gmail_message_id,gmail_thread_id,project_id,match_method&limit=5000'));
+    links=links.concat(await dbSafe('project_email_links?gmail_thread_id=in.('+inValues(threads.slice(j,j+20))+')&select=id,gmail_message_id,gmail_thread_id,project_id,link_method,source&limit=5000'));
+  }
+  var map={};function add(row,source){var id=String(row&&row.project_id||'');if(!id)return;var item=map[id]||(map[id]={projectId:id,count:0,sources:[]});item.count++;if(item.sources.indexOf(source)<0)item.sources.push(source);}
+  rows.forEach(function(r){add(r,'project_emails');});links.forEach(function(r){add(r,'project_email_links');});
+  state.associations=map;state.linkedIds=Object.keys(map).sort(function(a,b){return map[b].count-map[a].count;});
+}
+async function chooseCandidate(){
+  if(state.linkedIds.length===1){state.mode='linked';state.selectedProjectId=state.linkedIds[0];return;}
+  if(state.linkedIds.length>1){state.mode='conflict';state.selectedProjectId='';return;}
+  var people=participants(),ownership={};
+  for(var i=0;i<people.length;i+=35){var rows=await dbSafe('project_contacts?email=in.('+inValues(people.slice(i,i+35))+')&status=neq.inactive&select=project_id,email&limit=5000');rows.forEach(function(r){var e=email(r.email);if(!e||!r.project_id)return;(ownership[e]=ownership[e]||[]).push(String(r.project_id));});}
+  var text=textCorpus(),sub=subjectCorpus(),scored=[];
+  state.projects.forEach(function(p){var s=0,why=[],ref=norm(p.ref),name=norm(p.name),client=norm(p.client),pid=String(p.id);if(ref&&ref.length>=4&&text.indexOf(ref)>-1){s+=300;why.push('referenca');}if(name&&name.length>=7&&sub.indexOf(name)>-1){s+=220;why.push('emri në subjekt');}else if(name&&name.length>=7&&text.indexOf(name)>-1){s+=150;why.push('emri i projektit');}if(client&&client.length>=5&&sub.indexOf(client)>-1){s+=100;why.push('klienti në subjekt');}else if(client&&client.length>=5&&text.indexOf(client)>-1){s+=55;why.push('klienti');}people.forEach(function(e){var owners=uniq(ownership[e]||[]);if(owners.length===1&&owners[0]===pid){s+=140;why.push('kontakt unik');}else if(owners.indexOf(pid)>-1){s+=35;why.push('kontakt i projektit');}});tokens((p.name||'')+' '+(p.client||'')).forEach(function(t){if(sub.indexOf(t)>-1)s+=24;else if(text.indexOf(t)>-1)s+=7;});if(s>0)scored.push({project:p,score:s,why:uniq(why)});});
+  scored.sort(function(a,b){return b.score-a.score;});var best=scored[0],second=scored[1],margin=best?best.score-(second?second.score:0):0;
+  if(best&&best.score>=120&&margin>=35){state.mode='matched';state.candidate=best;state.selectedProjectId=String(best.project.id);}else{state.mode='unmatched';state.candidate=best||null;state.selectedProjectId='';}
+}
+
+function summary(){var ordered=state.messages.slice().sort(function(a,b){return Number(a.internalDate||0)-Number(b.internalDate||0);});return 'Projekt i krijuar nga Gmail thread me '+ordered.length+' emaila.\n\n'+ordered.map(function(m,i){var from=header(m.payload,'From'),date=fmtDate(Number(m.internalDate||0)),subject=cleanSubject(header(m.payload,'Subject')),snippet=String(m.snippet||'').replace(/\s+/g,' ').trim().slice(0,300);return(i+1)+'. '+date+' · '+from+' · '+subject+(snippet?'\n'+snippet:'');}).join('\n\n');}
+function optionHtml(selected){return'<option value="">Zgjidh projektin…</option>'+state.projects.map(function(p){return'<option value="'+esc(p.id)+'"'+(String(p.id)===String(selected)?' selected':'')+'>'+esc(p.name||'Pa emër')+(p.client?' — '+esc(p.client):'')+'</option>';}).join('');}
+function associationNames(){return state.linkedIds.map(function(id){return projectName(id)+' ('+state.associations[id].count+' lidhje)';});}
+function destinationBanner(){
+  if(state.mode==='linked')return'<div class="pgi2-banner ok"><b>Projekti u gjet nga lidhjet ekzistuese</b><span>Ky thread është i lidhur me <strong>'+esc(projectName(state.selectedProjectId))+'</strong>. Emailat dhe skedarët do të ruhen vetëm aty.</span></div>';
+  if(state.mode==='conflict')return'<div class="pgi2-banner bad"><b>U gjetën lidhje kontradiktore</b><span>Ky thread figuron te: <strong>'+esc(associationNames().join(' · '))+'</strong>. Asgjë nuk ruhet derisa të zgjedhësh një destinacion të vetëm.</span></div>';
+  if(state.mode==='matched')return'<div class="pgi2-banner info"><b>U gjet një projekt i mundshëm</b><span><strong>'+esc(projectName(state.selectedProjectId))+'</strong> u përputh nga '+esc((state.candidate&&state.candidate.why||[]).join(', ')||'përmbajtja e thread-it')+'. Kontrolloje para ruajtjes.</span></div>';
+  return'<div class="pgi2-banner neutral"><b>Nuk u gjet lidhje e sigurt</b><span>Zgjidh një projekt ekzistues. Projekt i ri krijohet vetëm kur vërtet nuk ekziston.</span></div>';
+}
+function fileRows(){
+  var visible=state.attachments.filter(function(a){return!a.duplicate;});if(!visible.length)return'<div class="pgi2-empty">Nuk u gjetën skedarë në thread.</div>';
+  return visible.map(function(a){var checked=a.recommended?' checked':'',tag=a.junk?'Skedar automatik, jo i zgjedhur':a.recommended?'I rekomanduar':'Version alternativ';return'<label class="pgi2-file-row'+(a.junk?' muted':'')+'"><input class="pgi2-file" type="checkbox" value="'+esc(a.key)+'"'+checked+'><span class="pgi2-file-main"><b>'+esc(a.filename)+'</b><small>'+esc(email(a.sender)||a.sender)+' · '+esc(fmtDate(a.sentAt))+(a.size?' · '+esc(fmtBytes(a.size)):'')+'</small></span><i>'+esc(tag)+'</i></label>';}).join('');
+}
+function createForm(){return'<div class="pgi2-create" id="pgi2-create-form" hidden><div class="pgi2-grid"><label class="wide"><span>Emri i projektit</span><input id="pgi2-name" value="'+esc(cleanSubject(state.meta&&state.meta.subject||state.fallbackSubject))+'"></label><label><span>Klienti</span><input id="pgi2-client" value="'+esc(email(state.meta&&state.meta.from_email||state.fallbackFrom))+'"></label><label><span>Referenca</span><input id="pgi2-ref"></label><label><span>Lokacioni</span><input id="pgi2-location"></label><label><span>Afati</span><input id="pgi2-deadline" type="date"></label><label class="wide"><span>Përmbledhja</span><textarea id="pgi2-notes">'+esc(summary())+'</textarea></label></div></div>';}
+function css(){if(document.getElementById('pgi2-css'))return;var s=document.createElement('style');s.id='pgi2-css';s.textContent=`
+.pgi2-bg{position:fixed;inset:0;z-index:2147482000;background:rgba(30,45,52,.48);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.pgi2-modal{width:min(980px,98vw);max-height:94vh;background:#fff;border-radius:18px;box-shadow:0 28px 90px rgba(22,43,52,.26);display:flex;flex-direction:column;overflow:hidden}.pgi2-head{padding:17px 20px;border-bottom:1px solid #E1E9EC;display:flex;justify-content:space-between;gap:14px;background:linear-gradient(180deg,#fff,#F7FBFC)}.pgi2-head h2{font-size:17px;margin:0;color:#20282C}.pgi2-head p{font-size:10px;color:#7A878D;margin:4px 0 0}.pgi2-x{border:0;background:none;font-size:23px;color:#849096;cursor:pointer}.pgi2-body{padding:16px 20px;overflow:auto}.pgi2-mail{border:1px solid #E0E8EB;border-radius:12px;padding:11px 13px;margin-bottom:11px;background:#FBFCFD}.pgi2-mail b{display:block;font-size:11.5px}.pgi2-mail span{display:block;font-size:9px;color:#7D898F;margin-top:3px}.pgi2-banner{border-radius:12px;padding:11px 13px;margin-bottom:12px}.pgi2-banner b{display:block;font-size:10px}.pgi2-banner span{display:block;font-size:9.5px;line-height:1.55;margin-top:3px}.pgi2-banner.ok{background:#ECF7F1;color:#2F7657;border:1px solid #CFE8D9}.pgi2-banner.bad{background:#FBEFEE;color:#96483F;border:1px solid #EDCFCC}.pgi2-banner.info{background:#EAF5F8;color:#3F7F98;border:1px solid #CCE2E9}.pgi2-banner.neutral{background:#F3F5F6;color:#66747A;border:1px solid #E1E6E8}.pgi2-section{margin-top:14px}.pgi2-section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #E7ECEE;padding-bottom:7px;margin-bottom:8px}.pgi2-section-title b{font-size:9px;text-transform:uppercase;letter-spacing:.65px;color:#78858B}.pgi2-tools{display:flex;gap:6px}.pgi2-link{border:1px solid #D6E4E9;border-radius:8px;background:#fff;color:#3F7F98;padding:5px 8px;font-size:8px;font-weight:700;cursor:pointer}.pgi2-destination{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pgi2-destination select{height:37px;min-width:330px;flex:1;border:1px solid #D8E4E8;border-radius:10px;background:#fff;padding:0 10px;font-size:10px}.pgi2-destination strong{font-size:11px;color:#293238}.pgi2-file-list{display:flex;flex-direction:column;gap:5px}.pgi2-file-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid #E1E8EB;border-radius:10px;padding:9px 10px}.pgi2-file-row.muted{opacity:.62}.pgi2-file-main{min-width:0}.pgi2-file-main b{display:block;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pgi2-file-main small{display:block;font-size:8px;color:#879298;margin-top:2px}.pgi2-file-row i{font-style:normal;font-size:7.5px;color:#6D7B82;background:#F1F4F5;border-radius:999px;padding:3px 7px}.pgi2-create{border:1px solid #DCE7EB;border-radius:12px;padding:12px;margin-top:9px;background:#FBFDFE}.pgi2-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.pgi2-grid label span{display:block;font-size:7.5px;text-transform:uppercase;color:#8B969B;font-weight:740;margin-bottom:3px}.pgi2-grid input,.pgi2-grid textarea{width:100%;border:1px solid #DCE5E8;border-radius:9px;padding:8px;font-size:10px}.pgi2-grid textarea{min-height:130px;resize:vertical}.pgi2-grid .wide{grid-column:1/-1}.pgi2-status{margin-top:12px;border-radius:10px;background:#F3F7F8;color:#68767D;padding:9px 11px;font-size:9.5px;line-height:1.5}.pgi2-status.ok{background:#ECF7F1;color:#2F7657}.pgi2-status.bad{background:#FBEFEE;color:#98483F}.pgi2-result{border:1px solid #CFE8D9;background:#ECF7F1;color:#2F7657;border-radius:12px;padding:13px;margin-top:12px}.pgi2-result b{display:block;font-size:11px}.pgi2-result span{display:block;font-size:9px;line-height:1.55;margin-top:4px}.pgi2-result-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.pgi2-foot{padding:13px 20px;border-top:1px solid #E1E9EC;display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;background:#FBFDFE}.pgi2-btn{height:35px;border:1px solid #D7E3E7;border-radius:9px;background:#fff;color:#526168;padding:0 11px;font-size:9px;font-weight:720;cursor:pointer}.pgi2-btn.primary{border:0;background:linear-gradient(135deg,#67A8C0,#3F7F98);color:#fff}.pgi2-btn.warn{border-color:#E5C9A4;color:#896129;background:#FFF9EF}.pgi2-empty{padding:15px;color:#879298;font-size:9px;text-align:center}@media(max-width:700px){.pgi2-grid{grid-template-columns:1fr}.pgi2-grid .wide{grid-column:auto}.pgi2-file-row{grid-template-columns:22px minmax(0,1fr)}.pgi2-file-row i{display:none}.pgi2-destination select{min-width:100%}}
+`;document.head.appendChild(s);}
+function render(){
+  css();var old=document.getElementById('pgi2-bg');if(old)old.remove();var selected=state.selectedProjectId,locked=state.mode==='linked'&&!state.allowChange;
+  var dest=locked?'<div class="pgi2-destination"><strong>'+esc(projectName(selected))+'</strong><button class="pgi2-link" id="pgi2-change">Zgjidh projekt tjetër</button></div>':'<div class="pgi2-destination"><select id="pgi2-project">'+optionHtml(selected)+'</select></div>';
+  var allowCreate=state.mode==='unmatched';
+  var html='<div class="pgi2-bg" id="pgi2-bg"><div class="pgi2-modal"><div class="pgi2-head"><div><h2>Bashkëngjit Gmail te projekti</h2><p>Një thread, një projekt destinacion dhe vetëm skedarët që zgjedh.</p></div><button class="pgi2-x" id="pgi2-close">×</button></div><div class="pgi2-body">'+destinationBanner()+'<div class="pgi2-mail"><b>'+esc(state.meta&&state.meta.subject||state.fallbackSubject||'(pa subjekt)')+'</b><span>'+esc(state.meta&&state.meta.from_email||state.fallbackFrom||'')+' · '+state.messages.length+' emaila në thread</span></div><section class="pgi2-section"><div class="pgi2-section-title"><b>Projekti destinacion</b></div>'+dest+'</section><section class="pgi2-section"><div class="pgi2-section-title"><b>Skedarët e thread-it</b><div class="pgi2-tools"><button class="pgi2-link" id="pgi2-recommended">Vetëm të rekomanduarat</button><button class="pgi2-link" id="pgi2-none">Hiqi të gjitha</button></div></div><div class="pgi2-file-list">'+fileRows()+'</div></section>'+(allowCreate?'<section class="pgi2-section"><div class="pgi2-section-title"><b>Vetëm nëse projekti nuk ekziston</b><button class="pgi2-link" id="pgi2-toggle-create">Krijo projekt të ri</button></div>'+createForm()+'</section>':'')+'<div class="pgi2-status" id="pgi2-status">Kontrollo destinacionin dhe skedarët para ruajtjes.</div><div id="pgi2-result"></div></div><div class="pgi2-foot"><button class="pgi2-btn" id="pgi2-gmail">Hap Gmail</button>'+(allowCreate?'<button class="pgi2-btn warn" id="pgi2-create" hidden>Krijo projektin dhe bashkëngjit</button>':'')+'<button class="pgi2-btn primary" id="pgi2-save"'+(!selected?' disabled':'')+'>Bashkëngjit te projekti</button></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);bind();updateSaveLabel();
+}
+function bind(){
+  document.getElementById('pgi2-close').onclick=close;
+  document.getElementById('pgi2-gmail').onclick=function(){window.open('https://mail.google.com/mail/u/0/#all/'+enc(state.threadId),'_blank');};
+  var change=document.getElementById('pgi2-change');if(change)change.onclick=function(){state.allowChange=true;render();};
+  var select=document.getElementById('pgi2-project');if(select)select.onchange=function(){state.selectedProjectId=String(select.value||'');updateSaveLabel();};
+  document.getElementById('pgi2-recommended').onclick=function(){document.querySelectorAll('.pgi2-file').forEach(function(x){var a=state.attachments.filter(function(y){return y.key===x.value;})[0];x.checked=!!(a&&a.recommended);});};
+  document.getElementById('pgi2-none').onclick=function(){document.querySelectorAll('.pgi2-file').forEach(function(x){x.checked=false;});};
+  var toggle=document.getElementById('pgi2-toggle-create'),form=document.getElementById('pgi2-create-form'),create=document.getElementById('pgi2-create');if(toggle&&form&&create)toggle.onclick=function(){form.hidden=!form.hidden;create.hidden=form.hidden;toggle.textContent=form.hidden?'Krijo projekt të ri':'Mbylle krijimin';};
+  if(create)create.onclick=createProject;
+  document.getElementById('pgi2-save').onclick=saveExisting;
+}
+function updateSaveLabel(){var b=document.getElementById('pgi2-save'),s=document.getElementById('pgi2-project');if(s)state.selectedProjectId=String(s.value||'');if(!b)return;b.disabled=!state.selectedProjectId;b.textContent=state.selectedProjectId?'Bashkëngjit te '+projectName(state.selectedProjectId):'Zgjidh projektin';}
+
+async function ensureRelation(message,target,reassign){
+  var meta=await window.PSTEmail.message(message.id,state.token),rows=await dbSafe('project_emails?gmail_message_id=eq.'+enc(meta.gmail_message_id)+'&select=id,project_id&limit=5'),old=rows[0]||null;
+  if(!old){await db('project_emails','POST',[Object.assign({},meta,{project_id:target,suggested_project_id:target,match_method:'gmail-intake-v2',match_confidence:100,needs_review:false,updated_at:new Date().toISOString()})]);}
+  else if(old.project_id&&String(old.project_id)!==String(target)){
+    if(!reassign)throw new Error('Emaili është i lidhur me '+projectName(old.project_id)+'. Zgjidhja duhet konfirmuar si riklasifikim.');
+    await db('project_emails?id=eq.'+enc(old.id),'PATCH',{project_id:target,suggested_project_id:target,match_method:'intake-reassign-confirmed',match_confidence:100,needs_review:false,updated_at:new Date().toISOString()});
+  }else{
+    await db('project_emails?id=eq.'+enc(old.id),'PATCH',{project_id:target,suggested_project_id:target,match_method:'gmail-intake-v2',match_confidence:100,needs_review:false,updated_at:new Date().toISOString()});
+  }
+  var exists=await dbSafe('project_email_links?gmail_message_id=eq.'+enc(meta.gmail_message_id)+'&project_id=eq.'+enc(target)+'&select=id&limit=1');
+  if(!exists.length)try{await db('project_email_links','POST',{project_id:target,gmail_message_id:meta.gmail_message_id,gmail_thread_id:meta.gmail_thread_id,link_method:'gmail-intake-v2',confidence:100,created_at:new Date().toISOString()});}catch(e){console.warn('PRISTEEL relation insert:',e);}
+  if(reassign)try{await db('project_email_links?gmail_message_id=eq.'+enc(meta.gmail_message_id)+'&project_id=neq.'+enc(target),'DELETE');}catch(e){console.warn('PRISTEEL old relation cleanup:',e);}
+}
+async function normalizeThread(target,reassign){for(var i=0;i<state.messages.length;i++){setStatus('Duke lidhur emailin '+(i+1)+'/'+state.messages.length+' me '+projectName(target)+'…');await ensureRelation(state.messages[i],target,reassign);}if(typeof window.pstSyncProjectContacts==='function')try{await window.pstSyncProjectContacts(target);}catch(e){}}
+async function importChosen(target){var chosen=selectedAttachments();if(!chosen.length)return{uploaded:0,skipped:0,folder:null};var files=[];for(var i=0;i<chosen.length;i++){setStatus('Duke lexuar skedarin '+(i+1)+'/'+chosen.length+': '+chosen[i].filename+'…');files.push(await attachmentFile(chosen[i]));}return window.PSTDriveImport.importFiles(target,files,function(x){if(x&&x.message)setStatus(x.message);});}
+function needsReassign(target){return state.linkedIds.some(function(id){return String(id)!==String(target);});}
+function confirmReassign(target){var old=associationNames().join(', ');return window.confirm('Ky thread ka lidhje ekzistuese me: '+old+'.\n\nDuke vazhduar, emailat do të normalizohen vetëm te projekti “'+projectName(target)+'”. Skedarët do të ruhen në dosjen e këtij projekti. Vazhdo?');}
+async function saveExisting(){
+  if(state.busy)return;var target=String(state.selectedProjectId||'');if(!target){setStatus('Zgjidh projektin destinacion.','bad');return;}var reassign=needsReassign(target);if(reassign&&!confirmReassign(target))return;
+  setBusy(true);try{await normalizeThread(target,reassign);var result=await importChosen(target);finish(target,result,false);}catch(e){setStatus(String(e&&e.message||e),'bad');}finally{setBusy(false);}
+}
+async function createProject(){
+  if(state.busy||state.linkedIds.length)return;var name=((document.getElementById('pgi2-name')||{}).value||'').trim();if(!name){setStatus('Shkruaj emrin e projektit.','bad');return;}setBusy(true);try{var payload={name:name,client:((document.getElementById('pgi2-client')||{}).value||'').trim(),ref:((document.getElementById('pgi2-ref')||{}).value||'').trim(),location:((document.getElementById('pgi2-location')||{}).value||'').trim(),deadline:(document.getElementById('pgi2-deadline')||{}).value||'',notes:((document.getElementById('pgi2-notes')||{}).value||'').trim(),deal_type:'full'};var rows=await db('projects','POST',payload);if(!rows||!rows[0])throw new Error('Projekti nuk u krijua.');var p=rows[0];state.projects.unshift(p);state.projectMap[String(p.id)]=p;state.selectedProjectId=String(p.id);await normalizeThread(p.id,false);var result=await importChosen(p.id);finish(p.id,result,true);}catch(e){setStatus(String(e&&e.message||e),'bad');}finally{setBusy(false);}
+}
+function finish(target,result,created){
+  var p=project(target)||{id:target,name:projectName(target)},folder=result&&result.folder,url=folder&&folder.webViewLink||p.drive_folder_url||'';setStatus((created?'Projekti u krijua dhe ':'')+'ruajtja përfundoi me sukses.','ok');var host=document.getElementById('pgi2-result');if(host)host.innerHTML='<div class="pgi2-result"><b>U ruajt te: '+esc(p.name||'Projekti')+'</b><span>'+state.messages.length+' emaila u lidhën · '+Number(result&&result.uploaded||0)+' skedarë u importuan'+(result&&result.skipped?' · '+result.skipped+' ekzistonin tashmë':'')+'. Ky është destinacioni final i këtij veprimi.</span><div class="pgi2-result-actions"><button class="pgi2-btn primary" id="pgi2-open-project">Hap projektin</button>'+(url?'<a class="pgi2-btn" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank" href="'+esc(url)+'">Hap dosjen Drive</a>':'')+'</div></div>';var open=document.getElementById('pgi2-open-project');if(open)open.onclick=function(){close();if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(target);else if(typeof window.openOverview==='function')window.openOverview(target);};var save=document.getElementById('pgi2-save'),create=document.getElementById('pgi2-create');if(save)save.disabled=true;if(create)create.disabled=true;
+}
+
+async function load(target){
+  var input=parseTarget(target);state.target=input.url;state.messageId=input.messageId;state.threadId=input.threadId;state.fallbackSubject=input.subject;state.fallbackFrom=input.from;state.busy=false;state.attachments=[];state.associations={};state.linkedIds=[];state.candidate=null;state.selectedProjectId='';state.mode='unmatched';state.allowChange=false;
+  if(!state.messageId)throw new Error('Gmail nuk dërgoi ID-në e emailit.');if(!window.PSTEmail||!window.PSTDriveImport)throw new Error('Modulet Gmail/Drive nuk janë gati.');
+  state.token=await window.PSTEmail.auth();state.meta=await window.PSTEmail.message(state.messageId,state.token);state.threadId=state.threadId||state.meta.gmail_thread_id;state.thread=await window.PSTEmail.gmail('/threads/'+enc(state.threadId)+'?format=full',state.token);state.messages=arr(state.thread.messages);state.messages.forEach(function(m){collectAttachments(m.payload,m,state.attachments);});state.attachments=prepareAttachments(state.attachments);
+  state.projects=await dbSafe('projects?select=id,name,client,ref,location,drive_folder_id,drive_folder_url&order=created_at.desc&limit=1500');state.projectMap={};state.projects.forEach(function(p){state.projectMap[String(p.id)]=p;});await resolveAssociations();await chooseCandidate();render();
+}
+function renderLoading(){css();var old=document.getElementById('pgi2-bg');if(old)old.remove();document.body.insertAdjacentHTML('beforeend','<div class="pgi2-bg" id="pgi2-bg"><div class="pgi2-modal" style="max-width:470px"><div class="pgi2-head"><div><h2>Duke hapur thread-in nga Gmail…</h2><p>Platforma po kontrollon lidhjet ekzistuese para se të ruajë diçka.</p></div></div><div class="pgi2-body"><div class="pgi2-status">Duke lexuar emailat, projektet dhe skedarët…</div></div></div></div>');}
+async function open(target){if(state.busy)return;state.busy=true;renderLoading();try{await load(target);}catch(e){var box=document.querySelector('#pgi2-bg .pgi2-body');if(box)box.innerHTML='<div class="pgi2-status bad">'+esc(e&&e.message||e)+'</div><div style="text-align:right;margin-top:10px"><button class="pgi2-btn" onclick="document.getElementById(\'pgi2-bg\').remove()">Mbylle</button></div>';}finally{state.busy=false;}}
+
+document.addEventListener('pst:gmail-intake-request',function(event){open(event&&event.detail&&event.detail.target||window.__pstPendingGmailIntakeTarget||location.href);});
+window.PSTGmailIntakeV2={open:open,close:close,_test:{junkAttachment:junkAttachment,prepareAttachments:prepareAttachments,baseName:baseName}};
+
+var initial=paramsFromLocation();
+function paramsFromLocation(){try{return new URL(location.href).searchParams.get('gmail_intake')==='1';}catch(e){return false;}}
+if(window.__pstPendingGmailIntakeTarget&&!window.__pstGmailHandoffPending)open(window.__pstPendingGmailIntakeTarget);
+else if(initial){
+  if(window.__pstGmailHandoffPending)document.addEventListener('pst:gmail-handoff-fallback',function(event){open(event&&event.detail&&event.detail.target||location.href);},{once:true});
+  else if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){open(location.href);},{once:true});else open(location.href);
+}
+})();
