@@ -55,6 +55,7 @@ jobs:
           PY
           grep -q 'pristeel-stable-boot-v2.js' _site/index.html
           test -s _site/pristeel-stable-boot-v2.js
+          test -s _site/pristeel-business-command-center-v1.js
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
@@ -89,19 +90,21 @@ jobs:
           for attempt in $(seq 1 18); do
             code=$(curl -L -sS -o /tmp/pristeel.html -w '%{http_code}' "$PAGE_URL" || true)
             boot_code=$(curl -L -sS -o /tmp/pristeel-boot.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-stable-boot-v2.js?v=20260805-1" || true)
-            if [ "$code" = "200" ] && [ "$boot_code" = "200" ] \
+            bcc_code=$(curl -L -sS -o /tmp/pristeel-bcc.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-business-command-center-v1.js?v=20260806-1" || true)
+            if [ "$code" = "200" ] && [ "$boot_code" = "200" ] && [ "$bcc_code" = "200" ] \
               && grep -q 'pristeel-stable-boot-v2.js' /tmp/pristeel.html \
               && grep -q '__pstStableBootV2' /tmp/pristeel-boot.js \
+              && grep -q '__pstBusinessCommandCenterV1' /tmp/pristeel-bcc.js \
               && ! grep -Eq 'new[[:space:]]+MutationObserver|setInterval[[:space:]]*\(' /tmp/pristeel-boot.js \
               && ! grep -q 'pristeel-startup-guard-v2.js' /tmp/pristeel.html \
               && ! grep -q 'pristeel-login-transition' /tmp/pristeel.html \
               && ! grep -q 'pristeel-simple-boot-v1.js' /tmp/pristeel.html; then
-              echo "Verified stable bounded startup at $PAGE_URL"
+              echo "Verified stable startup and business command center at $PAGE_URL"
               exit 0
             fi
             sleep 10
           done
-          echo "Deployment did not become reachable with stable startup in time."
+          echo "Deployment did not become reachable with the command center in time."
           exit 1
 
   report:
