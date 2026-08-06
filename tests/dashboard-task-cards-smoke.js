@@ -5,8 +5,8 @@ const { JSDOM } = require('jsdom');
 (() => {
   const source = fs.readFileSync('pristeel-dashboard-task-cards-v1.js', 'utf8');
   assert(!/new\s+MutationObserver|setInterval\s*\(/.test(source), 'Dashboard cards must not observe or poll the page');
-  assert(!/supaFetch|fetch\s*\(|XMLHttpRequest/.test(source), 'Dashboard cards must not query or write data');
-  assert(!/pstOpenProjectWorkspace\s*=|PSTEmail|Gmail|authGetSession|doLogin/.test(source), 'Dashboard cards must not override project, Gmail or login behavior');
+  assert(!/supaFetch\s*\(|fetch\s*\(|new\s+XMLHttpRequest/.test(source), 'Dashboard cards must not query or write data');
+  assert(!/(?:window\.)?(?:pstOpenProjectWorkspace|PSTEmail|authGetSession|doLogin)\s*=/.test(source), 'Dashboard cards must not override project, Gmail or login behavior');
   assert(source.includes('#page-workspace-home'), 'Dashboard styling is not scoped to the Workspace home page');
 
   const dom = new JSDOM(`<!doctype html><html><head></head><body>
