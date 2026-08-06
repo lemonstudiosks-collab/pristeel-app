@@ -1,5 +1,6 @@
-/* PRISTEEL Gmail intake revision selection fix
- * Applies once per rendered intake modal and remains overridable by the user afterwards.
+/* PRISTEEL Gmail intake safety helpers
+ * - Zgjedh vetem revisionin me te ri.
+ * - Kur mungon tokeni, shfaq autorizim te nisur nga klikimi qe Chrome te mos bllokoje pop-up-in.
  * No MutationObserver or interval.
  */
 (function(){
@@ -40,15 +41,55 @@ function normalize(root){
   Object.keys(groups).forEach(function(key){
     var rows=groups[key];if(rows.length<2)return;
     rows.sort(function(a,b){return b.score-a.score||a.index-b.index;});
-    rows.forEach(function(item,index){item.box.checked=index===0;item.row.classList.toggle('muted',index>0);var tag=item.row.querySelector('i');if(tag)tag.textContent=index===0?'Versioni më i ri':'Version më i vjetër';});
+    rows.forEach(function(item,index){
+      item.box.checked=index===0;
+      item.row.classList.toggle('muted',index>0);
+      var tag=item.row.querySelector('i');if(tag)tag.textContent=index===0?'Versioni me i ri':'Version me i vjeter';
+    });
   });
   root.dataset.pstRevisionReviewed='1';
   return true;
 }
-function schedule(){[0,350,900,1800,3500].forEach(function(ms){setTimeout(function(){normalize();},ms);});}
+function intakeTarget(){return window.__pstPendingGmailIntakeTarget||location.href;}
+function needsGoogleAuth(root){
+  var body=root&&root.querySelector('.pgi2-body');
+  var text=String(body&&body.textContent||'').toLowerCase();
+  return text.indexOf('autorizimi i google kerkohet')>-1||text.indexOf('autorizo gmail dhe drive')>-1;
+}
+function renderGoogleAuth(root){
+  root=root||document.getElementById('pgi2-bg');
+  if(!root||root.dataset.pstGoogleAuthPrompt==='1'||!needsGoogleAuth(root))return false;
+  var body=root.querySelector('.pgi2-body');if(!body)return false;
+  root.dataset.pstGoogleAuthPrompt='1';
+  body.innerHTML='<div class="pgi2-banner info"><b>Autorizo Google nje here</b><span>Platforma eshte e hapur dhe sesioni i PRISTEEL-it mbetet aktiv. Klikimi me poshte autorizon Gmail dhe Drive; pop-up-i hapet nga klikimi yt dhe nuk duhet te bllokohet nga Chrome.</span></div><div class="pgi2-status" id="pgi2-google-auth-status">Autorizimi i vlefshem do te riperdoret automatikisht ne tab-et e platformes derisa te skadoje.</div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="pgi2-btn" id="pgi2-auth-close">Mbylle</button><button class="pgi2-btn primary" id="pgi2-authorize-google">Autorizo Gmail dhe Drive</button></div>';
+  var close=body.querySelector('#pgi2-auth-close');
+  if(close)close.onclick=function(){var bg=document.getElementById('pgi2-bg');if(bg)bg.remove();};
+  var button=body.querySelector('#pgi2-authorize-google');
+  if(button)button.onclick=function(){
+    if(button.disabled)return;
+    var status=body.querySelector('#pgi2-google-auth-status');
+    button.disabled=true;button.textContent='Duke autorizuar…';
+    if(status)status.textContent='Po hapet dritarja e Google…';
+    var G=window.PSTGoogleWorkspaceAuth;
+    if(!G||typeof G.authorizeForIntake!=='function'){
+      button.disabled=false;button.textContent='Autorizo Gmail dhe Drive';
+      if(status)status.textContent='Moduli i autorizimit nuk eshte gati. Rifresko faqen dhe provo perseri.';
+      return;
+    }
+    G.authorizeForIntake().then(function(){
+      if(status)status.textContent='Autorizimi u krye. Po hapet thread-i…';
+      return window.PSTGmailIntakeV2.open(intakeTarget());
+    }).catch(function(error){
+      button.disabled=false;button.textContent='Autorizo Gmail dhe Drive';
+      if(status)status.textContent=String(error&&error.message||error||'Autorizimi deshtoi.');
+    });
+  };
+  return true;
+}
+function apply(){var root=document.getElementById('pgi2-bg');if(!root)return;renderGoogleAuth(root);normalize(root);}
+function schedule(){[0,100,350,900,1800,3500].forEach(function(ms){setTimeout(apply,ms);});}
 document.addEventListener('pst:gmail-intake-request',schedule);
 document.addEventListener('pst:gmail-handoff-fallback',schedule);
-document.addEventListener('click',function(event){var root=event.target&&event.target.closest?event.target.closest('#pgi2-bg'):null;if(root)normalize(root);},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.PSTGmailIntakeRevisionFixV1={base:base,rank:rank,normalize:normalize};
+window.PSTGmailIntakeRevisionFixV1={base:base,rank:rank,normalize:normalize,renderGoogleAuth:renderGoogleAuth};
 })();
