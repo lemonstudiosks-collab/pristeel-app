@@ -70,7 +70,7 @@ var files=[
   'pristeel-project-open-direct-v1.js?v=20260805-2',
   'pristeel-project-contacts-full-v1.js?v=20260805-1',
   'pristeel-dashboard-task-cards-v1.js?v=20260806-3',
-  'pristeel-business-command-center-v1.js?v=20260806-1'
+  'pristeel-business-command-center-v1.js?v=20260806-2'
 ];
 var completed=false;
 function ready(){
