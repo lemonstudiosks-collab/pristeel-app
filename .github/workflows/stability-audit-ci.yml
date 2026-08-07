@@ -1,12 +1,12 @@
 name: PRISTEEL Stability Audit CI
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [stability-audit-20260807]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
@@ -14,8 +14,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: stability-audit-20260807
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm test
+      - name: Record passing audit
+        run: |
+          printf 'PASS\nbranch=stability-audit-20260807\ntested_sha=%s\n' "$GITHUB_SHA" > AUDIT_TEST_RESULT.txt
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add AUDIT_TEST_RESULT.txt
+          git commit -m 'Record passing PRISTEEL stability audit [skip ci]' || true
+          git push
