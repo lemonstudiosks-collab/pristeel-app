@@ -24,4 +24,4 @@ jobs:
       - name: Run complete workspace checks
         run: npm test
 
-# Verification refresh after bounded UI-corrections update.
+# Verification refresh after observer test correction.
