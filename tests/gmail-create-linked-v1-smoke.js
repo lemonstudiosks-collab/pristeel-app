@@ -1,0 +1,13 @@
+const fs=require('fs');
+const assert=require('assert');
+const s=fs.readFileSync('pristeel-gmail-create-linked-v1.js','utf8');
+assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(s),'linked-create fix must not observe or poll');
+assert(s.includes("textContent='Krijo projekt të ri'"),'linked thread must expose create-new action');
+assert(s.includes('window.confirm'),'reassignment must require explicit confirmation');
+assert(s.includes("db('projects','POST',payload)"),'new project must be created explicitly');
+assert(s.includes("project_email_links?gmail_message_id=eq."),'old thread links must be normalized');
+assert(s.includes("link_method:'gmail-create-new-reassigned'"),'new relation must record explicit reassignment');
+assert(s.includes('PSTDriveImport.importFiles'),'selected attachments must follow the new project');
+const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
+assert(bootstrap.includes('pristeel-gmail-create-linked-v1.js'),'bootstrap must load linked-create fix');
+console.log('Gmail create-from-linked smoke test passed.');
