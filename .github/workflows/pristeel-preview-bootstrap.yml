@@ -1,0 +1,198 @@
+name: Temporary PRISTEEL Safe Preview Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pristeel-temporary-preview-bootstrap
+  cancel-in-progress: true
+
+jobs:
+  deploy_safe_preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pristeel-preview-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout safe preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: workspace-v2-safe-build
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run complete workspace checks
+        run: npm test
+
+      - name: Build deterministic safe preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          rsync -a ./ _site/ \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '_site/' \
+            --exclude 'node_modules/' \
+            --exclude 'tests/' \
+            --exclude 'scripts/' \
+            --exclude 'package-lock.json' \
+            --exclude 'package.json' \
+            --exclude 'preview-server.mjs' \
+            --exclude '.stackblitzrc' \
+            --exclude 'DEPLOYMENT_STATUS.md' \
+            --exclude 'PREVIEW_*_TRIGGER_20260807.txt'
+          cp pristeel-procurement.html _site/index.html
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('_site/index.html')
+          html = path.read_text(encoding='utf-8')
+          if '<head>' not in html or '</body>' not in html:
+              raise SystemExit('Platform HTML structure is incomplete')
+          html = html.replace('<head>', '<head>\n<script src="pristeel-stable-boot-v2.js?v=20260805-1"></script>', 1)
+          html = html.replace('src="pristeel-project-emails.js"', 'src="pristeel-project-emails.js?v=20260807-8"')
+          html = html.replace("src='pristeel-project-emails.js'", "src='pristeel-project-emails.js?v=20260807-8'")
+          tail = '''
+<!-- PRISTEEL deterministic tested redesign tail -->
+<script src="pristeel-dashboard-task-cards-v1.js?v=20260807-8"></script>
+<script src="pristeel-business-command-center-v1.js?v=20260807-8"></script>
+<script src="pristeel-gmail-deep-search-v1.js?v=20260807-8"></script>
+<script src="pristeel-business-command-center-deep-gmail-v1.js?v=20260807-8"></script>
+<script src="pristeel-project-command-view-v1.js?v=20260807-8"></script>
+<script src="pristeel-home-command-center-v2.js?v=20260807-8"></script>
+<script src="pristeel-redesign-finalizer-v1.js?v=20260807-8"></script>
+'''
+          html = html.replace('</body>', tail + '\n</body>', 1)
+          path.write_text(html, encoding='utf-8')
+          PY
+          grep -q 'pristeel-project-emails.js?v=20260807-8' _site/index.html
+          grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-8' _site/index.html
+          test -s _site/pristeel-dashboard-task-cards-v1.js
+          test -s _site/pristeel-business-command-center-v1.js
+          test -s _site/pristeel-gmail-deep-search-v1.js
+          test -s _site/pristeel-business-command-center-deep-gmail-v1.js
+          test -s _site/pristeel-project-command-view-v1.js
+          test -s _site/pristeel-home-command-center-v2.js
+          test -s _site/pristeel-redesign-finalizer-v1.js
+          touch _site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload preview artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy safe preview
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify live redesign
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 18); do
+            code=$(curl -L -sS -o /tmp/index.html -w '%{http_code}' "$PAGE_URL" || true)
+            bcc=$(curl -L -sS -o /tmp/bcc.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-business-command-center-v1.js?v=20260807-8" || true)
+            deep=$(curl -L -sS -o /tmp/deep.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-gmail-deep-search-v1.js?v=20260807-8" || true)
+            pcv=$(curl -L -sS -o /tmp/pcv.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-project-command-view-v1.js?v=20260807-8" || true)
+            home=$(curl -L -sS -o /tmp/home.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-home-command-center-v2.js?v=20260807-8" || true)
+            finalizer=$(curl -L -sS -o /tmp/finalizer.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-redesign-finalizer-v1.js?v=20260807-8" || true)
+            if [ "$code" = '200' ] && [ "$bcc" = '200' ] && [ "$deep" = '200' ] && [ "$pcv" = '200' ] && [ "$home" = '200' ] && [ "$finalizer" = '200' ] \
+              && grep -q 'pristeel-project-emails.js?v=20260807-8' /tmp/index.html \
+              && grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-8' /tmp/index.html \
+              && grep -q '__pstBusinessCommandCenterV1' /tmp/bcc.js \
+              && grep -q '__pstGmailDeepSearchV1' /tmp/deep.js \
+              && grep -q '__pstProjectCommandViewV1' /tmp/pcv.js \
+              && grep -q '__pstHomeCommandCenterV2' /tmp/home.js \
+              && grep -q '__pstRedesignFinalizerV1' /tmp/finalizer.js; then
+              echo "PRISTEEL tested redesign verified live at $PAGE_URL"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Live preview verification failed.'
+          exit 1
+
+      - name: Record VERIFIED status on safe branch
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --branch workspace-v2-safe-build --single-branch "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-repo
+          cd status-repo
+          cat > DEPLOYMENT_STATUS.md <<EOF
+          # PRISTEEL tested preview
+
+          Status: VERIFIED
+
+          Tests: success
+
+          Build: success
+
+          Deploy: success
+
+          Run ID: ${RUN_ID}
+
+          Version: 20260807-8
+
+          URL: ${PAGE_URL}
+
+          Checked at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add DEPLOYMENT_STATUS.md
+          git commit -m 'Record VERIFIED PRISTEEL tested preview' || exit 0
+          git push origin workspace-v2-safe-build
+
+      - name: Record FAILED status on safe branch
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --branch workspace-v2-safe-build --single-branch "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" status-repo
+          cd status-repo
+          cat > DEPLOYMENT_STATUS.md <<EOF
+          # PRISTEEL tested preview
+
+          Status: FAILED
+
+          Run ID: ${RUN_ID}
+
+          Version: 20260807-8
+
+          Checked at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add DEPLOYMENT_STATUS.md
+          git commit -m 'Record FAILED PRISTEEL tested preview' || exit 0
+          git push origin workspace-v2-safe-build
