@@ -56,6 +56,7 @@ var files=[
   'pristeel-gmail-intake-revision-fix-v1.js?v=20260806-2',
   'pristeel-contract-classification-v2.js?v=20260805-2',
   'pristeel-project-data-integrity-v1.js?v=20260805-1',
+  'pristeel-project-load-stability-v2.js?v=20260807-stability1',
   'pristeel-project-file-unifier-v2.js?v=20260805-1',
   'pristeel-document-routing-integrity-v1.js?v=20260804-1',
   'pristeel-project-integrity-ui-v1.js?v=20260804-1',
