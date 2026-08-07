@@ -22,6 +22,7 @@ const required = [
   'pristeel-project-load-stability-v2.js',
   'pristeel-project-command-view-v1.js',
   'pristeel-home-command-center-v2.js',
+  'pristeel-home-live-fix-v1.js',
   'pristeel-home-stability-v2.js',
   'pristeel-redesign-finalizer-v1.js',
   'pristeel-commercial-navigation-fix-v1.js'
@@ -31,8 +32,7 @@ required.forEach(file => assert(matches.includes(file), `Critical module missing
 const retired = [
   'pristeel-gmail-intake-v2.js',
   'pristeel-gmail-create-project-fix-v1.js',
-  'pristeel-gmail-live-inbox-v1.js',
-  'pristeel-home-live-fix-v1.js'
+  'pristeel-gmail-live-inbox-v1.js'
 ];
 retired.forEach(file => assert(!matches.includes(file), `Retired overlapping stability module still loaded: ${file}`));
 
