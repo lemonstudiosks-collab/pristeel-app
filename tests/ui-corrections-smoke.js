@@ -2,6 +2,10 @@ const fs = require('fs');
 const assert = require('assert');
 const { JSDOM } = require('jsdom');
 
+const source = fs.readFileSync('pristeel-ui-corrections-v2.js', 'utf8');
+assert(!/MutationObserver|setInterval\s*\(/.test(source), 'UI corrections must not observe or poll the whole platform');
+assert(!/supaFetch\([^)]*,\s*['\"](?:POST|PATCH|DELETE)/i.test(source), 'UI corrections must remain read-only');
+
 const dom = new JSDOM(`<!doctype html><html><body>
 <div id="pst-email-center">
   <div class="pec-grid">
@@ -22,9 +26,10 @@ w.open = () => ({ focus() {} });
 w.HTMLElement.prototype.scrollIntoView = function() { this.__scrolled = true; };
 w.supaFetch = async path => [{ id: 1, subject: 'Oferta Airbus', project_id: 'airbus-1', sent_at: '2026-08-01', gmail_url: 'https://mail.google.com/test' }];
 w.PSTEmail = { projects: [{ id: 'airbus-1', name: '260784 Airbus' }], gmailUrl: () => '' };
-w.eval(fs.readFileSync('pristeel-ui-corrections-v2.js', 'utf8'));
+w.eval(source);
 
 (async () => {
+  assert(w.PSTUICorrectionsV2, 'Bounded UI corrections API is missing');
   const generate = Array.from(w.document.querySelectorAll('button')).find(x => /Gjenero/.test(x.textContent));
   const position = Array.from(w.document.querySelectorAll('button')).find(x => /Pozicion/.test(x.textContent));
   assert.ok(generate.classList.contains('pst-offer-generate-compact'), 'Generate offer button was not compacted');
