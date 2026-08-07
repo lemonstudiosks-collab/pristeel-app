@@ -1,2 +1,3 @@
 Temporary PR trigger for the isolated PRISTEEL safe preview deployment workflow.
 No application code or business data is changed.
+Synchronize event revision 2: deploy the current workspace-v2-safe-build preview.
