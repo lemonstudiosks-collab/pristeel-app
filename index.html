@@ -2,11 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=pristeel-procurement.html?v=20260807-15">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>PRISTEEL Procurement Projects Platform</title>
-  <script>location.replace('pristeel-procurement.html?v=20260807-15');</script>
+  <style>html,body{margin:0;min-height:100%;background:#F4F8FA;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}#pst-entry{min-height:100vh;display:grid;place-items:center;color:#60727A;font-size:13px}</style>
 </head>
 <body>
-  <a href="pristeel-procurement.html?v=20260807-15">Open PRISTEEL</a>
+  <div id="pst-entry">Duke hapur PRISTEEL…</div>
+  <script>
+  (function(){
+    'use strict';
+    var VERSION='20260807-16';
+    fetch('pristeel-procurement.html?v='+VERSION,{cache:'no-store'})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
+      .then(function(html){
+        if(html.indexOf('<head>')<0||html.indexOf('</body>')<0)throw new Error('HTML structure missing');
+        html=html.replace('<head>','<head>\n<script src="pristeel-stable-boot-v2.js?v='+VERSION+'"><\/script>',1);
+        html=html.replace('</body>','<script src="pristeel-project-emails.js?v='+VERSION+'"><\/script>\n</body>',1);
+        document.open();
+        document.write(html);
+        document.close();
+      })
+      .catch(function(err){
+        var el=document.getElementById('pst-entry');
+        if(el)el.innerHTML='<div style="text-align:center"><b>PRISTEEL nuk u hap.</b><div style="margin-top:8px">'+String(err.message||err)+'</div><button onclick="location.reload()" style="margin-top:14px;padding:9px 14px;border:0;border-radius:8px;background:#3F7F98;color:#fff;cursor:pointer">Provo përsëri</button></div>';
+      });
+  })();
+  </script>
 </body>
 </html>
