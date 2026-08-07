@@ -1,0 +1,1 @@
+Temporary synchronize trigger for the trusted workspace-v2 live preview workflow. No application code or business data is changed.
