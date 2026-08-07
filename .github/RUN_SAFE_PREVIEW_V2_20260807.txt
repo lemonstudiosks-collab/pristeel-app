@@ -1,0 +1,2 @@
+Temporary PR trigger for the isolated PRISTEEL safe preview deployment workflow.
+No application code or business data is changed.
