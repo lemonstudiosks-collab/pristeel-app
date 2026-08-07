@@ -7,7 +7,7 @@
 if(window.__pstDocumentCenterStableV2)return;
 window.__pstDocumentCenterStableV2=true;
 var WAIT=3500;
-var D=window.PST_DOC_CENTER_STABLE={selectedType:'offer',quotes:[],invoices:[],adjustments:[],all:[],loading:false};
+var D=window.PST_DOC_CENTER_STABLE={selectedType:'offer',quotes:[],invoices:[],adjustments:[],all:[],loading:null};
 var LABEL={offer:'Ofertë',invoice:'Faturë',credit_note:'Notë Kreditore',debit_note:'Notë Debitore'};
 function arr(v){return Array.isArray(v)?v:[];}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -23,7 +23,26 @@ function createSelected(){var t=D.selectedType;if(t==='offer'){if(typeof window.
 function quote(r){return{id:r.id,type:'offer',nr:r.doc_nr||r.reference||'',date:r.created_at||'',client:r.client||'',project:r.project||r.project_name||'',amount:num(r.total_eur||r.total),currency:'EUR',raw:r};}
 function invoice(r){return{id:r.id,type:'invoice',nr:r.invoice_nr||'',date:r.date||r.created_at||'',client:r.client||'',project:r.project||'',amount:num(r.gross_amount||r.total_price||r.total_eur),currency:r.currency||'EUR',raw:r};}
 function adjustment(r){return{id:r.id,type:r.document_type||'credit_note',nr:r.document_nr||'',date:r.document_date||r.created_at||'',client:r.client||'',project:r.project||'',amount:num(r.gross_amount),currency:r.currency||'EUR',raw:r};}
-async function load(){if(D.loading)return;D.loading=true;var h=document.getElementById('pst-dc-list');if(h)h.innerHTML='<div class="pst-dc-empty">Duke ngarkuar…</div>';var out=await Promise.all([q('documents_registry?series=eq.QUO&order=created_at.desc&limit=250'),q('invoices_out?order=created_at.desc&limit=250'),q('commercial_adjustments?order=created_at.desc&limit=250')]);D.quotes=out[0];D.invoices=out[1];D.adjustments=out[2];D.all=D.quotes.map(quote).concat(D.invoices.map(invoice),D.adjustments.map(adjustment)).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});D.loading=false;render();}
+function load(){
+  if(D.loading)return D.loading;
+  var h=document.getElementById('pst-dc-list');
+  if(h)h.innerHTML='<div class="pst-dc-empty">Duke ngarkuar…</div>';
+  D.loading=Promise.all([
+    q('documents_registry?series=eq.QUO&order=created_at.desc&limit=250'),
+    q('invoices_out?order=created_at.desc&limit=250'),
+    q('commercial_adjustments?order=created_at.desc&limit=250')
+  ]).then(function(out){
+    D.quotes=out[0];D.invoices=out[1];D.adjustments=out[2];
+    D.all=D.quotes.map(quote).concat(D.invoices.map(invoice),D.adjustments.map(adjustment)).sort(function(a,b){return String(b.date||'').localeCompare(String(a.date||''));});
+    render();
+    return D.all;
+  }).catch(function(){
+    return D.all;
+  }).finally(function(){
+    D.loading=null;
+  });
+  return D.loading;
+}
 function actionHtml(r){return'<button type="button" class="pst-dc-action" data-open="'+esc(r.type)+'" data-id="'+esc(r.id)+'">Hap</button>'+(r.type==='invoice'?'<button type="button" class="pst-dc-action credit" data-adjust="credit_note" data-id="'+esc(r.id)+'">Kredito</button><button type="button" class="pst-dc-action debit" data-adjust="debit_note" data-id="'+esc(r.id)+'">Debito</button>':'');}
 function row(r){return'<div class="pst-dc-row"><div><span class="pst-dc-kind">'+esc(LABEL[r.type]||r.type)+'</span></div><div class="pst-dc-main"><div class="pst-dc-nr">'+esc(r.nr||'Pa numër')+'</div><div class="pst-dc-meta">'+esc(r.project||'Pa projekt')+'</div></div><div class="pst-dc-client"><div class="pst-dc-nr">'+esc(r.client||'Pa klient')+'</div></div><div class="pst-dc-date">'+dateText(r.date)+'</div><div class="pst-dc-amount">'+money(r.amount,r.currency)+'</div><div class="pst-dc-actions">'+actionHtml(r)+'</div></div>';}
 function render(){var h=document.getElementById('pst-dc-list');if(!h)return;var query=String((document.getElementById('pst-dc-search')||{}).value||'').toLowerCase().trim(),filter=String((document.getElementById('pst-dc-filter')||{}).value||'all'),rows=D.all.filter(function(r){return(filter==='all'||r.type===filter)&&(!query||[r.nr,r.client,r.project].join(' ').toLowerCase().indexOf(query)>-1);});h.innerHTML=rows.length?rows.map(row).join(''):'<div class="pst-dc-empty">Nuk u gjet asnjë dokument.</div>';h.querySelectorAll('[data-open]').forEach(function(b){b.onclick=function(){openDoc(b.getAttribute('data-open'),b.getAttribute('data-id'));};});h.querySelectorAll('[data-adjust]').forEach(function(b){b.onclick=function(){if(typeof window.pstOpenAdjustment==='function')window.pstOpenAdjustment(b.getAttribute('data-adjust'),b.getAttribute('data-id'));};});}
