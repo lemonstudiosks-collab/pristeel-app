@@ -1,4 +1,6 @@
-/* PRISTEEL targeted UI corrections from staging review */
+/* PRISTEEL targeted UI corrections from staging review
+ * Bounded refresh only. No MutationObserver, polling or business-data writes.
+ */
 (function(){
 'use strict';
 if(window.__pstUiCorrectionsV2)return;
@@ -7,6 +9,7 @@ window.__pstUiCorrectionsV2=true;
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function date(v){var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+
 function css(){
   if(document.getElementById('pst-ui-corrections-v2-css'))return;
   var s=document.createElement('style');s.id='pst-ui-corrections-v2-css';s.textContent=`
@@ -40,6 +43,7 @@ function css(){
 `;
   document.head.appendChild(s);
 }
+
 function decorateButtons(root){
   var scope=root&&root.querySelectorAll?root:document;
   Array.prototype.forEach.call(scope.querySelectorAll('button'),function(button){
@@ -55,58 +59,97 @@ function decorateButtons(root){
     if(/^\+\s*pozicion/.test(t)||/^shto pozicion/.test(t))button.classList.add('pst-position-primary');
   });
 }
+
 function projectName(pid){
   var A=window.PSTEmail&&window.PSTEmail.projects||[];
   var p=A.filter(function(x){return String(x.id)===String(pid);})[0];
   return p?p.name||p.client||pid:pid||'Pa projekt';
 }
+
 function closeModal(){var e=document.getElementById('pst-kpi-modal-bg');if(e)e.remove();}
 function modal(title,sub,body){
-  closeModal();var bg=document.createElement('div');bg.id='pst-kpi-modal-bg';bg.className='pst-kpi-modal-bg';
+  closeModal();
+  var bg=document.createElement('div');bg.id='pst-kpi-modal-bg';bg.className='pst-kpi-modal-bg';
   bg.innerHTML='<div class="pst-kpi-modal"><div class="pst-kpi-modal-hd"><div><div class="pst-kpi-modal-title">'+esc(title)+'</div><div class="pst-kpi-modal-sub">'+esc(sub||'')+'</div></div><button class="pst-kpi-modal-x" type="button">×</button></div><div class="pst-kpi-modal-body">'+body+'</div></div>';
-  bg.onclick=function(e){if(e.target===bg)closeModal();};bg.querySelector('.pst-kpi-modal-x').onclick=closeModal;document.body.appendChild(bg);
+  bg.onclick=function(e){if(e.target===bg)closeModal();};
+  bg.querySelector('.pst-kpi-modal-x').onclick=closeModal;
+  document.body.appendChild(bg);
 }
+
 function emailRows(rows){
   if(!rows||!rows.length)return'<div class="pst-kpi-empty">Nuk u gjetën emaila për këtë pamje.</div>';
   return rows.map(function(x){
     var who=x.direction==='outgoing'?(Array.isArray(x.to_emails)?x.to_emails.join(', '):x.to_emails||''):(x.from_name||x.from_email||'');
-    var meta=[who,date(x.sent_at),x.project_id?projectName(x.project_id):'Pa projekt'].filter(Boolean).join(' · '),url=x.gmail_url||(window.PSTEmail&&window.PSTEmail.gmailUrl?window.PSTEmail.gmailUrl(x.gmail_thread_id):'');
+    var meta=[who,date(x.sent_at),x.project_id?projectName(x.project_id):'Pa projekt'].filter(Boolean).join(' · ');
+    var url=x.gmail_url||(window.PSTEmail&&window.PSTEmail.gmailUrl?window.PSTEmail.gmailUrl(x.gmail_thread_id):'');
     return'<div class="pst-kpi-email"><div><b>'+esc(x.subject||'(pa subjekt)')+'</b><span>'+esc(meta)+'</span></div>'+(url?'<button type="button" data-url="'+esc(url)+'">Hap</button>':'')+'</div>';
   }).join('');
 }
+
 window.pstEmailCenterKpi=async function(kind){
   if(kind==='unmatched'){
-    var target=document.querySelector('#pst-email-center .pec-toolbar')||document.getElementById('pec-list');if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
-    var input=document.querySelector('#pst-email-center .pec-search');if(input)setTimeout(function(){input.focus();},350);return;
+    var target=document.querySelector('#pst-email-center .pec-toolbar')||document.getElementById('pec-list');
+    if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+    var input=document.querySelector('#pst-email-center .pec-search');
+    if(input)setTimeout(function(){input.focus();},350);
+    return;
   }
   var title='Emailat e indeksuar',sub='Emailat më të fundit të ruajtur në platformë',query='project_emails?select=*&order=sent_at.desc&limit=300';
   if(kind==='linked'){title='Emailat e lidhur me projekte';sub='Lidhjet aktive, me projektin përkatës';query='project_emails?project_id=not.is.null&select=*&order=sent_at.desc&limit=300';}
   if(kind==='processed'){title='Emailat e kontrolluar';sub='Emailat që kanë kaluar në klasifikim ose audit';query='project_emails?match_method=not.is.null&select=*&order=updated_at.desc&limit=300';}
   modal(title,sub,'<div class="pst-kpi-empty">Duke ngarkuar…</div>');
   try{
-    var rows=await window.supaFetch(query),body=document.querySelector('#pst-kpi-modal-bg .pst-kpi-modal-body');if(body)body.innerHTML=emailRows(rows||[]);
-  }catch(e){var b=document.querySelector('#pst-kpi-modal-bg .pst-kpi-modal-body');if(b)b.innerHTML='<div class="pst-kpi-empty">'+esc(e.message||e)+'</div>';}
+    var rows=await window.supaFetch(query);
+    var body=document.querySelector('#pst-kpi-modal-bg .pst-kpi-modal-body');
+    if(body)body.innerHTML=emailRows(rows||[]);
+  }catch(e){
+    var b=document.querySelector('#pst-kpi-modal-bg .pst-kpi-modal-body');
+    if(b)b.innerHTML='<div class="pst-kpi-empty">'+esc(e.message||e)+'</div>';
+  }
 };
+
 function activateKpis(root){
   var scope=root&&root.querySelectorAll?root:document;
   var map={'pec-kpi-total':'total','pec-kpi-linked':'linked','pec-kpi-unmatched':'unmatched','pec-kpi-processed':'processed'};
   Object.keys(map).forEach(function(id){
-    var value=document.getElementById(id);if(!value)return;var card=value.closest('.pec-kpi');if(!card||card.__pstKpi)return;
+    var value=document.getElementById(id);if(!value)return;
+    var card=value.closest('.pec-kpi');if(!card||card.__pstKpi)return;
     card.__pstKpi=true;card.classList.add('pst-kpi-action');card.tabIndex=0;card.setAttribute('role','button');
-    var run=function(){window.pstEmailCenterKpi(map[id]);};card.addEventListener('click',run);card.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();run();}});
+    var run=function(){window.pstEmailCenterKpi(map[id]);};
+    card.addEventListener('click',run);
+    card.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();run();}});
   });
   Array.prototype.forEach.call(scope.querySelectorAll('.pga-stat'),function(card){
-    if(card.__pstKpi)return;card.__pstKpi=true;card.classList.add('pst-kpi-action');card.tabIndex=0;card.setAttribute('role','button');
-    card.addEventListener('click',function(){var strip=document.getElementById('pga-strip');if(strip)strip.scrollIntoView({behavior:'smooth',block:'center'});if(/per kontroll/.test(norm(card.textContent))&&typeof window.pstGmailAuditReview==='function')window.pstGmailAuditReview();});
+    if(card.__pstKpi)return;
+    card.__pstKpi=true;card.classList.add('pst-kpi-action');card.tabIndex=0;card.setAttribute('role','button');
+    card.addEventListener('click',function(){
+      var strip=document.getElementById('pga-strip');if(strip)strip.scrollIntoView({behavior:'smooth',block:'center'});
+      if(/per kontroll/.test(norm(card.textContent))&&typeof window.pstGmailAuditReview==='function')window.pstGmailAuditReview();
+    });
   });
 }
+
 function installModalClicks(){
-  if(document.__pstKpiModalClick)return;document.__pstKpiModalClick=true;
-  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('.pst-kpi-email button[data-url]');if(!b)return;var w=window.open(b.getAttribute('data-url'),'PRISTEEL_GMAIL');if(w&&w.focus)w.focus();});
+  if(document.__pstKpiModalClick)return;
+  document.__pstKpiModalClick=true;
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('.pst-kpi-email button[data-url]');if(!b)return;
+    var w=window.open(b.getAttribute('data-url'),'PRISTEEL_GMAIL');if(w&&w.focus)w.focus();
+  });
 }
+
 function apply(root){decorateButtons(root||document);activateKpis(root||document);}
-css();installModalClicks();apply(document);
-var observer=new MutationObserver(function(records){records.forEach(function(r){Array.prototype.forEach.call(r.addedNodes,function(n){if(n.nodeType===1)apply(n);});});activateKpis(document);});
-function start(){if(document.body)observer.observe(document.body,{childList:true,subtree:true});apply(document);}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+function schedule(){[0,120,400,900,1800,3200].forEach(function(ms){setTimeout(function(){apply(document);},ms);});}
+
+css();
+installModalClicks();
+apply(document);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
+document.addEventListener('pst:modules-ready',schedule,{once:true});
+window.addEventListener('pageshow',schedule,{once:true});
+document.addEventListener('click',function(event){
+  var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,[onclick*="pstWorkspaceGo"],#pst-ws-home-refresh,.pst-pi-tab,.pec-tab'):null;
+  if(t)[0,100,350,900].forEach(function(ms){setTimeout(function(){apply(document);},ms);});
+},true);
+window.PSTUICorrectionsV2={apply:apply,schedule:schedule};
 })();
