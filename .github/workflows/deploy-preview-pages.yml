@@ -62,15 +62,34 @@ jobs:
           script = '<head>\n<script src="pristeel-stable-boot-v2.js?v=20260805-1"></script>'
           if marker not in html:
               raise SystemExit('Missing <head> in platform HTML')
-          path.write_text(html.replace(marker, script, 1), encoding='utf-8')
+          html = html.replace(marker, script, 1)
+          html = html.replace('src="pristeel-project-emails.js"', 'src="pristeel-project-emails.js?v=20260807-1"')
+          html = html.replace("src='pristeel-project-emails.js'", "src='pristeel-project-emails.js?v=20260807-1'")
+          tail = '''
+<!-- PRISTEEL deterministic redesign tail: loaded directly to avoid stale bootstrap caches -->
+<script src="pristeel-dashboard-task-cards-v1.js?v=20260807-1"></script>
+<script src="pristeel-business-command-center-v1.js?v=20260807-1"></script>
+<script src="pristeel-gmail-deep-search-v1.js?v=20260807-1"></script>
+<script src="pristeel-business-command-center-deep-gmail-v1.js?v=20260807-1"></script>
+<script src="pristeel-project-command-view-v1.js?v=20260807-1"></script>
+<script src="pristeel-home-command-center-v2.js?v=20260807-1"></script>
+<script src="pristeel-redesign-finalizer-v1.js?v=20260807-1"></script>
+'''
+          if '</body>' not in html:
+              raise SystemExit('Missing </body> in platform HTML')
+          html = html.replace('</body>', tail + '\n</body>', 1)
+          path.write_text(html, encoding='utf-8')
           PY
           grep -q 'pristeel-stable-boot-v2.js' _site/index.html
+          grep -q 'pristeel-project-emails.js?v=20260807-1' _site/index.html
+          grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-1' _site/index.html
           test -s _site/pristeel-stable-boot-v2.js
           test -s _site/pristeel-business-command-center-v1.js
           test -s _site/pristeel-gmail-deep-search-v1.js
           test -s _site/pristeel-business-command-center-deep-gmail-v1.js
           test -s _site/pristeel-project-command-view-v1.js
           test -s _site/pristeel-home-command-center-v2.js
+          test -s _site/pristeel-redesign-finalizer-v1.js
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
@@ -105,27 +124,31 @@ jobs:
           for attempt in $(seq 1 18); do
             code=$(curl -L -sS -o /tmp/pristeel.html -w '%{http_code}' "$PAGE_URL" || true)
             boot_code=$(curl -L -sS -o /tmp/pristeel-boot.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-stable-boot-v2.js?v=20260805-1" || true)
-            bcc_code=$(curl -L -sS -o /tmp/pristeel-bcc.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-business-command-center-v1.js?v=20260806-2" || true)
-            deep_code=$(curl -L -sS -o /tmp/pristeel-deep.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-gmail-deep-search-v1.js?v=20260806-1" || true)
-            project_code=$(curl -L -sS -o /tmp/pristeel-project-command.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-project-command-view-v1.js?v=20260806-1" || true)
-            home_code=$(curl -L -sS -o /tmp/pristeel-home-command.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-home-command-center-v2.js?v=20260806-1" || true)
-            if [ "$code" = "200" ] && [ "$boot_code" = "200" ] && [ "$bcc_code" = "200" ] && [ "$deep_code" = "200" ] && [ "$project_code" = "200" ] && [ "$home_code" = "200" ] \
+            bcc_code=$(curl -L -sS -o /tmp/pristeel-bcc.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-business-command-center-v1.js?v=20260807-1" || true)
+            deep_code=$(curl -L -sS -o /tmp/pristeel-deep.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-gmail-deep-search-v1.js?v=20260807-1" || true)
+            project_code=$(curl -L -sS -o /tmp/pristeel-project-command.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-project-command-view-v1.js?v=20260807-1" || true)
+            home_code=$(curl -L -sS -o /tmp/pristeel-home-command.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-home-command-center-v2.js?v=20260807-1" || true)
+            final_code=$(curl -L -sS -o /tmp/pristeel-finalizer.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-redesign-finalizer-v1.js?v=20260807-1" || true)
+            if [ "$code" = "200" ] && [ "$boot_code" = "200" ] && [ "$bcc_code" = "200" ] && [ "$deep_code" = "200" ] && [ "$project_code" = "200" ] && [ "$home_code" = "200" ] && [ "$final_code" = "200" ] \
               && grep -q 'pristeel-stable-boot-v2.js' /tmp/pristeel.html \
+              && grep -q 'pristeel-project-emails.js?v=20260807-1' /tmp/pristeel.html \
+              && grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-1' /tmp/pristeel.html \
               && grep -q '__pstStableBootV2' /tmp/pristeel-boot.js \
               && grep -q '__pstBusinessCommandCenterV1' /tmp/pristeel-bcc.js \
               && grep -q '__pstGmailDeepSearchV1' /tmp/pristeel-deep.js \
               && grep -q '__pstProjectCommandViewV1' /tmp/pristeel-project-command.js \
               && grep -q '__pstHomeCommandCenterV2' /tmp/pristeel-home-command.js \
+              && grep -q '__pstRedesignFinalizerV1' /tmp/pristeel-finalizer.js \
               && ! grep -Eq 'new[[:space:]]+MutationObserver|setInterval[[:space:]]*\(' /tmp/pristeel-boot.js \
               && ! grep -q 'pristeel-startup-guard-v2.js' /tmp/pristeel.html \
               && ! grep -q 'pristeel-login-transition' /tmp/pristeel.html \
               && ! grep -q 'pristeel-simple-boot-v1.js' /tmp/pristeel.html; then
-              echo "Verified tested startup, deep Gmail search and command-center redesign at $PAGE_URL"
+              echo "Verified tested startup, cache-busted bootstrap and deterministic redesign tail at $PAGE_URL"
               exit 0
             fi
             sleep 10
           done
-          echo "Deployment did not become reachable with the full command-center redesign in time."
+          echo "Deployment did not become reachable with the deterministic redesign in time."
           exit 1
 
   report:
