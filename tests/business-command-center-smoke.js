@@ -6,7 +6,7 @@ const { JSDOM } = require('jsdom');
   const source = fs.readFileSync('pristeel-business-command-center-v1.js', 'utf8');
   assert(!/new\s+MutationObserver|setInterval\s*\(/.test(source), 'Command center must not poll or observe the platform');
   assert(!/supaFetch\([^)]*,\s*['\"](?:POST|PATCH|DELETE)/i.test(source), 'Command center must remain read-only');
-  assert(!/(?:window\.)?(?:pstOpenProjectWorkspace|authGetSession|doLogin|PSTEmail)\s*=/.test(source), 'Command center must not replace project, login or Gmail functions');
+  assert(!/(?:window\.)?(?:pstOpenProjectWorkspace|authGetSession|doLogin|PSTEmail)\s*=(?!=)/.test(source), 'Command center must not replace project, login or Gmail functions');
   assert(source.includes('window.openCmdK='), 'Global search entry point is missing');
 
   const dom = new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2">
