@@ -1,13 +1,17 @@
-# PRISTEEL direct preview
+# PRISTEEL tested preview
 
-Status: FAILED
+Status: NEEDS_VERIFICATION
 
-Build: failure
+Branch: workspace-v2-safe-build
 
-Deploy: skipped
+Current redesign head: 2e6d5ccb10c68aee8172cb8690eb419cda1e357a
 
-Run ID: 31146493176
+Last legacy rerun: FAILED (Run ID 31146493176)
 
-URL: https://lemonstudiosks-collab.github.io/pristeel-app/
+Important: Run 31146493176 checked out the older snapshot f3d79c8b77a7e531b1eeeffe1d67ef89dc5e8c34 and therefore does not verify or invalidate the current redesign branch.
 
-Checked at: 2026-08-07T05:38:37Z
+Main remains on the stable rollback line and has not been merged with the redesign.
+
+Preview URL: https://lemonstudiosks-collab.github.io/pristeel-app/
+
+Next gate: run the complete current-branch test/build/live-preview check before any merge to main.
