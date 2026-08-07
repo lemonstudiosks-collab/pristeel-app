@@ -2,11 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=pristeel-procurement.html?v=20260807-17">
   <title>PRISTEEL Procurement Projects Platform</title>
-  <script>location.replace('pristeel-procurement.html?v=20260807-17');</script>
+  <script>
+    (function(){
+      var requested = new URLSearchParams(window.location.search).get('v');
+      var version = requested || String(Date.now());
+      window.location.replace('pristeel-procurement.html?v=' + encodeURIComponent(version));
+    })();
+  </script>
 </head>
 <body>
-  <a href="pristeel-procurement.html?v=20260807-17">Open PRISTEEL</a>
+  <noscript><a href="pristeel-procurement.html">Open PRISTEEL</a></noscript>
 </body>
 </html>
