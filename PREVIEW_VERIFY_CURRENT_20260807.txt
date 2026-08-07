@@ -1,0 +1,2 @@
+Verification trigger for the recovered PRISTEEL workspace-v2-safe-build state.
+No application logic or business data is changed.
