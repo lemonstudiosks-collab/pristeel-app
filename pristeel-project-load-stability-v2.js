@@ -8,7 +8,7 @@ if(window.__pstProjectLoadStabilityV2)return;
 window.__pstProjectLoadStabilityV2=true;
 if(!window.PSTProjectDataIntegrity||typeof window.PSTProjectDataIntegrity.load!=='function')return;
 var original=window.PSTProjectDataIntegrity.load.bind(window.PSTProjectDataIntegrity);
-var FULL_WAIT=8500,READ_WAIT=3200;
+var FULL_WAIT=Number(window.__pstProjectFullWait||8500),READ_WAIT=Number(window.__pstProjectReadWait||3200);
 function arr(v){return Array.isArray(v)?v:[];}
 function enc(v){return encodeURIComponent(String(v==null?'':v));}
 function bounded(promise,ms,fallback){return new Promise(function(resolve){var done=false,t=setTimeout(function(){if(done)return;done=true;resolve(fallback);},ms);Promise.resolve(promise).then(function(v){if(done)return;done=true;clearTimeout(t);resolve(v);}).catch(function(){if(done)return;done=true;clearTimeout(t);resolve(fallback);});});}
