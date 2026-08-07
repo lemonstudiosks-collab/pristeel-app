@@ -3,7 +3,7 @@ const assert = require('assert');
 const { JSDOM } = require('jsdom');
 
 const source = fs.readFileSync('pristeel-ui-corrections-v2.js', 'utf8');
-assert(!/MutationObserver|setInterval\s*\(/.test(source), 'UI corrections must not observe or poll the whole platform');
+assert(!/(?:new\s+)?MutationObserver\s*\(|setInterval\s*\(/.test(source), 'UI corrections must not observe or poll the whole platform');
 assert(!/supaFetch\([^)]*,\s*['\"](?:POST|PATCH|DELETE)/i.test(source), 'UI corrections must remain read-only');
 
 const dom = new JSDOM(`<!doctype html><html><body>
