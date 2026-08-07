@@ -1,9 +1,10 @@
 name: Temporary PRISTEEL redesign live verification
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: read
