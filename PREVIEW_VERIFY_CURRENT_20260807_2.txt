@@ -1,0 +1,2 @@
+Second clean verification trigger after isolating the legacy rerun.
+No application code or business data is changed.
