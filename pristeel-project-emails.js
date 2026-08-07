@@ -70,6 +70,7 @@ var files=[
   'pristeel-project-bulk-gmail-recovery-v1.js?v=20260805-1',
   'pristeel-project-closure-direct-v1.js?v=20260805-1',
   'pristeel-project-flow-actions-v1.js?v=20260805-2',
+  'pristeel-rfq-stability-v2.js?v=20260807-stability1',
   'pristeel-project-open-direct-v1.js?v=20260805-2',
   'pristeel-project-contacts-full-v1.js?v=20260805-1',
   'pristeel-dashboard-task-cards-v1.js?v=20260807-10',
