@@ -182,15 +182,22 @@ window.pstSetRole = async function(uid, role){
   }catch(e){ alert('Gabim: '+e.message); }
 };
 
+function tryReady(){
+  watchPages();
+  if(typeof authGetSession !== 'function') return false;
+  var session = authGetSession();
+  if(!session) return false;
+  loadRole();
+  return true;
+}
 function init(){
-  var tries = 0;
-  var iv = setInterval(function(){
-    watchPages();
-    if(typeof authGetSession === 'function' && authGetSession()){
-      clearInterval(iv);
-      loadRole();
-    } else if(++tries > 40) clearInterval(iv);
-  }, 400);
+  var waits=[0,400,1200,2500,5000,9000];
+  waits.forEach(function(ms){
+    setTimeout(function(){
+      if(myRole) return;
+      tryReady();
+    },ms);
+  });
 }
 
 if(document.readyState === 'loading'){
