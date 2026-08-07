@@ -14,7 +14,12 @@ on:
 
 permissions:
   contents: read
-  actions: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pristeel-v2-safe-preview
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -31,15 +36,118 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run workspace checks
         run: npm test
-      - name: Dispatch verified preview deployment
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'workspace-v2-safe-build'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_preview:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'workspace-v2-safe-build'
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout tested preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: workspace-v2-safe-build
+      - name: Build deterministic static preview
+        shell: bash
         run: |
-          curl -L --fail-with-body \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-preview-pages.yml/dispatches" \
-            -d '{"ref":"workspace-v2-safe-build"}'
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          rsync -a ./ _site/ \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '_site/' \
+            --exclude 'node_modules/' \
+            --exclude 'tests/' \
+            --exclude 'scripts/' \
+            --exclude 'package-lock.json' \
+            --exclude 'package.json' \
+            --exclude 'preview-server.mjs' \
+            --exclude '.stackblitzrc' \
+            --exclude 'DEPLOYMENT_STATUS.md'
+          cp pristeel-procurement.html _site/index.html
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('_site/index.html')
+          html = path.read_text(encoding='utf-8')
+          marker = '<head>'
+          script = '<head>\n<script src="pristeel-stable-boot-v2.js?v=20260805-1"></script>'
+          if marker not in html:
+              raise SystemExit('Missing <head> in platform HTML')
+          html = html.replace(marker, script, 1)
+          html = html.replace('src="pristeel-project-emails.js"', 'src="pristeel-project-emails.js?v=20260807-2"')
+          html = html.replace("src='pristeel-project-emails.js'", "src='pristeel-project-emails.js?v=20260807-2'")
+          tail = '''
+<!-- PRISTEEL tested redesign tail -->
+<script src="pristeel-dashboard-task-cards-v1.js?v=20260807-2"></script>
+<script src="pristeel-business-command-center-v1.js?v=20260807-2"></script>
+<script src="pristeel-gmail-deep-search-v1.js?v=20260807-2"></script>
+<script src="pristeel-business-command-center-deep-gmail-v1.js?v=20260807-2"></script>
+<script src="pristeel-project-command-view-v1.js?v=20260807-2"></script>
+<script src="pristeel-home-command-center-v2.js?v=20260807-2"></script>
+<script src="pristeel-redesign-finalizer-v1.js?v=20260807-2"></script>
+'''
+          if '</body>' not in html:
+              raise SystemExit('Missing </body> in platform HTML')
+          html = html.replace('</body>', tail + '\n</body>', 1)
+          path.write_text(html, encoding='utf-8')
+          PY
+          grep -q 'pristeel-project-emails.js?v=20260807-2' _site/index.html
+          grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-2' _site/index.html
+          test -s _site/pristeel-dashboard-task-cards-v1.js
+          test -s _site/pristeel-business-command-center-v1.js
+          test -s _site/pristeel-gmail-deep-search-v1.js
+          test -s _site/pristeel-business-command-center-deep-gmail-v1.js
+          test -s _site/pristeel-project-command-view-v1.js
+          test -s _site/pristeel-home-command-center-v2.js
+          test -s _site/pristeel-redesign-finalizer-v1.js
+          touch _site/.nojekyll
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload tested preview artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy_preview:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'workspace-v2-safe-build'
+    needs: build_preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pristeel-preview-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy tested preview
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify live redesign
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 18); do
+            code=$(curl -L -sS -o /tmp/pristeel.html -w '%{http_code}' "$PAGE_URL" || true)
+            bcc=$(curl -L -sS -o /tmp/bcc.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-business-command-center-v1.js?v=20260807-2" || true)
+            deep=$(curl -L -sS -o /tmp/deep.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-gmail-deep-search-v1.js?v=20260807-2" || true)
+            project=$(curl -L -sS -o /tmp/project.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-project-command-view-v1.js?v=20260807-2" || true)
+            home=$(curl -L -sS -o /tmp/home.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-home-command-center-v2.js?v=20260807-2" || true)
+            finalizer=$(curl -L -sS -o /tmp/finalizer.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-redesign-finalizer-v1.js?v=20260807-2" || true)
+            if [ "$code" = "200" ] && [ "$bcc" = "200" ] && [ "$deep" = "200" ] && [ "$project" = "200" ] && [ "$home" = "200" ] && [ "$finalizer" = "200" ] \
+              && grep -q 'pristeel-project-emails.js?v=20260807-2' /tmp/pristeel.html \
+              && grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-2' /tmp/pristeel.html \
+              && grep -q '__pstBusinessCommandCenterV1' /tmp/bcc.js \
+              && grep -q '__pstGmailDeepSearchV1' /tmp/deep.js \
+              && grep -q '__pstProjectCommandViewV1' /tmp/project.js \
+              && grep -q '__pstHomeCommandCenterV2' /tmp/home.js \
+              && grep -q '__pstRedesignFinalizerV1' /tmp/finalizer.js; then
+              echo "Verified tested redesign live at $PAGE_URL"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Live redesign verification failed.'
+          exit 1
