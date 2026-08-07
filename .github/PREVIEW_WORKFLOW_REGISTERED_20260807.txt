@@ -1,2 +1,0 @@
-Temporary workflow registration marker for PRISTEEL preview deployment.
-No application code or platform data is changed.
