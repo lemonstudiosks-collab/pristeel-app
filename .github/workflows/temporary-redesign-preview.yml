@@ -1,11 +1,9 @@
 name: Temporary PRISTEEL redesign live verification
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-    paths:
-      - '.github/workflows/temporary-redesign-preview.yml'
 
 permissions:
   contents: read
