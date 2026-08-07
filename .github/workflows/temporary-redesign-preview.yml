@@ -25,22 +25,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: workspace-v2-safe-build
-
       - name: Record exact safe SHA
         id: safe
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-
       - name: Run complete workspace checks
         run: npm test
-
       - name: Build exact cache-busted preview
         shell: bash
         run: |
@@ -90,17 +85,14 @@ jobs:
           grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-10' _site/index.html
           grep -q 'pristeel-ui-corrections-v2.js?v=20260807-10' _site/index.html
           touch _site/.nojekyll
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
-
       - name: Upload exact preview artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
-
     outputs:
       safe_sha: ${{ steps.safe.outputs.sha }}
 
@@ -117,7 +109,6 @@ jobs:
       - name: Deploy exact safe redesign
         id: deployment
         uses: actions/deploy-pages@v4
-
       - name: Verify live HTML and modules
         shell: bash
         env:
@@ -151,34 +142,38 @@ jobs:
           echo 'Live redesign verification failed'
           exit 1
 
-  report_success:
+  report_result:
     needs: [verify_build, deploy_verify]
-    if: success()
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main only for verification report
         uses: actions/checkout@v4
         with:
           ref: main
-      - name: Write success report
+      - name: Write deterministic result report
         shell: bash
         env:
+          VERIFY_RESULT: ${{ needs.verify_build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy_verify.result }}
           SAFE_SHA: ${{ needs.verify_build.outputs.safe_sha }}
           PAGE_URL: ${{ needs.deploy_verify.outputs.page_url }}
+          RUN_ID: ${{ github.run_id }}
         run: |
-          cat > LIVE_REDESSIGN_VERIFICATION.md <<EOF
+          if [ "$VERIFY_RESULT" = "success" ] && [ "$DEPLOY_RESULT" = "success" ]; then STATUS=LIVE_VERIFIED; else STATUS=FAILED; fi
+          cat > LIVE_REDESIGN_VERIFICATION.md <<EOF
           # PRISTEEL live redesign verification
 
-          Status: LIVE_VERIFIED
+          Status: $STATUS
           Version: 20260807-10
           Safe branch SHA: $SAFE_SHA
+          Workflow run: $RUN_ID
+          Verify/build job: $VERIFY_RESULT
+          Deploy/live job: $DEPLOY_RESULT
           Page URL: $PAGE_URL
-          Tests: SUCCESS
-          Live HTML/module verification: SUCCESS
-          Verified modules: bootstrap, UI corrections, dashboard cards, Business Command Center, Gmail deep search, Project Command View, Home Command Center, redesign finalizer.
           EOF
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add LIVE_REDESSIGN_VERIFICATION.md
-          git commit -m 'Record successful PRISTEEL redesign live verification' || exit 0
+          git add LIVE_REDESIGN_VERIFICATION.md
+          git commit -m "Record PRISTEEL redesign live verification: $STATUS" || exit 0
           git push origin HEAD:main
