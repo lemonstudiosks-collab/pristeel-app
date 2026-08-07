@@ -1,4 +1,5 @@
 /* PRISTEEL redesign finalizer v1
+ * Preview revision: 20260807-2.
  * Re-applies the read-only redesign after legacy workspace renders.
  * Bounded timeouts only. No polling, observers, writes, auth or project-open overrides.
  */
