@@ -80,7 +80,8 @@ var files=[
   'pristeel-redesign-finalizer-v1.js?v=20260807-10',
   'pristeel-home-live-fix-v1.js?v=20260807-1',
   'pristeel-home-visual-cleanup-v1.js?v=20260807-2',
-  'pristeel-commercial-navigation-fix-v1.js?v=20260807-1'
+  'pristeel-commercial-navigation-fix-v1.js?v=20260807-1',
+  'pristeel-gmail-live-inbox-v1.js?v=20260807-1'
 ];
 var completed=false;
 function ready(){
