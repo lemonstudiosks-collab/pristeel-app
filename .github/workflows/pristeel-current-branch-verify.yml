@@ -1,0 +1,25 @@
+name: Verify current PRISTEEL redesign
+
+on:
+  pull_request:
+    branches:
+      - workspace-v2-safe-build
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout PR verification branch
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run complete workspace checks
+        run: npm test
