@@ -17,9 +17,10 @@ html.pst-login-switching #auth-gate,html.pst-login-switching #app-shell-root{opa
 function logo(){return '<svg viewBox="0 0 24 24"><path d="M12 1.8c.7 5.45 4.75 9.5 10.2 10.2-5.45.7-9.5 4.75-10.2 10.2C11.3 16.75 7.25 12.7 1.8 12 7.25 11.3 11.3 7.25 12 1.8Z"/></svg>';}
 function intendedVisible(el){return !!el&&!el.hidden&&!(el.style&&el.style.display==='none');}
 function ensure(){var el=document.getElementById('pst-login-transition-v2');if(el)return el;el=document.createElement('div');el.id='pst-login-transition-v2';el.innerHTML='<div class="pst-lt-card"><div class="pst-lt-mark">'+logo()+'</div><div class="pst-lt-name">PRISTEEL</div><div class="pst-lt-copy">Duke hapur workspace-in aktual…</div><div class="pst-lt-line"><i></i></div></div>';document.body.appendChild(el);return el;}
-function redesignedReady(){return !!window.PSTHomeCommandCenterV2&&!!window.PSTHomeStabilityV2&&!!window.PSTHomeLiveFixV1;}
+function redesignedReady(){return !!window.PSTBusinessCommandCenterV1&&!!window.PSTHomeCommandCenterV2&&!!window.PSTHomeStabilityV2&&!!window.PSTHomeLiveFixV1;}
 function ready(){var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');return intendedVisible(app)&&!intendedVisible(gate)&&!!window.__pstWorkspaceArchitectureV1Loaded&&!!window.__pstProjectsModernV1&&redesignedReady();}
 function applyRedesignedHome(){
+ try{if(window.PSTBusinessCommandCenterV1&&typeof window.PSTBusinessCommandCenterV1.decorateHome==='function')window.PSTBusinessCommandCenterV1.decorateHome();}catch(e){}
  try{if(window.PSTHomeCommandCenterV2&&typeof window.PSTHomeCommandCenterV2.decorate==='function')window.PSTHomeCommandCenterV2.decorate();}catch(e){}
  try{if(window.PSTHomeStabilityV2&&typeof window.PSTHomeStabilityV2.apply==='function')window.PSTHomeStabilityV2.apply(true);}catch(e){}
  try{if(window.PSTHomeLiveFixV1&&typeof window.PSTHomeLiveFixV1.apply==='function')window.PSTHomeLiveFixV1.apply();}catch(e){}
