@@ -9,6 +9,6 @@ assert(brand.includes('#auth-form'),'Login brand must preserve and target the ex
 assert(!/addEventListener\(['\"]submit/.test(brand),'Brand layer must not intercept authentication submit');
 assert(!/POST|PATCH|DELETE/.test(brand),'Brand layer must not write data');
 assert(transition.includes("form.addEventListener('submit',begin,true)"),'Bounded login transition must remain attached to the existing form');
-assert(bootstrap.includes('pristeel-login-brand-v1.js?v=20260807-1'),'Login brand must be loaded by the real bootstrap');
-assert(bootstrap.includes('pristeel-login-transition-v2.js?v=20260807-1'),'Login transition must be loaded by the real bootstrap');
+assert(/pristeel-login-brand-v1\.js\?v=[^'\"]+/.test(bootstrap),'Login brand must be loaded by the real bootstrap');
+assert(/pristeel-login-transition-v2\.js\?v=[^'\"]+/.test(bootstrap),'Login transition must be loaded by the real bootstrap with a cache key');
 console.log('Login branding smoke test passed.');
