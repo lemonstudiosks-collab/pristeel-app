@@ -77,6 +77,7 @@ var files=[
   'pristeel-rfq-stability-v2.js?v=20260807-stability1',
   'pristeel-offer-pricing-stability-v2.js?v=20260807-stability1',
   'pristeel-our-offer-stability-v2.js?v=20260807-stability1',
+  'pristeel-offer-resave-fix-v1.js?v=20260808-1',
   'pristeel-finance-stability-v2.js?v=20260807-stability1',
   'pristeel-modal-navigation-safety-v2.js?v=20260807-stability1',
   'pristeel-project-open-direct-v1.js?v=20260805-2',
