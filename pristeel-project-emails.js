@@ -89,7 +89,7 @@ var files=[
   'pristeel-home-live-fix-v1.js?v=20260807-1',
   'pristeel-home-stability-v2.js?v=20260807-stability2',
   'pristeel-home-visual-cleanup-v1.js?v=20260807-2',
-  'pristeel-commercial-navigation-fix-v1.js?v=20260808-1',
+  'pristeel-commercial-navigation-fix-v1.js?v=20260808-2',
   'pristeel-gmail-live-inbox-v2.js?v=20260807-stability1'
 ];
 var completed=false;
