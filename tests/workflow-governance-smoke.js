@@ -13,7 +13,11 @@ const {JSDOM}=require('jsdom');
  w.pstProjectsModernAction=(id,act)=>{if(act==='closed')closed++;};
  w.supaFetch=async path=>{
    if(path.startsWith('projects?id=eq.p1'))return[{id:'p1',name:'Dukley',status:'fituar'}];
-   if(path.startsWith('invoices_out?project_id=eq.p1'))return mode==='unpaid'?[{id:'i1',invoice_nr:'INV-1',paid:false,gross_amount:1000}]:[{id:'i1',invoice_nr:'INV-1',paid:true,paid_date:'2026-08-08',gross_amount:1000}];
+   if(path.startsWith('invoices_out?project_id=eq.p1')){
+     if(mode==='legacy')return[];
+     return mode==='unpaid'?[{id:'i1',invoice_nr:'INV-1',paid:false,gross_amount:1000}]:[{id:'i1',invoice_nr:'INV-1',paid:true,paid_date:'2026-08-08',gross_amount:1000}];
+   }
+   if(path.startsWith('invoices_out?project=eq.Dukley'))return mode==='legacy'?[{id:'old1',invoice_nr:'OLD-INV',project:'Dukley',paid:false,gross_amount:750}]:[];
    return[];
  };
  w.eval(source);
@@ -40,5 +44,12 @@ const {JSDOM}=require('jsdom');
  assert(w.document.getElementById('pst-close-gate').textContent.includes('Faturat e lidhura rezultojnë të paguara'),'Paid invoice verification is missing');
  delivery.checked=true;delivery.dispatchEvent(new w.Event('change'));
  assert.strictEqual(go.disabled,false,'Paid project should become closable after delivery confirmation');
+ w.document.getElementById('pst-close-gate').remove();
+ mode='legacy';
+ await w.PSTWorkflowGovernanceV1.openCloseGate(dummy,'p1');
+ go=w.document.getElementById('pst-close-confirm');delivery=w.document.getElementById('pst-close-delivery');
+ delivery.checked=true;delivery.dispatchEvent(new w.Event('change'));
+ assert(go.disabled,'Legacy name-linked unpaid invoice must block project closure');
+ assert(w.document.getElementById('pst-close-gate').textContent.includes('OLD-INV'),'Legacy name-linked invoice was not included in closure verification');
  dom.window.close();console.log('Workflow governance smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
