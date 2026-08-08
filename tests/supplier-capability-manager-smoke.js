@@ -19,7 +19,7 @@ const {JSDOM}=require('jsdom');
  assert(txt.includes('Steel Trade'),'Tagged partner was not routed');
  assert(txt.includes('Profile'),'Canonical profile category was not displayed');
  assert(txt.includes('Aktiva')&&txt.includes('Kentaur'),'Fixed producers must remain available for production projects');
- assert.deepStrictEqual(w.PSTSupplierCapabilityManagerV1._test.mapCaps(['profile','tuba']),['profiles','tubes'],'Detected capabilities were not mapped to canonical categories');
+ assert.deepStrictEqual(Array.from(w.PSTSupplierCapabilityManagerV1._test.mapCaps(['profile','tuba'])),['profiles','tubes'],'Detected capabilities were not mapped to canonical categories');
  await w.PSTSupplierCapabilityManagerV1.open();
  const row=w.document.querySelector('.pst-scm-row[data-id="p1"]');
  assert(row,'Partner category editor did not render');
