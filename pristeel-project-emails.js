@@ -89,21 +89,12 @@ var files=[
   'pristeel-home-live-fix-v1.js?v=20260807-1',
   'pristeel-home-stability-v2.js?v=20260807-stability2',
   'pristeel-home-visual-cleanup-v1.js?v=20260807-2',
-  'pristeel-commercial-navigation-fix-v1.js?v=20260808-3',
+  'pristeel-commercial-navigation-fix-v1.js?v=20260808-4',
+  'pristeel-commercial-document-builder-v1.js?v=20260808-1',
   'pristeel-gmail-live-inbox-v2.js?v=20260807-stability1'
 ];
 var completed=false;
-function ready(){
-  if(completed)return;completed=true;
-  window.__pstModulesReady=true;
-  try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}
-}
-function load(i){
-  if(i>=files.length||window.__pstAbortBootstrap){ready();return;}
-  var s=document.createElement('script');s.src=files[i];s.defer=true;
-  s.onload=function(){if(window.__pstAbortBootstrap)ready();else load(i+1);};
-  s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(window.__pstAbortBootstrap)ready();else load(i+1);};
-  document.head.appendChild(s);
-}
+function ready(){if(completed)return;completed=true;window.__pstModulesReady=true;try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}}
+function load(i){if(i>=files.length||window.__pstAbortBootstrap){ready();return;}var s=document.createElement('script');s.src=files[i];s.defer=true;s.onload=function(){if(window.__pstAbortBootstrap)ready();else load(i+1);};s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(window.__pstAbortBootstrap)ready();else load(i+1);};document.head.appendChild(s);}
 load(0);
 })();
