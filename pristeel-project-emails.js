@@ -93,6 +93,7 @@ var files=[
   'pristeel-redesign-finalizer-v1.js?v=20260807-10',
   'pristeel-home-live-fix-v1.js?v=20260807-1',
   'pristeel-home-stability-v2.js?v=20260807-stability2',
+  'pristeel-home-project-recovery-v3.js?v=20260808-1',
   'pristeel-home-visual-cleanup-v1.js?v=20260807-2',
   'pristeel-commercial-navigation-fix-v1.js?v=20260808-4',
   'pristeel-commercial-document-builder-v1.js?v=20260808-2',
