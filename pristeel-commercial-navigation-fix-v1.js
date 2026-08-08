@@ -6,114 +6,23 @@
 'use strict';
 if(window.__pstCommercialNavigationFixV1)return;
 window.__pstCommercialNavigationFixV1=true;
-
 function norm(v){return String(v||'').replace(/\s+/g,' ').trim().toLowerCase();}
-function addCompactCss(){
-  if(document.getElementById('pst-dc-compact-fix'))return;
-  var s=document.createElement('style');s.id='pst-dc-compact-fix';s.textContent=`
+function addCompactCss(){if(document.getElementById('pst-dc-compact-fix'))return;var s=document.createElement('style');s.id='pst-dc-compact-fix';s.textContent=`
 #page-document-center .pst-dc-create{padding:14px 16px!important;margin-bottom:14px!important}
 #page-document-center .pst-dc-label{margin-bottom:8px!important}
 #page-document-center .pst-dc-types{display:flex!important;gap:7px!important;flex-wrap:wrap!important}
 #page-document-center .pst-dc-type{height:34px!important;width:auto!important;min-width:125px!important;padding:0 16px!important;border-radius:8px!important;font-size:11px!important;flex:0 0 auto!important}
 #page-document-center .pst-dc-new{width:auto!important;min-width:145px!important;height:34px!important;margin-top:9px!important;padding:0 18px!important;border-radius:8px!important;font-size:11px!important}
 @media(max-width:720px){#page-document-center .pst-dc-types{display:grid!important;grid-template-columns:1fr 1fr!important}#page-document-center .pst-dc-type,#page-document-center .pst-dc-new{width:100%!important;min-width:0!important}}
-`;
-  document.head.appendChild(s);
-}
-function openOfferRegister(){
-  if(typeof window.pstOpenDocumentCenter!=='function')return false;
-  window.pstOpenDocumentCenter('offer');
-  addCompactCss();
-  setTimeout(function(){
-    var filter=document.getElementById('pst-dc-filter');
-    if(filter){filter.value='offer';if(typeof window.pstRenderDocumentList==='function')window.pstRenderDocumentList();}
-    var types=document.querySelectorAll('#pst-dc-types .pst-dc-type');
-    types.forEach(function(b){b.classList.toggle('active',norm(b.textContent)==='ofertë'||norm(b.textContent)==='oferte');});
-  },0);
-  return true;
-}
+`;document.head.appendChild(s);}
+function openOfferRegister(){if(typeof window.pstOpenDocumentCenter!=='function')return false;window.pstOpenDocumentCenter('offer');addCompactCss();setTimeout(function(){var filter=document.getElementById('pst-dc-filter');if(filter){filter.value='offer';if(typeof window.pstRenderDocumentList==='function')window.pstRenderDocumentList();}document.querySelectorAll('#pst-dc-types .pst-dc-type').forEach(function(b){b.classList.toggle('active',norm(b.textContent)==='ofertë'||norm(b.textContent)==='oferte');});},0);return true;}
 function isCommercialNav(el){return !!el&&el.matches&&el.matches('.pst-ws-navbtn[data-key="commercial"]');}
-function isHomeOfferShortcut(el){
-  if(!el||!el.closest)return false;
-  var quick=el.closest('#page-workspace-home .pst-ws-quick');
-  if(!quick)return false;
-  var button=el.closest('button');
-  return !!button&&/^ofert[ëe]$/i.test(norm(button.textContent));
-}
-function openLegacyPage(name){
-  if(typeof window.pstWsLegacy==='function'){window.pstWsLegacy(name);return true;}
-  if(window.__pstWorkspaceLegacy&&typeof window.__pstWorkspaceLegacy.showPage==='function'){window.__pstWorkspaceLegacy.showPage(name);return true;}
-  if(typeof window.showPage==='function'){window.showPage(name);return true;}
-  return false;
-}
-function showOfferEditor(){
-  if(!openLegacyPage('oferta'))return false;
-  setTimeout(function(){
-    try{if(typeof window.resetOfferForm==='function')window.resetOfferForm();}catch(e){}
-    try{if(typeof window.fillOfferNr==='function')window.fillOfferNr(true);}catch(e){}
-    try{var d=document.getElementById('of-date');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);}catch(e){}
-    try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}
-  },100);
-  return true;
-}
-function showInvoiceEditor(){
-  if(!openLegacyPage('invoices'))return false;
-  setTimeout(function(){
-    try{if(typeof window.invSwitchTab==='function')window.invSwitchTab('out');}catch(e){}
-    try{if(typeof window.prefillDocNr==='function')window.prefillDocNr('INV','iv-nr');}catch(e){}
-    try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}
-  },100);
-  return true;
-}
-function createDocument(type){
-  if(type==='offer')return showOfferEditor();
-  if(type==='invoice')return showInvoiceEditor();
-  if(type==='credit_note'||type==='debit_note'){
-    if(typeof window.pstOpenAdjustment==='function'){window.pstOpenAdjustment(type,'');return true;}
-    return false;
-  }
-  return false;
-}
-function openDocument(type,id){
-  if(type==='offer'){
-    if(typeof window.oaOpenQuoteModal==='function'){window.oaOpenQuoteModal(id);return true;}
-    if(typeof window.oaOpen==='function'){window.oaOpen(id);return true;}
-  }
-  if(type==='invoice'&&typeof window.openInvoiceDetail==='function'){
-    window.openInvoiceDetail('out',id);return true;
-  }
-  return false;
-}
-
-document.addEventListener('click',function(event){
-  var target=event.target;
-  var nav=target.closest&&target.closest('.pst-ws-navbtn[data-key="commercial"]');
-  var quick=target.closest&&target.closest('#page-workspace-home .pst-ws-quick button');
-  if(isCommercialNav(nav)||isHomeOfferShortcut(quick)){
-    if(typeof window.pstOpenDocumentCenter!=='function')return;
-    event.preventDefault();event.stopImmediatePropagation();openOfferRegister();return;
-  }
-  var page=target.closest&&target.closest('#page-document-center');
-  if(!page)return;
-  var typeBtn=target.closest('[data-type]');
-  if(typeBtn){
-    event.preventDefault();event.stopImmediatePropagation();
-    var type=typeBtn.getAttribute('data-type')||'offer';
-    try{if(typeof window.pstSelectDocumentType==='function')window.pstSelectDocumentType(type);}catch(e){}
-    createDocument(type);return;
-  }
-  var newBtn=target.closest('#pst-dc-new');
-  if(newBtn){
-    event.preventDefault();event.stopImmediatePropagation();
-    createDocument((window.PST_DOC_CENTER_STABLE&&window.PST_DOC_CENTER_STABLE.selectedType)||'offer');return;
-  }
-  var openBtn=target.closest('[data-open]');
-  if(openBtn){
-    event.preventDefault();event.stopImmediatePropagation();
-    openDocument(openBtn.getAttribute('data-open'),openBtn.getAttribute('data-id'));return;
-  }
-},true);
-
-addCompactCss();
-window.PSTCommercialNavigationFixV1={openOfferRegister:openOfferRegister,createDocument:createDocument,openDocument:openDocument};
+function isHomeOfferShortcut(el){if(!el||!el.closest)return false;var quick=el.closest('#page-workspace-home .pst-ws-quick');if(!quick)return false;var button=el.closest('button');return !!button&&/^ofert[ëe]$/i.test(norm(button.textContent));}
+function openLegacyPage(name){if(typeof window.pstWsLegacy==='function'){window.pstWsLegacy(name);return true;}if(window.__pstWorkspaceLegacy&&typeof window.__pstWorkspaceLegacy.showPage==='function'){window.__pstWorkspaceLegacy.showPage(name);return true;}if(typeof window.showPage==='function'){window.showPage(name);return true;}return false;}
+function showOfferEditor(){if(!openLegacyPage('oferta'))return false;setTimeout(function(){try{if(typeof window.resetOfferForm==='function')window.resetOfferForm();}catch(e){}try{if(typeof window.fillOfferNr==='function')window.fillOfferNr(true);}catch(e){}try{var d=document.getElementById('of-date');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);}catch(e){}try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}},100);return true;}
+function showInvoiceEditor(){if(!openLegacyPage('invoices'))return false;setTimeout(function(){try{if(typeof window.invSwitchTab==='function')window.invSwitchTab('out');}catch(e){}try{if(typeof window.prefillDocNr==='function')window.prefillDocNr('INV','iv-nr');}catch(e){}try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}},100);return true;}
+function createDocument(type){if((type==='offer'||type==='invoice')&&window.PSTCommercialDocumentBuilderV1&&typeof window.PSTCommercialDocumentBuilderV1.begin==='function')return window.PSTCommercialDocumentBuilderV1.begin(type);if(type==='offer')return showOfferEditor();if(type==='invoice')return showInvoiceEditor();if(type==='credit_note'||type==='debit_note'){if(typeof window.pstOpenAdjustment==='function'){window.pstOpenAdjustment(type,'');return true;}return false;}return false;}
+function openDocument(type,id){if(type==='offer'){if(typeof window.oaOpenQuoteModal==='function'){window.oaOpenQuoteModal(id);return true;}if(typeof window.oaOpen==='function'){window.oaOpen(id);return true;}}if(type==='invoice'&&typeof window.openInvoiceDetail==='function'){window.openInvoiceDetail('out',id);return true;}return false;}
+document.addEventListener('click',function(event){var target=event.target;var nav=target.closest&&target.closest('.pst-ws-navbtn[data-key="commercial"]');var quick=target.closest&&target.closest('#page-workspace-home .pst-ws-quick button');if(isCommercialNav(nav)||isHomeOfferShortcut(quick)){if(typeof window.pstOpenDocumentCenter!=='function')return;event.preventDefault();event.stopImmediatePropagation();openOfferRegister();return;}var page=target.closest&&target.closest('#page-document-center');if(!page)return;var typeBtn=target.closest('[data-type]');if(typeBtn){event.preventDefault();event.stopImmediatePropagation();var type=typeBtn.getAttribute('data-type')||'offer';try{if(typeof window.pstSelectDocumentType==='function')window.pstSelectDocumentType(type);}catch(e){}createDocument(type);return;}var newBtn=target.closest('#pst-dc-new');if(newBtn){event.preventDefault();event.stopImmediatePropagation();createDocument((window.PST_DOC_CENTER_STABLE&&window.PST_DOC_CENTER_STABLE.selectedType)||'offer');return;}var openBtn=target.closest('[data-open]');if(openBtn){event.preventDefault();event.stopImmediatePropagation();openDocument(openBtn.getAttribute('data-open'),openBtn.getAttribute('data-id'));return;}},true);
+addCompactCss();window.PSTCommercialNavigationFixV1={openOfferRegister:openOfferRegister,createDocument:createDocument,openDocument:openDocument};
 })();
