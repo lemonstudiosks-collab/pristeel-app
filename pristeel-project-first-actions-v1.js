@@ -1,0 +1,10 @@
+/* PRISTEEL project-first actions v1
+ * Explicit desktop upload and explicit repair for legacy projects missing a Drive folder.
+ */
+(function(){
+'use strict';if(window.__pstProjectFirstActionsV1)return;window.__pstProjectFirstActionsV1=true;
+function data(){return window.__pstIntegrityLastData||null;}
+async function makeDrive(btn){var d=data(),id=d&&d.project&&d.project.id;if(!id||!window.PSTProjectDriveLifecycleV1)return;try{btn.disabled=true;btn.textContent='Duke krijuar…';var ok=await window.PSTProjectDriveLifecycleV1.ensureForCreatedProject(id);if(!ok)throw new Error('Dosja nuk u krijua. Kontrollo autorizimin Google Drive.');btn.textContent='U krijua';if(typeof window.pstPiRefresh==='function')window.pstPiRefresh();}catch(e){btn.disabled=false;btn.textContent='Krijo / lidh Drive';alert(e.message||e);}}
+function inject(){var d=data(),page=document.getElementById('page-workspace-project');if(!d||!page||!page.classList.contains('pf2-on'))return false;var cards=[].slice.call(page.querySelectorAll('.pf2-card')),c=cards.filter(function(x){var b=x.querySelector('header b');return b&&String(b.textContent).trim()==='Skedarët e projektit';})[0];if(!c)return false;var h=c.querySelector('header');if(!h)return false;if(!h.querySelector('[data-pf2-desktop]')){var b=document.createElement('button');b.type='button';b.className='pf2-btn';b.dataset.pf2Desktop='1';b.textContent='Ngarko nga kompjuteri';b.onclick=function(){if(window.PSTProjectFileUpload&&window.PSTProjectFileUpload.open)window.PSTProjectFileUpload.open();else alert('Ngarkimi nga kompjuteri nuk është gati.');};h.appendChild(b);}if(!d.project.drive_folder_id&&!h.querySelector('[data-pf2-drive-create]')){var g=document.createElement('button');g.type='button';g.className='pf2-btn';g.dataset.pf2DriveCreate='1';g.textContent='Krijo / lidh Drive';g.onclick=function(){makeDrive(g);};h.appendChild(g);}return true;}
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);window.PSTProjectFirstActionsV1={inject:inject};
+})();
