@@ -1,6 +1,7 @@
 /* PRISTEEL duplicate manager button visibility fix.
  * UI-only: exposes the existing duplicate manager from the Projects register.
  * If Projects was opened before the modern register finished loading, upgrade that page once.
+ * Also exposes the duplicate manager directly inside each project's three-dot menu.
  * No database writes here.
  */
 (function(){
@@ -30,6 +31,24 @@ function makeButton(){
   b.onclick=openManager;
   b.style.cssText='height:36px;border:1px solid #BFD8E1;border-radius:10px;background:#F4FAFC;color:#3F7F98;padding:0 13px;font-size:9px;font-weight:760;cursor:pointer;white-space:nowrap';
   return b;
+}
+function injectIntoActionMenu(){
+  var menu=document.getElementById('pst-pm-menu');
+  if(!menu||menu.querySelector('[data-pst-duplicates-menu]'))return false;
+  var b=document.createElement('button');
+  b.type='button';
+  b.setAttribute('data-pst-duplicates-menu','1');
+  b.textContent='Menaxho dublikatat';
+  b.title='Kontrollo dhe bashko projekte të dyfishta';
+  b.style.cssText='color:#3F7F98;font-weight:700;border-top:1px solid #EEF2F4;margin-top:3px;padding-top:2px';
+  b.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();
+    var m=document.getElementById('pst-pm-menu');if(m)m.remove();
+    openManager();
+  });
+  var danger=menu.querySelector('button.danger,[data-act="delete"]');
+  if(danger)menu.insertBefore(b,danger);else menu.appendChild(b);
+  return true;
 }
 function upgradeModernIfNeeded(){
   if(upgradeTried||upgrading||!isProjectsVisible()||typeof window.pstProjectsModernOpen!=='function')return false;
@@ -67,6 +86,8 @@ function install(){
 function schedule(){[0,80,180,350,700,1200,2200,3500].forEach(function(ms){setTimeout(install,ms);});}
 
 document.addEventListener('click',function(e){
+  var more=e.target&&e.target.closest?e.target.closest('.pst-pm-more,[data-pm-more]'):null;
+  if(more){setTimeout(injectIntoActionMenu,0);setTimeout(injectIntoActionMenu,40);}
   var el=e.target&&e.target.closest?e.target.closest('button,a,[data-key]'):null;
   if(!el)return;
   var key=String(el.getAttribute('data-key')||'').toLowerCase();
@@ -75,6 +96,6 @@ document.addEventListener('click',function(e){
 },true);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
-window.PSTProjectDuplicateButtonFix={install:install,schedule:schedule};
+window.PSTProjectDuplicateButtonFix={install:install,schedule:schedule,injectIntoActionMenu:injectIntoActionMenu};
 schedule();
 })();
