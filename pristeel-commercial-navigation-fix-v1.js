@@ -40,27 +40,37 @@ function isHomeOfferShortcut(el){
   var button=el.closest('button');
   return !!button&&/^ofert[ëe]$/i.test(norm(button.textContent));
 }
+function openLegacyPage(name){
+  if(typeof window.pstWsLegacy==='function'){window.pstWsLegacy(name);return true;}
+  if(window.__pstWorkspaceLegacy&&typeof window.__pstWorkspaceLegacy.showPage==='function'){window.__pstWorkspaceLegacy.showPage(name);return true;}
+  if(typeof window.showPage==='function'){window.showPage(name);return true;}
+  return false;
+}
 function showOfferEditor(){
-  try{if(typeof window.resetOfferForm==='function')window.resetOfferForm();}catch(e){}
-  if(typeof window.showPage!=='function')return false;
-  window.showPage('oferta');
+  if(!openLegacyPage('oferta'))return false;
   setTimeout(function(){
+    try{if(typeof window.resetOfferForm==='function')window.resetOfferForm();}catch(e){}
     try{if(typeof window.fillOfferNr==='function')window.fillOfferNr(true);}catch(e){}
     try{var d=document.getElementById('of-date');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);}catch(e){}
     try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}
   },100);
   return true;
 }
+function showInvoiceEditor(){
+  if(!openLegacyPage('invoices'))return false;
+  setTimeout(function(){
+    try{if(typeof window.invSwitchTab==='function')window.invSwitchTab('out');}catch(e){}
+    try{if(typeof window.prefillDocNr==='function')window.prefillDocNr('INV','iv-nr');}catch(e){}
+    try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}
+  },100);
+  return true;
+}
 function createDocument(type){
   if(type==='offer')return showOfferEditor();
-  if(type==='invoice'){
-    if(typeof window.showPage!=='function')return false;
-    window.showPage('invoices');
-    setTimeout(function(){try{if(typeof window.invSwitchTab==='function')window.invSwitchTab('out');}catch(e){}},60);
-    return true;
-  }
-  if((type==='credit_note'||type==='debit_note')&&typeof window.pstOpenAdjustment==='function'){
-    window.pstOpenAdjustment(type,'');return true;
+  if(type==='invoice')return showInvoiceEditor();
+  if(type==='credit_note'||type==='debit_note'){
+    if(typeof window.pstOpenAdjustment==='function'){window.pstOpenAdjustment(type,'');return true;}
+    return false;
   }
   return false;
 }
