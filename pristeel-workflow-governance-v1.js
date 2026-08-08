@@ -16,7 +16,7 @@ document.addEventListener('click',function(e){
  if(close){if(approvedClose===close){approvedClose=null;return;}if(!confirmAction('close')){e.preventDefault();e.stopImmediatePropagation();return;}approvedClose=close;setTimeout(function(){if(approvedClose===close)approvedClose=null;},1200);return;}
  var a=e.target.closest&&e.target.closest('a[href]');if(!a||!isCompose(a))return;if(approvedClick===a){approvedClick=null;return;}if(!confirmAction('outbound')){e.preventDefault();e.stopImmediatePropagation();return;}approvedClick=a;setTimeout(function(){if(approvedClick===a)approvedClick=null;},1200);
 },true);
-function loadRfqGovernance(){if(document.querySelector('script[data-pst-rfq-draft-governance]'))return;var s=document.createElement('script');s.src='pristeel-rfq-draft-governance-v1.js?v=20260808-2';s.defer=true;s.setAttribute('data-pst-rfq-draft-governance','1');document.head.appendChild(s);}
+function loadRfqGovernance(){if(document.querySelector('script[data-pst-rfq-draft-governance]'))return;var s=document.createElement('script');s.src='pristeel-rfq-draft-governance-v1.js?v=20260808-3';s.defer=true;s.setAttribute('data-pst-rfq-draft-governance','1');document.head.appendChild(s);}
 install();loadRfqGovernance();[100,400,1200,2500].forEach(function(ms){setTimeout(install,ms);});document.addEventListener('pst:modules-ready',install,{once:true});
 window.PSTWorkflowGovernanceV1={install:install};
 })();
