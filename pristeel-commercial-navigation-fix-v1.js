@@ -8,9 +8,22 @@ if(window.__pstCommercialNavigationFixV1)return;
 window.__pstCommercialNavigationFixV1=true;
 
 function norm(v){return String(v||'').replace(/\s+/g,' ').trim().toLowerCase();}
+function addCompactCss(){
+  if(document.getElementById('pst-dc-compact-fix'))return;
+  var s=document.createElement('style');s.id='pst-dc-compact-fix';s.textContent=`
+#page-document-center .pst-dc-create{padding:14px 16px!important;margin-bottom:14px!important}
+#page-document-center .pst-dc-label{margin-bottom:8px!important}
+#page-document-center .pst-dc-types{display:flex!important;gap:7px!important;flex-wrap:wrap!important}
+#page-document-center .pst-dc-type{height:34px!important;width:auto!important;min-width:125px!important;padding:0 16px!important;border-radius:8px!important;font-size:11px!important;flex:0 0 auto!important}
+#page-document-center .pst-dc-new{width:auto!important;min-width:145px!important;height:34px!important;margin-top:9px!important;padding:0 18px!important;border-radius:8px!important;font-size:11px!important}
+@media(max-width:720px){#page-document-center .pst-dc-types{display:grid!important;grid-template-columns:1fr 1fr!important}#page-document-center .pst-dc-type,#page-document-center .pst-dc-new{width:100%!important;min-width:0!important}}
+`;
+  document.head.appendChild(s);
+}
 function openOfferRegister(){
   if(typeof window.pstOpenDocumentCenter!=='function')return false;
   window.pstOpenDocumentCenter('offer');
+  addCompactCss();
   setTimeout(function(){
     var filter=document.getElementById('pst-dc-filter');
     if(filter){filter.value='offer';if(typeof window.pstRenderDocumentList==='function')window.pstRenderDocumentList();}
@@ -27,24 +40,24 @@ function isHomeOfferShortcut(el){
   var button=el.closest('button');
   return !!button&&/^ofert[ëe]$/i.test(norm(button.textContent));
 }
+function showOfferEditor(){
+  try{if(typeof window.resetOfferForm==='function')window.resetOfferForm();}catch(e){}
+  if(typeof window.showPage!=='function')return false;
+  window.showPage('oferta');
+  setTimeout(function(){
+    try{if(typeof window.fillOfferNr==='function')window.fillOfferNr(true);}catch(e){}
+    try{var d=document.getElementById('of-date');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);}catch(e){}
+    try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}
+  },100);
+  return true;
+}
 function createDocument(type){
-  if(type==='offer'){
-    if(typeof window.oaNew==='function'){window.oaNew();return true;}
-    if(typeof window.showPage==='function'){
-      try{if(typeof window.resetOfferForm==='function')window.resetOfferForm();}catch(e){}
-      window.showPage('oferta');
-      setTimeout(function(){try{if(typeof window.fillOfferNr==='function')window.fillOfferNr(true);}catch(e){}},120);
-      return true;
-    }
-    return false;
-  }
+  if(type==='offer')return showOfferEditor();
   if(type==='invoice'){
-    if(typeof window.showPage==='function'){
-      window.showPage('invoices');
-      setTimeout(function(){try{if(typeof window.invSwitchTab==='function')window.invSwitchTab('out');}catch(e){}},60);
-      return true;
-    }
-    return false;
+    if(typeof window.showPage!=='function')return false;
+    window.showPage('invoices');
+    setTimeout(function(){try{if(typeof window.invSwitchTab==='function')window.invSwitchTab('out');}catch(e){}},60);
+    return true;
   }
   if((type==='credit_note'||type==='debit_note')&&typeof window.pstOpenAdjustment==='function'){
     window.pstOpenAdjustment(type,'');return true;
@@ -70,7 +83,6 @@ document.addEventListener('click',function(event){
     if(typeof window.pstOpenDocumentCenter!=='function')return;
     event.preventDefault();event.stopImmediatePropagation();openOfferRegister();return;
   }
-
   var page=target.closest&&target.closest('#page-document-center');
   if(!page)return;
   var typeBtn=target.closest('[data-type]');
@@ -92,5 +104,6 @@ document.addEventListener('click',function(event){
   }
 },true);
 
+addCompactCss();
 window.PSTCommercialNavigationFixV1={openOfferRegister:openOfferRegister,createDocument:createDocument,openDocument:openDocument};
 })();
