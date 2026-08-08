@@ -1,0 +1,140 @@
+name: Verify current PRISTEEL redesign
+
+on:
+  pull_request:
+    branches:
+      - workspace-v2-safe-build
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pristeel-current-redesign-live
+  cancel-in-progress: true
+
+jobs:
+  verify_build_deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: pristeel-preview-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout exact safe redesign
+        uses: actions/checkout@v4
+        with:
+          ref: workspace-v2-safe-build
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run complete workspace checks
+        run: npm test
+
+      - name: Build exact cache-busted site
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=20260807-10
+          rm -rf _site
+          mkdir -p _site
+          rsync -a ./ _site/ \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude '_site/' \
+            --exclude 'node_modules/' \
+            --exclude 'tests/' \
+            --exclude 'scripts/' \
+            --exclude 'package-lock.json' \
+            --exclude 'package.json' \
+            --exclude 'preview-server.mjs' \
+            --exclude '.stackblitzrc' \
+            --exclude 'DEPLOYMENT_STATUS.md'
+          cp pristeel-procurement.html _site/index.html
+          python - <<'PY'
+          from pathlib import Path
+          version='20260807-10'
+          p=Path('_site/index.html')
+          html=p.read_text(encoding='utf-8')
+          if '<head>' not in html or '</body>' not in html:
+              raise SystemExit('Platform HTML structure is incomplete')
+          html=html.replace('<head>', f'<head>\n<script src="pristeel-stable-boot-v2.js?v={version}"></script>', 1)
+          html=html.replace('src="pristeel-project-emails.js"', f'src="pristeel-project-emails.js?v={version}"')
+          html=html.replace("src='pristeel-project-emails.js'", f"src='pristeel-project-emails.js?v={version}'")
+          tail=f'''
+<!-- PRISTEEL verified redesign safe tail {version} -->
+<script src="pristeel-ui-corrections-v2.js?v={version}"></script>
+<script src="pristeel-dashboard-task-cards-v1.js?v={version}"></script>
+<script src="pristeel-business-command-center-v1.js?v={version}"></script>
+<script src="pristeel-gmail-deep-search-v1.js?v={version}"></script>
+<script src="pristeel-business-command-center-deep-gmail-v1.js?v={version}"></script>
+<script src="pristeel-project-command-view-v1.js?v={version}"></script>
+<script src="pristeel-home-command-center-v2.js?v={version}"></script>
+<script src="pristeel-redesign-finalizer-v1.js?v={version}"></script>
+'''
+          html=html.replace('</body>', tail+'\n</body>', 1)
+          p.write_text(html, encoding='utf-8')
+          PY
+          grep -q 'pristeel-project-emails.js?v=20260807-10' _site/index.html
+          grep -q 'pristeel-home-command-center-v2.js?v=20260807-10' _site/index.html
+          grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-10' _site/index.html
+          test -s _site/pristeel-project-emails.js
+          test -s _site/pristeel-home-command-center-v2.js
+          test -s _site/pristeel-project-command-view-v1.js
+          test -s _site/pristeel-business-command-center-v1.js
+          test -s _site/pristeel-gmail-deep-search-v1.js
+          test -s _site/pristeel-redesign-finalizer-v1.js
+          touch _site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload preview artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: pristeel-current-redesign-20260807-10
+          path: _site
+
+      - name: Deploy exact redesign
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: pristeel-current-redesign-20260807-10
+
+      - name: Verify exact live files
+        shell: bash
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          VERSION=20260807-10
+          for attempt in $(seq 1 24); do
+            code=$(curl -L -sS -o /tmp/index.html -w '%{http_code}' "$PAGE_URL" || true)
+            bootstrap=$(curl -L -sS -o /tmp/bootstrap.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-project-emails.js?v=${VERSION}" || true)
+            home=$(curl -L -sS -o /tmp/home.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-home-command-center-v2.js?v=${VERSION}" || true)
+            project=$(curl -L -sS -o /tmp/project.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-project-command-view-v1.js?v=${VERSION}" || true)
+            search=$(curl -L -sS -o /tmp/search.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-business-command-center-v1.js?v=${VERSION}" || true)
+            finalizer=$(curl -L -sS -o /tmp/finalizer.js -w '%{http_code}' "${PAGE_URL%/}/pristeel-redesign-finalizer-v1.js?v=${VERSION}" || true)
+            if [ "$code" = 200 ] && [ "$bootstrap" = 200 ] && [ "$home" = 200 ] && [ "$project" = 200 ] && [ "$search" = 200 ] && [ "$finalizer" = 200 ] \
+              && grep -q 'pristeel-project-emails.js?v=20260807-10' /tmp/index.html \
+              && grep -q 'pristeel-redesign-finalizer-v1.js?v=20260807-10' /tmp/bootstrap.js \
+              && grep -q '__pstHomeCommandCenterV2' /tmp/home.js \
+              && grep -q '__pstProjectCommandViewV1' /tmp/project.js \
+              && grep -q '__pstBusinessCommandCenterV1' /tmp/search.js \
+              && grep -q '__pstRedesignFinalizerV1' /tmp/finalizer.js; then
+              echo "LIVE_VERIFIED $PAGE_URL version $VERSION"
+              exit 0
+            fi
+            sleep 8
+          done
+          echo 'Live verification failed'
+          exit 1
