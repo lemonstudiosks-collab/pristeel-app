@@ -6,6 +6,7 @@ var files=[
   'pristeel-login-transition-v2.js?v=20260807-3',
   'pristeel-gmail-tab-handoff.js?v=20260806-2',
   'pristeel-email-core.js?v=20260801-2',
+  'pristeel-email-full-body-v1.js?v=20260808-1',
   'pristeel-google-workspace-auth.js?v=20260806-3',
   'pristeel-project-routing-rules.js?v=20260802-2',
   'pristeel-gmail-project-search-expansion.js?v=20260802-2',
