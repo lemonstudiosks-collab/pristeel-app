@@ -26,6 +26,7 @@ const required = [
   'pristeel-rfq-no-bom-v1.js',
   'pristeel-workflow-governance-v1.js',
   'pristeel-quote-followup-governance-v1.js',
+  'pristeel-offer-project-status-sync-v1.js',
   'pristeel-project-first-v2.js',
   'pristeel-project-first-execution-v1.js',
   'pristeel-project-first-actions-v1.js',
