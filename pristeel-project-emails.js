@@ -65,6 +65,7 @@ var files=[
   'pristeel-project-attachments-relations-v2.js?v=20260804-1',
   'pristeel-project-integrity-safety-v2.js?v=20260804-1',
   'pristeel-projects-modern-v1.js?v=20260804-1',
+  'pristeel-project-duplicate-manager-v1.js?v=20260808-1',
   'pristeel-modules-unified-v1.js?v=20260804-1',
   'pristeel-ui-corrections-v2.js?v=20260807-10',
   'pristeel-project-context-navigation-v1.js?v=20260805-1',
