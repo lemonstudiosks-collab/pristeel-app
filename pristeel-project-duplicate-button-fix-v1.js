@@ -2,6 +2,7 @@
  * UI-only: exposes the existing duplicate manager from the Projects register.
  * If Projects was opened before the modern register finished loading, upgrade that page once.
  * Also exposes the duplicate manager directly inside each project's three-dot menu.
+ * Refreshes the Projects register when duplicate operations complete.
  * No database writes here.
  */
 (function(){
@@ -9,16 +10,41 @@
 if(window.__pstProjectDuplicateButtonFixV1)return;
 window.__pstProjectDuplicateButtonFixV1=true;
 
-var upgradeTried=false,upgrading=false;
+var upgradeTried=false,upgrading=false,statusObserver=null;
 function isProjectsVisible(){
   var p=document.getElementById('page-workspace-projects');
   if(!p)return false;
   var cs=window.getComputedStyle?getComputedStyle(p):null;
   return p.classList.contains('active') || p.style.display==='block' || !cs || cs.display!=='none';
 }
+function refreshProjects(){
+  if(typeof window.pstProjectsModernRefresh!=='function')return Promise.resolve(false);
+  try{return Promise.resolve(window.pstProjectsModernRefresh()).then(function(){schedule();return true;});}
+  catch(e){return Promise.resolve(false);}
+}
+function stopStatusWatch(){if(statusObserver){try{statusObserver.disconnect();}catch(e){}statusObserver=null;}}
+function watchManagerStatus(){
+  stopStatusWatch();
+  var status=document.getElementById('pst-pdm-status');
+  if(!status||typeof MutationObserver==='undefined')return false;
+  var last='';
+  function check(){
+    var text=String(status.textContent||'').trim();
+    if(!text||text===last)return;last=text;
+    if(/^Merge përfundoi:/i.test(text)||/^Kopja bosh u fshi\./i.test(text))refreshProjects();
+  }
+  statusObserver=new MutationObserver(check);
+  statusObserver.observe(status,{childList:true,characterData:true,subtree:true});
+  check();return true;
+}
 function openManager(){
   var api=window.PSTProjectDuplicateManager;
-  if(api&&typeof api.open==='function')return api.open();
+  if(api&&typeof api.open==='function'){
+    var result=api.open();
+    setTimeout(watchManagerStatus,0);
+    setTimeout(watchManagerStatus,120);
+    return result;
+  }
   alert('Menaxheri i dublikatave ende nuk është ngarkuar. Rifresko faqen dhe provo përsëri.');
 }
 function makeButton(){
@@ -86,6 +112,8 @@ function install(){
 function schedule(){[0,80,180,350,700,1200,2200,3500].forEach(function(ms){setTimeout(install,ms);});}
 
 document.addEventListener('click',function(e){
+  var close=e.target&&e.target.closest?e.target.closest('#pst-pdm-close'):null;
+  if(close){stopStatusWatch();refreshProjects();}
   var more=e.target&&e.target.closest?e.target.closest('.pst-pm-more,[data-pm-more]'):null;
   if(more){setTimeout(injectIntoActionMenu,0);setTimeout(injectIntoActionMenu,40);}
   var el=e.target&&e.target.closest?e.target.closest('button,a,[data-key]'):null;
@@ -96,6 +124,6 @@ document.addEventListener('click',function(e){
 },true);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
-window.PSTProjectDuplicateButtonFix={install:install,schedule:schedule,injectIntoActionMenu:injectIntoActionMenu};
+window.PSTProjectDuplicateButtonFix={install:install,schedule:schedule,injectIntoActionMenu:injectIntoActionMenu,refreshProjects:refreshProjects};
 schedule();
 })();
