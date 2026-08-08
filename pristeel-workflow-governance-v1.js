@@ -12,7 +12,7 @@ function wrapProjects(){var f=window.pstProjectsModernAction;if(typeof f!=='func
 function install(){wrap('saveInvoiceOut','invoice');wrap('pstSaveAdjustment','adjustment');wrap('sendFollowup','followup');wrap('pstPiMail','outbound');wrapProjects();}
 function isCompose(a){var href=String(a&&a.getAttribute&&a.getAttribute('href')||'');return /mail\.google\.com\/mail\/.+view=cm/i.test(href)||/mail\.google\.com\/mail\/\?view=cm/i.test(href);}
 document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href]');if(!a||!isCompose(a))return;if(approvedClick===a){approvedClick=null;return;}if(!confirmAction('outbound')){e.preventDefault();e.stopImmediatePropagation();return;}approvedClick=a;setTimeout(function(){if(approvedClick===a)approvedClick=null;},1200);},true);
-function loadRfqGovernance(){if(document.querySelector('script[data-pst-rfq-draft-governance]'))return;var s=document.createElement('script');s.src='pristeel-rfq-draft-governance-v1.js?v=20260808-1';s.defer=true;s.setAttribute('data-pst-rfq-draft-governance','1');document.head.appendChild(s);}
+function loadRfqGovernance(){if(document.querySelector('script[data-pst-rfq-draft-governance]'))return;var s=document.createElement('script');s.src='pristeel-rfq-draft-governance-v1.js?v=20260808-2';s.defer=true;s.setAttribute('data-pst-rfq-draft-governance','1');document.head.appendChild(s);}
 install();loadRfqGovernance();[100,400,1200,2500].forEach(function(ms){setTimeout(install,ms);});document.addEventListener('pst:modules-ready',install,{once:true});
 window.PSTWorkflowGovernanceV1={install:install};
 })();
