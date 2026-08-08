@@ -124,7 +124,7 @@ function filtersHtml(){
 }
 function shell(){
   var p=ensurePage();if(!p)return null;
-  p.innerHTML='<div class="pst-pm-page"><div class="pst-pm-head"><div><div class="pst-pm-eyebrow">Projektet</div><div class="pst-pm-title">Të gjitha projektet</div><div class="pst-pm-sub">Komunikimi, prokurimi, dokumentet dhe financat në një dosje operative.</div></div><div class="pst-pm-head-actions"><button class="pst-pm-btn" id="pst-pm-refresh">Rifresko</button><button class="pst-pm-btn primary" id="pst-pm-new">+ Projekt i ri</button></div></div><div class="pst-pm-controls"><div class="pst-pm-control-top"><input class="pst-pm-search" id="pst-pm-search" placeholder="Kërko projekt, klient, referencë ose përshkrim"><select class="pst-pm-select" id="pst-pm-sort"><option value="activity">Aktiviteti i fundit</option><option value="deadline">Afati</option><option value="client">Klienti</option></select><div class="pst-pm-toggle"><button data-pm-view="list" class="'+(state.view==='list'?'on':'')+'">Listë</button><button data-pm-view="board" class="'+(state.view==='board'?'on':'')+'">Board</button></div></div><div class="pst-pm-filters" id="pst-pm-filters">'+filtersHtml()+'</div></div><div id="pst-pm-content"><div class="pst-pm-loading">Duke ngarkuar projektet…</div></div></div>';
+  p.innerHTML='<div class="pst-pm-page"><div class="pst-pm-head"><div><div class="pst-pm-eyebrow">Projektet</div><div class="pst-pm-title">Të gjitha projektet</div><div class="pst-pm-sub">Komunikimi, prokurimi, dokumentet dhe financat në një dosje operative.</div></div><div class="pst-pm-head-actions"><button class="pst-pm-btn" id="pst-pdm-btn">Dublikatat</button><button class="pst-pm-btn" id="pst-pm-refresh">Rifresko</button><button class="pst-pm-btn primary" id="pst-pm-new">+ Projekt i ri</button></div></div><div class="pst-pm-controls"><div class="pst-pm-control-top"><input class="pst-pm-search" id="pst-pm-search" placeholder="Kërko projekt, klient, referencë ose përshkrim"><select class="pst-pm-select" id="pst-pm-sort"><option value="activity">Aktiviteti i fundit</option><option value="deadline">Afati</option><option value="client">Klienti</option></select><div class="pst-pm-toggle"><button data-pm-view="list" class="'+(state.view==='list'?'on':'')+'">Listë</button><button data-pm-view="board" class="'+(state.view==='board'?'on':'')+'">Board</button></div></div><div class="pst-pm-filters" id="pst-pm-filters">'+filtersHtml()+'</div></div><div id="pst-pm-content"><div class="pst-pm-loading">Duke ngarkuar projektet…</div></div></div>';
   bind(p);return p;
 }
 function rowHtml(r){
@@ -193,6 +193,12 @@ function bind(p){
     var view=e.target.closest('[data-pm-view]');if(view){state.view=view.getAttribute('data-pm-view');try{localStorage.setItem('pristeel_projects_modern_view',state.view);}catch(x){}render();return;}
     var open=e.target.closest('[data-pm-open]');if(open){openProject(open.getAttribute('data-pm-open'));return;}
     var more=e.target.closest('[data-pm-more]');if(more){e.stopPropagation();menuFor(more.getAttribute('data-pm-more'),more);return;}
+    if(e.target.id==='pst-pdm-btn'){
+      var api=window.PSTProjectDuplicateManager;
+      if(api&&typeof api.open==='function')api.open();
+      else alert('Menaxheri i dublikatave ende nuk është ngarkuar. Rifresko faqen dhe provo përsëri.');
+      return;
+    }
     if(e.target.id==='pst-pm-refresh'){load(true);return;}
     if(e.target.id==='pst-pm-new'){if(typeof window.pstWsCreate==='function')window.pstWsCreate('project');else if(typeof window.newProject==='function')window.newProject();return;}
   });
