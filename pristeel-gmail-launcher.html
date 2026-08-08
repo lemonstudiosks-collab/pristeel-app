@@ -8,89 +8,25 @@
     html,body{height:100%;margin:0}
     body{display:flex;align-items:center;justify-content:center;background:#fff;color:#5c5a57;font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     .box{text-align:center;padding:28px;max-width:460px}
-    .mark{font-size:22px;font-weight:750;letter-spacing:.08em;color:#a65f2e;margin-bottom:8px}
+    .mark{font-size:22px;font-weight:750;letter-spacing:.08em;color:#3f7f98;margin-bottom:8px}
     .msg{line-height:1.5}
-    button{margin-top:16px;border:0;border-radius:8px;background:#a65f2e;color:#fff;padding:9px 14px;font-weight:650;cursor:pointer}
+    a{display:inline-block;margin-top:16px;border:0;border-radius:8px;background:#3f7f98;color:#fff;padding:9px 14px;font-weight:650;text-decoration:none}
   </style>
 </head>
 <body>
   <div class="box">
     <div class="mark">PRISTEEL</div>
-    <div class="msg" id="msg">Po dërgohet kërkesa te platforma…</div>
-    <button id="manual" style="display:none">Hap kërkesën këtu</button>
+    <div class="msg">Po hapet emaili në PRISTEEL…</div>
+    <a id="manual" href="#">Hap PRISTEEL</a>
   </div>
   <script>
   (function(){
     'use strict';
-    var REQUEST_KEY='pst_gmail_handoff_request_v2';
-    var ACK_KEY='pst_gmail_handoff_ack_v2';
-    var READY_KEY='pst_gmail_handoff_ready_v2';
-    var CHANNEL_NAME='pristeel-gmail-handoff-v2';
-    var requestId=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);
     var target=new URL('pristeel-procurement.html',window.location.href);
     target.search=window.location.search;
     target.hash=window.location.hash;
-    var channel=null;
-    var done=false;
-    var timer=null;
-
-    function parse(value){try{return JSON.parse(value||'null');}catch(e){return null;}}
-    function finish(){
-      if(done)return;
-      done=true;
-      clearTimeout(timer);
-      try{localStorage.removeItem(REQUEST_KEY);}catch(e){}
-      try{if(channel)channel.close();}catch(e){}
-      setTimeout(function(){
-        try{window.close();}catch(e){}
-        if(!window.closed){
-          document.getElementById('msg').textContent='Kërkesa u hap te tab-i ekzistues i PRISTEEL-it. Këtë tab mund ta mbyllësh.';
-        }
-      },120);
-    }
-    function ack(message){
-      if(message&&message.type==='ack'&&message.id===requestId)finish();
-    }
-    function send(){
-      var request={type:'request',id:requestId,target:target.href,ts:Date.now()};
-      try{localStorage.setItem(REQUEST_KEY,JSON.stringify(request));}catch(e){}
-      try{if(channel)channel.postMessage(request);}catch(e){}
-    }
-    function openHere(){
-      try{localStorage.removeItem(REQUEST_KEY);}catch(e){}
-      window.location.replace(target.href);
-    }
-
-    try{
-      if('BroadcastChannel' in window){
-        channel=new BroadcastChannel(CHANNEL_NAME);
-        channel.addEventListener('message',function(event){ack(event.data||{});});
-      }
-    }catch(e){channel=null;}
-    window.addEventListener('storage',function(event){
-      if(event.key===ACK_KEY&&event.newValue)ack(parse(event.newValue));
-    });
-
-    var ready=null;
-    try{ready=parse(localStorage.getItem(READY_KEY));}catch(e){}
-    var readyIsFresh=!!(ready&&ready.ts&&Date.now()-Number(ready.ts)<6000);
-
-    send();
-    setTimeout(send,350);
-    setTimeout(send,900);
-
-    timer=setTimeout(function(){
-      if(done)return;
-      var msg=document.getElementById('msg');
-      var button=document.getElementById('manual');
-      if(readyIsFresh){
-        msg.textContent='Tab-i ekzistues nuk e mori kërkesën. Rifresko PRISTEEL-in dhe provo përsëri.';
-      }else{
-        msg.textContent='PRISTEEL nuk duket se është e hapur.';
-      }
-      button.style.display='inline-block';
-      button.onclick=openHere;
-    },3200);
+    document.getElementById('manual').href=target.href;
+    window.location.replace(target.href);
   })();
   </script>
 </body>
