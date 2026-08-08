@@ -11,19 +11,32 @@ const {JSDOM}=require('jsdom');
  w.open=()=>{opened++;};
  w.followupQuote=()=>{legacy++;};
  w.supaFetch=async (path,method,body)=>{calls.push({path,method,body});return[];};
- w.__pstIntegrityLastData={project:{id:'p1',name:'Dukley',client:'ITALIAN STYLE'},ourOffers:[{doc_nr:'Q-001',client:'ITALIAN STYLE',email:'buyer@example.com',project:'Dukley',total_eur:12000,created_at:new Date(Date.now()-6*86400000).toISOString(),followup_status:'open'},{doc_nr:'Q-WON',client:'ITALIAN STYLE',created_at:new Date(Date.now()-8*86400000).toISOString(),followup_status:'won'}]};
+ const sixDaysAgo=new Date(Date.now()-6*86400000).toISOString(),tenDaysAgo=new Date(Date.now()-10*86400000).toISOString();
+ w.__pstIntegrityLastData={project:{id:'p1',name:'Dukley',client:'ITALIAN STYLE'},ourOffers:[
+   {doc_nr:'Q-001',client:'ITALIAN STYLE',email:'buyer@example.com',project:'Dukley',total_eur:12000,created_at:tenDaysAgo,offer_state:{pst_sent_at:sixDaysAgo},followup_status:'open'},
+   {doc_nr:'Q-DRAFT',client:'ITALIAN STYLE',email:'buyer@example.com',project:'Dukley',created_at:tenDaysAgo,offer_state:{},followup_status:'open'},
+   {doc_nr:'Q-WON',client:'ITALIAN STYLE',created_at:tenDaysAgo,offer_state:{pst_sent_at:sixDaysAgo},followup_status:'won'}
+ ]};
  w.eval(source);
  assert(w.PSTQuoteFollowupGovernanceV1,'Quote follow-up governance API missing');
- w.followupQuote('Q-001',encodeURIComponent('ITALIAN STYLE'),encodeURIComponent('buyer@example.com'),12000,new Date().toISOString(),encodeURIComponent('en'),encodeURIComponent('Dukley'));
+ const due=w.PSTQuoteFollowupGovernanceV1._test.dueRows(w.__pstIntegrityLastData),unsent=w.PSTQuoteFollowupGovernanceV1._test.unsentRows(w.__pstIntegrityLastData);
+ assert.deepStrictEqual(due.map(x=>x.doc_nr),['Q-001'],'Follow-up clock must start only after actual offer sent confirmation');
+ assert.deepStrictEqual(unsent.map(x=>x.doc_nr),['Q-DRAFT'],'Saved draft must remain unsent until explicitly confirmed');
+ answer=false;
+ await w.PSTQuoteFollowupGovernanceV1.markOfferSent('Q-DRAFT',w.document.createElement('button'));
+ assert.strictEqual(calls.length,0,'Declined offer-sent confirmation must not write');
+ answer=true;
+ await w.PSTQuoteFollowupGovernanceV1.markOfferSent('Q-DRAFT',w.document.createElement('button'));
+ const offerPatch=calls.find(x=>x.path==='documents_registry?doc_nr=eq.Q-DRAFT'&&x.method==='PATCH');
+ assert(offerPatch&&offerPatch.body.offer_state&&offerPatch.body.offer_state.pst_sent_at,'Confirmed client offer send must persist sent timestamp in offer_state');
+ calls.length=0;
+ w.followupQuote('Q-001',encodeURIComponent('ITALIAN STYLE'),encodeURIComponent('buyer@example.com'),12000,sixDaysAgo,encodeURIComponent('en'),encodeURIComponent('Dukley'));
  assert.strictEqual(opened,1,'Approved follow-up draft should open Gmail');
  assert.strictEqual(legacy,0,'Legacy follow-up writer must not run');
  assert.strictEqual(calls.length,0,'Opening a follow-up draft must not write last_followup_at');
- const due=w.PSTQuoteFollowupGovernanceV1._test.dueRows(w.__pstIntegrityLastData);
- assert.strictEqual(due.length,1,'Only the overdue open quote should require follow-up');
- assert.strictEqual(due[0].doc_nr,'Q-001','Won quotes must be excluded from follow-up');
  answer=false;
  await w.PSTQuoteFollowupGovernanceV1.markSent('Q-001',w.document.createElement('button'));
- assert.strictEqual(calls.length,0,'Declined sent confirmation must not write');
+ assert.strictEqual(calls.length,0,'Declined follow-up sent confirmation must not write');
  answer=true;
  await w.PSTQuoteFollowupGovernanceV1.markSent('Q-001',w.document.createElement('button'));
  const patch=calls.find(x=>x.path==='documents_registry?doc_nr=eq.Q-001'&&x.method==='PATCH');
