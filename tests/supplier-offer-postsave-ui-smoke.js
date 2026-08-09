@@ -31,6 +31,7 @@ if(!tl.includes('1,85 EUR/kg'))throw new Error('timeline not decorated: '+tl);
  if(baseSaves!==1)throw new Error('base save not called once');
  if(rendered!=='procurement')throw new Error('procurement not refreshed: '+rendered);
  if(!w.__pstIntegrityLastData||!w.__pstIntegrityLastData.supplierOffers.length)throw new Error('fresh integrity data not stored');
+ await new Promise(resolve=>setTimeout(resolve,10));
  console.log('supplier offer post-save UI smoke: ok');
  dom.window.close();
 })().catch(e=>{console.error(e);process.exit(1);});
