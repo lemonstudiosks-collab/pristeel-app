@@ -22,8 +22,10 @@ const {JSDOM}=require('jsdom');
  assert.strictEqual(w.PSTEmailOfferIntakeUIFixV1.inject(),true,'Candidate card did not inject into Project-First procurement');
  const card=w.document.getElementById('pst-eoi-card');assert(card,'Email-offer card missing');
  assert(card.textContent.includes('Sector Construction'),'Supplier email candidate is not visible');
- assert(card.querySelector('[data-eoi-analyze="m1"]'),'Analyze action is missing');
+ assert(card.querySelector('[data-esf-analyze="m1"]'),'Structured analyze action is missing');
  w.__pstIntegrityLastData.offers=[{notes:'Imported [SOURCE_EMAIL:m1]'}];
  assert.strictEqual(api._test.candidates(w.__pstIntegrityLastData,false).length,0,'Already imported source email should not be suggested again');
  dom.window.close();console.log('Email-body supplier offer intake smoke test passed.');
 })();
+
+require('./email-offer-structured-fallback-smoke.js');
