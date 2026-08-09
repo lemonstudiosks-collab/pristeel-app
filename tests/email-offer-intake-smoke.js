@@ -29,3 +29,4 @@ const {JSDOM}=require('jsdom');
 })();
 
 require('./email-offer-structured-fallback-smoke.js');
+require('./email-offer-analysis-router-smoke.js');
