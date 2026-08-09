@@ -18,6 +18,12 @@ const {JSDOM}=require('jsdom');
   assert(!/project_email_links/.test(syncSource),'Email body sync must not change project email relations');
   assert(/format=full/.test(syncSource),'Email body sync must request Gmail full messages');
   assert(/Shfaq emailin e plotë/.test(syncSource),'Communication UI must expose full-email expansion');
+  assert(!/state\.done\[id\]/.test(syncSource),'Email body sync must not mark an entire project done');
+  assert(/state\.done\[mid\]/.test(syncSource),'Email body sync must track hydration per Gmail message');
+
+  const contactDedupeSource=fs.readFileSync('pristeel-project-contact-view-dedupe-v1.js','utf8');
+  new Function(contactDedupeSource);
+  assert(!/MutationObserver|setInterval\s*\(/.test(contactDedupeSource),'Contact view dedupe must not globally observe or poll');
 
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
     <div id="page-workspace-project" class="page" style="display:block">
@@ -55,6 +61,11 @@ const {JSDOM}=require('jsdom');
   const comm=w.document.getElementById('pst-pi-body').textContent;
   assert(comm.includes('Request for quotation'),'Email record must remain visible even without attachment');
   assert(comm.includes('Please quote the steel structure'),'Email content/snippet must be visible as project documentation');
+
+  w.eval(contactDedupeSource);
+  const gmailKey=w.PSTProjectContactViewDedupeV1._test.gmailKey;
+  assert.strictEqual(gmailKey('sector.construction20@gmail.com'),'sectorconstruction20@gmail.com','Gmail dots must not create duplicate contacts');
+  assert.strictEqual(gmailKey('sectorconstruction20+rfq@gmail.com'),'sectorconstruction20@gmail.com','Gmail plus aliases must not create duplicate contacts');
 
   w.PSTProjectFirstV2.render('files');
   assert(w.document.getElementById('pst-pi-body').textContent.includes('dosje permanente Google Drive'),'Workspace must describe the single permanent Drive-folder model');
