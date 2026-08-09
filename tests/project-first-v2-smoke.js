@@ -4,9 +4,12 @@ const {JSDOM}=require('jsdom');
 
 (async()=>{
   const source=fs.readFileSync('pristeel-project-first-v2.js','utf8');
+  const actionsSource=fs.readFileSync('pristeel-project-first-actions-v1.js','utf8');
   assert(!/MutationObserver|setInterval\s*\(/.test(source),'Project-first V2 must not globally observe or poll');
   assert(!/ensureProjectFolderById|PSTDriveImport\.ensure/.test(source),'Workspace itself must not create Drive folders');
   assert(!/mail\.google\.com\/mail\/\?view=cm/.test(source),'Workspace must not auto-open outbound Gmail compose');
+  assert(!/MutationObserver|setInterval\s*\(/.test(actionsSource),'Project-first actions must not globally observe or poll');
+  assert(/pgc-close/.test(actionsSource)&&/pstOpenProjectWorkspace/.test(actionsSource),'Gmail post-link close must refresh the project workspace');
 
   const syncSource=fs.readFileSync('pristeel-project-email-body-sync-v1.js','utf8');
   new Function(syncSource);
@@ -55,6 +58,22 @@ const {JSDOM}=require('jsdom');
 
   w.PSTProjectFirstV2.render('files');
   assert(w.document.getElementById('pst-pi-body').textContent.includes('dosje permanente Google Drive'),'Workspace must describe the single permanent Drive-folder model');
+
+  let refreshCalls=[];
+  const liveOpen=w.pstOpenProjectWorkspace;
+  w.pstOpenProjectWorkspace=async function(id){refreshCalls.push(String(id));return liveOpen.apply(this,arguments);};
+  w.eval(actionsSource);
+  w.document.body.insertAdjacentHTML('beforeend','<div id="pgc-bg"><div id="pgc-status">U lidhën 1 emaila.</div><button id="pgc-close">×</button></div>');
+  w.document.getElementById('pgc-close').click();
+  await new Promise(r=>setTimeout(r,30));
+  assert.deepStrictEqual(refreshCalls,['p1'],'Successful Gmail linking must refresh exactly the same active project');
+
+  refreshCalls=[];
+  w.document.getElementById('pgc-bg').remove();
+  w.document.body.insertAdjacentHTML('beforeend','<div id="pgc-bg"><div id="pgc-status">Kontrollo listën.</div><button id="pgc-close">×</button></div>');
+  w.document.getElementById('pgc-close').click();
+  await new Promise(r=>setTimeout(r,30));
+  assert.strictEqual(refreshCalls.length,0,'Closing Gmail without a successful link must not reload the workspace');
 
   dom.window.close();
   console.log('Project-first V2 smoke test passed.');
