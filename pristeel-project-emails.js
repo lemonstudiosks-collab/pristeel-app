@@ -4,7 +4,7 @@
 var files=[
   'pristeel-login-brand-v1.js?v=20260807-1',
   'pristeel-login-transition-v2.js?v=20260807-3',
-  'pristeel-gmail-tab-handoff.js?v=20260806-2',
+  'pristeel-gmail-tab-handoff.js?v=20260809-1',
   'pristeel-email-core.js?v=20260801-2',
   'pristeel-email-full-body-v1.js?v=20260808-2',
   'pristeel-google-workspace-auth.js?v=20260806-3',
@@ -54,7 +54,7 @@ var files=[
   'pristeel-workspace-release-fix-v3.js?v=20260804-2',
   'pristeel-email-relation-safety-v2.js?v=20260804-1',
   'pristeel-gmail-intake-v3.js?v=20260807-stability1',
-  'pristeel-gmail-intake-auth-bridge-v1.js?v=20260808-1',
+  'pristeel-gmail-intake-auth-bridge-v1.js?v=20260809-2',
   'pristeel-gmail-create-linked-v1.js?v=20260807-1',
   'pristeel-gmail-intake-revision-fix-v1.js?v=20260806-2',
   'pristeel-project-drive-lifecycle-v1.js?v=20260808-3',
