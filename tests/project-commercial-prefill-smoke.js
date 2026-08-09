@@ -57,7 +57,7 @@ assert.strictEqual(w.document.getElementById('of-pay-preset').value,'','unsuppor
 assert.strictEqual(w.document.getElementById('of-cer').value,'','unsupported certificate default must be cleared');
 assert.strictEqual(w.document.getElementById('of-val').value,'','unsupported validity default must be cleared');
 assert.strictEqual(w.document.getElementById('of-loc').value,'Budva, Montenegro');
-assert.deepStrictEqual(w.buildPayPlan(),[],'blank payment selection must not silently fall back to net 30');
+assert.strictEqual(w.buildPayPlan().length,0,'blank payment selection must not silently fall back to net 30');
 const costText=w.document.getElementById('pst-project-cost-basis').textContent.replace(/\s+/g,' ');
 assert(costText.includes('Sector Construction'),'cost basis must name supplier');
 assert(costText.includes('1,85 EUR/kg'),'cost basis must show base rate');
