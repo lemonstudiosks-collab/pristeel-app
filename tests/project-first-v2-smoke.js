@@ -8,6 +8,14 @@ const {JSDOM}=require('jsdom');
   assert(!/ensureProjectFolderById|PSTDriveImport\.ensure/.test(source),'Workspace itself must not create Drive folders');
   assert(!/mail\.google\.com\/mail\/\?view=cm/.test(source),'Workspace must not auto-open outbound Gmail compose');
 
+  const syncSource=fs.readFileSync('pristeel-project-email-body-sync-v1.js','utf8');
+  new Function(syncSource);
+  assert(!/MutationObserver|setInterval\s*\(/.test(syncSource),'Email body sync must not globally observe or poll');
+  assert(!/\.auth\s*\(/.test(syncSource),'Email body sync must not launch OAuth authorization');
+  assert(!/project_email_links/.test(syncSource),'Email body sync must not change project email relations');
+  assert(/format=full/.test(syncSource),'Email body sync must request Gmail full messages');
+  assert(/Shfaq emailin e plotë/.test(syncSource),'Communication UI must expose full-email expansion');
+
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
     <div id="page-workspace-project" class="page" style="display:block">
       <div class="pst-pi-head"><div class="pst-pi-actions"></div></div>
@@ -18,7 +26,7 @@ const {JSDOM}=require('jsdom');
   const project={id:'p1',name:'Dukley Budva',client:'ITALIAN STYLE',ref:'',status:'aktiv',pipeline_stage:'rfq_in',drive_folder_id:'drive1',drive_folder_url:'https://drive.google.com/drive/folders/drive1'};
   const integrity={
     project,
-    emails:[{id:'e1',subject:'Request for quotation',from_email:'buyer@example.com',sent_at:'2026-08-08T09:00:00Z',snippet:'Please quote the steel structure. Delivery required in October.',gmail_url:'https://mail.google.com/mail/u/0/#all/e1'}],
+    emails:[{id:'e1',gmail_message_id:'m1',subject:'Request for quotation',from_email:'buyer@example.com',sent_at:'2026-08-08T09:00:00Z',snippet:'Please quote the steel structure. Delivery required in October.',gmail_url:'https://mail.google.com/mail/u/0/#all/e1'}],
     contacts:[{email:'buyer@example.com'}],bom:[],rfqs:[],supplierOffers:[],ourOffers:[],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[]}
   };
   w.PSTProjectDataIntegrity={load:async()=>integrity};
