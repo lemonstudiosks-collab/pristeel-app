@@ -1,7 +1,7 @@
 /* PRISTEEL Gmail intake auth bridge v1
  * Keeps direct Gmail -> platform intake usable when Google token expired.
  * No automatic popup: authorization starts only from an explicit user click.
- * Never stacks underneath an active Gmail Intake modal.
+ * Never stacks underneath an active Gmail Intake modal or above PRISTEEL login.
  */
 (function(){
 'use strict';
@@ -9,17 +9,18 @@ if(window.__pstGmailIntakeAuthBridgeV1)return;
 window.__pstGmailIntakeAuthBridgeV1=true;
 function intakeActive(){try{return new URL(location.href).searchParams.get('gmail_intake')==='1';}catch(e){return false;}}
 function intakeModalActive(){return !!document.getElementById('pgi2-bg');}
-function hasToken(){var G=window.PSTGoogleWorkspaceAuth;return !!(G&&G.currentToken&&G.currentToken([G.gmailScope]));}
+function platformReady(){try{return typeof window.authGetSession==='function'&&!!window.authGetSession();}catch(e){return false;}}
+function hasToken(){var G=window.PSTGoogleWorkspaceAuth;return !!(G&&G.currentToken&&G.currentToken([G.gmailScope,G.driveScope]));}
 function remove(){var e=document.getElementById('pst-gmail-intake-auth-bridge');if(e)e.remove();}
 function target(){return location.href;}
 function render(){
   /*
-   * The intake itself may already be authorized and working while bootstrap is still
-   * finishing. In that state a late auth-bridge render used to create a second modal
-   * underneath #pgi2-bg. It became visible only after the user clicked "Hap projektin",
-   * falsely suggesting that Google authorization had expired immediately.
+   * Google authorization is only the second gate. If PRISTEEL itself is locked,
+   * the platform login must be completed first. Also, the intake may already be
+   * authorized and working while bootstrap is still finishing; in that state a
+   * late bridge render must never create a second modal underneath #pgi2-bg.
    */
-  if(!intakeActive()||hasToken()||intakeModalActive()){remove();return false;}
+  if(!intakeActive()||!platformReady()||hasToken()||intakeModalActive()){remove();return false;}
   if(document.getElementById('pst-gmail-intake-auth-bridge'))return true;
   var bg=document.createElement('div');bg.id='pst-gmail-intake-auth-bridge';bg.style.cssText='position:fixed;inset:0;z-index:1000001;background:rgba(20,31,37,.48);display:flex;align-items:center;justify-content:center;padding:18px';
   bg.innerHTML='<div style="width:min(470px,94vw);background:#fff;border-radius:13px;box-shadow:0 22px 65px rgba(0,0,0,.25);padding:20px"><div style="font-size:17px;font-weight:750;margin-bottom:6px">Lidhe Gmail me PRISTEEL</div><div style="font-size:11px;color:#6f7c83;line-height:1.5;margin-bottom:15px">Sesioni i Google ka skaduar ose nuk është i autorizuar. Autorizoje një herë dhe thread-i hapet menjëherë në platformë.</div><div id="pst-gia-status" style="font-size:10px;color:#6f7c83;margin-bottom:10px"></div><div style="display:flex;justify-content:flex-end;gap:8px"><button id="pst-gia-close" style="height:34px;padding:0 13px;border:1px solid #d6e0e4;background:#fff;border-radius:7px;cursor:pointer">Mbyll</button><button id="pst-gia-auth" style="height:34px;padding:0 15px;border:1px solid #3f7f98;background:#3f7f98;color:#fff;border-radius:7px;font-weight:700;cursor:pointer">Autorizo Gmail dhe Drive</button></div></div>';
