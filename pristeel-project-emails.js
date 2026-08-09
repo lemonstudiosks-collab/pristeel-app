@@ -101,6 +101,7 @@ var files=[
   'pristeel-email-offer-intake-ui-fix-v1.js?v=20260809-3',
   'pristeel-email-offer-intake-structured-fallback-v1.js?v=20260809-3',
   'pristeel-email-offer-analysis-router-v1.js?v=20260809-1',
+  'pristeel-email-offer-draft-editor-bridge-v1.js?v=20260809-1',
   'pristeel-project-first-execution-v1.js?v=20260808-1',
   'pristeel-project-first-actions-v1.js?v=20260809-5',
   'pristeel-supplier-capability-manager-v1.js?v=20260808-3',
