@@ -7,6 +7,10 @@
 'use strict';
 if(window.__pstLoginTransitionV2)return;
 window.__pstLoginTransitionV2=true;
+(function loadProjectIdentityLockEarly(){
+  if(window.__pstProjectIdentityLockV1||document.querySelector('script[data-pst-project-identity-lock]'))return;
+  var s=document.createElement('script');s.src='pristeel-project-identity-lock-v1.js?v=20260809-1';s.defer=true;s.setAttribute('data-pst-project-identity-lock','1');document.head.appendChild(s);
+})();
 var root=document.documentElement,state={active:false,started:0,timer:null,installTries:0};
 var style=document.createElement('style');style.id='pst-login-transition-v2-style';style.textContent=`
 html.pst-login-switching,html.pst-login-switching body{overflow:hidden!important;background:#F3F8FA!important}
