@@ -1,6 +1,7 @@
 /* PRISTEEL project-first actions v1
  * Explicit desktop upload and explicit repair for legacy projects missing a Drive folder.
- * Also loads read-only duplicate context, linked-email full-body sync, Gmail contact view dedupe and the explicit Gmail recovery auth gate.
+ * Also loads read-only duplicate context, per-message linked-email full-body sync,
+ * Gmail-equivalent contact view dedupe and the explicit Gmail recovery auth gate.
  */
 (function(){
 'use strict';if(window.__pstProjectFirstActionsV1)return;window.__pstProjectFirstActionsV1=true;
