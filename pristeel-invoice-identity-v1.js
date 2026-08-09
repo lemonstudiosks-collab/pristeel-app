@@ -1,12 +1,13 @@
 /* PRISTEEL invoice identity + project-flow bridge v1
  * Keeps Offer and Invoice as separate documents while preserving the shared visual language.
- * Narrow scope: project-flow navigation between Offer/Invoice, invoice numbering, invoice language labels.
+ * Narrow scope: project-flow navigation, invoice numbering/language labels, invoice-only visual accent.
  */
 (function(){
 'use strict';
 if(window.__pstInvoiceIdentityV1)return;
 window.__pstInvoiceIdentityV1=true;
 var baseFlowGoto=window.flowGoto;
+var ACCENT='#4F7D73',ACCENT_SOFT='#EDF5F3',ACCENT_LINE='#BFD3CE';
 function el(id){return document.getElementById(id);}
 function clearDisplay(node){if(node&&node.style&&typeof node.style.removeProperty==='function')node.style.removeProperty('display');}
 function patchLabels(){
@@ -59,13 +60,56 @@ function syncPair(page){
     fillInvoiceNr().catch(function(){});
   }
 }
+function normColor(v){return String(v||'').toLowerCase().replace(/\s+/g,'');}
+function isOldAccent(v){var x=normColor(v);return x==='#b87333'||x==='rgb(184,115,51)'||x==='rgba(184,115,51,1)';}
+function recolorInvoice(root){
+  if(!root||!root.querySelectorAll)return;
+  Array.prototype.forEach.call(root.querySelectorAll('*'),function(node){
+    var s=node.style;if(!s)return;
+    if(isOldAccent(s.color))s.color=ACCENT;
+    if(isOldAccent(s.borderTopColor))s.borderTopColor=ACCENT;
+    if(isOldAccent(s.borderBottomColor))s.borderBottomColor=ACCENT;
+    if(isOldAccent(s.borderLeftColor))s.borderLeftColor=ACCENT;
+    if(isOldAccent(s.borderRightColor))s.borderRightColor=ACCENT;
+  });
+}
+function applyInvoiceAccent(){
+  var preview=el('iv-preview');if(!preview||!preview.firstElementChild)return false;
+  recolorInvoice(preview);
+  var root=preview.firstElementChild,header=root&&root.firstElementChild;
+  if(header){
+    header.style.borderBottomColor=ACCENT;
+    var right=header.lastElementChild;
+    if(right&&right!==header.firstElementChild){
+      var title=right.firstElementChild,nr=right.children&&right.children[1];
+      if(title){
+        title.style.color=ACCENT;
+        title.style.backgroundColor=ACCENT_SOFT;
+        title.style.border='1px solid '+ACCENT_LINE;
+        title.style.borderRadius='5px';
+        title.style.padding='5px 10px';
+        title.style.display='inline-block';
+      }
+      if(nr)nr.style.color=ACCENT;
+    }
+  }
+  preview.setAttribute('data-pst-invoice-accent','petrol');
+  return true;
+}
+function wrapInvoiceGenerator(){
+  var fn=window.genInvoiceOut;
+  if(typeof fn!=='function'||fn.__pstInvoiceVisualAccent)return false;
+  var wrapped=function(){var out=fn.apply(this,arguments);applyInvoiceAccent();return out;};
+  wrapped.__pstInvoiceVisualAccent=true;wrapped.__base=fn;window.genInvoiceOut=wrapped;return true;
+}
+function install(){patchLabels();wrapInvoiceGenerator();applyInvoiceAccent();}
 window.flowGoto=function(page){
   page=String(page||'');
   if(page==='invoices'||page==='oferta')return syncPair(page);
   if(typeof baseFlowGoto==='function')return baseFlowGoto.apply(this,arguments);
   if(typeof window.showPage==='function')return window.showPage(page);
 };
-patchLabels();
-document.addEventListener&&document.addEventListener('pst:modules-ready',patchLabels,{once:true});
-window.PSTInvoiceIdentityV1={patchLabels:patchLabels,nextInvoiceNr:nextInvoiceNr,fillInvoiceNr:fillInvoiceNr,syncPair:syncPair,seqFromNr:seqFromNr};
+install();
+document.addEventListener&&document.addEventListener('pst:modules-ready',install,{once:true});
+window.PSTInvoiceIdentityV1={patchLabels:patchLabels,nextInvoiceNr:nextInvoiceNr,fillInvoiceNr:fillInvoiceNr,syncPair:syncPair,seqFromNr:seqFromNr,applyInvoiceAccent:applyInvoiceAccent,accent:ACCENT};
 })();
