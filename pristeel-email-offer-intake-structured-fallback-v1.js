@@ -14,22 +14,33 @@ function supplier(m){var n=String(m&&m.from_name||'').trim();if(n)return n;var e
 function baseFallback(t,m){var api=window.PSTEmailOfferIntakeV1;try{return api&&api._test&&api._test.fallback?api._test.fallback(t,m):{};}catch(e){return{};}}
 function cleanDesc(v){return String(v||'').replace(/^\s*[-–•]+\s*/,'').replace(/\s+/g,' ').trim();}
 function kind(desc){var n=String(desc||'').toLowerCase();if(/powder|coating|ngjyr|paint|beschicht/.test(n))return'coating';if(/zink|zinc|galvan/.test(n))return'zinc';return'base';}
+function logicalLines(t){
+ var raw=String(t||'').replace(/\r/g,'').split(/\n+/).map(function(s){return s.trim();}).filter(Boolean),out=[];
+ raw.forEach(function(line){
+   var prev=out.length?out[out.length-1]:'';
+   var prevBullet=/^[-–•]\s*/.test(prev),prevHasPrice=/:\s*[0-9]+(?:[.,][0-9]+)?\s*(?:€|EUR)\s*\/\s*kg\b/i.test(prev);
+   var currentPrice=/:\s*[0-9]+(?:[.,][0-9]+)?\s*(?:€|EUR)\s*\/\s*kg\b/i.test(line);
+   if(prevBullet&&!prevHasPrice&&!/^[-–•]\s*/.test(line)&&currentPrice){out[out.length-1]=prev+' '+line;return;}
+   out.push(line);
+ });
+ return out;
+}
 function structured(t,m){
  var x=Object.assign({is_supplier_offer:true,supplier:supplier(m),currency:'EUR',positions:[],price_kg:null,total_eur:null,qty_kg:null,zinc_eur_kg:null,coating_eur_kg:null,transport_eur:null,vat_pct:null,vat_note:null,delivery_weeks:null,incoterms:null,cert:null,origin:null,payment_terms:null,validity:null,notes:'',confidence:0,warnings:[]},baseFallback(t,m)||{});
  x.supplier=x.supplier||supplier(m);x.positions=[];
- var lines=String(t||'').replace(/\r/g,'').split(/\n+/).map(function(s){return s.trim();}).filter(Boolean);
+ var lines=logicalLines(t),logicalText=lines.join('\n');
  lines.forEach(function(line){
-   var q=line.match(/^\s*[-–•]?\s*(.{3,240}?)\s*:\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:€|EUR)\s*\/\s*kg\b(.*)$/i);
+   var q=line.match(/^\s*[-–•]?\s*(.{3,320}?)\s*:\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:€|EUR)\s*\/\s*kg\b(.*)$/i);
    if(!q)return;var d=cleanDesc(q[1]),p=num(q[2]);if(p==null)return;var k=kind(d),tail=String(q[3]||'').trim();
    x.positions.push({description:d,qty:null,unit:'kg',unit_price:p,kind:k,vat_note:/pa\s+tvsh|without\s+vat|excl\.?\s*vat/i.test(tail)?'Pa TVSH':null});
    if(k==='zinc')x.zinc_eur_kg=p;else if(k==='coating')x.coating_eur_kg=p;else if(x.price_kg==null)x.price_kg=p;
  });
  if(x.positions.length<2){
-   var re=/(?:^|\n)\s*[-–•]?\s*([^:\n]{3,220}?)\s*:\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:€|EUR)\s*\/\s*kg\b([^\n]*)/gim,mm;
-   while((mm=re.exec(String(t||'')))){var d2=cleanDesc(mm[1]),p2=num(mm[2]);if(p2==null||x.positions.some(function(z){return z.description===d2&&z.unit_price===p2;}))continue;var k2=kind(d2);x.positions.push({description:d2,qty:null,unit:'kg',unit_price:p2,kind:k2,vat_note:/pa\s+tvsh/i.test(mm[3]||'')?'Pa TVSH':null});if(k2==='zinc')x.zinc_eur_kg=p2;else if(k2==='coating')x.coating_eur_kg=p2;else if(x.price_kg==null)x.price_kg=p2;}
+   var re=/(?:^|\n)\s*[-–•]?\s*([^:\n]{3,320}?)\s*:\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:€|EUR)\s*\/\s*kg\b([^\n]*)/gim,mm;
+   while((mm=re.exec(logicalText))){var d2=cleanDesc(mm[1]),p2=num(mm[2]);if(p2==null||x.positions.some(function(z){return z.description===d2&&z.unit_price===p2;}))continue;var k2=kind(d2);x.positions.push({description:d2,qty:null,unit:'kg',unit_price:p2,kind:k2,vat_note:/pa\s+tvsh/i.test(mm[3]||'')?'Pa TVSH':null});if(k2==='zinc')x.zinc_eur_kg=p2;else if(k2==='coating')x.coating_eur_kg=p2;else if(x.price_kg==null)x.price_kg=p2;}
  }
  if(/\bpa\s+tvsh\b|without\s+vat|excl\.?\s*vat/i.test(t))x.vat_note='Pa TVSH';
- var cond=String(t||'').split(/\n+|(?<=[.!?])\s+/).map(function(s){return s.trim();}).filter(function(s){return /(tvsh|final|bulon|bolt|export|fatur)/i.test(s);});
+ var cond=logicalText.split(/\n+|(?<=[.!?])\s+/).map(function(s){return s.trim();}).filter(function(s){return /(tvsh|final|bulon|bolt|export|fatur)/i.test(s);});
  if(cond.length)x.notes=cond.slice(0,8).join('\n');
  if(x.positions.length>=3)x.confidence=Math.max(Number(x.confidence)||0,90);else if(x.positions.length>=2)x.confidence=Math.max(Number(x.confidence)||0,82);else x.confidence=Math.max(Number(x.confidence)||0,65);
  x.warnings=['Nxjerrje deterministike nga teksti i emailit. Kontrollo çdo komponent dhe kusht para ruajtjes.'];
@@ -54,6 +65,6 @@ async function openDraft(id){
  if(window.pstCalc)window.pstCalc();var q=document.getElementById('oe-msg');if(q){q.textContent='Draft nga emaili. Sasia nuk ishte në email; kontrollo komponentët, plotëso sasinë dhe verifiko TVSH-në para ruajtjes.';q.className='oe-msg';}
 }
 function analyze(id){var d=window.__pstIntegrityLastData,m=A(d&&d.emails).find(function(x){return String(x.gmail_message_id||x.id||'')===String(id);});if(!m)return;var t=text(m),x=structured(t,m);drafts[String(id)]={mail:m,data:x,text:t};modal(m,x,t);}
-document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('[data-esf-analyze]');if(a){e.preventDefault();e.stopImmediatePropagation();var id=a.getAttribute('data-esf-analyze'),key=localStorage.getItem('pristeel_apikey')||'';if(key&&window.PSTEmailOfferIntakeV1&&window.PSTEmailOfferIntakeV1.analyze)window.PSTEmailOfferIntakeV1.analyze(id);else analyze(id);return;}var o=e.target.closest&&e.target.closest('[data-esf-open]');if(o){e.preventDefault();e.stopImmediatePropagation();openDraft(o.getAttribute('data-esf-open'));}},true);
-window.PSTEmailOfferStructuredFallbackV1={structured:structured,analyze:analyze,openDraft:openDraft,_test:{structured:structured,kind:kind}};
+document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('[data-esf-analyze]');if(a){e.preventDefault();e.stopImmediatePropagation();analyze(a.getAttribute('data-esf-analyze'));return;}var o=e.target.closest&&e.target.closest('[data-esf-open]');if(o){e.preventDefault();e.stopImmediatePropagation();openDraft(o.getAttribute('data-esf-open'));}},true);
+window.PSTEmailOfferStructuredFallbackV1={structured:structured,analyze:analyze,openDraft:openDraft,_test:{structured:structured,kind:kind,logicalLines:logicalLines}};
 })();
