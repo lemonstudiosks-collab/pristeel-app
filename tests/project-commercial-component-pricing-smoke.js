@@ -120,16 +120,21 @@ assert(w.oferPos.some(p=>p.desc==='Ankera speciale'),'manual position must survi
 assert(w.oferPos.some(p=>p.spec&&p.spec.profile==='IPE'),'BOM position must survive draft reload');
 assert.strictEqual(w.oferPos.some(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='zinc'),false,'deleted standard row must stay deleted after draft reload');
 
+// Installation can be switched to lump sum without disturbing the other rows.
 d.getElementById('pst-install-unit').value='ls';
 d.getElementById('pst-cost-install-input').value='1800';
 d.getElementById('pst-sale-install').value='2200';
 w.PSTProjectCommercialComponentPricingV1.sync();
+w.buildOferPosFromQuick();
+const installRow=w.oferPos.find(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='install');
+assert.strictEqual(installRow.unit,'ls','installation can also be quoted as a lump sum');
+assert.strictEqual(installRow.qty,1);
+assert.strictEqual(installRow.price,2200);
+assert(w.oferPos.some(p=>p.desc==='Ankera speciale'),'changing installation unit must not erase manual rows');
+
+// A genuinely new draft resets deletion decisions from the prior draft.
 w.ofertaStartNewDraft();
 w.buildOferPosFromQuick();
-const last=w.oferPos[w.oferPos.length-1];
-assert.strictEqual(last.unit,'ls','installation can also be quoted as a lump sum');
-assert.strictEqual(last.qty,1);
-assert.strictEqual(last.price,2200);
 assert(w.oferPos.some(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='zinc'),'new draft resets prior deletion decisions');
 
 dom.window.close();
