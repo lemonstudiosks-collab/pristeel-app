@@ -4,6 +4,7 @@ const { JSDOM } = require('jsdom');
 
 const handoffSrc = fs.readFileSync('pristeel-gmail-tab-handoff.js','utf8');
 const bridgeSrc = fs.readFileSync('pristeel-gmail-intake-auth-bridge-v1.js','utf8');
+const recoveryGateSrc = fs.readFileSync('pristeel-linked-gmail-auth-gate-v1.js','utf8');
 const url = 'https://example.test/pristeel-procurement.html?gmail_intake=1&gmail_message_id=m1&gmail_thread_id=t1';
 
 function wait(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
@@ -21,11 +22,9 @@ async function testPlatformBeforeGoogle(){
   assert.strictEqual(w.__pstGmailHandoffPending, true, 'Direct Gmail target must be held while PRISTEEL is logged out');
   assert.strictEqual(fallbacks.length, 0, 'Intake must not open before PRISTEEL login');
 
-  // Bootstrap may finish while the platform is still locked. This must not release intake.
   w.document.dispatchEvent(new w.CustomEvent('pst:modules-ready'));
   assert.strictEqual(fallbacks.length, 0, 'Modules-ready must not bypass PRISTEEL login');
 
-  // After explicit login, Google authorization is the next gate.
   session = { access_token:'platform-token' };
   w.PSTGoogleWorkspaceAuth = {
     gmailScope:'gmail', driveScope:'drive',
@@ -50,7 +49,6 @@ function testBothSessionsReady(){
   w.document.addEventListener('pst:gmail-handoff-fallback', e => fallbacks.push(e.detail && e.detail.target));
   w.eval(handoffSrc);
 
-  // In production these modules load later than the handoff module.
   w.PSTGoogleWorkspaceAuth = {
     gmailScope:'gmail', driveScope:'drive',
     currentToken: required => Array.isArray(required) && required.length === 2 ? 'google-token' : ''
@@ -88,9 +86,44 @@ function testBridgeDoesNotStack(){
   dom.window.close();
 }
 
+async function testLinkedRecoveryRequiresExplicitAuthClick(){
+  const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', { url:'https://example.test/pristeel-procurement.html', runScripts:'outside-only' });
+  const w = dom.window;
+  let token = '';
+  let authCalls = 0;
+  let recoveryCalls = 0;
+  let recoveredId = '';
+  w.__pstIntegrityLastData = { project:{ id:'p-dukley', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA' } };
+  w.PSTGoogleWorkspaceAuth = {
+    gmailScope:'gmail', driveScope:'drive',
+    cachedToken: required => token && Array.isArray(required) && required.length === 2 ? token : '',
+    authorizeForIntake: async () => { authCalls++; token='google-token'; return token; }
+  };
+  function originalRecovery(id){ recoveryCalls++; recoveredId=id; return true; }
+  w.pstRecoverLinkedProjectGmail = originalRecovery;
+  w.pstCollectProjectGmail = originalRecovery;
+  w.eval(recoveryGateSrc);
+
+  const first = w.pstCollectProjectGmail('p-dukley');
+  assert.strictEqual(first, false, 'Recovery should pause when Google token is missing');
+  assert.strictEqual(recoveryCalls, 0, 'Recovery must not start before explicit Google authorization');
+  assert.strictEqual(authCalls, 0, 'Auth popup must never open automatically from recovery');
+  assert.ok(w.document.getElementById('pst-linked-gmail-auth-gate'), 'Explicit auth gate must be visible');
+  assert.ok(w.document.getElementById('pst-linked-gmail-auth-run'), 'Auth gate must provide a real authorization button');
+
+  w.document.getElementById('pst-linked-gmail-auth-run').click();
+  await wait(20);
+  assert.strictEqual(authCalls, 1, 'Google authorization must start only from the explicit button click');
+  assert.strictEqual(recoveryCalls, 1, 'Recovery should resume automatically after authorization succeeds');
+  assert.strictEqual(recoveredId, 'p-dukley', 'Recovery must resume the same project');
+  assert.strictEqual(w.document.getElementById('pst-linked-gmail-auth-gate'), null, 'Auth gate should close after success');
+  dom.window.close();
+}
+
 (async function(){
   await testPlatformBeforeGoogle();
   testBothSessionsReady();
   testBridgeDoesNotStack();
+  await testLinkedRecoveryRequiresExplicitAuthClick();
   console.log('Gmail auth sequence smoke test passed.');
 })().catch(err => { console.error(err); process.exit(1); });
