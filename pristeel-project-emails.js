@@ -3,7 +3,8 @@
 'use strict';
 var files=[
   'pristeel-login-brand-v1.js?v=20260807-1',
-  'pristeel-login-transition-v2.js?v=20260807-3',
+  'pristeel-login-transition-v2.js?v=20260809-identity1',
+  'pristeel-project-identity-lock-v1.js?v=20260809-1',
   'pristeel-gmail-tab-handoff.js?v=20260809-2',
   'pristeel-email-core.js?v=20260801-2',
   'pristeel-email-full-body-v1.js?v=20260808-2',
@@ -99,7 +100,7 @@ var files=[
   'pristeel-email-offer-intake-v1.js?v=20260809-1',
   'pristeel-email-offer-intake-ui-fix-v1.js?v=20260809-1',
   'pristeel-project-first-execution-v1.js?v=20260808-1',
-  'pristeel-project-first-actions-v1.js?v=20260809-4',
+  'pristeel-project-first-actions-v1.js?v=20260809-5',
   'pristeel-supplier-capability-manager-v1.js?v=20260808-3',
   'pristeel-project-first-commercial-v1.js?v=20260808-1',
   'pristeel-project-file-upload-v1.js?v=20260808-1',
