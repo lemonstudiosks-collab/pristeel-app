@@ -1,0 +1,1 @@
+CI-only marker for EUR/kg commercial component parsing and project-aware prefill. Do not merge.
