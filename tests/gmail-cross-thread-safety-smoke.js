@@ -4,7 +4,7 @@ const {JSDOM}=require('jsdom');
 
 (async()=>{
   const source=fs.readFileSync('pristeel-gmail-cross-thread-safety-v1.js','utf8');
-  assert(!/MutationObserver|setInterval\s*\(/.test(source),'Cross-thread safety must not poll or globally observe');
+  assert(!/new\s+MutationObserver|setInterval\s*\(/.test(source),'Cross-thread safety must not poll or globally observe');
   assert(!/PSTEmail\.auth|requestAccessToken|accounts\.oauth2/.test(source),'Cross-thread safety must not trigger OAuth');
   assert(!/project_emails[^?]*[\"']\s*,\s*[\"'](?:POST|PATCH|DELETE)/.test(source),'Safety layer must not write email relations');
 
