@@ -21,21 +21,28 @@ const {JSDOM}=require('jsdom');
   w.PSTEmail={
     map:async function(){await new Promise(r=>setTimeout(r,650));return[];}
   };
-  function renderCollector(){
+  function openShell(){
     w.document.body.innerHTML=`<div id="pgc-bg">
+      <div id="pgc-results"></div>
       <div class="pgc-status" id="pgc-status"></div>
+      <button id="pgc-import">Lidhi dhe importo skedarët</button><button id="pgc-link">Lidhi vetëm emailat</button><button id="pgc-all-threads">Zgjidh të gjitha</button><button id="pgc-latest-files">Vetëm versionet e fundit</button><button id="pgc-search">Kërko përsëri</button>
+    </div>`;
+  }
+  function renderCollector(){
+    const host=w.document.getElementById('pgc-results');
+    if(!host)return;
+    host.innerHTML=`
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" value="t1" checked><span class="pgc-main">Fwd: Dukley Seafront Restoran / Zahtjev za ponudu <span class="pgc-meta">sectorconstruction20@gmail.com</span></span><span class="pgc-score">100%</span></label>
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" value="t2" checked><span class="pgc-main">Re: Zahtjev za ponudu - Salla Sportive Andrijevica <span class="pgc-meta">italianstyle.ks@gmail.com</span></span><span class="pgc-score">100%</span></label>
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" value="t3" checked><span class="pgc-main">You have been made the Deal owner of Italian Style — Salla Sportive Andrijevica <span class="pgc-meta">noreply@notifications.hubspot.com</span></span><span class="pgc-score">86%</span></label>
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" value="t4" checked><span class="pgc-main">Restauranti Budva - Marko <span class="pgc-meta">sector.construction20@gmail.com</span></span><span class="pgc-score">48%</span></label>
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" value="t5" checked><span class="pgc-main">Notification Italian Style / Andrijevica follow-up</span><span class="pgc-score">36%</span></label>
-      <label class="pgc-att-row"><input class="pgc-attachment" type="checkbox" checked></label>
-      <button id="pgc-import">Lidhi dhe importo skedarët</button><button id="pgc-link">Lidhi vetëm emailat</button><button id="pgc-all-threads">Zgjidh të gjitha</button><button id="pgc-latest-files">Vetëm versionet e fundit</button><button id="pgc-search">Kërko përsëri</button>
-    </div>`;
+      <label class="pgc-att-row"><input class="pgc-attachment" type="checkbox" checked></label>`;
   }
   let collectorCalls=0;
   w.pstCollectProjectGmail=function(){
     collectorCalls++;
+    openShell();
     w.PSTEmail.map([],5,()=>{}).then(renderCollector);
   };
   w.eval(source);
