@@ -7,7 +7,7 @@
 (function(){
 'use strict';
 if(window.__pstGmailCrossThreadSafetyV1)return;window.__pstGmailCrossThreadSafetyV1=true;
-var base=null,currentId='',ctx=null,seq=0;
+var currentId='',ctx=null,seq=0;
 var STOP={project:1,projekti:1,projekt:1,italian:1,style:1,steel:1,construction:1,konstrukcija:1,konstrukcije:1,restoran:1,restaurant:1,seafront:0};
 function arr(v){return Array.isArray(v)?v:[];}
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9@._+\-]+/g,' ').replace(/\s+/g,' ').trim();}
@@ -49,9 +49,12 @@ function apply(){
 }
 function schedule(){[0,120,400,900,1700,3000].forEach(function(ms){setTimeout(apply,ms);});}
 function install(){
-  var f=window.pstCollectProjectGmail;if(typeof f!=='function'||f.__pstCrossThreadSafe)return false;base=f;
-  function wrapped(id){currentId=String(id||window.__pstCurrentProjectId||'');var my=++seq;ctx=null;if(currentId)loadContext(currentId,my).then(function(){schedule();});var r=base.apply(this,arguments);schedule();return r;}
-  wrapped.__pstCrossThreadSafe=true;wrapped.__base=base;window.pstCollectProjectGmail=wrapped;return true;
+  var f=window.pstCollectProjectGmail;
+  if(typeof f!=='function'||f.__pstCrossThreadSafe)return false;
+  if(typeof window.pstRecoverLinkedProjectGmail==='function'&&f===window.pstRecoverLinkedProjectGmail)return false;
+  var target=f;
+  function wrapped(id){currentId=String(id||window.__pstCurrentProjectId||'');var my=++seq;ctx=null;if(currentId)loadContext(currentId,my).then(function(){schedule();});var r=target.apply(this,arguments);schedule();return r;}
+  wrapped.__pstCrossThreadSafe=true;wrapped.__base=target;window.pstCollectProjectGmail=wrapped;return true;
 }
 function css(){if(document.getElementById('pgc-safety-css'))return;var s=document.createElement('style');s.id='pgc-safety-css';s.textContent='.pgc-safety-note{display:block;margin-top:5px;font-size:8.5px;font-weight:700}.pgc-safety-note.ok{color:#2F7657}.pgc-safety-note.manual{color:#9A6A25}.pgc-attachment:disabled{cursor:not-allowed}.pgc-att-row:has(.pgc-attachment:disabled){opacity:.48}';document.head.appendChild(s);}
 css();install();setTimeout(install,120);setTimeout(install,500);
