@@ -1,5 +1,6 @@
 /* PRISTEEL project email full-body sync v1
  * Hydrates already-linked project emails from Gmail without changing relations.
+ * Tracks hydration per Gmail message so newly linked emails are always picked up.
  * No OAuth popup: sync runs only when an existing Gmail token is available.
  */
 (function(){
