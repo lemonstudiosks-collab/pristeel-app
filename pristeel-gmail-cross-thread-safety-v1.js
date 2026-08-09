@@ -13,6 +13,14 @@ function arr(v){return Array.isArray(v)?v:[];}
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9@._+\-]+/g,' ').replace(/\s+/g,' ').trim();}
 function uniq(a){var m={};return arr(a).filter(function(x){x=String(x||'').trim();if(!x||m[x])return false;m[x]=1;return true;});}
 function tokens(v){return norm(v).split(' ').filter(function(x){return x.length>=5&&!STOP[x];});}
+function emailKey(v){
+  var s=String(v||'').toLowerCase().trim(),m=s.match(/([a-z0-9._%+\-]+)@([a-z0-9.\-]+\.[a-z]{2,})/i);if(!m)return'';
+  var local=m[1],domain=m[2];
+  if(domain==='googlemail.com')domain='gmail.com';
+  if(domain==='gmail.com'){local=local.split('+')[0].replace(/\./g,'');}
+  return local+'@'+domain;
+}
+function emailKeys(v){var ms=String(v||'').match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/ig)||[];return uniq(ms.map(emailKey).filter(Boolean));}
 async function safe(path){try{return arr(await window.supaFetch(path));}catch(e){return[];}}
 async function loadContext(id,mySeq){
   var p=(await safe('projects?id=eq.'+encodeURIComponent(id)+'&select=id,name,client,ref,location&limit=1'))[0]||{},cs=await safe('project_contacts?project_id=eq.'+encodeURIComponent(id)+'&select=email,contact_name,name,company&limit=500');
@@ -22,12 +30,12 @@ async function loadContext(id,mySeq){
   tokens(p.location||'').forEach(function(t){anchors.push(t);});
   var ref=norm(p.ref||'');if(ref.length>=4)anchors.push(ref);tokens(p.ref||'').forEach(function(t){anchors.push(t);});
   anchors=uniq(anchors).filter(function(x){return x.length>=5;}).slice(0,18);
-  var contacts=uniq(cs.map(function(c){return norm(c.email||'');}).filter(function(e){return e.indexOf('@')>0;}));
+  var contacts=uniq(cs.map(function(c){return emailKey(c.email||'');}).filter(Boolean));
   ctx={project:p,anchors:anchors,contacts:contacts};return ctx;
 }
 function scoreOf(row){var e=row&&row.querySelector('.pgc-score'),m=String(e&&e.textContent||'').match(/\d+/);return m?Number(m[0]):0;}
 function classify(row){
-  var text=norm(row&&row.textContent||''),hits=(ctx&&ctx.anchors||[]).filter(function(a){return text.indexOf(a)>-1;}),contacts=(ctx&&ctx.contacts||[]).filter(function(e){return text.indexOf(e)>-1;}),score=scoreOf(row);
+  var raw=String(row&&row.textContent||''),text=norm(raw),rowEmails=emailKeys(raw),hits=(ctx&&ctx.anchors||[]).filter(function(a){return text.indexOf(a)>-1;}),contacts=(ctx&&ctx.contacts||[]).filter(function(e){return rowEmails.indexOf(e)>-1;}),score=scoreOf(row);
   var strong=hits.length>=2||(hits.length>=1&&contacts.length>=1)||(hits.length>=1&&score>=70);
   return{strong:strong,hits:hits,contacts:contacts,score:score};
 }
@@ -60,5 +68,5 @@ function css(){if(document.getElementById('pgc-safety-css'))return;var s=documen
 css();install();setTimeout(install,120);setTimeout(install,500);
 document.addEventListener('click',function(e){var t=e.target;if(t&&t.id==='pgc-search')schedule();},true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
-window.PSTGmailCrossThreadSafetyV1={apply:apply,install:install};
+window.PSTGmailCrossThreadSafetyV1={apply:apply,install:install,emailKey:emailKey};
 })();
