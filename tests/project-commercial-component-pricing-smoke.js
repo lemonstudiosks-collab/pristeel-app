@@ -3,6 +3,7 @@ const assert=require('assert');
 const {JSDOM}=require('jsdom');
 
 const code=fs.readFileSync('pristeel-project-commercial-component-pricing-v1.js','utf8');
+const preserveCode=fs.readFileSync('pristeel-offer-position-preservation-v1.js','utf8');
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <div id="page-oferta" style="display:block">
   <div id="price-advisor"></div>
@@ -28,10 +29,14 @@ w.buildOferPosFromQuick=function(){
   if(zn>0&&kg>0)w.oferPos.push({desc:'Cinkovanje',qty:kg,unit:'kg',price:zn});
   if(tr>0)w.oferPos.push({desc:'Transport',qty:1,unit:'ls',price:tr});
 };
+w.addOferPos=function(d){w.oferPos.push(d||{desc:'',qty:0,unit:'kg',price:0});};
+w.updOferPos=function(i,f,v){const p=w.oferPos[i];if(!p)return;if(f==='desc'||f==='unit')p[f]=v;else p[f]=parseFloat(v)||0;};
+w.remOferPos=function(i){w.oferPos.splice(i,1);};
 w.collectOfferFormState=function(){return{pr:w.document.getElementById('of-pr').value,kg:w.document.getElementById('of-kg').value,zn:w.document.getElementById('of-zn').value,tr:w.document.getElementById('of-tr').value,oferPos:JSON.parse(JSON.stringify(w.oferPos))};};
-w.applyOfferFormState=function(){};
-w.saveOfferState=function(){};w.genOfer=function(){};w.printOfer=function(){};w.ofertaStartNewDraft=function(){};
+w.applyOfferFormState=function(st){w.oferPos=JSON.parse(JSON.stringify(st&&st.oferPos||[]));};
+w.saveOfferState=function(){};w.genOfer=function(){};w.printOfer=function(){};w.ofertaStartNewDraft=function(){w.oferPos=[];};
 w.eval(code);
+w.eval(preserveCode);
 
 assert(w.PSTProjectCommercialComponentPricingV1.inject(),'component pricing panel should inject');
 const d=w.document;
@@ -67,6 +72,34 @@ assert.strictEqual(w.oferPos[4].price,0.22);
 assert(/montaž/i.test(w.oferPos[4].desc),'installation should be a distinct selling position');
 assert.strictEqual(w.oferPos[4].unit,'kg');
 
+// Manual rows must append and survive any later refresh from pricing.
+w.addOferPos({desc:'Ankera speciale',qty:20,unit:'pc',price:8});
+assert.strictEqual(w.oferPos.length,6);
+w.buildOferPosFromQuick();
+assert.strictEqual(w.oferPos.length,6,'pricing refresh must not delete a manually added position');
+assert(w.oferPos.some(p=>p.desc==='Ankera speciale'),'manual position must remain active');
+
+// BOM/imported rows are source rows too and must survive pricing refresh.
+w.oferPos.push({desc:'IPE 200 S355',qty:500,unit:'kg',price:0,spec:{kind:'ih',profile:'IPE',dim:'200'}});
+w.buildOferPosFromQuick();
+assert.strictEqual(w.oferPos.length,7,'BOM/imported position must be appended, not replaced');
+assert(w.oferPos.some(p=>p.spec&&p.spec.profile==='IPE'),'BOM source position must remain');
+
+// Editing an imported/pricing row turns it into an explicit human override.
+let baseIdx=w.oferPos.findIndex(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='base');
+w.updOferPos(baseIdx,'price','2.05');
+w.buildOferPosFromQuick();
+baseIdx=w.oferPos.findIndex(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='base');
+assert.strictEqual(w.oferPos[baseIdx].price,2.05,'manual edit of a pricing position must survive refresh');
+assert.strictEqual(w.oferPos.filter(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='base').length,1,'manual override must not create a duplicate base row');
+
+// Explicit delete is the only way a standard row disappears, and it must not auto-return.
+let zincIdx=w.oferPos.findIndex(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='zinc');
+w.remOferPos(zincIdx);
+w.buildOferPosFromQuick();
+assert.strictEqual(w.oferPos.some(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='zinc'),false,'manually deleted zinc row must not be recreated automatically');
+assert(w.PSTOfferPositionPreservationV1.removed().includes('zinc'),'manual delete tombstone should be tracked');
+
 const st=w.collectOfferFormState();
 assert.strictEqual(st.coat,'0.58','coating selling price must persist in offer state');
 assert.strictEqual(st.installation,'0.22','installation selling price must persist in offer state');
@@ -78,17 +111,26 @@ assert.strictEqual(st.componentPricing.coat,'0.58');
 assert.strictEqual(st.componentPricing.transportSale,'750');
 assert.strictEqual(st.componentPricing.installationSale,'0.22');
 assert.strictEqual(st.componentPricing.installationUnit,'kg');
+assert(st.positionPreservation.removedKeys.includes('zinc'),'manual delete decision must persist with the draft');
+
+// Reopening a saved draft preserves both rows and manual-delete decisions.
+w.applyOfferFormState(st);
+w.buildOferPosFromQuick();
+assert(w.oferPos.some(p=>p.desc==='Ankera speciale'),'manual position must survive draft reload');
+assert(w.oferPos.some(p=>p.spec&&p.spec.profile==='IPE'),'BOM position must survive draft reload');
+assert.strictEqual(w.oferPos.some(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='zinc'),false,'deleted standard row must stay deleted after draft reload');
 
 d.getElementById('pst-install-unit').value='ls';
 d.getElementById('pst-cost-install-input').value='1800';
 d.getElementById('pst-sale-install').value='2200';
 w.PSTProjectCommercialComponentPricingV1.sync();
-w.oferPos=[];
+w.ofertaStartNewDraft();
 w.buildOferPosFromQuick();
 const last=w.oferPos[w.oferPos.length-1];
 assert.strictEqual(last.unit,'ls','installation can also be quoted as a lump sum');
 assert.strictEqual(last.qty,1);
 assert.strictEqual(last.price,2200);
+assert(w.oferPos.some(p=>w.PSTOfferPositionPreservationV1.inferKey(p)==='zinc'),'new draft resets prior deletion decisions');
 
 dom.window.close();
-console.log('Project commercial component pricing smoke test passed.');
+console.log('Project commercial component pricing and position preservation smoke test passed.');
