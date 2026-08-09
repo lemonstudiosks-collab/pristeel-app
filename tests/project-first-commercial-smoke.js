@@ -9,7 +9,7 @@ const {JSDOM}=require('jsdom');
 
   assert(bootstrap.includes("pristeel-supplier-offer-postsave-ui-v1.js?v=20260809-1"),'Live bootstrap must load supplier offer post-save UI');
   assert(bootstrap.includes("pristeel-project-first-commercial-v1.js?v=20260809-3"),'Live bootstrap must load commercial comparison module');
-  assert(bootstrap.includes("pristeel-project-commercial-prefill-rescue-v1.js?v=20260809-1"),'Live bootstrap must load the project commercial prefill rescue after the builder');
+  assert(bootstrap.includes("pristeel-project-commercial-prefill-rescue-v1.js?v=20260809-2"),'Live bootstrap must load the project commercial prefill rescue after the builder');
   assert(commercial.includes("pristeel-project-commercial-prefill-v1.js?v=20260809-3"),'Commercial workflow must cache-bust the project-aware offer prefill');
   assert(!/MutationObserver|setInterval\s*\(/.test(commercial),'Commercial compare must not poll or globally observe');
 
