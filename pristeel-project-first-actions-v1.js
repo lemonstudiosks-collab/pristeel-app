@@ -11,5 +11,8 @@ function loadScript(src,key,ready){if(ready()||document.querySelector('script[da
 function loadDuplicateContext(){loadScript('pristeel-project-duplicate-context-v1.js?v=20260809-1','duplicate-context',function(){return !!window.PSTProjectDuplicateContextV1;});}
 function loadEmailBodySync(){loadScript('pristeel-project-email-body-sync-v1.js?v=20260809-1','email-body-sync',function(){return !!window.PSTProjectEmailBodySyncV1;});}
 function loadLinkedGmailAuthGate(){loadScript('pristeel-linked-gmail-auth-gate-v1.js?v=20260809-1','linked-gmail-auth-gate',function(){return !!window.PSTLinkedGmailAuthGateV1;});}
-document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);window.PSTProjectFirstActionsV1={inject:inject};loadDuplicateContext();loadEmailBodySync();loadLinkedGmailAuthGate();
+function refreshAfterGmailClose(e){var t=e.target&&e.target.closest?e.target.closest('#pgc-close'):null;if(!t)return;var modal=t.closest('#pgc-bg'),st=modal&&modal.querySelector('#pgc-status'),msg=String(st&&st.textContent||'');if(msg.indexOf('U lidhën')!==0)return;var id=String(window.__pstCurrentProjectId||window._curProjId||'');if(!id)return;setTimeout(function(){if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);},0);}
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);
+document.addEventListener('click',refreshAfterGmailClose,true);
+window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose};loadDuplicateContext();loadEmailBodySync();loadLinkedGmailAuthGate();
 })();
