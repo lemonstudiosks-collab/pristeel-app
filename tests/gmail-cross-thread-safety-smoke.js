@@ -15,7 +15,9 @@ const {JSDOM}=require('jsdom');
     if(path.startsWith('project_contacts?'))return[{email:'sectorconstruction20@gmail.com'},{email:'aleksandarcigelic@gmail.com'}];
     return[];
   };
+  let collectorCalls=0;
   w.pstCollectProjectGmail=function(){
+    collectorCalls++;
     w.document.body.innerHTML=`<div id="pgc-bg">
       <div class="pgc-status" id="pgc-status"></div>
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" checked><span class="pgc-main">Fwd: Dukley Seafront Restoran / Zahtjev za ponudu <span class="pgc-meta">sectorconstruction20@gmail.com</span></span><span class="pgc-score">100%</span></label>
@@ -27,7 +29,8 @@ const {JSDOM}=require('jsdom');
     </div>`;
   };
   w.eval(source);
-  w.pstCollectProjectGmail('p1');
+  const safeCollector=w.pstCollectProjectGmail;
+  safeCollector('p1');
   await new Promise(r=>setTimeout(r,550));
   const rows=[...w.document.querySelectorAll('.pgc-row')];
   assert.strictEqual(rows[0].querySelector('.pgc-thread').checked,true,'Dukley thread should auto-select');
@@ -40,6 +43,17 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(w.document.getElementById('pgc-import').disabled,true,'Cross-thread file import must be blocked');
   assert.strictEqual(w.document.getElementById('pgc-link').textContent,'Lidhi emailat e zgjedhur');
   assert(rows[2].textContent.includes('Përputhje projekti'),'Strong-match explanation should be visible');
+
+  let recoveryCalls=0;
+  function recovery(){recoveryCalls++;}
+  w.pstRecoverLinkedProjectGmail=recovery;
+  w.pstCollectProjectGmail=recovery;
+  assert.strictEqual(w.PSTGmailCrossThreadSafetyV1.install(),false,'Safety layer must not wrap linked-email recovery');
+  safeCollector('p1');
+  await new Promise(r=>setTimeout(r,20));
+  assert.strictEqual(collectorCalls,2,'Saved fallback wrapper must still call the original Gmail collector');
+  assert.strictEqual(recoveryCalls,0,'Saved fallback wrapper must never bounce back into linked-email recovery');
+
   dom.window.close();
   console.log('Gmail cross-thread safety smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
