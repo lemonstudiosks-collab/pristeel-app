@@ -27,4 +27,5 @@ w.eval(src);
  if(!text.includes('2 emaila')) throw new Error('email count missing');
  if(!box.querySelector('[data-pdc-open="b"]')) throw new Error('open alternate record action missing');
  console.log('project duplicate context smoke ok');
+ require('./project-identity-lock-smoke.js');
 })().catch(e=>{console.error(e);process.exit(1);});
