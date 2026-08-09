@@ -1,8 +1,9 @@
 /* PRISTEEL Gmail direct launch v5
- * Gmail opens the platform in the current tab and reuses the existing same-origin session.
- * If PRISTEEL itself is locked, the Gmail target is held until explicit platform login.
- * Google authorization is a second gate and never opens automatically.
- * No cross-tab negotiation, automatic closing, navigation takeover, global polling or observers.
+ * Gmail intake has two explicit gates, in order:
+ *   1) PRISTEEL platform session
+ *   2) Google Gmail + Drive authorization
+ * Only then is the Gmail thread intake opened.
+ * No automatic OAuth popup, global polling, cross-tab negotiation or navigation takeover.
  */
 (function(){
 'use strict';
@@ -14,7 +15,6 @@ window.__pstGmailDirectLaunchV4=true;
 var PARAMS=['gmail_intake','gmail_message_id','gmail_thread_id','subject','from'];
 var gate={target:'',holding:false,released:false,timers:[],loginBound:false};
 
-/* Clear the legacy named-window marker and any stale handoff flags. */
 try{window.name='';}catch(e){}
 window.__pstAbortBootstrap=false;
 window.__pstGmailHandoffPending=false;
@@ -44,6 +44,7 @@ function platformSession(){
   }catch(e){return null;}
 }
 function platformReady(){return !!platformSession();}
+function googleModuleReady(){return !!(window.PSTGoogleWorkspaceAuth&&window.PSTGmailIntakeAuthBridgeV1);}
 function googleReady(){
   var G=window.PSTGoogleWorkspaceAuth;
   if(!G||!G.currentToken)return false;
@@ -51,31 +52,34 @@ function googleReady(){
 }
 function clearGateTimers(){gate.timers.forEach(function(t){clearTimeout(t);});gate.timers=[];}
 function dispatchFallback(target){
+  gate.released=true;gate.holding=false;
   window.__pstGmailHandoffPending=false;
   window.__pstPendingGmailIntakeTarget=target;
   try{document.dispatchEvent(new CustomEvent('pst:gmail-handoff-fallback',{detail:{target:target}}));}catch(e){}
+  return true;
 }
-function releaseAfterLogin(){
-  if(!gate.holding||gate.released||!gate.target||!platformReady())return false;
-  gate.released=true;
-  gate.holding=false;
-  clearGateTimers();
+function releaseWhenReady(){
+  if(!gate.holding||gate.released||!gate.target)return false;
+  if(!platformReady())return false;
+  if(!googleModuleReady())return false;
+
   window.__pstGmailHandoffPending=false;
   window.__pstPendingGmailIntakeTarget=gate.target;
 
-  /* Google auth is independent from PRISTEEL login. Show only if actually needed. */
   if(!googleReady()){
     var B=window.PSTGmailIntakeAuthBridgeV1;
-    if(B&&typeof B.render==='function'&&B.render())return true;
+    if(B&&typeof B.render==='function'&&B.render()){
+      gate.released=true;gate.holding=false;clearGateTimers();return true;
+    }
+    return false;
   }
-  dispatchFallback(gate.target);
-  return true;
+
+  clearGateTimers();
+  return dispatchFallback(gate.target);
 }
 function boundedLoginChecks(){
   clearGateTimers();
-  [120,300,650,1200,2200,4000,7000].forEach(function(ms){
-    gate.timers.push(setTimeout(releaseAfterLogin,ms));
-  });
+  [120,300,650,1200,2200,4000,7000].forEach(function(ms){gate.timers.push(setTimeout(releaseWhenReady,ms));});
 }
 function bindLogin(){
   if(gate.loginBound)return true;
@@ -85,16 +89,14 @@ function bindLogin(){
   form.addEventListener('submit',boundedLoginChecks,true);
   return true;
 }
-function holdUntilPlatformLogin(target){
+function hold(target){
   target=safeTarget(target);if(!target)return false;
   gate.target=target;gate.holding=true;gate.released=false;
   window.__pstGmailHandoffPending=true;
   window.__pstPendingGmailIntakeTarget=target;
-  if(!bindLogin()){
+  if(!platformReady()&&!bindLogin()){
     [100,250,500,900,1500,2500].forEach(function(ms){
-      gate.timers.push(setTimeout(function(){
-        if(platformReady())releaseAfterLogin();else bindLogin();
-      },ms));
+      gate.timers.push(setTimeout(function(){if(platformReady())releaseWhenReady();else bindLogin();},ms));
     });
   }
   return true;
@@ -104,27 +106,27 @@ function openTarget(target){
   var localTarget=copyIntakeParams(target);
   window.__pstPendingGmailIntakeTarget=localTarget;
 
-  if(!platformReady())return holdUntilPlatformLogin(localTarget);
+  /* If either gate is unresolved, keep the target and let the explicit gate UI continue it. */
+  if(!platformReady()||!googleModuleReady()||!googleReady()){
+    hold(localTarget);
+    if(platformReady()&&googleModuleReady())releaseWhenReady();
+    return true;
+  }
 
   window.__pstGmailHandoffPending=false;
-  if(window.PSTGmailIntakeV3&&typeof window.PSTGmailIntakeV3.open==='function'){
-    window.PSTGmailIntakeV3.open(localTarget);
-  }else if(window.PSTGmailIntakeV2&&typeof window.PSTGmailIntakeV2.open==='function'){
-    window.PSTGmailIntakeV2.open(localTarget);
-  }else{
-    try{document.dispatchEvent(new CustomEvent('pst:gmail-intake-request',{detail:{target:localTarget}}));}catch(e){}
-  }
+  if(window.PSTGmailIntakeV3&&typeof window.PSTGmailIntakeV3.open==='function')window.PSTGmailIntakeV3.open(localTarget);
+  else if(window.PSTGmailIntakeV2&&typeof window.PSTGmailIntakeV2.open==='function')window.PSTGmailIntakeV2.open(localTarget);
+  else try{document.dispatchEvent(new CustomEvent('pst:gmail-intake-request',{detail:{target:localTarget}}));}catch(e){}
   return true;
 }
 
-/* A Gmail link is already the destination platform tab. Keep it alive for bootstrap. */
+/* Initial direct Gmail URL is always held until both gates are resolved. */
 var initial=safeTarget(location.href);
-if(initial){
-  window.__pstPendingGmailIntakeTarget=initial;
-  if(!platformReady())holdUntilPlatformLogin(initial);
-}
+if(initial)hold(initial);
 
-window.PSTGmailHandoffV5={openTarget:openTarget,isIntake:!!initial,isHolding:function(){return gate.holding&&!gate.released;},releaseAfterLogin:releaseAfterLogin};
+document.addEventListener('pst:modules-ready',function(){releaseWhenReady();},{once:true});
+
+window.PSTGmailHandoffV5={openTarget:openTarget,isIntake:!!initial,isHolding:function(){return gate.holding&&!gate.released;},releaseWhenReady:releaseWhenReady};
 window.PSTGmailHandoffV4=window.PSTGmailHandoffV5;
 window.PSTGmailHandoffV3=window.PSTGmailHandoffV5;
 })();
