@@ -21,6 +21,7 @@ function emailKey(v){
   return local+'@'+domain;
 }
 function canonicalEmailText(v){return String(v||'').toLowerCase().replace(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/ig,function(e){return emailKey(e)||e.toLowerCase();});}
+function rowSourceText(row){if(!row)return'';var c=row.cloneNode(true);c.querySelectorAll('.pgc-safety-note').forEach(function(n){n.remove();});return String(c.textContent||'');}
 async function safe(path){try{return arr(await window.supaFetch(path));}catch(e){return[];}}
 async function loadContext(id,mySeq){
   var p=(await safe('projects?id=eq.'+encodeURIComponent(id)+'&select=id,name,client,ref,location&limit=1'))[0]||{},cs=await safe('project_contacts?project_id=eq.'+encodeURIComponent(id)+'&select=email,contact_name,name,company&limit=500');
@@ -35,7 +36,7 @@ async function loadContext(id,mySeq){
 }
 function scoreOf(row){var e=row&&row.querySelector('.pgc-score'),m=String(e&&e.textContent||'').match(/\d+/);return m?Number(m[0]):0;}
 function classify(row){
-  var raw=String(row&&row.textContent||''),text=norm(raw),emailText=canonicalEmailText(raw),hits=(ctx&&ctx.anchors||[]).filter(function(a){return text.indexOf(a)>-1;}),contacts=(ctx&&ctx.contacts||[]).filter(function(e){return emailText.indexOf(e)>-1;}),score=scoreOf(row);
+  var raw=rowSourceText(row),text=norm(raw),emailText=canonicalEmailText(raw),hits=(ctx&&ctx.anchors||[]).filter(function(a){return text.indexOf(a)>-1;}),contacts=(ctx&&ctx.contacts||[]).filter(function(e){return emailText.indexOf(e)>-1;}),score=scoreOf(row);
   var strong=hits.length>=2||(hits.length>=1&&contacts.length>=1)||(hits.length>=1&&score>=70);
   return{strong:strong,hits:hits,contacts:contacts,score:score,emailText:emailText};
 }
@@ -68,5 +69,5 @@ function css(){if(document.getElementById('pgc-safety-css'))return;var s=documen
 css();install();setTimeout(install,120);setTimeout(install,500);
 document.addEventListener('click',function(e){var t=e.target;if(t&&t.id==='pgc-search')schedule();},true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
-window.PSTGmailCrossThreadSafetyV1={apply:apply,install:install,emailKey:emailKey,canonicalEmailText:canonicalEmailText,debug:function(row){return{context:ctx,result:classify(row),raw:String(row&&row.textContent||'')}}};
+window.PSTGmailCrossThreadSafetyV1={apply:apply,install:install,emailKey:emailKey,canonicalEmailText:canonicalEmailText,debug:function(row){return{context:ctx,result:classify(row),raw:rowSourceText(row)}}};
 })();
