@@ -118,6 +118,7 @@ var files=[
   'pristeel-commercial-document-builder-v1.js?v=20260808-2',
   'pristeel-project-commercial-prefill-rescue-v1.js?v=20260809-2',
   'pristeel-project-commercial-component-pricing-v1.js?v=20260809-2',
+  'pristeel-offer-position-preservation-v1.js?v=20260809-1',
   'pristeel-gmail-live-inbox-v2.js?v=20260808-2',
   'pristeel-gmail-intake-click-fix-v1.js?v=20260808-1'
 ];
