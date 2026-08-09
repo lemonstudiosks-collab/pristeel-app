@@ -22,20 +22,23 @@ const {JSDOM}=require('jsdom');
       <div class="pgc-status" id="pgc-status"></div>
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" checked><span class="pgc-main">Fwd: Dukley Seafront Restoran / Zahtjev za ponudu <span class="pgc-meta">sectorconstruction20@gmail.com</span></span><span class="pgc-score">100%</span></label>
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" checked><span class="pgc-main">Re: Zahtjev za ponudu - Salla Sportive Andrijevica <span class="pgc-meta">italianstyle.ks@gmail.com</span></span><span class="pgc-score">100%</span></label>
-      <label class="pgc-row"><input class="pgc-thread" type="checkbox" checked><span class="pgc-main">Restauranti Budva - Marko <span class="pgc-meta">sectorconstruction20@gmail.com</span></span><span class="pgc-score">48%</span></label>
+      <label class="pgc-row"><input class="pgc-thread" type="checkbox" checked><span class="pgc-main">Restauranti Budva - Marko <span class="pgc-meta">sector.construction20@gmail.com</span></span><span class="pgc-score">48%</span></label>
       <label class="pgc-row"><input class="pgc-thread" type="checkbox" checked><span class="pgc-main">Notification Italian Style / Andrijevica follow-up</span><span class="pgc-score">36%</span></label>
       <label class="pgc-att-row"><input class="pgc-attachment" type="checkbox" checked></label>
       <button id="pgc-import">Lidhi dhe importo skedarët</button><button id="pgc-link">Lidhi vetëm emailat</button><button id="pgc-all-threads">Zgjidh të gjitha</button><button id="pgc-latest-files">Vetëm versionet e fundit</button><button id="pgc-search">Kërko përsëri</button>
     </div>`;
   };
   w.eval(source);
+  assert.strictEqual(w.PSTGmailCrossThreadSafetyV1.emailKey('sector.construction20@gmail.com'),'sectorconstruction20@gmail.com','Gmail dots must normalize');
+  assert.strictEqual(w.PSTGmailCrossThreadSafetyV1.emailKey('sector.construction20+rfq@gmail.com'),'sectorconstruction20@gmail.com','Gmail plus aliases must normalize');
+  assert.strictEqual(w.PSTGmailCrossThreadSafetyV1.emailKey('first.last@example.com'),'first.last@example.com','Dots on non-Gmail domains must be preserved');
   const safeCollector=w.pstCollectProjectGmail;
   safeCollector('p1');
   await new Promise(r=>setTimeout(r,550));
   const rows=[...w.document.querySelectorAll('.pgc-row')];
   assert.strictEqual(rows[0].querySelector('.pgc-thread').checked,true,'Dukley thread should auto-select');
   assert.strictEqual(rows[1].querySelector('.pgc-thread').checked,false,'Andrijevica sibling project must not auto-select');
-  assert.strictEqual(rows[2].querySelector('.pgc-thread').checked,true,'Sector Budva email should auto-select from Budva anchor + project contact');
+  assert.strictEqual(rows[2].querySelector('.pgc-thread').checked,true,'Sector Budva email should auto-select from Budva anchor + Gmail-equivalent project contact');
   assert.strictEqual(rows[3].querySelector('.pgc-thread').checked,false,'Generic notification must not auto-select');
   const att=w.document.querySelector('.pgc-attachment');
   assert.strictEqual(att.checked,false,'Cross-thread attachments must start unchecked');
