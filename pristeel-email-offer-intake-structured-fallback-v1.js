@@ -46,7 +46,7 @@ function modal(m,x,t){
 function setVal(id,v){var el=document.getElementById(id);if(el&&v!==undefined&&v!==null&&String(v)!=='')el.value=v;}
 async function openDraft(id){
  var z=drafts[String(id)],d=window.__pstIntegrityLastData,pid=String(d&&d.project&&d.project.id||window.__pstCurrentProjectId||'');if(!z||typeof window.pstOpenOffer!=='function')return;
- var bg=document.getElementById('pst-eoi-bg');if(bg)bg.remove();await window.pstOpenOffer(null,pid);var x=z.data,m=z.mail;base=x.positions.find(function(p){return p.kind==='base';})||x.positions[0];
+ var bg=document.getElementById('pst-eoi-bg');if(bg)bg.remove();await window.pstOpenOffer(null,pid);var x=z.data,m=z.mail,base=x.positions.find(function(p){return p.kind==='base';})||x.positions[0];
  setVal('oe-sup',x.supplier||supplier(m));setVal('oe-sup-q',x.supplier||supplier(m));setVal('oe-proj',pid);
  if(base&&window.pstPos){window.pstPos(0,'desc',base.description||'Konstruksion metalik');window.pstPos(0,'qty',0);window.pstPos(0,'unit','kg');window.pstPos(0,'price_orig',base.unit_price||0);window.pstPos(0,'price_neg',base.unit_price||0);}
  setVal('oe-zinc',x.zinc_eur_kg);setVal('oe-weeks',x.delivery_weeks);setVal('oe-inco',x.incoterms);setVal('oe-cert',x.cert);setVal('oe-origin',x.origin);setVal('oe-origin-q',x.origin);
