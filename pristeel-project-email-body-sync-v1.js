@@ -64,19 +64,23 @@ async function patchMessage(row,text){
 }
 async function sync(force){
   var d=current(),p=d&&d.project,id=String(p&&p.id||'');
-  if(!id||state.busy||(!force&&state.done[id])){enhanceDisplay();return false;}
+  if(!id||state.busy){enhanceDisplay();return false;}
   var token=gmailToken(),E=window.PSTEmail;
   if(!token||!E||typeof E.gmail!=='function'){enhanceDisplay();return false;}
-  state.busy=true;state.done[id]=true;var my=++state.seq,changed=0,mails=A(d.emails).filter(function(m){return !!m.gmail_message_id;}).slice(0,80);
-  if(activeCommunication())setHeaderStatus(mails.length+' emaila · duke sinkronizuar tekstin…');
+  var mails=A(d.emails).filter(function(m){var mid=String(m&&m.gmail_message_id||'');return !!mid&&(force||!state.done[mid]);}).slice(0,80);
+  if(!mails.length){enhanceDisplay();if(activeCommunication())setHeaderStatus(A(d.emails).length+' emaila · teksti i sinkronizuar');return false;}
+  state.busy=true;var my=++state.seq,changed=0;
+  if(activeCommunication())setHeaderStatus(A(d.emails).length+' emaila · duke sinkronizuar tekstin…');
   try{
     for(var i=0;i<mails.length;i++){
       if(my!==state.seq)break;
+      var mid=String(mails[i].gmail_message_id||'');
       try{
-        var gm=await E.gmail('/messages/'+enc(mails[i].gmail_message_id)+'?format=full',token);
+        var gm=await E.gmail('/messages/'+enc(mid)+'?format=full',token);
         var txt=fullText(gm&&gm.payload,gm&&gm.snippet||mails[i].snippet||'');
         if(txt&&await patchMessage(mails[i],txt))changed++;
-      }catch(e){if(window.console&&console.debug)console.debug('PRISTEEL email body sync skipped:',mails[i].gmail_message_id,e&&e.message);}
+        state.done[mid]=true;
+      }catch(e){if(window.console&&console.debug)console.debug('PRISTEEL email body sync skipped:',mid,e&&e.message);}
     }
     if(changed&&window.PSTProjectDataIntegrity&&typeof window.PSTProjectDataIntegrity.load==='function'){
       try{var fresh=await window.PSTProjectDataIntegrity.load(id);window.__pstIntegrityLastData=fresh;}catch(e){}
