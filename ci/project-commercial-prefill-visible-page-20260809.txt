@@ -1,0 +1,1 @@
+CI trigger only: verify project commercial prefill when legacy offer page is display:block without active class.
