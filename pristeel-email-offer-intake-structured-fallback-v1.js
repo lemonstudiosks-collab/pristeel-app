@@ -13,7 +13,7 @@ function text(m){return String(m&&(m.body_text||m.body||m.text||m.snippet)||'').
 function supplier(m){var n=String(m&&m.from_name||'').trim();if(n)return n;var e=String(m&&m.from_email||''),d=(e.split('@')[1]||'').split('.')[0];return d?d.replace(/[-_]+/g,' ').replace(/\b\w/g,function(x){return x.toUpperCase();}):'Furnitor';}
 function baseFallback(t,m){var api=window.PSTEmailOfferIntakeV1;try{return api&&api._test&&api._test.fallback?api._test.fallback(t,m):{};}catch(e){return{};}}
 function cleanDesc(v){return String(v||'').replace(/^\s*[-–•]+\s*/,'').replace(/\s+/g,' ').trim();}
-function kind(desc){var n=String(desc||'').toLowerCase();if(/zink|zinc|galvan/.test(n))return'zinc';if(/powder|coating|ngjyr|paint|beschicht/.test(n))return'coating';return'base';}
+function kind(desc){var n=String(desc||'').toLowerCase();if(/powder|coating|ngjyr|paint|beschicht/.test(n))return'coating';if(/zink|zinc|galvan/.test(n))return'zinc';return'base';}
 function structured(t,m){
  var x=Object.assign({is_supplier_offer:true,supplier:supplier(m),currency:'EUR',positions:[],price_kg:null,total_eur:null,qty_kg:null,zinc_eur_kg:null,coating_eur_kg:null,transport_eur:null,vat_pct:null,vat_note:null,delivery_weeks:null,incoterms:null,cert:null,origin:null,payment_terms:null,validity:null,notes:'',confidence:0,warnings:[]},baseFallback(t,m)||{});
  x.supplier=x.supplier||supplier(m);x.positions=[];
