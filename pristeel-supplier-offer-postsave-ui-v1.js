@@ -50,7 +50,7 @@ function wrapSave(){
  };
  wrapped.__pstPostsaveUiWrapped=true;wrapped.__base=fn;window.pstSaveOffer=wrapped;return true;
 }
-document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;if(t)setTimeout(decorate,0);},true);
+document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"],[data-pf2-tab="commercial"],[data-pf2-action="tab:commercial"]'):null;if(t)setTimeout(decorate,0);},true);
 wrapSave();document.addEventListener('pst:modules-ready',function(){wrapSave();setTimeout(decorate,0);},{once:true});
 window.PSTSupplierOfferPostsaveUiV1={decorate:decorate,offerMeta:offerMeta,wrapSave:wrapSave};
 })();
