@@ -10,6 +10,7 @@ const {JSDOM}=require('jsdom');
 
   const dom=new JSDOM('<!doctype html><html><head></head><body></body></html>',{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
+  async function waitFor(fn,timeout=3500){const start=Date.now();while(Date.now()-start<timeout){if(fn())return;await new Promise(r=>setTimeout(r,25));}throw new Error('Timed out waiting for Gmail safety application');}
   w.supaFetch=async path=>{
     if(path.startsWith('projects?'))return[{id:'p1',name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA',client:'ITALIAN STYLE',ref:'',location:'Budva'}];
     if(path.startsWith('project_contacts?'))return[{email:'sectorconstruction20@gmail.com'},{email:'aleksandarcigelic@gmail.com'}];
@@ -45,10 +46,11 @@ const {JSDOM}=require('jsdom');
 
   const safeCollector=w.pstCollectProjectGmail;
   safeCollector('p1');
-  await new Promise(r=>setTimeout(r,850));
+  await waitFor(()=>w.document.querySelectorAll('.pgc-safety-note').length===5);
   const rows=[...w.document.querySelectorAll('.pgc-row')];
   assert.strictEqual(rows.length,5,'Delayed collector render should complete');
-  assert.strictEqual(rows[0].querySelector('.pgc-thread').checked,false,'Already-linked Dukley thread must not be selected again');
+  const linkedDbg=w.PSTGmailCrossThreadSafetyV1.debug(rows[0]);
+  assert.strictEqual(rows[0].querySelector('.pgc-thread').checked,false,'Already-linked Dukley thread must not be selected again: '+JSON.stringify(linkedDbg));
   assert.strictEqual(rows[0].querySelector('.pgc-thread').disabled,true,'Already-linked thread must be disabled');
   assert(rows[0].textContent.includes('Tashmë i lidhur'),'Already-linked explanation should be visible');
   assert.strictEqual(rows[1].querySelector('.pgc-thread').checked,false,'Andrijevica sibling project must not auto-select');
@@ -70,7 +72,7 @@ const {JSDOM}=require('jsdom');
   w.pstCollectProjectGmail=recovery;
   assert.strictEqual(w.PSTGmailCrossThreadSafetyV1.install(),false,'Safety layer must not wrap linked-email recovery');
   safeCollector('p1');
-  await new Promise(r=>setTimeout(r,850));
+  await waitFor(()=>collectorCalls===2&&w.document.querySelectorAll('.pgc-safety-note').length===5);
   assert.strictEqual(collectorCalls,2,'Saved fallback wrapper must still call the original Gmail collector');
   assert.strictEqual(recoveryCalls,0,'Saved fallback wrapper must never bounce back into linked-email recovery');
 
