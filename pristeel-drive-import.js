@@ -5,6 +5,7 @@
 var ROOT_FOLDER_NAME='PRISTEEL — Projektet';
 var DRIVE_SCOPE='https://www.googleapis.com/auth/drive';
 var FOLDER_MIME='application/vnd.google-apps.folder';
+var CHUNK_SIZE=8*1024*1024;
 var token='',tokenExp=0,pending=null;
 
 function enc(v){return encodeURIComponent(String(v==null?'':v))}
@@ -55,7 +56,7 @@ function xhrRequest(url,options){
       };
       x.onerror=function(){reject(new Error('Lidhja me Google Drive dështoi para se serveri të kthente përgjigje.'))};
       x.ontimeout=function(){reject(new Error('Google Drive nuk u përgjigj brenda afatit.'))};
-      x.timeout=120000;
+      x.timeout=options.timeoutMs||120000;
       x.send(options.body==null?null:options.body)
     })
   })
@@ -109,13 +110,75 @@ async function startUpload(file,folderId){
   if(!location)throw new Error('Google Drive nuk ktheu adresën e ngarkimit.');
   return location
 }
+function rangeEnd(v){var m=String(v||'').match(/bytes\s*=\s*0-(\d+)/i);return m?parseInt(m[1],10):-1}
+function resumableRequest(location,options){
+  options=options||{};
+  return authorize().then(function(t){
+    return new Promise(function(resolve,reject){
+      var x=new XMLHttpRequest();
+      x.open('PUT',location,true);
+      x.setRequestHeader('Authorization','Bearer '+t);
+      if(options.contentType)x.setRequestHeader('Content-Type',options.contentType);
+      if(options.contentRange)x.setRequestHeader('Content-Range',options.contentRange);
+      if(options.onProgress)x.upload.onprogress=options.onProgress;
+      x.onload=function(){
+        if(x.status===308){resolve({complete:false,range:x.getResponseHeader('Range')||'',data:parse(x.responseText),xhr:x});return}
+        if(x.status>=200&&x.status<300){resolve({complete:true,range:x.getResponseHeader('Range')||'',data:parse(x.responseText),xhr:x});return}
+        var body=parse(x.responseText),detail=(body&&body.error&&body.error.message)||x.responseText||('HTTP '+x.status);
+        if(x.status===401||x.status===403)clearToken();
+        reject(new Error('Google Drive '+x.status+': '+String(detail).slice(0,300)))
+      };
+      x.onerror=function(){reject(new Error('Lidhja me Google Drive u ndërpre gjatë ngarkimit.'))};
+      x.ontimeout=function(){reject(new Error('Ngarkimi në Google Drive kaloi afatin për këtë pjesë.'))};
+      x.timeout=options.timeoutMs||300000;
+      x.send(options.body==null?null:options.body)
+    })
+  })
+}
+async function queryUpload(location,total){
+  return resumableRequest(location,{contentRange:'bytes */'+total,body:new Blob([]),timeoutMs:60000})
+}
 async function uploadFile(file,folderId,onProgress){
   var location;
   try{location=await startUpload(file,folderId)}catch(e){throw err('Nisja e ngarkimit për '+file.name,e)}
+  var total=Number(file.size||0);
+  if(total===0){
+    try{return(await resumableRequest(location,{body:new Blob([]),contentType:file.type||'application/octet-stream',timeoutMs:60000})).data}catch(e){throw err('Ngarkimi i skedarit '+file.name,e)}
+  }
+  var offset=0,retries=0;
+  while(offset<total){
+    var end=Math.min(offset+CHUNK_SIZE,total)-1,part=file.slice(offset,end+1),base=offset;
+    try{
+      var r=await resumableRequest(location,{
+        contentType:file.type||'application/octet-stream',
+        contentRange:'bytes '+offset+'-'+end+'/'+total,
+        body:part,
+        timeoutMs:300000,
+        onProgress:function(ev){if(onProgress&&ev.lengthComputable)onProgress(Math.min(99,Math.round((base+ev.loaded)/total*100)))}
+      });
+      retries=0;
+      if(r.complete){if(onProgress)onProgress(100);return r.data}
+      var acknowledged=rangeEnd(r.range)+1;
+      offset=acknowledged>offset?acknowledged:end+1
+    }catch(e){
+      var recovered=false;
+      try{
+        var state=await queryUpload(location,total);
+        if(state.complete){if(onProgress)onProgress(100);return state.data}
+        var next=rangeEnd(state.range)+1;
+        if(next>offset){offset=next;retries=0;recovered=true}
+      }catch(ignore){}
+      if(recovered)continue;
+      retries++;
+      if(retries<=2)continue;
+      throw err('Ngarkimi i skedarit '+file.name,e)
+    }
+  }
   try{
-    var r=await xhrRequest(location,{method:'PUT',headers:{'Content-Type':file.type||'application/octet-stream'},body:file,onProgress:onProgress});
-    return r.data
-  }catch(e){throw err('Ngarkimi i skedarit '+file.name,e)}
+    var finalState=await queryUpload(location,total);
+    if(finalState.complete){if(onProgress)onProgress(100);return finalState.data}
+  }catch(ignore){}
+  throw new Error('Google Drive nuk konfirmoi përfundimin e ngarkimit për '+file.name+'.')
 }
 
 async function importFiles(projectId,files,onStatus){
@@ -145,6 +208,7 @@ async function importFiles(projectId,files,onStatus){
 window.PSTDriveImport={
   authorize:authorize,
   importFiles:importFiles,
-  ensureProjectFolderById:async function(projectId){await authorize();return ensureProjectFolder(await getProject(projectId))}
+  ensureProjectFolderById:async function(projectId){await authorize();return ensureProjectFolder(await getProject(projectId))},
+  _test:{rangeEnd:rangeEnd,chunkSize:CHUNK_SIZE}
 };
 })();
