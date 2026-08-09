@@ -7,7 +7,7 @@ const {JSDOM}=require('jsdom');
   const rescue=fs.readFileSync('pristeel-project-commercial-prefill-rescue-v1.js','utf8');
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
     <button id="open" data-pf2-action="offer">Krijo / edito ofertë</button>
-    <div id="page-oferta" class="page">
+    <div id="page-oferta" class="page" style="display:none">
       <div id="price-advisor"></div>
       <select id="pa-country"><option value="DE" selected>Germany</option><option value="ME">Montenegro</option></select>
       <select id="pa-type"><option value="stahlbau" selected>Konstruksion çeliku</option></select>
@@ -44,7 +44,7 @@ const {JSDOM}=require('jsdom');
   w.eval(prefill);
   w.eval(rescue);
   w.document.getElementById('open').click();
-  w.document.getElementById('prod').onclick=()=>w.document.getElementById('page-oferta').classList.add('active');
+  w.document.getElementById('prod').onclick=()=>{w.document.getElementById('page-oferta').style.display='block';};
   w.document.getElementById('prod').click();
   await new Promise(r=>setTimeout(r,700));
   assert.strictEqual(w.document.getElementById('of-proj').value,'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA');
@@ -58,7 +58,7 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(w.document.getElementById('pa-exc').value,'');
   assert.strictEqual(w.document.getElementById('of-pay-preset').value,'');
   assert.strictEqual(w.document.getElementById('of-cer').value,'');
-  assert(w.document.getElementById('pst-project-cost-basis'),'cost basis panel should be injected in the real click flow');
+  assert(w.document.getElementById('pst-project-cost-basis'),'cost basis panel should be injected when legacy page is display:block without active class');
   dom.window.close();
   console.log('Project commercial prefill rescue smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
