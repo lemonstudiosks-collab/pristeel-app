@@ -1,0 +1,1 @@
+CI trigger v2 for offer position preservation validation.
