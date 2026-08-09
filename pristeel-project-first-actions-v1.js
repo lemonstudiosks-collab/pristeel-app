@@ -1,6 +1,6 @@
 /* PRISTEEL project-first actions v1
  * Explicit desktop upload and explicit repair for legacy projects missing a Drive folder.
- * Also loads read-only duplicate context and linked-email full-body sync for Project Workspace.
+ * Also loads read-only duplicate context, linked-email full-body sync and the explicit Gmail recovery auth gate.
  */
 (function(){
 'use strict';if(window.__pstProjectFirstActionsV1)return;window.__pstProjectFirstActionsV1=true;
@@ -10,5 +10,6 @@ function inject(){var d=data(),page=document.getElementById('page-workspace-proj
 function loadScript(src,key,ready){if(ready()||document.querySelector('script[data-pst-'+key+']'))return;var s=document.createElement('script');s.src=src;s.defer=true;s.setAttribute('data-pst-'+key,'1');document.head.appendChild(s);}
 function loadDuplicateContext(){loadScript('pristeel-project-duplicate-context-v1.js?v=20260809-1','duplicate-context',function(){return !!window.PSTProjectDuplicateContextV1;});}
 function loadEmailBodySync(){loadScript('pristeel-project-email-body-sync-v1.js?v=20260809-1','email-body-sync',function(){return !!window.PSTProjectEmailBodySyncV1;});}
-document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);window.PSTProjectFirstActionsV1={inject:inject};loadDuplicateContext();loadEmailBodySync();
+function loadLinkedGmailAuthGate(){loadScript('pristeel-linked-gmail-auth-gate-v1.js?v=20260809-1','linked-gmail-auth-gate',function(){return !!window.PSTLinkedGmailAuthGateV1;});}
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);window.PSTProjectFirstActionsV1={inject:inject};loadDuplicateContext();loadEmailBodySync();loadLinkedGmailAuthGate();
 })();
