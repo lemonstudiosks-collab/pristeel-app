@@ -51,3 +51,5 @@ const {JSDOM}=require('jsdom');
   dom.window.close();
   console.log('Project-first V2 smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
+
+require('./project-duplicate-context-smoke.js');
