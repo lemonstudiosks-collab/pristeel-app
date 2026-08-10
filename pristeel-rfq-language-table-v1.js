@@ -65,26 +65,35 @@ function replaceSection(body,start,end,value){
   return body;
 }
 function rewriteBody(raw,l,buyer,rows){
-  var b=String(raw||'');
-  var bh=buyerHeading(l),mh=bomHeading(l),th=totalHeading(l);
+  var b=String(raw||''),bh=buyerHeading(l),mh=bomHeading(l),th=totalHeading(l);
   if(buyer){b=replaceSection(b,bh,mh,clean(buyer));}else{var re=new RegExp('\\n\\n'+rxEsc(bh)+'\\n[\\s\\S]*?(?=\\n\\n'+rxEsc(mh)+')');b=b.replace(re,'');}
   b=replaceSection(b,mh,th,bomTable(l,rows));
   return b;
 }
 function setBody(a,body){if(!a)return;try{var u=new URL(a.href,location.href);u.searchParams.set('body',body);a.href=u.toString();}catch(e){}}
 function note(box,text){var n=box&&box.querySelector('.prfq-note');if(!n)return;var base='Detajet shtese mbeten te editueshme ne gjuhen origjinale. Drafti i secilit prodhues gjenerohet i plote ne gjuhen e kontaktit.';n.textContent=text?base+' '+text:base;}
+function guardedContext(R,box){
+  var B=window.PSTRfqBuyerRequestContextV1,ta=box&&box.querySelector('[data-prfq-context]'),manual=!!(ta&&ta.getAttribute('data-pst-buyer-user-edited')==='1');
+  if(B&&typeof B.apply==='function'&&!manual)B.apply(false);
+  var ctx=manual?clean(ta&&ta.value||''):(B&&typeof B.safeContext==='function'?clean(B.safeContext()):clean(ta&&ta.value||R._state.buyerContext||''));
+  if(!manual&&B&&typeof B.buyerRequest==='function'){
+    var direct=clean(B.buyerRequest((R._state&&R._state.data)||window.__pstIntegrityLastData||null));
+    if(direct)ctx=direct;
+  }
+  if(R._state)R._state.buyerContext=ctx;
+  return ctx;
+}
 async function rewrite(force){
   var R=window.PSTProjectFirstRfqDraftV1,box=document.getElementById('pst-pf2-rfq-draft');if(!R||!R._state||!box)return false;
-  var state=R._state,ta=box.querySelector('[data-prfq-context]'),ctx=clean(ta&&ta.value||state.buyerContext||'');
+  var state=R._state,ctx=guardedContext(R,box);
   note(box,'Duke pergatitur perkthimet…');
-  var map=await translations(ctx,!!force);var rows=A(state.bom);
+  var map=await translations(ctx,!!force),rows=A(state.bom);
   A(state.suppliers).forEach(function(s,i){var row=box.querySelector('[data-prfq-row="'+i+'"]');if(!row)return;var l=lang(s.lang),raw=R.bodyFor(s,ctx),body=rewriteBody(raw,l,map[l]||'',rows),pre=row.querySelector('.prfq-preview'),a=row.querySelector('[data-prfq-gmail]');if(pre)pre.textContent=body;setBody(a,body);});
   note(box,'BOM-i paraqitet si tabele me kolona edhe ne draftin Gmail.');
   var D=window.PSTRfqProjectDocumentationV1;if(D&&typeof D.patchRows==='function')setTimeout(function(){D.patchRows();},0);
   return true;
 }
-function schedule(force){[0,100,300,700].forEach(function(ms){setTimeout(function(){rewrite(!!force);},ms);});}
-
+function schedule(force){[0,100,300,700,1400].forEach(function(ms){setTimeout(function(){rewrite(!!force);},ms);});}
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest&&e.target.closest('[data-pf2-tab="procurement"],[data-prfq-open]');if(t)schedule(false);
   var r=e.target&&e.target.closest&&e.target.closest('#pst-pf2-rfq-draft [data-prfq-refresh]');if(r){setTimeout(function(){rewrite(true);},30);}
