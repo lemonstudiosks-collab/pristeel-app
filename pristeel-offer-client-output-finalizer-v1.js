@@ -51,7 +51,7 @@ function ensureSerbianGsp(root,lang){
 }
 function vatText(lang){
   var M={
-    sr:'Sve navedene cene su neto i ne uključuju PDV. Eventualno zakonski primenljiv PDV nije uključen u cenu ponude.',
+    sr:'Sve navedene cijene su neto i ne uključuju PDV.',
     sq:'Të gjitha çmimet e paraqitura janë neto dhe nuk përfshijnë TVSH-në. Çdo TVSH eventualisht e aplikueshme sipas ligjit nuk është e përfshirë në çmimin e ofertës.',
     en:'All prices stated are net and exclude VAT. Any VAT that may be legally applicable is not included in the quoted price.',
     de:'Alle angegebenen Preise sind Nettopreise und verstehen sich ohne Mehrwertsteuer (MwSt.). Eine gegebenenfalls gesetzlich anfallende Mehrwertsteuer ist im Angebotspreis nicht enthalten.'
