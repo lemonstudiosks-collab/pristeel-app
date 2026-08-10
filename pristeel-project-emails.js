@@ -125,6 +125,7 @@ var files=[
   'pristeel-offer-position-preservation-v1.js?v=20260809-1',
   'pristeel-offer-final-output-fix-v1.js?v=20260810-3',
   'pristeel-offer-client-output-finalizer-v1.js?v=20260810-2',
+  'pristeel-offer-number-integrity-v1.js?v=20260810-visible1',
   'pristeel-invoice-identity-v1.js?v=20260809-1',
   'pristeel-gmail-live-inbox-v2.js?v=20260808-2',
   'pristeel-gmail-intake-click-fix-v1.js?v=20260808-1'
