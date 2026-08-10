@@ -1,9 +1,8 @@
 /* PRISTEEL RFQ draft finalizer v1
  * Final presentation guard for Project-first RFQ drafts.
- * Runs after buyer-context, translation/table and project-documentation helpers.
- * Guarantees: no internal thread summary leakage, no map/search URL as project download,
- * target-language buyer section, compact BOM table, and a safe project-document link gate.
- * No email is sent and no polling/MutationObserver is used.
+ * Supplier RFQs are intentionally concise: project documentation is the quantity/technical source.
+ * The internal buyer request and PRISTEEL BOM remain internal and are not inserted into supplier emails.
+ * No email is sent automatically and no polling/MutationObserver is used.
  */
 (function(){
 'use strict';
@@ -13,27 +12,10 @@ window.__pstRfqDraftFinalizerV1=true;
 function A(v){return Array.isArray(v)?v:[];}
 function O(){for(var i=0;i<arguments.length;i++){var v=arguments[i];if(v!==undefined&&v!==null&&String(v).trim()!=='')return String(v).trim();}return'';}
 function N(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
-function num(v){var x=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(x)?x:0;}
-function fmt(v){return num(v).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function escRx(v){return String(v||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 function lang(v){v=N(v);if(v==='de'||v.indexOf('german')>-1||v.indexOf('deutsch')>-1)return'de';if(v==='sq'||v.indexOf('alban')>-1)return'sq';if(v==='sr'||v==='bs'||v==='hr'||v.indexOf('serb')>-1||v.indexOf('bosn')>-1||v.indexOf('croat')>-1)return'sr';return'en';}
 function data(){var R=window.PSTProjectFirstRfqDraftV1;return (R&&R._state&&R._state.data)||window.__pstIntegrityLastData||null;}
-function clean(v){return String(v||'').replace(/\r/g,'').replace(/\n{3,}/g,'\n\n').trim().slice(0,4800);}
-function sourceLang(t){var x=N(t);if(/\b(postovani|molimo|ponud|celic|projekat|dokumentacij|unaprijed|zahtev)\b/.test(x))return'sr';if(/\b(pershendet|ju lutem|kerkese|oferten|projektit|bleresit)\b/.test(x))return'sq';if(/\b(guten tag|bitte|angebot|projekt|unterlagen|dokumentation)\b/.test(x))return'de';return'en';}
-function fallback(l){
-  if(l==='de')return'Die vollständigen zusätzlichen Anforderungen des Kunden sind in der Projektdokumentation enthalten. Bitte prüfen Sie die Unterlagen als technische Referenz und weisen Sie uns auf relevante Abweichungen hin.';
-  if(l==='sr')return'Kompletni dodatni zahtevi kupca nalaze se u projektnoj dokumentaciji. Molimo proverite dokumentaciju kao tehničku referencu i jasno navedite sva relevantna odstupanja.';
-  if(l==='sq')return'Detajet e plota shtese te kerkeses se bleresit gjenden ne dokumentacionin e projektit. Ju lutem kontrolloni dokumentacionin si reference teknike dhe na tregoni qarte çdo devijim relevant.';
-  return'The buyer’s complete additional requirements are included in the project documentation. Please review the documentation as the technical reference and clearly flag any relevant discrepancies.';
-}
-function safeBuyer(){
-  var B=window.PSTRfqBuyerRequestContextV1,R=window.PSTProjectFirstRfqDraftV1,box=document.getElementById('pst-pf2-rfq-draft'),ta=box&&box.querySelector('[data-prfq-context]');
-  if(ta&&ta.getAttribute('data-pst-buyer-user-edited')==='1')return clean(ta.value);
-  if(B&&typeof B.buyerRequest==='function'){
-    var x=clean(B.buyerRequest((R&&R._state&&R._state.data)||data()));if(x)return x;
-  }
-  if(B&&typeof B.safeContext==='function'){var y=clean(B.safeContext());if(y)return y;}
-  return '';
-}
+
 function badUrl(u){
   u=String(u||'').trim();
   if(!/^https?:\/\//i.test(u))return true;
@@ -66,53 +48,62 @@ function normalizeDocLink(){
   var open=box.querySelector('[data-prfq-doc-open]');if(open)open.href=cur||'#';
   return cur;
 }
-function pad(v,w,right){v=String(v==null?'':v);if(v.length>w)v=v.slice(0,Math.max(1,w-1))+'…';var p=' '.repeat(Math.max(0,w-v.length));return right?p+v:v+p;}
-function bomTable(l,rows){
-  rows=A(rows);var H=l==='de'?['Nr.','Profil','Abmessung','Güte','Gewicht']:l==='sr'?['Br.','Profil','Dimenzija','Kvalitet','Težina']:l==='sq'?['Nr.','Profili','Dimensioni','Grada','Pesha']:['No.','Profile','Dimension','Grade','Weight'];
-  var W=[3,18,18,10,15],sep=W.map(function(w){return'-'.repeat(w);}).join('-+-');
-  var out=[pad(H[0],W[0]),pad(H[1],W[1]),pad(H[2],W[2]),pad(H[3],W[3]),pad(H[4],W[4],true)].join(' | ')+'\n'+sep;
-  rows.forEach(function(r,i){var vals=[String(i+1),O(r.profile,r.description,r.name,'-'),O(r.dim,r.dimension,'-'),O(r.grade,r.material,'-'),fmt(r.kg)+' kg'];out+='\n'+[pad(vals[0],W[0],true),pad(vals[1],W[1]),pad(vals[2],W[2]),pad(vals[3],W[3]),pad(vals[4],W[4],true)].join(' | ');});
-  return out;
+function projectLabel(){
+  var p=(data()&&data().project)||{},name=O(p.name,'Projekt'),client=O(p.client,'');
+  if(client){
+    var re=new RegExp('^\\s*'+escRx(client)+'\\s*(?:[-–—|:]\\s*)','i');
+    var stripped=name.replace(re,'').trim();if(stripped)name=stripped;
+  }
+  return name;
 }
-function buyerHeading(l){return l==='de'?'Zusätzliche Projektangaben aus der Anfrage des Kunden:':l==='sr'?'Dodatne informacije o projektu iz zahteva kupca:':l==='sq'?'Informacion shtese per projektin nga kerkesa e bleresit:':'Additional project information from the buyer request:';}
-function bomHeading(l){return l==='de'?'BOM / Stahlmengen:':l==='sr'?'BOM / količine čelika:':l==='sq'?'BOM / sasite e celikut:':'BOM / steel quantities:';}
-function totalHeading(l){return l==='de'?'Gesamtgewicht BOM:':l==='sr'?'Ukupna težina BOM-a:':l==='sq'?'Pesha totale e BOM:':'Total BOM weight:';}
-function rx(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
-function replaceSection(body,start,end,value){var re=new RegExp(rx(start)+'\\n[\\s\\S]*?(?=\\n\\n'+rx(end)+')');return re.test(body)?body.replace(re,start+'\n'+value):body;}
-function stripDocs(body){return String(body||'').replace(/\n\n(?:Projektdokumentation \/ Download:|Projektna dokumentacija \/ Download:|Dokumentacioni i projektit \/ Shkarkim:|Project documentation \/ Download:)[\s\S]*?(?=\n\nBOM \/)/g,'');}
-function docBlock(l,link){
-  if(!link)return'';
-  if(l==='de')return'Projektdokumentation / Download:\n'+link+'\n\nBitte prüfen Sie unsere BOM und Mengen anhand der vollständigen Projektdokumentation. Bei fehlenden Positionen, Mengenabweichungen oder anderen Unstimmigkeiten verwenden Sie bitte die korrekten Werte in Ihrem Angebot und weisen Sie uns ausdrücklich auf jede Korrektur hin. Im Zweifel ist die Projektdokumentation maßgebend.';
-  if(l==='sr')return'Projektna dokumentacija / Download:\n'+link+'\n\nMolimo proverite naš BOM i navedene količine prema kompletnoj projektnoj dokumentaciji. Ako uočite nedostajuće pozicije, razlike u količinama ili druga odstupanja, koristite ispravne vrednosti u ponudi i jasno navedite svaku korekciju. U slučaju neslaganja, projektna dokumentacija je merodavna.';
-  if(l==='sq')return'Dokumentacioni i projektit / Shkarkim:\n'+link+'\n\nJu lutem kontrolloni BOM-in dhe sasite tona kundrejt dokumentacionit te plote te projektit. Nese gjeni pozicione qe mungojne, dallime ne sasi ose mospërputhje te tjera, perdorni vlerat e sakta ne oferten tuaj dhe na tregoni qarte çdo korrigjim. Ne rast mospërputhjeje, dokumentacioni i projektit eshte burimi teknik percaktues.';
-  return'Project documentation / Download:\n'+link+'\n\nPlease verify our BOM and stated quantities against the complete project documentation. If you identify missing items, quantity differences or other discrepancies, use the correct values in your quotation and clearly flag every correction. In case of discrepancy, the project documentation is the governing technical source.';
+function subject(l,project){
+  if(l==='de')return'Anfrage | '+project;
+  if(l==='sr')return'Zahtev za ponudu | '+project;
+  if(l==='sq')return'Kerkese per oferte | '+project;
+  return'RFQ | '+project;
 }
-function setBody(a,body){if(!a)return;try{var u=new URL(a.href,location.href);u.searchParams.set('body',body);a.href=u.toString();}catch(e){}}
-function immediate(){
+function body(l,who,project,link){
+  who=String(who||'').trim();project=String(project||'Projekt').trim();
+  var doc=link||'[Shto linkun e dokumentacionit]';
+  if(l==='de')return 'Guten Tag '+(who||'')+',\n\nunser Kunde hat uns um ein Angebot für die Stahlkonstruktion des folgenden Projekts gebeten:\n'+project+'\n\nDie Projektdokumentation können Sie hier herunterladen:\n'+doc+'\n\nAuf Grundlage der Projektdokumentation benötigen wir Ihr Angebot für:\n- Material + Fertigung, EUR/kg\n- Feuerverzinkung, EUR/kg\n- Pulverbeschichtung, EUR/kg\n- Transport\n- Lieferzeit\n- Incoterm\n- Zahlungsbedingungen\n\nMengen und Positionen sind der Projektdokumentation zu entnehmen. Unklarheiten, fehlende Angaben oder technische Abweichungen kennzeichnen Sie im Angebot eindeutig.\n\nMit freundlichen Grüßen\nArianit Vllahiu\nPRISTEEL Sh.p.k.\nsales@prissteel.com';
+  if(l==='sr')return 'Poštovani'+(who?' '+who:'')+',\n\nnaš klijent je od nas zatražio ponudu za čeličnu konstrukciju za sledeći projekat:\n'+project+'\n\nProjektnu dokumentaciju možete preuzeti ovde:\n'+doc+'\n\nNa osnovu projektne dokumentacije dostavite ponudu za:\n- Materijal + izrada, EUR/kg\n- Toplo cinkovanje, EUR/kg\n- Powder coating, EUR/kg\n- Transport\n- Rok isporuke\n- Incoterm\n- Uslove plaćanja\n\nKoličine i pozicije preuzmite iz projektne dokumentacije. Sve nejasnoće, nedostajuće podatke ili tehnička odstupanja jasno navedite u ponudi.\n\nSrdačan pozdrav,\nArianit Vllahiu\nPRISTEEL Sh.p.k.\nsales@prissteel.com';
+  if(l==='sq')return 'Pershendetje'+(who?' '+who:'')+',\n\nBleresi yne na ka kerkuar oferte per konstruksionin e celikut per projektin:\n'+project+'\n\nDokumentacionin e projektit mund ta shkarkoni ketu:\n'+doc+'\n\nBazuar ne dokumentacionin e projektit, na dergoni oferten tuaj per:\n- Material + prodhim, EUR/kg\n- Zinkim i nxehte, EUR/kg\n- Powder coating, EUR/kg\n- Transport\n- Afati i furnizimit\n- Incoterm\n- Kushtet e pageses\n\nSasite dhe pozicionet duhet te merren nga dokumentacioni i projektit. Çdo paqartesi, mungese ose devijim teknik shenojeni qarte ne oferte.\n\nMe respekt,\nArianit Vllahiu\nPRISTEEL Sh.p.k.\nsales@prissteel.com';
+  return 'Dear '+(who||'Sir/Madam')+',\n\nour client has asked us to provide a quotation for the structural steel works for the following project:\n'+project+'\n\nThe project documentation can be downloaded here:\n'+doc+'\n\nBased on the project documentation, send us your quotation for:\n- Material + fabrication, EUR/kg\n- Hot-dip galvanizing, EUR/kg\n- Powder coating, EUR/kg\n- Transport\n- Lead time\n- Incoterm\n- Payment terms\n\nQuantities and positions are to be taken from the project documentation. Clearly identify any ambiguities, missing information or technical deviations in your quotation.\n\nKind regards,\nArianit Vllahiu\nPRISTEEL Sh.p.k.\nsales@prissteel.com';
+}
+function setCompose(a,sub,txt){
+  if(!a)return;try{var u=new URL(a.href,location.href);u.searchParams.set('su',sub);u.searchParams.set('body',txt);a.href=u.toString();}catch(e){}
+}
+function markInternalContext(box){
+  var c=box&&box.querySelector('.prfq-context');if(!c)return;
+  var label=c.querySelector('label'),note=c.querySelector('.prfq-note');
+  if(label)label.textContent='Kerkesa e bleresit · vetem per reference te brendshme';
+  if(note)note.textContent='Ky tekst nuk perfshihet ne emailin RFQ per prodhuesin. Emaili bazohet vetem ne projekt dhe dokumentacionin qe ndahet me te.';
+}
+function markHeader(box){
+  var b=box&&box.querySelector('.prfq-head b'),s=box&&box.querySelector('.prfq-head span');
+  if(b)b.textContent='RFQ draft per prodhuesit';
+  if(s)s.textContent='Dokumentacioni i projektit eshte baza per sasite · emaila sipas gjuhes se kontaktit';
+}
+function finalize(){
   var R=window.PSTProjectFirstRfqDraftV1,box=document.getElementById('pst-pf2-rfq-draft');if(!R||!R._state||!box)return false;
-  var ctx=safeBuyer(),src=sourceLang(ctx),link=normalizeDocLink(),rows=A(R._state.bom);
-  if(ctx&&R._state)R._state.buyerContext=ctx;
+  var link=normalizeDocLink(),project=projectLabel();markInternalContext(box);markHeader(box);
   A(R._state.suppliers).forEach(function(s,i){
-    var row=box.querySelector('[data-prfq-row="'+i+'"]');if(!row)return;var l=lang(s.lang),buyer=(l===src?ctx:fallback(l)),body=String(R.bodyFor(s,ctx)||'');
-    body=replaceSection(body,buyerHeading(l),bomHeading(l),buyer);
-    body=replaceSection(body,bomHeading(l),totalHeading(l),bomTable(l,rows));
-    body=stripDocs(body);var db=docBlock(l,link);if(db){var mark='\n\n'+bomHeading(l);body=body.replace(mark,'\n\n'+db+mark);}
-    var pre=row.querySelector('.prfq-preview'),a=row.querySelector('[data-prfq-gmail]');if(pre)pre.textContent=body;setBody(a,body);
+    var row=box.querySelector('[data-prfq-row="'+i+'"]');if(!row)return;var l=lang(s.lang),sub=subject(l,project),txt=body(l,s.contactName||'',project,link);
+    var pre=row.querySelector('.prfq-preview'),a=row.querySelector('[data-prfq-gmail]'),subEl=row.querySelector('.prfq-subject');
+    if(pre)pre.textContent=txt;if(subEl)subEl.textContent=sub;setCompose(a,sub,txt);
   });
   return true;
 }
-function finalize(){
-  immediate();
-  var F=window.PSTRfqLanguageTableV1;
-  if(F&&typeof F.rewrite==='function'){
-    Promise.resolve(F.rewrite(false)).then(function(){normalizeDocLink();var D=window.PSTRfqProjectDocumentationV1;if(D&&typeof D.patchRows==='function')D.patchRows();}).catch(function(){immediate();});
-  }
-  return true;
-}
-function schedule(){[0,120,400,900,1800,3200].forEach(function(ms){setTimeout(finalize,ms);});}
-document.addEventListener('click',function(e){var t=e.target&&e.target.closest&&e.target.closest('[data-pf2-tab="procurement"],[data-prfq-open],#pst-pf2-rfq-draft [data-prfq-refresh],#pst-pf2-rfq-draft [data-prfq-preview]');if(t)schedule();},true);
-document.addEventListener('input',function(e){if(e.target&&e.target.matches&&e.target.matches('#pst-pf2-rfq-draft [data-prfq-context],[data-prfq-doc-link]'))setTimeout(finalize,80);},false);
+function schedule(){[0,100,300,700,1500,2600].forEach(function(ms){setTimeout(finalize,ms);});}
+document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest&&e.target.closest('[data-pf2-tab="procurement"],[data-prfq-open],#pst-pf2-rfq-draft [data-prfq-refresh],#pst-pf2-rfq-draft [data-prfq-preview]');if(t)schedule();
+},true);
+document.addEventListener('input',function(e){if(e.target&&e.target.matches&&e.target.matches('#pst-pf2-rfq-draft [data-prfq-doc-link]'))setTimeout(finalize,40);},false);
+document.addEventListener('click',function(e){
+  var a=e.target&&e.target.closest&&e.target.closest('#pst-pf2-rfq-draft [data-prfq-gmail]');if(!a)return;
+  finalize();var link=normalizeDocLink();if(!link||badUrl(link)){e.preventDefault();e.stopPropagation();alert('Shto nje link valid te dokumentacionit te projektit para se te hapesh draftin ne Gmail.');}
+},true);
 document.addEventListener('pst:bom-saved',schedule,false);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
-window.PSTRfqDraftFinalizerV1={finalize:finalize,immediate:immediate,safeBestLink:safeBestLink,_test:{badUrl:badUrl,bomTable:bomTable,sourceLang:sourceLang}};
+window.PSTRfqDraftFinalizerV1={finalize:finalize,safeBestLink:safeBestLink,_test:{badUrl:badUrl,projectLabel:projectLabel,subject:subject,body:body}};
 })();
