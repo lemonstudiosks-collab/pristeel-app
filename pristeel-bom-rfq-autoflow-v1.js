@@ -1,5 +1,6 @@
 /* PRISTEEL BOM -> RFQ autoflow v1
- * After an explicit successful BOM save, continue directly to the native Project-first RFQ draft.
+ * Connects an explicit successful BOM save to the native Project-first RFQ draft.
+ * RFQ presentation is owned exclusively by pristeel-project-first-rfq-draft-v1.js.
  * No email is sent and no RFQ is logged as sent here.
  */
 (function(){
@@ -7,20 +8,6 @@
 if(window.__pstBomRfqAutoflowV1)return;
 window.__pstBomRfqAutoflowV1=true;
 
-function loadBuyerRequestContext(){
-  if(window.PSTRfqBuyerRequestContextV1||document.querySelector('script[data-pst-rfq-buyer-request]'))return;
-  var s=document.createElement('script');
-  s.src='pristeel-rfq-buyer-request-context-v1.js?v=20260810-3';
-  s.defer=true;
-  s.setAttribute('data-pst-rfq-buyer-request','1');
-  s.onload=function(){
-    var B=window.PSTRfqBuyerRequestContextV1;
-    if(B&&typeof B.apply==='function'){
-      [0,160,500,1200].forEach(function(ms){setTimeout(function(){B.apply();},ms);});
-    }
-  };
-  document.head.appendChild(s);
-}
 function loadBomClarity(){
   if(window.PSTProjectFirstBomClarityV1||document.querySelector('script[data-pst-bom-clarity]'))return;
   var s=document.createElement('script');
@@ -28,38 +15,6 @@ function loadBomClarity(){
   s.defer=true;
   s.setAttribute('data-pst-bom-clarity','1');
   s.onload=function(){var B=window.PSTProjectFirstBomClarityV1;if(B&&typeof B.apply==='function')B.apply();};
-  document.head.appendChild(s);
-}
-function loadProjectDocumentation(){
-  if(window.PSTRfqProjectDocumentationV1||document.querySelector('script[data-pst-rfq-project-docs]'))return;
-  var s=document.createElement('script');
-  s.src='pristeel-rfq-project-documentation-v1.js?v=20260810-2';
-  s.defer=true;
-  s.setAttribute('data-pst-rfq-project-docs','1');
-  s.onload=function(){
-    var D=window.PSTRfqProjectDocumentationV1;
-    if(D&&typeof D.inject==='function'){
-      [0,120,350,800].forEach(function(ms){setTimeout(function(){D.inject();D.patchRows();},ms);});
-    }
-  };
-  document.head.appendChild(s);
-}
-function loadRfqLanguageTable(){
-  if(window.PSTRfqLanguageTableV1||document.querySelector('script[data-pst-rfq-language-table]'))return;
-  var s=document.createElement('script');
-  s.src='pristeel-rfq-language-table-v1.js?v=20260810-2';
-  s.defer=true;
-  s.setAttribute('data-pst-rfq-language-table','1');
-  s.onload=function(){var F=window.PSTRfqLanguageTableV1;if(F&&typeof F.rewrite==='function')setTimeout(function(){F.rewrite(false);},0);};
-  document.head.appendChild(s);
-}
-function loadRfqDraftFinalizer(){
-  if(window.PSTRfqDraftFinalizerV1||document.querySelector('script[data-pst-rfq-finalizer]'))return;
-  var s=document.createElement('script');
-  s.src='pristeel-rfq-draft-finalizer-v1.js?v=20260810-3';
-  s.defer=true;
-  s.setAttribute('data-pst-rfq-finalizer','1');
-  s.onload=function(){var F=window.PSTRfqDraftFinalizerV1;if(F&&typeof F.finalize==='function'){[0,160,500,1200].forEach(function(ms){setTimeout(function(){F.finalize();},ms);});}};
   document.head.appendChild(s);
 }
 function loadRfqNavigation(){
@@ -89,9 +44,7 @@ function waitForSave(btn,id){
       var d=window.__pstIntegrityLastData||{},savedBom=Array.isArray(d.bom)?d.bom:[];
       if((!btn.isConnected&&savedBom.length)||tries>80){
         var R=window.PSTProjectFirstRfqDraftV1;
-        if(R&&typeof R.open==='function'){
-          Promise.resolve(R.open(id)).then(function(){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);});
-        }
+        if(R&&typeof R.open==='function')Promise.resolve(R.open(id)).then(function(){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);});
         return;
       }
     }
@@ -111,12 +64,8 @@ document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
   if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);}
 },true);
-document.addEventListener('pst:modules-ready',function(){loadBuyerRequestContext();loadBomClarity();loadProjectDocumentation();loadRfqLanguageTable();loadRfqDraftFinalizer();loadRfqNavigation();setTimeout(nativeButtons,0);},{once:true});
-loadBuyerRequestContext();
+document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();setTimeout(nativeButtons,0);},{once:true});
 loadBomClarity();
-loadProjectDocumentation();
-loadRfqLanguageTable();
-loadRfqDraftFinalizer();
 loadRfqNavigation();
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBuyerRequestContext:loadBuyerRequestContext,loadBomClarity:loadBomClarity,loadProjectDocumentation:loadProjectDocumentation,loadRfqLanguageTable:loadRfqLanguageTable,loadRfqDraftFinalizer:loadRfqDraftFinalizer,loadRfqNavigation:loadRfqNavigation};
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation};
 })();
