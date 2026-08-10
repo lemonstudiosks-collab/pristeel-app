@@ -33,13 +33,13 @@ function loadBomClarity(){
 function loadProjectDocumentation(){
   if(window.PSTRfqProjectDocumentationV1||document.querySelector('script[data-pst-rfq-project-docs]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-rfq-project-documentation-v1.js?v=20260810-2';
+  s.src='pristeel-rfq-project-documentation-v1.js?v=20260810-4';
   s.defer=true;
   s.setAttribute('data-pst-rfq-project-docs','1');
   s.onload=function(){
     var D=window.PSTRfqProjectDocumentationV1;
     if(D&&typeof D.inject==='function'){
-      [0,120,350,800].forEach(function(ms){setTimeout(function(){D.inject();D.patchRows();},ms);});
+      [0,120,350,800,1600,3000].forEach(function(ms){setTimeout(function(){D.inject();D.patchRows();},ms);});
     }
   };
   document.head.appendChild(s);
@@ -56,10 +56,19 @@ function loadRfqLanguageTable(){
 function loadRfqDraftFinalizer(){
   if(window.PSTRfqDraftFinalizerV1||document.querySelector('script[data-pst-rfq-finalizer]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-rfq-draft-finalizer-v1.js?v=20260810-3';
+  s.src='pristeel-rfq-draft-finalizer-v1.js?v=20260810-5';
   s.defer=true;
   s.setAttribute('data-pst-rfq-finalizer','1');
-  s.onload=function(){var F=window.PSTRfqDraftFinalizerV1;if(F&&typeof F.finalize==='function'){[0,160,500,1200].forEach(function(ms){setTimeout(function(){F.finalize();},ms);});}};
+  s.onload=function(){
+    var F=window.PSTRfqDraftFinalizerV1;
+    if(F&&typeof F.finalize==='function'){
+      [0,160,500,1200,2200,3400].forEach(function(ms){setTimeout(function(){
+        var D=window.PSTRfqProjectDocumentationV1;
+        if(D&&typeof D.inject==='function'){D.inject();D.patchRows();}
+        F.finalize();
+      },ms);});
+    }
+  };
   document.head.appendChild(s);
 }
 function loadRfqNavigation(){
