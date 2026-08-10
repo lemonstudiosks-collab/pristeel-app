@@ -3,9 +3,7 @@
  * Does not save, generate or send anything.
  */
 (function(){
-'use strict';
-if(window.__pstProjectCommercialPrefillRescueV1)return;
-window.__pstProjectCommercialPrefillRescueV1=true;
+'use strict';if(window.__pstProjectCommercialPrefillRescueV1)return;window.__pstProjectCommercialPrefillRescueV1=true;
 var armed='';
 function id(){var d=window.__pstIntegrityLastData;return String(d&&d.project&&d.project.id||window.__pstCurrentProjectId||window._curProjId||'');}
 function val(x){var e=document.getElementById(x);return String(e&&e.value||'').trim();}
@@ -17,6 +15,6 @@ function neutralizeFreshDefaults(){if(!fresh())return false;['of-pr','of-kg','of
 function apply(){var page=document.getElementById('page-oferta');var p=armed||id();if(!p||!visible(page))return false;if(!fresh())return false;neutralizeFreshDefaults();var api=window.PSTProjectCommercialPrefillV1;if(api&&typeof api.prefill==='function'){try{return api.prefill(p)!==false;}catch(e){if(window.console)console.warn('Project commercial prefill rescue:',e);}}return false;}
 function schedule(){if(!armed)armed=id();[90,220,500,900].forEach(function(ms){setTimeout(apply,ms);});}
 function ensureAndSchedule(){armed=armed||id();var api=window.PSTProjectCommercialPrefillV1;if(api&&typeof api.prefill==='function'){schedule();return;}var old=document.querySelector('script[data-pst-project-commercial-prefill-rescue-load]');if(old){schedule();return;}var s=document.createElement('script');s.src='pristeel-project-commercial-prefill-v1.js?v='+Date.now();s.defer=true;s.setAttribute('data-pst-project-commercial-prefill-rescue-load','1');s.onload=schedule;s.onerror=schedule;document.head.appendChild(s);}
-document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-pf2-action="offer"]'):null;if(t){armed=id();return;}var choice=e.target&&e.target.closest?e.target.closest('#pst-cdb-choice [data-m]'):null;if(choice){armed=armed||id();ensureAndSchedule();return;}var mode=e.target&&e.target.closest?e.target.closest('#page-oferta [data-cdm]'):null;if(mode&&id()){armed=id();ensureAndSchedule();}},true);
+document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('[data-pf2-action="offer"]'):null;if(t){armed=id();setTimeout(ensureAndSchedule,0);return;}var choice=e.target&&e.target.closest?e.target.closest('#pst-cdb-choice [data-m]'):null;if(choice){armed=armed||id();ensureAndSchedule();return;}var mode=e.target&&e.target.closest?e.target.closest('#page-oferta [data-cdm]'):null;if(mode&&id()){armed=id();ensureAndSchedule();}},true);
 window.PSTProjectCommercialPrefillRescueV1={apply:apply,schedule:schedule,neutralizeFreshDefaults:neutralizeFreshDefaults,visible:visible};
 })();
