@@ -33,7 +33,7 @@ function loadBomClarity(){
 function loadProjectDocumentation(){
   if(window.PSTRfqProjectDocumentationV1||document.querySelector('script[data-pst-rfq-project-docs]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-rfq-project-documentation-v1.js?v=20260810-2';
+  s.src='pristeel-rfq-project-documentation-v1.js?v=20260810-3';
   s.defer=true;
   s.setAttribute('data-pst-rfq-project-docs','1');
   s.onload=function(){
@@ -56,7 +56,7 @@ function loadRfqLanguageTable(){
 function loadRfqDraftFinalizer(){
   if(window.PSTRfqDraftFinalizerV1||document.querySelector('script[data-pst-rfq-finalizer]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-rfq-draft-finalizer-v1.js?v=20260810-3';
+  s.src='pristeel-rfq-draft-finalizer-v1.js?v=20260810-4';
   s.defer=true;
   s.setAttribute('data-pst-rfq-finalizer','1');
   s.onload=function(){var F=window.PSTRfqDraftFinalizerV1;if(F&&typeof F.finalize==='function'){[0,160,500,1200].forEach(function(ms){setTimeout(function(){F.finalize();},ms);});}};
