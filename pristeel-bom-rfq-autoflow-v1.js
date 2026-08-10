@@ -30,6 +30,20 @@ function loadBomClarity(){
   s.onload=function(){var B=window.PSTProjectFirstBomClarityV1;if(B&&typeof B.apply==='function')B.apply();};
   document.head.appendChild(s);
 }
+function loadProjectDocumentation(){
+  if(window.PSTRfqProjectDocumentationV1||document.querySelector('script[data-pst-rfq-project-docs]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-rfq-project-documentation-v1.js?v=20260810-1';
+  s.defer=true;
+  s.setAttribute('data-pst-rfq-project-docs','1');
+  s.onload=function(){
+    var D=window.PSTRfqProjectDocumentationV1;
+    if(D&&typeof D.inject==='function'){
+      [0,120,350,800].forEach(function(ms){setTimeout(function(){D.inject();D.patchRows();},ms);});
+    }
+  };
+  document.head.appendChild(s);
+}
 function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
 function nativeButtons(){
   var host=document.getElementById('pst-pi-body');if(!host)return;
@@ -70,8 +84,9 @@ document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
   if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);}
 },true);
-document.addEventListener('pst:modules-ready',function(){loadBuyerRequestContext();loadBomClarity();setTimeout(nativeButtons,0);},{once:true});
+document.addEventListener('pst:modules-ready',function(){loadBuyerRequestContext();loadBomClarity();loadProjectDocumentation();setTimeout(nativeButtons,0);},{once:true});
 loadBuyerRequestContext();
 loadBomClarity();
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBuyerRequestContext:loadBuyerRequestContext,loadBomClarity:loadBomClarity};
+loadProjectDocumentation();
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBuyerRequestContext:loadBuyerRequestContext,loadBomClarity:loadBomClarity,loadProjectDocumentation:loadProjectDocumentation};
 })();
