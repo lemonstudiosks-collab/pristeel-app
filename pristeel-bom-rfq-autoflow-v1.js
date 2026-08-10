@@ -26,6 +26,18 @@ function loadRfqNavigation(){
   s.onload=function(){var N=window.PSTProjectFirstRfqNavigationV1;if(N&&typeof N.install==='function')N.install();};
   document.head.appendChild(s);
 }
+function loadHistorySync(done){
+  var H=window.PSTRfqGmailHistorySyncV2;
+  if(H){if(done)done(H);return;}
+  var existing=document.querySelector('script[data-pst-rfq-history-native]');
+  if(existing){if(done)existing.addEventListener('load',function(){done(window.PSTRfqGmailHistorySyncV2);},{once:true});return;}
+  var s=document.createElement('script');
+  s.src='pristeel-rfq-gmail-history-sync-v1.js?v=20260810-native2';
+  s.defer=true;
+  s.setAttribute('data-pst-rfq-history-native','1');
+  if(done)s.onload=function(){done(window.PSTRfqGmailHistorySyncV2);};
+  document.head.appendChild(s);
+}
 function installGateCss(){
   if(document.getElementById('pst-rfq-gate-visibility-css'))return;
   var s=document.createElement('style');
@@ -35,6 +47,16 @@ function installGateCss(){
 }
 function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
 function currentDraft(){return document.getElementById('pst-pf2-rfq-draft');}
+function installHistoryButton(){
+  var draft=currentDraft();if(!draft)return false;
+  var actions=draft.querySelector('.prfq-actions');if(!actions)return false;
+  if(actions.querySelector('[data-prfq-history-sync-native]'))return true;
+  var b=document.createElement('button');
+  b.type='button';b.className='prfq-btn';b.setAttribute('data-prfq-history-sync-native','1');b.textContent='Sinkronizo nga Gmail';
+  var refresh=actions.querySelector('[data-prfq-refresh]');
+  if(refresh)actions.insertBefore(b,refresh);else actions.appendChild(b);
+  return true;
+}
 function nativeButtons(){
   var host=document.getElementById('pst-pi-body');if(!host)return;
   var draft=currentDraft();
@@ -51,6 +73,7 @@ function nativeButtons(){
       b.textContent='Pergatit / hap RFQ';
     }
   });
+  installHistoryButton();
 }
 function waitForSave(btn,id){
   var tries=0,successSeen=false;
@@ -80,6 +103,17 @@ window.addEventListener('click',function(e){
   try{draft.scrollIntoView({behavior:'smooth',block:'start'});}catch(err){draft.scrollIntoView();}
 },true);
 document.addEventListener('click',function(e){
+  var sync=e.target&&e.target.closest?e.target.closest('[data-prfq-history-sync-native]'):null;
+  if(sync){
+    e.preventDefault();
+    sync.disabled=true;sync.textContent='Duke hapur Gmail…';
+    loadHistorySync(function(H){
+      sync.disabled=false;sync.textContent='Sinkronizo nga Gmail';
+      if(H&&typeof H.scan==='function')H.scan();
+      else alert('Moduli i sinkronizimit Gmail nuk u ngarkua.');
+    });
+    return;
+  }
   var btn=e.target&&e.target.closest?e.target.closest('[data-pbp-save]'):null;
   if(!btn)return;
   var id=projectId();
@@ -87,13 +121,14 @@ document.addEventListener('click',function(e){
 },false);
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
-  if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);}
+  if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);setTimeout(installHistoryButton,360);}
   var b=e.target&&e.target.closest?e.target.closest('[data-prfq-open]'):null;
   if(b){setTimeout(nativeButtons,180);setTimeout(nativeButtons,360);}
 },true);
-document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();installGateCss();setTimeout(nativeButtons,0);},{once:true});
+document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();installGateCss();setTimeout(nativeButtons,0);setTimeout(installHistoryButton,240);},{once:true});
 installGateCss();
 loadBomClarity();
 loadRfqNavigation();
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation};
+[0,120,400].forEach(function(ms){setTimeout(installHistoryButton,ms);});
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,installHistoryButton:installHistoryButton,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation};
 })();
