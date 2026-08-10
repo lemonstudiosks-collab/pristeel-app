@@ -168,13 +168,21 @@ function wrap(name){
   w.__pstClientOutputFinalizer=true;w.__base=fn;window[name]=w;
 }
 function install(){wrap('genOfer');wrap('printOfer');patch();}
+function loadNumberIntegrity(){
+  if(window.PSTOfferNumberIntegrityV1||document.querySelector('script[data-pst-offer-number-integrity]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-offer-number-integrity-v1.js?v=20260810-1';
+  s.defer=true;
+  s.setAttribute('data-pst-offer-number-integrity','1');
+  document.head.appendChild(s);
+}
 
 document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('button,a'):null;if(!b)return;
   var t=String(b.textContent||'').trim();
   if(/Gjenero\s+Ofert/i.test(t)||/^PDF$/i.test(t)){setTimeout(patch,0);setTimeout(patch,100);}
 },true);
-document.addEventListener('pst:modules-ready',function(){install();setTimeout(install,1000);});
-install();setTimeout(install,1200);
+document.addEventListener('pst:modules-ready',function(){install();loadNumberIntegrity();setTimeout(install,1000);});
+loadNumberIntegrity();install();setTimeout(install,1200);
 window.PSTOfferClientOutputFinalizerV1={patch:patch,install:install,documentLang:documentLang,normalizeClientLanguage:normalizeClientLanguage,ensureSerbianGsp:ensureSerbianGsp,ensureVatNote:ensureVatNote,moveBomOutsideOffer:moveBomOutsideOffer};
 })();
