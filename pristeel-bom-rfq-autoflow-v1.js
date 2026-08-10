@@ -38,6 +38,15 @@ function loadHistorySync(done){
   if(done)s.onload=function(){done(window.PSTRfqGmailHistorySyncV2);};
   document.head.appendChild(s);
 }
+function loadFinalOfferOutputFix(){
+  if(window.PSTFinalOfferOutputFixV1||document.querySelector('script[data-pst-final-offer-output-fix]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-final-offer-output-fix-v1.js?v=20260810-1';
+  s.defer=true;
+  s.setAttribute('data-pst-final-offer-output-fix','1');
+  s.onload=function(){var F=window.PSTFinalOfferOutputFixV1;if(F&&typeof F.wrapGenerator==='function')F.wrapGenerator();if(F&&typeof F.patch==='function')F.patch();};
+  document.head.appendChild(s);
+}
 function installGateCss(){
   if(document.getElementById('pst-rfq-gate-visibility-css'))return;
   var s=document.createElement('style');
@@ -125,10 +134,11 @@ document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-prfq-open]'):null;
   if(b){setTimeout(nativeButtons,180);setTimeout(nativeButtons,360);}
 },true);
-document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();installGateCss();setTimeout(nativeButtons,0);setTimeout(installHistoryButton,240);},{once:true});
+document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();loadFinalOfferOutputFix();installGateCss();setTimeout(nativeButtons,0);setTimeout(installHistoryButton,240);},{once:true});
 installGateCss();
 loadBomClarity();
 loadRfqNavigation();
+loadFinalOfferOutputFix();
 [0,120,400].forEach(function(ms){setTimeout(installHistoryButton,ms);});
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,installHistoryButton:installHistoryButton,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation};
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,installHistoryButton:installHistoryButton,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation,loadFinalOfferOutputFix:loadFinalOfferOutputFix};
 })();
