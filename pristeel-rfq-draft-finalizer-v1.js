@@ -21,42 +21,29 @@ function badUrl(u){
   if(!/^https?:\/\//i.test(u))return true;
   return /(?:google\.[^/]+\/maps|maps\.google\.|maps\.app\.goo\.gl|goo\.gl\/maps|google\.[^/]+\/search|bing\.com\/maps|openstreetmap\.org|facebook\.com|instagram\.com|linkedin\.com|mail\.google\.com|prissteel\.com|localhost|127\.0\.0\.1)/i.test(u);
 }
-function documentLike(u,name){
-  u=String(u||'').trim();name=String(name||'').trim();
-  if(badUrl(u))return false;
-  if(/(?:we\.tl|wetransfer|dropbox|sharepoint|onedrive|drive\.google\.com|docs\.google\.com|mega\.|transfer|download)/i.test(u))return true;
-  if(/\.(?:zip|pdf|dwg|dxf|ifc|xlsx?|docx?|rar|7z)(?:[?#]|$)/i.test(u))return true;
-  if(/\.(?:zip|pdf|dwg|dxf|ifc|xlsx?|docx?|rar|7z)$/i.test(name))return true;
-  return false;
-}
 function urls(v){var m=String(v||'').match(/https?:\/\/[^\s<>"']+/ig)||[];return m.map(function(x){return x.replace(/[),.;]+$/,'');});}
-function preferredDrive(p){
-  p=p||{};var u=String(p.drive_folder_url||'').trim();
-  if(u&&/drive\.google\.com\/drive\/folders\//i.test(u)&&!badUrl(u))return u;
-  if(p.drive_folder_id)return'https://drive.google.com/drive/folders/'+String(p.drive_folder_id).trim();
-  return'';
-}
 function score(u,origin,name){
-  if(!documentLike(u,name))return-999;u=String(u||'');name=String(name||'');var s=0;
-  if(origin==='project-file')s+=70;if(origin==='project')s+=55;if(origin==='buyer-email')s+=35;
-  if(/(?:we\.tl|wetransfer|dropbox|sharepoint|onedrive|drive\.google\.com|docs\.google\.com|mega\.|transfer|download)/i.test(u))s+=45;
+  if(badUrl(u))return-999;u=String(u||'');name=String(name||'');var s=0;
+  if(origin==='buyer-email')s+=70;if(origin==='project-file')s+=50;if(origin==='project')s+=30;
+  if(/(?:we\.tl|wetransfer|dropbox|sharepoint|onedrive|drive\.google\.com|mega\.|transfer|download)/i.test(u))s+=45;
   if(/\.zip(?:[?#]|$)/i.test(u)||/\.zip$/i.test(name))s+=55;
-  if(/\.(?:pdf|dwg|dxf|ifc|xlsx?|docx?|rar|7z)(?:[?#]|$)/i.test(u)||/\.(?:pdf|dwg|dxf|ifc|xlsx?|docx?|rar|7z)$/i.test(name))s+=20;
-  if(/drive\.google\.com\/drive\/folders\//i.test(u))s+=30;
+  if(/\.(?:pdf|dwg|dxf|ifc|xlsx?|rar|7z)(?:[?#]|$)/i.test(u)||/\.(?:pdf|dwg|dxf|ifc|xlsx?|rar|7z)$/i.test(name))s+=20;
+  if(/drive\.google\.com\/drive\/folders\//i.test(u))s+=12;
   return s;
 }
 function addCandidate(out,u,origin,name){u=String(u||'').trim();var s=score(u,origin,name);if(s>-900)out.push({url:u,score:s});}
 function safeBestLink(){
-  var d=data()||{},p=d.project||{},drive=preferredDrive(p),out=[];if(drive)return drive;
-  A(d.files).concat(A(d.projectDocs),A(d.attachmentLinks),A(d.inboxDocs),A(d.docs),A(d.drive&&d.drive.rows)).forEach(function(f){addCandidate(out,O(f.webContentLink,f.web_view_link,f.webViewLink,f.drive_url,f.file_url,f.url,''),'project-file',O(f.name,f.filename,f.file_name,''));});
-  [p.project_download_url,p.download_url].forEach(function(u){addCandidate(out,u,'project','');});
+  var d=data()||{},p=d.project||{},out=[];
   A(d.emails).forEach(function(m){var from=String(O(m.from_email,m.sender,m.from,'')).toLowerCase();if(/@prissteel\.com\b/.test(from))return;urls([m.body_text,m.body,m.text,m.snippet,m.subject].filter(Boolean).join('\n')).forEach(function(u){addCandidate(out,u,'buyer-email',m.subject||'');});});
+  A(d.files).concat(A(d.projectDocs),A(d.attachmentLinks),A(d.inboxDocs),A(d.docs),A(d.drive&&d.drive.rows)).forEach(function(f){addCandidate(out,O(f.webContentLink,f.web_view_link,f.webViewLink,f.drive_url,f.file_url,f.url,''),'project-file',O(f.name,f.filename,f.file_name,''));});
+  [p.project_download_url,p.download_url,p.source_url,p.drive_folder_url].forEach(function(u){addCandidate(out,u,'project','');});
+  if(p.drive_folder_id)addCandidate(out,'https://drive.google.com/drive/folders/'+p.drive_folder_id,'project','');
   out.sort(function(a,b){return b.score-a.score;});return out.length?out[0].url:'';
 }
 function normalizeDocLink(){
   var box=document.getElementById('pst-pf2-rfq-draft'),inp=box&&box.querySelector('[data-prfq-doc-link]');if(!inp)return'';
-  var cur=String(inp.value||'').trim(),best=safeBestLink(),manual=inp.getAttribute('data-prfq-doc-user-edited')==='1';
-  if(badUrl(cur)||(!manual&&!documentLike(cur,'')))cur=best;
+  var cur=String(inp.value||'').trim(),best=safeBestLink();
+  if(badUrl(cur))cur=best;
   if(cur!==String(inp.value||'').trim()){inp.value=cur;inp.dispatchEvent(new Event('input',{bubbles:true}));}
   var open=box.querySelector('[data-prfq-doc-open]');if(open)open.href=cur||'#';
   return cur;
@@ -118,5 +105,5 @@ document.addEventListener('click',function(e){
 },true);
 document.addEventListener('pst:bom-saved',schedule,false);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
-window.PSTRfqDraftFinalizerV1={finalize:finalize,safeBestLink:safeBestLink,_test:{badUrl:badUrl,documentLike:documentLike,projectLabel:projectLabel,subject:subject,body:body}};
+window.PSTRfqDraftFinalizerV1={finalize:finalize,safeBestLink:safeBestLink,_test:{badUrl:badUrl,projectLabel:projectLabel,subject:subject,body:body}};
 })();
