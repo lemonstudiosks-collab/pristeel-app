@@ -89,6 +89,11 @@ function loadRfqCompanySync(){
   s.onload=function(){var C=window.PSTRfqGmailCompanySyncV1;if(C&&typeof C.render==='function')setTimeout(function(){C.render();},220);};
   document.head.appendChild(s);
 }
+function refreshRfqCompanyStatus(){
+  var C=window.PSTRfqGmailCompanySyncV1;
+  if(!C||typeof C.render!=='function')return;
+  [320,650].forEach(function(ms){setTimeout(function(){C.render();},ms);});
+}
 function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
 function nativeButtons(){
   var host=document.getElementById('pst-pi-body');if(!host)return;
@@ -108,7 +113,7 @@ function waitForSave(btn,id){
       if((!btn.isConnected&&savedBom.length)||tries>80){
         var R=window.PSTProjectFirstRfqDraftV1;
         if(R&&typeof R.open==='function'){
-          Promise.resolve(R.open(id)).then(function(){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);});
+          Promise.resolve(R.open(id)).then(function(){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);refreshRfqCompanyStatus();});
         }
         return;
       }
@@ -127,7 +132,9 @@ document.addEventListener('click',function(e){
 },false);
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
-  if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);}
+  if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);refreshRfqCompanyStatus();}
+  var r=e.target&&e.target.closest?e.target.closest('[data-prfq-open]'):null;
+  if(r)refreshRfqCompanyStatus();
 },true);
 document.addEventListener('pst:modules-ready',function(){loadBuyerRequestContext();loadBomClarity();loadProjectDocumentation();loadRfqLanguageTable();loadRfqDraftFinalizer();loadRfqNavigation();loadRfqHistorySync();loadRfqCompanySync();setTimeout(nativeButtons,0);},{once:true});
 loadBuyerRequestContext();
@@ -138,5 +145,5 @@ loadRfqDraftFinalizer();
 loadRfqNavigation();
 loadRfqHistorySync();
 loadRfqCompanySync();
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBuyerRequestContext:loadBuyerRequestContext,loadBomClarity:loadBomClarity,loadProjectDocumentation:loadProjectDocumentation,loadRfqLanguageTable:loadRfqLanguageTable,loadRfqDraftFinalizer:loadRfqDraftFinalizer,loadRfqNavigation:loadRfqNavigation,loadRfqHistorySync:loadRfqHistorySync,loadRfqCompanySync:loadRfqCompanySync};
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBuyerRequestContext:loadBuyerRequestContext,loadBomClarity:loadBomClarity,loadProjectDocumentation:loadProjectDocumentation,loadRfqLanguageTable:loadRfqLanguageTable,loadRfqDraftFinalizer:loadRfqDraftFinalizer,loadRfqNavigation:loadRfqNavigation,loadRfqHistorySync:loadRfqHistorySync,loadRfqCompanySync:loadRfqCompanySync,refreshRfqCompanyStatus:refreshRfqCompanyStatus};
 })();
