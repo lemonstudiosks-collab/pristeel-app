@@ -33,7 +33,7 @@ function loadBomClarity(){
 function loadProjectDocumentation(){
   if(window.PSTRfqProjectDocumentationV1||document.querySelector('script[data-pst-rfq-project-docs]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-rfq-project-documentation-v1.js?v=20260810-1';
+  s.src='pristeel-rfq-project-documentation-v1.js?v=20260810-2';
   s.defer=true;
   s.setAttribute('data-pst-rfq-project-docs','1');
   s.onload=function(){
