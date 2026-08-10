@@ -1,7 +1,8 @@
 /* PRISTEEL offer number integrity v1
  * Keeps an existing project offer number when editing and calculates the next offer number
  * from the visible doc_nr suffix instead of relying on legacy seq metadata.
- * Does not change pricing, BOM, VAT, PDF content or project data.
+ * Restores the current offer number in the generated client document after older output cleanup.
+ * Does not change pricing, BOM, VAT, PDF content structure or project data.
  */
 (function(){
 'use strict';
@@ -101,7 +102,51 @@ function wrapRegister(){
   };
   w.__pstNumberIntegrity=true;w.__base=fn;window.registerDocNr=w;return true;
 }
-function install(){wrapNext();wrapRegister();if(editDocNr)restoreExistingNumber();}
+function currentNumber(){
+  var raw=String((E('of-nr')||{}).value||editDocNr||'').trim();
+  return parseOfferNr(raw)?raw:'';
+}
+function ensureVisibleNumber(){
+  var root=E('of-pre'),nr=currentNumber();
+  if(!root||!nr)return false;
+  var existing=root.querySelector('[data-pst-offer-number-visible="1"]');
+  if(existing){existing.textContent=nr;return true;}
+  var found=false;
+  Array.prototype.forEach.call(root.querySelectorAll('*'),function(el){
+    if(el.children.length)return;
+    var t=String(el.textContent||'').trim();
+    if(/^PST-OFF-\d{4}-(?:\d{2}-)?\d{1,4}$/i.test(t)){
+      el.textContent=nr;found=true;
+    }
+  });
+  if(found)return true;
+  var title=null;
+  Array.prototype.some.call(root.querySelectorAll('*'),function(el){
+    if(el.children.length)return false;
+    if(/^(PONUDA|ANGEBOT|QUOTATION|OFERT[ËE])$/i.test(String(el.textContent||'').trim())){title=el;return true;}
+    return false;
+  });
+  if(!title||!title.parentElement)return false;
+  var d=document.createElement('div');
+  d.setAttribute('data-pst-offer-number-visible','1');
+  d.style.cssText='font-size:13px;color:#B87333;font-weight:600;letter-spacing:1px;margin-top:2px;text-align:right';
+  d.textContent=nr;
+  title.parentElement.appendChild(d);
+  return true;
+}
+function wrapOutput(){
+  var fn=window.genOfer;
+  if(typeof fn!=='function'||fn.__pstNumberVisible)return false;
+  var w=function(){
+    var r=fn.apply(this,arguments);
+    ensureVisibleNumber();
+    setTimeout(ensureVisibleNumber,0);
+    setTimeout(ensureVisibleNumber,120);
+    return r;
+  };
+  w.__pstNumberVisible=true;w.__base=fn;window.genOfer=w;return true;
+}
+function install(){wrapNext();wrapRegister();wrapOutput();if(editDocNr)restoreExistingNumber();ensureVisibleNumber();}
 
 document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-pf2-action="offer"]'):null;
@@ -112,8 +157,12 @@ document.addEventListener('click',function(e){
   }
   var mode=e.target&&e.target.closest?e.target.closest('#pst-cdb-choice [data-m]'):null;
   if(mode&&editDocNr)scheduleRestore();
+  var out=e.target&&e.target.closest?e.target.closest('button,a'):null;
+  if(out&&(/Gjenero\s+Ofert/i.test(String(out.textContent||''))||/^PDF$/i.test(String(out.textContent||'').trim()))){
+    setTimeout(ensureVisibleNumber,0);setTimeout(ensureVisibleNumber,120);
+  }
 },true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 install();[150,500,1200].forEach(function(ms){setTimeout(install,ms);});
-window.PSTOfferNumberIntegrityV1={install:install,restoreExistingNumber:restoreExistingNumber,parseOfferNr:parseOfferNr,safeNextOfferNr:safeNextOfferNr};
+window.PSTOfferNumberIntegrityV1={install:install,restoreExistingNumber:restoreExistingNumber,parseOfferNr:parseOfferNr,safeNextOfferNr:safeNextOfferNr,ensureVisibleNumber:ensureVisibleNumber};
 })();
