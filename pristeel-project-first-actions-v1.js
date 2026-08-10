@@ -16,7 +16,7 @@ function loadLinkedGmailAuthGate(){loadScript('pristeel-linked-gmail-auth-gate-v
 function refreshAfterGmailClose(e){var t=e.target&&e.target.closest?e.target.closest('#pgc-close'):null;if(!t)return;var modal=t.closest('#pgc-bg'),st=modal&&modal.querySelector('#pgc-status'),msg=String(st&&st.textContent||'');if(msg.indexOf('U lidhën')!==0)return;var id=String(window.__pstCurrentProjectId||window._curProjId||'');if(!id)return;setTimeout(function(){if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);},0);}
 function projectFirstVisible(){var p=document.getElementById('page-workspace-project');return !!(p&&p.classList.contains('pf2-on'));}
 function supplierOfferCard(){var p=document.getElementById('page-workspace-project');if(!p)return null;return [].slice.call(p.querySelectorAll('.pf2-card')).filter(function(c){var b=c.querySelector('header b');return b&&String(b.textContent||'').trim()==='Oferta furnitorësh';})[0]||null;}
-function openSupplierOffers(){
+function showSupplierOffers(){
   if(!projectFirstVisible()||!window.PSTProjectFirstV2||typeof window.PSTProjectFirstV2.render!=='function')return false;
   window.PSTProjectFirstV2.render('commercial');
   try{if(typeof window.renderFlowBar==='function')window.renderFlowBar('offers');}catch(e){}
@@ -24,6 +24,15 @@ function openSupplierOffers(){
     if(window.PSTSupplierOfferPostsaveUiV1&&typeof window.PSTSupplierOfferPostsaveUiV1.decorate==='function')window.PSTSupplierOfferPostsaveUiV1.decorate();
     var c=supplierOfferCard();if(c)try{c.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){c.scrollIntoView();}
   },0);
+  return true;
+}
+function openSupplierOffers(){
+  if(!projectFirstVisible()||!window.PSTProjectFirstV2||typeof window.PSTProjectFirstV2.render!=='function')return false;
+  var d=data(),id=String(window.__pstCurrentProjectId||window._curProjId||(d&&d.project&&d.project.id)||'');
+  var I=window.PSTProjectDataIntegrity;
+  if(id&&I&&typeof I.load==='function'){
+    I.load(id).then(function(fresh){if(fresh)window.__pstIntegrityLastData=fresh;showSupplierOffers();}).catch(function(err){if(window.console&&console.warn)console.warn('Project-first commercial refresh:',err);showSupplierOffers();});
+  }else showSupplierOffers();
   return true;
 }
 function installFlowBridge(){
@@ -34,5 +43,5 @@ function installFlowBridge(){
 document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);
 document.addEventListener('click',refreshAfterGmailClose,true);
 document.addEventListener('pst:modules-ready',function(){installFlowBridge();},{once:true});
-window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();installFlowBridge();
+window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers,showSupplierOffers:showSupplierOffers};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();installFlowBridge();
 })();
