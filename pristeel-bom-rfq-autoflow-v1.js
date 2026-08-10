@@ -7,6 +7,20 @@
 if(window.__pstBomRfqAutoflowV1)return;
 window.__pstBomRfqAutoflowV1=true;
 
+function loadBuyerRequestContext(){
+  if(window.PSTRfqBuyerRequestContextV1||document.querySelector('script[data-pst-rfq-buyer-request]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-rfq-buyer-request-context-v1.js?v=20260810-1';
+  s.defer=true;
+  s.setAttribute('data-pst-rfq-buyer-request','1');
+  s.onload=function(){
+    var B=window.PSTRfqBuyerRequestContextV1;
+    if(B&&typeof B.apply==='function'){
+      [0,160,500,1200].forEach(function(ms){setTimeout(function(){B.apply();},ms);});
+    }
+  };
+  document.head.appendChild(s);
+}
 function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
 function nativeButtons(){
   var host=document.getElementById('pst-pi-body');if(!host)return;
@@ -47,6 +61,7 @@ document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
   if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);}
 },true);
-document.addEventListener('pst:modules-ready',function(){setTimeout(nativeButtons,0);},{once:true});
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons};
+document.addEventListener('pst:modules-ready',function(){loadBuyerRequestContext();setTimeout(nativeButtons,0);},{once:true});
+loadBuyerRequestContext();
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBuyerRequestContext:loadBuyerRequestContext};
 })();
