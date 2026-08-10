@@ -108,6 +108,7 @@ var files=[
   'pristeel-supplier-capability-manager-v1.js?v=20260808-3',
   'pristeel-project-first-commercial-v1.js?v=20260809-3',
   'pristeel-project-file-upload-v1.js?v=20260808-1',
+  'pristeel-project-bom-document-extract-v1.js?v=20260810-1',
   'pristeel-home-command-center-v2.js?v=20260807-12',
   'pristeel-redesign-finalizer-v1.js?v=20260807-10',
   'pristeel-home-live-fix-v1.js?v=20260807-1',
