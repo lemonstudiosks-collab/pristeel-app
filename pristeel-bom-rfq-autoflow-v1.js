@@ -27,12 +27,22 @@ function loadRfqNavigation(){
   document.head.appendChild(s);
 }
 function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
+function currentDraft(){return document.getElementById('pst-pf2-rfq-draft');}
 function nativeButtons(){
   var host=document.getElementById('pst-pi-body');if(!host)return;
-  host.querySelectorAll('[data-pf2-action="rfq"]').forEach(function(b){
-    b.removeAttribute('data-pf2-action');
-    b.setAttribute('data-prfq-open','1');
-    b.textContent='Pergatit / hap RFQ';
+  var draft=currentDraft();
+  host.querySelectorAll('[data-pf2-action="rfq"],[data-prfq-open]').forEach(function(b){
+    var gate=b.closest&&b.closest('.pf2-gate');
+    if(draft){
+      if(gate)gate.style.display='none';
+      else b.style.display='none';
+      return;
+    }
+    if(b.hasAttribute('data-pf2-action')){
+      b.removeAttribute('data-pf2-action');
+      b.setAttribute('data-prfq-open','1');
+      b.textContent='Pergatit / hap RFQ';
+    }
   });
 }
 function waitForSave(btn,id){
@@ -54,6 +64,14 @@ function waitForSave(btn,id){
   }
   setTimeout(tick,80);
 }
+window.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('[data-prfq-open]'):null;
+  if(!b)return;
+  var draft=currentDraft();if(!draft)return;
+  e.preventDefault();e.stopPropagation();
+  var gate=b.closest&&b.closest('.pf2-gate');if(gate)gate.style.display='none';
+  try{draft.scrollIntoView({behavior:'smooth',block:'start'});}catch(err){draft.scrollIntoView();}
+},true);
 document.addEventListener('click',function(e){
   var btn=e.target&&e.target.closest?e.target.closest('[data-pbp-save]'):null;
   if(!btn)return;
@@ -63,6 +81,8 @@ document.addEventListener('click',function(e){
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
   if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);}
+  var b=e.target&&e.target.closest?e.target.closest('[data-prfq-open]'):null;
+  if(b){setTimeout(nativeButtons,180);setTimeout(nativeButtons,360);}
 },true);
 document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();setTimeout(nativeButtons,0);},{once:true});
 loadBomClarity();
