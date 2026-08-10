@@ -13,6 +13,7 @@ function A(v){return Array.isArray(v)?v:[];}
 function email(v){var m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
 function field(m){return String(m&&(m.body_text||m.body||m.text||m.snippet)||'');}
 function when(m){var t=new Date((m&&m.sent_at)||(m&&m.created_at)||0).getTime();return isFinite(t)?t:0;}
+function rfqData(){var R=window.PSTProjectFirstRfqDraftV1;return (R&&R._state&&R._state.data)||window.__pstIntegrityLastData||null;}
 function externalIncoming(m){
   if(!m)return false;
   var dir=String(m.direction||'').toLowerCase();
@@ -55,37 +56,29 @@ function stripHeaders(lines){
 }
 function cleanSegment(v){
   var t=normalize(v);
-  // Stop before reply history inside the selected request block.
   t=t.split(/\n\s*(?:On|Am|Dana|Më datën|Me daten).{0,220}(?:wrote|schrieb|napisao|je napisao|shkroi):/i)[0];
-
   var lines=t.split('\n').map(function(x){return x.replace(/^\s*>+\s?/,'').replace(/[ \t]+/g,' ').trim();});
   lines=stripHeaders(lines);
   while(lines.length&&!lines[0])lines.shift();
   while(lines.length&&!lines[lines.length-1])lines.pop();
-
   if(lines.length&&/^(poštovani|postovani|dear|guten tag|hallo|hello|pershendetje|përshëndetje)\b.*[,!]?$/.test(lines[0].toLowerCase()))lines.shift();
   while(lines.length&&!lines[0])lines.shift();
-
   var close=-1;
   for(var i=0;i<lines.length;i++){
     if(/^(s poštovanjem|s postovanjem|srdačan pozdrav|srdacan pozdrav|pozdrav|mit freundlichen grüßen|mit freundlichen gruessen|kind regards|best regards|regards|me respekt|faleminderit)\s*[,!.]?$/.test(lines[i].toLowerCase())){close=i;break;}
   }
   if(close>0&&lines.slice(0,close).join(' ').trim().length>=20)lines=lines.slice(0,close);
-
   lines=lines.filter(function(x){return !/^\s*(from|von|od|nga|sent|gesendet|poslato|dërguar|derguar|date|datum|to|an|za|për|per|cc|subject|betreff|predmet|subjekti):/i.test(x);});
   return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim().slice(0,4800);
 }
 function clean(v){
   var t=normalize(v),f=forwardedSection(t);
-  // When the outer message merely says "I am forwarding the investor email",
-  // the forwarded body is the real commercial request and is therefore preferred.
   if(f&&forwardingWrapper(f.wrapper)){
     var inner=f.body,deep=forwardedSection(inner),guard=0;
     while(deep&&forwardingWrapper(deep.wrapper)&&guard++<4){inner=deep.body;deep=forwardedSection(inner);}
     var actual=cleanSegment(inner);
     if(actual.length>=12)return actual;
   }
-  // Normal direct buyer request: remove quoted/forwarded history instead of importing it.
   if(f)t=f.wrapper;
   return cleanSegment(t);
 }
@@ -97,25 +90,40 @@ function buyerRequest(d){
   }
   return '';
 }
-function apply(){
-  var box=document.getElementById('pst-pf2-rfq-draft');
-  var ta=box&&box.querySelector('[data-prfq-context]');
-  if(!ta||ta.getAttribute('data-pst-buyer-request-cleaned')==='2')return false;
-  var d=window.__pstIntegrityLastData||null;
-  var txt=buyerRequest(d);
-  ta.setAttribute('data-pst-buyer-request-cleaned','2');
+function textarea(){var box=document.getElementById('pst-pf2-rfq-draft');return box&&box.querySelector('[data-prfq-context]');}
+function userEdited(ta){return !!(ta&&ta.getAttribute('data-pst-buyer-user-edited')==='1');}
+function safeContext(){
+  var ta=textarea();
+  if(userEdited(ta))return String(ta.value||'').trim().slice(0,4800);
+  return buyerRequest(rfqData());
+}
+function syncState(txt){var R=window.PSTProjectFirstRfqDraftV1;if(R&&R._state)R._state.buyerContext=String(txt||'');}
+function apply(force){
+  var box=document.getElementById('pst-pf2-rfq-draft'),ta=box&&box.querySelector('[data-prfq-context]');
+  if(!ta)return false;
+  if(userEdited(ta)&&!force)return false;
+  var txt=buyerRequest(rfqData());
+  if(!txt)return false;
+  if(!force&&ta.getAttribute('data-pst-buyer-request-cleaned')==='3'&&String(ta.value||'').trim()===txt){syncState(txt);return true;}
+  ta.setAttribute('data-pst-buyer-request-cleaned','3');
   ta.value=txt;
+  syncState(txt);
   ta.dispatchEvent(new Event('input',{bubbles:true}));
   var note=box.querySelector('.prfq-note');
   if(note)note.textContent='Vetem kerkesa origjinale e bleresit/investitorit. Nese emaili eshte forward, merret kerkesa brenda forwarded message, jo fjalia percjellese. Thread summary dhe pergjigjet tona nuk perfshihen.';
   return true;
 }
-function schedule(){[20,180,500,1100,1800].forEach(function(ms){setTimeout(apply,ms);});}
+function schedule(){[0,80,220,500,1000,1800,3000].forEach(function(ms){setTimeout(function(){apply(false);},ms);});}
 document.addEventListener('click',function(e){
-  var t=e.target&&e.target.closest&&e.target.closest('[data-pf2-tab="procurement"],[data-prfq-open]');
+  var t=e.target&&e.target.closest&&e.target.closest('[data-pf2-tab="procurement"],[data-prfq-open],#pst-pf2-rfq-draft [data-prfq-refresh]');
   if(t)schedule();
 },true);
+document.addEventListener('input',function(e){
+  var ta=e.target&&e.target.matches&&e.target.matches('#pst-pf2-rfq-draft [data-prfq-context]')?e.target:null;
+  if(!ta)return;
+  if(e.isTrusted){ta.setAttribute('data-pst-buyer-user-edited','1');syncState(String(ta.value||'').trim().slice(0,4800));}
+},false);
 document.addEventListener('pst:bom-saved',schedule,false);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
-window.PSTRfqBuyerRequestContextV1={apply:apply,buyerRequest:buyerRequest,clean:clean,_test:{externalIncoming:externalIncoming,forwardedSection:forwardedSection,forwardingWrapper:forwardingWrapper,cleanSegment:cleanSegment}};
+window.PSTRfqBuyerRequestContextV1={apply:apply,safeContext:safeContext,buyerRequest:buyerRequest,clean:clean,_test:{externalIncoming:externalIncoming,forwardedSection:forwardedSection,forwardingWrapper:forwardingWrapper,cleanSegment:cleanSegment}};
 })();
