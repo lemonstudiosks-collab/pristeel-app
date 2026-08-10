@@ -100,7 +100,7 @@ function badUrl(u){u=String(u||'').trim();if(!/^https?:\/\//i.test(u))return tru
 function documentLike(u,name){u=String(u||'').trim();name=String(name||'').trim();if(badUrl(u))return false;if(/(?:we\.tl|wetransfer|dropbox|sharepoint|onedrive|drive\.google\.com|docs\.google\.com|mega\.|transfer|download)/i.test(u))return true;if(/\.(?:zip|pdf|dwg|dxf|ifc|xlsx?|docx?|rar|7z)(?:[?#]|$)/i.test(u))return true;if(/\.(?:zip|pdf|dwg|dxf|ifc|xlsx?|docx?|rar|7z)$/i.test(name))return true;return false;}
 function urls(v){var m=String(v||'').match(/https?:\/\/[^\s<>"']+/ig)||[];return m.map(function(x){return x.replace(/[),.;]+$/,'');});}
 function bestDocLink(d){
-  d=d||{},p=d.project||{},u=String(p.drive_folder_url||'').trim();
+  d=d||{};var p=d.project||{},u=String(p.drive_folder_url||'').trim();
   if(u&&/drive\.google\.com\/drive\/folders\//i.test(u)&&!badUrl(u))return u;
   if(p.drive_folder_id)return'https://drive.google.com/drive/folders/'+String(p.drive_folder_id).trim();
   var out=[];
