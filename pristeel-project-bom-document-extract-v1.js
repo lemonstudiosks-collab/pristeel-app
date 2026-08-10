@@ -150,9 +150,27 @@ function renderProjectFirstPanel(){
   var b=E('pst-doc-bom-pf2-open');if(b)b.onclick=function(){openLegacyPreview(!done);};
   return true;
 }
+function hideProjectFirstPage(){
+  var page=E('page-workspace-project');
+  if(!page)return false;
+  page.classList.remove('active');
+  page.style.display='none';
+  return true;
+}
+function revealLegacyBomPage(){
+  hideProjectFirstPage();
+  try{
+    if(typeof window.pstPiLegacy==='function'){window.pstPiLegacy('bom');return true;}
+    if(typeof window.showPage==='function'){window.showPage('bom');hideProjectFirstPage();return true;}
+  }catch(e){console.error('Dukley BOM visibility:',e);}
+  var page=E('page-bom');
+  if(page){page.classList.add('active');page.style.display='block';hideProjectFirstPage();return true;}
+  return false;
+}
 function openLegacyPreview(importAfterLoad){
   var id=currentProjectId();if(!id)return alert('Projekti aktiv nuk u gjet.');
   var tries=0,started=false;
+  hideProjectFirstPage();
   try{
     if(typeof window.loadProject==='function'){window.loadProject(id);started=true;}
     else if(typeof window.pstPiWork==='function'){window.pstPiWork();started=true;}
@@ -160,10 +178,11 @@ function openLegacyPreview(importAfterLoad){
   }catch(e){console.error('Dukley BOM open:',e);}
   if(!started)return alert('Editori ekzistues i BOM nuk u gjet.');
   function waitReady(){
+    hideProjectFirstPage();
     var name=E('i-projname'),table=E('bom-tbody');
     var same=!!(name&&N(name.value).indexOf('dukley')>-1);
     if(table&&same&&tries>=5){
-      try{if(typeof window.showPage==='function')window.showPage('bom');else if(typeof window.pstPiLegacy==='function')window.pstPiLegacy('bom');}catch(e){}
+      revealLegacyBomPage();
       setTimeout(function(){renderLegacyPanel();if(importAfterLoad)safeImport();},80);
       return;
     }
