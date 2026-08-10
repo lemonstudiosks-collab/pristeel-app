@@ -3,8 +3,8 @@
  * - Detects the language from the generated document itself.
  * - Serbian salutation uses "Gsp."
  * - Removes mixed-language commercial labels from the client-facing output.
- * - VAT/PDV exclusion is explicit and professionally worded in the commercial total box.
- * - Informative BOM is moved after the complete commercial offer as a separate appendix.
+ * - VAT/PDV exclusion is explicit in the commercial total box.
+ * - Informative BOM stays visible below the offer in the app, but outside the client PDF.
  * No pricing, BOM, supplier offer, project, or saved source data is changed.
  */
 (function(){
@@ -120,27 +120,33 @@ function normalizeClientLanguage(root,lang){
 function bomHeadingRe(){
   return /^(Pregled materijala \(informativno\)|Pasqyra e materialit \(informative\)|Material overview \(informative\)|Materialübersicht \(informativ\))$/i;
 }
-function moveBomAfterOffer(root){
+function moveBomOutsideOffer(root){
   if(!root)return;
-  var existing=root.querySelector('[data-pst-client-bom-appendix="1"]');
-  if(existing)return;
-  var heading=exactLeaf(root,bomHeadingRe());
+  var oldOutside=document.querySelector('[data-pst-client-bom-external="1"]');
+  if(oldOutside)oldOutside.remove();
+
+  var oldAppendix=root.querySelector('[data-pst-client-bom-appendix="1"]');
+  var scope=oldAppendix||root;
+  var heading=exactLeaf(scope,bomHeadingRe());
   if(!heading)return;
+
   var title=heading;
-  while(title.parentElement&&title.parentElement!==root&&title.parentElement.children.length===1){title=title.parentElement;}
+  while(title.parentElement&&title.parentElement!==scope&&title.parentElement.children.length===1){title=title.parentElement;}
   var table=title.nextElementSibling;
   if(!table||table.tagName!=='TABLE'){
-    table=heading.nextElementSibling;
-    if(!table||table.tagName!=='TABLE')return;
-    title=heading;
+    table=scope.querySelector('table');
+    if(!table)return;
+    if(title===table)return;
   }
-  var doc=root.firstElementChild&&root.children.length===1?root.firstElementChild:root;
-  var appendix=document.createElement('div');
-  appendix.setAttribute('data-pst-client-bom-appendix','1');
-  appendix.style.cssText='margin-top:40px;padding-top:26px;border-top:2px solid #E8E4DE;page-break-before:auto';
-  appendix.appendChild(title);
-  appendix.appendChild(table);
-  doc.appendChild(appendix);
+
+  var panel=document.createElement('div');
+  panel.setAttribute('data-pst-client-bom-external','1');
+  panel.style.cssText='margin:24px 0 8px;padding:22px 24px;border:1px solid #E5EAEC;border-radius:14px;background:#fff;overflow-x:auto';
+  panel.appendChild(title);
+  panel.appendChild(table);
+  root.insertAdjacentElement('afterend',panel);
+
+  if(oldAppendix&&oldAppendix.isConnected)oldAppendix.remove();
 }
 function patch(){
   var root=preview();
@@ -149,7 +155,7 @@ function patch(){
   normalizeClientLanguage(root,lang);
   ensureSerbianGsp(root,lang);
   ensureVatNote(root,lang);
-  moveBomAfterOffer(root);
+  moveBomOutsideOffer(root);
   return true;
 }
 function wrap(name){
@@ -170,5 +176,5 @@ document.addEventListener('click',function(e){
 },true);
 document.addEventListener('pst:modules-ready',function(){install();setTimeout(install,1000);});
 install();setTimeout(install,1200);
-window.PSTOfferClientOutputFinalizerV1={patch:patch,install:install,documentLang:documentLang,normalizeClientLanguage:normalizeClientLanguage,ensureSerbianGsp:ensureSerbianGsp,ensureVatNote:ensureVatNote,moveBomAfterOffer:moveBomAfterOffer};
+window.PSTOfferClientOutputFinalizerV1={patch:patch,install:install,documentLang:documentLang,normalizeClientLanguage:normalizeClientLanguage,ensureSerbianGsp:ensureSerbianGsp,ensureVatNote:ensureVatNote,moveBomOutsideOffer:moveBomOutsideOffer};
 })();
