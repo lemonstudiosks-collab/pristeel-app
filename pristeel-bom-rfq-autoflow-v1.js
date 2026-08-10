@@ -17,17 +17,21 @@ function nativeButtons(){
   });
 }
 function waitForSave(btn,id){
-  var tries=0;
+  var tries=0,successSeen=false;
   function tick(){
     var txt=String(btn&&btn.textContent||'');
-    if(/U ruajt|✓\s*U ruajt/i.test(txt)){
-      var R=window.PSTProjectFirstRfqDraftV1;
-      if(R&&typeof R.open==='function'){
-        Promise.resolve(R.open(id)).then(function(){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);});
+    if(/U ruajt|✓\s*U ruajt/i.test(txt))successSeen=true;
+    if(successSeen){
+      var d=window.__pstIntegrityLastData||{},savedBom=Array.isArray(d.bom)?d.bom:[];
+      if((!btn.isConnected&&savedBom.length)||tries>80){
+        var R=window.PSTProjectFirstRfqDraftV1;
+        if(R&&typeof R.open==='function'){
+          Promise.resolve(R.open(id)).then(function(){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);});
+        }
+        return;
       }
-      return;
     }
-    if(btn&&!btn.disabled&&/Ruaj BOM/i.test(txt))return;
+    if(!successSeen&&btn&&!btn.disabled&&/Ruaj BOM/i.test(txt))return;
     tries++;
     if(tries<160)setTimeout(tick,100);
   }
