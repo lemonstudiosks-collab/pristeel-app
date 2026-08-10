@@ -71,13 +71,10 @@ function ensureVatNote(root){
     h.insertAdjacentElement('afterend',d);
     return;
   }
-  var box=label.parentElement;
-  while(box&&box!==root){
-    var txt=String(box.textContent||'');
-    if(txt.indexOf(label.textContent)>=0&&/EUR|€/.test(txt)&&box.children.length>=1)break;
-    box=box.parentElement;
-  }
-  if(!box||box===root)box=label.parentElement;
+  // Label sits inside the total row; the row's parent is the commercial total box.
+  var row=label.parentElement;
+  var box=row&&row.parentElement;
+  if(!box||box===root)box=row;
   if(!box)return;
   var note=document.createElement('div');
   note.setAttribute('data-pst-client-vat-note','1');
