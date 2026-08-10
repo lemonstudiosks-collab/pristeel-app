@@ -26,6 +26,13 @@ function loadRfqNavigation(){
   s.onload=function(){var N=window.PSTProjectFirstRfqNavigationV1;if(N&&typeof N.install==='function')N.install();};
   document.head.appendChild(s);
 }
+function installGateCss(){
+  if(document.getElementById('pst-rfq-gate-visibility-css'))return;
+  var s=document.createElement('style');
+  s.id='pst-rfq-gate-visibility-css';
+  s.textContent='#pst-pi-body:has(#pst-pf2-rfq-draft) .pf2-gate:has([data-pf2-action="rfq"], [data-prfq-open]){display:none!important}';
+  document.head.appendChild(s);
+}
 function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
 function currentDraft(){return document.getElementById('pst-pf2-rfq-draft');}
 function nativeButtons(){
@@ -84,7 +91,8 @@ document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-prfq-open]'):null;
   if(b){setTimeout(nativeButtons,180);setTimeout(nativeButtons,360);}
 },true);
-document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();setTimeout(nativeButtons,0);},{once:true});
+document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();installGateCss();setTimeout(nativeButtons,0);},{once:true});
+installGateCss();
 loadBomClarity();
 loadRfqNavigation();
 window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation};
