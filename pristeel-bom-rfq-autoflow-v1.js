@@ -24,7 +24,7 @@ function loadBuyerRequestContext(){
 function loadBomClarity(){
   if(window.PSTProjectFirstBomClarityV1||document.querySelector('script[data-pst-bom-clarity]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-project-first-bom-clarity-v1.js?v=20260810-1';
+  s.src='pristeel-project-first-bom-clarity-v1.js?v=20260810-2';
   s.defer=true;
   s.setAttribute('data-pst-bom-clarity','1');
   s.onload=function(){var B=window.PSTProjectFirstBomClarityV1;if(B&&typeof B.apply==='function')B.apply();};
