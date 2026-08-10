@@ -62,6 +62,15 @@ function loadRfqDraftFinalizer(){
   s.onload=function(){var F=window.PSTRfqDraftFinalizerV1;if(F&&typeof F.finalize==='function'){[0,160,500,1200].forEach(function(ms){setTimeout(function(){F.finalize();},ms);});}};
   document.head.appendChild(s);
 }
+function loadRfqNavigation(){
+  if(window.PSTProjectFirstRfqNavigationV1||document.querySelector('script[data-pst-rfq-navigation]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-project-first-rfq-navigation-v1.js?v=20260810-1';
+  s.defer=true;
+  s.setAttribute('data-pst-rfq-navigation','1');
+  s.onload=function(){var N=window.PSTProjectFirstRfqNavigationV1;if(N&&typeof N.install==='function')N.install();};
+  document.head.appendChild(s);
+}
 function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
 function nativeButtons(){
   var host=document.getElementById('pst-pi-body');if(!host)return;
@@ -102,11 +111,12 @@ document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
   if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);}
 },true);
-document.addEventListener('pst:modules-ready',function(){loadBuyerRequestContext();loadBomClarity();loadProjectDocumentation();loadRfqLanguageTable();loadRfqDraftFinalizer();setTimeout(nativeButtons,0);},{once:true});
+document.addEventListener('pst:modules-ready',function(){loadBuyerRequestContext();loadBomClarity();loadProjectDocumentation();loadRfqLanguageTable();loadRfqDraftFinalizer();loadRfqNavigation();setTimeout(nativeButtons,0);},{once:true});
 loadBuyerRequestContext();
 loadBomClarity();
 loadProjectDocumentation();
 loadRfqLanguageTable();
 loadRfqDraftFinalizer();
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBuyerRequestContext:loadBuyerRequestContext,loadBomClarity:loadBomClarity,loadProjectDocumentation:loadProjectDocumentation,loadRfqLanguageTable:loadRfqLanguageTable,loadRfqDraftFinalizer:loadRfqDraftFinalizer};
+loadRfqNavigation();
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,loadBuyerRequestContext:loadBuyerRequestContext,loadBomClarity:loadBomClarity,loadProjectDocumentation:loadProjectDocumentation,loadRfqLanguageTable:loadRfqLanguageTable,loadRfqDraftFinalizer:loadRfqDraftFinalizer,loadRfqNavigation:loadRfqNavigation};
 })();
