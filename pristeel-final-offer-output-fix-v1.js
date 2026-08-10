@@ -64,22 +64,8 @@ function patchBomPrecision(root){
   }
 }
 function patchVat(root){
-  if(!root||root.querySelector('[data-pst-offer-vat-note]'))return;
-  var lang=(document.getElementById('of-lang')||{}).value||'de';
-  var txt={
-    sr:'PDV nije uključen u navedene cene.',
-    de:'Die MwSt. ist in den angegebenen Preisen nicht enthalten.',
-    en:'VAT is not included in the stated prices.',
-    sq:'TVSH-ja nuk është e përfshirë në çmimet e lartpërmendura.'
-  }[lang]||'VAT is not included in the stated prices.';
-  var heading={sr:'USLOVI',de:'KONDITIONEN',en:'CONDITIONS',sq:'KUSHTET'}[lang]||'USLOVI';
-  var h=exactText(root,heading);
-  if(!h)return;
-  var d=document.createElement('div');
-  d.setAttribute('data-pst-offer-vat-note','1');
-  d.style.cssText='font-size:12px;font-weight:650;color:#1f2937;margin:7px 0 9px';
-  d.textContent=txt;
-  h.insertAdjacentElement('afterend',d);
+  if(!root)return;
+  Array.prototype.slice.call(root.querySelectorAll('[data-pst-offer-vat-note]')).forEach(function(x){x.remove();});
 }
 function patch(){
   var root=preview();
