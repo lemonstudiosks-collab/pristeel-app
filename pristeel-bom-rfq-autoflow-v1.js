@@ -10,7 +10,7 @@ window.__pstBomRfqAutoflowV1=true;
 function loadBuyerRequestContext(){
   if(window.PSTRfqBuyerRequestContextV1||document.querySelector('script[data-pst-rfq-buyer-request]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-rfq-buyer-request-context-v1.js?v=20260810-1';
+  s.src='pristeel-rfq-buyer-request-context-v1.js?v=20260810-2';
   s.defer=true;
   s.setAttribute('data-pst-rfq-buyer-request','1');
   s.onload=function(){
