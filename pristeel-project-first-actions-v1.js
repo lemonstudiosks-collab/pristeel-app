@@ -14,7 +14,25 @@ function loadEmailBodySync(){loadScript('pristeel-project-email-body-sync-v1.js?
 function loadContactViewDedupe(){loadScript('pristeel-project-contact-view-dedupe-v1.js?v=20260809-1','contact-view-dedupe',function(){return !!window.PSTProjectContactViewDedupeV1;});}
 function loadLinkedGmailAuthGate(){loadScript('pristeel-linked-gmail-auth-gate-v1.js?v=20260809-1','linked-gmail-auth-gate',function(){return !!window.PSTLinkedGmailAuthGateV1;});}
 function refreshAfterGmailClose(e){var t=e.target&&e.target.closest?e.target.closest('#pgc-close'):null;if(!t)return;var modal=t.closest('#pgc-bg'),st=modal&&modal.querySelector('#pgc-status'),msg=String(st&&st.textContent||'');if(msg.indexOf('U lidhën')!==0)return;var id=String(window.__pstCurrentProjectId||window._curProjId||'');if(!id)return;setTimeout(function(){if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);},0);}
+function projectFirstVisible(){var p=document.getElementById('page-workspace-project');return !!(p&&p.classList.contains('pf2-on'));}
+function supplierOfferCard(){var p=document.getElementById('page-workspace-project');if(!p)return null;return [].slice.call(p.querySelectorAll('.pf2-card')).filter(function(c){var b=c.querySelector('header b');return b&&String(b.textContent||'').trim()==='Oferta furnitorësh';})[0]||null;}
+function openSupplierOffers(){
+  if(!projectFirstVisible()||!window.PSTProjectFirstV2||typeof window.PSTProjectFirstV2.render!=='function')return false;
+  window.PSTProjectFirstV2.render('commercial');
+  try{if(typeof window.renderFlowBar==='function')window.renderFlowBar('offers');}catch(e){}
+  setTimeout(function(){
+    if(window.PSTSupplierOfferPostsaveUiV1&&typeof window.PSTSupplierOfferPostsaveUiV1.decorate==='function')window.PSTSupplierOfferPostsaveUiV1.decorate();
+    var c=supplierOfferCard();if(c)try{c.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){c.scrollIntoView();}
+  },0);
+  return true;
+}
+function installFlowBridge(){
+  var base=window.flowGoto;if(typeof base!=='function'||base.__pstProjectFirstOffersBridge)return false;
+  var wrapped=function(page){if(page==='offers'&&openSupplierOffers())return;return base.apply(this,arguments);};
+  wrapped.__pstProjectFirstOffersBridge=true;wrapped.__base=base;window.flowGoto=wrapped;return true;
+}
 document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);
 document.addEventListener('click',refreshAfterGmailClose,true);
-window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();
+document.addEventListener('pst:modules-ready',function(){installFlowBridge();},{once:true});
+window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();installFlowBridge();
 })();
