@@ -1,0 +1,48 @@
+/* PRISTEEL BOM -> RFQ autoflow v1
+ * After an explicit successful BOM save, continue directly to the native Project-first RFQ draft.
+ * No email is sent and no RFQ is logged as sent here.
+ */
+(function(){
+'use strict';
+if(window.__pstBomRfqAutoflowV1)return;
+window.__pstBomRfqAutoflowV1=true;
+
+function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
+function nativeButtons(){
+  var host=document.getElementById('pst-pi-body');if(!host)return;
+  host.querySelectorAll('[data-pf2-action="rfq"]').forEach(function(b){
+    b.removeAttribute('data-pf2-action');
+    b.setAttribute('data-prfq-open','1');
+    b.textContent='Pergatit / hap RFQ';
+  });
+}
+function waitForSave(btn,id){
+  var tries=0;
+  function tick(){
+    var txt=String(btn&&btn.textContent||'');
+    if(/U ruajt|✓\s*U ruajt/i.test(txt)){
+      var R=window.PSTProjectFirstRfqDraftV1;
+      if(R&&typeof R.open==='function'){
+        Promise.resolve(R.open(id)).then(function(){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);});
+      }
+      return;
+    }
+    if(btn&&!btn.disabled&&/Ruaj BOM/i.test(txt))return;
+    tries++;
+    if(tries<160)setTimeout(tick,100);
+  }
+  setTimeout(tick,80);
+}
+document.addEventListener('click',function(e){
+  var btn=e.target&&e.target.closest?e.target.closest('[data-pbp-save]'):null;
+  if(!btn)return;
+  var id=projectId();
+  setTimeout(function(){if(btn.disabled)waitForSave(btn,id);},0);
+},false);
+document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
+  if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);}
+},true);
+document.addEventListener('pst:modules-ready',function(){setTimeout(nativeButtons,0);},{once:true});
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons};
+})();
