@@ -30,7 +30,7 @@ function emitReuse(existing,requested){
   try{document.dispatchEvent(new CustomEvent('pst:project-create-reused',{detail:{project:existing,requested:requested}}));}catch(e){}
   try{console.info('PRISTEEL project create guard: reused existing project',existing&&existing.id,existing&&existing.name);}catch(e){}
 }
-async function install(){
+function install(){
   if(installed)return true;
   var original=window.supaFetch;
   if(typeof original!=='function')return false;
@@ -41,7 +41,7 @@ async function install(){
     var requested=Array.isArray(body)?body:[body];
     if(!requested.length)return original.apply(this,arguments);
 
-    var existing=arr(await original.call(this,'projects?select=id,name,client,ref,reference,status,created_at,updated_at&order=created_at.asc&limit=5000'));
+    var existing=arr(await original.call(this,'projects?select=id,name,client,ref,status,created_at&order=created_at.asc&limit=5000'));
     var byKey={};
     existing.forEach(function(p){
       var key=keyProject(p);
