@@ -5,10 +5,15 @@ const login=process.env.BITRIX_LOGIN||'sales@prissteel.com';
 const bitrixPassword=process.env.BITRIX_APP_PASSWORD||'';
 const ppppEmail=process.env.PPPP_SYNC_EMAIL||'';
 const ppppPassword=process.env.PPPP_SYNC_PASSWORD||'';
-const apply=String(process.env.APPLY_NEW_CONTACTS||'false').toLowerCase()==='true';
+const mode=String(process.env.IMPORT_MODE||'preview').trim().toLowerCase();
+const apply=mode==='apply';
 
 if(!bitrixPassword||!ppppEmail||!ppppPassword){
   console.error('Missing required GitHub secrets.');
+  process.exit(2);
+}
+if(!['preview','apply'].includes(mode)){
+  console.error(`Invalid IMPORT_MODE: ${mode}`);
   process.exit(2);
 }
 
@@ -45,7 +50,7 @@ function parseVcard(text,href){
   return {person,company,email,phone,role,country};
 }
 async function bfetch(url,opt={}){
-  const r=await fetch(url,{...opt,headers:{Authorization:bitrixAuth,'User-Agent':'PRISTEEL-PPPP-Bitrix-NewImport/1.0',...(opt.headers||{})}});
+  const r=await fetch(url,{...opt,headers:{Authorization:bitrixAuth,'User-Agent':'PRISTEEL-PPPP-Bitrix-NewImport/1.1',...(opt.headers||{})}});
   const t=await r.text();
   if(!r.ok&&r.status!==207)throw new Error(`${opt.method||'GET'} ${url} -> ${r.status}`);
   return t;
@@ -125,11 +130,11 @@ try{
 
   if(newContacts.length>50)throw new Error(`Guard stopped import: ${newContacts.length} new contacts exceeds limit 50.`);
 
-  const summary={checkedAt:new Date().toISOString(),apply,bitrixContacts:bitrixByEmail.size,ppppBefore:local.length,newEligible:newContacts.length,inserted:0,ppppAfter:local.length};
+  const summary={checkedAt:new Date().toISOString(),mode,apply,bitrixContacts:bitrixByEmail.size,ppppBefore:local.length,newEligible:newContacts.length,inserted:0,ppppAfter:local.length};
   fs.mkdirSync('tmp',{recursive:true});
 
   if(!apply){
-    console.log('No writes performed. Tick the workflow apply checkbox to import only the new contacts.');
+    console.log('No writes performed. Select apply in the workflow mode to import only the new contacts.');
     fs.writeFileSync('tmp/bitrix-pppp-import-new.json',JSON.stringify(summary,null,2));
     process.exit(0);
   }
