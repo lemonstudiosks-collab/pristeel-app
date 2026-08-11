@@ -1,0 +1,31 @@
+name: Bitrix24 CardDAV probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Probe Bitrix24 CardDAV
+        env:
+          BITRIX_HOST: b24-cl53os.bitrix24.com
+          BITRIX_LOGIN: sales@prissteel.com
+          BITRIX_APP_PASSWORD: ${{ secrets.BITRIX_APP_PASSWORD }}
+        run: node scripts/bitrix-carddav-probe.mjs
+
+      - name: Upload sanitized probe result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitrix-carddav-probe
+          path: tmp/bitrix-carddav-probe.json
+          if-no-files-found: ignore
+          retention-days: 3
