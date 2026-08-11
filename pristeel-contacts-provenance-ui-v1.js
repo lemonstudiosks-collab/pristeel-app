@@ -28,6 +28,7 @@ function sourceLabel(source){
   return source||'Burim';
 }
 function sourceClass(source){return source==='hubspot'?'hubspot':source==='bitrix24'?'bitrix24':'other';}
+function clearLegacyHubspot(){try{window._ctOnlyHubspot=false;}catch(e){}}
 
 function rebuildMap(rows){
   sourceRows=Array.isArray(rows)?rows:[];
@@ -99,7 +100,7 @@ function ensureSourceControl(){
     +'<option value="multi">Burimi: disa sisteme</option>'
     +'<option value="none">Burimi: pa lidhje</option>';
   select.value=sourceFilter;
-  select.addEventListener('change',function(){sourceFilter=select.value||'all';renderAll();});
+  select.addEventListener('change',function(){clearLegacyHubspot();sourceFilter=select.value||'all';renderAll();});
   search.parentNode.insertBefore(select,search);
 }
 
@@ -114,14 +115,15 @@ function sourceContactCount(source){
 
 function resetKind(){
   try{
+    clearLegacyHubspot();
     window._ctFilter='all';
     ['all','client','supplier'].forEach(function(x){var b=document.getElementById('ct-tab-'+x);if(b)b.classList.toggle('active',x==='all');});
   }catch(e){}
 }
 function clearSearch(){var s=document.getElementById('ct-search');if(s)s.value='';}
-function setSource(next){sourceFilter=next||'all';var s=document.getElementById('pst-ct-source-filter');if(s)s.value=sourceFilter;renderAll();}
-function setKind(kind){sourceFilter='all';var s=document.getElementById('pst-ct-source-filter');if(s)s.value='all';clearSearch();if(typeof window.filterContacts==='function')window.filterContacts(kind);else renderAll();}
-function resetAll(){sourceFilter='all';var s=document.getElementById('pst-ct-source-filter');if(s)s.value='all';clearSearch();resetKind();renderAll();}
+function setSource(next){clearLegacyHubspot();sourceFilter=next||'all';var s=document.getElementById('pst-ct-source-filter');if(s)s.value=sourceFilter;renderAll();}
+function setKind(kind){clearLegacyHubspot();sourceFilter='all';var s=document.getElementById('pst-ct-source-filter');if(s)s.value='all';clearSearch();if(typeof window.filterContacts==='function')window.filterContacts(kind);else renderAll();}
+function resetAll(){clearLegacyHubspot();sourceFilter='all';var s=document.getElementById('pst-ct-source-filter');if(s)s.value='all';clearSearch();resetKind();renderAll();}
 
 function renderStats(){
   var el=document.getElementById('ct-stats');if(!el)return;
@@ -206,7 +208,7 @@ async function loadContactsWrapped(){
 }
 
 function install(){
-  setPageMeta();injectStyle();ensureSourceControl();
+  clearLegacyHubspot();setPageMeta();injectStyle();ensureSourceControl();
   if(original.renderContactStats)window.renderContactStats=renderStats;
   if(original.renderContacts)window.renderContacts=renderContactsWrapped;
   if(original.loadContacts)window.loadContacts=loadContactsWrapped;
