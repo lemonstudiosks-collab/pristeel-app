@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mapHubSpotContact, mapHubSpotDeal, planHubSpotContactUpdate } from '../scripts/hubspot-sync.mjs';
 import { makeSourceRow, dedupeSourceRows, upsertSourceRows } from '../scripts/contact-provenance-common.mjs';
 import { resolveBitrixEmailGroups } from '../scripts/bitrix-contact-email-resolver.mjs';
+import { resolveSupabaseWorkflowAccess } from '../scripts/supabase-workflow-auth.mjs';
 
 const contact = mapHubSpotContact({
   id: '123',
@@ -157,11 +158,49 @@ const samePersonCards=resolveBitrixEmailGroups([
 assert.equal(samePersonCards.unresolvedDuplicates.length,0);
 assert.equal(samePersonCards.byEmail.get('sales@example.test').bitrix_id,'rich','Richer duplicate card for same person should be retained');
 
+let serviceFetchCalled=false;
+const serviceAccess=await resolveSupabaseWorkflowAccess({
+  supabaseUrl:'https://example.supabase.co',
+  serviceKey:'service-secret',
+  syncEmail:'unused@example.test',
+  syncPassword:'unused',
+  fetchImpl:async()=>{serviceFetchCalled=true;throw new Error('service key should not authenticate through password');}
+});
+assert.equal(serviceAccess.authMode,'service_key');
+assert.equal(serviceAccess.apiKey,'service-secret');
+assert.equal(serviceAccess.bearerToken,'service-secret');
+assert.equal(serviceFetchCalled,false,'Service-key auth must not call password auth');
+
+let authRequest=null;
+const userAccess=await resolveSupabaseWorkflowAccess({
+  supabaseUrl:'https://example.supabase.co',
+  serviceKey:'',
+  syncEmail:'sync@example.test',
+  syncPassword:'sync-password',
+  fetchImpl:async(url,options)=>{
+    authRequest={url,options};
+    return{ok:true,status:200,text:async()=>JSON.stringify({access_token:'user-access-token'})};
+  }
+});
+assert.equal(userAccess.authMode,'pppp_sync_account');
+assert.equal(userAccess.bearerToken,'user-access-token');
+assert(userAccess.apiKey&&userAccess.apiKey!=='user-access-token','PPPP auth must use the public API key plus user bearer token');
+assert.match(authRequest.url,/\/auth\/v1\/token\?grant_type=password$/);
+assert.equal(JSON.parse(authRequest.options.body).email,'sync@example.test');
+await assert.rejects(
+  ()=>resolveSupabaseWorkflowAccess({supabaseUrl:'https://example.supabase.co',serviceKey:'',syncEmail:'',syncPassword:'',fetchImpl:async()=>{throw new Error('should not fetch');}}),
+  /No Supabase service key or PPPP sync account/,
+  'Workflow auth must fail closed when no credential path exists'
+);
+
 execFileSync(process.execPath, ['--check', 'scripts/hubspot-contact-provenance.mjs']);
 execFileSync(process.execPath, ['--check', 'scripts/bitrix-contact-email-resolver.mjs']);
 execFileSync(process.execPath, ['--check', 'scripts/bitrix-pppp-sync.mjs']);
 execFileSync(process.execPath, ['--check', 'scripts/bitrix-contact-provenance.mjs']);
 execFileSync(process.execPath, ['--check', 'scripts/contact-provenance-common.mjs']);
+execFileSync(process.execPath, ['--check', 'scripts/supabase-workflow-auth.mjs']);
+execFileSync(process.execPath, ['--check', 'scripts/invoice-payment-task-sync.mjs']);
+execFileSync(process.execPath, ['--check', 'scripts/won-execution-bootstrap.mjs']);
 
 const deal = mapHubSpotDeal({
   id: '456',
@@ -182,4 +221,4 @@ assert.deepEqual(Object.keys(deal).sort(), [
   'amount', 'closedate', 'dealname', 'dealstage', 'description', 'hs_object_id'
 ].sort());
 
-console.log('HubSpot/Bitrix sync mapping, contact safety and provenance smoke test passed.');
+console.log('HubSpot/Bitrix sync mapping, contact safety, provenance and workflow auth smoke test passed.');
