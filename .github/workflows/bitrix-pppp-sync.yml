@@ -1,0 +1,43 @@
+name: Bitrix24 to PPPP safe contact sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - apply
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Safe Bitrix24 to PPPP contact sync
+        env:
+          BITRIX_HOST: b24-cl53os.bitrix24.com
+          BITRIX_LOGIN: sales@prissteel.com
+          BITRIX_APP_PASSWORD: ${{ secrets.BITRIX_APP_PASSWORD }}
+          PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+          PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+          SYNC_MODE: ${{ inputs.mode }}
+        run: node scripts/bitrix-pppp-sync.mjs
+
+      - name: Upload sanitized summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitrix-pppp-sync
+          path: tmp/bitrix-pppp-sync.json
+          if-no-files-found: ignore
+          retention-days: 3
