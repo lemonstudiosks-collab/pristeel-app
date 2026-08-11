@@ -1,0 +1,33 @@
+name: Bitrix24 to PPPP conflict preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  conflicts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Bitrix24 vs PPPP conflict details
+        env:
+          BITRIX_HOST: b24-cl53os.bitrix24.com
+          BITRIX_LOGIN: sales@prissteel.com
+          BITRIX_APP_PASSWORD: ${{ secrets.BITRIX_APP_PASSWORD }}
+          PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+          PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+        run: node scripts/bitrix-pppp-conflict-preview.mjs
+
+      - name: Upload sanitized conflict summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitrix-pppp-conflicts
+          path: tmp/bitrix-pppp-conflicts.json
+          if-no-files-found: ignore
+          retention-days: 3
