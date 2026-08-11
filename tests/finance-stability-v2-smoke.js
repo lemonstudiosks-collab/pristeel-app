@@ -70,7 +70,75 @@ async function testInvoiceLinks(){
   dom.window.close();
 }
 
+async function testInvoicePaymentTaskPlanner(){
+  const mod=await import('../scripts/invoice-payment-task-sync.mjs');
+  assert.strictEqual(mod.daysFromToday('2026-08-22','2026-08-11'),11,'Date-only day difference is wrong');
+  assert.strictEqual(mod.daysFromToday('2026-08-10','2026-08-11'),-1,'Overdue day difference is wrong');
+  assert.strictEqual(mod.priorityForDays(-1),'urgjent','Overdue invoice must be urgent');
+  assert.strictEqual(mod.priorityForDays(0),'e larte','Due-today invoice must be high priority');
+  assert.strictEqual(mod.priorityForDays(3),'e larte','Near-term invoice must be high priority');
+  assert.strictEqual(mod.priorityForDays(7),'mesatare','Seven-day invoice should be medium priority');
+
+  const outgoing={
+    id:'out-1',invoice_nr:'PST-INV-2026-010',project_id:'p1',project:'EVOSYS',client:'Evosys Laser GmbH',
+    due_date:'2026-08-15',paid:false,gross_amount:2399.60,currency:'EUR'
+  };
+  const outgoingTask=mod.taskFromInvoice(outgoing,'out','2026-08-11');
+  assert.strictEqual(outgoingTask.source,'invoice_receivable');
+  assert.strictEqual(outgoingTask.source_ref,'out-1');
+  assert.strictEqual(outgoingTask.project_id,'p1');
+  assert.strictEqual(outgoingTask.category,'klient');
+  assert.strictEqual(outgoingTask.priority,'mesatare');
+  assert.match(outgoingTask.title,/PST-INV-2026-010/);
+
+  const incoming={
+    id:'in-1',supplier_invoice_nr:'SUP-77',project_id:'p2',project:'Project B',supplier:'Supplier GmbH',
+    due_date:'2026-08-12',paid:false,amount:5000,currency:'EUR'
+  };
+  const incomingTask=mod.taskFromInvoice(incoming,'in','2026-08-11');
+  assert.strictEqual(incomingTask.source,'invoice_payable');
+  assert.strictEqual(incomingTask.category,'furnitor');
+  assert.strictEqual(incomingTask.priority,'e larte');
+
+  const existing={
+    id:'task-existing',source:'invoice_receivable',source_ref:'out-existing',status:'hapur',done_at:null,
+    due_date:'2026-08-14',project_id:'p3',title:'old',detail:'old',priority:'mesatare',category:'klient'
+  };
+  const plan=mod.planInvoiceTasks({
+    today:'2026-08-11',
+    lookaheadDays:7,
+    outgoing:[
+      outgoing,
+      {id:'out-future',invoice_nr:'FUTURE',due_date:'2026-09-30',paid:false},
+      {id:'out-existing',invoice_nr:'EXIST',project_id:'p3',project:'P3',client:'C3',due_date:'2026-08-13',paid:false,total_price:100,currency:'EUR'},
+      {id:'out-paid',invoice_nr:'PAID',project_id:'p4',project:'P4',client:'C4',due_date:'2026-08-10',paid:true,total_price:100,currency:'EUR'}
+    ],
+    incoming:[incoming],
+    existingTasks:[
+      existing,
+      {id:'task-paid',source:'invoice_receivable',source_ref:'out-paid',status:'hapur',done_at:null,due_date:'2026-08-10'}
+    ]
+  });
+
+  assert.strictEqual(plan.planned.filter(x=>x.action==='create').length,2,'Expected one outgoing and one incoming task create');
+  assert.strictEqual(plan.planned.filter(x=>x.action==='update').length,1,'Existing unpaid invoice task should update, not duplicate');
+  assert.strictEqual(plan.complete.length,1,'Paid invoice should complete its existing task');
+  assert.strictEqual(plan.complete[0].task.id,'task-paid');
+  assert.ok(plan.skipped.some(x=>x.id==='out-future'&&x.reason==='outside_window'),'Far-future invoice should not create noise');
+  assert.ok(!plan.planned.some(x=>x.invoice.id==='out-paid'),'Paid invoice must not reopen/create a payment task');
+
+  const movedFuturePlan=mod.planInvoiceTasks({
+    today:'2026-08-11',
+    lookaheadDays:7,
+    outgoing:[{id:'out-existing',invoice_nr:'EXIST',project_id:'p3',project:'P3',client:'C3',due_date:'2026-09-01',paid:false,total_price:100,currency:'EUR'}],
+    existingTasks:[existing]
+  });
+  assert.strictEqual(movedFuturePlan.planned.length,1,'Existing task must stay synced when due date is extended');
+  assert.strictEqual(movedFuturePlan.planned[0].task.due_date,'2026-09-01');
+}
+
 (async()=>{
   await testInvoiceLinks();
-  console.log('Finance stability + invoice traceability smoke test passed.');
+  await testInvoicePaymentTaskPlanner();
+  console.log('Finance stability + invoice traceability + payment task automation smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
