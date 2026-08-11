@@ -36,6 +36,8 @@ const required = [
   'pristeel-supplier-capability-manager-v1.js',
   'pristeel-project-first-commercial-v1.js',
   'pristeel-project-file-upload-v1.js',
+  'pristeel-project-contacts-full-v1.js',
+  'pristeel-contacts-provenance-ui-v1.js',
   'pristeel-home-command-center-v2.js',
   'pristeel-home-live-fix-v1.js',
   'pristeel-home-stability-v2.js',
@@ -44,6 +46,18 @@ const required = [
 ];
 required.forEach(file => assert(matches.includes(file), `Critical module missing from bootstrap: ${file}`));
 
+assert(
+  matches.indexOf('pristeel-contacts-provenance-ui-v1.js') > matches.indexOf('pristeel-project-contacts-full-v1.js'),
+  'Contacts provenance UI should load after the existing contacts module'
+);
+
+const contactsUi = fs.readFileSync('pristeel-contacts-provenance-ui-v1.js','utf8');
+assert(contactsUi.includes('contact_sources?select='), 'Contacts provenance UI must read contact_sources');
+assert(contactsUi.includes("source==='bitrix24'"), 'Contacts provenance UI must understand Bitrix24');
+assert(contactsUi.includes("source==='hubspot'"), 'Contacts provenance UI must understand HubSpot');
+assert(contactsUi.includes('clearLegacyHubspot'), 'Contacts provenance UI must neutralize the old HubSpot-only filter');
+assert(!/supaFetch\([^\n]*(?:POST|PATCH|DELETE)/.test(contactsUi), 'Contacts provenance UI must stay read-only for contact master data');
+
 const retired = [
   'pristeel-gmail-intake-v2.js',
   'pristeel-gmail-create-project-fix-v1.js',
@@ -51,4 +65,4 @@ const retired = [
 ];
 retired.forEach(file => assert(!matches.includes(file), `Retired overlapping stability module still loaded: ${file}`));
 
-console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules.`);
+console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules, including read-only Contacts provenance UI.`);
