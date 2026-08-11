@@ -38,7 +38,7 @@ function parseVcard(text,href){
   return {bitrix_id:id,person,company:org,email,phone,role,country};
 }
 async function bfetch(url,opt={}){
-  const r=await fetch(url,{...opt,headers:{Authorization:auth,'User-Agent':'PRISTEEL-PPPP-Bitrix-DryRun/1.2',...(opt.headers||{})}});
+  const r=await fetch(url,{...opt,headers:{Authorization:auth,'User-Agent':'PRISTEEL-PPPP-Bitrix-DryRun/1.3',...(opt.headers||{})}});
   const t=await r.text(); if(!r.ok&&r.status!==207)throw new Error(`${opt.method||'GET'} ${url} -> ${r.status}`); return t;
 }
 async function mapLimit(items,limit,fn){let i=0;const out=new Array(items.length);async function w(){while(true){const x=i++;if(x>=items.length)return;try{out[x]=await fn(items[x],x);}catch(e){out[x]={__error:String(e.message||e)};}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},w));return out;}
@@ -78,6 +78,7 @@ try{
   const pppp=await getPpppContacts();
   let matched=0,newCount=0,ppppDuplicateEmails=0;
   let newContacts=[]; let duplicateGroups=[];
+  let matchedKindCounts={client:0,supplier:0,other:0,ambiguous:0};
   if(pppp.ok){
     const localGroups=new Map();
     for(const c of pppp.rows){
@@ -91,8 +92,14 @@ try{
       .map(([email,rows])=>({email,rows:rows.map(r=>({id:r.id,person:r.person||'',company:r.company||'',kind:r.kind||''}))}));
     ppppDuplicateEmails=duplicateGroups.length;
     for(const [e,c] of byEmail.entries()){
-      if(localGroups.has(e))matched++;
-      else{newCount++;newContacts.push(c);}
+      const rows=localGroups.get(e)||[];
+      if(rows.length){
+        matched++;
+        if(rows.length>1) matchedKindCounts.ambiguous++;
+        else if(rows[0].kind==='client') matchedKindCounts.client++;
+        else if(rows[0].kind==='supplier') matchedKindCounts.supplier++;
+        else matchedKindCounts.other++;
+      }else{newCount++;newContacts.push(c);}
     }
     newContacts.sort((a,b)=>(a.person||a.company||a.email).localeCompare(b.person||b.company||b.email));
   }
@@ -101,7 +108,7 @@ try{
     checkedAt:new Date().toISOString(),
     bitrix:{vcardResources:cardHrefs.length,parsed:contacts.length,fetchErrors,withEmail:withEmail.length,noEmail:noEmail.length,duplicateEmails:dupEmails.size,uniqueEmails:byEmail.size},
     pppp:{readOk:pppp.ok,stage:pppp.stage,httpStatus:pppp.status,currentContacts:pppp.ok?pppp.rows.length:null,duplicateEmails:pppp.ok?ppppDuplicateEmails:null},
-    comparison:pppp.ok?{matchedByEmail:matched,newByEmail:newCount}:null,
+    comparison:pppp.ok?{matchedByEmail:matched,newByEmail:newCount,matchedKindCounts}:null,
     preflight:pppp.ok?{ppppDuplicateGroups:duplicateGroups,newContacts}:null
   };
   fs.mkdirSync('tmp',{recursive:true});fs.writeFileSync('tmp/bitrix-pppp-dryrun.json',JSON.stringify(summary,null,2));
@@ -111,6 +118,7 @@ try{
   if(pppp.ok){
     console.log(`PPPP contacts: ${summary.pppp.currentContacts} | PPPP duplicate emails: ${summary.pppp.duplicateEmails}`);
     console.log(`Matched by email: ${summary.comparison.matchedByEmail} | New by email: ${summary.comparison.newByEmail}`);
+    console.log(`Matched kinds: client=${matchedKindCounts.client} | supplier=${matchedKindCounts.supplier} | other=${matchedKindCounts.other} | ambiguous duplicate email=${matchedKindCounts.ambiguous}`);
     console.log('');
     console.log('PPPP DUPLICATE EMAIL GROUPS:');
     if(!duplicateGroups.length)console.log('  none');
