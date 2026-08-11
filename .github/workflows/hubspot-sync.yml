@@ -6,6 +6,8 @@ on:
       - workspace-v2-safe-build
     paths:
       - 'scripts/hubspot-sync.mjs'
+      - 'scripts/hubspot-contact-provenance.mjs'
+      - 'scripts/contact-provenance-common.mjs'
       - '.github/workflows/hubspot-sync.yml'
   workflow_dispatch:
   schedule:
@@ -54,3 +56,7 @@ jobs:
       - name: Synchronize contacts and deals
         if: steps.credential.outputs.available == 'true'
         run: node scripts/hubspot-sync.mjs
+
+      - name: Record HubSpot contact provenance
+        if: steps.credential.outputs.available == 'true'
+        run: node scripts/hubspot-contact-provenance.mjs
