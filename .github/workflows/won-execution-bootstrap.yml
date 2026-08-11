@@ -29,6 +29,8 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
     steps:
       - name: Checkout
@@ -43,11 +45,11 @@ jobs:
         id: credential
         shell: bash
         run: |
-          if [ -z "$SUPABASE_SECRET_KEY" ] && [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Supabase server-side key is not configured."
-          else
+          if { [ -n "$SUPABASE_SECRET_KEY" ] || [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; } || { [ -n "$PPPP_SYNC_EMAIL" ] && [ -n "$PPPP_SYNC_PASSWORD" ]; }; then
             echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Supabase service key or PPPP sync account is configured."
           fi
 
       - name: Bootstrap won projects into execution

@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
 const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
 const SOURCE='execution_won';
@@ -48,8 +49,6 @@ export function planExecutionBootstrap({projects=[],wonOffers=[],invoicesOut=[],
   for(const inv of invoicesOut||[]){
     if(!inv?.project_id)continue;
     const id=String(inv.project_id),p=byId.get(id);
-    // A linked client invoice is treated as won evidence only once the project is already
-    // in execution. This repairs stale "pritje" statuses without promoting early-stage projects.
     if(p&&stageRank(p.pipeline_stage)>=stageRank('production_control')){wonIds.add(id);invoiceEvidenceIds.add(id);}
   }
 
@@ -80,44 +79,48 @@ export function planExecutionBootstrap({projects=[],wonOffers=[],invoicesOut=[],
   }
   return{projectPatches,taskCreates,skipped,wonProjectIds:[...wonIds]};
 }
-async function rest({supabaseUrl,apiKey,path,method='GET',body,prefer}){
-  const res=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
+async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',body,prefer}){
+  const res=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const raw=await res.text();if(!res.ok)throw new Error(`${method} ${path} failed: HTTP ${res.status} ${raw.slice(0,700)}`);return raw?JSON.parse(raw):[];
 }
-async function readState({supabaseUrl,apiKey}){
+async function readState(access){
+  const{supabaseUrl,apiKey,bearerToken}=access;
   const [projects,wonOffers,invoicesOut,supplierOffers,rfqs,tasks]=await Promise.all([
-    rest({supabaseUrl,apiKey,path:'projects?select=id,name,client,ref,status,pipeline_stage,deal_type,deadline,execution_bootstrapped_at,execution_bootstrap_source&limit=5000'}),
-    rest({supabaseUrl,apiKey,path:'documents_registry?series=eq.QUO&followup_status=eq.won&project_id=not.is.null&select=id,project_id,doc_nr,created_at&limit=5000'}),
-    rest({supabaseUrl,apiKey,path:'invoices_out?select=id,project_id,invoice_nr,date,paid&project_id=not.is.null&limit=5000'}),
-    rest({supabaseUrl,apiKey,path:'offers?select=id,project_id,supplier&project_id=not.is.null&limit=10000'}),
-    rest({supabaseUrl,apiKey,path:'rfq_log?select=id,project_id,supplier_name,status&project_id=not.is.null&limit=10000'}),
-    rest({supabaseUrl,apiKey,path:`tasks?select=id,project_id,status,source,source_ref&source=eq.${SOURCE}&limit=10000`})
+    rest({supabaseUrl,apiKey,bearerToken,path:'projects?select=id,name,client,ref,status,pipeline_stage,deal_type,deadline,execution_bootstrapped_at,execution_bootstrap_source&limit=5000'}),
+    rest({supabaseUrl,apiKey,bearerToken,path:'documents_registry?series=eq.QUO&followup_status=eq.won&project_id=not.is.null&select=id,project_id,doc_nr,created_at&limit=5000'}),
+    rest({supabaseUrl,apiKey,bearerToken,path:'invoices_out?select=id,project_id,invoice_nr,date,paid&project_id=not.is.null&limit=5000'}),
+    rest({supabaseUrl,apiKey,bearerToken,path:'offers?select=id,project_id,supplier&project_id=not.is.null&limit=10000'}),
+    rest({supabaseUrl,apiKey,bearerToken,path:'rfq_log?select=id,project_id,supplier_name,status&project_id=not.is.null&limit=10000'}),
+    rest({supabaseUrl,apiKey,bearerToken,path:`tasks?select=id,project_id,status,source,source_ref&source=eq.${SOURCE}&limit=10000`})
   ]);return{projects,wonOffers,invoicesOut,supplierOffers,rfqs,tasks};
 }
-async function applyPlan({supabaseUrl,apiKey,plan}){
-  // Tasks first, marker second. If task creation fails, the project remains unmarked so the next run can retry.
+async function applyPlan({access,plan}){
+  const{supabaseUrl,apiKey,bearerToken}=access;
   if(plan.taskCreates.length){
-    await rest({supabaseUrl,apiKey,path:'tasks?on_conflict=source,source_ref',method:'POST',body:plan.taskCreates,prefer:'resolution=merge-duplicates,return=minimal'});
+    await rest({supabaseUrl,apiKey,bearerToken,path:'tasks?on_conflict=source,source_ref',method:'POST',body:plan.taskCreates,prefer:'resolution=merge-duplicates,return=minimal'});
   }
   for(const item of plan.projectPatches){
-    await rest({supabaseUrl,apiKey,path:`projects?id=eq.${encodeURIComponent(item.project.id)}`,method:'PATCH',body:item.patch,prefer:'return=minimal'});
+    await rest({supabaseUrl,apiKey,bearerToken,path:`projects?id=eq.${encodeURIComponent(item.project.id)}`,method:'PATCH',body:item.patch,prefer:'return=minimal'});
   }
 }
 async function writeSummary(summary){await mkdir('tmp',{recursive:true});await writeFile('tmp/won-execution-bootstrap.json',JSON.stringify(summary,null,2));}
 export async function runWonExecutionBootstrap({
   supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL,
-  apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||'',
+  apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||'',
+  bearerToken='',
   mode=process.env.SYNC_MODE||'preview',
   today=process.env.SYNC_TODAY||new Date().toISOString().slice(0,10),
   nowIso=new Date().toISOString()
 }={}){
-  if(!apiKey)throw new Error('Supabase server-side key is not configured.');
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
-  const state=await readState({supabaseUrl,apiKey});
+  const access=apiKey
+    ? {supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}
+    : await resolveSupabaseWorkflowAccess({supabaseUrl});
+  const state=await readState(access);
   const plan=planExecutionBootstrap({projects:state.projects,wonOffers:state.wonOffers,invoicesOut:state.invoicesOut,supplierOffers:state.supplierOffers,rfqs:state.rfqs,existingTasks:state.tasks,today,nowIso});
-  if(mode==='apply')await applyPlan({supabaseUrl,apiKey,plan});
-  const summary={mode,today,won_projects:plan.wonProjectIds.length,project_patches:plan.projectPatches.length,tasks_create:plan.taskCreates.length,skipped:plan.skipped.length,projects:plan.projectPatches.map(x=>({id:x.project.id,name:x.project.name,already_bootstrapped:x.alreadyBootstrapped,patch:x.patch})),tasks:plan.taskCreates.map(t=>({project_id:t.project_id,title:t.title,due_date:t.due_date,category:t.category,source_ref:t.source_ref}))};
-  await writeSummary(summary);console.log(`Won execution bootstrap ${mode}: ${summary.won_projects} won project(s), ${summary.project_patches} project patch(es), ${summary.tasks_create} task(s).`);return summary;
+  if(mode==='apply')await applyPlan({access,plan});
+  const summary={mode,auth_mode:access.authMode,today,won_projects:plan.wonProjectIds.length,project_patches:plan.projectPatches.length,tasks_create:plan.taskCreates.length,skipped:plan.skipped.length,projects:plan.projectPatches.map(x=>({id:x.project.id,name:x.project.name,already_bootstrapped:x.alreadyBootstrapped,patch:x.patch})),tasks:plan.taskCreates.map(t=>({project_id:t.project_id,title:t.title,due_date:t.due_date,category:t.category,source_ref:t.source_ref}))};
+  await writeSummary(summary);console.log(`Won execution bootstrap ${mode} (${summary.auth_mode}): ${summary.won_projects} won project(s), ${summary.project_patches} project patch(es), ${summary.tasks_create} task(s).`);return summary;
 }
 const isDirect=process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href;
 if(isDirect)runWonExecutionBootstrap().catch(async e=>{const s={mode:process.env.SYNC_MODE||'preview',error:String(e?.message||e)};try{await writeSummary(s);}catch{}console.error(s.error);process.exit(1);});
