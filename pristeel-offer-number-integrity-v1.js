@@ -1,5 +1,5 @@
 /* PRISTEEL offer number integrity v1
- * Existing project offer edit opens the saved document directly.
+ * Existing project offer edit reuses the normal editor route but preserves the saved doc_nr.
  * New offers alone receive the next doc_nr.
  * Calculates the next offer number from doc_nr suffix, not legacy seq metadata.
  * Restores the current offer number in the generated client document.
@@ -39,41 +39,53 @@ function stateObject(v){
   if(typeof v==='string'&&v.trim()){try{var x=JSON.parse(v);return x&&typeof x==='object'?x:null;}catch(e){}}
   return null;
 }
-function showOfferPage(){
-  var el=E('of-nr');if(el&&editDocNr)el.value=editDocNr;
-  if(typeof window.showPage==='function'){window.showPage('oferta');return true;}
-  var L=window.__pstWorkspaceLegacy;
-  if(L&&typeof L.showPage==='function'){L.showPage('oferta');return true;}
-  return false;
-}
 function applyExistingState(){
   if(!editDocNr)return false;
-  var el=E('of-nr');if(el)el.value=editDocNr;
   var st=stateObject(editOfferState);
   if(st&&typeof window.applyOfferFormState==='function'){
     try{window.applyOfferFormState(st);}catch(e){if(window.console)console.warn('Existing offer state:',e);}
   }
-  el=E('of-nr');if(el){el.value=editDocNr;try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}
+  var el=E('of-nr');
+  if(el){el.value=editDocNr;try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}
   if(typeof window.genOfer==='function'){try{window.genOfer();}catch(e){}}
   ensureVisibleNumber();
   return true;
 }
-function scheduleExistingState(){[0,80,220,500].forEach(function(ms){setTimeout(applyExistingState,ms);});}
+function scheduleExistingState(){[0,80,220,500,900].forEach(function(ms){setTimeout(applyExistingState,ms);});}
+function openNormalEditorRoute(){
+  if(typeof window.pstPiNew==='function'){
+    try{window.pstPiNew('offer');return true;}catch(e){if(window.console)console.warn('Offer editor route:',e);}
+  }
+  if(typeof window.showPage==='function'){
+    try{window.showPage('oferta');return true;}catch(e){}
+  }
+  var L=window.__pstWorkspaceLegacy;
+  if(L&&typeof L.showPage==='function'){
+    try{L.showPage('oferta');return true;}catch(e){}
+  }
+  return false;
+}
 function openExistingOffer(row){
   var p=row&&parseOfferNr(row.doc_nr||row.document_nr||row.reference);
   if(!row||!p)return false;
   editDocNr=p.nr;
   editOfferState=stateObject(row.offer_state);
-  showOfferPage();
+  if(!openNormalEditorRoute())return false;
   if(editOfferState){scheduleExistingState();return true;}
   if(typeof window.supaFetch!=='function'){scheduleExistingState();return true;}
   var q=row.id?'documents_registry?id=eq.'+encodeURIComponent(row.id)+'&select=*&limit=1':'documents_registry?doc_nr=eq.'+encodeURIComponent(editDocNr)+'&select=*&limit=1';
   window.supaFetch(q).then(function(rows){var full=A(rows)[0];if(full)editOfferState=stateObject(full.offer_state);scheduleExistingState();}).catch(function(){scheduleExistingState();});
   return true;
 }
-function interceptExistingEdit(e){
+function interceptOfferAction(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-pf2-action="offer"]'):null;
-  if(!b||!/Krijo\s*\/\s*edito\s+ofert/i.test(String(b.textContent||'')))return;
+  if(!b)return;
+  var txt=String(b.textContent||'').trim();
+  if(/Ofert[ëe]\s+e\s+re/i.test(txt)){
+    editDocNr='';editOfferState=null;
+    return;
+  }
+  if(!/Krijo\s*\/\s*edito\s+ofert/i.test(txt))return;
   var row=newestOwnOffer();
   if(!row||!parseOfferNr(row.doc_nr||row.document_nr||row.reference))return;
   e.preventDefault();
@@ -167,8 +179,8 @@ function wrapOutput(){
 }
 function install(){wrapNext();wrapFill();wrapRegister();wrapOutput();if(editDocNr)applyExistingState();ensureVisibleNumber();}
 
-/* Window capture runs before project-first document capture, so existing edit never enters the new-offer flow. */
-window.addEventListener('click',interceptExistingEdit,true);
+/* Window capture runs before project-first document capture. Existing edit reuses pstPiNew, new offer propagates normally. */
+window.addEventListener('click',interceptOfferAction,true);
 document.addEventListener('click',function(e){
   var out=e.target&&e.target.closest?e.target.closest('button,a'):null;
   if(out&&(/Gjenero\s+Ofert/i.test(String(out.textContent||''))||/^PDF$/i.test(String(out.textContent||'').trim()))){setTimeout(ensureVisibleNumber,0);setTimeout(ensureVisibleNumber,120);}
