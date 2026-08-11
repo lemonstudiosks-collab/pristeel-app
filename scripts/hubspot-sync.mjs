@@ -12,6 +12,8 @@ const DEAL_PROPERTIES = [
   'dealname', 'amount', 'dealstage', 'closedate', 'description'
 ];
 
+const CONTACT_DATA_FIELDS = ['person', 'company', 'email', 'phone', 'role', 'country'];
+
 function required(name, value) {
   if (!value) throw new Error(`${name} is missing.`);
   return value;
@@ -49,6 +51,10 @@ function normalized(value) {
   return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
+function sameValue(a, b) {
+  return normalized(a) === normalized(b);
+}
+
 function inferredCompany(email) {
   const domain = clean(email)?.split('@')[1] || '';
   const root = domain.split('.')[0] || '';
@@ -81,6 +87,36 @@ export function mapHubSpotContact(record, portalId = '147958987') {
     role: clean(p.jobtitle),
     country: clean(p.country)
   });
+}
+
+export function planHubSpotContactUpdate(current, mapped) {
+  const payload = {};
+  const conflicts = [];
+  const currentHubSpotId = clean(current?.hubspot_id);
+  const incomingHubSpotId = clean(mapped?.hubspot_id);
+
+  if (incomingHubSpotId) {
+    if (!currentHubSpotId) {
+      payload.hubspot_id = incomingHubSpotId;
+      if (mapped.hubspot_url) payload.hubspot_url = mapped.hubspot_url;
+    } else if (sameValue(currentHubSpotId, incomingHubSpotId)) {
+      if (mapped.hubspot_url && !sameValue(current?.hubspot_url, mapped.hubspot_url)) {
+        payload.hubspot_url = mapped.hubspot_url;
+      }
+    } else {
+      conflicts.push('hubspot_id');
+    }
+  }
+
+  for (const field of CONTACT_DATA_FIELDS) {
+    const incoming = clean(mapped?.[field]);
+    if (!incoming) continue;
+    const existing = clean(current?.[field]);
+    if (!existing) payload[field] = incoming;
+    else if (!sameValue(existing, incoming)) conflicts.push(field);
+  }
+
+  return { payload, conflicts };
 }
 
 export function mapHubSpotDeal(record) {
@@ -209,32 +245,59 @@ async function runPool(items, worker, concurrency = 8) {
   await Promise.all(workers);
 }
 
+function groupBy(rows, keyFn) {
+  const groups = new Map();
+  for (const row of rows) {
+    const key = keyFn(row);
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  }
+  return groups;
+}
+
 export async function syncContacts(records, config) {
   const existing = await readExisting(
     'contacts',
-    'id,hubspot_id,email,kind,notes',
+    'id,hubspot_id,hubspot_url,email,kind,notes,person,company,phone,role,country',
     config.supabaseUrl,
     config.supabaseKey
   );
 
-  const byHubSpotId = new Map(existing.filter(row => row.hubspot_id).map(row => [String(row.hubspot_id), row]));
-  const byEmail = new Map(existing.filter(row => row.email).map(row => [String(row.email).toLowerCase(), row]));
+  const byHubSpotId = groupBy(existing, row => clean(row.hubspot_id));
+  const byEmail = groupBy(existing, row => clean(row.email)?.toLowerCase());
   const updates = [];
   const inserts = [];
+  const conflicts = [];
+  let unchanged = 0;
+  let skippedDuplicate = 0;
 
   for (const record of records) {
     const mapped = mapHubSpotContact(record, config.portalId);
-    const current = byHubSpotId.get(mapped.hubspot_id) || (mapped.email ? byEmail.get(mapped.email) : null);
+    const idMatches = byHubSpotId.get(mapped.hubspot_id) || [];
+    const emailMatches = mapped.email ? (byEmail.get(mapped.email) || []) : [];
+    let current = null;
+
+    if (idMatches.length > 1) {
+      skippedDuplicate += 1;
+      continue;
+    }
+    if (idMatches.length === 1) {
+      current = idMatches[0];
+    } else if (emailMatches.length > 1) {
+      skippedDuplicate += 1;
+      continue;
+    } else if (emailMatches.length === 1) {
+      current = emailMatches[0];
+    }
 
     if (current) {
-      const payload = { ...mapped };
-      if (!payload.person) delete payload.person;
-      if (!payload.company) delete payload.company;
-      if (!payload.email) delete payload.email;
-      if (!payload.phone) delete payload.phone;
-      if (!payload.role) delete payload.role;
-      if (!payload.country) delete payload.country;
-      updates.push({ id: current.id, payload });
+      const planned = planHubSpotContactUpdate(current, mapped);
+      if (planned.conflicts.length) {
+        conflicts.push({ id: current.id, email: current.email || mapped.email || null, fields: planned.conflicts });
+      }
+      if (Object.keys(planned.payload).length) updates.push({ id: current.id, payload: planned.payload });
+      else unchanged += 1;
     } else {
       inserts.push({
         ...mapped,
@@ -251,7 +314,20 @@ export async function syncContacts(records, config) {
   );
   await insertRows('contacts', inserts, 'hubspot_id', config.supabaseUrl, config.supabaseKey);
 
-  return { total: records.length, updated: updates.length, insertedOrAlreadyPresent: inserts.length };
+  const conflictFieldCounts = {};
+  for (const conflict of conflicts) {
+    for (const field of conflict.fields) conflictFieldCounts[field] = (conflictFieldCounts[field] || 0) + 1;
+  }
+
+  return {
+    total: records.length,
+    updated: updates.length,
+    insertedOrAlreadyPresent: inserts.length,
+    unchanged,
+    skippedDuplicate,
+    conflicts: conflicts.length,
+    conflictFieldCounts
+  };
 }
 
 export async function syncDeals(records, config) {
