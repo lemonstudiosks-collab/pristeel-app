@@ -1,0 +1,64 @@
+name: Won project execution bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - apply
+  schedule:
+    - cron: '41 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: won-execution-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Detect Supabase credentials
+        id: credential
+        shell: bash
+        run: |
+          if [ -z "$SUPABASE_SECRET_KEY" ] && [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Supabase server-side key is not configured."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bootstrap won projects into execution
+        if: steps.credential.outputs.available == 'true'
+        run: node scripts/won-execution-bootstrap.mjs
+
+      - name: Upload sanitized summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: won-execution-bootstrap
+          path: tmp/won-execution-bootstrap.json
+          if-no-files-found: ignore
+          retention-days: 7
