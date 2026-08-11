@@ -38,7 +38,7 @@ function parseVcard(text,href){
   return {bitrix_id:id,person,company:org,email,phone,role,country};
 }
 async function bfetch(url,opt={}){
-  const r=await fetch(url,{...opt,headers:{Authorization:auth,'User-Agent':'PRISTEEL-PPPP-Bitrix-DryRun/1.1',...(opt.headers||{})}});
+  const r=await fetch(url,{...opt,headers:{Authorization:auth,'User-Agent':'PRISTEEL-PPPP-Bitrix-DryRun/1.2',...(opt.headers||{})}});
   const t=await r.text(); if(!r.ok&&r.status!==207)throw new Error(`${opt.method||'GET'} ${url} -> ${r.status}`); return t;
 }
 async function mapLimit(items,limit,fn){let i=0;const out=new Array(items.length);async function w(){while(true){const x=i++;if(x>=items.length)return;try{out[x]=await fn(items[x],x);}catch(e){out[x]={__error:String(e.message||e)};}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},w));return out;}
@@ -59,7 +59,7 @@ async function getPpppContacts(){
   if(!authResp.ok){return {ok:false,stage:'auth',status:authResp.status,error:authText.slice(0,300),rows:[]};}
   let session={}; try{session=JSON.parse(authText);}catch{}
   if(!session.access_token){return {ok:false,stage:'auth',status:authResp.status,error:'No access_token returned',rows:[]};}
-  const r=await fetch(`${url}/rest/v1/contacts?select=id,email,company,person,kind,country,role&limit=5000`,{headers:{apikey:key,Authorization:`Bearer ${session.access_token}`}});
+  const r=await fetch(`${url}/rest/v1/contacts?select=id,email,company,person,kind,country,role,phone&limit=5000`,{headers:{apikey:key,Authorization:`Bearer ${session.access_token}`}});
   const txt=await r.text(); if(!r.ok)return {ok:false,stage:'contacts',status:r.status,error:txt.slice(0,300),rows:[]};
   return {ok:true,stage:'contacts',status:r.status,rows:JSON.parse(txt)};
 }
@@ -77,17 +77,49 @@ try{
 
   const pppp=await getPpppContacts();
   let matched=0,newCount=0,ppppDuplicateEmails=0;
+  let newContacts=[]; let duplicateGroups=[];
   if(pppp.ok){
-    const local=new Map(); const localDup=new Set();
-    for(const c of pppp.rows){const e=String(c.email||'').trim().toLowerCase();if(!e)continue;if(local.has(e))localDup.add(e);else local.set(e,c);}
-    ppppDuplicateEmails=localDup.size;
-    for(const e of byEmail.keys()){if(local.has(e))matched++;else newCount++;}
+    const localGroups=new Map();
+    for(const c of pppp.rows){
+      const e=String(c.email||'').trim().toLowerCase();
+      if(!e)continue;
+      if(!localGroups.has(e))localGroups.set(e,[]);
+      localGroups.get(e).push(c);
+    }
+    duplicateGroups=[...localGroups.entries()]
+      .filter(([,rows])=>rows.length>1)
+      .map(([email,rows])=>({email,rows:rows.map(r=>({id:r.id,person:r.person||'',company:r.company||'',kind:r.kind||''}))}));
+    ppppDuplicateEmails=duplicateGroups.length;
+    for(const [e,c] of byEmail.entries()){
+      if(localGroups.has(e))matched++;
+      else{newCount++;newContacts.push(c);}
+    }
+    newContacts.sort((a,b)=>(a.person||a.company||a.email).localeCompare(b.person||b.company||b.email));
   }
 
-  const summary={checkedAt:new Date().toISOString(),bitrix:{vcardResources:cardHrefs.length,parsed:contacts.length,fetchErrors,withEmail:withEmail.length,noEmail:noEmail.length,duplicateEmails:dupEmails.size,uniqueEmails:byEmail.size},pppp:{readOk:pppp.ok,stage:pppp.stage,httpStatus:pppp.status,currentContacts:pppp.ok?pppp.rows.length:null,duplicateEmails:pppp.ok?ppppDuplicateEmails:null},comparison:pppp.ok?{matchedByEmail:matched,newByEmail:newCount}:null};
+  const summary={
+    checkedAt:new Date().toISOString(),
+    bitrix:{vcardResources:cardHrefs.length,parsed:contacts.length,fetchErrors,withEmail:withEmail.length,noEmail:noEmail.length,duplicateEmails:dupEmails.size,uniqueEmails:byEmail.size},
+    pppp:{readOk:pppp.ok,stage:pppp.stage,httpStatus:pppp.status,currentContacts:pppp.ok?pppp.rows.length:null,duplicateEmails:pppp.ok?ppppDuplicateEmails:null},
+    comparison:pppp.ok?{matchedByEmail:matched,newByEmail:newCount}:null,
+    preflight:pppp.ok?{ppppDuplicateGroups:duplicateGroups,newContacts}:null
+  };
   fs.mkdirSync('tmp',{recursive:true});fs.writeFileSync('tmp/bitrix-pppp-dryrun.json',JSON.stringify(summary,null,2));
   console.log('BITRIX -> PPPP DRY RUN (NO WRITES)');
   console.log(`Bitrix vCards: ${summary.bitrix.vcardResources}`);
   console.log(`Parsed: ${summary.bitrix.parsed} | unique emails: ${summary.bitrix.uniqueEmails} | no email: ${summary.bitrix.noEmail} | Bitrix duplicate emails: ${summary.bitrix.duplicateEmails}`);
-  if(pppp.ok){console.log(`PPPP contacts: ${summary.pppp.currentContacts} | PPPP duplicate emails: ${summary.pppp.duplicateEmails}`);console.log(`Matched by email: ${summary.comparison.matchedByEmail} | New by email: ${summary.comparison.newByEmail}`);}else{console.log(`PPPP read blocked at ${pppp.stage}: HTTP ${pppp.status}.`);process.exitCode=3;}
+  if(pppp.ok){
+    console.log(`PPPP contacts: ${summary.pppp.currentContacts} | PPPP duplicate emails: ${summary.pppp.duplicateEmails}`);
+    console.log(`Matched by email: ${summary.comparison.matchedByEmail} | New by email: ${summary.comparison.newByEmail}`);
+    console.log('');
+    console.log('PPPP DUPLICATE EMAIL GROUPS:');
+    if(!duplicateGroups.length)console.log('  none');
+    duplicateGroups.forEach((g,i)=>console.log(`  ${i+1}. ${g.email} | ${g.rows.map(r=>`${r.person||r.company||'(pa emer)'} [${r.kind||'-'}]`).join(' || ')}`));
+    console.log('');
+    console.log('NEW BITRIX CONTACTS NOT IN PPPP:');
+    if(!newContacts.length)console.log('  none');
+    newContacts.forEach((c,i)=>console.log(`  ${i+1}. ${c.person||'(pa emer)'} | ${c.company||'-'} | ${c.email} | ${c.phone||'-'} | ${c.role||'-'} | ${c.country||'-'} | Bitrix ${c.bitrix_id}`));
+  }else{
+    console.log(`PPPP read blocked at ${pppp.stage}: HTTP ${pppp.status}.`);process.exitCode=3;
+  }
 }catch(e){console.error('Dry run failed:',e&&e.stack?e.stack:e);process.exit(1);}
