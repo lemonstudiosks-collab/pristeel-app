@@ -130,6 +130,7 @@ var files=[
   'pristeel-offer-number-integrity-v1.js?v=20260810-visible1',
   'pristeel-invoice-identity-v1.js?v=20260809-1',
   'pristeel-invoice-project-link-v1.js?v=20260811-1',
+  'pristeel-document-currency-v1.js?v=20260811-1',
   'pristeel-gmail-live-inbox-v2.js?v=20260808-2',
   'pristeel-gmail-intake-click-fix-v1.js?v=20260808-1'
 ];
