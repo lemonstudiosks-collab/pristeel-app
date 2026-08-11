@@ -1,0 +1,31 @@
+name: Bitrix24 to PPPP contact dry-run
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compare Bitrix24 contacts with PPPP
+        env:
+          BITRIX_HOST: b24-cl53os.bitrix24.com
+          BITRIX_LOGIN: sales@prissteel.com
+          BITRIX_APP_PASSWORD: ${{ secrets.BITRIX_APP_PASSWORD }}
+        run: node scripts/bitrix-pppp-dryrun.mjs
+
+      - name: Upload sanitized summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitrix-pppp-dryrun
+          path: tmp/bitrix-pppp-dryrun.json
+          if-no-files-found: ignore
+          retention-days: 3
