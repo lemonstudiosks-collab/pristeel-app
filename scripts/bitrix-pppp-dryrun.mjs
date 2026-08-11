@@ -37,11 +37,30 @@ function parseVcard(text,href){
   const country=(adr[6]||'').trim(); const id=(String(href).match(/\/([^/]+)\.vcf(?:\?|$)/i)||[])[1]||'';
   return {bitrix_id:id,person,company:org,email,phone,role,country};
 }
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function retryableStatus(s){return [408,425,429,500,502,503,504].includes(s);}
 async function bfetch(url,opt={}){
-  const r=await fetch(url,{...opt,headers:{Authorization:auth,'User-Agent':'PRISTEEL-PPPP-Bitrix-DryRun/1.3',...(opt.headers||{})}});
-  const t=await r.text(); if(!r.ok&&r.status!==207)throw new Error(`${opt.method||'GET'} ${url} -> ${r.status}`); return t;
+  let lastErr;
+  for(let attempt=0;attempt<5;attempt++){
+    try{
+      const r=await fetch(url,{...opt,headers:{Authorization:auth,'User-Agent':'PRISTEEL-PPPP-Bitrix-DryRun/1.4',...(opt.headers||{})}});
+      const t=await r.text();
+      if(r.ok||r.status===207)return t;
+      const e=new Error(`${opt.method||'GET'} ${url} -> ${r.status}`); e.status=r.status;
+      if(!retryableStatus(r.status))throw e;
+      lastErr=e;
+      const ra=parseInt(r.headers.get('retry-after')||'',10);
+      await sleep(Number.isFinite(ra)&&ra>0?ra*1000:400*(2**attempt));
+    }catch(e){
+      lastErr=e;
+      if(e&&e.status&&!retryableStatus(e.status))throw e;
+      if(attempt===4)throw e;
+      await sleep(400*(2**attempt));
+    }
+  }
+  throw lastErr||new Error(`GET ${url} failed`);
 }
-async function mapLimit(items,limit,fn){let i=0;const out=new Array(items.length);async function w(){while(true){const x=i++;if(x>=items.length)return;try{out[x]=await fn(items[x],x);}catch(e){out[x]={__error:String(e.message||e)};}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},w));return out;}
+async function mapLimit(items,limit,fn){let i=0;const out=new Array(items.length);async function w(){while(true){const x=i++;if(x>=items.length)return;try{out[x]=await fn(items[x],x);}catch(e){out[x]={__error:String(e.message||e),__item:items[x]};}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},w));return out;}
 
 function readSupabaseConfig(){
   const html=fs.readFileSync('pristeel-procurement.html','utf8');
@@ -51,9 +70,7 @@ function readSupabaseConfig(){
 async function getPpppContacts(){
   const {url,key}=readSupabaseConfig();
   const authResp=await fetch(`${url}/auth/v1/token?grant_type=password`,{
-    method:'POST',
-    headers:{apikey:key,'Content-Type':'application/json'},
-    body:JSON.stringify({email:ppppEmail,password:ppppPassword})
+    method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email:ppppEmail,password:ppppPassword})
   });
   const authText=await authResp.text();
   if(!authResp.ok){return {ok:false,stage:'auth',status:authResp.status,error:authText.slice(0,300),rows:[]};}
@@ -68,9 +85,10 @@ try{
   const body=`<?xml version=\"1.0\"?><d:propfind xmlns:d=\"DAV:\"><d:prop><d:getetag/><d:getcontenttype/></d:prop></d:propfind>`;
   const xml=await bfetch(crmBook,{method:'PROPFIND',headers:{Depth:'1','Content-Type':'application/xml; charset=utf-8'},body});
   const cardHrefs=[...new Set(hrefs(xml).filter(h=>/\.vcf(?:\?|$)/i.test(h)))];
-  const raw=await mapLimit(cardHrefs,10,async h=>parseVcard(await bfetch(abs(h)),h));
+  const raw=await mapLimit(cardHrefs,4,async h=>parseVcard(await bfetch(abs(h)),h));
   const contacts=raw.filter(x=>x&&!x.__error);
-  const fetchErrors=raw.filter(x=>x&&x.__error).length;
+  const fetchErrorRows=raw.filter(x=>x&&x.__error);
+  const fetchErrors=fetchErrorRows.length;
   const withEmail=contacts.filter(c=>c.email); const noEmail=contacts.filter(c=>!c.email);
   const byEmail=new Map(); const dupEmails=new Set();
   for(const c of withEmail){if(byEmail.has(c.email))dupEmails.add(c.email);else byEmail.set(c.email,c);}
@@ -81,40 +99,25 @@ try{
   let matchedKindCounts={client:0,supplier:0,other:0,ambiguous:0};
   if(pppp.ok){
     const localGroups=new Map();
-    for(const c of pppp.rows){
-      const e=String(c.email||'').trim().toLowerCase();
-      if(!e)continue;
-      if(!localGroups.has(e))localGroups.set(e,[]);
-      localGroups.get(e).push(c);
-    }
-    duplicateGroups=[...localGroups.entries()]
-      .filter(([,rows])=>rows.length>1)
-      .map(([email,rows])=>({email,rows:rows.map(r=>({id:r.id,person:r.person||'',company:r.company||'',kind:r.kind||''}))}));
+    for(const c of pppp.rows){const e=String(c.email||'').trim().toLowerCase();if(!e)continue;if(!localGroups.has(e))localGroups.set(e,[]);localGroups.get(e).push(c);}
+    duplicateGroups=[...localGroups.entries()].filter(([,rows])=>rows.length>1).map(([email,rows])=>({email,rows:rows.map(r=>({id:r.id,person:r.person||'',company:r.company||'',kind:r.kind||''}))}));
     ppppDuplicateEmails=duplicateGroups.length;
     for(const [e,c] of byEmail.entries()){
       const rows=localGroups.get(e)||[];
-      if(rows.length){
-        matched++;
-        if(rows.length>1) matchedKindCounts.ambiguous++;
-        else if(rows[0].kind==='client') matchedKindCounts.client++;
-        else if(rows[0].kind==='supplier') matchedKindCounts.supplier++;
-        else matchedKindCounts.other++;
-      }else{newCount++;newContacts.push(c);}
+      if(rows.length){matched++;if(rows.length>1) matchedKindCounts.ambiguous++;else if(rows[0].kind==='client') matchedKindCounts.client++;else if(rows[0].kind==='supplier') matchedKindCounts.supplier++;else matchedKindCounts.other++;}
+      else{newCount++;newContacts.push(c);}
     }
     newContacts.sort((a,b)=>(a.person||a.company||a.email).localeCompare(b.person||b.company||b.email));
   }
 
-  const summary={
-    checkedAt:new Date().toISOString(),
-    bitrix:{vcardResources:cardHrefs.length,parsed:contacts.length,fetchErrors,withEmail:withEmail.length,noEmail:noEmail.length,duplicateEmails:dupEmails.size,uniqueEmails:byEmail.size},
-    pppp:{readOk:pppp.ok,stage:pppp.stage,httpStatus:pppp.status,currentContacts:pppp.ok?pppp.rows.length:null,duplicateEmails:pppp.ok?ppppDuplicateEmails:null},
-    comparison:pppp.ok?{matchedByEmail:matched,newByEmail:newCount,matchedKindCounts}:null,
-    preflight:pppp.ok?{ppppDuplicateGroups:duplicateGroups,newContacts}:null
-  };
+  const errorKinds={};
+  for(const e of fetchErrorRows){const m=String(e.__error||'').match(/->\s*(\d{3})/);const k=m?`HTTP ${m[1]}`:'network/other';errorKinds[k]=(errorKinds[k]||0)+1;}
+  const summary={checkedAt:new Date().toISOString(),bitrix:{vcardResources:cardHrefs.length,parsed:contacts.length,fetchErrors,fetchErrorKinds:errorKinds,withEmail:withEmail.length,noEmail:noEmail.length,duplicateEmails:dupEmails.size,uniqueEmails:byEmail.size},pppp:{readOk:pppp.ok,stage:pppp.stage,httpStatus:pppp.status,currentContacts:pppp.ok?pppp.rows.length:null,duplicateEmails:pppp.ok?ppppDuplicateEmails:null},comparison:pppp.ok?{matchedByEmail:matched,newByEmail:newCount,matchedKindCounts}:null,preflight:pppp.ok?{ppppDuplicateGroups:duplicateGroups,newContacts}:null};
   fs.mkdirSync('tmp',{recursive:true});fs.writeFileSync('tmp/bitrix-pppp-dryrun.json',JSON.stringify(summary,null,2));
   console.log('BITRIX -> PPPP DRY RUN (NO WRITES)');
   console.log(`Bitrix vCards: ${summary.bitrix.vcardResources}`);
-  console.log(`Parsed: ${summary.bitrix.parsed} | unique emails: ${summary.bitrix.uniqueEmails} | no email: ${summary.bitrix.noEmail} | Bitrix duplicate emails: ${summary.bitrix.duplicateEmails}`);
+  console.log(`Parsed: ${summary.bitrix.parsed} | fetch errors: ${summary.bitrix.fetchErrors} | unique emails: ${summary.bitrix.uniqueEmails} | no email: ${summary.bitrix.noEmail} | Bitrix duplicate emails: ${summary.bitrix.duplicateEmails}`);
+  if(fetchErrors){console.log(`Fetch error types: ${Object.entries(errorKinds).map(([k,v])=>`${k}=${v}`).join(' | ')}`);}
   if(pppp.ok){
     console.log(`PPPP contacts: ${summary.pppp.currentContacts} | PPPP duplicate emails: ${summary.pppp.duplicateEmails}`);
     console.log(`Matched by email: ${summary.comparison.matchedByEmail} | New by email: ${summary.comparison.newByEmail}`);
@@ -127,7 +130,6 @@ try{
     console.log('NEW BITRIX CONTACTS NOT IN PPPP:');
     if(!newContacts.length)console.log('  none');
     newContacts.forEach((c,i)=>console.log(`  ${i+1}. ${c.person||'(pa emer)'} | ${c.company||'-'} | ${c.email} | ${c.phone||'-'} | ${c.role||'-'} | ${c.country||'-'} | Bitrix ${c.bitrix_id}`));
-  }else{
-    console.log(`PPPP read blocked at ${pppp.stage}: HTTP ${pppp.status}.`);process.exitCode=3;
-  }
+  }else{console.log(`PPPP read blocked at ${pppp.stage}: HTTP ${pppp.status}.`);process.exitCode=3;}
+  if(fetchErrors){console.error(`INCOMPLETE BITRIX READ: ${fetchErrors} of ${cardHrefs.length} vCards still failed after retries.`);process.exitCode=4;}
 }catch(e){console.error('Dry run failed:',e&&e.stack?e.stack:e);process.exit(1);}
