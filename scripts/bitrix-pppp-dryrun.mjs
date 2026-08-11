@@ -1,0 +1,81 @@
+import fs from 'node:fs';
+
+const host=process.env.BITRIX_HOST||'b24-cl53os.bitrix24.com';
+const login=process.env.BITRIX_LOGIN||'sales@prissteel.com';
+const password=process.env.BITRIX_APP_PASSWORD||'';
+if(!password){console.error('Missing BITRIX_APP_PASSWORD');process.exit(2);}
+const base=`https://${host}`;
+const auth='Basic '+Buffer.from(`${login}:${password}`).toString('base64');
+const crmBook=`${base}/bitrix/groupdav.php/s1/${encodeURIComponent(login)}/addressbook/crmContacts/`;
+
+function xmlDecode(s=''){return s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');}
+function hrefs(xml=''){return [...xml.matchAll(/<(?:[a-z]+:)?href[^>]*>([\s\S]*?)<\/(?:[a-z]+:)?href>/gi)].map(m=>xmlDecode(m[1].trim()));}
+function abs(h){return /^https?:\/\//i.test(h)?h:new URL(h,base).href;}
+function unfold(s=''){return s.replace(/\r?\n[ \t]/g,'');}
+function qp(s=''){try{return s.replace(/=([0-9A-F]{2})/gi,(_,h)=>String.fromCharCode(parseInt(h,16)));}catch{return s;}}
+function cleanVal(v=''){return v.replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\').trim();}
+function decodeProp(line){
+  const p=line.indexOf(':'); if(p<0)return null;
+  const left=line.slice(0,p), raw=line.slice(p+1); const [name,...params]=left.split(';');
+  const ps=params.join(';').toUpperCase(); let value=raw;
+  if(ps.includes('ENCODING=QUOTED-PRINTABLE')) value=qp(value);
+  else if(ps.includes('ENCODING=B')||ps.includes('ENCODING=BASE64')){try{value=Buffer.from(value,'base64').toString('utf8');}catch{}}
+  return {name:name.toUpperCase(),value:cleanVal(value)};
+}
+function parseVcard(text,href){
+  const props=unfold(text).split(/\r?\n/).map(decodeProp).filter(Boolean);
+  const vals=n=>props.filter(p=>p.name===n).map(p=>p.value).filter(Boolean);
+  const first=n=>vals(n)[0]||'';
+  let person=first('FN');
+  if(!person){const n=first('N').split(';');person=[n[1],n[0]].filter(Boolean).join(' ').trim();}
+  const org=first('ORG').split(';').filter(Boolean).join(' · ');
+  const email=(first('EMAIL')||'').trim().toLowerCase();
+  const phone=first('TEL'); const role=first('TITLE'); const adr=first('ADR').split(';');
+  const country=(adr[6]||'').trim(); const id=(String(href).match(/\/([^/]+)\.vcf(?:\?|$)/i)||[])[1]||'';
+  return {bitrix_id:id,person,company:org,email,phone,role,country};
+}
+async function bfetch(url,opt={}){
+  const r=await fetch(url,{...opt,headers:{Authorization:auth,'User-Agent':'PRISTEEL-PPPP-Bitrix-DryRun/1.0',...(opt.headers||{})}});
+  const t=await r.text(); if(!r.ok&&r.status!==207)throw new Error(`${opt.method||'GET'} ${url} -> ${r.status}`); return t;
+}
+async function mapLimit(items,limit,fn){let i=0;const out=new Array(items.length);async function w(){while(true){const x=i++;if(x>=items.length)return;try{out[x]=await fn(items[x],x);}catch(e){out[x]={__error:String(e.message||e)};}}}await Promise.all(Array.from({length:Math.min(limit,items.length)},w));return out;}
+
+function readSupabaseConfig(){
+  const html=fs.readFileSync('pristeel-procurement.html','utf8');
+  const um=html.match(/var\s+_SB_URL\s*=\s*['"]([^'"]+)['"]/); const km=html.match(/var\s+_SB_KEY\s*=\s*['"]([^'"]+)['"]/);
+  if(!um||!km)throw new Error('Could not read PPPP Supabase config from HTML'); return {url:um[1],key:km[1]};
+}
+async function getPpppContacts(){
+  const {url,key}=readSupabaseConfig();
+  const r=await fetch(`${url}/rest/v1/contacts?select=id,email,company,person,kind,country,role&limit=5000`,{headers:{apikey:key,Authorization:`Bearer ${key}`}});
+  const txt=await r.text(); if(!r.ok)return {ok:false,status:r.status,error:txt.slice(0,300),rows:[]};
+  return {ok:true,status:r.status,rows:JSON.parse(txt)};
+}
+
+try{
+  const body=`<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:getetag/><d:getcontenttype/></d:prop></d:propfind>`;
+  const xml=await bfetch(crmBook,{method:'PROPFIND',headers:{Depth:'1','Content-Type':'application/xml; charset=utf-8'},body});
+  const cardHrefs=[...new Set(hrefs(xml).filter(h=>/\.vcf(?:\?|$)/i.test(h)))];
+  const raw=await mapLimit(cardHrefs,10,async h=>parseVcard(await bfetch(abs(h)),h));
+  const contacts=raw.filter(x=>x&&!x.__error);
+  const fetchErrors=raw.filter(x=>x&&x.__error).length;
+  const withEmail=contacts.filter(c=>c.email); const noEmail=contacts.filter(c=>!c.email);
+  const byEmail=new Map(); const dupEmails=new Set();
+  for(const c of withEmail){if(byEmail.has(c.email))dupEmails.add(c.email);else byEmail.set(c.email,c);}
+
+  const pppp=await getPpppContacts();
+  let matched=0,newCount=0,ppppDuplicateEmails=0;
+  if(pppp.ok){
+    const local=new Map(); const localDup=new Set();
+    for(const c of pppp.rows){const e=String(c.email||'').trim().toLowerCase();if(!e)continue;if(local.has(e))localDup.add(e);else local.set(e,c);}
+    ppppDuplicateEmails=localDup.size;
+    for(const e of byEmail.keys()){if(local.has(e))matched++;else newCount++;}
+  }
+
+  const summary={checkedAt:new Date().toISOString(),bitrix:{vcardResources:cardHrefs.length,parsed:contacts.length,fetchErrors,withEmail:withEmail.length,noEmail:noEmail.length,duplicateEmails:dupEmails.size,uniqueEmails:byEmail.size},pppp:{readOk:pppp.ok,httpStatus:pppp.status,currentContacts:pppp.ok?pppp.rows.length:null,duplicateEmails:pppp.ok?ppppDuplicateEmails:null},comparison:pppp.ok?{matchedByEmail:matched,newByEmail:newCount}:null};
+  fs.mkdirSync('tmp',{recursive:true});fs.writeFileSync('tmp/bitrix-pppp-dryrun.json',JSON.stringify(summary,null,2));
+  console.log('BITRIX -> PPPP DRY RUN (NO WRITES)');
+  console.log(`Bitrix vCards: ${summary.bitrix.vcardResources}`);
+  console.log(`Parsed: ${summary.bitrix.parsed} | unique emails: ${summary.bitrix.uniqueEmails} | no email: ${summary.bitrix.noEmail} | Bitrix duplicate emails: ${summary.bitrix.duplicateEmails}`);
+  if(pppp.ok){console.log(`PPPP contacts: ${summary.pppp.currentContacts} | PPPP duplicate emails: ${summary.pppp.duplicateEmails}`);console.log(`Matched by email: ${summary.comparison.matchedByEmail} | New by email: ${summary.comparison.newByEmail}`);}else{console.log(`PPPP read blocked: HTTP ${pppp.status}. A dedicated Supabase sync credential will be needed for the write stage.`);}
+}catch(e){console.error('Dry run failed:',e&&e.stack?e.stack:e);process.exit(1);}
