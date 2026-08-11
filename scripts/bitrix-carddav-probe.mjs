@@ -35,6 +35,19 @@ function uniq(xs) { return [...new Set(xs.filter(Boolean))]; }
 function safePath(u) {
   try { return new URL(absolute(u)).pathname; } catch { return String(u||''); }
 }
+function responseBlocks(xml='') {
+  return [...xml.matchAll(/<(?:[a-z]+:)?response\b[^>]*>([\s\S]*?)<\/(?:[a-z]+:)?response>/gi)].map(m => m[1]);
+}
+function responseInfo(block='') {
+  const h = hrefs(block)[0] || '';
+  return {
+    href: h,
+    path: safePath(h),
+    isCollection: /<(?:[a-z]+:)?collection\b/i.test(block),
+    contentType: ((block.match(/<(?:[a-z]+:)?getcontenttype[^>]*>([\s\S]*?)<\/(?:[a-z]+:)?getcontenttype>/i)||[])[1] || '').trim(),
+    hasEtag: /<(?:[a-z]+:)?getetag\b/i.test(block)
+  };
+}
 
 async function dav(url, method='PROPFIND', depth='0', body='') {
   const res = await fetch(url, {
@@ -44,7 +57,7 @@ async function dav(url, method='PROPFIND', depth='0', body='') {
       Authorization: auth,
       Depth: depth,
       'Content-Type': 'application/xml; charset=utf-8',
-      'User-Agent': 'PRISTEEL-PPPP-CardDAV-Probe/2.0'
+      'User-Agent': 'PRISTEEL-PPPP-CardDAV-Probe/3.0'
     },
     body: body || undefined
   });
@@ -55,15 +68,16 @@ async function dav(url, method='PROPFIND', depth='0', body='') {
   return { status: res.status, url: res.url, text };
 }
 
-const props = `<?xml version="1.0"?><d:propfind xmlns:d="DAV:" xmlns:card="urn:ietf:params:xml:ns:carddav"><d:prop><d:displayname/><d:resourcetype/><d:current-user-principal/><d:principal-URL/><card:addressbook-home-set/><card:supported-address-data/></d:prop></d:propfind>`;
-const report = `<?xml version="1.0"?><card:addressbook-query xmlns:d="DAV:" xmlns:card="urn:ietf:params:xml:ns:carddav"><d:prop><d:getetag/></d:prop><card:filter/></card:addressbook-query>`;
+const props = `<?xml version="1.0"?><d:propfind xmlns:d="DAV:" xmlns:card="urn:ietf:params:xml:ns:carddav"><d:prop><d:displayname/><d:resourcetype/><d:getetag/><d:getcontenttype/><d:current-user-principal/><d:principal-URL/><card:addressbook-home-set/><card:supported-address-data/></d:prop></d:propfind>`;
+const report = `<?xml version="1.0"?><card:addressbook-query xmlns:d="DAV:" xmlns:card="urn:ietf:params:xml:ns:carddav"><d:prop><d:getetag/></d:prop><card:filter test="anyof"><card:prop-filter name="FN"/></card:filter></card:addressbook-query>`;
 
 async function propProbe(url, depth='1') {
   try {
     const r = await dav(absolute(url), 'PROPFIND', depth, props);
-    return { ok:true, status:r.status, finalUrl:r.url, hrefs:uniq(hrefs(r.text)), names:displayNames(r.text), xml:r.text };
+    const responses = responseBlocks(r.text).map(responseInfo);
+    return { ok:true, status:r.status, finalUrl:r.url, hrefs:uniq(hrefs(r.text)), names:displayNames(r.text), responses, xml:r.text };
   } catch (e) {
-    return { ok:false, error:String(e.message||e), hrefs:[], names:[], xml:'' };
+    return { ok:false, error:String(e.message||e), hrefs:[], names:[], responses:[], xml:'' };
   }
 }
 
@@ -71,10 +85,22 @@ async function reportProbe(url) {
   try {
     const r = await dav(absolute(url), 'REPORT', '1', report);
     const hs = uniq(hrefs(r.text));
-    return { ok:true, status:r.status, count:Math.max(0, hs.length - 1), hrefs:hs };
+    return { ok:true, status:r.status, count:hs.length, hrefs:hs };
   } catch (e) {
     return { ok:false, error:String(e.message||e), count:null, hrefs:[] };
   }
+}
+
+async function directResourceProbe(url) {
+  const p = await propProbe(url, '1');
+  if (!p.ok) return { ok:false, error:p.error, count:null, resources:[] };
+  const basePath = safePath(url).replace(/\/+$/,'');
+  const resources = p.responses.filter(r => {
+    if (!r.path || r.path.replace(/\/+$/,'') === basePath) return false;
+    if (r.isCollection) return false;
+    return r.hasEtag || /vcard|text\/card|text\/x-vcard/i.test(r.contentType) || /\.vcf(?:$|\?)/i.test(r.path);
+  });
+  return { ok:true, count:resources.length, resources:resources.map(r => ({ path:r.path, contentType:r.contentType || null })) };
 }
 
 async function discover() {
@@ -97,8 +123,6 @@ async function discover() {
   const principalProbe = await propProbe(principal, '1');
   const home = firstHrefNear(principalProbe.xml, 'addressbook-home-set');
 
-  // Bitrix Cloud exposes GroupDAV paths that are not always advertised through generic CardDAV discovery.
-  // Probe only read-only DAV locations derived from the authenticated principal and known GroupDAV roots.
   const seeds = uniq([
     '/bitrix/groupdav.php/',
     principal,
@@ -120,7 +144,7 @@ async function discover() {
     if (!key || visited.has(key)) continue;
     visited.add(key);
     const p = await propProbe(u, '1');
-    probes.push({ path:safePath(u), ok:p.ok, status:p.status||null, hrefCount:p.hrefs.length, names:p.names.slice(0,12), error:p.error||null });
+    probes.push({ path:safePath(u), ok:p.ok, status:p.status||null, hrefCount:p.hrefs.length, responseCount:p.responses.length, names:p.names.slice(0,12), error:p.error||null });
     if (!p.ok) continue;
     for (const h of p.hrefs) {
       const path = safePath(h);
@@ -130,18 +154,26 @@ async function discover() {
     }
   }
 
-  const reportTargets = uniq([
-    home,
-    ...candidateHrefs
-  ]).filter(h => /groupdav\.php/i.test(safePath(h))).slice(0,100);
+  const targets = uniq([home, ...candidateHrefs])
+    .filter(h => /groupdav\.php/i.test(safePath(h)))
+    .slice(0,100);
 
   const books = [];
-  const reportDiagnostics = [];
-  for (const h of reportTargets) {
+  const diagnostics = [];
+  for (const h of targets) {
+    const direct = await directResourceProbe(h);
     const rp = await reportProbe(h);
-    reportDiagnostics.push({ path:safePath(h), ok:rp.ok, status:rp.status||null, count:rp.count, error:rp.error||null });
-    if (rp.ok && rp.count > 0) {
-      books.push({ href:safePath(h), count:rp.count });
+    diagnostics.push({
+      path:safePath(h),
+      directOk:direct.ok,
+      directCount:direct.count,
+      reportOk:rp.ok,
+      reportCount:rp.count,
+      directError:direct.error||null,
+      reportError:rp.error||null
+    });
+    if (direct.ok && direct.count > 0) {
+      books.push({ href:safePath(h), directCount:direct.count, reportCount:rp.ok ? rp.count : null });
     }
   }
 
@@ -153,10 +185,7 @@ async function discover() {
     principal:safePath(principal),
     advertisedHome:safePath(home),
     addressBooks:books,
-    diagnostics:{
-      propfind:probes,
-      reports:reportDiagnostics
-    }
+    diagnostics:{ propfind:probes, resources:diagnostics }
   };
 }
 
@@ -167,10 +196,10 @@ try {
   console.log('Bitrix24 CardDAV connection: OK');
   console.log(`Principal: ${result.principal}`);
   console.log(`Advertised home: ${result.advertisedHome || '(none)'}`);
-  console.log(`Address books with items: ${result.addressBooks.length}`);
-  result.addressBooks.forEach((b,i) => console.log(`${i+1}. ${b.count} items | ${b.href}`));
+  console.log(`Address books with direct vCard resources: ${result.addressBooks.length}`);
+  result.addressBooks.forEach((b,i) => console.log(`${i+1}. direct=${b.directCount} | report=${b.reportCount ?? 'n/a'} | ${b.href}`));
   if (!result.addressBooks.length) {
-    console.log('No populated address book detected yet. Diagnostic paths were written to the sanitized artifact.');
+    console.log('No direct vCard resources detected. Sanitized DAV diagnostics were written to the artifact.');
   }
 } catch (e) {
   console.error('Bitrix24 CardDAV probe failed.');
