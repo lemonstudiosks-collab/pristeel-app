@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
 const DEFAULT_SUPABASE_URL = 'https://isymxqfqzkchbsrbhucf.supabase.co';
 const RECEIVABLE_SOURCE = 'invoice_receivable';
@@ -108,8 +109,6 @@ export function planInvoiceTasks({ outgoing = [], incoming = [], existingTasks =
         continue;
       }
 
-      // Do not create noise far in advance. If the task already exists, keep it synced
-      // even when the due date was moved further into the future.
       if (days > lookaheadDays && !current) {
         skipped.push({ kind, id: invoice.id, reason: 'outside_window', days });
         continue;
@@ -123,12 +122,12 @@ export function planInvoiceTasks({ outgoing = [], incoming = [], existingTasks =
   return { planned, complete, skipped };
 }
 
-async function rest({ supabaseUrl, apiKey, path, method = 'GET', body, prefer }) {
+async function rest({ supabaseUrl, apiKey, bearerToken = apiKey, path, method = 'GET', body, prefer }) {
   const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
     method,
     headers: {
       apikey: apiKey,
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${bearerToken}`,
       'Content-Type': 'application/json',
       ...(prefer ? { Prefer: prefer } : {})
     },
@@ -139,29 +138,31 @@ async function rest({ supabaseUrl, apiKey, path, method = 'GET', body, prefer })
   return raw ? JSON.parse(raw) : [];
 }
 
-async function readState({ supabaseUrl, apiKey }) {
+async function readState(access) {
+  const {supabaseUrl,apiKey,bearerToken}=access;
   const [outgoing, incoming, tasks] = await Promise.all([
     rest({
-      supabaseUrl, apiKey,
+      supabaseUrl, apiKey, bearerToken,
       path: 'invoices_out?select=id,invoice_nr,project_id,project,client,due_date,paid,paid_date,gross_amount,total_price,currency&order=date.asc&limit=5000'
     }),
     rest({
-      supabaseUrl, apiKey,
+      supabaseUrl, apiKey, bearerToken,
       path: 'invoices_in?select=id,supplier_invoice_nr,project_id,project,supplier,due_date,paid,paid_date,amount,currency&order=date.asc&limit=5000'
     }),
     rest({
-      supabaseUrl, apiKey,
+      supabaseUrl, apiKey, bearerToken,
       path: `tasks?select=id,project_id,title,detail,due_date,priority,status,done_at,source,source_ref,category&source=in.(${RECEIVABLE_SOURCE},${PAYABLE_SOURCE})&limit=5000`
     })
   ]);
   return { outgoing, incoming, tasks };
 }
 
-async function upsertOpenTasks({ supabaseUrl, apiKey, rows }) {
+async function upsertOpenTasks({ supabaseUrl, apiKey, bearerToken, rows }) {
   if (!rows.length) return;
   await rest({
     supabaseUrl,
     apiKey,
+    bearerToken,
     path: 'tasks?on_conflict=source,source_ref',
     method: 'POST',
     body: rows,
@@ -169,10 +170,11 @@ async function upsertOpenTasks({ supabaseUrl, apiKey, rows }) {
   });
 }
 
-async function completeTask({ supabaseUrl, apiKey, task, doneAt }) {
+async function completeTask({ supabaseUrl, apiKey, bearerToken, task, doneAt }) {
   await rest({
     supabaseUrl,
     apiKey,
+    bearerToken,
     path: `tasks?id=eq.${encodeURIComponent(task.id)}`,
     method: 'PATCH',
     body: { status: 'kryer', done_at: task.done_at || doneAt },
@@ -187,16 +189,19 @@ async function writeSummary(summary) {
 
 export async function runInvoicePaymentTaskSync({
   supabaseUrl = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL,
-  apiKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  apiKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '',
+  bearerToken = '',
   mode = process.env.SYNC_MODE || 'preview',
   today = process.env.SYNC_TODAY || new Date().toISOString().slice(0, 10),
   lookaheadDays = Number(process.env.PAYMENT_TASK_LOOKAHEAD_DAYS || 7)
 } = {}) {
-  if (!apiKey) throw new Error('Supabase server-side key is not configured.');
   if (!['preview', 'apply'].includes(mode)) throw new Error(`Unsupported SYNC_MODE: ${mode}`);
   if (!Number.isFinite(lookaheadDays) || lookaheadDays < 0 || lookaheadDays > 60) throw new Error('PAYMENT_TASK_LOOKAHEAD_DAYS must be between 0 and 60.');
 
-  const state = await readState({ supabaseUrl, apiKey });
+  const access=apiKey
+    ? {supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}
+    : await resolveSupabaseWorkflowAccess({supabaseUrl});
+  const state = await readState(access);
   const plan = planInvoiceTasks({
     outgoing: state.outgoing,
     incoming: state.incoming,
@@ -208,17 +213,17 @@ export async function runInvoicePaymentTaskSync({
   const doneAt = new Date().toISOString();
   if (mode === 'apply') {
     await upsertOpenTasks({
-      supabaseUrl,
-      apiKey,
+      ...access,
       rows: plan.planned.map(x => x.task)
     });
     for (const item of plan.complete) {
-      await completeTask({ supabaseUrl, apiKey, task: item.task, doneAt });
+      await completeTask({ ...access, task: item.task, doneAt });
     }
   }
 
   const summary = {
     mode,
+    auth_mode:access.authMode,
     today,
     lookahead_days: lookaheadDays,
     invoices_out: state.outgoing.length,
@@ -245,7 +250,7 @@ export async function runInvoicePaymentTaskSync({
   };
 
   await writeSummary(summary);
-  console.log(`Invoice payment task sync ${mode}: ${summary.create} create, ${summary.update} update, ${summary.complete} complete, ${summary.skipped} skipped.`);
+  console.log(`Invoice payment task sync ${mode} (${summary.auth_mode}): ${summary.create} create, ${summary.update} update, ${summary.complete} complete, ${summary.skipped} skipped.`);
   return summary;
 }
 
