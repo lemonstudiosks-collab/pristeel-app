@@ -11,6 +11,8 @@ on:
         options:
           - preview
           - apply
+  schedule:
+    - cron: '17 */6 * * *'
 
 permissions:
   contents: read
@@ -30,7 +32,7 @@ jobs:
           BITRIX_APP_PASSWORD: ${{ secrets.BITRIX_APP_PASSWORD }}
           PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
           PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
-          SYNC_MODE: ${{ inputs.mode }}
+          SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
         run: node scripts/bitrix-pppp-sync.mjs
 
       - name: Upload sanitized summary
