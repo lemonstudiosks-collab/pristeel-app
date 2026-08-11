@@ -50,7 +50,7 @@ function parseVcard(text,href){
   return {person,company,email,phone,role,country};
 }
 async function bfetch(url,opt={}){
-  const r=await fetch(url,{...opt,headers:{Authorization:bitrixAuth,'User-Agent':'PRISTEEL-PPPP-Bitrix-NewImport/1.2',...(opt.headers||{})}});
+  const r=await fetch(url,{...opt,headers:{Authorization:bitrixAuth,'User-Agent':'PRISTEEL-PPPP-Bitrix-NewImport/1.3',...(opt.headers||{})}});
   const t=await r.text();
   if(!r.ok&&r.status!==207)throw new Error(`${opt.method||'GET'} ${url} -> ${r.status}`);
   return t;
@@ -108,7 +108,7 @@ try{
   const bitrixByEmail=new Map(); const bitrixDup=new Set();
   for(const c of contacts){if(bitrixByEmail.has(c.email))bitrixDup.add(c.email);else bitrixByEmail.set(c.email,c);}
 
-  if(cardHrefs.length<1||cardHrefs.length>250)throw new Error(`Guard stopped import: unexpected Bitrix vCard count ${cardHrefs.length}.`);
+  if(cardHrefs.length<1||cardHrefs.length>5000)throw new Error(`Guard stopped import: unexpected Bitrix vCard count ${cardHrefs.length}.`);
   if(bitrixDup.size)throw new Error(`Guard stopped import: Bitrix contains ${bitrixDup.size} duplicate email(s).`);
 
   const cfg=await ppppSession();
