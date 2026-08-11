@@ -35,6 +35,16 @@ jobs:
           SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
         run: node scripts/bitrix-pppp-sync.mjs
 
+      - name: Record Bitrix24 contact provenance
+        if: github.event_name == 'schedule' || inputs.mode == 'apply'
+        env:
+          BITRIX_HOST: b24-cl53os.bitrix24.com
+          BITRIX_LOGIN: sales@prissteel.com
+          BITRIX_APP_PASSWORD: ${{ secrets.BITRIX_APP_PASSWORD }}
+          PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+          PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+        run: node scripts/bitrix-contact-provenance.mjs
+
       - name: Upload sanitized summary
         if: always()
         uses: actions/upload-artifact@v4
