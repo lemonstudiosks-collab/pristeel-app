@@ -64,23 +64,30 @@ async function testExecutionBootstrap(){
   {id:'p1',name:'Project One',client:'Client A',ref:'R1',status:'pritje',pipeline_stage:'commercial'},
   {id:'p2',name:'Project Two',client:'Client B',ref:'R2',status:'fituar',pipeline_stage:'production_control'},
   {id:'p3',name:'Archived',client:'Client C',ref:'R3',status:'arkivuar',pipeline_stage:'commercial'},
-  {id:'p4',name:'Advanced',client:'Client D',ref:'R4',status:'fituar',pipeline_stage:'transport'}
+  {id:'p4',name:'Advanced',client:'Client D',ref:'R4',status:'fituar',pipeline_stage:'transport'},
+  {id:'p5',name:'Invoiced Execution',client:'Client E',ref:'R5',status:'pritje',pipeline_stage:'production_control'},
+  {id:'p6',name:'Early Invoice',client:'Client F',ref:'R6',status:'pritje',pipeline_stage:'client_offer'}
  ];
  const plan=mod.planExecutionBootstrap({
   projects,
   wonOffers:[{project_id:'p1'},{project_id:'p3'}],
+  invoicesOut:[{project_id:'p5',invoice_nr:'INV-5'},{project_id:'p6',invoice_nr:'INV-6'}],
   supplierOffers:[{project_id:'p1',supplier:'Supplier A'}],
   rfqs:[],
   existingTasks:[{id:'t1',source:'execution_won',source_ref:'p2:scope_lock',status:'kryer'}],
   today:'2026-08-11'
  });
 
- assert.deepStrictEqual(new Set(plan.wonProjectIds),new Set(['p1','p2','p3','p4']),'Won project discovery is incomplete');
+ assert.deepStrictEqual(new Set(plan.wonProjectIds),new Set(['p1','p2','p3','p4','p5']),'Won project discovery is incomplete or promoted an early-stage invoice');
  const p1Patch=plan.projectPatches.find(x=>x.project.id==='p1');
  assert(p1Patch,'Won quote should bootstrap its linked project');
  assert.strictEqual(p1Patch.patch.status,'fituar','Won quotation should repair project status');
  assert.strictEqual(p1Patch.patch.pipeline_stage,'production_control','Won project should advance to production_control');
+ const p5Patch=plan.projectPatches.find(x=>x.project.id==='p5');
+ assert(p5Patch,'Invoiced execution project should be recognized as won');
+ assert.deepStrictEqual(p5Patch.patch,{status:'fituar'},'Invoiced execution should repair status without changing an already-correct stage');
  assert(!plan.projectPatches.some(x=>x.project.id==='p4'),'Advanced execution stage must never regress');
+ assert(!plan.wonProjectIds.includes('p6'),'An invoice in an early-stage project must not auto-promote it to won');
  assert(plan.skipped.some(x=>x.project_id==='p3'&&x.reason==='terminal_status'),'Archived project must not be reopened');
 
  const p1Tasks=plan.taskCreates.filter(x=>x.project_id==='p1');
@@ -91,6 +98,8 @@ async function testExecutionBootstrap(){
  assert(!p2Tasks.some(x=>x.source_ref==='p2:scope_lock'),'Completed scope task was recreated');
  const p4Tasks=plan.taskCreates.filter(x=>x.project_id==='p4');
  assert.strictEqual(p4Tasks.length,3,'Advanced won project should still receive missing execution checklist tasks');
+ const p5Tasks=plan.taskCreates.filter(x=>x.project_id==='p5');
+ assert.strictEqual(p5Tasks.length,3,'Invoiced execution project should get the universal execution checklist');
 }
 
 (async()=>{
