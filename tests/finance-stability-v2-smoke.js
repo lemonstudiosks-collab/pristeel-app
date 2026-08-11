@@ -137,8 +137,79 @@ async function testInvoicePaymentTaskPlanner(){
   assert.strictEqual(movedFuturePlan.planned[0].task.due_date,'2026-09-01');
 }
 
+async function testDocumentCurrency(){
+  const dom=new JSDOM(`<!doctype html><html><body>
+    <div class="field-group"><div><label class="lbl">Cmimi EUR/kg</label><input id="of-pr"></div><div><label class="lbl">Total kg</label><input id="of-kg"></div></div>
+    <div class="field-group"><div><label class="lbl">Zinktimi EUR/kg</label><input id="of-zn"></div><div><label class="lbl">Transporti EUR total</label><input id="of-tr"></div></div>
+    <div id="of-preview-col" style="display:block"><div id="of-pre">Plotëso</div></div><div id="ofp-sum">100.00 EUR</div>
+    <div class="field-group"><div><label class="lbl">Lloji</label><select id="iv-type"><option>standard</option></select></div><div><label class="lbl">X</label><input></div></div>
+    <table id="iv-items-tbl"><thead><tr><th>Çmimi/kg</th></tr></thead></table><div id="iv-preview">Plotëso</div>
+    <select id="iv-from-quo"><option value="">—</option><option value="0">Quote</option></select><input id="iv-contract-value"><select id="iv-milestone"><option value=""></option></select>
+    <select id="fin-year"><option value="2026" selected>2026</option></select><select id="fin-period"><option value="year" selected>year</option></select>
+    <div id="iv-out-list"></div><div id="oa-list"></div><input id="oa-search">
+  </body></html>`,{url:'https://localhost/pristeel-procurement.html',runScripts:'outside-only'});
+  const w=dom.window;w.console=console;w.alertMessages=[];w.alert=m=>w.alertMessages.push(String(m));
+  const registryCalls=[],dbCalls=[];
+  w.collectOfferFormState=()=>({lang:'de'});
+  w.applyOfferFormState=()=>{};
+  w.renderOferPos=()=>{};
+  w.registerDocNr=async function(series,nr,project,client,total,pay,state){registryCalls.push({series,nr,total,state});return[];};
+  w.supaFetch=async function(path,method,body){dbCalls.push({path,method,body});if(path==='invoices_out'&&method==='POST')return [body];return[];};
+  w.genOfer=function(){w.document.getElementById('of-pre').innerHTML='<div>100 EUR</div><div>EUR · USD · CHF · GBP</div>';};
+  w.genInvoiceOut=function(){w.document.getElementById('iv-preview').innerHTML='<div>250 EUR</div>';};
+  w.quoSelected=function(){};w.loadQuoRegistry=function(){return Promise.resolve([]);};
+  let taxCalls=0,taxRevenue=0,taxCost=0;
+  w.calcTaxSummary=function(){taxCalls++;taxRevenue=(w.invoicesOutList||[]).reduce((a,x)=>a+(parseFloat(x.net_amount)||0),0);taxCost=(w.invoicesInList||[]).reduce((a,x)=>a+(parseFloat(x.net_amount)||parseFloat(x.amount)||0),0);};
+  w.PSTCommercialDocumentBuilderV1={fresh:function(){return true;}};
+  w.eval(fs.readFileSync('pristeel-document-currency-v1.js','utf8'));
+  w.PSTDocumentCurrencyV1.enhance();
+
+  assert(w.document.getElementById('pst-of-currency'),'Offer currency selector missing');
+  assert(w.document.getElementById('pst-iv-currency'),'Invoice currency selector missing');
+  w.PSTDocumentCurrencyV1.setCurrency('offer','USD',0.92);
+  const state=w.collectOfferFormState();
+  assert.strictEqual(state.currency,'USD');assert.strictEqual(state.exchange_rate_to_eur,0.92);
+  await w.registerDocNr('QUO','PST-OFF-2026-999','P','C',100,null,state,null);
+  assert.strictEqual(registryCalls[0].total,92,'Registry total_eur must be converted, not raw USD');
+  assert.strictEqual(registryCalls[0].state.currency,'USD');
+  const quotePatch=dbCalls.find(x=>/documents_registry\?doc_nr=eq.PST-OFF-2026-999/.test(x.path));
+  assert(quotePatch,'Document currency registry patch missing');
+  assert.strictEqual(quotePatch.body.total_amount,100);assert.strictEqual(quotePatch.body.total_eur,92);assert.strictEqual(quotePatch.body.currency,'USD');
+
+  w.genOfer();
+  assert(/100 USD/.test(w.document.getElementById('of-pre').textContent),'Offer preview did not switch to USD');
+  assert(/EUR · USD · CHF · GBP/.test(w.document.getElementById('of-pre').textContent),'Bank supported-currency list must not be rewritten');
+
+  w.PSTDocumentCurrencyV1.setCurrency('invoice','CHF',1.04);
+  await w.supaFetch('invoices_out','POST',{invoice_nr:'PST-INV-2026-999',gross_amount:500,total_price:500,currency:'EUR'});
+  const invWrite=dbCalls.find(x=>x.path==='invoices_out'&&x.method==='POST');
+  assert.strictEqual(invWrite.body.currency,'CHF');assert.strictEqual(invWrite.body.exchange_rate_to_eur,1.04);
+  const invPatch=dbCalls.find(x=>/documents_registry\?doc_nr=eq.PST-INV-2026-999/.test(x.path));
+  assert(invPatch,'Invoice registry currency patch missing');assert.strictEqual(invPatch.body.total_amount,500);assert.strictEqual(invPatch.body.total_eur,520);
+  w.genInvoiceOut();assert(/250 CHF/.test(w.document.getElementById('iv-preview').textContent),'Invoice preview did not switch to CHF');
+
+  w._quoDocs=[{id:'q-usd',doc_nr:'Q-USD',client:'Client',currency:'USD',total_amount:1000,total_eur:920,exchange_rate_to_eur:0.92,payment_plan:[]}];
+  w.document.getElementById('iv-from-quo').value='0';w.quoSelected();
+  assert.strictEqual(w.PSTDocumentCurrencyV1.invoiceCurrency(),'USD','Invoice must inherit source quote currency');
+  assert.strictEqual(w.document.getElementById('iv-contract-value').value,'1000','Invoice contract value must stay in document currency');
+  assert(/1.000,00 USD/.test(w.document.getElementById('iv-from-quo').options[1].textContent),'Quote dropdown must show original document currency');
+
+  w.invoicesOutList=[{date:'2026-08-01',currency:'USD',exchange_rate_to_eur:0.9,net_amount:100,vat_amount:10,gross_amount:110}];
+  w.invoicesInList=[{date:'2026-08-02',currency:'CHF',exchange_rate:1.05,net_amount:50,vat_amount:0,amount:50}];
+  w.calcTaxSummary();
+  assert.strictEqual(taxCalls,1);assert.strictEqual(taxRevenue,90,'Outgoing FX conversion for Finance is wrong');assert.strictEqual(taxCost,52.5,'Incoming FX conversion for Finance is wrong');
+  assert.strictEqual(w.invoicesOutList[0].net_amount,100,'Finance wrapper must restore original document-currency rows');
+
+  w.invoicesOutList=[{invoice_nr:'NO-RATE',date:'2026-08-01',currency:'USD',exchange_rate_to_eur:null,net_amount:100}];w.invoicesInList=[];
+  w.calcTaxSummary();
+  assert.strictEqual(taxCalls,1,'Finance must not calculate a foreign-currency row without FX rate');
+  assert(w.alertMessages.some(x=>/NO-RATE/.test(x)&&/kursi/i.test(x)),'Missing FX rate warning is missing');
+  dom.window.close();
+}
+
 (async()=>{
   await testInvoiceLinks();
   await testInvoicePaymentTaskPlanner();
-  console.log('Finance stability + invoice traceability + payment task automation smoke test passed.');
+  await testDocumentCurrency();
+  console.log('Finance stability + invoice traceability + payment tasks + document currency smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
