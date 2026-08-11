@@ -13,6 +13,13 @@ on:
           - apply
   schedule:
     - cron: '17 */6 * * *'
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/bitrix-pppp-sync.mjs'
+      - 'scripts/bitrix-contact-email-resolver.mjs'
+      - 'scripts/bitrix-contact-provenance.mjs'
 
 permissions:
   contents: read
@@ -32,11 +39,11 @@ jobs:
           BITRIX_APP_PASSWORD: ${{ secrets.BITRIX_APP_PASSWORD }}
           PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
           PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
-          SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
+          SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || github.event_name == 'workflow_dispatch' && inputs.mode || 'preview' }}
         run: node scripts/bitrix-pppp-sync.mjs
 
       - name: Record Bitrix24 contact provenance
-        if: github.event_name == 'schedule' || inputs.mode == 'apply'
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'apply')
         env:
           BITRIX_HOST: b24-cl53os.bitrix24.com
           BITRIX_LOGIN: sales@prissteel.com

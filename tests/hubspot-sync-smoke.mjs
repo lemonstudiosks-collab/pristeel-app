@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mapHubSpotContact, mapHubSpotDeal, planHubSpotContactUpdate } from '../scripts/hubspot-sync.mjs';
 import { makeSourceRow, dedupeSourceRows, upsertSourceRows } from '../scripts/contact-provenance-common.mjs';
+import { resolveBitrixEmailGroups } from '../scripts/bitrix-contact-email-resolver.mjs';
 
 const contact = mapHubSpotContact({
   id: '123',
@@ -125,7 +126,40 @@ const missingResult = await upsertSourceRows({
 assert.equal(missingResult.available, false);
 assert.equal(missingResult.upserted, 0);
 
+const importedPairs=[];
+for(let i=1;i<=27;i++){
+  const email=`contact${i}@example.test`,company=`Company ${i} GmbH`;
+  importedPairs.push({bitrix_id:`company-${i}`,email,person:company,company,vcard_kind:'org',phone:`+49 100${i}`});
+  importedPairs.push({bitrix_id:`person-${i}`,email,person:`Person ${i}`,company,vcard_kind:'individual',role:'Purchasing'});
+}
+const bitrixResolved=resolveBitrixEmailGroups(importedPairs);
+assert.equal(bitrixResolved.byEmail.size,27,'27 imported Company+Contact pairs must resolve to 27 unique emails');
+assert.equal(bitrixResolved.resolvedDuplicates.length,27,'All Company+Contact duplicate groups should be safely collapsed');
+assert.equal(bitrixResolved.unresolvedDuplicates.length,0,'Company+Contact pairs must not be treated as genuine duplicate people');
+for(let i=1;i<=27;i++){
+  const row=bitrixResolved.byEmail.get(`contact${i}@example.test`);
+  assert.equal(row.bitrix_id,`person-${i}`,'Contact card must win over organization card');
+  assert.equal(row.person,`Person ${i}`);
+  assert.equal(row.phone,`+49 100${i}`,'Blank contact field may be safely filled from matching organization card');
+}
+
+const dangerousSharedEmail=resolveBitrixEmailGroups([
+  {bitrix_id:'p-a',email:'info@shared.test',person:'Anna Example',company:'Shared GmbH',vcard_kind:'individual'},
+  {bitrix_id:'p-b',email:'info@shared.test',person:'Ben Example',company:'Shared GmbH',vcard_kind:'individual'}
+]);
+assert.equal(dangerousSharedEmail.byEmail.size,0,'Two different people sharing an email must not be silently collapsed');
+assert.equal(dangerousSharedEmail.unresolvedDuplicates.length,1,'True shared-email ambiguity must remain a hard-stop');
+
+const samePersonCards=resolveBitrixEmailGroups([
+  {bitrix_id:'old',email:'sales@example.test',person:'Maria Test',company:'Example AG',vcard_kind:'individual'},
+  {bitrix_id:'rich',email:'sales@example.test',person:'Maria Test',company:'Example AG',role:'Sales',country:'CH',vcard_kind:'individual'}
+]);
+assert.equal(samePersonCards.unresolvedDuplicates.length,0);
+assert.equal(samePersonCards.byEmail.get('sales@example.test').bitrix_id,'rich','Richer duplicate card for same person should be retained');
+
 execFileSync(process.execPath, ['--check', 'scripts/hubspot-contact-provenance.mjs']);
+execFileSync(process.execPath, ['--check', 'scripts/bitrix-contact-email-resolver.mjs']);
+execFileSync(process.execPath, ['--check', 'scripts/bitrix-pppp-sync.mjs']);
 execFileSync(process.execPath, ['--check', 'scripts/bitrix-contact-provenance.mjs']);
 execFileSync(process.execPath, ['--check', 'scripts/contact-provenance-common.mjs']);
 
@@ -148,4 +182,4 @@ assert.deepEqual(Object.keys(deal).sort(), [
   'amount', 'closedate', 'dealname', 'dealstage', 'description', 'hs_object_id'
 ].sort());
 
-console.log('HubSpot sync mapping, contact safety and provenance smoke test passed.');
+console.log('HubSpot/Bitrix sync mapping, contact safety and provenance smoke test passed.');

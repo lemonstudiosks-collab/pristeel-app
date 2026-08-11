@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { recoverFailedVcards, sleep } from './bitrix-carddav-fetch-recovery.mjs';
 import { makeSourceRow, safeUpsertSourceRows } from './contact-provenance-common.mjs';
+import { resolveBitrixEmailGroups } from './bitrix-contact-email-resolver.mjs';
 
 const host = process.env.BITRIX_HOST || 'b24-cl53os.bitrix24.com';
 const login = process.env.BITRIX_LOGIN || 'sales@prissteel.com';
@@ -20,21 +21,29 @@ const xmlDecode = (s='') => s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(
 const hrefs = (xml='') => [...xml.matchAll(/<(?:[a-z]+:)?href[^>]*>([\s\S]*?)<\/(?:[a-z]+:)?href>/gi)].map(m => xmlDecode(m[1].trim()));
 const abs = h => /^https?:\/\//i.test(h) ? h : new URL(h, base).href;
 const unfold = (s='') => s.replace(/\r?\n[ \t]/g,'');
+const qp = (s='') => s.replace(/=([0-9A-F]{2})/gi,(_,h)=>String.fromCharCode(parseInt(h,16)));
 const cleanVal = (v='') => v.replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\').trim();
 
 function decodeProp(line) {
   const p = line.indexOf(':');
   if (p < 0) return null;
-  const left = line.slice(0,p), raw = line.slice(p+1);
-  const [name] = left.split(';');
-  return { name:name.toUpperCase(), value:cleanVal(raw) };
+  const left=line.slice(0,p),raw=line.slice(p+1),parts=left.split(';'),name=parts.shift(),params=parts.join(';').toUpperCase();
+  let value=raw;
+  if(params.includes('ENCODING=QUOTED-PRINTABLE'))value=qp(value);
+  else if(params.includes('ENCODING=B')||params.includes('ENCODING=BASE64')){try{value=Buffer.from(value,'base64').toString('utf8');}catch{}}
+  return { name:name.toUpperCase(), value:cleanVal(value) };
 }
 
 function parseVcard(text, href) {
-  const props = unfold(text).split(/\r?\n/).map(decodeProp).filter(Boolean);
-  const email = (props.find(p => p.name === 'EMAIL')?.value || '').trim().toLowerCase();
-  const bitrixId = (String(href).match(/\/([^/]+)\.vcf(?:\?|$)/i)||[])[1] || '';
-  return { email, bitrix_id:bitrixId };
+  const props=unfold(text).split(/\r?\n/).map(decodeProp).filter(Boolean);
+  const vals=n=>props.filter(p=>p.name===n).map(p=>p.value).filter(Boolean);
+  const first=n=>vals(n)[0]||'';
+  let person=first('FN');
+  if(!person){const n=first('N').split(';');person=[n[1],n[0]].filter(Boolean).join(' ').trim();}
+  const company=first('ORG').split(';').filter(Boolean).join(' · ');
+  const email=first('EMAIL').trim().toLowerCase();
+  const bitrix_id=(String(href).match(/\/([^/]+)\.vcf(?:\?|$)/i)||[])[1]||'';
+  return {email,bitrix_id,person,company,vcard_kind:first('KIND')};
 }
 
 async function bfetch(url, opt={}) {
@@ -112,12 +121,8 @@ try {
   const fetchOne=async h=>parseVcard(await bfetch(abs(h)),h);
   const firstPass=await mapLimit(cardHrefs,3,fetchOne);
   const recovered=await recoverFailedVcards(firstPass,cardHrefs,fetchOne,{cooldownMs:10000,pauseMs:1500,attempts:6});
-  const parsed=recovered.rows.filter(x=>x&&!x.__error&&x.email);
-  const bitrixGroups=new Map();
-  for (const row of parsed) {
-    if (!bitrixGroups.has(row.email)) bitrixGroups.set(row.email,[]);
-    bitrixGroups.get(row.email).push(row);
-  }
+  const parsed=recovered.rows.filter(x=>x&&!x.__error);
+  const resolved=resolveBitrixEmailGroups(parsed);
 
   const cfg=await ppppSession();
   const local=await readLocalContacts(cfg);
@@ -131,10 +136,10 @@ try {
 
   const seenAt=new Date().toISOString();
   const sourceRows=[];
-  let skippedAmbiguous=0;
-  for (const [email,bgroup] of bitrixGroups) {
+  let skippedAmbiguous=resolved.unresolvedDuplicates.length;
+  for (const [email,b] of resolved.byEmail) {
     const pgroup=localGroups.get(email)||[];
-    if (bgroup.length!==1 || pgroup.length!==1) {
+    if (pgroup.length!==1) {
       skippedAmbiguous++;
       continue;
     }
@@ -142,7 +147,7 @@ try {
       contactId:pgroup[0].id,
       email,
       source:'bitrix24',
-      externalId:bgroup[0].bitrix_id,
+      externalId:b.bitrix_id,
       seenAt
     }));
   }
@@ -159,7 +164,7 @@ try {
   } else if (result.available===null) {
     console.log(`Bitrix provenance warning: ${result.error}`);
   } else {
-    console.log(`Bitrix provenance updated: ${result.upserted} source link(s); ambiguous skipped: ${skippedAmbiguous}.`);
+    console.log(`Bitrix provenance updated: ${result.upserted} source link(s); company/contact groups safely collapsed: ${resolved.resolvedDuplicates.length}; ambiguous skipped: ${skippedAmbiguous}.`);
   }
 } catch (error) {
   console.log(`Bitrix provenance warning: ${String(error?.message||error)}`);
