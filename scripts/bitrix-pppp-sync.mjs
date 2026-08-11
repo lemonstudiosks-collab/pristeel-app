@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { recoverFailedVcards, sleep } from './bitrix-carddav-fetch-recovery.mjs';
+import { resolveBitrixEmailGroups } from './bitrix-contact-email-resolver.mjs';
 
 const host = process.env.BITRIX_HOST || 'b24-cl53os.bitrix24.com';
 const login = process.env.BITRIX_LOGIN || 'sales@prissteel.com';
@@ -50,7 +51,8 @@ function parseVcard(text, href) {
   const email = first('EMAIL').trim().toLowerCase();
   const phone = first('TEL'); const role = first('TITLE'); const adr = first('ADR').split(';');
   const country = (adr[6] || '').trim(); const bitrix_id = (String(href).match(/\/([^/]+)\.vcf(?:\?|$)/i)||[])[1] || '';
-  return { bitrix_id, person, company, email, phone, role, country };
+  const vcard_kind = first('KIND');
+  return { bitrix_id, person, company, email, phone, role, country, vcard_kind };
 }
 
 function retryable(s) { return [408,425,429,500,502,503,504].includes(s); }
@@ -155,12 +157,12 @@ try {
   const contacts = raw.filter(x => x && !x.__error);
   if (errors.length) throw new Error(`Guard stopped sync: incomplete Bitrix read, ${errors.length}/${cardHrefs.length} vCards still failed.`);
 
-  const noEmail = contacts.filter(c => !c.email);
-  const byEmail = new Map(); const bitrixDup = new Set();
-  for (const c of contacts.filter(c=>c.email)) {
-    if (byEmail.has(c.email)) bitrixDup.add(c.email); else byEmail.set(c.email,c);
+  const resolved = resolveBitrixEmailGroups(contacts);
+  const {byEmail,noEmail,resolvedDuplicates,unresolvedDuplicates} = resolved;
+  if (unresolvedDuplicates.length) {
+    const sample=unresolvedDuplicates.slice(0,5).map(x=>`${x.email} (${x.people.length} people / ${x.count} cards)`).join(', ');
+    throw new Error(`Guard stopped sync: ${unresolvedDuplicates.length} genuinely ambiguous Bitrix email group(s). ${sample}`);
   }
-  if (bitrixDup.size) throw new Error(`Guard stopped sync: Bitrix contains ${bitrixDup.size} duplicate email(s).`);
 
   const cfg = await ppppSession();
   const local = await getAllLocalContacts(cfg);
@@ -199,13 +201,13 @@ try {
   console.log('BITRIX -> PPPP SAFE CONTACT SYNC');
   console.log(`Mode: ${apply?'APPLY':'PREVIEW ONLY'}`);
   console.log(`Bitrix vCards: ${cardHrefs.length} | parsed: ${contacts.length} | recovered serially: ${recovered.recovered} | fetch errors remaining: ${errors.length}`);
-  console.log(`Bitrix unique emails: ${byEmail.size} | no email: ${noEmail.length} | duplicate emails: ${bitrixDup.size}`);
+  console.log(`Bitrix unique emails after safe resolve: ${byEmail.size} | no email: ${noEmail.length} | company/contact groups safely collapsed: ${resolvedDuplicates.length} | ambiguous groups: ${unresolvedDuplicates.length}`);
   console.log(`PPPP contacts before: ${local.length}`);
   console.log(`New contacts: ${newContacts.length} | fill-only existing: ${fillCandidates.length} | unchanged/no-fill: ${unchanged} | duplicate PPPP email skipped: ${skippedDuplicate}`);
   console.log(`Conflicting non-empty fields skipped: ${conflicts.length}`);
   console.log(`Fields to fill: company=${fieldCounts.company} | person=${fieldCounts.person} | phone=${fieldCounts.phone} | role=${fieldCounts.role} | country=${fieldCounts.country}`);
 
-  const summary={checkedAt:new Date().toISOString(),mode,apply,bitrix:{vCards:cardHrefs.length,uniqueEmails:byEmail.size,recovered:recovered.recovered,noEmail:noEmail.length},ppppBefore:local.length,newContacts:newContacts.length,fillCandidates:fillCandidates.length,skippedDuplicate,conflicts:conflicts.length,fieldCounts,inserted:0,updated:0,verifiedNew:0,verifiedFill:0};
+  const summary={checkedAt:new Date().toISOString(),mode,apply,bitrix:{vCards:cardHrefs.length,uniqueEmails:byEmail.size,recovered:recovered.recovered,noEmail:noEmail.length,resolvedDuplicateGroups:resolvedDuplicates.length,ambiguousGroups:unresolvedDuplicates.length},ppppBefore:local.length,newContacts:newContacts.length,fillCandidates:fillCandidates.length,skippedDuplicate,conflicts:conflicts.length,fieldCounts,inserted:0,updated:0,verifiedNew:0,verifiedFill:0};
   fs.mkdirSync('tmp',{recursive:true});
 
   if (!apply) {
