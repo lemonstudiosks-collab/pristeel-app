@@ -50,7 +50,7 @@ function parseVcard(text,href){
   return {person,company,email,phone,role,country};
 }
 async function bfetch(url,opt={}){
-  const r=await fetch(url,{...opt,headers:{Authorization:bitrixAuth,'User-Agent':'PRISTEEL-PPPP-Bitrix-NewImport/1.1',...(opt.headers||{})}});
+  const r=await fetch(url,{...opt,headers:{Authorization:bitrixAuth,'User-Agent':'PRISTEEL-PPPP-Bitrix-NewImport/1.2',...(opt.headers||{})}});
   const t=await r.text();
   if(!r.ok&&r.status!==207)throw new Error(`${opt.method||'GET'} ${url} -> ${r.status}`);
   return t;
@@ -127,10 +127,11 @@ try{
   console.log(`Bitrix contacts with unique email: ${bitrixByEmail.size}`);
   console.log(`PPPP contacts before: ${local.length}`);
   console.log(`New contacts eligible: ${newContacts.length}`);
+  console.log(`New contacts without company: ${newContacts.filter(c=>!c.company).length}`);
 
   if(newContacts.length>50)throw new Error(`Guard stopped import: ${newContacts.length} new contacts exceeds limit 50.`);
 
-  const summary={checkedAt:new Date().toISOString(),mode,apply,bitrixContacts:bitrixByEmail.size,ppppBefore:local.length,newEligible:newContacts.length,inserted:0,ppppAfter:local.length};
+  const summary={checkedAt:new Date().toISOString(),mode,apply,bitrixContacts:bitrixByEmail.size,ppppBefore:local.length,newEligible:newContacts.length,withoutCompany:newContacts.filter(c=>!c.company).length,inserted:0,ppppAfter:local.length};
   fs.mkdirSync('tmp',{recursive:true});
 
   if(!apply){
@@ -141,7 +142,7 @@ try{
 
   const rows=newContacts.map(c=>({
     kind:'client',
-    company:c.company||null,
+    company:c.company||'',
     person:c.person||null,
     email:c.email,
     phone:c.phone||null,
