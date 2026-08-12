@@ -2,7 +2,8 @@
  * Additive safety layer over PSTEmail.profiles().
  * Supplier/subcontractor partner email domains are multi-project by nature and
  * must not become project-owner emails that earn email-unique/email-shared score.
- * Project/reference/thread evidence remains untouched.
+ * Canonical business-ref enrichment is installed first; project/reference/thread
+ * evidence then remains available after supplier-domain filtering.
  */
 (function(){
 'use strict';
@@ -37,9 +38,16 @@ function filterProfiles(profiles,domains){
  });
  return profiles;
 }
+function ensureCanonicalRefWrapper(){
+ var R=window.PSTProjectReferenceV1;
+ if(R&&typeof R.wrapEmailProfiles==='function')try{return R.wrapEmailProfiles();}catch(e){}
+ return false;
+}
 function install(){
  if(installed)return true;
  var P=window.PSTEmail;if(!P||typeof P.profiles!=='function')return false;
+ ensureCanonicalRefWrapper();
+ P=window.PSTEmail;
  if(P.profiles.__pstSupplierDomainSafety){installed=true;return true;}
  var base=P.profiles;
  P.profiles=async function(){var profiles=await base.apply(this,arguments),domains=await supplierDomains();P.supplierDomains=domains;return filterProfiles(profiles,domains);};
@@ -47,5 +55,5 @@ function install(){
 }
 function schedule(){[0,50,120,300,700,1400].forEach(function(ms){setTimeout(function(){if(!installed)install();},ms);});}
 install();schedule();document.addEventListener('pst:modules-ready',function(){install();},{once:true});
-window.PSTEmailSupplierDomainSafetyV1={install:install,supplierDomains:supplierDomains,filterProfiles:filterProfiles,companyMatches:companyMatches,domain:domain,_state:function(){return{installed:installed};}};
+window.PSTEmailSupplierDomainSafetyV1={install:install,ensureCanonicalRefWrapper:ensureCanonicalRefWrapper,supplierDomains:supplierDomains,filterProfiles:filterProfiles,companyMatches:companyMatches,domain:domain,_state:function(){return{installed:installed};}};
 })();
