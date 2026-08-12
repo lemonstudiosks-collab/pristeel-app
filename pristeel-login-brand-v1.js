@@ -27,16 +27,22 @@ function css(){
   s.id='pst-login-brand-v1-style';
   s.textContent=`
 #auth-gate.pst-auth-branded{background:radial-gradient(circle at 72% 14%,rgba(103,168,192,.14),transparent 34%),linear-gradient(145deg,#F8FBFC,#EEF6F8)!important;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
-#auth-gate.pst-auth-branded #auth-form{background:#fff!important;border:1px solid #DCE8EC!important;border-radius:18px!important;box-shadow:0 22px 60px rgba(45,82,97,.12)!important;padding:30px 32px!important;max-width:390px!important;width:calc(100% - 32px)!important}
-#auth-gate.pst-auth-branded .pst-auth-brand{text-align:center;margin-bottom:24px;color:#253239}
-#auth-gate.pst-auth-branded .pst-auth-mark{width:52px;height:52px;margin:0 auto 12px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#67A8C0,#3F7F98);box-shadow:0 13px 30px rgba(63,127,152,.2);color:#fff}
-#auth-gate.pst-auth-branded .pst-auth-mark svg{width:27px;height:27px;fill:currentColor}
-#auth-gate.pst-auth-branded .pst-auth-name{font-size:20px;font-weight:800;letter-spacing:.45px}
-#auth-gate.pst-auth-branded .pst-auth-sub{font-size:10.5px;color:#7D8B91;margin-top:3px}
-#auth-gate.pst-auth-branded input{border:1px solid #D8E3E7!important;border-radius:10px!important;background:#FBFDFE!important;box-shadow:none!important}
+/* The legacy bronze PRISTEEL wordmark above the card is redundant. */
+#auth-gate.pst-auth-branded .auth-logo{display:none!important}
+#auth-gate.pst-auth-branded #auth-form{background:#fff!important;border:1px solid #DCE8EC!important;border-radius:18px!important;box-shadow:0 22px 60px rgba(45,82,97,.12)!important;padding:32px 34px!important;max-width:420px!important;width:calc(100% - 32px)!important}
+#auth-gate.pst-auth-branded .pst-auth-brand{text-align:center;margin-bottom:25px;color:#253239}
+#auth-gate.pst-auth-branded .pst-auth-mark{width:54px;height:54px;margin:0 auto 12px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#67A8C0,#3F7F98);box-shadow:0 13px 30px rgba(63,127,152,.2);color:#fff}
+#auth-gate.pst-auth-branded .pst-auth-mark svg{width:28px;height:28px;fill:currentColor}
+#auth-gate.pst-auth-branded .pst-auth-name{font-size:22px!important;line-height:1.2;font-weight:800;letter-spacing:.4px}
+#auth-gate.pst-auth-branded .pst-auth-sub{font-size:12.5px!important;line-height:1.45;color:#718087;margin-top:5px}
+#auth-gate.pst-auth-branded .auth-title{font-size:22px!important;line-height:1.25!important}
+#auth-gate.pst-auth-branded .auth-sub{font-size:12.5px!important;line-height:1.5!important}
+#auth-gate.pst-auth-branded label{font-size:12px!important;line-height:1.35!important}
+#auth-gate.pst-auth-branded input{min-height:44px!important;font-size:14px!important;line-height:1.35!important;padding:0 12px!important;border:1px solid #D8E3E7!important;border-radius:10px!important;background:#FBFDFE!important;box-shadow:none!important}
 #auth-gate.pst-auth-branded input:focus{border-color:#67A8C0!important;box-shadow:0 0 0 3px rgba(91,155,179,.11)!important}
-#auth-gate.pst-auth-branded button[type="submit"]{border:0!important;border-radius:10px!important;background:linear-gradient(135deg,#67A8C0,#3F7F98)!important;color:#fff!important;font-weight:760!important;box-shadow:0 8px 20px rgba(63,127,152,.16)!important}
+#auth-gate.pst-auth-branded button[type="submit"]{min-height:44px!important;font-size:14px!important;line-height:1.2!important;border:0!important;border-radius:10px!important;background:linear-gradient(135deg,#67A8C0,#3F7F98)!important;color:#fff!important;font-weight:760!important;box-shadow:0 8px 20px rgba(63,127,152,.16)!important}
 #auth-gate.pst-auth-branded button[type="submit"]:hover{background:linear-gradient(135deg,#5F9FB7,#36758E)!important}
+#auth-gate.pst-auth-branded #auth-err{font-size:12px!important;line-height:1.45!important}
 `;
   document.head.appendChild(s);
 }
