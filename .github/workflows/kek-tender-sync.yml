@@ -17,6 +17,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/kek-tender-sync.mjs'
+      - 'scripts/kek-tender-postprocess.mjs'
       - '.github/workflows/kek-tender-sync.yml'
 
 permissions:
@@ -51,6 +52,10 @@ jobs:
 
       - name: Collect KEK steel tenders
         run: node scripts/kek-tender-sync.mjs
+
+      - name: Keep only actionable precise opportunities
+        if: ${{ env.SYNC_MODE == 'apply' }}
+        run: node scripts/kek-tender-postprocess.mjs
 
       - name: Upload sanitized summary
         if: always()

@@ -28,5 +28,7 @@ jobs:
         run: npm test
       - name: Run KEK tender collector smoke
         run: node tests/kek-tender-sync-smoke.mjs
+      - name: Run KEK tender postprocess smoke
+        run: node tests/kek-tender-postprocess-smoke.mjs
       - name: Run KEK tender UI smoke
         run: node tests/kek-tender-watch-smoke.js
