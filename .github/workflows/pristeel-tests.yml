@@ -24,5 +24,9 @@ jobs:
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Run tests
+      - name: Run full test suite
         run: npm test
+      - name: Run KEK tender collector smoke
+        run: node tests/kek-tender-sync-smoke.mjs
+      - name: Run KEK tender UI smoke
+        run: node tests/kek-tender-watch-smoke.js
