@@ -34,12 +34,12 @@ async function testProjectCreateDedupeGuard() {
   const w = dom.window;
   w.console = console;
   let rows = [
-    { id:'p1', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA', client:'ITALIAN STYLE', ref:'', status:'pritje', created_at:'2026-08-01T00:00:00Z' }
+    { id:'p1', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA', client:'ITALIAN STYLE', ref:'', business_ref:null, status:'pritje', created_at:'2026-08-01T00:00:00Z' }
   ];
   let inserts = 0;
   const passthrough = [];
   w.supaFetch = async (path, method, body) => {
-    if (path.indexOf('projects?select=id,name,client,ref,status,created_at') === 0) return rows.map(x => ({...x}));
+    if (path.indexOf('projects?select=id,name,client,ref,business_ref,status,created_at') === 0) return rows.map(x => ({...x}));
     if (path === 'projects' && method === 'POST') {
       inserts++;
       const created = { id:'new-'+inserts, ...body, created_at:'2026-08-11T00:00:00Z' };
@@ -70,7 +70,7 @@ async function testProjectCreateDedupeGuard() {
   assert.strictEqual(inserts, 1, 'New project should be inserted exactly once');
   assert.strictEqual(created[0].id, 'new-1');
 
-  rows.push({ id:'p2', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA', client:'ITALIAN STYLE', ref:'', status:'pritje', created_at:'2026-08-02T00:00:00Z' });
+  rows.push({ id:'p2', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA', client:'ITALIAN STYLE', ref:'', business_ref:null, status:'pritje', created_at:'2026-08-02T00:00:00Z' });
   await assert.rejects(
     () => w.supaFetch('projects','POST',{
       name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA',
