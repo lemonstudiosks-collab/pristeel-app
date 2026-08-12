@@ -78,3 +78,4 @@ require('./project-commercial-prefill-rescue-smoke.js');
 require('./our-offer-source-smoke.js');
 require('./our-offer-history-ui-smoke.js');
 require('./supplier-offer-currency-smoke.js');
+require('./project-pipeline-consistency-smoke.js');
