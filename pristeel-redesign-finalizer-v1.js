@@ -1,5 +1,5 @@
 /* PRISTEEL redesign finalizer v1
- * Preview revision: 20260807-2.
+ * Preview revision: 20260812-readability1.
  * Re-applies the read-only redesign after legacy workspace renders.
  * Bounded timeouts only. No polling, observers, writes, auth or project-open overrides.
  */
@@ -8,7 +8,22 @@
 if(window.__pstRedesignFinalizerV1)return;
 window.__pstRedesignFinalizerV1=true;
 
+function readability(){
+  try{
+    var R=window.PSTPlatformReadabilityV1;
+    if(R&&typeof R.apply==='function'){R.apply(document);return;}
+    if(document.querySelector('script[data-pst-platform-readability]'))return;
+    var s=document.createElement('script');
+    s.src='pristeel-platform-readability-v1.js?v=20260812-1';
+    s.defer=true;
+    s.setAttribute('data-pst-platform-readability','1');
+    s.onload=function(){var x=window.PSTPlatformReadabilityV1;if(x&&typeof x.apply==='function')x.apply(document);};
+    document.head.appendChild(s);
+  }catch(e){console.warn('PRISTEEL finalizer readability:',e);}
+}
+
 function apply(){
+  readability();
   try{
     var C=window.PSTBusinessCommandCenterV1;
     if(C&&typeof C.open==='function')window.openCmdK=C.open;
@@ -42,5 +57,5 @@ document.addEventListener('click',function(event){
   if(t)[0,80,250,700].forEach(function(ms){setTimeout(apply,ms);});
 },true);
 if(document.readyState!=='loading')schedule();
-window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule};
+window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability};
 })();
