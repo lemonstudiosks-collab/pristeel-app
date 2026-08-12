@@ -53,6 +53,8 @@ const {JSDOM}=require('jsdom');
  assert.deepStrictEqual(ids('ANF-8910 Anfrage Schweißbaugruppen für 05510'),['e8910'],'ANF-8910 must not map to ANF-8915');
  assert.deepStrictEqual(ids('ANF-8915 Anfrage Schweissgestell 03829'),['e8915'],'ANF-8915 must remain separate');
  assert.deepStrictEqual(ids('ANF-8910 / ANF-8915 gemeinsame Rückmeldung'),['e8910','e8915'],'Mixed EVOSYS RFQs must be detected as multi-project');
+ assert.deepStrictEqual(ids('ANF-8910 / ANF-08915 gemeinsame Rückmeldung'),['e8910','e8915'],'Zero-padded ANF-08915 must normalize to ANF-8915 and remain mixed');
+ assert(T.classifyCorpus('ANF-8910 / ANF-08915 gemeinsame Rückmeldung',idx).mixed,'Mixed EVOSYS message must be blocked from one-project normalization');
  assert.deepStrictEqual(ids('260784 Airbus H24X Anfrage Fertigung'),['s784'],'STACON 260784 must map only to its own RFQ');
  assert.deepStrictEqual(ids('Nahtvorbereitung ES-W001 kurze Nachfrage'),['sw001'],'STACON ES-W001 must map only to Lagerhalle project');
  assert.deepStrictEqual(ids('Dukley Seafront Restoran BUDVA'),['ibudva'],'Italian Style Budva must map only to Dukley/Budva');
