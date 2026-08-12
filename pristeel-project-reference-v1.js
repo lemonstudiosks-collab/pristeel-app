@@ -1,6 +1,7 @@
 /* PRISTEEL canonical project reference v1
  * Additive compatibility layer around projects.business_ref.
  * Legacy projects.ref is never rewritten automatically.
+ * Unsafe/free-text legacy refs are display/history only and never become strong identity signals.
  */
 (function(){
 'use strict';
@@ -9,6 +10,13 @@ if(window.PSTProjectReferenceV1)return;
 var writesWrapped=false,emailWrapped=false;
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function tidy(v){return String(v||'').trim().replace(/\s*\/\s*/g,'/').replace(/\s*-\s*/g,'-').replace(/\s+/g,' ');}
+function codeish(raw){
+ raw=String(raw||'').trim();if(!raw||raw.length>45)return false;
+ var words=raw.split(/\s+/).filter(Boolean);if(words.length>3)return false;
+ if(/\b(eur|usd|chf|gbp|kg|ton|scope|ofert|offer|preis|price|referenz|projekt|project)\b/i.test(raw))return false;
+ if(!/\d/.test(raw))return false;
+ return /[A-Za-z]/.test(raw)||/^\d{4,}$/.test(raw);
+}
 function clean(v){
  var raw=String(v||'').trim();if(!raw)return'';
  var m;
@@ -19,19 +27,26 @@ function clean(v){
  m=raw.match(/(?:Projekt-?\/?Auftragsnummer|Auftragsnummer)\s*:\s*([A-Za-z0-9-]{4,})/i);if(m)return tidy(m[1]);
  m=raw.match(/^Projekt\s+([0-9][A-Za-z0-9-]{3,})(?:\s*[|/·]|$)/i);if(m)return tidy(m[1]);
  var first=raw.split(/\s+(?:\||·|\+)\s+|\s+\/\s+/)[0].trim();
- if(first!==raw&&first.length<=45&&/\d/.test(first)&&!/(eur|usd|chf|gbp|kg|ton|scope|ofert|offer|preis|price)/i.test(first))return tidy(first);
- if(raw.length<=45&&/\d/.test(raw)&&!/(eur|usd|chf|gbp|kg|ton|scope|ofert|offer|preis|price|referenz)/i.test(raw))return tidy(raw);
+ if(first!==raw&&codeish(first))return tidy(first);
+ if(codeish(raw))return tidy(raw);
  return'';
 }
 function canonical(p){
  var b=String(p&&p.business_ref||'').trim();if(b)return tidy(b);
- var c=clean(p&&(p.ref||p.reference));return c||String(p&&(p.ref||p.reference)||'').trim();
+ return clean(p&&(p.ref||p.reference));
 }
+function display(p){return canonical(p)||String(p&&(p.ref||p.reference)||'').trim();}
 function key(p){return norm(p&&p.name)+'|'+norm(p&&p.client)+'|'+norm(canonical(p));}
 function enrichProfile(profile,businessById){
  if(!profile||!profile.p)return profile;
+ var legacy=String(profile.p.ref||profile.p.reference||'').trim().toLowerCase();
  var b=String(profile.p.business_ref||businessById&&businessById[String(profile.p.id)]||'').trim();
- if(b){profile.p.business_ref=b;var refs=Array.isArray(profile.refs)?profile.refs:[];var low=b.toLowerCase();if(refs.indexOf(low)<0)refs.unshift(low);profile.refs=refs;}
+ var safe=b||clean(profile.p.ref||profile.p.reference);
+ if(b)profile.p.business_ref=b;
+ var refs=Array.isArray(profile.refs)?profile.refs.slice():[];
+ if(legacy)refs=refs.filter(function(r){return String(r||'').trim().toLowerCase()!==legacy;});
+ if(safe){var low=String(safe).toLowerCase();refs=refs.filter(function(r){return String(r||'').toLowerCase()!==low;});refs.unshift(low);}
+ profile.refs=refs;
  return profile;
 }
 function wrapEmailProfiles(){
@@ -76,5 +91,5 @@ function decorateForm(){
 }
 function install(){wrapProjectWrites();wrapEmailProfiles();decorateForm();}
 install();[0,80,220,600,1200].forEach(function(ms){setTimeout(install,ms);});document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTProjectReferenceV1={install:install,norm:norm,tidy:tidy,clean:clean,canonical:canonical,key:key,enrichProfile:enrichProfile,wrapEmailProfiles:wrapEmailProfiles,wrapProjectWrites:wrapProjectWrites,decorateForm:decorateForm,_state:function(){return{writesWrapped:writesWrapped,emailWrapped:emailWrapped};}};
+window.PSTProjectReferenceV1={install:install,norm:norm,tidy:tidy,codeish:codeish,clean:clean,canonical:canonical,display:display,key:key,enrichProfile:enrichProfile,wrapEmailProfiles:wrapEmailProfiles,wrapProjectWrites:wrapProjectWrites,decorateForm:decorateForm,_state:function(){return{writesWrapped:writesWrapped,emailWrapped:emailWrapped};}};
 })();
