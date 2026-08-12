@@ -3,6 +3,7 @@
  * Canonical rule:
  *   1) If documents_registry contains one or more QUO rows, use those as ourOffers.
  *   2) Otherwise fall back to legacy "OFERTA JONE" rows in offers.
+ *   3) The newest canonical row is currentOurOffer; older rows remain in ourOfferHistory.
  * No rows are moved, rewritten or deleted.
  */
 (function(){
@@ -24,11 +25,19 @@ function uniq(rows){
     return true;
   });
 }
+function stamp(row){
+  var v=row&&(row.updated_at||row.created_at||row.date||(row.offer_state&&row.offer_state.date))||'';
+  var t=Date.parse(v);return isFinite(t)?t:0;
+}
+function newestFirst(rows){return uniq(rows).slice().sort(function(a,b){return stamp(b)-stamp(a);});}
 function canonicalize(data){
   if(!data||typeof data!=='object')return data;
-  var registry=uniq(arr(data.docs).filter(isRegistryQuote));
-  var legacy=uniq(arr(data.offers).filter(isLegacyOurOffer));
-  data.ourOffers=registry.length?registry:legacy;
+  var registry=newestFirst(arr(data.docs).filter(isRegistryQuote));
+  var legacy=newestFirst(arr(data.offers).filter(isLegacyOurOffer));
+  var canonical=registry.length?registry:legacy;
+  data.ourOffers=canonical;
+  data.currentOurOffer=canonical[0]||null;
+  data.ourOfferHistory=canonical.slice(1);
   data.ourOfferSource=registry.length?'documents_registry':(legacy.length?'legacy_offers':'none');
   return data;
 }
@@ -52,6 +61,7 @@ document.addEventListener('pst:modules-ready',install,{once:true});
 window.PSTOurOfferSourceV1={
   install:install,
   canonicalize:canonicalize,
+  newestFirst:newestFirst,
   isRegistryQuote:isRegistryQuote,
   isLegacyOurOffer:isLegacyOurOffer
 };
