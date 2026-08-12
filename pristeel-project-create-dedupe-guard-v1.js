@@ -1,7 +1,7 @@
 /* PRISTEEL project create dedupe guard v1
  * Narrow safety wrapper for POST /projects only.
- * Uses the same exact duplicate key as Project Duplicate Manager:
- * normalized name + client + ref/reference.
+ * Uses canonical project identity: normalized name + client + business reference.
+ * business_ref is preferred; legacy ref/reference remains a compatibility fallback.
  *
  * 0 exact matches: create normally.
  * 1 exact match: reuse the existing project instead of inserting a duplicate.
@@ -17,11 +17,12 @@ window.__pstProjectCreateDedupeGuardV1=true;
 var installed=false;
 function arr(v){return Array.isArray(v)?v:[];}
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
-function keyProject(p){return norm(p&&p.name)+'|'+norm(p&&p.client)+'|'+norm(p&&(p.ref||p.reference));}
+function businessRef(p){var R=window.PSTProjectReferenceV1;return R&&typeof R.canonical==='function'?R.canonical(p):String(p&&(p.business_ref||p.ref||p.reference)||'');}
+function keyProject(p){var R=window.PSTProjectReferenceV1;return R&&typeof R.key==='function'?R.key(p):(norm(p&&p.name)+'|'+norm(p&&p.client)+'|'+norm(businessRef(p)));}
 function isProjectCreate(path,method){return String(method||'GET').toUpperCase()==='POST'&&/^projects(?:\?|$)/.test(String(path||''));}
 function displayName(p){return String(p&&p.name||'Projekt').trim()||'Projekt';}
 function conflictError(project,matches){
-  var e=new Error('Ekzistojnë '+matches.length+' projekte me të njëjtin emër, klient dhe referencë për “'+displayName(project)+'”. Projekti i ri NUK u krijua. Hape Projektet → Dublikatat dhe zgjidh kopjen canonical.');
+  var e=new Error('Ekzistojnë '+matches.length+' projekte me të njëjtin emër, klient dhe referencë canonical për “'+displayName(project)+'”. Projekti i ri NUK u krijua. Hape Projektet → Dublikatat dhe zgjidh kopjen canonical.');
   e.code='PST_DUPLICATE_PROJECT_CONFLICT';
   e.matches=matches.map(function(x){return x&&x.id;}).filter(Boolean);
   return e;
@@ -41,7 +42,7 @@ function install(){
     var requested=Array.isArray(body)?body:[body];
     if(!requested.length)return original.apply(this,arguments);
 
-    var existing=arr(await original.call(this,'projects?select=id,name,client,ref,status,created_at&order=created_at.asc&limit=5000'));
+    var existing=arr(await original.call(this,'projects?select=id,name,client,ref,business_ref,status,created_at&order=created_at.asc&limit=5000'));
     var byKey={};
     existing.forEach(function(p){
       var key=keyProject(p);
@@ -82,6 +83,7 @@ function install(){
 window.PSTProjectCreateDedupeGuard={
   install:install,
   keyProject:keyProject,
+  businessRef:businessRef,
   isInstalled:function(){return installed;}
 };
 
