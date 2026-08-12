@@ -26,7 +26,8 @@ const {JSDOM}=require('jsdom');
   w.eval(code);
   const api=w.PSTSupplierOfferCurrencyV1;
   assert(api,'Supplier currency module must install');
-  assert(w.document.getElementById('oe-currency'),'Currency selector must be injected');
+  await w.pstOpenOffer(null,null);
+  assert(w.document.getElementById('oe-currency'),'Currency selector must be injected when the editor opens');
 
   api.setControls('USD',null);
   writes.length=0;
