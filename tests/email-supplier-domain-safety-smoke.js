@@ -68,7 +68,7 @@ const {JSDOM}=require('jsdom');
   assert(/reference/.test(inserted[0].match_method),'BUNT assignment must be evidence-driven, not email-unique');
   assert(!/email-unique|email-shared/.test(inserted[0].match_method),'Suppressed supplier domain must not contribute ownership score');
 
-  assert(bootstrap.includes("pristeel-email-supplier-domain-safety-v1.js?v=20260812-1"),'Bootstrap must load supplier-domain safety');
+  assert(bootstrap.includes("pristeel-email-supplier-domain-safety-v1.js?v=20260812-2"),'Bootstrap must load synchronous supplier-domain safety');
   assert(bootstrap.indexOf('pristeel-email-core.js')<bootstrap.indexOf('pristeel-email-supplier-domain-safety-v1.js'),'Supplier-domain safety must load after Gmail core');
 
   dom.window.close();
