@@ -1,6 +1,7 @@
 /* PRISTEEL Gmail intake safety helpers
  * - Zgjedh vetem revisionin me te ri.
  * - Kur mungon tokeni, shfaq autorizim te nisur nga klikimi qe Chrome te mos bllokoje pop-up-in.
+ * - Ngarkon project-identity guard pas intake-it per te bllokuar company-only matching.
  * No MutationObserver or interval.
  */
 (function(){
@@ -86,10 +87,15 @@ function renderGoogleAuth(root){
   };
   return true;
 }
-function apply(){var root=document.getElementById('pgi2-bg');if(!root)return;renderGoogleAuth(root);normalize(root);}
+function loadProjectIdentityGuard(){
+  if(window.__pstGmailProjectIdentityGuardV1||document.querySelector('script[data-pst-gmail-project-identity-guard]'))return;
+  var s=document.createElement('script');s.dataset.pstGmailProjectIdentityGuard='1';s.src='pristeel-gmail-project-identity-guard-v1.js?v=20260812-1';s.defer=true;s.onerror=function(){console.error('Nuk u ngarkua Gmail project identity guard.');};document.head.appendChild(s);
+}
+function apply(){var root=document.getElementById('pgi2-bg');if(!root)return;renderGoogleAuth(root);normalize(root);if(window.PSTGmailProjectIdentityGuardV1&&typeof window.PSTGmailProjectIdentityGuardV1.applyIntake==='function')window.PSTGmailProjectIdentityGuardV1.applyIntake();}
 function schedule(){[0,100,350,900,1800,3500].forEach(function(ms){setTimeout(apply,ms);});}
+loadProjectIdentityGuard();
 document.addEventListener('pst:gmail-intake-request',schedule);
 document.addEventListener('pst:gmail-handoff-fallback',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.PSTGmailIntakeRevisionFixV1={base:base,rank:rank,normalize:normalize,renderGoogleAuth:renderGoogleAuth};
+window.PSTGmailIntakeRevisionFixV1={base:base,rank:rank,normalize:normalize,renderGoogleAuth:renderGoogleAuth,loadProjectIdentityGuard:loadProjectIdentityGuard};
 })();
