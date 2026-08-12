@@ -55,18 +55,22 @@ function install(){
   P.load=wrapped;
   return true;
 }
-function loadHistoryUi(){
-  if(window.PSTOurOfferHistoryUiV1||document.querySelector('script[data-pst-our-offer-history-ui]'))return;
-  var s=document.createElement('script');s.src='pristeel-our-offer-history-ui-v1.js?v=20260812-1';s.defer=true;s.setAttribute('data-pst-our-offer-history-ui','1');document.head.appendChild(s);
+function loadUi(path,attr){
+  if(document.querySelector('script['+attr+']'))return;
+  var s=document.createElement('script');s.src=path;s.defer=true;s.setAttribute(attr,'1');document.head.appendChild(s);
+}
+function loadIntegrityUi(){
+  if(!window.PSTOurOfferHistoryUiV1)loadUi('pristeel-our-offer-history-ui-v1.js?v=20260812-1','data-pst-our-offer-history-ui');
+  if(!window.PSTProjectPipelineConsistencyV1)loadUi('pristeel-project-pipeline-consistency-v1.js?v=20260812-1','data-pst-pipeline-consistency');
 }
 
-install();loadHistoryUi();
-document.addEventListener('pst:modules-ready',function(){install();loadHistoryUi();},{once:true});
+install();loadIntegrityUi();
+document.addEventListener('pst:modules-ready',function(){install();loadIntegrityUi();},{once:true});
 window.PSTOurOfferSourceV1={
   install:install,
   canonicalize:canonicalize,
   newestFirst:newestFirst,
-  loadHistoryUi:loadHistoryUi,
+  loadIntegrityUi:loadIntegrityUi,
   isRegistryQuote:isRegistryQuote,
   isLegacyOurOffer:isLegacyOurOffer
 };
