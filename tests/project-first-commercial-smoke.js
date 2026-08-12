@@ -80,3 +80,4 @@ require('./our-offer-history-ui-smoke.js');
 require('./supplier-offer-currency-smoke.js');
 require('./project-pipeline-consistency-smoke.js');
 require('./project-reference-smoke.js');
+require('./email-supplier-domain-safety-smoke.js');
