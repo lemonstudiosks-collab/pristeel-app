@@ -31,3 +31,5 @@ const {JSDOM}=require('jsdom');
   dom.window.close();
   console.log('Our-offer revision UI smoke test passed.');
 })();
+
+require('./project-email-review-ui-smoke.js');
