@@ -10,6 +10,7 @@ const w = dom.window;
 w.console = console;
 w.PSTProjectDataIntegrity = { safe: async () => [] };
 w.eval(fs.readFileSync('pristeel-project-bulk-gmail-recovery-v1.js', 'utf8'));
+w.eval(fs.readFileSync('pristeel-project-linked-gmail-recovery-v2.js', 'utf8'));
 
 const B = w.PSTBulkGmailRecovery;
 assert(B, 'Bulk recovery API missing');
@@ -46,6 +47,30 @@ const deduped = B.uniqueFiles([
 ]);
 assert.deepStrictEqual(Array.from(deduped, x => x.filename), ['offer.pdf', 'drawing.pdf']);
 
-console.log('Bulk Gmail recovery isolation smoke test passed.');
+const L = w.PSTLinkedGmailRecoveryV2 && w.PSTLinkedGmailRecoveryV2._test;
+assert(L, 'Linked Gmail recovery test API missing');
+
+const collapsed = L.collapseRepeatedFiles([
+  { key:'m1:a1', filename:'RECHNUNG - PRISTEEL - EVOSYS LASER .pdf', size:70000, mimeType:'application/pdf', internalDate:1000 },
+  { key:'m2:a2', filename:'RECHNUNG - PRISTEEL - EVOSYS LASER .pdf', size:70000, mimeType:'application/pdf', internalDate:2000 },
+  { key:'m3:a3', filename:'image001.png', size:3300, mimeType:'image/png', inline:true, internalDate:3000 },
+  { key:'m4:a4', filename:'RECHNUNG - PRISTEEL - EVOSYS LASER .pdf', size:71000, mimeType:'application/pdf', internalDate:4000 }
+]);
+assert.strictEqual(collapsed.files.length, 2, 'Exact Gmail copies should collapse but changed-size files must remain');
+assert.strictEqual(collapsed.duplicates, 1, 'Repeated exact attachment was not counted');
+assert.strictEqual(collapsed.signatures, 1, 'Inline signature was not filtered');
+assert.strictEqual(collapsed.files[1].duplicateCount, 2, 'Collapsed representative should record its Gmail copy count');
+assert.strictEqual(collapsed.files[1].internalDate, 2000, 'Newest repeated Gmail copy should represent the group');
+
+const technical = [
+  { key:'pdf', filename:'EVO_119.029_0.PDF', size:149000, internalDate:1000 },
+  { key:'dxf', filename:'EVO_119.029_0.DXF', size:3000000, internalDate:1000 },
+  { key:'stp', filename:'EVO_119.029_0.stp', size:1800000, internalDate:1000 }
+];
+L.markRecommended(technical);
+assert(technical.every(x => x.recommended === true), 'PDF/DXF/STP with the same basename are distinct technical files and should all remain selectable');
+assert.notStrictEqual(L.versionFamily(technical[0]), L.versionFamily(technical[1]), 'Different technical extensions must not share one version family');
+
+console.log('Bulk + linked Gmail recovery isolation/dedup smoke test passed.');
 dom.window.close();
 process.exit(0);
