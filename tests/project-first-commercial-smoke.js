@@ -23,7 +23,11 @@ const {JSDOM}=require('jsdom');
   const integrity={
     project:{id:'p1',name:'Dukley',client:'ITALIAN STYLE',status:'aktiv',drive_folder_id:'d1'},
     emails:[],contacts:[],bom:[],rfqs:[],
-    supplierOffers:[{id:'o1',supplier:'Sector Construction',price_kg:1.85,total_eur:0,currency:'EUR',created_at:'2026-08-09T08:00:00Z',notes:'Zinkimi i struktures metalike: 0.42 EUR/kg pa TVSH.\nPowder Coating pas zinkimit: 0.56 EUR/kg · Pa TVSH'}],
+    supplierOffers:[
+      {id:'o1',supplier:'Sector Construction',price_kg:1.85,total_eur:1000,currency:'EUR',created_at:'2026-08-09T08:00:00Z',notes:'Zinkimi i struktures metalike: 0.42 EUR/kg pa TVSH.\nPowder Coating pas zinkimit: 0.56 EUR/kg · Pa TVSH'},
+      {id:'o2',supplier:'USD pa FX',price_kg:1.10,total_eur:1200,currency:'USD',created_at:'2026-08-09T09:00:00Z',notes:''},
+      {id:'o3',supplier:'USD me FX',price_kg:2.00,total_eur:2000,currency:'USD',exchange_rate_to_eur:0.80,created_at:'2026-08-09T10:00:00Z',notes:''}
+    ],
     ourOffers:[],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[]}
   };
   w.PSTProjectDataIntegrity={load:async()=>integrity};
@@ -33,6 +37,10 @@ const {JSDOM}=require('jsdom');
   w.eval(pf2);
   w.eval(commercial);
   await w.pstOpenProjectWorkspace('p1');
+
+  assert.strictEqual(w.PSTProjectFirstCommercialV1._test.eurPrice(integrity.supplierOffers[0]),1.85,'EUR offer must normalize 1:1');
+  assert.strictEqual(w.PSTProjectFirstCommercialV1._test.eurPrice(integrity.supplierOffers[1]),null,'Foreign offer without FX must be excluded from EUR ranking');
+  assert.strictEqual(w.PSTProjectFirstCommercialV1._test.eurPrice(integrity.supplierOffers[2]),1.6,'Foreign offer with explicit FX must normalize to EUR');
 
   const next=w.document.querySelector('[data-pf2-action="tab:commercial"]');
   assert(next,'Overview must expose the commercial comparison next-step action');
@@ -47,6 +55,14 @@ const {JSDOM}=require('jsdom');
   assert(text.includes('0,42 EUR/kg'),'Comparison must recover zinc rate from EUR/kg notes');
   assert(text.includes('0,56 EUR/kg'),'Comparison must recover coating rate from EUR/kg notes');
   assert(text.includes('Pa TVSH'),'Comparison must preserve supplier VAT note');
+  assert(text.includes('Pa kurs FX'),'Foreign offer without FX must show a safety warning');
+  assert(text.includes('≈ 1,60 EUR/kg'),'Foreign offer with FX must show normalized EUR rate');
+
+  const rows=[...table.querySelectorAll('tbody tr')];
+  const noFx=rows.find(r=>r.textContent.includes('USD pa FX'));
+  const withFx=rows.find(r=>r.textContent.includes('USD me FX'));
+  assert(noFx && !noFx.classList.contains('best'),'Foreign offer without FX must never win raw-number ranking');
+  assert(withFx && withFx.classList.contains('best'),'Lowest normalized EUR offer should be marked best');
 
   dom.window.close();
   console.log('Project-first commercial comparison smoke test passed.');
