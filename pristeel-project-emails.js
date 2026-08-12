@@ -9,6 +9,7 @@ var files=[
   'pristeel-project-create-dedupe-guard-v1.js?v=20260812-businessref1',
   'pristeel-gmail-tab-handoff.js?v=20260809-2',
   'pristeel-email-core.js?v=20260801-2',
+  'pristeel-email-supplier-domain-safety-v1.js?v=20260812-1',
   'pristeel-email-full-body-v1.js?v=20260808-2',
   'pristeel-google-workspace-auth.js?v=20260806-3',
   'pristeel-project-routing-rules.js?v=20260802-2',
