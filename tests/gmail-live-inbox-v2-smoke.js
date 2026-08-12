@@ -7,6 +7,10 @@ const {JSDOM}=require('jsdom');
  assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source),'Gmail live v2 must not observe or poll');
  assert(source.includes('LIST_WAIT=4500')&&source.includes('MSG_WAIT=3200'),'Gmail live waits are not bounded');
  assert(source.includes('Krijo / Lidhe projektin'),'Gmail live intake action is missing');
+ assert(source.includes('#page-workspace-inbox .pst-ws-card-title{font-size:14px!important'),'Inbox card titles must remain readable');
+ assert(source.includes('#page-workspace-inbox .pst-ws-action-title{font-size:13px!important'),'Inbox action titles must remain readable');
+ assert(source.includes('#page-workspace-inbox #pst-gli-status{font-size:11.5px!important'),'Gmail live status must remain readable');
+ assert(!source.includes('#page-workspace-commercial .pst-ws-card-title'),'Inbox readability must not alter the commercial/document center page');
  const dom=new JSDOM(`<!doctype html><html><body>
    <div id="pst-ws-sidebar"><button class="pst-ws-navbtn" data-key="inbox"><span>Inbox</span></button></div>
    <div id="page-workspace-inbox" class="active" style="display:block"><div class="pst-ws-page"><div class="pst-ws-head"></div></div></div>
@@ -22,6 +26,7 @@ const {JSDOM}=require('jsdom');
  w.pstWorkspaceGo=()=>{};
  w.open=()=>{};
  w.eval(source);
+ assert(w.document.getElementById('pst-gmail-live-inbox-readable-css'),'Scoped inbox readability CSS was not installed');
  w.PSTGmailLiveInboxV2.decorate();
  await new Promise(r=>setTimeout(r,80));
  assert(w.document.body.textContent.includes('RFQ New Project'),'Live Gmail did not render Gmail data');
