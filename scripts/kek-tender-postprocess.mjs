@@ -28,6 +28,8 @@ export function normalizeTenderRow(row){
   const corpus=[row?.title,row?.fpp_description].filter(Boolean).join(' ');
   const n=norm(corpus);
   const currentReasons=reasons(row);
+  const profileTokens=['ipe','hea','heb','upe','upn'];
+  const standaloneProfile=profileTokens.find(token=>wholeWord(corpus,token))||'';
   const profileReason=currentReasons.map(norm).find(r=>/^lende e pare: (ipe|hea|heb|upe|upn)$/.test(r));
   if(profileReason){
     const token=profileReason.match(/(ipe|hea|heb|upe|upn)$/)?.[1]||'';
@@ -39,15 +41,15 @@ export function normalizeTenderRow(row){
   }
 
   const hasSteel=hasAny(n,['celik','steel']);
-  const rawNoun=hasAny(n,['llamar','shufr','profile','trar','gyp','tub','litar','zinxhir','armatur','bobin','coil']);
+  const rawNoun=hasAny(n,['llamar','shufr','profile','trar','gyp','tub','litar','zinxhir','armatur','bobin','coil'])||Boolean(standaloneProfile);
   const structureNoun=hasAny(n,['konstruksion','strukture','platform','shkall','shtyll','rrethoje','grating','mbajtese metal']);
   const patch={};
   const added=[];
 
-  if(hasSteel&&rawNoun){
+  if((hasSteel&&rawNoun)||standaloneProfile){
     patch.category='raw_material';
-    patch.relevance_score=Math.max(Number(row?.relevance_score)||0,75);
-    added.push('kombinim material + çelik');
+    patch.relevance_score=Math.max(Number(row?.relevance_score)||0,standaloneProfile?78:75);
+    added.push(standaloneProfile?`profil çeliku: ${standaloneProfile.toUpperCase()}`:'kombinim material + çelik');
   }
   if((hasSteel&&structureNoun)||hasAny(n,['konstruksion metalik','strukture metalike','steel structure'])){
     patch.category='steel_structure';
