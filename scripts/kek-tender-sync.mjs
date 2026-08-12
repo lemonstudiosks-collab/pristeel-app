@@ -34,8 +34,8 @@ function stripTags(value) {
 function cellsFromRow(rowHtml) {
   const cells = [];
   const re = /<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi;
-  let m;
-  while ((m = re.exec(rowHtml))) cells.push(stripTags(m[1]));
+  let match;
+  while ((match = re.exec(rowHtml))) cells.push(stripTags(match[1]));
   return cells;
 }
 
@@ -48,56 +48,68 @@ function absoluteUrl(base, href) {
 function detailUrlFromRow(rowHtml, baseUrl) {
   const links = [];
   const re = /href\s*=\s*["']([^"']+)["']/gi;
-  let m;
-  while ((m = re.exec(rowHtml))) links.push(absoluteUrl(baseUrl, m[1]));
+  let match;
+  while ((match = re.exec(rowHtml))) links.push(absoluteUrl(baseUrl, match[1]));
   return links.find(url => /DocumentManagement|DokumentPodaciFrm\.aspx/i.test(url)) || '';
 }
 
 function isoDateFromKosovo(value) {
-  const m = text(value).match(/\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b/);
-  if (!m) return '';
-  const dd = m[1].padStart(2, '0');
-  const mm = m[2].padStart(2, '0');
-  return `${m[3]}-${mm}-${dd}`;
+  const match = text(value).match(/\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b/);
+  if (!match) return '';
+  return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
 }
 
 function dateCells(cells) {
-  return cells.map((value, index) => ({ index, value, iso: isoDateFromKosovo(value) })).filter(x => x.iso);
+  return cells
+    .map((value, index) => ({ index, value, iso: isoDateFromKosovo(value) }))
+    .filter(item => item.iso);
 }
 
 function likelyTitle(cells, publicationIndex, fppIndex) {
   if (fppIndex > 0) {
-    const before = text(cells[fppIndex - 1]);
-    if (before && before.length > 3 && !/^\d+$/.test(before)) return before;
+    const beforeFpp = text(cells[fppIndex - 1]);
+    if (beforeFpp && beforeFpp.length > 3 && !/^\d+$/.test(beforeFpp)) return beforeFpp;
   }
+
   const start = publicationIndex >= 0 ? publicationIndex + 1 : 0;
   const end = fppIndex > start ? fppIndex : cells.length;
   const candidates = cells.slice(start, end)
-    .map((value, offset) => ({ value: text(value), index: start + offset }))
-    .filter(x => x.value.length > 4)
-    .filter(x => !/njoftim|formular|b0\d|b5\d|dokument/i.test(norm(x.value)))
-    .sort((a, b) => b.value.length - a.value.length);
-  return candidates[0]?.value || '';
+    .map(value => text(value))
+    .filter(value => value.length > 4)
+    .filter(value => !/njoftim|formular|b0\d|b5\d|dokument/i.test(norm(value)))
+    .sort((a, b) => b.length - a.length);
+  return candidates[0] || '';
+}
+
+function dedupeRows(rows) {
+  const unique = new Map();
+  for (const row of rows || []) {
+    const key = sourceKey(row);
+    if (!unique.has(key)) unique.set(key, row);
+  }
+  return [...unique.values()];
 }
 
 export function parseSearchHtml(html, sourceUrl = DEFAULT_KRPP_URL) {
   const rows = [];
   const rowRe = /<tr\b[^>]*>[\s\S]*?<\/tr>/gi;
   let match;
-  while ((match = rowRe.exec(String(html || '')) ) {
+
+  while ((match = rowRe.exec(String(html || '')))) {
     const rowHtml = match[0];
     const cells = cellsFromRow(rowHtml);
     if (!cells.length) continue;
 
-    const procurementIndex = cells.findIndex(v => KEK_PROCUREMENT_RE.test(text(v)));
+    const procurementIndex = cells.findIndex(value => KEK_PROCUREMENT_RE.test(text(value)));
     if (procurementIndex < 0) continue;
-    const procurementNo = text(cells[procurementIndex]);
-    const authorityIndex = cells.findIndex(v => KEK_AUTHORITY_RE.test(v));
+
+    const authorityIndex = cells.findIndex(value => KEK_AUTHORITY_RE.test(value));
     if (authorityIndex < 0) continue;
 
-    const publicationIndex = cells.findIndex(v => /^20\d{2}\/KEK-/i.test(text(v)));
+    const procurementNo = text(cells[procurementIndex]);
+    const publicationIndex = cells.findIndex(value => /^20\d{2}\/KEK-/i.test(text(value)));
     const publicationNo = publicationIndex >= 0 ? text(cells[publicationIndex]) : '';
-    const fppIndex = cells.findIndex(v => FPP_RE.test(text(v)));
+    const fppIndex = cells.findIndex(value => FPP_RE.test(text(value)));
     const fpp = fppIndex >= 0 ? text(cells[fppIndex]) : '';
     const title = likelyTitle(cells, publicationIndex, fppIndex);
     if (!title) continue;
@@ -105,14 +117,14 @@ export function parseSearchHtml(html, sourceUrl = DEFAULT_KRPP_URL) {
     const dates = dateCells(cells);
     const publishedDate = dates.length ? dates[dates.length - 1].iso : '';
     const deadline = dates.length > 1 ? dates[dates.length - 2].iso : '';
-    const contractType = cells.find(v => /^(Furnizim|Pun[eë]|Sh[eë]rbime)$/i.test(text(v))) || '';
-    const procedure = cells.find(v => /procedur/i.test(norm(v))) || '';
-    const contractValueBand = cells.find(v => /vler[eë]\s+(e\s+)?(madhe|mesme|ul[eë]t)/i.test(norm(v))) || '';
+    const contractType = cells.find(value => /^(Furnizim|Pun[eë]|Sh[eë]rbime)$/i.test(text(value))) || '';
+    const procedure = cells.find(value => /procedur/i.test(norm(value))) || '';
+    const contractValueBand = cells.find(value => /vler[eë]\s+(e\s+)?(madhe|mesme|ul[eë]t)/i.test(norm(value))) || '';
     const fppDescription = fppIndex >= 0 && cells[fppIndex + 1] && !/^(Furnizim|Pun[eë]|Sh[eë]rbime)$/i.test(text(cells[fppIndex + 1]))
       ? text(cells[fppIndex + 1])
       : '';
     const detailUrl = detailUrlFromRow(rowHtml, sourceUrl);
-    const isRetender = /ri[- ]?tender|ritender/i.test(norm(title)) || cells.some(v => /^po$/i.test(text(v)) && /tender/i.test(norm(cells.join(' '))));
+    const rowText = norm(cells.join(' '));
 
     rows.push({
       procurement_no: procurementNo,
@@ -129,71 +141,81 @@ export function parseSearchHtml(html, sourceUrl = DEFAULT_KRPP_URL) {
       currency: 'EUR',
       deadline: deadline || null,
       published_date: publishedDate || null,
-      is_retender: isRetender,
+      is_retender: /ri[- ]?tender|ritender/i.test(norm(title)) || (/\bpo\b/.test(rowText) && /tender/.test(rowText)),
       source_url: sourceUrl,
       detail_url: detailUrl || null,
       payload: { cells }
     });
   }
+
   return dedupeRows(rows);
 }
 
-function dedupeRows(rows) {
-  const map = new Map();
-  for (const row of rows || []) {
-    const key = sourceKey(row);
-    if (!map.has(key)) map.set(key, row);
-  }
-  return [...map.values()];
-}
-
 function hasAny(haystack, terms) {
-  const n = norm(haystack);
-  return terms.find(term => n.includes(norm(term))) || '';
+  const normalized = norm(haystack);
+  return terms.find(term => normalized.includes(norm(term))) || '';
 }
 
 export function classifyTender(row) {
   const corpus = [row?.title, row?.fpp_description, row?.document_type].filter(Boolean).join(' ');
-  const n = norm(corpus);
+  const normalized = norm(corpus);
   const reasons = [];
   let raw = 0;
   let structure = 0;
 
-  const rawStrong = hasAny(n, [
-    'llamarine', 'llamarina', 'celik', 'steel plate', 'steel sheet', 'plate steel',
+  const rawStrong = hasAny(normalized, [
+    'llamarine', 'llamarina', 'steel plate', 'steel sheet', 'plate steel',
     'profile celiku', 'profile metalike', 'trar celiku', 'shufra celiku', 'tuba celiku',
-    'coil', 'bobine celiku', 'armature b500', 'b500c', 'ipe', 'hea', 'heb', 'upe', 'upn',
-    'flat bar', 'kendore celiku', 'angle steel'
+    'gypa celiku', 'gypa te celikut', 'coil', 'bobine celiku', 'armature b500', 'b500c',
+    'ipe', 'hea', 'heb', 'upe', 'upn', 'flat bar', 'kendore celiku', 'angle steel'
   ]);
-  if (rawStrong) { raw += 62; reasons.push(`lëndë e parë: ${rawStrong}`); }
+  if (rawStrong) {
+    raw += 62;
+    reasons.push(`lëndë e parë: ${rawStrong}`);
+  }
 
-  const rawMedium = hasAny(n, ['llamar', 'profile', 'shufr', 'tub metal', 'trar', 'hekur', 'metal sheet']);
-  if (rawMedium && !rawStrong) { raw += 38; reasons.push(`sinjal lënde: ${rawMedium}`); }
+  const rawMedium = hasAny(normalized, ['llamar', 'profile', 'shufr', 'tub metal', 'gyp metal', 'trar', 'hekur', 'metal sheet']);
+  if (rawMedium && !rawStrong) {
+    raw += 38;
+    reasons.push(`sinjal lënde: ${rawMedium}`);
+  }
 
-  const structStrong = hasAny(n, [
+  const structStrong = hasAny(normalized, [
     'konstruksion metalik', 'konstruksione metalike', 'struktura celiku', 'strukture celiku',
     'steel structure', 'platforme metalike', 'platforma metalike', 'shkalle metalike',
     'rrethoje', 'rrethojes', 'grating', 'shtylle metalike', 'shtylla metalike',
     'support steel', 'steel support', 'frame steel', 'ura metalike'
   ]);
-  if (structStrong) { structure += 68; reasons.push(`strukturë: ${structStrong}`); }
-
-  const structMedium = hasAny(n, ['fabrikim', 'fabricim', 'saldim', 'welding', 'galvaniz', 'montim metal', 'mbajtese metal']);
-  if (structMedium) { structure += 34; reasons.push(`punim struktural: ${structMedium}`); }
-
-  if (/\bfurnizim\b/.test(n) && raw > 0) raw += 7;
-  if (/\b(pune|punime|montim|vendosja)\b/.test(n) && structure > 0) structure += 7;
-
-  const fpp = text(row?.fpp).replace(/\D/g, '');
-  if (/^(2711|273[0-9]|4433)/.test(fpp)) {
-    raw += 48;
-    reasons.push(`FPP çelik/profil: ${row.fpp}`);
-  } else if (/^(2851|2852|4421|44212|45223)/.test(fpp)) {
-    structure += 28;
-    reasons.push(`FPP metal/strukturë: ${row.fpp}`);
+  if (structStrong) {
+    structure += 68;
+    reasons.push(`strukturë: ${structStrong}`);
   }
 
-  const genericSteel = hasAny(n, ['celik', 'steel']);
+  const structMedium = hasAny(normalized, ['fabrikim', 'fabricim', 'saldim', 'welding', 'galvaniz', 'montim metal', 'mbajtese metal']);
+  if (structMedium) {
+    structure += 34;
+    reasons.push(`punim struktural: ${structMedium}`);
+  }
+
+  if (/\bfurnizim\b/.test(normalized) && raw > 0) raw += 7;
+  if (/\b(pune|punime|montim|vendosja)\b/.test(normalized) && structure > 0) structure += 7;
+
+  const fpp = text(row?.fpp).replace(/\D/g, '');
+  if (/^2711/.test(fpp)) {
+    raw += 68;
+    reasons.push(`FPP çelik: ${row.fpp}`);
+  } else if (/^(273[0-9]|4433)/.test(fpp)) {
+    raw += 48;
+    reasons.push(`FPP profil/produkt çeliku: ${row.fpp}`);
+  } else if (/^(4421|44212|45223)/.test(fpp)) {
+    structure += 42;
+    reasons.push(`FPP strukturë metalike: ${row.fpp}`);
+  } else if (/^(2851|2852)/.test(fpp)) {
+    structure += 22;
+    reasons.push(`FPP metal: ${row.fpp}`);
+  }
+
+  const genericSteel = hasAny(normalized, ['celik', 'steel']);
   if (genericSteel && raw < 35 && structure < 35) {
     raw += 35;
     reasons.push(`sinjal i përgjithshëm çeliku: ${genericSteel}`);
@@ -202,6 +224,7 @@ export function classifyTender(row) {
   const best = Math.min(100, Math.max(raw, structure));
   let category = 'possible';
   if (best >= 65) category = structure >= raw ? 'steel_structure' : 'raw_material';
+
   return { category, relevance_score: best, match_reasons: reasons };
 }
 
@@ -212,16 +235,15 @@ export function sourceKey(row) {
 }
 
 export function prepareRelevantRows(rows, seenAt = new Date().toISOString(), minScore = 35) {
-  return (rows || []).map(row => {
-    const cls = classifyTender(row);
-    return {
+  return (rows || [])
+    .map(row => ({
       ...row,
       source_key: sourceKey(row),
-      ...cls,
+      ...classifyTender(row),
       last_seen_at: seenAt,
       updated_at: seenAt
-    };
-  }).filter(row => row.relevance_score >= minScore);
+    }))
+    .filter(row => row.relevance_score >= minScore);
 }
 
 async function fetchHtml(url, timeoutMs = 20000) {
@@ -231,7 +253,7 @@ async function fetchHtml(url, timeoutMs = 20000) {
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'PRISTEEL-KEK-Tender-Monitor/1.0 (+https://prissteel.com)',
-        'Accept': 'text/html,application/xhtml+xml'
+        Accept: 'text/html,application/xhtml+xml'
       },
       signal: controller.signal,
       redirect: 'follow'
@@ -287,6 +309,7 @@ async function upsertRows(access, rows) {
     last_seen_at: row.last_seen_at,
     updated_at: row.updated_at
   }));
+
   await rest({
     ...access,
     path: 'kek_tender_watch?on_conflict=source_key',
@@ -353,6 +376,7 @@ export async function runKekTenderSync({
       match_reasons: row.match_reasons
     }))
   };
+
   await writeSummary(summary);
   console.log(`KEK tender sync ${mode}: ${summary.parsed_kek_rows} KEK rows, ${summary.relevant_rows} steel-relevant.`);
   return summary;
