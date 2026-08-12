@@ -99,7 +99,9 @@ function wrapSave(){
     };
     try{return await base.apply(this,arguments);}finally{window.supaFetch=rawFetch;}
   };
-  wrapped.__pstSupplierCurrencyV1=true;wrapped.__base=base;window.pstSaveOffer=wrapped;return true;
+  wrapped.__pstSupplierCurrencyV1=true;
+  wrapped.__pstEmailRateWrapped=!!base.__pstEmailRateWrapped;
+  wrapped.__base=base;window.pstSaveOffer=wrapped;return true;
 }
 function install(){var a=wrapCalc(),b=wrapOpen(),c=wrapSave();return a||b||c;}
 
