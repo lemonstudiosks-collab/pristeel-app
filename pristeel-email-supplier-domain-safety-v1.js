@@ -46,6 +46,6 @@ function install(){
  P.profiles.__pstSupplierDomainSafety=true;P.profiles.__base=base;installed=true;return true;
 }
 function schedule(){[0,50,120,300,700,1400].forEach(function(ms){setTimeout(function(){if(!installed)install();},ms);});}
-schedule();document.addEventListener('pst:modules-ready',function(){install();},{once:true});
+install();schedule();document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 window.PSTEmailSupplierDomainSafetyV1={install:install,supplierDomains:supplierDomains,filterProfiles:filterProfiles,companyMatches:companyMatches,domain:domain,_state:function(){return{installed:installed};}};
 })();
