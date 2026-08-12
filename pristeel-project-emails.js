@@ -2,7 +2,8 @@
 (function(){
 'use strict';
 var files=[
-  'pristeel-login-brand-v1.js?v=20260807-1',
+  'pristeel-auth-persistence.js?v=20260812-remember1',
+  'pristeel-login-brand-v1.js?v=20260812-readable1',
   'pristeel-login-transition-v2.js?v=20260809-identity1',
   'pristeel-project-identity-lock-v1.js?v=20260809-1',
   'pristeel-project-reference-v1.js?v=20260812-3',
@@ -73,6 +74,7 @@ var files=[
   'pristeel-project-attachments-relations-v2.js?v=20260804-1',
   'pristeel-project-integrity-safety-v2.js?v=20260804-1',
   'pristeel-projects-modern-v1.js?v=20260808-2',
+  'pristeel-project-readability-tuning-v1.js?v=20260812-1',
   'pristeel-project-duplicate-manager-v1.js?v=20260812-businessref1',
   'pristeel-project-duplicate-button-fix-v1.js?v=20260808-3',
   'pristeel-modules-unified-v1.js?v=20260804-1',
