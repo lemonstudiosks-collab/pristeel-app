@@ -71,6 +71,22 @@ L.markRecommended(technical);
 assert(technical.every(x => x.recommended === true), 'PDF/DXF/STP with the same basename are distinct technical files and should all remain selectable');
 assert.notStrictEqual(L.versionFamily(technical[0]), L.versionFamily(technical[1]), 'Different technical extensions must not share one version family');
 
-console.log('Bulk + linked Gmail recovery isolation/dedup smoke test passed.');
+const conservative = [
+  { key:'eml', filename:'AW Evosys Laser - Zollcon Anfrage.eml', size:1400000, internalDate:6000 },
+  { key:'tpl', filename:'Evosys Briefvorlage blanko.docx', size:54000, internalDate:5000 },
+  { key:'pdf2', filename:'2026-08-06_Vollmacht Abfertigung 2025 - DE.pdf', size:321000, internalDate:4000 },
+  { key:'inv', filename:'RECHNUNG - PRISTEEL - EVOSYS LASER .pdf', size:70000, internalDate:3000 },
+  { key:'cmr', filename:'CMR AL1000170755.pdf', size:73000, internalDate:2000 }
+];
+L.markRecommended(conservative);
+assert.strictEqual(conservative[0].recommended, false, '.eml exports must stay visible but not be auto-selected');
+assert.strictEqual(conservative[1].recommended, false, 'Blank/template documents must stay visible but not be auto-selected');
+assert.strictEqual(conservative[2].recommended, true, 'Operational PDFs should remain auto-selected');
+assert.strictEqual(conservative[3].recommended, true, 'Invoices should remain auto-selected');
+assert.strictEqual(conservative[4].recommended, true, 'CMR documents should remain auto-selected');
+assert(/Email export/.test(conservative[0].selectionNote), 'Email export must explain why it is manual');
+assert(/Template/.test(conservative[1].selectionNote), 'Template must explain why it is manual');
+
+console.log('Bulk + linked Gmail recovery isolation/dedup/selection smoke test passed.');
 dom.window.close();
 process.exit(0);
