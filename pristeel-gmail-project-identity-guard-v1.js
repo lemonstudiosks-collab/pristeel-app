@@ -19,19 +19,21 @@ var STOP={
   schweissgestell:1,schweissbaugruppen:1,schweissbaugruppe:1,porosi:1,porosia:1,konfirmuar:1,confirmed:1,
   fwd:1,forwarded:1,nachfrage:1,dokument:1,dokumente:1,dokumentacion:1,celicne:1,celicna:1,konstrukciju:1
 };
-var projectCache=null,projectCacheAt=0,collectorProjectId='',collectorHooked=false,mapHooked=false,intakeSeq=0;
+var projectCache=null,projectCacheAt=0,collectorProjectId='',intakeSeq=0;
 
 function arr(v){return Array.isArray(v)?v:[];}
 function uniq(v){var m={};return arr(v).map(function(x){return String(x||'').trim();}).filter(function(x){if(!x||m[x])return false;m[x]=1;return true;});}
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function compact(v){return norm(v).replace(/\s+/g,'');}
+function canonicalRefKey(v){var k=compact(v);return k.replace(/^anf0+(\d{4})$/,'anf$1');}
+function identityCompact(v){return compact(v).replace(/anf0+(\d{4})/g,'anf$1');}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function words(v){return norm(v).split(' ').filter(function(x){return x.length>=5&&!STOP[x];});}
 function safe(path){if(typeof window.supaFetch!=='function')return Promise.resolve([]);return Promise.resolve(window.supaFetch(path)).then(arr).catch(function(e){console.warn('PRISTEEL identity guard optional read:',e&&e.message);return[];});}
 
 function referenceKeys(v){
   var raw=String(v||''),out=[];
-  function add(x){var k=compact(x);if(k.length>=4&&out.indexOf(k)<0)out.push(k);}
+  function add(x){var k=canonicalRefKey(x);if(k.length>=4&&out.indexOf(k)<0)out.push(k);}
   var m=raw.match(/[A-Za-z]{2,}[A-Za-z0-9]*[\s._\/-]*\d{2,}(?:[\s._\/-]*[A-Za-z0-9]+)*/g)||[];m.forEach(add);
   (raw.match(/\b\d{6}\b/g)||[]).forEach(add);
   return out;
@@ -44,7 +46,7 @@ function buildIndex(projects){
   var byId={},knownRef={};
   var items=projects.map(function(p){
     var anchors=[],seen={};
-    function add(value,kind,label){var k=compact(value);if(k.length<4||seen[k])return;seen[k]=1;anchors.push({key:k,kind:kind,label:String(label||value||k)});if(kind!=='semantic')knownRef[k]=1;}
+    function add(value,kind,label){var k=kind==='semantic'?compact(value):canonicalRefKey(value);if(k.length<4||seen[k])return;seen[k]=1;anchors.push({key:k,kind:kind,label:String(label||value||k)});if(kind!=='semantic')knownRef[k]=1;}
     if(p&&p.ref)add(p.ref,'ref',p.ref);
     if(p&&p.business_ref)add(p.business_ref,'business_ref',p.business_ref);
     referenceKeys(p&&p.name||'').forEach(function(k){add(k,'name_ref',k);});
@@ -55,10 +57,10 @@ function buildIndex(projects){
 }
 function hasAnchor(textNorm,textCompact,a){if(!a||!a.key)return false;if(a.kind==='semantic')return (' '+textNorm+' ').indexOf(' '+a.key+' ')>-1;return textCompact.indexOf(a.key)>-1;}
 function classifyCorpus(corpus,index){
-  index=index||{items:[],knownRef:{}};var n=norm(corpus),c=compact(corpus),hits=[];
+  index=index||{items:[],knownRef:{}};var n=norm(corpus),c=identityCompact(corpus),hits=[];
   arr(index.items).forEach(function(item){var matched=arr(item.anchors).filter(function(a){return hasAnchor(n,c,a);});if(matched.length)hits.push({project:item.project,anchors:matched});});
   var unknown=referenceKeys(corpus).filter(function(k){return looksLikeExternalProjectRef(k)&&!index.knownRef[k];});
-  return{hits:hits,unknownRefs:uniq(unknown),mixed:hits.length>1,corpus:String(corpus||'')};
+  return{hits:hits,unknownRefs:uniq(unknown),mixed:hits.length>1||(hits.length>0&&unknown.length>0)||unknown.length>1,corpus:String(corpus||'')};
 }
 async function projectsIndex(force){
   if(!force&&projectCache&&Date.now()-projectCacheAt<30000)return projectCache;
@@ -97,7 +99,7 @@ async function applyIntakeGuard(){
     if(select&&!manual)setSelect(root,'');blockSave(root);guardBanner(root,'bad','Email sistemor, jo projekt','Ky email nuk lidhet automatikisht me projekt.');return true;
   }
   if(result.mixed){
-    if(select&&!manual)setSelect(root,'');blockSave(root);guardBanner(root,'bad','U gjetën disa identitete projekti','Ky thread/email përmban referenca të më shumë se një projekti. Nuk normalizohet automatikisht te një projekt i vetëm.');return true;
+    if(select&&!manual)setSelect(root,'');blockSave(root);guardBanner(root,'bad','U gjetën disa identitete projekti','Ky thread/email përmban disa referenca projekti ose një referencë kontradiktore. Nuk normalizohet automatikisht te një projekt i vetëm.');return true;
   }
   if(result.hits.length===1){
     var target=hitIds[0],name=projectName(index,target);
@@ -121,10 +123,10 @@ function collectorCorpus(row){if(!row)return'';var c=row.cloneNode(true);c.query
 function collectorNote(row,kind,text){var host=row&&row.querySelector('.pgc-main');if(!host)return;var old=host.querySelector('.pgc-identity-note');if(old)old.remove();var n=document.createElement('span');n.className='pgc-identity-note '+kind;n.textContent=text;host.appendChild(n);}
 async function applyCollectorGuard(){
   var modal=document.getElementById('pgc-bg'),pid=String(collectorProjectId||window.__pstCurrentProjectId||'');if(!modal||!pid)return false;var index=await projectsIndex(false);modal=document.getElementById('pgc-bg');if(!modal)return false;
-  var current=index.byId[pid];if(!current)return false;
+  if(!index.byId[pid])return false;
   [].slice.call(modal.querySelectorAll('.pgc-row')).forEach(function(row){
     var cb=row.querySelector('.pgc-thread');if(!cb||cb.disabled)return;var r=classifyCorpus(collectorCorpus(row),index),ids=uniq(r.hits.map(function(h){return String(h.project&&h.project.id||'');}));
-    if(r.mixed){cb.checked=false;collectorNote(row,'bad','Disa projekte në të njëjtin thread — kontroll manual');}
+    if(r.mixed){cb.checked=false;collectorNote(row,'bad','Disa/kontradiktore referenca projekti — kontroll manual');}
     else if(ids.length===1&&ids[0]===pid){cb.checked=true;collectorNote(row,'ok','Identiteti i projektit u verifikua');}
     else if(ids.length===1){cb.checked=false;collectorNote(row,'bad','I takon projektit: '+projectName(index,ids[0]));}
     else if(r.unknownRefs.length){cb.checked=false;collectorNote(row,'bad','Referencë tjetër/pa projekt: '+r.unknownRefs.join(', '));}
@@ -137,12 +139,12 @@ async function applyCollectorGuard(){
 function installCollector(){
   var f=window.pstCollectProjectGmail;if(typeof f!=='function'||f.__pstProjectIdentityGuard)return false;var target=f;
   function wrapped(id){collectorProjectId=String(id||window.__pstCurrentProjectId||'');var r=target.apply(this,arguments);return Promise.resolve(r).then(function(v){setTimeout(applyCollectorGuard,0);return v;});}
-  wrapped.__pstProjectIdentityGuard=true;wrapped.__base=target;window.pstCollectProjectGmail=wrapped;collectorHooked=true;return true;
+  wrapped.__pstProjectIdentityGuard=true;wrapped.__base=target;window.pstCollectProjectGmail=wrapped;return true;
 }
 function installMapHook(){
   var E=window.PSTEmail;if(!E||typeof E.map!=='function'||E.map.__pstProjectIdentityGuard)return false;var target=E.map;
   function wrapped(){var r=target.apply(this,arguments);return Promise.resolve(r).then(function(v){if(document.getElementById('pgc-bg'))setTimeout(applyCollectorGuard,0);return v;});}
-  wrapped.__pstProjectIdentityGuard=true;wrapped.__base=target;E.map=wrapped;mapHooked=true;return true;
+  wrapped.__pstProjectIdentityGuard=true;wrapped.__base=target;E.map=wrapped;return true;
 }
 function installIntakeEvents(){
   document.addEventListener('click',function(e){var t=e.target;if(!t)return;if(t.id==='pgi2-change')setTimeout(applyIntakeGuard,0);},true);
@@ -155,5 +157,5 @@ function css(){if(document.getElementById('pst-gmail-project-identity-css'))retu
 css();install();installIntakeEvents();
 document.addEventListener('pst:modules-ready',install,{once:true});
 setTimeout(function(){install();applyIntakeGuard();},0);
-window.PSTGmailProjectIdentityGuardV1={applyIntake:applyIntakeGuard,applyCollector:applyCollectorGuard,install:install,_test:{norm:norm,compact:compact,referenceKeys:referenceKeys,buildIndex:buildIndex,classifyCorpus:classifyCorpus}};
+window.PSTGmailProjectIdentityGuardV1={applyIntake:applyIntakeGuard,applyCollector:applyCollectorGuard,install:install,_test:{norm:norm,compact:compact,canonicalRefKey:canonicalRefKey,referenceKeys:referenceKeys,buildIndex:buildIndex,classifyCorpus:classifyCorpus}};
 })();
