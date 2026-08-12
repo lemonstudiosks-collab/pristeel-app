@@ -3,6 +3,7 @@ const assert=require('assert');
 const {JSDOM}=require('jsdom');
 
 (async()=>{
+  const refs=fs.readFileSync('pristeel-project-reference-v1.js','utf8');
   const core=fs.readFileSync('pristeel-email-core.js','utf8');
   const safety=fs.readFileSync('pristeel-email-supplier-domain-safety-v1.js','utf8');
   const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
@@ -11,7 +12,8 @@ const {JSDOM}=require('jsdom');
   const inserted=[];
   w.console=console;
   w.supaFetch=async(path,method,body)=>{
-    if(path.startsWith('projects?select='))return[{id:'p1',name:'PROJEKT TENNET · SPIE',client:'SPIE',ref:'BUNT',status:'pritje',location:'Gjermani',pipeline_stage:'supplier_selection'}];
+    if(path.startsWith('projects?select=id,business_ref'))return[{id:'p1',business_ref:'BUNT'}];
+    if(path.startsWith('projects?select='))return[{id:'p1',name:'PROJEKT TENNET · SPIE',client:'SPIE',ref:'PROJEKT TENNET',status:'pritje',location:'Gjermani',pipeline_stage:'supplier_selection'}];
     if(path.startsWith('rfq_log?select='))return[];
     if(path.startsWith('contact_activities?select='))return[];
     if(path.startsWith('project_contacts?select='))return[
@@ -36,11 +38,16 @@ const {JSDOM}=require('jsdom');
     return[];
   };
 
+  // Production order: reference helper loads before core, then supplier-domain safety.
+  w.eval(refs);
   w.eval(core);
   w.eval(safety);
   assert(w.PSTEmailSupplierDomainSafetyV1,'Supplier-domain safety module must install');
+  assert(w.PSTProjectReferenceV1._state().emailWrapped,'Supplier safety must force canonical business-ref profile enrichment synchronously');
   const profiles=await w.PSTEmail.profiles();
   assert.strictEqual(profiles.length,1);
+  assert.strictEqual(profiles[0].p.business_ref,'BUNT','Canonical business_ref must be present before supplier filtering');
+  assert.strictEqual(profiles[0].refs[0],'bunt','BUNT must remain a strong reference signal');
   assert.deepStrictEqual(Array.from(profiles[0].emails),[],'Supplier partner domains must be removed from project-owner email scoring');
   assert.deepStrictEqual(Array.from(profiles[0].supplier_emails).sort(),[
     'dimitar.zakov@vating.com.mk','martin.nedelkovski@elektroterra.mk','zoran@aktiva.com.mk'
@@ -68,7 +75,7 @@ const {JSDOM}=require('jsdom');
   assert(/reference/.test(inserted[0].match_method),'BUNT assignment must be evidence-driven, not email-unique');
   assert(!/email-unique|email-shared/.test(inserted[0].match_method),'Suppressed supplier domain must not contribute ownership score');
 
-  assert(bootstrap.includes("pristeel-email-supplier-domain-safety-v1.js?v=20260812-2"),'Bootstrap must load synchronous supplier-domain safety');
+  assert(bootstrap.includes("pristeel-email-supplier-domain-safety-v1.js?v=20260812-3"),'Bootstrap must load canonical-ref ordered supplier-domain safety');
   assert(bootstrap.indexOf('pristeel-email-core.js')<bootstrap.indexOf('pristeel-email-supplier-domain-safety-v1.js'),'Supplier-domain safety must load after Gmail core');
 
   dom.window.close();
