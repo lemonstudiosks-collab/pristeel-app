@@ -76,4 +76,5 @@ const {JSDOM}=require('jsdom');
 require('./project-commercial-prefill-smoke.js');
 require('./project-commercial-prefill-rescue-smoke.js');
 require('./our-offer-source-smoke.js');
+require('./our-offer-history-ui-smoke.js');
 require('./supplier-offer-currency-smoke.js');
