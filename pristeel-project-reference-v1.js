@@ -6,6 +6,7 @@
 'use strict';
 if(window.PSTProjectReferenceV1)return;
 
+var writesWrapped=false,emailWrapped=false;
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function tidy(v){return String(v||'').trim().replace(/\s*\/\s*/g,'/').replace(/\s*-\s*/g,'-').replace(/\s+/g,' ');}
 function clean(v){
@@ -34,7 +35,8 @@ function enrichProfile(profile,businessById){
  return profile;
 }
 function wrapEmailProfiles(){
- var A=window.PSTEmail;if(!A||typeof A.profiles!=='function'||A.profiles.__pstBusinessRef)return false;
+ if(emailWrapped)return true;
+ var A=window.PSTEmail;if(!A||typeof A.profiles!=='function')return false;
  var base=A.profiles;
  A.profiles=async function(){
    var profiles=await base.apply(this,arguments),by={};
@@ -46,10 +48,11 @@ function wrapEmailProfiles(){
    A.projects=(Array.isArray(profiles)?profiles:[]).map(function(q){return q.p;});
    return profiles;
  };
- A.profiles.__pstBusinessRef=true;A.profiles.__base=base;return true;
+ A.profiles.__pstBusinessRef=true;A.profiles.__base=base;emailWrapped=true;return true;
 }
 function wrapProjectWrites(){
- var f=window.supaFetch;if(typeof f!=='function'||f.__pstProjectBusinessRef)return false;
+ if(writesWrapped)return true;
+ var f=window.supaFetch;if(typeof f!=='function')return false;
  async function wrapped(path,method,body){
    var m=String(method||'GET').toUpperCase(),isWrite=(m==='POST'||m==='PATCH')&&/^projects(?:\?|$)/.test(String(path||''));
    if(isWrite&&body&&typeof body==='object'&&!Array.isArray(body)){
@@ -61,7 +64,7 @@ function wrapProjectWrites(){
    }
    return f.apply(this,arguments);
  }
- wrapped.__pstProjectBusinessRef=true;wrapped.__base=f;window.supaFetch=wrapped;return true;
+ wrapped.__pstProjectBusinessRef=true;wrapped.__base=f;window.supaFetch=wrapped;writesWrapped=true;return true;
 }
 function decorateForm(){
  var input=document.getElementById('i-ref');if(!input)return false;
@@ -73,5 +76,5 @@ function decorateForm(){
 }
 function install(){wrapProjectWrites();wrapEmailProfiles();decorateForm();}
 install();[0,80,220,600,1200].forEach(function(ms){setTimeout(install,ms);});document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTProjectReferenceV1={norm:norm,tidy:tidy,clean:clean,canonical:canonical,key:key,enrichProfile:enrichProfile,wrapEmailProfiles:wrapEmailProfiles,wrapProjectWrites:wrapProjectWrites,decorateForm:decorateForm};
+window.PSTProjectReferenceV1={norm:norm,tidy:tidy,clean:clean,canonical:canonical,key:key,enrichProfile:enrichProfile,wrapEmailProfiles:wrapEmailProfiles,wrapProjectWrites:wrapProjectWrites,decorateForm:decorateForm,_state:function(){return{writesWrapped:writesWrapped,emailWrapped:emailWrapped};}};
 })();
