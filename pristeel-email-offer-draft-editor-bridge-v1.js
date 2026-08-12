@@ -54,7 +54,9 @@ function wrapSave(){
    }
    return out;
  };
- wrapped.__pstEmailRateWrapped=true;window.pstSaveOffer=wrapped;
+ wrapped.__pstEmailRateWrapped=true;
+ wrapped.__pstSupplierCurrencyV1=!!fn.__pstSupplierCurrencyV1;
+ window.pstSaveOffer=wrapped;
 }
 function loadPostsaveUi(){
  if(window.PSTSupplierOfferPostsaveUiV1||document.querySelector('script[data-pst-supplier-offer-postsave-ui]'))return;
