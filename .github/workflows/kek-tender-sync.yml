@@ -1,0 +1,57 @@
+name: KEK tender monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - apply
+  schedule:
+    - cron: '17 */2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kek-tender-monitor
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+      KRPP_SEARCH_URL: ${{ vars.KRPP_SEARCH_URL }}
+      KEK_TENDER_MIN_SCORE: '35'
+      SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Collect KEK steel tenders
+        run: node scripts/kek-tender-sync.mjs
+
+      - name: Upload sanitized summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kek-tender-monitor
+          path: tmp/kek-tender-sync.json
+          if-no-files-found: ignore
+          retention-days: 14
