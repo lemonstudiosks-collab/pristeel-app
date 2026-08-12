@@ -49,7 +49,8 @@ const {JSDOM}=require('jsdom');
    {id:'ikot',name:'ITALIAN STYLE – Kotlarnica TE Pljevlja (Montenegro)',client:'ITALIAN STYLE',ref:'Kotlarnica-TE-Pljevlja',business_ref:'Kotlarnica-TE-Pljevlja'}
  ];
  const idx=T.buildIndex(projects);
- const ids=text=>T.classifyCorpus(text,idx).hits.map(x=>x.project.id).sort();
+ // Convert jsdom-realm arrays to native Node arrays before deep comparisons.
+ const ids=text=>Array.from(T.classifyCorpus(text,idx).hits,x=>x.project.id).sort();
  assert.deepStrictEqual(ids('ANF-8910 Anfrage Schweißbaugruppen für 05510'),['e8910'],'ANF-8910 must not map to ANF-8915');
  assert.deepStrictEqual(ids('ANF-8915 Anfrage Schweissgestell 03829'),['e8915'],'ANF-8915 must remain separate');
  assert.deepStrictEqual(ids('ANF-8910 / ANF-8915 gemeinsame Rückmeldung'),['e8910','e8915'],'Mixed EVOSYS RFQs must be detected as multi-project');
@@ -62,7 +63,7 @@ const {JSDOM}=require('jsdom');
  assert.deepStrictEqual(ids('ITALIAN STYLE nova dokumentacija'),[],'Company name alone must never pick one sibling project');
  const idxOnly8915=T.buildIndex(projects.filter(p=>p.id!=='e8910'));
  const unknown=T.classifyCorpus('Evosys Laser GmbH - ANF-8910 Anfrage',idxOnly8915);
- assert(unknown.unknownRefs.includes('anf8910'),'Unknown ANF-8910 must be blocked instead of falling into ANF-8915');
+ assert(Array.from(unknown.unknownRefs).includes('anf8910'),'Unknown ANF-8910 must be blocked instead of falling into ANF-8915');
 
  await w.PSTGmailIntakeV3.open('https://example.test/?gmail_intake=1&gmail_message_id=m1&gmail_thread_id=t1&subject=New%20Steel%20Project&from=buyer%40example.com');
  assert(w.document.getElementById('pgi2-toggle-create'),'Unmatched Gmail thread did not expose Create Project');
