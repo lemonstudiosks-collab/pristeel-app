@@ -60,7 +60,11 @@ function loadPostsaveUi(){
  if(window.PSTSupplierOfferPostsaveUiV1||document.querySelector('script[data-pst-supplier-offer-postsave-ui]'))return;
  var s=document.createElement('script');s.src='pristeel-supplier-offer-postsave-ui-v1.js?v=20260809-1';s.defer=true;s.setAttribute('data-pst-supplier-offer-postsave-ui','1');document.head.appendChild(s);
 }
+function loadCurrency(){
+ if(window.PSTSupplierOfferCurrencyV1||document.querySelector('script[data-pst-supplier-offer-currency]'))return;
+ var s=document.createElement('script');s.src='pristeel-supplier-offer-currency-v1.js?v=20260812-1';s.defer=true;s.setAttribute('data-pst-supplier-offer-currency','1');document.head.appendChild(s);
+}
 window.addEventListener('click',onOpen,true);
-wrapSave();loadPostsaveUi();document.addEventListener('pst:modules-ready',function(){wrapSave();loadPostsaveUi();},{once:true});
-window.PSTEmailOfferDraftEditorBridgeV1={applyBaseRow:applyBaseRow,captureDraftForSave:captureDraftForSave,wrapSave:wrapSave,loadPostsaveUi:loadPostsaveUi};
+wrapSave();loadPostsaveUi();loadCurrency();document.addEventListener('pst:modules-ready',function(){wrapSave();loadPostsaveUi();loadCurrency();},{once:true});
+window.PSTEmailOfferDraftEditorBridgeV1={applyBaseRow:applyBaseRow,captureDraftForSave:captureDraftForSave,wrapSave:wrapSave,loadPostsaveUi:loadPostsaveUi,loadCurrency:loadCurrency};
 })();
