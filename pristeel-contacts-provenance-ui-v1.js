@@ -30,6 +30,22 @@ function sourceLabel(source){
 function sourceClass(source){return source==='hubspot'?'hubspot':source==='bitrix24'?'bitrix24':'other';}
 function clearLegacyHubspot(){try{window._ctOnlyHubspot=false;}catch(e){}}
 
+async function fetchPaged(path,pageSize){
+  if(typeof window.supaFetch!=='function')return [];
+  pageSize=pageSize||1000;
+  var rows=[];
+  var offset=0;
+  for(var page=0;page<100;page++){
+    var sep=path.indexOf('?')>-1?'&':'?';
+    var chunk=await window.supaFetch(path+sep+'limit='+pageSize+'&offset='+offset);
+    chunk=Array.isArray(chunk)?chunk:[];
+    rows=rows.concat(chunk);
+    if(chunk.length<pageSize)break;
+    offset+=chunk.length;
+  }
+  return rows;
+}
+
 function rebuildMap(rows){
   sourceRows=Array.isArray(rows)?rows:[];
   sourceMap=new Map();
@@ -193,7 +209,7 @@ function renderAll(){ensureSourceControl();renderStats();renderContactsWrapped()
 async function loadSources(force){
   if(loadingPromise&&!force)return loadingPromise;
   if(typeof window.supaFetch!=='function')return Promise.resolve([]);
-  loadingPromise=window.supaFetch('contact_sources?select=contact_id,email,source,external_id,external_url,last_seen&order=source.asc&limit=5000')
+  loadingPromise=fetchPaged('contact_sources?select=contact_id,email,source,external_id,external_url,last_seen&order=source.asc,contact_id.asc',1000)
     .then(function(rows){rebuildMap(rows||[]);renderAll();return rows||[];})
     .catch(function(error){console.warn('PRISTEEL contact provenance UI:',error);sourcesReady=false;renderAll();return [];})
     .finally(function(){loadingPromise=null;});
@@ -203,7 +219,14 @@ async function loadSources(force){
 async function loadContactsWrapped(){
   if(!original.loadContacts)return;
   var result=await original.loadContacts.apply(this,arguments);
+  try{
+    var allContacts=await fetchPaged('contacts?order=kind.asc,company.asc,id.asc',1000);
+    if(allContacts.length)window._contacts=allContacts;
+  }catch(error){
+    console.warn('PRISTEEL contacts pagination:',error);
+  }
   await loadSources(true);
+  renderAll();
   return result;
 }
 
