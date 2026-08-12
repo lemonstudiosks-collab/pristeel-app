@@ -76,5 +76,5 @@ function decorateForm(){
 }
 function install(){wrapProjectWrites();wrapEmailProfiles();decorateForm();}
 install();[0,80,220,600,1200].forEach(function(ms){setTimeout(install,ms);});document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTProjectReferenceV1={norm:norm,tidy:tidy,clean:clean,canonical:canonical,key:key,enrichProfile:enrichProfile,wrapEmailProfiles:wrapEmailProfiles,wrapProjectWrites:wrapProjectWrites,decorateForm:decorateForm,_state:function(){return{writesWrapped:writesWrapped,emailWrapped:emailWrapped};}};
+window.PSTProjectReferenceV1={install:install,norm:norm,tidy:tidy,clean:clean,canonical:canonical,key:key,enrichProfile:enrichProfile,wrapEmailProfiles:wrapEmailProfiles,wrapProjectWrites:wrapProjectWrites,decorateForm:decorateForm,_state:function(){return{writesWrapped:writesWrapped,emailWrapped:emailWrapped};}};
 })();
