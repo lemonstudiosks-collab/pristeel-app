@@ -33,10 +33,11 @@ const {JSDOM}=require('jsdom');
   </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
   const project={id:'p1',name:'Dukley Budva',client:'ITALIAN STYLE',ref:'',status:'aktiv',pipeline_stage:'rfq_in',drive_folder_id:'drive1',drive_folder_url:'https://drive.google.com/drive/folders/drive1'};
+  const fileUrl='https://drive.google.com/file/d/f1/view';
   const integrity={
     project,
     emails:[{id:'e1',gmail_message_id:'m1',subject:'Request for quotation',from_email:'buyer@example.com',sent_at:'2026-08-08T09:00:00Z',snippet:'Please quote the steel structure. Delivery required in October.',gmail_url:'https://mail.google.com/mail/u/0/#all/e1'}],
-    contacts:[{email:'buyer@example.com'}],bom:[],rfqs:[],supplierOffers:[],ourOffers:[],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[]}
+    contacts:[{email:'buyer@example.com'}],bom:[],rfqs:[],supplierOffers:[],ourOffers:[],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[{id:'f1',name:'drawing.pdf',modifiedTime:'2026-08-12T10:00:00Z',webViewLink:fileUrl}]}
   };
   w.PSTProjectDataIntegrity={load:async()=>integrity};
   w.supaFetch=async path=>path.startsWith('suppliers?')?[]:[];
@@ -69,6 +70,17 @@ const {JSDOM}=require('jsdom');
 
   w.PSTProjectFirstV2.render('files');
   assert(w.document.getElementById('pst-pi-body').textContent.includes('dosje permanente Google Drive'),'Workspace must describe the single permanent Drive-folder model');
+  const fileRow=w.document.querySelector('a.pf2-file-line');
+  assert(fileRow,'A file with a URL must render as a full-row link');
+  assert.strictEqual(fileRow.getAttribute('href'),fileUrl,'Clickable file row must preserve the original file URL');
+  assert.strictEqual(fileRow.getAttribute('target'),'_blank','Clickable file row must keep files opening in a new tab');
+  assert(fileRow.textContent.includes('drawing.pdf'),'Clickable file row must keep the file name visible');
+  assert(fileRow.textContent.includes('Hap'),'Clickable file row should keep a small open affordance');
+  const readability=w.document.getElementById('pf2-readability-css');
+  assert(readability,'Project workspace readability stylesheet must be loaded');
+  assert(readability.textContent.includes('.pst-pi-tab{font-size:12.5px'),'Workspace tabs must use a readable desktop font size');
+  assert(readability.textContent.includes('.pf2-line b{font-size:14px'),'Primary file/list labels must use a readable desktop font size');
+  assert(readability.textContent.includes('.pf2-btn{min-height:36px'),'Workspace buttons must be easier to read and click');
 
   let refreshCalls=[];
   const liveOpen=w.pstOpenProjectWorkspace;
