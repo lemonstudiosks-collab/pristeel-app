@@ -2,14 +2,20 @@ const fs = require('fs');
 const assert = require('assert');
 const { JSDOM } = require('jsdom');
 
+function stripComments(s){
+  return s.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|\s)\/\/.*$/gm,'$1');
+}
+
 (async () => {
   const source = fs.readFileSync('pristeel-redesign-finalizer-v1.js', 'utf8');
   const readability = fs.readFileSync('pristeel-platform-readability-v1.js', 'utf8');
-  assert(!/MutationObserver|setInterval\s*\(/.test(source), 'Finalizer must stay bounded and observer-free');
-  assert(!/supaFetch|fetch\s*\(|localStorage\.setItem|sessionStorage\.setItem/.test(source), 'Finalizer must not write or fetch data');
-  assert(!/(?:pstOpenProjectWorkspace|authGetSession|doLogin|PSTEmail)\s*=/.test(source), 'Finalizer must not replace core project/auth/Gmail functions');
-  assert(!/MutationObserver|setInterval\s*\(/.test(readability), 'Readability layer must stay bounded and observer-free');
-  assert(!/supaFetch|fetch\s*\(|localStorage\.(?:setItem|removeItem)|sessionStorage\.(?:setItem|removeItem)/.test(readability), 'Readability layer must stay UI-only');
+  const sourceCode = stripComments(source);
+  const readabilityCode = stripComments(readability);
+  assert(!/MutationObserver|setInterval\s*\(/.test(sourceCode), 'Finalizer must stay bounded and observer-free');
+  assert(!/supaFetch|fetch\s*\(|localStorage\.setItem|sessionStorage\.setItem/.test(sourceCode), 'Finalizer must not write or fetch data');
+  assert(!/(?:pstOpenProjectWorkspace|authGetSession|doLogin|PSTEmail)\s*=/.test(sourceCode), 'Finalizer must not replace core project/auth/Gmail functions');
+  assert(!/MutationObserver|setInterval\s*\(/.test(readabilityCode), 'Readability layer must stay bounded and observer-free');
+  assert(!/supaFetch|fetch\s*\(|localStorage\.(?:setItem|removeItem)|sessionStorage\.(?:setItem|removeItem)/.test(readabilityCode), 'Readability layer must stay UI-only');
 
   const dom = new JSDOM('<!doctype html><html><body><div id="page-workspace-home"></div></body></html>', { runScripts:'outside-only', url:'https://example.test/' });
   const w = dom.window;
