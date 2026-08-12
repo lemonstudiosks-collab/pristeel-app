@@ -1,5 +1,6 @@
 /* PRISTEEL project data integrity adapter
  * Read-first adapter: unifies legacy and new relations without moving or deleting data.
+ * Canonical project business_ref is preferred for identity matching; legacy ref is fallback only.
  */
 (function(){
 'use strict';
@@ -18,6 +19,7 @@ function arr(v){
 }
 function enc(v){return encodeURIComponent(String(v==null?'':v));}
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9@._+\-]+/g,' ').replace(/\s+/g,' ').trim();}
+function canonicalRef(project){var R=window.PSTProjectReferenceV1;return R&&typeof R.canonical==='function'?R.canonical(project):String(project&&(project.business_ref||project.ref)||'').trim();}
 function email(v){var m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
 function external(v){var e=email(v);return e&&INTERNAL.indexOf(e)<0&&!/(no-?reply|mailer-daemon|postmaster|dmarc|calendar-notification)@/i.test(e);}
 function safe(path){
@@ -35,16 +37,17 @@ function rowKey(row){return row&&(
 );}
 function flatText(row){
   if(!row||typeof row!=='object')return norm(row);
-  var fields=['project_id','source_project_id','linked_project_id','project','project_name','project_ref','ref','reference','rfq_ref','request_ref','name','title','subject','description','desc','notes','snippet','file_name','filename','document_name','doc_nr','document_nr','invoice_nr','supplier','supplier_name','origin','source','client','customer','company'];
+  var fields=['project_id','source_project_id','linked_project_id','project','project_name','project_ref','project_business_ref','business_ref','ref','reference','rfq_ref','request_ref','name','title','subject','description','desc','notes','snippet','file_name','filename','document_name','doc_nr','document_nr','invoice_nr','supplier','supplier_name','origin','source','client','customer','company'];
   return norm(fields.map(function(k){var v=row[k];return Array.isArray(v)?v.join(' '):(v==null?'':String(v));}).join(' '));
 }
 function dedicatedText(row){
-  return norm(['project','project_name','project_ref','ref','reference','rfq_ref','request_ref','client','customer','company'].map(function(k){return row&&row[k]||'';}).join(' '));
+  return norm(['project','project_name','project_ref','project_business_ref','business_ref','ref','reference','rfq_ref','request_ref','client','customer','company'].map(function(k){return row&&row[k]||'';}).join(' '));
 }
 function projectIdentity(project){
-  var name=norm(project&&project.name),ref=norm(project&&project.ref),client=norm(project&&project.client);
-  var numbers=norm((project&&project.name||'')+' '+(project&&project.ref||'')).match(/\b[a-z]*\d{4,}[a-z0-9_-]*\b/g)||[];
-  var tokens=norm([project&&project.name,project&&project.ref].join(' ')).split(' ').filter(function(x){return x.length>=5&&!/^(projekt|project|anfrage|fertigung|steel|stahl|construction|angebot|offer)$/.test(x);});
+  var name=norm(project&&project.name),ref=norm(canonicalRef(project)),client=norm(project&&project.client);
+  var identitySource=(project&&project.name||'')+' '+canonicalRef(project);
+  var numbers=norm(identitySource).match(/\b[a-z]*\d{4,}[a-z0-9_-]*\b/g)||[];
+  var tokens=norm(identitySource).split(' ').filter(function(x){return x.length>=5&&!/^(projekt|project|anfrage|fertigung|steel|stahl|construction|angebot|offer)$/.test(x);});
   return{name:name,ref:ref,client:client,numbers:uniq(numbers,function(x){return x;}),tokens:uniq(tokens,function(x){return x;})};
 }
 function relationScore(row,project){
@@ -70,9 +73,10 @@ async function byProject(table,pid,projectOrName,order){
   batches.push(await safe(table+'?project_id=eq.'+enc(pid)+tail));
   if(project.name)batches.push(await safe(table+'?project=ilike.'+pattern(project.name)+tail));
   if(project.name)batches.push(await safe(table+'?project_name=ilike.'+pattern(project.name)+tail));
-  if(project.ref){
-    batches.push(await safe(table+'?project=ilike.'+pattern(project.ref)+tail));
-    batches.push(await safe(table+'?project_name=ilike.'+pattern(project.ref)+tail));
+  var pref=canonicalRef(project);
+  if(pref){
+    batches.push(await safe(table+'?project=ilike.'+pattern(pref)+tail));
+    batches.push(await safe(table+'?project_name=ilike.'+pattern(pref)+tail));
   }
   var rows=uniq([].concat.apply([],batches),rowKey);
   if(BROAD_TABLES[table]){
@@ -134,7 +138,7 @@ async function drive(project){
   }catch(e){return{rows:[],state:'error',error:e.message};}
 }
 function matchDeal(project,deals){
-  var tokens=norm([project.name,project.ref,project.client].join(' ')).split(' ').filter(function(x){return x.length>=4;}),best=null,score=0;
+  var tokens=norm([project.name,canonicalRef(project),project.client].join(' ')).split(' ').filter(function(x){return x.length>=4;}),best=null,score=0;
   deals.forEach(function(d){var t=norm(d.dealname),s=0;tokens.forEach(function(x){if(t.indexOf(x)>-1)s++;});if(s>score){score=s;best=d;}});
   return score?best:null;
 }
@@ -182,5 +186,5 @@ async function load(id){
   };
   return data;
 }
-window.PSTProjectDataIntegrity={load:load,arr:arr,enc:enc,safe:safe,byProject:byProject,email:email,external:external,relationScore:relationScore};
+window.PSTProjectDataIntegrity={load:load,arr:arr,enc:enc,safe:safe,byProject:byProject,email:email,external:external,relationScore:relationScore,canonicalRef:canonicalRef};
 })();
