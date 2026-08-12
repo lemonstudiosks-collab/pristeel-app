@@ -19,6 +19,30 @@ function message(id,t){return window.PSTEmail&&window.PSTEmail.message?window.PS
 function bounded(promise,ms){return new Promise(function(resolve,reject){var done=false,t=setTimeout(function(){if(done)return;done=true;reject(new Error('Kërkesa mori shumë kohë. Provo përsëri.'));},ms);Promise.resolve(promise).then(function(v){if(done)return;done=true;clearTimeout(t);resolve(v);}).catch(function(e){if(done)return;done=true;clearTimeout(t);reject(e);});});}
 function setStatus(text,bad){var e=document.getElementById('pst-gli-status');if(!e)return;e.textContent=text||'';e.style.color=bad?'#8A5A52':'#6E7C83';}
 function navLabel(){var b=document.querySelector('.pst-ws-navbtn[data-key="inbox"] span');if(b)b.textContent='Gmail / Inbox';}
+function css(){
+  if(document.getElementById('pst-gmail-live-inbox-readable-css'))return;
+  var s=document.createElement('style');s.id='pst-gmail-live-inbox-readable-css';s.textContent=`
+#page-workspace-inbox .pst-ws-eyebrow{font-size:10.5px!important;margin-bottom:6px!important}
+#page-workspace-inbox .pst-ws-title{font-size:28px!important;line-height:1.16!important}
+#page-workspace-inbox .pst-ws-sub{font-size:12.5px!important;line-height:1.45!important;margin-top:7px!important}
+#page-workspace-inbox .pst-ws-btn{height:40px!important;padding:0 14px!important;font-size:12.5px!important}
+#page-workspace-inbox .pst-ws-btn svg{width:16px!important;height:16px!important}
+#page-workspace-inbox .pst-ws-card-hd{padding:16px 18px!important}
+#page-workspace-inbox .pst-ws-card-title{font-size:14px!important;line-height:1.35!important}
+#page-workspace-inbox .pst-ws-card-sub{font-size:11.5px!important;line-height:1.45!important;margin-top:3px!important}
+#page-workspace-inbox .pst-ws-card-body{padding:11px 12px 14px!important}
+#page-workspace-inbox .pst-ws-input{font-size:13px!important;min-height:40px!important;padding-left:13px!important;padding-right:13px!important}
+#page-workspace-inbox .pst-ws-action{padding:13px 9px!important;gap:11px!important}
+#page-workspace-inbox .pst-ws-action-title{font-size:13px!important;line-height:1.4!important}
+#page-workspace-inbox .pst-ws-action-meta{font-size:11.5px!important;line-height:1.45!important;margin-top:3px!important}
+#page-workspace-inbox .pst-ws-rowaction{font-size:12px!important;min-height:34px!important;padding:0 10px!important}
+#page-workspace-inbox .pst-ws-empty{font-size:12px!important;line-height:1.5!important;padding:30px 16px!important}
+#page-workspace-inbox #pst-gli-status{font-size:11.5px!important;line-height:1.45!important;margin-bottom:10px!important}
+#page-workspace-inbox #pst-gmail-live-card{margin-bottom:16px!important}
+@media(max-width:800px){#page-workspace-inbox .pst-ws-title{font-size:25px!important}#page-workspace-inbox .pst-ws-btn{height:38px!important;padding:0 11px!important;font-size:12px!important}}
+`;
+  document.head.appendChild(s);
+}
 function shell(){navLabel();var page=document.getElementById('page-workspace-inbox');if(!page||page.style.display==='none'||!page.classList.contains('active'))return null;var host=page.querySelector('.pst-ws-page');if(!host)return null;var old=document.getElementById('pst-gmail-live-card');if(old)return old;var head=host.querySelector('.pst-ws-head'),card=document.createElement('section');card.id='pst-gmail-live-card';card.className='pst-ws-card';card.style.marginBottom='14px';card.innerHTML='<div class="pst-ws-card-hd"><div><div class="pst-ws-card-title">Gmail live</div><div class="pst-ws-card-sub">Zgjidh një email real dhe nis projektin prej thread-it të tij</div></div><div style="display:flex;gap:7px;align-items:center"><button class="pst-ws-btn" id="pst-gli-auth">Lidhu me Gmail</button><button class="pst-ws-btn" id="pst-gli-refresh">Rifresko</button></div></div><div class="pst-ws-card-body"><div class="pst-ws-toolbar" style="padding:0 0 10px"><input class="pst-ws-input" id="pst-gli-query" placeholder="Kërko në Gmail: kompani, projekt, subjekt…"><button class="pst-ws-btn primary" id="pst-gli-search">Kërko</button></div><div id="pst-gli-status" style="font-size:10px;color:#6E7C83;margin-bottom:8px"></div><div id="pst-gli-list"><div class="pst-ws-empty">Gmail është gati.</div></div></div>';if(head&&head.nextSibling)host.insertBefore(card,head.nextSibling);else host.insertBefore(card,host.firstChild);card.querySelector('#pst-gli-auth').onclick=authorize;card.querySelector('#pst-gli-refresh').onclick=function(){load(true);};card.querySelector('#pst-gli-search').onclick=function(){load(true);};card.querySelector('#pst-gli-query').onkeydown=function(e){if(e.key==='Enter')load(true);};updateAuth();return card;}
 function updateAuth(){var b=document.getElementById('pst-gli-auth'),t=token();if(!b)return;b.textContent=t?'Gmail i lidhur':'Lidhu me Gmail';b.disabled=!!t;}
 function render(seq){if(seq!==state.seq)return;var h=document.getElementById('pst-gli-list');if(!h)return;if(!state.rows.length){h.innerHTML='<div class="pst-ws-empty">Nuk u gjet asnjë email.</div>';return;}h.innerHTML=state.rows.map(function(r){return'<div class="pst-ws-action" style="align-items:center"><i class="pst-ws-action-dot" style="--c:#3F7F98;--bg:#EAF4F7"></i><div class="pst-ws-action-main"><div class="pst-ws-action-title">'+esc(r.subject||'(pa subjekt)')+'</div><div class="pst-ws-action-meta">'+esc(r.from_name||r.from_email||'')+' · '+date(r.sent_at)+(r.has_attachments?' · Ka bashkëngjitje':'')+'</div><div class="pst-ws-action-meta" style="margin-top:2px">'+esc(short(r.snippet,145))+'</div></div><div style="display:flex;gap:5px;flex-shrink:0"><button class="pst-ws-rowaction" data-gmail-url="'+esc(r.gmail_url||'')+'">Hap Gmail</button><button class="pst-ws-rowaction pst-gli-intake" style="background:#3F7F98;color:#fff;border-color:#3F7F98" data-mid="'+esc(r.gmail_message_id)+'" data-tid="'+esc(r.gmail_thread_id)+'">Krijo / Lidhe projektin</button></div></div>';}).join('');h.querySelectorAll('[data-gmail-url]').forEach(function(b){b.onclick=function(){var u=b.getAttribute('data-gmail-url');if(u)window.open(u,'PRISTEEL_GMAIL');};});h.querySelectorAll('.pst-gli-intake').forEach(function(b){b.onclick=function(){intake(b.getAttribute('data-mid'),b.getAttribute('data-tid'));};});}
@@ -29,5 +53,6 @@ window.pstGmailLiveAuthorize=authorize;window.pstGmailLiveLoad=load;window.pstGm
 function decorate(){var c=shell();if(c){if(token())load(false);else setStatus('Kliko “Lidhu me Gmail” për të lexuar inbox-in real.');}}
 var original=window.pstWorkspaceGo;if(typeof original==='function'&&!original.__pstGmailLiveV2Wrapped){var wrapped=function(key){var out=original.apply(this,arguments);if(key==='inbox')setTimeout(decorate,0);return out;};wrapped.__pstGmailLiveV2Wrapped=true;window.pstWorkspaceGo=wrapped;}
 document.addEventListener('pst:modules-ready',function(){setTimeout(function(){navLabel();var p=document.getElementById('page-workspace-inbox');if(p&&p.classList.contains('active'))decorate();},80);},{once:true});
+css();
 window.PSTGmailLiveInboxV2={decorate:decorate,load:load,intake:intake,_state:state};navLabel();
 })();
