@@ -13,6 +13,11 @@ on:
           - apply
   schedule:
     - cron: '17 */2 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/kek-tender-sync.mjs'
+      - '.github/workflows/kek-tender-sync.yml'
 
 permissions:
   contents: read
@@ -33,7 +38,7 @@ jobs:
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       KRPP_SEARCH_URL: ${{ vars.KRPP_SEARCH_URL }}
       KEK_TENDER_MIN_SCORE: '35'
-      SYNC_MODE: ${{ github.event_name == 'schedule' && 'apply' || inputs.mode }}
+      SYNC_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'apply' }}
 
     steps:
       - name: Checkout
