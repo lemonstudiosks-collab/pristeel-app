@@ -34,11 +34,15 @@ function safe(path){if(typeof window.supaFetch!=='function')return Promise.resol
 function referenceKeys(v){
   var raw=String(v||''),out=[];
   function add(x){var k=canonicalRefKey(x);if(k.length>=4&&out.indexOf(k)<0)out.push(k);}
-  var m=raw.match(/[A-Za-z]{2,}[A-Za-z0-9]*[\s._\/-]*\d{2,}(?:[\s._\/-]*[A-Za-z0-9]+)*/g)||[];m.forEach(add);
+  (raw.match(/\b[A-Za-z]{2,}[A-Za-z0-9]*[\s._\/-]*\d{2,}\b/g)||[]).forEach(add);
+  (raw.match(/\b[A-Za-z]{2,}[\s._\/-]*[A-Za-z]\d{3,}\b/g)||[]).forEach(add);
+  (raw.match(/\bD[\s._\/-]*\d{2}[\s._\/-]*\d{2}\b/gi)||[]).forEach(add);
+  (raw.match(/\b\d{5,6}[A-Za-z]{2,4}\b/g)||[]).forEach(add);
+  (raw.match(/\b\d{6}[\s._\/-]*[A-Za-z]{2,4}\b/g)||[]).forEach(add);
   (raw.match(/\b\d{6}\b/g)||[]).forEach(add);
   return out;
 }
-function looksLikeExternalProjectRef(k){return /^(anf\d{4,6}|esw\d{3,}|robmc\d{4,}|\d{6})$/.test(String(k||''));}
+function looksLikeExternalProjectRef(k){return /^(anf\d{4,6}|esw\d{3,}|robmc\d{4,}|d\d{4}|\d{5,6}[a-z]{2,4}|\d{6}[a-z]{2,4}|\d{6})$/.test(String(k||''));}
 function projectClientWords(p){var m={};words(p&&p.client||'').forEach(function(x){m[x]=1;});return m;}
 function buildIndex(projects){
   projects=arr(projects);var occurrence={};
