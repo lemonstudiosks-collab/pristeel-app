@@ -55,13 +55,18 @@ function install(){
   P.load=wrapped;
   return true;
 }
+function loadHistoryUi(){
+  if(window.PSTOurOfferHistoryUiV1||document.querySelector('script[data-pst-our-offer-history-ui]'))return;
+  var s=document.createElement('script');s.src='pristeel-our-offer-history-ui-v1.js?v=20260812-1';s.defer=true;s.setAttribute('data-pst-our-offer-history-ui','1');document.head.appendChild(s);
+}
 
-install();
-document.addEventListener('pst:modules-ready',install,{once:true});
+install();loadHistoryUi();
+document.addEventListener('pst:modules-ready',function(){install();loadHistoryUi();},{once:true});
 window.PSTOurOfferSourceV1={
   install:install,
   canonicalize:canonicalize,
   newestFirst:newestFirst,
+  loadHistoryUi:loadHistoryUi,
   isRegistryQuote:isRegistryQuote,
   isLegacyOurOffer:isLegacyOurOffer
 };
