@@ -16,10 +16,12 @@ assert(src.includes("function localDay(v)"), 'Follow-up must format dates in the
 assert(src.includes("d.getFullYear()+'-'"), 'Local follow-up date must use local calendar fields');
 assert(src.includes("function todayDay(){return localDay(new Date());}"), 'Today must not be derived from UTC midnight');
 assert(!src.includes("setHours(0,0,0,0);return d.toISOString().slice(0,10)"), 'UTC midnight date drift must stay removed');
+assert(src.includes("function strongSubject(v)"), 'Subject-only project evidence must be explicitly gated');
+assert(src.includes("s.length>=24&&parts.length>=4"), 'Generic short subjects must not be used as project evidence');
 assert(src.includes("Follow-up për kontakte"), 'Inbox must be relabeled as a follow-up queue');
 assert(src.includes("Kërkesa pa projekt"), 'Right column must represent only projectless requests');
 assert(src.includes("project_email_links?select="), 'Right-column filtering must inspect canonical project links');
-assert(src.includes("subjectProjects"), 'Right-column filtering must use unique canonical subject evidence');
+assert(src.includes("subjectProjects"), 'Right-column filtering may use only strong unique canonical subject evidence');
 assert(src.includes("scope:'https://www.googleapis.com/auth/gmail.compose'"), 'Draft authorization must request gmail.compose explicitly');
 assert(src.includes("/gmail/v1/users/me/drafts"), 'Feature must use Gmail drafts.create endpoint');
 assert(!src.includes('/drafts/send'), 'Feature must never send Gmail drafts');
