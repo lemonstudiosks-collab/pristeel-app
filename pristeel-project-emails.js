@@ -57,6 +57,7 @@ var files=[
   'pristeel-document-adjustments-v3.js?v=20260803-1',
   'pristeel-dashboard-calm.js?v=20260803-1',
   'pristeel-workspace-architecture-v1.js?v=20260804-1',
+  'pristeel-outreach-followup-v1.js?v=20260813-1',
   'pristeel-workspace-release-fix-v3.js?v=20260804-2',
   'pristeel-email-relation-safety-v2.js?v=20260804-1',
   'pristeel-gmail-intake-v3.js?v=20260807-stability1',
