@@ -10,7 +10,7 @@ window.__pstHomeProjectRecoveryV3=true;
 var inFlight=null,lastSuccess=0,SUCCESS_CACHE_MS=15000,WAIT_MS=8000;
 function arr(v){return Array.isArray(v)?v:[];}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function active(p){var s=String(p&&p.status||'').toLowerCase().trim();return !/^(mbyllur|fituar|humbur|arkivuar|closedwon|closedlost|cancelled|realizuar)$/.test(s);}
+function active(p){var s=String(p&&p.status||'').toLowerCase().trim();return !/^(mbyllur|humbur|arkivuar|closedlost|cancelled|realizuar)$/.test(s);}
 function stamp(p){var v=p&&(p.updated_at||p.last_activity_at||p.last_email_at||p.created_at),t=v?new Date(v).getTime():0;return isFinite(t)?t:0;}
 function visible(){var p=document.getElementById('page-workspace-home');return !!p&&p.style.display!=='none';}
 function card(p){var status=String(p.status||'Në pritje'),name=p.name||'Pa emër',meta=(p.client||'Pa klient')+(p.ref?' · '+p.ref:''),next=p.pipeline_stage?('Faza aktuale: '+String(p.pipeline_stage).replace(/_/g,' ')):'Hap workspace-in e projektit';return '<div class="pst-ws-projectcard pst-home-recovery-v3" data-project-id="'+esc(p.id)+'"><div class="pst-ws-projectcard-top"><div><div class="pst-ws-projectcard-name">'+esc(name)+'</div><div class="pst-ws-projectcard-client">'+esc(meta)+'</div></div><span class="pst-ws-status">'+esc(status)+'</span></div><div class="pst-ws-projectcard-next"><b>Hapi tjetër:</b> '+esc(next)+'</div></div>';}
