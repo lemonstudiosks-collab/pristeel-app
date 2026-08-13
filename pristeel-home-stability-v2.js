@@ -8,8 +8,8 @@ if(window.__pstHomeStabilityV2)return;
 window.__pstHomeStabilityV2=true;
 var recovery=null,lastRecovery=0,CACHE_MS=120000,WAIT_MS=3200;
 function arr(v){return Array.isArray(v)?v:[];}
-function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function active(p){var s=String(p&&p.status||'').toLowerCase().trim();return !/^(mbyllur|fituar|humbur|arkivuar|closedwon|closedlost|cancelled|realizuar)$/.test(s);}
+function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');}
+function active(p){var s=String(p&&p.status||'').toLowerCase().trim();return !/^(mbyllur|humbur|arkivuar|closedlost|cancelled|realizuar)$/.test(s);}
 function one(){for(var i=0;i<arguments.length;i++)if(arguments[i])return arguments[i];return'';}
 function stamp(p){var v=p&&one(p.updated_at,p.last_activity_at,p.last_email_at,p.created_at),t=v?new Date(v).getTime():0;return isFinite(t)?t:0;}
 function currentView(){try{return window.PSTHomeCommandCenterV2&&window.PSTHomeCommandCenterV2.getView?window.PSTHomeCommandCenterV2.getView():'today';}catch(e){return'today';}}
