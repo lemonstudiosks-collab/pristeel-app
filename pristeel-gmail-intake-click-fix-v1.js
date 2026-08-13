@@ -20,7 +20,14 @@ function targetFromButton(btn){
   if(tid)u.searchParams.set('gmail_thread_id',tid);else u.searchParams.delete('gmail_thread_id');
   return u.href;
 }
+function isRealIntakeAction(btn){
+  if(!btn||!btn.classList||!btn.classList.contains('pst-gli-intake'))return false;
+  if(String(btn.getAttribute('data-intake-disabled')||'')==='1')return false;
+  var label=String(btn.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+  return label==='krijo / lidhe projektin'||label==='krijo/lidhe projektin';
+}
 function launch(btn){
+  if(!isRealIntakeAction(btn))return false;
   var target=targetFromButton(btn);
   if(!target){setStatus('Emaili nuk ka Gmail message ID. Rifresko listën dhe provo përsëri.',true);return false;}
   setStatus('Duke hapur thread-in për lidhje me projektin…');
@@ -56,11 +63,11 @@ function launch(btn){
 
 document.addEventListener('click',function(ev){
   var btn=ev.target&&ev.target.closest&&ev.target.closest('.pst-gli-intake');
-  if(!btn)return;
+  if(!btn||!isRealIntakeAction(btn))return;
   ev.preventDefault();
   ev.stopImmediatePropagation();
   launch(btn);
 },true);
 
-window.PSTGmailIntakeClickFixV1={launch:launch};
+window.PSTGmailIntakeClickFixV1={launch:launch,isRealIntakeAction:isRealIntakeAction};
 })();
