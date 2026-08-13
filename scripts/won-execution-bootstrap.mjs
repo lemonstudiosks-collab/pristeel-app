@@ -8,8 +8,8 @@ const STAGE_ORDER=['rfq_in','technical_review','supplier_selection','pricing','c
 const text=v=>String(v==null?'':v).trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
 
-export function isWonStatus(value){return /^(fituar|won|realizuar)$/.test(norm(value));}
-export function isTerminalStatus(value){return /^(mbyllur|closed|arkivuar|humbur|lost)$/.test(norm(value));}
+export function isWonStatus(value){return /^(fituar|won|closedwon)$/.test(norm(value));}
+export function isTerminalStatus(value){return /^(mbyllur|closed|realizuar|arkivuar|humbur|lost|closedlost|cancelled)$/.test(norm(value));}
 export function addDays(dateValue,days){
   const raw=/^\d{4}-\d{2}-\d{2}$/.test(text(dateValue))?text(dateValue):new Date().toISOString().slice(0,10);
   const d=new Date(`${raw}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);
@@ -28,17 +28,39 @@ function task(project,key,title,days,category,priority,today){return{
   contact_email:null,
   category
 };}
-export function buildExecutionTasks(project,{hasSupplier=false,today}={}){
+export function buildExecutionTasks(project,{hasSupplier=false,today,stage='production_control'}={}){
   if(!project?.id)return[];
+  if(stage==='factory_audit')return[
+    task(project,'quality_dossier','Verifiko dosjen e cilësisë dhe dokumentet para release-it',1,'intern','e larte',today),
+    task(project,'factory_audit_release','Kryej auditin / release-in e prodhimit para transportit',2,'intern','e larte',today)
+  ];
+  if(stage==='transport')return[
+    task(project,'transport_plan','Konfirmo transportin, adresën dhe dritaren e dorëzimit',1,'intern','e larte',today),
+    task(project,'shipping_docs','Përgatit dhe verifiko CMR / dokumentet finale të dërgesës',1,'intern','e larte',today),
+    task(project,'client_invoice','Kontrollo dhe lësho faturën e klientit sipas kushteve reale',2,'intern','e larte',today),
+    task(project,'payment_terms_capture','Regjistro afatin real të pagesës dhe planifiko follow-up-in financiar',3,'intern','mesatare',today),
+    task(project,'closure_review','Konfirmo dorëzimin final dhe gatishmërinë për Realizuar / Mbyllur',5,'intern','mesatare',today)
+  ];
   const rows=[
     task(project,'scope_lock','Finalizo scope-in dhe paketën e ekzekutimit',1,'intern','e larte',today),
     task(project,'buyer_confirmation','Konfirmo fillimin e ekzekutimit me klientin',1,'klient','e larte',today),
-    task(project,'execution_schedule','Konfirmo planin e prodhimit / dorëzimit',3,hasSupplier?'furnitor':'intern','mesatare',today)
+    task(project,'execution_schedule','Konfirmo planin e prodhimit / dorëzimit',3,hasSupplier?'furnitor':'intern','mesatare',today),
+    task(project,'production_docs','Kontrollo vizatimet e prodhimit dhe dokumentacionin teknik aktiv',5,'intern','mesatare',today)
   ];
   if(hasSupplier)rows.splice(2,0,task(project,'supplier_confirmation','Konfirmo furnitorin / prodhuesin para porosisë finale',1,'furnitor','e larte',today));
   return rows;
 }
 function stageRank(stage){const i=STAGE_ORDER.indexOf(text(stage));return i<0?-1:i;}
+function taskStage(project,patch){
+  const effective=text(patch.pipeline_stage||project.pipeline_stage);
+  if(effective==='factory_audit')return'factory_audit';
+  if(effective==='transport')return'transport';
+  return'production_control';
+}
+function taskBaseDate(project,today){
+  const raw=text(project.execution_bootstrapped_at).slice(0,10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw)?raw:today;
+}
 export function planExecutionBootstrap({projects=[],wonOffers=[],invoicesOut=[],supplierOffers=[],rfqs=[],existingTasks=[],today=new Date().toISOString().slice(0,10),nowIso=new Date().toISOString()}){
   const byId=new Map((projects||[]).map(p=>[String(p.id),p]));
   const wonIds=new Set();
@@ -70,9 +92,12 @@ export function planExecutionBootstrap({projects=[],wonOffers=[],invoicesOut=[],
       const bootstrapSource=isWonStatus(p.status)?'project_status':wonOfferIds.has(id)?'won_quote':invoiceEvidenceIds.has(id)?'invoice_execution':'won_evidence';
       patch.execution_bootstrapped_at=nowIso;
       patch.execution_bootstrap_source=bootstrapSource;
-      for(const t of buildExecutionTasks(p,{hasSupplier:supplierProjects.has(id),today})){
-        if(!existingRefs.has(t.source_ref)){taskCreates.push(t);existingRefs.add(t.source_ref);}
-      }
+    }
+
+    const stage=taskStage(p,patch);
+    const baseDate=alreadyBootstrapped?taskBaseDate(p,today):today;
+    for(const t of buildExecutionTasks(p,{hasSupplier:supplierProjects.has(id),today:baseDate,stage})){
+      if(!existingRefs.has(t.source_ref)){taskCreates.push(t);existingRefs.add(t.source_ref);}
     }
 
     if(Object.keys(patch).length)projectPatches.push({project:p,patch,alreadyBootstrapped});
@@ -113,9 +138,7 @@ export async function runWonExecutionBootstrap({
   nowIso=new Date().toISOString()
 }={}){
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
-  const access=apiKey
-    ? {supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}
-    : await resolveSupabaseWorkflowAccess({supabaseUrl});
+  const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
   const state=await readState(access);
   const plan=planExecutionBootstrap({projects:state.projects,wonOffers:state.wonOffers,invoicesOut:state.invoicesOut,supplierOffers:state.supplierOffers,rfqs:state.rfqs,existingTasks:state.tasks,today,nowIso});
   if(mode==='apply')await applyPlan({access,plan});
