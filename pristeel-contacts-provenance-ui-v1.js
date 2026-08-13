@@ -22,6 +22,16 @@ var original={
 function text(v){return String(v==null?'':v).trim();}
 function esc(v){return text(v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
 function contactId(c){return text(c&&c.id);}
+var PERSONAL_DOMAINS={gmail:1,googlemail:1,yahoo:1,outlook:1,hotmail:1,icloud:1,me:1,protonmail:1,proton:1,gmx:1,aol:1,live:1,msn:1,mail:1};
+function titleWords(v){return text(v).split(/[-_\s]+/).filter(Boolean).map(function(part){return part.charAt(0).toUpperCase()+part.slice(1).toLowerCase();}).join(' ');}
+function companyFromEmail(email){
+  var raw=text(email).toLowerCase(),at=raw.lastIndexOf('@');if(at<0)return'';
+  var domain=raw.slice(at+1).replace(/^www\./,'').replace(/^mail\./,'').replace(/^email\./,'').trim();if(!domain)return'';
+  var parts=domain.split('.').filter(Boolean);if(!parts.length)return'';
+  var label=parts[0];
+  if(PERSONAL_DOMAINS[label])return'';
+  return titleWords(label);
+}
 function sourceLabel(source){
   if(source==='hubspot')return 'HubSpot';
   if(source==='bitrix24')return 'Bitrix24';
@@ -185,6 +195,14 @@ function decorateCards(){
     var id=match[1];
     var contact=(window._contacts||[]).find(function(c){return contactId(c)===text(id);});
     if(!contact)return;
+    if(!text(contact.person)&&!text(contact.company)){
+      var fallback=companyFromEmail(contact.email),nameEl=card.querySelector('.ct-name');
+      if(fallback&&nameEl){
+        var flag=nameEl.querySelector('span');
+        nameEl.innerHTML=esc(fallback)+(flag?' '+flag.outerHTML:'');
+        nameEl.title='Emër kompanie i nxjerrë nga domain-i i emailit';
+      }
+    }
     var rows=sourcesFor(contact);
     var stack=document.createElement('div');stack.className='pst-ct-source-stack';
     if(!rows.length){stack.innerHTML='<span class="pst-ct-source other">Pa burim</span>';}
@@ -242,7 +260,8 @@ window.PSTContactsProvenanceUI={
   refreshSources:function(){return loadSources(true);},
   setSource:setSource,
   getSources:function(contact){return sourcesFor(contact);},
-  get state(){return {sourceFilter:sourceFilter,sourcesReady:sourcesReady,sourceLinks:sourceRows.length};}
+  get state(){return {sourceFilter:sourceFilter,sourcesReady:sourcesReady,sourceLinks:sourceRows.length};},
+  _test:{companyFromEmail:companyFromEmail,titleWords:titleWords,decorateCards:decorateCards}
 };
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
