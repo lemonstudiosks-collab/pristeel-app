@@ -12,6 +12,10 @@ assert(src.includes("isAutomatedIncoming"), 'Automated replies must not count as
 assert(src.includes("linkedThreadSet"), 'Project-linked threads must be excluded from cold outreach follow-up');
 assert(src.includes("lower(contact.kind)==='supplier'"), 'Supplier contacts must not be mixed into client cold outreach follow-up');
 assert(src.includes("return n<=1?7:n===2?14:30"), 'Follow-up cadence must be 7/14/30 days');
+assert(src.includes("function localDay(v)"), 'Follow-up must format dates in the browser local timezone');
+assert(src.includes("d.getFullYear()+'-'"), 'Local follow-up date must use local calendar fields');
+assert(src.includes("function todayDay(){return localDay(new Date());}"), 'Today must not be derived from UTC midnight');
+assert(!src.includes("setHours(0,0,0,0);return d.toISOString().slice(0,10)"), 'UTC midnight date drift must stay removed');
 assert(src.includes("Follow-up për kontakte"), 'Inbox must be relabeled as a follow-up queue');
 assert(src.includes("Kërkesa pa projekt"), 'Right column must represent only projectless requests');
 assert(src.includes("project_email_links?select="), 'Right-column filtering must inspect canonical project links');
