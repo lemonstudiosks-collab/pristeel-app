@@ -13,7 +13,7 @@ function arr(v){return Array.isArray(v)?v:[];}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function activeProject(p){
   var s=String(p&&p.status||'').toLowerCase().trim();
-  return !/^(mbyllur|fituar|humbur|arkivuar|closedwon|closedlost|cancelled|realizuar)$/.test(s);
+  return !/^(mbyllur|humbur|arkivuar|closedlost|cancelled|realizuar)$/.test(s);
 }
 function dateValue(p){
   var v=p&&((p.updated_at)||(p.last_activity_at)||(p.last_email_at)||(p.created_at));
