@@ -43,18 +43,18 @@ function groupStatus(row){
   if(/arkiv|archiv/.test(s))return'archived';
   if(/shtyr|postpon|paused|on hold|pezull/.test(s))return'postponed';
   if(/humb|lost|cancel|refuz/.test(s))return'lost';
-  if(/fituar|won|realizuar/.test(s))return'won';
+  if(s==='fituar'||s==='won'||s==='closedwon'||/\bfituar\b/.test(s))return'won';
+  if(/realizuar|mbyllur|closed/.test(s))return'closed';
   if(/pritje|waiting|pending/.test(s))return'waiting';
-  if(/mbyllur|closed/.test(s))return'closed';
   return'active';
 }
 function statusInfo(row){
   var g=groupStatus(row),label=String(row.status||'').trim();
-  if(g==='won')return{group:g,label:/realizuar/.test(norm(label))?'Realizuar':'Fituar',c:GREEN_STRONG,bg:'#DDF1E6'};
+  if(g==='won')return{group:g,label:'Fituar',c:GREEN_STRONG,bg:'#DDF1E6'};
   if(g==='lost')return{group:g,label:'Humbur',c:RED,bg:RED_BG};
   if(g==='postponed')return{group:g,label:'Shtyrë',c:AMBER,bg:AMBER_BG};
   if(g==='archived')return{group:g,label:'Arkivuar',c:GREY,bg:GREY_BG};
-  if(g==='closed')return{group:g,label:'Mbyllur',c:GREY,bg:GREY_BG};
+  if(g==='closed')return{group:g,label:/realizuar/.test(norm(label))?'Realizuar':'Mbyllur',c:GREY,bg:GREY_BG};
   if(g==='waiting')return{group:g,label:'Në pritje',c:BRAND_DEEP,bg:BRAND_PALE};
   return{group:g,label:label&&norm(label)!=='aktiv'?label:'Aktiv',c:GREEN,bg:GREEN_BG};
 }
@@ -74,11 +74,11 @@ function activity(row){
 function description(row){return row.description||row.notes||row.summary||row.scope||'';}
 function counts(){
   var c={all:state.rows.length,active:0,waiting:0,postponed:0,lost:0,won:0,archived:0};
-  state.rows.forEach(function(r){var g=groupStatus(r);if(c[g]!==undefined)c[g]++;else if(g==='closed')c.archived++;});return c;
+  state.rows.forEach(function(r){var g=groupStatus(r);if(g==='won'){c.won++;c.active++;}else if(c[g]!==undefined)c[g]++;else if(g==='closed')c.archived++;});return c;
 }
 function visibleRows(){
   var q=norm(state.search),rows=state.rows.filter(function(r){
-    var g=groupStatus(r),ok=state.filter==='all'||g===state.filter||(state.filter==='archived'&&g==='closed');
+    var g=groupStatus(r),ok=state.filter==='all'||g===state.filter||(state.filter==='active'&&g==='won')||(state.filter==='archived'&&g==='closed');
     if(!ok)return false;
     if(!q)return true;
     return norm([r.name,r.client,r.ref,r.reference,r.pipeline_stage,description(r)].join(' ')).indexOf(q)>-1;
@@ -206,7 +206,7 @@ function bind(p){
 async function load(force){
   css();try{var saved=localStorage.getItem('pristeel_projects_modern_view');if(saved==='board'||saved==='list')state.view=saved;}catch(e){}
   shell();state.loading=true;
-  try{state.rows=await fetchProjects();window.__pstWorkspaceProjectRows=state.rows;window._allProjectsCache=state.rows;state.loading=false;render();var b=document.getElementById('pst-ws-b-projects');if(b){var n=state.rows.filter(function(r){return['active','waiting','postponed'].indexOf(groupStatus(r))>-1;}).length;b.textContent=String(n);b.style.display=n?'inline-flex':'none';}}
+  try{state.rows=await fetchProjects();window.__pstWorkspaceProjectRows=state.rows;window._allProjectsCache=state.rows;state.loading=false;render();var b=document.getElementById('pst-ws-b-projects');if(b){var n=state.rows.filter(function(r){return['active','waiting','postponed','won'].indexOf(groupStatus(r))>-1;}).length;b.textContent=String(n);b.style.display=n?'inline-flex':'none';}}
   catch(e){state.loading=false;var h=document.getElementById('pst-pm-content');if(h)h.innerHTML='<div class="pst-pm-empty">Projektet nuk u ngarkuan: '+esc(e.message||e)+'</div>';}
 }
 window.pstProjectsModernOpen=function(){return load(false);};
