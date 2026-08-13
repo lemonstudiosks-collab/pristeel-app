@@ -13,14 +13,16 @@ var FREE_DOMAINS=new Set(['gmail.com','googlemail.com','outlook.com','hotmail.co
 
 function text(v){return String(v==null?'':v).trim();}
 function lower(v){return text(v).toLowerCase();}
-function esc(v){return text(v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+function esc(v){return text(v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch];});}
 function email(v){var m=lower(v).match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
 function isInternal(v){var e=email(v);return !e||/@prissteel\.com$/i.test(e);}
 function arr(v){return Array.isArray(v)?v:[];}
 function uniq(v){var seen=new Set();return arr(v).filter(function(x){x=text(x);if(!x||seen.has(x))return false;seen.add(x);return true;});}
 function safeDate(v){var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d:null;}
-function isoDay(v){var d=safeDate(v);if(!d)return'';return d.toISOString().slice(0,10);}
-function todayDay(){var d=new Date();d.setHours(0,0,0,0);return d.toISOString().slice(0,10);}
+function pad2(v){return String(v).padStart(2,'0');}
+function localDay(v){var d=safeDate(v);if(!d)return'';return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+function isoDay(v){return localDay(v);}
+function todayDay(){return localDay(new Date());}
 function fmtDay(v){var d=safeDate(v);if(!d)return'—';return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});}
 function addDays(v,n){var d=safeDate(v);if(!d)return null;d=new Date(d.getTime());d.setUTCDate(d.getUTCDate()+Number(n||0));return d;}
 function daysBetween(a,b){var x=safeDate(a),y=safeDate(b);if(!x||!y)return 0;x.setHours(0,0,0,0);y.setHours(0,0,0,0);return Math.round((y-x)/86400000);}
@@ -110,7 +112,7 @@ function renderLeft(filter){var root=document.getElementById('pst-ws-inbox-email
 function renderRight(){var root=document.getElementById('pst-ws-inbox-requests');if(!root)return;var cards=document.querySelectorAll('#page-workspace-inbox .pst-ws-card');if(cards[1]){var s=cards[1].querySelector('.pst-ws-card-sub');if(s)s.textContent='Vetëm hyrjet pa lidhje të provuar · '+state.removedRequests+' komunikime projekti u filtruan';}var list=state.requests.slice(0,40);root.innerHTML=list.length?list.map(function(x){return'<div class="pst-ws-action"><i class="pst-ws-action-dot" style="--c:#B78324;--bg:rgba(183,131,36,.08)"></i><div class="pst-ws-action-main" onclick="pstWsLegacy(\'outreach\')"><div class="pst-ws-action-title">'+esc(x.subject||x.file_name||'Kërkesë')+'</div><div class="pst-ws-action-meta">'+esc(x.sender||'')+' · '+fmtDay(x.received_at||x.created_at)+'</div></div><button class="pst-ws-rowaction" onclick="pstWsLegacy(\'outreach\')">Analizo</button></div>';}).join(''):'<div class="pst-ws-empty" style="color:#3F7A4E">Nuk ka kërkesa të palidhura me projekt.</div>';}
 
 async function loadData(generation){
-  var now=new Date(),nowIso=encodeURIComponent(now.toISOString());
+  var now=new Date();
   var out=await Promise.all([
     fetchPaged('project_emails?direction=eq.outgoing&project_id=is.null&select=id,gmail_message_id,gmail_thread_id,rfc822_message_id,to_emails,subject,sent_at,gmail_url&order=sent_at.asc',1000),
     fetchPaged('project_emails?direction=eq.incoming&select=id,gmail_thread_id,from_email,from_name,subject,snippet,sent_at,project_id&order=sent_at.asc',1000),
