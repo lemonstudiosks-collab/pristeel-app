@@ -24,7 +24,7 @@ function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'
 function enc(v){return encodeURIComponent(String(v==null?'':v));}
 function arr(v){return Array.isArray(v)?v:[];}
 function projectId(){return String(window.__pstCurrentProjectId||window._curProjId||'');}
-function closedStatus(v){return /humb|lost|closed|mbyll|arkiv|cancel|fituar|won|realizuar/i.test(String(v||''));}
+function closedStatus(v){var s=String(v||'').toLowerCase().trim();if(s==='fituar'||s==='won'||s==='closedwon')return false;return /humb|lost|closed|mbyll|arkiv|cancel|realizuar/i.test(s);}
 function toast(text,error){
   if(typeof window.toast==='function'){window.toast(text,error);return;}
   var old=document.getElementById('pst-flow-toast');if(old)old.remove();
