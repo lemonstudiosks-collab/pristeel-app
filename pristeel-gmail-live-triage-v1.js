@@ -11,7 +11,7 @@ window.__pstGmailLiveTriageV1=true;
 var state={busy:false,outreachThreads:new Map(),dismissed:new Set(),waiting:[],seq:0};
 function text(v){return String(v==null?'':v).trim();}
 function lower(v){return text(v).toLowerCase();}
-function esc(v){return text(v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function esc(v){return text(v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c];});}
 function email(v){var m=lower(v).match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
 function emails(v){return lower(v).match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/g)||[];}
 function arr(v){return Array.isArray(v)?v:[];}
@@ -29,6 +29,7 @@ function queryIn(name,values){values=uniq(values);return name+'=in.('+values.map
 function noteJson(v){try{return JSON.stringify(v);}catch(e){return text(v);}}
 function parseNote(v){try{var x=JSON.parse(text(v));return x&&typeof x==='object'?x:{};}catch(e){return{};}}
 function domain(e){e=email(e);return e?e.split('@')[1]:'';}
+function findAction(mid){return document.querySelector('[data-mid="'+text(mid).replace(/["\\]/g,'')+'"]');}
 function classify(r){
   var hay=lower([r&&r.from_email,r&&r.from_name,r&&r.subject,r&&r.snippet].join(' ')),tid=threadKey(r);
   if(state.dismissed.has(text(r&&r.gmail_message_id)))return'dismissed';
@@ -66,7 +67,7 @@ async function upsertOutreach(contact,patch){
 async function dismiss(mid,reason,label){
   mid=text(mid);if(!mid)return;var existing=await getOne('dismissed_items?select=id&item_type=eq.gmail_live&item_ref=eq.'+encodeURIComponent(mid)+'&limit=1');
   if(!existing)await window.supaFetch('dismissed_items','POST',{item_type:'gmail_live',item_ref:mid,project_id:null,label:label||null,reason:reason||'triaged',dismissed_by:null,dismissed_at:new Date().toISOString()});
-  state.dismissed.add(mid);var b=document.querySelector('.pst-gli-intake[data-mid="'+CSS.escape(mid)+'"]');var row=b&&b.closest('.pst-ws-action');if(row)row.remove();
+  state.dismissed.add(mid);var b=findAction(mid),row=b&&b.closest('.pst-ws-action');if(row)row.remove();
 }
 function outreachContext(r){return state.outreachThreads.get(threadKey(r))||null;}
 function originalRecipient(ctx){return email(ctx&&ctx.to_emails&&ctx.to_emails[0]);}
@@ -89,9 +90,10 @@ async function loadContext(rows,seq){
 }
 function applyRows(){
   restoreHeadings();var G=window.PSTGmailLiveInboxV2,rows=G&&G._state&&G._state.rows||[];
-  rows.forEach(function(r){var mid=text(r.gmail_message_id),btn=document.querySelector('.pst-gli-intake[data-mid="'+CSS.escape(mid)+'"]'),row=btn&&btn.closest('.pst-ws-action');if(!row)return;var kind=classify(r);if(kind==='dismissed'){row.remove();return;}var title=row.querySelector('.pst-ws-action-title');if(title){var old=title.querySelector('.pst-glt-tag');if(old)old.remove();if(kind!=='intake'){var tag=document.createElement('span');tag.className='pst-glt-tag '+(kind==='outreach_reply'?'reply':kind);tag.textContent=kind==='bounce'?'Bounce':kind==='outreach_reply'?'Përgjigje outreach':'Auto-reply';title.appendChild(tag);}}
-    if(kind==='bounce'){btn.textContent='Hiqe nga PPPP';btn.classList.remove('pst-gli-intake');btn.onclick=function(){window.PSTGmailLiveTriageV1.dismissBounce(mid,this);};}
+  rows.forEach(function(r){var mid=text(r.gmail_message_id),btn=findAction(mid),row=btn&&btn.closest('.pst-ws-action');if(!row)return;var kind=classify(r);if(kind==='dismissed'){row.remove();return;}var title=row.querySelector('.pst-ws-action-title');if(title){var old=title.querySelector('.pst-glt-tag');if(old)old.remove();if(kind!=='intake'){var tag=document.createElement('span');tag.className='pst-glt-tag '+(kind==='outreach_reply'?'reply':kind);tag.textContent=kind==='bounce'?'Bounce':kind==='outreach_reply'?'Përgjigje outreach':'Auto-reply';title.appendChild(tag);}}
+    if(kind==='bounce'){btn.textContent='Hiqe nga PPPP';btn.onclick=function(){window.PSTGmailLiveTriageV1.dismissBounce(mid,this);};}
     else if(kind==='outreach_reply'){btn.textContent='Ruaj follow-up';btn.onclick=function(){window.PSTGmailLiveTriageV1.followup(mid,this);};}
+    else if(kind==='auto'){btn.textContent='Shqyrto';btn.onclick=function(){if(r.gmail_url)window.open(r.gmail_url,'PRISTEEL_GMAIL');};}
   });
 }
 async function injectWaiting(){
@@ -101,9 +103,9 @@ async function injectWaiting(){
   var toolbar=root.querySelector('.pst-ofu-toolbar');if(toolbar&&toolbar.nextSibling)root.insertBefore(box,toolbar.nextSibling);else root.insertBefore(box,root.firstChild);
 }
 async function refresh(){if(state.busy)return;var G=window.PSTGmailLiveInboxV2,rows=G&&G._state&&G._state.rows||[];if(!rows.length){restoreHeadings();await injectWaiting();return;}state.busy=true;var seq=++state.seq;try{await loadContext(rows,seq);if(seq!==state.seq)return;applyRows();await injectWaiting();}finally{if(seq===state.seq)state.busy=false;}}
-function schedule(){[120,900,2400,4800].forEach(function(ms){setTimeout(function(){refresh().catch(function(e){console.warn('Gmail triage:',e);});},ms);});}
+function schedule(){[120,900,2400,4800,8000].forEach(function(ms){setTimeout(function(){refresh().catch(function(e){console.warn('Gmail triage:',e);});},ms);});}
 async function openFollowup(r){
-  var ctx=outreachContext(r);if(!ctx){throw new Error('Thread-i nuk u gjet në historikun e cold outreach.');}var full=await fullMessage(r),suggested=explicitReturnDate(full.body,r.sent_at),recipient=originalRecipient(ctx);if(!recipient)throw new Error('Nuk u gjet marrësi i emailit fillestar.');var old=document.getElementById('pst-glt-modal-bg');if(old)old.remove();var bg=document.createElement('div');bg.id='pst-glt-modal-bg';bg.innerHTML='<div id="pst-glt-modal"><div class="hd"><div><div class="title">Ruaj për follow-up</div><div class="sub">'+esc(r.from_name||r.from_email)+' · '+esc(r.subject||'')+'</div></div><button onclick="document.getElementById(\'pst-glt-modal-bg\').remove()">×</button></div><div class="bd"><div class="note">'+(suggested?'U gjet një datë konkrete në përgjigje. Kontrolloje para ruajtjes.':'Data e kthimit nuk u dha në këtë email. Mund ta ruash pa datë dhe ta vendosësh më vonë.')+'</div><label>Data e follow-up</label><input id="pst-glt-follow-date" type="date" value="'+esc(suggested)+'"><input id="pst-glt-follow-mid" type="hidden" value="'+esc(r.gmail_message_id)+'"></div><div class="ft"><button onclick="document.getElementById(\'pst-glt-modal-bg\').remove()">Anulo</button><button class="primary" onclick="PSTGmailLiveTriageV1.confirmFollowup()">Ruaj në pritje</button></div></div>';document.body.appendChild(bg);bg.__pstFull=full;bg.__pstCtx=ctx;bg.__pstRow=r;
+  var ctx=outreachContext(r);if(!ctx)throw new Error('Thread-i nuk u gjet në historikun e cold outreach.');var full=await fullMessage(r),suggested=explicitReturnDate(full.body,r.sent_at),recipient=originalRecipient(ctx);if(!recipient)throw new Error('Nuk u gjet marrësi i emailit fillestar.');var old=document.getElementById('pst-glt-modal-bg');if(old)old.remove();var bg=document.createElement('div');bg.id='pst-glt-modal-bg';bg.innerHTML='<div id="pst-glt-modal"><div class="hd"><div><div class="title">Ruaj për follow-up</div><div class="sub">'+esc(r.from_name||r.from_email)+' · '+esc(r.subject||'')+'</div></div><button onclick="document.getElementById(\'pst-glt-modal-bg\').remove()">×</button></div><div class="bd"><div class="note">'+(suggested?'U gjet një datë konkrete në përgjigje. Kontrolloje para ruajtjes.':'Data e kthimit nuk u dha në këtë email. Mund ta ruash pa datë dhe ta vendosësh më vonë.')+'</div><label>Data e follow-up</label><input id="pst-glt-follow-date" type="date" value="'+esc(suggested)+'"><input id="pst-glt-follow-mid" type="hidden" value="'+esc(r.gmail_message_id)+'"></div><div class="ft"><button onclick="document.getElementById(\'pst-glt-modal-bg\').remove()">Anulo</button><button class="primary" onclick="PSTGmailLiveTriageV1.confirmFollowup()">Ruaj në pritje</button></div></div>';document.body.appendChild(bg);bg.__pstFull=full;bg.__pstCtx=ctx;bg.__pstRow=r;
 }
 window.PSTGmailLiveTriageV1={
   refresh:refresh,
@@ -119,6 +121,7 @@ function bind(){
   document.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target&&e.target.id==='pst-gli-query')schedule();},true);
   var original=window.pstWorkspaceGo;if(typeof original==='function'&&!original.__pstGmailTriageWrapped){var wrapped=function(key){var out=original.apply(this,arguments);if(key==='inbox')schedule();return out;};wrapped.__pstGmailTriageWrapped=true;window.pstWorkspaceGo=wrapped;}
 }
+installStyle();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
 document.addEventListener('pst:modules-ready',function(){restoreHeadings();schedule();},{once:true});
 })();
