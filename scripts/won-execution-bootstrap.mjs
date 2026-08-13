@@ -28,7 +28,21 @@ function task(project,key,title,days,category,priority,today){return{
   contact_email:null,
   category
 };}
-export function buildExecutionTasks(project,{hasSupplier=false,today,stage='production_control'}={}){
+
+/* Initial bootstrap contract kept stable for legacy governance/tests. */
+export function buildExecutionTasks(project,{hasSupplier=false,today}={}){
+  if(!project?.id)return[];
+  const rows=[
+    task(project,'scope_lock','Finalizo scope-in dhe paketën e ekzekutimit',1,'intern','e larte',today),
+    task(project,'buyer_confirmation','Konfirmo fillimin e ekzekutimit me klientin',1,'klient','e larte',today),
+    task(project,'execution_schedule','Konfirmo planin e prodhimit / dorëzimit',3,hasSupplier?'furnitor':'intern','mesatare',today)
+  ];
+  if(hasSupplier)rows.splice(2,0,task(project,'supplier_confirmation','Konfirmo furnitorin / prodhuesin para porosisë finale',1,'furnitor','e larte',today));
+  return rows;
+}
+
+/* Stage-aware checklist is additive and idempotent. It never changes stage/status. */
+export function buildStageTasks(project,{hasSupplier=false,today,stage='production_control'}={}){
   if(!project?.id)return[];
   if(stage==='factory_audit')return[
     task(project,'quality_dossier','Verifiko dosjen e cilësisë dhe dokumentet para release-it',1,'intern','e larte',today),
@@ -41,26 +55,16 @@ export function buildExecutionTasks(project,{hasSupplier=false,today,stage='prod
     task(project,'payment_terms_capture','Regjistro afatin real të pagesës dhe planifiko follow-up-in financiar',3,'intern','mesatare',today),
     task(project,'closure_review','Konfirmo dorëzimin final dhe gatishmërinë për Realizuar / Mbyllur',5,'intern','mesatare',today)
   ];
-  const rows=[
-    task(project,'scope_lock','Finalizo scope-in dhe paketën e ekzekutimit',1,'intern','e larte',today),
-    task(project,'buyer_confirmation','Konfirmo fillimin e ekzekutimit me klientin',1,'klient','e larte',today),
-    task(project,'execution_schedule','Konfirmo planin e prodhimit / dorëzimit',3,hasSupplier?'furnitor':'intern','mesatare',today),
-    task(project,'production_docs','Kontrollo vizatimet e prodhimit dhe dokumentacionin teknik aktiv',5,'intern','mesatare',today)
-  ];
-  if(hasSupplier)rows.splice(2,0,task(project,'supplier_confirmation','Konfirmo furnitorin / prodhuesin para porosisë finale',1,'furnitor','e larte',today));
+  const rows=buildExecutionTasks(project,{hasSupplier,today});
+  rows.push(task(project,'production_docs','Kontrollo vizatimet e prodhimit dhe dokumentacionin teknik aktiv',5,'intern','mesatare',today));
   return rows;
 }
 function stageRank(stage){const i=STAGE_ORDER.indexOf(text(stage));return i<0?-1:i;}
-function taskStage(project,patch){
-  const effective=text(patch.pipeline_stage||project.pipeline_stage);
-  if(effective==='factory_audit')return'factory_audit';
-  if(effective==='transport')return'transport';
-  return'production_control';
-}
-function taskBaseDate(project,today){
-  const raw=text(project.execution_bootstrapped_at).slice(0,10);
+function taskBaseDate(project,patch,today){
+  const raw=text(project.execution_bootstrapped_at||patch?.execution_bootstrapped_at).slice(0,10);
   return /^\d{4}-\d{2}-\d{2}$/.test(raw)?raw:today;
 }
+
 export function planExecutionBootstrap({projects=[],wonOffers=[],invoicesOut=[],supplierOffers=[],rfqs=[],existingTasks=[],today=new Date().toISOString().slice(0,10),nowIso=new Date().toISOString()}){
   const byId=new Map((projects||[]).map(p=>[String(p.id),p]));
   const wonIds=new Set();
@@ -92,18 +96,57 @@ export function planExecutionBootstrap({projects=[],wonOffers=[],invoicesOut=[],
       const bootstrapSource=isWonStatus(p.status)?'project_status':wonOfferIds.has(id)?'won_quote':invoiceEvidenceIds.has(id)?'invoice_execution':'won_evidence';
       patch.execution_bootstrapped_at=nowIso;
       patch.execution_bootstrap_source=bootstrapSource;
-    }
-
-    const stage=taskStage(p,patch);
-    const baseDate=alreadyBootstrapped?taskBaseDate(p,today):today;
-    for(const t of buildExecutionTasks(p,{hasSupplier:supplierProjects.has(id),today:baseDate,stage})){
-      if(!existingRefs.has(t.source_ref)){taskCreates.push(t);existingRefs.add(t.source_ref);}
+      for(const t of buildExecutionTasks(p,{hasSupplier:supplierProjects.has(id),today})){
+        if(!existingRefs.has(t.source_ref)){taskCreates.push(t);existingRefs.add(t.source_ref);}
+      }
     }
 
     if(Object.keys(patch).length)projectPatches.push({project:p,patch,alreadyBootstrapped});
   }
   return{projectPatches,taskCreates,skipped,wonProjectIds:[...wonIds]};
 }
+
+export function planExecutionStageTasks({projects=[],supplierOffers=[],rfqs=[],existingTasks=[],baseTaskCreates=[],projectPatches=[],eligibleProjectIds=[],today=new Date().toISOString().slice(0,10)}){
+  const byId=new Map((projects||[]).map(p=>[String(p.id),p]));
+  const eligible=new Set((eligibleProjectIds||[]).map(String));
+  if(!eligible.size)for(const p of projects||[])if(isWonStatus(p.status))eligible.add(String(p.id));
+  const supplierProjects=new Set();
+  for(const o of supplierOffers||[])if(o?.project_id)supplierProjects.add(String(o.project_id));
+  for(const r of rfqs||[])if(r?.project_id)supplierProjects.add(String(r.project_id));
+  const patchMap=new Map((projectPatches||[]).map(x=>[String(x?.project?.id||''),x.patch||{}]));
+  const existingRefs=new Set();
+  for(const t of [...(existingTasks||[]),...(baseTaskCreates||[])])if(text(t.source)===SOURCE&&text(t.source_ref))existingRefs.add(text(t.source_ref));
+  const taskCreates=[];const skipped=[];
+  for(const id of eligible){
+    const p=byId.get(id);if(!p){skipped.push({project_id:id,reason:'missing_project'});continue;}
+    const patch=patchMap.get(id)||{};
+    const effectiveStatus=text(patch.status||p.status);
+    if(isTerminalStatus(effectiveStatus)){skipped.push({project_id:id,reason:'terminal_status'});continue;}
+    const stage=text(patch.pipeline_stage||p.pipeline_stage);
+    if(stageRank(stage)<stageRank('production_control')){skipped.push({project_id:id,reason:'pre_execution_stage'});continue;}
+    const stageKey=stage==='transport'?'transport':stage==='factory_audit'?'factory_audit':'production_control';
+    const baseDate=taskBaseDate(p,patch,today);
+    for(const t of buildStageTasks(p,{hasSupplier:supplierProjects.has(id),today:baseDate,stage:stageKey})){
+      if(!existingRefs.has(t.source_ref)){taskCreates.push(t);existingRefs.add(t.source_ref);}
+    }
+  }
+  return{taskCreates,skipped};
+}
+
+export function combineExecutionTasks({basePlan,stagePlan,projects=[]}){
+  const byId=new Map((projects||[]).map(p=>[String(p.id),p]));
+  const patchMap=new Map((basePlan?.projectPatches||[]).map(x=>[String(x?.project?.id||''),x.patch||{}]));
+  const keepBase=(basePlan?.taskCreates||[]).filter(t=>{
+    const p=byId.get(String(t.project_id));if(!p)return true;
+    const patch=patchMap.get(String(t.project_id))||{};
+    const stage=text(patch.pipeline_stage||p.pipeline_stage);
+    return stageRank(stage)<=stageRank('production_control');
+  });
+  const seen=new Set();const out=[];
+  for(const t of [...keepBase,...(stagePlan?.taskCreates||[])]){if(!t?.source_ref||seen.has(t.source_ref))continue;seen.add(t.source_ref);out.push(t);}
+  return out;
+}
+
 async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',body,prefer}){
   const res=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const raw=await res.text();if(!res.ok)throw new Error(`${method} ${path} failed: HTTP ${res.status} ${raw.slice(0,700)}`);return raw?JSON.parse(raw):[];
@@ -121,12 +164,8 @@ async function readState(access){
 }
 async function applyPlan({access,plan}){
   const{supabaseUrl,apiKey,bearerToken}=access;
-  if(plan.taskCreates.length){
-    await rest({supabaseUrl,apiKey,bearerToken,path:'tasks?on_conflict=source,source_ref',method:'POST',body:plan.taskCreates,prefer:'resolution=merge-duplicates,return=minimal'});
-  }
-  for(const item of plan.projectPatches){
-    await rest({supabaseUrl,apiKey,bearerToken,path:`projects?id=eq.${encodeURIComponent(item.project.id)}`,method:'PATCH',body:item.patch,prefer:'return=minimal'});
-  }
+  if(plan.taskCreates.length)await rest({supabaseUrl,apiKey,bearerToken,path:'tasks?on_conflict=source,source_ref',method:'POST',body:plan.taskCreates,prefer:'resolution=merge-duplicates,return=minimal'});
+  for(const item of plan.projectPatches)await rest({supabaseUrl,apiKey,bearerToken,path:`projects?id=eq.${encodeURIComponent(item.project.id)}`,method:'PATCH',body:item.patch,prefer:'return=minimal'});
 }
 async function writeSummary(summary){await mkdir('tmp',{recursive:true});await writeFile('tmp/won-execution-bootstrap.json',JSON.stringify(summary,null,2));}
 export async function runWonExecutionBootstrap({
@@ -140,7 +179,10 @@ export async function runWonExecutionBootstrap({
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
   const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
   const state=await readState(access);
-  const plan=planExecutionBootstrap({projects:state.projects,wonOffers:state.wonOffers,invoicesOut:state.invoicesOut,supplierOffers:state.supplierOffers,rfqs:state.rfqs,existingTasks:state.tasks,today,nowIso});
+  const basePlan=planExecutionBootstrap({projects:state.projects,wonOffers:state.wonOffers,invoicesOut:state.invoicesOut,supplierOffers:state.supplierOffers,rfqs:state.rfqs,existingTasks:state.tasks,today,nowIso});
+  const stagePlan=planExecutionStageTasks({projects:state.projects,supplierOffers:state.supplierOffers,rfqs:state.rfqs,existingTasks:state.tasks,baseTaskCreates:basePlan.taskCreates,projectPatches:basePlan.projectPatches,eligibleProjectIds:basePlan.wonProjectIds,today});
+  const taskCreates=combineExecutionTasks({basePlan,stagePlan,projects:state.projects});
+  const plan={...basePlan,taskCreates,skipped:[...basePlan.skipped,...stagePlan.skipped]};
   if(mode==='apply')await applyPlan({access,plan});
   const summary={mode,auth_mode:access.authMode,today,won_projects:plan.wonProjectIds.length,project_patches:plan.projectPatches.length,tasks_create:plan.taskCreates.length,skipped:plan.skipped.length,projects:plan.projectPatches.map(x=>({id:x.project.id,name:x.project.name,already_bootstrapped:x.alreadyBootstrapped,patch:x.patch})),tasks:plan.taskCreates.map(t=>({project_id:t.project_id,title:t.title,due_date:t.due_date,category:t.category,source_ref:t.source_ref}))};
   await writeSummary(summary);console.log(`Won execution bootstrap ${mode} (${summary.auth_mode}): ${summary.won_projects} won project(s), ${summary.project_patches} project patch(es), ${summary.tasks_create} task(s).`);return summary;
