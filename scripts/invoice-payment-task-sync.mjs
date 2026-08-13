@@ -5,6 +5,7 @@ import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 const DEFAULT_SUPABASE_URL = 'https://isymxqfqzkchbsrbhucf.supabase.co';
 const RECEIVABLE_SOURCE = 'invoice_receivable';
 const PAYABLE_SOURCE = 'invoice_payable';
+const DUE_DATE_SOURCE = 'invoice_due_date_missing';
 
 const text = value => String(value == null ? '' : value).trim();
 const bool = value => value === true || String(value).toLowerCase() === 'true';
@@ -48,15 +49,30 @@ function timingText(days) {
   return `afati pas ${days} ditësh`;
 }
 
+function invoiceNr(invoice, kind) {
+  return text(kind === 'out' ? invoice?.invoice_nr : invoice?.supplier_invoice_nr) || 'pa numër';
+}
+function partyText(invoice, kind) {
+  return text(kind === 'out' ? invoice?.client : invoice?.supplier) || (kind === 'out' ? 'Klient' : 'Furnitor');
+}
+function projectText(invoice) {
+  return text(invoice?.project) || 'Pa projekt';
+}
+function paymentSource(kind) {
+  return kind === 'out' ? RECEIVABLE_SOURCE : PAYABLE_SOURCE;
+}
+function dueDateSourceRef(invoice, kind) {
+  return `${kind}:${invoice?.id || ''}`;
+}
+
 export function taskFromInvoice(invoice, kind, today) {
   const due = dateOnly(invoice?.due_date);
   if (!invoice?.id || !due) return null;
   const days = daysFromToday(due, today);
   const outgoing = kind === 'out';
-  const nr = text(outgoing ? invoice.invoice_nr : invoice.supplier_invoice_nr) || 'pa numër';
-  const party = text(outgoing ? invoice.client : invoice.supplier) || (outgoing ? 'Klient' : 'Furnitor');
-  const project = text(invoice.project) || 'Pa projekt';
-  const source = outgoing ? RECEIVABLE_SOURCE : PAYABLE_SOURCE;
+  const nr = invoiceNr(invoice, kind);
+  const party = partyText(invoice, kind);
+  const project = projectText(invoice);
   return {
     project_id: invoice.project_id || null,
     title: `[AUTO] ${outgoing ? 'Pagesë klienti' : 'Pagesë furnitori'} — ${nr}`,
@@ -65,8 +81,27 @@ export function taskFromInvoice(invoice, kind, today) {
     priority: priorityForDays(days),
     status: 'hapur',
     done_at: null,
-    source,
+    source: paymentSource(kind),
     source_ref: String(invoice.id),
+    contact_email: null,
+    category: outgoing ? 'klient' : 'furnitor'
+  };
+}
+
+export function missingDueDateTask(invoice, kind, today) {
+  if (!invoice?.id || !dateOnly(today)) return null;
+  const outgoing = kind === 'out';
+  const nr = invoiceNr(invoice, kind);
+  return {
+    project_id: invoice.project_id || null,
+    title: `[AUTO] Plotëso afatin e pagesës — ${nr}`,
+    detail: `${partyText(invoice, kind)} · ${projectText(invoice)} · ${amountText(invoice, kind)} · Fatura është e papaguar dhe nuk ka afat pagese të regjistruar. Verifiko dokumentin/kushtet dhe plotëso due_date; mos e hamendëso.`,
+    due_date: dateOnly(today),
+    priority: 'e larte',
+    status: 'hapur',
+    done_at: null,
+    source: DUE_DATE_SOURCE,
+    source_ref: dueDateSourceRef(invoice, kind),
     contact_email: null,
     category: outgoing ? 'klient' : 'furnitor'
   };
@@ -86,21 +121,37 @@ export function planInvoiceTasks({ outgoing = [], incoming = [], existingTasks =
 
   for (const [kind, rows] of [['out', outgoing], ['in', incoming]]) {
     for (const invoice of rows || []) {
-      const source = kind === 'out' ? RECEIVABLE_SOURCE : PAYABLE_SOURCE;
-      const key = `${source}::${invoice?.id || ''}`;
-      const current = existing.get(key) || null;
-      const due = dateOnly(invoice?.due_date);
+      if (!invoice?.id) {
+        skipped.push({ kind, id: null, reason: 'missing_invoice_id' });
+        continue;
+      }
+      const paySource = paymentSource(kind);
+      const paymentKey = `${paySource}::${invoice.id}`;
+      const dueKey = `${DUE_DATE_SOURCE}::${dueDateSourceRef(invoice, kind)}`;
+      const paymentCurrent = existing.get(paymentKey) || null;
+      const dueCurrent = existing.get(dueKey) || null;
+      const due = dateOnly(invoice.due_date);
+      const paid = bool(invoice.paid);
 
-      if (!invoice?.id || !due) {
-        skipped.push({ kind, id: invoice?.id || null, reason: 'missing_due_date' });
+      if (paid) {
+        if (paymentCurrent && String(paymentCurrent.status || '').toLowerCase() !== 'kryer') {
+          complete.push({ task: paymentCurrent, invoice, kind, reason: 'invoice_paid' });
+        }
+        if (dueCurrent && String(dueCurrent.status || '').toLowerCase() !== 'kryer') {
+          complete.push({ task: dueCurrent, invoice, kind, reason: 'invoice_paid' });
+        }
         continue;
       }
 
-      if (bool(invoice.paid)) {
-        if (current && String(current.status || '').toLowerCase() !== 'kryer') {
-          complete.push({ task: current, invoice, kind });
-        }
+      if (!due) {
+        const task = missingDueDateTask(invoice, kind, today);
+        if (task) planned.push({ action: dueCurrent ? 'update' : 'create', task, invoice, kind, reason: 'missing_due_date' });
+        else skipped.push({ kind, id: invoice.id, reason: 'invalid_today_for_due_review' });
         continue;
+      }
+
+      if (dueCurrent && String(dueCurrent.status || '').toLowerCase() !== 'kryer') {
+        complete.push({ task: dueCurrent, invoice, kind, reason: 'due_date_filled' });
       }
 
       const days = daysFromToday(due, today);
@@ -109,13 +160,13 @@ export function planInvoiceTasks({ outgoing = [], incoming = [], existingTasks =
         continue;
       }
 
-      if (days > lookaheadDays && !current) {
+      if (days > lookaheadDays && !paymentCurrent) {
         skipped.push({ kind, id: invoice.id, reason: 'outside_window', days });
         continue;
       }
 
       const task = taskFromInvoice(invoice, kind, today);
-      planned.push({ action: current ? 'update' : 'create', task, invoice, kind });
+      planned.push({ action: paymentCurrent ? 'update' : 'create', task, invoice, kind, reason: days < 0 ? 'overdue' : 'payment_due' });
     }
   }
 
@@ -143,15 +194,15 @@ async function readState(access) {
   const [outgoing, incoming, tasks] = await Promise.all([
     rest({
       supabaseUrl, apiKey, bearerToken,
-      path: 'invoices_out?select=id,invoice_nr,project_id,project,client,due_date,paid,paid_date,gross_amount,total_price,currency&order=date.asc&limit=5000'
+      path: 'invoices_out?select=id,invoice_nr,project_id,project,client,due_date,paid,paid_date,gross_amount,total_price,currency,payment_terms&order=date.asc&limit=5000'
     }),
     rest({
       supabaseUrl, apiKey, bearerToken,
-      path: 'invoices_in?select=id,supplier_invoice_nr,project_id,project,supplier,due_date,paid,paid_date,amount,currency&order=date.asc&limit=5000'
+      path: 'invoices_in?select=id,supplier_invoice_nr,project_id,project,supplier,due_date,paid,paid_date,amount,currency,payment_terms&order=date.asc&limit=5000'
     }),
     rest({
       supabaseUrl, apiKey, bearerToken,
-      path: `tasks?select=id,project_id,title,detail,due_date,priority,status,done_at,source,source_ref,category&source=in.(${RECEIVABLE_SOURCE},${PAYABLE_SOURCE})&limit=5000`
+      path: `tasks?select=id,project_id,title,detail,due_date,priority,status,done_at,source,source_ref,category&source=in.(${RECEIVABLE_SOURCE},${PAYABLE_SOURCE},${DUE_DATE_SOURCE})&limit=5000`
     })
   ]);
   return { outgoing, incoming, tasks };
@@ -212,13 +263,8 @@ export async function runInvoicePaymentTaskSync({
 
   const doneAt = new Date().toISOString();
   if (mode === 'apply') {
-    await upsertOpenTasks({
-      ...access,
-      rows: plan.planned.map(x => x.task)
-    });
-    for (const item of plan.complete) {
-      await completeTask({ ...access, task: item.task, doneAt });
-    }
+    await upsertOpenTasks({ ...access, rows: plan.planned.map(x => x.task) });
+    for (const item of plan.complete) await completeTask({ ...access, task: item.task, doneAt });
   }
 
   const summary = {
@@ -232,25 +278,30 @@ export async function runInvoicePaymentTaskSync({
     create: plan.planned.filter(x => x.action === 'create').length,
     update: plan.planned.filter(x => x.action === 'update').length,
     complete: plan.complete.length,
+    missing_due_date: plan.planned.filter(x => x.reason === 'missing_due_date').length,
     skipped: plan.skipped.length,
     actions: [
       ...plan.planned.map(x => ({
         action: x.action,
+        reason: x.reason,
         kind: x.kind,
-        invoice: text(x.kind === 'out' ? x.invoice.invoice_nr : x.invoice.supplier_invoice_nr),
+        invoice: invoiceNr(x.invoice, x.kind),
         due_date: x.task.due_date,
-        priority: x.task.priority
+        priority: x.task.priority,
+        source: x.task.source
       })),
       ...plan.complete.map(x => ({
         action: 'complete',
+        reason: x.reason,
         kind: x.kind,
-        invoice: text(x.kind === 'out' ? x.invoice.invoice_nr : x.invoice.supplier_invoice_nr)
+        invoice: invoiceNr(x.invoice, x.kind),
+        source: x.task.source
       }))
     ]
   };
 
   await writeSummary(summary);
-  console.log(`Invoice payment task sync ${mode} (${summary.auth_mode}): ${summary.create} create, ${summary.update} update, ${summary.complete} complete, ${summary.skipped} skipped.`);
+  console.log(`Invoice payment task sync ${mode} (${summary.auth_mode}): ${summary.create} create, ${summary.update} update, ${summary.complete} complete, ${summary.missing_due_date} missing due-date review, ${summary.skipped} skipped.`);
   return summary;
 }
 
