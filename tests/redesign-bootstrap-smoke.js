@@ -36,7 +36,8 @@ required.forEach(entry => {
   'pristeel-gmail-intake-create-project-fix-v1.js',
   'pristeel-gmail-live-inbox-v1.js',
   'pristeel-document-center-v2.js',
-  'pristeel-dashboard-focus.js'
+  'pristeel-dashboard-focus.js',
+  'pristeel-dashboard-operations.js'
 ].forEach(entry=>assert(!source.includes(entry),`${entry} is retired and must not return to the bootstrap`));
 
 const searchPos=source.indexOf('pristeel-search-stable-v2.js');

@@ -52,7 +52,6 @@ var files=[
   'pristeel-document-shortcuts.js?v=20260803-1',
   'pristeel-invoice-copy-fix.js?v=20260803-1',
   'pristeel-document-center-stable-v2.js?v=20260808-3',
-  'pristeel-dashboard-operations.js?v=20260803-1',
   'pristeel-document-adjustments-v3.js?v=20260803-1',
   'pristeel-dashboard-calm.js?v=20260803-1',
   'pristeel-workspace-architecture-v1.js?v=20260804-1',
