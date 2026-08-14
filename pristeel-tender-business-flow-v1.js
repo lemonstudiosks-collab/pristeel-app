@@ -36,12 +36,16 @@ function bizStatus(r){
  if(source(r)==='TED'&&payload(r).ted_contact_status==='contacted')return'contacted';
  return r.status||'new';
 }
+function hasTedWinner(r){return source(r)==='TED'&&!!winner(r).name;}
 function statusLabel(r){
  var st=bizStatus(r);
- if(source(r)==='TED')return({new:'Fitues i ri',review:'Për kontakt',contacted:'Kontaktuar',ignored:'Anashkaluar',promoted:'Projekt'})[st]||st;
+ if(source(r)==='TED'){
+  if(!hasTedWinner(r)&&st!=='ignored')return'Fituesi i papublikuar';
+  return({new:'Fitues i ri',review:'Për kontakt',contacted:'Kontaktuar',ignored:'Anashkaluar',promoted:'Projekt'})[st]||st;
+ }
  return({new:'E re',review:'Në shqyrtim',ignored:'Anashkaluar',promoted:'Projekt',contacted:'Kontaktuar'})[st]||st||'—';
 }
-function isOperationalFocus(r){return source(r)==='TED'?phase(r)==='award':phase(r)==='opportunity';}
+function isOperationalFocus(r){return source(r)==='TED'?phase(r)==='award'&&hasTedWinner(r):phase(r)==='opportunity';}
 function isOpen(r){var st=bizStatus(r);return st==='new'||st==='review';}
 
 function setupShell(){
@@ -88,6 +92,10 @@ function winnerHtml(r){
 function tedActions(r){
  var w=winner(r),a='';
  a+='<button class="pst-kek-btn" onclick="pstKekOpenSource(\''+esc(r.id)+'\')">TED ↗</button>';
+ if(!w.name){
+  if(r.status!=='ignored')a+='<button class="pst-kek-btn danger" onclick="pstTenderBizSetStatus(\''+esc(r.id)+'\',\'ignored\')">Anashkalo</button>';
+  return a;
+ }
  if(w.email)a+='<button class="pst-kek-btn" onclick="pstTenderBizEmail(\''+esc(r.id)+'\')">Email ↗</button>';
  if(safeHttp(w.website))a+='<button class="pst-kek-btn" onclick="pstTenderBizWebsite(\''+esc(r.id)+'\')">Web ↗</button>';
  var st=bizStatus(r);
