@@ -106,7 +106,7 @@ The current Workspace replaces the normal `openOverview()` route with the modern
 
 `pristeel-project-intelligence-ui.js` is therefore also **LEGACY_FALLBACK_REQUIRED**. In that old project overview, `pristeel-project-analysis.js` injects the analysis panel and `pristeel-project-intelligence-ui.js` repositions it to the top of the modal, widens the overview, manages scrolling, watches for legacy overview openings and provides the analysis-load fallback. Removing it while **Pamja e vjetër** remains accessible would change that fallback UI.
 
-`pristeel-project-workspace.js` is still loaded but remains a review candidate; its presence alone does not mean it owns the current project UI.
+`pristeel-project-workspace.js` is also **LEGACY_FALLBACK_REQUIRED**. It mounts into the same legacy `ov-body` surface and provides the old project's email/Drive folder view plus the duplicate-project merge workflow. That merge workflow can transfer email links, project emails, contacts, attachment links, BOM items, offers, RFQ logs, documents, tasks and analyses to the chosen master project before archiving the source project. No equivalent current surface has been proven to replace that behavior, so removing this module while **Pamja e vjetër** remains available would remove user-accessible functionality.
 
 ### Gmail / Inbox
 
@@ -151,12 +151,12 @@ Awkward naming is technical debt, not evidence that a file is dead.
 - `pristeel-ui-v2-polish.js` — classic Home triage/polish.
 - `pristeel-dashboard-calm.js` — classic Home renderer captured by Workspace Architecture.
 - `pristeel-project-intelligence-ui.js` — classic project overview layout/analysis behavior used by **Pamja e vjetër**.
+- `pristeel-project-workspace.js` — classic project folder plus duplicate-project merge workflow used through **Pamja e vjetër**.
 
 These have been traced and deliberately removed from the cleanup-candidate list. They remain loaded because current Workspace actions still expose their fallback surfaces.
 
 ## Legacy-review candidates still loaded
 
-- `pristeel-project-workspace.js`
 - `pristeel-ui-v2.js`
 
 For each candidate, removal requires tracing globals/events/functions, tracing callers, running the full smoke suite without it, verifying the real browser UI, and only then removing it from the bootstrap.
