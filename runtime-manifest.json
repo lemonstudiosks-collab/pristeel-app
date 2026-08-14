@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "name": "PPPP Active Runtime Manifest",
+  "authoritativeBranch": "main",
+  "auditedAtCommit": "b20bcfc3a479c45070bc5a0a56bb2f94c3a77857",
+  "entrypoints": {
+    "pagesEntry": "index.html",
+    "applicationHtml": "pristeel-procurement.html",
+    "bootstrapLoader": "pristeel-roles.js",
+    "bootstrapLoaderGitBlobSha": "56fe1f173bee72e79395cc813a9991e07c06af04",
+    "bootstrap": "pristeel-project-emails.js",
+    "bootstrapGitBlobSha": "03953016f6feb32267ae84a2dded6230b78ff876"
+  },
+  "applicationDirectRuntime": [
+    "pristeel-kpi.js",
+    "pristeel-search.js",
+    "pristeel-drive.js",
+    "pristeel-roles.js",
+    "pristeel-export.js",
+    "pristeel-offer-editor.js",
+    "pristeel-finance.js",
+    "pristeel-contracts.js",
+    "pristeel-outreach.js"
+  ],
+  "principles": {
+    "currentMeansHeadOfMain": true,
+    "filePresenceDoesNotMeanUiAuthority": true,
+    "bootstrapOrderIsRuntimeBehavior": true,
+    "loadedModuleDefaultStatus": "LOADED_CURRENT_UNCLASSIFIED",
+    "legacyCandidatesStayLoadedUntilTraced": true,
+    "bootstrapChangesRequireManifestReview": true,
+    "bootstrapLoaderChangesRequireManifestReview": true
+  },
+  "statusDefinitions": {
+    "BASE_DIRECT": "Loaded directly by the application HTML before the additive runtime bootstrap. It may be foundational without owning the final visible UI.",
+    "FINAL_OWNER": "Known current owner/finalizer for a visible runtime area. Later modules may still decorate it.",
+    "COMPATIBILITY": "Required bridge, adapter, safety wrapper or migration layer. Do not infer UI ownership from this file.",
+    "LOADED_LEGACY_CANDIDATE": "Still loaded in production but likely superseded in visible behavior. Must not be removed until callers, globals, events and smoke tests are traced.",
+    "ACTIVE_PROVIDER": "Conditionally active runtime provider loaded outside the main bootstrap.",
+    "DYNAMIC_CURRENT": "Current production module loaded dynamically by another current runtime file rather than by the main ordered bootstrap.",
+    "LOADED_CURRENT_UNCLASSIFIED": "Loaded by the production bootstrap and therefore treated as required until explicitly classified."
+  },
+  "areas": [
+    {
+      "area": "application-shell",
+      "finalOwners": [
+        "pristeel-workspace-architecture-v1.js",
+        "pristeel-ui-corrections-v2.js",
+        "pristeel-redesign-finalizer-v1.js"
+      ]
+    },
+    {
+      "area": "home",
+      "finalOwners": [
+        "pristeel-home-command-center-v2.js",
+        "pristeel-home-stability-v2.js",
+        "pristeel-home-visual-cleanup-v1.js",
+        "pristeel-redesign-finalizer-v1.js"
+      ]
+    },
+    {
+      "area": "projects-list",
+      "finalOwners": [
+        "pristeel-projects-modern-v1.js"
+      ]
+    },
+    {
+      "area": "project-workspace",
+      "finalOwners": [
+        "pristeel-project-first-v2.js",
+        "pristeel-project-first-actions-v1.js",
+        "pristeel-project-first-commercial-v1.js",
+        "pristeel-project-first-execution-v1.js"
+      ]
+    },
+    {
+      "area": "gmail-inbox",
+      "finalOwners": [
+        "pristeel-gmail-live-inbox-v2.js",
+        "pristeel-gmail-live-triage-v1.js",
+        "pristeel-outreach-followup-v1.js"
+      ]
+    },
+    {
+      "area": "document-center",
+      "finalOwners": [
+        "pristeel-document-center-stable-v2.js"
+      ]
+    },
+    {
+      "area": "finance",
+      "finalOwners": [
+        "pristeel-finance-stability-v2.js",
+        "pristeel-invoice-project-link-v1.js",
+        "pristeel-document-currency-v1.js",
+        "pristeel-invoice-original-document-v1.js"
+      ]
+    },
+    {
+      "area": "tenders",
+      "finalOwners": [
+        "pristeel-kek-tender-watch-v1.js",
+        "pristeel-tender-business-flow-v1.js"
+      ],
+      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania and TED winner outreach."
+    },
+    {
+      "area": "ai",
+      "finalOwners": [
+        "pristeel-gemini-test-ui-v1.js",
+        "pristeel-groq-gptoss-provider-v1.js"
+      ],
+      "note": "GPT-OSS provider is dynamically loaded and becomes active only after explicit activation in the browser."
+    }
+  ],
+  "compatibilityLayers": [
+    "pristeel-project-schema-compat.js",
+    "pristeel-groq-rate-limit.js",
+    "pristeel-gmail-intake-auth-bridge-v1.js",
+    "pristeel-email-offer-draft-editor-bridge-v1.js",
+    "pristeel-project-commercial-prefill-rescue-v1.js",
+    "pristeel-workspace-release-fix-v3.js"
+  ],
+  "loadedLegacyReviewCandidates": [
+    "pristeel-project-intelligence-ui.js",
+    "pristeel-project-workspace.js",
+    "pristeel-ui-v2.js",
+    "pristeel-ui-v2-polish.js",
+    "pristeel-dashboard-focus.js",
+    "pristeel-dashboard-operations.js",
+    "pristeel-dashboard-calm.js",
+    "pristeel-document-adjustments.js",
+    "pristeel-document-adjustments-v3.js"
+  ],
+  "dynamicRuntime": [
+    {
+      "module": "pristeel-invoice-original-document-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded unconditionally by the production pristeel-roles.js base module."
+    },
+    {
+      "module": "pristeel-tender-business-flow-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded unconditionally by the production pristeel-roles.js base module."
+    },
+    {
+      "module": "pristeel-groq-gptoss-provider-v1.js",
+      "loader": "pristeel-gemini-test-ui-v1.js",
+      "status": "ACTIVE_PROVIDER",
+      "condition": "The provider module is loaded; GPT-OSS routing becomes active when pristeel_ai_provider === groq-gptoss and a Groq key is present."
+    }
+  ],
+  "loadOrderConstraints": [
+    {
+      "before": "pristeel-project-reference-v1.js",
+      "after": "pristeel-project-create-dedupe-guard-v1.js",
+      "reason": "Project duplicate identity uses canonical project reference helpers."
+    },
+    {
+      "before": "pristeel-groq-rate-limit.js",
+      "after": "pristeel-gemini-test-ui-v1.js",
+      "reason": "AI compatibility layer must exist before provider settings/testing is installed."
+    },
+    {
+      "before": "pristeel-projects-modern-v1.js",
+      "after": "pristeel-project-first-v2.js",
+      "reason": "Current project workspace layers build after modern project navigation/list behavior."
+    },
+    {
+      "before": "pristeel-home-command-center-v2.js",
+      "after": "pristeel-redesign-finalizer-v1.js",
+      "reason": "The redesign finalizer is intentionally later than the Home command-center layer."
+    },
+    {
+      "before": "pristeel-gmail-live-inbox-v2.js",
+      "after": "pristeel-gmail-live-triage-v1.js",
+      "reason": "Triage decorates and constrains the Gmail live inbox after the inbox module exists."
+    }
+  ],
+  "deprecatedForbidden": []
+}
