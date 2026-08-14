@@ -1,0 +1,65 @@
+name: APP Albania steel monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        required: true
+        default: preview
+        type: choice
+        options: [preview, apply]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/app-albania-steel-sync.mjs'
+      - 'tests/app-albania-steel-sync-smoke.mjs'
+      - '.github/workflows/app-albania-steel-sync.yml'
+  schedule:
+    - cron: '57 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/app-albania-steel-sync.mjs'
+      - '.github/workflows/app-albania-steel-sync.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-albania-steel-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+      APP_AL_MIN_SCORE: '55'
+      APP_AL_RECENT_DAYS: '60'
+      SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check collector syntax
+        run: node --check scripts/app-albania-steel-sync.mjs
+      - name: Run classifier smoke tests
+        run: node tests/app-albania-steel-sync-smoke.mjs
+      - name: Collect Albania steel tenders
+        run: node scripts/app-albania-steel-sync.mjs
+      - name: Upload sanitized summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-albania-steel-monitor
+          path: tmp/app-albania-steel-sync.json
+          if-no-files-found: ignore
+          retention-days: 14
