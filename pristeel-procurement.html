@@ -8887,8 +8887,8 @@ function qGuessSupplierName(sender){
   return ''; // bosh = 'nuk dihet', mos e perdor domenin si emer furnitori
 }
 async function qAnalyzeOffer(inboxId, subject, sender){
-  var apiKey=localStorage.getItem('pristeel_apikey')||'';
-  if(!apiKey){alert('Mungon Groq API Key — shko te Cilësimet fillimisht.');return;}
+  var ai=window.PSTAI;
+  if(!ai||typeof ai.hasApiKey!=='function'||typeof ai.requestJson!=='function'||!ai.hasApiKey()){alert('Mungon Groq API Key — shko te Cilësimet fillimisht.');return;}
   var btn=event&&event.target; var origTxt=btn?btn.textContent:'';
   if(btn){btn.textContent='Duke lexuar...';btn.disabled=true;}
   try{
@@ -8921,15 +8921,9 @@ async function qAnalyzeOffer(inboxId, subject, sender){
     var supplierGuess=qGuessSupplierName(sender)||sender.split('<')[0].trim()||'Furnitori (kontrollo emrin)';
     if(btn) btn.textContent='Duke analizuar me AI...';
     var prompt2='Extract offer/quotation data from this supplier document and return ONLY a JSON object. No explanation, no markdown, no code fences. Start with { and end with }.\n\nSupplier: '+supplierGuess+'\nDocument text: '+text.slice(0,9000)+'\n\nJSON format:\n{"supplier":"'+supplierGuess+'","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"price_per_kg":0.00,"price_currency":"EUR","delivery_weeks":0,"incoterms":"EXW or DAP or DDP or CIF etc","incoterms_location":"city or null","certification":"EN 10204 3.1 or EN 10204 3.2 or null","validity_days":30,"notes":"any special conditions","confidence":"high or medium or low","positions":[{"desc":"exact line item description","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}\nRules:\n- positions: EVERY priced line item as a SEPARATE entry, in document order, own unit price — NEVER merge or average.\n- fabrication_total: sum of fabrication/material/erection items ONLY (exclude transport).\n- Return ONLY the JSON';
-    var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,
-        messages:[{role:'system',content:'You are a steel procurement AI. Respond with valid JSON only. Never merge or average line items.'},{role:'user',content:prompt2}]})
-    });
-    var data=await resp.json();
-    var raw=data.choices&&data.choices[0]&&data.choices[0].message.content||'';
-    var s=raw.indexOf('{'), e=raw.lastIndexOf('}');
-    var parsed=JSON.parse(raw.slice(s,e+1));
+    var parsed=await ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,response_format:{type:'json_object'},
+      messages:[{role:'system',content:'You are a steel procurement AI. Respond with valid JSON only. Never merge or average line items.'},{role:'user',content:prompt2}]});
+    if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)) throw new Error('Unexpected end of JSON input');
 
     var kgTotal=parseFloat(parsed.total_weight_kg)||0;
     var fabTotal=parseFloat(parsed.fabrication_total)||0;

@@ -79,6 +79,7 @@ const gmailAudit = read(files.gmailAudit);
 const projectAnalysis = read(files.projectAnalysis);
 const startParsing = extractFunction(appHtml, 'async function startParsing()');
 const parseOffer = extractFunction(appHtml, 'async function parseOffer()');
+const qAnalyzeOffer = extractFunction(appHtml, 'async function qAnalyzeOffer(');
 
 const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
 const compatIndex = ordered.indexOf(files.compat);
@@ -201,6 +202,21 @@ forbidText(parseOffer, "https://api.groq.com/openai/v1/chat/completions", `${fil
 forbidText(parseOffer, "pristeel_apikey", `${files.appHtml} parseOffer`);
 
 for (const [needle, label] of [
+  ["var ai=window.PSTAI", 'explicit inbox-offer AI service lookup'],
+  ["ai.hasApiKey()", 'explicit inbox-offer AI availability check'],
+  ["ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,response_format:{type:'json_object'}", 'preserved inbox-offer AI request contract'],
+  ["You are a steel procurement AI. Respond with valid JSON only. Never merge or average line items.", 'preserved inbox-offer system prompt'],
+  ["if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)) throw new Error('Unexpected end of JSON input')", 'preserved object-only parse failure semantics'],
+  ["Mungon Groq API Key — shko te Cilësimet fillimisht.", 'preserved inbox-offer missing-key alert'],
+  ["await supaFetch('offers','POST'", 'preserved supplier-offer persistence'],
+  ["await supaFetch('offers_inbox?id=eq.'+inboxId,'PATCH',{processed:true, project_id:proj.id})", 'preserved inbox processed/project update'],
+  ["alert('Gabim gjatë analizës: '+err.message)", 'preserved inbox-offer outer error alert'],
+  ["if(btn){btn.textContent=origTxt;btn.disabled=false;}", 'preserved inbox-offer button restoration']
+]) requireText(qAnalyzeOffer, needle, `${files.appHtml} qAnalyzeOffer: ${label}`);
+forbidText(qAnalyzeOffer, "https://api.groq.com/openai/v1/chat/completions", `${files.appHtml} qAnalyzeOffer`);
+forbidText(qAnalyzeOffer, "pristeel_apikey", `${files.appHtml} qAnalyzeOffer`);
+
+for (const [needle, label] of [
   ["MODEL_FAST='llama-3.1-8b-instant'", 'legacy fast-model caller contract'],
   ["MODEL_MAIN='llama-3.3-70b-versatile'", 'legacy main-model caller contract'],
   ["localStorage.getItem('pristeel_apikey')", 'legacy AI key caller contract'],
@@ -210,7 +226,7 @@ for (const [needle, label] of [
 console.log('PPPP AI provider contract guard');
 console.log(`Bootstrap order: ${files.compat} -> ${files.geminiUi}`);
 console.log(`Dynamic provider: ${files.geminiUi} -> ${files.groqProvider}`);
-console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}, ${files.appHtml}::startParsing, ${files.appHtml}::parseOffer`);
+console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}, ${files.appHtml}::startParsing, ${files.appHtml}::parseOffer, ${files.appHtml}::qAnalyzeOffer`);
 console.log('Storage contracts: pristeel_apikey, pristeel_gemini_apikey, pristeel_gemini_model, pristeel_groq_apikey, pristeel_ai_provider');
-console.log('Two remaining inline HTML request flows and project analysis still retain their audited legacy contracts.');
+console.log('The remaining inline batch request flow and project analysis still retain their audited legacy contracts.');
 if (!process.exitCode) console.log('AI provider runtime contracts OK.');

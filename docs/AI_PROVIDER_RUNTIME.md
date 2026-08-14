@@ -63,11 +63,17 @@ It now:
 
 `parseOffer()` no longer contains the Groq endpoint or direct `pristeel_apikey` access.
 
-## Audited active runtime callsites after the fourth migration
+### 5. Inline inbox supplier-offer `qAnalyzeOffer()`
+
+`qAnalyzeOffer()` now resolves the configured AI route through `window.PSTAI` and uses `PSTAI.requestJson(...)` while preserving the existing inbox workflow. PDF extraction, scanned/empty-PDF handling, project matching and manual project selection, supplier guessing, the `llama-3.1-8b-instant` model, 3,000-token budget, temperature `0`, prompt text, offer calculations, `offers` persistence, `offers_inbox` processed/project linking, success/error alerts and button restoration remain unchanged. It deliberately preserves its historical failure model: request/parse/network failures continue to reach `alert('Gabim gjatë analizës: ...')`. Non-object structured results are rejected before offer mapping so they follow that same legacy outer-error path. The exact missing-key text remains `Mungon Groq API Key — shko te Cilësimet fillimisht.` during this transport-only migration.
+
+`qAnalyzeOffer()` no longer reads `pristeel_apikey` or contains the Groq endpoint directly.
+
+## Audited active runtime callsites after the fifth migration
 
 Direct Groq-shaped **application** requests now remain only in:
 
-- two inline request flows in `pristeel-procurement.html`: `qAnalyzeOffer()` and the `qAnalyzeAll()` / `qAnalyzeOne()` batch flow
+- one inline request flow in `pristeel-procurement.html`: the `qAnalyzeAll()` / `qAnalyzeOne()` batch flow
 - `pristeel-project-analysis.js`
 
 Provider/compatibility implementation files still contain the Groq endpoint by design:
@@ -75,7 +81,7 @@ Provider/compatibility implementation files still contain the Groq endpoint by d
 - `pristeel-groq-rate-limit.js`
 - `pristeel-groq-gptoss-provider-v1.js`
 
-The application HTML still contains four `pristeel_apikey` references: two remaining request flows plus current Settings storage UI references. Settings is a separate ownership cleanup.
+The application HTML still contains three `pristeel_apikey` references: the remaining batch request flow plus current Settings storage UI references. Settings is a separate ownership cleanup.
 
 `PSTAI` is now used by the provider stack plus:
 
@@ -83,14 +89,15 @@ The application HTML still contains four `pristeel_apikey` references: two remai
 - `pristeel-gmail-audit.js`
 - `pristeel-procurement.html::startParsing()`
 - `pristeel-procurement.html::parseOffer()`
+- `pristeel-procurement.html::qAnalyzeOffer()`
 
 Global `window.fetch` monkey-patching remains in the two AI provider/compatibility layers and independently in `pristeel-drive-intelligence.js`. The Drive wrapper must not be removed as collateral damage.
 
-The exact active-runtime file/count inventory is enforced by `scripts/ai-runtime-callsite-inventory.mjs`. Per-caller behavior is additionally executed by `scripts/start-parsing-ai-smoke.mjs` and `scripts/parse-offer-ai-smoke.mjs`.
+The exact active-runtime file/count inventory is enforced by `scripts/ai-runtime-callsite-inventory.mjs`. Per-caller behavior is additionally executed by `scripts/start-parsing-ai-smoke.mjs`, `scripts/parse-offer-ai-smoke.mjs` and `scripts/q-analyze-offer-ai-smoke.mjs`.
 
 ## Why compatibility is still required
 
-The legacy Groq-shaped interception path remains live because two inline application request flows and `pristeel-project-analysis.js` have not yet been migrated.
+The legacy Groq-shaped interception path remains live because the inline `qAnalyzeAll()` / `qAnalyzeOne()` batch flow and `pristeel-project-analysis.js` have not yet been migrated.
 
 ## Consolidation boundary
 
@@ -98,10 +105,9 @@ The safe sequence is:
 
 1. keep provider-contract, typed-error, callsite and per-caller behavior smokes green;
 2. keep `PSTAI.requestJson` routing through the existing wrapper stack while legacy callers remain;
-3. migrate `qAnalyzeOffer()` next;
-4. migrate the `qAnalyzeAll()` / `qAnalyzeOne()` batch flow separately;
-5. migrate `pristeel-project-analysis.js` last among application callers;
-6. remove direct application access to `pristeel_apikey` only after all application request callers are migrated;
-7. centralize Settings ownership only after wrapper order is no longer required;
-8. remove AI-specific global fetch monkey-patching only after no production caller depends on the Groq-shaped interception path, while preserving the independent Drive Intelligence wrapper;
-9. move provider secrets server-side as a separate security change.
+3. migrate the `qAnalyzeAll()` / `qAnalyzeOne()` batch flow separately;
+4. migrate `pristeel-project-analysis.js` last among application callers;
+5. remove direct application access to `pristeel_apikey` only after all application request callers are migrated;
+6. centralize Settings ownership only after wrapper order is no longer required;
+7. remove AI-specific global fetch monkey-patching only after no production caller depends on the Groq-shaped interception path, while preserving the independent Drive Intelligence wrapper;
+8. move provider secrets server-side as a separate security change.
