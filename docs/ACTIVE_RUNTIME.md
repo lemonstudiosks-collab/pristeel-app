@@ -61,6 +61,7 @@ The nine local files loaded directly by `pristeel-procurement.html`, in current 
 ## Status meanings
 
 - **BASE_DIRECT**: loaded directly by the application HTML before the additive runtime bootstrap.
+- **FOUNDATION_REQUIRED**: a current foundational shell/host layer required by later runtime owners. It can be visually superseded while still providing DOM, classes, globals or lifecycle hooks that later modules depend on.
 - **FINAL_OWNER**: a verified current owner/finalizer for a visible application area.
 - **COMPATIBILITY**: a bridge, adapter, wrapper or migration layer still required by current code.
 - **LOADED_LEGACY_CANDIDATE**: still loaded in production, but likely superseded for visible behavior. Investigation candidate, not deletion candidate.
@@ -73,9 +74,15 @@ The nine local files loaded directly by `pristeel-procurement.html`, in current 
 
 ### Application shell
 
+Required foundation:
+- `pristeel-ui-v2.js`
+
+Final/current owners:
 - `pristeel-workspace-architecture-v1.js`
 - `pristeel-ui-corrections-v2.js`
 - `pristeel-redesign-finalizer-v1.js`
+
+`pristeel-ui-v2.js` is **FOUNDATION_REQUIRED**, not legacy. It creates the `pst-ui-v2` body state and the `#pst-v2-sidebar` host. Workspace Architecture later builds the current `#pst-ws-sidebar` inside that host and its boot loop explicitly waits for `#pst-v2-sidebar` before starting. The later workspace/finalizer layers own the visible shell, but they currently depend on the UI V2 host existing first. The manifest therefore enforces `pristeel-ui-v2.js → pristeel-workspace-architecture-v1.js` load order.
 
 ### Home
 
@@ -140,6 +147,12 @@ The first filename is legacy. The current tender layer covers Kosovo/KRPP and Al
 
 GPT-OSS routing becomes active after successful explicit activation. `pristeel-groq-rate-limit.js` is now a compatibility-layer concern, not a reliable description of the final provider architecture.
 
+## Required foundations
+
+- `pristeel-ui-v2.js` — creates the shell state and `#pst-v2-sidebar` host required by the current Workspace Architecture layer.
+
+A foundation is not necessarily the visible owner. It remains loaded because later current modules depend on what it creates.
+
 ## Compatibility layers that must not be casually removed
 
 The manifest records current bridge/compatibility files including project schema compatibility, AI routing, Gmail auth bridging, offer draft-editor bridging, commercial prefill rescue and workspace release compatibility.
@@ -157,9 +170,9 @@ These have been traced and deliberately removed from the cleanup-candidate list.
 
 ## Legacy-review candidates still loaded
 
-- `pristeel-ui-v2.js`
+**None.**
 
-For each candidate, removal requires tracing globals/events/functions, tracing callers, running the full smoke suite without it, verifying the real browser UI, and only then removing it from the bootstrap.
+The initial legacy-review queue is now fully traced. Every former candidate has either been retired from runtime, classified as a required user-accessible fallback, or classified as a current foundation. New candidates should only be added when fresh evidence identifies an untraced superseded layer.
 
 ## Retired runtime layers
 
@@ -182,7 +195,7 @@ The runtime manifest's `deprecatedForbidden` list makes CI fail if one of these 
 - the loader still loads the ordered bootstrap;
 - the audited bootstrap blob has not silently changed;
 - bootstrap entries have no duplicates and every module exists;
-- all manifest final owners, compatibility layers, required legacy fallbacks and review candidates remain valid;
+- all manifest final owners, compatibility layers, required foundations, required legacy fallbacks and review candidates remain valid;
 - critical load-order constraints remain true;
 - dynamic runtime modules still have their loader and target file;
 - deprecated/forbidden modules cannot silently return.

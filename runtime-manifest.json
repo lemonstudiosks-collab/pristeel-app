@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "21e8f7218aba1d4719d84fadbe7e65a3f976d296",
+  "auditedAtCommit": "5c34617f97979eeaf06f5c4025eae2901e127583",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
@@ -33,6 +33,7 @@
   },
   "statusDefinitions": {
     "BASE_DIRECT": "Loaded directly by the application HTML before the additive runtime bootstrap. It may be foundational without owning the final visible UI.",
+    "FOUNDATION_REQUIRED": "Current foundational shell or host layer required by later runtime owners. It may be visually superseded while still providing DOM, classes, globals or lifecycle hooks that later modules depend on.",
     "FINAL_OWNER": "Known current owner/finalizer for a visible runtime area. Later modules may still decorate it.",
     "COMPATIBILITY": "Required bridge, adapter, safety wrapper or migration layer. Do not infer UI ownership from this file.",
     "LOADED_LEGACY_CANDIDATE": "Still loaded in production but likely superseded in visible behavior. Must not be removed until callers, globals, events and smoke tests are traced.",
@@ -123,15 +124,16 @@
     "pristeel-project-commercial-prefill-rescue-v1.js",
     "pristeel-workspace-release-fix-v3.js"
   ],
+  "foundationRequired": [
+    "pristeel-ui-v2.js"
+  ],
   "legacyFallbackRequired": [
     "pristeel-ui-v2-polish.js",
     "pristeel-dashboard-calm.js",
     "pristeel-project-intelligence-ui.js",
     "pristeel-project-workspace.js"
   ],
-  "loadedLegacyReviewCandidates": [
-    "pristeel-ui-v2.js"
-  ],
+  "loadedLegacyReviewCandidates": [],
   "dynamicRuntime": [
     {
       "module": "pristeel-invoice-original-document-v1.js",
@@ -162,6 +164,11 @@
       "before": "pristeel-groq-rate-limit.js",
       "after": "pristeel-gemini-test-ui-v1.js",
       "reason": "AI compatibility layer must exist before provider settings/testing is installed."
+    },
+    {
+      "before": "pristeel-ui-v2.js",
+      "after": "pristeel-workspace-architecture-v1.js",
+      "reason": "Workspace Architecture mounts the current workspace sidebar inside #pst-v2-sidebar and waits for the UI V2 shell host before booting."
     },
     {
       "before": "pristeel-projects-modern-v1.js",
