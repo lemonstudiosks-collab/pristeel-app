@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "b20bcfc3a479c45070bc5a0a56bb2f94c3a77857",
+  "auditedAtCommit": "59703dd6787ad0f1cd5896224fced7099a71c850",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "56fe1f173bee72e79395cc813a9991e07c06af04",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "03953016f6feb32267ae84a2dded6230b78ff876"
+    "bootstrapGitBlobSha": "a2cea4faa597dd0fc02ca73646d9173da749a845"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -84,7 +84,8 @@
     {
       "area": "document-center",
       "finalOwners": [
-        "pristeel-document-center-stable-v2.js"
+        "pristeel-document-center-stable-v2.js",
+        "pristeel-document-adjustments-v3.js"
       ]
     },
     {
@@ -128,9 +129,7 @@
     "pristeel-ui-v2-polish.js",
     "pristeel-dashboard-focus.js",
     "pristeel-dashboard-operations.js",
-    "pristeel-dashboard-calm.js",
-    "pristeel-document-adjustments.js",
-    "pristeel-document-adjustments-v3.js"
+    "pristeel-dashboard-calm.js"
   ],
   "dynamicRuntime": [
     {
@@ -179,5 +178,7 @@
       "reason": "Triage decorates and constrains the Gmail live inbox after the inbox module exists."
     }
   ],
-  "deprecatedForbidden": []
+  "deprecatedForbidden": [
+    "pristeel-document-adjustments.js"
+  ]
 }
