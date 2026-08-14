@@ -1,0 +1,67 @@
+name: TEMP Cleanup 15J marker diagnostic
+
+on:
+  push:
+    branches:
+      - cleanup/ai-compat-marker-retirement-20260814
+    paths:
+      - .github/workflows/temp-ai-marker-diagnostic-15j.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup/ai-compat-marker-retirement-20260814
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply finalizer in worktree only
+        run: node scripts/finalize-ai-compat-marker-retirement-15j.mjs
+      - name: Run validation commands independently
+        shell: bash
+        run: |
+          mkdir -p tmp
+          : > tmp/marker-finalizer-diagnostic.txt
+          set +e
+          commands=(
+            "node scripts/ai-compat-marker-retirement-smoke.mjs"
+            "node scripts/ai-request-api-smoke.mjs"
+            "node scripts/ai-provider-routing-smoke.mjs"
+            "node scripts/ai-fetch-wrapper-removal-smoke.mjs"
+            "node scripts/ai-settings-ownership-smoke.mjs"
+            "node scripts/project-analysis-ai-smoke.mjs"
+            "node scripts/q-analyze-batch-ai-smoke.mjs"
+            "node scripts/q-analyze-offer-ai-smoke.mjs"
+            "node scripts/parse-offer-ai-smoke.mjs"
+            "node scripts/start-parsing-ai-smoke.mjs"
+            "node scripts/ai-provider-contract-check.mjs"
+            "node scripts/ai-runtime-callsite-inventory.mjs"
+            "node scripts/runtime-manifest-check.mjs"
+            "node scripts/bootstrap-sequence-check.mjs"
+            "node scripts/generate-bootstrap.mjs --check"
+            "git diff --check"
+          )
+          overall=0
+          for cmd in "${commands[@]}"; do
+            echo "=== $cmd ===" | tee -a tmp/marker-finalizer-diagnostic.txt
+            bash -lc "$cmd" >> tmp/marker-finalizer-diagnostic.txt 2>&1
+            code=$?
+            echo "EXIT=$code" | tee -a tmp/marker-finalizer-diagnostic.txt
+            echo >> tmp/marker-finalizer-diagnostic.txt
+            if [ $code -ne 0 ]; then overall=1; fi
+          done
+          echo "OVERALL=$overall" | tee -a tmp/marker-finalizer-diagnostic.txt
+          exit 0
+      - name: Upload diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: marker-finalizer-diagnostic
+          path: tmp/marker-finalizer-diagnostic.txt
+          retention-days: 2
