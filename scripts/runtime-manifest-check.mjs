@@ -188,6 +188,7 @@ for (const area of Array.isArray(manifest.areas) ? manifest.areas : []) {
   for (const owner of Array.isArray(area.finalOwners) ? area.finalOwners : []) expectedCurrent.add(cleanModule(owner));
 }
 for (const module of Array.isArray(manifest.compatibilityLayers) ? manifest.compatibilityLayers : []) expectedCurrent.add(cleanModule(module));
+for (const module of Array.isArray(manifest.legacyFallbackRequired) ? manifest.legacyFallbackRequired : []) expectedCurrent.add(cleanModule(module));
 for (const module of Array.isArray(manifest.loadedLegacyReviewCandidates) ? manifest.loadedLegacyReviewCandidates : []) expectedCurrent.add(cleanModule(module));
 
 for (const module of expectedCurrent) {
