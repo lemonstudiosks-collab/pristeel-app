@@ -1,0 +1,54 @@
+name: TEMP Cleanup 15I AI fetch-wrapper removal
+
+on:
+  push:
+    branches:
+      - cleanup/ai-fetch-wrapper-removal-20260814
+    paths:
+      - scripts/apply-ai-fetch-wrapper-removal-15i.mjs
+      - .github/workflows/temp-ai-fetch-wrapper-removal-15i.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup/ai-fetch-wrapper-removal-20260814
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Remove AI-specific global fetch wrappers
+        run: node scripts/apply-ai-fetch-wrapper-removal-15i.mjs
+      - name: Validate isolated wrapper removal
+        run: |
+          node scripts/ai-fetch-wrapper-removal-smoke.mjs
+          node scripts/ai-provider-routing-smoke.mjs
+          node scripts/ai-request-api-smoke.mjs
+          node scripts/ai-settings-ownership-smoke.mjs
+          node scripts/project-analysis-ai-smoke.mjs
+          node scripts/q-analyze-batch-ai-smoke.mjs
+          node scripts/q-analyze-offer-ai-smoke.mjs
+          node scripts/parse-offer-ai-smoke.mjs
+          node scripts/start-parsing-ai-smoke.mjs
+          node scripts/runtime-manifest-check.mjs
+          node scripts/bootstrap-sequence-check.mjs
+          node scripts/generate-bootstrap.mjs --check
+          git diff --check
+      - name: Commit wrapper removal
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pristeel-groq-rate-limit.js pristeel-groq-gptoss-provider-v1.js scripts/ai-provider-routing-smoke.mjs runtime-manifest.json
+          if git diff --cached --quiet; then
+            echo "No wrapper-removal changes produced." >&2
+            exit 1
+          fi
+          git commit -m "Remove AI-specific global fetch wrappers"
+          git push origin HEAD:cleanup/ai-fetch-wrapper-removal-20260814
