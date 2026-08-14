@@ -21,8 +21,6 @@ This rule exists because PPPP grew through additive safety layers. A filename ma
 
 ## Traced production chain
 
-The current production chain at the audited baseline is:
-
 ```text
 GitHub main HEAD
       ↓
@@ -35,7 +33,7 @@ pristeel-procurement.html
 pristeel-roles.js
       ├── dynamically loads pristeel-project-emails.js
       │         ↓
-      │   138 ordered runtime modules
+      │   137 ordered runtime modules
       │         ↓
       │   late finalizers / safety layers
       │
@@ -60,17 +58,15 @@ The nine local files loaded directly by `pristeel-procurement.html`, in current 
 
 `index.html` is only the Pages entry/redirect. `pristeel-procurement.html` is the application document. `pristeel-roles.js` is both a real RBAC module and, historically, the hidden loader for the additive PPPP runtime. `pristeel-project-emails.js` is historically named but currently acts as the large ordered module bootstrap.
 
-This hidden `pristeel-roles.js → pristeel-project-emails.js` relationship is exactly why the runtime manifest exists. The first draft of this audit assumed the HTML loaded the bootstrap directly; the new guard rejected that assumption and the chain was corrected from the production source before merge.
-
 ## Status meanings
 
-- **BASE_DIRECT**: loaded directly by the application HTML. It may be foundational without owning the final visible UI.
-- **FINAL_OWNER**: a verified current owner/finalizer for a visible application area. It does not mean it is the only file involved.
-- **COMPATIBILITY**: a bridge, adapter, wrapper or migration layer still required by current code. Do not infer visible UI ownership from the filename.
-- **LOADED_LEGACY_CANDIDATE**: still loaded in production, but likely superseded for visible behavior. These are investigation candidates, not deletion candidates.
-- **DYNAMIC_CURRENT**: a current production module loaded dynamically by another runtime file rather than by the large ordered bootstrap.
+- **BASE_DIRECT**: loaded directly by the application HTML before the additive runtime bootstrap.
+- **FINAL_OWNER**: a verified current owner/finalizer for a visible application area.
+- **COMPATIBILITY**: a bridge, adapter, wrapper or migration layer still required by current code.
+- **LOADED_LEGACY_CANDIDATE**: still loaded in production, but likely superseded for visible behavior. Investigation candidate, not deletion candidate.
+- **DYNAMIC_CURRENT**: a current module loaded dynamically by another runtime file.
 - **ACTIVE_PROVIDER**: conditionally active runtime provider outside the main bootstrap.
-- **LOADED_CURRENT_UNCLASSIFIED**: the safe default for every bootstrap module not yet explicitly classified. If it is loaded, we treat it as required until proven otherwise.
+- **LOADED_CURRENT_UNCLASSIFIED**: safe default for bootstrap modules not yet explicitly classified.
 
 ## Current visible ownership map
 
@@ -87,20 +83,20 @@ This hidden `pristeel-roles.js → pristeel-project-emails.js` relationship is e
 - `pristeel-home-visual-cleanup-v1.js`
 - `pristeel-redesign-finalizer-v1.js`
 
+`pristeel-dashboard-calm.js` remains loaded because Workspace Architecture captures its `renderHome` implementation as the current **Pamja klasike** fallback. It is therefore not yet safe to retire.
+
 ### Projects
 
 Projects list:
-
 - `pristeel-projects-modern-v1.js`
 
 Current project workspace:
-
 - `pristeel-project-first-v2.js`
 - `pristeel-project-first-actions-v1.js`
 - `pristeel-project-first-commercial-v1.js`
 - `pristeel-project-first-execution-v1.js`
 
-This distinction is important. Files such as `pristeel-project-intelligence-ui.js` and `pristeel-project-workspace.js` still exist and are still loaded, but they are **not** sufficient evidence that their older visible UI is what the user sees today.
+Files such as `pristeel-project-intelligence-ui.js` and `pristeel-project-workspace.js` still exist and are still loaded, but they are not sufficient evidence that their older visible UI is what the user sees today.
 
 ### Gmail / Inbox
 
@@ -132,46 +128,31 @@ The first filename is legacy. The current tender layer covers Kosovo/KRPP and Al
 - `pristeel-gemini-test-ui-v1.js`
 - `pristeel-groq-gptoss-provider-v1.js` (dynamically loaded)
 
-The GPT-OSS provider module is loaded by the Gemini settings/test layer. GPT-OSS routing becomes active after successful explicit activation. The older `pristeel-groq-rate-limit.js` filename is now a compatibility-layer concern, not a reliable description of the final provider architecture.
+GPT-OSS routing becomes active after successful explicit activation. `pristeel-groq-rate-limit.js` is now a compatibility-layer concern, not a reliable description of the final provider architecture.
 
 ## Compatibility layers that must not be casually removed
 
-The manifest explicitly records current bridge/compatibility files including:
+The manifest records current bridge/compatibility files including project schema compatibility, AI routing, Gmail auth bridging, offer draft-editor bridging, commercial prefill rescue and workspace release compatibility.
 
-- project schema compatibility
-- AI compatibility routing
-- Gmail auth bridging
-- offer draft-editor bridging
-- commercial prefill rescue
-- workspace release compatibility
-
-Their awkward names are technical debt, but awkward naming is not evidence that a file is dead.
+Awkward naming is technical debt, not evidence that a file is dead.
 
 ## Legacy-review candidates still loaded
-
-The following are deliberately marked for future tracing, not deletion:
 
 - `pristeel-project-intelligence-ui.js`
 - `pristeel-project-workspace.js`
 - `pristeel-ui-v2.js`
 - `pristeel-ui-v2-polish.js`
-- `pristeel-dashboard-operations.js`
 - `pristeel-dashboard-calm.js`
 
-For each candidate, removal requires all of the following:
-
-1. trace globals/events/functions it exposes;
-2. trace all callers;
-3. run the full smoke suite without it;
-4. verify the real browser UI;
-5. only then remove it from the bootstrap.
+For each candidate, removal requires tracing globals/events/functions, tracing callers, running the full smoke suite without it, verifying the real browser UI, and only then removing it from the bootstrap.
 
 ## Retired runtime layers
 
 These files remain in repository history/reference but are forbidden from returning to the active runtime unless deliberately re-reviewed:
 
 - `pristeel-document-adjustments.js` — superseded by `pristeel-document-adjustments-v3.js`.
-- `pristeel-dashboard-focus.js` — its focus tabs/style were removed by the later `pristeel-dashboard-operations.js` shell, which replaced `page-home` markup; the later `pristeel-dashboard-calm.js` then became the classic Home renderer captured by Workspace Architecture.
+- `pristeel-dashboard-focus.js` — its focus UI was destroyed by the later legacy Home layers and its polling loop had no surviving UI owner.
+- `pristeel-dashboard-operations.js` — its Home renderer was fully superseded by `pristeel-dashboard-calm`; its `page-all-modules` surface had no surviving trigger, while the current Workspace provides the authoritative Apps surface.
 
 The runtime manifest's `deprecatedForbidden` list makes CI fail if one of these modules is accidentally re-added to the production bootstrap.
 
@@ -181,18 +162,17 @@ The runtime manifest's `deprecatedForbidden` list makes CI fail if one of these 
 
 - the production entrypoint files exist;
 - `index.html` still points to the application document;
-- the expected local application scripts are still loaded directly and in the recorded order;
-- the audited `pristeel-roles.js` loader Git blob has not silently changed;
+- expected local application scripts are loaded directly and in recorded order;
+- the audited `pristeel-roles.js` loader has not silently changed;
 - the loader still loads the ordered bootstrap;
-- the audited bootstrap Git blob has not silently changed;
-- bootstrap module entries have no duplicates;
-- every bootstrap module exists;
-- all manifest final owners/compatibility layers/review candidates still exist in the expected runtime;
-- critical bootstrap load-order constraints remain true;
-- known dynamically loaded runtime modules still have their loader and target file;
-- deprecated/forbidden modules cannot silently return to the current runtime.
+- the audited bootstrap blob has not silently changed;
+- bootstrap entries have no duplicates and every module exists;
+- all manifest final owners/compatibility layers/review candidates remain valid;
+- critical load-order constraints remain true;
+- dynamic runtime modules still have their loader and target file;
+- deprecated/forbidden modules cannot silently return.
 
-A loader/bootstrap change is allowed, but it must be accompanied by a deliberate manifest review/update. That is the point of the guard.
+A loader/bootstrap change is allowed, but it must be accompanied by a deliberate manifest review/update.
 
 ## What this manifest does not do
 
