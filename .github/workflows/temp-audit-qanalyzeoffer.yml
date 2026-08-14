@@ -1,0 +1,26 @@
+name: TEMP qAnalyzeOffer audit
+
+on:
+  push:
+    branches:
+      - cleanup/ai-inline-qanalyzeoffer-20260814
+    paths:
+      - scripts/temp-audit-qanalyzeoffer.mjs
+      - .github/workflows/temp-audit-qanalyzeoffer.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup/ai-inline-qanalyzeoffer-20260814
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Print qAnalyzeOffer current contract
+        run: node scripts/temp-audit-qanalyzeoffer.mjs
