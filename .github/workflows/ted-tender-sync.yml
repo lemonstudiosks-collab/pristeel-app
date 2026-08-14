@@ -15,7 +15,6 @@ on:
     branches: [main]
     paths:
       - 'scripts/ted-tender-sync.mjs'
-      - 'scripts/ted-api-probe.mjs'
       - 'tests/ted-tender-sync-smoke.mjs'
       - 'pristeel-kek-tender-watch-v1.js'
       - '.github/workflows/ted-tender-sync.yml'
@@ -44,7 +43,7 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
       PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
-      TED_TENDER_MIN_SCORE: '55'
+      TED_TENDER_MIN_SCORE: '75'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
 
     steps:
@@ -61,10 +60,6 @@ jobs:
 
       - name: Run TED collector smoke
         run: node tests/ted-tender-sync-smoke.mjs
-
-      - name: Probe known TED notices
-        if: ${{ github.event_name == 'pull_request' }}
-        run: node scripts/ted-api-probe.mjs
 
       - name: Collect TED steel tenders
         run: node scripts/ted-tender-sync.mjs
