@@ -1,88 +1,43 @@
-/* PRISTEEL Groq guard: përdor modelin me kufi më të lartë dhe respekton TPM */
+/* PRISTEEL AI compatibility adapter: existing Groq call-sites -> Gemini Developer API.
+ * Inert until a Gemini key is deliberately configured.
+ * Preferred model: gemini-3.5-flash-lite; confirmed free-tier fallback: gemini-3.1-flash-lite.
+ */
 (function(){
 'use strict';
-if(window.__pstGroqRateLimitGuardLoaded)return;
-window.__pstGroqRateLimitGuardLoaded=true;
-
+if(window.__pstAiCompatibilityLoaded)return;
+window.__pstAiCompatibilityLoaded=true;
 var nativeFetch=window.fetch.bind(window);
-var GROQ_URL='api.groq.com/openai/v1/chat/completions';
+var LEGACY_GROQ_URL='api.groq.com/openai/v1/chat/completions';
+var GEMINI_BASE='https://generativelanguage.googleapis.com/v1beta/models/';
+var MODEL_PREFERRED='gemini-3.5-flash-lite';
+var MODEL_FREE_FALLBACK='gemini-3.1-flash-lite';
 var queue=Promise.resolve();
-
 function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
-function isGroq(input){
-  var url=typeof input==='string'?input:(input&&input.url)||'';
-  return String(url).indexOf(GROQ_URL)>-1
-}
+function isLegacyGroq(input){var url=typeof input==='string'?input:(input&&input.url)||'';return String(url).indexOf(LEGACY_GROQ_URL)>-1}
+function parseBody(init){if(!init||typeof init.body!=='string')return null;try{return JSON.parse(init.body)}catch(e){return null}}
 function cloneJson(v){return JSON.parse(JSON.stringify(v))}
-function parseBody(init){
-  if(!init||typeof init.body!=='string')return null;
-  try{return JSON.parse(init.body)}catch(e){return null}
-}
-function shape(body,attempt){
-  var out=cloneJson(body||{});
-  var original=Number(out.max_tokens)||0;
-
-  // Free tier: llama-3.1-8b-instant ka 6K TPM; 70B ka 12K TPM.
-  // Përdorim 70B edhe për nxjerrjen e fakteve, pastaj ulim completion budget.
-  if(out.model==='llama-3.1-8b-instant'){
-    out.model='llama-3.3-70b-versatile';
-    out.max_tokens=Math.min(original||1800,attempt===0?1800:attempt===1?1300:950)
-  }else{
-    out.max_tokens=Math.min(original||2600,attempt===0?2600:attempt===1?1900:1300)
-  }
-
-  // Në retry-n e fundit, kufizo vetëm mesazhin më të gjatë pa prishur fillimin/fundin.
-  if(attempt>=2&&Array.isArray(out.messages)){
-    out.messages=out.messages.map(function(m){
-      var c=String((m&&m.content)||'');
-      if(c.length<=18000)return m;
-      var copy=Object.assign({},m);
-      copy.content=c.slice(0,11500)+'\n\n[...pjesa e mesit u shkurtua për kufirin TPM...]\n\n'+c.slice(-5500);
-      return copy
-    })
-  }
-  return out
-}
-function limitError(text,status){
-  return status===429||/request too large|tokens per minute|\bTPM\b|rate limit|reduce your message size/i.test(String(text||''))
-}
-function retryDelay(response,text,attempt){
-  var h=response&&response.headers;
-  var sec=h&&Number(h.get('retry-after'));
-  if(!isFinite(sec)||sec<=0){
-    var m=String(text||'').match(/try again in\s*([0-9.]+)s/i);
-    sec=m?Number(m[1]):(attempt===0?8:18)
-  }
-  return Math.min(65000,Math.max(1500,Math.ceil(sec*1000)+500))
-}
-async function groqFetch(input,init){
-  var body=parseBody(init);
-  if(!body)return nativeFetch(input,init);
-
-  var lastResponse=null;
-  for(var attempt=0;attempt<3;attempt++){
-    var nextInit=Object.assign({},init,{body:JSON.stringify(shape(body,attempt))});
-    lastResponse=await nativeFetch(input,nextInit);
-    if(lastResponse.ok)return lastResponse;
-
-    var text='';
-    try{text=await lastResponse.clone().text()}catch(e){}
-    if(!limitError(text,lastResponse.status))return lastResponse;
-
-    if(attempt<2){
-      console.warn('PRISTEEL: Groq TPM limit, retry '+(attempt+1)+'/2');
-      await sleep(retryDelay(lastResponse,text,attempt))
-    }
-  }
-  return lastResponse
-}
-
-window.fetch=function(input,init){
-  if(!isGroq(input))return nativeFetch(input,init);
-  // Serializimi ndalon dy kërkesa AI që të konsumojnë TPM në të njëjtën kohë.
-  var run=function(){return groqFetch(input,init)};
-  var result=queue.then(run,run);
-  queue=result.then(function(){},function(){});
-  return result
-};
+function shapeLegacyGroq(body,attempt){var out=cloneJson(body||{});var original=Number(out.max_tokens)||0;if(out.model==='llama-3.1-8b-instant'){out.model='llama-3.3-70b-versatile';out.max_tokens=Math.min(original||1800,attempt===0?1800:attempt===1?1300:950)}else out.max_tokens=Math.min(original||2600,attempt===0?2600:attempt===1?1900:1300);if(attempt>=2&&Array.isArray(out.messages)){out.messages=out.messages.map(function(m){var c=String((m&&m.content)||'');if(c.length<=18000)return m;var copy=Object.assign({},m);copy.content=c.slice(0,11500)+'\n\n[...pjesa e mesit u shkurtua për kufirin TPM...]\n\n'+c.slice(-5500);return copy})}return out}
+function legacyLimitError(text,status){return status===429||/request too large|tokens per minute|\bTPM\b|rate limit|reduce your message size/i.test(String(text||''))}
+function legacyRetryDelay(response,text,attempt){var sec=0;try{sec=Number(response.headers.get('retry-after'))||0}catch(e){}if(!sec){var m=String(text||'').match(/try again in\s*([0-9.]+)s/i);sec=m?Number(m[1]):(attempt===0?8:18)}return Math.min(65000,Math.max(1500,Math.ceil(sec*1000)+500))}
+async function legacyGroqFetch(input,init){var body=parseBody(init);if(!body)return nativeFetch(input,init);var last=null;for(var attempt=0;attempt<3;attempt++){var nextInit=Object.assign({},init,{body:JSON.stringify(shapeLegacyGroq(body,attempt))});last=await nativeFetch(input,nextInit);if(last.ok)return last;var text='';try{text=await last.clone().text()}catch(e){}if(!legacyLimitError(text,last.status))return last;if(attempt<2)await sleep(legacyRetryDelay(last,text,attempt))}return last}
+function geminiKey(){try{return String(localStorage.getItem('pristeel_gemini_apikey')||'').trim()}catch(e){return''}}
+function configuredModel(){try{return String(localStorage.getItem('pristeel_gemini_model')||MODEL_PREFERRED).trim()||MODEL_PREFERRED}catch(e){return MODEL_PREFERRED}}
+function textOf(v){return typeof v==='string'?v:String(v==null?'':v)}
+function toGemini(body){var messages=Array.isArray(body&&body.messages)?body.messages:[];var systems=[],contents=[];messages.forEach(function(m){var role=String((m&&m.role)||'user');var content=textOf(m&&m.content);if(role==='system')systems.push(content);else contents.push({role:role==='assistant'?'model':'user',parts:[{text:content}]})});if(!contents.length)contents=[{role:'user',parts:[{text:'Return a valid JSON object.'}]}];var cfg={maxOutputTokens:Math.max(64,Math.min(16000,Number(body&&body.max_tokens)||5000)),responseMimeType:'application/json'};var out={contents:contents,generationConfig:cfg};if(systems.length)out.systemInstruction={parts:[{text:systems.join('\n\n')}]};return out}
+function candidateText(data){var c=data&&data.candidates&&data.candidates[0];var parts=c&&c.content&&c.content.parts;if(!Array.isArray(parts))return'';return parts.map(function(p){return p&&p.text?String(p.text):''}).join('')}
+function openAiLike(text,data,model){return{id:'gemini-compat-'+Date.now(),object:'chat.completion',model:model,choices:[{index:0,message:{role:'assistant',content:text},finish_reason:'stop'}],usage:data&&data.usageMetadata?{prompt_tokens:data.usageMetadata.promptTokenCount||0,completion_tokens:data.usageMetadata.candidatesTokenCount||0,total_tokens:data.usageMetadata.totalTokenCount||0}:undefined,provider:'google-gemini'}}
+function jsonResponse(obj,status){return new Response(JSON.stringify(obj),{status:status||200,headers:{'Content-Type':'application/json'}})}
+function isRetryable(status,text){return status===429||status===503||/resource_exhausted|rate limit|temporar|unavailable|try again/i.test(String(text||''))}
+function modelUnavailable(status,text){return status===403||status===404||(status===400&&/model|not available|not found|permission|unsupported/i.test(String(text||'')))}
+function retryDelay(response,attempt){var sec=0;try{sec=Number(response.headers.get('retry-after'))||0}catch(e){}if(sec>0)return Math.min(30000,Math.max(1000,Math.ceil(sec*1000)+250));return attempt===0?1800:4500}
+async function callGemini(model,payload,key){var url=GEMINI_BASE+encodeURIComponent(model)+':generateContent';var last=null,lastText='';for(var attempt=0;attempt<3;attempt++){last=await nativeFetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(payload)});lastText=await last.text();if(last.ok){var data={};try{data=JSON.parse(lastText)}catch(e){return jsonResponse({error:{message:'Gemini returned invalid JSON metadata.'}},502)}var text=candidateText(data);if(!text)return jsonResponse({error:{message:'Gemini model returned no text output.'}},502);return jsonResponse(openAiLike(text,data,model),200)}if(!isRetryable(last.status,lastText)||attempt===2)break;await sleep(retryDelay(last,attempt))}return{__geminiError:true,status:last?last.status:502,text:lastText||'Gemini request failed.'}}
+async function geminiCompatFetch(input,init){var key=geminiKey();if(!key)return legacyGroqFetch(input,init);var body=parseBody(init);if(!body)return nativeFetch(input,init);var payload=toGemini(body);var preferred=configuredModel();var result=await callGemini(preferred,payload,key);if(result&&result.__geminiError&&preferred!==MODEL_FREE_FALLBACK&&modelUnavailable(result.status,result.text)){console.warn('PRISTEEL: '+preferred+' unavailable; falling back to '+MODEL_FREE_FALLBACK+'.');result=await callGemini(MODEL_FREE_FALLBACK,payload,key)}if(result&&result.__geminiError){var msg=result.text;try{var parsed=JSON.parse(result.text);msg=(parsed.error&&parsed.error.message)||msg}catch(e){}return jsonResponse({error:{message:'Gemini '+result.status+': '+String(msg||'request failed').slice(0,500)}},result.status||502)}return result}
+window.fetch=function(input,init){if(!isLegacyGroq(input))return nativeFetch(input,init);var run=function(){return geminiCompatFetch(input,init)};var result=queue.then(run,run);queue=result.then(function(){},function(){});return result};
+window.PSTAI=window.PSTAI||{};
+window.PSTAI.provider=function(){return geminiKey()?'gemini':'groq'};
+window.PSTAI.model=function(){return geminiKey()?configuredModel():'legacy-groq'};
+window.PSTAI.configureGemini=function(key,model){var k=String(key||'').trim();if(k){localStorage.setItem('pristeel_gemini_apikey',k);localStorage.setItem('pristeel_apikey','__GEMINI_COMPAT__')}else{localStorage.removeItem('pristeel_gemini_apikey');if(localStorage.getItem('pristeel_apikey')==='__GEMINI_COMPAT__')localStorage.removeItem('pristeel_apikey')}if(model)localStorage.setItem('pristeel_gemini_model',String(model).trim());return{provider:k?'gemini':'groq',model:k?(model||configuredModel()):'legacy-groq'}};
+function paintGeminiSettings(){var input=document.getElementById('s-apikey');if(!input)return;var group=input.closest?input.closest('.field-group'):null;var label=group&&group.querySelector?group.querySelector('label'):null;if(label)label.textContent='Gemini API Key';input.placeholder='Gemini API key';var key=geminiKey();if(key&&document.activeElement!==input)input.value=key;else if(!key&&input.value==='__GEMINI_COMPAT__')input.value='';var page=document.getElementById('page-settings');var note=page&&page.querySelector?page.querySelector('.api-note'):null;if(note)note.innerHTML='Platforma mund të përdorë <strong>Google Gemini API</strong> për funksionet AI. Modeli i preferuar është Gemini 3.5 Flash-Lite; nëse nuk është i disponueshëm për projektin Free, PPPP provon Gemini 3.1 Flash-Lite. <strong>Kujdes:</strong> shërbimi Gemini falas mund të përdorë përmbajtjen e dërguar për përmirësimin e produkteve të Google.';var status=document.getElementById('key-status');if(status&&key)status.textContent='✓ Gemini API Key e ruajtur në browser'}
+function installSettingsBridge(){var oldRender=window.renderSettings;if(typeof oldRender==='function'&&!oldRender.__pstGeminiWrapped){var wrapped=function(){var r=oldRender.apply(this,arguments);paintGeminiSettings();return r};wrapped.__pstGeminiWrapped=true;window.renderSettings=wrapped}window.saveApiKey=function(){var input=document.getElementById('s-apikey');var k=input?String(input.value||'').trim():'';window.PSTAI.configureGemini(k,configuredModel());var status=document.getElementById('key-status');if(status)status.textContent=k?'✓ Gemini API Key e ruajtur në browser':'Gemini API Key u fshi.';paintGeminiSettings()};paintGeminiSettings()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installSettingsBridge);else setTimeout(installSettingsBridge,0);
 })();
