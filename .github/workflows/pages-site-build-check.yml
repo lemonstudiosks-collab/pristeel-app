@@ -1,0 +1,64 @@
+name: PPPP candidate Pages site build
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Re-run Pages artifact audit
+        run: node scripts/pages-artifact-audit.mjs
+
+      - name: Build isolated candidate site
+        run: node scripts/pages-artifact-build.mjs
+
+      - name: Serve candidate site locally
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory _site >/tmp/pppp-site-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for i in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+
+          curl --fail --silent --show-error http://127.0.0.1:4173/ >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-procurement.html >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-gmail-launcher-v2.html >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-document-center.css >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:4173/gmail-addon/pristeel-addon-icon.svg >/dev/null
+
+          echo "Candidate site HTTP smoke OK."
+
+      - name: Confirm production deploy remains whole-repository mode
+        run: |
+          set -e
+          grep -q "path: '.'" .github/workflows/static.yml
+          echo "Production Pages upload path is still '.'."
+
+      - name: Upload candidate site for inspection only
+        uses: actions/upload-artifact@v4
+        with:
+          name: pppp-candidate-pages-site
+          path: _site
+          include-hidden-files: true
+          retention-days: 3
