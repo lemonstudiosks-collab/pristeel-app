@@ -52,9 +52,9 @@ jobs:
       - name: Confirm production deploy uses verified artifact
         run: |
           set -e
-          grep -q "node scripts/pages-artifact-build.mjs" .github/workflows/static.yml
-          grep -q "path: '_site'" .github/workflows/static.yml
-          if grep -q "path: '.'" .github/workflows/static.yml; then
+          grep -Fq "node scripts/pages-artifact-build.mjs" .github/workflows/static.yml
+          grep -Fq "path: '_site'" .github/workflows/static.yml
+          if grep -Fq "path: '.'" .github/workflows/static.yml; then
             echo "ERROR: whole-repository Pages upload path is still present"
             exit 1
           fi
