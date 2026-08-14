@@ -1,5 +1,5 @@
 /* PRISTEEL AI compatibility adapter: existing Groq call-sites -> Gemini Developer API.
- * Inert until pristeel_gemini_apikey is deliberately configured.
+ * Inert until a Gemini key is deliberately configured.
  * Preferred model: gemini-3.5-flash-lite; confirmed free-tier fallback: gemini-3.1-flash-lite.
  */
 (function(){
@@ -31,5 +31,8 @@ window.fetch=function(input,init){if(!isLegacyGroq(input))return nativeFetch(inp
 window.PSTAI=window.PSTAI||{};
 window.PSTAI.provider=function(){return geminiKey()?'gemini':'groq'};
 window.PSTAI.model=function(){return geminiKey()?configuredModel():'legacy-groq'};
-window.PSTAI.configureGemini=function(key,model){var k=String(key||'').trim();if(k)localStorage.setItem('pristeel_gemini_apikey',k);else localStorage.removeItem('pristeel_gemini_apikey');if(model)localStorage.setItem('pristeel_gemini_model',String(model).trim());return{provider:k?'gemini':'groq',model:k?(model||configuredModel()):'legacy-groq'}};
+window.PSTAI.configureGemini=function(key,model){var k=String(key||'').trim();if(k){localStorage.setItem('pristeel_gemini_apikey',k);localStorage.setItem('pristeel_apikey','__GEMINI_COMPAT__')}else{localStorage.removeItem('pristeel_gemini_apikey');if(localStorage.getItem('pristeel_apikey')==='__GEMINI_COMPAT__')localStorage.removeItem('pristeel_apikey')}if(model)localStorage.setItem('pristeel_gemini_model',String(model).trim());return{provider:k?'gemini':'groq',model:k?(model||configuredModel()):'legacy-groq'}};
+function paintGeminiSettings(){var input=document.getElementById('s-apikey');if(!input)return;var group=input.closest?input.closest('.field-group'):null;var label=group&&group.querySelector?group.querySelector('label'):null;if(label)label.textContent='Gemini API Key';input.placeholder='Gemini API key';var key=geminiKey();if(key&&document.activeElement!==input)input.value=key;else if(!key&&input.value==='__GEMINI_COMPAT__')input.value='';var page=document.getElementById('page-settings');var note=page&&page.querySelector?page.querySelector('.api-note'):null;if(note)note.innerHTML='Platforma mund të përdorë <strong>Google Gemini API</strong> për funksionet AI. Modeli i preferuar është Gemini 3.5 Flash-Lite; nëse nuk është i disponueshëm për projektin Free, PPPP provon Gemini 3.1 Flash-Lite. <strong>Kujdes:</strong> shërbimi Gemini falas mund të përdorë përmbajtjen e dërguar për përmirësimin e produkteve të Google.';var status=document.getElementById('key-status');if(status&&key)status.textContent='✓ Gemini API Key e ruajtur në browser'}
+function installSettingsBridge(){var oldRender=window.renderSettings;if(typeof oldRender==='function'&&!oldRender.__pstGeminiWrapped){var wrapped=function(){var r=oldRender.apply(this,arguments);paintGeminiSettings();return r};wrapped.__pstGeminiWrapped=true;window.renderSettings=wrapped}window.saveApiKey=function(){var input=document.getElementById('s-apikey');var k=input?String(input.value||'').trim():'';window.PSTAI.configureGemini(k,configuredModel());var status=document.getElementById('key-status');if(status)status.textContent=k?'✓ Gemini API Key e ruajtur në browser':'Gemini API Key u fshi.';paintGeminiSettings()};paintGeminiSettings()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installSettingsBridge);else setTimeout(installSettingsBridge,0);
 })();
