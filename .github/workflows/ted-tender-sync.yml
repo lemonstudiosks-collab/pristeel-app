@@ -11,6 +11,13 @@ on:
         options:
           - preview
           - apply
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/ted-tender-sync.mjs'
+      - 'tests/ted-tender-sync-smoke.mjs'
+      - 'pristeel-kek-tender-watch-v1.js'
+      - '.github/workflows/ted-tender-sync.yml'
   schedule:
     - cron: '47 */2 * * *'
   push:
@@ -23,7 +30,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ted-tender-monitor
+  group: ted-tender-monitor-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -37,7 +44,7 @@ jobs:
       PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       TED_TENDER_MIN_SCORE: '55'
-      SYNC_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'apply' }}
+      SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
 
     steps:
       - name: Checkout
