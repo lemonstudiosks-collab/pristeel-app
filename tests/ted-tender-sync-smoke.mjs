@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import { classifyTedNotice, normalizeTedNotice, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
+
+const steel=classifyTedNotice({title:'Stahlbauarbeiten mit technischer Plattform',cpv:['44212000']});
+assert.equal(steel.category,'steel_structure');
+assert.ok(steel.relevance_score>=90);
+const raw=classifyTedNotice({title:'Supply of profiles',cpv:['44334000']});
+assert.equal(raw.category,'raw_material');
+assert.ok(raw.relevance_score>=80);
+
+const fixture={
+  notices:[
+    {
+      'publication-number':'562840-2026',
+      'notice-title':{eng:'Stahlbauarbeiten mit Alu-Plattform und technischer Ausrüstung'},
+      'notice-type':'can-standard',
+      'publication-date':'2026-08-13',
+      'buyer-name':{eng:'Test Buyer Germany'},
+      'classification-cpv':['44212000','45223210'],
+      'deadline':null,
+      'place-of-performance':['DEU']
+    },
+    {
+      'publication-number':'600001-2026',
+      'notice-title':{eng:'Supply of structural steel profiles'},
+      'notice-type':'cn-standard',
+      'publication-date':'2026-08-14',
+      'buyer-name':{eng:'Infrastructure Buyer'},
+      'classification-cpv':['44334000'],
+      'deadline':['2026-09-30'],
+      'place-of-performance':['DEU']
+    }
+  ]
+};
+const row=normalizeTedNotice(fixture.notices[1],'opportunity','2026-08-14T06:00:00.000Z');
+assert.equal(row.source_key,'TED:600001-2026');
+assert.equal(row.procurement_no,'TED-600001-2026');
+assert.equal(row.fpp,'44334000');
+assert.equal(row.deadline,'2026-09-30');
+assert.equal(row.payload.source,'TED');
+assert.equal(row.payload.notice_phase,'opportunity');
+
+const calls=[];
+async function fakeFetch(url,opts){
+  calls.push({url,body:JSON.parse(opts.body)});
+  const query=JSON.parse(opts.body).query;
+  const notices=query.includes('can-standard')?[fixture.notices[0]]:[fixture.notices[1]];
+  return new Response(JSON.stringify({notices}),{status:200,headers:{'content-type':'application/json'}});
+}
+const summary=await runTedTenderSync({mode:'preview',minScore:55,fetchImpl:fakeFetch});
+assert.equal(calls.length,2,'collector should make separate opportunity and award searches');
+assert.ok(calls[0].body.query.includes('notice-type IN (cn-standard cn-social pin-cfc-standard pin-cfc-social qu-sy subco)'));
+assert.ok(calls[0].body.query.includes('classification-cpv = 4421*'));
+assert.equal(calls[0].body.scope,'ACTIVE');
+assert.equal(summary.opportunities,1);
+assert.equal(summary.awards,1);
+assert.equal(summary.relevant_rows,2);
+assert.ok(summary.tenders.some(x=>x.publication_no==='600001-2026'&&x.phase==='opportunity'));
+assert.ok(summary.tenders.some(x=>x.publication_no==='562840-2026'&&x.phase==='award'));
+
+console.log('TED tender sync smoke: OK');
