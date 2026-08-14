@@ -1,0 +1,79 @@
+name: TED tender monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - apply
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/ted-tender-sync.mjs'
+      - 'scripts/ted-api-probe.mjs'
+      - 'tests/ted-tender-sync-smoke.mjs'
+      - 'pristeel-kek-tender-watch-v1.js'
+      - '.github/workflows/ted-tender-sync.yml'
+  schedule:
+    - cron: '47 */2 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/ted-tender-sync.mjs'
+      - '.github/workflows/ted-tender-sync.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ted-tender-monitor-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+      TED_TENDER_MIN_SCORE: '55'
+      SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check TED collector syntax
+        run: node --check scripts/ted-tender-sync.mjs
+
+      - name: Run TED collector smoke
+        run: node tests/ted-tender-sync-smoke.mjs
+
+      - name: Probe known TED notices
+        if: ${{ github.event_name == 'pull_request' }}
+        run: node scripts/ted-api-probe.mjs
+
+      - name: Collect TED steel tenders
+        run: node scripts/ted-tender-sync.mjs
+
+      - name: Upload sanitized summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ted-tender-monitor
+          path: tmp/ted-tender-sync.json
+          if-no-files-found: ignore
+          retention-days: 14
