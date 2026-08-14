@@ -51,6 +51,17 @@ function extractBootstrapModules(source) {
   return entries;
 }
 
+function extractLocalScriptTags(source) {
+  const entries = [];
+  for (const m of source.matchAll(/<script\b[^>]*\bsrc\s*=\s*['"]([^'"]+)['"][^>]*>/gi)) {
+    const raw = String(m[1] || '').trim();
+    if (!raw || /^(?:https?:)?\/\//i.test(raw) || /^data:/i.test(raw)) continue;
+    const module = cleanModule(raw.replace(/^\.\//, ''));
+    if (/\.js$/i.test(module)) entries.push(module);
+  }
+  return entries;
+}
+
 function headInfo() {
   try {
     return execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -101,19 +112,19 @@ if (indexSource && applicationHtml && !indexSource.includes(applicationHtml)) {
 const directRuntime = (Array.isArray(manifest.applicationDirectRuntime) ? manifest.applicationDirectRuntime : []).map(cleanModule);
 if (!directRuntime.length) fail('applicationDirectRuntime must list the local scripts loaded directly by the application HTML.');
 
-let previousDirectIndex = -1;
+const actualDirectRuntime = extractLocalScriptTags(applicationSource);
+if (JSON.stringify(actualDirectRuntime) !== JSON.stringify(directRuntime)) {
+  fail(
+    `${applicationHtml} local <script src> runtime changed.\n` +
+    `  manifest: ${JSON.stringify(directRuntime)}\n` +
+    `  actual:   ${JSON.stringify(actualDirectRuntime)}\n` +
+    'Review the direct application runtime and update runtime-manifest.json deliberately.'
+  );
+}
+
 for (const module of directRuntime) {
   if (!module) continue;
   if (!exists(module)) fail(`Application direct runtime file is missing: ${module}`);
-  const idx = applicationSource.indexOf(module);
-  if (idx < 0) {
-    fail(`${applicationHtml} no longer references direct runtime module ${module}.`);
-    continue;
-  }
-  if (idx <= previousDirectIndex) {
-    fail(`Direct application script order changed around ${module}. Review applicationDirectRuntime deliberately.`);
-  }
-  previousDirectIndex = idx;
 }
 
 if (bootstrapLoaderPath && !directRuntime.includes(bootstrapLoaderPath)) {
