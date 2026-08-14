@@ -70,12 +70,7 @@
     "preview-server.mjs",
     "gmail-addon/Code.gs",
     "gmail-addon/appsscript.json",
-    "gmail-addon/README.md",
-    "AUDIT_TEST_RESULT.txt",
-    "DEPLOYMENT_STATUS.md",
-    "PREVIEW_REF_TRIGGER_20260807.txt",
-    "STABILITY_AUDIT_20260807.md",
-    "VERIFY_HOME_SEARCH_TABS_2045.txt"
+    "gmail-addon/README.md"
   ],
   "policy": {
     "extraRepositoryFilesDoNotFailAudit": true,
