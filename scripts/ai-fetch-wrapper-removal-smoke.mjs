@@ -57,7 +57,7 @@ vm.runInThisContext(compatSource,{filename:'pristeel-groq-rate-limit.js'});
 assert(globalThis.fetch===nativeFetch,'compatibility provider changed global fetch at runtime.');
 assert(typeof window.PSTAI.requestTransport==='function','compatibility explicit transport missing at runtime.');
 
-localStorage.setItem('pristeel_apikey','legacy-test-key');
+localStorage.setItem('pristeel_groq_apikey','legacy-test-key');
 nativeCalls=[];xhrCalls=[];
 let out=await window.PSTAI.requestJson({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:'Return JSON.'}],max_tokens:2400,temperature:0,response_format:{type:'json_object'}});
 assert(out&&out.route==='legacy','legacy explicit routing changed after wrapper removal.');
@@ -67,7 +67,6 @@ assert(xhrCalls.length===0,'legacy route unexpectedly used GPT-OSS XHR.');
 
 localStorage.setItem('pristeel_gemini_apikey','gemini-test-key');
 localStorage.setItem('pristeel_gemini_model','gemini-3.1-flash-lite');
-localStorage.setItem('pristeel_apikey','__GEMINI_COMPAT__');
 nativeCalls=[];xhrCalls=[];
 out=await window.PSTAI.requestJson({model:'llama-3.3-70b-versatile',messages:[{role:'system',content:'Return JSON only.'},{role:'user',content:'Return JSON.'}],max_tokens:2400,temperature:0,response_format:{type:'json_object'}});
 assert(out&&out.route==='gemini','Gemini explicit routing changed after wrapper removal.');
@@ -89,7 +88,6 @@ assert(gBody.max_tokens===2200,'GPT-OSS token shaping changed.');
 
 window.PSTAI.deactivateGroqGptOss();
 localStorage.setItem('pristeel_gemini_apikey','gemini-test-key');
-localStorage.setItem('pristeel_apikey','__GEMINI_COMPAT__');
 nativeCalls=[];xhrCalls=[];
 out=await window.PSTAI.requestJson({messages:[{role:'user',content:'Return JSON.'}],max_tokens:100});
 assert(out&&out.route==='gemini','inactive GPT-OSS no longer delegates to compatibility transport.');

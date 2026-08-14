@@ -62,8 +62,8 @@ assert(window.PSTAI, 'PSTAI was not initialized.');
 assert(typeof window.PSTAI.hasApiKey === 'function', 'PSTAI.hasApiKey is missing.');
 assert(typeof window.PSTAI.requestJson === 'function', 'PSTAI.requestJson is missing.');
 
-localStorage.setItem('pristeel_apikey', 'legacy-test-key');
-assert(window.PSTAI.hasApiKey() === true, 'Legacy compatibility key was not detected.');
+localStorage.setItem('pristeel_groq_apikey', 'legacy-test-key');
+assert(window.PSTAI.hasApiKey() === true, 'Dedicated Groq key was not detected.');
 calls = [];
 nativeMode = 'normal';
 const legacy = await window.PSTAI.requestJson({
@@ -83,7 +83,6 @@ assert(legacyBody.max_tokens === 2400, 'Legacy max_tokens changed unexpectedly.'
 
 localStorage.setItem('pristeel_gemini_apikey', 'gemini-test-key');
 localStorage.setItem('pristeel_gemini_model', 'gemini-3.1-flash-lite');
-localStorage.setItem('pristeel_apikey', '__GEMINI_COMPAT__');
 calls = [];
 nativeMode = 'normal';
 const gemini = await window.PSTAI.requestJson({
@@ -105,7 +104,7 @@ assert(Array.isArray(geminiBody.contents) && geminiBody.contents.length === 1, '
 assert(geminiBody.systemInstruction && geminiBody.systemInstruction.parts[0].text === 'Return only JSON.', 'Gemini system instruction mapping changed.');
 
 localStorage.removeItem('pristeel_gemini_apikey');
-localStorage.setItem('pristeel_apikey', 'legacy-test-key');
+localStorage.setItem('pristeel_groq_apikey', 'legacy-test-key');
 for (const [mode, expectedCode] of [
   ['http-error', 'HTTP'],
   ['empty-content', 'EMPTY'],
@@ -131,8 +130,8 @@ try {
 assert(networkError && /synthetic-network-error/.test(String(networkError.message || networkError)), 'Network failure did not propagate.');
 assert(!networkError.pstAiCode, 'Network failure was incorrectly converted into a soft typed response error.');
 
-localStorage.removeItem('pristeel_apikey');
-assert(window.PSTAI.hasApiKey() === false, 'Missing compatibility key should report unavailable.');
+localStorage.removeItem('pristeel_groq_apikey');
+assert(window.PSTAI.hasApiKey() === false, 'Missing real provider keys should report unavailable.');
 let missingKeyError = null;
 try {
   await window.PSTAI.requestJson({ messages: [] });
