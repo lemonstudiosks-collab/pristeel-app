@@ -27,7 +27,8 @@ source=source.slice(0,groqStart)+newGroq+source.slice(askStart);
 source=replaceOnce(
   source,
   "setState(pid,'Po mblidhen të dhënat e projektit…');var previous=await latest(pid),b=await collect(pid),key=localStorage.getItem('pristeel_apikey')||'',a,engine='rules',model=null;prog(pid,true,44);\n    if(key){",
-  "setState(pid,'Po mblidhen të dhënat e projektit…');var previous=await latest(pid),b=await collect(pid),ai=window.PSTAI,a,engine='rules',model=null;prog(pid,true,44);\n    if(ai&&typeof ai.hasApiKey==='function'&&ai.hasApiKey()){",""project analysis AI-vs-rules gate""
+  "setState(pid,'Po mblidhen të dhënat e projektit…');var previous=await latest(pid),b=await collect(pid),ai=window.PSTAI,a,engine='rules',model=null;prog(pid,true,44);\n    if(ai&&typeof ai.hasApiKey==='function'&&ai.hasApiKey()){",
+  'project analysis AI-vs-rules gate'
 );
 fs.writeFileSync(path,source,'utf8');
 
