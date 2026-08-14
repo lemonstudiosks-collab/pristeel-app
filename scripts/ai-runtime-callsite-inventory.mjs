@@ -82,8 +82,8 @@ const expected = {
     { file: 'pristeel-email-offer-intake-v1.js', count: 1 },
     { file: 'pristeel-gemini-test-ui-v1.js', count: 3 },
     { file: 'pristeel-gmail-audit.js', count: 1 },
-    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 13 },
-    { file: 'pristeel-groq-rate-limit.js', count: 8 },
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 17 },
+    { file: 'pristeel-groq-rate-limit.js', count: 10 },
     { file: 'pristeel-procurement.html', count: 5 },
     { file: 'pristeel-project-analysis.js', count: 2 }
   ],

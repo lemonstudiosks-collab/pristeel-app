@@ -87,6 +87,8 @@ const projectAnalysisAsk = extractFunction(projectAnalysis, 'async function ask(
 const projectAnalyze = extractFunction(projectAnalysis, 'window.pstAnalyzeProject=async function(pid)');
 const baseSaveApiKey = extractFunction(appHtml, 'function saveApiKey()');
 const baseRenderSettings = extractFunction(appHtml, 'function renderSettings()');
+const explicitRequestJson = extractFunction(compat, 'window.PSTAI.requestJson=async function(options)');
+const gptOssRequestTransport = extractFunction(groqProvider, 'window.PSTAI.requestTransport=async function(body,key)');
 
 const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
 const compatIndex = ordered.indexOf(files.compat);
@@ -143,13 +145,22 @@ for (const [needle, label] of [
   ["window.fetch=function", 'compatibility fetch wrapper'],
   ["window.PSTAI.configureGemini", 'Gemini configuration API'],
   ["window.PSTAI.hasApiKey", 'explicit AI availability API'],
+  ["window.PSTAI.requestTransport=compatibilityRequestTransport", 'explicit compatibility transport API'],
   ["window.PSTAI.requestJson", 'explicit JSON request API'],
+  ["function compatibilityRequestTransport", 'compatibility response transport implementation'],
   ["function pstAiError", 'typed explicit-request error helper'],
   ["pstAiError('HTTP'", 'typed HTTP error'],
   ["pstAiError('EMPTY'", 'typed empty-response error'],
   ["pstAiError('INVALID_JSON'", 'typed invalid-JSON error'],
   ["window.saveApiKey=function", 'legacy settings save bridge']
 ]) requireText(compat, needle, `${files.compat}: ${label}`);
+
+for (const [needle, label] of [
+  ["window.PSTAI.requestTransport(body,key)", 'explicit request transport dispatch'],
+  ["response_format:o.response_format||{type:'json_object'}", 'preserved request JSON contract'],
+  ["parseModelJson(c)", 'preserved tolerant model JSON parser']
+]) requireText(explicitRequestJson, needle, `${files.compat} requestJson: ${label}`);
+forbidText(explicitRequestJson, "window.fetch(", `${files.compat} requestJson`);
 
 for (const [needle, label] of [
   ["window.PSTAI.testGeminiConnection", 'Gemini connectivity API'],
@@ -164,12 +175,21 @@ for (const [needle, label] of [
   ["pristeel_ai_provider", 'active provider storage'],
   ["__GROQ_GPTOSS_COMPAT__", 'legacy key compatibility marker'],
   ["previousFetch=window.fetch.bind(window)", 'provider wrapper chaining'],
+  ["previousRequestTransport=typeof window.PSTAI.requestTransport==='function'?window.PSTAI.requestTransport:null", 'explicit provider transport chaining'],
+  ["window.PSTAI.requestTransport=async function", 'GPT-OSS explicit transport override'],
   ["new XMLHttpRequest()", 'direct Groq transport bypass'],
   ["window.fetch=function", 'active provider fetch wrapper'],
   ["window.PSTAI.activateGroqGptOss", 'provider activation API'],
   ["window.PSTAI.deactivateGroqGptOss", 'provider deactivation API'],
   ["oldRender=window.renderSettings", 'settings render wrapper']
 ]) requireText(groqProvider, needle, `${files.groqProvider}: ${label}`);
+
+for (const [needle, label] of [
+  ["if(!active())", 'inactive-provider transport delegation'],
+  ["previousRequestTransport(body,key)", 'previous explicit transport delegation'],
+  ["groqFetch(GROQ_URL,init)", 'active GPT-OSS explicit transport'],
+  ["Authorization':'Bearer '+groqKey()", 'Groq explicit transport key header']
+]) requireText(gptOssRequestTransport, needle, `${files.groqProvider} requestTransport: ${label}`);
 
 for (const [needle, label] of [
   ["var ai=window.PSTAI", 'explicit AI service lookup'],

@@ -28,6 +28,8 @@ jobs:
         run: npm test
       - name: Run explicit AI request API smoke
         run: node scripts/ai-request-api-smoke.mjs
+      - name: Run explicit AI provider routing smoke
+        run: node scripts/ai-provider-routing-smoke.mjs
       - name: Run startParsing AI migration smoke
         run: node scripts/start-parsing-ai-smoke.mjs
       - name: Run parseOffer AI migration smoke
