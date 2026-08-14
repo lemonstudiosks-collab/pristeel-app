@@ -70,8 +70,14 @@ vm.runInContext(code,dom.getInternalVMContext());
   await window.openInvoiceDetail('out','out-missing');
   modal=window.document.getElementById('inv-detail-modal');
   assert.ok(modal.textContent.includes('Origjinali i faturës nuk është ruajtur'));
+  assert.ok(modal.textContent.includes('Bashkëngjit origjinalin'),'missing historical originals must be remediable explicitly');
   assert.ok(!modal.textContent.includes('Printo origjinalin'),'do not offer synthetic print when no original exists');
   assert.ok(!modal.querySelector('iframe'),'no fake invoice document may be generated');
+  assert.strictEqual(writes,0,'showing the upload option must remain read-only until user explicitly confirms a file');
+
+  assert.strictEqual(window.pstInvoiceOriginalDocument.validOriginalFile({name:'invoice.pdf',type:'application/pdf'}),true);
+  assert.strictEqual(window.pstInvoiceOriginalDocument.validOriginalFile({name:'invoice.jpg',type:'image/jpeg'}),true);
+  assert.strictEqual(window.pstInvoiceOriginalDocument.validOriginalFile({name:'invoice.txt',type:'text/plain'}),false);
 
   const b64=window.pstInvoiceOriginalDocument.resolveOriginal(rows.incomingBase64,'in');
   assert.strictEqual(b64.kind,'base64');
