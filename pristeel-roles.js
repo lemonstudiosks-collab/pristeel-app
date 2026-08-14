@@ -224,4 +224,13 @@ if(document.readyState === 'loading'){
   document.head.appendChild(s);
 })();
 
+(function loadTenderBusinessFlowModule(){
+  if(document.querySelector('script[data-pst-tender-business-flow]')) return;
+  var s=document.createElement('script');
+  s.src='pristeel-tender-business-flow-v1.js?v='+String(Date.now());
+  s.defer=true;
+  s.setAttribute('data-pst-tender-business-flow','1');
+  document.head.appendChild(s);
+})();
+
 })();
