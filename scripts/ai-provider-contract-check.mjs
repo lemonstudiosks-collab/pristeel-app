@@ -1,0 +1,116 @@
+import fs from 'node:fs';
+
+const files = {
+  registry: 'runtime-bootstrap-order.json',
+  manifest: 'runtime-manifest.json',
+  compat: 'pristeel-groq-rate-limit.js',
+  geminiUi: 'pristeel-gemini-test-ui-v1.js',
+  groqProvider: 'pristeel-groq-gptoss-provider-v1.js',
+  projectAnalysis: 'pristeel-project-analysis.js'
+};
+
+function fail(message) {
+  console.error(`AI PROVIDER CONTRACT ERROR: ${message}`);
+  process.exitCode = 1;
+}
+
+function read(path) {
+  if (!fs.existsSync(path)) {
+    fail(`Missing file: ${path}`);
+    return '';
+  }
+  return fs.readFileSync(path, 'utf8');
+}
+
+function requireText(source, needle, label) {
+  if (!source.includes(needle)) fail(`${label} no longer contains required contract: ${needle}`);
+}
+
+function clean(entry) {
+  return String(entry || '').split('?')[0].trim();
+}
+
+let registry = {};
+let manifest = {};
+try { registry = JSON.parse(read(files.registry)); } catch (e) { fail(`${files.registry} is invalid JSON: ${e.message}`); }
+try { manifest = JSON.parse(read(files.manifest)); } catch (e) { fail(`${files.manifest} is invalid JSON: ${e.message}`); }
+
+const compat = read(files.compat);
+const geminiUi = read(files.geminiUi);
+const groqProvider = read(files.groqProvider);
+const projectAnalysis = read(files.projectAnalysis);
+
+const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
+const compatIndex = ordered.indexOf(files.compat);
+const geminiIndex = ordered.indexOf(files.geminiUi);
+if (compatIndex < 0) fail(`${files.compat} is missing from the ordered bootstrap registry.`);
+if (geminiIndex < 0) fail(`${files.geminiUi} is missing from the ordered bootstrap registry.`);
+if (compatIndex >= 0 && geminiIndex >= 0 && compatIndex >= geminiIndex) {
+  fail(`${files.compat} must load before ${files.geminiUi}.`);
+}
+
+const compatibilityLayers = Array.isArray(manifest.compatibilityLayers) ? manifest.compatibilityLayers.map(clean) : [];
+if (!compatibilityLayers.includes(files.compat)) fail(`${files.compat} is no longer classified as a compatibility layer.`);
+
+const aiArea = (Array.isArray(manifest.areas) ? manifest.areas : []).find((x) => x && x.area === 'ai');
+const aiOwners = aiArea && Array.isArray(aiArea.finalOwners) ? aiArea.finalOwners.map(clean) : [];
+for (const owner of [files.geminiUi, files.groqProvider]) {
+  if (!aiOwners.includes(owner)) fail(`AI final owner missing from runtime manifest: ${owner}`);
+}
+
+const dynamic = (Array.isArray(manifest.dynamicRuntime) ? manifest.dynamicRuntime : []).find((x) => clean(x && x.module) === files.groqProvider);
+if (!dynamic) fail(`${files.groqProvider} is missing from dynamicRuntime.`);
+else {
+  if (clean(dynamic.loader) !== files.geminiUi) fail(`${files.groqProvider} loader changed from ${files.geminiUi}.`);
+  if (dynamic.status !== 'ACTIVE_PROVIDER') fail(`${files.groqProvider} status changed from ACTIVE_PROVIDER.`);
+}
+
+const orderConstraint = (Array.isArray(manifest.loadOrderConstraints) ? manifest.loadOrderConstraints : []).some((x) =>
+  clean(x && x.before) === files.compat && clean(x && x.after) === files.geminiUi
+);
+if (!orderConstraint) fail(`Runtime manifest no longer records the AI compatibility-before-settings load-order constraint.`);
+
+for (const [needle, label] of [
+  ["api.groq.com/openai/v1/chat/completions", 'legacy Groq-shaped endpoint'],
+  ["https://generativelanguage.googleapis.com/v1beta/models/", 'Gemini API base'],
+  ["pristeel_gemini_apikey", 'Gemini browser key storage'],
+  ["pristeel_gemini_model", 'Gemini model storage'],
+  ["pristeel_apikey", 'legacy compatibility key marker'],
+  ["window.fetch=function", 'compatibility fetch wrapper'],
+  ["window.PSTAI.configureGemini", 'Gemini configuration API'],
+  ["window.saveApiKey=function", 'legacy settings save bridge']
+]) requireText(compat, needle, `${files.compat}: ${label}`);
+
+for (const [needle, label] of [
+  ["window.PSTAI.testGeminiConnection", 'Gemini connectivity API'],
+  ["pristeel-groq-gptoss-provider-v1.js?v=20260814-1", 'dynamic GPT-OSS provider loader'],
+  ["oldRender=window.renderSettings", 'settings render wrapper']
+]) requireText(geminiUi, needle, `${files.geminiUi}: ${label}`);
+
+for (const [needle, label] of [
+  ["openai/gpt-oss-20b", 'GPT-OSS model'],
+  ["groq-gptoss", 'provider id'],
+  ["pristeel_groq_apikey", 'Groq browser key storage'],
+  ["pristeel_ai_provider", 'active provider storage'],
+  ["__GROQ_GPTOSS_COMPAT__", 'legacy key compatibility marker'],
+  ["previousFetch=window.fetch.bind(window)", 'provider wrapper chaining'],
+  ["new XMLHttpRequest()", 'direct Groq transport bypass'],
+  ["window.fetch=function", 'active provider fetch wrapper'],
+  ["window.PSTAI.activateGroqGptOss", 'provider activation API'],
+  ["window.PSTAI.deactivateGroqGptOss", 'provider deactivation API'],
+  ["oldRender=window.renderSettings", 'settings render wrapper']
+]) requireText(groqProvider, needle, `${files.groqProvider}: ${label}`);
+
+for (const [needle, label] of [
+  ["MODEL_FAST='llama-3.1-8b-instant'", 'legacy fast-model caller contract'],
+  ["MODEL_MAIN='llama-3.3-70b-versatile'", 'legacy main-model caller contract'],
+  ["localStorage.getItem('pristeel_apikey')", 'legacy AI key caller contract'],
+  ["https://api.groq.com/openai/v1/chat/completions", 'Groq-shaped project analysis call']
+]) requireText(projectAnalysis, needle, `${files.projectAnalysis}: ${label}`);
+
+console.log('PPPP AI provider contract guard');
+console.log(`Bootstrap order: ${files.compat} -> ${files.geminiUi}`);
+console.log(`Dynamic provider: ${files.geminiUi} -> ${files.groqProvider}`);
+console.log('Storage contracts: pristeel_apikey, pristeel_gemini_apikey, pristeel_gemini_model, pristeel_groq_apikey, pristeel_ai_provider');
+console.log('Project analysis still uses the audited legacy Groq-shaped caller contract.');
+if (!process.exitCode) console.log('AI provider runtime contracts OK.');
