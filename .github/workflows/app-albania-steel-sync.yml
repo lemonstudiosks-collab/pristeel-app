@@ -13,7 +13,9 @@ on:
     branches: [main]
     paths:
       - 'scripts/app-albania-steel-sync.mjs'
+      - 'scripts/app-albania-steel-sync-v2.mjs'
       - 'tests/app-albania-steel-sync-smoke.mjs'
+      - 'tests/public-steel-boundary-regression.mjs'
       - '.github/workflows/app-albania-steel-sync.yml'
   schedule:
     - cron: '57 */6 * * *'
@@ -21,6 +23,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/app-albania-steel-sync.mjs'
+      - 'scripts/app-albania-steel-sync-v2.mjs'
       - '.github/workflows/app-albania-steel-sync.yml'
 
 permissions:
@@ -50,11 +53,15 @@ jobs:
         with:
           node-version: '22'
       - name: Check collector syntax
-        run: node --check scripts/app-albania-steel-sync.mjs
-      - name: Run classifier smoke tests
-        run: node tests/app-albania-steel-sync-smoke.mjs
+        run: |
+          node --check scripts/app-albania-steel-sync.mjs
+          node --check scripts/app-albania-steel-sync-v2.mjs
+      - name: Run parser and classifier smoke tests
+        run: |
+          node tests/app-albania-steel-sync-smoke.mjs
+          node tests/public-steel-boundary-regression.mjs
       - name: Collect Albania steel tenders
-        run: node scripts/app-albania-steel-sync.mjs
+        run: node scripts/app-albania-steel-sync-v2.mjs
       - name: Upload sanitized summary
         if: always()
         uses: actions/upload-artifact@v4
