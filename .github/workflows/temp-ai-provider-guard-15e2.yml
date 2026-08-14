@@ -1,0 +1,55 @@
+name: TEMP Cleanup 15E2 provider guard
+
+on:
+  push:
+    branches:
+      - cleanup/ai-inline-parseoffer-20260814
+    paths:
+      - scripts/finalize-ai-provider-guard-15e2.mjs
+      - .github/workflows/temp-ai-provider-guard-15e2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: cleanup/ai-inline-parseoffer-20260814
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Finalize provider guard
+        run: node scripts/finalize-ai-provider-guard-15e2.mjs
+
+      - name: Validate parseOffer migration contracts
+        run: |
+          node scripts/parse-offer-ai-smoke.mjs
+          node scripts/start-parsing-ai-smoke.mjs
+          node scripts/ai-provider-contract-check.mjs
+          node scripts/ai-runtime-callsite-inventory.mjs
+          node scripts/runtime-manifest-check.mjs
+          node scripts/bootstrap-sequence-check.mjs
+          node scripts/generate-bootstrap.mjs --check
+          git diff --check
+
+      - name: Commit finalized guard
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/ai-provider-contract-check.mjs
+          if git diff --cached --quiet; then
+            echo "No provider guard change was produced." >&2
+            exit 1
+          fi
+          git commit -m "Guard parseOffer explicit AI migration"
+          git push origin HEAD:cleanup/ai-inline-parseoffer-20260814
