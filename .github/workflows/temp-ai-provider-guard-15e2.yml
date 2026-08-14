@@ -1,4 +1,5 @@
 name: TEMP Cleanup 15E2 provider guard
+# Retry after preserving parseOffer object-only response semantics.
 
 on:
   push:
