@@ -125,10 +125,10 @@
   ],
   "legacyFallbackRequired": [
     "pristeel-ui-v2-polish.js",
-    "pristeel-dashboard-calm.js"
+    "pristeel-dashboard-calm.js",
+    "pristeel-project-intelligence-ui.js"
   ],
   "loadedLegacyReviewCandidates": [
-    "pristeel-project-intelligence-ui.js",
     "pristeel-project-workspace.js",
     "pristeel-ui-v2.js"
   ],
