@@ -72,6 +72,11 @@ function isOperationalFocus(r){return source(r)==='TED'?phase(r)==='award'&&hasT
     'missing-winner fixture');
 
   s=replaceOnce(s,
+` assert.equal(window.pstTenderBusinessFlow.phaseMatch(rows[1],'all'),false,'TED opportunities must be hidden even under all');`,
+` assert.equal(window.pstTenderBusinessFlow.phaseMatch(rows[2],'all'),false,'TED opportunities must be hidden even under all');`,
+    'TED opportunity fixture index');
+
+  s=replaceOnce(s,
 ` assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[0]),true,'TED award is operational');
  assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[2]),true,'KRPP opportunity is operational');
  await window.pstKekLoad();
