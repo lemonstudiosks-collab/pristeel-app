@@ -13,7 +13,9 @@ on:
     branches: [main]
     paths:
       - 'scripts/krpp-public-steel-sync.mjs'
+      - 'scripts/krpp-public-steel-sync-v2.mjs'
       - 'tests/krpp-public-steel-sync-smoke.mjs'
+      - 'tests/public-steel-boundary-regression.mjs'
       - '.github/workflows/krpp-public-steel-sync.yml'
   schedule:
     - cron: '27 */2 * * *'
@@ -21,6 +23,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/krpp-public-steel-sync.mjs'
+      - 'scripts/krpp-public-steel-sync-v2.mjs'
       - '.github/workflows/krpp-public-steel-sync.yml'
 
 permissions:
@@ -49,11 +52,15 @@ jobs:
         with:
           node-version: '22'
       - name: Check collector syntax
-        run: node --check scripts/krpp-public-steel-sync.mjs
-      - name: Run classifier smoke tests
-        run: node tests/krpp-public-steel-sync-smoke.mjs
+        run: |
+          node --check scripts/krpp-public-steel-sync.mjs
+          node --check scripts/krpp-public-steel-sync-v2.mjs
+      - name: Run parser and classifier smoke tests
+        run: |
+          node tests/krpp-public-steel-sync-smoke.mjs
+          node tests/public-steel-boundary-regression.mjs
       - name: Collect public KRPP steel tenders
-        run: node scripts/krpp-public-steel-sync.mjs
+        run: node scripts/krpp-public-steel-sync-v2.mjs
       - name: Upload sanitized summary
         if: always()
         uses: actions/upload-artifact@v4
