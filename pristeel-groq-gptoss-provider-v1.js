@@ -83,14 +83,6 @@ async function groqFetch(input,init){
   }
   return last;
 }
-window.fetch=function(input,init){
-  if(!active()||!isGroqUrl(input))return previousFetch(input,init);
-  var run=function(){return groqFetch(input,init);};
-  var result=queue.then(run,run);
-  queue=result.then(function(){},function(){});
-  return result;
-};
-
 function groqError(text,status){
   var msg=String(text||'').trim();
   try{var p=JSON.parse(msg);msg=(p.error&&p.error.message)||msg;}catch(e){}

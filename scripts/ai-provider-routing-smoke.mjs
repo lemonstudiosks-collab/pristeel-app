@@ -27,7 +27,7 @@ globalThis.performance={now:()=>Date.now()};
 
 let nativeCalls=[];
 let xhrCalls=[];
-globalThis.fetch=async function nativeFetchStub(url,init={}){
+const nativeFetch=async function nativeFetchStub(url,init={}){
   nativeCalls.push({url:String(url),init});
   if(String(url).includes('generativelanguage.googleapis.com')){
     return new Response(JSON.stringify({candidates:[{content:{parts:[{text:'{"route":"gemini"}'}]}}],usageMetadata:{promptTokenCount:4,candidatesTokenCount:2,totalTokenCount:6}}),{status:200,headers:{'Content-Type':'application/json'}});
@@ -37,6 +37,7 @@ globalThis.fetch=async function nativeFetchStub(url,init={}){
   }
   return new Response('ok',{status:200,headers:{'Content-Type':'text/plain'}});
 };
+globalThis.fetch=nativeFetch;
 
 class FakeXHR{
   constructor(){this.headers={};this.readyState=0;this.status=0;this.statusText='';this.responseText='';}
@@ -52,6 +53,7 @@ class FakeXHR{
 globalThis.XMLHttpRequest=FakeXHR;
 
 vm.runInThisContext(compatSource,{filename:'pristeel-groq-rate-limit.js'});
+assert(globalThis.fetch===nativeFetch,'compatibility layer changed global fetch after wrapper removal.');
 assert(typeof window.PSTAI.requestTransport==='function','compatibility explicit transport missing at runtime.');
 assert(typeof window.PSTAI.requestJson==='function','requestJson missing at runtime.');
 
@@ -75,8 +77,9 @@ assert(nativeCalls.length===1&&nativeCalls[0].url.includes('/gemini-3.1-flash-li
 assert(nativeCalls[0].init.headers['x-goog-api-key']==='gemini-test-key','Gemini explicit transport key header changed.');
 assert(xhrCalls.length===0,'Gemini route unexpectedly used GPT-OSS XHR transport.');
 
-// Load GPT-OSS provider. It must chain requestTransport explicitly while leaving fetch wrapper fallback installed.
+// Load GPT-OSS provider. It must chain requestTransport explicitly without changing global fetch.
 vm.runInThisContext(groqSource,{filename:'pristeel-groq-gptoss-provider-v1.js'});
+assert(globalThis.fetch===nativeFetch,'GPT-OSS provider changed global fetch after wrapper removal.');
 assert(typeof window.PSTAI.requestTransport==='function','GPT-OSS explicit transport override missing at runtime.');
 localStorage.setItem('pristeel_groq_apikey','gsk-test-key');
 assert(window.PSTAI.activateGroqGptOss('gsk-test-key')===true,'GPT-OSS activation changed.');
@@ -99,11 +102,11 @@ out=await window.PSTAI.requestJson({messages:[{role:'user',content:'Return JSON.
 assert(out&&out.route==='gemini','deactivated GPT-OSS did not delegate to previous explicit transport.');
 assert(nativeCalls.length===1&&xhrCalls.length===0,'deactivated GPT-OSS routing chain changed.');
 
-// Global fetch wrappers deliberately remain in this phase and must still delegate unrelated traffic.
+// With AI wrappers removed, unrelated fetch traffic remains direct/native.
 nativeCalls=[];xhrCalls=[];
 const unrelated=await window.fetch('https://example.com/health');
-assert(unrelated.ok,'unrelated fetch did not succeed through retained wrapper chain.');
-assert(nativeCalls.length===1&&nativeCalls[0].url==='https://example.com/health','retained fetch wrappers no longer delegate unrelated traffic.');
+assert(unrelated.ok,'unrelated native fetch failed.');
+assert(nativeCalls.length===1&&nativeCalls[0].url==='https://example.com/health','unrelated fetch is no longer native/direct.');
 assert(xhrCalls.length===0,'unrelated traffic reached GPT-OSS XHR.');
 
 console.log('Explicit AI provider routing smoke passed');
