@@ -82,6 +82,9 @@ const parseOffer = extractFunction(appHtml, 'async function parseOffer()');
 const qAnalyzeOffer = extractFunction(appHtml, 'async function qAnalyzeOffer(');
 const qAnalyzeAll = extractFunction(appHtml, 'async function qAnalyzeAll()');
 const qAnalyzeOne = extractFunction(appHtml, 'async function qAnalyzeOne(');
+const projectAnalysisGroq = extractFunction(projectAnalysis, 'async function groq(');
+const projectAnalysisAsk = extractFunction(projectAnalysis, 'async function ask(');
+const projectAnalyze = extractFunction(projectAnalysis, 'window.pstAnalyzeProject=async function(pid)');
 
 const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
 const compatIndex = ordered.indexOf(files.compat);
@@ -248,16 +251,36 @@ forbidText(qAnalyzeOne, "https://api.groq.com/openai/v1/chat/completions", `${fi
 forbidText(qAnalyzeOne, "pristeel_apikey", `${files.appHtml} qAnalyzeOne`);
 
 for (const [needle, label] of [
-  ["MODEL_FAST='llama-3.1-8b-instant'", 'legacy fast-model caller contract'],
-  ["MODEL_MAIN='llama-3.3-70b-versatile'", 'legacy main-model caller contract'],
-  ["localStorage.getItem('pristeel_apikey')", 'legacy AI key caller contract'],
-  ["https://api.groq.com/openai/v1/chat/completions", 'Groq-shaped project analysis call']
+  ["MODEL_FAST='llama-3.1-8b-instant'", 'preserved fast model contract'],
+  ["MODEL_MAIN='llama-3.3-70b-versatile'", 'preserved main model contract']
 ]) requireText(projectAnalysis, needle, `${files.projectAnalysis}: ${label}`);
+for (const [needle, label] of [
+  ["var ai=window.PSTAI", 'explicit Project Analysis AI service lookup'],
+  ["ai.hasApiKey()", 'explicit Project Analysis AI availability check'],
+  ["ai.requestJson({model:model,messages:messages,max_tokens:maxTokens||5000,temperature:0,response_format:{type:'json_object'}", 'preserved Project Analysis request contract'],
+  ["code==='MISSING_KEY'", 'preserved missing-key mapping'],
+  ["code==='EMPTY'", 'preserved empty-output mapping'],
+  ["Mungon Groq API Key te Cilësimet.", 'preserved Project Analysis missing-key message'],
+  ["Modeli nuk ktheu analizë.", 'preserved Project Analysis empty-output message']
+]) requireText(projectAnalysisGroq, needle, `${files.projectAnalysis} groq helper: ${label}`);
+for (const [needle, label] of [
+  ["model!==MODEL_FAST&&/model|permission|403|404/i.test(e.message)", 'preserved main-to-fast fallback condition'],
+  ["return groq(MODEL_FAST,messages,maxTokens)", 'preserved fast-model fallback request']
+]) requireText(projectAnalysisAsk, needle, `${files.projectAnalysis} ask helper: ${label}`);
+for (const [needle, label] of [
+  ["ai=window.PSTAI", 'Project Analysis entry AI lookup'],
+  ["if(ai&&typeof ai.hasApiKey==='function'&&ai.hasApiKey())", 'preserved AI-vs-rules gate'],
+  ["a=normalize(localAnalysis(b))", 'preserved rules-only fallback'],
+  ["engine='groq';model=MODEL_MAIN", 'preserved analysis engine/model metadata'],
+  ["Shto Groq API Key për analizë semantike.", 'preserved rules fallback user message']
+]) requireText(projectAnalyze, needle, `${files.projectAnalysis} analyze entry: ${label}`);
+forbidText(projectAnalysis, "https://api.groq.com/openai/v1/chat/completions", files.projectAnalysis);
+forbidText(projectAnalysis, "pristeel_apikey", files.projectAnalysis);
 
 console.log('PPPP AI provider contract guard');
 console.log(`Bootstrap order: ${files.compat} -> ${files.geminiUi}`);
 console.log(`Dynamic provider: ${files.geminiUi} -> ${files.groqProvider}`);
 console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}, ${files.appHtml}::startParsing, ${files.appHtml}::parseOffer, ${files.appHtml}::qAnalyzeOffer, ${files.appHtml}::qAnalyzeAll/qAnalyzeOne`);
 console.log('Storage contracts: pristeel_apikey, pristeel_gemini_apikey, pristeel_gemini_model, pristeel_groq_apikey, pristeel_ai_provider');
-console.log('All inline HTML application request flows are migrated; project analysis retains the final audited legacy application request contract.');
+console.log('All audited application AI request callers now use the explicit PSTAI request API; direct endpoint/key access remains provider/Settings compatibility only.');
 if (!process.exitCode) console.log('AI provider runtime contracts OK.');

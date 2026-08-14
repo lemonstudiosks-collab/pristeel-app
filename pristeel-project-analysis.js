@@ -156,10 +156,9 @@ function block(s){return'=== ['+s.id+'] '+String(s.type).toUpperCase()+' | '+s.l
 function chunks(sources,max){var out=[],cur=[],n=0;arr(sources).forEach(function(s){var b=block(s);if(cur.length&&n+b.length>max){out.push(cur);cur=[];n=0}cur.push(s);n+=b.length});if(cur.length)out.push(cur);return out}
 
 async function groq(model,messages,maxTokens){
-  var key=localStorage.getItem('pristeel_apikey')||'';if(!key)throw new Error('Mungon Groq API Key te Cilësimet.');
-  var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:model,messages:messages,max_tokens:maxTokens||5000,temperature:0,response_format:{type:'json_object'}})});
-  var text=await r.text(),data={};try{data=JSON.parse(text)}catch(e){}if(!r.ok)throw new Error((data.error&&data.error.message)||('Groq '+r.status+': '+text.slice(0,180)));
-  var c=data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content;if(!c)throw new Error('Modeli nuk ktheu analizë.');return safeJson(c)
+  var ai=window.PSTAI;if(!ai||typeof ai.hasApiKey!=='function'||typeof ai.requestJson!=='function'||!ai.hasApiKey())throw new Error('Mungon Groq API Key te Cilësimet.');
+  try{return await ai.requestJson({model:model,messages:messages,max_tokens:maxTokens||5000,temperature:0,response_format:{type:'json_object'}})}
+  catch(e){var code=String(e&&e.pstAiCode||'');if(code==='MISSING_KEY')throw new Error('Mungon Groq API Key te Cilësimet.');if(code==='EMPTY')throw new Error('Modeli nuk ktheu analizë.');throw e}
 }
 async function ask(model,messages,maxTokens){try{return await groq(model,messages,maxTokens)}catch(e){if(model!==MODEL_FAST&&/model|permission|403|404/i.test(e.message))return groq(MODEL_FAST,messages,maxTokens);throw e}}
 var extractShape={summary:'',facts:[{text:'',category:'scope|technical|quality|commercial|logistics|contractual|deadline|decision|contact|other',status:'confirmed|unclear|contradictory',source_ids:['P1']}],risks:[{text:'',severity:'critical|high|medium|low',why:'',source_ids:['E1']}],missing_information:[{text:'',why_needed:'',ask_to:'client|supplier|internal',source_ids:['P1']}],deadlines:[{date:'YYYY-MM-DD or null',text:'',status:'confirmed|mentioned|unclear',source_ids:['E1']}],next_actions:[{title:'',why:'',priority:'critical|high|medium|low',owner:'internal|client|supplier',due_in_days:1,source_ids:['E1']}],assumptions:[{text:'',source_ids:[]}]};
@@ -218,8 +217,8 @@ window.pstProjectAnalysisLoad=async function(pid){
 window.pstAnalyzeProject=async function(pid){
   if(cache[String(pid)]&&cache[String(pid)].busy)return;cache[String(pid)]=cache[String(pid)]||{};cache[String(pid)].busy=true;busy(pid,true);prog(pid,true,3);
   try{
-    setState(pid,'Po mblidhen të dhënat e projektit…');var previous=await latest(pid),b=await collect(pid),key=localStorage.getItem('pristeel_apikey')||'',a,engine='rules',model=null;prog(pid,true,44);
-    if(key){
+    setState(pid,'Po mblidhen të dhënat e projektit…');var previous=await latest(pid),b=await collect(pid),ai=window.PSTAI,a,engine='rules',model=null;prog(pid,true,44);
+    if(ai&&typeof ai.hasApiKey==='function'&&ai.hasApiKey()){
       var cc=chunks(b.sources,18500).slice(0,12),ex=[];for(var i=0;i<cc.length;i++){ex.push(await extractPart(cc[i],i+1,cc.length,pid));prog(pid,true,45+Math.round((i+1)/Math.max(cc.length,1)*34))}
       a=normalize(await synth(b,ex,previous,pid));engine='groq';model=MODEL_MAIN
     }else a=normalize(localAnalysis(b));
