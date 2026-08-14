@@ -6,9 +6,15 @@ assert.equal(steel.category,'steel_structure');
 assert.ok(steel.relevance_score>=90);
 const raw=classifyTedNotice({title:'Supply of structural steel profiles',cpv:['44334000']});
 assert.equal(raw.category,'raw_material');
-assert.ok(raw.relevance_score>=80);
+assert.ok(raw.relevance_score>=90);
 const generic=classifyTedNotice({title:'Emergency training dolls',cpv:['44211100']});
 assert.equal(generic.relevance_score,0,'generic 4421 structures must not be promoted as steel work by CPV alone');
+const secondaryOnly=classifyTedNotice({title:'General building construction',cpv:['45000000','45223210']});
+assert.ok(secondaryOnly.relevance_score<75,'secondary steel CPV inside a general contract must stay below the operational threshold');
+const explicitSteelTitle=classifyTedNotice({title:'Stahlbauarbeiten mit Alu-Plattform',cpv:['45223000','45223210']});
+assert.ok(explicitSteelTitle.relevance_score>=75,'explicit steel title must remain eligible even when the main CPV is broader');
+const supervision=classifyTedNotice({title:'Fachbauüberwachung Stahlbau',cpv:['71000000','45223210']});
+assert.ok(supervision.relevance_score<75,'steel supervision/service tenders are not fabrication opportunities');
 
 const fixture={
   notices:[
@@ -49,7 +55,7 @@ async function fakeFetch(url,opts){
   const notices=query.includes('can-standard')?[fixture.notices[0]]:[fixture.notices[1]];
   return new Response(JSON.stringify({notices}),{status:200,headers:{'content-type':'application/json'}});
 }
-const summary=await runTedTenderSync({mode:'preview',minScore:55,fetchImpl:fakeFetch});
+const summary=await runTedTenderSync({mode:'preview',minScore:75,fetchImpl:fakeFetch});
 assert.equal(calls.length,2,'collector should make separate opportunity and award searches');
 assert.ok(calls[0].body.query.includes('notice-type IN (cn-standard cn-social pin-cfc-standard pin-cfc-social qu-sy subco)'));
 assert.ok(calls[0].body.query.includes('classification-cpv = 45223210'));
