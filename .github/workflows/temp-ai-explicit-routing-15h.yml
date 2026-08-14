@@ -1,0 +1,53 @@
+name: TEMP Cleanup 15H explicit AI provider routing
+
+on:
+  push:
+    branches:
+      - cleanup/ai-explicit-provider-routing-20260814
+    paths:
+      - scripts/apply-ai-explicit-routing-15h.mjs
+      - .github/workflows/temp-ai-explicit-routing-15h.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup/ai-explicit-provider-routing-20260814
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply explicit provider routing
+        run: node scripts/apply-ai-explicit-routing-15h.mjs
+      - name: Validate isolated routing migration
+        run: |
+          node scripts/ai-provider-routing-smoke.mjs
+          node scripts/ai-request-api-smoke.mjs
+          node scripts/ai-settings-ownership-smoke.mjs
+          node scripts/project-analysis-ai-smoke.mjs
+          node scripts/q-analyze-batch-ai-smoke.mjs
+          node scripts/q-analyze-offer-ai-smoke.mjs
+          node scripts/parse-offer-ai-smoke.mjs
+          node scripts/start-parsing-ai-smoke.mjs
+          node scripts/runtime-manifest-check.mjs
+          node scripts/bootstrap-sequence-check.mjs
+          node scripts/generate-bootstrap.mjs --check
+          git diff --check
+      - name: Commit runtime migration
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pristeel-groq-rate-limit.js pristeel-groq-gptoss-provider-v1.js runtime-manifest.json
+          if git diff --cached --quiet; then
+            echo "No explicit provider routing migration produced." >&2
+            exit 1
+          fi
+          git commit -m "Route PSTAI requests through explicit provider transport"
+          git push origin HEAD:cleanup/ai-explicit-provider-routing-20260814
