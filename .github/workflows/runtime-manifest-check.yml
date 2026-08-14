@@ -27,3 +27,6 @@ jobs:
 
       - name: Verify ordered bootstrap sequence
         run: node scripts/bootstrap-sequence-check.mjs
+
+      - name: Verify generated bootstrap artifact
+        run: node scripts/generate-bootstrap.mjs --check
