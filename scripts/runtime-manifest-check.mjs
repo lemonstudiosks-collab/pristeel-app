@@ -53,8 +53,7 @@ function extractBootstrapModules(source) {
 
 function headInfo() {
   try {
-    const sha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-    return sha;
+    return execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   } catch {
     return '(git HEAD unavailable)';
   }
@@ -73,25 +72,66 @@ try {
   process.exit(1);
 }
 
-const requiredEntryKeys = ['pagesEntry', 'applicationHtml', 'bootstrap', 'bootstrapGitBlobSha'];
+const requiredEntryKeys = [
+  'pagesEntry',
+  'applicationHtml',
+  'bootstrapLoader',
+  'bootstrapLoaderGitBlobSha',
+  'bootstrap',
+  'bootstrapGitBlobSha'
+];
 for (const key of requiredEntryKeys) {
   if (!manifest.entrypoints || !manifest.entrypoints[key]) fail(`Manifest entrypoints.${key} is required.`);
 }
 
 const pagesEntry = manifest.entrypoints?.pagesEntry || '';
 const applicationHtml = manifest.entrypoints?.applicationHtml || '';
+const bootstrapLoaderPath = manifest.entrypoints?.bootstrapLoader || '';
 const bootstrapPath = manifest.entrypoints?.bootstrap || '';
 
 const indexSource = read(pagesEntry);
 const applicationSource = read(applicationHtml);
+const bootstrapLoaderSource = read(bootstrapLoaderPath);
 const bootstrapSource = read(bootstrapPath);
 
 if (indexSource && applicationHtml && !indexSource.includes(applicationHtml)) {
   fail(`${pagesEntry} no longer references ${applicationHtml}.`);
 }
 
-if (applicationSource && bootstrapPath && !applicationSource.includes(bootstrapPath)) {
-  fail(`${applicationHtml} no longer references ${bootstrapPath}. If boot ownership changed, update the manifest deliberately.`);
+const directRuntime = (Array.isArray(manifest.applicationDirectRuntime) ? manifest.applicationDirectRuntime : []).map(cleanModule);
+if (!directRuntime.length) fail('applicationDirectRuntime must list the local scripts loaded directly by the application HTML.');
+
+let previousDirectIndex = -1;
+for (const module of directRuntime) {
+  if (!module) continue;
+  if (!exists(module)) fail(`Application direct runtime file is missing: ${module}`);
+  const idx = applicationSource.indexOf(module);
+  if (idx < 0) {
+    fail(`${applicationHtml} no longer references direct runtime module ${module}.`);
+    continue;
+  }
+  if (idx <= previousDirectIndex) {
+    fail(`Direct application script order changed around ${module}. Review applicationDirectRuntime deliberately.`);
+  }
+  previousDirectIndex = idx;
+}
+
+if (bootstrapLoaderPath && !directRuntime.includes(bootstrapLoaderPath)) {
+  fail(`Bootstrap loader ${bootstrapLoaderPath} is not registered in applicationDirectRuntime.`);
+}
+
+if (bootstrapLoaderSource && manifest.entrypoints?.bootstrapLoaderGitBlobSha) {
+  const actualBlob = gitBlobSha(bootstrapLoaderSource);
+  if (actualBlob !== manifest.entrypoints.bootstrapLoaderGitBlobSha) {
+    fail(
+      `${bootstrapLoaderPath} changed (expected Git blob ${manifest.entrypoints.bootstrapLoaderGitBlobSha}, actual ${actualBlob}). ` +
+      'Review its dynamic runtime loading and then update runtime-manifest.json.'
+    );
+  }
+}
+
+if (bootstrapLoaderSource && bootstrapPath && !bootstrapLoaderSource.includes(bootstrapPath)) {
+  fail(`${bootstrapLoaderPath} no longer loads ${bootstrapPath}. If boot ownership changed, update the manifest deliberately.`);
 }
 
 if (bootstrapSource && manifest.entrypoints?.bootstrapGitBlobSha) {
@@ -141,7 +181,7 @@ for (const module of Array.isArray(manifest.loadedLegacyReviewCandidates) ? mani
 
 for (const module of expectedCurrent) {
   if (!module) continue;
-  if (!moduleSet.has(module) && !dynamicSet.has(module)) {
+  if (!moduleSet.has(module) && !dynamicSet.has(module) && !directRuntime.includes(module)) {
     fail(`Manifest-classified current runtime module is no longer loaded: ${module}`);
   }
   if (!exists(module)) fail(`Manifest-classified runtime file is missing: ${module}`);
@@ -161,7 +201,9 @@ for (const constraint of Array.isArray(manifest.loadOrderConstraints) ? manifest
 
 for (const forbidden of Array.isArray(manifest.deprecatedForbidden) ? manifest.deprecatedForbidden : []) {
   const module = cleanModule(forbidden);
-  if (moduleSet.has(module)) fail(`Deprecated/forbidden module returned to bootstrap: ${module}`);
+  if (moduleSet.has(module) || dynamicSet.has(module) || directRuntime.includes(module)) {
+    fail(`Deprecated/forbidden module returned to current runtime: ${module}`);
+  }
 }
 
 const classifiedBootstrap = new Set([...expectedCurrent].filter((m) => moduleSet.has(m)));
@@ -170,11 +212,14 @@ const unclassified = modules.filter((m) => !classifiedBootstrap.has(m));
 console.log('PPPP runtime manifest check');
 console.log(`HEAD: ${headInfo()}`);
 console.log(`Audited baseline commit: ${manifest.auditedAtCommit || '(not recorded)'}`);
-console.log(`Bootstrap: ${bootstrapPath}`);
+console.log(`Application HTML: ${applicationHtml}`);
+console.log(`Direct local runtime modules: ${directRuntime.length}`);
+console.log(`Bootstrap loader: ${bootstrapLoaderPath}`);
+console.log(`Ordered bootstrap: ${bootstrapPath}`);
 console.log(`Bootstrap modules: ${modules.length}`);
 console.log(`Explicitly classified bootstrap modules: ${classifiedBootstrap.size}`);
 console.log(`Safe-default LOADED_CURRENT_UNCLASSIFIED modules: ${unclassified.length}`);
-console.log(`Registered dynamic runtime modules: ${dynamic.length}`);
+console.log(`Registered additional dynamic runtime modules: ${dynamic.length}`);
 
 if (unclassified.length) {
   console.log('Unclassified modules remain loaded by design; they are NOT treated as dead code.');
