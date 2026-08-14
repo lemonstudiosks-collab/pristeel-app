@@ -118,10 +118,12 @@ async function testGroqConnection(apiKey){
 }
 
 window.PSTAI=window.PSTAI||{};
+var previousRequestTransport=typeof window.PSTAI.requestTransport==='function'?window.PSTAI.requestTransport:null;
 var previousProvider=typeof window.PSTAI.provider==='function'?window.PSTAI.provider:null;
 var previousModel=typeof window.PSTAI.model==='function'?window.PSTAI.model:null;
 window.PSTAI.provider=function(){return active()?'groq':(previousProvider?previousProvider():'unknown');};
 window.PSTAI.model=function(){return active()?MODEL:(previousModel?previousModel():'unknown');};
+window.PSTAI.requestTransport=async function(body,key){if(!active()){if(!previousRequestTransport)throw new Error('PSTAI request transport chain is unavailable.');return previousRequestTransport(body,key)}var init={method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey()},body:JSON.stringify(body||{})};var run=function(){return groqFetch(GROQ_URL,init)};var result=queue.then(run,run);queue=result.then(function(){},function(){});return result};
 window.PSTAI.groqKey=groqKey;
 window.PSTAI.testGroqConnection=testGroqConnection;
 window.PSTAI.activateGroqGptOss=function(key){
