@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import { classifyTedNotice, normalizeTedNotice, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
 
-const steel=classifyTedNotice({title:'Stahlbauarbeiten mit technischer Plattform',cpv:['44212000']});
+const steel=classifyTedNotice({title:'Stahlbauarbeiten mit technischer Plattform',cpv:['45223210']});
 assert.equal(steel.category,'steel_structure');
 assert.ok(steel.relevance_score>=90);
-const raw=classifyTedNotice({title:'Supply of profiles',cpv:['44334000']});
+const raw=classifyTedNotice({title:'Supply of structural steel profiles',cpv:['44334000']});
 assert.equal(raw.category,'raw_material');
 assert.ok(raw.relevance_score>=80);
+const generic=classifyTedNotice({title:'Emergency training dolls',cpv:['44211100']});
+assert.equal(generic.relevance_score,0,'generic 4421 structures must not be promoted as steel work by CPV alone');
 
 const fixture={
   notices:[
@@ -50,8 +52,12 @@ async function fakeFetch(url,opts){
 const summary=await runTedTenderSync({mode:'preview',minScore:55,fetchImpl:fakeFetch});
 assert.equal(calls.length,2,'collector should make separate opportunity and award searches');
 assert.ok(calls[0].body.query.includes('notice-type IN (cn-standard cn-social pin-cfc-standard pin-cfc-social qu-sy subco)'));
-assert.ok(calls[0].body.query.includes('classification-cpv = 4421*'));
+assert.ok(calls[0].body.query.includes('classification-cpv = 45223210'));
+assert.ok(!calls[0].body.query.includes('classification-cpv = 4421*'),'broad generic structures CPV must not be queried');
+assert.ok(calls[0].body.query.includes('publication-date = ('),'opportunities should use a bounded publication window');
 assert.equal(calls[0].body.scope,'ACTIVE');
+assert.equal(calls[0].body.checkQuerySyntax,false);
+assert.equal(calls[0].body.paginationMode,'PAGE_NUMBER');
 assert.equal(summary.opportunities,1);
 assert.equal(summary.awards,1);
 assert.equal(summary.relevant_rows,2);
