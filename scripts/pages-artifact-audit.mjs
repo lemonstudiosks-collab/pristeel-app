@@ -57,7 +57,7 @@ function add(set, value) {
 function walk(dir, base = '') {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === '.git' || entry.name === 'node_modules') continue;
+    if (entry.name === '.git' || entry.name === 'node_modules' || (base === '' && entry.name === '_site')) continue;
     const rel = base ? `${base}/${entry.name}` : entry.name;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...walk(full, rel));
@@ -84,17 +84,50 @@ const artifactManifest = readJson('pages-artifact-manifest.json');
 const runtimeManifestPath = artifactManifest.runtimeManifest || 'runtime-manifest.json';
 const runtime = readJson(runtimeManifestPath);
 
-if (artifactManifest.mode !== 'AUDIT_ONLY') {
-  fail(`Expected audit-only mode, got ${artifactManifest.mode || '(missing)'}. A deploy-mode change requires deliberate review.`);
+const mode = artifactManifest.mode;
+if (mode !== 'PRODUCTION_ARTIFACT') {
+  fail(`Expected PRODUCTION_ARTIFACT mode, got ${mode || '(missing)'}.`);
 }
-if (artifactManifest.futureDeploymentChangeAuthorized !== false) {
-  fail('futureDeploymentChangeAuthorized must remain false during the audit-only phase.');
+if (artifactManifest.productionArtifactDeploymentEnabled !== true) {
+  fail('productionArtifactDeploymentEnabled must be true in production artifact mode.');
+}
+
+const deployment = artifactManifest.currentDeployment || {};
+const expectedUploadPath = String(deployment.uploadPath || '').trim();
+if (expectedUploadPath !== '_site') {
+  fail(`Production Pages uploadPath must be '_site', got ${expectedUploadPath || '(missing)'}.`);
+}
+if (deployment.wholeRepository !== false) {
+  fail('currentDeployment.wholeRepository must be false in production artifact mode.');
 }
 
 const workflowPath = artifactManifest.deploymentWorkflow || '.github/workflows/static.yml';
 const workflow = read(workflowPath);
-if (workflow && !/upload-pages-artifact@v3[\s\S]*?path:\s*['"]?\.['"]?(?:\s|$)/m.test(workflow)) {
-  fail(`${workflowPath} no longer clearly uploads path '.'. Review the deployment mode and update the artifact audit deliberately.`);
+if (workflow) {
+  const buildNeedle = 'node scripts/pages-artifact-build.mjs';
+  const uploadActionNeedle = 'uses: actions/upload-pages-artifact@v3';
+  const uploadPathNeedleSingle = `path: '${expectedUploadPath}'`;
+  const uploadPathNeedleDouble = `path: "${expectedUploadPath}"`;
+  const uploadPathNeedleBare = `path: ${expectedUploadPath}`;
+
+  const buildIndex = workflow.indexOf(buildNeedle);
+  const uploadActionIndex = workflow.indexOf(uploadActionNeedle);
+  let uploadPathIndex = workflow.indexOf(uploadPathNeedleSingle);
+  if (uploadPathIndex < 0) uploadPathIndex = workflow.indexOf(uploadPathNeedleDouble);
+  if (uploadPathIndex < 0) uploadPathIndex = workflow.indexOf(uploadPathNeedleBare);
+
+  if (buildIndex < 0) fail(`${workflowPath} does not build the verified Pages artifact before deployment.`);
+  if (uploadActionIndex < 0) fail(`${workflowPath} does not use actions/upload-pages-artifact@v3.`);
+  if (uploadPathIndex < 0) fail(`${workflowPath} does not upload path '${expectedUploadPath}'.`);
+  if (buildIndex >= 0 && uploadActionIndex >= 0 && buildIndex > uploadActionIndex) {
+    fail(`${workflowPath} uploads Pages before building the verified artifact.`);
+  }
+  if (uploadActionIndex >= 0 && uploadPathIndex >= 0 && uploadPathIndex < uploadActionIndex) {
+    fail(`${workflowPath} production upload path is not attached to the Pages upload step.`);
+  }
+  if (/path:\s*['"]?\.['"]?(?:\s|$)/m.test(workflow)) {
+    fail(`${workflowPath} still contains a whole-repository Pages upload path '.'.`);
+  }
 }
 
 const candidate = new Set();
@@ -108,14 +141,15 @@ for (const file of Array.isArray(runtime.applicationDirectRuntime) ? runtime.app
 
 const bootstrapPath = cleanModule(entry.bootstrap);
 const bootstrapSource = bootstrapPath ? read(bootstrapPath) : '';
-for (const file of extractBootstrapModules(bootstrapSource)) add(candidate, file);
+const bootstrapModules = extractBootstrapModules(bootstrapSource);
+for (const file of bootstrapModules) add(candidate, file);
 
 for (const item of Array.isArray(runtime.dynamicRuntime) ? runtime.dynamicRuntime : []) add(candidate, item.module);
 for (const item of Array.isArray(artifactManifest.additionalPublicAssets) ? artifactManifest.additionalPublicAssets : []) add(candidate, item.path);
 for (const item of Array.isArray(artifactManifest.compatibilityPublicAssets) ? artifactManifest.compatibilityPublicAssets : []) add(candidate, item.path);
 
 for (const rel of candidate) {
-  if (!exists(rel)) fail(`Candidate public artifact is missing: ${rel}`);
+  if (!exists(rel)) fail(`Production public artifact source is missing: ${rel}`);
 }
 
 for (const check of Array.isArray(artifactManifest.referenceChecks) ? artifactManifest.referenceChecks : []) {
@@ -133,24 +167,24 @@ for (const check of Array.isArray(artifactManifest.referenceChecks) ? artifactMa
 
 const allRepoFiles = walk(root).sort();
 const candidateFiles = [...candidate].sort();
-const extraFiles = allRepoFiles.filter((rel) => !candidate.has(rel));
+const excludedFiles = allRepoFiles.filter((rel) => !candidate.has(rel));
 
 const candidateBytes = bytes(candidateFiles);
 const repoBytes = bytes(allRepoFiles);
 const pct = repoBytes ? (candidateBytes / repoBytes) * 100 : 0;
 
-console.log('PPPP GitHub Pages artifact audit');
-console.log(`Mode: ${artifactManifest.mode}`);
-console.log(`Audited baseline commit: ${artifactManifest.auditedAtCommit || '(not recorded)'}`);
-console.log(`Current Pages upload path: ${artifactManifest.currentDeployment?.uploadPath || '(unknown)'}`);
-console.log(`Runtime bootstrap modules discovered: ${extractBootstrapModules(bootstrapSource).length}`);
-console.log(`Candidate public artifact files: ${candidateFiles.length}`);
-console.log(`Candidate public artifact size: ${human(candidateBytes)}`);
-console.log(`Repository checkout files (excluding .git/node_modules): ${allRepoFiles.length}`);
+console.log('PPPP GitHub Pages production artifact audit');
+console.log(`Mode: ${mode}`);
+console.log(`Production switch baseline commit: ${artifactManifest.productionSwitchBaselineCommit || '(not recorded)'}`);
+console.log(`Production Pages upload path: ${expectedUploadPath}`);
+console.log(`Runtime bootstrap modules discovered: ${bootstrapModules.length}`);
+console.log(`Production public artifact source files: ${candidateFiles.length}`);
+console.log(`Production public artifact size: ${human(candidateBytes)}`);
+console.log(`Repository checkout files (excluding .git/node_modules/_site): ${allRepoFiles.length}`);
 console.log(`Repository checkout size: ${human(repoBytes)}`);
-console.log(`Candidate artifact share of checkout bytes: ${pct.toFixed(1)}%`);
-console.log(`Files currently deployed only because Pages uploads the whole repo: ${extraFiles.length}`);
-console.log('No deployment path was changed by this audit.');
+console.log(`Production artifact share of checkout bytes: ${pct.toFixed(1)}%`);
+console.log(`Repository files excluded from production Pages: ${excludedFiles.length}`);
+console.log('Production Pages deployment policy verified: build first, upload _site only.');
 
 if (failed) process.exitCode = 1;
-else console.log('Pages artifact audit OK.');
+else console.log('Pages production artifact audit OK.');

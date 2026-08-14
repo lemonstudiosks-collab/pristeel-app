@@ -97,23 +97,30 @@ function checkLocalReference(sourceRel, rawRef) {
   }
 }
 
-console.log('PPPP Pages candidate site builder');
-console.log('Safety mode: CI artifact only; production deployment is not changed.');
+console.log('PPPP Pages production site builder');
+console.log('Safety mode: derive, verify and build the exact artifact uploaded by production Pages.');
 
 try {
   execFileSync(process.execPath, ['scripts/pages-artifact-audit.mjs'], { cwd: root, stdio: 'inherit' });
 } catch (error) {
-  fail('Pre-build Pages artifact audit failed.');
+  fail('Pre-build Pages production artifact audit failed.');
 }
 
 const artifactManifest = readJson('pages-artifact-manifest.json');
 const runtime = readJson(artifactManifest.runtimeManifest || 'runtime-manifest.json');
 
-if (artifactManifest.mode !== 'AUDIT_ONLY') {
-  fail(`Expected AUDIT_ONLY manifest mode, got ${artifactManifest.mode || '(missing)'}.`);
+if (artifactManifest.mode !== 'PRODUCTION_ARTIFACT') {
+  fail(`Expected PRODUCTION_ARTIFACT manifest mode, got ${artifactManifest.mode || '(missing)'}.`);
 }
-if (artifactManifest.futureDeploymentChangeAuthorized !== false) {
-  fail('futureDeploymentChangeAuthorized must remain false for this build-only cleanup.');
+if (artifactManifest.productionArtifactDeploymentEnabled !== true) {
+  fail('productionArtifactDeploymentEnabled must be true.');
+}
+const configuredUploadPath = String(artifactManifest.currentDeployment?.uploadPath || '').trim();
+if (configuredUploadPath !== outputName) {
+  fail(`Builder output '${outputName}' does not match production upload path '${configuredUploadPath || '(missing)'}'.`);
+}
+if (artifactManifest.currentDeployment?.wholeRepository !== false) {
+  fail('Production deployment must not be configured as wholeRepository.');
 }
 
 const candidate = new Set();
@@ -135,8 +142,8 @@ for (const item of Array.isArray(artifactManifest.compatibilityPublicAssets) ? a
 
 for (const rel of candidate) {
   const full = path.join(root, rel);
-  if (!fs.existsSync(full)) fail(`Candidate source is missing: ${rel}`);
-  else if (!fs.statSync(full).isFile()) fail(`Candidate source is not a file: ${rel}`);
+  if (!fs.existsSync(full)) fail(`Production artifact source is missing: ${rel}`);
+  else if (!fs.statSync(full).isFile()) fail(`Production artifact source is not a file: ${rel}`);
 }
 
 if (failed) process.exit(1);
@@ -159,13 +166,13 @@ const expectedFiles = [...candidate].sort();
 const actualCandidateFiles = siteFiles.filter((rel) => rel !== '.nojekyll');
 
 if (actualCandidateFiles.length !== expectedFiles.length) {
-  fail(`Expected ${expectedFiles.length} candidate files in ${outputName}, found ${actualCandidateFiles.length}.`);
+  fail(`Expected ${expectedFiles.length} production files in ${outputName}, found ${actualCandidateFiles.length}.`);
 }
 for (const rel of expectedFiles) {
-  if (!actualCandidateFiles.includes(rel)) fail(`Built site is missing candidate file: ${rel}`);
+  if (!actualCandidateFiles.includes(rel)) fail(`Built production site is missing file: ${rel}`);
 }
 for (const rel of actualCandidateFiles) {
-  if (!candidate.has(rel)) fail(`Unexpected file in built site: ${rel}`);
+  if (!candidate.has(rel)) fail(`Unexpected file in built production site: ${rel}`);
 }
 
 const forbiddenPatterns = [
@@ -180,13 +187,13 @@ const forbiddenPatterns = [
 ];
 for (const rel of siteFiles) {
   if (forbiddenPatterns.some((pattern) => pattern.test(rel))) {
-    fail(`Repository-only file leaked into candidate site: ${rel}`);
+    fail(`Repository-only file leaked into production site: ${rel}`);
   }
 }
 
 for (const rel of actualCandidateFiles.filter((file) => file.endsWith('.js'))) {
   const result = spawnSync(process.execPath, ['--check', path.join(outputDir, rel)], { encoding: 'utf8' });
-  if (result.status !== 0) fail(`JavaScript syntax failed in built site: ${rel}\n${result.stderr || result.stdout}`);
+  if (result.status !== 0) fail(`JavaScript syntax failed in production site: ${rel}\n${result.stderr || result.stdout}`);
 }
 
 for (const rel of actualCandidateFiles.filter((file) => /\.html?$/i.test(file))) {
@@ -206,12 +213,12 @@ let totalBytes = 0;
 for (const rel of siteFiles) totalBytes += fs.statSync(path.join(outputDir, rel)).size;
 
 console.log(`Output directory: ${outputName}`);
-console.log(`Verified candidate files: ${expectedFiles.length}`);
+console.log(`Verified production source files: ${expectedFiles.length}`);
 console.log(`Built files including .nojekyll: ${siteFiles.length}`);
-console.log(`Built artifact size: ${human(totalBytes)}`);
+console.log(`Built production artifact size: ${human(totalBytes)}`);
 console.log(`JavaScript files syntax-checked: ${actualCandidateFiles.filter((file) => file.endsWith('.js')).length}`);
 console.log('Repository-only classes absent: yes');
-console.log('Production Pages workflow changed: no');
+console.log(`Production Pages upload path matched: ${configuredUploadPath}`);
 
 if (failed) process.exitCode = 1;
-else console.log('Pages candidate site build OK.');
+else console.log('Pages production site build OK.');
