@@ -35,7 +35,7 @@ pristeel-procurement.html
 pristeel-roles.js
       ├── dynamically loads pristeel-project-emails.js
       │         ↓
-      │   140 ordered runtime modules
+      │   138 ordered runtime modules
       │         ↓
       │   late finalizers / safety layers
       │
@@ -111,6 +111,7 @@ This distinction is important. Files such as `pristeel-project-intelligence-ui.j
 ### Document Center
 
 - `pristeel-document-center-stable-v2.js`
+- `pristeel-document-adjustments-v3.js`
 
 ### Finance / invoices
 
@@ -146,7 +147,7 @@ The manifest explicitly records current bridge/compatibility files including:
 
 Their awkward names are technical debt, but awkward naming is not evidence that a file is dead.
 
-## First legacy-review candidates
+## Legacy-review candidates still loaded
 
 The following are deliberately marked for future tracing, not deletion:
 
@@ -154,11 +155,8 @@ The following are deliberately marked for future tracing, not deletion:
 - `pristeel-project-workspace.js`
 - `pristeel-ui-v2.js`
 - `pristeel-ui-v2-polish.js`
-- `pristeel-dashboard-focus.js`
 - `pristeel-dashboard-operations.js`
 - `pristeel-dashboard-calm.js`
-- `pristeel-document-adjustments.js`
-- `pristeel-document-adjustments-v3.js`
 
 For each candidate, removal requires all of the following:
 
@@ -167,6 +165,15 @@ For each candidate, removal requires all of the following:
 3. run the full smoke suite without it;
 4. verify the real browser UI;
 5. only then remove it from the bootstrap.
+
+## Retired runtime layers
+
+These files remain in repository history/reference but are forbidden from returning to the active runtime unless deliberately re-reviewed:
+
+- `pristeel-document-adjustments.js` — superseded by `pristeel-document-adjustments-v3.js`.
+- `pristeel-dashboard-focus.js` — its focus tabs/style were removed by the later `pristeel-dashboard-operations.js` shell, which replaced `page-home` markup; the later `pristeel-dashboard-calm.js` then became the classic Home renderer captured by Workspace Architecture.
+
+The runtime manifest's `deprecatedForbidden` list makes CI fail if one of these modules is accidentally re-added to the production bootstrap.
 
 ## CI guard
 

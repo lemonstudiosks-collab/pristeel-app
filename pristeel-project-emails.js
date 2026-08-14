@@ -43,7 +43,6 @@ var files=[
   'pristeel-ui-v2.js?v=20260801-1',
   'pristeel-ui-session.js?v=20260801-1',
   'pristeel-ui-v2-polish.js?v=20260801-1',
-  'pristeel-dashboard-focus.js?v=20260801-1',
   'pristeel-dashboard-action-controls-v2.js?v=20260803-1',
   'pristeel-utilities.js?v=20260808-focusradio1',
   'pristeel-email-shortcuts.js?v=20260801-1',
