@@ -36,12 +36,12 @@ jobs:
           node scripts/bootstrap-sequence-check.mjs
           node scripts/generate-bootstrap.mjs --check
           git diff --check
-      - name: Commit permanent finalization
+      - name: Commit permanent finalization except protected workflow
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/ai-runtime-callsite-inventory.mjs scripts/ai-provider-contract-check.mjs docs/AI_PROVIDER_RUNTIME.md .github/workflows/pristeel-tests.yml
+          git add scripts/ai-runtime-callsite-inventory.mjs scripts/ai-provider-contract-check.mjs docs/AI_PROVIDER_RUNTIME.md
           if git diff --cached --quiet; then
             echo "No finalization changes produced." >&2
             exit 1
