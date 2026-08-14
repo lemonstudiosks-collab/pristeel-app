@@ -7,12 +7,12 @@ This document records the current production AI routing contracts. It is descrip
 ## Current runtime chain
 
 1. `pristeel-groq-rate-limit.js` loads from the ordered bootstrap as the compatibility/provider base.
-2. It still installs the historical Groq-shaped `window.fetch` wrapper as a temporary safety fallback, but `PSTAI.requestJson(...)` no longer depends on that wrapper.
+2. It no longer installs a global `window.fetch` wrapper. AI requests use the explicit `PSTAI.requestJson(...) → PSTAI.requestTransport(...)` path.
 3. The compatibility layer exposes `PSTAI.requestTransport(body,key)` and implements it with the existing serialized Gemini/legacy routing logic. Without a Gemini key it calls the legacy Groq path with the same retry/token shaping; with Gemini configured it calls Gemini directly through the captured native fetch and preserves model fallback/response translation.
 4. `PSTAI.requestJson(options)` now sends its normalized request body to `PSTAI.requestTransport(...)`, then preserves the same typed `MISSING_KEY`, `HTTP`, `EMPTY` and `INVALID_JSON` semantics and tolerant JSON parsing. Network/transport failures still propagate untyped.
 5. `pristeel-gemini-test-ui-v1.js` loads later and dynamically loads `pristeel-groq-gptoss-provider-v1.js`.
 6. The GPT-OSS provider captures the previous explicit transport and overrides `PSTAI.requestTransport(...)`. When `pristeel_ai_provider === "groq-gptoss"` and a Groq key exists, it uses the existing queued XHR/GPT-OSS path directly; when inactive it delegates to the previous explicit transport.
-7. The two AI `window.fetch` wrappers remain installed in this phase for compatibility/rollback safety and still delegate unrelated traffic, but normal application AI requests route through the explicit transport chain instead.
+7. Neither AI provider layer monkey-patches global `window.fetch`. Unrelated browser fetch traffic is no longer intercepted by AI routing. The independent Drive Intelligence wrapper remains separate.
 
 ## Browser storage contracts
 
@@ -105,21 +105,20 @@ The application HTML contains **zero** `pristeel_apikey` references. The compati
 - `pristeel-procurement.html::qAnalyzeAll()/qAnalyzeOne()`
 - `pristeel-project-analysis.js`
 
-Global `window.fetch` monkey-patching still exists in the two AI provider/compatibility layers as a temporary compatibility fallback and independently in `pristeel-drive-intelligence.js`. The explicit `PSTAI.requestJson → PSTAI.requestTransport` path no longer relies on the AI fetch wrappers. The Drive wrapper must not be removed as collateral damage.
+Global `window.fetch` monkey-patching has been removed from both AI provider/compatibility layers. The only active-runtime `window.fetch` monkey patch recorded by the AI inventory is the independent `pristeel-drive-intelligence.js` wrapper, which must remain untouched by AI cleanup.
 
-The exact active-runtime file/count inventory is enforced by `scripts/ai-runtime-callsite-inventory.mjs`. Provider routing is executed by `scripts/ai-provider-routing-smoke.mjs`; per-caller behavior is additionally executed by `scripts/start-parsing-ai-smoke.mjs`, `scripts/parse-offer-ai-smoke.mjs`, `scripts/q-analyze-offer-ai-smoke.mjs`, `scripts/q-analyze-batch-ai-smoke.mjs` and `scripts/project-analysis-ai-smoke.mjs`.
+The exact active-runtime file/count inventory is enforced by `scripts/ai-runtime-callsite-inventory.mjs`. Provider routing is executed by `scripts/ai-provider-routing-smoke.mjs`; wrapper-free global-fetch ownership is executed by `scripts/ai-fetch-wrapper-removal-smoke.mjs`; per-caller behavior is additionally executed by `scripts/start-parsing-ai-smoke.mjs`, `scripts/parse-offer-ai-smoke.mjs`, `scripts/q-analyze-offer-ai-smoke.mjs`, `scripts/q-analyze-batch-ai-smoke.mjs` and `scripts/project-analysis-ai-smoke.mjs`.
 
 ## Why compatibility is still required
 
-`PSTAI.requestJson(...)` now routes through the explicit `PSTAI.requestTransport(...)` chain. Gemini/legacy routing is owned by the compatibility transport and active GPT-OSS overrides that transport directly. The historical AI fetch wrappers remain only as a compatibility/rollback layer and are no longer a normal application-request dependency. The independent Drive Intelligence fetch wrapper remains unrelated and must be preserved.
+`PSTAI.requestJson(...)` routes through the explicit `PSTAI.requestTransport(...)` chain. Gemini/legacy routing is owned by the compatibility transport and active GPT-OSS overrides that transport directly. The historical AI fetch wrappers have been removed; the independent Drive Intelligence fetch wrapper remains unrelated and must be preserved.
 
 ## Consolidation boundary
 
 The safe sequence is:
 
-1. keep provider-contract, provider-routing, Settings-ownership, typed-error, callsite and per-caller behavior smokes green;
+1. keep provider-contract, provider-routing, fetch-wrapper-removal, Settings-ownership, typed-error, callsite and per-caller behavior smokes green;
 2. treat `PSTAI.requestJson(...)` as the only application-facing AI request API and `PSTAI.requestTransport(...)` as the provider-routing contract;
-3. keep the historical AI fetch wrappers temporarily while the explicit transport path is independently proven in production CI;
-4. remove only the AI-specific global fetch monkey-patching in a separate guarded change, while preserving the unrelated Drive Intelligence wrapper;
-5. after fetch-wrapper removal is proven, simplify/retire the `pristeel_apikey` compatibility marker without changing real Gemini/Groq key storage;
-6. move provider secrets server-side as a separate security change.
+3. preserve the independent Drive Intelligence fetch wrapper while AI provider files remain wrapper-free;
+4. simplify/retire the `pristeel_apikey` compatibility marker without changing real Gemini/Groq key storage or provider selection behavior;
+5. move provider secrets server-side as a separate security change.
