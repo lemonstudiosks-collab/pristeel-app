@@ -24,3 +24,6 @@ jobs:
 
       - name: Verify active runtime manifest
         run: node scripts/runtime-manifest-check.mjs
+
+      - name: Verify ordered bootstrap sequence
+        run: node scripts/bootstrap-sequence-check.mjs
