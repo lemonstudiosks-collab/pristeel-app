@@ -1,14 +1,22 @@
-# PPPP candidate GitHub Pages site build
+# PPPP production GitHub Pages artifact
 
 ## Status
 
-This is a **build-and-test gate only**.
+Cleanup #12 makes the verified `_site/` artifact the **production GitHub Pages deployment source**.
 
-It does not change the production GitHub Pages deployment path. Production continues to upload the whole repository from `path: '.'` in `.github/workflows/static.yml`.
+Production no longer uploads the whole repository. `.github/workflows/static.yml` now builds the verified public artifact first and uploads only:
 
-## Purpose
+```yaml
+path: '_site'
+```
 
-Cleanup #10 established an audited candidate public artifact derived from:
+No application JavaScript, production HTML, runtime load order, Supabase logic, Gmail logic, tender logic, finance logic or other business functionality is changed by this deployment cleanup.
+
+## How we reached this point
+
+### Cleanup #10: artifact audit
+
+Cleanup #10 established the audited public file set derived from:
 
 - `runtime-manifest.json`
 - the ordered active bootstrap
@@ -17,9 +25,25 @@ Cleanup #10 established an audited candidate public artifact derived from:
 - verified public non-JavaScript dependencies
 - deliberately retained compatibility assets
 
-Cleanup #11 takes the next safe step: it physically builds those files into `_site/` and tests that directory as an isolated static website without deploying it to production.
+It also identified dependencies that a JavaScript-only whitelist would have missed, including the Document Center stylesheet and Gmail Add-on launcher/icon assets.
 
-## Builder
+### Cleanup #11: isolated site build
+
+Cleanup #11 physically built the audited file set into `_site/` without using it for production. CI then:
+
+- verified every copied file byte-for-byte;
+- syntax-checked the JavaScript inside the built artifact;
+- rejected repository-only classes;
+- served `_site/` locally;
+- HTTP-smoked the application and auxiliary public assets.
+
+Only after that isolated build stayed green was the production switch considered.
+
+### Cleanup #12: production switch
+
+Cleanup #12 changes only deployment/governance files so that GitHub Pages uses the already-tested artifact.
+
+## Production builder
 
 Run:
 
@@ -27,61 +51,69 @@ Run:
 node scripts/pages-artifact-build.mjs
 ```
 
-The builder first re-runs `scripts/pages-artifact-audit.mjs`. It stops if the audit fails or if the manifest is no longer in `AUDIT_ONLY` mode.
+The builder first runs:
 
-It then:
+```bash
+node scripts/pages-artifact-audit.mjs
+```
 
-1. derives the candidate file set using the same current runtime sources used by the audit;
+The audit requires `pages-artifact-manifest.json` to be in `PRODUCTION_ARTIFACT` mode and verifies that `.github/workflows/static.yml`:
+
+1. runs the artifact builder;
+2. does so before the Pages upload action;
+3. uploads `_site`;
+4. does not contain the old whole-repository `path: '.'` deployment.
+
+The builder then:
+
+1. derives the production file set from current runtime sources;
 2. recreates `_site/` from scratch;
-3. copies only candidate public files while preserving paths;
-4. verifies every copied file byte-for-byte with SHA-256;
-5. adds `.nojekyll` to the generated site;
-6. verifies no unexpected file entered the artifact;
+3. copies only approved public files while preserving paths;
+4. verifies every copied file with SHA-256;
+5. adds `.nojekyll`;
+6. rejects unexpected files;
 7. rejects repository-only classes such as `.github/`, `tests/`, `scripts/`, `supabase/`, SQL and package metadata;
-8. syntax-checks every JavaScript file in the built artifact;
-9. checks local HTML/CSS asset references that resolve to static file types.
+8. syntax-checks every JavaScript file in `_site/`;
+9. checks local HTML/CSS static asset references;
+10. verifies the builder output directory matches the configured production Pages upload path.
 
-The generated `_site/` directory is disposable CI output and is not committed.
+The generated `_site/` directory remains disposable build output and is not committed.
 
-## CI workflow
+## Production deployment flow
 
-`.github/workflows/pages-site-build-check.yml` runs on pull requests, pushes to `main`, and manual dispatch.
+```text
+main checkout
+    ↓
+existing syntax checks
+    ↓
+node scripts/pages-artifact-build.mjs
+    ↓
+verified _site/
+    ↓
+actions/upload-pages-artifact
+    ↓
+GitHub Pages production
+```
 
-The workflow:
+The repository-only files remain available in GitHub for development, testing, audits and operations, but they are no longer intended to be web-published by Pages.
 
-1. re-runs the Pages artifact audit;
+## Independent CI gate
+
+`.github/workflows/pages-site-build-check.yml` still runs independently on pull requests, pushes to `main`, and manual dispatch.
+
+It:
+
+1. audits the production artifact policy;
 2. builds `_site/`;
-3. serves `_site/` locally with a static HTTP server;
-4. performs HTTP smoke requests for the main application and verified auxiliary public assets;
-5. confirms `.github/workflows/static.yml` still uses `path: '.'`;
-6. uploads `_site/` only as a short-lived GitHub Actions artifact for inspection.
+3. serves `_site/` locally;
+4. HTTP-smokes the main app, Gmail launcher, Document Center CSS and Gmail Add-on icon;
+5. confirms production builds the artifact and uploads only `_site`;
+6. uploads a short-lived copy of the built site for inspection.
 
-The CI artifact is **not** a GitHub Pages deployment.
+This independent workflow is intentionally separate from the actual Pages deploy so artifact completeness is tested before and outside the deployment job itself.
 
-## Production safety boundary
+## Rollback
 
-This cleanup is successful only if all of the following remain true:
+The deployment switch is intentionally small. If a production-only issue is discovered, rollback consists of reverting Cleanup #12 so `.github/workflows/static.yml` returns to the previous whole-repository upload while the artifact audit/build tooling can remain available for diagnosis.
 
-- no application JavaScript is edited;
-- no production HTML is edited;
-- `.github/workflows/static.yml` is unchanged;
-- Pages still deploys `path: '.'`;
-- the existing runtime manifest guard passes;
-- the existing full PRISTEEL test suite passes;
-- the new candidate-site build and HTTP smoke pass.
-
-## Future deployment switch
-
-A future change from:
-
-```yaml
-path: '.'
-```
-
-to:
-
-```yaml
-path: '_site'
-```
-
-must be a separate reviewed cleanup. It should not be bundled into this build-validation step.
+A rollback must not delete runtime modules or change application code.
