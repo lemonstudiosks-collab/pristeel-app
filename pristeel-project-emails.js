@@ -36,6 +36,7 @@ var files=[
   'pristeel-project-schema-compat.js?v=20260801-2',
   'pristeel-historical-project-audit.js?v=20260801-1',
   'pristeel-groq-rate-limit.js?v=20260801-2',
+  'pristeel-gemini-test-ui-v1.js?v=20260814-1',
   'pristeel-project-analysis.js?v=20260801-1',
   'pristeel-project-intelligence-ui.js?v=20260802-5',
   'pristeel-project-workspace.js?v=20260802-1',
