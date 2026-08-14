@@ -34,3 +34,5 @@ jobs:
         run: node tests/kek-tender-postprocess-smoke.mjs
       - name: Run KEK tender UI smoke
         run: node tests/kek-tender-watch-smoke.js
+      - name: Run original invoice document smoke
+        run: node --check pristeel-invoice-original-document-v1.js && node tests/invoice-original-document-smoke.js
