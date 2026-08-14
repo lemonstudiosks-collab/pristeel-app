@@ -13,7 +13,7 @@ function replaceOnce(source,before,after,label){
 {
   const path='scripts/ai-runtime-callsite-inventory.mjs';
   let s=read(path);
-  s=replaceOnce(s,"    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 13 },","    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 16 },",'GPT-OSS PSTAI count');
+  s=replaceOnce(s,"    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 13 },","    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 17 },",'GPT-OSS PSTAI count');
   s=replaceOnce(s,"    { file: 'pristeel-groq-rate-limit.js', count: 8 },","    { file: 'pristeel-groq-rate-limit.js', count: 10 },",'compatibility PSTAI count');
   write(path,s);
 }
