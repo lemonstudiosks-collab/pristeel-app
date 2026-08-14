@@ -6,22 +6,38 @@
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
+    "bootstrapLoader": "pristeel-roles.js",
+    "bootstrapLoaderGitBlobSha": "56fe1f173bee72e79395cc813a9991e07c06af04",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "03953016f6feb32267ae84a2dded6230b78ff876"
   },
+  "applicationDirectRuntime": [
+    "pristeel-kpi.js",
+    "pristeel-search.js",
+    "pristeel-drive.js",
+    "pristeel-roles.js",
+    "pristeel-export.js",
+    "pristeel-offer-editor.js",
+    "pristeel-finance.js",
+    "pristeel-contracts.js",
+    "pristeel-outreach.js"
+  ],
   "principles": {
     "currentMeansHeadOfMain": true,
     "filePresenceDoesNotMeanUiAuthority": true,
     "bootstrapOrderIsRuntimeBehavior": true,
     "loadedModuleDefaultStatus": "LOADED_CURRENT_UNCLASSIFIED",
     "legacyCandidatesStayLoadedUntilTraced": true,
-    "bootstrapChangesRequireManifestReview": true
+    "bootstrapChangesRequireManifestReview": true,
+    "bootstrapLoaderChangesRequireManifestReview": true
   },
   "statusDefinitions": {
+    "BASE_DIRECT": "Loaded directly by the application HTML before the additive runtime bootstrap. It may be foundational without owning the final visible UI.",
     "FINAL_OWNER": "Known current owner/finalizer for a visible runtime area. Later modules may still decorate it.",
     "COMPATIBILITY": "Required bridge, adapter, safety wrapper or migration layer. Do not infer UI ownership from this file.",
     "LOADED_LEGACY_CANDIDATE": "Still loaded in production but likely superseded in visible behavior. Must not be removed until callers, globals, events and smoke tests are traced.",
     "ACTIVE_PROVIDER": "Conditionally active runtime provider loaded outside the main bootstrap.",
+    "DYNAMIC_CURRENT": "Current production module loaded dynamically by another current runtime file rather than by the main ordered bootstrap.",
     "LOADED_CURRENT_UNCLASSIFIED": "Loaded by the production bootstrap and therefore treated as required until explicitly classified."
   },
   "areas": [
@@ -76,15 +92,17 @@
       "finalOwners": [
         "pristeel-finance-stability-v2.js",
         "pristeel-invoice-project-link-v1.js",
-        "pristeel-document-currency-v1.js"
+        "pristeel-document-currency-v1.js",
+        "pristeel-invoice-original-document-v1.js"
       ]
     },
     {
       "area": "tenders",
       "finalOwners": [
-        "pristeel-kek-tender-watch-v1.js"
+        "pristeel-kek-tender-watch-v1.js",
+        "pristeel-tender-business-flow-v1.js"
       ],
-      "note": "Legacy filename; current UI covers KRPP Kosovo, APP Albania and TED."
+      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania and TED winner outreach."
     },
     {
       "area": "ai",
@@ -116,10 +134,22 @@
   ],
   "dynamicRuntime": [
     {
+      "module": "pristeel-invoice-original-document-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded unconditionally by the production pristeel-roles.js base module."
+    },
+    {
+      "module": "pristeel-tender-business-flow-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded unconditionally by the production pristeel-roles.js base module."
+    },
+    {
       "module": "pristeel-groq-gptoss-provider-v1.js",
       "loader": "pristeel-gemini-test-ui-v1.js",
       "status": "ACTIVE_PROVIDER",
-      "condition": "pristeel_ai_provider === groq-gptoss and a Groq key is present"
+      "condition": "The provider module is loaded; GPT-OSS routing becomes active when pristeel_ai_provider === groq-gptoss and a Groq key is present."
     }
   ],
   "loadOrderConstraints": [
