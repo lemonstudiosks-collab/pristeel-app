@@ -33,3 +33,6 @@ jobs:
 
       - name: Verify AI provider runtime contracts
         run: node scripts/ai-provider-contract-check.mjs
+
+      - name: Inventory active runtime AI callsites
+        run: node scripts/ai-runtime-callsite-inventory.mjs
