@@ -1,0 +1,24 @@
+name: PPPP Pages artifact audit
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pages-artifact-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Audit candidate GitHub Pages artifact
+        run: node scripts/pages-artifact-audit.mjs

@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "name": "PPPP GitHub Pages Artifact Audit",
+  "mode": "AUDIT_ONLY",
+  "authoritativeBranch": "main",
+  "auditedAtCommit": "792248e698c6d2d3fdcc073c7cc2a9c76e6a4e29",
+  "runtimeManifest": "runtime-manifest.json",
+  "deploymentWorkflow": ".github/workflows/static.yml",
+  "currentDeployment": {
+    "uploadPath": ".",
+    "wholeRepository": true,
+    "note": "This cleanup does not change production deployment. The current workflow still uploads the whole checkout."
+  },
+  "futureDeploymentChangeAuthorized": false,
+  "additionalPublicAssets": [
+    {
+      "path": "pristeel-document-center.css",
+      "reason": "Loaded dynamically by pristeel-document-center-stable-v2.js and therefore not visible in the ordered JavaScript runtime manifest."
+    },
+    {
+      "path": "pristeel-gmail-launcher-v2.html",
+      "reason": "Current Gmail Add-on entry URL points directly to this GitHub Pages file."
+    },
+    {
+      "path": "gmail-addon/pristeel-addon-icon.svg",
+      "reason": "Current Gmail Add-on manifest loads this icon directly from GitHub Pages."
+    }
+  ],
+  "compatibilityPublicAssets": [
+    {
+      "path": "pristeel-gmail-launcher.html",
+      "reason": "Legacy Gmail launcher retained in the future candidate artifact until installed/older Add-on deployments are explicitly proven not to reference it."
+    },
+    {
+      "path": "pristeel.webmanifest",
+      "reason": "Small legacy PWA artifact. No current production reference has been proven, but it is retained pending a deliberate PWA review rather than being removed by inference."
+    }
+  ],
+  "referenceChecks": [
+    {
+      "source": "pristeel-document-center-stable-v2.js",
+      "contains": "pristeel-document-center.css",
+      "reason": "Document Center stylesheet dependency."
+    },
+    {
+      "source": "gmail-addon/Code.gs",
+      "contains": "pristeel-gmail-launcher-v2.html",
+      "reason": "Current Gmail Add-on launcher dependency."
+    },
+    {
+      "source": "gmail-addon/appsscript.json",
+      "contains": "gmail-addon/pristeel-addon-icon.svg",
+      "reason": "Current Gmail Add-on public icon dependency."
+    },
+    {
+      "source": "pristeel-gmail-launcher-v2.html",
+      "contains": "pristeel-procurement.html",
+      "reason": "Launcher forwards into the main PPPP application document."
+    }
+  ],
+  "knownRepositoryOnlyClasses": [
+    ".github/**",
+    "tests/**",
+    "scripts/**",
+    "supabase/**",
+    "*.sql",
+    "docs/**",
+    "package.json",
+    "preview-server.mjs",
+    "gmail-addon/Code.gs",
+    "gmail-addon/appsscript.json",
+    "gmail-addon/README.md",
+    "AUDIT_TEST_RESULT.txt",
+    "DEPLOYMENT_STATUS.md",
+    "PREVIEW_REF_TRIGGER_20260807.txt",
+    "STABILITY_AUDIT_20260807.md",
+    "VERIFY_HOME_SEARCH_TABS_2045.txt"
+  ],
+  "policy": {
+    "extraRepositoryFilesDoNotFailAudit": true,
+    "missingCandidatePublicAssetFailsAudit": true,
+    "referenceDriftFailsAudit": true,
+    "deploymentWorkflowDriftRequiresReview": true,
+    "auditDoesNotDeleteFiles": true,
+    "auditDoesNotModifyPagesUploadPath": true
+  }
+}
