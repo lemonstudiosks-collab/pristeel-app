@@ -3,7 +3,7 @@ import { authorityPriority, classifyKrppSteel, parseDetailHtml, parseNoticeIndex
 
 assert.equal(authorityPriority('TREPÇA Sh.A.'),'A');
 assert.equal(authorityPriority('KOSTT sh.a.'),'A');
-assert.equal(authorityPriority('KRU Prishtina'),'B');
+assert.equal(authorityPriority('Kompania Rajonale e Ujësjellësit Prishtina'),'B');
 assert.equal(authorityPriority('Komuna e Prizrenit'),'other');
 
 const indexHtml=`
