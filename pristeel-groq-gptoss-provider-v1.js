@@ -123,20 +123,12 @@ window.PSTAI.activateGroqGptOss=function(key){
   if(!k)return false;
   setStore('pristeel_groq_apikey',k);
   setStore('pristeel_ai_provider',PROVIDER);
-  setStore('pristeel_apikey','__GROQ_GPTOSS_COMPAT__');
   return true;
 };
 window.PSTAI.deactivateGroqGptOss=function(){
   setStore('pristeel_ai_provider','');
-  if(getStore('pristeel_apikey')==='__GROQ_GPTOSS_COMPAT__')setStore('pristeel_apikey','__GEMINI_COMPAT__');
   return true;
 };
-
-function salvageLegacyKey(){
-  if(groqKey())return;
-  var legacy=getStore('pristeel_apikey');
-  if(/^gsk_/i.test(legacy))setStore('pristeel_groq_apikey',legacy);
-}
 function css(){
   if(document.getElementById('pst-groq-gptoss-style'))return;
   var s=document.createElement('style');s.id='pst-groq-gptoss-style';
@@ -160,7 +152,7 @@ function install(){
   var group=apiInput.closest?apiInput.closest('.field-group'):null;
   var anchor=(document.getElementById('pst-gemini-test-row')||document.getElementById('key-status')||group);
   if(!anchor||document.getElementById('pst-groq-gptoss-card'))return !!document.getElementById('pst-groq-gptoss-card');
-  css();salvageLegacyKey();
+  css();
   var card=document.createElement('div');card.id='pst-groq-gptoss-card';
   card.innerHTML='<div class="pst-ai-title">Groq GPT-OSS</div><div class="pst-ai-note">Free Plan kandidat për PPPP. Testi dërgon vetëm një prompt sintetik. Nëse testi kalon, GPT-OSS 20B aktivizohet si motori AI i PPPP në këtë browser.</div><label class="lbl" for="pst-groq-gptoss-key">Groq API Key</label><br><input type="password" id="pst-groq-gptoss-key" placeholder="gsk_..." autocomplete="off"><div id="pst-groq-gptoss-actions"><button type="button" id="pst-groq-gptoss-test">Test & aktivizo GPT-OSS</button><div id="pst-groq-gptoss-result" aria-live="polite"></div></div>';
   anchor.insertAdjacentElement('afterend',card);

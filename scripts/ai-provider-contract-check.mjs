@@ -141,7 +141,9 @@ for (const [needle, label] of [
   ["https://generativelanguage.googleapis.com/v1beta/models/", 'Gemini API base'],
   ["pristeel_gemini_apikey", 'Gemini browser key storage'],
   ["pristeel_gemini_model", 'Gemini model storage'],
-  ["pristeel_apikey", 'legacy compatibility key marker'],
+  ["LEGACY_AI_STORAGE='pristeel_apikey'", 'one-time legacy storage migration input'],
+  ["function migrateLegacyAiStorage()", 'one-time legacy storage migration shim'],
+  ["pristeel_groq_apikey", 'dedicated Groq browser key storage'],
   ["window.PSTAI.configureGemini", 'Gemini configuration API'],
   ["window.PSTAI.hasApiKey", 'explicit AI availability API'],
   ["window.PSTAI.requestTransport=compatibilityRequestTransport", 'explicit compatibility transport API'],
@@ -153,6 +155,8 @@ for (const [needle, label] of [
   ["pstAiError('INVALID_JSON'", 'typed invalid-JSON error'],
   ["window.saveApiKey=function", 'legacy settings save bridge']
 ]) requireText(compat, needle, `${files.compat}: ${label}`);
+forbidText(compat, "__GEMINI_COMPAT__", `${files.compat} retired Gemini marker`);
+forbidText(compat, "__GROQ_GPTOSS_COMPAT__", `${files.compat} retired GPT marker`);
 forbidText(compat, "window.fetch=function", `${files.compat} global fetch ownership`);
 
 for (const [needle, label] of [
@@ -173,7 +177,6 @@ for (const [needle, label] of [
   ["groq-gptoss", 'provider id'],
   ["pristeel_groq_apikey", 'Groq browser key storage'],
   ["pristeel_ai_provider", 'active provider storage'],
-  ["__GROQ_GPTOSS_COMPAT__", 'legacy key compatibility marker'],
   ["previousFetch=window.fetch.bind(window)", 'provider wrapper chaining'],
   ["previousRequestTransport=typeof window.PSTAI.requestTransport==='function'?window.PSTAI.requestTransport:null", 'explicit provider transport chaining'],
   ["window.PSTAI.requestTransport=async function", 'GPT-OSS explicit transport override'],
@@ -182,6 +185,10 @@ for (const [needle, label] of [
   ["window.PSTAI.deactivateGroqGptOss", 'provider deactivation API'],
   ["oldRender=window.renderSettings", 'settings render wrapper']
 ]) requireText(groqProvider, needle, `${files.groqProvider}: ${label}`);
+forbidText(groqProvider, "pristeel_apikey", `${files.groqProvider} retired legacy storage`);
+forbidText(groqProvider, "__GEMINI_COMPAT__", `${files.groqProvider} retired Gemini marker`);
+forbidText(groqProvider, "__GROQ_GPTOSS_COMPAT__", `${files.groqProvider} retired GPT marker`);
+forbidText(groqProvider, "salvageLegacyKey", `${files.groqProvider} retired legacy salvage`);
 forbidText(groqProvider, "window.fetch=function", `${files.groqProvider} global fetch ownership`);
 
 for (const [needle, label] of [

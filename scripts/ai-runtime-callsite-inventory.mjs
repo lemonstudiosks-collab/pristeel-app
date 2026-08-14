@@ -61,8 +61,7 @@ const expected = {
     { file: 'pristeel-groq-rate-limit.js', count: 1 }
   ],
   legacy_ai_key: [
-    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 4 },
-    { file: 'pristeel-groq-rate-limit.js', count: 4 }
+    { file: 'pristeel-groq-rate-limit.js', count: 1 }
   ],
   gemini_key: [
     { file: 'pristeel-gemini-test-ui-v1.js', count: 1 },
@@ -73,7 +72,8 @@ const expected = {
     { file: 'pristeel-groq-rate-limit.js', count: 2 }
   ],
   groq_key: [
-    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 5 }
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 4 },
+    { file: 'pristeel-groq-rate-limit.js', count: 2 }
   ],
   active_provider_key: [
     { file: 'pristeel-groq-gptoss-provider-v1.js', count: 3 }
