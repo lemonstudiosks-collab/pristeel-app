@@ -9460,8 +9460,8 @@ function openProjectDetail(projectId){
 var loadCockpit=loadHub;
 // ══ ANALIZË MASIVE E INBOX-IT ══
 async function qAnalyzeAll(){
-  var apiKey=localStorage.getItem('pristeel_apikey')||'';
-  if(!apiKey){alert('Mungon Groq API Key — Cilësimet.');return;}
+  var ai=window.PSTAI;
+  if(!ai||typeof ai.hasApiKey!=='function'||typeof ai.requestJson!=='function'||!ai.hasApiKey()){alert('Mungon Groq API Key — Cilësimet.');return;}
   var btn=document.getElementById('q-analyze-all');
   var rows=await supaFetch('offers_inbox?processed=eq.false&select=id,sender,subject,file_name&order=received_at.desc&limit=60');
   if(!rows||!rows.length){alert('Asnjë dokument i paanalizuar.');return;}
@@ -9474,7 +9474,7 @@ async function qAnalyzeAll(){
     try{
       var guess=qGuessProjectMatch(r.subject, r.sender, projects);
       if(!guess.strong){ skip++; continue; } // vetem referenca RFQ ne subjekt = perputhje e sigurte per shkrim te heshtur; gjithcka tjeter -> shqyrtim manual me "Analizo" te rreshti
-      var done=await qAnalyzeOne(r.id, r.subject, r.sender, guess.match, apiKey);
+      var done=await qAnalyzeOne(r.id, r.subject, r.sender, guess.match, ai);
       if(done) ok++; else fail++;
     }catch(e){ fail++; }
   }
@@ -9482,7 +9482,7 @@ async function qAnalyzeAll(){
   alert('U analizuan: '+ok+' të regjistruara automatikisht\n'+skip+' kërkojnë zgjedhje manuale (kliko "Analizo" te rreshti)\n'+(fail?fail+' dështuan':''));
   loadQInbox(); loadCockpit();
 }
-async function qAnalyzeOne(inboxId, subject, sender, proj, apiKey){
+async function qAnalyzeOne(inboxId, subject, sender, proj, ai){
   var rows=await supaFetch('offers_inbox?id=eq.'+inboxId+'&select=file_base64');
   var rec=rows&&rows[0]; if(!rec||!rec.file_base64) return false;
   var bc=atob(rec.file_base64.replace(/^data:.*;base64,/,''));
@@ -9500,16 +9500,16 @@ async function qAnalyzeOne(inboxId, subject, sender, proj, apiKey){
   if(!supplierGuess) return false; // domen gjenerik (gmail/prissteel etj.) -- s'ka emer te besueshem furnitori, lehe per rishikim manual
   var prompt='Extract offer data. ONLY JSON.\nSupplier: '+supplierGuess+'\nText: '+text.slice(0,9000)
     +'\n\n{"supplier":"","fabrication_total":0,"transport_cost":0,"total_weight_kg":0,"delivery_weeks":0,"incoterms":"","certification":"","validity_days":30,"notes":"","positions":[{"desc":"","qty":0,"unit":"kg or pc or ls or m2","unit_price":0,"total":0}]}\nRules: every priced line separate, never merge/average. fabrication_total excludes transport. ONLY JSON.';
-  var resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-    body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,
-      messages:[{role:'system',content:'Steel procurement AI. Valid JSON only. Never merge line items.'},{role:'user',content:prompt}]})
-  });
-  var data=await resp.json();
-  var raw=(data.choices&&data.choices[0]&&data.choices[0].message.content)||'';
-  var s=raw.indexOf('{'), e=raw.lastIndexOf('}');
-  if(s<0||e<0) return false;
-  var p=JSON.parse(raw.slice(s,e+1));
+  var p;
+  try{
+    p=await ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,response_format:{type:'json_object'},
+      messages:[{role:'system',content:'Steel procurement AI. Valid JSON only. Never merge line items.'},{role:'user',content:prompt}]});
+  }catch(aiErr){
+    var code=String(aiErr&&aiErr.pstAiCode||'');
+    if(code==='HTTP'||code==='EMPTY'||code==='INVALID_JSON') return false;
+    throw aiErr;
+  }
+  if(!p||typeof p!=='object'||Array.isArray(p)) return false;
   var kg=parseFloat(p.total_weight_kg)||0, fab=parseFloat(p.fabrication_total)||0, tr=parseFloat(p.transport_cost)||0;
   await supaFetch('offers','POST',{
     project_id:proj.id, supplier:p.supplier||supplierGuess,

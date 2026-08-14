@@ -80,6 +80,8 @@ const projectAnalysis = read(files.projectAnalysis);
 const startParsing = extractFunction(appHtml, 'async function startParsing()');
 const parseOffer = extractFunction(appHtml, 'async function parseOffer()');
 const qAnalyzeOffer = extractFunction(appHtml, 'async function qAnalyzeOffer(');
+const qAnalyzeAll = extractFunction(appHtml, 'async function qAnalyzeAll()');
+const qAnalyzeOne = extractFunction(appHtml, 'async function qAnalyzeOne(');
 
 const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
 const compatIndex = ordered.indexOf(files.compat);
@@ -217,6 +219,35 @@ forbidText(qAnalyzeOffer, "https://api.groq.com/openai/v1/chat/completions", `${
 forbidText(qAnalyzeOffer, "pristeel_apikey", `${files.appHtml} qAnalyzeOffer`);
 
 for (const [needle, label] of [
+  ["var ai=window.PSTAI", 'explicit batch AI service lookup'],
+  ["ai.hasApiKey()", 'explicit batch AI availability check'],
+  ["Mungon Groq API Key — Cilësimet.", 'preserved batch missing-key alert'],
+  ["if(!guess.strong){ skip++; continue; }", 'preserved strong-match-only auto-write gate'],
+  ["qAnalyzeOne(r.id, r.subject, r.sender, guess.match, ai)", 'AI service passed into per-document batch analyzer'],
+  ["if(done) ok++; else fail++;", 'preserved batch success/failure counting'],
+  ["catch(e){ fail++; }", 'preserved batch exception counting'],
+  ["loadQInbox(); loadCockpit();", 'preserved batch final refresh']
+]) requireText(qAnalyzeAll, needle, `${files.appHtml} qAnalyzeAll: ${label}`);
+forbidText(qAnalyzeAll, "https://api.groq.com/openai/v1/chat/completions", `${files.appHtml} qAnalyzeAll`);
+forbidText(qAnalyzeAll, "pristeel_apikey", `${files.appHtml} qAnalyzeAll`);
+
+for (const [needle, label] of [
+  ["ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,response_format:{type:'json_object'}", 'preserved batch AI request contract'],
+  ["Steel procurement AI. Valid JSON only. Never merge line items.", 'preserved batch system prompt'],
+  ["var code=String(aiErr&&aiErr.pstAiCode||'')", 'typed batch response error lookup'],
+  ["code==='HTTP'||code==='EMPTY'||code==='INVALID_JSON'", 'preserved soft batch response failure semantics'],
+  ["throw aiErr;", 'preserved network/untyped failure propagation'],
+  ["if(!p||typeof p!=='object'||Array.isArray(p)) return false;", 'preserved non-object soft failure'],
+  ["if(text.trim().length<20) return false;", 'preserved short/scan PDF soft failure'],
+  ["if(!supplierGuess) return false;", 'preserved untrusted supplier soft failure'],
+  ["await supaFetch('offers','POST'", 'preserved batch offer persistence'],
+  ["await supaFetch('offers_inbox?id=eq.'+inboxId,'PATCH',{processed:true, project_id:proj.id})", 'preserved batch inbox PATCH'],
+  ["return true;", 'preserved batch success result']
+]) requireText(qAnalyzeOne, needle, `${files.appHtml} qAnalyzeOne: ${label}`);
+forbidText(qAnalyzeOne, "https://api.groq.com/openai/v1/chat/completions", `${files.appHtml} qAnalyzeOne`);
+forbidText(qAnalyzeOne, "pristeel_apikey", `${files.appHtml} qAnalyzeOne`);
+
+for (const [needle, label] of [
   ["MODEL_FAST='llama-3.1-8b-instant'", 'legacy fast-model caller contract'],
   ["MODEL_MAIN='llama-3.3-70b-versatile'", 'legacy main-model caller contract'],
   ["localStorage.getItem('pristeel_apikey')", 'legacy AI key caller contract'],
@@ -226,7 +257,7 @@ for (const [needle, label] of [
 console.log('PPPP AI provider contract guard');
 console.log(`Bootstrap order: ${files.compat} -> ${files.geminiUi}`);
 console.log(`Dynamic provider: ${files.geminiUi} -> ${files.groqProvider}`);
-console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}, ${files.appHtml}::startParsing, ${files.appHtml}::parseOffer, ${files.appHtml}::qAnalyzeOffer`);
+console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}, ${files.appHtml}::startParsing, ${files.appHtml}::parseOffer, ${files.appHtml}::qAnalyzeOffer, ${files.appHtml}::qAnalyzeAll/qAnalyzeOne`);
 console.log('Storage contracts: pristeel_apikey, pristeel_gemini_apikey, pristeel_gemini_model, pristeel_groq_apikey, pristeel_ai_provider');
-console.log('The remaining inline batch request flow and project analysis still retain their audited legacy contracts.');
+console.log('All inline HTML application request flows are migrated; project analysis retains the final audited legacy application request contract.');
 if (!process.exitCode) console.log('AI provider runtime contracts OK.');
