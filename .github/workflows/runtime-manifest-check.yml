@@ -30,3 +30,6 @@ jobs:
 
       - name: Verify generated bootstrap artifact
         run: node scripts/generate-bootstrap.mjs --check
+
+      - name: Verify AI provider runtime contracts
+        run: node scripts/ai-provider-contract-check.mjs
