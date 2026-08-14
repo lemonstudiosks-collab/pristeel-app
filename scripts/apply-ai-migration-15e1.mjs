@@ -48,83 +48,23 @@ const oldKey=`  const apiKey=localStorage.getItem('pristeel_apikey')||'';\n  if(
 const newKey=`  const ai=window.PSTAI;\n  if(!ai||typeof ai.hasApiKey!=='function'||typeof ai.requestJson!=='function'||!ai.hasApiKey()){document.getElementById('st1d').textContent='Mungon Groq API Key — shko te Cilësimet.';document.getElementById('parsing-card').classList.add('hidden');return;}`;
 fn=replaceOnce(fn,oldKey,newKey,'startParsing AI availability contract');
 
-const oldTransport=String.raw`      const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-        body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0,messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows.'},{role:'user',content:prompt}]})
-      });
-      const data=await resp.json();
-      // ── Kap gabimet e API-t QARTË (para se të provohet JSON parse) ──
-      if(!resp.ok || data.error){
-        var apiErr=(data.error&&(data.error.message||data.error))||('HTTP '+resp.status);
-        var human=apiErr;
-        if(/too large|context|token/i.test(apiErr)) human='Dokumenti/pjesa është shumë e madhe për modelin AI. Ndaje dokumentin në pjesë më të vogla.';
-        else if(/rate limit|429/i.test(apiErr)) human='Kufiri i shpejtësisë së API u arrit (rate limit). Prit pak minuta dhe provo sërish.';
-        else if(/invalid api key|authentication|401|unauthorized/i.test(apiErr)) human='Groq API Key i pavlefshëm ose skaduar — kontrollo te Cilësimet.';
-        else if(/model|not found|decommission/i.test(apiErr)) human='Modeli AI nuk është i disponueshëm më. Duhet përditësuar modeli te kodi.';
-        merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': '+human+' ('+apiErr+')');
-        merged.confidence='low';
-        if(ci+1<chunks.length) await delay(400);
-        continue;
-      }
-      const raw=data.choices?.[0]?.message?.content||'';
-      if(!raw.trim()){
-        merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': AI nuk ktheu përgjigje (bosh). Provo sërish ose verifiko manualisht.');
-        merged.confidence='medium';
-        if(ci+1<chunks.length) await delay(400);
-        continue;
-      }
-      try{
-        let jsonStr=raw.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
-        const s=jsonStr.indexOf('{'), e=jsonStr.lastIndexOf('}');
-        if(s!==-1&&e!==-1) jsonStr=jsonStr.slice(s,e+1);
-        else throw new Error('nuk u gjet JSON në përgjigje');
-        const p=JSON.parse(jsonStr);
-        if(Array.isArray(p.items)) merged.items=merged.items.concat(p.items);
-        if(p.issues&&p.issues.length) merged.issues=merged.issues.concat(p.issues.map(x=>'[Pjesa '+(ci+1)+'] '+x));
-        if(!merged.project_summary&&p.project_summary) merged.project_summary=p.project_summary;
-        if(p.confidence==='low') merged.confidence='low';
-        else if(p.confidence==='medium'&&merged.confidence!=='low') merged.confidence='medium';
-      }catch(pe){
-        merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': JSON invalid ('+pe.message+') — pozicionet e kësaj pjese mund të mungojnë, verifiko manualisht.');
-        merged.confidence='medium';
-      }`;
+const transportStartNeedle="      const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{";
+const transportStart=fn.indexOf(transportStartNeedle);
+if(transportStart<0)die('startParsing direct Groq transport start not found.');
+const genericDelayNeedle="      if(ci+1<chunks.length) await delay(400);";
+const transportEnd=fn.lastIndexOf(genericDelayNeedle);
+if(transportEnd<=transportStart)die('startParsing audited transport end marker not found.');
+if(fn.indexOf(genericDelayNeedle,transportEnd+genericDelayNeedle.length)>=0)die('Unexpected marker after audited startParsing transport block.');
 
-const newTransport=String.raw`      try{
-        const p=await ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0,response_format:{type:'json_object'},messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows.'},{role:'user',content:prompt}]});
-        if(Array.isArray(p.items)) merged.items=merged.items.concat(p.items);
-        if(p.issues&&p.issues.length) merged.issues=merged.issues.concat(p.issues.map(x=>'[Pjesa '+(ci+1)+'] '+x));
-        if(!merged.project_summary&&p.project_summary) merged.project_summary=p.project_summary;
-        if(p.confidence==='low') merged.confidence='low';
-        else if(p.confidence==='medium'&&merged.confidence!=='low') merged.confidence='medium';
-      }catch(pe){
-        const code=String(pe&&pe.pstAiCode||'');
-        if(code==='HTTP'){
-          var apiErr=String(pe&&pe.message||'HTTP');
-          var human=apiErr;
-          if(/too large|context|token/i.test(apiErr)) human='Dokumenti/pjesa është shumë e madhe për modelin AI. Ndaje dokumentin në pjesë më të vogla.';
-          else if(/rate limit|429/i.test(apiErr)) human='Kufiri i shpejtësisë së API u arrit (rate limit). Prit pak minuta dhe provo sërish.';
-          else if(/invalid api key|authentication|401|unauthorized/i.test(apiErr)) human='Groq API Key i pavlefshëm ose skaduar — kontrollo te Cilësimet.';
-          else if(/model|not found|decommission/i.test(apiErr)) human='Modeli AI nuk është i disponueshëm më. Duhet përditësuar modeli te kodi.';
-          merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': '+human+' ('+apiErr+')');
-          merged.confidence='low';
-        }else if(code==='EMPTY'){
-          merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': AI nuk ktheu përgjigje (bosh). Provo sërish ose verifiko manualisht.');
-          merged.confidence='medium';
-        }else if(code==='INVALID_JSON'){
-          merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': JSON invalid ('+pe.message+') — pozicionet e kësaj pjese mund të mungojnë, verifiko manualisht.');
-          merged.confidence='medium';
-        }else{
-          throw pe;
-        }
-      }`;
-fn=replaceOnce(fn,oldTransport,newTransport,'startParsing direct Groq transport and parse block');
+const newTransport=`      try{\n        const p=await ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0,response_format:{type:'json_object'},messages:[{role:'system',content:'You are a metals procurement AI. Respond with valid JSON only, no markdown. Every row in the source table is a real, separate line item — never merge, deduplicate, or omit rows.'},{role:'user',content:prompt}]});\n        if(Array.isArray(p.items)) merged.items=merged.items.concat(p.items);\n        if(p.issues&&p.issues.length) merged.issues=merged.issues.concat(p.issues.map(x=>'[Pjesa '+(ci+1)+'] '+x));\n        if(!merged.project_summary&&p.project_summary) merged.project_summary=p.project_summary;\n        if(p.confidence==='low') merged.confidence='low';\n        else if(p.confidence==='medium'&&merged.confidence!=='low') merged.confidence='medium';\n      }catch(pe){\n        const code=String(pe&&pe.pstAiCode||'');\n        if(code==='HTTP'){\n          var apiErr=String(pe&&pe.message||'HTTP');\n          var human=apiErr;\n          if(/too large|context|token/i.test(apiErr)) human='Dokumenti/pjesa është shumë e madhe për modelin AI. Ndaje dokumentin në pjesë më të vogla.';\n          else if(/rate limit|429/i.test(apiErr)) human='Kufiri i shpejtësisë së API u arrit (rate limit). Prit pak minuta dhe provo sërish.';\n          else if(/invalid api key|authentication|401|unauthorized/i.test(apiErr)) human='Groq API Key i pavlefshëm ose skaduar — kontrollo te Cilësimet.';\n          else if(/model|not found|decommission/i.test(apiErr)) human='Modeli AI nuk është i disponueshëm më. Duhet përditësuar modeli te kodi.';\n          merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': '+human+' ('+apiErr+')');\n          merged.confidence='low';\n        }else if(code==='EMPTY'){\n          merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': AI nuk ktheu përgjigje (bosh). Provo sërish ose verifiko manualisht.');\n          merged.confidence='medium';\n        }else if(code==='INVALID_JSON'){\n          merged.issues.push('Pjesa '+(ci+1)+'/'+chunks.length+': JSON invalid ('+pe.message+') — pozicionet e kësaj pjese mund të mungojnë, verifiko manualisht.');\n          merged.confidence='medium';\n        }else{\n          throw pe;\n        }\n      }\n`;
+fn=fn.slice(0,transportStart)+newTransport+fn.slice(transportEnd);
 
 if(fn.includes('api.groq.com/openai/v1/chat/completions'))die('startParsing still contains direct Groq endpoint.');
 if(fn.includes('pristeel_apikey'))die('startParsing still contains direct legacy AI key.');
 if(!fn.includes("ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0"))die('startParsing explicit request contract missing.');
 if(!fn.includes("code==='HTTP'" )||!fn.includes("code==='EMPTY'")||!fn.includes("code==='INVALID_JSON'"))die('startParsing typed soft-error mapping missing.');
 if(!fn.includes('throw pe;'))die('startParsing network/untyped error propagation missing.');
+if((fn.match(new RegExp(genericDelayNeedle.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'))||[]).length!==1)die('startParsing final inter-chunk delay contract changed unexpectedly.');
 
 html=html.slice(0,extracted.start)+fn+html.slice(extracted.end);
 fs.writeFileSync(htmlPath,html,'utf8');
