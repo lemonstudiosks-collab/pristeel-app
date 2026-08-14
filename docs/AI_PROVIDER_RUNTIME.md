@@ -10,9 +10,10 @@ This document records the current production AI routing contracts. It is descrip
 2. It wraps `window.fetch` for legacy Groq-shaped chat-completions calls.
 3. Without a configured Gemini key, those calls continue to the legacy Groq-shaped path with retry/token shaping.
 4. With a configured Gemini key, the compatibility layer translates the same OpenAI/Groq-shaped request to the Gemini Developer API and translates the response back to an OpenAI-like shape.
-5. `pristeel-gemini-test-ui-v1.js` loads later, provides the Gemini connectivity test/settings UI, and dynamically loads `pristeel-groq-gptoss-provider-v1.js`.
-6. The GPT-OSS provider captures the previous `window.fetch`. When `pristeel_ai_provider === "groq-gptoss"` and a Groq key exists, it intercepts Groq chat-completions requests and sends them directly to Groq with XHR using `openai/gpt-oss-20b`.
-7. When GPT-OSS is not active, that later wrapper delegates to the previous fetch chain.
+5. The compatibility layer now also exposes `PSTAI.hasApiKey()` and `PSTAI.requestJson(options)` as the explicit application-facing request API. `requestJson` deliberately calls the current `window.fetch`, so existing GPT-OSS/Gemini/legacy routing remains intact.
+6. `pristeel-gemini-test-ui-v1.js` loads later, provides the Gemini connectivity test/settings UI, and dynamically loads `pristeel-groq-gptoss-provider-v1.js`.
+7. The GPT-OSS provider captures the previous `window.fetch`. When `pristeel_ai_provider === "groq-gptoss"` and a Groq key exists, it intercepts Groq chat-completions requests and sends them directly to Groq with XHR using `openai/gpt-oss-20b`.
+8. When GPT-OSS is not active, that later wrapper delegates to the previous fetch chain.
 
 ## Browser storage contracts
 
@@ -35,38 +36,53 @@ Do not rename or remove these until all current callers are migrated.
 
 The provider stack extends `window.PSTAI` with current provider/model information, Gemini configuration/testing, Groq testing and GPT-OSS activation/deactivation.
 
+The compatibility layer additionally owns:
+
+- `PSTAI.hasApiKey()`
+- `PSTAI.requestJson(options)`
+
 Both provider UI layers currently decorate `window.renderSettings`; the Gemini compatibility layer also bridges the legacy `window.saveApiKey` function.
 
-## Audited active runtime callsites
+## First migrated application caller
 
-The active-runtime scanner derives its file set from `runtime-manifest.json` and `runtime-bootstrap-order.json`. It found six active files containing the Groq chat-completions endpoint or its provider/compatibility implementation:
+`pristeel-email-offer-intake-v1.js` is the first application surface migrated to the explicit API.
 
-- `pristeel-email-offer-intake-v1.js`
+It now:
+
+- obtains the AI service through `window.PSTAI`
+- checks availability through `PSTAI.hasApiKey()`
+- requests structured JSON through `PSTAI.requestJson(...)`
+- preserves the same model, messages, temperature, token budget and JSON response requirement
+- keeps the same deterministic non-AI fallback when no configured AI route is available
+
+It no longer reads `pristeel_apikey` directly and no longer contains the Groq chat-completions endpoint.
+
+## Audited active runtime callsites after the first migration
+
+The remaining legacy **application** callers that still contain direct Groq-shaped requests are:
+
 - `pristeel-gmail-audit.js`
-- `pristeel-groq-gptoss-provider-v1.js`
+- `pristeel-procurement.html`
+- `pristeel-project-analysis.js`
+
+Provider/compatibility implementation files still contain the Groq endpoint by design:
+
 - `pristeel-groq-rate-limit.js`
-- `pristeel-procurement.html`
-- `pristeel-project-analysis.js`
+- `pristeel-groq-gptoss-provider-v1.js`
 
-The actual legacy application callers that must be migrated away from direct Groq-shaped requests are therefore:
-
-- `pristeel-email-offer-intake-v1.js`
-- `pristeel-gmail-audit.js`
-- `pristeel-procurement.html`
-- `pristeel-project-analysis.js`
-
-Gemini API-base usage is currently limited to:
+Gemini API-base usage remains limited to:
 
 - `pristeel-gemini-test-ui-v1.js`
 - `pristeel-groq-rate-limit.js`
 
-`PSTAI` usage is currently limited to the three provider-stack files:
+`PSTAI` is now used by the provider stack plus the first migrated application caller:
 
+- `pristeel-email-offer-intake-v1.js`
 - `pristeel-groq-rate-limit.js`
 - `pristeel-gemini-test-ui-v1.js`
 - `pristeel-groq-gptoss-provider-v1.js`
 
-Global `window.fetch` monkey-patching is not AI-only. It is currently present in:
+Global `window.fetch` monkey-patching is not AI-only. It remains present in:
 
 - `pristeel-groq-rate-limit.js`
 - `pristeel-groq-gptoss-provider-v1.js`
@@ -78,23 +94,21 @@ The exact file/count inventory is enforced by `scripts/ai-runtime-callsite-inven
 
 ## Why compatibility is still required
 
-At least four application surfaces still use the legacy Groq-shaped contract. For example, `pristeel-project-analysis.js` still:
+Three application surfaces still use the legacy Groq-shaped contract. For example, `pristeel-project-analysis.js` still:
 
 - reads `localStorage.getItem('pristeel_apikey')`
 - uses the legacy model names `llama-3.1-8b-instant` and `llama-3.3-70b-versatile`
 - posts to `https://api.groq.com/openai/v1/chat/completions`
 
-Therefore the Groq-shaped compatibility contract is still live. Removing it or replacing the compatibility marker before migrating all four application caller surfaces would break current AI behavior.
+Therefore the Groq-shaped compatibility/interception path is still live. Removing it before migrating all three remaining application caller surfaces would break current AI behavior.
 
 ## Consolidation boundary
-
-A later cleanup may centralize provider constants, storage helpers, transport selection and Settings integration, but it must preserve these behaviors until each caller has been migrated deliberately.
 
 The safe sequence is:
 
 1. keep the provider-contract and callsite-inventory guards green;
-2. introduce one explicit `PSTAI` request API while keeping the old interception path intact;
-3. migrate legacy application callers one at a time: email offer intake, Gmail audit, inline application callers, then project analysis;
+2. keep `PSTAI.requestJson` routing through the existing wrapper stack while legacy callers remain;
+3. migrate remaining application callers one at a time: Gmail audit, inline application callers, then project analysis;
 4. remove direct caller access to `pristeel_apikey` only after all callers are migrated;
 5. centralize Settings ownership only after wrapper order is no longer required;
 6. remove AI-specific global fetch monkey-patching only after no production caller depends on the Groq-shaped interception path, while preserving the independent Drive Intelligence fetch wrapper;

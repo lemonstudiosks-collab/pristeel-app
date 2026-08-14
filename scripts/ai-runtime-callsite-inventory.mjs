@@ -52,7 +52,6 @@ const patterns = {
 
 const expected = {
   groq_chat_endpoint: [
-    { file: 'pristeel-email-offer-intake-v1.js', count: 1 },
     { file: 'pristeel-gmail-audit.js', count: 1 },
     { file: 'pristeel-groq-gptoss-provider-v1.js', count: 2 },
     { file: 'pristeel-groq-rate-limit.js', count: 1 },
@@ -64,10 +63,9 @@ const expected = {
     { file: 'pristeel-groq-rate-limit.js', count: 1 }
   ],
   legacy_ai_key: [
-    { file: 'pristeel-email-offer-intake-v1.js', count: 1 },
     { file: 'pristeel-gmail-audit.js', count: 2 },
     { file: 'pristeel-groq-gptoss-provider-v1.js', count: 4 },
-    { file: 'pristeel-groq-rate-limit.js', count: 3 },
+    { file: 'pristeel-groq-rate-limit.js', count: 4 },
     { file: 'pristeel-procurement.html', count: 6 },
     { file: 'pristeel-project-analysis.js', count: 2 }
   ],
@@ -86,9 +84,10 @@ const expected = {
     { file: 'pristeel-groq-gptoss-provider-v1.js', count: 3 }
   ],
   pstai_api: [
+    { file: 'pristeel-email-offer-intake-v1.js', count: 1 },
     { file: 'pristeel-gemini-test-ui-v1.js', count: 3 },
     { file: 'pristeel-groq-gptoss-provider-v1.js', count: 13 },
-    { file: 'pristeel-groq-rate-limit.js', count: 6 }
+    { file: 'pristeel-groq-rate-limit.js', count: 8 }
   ],
   fetch_monkey_patch: [
     { file: 'pristeel-drive-intelligence.js', count: 1 },
@@ -119,7 +118,7 @@ const expected = {
   ],
   legacy_main_model: [
     { file: 'pristeel-email-offer-intake-v1.js', count: 1 },
-    { file: 'pristeel-groq-rate-limit.js', count: 1 },
+    { file: 'pristeel-groq-rate-limit.js', count: 2 },
     { file: 'pristeel-project-analysis.js', count: 1 }
   ],
   gpt_oss_model: [

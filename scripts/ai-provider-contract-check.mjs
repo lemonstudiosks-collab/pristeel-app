@@ -6,6 +6,7 @@ const files = {
   compat: 'pristeel-groq-rate-limit.js',
   geminiUi: 'pristeel-gemini-test-ui-v1.js',
   groqProvider: 'pristeel-groq-gptoss-provider-v1.js',
+  emailOfferIntake: 'pristeel-email-offer-intake-v1.js',
   projectAnalysis: 'pristeel-project-analysis.js'
 };
 
@@ -26,6 +27,10 @@ function requireText(source, needle, label) {
   if (!source.includes(needle)) fail(`${label} no longer contains required contract: ${needle}`);
 }
 
+function forbidText(source, needle, label) {
+  if (source.includes(needle)) fail(`${label} still contains forbidden direct contract: ${needle}`);
+}
+
 function clean(entry) {
   return String(entry || '').split('?')[0].trim();
 }
@@ -38,6 +43,7 @@ try { manifest = JSON.parse(read(files.manifest)); } catch (e) { fail(`${files.m
 const compat = read(files.compat);
 const geminiUi = read(files.geminiUi);
 const groqProvider = read(files.groqProvider);
+const emailOfferIntake = read(files.emailOfferIntake);
 const projectAnalysis = read(files.projectAnalysis);
 
 const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
@@ -78,6 +84,8 @@ for (const [needle, label] of [
   ["pristeel_apikey", 'legacy compatibility key marker'],
   ["window.fetch=function", 'compatibility fetch wrapper'],
   ["window.PSTAI.configureGemini", 'Gemini configuration API'],
+  ["window.PSTAI.hasApiKey", 'explicit AI availability API'],
+  ["window.PSTAI.requestJson", 'explicit JSON request API'],
   ["window.saveApiKey=function", 'legacy settings save bridge']
 ]) requireText(compat, needle, `${files.compat}: ${label}`);
 
@@ -102,6 +110,16 @@ for (const [needle, label] of [
 ]) requireText(groqProvider, needle, `${files.groqProvider}: ${label}`);
 
 for (const [needle, label] of [
+  ["var ai=window.PSTAI", 'explicit AI service lookup'],
+  ["ai.requestJson({", 'explicit AI request call'],
+  ["model:'llama-3.3-70b-versatile'", 'preserved email offer model'],
+  ["max_tokens:2400", 'preserved email offer token budget'],
+  ["response_format:{type:'json_object'}", 'preserved JSON response request']
+]) requireText(emailOfferIntake, needle, `${files.emailOfferIntake}: ${label}`);
+forbidText(emailOfferIntake, "https://api.groq.com/openai/v1/chat/completions", files.emailOfferIntake);
+forbidText(emailOfferIntake, "localStorage.getItem('pristeel_apikey')", files.emailOfferIntake);
+
+for (const [needle, label] of [
   ["MODEL_FAST='llama-3.1-8b-instant'", 'legacy fast-model caller contract'],
   ["MODEL_MAIN='llama-3.3-70b-versatile'", 'legacy main-model caller contract'],
   ["localStorage.getItem('pristeel_apikey')", 'legacy AI key caller contract'],
@@ -111,6 +129,7 @@ for (const [needle, label] of [
 console.log('PPPP AI provider contract guard');
 console.log(`Bootstrap order: ${files.compat} -> ${files.geminiUi}`);
 console.log(`Dynamic provider: ${files.geminiUi} -> ${files.groqProvider}`);
+console.log(`Migrated explicit caller: ${files.emailOfferIntake}`);
 console.log('Storage contracts: pristeel_apikey, pristeel_gemini_apikey, pristeel_gemini_model, pristeel_groq_apikey, pristeel_ai_provider');
 console.log('Project analysis still uses the audited legacy Groq-shaped caller contract.');
 if (!process.exitCode) console.log('AI provider runtime contracts OK.');
