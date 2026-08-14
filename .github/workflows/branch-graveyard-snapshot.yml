@@ -18,10 +18,10 @@ jobs:
       - name: Guard audited repository state
         env:
           GH_TOKEN: ${{ github.token }}
-          EXPECTED_BEFORE: 62be8a6447fafd2f12da273d2196eb97a231d8e4
-          EXPECTED_TOTAL_BRANCHES: "254"
+          EXPECTED_BEFORE: d2149e78182a696859ef8629beef18cd45ae3ff2
+          EXPECTED_TOTAL_BRANCHES: "255"
           EXPECTED_STABLE_BRANCHES: "252"
-          EXPECTED_DELETE_CANDIDATES: "239"
+          EXPECTED_DELETE_CANDIDATES: "240"
         shell: bash
         run: |
           set -euo pipefail
@@ -87,7 +87,8 @@ jobs:
           fi
 
           awk -F '\t' '{print $1}' branch-graveyard-snapshot/all-branches.tsv | sort > branch-graveyard-snapshot/all-names.txt
-          comm -23 branch-graveyard-snapshot/all-names.txt <(printf '%s\n' main; cat branch-graveyard-snapshot/hold-branches.txt | sort) \
+          { printf '%s\n' main; cat branch-graveyard-snapshot/hold-branches.txt; } | sort > branch-graveyard-snapshot/keep-names.txt
+          comm -23 branch-graveyard-snapshot/all-names.txt branch-graveyard-snapshot/keep-names.txt \
             | sort > branch-graveyard-snapshot/delete-candidates.txt
 
           delete_count="$(wc -l < branch-graveyard-snapshot/delete-candidates.txt | tr -d ' ')"
