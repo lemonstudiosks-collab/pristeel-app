@@ -1,3 +1,11 @@
+# Historical snapshot: PRISTEEL Stability Audit — 2026-08-07
+
+> **Archived on 2026-08-14.** This document is a historical snapshot from the August 7 stability-audit branch and is no longer an operational status document. For the current production source of truth, use `docs/ACTIVE_RUNTIME.md`, the current `main` branch, runtime manifests and current CI results.
+
+Original snapshot follows unchanged below.
+
+---
+
 # PRISTEEL Stability Audit — 2026-08-07
 
 Status: IN PROGRESS — FINAL CI GATE

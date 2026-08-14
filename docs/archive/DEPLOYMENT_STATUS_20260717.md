@@ -1,3 +1,11 @@
+# Historical snapshot: PRISTEEL workspace v2 deployment status
+
+> **Archived on 2026-08-14.** This document describes the July/August workspace-v2 preview period and is no longer the deployment source of truth. The referenced `workspace-v2-safe-build` branch no longer exists. For current production state, use `docs/ACTIVE_RUNTIME.md`, `docs/PAGES_SITE_BUILD.md`, the current `main` branch and current CI/deployment results.
+
+Original snapshot follows unchanged below.
+
+---
+
 # PRISTEEL workspace v2 status
 
 Status: TESTS_VERIFIED_LIVE_PREVIEW_PENDING
