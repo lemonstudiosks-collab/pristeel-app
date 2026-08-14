@@ -4,11 +4,24 @@ const {JSDOM}=require('jsdom');
 
 (async()=>{
  const source=fs.readFileSync('pristeel-home-command-center-v2.js','utf8');
+ const cleanup=fs.readFileSync('pristeel-home-visual-cleanup-v1.js','utf8');
  assert(!/MutationObserver|setInterval\s*\(/.test(source),'Home command center must not observe or poll');
  assert(!/supaFetch\([^)]*,\s*['\"](?:POST|PATCH|DELETE)/i.test(source),'Home command center must remain read-only');
  assert(source.includes('#pst-home-pulse{display:none!important}'),'Low-value KPI pulse strip must stay removed from Home');
  assert(source.includes('height:42px!important')&&source.includes('font-size:13px!important'),'Home quick-create buttons must remain comfortably readable');
  assert(source.includes('.pst-hcc-quick-label{font-size:10.5px'),'Quick-create section label must remain readable');
+
+ assert(!/MutationObserver|setInterval\s*\(/.test(cleanup),'Workspace chrome cleanup must not observe or poll');
+ assert(!/supaFetch|\b(?:POST|PATCH|DELETE)\b/.test(cleanup),'Workspace chrome cleanup must remain presentation-only');
+ ['page-workspace-home','page-workspace-projects','page-workspace-inbox','page-workspace-commercial','page-workspace-apps','page-workspace-project','page-finance','page-contacts'].forEach(id=>{
+   assert(cleanup.includes(`:has(#${id}.active) .topbar`),`Legacy topbar is not scoped away for ${id}`);
+ });
+ assert(cleanup.includes(':has(#page-workspace-project.active) #modbar'),'Modern project workspace must also suppress the legacy module bar');
+ assert(!cleanup.includes('body.pst-ui-v2 .topbar{display:none'),'Legacy toolbar must not be hidden globally on Apps/legacy flows');
+ assert(cleanup.includes('#page-workspace-home.active #pst-bcc-home-search{min-height:58px'),'Home universal search was not compacted');
+ assert(cleanup.includes('#page-workspace-home.active .pst-hcc-tabs{margin:0 0 8px!important}'),'Home view controls still waste vertical space');
+ assert(cleanup.includes('#page-workspace-home.active .pst-ws-quick{margin-bottom:12px!important}'),'Home quick-create row still wastes vertical space');
+
  const tasks=Array.from({length:7},(_,i)=>`<div class="pst-ws-action">Task ${i}</div>`).join('');
  const projects=Array.from({length:6},(_,i)=>`<div class="pst-ws-projectcard">Project ${i}</div>`).join('');
  const dom=new JSDOM(`<!doctype html><html><body><div id="page-workspace-home" style="display:block"><div class="pst-ws-page"><div class="pst-ws-head"></div><button id="pst-bcc-home-search">Search</button><section id="pst-home-pulse"><button>Legacy KPI</button></section><div class="pst-ws-quick"><button>A</button><button>B</button><button>C</button><button>D</button><button>E</button></div><div class="pst-ws-card-title">Old 1</div><div class="pst-ws-card-sub">Old sub 1</div><div id="pst-ws-home-actions">${tasks}</div><div class="pst-ws-card-title">Old 2</div><div class="pst-ws-card-sub">Old sub 2</div><div id="pst-ws-home-projects">${projects}</div></div></div></body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
