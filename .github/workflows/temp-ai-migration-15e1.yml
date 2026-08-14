@@ -1,0 +1,51 @@
+name: TEMP Cleanup 15E1 inline AI migration
+
+on:
+  push:
+    branches:
+      - cleanup/ai-inline-startparsing-20260814
+    paths:
+      - scripts/apply-ai-migration-15e1.mjs
+      - .github/workflows/temp-ai-migration-15e1.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: cleanup/ai-inline-startparsing-20260814
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Apply guarded migration
+        run: node scripts/apply-ai-migration-15e1.mjs
+
+      - name: Validate HTML syntax and current runtime guards
+        run: |
+          node scripts/runtime-manifest-check.mjs
+          node scripts/bootstrap-sequence-check.mjs
+          node scripts/generate-bootstrap.mjs --check
+
+      - name: Commit migration to branch
+        run: |
+          set -euo pipefail
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pristeel-procurement.html runtime-manifest.json
+          if git diff --cached --quiet; then
+            echo "No migration changes were produced." >&2
+            exit 1
+          fi
+          git commit -m "Migrate startParsing to explicit AI request API"
+          git push origin HEAD:cleanup/ai-inline-startparsing-20260814
