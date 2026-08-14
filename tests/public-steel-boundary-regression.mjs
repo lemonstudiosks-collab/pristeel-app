@@ -32,7 +32,11 @@ assert.equal(classifyAlbaniaSteel({title:'Furnizim çeliku',cpvs:['14622000-7']}
 assert.equal(classifyAlbaniaSteel({title:'Furnizim hekuri',cpvs:['14711000-8']}).category,'raw_material');
 assert.ok(classifyAlbaniaSteel({title:'Mirembajtje ambiente ndihmese',cpvs:['44171000-9']}).relevance_score<55,'generic plates CPV without steel text must stay below threshold');
 assert.ok(classifyAlbaniaSteel({title:'Krijim ambienti arkive',cpvs:['44334000-0']}).relevance_score<55,'generic profiles CPV without metal text must stay below threshold');
+assert.ok(classifyAlbaniaSteel({title:'Punime për ambjente arkive',cpvs:['44330000-2','44334000-0']}).relevance_score<55,'multiple broad profile CPVs must not stack into a false steel match');
 assert.equal(classifyAlbaniaSteel({title:'Blerje profile metalike',cpvs:['44334000-0']}).category,'raw_material');
+const genericIronAmongMany=classifyAlbaniaSteel({title:'Blerje materiale ndërtimi',cpvs:['14711000-8','44111200-3','44192200-4','44921200-4']});
+assert.equal(genericIronAmongMany.category,'possible');
+assert.ok(genericIronAmongMany.relevance_score>=55&&genericIronAmongMany.relevance_score<65,'iron among many generic CPVs should be review-only, not high-confidence raw steel');
 
 const expiredKrpp=prepareKrppRows([{title:'Furnizim me çelik',fpp:'27115000-4',deadline:'2026-08-01',payload:{source:'KRPP'}}],{today:new Date('2026-08-14T00:00:00Z')});
 assert.equal(expiredKrpp.length,0);
