@@ -12,6 +12,10 @@ function replaceOnce(source,before,after,label){const i=source.indexOf(before);i
     "  legacy_ai_key: [\n    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 4 },\n    { file: 'pristeel-groq-rate-limit.js', count: 4 }\n  ],",
     "  legacy_ai_key: [\n    { file: 'pristeel-groq-rate-limit.js', count: 1 }\n  ],",
     'retired legacy-key inventory');
+  s=replaceOnce(s,
+    "  groq_key: [\n    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 5 }\n  ],",
+    "  groq_key: [\n    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 4 },\n    { file: 'pristeel-groq-rate-limit.js', count: 2 }\n  ],",
+    'retired real-Groq-key inventory');
   write(path,s);
 }
 
