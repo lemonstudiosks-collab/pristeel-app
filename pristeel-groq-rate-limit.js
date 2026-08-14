@@ -1,88 +1,179 @@
-/* PRISTEEL Groq guard: përdor modelin me kufi më të lartë dhe respekton TPM */
+/* PRISTEEL AI compatibility adapter: Groq call-sites -> Gemini Developer API.
+ *
+ * Why this file keeps the old filename:
+ * - PPPP already loads pristeel-groq-rate-limit.js.
+ * - Existing Groq call-sites are spread across the app.
+ * - This adapter lets us migrate the provider without rewriting those call-sites at once.
+ *
+ * Activation:
+ * - If localStorage.pristeel_gemini_apikey is empty, requests continue to Groq unchanged.
+ * - If a Gemini key exists, Groq-shaped requests are translated to Gemini and the
+ *   Gemini response is translated back to the OpenAI/Groq response shape expected
+ *   by the existing PPPP code.
+ *
+ * Model:
+ * - Preferred: gemini-3.5-flash-lite
+ * - Free-tier fallback: gemini-3.1-flash-lite if the preferred model is unavailable
+ *   for the current Google AI Studio project.
+ */
 (function(){
 'use strict';
-if(window.__pstGroqRateLimitGuardLoaded)return;
-window.__pstGroqRateLimitGuardLoaded=true;
+if(window.__pstAiCompatibilityLoaded)return;
+window.__pstAiCompatibilityLoaded=true;
 
 var nativeFetch=window.fetch.bind(window);
-var GROQ_URL='api.groq.com/openai/v1/chat/completions';
+var LEGACY_GROQ_URL='api.groq.com/openai/v1/chat/completions';
+var GEMINI_BASE='https://generativelanguage.googleapis.com/v1beta/models/';
+var MODEL_PREFERRED='gemini-3.5-flash-lite';
+var MODEL_FREE_FALLBACK='gemini-3.1-flash-lite';
 var queue=Promise.resolve();
 
 function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
-function isGroq(input){
+function isLegacyGroq(input){
   var url=typeof input==='string'?input:(input&&input.url)||'';
-  return String(url).indexOf(GROQ_URL)>-1
+  return String(url).indexOf(LEGACY_GROQ_URL)>-1
 }
-function cloneJson(v){return JSON.parse(JSON.stringify(v))}
 function parseBody(init){
   if(!init||typeof init.body!=='string')return null;
   try{return JSON.parse(init.body)}catch(e){return null}
 }
-function shape(body,attempt){
-  var out=cloneJson(body||{});
-  var original=Number(out.max_tokens)||0;
-
-  // Free tier: llama-3.1-8b-instant ka 6K TPM; 70B ka 12K TPM.
-  // Përdorim 70B edhe për nxjerrjen e fakteve, pastaj ulim completion budget.
-  if(out.model==='llama-3.1-8b-instant'){
-    out.model='llama-3.3-70b-versatile';
-    out.max_tokens=Math.min(original||1800,attempt===0?1800:attempt===1?1300:950)
-  }else{
-    out.max_tokens=Math.min(original||2600,attempt===0?2600:attempt===1?1900:1300)
-  }
-
-  // Në retry-n e fundit, kufizo vetëm mesazhin më të gjatë pa prishur fillimin/fundin.
-  if(attempt>=2&&Array.isArray(out.messages)){
-    out.messages=out.messages.map(function(m){
-      var c=String((m&&m.content)||'');
-      if(c.length<=18000)return m;
-      var copy=Object.assign({},m);
-      copy.content=c.slice(0,11500)+'\n\n[...pjesa e mesit u shkurtua për kufirin TPM...]\n\n'+c.slice(-5500);
-      return copy
+function geminiKey(){
+  try{return String(localStorage.getItem('pristeel_gemini_apikey')||'').trim()}catch(e){return''}
+}
+function configuredModel(){
+  try{return String(localStorage.getItem('pristeel_gemini_model')||MODEL_PREFERRED).trim()||MODEL_PREFERRED}catch(e){return MODEL_PREFERRED}
+}
+function textOf(v){return typeof v==='string'?v:String(v==null?'':v)}
+function toGemini(body){
+  var messages=Array.isArray(body&&body.messages)?body.messages:[];
+  var systems=[],contents=[];
+  messages.forEach(function(m){
+    var role=String((m&&m.role)||'user');
+    var content=textOf(m&&m.content);
+    if(role==='system')systems.push(content);
+    else contents.push({
+      role:role==='assistant'?'model':'user',
+      parts:[{text:content}]
     })
-  }
+  });
+  if(!contents.length)contents=[{role:'user',parts:[{text:'Return a valid JSON object.'}]}];
+
+  var cfg={
+    maxOutputTokens:Math.max(64,Math.min(16000,Number(body&&body.max_tokens)||5000)),
+    responseMimeType:'application/json'
+  };
+
+  var out={contents:contents,generationConfig:cfg};
+  if(systems.length)out.systemInstruction={parts:[{text:systems.join('\n\n')}]}];
   return out
 }
-function limitError(text,status){
-  return status===429||/request too large|tokens per minute|\bTPM\b|rate limit|reduce your message size/i.test(String(text||''))
+function candidateText(data){
+  var c=data&&data.candidates&&data.candidates[0];
+  var parts=c&&c.content&&c.content.parts;
+  if(!Array.isArray(parts))return'';
+  return parts.map(function(p){return p&&p.text?String(p.text):''}).join('')
 }
-function retryDelay(response,text,attempt){
-  var h=response&&response.headers;
-  var sec=h&&Number(h.get('retry-after'));
-  if(!isFinite(sec)||sec<=0){
-    var m=String(text||'').match(/try again in\s*([0-9.]+)s/i);
-    sec=m?Number(m[1]):(attempt===0?8:18)
+function openAiLike(text,data,model){
+  return {
+    id:'gemini-compat-'+Date.now(),
+    object:'chat.completion',
+    model:model,
+    choices:[{index:0,message:{role:'assistant',content:text},finish_reason:'stop'}],
+    usage:data&&data.usageMetadata?{
+      prompt_tokens:data.usageMetadata.promptTokenCount||0,
+      completion_tokens:data.usageMetadata.candidatesTokenCount||0,
+      total_tokens:data.usageMetadata.totalTokenCount||0
+    }:undefined,
+    provider:'google-gemini'
   }
-  return Math.min(65000,Math.max(1500,Math.ceil(sec*1000)+500))
 }
-async function groqFetch(input,init){
+function jsonResponse(obj,status){
+  return new Response(JSON.stringify(obj),{
+    status:status||200,
+    headers:{'Content-Type':'application/json'}
+  })
+}
+function isRetryable(status,text){
+  return status===429||status===503||/resource_exhausted|rate limit|temporar|unavailable|try again/i.test(String(text||''))
+}
+function modelUnavailable(status,text){
+  return status===403||status===404||(status===400&&/model|not available|not found|permission|unsupported/i.test(String(text||'')))
+}
+function retryDelay(response,attempt){
+  var sec=0;
+  try{sec=Number(response.headers.get('retry-after'))||0}catch(e){}
+  if(sec>0)return Math.min(30000,Math.max(1000,Math.ceil(sec*1000)+250));
+  return attempt===0?1800:4500
+}
+async function callGemini(model,payload,key){
+  var url=GEMINI_BASE+encodeURIComponent(model)+':generateContent';
+  var last=null,lastText='';
+  for(var attempt=0;attempt<3;attempt++){
+    last=await nativeFetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-goog-api-key':key},
+      body:JSON.stringify(payload)
+    });
+    lastText=await last.text();
+    if(last.ok){
+      var data={};
+      try{data=JSON.parse(lastText)}catch(e){return jsonResponse({error:{message:'Gemini returned invalid JSON metadata.'}},502)}
+      var text=candidateText(data);
+      if(!text)return jsonResponse({error:{message:'Gemini model returned no text output.'}},502);
+      return jsonResponse(openAiLike(text,data,model),200)
+    }
+    if(!isRetryable(last.status,lastText)||attempt===2)break;
+    await sleep(retryDelay(last,attempt))
+  }
+  return {__geminiError:true,status:last?last.status:502,text:lastText||'Gemini request failed.'}
+}
+async function geminiCompatFetch(input,init){
+  var key=geminiKey();
+  // Safe migration behaviour: until a Gemini key is deliberately configured,
+  // production continues using the existing Groq path unchanged.
+  if(!key)return nativeFetch(input,init);
+
   var body=parseBody(init);
   if(!body)return nativeFetch(input,init);
 
-  var lastResponse=null;
-  for(var attempt=0;attempt<3;attempt++){
-    var nextInit=Object.assign({},init,{body:JSON.stringify(shape(body,attempt))});
-    lastResponse=await nativeFetch(input,nextInit);
-    if(lastResponse.ok)return lastResponse;
+  var payload=toGemini(body);
+  var preferred=configuredModel();
+  var result=await callGemini(preferred,payload,key);
 
-    var text='';
-    try{text=await lastResponse.clone().text()}catch(e){}
-    if(!limitError(text,lastResponse.status))return lastResponse;
-
-    if(attempt<2){
-      console.warn('PRISTEEL: Groq TPM limit, retry '+(attempt+1)+'/2');
-      await sleep(retryDelay(lastResponse,text,attempt))
-    }
+  // The current Google pricing page does not clearly guarantee 3.5 Flash-Lite
+  // on every Free project. Fall back to the confirmed Free Flash-Lite model.
+  if(result&&result.__geminiError&&preferred!==MODEL_FREE_FALLBACK&&modelUnavailable(result.status,result.text)){
+    console.warn('PRISTEEL: '+preferred+' unavailable; falling back to '+MODEL_FREE_FALLBACK+'.');
+    result=await callGemini(MODEL_FREE_FALLBACK,payload,key)
   }
-  return lastResponse
+
+  if(result&&result.__geminiError){
+    var msg=result.text;
+    try{
+      var parsed=JSON.parse(result.text);
+      msg=(parsed.error&&parsed.error.message)||msg
+    }catch(e){}
+    return jsonResponse({error:{message:'Gemini '+result.status+': '+String(msg||'request failed').slice(0,500)}},result.status||502)
+  }
+  return result
 }
 
 window.fetch=function(input,init){
-  if(!isGroq(input))return nativeFetch(input,init);
-  // Serializimi ndalon dy kërkesa AI që të konsumojnë TPM në të njëjtën kohë.
-  var run=function(){return groqFetch(input,init)};
+  if(!isLegacyGroq(input))return nativeFetch(input,init);
+  var run=function(){return geminiCompatFetch(input,init)};
   var result=queue.then(run,run);
   queue=result.then(function(){},function(){});
   return result
+};
+
+window.PSTAI=window.PSTAI||{};
+window.PSTAI.provider=function(){return geminiKey()?'gemini':'groq'};
+window.PSTAI.model=function(){return geminiKey()?configuredModel():'legacy-groq'};
+window.PSTAI.configureGemini=function(key,model){
+  var k=String(key||'').trim();
+  if(k)localStorage.setItem('pristeel_gemini_apikey',k);
+  else localStorage.removeItem('pristeel_gemini_apikey');
+  if(model)localStorage.setItem('pristeel_gemini_model',String(model).trim());
+  return {provider:k?'gemini':'groq',model:k?(model||configuredModel()):'legacy-groq'}
 };
 })();
