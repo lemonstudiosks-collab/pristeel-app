@@ -94,9 +94,7 @@ const expected = {
     { file: 'pristeel-project-analysis.js', count: 1 }
   ],
   fetch_monkey_patch: [
-    { file: 'pristeel-drive-intelligence.js', count: 1 },
-    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 1 },
-    { file: 'pristeel-groq-rate-limit.js', count: 1 }
+    { file: 'pristeel-drive-intelligence.js', count: 1 }
   ],
   xhr_transport: [
     { file: 'pristeel-drive-import.js', count: 2 },

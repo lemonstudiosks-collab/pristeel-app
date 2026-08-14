@@ -142,7 +142,6 @@ for (const [needle, label] of [
   ["pristeel_gemini_apikey", 'Gemini browser key storage'],
   ["pristeel_gemini_model", 'Gemini model storage'],
   ["pristeel_apikey", 'legacy compatibility key marker'],
-  ["window.fetch=function", 'compatibility fetch wrapper'],
   ["window.PSTAI.configureGemini", 'Gemini configuration API'],
   ["window.PSTAI.hasApiKey", 'explicit AI availability API'],
   ["window.PSTAI.requestTransport=compatibilityRequestTransport", 'explicit compatibility transport API'],
@@ -154,6 +153,7 @@ for (const [needle, label] of [
   ["pstAiError('INVALID_JSON'", 'typed invalid-JSON error'],
   ["window.saveApiKey=function", 'legacy settings save bridge']
 ]) requireText(compat, needle, `${files.compat}: ${label}`);
+forbidText(compat, "window.fetch=function", `${files.compat} global fetch ownership`);
 
 for (const [needle, label] of [
   ["window.PSTAI.requestTransport(body,key)", 'explicit request transport dispatch'],
@@ -178,11 +178,11 @@ for (const [needle, label] of [
   ["previousRequestTransport=typeof window.PSTAI.requestTransport==='function'?window.PSTAI.requestTransport:null", 'explicit provider transport chaining'],
   ["window.PSTAI.requestTransport=async function", 'GPT-OSS explicit transport override'],
   ["new XMLHttpRequest()", 'direct Groq transport bypass'],
-  ["window.fetch=function", 'active provider fetch wrapper'],
   ["window.PSTAI.activateGroqGptOss", 'provider activation API'],
   ["window.PSTAI.deactivateGroqGptOss", 'provider deactivation API'],
   ["oldRender=window.renderSettings", 'settings render wrapper']
 ]) requireText(groqProvider, needle, `${files.groqProvider}: ${label}`);
+forbidText(groqProvider, "window.fetch=function", `${files.groqProvider} global fetch ownership`);
 
 for (const [needle, label] of [
   ["if(!active())", 'inactive-provider transport delegation'],

@@ -30,6 +30,8 @@ jobs:
         run: node scripts/ai-request-api-smoke.mjs
       - name: Run explicit AI provider routing smoke
         run: node scripts/ai-provider-routing-smoke.mjs
+      - name: Run AI fetch-wrapper removal smoke
+        run: node scripts/ai-fetch-wrapper-removal-smoke.mjs
       - name: Run startParsing AI migration smoke
         run: node scripts/start-parsing-ai-smoke.mjs
       - name: Run parseOffer AI migration smoke
