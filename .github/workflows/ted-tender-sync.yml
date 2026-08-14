@@ -1,4 +1,4 @@
-name: TED tender monitor
+name: TED award winner monitor
 
 on:
   workflow_dispatch:
@@ -14,23 +14,27 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'scripts/ted-tender-sync.mjs'
-      - 'tests/ted-tender-sync-smoke.mjs'
-      - 'pristeel-kek-tender-watch-v1.js'
+      - 'scripts/ted-award-winner-sync.mjs'
+      - 'tests/ted-award-winner-sync-smoke.mjs'
+      - 'pristeel-tender-business-flow-v1.js'
+      - 'tests/tender-business-flow-smoke.js'
+      - 'pristeel-roles.js'
       - '.github/workflows/ted-tender-sync.yml'
   schedule:
     - cron: '47 */2 * * *'
   push:
     branches: [main]
     paths:
-      - 'scripts/ted-tender-sync.mjs'
+      - 'scripts/ted-award-winner-sync.mjs'
+      - 'pristeel-tender-business-flow-v1.js'
+      - 'pristeel-roles.js'
       - '.github/workflows/ted-tender-sync.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: ted-tender-monitor-${{ github.ref }}
+  group: ted-award-winner-monitor-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -44,6 +48,7 @@ jobs:
       PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       TED_TENDER_MIN_SCORE: '75'
+      TED_AWARD_DAYS: '30'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
 
     steps:
@@ -55,20 +60,28 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Check TED collector syntax
-        run: node --check scripts/ted-tender-sync.mjs
+      - name: Install UI test dependency
+        run: npm install --no-audit --no-fund
 
-      - name: Run TED collector smoke
-        run: node tests/ted-tender-sync-smoke.mjs
+      - name: Check award collector and UI syntax
+        run: |
+          node --check scripts/ted-award-winner-sync.mjs
+          node --check pristeel-tender-business-flow-v1.js
 
-      - name: Collect TED steel tenders
-        run: node scripts/ted-tender-sync.mjs
+      - name: Run TED award winner smoke
+        run: node tests/ted-award-winner-sync-smoke.mjs
+
+      - name: Run tender business flow smoke
+        run: node tests/tender-business-flow-smoke.js
+
+      - name: Collect awarded TED steel contracts and winners
+        run: node scripts/ted-award-winner-sync.mjs
 
       - name: Upload sanitized summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ted-tender-monitor
-          path: tmp/ted-tender-sync.json
+          name: ted-award-winner-monitor
+          path: tmp/ted-award-winner-sync.json
           if-no-files-found: ignore
           retention-days: 14
