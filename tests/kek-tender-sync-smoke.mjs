@@ -43,25 +43,32 @@ const indexHtml = `
 <li><a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=5001">1. Furnizim me llamarinë të çelikut</a></li>
 <li><a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=5002">2. Furnizim me elemente lidhese per rule</a></li>
 <li><a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=5003">3. Furnizim me printera</a></li>
+<li><a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=5006">4. Furnizim me materiale për mirëmbajtje</a></li>
 </ul>
 <h2>PlusMinusB08 Njoftim për dhënie të kontratës</h2>
 <a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=5004">1. Furnizim me shufra të çelikut</a>
 <h1>On-line njoftimet 11.08.2026</h1>
 <h2>PlusMinusB54 Formulari standard per korrigjimin e gabimeve</h2>
-<a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=5005">1. Konstruksione metalike për platformë</a>`;
+<a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=5005">1. Konstruksione metalike për platformë</a>
+<h1>On-line njoftimet 10.08.2026</h1>
+<h2>PlusMinusB05 Njoftim per Kontrat</h2>
+<a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=5007">1. Furnizim i përgjithshëm për mirëmbajtje</a>`;
 
 const notices = parseNoticeIndexHtml(indexHtml, 'https://e-prokurimi.rks-gov.net/SPIN_PROD/application/ipn/DocumentManagement/NewPreglediDokumenataFrm.aspx');
-assert.equal(notices.length, 5);
+assert.equal(notices.length, 7);
 assert.equal(notices[0].detail_id, '5001');
 assert.equal(notices[0].published_date, '2026-08-12');
 assert.equal(notices[0].notice_type, 'B05');
-assert.equal(notices[4].notice_type, 'B54');
-assert.equal(notices[4].published_date, '2026-08-11');
+assert.equal(notices[5].notice_type, 'B54');
+assert.equal(notices[5].published_date, '2026-08-11');
 
 const candidates = selectNoticeCandidates(notices, { recentDateCount: 30, maxCandidates: 120 });
-assert.deepEqual(candidates.map(x => x.detail_id).sort(), ['5001', '5002', '5005']);
+assert.deepEqual(candidates.map(x => x.detail_id).sort(), ['5001', '5002', '5003', '5005', '5006']);
 assert.ok(candidates.find(x => x.detail_id === '5002'), 'ambiguous fastening-elements title must be inspected for its FPP');
+assert.ok(candidates.find(x => x.detail_id === '5006'), 'new B05 with a generic title must be inspected so hidden steel FPP cannot be missed');
+assert.equal(candidates.find(x => x.detail_id === '5006')?.candidate_reason, 'recent_actionable_full_scan');
 assert.ok(!candidates.find(x => x.detail_id === '5004'), 'award notices must not be raised as new bid opportunities');
+assert.ok(!candidates.find(x => x.detail_id === '5007'), 'generic titles outside the two newest publication dates remain bounded unless they have steel hints');
 
 const detailHtml = `
 <table>
@@ -88,6 +95,24 @@ assert.equal(detail.procedure, 'Procedurë e hapur');
 assert.equal(detail.estimated_value, 50000);
 assert.equal(detail.deadline, '2026-09-04');
 assert.equal(detail.published_date, '2026-08-12');
+
+const hiddenFppDetailHtml = `
+<table>
+<tr><td>Blerësi</td><td>KORPORATA ENERGJETIKE E KOSOVES sh.a.</td></tr>
+<tr><td>Kodi/Numri</td><td>2026/KEK-26-2999-1-2-1/B05-0017999</td></tr>
+<tr><td>Emërtimi</td><td>Furnizim me materiale për mirëmbajtje</td></tr>
+<tr><td>Lloji i dokumentit*</td><td>B05 Njoftim per Kontrat</td></tr>
+<tr><td>Lloji i kontratës</td><td>1 Furnizim</td></tr>
+<tr><td>FPP</td><td>27115000-4 Çelik</td></tr>
+<tr><td>Lloji i procedurës</td><td>1 Procedurë e hapur</td></tr>
+<tr><td>Vlera e parashikuar</td><td>75,000.00</td></tr>
+<tr><td>Afati për dorëzimin e ofertave/kërkesës për pjesëmarrje</td><td>10.09.2026 14:00</td></tr>
+<tr><td>Data e njoftimit</td><td>12.08.2026</td></tr>
+</table>`;
+const hiddenFppDetail = parseDetailHtml(hiddenFppDetailHtml, notices.find(x => x.detail_id === '5006').detail_url, notices.find(x => x.detail_id === '5006'));
+const hiddenFppSteel = classifyTender(hiddenFppDetail);
+assert.equal(hiddenFppSteel.category, 'raw_material');
+assert.ok(hiddenFppSteel.relevance_score >= 65, 'generic-title B05 must become steel-relevant after reading its hidden FPP');
 
 const fppSteel = classifyTender(detail);
 assert.equal(fppSteel.category, 'raw_material');
