@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "81127fb06e898692bf6604bf95d76c760afc95e1",
+  "auditedAtCommit": "77a0df563690c340abf145d73bc9b4a67917049e",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",

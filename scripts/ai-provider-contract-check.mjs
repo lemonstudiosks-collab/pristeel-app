@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const files = {
   registry: 'runtime-bootstrap-order.json',
   manifest: 'runtime-manifest.json',
+  appHtml: 'pristeel-procurement.html',
   compat: 'pristeel-groq-rate-limit.js',
   geminiUi: 'pristeel-gemini-test-ui-v1.js',
   groqProvider: 'pristeel-groq-gptoss-provider-v1.js',
@@ -36,17 +37,47 @@ function clean(entry) {
   return String(entry || '').split('?')[0].trim();
 }
 
+function extractFunction(source, needle) {
+  const start = source.indexOf(needle);
+  if (start < 0) { fail(`Function not found for AI contract guard: ${needle}`); return ''; }
+  const brace = source.indexOf('{', start);
+  let depth = 0, quote = '', escaped = false, lineComment = false, blockComment = false, end = -1;
+  for (let i = brace; i < source.length; i += 1) {
+    const ch = source[i], nx = source[i + 1] || '';
+    if (lineComment) { if (ch === '\n') lineComment = false; continue; }
+    if (blockComment) { if (ch === '*' && nx === '/') { blockComment = false; i += 1; } continue; }
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === quote) quote = '';
+      continue;
+    }
+    if (ch === '/' && nx === '/') { lineComment = true; i += 1; continue; }
+    if (ch === '/' && nx === '*') { blockComment = true; i += 1; continue; }
+    if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+    if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) { end = i + 1; break; }
+    }
+  }
+  if (end < 0) { fail(`Function closing brace not found for AI contract guard: ${needle}`); return ''; }
+  return source.slice(start, end);
+}
+
 let registry = {};
 let manifest = {};
 try { registry = JSON.parse(read(files.registry)); } catch (e) { fail(`${files.registry} is invalid JSON: ${e.message}`); }
 try { manifest = JSON.parse(read(files.manifest)); } catch (e) { fail(`${files.manifest} is invalid JSON: ${e.message}`); }
 
+const appHtml = read(files.appHtml);
 const compat = read(files.compat);
 const geminiUi = read(files.geminiUi);
 const groqProvider = read(files.groqProvider);
 const emailOfferIntake = read(files.emailOfferIntake);
 const gmailAudit = read(files.gmailAudit);
 const projectAnalysis = read(files.projectAnalysis);
+const startParsing = extractFunction(appHtml, 'async function startParsing()');
 
 const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
 const compatIndex = ordered.indexOf(files.compat);
@@ -137,6 +168,25 @@ forbidText(gmailAudit, "https://api.groq.com/openai/v1/chat/completions", files.
 forbidText(gmailAudit, "localStorage.getItem('pristeel_apikey')", files.gmailAudit);
 
 for (const [needle, label] of [
+  ["deterministicParseGermanMengenliste(text)", 'deterministic BOM parser-first path'],
+  ["const ai=window.PSTAI", 'explicit inline AI service lookup'],
+  ["ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:8000,temperature:0,response_format:{type:'json_object'}", 'preserved BOM AI request contract'],
+  ["chunkTextByLines(text, 8000)", 'preserved BOM chunk size'],
+  ["return out.slice(0, 12)", 'preserved BOM chunk cap'],
+  ["const code=String(pe&&pe.pstAiCode||'')", 'typed chunk error lookup'],
+  ["code==='HTTP'", 'soft HTTP chunk behavior'],
+  ["code==='EMPTY'", 'soft empty chunk behavior'],
+  ["code==='INVALID_JSON'", 'soft invalid-JSON chunk behavior'],
+  ["throw pe;", 'network/untyped failure propagation'],
+  ["Mungon Groq API Key — shko te Cilësimet.", 'preserved missing-key user message']
+]) requireText(startParsing, needle, `${files.appHtml} startParsing: ${label}`);
+forbidText(startParsing, "https://api.groq.com/openai/v1/chat/completions", `${files.appHtml} startParsing`);
+forbidText(startParsing, "pristeel_apikey", `${files.appHtml} startParsing`);
+if (startParsing.indexOf('deterministicParseGermanMengenliste(text)') > startParsing.indexOf('const ai=window.PSTAI')) {
+  fail(`${files.appHtml} startParsing no longer runs the deterministic parser before AI availability.`);
+}
+
+for (const [needle, label] of [
   ["MODEL_FAST='llama-3.1-8b-instant'", 'legacy fast-model caller contract'],
   ["MODEL_MAIN='llama-3.3-70b-versatile'", 'legacy main-model caller contract'],
   ["localStorage.getItem('pristeel_apikey')", 'legacy AI key caller contract'],
@@ -146,7 +196,7 @@ for (const [needle, label] of [
 console.log('PPPP AI provider contract guard');
 console.log(`Bootstrap order: ${files.compat} -> ${files.geminiUi}`);
 console.log(`Dynamic provider: ${files.geminiUi} -> ${files.groqProvider}`);
-console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}`);
+console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}, ${files.appHtml}::startParsing`);
 console.log('Storage contracts: pristeel_apikey, pristeel_gemini_apikey, pristeel_gemini_model, pristeel_groq_apikey, pristeel_ai_provider');
-console.log('Project analysis still uses the audited legacy Groq-shaped caller contract.');
+console.log('Remaining inline HTML callers and project analysis still retain their audited legacy contracts.');
 if (!process.exitCode) console.log('AI provider runtime contracts OK.');
