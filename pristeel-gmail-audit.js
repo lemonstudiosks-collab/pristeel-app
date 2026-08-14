@@ -38,6 +38,7 @@ function phrase(v){return String(v||'').toLowerCase().replace(/[^a-z0-9à-ž]+/g
 function toks(v){var stop={project:1,projekt:1,steel:1,stahl:1,construction:1,konstruktion:1,prissteel:1,offer:1,angebot:1,quotation:1,anfrage:1,request:1,reply:1,forward:1,invoice:1};return phrase(v).split(/\s+/).filter(function(w){return w.length>=5&&!stop[w];}).filter(function(w,i,a){return a.indexOf(w)===i;}).slice(0,20);}
 function inText(field,values){return field+'=in.('+values.map(function(x){return'"'+String(x).replace(/"/g,'')+'"';}).join(',')+')';}
 function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function aiService(){var ai=window.PSTAI;return ai&&typeof ai.hasApiKey==='function'&&typeof ai.requestJson==='function'?ai:null;}
 function loadStats(){try{var s=JSON.parse(localStorage.getItem(KEYS.stats)||'null');if(s)stats=Object.assign(stats,s);}catch(e){}return stats;}
 function saveStats(){try{localStorage.setItem(KEYS.stats,JSON.stringify(stats));}catch(e){}}
 function setText(id,text){var e=document.getElementById(id);if(e)e.textContent=text;}
@@ -138,8 +139,8 @@ async function fullMessage(row,token){
   var at=[];collectAttachments(m.payload,m,at);
   return{text:String(plain||html||row.snippet||'').slice(0,5000),attachments:at};
 }
-async function groqClassify(items,token){
-  var key=localStorage.getItem('pristeel_apikey')||'';if(!key||!items.length)return{};
+async function groqClassify(items,token,ai){
+  if(!ai||typeof ai.requestJson!=='function'||!items.length)return{};
   var full=await mapLimit(items,4,async function(item){var f=await fullMessage(item.row,token);item.full=f;return item;});
   var valid=full.filter(function(x){return x&&!x.error;});var result={};
   for(var i=0;i<valid.length;i+=10){
@@ -153,9 +154,7 @@ async function groqClassify(items,token){
       candidates:it.decision.candidates.map(function(c){return{id:c.project_id,name:c.project.name,client:c.project.client,ref:c.project.ref,score:c.score,evidence:c.evidence};})
     };});
     var prompt='Klasifiko emailat e mëposhtëm për një platformë prokurimi çeliku. Për secilin email zgjidh zero, një ose disa project_ids VETËM nga candidates. Zgjidh disa vetëm kur emaili realisht flet për disa projekte. Nëse është newsletter, njoftim sistemi ose jo-projekt, classification="non_project". Nëse provat nuk mjaftojnë, classification="review". Mos u mbështet vetëm te adresa e kontaktit kur ajo përdoret në disa projekte. Kthe vetëm JSON: {"results":[{"gmail_message_id":"","classification":"project|non_project|review","project_ids":[],"confidence":0,"reason":""}]}\n\n'+JSON.stringify(payload);
-    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'llama-3.1-8b-instant',temperature:0,max_tokens:4000,response_format:{type:'json_object'},messages:[{role:'system',content:'Je klasifikues konservativ i emailave të projekteve. Kthe vetëm JSON.'},{role:'user',content:prompt}]})});
-    var txt=await r.text(),data={};try{data=JSON.parse(txt);}catch(e){}if(!r.ok)continue;
-    var content=data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content,obj={};try{obj=JSON.parse(String(content||'').replace(/^```(?:json)?/i,'').replace(/```$/,'').trim());}catch(e){continue;}
+    var obj={};try{obj=await ai.requestJson({model:'llama-3.1-8b-instant',temperature:0,max_tokens:4000,response_format:{type:'json_object'},messages:[{role:'system',content:'Je klasifikues konservativ i emailave të projekteve. Kthe vetëm JSON.'},{role:'user',content:prompt}]});}catch(e){var code=String(e&&e.pstAiCode||'');if(code==='HTTP'||code==='EMPTY'||code==='INVALID_JSON')continue;throw e;}
     arr(obj.results).forEach(function(x){result[String(x.gmail_message_id||'')]=x;});
   }
   valid.forEach(function(it){if(result[it.row.gmail_message_id])result[it.row.gmail_message_id]._full=it.full;});
@@ -225,13 +224,13 @@ window.pstGmailAuditRun=async function(){
       await A.history(async function(x){setStatus('Indeksimi: '+x.processed+' emaila të lexuar…');var b=document.getElementById('pga-progress-fill');if(b)b.style.width='12%';});
     }
     setStatus('Po ndërtohet harta e projekteve, kontakteve dhe thread-eve…');await prepare();
-    var last=parseInt(localStorage.getItem(KEYS.last)||'0',10)||0,token=await A.auth(),key=localStorage.getItem('pristeel_apikey')||'';
+    var last=parseInt(localStorage.getItem(KEYS.last)||'0',10)||0,token=await A.auth(),ai=aiService(),hasAi=!!(ai&&ai.hasApiKey());
     while(!stopRequested){
       var rows=await supaFetch('project_emails?id=gt.'+last+'&order=id.asc&limit=160');
       if(!rows||!rows.length){localStorage.setItem(KEYS.done,'1');break;}
       var items=rows.map(function(row){return{row:row,decision:decide(row)};});
       var ambiguous=items.filter(function(x){return x.decision.kind==='ambiguous';});
-      if(key&&ambiguous.length){setStatus('Po kontrollohen me AI '+ambiguous.length+' emaila të paqartë në këtë bllok…');var ai=await groqClassify(ambiguous,token);ambiguous.forEach(function(x){x.decision=applyAi(x,ai[x.row.gmail_message_id]);});}
+      if(hasAi&&ambiguous.length){setStatus('Po kontrollohen me AI '+ambiguous.length+' emaila të paqartë në këtë bllok…');var aiResult=await groqClassify(ambiguous,token,ai);ambiguous.forEach(function(x){x.decision=applyAi(x,aiResult[x.row.gmail_message_id]);});}
       setStatus('Po ruhen lidhjet e emailave '+(last+1)+'–'+rows[rows.length-1].id+'…');
       var res=await mapLimit(items,5,async function(item){return persist(item,token);});
       res.forEach(function(x){if(Array.isArray(x))x.forEach(function(pid){affected[String(pid)]=1;});});
