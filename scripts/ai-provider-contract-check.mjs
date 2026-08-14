@@ -85,6 +85,8 @@ const qAnalyzeOne = extractFunction(appHtml, 'async function qAnalyzeOne(');
 const projectAnalysisGroq = extractFunction(projectAnalysis, 'async function groq(');
 const projectAnalysisAsk = extractFunction(projectAnalysis, 'async function ask(');
 const projectAnalyze = extractFunction(projectAnalysis, 'window.pstAnalyzeProject=async function(pid)');
+const baseSaveApiKey = extractFunction(appHtml, 'function saveApiKey()');
+const baseRenderSettings = extractFunction(appHtml, 'function renderSettings()');
 
 const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
 const compatIndex = ordered.indexOf(files.compat);
@@ -115,6 +117,22 @@ const orderConstraint = (Array.isArray(manifest.loadOrderConstraints) ? manifest
   clean(x && x.before) === files.compat && clean(x && x.after) === files.geminiUi
 );
 if (!orderConstraint) fail(`Runtime manifest no longer records the AI compatibility-before-settings load-order constraint.`);
+
+for (const [needle, label] of [
+  ["id=\"s-apikey\"", 'Settings API-key input anchor'],
+  ["id=\"key-status\"", 'Settings key-status anchor']
+]) requireText(appHtml, needle, `${files.appHtml}: ${label}`);
+for (const [needle, label] of [
+  ["const ai=window.PSTAI", 'base Settings PSTAI delegation'],
+  ["typeof ai.configureGemini!=='function'", 'base Settings configureGemini availability guard'],
+  ["ai.configureGemini(k)", 'base Settings Gemini configuration delegation'],
+  ["AI Settings nuk janë ngarkuar.", 'base Settings unavailable status'],
+  ["✓ API Key e ruajtur në browser", 'preserved base saved status'],
+  ["API Key u fshi.", 'preserved base cleared status']
+]) requireText(baseSaveApiKey, needle, `${files.appHtml} saveApiKey: ${label}`);
+forbidText(baseSaveApiKey, "localStorage.", `${files.appHtml} saveApiKey`);
+forbidText(baseRenderSettings, "pristeel_apikey", `${files.appHtml} renderSettings`);
+forbidText(appHtml, "pristeel_apikey", files.appHtml);
 
 for (const [needle, label] of [
   ["api.groq.com/openai/v1/chat/completions", 'legacy Groq-shaped endpoint'],
