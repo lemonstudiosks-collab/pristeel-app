@@ -5447,7 +5447,12 @@ function exportRanking(){
 // ── SETTINGS ──────────────────────────────────────────
 function saveApiKey(){
   const k=document.getElementById('s-apikey').value;
-  localStorage.setItem('pristeel_apikey',k);
+  const ai=window.PSTAI;
+  if(!ai||typeof ai.configureGemini!=='function'){
+    document.getElementById('key-status').textContent='AI Settings nuk janë ngarkuar.';
+    return;
+  }
+  ai.configureGemini(k);
   document.getElementById('key-status').textContent=k?'✓ API Key e ruajtur në browser':'API Key u fshi.';
 }
 function saveGoogleKeys(){
@@ -5469,8 +5474,6 @@ function remDefaultSupplier(id){defaultSuppliers=defaultSuppliers.filter(s=>s.id
 function updDefaultSupplier(id,f,v){const s=defaultSuppliers.find(s=>s.id===id);if(s)s[f]=v;saveDefaultSuppliers();}
 function saveDefaultSuppliers(){localStorage.setItem('pristeel_default_suppliers',JSON.stringify(defaultSuppliers));}
 function renderSettings(){
-  const k=localStorage.getItem('pristeel_apikey')||'';
-  if(k)document.getElementById('s-apikey').value=k;
   var gc=localStorage.getItem('pristeel_gclient')||'', gk=localStorage.getItem('pristeel_gapikey')||'';
   var gce=document.getElementById('s-gclient'), gke=document.getElementById('s-gapikey');
   if(gce) gce.value=gc; if(gke) gke.value=gk;
