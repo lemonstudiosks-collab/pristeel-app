@@ -50,6 +50,83 @@ const patterns = {
   gpt_oss_model: /openai\/gpt-oss-20b/g
 };
 
+const expected = {
+  groq_chat_endpoint: [
+    { file: 'pristeel-email-offer-intake-v1.js', count: 1 },
+    { file: 'pristeel-gmail-audit.js', count: 1 },
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 2 },
+    { file: 'pristeel-groq-rate-limit.js', count: 1 },
+    { file: 'pristeel-procurement.html', count: 4 },
+    { file: 'pristeel-project-analysis.js', count: 1 }
+  ],
+  gemini_api_base: [
+    { file: 'pristeel-gemini-test-ui-v1.js', count: 1 },
+    { file: 'pristeel-groq-rate-limit.js', count: 1 }
+  ],
+  legacy_ai_key: [
+    { file: 'pristeel-email-offer-intake-v1.js', count: 1 },
+    { file: 'pristeel-gmail-audit.js', count: 2 },
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 4 },
+    { file: 'pristeel-groq-rate-limit.js', count: 3 },
+    { file: 'pristeel-procurement.html', count: 6 },
+    { file: 'pristeel-project-analysis.js', count: 2 }
+  ],
+  gemini_key: [
+    { file: 'pristeel-gemini-test-ui-v1.js', count: 1 },
+    { file: 'pristeel-groq-rate-limit.js', count: 3 }
+  ],
+  gemini_model_key: [
+    { file: 'pristeel-gemini-test-ui-v1.js', count: 1 },
+    { file: 'pristeel-groq-rate-limit.js', count: 2 }
+  ],
+  groq_key: [
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 5 }
+  ],
+  active_provider_key: [
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 3 }
+  ],
+  pstai_api: [
+    { file: 'pristeel-gemini-test-ui-v1.js', count: 3 },
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 13 },
+    { file: 'pristeel-groq-rate-limit.js', count: 6 }
+  ],
+  fetch_monkey_patch: [
+    { file: 'pristeel-drive-intelligence.js', count: 1 },
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 1 },
+    { file: 'pristeel-groq-rate-limit.js', count: 1 }
+  ],
+  xhr_transport: [
+    { file: 'pristeel-drive-import.js', count: 2 },
+    { file: 'pristeel-drive.js', count: 1 },
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 1 },
+    { file: 'pristeel-project-workspace.js', count: 1 }
+  ],
+  render_settings_contract: [
+    { file: 'pristeel-gemini-test-ui-v1.js', count: 2 },
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 2 },
+    { file: 'pristeel-groq-rate-limit.js', count: 2 },
+    { file: 'pristeel-procurement.html', count: 4 }
+  ],
+  save_api_key_contract: [
+    { file: 'pristeel-groq-rate-limit.js', count: 1 },
+    { file: 'pristeel-procurement.html', count: 2 }
+  ],
+  legacy_fast_model: [
+    { file: 'pristeel-gmail-audit.js', count: 1 },
+    { file: 'pristeel-groq-rate-limit.js', count: 1 },
+    { file: 'pristeel-procurement.html', count: 4 },
+    { file: 'pristeel-project-analysis.js', count: 1 }
+  ],
+  legacy_main_model: [
+    { file: 'pristeel-email-offer-intake-v1.js', count: 1 },
+    { file: 'pristeel-groq-rate-limit.js', count: 1 },
+    { file: 'pristeel-project-analysis.js', count: 1 }
+  ],
+  gpt_oss_model: [
+    { file: 'pristeel-groq-gptoss-provider-v1.js', count: 1 }
+  ]
+};
+
 const inventory = {};
 for (const key of Object.keys(patterns)) inventory[key] = [];
 
@@ -74,3 +151,18 @@ const report = {
 
 console.log('PPPP active runtime AI callsite inventory');
 console.log(JSON.stringify(report, null, 2));
+
+for (const key of Object.keys(patterns)) {
+  const actualJson = JSON.stringify(inventory[key] || []);
+  const expectedJson = JSON.stringify(expected[key] || []);
+  if (actualJson !== expectedJson) {
+    fail(
+      `Audited callsite set changed for ${key}.\n` +
+      `expected=${expectedJson}\n` +
+      `actual=${actualJson}\n` +
+      'Review the runtime caller/provider migration deliberately before updating this allowlist.'
+    );
+  }
+}
+
+console.log('AI runtime callsite allowlist OK.');
