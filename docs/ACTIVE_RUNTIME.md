@@ -64,6 +64,7 @@ The nine local files loaded directly by `pristeel-procurement.html`, in current 
 - **FINAL_OWNER**: a verified current owner/finalizer for a visible application area.
 - **COMPATIBILITY**: a bridge, adapter, wrapper or migration layer still required by current code.
 - **LOADED_LEGACY_CANDIDATE**: still loaded in production, but likely superseded for visible behavior. Investigation candidate, not deletion candidate.
+- **LEGACY_FALLBACK_REQUIRED**: older layer intentionally retained because a user-accessible current fallback still depends on it. It is not a deletion candidate while that fallback exists.
 - **DYNAMIC_CURRENT**: a current module loaded dynamically by another runtime file.
 - **ACTIVE_PROVIDER**: conditionally active runtime provider outside the main bootstrap.
 - **LOADED_CURRENT_UNCLASSIFIED**: safe default for bootstrap modules not yet explicitly classified.
@@ -83,7 +84,12 @@ The nine local files loaded directly by `pristeel-procurement.html`, in current 
 - `pristeel-home-visual-cleanup-v1.js`
 - `pristeel-redesign-finalizer-v1.js`
 
-`pristeel-dashboard-calm.js` remains loaded because Workspace Architecture captures its `renderHome` implementation as the current **Pamja klasike** fallback. It is therefore not yet safe to retire.
+The current Workspace also exposes **Apps → Pamja klasike**. That route intentionally keeps two older layers alive:
+
+- `pristeel-dashboard-calm.js` supplies the `renderHome` implementation captured by Workspace Architecture as the classic Home renderer.
+- `pristeel-ui-v2-polish.js` still reacts when legacy `page-home` becomes active and performs the classic dashboard's opportunity triage, KPI/inbox cleanup and row limiting.
+
+These are now classified as **LEGACY_FALLBACK_REQUIRED**, not as removal candidates. Retiring them would require first removing or replacing the user-accessible classic fallback.
 
 ### Projects
 
@@ -136,13 +142,18 @@ The manifest records current bridge/compatibility files including project schema
 
 Awkward naming is technical debt, not evidence that a file is dead.
 
+## Legacy fallbacks required by current UI
+
+- `pristeel-ui-v2-polish.js`
+- `pristeel-dashboard-calm.js`
+
+These have been traced and deliberately removed from the cleanup-candidate list. They remain loaded because **Pamja klasike** is still exposed by the current Workspace.
+
 ## Legacy-review candidates still loaded
 
 - `pristeel-project-intelligence-ui.js`
 - `pristeel-project-workspace.js`
 - `pristeel-ui-v2.js`
-- `pristeel-ui-v2-polish.js`
-- `pristeel-dashboard-calm.js`
 
 For each candidate, removal requires tracing globals/events/functions, tracing callers, running the full smoke suite without it, verifying the real browser UI, and only then removing it from the bootstrap.
 
@@ -167,7 +178,7 @@ The runtime manifest's `deprecatedForbidden` list makes CI fail if one of these 
 - the loader still loads the ordered bootstrap;
 - the audited bootstrap blob has not silently changed;
 - bootstrap entries have no duplicates and every module exists;
-- all manifest final owners/compatibility layers/review candidates remain valid;
+- all manifest final owners, compatibility layers, required legacy fallbacks and review candidates remain valid;
 - critical load-order constraints remain true;
 - dynamic runtime modules still have their loader and target file;
 - deprecated/forbidden modules cannot silently return.
