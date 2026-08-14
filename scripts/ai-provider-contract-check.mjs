@@ -78,6 +78,7 @@ const emailOfferIntake = read(files.emailOfferIntake);
 const gmailAudit = read(files.gmailAudit);
 const projectAnalysis = read(files.projectAnalysis);
 const startParsing = extractFunction(appHtml, 'async function startParsing()');
+const parseOffer = extractFunction(appHtml, 'async function parseOffer()');
 
 const ordered = Array.isArray(registry.files) ? registry.files.map(clean) : [];
 const compatIndex = ordered.indexOf(files.compat);
@@ -187,6 +188,19 @@ if (startParsing.indexOf('deterministicParseGermanMengenliste(text)') > startPar
 }
 
 for (const [needle, label] of [
+  ["const ai=window.PSTAI", 'explicit supplier-offer AI service lookup'],
+  ["ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,response_format:{type:'json_object'}", 'preserved supplier-offer AI request contract'],
+  ["const code=String(aiErr&&aiErr.pstAiCode||'')", 'typed supplier-offer response error lookup'],
+  ["code==='HTTP'||code==='EMPTY'||code==='INVALID_JSON'", 'preserved supplier-offer response warning semantics'],
+  ["throw aiErr;", 'supplier-offer network/untyped failure propagation'],
+  ["Mungon API Key — shko te Cilësimet.", 'preserved supplier-offer missing-key message'],
+  ["⚠ Nuk u lexua saktë — provo të ngjitësh tekstin manualisht.", 'preserved supplier-offer response warning'],
+  ["document.getElementById('pdf-status').textContent='Gabim: '+err.message", 'preserved supplier-offer outer error status']
+]) requireText(parseOffer, needle, `${files.appHtml} parseOffer: ${label}`);
+forbidText(parseOffer, "https://api.groq.com/openai/v1/chat/completions", `${files.appHtml} parseOffer`);
+forbidText(parseOffer, "pristeel_apikey", `${files.appHtml} parseOffer`);
+
+for (const [needle, label] of [
   ["MODEL_FAST='llama-3.1-8b-instant'", 'legacy fast-model caller contract'],
   ["MODEL_MAIN='llama-3.3-70b-versatile'", 'legacy main-model caller contract'],
   ["localStorage.getItem('pristeel_apikey')", 'legacy AI key caller contract'],
@@ -196,7 +210,7 @@ for (const [needle, label] of [
 console.log('PPPP AI provider contract guard');
 console.log(`Bootstrap order: ${files.compat} -> ${files.geminiUi}`);
 console.log(`Dynamic provider: ${files.geminiUi} -> ${files.groqProvider}`);
-console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}, ${files.appHtml}::startParsing`);
+console.log(`Migrated explicit callers: ${files.emailOfferIntake}, ${files.gmailAudit}, ${files.appHtml}::startParsing, ${files.appHtml}::parseOffer`);
 console.log('Storage contracts: pristeel_apikey, pristeel_gemini_apikey, pristeel_gemini_model, pristeel_groq_apikey, pristeel_ai_provider');
-console.log('Remaining inline HTML callers and project analysis still retain their audited legacy contracts.');
+console.log('Two remaining inline HTML request flows and project analysis still retain their audited legacy contracts.');
 if (!process.exitCode) console.log('AI provider runtime contracts OK.');
