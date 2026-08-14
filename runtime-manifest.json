@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "59703dd6787ad0f1cd5896224fced7099a71c850",
+  "auditedAtCommit": "064b35c516091e72a06ec56e8a9fe92f6e36fc81",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "56fe1f173bee72e79395cc813a9991e07c06af04",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "a2cea4faa597dd0fc02ca73646d9173da749a845"
+    "bootstrapGitBlobSha": "65d9a226d44dde9372042e425460efea527a5b3f"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -127,7 +127,6 @@
     "pristeel-project-workspace.js",
     "pristeel-ui-v2.js",
     "pristeel-ui-v2-polish.js",
-    "pristeel-dashboard-focus.js",
     "pristeel-dashboard-operations.js",
     "pristeel-dashboard-calm.js"
   ],
@@ -179,6 +178,7 @@
     }
   ],
   "deprecatedForbidden": [
-    "pristeel-document-adjustments.js"
+    "pristeel-document-adjustments.js",
+    "pristeel-dashboard-focus.js"
   ]
 }
