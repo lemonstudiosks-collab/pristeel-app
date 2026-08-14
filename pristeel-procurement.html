@@ -5550,8 +5550,8 @@ async function parseOffer(){
   document.getElementById('pdf-prog').style.width='30%';
   document.getElementById('pdf-status').textContent='Duke dërguar te AI...';
 
-  const apiKey=localStorage.getItem('pristeel_apikey')||'';
-  if(!apiKey){document.getElementById('pdf-status').textContent='Mungon API Key — shko te Cilësimet.';return;}
+  const ai=window.PSTAI;
+  if(!ai||typeof ai.hasApiKey!=='function'||typeof ai.requestJson!=='function'||!ai.hasApiKey()){document.getElementById('pdf-status').textContent='Mungon API Key — shko te Cilësimet.';return;}
 
   const prompt=`Extract offer/quotation data from this supplier document and return ONLY a JSON object. No explanation, no markdown, no code fences. Start with { and end with }.
 
@@ -5575,19 +5575,23 @@ Rules:
 - positions: EVERY priced line item from the offer table as a SEPARATE entry, in document order, with its own unit price — NEVER merge line items or average prices. Text-only note lines get qty=0, unit_price=0.
 - Return ONLY the JSON`;
   try{
-    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,
-        messages:[{role:'system',content:'You are a steel procurement AI. Respond with valid JSON only. Never merge or average line items.'},{role:'user',content:prompt}]})
-    });
-    const data=await resp.json();
-    document.getElementById('pdf-prog').style.width='100%';
-    const raw=data.choices?.[0]?.message?.content||'';
     let parsed;
     try{
-      const start=raw.indexOf('{');const end=raw.lastIndexOf('}');
-      parsed=JSON.parse(raw.slice(start,end+1));
+      parsed=await ai.requestJson({model:'llama-3.1-8b-instant',max_tokens:3000,temperature:0,response_format:{type:'json_object'},messages:[{role:'system',content:'You are a steel procurement AI. Respond with valid JSON only. Never merge or average line items.'},{role:'user',content:prompt}]});
+    }catch(aiErr){
+      const code=String(aiErr&&aiErr.pstAiCode||'');
+      if(code==='HTTP'||code==='EMPTY'||code==='INVALID_JSON'){
+        document.getElementById('pdf-status').textContent='⚠ Nuk u lexua saktë — provo të ngjitësh tekstin manualisht.';
+        return;
+      }
+      throw aiErr;
+    }
+    if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)){
+      document.getElementById('pdf-status').textContent='⚠ Nuk u lexua saktë — provo të ngjitësh tekstin manualisht.';
+      return;
+    }
+    document.getElementById('pdf-prog').style.width='100%';
+    try{
   const mA=text.match(/Amount\s*A[\s\S]{0,40}?([\d.,]+)/i);
 if(mA) parsed.fabrication_total=parseFloat(mA[1].replace(/\./g,'').replace(',','.'));
 

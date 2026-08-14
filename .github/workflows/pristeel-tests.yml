@@ -30,6 +30,8 @@ jobs:
         run: node scripts/ai-request-api-smoke.mjs
       - name: Run startParsing AI migration smoke
         run: node scripts/start-parsing-ai-smoke.mjs
+      - name: Run parseOffer AI migration smoke
+        run: node scripts/parse-offer-ai-smoke.mjs
       - name: Run project Drive cross-device smoke
         run: node tests/project-drive-cross-device-smoke.js
       - name: Run KEK tender collector smoke
