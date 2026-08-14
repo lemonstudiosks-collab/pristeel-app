@@ -5586,6 +5586,10 @@ Rules:
       }
       throw aiErr;
     }
+    if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)){
+      document.getElementById('pdf-status').textContent='⚠ Nuk u lexua saktë — provo të ngjitësh tekstin manualisht.';
+      return;
+    }
     document.getElementById('pdf-prog').style.width='100%';
     try{
   const mA=text.match(/Amount\s*A[\s\S]{0,40}?([\d.,]+)/i);
