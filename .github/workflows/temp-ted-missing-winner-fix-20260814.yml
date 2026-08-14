@@ -1,5 +1,6 @@
 name: TEMP TED missing-winner fix
 
+# Rerun after correcting the regression fixture index.
 on:
   push:
     branches: [fix/ted-missing-winner-operational-focus-20260814]
