@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "ad1c8e2dac23c931cf69a065458b7f8748bd3a07",
+  "auditedAtCommit": "21e8f7218aba1d4719d84fadbe7e65a3f976d296",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
@@ -36,6 +36,7 @@
     "FINAL_OWNER": "Known current owner/finalizer for a visible runtime area. Later modules may still decorate it.",
     "COMPATIBILITY": "Required bridge, adapter, safety wrapper or migration layer. Do not infer UI ownership from this file.",
     "LOADED_LEGACY_CANDIDATE": "Still loaded in production but likely superseded in visible behavior. Must not be removed until callers, globals, events and smoke tests are traced.",
+    "LEGACY_FALLBACK_REQUIRED": "Legacy layer intentionally retained because a current user-accessible fallback still depends on its behavior. Do not retire it until that fallback is removed or replaced.",
     "ACTIVE_PROVIDER": "Conditionally active runtime provider loaded outside the main bootstrap.",
     "DYNAMIC_CURRENT": "Current production module loaded dynamically by another current runtime file rather than by the main ordered bootstrap.",
     "LOADED_CURRENT_UNCLASSIFIED": "Loaded by the production bootstrap and therefore treated as required until explicitly classified."
@@ -122,12 +123,14 @@
     "pristeel-project-commercial-prefill-rescue-v1.js",
     "pristeel-workspace-release-fix-v3.js"
   ],
+  "legacyFallbackRequired": [
+    "pristeel-ui-v2-polish.js",
+    "pristeel-dashboard-calm.js"
+  ],
   "loadedLegacyReviewCandidates": [
     "pristeel-project-intelligence-ui.js",
     "pristeel-project-workspace.js",
-    "pristeel-ui-v2.js",
-    "pristeel-ui-v2-polish.js",
-    "pristeel-dashboard-calm.js"
+    "pristeel-ui-v2.js"
   ],
   "dynamicRuntime": [
     {
