@@ -8,11 +8,26 @@ if(window.__pstLoginBrandV1)return;
 window.__pstLoginBrandV1=true;
 
 function mark(){return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8c.7 5.45 4.75 9.5 10.2 10.2-5.45.7-9.5 4.75-10.2 10.2C11.3 16.75 7.25 12.7 1.8 12 7.25 11.3 11.3 7.25 12 1.8Z"/></svg>';}
+function hideLegacy(gate,form){
+  var wrap=form&&form.parentElement;
+  if(!gate||!form||!wrap||!gate.contains(wrap))return 0;
+  var hidden=0;
+  Array.prototype.slice.call(wrap.children).forEach(function(node){
+    if(node===form)return;
+    var value=String(node.textContent||'').replace(/\s+/g,' ').trim();
+    if(value!=='PRISTEEL'&&value!=='Procurement Platform')return;
+    node.classList.add('pst-auth-legacy-brand');
+    node.setAttribute('aria-hidden','true');
+    hidden++;
+  });
+  return hidden;
+}
 function apply(){
   var gate=document.getElementById('auth-gate');
   var form=document.getElementById('auth-form');
   if(!gate||!form)return false;
   gate.classList.add('pst-auth-branded');
+  hideLegacy(gate,form);
   if(!form.querySelector('.pst-auth-brand')){
     var brand=document.createElement('div');
     brand.className='pst-auth-brand';
@@ -27,8 +42,8 @@ function css(){
   s.id='pst-login-brand-v1-style';
   s.textContent=`
 #auth-gate.pst-auth-branded{background:radial-gradient(circle at 72% 14%,rgba(103,168,192,.14),transparent 34%),linear-gradient(145deg,#F8FBFC,#EEF6F8)!important;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
-/* The legacy bronze PRISTEEL wordmark above the card is redundant. */
-#auth-gate.pst-auth-branded .auth-logo{display:none!important}
+/* Legacy branding existed both with and without a class in the original auth markup. */
+#auth-gate.pst-auth-branded .auth-logo,#auth-gate.pst-auth-branded .pst-auth-legacy-brand{display:none!important}
 #auth-gate.pst-auth-branded #auth-form{background:#fff!important;border:1px solid #DCE8EC!important;border-radius:18px!important;box-shadow:0 22px 60px rgba(45,82,97,.12)!important;padding:32px 34px!important;max-width:420px!important;width:calc(100% - 32px)!important}
 #auth-gate.pst-auth-branded .pst-auth-brand{text-align:center;margin-bottom:25px;color:#253239}
 #auth-gate.pst-auth-branded .pst-auth-mark{width:54px;height:54px;margin:0 auto 12px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#67A8C0,#3F7F98);box-shadow:0 13px 30px rgba(63,127,152,.2);color:#fff}
@@ -49,5 +64,5 @@ function css(){
 css();
 function schedule(){[0,80,250,700,1500].forEach(function(ms){setTimeout(apply,ms);});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.PSTLoginBrandV1={apply:apply};
+window.PSTLoginBrandV1={apply:apply,_test:{hideLegacy:hideLegacy}};
 })();
