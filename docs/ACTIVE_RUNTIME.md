@@ -84,12 +84,12 @@ The nine local files loaded directly by `pristeel-procurement.html`, in current 
 - `pristeel-home-visual-cleanup-v1.js`
 - `pristeel-redesign-finalizer-v1.js`
 
-The current Workspace also exposes **Apps → Pamja klasike**. That route intentionally keeps two older layers alive:
+The current Workspace also exposes **Apps → Pamja klasike**. That route intentionally keeps two older Home layers alive:
 
 - `pristeel-dashboard-calm.js` supplies the `renderHome` implementation captured by Workspace Architecture as the classic Home renderer.
 - `pristeel-ui-v2-polish.js` still reacts when legacy `page-home` becomes active and performs the classic dashboard's opportunity triage, KPI/inbox cleanup and row limiting.
 
-These are now classified as **LEGACY_FALLBACK_REQUIRED**, not as removal candidates. Retiring them would require first removing or replacing the user-accessible classic fallback.
+These are classified as **LEGACY_FALLBACK_REQUIRED**, not as removal candidates. Retiring them would require first removing or replacing the user-accessible classic fallback.
 
 ### Projects
 
@@ -102,7 +102,11 @@ Current project workspace:
 - `pristeel-project-first-commercial-v1.js`
 - `pristeel-project-first-execution-v1.js`
 
-Files such as `pristeel-project-intelligence-ui.js` and `pristeel-project-workspace.js` still exist and are still loaded, but they are not sufficient evidence that their older visible UI is what the user sees today.
+The current Workspace replaces the normal `openOverview()` route with the modern 360 project workspace, but deliberately captures the previous `openOverview` implementation and exposes it through the current **“Pamja e vjetër”** project action.
+
+`pristeel-project-intelligence-ui.js` is therefore also **LEGACY_FALLBACK_REQUIRED**. In that old project overview, `pristeel-project-analysis.js` injects the analysis panel and `pristeel-project-intelligence-ui.js` repositions it to the top of the modal, widens the overview, manages scrolling, watches for legacy overview openings and provides the analysis-load fallback. Removing it while **Pamja e vjetër** remains accessible would change that fallback UI.
+
+`pristeel-project-workspace.js` is still loaded but remains a review candidate; its presence alone does not mean it owns the current project UI.
 
 ### Gmail / Inbox
 
@@ -144,14 +148,14 @@ Awkward naming is technical debt, not evidence that a file is dead.
 
 ## Legacy fallbacks required by current UI
 
-- `pristeel-ui-v2-polish.js`
-- `pristeel-dashboard-calm.js`
+- `pristeel-ui-v2-polish.js` — classic Home triage/polish.
+- `pristeel-dashboard-calm.js` — classic Home renderer captured by Workspace Architecture.
+- `pristeel-project-intelligence-ui.js` — classic project overview layout/analysis behavior used by **Pamja e vjetër**.
 
-These have been traced and deliberately removed from the cleanup-candidate list. They remain loaded because **Pamja klasike** is still exposed by the current Workspace.
+These have been traced and deliberately removed from the cleanup-candidate list. They remain loaded because current Workspace actions still expose their fallback surfaces.
 
 ## Legacy-review candidates still loaded
 
-- `pristeel-project-intelligence-ui.js`
 - `pristeel-project-workspace.js`
 - `pristeel-ui-v2.js`
 
