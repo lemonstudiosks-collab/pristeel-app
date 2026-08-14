@@ -137,4 +137,15 @@ if(typeof oldRender==='function'&&!oldRender.__pstGeminiTestWrapped){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(install,0);},{once:true});
 else setTimeout(install,0);
+
+/* Load the optional Groq GPT-OSS provider after the Gemini test UI.
+ * This keeps the active production bootstrap change isolated to this already-loaded module.
+ */
+if(!window.__pstGroqGptOssLoaderV1){
+  window.__pstGroqGptOssLoaderV1=true;
+  var groqScript=document.createElement('script');
+  groqScript.src='pristeel-groq-gptoss-provider-v1.js?v=20260814-1';
+  groqScript.defer=true;
+  document.head.appendChild(groqScript);
+}
 })();
