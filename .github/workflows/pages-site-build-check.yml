@@ -1,4 +1,4 @@
-name: PPPP candidate Pages site build
+name: PPPP production Pages site build
 
 on:
   pull_request:
@@ -21,13 +21,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Re-run Pages artifact audit
+      - name: Re-run Pages production artifact audit
         run: node scripts/pages-artifact-audit.mjs
 
-      - name: Build isolated candidate site
+      - name: Build production Pages site
         run: node scripts/pages-artifact-build.mjs
 
-      - name: Serve candidate site locally
+      - name: Serve production artifact locally
         run: |
           set -euo pipefail
           python3 -m http.server 4173 --directory _site >/tmp/pppp-site-server.log 2>&1 &
@@ -47,18 +47,23 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-document-center.css >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:4173/gmail-addon/pristeel-addon-icon.svg >/dev/null
 
-          echo "Candidate site HTTP smoke OK."
+          echo "Production Pages artifact HTTP smoke OK."
 
-      - name: Confirm production deploy remains whole-repository mode
+      - name: Confirm production deploy uses verified artifact
         run: |
           set -e
-          grep -q "path: '.'" .github/workflows/static.yml
-          echo "Production Pages upload path is still '.'."
+          grep -q "node scripts/pages-artifact-build.mjs" .github/workflows/static.yml
+          grep -q "path: '_site'" .github/workflows/static.yml
+          if grep -q "path: '.'" .github/workflows/static.yml; then
+            echo "ERROR: whole-repository Pages upload path is still present"
+            exit 1
+          fi
+          echo "Production Pages builds and uploads only _site."
 
-      - name: Upload candidate site for inspection only
+      - name: Upload production site check artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pppp-candidate-pages-site
+          name: pppp-production-pages-site-check
           path: _site
           include-hidden-files: true
           retention-days: 3
