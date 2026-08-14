@@ -1,0 +1,42 @@
+name: TEMP Cleanup 15E2 object guard fix
+
+on:
+  push:
+    branches:
+      - cleanup/ai-inline-parseoffer-20260814
+    paths:
+      - scripts/apply-ai-fix-15e2-object-guard.mjs
+      - .github/workflows/temp-ai-fix-15e2-object-guard.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: cleanup/ai-inline-parseoffer-20260814
+          fetch-depth: 1
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply object guard
+        run: node scripts/apply-ai-fix-15e2-object-guard.mjs
+      - name: Validate current runtime guards
+        run: |
+          node scripts/runtime-manifest-check.mjs
+          node scripts/ai-runtime-callsite-inventory.mjs
+      - name: Commit fix to branch
+        run: |
+          set -euo pipefail
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pristeel-procurement.html
+          git commit -m "Preserve parseOffer object-only response semantics"
+          git push origin HEAD:cleanup/ai-inline-parseoffer-20260814
