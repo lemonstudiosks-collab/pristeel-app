@@ -215,4 +215,13 @@ if(document.readyState === 'loading'){
   document.head.appendChild(s);
 })();
 
+(function loadInvoiceOriginalDocumentModule(){
+  if(document.querySelector('script[data-pst-invoice-original-document]')) return;
+  var s=document.createElement('script');
+  s.src='pristeel-invoice-original-document-v1.js?v='+String(Date.now());
+  s.defer=true;
+  s.setAttribute('data-pst-invoice-original-document','1');
+  document.head.appendChild(s);
+})();
+
 })();
