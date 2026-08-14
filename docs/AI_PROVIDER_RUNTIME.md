@@ -16,21 +16,20 @@ This document records the current production AI routing contracts. It is descrip
 
 ## Browser storage contracts
 
-Current keys are intentionally preserved:
+Current runtime storage contracts are:
 
-- `pristeel_apikey`: compatibility marker retained for the current provider/Settings bridge
 - `pristeel_gemini_apikey`: Gemini browser key
 - `pristeel_gemini_model`: selected Gemini model
 - `pristeel_groq_apikey`: Groq browser key
 - `pristeel_ai_provider`: active provider selector
 
-Compatibility markers remain `__GEMINI_COMPAT__` and `__GROQ_GPTOSS_COMPAT__`. Application request callers are migrated and the base application Settings UI no longer reads or writes the marker directly. Marker ownership now remains only inside the provider/compatibility layers until routing is refactored separately.
+`pristeel_apikey` is **retired as a runtime key/marker**. `pristeel-groq-rate-limit.js` retains that storage name only as a one-time historical migration input: a real non-marker legacy value is copied to `pristeel_groq_apikey` if needed, then the old storage entry is removed. Historical marker literals `__GEMINI_COMPAT__` and `__GROQ_GPTOSS_COMPAT__` are removed rather than treated as credentials. GPT-OSS no longer reads or writes the retired storage.
 
 ## Current public browser API
 
 The provider stack extends `window.PSTAI` with provider/model information, Gemini configuration/testing, Groq testing, GPT-OSS activation/deactivation, `PSTAI.hasApiKey()`, `PSTAI.requestTransport(body,key)` and `PSTAI.requestJson(options)`. `requestTransport` is the explicit provider-routing contract; application code continues to call only `requestJson`.
 
-The base Settings `saveApiKey()` now delegates key configuration to `PSTAI.configureGemini(...)` and no longer owns AI browser storage. The base `renderSettings()` no longer reads `pristeel_apikey`. The existing `s-apikey` and `key-status` DOM anchors remain intentionally stable. Provider UI layers still decorate `window.renderSettings`, and the compatibility layer still replaces `window.saveApiKey` at runtime so current Gemini/GPT-OSS behavior is unchanged.
+The base Settings `saveApiKey()` delegates key configuration to `PSTAI.configureGemini(...)` and owns no AI browser storage. The base `renderSettings()` has zero retired-storage references. The existing `s-apikey` and `key-status` DOM anchors remain stable. The compatibility layer still bridges `window.saveApiKey`/`renderSettings`, but availability and requests now depend only on real dedicated Gemini/Groq keys. GPT-OSS activation/deactivation uses only `pristeel_groq_apikey` and `pristeel_ai_provider`.
 
 ## Migrated application callers
 
@@ -93,7 +92,7 @@ Provider/compatibility implementation files still contain the Groq endpoint by d
 - `pristeel-groq-rate-limit.js`
 - `pristeel-groq-gptoss-provider-v1.js`
 
-The application HTML contains **zero** `pristeel_apikey` references. The compatibility marker is now owned only by `pristeel-groq-rate-limit.js` and `pristeel-groq-gptoss-provider-v1.js`. The base Settings UI delegates to `PSTAI.configureGemini(...)` while preserving the existing input/status anchors and runtime provider wrappers.
+The application HTML contains **zero** `pristeel_apikey` references. GPT-OSS contains zero retired-storage references. The compatibility layer contains exactly one occurrence, solely as the one-time historical migration storage name. Runtime availability and routing use `pristeel_gemini_apikey` / `pristeel_groq_apikey` directly.
 
 `PSTAI` is now used by the provider stack plus:
 
@@ -107,7 +106,7 @@ The application HTML contains **zero** `pristeel_apikey` references. The compati
 
 Global `window.fetch` monkey-patching has been removed from both AI provider/compatibility layers. The only active-runtime `window.fetch` monkey patch recorded by the AI inventory is the independent `pristeel-drive-intelligence.js` wrapper, which must remain untouched by AI cleanup.
 
-The exact active-runtime file/count inventory is enforced by `scripts/ai-runtime-callsite-inventory.mjs`. Provider routing is executed by `scripts/ai-provider-routing-smoke.mjs`; wrapper-free global-fetch ownership is executed by `scripts/ai-fetch-wrapper-removal-smoke.mjs`; per-caller behavior is additionally executed by `scripts/start-parsing-ai-smoke.mjs`, `scripts/parse-offer-ai-smoke.mjs`, `scripts/q-analyze-offer-ai-smoke.mjs`, `scripts/q-analyze-batch-ai-smoke.mjs` and `scripts/project-analysis-ai-smoke.mjs`.
+The exact active-runtime file/count inventory is enforced by `scripts/ai-runtime-callsite-inventory.mjs`. Provider routing is executed by `scripts/ai-provider-routing-smoke.mjs`; wrapper-free global-fetch ownership by `scripts/ai-fetch-wrapper-removal-smoke.mjs`; legacy-storage migration/marker retirement by `scripts/ai-compat-marker-retirement-smoke.mjs`; Settings ownership by `scripts/ai-settings-ownership-smoke.mjs`; per-caller behavior by the dedicated caller smokes.
 
 ## Why compatibility is still required
 
@@ -117,8 +116,8 @@ The exact active-runtime file/count inventory is enforced by `scripts/ai-runtime
 
 The safe sequence is:
 
-1. keep provider-contract, provider-routing, fetch-wrapper-removal, Settings-ownership, typed-error, callsite and per-caller behavior smokes green;
+1. keep provider-contract, provider-routing, fetch-wrapper-removal, marker-retirement, Settings-ownership, typed-error, callsite and per-caller behavior smokes green;
 2. treat `PSTAI.requestJson(...)` as the only application-facing AI request API and `PSTAI.requestTransport(...)` as the provider-routing contract;
 3. preserve the independent Drive Intelligence fetch wrapper while AI provider files remain wrapper-free;
-4. simplify/retire the `pristeel_apikey` compatibility marker without changing real Gemini/Groq key storage or provider selection behavior;
+4. keep only the one-time historical `pristeel_apikey` migration shim until the legacy-browser compatibility window is deliberately retired; it is not a runtime routing contract;
 5. move provider secrets server-side as a separate security change.
