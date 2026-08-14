@@ -12,9 +12,9 @@ var active={type:null,id:null,row:null,original:null,blobUrl:null};
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function safeHttpUrl(v){var s=String(v||'').trim();return /^https?:\/\//i.test(s)?s:'';}
 function firstUrl(text){
-  var m=String(text||'').match(/https?:\/\/[^\s<>"']+/i);
-  if(!m)return'';
-  return m[0].replace(/[),.;]+$/g,'');
+  var all=String(text||'').match(/https?:\/\/[^\s<>"']+/ig)||[];
+  all=all.map(function(x){return x.replace(/[),.;]+$/g,'');});
+  return all.find(function(x){return /drive\.google\.com|\.pdf(?:$|[?#])|\.(?:png|jpe?g|webp)(?:$|[?#])/i.test(x);})||all[0]||'';
 }
 function driveId(url){
   var s=String(url||'');
@@ -33,7 +33,6 @@ function b64Blob(value,mime){
   return new Blob([arr],{type:p.mime});
 }
 function isImageMime(mime,url){return /^image\//i.test(String(mime||''))||/\.(png|jpe?g|gif|webp|bmp)(?:$|[?#])/i.test(String(url||''));}
-function isPdfMime(mime,url){return /pdf/i.test(String(mime||''))||/\.pdf(?:$|[?#])/i.test(String(url||''))||!!driveId(url);}
 
 function resolveOriginal(row,type){
   row=row||{};
@@ -84,11 +83,11 @@ function render(row,type,id){
     if(isImageMime(view.mime,view.viewerUrl))body='<div class="pst-iod-imgwrap"><img class="pst-iod-img" src="'+esc(view.viewerUrl)+'" alt="Fatura origjinale"></div>';
     else body='<iframe class="pst-iod-frame" src="'+esc(view.viewerUrl)+'" title="Fatura origjinale"></iframe>';
   }else{
-    body='<div class="pst-iod-missing"><div class="pst-iod-missingbox"><div class="pst-iod-missingtitle">Origjinali i faturës nuk është ruajtur</div><div class="pst-iod-missingsub">Ky regjistrim ka vetëm të dhëna financiare në PPPP. Platforma nuk do të gjenerojë më një faqe përmbledhëse dhe ta paraqesë si faturë. Për kopje fizike / ATK duhet të ruhet PDF-ja ose imazhi origjinal i dokumentit.</div></div></div>';
+    body='<div class="pst-iod-missing"><div class="pst-iod-missingbox"><div class="pst-iod-missingtitle">Origjinali i faturës nuk është ruajtur</div><div class="pst-iod-missingsub">Ky regjistrim ka vetëm të dhëna financiare në PPPP. Platforma nuk do të gjenerojë më një faqe përmbledhëse dhe ta paraqesë si faturë. Për kopje fizike / ATK bashkëngjit PDF-në ose imazhin origjinal një herë; pastaj PPPP do të hapë dhe printojë gjithmonë atë dokument.</div></div></div>';
   }
-  var originalActions=original?'<button class="pst-iod-btn" onclick="pstInvoiceOpenOriginal()">Hap origjinalin</button><button class="pst-iod-btn primary" onclick="pstInvoicePrintOriginal()">Printo origjinalin</button>':'';
+  var originalActions=original?'<button class="pst-iod-btn" onclick="pstInvoiceOpenOriginal()">Hap origjinalin</button><button class="pst-iod-btn primary" onclick="pstInvoicePrintOriginal()">Printo origjinalin</button>':'<input id="pst-iod-upload" type="file" accept="application/pdf,image/*" style="display:none" onchange="pstInvoiceAttachOriginal(this.files&&this.files[0])"><button class="pst-iod-btn primary" onclick="document.getElementById(\'pst-iod-upload\').click()">Bashkëngjit origjinalin</button>';
   var paidAction=(type==='in'&&!row.paid&&typeof window.markInvoiceInPaid==='function')?'<button class="pst-iod-btn success" onclick="pstInvoiceMarkPaidFromViewer()">Shëno Paguar</button>':'';
-  bg.innerHTML='<div class="pst-iod-modal" role="dialog" aria-modal="true"><div class="pst-iod-head"><div><div class="pst-iod-title">'+esc(title)+'</div><div class="pst-iod-meta">'+esc(meta)+'</div></div><button class="pst-iod-close" aria-label="Mbyll" onclick="closeInvoiceDetail()">×</button></div><div class="pst-iod-body">'+body+'</div><div class="pst-iod-foot"><div class="pst-iod-note">'+(original?'Po shfaqet dokumenti origjinal. Printimi hap po këtë dokument, jo një summary të PPPP-së.':'Nuk ka buton printimi derisa të ekzistojë dokument origjinal.')+'</div><div class="pst-iod-actions">'+paidAction+originalActions+'</div></div></div>';
+  bg.innerHTML='<div class="pst-iod-modal" role="dialog" aria-modal="true"><div class="pst-iod-head"><div><div class="pst-iod-title">'+esc(title)+'</div><div class="pst-iod-meta">'+esc(meta)+'</div></div><button class="pst-iod-close" aria-label="Mbyll" onclick="closeInvoiceDetail()">×</button></div><div class="pst-iod-body">'+body+'</div><div class="pst-iod-foot"><div class="pst-iod-note">'+(original?'Po shfaqet dokumenti origjinal. Printimi hap po këtë dokument, jo një summary të PPPP-së.':'Nuk ka printim derisa të ruhet dokumenti origjinal.')+'</div><div class="pst-iod-actions">'+paidAction+originalActions+'</div></div></div>';
   document.body.appendChild(bg);
 }
 async function fetchRow(type,id){
@@ -112,12 +111,29 @@ async function printById(type,id){
     var prev=active.original;active.original=original;openOriginal();active.original=prev;
   }catch(e){alert('Origjinali nuk u hap për printim: '+e.message);}
 }
+function validOriginalFile(file){return !!file&&(/application\/pdf/i.test(file.type)||/^image\//i.test(file.type)||/\.(pdf|png|jpe?g|webp)$/i.test(file.name||''));}
+async function attachOriginal(file){
+  if(!file||!active.row||!active.id)return;
+  if(!validOriginalFile(file)){alert('Lejohen vetëm PDF ose imazhe të faturës origjinale.');return;}
+  if(file.size>12*1024*1024){alert('Skedari është më i madh se 12 MB. Ruaje/kompresoje PDF-në dhe provo përsëri.');return;}
+  if(!confirm('Ta bashkëngjisim këtë dokument si origjinalin e faturës '+number(active.row,active.type)+'?'))return;
+  try{
+    var data=await new Promise(function(resolve,reject){var r=new FileReader();r.onload=function(){resolve(r.result);};r.onerror=function(){reject(new Error('Skedari nuk u lexua.'));};r.readAsDataURL(file);});
+    var table=active.type==='out'?'invoices_out':'invoices_in';
+    await window.supaFetch(table+'?id=eq.'+encodeURIComponent(active.id),'PATCH',{file_name:file.name,file_type:file.type||'application/pdf',file_base64:data});
+    active.row.file_name=file.name;active.row.file_type=file.type||'application/pdf';active.row.file_base64=data;
+    var row=active.row,type=active.type,id=active.id;
+    render(row,type,id);
+    try{if(type==='out'&&typeof window.loadInvoicesOut==='function')window.loadInvoicesOut();if(type==='in'&&typeof window.loadInvoicesIn==='function')window.loadInvoicesIn();}catch(e){}
+  }catch(e){alert('Origjinali nuk u ruajt: '+e.message);}
+}
 
 window.closeInvoiceDetail=close;
 window.openInvoiceDetail=function(type,id){return loadAndRender(type,id);};
 window.printInvoiceDetail=function(type,id){return printById(type,id);};
 window.pstInvoiceOpenOriginal=openOriginal;
 window.pstInvoicePrintOriginal=function(){if(!active.original){alert('Origjinali i faturës nuk është ruajtur.');return;}openOriginal();};
+window.pstInvoiceAttachOriginal=attachOriginal;
 window.pstInvoiceMarkPaidFromViewer=function(){if(active.type==='in'&&active.id&&typeof window.markInvoiceInPaid==='function'){if(confirm('Ta shënojmë këtë faturë si të paguar?')){window.markInvoiceInPaid(active.id);close();}}};
-window.pstInvoiceOriginalDocument={resolveOriginal:resolveOriginal,drivePreview:drivePreview,firstUrl:firstUrl};
+window.pstInvoiceOriginalDocument={resolveOriginal:resolveOriginal,drivePreview:drivePreview,firstUrl:firstUrl,validOriginalFile:validOriginalFile};
 })();
