@@ -60,6 +60,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install UI test dependency
+        run: npm install --no-audit --no-fund
+
       - name: Check award collector and UI syntax
         run: |
           node --check scripts/ted-award-winner-sync.mjs
