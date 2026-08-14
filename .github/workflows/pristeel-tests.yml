@@ -38,6 +38,8 @@ jobs:
         run: node scripts/q-analyze-batch-ai-smoke.mjs
       - name: Run Project Analysis AI migration smoke
         run: node scripts/project-analysis-ai-smoke.mjs
+      - name: Run AI Settings ownership smoke
+        run: node scripts/ai-settings-ownership-smoke.mjs
       - name: Run project Drive cross-device smoke
         run: node tests/project-drive-cross-device-smoke.js
       - name: Run KEK tender collector smoke
