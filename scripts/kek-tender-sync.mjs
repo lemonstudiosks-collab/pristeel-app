@@ -377,12 +377,11 @@ const DETAIL_CANDIDATE_HINTS = [
 ];
 
 export function selectNoticeCandidates(notices, { recentDateCount = 30, maxCandidates = 120 } = {}) {
-  const dates = [];
-  for (const notice of notices || []) {
-    if (notice.published_date && !dates.includes(notice.published_date)) dates.push(notice.published_date);
-    if (dates.length >= recentDateCount) break;
-  }
+  const dates = [...new Set((notices || []).map(notice => notice.published_date).filter(Boolean))]
+    .sort((a, b) => b.localeCompare(a))
+    .slice(0, recentDateCount);
   const allowedDates = new Set(dates);
+  const fullScanDates = new Set(dates.slice(0, 2));
   const scored = [];
   for (const notice of notices || []) {
     if (allowedDates.size && notice.published_date && !allowedDates.has(notice.published_date)) continue;
@@ -390,14 +389,22 @@ export function selectNoticeCandidates(notices, { recentDateCount = 30, maxCandi
     if (type && !['B05', 'B54'].includes(type)) continue;
     const direct = classifyTender({ title: notice.title });
     const hint = hasAny(notice.title, DETAIL_CANDIDATE_HINTS);
-    if (direct.relevance_score < 20 && !hint) continue;
+    const recentFullScan = !!notice.published_date && fullScanDates.has(notice.published_date);
+    if (!recentFullScan && direct.relevance_score < 20 && !hint) continue;
     scored.push({
       ...notice,
-      candidate_score: Math.max(direct.relevance_score, hint ? 25 : 0),
-      candidate_reason: direct.relevance_score >= 20 ? 'title_classifier' : `title_hint:${hint}`
+      candidate_score: Math.max(direct.relevance_score, hint ? 25 : 0, recentFullScan ? 15 : 0),
+      candidate_reason: direct.relevance_score >= 20
+        ? 'title_classifier'
+        : hint
+          ? `title_hint:${hint}`
+          : 'recent_actionable_full_scan',
+      candidate_full_scan: recentFullScan
     });
   }
-  return scored.sort((a, b) => b.candidate_score - a.candidate_score).slice(0, maxCandidates);
+  return scored
+    .sort((a, b) => Number(b.candidate_full_scan) - Number(a.candidate_full_scan) || b.candidate_score - a.candidate_score)
+    .slice(0, maxCandidates);
 }
 
 export function sourceKey(row) {
