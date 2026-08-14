@@ -15,7 +15,7 @@ const esc=v=>String(v).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 function token(h,t){return new RegExp(`(?:^|[^a-z0-9])${esc(norm(t))}(?=$|[^a-z0-9])`,'i').test(norm(h));}
 function term(h,t){const n=norm(t);return EXACT_TERMS.has(n)?token(h,n):norm(h).includes(n);}
 function hasAny(h,terms){return terms.find(t=>term(h,t))||'';}
-function profileSignal(h){const n=norm(h);for(const code of PROFILE_CODES){if(!token(n,code))continue;const dim=new RegExp(`(?:^|[^a-z0-9])${code}\s*[-x/]?\s*\d{2,4}(?=$|[^a-z0-9])`,'i').test(n);if(dim||/(profil|profile|trar|beam|celik|steel|hekur)/.test(n))return code;}return'';}
+function profileSignal(h){const n=norm(h);for(const code of PROFILE_CODES){if(!token(n,code))continue;const dim=new RegExp('(?:^|[^a-z0-9])'+code+'[ \t]*[-x/]?[ \t]*[0-9]{2,4}(?=$|[^a-z0-9])','i').test(n);if(dim||/(profil|profile|trar|beam|celik|steel|hekur)/.test(n))return code;}return'';}
 function daysOld(date,today){if(!date)return Infinity;const d=new Date(`${date}T00:00:00Z`);return Number.isNaN(d.getTime())?Infinity:Math.floor((today-d)/86400000);}
 
 export function classifyAlbaniaSteel(row){
