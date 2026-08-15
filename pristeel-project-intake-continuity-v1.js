@@ -1,7 +1,8 @@
 /* PRISTEEL project intake continuity v1
  * Repairs confirmed Gmail-thread continuity after the explicit Gmail+Drive auth gate.
  * A thread is normalized only when all existing project relations point to one project.
- * Reconstructs missing RFQ history only from confirmed single-project outgoing RFQ messages.
+ * Reconstructs missing RFQ history only from confirmed single-project outgoing RFQ messages
+ * sent to a recipient already evidenced as a supplier/RFQ recipient in PPPP.
  * Also removes non-file offers_inbox rows from the project Files view.
  * No outbound mail, no automatic cross-project reassignment, no interactive OAuth, no polling.
  */
@@ -64,12 +65,15 @@ function rfqLike(meta){
   if(/^(re|aw)\s*:/i.test(subject))return false;
   return /^(fwd?|wg)\s*:/i.test(subject)&&/(zahtev|zahtjev|ponud|quotation|quote|rfq|anfrage|upit|ofert)/i.test(subject)||/\b(rfq|request for quotation|request for quote|anfrage|upit za ponudu|zahtev za ponudu|zahtjev za ponudu|kerkese per oferte|kërkesë për ofertë)\b/i.test(subject);
 }
-async function supplierName(email){
+function supplierRole(v){return /supplier|vendor|furnitor|prodhues|manufacturer|fabricator/i.test(String(v||''));}
+async function supplierIdentity(projectId,email){
   var old=await safe('rfq_log?supplier_email=eq.'+enc(email)+'&supplier_name=not.is.null&select=supplier_name&order=sent_at.desc&limit=1');
-  if(old[0]&&old[0].supplier_name)return String(old[0].supplier_name);
-  var c=await safe('contacts?email=eq.'+enc(email)+'&select=person,company&limit=1');
-  if(c[0])return String(c[0].company||c[0].person||email);
-  return String(email);
+  if(old[0]&&old[0].supplier_name)return{trusted:true,name:String(old[0].supplier_name),source:'rfq-history'};
+  var c=await safe('contacts?email=eq.'+enc(email)+'&select=person,company,kind,role&limit=1');
+  if(c[0]&&supplierRole([c[0].kind,c[0].role].join(' ')))return{trusted:true,name:String(c[0].company||c[0].person||email),source:'supplier-contact'};
+  var pc=await safe('project_contacts?project_id=eq.'+enc(projectId)+'&email=eq.'+enc(email)+'&select=name,company,role&limit=1');
+  if(pc[0]&&supplierRole(pc[0].role))return{trusted:true,name:String(pc[0].company||pc[0].name||email),source:'project-supplier-contact'};
+  return{trusted:false,name:'',source:'none'};
 }
 async function recoverRfqs(projectId,projectName,meta){
   if(!rfqLike(meta))return 0;
@@ -77,9 +81,9 @@ async function recoverRfqs(projectId,projectName,meta){
   for(var i=0;i<targets.length;i++){
     var email=targets[i],dupe=await safe('rfq_log?project_id=eq.'+enc(projectId)+'&supplier_email=eq.'+enc(email)+'&sent_at=eq.'+enc(meta.sent_at)+'&select=id&limit=1');
     if(dupe.length)continue;
-    var name=await supplierName(email);
+    var identity=await supplierIdentity(projectId,email);if(!identity.trusted)continue;
     try{
-      await db('rfq_log','POST',{project_id:projectId,project_name:projectName||null,supplier_name:name,supplier_email:email,subject:meta.subject||null,body:meta.snippet||null,sent_at:meta.sent_at||new Date().toISOString(),status:'sent',followup_count:0,notes:'Recovered from confirmed Gmail thread '+String(meta.gmail_thread_id||'')});
+      await db('rfq_log','POST',{project_id:projectId,project_name:projectName||null,supplier_name:identity.name,supplier_email:email,subject:meta.subject||null,body:meta.snippet||null,sent_at:meta.sent_at||new Date().toISOString(),status:'sent',followup_count:0,notes:'Recovered from confirmed Gmail thread '+String(meta.gmail_thread_id||'')+'; supplier evidence: '+identity.source});
       added++;
     }catch(e){console.warn('PRISTEEL continuity RFQ:',e);}
   }
@@ -157,5 +161,5 @@ function install(){wrapIntegrity();wrapWorkspaceOpen();}
 install();
 document.addEventListener('pst:modules-ready',function(){install();setTimeout(function(){autoReconcile(activeProjectId());},350);},{once:true});
 setTimeout(install,250);setTimeout(install,1200);setTimeout(function(){install();autoReconcile(activeProjectId());},2200);
-window.PSTProjectIntakeContinuityV1={install:install,normalizeProjectThreads:normalizeProjectThreads,autoReconcile:autoReconcile,_test:{hasAttachment:hasAttachment,fileBearing:fileBearing,currentGmailToken:currentGmailToken,fullMeta:fullMeta,threadOwners:threadOwners,rfqLike:rfqLike,recoverRfqs:recoverRfqs,normalizeThread:normalizeThread}};
+window.PSTProjectIntakeContinuityV1={install:install,normalizeProjectThreads:normalizeProjectThreads,autoReconcile:autoReconcile,_test:{hasAttachment:hasAttachment,fileBearing:fileBearing,currentGmailToken:currentGmailToken,fullMeta:fullMeta,threadOwners:threadOwners,rfqLike:rfqLike,supplierIdentity:supplierIdentity,recoverRfqs:recoverRfqs,normalizeThread:normalizeThread}};
 })();
