@@ -14,8 +14,8 @@ const {JSDOM}=require('jsdom');
   assert(source.includes('Vlera e kontratës'),'Summary must prioritize the commercial contract value');
   assert(source.includes('Detaje operative'),'Technical counters must be demoted to collapsible operational details');
   assert(source.includes('Brief i projektit'),'Project Intelligence must present itself as a discussion brief');
-  assert(actionsSource.includes('pristeel-project-summary-command-v1.js'),'Current ProjectFirst actions must load the summary command');
-  assert(bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260815-summary1'),'ProjectFirst actions cache-bust must expose the current summary loader');
+  assert(actionsSource.includes('pristeel-project-summary-command-v1.js?v=20260815-brief2'),'Current ProjectFirst actions must load the redesigned summary command');
+  assert(bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260815-summary2'),'ProjectFirst actions cache-bust must expose the redesigned summary loader');
   assert(!bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260810-offers2'),'Stale pre-summary ProjectFirst actions cache key must not remain in runtime bootstrap');
   assert(actionsSource.includes("sub.textContent='Drive pa autorizim'"),'Unauthorized permanent Drive must not be labeled as zero files');
 
