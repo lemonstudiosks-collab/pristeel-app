@@ -113,6 +113,79 @@ function installHomeNavigationHooks(){
  }
 }
 
+function intelligenceMode(r){
+ if(source(r)!=='TED')return'direct_bid';
+ return r.category==='raw_material'?'supplier_relation':'winner_outreach';
+}
+function fallbackPriority(r){var s=Number(r&&r.relevance_score)||0;return s>=95?'high':s>=88?'medium':'low';}
+function fallbackFit(r){var s=Number(r&&r.relevance_score)||0;return s>=95?'strong':s>=85?'possible':'weak';}
+function tenderBriefFallback(r,reason){
+ var mode=intelligenceMode(r),w=winner(r),why=Array.isArray(r.match_reasons)?r.match_reasons.filter(Boolean).slice(0,5):[];
+ if(!why.length)why.push(r.category==='raw_material'?'Klasifikuar si lëndë e parë çeliku.':'Klasifikuar si punë/strukturë çeliku.');
+ var checks=[],next='',angle=null;
+ if(mode==='direct_bid'){
+  checks=['Hap njoftimin zyrtar dhe verifiko objektin teknik.','Verifiko afatin, kriteret e kualifikimit dhe dokumentet e kërkuara.','Konfirmo sasitë/specifikimet para krijimit të projektit ose ofertimit.'];
+  next='Hap burimin zyrtar, verifiko scope dhe afatin; krijo projekt vetëm pas kontrollit njerëzor.';
+ }else if(mode==='winner_outreach'){
+  checks=['Verifiko scope-in e kontratës së dhënë dhe rolin real të fituesit.','Kontrollo nëse fituesi ka nevojë për kapacitet fabrikimi, galvanizim, dokumentacion ose logjistikë.','Verifiko kontaktin para çdo outreach.'];
+  next=w.email?'Shqyrto fituesin dhe përgatit një outreach të personalizuar; mos e dërgo automatikisht.':'Hap TED/web dhe gjej kontakt të verifikuar para outreach.';
+  angle='Poziciono PRISTEEL si partner prodhimi/subcontracting për paketën e çelikut, jo si ofertues për kontratën tashmë të dhënë.';
+ }else{
+  checks=['Verifiko çfarë produkti çeliku është furnizuar dhe volumin kur është publik.','Kontrollo profilin e fituesit: prodhues, trader apo distributor.','Verifiko kontaktin dhe mundësinë reale për sourcing/partneritet.'];
+  next=w.email?'Shqyrto kompaninë fituese si kontakt potencial për sourcing/partneritet dhe përgatit outreach vetëm nëse ka kuptim.':'Hap TED/web dhe verifiko kompaninë e fituesit para çdo kontakti.';
+  angle='Trajtoje si lead furnizimi/partneriteti për lëndë të parë, jo si mundësi për të ofertuar në kontratën e përfunduar.';
+ }
+ return{priority:fallbackPriority(r),fit:fallbackFit(r),business_mode:mode,summary:mode==='direct_bid'?'Mundësi direkte për shqyrtim nga PRISTEEL bazuar në filtrin ekzistues të relevancës.':mode==='winner_outreach'?'Kontratë TED e dhënë me fitues të identifikuar; vlera për PRISTEEL është outreach te fituesi, jo ofertimi në tender.':'Kontratë TED e dhënë për lëndë çeliku; fituesi mund të jetë relevant për sourcing ose partneritet.',why_relevant:why,checks:checks,next_action:next,outreach_angle:angle,engine:'rules',fallback_reason:reason||null};
+}
+function tenderBriefContext(r){
+ var w=winner(r);
+ return{source:source(r),phase:phase(r),title:r.title||'',authority:r.authority||'',procurement_no:r.procurement_no||'',publication_no:r.publication_no||'',category:r.category||'',relevance_score:Number(r.relevance_score)||0,match_reasons:Array.isArray(r.match_reasons)?r.match_reasons:[],published_date:r.published_date||null,deadline:r.deadline||null,code:r.fpp||null,code_description:r.fpp_description||null,estimated_value:r.estimated_value==null?null:r.estimated_value,currency:r.currency||null,winner:source(r)==='TED'?{name:w.name||null,country:w.country||null,city:w.city||null,email:w.email||null,website:w.website||null}:null};
+}
+function tenderBriefMessages(r){
+ var mode=intelligenceMode(r),ctx=tenderBriefContext(r);
+ var system='You are PRISTEEL Tender Intelligence. PRISTEEL evaluates steel raw-material supply and fabricated steel-structure work. Use only the supplied tender data. Never invent scope, quantities, contract value, certifications, contacts, deadlines or buyer requirements. If information is unknown, say it is unknown. TED award notices are already awarded: never recommend bidding on them; assess only winner outreach or supplier relationship. KRPP/APP opportunity notices may be assessed for direct bid, but final review and project creation remain human decisions. Return only valid JSON.';
+ var user={task:'Assess this record for practical PRISTEEL follow-up.',business_mode_must_be:mode,tender:ctx,required_json:{priority:'high|medium|low',fit:'strong|possible|weak',business_mode:mode,summary:'short factual summary',why_relevant:['2-5 factual reasons'],checks:['2-5 things a person must verify'],next_action:'one controlled next action',outreach_angle:mode==='direct_bid'?null:'short angle or null'}};
+ return[{role:'system',content:system},{role:'user',content:JSON.stringify(user)}];
+}
+function cleanList(v,max){return(Array.isArray(v)?v:[]).map(function(x){return String(x||'').trim();}).filter(Boolean).slice(0,max||5);}
+function normalizeTenderBrief(raw,r){
+ var fb=tenderBriefFallback(r),x=raw&&typeof raw==='object'?raw:{};
+ var priority=['high','medium','low'].indexOf(String(x.priority||''))>-1?String(x.priority):fb.priority;
+ var fit=['strong','possible','weak'].indexOf(String(x.fit||''))>-1?String(x.fit):fb.fit;
+ var why=cleanList(x.why_relevant,5),checks=cleanList(x.checks,5);
+ return{priority:priority,fit:fit,business_mode:intelligenceMode(r),summary:String(x.summary||fb.summary).trim().slice(0,1200),why_relevant:why.length?why:fb.why_relevant,checks:checks.length?checks:fb.checks,next_action:String(x.next_action||fb.next_action).trim().slice(0,900),outreach_angle:intelligenceMode(r)==='direct_bid'?null:String(x.outreach_angle||fb.outreach_angle||'').trim().slice(0,900)||null,engine:'ai',fallback_reason:null};
+}
+async function generateTenderBrief(r){
+ var ai=window.PSTAI;
+ if(!ai||typeof ai.requestJson!=='function'||typeof ai.hasApiKey!=='function'||!ai.hasApiKey())return tenderBriefFallback(r,'AI API Key nuk është konfiguruar; po përdoret analiza operative me rregulla.');
+ try{
+  var raw=await ai.requestJson({messages:tenderBriefMessages(r),temperature:0,max_tokens:1200,response_format:{type:'json_object'}});
+  return normalizeTenderBrief(raw,r);
+ }catch(e){return tenderBriefFallback(r,'AI nuk ishte i disponueshëm ('+String((e&&e.pstAiCode)||'error')+'); po përdoret analiza operative me rregulla.');}
+}
+function intelligenceLabel(v){return({high:'Prioritet i lartë',medium:'Prioritet mesatar',low:'Prioritet i ulët',strong:'Përshtatje e fortë',possible:'Përshtatje e mundshme',weak:'Përshtatje e dobët',direct_bid:'Direct bid',winner_outreach:'Winner outreach',supplier_relation:'Supplier relation'})[v]||v;}
+function briefList(title,items){items=cleanList(items,6);return items.length?'<div style="margin-top:14px"><div style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#6F7780;margin-bottom:6px">'+esc(title)+'</div><ul style="margin:0;padding-left:18px;color:#30363B;font-size:12px;line-height:1.6">'+items.map(function(x){return'<li>'+esc(x)+'</li>';}).join('')+'</ul></div>':'';}
+function ensureIntelligenceModal(){
+ var old=document.getElementById('pst-ti-backdrop');if(old)return old;
+ var b=document.createElement('div');b.id='pst-ti-backdrop';b.style.cssText='position:fixed;inset:0;z-index:10080;background:rgba(28,32,35,.46);display:none;align-items:center;justify-content:center;padding:18px';
+ b.innerHTML='<div id="pst-ti-card" style="width:min(720px,96vw);max-height:88vh;overflow:auto;background:#fff;border-radius:14px;border:1px solid #D9DEE2;box-shadow:0 20px 70px rgba(0,0,0,.18);padding:20px"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px"><div><div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8A4E24">Tender Intelligence</div><div id="pst-ti-title" style="font-size:17px;font-weight:750;color:#252A2E;margin-top:3px"></div><div id="pst-ti-meta" style="font-size:10.5px;color:#7A8187;margin-top:4px"></div></div><button type="button" onclick="pstTenderIntelligenceClose()" style="border:1px solid #D9DEE2;background:#fff;border-radius:8px;padding:6px 9px;cursor:pointer">Mbyll</button></div><div id="pst-ti-body" style="margin-top:16px"></div><div style="margin-top:16px;padding-top:10px;border-top:1px solid #ECEFF1;font-size:9.5px;color:#8A9095">Read-only decision support · nuk krijon projekt, nuk ndryshon status dhe nuk dërgon email.</div></div>';
+ b.addEventListener('click',function(e){if(e.target===b)window.pstTenderIntelligenceClose();});document.body.appendChild(b);return b;
+}
+function renderTenderBrief(r,brief){
+ var b=ensureIntelligenceModal(),w=winner(r),body=document.getElementById('pst-ti-body');
+ document.getElementById('pst-ti-title').textContent=r.title||'Tender';
+ document.getElementById('pst-ti-meta').textContent=sourceLabel(r)+(w.name?' · '+w.name:'')+' · Relevanca '+String(r.relevance_score||0)+'%';
+ var engine=brief.engine==='ai'?'AI':'Rregulla operative';
+ body.innerHTML='<div style="display:flex;gap:7px;flex-wrap:wrap"><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.priority))+'</span><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.fit))+'</span><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.business_mode))+'</span><span class="pst-kek-chip">'+esc(engine)+'</span></div><div style="font-size:12.5px;line-height:1.65;color:#2C3237;margin-top:14px">'+esc(brief.summary)+'</div>'+briefList('Pse është relevant',brief.why_relevant)+briefList('Çfarë duhet verifikuar',brief.checks)+'<div style="margin-top:14px;padding:11px 12px;border-radius:9px;background:#F6F8F9;font-size:12px;line-height:1.55;color:#30363B"><b>Hapi i rekomanduar:</b> '+esc(brief.next_action)+'</div>'+(brief.outreach_angle?'<div style="margin-top:10px;padding:11px 12px;border-radius:9px;background:#F8F5F2;font-size:12px;line-height:1.55;color:#4B4038"><b>Angle:</b> '+esc(brief.outreach_angle)+'</div>':'')+(brief.fallback_reason?'<div style="font-size:9.5px;color:#8B6B4E;margin-top:10px">'+esc(brief.fallback_reason)+'</div>':'');
+ b.style.display='flex';
+}
+window.pstTenderIntelligenceClose=function(){var b=document.getElementById('pst-ti-backdrop');if(b)b.style.display='none';};
+window.pstTenderIntelligence=async function(id){
+ var r=bizRows.find(function(x){return String(x.id)===String(id);});if(!r||!isOperationalFocus(r))return null;
+ var b=ensureIntelligenceModal();document.getElementById('pst-ti-title').textContent=r.title||'Tender';document.getElementById('pst-ti-meta').textContent=sourceLabel(r)+' · Relevanca '+String(r.relevance_score||0)+'%';document.getElementById('pst-ti-body').innerHTML='<div style="font-size:12px;color:#6F7780">Duke përgatitur brief-in…</div>';b.style.display='flex';
+ var brief=await generateTenderBrief(r);renderTenderBrief(r,brief);return brief;
+};
+
 function setupShell(){
  var page=document.getElementById('page-kek-tenders');if(!page)return;
  var sub=page.querySelector('.pst-kek-sub');
@@ -162,6 +235,7 @@ function tedActions(r){
   if(r.status!=='ignored')a+='<button class="pst-kek-btn danger" onclick="pstTenderBizSetStatus(\''+esc(r.id)+'\',\'ignored\')">Anashkalo</button>';
   return a;
  }
+ if(isOperationalFocus(r))a+='<button class="pst-kek-btn" onclick="pstTenderIntelligence(\''+esc(r.id)+'\')">AI Brief</button>';
  if(w.email)a+='<button class="pst-kek-btn" onclick="pstTenderBizEmail(\''+esc(r.id)+'\')">Email ↗</button>';
  if(safeHttp(w.website))a+='<button class="pst-kek-btn" onclick="pstTenderBizWebsite(\''+esc(r.id)+'\')">Web ↗</button>';
  var st=bizStatus(r);
@@ -175,6 +249,7 @@ function localActions(r){
  var a='';
  if((r.detail_url||r.source_url))a+='<button class="pst-kek-btn" onclick="pstKekOpenSource(\''+esc(r.id)+'\')">'+sourceButton(r)+'</button>';
  if(r.status==='promoted'&&r.project_id)return a+'<button class="pst-kek-btn primary" onclick="pstKekOpenProject(\''+esc(r.project_id)+'\')">Hap projektin</button>';
+ if(isOperationalFocus(r))a+='<button class="pst-kek-btn" onclick="pstTenderIntelligence(\''+esc(r.id)+'\')">AI Brief</button>';
  a+='<button class="pst-kek-btn" onclick="pstTenderBizSetStatus(\''+esc(r.id)+'\',\'review\')">Shqyrto</button>';
  if(phase(r)==='opportunity')a+='<button class="pst-kek-btn primary" onclick="pstTenderBizPromote(\''+esc(r.id)+'\')">Krijo projekt</button>';
  a+='<button class="pst-kek-btn danger" onclick="pstTenderBizSetStatus(\''+esc(r.id)+'\',\'ignored\')">Anashkalo</button>';
@@ -241,5 +316,5 @@ function install(){
 [400,900,1600,2800,4800,8000].forEach(function(ms){setTimeout(function(){install();installHomeNavigationHooks();},ms);});
 [700,1800,4200,8000].forEach(function(ms){setTimeout(function(){scheduleHomeSignal(ms===700);},ms);});
 window.addEventListener('pst:modules-ready',function(){installHomeNavigationHooks();afterHomeRender(true);});
-window.pstTenderBusinessFlow={source:source,phase:phase,bizStatus:bizStatus,isOperationalFocus:isOperationalFocus,phaseMatch:phaseMatch,winner:winner,operationalRows:operationalRows,homeSignalSummary:homeSignalSummary,renderHomeSignal:renderHomeSignal,refreshHomeSignal:refreshHomeSignal};
+window.pstTenderBusinessFlow={source:source,phase:phase,bizStatus:bizStatus,isOperationalFocus:isOperationalFocus,phaseMatch:phaseMatch,winner:winner,operationalRows:operationalRows,homeSignalSummary:homeSignalSummary,renderHomeSignal:renderHomeSignal,refreshHomeSignal:refreshHomeSignal,intelligenceMode:intelligenceMode,tenderBriefFallback:tenderBriefFallback,tenderBriefMessages:tenderBriefMessages,normalizeTenderBrief:normalizeTenderBrief,generateTenderBrief:generateTenderBrief};
 })();
