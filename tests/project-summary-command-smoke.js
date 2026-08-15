@@ -11,8 +11,11 @@ const {JSDOM}=require('jsdom');
   assert(source.includes('Përmbledh projektin'),'Visible project summary command label is missing');
   assert(source.includes('PSTProjectIntakeContinuityV1'),'Summary command must reconcile confirmed project Gmail before analysis');
   assert(source.includes('pstAnalyzeProject'),'Summary command must reuse existing Project Intelligence');
-  assert(actionsSource.includes('pristeel-project-summary-command-v1.js'),'Current ProjectFirst actions must load the summary command');
-  assert(bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260815-summary1'),'ProjectFirst actions cache-bust must expose the current summary loader');
+  assert(source.includes('Vlera e kontratës'),'Summary must prioritize the commercial contract value');
+  assert(source.includes('Detaje operative'),'Technical counters must be demoted to collapsible operational details');
+  assert(source.includes('Brief i projektit'),'Project Intelligence must present itself as a discussion brief');
+  assert(actionsSource.includes('pristeel-project-summary-command-v1.js?v=20260815-brief2'),'Current ProjectFirst actions must load the redesigned summary command');
+  assert(bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260815-summary2'),'ProjectFirst actions cache-bust must expose the redesigned summary loader');
   assert(!bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260810-offers2'),'Stale pre-summary ProjectFirst actions cache key must not remain in runtime bootstrap');
   assert(actionsSource.includes("sub.textContent='Drive pa autorizim'"),'Unauthorized permanent Drive must not be labeled as zero files');
 
@@ -46,8 +49,8 @@ const {JSDOM}=require('jsdom');
   w.PSTProjectDataIntegrity={load:async pid=>{integrityLoads++;assert.strictEqual(pid,'p1');return token?fresh:base;}};
   w.PSTProjectFirstV2={render:()=>{renders++;}};
   w.supaFetch=async path=>path.startsWith('tasks?project_id=eq.p1')?[{id:'t1',status:'open'},{id:'t2',status:'done'}]:[];
-  w.pstProjectAnalysisLoad=async pid=>{analysisLoads++;const host=w.document.getElementById('pai-body-'+pid);if(host)host.textContent='Analiza e fundit';};
-  w.pstAnalyzeProject=async pid=>{analysisRuns++;const host=w.document.getElementById('pai-body-'+pid);if(host)host.textContent='Përmbledhja ekzekutive e freskët';};
+  w.pstProjectAnalysisLoad=async pid=>{analysisLoads++;const host=w.document.getElementById('pai-body-'+pid);if(host)host.innerHTML='<div class="pai-top"><div class="pai-card"><div class="pai-label">Përmbledhja ekzekutive</div><div class="pai-summary">Analiza e fundit</div></div><div class="pai-card pai-decision">Vendim</div></div>';};
+  w.pstAnalyzeProject=async pid=>{analysisRuns++;const host=w.document.getElementById('pai-body-'+pid);if(host)host.innerHTML='<div class="pai-top"><div class="pai-card"><div class="pai-label">Përmbledhja ekzekutive</div><div class="pai-summary">Përmbledhja ekzekutive e freskët</div></div><div class="pai-card pai-decision">Vendim</div></div>';};
   w.pstProjectAnalysisHistory=()=>{};
   w.pstProjectAnalysisCreateTasks=()=>{};
   w.pstOpenProjectWorkspace=()=>true;
@@ -76,11 +79,28 @@ const {JSDOM}=require('jsdom');
   assert(renders>=1,'Summary sync must refresh ProjectFirst after data changes');
   assert(analysisLoads>=1,'Summary must load existing Project Intelligence history');
   assert.strictEqual(analysisRuns,1,'Summary click must run one fresh Project Intelligence analysis');
-  const snap=w.document.getElementById('pst-ps-snapshot').textContent;
-  assert(snap.includes('4'),'Fresh snapshot must reflect reconciled project data');
-  assert(snap.includes('2 në Drive'),'Fresh snapshot must reflect real Drive rows');
-  assert(snap.includes('RFQ të rikuperuara tani')&&snap.includes('2'),'Snapshot must expose RFQ recovery from the confirmed Gmail thread');
-  assert(w.document.getElementById('pai-body-p1').textContent.includes('Përmbledhja ekzekutive'),'Existing Project Intelligence output must render in the new project summary modal');
+
+  const context=w.document.querySelector('.pst-ps-context');
+  assert(context,'Summary must open with one compact project context row');
+  assert(context.textContent.includes('Client AG')&&context.textContent.includes('supplier_selection'),'Context row must retain client and lifecycle information without metric cards');
+  const contract=w.document.querySelector('.pst-ps-contract');
+  assert(contract,'Contract value must be the only prominent commercial card above the brief');
+  assert(contract.textContent.includes('1.200,00 EUR'),'Invoice value must be used transparently when no deal/offer contract value is registered');
+  assert(contract.textContent.includes('faturimi i regjistruar'),'Derived contract value must expose its source');
+
+  const ops=w.document.querySelector('#pst-ps-ops-host .pst-ps-ops');
+  assert(ops,'Operational counters must be moved below Project Intelligence');
+  assert.strictEqual(ops.open,false,'Operational details must be collapsed by default');
+  assert(ops.textContent.includes('4 emaila')&&ops.textContent.includes('2 skedarë'),'Collapsed details must preserve source coverage');
+  assert(ops.textContent.includes('2 në Drive'),'Operational details must preserve real Drive rows');
+  assert(ops.textContent.includes('RFQ të rikuperuara tani')&&ops.textContent.includes('2'),'Operational details must preserve RFQ recovery evidence');
+
+  const ai=w.document.querySelector('.pst-ps-ai');
+  assert(ai&&ai.textContent.includes('Brief i projektit'),'Main content must be framed as the discussion brief');
+  assert(w.document.getElementById('pai-body-p1').textContent.includes('Përmbledhja ekzekutive'),'Existing Project Intelligence output must render in the redesigned brief');
+  const css=w.document.getElementById('pst-project-summary-command-css').textContent;
+  assert(css.includes('width:min(1450px,99vw)'),'Project brief must use materially more horizontal page space');
+  assert(css.includes('.pst-ps-ai .pai-top>.pai-card:first-child{border:0'),'Executive summary must not be trapped in a bordered card');
 
   dom.window.close();
   console.log('Project summary command smoke test passed.');
