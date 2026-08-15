@@ -19,7 +19,7 @@ assert(source.includes('mos e quaj projektin te perfunduar'), 'AI prompt must re
 assert(source.includes('Mos e quaj diferencen fitim/marzh'), 'AI prompt must guard incomplete margin calculations');
 assert(source.includes("Pergjigju ne te njejten gjuhe si pyetja"), 'conversation should answer in the user language');
 assert(source.includes('allowed[str(e.source_id)]'), 'returned evidence must be filtered against real allowed sources');
-assert(loader.includes('pristeel-project-intelligence-conversation-v1.js?v=20260815-1'), 'current Project-first loader must load the conversation extension');
+assert(loader.includes('pristeel-project-intelligence-conversation-v1.js?v=20260815-commercial1'), 'current Project-first loader must load the commercial-grounded conversation extension');
 
 const dyn = (manifest.dynamicRuntime || []).find(x => x.module === 'pristeel-project-intelligence-conversation-v1.js');
 assert(dyn, 'conversation extension must be registered as dynamic runtime');
