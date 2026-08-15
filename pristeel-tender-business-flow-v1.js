@@ -95,6 +95,23 @@ function scheduleHomeSignal(force){
  if(homeSignalTimer)clearTimeout(homeSignalTimer);
  homeSignalTimer=setTimeout(function(){refreshHomeSignal(!!force);},80);
 }
+function afterHomeRender(force){
+ setTimeout(function(){refreshHomeSignal(!!force);},220);
+ setTimeout(function(){renderHomeSignal(homeSignalCache);},900);
+ setTimeout(function(){renderHomeSignal(homeSignalCache);},2200);
+}
+function installHomeNavigationHooks(){
+ if(typeof window.pstWorkspaceGo==='function'&&!window.pstWorkspaceGo.__pstTenderHomeSignal){
+  var go=window.pstWorkspaceGo;
+  var wrappedGo=function(key){var result=go.apply(this,arguments);if(key==='home')afterHomeRender(false);return result;};
+  wrappedGo.__pstTenderHomeSignal=true;window.pstWorkspaceGo=wrappedGo;
+ }
+ if(typeof window.pstWsRefreshHome==='function'&&!window.pstWsRefreshHome.__pstTenderHomeSignal){
+  var refresh=window.pstWsRefreshHome;
+  var wrappedRefresh=function(){var result=refresh.apply(this,arguments);afterHomeRender(true);return result;};
+  wrappedRefresh.__pstTenderHomeSignal=true;window.pstWsRefreshHome=wrappedRefresh;
+ }
+}
 
 function setupShell(){
  var page=document.getElementById('page-kek-tenders');if(!page)return;
@@ -221,16 +238,8 @@ function install(){
  var page=document.getElementById('page-kek-tenders');if(page&&page.style.display!=='none')setTimeout(load,50);
  return true;
 }
-[400,900,1600,2800,4800,8000].forEach(function(ms){setTimeout(install,ms);});
+[400,900,1600,2800,4800,8000].forEach(function(ms){setTimeout(function(){install();installHomeNavigationHooks();},ms);});
 [700,1800,4200,8000].forEach(function(ms){setTimeout(function(){scheduleHomeSignal(ms===700);},ms);});
-if(typeof MutationObserver!=='undefined'){
- var homeObserver=new MutationObserver(function(){
-  var bar=document.getElementById('pst-ws-alertbar');
-  if(bar&&!document.getElementById('pst-tender-home-signal'))scheduleHomeSignal(false);
- });
- if(document.body)homeObserver.observe(document.body,{childList:true,subtree:true});
- else document.addEventListener('DOMContentLoaded',function(){homeObserver.observe(document.body,{childList:true,subtree:true});});
-}
-window.addEventListener('pst:modules-ready',function(){scheduleHomeSignal(true);});
+window.addEventListener('pst:modules-ready',function(){installHomeNavigationHooks();afterHomeRender(true);});
 window.pstTenderBusinessFlow={source:source,phase:phase,bizStatus:bizStatus,isOperationalFocus:isOperationalFocus,phaseMatch:phaseMatch,winner:winner,operationalRows:operationalRows,homeSignalSummary:homeSignalSummary,renderHomeSignal:renderHomeSignal,refreshHomeSignal:refreshHomeSignal};
 })();
