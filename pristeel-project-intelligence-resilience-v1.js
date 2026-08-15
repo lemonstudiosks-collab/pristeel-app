@@ -2,7 +2,7 @@
  * Final additive guard for whole-project analysis.
  * - Filters completed/archived tasks from the active-task view used during analysis.
  * - Corrects the Project Summary "Detyra hapur" metric from live task status.
- * - On AI 429/TPM/rate-limit, reuses the existing rule-based Project Intelligence analysis instead of leaving an empty result.
+ * - On recoverable AI generation failures (429/TPM or invalid structured JSON generation), reuses the existing rule-based Project Intelligence analysis instead of leaving an empty result.
  * - Terminal projects keep historic deadlines without being treated as actively overdue by the local fallback.
  * Does not change the selected AI provider, send email, or auto-change project status.
  */
@@ -23,6 +23,8 @@ function isOpenTask(t){
 }
 function terminalStatus(v){return /^(realizuar|mbyllur|arkivuar|archived|closed|complete|completed|done)$/.test(norm(v));}
 function isRateLimitText(v){return /rate\s*limit|quota|tokens?\s+per\s+minute|\bTPM\b|\b429\b|too\s+many\s+requests|try\s+again\s+in/i.test(str(v));}
+function isGenerationFailureText(v){return /failed[_\s-]*generation|failed\s+to\s+validate\s+json|invalid\s+(?:structured\s+)?json|malformed\s+json|json\s+(?:schema\s+)?validation\s+(?:failed|error)|could\s+not\s+(?:parse|validate).*json|unable\s+to\s+(?:parse|validate).*json/i.test(str(v));}
+function recoverableFailureKind(v){if(isRateLimitText(v))return'rate_limit';if(isGenerationFailureText(v))return'generation';return'';}
 function stateText(pid){var e=document.getElementById('pai-state-'+pid);return e?str(e.textContent):'';}
 function setState(pid,text,color){var e=document.getElementById('pai-state-'+pid);if(!e)return;e.textContent=text;e.style.color=color||'var(--text3)';}
 function activeId(){var d=window.__pstIntegrityLastData;return str(window.__pstCurrentProjectId||window._curProjId||(d&&d.project&&d.project.id)||'');}
@@ -66,16 +68,16 @@ function cleanTerminalAnalysis(a){
   return{analysis:a,changed:changed,deadlinePenaltyRemoved:removed};
 }
 
-async function postprocessTerminal(pid,rateLimited){
+async function postprocessTerminal(pid,fallbackKind){
   var p=(await safe('projects?id=eq.'+enc(pid)+'&select=id,status,pipeline_stage,deadline&limit=1'))[0];
   if(!p||!terminalStatus(p.status))return false;
   var rec=(await safe('project_analyses?project_id=eq.'+enc(pid)+'&order=created_at.desc&limit=1'))[0];
   if(!rec||!rec.id||!rec.analysis)return false;
   var cloned;try{cloned=JSON.parse(JSON.stringify(rec.analysis));}catch(e){return false;}
   var out=cleanTerminalAnalysis(cloned);
-  if(!out.changed&&!rateLimited)return false;
+  if(!out.changed&&!fallbackKind)return false;
   var payload={analysis:out.analysis};
-  if(rateLimited){payload.engine='rules_rate_limit';payload.model=null;}
+  if(fallbackKind){payload.engine=fallbackKind==='rate_limit'?'rules_rate_limit':'rules_generation_fallback';payload.model=null;}
   await window.supaFetch('project_analyses?id=eq.'+enc(rec.id),'PATCH',payload);
   return true;
 }
@@ -98,20 +100,20 @@ function wrapAnalyze(){
   async function wrapped(pid){
     pid=str(pid||activeId());var self=this,args=arguments;
     return withOpenTaskReads(pid,async function(){
-      var result=await original.apply(self,args),rate=isRateLimitText(stateText(pid));
-      if(rate){
+      var result=await original.apply(self,args),failureKind=recoverableFailureKind(stateText(pid));
+      if(failureKind){
         var ai=window.PSTAI||{},oldHas=ai.hasApiKey;
         if(typeof oldHas==='function'){
-          setState(pid,'Kufiri i përkohshëm i AI u arrit. Po krijohet analiza operative nga të dhënat e platformës…','#9B6A22');
+          setState(pid,failureKind==='rate_limit'?'Kufiri i përkohshëm i AI u arrit. Po krijohet analiza operative nga të dhënat e platformës…':'Përgjigjja AI nuk kaloi validimin e strukturuar. Po krijohet analiza operative nga të dhënat e platformës…','#9B6A22');
           ai.hasApiKey=function(){return false;};
           try{result=await original.apply(self,args);}
           finally{ai.hasApiKey=oldHas;}
-          try{await postprocessTerminal(pid,true);}catch(e){if(window.console&&console.warn)console.warn('Project Intelligence terminal cleanup:',e);}
+          try{await postprocessTerminal(pid,failureKind);}catch(e){if(window.console&&console.warn)console.warn('Project Intelligence terminal cleanup:',e);}
           if(typeof window.pstProjectAnalysisLoad==='function')try{await window.pstProjectAnalysisLoad(pid);}catch(e){}
-          setState(pid,'Analiza operative u krijua. AI arriti kufirin e përkohshëm; përdor Rianalizo më vonë për analizë semantike.','#2F7657');
+          setState(pid,failureKind==='rate_limit'?'Analiza operative u krijua. AI arriti kufirin e përkohshëm; përdor Rianalizo më vonë për analizë semantike.':'Analiza operative u krijua. Përgjigjja AI nuk kaloi validimin JSON; përdor Rianalizo më vonë për analizë semantike.','#2F7657');
         }
       }else{
-        try{var changed=await postprocessTerminal(pid,false);if(changed&&typeof window.pstProjectAnalysisLoad==='function')await window.pstProjectAnalysisLoad(pid);}catch(e){if(window.console&&console.warn)console.warn('Project Intelligence terminal cleanup:',e);}
+        try{var changed=await postprocessTerminal(pid,'');if(changed&&typeof window.pstProjectAnalysisLoad==='function')await window.pstProjectAnalysisLoad(pid);}catch(e){if(window.console&&console.warn)console.warn('Project Intelligence terminal cleanup:',e);}
       }
       try{await refreshOpenTaskMetric(pid);}catch(e){}
       return result;
@@ -126,5 +128,5 @@ document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.t
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 install();setTimeout(install,300);setTimeout(install,1000);
 
-window.PSTProjectIntelligenceResilienceV1={install:install,refreshOpenTaskMetric:refreshOpenTaskMetric,_test:{isOpenTask:isOpenTask,terminalStatus:terminalStatus,isRateLimitText:isRateLimitText,cleanTerminalAnalysis:cleanTerminalAnalysis,taskQueryFor:taskQueryFor}};
+window.PSTProjectIntelligenceResilienceV1={install:install,refreshOpenTaskMetric:refreshOpenTaskMetric,_test:{isOpenTask:isOpenTask,terminalStatus:terminalStatus,isRateLimitText:isRateLimitText,isGenerationFailureText:isGenerationFailureText,recoverableFailureKind:recoverableFailureKind,cleanTerminalAnalysis:cleanTerminalAnalysis,taskQueryFor:taskQueryFor}};
 })();
