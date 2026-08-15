@@ -86,13 +86,15 @@ const expected = {
     { file: 'pristeel-groq-rate-limit.js', count: 10 },
     { file: 'pristeel-procurement.html', count: 5 },
     { file: 'pristeel-project-analysis.js', count: 2 },
-    { file: 'pristeel-project-intelligence-resilience-v1.js', count: 1 }
+    { file: 'pristeel-project-intelligence-resilience-v1.js', count: 1 },
+    { file: 'pristeel-tender-business-flow-v1.js', count: 1 }
   ],
   pstai_error_code: [
     { file: 'pristeel-gmail-audit.js', count: 1 },
     { file: 'pristeel-groq-rate-limit.js', count: 1 },
     { file: 'pristeel-procurement.html', count: 3 },
-    { file: 'pristeel-project-analysis.js', count: 1 }
+    { file: 'pristeel-project-analysis.js', count: 1 },
+    { file: 'pristeel-tender-business-flow-v1.js', count: 1 }
   ],
   fetch_monkey_patch: [
     { file: 'pristeel-drive-intelligence.js', count: 1 }
