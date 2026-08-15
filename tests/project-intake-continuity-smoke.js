@@ -4,15 +4,18 @@ const {JSDOM}=require('jsdom');
 
 (async()=>{
   const source=fs.readFileSync('pristeel-project-intake-continuity-v1.js','utf8');
+  const gateSource=fs.readFileSync('pristeel-linked-gmail-auth-gate-v1.js','utf8');
   assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source),'Intake continuity must not poll or globally observe');
   assert(!/\/send\b|messages\/send|drafts\/send/.test(source),'Intake continuity must never send Gmail messages');
+  assert(!/PSTEmail\.auth\s*\(|\bP\.auth\s*\(/.test(source),'Intake continuity must never trigger interactive Gmail OAuth itself');
   assert(source.includes("owners.length!==1||String(owners[0])!==String(projectId)"),'Single-project thread ownership guard is missing');
+  assert(gateSource.includes('await C.normalizeProjectThreads(pid,token)'),'OAuth gate must run confirmed-thread continuity after authorization');
 
   const dom=new JSDOM('<!doctype html><html><body></body></html>',{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
   const emails=[{id:'e1',gmail_message_id:'m1',gmail_thread_id:'t1',project_id:'p1',match_method:'gmail-intake-v3',has_attachments:false}];
   const links=[{id:'l1',project_id:'p1',gmail_message_id:'m1',gmail_thread_id:'t1',link_method:'gmail-intake-v3'}];
-  let seq=10,contactSync=0,recoveryCalls=0,gmailThreadReads=0;
+  let seq=10,contactSync=0,recoveryCalls=0,gmailThreadReads=0,authorizeCalls=0,workspaceToken='workspace-token';
 
   w.PSTProjectDataIntegrity={
     load:async()=>({
@@ -27,6 +30,11 @@ const {JSDOM}=require('jsdom');
       ]
     })
   };
+  w.PSTGoogleWorkspaceAuth={
+    gmailScope:'gmail.readonly',driveScope:'drive',
+    cachedToken:()=>workspaceToken,
+    authorizeForIntake:async()=>{authorizeCalls++;workspaceToken='workspace-token';return workspaceToken;}
+  };
   function ext(v){const m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
   function list(v){return String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/g)||[];}
   function msg(id,from,to,attachment){
@@ -39,7 +47,6 @@ const {JSDOM}=require('jsdom');
   w.PSTEmail={
     norm:ext,emails:list,isInternal:e=>['sales@prissteel.com','arianit.vllahiu@prissteel.com'].includes(String(e||'').toLowerCase()),
     gmailUrl:t=>'https://mail.google.test/'+t,
-    auth:async()=> 'token',
     gmail:async path=>{if(path.startsWith('/threads/t1?format=full')){gmailThreadReads++;return thread;}throw new Error('Unexpected Gmail path '+path);}
   };
   w.pstSyncProjectContacts=async()=>{contactSync++;};
@@ -70,6 +77,7 @@ const {JSDOM}=require('jsdom');
   };
 
   w.eval(source);
+  w.eval(gateSource);
 
   const clean=await w.PSTProjectDataIntegrity.load('p1');
   assert.deepStrictEqual(Array.from(clean.inboxDocs,x=>x.id),['inbox-real-file'],'Email-only offers_inbox rows must not appear as files');
@@ -79,7 +87,7 @@ const {JSDOM}=require('jsdom');
   await w.pstRecoverLinkedProjectGmail('p1');
   assert.strictEqual(recoveryCalls,1,'Original linked-Gmail recovery must still open after continuity repair');
   assert.strictEqual(contactSync,1,'Project contacts must refresh after thread continuity repair');
-  assert.strictEqual(gmailThreadReads,1,'Confirmed thread must be read exactly once during recovery');
+  assert.strictEqual(gmailThreadReads,1,'Confirmed thread must be read exactly once during authenticated recovery');
   const first=emails.find(x=>x.gmail_message_id==='m1');
   const second=emails.find(x=>x.gmail_message_id==='m2');
   assert.strictEqual(first.has_attachments,true,'Existing linked email must receive the real attachment flag from full Gmail payload');
@@ -87,9 +95,22 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(second.match_method,'confirmed-thread-recovery');
   assert(links.some(x=>x.gmail_message_id==='m2'&&x.project_id==='p1'),'Recovered message must receive an explicit project_email_link');
 
+  workspaceToken='';
+  const beforeAuthReads=gmailThreadReads,beforeAuthRecovery=recoveryCalls;
+  const gatedResult=w.pstRecoverLinkedProjectGmail('p1');
+  assert.strictEqual(gatedResult,false,'Missing browser token must stop at the explicit OAuth gate');
+  assert(w.document.getElementById('pst-linked-gmail-auth-gate'),'OAuth gate must be visible when no cached Gmail+Drive token exists');
+  assert.strictEqual(gmailThreadReads,beforeAuthReads,'Continuity must not read Gmail before explicit authorization');
+  assert.strictEqual(recoveryCalls,beforeAuthRecovery,'Attachment recovery must not run before explicit authorization');
+  w.document.getElementById('pst-linked-gmail-auth-run').click();
+  await new Promise(r=>setTimeout(r,30));
+  assert.strictEqual(authorizeCalls,1,'Explicit OAuth button must authorize exactly once');
+  assert(gmailThreadReads>beforeAuthReads,'Continuity must resume after explicit authorization');
+  assert(recoveryCalls>beforeAuthRecovery,'Attachment recovery must resume after explicit authorization');
+
   links.push({id:'mixed',project_id:'p2',gmail_message_id:'other',gmail_thread_id:'t1',link_method:'manual'});
   const before=emails.length,readsBefore=gmailThreadReads;
-  const blocked=await w.PSTProjectIntakeContinuityV1._test.normalizeThread('p1','t1','token');
+  const blocked=await w.PSTProjectIntakeContinuityV1._test.normalizeThread('p1','t1','workspace-token');
   assert.strictEqual(blocked.blocked,true,'Mixed-project thread must be blocked');
   assert.strictEqual(emails.length,before,'Mixed-project thread must not write new email relations');
   assert.strictEqual(gmailThreadReads,readsBefore,'Mixed-project ownership must be checked before Gmail normalization');
