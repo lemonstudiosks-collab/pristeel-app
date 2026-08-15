@@ -32,7 +32,7 @@ function loadHistorySync(done){
   var existing=document.querySelector('script[data-pst-rfq-history-native]');
   if(existing){if(done)existing.addEventListener('load',function(){done(window.PSTRfqGmailHistorySyncV2);},{once:true});return;}
   var s=document.createElement('script');
-  s.src='pristeel-rfq-gmail-history-sync-v1.js?v=20260810-native2';
+  s.src='pristeel-rfq-gmail-history-sync-v1.js?v=20260815-body1';
   s.defer=true;
   s.setAttribute('data-pst-rfq-history-native','1');
   if(done)s.onload=function(){done(window.PSTRfqGmailHistorySyncV2);};
@@ -49,8 +49,7 @@ function loadFinalOfferOutputFix(){
 }
 function installGateCss(){
   if(document.getElementById('pst-rfq-gate-visibility-css'))return;
-  var s=document.createElement('style');
-  s.id='pst-rfq-gate-visibility-css';
+  var s=document.createElement('style');s.id='pst-rfq-gate-visibility-css';
   s.textContent='#pst-pi-body:has(#pst-pf2-rfq-draft) .pf2-gate:has([data-pf2-action="rfq"], [data-prfq-open]){display:none!important}';
   document.head.appendChild(s);
 }
