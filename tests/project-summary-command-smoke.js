@@ -4,11 +4,14 @@ const {JSDOM}=require('jsdom');
 
 (async()=>{
   const source=fs.readFileSync('pristeel-project-summary-command-v1.js','utf8');
+  const actionsSource=fs.readFileSync('pristeel-project-first-actions-v1.js','utf8');
   assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source),'Project summary command must not poll or globally observe');
   assert(!/\/send\b|messages\/send|drafts\/send/.test(source),'Project summary command must never send Gmail messages');
   assert(source.includes('Përmbledh projektin'),'Visible project summary command label is missing');
   assert(source.includes('PSTProjectIntakeContinuityV1'),'Summary command must reconcile confirmed project Gmail before analysis');
   assert(source.includes('pstAnalyzeProject'),'Summary command must reuse existing Project Intelligence');
+  assert(actionsSource.includes('pristeel-project-summary-command-v1.js'),'Current ProjectFirst actions must load the summary command');
+  assert(actionsSource.includes("sub.textContent='Drive pa autorizim'"),'Unauthorized permanent Drive must not be labeled as zero files');
 
   const dom=new JSDOM(`<!doctype html><html><body>
     <div id="page-workspace-project" class="pf2-on">
