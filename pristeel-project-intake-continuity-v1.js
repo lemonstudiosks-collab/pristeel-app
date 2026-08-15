@@ -1,15 +1,14 @@
 /* PRISTEEL project intake continuity v1
- * Repairs confirmed Gmail-thread continuity before project Gmail recovery.
+ * Repairs confirmed Gmail-thread continuity after the explicit Gmail+Drive auth gate.
  * A thread is normalized only when all existing project relations point to one project.
  * Also removes non-file offers_inbox rows from the project Files view.
- * No outbound mail, no automatic cross-project reassignment, no polling.
+ * No outbound mail, no automatic cross-project reassignment, no interactive OAuth, no polling.
  */
 (function(){
 'use strict';
 if(window.__pstProjectIntakeContinuityV1)return;
 window.__pstProjectIntakeContinuityV1=true;
 
-var runCache={};
 function arr(v){return Array.isArray(v)?v:[];}
 function enc(v){return encodeURIComponent(String(v==null?'':v));}
 function uniq(v){var seen={};return arr(v).map(function(x){return String(x||'');}).filter(function(x){if(!x||seen[x])return false;seen[x]=1;return true;});}
@@ -20,6 +19,14 @@ function fileBearing(row){
   if(!row||typeof row!=='object')return false;
   return !!String(row.file_name||row.filename||row.name||row.document_name||row.drive_file_id||row.file_id||row.document_id||row.file_url||row.drive_url||row.webViewLink||row.web_view_link||'').trim()||
     !!(row.file_base64&&String(row.file_base64).length>20);
+}
+function currentGmailToken(){
+  var G=window.PSTGoogleWorkspaceAuth;
+  try{
+    if(G){var scopes=[G.gmailScope].filter(Boolean);if(typeof G.cachedToken==='function')return G.cachedToken(scopes)||'';if(typeof G.currentToken==='function')return G.currentToken(scopes)||'';}
+  }catch(e){}
+  var P=window.PSTEmail;if(P&&P.token&&Date.now()<Number(P.tokenExp||0))return P.token;
+  return'';
 }
 async function safe(path){try{return arr(await window.supaFetch(path));}catch(e){return[];}}
 async function db(path,method,body){return window.supaFetch(path,method,body);}
@@ -52,6 +59,7 @@ async function normalizeThread(projectId,threadId,token){
   var owners=await threadOwners(threadId);
   if(owners.length!==1||String(owners[0])!==String(projectId))return{threadId:threadId,blocked:true,added:0,updated:0,attachments:0};
   var P=window.PSTEmail;if(!P||typeof P.gmail!=='function')throw new Error('Gmail core nuk është gati.');
+  if(!token)return{threadId:threadId,blocked:false,added:0,updated:0,attachments:0,skipped:'auth-required'};
   var thread=await P.gmail('/threads/'+enc(threadId)+'?format=full',token),messages=arr(thread&&thread.messages),existing=await safe('project_emails?gmail_thread_id=eq.'+enc(threadId)+'&select=id,gmail_message_id,project_id,match_method,has_attachments&limit=5000'),by={};
   existing.forEach(function(x){if(x.gmail_message_id)by[String(x.gmail_message_id)]=x;});
   var result={threadId:threadId,blocked:false,added:0,updated:0,attachments:0};
@@ -72,28 +80,18 @@ async function normalizeThread(projectId,threadId,token){
   }
   return result;
 }
-async function normalizeProjectThreads(projectId){
+async function normalizeProjectThreads(projectId,token){
   projectId=String(projectId||'');if(!projectId)return{threads:0,added:0,updated:0,blocked:0,attachments:0};
-  var P=window.PSTEmail;if(!P||typeof P.auth!=='function'||typeof P.gmail!=='function')return{threads:0,added:0,updated:0,blocked:0,attachments:0,skipped:'gmail-not-ready'};
+  var P=window.PSTEmail;if(!P||typeof P.gmail!=='function')return{threads:0,added:0,updated:0,blocked:0,attachments:0,skipped:'gmail-not-ready'};
+  token=token||currentGmailToken();if(!token)return{threads:0,added:0,updated:0,blocked:0,attachments:0,skipped:'auth-required'};
   var rel=await safe('project_email_links?project_id=eq.'+enc(projectId)+'&select=gmail_thread_id&limit=5000'),direct=await safe('project_emails?project_id=eq.'+enc(projectId)+'&select=gmail_thread_id&limit=5000'),threads=uniq(rel.concat(direct).map(function(x){return x.gmail_thread_id;}));
   if(!threads.length)return{threads:0,added:0,updated:0,blocked:0,attachments:0};
-  var token=await P.auth(),sum={threads:threads.length,added:0,updated:0,blocked:0,attachments:0};
+  var sum={threads:threads.length,added:0,updated:0,blocked:0,attachments:0};
   for(var i=0;i<threads.length;i++){
     var r=await normalizeThread(projectId,threads[i],token);sum.added+=r.added;sum.updated+=r.updated;sum.attachments+=r.attachments;if(r.blocked)sum.blocked++;
   }
   if(typeof window.pstSyncProjectContacts==='function')try{await window.pstSyncProjectContacts(projectId);}catch(e){console.warn('PRISTEEL continuity contacts:',e);}
   return sum;
-}
-function normalizeOnce(projectId){
-  var id=String(projectId||''),now=Date.now(),c=runCache[id];
-  if(c&&now-c.at<12000)return c.promise;
-  var promise=normalizeProjectThreads(id).catch(function(e){console.warn('PRISTEEL project intake continuity:',e);return{error:String(e&&e.message||e)};});
-  runCache[id]={at:now,promise:promise};return promise;
-}
-function wrapRecoveryName(name){
-  var base=window[name];if(typeof base!=='function'||base.__pstIntakeContinuity)return false;
-  async function wrapped(projectId){await normalizeOnce(projectId);return base.apply(this,arguments);}
-  wrapped.__pstIntakeContinuity=true;wrapped.__base=base;window[name]=wrapped;return true;
 }
 function wrapIntegrity(){
   var I=window.PSTProjectDataIntegrity;if(!I||typeof I.load!=='function'||I.load.__pstIntakeContinuity)return false;
@@ -106,9 +104,9 @@ function wrapIntegrity(){
   }
   load.__pstIntakeContinuity=true;load.__base=base;I.load=load;return true;
 }
-function install(){wrapIntegrity();wrapRecoveryName('pstRecoverLinkedProjectGmail');wrapRecoveryName('pstCollectProjectGmail');}
+function install(){wrapIntegrity();}
 install();
 document.addEventListener('pst:modules-ready',install,{once:true});
 setTimeout(install,250);setTimeout(install,1200);
-window.PSTProjectIntakeContinuityV1={install:install,normalizeProjectThreads:normalizeProjectThreads,_test:{hasAttachment:hasAttachment,fileBearing:fileBearing,fullMeta:fullMeta,threadOwners:threadOwners,normalizeThread:normalizeThread}};
+window.PSTProjectIntakeContinuityV1={install:install,normalizeProjectThreads:normalizeProjectThreads,_test:{hasAttachment:hasAttachment,fileBearing:fileBearing,currentGmailToken:currentGmailToken,fullMeta:fullMeta,threadOwners:threadOwners,normalizeThread:normalizeThread}};
 })();
