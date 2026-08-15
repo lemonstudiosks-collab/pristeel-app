@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "25c8896e64cd2b5d5f104e4ab634d8a0d611739a",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "1cab2a454f7a3931caa35408fc67a8cbd16358b2"
+    "bootstrapGitBlobSha": "3656282c405ff864cdae0e0f41921208d43e5344"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -75,7 +75,8 @@
         "pristeel-project-first-commercial-v1.js",
         "pristeel-project-first-execution-v1.js",
         "pristeel-project-summary-command-v1.js",
-        "pristeel-project-lifecycle-tracking-v1.js"
+        "pristeel-project-lifecycle-tracking-v1.js",
+        "pristeel-project-intelligence-resilience-v1.js"
       ]
     },
     {
@@ -114,9 +115,10 @@
       "area": "ai",
       "finalOwners": [
         "pristeel-gemini-test-ui-v1.js",
-        "pristeel-groq-gptoss-provider-v1.js"
+        "pristeel-groq-gptoss-provider-v1.js",
+        "pristeel-project-intelligence-resilience-v1.js"
       ],
-      "note": "GPT-OSS provider is dynamically loaded and becomes active only after explicit activation in the browser."
+      "note": "GPT-OSS provider is dynamically loaded and becomes active only after explicit activation in the browser. Project Intelligence resilience is the final project-analysis guard and does not change the selected provider."
     }
   ],
   "compatibilityLayers": [
@@ -205,6 +207,11 @@
       "before": "pristeel-kek-tender-watch-v1.js",
       "after": "pristeel-project-lifecycle-tracking-v1.js",
       "reason": "Project lifecycle tracking is the deliberate final ordered reconciliation layer for modern project list and workspace UX."
+    },
+    {
+      "before": "pristeel-project-lifecycle-tracking-v1.js",
+      "after": "pristeel-project-intelligence-resilience-v1.js",
+      "reason": "Project Intelligence resilience is deliberately last so task-state correction and AI rate-limit fallback wrap the final project workspace behavior without changing lifecycle status."
     }
   ],
   "deprecatedForbidden": [
