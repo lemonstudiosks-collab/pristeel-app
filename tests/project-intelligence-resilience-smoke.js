@@ -17,9 +17,14 @@ const {JSDOM}=require('jsdom');
   let aiAvailable=true,analysisCalls=0,patchPayload=null;
   let failureText='Analiza dështoi: Rate limit reached; TPM limit 8000; try again in 46s.';
   const tasks=[
-    {id:'t1',status:'hapur'},
-    {id:'t2',status:'kryer'},
-    {id:'t3',status:'arkivuar'}
+    {id:'t1',status:'hapur',title:'[AUTO] Pagesë klienti — INV-1',detail:'Klienti duhet të paguajë faturën.',category:'klient',source:'invoice_receivable',due_date:'2026-08-22',priority:'mesatare'},
+    {id:'t2',status:'kryer',title:'Konfirmo dorëzimin'},
+    {id:'t3',status:'arkivuar',title:'Planifiko prodhimin'}
+  ];
+  const emails=[
+    {subject:'Re: Reklamation BE-1',sent_at:'2026-08-14T06:00:00Z',direction:'outgoing',from_email:'sales@prissteel.com',to_emails:['client@example.com'],snippet:'Faleminderit për feedback-un. Kemi analizuar dëmtimin e sipërfaqes.'},
+    {subject:'Reklamation BE-1',sent_at:'2026-08-13T09:26:00Z',direction:'incoming',from_email:'client@example.com',to_emails:['sales@prissteel.com'],snippet:'Reklamation për dëmtim të ngjyrës.'},
+    {subject:'Importverzollung',sent_at:'2026-08-12T12:40:00Z',direction:'incoming',from_email:'zoll@example.com',to_emails:['sales@prissteel.com'],snippet:'Shipment was custom cleared. You may proceed for unloading.'}
   ];
   const latest={id:77,analysis:{
     executive_summary:'Ky është vlerësim operativ me rregulla; analiza semantike kërkon Groq API Key.',
@@ -32,7 +37,8 @@ const {JSDOM}=require('jsdom');
   w.PSTAI={hasApiKey:()=>aiAvailable};
   w.supaFetch=async (path,method,body)=>{
     if(path.startsWith('tasks?'))return tasks;
-    if(path.startsWith('projects?'))return[{id:'p1',status:'realizuar',pipeline_stage:'transport',deadline:'2026-07-24'}];
+    if(path.startsWith('project_emails?'))return emails;
+    if(path.startsWith('projects?'))return[{id:'p1',name:'Project X',client:'Client GmbH',status:'realizuar',pipeline_stage:'transport',deadline:'2026-07-24'}];
     if(path.startsWith('project_analyses?')&&method==='PATCH'){patchPayload=body;return[Object.assign({},latest,body)];}
     if(path.startsWith('project_analyses?'))return[latest];
     return[];
@@ -60,6 +66,7 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(T.recoverableFailureKind("Failed to validate JSON. See failed_generation"),'generation');
   assert.strictEqual(T.recoverableFailureKind('Invalid API key'),'');
   assert.strictEqual(T.terminalStatus('realizuar'),true);
+  assert.strictEqual(T.financeTask(tasks[0]),true);
 
   await w.pstAnalyzeProject('p1');
   assert.strictEqual(analysisCalls,2,'Rate-limit must retry exactly once through the existing local rules engine');
@@ -67,10 +74,18 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(w.PSTAI.hasApiKey(),true,'AI availability function must be restored after scoped fallback');
   assert(patchPayload,'Terminal fallback analysis must be post-processed');
   assert.strictEqual(patchPayload.engine,'rules_rate_limit');
-  assert.strictEqual(patchPayload.analysis.risks.length,0,'Completed project must not retain the local active-overdue risk');
-  assert.strictEqual(patchPayload.analysis.next_actions.length,0,'Completed project must not ask to reconfirm the obsolete deadline');
+  assert(!patchPayload.analysis.risks.some(x=>/Afati i projektit ka kaluar/.test(x.text)),'Completed project must not retain the local active-overdue risk');
+  assert(patchPayload.analysis.risks.some(x=>/Reklamacioni\/feedback-u/.test(x.text)),'Unconfirmed complaint close-out must remain visible');
+  assert.strictEqual(patchPayload.analysis.next_actions.length,1,'Only the real open close-out task should remain actionable');
+  assert(/Pagesë klienti/.test(patchPayload.analysis.next_actions[0].title),'Open financial task must become the close-out action');
   assert.strictEqual(patchPayload.analysis.deadlines[0].status,'completed');
-  assert(/shërbimi AI është i disponueshëm/.test(patchPayload.analysis.executive_summary),'Fallback summary must explain semantic analysis can be refreshed later');
+  assert.strictEqual(patchPayload.analysis.recommendation.label,'Mbyllje / ndjekje','Terminal project must not receive a pre-award continue recommendation');
+  assert.strictEqual(patchPayload.analysis.recommendation.decision,'mbyllje_me_ndjekje');
+  assert(/Project X/.test(patchPayload.analysis.executive_summary),'Close-out summary must name the project');
+  assert(/dorëzimit\/logjistikës/.test(patchPayload.analysis.executive_summary),'Close-out summary must surface delivery/logistics evidence');
+  assert(/reklamacion\/feedback/.test(patchPayload.analysis.executive_summary),'Close-out summary must surface complaint/feedback evidence');
+  assert(/çështje financiare/.test(patchPayload.analysis.executive_summary),'Close-out summary must surface remaining finance follow-up');
+  assert(/realizuar/.test(patchPayload.analysis.health.label),'Terminal health label must reflect realized state');
   assert.strictEqual(w.document.querySelector('.pst-ps-metric b').textContent,'1','Summary modal must show the live open-task count');
   assert(/Analiza operative u krijua/.test(w.document.getElementById('pai-state-p1').textContent),'Rate-limit must end with a usable operational analysis state');
 
@@ -82,6 +97,7 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(w.PSTAI.hasApiKey(),true,'AI availability function must also be restored after JSON fallback');
   assert(patchPayload,'JSON generation fallback must be saved and post-processed');
   assert.strictEqual(patchPayload.engine,'rules_generation_fallback');
+  assert.strictEqual(patchPayload.analysis.recommendation.label,'Mbyllje / ndjekje');
   assert(/validimin JSON/.test(w.document.getElementById('pai-state-p1').textContent),'JSON failure must end with a usable operational analysis state');
 
   failureText='Analiza dështoi: Invalid API key';
