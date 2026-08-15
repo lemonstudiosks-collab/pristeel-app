@@ -139,7 +139,8 @@ var files=[
   'pristeel-gmail-live-triage-v1.js?v=20260813-1',
   'pristeel-gmail-intake-click-fix-v1.js?v=20260808-1',
   'pristeel-kek-tender-watch-v1.js?v=20260812-1',
-  'pristeel-project-lifecycle-tracking-v1.js?v=20260815-1'
+  'pristeel-project-lifecycle-tracking-v1.js?v=20260815-1',
+  'pristeel-project-intelligence-resilience-v1.js?v=20260815-1'
 ];
 var completed=false;
 function ready(){if(completed)return;completed=true;window.__pstModulesReady=true;try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}}
