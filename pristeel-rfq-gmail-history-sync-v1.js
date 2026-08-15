@@ -47,14 +47,22 @@ function projectSignals(){
   var x=d()||{},p=x.project||{},name=projectLabel(),tok=N(name).split(' ').filter(function(w){return w.length>=4&&['projekt','project','steel','restoran','restaurant'].indexOf(w)<0;});
   return{name:name,tokens:tok.slice(0,8),ref:N(O(p.ref,p.reference,''))};
 }
+function rfqIntent(meta){
+  var sub=N(meta&&meta.subject),sn=N(meta&&meta.snippet);
+  var subject=/\b(rfq|offer|offerte|ofert|angebot|anfrage|ponud|kerkese|quotation|quote)\b/.test(sub);
+  var snippet=/\b(request for (quotation|quote|offer)|please (send|provide).{0,40}(quotation|quote|offer)|kerkese per oferte|kerkesa per oferte|per te ofertuar|zahtev za ponudu|zahtjev za ponudu|upit za ponudu|bitte um angebot|angebot abgeben)\b/.test(sn);
+  return{strong:subject||snippet,subject:subject,snippet:snippet};
+}
 function score(meta){
-  var s=projectSignals(),sub=N(meta.subject),sn=N(meta.snippet),text=sub+' '+sn,points=0,hits=0;
+  var s=projectSignals(),sub=N(meta.subject),sn=N(meta.snippet),text=sub+' '+sn,points=0,hits=0,intent=rfqIntent(meta);
   if(s.ref&&s.ref.length>=5&&text.indexOf(s.ref)>-1){points+=160;hits+=3;}
   var full=N(s.name);if(full.length>=7&&sub.indexOf(full)>-1){points+=140;hits+=3;}
   s.tokens.forEach(function(t){if(sub.indexOf(t)>-1){points+=30;hits++;}else if(sn.indexOf(t)>-1){points+=10;hits++;}});
-  if(/\b(rfq|offer|offerte|ofert|angebot|anfrage|ponud|kerkese|quotation|quote)\b/.test(sub))points+=20;
-  return{points:points,hits:hits};
+  if(intent.subject)points+=20;
+  if(intent.snippet)points+=35;
+  return{points:points,hits:hits,intent:intent.strong};
 }
+function eligible(sc){return !!(sc&&(sc.hits>=2||sc.points>=90||(sc.hits>=1&&sc.intent)));}
 async function gmailIds(addr){
   var P=window.PSTEmail;if(!P||!P.gmail)throw new Error('Moduli Gmail nuk eshte gati.');
   var q='in:sent to:'+String(addr||'').trim()+' after:2025/01/01';
@@ -65,7 +73,7 @@ async function findForContact(s){
   var P=window.PSTEmail,ids=await gmailIds(s.email),best=null;
   for(var i=0;i<Math.min(ids.length,35);i++){
     var meta=await P.message(ids[i],state.token),sc=score(meta);
-    if(sc.hits<2&&sc.points<90)continue;
+    if(!eligible(sc))continue;
     var row={contact:s,meta:meta,score:sc.points,hits:sc.hits};
     if(!best||row.score>best.score||(row.score===best.score&&String(meta.sent_at)>String(best.meta.sent_at)))best=row;
   }
@@ -167,5 +175,5 @@ document.addEventListener('click',function(e){
   if(e.target&&e.target.closest&&e.target.closest('[data-rhg-save]')){e.preventDefault();saveSelected();}
 },true);
 css();
-window.PSTRfqGmailHistorySyncV2={scan:scan,refresh:refresh,_state:state};
+window.PSTRfqGmailHistorySyncV2={scan:scan,refresh:refresh,_state:state,_test:{rfqIntent:rfqIntent,score:score,eligible:eligible}};
 })();
