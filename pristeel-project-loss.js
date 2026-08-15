@@ -83,7 +83,7 @@ async function archiveProjectTasks(project,reason){
     var task=tasks[i];
     try{
       await window.supaFetch('task_archive','POST',{
-        task_id:task.id,
+        original_task_id:task.id,
         project_id:task.project_id||project.id,
         title:task.title||'Detyrë e projektit',
         detail:task.detail||'',
