@@ -9,6 +9,7 @@ const {JSDOM}=require('jsdom');
   assert(!/\/send\b|messages\/send|drafts\/send/.test(source),'Intake continuity must never send Gmail messages');
   assert(!/PSTEmail\.auth\s*\(|\bP\.auth\s*\(/.test(source),'Intake continuity must never trigger interactive Gmail OAuth itself');
   assert(source.includes("owners.length!==1||String(owners[0])!==String(projectId)"),'Single-project thread ownership guard is missing');
+  assert(source.includes('supplierIdentity(projectId,email)'),'RFQ recovery must require supplier evidence');
   assert(source.includes('wrapWorkspaceOpen()'),'Project-open auto reconcile bridge is missing');
   assert(gateSource.includes('await C.normalizeProjectThreads(pid,token)'),'OAuth gate must run confirmed-thread continuity after authorization');
 
@@ -51,7 +52,8 @@ const {JSDOM}=require('jsdom');
   const thread={messages:[
     msg('m1','Buyer <buyer@example.com>','sales@prissteel.com',true,'Request for quotation'),
     msg('m2','PRISTEEL <sales@prissteel.com>','Supplier <supplier@example.com>',false,'Fwd: Request for quotation'),
-    msg('m3','PRISTEEL <sales@prissteel.com>','Buyer <buyer@example.com>',false,'Re: Request for quotation')
+    msg('m3','PRISTEEL <sales@prissteel.com>','Buyer <buyer@example.com>',false,'Re: Request for quotation'),
+    msg('m4','PRISTEEL <sales@prissteel.com>','Unknown <unknown@example.com>',false,'Fwd: Request for quotation')
   ]};
   w.PSTEmail={
     norm:ext,emails:list,isInternal:e=>['sales@prissteel.com','arianit.vllahiu@prissteel.com'].includes(String(e||'').toLowerCase()),
@@ -71,8 +73,10 @@ const {JSDOM}=require('jsdom');
       if(path.startsWith('project_emails?gmail_thread_id=eq.t1&project_id=not.is.null&select=project_id'))return emails.filter(x=>x.gmail_thread_id==='t1'&&x.project_id).map(x=>({project_id:x.project_id}));
       if(path.startsWith('project_emails?gmail_thread_id=eq.t1&select=id,gmail_message_id'))return emails.filter(x=>x.gmail_thread_id==='t1').map(x=>({...x}));
       if(path.startsWith('projects?id=eq.p1&select=name'))return[{name:'Project One'}];
-      if(path.startsWith('contacts?email=eq.supplier%40example.com'))return[{person:'Supplier Person',company:'Supplier Co'}];
-      if(path.startsWith('contacts?email=eq.buyer%40example.com'))return[{person:'Buyer',company:'Buyer Co'}];
+      if(path.startsWith('contacts?email=eq.supplier%40example.com'))return[{person:'Supplier Person',company:'Supplier Co',kind:'supplier',role:'Supplier'}];
+      if(path.startsWith('contacts?email=eq.buyer%40example.com'))return[{person:'Buyer',company:'Buyer Co',kind:'client',role:'Buyer'}];
+      if(path.startsWith('contacts?email=eq.unknown%40example.com'))return[{person:'Unknown',company:'Unknown Co',kind:'contact',role:''}];
+      if(path.startsWith('project_contacts?project_id=eq.p1&email=eq.'))return[];
       if(path.startsWith('rfq_log?supplier_email=eq.'))return[];
       let rd=path.match(/^rfq_log\?project_id=eq\.p1&supplier_email=eq\.([^&]+)&sent_at=eq\.([^&]+)/);if(rd){const email=decodeURIComponent(rd[1]),sent=decodeURIComponent(rd[2]);return rfqs.filter(x=>x.project_id==='p1'&&x.supplier_email===email&&x.sent_at===sent).map(x=>({id:x.id}));}
       let m=path.match(/^project_email_links\?project_id=eq\.p1&gmail_message_id=eq\.([^&]+)/);if(m){const id=decodeURIComponent(m[1]);return links.filter(x=>x.project_id==='p1'&&x.gmail_message_id===id).map(x=>({id:x.id}));}
@@ -108,16 +112,19 @@ const {JSDOM}=require('jsdom');
   const first=emails.find(x=>x.gmail_message_id==='m1');
   const second=emails.find(x=>x.gmail_message_id==='m2');
   const reply=emails.find(x=>x.gmail_message_id==='m3');
+  const unknown=emails.find(x=>x.gmail_message_id==='m4');
   assert.strictEqual(first.has_attachments,true,'Existing linked email must receive the real attachment flag from full Gmail payload');
-  assert(second&&second.project_id==='p1','Missing later message in confirmed thread must be linked to the same project');
+  assert(second&&second.project_id==='p1','Missing later supplier message in confirmed thread must be linked to the same project');
   assert(reply&&reply.project_id==='p1','Later reply in confirmed thread must also remain part of the project');
+  assert(unknown&&unknown.project_id==='p1','Unknown-recipient message still belongs to the confirmed project thread');
   assert.strictEqual(second.match_method,'confirmed-thread-recovery');
   assert(links.some(x=>x.gmail_message_id==='m2'&&x.project_id==='p1'),'Recovered message must receive an explicit project_email_link');
-  assert.strictEqual(rfqs.length,1,'Exactly one outgoing RFQ-style message must reconstruct RFQ history');
+  assert.strictEqual(rfqs.length,1,'Only a supplier-evidenced outgoing RFQ-style message may reconstruct RFQ history');
   assert.strictEqual(rfqs[0].supplier_email,'supplier@example.com');
   assert.strictEqual(rfqs[0].supplier_name,'Supplier Co');
   assert.strictEqual(rfqs[0].status,'sent');
   assert(!rfqs.some(x=>x.supplier_email==='buyer@example.com'),'Re: client reply must never become an RFQ');
+  assert(!rfqs.some(x=>x.supplier_email==='unknown@example.com'),'Unknown external recipient without supplier evidence must never become an RFQ');
 
   await w.PSTProjectIntakeContinuityV1.normalizeProjectThreads('p1','workspace-token');
   assert.strictEqual(rfqs.length,1,'RFQ recovery must be duplicate-safe');
