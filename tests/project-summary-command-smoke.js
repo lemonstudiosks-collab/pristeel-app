@@ -14,8 +14,8 @@ const {JSDOM}=require('jsdom');
   assert(source.includes('Vlera e kontratës'),'Summary must prioritize the commercial contract value');
   assert(source.includes('Detaje operative'),'Technical counters must be demoted to collapsible operational details');
   assert(source.includes('Brief i projektit'),'Project Intelligence must present itself as a discussion brief');
-  assert(actionsSource.includes('pristeel-project-summary-command-v1.js?v=20260815-brief2'),'Current ProjectFirst actions must load the redesigned summary command');
-  assert(bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260815-summary2'),'ProjectFirst actions cache-bust must expose the redesigned summary loader');
+  assert(actionsSource.includes('pristeel-project-summary-command-v1.js?v=20260815-brief3'),'Current ProjectFirst actions must load the stable summary command');
+  assert(bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260815-summary3'),'ProjectFirst actions cache-bust must expose the stable summary loader');
   assert(!bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260810-offers2'),'Stale pre-summary ProjectFirst actions cache key must not remain in runtime bootstrap');
   assert(actionsSource.includes("sub.textContent='Drive pa autorizim'"),'Unauthorized permanent Drive must not be labeled as zero files');
 
@@ -43,7 +43,7 @@ const {JSDOM}=require('jsdom');
   w.PSTGoogleWorkspaceAuth={
     gmailScope:'gmail.readonly',driveScope:'drive',
     cachedToken:()=>token,
-    authorizeForIntake:async()=>{authorizeCalls++;token='workspace-token';return token;}
+    authorizeForIntake:async()=>{authorizeCalls++;await new Promise(r=>setTimeout(r,35));token='workspace-token';return token;}
   };
   w.PSTProjectIntakeContinuityV1={normalizeProjectThreads:async(pid,t)=>{syncCalls++;assert.strictEqual(pid,'p1');assert.strictEqual(t,'workspace-token');return{threads:1,added:1,updated:3,attachments:2,rfqs:2};}};
   w.PSTProjectDataIntegrity={load:async pid=>{integrityLoads++;assert.strictEqual(pid,'p1');return token?fresh:base;}};
@@ -70,9 +70,17 @@ const {JSDOM}=require('jsdom');
   assert(driveNote.querySelector('button')&&driveNote.querySelector('button').textContent.includes('Autorizo'),'Unauthorized Drive must expose an explicit authorization action');
 
   button.click();
-  await new Promise(r=>setTimeout(r,80));
+  await new Promise(r=>setTimeout(r,10));
 
   assert(w.document.getElementById('pst-project-summary-bg'),'Summary modal must open from one click');
+  const initialContext=w.document.querySelector('.pst-ps-context');
+  assert(initialContext,'Current project context must render before Google authorization completes');
+  assert(initialContext.textContent.includes('Client AG')&&initialContext.textContent.includes('supplier_selection'),'Initial first paint must use already-loaded project context');
+  assert(w.document.querySelector('.pst-ps-contract').textContent.includes('Pa vlerë të regjistruar'),'Initial contract card must reserve its final position before sync');
+  assert.strictEqual(syncCalls,0,'Confirmed Gmail reconciliation must still be waiting while the initial snapshot is already visible');
+
+  await new Promise(r=>setTimeout(r,100));
+
   assert.strictEqual(authorizeCalls,1,'Summary click must authorize Google Workspace at most once when required');
   assert.strictEqual(syncCalls,1,'Summary click must reconcile the confirmed project thread before analysis');
   assert(integrityLoads>=1,'Summary click must reload project integrity');
@@ -81,7 +89,7 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(analysisRuns,1,'Summary click must run one fresh Project Intelligence analysis');
 
   const context=w.document.querySelector('.pst-ps-context');
-  assert(context,'Summary must open with one compact project context row');
+  assert(context,'Summary must keep one compact project context row');
   assert(context.textContent.includes('Client AG')&&context.textContent.includes('supplier_selection'),'Context row must retain client and lifecycle information without metric cards');
   const contract=w.document.querySelector('.pst-ps-contract');
   assert(contract,'Contract value must be the only prominent commercial card above the brief');
@@ -90,6 +98,7 @@ const {JSDOM}=require('jsdom');
 
   const ops=w.document.querySelector('#pst-ps-ops-host .pst-ps-ops');
   assert(ops,'Operational counters must be moved below Project Intelligence');
+  assert.strictEqual(w.document.querySelectorAll('#pst-ps-ops-host .pst-ps-ops').length,1,'Snapshot refresh must replace operational details instead of duplicating them');
   assert.strictEqual(ops.open,false,'Operational details must be collapsed by default');
   assert(ops.textContent.includes('4 emaila')&&ops.textContent.includes('2 skedarë'),'Collapsed details must preserve source coverage');
   assert(ops.textContent.includes('2 në Drive'),'Operational details must preserve real Drive rows');
@@ -100,6 +109,7 @@ const {JSDOM}=require('jsdom');
   assert(w.document.getElementById('pai-body-p1').textContent.includes('Përmbledhja ekzekutive'),'Existing Project Intelligence output must render in the redesigned brief');
   const css=w.document.getElementById('pst-project-summary-command-css').textContent;
   assert(css.includes('width:min(1450px,99vw)'),'Project brief must use materially more horizontal page space');
+  assert(css.includes('.pst-ps-snapshot{min-height:92px'),'Snapshot must reserve stable vertical space before sync finishes');
   assert(css.includes('.pst-ps-ai .pai-top>.pai-card:first-child{border:0'),'Executive summary must not be trapped in a bordered card');
 
   dom.window.close();
