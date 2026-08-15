@@ -42,8 +42,19 @@ css.textContent = `
 .rl-sel:hover{border-color:var(--border2)}
 .rl-note{font-size:11px;color:var(--text3);line-height:1.6;margin-top:12px;
   padding-top:11px;border-top:1px solid var(--border)}
+/* Do not expose intermediate Home owners while the ordered runtime is still booting. */
+html:not(.pst-runtime-ready) #page-workspace-home.active{min-height:68vh!important;position:relative!important}
+html:not(.pst-runtime-ready) #page-workspace-home.active>*{visibility:hidden!important}
+html:not(.pst-runtime-ready) #page-workspace-home.active::after{content:'Po përgatitet platforma…';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;visibility:visible!important;font-size:12px;font-weight:650;color:#6F838C;letter-spacing:.1px;background:#F7FAFB}
 `;
 document.head.appendChild(css);
+
+/* Failsafe: a partial bootstrap must never leave Home permanently hidden. */
+if(!window.__pstRuntimeRevealFallback){
+  window.__pstRuntimeRevealFallback=setTimeout(function(){
+    document.documentElement.classList.add('pst-runtime-ready');
+  },12000);
+}
 
 var myRole = null, myEmail = null, allUsers = [];
 
