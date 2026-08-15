@@ -30,6 +30,8 @@ jobs:
         run: node tests/operational-lifecycle-smoke.mjs
       - name: Run project intake continuity smoke
         run: node --check pristeel-project-intake-continuity-v1.js && node tests/project-intake-continuity-smoke.js
+      - name: Run project summary command smoke
+        run: node --check pristeel-project-summary-command-v1.js && node tests/project-summary-command-smoke.js
       - name: Run explicit AI request API smoke
         run: node scripts/ai-request-api-smoke.mjs
       - name: Run explicit AI provider routing smoke
