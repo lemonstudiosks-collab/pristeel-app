@@ -3,7 +3,7 @@
  * - Filters completed/archived tasks from the active-task view used during analysis.
  * - Corrects the Project Summary "Detyra hapur" metric from live task status.
  * - On recoverable AI generation failures (429/TPM or invalid structured JSON generation), reuses the existing rule-based Project Intelligence analysis instead of leaving an empty result.
- * - Terminal projects keep historic deadlines without being treated as actively overdue by the local fallback.
+ * - Terminal projects become close-out briefs: historic delivery deadlines stay historic, real recent delivery/complaint communication is surfaced, and only genuinely open follow-up remains actionable.
  * Does not change the selected AI provider, send email, or auto-change project status.
  */
 (function(){
@@ -29,6 +29,10 @@ function stateText(pid){var e=document.getElementById('pai-state-'+pid);return e
 function setState(pid,text,color){var e=document.getElementById('pai-state-'+pid);if(!e)return;e.textContent=text;e.style.color=color||'var(--text3)';}
 function activeId(){var d=window.__pstIntegrityLastData;return str(window.__pstCurrentProjectId||window._curProjId||(d&&d.project&&d.project.id)||'');}
 async function safe(path){try{return arr(await window.supaFetch(path));}catch(e){return[];}}
+function dateOnly(v){if(!v)return'';var d=new Date(v);if(isNaN(d))return str(v).slice(0,10);try{return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return str(v).slice(0,10);}}
+function emailText(x){return [x&&x.subject,x&&x.snippet,x&&x.from_email,arr(x&&x.to_emails).join(' ')].join(' ');}
+function newestMatch(rows,re,direction){for(var i=0;i<rows.length;i++){var x=rows[i];if(direction&&str(x.direction)!==direction)continue;if(re.test(emailText(x)))return x;}return null;}
+function financeTask(t){return /invoice|fatur|pages|pagese|payment|receivable|payable|ark[eë]tim/i.test([t&&t.title,t&&t.detail,t&&t.category,t&&t.source].join(' '));}
 
 function taskQueryFor(path,pid){
   var p=str(path);
@@ -57,25 +61,65 @@ function cleanTerminalAnalysis(a){
   if(nr.length!==risks.length||changed)a.risks=nr;
   if(na.length!==next.length||changed)a.next_actions=na;
   if(changed)a.deadlines=nd;
-  if(removed&&a.health&&isFinite(Number(a.health.score))){
-    var score=Math.min(95,Number(a.health.score)+28);a.health.score=score;
-    a.health.label=score>=80?'mirë':score>=60?'mesatar':score>=40?'në rrezik':'dobët';
-    if(a.recommendation){a.recommendation.decision=score>=72?'vazhdo_me_kushte':score>=50?'prit':'mos_vazhdo';a.recommendation.label=score>=72?'Vazhdo, me kushte':score>=50?'Prit dhe plotëso boshllëqet':'Mos vazhdo pa korrigjime';}
-  }
   if(/analiza semantike kërkon Groq API Key/i.test(str(a.executive_summary))){
     a.executive_summary=str(a.executive_summary).replace(/Ky është vlerësim operativ me rregulla; analiza semantike kërkon Groq API Key\.?/i,'Ky është vlerësim operativ nga të dhënat aktuale të platformës; analiza semantike mund të rifreskohet kur shërbimi AI është i disponueshëm.');changed=true;
   }
   return{analysis:a,changed:changed,deadlinePenaltyRemoved:removed};
 }
 
+function applyTerminalCloseout(a,p,emails,tasks,forceSummary){
+  if(!a||typeof a!=='object')return false;
+  emails=arr(emails).slice().sort(function(x,y){return str(y.sent_at).localeCompare(str(x.sent_at));});
+  tasks=arr(tasks).filter(isOpenTask);
+  var finance=tasks.filter(financeTask);
+  var delivery=newestMatch(emails,/custom\s*clear|customs?\s*clear|zoll.*(?:überlass|freigab|abfertig)|einfuhranmeldung.*überlass|unload|entlad|zugestellt|delivered|delivery|dor[eë]z|shkark/i,'');
+  var complaint=newestMatch(emails,/reklamation|reklam|complaint|besch[aä]dig|damage|lackier|paint\s*damage|qualit[aä]ts.*(?:problem|mangel)/i,'incoming');
+  var response=newestMatch(emails,/reklamation|reklam|complaint|besch[aä]dig|damage|lackier|feedback/i,'outgoing');
+  var complaintOpen=false;
+  if(complaint&&response){
+    var rt=new Date(response.sent_at||0).getTime();
+    complaintOpen=!emails.some(function(x){return str(x.direction)==='incoming'&&new Date(x.sent_at||0).getTime()>rt&&/reklamation|reklam|complaint|feedback|besch[aä]dig|damage|lackier/i.test(emailText(x));});
+  }else complaintOpen=!!complaint;
+
+  var parts=[];
+  parts.push('Projekti “'+str(p.name||'')+'” është i regjistruar si i realizuar'+(p.client?' për '+str(p.client):'')+'.');
+  if(delivery)parts.push('Komunikimi i '+dateOnly(delivery.sent_at)+' konfirmon fazën e dorëzimit/logjistikës ('+str(delivery.subject||'komunikim logjistik')+').');
+  if(complaint)parts.push('Më '+dateOnly(complaint.sent_at)+' është regjistruar reklamacion/feedback nga klienti'+(response?' dhe PRISTEEL ka kthyer përgjigje më '+dateOnly(response.sent_at):'')+'.');
+  if(finance.length)parts.push('Mbeten '+finance.length+' çështje financiare/administrative për ndjekje: '+finance.map(function(t){return str(t.title||'Detyrë financiare');}).join('; ')+'.');
+  else if(tasks.length)parts.push('Mbeten '+tasks.length+' detyra të hapura për close-out: '+tasks.map(function(t){return str(t.title||'Detyrë');}).join('; ')+'.');
+  else parts.push('Nuk ka detyra të hapura të regjistruara për close-out.');
+  if(forceSummary||/vlerësim operativ|ka \d+ emaila|analiza semantike/i.test(str(a.executive_summary)))a.executive_summary=parts.join(' ');
+
+  a.current_stage=p.pipeline_stage||a.current_stage||'closeout';
+  a.health=a.health&&typeof a.health==='object'?a.health:{};
+  var follow=tasks.length+(complaintOpen?1:0);
+  a.health.score=follow?Math.max(80,100-Math.min(20,follow*5)):100;
+  a.health.label=follow?'realizuar · ndjekje':'realizuar';
+  a.health.reason=follow?'Projekti operativ është realizuar; rezultati tregon vetëm plotësinë e close-out-it dhe çështjet e mbetura.':'Projekti operativ është realizuar dhe nuk ka çështje të hapura të regjistruara.';
+  a.recommendation={
+    decision:follow?'mbyllje_me_ndjekje':'projekt_realizuar',
+    label:follow?'Mbyllje / ndjekje':'Projekt i realizuar',
+    reason:follow?'Puna operative është përfunduar. Ndiq vetëm çështjet e hapura të close-out-it; mos e trajto projektin si ofertë ose prodhim aktiv.':'Puna operative dhe close-out-i janë të përfunduara.',
+    source_ids:['P1']
+  };
+  a.next_actions=tasks.map(function(t,i){return{title:str(t.title||'Mbyll detyrën e hapur'),why:str(t.detail||'Detyrë e hapur e close-out-it.'),due_date:t.due_date||null,priority:t.priority||'medium',source_ids:['T'+(i+1)]};});
+  var otherRisks=arr(a.risks).filter(function(x){return !/reklamacion.*pa konfirmim|afati i projektit ka kaluar/i.test(str(x&&x.text));});
+  if(complaintOpen)otherRisks.push({text:'Reklamacioni/feedback-u i klientit ka marrë trajtim, por nuk ka konfirmim të regjistruar se çështja është mbyllur nga klienti.',severity:'medium',status:'open',source_ids:['E1']});
+  a.risks=otherRisks;
+  return true;
+}
+
 async function postprocessTerminal(pid,fallbackKind){
-  var p=(await safe('projects?id=eq.'+enc(pid)+'&select=id,status,pipeline_stage,deadline&limit=1'))[0];
+  var p=(await safe('projects?id=eq.'+enc(pid)+'&select=id,name,status,pipeline_stage,deadline,client&limit=1'))[0];
   if(!p||!terminalStatus(p.status))return false;
   var rec=(await safe('project_analyses?project_id=eq.'+enc(pid)+'&order=created_at.desc&limit=1'))[0];
   if(!rec||!rec.id||!rec.analysis)return false;
   var cloned;try{cloned=JSON.parse(JSON.stringify(rec.analysis));}catch(e){return false;}
   var out=cleanTerminalAnalysis(cloned);
-  if(!out.changed&&!fallbackKind)return false;
+  var emails=await safe('project_emails?project_id=eq.'+enc(pid)+'&select=subject,sent_at,direction,from_email,to_emails,snippet&order=sent_at.desc&limit=120');
+  var tasks=await safe('tasks?project_id=eq.'+enc(pid)+'&select=id,title,status,due_date,priority,detail,category,source&order=due_date.asc&limit=500');
+  var closeout=applyTerminalCloseout(out.analysis,p,emails,tasks,!!fallbackKind);
+  if(!out.changed&&!closeout&&!fallbackKind)return false;
   var payload={analysis:out.analysis};
   if(fallbackKind){payload.engine=fallbackKind==='rate_limit'?'rules_rate_limit':'rules_generation_fallback';payload.model=null;}
   await window.supaFetch('project_analyses?id=eq.'+enc(rec.id),'PATCH',payload);
@@ -128,5 +172,5 @@ document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.t
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 install();setTimeout(install,300);setTimeout(install,1000);
 
-window.PSTProjectIntelligenceResilienceV1={install:install,refreshOpenTaskMetric:refreshOpenTaskMetric,_test:{isOpenTask:isOpenTask,terminalStatus:terminalStatus,isRateLimitText:isRateLimitText,isGenerationFailureText:isGenerationFailureText,recoverableFailureKind:recoverableFailureKind,cleanTerminalAnalysis:cleanTerminalAnalysis,taskQueryFor:taskQueryFor}};
+window.PSTProjectIntelligenceResilienceV1={install:install,refreshOpenTaskMetric:refreshOpenTaskMetric,_test:{isOpenTask:isOpenTask,terminalStatus:terminalStatus,isRateLimitText:isRateLimitText,isGenerationFailureText:isGenerationFailureText,recoverableFailureKind:recoverableFailureKind,cleanTerminalAnalysis:cleanTerminalAnalysis,applyTerminalCloseout:applyTerminalCloseout,financeTask:financeTask,taskQueryFor:taskQueryFor}};
 })();
