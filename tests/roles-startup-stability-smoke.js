@@ -1,7 +1,15 @@
 const fs=require('fs');const assert=require('assert');
 const s=fs.readFileSync('pristeel-roles.js','utf8');
+const boot=fs.readFileSync('pristeel-project-emails.js','utf8');
 assert(!/setInterval\s*\(/.test(s),'Roles startup must not poll with setInterval');
 assert(/waits=\[0,400,1200,2500,5000,9000\]/.test(s),'Bounded role readiness schedule missing');
 assert(/pristeel-project-emails\.js\?v='\+String\(Date\.now\(\)\)/.test(s),'Bootstrap must remain cache-busted');
 assert(/authGetSession/.test(s),'Role loading must remain session-aware');
+assert(s.includes("html:not(.pst-runtime-ready) #page-workspace-home.active>*{visibility:hidden!important}"),'Intermediate Home owners must stay hidden before final runtime first paint');
+assert(s.includes("content:'Po përgatitet platforma…'"),'Startup gate must show one calm loading state instead of intermediate Home layouts');
+assert(s.includes('window.__pstRuntimeRevealFallback=setTimeout'),'Startup gate must have a bounded failsafe reveal');
+assert(boot.includes('function finalFirstPaint()'),'Ordered bootstrap must own the final Home reveal');
+assert(boot.includes('PSTHomeCommandCenterV2')&&boot.includes('PSTHomeStabilityV2')&&boot.includes('PSTRedesignFinalizerV1'),'Final first paint must reconcile the approved Home owners before reveal');
+assert(boot.includes("document.documentElement.classList.add('pst-runtime-ready')"),'Ordered bootstrap must explicitly reveal the stable Home');
+assert(boot.includes('clearTimeout(window.__pstRuntimeRevealFallback)'),'Successful bootstrap must cancel the failsafe timer');
 console.log('Roles startup stability smoke test passed.');
