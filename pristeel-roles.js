@@ -233,4 +233,13 @@ if(document.readyState === 'loading'){
   document.head.appendChild(s);
 })();
 
+(function loadProjectIntakeContinuityModule(){
+  if(document.querySelector('script[data-pst-project-intake-continuity]')) return;
+  var s=document.createElement('script');
+  s.src='pristeel-project-intake-continuity-v1.js?v='+String(Date.now());
+  s.defer=true;
+  s.setAttribute('data-pst-project-intake-continuity','1');
+  document.head.appendChild(s);
+})();
+
 })();
