@@ -7,9 +7,9 @@
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "25c8896e64cd2b5d5f104e4ab634d8a0d611739a",
+    "bootstrapLoaderGitBlobSha": "c83d39c49b1113e6e91e1e789abba6dd077a25ec",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "b266adb361ebed13c9bfdc0df576c75e69339e0b"
+    "bootstrapGitBlobSha": "1a0359cce087737575ffd4619a02bab829ecd0ab"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
