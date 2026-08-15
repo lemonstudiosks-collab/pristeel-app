@@ -34,7 +34,7 @@ for (const [label, file] of stages) {
 
 const runtime = fs.readFileSync('pristeel-project-emails.js', 'utf8');
 for (const required of [
-  'pristeel-rfq-draft-governance-v1.js',
+  'pristeel-workflow-governance-v1.js',
   'pristeel-supplier-offer-postsave-ui-v1.js',
   'pristeel-project-first-commercial-v1.js',
   'pristeel-offer-project-status-sync-v1.js',
@@ -42,5 +42,10 @@ for (const required of [
 ]) {
   assert(runtime.includes(required), `Live bootstrap is missing lifecycle module ${required}`);
 }
+const workflowGovernance = fs.readFileSync('pristeel-workflow-governance-v1.js', 'utf8');
+assert(
+  workflowGovernance.includes('pristeel-rfq-draft-governance-v1.js'),
+  'Workflow governance must dynamically load RFQ draft governance'
+);
 
 console.log('\nPPPP operational lifecycle smoke passed: Tender → Project → RFQ → Supplier Offer → Commercial/Our Offer → Won → Execution → Invoice/Payment → Reconciliation.');
