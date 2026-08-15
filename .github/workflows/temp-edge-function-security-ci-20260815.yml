@@ -1,0 +1,39 @@
+name: TEMP Edge Function security CI
+
+on:
+  push:
+    branches: [chore/track-edge-functions-20260815]
+    paths:
+      - '.github/workflows/temp-edge-function-security-ci-20260815.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chore/track-edge-functions-20260815
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Add permanent smoke to npm test
+        run: node scripts/temp-add-edge-function-security-smoke-20260815.mjs
+      - name: Run Edge Functions security smoke
+        run: node tests/edge-functions-security-smoke.js
+      - name: Run full suite
+        run: npm test
+      - name: Validate diff
+        run: git diff --check
+      - name: Commit package CI hook
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Guard production Edge Function security contracts"
+          git push origin HEAD:chore/track-edge-functions-20260815
