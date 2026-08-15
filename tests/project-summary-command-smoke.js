@@ -61,7 +61,7 @@ const {JSDOM}=require('jsdom');
   const driveNote=w.document.querySelector('.pst-ps-drive-note');
   assert(driveNote,'Unauthorized permanent Drive folder must show an explicit authorization state');
   assert(driveNote.textContent.includes('nuk është autorizuar'),'Files UX must explain why Drive rows are unavailable');
-  assert(!driveNote.textContent.includes('dosje bosh'),'Unauthorized Drive must not be represented as an empty folder');
+  assert(driveNote.querySelector('button')&&driveNote.querySelector('button').textContent.includes('Autorizo'),'Unauthorized Drive must expose an explicit authorization action');
 
   button.click();
   await new Promise(r=>setTimeout(r,80));
