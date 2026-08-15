@@ -15,6 +15,7 @@ const {JSDOM}=require('jsdom');
   w.__pstCurrentProjectId='p1';w._curProjId='p1';
 
   let aiAvailable=true,analysisCalls=0,patchPayload=null;
+  let failureText='Analiza dështoi: Rate limit reached; TPM limit 8000; try again in 46s.';
   const tasks=[
     {id:'t1',status:'hapur'},
     {id:'t2',status:'kryer'},
@@ -41,7 +42,7 @@ const {JSDOM}=require('jsdom');
     analysisCalls++;
     const rows=await w.supaFetch('tasks?project_id=eq.'+encodeURIComponent(pid)+'&select=*');
     taskCounts.push(rows.length);
-    if(w.PSTAI.hasApiKey())w.document.getElementById('pai-state-'+pid).textContent='Analiza dështoi: Rate limit reached; TPM limit 8000; try again in 46s.';
+    if(w.PSTAI.hasApiKey())w.document.getElementById('pai-state-'+pid).textContent=failureText;
     else w.document.getElementById('pai-state-'+pid).textContent='Analiza operative u krijua.';
   };
   w.pstProjectAnalysisLoad=async()=>{};
@@ -53,6 +54,11 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(T.isOpenTask({status:'arkivuar'}),false);
   assert.strictEqual(T.isRateLimitText('Rate limit reached for TPM 8000'),true);
   assert.strictEqual(T.isRateLimitText('Invalid API key'),false);
+  assert.strictEqual(T.isGenerationFailureText("Failed to validate JSON. See 'failed_generation' for more details."),true);
+  assert.strictEqual(T.isGenerationFailureText('Invalid API key'),false);
+  assert.strictEqual(T.recoverableFailureKind('429 too many requests'),'rate_limit');
+  assert.strictEqual(T.recoverableFailureKind("Failed to validate JSON. See failed_generation"),'generation');
+  assert.strictEqual(T.recoverableFailureKind('Invalid API key'),'');
   assert.strictEqual(T.terminalStatus('realizuar'),true);
 
   await w.pstAnalyzeProject('p1');
@@ -67,6 +73,21 @@ const {JSDOM}=require('jsdom');
   assert(/shërbimi AI është i disponueshëm/.test(patchPayload.analysis.executive_summary),'Fallback summary must explain semantic analysis can be refreshed later');
   assert.strictEqual(w.document.querySelector('.pst-ps-metric b').textContent,'1','Summary modal must show the live open-task count');
   assert(/Analiza operative u krijua/.test(w.document.getElementById('pai-state-p1').textContent),'Rate-limit must end with a usable operational analysis state');
+
+  failureText="Analiza dështoi: Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.";
+  patchPayload=null;
+  await w.pstAnalyzeProject('p1');
+  assert.strictEqual(analysisCalls,4,'Structured JSON generation failure must retry exactly once through the local rules engine');
+  assert.deepStrictEqual(taskCounts,[1,1,1,1],'JSON fallback must keep the active-task filter scoped to both attempts');
+  assert.strictEqual(w.PSTAI.hasApiKey(),true,'AI availability function must also be restored after JSON fallback');
+  assert(patchPayload,'JSON generation fallback must be saved and post-processed');
+  assert.strictEqual(patchPayload.engine,'rules_generation_fallback');
+  assert(/validimin JSON/.test(w.document.getElementById('pai-state-p1').textContent),'JSON failure must end with a usable operational analysis state');
+
+  failureText='Analiza dështoi: Invalid API key';
+  await w.pstAnalyzeProject('p1');
+  assert.strictEqual(analysisCalls,5,'Configuration/auth failures must not be masked by a local retry');
+  assert(/Invalid API key/.test(w.document.getElementById('pai-state-p1').textContent),'Non-recoverable AI errors must remain visible');
 
   dom.window.close();
   console.log('Project Intelligence resilience smoke test passed.');
