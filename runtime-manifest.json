@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "25c8896e64cd2b5d5f104e4ab634d8a0d611739a",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "1ca8e2743f1b2f643c224fd751ccdaa6b1eec4de"
+    "bootstrapGitBlobSha": "1cab2a454f7a3931caa35408fc67a8cbd16358b2"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -63,7 +63,8 @@
     {
       "area": "projects-list",
       "finalOwners": [
-        "pristeel-projects-modern-v1.js"
+        "pristeel-projects-modern-v1.js",
+        "pristeel-project-lifecycle-tracking-v1.js"
       ]
     },
     {
@@ -73,7 +74,8 @@
         "pristeel-project-first-actions-v1.js",
         "pristeel-project-first-commercial-v1.js",
         "pristeel-project-first-execution-v1.js",
-        "pristeel-project-summary-command-v1.js"
+        "pristeel-project-summary-command-v1.js",
+        "pristeel-project-lifecycle-tracking-v1.js"
       ]
     },
     {
@@ -198,6 +200,11 @@
       "before": "pristeel-gmail-live-inbox-v2.js",
       "after": "pristeel-gmail-live-triage-v1.js",
       "reason": "Triage decorates and constrains the Gmail live inbox after the inbox module exists."
+    },
+    {
+      "before": "pristeel-kek-tender-watch-v1.js",
+      "after": "pristeel-project-lifecycle-tracking-v1.js",
+      "reason": "Project lifecycle tracking is the deliberate final ordered reconciliation layer for modern project list and workspace UX."
     }
   ],
   "deprecatedForbidden": [
