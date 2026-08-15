@@ -72,7 +72,8 @@
         "pristeel-project-first-v2.js",
         "pristeel-project-first-actions-v1.js",
         "pristeel-project-first-commercial-v1.js",
-        "pristeel-project-first-execution-v1.js"
+        "pristeel-project-first-execution-v1.js",
+        "pristeel-project-summary-command-v1.js"
       ]
     },
     {
@@ -153,6 +154,12 @@
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded unconditionally by the production pristeel-roles.js base module to recover confirmed single-project Gmail thread continuity before linked-file recovery."
+    },
+    {
+      "module": "pristeel-project-summary-command-v1.js",
+      "loader": "pristeel-project-first-actions-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded unconditionally by the current ProjectFirst actions layer to expose a professional whole-project summary and explicit Google Workspace synchronization command."
     },
     {
       "module": "pristeel-groq-gptoss-provider-v1.js",
