@@ -86,6 +86,7 @@ const expected = {
     { file: 'pristeel-groq-rate-limit.js', count: 10 },
     { file: 'pristeel-procurement.html', count: 5 },
     { file: 'pristeel-project-analysis.js', count: 2 },
+    { file: 'pristeel-project-intelligence-conversation-v1.js', count: 1 },
     { file: 'pristeel-project-intelligence-resilience-v1.js', count: 1 },
     { file: 'pristeel-tender-business-flow-v1.js', count: 1 }
   ],
