@@ -26,6 +26,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run full test suite
         run: npm test
+      - name: Run operational lifecycle smoke
+        run: node tests/operational-lifecycle-smoke.mjs
       - name: Run explicit AI request API smoke
         run: node scripts/ai-request-api-smoke.mjs
       - name: Run explicit AI provider routing smoke
