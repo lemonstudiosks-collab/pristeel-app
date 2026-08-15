@@ -1,0 +1,39 @@
+name: TEMP Project loss task archive fix
+
+on:
+  push:
+    branches: [fix/project-loss-task-archive-20260815]
+    paths:
+      - '.github/workflows/temp-project-loss-task-archive-fix-20260815.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/project-loss-task-archive-20260815
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Apply targeted patch
+        run: node scripts/temp-fix-project-loss-task-archive-20260815.mjs
+      - name: Run project loss archive smoke
+        run: node tests/project-loss-task-archive-smoke.js
+      - name: Run full suite
+        run: npm test
+      - name: Validate repository diff
+        run: git diff --check
+      - name: Commit tested runtime and CI changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pristeel-project-loss.js package.json tests/project-loss-task-archive-smoke.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix project loss task archive schema contract"
+          git push origin HEAD:fix/project-loss-task-archive-20260815
