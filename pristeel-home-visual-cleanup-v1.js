@@ -82,9 +82,21 @@ body.pst-ui-v2:has(#page-contacts.active) .content{padding-top:14px!important}
   document.head.appendChild(s);
 }
 function apply(){css();return true;}
+function revealStableHome(){
+  apply();
+  try{var H=window.PSTHomeCommandCenterV2;if(H&&typeof H.decorate==='function')H.decorate(false);}catch(e){}
+  try{var S=window.PSTHomeStabilityV2;if(S&&typeof S.enforce==='function')S.enforce();}catch(e){}
+  try{var R=window.PSTRedesignFinalizerV1;if(R&&typeof R.apply==='function')R.apply();}catch(e){}
+  if(window.__pstRuntimeRevealFallback){clearTimeout(window.__pstRuntimeRevealFallback);window.__pstRuntimeRevealFallback=null;}
+  var reveal=function(){document.documentElement.classList.add('pst-runtime-ready');};
+  if(typeof requestAnimationFrame==='function')requestAnimationFrame(function(){requestAnimationFrame(reveal);});
+  else setTimeout(reveal,0);
+}
 function schedule(){apply();}
+function scheduleFirstPaint(){setTimeout(revealStableHome,900);}
 css();
-document.addEventListener('pst:modules-ready',schedule,{once:true});
+document.addEventListener('pst:modules-ready',function(){schedule();scheduleFirstPaint();},{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
-window.PSTHomeVisualCleanupV1={apply:apply,schedule:schedule};
+if(window.__pstModulesReady)scheduleFirstPaint();
+window.PSTHomeVisualCleanupV1={apply:apply,schedule:schedule,revealStableHome:revealStableHome};
 })();
