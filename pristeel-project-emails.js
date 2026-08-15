@@ -39,7 +39,7 @@ var files=[
   'pristeel-gemini-test-ui-v1.js?v=20260814-1',
   'pristeel-project-analysis.js?v=20260801-1',
   'pristeel-project-intelligence-ui.js?v=20260802-5',
-  'pristeel-project-workspace.js?v=20260801-1',
+  'pristeel-project-workspace.js?v=20260802-1',
   'pristeel-ui-v2.js?v=20260801-1',
   'pristeel-ui-session.js?v=20260801-1',
   'pristeel-ui-v2-polish.js?v=20260801-1',
@@ -110,7 +110,7 @@ var files=[
   'pristeel-email-offer-draft-editor-bridge-v1.js?v=20260812-currency1',
   'pristeel-supplier-offer-postsave-ui-v1.js?v=20260809-1',
   'pristeel-project-first-execution-v1.js?v=20260808-1',
-  'pristeel-project-first-actions-v1.js?v=20260815-summary3',
+  'pristeel-project-first-actions-v1.js?v=20260815-summary2',
   'pristeel-supplier-capability-manager-v1.js?v=20260808-3',
   'pristeel-project-first-commercial-v1.js?v=20260812-fx2',
   'pristeel-project-file-upload-v1.js?v=20260808-1',
@@ -143,21 +143,7 @@ var files=[
   'pristeel-project-intelligence-resilience-v1.js?v=20260815-1'
 ];
 var completed=false;
-function finalFirstPaint(){
-  try{var H=window.PSTHomeCommandCenterV2;if(H&&typeof H.decorate==='function')H.decorate();}catch(e){}
-  try{var S=window.PSTHomeStabilityV2;if(S&&typeof S.enforce==='function')S.enforce();}catch(e){}
-  try{var V=window.PSTHomeVisualCleanupV1;if(V&&typeof V.apply==='function')V.apply();}catch(e){}
-  try{var R=window.PSTRedesignFinalizerV1;if(R&&typeof R.apply==='function')R.apply();}catch(e){}
-  if(window.__pstRuntimeRevealFallback){clearTimeout(window.__pstRuntimeRevealFallback);window.__pstRuntimeRevealFallback=null;}
-  var reveal=function(){document.documentElement.classList.add('pst-runtime-ready');};
-  if(typeof requestAnimationFrame==='function')requestAnimationFrame(function(){requestAnimationFrame(reveal);});
-  else setTimeout(reveal,0);
-}
-function ready(){
-  if(completed)return;completed=true;window.__pstModulesReady=true;
-  try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}
-  setTimeout(finalFirstPaint,140);
-}
+function ready(){if(completed)return;completed=true;window.__pstModulesReady=true;try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}}
 function load(i){if(i>=files.length||window.__pstAbortBootstrap){ready();return;}var s=document.createElement('script');s.src=files[i];s.defer=true;s.onload=function(){if(window.__pstAbortBootstrap)ready();else load(i+1);};s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(window.__pstAbortBootstrap)ready();else load(i+1);};document.head.appendChild(s);}
 load(0);
 })();
