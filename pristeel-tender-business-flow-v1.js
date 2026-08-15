@@ -31,7 +31,7 @@ function winner(r){
  var w=payload(r).winner;
  if(!w||typeof w!=='object')return{name:'',email:'',website:'',country:'',city:'',names:[]};
  var names=Array.isArray(w.names)?w.names.filter(Boolean):(w.name?[w.name]:[]);
- return{name:String(w.name||names[0]||''),email:String(w.email||(Array.isArray(w.emails)&&w.emails[0])||''),website:String(w.website||(Array.isArray(w.websites)&&w.websites[0])||''),country:String(w.country||(Array.isArray(w.countries)&&w.countries[0])||''),city:String(w.city||(Array.isArray(w.cities)&&w.cities[0])||''),identifier:String(w.identifier||''),contact_point:String(w.contact_point||''),names:names};
+ return{name:String(w.name||names[0]||''),email:String(w.email||(Array.isArray(w.emails)&&w.emails[0])||''),website:String(w.website||(Array.isArray(w.websites)&&w.websites[0])||''),country:String(w.country||(Array.isArray(w.countries)&&w.countries[0])||''),city:String(w.city||(Array.isArray(w.cities)&&w.cities[0])||''),names:names};
 }
 function bizStatus(r){
  if(source(r)==='TED'&&payload(r).ted_contact_status==='contacted')return'contacted';
