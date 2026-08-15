@@ -34,6 +34,8 @@ jobs:
         run: node --check pristeel-project-summary-command-v1.js && node tests/project-summary-command-smoke.js
       - name: Run project lifecycle tracking smoke
         run: node --check pristeel-project-lifecycle-tracking-v1.js && node tests/project-lifecycle-tracking-smoke.js
+      - name: Run Project Intelligence resilience smoke
+        run: node --check pristeel-project-intelligence-resilience-v1.js && node tests/project-intelligence-resilience-smoke.js
       - name: Run explicit AI request API smoke
         run: node scripts/ai-request-api-smoke.mjs
       - name: Run explicit AI provider routing smoke
