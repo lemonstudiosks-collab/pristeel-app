@@ -3,12 +3,14 @@ const vm=require('vm');
 const assert=require('assert');
 const {JSDOM}=require('jsdom');
 
-const html='<!doctype html><html><body><div id="page-kek-tenders" style="display:block"><div class="pst-kek-eye"></div><div class="pst-kek-sub"></div><input id="pst-kek-search"><select id="pst-kek-source"><option value="all" selected>all</option><option value="TED">TED</option><option value="KRPP">KRPP</option><option value="APP_AL">APP</option></select><select id="pst-kek-phase"></select><select id="pst-kek-category"><option value="all" selected>all</option></select><select id="pst-kek-status"></select><div id="pst-kek-list"></div></div><b id="pst-kek-nav-badge"></b></body></html>';
+const html='<!doctype html><html><body><div id="pst-ws-alertbar"><button class="pst-ws-alertitem">1 email pa projekt</button></div><div id="page-kek-tenders" style="display:block"><div class="pst-kek-eye"></div><div class="pst-kek-sub"></div><input id="pst-kek-search"><select id="pst-kek-source"><option value="all" selected>all</option><option value="TED">TED</option><option value="KRPP">KRPP</option><option value="APP_AL">APP</option></select><select id="pst-kek-phase"></select><select id="pst-kek-category"><option value="all" selected>all</option></select><select id="pst-kek-status"></select><div id="pst-kek-list"></div></div><b id="pst-kek-nav-badge"></b></body></html>';
 const dom=new JSDOM(html,{url:'https://example.test/',runScripts:'outside-only'});
 const {window}=dom;
 window.setTimeout=(fn)=>{fn();return 1;};
+window.clearTimeout=()=>{};
 window.alert=()=>{};window.confirm=()=>true;window.open=()=>{};
 let writes=[];
+let monitorOpens=0;
 const rows=[
  {id:'ted-award',source_key:'TED:A',procurement_no:'TED-A',title:'Structural steel award',authority:'Buyer GmbH',category:'steel_structure',relevance_score:96,status:'new',published_date:'2026-08-14',fpp:'45223210',match_reasons:['steel'],payload:{source:'TED',notice_phase:'award',winner:{name:'Winner Stahl GmbH',email:'sales@winner.example',website:'https://winner.example',city:'Berlin',country:'DE'}}},
  {id:'ted-no-winner',source_key:'TED:N',procurement_no:'TED-N',title:'Steel award awaiting winner publication',authority:'Buyer SA',category:'steel_structure',relevance_score:94,status:'new',published_date:'2026-08-14',fpp:'45223210',match_reasons:['steel'],payload:{source:'TED',notice_phase:'award',winner:{name:'',email:'',website:'',city:'',country:''}}},
@@ -25,6 +27,7 @@ window.pstKekRender=()=>{};
 window.pstKekSetStatus=async(id,status)=>{const r=rows.find(x=>x.id===id);if(r)r.status=status;};
 window.pstKekPromote=async()=>{};
 window.pstKekOpenSource=()=>{};window.pstKekOpenProject=()=>{};
+window.pstWsKekTenders=()=>{monitorOpens++;};
 const code=fs.readFileSync('pristeel-tender-business-flow-v1.js','utf8');
 vm.runInContext(code,dom.getInternalVMContext());
 
@@ -34,6 +37,25 @@ vm.runInContext(code,dom.getInternalVMContext());
  assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[0]),true,'TED award with winner is operational');
  assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[1]),false,'TED award without winner is intelligence-only until winner data exists');
  assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[3]),true,'KRPP opportunity is operational');
+
+ const homeBoundaryRows=rows.concat([
+  {id:'app-open',status:'review',payload:{source:'APP_AL',notice_phase:'opportunity'}},
+  {id:'app-award',status:'new',payload:{source:'APP_AL',notice_phase:'award'}},
+  {id:'krpp-ignored',status:'ignored',payload:{source:'KRPP',notice_phase:'opportunity'}},
+  {id:'ted-contacted',status:'review',payload:{source:'TED',notice_phase:'award',ted_contact_status:'contacted',winner:{name:'Already Contacted GmbH'}}}
+ ]);
+ const signalSummary=window.pstTenderBusinessFlow.homeSignalSummary(homeBoundaryRows);
+ assert.deepEqual(JSON.parse(JSON.stringify(signalSummary)),{total:3,opportunities:2,ted_winners:1},'Home signal must count only direct-bid opportunities and actionable TED winners');
+ const writesBeforeHome=writes.length;
+ await window.pstTenderBusinessFlow.refreshHomeSignal(true);
+ assert.equal(writes.length,writesBeforeHome,'Home tender refresh must remain read-only');
+ const homeSignal=window.document.getElementById('pst-tender-home-signal');
+ assert.ok(homeSignal,'actionable tenders should surface one Home signal');
+ assert.ok(window.document.getElementById('pst-ws-alertbar').textContent.includes('1 email pa projekt'),'Home tender signal must preserve existing Home alerts');
+ assert.ok(homeSignal.textContent.includes('2'),'Home signal should aggregate the two operational rows in the current dataset');
+ homeSignal.click();
+ assert.equal(monitorOpens,1,'Home tender signal must open the existing Tender Monitor');
+
  await window.pstKekLoad();
  let text=window.document.getElementById('pst-kek-list').textContent;
  assert.ok(!text.includes('Steel award awaiting winner publication'),'TED award without winner must stay out of operational focus');

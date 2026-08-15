@@ -12,6 +12,7 @@ var bizRows=[];
 var installed=false;
 var loading=false;
 var originalLoad=null,originalSetStatus=null,originalPromote=null;
+var homeSignalLoading=false,homeSignalLastFetch=0,homeSignalCache=[],homeSignalTimer=null;
 
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function n(v){return String(v==null?'':v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
@@ -47,6 +48,53 @@ function statusLabel(r){
 }
 function isOperationalFocus(r){return source(r)==='TED'?phase(r)==='award'&&hasTedWinner(r):phase(r)==='opportunity';}
 function isOpen(r){var st=bizStatus(r);return st==='new'||st==='review';}
+function operationalRows(rows){return(Array.isArray(rows)?rows:[]).filter(function(r){return isOperationalFocus(r)&&isOpen(r);});}
+function homeSignalSummary(rows){
+ var list=operationalRows(rows),opportunities=0,tedWinners=0;
+ list.forEach(function(r){if(source(r)==='TED')tedWinners++;else opportunities++;});
+ return{total:list.length,opportunities:opportunities,ted_winners:tedWinners};
+}
+function openTenderMonitor(){
+ if(typeof window.pstWsKekTenders==='function'){window.pstWsKekTenders();return;}
+ if(typeof window.showPage==='function')window.showPage('kek-tenders');
+}
+window.pstTenderBizOpenMonitor=openTenderMonitor;
+function homeSignalLabel(s){
+ if(s.opportunities&&s.ted_winners)return'<b>'+s.total+'</b> sinjale tenderash · '+s.opportunities+' mundësi · '+s.ted_winners+' fitues TED';
+ if(s.opportunities)return'<b>'+s.opportunities+'</b> tender'+(s.opportunities===1?'':'a')+' për shqyrtim';
+ return'<b>'+s.ted_winners+'</b> fitues TED për outreach';
+}
+function renderHomeSignal(rows){
+ var bar=document.getElementById('pst-ws-alertbar');if(!bar)return;
+ var s=homeSignalSummary(rows),old=document.getElementById('pst-tender-home-signal'),sep=bar.querySelector('[data-pst-tender-signal-sep]');
+ if(!s.total){if(old)old.remove();if(sep)sep.remove();return;}
+ var signature=[s.total,s.opportunities,s.ted_winners].join(':');
+ if(old&&old.getAttribute('data-pst-signature')===signature)return;
+ if(!old){
+  var hasExisting=!!bar.querySelector('.pst-ws-alertitem');
+  if(!hasExisting)bar.innerHTML='';
+  else{
+   sep=document.createElement('span');sep.setAttribute('data-pst-tender-signal-sep','1');sep.textContent='·';sep.style.color='#A0A6AB';bar.appendChild(sep);
+  }
+  old=document.createElement('button');old.type='button';old.id='pst-tender-home-signal';old.className='pst-ws-alertitem';old.style.cursor='pointer';old.title='Hap Tender Monitor';old.addEventListener('click',openTenderMonitor);bar.appendChild(old);
+ }
+ old.setAttribute('data-pst-signature',signature);old.innerHTML=homeSignalLabel(s);
+}
+async function refreshHomeSignal(force){
+ var now=Date.now();
+ if(!force&&homeSignalLastFetch&&now-homeSignalLastFetch<30000){renderHomeSignal(homeSignalCache);return homeSignalCache;}
+ if(homeSignalLoading||typeof window.supaFetch!=='function')return homeSignalCache;
+ homeSignalLoading=true;
+ try{
+  var rows=await db('kek_tender_watch?select=id,status,payload&status=in.(new,review)&limit=2000');
+  homeSignalCache=Array.isArray(rows)?rows:[];homeSignalLastFetch=Date.now();renderHomeSignal(homeSignalCache);return homeSignalCache;
+ }catch(e){return homeSignalCache;}
+ finally{homeSignalLoading=false;}
+}
+function scheduleHomeSignal(force){
+ if(homeSignalTimer)clearTimeout(homeSignalTimer);
+ homeSignalTimer=setTimeout(function(){refreshHomeSignal(!!force);},80);
+}
 
 function setupShell(){
  var page=document.getElementById('page-kek-tenders');if(!page)return;
@@ -60,7 +108,7 @@ function setupShell(){
 }
 function updateBadge(){
  var badge=document.getElementById('pst-kek-nav-badge');if(!badge)return;
- var c=bizRows.filter(function(r){return isOperationalFocus(r)&&isOpen(r);}).length;
+ var c=operationalRows(bizRows).length;
  badge.textContent=String(c);badge.style.display=c?'inline-flex':'none';
 }
 async function load(){
@@ -70,7 +118,8 @@ async function load(){
   if(originalLoad)await originalLoad();
   bizRows=await db('kek_tender_watch?select=*&order=published_date.desc,relevance_score.desc&limit=2000');
   bizRows=Array.isArray(bizRows)?bizRows:[];
-  setupShell();updateBadge();loading=false;render();
+  homeSignalCache=bizRows;homeSignalLastFetch=Date.now();
+  setupShell();updateBadge();renderHomeSignal(bizRows);loading=false;render();
  }catch(e){loading=false;if(h)h.innerHTML='<div class="pst-kek-empty">Tabela e tenderëve nuk u ngarkua: '+esc(e.message)+'</div>';}
 }
 function statusMatch(r,st){var bs=bizStatus(r);if(st==='all')return true;if(st==='open')return bs==='new'||bs==='review';return bs===st;}
@@ -138,26 +187,26 @@ function render(){
  }).join('')+'</tbody></table>';
 }
 async function refreshOwnRows(){
- bizRows=await db('kek_tender_watch?select=*&order=published_date.desc,relevance_score.desc&limit=2000');bizRows=Array.isArray(bizRows)?bizRows:[];updateBadge();render();
+ bizRows=await db('kek_tender_watch?select=*&order=published_date.desc,relevance_score.desc&limit=2000');bizRows=Array.isArray(bizRows)?bizRows:[];homeSignalCache=bizRows;homeSignalLastFetch=Date.now();updateBadge();renderHomeSignal(bizRows);render();
 }
 window.pstTenderBizSetStatus=async function(id,status){
  try{
   if(originalSetStatus)await originalSetStatus(id,status);else await db('kek_tender_watch?id=eq.'+encodeURIComponent(id),'PATCH',{status:status,updated_at:new Date().toISOString()});
-  var r=bizRows.find(function(x){return String(x.id)===String(id);});if(r)r.status=status;updateBadge();render();
+  var r=bizRows.find(function(x){return String(x.id)===String(id);});if(r)r.status=status;updateBadge();renderHomeSignal(bizRows);render();
  }catch(e){alert('Gabim: '+e.message);}
 };
 window.pstTenderBizMarkContacted=async function(id){
  try{
   var r=bizRows.find(function(x){return String(x.id)===String(id);});if(!r)return;
   var p=Object.assign({},payload(r),{ted_contact_status:'contacted',ted_contacted_at:new Date().toISOString()});
-  await db('kek_tender_watch?id=eq.'+encodeURIComponent(id),'PATCH',{payload:p,updated_at:new Date().toISOString()});r.payload=p;updateBadge();render();
+  await db('kek_tender_watch?id=eq.'+encodeURIComponent(id),'PATCH',{payload:p,updated_at:new Date().toISOString()});r.payload=p;updateBadge();renderHomeSignal(bizRows);render();
  }catch(e){alert('Gabim: '+e.message);}
 };
 window.pstTenderBizReopen=async function(id){
  try{
   var r=bizRows.find(function(x){return String(x.id)===String(id);});if(!r)return;
   var p=Object.assign({},payload(r));delete p.ted_contact_status;delete p.ted_contacted_at;
-  await db('kek_tender_watch?id=eq.'+encodeURIComponent(id),'PATCH',{payload:p,status:'review',updated_at:new Date().toISOString()});r.payload=p;r.status='review';updateBadge();render();
+  await db('kek_tender_watch?id=eq.'+encodeURIComponent(id),'PATCH',{payload:p,status:'review',updated_at:new Date().toISOString()});r.payload=p;r.status='review';updateBadge();renderHomeSignal(bizRows);render();
  }catch(e){alert('Gabim: '+e.message);}
 };
 window.pstTenderBizEmail=function(id){var r=bizRows.find(function(x){return String(x.id)===String(id);}),e=r&&winner(r).email;if(e)window.location.href='mailto:'+encodeURIComponent(e);};
@@ -173,5 +222,15 @@ function install(){
  return true;
 }
 [400,900,1600,2800,4800,8000].forEach(function(ms){setTimeout(install,ms);});
-window.pstTenderBusinessFlow={source:source,phase:phase,bizStatus:bizStatus,isOperationalFocus:isOperationalFocus,phaseMatch:phaseMatch,winner:winner};
+[700,1800,4200,8000].forEach(function(ms){setTimeout(function(){scheduleHomeSignal(ms===700);},ms);});
+if(typeof MutationObserver!=='undefined'){
+ var homeObserver=new MutationObserver(function(){
+  var bar=document.getElementById('pst-ws-alertbar');
+  if(bar&&!document.getElementById('pst-tender-home-signal'))scheduleHomeSignal(false);
+ });
+ if(document.body)homeObserver.observe(document.body,{childList:true,subtree:true});
+ else document.addEventListener('DOMContentLoaded',function(){homeObserver.observe(document.body,{childList:true,subtree:true});});
+}
+window.addEventListener('pst:modules-ready',function(){scheduleHomeSignal(true);});
+window.pstTenderBusinessFlow={source:source,phase:phase,bizStatus:bizStatus,isOperationalFocus:isOperationalFocus,phaseMatch:phaseMatch,winner:winner,operationalRows:operationalRows,homeSignalSummary:homeSignalSummary,renderHomeSignal:renderHomeSignal,refreshHomeSignal:refreshHomeSignal};
 })();
