@@ -7,7 +7,7 @@
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "56fe1f173bee72e79395cc813a9991e07c06af04",
+    "bootstrapLoaderGitBlobSha": "25c8896e64cd2b5d5f104e4ab634d8a0d611739a",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "6ed1ddcbfee2cdfb324259e75e4140af12950f8a"
   },
@@ -122,7 +122,8 @@
     "pristeel-gmail-intake-auth-bridge-v1.js",
     "pristeel-email-offer-draft-editor-bridge-v1.js",
     "pristeel-project-commercial-prefill-rescue-v1.js",
-    "pristeel-workspace-release-fix-v3.js"
+    "pristeel-workspace-release-fix-v3.js",
+    "pristeel-project-intake-continuity-v1.js"
   ],
   "foundationRequired": [
     "pristeel-ui-v2.js"
@@ -146,6 +147,12 @@
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded unconditionally by the production pristeel-roles.js base module."
+    },
+    {
+      "module": "pristeel-project-intake-continuity-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded unconditionally by the production pristeel-roles.js base module to recover confirmed single-project Gmail thread continuity before linked-file recovery."
     },
     {
       "module": "pristeel-groq-gptoss-provider-v1.js",
