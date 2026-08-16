@@ -12,7 +12,11 @@ assert.equal(generic.relevance_score,0,'generic 4421 structures must not be prom
 const secondaryOnly=classifyTedNotice({title:'General building construction',cpv:['45000000','45223210']});
 assert.ok(secondaryOnly.relevance_score<75,'secondary steel CPV inside a general contract must stay below the operational threshold');
 const explicitSteelTitle=classifyTedNotice({title:'Stahlbauarbeiten mit Alu-Plattform',cpv:['45223000','45223210']});
-assert.ok(explicitSteelTitle.relevance_score>=75,'explicit steel title must remain eligible even when the main CPV is broader');
+assert.ok(explicitSteelTitle.relevance_score>=75,'explicit steel title must remain eligible even when the scope also mentions aluminium');
+const aluminiumOnly=classifyTedNotice({title:'Vorhangfassade Alu / Neubau Kombibad',cpv:['45223110']});
+assert.ok(aluminiumOnly.relevance_score<75,'clear aluminium-only metalwork must not become a steel opportunity from CPV alone');
+const aluminiumCladding=classifyTedNotice({title:'Fahrzeughalle, Dämmung- und Alu-Wandbekleidung',cpv:['45223110']});
+assert.ok(aluminiumCladding.relevance_score<75,'aluminium cladding must not be promoted as fabricated steel work');
 const supervision=classifyTedNotice({title:'Fachbauüberwachung Stahlbau',cpv:['71000000','45223210']});
 assert.ok(supervision.relevance_score<75,'steel supervision/service tenders are not fabrication opportunities');
 
