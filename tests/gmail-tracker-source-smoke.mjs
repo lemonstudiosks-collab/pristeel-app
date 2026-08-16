@@ -16,17 +16,23 @@ assert.ok(source.includes('match_confidence: 0'),'server ingestion must not inve
 assert.ok(source.includes('needs_review: false'),'new ingestion must not fabricate a review decision');
 
 const fetchStart=source.indexOf('async function fetchMessageRow');
-const ingestStart=source.indexOf('async function ingestProjectEmails');
-assert.ok(fetchStart>=0&&ingestStart>fetchStart,'fetchMessageRow ingestion boundary must exist');
-const fetchBlock=source.slice(fetchStart,ingestStart);
+const attachmentStart=source.indexOf('async function linkedAttachmentCandidates');
+assert.ok(fetchStart>=0&&attachmentStart>fetchStart,'fetchMessageRow ingestion boundary must exist');
+const fetchBlock=source.slice(fetchStart,attachmentStart);
 assert.ok(!/\bproject_id\b/.test(fetchBlock),'raw Gmail ingestion must never assign a project_id');
 assert.ok(!/suggested_project_id/.test(fetchBlock),'raw Gmail ingestion must never assign a suggested project');
 assert.ok(!/\/attachments\//.test(source),'gmail-tracker must not download attachment binaries during metadata/body ingestion');
 
+const ingestStart=source.indexOf('async function ingestProjectEmails');
 const ingestEnd=source.indexOf('async function scanReplies');
+assert.ok(ingestStart>=0&&ingestEnd>ingestStart,'project email ingestion boundary must exist');
 const ingestBlock=source.slice(ingestStart,ingestEnd);
 assert.ok(ingestBlock.includes('const newIds = ids.filter((id) => !existing.has(id));'),'ingestion must fetch only new Gmail message ids');
 assert.ok(ingestBlock.includes('ignoreDuplicates: true'),'database insert must remain duplicate-safe');
 assert.ok(ingestBlock.includes('onConflict: "gmail_message_id"'),'Gmail message id must remain the dedupe key');
+
+assert.ok(source.includes('attachmentRegistryRows(full, candidate.project_id, "server-metadata-v1")'),'attachment metadata must require a confirmed project relation');
+assert.ok(source.includes('Math.min(40, Math.max(1, Math.floor(Number(limit) || 20)))'),'attachment metadata sync must remain batch-bounded');
+assert.ok(source.includes('onConflict: "gmail_message_id,attachment_id,project_id"'),'attachment metadata registry must remain duplicate-safe per project');
 
 console.log('Gmail tracker source safety smoke: OK');
