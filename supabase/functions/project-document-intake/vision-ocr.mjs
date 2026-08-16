@@ -35,10 +35,10 @@ export async function ocrWithGoogleVision(bytes,{name='',mime=''}={}){
     if(isPdf){
       const j=await post('https://vision.googleapis.com/v1/files:annotate',{requests:[{inputConfig:{mimeType:'application/pdf',content:base64(bytes)},features:[{type:'DOCUMENT_TEXT_DETECTION'}]}]}),file=j?.responses?.[0],pages=file?.responses||[],errors=pages.map(x=>x?.error?.message).filter(Boolean),text=pages.map(responseText).filter(Boolean).join('\n\n').trim();
       if(errors.length&&!text)return {text:'',method:'google-vision-pdf-ocr-v1',status:'review',error:errors.join('; ').slice(0,1000),trust_tier:'ocr'};
-      return {text,method:'google-vision-pdf-ocr-v1',status:text?'extracted':'needs_visual_reasoning',error:errors.length?errors.join('; ').slice(0,1000):null,trust_tier:'ocr',ocr_metadata:{provider:'google-vision',mode:'DOCUMENT_TEXT_DETECTION',pages:pages.length}};
+      return {text,method:'google-vision-pdf-ocr-v1',status:text?'extracted':'needs_vision',error:errors.length?errors.join('; ').slice(0,1000):null,trust_tier:'ocr',ocr_metadata:{provider:'google-vision',mode:'DOCUMENT_TEXT_DETECTION',pages:pages.length}};
     }
     const j=await post('https://vision.googleapis.com/v1/images:annotate',{requests:[{image:{content:base64(bytes)},features:[{type:'DOCUMENT_TEXT_DETECTION'}]}]}),res=j?.responses?.[0]||{},err=res?.error?.message||'',text=responseText(res);
     if(err&&!text)return {text:'',method:'google-vision-image-ocr-v1',status:'review',error:s(err).slice(0,1000),trust_tier:'ocr'};
-    return {text,method:'google-vision-image-ocr-v1',status:text?'extracted':'needs_visual_reasoning',error:err?s(err).slice(0,1000):null,trust_tier:'ocr',ocr_metadata:{provider:'google-vision',mode:'DOCUMENT_TEXT_DETECTION'}};
+    return {text,method:'google-vision-image-ocr-v1',status:text?'extracted':'needs_vision',error:err?s(err).slice(0,1000):null,trust_tier:'ocr',ocr_metadata:{provider:'google-vision',mode:'DOCUMENT_TEXT_DETECTION'}};
   }catch(e2){return {text:'',method:'google-vision-ocr-v1',status:'needs_ocr',error:String(e2).slice(0,1500),trust_tier:'ocr'};}
 }
