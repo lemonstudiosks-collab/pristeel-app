@@ -15,6 +15,8 @@ let owners=ownerMap([],[]);
 
 assert.equal(trustedMethod('manual',100),true);
 assert.equal(trustedMethod('verified-identity-reconcile-v1',100),true);
+assert.equal(trustedMethod('verified-thread-repair-v1',100),true);
+assert.equal(trustedMethod('verified-thread-continuity-v1',100),true);
 assert.equal(trustedMethod('project-identity-audit-ssp',100),true);
 assert.equal(trustedMethod('gmail-panel',100),true);
 assert.equal(trustedMethod('email',90),false,'Old email-only matching must never seed thread inheritance');
