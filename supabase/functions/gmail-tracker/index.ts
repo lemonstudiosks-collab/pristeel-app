@@ -289,7 +289,7 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 }
 
 async function fetchMessageRow(id: string): Promise<GmailMessageRow> {
-  const fields = "id,threadId,internalDate,snippet,payload(headers,filename,mimeType,body(data,attachmentId,size),parts(filename,mimeType,body(data,attachmentId,size),parts(filename,mimeType,body(data,attachmentId,size),parts(filename,mimeType,body(data,attachmentId,size))))))";
+  const fields = "id,threadId,internalDate,snippet,payload";
   const full = await gmail(`/messages/${encodeURIComponent(id)}?format=full&fields=${encodeURIComponent(fields)}`);
   const headers = full.payload?.headers ?? [];
   const fromRaw = headerValue(headers, "From");
