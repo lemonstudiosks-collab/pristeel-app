@@ -1,4 +1,4 @@
-name: TED award winner monitor
+name: TED steel tender + award monitor
 
 on:
   workflow_dispatch:
@@ -14,6 +14,8 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'scripts/ted-tender-sync.mjs'
+      - 'tests/ted-tender-sync-smoke.mjs'
       - 'scripts/ted-award-winner-sync.mjs'
       - 'tests/ted-award-winner-sync-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
@@ -25,8 +27,12 @@ on:
   push:
     branches: [main]
     paths:
+      - 'scripts/ted-tender-sync.mjs'
+      - 'tests/ted-tender-sync-smoke.mjs'
       - 'scripts/ted-award-winner-sync.mjs'
+      - 'tests/ted-award-winner-sync-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
+      - 'tests/tender-business-flow-smoke.js'
       - 'pristeel-roles.js'
       - '.github/workflows/ted-tender-sync.yml'
 
@@ -34,13 +40,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: ted-award-winner-monitor-${{ github.ref }}
+  group: ted-steel-monitor-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
@@ -63,10 +69,14 @@ jobs:
       - name: Install UI test dependency
         run: npm install --no-audit --no-fund
 
-      - name: Check award collector and UI syntax
+      - name: Check TED collectors and UI syntax
         run: |
+          node --check scripts/ted-tender-sync.mjs
           node --check scripts/ted-award-winner-sync.mjs
           node --check pristeel-tender-business-flow-v1.js
+
+      - name: Run TED open tender smoke
+        run: node tests/ted-tender-sync-smoke.mjs
 
       - name: Run TED award winner smoke
         run: node tests/ted-award-winner-sync-smoke.mjs
@@ -74,14 +84,19 @@ jobs:
       - name: Run tender business flow smoke
         run: node tests/tender-business-flow-smoke.js
 
-      - name: Collect awarded TED steel contracts and winners
+      - name: Collect open TED steel opportunities
+        run: node scripts/ted-tender-sync.mjs
+
+      - name: Enrich awarded TED steel contracts with winners
         run: node scripts/ted-award-winner-sync.mjs
 
-      - name: Upload sanitized summary
+      - name: Upload sanitized summaries
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ted-award-winner-monitor
-          path: tmp/ted-award-winner-sync.json
+          name: ted-steel-monitor
+          path: |
+            tmp/ted-tender-sync.json
+            tmp/ted-award-winner-sync.json
           if-no-files-found: ignore
           retention-days: 14
