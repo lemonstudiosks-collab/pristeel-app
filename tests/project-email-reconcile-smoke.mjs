@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { loadIdentityTools,autoEligibleHit,ownerMap,classifyEmail } from '../scripts/project-email-reconcile.mjs';
+import { loadIdentityTools,autoEligibleHit,trustedMethod,ownerMap,classifyEmail } from '../scripts/project-email-reconcile.mjs';
 
 const tools=await loadIdentityTools();
 const projects=[
@@ -12,6 +12,13 @@ const projects=[
 ];
 const index=tools.buildIndex(projects);
 let owners=ownerMap([],[]);
+
+assert.equal(trustedMethod('manual',100),true);
+assert.equal(trustedMethod('verified-identity-reconcile-v1',100),true);
+assert.equal(trustedMethod('project-identity-audit-ssp',100),true);
+assert.equal(trustedMethod('gmail-panel',100),true);
+assert.equal(trustedMethod('email',90),false,'Old email-only matching must never seed thread inheritance');
+assert.equal(trustedMethod('email+snippet+snippet',100),false,'Old contact/snippet scoring must not seed thread inheritance');
 
 let d=classifyEmail({id:1,gmail_thread_id:'t1',subject:'Re: ANF-8910 Anfrage Schweißbaugruppen',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'p8910');
@@ -42,7 +49,7 @@ assert.equal(d.target,'pairbus','Historical request reference must resolve throu
 assert.equal(d.reason,'strong-identity');
 assert(d.result.hits[0].anchors.some(a=>a.key==='260784'),'Alias reference 260784 must be indexed as a strong known project identity');
 
-owners=ownerMap([{gmail_thread_id:'t4',project_id:'p8910'}],[]);
+owners=ownerMap([{gmail_thread_id:'t4',project_id:'p8910',match_method:'manual',match_confidence:100}],[]);
 d=classifyEmail({id:4,gmail_thread_id:'t4',subject:'Danke für die Rückmeldung',snippet:'',match_method:null},index,owners,tools,{allowThread:true});
 assert.equal(d.target,'p8910');
 assert.equal(d.reason,'single-project-thread');
@@ -50,6 +57,11 @@ assert.equal(d.reason,'single-project-thread');
 d=classifyEmail({id:5,gmail_thread_id:'t4',subject:'Neue Anfrage ANF-9999',snippet:'',match_method:null},index,owners,tools,{allowThread:true});
 assert.equal(d.target,'');
 assert.equal(d.reason,'unknown-reference','Unknown strong ref must block thread inheritance');
+
+owners=ownerMap([{gmail_thread_id:'t5',project_id:'p8910',match_method:'email',match_confidence:90}],[]);
+d=classifyEmail({id:11,gmail_thread_id:'t5',subject:'Danke für die Rückmeldung',snippet:'',match_method:null},index,owners,tools,{allowThread:true});
+assert.equal(d.target,'');
+assert.equal(d.reason,'insufficient-identity','Untrusted historical email-only links must not propagate through the thread');
 
 d=classifyEmail({id:6,gmail_thread_id:'t4',subject:'Delivery Status Notification',snippet:'',match_method:null},index,owners,tools,{allowThread:true});
 assert.equal(d.reason,'system-mail');
