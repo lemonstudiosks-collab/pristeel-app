@@ -7,6 +7,8 @@ const conversation = fs.readFileSync('pristeel-project-intelligence-conversation
 
 assert(source.includes('gmail_tracker_cron_authorized'), 'edge function must reuse the existing private cron-secret authorization guard');
 assert(source.includes('https://www.googleapis.com/auth/gmail.readonly'), 'document intake may read Gmail attachments');
+assert(source.includes('urn:ietf:params:oauth:grant-type:jwt-bearer'), 'Google service-account token exchange must use the OAuth JWT bearer grant type');
+assert(!source.includes('urn:ietf:params:oauth-type:jwt-bearer'), 'invalid OAuth grant-type spelling must never return');
 assert(source.includes('project-source-files'), 'source binaries must be archived in the private project source bucket');
 assert(source.includes('content_sha256'), 'archive must retain a content hash');
 assert(source.includes('rows.length!==same.length'), 'duplicate filename fallback must fail closed when live and registered occurrences differ');
@@ -14,6 +16,8 @@ assert(source.includes('analysis_status:"retry"'), 'processing failures must rem
 assert(source.includes('Number(x.confidence)>=.96'), 'automatic BOM writes must use the high-confidence threshold');
 assert(source.includes('source_attachment_link_id'), 'automatic BOM rows must preserve source provenance');
 assert(source.includes('source_item_key'), 'automatic BOM rows must carry an idempotent source item key');
+assert(source.includes('bomResult.conflicts'), 'automatic BOM must detect semantic conflicts with existing project BOM rows');
+assert(source.includes('Asnje vlere ekzistuese nuk u mbishkrua'), 'existing BOM conflicts must be review-first and never overwritten');
 assert(source.includes('needs_conversion'), 'unsupported DWG must route to conversion/review rather than guess');
 assert(source.includes('needs_ocr'), 'image-only PDF extraction must route to OCR/review rather than guess');
 assert(!source.includes('drive/v3/files'), 'server intake must not claim an automatic Google Drive upload before that path is explicitly implemented');
