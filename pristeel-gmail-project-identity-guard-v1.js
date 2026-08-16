@@ -1,6 +1,6 @@
 /* PRISTEEL Gmail project identity guard v1
  * Project/RFQ identity is authoritative; company/contact/domain are supporting evidence only.
- * - Strong project refs/business refs and unique project-name anchors/phrases may auto-suggest.
+ * - Strong project refs/business refs/identity aliases and unique project-name anchors/phrases may auto-suggest.
  * - Existing verified thread continuity is allowed only when no contradictory project identity appears.
  * - Mixed/multi-RFQ threads are never normalized automatically to one project.
  * - Unknown strong refs (for example ANF-8910 when only ANF-8915 exists) block automatic linking.
@@ -60,6 +60,7 @@ function buildIndex(projects){
     function add(value,kind,label){var k=(kind==='semantic'||kind==='semantic_phrase')?compact(value):canonicalRefKey(value);if(k.length<4||seen[k])return;seen[k]=1;anchors.push({key:k,kind:kind,label:String(label||value||k)});if(kind!=='semantic'&&kind!=='semantic_phrase')knownRef[k]=1;}
     if(p&&p.ref)add(p.ref,'ref',p.ref);
     if(p&&p.business_ref)add(p.business_ref,'business_ref',p.business_ref);
+    arr(p&&p.identity_aliases).forEach(function(alias){var refs=referenceKeys(alias);if(refs.length)refs.forEach(function(k){add(k,'business_ref',alias);});else if(norm(alias).length>=8)add(alias,'semantic_phrase',alias);});
     referenceKeys(p&&p.name||'').forEach(function(k){add(k,'name_ref',k);});
     var cw=projectClientWords(p);uniq(words(p&&p.name||'')).forEach(function(t){if(!cw[t]&&t.length>=7&&occurrence[t]===1)add(t,'semantic',t);});
     semanticPhrases(p).forEach(function(ph){if(phraseOccurrence[compact(ph)]===1)add(ph,'semantic_phrase',ph);});
@@ -76,7 +77,7 @@ function classifyCorpus(corpus,index){
 }
 async function projectsIndex(force){
   if(!force&&projectCache&&Date.now()-projectCacheAt<30000)return projectCache;
-  var rows=await safe('projects?select=id,name,client,ref,business_ref,status&order=created_at.desc&limit=2000');
+  var rows=await safe('projects?select=id,name,client,ref,business_ref,identity_aliases,status&order=created_at.desc&limit=2000');
   projectCache=buildIndex(rows);projectCacheAt=Date.now();return projectCache;
 }
 function parseIntakeTarget(){try{var u=new URL(window.__pstPendingGmailIntakeTarget||location.href,location.href);return{messageId:u.searchParams.get('gmail_message_id')||'',threadId:u.searchParams.get('gmail_thread_id')||'',subject:u.searchParams.get('subject')||''};}catch(e){return{messageId:'',threadId:'',subject:''};}}
