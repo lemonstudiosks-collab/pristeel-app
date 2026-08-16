@@ -2,7 +2,8 @@
  * Explicit desktop upload and explicit repair for legacy projects missing a Drive folder.
  * Also loads read-only duplicate context, per-message linked-email full-body sync,
  * Gmail-equivalent contact view dedupe, explicit Gmail recovery auth, project summary command,
- * its read-only Project Intelligence conversation extension and guarded Gmail project auto-link.
+ * its read-only Project Intelligence conversation extension, Project Analysis run guard,
+ * and guarded Gmail project auto-link.
  */
 (function(){
 'use strict';if(window.__pstProjectFirstActionsV1)return;window.__pstProjectFirstActionsV1=true;
@@ -15,6 +16,7 @@ function loadEmailBodySync(){loadScript('pristeel-project-email-body-sync-v1.js?
 function loadContactViewDedupe(){loadScript('pristeel-project-contact-view-dedupe-v1.js?v=20260809-1','contact-view-dedupe',function(){return !!window.PSTProjectContactViewDedupeV1;});}
 function loadLinkedGmailAuthGate(){loadScript('pristeel-linked-gmail-auth-gate-v1.js?v=20260809-1','linked-gmail-auth-gate',function(){return !!window.PSTLinkedGmailAuthGateV1;});}
 function loadProjectSummary(){loadScript('pristeel-project-summary-command-v1.js?v=20260815-brief2','project-summary-command',function(){return !!window.PSTProjectSummaryCommandV1;});}
+function loadProjectAnalysisRunGuard(){loadScript('pristeel-project-analysis-run-guard-v1.js?v=20260816-1','project-analysis-run-guard',function(){return !!window.PSTProjectAnalysisRunGuardV1;});}
 function loadProjectConversation(){loadScript('pristeel-project-intelligence-conversation-v1.js?v=20260816-coverage1','project-intelligence-conversation',function(){return !!window.PSTProjectIntelligenceConversationV1;});}
 function loadGmailProjectAutoLink(){loadScript('pristeel-gmail-project-auto-link-v1.js?v=20260816-autolink5','gmail-project-auto-link',function(){return !!window.PSTGmailProjectAutoLinkV1;});}
 function refreshAfterGmailClose(e){var t=e.target&&e.target.closest?e.target.closest('#pgc-close'):null;if(!t)return;var modal=t.closest('#pgc-bg'),st=modal&&modal.querySelector('#pgc-status'),msg=String(st&&st.textContent||'');if(msg.indexOf('U lidhën')!==0)return;var id=String(window.__pstCurrentProjectId||window._curProjId||'');if(!id)return;setTimeout(function(){if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);},0);}
@@ -47,5 +49,5 @@ function installFlowBridge(){
 document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);
 document.addEventListener('click',refreshAfterGmailClose,true);
 document.addEventListener('pst:modules-ready',function(){installFlowBridge();if(window.PSTProjectSummaryCommandV1&&typeof window.PSTProjectSummaryCommandV1.decorate==='function')window.PSTProjectSummaryCommandV1.decorate();},{once:true});
-window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers,showSupplierOffers:showSupplierOffers};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();loadProjectSummary();loadProjectConversation();loadGmailProjectAutoLink();installFlowBridge();
+window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers,showSupplierOffers:showSupplierOffers};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();loadProjectSummary();loadProjectAnalysisRunGuard();loadProjectConversation();loadGmailProjectAutoLink();installFlowBridge();
 })();
