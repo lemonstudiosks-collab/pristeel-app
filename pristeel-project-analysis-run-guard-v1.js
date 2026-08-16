@@ -4,6 +4,7 @@
  * - Caps Gmail/Drive authorization waits only during the analysis run.
  * - Restores the original auth functions immediately afterwards.
  * - Provides a programmatic click path for the Project Intelligence analyze buttons.
+ * - If an AI run returns without creating a project_analyses row, retries once with the existing rule engine.
  * - Does not send email, write BOM/tasks, or change project status.
  */
 (function(){
@@ -14,8 +15,15 @@ window.__pstProjectAnalysisRunGuardV1=true;
 var AUTH_WAIT_MS=8000;
 var running={};
 function str(v){return String(v==null?'':v);}
+function enc(v){return encodeURIComponent(str(v));}
 function activeId(id){var d=window.__pstIntegrityLastData;return str(id||window.__pstCurrentProjectId||window._curProjId||(d&&d.project&&d.project.id)||'').trim();}
+function stateText(pid){var e=document.getElementById('pai-state-'+pid);return e?str(e.textContent).trim():'';}
 function setState(pid,text,color){var e=document.getElementById('pai-state-'+pid);if(!e)return;e.textContent=text;e.style.color=color||'var(--text3)';}
+async function latestRecord(pid){
+  if(typeof window.supaFetch!=='function')return null;
+  try{var rows=await window.supaFetch('project_analyses?project_id=eq.'+enc(pid)+'&select=id,created_at,engine&order=created_at.desc&limit=1');return Array.isArray(rows)&&rows[0]?rows[0]:null;}catch(e){return null;}
+}
+function isNewRecord(before,after){return !!after&&(!before||str(before.id)!==str(after.id)||str(before.created_at)!==str(after.created_at));}
 function timeoutPromise(p,ms,label){
   return new Promise(function(resolve,reject){
     var settled=false,t=setTimeout(function(){if(settled)return;settled=true;reject(new Error(label+' nuk u përfundua brenda '+Math.round(ms/1000)+' sekondave. Analiza vazhdon me të dhënat e PPPP-së.'));},ms);
@@ -35,6 +43,14 @@ async function withAuthGuards(fn){
   try{return await fn();}
   finally{for(var i=restores.length-1;i>=0;i--)try{restores[i]();}catch(e){}}
 }
+async function retryWithRules(original,self,args,pid){
+  var ai=window.PSTAI||{},oldHas=ai.hasApiKey;
+  if(typeof oldHas!=='function')return{attempted:false,result:null};
+  setState(pid,'Analiza AI nuk u ruajt. Po krijohet analiza operative nga të dhënat e platformës…','#9B6A22');
+  ai.hasApiKey=function(){return false;};
+  try{return{attempted:true,result:await original.apply(self,args)};}
+  finally{ai.hasApiKey=oldHas;}
+}
 function chainHas(fn,flag){var n=0;while(typeof fn==='function'&&n++<12){if(fn[flag])return true;fn=fn.__pstOriginal||fn.__base||null;}return false;}
 function install(){
   var original=window.pstAnalyzeProject;
@@ -45,7 +61,23 @@ function install(){
     if(running[pid])return running[pid];
     var self=this,args=arguments;
     setState(pid,'Po përgatitet analiza e projektit…');
-    var job=withAuthGuards(function(){return original.apply(self,args);});
+    var job=withAuthGuards(async function(){
+      var before=await latestRecord(pid),result=await original.apply(self,args),firstState=stateText(pid),after=await latestRecord(pid);
+      if(isNewRecord(before,after))return result;
+      var retry=await retryWithRules(original,self,args,pid);
+      if(!retry.attempted){
+        setState(pid,firstState||'Analiza nuk u ruajt. Motori operativ nuk ishte i disponueshëm.','#A64B42');
+        return result;
+      }
+      var secondState=stateText(pid),afterRules=await latestRecord(pid);
+      if(isNewRecord(before,afterRules)){
+        setState(pid,'Analiza operative u krijua nga të dhënat aktuale të platformës.','#2F7657');
+        return retry.result;
+      }
+      var failure=/^Analiza d[eë]shtoi\s*:/i.test(secondState)?secondState:(/^Analiza d[eë]shtoi\s*:/i.test(firstState)?firstState:'Analiza nuk u ruajt as me motorin operativ.');
+      setState(pid,failure,'#A64B42');
+      return retry.result;
+    });
     running[pid]=job;
     try{return await job;}
     finally{delete running[pid];}
@@ -76,5 +108,5 @@ install();
 document.addEventListener('click',onAnalysisClick,true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 setTimeout(install,300);setTimeout(install,1200);
-window.PSTProjectAnalysisRunGuardV1={install:install,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid}};
+window.PSTProjectAnalysisRunGuardV1={install:install,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord}};
 })();
