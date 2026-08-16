@@ -26,6 +26,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Run full test suite
         run: npm test
+      - name: Run trading project display smoke
+        run: node --check pristeel-projects-modern-v1.js && node tests/project-trading-display-smoke.js
       - name: Run operational lifecycle smoke
         run: node tests/operational-lifecycle-smoke.mjs
       - name: Run project intake continuity smoke
