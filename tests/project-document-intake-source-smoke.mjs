@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 const source = fs.readFileSync('supabase/functions/project-document-intake/index.ts', 'utf8');
 const eml = fs.readFileSync('supabase/functions/project-document-intake/eml-intelligence.mjs', 'utf8');
+const vision = fs.readFileSync('supabase/functions/project-document-intake/vision-ocr.mjs', 'utf8');
 const migration = fs.readFileSync('supabase/project-attachment-document-intelligence.sql', 'utf8');
 const conversation = fs.readFileSync('pristeel-project-intelligence-conversation-v1.js', 'utf8');
 
@@ -12,9 +13,13 @@ assert(source.includes('urn:ietf:params:oauth:grant-type:jwt-bearer'), 'Google s
 assert(!source.includes('urn:ietf:params:oauth-type:jwt-bearer'), 'invalid OAuth grant-type spelling must never return');
 assert(source.includes('project-source-files'), 'source binaries must be archived in the private project source bucket');
 assert(source.includes('content_sha256'), 'archive must retain a content hash');
+assert(source.includes('duplicateSource(link,hash)'), 'same-project binary content must be checked by content hash before archive');
+assert(source.includes("analysis_status:'duplicate_content'"), 'already analyzed identical content must become a reference instead of a second analysis');
+assert(source.includes("archive_method:'duplicate-content-reference-v1'"), 'duplicate content must preserve a reference-only archive method');
 assert(source.includes('rows.length!==same.length'), 'duplicate filename fallback must fail closed when live and registered occurrences differ');
-assert(source.includes('analysis_status:"retry"'), 'processing failures must remain retryable rather than silently completing');
+assert(source.includes("analysis_status:'retry'"), 'processing failures must remain retryable rather than silently completing');
 assert(source.includes('Number(x.confidence)>=.96'), 'automatic BOM writes must use the high-confidence threshold');
+assert(source.includes("if(x.trust_tier==='ocr'){a.auto_bom_candidates=[]"), 'OCR-derived rows must never auto-write BOM');
 assert(source.includes('source_attachment_link_id'), 'automatic BOM rows must preserve source provenance');
 assert(source.includes('source_item_key'), 'automatic BOM rows must carry an idempotent source item key');
 assert(source.includes('bomResult.conflicts'), 'automatic BOM must detect semantic conflicts with existing project BOM rows');
@@ -30,16 +35,24 @@ assert(eml.includes('npm:postal-mime@2.7.5'), 'EML parser dependency must be pin
 assert(eml.includes('maxNestingDepth:32'), 'EML MIME nesting must be bounded');
 assert(eml.includes('MAX_CHILD_TOTAL=30*1024*1024'), 'EML nested attachment extraction must have a total byte guard');
 assert(eml.includes('DWG requires trusted CAD conversion'), 'DWG nested in EML must remain conversion-first');
-assert(eml.includes('image requires vision/OCR'), 'images nested in EML must be deferred to vision/OCR');
+assert(source.includes('ocrWithGoogleVision'), 'scanned PDFs and images must route through the guarded OCR helper');
+assert(source.includes("return await ocrWithGoogleVision(b,{name,mime:'application/pdf'})"), 'image-only PDFs must fall through to OCR after normal PDF text extraction');
+assert(source.includes('if(isImage(name,mime))return await ocrWithGoogleVision'), 'image attachments must use the same OCR pipeline');
+assert(vision.includes("scope:'https://www.googleapis.com/auth/cloud-platform'"), 'Vision access must use a server-side Google Cloud OAuth scope');
+assert(vision.includes('https://vision.googleapis.com/v1/files:annotate'), 'scanned PDF OCR must use the Vision file annotation endpoint');
+assert(vision.includes('https://vision.googleapis.com/v1/images:annotate'), 'image OCR must use the Vision image annotation endpoint');
+assert(vision.includes("type:'DOCUMENT_TEXT_DETECTION'"), 'OCR must use document-oriented text detection');
+assert(vision.includes("method:'image-signature-noise-v1'"), 'small generic image signatures must be filtered before paid OCR');
+assert(vision.includes("status:permanent?'ocr_unavailable':'needs_ocr'"), 'permanent Vision permission/billing failures must not loop hourly');
 assert(source.includes('needs_conversion'), 'unsupported DWG must route to conversion/review rather than guess');
-assert(source.includes('needs_ocr'), 'image-only PDF extraction must route to OCR/review rather than guess');
-assert(source.includes('image-vision-pending-v1'), 'image attachments must be deferred to a vision path rather than parsed as text');
+assert(source.includes('needs_ocr'), 'OCR retry state must remain supported');
 assert(source.includes('url-like-attachment-name-v1'), 'URL-like MIME noise must not consume the technical intake queue');
 assert(!source.includes('drive/v3/files'), 'server intake must not claim an automatic Google Drive upload before that path is explicitly implemented');
 assert(!source.includes('project_id:link.project_id,attachment_name'), 'server intake must not create a second project attachment relation');
 
 assert(migration.includes('bom_items_auto_source_unique'), 'database must prevent duplicate auto-BOM rows from the same source item');
 assert(migration.includes('revoke all on function public.project_document_intake_internal_request'), 'internal scheduler wrapper must not be callable by browser roles');
+assert(migration.includes('project_document_intake_internal_process(p_link_id bigint)'), 'repo must preserve the single existing targeted process wrapper');
 assert(conversation.includes('document_intelligence:documentIntel(d.attachmentLinks)'), 'Project Intelligence must receive analyzed source-file content');
 assert(conversation.includes('permend filename-in'), 'AI grounding rules must require the source filename when using attachment content');
 assert(conversation.includes('needs_conversion, needs_ocr, needs_vision ose review'), 'Project Intelligence must not invent contents for unparsed files');
