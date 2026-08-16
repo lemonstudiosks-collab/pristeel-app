@@ -36,6 +36,8 @@ jobs:
         run: node --check pristeel-gmail-project-auto-link-v1.js && node tests/gmail-project-auto-link-smoke.js
       - name: Run Gmail tracker source smoke
         run: node tests/gmail-tracker-source-smoke.mjs && node tests/gmail-attachment-metadata-smoke.mjs
+      - name: Run project email body hydration smoke
+        run: node --check pristeel-project-email-body-sync-v1.js && node tests/project-email-body-hydration-smoke.js
       - name: Run workspace task source shortcut smoke
         run: node --check pristeel-task-source-actions-v1.js && node tests/task-source-actions-smoke.js
       - name: Run RFQ Gmail history sync smoke
