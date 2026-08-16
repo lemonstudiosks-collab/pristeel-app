@@ -1,6 +1,6 @@
 /* PRISTEEL — Tender Business Flow v1
- * TED = awarded contracts / winner outreach.
- * KRPP + APP = active opportunities PRISTEEL can bid on directly.
+ * TED opportunities + KRPP + APP = active opportunities PRISTEEL can bid on directly.
+ * TED awards = awarded contracts / winner outreach.
  * Additive UI layer; does not replace the underlying collectors or project promotion logic.
  */
 (function(){
@@ -34,24 +34,24 @@ function winner(r){
  return{name:String(w.name||names[0]||''),email:String(w.email||(Array.isArray(w.emails)&&w.emails[0])||''),website:String(w.website||(Array.isArray(w.websites)&&w.websites[0])||''),country:String(w.country||(Array.isArray(w.countries)&&w.countries[0])||''),city:String(w.city||(Array.isArray(w.cities)&&w.cities[0])||''),names:names};
 }
 function bizStatus(r){
- if(source(r)==='TED'&&payload(r).ted_contact_status==='contacted')return'contacted';
+ if(source(r)==='TED'&&phase(r)==='award'&&payload(r).ted_contact_status==='contacted')return'contacted';
  return r.status||'new';
 }
-function hasTedWinner(r){return source(r)==='TED'&&!!winner(r).name;}
+function hasTedWinner(r){return source(r)==='TED'&&phase(r)==='award'&&!!winner(r).name;}
 function statusLabel(r){
  var st=bizStatus(r);
- if(source(r)==='TED'){
+ if(source(r)==='TED'&&phase(r)==='award'){
   if(!hasTedWinner(r)&&st!=='ignored')return'Fituesi i papublikuar';
   return({new:'Fitues i ri',review:'Për kontakt',contacted:'Kontaktuar',ignored:'Anashkaluar',promoted:'Projekt'})[st]||st;
  }
  return({new:'E re',review:'Në shqyrtim',ignored:'Anashkaluar',promoted:'Projekt',contacted:'Kontaktuar'})[st]||st||'—';
 }
-function isOperationalFocus(r){return source(r)==='TED'?phase(r)==='award'&&hasTedWinner(r):phase(r)==='opportunity';}
+function isOperationalFocus(r){return phase(r)==='opportunity'||(source(r)==='TED'&&phase(r)==='award'&&hasTedWinner(r));}
 function isOpen(r){var st=bizStatus(r);return st==='new'||st==='review';}
 function operationalRows(rows){return(Array.isArray(rows)?rows:[]).filter(function(r){return isOperationalFocus(r)&&isOpen(r);});}
 function homeSignalSummary(rows){
  var list=operationalRows(rows),opportunities=0,tedWinners=0;
- list.forEach(function(r){if(source(r)==='TED')tedWinners++;else opportunities++;});
+ list.forEach(function(r){if(source(r)==='TED'&&phase(r)==='award')tedWinners++;else opportunities++;});
  return{total:list.length,opportunities:opportunities,ted_winners:tedWinners};
 }
 function openTenderMonitor(){
@@ -114,6 +114,7 @@ function installHomeNavigationHooks(){
 }
 
 function intelligenceMode(r){
+ if(phase(r)==='opportunity')return'direct_bid';
  if(source(r)!=='TED')return'direct_bid';
  return r.category==='raw_material'?'supplier_relation':'winner_outreach';
 }
@@ -139,11 +140,11 @@ function tenderBriefFallback(r,reason){
 }
 function tenderBriefContext(r){
  var w=winner(r);
- return{source:source(r),phase:phase(r),title:r.title||'',authority:r.authority||'',procurement_no:r.procurement_no||'',publication_no:r.publication_no||'',category:r.category||'',relevance_score:Number(r.relevance_score)||0,match_reasons:Array.isArray(r.match_reasons)?r.match_reasons:[],published_date:r.published_date||null,deadline:r.deadline||null,code:r.fpp||null,code_description:r.fpp_description||null,estimated_value:r.estimated_value==null?null:r.estimated_value,currency:r.currency||null,winner:source(r)==='TED'?{name:w.name||null,country:w.country||null,city:w.city||null,email:w.email||null,website:w.website||null}:null};
+ return{source:source(r),phase:phase(r),title:r.title||'',authority:r.authority||'',procurement_no:r.procurement_no||'',publication_no:r.publication_no||'',category:r.category||'',relevance_score:Number(r.relevance_score)||0,match_reasons:Array.isArray(r.match_reasons)?r.match_reasons:[],published_date:r.published_date||null,deadline:r.deadline||null,code:r.fpp||null,code_description:r.fpp_description||null,estimated_value:r.estimated_value==null?null:r.estimated_value,currency:r.currency||null,winner:source(r)==='TED'&&phase(r)==='award'?{name:w.name||null,country:w.country||null,city:w.city||null,email:w.email||null,website:w.website||null}:null};
 }
 function tenderBriefMessages(r){
  var mode=intelligenceMode(r),ctx=tenderBriefContext(r);
- var system='You are PRISTEEL Tender Intelligence. PRISTEEL evaluates steel raw-material supply and fabricated steel-structure work. Use only the supplied tender data. Never invent scope, quantities, contract value, certifications, contacts, deadlines or buyer requirements. If information is unknown, say it is unknown. TED award notices are already awarded: never recommend bidding on them; assess only winner outreach or supplier relationship. KRPP/APP opportunity notices may be assessed for direct bid, but final review and project creation remain human decisions. Return only valid JSON.';
+ var system='You are PRISTEEL Tender Intelligence. PRISTEEL evaluates steel raw-material supply and fabricated steel-structure work. Use only the supplied tender data. Never invent scope, quantities, contract value, certifications, contacts, deadlines or buyer requirements. If information is unknown, say it is unknown. TED award notices are already awarded: never recommend bidding on them; assess only winner outreach or supplier relationship. TED/KRPP/APP opportunity notices may be assessed for direct bid, but final review and project creation remain human decisions. Return only valid JSON.';
  var user={task:'Assess this record for practical PRISTEEL follow-up.',business_mode_must_be:mode,tender:ctx,required_json:{priority:'high|medium|low',fit:'strong|possible|weak',business_mode:mode,summary:'short factual summary',why_relevant:['2-5 factual reasons'],checks:['2-5 things a person must verify'],next_action:'one controlled next action',outreach_angle:mode==='direct_bid'?null:'short angle or null'}};
  return[{role:'system',content:system},{role:'user',content:JSON.stringify(user)}];
 }
@@ -174,7 +175,7 @@ function ensureIntelligenceModal(){
 function renderTenderBrief(r,brief){
  var b=ensureIntelligenceModal(),w=winner(r),body=document.getElementById('pst-ti-body');
  document.getElementById('pst-ti-title').textContent=r.title||'Tender';
- document.getElementById('pst-ti-meta').textContent=sourceLabel(r)+(w.name?' · '+w.name:'')+' · Relevanca '+String(r.relevance_score||0)+'%';
+ document.getElementById('pst-ti-meta').textContent=sourceLabel(r)+(w.name&&phase(r)==='award'?' · '+w.name:'')+' · Relevanca '+String(r.relevance_score||0)+'%';
  var engine=brief.engine==='ai'?'AI':'Rregulla operative';
  body.innerHTML='<div style="display:flex;gap:7px;flex-wrap:wrap"><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.priority))+'</span><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.fit))+'</span><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.business_mode))+'</span><span class="pst-kek-chip">'+esc(engine)+'</span></div><div style="font-size:12.5px;line-height:1.65;color:#2C3237;margin-top:14px">'+esc(brief.summary)+'</div>'+briefList('Pse është relevant',brief.why_relevant)+briefList('Çfarë duhet verifikuar',brief.checks)+'<div style="margin-top:14px;padding:11px 12px;border-radius:9px;background:#F6F8F9;font-size:12px;line-height:1.55;color:#30363B"><b>Hapi i rekomanduar:</b> '+esc(brief.next_action)+'</div>'+(brief.outreach_angle?'<div style="margin-top:10px;padding:11px 12px;border-radius:9px;background:#F8F5F2;font-size:12px;line-height:1.55;color:#4B4038"><b>Angle:</b> '+esc(brief.outreach_angle)+'</div>':'')+(brief.fallback_reason?'<div style="font-size:9.5px;color:#8B6B4E;margin-top:10px">'+esc(brief.fallback_reason)+'</div>':'');
  b.style.display='flex';
@@ -189,10 +190,10 @@ window.pstTenderIntelligence=async function(id){
 function setupShell(){
  var page=document.getElementById('page-kek-tenders');if(!page)return;
  var sub=page.querySelector('.pst-kek-sub');
- if(sub)sub.textContent='Kosovë dhe Shqipëri: tendera aktivë ku PRISTEEL mund të aplikojë. TED: vetëm kontrata të dhëna, fituesit dhe kontaktet për outreach.';
- var eye=page.querySelector('.pst-kek-eye');if(eye)eye.textContent='PUBLIC STEEL PROCUREMENT · APPLICATION + WINNER OUTREACH';
+ if(sub)sub.textContent='TED, Kosovë dhe Shqipëri: tendera aktivë ku PRISTEEL mund të aplikojë. TED awards: fituesit dhe kontaktet për outreach.';
+ var eye=page.querySelector('.pst-kek-eye');if(eye)eye.textContent='PUBLIC STEEL PROCUREMENT · DIRECT BID + WINNER OUTREACH';
  var ph=document.getElementById('pst-kek-phase');
- if(ph){ph.innerHTML='<option value="focus">Fokus operativ</option><option value="opportunity">Të shpallura · KRPP/APP</option><option value="award">Të dhëna / fitues</option><option value="all">Të gjitha operative</option>';ph.value='focus';ph.onchange=window.pstKekRender;}
+ if(ph){ph.innerHTML='<option value="focus">Fokus operativ</option><option value="opportunity">Të shpallura · TED/KRPP/APP</option><option value="award">Të dhëna / fitues</option><option value="all">Të gjitha</option>';ph.value='focus';ph.onchange=window.pstKekRender;}
  var st=document.getElementById('pst-kek-status');
  if(st){st.innerHTML='<option value="open">Të hapura / për veprim</option><option value="new">Vetëm të reja</option><option value="review">Në shqyrtim / për kontakt</option><option value="contacted">Kontaktuar · TED</option><option value="promoted">Të kthyera në projekt</option><option value="ignored">Të anashkaluara</option><option value="all">Të gjitha</option>';st.value='open';st.onchange=window.pstKekRender;}
 }
@@ -214,15 +215,13 @@ async function load(){
 }
 function statusMatch(r,st){var bs=bizStatus(r);if(st==='all')return true;if(st==='open')return bs==='new'||bs==='review';return bs===st;}
 function phaseMatch(r,ph){
- /* Hard business boundary: TED opportunities are never operational rows in PPPP. */
- if(source(r)==='TED'&&phase(r)!=='award')return false;
  if(ph==='focus')return isOperationalFocus(r);
- if(ph==='opportunity')return source(r)!=='TED'&&phase(r)==='opportunity';
+ if(ph==='opportunity')return phase(r)==='opportunity';
  if(ph==='award')return phase(r)==='award';
  return true;
 }
 function winnerHtml(r){
- if(source(r)!=='TED')return'';
+ if(source(r)!=='TED'||phase(r)!=='award')return'';
  var w=winner(r);
  if(!w.name)return'<div class="pst-kek-meta" style="margin-top:6px;color:#9A6B45"><strong>Fituesi:</strong> ende nuk është publikuar në të dhënat e TED.</div>';
  var extra=[w.city,w.country].filter(Boolean).join(', ');var more=w.names.length>1?' · +'+(w.names.length-1)+' fitues tjetër':'';
@@ -270,12 +269,12 @@ function render(){
   if(q&&n([r.title,r.authority,r.procurement_no,r.publication_no,r.fpp,r.fpp_description,winner(r).name,winner(r).email].join(' ')).indexOf(q)<0)return false;
   return true;
  });
- if(!list.length){h.innerHTML='<div class="pst-kek-empty">Nuk ka tenderë që përputhen me filtrin. Për TED shfaqen vetëm kontratat e dhëna; për KRPP/APP shfaqen tenderat aktivë.</div>';return;}
+ if(!list.length){h.innerHTML='<div class="pst-kek-empty">Nuk ka tenderë që përputhen me filtrin. Të shpallurat aktive nga TED/KRPP/APP shfaqen si mundësi; TED awards shfaqen për winner outreach.</div>';return;}
  h.innerHTML='<table class="pst-kek-table"><thead><tr><th>Tenderi</th><th>Burimi</th><th>Kategoria</th><th>Relevanca</th><th>Publikuar</th><th>Afati</th><th>Statusi</th><th></th></tr></thead><tbody>'+list.map(function(r){
   var reasons=Array.isArray(r.match_reasons)?r.match_reasons.join(' · '):'';
   var meta=esc(r.procurement_no||'')+(r.fpp?' · '+codeLabel(r)+' '+esc(r.fpp):'')+(r.authority?' · '+esc(r.authority):'');
-  var isAward=phase(r)==='award';var actions=source(r)==='TED'?tedActions(r):localActions(r);
-  return'<tr><td><div class="pst-kek-name">'+esc(r.title)+'</div><div class="pst-kek-meta">'+meta+'</div>'+winnerHtml(r)+'</td><td><span class="pst-kek-chip source '+sourceClass(r)+'">'+sourceLabel(r)+'</span>'+(isAward?'<span class="pst-kek-chip award">Rezultat</span>':'')+'</td><td><span class="pst-kek-chip '+esc(r.category)+'">'+esc(catLabel(r.category))+'</span></td><td><div class="pst-kek-score">'+esc(r.relevance_score)+'%</div><div class="pst-kek-reason">'+esc(reasons)+'</div></td><td>'+dateText(r.published_date)+'</td><td>'+(source(r)==='TED'?'—':dateText(r.deadline))+'</td><td>'+esc(statusLabel(r))+'</td><td><div class="pst-kek-rowacts">'+actions+'</div></td></tr>';
+  var isAward=phase(r)==='award';var actions=source(r)==='TED'&&isAward?tedActions(r):localActions(r);
+  return'<tr><td><div class="pst-kek-name">'+esc(r.title)+'</div><div class="pst-kek-meta">'+meta+'</div>'+winnerHtml(r)+'</td><td><span class="pst-kek-chip source '+sourceClass(r)+'">'+sourceLabel(r)+'</span>'+(isAward?'<span class="pst-kek-chip award">Rezultat</span>':'')+'</td><td><span class="pst-kek-chip '+esc(r.category)+'">'+esc(catLabel(r.category))+'</span></td><td><div class="pst-kek-score">'+esc(r.relevance_score)+'%</div><div class="pst-kek-reason">'+esc(reasons)+'</div></td><td>'+dateText(r.published_date)+'</td><td>'+(isAward?'—':dateText(r.deadline))+'</td><td>'+esc(statusLabel(r))+'</td><td><div class="pst-kek-rowacts">'+actions+'</div></td></tr>';
  }).join('')+'</tbody></table>';
 }
 async function refreshOwnRows(){
@@ -289,21 +288,21 @@ window.pstTenderBizSetStatus=async function(id,status){
 };
 window.pstTenderBizMarkContacted=async function(id){
  try{
-  var r=bizRows.find(function(x){return String(x.id)===String(id);});if(!r)return;
+  var r=bizRows.find(function(x){return String(x.id)===String(id);});if(!r||source(r)!=='TED'||phase(r)!=='award')return;
   var p=Object.assign({},payload(r),{ted_contact_status:'contacted',ted_contacted_at:new Date().toISOString()});
   await db('kek_tender_watch?id=eq.'+encodeURIComponent(id),'PATCH',{payload:p,updated_at:new Date().toISOString()});r.payload=p;updateBadge();renderHomeSignal(bizRows);render();
  }catch(e){alert('Gabim: '+e.message);}
 };
 window.pstTenderBizReopen=async function(id){
  try{
-  var r=bizRows.find(function(x){return String(x.id)===String(id);});if(!r)return;
+  var r=bizRows.find(function(x){return String(x.id)===String(id);});if(!r||source(r)!=='TED'||phase(r)!=='award')return;
   var p=Object.assign({},payload(r));delete p.ted_contact_status;delete p.ted_contacted_at;
   await db('kek_tender_watch?id=eq.'+encodeURIComponent(id),'PATCH',{payload:p,status:'review',updated_at:new Date().toISOString()});r.payload=p;r.status='review';updateBadge();renderHomeSignal(bizRows);render();
  }catch(e){alert('Gabim: '+e.message);}
 };
-window.pstTenderBizEmail=function(id){var r=bizRows.find(function(x){return String(x.id)===String(id);}),e=r&&winner(r).email;if(e)window.location.href='mailto:'+encodeURIComponent(e);};
-window.pstTenderBizWebsite=function(id){var r=bizRows.find(function(x){return String(x.id)===String(id);}),u=r&&safeHttp(winner(r).website);if(u)window.open(u,'_blank','noopener');};
-window.pstTenderBizPromote=async function(id){try{if(originalPromote)await originalPromote(id);await refreshOwnRows();}catch(e){alert('Gabim: '+e.message);}};
+window.pstTenderBizEmail=function(id){var r=bizRows.find(function(x){return String(x.id)===String(id);}),e=r&&phase(r)==='award'&&winner(r).email;if(e)window.location.href='mailto:'+encodeURIComponent(e);};
+window.pstTenderBizWebsite=function(id){var r=bizRows.find(function(x){return String(x.id)===String(id);}),u=r&&phase(r)==='award'&&safeHttp(winner(r).website);if(u)window.open(u,'_blank','noopener');};
+window.pstTenderBizPromote=async function(id){try{var r=bizRows.find(function(x){return String(x.id)===String(id);});if(!r||phase(r)!=='opportunity')return;if(originalPromote)await originalPromote(id);await refreshOwnRows();}catch(e){alert('Gabim: '+e.message);}};
 
 function install(){
  if(installed)return true;
