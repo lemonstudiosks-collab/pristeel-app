@@ -38,6 +38,7 @@ var files=[
   'pristeel-groq-rate-limit.js?v=20260814-ai2',
   'pristeel-gemini-test-ui-v1.js?v=20260814-1',
   'pristeel-project-analysis.js?v=20260801-1',
+  'pristeel-project-analysis-document-intelligence-v1.js?v=20260816-1',
   'pristeel-project-intelligence-ui.js?v=20260802-5',
   'pristeel-project-workspace.js?v=20260802-1',
   'pristeel-ui-v2.js?v=20260801-1',
