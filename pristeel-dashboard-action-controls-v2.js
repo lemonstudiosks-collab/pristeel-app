@@ -20,8 +20,6 @@ style.textContent=`
 .pst-action-control:hover{background:#F3F5F5;border-color:#CDD2D5;color:#303438}
 .pst-action-control.done:hover{background:#EAF5EF;border-color:#CBE5D6;color:#2F7657}
 .pst-action-control.dismiss:hover{background:#F9ECEA;border-color:#E8CCC8;color:#A64B42}
-.pst-action-control.source{color:#3F7F98;border-color:#CFE0E7;background:#F8FBFC}
-.pst-action-control.source:hover{background:#EDF6F9;border-color:#B8D4DF;color:#2F6E86}
 .pst-action-control:disabled{opacity:.45;cursor:wait}
 .pst-action-removing{opacity:0;transform:translateX(10px);transition:opacity .16s,transform .16s}
 #pst-action-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:4000;display:flex;align-items:center;gap:12px;background:#25292C;color:#fff;border-radius:10px;padding:10px 12px 10px 14px;box-shadow:0 8px 28px rgba(20,25,28,.22);font-size:11px}
@@ -66,18 +64,6 @@ function actionData(row){
     type:tag?String(tag.textContent||'').trim():'',
     sourceRef:row.getAttribute('onclick')||''
   };
-}
-function sourceUrl(row){
-  if(!row)return'';
-  var meta=row.querySelector('.pst-action-meta');
-  var text=String(meta?meta.textContent:'');
-  var match=text.match(/https:\/\/[^\s<>"']+/i);
-  if(!match)return'';
-  var candidate=String(match[0]||'').replace(/[\]\)}>.,;]+$/g,'');
-  try{
-    var parsedUrl=new URL(candidate,window.location&&window.location.href||undefined);
-    return parsedUrl.protocol==='https:'?parsedUrl.href:'';
-  }catch(e){return'';}
 }
 function toast(label,options){
   options=options||{};
@@ -204,18 +190,6 @@ function button(label,kind,row){
   });
   return btn;
 }
-function sourceButton(url){
-  var btn=document.createElement('button');
-  btn.type='button';
-  btn.className='pst-action-control source';
-  btn.textContent='Burimi';
-  btn.title='Hap burimin zyrtar në tab të ri';
-  btn.addEventListener('click',function(event){
-    event.preventDefault();event.stopPropagation();
-    window.open(url,'_blank','noopener,noreferrer');
-  });
-  return btn;
-}
 function apply(){
   if(applying||!loaded)return;
   applying=true;
@@ -230,7 +204,6 @@ function apply(){
       controls.className='pst-action-controls';
       controls.appendChild(button('Kryer','done',row));
       controls.appendChild(button('Hiqe','dismiss',row));
-      var url=sourceUrl(row);if(url)controls.appendChild(sourceButton(url));
       row.appendChild(controls);
     });
     ensureEmpty();
@@ -248,7 +221,6 @@ function start(){
   });
   return true;
 }
-window.PSTDashboardActionControlsV2={sourceUrl:sourceUrl};
 var tries=0,timer=setInterval(function(){if(start()||++tries>160)clearInterval(timer);},250);
 window.addEventListener('pst-dashboard-rendered',function(){fetchStates().catch(function(){});});
 })();
