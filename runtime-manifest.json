@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "bd7377591df760594d444a4da75d1ef3f6c7a09a",
+  "auditedAtCommit": "4b91e0a16fe3036e8b65130906bf9efdc1438e5e",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5cfa02125cce830abc769f2ab48bb20fa4c5fe82",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "778ea1e92abdfa969dab47f601179010be00feb4"
+    "bootstrapGitBlobSha": "b6b62ff472a9a6a9b8d5b382241b53fec210848d"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -131,7 +131,8 @@
     "pristeel-email-offer-draft-editor-bridge-v1.js",
     "pristeel-project-commercial-prefill-rescue-v1.js",
     "pristeel-workspace-release-fix-v3.js",
-    "pristeel-project-intake-continuity-v1.js"
+    "pristeel-project-intake-continuity-v1.js",
+    "pristeel-project-analysis-document-intelligence-v1.js"
   ],
   "foundationRequired": [
     "pristeel-ui-v2.js"
@@ -160,7 +161,7 @@
       "module": "pristeel-project-intake-continuity-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production pristeel-roles.js base module to recover confirmed single-project Gmail thread continuity before linked-file recovery."
+      "condition": "Loaded unconditionally by the production base loader to recover confirmed single-project Gmail thread continuity before linked-file recovery."
     },
     {
       "module": "pristeel-task-source-actions-v1.js",
@@ -203,6 +204,11 @@
       "before": "pristeel-groq-rate-limit.js",
       "after": "pristeel-gemini-test-ui-v1.js",
       "reason": "AI compatibility layer must exist before provider settings/testing is installed."
+    },
+    {
+      "before": "pristeel-project-analysis.js",
+      "after": "pristeel-project-analysis-document-intelligence-v1.js",
+      "reason": "The base Project Intelligence analysis must exist before the document-intelligence read-context adapter wraps its load and analyze functions."
     },
     {
       "before": "pristeel-ui-v2.js",
