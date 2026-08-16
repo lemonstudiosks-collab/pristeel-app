@@ -3,6 +3,7 @@
  * when a browser blocks Google OAuth pop-ups.
  * - Caps Gmail/Drive authorization waits only during the analysis run.
  * - Restores the original auth functions immediately afterwards.
+ * - Provides a programmatic click path for the Project Intelligence analyze buttons.
  * - Does not send email, write BOM/tasks, or change project status.
  */
 (function(){
@@ -54,8 +55,26 @@ function install(){
   window.pstAnalyzeProject=wrapped;
   return true;
 }
+function buttonAndPid(target){
+  if(!target||!target.closest)return null;
+  var button=target.closest('[id^="pai-analyze-"]');
+  if(button)return{button:button,pid:str(button.id).slice('pai-analyze-'.length)};
+  button=target.closest('.pai-empty .pai-btn.primary');
+  if(!button)return null;
+  var body=button.closest('[id^="pai-body-"]');
+  return body?{button:button,pid:str(body.id).slice('pai-body-'.length)}:null;
+}
+function onAnalysisClick(e){
+  var hit=buttonAndPid(e.target);if(!hit||!hit.pid||hit.button.disabled)return;
+  e.preventDefault();
+  e.stopPropagation();
+  if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+  install();
+  setTimeout(function(){if(typeof window.pstAnalyzeProject==='function')window.pstAnalyzeProject(hit.pid);},0);
+}
 install();
+document.addEventListener('click',onAnalysisClick,true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 setTimeout(install,300);setTimeout(install,1200);
-window.PSTProjectAnalysisRunGuardV1={install:install,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas}};
+window.PSTProjectAnalysisRunGuardV1={install:install,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid}};
 })();
