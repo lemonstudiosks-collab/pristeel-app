@@ -9,7 +9,7 @@ const TABLES=[
   {name:'rfq_log',select:'*'},
   {name:'project_docs',select:'*'},
   {name:'project_attachment_links',select:'*'},
-  {name:'offers_inbox',select:'*'},
+  {name:'offers_inbox',select:'id,created_at,gmail_msg_id,sender,subject,received_at,snippet,file_name,processed,project_id'},
   {name:'files',select:'id,file_name,file_type,size_kb,created_at,project_id,page_context'}
 ];
 const MIN_PREVIEW_SCORE=820;
@@ -18,10 +18,11 @@ const MIN_APPLY_MARGIN=150;
 
 export function norm(value){return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function unique(values){return[...new Set(values.filter(Boolean))];}
-export function identifiers(project){const source=norm(`${project?.name||''} ${project?.ref||''}`);return unique(source.match(/\b(?:[a-z]{1,6}[-_\/]?)?\d{4,}(?:[-_\/]?[a-z0-9]+)*\b/g)||[]);}
-export function projectProfile(project){return{...project,nName:norm(project?.name),nRef:norm(project?.ref),ids:identifiers(project)};}
+function aliasText(project){return Array.isArray(project?.identity_aliases)?project.identity_aliases.join(' '):'';}
+export function identifiers(project){const source=norm(`${project?.name||''} ${project?.ref||''} ${project?.business_ref||''} ${aliasText(project)}`);return unique(source.match(/\b(?:[a-z]{1,6}[-_\/]?)?\d{4,}(?:[-_\/]?[a-z0-9]+)*\b/g)||[]);}
+export function projectProfile(project){return{...project,nName:norm(project?.name),nRef:norm(project?.business_ref||project?.ref),ids:identifiers(project)};}
 function primitiveText(row){return norm(Object.entries(row||{}).filter(([key,value])=>key!=='file_base64'&&value!=null&&typeof value!=='object').map(([,value])=>value).join(' '));}
-function dedicatedValues(row){const keys=['project','project_name','project_ref','ref','reference','rfq_ref','request_ref','title','subject','doc_nr','document_nr','file_name','filename'];return keys.map(key=>norm(row?.[key])).filter(Boolean);}
+function dedicatedValues(row){const keys=['project','project_name','project_ref','project_business_ref','business_ref','ref','reference','rfq_ref','request_ref','title','subject','doc_nr','document_nr','file_name','filename'];return keys.map(key=>norm(row?.[key])).filter(Boolean);}
 export function relationScore(row,project){const dedicated=dedicatedValues(row),text=primitiveText(row);let points=0;if(project.nName&&dedicated.some(v=>v===project.nName))points=Math.max(points,1200);if(project.nRef&&dedicated.some(v=>v===project.nRef))points=Math.max(points,1180);if(project.nRef&&project.nRef.length>=4&&dedicated.some(v=>v.includes(project.nRef)))points=Math.max(points,1050);if(project.nName&&project.nName.length>=7&&dedicated.some(v=>v.includes(project.nName)||project.nName.includes(v)))points=Math.max(points,980);if(project.ids.some(id=>dedicated.some(v=>v.includes(id))))points=Math.max(points,960);if(project.ids.some(id=>text.includes(id)))points=Math.max(points,900);if(project.nRef&&project.nRef.length>=4&&text.includes(project.nRef))points=Math.max(points,850);if(project.nName&&project.nName.length>=10&&text.includes(project.nName))points=Math.max(points,820);return points;}
 
 export function planProjectRelation(row,projects,validProjectIds){
@@ -89,7 +90,7 @@ export async function runProjectDataReconcile({
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
   if(!key)throw new Error('Missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY');
   const access={supabaseUrl,key};
-  const projects=(await fetchAll(access,'projects','id,name,client,ref,status,created_at')).map(projectProfile);
+  const projects=(await fetchAll(access,'projects','id,name,client,ref,business_ref,identity_aliases,status,created_at')).map(projectProfile);
   const validProjectIds=new Set(projects.map(p=>String(p.id)));
   const report={mode,projects:projects.length,project_relations:{applied:[],candidates:[],unresolved:[],conflicts:[]},offer_fields:{applied:[],candidates:[],ambiguous:[]},tables:{}};
 
