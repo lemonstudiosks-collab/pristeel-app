@@ -47,7 +47,7 @@ function ensureGuard(){
     var done=false;
     function finish(){var T=tools();if(T&&!done){done=true;resolve(T);}}
     var s=[].slice.call(document.querySelectorAll('script')).filter(function(x){return /pristeel-gmail-project-identity-guard-v1\.js/.test(str(x.src));})[0];
-    if(!s){s=document.createElement('script');s.src='pristeel-gmail-project-identity-guard-v1.js?v=20260816-autolink4';s.defer=true;s.setAttribute('data-pst-gmail-project-identity-guard-autolink','1');document.head.appendChild(s);}
+    if(!s){s=document.createElement('script');s.src='pristeel-gmail-project-identity-guard-v1.js?v=20260816-autolink5';s.defer=true;s.setAttribute('data-pst-gmail-project-identity-guard-autolink','1');document.head.appendChild(s);}
     s.addEventListener('load',finish,{once:true});
     s.addEventListener('error',function(){if(!done){done=true;resolve(null);}},{once:true});
     [0,120,420,900].forEach(function(ms){setTimeout(function(){if(done)return;finish();if(ms===900&&!done){done=true;resolve(null);}},ms);});
@@ -148,7 +148,7 @@ async function reconcileHistorical(){
   })().catch(function(e){if(window.console&&console.warn)console.warn('PRISTEEL historical Gmail auto-link:',e);return{error:str(e&&e.message||e)};}).finally(function(){state.busy=false;state.promise=null;});
   return state.promise;
 }
-function safeProfiles(profiles){return arr(profiles).map(function(x){var y=Object.assign({},x);y.emails=[];y.tokens=[];return y;});}
+function safeProfiles(profiles){return arr(profiles).map(function(x){var y=Object.assign({},x),p=Object.assign({},x&&x.p||{});y.emails=[];y.tokens=[];y.refs=[];y.names=[];p.name='';p.client='';p.ref='';p.business_ref='';p.location='';y.p=p;return y;});}
 function wrapEmailSave(){
   var E=window.PSTEmail;if(!E||typeof E.save!=='function'||E.save.__pstProjectAutoLink)return false;var base=E.save;
   async function wrapped(messages,profiles){var out=await base.call(this,messages,safeProfiles(profiles));try{await reconcileMessages(messages);}catch(e){if(window.console&&console.warn)console.warn('PRISTEEL post-sync project auto-link:',e);}return out;}
