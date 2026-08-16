@@ -11,6 +11,8 @@ on:
       - 'tests/project-email-reconcile-smoke.mjs'
       - 'pristeel-gmail-project-identity-guard-v1.js'
       - '.github/workflows/project-data-reconcile.yml'
+  schedule:
+    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -39,10 +41,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Require explicit apply confirmation
+      - name: Require explicit manual apply confirmation
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'apply' && inputs.confirm_apply != true }}
         run: |
-          echo 'Apply mode requires confirm_apply=true.'
+          echo 'Manual apply mode requires confirm_apply=true.'
           exit 1
       - name: Test reconciliation planner
         run: node tests/project-data-reconcile-smoke.mjs
@@ -60,13 +62,13 @@ jobs:
           SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          EMAIL_RECONCILE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'preview' }}
+          EMAIL_RECONCILE_MODE: ${{ github.event_name == 'schedule' && 'apply' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'preview') }}
         run: node scripts/project-email-reconcile.mjs
       - name: Upload reconciliation reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: project-data-reconcile-${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'preview' }}
+          name: project-data-reconcile-${{ github.event_name }}-${{ github.run_number }}
           path: |
             tmp/project-data-reconcile.json
             tmp/project-email-reconcile.json
