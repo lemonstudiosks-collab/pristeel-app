@@ -7,8 +7,11 @@ on:
     paths:
       - 'scripts/project-data-reconcile.mjs'
       - 'scripts/project-email-reconcile.mjs'
+      - 'scripts/project-discovery-queue.mjs'
       - 'tests/project-data-reconcile-smoke.mjs'
       - 'tests/project-email-reconcile-smoke.mjs'
+      - 'tests/project-discovery-queue-smoke.mjs'
+      - 'pristeel-project-discovery.js'
       - 'pristeel-gmail-project-identity-guard-v1.js'
       - '.github/workflows/project-data-reconcile.yml'
   schedule:
@@ -50,6 +53,8 @@ jobs:
         run: node tests/project-data-reconcile-smoke.mjs
       - name: Test project email reconciliation safety
         run: node tests/project-email-reconcile-smoke.mjs
+      - name: Test Project Discovery queue safety
+        run: node tests/project-discovery-queue-smoke.mjs
       - name: Reconcile project data
         env:
           SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
@@ -64,6 +69,13 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           EMAIL_RECONCILE_MODE: ${{ github.event_name == 'schedule' && 'apply' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'preview') }}
         run: node scripts/project-email-reconcile.mjs
+      - name: Preview Project Discovery queue
+        env:
+          SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PROJECT_DISCOVERY_MODE: preview
+        run: node scripts/project-discovery-queue.mjs
       - name: Upload reconciliation reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -72,4 +84,5 @@ jobs:
           path: |
             tmp/project-data-reconcile.json
             tmp/project-email-reconcile.json
+            tmp/project-discovery-queue.json
           retention-days: 14
