@@ -6,7 +6,7 @@
  * - only projectless/unlinked emails may receive a project_id;
  * - only auto-link-grade unique project identity may create a new relation;
  * - semantic/company/brand wording may suggest, but never auto-write a project relation;
- * - an already-confirmed single-project thread may continue to that same project;
+ * - thread continuity may propagate only from manual/audited/identity-verified owners;
  * - mixed/unknown/weak identities remain unlinked for review;
  * - an email already linked to any project is never reassigned here.
  *
@@ -28,8 +28,17 @@ function db(path,method,body){return window.supaFetch(path,method,body);}
 function inFilter(field,values){values=uniq(values);return field+'=in.('+values.map(function(x){return'"'+str(x).replace(/"/g,'')+'"';}).join(',')+')';}
 function systemMail(row){var s=(str(row&&row.subject)+' '+str(row&&row.snippet)).toLowerCase();return /delivery status notification|mail delivery subsystem|mailer-daemon|postmaster|undeliverable|calendar notification|hubspot notification/.test(s);}
 function rowCorpus(row,files){return[str(row&&row.subject),str(row&&row.snippet)].concat(arr(files)).join(' ');}
+function trustedMethod(method){
+  var m=str(method).toLowerCase().trim();
+  return !!m&&/^(manual(?:-|$)|gmail-panel$|gmail-intake-v[23]$|verified(?:-|$)|project-identity-audit-|project-ref-verified-|thread-verified-|intake-reassign-confirmed$|confirmed-thread-recovery$|identity-auto-link-v1$|identity-reconcile-v1$|confirmed-thread-auto-link-v1$|confirmed-thread-reconcile-v1$)/.test(m);
+}
 function addOwner(map,threadId,projectId){threadId=str(threadId);projectId=str(projectId);if(!threadId||!projectId)return;if(!map[threadId])map[threadId]=[];if(map[threadId].indexOf(projectId)<0)map[threadId].push(projectId);}
-function ownerMap(rows,links){var out={};arr(rows).forEach(function(r){if(r&&r.project_id)addOwner(out,r.gmail_thread_id,r.project_id);});arr(links).forEach(function(r){if(r&&r.project_id)addOwner(out,r.gmail_thread_id,r.project_id);});return out;}
+function ownerMap(rows,links){
+  var out={};
+  arr(rows).forEach(function(r){if(r&&r.project_id&&trustedMethod(r.match_method))addOwner(out,r.gmail_thread_id,r.project_id);});
+  arr(links).forEach(function(r){if(r&&r.project_id&&trustedMethod(r.link_method))addOwner(out,r.gmail_thread_id,r.project_id);});
+  return out;
+}
 function tools(){var G=window.PSTGmailProjectIdentityGuardV1,T=G&&G._test;return T&&typeof T.buildIndex==='function'&&typeof T.classifyCorpus==='function'?T:null;}
 function ensureGuard(){
   if(tools())return Promise.resolve(tools());
@@ -38,7 +47,7 @@ function ensureGuard(){
     var done=false;
     function finish(){var T=tools();if(T&&!done){done=true;resolve(T);}}
     var s=[].slice.call(document.querySelectorAll('script')).filter(function(x){return /pristeel-gmail-project-identity-guard-v1\.js/.test(str(x.src));})[0];
-    if(!s){s=document.createElement('script');s.src='pristeel-gmail-project-identity-guard-v1.js?v=20260816-autolink3';s.defer=true;s.setAttribute('data-pst-gmail-project-identity-guard-autolink','1');document.head.appendChild(s);}
+    if(!s){s=document.createElement('script');s.src='pristeel-gmail-project-identity-guard-v1.js?v=20260816-autolink4';s.defer=true;s.setAttribute('data-pst-gmail-project-identity-guard-autolink','1');document.head.appendChild(s);}
     s.addEventListener('load',finish,{once:true});
     s.addEventListener('error',function(){if(!done){done=true;resolve(null);}},{once:true});
     [0,120,420,900].forEach(function(ms){setTimeout(function(){if(done)return;finish();if(ms===900&&!done){done=true;resolve(null);}},ms);});
@@ -100,8 +109,11 @@ async function reconcileMessages(messages){
   messages=arr(messages).filter(function(x){return x&&x.gmail_message_id;});if(!messages.length)return{checked:0,linked:0,strong:0,thread:0,conflicts:0};
   var index=await identityIndex(false);if(!index)return{checked:messages.length,linked:0,skipped:'identity-guard-not-ready'};
   var mids=uniq(messages.map(function(x){return x.gmail_message_id;})),tids=uniq(messages.map(function(x){return x.gmail_thread_id;}).filter(Boolean)),existing=[],ownerRows=[],links=[];
-  for(var a=0;a<mids.length;a+=40)existing=existing.concat(await safe('project_emails?select=id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,match_method,subject,snippet&'+inFilter('gmail_message_id',mids.slice(a,a+40))));
-  for(var b=0;b<tids.length;b+=35){ownerRows=ownerRows.concat(await safe('project_emails?select=gmail_thread_id,project_id&project_id=not.is.null&'+inFilter('gmail_thread_id',tids.slice(b,b+35))+'&limit=5000'));links=links.concat(await safe('project_email_links?select=gmail_thread_id,gmail_message_id,project_id&'+inFilter('gmail_thread_id',tids.slice(b,b+35))+'&limit=5000'));}
+  for(var a=0;a<mids.length;a+=40)existing=existing.concat(await safe('project_emails?select=id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,match_method,match_confidence,subject,snippet&'+inFilter('gmail_message_id',mids.slice(a,a+40))));
+  for(var b=0;b<tids.length;b+=35){
+    ownerRows=ownerRows.concat(await safe('project_emails?select=gmail_thread_id,project_id,match_method,match_confidence&project_id=not.is.null&'+inFilter('gmail_thread_id',tids.slice(b,b+35))+'&limit=5000'));
+    links=links.concat(await safe('project_email_links?select=gmail_thread_id,gmail_message_id,project_id,link_method,confidence&'+inFilter('gmail_thread_id',tids.slice(b,b+35))+'&limit=5000'));
+  }
   var byMid={},owners=ownerMap(ownerRows,links),knownLinks={};existing.forEach(function(x){byMid[str(x.gmail_message_id)]=x;});links.forEach(function(x){if(x.project_id&&x.gmail_message_id)knownLinks[str(x.project_id)+'|'+str(x.gmail_message_id)]=1;});
   var sum={checked:messages.length,linked:0,strong:0,thread:0,conflicts:0};
   for(var i=0;i<messages.length;i++){
@@ -119,7 +131,7 @@ async function reconcileHistorical(){
   state.busy=true;state.promise=(async function(){
     var index=await identityIndex(true);if(!index)return{checked:0,linked:0,skipped:'identity-guard-not-ready'};
     var rows=await safe('project_emails?select=id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,subject,snippet,match_method,match_confidence,needs_review&order=sent_at.asc&limit=5000');
-    var links=await safe('project_email_links?select=gmail_thread_id,gmail_message_id,project_id&limit=10000');
+    var links=await safe('project_email_links?select=gmail_thread_id,gmail_message_id,project_id,link_method,confidence&limit=10000');
     var inbox=await safe('offers_inbox?select=gmail_msg_id,file_name&limit=5000'),filesByMid={};
     inbox.forEach(function(x){var mid=str(x&&x.gmail_msg_id),fn=str(x&&x.file_name);if(mid&&fn){if(!filesByMid[mid])filesByMid[mid]=[];filesByMid[mid].push(fn);}});
     var owners=ownerMap(rows,links),knownLinks={};links.forEach(function(x){if(x.project_id&&x.gmail_message_id)knownLinks[str(x.project_id)+'|'+str(x.gmail_message_id)]=1;});
@@ -147,5 +159,5 @@ install();
 [120,500,1400].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',function(){install();setTimeout(function(){reconcileHistorical();},320);},{once:true});
 window.addEventListener('pst:gmail-synced',function(){setTimeout(function(){reconcileHistorical();},80);});
-window.PSTGmailProjectAutoLinkV1={install:install,reconcileHistorical:reconcileHistorical,reconcileMessages:reconcileMessages,_test:{classify:classify,autoEligibleHit:autoEligibleHit,ownerMap:ownerMap,safeProfiles:safeProfiles,systemMail:systemMail,rowCorpus:rowCorpus,identityIndex:identityIndex,standardLike:standardLike}};
+window.PSTGmailProjectAutoLinkV1={install:install,reconcileHistorical:reconcileHistorical,reconcileMessages:reconcileMessages,_test:{classify:classify,autoEligibleHit:autoEligibleHit,trustedMethod:trustedMethod,ownerMap:ownerMap,safeProfiles:safeProfiles,systemMail:systemMail,rowCorpus:rowCorpus,identityIndex:identityIndex,standardLike:standardLike}};
 })();
