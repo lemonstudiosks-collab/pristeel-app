@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { attachmentRegistryRows } from "./attachment-metadata.mjs";
 
 const SA_JSON = Deno.env.get("GOOGLE_SA_JSON")!;
 const GMAIL_USER = Deno.env.get("GMAIL_USER")!;
@@ -240,6 +241,7 @@ type GmailMessageRow = {
   review_reason: string | null;
   updated_at: string;
 };
+type AttachmentPair = { project_id: string; gmail_message_id: string; gmail_thread_id: string | null };
 
 async function listMessageIds(query: string, maxTotal = 3000): Promise<string[]> {
   const out: string[] = [];
@@ -319,6 +321,78 @@ async function fetchMessageRow(id: string): Promise<GmailMessageRow> {
     review_reason: null,
     updated_at: new Date().toISOString(),
   };
+}
+
+async function linkedAttachmentCandidates(limit = 20): Promise<AttachmentPair[]> {
+  const safeLimit = Math.min(40, Math.max(1, Math.floor(Number(limit) || 20)));
+  const { data: emails, error: emailError } = await db
+    .from("project_emails")
+    .select("project_id,gmail_message_id,gmail_thread_id,has_attachments,sent_at")
+    .eq("has_attachments", true)
+    .not("gmail_message_id", "is", null)
+    .order("sent_at", { ascending: false })
+    .limit(2000);
+  if (emailError) throw emailError;
+  const attachmentMessages = new Map<string, any>();
+  for (const row of emails ?? []) if (row.gmail_message_id) attachmentMessages.set(String(row.gmail_message_id), row);
+
+  const { data: links, error: linkError } = await db
+    .from("project_email_links")
+    .select("project_id,gmail_message_id,gmail_thread_id")
+    .not("project_id", "is", null)
+    .not("gmail_message_id", "is", null)
+    .limit(4000);
+  if (linkError) throw linkError;
+
+  const pairs = new Map<string, AttachmentPair>();
+  for (const row of emails ?? []) {
+    if (!row.project_id || !row.gmail_message_id) continue;
+    const pair = { project_id: String(row.project_id), gmail_message_id: String(row.gmail_message_id), gmail_thread_id: row.gmail_thread_id ? String(row.gmail_thread_id) : null };
+    pairs.set(`${pair.project_id}|${pair.gmail_message_id}`, pair);
+  }
+  for (const link of links ?? []) {
+    if (!attachmentMessages.has(String(link.gmail_message_id ?? "")) || !link.project_id || !link.gmail_message_id) continue;
+    const base = attachmentMessages.get(String(link.gmail_message_id));
+    const pair = { project_id: String(link.project_id), gmail_message_id: String(link.gmail_message_id), gmail_thread_id: link.gmail_thread_id ? String(link.gmail_thread_id) : (base?.gmail_thread_id ? String(base.gmail_thread_id) : null) };
+    pairs.set(`${pair.project_id}|${pair.gmail_message_id}`, pair);
+  }
+
+  const { data: existing, error: existingError } = await db
+    .from("project_attachment_links")
+    .select("project_id,gmail_message_id")
+    .limit(10000);
+  if (existingError) throw existingError;
+  const registered = new Set((existing ?? []).map((x) => `${String(x.project_id ?? "")}|${String(x.gmail_message_id ?? "")}`));
+  return [...pairs.entries()].filter(([key]) => !registered.has(key)).map(([, value]) => value).slice(0, safeLimit);
+}
+
+async function syncLinkedAttachmentMetadata(limit = 20) {
+  const candidates = await linkedAttachmentCandidates(limit);
+  if (!candidates.length) return { candidates: 0, messages_fetched: 0, rows_registered: 0, no_downloadable: 0 };
+  const ids = [...new Set(candidates.map((x) => x.gmail_message_id))];
+  const fetched = await mapLimit(ids, 5, async (id) => {
+    const full = await gmail(`/messages/${encodeURIComponent(id)}?format=full`);
+    return [id, full] as const;
+  });
+  const byId = new Map(fetched);
+  const registryRows: any[] = [];
+  let noDownloadable = 0;
+  for (const candidate of candidates) {
+    const full = byId.get(candidate.gmail_message_id);
+    const rows = attachmentRegistryRows(full, candidate.project_id, "server-metadata-v1");
+    if (!rows.length) { noDownloadable++; continue; }
+    for (const row of rows) {
+      if (!row.gmail_thread_id && candidate.gmail_thread_id) row.gmail_thread_id = candidate.gmail_thread_id;
+      registryRows.push(row);
+    }
+  }
+  if (registryRows.length) {
+    const { error } = await db
+      .from("project_attachment_links")
+      .upsert(registryRows, { onConflict: "gmail_message_id,attachment_id,project_id", ignoreDuplicates: true });
+    if (error) throw error;
+  }
+  return { candidates: candidates.length, messages_fetched: ids.length, rows_registered: registryRows.length, no_downloadable: noDownloadable };
 }
 
 async function ingestProjectEmails(days: number, apply = true) {
@@ -478,6 +552,11 @@ Deno.serve(async (req: Request) => {
       const res = await ingestProjectEmails(days, true);
       return new Response(JSON.stringify({ ok: true, ...res }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
+    if (action === "attachment_sync") {
+      const limit = Number(url.searchParams.get("limit") ?? payload.limit ?? 20);
+      const res = await syncLinkedAttachmentMetadata(limit);
+      return new Response(JSON.stringify({ ok: true, ...res }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
     if (action === "scan_preview") {
       const days = Number(url.searchParams.get("days") ?? payload.days ?? 7);
       const res = await scanReplies(days, false);
@@ -495,10 +574,12 @@ Deno.serve(async (req: Request) => {
     if (action === "run") {
       const ingestDays = Number(url.searchParams.get("ingest_days") ?? payload.ingest_days ?? 2);
       const scanDays = Number(url.searchParams.get("days") ?? payload.days ?? 7);
+      const attachmentLimit = Number(url.searchParams.get("attachment_limit") ?? payload.attachment_limit ?? 20);
       const ingest = await ingestProjectEmails(ingestDays, true);
       const scan = await scanReplies(scanDays, true);
       const sla = await slaCheck();
-      return new Response(JSON.stringify({ ok: true, ingest, scan, sla }), { headers: { ...cors, "Content-Type": "application/json" } });
+      const attachments = await syncLinkedAttachmentMetadata(attachmentLimit);
+      return new Response(JSON.stringify({ ok: true, ingest, scan, sla, attachments }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ ok: false, error: `unknown action: ${action}` }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
