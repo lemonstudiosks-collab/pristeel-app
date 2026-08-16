@@ -3,9 +3,10 @@ import { loadIdentityTools,autoEligibleHit,ownerMap,classifyEmail } from '../scr
 
 const tools=await loadIdentityTools();
 const projects=[
-  {id:'p8910',name:'EVOSYS Laser — ANF-8910 Schweißbaugruppen/-gestell 05510',client:'Evosys Laser GmbH',ref:'ANF-8910',business_ref:'ANF-8910'},
-  {id:'p8915',name:'EVOSYS Laser — ANF-8915 Schweißbaugruppen/-gestell',client:'Evosys Laser GmbH',ref:'ANF-8915',business_ref:'ANF-8915'},
-  {id:'pbunt',name:'PROJEKT TENNET · SPIE',client:'Spie',ref:'PROJEKT TENNET',business_ref:'BUNT'}
+  {id:'p8910',name:'EVOSYS Laser — ANF-8910 Schweißbaugruppen/-gestell 05510',client:'Evosys Laser GmbH',ref:'ANF-8910',business_ref:'ANF-8910',identity_aliases:[]},
+  {id:'p8915',name:'EVOSYS Laser — ANF-8915 Schweißbaugruppen/-gestell',client:'Evosys Laser GmbH',ref:'ANF-8915',business_ref:'ANF-8915',identity_aliases:[]},
+  {id:'pbunt',name:'PROJEKT TENNET · SPIE',client:'Spie',ref:'PROJEKT TENNET',business_ref:'BUNT',identity_aliases:[]},
+  {id:'pairbus',name:'Halle 24X ModOps — Übergänge Ebene 1 & 2',client:'Stacon GmbH & Co. KG',ref:'25007HH',business_ref:'25007HH',identity_aliases:['260784','260784_Airbus H24X_Anfrage Fertigung']}
 ];
 const index=tools.buildIndex(projects);
 let owners=ownerMap([],[]);
@@ -23,6 +24,11 @@ assert.equal(d.reason,'mixed','Mixed sibling references must fail closed');
 d=classifyEmail({id:3,gmail_thread_id:'t3',subject:'Stahlbau-Kapazitäten für BUNTE',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'');
 assert.equal(d.reason,'weak-identity-anchor','Short generic BUNT must not auto-link merely because BUNTE contains it');
+
+d=classifyEmail({id:8,gmail_thread_id:'ta',subject:'Re: 260784_Airbus H24X_Anfrage Fertigung',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
+assert.equal(d.target,'pairbus','Historical request reference must resolve through canonical project identity_aliases');
+assert.equal(d.reason,'strong-identity');
+assert(d.result.hits[0].anchors.some(a=>a.key==='260784'),'Alias reference 260784 must be indexed as a strong known project identity');
 
 owners=ownerMap([{gmail_thread_id:'t4',project_id:'p8910'}],[]);
 d=classifyEmail({id:4,gmail_thread_id:'t4',subject:'Danke für die Rückmeldung',snippet:'',match_method:null},index,owners,tools,{allowThread:true});
