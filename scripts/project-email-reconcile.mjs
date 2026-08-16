@@ -10,11 +10,12 @@ function str(v){return String(v??'');}
 function uniq(v){return [...new Set(arr(v).map(x=>str(x).trim()).filter(Boolean))];}
 function systemMail(row){const s=`${str(row?.subject)} ${str(row?.snippet)}`.toLowerCase();return /delivery status notification|mail delivery subsystem|mailer-daemon|postmaster|undeliverable|calendar notification|hubspot notification/.test(s);}
 function manualIgnored(row){return str(row?.match_method).toLowerCase()==='manual-ignored';}
+function standardLike(key){return /^(?:en\d{3,}|iso\d{3,}|din\d{3,}|exc\d+|s\d{3,}[a-z0-9]*)$/i.test(str(key));}
 function eligibleAnchor(a){
   const kind=str(a?.kind),key=str(a?.key);
-  if(kind==='semantic'||kind==='semantic_phrase')return true;
-  if(kind==='name_ref')return key.length>=6;
-  if(kind==='ref'||kind==='business_ref')return key.length>=5&&(/\d/.test(key)||key.length>=10);
+  if(!key||standardLike(key))return false;
+  if(kind==='business_ref')return key.length>=5&&(/\d/.test(key)||key.length>=10);
+  if(kind==='ref'||kind==='name_ref')return key.length>=6&&/\d/.test(key);
   return false;
 }
 export function autoEligibleHit(hit){return arr(hit?.anchors).some(eligibleAnchor);}
