@@ -4,9 +4,9 @@
  *
  * Automatic writes are deliberately narrow:
  * - only projectless/unlinked emails may receive a project_id;
- * - strong unique project identity may auto-link;
+ * - only auto-link-grade unique project identity may create a new relation;
  * - an already-confirmed single-project thread may continue to that same project;
- * - mixed/unknown identities remain unlinked for review;
+ * - mixed/unknown/weak identities remain unlinked for review;
  * - an email already linked to any project is never reassigned here.
  *
  * Also reconciles historical projectless project_emails already stored in PPPP.
@@ -37,7 +37,7 @@ function ensureGuard(){
     var done=false;
     function finish(){var T=tools();if(T&&!done){done=true;resolve(T);}}
     var s=[].slice.call(document.querySelectorAll('script')).filter(function(x){return /pristeel-gmail-project-identity-guard-v1\.js/.test(str(x.src));})[0];
-    if(!s){s=document.createElement('script');s.src='pristeel-gmail-project-identity-guard-v1.js?v=20260816-autolink1';s.defer=true;s.setAttribute('data-pst-gmail-project-identity-guard-autolink','1');document.head.appendChild(s);}
+    if(!s){s=document.createElement('script');s.src='pristeel-gmail-project-identity-guard-v1.js?v=20260816-autolink2';s.defer=true;s.setAttribute('data-pst-gmail-project-identity-guard-autolink','1');document.head.appendChild(s);}
     s.addEventListener('load',finish,{once:true});
     s.addEventListener('error',function(){if(!done){done=true;resolve(null);}},{once:true});
     [0,120,420,900].forEach(function(ms){setTimeout(function(){if(done)return;finish();if(ms===900&&!done){done=true;resolve(null);}},ms);});
@@ -50,13 +50,23 @@ async function identityIndex(force){
   var projects=await safe('projects?select=id,name,client,ref,business_ref,status&order=created_at.desc&limit=2000');
   state.index=T.buildIndex(projects);state.indexAt=Date.now();return state.index;
 }
+function autoEligibleHit(hit){
+  var anchors=arr(hit&&hit.anchors);
+  return anchors.some(function(a){
+    var kind=str(a&&a.kind),key=str(a&&a.key);
+    if(kind==='ref'||kind==='business_ref'||kind==='semantic'||kind==='semantic_phrase')return true;
+    if(kind==='name_ref'&&key.length>=6)return true;
+    return false;
+  });
+}
 function classify(row,index,owners,files,allowThread){
   var T=tools();if(!T||!index||!row||systemMail(row))return{target:'',method:'',reason:'skip'};
   var r=T.classifyCorpus(rowCorpus(row,files),index),tid=str(row.gmail_thread_id),threadOwners=arr(owners&&owners[tid]);
   if(!r||r.mixed)return{target:'',method:'',reason:'mixed'};
   if(arr(r.hits).length===1){
-    var target=str(r.hits[0]&&r.hits[0].project&&r.hits[0].project.id);
+    var hit=r.hits[0],target=str(hit&&hit.project&&hit.project.id);
     if(!target)return{target:'',method:'',reason:'no-target'};
+    if(!autoEligibleHit(hit))return{target:'',method:'',reason:'weak-identity-anchor'};
     if(threadOwners.length&&!(threadOwners.length===1&&threadOwners[0]===target))return{target:'',method:'',reason:'thread-conflict'};
     return{target:target,method:'identity-auto-link-v1',reason:'strong-identity'};
   }
@@ -134,5 +144,5 @@ install();
 [120,500,1400].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',function(){install();setTimeout(function(){reconcileHistorical();},320);},{once:true});
 window.addEventListener('pst:gmail-synced',function(){setTimeout(function(){reconcileHistorical();},80);});
-window.PSTGmailProjectAutoLinkV1={install:install,reconcileHistorical:reconcileHistorical,reconcileMessages:reconcileMessages,_test:{classify:classify,ownerMap:ownerMap,safeProfiles:safeProfiles,systemMail:systemMail,rowCorpus:rowCorpus,identityIndex:identityIndex}};
+window.PSTGmailProjectAutoLinkV1={install:install,reconcileHistorical:reconcileHistorical,reconcileMessages:reconcileMessages,_test:{classify:classify,autoEligibleHit:autoEligibleHit,ownerMap:ownerMap,safeProfiles:safeProfiles,systemMail:systemMail,rowCorpus:rowCorpus,identityIndex:identityIndex}};
 })();
