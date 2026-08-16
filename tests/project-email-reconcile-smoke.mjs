@@ -6,7 +6,9 @@ const projects=[
   {id:'p8910',name:'EVOSYS Laser — ANF-8910 Schweißbaugruppen/-gestell 05510',client:'Evosys Laser GmbH',ref:'ANF-8910',business_ref:'ANF-8910',identity_aliases:[]},
   {id:'p8915',name:'EVOSYS Laser — ANF-8915 Schweißbaugruppen/-gestell',client:'Evosys Laser GmbH',ref:'ANF-8915',business_ref:'ANF-8915',identity_aliases:[]},
   {id:'pbunt',name:'PROJEKT TENNET · SPIE',client:'Spie',ref:'PROJEKT TENNET',business_ref:'BUNT',identity_aliases:[]},
-  {id:'pairbus',name:'Halle 24X ModOps — Übergänge Ebene 1 & 2',client:'Stacon GmbH & Co. KG',ref:'25007HH',business_ref:'25007HH',identity_aliases:['260784','260784_Airbus H24X_Anfrage Fertigung']}
+  {id:'pairbus',name:'Halle 24X ModOps — Übergänge Ebene 1 & 2',client:'Stacon GmbH & Co. KG',ref:'25007HH',business_ref:'25007HH',identity_aliases:['260784','260784_Airbus H24X_Anfrage Fertigung']},
+  {id:'psemantic',name:'Pristeel–Friedrich 30 Proposal — For Your Review',client:'Friedrich 30',ref:'',business_ref:null,identity_aliases:[]},
+  {id:'pstandard',name:'Kooperationsanfrage Stahlbau nach EN 1090-2 EXC4',client:'Knapp Engineering',ref:'',business_ref:null,identity_aliases:[]}
 ];
 const index=tools.buildIndex(projects);
 let owners=ownerMap([],[]);
@@ -16,6 +18,8 @@ assert.equal(d.target,'p8910');
 assert.equal(d.reason,'strong-identity');
 assert(autoEligibleHit(d.result.hits[0]));
 assert.equal(autoEligibleHit({anchors:[{kind:'business_ref',key:'bunt'}]}),false,'Short generic refs without digits must never be auto-link grade');
+assert.equal(autoEligibleHit({anchors:[{kind:'semantic',key:'pristeel'}]}),false,'Semantic brand wording may suggest but must never auto-write a project relation');
+assert.equal(autoEligibleHit({anchors:[{kind:'name_ref',key:'en1090'}]}),false,'Standards such as EN1090 are not project identities');
 
 d=classifyEmail({id:2,gmail_thread_id:'t2',subject:'AW: ANF-8910 / ANF-08915 Schweißbaugruppen',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'');
@@ -24,6 +28,14 @@ assert.equal(d.reason,'mixed','Mixed sibling references must fail closed');
 d=classifyEmail({id:3,gmail_thread_id:'t3',subject:'Stahlbau-Kapazitäten für BUNTE',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'');
 assert.equal(d.reason,'weak-identity-anchor','Short generic BUNT must not auto-link merely because BUNTE contains it');
+
+d=classifyEmail({id:9,gmail_thread_id:'ts',subject:'Structural Steel Capacity by PRISTEEL',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
+assert.equal(d.target,'');
+assert.equal(d.reason,'weak-identity-anchor','PRISTEEL brand wording alone may never auto-link to a project');
+
+d=classifyEmail({id:10,gmail_thread_id:'te',subject:'Stahlbau nach EN 1090-2 EXC4',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
+assert.equal(d.target,'');
+assert.equal(d.reason,'weak-identity-anchor','EN1090/EXC wording alone may never auto-link to a project');
 
 d=classifyEmail({id:8,gmail_thread_id:'ta',subject:'Re: 260784_Airbus H24X_Anfrage Fertigung',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'pairbus','Historical request reference must resolve through canonical project identity_aliases');
