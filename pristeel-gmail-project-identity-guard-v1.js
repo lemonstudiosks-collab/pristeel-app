@@ -68,11 +68,18 @@ function buildIndex(projects){
   });
   return{items:items,byId:byId,knownRef:knownRef};
 }
-function hasAnchor(textNorm,textCompact,a){if(!a||!a.key)return false;if(a.kind==='semantic')return (' '+textNorm+' ').indexOf(' '+a.key+' ')>-1;if(a.kind==='semantic_phrase')return (' '+textNorm+' ').indexOf(' '+norm(a.label)+' ')>-1;return textCompact.indexOf(a.key)>-1;}
+function hasAnchor(textNorm,textCompact,a,refs){
+  if(!a||!a.key)return false;
+  if(a.kind==='semantic')return (' '+textNorm+' ').indexOf(' '+a.key+' ')>-1;
+  if(a.kind==='semantic_phrase')return (' '+textNorm+' ').indexOf(' '+norm(a.label)+' ')>-1;
+  if(arr(refs).indexOf(a.key)>-1)return true;
+  var label=norm(a.label);
+  return !!label&&(' '+textNorm+' ').indexOf(' '+label+' ')>-1;
+}
 function classifyCorpus(corpus,index){
-  index=index||{items:[],knownRef:{}};var n=norm(corpus),c=identityCompact(corpus),hits=[];
-  arr(index.items).forEach(function(item){var matched=arr(item.anchors).filter(function(a){return hasAnchor(n,c,a);});if(matched.length)hits.push({project:item.project,anchors:matched});});
-  var unknown=referenceKeys(corpus).filter(function(k){return looksLikeExternalProjectRef(k)&&!index.knownRef[k];});
+  index=index||{items:[],knownRef:{}};var n=norm(corpus),c=identityCompact(corpus),refs=referenceKeys(corpus),hits=[];
+  arr(index.items).forEach(function(item){var matched=arr(item.anchors).filter(function(a){return hasAnchor(n,c,a,refs);});if(matched.length)hits.push({project:item.project,anchors:matched});});
+  var unknown=refs.filter(function(k){return looksLikeExternalProjectRef(k)&&!index.knownRef[k];});
   return{hits:hits,unknownRefs:uniq(unknown),mixed:hits.length>1||(hits.length>0&&unknown.length>0)||unknown.length>1,corpus:String(corpus||'')};
 }
 async function projectsIndex(force){
