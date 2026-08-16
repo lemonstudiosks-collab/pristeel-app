@@ -109,6 +109,7 @@ async function patchFreshRecord(fetcher,pid,before,after,intel){
   try{await fetcher('project_analyses?id=eq.'+enc(after.id),'PATCH',payload);return true;}catch(e){if(window.console&&console.warn)console.warn('Project Intelligence document metadata patch:',e&&e.message||e);return changed;}
 }
 function setFreshnessState(pid,text,color){var e=document.getElementById('pai-state-'+pid);if(!e)return;e.textContent=text;e.style.color=color||'var(--text3)';}
+function analysisFailureState(pid){var e=document.getElementById('pai-state-'+pid),t=str(e&&e.textContent).trim();return /^Analiza d[eë]shtoi\s*:/i.test(t)?t:'';}
 async function showFreshness(pid){
   pid=activeId(pid);var base=window.supaFetch;if(!pid||typeof base!=='function')return null;
   var q=await Promise.all([latestAnalysis(base,pid),readIntel(base,pid)]),rec=q[0],intel=q[1];
@@ -128,8 +129,8 @@ function wrapAnalyze(){
     pid=activeId(pid);var base=window.supaFetch;if(!pid||typeof base!=='function')return original.apply(this,arguments);
     var before=await latestAnalysis(base,pid),intel=await readIntel(base,pid),self=this,args=arguments;
     var result=await withIntelRead(pid,intel,function(){return original.apply(self,args);});
-    var after=await latestAnalysis(base,pid);await patchFreshRecord(base,pid,before,after,intel);
-    try{if(after&&after.id&&typeof window.pstProjectAnalysisLoad==='function')await window.pstProjectAnalysisLoad(pid);else await showFreshness(pid);}catch(e){}
+    var failure=analysisFailureState(pid),after=await latestAnalysis(base,pid);await patchFreshRecord(base,pid,before,after,intel);
+    try{if(after&&after.id&&typeof window.pstProjectAnalysisLoad==='function')await window.pstProjectAnalysisLoad(pid);else if(!failure)await showFreshness(pid);}catch(e){}
     return result;
   }
   wrapped.__pstDocumentIntelV1=true;wrapped.__pstOriginal=original;window.pstAnalyzeProject=wrapped;return true;
@@ -137,5 +138,5 @@ function wrapAnalyze(){
 function install(){wrapLoad();wrapAnalyze();var id=activeId();if(id)setTimeout(function(){showFreshness(id);},120);}
 install();
 document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTProjectAnalysisDocumentIntelligenceV1={refresh:showFreshness,_test:{intelSummary:intelSummary,compactRow:compactRow,usable:usable,reviewRequired:reviewRequired,ruleDocumentationFix:ruleDocumentationFix,syntheticRecord:syntheticRecord,docsQuery:docsQuery}};
+window.PSTProjectAnalysisDocumentIntelligenceV1={refresh:showFreshness,_test:{intelSummary:intelSummary,compactRow:compactRow,usable:usable,reviewRequired:reviewRequired,ruleDocumentationFix:ruleDocumentationFix,syntheticRecord:syntheticRecord,docsQuery:docsQuery,analysisFailureState:analysisFailureState}};
 })();
