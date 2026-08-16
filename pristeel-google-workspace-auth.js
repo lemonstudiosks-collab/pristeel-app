@@ -69,7 +69,7 @@ function clear(){
   });
 }
 function popupMessage(type){
-  if(type==='popup_failed_to_open')return'Chrome e bllokoi dritaren e Google. Kliko butonin e autorizimit perseri dhe lejo pop-up-in nese Chrome e kerkon.';
+  if(type==='popup_failed_to_open')return'Shfletuesi e bllokoi dritaren e Google. Kliko butonin e autorizimit perseri dhe lejo pop-up-in per PPPP nese shfletuesi e kerkon.';
   if(type==='popup_closed')return'Dritarja e Google u mbyll para se te perfundonte autorizimi.';
   return'Autorizimi i Google nuk u hap.';
 }
