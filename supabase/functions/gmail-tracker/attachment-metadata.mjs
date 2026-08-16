@@ -1,8 +1,16 @@
+function headerValue(headers, name) {
+  const wanted=String(name||'').toLowerCase();
+  const item=(Array.isArray(headers)?headers:[]).find((x)=>String(x?.name||'').toLowerCase()===wanted);
+  return String(item?.value||'');
+}
+
 export function collectAttachmentMetadata(part, out = []) {
   if (!part) return out;
   const filename = String(part.filename ?? '').trim();
   const attachmentId = String(part.body?.attachmentId ?? '').trim();
-  if (filename && attachmentId) {
+  const disposition = headerValue(part.headers, 'Content-Disposition');
+  const isInline = /(?:^|;)\s*inline\b/i.test(disposition);
+  if (filename && attachmentId && !isInline) {
     out.push({
       attachment_id: attachmentId,
       attachment_name: filename,
