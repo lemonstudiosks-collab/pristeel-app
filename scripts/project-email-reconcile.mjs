@@ -95,7 +95,7 @@ export async function runProjectEmailReconcile({
   if(!key)throw new Error('Missing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY');
   const tools=await loadIdentityTools(guardFile),access={supabaseUrl,key};
   const [projects,emails,links]=await Promise.all([
-    fetchAll(access,'projects','id,name,client,ref,business_ref,status,created_at'),
+    fetchAll(access,'projects','id,name,client,ref,business_ref,identity_aliases,status,created_at'),
     fetchAll(access,'project_emails','id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,sent_at,direction,subject,from_email,to_emails,cc_emails,snippet,match_method,match_confidence,needs_review'),
     fetchAll(access,'project_email_links','id,gmail_message_id,gmail_thread_id,project_id,link_method,confidence')
   ]);
