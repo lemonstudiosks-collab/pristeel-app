@@ -14,6 +14,7 @@ let d=classifyEmail({id:1,gmail_thread_id:'t1',subject:'Re: ANF-8910 Anfrage Sch
 assert.equal(d.target,'p8910');
 assert.equal(d.reason,'strong-identity');
 assert(autoEligibleHit(d.result.hits[0]));
+assert.equal(autoEligibleHit({anchors:[{kind:'business_ref',key:'bunt'}]}),false,'Short generic refs without digits must never be auto-link grade');
 
 d=classifyEmail({id:2,gmail_thread_id:'t2',subject:'AW: ANF-8910 / ANF-08915 Schweißbaugruppen',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'');
