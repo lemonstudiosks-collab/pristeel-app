@@ -67,7 +67,11 @@ export function tenderDeadlineTaskRows(rows,{today=isoToday(),withinDays=7,minSc
   for(const row of Array.isArray(rows)?rows:[]){
     if(row?.payload?.notice_phase!=='opportunity'||!row.deadline||row.deadline<today||row.deadline>horizon||Number(row.relevance_score)<minScore)continue;
     const days=daysBetween(today,row.deadline);const reviewDue=days<=2?today:plusDaysIso(row.deadline,-2);const title=text(row.title).slice(0,170);
-    out.push({project_id:null,title:`TED urgjent · ${title}`,detail:`Mundësi TED për PRISTEEL · ${row.category==='raw_material'?'lëndë e parë':'strukturë/punime çeliku'} · relevanca ${row.relevance_score}% · autoriteti: ${row.authority||'—'} · afati: ${sqDate(row.deadline)}. Veprim: hap njoftimin zyrtar, verifiko scope/kriteret dhe vendos nëse duhet krijuar projekt. ${row.source_url||''}`.trim(),due_date:reviewDue,priority:days<=2?'urgjent':'e larte',source:'tender_deadline_auto',source_ref:row.source_key,category:'intern'});
+    const place=text(row?.payload?.country)||'—';
+    const cpv=Array.isArray(row?.payload?.cpv)&&row.payload.cpv.length?row.payload.cpv.join(', '):(row.fpp||'—');
+    const ref=text(row.publication_no)||text(row.source_key).replace(/^TED:/,'')||'—';
+    const reasons=Array.isArray(row.match_reasons)&&row.match_reasons.length?row.match_reasons.map(text).filter(Boolean).join('; '):'sinjal i klasifikimit TED';
+    out.push({project_id:null,title:`TED urgjent · ${title}`,detail:`Mundësi TED për PRISTEEL · ${row.category==='raw_material'?'lëndë e parë':'strukturë/punime çeliku'} · relevanca ${row.relevance_score}% · autoriteti: ${row.authority||'—'} · afati: ${sqDate(row.deadline)} · Vendi: ${place} · CPV: ${cpv} · Ref: ${ref} · Pse relevante: ${reasons}. Veprim: hap njoftimin zyrtar, verifiko scope/kriteret dhe vendos nëse duhet krijuar projekt. ${row.source_url||''}`.trim(),due_date:reviewDue,priority:days<=2?'urgjent':'e larte',source:'tender_deadline_auto',source_ref:row.source_key,category:'intern'});
   }
   return out;
 }
