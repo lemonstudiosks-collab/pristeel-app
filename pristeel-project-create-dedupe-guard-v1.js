@@ -22,7 +22,8 @@ function compact(v){return norm(v).replace(/\s+/g,'');}
 function businessRef(p){var R=window.PSTProjectReferenceV1;return R&&typeof R.canonical==='function'?R.canonical(p):String(p&&(p.business_ref||p.ref||p.reference)||'');}
 function keyProject(p){var R=window.PSTProjectReferenceV1;return R&&typeof R.key==='function'?R.key(p):(norm(p&&p.name)+'|'+norm(p&&p.client)+'|'+norm(businessRef(p)));}
 function identityAliases(p){return arr(p&&p.identity_aliases).map(function(x){return String(x||'').trim();}).filter(Boolean);}
-function sameClient(a,b){var x=norm(a&&a.client),y=norm(b&&b.client);return !!x&&!!y&&x===y;}
+function clientKey(v){return norm(v).split(' ').filter(function(x){return x&&!/^(gmbh|co|kg|ag|llc|ltd|limited|inc|corp|corporation|shpk|sh\.p\.k|doo|d\.o\.o|sas|sarl|spa|srl|bv|nv|oy|ab)$/.test(x);}).join(' ');}
+function sameClient(a,b){var x=clientKey(a&&a.client),y=clientKey(b&&b.client);return !!x&&!!y&&x===y;}
 function aliasMatch(existing,requested){
   if(!sameClient(existing,requested))return false;
   var aliases=identityAliases(existing),reqName=norm(requested&&requested.name),reqRef=compact(businessRef(requested));
@@ -102,6 +103,7 @@ window.PSTProjectCreateDedupeGuard={
   keyProject:keyProject,
   businessRef:businessRef,
   identityAliases:identityAliases,
+  clientKey:clientKey,
   aliasMatch:aliasMatch,
   isInstalled:function(){return installed;}
 };
