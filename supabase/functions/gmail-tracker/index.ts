@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { attachmentRegistryRows } from "./attachment-metadata.mjs";
+import { attachmentScanStateRow, selectUnscannedAttachmentPairs } from "./attachment-scan-state.mjs";
 import { bodyHydrationPatch, selectLinkedBodyCandidates } from "./body-hydration.mjs";
 
 const SA_JSON = Deno.env.get("GOOGLE_SA_JSON")!;
@@ -410,18 +411,17 @@ async function linkedAttachmentCandidates(limit = 20): Promise<AttachmentPair[]>
     pairs.set(`${pair.project_id}|${pair.gmail_message_id}`, pair);
   }
 
-  const { data: existing, error: existingError } = await db
-    .from("project_attachment_links")
+  const { data: scanRows, error: scanError } = await db
+    .from("project_attachment_scan_state")
     .select("project_id,gmail_message_id")
     .limit(10000);
-  if (existingError) throw existingError;
-  const registered = new Set((existing ?? []).map((x) => `${String(x.project_id ?? "")}|${String(x.gmail_message_id ?? "")}`));
-  return [...pairs.entries()].filter(([key]) => !registered.has(key)).map(([, value]) => value).slice(0, safeLimit);
+  if (scanError) throw scanError;
+  return selectUnscannedAttachmentPairs([...pairs.values()], scanRows ?? [], safeLimit);
 }
 
 async function syncLinkedAttachmentMetadata(limit = 20) {
   const candidates = await linkedAttachmentCandidates(limit);
-  if (!candidates.length) return { candidates: 0, messages_fetched: 0, rows_registered: 0, no_downloadable: 0 };
+  if (!candidates.length) return { candidates: 0, messages_fetched: 0, pairs_scanned: 0, rows_registered: 0, no_downloadable: 0 };
   const ids = [...new Set(candidates.map((x) => x.gmail_message_id))];
   const fetched = await mapLimit(ids, 5, async (id) => {
     const full = await gmail(`/messages/${encodeURIComponent(id)}?format=full`);
@@ -429,15 +429,18 @@ async function syncLinkedAttachmentMetadata(limit = 20) {
   });
   const byId = new Map(fetched);
   const registryRows: any[] = [];
+  const scanRows: any[] = [];
   let noDownloadable = 0;
   for (const candidate of candidates) {
     const full = byId.get(candidate.gmail_message_id);
     const rows = attachmentRegistryRows(full, candidate.project_id, "server-metadata-v1");
-    if (!rows.length) { noDownloadable++; continue; }
+    if (!rows.length) noDownloadable++;
     for (const row of rows) {
       if (!row.gmail_thread_id && candidate.gmail_thread_id) row.gmail_thread_id = candidate.gmail_thread_id;
       registryRows.push(row);
     }
+    const scanRow = attachmentScanStateRow(candidate, rows.length, new Date().toISOString(), "server-metadata-v1");
+    if (scanRow) scanRows.push(scanRow);
   }
   if (registryRows.length) {
     const { error } = await db
@@ -445,7 +448,13 @@ async function syncLinkedAttachmentMetadata(limit = 20) {
       .upsert(registryRows, { onConflict: "gmail_message_id,attachment_id,project_id", ignoreDuplicates: true });
     if (error) throw error;
   }
-  return { candidates: candidates.length, messages_fetched: ids.length, rows_registered: registryRows.length, no_downloadable: noDownloadable };
+  if (scanRows.length) {
+    const { error } = await db
+      .from("project_attachment_scan_state")
+      .upsert(scanRows, { onConflict: "project_id,gmail_message_id", ignoreDuplicates: false });
+    if (error) throw error;
+  }
+  return { candidates: candidates.length, messages_fetched: ids.length, pairs_scanned: scanRows.length, rows_registered: registryRows.length, no_downloadable: noDownloadable };
 }
 
 async function ingestProjectEmails(days: number, apply = true) {
