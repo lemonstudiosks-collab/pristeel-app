@@ -114,7 +114,7 @@ function normalizeAiScores(out){
 }
 async function withAnalysisAi(intel,fn){
   var ai=window.PSTAI,base=ai&&ai.requestJson;if(typeof base!=='function')return fn();
-  async function wrapped(opts){var aug=augmentAiOptions(opts,intel),out=await base.call(this,aug);return aug.__pstDocumentIntelFinal?normalizeAiScores(out):out;}
+  async function wrapped(opts){var aug=augmentAiOptions(opts,intel),isFinal=!!aug.__pstDocumentIntelFinal;delete aug.__pstDocumentIntelFinal;var out=await base.call(this,aug);return isFinal?normalizeAiScores(out):out;}
   ai.requestJson=wrapped;
   try{return await fn();}
   finally{if(ai.requestJson===wrapped)ai.requestJson=base;}
