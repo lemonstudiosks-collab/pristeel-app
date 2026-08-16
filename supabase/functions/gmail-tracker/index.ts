@@ -331,14 +331,18 @@ async function fetchMessageRow(id: string): Promise<GmailMessageRow> {
 }
 
 async function linkedBodyHydrationCandidates(limit = 20) {
-  const { data: emails, error: emailError } = await db
+  const safeLimit = Math.min(40, Math.max(1, Math.floor(Number(limit) || 20)));
+  const selectCols = "gmail_message_id,project_id,suggested_project_id,body_hydrated_at,sent_at";
+  const { data: direct, error: directError } = await db
     .from("project_emails")
-    .select("gmail_message_id,project_id,suggested_project_id,body_hydrated_at,sent_at")
+    .select(selectCols)
     .not("gmail_message_id", "is", null)
+    .not("project_id", "is", null)
     .is("body_hydrated_at", null)
     .order("sent_at", { ascending: false })
-    .limit(5000);
-  if (emailError) throw emailError;
+    .limit(Math.max(200, safeLimit * 4));
+  if (directError) throw directError;
+
   const { data: links, error: linkError } = await db
     .from("project_email_links")
     .select("project_id,gmail_message_id")
@@ -346,35 +350,91 @@ async function linkedBodyHydrationCandidates(limit = 20) {
     .not("gmail_message_id", "is", null)
     .limit(5000);
   if (linkError) throw linkError;
-  return selectLinkedBodyCandidates(emails ?? [], links ?? [], limit);
+
+  const directIds = new Set((direct ?? []).map((x: any) => String(x.gmail_message_id ?? "")).filter(Boolean));
+  const linkedIds = [...new Set((links ?? []).map((x: any) => String(x.gmail_message_id ?? "")).filter((id: string) => id && !directIds.has(id)))];
+  const linkedEmails: any[] = [];
+  for (let i = 0; i < linkedIds.length; i += 200) {
+    const ids = linkedIds.slice(i, i + 200);
+    if (!ids.length) continue;
+    const { data, error } = await db
+      .from("project_emails")
+      .select(selectCols)
+      .in("gmail_message_id", ids)
+      .is("body_hydrated_at", null);
+    if (error) throw error;
+    linkedEmails.push(...(data ?? []));
+  }
+
+  return selectLinkedBodyCandidates([...(direct ?? []), ...linkedEmails], links ?? [], safeLimit);
 }
 
 async function syncLinkedBodyHydration(limit = 20) {
   const candidates = await linkedBodyHydrationCandidates(limit);
-  if (!candidates.length) return { candidates: 0, hydrated: 0, empty_marked: 0 };
+  if (!candidates.length) return { candidates: 0, hydrated: 0, empty_marked: 0, not_found: 0, failed: 0 };
   let hydrated = 0;
   let emptyMarked = 0;
+  let notFound = 0;
+  let failed = 0;
+  const failures: Array<{ id: string; error: string }> = [];
+
   await mapLimit(candidates, 5, async (candidate) => {
     const id = String(candidate.gmail_message_id ?? "");
     if (!id) return;
-    const full = await gmail(`/messages/${encodeURIComponent(id)}?format=full`);
-    const body = fullBodyText(full?.payload, "");
-    const at = new Date().toISOString();
-    const patch = bodyHydrationPatch(body, at);
-    const update = patch ?? {
-      body_hydrated_at: at,
-      body_hydration_method: "server-full-mime-empty-v1",
-      updated_at: at,
-    };
-    const { error } = await db
-      .from("project_emails")
-      .update(update)
-      .eq("gmail_message_id", id)
-      .is("body_hydrated_at", null);
-    if (error) throw error;
-    if (patch) hydrated++; else emptyMarked++;
+    try {
+      const full = await gmail(`/messages/${encodeURIComponent(id)}?format=full`);
+      const body = fullBodyText(full?.payload, "");
+      const at = new Date().toISOString();
+      const patch = bodyHydrationPatch(body, at);
+      const update = patch ?? {
+        body_hydrated_at: at,
+        body_hydration_method: "server-full-mime-empty-v1",
+        updated_at: at,
+      };
+      const { error } = await db
+        .from("project_emails")
+        .update(update)
+        .eq("gmail_message_id", id)
+        .is("body_hydrated_at", null);
+      if (error) throw error;
+      if (patch) hydrated++; else emptyMarked++;
+    } catch (e) {
+      const message = String(e);
+      if (/Gmail \/messages\/[^ ]+\?format=full -> 404:/i.test(message)) {
+        const at = new Date().toISOString();
+        const { error } = await db
+          .from("project_emails")
+          .update({
+            body_hydrated_at: at,
+            body_hydration_method: "server-full-mime-not-found-v1",
+            updated_at: at,
+          })
+          .eq("gmail_message_id", id)
+          .is("body_hydrated_at", null);
+        if (error) {
+          failed++;
+          failures.push({ id, error: String(error).slice(0, 300) });
+        } else {
+          notFound++;
+        }
+        return;
+      }
+      failed++;
+      failures.push({ id, error: message.slice(0, 300) });
+    }
   });
-  return { candidates: candidates.length, hydrated, empty_marked: emptyMarked };
+
+  if (failed === candidates.length && candidates.length > 0) {
+    throw new Error(`Body hydration batch failed for all ${failed} candidates: ${failures[0]?.error || "unknown error"}`);
+  }
+  return {
+    candidates: candidates.length,
+    hydrated,
+    empty_marked: emptyMarked,
+    not_found: notFound,
+    failed,
+    errors: failures.slice(0, 10),
+  };
 }
 
 async function linkedAttachmentCandidates(limit = 20): Promise<AttachmentPair[]> {
