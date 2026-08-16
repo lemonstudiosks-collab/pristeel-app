@@ -253,4 +253,13 @@ if(document.readyState === 'loading'){
   document.head.appendChild(s);
 })();
 
+(function loadTaskSourceActionsModule(){
+  if(document.querySelector('script[data-pst-task-source-actions]')) return;
+  var s=document.createElement('script');
+  s.src='pristeel-task-source-actions-v1.js?v='+String(Date.now());
+  s.defer=true;
+  s.setAttribute('data-pst-task-source-actions','1');
+  document.head.appendChild(s);
+})();
+
 })();
