@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { classifyTedNotice, normalizeTedNotice, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
+import { classifyTedNotice, normalizeTedNotice, reconcileTedOpportunityLifecycle, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
 
 const steel=classifyTedNotice({title:'Stahlbauarbeiten mit technischer Plattform',cpv:['45223210']});
 assert.equal(steel.category,'steel_structure');
@@ -62,7 +62,7 @@ async function fakeFetch(url,opts){
   const notices=query.includes('can-standard')?[fixture.notices[0]]:[fixture.notices[1]];
   return new Response(JSON.stringify({notices}),{status:200,headers:{'content-type':'application/json'}});
 }
-const summary=await runTedTenderSync({mode:'preview',minScore:75,fetchImpl:fakeFetch});
+const summary=await runTedTenderSync({mode:'preview',minScore:75,opportunityDays:45,awardDays:14,fetchImpl:fakeFetch});
 assert.equal(calls.length,2,'collector should make separate opportunity and award searches');
 assert.ok(calls[0].body.query.includes('notice-type IN (cn-standard cn-social pin-cfc-standard pin-cfc-social qu-sy subco)'));
 assert.ok(calls[0].body.query.includes('classification-cpv = 45223210'));
@@ -73,10 +73,39 @@ assert.ok(calls[0].body.fields.includes('deadline-receipt-request-date-lot'),'co
 assert.equal(calls[0].body.scope,'ACTIVE');
 assert.equal(calls[0].body.checkQuerySyntax,false);
 assert.equal(calls[0].body.paginationMode,'PAGE_NUMBER');
+assert.equal(summary.opportunity_lookback_days,45,'open TED scan should cover long-running active procedures');
 assert.equal(summary.opportunities,1);
 assert.equal(summary.opportunities_with_deadline,1);
 assert.equal(summary.awards,1);
 assert.equal(summary.relevant_rows,2);
 assert.ok(summary.tenders.some(x=>x.publication_no==='600001-2026'&&x.phase==='opportunity'&&x.deadline==='2026-09-25'));
+
+const originalFetch=globalThis.fetch;
+const deletes=[];
+const lifecycleRows=[
+  {id:'reject-new',source_key:'TED:REJECT',status:'new',project_id:null,deadline:'2026-09-10',payload:{source:'TED',notice_phase:'opportunity'}},
+  {id:'expired-new',source_key:'TED:EXPIRED',status:'new',project_id:null,deadline:'2026-08-15',payload:{source:'TED',notice_phase:'opportunity'}},
+  {id:'expired-review',source_key:'TED:REVIEW',status:'review',project_id:null,deadline:'2026-08-15',payload:{source:'TED',notice_phase:'opportunity'}},
+  {id:'expired-promoted',source_key:'TED:PROMOTED',status:'promoted',project_id:'project-1',deadline:'2026-08-15',payload:{source:'TED',notice_phase:'opportunity'}},
+  {id:'relevant-new',source_key:'TED:KEEP',status:'new',project_id:null,deadline:'2026-09-10',payload:{source:'TED',notice_phase:'opportunity'}},
+  {id:'app-expired',source_key:'APP:X',status:'new',project_id:null,deadline:'2026-08-15',payload:{source:'APP_AL',notice_phase:'opportunity'}}
+];
+globalThis.fetch=async(url,opts={})=>{
+  if((opts.method||'GET')==='GET')return new Response(JSON.stringify(lifecycleRows),{status:200});
+  if(opts.method==='DELETE'){deletes.push(decodeURIComponent(String(url).match(/id=eq\.([^&]+)/)?.[1]||''));return new Response('',{status:204});}
+  throw new Error(`Unexpected lifecycle request ${opts.method} ${url}`);
+};
+try{
+  const lifecycle=await reconcileTedOpportunityLifecycle(
+    {supabaseUrl:'https://supabase.test',apiKey:'test',bearerToken:'test'},
+    {evaluatedKeys:new Set(['TED:REJECT','TED:KEEP']),relevantKeys:new Set(['TED:KEEP']),today:'2026-08-16'}
+  );
+  assert.deepEqual(lifecycle,{rejected:1,expired:1});
+  assert.deepEqual(deletes.sort(),['expired-new','reject-new'],'only untouched machine-new rejected/expired TED opportunities may be removed');
+  assert.ok(!deletes.includes('expired-review'),'human-reviewed expired tender must be preserved');
+  assert.ok(!deletes.includes('expired-promoted'),'promoted tender must be preserved');
+  assert.ok(!deletes.includes('relevant-new'),'currently relevant tender must be preserved');
+  assert.ok(!deletes.includes('app-expired'),'TED lifecycle must not touch another source');
+}finally{globalThis.fetch=originalFetch;}
 
 console.log('TED tender sync smoke: OK');
