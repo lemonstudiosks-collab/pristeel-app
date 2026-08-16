@@ -5,7 +5,12 @@ const { JSDOM } = require('jsdom');
 const handoffSrc = fs.readFileSync('pristeel-gmail-tab-handoff.js','utf8');
 const bridgeSrc = fs.readFileSync('pristeel-gmail-intake-auth-bridge-v1.js','utf8');
 const recoveryGateSrc = fs.readFileSync('pristeel-linked-gmail-auth-gate-v1.js','utf8');
+const authSrc = fs.readFileSync('pristeel-google-workspace-auth.js','utf8');
 const url = 'https://example.test/pristeel-procurement.html?gmail_intake=1&gmail_message_id=m1&gmail_thread_id=t1';
+
+assert(!authSrc.includes('Chrome e bllokoi dritaren e Google'), 'Google popup guidance must not assume Chrome');
+assert(authSrc.includes('Shfletuesi e bllokoi dritaren e Google'), 'Google popup guidance must be browser-neutral');
+assert(authSrc.includes('Gmail intake nuk hap pop-up automatikisht'), 'browser-neutral copy must not weaken the explicit OAuth boundary');
 
 function wait(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 
