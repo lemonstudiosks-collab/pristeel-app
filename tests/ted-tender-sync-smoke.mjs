@@ -81,8 +81,8 @@ assert.equal(summary.relevant_rows,2);
 assert.ok(summary.tenders.some(x=>x.publication_no==='600001-2026'&&x.phase==='opportunity'&&x.deadline==='2026-09-25'));
 
 const taskRows=tenderDeadlineTaskRows([
-  {source_key:'TED:URGENT',title:'Urgent steel structure',authority:'Buyer A',category:'steel_structure',relevance_score:96,deadline:'2026-08-17',source_url:'https://ted.example/urgent',payload:{notice_phase:'opportunity'}},
-  {source_key:'TED:SOON',title:'Steel profiles',authority:'Buyer B',category:'raw_material',relevance_score:95,deadline:'2026-08-21',source_url:'https://ted.example/soon',payload:{notice_phase:'opportunity'}},
+  {source_key:'TED:URGENT',publication_no:'700001-2026',title:'Urgent steel structure',authority:'Buyer A',category:'steel_structure',relevance_score:96,match_reasons:['CPV kryesor strukturë çeliku: 45223210','titull i qartë për strukturë çeliku'],deadline:'2026-08-17',source_url:'https://ted.example/urgent',payload:{notice_phase:'opportunity',country:'DEU',cpv:['45223210']}},
+  {source_key:'TED:SOON',publication_no:'700002-2026',title:'Steel profiles',authority:'Buyer B',category:'raw_material',relevance_score:95,match_reasons:['CPV kryesor lëndë çeliku: 44334000'],deadline:'2026-08-21',source_url:'https://ted.example/soon',payload:{notice_phase:'opportunity',country:'AUT',cpv:['44334000']}},
   {source_key:'TED:LOW',title:'Weak signal',authority:'Buyer C',category:'steel_structure',relevance_score:80,deadline:'2026-08-18',payload:{notice_phase:'opportunity'}},
   {source_key:'TED:LATER',title:'Later steel work',authority:'Buyer D',category:'steel_structure',relevance_score:96,deadline:'2026-08-30',payload:{notice_phase:'opportunity'}},
   {source_key:'TED:AWARD',title:'Already awarded',authority:'Buyer E',category:'steel_structure',relevance_score:100,deadline:'2026-08-17',payload:{notice_phase:'award'}}
@@ -95,6 +95,10 @@ assert.equal(taskRows[1].due_date,'2026-08-19','normal urgent tender review shou
 assert.equal(taskRows[1].priority,'e larte');
 assert.ok(taskRows.every(x=>x.source==='tender_deadline_auto'&&x.project_id===null&&x.category==='intern'),'deadline automation must create internal review tasks only, never projects');
 assert.ok(taskRows[0].detail.includes('verifiko scope/kriteret'),'task must explicitly require human verification');
+assert.ok(taskRows[0].detail.includes('Vendi: DEU'),'task brief must carry the place of performance');
+assert.ok(taskRows[0].detail.includes('CPV: 45223210'),'task brief must carry the TED CPV code');
+assert.ok(taskRows[0].detail.includes('Ref: 700001-2026'),'task brief must carry the TED publication reference');
+assert.ok(taskRows[0].detail.includes('Pse relevante: CPV kryesor strukturë çeliku: 45223210; titull i qartë për strukturë çeliku'),'task brief must explain why the classifier promoted the tender');
 
 const originalFetch=globalThis.fetch;
 const deletes=[];
