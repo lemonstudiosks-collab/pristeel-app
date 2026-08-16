@@ -13,6 +13,9 @@ const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCas
 function ymd(date){return date.toISOString().slice(0,10).replace(/-/g,'');}
 function isoToday(){return new Date().toISOString().slice(0,10);}
 function daysAgo(days){const d=new Date();d.setUTCDate(d.getUTCDate()-days);return d;}
+function plusDaysIso(iso,days){const d=new Date(`${iso}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);}
+function daysBetween(a,b){return Math.round((Date.parse(`${b}T00:00:00Z`)-Date.parse(`${a}T00:00:00Z`))/86400000);}
+function sqDate(iso){if(!iso)return'—';const [y,m,d]=iso.split('-');return `${d}.${m}.${y}`;}
 function firstScalar(value){if(value==null)return '';if(Array.isArray(value)){for(const x of value){const v=firstScalar(x);if(v)return v;}return '';}if(typeof value==='object'){for(const key of ['eng','en','deu','de','fra','fr','value','label','name','text']){if(value[key]!=null){const v=firstScalar(value[key]);if(v)return v;}}for(const v of Object.values(value)){const x=firstScalar(v);if(x)return x;}return '';}return text(value);}
 function listScalars(value){const out=[];const walk=v=>{if(v==null)return;if(Array.isArray(v)){v.forEach(walk);return;}if(typeof v==='object'){if('value' in v){walk(v.value);return;}const languageKeys=['eng','en','deu','de','fra','fr','ita','it','nld','nl'];const matched=languageKeys.filter(k=>v[k]!=null);if(matched.length){matched.forEach(k=>walk(v[k]));return;}Object.values(v).forEach(walk);return;}const s=text(v);if(s&&!out.includes(s))out.push(s);};walk(value);return out;}
 function field(row,name){return row?.[name]??row?.fields?.[name]??row?.data?.[name]??null;}
@@ -59,8 +62,21 @@ export async function reconcileTedOpportunityLifecycle(access,{evaluatedKeys=new
   }
   return{rejected,expired};
 }
+export function tenderDeadlineTaskRows(rows,{today=isoToday(),withinDays=7,minScore=88}={}){
+  const horizon=plusDaysIso(today,withinDays),out=[];
+  for(const row of Array.isArray(rows)?rows:[]){
+    if(row?.payload?.notice_phase!=='opportunity'||!row.deadline||row.deadline<today||row.deadline>horizon||Number(row.relevance_score)<minScore)continue;
+    const days=daysBetween(today,row.deadline);const reviewDue=days<=2?today:plusDaysIso(row.deadline,-2);const title=text(row.title).slice(0,170);
+    out.push({project_id:null,title:`TED urgjent · ${title}`,detail:`Mundësi TED për PRISTEEL · ${row.category==='raw_material'?'lëndë e parë':'strukturë/punime çeliku'} · relevanca ${row.relevance_score}% · autoriteti: ${row.authority||'—'} · afati: ${sqDate(row.deadline)}. Veprim: hap njoftimin zyrtar, verifiko scope/kriteret dhe vendos nëse duhet krijuar projekt. ${row.source_url||''}`.trim(),due_date:reviewDue,priority:days<=2?'urgjent':'e larte',source:'tender_deadline_auto',source_ref:row.source_key,category:'intern'});
+  }
+  return out;
+}
+async function syncTenderDeadlineTasks(access,tasks){
+  if(!tasks.length)return 0;
+  await rest({...access,path:'tasks?on_conflict=source,source_ref',method:'POST',body:tasks,prefer:'resolution=merge-duplicates,return=minimal'});return tasks.length;
+}
 async function writeSummary(summary){await mkdir('tmp',{recursive:true});await writeFile('tmp/ted-tender-sync.json',JSON.stringify(summary,null,2));}
-export async function runTedTenderSync({mode=process.env.SYNC_MODE||'preview',minScore=Number(process.env.TED_TENDER_MIN_SCORE||75),opportunityDays=Number(process.env.TED_OPPORTUNITY_DAYS||45),awardDays=Number(process.env.TED_OPEN_AWARD_DAYS||14),fetchImpl=fetch,supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL,apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||'',bearerToken=''}={}){
+export async function runTedTenderSync({mode=process.env.SYNC_MODE||'preview',minScore=Number(process.env.TED_TENDER_MIN_SCORE||75),opportunityDays=Number(process.env.TED_OPPORTUNITY_DAYS||45),awardDays=Number(process.env.TED_OPEN_AWARD_DAYS||14),taskMinScore=Number(process.env.TED_TASK_MIN_SCORE||88),taskWithinDays=Number(process.env.TED_TASK_WITHIN_DAYS||7),fetchImpl=fetch,supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL,apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||'',bearerToken=''}={}){
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
   const seenAt=new Date().toISOString(),today=isoToday();
   const opportunityRaw=await tedSearch({query:queryFor(OPPORTUNITY_TYPES,{days:opportunityDays}),scope:'ACTIVE',fetchImpl});
@@ -68,13 +84,14 @@ export async function runTedTenderSync({mode=process.env.SYNC_MODE||'preview',mi
   const evaluatedKeys=new Set();const relevantOpportunityKeys=new Set();const dedupe=new Map();
   for(const item of opportunityRaw){const row=normalizeTedNotice(item,'opportunity',seenAt);if(!row)continue;evaluatedKeys.add(row.source_key);if(row.deadline&&row.deadline<today)continue;if(row.relevance_score<minScore)continue;relevantOpportunityKeys.add(row.source_key);dedupe.set(row.source_key,row);}
   for(const item of awardRaw){const row=normalizeTedNotice(item,'award',seenAt);if(!row||row.relevance_score<minScore)continue;if(!dedupe.has(row.source_key))dedupe.set(row.source_key,row);}
-  const rows=[...dedupe.values()];let authMode='not_needed',lifecycle={rejected:0,expired:0};
+  const rows=[...dedupe.values()];const deadlineTasks=tenderDeadlineTaskRows(rows,{today,withinDays:taskWithinDays,minScore:taskMinScore});
+  let authMode='not_needed',lifecycle={rejected:0,expired:0},tasksSynced=0;
   if(mode==='apply'){
     const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
-    authMode=access.authMode;await upsertRows(access,rows);lifecycle=await reconcileTedOpportunityLifecycle(access,{evaluatedKeys,relevantKeys:relevantOpportunityKeys,today});
+    authMode=access.authMode;await upsertRows(access,rows);lifecycle=await reconcileTedOpportunityLifecycle(access,{evaluatedKeys,relevantKeys:relevantOpportunityKeys,today});tasksSynced=await syncTenderDeadlineTasks(access,deadlineTasks);
   }
-  const summary={mode,auth_mode:authMode,api:TED_API,opportunity_raw:opportunityRaw.length,award_raw:awardRaw.length,relevant_rows:rows.length,opportunities:rows.filter(r=>r.payload.notice_phase==='opportunity').length,opportunities_with_deadline:rows.filter(r=>r.payload.notice_phase==='opportunity'&&r.deadline).length,awards:rows.filter(r=>r.payload.notice_phase==='award').length,minimum_score:minScore,opportunity_lookback_days:opportunityDays,award_lookback_days:awardDays,lifecycle_pruned:lifecycle,queries:{opportunities:queryFor(OPPORTUNITY_TYPES,{days:opportunityDays}),awards:queryFor(AWARD_TYPES,{days:awardDays})},tenders:rows.map(r=>({publication_no:r.publication_no,title:r.title,authority:r.authority,category:r.category,relevance_score:r.relevance_score,phase:r.payload.notice_phase,cpv:r.payload.cpv,published_date:r.published_date,deadline:r.deadline}))};
-  await writeSummary(summary);console.log(`TED tender sync ${mode}: opportunityRaw=${summary.opportunity_raw}, awardRaw=${summary.award_raw}, relevant=${summary.relevant_rows}, opportunities=${summary.opportunities}, withDeadline=${summary.opportunities_with_deadline}, awards=${summary.awards}, prunedRejected=${lifecycle.rejected}, prunedExpired=${lifecycle.expired}.`);return summary;
+  const summary={mode,auth_mode:authMode,api:TED_API,opportunity_raw:opportunityRaw.length,award_raw:awardRaw.length,relevant_rows:rows.length,opportunities:rows.filter(r=>r.payload.notice_phase==='opportunity').length,opportunities_with_deadline:rows.filter(r=>r.payload.notice_phase==='opportunity'&&r.deadline).length,awards:rows.filter(r=>r.payload.notice_phase==='award').length,minimum_score:minScore,opportunity_lookback_days:opportunityDays,award_lookback_days:awardDays,lifecycle_pruned:lifecycle,deadline_tasks:{eligible:deadlineTasks.length,synced:tasksSynced,minimum_score:taskMinScore,within_days:taskWithinDays},queries:{opportunities:queryFor(OPPORTUNITY_TYPES,{days:opportunityDays}),awards:queryFor(AWARD_TYPES,{days:awardDays})},tenders:rows.map(r=>({publication_no:r.publication_no,title:r.title,authority:r.authority,category:r.category,relevance_score:r.relevance_score,phase:r.payload.notice_phase,cpv:r.payload.cpv,published_date:r.published_date,deadline:r.deadline}))};
+  await writeSummary(summary);console.log(`TED tender sync ${mode}: opportunityRaw=${summary.opportunity_raw}, awardRaw=${summary.award_raw}, relevant=${summary.relevant_rows}, opportunities=${summary.opportunities}, withDeadline=${summary.opportunities_with_deadline}, awards=${summary.awards}, prunedRejected=${lifecycle.rejected}, prunedExpired=${lifecycle.expired}, deadlineTasks=${deadlineTasks.length}.`);return summary;
 }
 const direct=process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href;
 if(direct)runTedTenderSync().catch(async error=>{try{await writeSummary({error:String(error?.message||error),mode:process.env.SYNC_MODE||'preview'});}catch{}console.error(error?.message||error);process.exit(1);});
