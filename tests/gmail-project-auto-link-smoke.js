@@ -14,7 +14,7 @@ const {JSDOM}=require('jsdom');
   assert(source.includes('if(!row||row.project_id||!decision'),'Already-linked email rows must never be reassigned');
   assert(source.includes('y.emails=[];y.tokens=[];y.refs=[];y.names=[]'),'Legacy contact/token/ref/name evidence must be stripped before persistence');
   assert(source.includes("p.name='';p.client='';p.ref='';p.business_ref='';p.location='';"),'Legacy project metadata must be neutralized before persistence');
-  assert(loader.includes('pristeel-gmail-project-auto-link-v1.js?v=20260816-1'),'Current Project-first loader must load Gmail project auto-link');
+  assert(loader.includes('pristeel-gmail-project-auto-link-v1.js?v=20260816-autolink5'),'Current Project-first loader must cache-bust the authoritative Gmail auto-link module');
 
   const dom=new JSDOM('<!doctype html><html><head></head><body></body></html>',{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
