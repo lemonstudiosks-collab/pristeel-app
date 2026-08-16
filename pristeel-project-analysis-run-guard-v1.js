@@ -3,9 +3,10 @@
  * when a browser blocks Google OAuth pop-ups.
  * - Caps Gmail/Drive authorization waits only during the analysis run.
  * - Restores the original auth functions immediately afterwards.
- * - Provides a programmatic click path for the Project Intelligence analyze buttons.
+ * - Provides one guarded programmatic path for Project Intelligence analysis runs.
  * - If an AI run returns without creating a project_analyses row, retries once with the existing rule engine.
  * - Clears stale per-project running locks so a completed UI cannot stay blocked forever.
+ * - If Project Summary cannot run a fresh analysis because Google authorization failed, starts the guarded analysis from PPPP data after the summary settles.
  * - Does not send email, write BOM/tasks, or change project status.
  */
 (function(){
@@ -15,6 +16,8 @@ window.__pstProjectAnalysisRunGuardV1=true;
 
 var AUTH_WAIT_MS=8000;
 var RUN_STALE_MS=180000;
+var SUMMARY_RECHECK_MS=3500;
+var SUMMARY_MAX_CHECKS=8;
 var running={};
 function str(v){return String(v==null?'':v);}
 function enc(v){return encodeURIComponent(str(v));}
@@ -54,6 +57,7 @@ async function retryWithRules(original,self,args,pid){
   finally{ai.hasApiKey=oldHas;}
 }
 function chainHas(fn,flag){var n=0;while(typeof fn==='function'&&n++<12){if(fn[flag])return true;fn=fn.__pstOriginal||fn.__base||null;}return false;}
+function findGuard(fn){var n=0;while(typeof fn==='function'&&n++<12){if(fn.__pstAnalysisRunGuardV1)return fn;fn=fn.__pstOriginal||fn.__base||null;}return null;}
 function activeRun(pid){
   var r=running[pid];if(!r)return null;
   if(!r.promise||!r.startedAt){delete running[pid];return null;}
@@ -96,6 +100,16 @@ function install(){
   window.pstAnalyzeProject=wrapped;
   return true;
 }
+function run(pid){
+  pid=activeId(pid);if(!pid)return Promise.resolve(null);
+  install();
+  var fn=findGuard(window.pstAnalyzeProject)||window.pstAnalyzeProject;
+  if(typeof fn!=='function'){
+    setState(pid,'Motori i analizës nuk është ngarkuar. Rifresko faqen dhe provo përsëri.','#A64B42');
+    return Promise.resolve(null);
+  }
+  return Promise.resolve(fn(pid));
+}
 function buttonAndPid(target){
   if(!target||!target.closest)return null;
   var button=target.closest('[id^="pai-analyze-"]');
@@ -110,13 +124,34 @@ function onAnalysisClick(e){
   e.preventDefault();
   e.stopPropagation();
   if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
-  install();
   setState(hit.pid,'Po nis rifreskimi i analizës…');
-  setTimeout(function(){if(typeof window.pstAnalyzeProject==='function')window.pstAnalyzeProject(hit.pid);},0);
+  setTimeout(function(){run(hit.pid);},0);
+}
+function summarySettled(){
+  var s=document.getElementById('pst-ps-sync-state'),t=str(s&&s.textContent).trim();
+  if(!t)return false;
+  return !/^Po sinkronizohen/i.test(t)&&!/Po krijohet analiza e freskët/i.test(t);
+}
+function summaryBusy(pid){var b=document.getElementById('pai-analyze-'+pid),p=document.getElementById('pai-progress-'+pid);return !!((b&&b.disabled)||(p&&p.classList&&p.classList.contains('on')));}
+function ensureSummaryAnalysis(pid,before,attempt){
+  attempt=attempt||0;
+  if(!document.getElementById('pst-project-summary-bg'))return;
+  if((!summarySettled()||summaryBusy(pid))&&attempt<SUMMARY_MAX_CHECKS){setTimeout(function(){ensureSummaryAnalysis(pid,before,attempt+1);},SUMMARY_RECHECK_MS);return;}
+  latestRecord(pid).then(function(after){
+    if(isNewRecord(before,after)||summaryBusy(pid))return;
+    setState(pid,'Google Workspace nuk e nisi analizën e re. Po vazhdohet automatikisht me të dhënat e PPPP-së…','#9B6A22');
+    run(pid);
+  });
+}
+function onSummaryClick(e){
+  if(!e.target||!e.target.closest||!e.target.closest('[data-pst-project-summary]'))return;
+  var pid=activeId();if(!pid)return;
+  latestRecord(pid).then(function(before){setTimeout(function(){ensureSummaryAnalysis(pid,before,0);},SUMMARY_RECHECK_MS);});
 }
 install();
 document.addEventListener('click',onAnalysisClick,true);
+document.addEventListener('click',onSummaryClick,true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 setTimeout(install,300);setTimeout(install,1200);
-window.PSTProjectAnalysisRunGuardV1={install:install,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord,activeRun:activeRun}};
+window.PSTProjectAnalysisRunGuardV1={version:'20260816-5',install:install,run:run,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord,activeRun:activeRun,summarySettled:summarySettled,summaryBusy:summaryBusy}};
 })();
