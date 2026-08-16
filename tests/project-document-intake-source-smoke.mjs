@@ -18,8 +18,15 @@ assert(source.includes('source_attachment_link_id'), 'automatic BOM rows must pr
 assert(source.includes('source_item_key'), 'automatic BOM rows must carry an idempotent source item key');
 assert(source.includes('bomResult.conflicts'), 'automatic BOM must detect semantic conflicts with existing project BOM rows');
 assert(source.includes('Asnje vlere ekzistuese nuk u mbishkrua'), 'existing BOM conflicts must be review-first and never overwritten');
+assert(source.includes('npm:fflate@0.8.2'), 'ZIP handling must use the pinned fflate implementation');
+assert(source.includes('b.length>15*1024*1024'), 'ZIP archives must have a compressed-size safety guard');
+assert(source.includes('file.originalSize||0)<=10_000_000'), 'ZIP entries must be filtered by uncompressed size before extraction');
+assert(source.includes('total>40*1024*1024'), 'ZIP extraction must stop at a bounded total uncompressed size');
+assert(source.includes("ce==='dwg'"), 'DWG inside ZIP must never be treated as plain text');
 assert(source.includes('needs_conversion'), 'unsupported DWG must route to conversion/review rather than guess');
 assert(source.includes('needs_ocr'), 'image-only PDF extraction must route to OCR/review rather than guess');
+assert(source.includes('image-vision-pending-v1'), 'image attachments must be deferred to a vision path rather than parsed as text');
+assert(source.includes('url-like-attachment-name-v1'), 'URL-like MIME noise must not consume the technical intake queue');
 assert(!source.includes('drive/v3/files'), 'server intake must not claim an automatic Google Drive upload before that path is explicitly implemented');
 assert(!source.includes('project_id:link.project_id,attachment_name'), 'server intake must not create a second project attachment relation');
 
