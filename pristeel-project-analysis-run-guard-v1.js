@@ -5,6 +5,7 @@
  * - Restores the original auth functions immediately afterwards.
  * - Provides a programmatic click path for the Project Intelligence analyze buttons.
  * - If an AI run returns without creating a project_analyses row, retries once with the existing rule engine.
+ * - Clears stale per-project running locks so a completed UI cannot stay blocked forever.
  * - Does not send email, write BOM/tasks, or change project status.
  */
 (function(){
@@ -13,6 +14,7 @@ if(window.__pstProjectAnalysisRunGuardV1)return;
 window.__pstProjectAnalysisRunGuardV1=true;
 
 var AUTH_WAIT_MS=8000;
+var RUN_STALE_MS=180000;
 var running={};
 function str(v){return String(v==null?'':v);}
 function enc(v){return encodeURIComponent(str(v));}
@@ -52,13 +54,20 @@ async function retryWithRules(original,self,args,pid){
   finally{ai.hasApiKey=oldHas;}
 }
 function chainHas(fn,flag){var n=0;while(typeof fn==='function'&&n++<12){if(fn[flag])return true;fn=fn.__pstOriginal||fn.__base||null;}return false;}
+function activeRun(pid){
+  var r=running[pid];if(!r)return null;
+  if(!r.promise||!r.startedAt){delete running[pid];return null;}
+  if(Date.now()-r.startedAt>=RUN_STALE_MS){delete running[pid];return null;}
+  return r;
+}
 function install(){
   var original=window.pstAnalyzeProject;
   if(typeof original!=='function')return false;
   if(chainHas(original,'__pstAnalysisRunGuardV1'))return true;
   async function wrapped(pid){
     pid=activeId(pid);if(!pid)return original.apply(this,arguments);
-    if(running[pid])return running[pid];
+    var existing=activeRun(pid);
+    if(existing){setState(pid,'Analiza është tashmë duke u përpunuar…');return existing.promise;}
     var self=this,args=arguments;
     setState(pid,'Po përgatitet analiza e projektit…');
     var job=withAuthGuards(async function(){
@@ -78,9 +87,9 @@ function install(){
       setState(pid,failure,'#A64B42');
       return retry.result;
     });
-    running[pid]=job;
+    running[pid]={promise:job,startedAt:Date.now()};
     try{return await job;}
-    finally{delete running[pid];}
+    finally{if(running[pid]&&running[pid].promise===job)delete running[pid];}
   }
   wrapped.__pstAnalysisRunGuardV1=true;
   wrapped.__pstOriginal=original;
@@ -102,11 +111,12 @@ function onAnalysisClick(e){
   e.stopPropagation();
   if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
   install();
+  setState(hit.pid,'Po nis rifreskimi i analizës…');
   setTimeout(function(){if(typeof window.pstAnalyzeProject==='function')window.pstAnalyzeProject(hit.pid);},0);
 }
 install();
 document.addEventListener('click',onAnalysisClick,true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 setTimeout(install,300);setTimeout(install,1200);
-window.PSTProjectAnalysisRunGuardV1={install:install,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord}};
+window.PSTProjectAnalysisRunGuardV1={install:install,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord,activeRun:activeRun}};
 })();
