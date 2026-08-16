@@ -36,6 +36,8 @@ jobs:
           exit 1
       - name: Test reconciliation planner
         run: node tests/project-data-reconcile-smoke.mjs
+      - name: Test project email reconciliation safety
+        run: node tests/project-email-reconcile-smoke.mjs
       - name: Reconcile project data
         env:
           SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
@@ -43,10 +45,19 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SYNC_MODE: ${{ inputs.mode }}
         run: node scripts/project-data-reconcile.mjs
-      - name: Upload reconciliation report
+      - name: Reconcile project emails
+        env:
+          SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EMAIL_RECONCILE_MODE: ${{ inputs.mode }}
+        run: node scripts/project-email-reconcile.mjs
+      - name: Upload reconciliation reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: project-data-reconcile-${{ inputs.mode }}
-          path: tmp/project-data-reconcile.json
+          path: |
+            tmp/project-data-reconcile.json
+            tmp/project-email-reconcile.json
           retention-days: 14
