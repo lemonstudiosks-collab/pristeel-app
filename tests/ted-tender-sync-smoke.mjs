@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { classifyTedNotice, normalizeTedNotice, reconcileTedOpportunityLifecycle, tenderDeadlineTaskRows, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
+import { classifyTedNotice, normalizeTedNotice, reconcileTedOpportunityLifecycle, reconcileTenderDeadlineTaskLifecycle, tenderDeadlineTaskRows, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
 
 const steel=classifyTedNotice({title:'Stahlbauarbeiten mit technischer Plattform',cpv:['45223210']});
 assert.equal(steel.category,'steel_structure');
@@ -122,6 +122,40 @@ try{
   assert.ok(!deletes.includes('expired-promoted'),'promoted tender must be preserved');
   assert.ok(!deletes.includes('relevant-new'),'currently relevant tender must be preserved');
   assert.ok(!deletes.includes('app-expired'),'TED lifecycle must not touch another source');
+}finally{globalThis.fetch=originalFetch;}
+
+const taskLifecyclePatches=[];
+globalThis.fetch=async(url,opts={})=>{
+  const method=opts.method||'GET';
+  if(method==='GET'&&String(url).includes('/tasks?'))return new Response(JSON.stringify([
+    {id:'task-promoted',source_ref:'TED:PROMOTED',status:'hapur'},
+    {id:'task-ignored',source_ref:'TED:IGNORED',status:'hapur'},
+    {id:'task-linked',source_ref:'TED:LINKED',status:'hapur'},
+    {id:'task-overdue',source_ref:'TED:OVERDUE',status:'hapur'},
+    {id:'task-missing',source_ref:'TED:MISSING',status:'hapur'}
+  ]),{status:200});
+  if(method==='GET'&&String(url).includes('/kek_tender_watch?'))return new Response(JSON.stringify([
+    {source_key:'TED:PROMOTED',status:'promoted',project_id:'project-1'},
+    {source_key:'TED:IGNORED',status:'ignored',project_id:null},
+    {source_key:'TED:LINKED',status:'review',project_id:'project-2'},
+    {source_key:'TED:OVERDUE',status:'new',project_id:null}
+  ]),{status:200});
+  if(method==='PATCH'&&String(url).includes('/tasks?')){
+    taskLifecyclePatches.push({id:decodeURIComponent(String(url).match(/id=eq\.([^&]+)/)?.[1]||''),body:JSON.parse(opts.body)});
+    return new Response(null,{status:204});
+  }
+  throw new Error(`Unexpected task lifecycle request ${method} ${url}`);
+};
+try{
+  const closed=await reconcileTenderDeadlineTaskLifecycle(
+    {supabaseUrl:'https://supabase.test',apiKey:'test',bearerToken:'test'},
+    {doneAt:'2026-08-16T10:30:00.000Z'}
+  );
+  assert.equal(closed,3,'promoted, ignored or already-linked tenders should close their open deadline tasks');
+  assert.deepEqual(taskLifecyclePatches.map(x=>x.id).sort(),['task-ignored','task-linked','task-promoted']);
+  assert.ok(taskLifecyclePatches.every(x=>x.body.status==='kryer'&&x.body.done_at==='2026-08-16T10:30:00.000Z'),'auto-close should only mark the task done with an audit timestamp');
+  assert.ok(!taskLifecyclePatches.some(x=>x.id==='task-overdue'),'overdue unresolved tender must remain open as a missed-opportunity signal');
+  assert.ok(!taskLifecyclePatches.some(x=>x.id==='task-missing'),'missing tender record must not silently close the task');
 }finally{globalThis.fetch=originalFetch;}
 
 console.log('TED tender sync smoke: OK');
