@@ -1,6 +1,6 @@
 /* PRISTEEL Gmail project identity guard v1
  * Project/RFQ identity is authoritative; company/contact/domain are supporting evidence only.
- * - Strong project refs/business refs and unique project-name anchors may auto-suggest.
+ * - Strong project refs/business refs and unique project-name anchors/phrases may auto-suggest.
  * - Existing verified thread continuity is allowed only when no contradictory project identity appears.
  * - Mixed/multi-RFQ threads are never normalized automatically to one project.
  * - Unknown strong refs (for example ANF-8910 when only ANF-8915 exists) block automatic linking.
@@ -29,6 +29,13 @@ function canonicalRefKey(v){var k=compact(v);return k.replace(/^anf0+(\d{4})$/,'
 function identityCompact(v){return compact(v).replace(/anf0+(\d{4})/g,'anf$1');}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function words(v){return norm(v).split(' ').filter(function(x){return x.length>=5&&!STOP[x];});}
+function phraseWords(v){return norm(v).split(' ').filter(function(x){return x.length>=4&&!STOP[x];});}
+function semanticPhrases(p){
+  var client={};phraseWords(p&&p.client||'').forEach(function(x){client[x]=1;});
+  var xs=phraseWords(p&&p.name||'').filter(function(x){return !client[x];}),out=[];
+  for(var i=0;i<xs.length-1;i++){var phrase=xs[i]+' '+xs[i+1];if(compact(phrase).length>=8)out.push(phrase);}
+  return uniq(out);
+}
 function safe(path){if(typeof window.supaFetch!=='function')return Promise.resolve([]);return Promise.resolve(window.supaFetch(path)).then(arr).catch(function(e){console.warn('PRISTEEL identity guard optional read:',e&&e.message);return[];});}
 
 function referenceKeys(v){
@@ -45,21 +52,22 @@ function referenceKeys(v){
 function looksLikeExternalProjectRef(k){return /^(anf\d{4,6}|esw\d{3,}|robmc\d{4,}|d\d{4}|\d{5,6}[a-z]{2,4}|\d{6}[a-z]{2,4}|\d{6})$/.test(String(k||''));}
 function projectClientWords(p){var m={};words(p&&p.client||'').forEach(function(x){m[x]=1;});return m;}
 function buildIndex(projects){
-  projects=arr(projects);var occurrence={};
-  projects.forEach(function(p){var cw=projectClientWords(p);uniq(words(p&&p.name||'')).forEach(function(t){if(!cw[t]&&t.length>=7)occurrence[t]=(occurrence[t]||0)+1;});});
+  projects=arr(projects);var occurrence={},phraseOccurrence={};
+  projects.forEach(function(p){var cw=projectClientWords(p);uniq(words(p&&p.name||'')).forEach(function(t){if(!cw[t]&&t.length>=7)occurrence[t]=(occurrence[t]||0)+1;});semanticPhrases(p).forEach(function(ph){var k=compact(ph);phraseOccurrence[k]=(phraseOccurrence[k]||0)+1;});});
   var byId={},knownRef={};
   var items=projects.map(function(p){
     var anchors=[],seen={};
-    function add(value,kind,label){var k=kind==='semantic'?compact(value):canonicalRefKey(value);if(k.length<4||seen[k])return;seen[k]=1;anchors.push({key:k,kind:kind,label:String(label||value||k)});if(kind!=='semantic')knownRef[k]=1;}
+    function add(value,kind,label){var k=(kind==='semantic'||kind==='semantic_phrase')?compact(value):canonicalRefKey(value);if(k.length<4||seen[k])return;seen[k]=1;anchors.push({key:k,kind:kind,label:String(label||value||k)});if(kind!=='semantic'&&kind!=='semantic_phrase')knownRef[k]=1;}
     if(p&&p.ref)add(p.ref,'ref',p.ref);
     if(p&&p.business_ref)add(p.business_ref,'business_ref',p.business_ref);
     referenceKeys(p&&p.name||'').forEach(function(k){add(k,'name_ref',k);});
     var cw=projectClientWords(p);uniq(words(p&&p.name||'')).forEach(function(t){if(!cw[t]&&t.length>=7&&occurrence[t]===1)add(t,'semantic',t);});
+    semanticPhrases(p).forEach(function(ph){if(phraseOccurrence[compact(ph)]===1)add(ph,'semantic_phrase',ph);});
     var item={project:p,anchors:anchors};byId[String(p&&p.id||'')]=item;return item;
   });
   return{items:items,byId:byId,knownRef:knownRef};
 }
-function hasAnchor(textNorm,textCompact,a){if(!a||!a.key)return false;if(a.kind==='semantic')return (' '+textNorm+' ').indexOf(' '+a.key+' ')>-1;return textCompact.indexOf(a.key)>-1;}
+function hasAnchor(textNorm,textCompact,a){if(!a||!a.key)return false;if(a.kind==='semantic')return (' '+textNorm+' ').indexOf(' '+a.key+' ')>-1;if(a.kind==='semantic_phrase')return (' '+textNorm+' ').indexOf(' '+norm(a.label)+' ')>-1;return textCompact.indexOf(a.key)>-1;}
 function classifyCorpus(corpus,index){
   index=index||{items:[],knownRef:{}};var n=norm(corpus),c=identityCompact(corpus),hits=[];
   arr(index.items).forEach(function(item){var matched=arr(item.anchors).filter(function(a){return hasAnchor(n,c,a);});if(matched.length)hits.push({project:item.project,anchors:matched});});
@@ -161,5 +169,5 @@ function css(){if(document.getElementById('pst-gmail-project-identity-css'))retu
 css();install();installIntakeEvents();
 document.addEventListener('pst:modules-ready',install,{once:true});
 setTimeout(function(){install();applyIntakeGuard();},0);
-window.PSTGmailProjectIdentityGuardV1={applyIntake:applyIntakeGuard,applyCollector:applyCollectorGuard,install:install,_test:{norm:norm,compact:compact,canonicalRefKey:canonicalRefKey,referenceKeys:referenceKeys,buildIndex:buildIndex,classifyCorpus:classifyCorpus}};
+window.PSTGmailProjectIdentityGuardV1={applyIntake:applyIntakeGuard,applyCollector:applyCollectorGuard,install:install,_test:{norm:norm,compact:compact,canonicalRefKey:canonicalRefKey,referenceKeys:referenceKeys,buildIndex:buildIndex,classifyCorpus:classifyCorpus,semanticPhrases:semanticPhrases}};
 })();
