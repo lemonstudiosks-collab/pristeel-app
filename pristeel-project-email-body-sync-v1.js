@@ -58,17 +58,17 @@ function enhanceDisplay(){
 }
 async function patchMessage(row,text){
   if(!row||!row.gmail_message_id||!text||typeof window.supaFetch!=='function')return false;
-  if(String(row.snippet||'')===String(text))return false;
-  await window.supaFetch('project_emails?gmail_message_id=eq.'+enc(row.gmail_message_id),'PATCH',{snippet:text,updated_at:new Date().toISOString()});
-  row.snippet=text;
-  return true;
+  var changed=String(row.snippet||'')!==String(text),now=new Date().toISOString();
+  await window.supaFetch('project_emails?gmail_message_id=eq.'+enc(row.gmail_message_id),'PATCH',{snippet:text,body_hydrated_at:now,body_hydration_method:'browser-gmail-full-v1',updated_at:now});
+  row.snippet=text;row.body_hydrated_at=now;row.body_hydration_method='browser-gmail-full-v1';
+  return changed;
 }
 async function sync(force){
   var d=current(),p=d&&d.project,id=String(p&&p.id||'');
   if(!id||state.busy){enhanceDisplay();return false;}
   var token=gmailToken(),E=window.PSTEmail;
   if(!token||!E||typeof E.gmail!=='function'){enhanceDisplay();return false;}
-  var mails=A(d.emails).filter(function(m){var mid=String(m&&m.gmail_message_id||'');return !!mid&&(force||!state.done[mid]);}).slice(0,80);
+  var mails=A(d.emails).filter(function(m){var mid=String(m&&m.gmail_message_id||'');return !!mid&&(force||(!m.body_hydrated_at&&!state.done[mid]));}).slice(0,80);
   if(!mails.length){enhanceDisplay();if(activeCommunication())setHeaderStatus(A(d.emails).length+' emaila · teksti i sinkronizuar');return false;}
   state.busy=true;var my=++state.seq,changed=0;
   if(activeCommunication())setHeaderStatus(A(d.emails).length+' emaila · duke sinkronizuar tekstin…');
@@ -99,5 +99,5 @@ document.addEventListener('click',function(e){
 },true);
 document.addEventListener('pst:modules-ready',function(){schedule(false);},{once:true});
 window.addEventListener('pageshow',function(){schedule(false);},{once:true});
-window.PSTProjectEmailBodySyncV1={sync:sync,enhanceDisplay:enhanceDisplay,_test:{displayText:displayText,activeCommunication:activeCommunication}};
+window.PSTProjectEmailBodySyncV1={sync:sync,enhanceDisplay:enhanceDisplay,_test:{displayText:displayText,activeCommunication:activeCommunication,patchMessage:patchMessage}};
 })();
