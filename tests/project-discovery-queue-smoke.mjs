@@ -15,12 +15,13 @@ const rows=[
   {...base,id:1,gmail_message_id:'m1',gmail_thread_id:'new-1',from_email:'buyer@acme.example',subject:'RFQ ACME-88421 Steel Platform',snippet:'Please quote fabrication and delivery. Drawing attached.',sent_at:'2026-08-15T08:00:00Z',direction:'incoming',has_attachments:true},
   {...base,id:2,gmail_message_id:'m2',gmail_thread_id:'new-1',from_email:'sales@prissteel.com',to_emails:['buyer@acme.example'],subject:'Re: RFQ ACME-88421 Steel Platform',snippet:'Thank you, we are reviewing the drawings.',sent_at:'2026-08-15T09:00:00Z',direction:'outgoing',has_attachments:false},
   {...base,id:3,gmail_message_id:'m3',gmail_thread_id:'airbus-1',from_email:'buyer@stacon.de',subject:'260784_Airbus H24X_Anfrage Fertigung',snippet:'Bitte um Angebot.',sent_at:'2026-08-15T10:00:00Z',direction:'incoming',has_attachments:true},
+  {...base,id:6,gmail_message_id:'m6',gmail_thread_id:'airbus-1',from_email:'sales@prissteel.com',to_emails:['buyer@stacon.de'],subject:'Re: 260784_Airbus H24X_Anfrage Fertigung',snippet:'Vielen Dank. Wir prüfen die Anfrage und melden uns mit unserem Angebot.',sent_at:'2026-08-15T10:30:00Z',direction:'outgoing',has_attachments:false},
   {...base,id:4,gmail_message_id:'m4',gmail_thread_id:'cold-1',from_email:'sales@prissteel.com',to_emails:['hello@prospect.example'],subject:'Certified Steel Fabrication Cooperation Opportunity',snippet:'Introduction PRISTEEL',sent_at:'2026-08-15T11:00:00Z',direction:'outgoing',has_attachments:false},
   {...base,id:5,gmail_message_id:'m5',gmail_thread_id:'noise-1',from_email:'noreply@example.com',subject:'Delivery Status Notification',snippet:'automatic report',sent_at:'2026-08-15T12:00:00Z',direction:'incoming',has_attachments:false}
 ];
 
 const candidates=discovery.buildCandidates(rows,[]);
-assert(candidates.length>=2,'Expected one new RFQ cluster and one existing-project cluster');
+assert(candidates.length>=2,'Expected one new RFQ cluster and one two-way existing-project cluster');
 assert(!candidates.some(c=>c.rows.some(r=>r.id===4)),'Cold outreach without reply/attachment must be excluded');
 assert(!candidates.some(c=>c.rows.some(r=>r.id===5)),'System mail must be excluded');
 
@@ -31,7 +32,7 @@ const acmeMatch=authoritativeMatch(acme,index,identity);
 assert.equal(acmeMatch.project,null,'Unknown ACME RFQ must not be forced into an existing project');
 
 const airbus=candidates.find(c=>c.rows.some(r=>r.id===3));
-assert(airbus,'Airbus candidate missing');
+assert(airbus,'Airbus two-way candidate missing');
 const airbusMatch=authoritativeMatch(airbus,index,identity);
 assert.equal(airbusMatch.project?.id,'p-airbus','Alias 260784 must resolve to canonical Airbus/Halle project');
 assert.equal(airbusMatch.score,100,'Strong existing-project identity should score 100');
