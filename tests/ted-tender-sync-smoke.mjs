@@ -92,7 +92,7 @@ const lifecycleRows=[
 ];
 globalThis.fetch=async(url,opts={})=>{
   if((opts.method||'GET')==='GET')return new Response(JSON.stringify(lifecycleRows),{status:200});
-  if(opts.method==='DELETE'){deletes.push(decodeURIComponent(String(url).match(/id=eq\.([^&]+)/)?.[1]||''));return new Response('',{status:204});}
+  if(opts.method==='DELETE'){deletes.push(decodeURIComponent(String(url).match(/id=eq\.([^&]+)/)?.[1]||''));return new Response(null,{status:204});}
   throw new Error(`Unexpected lifecycle request ${opts.method} ${url}`);
 };
 try{
