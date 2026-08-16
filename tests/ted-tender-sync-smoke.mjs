@@ -25,7 +25,7 @@ const fixture={
       'publication-date':'2026-08-13',
       'buyer-name':{eng:'Test Buyer Germany'},
       'classification-cpv':['44212000','45223210'],
-      'deadline':null,
+      'deadline-receipt-tender-date-lot':['2026-09-15'],
       'place-of-performance':['DEU']
     },
     {
@@ -35,7 +35,8 @@ const fixture={
       'publication-date':'2026-08-14',
       'buyer-name':{eng:'Infrastructure Buyer'},
       'classification-cpv':['44334000'],
-      'deadline':['2026-09-30'],
+      'deadline-receipt-tender-date-lot':['2026-09-30','2026-10-15'],
+      'deadline-receipt-request-date-lot':['2026-09-25'],
       'place-of-performance':['DEU']
     }
   ]
@@ -44,9 +45,11 @@ const row=normalizeTedNotice(fixture.notices[1],'opportunity','2026-08-14T06:00:
 assert.equal(row.source_key,'TED:600001-2026');
 assert.equal(row.procurement_no,'TED-600001-2026');
 assert.equal(row.fpp,'44334000');
-assert.equal(row.deadline,'2026-09-30');
+assert.equal(row.deadline,'2026-09-25','collector must use the nearest valid lot-level tender/participation deadline');
 assert.equal(row.payload.source,'TED');
 assert.equal(row.payload.notice_phase,'opportunity');
+const awardRow=normalizeTedNotice(fixture.notices[0],'award','2026-08-14T06:00:00.000Z');
+assert.equal(awardRow.deadline,null,'award records must not present a bidding deadline');
 
 const calls=[];
 async function fakeFetch(url,opts){
@@ -61,13 +64,15 @@ assert.ok(calls[0].body.query.includes('notice-type IN (cn-standard cn-social pi
 assert.ok(calls[0].body.query.includes('classification-cpv = 45223210'));
 assert.ok(!calls[0].body.query.includes('classification-cpv = 4421*'),'broad generic structures CPV must not be queried');
 assert.ok(calls[0].body.query.includes('publication-date = ('),'opportunities should use a bounded publication window');
+assert.ok(calls[0].body.fields.includes('deadline-receipt-tender-date-lot'),'collector must request the official lot tender deadline field');
+assert.ok(calls[0].body.fields.includes('deadline-receipt-request-date-lot'),'collector must request the participation-request deadline for multi-stage procedures');
 assert.equal(calls[0].body.scope,'ACTIVE');
 assert.equal(calls[0].body.checkQuerySyntax,false);
 assert.equal(calls[0].body.paginationMode,'PAGE_NUMBER');
 assert.equal(summary.opportunities,1);
+assert.equal(summary.opportunities_with_deadline,1);
 assert.equal(summary.awards,1);
 assert.equal(summary.relevant_rows,2);
-assert.ok(summary.tenders.some(x=>x.publication_no==='600001-2026'&&x.phase==='opportunity'));
-assert.ok(summary.tenders.some(x=>x.publication_no==='562840-2026'&&x.phase==='award'));
+assert.ok(summary.tenders.some(x=>x.publication_no==='600001-2026'&&x.phase==='opportunity'&&x.deadline==='2026-09-25'));
 
 console.log('TED tender sync smoke: OK');
