@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { attachmentRegistryRows } from "./attachment-metadata.mjs";
+import { bodyHydrationPatch, selectLinkedBodyCandidates } from "./body-hydration.mjs";
 
 const SA_JSON = Deno.env.get("GOOGLE_SA_JSON")!;
 const GMAIL_USER = Deno.env.get("GMAIL_USER")!;
@@ -239,6 +240,8 @@ type GmailMessageRow = {
   match_confidence: number;
   needs_review: boolean;
   review_reason: string | null;
+  body_hydrated_at: string;
+  body_hydration_method: string;
   updated_at: string;
 };
 type AttachmentPair = { project_id: string; gmail_message_id: string; gmail_thread_id: string | null };
@@ -301,6 +304,7 @@ async function fetchMessageRow(id: string): Promise<GmailMessageRow> {
       : new Date().toISOString();
   const threadId = String(full.threadId ?? "");
   if (!threadId) throw new Error(`Gmail message ${id} has no threadId`);
+  const hydratedAt = new Date().toISOString();
   return {
     gmail_message_id: String(full.id ?? id),
     gmail_thread_id: threadId,
@@ -319,8 +323,57 @@ async function fetchMessageRow(id: string): Promise<GmailMessageRow> {
     match_confidence: 0,
     needs_review: false,
     review_reason: null,
-    updated_at: new Date().toISOString(),
+    body_hydrated_at: hydratedAt,
+    body_hydration_method: "server-full-mime-v1",
+    updated_at: hydratedAt,
   };
+}
+
+async function linkedBodyHydrationCandidates(limit = 20) {
+  const { data: emails, error: emailError } = await db
+    .from("project_emails")
+    .select("gmail_message_id,project_id,suggested_project_id,body_hydrated_at,sent_at")
+    .not("gmail_message_id", "is", null)
+    .is("body_hydrated_at", null)
+    .order("sent_at", { ascending: false })
+    .limit(5000);
+  if (emailError) throw emailError;
+  const { data: links, error: linkError } = await db
+    .from("project_email_links")
+    .select("project_id,gmail_message_id")
+    .not("project_id", "is", null)
+    .not("gmail_message_id", "is", null)
+    .limit(5000);
+  if (linkError) throw linkError;
+  return selectLinkedBodyCandidates(emails ?? [], links ?? [], limit);
+}
+
+async function syncLinkedBodyHydration(limit = 20) {
+  const candidates = await linkedBodyHydrationCandidates(limit);
+  if (!candidates.length) return { candidates: 0, hydrated: 0, empty_marked: 0 };
+  let hydrated = 0;
+  let emptyMarked = 0;
+  await mapLimit(candidates, 5, async (candidate) => {
+    const id = String(candidate.gmail_message_id ?? "");
+    if (!id) return;
+    const full = await gmail(`/messages/${encodeURIComponent(id)}?format=full`);
+    const body = fullBodyText(full?.payload, "");
+    const at = new Date().toISOString();
+    const patch = bodyHydrationPatch(body, at);
+    const update = patch ?? {
+      body_hydrated_at: at,
+      body_hydration_method: "server-full-mime-empty-v1",
+      updated_at: at,
+    };
+    const { error } = await db
+      .from("project_emails")
+      .update(update)
+      .eq("gmail_message_id", id)
+      .is("body_hydrated_at", null);
+    if (error) throw error;
+    if (patch) hydrated++; else emptyMarked++;
+  });
+  return { candidates: candidates.length, hydrated, empty_marked: emptyMarked };
 }
 
 async function linkedAttachmentCandidates(limit = 20): Promise<AttachmentPair[]> {
@@ -552,6 +605,11 @@ Deno.serve(async (req: Request) => {
       const res = await ingestProjectEmails(days, true);
       return new Response(JSON.stringify({ ok: true, ...res }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
+    if (action === "body_hydrate") {
+      const limit = Number(url.searchParams.get("limit") ?? payload.limit ?? 20);
+      const res = await syncLinkedBodyHydration(limit);
+      return new Response(JSON.stringify({ ok: true, ...res }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
     if (action === "attachment_sync") {
       const limit = Number(url.searchParams.get("limit") ?? payload.limit ?? 20);
       const res = await syncLinkedAttachmentMetadata(limit);
@@ -574,12 +632,14 @@ Deno.serve(async (req: Request) => {
     if (action === "run") {
       const ingestDays = Number(url.searchParams.get("ingest_days") ?? payload.ingest_days ?? 2);
       const scanDays = Number(url.searchParams.get("days") ?? payload.days ?? 7);
+      const bodyLimit = Number(url.searchParams.get("body_limit") ?? payload.body_limit ?? 20);
       const attachmentLimit = Number(url.searchParams.get("attachment_limit") ?? payload.attachment_limit ?? 20);
       const ingest = await ingestProjectEmails(ingestDays, true);
       const scan = await scanReplies(scanDays, true);
       const sla = await slaCheck();
+      const body_hydration = await syncLinkedBodyHydration(bodyLimit);
       const attachments = await syncLinkedAttachmentMetadata(attachmentLimit);
-      return new Response(JSON.stringify({ ok: true, ingest, scan, sla, attachments }), { headers: { ...cors, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, ingest, scan, sla, body_hydration, attachments }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ ok: false, error: `unknown action: ${action}` }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
