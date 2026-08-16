@@ -2,6 +2,8 @@
  * Additive read-context adapter for the existing whole-project brief.
  * - Feeds analyzed project_attachment_links into the existing analysis read phase.
  * - Keeps OCR/document trust metadata explicit and caps excerpts aggressively.
+ * - Exposes per-document DI* evidence IDs to Project Analysis without changing source documents.
+ * - Normalizes AI-only 0-10 score responses to the UI's 0-100 scale.
  * - Marks saved briefs stale when newer analyzed documents exist.
  * - Corrects only the rule fallback's false "no documentation" conclusion.
  * - Does not create tasks, write BOM, send email, change project status, or mutate source documents.
@@ -72,6 +74,51 @@ function syntheticRecord(intel){
     analyzed_documents:intel.rows
   };
 }
+function documentEvidence(intel){
+  return arr(intel&&intel.rows).map(function(row,i){
+    var id='DI'+(i+1),facts=cap(row&&row.facts_excerpt,1000),text=cap(row&&row.extracted_text,1400),parts=[];
+    if(facts)parts.push('FACTS: '+facts);if(text)parts.push('TEXT: '+text);
+    return{
+      id:id,
+      type:'document_intelligence',
+      label:row&&row.file_name||('Dokument i analizuar '+(i+1)),
+      date:row&&row.analyzed_at||null,
+      url:null,
+      text:cap(parts.join('\n'),2200),
+      meta:{attachment_link_id:row&&row.attachment_link_id,analysis_method:row&&row.analysis_method||'',trust_tier:row&&row.trust_tier||'text',review_required:!!(row&&row.review_required),analysis_confidence:row&&row.analysis_confidence==null?null:Number(row.analysis_confidence)}
+    };
+  });
+}
+function evidenceManifest(intel){return documentEvidence(intel).map(function(s){return{id:s.id,type:s.type,label:s.label,date:s.date,url:s.url,meta:s.meta};});}
+function evidenceIds(intel){return documentEvidence(intel).map(function(s){return s.id;});}
+function evidencePrompt(intel){
+  var xs=documentEvidence(intel);if(!xs.length)return'';
+  return '\n\nBURIME PPPP DOCUMENT INTELLIGENCE - ID TE LEJUARA SHTESE:\n'+xs.map(function(s){return'=== ['+s.id+'] DOCUMENT_INTELLIGENCE | '+s.label+' ===\nData: '+(s.date||'')+'\nTrust: '+str(s.meta.trust_tier)+(s.meta.review_required?' | REVIEW_REQUIRED=true':' | REVIEW_REQUIRED=false')+'\n'+s.text;}).join('\n\n')+'\n\nKur nje fakt vjen nga nje attachment i analizuar, cito DI-ne perkatese. Per REVIEW_REQUIRED=true, trajtoje si evidence qe kerkon verifikim njerezor dhe jo si fakt automatik per BOM.';
+}
+function cloneAiOptions(opts){var out=Object.assign({},opts||{});out.messages=arr(opts&&opts.messages).map(function(m){return Object.assign({},m);});return out;}
+function finalPromptText(opts){var ms=arr(opts&&opts.messages);for(var i=ms.length-1;i>=0;i--)if(str(ms[i]&&ms[i].role)==='user')return str(ms[i].content);return'';}
+function augmentAiOptions(opts,intel){
+  var out=cloneAiOptions(opts),ms=out.messages,text=finalPromptText(out),isFinal=/P[eë]rgatit analiz[eë]n p[eë]rfundimtare operative/i.test(text),isExtract=/Analizo k[eë]t[eë] pjes[eë] t[eë] nj[eë] projekti/i.test(text),hasIntel=/PPPP_DOCUMENT_INTELLIGENCE|project_attachment_intelligence/i.test(text),ids=evidenceIds(intel),extra='';
+  if(isExtract&&hasIntel&&ids.length)extra=evidencePrompt(intel)+'\nID-te '+ids.join(', ')+' konsiderohen pjese e listes se lejuar te source_ids edhe nese lista e gjeneruar me siper permend vetem D1.';
+  if(isFinal){
+    extra+='\n\nRREGULL I DETYRUESHEM PER SCORE: health.score dhe confidence.score jane numra te plote nga 0 deri ne 100. Mos perdor shkallen 0-10.';
+    if(ids.length)extra+='\nBURIME DOCUMENT INTELLIGENCE TE LEJUARA NE ANALIZEN PERFUNDIMTARE:\n'+JSON.stringify(evidenceManifest(intel))+'\nID-te DI jane source_ids ekzistuese dhe te vlefshme. Prefero DI-ne konkrete ne vend te D1 kur pika faktike mbeshtetet nga nje attachment i analizuar.';
+  }
+  if(extra){for(var j=ms.length-1;j>=0;j--)if(str(ms[j]&&ms[j].role)==='user'){ms[j].content=str(ms[j].content)+extra;break;}}
+  out.__pstDocumentIntelFinal=isFinal;return out;
+}
+function normalizeAiScores(out){
+  if(!out||typeof out!=='object')return out;
+  ['health','confidence'].forEach(function(k){var box=out[k],n=Number(box&&box.score);if(!box||!isFinite(n)||n<=0)return;if(n<=1)box.score=Math.round(n*100);else if(n<=10)box.score=Math.round(n*10);});
+  return out;
+}
+async function withAnalysisAi(intel,fn){
+  var ai=window.PSTAI,base=ai&&ai.requestJson;if(typeof base!=='function')return fn();
+  async function wrapped(opts){var aug=augmentAiOptions(opts,intel),isFinal=!!aug.__pstDocumentIntelFinal;delete aug.__pstDocumentIntelFinal;var out=await base.call(this,aug);return isFinal?normalizeAiScores(out):out;}
+  ai.requestJson=wrapped;
+  try{return await fn();}
+  finally{if(ai.requestJson===wrapped)ai.requestJson=base;}
+}
 async function withIntelRead(pid,intel,fn){
   var base=window.supaFetch;if(typeof base!=='function')return fn();
   function scoped(path){
@@ -88,11 +135,11 @@ async function withIntelRead(pid,intel,fn){
 async function latestAnalysis(fetcher,pid){var r=await safeWith(fetcher,'project_analyses?project_id=eq.'+enc(pid)+'&order=created_at.desc&limit=1');return r[0]||null;}
 function ruleDocumentationFix(analysis,intel){
   if(!analysis||!intel||!intel.analyzed_count)return false;
-  var changed=false,missing=arr(analysis.missing_information),actions=arr(analysis.next_actions),req=arr(analysis.requirements);
+  var changed=false,missing=arr(analysis.missing_information),actions=arr(analysis.next_actions),req=arr(analysis.requirements),src=evidenceIds(intel);if(!src.length)src=['D1'];
   var nm=missing.filter(function(x){var hit=/dokumentacioni teknik dhe komercial/i.test(str(x&&x.text))&&/scope|verifik/i.test(str(x&&x.why_needed));if(hit)changed=true;return !hit;});
   var na=actions.filter(function(x){var hit=/importo dokumentet kryesore/i.test(str(x&&x.title));if(hit)changed=true;return !hit;});
   if(!req.some(function(x){return /dokumente.*analizuar.*pppp|pppp.*dokumente.*analizuar/i.test(str(x&&x.text));})){
-    req.push({category:'documentation',text:'PPPP ka '+intel.analyzed_count+' dokumente/attachment-e te analizuara te lidhura me projektin'+(intel.review_count?' ('+intel.review_count+' kerkojne review).':'.'),status:'confirmed',priority:intel.review_count?'high':'medium',source_ids:['D1']});changed=true;
+    req.push({category:'documentation',text:'PPPP ka '+intel.analyzed_count+' dokumente/attachment-e te analizuara te lidhura me projektin'+(intel.review_count?' ('+intel.review_count+' kerkojne review).':'.'),status:'confirmed',priority:intel.review_count?'high':'medium',source_ids:src.slice(0,6)});changed=true;
   }
   if(changed){analysis.missing_information=nm;analysis.next_actions=na;analysis.requirements=req;}
   return changed;
@@ -100,8 +147,8 @@ function ruleDocumentationFix(analysis,intel){
 async function patchFreshRecord(fetcher,pid,before,after,intel){
   if(!after||!after.id||!intel)return false;
   if(before&&str(before.id)===str(after.id)&&str(before.created_at)===str(after.created_at))return false;
-  var counts=Object.assign({},after.source_counts||{}, {document_intelligence:intel.analyzed_count,document_intelligence_review:intel.review_count});
-  var payload={source_counts:counts},changed=false,engine=norm(after.engine);
+  var counts=Object.assign({},after.source_counts||{}, {document_intelligence:intel.analyzed_count,document_intelligence_review:intel.review_count}),manifest=arr(after.source_manifest).filter(function(s){return !/^DI\d+$/i.test(str(s&&s.id));}).concat(evidenceManifest(intel));
+  var payload={source_counts:counts,source_manifest:manifest},changed=false,engine=norm(after.engine);
   if(engine.indexOf('rules')===0&&after.analysis&&typeof after.analysis==='object'){
     var clone;try{clone=JSON.parse(JSON.stringify(after.analysis));}catch(e){clone=null;}
     if(clone&&ruleDocumentationFix(clone,intel)){payload.analysis=clone;changed=true;}
@@ -128,7 +175,7 @@ function wrapAnalyze(){
   async function wrapped(pid){
     pid=activeId(pid);var base=window.supaFetch;if(!pid||typeof base!=='function')return original.apply(this,arguments);
     var before=await latestAnalysis(base,pid),intel=await readIntel(base,pid),self=this,args=arguments;
-    var result=await withIntelRead(pid,intel,function(){return original.apply(self,args);});
+    var result=await withIntelRead(pid,intel,function(){return withAnalysisAi(intel,function(){return original.apply(self,args);});});
     var failure=analysisFailureState(pid),after=await latestAnalysis(base,pid);await patchFreshRecord(base,pid,before,after,intel);
     try{if(after&&after.id&&typeof window.pstProjectAnalysisLoad==='function')await window.pstProjectAnalysisLoad(pid);else if(!failure)await showFreshness(pid);}catch(e){}
     return result;
@@ -138,5 +185,5 @@ function wrapAnalyze(){
 function install(){wrapLoad();wrapAnalyze();var id=activeId();if(id)setTimeout(function(){showFreshness(id);},120);}
 install();
 document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTProjectAnalysisDocumentIntelligenceV1={refresh:showFreshness,_test:{intelSummary:intelSummary,compactRow:compactRow,usable:usable,reviewRequired:reviewRequired,ruleDocumentationFix:ruleDocumentationFix,syntheticRecord:syntheticRecord,docsQuery:docsQuery,analysisFailureState:analysisFailureState}};
+window.PSTProjectAnalysisDocumentIntelligenceV1={refresh:showFreshness,_test:{intelSummary:intelSummary,compactRow:compactRow,usable:usable,reviewRequired:reviewRequired,ruleDocumentationFix:ruleDocumentationFix,syntheticRecord:syntheticRecord,docsQuery:docsQuery,analysisFailureState:analysisFailureState,documentEvidence:documentEvidence,evidenceManifest:evidenceManifest,augmentAiOptions:augmentAiOptions,normalizeAiScores:normalizeAiScores}};
 })();
