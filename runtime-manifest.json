@@ -7,7 +7,7 @@
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "c83d39c49b1113e6e91e1e789abba6dd077a25ec",
+    "bootstrapLoaderGitBlobSha": "5cfa02125cce830abc769f2ab48bb20fa4c5fe82",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "778ea1e92abdfa969dab47f601179010be00feb4"
   },
@@ -57,7 +57,8 @@
         "pristeel-home-command-center-v2.js",
         "pristeel-home-stability-v2.js",
         "pristeel-home-visual-cleanup-v1.js",
-        "pristeel-redesign-finalizer-v1.js"
+        "pristeel-redesign-finalizer-v1.js",
+        "pristeel-task-source-actions-v1.js"
       ]
     },
     {
@@ -110,7 +111,7 @@
         "pristeel-kek-tender-watch-v1.js",
         "pristeel-tender-business-flow-v1.js"
       ],
-      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania and TED winner outreach."
+      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania, TED direct-bid opportunities and TED award-winner outreach."
     },
     {
       "area": "ai",
@@ -160,6 +161,12 @@
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded unconditionally by the production pristeel-roles.js base module to recover confirmed single-project Gmail thread continuity before linked-file recovery."
+    },
+    {
+      "module": "pristeel-task-source-actions-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded unconditionally by the production base loader. Adds only a safe HTTPS source shortcut to current Workspace action rows and performs no data writes or task lifecycle changes."
     },
     {
       "module": "pristeel-project-summary-command-v1.js",
