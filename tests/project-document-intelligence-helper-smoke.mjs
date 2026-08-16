@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
-import { analyzeText, classifyUnsupported, extOf, mimeGuess } from '../supabase/functions/project-document-intake/document-intelligence.mjs';
+import { analyzeText, classifyUnsupported, extOf, mimeGuess, safeFileName } from '../supabase/functions/project-document-intake/document-intelligence.mjs';
 
 assert.equal(extOf('drawing.DXF'), 'dxf');
 assert.equal(mimeGuess('table.xlsx', ''), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+assert.equal(safeFileName('PRISTEEL — GUTSCHRIFT.pdf'), 'PRISTEEL_GUTSCHRIFT.pdf');
+assert.equal(safeFileName('hale_#1_#2_carinvest.zip'), 'hale_1_2_carinvest.zip');
 
 const clear = analyzeText(`
 Project: H24X
