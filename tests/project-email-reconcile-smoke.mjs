@@ -27,7 +27,7 @@ assert.equal(d.reason,'mixed','Mixed sibling references must fail closed');
 
 d=classifyEmail({id:3,gmail_thread_id:'t3',subject:'Stahlbau-Kapazitäten für BUNTE',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'');
-assert.equal(d.reason,'weak-identity-anchor','Short generic BUNT must not auto-link merely because BUNTE contains it');
+assert.equal(d.reason,'insufficient-identity','Short generic BUNT must not match inside the unrelated word BUNTE');
 
 d=classifyEmail({id:9,gmail_thread_id:'ts',subject:'Structural Steel Capacity by PRISTEEL',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'');
