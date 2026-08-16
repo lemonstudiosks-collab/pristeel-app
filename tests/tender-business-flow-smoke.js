@@ -13,6 +13,7 @@ let writes=[];
 let monitorOpens=0;
 let aiEnabled=true;
 let aiCalls=[];
+let promoted=[];
 const rows=[
  {id:'ted-award',source_key:'TED:A',procurement_no:'TED-A',title:'Structural steel award',authority:'Buyer GmbH',category:'steel_structure',relevance_score:96,status:'new',published_date:'2026-08-14',fpp:'45223210',match_reasons:['steel'],payload:{source:'TED',notice_phase:'award',winner:{name:'Winner Stahl GmbH',email:'sales@winner.example',website:'https://winner.example',city:'Berlin',country:'DE'}}},
  {id:'ted-no-winner',source_key:'TED:N',procurement_no:'TED-N',title:'Steel award awaiting winner publication',authority:'Buyer SA',category:'steel_structure',relevance_score:94,status:'new',published_date:'2026-08-14',fpp:'45223210',match_reasons:['steel'],payload:{source:'TED',notice_phase:'award',winner:{name:'',email:'',website:'',city:'',country:''}}},
@@ -28,13 +29,13 @@ window.PSTAI={
  hasApiKey:()=>aiEnabled,
  requestJson:async options=>{
   aiCalls.push(options);
-  return{priority:'high',fit:'strong',business_mode:'direct_bid',summary:'AI summary grounded in the supplied record.',why_relevant:['Awarded structural steel scope','Winner contact is available'],checks:['Verify exact awarded scope','Verify winner role'],next_action:'Prepare a controlled review before outreach.',outreach_angle:'Offer fabrication support.'};
+  return{priority:'high',fit:'strong',business_mode:'direct_bid',summary:'AI summary grounded in the supplied record.',why_relevant:['Relevant steel scope','Official procurement record is available'],checks:['Verify exact scope','Verify qualification requirements'],next_action:'Prepare a controlled review before action.',outreach_angle:'Offer fabrication support.'};
  }
 };
 window.pstKekLoad=async()=>{};
 window.pstKekRender=()=>{};
 window.pstKekSetStatus=async(id,status)=>{const r=rows.find(x=>x.id===id);if(r)r.status=status;};
-window.pstKekPromote=async()=>{};
+window.pstKekPromote=async id=>{promoted.push(id);};
 window.pstKekOpenSource=()=>{};window.pstKekOpenProject=()=>{};
 window.pstWsKekTenders=()=>{monitorOpens++;};
 const code=fs.readFileSync('pristeel-tender-business-flow-v1.js','utf8');
@@ -43,11 +44,14 @@ vm.runInContext(code,dom.getInternalVMContext());
 (async()=>{
  assert.ok(window.pstTenderBusinessFlow,'business flow API should be exposed');
  assert.equal(aiCalls.length,0,'Tender Intelligence must never call AI automatically on module startup');
- assert.equal(window.pstTenderBusinessFlow.phaseMatch(rows[2],'all'),false,'TED opportunities must be hidden even under all');
+ assert.equal(window.pstTenderBusinessFlow.phaseMatch(rows[2],'all'),true,'TED opportunities must remain visible in the common tender monitor');
+ assert.equal(window.pstTenderBusinessFlow.phaseMatch(rows[2],'opportunity'),true,'TED opportunities belong in the open-opportunity phase');
  assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[0]),true,'TED award with winner is operational');
  assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[1]),false,'TED award without winner is intelligence-only until winner data exists');
+ assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[2]),true,'Open TED tender is a direct-bid opportunity');
  assert.equal(window.pstTenderBusinessFlow.isOperationalFocus(rows[3]),true,'KRPP opportunity is operational');
  assert.equal(window.pstTenderBusinessFlow.intelligenceMode(rows[0]),'winner_outreach','TED structural award must be winner outreach');
+ assert.equal(window.pstTenderBusinessFlow.intelligenceMode(rows[2]),'direct_bid','TED opportunity must be assessed for direct bid');
  assert.equal(window.pstTenderBusinessFlow.intelligenceMode(rows[3]),'direct_bid','KRPP opportunity must be direct bid');
 
  const homeBoundaryRows=rows.concat([
@@ -57,21 +61,22 @@ vm.runInContext(code,dom.getInternalVMContext());
   {id:'ted-contacted',status:'review',payload:{source:'TED',notice_phase:'award',ted_contact_status:'contacted',winner:{name:'Already Contacted GmbH'}}}
  ]);
  const signalSummary=window.pstTenderBusinessFlow.homeSignalSummary(homeBoundaryRows);
- assert.deepEqual(JSON.parse(JSON.stringify(signalSummary)),{total:3,opportunities:2,ted_winners:1},'Home signal must count only direct-bid opportunities and actionable TED winners');
+ assert.deepEqual(JSON.parse(JSON.stringify(signalSummary)),{total:4,opportunities:3,ted_winners:1},'Home signal must count TED/KRPP/APP direct-bid opportunities plus actionable TED winners');
  const writesBeforeHome=writes.length;
  await window.pstTenderBusinessFlow.refreshHomeSignal(true);
  assert.equal(writes.length,writesBeforeHome,'Home tender refresh must remain read-only');
  const homeSignal=window.document.getElementById('pst-tender-home-signal');
  assert.ok(homeSignal,'actionable tenders should surface one Home signal');
  assert.ok(window.document.getElementById('pst-ws-alertbar').textContent.includes('1 email pa projekt'),'Home tender signal must preserve existing Home alerts');
- assert.ok(homeSignal.textContent.includes('2'),'Home signal should aggregate the two operational rows in the current dataset');
+ assert.ok(homeSignal.textContent.includes('3'),'Home signal should aggregate the three operational rows in the current dataset');
  homeSignal.click();
  assert.equal(monitorOpens,1,'Home tender signal must open the existing Tender Monitor');
 
  await window.pstKekLoad();
  let text=window.document.getElementById('pst-kek-list').textContent;
  assert.ok(!text.includes('Steel award awaiting winner publication'),'TED award without winner must stay out of operational focus');
- assert.equal(window.document.getElementById('pst-kek-nav-badge').textContent,'2','badge must count only actionable TED winners plus direct-bid opportunities');
+ assert.ok(text.includes('Open TED steel tender'),'open TED opportunities must be visible in operational focus');
+ assert.equal(window.document.getElementById('pst-kek-nav-badge').textContent,'3','badge must count actionable TED winners plus TED/KRPP direct-bid opportunities');
  assert.equal(aiCalls.length,0,'Loading and rendering Tender Monitor must remain AI-free until explicit click');
  assert.ok(text.includes('AI Brief'),'operational focus rows should expose explicit AI Brief actions');
 
@@ -82,10 +87,16 @@ vm.runInContext(code,dom.getInternalVMContext());
  assert.equal(tedBrief.engine,'ai','successful request should be identified as AI analysis');
  assert.equal(tedBrief.business_mode,'winner_outreach','AI cannot override the hard TED award business boundary');
  assert.ok(aiCalls[0].messages[0].content.includes('already awarded'),'system prompt must explicitly guard TED awards from bid recommendations');
- assert.ok(aiCalls[0].messages[1].content.includes('winner_outreach'),'request must lock the TED business mode');
+ assert.ok(aiCalls[0].messages[1].content.includes('winner_outreach'),'request must lock the TED award business mode');
  assert.ok(window.document.getElementById('pst-ti-backdrop'),'AI Brief should render inside a controlled modal');
  assert.ok(window.document.getElementById('pst-ti-body').textContent.includes('AI summary'),'modal should show returned intelligence');
  assert.ok(window.document.getElementById('pst-ti-backdrop').textContent.includes('nuk krijon projekt'),'modal must state the read-only boundary');
+ window.pstTenderIntelligenceClose();
+
+ const tedOpenBrief=await window.pstTenderIntelligence('ted-open');
+ assert.equal(aiCalls.length,2,'TED open opportunity should support one explicit AI Brief request');
+ assert.equal(tedOpenBrief.business_mode,'direct_bid','TED open opportunity AI boundary must be direct bid');
+ assert.ok(aiCalls[1].messages[1].content.includes('direct_bid'),'TED open request must lock direct-bid mode');
  window.pstTenderIntelligenceClose();
 
  aiEnabled=false;
@@ -109,25 +120,33 @@ vm.runInContext(code,dom.getInternalVMContext());
  assert.ok(!noWinnerRow.textContent.includes('Për kontakt'),'missing-winner row must not offer outreach action');
  assert.ok(!noWinnerRow.textContent.includes('AI Brief'),'missing-winner row must not trigger actionable AI outreach analysis');
  assert.ok(noWinnerRow.textContent.includes('TED ↗'),'missing-winner row must keep the official TED source action');
+
  window.document.getElementById('pst-kek-phase').value='focus';
  window.document.getElementById('pst-kek-status').value='open';
  window.pstKekRender();
  text=window.document.getElementById('pst-kek-list').textContent;
  assert.ok(text.includes('Winner Stahl GmbH'),'TED winner must be visible');
  assert.ok(text.includes('Furnizim me profile çeliku'),'KRPP opportunity must be visible');
- assert.ok(!text.includes('Open TED steel tender'),'TED open tender must not be operationally visible');
- const tedRow=[...window.document.querySelectorAll('#pst-kek-list tr')].find(tr=>tr.textContent.includes('Winner Stahl GmbH'));
- assert.ok(tedRow,'TED award row missing');
- assert.ok(!tedRow.textContent.includes('Krijo projekt'),'TED award must never offer project creation');
- assert.ok(tedRow.textContent.includes('AI Brief'),'actionable TED winner should have explicit AI Brief');
- assert.ok(tedRow.textContent.includes('Për kontakt'),'new TED winner must offer outreach queue action');
- assert.ok(window.document.querySelector('.pst-kek-sub').textContent.includes('TED: vetëm kontrata të dhëna'));
+ assert.ok(text.includes('Open TED steel tender'),'TED open tender must be operationally visible');
+ const tedAwardRow=[...window.document.querySelectorAll('#pst-kek-list tr')].find(tr=>tr.textContent.includes('Winner Stahl GmbH'));
+ assert.ok(tedAwardRow,'TED award row missing');
+ assert.ok(!tedAwardRow.textContent.includes('Krijo projekt'),'TED award must never offer project creation');
+ assert.ok(tedAwardRow.textContent.includes('AI Brief'),'actionable TED winner should have explicit AI Brief');
+ assert.ok(tedAwardRow.textContent.includes('Për kontakt'),'new TED winner must offer outreach queue action');
+ const tedOpenRow=[...window.document.querySelectorAll('#pst-kek-list tr')].find(tr=>tr.textContent.includes('Open TED steel tender'));
+ assert.ok(tedOpenRow,'TED open row missing');
+ assert.ok(tedOpenRow.textContent.includes('Krijo projekt'),'TED open opportunity must allow controlled project promotion');
+ assert.ok(tedOpenRow.textContent.includes('01 sht 2026'),'TED open opportunity must show its deadline');
+ assert.ok(window.document.querySelector('.pst-kek-sub').textContent.includes('TED, Kosovë dhe Shqipëri'));
+
+ await window.pstTenderBizPromote('ted-open');
+ assert.deepEqual(promoted,['ted-open'],'TED opportunity promotion must reuse the existing controlled project-promotion path');
 
  await window.pstTenderBizSetStatus('ted-award','review');
  text=window.document.getElementById('pst-kek-list').textContent;
  assert.ok(text.includes('Për kontakt'),'TED review state must be labelled Për kontakt, not Në shqyrtim');
  await window.pstTenderBizMarkContacted('ted-award');
- assert.ok(writes.some(w=>w.body&&w.body.payload&&w.body.payload.ted_contact_status==='contacted'),'contacted action must persist in TED payload');
+ assert.ok(writes.some(w=>w.body&&w.body.payload&&w.body.payload.ted_contact_status==='contacted'),'contacted action must persist in TED award payload');
  window.document.getElementById('pst-kek-status').value='contacted';window.pstKekRender();
  text=window.document.getElementById('pst-kek-list').textContent;
  assert.ok(text.includes('Kontaktuar'),'contacted TED winners need a completed outreach state');
