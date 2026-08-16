@@ -34,15 +34,16 @@ async function testProjectCreateDedupeGuard() {
   const w = dom.window;
   w.console = console;
   let rows = [
-    { id:'p1', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA', client:'ITALIAN STYLE', ref:'', business_ref:null, status:'pritje', created_at:'2026-08-01T00:00:00Z' }
+    { id:'p1', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA', client:'ITALIAN STYLE', ref:'', business_ref:null, identity_aliases:[], status:'pritje', created_at:'2026-08-01T00:00:00Z' },
+    { id:'pairbus', name:'Airbus H24X — Halle 24X ModOps — Übergänge Ebene 1 & 2 [260784]', client:'Stacon GmbH & Co. KG', ref:'25007HH', business_ref:'25007HH', identity_aliases:['260784','260784_Airbus H24X_Anfrage Fertigung'], status:'humbur', created_at:'2026-07-01T00:00:00Z' }
   ];
   let inserts = 0;
   const passthrough = [];
   w.supaFetch = async (path, method, body) => {
-    if (path.indexOf('projects?select=id,name,client,ref,business_ref,status,created_at') === 0) return rows.map(x => ({...x}));
+    if (path.indexOf('projects?select=id,name,client,ref,business_ref,identity_aliases,status,created_at') === 0) return rows.map(x => ({...x}));
     if (path === 'projects' && method === 'POST') {
       inserts++;
-      const created = { id:'new-'+inserts, ...body, created_at:'2026-08-11T00:00:00Z' };
+      const created = { id:'new-'+inserts, identity_aliases:[], ...body, created_at:'2026-08-11T00:00:00Z' };
       rows.push(created);
       return [created];
     }
@@ -62,6 +63,15 @@ async function testProjectCreateDedupeGuard() {
   assert.strictEqual(reused[0].id, 'p1', 'Exact duplicate should reuse the existing project');
   assert.strictEqual(reused[0].__pst_reused_existing, true, 'Reuse marker missing');
 
+  const aliasReused = await w.supaFetch('projects','POST',{
+    name:'260784_Airbus H24X_Anfrage Fertigung',
+    client:'Stacon',
+    ref:'260784'
+  });
+  assert.strictEqual(inserts, 0, 'Airbus request alias must not create a duplicate project');
+  assert.strictEqual(aliasReused[0].id, 'pairbus', 'Airbus 260784 alias must resolve to canonical Halle 24X project');
+  assert.strictEqual(aliasReused[0].__pst_reuse_reason, 'identity_alias', 'Alias reuse must be auditable');
+
   const created = await w.supaFetch('projects','POST',{
     name:'Completely New Project',
     client:'New Client',
@@ -70,7 +80,7 @@ async function testProjectCreateDedupeGuard() {
   assert.strictEqual(inserts, 1, 'New project should be inserted exactly once');
   assert.strictEqual(created[0].id, 'new-1');
 
-  rows.push({ id:'p2', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA', client:'ITALIAN STYLE', ref:'', business_ref:null, status:'pritje', created_at:'2026-08-02T00:00:00Z' });
+  rows.push({ id:'p2', name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA', client:'ITALIAN STYLE', ref:'', business_ref:null, identity_aliases:[], status:'pritje', created_at:'2026-08-02T00:00:00Z' });
   await assert.rejects(
     () => w.supaFetch('projects','POST',{
       name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA',
