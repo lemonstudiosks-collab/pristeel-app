@@ -25,7 +25,7 @@ d=classifyEmail({id:2,gmail_thread_id:'t2',subject:'AW: ANF-8910 / ANF-08915 Sch
 assert.equal(d.target,'');
 assert.equal(d.reason,'mixed','Mixed sibling references must fail closed');
 
-d=classifyEmail({id:3,gmail_thread_id:'t3',subject:'Stahlbau-Kapazitäten für BUNTE',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
+d=classifyEmail({id:3,gmail_thread_id:'t3',subject:'Kapazitäten für BUNTE',snippet:'',match_method:null},index,owners,tools,{allowThread:false});
 assert.equal(d.target,'');
 assert.equal(d.reason,'insufficient-identity','Short generic BUNT must not match inside the unrelated word BUNTE');
 
