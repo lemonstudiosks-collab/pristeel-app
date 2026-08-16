@@ -11,8 +11,11 @@ on:
       - 'tests/project-data-reconcile-smoke.mjs'
       - 'tests/project-email-reconcile-smoke.mjs'
       - 'tests/project-discovery-queue-smoke.mjs'
+      - 'tests/gmail-project-auto-link-smoke.js'
       - 'pristeel-project-discovery.js'
       - 'pristeel-gmail-project-identity-guard-v1.js'
+      - 'pristeel-gmail-project-auto-link-v1.js'
+      - 'pristeel-project-first-actions-v1.js'
       - '.github/workflows/project-data-reconcile.yml'
   schedule:
     - cron: '17 * * * *'
@@ -44,6 +47,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install browser smoke dependency
+        run: npm install --no-save --package-lock=false --no-audit --no-fund jsdom@26.1.0
       - name: Require explicit manual apply confirmation
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'apply' && inputs.confirm_apply != true }}
         run: |
@@ -53,6 +58,8 @@ jobs:
         run: node tests/project-data-reconcile-smoke.mjs
       - name: Test project email reconciliation safety
         run: node tests/project-email-reconcile-smoke.mjs
+      - name: Test browser Gmail project auto-link safety
+        run: node tests/gmail-project-auto-link-smoke.js
       - name: Test Project Discovery queue safety
         run: node tests/project-discovery-queue-smoke.mjs
       - name: Reconcile project data
