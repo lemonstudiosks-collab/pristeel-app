@@ -40,5 +40,5 @@ export async function ocrWithGoogleVision(bytes,{name='',mime=''}={}){
     const j=await post('https://vision.googleapis.com/v1/images:annotate',{requests:[{image:{content:base64(bytes)},features:[{type:'DOCUMENT_TEXT_DETECTION'}]}]}),res=j?.responses?.[0]||{},err=res?.error?.message||'',text=responseText(res);
     if(err&&!text)return {text:'',method:'google-vision-image-ocr-v1',status:'review',error:s(err).slice(0,1000),trust_tier:'ocr'};
     return {text,method:'google-vision-image-ocr-v1',status:text?'extracted':'needs_vision',error:err?s(err).slice(0,1000):null,trust_tier:'ocr',ocr_metadata:{provider:'google-vision',mode:'DOCUMENT_TEXT_DETECTION'}};
-  }catch(e2){return {text:'',method:'google-vision-ocr-v1',status:'needs_ocr',error:String(e2).slice(0,1500),trust_tier:'ocr'};}
+  }catch(e2){const msg=String(e2).slice(0,1500),permanent=/\b403\b|PERMISSION_DENIED|has not been used|is disabled|billing|permission/i.test(msg);return {text:'',method:'google-vision-ocr-v1',status:permanent?'ocr_unavailable':'needs_ocr',error:msg,trust_tier:'ocr'};}
 }
