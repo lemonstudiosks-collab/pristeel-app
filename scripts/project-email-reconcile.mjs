@@ -7,7 +7,6 @@ const GUARD_FILE='pristeel-gmail-project-identity-guard-v1.js';
 
 function arr(v){return Array.isArray(v)?v:[];}
 function str(v){return String(v??'');}
-function uniq(v){return [...new Set(arr(v).map(x=>str(x).trim()).filter(Boolean))];}
 function systemMail(row){const s=`${str(row?.subject)} ${str(row?.snippet)}`.toLowerCase();return /delivery status notification|mail delivery subsystem|mailer-daemon|postmaster|undeliverable|calendar notification|hubspot notification/.test(s);}
 function manualIgnored(row){return str(row?.match_method).toLowerCase()==='manual-ignored';}
 function standardLike(key){return /^(?:en\d{3,}|iso\d{3,}|din\d{3,}|exc\d+|s\d{3,}[a-z0-9]*)$/i.test(str(key));}
@@ -19,6 +18,14 @@ function eligibleAnchor(a){
   return false;
 }
 export function autoEligibleHit(hit){return arr(hit?.anchors).some(eligibleAnchor);}
+
+export function trustedMethod(method,confidence){
+  const m=str(method).toLowerCase().trim();
+  if(!m)return false;
+  if(/^(manual(?:-|$)|gmail-panel$|gmail-intake-v[23]$|verified(?:-|$)|project-identity-audit-|project-ref-verified-|thread-verified-|intake-reassign-confirmed$|confirmed-thread-recovery$|identity-auto-link-v1$|identity-reconcile-v1$|confirmed-thread-auto-link-v1$|confirmed-thread-reconcile-v1$)/.test(m))return true;
+  const c=Number(confidence);
+  return false&&Number.isFinite(c)&&c>=100;
+}
 
 export async function loadIdentityTools(guardFile=GUARD_FILE){
   const source=await readFile(guardFile,'utf8');
@@ -49,8 +56,8 @@ export function ownerMap(rows=[],links=[]){
     const tid=str(threadId).trim(),pid=str(projectId).trim();if(!tid||!pid)return;
     if(!out.has(tid))out.set(tid,new Set());out.get(tid).add(pid);
   }
-  for(const row of rows)if(row?.project_id)add(row.gmail_thread_id,row.project_id);
-  for(const link of links)if(link?.project_id)add(link.gmail_thread_id,link.project_id);
+  for(const row of rows)if(row?.project_id&&trustedMethod(row.match_method,row.match_confidence))add(row.gmail_thread_id,row.project_id);
+  for(const link of links)if(link?.project_id&&trustedMethod(link.link_method,link.confidence))add(link.gmail_thread_id,link.project_id);
   return out;
 }
 function ownerIds(owners,threadId){return [...(owners.get(str(threadId))||new Set())];}
@@ -102,7 +109,7 @@ export async function runProjectEmailReconcile({
   ]);
   const index=tools.buildIndex(projects),owners=ownerMap(emails,links),knownLinks=new Set(links.filter(x=>x.project_id&&x.gmail_message_id).map(x=>`${x.project_id}|${x.gmail_message_id}`));
   const pending=emails.filter(x=>!x.project_id),planned=new Set();
-  const report={mode,projects:projects.length,emails:emails.length,pending_initial:pending.length,strong:{candidates:[],applied:[]},thread:{candidates:[],applied:[]},skipped:{system:0,manual_ignored:0,mixed:0,unknown_reference:0,weak_identity:0,thread_conflict:0,insufficient_identity:0},remaining_estimate:pending.length};
+  const report={mode,projects:projects.length,emails:emails.length,pending_initial:pending.length,trusted_owner_threads:owners.size,strong:{candidates:[],applied:[]},thread:{candidates:[],applied:[]},skipped:{system:0,manual_ignored:0,mixed:0,unknown_reference:0,weak_identity:0,thread_conflict:0,insufficient_identity:0},remaining_estimate:pending.length};
 
   async function applyDecision(row,decision,bucket){
     bucket.candidates.push(sample(row,decision));planned.add(String(row.id));addOwner(owners,row.gmail_thread_id,decision.target);
@@ -136,7 +143,7 @@ export async function runProjectEmailReconcile({
   report.remaining_estimate=Math.max(0,pending.length-report.strong.candidates.length-report.thread.candidates.length);
   await writeSummary(report);
   console.log(JSON.stringify(report,null,2));
-  console.log(`PROJECT_EMAIL_RECONCILE_SUMMARY mode=${mode} projects=${report.projects} emails=${report.emails} pending=${report.pending_initial} strong_candidates=${report.strong.candidates.length} strong_applied=${report.strong.applied.length} thread_candidates=${report.thread.candidates.length} thread_applied=${report.thread.applied.length} remaining_estimate=${report.remaining_estimate}`);
+  console.log(`PROJECT_EMAIL_RECONCILE_SUMMARY mode=${mode} projects=${report.projects} emails=${report.emails} pending=${report.pending_initial} trusted_owner_threads=${report.trusted_owner_threads} strong_candidates=${report.strong.candidates.length} strong_applied=${report.strong.applied.length} thread_candidates=${report.thread.candidates.length} thread_applied=${report.thread.applied.length} remaining_estimate=${report.remaining_estimate}`);
   return report;
 }
 
