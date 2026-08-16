@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { classifyTedNotice, normalizeTedNotice, reconcileTedOpportunityLifecycle, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
+import { classifyTedNotice, normalizeTedNotice, reconcileTedOpportunityLifecycle, tenderDeadlineTaskRows, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
 
 const steel=classifyTedNotice({title:'Stahlbauarbeiten mit technischer Plattform',cpv:['45223210']});
 assert.equal(steel.category,'steel_structure');
@@ -79,6 +79,22 @@ assert.equal(summary.opportunities_with_deadline,1);
 assert.equal(summary.awards,1);
 assert.equal(summary.relevant_rows,2);
 assert.ok(summary.tenders.some(x=>x.publication_no==='600001-2026'&&x.phase==='opportunity'&&x.deadline==='2026-09-25'));
+
+const taskRows=tenderDeadlineTaskRows([
+  {source_key:'TED:URGENT',title:'Urgent steel structure',authority:'Buyer A',category:'steel_structure',relevance_score:96,deadline:'2026-08-17',source_url:'https://ted.example/urgent',payload:{notice_phase:'opportunity'}},
+  {source_key:'TED:SOON',title:'Steel profiles',authority:'Buyer B',category:'raw_material',relevance_score:95,deadline:'2026-08-21',source_url:'https://ted.example/soon',payload:{notice_phase:'opportunity'}},
+  {source_key:'TED:LOW',title:'Weak signal',authority:'Buyer C',category:'steel_structure',relevance_score:80,deadline:'2026-08-18',payload:{notice_phase:'opportunity'}},
+  {source_key:'TED:LATER',title:'Later steel work',authority:'Buyer D',category:'steel_structure',relevance_score:96,deadline:'2026-08-30',payload:{notice_phase:'opportunity'}},
+  {source_key:'TED:AWARD',title:'Already awarded',authority:'Buyer E',category:'steel_structure',relevance_score:100,deadline:'2026-08-17',payload:{notice_phase:'award'}}
+],{today:'2026-08-16',withinDays:7,minScore:88});
+assert.equal(taskRows.length,2,'only high-confidence open TED opportunities due within seven days may create tasks');
+assert.deepEqual(taskRows.map(x=>x.source_ref),['TED:URGENT','TED:SOON'],'task source_ref must be the stable TED source key');
+assert.equal(taskRows[0].due_date,'2026-08-16','deadline within two days should require review today');
+assert.equal(taskRows[0].priority,'urgjent');
+assert.equal(taskRows[1].due_date,'2026-08-19','normal urgent tender review should be due two days before bid deadline');
+assert.equal(taskRows[1].priority,'e larte');
+assert.ok(taskRows.every(x=>x.source==='tender_deadline_auto'&&x.project_id===null&&x.category==='intern'),'deadline automation must create internal review tasks only, never projects');
+assert.ok(taskRows[0].detail.includes('verifiko scope/kriteret'),'task must explicitly require human verification');
 
 const originalFetch=globalThis.fetch;
 const deletes=[];
