@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
 const source = fs.readFileSync('supabase/functions/project-document-intake/index.ts', 'utf8');
+const eml = fs.readFileSync('supabase/functions/project-document-intake/eml-intelligence.mjs', 'utf8');
 const migration = fs.readFileSync('supabase/project-attachment-document-intelligence.sql', 'utf8');
 const conversation = fs.readFileSync('pristeel-project-intelligence-conversation-v1.js', 'utf8');
 
@@ -23,6 +24,13 @@ assert(source.includes('b.length>15*1024*1024'), 'ZIP archives must have a compr
 assert(source.includes('file.originalSize||0)<=10_000_000'), 'ZIP entries must be filtered by uncompressed size before extraction');
 assert(source.includes('total>40*1024*1024'), 'ZIP extraction must stop at a bounded total uncompressed size');
 assert(source.includes("ce==='dwg'"), 'DWG inside ZIP must never be treated as plain text');
+assert(source.includes('parseEmlSource'), 'EML files must be routed through the dedicated RFC822 parser');
+assert(source.includes('needs_email_parse'), 'historical EML backlog must be eligible for the normal intake queue');
+assert(eml.includes('npm:postal-mime@2.7.5'), 'EML parser dependency must be pinned');
+assert(eml.includes('maxNestingDepth:32'), 'EML MIME nesting must be bounded');
+assert(eml.includes('MAX_CHILD_TOTAL=30*1024*1024'), 'EML nested attachment extraction must have a total byte guard');
+assert(eml.includes('DWG requires trusted CAD conversion'), 'DWG nested in EML must remain conversion-first');
+assert(eml.includes('image requires vision/OCR'), 'images nested in EML must be deferred to vision/OCR');
 assert(source.includes('needs_conversion'), 'unsupported DWG must route to conversion/review rather than guess');
 assert(source.includes('needs_ocr'), 'image-only PDF extraction must route to OCR/review rather than guess');
 assert(source.includes('image-vision-pending-v1'), 'image attachments must be deferred to a vision path rather than parsed as text');
