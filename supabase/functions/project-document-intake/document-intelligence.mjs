@@ -1,7 +1,7 @@
 function s(v){return String(v==null?'':v);}
 function uniq(a){return [...new Set((Array.isArray(a)?a:[]).filter(Boolean))];}
 function cleanText(v,limit=120000){return s(v).replace(/\u0000/g,'').replace(/\r\n/g,'\n').replace(/[\t ]+\n/g,'\n').replace(/\n{4,}/g,'\n\n\n').trim().slice(0,limit);}
-export function safeFileName(v){const x=s(v).replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').replace(/\s+/g,' ').trim();return (x||'attachment.bin').slice(0,180);}
+export function safeFileName(v){const x=s(v).normalize('NFKD').replace(/[^\x00-\x7F]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'').trim();return (x||'attachment.bin').slice(0,180);}
 export function extOf(name){const m=s(name).toLowerCase().match(/\.([a-z0-9]{1,10})$/);return m?m[1]:'';}
 export function mimeGuess(name,mime){if(mime)return s(mime).toLowerCase();const e=extOf(name);return ({pdf:'application/pdf',csv:'text/csv',txt:'text/plain',md:'text/markdown',json:'application/json',xml:'application/xml',dxf:'application/dxf',dwg:'application/acad',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',xls:'application/vnd.ms-excel',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',doc:'application/msword'})[e]||'application/octet-stream';}
 export function decodeBase64UrlBytes(data){let x=s(data).replace(/-/g,'+').replace(/_/g,'/');while(x.length%4)x+='=';const bin=atob(x),out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out;}
