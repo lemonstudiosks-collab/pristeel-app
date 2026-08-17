@@ -67,7 +67,7 @@ function bootstrapCompat(){
  ensureCompatScaffold();installCompatApi();
  if(!document.getElementById('pst-home-owner-v2-style')){
    var s=document.createElement('style');s.id='pst-home-owner-v2-style';
-   s.textContent='html.pst-runtime-ready #page-home{display:none!important;visibility:hidden!important;pointer-events:none!important}';
+   s.textContent='body.pst-ui-v2 .sidebar>*:not(#pst-v2-sidebar){display:none!important}body.pst-ui-v2 #right-rail,body.pst-ui-v2 #modbar,body.pst-ui-v2 #util-fab{display:none!important}html.pst-runtime-ready #page-home{display:none!important;visibility:hidden!important;pointer-events:none!important}';
    document.head.appendChild(s);
  }
  if(!ensureCompatScaffold()&&scaffoldTries++<80)setTimeout(bootstrapCompat,50);
