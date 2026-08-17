@@ -19,20 +19,25 @@ assert(!rolesSource.includes('(function loadProjectEmailsModule(){'),'The old im
   'window.__pstHomeStabilityV2=true;',
   'window.__pstHomeProjectRecoveryV3=true;',
   'window.__pstHomeOperationalPriorityV1=true;',
-  'window.__pstHomeVisualCleanupV1=true;'
+  'window.__pstHomeVisualCleanupV1=true;',
+  'window.__pstLoginTransitionV2=true;'
 ].forEach(marker=>assert(guardSource.includes(marker),'Missing pre-bootstrap retirement marker: '+marker));
 
 const listeners = Object.create(null);
 function cls(){const set=new Set();return{add(x){set.add(x);},remove(x){set.delete(x);},contains(x){return set.has(x);},toggle(x,on){if(on)set.add(x);else set.delete(x);}};}
-function node(id){return{id,style:{},classList:cls(),attrs:{},children:[],setAttribute(k,v){this.attrs[k]=v;},insertBefore(ch){this.children.unshift(ch);nodes[ch.id]=ch;},appendChild(ch){this.children.push(ch);nodes[ch.id]=ch;}};}
+function node(id){return{id,style:{},classList:cls(),attrs:{},children:[],parentNode:null,setAttribute(k,v){this.attrs[k]=v;},remove(){if(this.parentNode&&this.parentNode.children)this.parentNode.children=this.parentNode.children.filter(x=>x!==this);delete nodes[this.id];},insertBefore(ch){ch.parentNode=this;this.children.unshift(ch);nodes[ch.id]=ch;},appendChild(ch){ch.parentNode=this;this.children.push(ch);nodes[ch.id]=ch;}};}
 const nodes={
   'page-workspace-home':node('page-workspace-home'),
   'pst-ws-home-actions':node('pst-ws-home-actions'),
   'pst-ws-home-projects':node('pst-ws-home-projects'),
   'page-home':node('page-home'),
-  'app-sidebar':node('app-sidebar')
+  'app-sidebar':node('app-sidebar'),
+  'pst-login-transition-v2':node('pst-login-transition-v2'),
+  'pst-login-transition-v2-style':node('pst-login-transition-v2-style')
 };
 nodes['page-home'].classList.add('active');
+nodes['pst-login-transition-v2'].parentNode=nodes['app-sidebar'];
+nodes['pst-login-transition-v2-style'].parentNode=nodes['app-sidebar'];
 let canonicalScript=null,legacyCalls=[],canonicalRenders=0,canonicalActivations=0,capturedLegacyDuringCanonicalLoad=null;
 
 const document={
@@ -80,6 +85,9 @@ assert.strictEqual(context.window.__pstHomeStabilityV2,true);
 assert.strictEqual(context.window.__pstHomeProjectRecoveryV3,true);
 assert.strictEqual(context.window.__pstHomeOperationalPriorityV1,true);
 assert.strictEqual(context.window.__pstHomeVisualCleanupV1,true);
+assert.strictEqual(context.window.__pstLoginTransitionV2,true,'Cached blocking login handoff must be retired before project-emails bootstrap');
+assert(!nodes['pst-login-transition-v2'],'Any existing blocking login overlay must be removed immediately');
+assert(!nodes['pst-login-transition-v2-style'],'Any existing blocking login transition CSS must be removed immediately');
 
 if(listeners.DOMContentLoaded)listeners.DOMContentLoaded();
 assert(nodes['pst-v2-sidebar'],'Compatibility sidebar scaffold must exist without legacy UI V2');
