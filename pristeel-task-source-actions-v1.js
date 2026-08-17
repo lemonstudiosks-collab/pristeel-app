@@ -74,13 +74,4 @@ document.addEventListener('pst:modules-ready',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.PSTTaskSourceActionsV1={sourceUrl:sourceUrl,metadataText:metadataText,enhanceRow:enhanceRow,decorate:decorate};
-
-(function loadOperationalHomePriority(){
-  if(document.querySelector('script[data-pst-home-operational-priority]'))return;
-  var s=document.createElement('script');
-  s.src='pristeel-home-operational-priority-v1.js?v='+String(Date.now());
-  s.defer=true;
-  s.setAttribute('data-pst-home-operational-priority','1');
-  document.head.appendChild(s);
-})();
 })();
