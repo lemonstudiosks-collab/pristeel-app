@@ -217,13 +217,29 @@ if(document.readyState === 'loading'){
   setTimeout(init, 900);
 }
 
-(function loadProjectEmailsModule(){
-  if(document.querySelector('script[data-pst-project-emails]')) return;
-  var s=document.createElement('script');
-  s.src='pristeel-project-emails.js?v='+String(Date.now());
-  s.defer=true;
-  s.setAttribute('data-pst-project-emails','1');
-  document.head.appendChild(s);
+(function loadHomeRuntimeGuardThenProjectEmails(){
+  function loadProjectEmailsModule(){
+    if(document.querySelector('script[data-pst-project-emails]')) return;
+    var s=document.createElement('script');
+    s.src='pristeel-project-emails.js?v='+String(Date.now());
+    s.defer=true;
+    s.setAttribute('data-pst-project-emails','1');
+    document.head.appendChild(s);
+  }
+  if(window.PSTHomeRuntimeOwnerGuardV1){loadProjectEmailsModule();return;}
+  var existing=document.querySelector('script[data-pst-home-runtime-owner-guard]');
+  if(existing){
+    existing.addEventListener('load',loadProjectEmailsModule,{once:true});
+    existing.addEventListener('error',loadProjectEmailsModule,{once:true});
+    return;
+  }
+  var g=document.createElement('script');
+  g.src='pristeel-home-runtime-owner-guard-v1.js?v=20260817-runtimeowner1';
+  g.defer=true;
+  g.setAttribute('data-pst-home-runtime-owner-guard','1');
+  g.onload=loadProjectEmailsModule;
+  g.onerror=function(){console.error('Nuk u ngarkua Home runtime owner guard.');loadProjectEmailsModule();};
+  document.head.appendChild(g);
 })();
 
 (function loadInvoiceOriginalDocumentModule(){

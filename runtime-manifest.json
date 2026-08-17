@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "4c261b06b79a39ed70255a65e2f799917934ed6b",
+  "auditedAtCommit": "a8ffe783d3d7f024ea1abe8d79b29fe70791ea03",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "799f171845e9f04b531b14232cc2d251fa8b6149",
+    "bootstrapLoaderGitBlobSha": "c58cb035c89e172809598e8e09fde8b7e33785d8",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "adc33adf570fe209c8f59d4ef0c1700289f32b2f"
   },
@@ -54,12 +54,9 @@
     {
       "area": "home",
       "finalOwners": [
-        "pristeel-home-command-center-v2.js",
-        "pristeel-home-stability-v2.js",
-        "pristeel-home-visual-cleanup-v1.js",
-        "pristeel-redesign-finalizer-v1.js",
-        "pristeel-task-source-actions-v1.js"
-      ]
+        "pristeel-home-canonical-v1.js"
+      ],
+      "note": "Workspace Architecture may create the Home shell during startup, but Home Canonical is the sole final data owner. The pre-bootstrap runtime owner guard keeps later Home navigation on Canonical after pst:modules-ready."
     },
     {
       "area": "projects-list",
@@ -147,6 +144,18 @@
   "loadedLegacyReviewCandidates": [],
   "dynamicRuntime": [
     {
+      "module": "pristeel-home-runtime-owner-guard-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded before pristeel-project-emails.js. It captures Home routing before the ordered runtime starts and performs the final ownership handoff on pst:modules-ready."
+    },
+    {
+      "module": "pristeel-home-canonical-v1.js",
+      "loader": "pristeel-home-runtime-owner-guard-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded by the pre-bootstrap Home runtime owner guard. It is the sole final owner of Home priority and active-project data."
+    },
+    {
       "module": "pristeel-invoice-original-document-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
@@ -156,7 +165,7 @@
       "module": "pristeel-tender-business-flow-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production pristeel-roles.js base module."
+      "condition": "Loaded unconditionally by the production base loader."
     },
     {
       "module": "pristeel-tender-winner-contacts-v1.js",
