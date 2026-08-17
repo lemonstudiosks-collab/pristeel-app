@@ -6,7 +6,7 @@ import { classifyTedNotice } from './ted-tender-sync.mjs';
 const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
 const TED_API='https://api.ted.europa.eu/v3/notices/search';
 const AWARD_TYPES=['can-standard','can-social','can-desg','can-tran'];
-const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 44171000 OR classification-cpv = 44172000 OR classification-cpv = 44212220 OR classification-cpv = 44212240 OR classification-cpv = 44212313 OR classification-cpv = 44212410 OR classification-cpv = 44212500 OR classification-cpv = 44330000 OR classification-cpv = 44334000 OR FT IN (Stahlbau Stahlkonstruktion Stahltragwerk Stahlhalle steelwork staalbouw staalconstructie))';
+const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 44171000 OR classification-cpv = 44172000 OR classification-cpv = 44212220 OR classification-cpv = 44212240 OR classification-cpv = 44212313 OR classification-cpv = 44212410 OR classification-cpv = 44212500 OR classification-cpv = 44330000 OR classification-cpv = 44334000 OR classification-cpv = 45223100 OR classification-cpv = 45223110 OR classification-cpv = 45223210 OR FT IN (Stahlbau Stahlkonstruktion Stahltragwerk Stahlhalle steelwork staalbouw staalconstructie))';
 const FIELDS=[
   'publication-number','notice-title','notice-type','publication-date','buyer-name',
   'classification-cpv','place-of-performance',
