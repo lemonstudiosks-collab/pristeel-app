@@ -30,4 +30,5 @@ function wait(ms){return new Promise(r=>setTimeout(r,ms));}
   assert(finalizer>0&&home>0&&stability>0&&recovery>0&&live>0,'Visual stabilization did not coordinate all current Home layers');
   dom.window.close();
   console.log('Startup visual stability smoke test passed.');
+  process.exit(0);
 })().catch(e=>{console.error(e);process.exit(1);});
