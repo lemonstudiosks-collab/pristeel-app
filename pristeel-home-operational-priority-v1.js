@@ -9,7 +9,7 @@ if(window.__pstHomeOperationalPriorityV1)return;
 window.__pstHomeOperationalPriorityV1=true;
 
 var RUNNING=null,LAST=0,CACHE_MS=30000,RECENT_DAYS=14,CACHED_ITEMS=[];
-var OBSERVER=null,OBSERVED_ACTIONS=null,OBSERVED_PROJECTS=null,MUTATION_PAUSE_UNTIL=0,RECONCILE_TIMER=null;
+var OBSERVER=null,OBSERVED_ACTIONS=null,OBSERVED_PROJECTS=null,RECONCILE_TIMER=null;
 var RED='#A64B42',RED_SOFT='#F9ECEA';
 function arr(v){return Array.isArray(v)?v:[];}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -103,10 +103,11 @@ function removeDuplicateTaskRows(host,items){
  var titles={};items.forEach(function(item){titles[String(item.task.title||'').trim()]=1;});
  arr([].slice.call(host.querySelectorAll(':scope > .pst-ws-action:not(.pst-op-priority)'))).forEach(function(row){if(titles[taskTitle(row)])row.remove();});
 }
+function disconnectObserver(){if(OBSERVER){try{OBSERVER.disconnect();}catch(e){}}OBSERVER=null;OBSERVED_ACTIONS=null;OBSERVED_PROJECTS=null;}
 function reconcileDom(items){
  if(!homeVisible())return 0;
  var host=document.getElementById('pst-ws-home-actions');if(!host)return 0;
- MUTATION_PAUSE_UNTIL=Date.now()+450;
+ disconnectObserver();
  host.querySelectorAll(':scope > .pst-op-priority').forEach(function(r){r.remove();});
  removeDuplicateTaskRows(host,items);
  var empty=host.querySelector('.pst-ws-empty');if(empty&&items.length)empty.remove();
@@ -120,17 +121,14 @@ function reconcileDom(items){
  installObserver();
  return items.length;
 }
-function scheduleDomReconcile(delay){
- clearTimeout(RECONCILE_TIMER);RECONCILE_TIMER=setTimeout(function(){if(Date.now()<MUTATION_PAUSE_UNTIL||!homeVisible())return;reconcileDom(CACHED_ITEMS);},delay||80);
-}
+function scheduleDomReconcile(delay){clearTimeout(RECONCILE_TIMER);RECONCILE_TIMER=setTimeout(function(){if(homeVisible())reconcileDom(CACHED_ITEMS);},delay||60);}
 function installObserver(){
  var actions=document.getElementById('pst-ws-home-actions'),projects=document.getElementById('pst-ws-home-projects');
  if(!actions&&!projects)return;
- if(OBSERVER&&(actions!==OBSERVED_ACTIONS||projects!==OBSERVED_PROJECTS)){try{OBSERVER.disconnect();}catch(e){}OBSERVER=null;}
+ if(OBSERVER&&(actions!==OBSERVED_ACTIONS||projects!==OBSERVED_PROJECTS))disconnectObserver();
  if(OBSERVER)return;
  OBSERVED_ACTIONS=actions;OBSERVED_PROJECTS=projects;
  OBSERVER=new MutationObserver(function(mutations){
-   if(Date.now()<MUTATION_PAUSE_UNTIL)return;
    var directChange=mutations.some(function(m){return m.type==='childList'&&m.target&&(m.target===OBSERVED_ACTIONS||m.target===OBSERVED_PROJECTS);});
    if(directChange)scheduleDomReconcile(60);
  });
