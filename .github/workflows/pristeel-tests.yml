@@ -46,6 +46,8 @@ jobs:
         run: node --check pristeel-project-intake-continuity-v1.js && node tests/project-intake-continuity-smoke.js
       - name: Run Gmail project auto-link smoke
         run: node --check pristeel-gmail-project-auto-link-v1.js && node tests/gmail-project-auto-link-smoke.js
+      - name: Run Gmail client request execution smoke
+        run: node tests/gmail-project-intake-execution-smoke.mjs
       - name: Run Gmail tracker source smoke
         run: node tests/gmail-tracker-source-smoke.mjs && node tests/gmail-attachment-metadata-smoke.mjs && node tests/gmail-body-hydration-helper-smoke.mjs && node tests/gmail-attachment-scan-state-smoke.mjs
       - name: Run project document intake smoke
@@ -64,6 +66,8 @@ jobs:
         run: node --check pristeel-project-intelligence-resilience-v1.js && node tests/project-intelligence-resilience-smoke.js
       - name: Run Project Intelligence conversation smoke
         run: node --check pristeel-project-intelligence-conversation-v1.js && node tests/project-intelligence-conversation-smoke.js
+      - name: Run Project live intelligence smoke
+        run: node --check pristeel-project-live-intelligence-v1.js && node tests/project-live-intelligence-smoke.js
       - name: Run explicit AI request API smoke
         run: node scripts/ai-request-api-smoke.mjs
       - name: Run explicit AI provider routing smoke
