@@ -89,7 +89,7 @@ function intendedVisible(el){if(!el||el.hidden)return false;return !(el.style&&e
 function setCopy(text){var e=document.getElementById('pst-startup-copy');if(e&&e.textContent!==text)e.textContent=text;}
 function finish(kind){
   if(state.revealed)return;state.revealed=true;
-  clearTimeout(state.maxTimer);clearTimeout(state.quietTimer);clearInterval(state.poll);if(state.observer)state.observer.disconnect();
+  clearTimeout(state.maxTimer);clearTimeout(state.quietTimer);clearInterval(state.poll);
   polishLogin();
   root.classList.remove('pst-booting');root.classList.add(kind==='auth'?'pst-auth-ready':'pst-app-ready');
   var preload=document.getElementById('pst-startup-preload-css');if(preload)preload.remove();
@@ -117,12 +117,7 @@ function check(){
     setCopy(state.modules?'Duke stabilizuar pamjen finale…':'Duke finalizuar workspace-in…');
   }
 }
-function observe(){
-  if(!document.body||state.observer)return;
-  state.observer=new MutationObserver(check);
-  state.observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style','class','hidden']});
-}
-function domReady(){state.dom=true;ensureShell();polishLogin();observe();check();}
+function domReady(){state.dom=true;ensureShell();polishLogin();check();}
 function modulesReady(){state.modules=true;setCopy('Duke stabilizuar pamjen finale…');check();}
 function visualReady(){state.visual=true;setCopy('Gati…');check();}
 
