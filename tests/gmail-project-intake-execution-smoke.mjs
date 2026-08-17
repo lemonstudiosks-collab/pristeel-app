@@ -8,7 +8,8 @@ assert.match(source,/followup_status:\s*"draft"/,'Automatically prepared quote m
 assert.match(source,/installation_price_pending/,'Installation must stay explicitly pending when no price exists');
 assert.match(source,/price:0,_pstNeedsPrice:true/,'No installation price may be invented');
 assert.match(source,/subtotal_before_installation/,'Subtotal must explicitly exclude pending installation');
-assert.match(source,/text\(d\.followup_status\)\.toLowerCase\(\)===\"sent\"/,'Revision must start from an already sent PRISTEEL quote');
+assert.match(source,/\["open","sent","won"\]\.includes\(follow\)/,'Revision must accept the active quote lifecycle states used by PPPP');
+assert.match(source,/rev!=="draft_review"/,'Revision drafts must never become their own base quote');
 assert.match(source,/r\.massKg<=qty/,'Requested coating quantity must be bounded by the base quote quantity');
 assert.match(source,/engine:\"server_event_rules\"/,'A processed client request must write a deterministic current Project Intelligence event analysis');
 assert.match(source,/model:\"deterministic-client-request-v1\"/,'Event analysis must be identifiable and auditable');
