@@ -8,12 +8,16 @@ const guardSource = fs.readFileSync('pristeel-home-runtime-owner-guard-v1.js', '
 const rolesSource = fs.readFileSync('pristeel-roles.js', 'utf8');
 
 assert(
-  rolesSource.indexOf('pristeel-home-runtime-owner-guard-v1.js') !== -1,
+  rolesSource.includes("g.src='pristeel-home-runtime-owner-guard-v1.js?v=20260817-runtimeowner1'"),
   'RBAC/bootstrap loader must load the Home runtime owner guard'
 );
 assert(
-  rolesSource.indexOf('pristeel-home-runtime-owner-guard-v1.js') < rolesSource.indexOf('pristeel-project-emails.js'),
-  'Home runtime owner guard must be requested before the ordered runtime bootstrap'
+  rolesSource.includes('g.onload=loadProjectEmailsModule'),
+  'Ordered runtime bootstrap must start from the guard onload callback'
+);
+assert(
+  !rolesSource.includes('(function loadProjectEmailsModule(){'),
+  'The old immediate project-emails bootstrap must not remain active'
 );
 
 const listeners = Object.create(null);
