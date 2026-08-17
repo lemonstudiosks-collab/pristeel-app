@@ -71,3 +71,4 @@ assert(bootstrap.includes("el.remove()"), 'Timed-out module element must be remo
 
 console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules, including read-only Contacts provenance UI.`);
 require('./bootstrap-timeout-safety-smoke.js');
+require('./project-discovery-runtime-smoke.js');
