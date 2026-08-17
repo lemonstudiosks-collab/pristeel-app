@@ -1,30 +1,31 @@
-/* PRISTEEL Home Runtime Owner Guard v3
+/* PRISTEEL Home Runtime Owner Guard v4
  * Loaded before the ordered runtime bootstrap.
  * Canonical Workspace Home is the only allowed Home renderer.
- * Historical Home implementations and the obsolete blocking login handoff are
+ * Historical Home implementations and obsolete blocking startup layers are
  * retired before their scripts execute.
  */
 (function(){
 'use strict';
-if(window.__pstHomeRuntimeOwnerGuardV3)return;
+if(window.__pstHomeRuntimeOwnerGuardV4)return;
+window.__pstHomeRuntimeOwnerGuardV4=true;
 window.__pstHomeRuntimeOwnerGuardV3=true;
 window.__pstHomeRuntimeOwnerGuardV2=true;
 window.__pstHomeRuntimeOwnerGuardV1=true;
 
-/* Definitively retire historical owners. Files may remain in the static
- * artifact for compatibility with old references, but their startup guards
- * must stop them before they register timers, observers or routers. */
+/* Retire historical Home owners before the ordered bootstrap reaches them. */
 window.__pstDashboardCalmLoaded=true;
 window.__pstDashboardFocusLoaded=true;
 window.__pstOperationalHomeLoaded=true;
 window.__pstUiV2Loaded=true;
+window.__pstUiV2PolishLoaded=true;
+window.__pstDashboardActionControlsV2Loaded=true;
 window.__pstHomeLiveFixV1=true;
 window.__pstHomeStabilityV2=true;
 window.__pstHomeProjectRecoveryV3=true;
 window.__pstHomeOperationalPriorityV1=true;
 window.__pstHomeVisualCleanupV1=true;
-/* The startup guard is the only startup-visibility owner. A cached historical
- * login-transition asset must never be able to cover the authenticated app. */
+/* StartupGuard owns startup visibility. A cached historical login-transition
+ * asset must never be able to cover the authenticated app. */
 window.__pstLoginTransitionV2=true;
 
 var rawGo=typeof window.pstWorkspaceGo==='function'?window.pstWorkspaceGo:null;
@@ -38,6 +39,16 @@ function clearLegacyLoginBlocker(){
  try{document.documentElement.classList.remove('pst-login-switching');}catch(e){}
  var old=document.getElementById('pst-login-transition-v2');if(old&&old.parentNode)old.remove();
  var css=document.getElementById('pst-login-transition-v2-style');if(css&&css.parentNode)css.remove();
+}
+function signalVisualReady(){
+ try{document.documentElement.classList.add('pst-runtime-ready');}catch(e){}
+ try{
+   if(window.PSTStartupGuard&&typeof window.PSTStartupGuard.visualReady==='function'){
+     window.PSTStartupGuard.visualReady();
+     return;
+   }
+   document.dispatchEvent(new CustomEvent('pst:visual-ready'));
+ }catch(e){}
 }
 function canonical(){return window.PSTHomeCanonicalV1||null;}
 function hasHomeShell(){return !!(document.getElementById('page-workspace-home')&&document.getElementById('pst-ws-home-actions')&&document.getElementById('pst-ws-home-projects'));}
@@ -75,8 +86,8 @@ function installCompatApi(){
 }
 function bootstrapCompat(){
  clearLegacyLoginBlocker();ensureCompatScaffold();installCompatApi();
- if(!document.getElementById('pst-home-owner-v3-style')){
-   var s=document.createElement('style');s.id='pst-home-owner-v3-style';
+ if(!document.getElementById('pst-home-owner-v4-style')){
+   var s=document.createElement('style');s.id='pst-home-owner-v4-style';
    s.textContent='body.pst-ui-v2 .sidebar>*:not(#pst-v2-sidebar){display:none!important}body.pst-ui-v2 #right-rail,body.pst-ui-v2 #modbar,body.pst-ui-v2 #util-fab{display:none!important}html.pst-runtime-ready #page-home{display:none!important;visibility:hidden!important;pointer-events:none!important}';
    document.head.appendChild(s);
  }
@@ -88,7 +99,10 @@ function renderCanonical(){
   if(!api||typeof api.render!=='function'||!hasHomeShell())return false;
   clearLegacyLoginBlocker();hideLegacyHome();
   try{if(typeof api.activateHome==='function')api.activateHome();}catch(e){}
-  api.render(true);
+  try{
+    var result=api.render(true);
+    Promise.resolve(result).then(function(ok){if(ok!==false)signalVisualReady();}).catch(function(error){console.error('PPPP canonical Home render:',error);});
+  }catch(e){console.error('PPPP canonical Home render:',e);return false;}
   return true;
 }
 function ensureCanonical(){
@@ -150,13 +164,14 @@ try{
   });
 }catch(e){console.error('PPPP could not install Home route guard',e);}
 
-window.PSTHomeRuntimeOwnerGuardV1=window.PSTHomeRuntimeOwnerGuardV2=window.PSTHomeRuntimeOwnerGuardV3={
+window.PSTHomeRuntimeOwnerGuardV1=window.PSTHomeRuntimeOwnerGuardV2=window.PSTHomeRuntimeOwnerGuardV3=window.PSTHomeRuntimeOwnerGuardV4={
   ensureCanonical:ensureCanonical,
   finalizeHome:finalizeHome,
   renderCanonical:renderCanonical,
   ensureCompatScaffold:ensureCompatScaffold,
   hideLegacyHome:hideLegacyHome,
   clearLegacyLoginBlocker:clearLegacyLoginBlocker,
+  signalVisualReady:signalVisualReady,
   isRuntimeReady:function(){return runtimeReady;}
 };
 

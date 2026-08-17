@@ -15,6 +15,8 @@ assert(!rolesSource.includes('(function loadProjectEmailsModule(){'),'The old im
   'window.__pstDashboardFocusLoaded=true;',
   'window.__pstOperationalHomeLoaded=true;',
   'window.__pstUiV2Loaded=true;',
+  'window.__pstUiV2PolishLoaded=true;',
+  'window.__pstDashboardActionControlsV2Loaded=true;',
   'window.__pstHomeLiveFixV1=true;',
   'window.__pstHomeStabilityV2=true;',
   'window.__pstHomeProjectRecoveryV3=true;',
@@ -38,7 +40,7 @@ const nodes={
 nodes['page-home'].classList.add('active');
 nodes['pst-login-transition-v2'].parentNode=nodes['app-sidebar'];
 nodes['pst-login-transition-v2-style'].parentNode=nodes['app-sidebar'];
-let canonicalScript=null,legacyCalls=[],canonicalRenders=0,canonicalActivations=0,capturedLegacyDuringCanonicalLoad=null;
+let canonicalScript=null,legacyCalls=[],canonicalRenders=0,canonicalActivations=0,capturedLegacyDuringCanonicalLoad=null,visualReady=0;
 
 const document={
   body:{classList:cls()},
@@ -68,18 +70,22 @@ const document={
       if(typeof el.onload==='function')el.onload();
     },0);
   }},
-  addEventListener(name,fn){listeners[name]=fn;}
+  addEventListener(name,fn){listeners[name]=fn;},
+  dispatchEvent(){}
 };
 
-const context=vm.createContext({console,document,setTimeout,clearTimeout,Promise});
+const context=vm.createContext({console,document,setTimeout,clearTimeout,Promise,CustomEvent:function(){}});
 context.window=context;
 context.window.open=()=>true;
+context.window.PSTStartupGuard={visualReady(){visualReady+=1;}};
 vm.runInContext(guardSource,context,{filename:'pristeel-home-runtime-owner-guard-v1.js'});
 
 assert.strictEqual(context.window.__pstDashboardCalmLoaded,true);
 assert.strictEqual(context.window.__pstDashboardFocusLoaded,true);
 assert.strictEqual(context.window.__pstOperationalHomeLoaded,true);
 assert.strictEqual(context.window.__pstUiV2Loaded,true,'UI V2 legacy dashboard must be retired before its file executes');
+assert.strictEqual(context.window.__pstUiV2PolishLoaded,true,'Legacy UI V2 polish must not poll or rewrite old Home');
+assert.strictEqual(context.window.__pstDashboardActionControlsV2Loaded,true,'Legacy dashboard action observer must not attach to old Home');
 assert.strictEqual(context.window.__pstHomeLiveFixV1,true);
 assert.strictEqual(context.window.__pstHomeStabilityV2,true);
 assert.strictEqual(context.window.__pstHomeProjectRecoveryV3,true);
@@ -111,6 +117,8 @@ context.window.pstWorkspaceGo=workspaceGo;
 
   assert(canonicalRenders>=1,'Canonical Home must render after modules-ready');
   assert(canonicalActivations>=1,'Canonical Home must activate after modules-ready');
+  assert(visualReady>=1,'Successful canonical Home render must release the startup visibility owner');
+  assert(document.documentElement.classList.contains('pst-runtime-ready'),'Canonical owner must mark runtime ready after final Home render');
   assert.strictEqual(nodes['page-home'].style.display,'none','Legacy #page-home must be hidden after runtime is ready');
   assert.strictEqual(nodes['page-home'].attrs['aria-hidden'],'true','Legacy Home must be inaccessible after runtime is ready');
 
