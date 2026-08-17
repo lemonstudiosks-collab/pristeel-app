@@ -1,7 +1,7 @@
 /* PRISTEEL bounded login transition
  * No MutationObserver and no endless intervals.
- * Holds the first-login handoff until the approved redesigned Home layers exist,
- * then applies them before exposing the workspace.
+ * Holds login and authenticated reload handoff until the ordered runtime is ready,
+ * lets transitional Home decorators finish behind the curtain, then exposes one base Home render.
  */
 (function(){
 'use strict';
@@ -11,7 +11,7 @@ window.__pstLoginTransitionV2=true;
   if(window.__pstProjectIdentityLockV1||document.querySelector('script[data-pst-project-identity-lock]'))return;
   var s=document.createElement('script');s.src='pristeel-project-identity-lock-v1.js?v=20260809-1';s.defer=true;s.setAttribute('data-pst-project-identity-lock','1');document.head.appendChild(s);
 })();
-var root=document.documentElement,state={active:false,started:0,timer:null,installTries:0};
+var root=document.documentElement,state={active:false,started:0,timer:null,installTries:0,sessionTries:0,settling:false};
 var style=document.createElement('style');style.id='pst-login-transition-v2-style';style.textContent=`
 html.pst-login-switching,html.pst-login-switching body{overflow:hidden!important;background:#F3F8FA!important}
 html.pst-login-switching #auth-gate,html.pst-login-switching #app-shell-root{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
@@ -20,19 +20,45 @@ html.pst-login-switching #auth-gate,html.pst-login-switching #app-shell-root{opa
 `;document.head.appendChild(style);
 function logo(){return '<svg viewBox="0 0 24 24"><path d="M12 1.8c.7 5.45 4.75 9.5 10.2 10.2-5.45.7-9.5 4.75-10.2 10.2C11.3 16.75 7.25 12.7 1.8 12 7.25 11.3 11.3 7.25 12 1.8Z"/></svg>';}
 function intendedVisible(el){return !!el&&!el.hidden&&!(el.style&&el.style.display==='none');}
-function ensure(){var el=document.getElementById('pst-login-transition-v2');if(el)return el;el=document.createElement('div');el.id='pst-login-transition-v2';el.innerHTML='<div class="pst-lt-card"><div class="pst-lt-mark">'+logo()+'</div><div class="pst-lt-name">PRISTEEL</div><div class="pst-lt-copy">Duke hapur workspace-in aktual…</div><div class="pst-lt-line"><i></i></div></div>';document.body.appendChild(el);return el;}
-function redesignedReady(){return !!window.PSTBusinessCommandCenterV1&&!!window.PSTHomeCommandCenterV2&&!!window.PSTHomeStabilityV2&&!!window.PSTHomeLiveFixV1;}
-function ready(){var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');return intendedVisible(app)&&!intendedVisible(gate)&&!!window.__pstWorkspaceArchitectureV1Loaded&&!!window.__pstProjectsModernV1&&redesignedReady();}
-function applyRedesignedHome(){
- try{if(window.PSTBusinessCommandCenterV1&&typeof window.PSTBusinessCommandCenterV1.decorateHome==='function')window.PSTBusinessCommandCenterV1.decorateHome();}catch(e){}
- try{if(window.PSTHomeCommandCenterV2&&typeof window.PSTHomeCommandCenterV2.decorate==='function')window.PSTHomeCommandCenterV2.decorate();}catch(e){}
- try{if(window.PSTHomeStabilityV2&&typeof window.PSTHomeStabilityV2.apply==='function')window.PSTHomeStabilityV2.apply(true);}catch(e){}
- try{if(window.PSTHomeLiveFixV1&&typeof window.PSTHomeLiveFixV1.apply==='function')window.PSTHomeLiveFixV1.apply();}catch(e){}
+function ensure(){var el=document.getElementById('pst-login-transition-v2');if(el)return el;el=document.createElement('div');el.id='pst-login-transition-v2';el.innerHTML='<div class="pst-lt-card"><div class="pst-lt-mark">'+logo()+'</div><div class="pst-lt-name">PRISTEEL</div><div class="pst-lt-copy">Duke përgatitur workspace-in final…</div><div class="pst-lt-line"><i></i></div></div>';document.body.appendChild(el);return el;}
+function runtimeReady(){var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');return intendedVisible(app)&&!intendedVisible(gate)&&!!window.__pstWorkspaceArchitectureV1Loaded&&!!window.__pstProjectsModernV1&&!!window.__pstModulesReady;}
+function renderBaseHome(){try{if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('home');return true;}if(typeof window.renderHome==='function'){window.renderHome();return true;}}catch(e){}return false;}
+function homeReady(){var page=document.getElementById('page-workspace-home');if(!page)return false;var btn=document.getElementById('pst-ws-home-refresh');if(btn&&btn.disabled)return false;var actions=document.getElementById('pst-ws-home-actions'),projects=document.getElementById('pst-ws-home-projects');if(!actions||!projects)return false;var text=(actions.textContent||'')+' '+(projects.textContent||'');return !/Duke ngarkuar|Duke rifreskuar/i.test(text);}
+function reveal(){if(!state.active)return;state.active=false;state.settling=false;clearTimeout(state.timer);root.classList.remove('pst-login-switching');var el=document.getElementById('pst-login-transition-v2');if(el){el.classList.add('leaving');setTimeout(function(){if(el.parentNode)el.remove();},220);}}
+function settleFinalHome(){
+  if(!state.active||state.settling)return;state.settling=true;
+  /* Business/Home command-center modules have bounded decoration timers up to 3s.
+   * Keep them behind the transition, then let Workspace Architecture own the final paint. */
+  state.timer=setTimeout(function(){
+    renderBaseHome();
+    var started=Date.now();
+    (function waitHome(){
+      if(!state.active)return;
+      if(homeReady()||Date.now()-started>2800){reveal();return;}
+      state.timer=setTimeout(waitHome,100);
+    })();
+  },3150);
 }
-function finish(){if(!state.active)return;applyRedesignedHome();setTimeout(applyRedesignedHome,120);state.active=false;clearTimeout(state.timer);root.classList.remove('pst-login-switching');var el=document.getElementById('pst-login-transition-v2');if(el){el.classList.add('leaving');setTimeout(function(){if(el.parentNode)el.remove();},220);}}
-function check(){if(!state.active)return;var age=Date.now()-state.started;if((age>650&&ready())||age>9000){finish();return;}state.timer=setTimeout(check,140);}
-function begin(){if(state.active)return;state.active=true;state.started=Date.now();root.classList.add('pst-login-switching');ensure();state.timer=setTimeout(check,180);}
-function install(){var form=document.getElementById('auth-form');if(form&&!form.__pstLoginTransitionV2){form.__pstLoginTransitionV2=true;form.addEventListener('submit',begin,true);return;}if(!form&&state.installTries++<40)setTimeout(install,100);}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
-window.PSTLoginTransition={begin:begin,finish:finish,state:state};
+function check(){
+  if(!state.active)return;
+  var age=Date.now()-state.started;
+  if(age>500&&runtimeReady()){settleFinalHome();return;}
+  if(age>15000){renderBaseHome();reveal();return;}
+  state.timer=setTimeout(check,140);
+}
+function begin(){if(state.active)return;state.active=true;state.settling=false;state.started=Date.now();root.classList.add('pst-login-switching');ensure();state.timer=setTimeout(check,180);}
+function install(){var form=document.getElementById('auth-form');if(form&&!form.__pstLoginTransitionV2){form.__pstLoginTransitionV2=true;form.addEventListener('submit',begin,true);}if(!form&&state.installTries++<40)setTimeout(install,100);}
+function detectExistingSession(){
+  if(state.active)return;
+  try{
+    if(typeof window.authGetSession==='function'){
+      var session=window.authGetSession();
+      if(session&&session.access_token){begin();return;}
+    }
+  }catch(e){}
+  if(state.sessionTries++<60)setTimeout(detectExistingSession,100);
+}
+function boot(){install();setTimeout(detectExistingSession,40);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.PSTLoginTransition={begin:begin,finish:reveal,state:state,renderBaseHome:renderBaseHome,homeReady:homeReady};
 })();
