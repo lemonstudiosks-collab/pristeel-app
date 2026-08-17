@@ -12,7 +12,7 @@ const {JSDOM}=require('jsdom');
  assert(source.includes('Number(e.match_confidence||0)<90'),'Suggested-project freshness must require high confidence');
  assert(source.includes('e.needs_review===true'),'Needs-review email relations must never refresh tasks');
  const dom=new JSDOM(`<!doctype html><html><body>
-  <div id="page-workspace-home" style="display:block">
+  <div id="page-workspace-home" class="active" style="display:block">
    <div id="pst-ws-home-actions">
     <div class="pst-ws-action" id="lost-roleff-action">Roleff stale</div>
     <div class="pst-ws-action" id="stale-wolff-action">Wolff stale</div>
@@ -82,6 +82,43 @@ const {JSDOM}=require('jsdom');
  assert.strictEqual(w.PSTHomeStabilityV2._test.active({status:'fituar'}),true,'Won project must remain active');
  assert.strictEqual(w.PSTHomeStabilityV2._test.lost({status:'humbur'}),true,'Lost status helper must identify humbur');
  assert.strictEqual(w.PSTHomeStabilityV2._test.lost({status:'realizuar'}),false,'Realized project must not be treated as a lost-project cleanup case');
+
+ /* Regression: a fresh client request must remain first even after another Home renderer replaces both lists. */
+ const opSource=fs.readFileSync('pristeel-home-operational-priority-v1.js','utf8');
+ assert(opSource.includes('new MutationObserver'),'Operational Home owner must watch direct list replacement');
+ assert(opSource.includes('disconnectObserver();'),'Operational reconciliation must suspend its own observer while writing');
+ const dukleyProject={id:'dukley',name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA',client:'ITALIAN STYLE',ref:null,status:'pritje',pipeline_stage:'client_offer'};
+ const dukleyTask={id:'dukley-task',project_id:'dukley',title:'Urgjent: Drafti PST-OFF-2026-08-024 gati — plotëso montazhin',detail:'Drafti është gati; plotëso montazhin dhe afatet.',due_date:localIsoDate(),priority:'e larte',status:'hapur',source:'email_request_auto',source_ref:'gmail-dukley',created_at:new Date().toISOString()};
+ const dukleyAnalysis={id:12,project_id:'dukley',created_at:new Date().toISOString(),analysis:{event_source_ref:'gmail-dukley',recommendation:{label:'Përfundo revizionin dhe montazhin',decision:'vepro_tani'},next_actions:[{text:'Plotëso çmimin e montimit.',status:'open',priority:'critical'},{text:'Përcakto planin dinamik.',status:'open',priority:'high'}]}};
+ const dukleyEmail={gmail_message_id:'gmail-dukley',gmail_thread_id:'thread-dukley',subject:'Dukley Seafront Restaurant',sent_at:new Date().toISOString(),from_name:'Aleksandar Cingelic',from_email:'aleksandar@example.test'};
+ w.supaFetch=async path=>{
+  if(path.startsWith('tasks?status=eq.hapur&source=eq.email_request_auto'))return [dukleyTask];
+  if(path.startsWith('projects?select=id,name,client,ref,status,pipeline_stage'))return [dukleyProject];
+  if(path.startsWith('project_analyses?'))return [dukleyAnalysis];
+  if(path.startsWith('project_emails?select=gmail_message_id'))return [dukleyEmail];
+  if(path.startsWith('dashboard_action_states?'))return [];
+  return [];
+ };
+ w.eval(opSource);
+ await w.PSTHomeOperationalPriorityV1.load(true);
+ let firstAction=w.document.querySelector('#pst-ws-home-actions>.pst-ws-action');
+ let firstProject=w.document.querySelector('#pst-ws-home-projects>.pst-ws-projectcard');
+ assert(firstAction&&firstAction.querySelector('.pst-ws-action-title').textContent===dukleyTask.title,'Fresh client request must be first on Home');
+ assert(firstAction.querySelector('.pst-ws-action-tag').textContent==='Vepro tani','Fresh client request must carry the operational action label');
+ assert(firstProject&&firstProject.querySelector('.pst-ws-projectcard-name').textContent===dukleyProject.name,'Client-request project must be first in Continue Work');
+ assert(firstProject.textContent.includes('Përfundo revizionin dhe montazhin'),'Project card must show the current analysis recommendation, not stale project age');
+
+ const actionsHost=w.document.getElementById('pst-ws-home-actions');
+ const projectsHost=w.document.getElementById('pst-ws-home-projects');
+ actionsHost.innerHTML='<div class="pst-ws-action"><div class="pst-ws-action-title">Renderer i vjetër</div></div>';
+ projectsHost.innerHTML='<div class="pst-ws-projectcard" data-project-id="other"><div class="pst-ws-projectcard-name">Projekt tjetër</div><div class="pst-ws-projectcard-next">Hapi tjetër: i vjetër</div></div>';
+ await new Promise(resolve=>w.setTimeout(resolve,180));
+ firstAction=w.document.querySelector('#pst-ws-home-actions>.pst-ws-action');
+ firstProject=w.document.querySelector('#pst-ws-home-projects>.pst-ws-projectcard');
+ assert(firstAction&&firstAction.querySelector('.pst-ws-action-title').textContent===dukleyTask.title,'Operational priority must recover after a later renderer replaces the action list');
+ assert(firstProject&&firstProject.querySelector('.pst-ws-projectcard-name').textContent===dukleyProject.name,'Operational project must recover after a later renderer replaces the project list');
+ assert(firstProject.textContent.includes('Përfundo revizionin dhe montazhin'),'Recovered project must keep the current next action');
+
  dom.window.close();
  console.log('Home stability v2 smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
