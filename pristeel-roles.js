@@ -234,7 +234,7 @@ if(document.readyState === 'loading'){
     return;
   }
   var g=document.createElement('script');
-  g.src='pristeel-home-runtime-owner-guard-v1.js?v=20260817-runtimeowner1';
+  g.src='pristeel-home-runtime-owner-guard-v1.js?v='+String(Date.now());
   g.defer=true;
   g.setAttribute('data-pst-home-runtime-owner-guard','1');
   g.onload=loadProjectEmailsModule;
