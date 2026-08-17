@@ -66,7 +66,16 @@ window.pstDiscoveryIgnore=async function(i){var c=current.candidates[i];if(!c)re
 window.pstDiscoveryOpenGmail=function(i){var c=current.candidates[i],u=c&&c.rows&&c.rows[c.rows.length-1]&&c.rows[c.rows.length-1].gmail_url;if(u)window.open(u,'PRISTEEL_GMAIL')};
 window.pstProjectDiscovery=discover;window.pstProjectDiscoveryOpen=function(){current=saved()||current;openModal()};
 
-function dashPanel(){var s=saved(),n=s&&s.candidates?s.candidates.length:0;return'<div class="ppd-dash" id="ppd-dash"><div class="ppd-dash-icon">✦</div><div class="ppd-dash-main"><div class="ppd-dash-title">Project Discovery <span class="ppd-chip ppd-count">'+n+'</span></div><div class="ppd-dash-sub" id="ppd-dash-sub">'+(s?'Auditi i fundit gjeti '+n+' projekte të mundshme.':'Analizon emailat e palidhur dhe zbulon projekte të humbura ose të paregjistruara.')+'</div></div><div class="ppd-dash-actions"><button class="ppd-btn" id="ppd-open" onclick="pstProjectDiscoveryOpen()">Shiko kandidatët</button><button class="ppd-btn primary" id="ppd-run" onclick="pstProjectDiscovery()">Zbulo projekte</button></div></div>'}
-function inject(){var dash=document.querySelector('.pst-dash')||document.getElementById('page-home');if(dash&&!document.getElementById('ppd-dash')){var h=document.createElement('div');h.innerHTML=dashPanel();var head=dash.querySelector('.pst-dash-head');if(head&&head.parentNode)head.parentNode.insertBefore(h.firstChild,head.nextSibling);else dash.insertBefore(h.firstChild,dash.firstChild)}var strip=document.getElementById('pga-strip');if(strip&&!document.getElementById('ppd-audit-btn')){var b=document.createElement('button');b.className='pga-btn';b.id='ppd-audit-btn';b.innerHTML='Projektet e zbuluara <span class="ppd-chip ppd-count">'+((saved()&&saved().candidates||[]).length)+'</span>';b.onclick=discover;var prog=strip.querySelector('.pga-progress');strip.insertBefore(b,prog||null)}return true}
-var obs=new MutationObserver(inject);obs.observe(document.documentElement,{childList:true,subtree:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(inject,900)});else setTimeout(inject,900);
+function injectAuditShortcut(){
+ var strip=document.getElementById('pga-strip');
+ if(strip&&!document.getElementById('ppd-audit-btn')){
+  var b=document.createElement('button');b.className='pga-btn';b.id='ppd-audit-btn';
+  b.innerHTML='Projektet e zbuluara <span class="ppd-chip ppd-count">'+((saved()&&saved().candidates||[]).length)+'</span>';
+  b.onclick=discover;var prog=strip.querySelector('.pga-progress');strip.insertBefore(b,prog||null);
+ }
+ return true;
+}
+function scheduleAuditShortcut(){[0,350,900,1800,3500,6000].forEach(function(ms){setTimeout(injectAuditShortcut,ms);});}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scheduleAuditShortcut,{once:true});else scheduleAuditShortcut();
+document.addEventListener('pst:modules-ready',scheduleAuditShortcut,{once:true});
 })();
