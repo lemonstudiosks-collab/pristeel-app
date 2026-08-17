@@ -8,12 +8,17 @@ const {JSDOM}=require('jsdom');
  const stabilitySource=fs.readFileSync('pristeel-home-stability-v2.js','utf8');
  const recoverySource=fs.readFileSync('pristeel-home-project-recovery-v3.js','utf8');
  const taskSource=fs.readFileSync('pristeel-task-source-actions-v1.js','utf8');
+ const releaseSource=fs.readFileSync('pristeel-workspace-release-fix-v3.js','utf8');
 
  assert(!canonicalSource.includes('updated_at.desc'),'Canonical Home must never query projects.updated_at');
  assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(canonicalSource),'Canonical Home must not win by polling or DOM reconciliation');
  assert(!taskSource.includes('pristeel-home-operational-priority-v1.js'),'Task-source decorator must not inject a hidden Home renderer');
  assert(bridgeSource.includes('window.__pstHomeStabilityV2=true'),'Official Home bridge must retire Stability writer before it loads');
  assert(bridgeSource.includes('window.__pstHomeProjectRecoveryV3=true'),'Official Home bridge must retire Recovery writer before it loads');
+ assert(/async function patchHomeProjects\(\)[\s\S]*renderCanonical/.test(releaseSource),'Workspace release compatibility must delegate Home refresh to canonical owner');
+ assert(!/host\.innerHTML=list\.length/.test(releaseSource),'Workspace release compatibility must never write canonical Home project cards');
+ assert(!/key==='home'\)setTimeout\(patchHomeProjects/.test(releaseSource),'Workspace release route must not schedule a competing Home writer');
+ assert(!/page-workspace-home[^\n]*setTimeout\(patchHomeProjects/.test(releaseSource),'Workspace release startup must not repaint Home projects');
 
  const dom=new JSDOM(`<!doctype html><html><head></head><body>
    <button class="pst-ws-navbtn active" data-key="home"></button>
@@ -54,7 +59,6 @@ const {JSDOM}=require('jsdom');
    return [];
  };
 
- /* Simulate the destructive Workspace Architecture owner that existed before canonical ownership. */
  w.pstWorkspaceGo=function(key){
    if(String(key)==='home'){
      w.document.getElementById('pst-ws-home-actions').innerHTML='<div class="pst-ws-action"><div class="pst-ws-action-title">Renderer i vjeter</div></div>';
@@ -63,7 +67,6 @@ const {JSDOM}=require('jsdom');
  };
  w.renderHome=function(){return w.pstWorkspaceGo('home');};
 
- /* Resolve the bridge's local canonical script synchronously in this test harness. */
  const nativeAppend=w.document.head.appendChild.bind(w.document.head);
  w.document.head.appendChild=function(node){
    const result=nativeAppend(node);
@@ -75,7 +78,6 @@ const {JSDOM}=require('jsdom');
  };
 
  w.eval(bridgeSource);
- /* These real legacy scripts are still in the production sequence. Their guards must make them inert. */
  w.eval(stabilitySource);
  w.eval(recoverySource);
  assert.strictEqual(w.PSTHomeStabilityV2,undefined,'Legacy Stability writer must not register');
@@ -93,7 +95,6 @@ const {JSDOM}=require('jsdom');
  assert(firstProject.textContent.includes('Përfundo revizionin dhe montazhin'),'Project next step must come from latest Project Intelligence analysis');
  assert.strictEqual(w.document.getElementById('page-workspace-home').dataset.pstHomeOwner,'canonical-v1','Home must expose one canonical owner');
 
- /* Regression for the exact production symptom: a later legacy renderHome call must route back to canonical, not wipe the shell. */
  await Promise.resolve(w.renderHome());
  await new Promise(r=>w.setTimeout(r,25));
  firstAction=w.document.querySelector('#pst-ws-home-actions>.pst-ws-action');
