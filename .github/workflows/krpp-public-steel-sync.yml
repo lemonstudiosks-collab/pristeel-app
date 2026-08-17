@@ -1,4 +1,4 @@
-name: KRPP public steel monitor
+name: KRPP public PRISTEEL monitor
 
 on:
   workflow_dispatch:
@@ -14,8 +14,11 @@ on:
     paths:
       - 'scripts/krpp-public-steel-sync.mjs'
       - 'scripts/krpp-public-steel-runner.mjs'
+      - 'scripts/krpp-public-capability-runner.mjs'
+      - 'scripts/pristeel-capability-profile.mjs'
       - 'tests/krpp-public-steel-sync-smoke.mjs'
       - 'tests/public-steel-boundary-regression.mjs'
+      - 'tests/pristeel-capability-profile-smoke.mjs'
       - '.github/workflows/krpp-public-steel-sync.yml'
   schedule:
     - cron: '27 */2 * * *'
@@ -24,6 +27,8 @@ on:
     paths:
       - 'scripts/krpp-public-steel-sync.mjs'
       - 'scripts/krpp-public-steel-runner.mjs'
+      - 'scripts/krpp-public-capability-runner.mjs'
+      - 'scripts/pristeel-capability-profile.mjs'
       - '.github/workflows/krpp-public-steel-sync.yml'
 
 permissions:
@@ -44,6 +49,7 @@ jobs:
       PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       KRPP_PUBLIC_MIN_SCORE: '35'
+      KRPP_PUBLIC_MAX_CANDIDATES: '240'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
 
     steps:
@@ -55,17 +61,20 @@ jobs:
         run: |
           node --check scripts/krpp-public-steel-sync.mjs
           node --check scripts/krpp-public-steel-runner.mjs
+          node --check scripts/pristeel-capability-profile.mjs
+          node --check scripts/krpp-public-capability-runner.mjs
       - name: Run parser and classifier smoke tests
         run: |
           node tests/krpp-public-steel-sync-smoke.mjs
           node tests/public-steel-boundary-regression.mjs
-      - name: Collect public KRPP steel tenders
-        run: node scripts/krpp-public-steel-runner.mjs
+          node tests/pristeel-capability-profile-smoke.mjs
+      - name: Collect public KRPP PRISTEEL opportunities
+        run: node scripts/krpp-public-capability-runner.mjs
       - name: Upload sanitized summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: krpp-public-steel-monitor
+          name: krpp-public-pristeel-monitor
           path: tmp/krpp-public-steel-sync.json
           if-no-files-found: ignore
           retention-days: 14
