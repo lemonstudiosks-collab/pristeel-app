@@ -1,12 +1,14 @@
 const fs=require('fs');
 const src=fs.readFileSync('pristeel-login-transition-v2.js','utf8');
 function must(re,msg){if(!re.test(src)){throw new Error(msg);}}
-must(/detectExistingSession\(\)/,'missing authenticated reload detector');
-must(/authGetSession/,'reload detector must use real session helper');
-must(/__pstModulesReady/,'transition must wait for ordered runtime');
-must(/setTimeout\(function\(\)\{[\s\S]*renderBaseHome\(\)[\s\S]*\},3150\)/,'final base Home render must happen after bounded decorators settle');
-must(/Date\.now\(\)-started>2800/,'base Home wait must be bounded');
-must(/age>15000/,'transition must have a hard failsafe');
-must(/pstWorkspaceGo\('home'\)/,'final paint must come from Workspace Architecture');
-if(/MutationObserver/.test(src)&&!/No MutationObserver/.test(src.split('\n')[1]||''))throw new Error('reload transition must not add MutationObserver');
+function mustNot(re,msg){if(re.test(src)){throw new Error(msg);}}
+must(/settleExistingSession\(\)/,'missing authenticated reload settlement');
+must(/authGetSession/,'reload settlement must use real session helper');
+must(/pst:modules-ready/,'existing session must settle after ordered runtime');
+must(/PSTHomeRuntimeOwnerGuardV2\|\|window\.PSTHomeRuntimeOwnerGuardV1/,'handoff must prefer canonical Home owner');
+must(/clearLegacyBlocker\(\)/,'legacy blocking transition must be actively removed');
+must(/pstWorkspaceGo\('home'\)/,'compatibility Home route is required');
+mustNot(/pst-login-switching[^\n]*add/,'transition must never add a blocking switching state');
+mustNot(/position:fixed;inset:0/,'transition must not create a full-screen overlay');
+mustNot(/MutationObserver/,'reload handoff must not add MutationObserver');
 console.log('home reload transition smoke: ok');
