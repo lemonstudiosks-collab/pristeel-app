@@ -96,8 +96,9 @@ function finish(kind){
   var shell=document.getElementById('pst-startup-shell');if(shell){shell.classList.add('pst-leaving');setTimeout(function(){if(shell.parentNode)shell.remove();},260);}
 }
 function settleApp(){
-  if(state.revealed)return;clearTimeout(state.quietTimer);
+  if(state.revealed||state.quietTimer)return;
   state.quietTimer=setTimeout(function(){
+    state.quietTimer=null;
     var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');
     if(app&&intendedVisible(app)&&(!gate||!intendedVisible(gate)))finish('app');else check();
   },180);
