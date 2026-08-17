@@ -65,4 +65,9 @@ const retired = [
 ];
 retired.forEach(file => assert(!matches.includes(file), `Retired overlapping stability module still loaded: ${file}`));
 
+assert(bootstrap.includes('timeoutMs=8000,maxAttempts=2'), 'Ordered bootstrap must bound a hung module and retry once');
+assert(bootstrap.includes('__pstBootstrapDiagnostics'), 'Ordered bootstrap must expose diagnostics for timeout/error recovery');
+assert(bootstrap.includes("el.remove()"), 'Timed-out module element must be removed before retry/continuation');
+
 console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules, including read-only Contacts provenance UI.`);
+require('./bootstrap-timeout-safety-smoke.js');
