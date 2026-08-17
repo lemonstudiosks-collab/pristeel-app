@@ -74,19 +74,19 @@ function polishLogin(){
   if(!card.querySelector('.pst-auth-head')){
     var children=card.children,title=children[0],sub=children[1];
     if(title&&sub){
-      title.className='pst-auth-brand';sub.className='pst-auth-sub';sub.textContent='Workspace i sigurt për ekipin PRISTEEL';
+      title.className='pst-auth-brand';sub.className='pst-auth-sub';if(sub.textContent!=='Workspace i sigurt për ekipin PRISTEEL')sub.textContent='Workspace i sigurt për ekipin PRISTEEL';
       var head=document.createElement('div');head.className='pst-auth-head';
       var mark=document.createElement('div');mark.className='pst-auth-mark';mark.innerHTML=logo();
       var words=document.createElement('div');card.insertBefore(head,title);head.appendChild(mark);head.appendChild(words);words.appendChild(title);words.appendChild(sub);
     }
   }
-  var button=form.querySelector('button[type="submit"]');if(button)button.textContent='Hyr në PRISTEEL';
+  var button=form.querySelector('button[type="submit"]');if(button&&button.textContent!=='Hyr në PRISTEEL')button.textContent='Hyr në PRISTEEL';
   if(!card.querySelector('.pst-auth-note')){var note=document.createElement('div');note.className='pst-auth-note';note.textContent='Qasje e mbrojtur · PRISTEEL Sh.p.k.';card.appendChild(note);}
   return true;
 }
 function sessionExists(){try{return !!localStorage.getItem('pristeel_session');}catch(e){return false;}}
 function intendedVisible(el){if(!el||el.hidden)return false;return !(el.style&&el.style.display==='none');}
-function setCopy(text){var e=document.getElementById('pst-startup-copy');if(e)e.textContent=text;}
+function setCopy(text){var e=document.getElementById('pst-startup-copy');if(e&&e.textContent!==text)e.textContent=text;}
 function finish(kind){
   if(state.revealed)return;state.revealed=true;
   clearTimeout(state.maxTimer);clearTimeout(state.quietTimer);clearInterval(state.poll);if(state.observer)state.observer.disconnect();
