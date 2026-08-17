@@ -16,6 +16,7 @@ const FIELDS=[
 const RAW_CPVS=new Set(['14622000','44171000','44172000','44330000','44334000']);
 const STRUCT_CPVS=new Set(['44212220','44212240','44212313','44212410','44212500','45223100','45223110','45223210']);
 const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
+const unique=arr=>[...new Set((arr||[]).filter(Boolean).map(text).filter(Boolean))];
 function ymd(date){return date.toISOString().slice(0,10).replace(/-/g,'');}
 function daysAgo(days){const d=new Date();d.setUTCDate(d.getUTCDate()-days);return d;}
 function firstScalar(value){
@@ -52,6 +53,7 @@ function noticeItems(json){for(const key of ['notices','results','content','item
 function cpvCodes(row){return listScalars(field(row,'classification-cpv')).map(v=>(v.match(/\b\d{8}\b/)||[])[0]).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);}
 function tedTitle(row){const value=field(row,'notice-title');if(typeof value==='object'&&!Array.isArray(value)){for(const key of ['eng','en','deu','de','fra','fr'])if(value[key])return firstScalar(value[key]);}return firstScalar(value);}
 function winnerValues(row,name){return listScalars(field(row,name));}
+function winnerNames(w){return unique([...(Array.isArray(w?.names)?w.names:[]),w?.name]);}
 function winnerData(row){
   const names=winnerValues(row,'winner-name');
   const emails=winnerValues(row,'winner-email');
@@ -108,19 +110,51 @@ async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',bod
   const response=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const raw=await response.text();if(!response.ok)throw new Error(`${method} ${path} failed: HTTP ${response.status} ${raw.slice(0,700)}`);return raw?JSON.parse(raw):[];
 }
-export function preserveContactEnrichment(rows,existingRows){
+function mergeWinnerArrays(current,old){
+  current.emails=unique([...(Array.isArray(current.emails)?current.emails:[]),...(Array.isArray(old.emails)?old.emails:[])]);
+  current.websites=unique([...(Array.isArray(current.websites)?current.websites:[]),...(Array.isArray(old.websites)?old.websites:[])]);
+  current.contacts=unique([...(Array.isArray(current.contacts)?current.contacts:[]),...(Array.isArray(old.contacts)?old.contacts:[])]);
+}
+export function preserveWinnerIntelligence(rows,existingRows){
   const byKey=new Map((Array.isArray(existingRows)?existingRows:[]).map(r=>[String(r?.source_key||''),r]));
   for(const row of Array.isArray(rows)?rows:[]){
     const old=byKey.get(String(row?.source_key||''));
-    const enrichment=old?.payload?.winner?.contact_enrichment;
-    if(enrichment&&row?.payload?.winner)row.payload.winner.contact_enrichment=enrichment;
+    const current=row?.payload?.winner,oldWinner=old?.payload?.winner;
+    if(!current||!oldWinner)continue;
+    mergeWinnerArrays(current,oldWinner);
+    if(oldWinner.contact_enrichment)current.contact_enrichment=oldWinner.contact_enrichment;
+    if(oldWinner.history_contact_seed)current.history_contact_seed=oldWinner.history_contact_seed;
+    if(oldWinner.contact_ranking)current.contact_ranking=oldWinner.contact_ranking;
+    const oldOrganizations=Array.isArray(oldWinner?.contact_enrichment?.organizations)?oldWinner.contact_enrichment.organizations:[];
+    const multiSafe=winnerNames(oldWinner).length>1||oldOrganizations.length>1;
+    if(oldWinner.contact_enrichment&&multiSafe){
+      current.email=null;current.website=null;current.contact_point=null;
+    }else if(oldWinner.contact_enrichment){
+      if(!current.email&&oldWinner.email)current.email=oldWinner.email;
+      if(!current.website&&oldWinner.website)current.website=oldWinner.website;
+      if(!current.contact_point&&oldWinner.contact_point)current.contact_point=oldWinner.contact_point;
+    }
   }
   return rows;
 }
-async function preserveExistingContactEnrichment(access,rows){
+export const preserveContactEnrichment=preserveWinnerIntelligence;
+export function existingWinnerIntelligencePaths(rows,chunkSize=40){
+  const keys=unique((Array.isArray(rows)?rows:[]).map(r=>r?.source_key));
+  const size=Math.max(1,Number(chunkSize)||40),paths=[];
+  for(let i=0;i<keys.length;i+=size){
+    const chunk=keys.slice(i,i+size).map(encodeURIComponent).join(',');
+    paths.push(`kek_tender_watch?select=source_key,payload&source_key=in.(${chunk})&limit=${Math.min(size,keys.length-i)}`);
+  }
+  return paths;
+}
+async function preserveExistingWinnerIntelligence(access,rows){
   if(!rows.length)return rows;
-  const existing=await rest({...access,path:'kek_tender_watch?select=source_key,payload&limit=2000'});
-  return preserveContactEnrichment(rows,existing);
+  const existing=[];
+  for(const path of existingWinnerIntelligencePaths(rows)){
+    const part=await rest({...access,path});
+    if(Array.isArray(part))existing.push(...part);
+  }
+  return preserveWinnerIntelligence(rows,existing);
 }
 async function upsertRows(access,rows){if(!rows.length)return;await rest({...access,path:'kek_tender_watch?on_conflict=source_key',method:'POST',body:rows,prefer:'resolution=merge-duplicates,return=minimal'});}
 async function writeSummary(summary){await mkdir('tmp',{recursive:true});await writeFile('tmp/ted-award-winner-sync.json',JSON.stringify(summary,null,2));}
@@ -135,7 +169,7 @@ export async function runTedAwardWinnerSync({mode=process.env.SYNC_MODE||'previe
   if(mode==='apply'&&rows.length){
     const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
     authMode=access.authMode;
-    await preserveExistingContactEnrichment(access,rows);
+    await preserveExistingWinnerIntelligence(access,rows);
     await upsertRows(access,rows);
   }
   const winnersFound=rows.filter(r=>r.payload?.winner?.name).length;
