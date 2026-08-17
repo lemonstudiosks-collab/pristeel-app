@@ -1,1 +1,13 @@
-const fs=require('fs');const assert=require('assert');const s=fs.readFileSync('pristeel-login-transition-v2.js','utf8');assert(s.includes('PSTBusinessCommandCenterV1'),'login transition must wait for Home universal-search layer');assert(s.includes('PSTHomeCommandCenterV2'),'login transition must wait for redesigned Home command center');assert(s.includes('PSTHomeStabilityV2'),'login transition must wait for Home stability layer');assert(s.includes('PSTHomeLiveFixV1'),'login transition must wait for approved Home live layer');assert(/function\s+applyRedesignedHome\(\)[\s\S]*PSTBusinessCommandCenterV1[\s\S]*decorateHome/.test(s),'redesigned Home apply helper must restore universal search before tabs');assert(/function\s+applyRedesignedHome\(\)[\s\S]*PSTHomeCommandCenterV2[\s\S]*decorate/.test(s),'redesigned Home apply helper must restore view tabs');assert(/function\s+applyRedesignedHome\(\)[\s\S]*PSTHomeStabilityV2[\s\S]*\.apply/.test(s),'redesigned Home apply helper must invoke Home stability');assert(/function\s+finish\(\)[\s\S]*applyRedesignedHome\(\)/.test(s),'finish must apply redesigned Home after first login');console.log('Post-login Home readiness smoke test passed.');
+const fs=require('fs');const assert=require('assert');
+const s=fs.readFileSync('pristeel-login-transition-v2.js','utf8');
+assert(s.includes('authGetSession'),'transition must confirm authenticated reloads with the real session helper');
+assert(s.includes('__pstModulesReady'),'transition must wait for the complete ordered runtime');
+assert(s.includes('__pstWorkspaceArchitectureV1Loaded'),'transition must wait for Workspace Architecture');
+assert(s.includes('__pstProjectsModernV1'),'transition must retain modern-project readiness');
+assert(/function\s+renderBaseHome\(\)[\s\S]*pstWorkspaceGo\('home'\)/.test(s),'final Home must be rendered by Workspace Architecture');
+assert(/function\s+settleFinalHome\(\)[\s\S]*3150/.test(s),'bounded transitional decorators must settle behind the curtain');
+assert(/function\s+settleFinalHome\(\)[\s\S]*renderBaseHome\(\)/.test(s),'settle step must replace transitional Home with one final base Home render');
+assert(/function\s+homeReady\(\)/.test(s),'transition must wait until final Home data render is ready');
+assert(!/applyRedesignedHome/.test(s),'transition must not re-apply competing Home decorators at reveal');
+assert(/age>15000/.test(s),'transition must have a hard failsafe');
+console.log('Post-login Home readiness smoke test passed.');
