@@ -22,6 +22,8 @@ on:
       - 'tests/ted-winner-contact-history-reuse-smoke.mjs'
       - 'scripts/ted-winner-contact-enrichment.mjs'
       - 'tests/ted-winner-contact-enrichment-smoke.mjs'
+      - 'scripts/ted-winner-contact-ranking.mjs'
+      - 'tests/ted-winner-contact-ranking-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
       - 'tests/tender-business-flow-smoke.js'
       - 'pristeel-tender-winner-contacts-v1.js'
@@ -41,6 +43,8 @@ on:
       - 'tests/ted-winner-contact-history-reuse-smoke.mjs'
       - 'scripts/ted-winner-contact-enrichment.mjs'
       - 'tests/ted-winner-contact-enrichment-smoke.mjs'
+      - 'scripts/ted-winner-contact-ranking.mjs'
+      - 'tests/ted-winner-contact-ranking-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
       - 'tests/tender-business-flow-smoke.js'
       - 'pristeel-tender-winner-contacts-v1.js'
@@ -92,6 +96,7 @@ jobs:
           node --check scripts/ted-award-winner-sync.mjs
           node --check scripts/ted-winner-contact-history-reuse.mjs
           node --check scripts/ted-winner-contact-enrichment.mjs
+          node --check scripts/ted-winner-contact-ranking.mjs
           node --check pristeel-tender-business-flow-v1.js
           node --check pristeel-tender-winner-contacts-v1.js
 
@@ -106,6 +111,9 @@ jobs:
 
       - name: Run TED winner contact enrichment smoke
         run: node tests/ted-winner-contact-enrichment-smoke.mjs
+
+      - name: Run TED winner contact ranking smoke
+        run: node tests/ted-winner-contact-ranking-smoke.mjs
 
       - name: Run tender business flow smoke
         run: node tests/tender-business-flow-smoke.js
@@ -127,6 +135,10 @@ jobs:
         if: github.event_name != 'pull_request'
         run: node scripts/ted-winner-contact-enrichment.mjs
 
+      - name: Rank winner contacts for procurement outreach
+        if: github.event_name != 'pull_request'
+        run: node scripts/ted-winner-contact-ranking.mjs
+
       - name: Upload sanitized summaries
         if: always()
         uses: actions/upload-artifact@v4
@@ -137,5 +149,6 @@ jobs:
             tmp/ted-award-winner-sync.json
             tmp/ted-winner-contact-history-reuse.json
             tmp/ted-winner-contact-enrichment.json
+            tmp/ted-winner-contact-ranking.json
           if-no-files-found: ignore
           retention-days: 14
