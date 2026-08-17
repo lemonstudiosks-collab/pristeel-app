@@ -4,14 +4,12 @@ import { classifyKrppOpportunity, prepareRows, selectCandidates } from '../scrip
 
 function score(title,extra={}){return classifyKrppOpportunity({title,...extra});}
 
-// Existing direct steel/raw-material matches stay strong.
 for(const title of ['Furnizim me profile IPE 200','Furnizim me profile HEB 300','Furnizim me llamarinë të çelikut','Furnizim me B500C armaturë']){
   const r=score(title);
   assert.ok(r.relevance_score>=65,`direct capability must be strong: ${title}`);
   assert.ok(['raw_material','steel_structure'].includes(r.category));
 }
 
-// The important expansion: no word steel/hekur/metal is required when the business context itself points to a PRISTEEL package.
 const hidden=[
   ['Rehabilitimi i nënstacionit 110 kV dhe zëvendësimi i portaleve','energy_grid'],
   ['Riparimi i transportuesit të thëngjillit dhe platformave të mirëmbajtjes','industrial_steelwork'],
@@ -27,31 +25,29 @@ for(const [title,family] of hidden){
   assert.ok(r.capability_matches.some(x=>x.key===family),`expected ${family}: ${title}`);
 }
 
-// Generic civil construction and irrelevant finished goods must not become noise.
 for(const title of [
   'Ndërtimi i objektit administrativ',
   'Furnizim me printera dhe laptopë',
   'Furnizim me instrumente kirurgjikale prej çeliku',
   'Furnizim me dollapa metalikë për zyre',
-  'Siguracion i detyrueshëm TPL'
+  'Siguracion i detyrueshëm TPL',
+  'Furnizim me licencë për qasje institucionale në platformën për detektimin e plagjiaturës, Sistemi ANTIPLAGJIATUR',
+  'Furnizim me licenca të avancuara të platformave të Inteligjencës Artificiale për nevojat e SIMS'
 ]){
   assert.ok(score(title).relevance_score<35,`false positive must stay below review threshold: ${title}`);
 }
 
-// A broad FPP by itself is still insufficient.
+assert.ok(score('Ndërtimi i sheshit prej Urës se Zallit deri te Ura e Hajdaragëve ne Komunën e Pejës',{fpp:'45000000-7',contract_type:'Punë'}).relevance_score<35,'bridge name used only as location must not create a PRISTEEL review');
 assert.ok(score('Furnizim me pajisje zyre',{fpp:'27000000-5'}).relevance_score<35);
 
-// Direct structural evidence remains promotable as a strong match.
 const directStructure=score('Fabrikim dhe montim i platformave metalike me grating',{fpp:'45223100-7',contract_type:'Punë'});
 assert.equal(directStructure.category,'steel_structure');
 assert.equal(directStructure.capability_fit,'strong');
 assert.equal(directStructure.capability_review_required,false);
 
-// Candidate hints deliberately include non-steel business context.
 assert.ok(capabilityCandidateHint('Rehabilitimi i nënstacionit 110 kV'));
 assert.ok(capabilityCandidateHint('Riparimi i conveyor-it kryesor'));
 
-// Full scan of newest publication dates must include even a title with no capability keyword.
 const candidates=selectCandidates([
   {detail_id:'1',title:'Shërbime të përgjithshme',notice_type:'B05',published_date:'2026-08-17'},
   {detail_id:'2',title:'Rehabilitimi i nënstacionit 110 kV',notice_type:'B05',published_date:'2026-08-16'},
