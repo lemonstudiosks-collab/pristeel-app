@@ -1,6 +1,6 @@
 /* PRISTEEL startup guard v2
- * Shows a branded shell immediately, before BODY is parsed.
- * Reveals only the modern login or the final workspace.
+ * Shows a branded shell immediately, before the ordered runtime starts.
+ * Reveals only the modern login or a visually stabilized final workspace.
  */
 (function(){
 'use strict';
@@ -8,7 +8,7 @@ if(window.__pstStartupGuardV2)return;
 window.__pstStartupGuardV2=true;
 
 var root=document.documentElement;
-var state={dom:false,loaded:false,modules:false,revealed:false,started:Date.now(),quietTimer:null,maxTimer:null,observer:null,poll:null};
+var state={dom:false,loaded:false,modules:false,visual:false,revealed:false,started:Date.now(),quietTimer:null,maxTimer:null,observer:null,poll:null};
 root.classList.add('pst-booting');
 
 var style=document.createElement('style');
@@ -21,6 +21,7 @@ style.textContent=`
 }
 html.pst-booting,html.pst-booting body{min-height:100%;background:#F3F8FA!important;overflow:hidden!important}
 html.pst-booting #app-shell-root,html.pst-booting #auth-gate{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+html.pst-booting #app-shell-root *,html.pst-booting #auth-gate *{animation:none!important;transition:none!important}
 #pst-startup-shell{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 72% 18%,rgba(103,168,192,.14),transparent 33%),linear-gradient(145deg,#F8FBFC 0%,#EEF6F8 100%);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#20282C;opacity:1;transition:opacity .22s ease,visibility .22s ease}
 #pst-startup-shell.pst-leaving{opacity:0;visibility:hidden;pointer-events:none}
 .pst-startup-card{display:flex;flex-direction:column;align-items:center;gap:13px;text-align:center;transform:translateY(-2vh)}
@@ -73,33 +74,34 @@ function polishLogin(){
   if(!card.querySelector('.pst-auth-head')){
     var children=card.children,title=children[0],sub=children[1];
     if(title&&sub){
-      title.className='pst-auth-brand';sub.className='pst-auth-sub';sub.textContent='Workspace i sigurt për ekipin PRISTEEL';
+      title.className='pst-auth-brand';sub.className='pst-auth-sub';if(sub.textContent!=='Workspace i sigurt për ekipin PRISTEEL')sub.textContent='Workspace i sigurt për ekipin PRISTEEL';
       var head=document.createElement('div');head.className='pst-auth-head';
       var mark=document.createElement('div');mark.className='pst-auth-mark';mark.innerHTML=logo();
       var words=document.createElement('div');card.insertBefore(head,title);head.appendChild(mark);head.appendChild(words);words.appendChild(title);words.appendChild(sub);
     }
   }
-  var button=form.querySelector('button[type="submit"]');if(button)button.textContent='Hyr në PRISTEEL';
+  var button=form.querySelector('button[type="submit"]');if(button&&button.textContent!=='Hyr në PRISTEEL')button.textContent='Hyr në PRISTEEL';
   if(!card.querySelector('.pst-auth-note')){var note=document.createElement('div');note.className='pst-auth-note';note.textContent='Qasje e mbrojtur · PRISTEEL Sh.p.k.';card.appendChild(note);}
   return true;
 }
 function sessionExists(){try{return !!localStorage.getItem('pristeel_session');}catch(e){return false;}}
-/* Read the application's intended state. Do not inspect visibility, because the guard itself hides it. */
 function intendedVisible(el){if(!el||el.hidden)return false;return !(el.style&&el.style.display==='none');}
-function setCopy(text){var e=document.getElementById('pst-startup-copy');if(e)e.textContent=text;}
+function setCopy(text){var e=document.getElementById('pst-startup-copy');if(e&&e.textContent!==text)e.textContent=text;}
 function finish(kind){
   if(state.revealed)return;state.revealed=true;
-  clearTimeout(state.maxTimer);clearTimeout(state.quietTimer);clearInterval(state.poll);if(state.observer)state.observer.disconnect();
+  clearTimeout(state.maxTimer);clearTimeout(state.quietTimer);clearInterval(state.poll);
   polishLogin();
   root.classList.remove('pst-booting');root.classList.add(kind==='auth'?'pst-auth-ready':'pst-app-ready');
+  var preload=document.getElementById('pst-startup-preload-css');if(preload)preload.remove();
   var shell=document.getElementById('pst-startup-shell');if(shell){shell.classList.add('pst-leaving');setTimeout(function(){if(shell.parentNode)shell.remove();},260);}
 }
 function settleApp(){
-  if(state.revealed)return;clearTimeout(state.quietTimer);
+  if(state.revealed||state.quietTimer)return;
   state.quietTimer=setTimeout(function(){
+    state.quietTimer=null;
     var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');
     if(app&&intendedVisible(app)&&(!gate||!intendedVisible(gate)))finish('app');else check();
-  },300);
+  },180);
 }
 function check(){
   if(state.revealed)return;
@@ -111,25 +113,24 @@ function check(){
     setCopy('Duke verifikuar sesionin…');
   }
   if(appOn&&!gateOn){
-    if(state.modules||state.loaded||Date.now()-state.started>6500){settleApp();return;}
-    setCopy('Duke finalizuar workspace-in…');
+    if(state.visual){settleApp();return;}
+    setCopy(state.modules?'Duke stabilizuar pamjen finale…':'Duke finalizuar workspace-in…');
   }
 }
-function observe(){
-  if(!document.body||state.observer)return;
-  state.observer=new MutationObserver(check);
-  state.observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style','class','hidden']});
-}
-function domReady(){state.dom=true;ensureShell();polishLogin();observe();check();}
-function modulesReady(){state.modules=true;setCopy('Duke finalizuar workspace-in…');check();}
+function domReady(){state.dom=true;ensureShell();polishLogin();check();}
+function modulesReady(){state.modules=true;setCopy('Duke stabilizuar pamjen finale…');check();}
+function visualReady(){state.visual=true;setCopy('Gati…');check();}
 
-window.PSTStartupGuard={modulesReady:modulesReady,reveal:check,state:state};
+window.PSTStartupGuard={modulesReady:modulesReady,visualReady:visualReady,reveal:check,state:state};
 document.addEventListener('pst:modules-ready',modulesReady);
+document.addEventListener('pst:visual-ready',visualReady);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',domReady,{once:true});else domReady();
 window.addEventListener('load',function(){state.loaded=true;check();});
 state.poll=setInterval(check,120);
 state.maxTimer=setTimeout(function(){
   if(state.revealed)return;
+  var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');
+  if(state.modules&&app&&intendedVisible(app)&&(!gate||!intendedVisible(gate))){state.visual=true;settleApp();return;}
   check();if(state.revealed)return;
   var shell=document.getElementById('pst-startup-shell');if(shell)shell.classList.add('pst-startup-stalled');
   setCopy('Ngarkimi po zgjat më shumë se zakonisht. Rifresko faqen.');

@@ -1,5 +1,5 @@
 /* PRISTEEL redesign finalizer v1
- * Preview revision: 20260812-readability1.
+ * Preview revision: 20260817-startup-stability1.
  * Re-applies the read-only redesign after legacy workspace renders.
  * Bounded timeouts only. No polling, observers, writes, auth or project-open overrides.
  */
@@ -47,7 +47,8 @@ function apply(){
     if(P&&projectPage&&projectPage.style.display!=='none'&&typeof P.load==='function')P.load(window.__pstCurrentProjectId||window._curProjId||'',false);
   }catch(e){console.warn('PRISTEEL finalizer project:',e);}
 }
-function schedule(){[0,80,220,500,1000,1800,3200,5500,8500].forEach(function(ms){setTimeout(apply,ms);});}
+/* Startup decoration is deliberately short. Later repairs are event-driven, not clock-driven. */
+function schedule(){[0,80,220,450].forEach(function(ms){setTimeout(apply,ms);});}
 
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 document.addEventListener('DOMContentLoaded',schedule,{once:true});

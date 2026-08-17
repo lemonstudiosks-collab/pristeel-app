@@ -50,8 +50,11 @@ async function appCase(){
   w.eval(source);
   w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
   w.PSTStartupGuard.modulesReady();
-  await wait(420);
-  assert(w.document.documentElement.classList.contains('pst-app-ready'), 'Current app was not revealed');
+  await wait(260);
+  assert(!w.document.documentElement.classList.contains('pst-app-ready'), 'Modules-ready alone must not expose intermediate workspace');
+  w.PSTStartupGuard.visualReady();
+  await wait(260);
+  assert(w.document.documentElement.classList.contains('pst-app-ready'), 'Current app was not revealed after visual-ready');
   assert(!w.document.documentElement.classList.contains('pst-booting'), 'Boot class remained on app');
   assert.strictEqual(w.getComputedStyle(w.document.getElementById('app-shell-root')).visibility, 'visible');
   dom.window.close();
