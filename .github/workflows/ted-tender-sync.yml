@@ -22,6 +22,8 @@ on:
       - 'tests/ted-winner-contact-enrichment-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
       - 'tests/tender-business-flow-smoke.js'
+      - 'pristeel-tender-winner-contacts-v1.js'
+      - 'tests/tender-winner-contacts-smoke.js'
       - 'pristeel-roles.js'
       - '.github/workflows/ted-tender-sync.yml'
   schedule:
@@ -37,6 +39,8 @@ on:
       - 'tests/ted-winner-contact-enrichment-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
       - 'tests/tender-business-flow-smoke.js'
+      - 'pristeel-tender-winner-contacts-v1.js'
+      - 'tests/tender-winner-contacts-smoke.js'
       - 'pristeel-roles.js'
       - '.github/workflows/ted-tender-sync.yml'
 
@@ -83,6 +87,7 @@ jobs:
           node --check scripts/ted-award-winner-sync.mjs
           node --check scripts/ted-winner-contact-enrichment.mjs
           node --check pristeel-tender-business-flow-v1.js
+          node --check pristeel-tender-winner-contacts-v1.js
 
       - name: Run TED open tender smoke
         run: node tests/ted-tender-sync-smoke.mjs
@@ -95,6 +100,9 @@ jobs:
 
       - name: Run tender business flow smoke
         run: node tests/tender-business-flow-smoke.js
+
+      - name: Run TED winner contacts UI smoke
+        run: node tests/tender-winner-contacts-smoke.js
 
       - name: Collect open TED steel opportunities
         run: node scripts/ted-tender-sync.mjs
