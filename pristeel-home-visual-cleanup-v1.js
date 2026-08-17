@@ -1,11 +1,13 @@
 /* PRISTEEL Home visual cleanup v1
  * Presentation-only cleanup for Home and the modern Workspace shell.
+ * Coordinates the first stable visual reveal after current read-only Home layers settle.
  * No data writes, auth changes, routing overrides, polling or observers.
  */
 (function(){
 'use strict';
 if(window.__pstHomeVisualCleanupV1)return;
 window.__pstHomeVisualCleanupV1=true;
+var settlePromise=null,visualSignaled=false;
 
 function css(){
   if(document.getElementById('pst-home-visual-cleanup-v1-css'))return;
@@ -82,21 +84,40 @@ body.pst-ui-v2:has(#page-contacts.active) .content{padding-top:14px!important}
   document.head.appendChild(s);
 }
 function apply(){css();return true;}
-function revealStableHome(){
-  apply();
-  try{var H=window.PSTHomeCommandCenterV2;if(H&&typeof H.decorate==='function')H.decorate(false);}catch(e){}
-  try{var S=window.PSTHomeStabilityV2;if(S&&typeof S.enforce==='function')S.enforce();}catch(e){}
-  try{var R=window.PSTRedesignFinalizerV1;if(R&&typeof R.apply==='function')R.apply();}catch(e){}
+function safePromise(fn){try{return Promise.resolve(fn());}catch(e){return Promise.resolve(false);}}
+function signalVisualReady(){
+  if(visualSignaled)return;visualSignaled=true;
   if(window.__pstRuntimeRevealFallback){clearTimeout(window.__pstRuntimeRevealFallback);window.__pstRuntimeRevealFallback=null;}
-  var reveal=function(){document.documentElement.classList.add('pst-runtime-ready');};
+  var reveal=function(){
+    document.documentElement.classList.add('pst-runtime-ready');
+    try{document.dispatchEvent(new CustomEvent('pst:visual-ready'));}catch(e){}
+  };
   if(typeof requestAnimationFrame==='function')requestAnimationFrame(function(){requestAnimationFrame(reveal);});
   else setTimeout(reveal,0);
 }
+function revealStableHome(){
+  if(settlePromise)return settlePromise;
+  apply();
+  settlePromise=Promise.resolve().then(function(){
+    var H=window.PSTHomeCommandCenterV2;if(H&&typeof H.decorate==='function')H.decorate(false);
+    var R=window.PSTHomeProjectRecoveryV3;return R&&typeof R.recover==='function'?safePromise(function(){return R.recover(true);}):true;
+  }).then(function(){
+    var S=window.PSTHomeStabilityV2;return S&&typeof S.apply==='function'?safePromise(function(){return S.apply(false);}):true;
+  }).then(function(){
+    var L=window.PSTHomeLiveFixV1;return L&&typeof L.apply==='function'?safePromise(function(){return L.apply();}):true;
+  }).then(function(){
+    try{var S=window.PSTHomeStabilityV2;if(S&&typeof S.enforce==='function')S.enforce();}catch(e){}
+    try{var L=window.PSTHomeLiveFixV1;if(L&&typeof L.enforceLimits==='function')L.enforceLimits();}catch(e){}
+    try{var R=window.PSTRedesignFinalizerV1;if(R&&typeof R.apply==='function')R.apply();}catch(e){}
+    apply();signalVisualReady();return true;
+  }).catch(function(){apply();signalVisualReady();return false;});
+  return settlePromise;
+}
 function schedule(){apply();}
-function scheduleFirstPaint(){setTimeout(revealStableHome,900);}
+function scheduleFirstPaint(){setTimeout(revealStableHome,80);}
 css();
 document.addEventListener('pst:modules-ready',function(){schedule();scheduleFirstPaint();},{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
 if(window.__pstModulesReady)scheduleFirstPaint();
-window.PSTHomeVisualCleanupV1={apply:apply,schedule:schedule,revealStableHome:revealStableHome};
+window.PSTHomeVisualCleanupV1={apply:apply,schedule:schedule,revealStableHome:revealStableHome,whenReady:function(){return settlePromise||revealStableHome();}};
 })();
