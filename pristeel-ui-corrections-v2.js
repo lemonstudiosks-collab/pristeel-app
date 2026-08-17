@@ -20,6 +20,20 @@ function css(){
 .pst-position-primary{background:linear-gradient(135deg,#67A8C0,#3F7F98)!important;color:#fff!important;border-color:transparent!important;font-weight:760!important;box-shadow:0 5px 14px rgba(63,127,152,.16)!important}
 .pst-position-primary:hover{background:linear-gradient(135deg,#5F9FB7,#35748D)!important;color:#fff!important}
 
+/* Topbar i projektit: një ritëm i vetëm për badge, mot dhe veprimet */
+.topbar>.flex.gap-8.items-center{align-items:center!important;gap:10px!important;margin:0!important}
+.topbar>.flex.gap-8.items-center>#wx-mini{height:38px!important;min-height:38px!important;box-sizing:border-box!important;margin:0!important;padding:0 12px!important;border-radius:10px!important;gap:7px!important;line-height:1!important;vertical-align:middle!important}
+.topbar>.flex.gap-8.items-center>#wx-mini #wx-icon{width:20px!important;height:20px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 20px!important;line-height:0!important}
+.topbar>.flex.gap-8.items-center>#wx-mini #wx-icon svg{display:block!important;width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
+.topbar>.flex.gap-8.items-center>#wx-mini #wx-temp{font-size:13px!important;font-weight:700!important;line-height:1!important}
+.topbar>.flex.gap-8.items-center>#wx-mini #wx-desc{font-size:12px!important;line-height:1!important}
+.topbar>.flex.gap-8.items-center>.badge{height:38px!important;min-height:38px!important;box-sizing:border-box!important;padding:0 14px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;margin:0!important}
+.topbar>.flex.gap-8.items-center>button{height:38px!important;min-height:38px!important;box-sizing:border-box!important;padding:0 14px!important;margin:0!important;border-radius:10px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;font-size:12px!important;font-weight:650!important;line-height:1!important;letter-spacing:.15px!important;white-space:nowrap!important;vertical-align:middle!important;transform:none!important}
+.topbar>.flex.gap-8.items-center>button:hover{transform:none!important}
+.topbar>.flex.gap-8.items-center>button .pst-topbar-icon,.topbar>.flex.gap-8.items-center>button>svg{display:block!important;width:17px!important;height:17px!important;min-width:17px!important;max-width:17px!important;min-height:17px!important;max-height:17px!important;flex:0 0 17px!important;fill:none!important;stroke:currentColor!important;stroke-width:2!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.topbar>.flex.gap-8.items-center>#pst-loss-top{border-width:1px!important}
+.topbar>.flex.gap-8.items-center>#ex-topbtn{background:#fff!important}
+
 /* Qendra e emailave: kartat janë kontrolle reale, jo dekor */
 .pec-kpi.pst-kpi-action,.pga-stat.pst-kpi-action{cursor:pointer!important;transition:border-color .14s ease,box-shadow .14s ease,transform .14s ease,background .14s ease}
 .pec-kpi.pst-kpi-action:hover,.pec-kpi.pst-kpi-action:focus-visible{border-color:#8FBCCC!important;background:#F3FAFC!important;box-shadow:0 7px 20px rgba(57,112,134,.09)!important;transform:translateY(-1px)}
@@ -39,9 +53,31 @@ function css(){
 .pst-pi-flow{gap:5px!important;padding:12px 4px 7px!important}.pst-pi-step{font-size:9.5px!important;line-height:1.35!important;color:#68777E!important;min-width:96px!important}.pst-pi-step i{width:29px!important;height:29px!important;font-size:9.5px!important;margin-bottom:7px!important}.pst-pi-step.on{font-weight:780!important;color:#3F7F98!important}
 .pst-pi-stat span{font-size:9.5px!important}.pst-pi-stat b{font-size:18px!important}.pst-pi-contactmain b{font-size:11.5px!important}.pst-pi-contactmain div{font-size:9.5px!important}
 .pst-ws-stage-label{font-size:9.5px!important;line-height:1.35!important}.pst-ws-stage-dot{width:26px!important;height:26px!important;font-size:9px!important}.pst-ws-stage:after{top:12px!important}
-@media(max-width:760px){.pst-offer-generate-compact{margin-left:0!important;min-width:160px!important}.pst-pi-step{min-width:105px!important}}
+@media(max-width:760px){.pst-offer-generate-compact{margin-left:0!important;min-width:160px!important}.pst-pi-step{min-width:105px!important}.topbar>.flex.gap-8.items-center{gap:7px!important}.topbar>.flex.gap-8.items-center>button{padding:0 10px!important}}
 `;
   document.head.appendChild(s);
+}
+
+function topbarIcon(kind){
+  var open='<svg class="pst-topbar-icon" aria-hidden="true" viewBox="0 0 24 24">',close='</svg>';
+  if(kind==='save')return open+'<path d="M5 3h12l4 4v14H3V3h2Z"/><path d="M7 3v6h10V3"/><path d="M7 21v-8h10v8"/>'+close;
+  if(kind==='plus')return open+'<path d="M12 5v14M5 12h14"/>'+close;
+  if(kind==='close')return open+'<path d="M7 7l10 10M17 7 7 17"/>'+close;
+  if(kind==='export')return open+'<path d="M5 15v4h14v-4"/><path d="M12 3v12M7 10l5 5 5-5"/>'+close;
+  return'';
+}
+
+function normalizeTopbarActions(){
+  var host=document.querySelector('.topbar>.flex.gap-8.items-center')||document.querySelector('.topbar .flex.gap-8.items-center');
+  if(!host)return;
+  var save=host.querySelector('button[onclick*="saveProject"]');
+  if(save&&!save.dataset.pstTopbarNormalized){save.dataset.pstTopbarNormalized='1';save.innerHTML=topbarIcon('save')+'<span>Ruaj</span>';}
+  var add=host.querySelector('button[onclick*="newProject"]');
+  if(add&&!add.dataset.pstTopbarNormalized){add.dataset.pstTopbarNormalized='1';add.innerHTML=topbarIcon('plus')+'<span>Projekt i ri</span>';}
+  var loss=host.querySelector('#pst-loss-top');
+  if(loss&&!loss.dataset.pstTopbarNormalized){loss.dataset.pstTopbarNormalized='1';loss.innerHTML=topbarIcon('close')+'<span>Mbyll projektin</span>';}
+  var exp=host.querySelector('#ex-topbtn');
+  if(exp&&!exp.dataset.pstTopbarNormalized){exp.dataset.pstTopbarNormalized='1';exp.innerHTML=topbarIcon('export')+'<span>Eksporto</span>';}
 }
 
 function decorateButtons(root){
@@ -138,7 +174,7 @@ function installModalClicks(){
   });
 }
 
-function apply(root){decorateButtons(root||document);activateKpis(root||document);}
+function apply(root){normalizeTopbarActions();decorateButtons(root||document);activateKpis(root||document);}
 function schedule(){[0,120,400,900,1800,3200].forEach(function(ms){setTimeout(function(){apply(document);},ms);});}
 
 css();
@@ -151,5 +187,5 @@ document.addEventListener('click',function(event){
   var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,[onclick*="pstWorkspaceGo"],#pst-ws-home-refresh,.pst-pi-tab,.pec-tab'):null;
   if(t)[0,100,350,900].forEach(function(ms){setTimeout(function(){apply(document);},ms);});
 },true);
-window.PSTUICorrectionsV2={apply:apply,schedule:schedule};
+window.PSTUICorrectionsV2={apply:apply,schedule:schedule,normalizeTopbarActions:normalizeTopbarActions};
 })();
