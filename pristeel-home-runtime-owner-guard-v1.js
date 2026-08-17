@@ -5,6 +5,9 @@
  */
 (function(){
 'use strict';
+/* Cache-proof the retired legacy Home. Even if a browser still has the old
+ * pristeel-dashboard-calm.js asset cached, its own startup guard will stop it. */
+window.__pstDashboardCalmLoaded=true;
 if(window.__pstHomeRuntimeOwnerGuardV1)return;
 window.__pstHomeRuntimeOwnerGuardV1=true;
 
@@ -48,7 +51,6 @@ function ensureCanonical(){
 function finalizeHome(){
   runtimeReady=true;
   if(finalizeTimer)clearTimeout(finalizeTimer);
-  /* Let any startup-only Workspace Home request finish while the runtime veil is still active. */
   finalizeTimer=setTimeout(function(){
     ensureCanonical().then(function(){
       var tries=0;
@@ -64,8 +66,6 @@ function routedGo(key){
   if(k==='home'){
     ensureCanonical();
     if(runtimeReady&&renderCanonical())return true;
-    /* Before modules-ready, Workspace Architecture is allowed to create the shell.
-       Its data is hidden by the startup veil and Canonical replaces it at finalization. */
     return rawGo?rawGo.apply(window,args):true;
   }
   return rawGo?rawGo.apply(window,args):false;
@@ -78,8 +78,6 @@ try{
     get:function(){return canonicalLoading&&rawGo?rawGo:routedGo;},
     set:function(fn){
       if(typeof fn!=='function')return;
-      /* Canonical assigns its own go() while loading. Keep the guard public and
-         preserve Workspace Architecture as the delegate for non-Home routes. */
       if(canonicalLoading)return;
       rawGo=fn;
       ensureCanonical();
