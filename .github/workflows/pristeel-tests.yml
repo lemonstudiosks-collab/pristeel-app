@@ -52,6 +52,8 @@ jobs:
         run: node --check pristeel-gmail-project-auto-link-v1.js && node tests/gmail-project-auto-link-smoke.js
       - name: Run Gmail client request execution smoke
         run: node tests/gmail-project-intake-execution-smoke.mjs
+      - name: Run project action engine source smoke
+        run: node tests/project-action-engine-source-smoke.mjs
       - name: Run Gmail tracker source smoke
         run: node tests/gmail-tracker-source-smoke.mjs && node tests/gmail-attachment-metadata-smoke.mjs && node tests/gmail-body-hydration-helper-smoke.mjs && node tests/gmail-attachment-scan-state-smoke.mjs
       - name: Run project document intake smoke
