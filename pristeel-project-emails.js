@@ -143,8 +143,30 @@ var files=[
   'pristeel-project-lifecycle-tracking-v1.js?v=20260815-1',
   'pristeel-project-intelligence-resilience-v1.js?v=20260815-1'
 ];
-var completed=false;
-function ready(){if(completed)return;completed=true;window.__pstModulesReady=true;try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}}
-function load(i){if(i>=files.length||window.__pstAbortBootstrap){ready();return;}var s=document.createElement('script');s.src=files[i];s.defer=true;s.onload=function(){if(window.__pstAbortBootstrap)ready();else load(i+1);};s.onerror=function(){console.error('Nuk u ngarkua moduli:',files[i]);if(window.__pstAbortBootstrap)ready();else load(i+1);};document.head.appendChild(s);}
-load(0);
+var completed=false,timeoutMs=8000,maxAttempts=2;
+var diag=window.__pstBootstrapDiagnostics=window.__pstBootstrapDiagnostics||{started_at:new Date().toISOString(),total:files.length,loaded:0,errors:[],timeouts:[],retries:[],completed:false};
+function ready(){if(completed)return;completed=true;diag.completed=true;diag.completed_at=new Date().toISOString();window.__pstModulesReady=true;try{document.dispatchEvent(new CustomEvent('pst:modules-ready'));}catch(e){}}
+function next(i){if(window.__pstAbortBootstrap){ready();return;}load(i+1,1);}
+function load(i,attempt){
+ if(i>=files.length){ready();return;}
+ if(window.__pstAbortBootstrap){ready();return;}
+ attempt=attempt||1;
+ var base=files[i],src=base+(attempt>1?(base.indexOf('?')>-1?'&':'?')+'pst_retry='+Date.now():'');
+ var el=document.createElement('script'),settled=false,timer=null;
+ el.src=src;el.defer=true;el.setAttribute('data-pst-bootstrap-index',String(i));el.setAttribute('data-pst-bootstrap-attempt',String(attempt));
+ function finish(kind,error){
+  if(settled)return;settled=true;if(timer)clearTimeout(timer);el.onload=null;el.onerror=null;
+  if(kind==='load'){diag.loaded++;next(i);return;}
+  try{el.remove();}catch(e){}
+  var row={index:i,module:base,attempt:attempt,at:new Date().toISOString(),error:error?String(error):null};
+  if(kind==='timeout')diag.timeouts.push(row);else diag.errors.push(row);
+  if(attempt<maxAttempts){diag.retries.push({index:i,module:base,attempt:attempt+1,reason:kind,at:new Date().toISOString()});load(i,attempt+1);return;}
+  console.error('Nuk u ngarkua moduli pas '+maxAttempts+' tentimeve:',base,kind,error||'');next(i);
+ }
+ el.onload=function(){finish('load');};
+ el.onerror=function(e){finish('error',e&&e.message||'script error');};
+ timer=setTimeout(function(){finish('timeout','>'+timeoutMs+'ms');},timeoutMs);
+ document.head.appendChild(el);
+}
+load(0,1);
 })();
