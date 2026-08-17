@@ -34,6 +34,8 @@ jobs:
         run: node tests/roles-startup-stability-smoke.js
       - name: Run Home stability smoke
         run: node tests/home-stability-v2-smoke.js
+      - name: Run Home single-owner smoke
+        run: node --check pristeel-home-canonical-v1.js && node --check pristeel-home-live-fix-v1.js && node tests/home-single-owner-smoke.js
       - name: Run redesign finalizer smoke
         run: node tests/redesign-finalizer-smoke.js
       - name: Run full test suite
