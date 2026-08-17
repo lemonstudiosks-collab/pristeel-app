@@ -29,7 +29,7 @@ jobs:
       - name: Run startup visual stability smoke
         run: node tests/startup-visual-stability-smoke.js
       - name: Run authenticated reload transition smoke
-        run: node --check pristeel-login-transition-v2.js && node tests/home-reload-transition-smoke.js
+        run: node --check pristeel-login-transition-v2.js && node tests/home-reload-transition-smoke.js && node tests/login-transition-retirement-smoke.js
       - name: Run roles startup stability smoke
         run: node tests/roles-startup-stability-smoke.js
       - name: Run Home stability smoke
