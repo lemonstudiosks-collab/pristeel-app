@@ -26,7 +26,7 @@ const EXACT=new Set(['ipe','ipn','hea','heb','hem','upe','upn','unp','b500','b50
 const PROFILE_CODES=['ipe','ipn','hea','heb','hem','upe','upn','unp'];
 
 function token(h,t){return new RegExp(`(?:^|[^a-z0-9])${esc(norm(t))}(?=$|[^a-z0-9])`,'i').test(norm(h));}
-function contains(h,t){const x=norm(t);return EXACT.has(x)?token(h,x):norm(h).includes(x);}
+function contains(h,t){const x=norm(t);return EXACT.has(x)||(!x.includes(' ')&&x.length<=4)?token(h,x):norm(h).includes(x);}
 function first(h,terms){return terms.find(t=>contains(h,t))||'';}
 function unique(v){return[...new Set((v||[]).filter(Boolean))];}
 
