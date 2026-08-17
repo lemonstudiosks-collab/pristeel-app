@@ -97,6 +97,24 @@ function checkLocalReference(sourceRel, rawRef) {
   }
 }
 
+function versionDirectRuntimeScripts(htmlRel) {
+  const full = path.join(outputDir, htmlRel);
+  if (!fs.existsSync(full)) return 0;
+  let text = fs.readFileSync(full, 'utf8');
+  let count = 0;
+  text = text.replace(/(<script\b[^>]*\bsrc=["'])([^"']+\.js)(?:\?[^"']*)?(["'][^>]*><\/script>)/gi, (whole, before, raw, after) => {
+    const ref = String(raw || '').trim();
+    if (!ref || isExternal(ref)) return whole;
+    const clean = ref.replace(/^\.\//, '').replace(/^\/+/, '');
+    if (!clean || !fs.existsSync(path.join(outputDir, clean))) return whole;
+    const digest = sha256(path.join(outputDir, clean)).slice(0, 16);
+    count += 1;
+    return `${before}${raw}?v=${digest}${after}`;
+  });
+  fs.writeFileSync(full, text, 'utf8');
+  return count;
+}
+
 console.log('PPPP Pages production site builder');
 console.log('Safety mode: derive, verify and build the exact artifact uploaded by production Pages.');
 
@@ -159,6 +177,12 @@ for (const rel of [...candidate].sort()) {
   if (sha256(from) !== sha256(to)) fail(`Byte verification failed after copying ${rel}.`);
 }
 
+const applicationHtml = cleanModule(entry.applicationHtml);
+const versionedRuntimeScripts = applicationHtml ? versionDirectRuntimeScripts(applicationHtml) : 0;
+if (applicationHtml && versionedRuntimeScripts === 0) {
+  fail(`No local direct runtime <script src> references were content-versioned in ${applicationHtml}.`);
+}
+
 fs.writeFileSync(path.join(outputDir, '.nojekyll'), '');
 
 const siteFiles = walk(outputDir).sort();
@@ -217,6 +241,7 @@ console.log(`Verified production source files: ${expectedFiles.length}`);
 console.log(`Built files including .nojekyll: ${siteFiles.length}`);
 console.log(`Built production artifact size: ${human(totalBytes)}`);
 console.log(`JavaScript files syntax-checked: ${actualCandidateFiles.filter((file) => file.endsWith('.js')).length}`);
+console.log(`Direct runtime scripts content-versioned: ${versionedRuntimeScripts}`);
 console.log('Repository-only classes absent: yes');
 console.log(`Production Pages upload path matched: ${configuredUploadPath}`);
 
