@@ -87,12 +87,14 @@ function recoverProjects(){
 }
 function apply(){
   enforceLimits();
-  recoverProjects().then(function(){
+  return recoverProjects().then(function(){
     if(window.PSTDashboardTaskCardsV1&&typeof window.PSTDashboardTaskCardsV1.decorate==='function')window.PSTDashboardTaskCardsV1.decorate();
     enforceLimits();
+    return true;
   });
 }
-function schedule(){[0,180,600,1400,3000,6000].forEach(function(ms){setTimeout(apply,ms);});}
+/* A single async pass is enough; navigation and explicit refresh trigger future passes. */
+function schedule(){return apply();}
 
 var css=document.createElement('style');css.id='pst-home-live-fix-v1-css';css.textContent=`
 #page-workspace-home .pst-hcc-hidden{display:none!important}
