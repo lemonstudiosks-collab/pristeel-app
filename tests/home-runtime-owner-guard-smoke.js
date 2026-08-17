@@ -1,9 +1,46 @@
 'use strict';
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
-const guardSource=fs.readFileSync('pristeel-home-runtime-owner-guard-v1.js','utf8');const rolesSource=fs.readFileSync('pristeel-roles.js','utf8');assert(rolesSource.includes('pristeel-home-runtime-owner-guard-v1.js'));
+const guardSource=fs.readFileSync('pristeel-home-runtime-owner-guard-v1.js','utf8');
+const rolesSource=fs.readFileSync('pristeel-roles.js','utf8');
+assert(rolesSource.includes('pristeel-home-runtime-owner-guard-v1.js'));
+assert(!guardSource.includes("Object.defineProperty(window,'pstWorkspaceGo'"),'Home owner must not trap the global router with a permanent property descriptor');
 ['window.__pstDashboardCalmLoaded=true;','window.__pstDashboardFocusLoaded=true;','window.__pstOperationalHomeLoaded=true;','window.__pstUiV2Loaded=true;','window.__pstUiV2PolishLoaded=true;','window.__pstDashboardActionControlsV2Loaded=true;','window.__pstHomeLiveFixV1=true;','window.__pstHomeStabilityV2=true;','window.__pstHomeProjectRecoveryV3=true;','window.__pstHomeOperationalPriorityV1=true;','window.__pstHomeVisualCleanupV1=true;','window.__pstLoginTransitionV2=true;'].forEach(x=>assert(guardSource.includes(x),x));
-function cls(){const s=new Set();return{add:x=>s.add(x),remove:x=>s.delete(x),contains:x=>s.has(x)};}function node(id){return{id,style:{},classList:cls(),attrs:{},children:[],parentNode:null,setAttribute(k,v){this.attrs[k]=v},remove(){delete nodes[this.id]},insertBefore(ch){ch.parentNode=this;this.children.unshift(ch);nodes[ch.id]=ch}};}
-const nodes={'page-workspace-home':node('page-workspace-home'),'pst-ws-home-actions':node('pst-ws-home-actions'),'pst-ws-home-projects':node('pst-ws-home-projects'),'page-home':node('page-home'),'app-sidebar':node('app-sidebar'),'pst-login-transition-v2':node('pst-login-transition-v2'),'pst-login-transition-v2-style':node('pst-login-transition-v2-style')};nodes['pst-login-transition-v2'].parentNode=nodes['app-sidebar'];nodes['pst-login-transition-v2-style'].parentNode=nodes['app-sidebar'];const listeners={};let canonicalScript=null,legacyCalls=[],renders=0,activations=0,visual=0,captured=null;
-const document={body:{classList:cls()},documentElement:{classList:cls()},getElementById:id=>nodes[id]||null,querySelector(sel){if(sel==='script[data-pst-home-canonical-v1]')return canonicalScript;if(sel==='.sidebar')return nodes['app-sidebar'];return null;},createElement(tag){if(tag==='script')return{tagName:'SCRIPT',addEventListener(){},setAttribute(){}};if(tag==='style')return{id:'',tagName:'STYLE',textContent:''};if(tag==='div')return node('');throw Error(tag);},head:{appendChild(el){if(el.tagName==='STYLE'){nodes[el.id]=el;return;}canonicalScript=el;setTimeout(()=>{captured=context.window.pstWorkspaceGo;context.window.PSTHomeCanonicalV1={activateHome(){activations++},render(){renders++;return Promise.resolve(true)}};if(el.onload)el.onload();},0);}},addEventListener:(n,f)=>listeners[n]=f,dispatchEvent(){}};
-const context=vm.createContext({console,document,setTimeout,clearTimeout,Promise,Date,CustomEvent:function(){}});context.window=context;context.window.open=()=>true;context.PSTStartupGuard={visualReady(){visual++}};vm.runInContext(guardSource,context);assert(!nodes['pst-login-transition-v2']);if(listeners.DOMContentLoaded)listeners.DOMContentLoaded();assert(nodes['pst-v2-sidebar']);function workspaceGo(k){legacyCalls.push(String(k||'home'));return'legacy:'+String(k||'home');}context.window.pstWorkspaceGo=workspaceGo;
-(async()=>{await new Promise(r=>setTimeout(r,120));assert.strictEqual(captured,workspaceGo);assert(renders>=1,'Canonical may render while background bootstrap continues');assert.strictEqual(visual,0,'Startup must stay covered until the release bridge has had one stabilization window');context.window.__pstWorkspaceReleaseFixV3Loaded=true;await new Promise(r=>setTimeout(r,520));assert(visual>=1,'Stable early canonical Home must release startup before full modules-ready');assert(context.window.PSTHomeRuntimeOwnerGuardV6.isHomeReady());assert(context.window.PSTHomeRuntimeOwnerGuardV6.isVisualReady());const before=legacyCalls.length;context.window.pstWorkspaceGo('home');await new Promise(r=>setTimeout(r,10));assert.strictEqual(legacyCalls.length,before);assert(listeners['pst:modules-ready']);listeners['pst:modules-ready']();await new Promise(r=>setTimeout(r,100));assert(renders>=2);context.window.pstWorkspaceGo('projects');assert.strictEqual(legacyCalls[legacyCalls.length-1],'projects');console.log('Home runtime owner guard smoke: OK');})().catch(e=>{console.error(e);process.exit(1)});
+function cls(){const s=new Set();return{add:x=>s.add(x),remove:x=>s.delete(x),contains:x=>s.has(x)};}
+function node(id){return{id,style:{},classList:cls(),attrs:{},children:[],parentNode:null,setAttribute(k,v){this.attrs[k]=v},remove(){delete nodes[this.id]},insertBefore(ch){ch.parentNode=this;this.children.unshift(ch);nodes[ch.id]=ch}};}
+const nodes={'page-workspace-home':node('page-workspace-home'),'pst-ws-home-actions':node('pst-ws-home-actions'),'pst-ws-home-projects':node('pst-ws-home-projects'),'page-home':node('page-home'),'app-sidebar':node('app-sidebar'),'pst-login-transition-v2':node('pst-login-transition-v2'),'pst-login-transition-v2-style':node('pst-login-transition-v2-style')};
+nodes['pst-login-transition-v2'].parentNode=nodes['app-sidebar'];nodes['pst-login-transition-v2-style'].parentNode=nodes['app-sidebar'];
+const listeners={};let canonicalScript=null,renders=0,activations=0,visual=0,capturedLegacy=null;const calls=[];
+const document={body:{classList:cls()},documentElement:{classList:cls()},getElementById:id=>nodes[id]||null,querySelector(sel){if(sel==='script[data-pst-home-canonical-v1]')return canonicalScript;if(sel==='.sidebar')return nodes['app-sidebar'];return null;},createElement(tag){if(tag==='script')return{tagName:'SCRIPT',listeners:{},addEventListener(n,f){this.listeners[n]=f},setAttribute(){}};if(tag==='style')return{id:'',tagName:'STYLE',textContent:''};if(tag==='div')return node('');throw Error(tag);},head:{appendChild(el){if(el.tagName==='STYLE'){nodes[el.id]=el;return;}canonicalScript=el;setTimeout(()=>{capturedLegacy=context.window.pstWorkspaceGo;const legacy=capturedLegacy;function canonicalGo(key){if(String(key||'home').toLowerCase()==='home'){activations++;renders++;return true;}return legacy.apply(this,arguments);}canonicalGo.__mockCanonical=true;context.window.PSTHomeCanonicalV1={activateHome(){activations++},render(){renders++;return Promise.resolve(true)}};context.window.pstWorkspaceGo=canonicalGo;if(el.onload)el.onload();},0);}},addEventListener:(n,f)=>listeners[n]=f,dispatchEvent(){}};
+const context=vm.createContext({console,document,setTimeout,clearTimeout,Promise,Date,CustomEvent:function(){}});context.window=context;context.window.open=()=>true;context.PSTStartupGuard={visualReady(){visual++}};
+vm.runInContext(guardSource,context);
+assert(!nodes['pst-login-transition-v2']);if(listeners.DOMContentLoaded)listeners.DOMContentLoaded();assert(nodes['pst-v2-sidebar']);
+function baseGo(key){calls.push('base:'+String(key));return'base:'+String(key);}context.window.pstWorkspaceGo=baseGo;
+const beforeRelease=context.window.pstWorkspaceGo;context.window.pstWorkspaceGo=function releaseWrapper(key){calls.push('release:'+String(key));return beforeRelease.apply(this,arguments);};
+(async()=>{
+ await new Promise(r=>setTimeout(r,120));
+ assert.strictEqual(canonicalScript,null,'Canonical must wait for the Workspace release bridge so it composes into a real router chain');
+ context.window.__pstWorkspaceReleaseFixV3Loaded=true;
+ await new Promise(r=>setTimeout(r,140));
+ assert(canonicalScript,'Canonical must load after release bridge is ready');
+ assert.strictEqual(capturedLegacy.name,'releaseWrapper','Canonical must capture the ordinary release router, never a self-referential guard router');
+ assert(visual>=1,'Canonical render must release startup visibility');
+ const afterCanonical=context.window.pstWorkspaceGo;
+ context.window.pstWorkspaceGo=function laterWrapper(key){calls.push('later:'+String(key));return afterCanonical.apply(this,arguments);};
+ calls.length=0;context.window.pstWorkspaceGo('projects');
+ assert.deepStrictEqual(calls,['later:projects','release:projects','base:projects'],'Non-Home route must traverse each wrapper exactly once before modules-ready');
+ calls.length=0;context.window.pstWorkspaceGo('home');
+ assert.deepStrictEqual(calls,['later:home'],'Canonical Home must stop the legacy chain before modules-ready');
+ assert(listeners['pst:modules-ready']);listeners['pst:modules-ready']();await new Promise(r=>setTimeout(r,100));
+ assert(context.window.pstWorkspaceGo.__pstCanonicalFinalRouter,'Final Home wrapper must be installed after the ordered bootstrap');
+ calls.length=0;context.window.pstWorkspaceGo('projects');
+ assert.deepStrictEqual(calls,['later:projects','release:projects','base:projects'],'Final router must preserve the complete non-Home chain without recursion');
+ calls.length=0;context.window.pstWorkspaceGo('home');
+ assert.deepStrictEqual(calls,[],'Final router must render Home directly without entering legacy wrappers');
+ const finalRouter=context.window.pstWorkspaceGo;context.window.pstWorkspaceGo=function dynamicWrapper(key){calls.push('dynamic:'+String(key));return finalRouter.apply(this,arguments);};
+ calls.length=0;context.window.pstWorkspaceGo('projects');
+ assert.deepStrictEqual(calls,['dynamic:projects','later:projects','release:projects','base:projects'],'A later dynamic wrapper must compose safely around the final router');
+ calls.length=0;context.window.pstWorkspaceGo('home');
+ assert.deepStrictEqual(calls,['dynamic:home'],'A later dynamic wrapper must still reach Canonical Home without recursion');
+ assert(context.window.PSTHomeRuntimeOwnerGuardV7.isHomeReady());
+ console.log('Home runtime owner guard non-recursive router smoke: OK');
+})().catch(e=>{console.error(e);process.exit(1)});
