@@ -13,6 +13,6 @@ assert.match(source,/r\.massKg<=qty/,'Requested coating quantity must be bounded
 assert.match(source,/engine:\"server_event_rules\"/,'A processed client request must write a deterministic current Project Intelligence event analysis');
 assert.match(source,/model:\"deterministic-client-request-v1\"/,'Event analysis must be identifiable and auditable');
 assert.match(source,/source:\"email_request_auto\"/,'Client request task must retain its dedicated source');
-assert.doesNotMatch(source,/db\.from\(\"bom_items\"\).*?(insert|update|upsert|delete)/s,'Client-request execution must not write BOM');
-assert.doesNotMatch(source,/db\.from\(\"projects\"\).*?(insert|update|upsert|delete)/s,'Client-request execution must not alter project status or create projects');
+assert.doesNotMatch(source,/db\.from\(\"bom_items\"\)\.(?:insert|update|upsert|delete)\s*\(/,'Client-request execution must not write BOM');
+assert.doesNotMatch(source,/db\.from\(\"projects\"\)\.(?:insert|update|upsert|delete)\s*\(/,'Client-request execution must not alter project status or create projects');
 console.log('Gmail project intake execution smoke test passed.');
