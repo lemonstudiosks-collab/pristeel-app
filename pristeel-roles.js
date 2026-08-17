@@ -6,6 +6,15 @@
 (function(){
 'use strict';
 
+/* Critical pre-bootstrap curtain. The full branded guard is loaded before the ordered runtime. */
+var bootRoot=document.documentElement;
+if(!window.__pstStartupGuardV2){
+  bootRoot.classList.add('pst-booting');
+  if(!document.getElementById('pst-startup-preload-css')){
+    var pre=document.createElement('style');pre.id='pst-startup-preload-css';pre.textContent='html.pst-booting,html.pst-booting body{min-height:100%;background:#F3F8FA!important;overflow:hidden!important}html.pst-booting #auth-gate,html.pst-booting #app-shell-root{opacity:0!important;visibility:hidden!important;pointer-events:none!important}';document.head.appendChild(pre);
+  }
+}
+
 var ROLE_LBL = {
   admin:'Administrator', sales:'Shitje', procurement:'Prokurim',
   finance:'Financa', viewer:'Vetëm shikim'
@@ -217,12 +226,25 @@ if(document.readyState === 'loading'){
   setTimeout(init, 900);
 }
 
-(function loadProjectEmailsModule(){
+function loadProjectEmailsModule(){
   if(document.querySelector('script[data-pst-project-emails]')) return;
   var s=document.createElement('script');
   s.src='pristeel-project-emails.js?v='+String(Date.now());
   s.defer=true;
   s.setAttribute('data-pst-project-emails','1');
+  document.head.appendChild(s);
+}
+(function loadStartupGuardThenRuntime(){
+  if(window.__pstStartupGuardV2){loadProjectEmailsModule();return;}
+  var existing=document.querySelector('script[data-pst-startup-guard]');
+  var start=function(){loadProjectEmailsModule();};
+  var fail=function(){bootRoot.classList.remove('pst-booting');start();};
+  if(existing){existing.addEventListener('load',start,{once:true});existing.addEventListener('error',fail,{once:true});return;}
+  var s=document.createElement('script');
+  s.src='pristeel-startup-guard-v2.js?v=20260817-1';
+  s.defer=true;
+  s.setAttribute('data-pst-startup-guard','1');
+  s.onload=start;s.onerror=fail;
   document.head.appendChild(s);
 })();
 
