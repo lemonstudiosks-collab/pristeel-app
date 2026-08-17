@@ -7,9 +7,9 @@
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "5cfa02125cce830abc769f2ab48bb20fa4c5fe82",
+    "bootstrapLoaderGitBlobSha": "dcf343619e10a139eb19e1ab8f3b626ffc12e645",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "ffe129a82c3f7a6bbad2f7dd9717e87ddc6a3bc8"
+    "bootstrapGitBlobSha": "adc33adf570fe209c8f59d4ef0c1700289f32b2f"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -145,6 +145,12 @@
   ],
   "loadedLegacyReviewCandidates": [],
   "dynamicRuntime": [
+    {
+      "module": "pristeel-startup-guard-v2.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded before the ordered bootstrap to hide intermediate runtime layouts and reveal only the login or visually stabilized workspace."
+    },
     {
       "module": "pristeel-invoice-original-document-v1.js",
       "loader": "pristeel-roles.js",
