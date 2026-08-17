@@ -18,8 +18,12 @@ on:
       - 'tests/ted-tender-sync-smoke.mjs'
       - 'scripts/ted-award-winner-sync.mjs'
       - 'tests/ted-award-winner-sync-smoke.mjs'
+      - 'scripts/ted-winner-contact-enrichment.mjs'
+      - 'tests/ted-winner-contact-enrichment-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
       - 'tests/tender-business-flow-smoke.js'
+      - 'pristeel-tender-winner-contacts-v1.js'
+      - 'tests/tender-winner-contacts-smoke.js'
       - 'pristeel-roles.js'
       - '.github/workflows/ted-tender-sync.yml'
   schedule:
@@ -31,8 +35,12 @@ on:
       - 'tests/ted-tender-sync-smoke.mjs'
       - 'scripts/ted-award-winner-sync.mjs'
       - 'tests/ted-award-winner-sync-smoke.mjs'
+      - 'scripts/ted-winner-contact-enrichment.mjs'
+      - 'tests/ted-winner-contact-enrichment-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
       - 'tests/tender-business-flow-smoke.js'
+      - 'pristeel-tender-winner-contacts-v1.js'
+      - 'tests/tender-winner-contacts-smoke.js'
       - 'pristeel-roles.js'
       - '.github/workflows/ted-tender-sync.yml'
 
@@ -55,6 +63,10 @@ jobs:
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       TED_TENDER_MIN_SCORE: '75'
       TED_AWARD_DAYS: '30'
+      TED_CONTACT_MIN_SCORE: '85'
+      TED_CONTACT_MAX_ROWS: '12'
+      TED_CONTACT_REFRESH_DAYS: '30'
+      TED_CONTACT_WEB_SEARCH: '1'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
 
     steps:
@@ -73,7 +85,9 @@ jobs:
         run: |
           node --check scripts/ted-tender-sync.mjs
           node --check scripts/ted-award-winner-sync.mjs
+          node --check scripts/ted-winner-contact-enrichment.mjs
           node --check pristeel-tender-business-flow-v1.js
+          node --check pristeel-tender-winner-contacts-v1.js
 
       - name: Run TED open tender smoke
         run: node tests/ted-tender-sync-smoke.mjs
@@ -81,14 +95,24 @@ jobs:
       - name: Run TED award winner smoke
         run: node tests/ted-award-winner-sync-smoke.mjs
 
+      - name: Run TED winner contact enrichment smoke
+        run: node tests/ted-winner-contact-enrichment-smoke.mjs
+
       - name: Run tender business flow smoke
         run: node tests/tender-business-flow-smoke.js
+
+      - name: Run TED winner contacts UI smoke
+        run: node tests/tender-winner-contacts-smoke.js
 
       - name: Collect open TED steel opportunities
         run: node scripts/ted-tender-sync.mjs
 
       - name: Enrich awarded TED steel contracts with winners
         run: node scripts/ted-award-winner-sync.mjs
+
+      - name: Research winner public business contacts
+        if: github.event_name != 'pull_request'
+        run: node scripts/ted-winner-contact-enrichment.mjs
 
       - name: Upload sanitized summaries
         if: always()
@@ -98,5 +122,6 @@ jobs:
           path: |
             tmp/ted-tender-sync.json
             tmp/ted-award-winner-sync.json
+            tmp/ted-winner-contact-enrichment.json
           if-no-files-found: ignore
           retention-days: 14

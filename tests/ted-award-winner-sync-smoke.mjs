@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { normalizeTedAward, runTedAwardWinnerSync } from '../scripts/ted-award-winner-sync.mjs';
+import { normalizeTedAward, preserveContactEnrichment, runTedAwardWinnerSync } from '../scripts/ted-award-winner-sync.mjs';
 
 const sample={
   'publication-number':'563865-2026',
@@ -30,6 +30,10 @@ assert.equal(row.payload.winner.website,'https://steelwinner.example');
 assert.equal(row.payload.winner.decision_date,'2026-08-12');
 assert.equal(row.deadline,null,'TED awards are not application opportunities');
 assert.ok(row.relevance_score>=75,'steel award should pass operational relevance');
+
+const savedResearch={version:'winner-contact-v1',status:'found',researched_at:'2026-08-17T10:00:00Z',organizations:[{name:'Steel Winner GmbH',contacts:[{type:'email',value:'einkauf@steelwinner.example'}]}]};
+preserveContactEnrichment([row],[{source_key:row.source_key,payload:{winner:{contact_enrichment:savedResearch}}}]);
+assert.deepEqual(row.payload.winner.contact_enrichment,savedResearch,'normal TED upsert must preserve winner contact research');
 
 let calls=0;
 const fetchImpl=async (_url,opts)=>{

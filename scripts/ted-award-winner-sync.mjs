@@ -108,6 +108,20 @@ async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',bod
   const response=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
   const raw=await response.text();if(!response.ok)throw new Error(`${method} ${path} failed: HTTP ${response.status} ${raw.slice(0,700)}`);return raw?JSON.parse(raw):[];
 }
+export function preserveContactEnrichment(rows,existingRows){
+  const byKey=new Map((Array.isArray(existingRows)?existingRows:[]).map(r=>[String(r?.source_key||''),r]));
+  for(const row of Array.isArray(rows)?rows:[]){
+    const old=byKey.get(String(row?.source_key||''));
+    const enrichment=old?.payload?.winner?.contact_enrichment;
+    if(enrichment&&row?.payload?.winner)row.payload.winner.contact_enrichment=enrichment;
+  }
+  return rows;
+}
+async function preserveExistingContactEnrichment(access,rows){
+  if(!rows.length)return rows;
+  const existing=await rest({...access,path:'kek_tender_watch?select=source_key,payload&limit=2000'});
+  return preserveContactEnrichment(rows,existing);
+}
 async function upsertRows(access,rows){if(!rows.length)return;await rest({...access,path:'kek_tender_watch?on_conflict=source_key',method:'POST',body:rows,prefer:'resolution=merge-duplicates,return=minimal'});}
 async function writeSummary(summary){await mkdir('tmp',{recursive:true});await writeFile('tmp/ted-award-winner-sync.json',JSON.stringify(summary,null,2));}
 export async function runTedAwardWinnerSync({mode=process.env.SYNC_MODE||'preview',minScore=Number(process.env.TED_TENDER_MIN_SCORE||75),days=Number(process.env.TED_AWARD_DAYS||30),fetchImpl=fetch,supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL,apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||'',bearerToken=''}={}){
@@ -118,9 +132,14 @@ export async function runTedAwardWinnerSync({mode=process.env.SYNC_MODE||'previe
   for(const item of awardRaw){const row=normalizeTedAward(item,seenAt);if(!row||row.relevance_score<minScore)continue;dedupe.set(row.source_key,row);}
   const rows=[...dedupe.values()];
   let authMode='not_needed';
-  if(mode==='apply'&&rows.length){const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});authMode=access.authMode;await upsertRows(access,rows);}
+  if(mode==='apply'&&rows.length){
+    const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
+    authMode=access.authMode;
+    await preserveExistingContactEnrichment(access,rows);
+    await upsertRows(access,rows);
+  }
   const winnersFound=rows.filter(r=>r.payload?.winner?.name).length;
-  const summary={mode,auth_mode:authMode,api:TED_API,workflow:'award_winner_outreach',award_raw:awardRaw.length,relevant_rows:rows.length,awards:rows.length,winners_found:winnersFound,without_winner:rows.length-winnersFound,minimum_score:minScore,lookback_days:days,query:queryForAwards(days),tenders:rows.map(r=>({publication_no:r.publication_no,title:r.title,buyer:r.authority,winner:r.payload.winner?.name||null,winner_email:r.payload.winner?.email||null,winner_website:r.payload.winner?.website||null,category:r.category,relevance_score:r.relevance_score,published_date:r.published_date,cpv:r.payload.cpv}))};
+  const summary={mode,auth_mode:authMode,api:TED_API,workflow:'award_winner_outreach',award_raw:awardRaw.length,relevant_rows:rows.length,awards:rows.length,winners_found:winnersFound,without_winner:rows.length-winnersFound,minimum_score:minScore,lookback_days:days,query:queryForAwards(days),tenders:rows.map(r=>({publication_no:r.publication_no,title:r.title,buyer:r.authority,winner:r.payload.winner?.name||null,winner_email:r.payload.winner?.email||null,winner_website:r.payload.winner?.website||null,contact_enrichment:r.payload.winner?.contact_enrichment?.status||null,category:r.category,relevance_score:r.relevance_score,published_date:r.published_date,cpv:r.payload.cpv}))};
   await writeSummary(summary);console.log(`TED award winner sync ${mode}: awardRaw=${summary.award_raw}, relevant=${summary.relevant_rows}, winners=${summary.winners_found}.`);return summary;
 }
 const direct=process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href;

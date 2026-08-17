@@ -244,6 +244,15 @@ if(document.readyState === 'loading'){
   document.head.appendChild(s);
 })();
 
+(function loadTenderWinnerContactsModule(){
+  if(document.querySelector('script[data-pst-tender-winner-contacts]')) return;
+  var s=document.createElement('script');
+  s.src='pristeel-tender-winner-contacts-v1.js?v='+String(Date.now());
+  s.defer=true;
+  s.setAttribute('data-pst-tender-winner-contacts','1');
+  document.head.appendChild(s);
+})();
+
 (function loadProjectIntakeContinuityModule(){
   if(document.querySelector('script[data-pst-project-intake-continuity]')) return;
   var s=document.createElement('script');

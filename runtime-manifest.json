@@ -7,7 +7,7 @@
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "5cfa02125cce830abc769f2ab48bb20fa4c5fe82",
+    "bootstrapLoaderGitBlobSha": "799f171845e9f04b531b14232cc2d251fa8b6149",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "adc33adf570fe209c8f59d4ef0c1700289f32b2f"
   },
@@ -109,9 +109,10 @@
       "area": "tenders",
       "finalOwners": [
         "pristeel-kek-tender-watch-v1.js",
-        "pristeel-tender-business-flow-v1.js"
+        "pristeel-tender-business-flow-v1.js",
+        "pristeel-tender-winner-contacts-v1.js"
       ],
-      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania, TED direct-bid opportunities and TED award-winner outreach."
+      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania, TED direct-bid opportunities and TED award-winner outreach. Winner Contacts is a read-only dynamic decorator over researched public business contacts."
     },
     {
       "area": "ai",
@@ -156,6 +157,12 @@
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded unconditionally by the production pristeel-roles.js base module."
+    },
+    {
+      "module": "pristeel-tender-winner-contacts-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded unconditionally after Tender Business Flow. Read-only UI for public business contacts researched for relevant awarded TED winners; performs no status, project or outreach writes."
     },
     {
       "module": "pristeel-project-intake-continuity-v1.js",
