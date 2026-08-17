@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { enrichWinnerPayload } from '../scripts/ted-winner-contact-enrichment.mjs';
+import { enrichWinnerPayload, mergeWinnerWithEnrichment } from '../scripts/ted-winner-contact-enrichment.mjs';
 
 function response(url,html,status=200){
   return {ok:status>=200&&status<300,status,url,headers:{get:()=> 'text/html; charset=utf-8'},async text(){return html;}};
@@ -15,11 +15,13 @@ const pages=new Map([
 ]);
 async function fetchImpl(url){const key=String(url);if(pages.has(key))return response(key,pages.get(key));throw new Error(`unexpected ${key}`);}
 
-const multi={payload:{winner:{
+const multiWinner={
   names:['Kovoreal - Holic s.r.o.','Rudolf Metallbau GmbH'],
   emails:['Angebot@rudolf-metallbau.at','kovoreal4@kovoreal.sk'],
+  email:'Angebot@rudolf-metallbau.at',
   cities:['Holic','Wien'],countries:['SVK','AUT']
-}}};
+};
+const multi={payload:{winner:multiWinner}};
 const enriched=await enrichWinnerPayload(multi,{fetchImpl,searchEnabled:false});
 assert.equal(enriched.organizations.length,2);
 const kovoreal=enriched.organizations.find(x=>x.name.includes('Kovoreal'));
@@ -29,13 +31,21 @@ assert(!kovoreal.contacts.some(c=>String(c.value).includes('rudolf-metallbau')),
 assert(rudolf.contacts.some(c=>String(c.value).toLowerCase()==='angebot@rudolf-metallbau.at'));
 assert(rudolf.contacts.some(c=>c.value==='einkauf@rudolf-metallbau.at'&&c.purpose==='procurement'));
 assert.deepEqual(enriched.unassigned_ted_contacts.emails,[]);
+const safeMulti=mergeWinnerWithEnrichment(multiWinner,enriched);
+assert.equal(safeMulti.email,null,'ambiguous first email must not be exposed as the first winner contact');
+assert.equal(safeMulti.website,null,'multi-winner direct website must remain unset unless selected by company');
 
-const urbas={payload:{winner:{name:'URBAS Maschinenfabrik Ges.m.b.H.',names:['URBAS Maschinenfabrik Ges.m.b.H.'],city:'Völkermarkt',country:'AUT'}}};
+const urbasWinner={name:'URBAS Maschinenfabrik Ges.m.b.H.',names:['URBAS Maschinenfabrik Ges.m.b.H.'],city:'Völkermarkt',country:'AUT'};
+const urbas={payload:{winner:urbasWinner}};
 const researched=await enrichWinnerPayload(urbas,{fetchImpl,searchEnabled:true});
 assert.equal(researched.status,'found');
 assert(researched.organizations[0].official_website.includes('urbas.at'));
 assert(researched.organizations[0].contacts.some(c=>c.value==='urbas@urbas.at'));
 assert(researched.organizations[0].contacts.some(c=>c.type==='phone'));
 assert(researched.organizations[0].contacts.every(c=>c.confidence==='high'||c.confidence==='medium'));
+const safeSingle=mergeWinnerWithEnrichment(urbasWinner,researched);
+assert.equal(safeSingle.email,'urbas@urbas.at','single winner should expose the best verified email to the existing UI');
+assert(safeSingle.website.includes('urbas.at'),'single winner should expose verified official website to the existing UI');
+assert.equal(safeSingle.contact_enrichment.status,'found');
 
 console.log('TED winner contact enrichment smoke: OK');
