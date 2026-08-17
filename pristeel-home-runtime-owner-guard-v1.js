@@ -1,182 +1,31 @@
-/* PRISTEEL Home Runtime Owner Guard v4
- * Loaded before the ordered runtime bootstrap.
- * Canonical Workspace Home is the only allowed Home renderer.
- * Historical Home implementations and obsolete blocking startup layers are
- * retired before their scripts execute.
+/* PRISTEEL Home Runtime Owner Guard v6
+ * Canonical Workspace Home is the only Home renderer.
+ * It may render before the complete additive bootstrap, but startup visibility
+ * is released only after the shell/release bridge has settled once.
  */
 (function(){
 'use strict';
-if(window.__pstHomeRuntimeOwnerGuardV4)return;
-window.__pstHomeRuntimeOwnerGuardV4=true;
-window.__pstHomeRuntimeOwnerGuardV3=true;
-window.__pstHomeRuntimeOwnerGuardV2=true;
-window.__pstHomeRuntimeOwnerGuardV1=true;
-
-/* Retire historical Home owners before the ordered bootstrap reaches them. */
-window.__pstDashboardCalmLoaded=true;
-window.__pstDashboardFocusLoaded=true;
-window.__pstOperationalHomeLoaded=true;
-window.__pstUiV2Loaded=true;
-window.__pstUiV2PolishLoaded=true;
-window.__pstDashboardActionControlsV2Loaded=true;
-window.__pstHomeLiveFixV1=true;
-window.__pstHomeStabilityV2=true;
-window.__pstHomeProjectRecoveryV3=true;
-window.__pstHomeOperationalPriorityV1=true;
-window.__pstHomeVisualCleanupV1=true;
-/* StartupGuard owns startup visibility. A cached historical login-transition
- * asset must never be able to cover the authenticated app. */
-window.__pstLoginTransitionV2=true;
-
-var rawGo=typeof window.pstWorkspaceGo==='function'?window.pstWorkspaceGo:null;
-var canonicalLoading=false;
-var canonicalPromise=null;
-var runtimeReady=!!window.__pstModulesReady;
-var finalizeTimer=null;
-var scaffoldTries=0;
-
-function clearLegacyLoginBlocker(){
- try{document.documentElement.classList.remove('pst-login-switching');}catch(e){}
- var old=document.getElementById('pst-login-transition-v2');if(old&&old.parentNode)old.remove();
- var css=document.getElementById('pst-login-transition-v2-style');if(css&&css.parentNode)css.remove();
-}
-function signalVisualReady(){
- try{document.documentElement.classList.add('pst-runtime-ready');}catch(e){}
- try{
-   if(window.PSTStartupGuard&&typeof window.PSTStartupGuard.visualReady==='function'){
-     window.PSTStartupGuard.visualReady();
-     return;
-   }
-   document.dispatchEvent(new CustomEvent('pst:visual-ready'));
- }catch(e){}
-}
+if(window.__pstHomeRuntimeOwnerGuardV6)return;
+window.__pstHomeRuntimeOwnerGuardV6=true;window.__pstHomeRuntimeOwnerGuardV5=true;window.__pstHomeRuntimeOwnerGuardV4=true;window.__pstHomeRuntimeOwnerGuardV3=true;window.__pstHomeRuntimeOwnerGuardV2=true;window.__pstHomeRuntimeOwnerGuardV1=true;
+window.__pstDashboardCalmLoaded=true;window.__pstDashboardFocusLoaded=true;window.__pstOperationalHomeLoaded=true;window.__pstUiV2Loaded=true;window.__pstUiV2PolishLoaded=true;window.__pstDashboardActionControlsV2Loaded=true;window.__pstHomeLiveFixV1=true;window.__pstHomeStabilityV2=true;window.__pstHomeProjectRecoveryV3=true;window.__pstHomeOperationalPriorityV1=true;window.__pstHomeVisualCleanupV1=true;window.__pstLoginTransitionV2=true;
+var rawGo=typeof window.pstWorkspaceGo==='function'?window.pstWorkspaceGo:null,canonicalLoading=false,canonicalPromise=null,runtimeReady=!!window.__pstModulesReady,homeReady=false,visualSignaled=false,releaseSeenAt=0,finalizeTimer=null,earlyTimer=null,scaffoldTries=0;
+function clearLegacyLoginBlocker(){try{document.documentElement.classList.remove('pst-login-switching');}catch(e){}var old=document.getElementById('pst-login-transition-v2');if(old&&old.parentNode)old.remove();var css=document.getElementById('pst-login-transition-v2-style');if(css&&css.parentNode)css.remove();}
+function signalVisualReady(){if(visualSignaled)return;visualSignaled=true;try{document.documentElement.classList.add('pst-runtime-ready');}catch(e){}try{if(window.PSTStartupGuard&&typeof window.PSTStartupGuard.visualReady==='function'){window.PSTStartupGuard.visualReady();return;}document.dispatchEvent(new CustomEvent('pst:visual-ready'));}catch(e){}}
+function earlyStable(){if(runtimeReady)return true;if(!window.__pstWorkspaceReleaseFixV3Loaded)return false;if(!releaseSeenAt)releaseSeenAt=Date.now();return Date.now()-releaseSeenAt>=350;}
 function canonical(){return window.PSTHomeCanonicalV1||null;}
 function hasHomeShell(){return !!(document.getElementById('page-workspace-home')&&document.getElementById('pst-ws-home-actions')&&document.getElementById('pst-ws-home-projects'));}
-function hideLegacyHome(){
- var old=document.getElementById('page-home');
- if(old){old.classList.remove('active');old.style.display='none';old.setAttribute('aria-hidden','true');}
-}
-function ensureCompatScaffold(){
- try{if(document.body)document.body.classList.add('pst-ui-v2');}catch(e){}
- var sidebar=document.getElementById('app-sidebar')||document.querySelector('.sidebar');
- if(sidebar&&!document.getElementById('pst-v2-sidebar')){
-   var host=document.createElement('div');host.id='pst-v2-sidebar';host.style.height='100%';sidebar.insertBefore(host,sidebar.firstChild||null);
- }
- return !!document.getElementById('pst-v2-sidebar');
-}
-function compatGo(page){
- page=String(page||'home');
- if(page==='home'){
-   if(runtimeReady&&renderCanonical())return true;
-   if(typeof window.pstWorkspaceGo==='function'&&window.pstWorkspaceGo!==compatGo)return window.pstWorkspaceGo('home');
-   ensureCanonical();return true;
- }
- if(typeof window.showPage==='function'){window.showPage(page);return true;}
- return false;
-}
-function installCompatApi(){
- if(typeof window.pstV2Go!=='function'||window.pstV2Go.__pstLegacyHome){window.pstV2Go=compatGo;}
- window.pstV2Go.__pstCanonicalCompat=true;
- window.pstV2NewProject=window.pstV2NewProject||function(){if(typeof window.newProject==='function')return window.newProject();return compatGo('newproject');};
- window.pstV2Search=window.pstV2Search||function(){if(typeof window.openCmdK==='function')return window.openCmdK();return false;};
- window.pstV2Refresh=function(){if(renderCanonical())return true;ensureCanonical().then(renderCanonical);return true;};
- window.pstV2RenderDashboard=window.pstV2Refresh;
- window.pstV2OpenProject=window.pstV2OpenProject||function(id){if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(id);if(typeof window.openOverview==='function')return window.openOverview(id);return compatGo('import');};
- window.pstV2OpenMail=window.pstV2OpenMail||function(url){if(url){window.open(url,'PRISTEEL_GMAIL');return true;}return compatGo('outreach');};
-}
-function bootstrapCompat(){
- clearLegacyLoginBlocker();ensureCompatScaffold();installCompatApi();
- if(!document.getElementById('pst-home-owner-v4-style')){
-   var s=document.createElement('style');s.id='pst-home-owner-v4-style';
-   s.textContent='body.pst-ui-v2 .sidebar>*:not(#pst-v2-sidebar){display:none!important}body.pst-ui-v2 #right-rail,body.pst-ui-v2 #modbar,body.pst-ui-v2 #util-fab{display:none!important}html.pst-runtime-ready #page-home{display:none!important;visibility:hidden!important;pointer-events:none!important}';
-   document.head.appendChild(s);
- }
- if(!ensureCompatScaffold()&&scaffoldTries++<80)setTimeout(bootstrapCompat,50);
-}
-
-function renderCanonical(){
-  var api=canonical();
-  if(!api||typeof api.render!=='function'||!hasHomeShell())return false;
-  clearLegacyLoginBlocker();hideLegacyHome();
-  try{if(typeof api.activateHome==='function')api.activateHome();}catch(e){}
-  try{
-    var result=api.render(true);
-    Promise.resolve(result).then(function(ok){if(ok!==false)signalVisualReady();}).catch(function(error){console.error('PPPP canonical Home render:',error);});
-  }catch(e){console.error('PPPP canonical Home render:',e);return false;}
-  return true;
-}
-function ensureCanonical(){
-  if(canonical())return Promise.resolve(canonical());
-  if(canonicalPromise)return canonicalPromise;
-  canonicalPromise=new Promise(function(resolve,reject){
-    canonicalLoading=true;
-    var existing=document.querySelector('script[data-pst-home-canonical-v1]');
-    if(existing){
-      if(canonical()){canonicalLoading=false;resolve(canonical());return;}
-      existing.addEventListener('load',function(){canonicalLoading=false;resolve(canonical());},{once:true});
-      existing.addEventListener('error',function(e){canonicalLoading=false;reject(e);},{once:true});
-      return;
-    }
-    var s=document.createElement('script');
-    s.src='pristeel-home-canonical-v1.js?v=20260817-canonical2';
-    s.defer=true;
-    s.setAttribute('data-pst-home-canonical-v1','1');
-    s.onload=function(){canonicalLoading=false;resolve(canonical());};
-    s.onerror=function(){canonicalLoading=false;reject(new Error('Nuk u ngarkua Home canonical owner.'));};
-    document.head.appendChild(s);
-  }).catch(function(error){canonicalPromise=null;console.error('PPPP Home runtime owner guard:',error);return null;});
-  return canonicalPromise;
-}
-function finalizeHome(){
-  runtimeReady=true;clearLegacyLoginBlocker();hideLegacyHome();installCompatApi();
-  if(finalizeTimer)clearTimeout(finalizeTimer);
-  finalizeTimer=setTimeout(function(){
-    ensureCanonical().then(function(){
-      var tries=0;
-      (function apply(){
-        if(renderCanonical())return;
-        if(++tries<100)setTimeout(apply,50);
-      })();
-    });
-  },80);
-}
-function routedGo(key){
-  var args=arguments,k=String(key||'home').toLowerCase();
-  if(k==='home'){
-    clearLegacyLoginBlocker();hideLegacyHome();ensureCanonical();
-    if(runtimeReady&&renderCanonical())return true;
-    return rawGo?rawGo.apply(window,args):true;
-  }
-  return rawGo?rawGo.apply(window,args):false;
-}
-
-try{
-  Object.defineProperty(window,'pstWorkspaceGo',{
-    configurable:true,
-    enumerable:true,
-    get:function(){return canonicalLoading&&rawGo?rawGo:routedGo;},
-    set:function(fn){
-      if(typeof fn!=='function')return;
-      if(canonicalLoading)return;
-      rawGo=fn;
-      ensureCanonical();
-    }
-  });
-}catch(e){console.error('PPPP could not install Home route guard',e);}
-
-window.PSTHomeRuntimeOwnerGuardV1=window.PSTHomeRuntimeOwnerGuardV2=window.PSTHomeRuntimeOwnerGuardV3=window.PSTHomeRuntimeOwnerGuardV4={
-  ensureCanonical:ensureCanonical,
-  finalizeHome:finalizeHome,
-  renderCanonical:renderCanonical,
-  ensureCompatScaffold:ensureCompatScaffold,
-  hideLegacyHome:hideLegacyHome,
-  clearLegacyLoginBlocker:clearLegacyLoginBlocker,
-  signalVisualReady:signalVisualReady,
-  isRuntimeReady:function(){return runtimeReady;}
-};
-
-clearLegacyLoginBlocker();
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrapCompat,{once:true});else bootstrapCompat();
-document.addEventListener('pst:modules-ready',finalizeHome,{once:true});
-if(window.__pstModulesReady)finalizeHome();
+function hideLegacyHome(){var old=document.getElementById('page-home');if(old){old.classList.remove('active');old.style.display='none';old.setAttribute('aria-hidden','true');}}
+function ensureCompatScaffold(){try{if(document.body)document.body.classList.add('pst-ui-v2');}catch(e){}var sidebar=document.getElementById('app-sidebar')||document.querySelector('.sidebar');if(sidebar&&!document.getElementById('pst-v2-sidebar')){var host=document.createElement('div');host.id='pst-v2-sidebar';host.style.height='100%';sidebar.insertBefore(host,sidebar.firstChild||null);}return !!document.getElementById('pst-v2-sidebar');}
+function installCompatApi(){if(typeof window.pstV2Go!=='function'||window.pstV2Go.__pstLegacyHome)window.pstV2Go=compatGo;window.pstV2Go.__pstCanonicalCompat=true;window.pstV2NewProject=window.pstV2NewProject||function(){if(typeof window.newProject==='function')return window.newProject();return compatGo('newproject');};window.pstV2Search=window.pstV2Search||function(){if(typeof window.openCmdK==='function')return window.openCmdK();return false;};window.pstV2Refresh=function(){if(promoteHome())return true;ensureCanonical().then(scheduleEarly);return true;};window.pstV2RenderDashboard=window.pstV2Refresh;window.pstV2OpenProject=window.pstV2OpenProject||function(id){if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(id);if(typeof window.openOverview==='function')return window.openOverview(id);return compatGo('import');};window.pstV2OpenMail=window.pstV2OpenMail||function(url){if(url){window.open(url,'PRISTEEL_GMAIL');return true;}return compatGo('outreach');};}
+function compatGo(page){page=String(page||'home');if(page==='home'){if(promoteHome())return true;if(typeof window.pstWorkspaceGo==='function'&&window.pstWorkspaceGo!==compatGo)return window.pstWorkspaceGo('home');ensureCanonical().then(scheduleEarly);return true;}if(typeof window.showPage==='function'){window.showPage(page);return true;}return false;}
+function bootstrapCompat(){clearLegacyLoginBlocker();ensureCompatScaffold();installCompatApi();if(!document.getElementById('pst-home-owner-v6-style')){var s=document.createElement('style');s.id='pst-home-owner-v6-style';s.textContent='body.pst-ui-v2 .sidebar>*:not(#pst-v2-sidebar){display:none!important}body.pst-ui-v2 #right-rail,body.pst-ui-v2 #modbar,body.pst-ui-v2 #util-fab{display:none!important}html.pst-runtime-ready #page-home{display:none!important;visibility:hidden!important;pointer-events:none!important}';document.head.appendChild(s);}if(!ensureCompatScaffold()&&scaffoldTries++<80)setTimeout(bootstrapCompat,50);}
+function renderCanonical(){var api=canonical();if(!api||typeof api.render!=='function'||!hasHomeShell())return false;clearLegacyLoginBlocker();hideLegacyHome();try{if(typeof api.activateHome==='function')api.activateHome();var result=api.render(true);Promise.resolve(result).then(function(ok){if(ok!==false){homeReady=true;if(earlyStable())signalVisualReady();else scheduleEarly();}}).catch(function(error){console.error('PPPP canonical Home render:',error);});return true;}catch(e){console.error('PPPP canonical Home render:',e);return false;}}
+function promoteHome(){if(!canonical()||!hasHomeShell())return false;homeReady=true;return renderCanonical();}
+function scheduleEarly(){if(visualSignaled)return;if(earlyTimer)clearTimeout(earlyTimer);var tries=0;(function apply(){if(visualSignaled)return;if(canonical()&&hasHomeShell()){if(!homeReady||earlyStable())renderCanonical();if(visualSignaled)return;}if(++tries<160)earlyTimer=setTimeout(apply,50);})();}
+function ensureCanonical(){if(canonical())return Promise.resolve(canonical());if(canonicalPromise)return canonicalPromise;canonicalPromise=new Promise(function(resolve,reject){canonicalLoading=true;var existing=document.querySelector('script[data-pst-home-canonical-v1]');if(existing){if(canonical()){canonicalLoading=false;resolve(canonical());return;}existing.addEventListener('load',function(){canonicalLoading=false;resolve(canonical());},{once:true});existing.addEventListener('error',function(e){canonicalLoading=false;reject(e);},{once:true});return;}var s=document.createElement('script');s.src='pristeel-home-canonical-v1.js?v='+String(Date.now());s.defer=true;s.setAttribute('data-pst-home-canonical-v1','1');s.onload=function(){canonicalLoading=false;resolve(canonical());};s.onerror=function(){canonicalLoading=false;reject(new Error('Nuk u ngarkua Home canonical owner.'));};document.head.appendChild(s);}).then(function(api){scheduleEarly();return api;}).catch(function(error){canonicalPromise=null;console.error('PPPP Home runtime owner guard:',error);return null;});return canonicalPromise;}
+function finalizeHome(){runtimeReady=true;clearLegacyLoginBlocker();hideLegacyHome();installCompatApi();if(finalizeTimer)clearTimeout(finalizeTimer);finalizeTimer=setTimeout(function(){ensureCanonical().then(function(){if(!promoteHome())scheduleEarly();});},40);}
+function routedGo(key){var args=arguments,k=String(key||'home').toLowerCase();if(k==='home'){clearLegacyLoginBlocker();hideLegacyHome();if(promoteHome())return true;ensureCanonical().then(scheduleEarly);return rawGo?rawGo.apply(window,args):true;}return rawGo?rawGo.apply(window,args):false;}
+try{Object.defineProperty(window,'pstWorkspaceGo',{configurable:true,enumerable:true,get:function(){return canonicalLoading&&rawGo?rawGo:routedGo;},set:function(fn){if(typeof fn!=='function'||canonicalLoading)return;rawGo=fn;ensureCanonical().then(scheduleEarly);}});}catch(e){console.error('PPPP could not install Home route guard',e);}
+window.PSTHomeRuntimeOwnerGuardV1=window.PSTHomeRuntimeOwnerGuardV2=window.PSTHomeRuntimeOwnerGuardV3=window.PSTHomeRuntimeOwnerGuardV4=window.PSTHomeRuntimeOwnerGuardV5=window.PSTHomeRuntimeOwnerGuardV6={ensureCanonical:ensureCanonical,finalizeHome:finalizeHome,renderCanonical:renderCanonical,promoteHome:promoteHome,ensureCompatScaffold:ensureCompatScaffold,hideLegacyHome:hideLegacyHome,clearLegacyLoginBlocker:clearLegacyLoginBlocker,signalVisualReady:signalVisualReady,isRuntimeReady:function(){return runtimeReady;},isHomeReady:function(){return homeReady;},isVisualReady:function(){return visualSignaled;}};
+clearLegacyLoginBlocker();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrapCompat,{once:true});else bootstrapCompat();document.addEventListener('pst:modules-ready',finalizeHome,{once:true});if(window.__pstModulesReady)finalizeHome();
 })();
