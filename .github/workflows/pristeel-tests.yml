@@ -24,6 +24,8 @@ jobs:
           cache-dependency-path: package.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Run startup visual regression smoke
+        run: node tests/startup-guard-smoke.js && node tests/startup-visual-stability-smoke.js && node tests/roles-startup-stability-smoke.js && node tests/home-stability-v2-smoke.js && node tests/redesign-finalizer-smoke.js
       - name: Run full test suite
         run: npm test
       - name: Run trading project display smoke
