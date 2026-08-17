@@ -2,6 +2,7 @@
  * Read-only home consistency layer for the live workspace.
  * - enforces progressive Today/Week/Overview limits after async rendering
  * - recovers active project cards with a broad projects query if the legacy home query returns empty
+ * - surfaces open client-request actions above routine/overdue follow-ups
  * - does not override auth, Gmail, project opening or database write functions
  */
 (function(){
@@ -85,30 +86,51 @@ function recoverProjects(){
     return false;
   });
 }
+function clientRequestRow(t){
+  var key='pst-client-request-'+String(t.id||t.source_ref||'').replace(/[^a-zA-Z0-9_-]/g,'');
+  return '<div class="pst-ws-action pst-client-request-action" data-client-request="'+esc(key)+'">'
+    +'<i class="pst-ws-action-dot"></i><div class="pst-ws-action-main" onclick="pstOpenProjectWorkspace(\''+esc(t.project_id)+'\')">'
+    +'<div class="pst-ws-action-title">'+esc(t.title||'Kërkesë e re e klientit')+'</div><div class="pst-ws-action-meta">'+esc(t.detail||'Kërkesa e klientit kërkon veprim në projekt.')+'</div></div>'
+    +'<span class="pst-ws-action-tag">Kërkesë klienti</span><span class="pst-ws-action-controls"><button onclick="event.stopPropagation();pstOpenProjectWorkspace(\''+esc(t.project_id)+'\')">Hap</button></span></div>';
+}
+function surfaceClientRequests(){
+  var page=document.getElementById('page-workspace-home'),host=document.getElementById('pst-ws-home-actions');
+  if(!page||page.style.display==='none'||!host||typeof window.supaFetch!=='function')return Promise.resolve(false);
+  return window.supaFetch('tasks?status=eq.hapur&source=eq.email_request_auto&select=id,project_id,title,detail,due_date,priority,source,source_ref,created_at&order=created_at.desc&limit=10').then(arr).then(function(rows){
+    host.querySelectorAll('.pst-client-request-action').forEach(function(x){x.remove();});
+    rows.slice(0,3).reverse().forEach(function(t){
+      Array.prototype.slice.call(host.querySelectorAll('.pst-ws-action')).forEach(function(x){var title=x.querySelector('.pst-ws-action-title');if(title&&String(title.textContent||'').trim()===String(t.title||'').trim())x.remove();});
+      host.insertAdjacentHTML('afterbegin',clientRequestRow(t));
+    });
+    enforceLimits();return !!rows.length;
+  }).catch(function(error){if(window.console&&console.debug)console.debug('PRISTEEL client request home surface skipped:',error&&error.message);return false;});
+}
 function apply(){
   enforceLimits();
-  return recoverProjects().then(function(){
+  return surfaceClientRequests().then(function(){return recoverProjects();}).then(function(){
     if(window.PSTDashboardTaskCardsV1&&typeof window.PSTDashboardTaskCardsV1.decorate==='function')window.PSTDashboardTaskCardsV1.decorate();
     enforceLimits();
     return true;
   });
 }
-/* A single async pass is enough; navigation and explicit refresh trigger future passes. */
 function schedule(){return apply();}
+function delayedSchedule(){setTimeout(schedule,220);}
 
 var css=document.createElement('style');css.id='pst-home-live-fix-v1-css';css.textContent=`
 #page-workspace-home .pst-hcc-hidden{display:none!important}
 #page-workspace-home .pst-live-projectcard{cursor:pointer}
 #page-workspace-home .pst-live-projectcard .pst-ws-status{background:#EDF6F9;color:#3F7F98;border:1px solid #CFE2E9}
+#page-workspace-home .pst-client-request-action{--c:#A64B42;--bg:#F9ECEA;border-left:3px solid #A64B42;background:#fff}
+#page-workspace-home .pst-client-request-action .pst-ws-action-tag{background:#F9ECEA;color:#A64B42}
 `;
 document.head.appendChild(css);
 
 document.addEventListener('click',function(event){
-  if(event.target.closest&&event.target.closest('#pst-home-view-tabs button,.pst-ws-navbtn,#pst-ws-home-refresh'))schedule();
+  if(event.target.closest&&event.target.closest('#pst-home-view-tabs button,.pst-ws-navbtn,#pst-ws-home-refresh'))delayedSchedule();
 },true);
-document.addEventListener('pst:modules-ready',schedule,{once:true});
+document.addEventListener('pst:modules-ready',delayedSchedule,{once:true});
 document.addEventListener('pst:home-projects-recovered',enforceLimits);
-window.addEventListener('pageshow',schedule,{once:true});
-window.PSTHomeLiveFixV1={apply:apply,recoverProjects:recoverProjects,enforceLimits:enforceLimits};
-schedule();
+window.addEventListener('pageshow',delayedSchedule,{once:true});
+window.PSTHomeLiveFixV1={apply:apply,recoverProjects:recoverProjects,surfaceClientRequests:surfaceClientRequests,enforceLimits:enforceLimits};
+delayedSchedule();
 })();
