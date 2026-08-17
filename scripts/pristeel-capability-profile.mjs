@@ -58,7 +58,7 @@ const FABRICATION=[
   'fabrikim','fabricim','fabrication','saldim','welding','galvaniz','hot dip galvan','prerje metal','cutting steel','shpim metal','drilling steel','lyerje industriale','coating steel','montim metal','steel erection','bravari'
 ];
 const EXCLUSIONS=[
-  'mobilje zyre','dollapa zyre','dollap metalik per zyre','dollapë metalikë për zyre','office furniture','office cabinet','instrumente kirurgjikale','instrumente mjekesore','instrumente mjekësore',
+  'mobilje zyre','dollapa zyre','dollap metalik per zyre','dollapa metalike per zyre','dollapë metalikë për zyre','office furniture','office cabinet','instrumente kirurgjikale','instrumente mjekesore','instrumente mjekësore',
   'pajisje mjekesore','pajisje mjekësore','medical equipment','surgical instrument','ene kuzhine','enë kuzhine','kitchen utensil','pajisje shtepiake','pajisje shtëpiake','household appliance',
   'automjete','automjet','vehicle','pjese veture','pjesë veture','auto parts','printer','kompjuter','laptop','server','telefon'
 ];
