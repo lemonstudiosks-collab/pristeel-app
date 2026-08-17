@@ -1,0 +1,11 @@
+'use strict';
+const fs=require('fs');const assert=require('assert');
+const src=fs.readFileSync('pristeel-project-discovery.js','utf8');
+assert(!/MutationObserver\s*\(/.test(src),'Project Discovery must not install a permanent DOM observer');
+assert(!/getElementById\(['\"]page-home['\"]\)/.test(src),'Project Discovery must never target legacy #page-home');
+assert(!/\.pst-dash[^\n]*insertBefore|insertBefore\([^\n]*\.pst-dash/.test(src),'Project Discovery must not inject a dashboard strip into legacy Home');
+assert(/window\.pstProjectDiscovery=discover/.test(src),'Project Discovery public discovery API must remain available');
+assert(/window\.pstProjectDiscoveryOpen=function/.test(src),'Project Discovery public modal API must remain available');
+assert(/function scheduleAuditShortcut\(\)/.test(src),'Project Discovery may keep a bounded Gmail audit shortcut');
+assert(/\[0,350,900,1800,3500,6000\]/.test(src),'Audit shortcut must use a bounded retry schedule');
+console.log('Project Discovery runtime smoke: OK');
