@@ -7,7 +7,7 @@
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "c58cb035c89e172809598e8e09fde8b7e33785d8",
+    "bootstrapLoaderGitBlobSha": "c3a7afc1644c6cc95070554a61d944683e5e932c",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "25ea9186cf554f2c8b4f4a0f57ebae4bd6444f73"
   },
