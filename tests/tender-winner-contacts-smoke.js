@@ -13,7 +13,7 @@ const row={id:'award-1',procurement_no:'TED-550551-2026',publication_no:'550551-
   {name:'Kovoreal - Holic s.r.o.',city:'Holic',country:'SVK',official_website:'https://kovoreal.sk',contacts:[{type:'email',value:'kovoreal4@kovoreal.sk',purpose:'sales',source_type:'TED',source_url:null,confidence:'high',score:92},{type:'phone',value:'+421123456',purpose:'general',source_type:'official_website',source_url:'https://kovoreal.sk/kontakt',confidence:'high',score:76}]},
   {name:'Rudolf Metallbau GmbH',city:'Wien',country:'AUT',official_website:'https://rudolf-metallbau.at',contacts:[{type:'email',value:'einkauf@rudolf-metallbau.at',purpose:'procurement',source_type:'official_website',source_url:'https://rudolf-metallbau.at/kontakt',confidence:'high',score:110},{type:'email',value:'Angebot@rudolf-metallbau.at',purpose:'tender',source_type:'TED',source_url:null,confidence:'high',score:96}]}
  ],unassigned_ted_contacts:{emails:[],websites:[]}}
-}};
+}}};
 window.supaFetch=async(path,method,body)=>{calls.push({path,method,body});return [JSON.parse(JSON.stringify(row))];};
 window.pstKekRender=()=>{};window.pstKekLoad=async()=>{};
 const code=fs.readFileSync('pristeel-tender-winner-contacts-v1.js','utf8');
