@@ -41,7 +41,8 @@ function recover(force){
   inFlight=timedFetch().then(function(result){inFlight=null;if(!result.ok)return false;return render(result.rows);}).catch(function(){inFlight=null;return false;});
   return inFlight;
 }
-function schedule(force){[0,250,900,2200,5000,9000].forEach(function(ms){setTimeout(function(){recover(!!force);},ms);});}
+/* Recovery is now event-driven. One bounded fetch per trigger replaces 9 seconds of timed re-renders. */
+function schedule(force){return recover(!!force);}
 document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.pst-ws-navbtn[data-key="home"],#pst-ws-home-refresh'))schedule(!!e.target.closest('#pst-ws-home-refresh'));},true);
 document.addEventListener('pst:modules-ready',function(){schedule(true);},{once:true});
 window.addEventListener('pageshow',function(){schedule(true);},{once:true});
