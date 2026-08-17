@@ -19,6 +19,10 @@ assert(
   !rolesSource.includes('(function loadProjectEmailsModule(){'),
   'The old immediate project-emails bootstrap must not remain active'
 );
+assert(
+  guardSource.includes('window.__pstDashboardCalmLoaded=true;'),
+  'Pre-bootstrap guard must block even a browser-cached legacy calm Home before ordered runtime starts'
+);
 
 const listeners = Object.create(null);
 const nodes = {
@@ -75,6 +79,7 @@ const context = vm.createContext({
 context.window = context;
 
 vm.runInContext(guardSource, context, { filename: 'pristeel-home-runtime-owner-guard-v1.js' });
+assert.strictEqual(context.window.__pstDashboardCalmLoaded, true, 'legacy calm Home must be blocked before bootstrap');
 
 function workspaceGo(key) {
   legacyCalls.push(String(key || 'home'));
