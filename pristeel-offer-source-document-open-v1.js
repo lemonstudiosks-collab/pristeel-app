@@ -25,3 +25,7 @@ var obs=new MutationObserver(function(){clearTimeout(obs._t);obs._t=setTimeout(d
 var css=document.createElement('style');css.textContent='.pst-real-source-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid #edf1f2}.pst-real-source-row:first-of-type{border-top:0}.pst-real-source-row>div{flex:1;min-width:0}.pst-real-source-row b{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-real-source-row small{display:block;font-size:9px;color:#839198;margin-top:2px}.pst-real-source-btn{border:1px solid #cfe0e6;border-radius:8px;background:#fff;color:#3f7f98;padding:7px 10px;font-size:9px;font-weight:750;text-decoration:none;cursor:pointer;white-space:nowrap}.pst-real-source-btn:hover{background:#f4fafc}.pst-real-source-btn:disabled{opacity:.55;cursor:wait}';document.head.appendChild(css);
 window.PSTOfferSourceDocumentOpenV1={decorate:decorate,openAttachment:openAttachment};
 })();
+(function(){
+  if(window.PSTOfferPdfEmailWorkflowV1||document.querySelector('script[data-pst-offer-pdf-email-workflow]'))return;
+  var s=document.createElement('script');s.src='pristeel-offer-pdf-email-workflow-v1.js?v=20260818-1';s.defer=true;s.setAttribute('data-pst-offer-pdf-email-workflow','1');document.head.appendChild(s);
+})();
