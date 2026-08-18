@@ -84,6 +84,8 @@ const {JSDOM}=require('jsdom');
   assert(readability.textContent.includes('.pf2-btn{min-height:36px'),'Workspace buttons must be easier to read and click');
 
   /* A created quote is not a sent quote. This is the Dukley regression case. */
+  project.status='pritje';
+  project.pipeline_stage='client_offer';
   integrity.ourOffers=[{
     doc_nr:'PST-OFF-2026-08-024',
     total_eur:68009.98,
@@ -99,6 +101,10 @@ const {JSDOM}=require('jsdom');
   assert(draftOverview.includes('Plotëso çmimin e montimit në draftin PST-OFF-2026-08-024.'),'Draft offer must surface the real open action from Project Intelligence');
   assert(draftOverview.includes('nuk është dërguar te klienti'),'Draft offer must explicitly state that it has not been sent');
   assert(!draftOverview.includes('Oferta te blerësi'),'Creating a quote must never imply that it was sent to the buyer');
+  assert(draftOverview.includes('StatusiAktiv'),'Open technical status "pritje" must render as business status Aktiv');
+  assert(draftOverview.includes('FazaPërgatitje oferte'),'Draft client offer must render business phase Përgatitje oferte');
+  assert(draftOverview.includes('OfertaDraft'),'Draft offer badge must be visible in project summary');
+  assert(draftOverview.includes('Montimi pending'),'Open installation price must be visible as a blocker badge');
 
   /* Only explicit sent evidence may move the project to buyer-waiting/follow-up state. */
   integrity.ourOffers[0].followup_status='sent';
@@ -108,6 +114,8 @@ const {JSDOM}=require('jsdom');
   const sentOverview=w.document.getElementById('pst-pi-body').textContent;
   assert(sentOverview.includes('Oferta te blerësi'),'Explicit sent evidence must allow the buyer-waiting state');
   assert(sentOverview.includes('regjistruar si e dërguar'),'Sent state must explain the evidence-backed transition');
+  assert(sentOverview.includes('FazaOferta te klienti'),'Sent offer must render the buyer-facing phase');
+  assert(sentOverview.includes('OfertaDërguar'),'Sent offer badge must be visible');
 
   let refreshCalls=[];
   const liveOpen=w.pstOpenProjectWorkspace;
