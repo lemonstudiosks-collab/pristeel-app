@@ -65,6 +65,59 @@ function installInteractionCss(){
   s.textContent='#pst-offer-source-modal{display:none!important}#pst-offer-source-modal.on{display:block!important}';
   document.head.appendChild(s);
 }
+function currentDocNr(){
+  var e=document.getElementById('of-nr'),v=String(e&&e.value||'').trim();
+  if(/^PST-OFF-/i.test(v))return v;
+  var p=document.getElementById('of-pre'),m=String(p&&p.textContent||'').match(/PST-OFF-\d{4}-\d{2}-\d{3,}/i);
+  return m?m[0]:'';
+}
+function previewLang(){
+  var l=String((document.getElementById('of-lang')||{}).value||'').toLowerCase().slice(0,2);
+  if(l)return l;
+  var t=String((document.getElementById('of-pre')||{}).textContent||'');
+  if(/\bPONUDA\b|\bPONUĐAČ\b|\bUSLOVI\b/i.test(t))return'sr';
+  if(/\bOFERT[ËE]\b|\bKUSHTET\b/i.test(t))return'sq';
+  if(/\bANGEBOT\b/i.test(t))return'de';
+  return'en';
+}
+function sent(row){
+  var st=row&&row.offer_state||{},s=String(row&&(row.status||row.state||row.followup_status)||'').toLowerCase();
+  return !!(row&&(row.sent_at||row.email_sent_at||row.dispatched_at)||st.pst_sent_at||st.sent_at||st.sent===true||/(sent|d[eë]rguar|versendet|poslano|submitted)/i.test(s));
+}
+function applyPreviewState(row){
+  var pre=document.getElementById('of-pre');if(!pre||!row)return false;
+  var lang=previewLang(),isSent=sent(row),texts={
+    sr:{head:'Ponuda — sačuvana verzija',saved:'SAČUVANO · NIJE POSLATO',sent:'POSLATO'},
+    sq:{head:'Oferta — versioni i ruajtur',saved:'RUAJTUR · NUK ËSHTË DËRGUAR',sent:'DËRGUAR'},
+    en:{head:'Quotation — saved version',saved:'SAVED · NOT SENT',sent:'SENT'},
+    de:{head:'Angebot — gespeicherte Version',saved:'GESPEICHERT · NICHT VERSENDET',sent:'VERSENDET'}
+  },L=texts[lang]||texts.sr,b=pre.querySelector('[data-pst-offer-draft-banner="1"]');
+  if(b){
+    b.textContent=isSent?L.sent:L.saved;
+    b.style.background=isSent?'#EAF5EF':'#EEF7FA';
+    b.style.borderColor=isSent?'#BFDCCA':'#C9DFE7';
+    b.style.color=isSent?'#2F7657':'#3E7E96';
+  }
+  var all=document.querySelectorAll('h1,h2,h3,h4,div,span');
+  for(var i=0;i<all.length;i++){
+    var x=all[i];if(x===pre||(x.closest&&x.closest('#of-pre'))||x.children.length)continue;
+    var t=String(x.textContent||'').trim();
+    if(/^(Angebot|Ponuda|Oferta|Quotation)\s*[—-]\s*(Entwurf|draft|review|pamja|final|gespeicherte|sačuvana|saved)/i.test(t)){x.textContent=L.head;break;}
+  }
+  return true;
+}
+async function patchSavedPreview(){
+  var nr=currentDocNr(),pre=document.getElementById('of-pre');if(!nr||!pre)return false;
+  var d=window.__pstIntegrityLastData||{},row=arr(d.ourOffers).filter(function(x){return String(x&&(x.doc_nr||x.document_nr)||'')===nr;})[0]||null;
+  if(row)return applyPreviewState(row);
+  if(typeof window.supaFetch!=='function')return false;
+  try{
+    var rows=await window.supaFetch('documents_registry?doc_nr=eq.'+encodeURIComponent(nr)+'&select=doc_nr,followup_status,offer_state,total_eur,client,project,created_at&limit=1');
+    row=rows&&rows[0]||null;if(!row)return false;
+    return applyPreviewState(row);
+  }catch(e){return false;}
+}
+function schedulePreview(){[80,260,700,1400].forEach(function(ms){setTimeout(patchSavedPreview,ms);});}
 function loadIntegrityUi(){
   installInteractionCss();
   if(!window.PSTOurOfferHistoryUiV1)loadUi('pristeel-our-offer-history-ui-v1.js?v=20260818-3','data-pst-our-offer-history-ui');
@@ -72,13 +125,19 @@ function loadIntegrityUi(){
   if(!window.PSTProjectEmailReviewUiV1)loadUi('pristeel-project-email-review-ui-v1.js?v=20260813-review2','data-pst-project-email-review-ui');
 }
 
-install();loadIntegrityUi();
-document.addEventListener('pst:modules-ready',function(){install();loadIntegrityUi();},{once:true});
+install();loadIntegrityUi();schedulePreview();
+document.addEventListener('pst:modules-ready',function(){install();loadIntegrityUi();schedulePreview();},{once:true});
+document.addEventListener('pst:offer-saved',schedulePreview);
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('button'):null;
+  if(b&&/^(ruaj|save|sačuvaj|speichern|e dërgova|shëno ofertën si të dërguar)$/i.test(String(b.textContent||'').trim()))schedulePreview();
+},true);
 window.PSTOurOfferSourceV1={
   install:install,
   canonicalize:canonicalize,
   newestFirst:newestFirst,
   loadIntegrityUi:loadIntegrityUi,
+  patchSavedPreview:patchSavedPreview,
   isRegistryQuote:isRegistryQuote,
   isLegacyOurOffer:isLegacyOurOffer
 };
