@@ -14,6 +14,31 @@ function obj(v){
   if(typeof v==='string'&&v.trim())try{var x=JSON.parse(v);return x&&typeof x==='object'?x:{};}catch(e){}
   return{};
 }
+function syncMemory(nr,project,client,totalEur,payPlan,state,revenueBreakdown,followupStatus){
+  var d=window.__pstIntegrityLastData;if(!d)return;
+  var rows=Array.isArray(d.ourOffers)?d.ourOffers:[],row=null;
+  for(var i=0;i<rows.length;i++){
+    if(String(rows[i]&&(rows[i].doc_nr||rows[i].document_nr)||'')===String(nr)){row=rows[i];break;}
+  }
+  if(!row){
+    row={doc_nr:nr,series:'QUO',created_at:new Date().toISOString()};
+    rows.unshift(row);
+    d.ourOffers=rows;
+  }
+  row.project=project||row.project||'';
+  row.client=client||row.client||'';
+  row.total_eur=totalEur||row.total_eur||null;
+  row.payment_plan=payPlan||row.payment_plan||null;
+  row.offer_state=state;
+  if(revenueBreakdown!==undefined)row.revenue_breakdown=revenueBreakdown;
+  row.followup_status=followupStatus||row.followup_status||'open';
+  d.currentOurOffer=row;
+  d.ourOfferHistory=rows.filter(function(x){return x!==row;});
+}
+function refreshUi(){
+  try{if(window.PSTOurOfferHistoryUiV1&&typeof window.PSTOurOfferHistoryUiV1.schedule==='function')window.PSTOurOfferHistoryUiV1.schedule();}catch(e){}
+  try{document.dispatchEvent(new CustomEvent('pst:offer-saved'));}catch(e){}
+}
 function install(){
   var original=window.registerDocNr;
   if(typeof original!=='function')return false;
@@ -41,7 +66,11 @@ function install(){
         merged.pst_document_status=sent?'sent':'saved';
         patch.offer_state=merged;
         if(!sent)patch.followup_status='open';
-        return window.supaFetch(path,'PATCH',patch).then(function(){return value;});
+        return window.supaFetch(path,'PATCH',patch).then(function(){
+          syncMemory(nr,project,client,totalEur,payPlan,merged,revenueBreakdown,patch.followup_status||(rows&&rows[0]&&rows[0].followup_status));
+          refreshUi();
+          return value;
+        });
       });
     });
   }
