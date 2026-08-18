@@ -3,7 +3,7 @@
   "name": "PPPP GitHub Pages Production Artifact",
   "mode": "PRODUCTION_ARTIFACT",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "799a6a78a8a4920934553ce2136a92f4c8e02966",
+  "auditedAtCommit": "b8466e8bfec724a320ebcd1e90363985edfb173f",
   "productionSwitchBaselineCommit": "799a6a78a8a4920934553ce2136a92f4c8e02966",
   "runtimeManifest": "runtime-manifest.json",
   "deploymentWorkflow": ".github/workflows/static.yml",
@@ -17,6 +17,22 @@
     {
       "path": "pristeel-document-center.css",
       "reason": "Loaded dynamically by pristeel-document-center-stable-v2.js and therefore not visible in the ordered JavaScript runtime manifest."
+    },
+    {
+      "path": "pristeel-our-offer-history-ui-v1.js",
+      "reason": "Loaded dynamically by pristeel-our-offer-source-v1.js to render interactive client-offer history, Commercial popups and project-step icons."
+    },
+    {
+      "path": "pristeel-offer-source-document-open-v1.js",
+      "reason": "Loaded dynamically by pristeel-our-offer-source-v1.js to open real supplier source documents from the Commercial modal."
+    },
+    {
+      "path": "pristeel-project-pipeline-consistency-v1.js",
+      "reason": "Loaded dynamically by pristeel-our-offer-source-v1.js and required by the current project commercial consistency layer."
+    },
+    {
+      "path": "pristeel-project-email-review-ui-v1.js",
+      "reason": "Loaded dynamically by pristeel-our-offer-source-v1.js and required by the current project email review layer."
     },
     {
       "path": "pristeel-gmail-launcher-v2.html",
@@ -42,6 +58,16 @@
       "source": "pristeel-document-center-stable-v2.js",
       "contains": "pristeel-document-center.css",
       "reason": "Document Center stylesheet dependency."
+    },
+    {
+      "source": "pristeel-our-offer-source-v1.js",
+      "contains": "pristeel-our-offer-history-ui-v1.js",
+      "reason": "Current Commercial client-offer UI dependency."
+    },
+    {
+      "source": "pristeel-our-offer-source-v1.js",
+      "contains": "pristeel-offer-source-document-open-v1.js",
+      "reason": "Current Commercial supplier source-document opener dependency."
     },
     {
       "source": "gmail-addon/Code.gs",
