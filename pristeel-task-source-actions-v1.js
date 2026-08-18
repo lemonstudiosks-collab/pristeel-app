@@ -1,6 +1,6 @@
-/* PRISTEEL task source actions v4
+/* PRISTEEL task source actions v5
  * Safe, read-only source shortcut for Workspace action rows.
- * Also refreshes the current Home visual owner after the ordered runtime so cached Home styling cannot win.
+ * Refreshes the current Home visual owner, then loads the final Happy Home cosmetic layer.
  */
 (function(){
 'use strict';
@@ -55,36 +55,51 @@ function decorate(){
   if(!page||page.style.display==='none')return 0;
   var count=0;
   page.querySelectorAll('#pst-ws-home-actions > .pst-ws-action').forEach(function(row){if(enhanceRow(row))count++;});
+  try{if(window.PSTHomeHappyV1&&typeof window.PSTHomeHappyV1.schedule==='function')window.PSTHomeHappyV1.schedule();}catch(e){}
   return count;
 }
 function schedule(){[0,120,350,800,1600].forEach(function(ms){setTimeout(decorate,ms);});}
 function installStyle(){
-  if(document.getElementById('pst-task-source-actions-v4-css'))return;
+  if(document.getElementById('pst-task-source-actions-v5-css'))return;
   var style=document.createElement('style');
-  style.id='pst-task-source-actions-v4-css';
+  style.id='pst-task-source-actions-v5-css';
   style.textContent=`
 #page-workspace-home .pst-task-source-open{height:32px;border:1px solid #CFE0E7;border-radius:10px;padding:0 11px;background:#F8FBFC;color:#3F7F98;font-size:10px;font-weight:760;line-height:1;cursor:pointer;white-space:nowrap}
 #page-workspace-home .pst-task-source-open:hover{background:#EDF6F9;border-color:#B8D4DF;color:#2F6E86}
 `;
   document.head.appendChild(style);
 }
+function loadHappyHome(){
+  if(window.PSTHomeHappyV1){try{window.PSTHomeHappyV1.schedule();}catch(e){}return;}
+  if(document.querySelector('script[data-pst-home-happy-v1]'))return;
+  var h=document.createElement('script');
+  h.src='pristeel-home-happy-v1.js?happy_v1='+String(Date.now());
+  h.defer=true;
+  h.setAttribute('data-pst-home-happy-v1','1');
+  h.onload=function(){try{if(window.PSTHomeHappyV1&&typeof window.PSTHomeHappyV1.schedule==='function')window.PSTHomeHappyV1.schedule();}catch(e){}};
+  h.onerror=function(){console.error('Nuk u ngarkua Home Happy v1.');};
+  document.head.appendChild(h);
+}
 function loadCurrentHomeVisual(){
-  if(document.querySelector('script[data-pst-home-command-live-v5]'))return;
+  if(document.querySelector('script[data-pst-home-command-live-v5]')){loadHappyHome();return;}
   /* The ordered bootstrap may have loaded an older cached copy. Allow the current source file to initialize again. */
   window.__pstHomeCommandCenterV2=false;
   var s=document.createElement('script');
   s.src='pristeel-home-command-center-v2.js?home_v5='+String(Date.now());
   s.defer=true;
   s.setAttribute('data-pst-home-command-live-v5','1');
-  s.onload=function(){try{if(window.PSTHomeCommandCenterV2&&typeof window.PSTHomeCommandCenterV2.refresh==='function')window.PSTHomeCommandCenterV2.refresh();}catch(e){}};
-  s.onerror=function(){console.error('Nuk u ngarkua Home Command Center v5.');};
+  s.onload=function(){
+    try{if(window.PSTHomeCommandCenterV2&&typeof window.PSTHomeCommandCenterV2.refresh==='function')window.PSTHomeCommandCenterV2.refresh();}catch(e){}
+    setTimeout(loadHappyHome,80);
+  };
+  s.onerror=function(){console.error('Nuk u ngarkua Home Command Center v5.');loadHappyHome();};
   document.head.appendChild(s);
 }
 installStyle();
 window.addEventListener('pst-dashboard-rendered',schedule);
-document.addEventListener('pst:home-canonical-rendered',schedule);
+document.addEventListener('pst:home-canonical-rendered',function(){schedule();loadHappyHome();});
 document.addEventListener('pst:modules-ready',function(){schedule();loadCurrentHomeVisual();},{once:true});
-window.addEventListener('pageshow',function(){schedule();setTimeout(loadCurrentHomeVisual,100);},{once:true});
+window.addEventListener('pageshow',function(){schedule();setTimeout(loadCurrentHomeVisual,100);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){schedule();setTimeout(loadCurrentHomeVisual,1400);},{once:true});else{schedule();setTimeout(loadCurrentHomeVisual,900);}
-window.PSTTaskSourceActionsV1={sourceUrl:sourceUrl,metadataText:metadataText,enhanceRow:enhanceRow,decorate:decorate,loadCurrentHomeVisual:loadCurrentHomeVisual};
+window.PSTTaskSourceActionsV1={sourceUrl:sourceUrl,metadataText:metadataText,enhanceRow:enhanceRow,decorate:decorate,loadCurrentHomeVisual:loadCurrentHomeVisual,loadHappyHome:loadHappyHome};
 })();
