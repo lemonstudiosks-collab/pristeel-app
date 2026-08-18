@@ -53,7 +53,7 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(w.PSTProjectFirstCommercialV1._test.coating(sector),0.56,'Coating must read structured component rate');
   assert.strictEqual(w.PSTProjectFirstCommercialV1._test.coatingQty(sector),50,'Coating scope must read structured component quantity');
   assert.strictEqual(w.PSTProjectFirstCommercialV1._test.transport(sector),100,'Transport must read structured cost');
-  assert.strictEqual(w.PSTProjectFirstCommercialV1._test.installationPending(sector,our),true,'Missing installation must mark margin preliminary');
+  assert.strictEqual(w.PSTProjectFirstCommercialV1._test.saleInstallPending(our),true,'Missing installation must mark margin preliminary');
 
   const next=w.document.querySelector('[data-pf2-action="tab:commercial"]');
   assert(next,'Overview must expose the commercial comparison next-step action');
