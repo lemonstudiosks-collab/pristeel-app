@@ -6,8 +6,8 @@
  * - Provides one guarded programmatic path for Project Intelligence analysis runs.
  * - If an AI run returns without creating a project_analyses row, retries once with the existing rule engine.
  * - Clears stale per-project running locks so a completed UI cannot stay blocked forever.
- * - Preserves a newer server-reactive analysis when Project Summary opens, instead of overwriting it with a weaker generic browser analysis.
- * - If Project Summary has no authoritative server analysis and cannot run fresh analysis because Google authorization failed, starts the guarded analysis from PPPP data after the summary settles.
+ * - Preserves newer server/canonical reactive analyses when Project Summary opens, instead of overwriting them with a weaker generic browser analysis.
+ * - If Project Summary has no authoritative reactive analysis and cannot run fresh analysis because Google authorization failed, starts the guarded analysis from PPPP data after the summary settles.
  * - Does not send email, write BOM/tasks, or change project status.
  */
 (function(){
@@ -31,7 +31,7 @@ async function latestRecord(pid){
   try{var rows=await window.supaFetch('project_analyses?project_id=eq.'+enc(pid)+'&select=id,created_at,engine&order=created_at.desc&limit=1');return Array.isArray(rows)&&rows[0]?rows[0]:null;}catch(e){return null;}
 }
 function isNewRecord(before,after){return !!after&&(!before||str(before.id)!==str(after.id)||str(before.created_at)!==str(after.created_at));}
-function authoritativeRecord(record){return !!record&&/^server_/i.test(str(record.engine));}
+function authoritativeRecord(record){var e=str(record&&record.engine).toLowerCase().trim();return !!e&&(e.indexOf('server_')===0||e==='project_state_rules'||e==='dynamic_plan_rules');}
 function summaryIntentActive(pid){var x=summaryIntent[pid];if(!x)return false;if(Date.now()-x.at>SUMMARY_INTENT_MS){delete summaryIntent[pid];return false;}return true;}
 function timeoutPromise(p,ms,label){
   return new Promise(function(resolve,reject){
@@ -170,5 +170,5 @@ document.addEventListener('click',onAnalysisClick,true);
 document.addEventListener('click',onSummaryClick,true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 setTimeout(install,300);setTimeout(install,1200);
-window.PSTProjectAnalysisRunGuardV1={version:'20260818-6',install:install,run:run,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord,authoritativeRecord:authoritativeRecord,summaryIntentActive:summaryIntentActive,activeRun:activeRun,summarySettled:summarySettled,summaryBusy:summaryBusy}};
+window.PSTProjectAnalysisRunGuardV1={version:'20260818-7',install:install,run:run,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord,authoritativeRecord:authoritativeRecord,summaryIntentActive:summaryIntentActive,activeRun:activeRun,summarySettled:summarySettled,summaryBusy:summaryBusy}};
 })();
