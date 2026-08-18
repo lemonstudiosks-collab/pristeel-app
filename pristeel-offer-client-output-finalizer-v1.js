@@ -5,6 +5,8 @@
  * - Removes mixed-language commercial labels from the client-facing output.
  * - VAT/PDV exclusion is explicit in the commercial total box.
  * - Informative BOM stays visible below the offer in the app, but outside the client PDF.
+ * - Incomplete installation never renders as 0.00 EUR; incomplete drafts are visibly gated.
+ * - A pending installation changes the total label to subtotal and blocks PDF export until completed.
  * No pricing, BOM, supplier offer, project, or saved source data is changed.
  */
 (function(){
@@ -14,6 +16,7 @@ window.__pstOfferClientOutputFinalizerV1=true;
 
 function E(id){return document.getElementById(id);}
 function preview(){return E('of-pre');}
+function num(v){var n=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(n)?n:0;}
 function formLang(){return String((E('of-lang')||{value:'sr'}).value||'sr').toLowerCase().slice(0,2);}
 function leafTextNodes(root){
   var out=[];
@@ -25,9 +28,9 @@ function leafTextNodes(root){
 function documentLang(root){
   var t=String(root&&root.textContent||'');
   if(/\bANGEBOT\b|\bANBIETER\b|\bKONDITIONEN\b|Gesamtpreis\s*\(Netto\)|Mit freundlichen Grüßen/i.test(t))return'de';
-  if(/\bPONUDA\b|\bPONUĐAČ\b|\bUSLOVI\b|Ukupna cena\s*\(neto\)|S poštovanjem/i.test(t))return'sr';
-  if(/\bOFERT[ËE]\b|\bKUSHTET\b|Çmimi total\s*\(neto\)|Me respekt/i.test(t))return'sq';
-  if(/\bQUOTATION\b|\bOFFER\b|\bCONDITIONS\b|Total price\s*\(net\)|Kind regards/i.test(t))return'en';
+  if(/\bPONUDA\b|\bPONUĐAČ\b|\bUSLOVI\b|Ukupna cena\s*\(neto\)|Međuzbir bez montaže|S poštovanjem/i.test(t))return'sr';
+  if(/\bOFERT[ËE]\b|\bKUSHTET\b|Çmimi total\s*\(neto\)|Nëntotali pa montim|Me respekt/i.test(t))return'sq';
+  if(/\bQUOTATION\b|\bOFFER\b|\bCONDITIONS\b|Total price\s*\(net\)|Subtotal excluding installation|Kind regards/i.test(t))return'en';
   return formLang();
 }
 function exactLeaf(root,re){
@@ -59,10 +62,10 @@ function vatText(lang){
   return M[lang]||M.en;
 }
 function totalLabelRe(lang){
-  if(lang==='sr')return /^Ukupna cena\s*\(neto\)$/i;
-  if(lang==='sq')return /^Çmimi total\s*\(neto\)$/i;
-  if(lang==='de')return /^Gesamtpreis\s*\(netto\)$/i;
-  return /^Total price\s*\(net\)$/i;
+  if(lang==='sr')return /^(Ukupna cena\s*\(neto\)|Međuzbir bez montaže)$/i;
+  if(lang==='sq')return /^(Çmimi total\s*\(neto\)|Nëntotali pa montim)$/i;
+  if(lang==='de')return /^(Gesamtpreis\s*\(netto\)|Zwischensumme ohne Montage)$/i;
+  return /^(Total price\s*\(net\)|Subtotal excluding installation)$/i;
 }
 function ensureVatNote(root,lang){
   if(!root)return;
@@ -81,18 +84,10 @@ function ensureVatNote(root,lang){
 }
 function commercialMap(lang){
   var M={
-    de:{
-      base:'Stahlkonstruktion',zinc:'Feuerverzinkung',coat:'Pulverbeschichtung nach Feuerverzinkung',transport:'Transport',install:'Montage der Stahlkonstruktion',agreement:'Nach Vereinbarung',lump:'pauschal',delivery:'Lieferort'
-    },
-    en:{
-      base:'Steel construction',zinc:'Hot-dip galvanizing',coat:'Powder coating after galvanizing',transport:'Transport',install:'Installation of the steel structure',agreement:'As agreed',lump:'lump sum',delivery:'Delivery place'
-    },
-    sq:{
-      base:'Konstruksion çeliku',zinc:'Zinkim i nxehtë',coat:'Powder coating pas zinkimit',transport:'Transport',install:'Montimi i konstruksionit metalik',agreement:'Sipas marrëveshjes',lump:'paushall',delivery:'Vendi i dorëzimit'
-    },
-    sr:{
-      base:'Čelična konstrukcija',zinc:'Toplo cinkovanje',coat:'Plastifikacija nakon toplog cinkovanja',transport:'Transport',install:'Montaža čelične konstrukcije',agreement:'Po dogovoru',lump:'paušal',delivery:'Mesto isporuke'
-    }
+    de:{base:'Stahlkonstruktion',zinc:'Feuerverzinkung',coat:'Pulverbeschichtung nach Feuerverzinkung',transport:'Transport',install:'Montage der Stahlkonstruktion',agreement:'Nach Vereinbarung',lump:'pauschal',delivery:'Lieferort'},
+    en:{base:'Steel construction',zinc:'Hot-dip galvanizing',coat:'Powder coating after galvanizing',transport:'Transport',install:'Installation of the steel structure',agreement:'As agreed',lump:'lump sum',delivery:'Delivery place'},
+    sq:{base:'Konstruksion çeliku',zinc:'Zinkim i nxehtë',coat:'Powder coating pas zinkimit',transport:'Transport',install:'Montimi i konstruksionit metalik',agreement:'Sipas marrëveshjes',lump:'paushall',delivery:'Vendi i dorëzimit'},
+    sr:{base:'Čelična konstrukcija',zinc:'Toplo cinkovanje',coat:'Plastifikacija nakon toplog cinkovanja',transport:'Transport',install:'Montaža čelične konstrukcije',agreement:'Po dogovoru',lump:'paušal',delivery:'Mesto isporuke'}
   };
   return M[lang]||M.en;
 }
@@ -117,19 +112,15 @@ function normalizeClientLanguage(root,lang){
     }
   });
 }
-function bomHeadingRe(){
-  return /^(Pregled materijala \(informativno\)|Pasqyra e materialit \(informative\)|Material overview \(informative\)|Materialübersicht \(informativ\))$/i;
-}
+function bomHeadingRe(){return /^(Pregled materijala \(informativno\)|Pasqyra e materialit \(informative\)|Material overview \(informative\)|Materialübersicht \(informativ\))$/i;}
 function moveBomOutsideOffer(root){
   if(!root)return;
   var oldOutside=document.querySelector('[data-pst-client-bom-external="1"]');
   if(oldOutside)oldOutside.remove();
-
   var oldAppendix=root.querySelector('[data-pst-client-bom-appendix="1"]');
   var scope=oldAppendix||root;
   var heading=exactLeaf(scope,bomHeadingRe());
   if(!heading)return;
-
   var title=heading;
   while(title.parentElement&&title.parentElement!==scope&&title.parentElement.children.length===1){title=title.parentElement;}
   var table=title.nextElementSibling;
@@ -138,51 +129,131 @@ function moveBomOutsideOffer(root){
     if(!table)return;
     if(title===table)return;
   }
-
   var panel=document.createElement('div');
   panel.setAttribute('data-pst-client-bom-external','1');
   panel.style.cssText='margin:24px 0 8px;padding:22px 24px;border:1px solid #E5EAEC;border-radius:14px;background:#fff;overflow-x:auto';
-  panel.appendChild(title);
-  panel.appendChild(table);
-  root.insertAdjacentElement('afterend',panel);
-
+  panel.appendChild(title);panel.appendChild(table);root.insertAdjacentElement('afterend',panel);
   if(oldAppendix&&oldAppendix.isConnected)oldAppendix.remove();
 }
+
+function draftMap(lang){
+  var M={
+    sr:{pending:'DRAFT · NIJE SPREMNO ZA SLANJE',ready:'DRAFT · SPREMNO ZA PREGLED',price:'ZA DOPUNU',excluded:'NIJE UKLJUČENO',subtotal:'Međuzbir bez montaže',heading:'Ponuda — draft za pregled',why:'Cijena montaže mora biti dopunjena prije PDF izvoza.'},
+    sq:{pending:'DRAFT · JO GATI PËR DËRGIM',ready:'DRAFT · GATI PËR RISHIKIM',price:'PËR PLOTËSIM',excluded:'NUK PËRFSHIHET',subtotal:'Nëntotali pa montim',heading:'Oferta — draft për rishikim',why:'Çmimi i montimit duhet të plotësohet para eksportit PDF.'},
+    en:{pending:'DRAFT · NOT READY TO SEND',ready:'DRAFT · READY FOR REVIEW',price:'TO BE COMPLETED',excluded:'NOT INCLUDED',subtotal:'Subtotal excluding installation',heading:'Quotation — review draft',why:'Installation price must be completed before PDF export.'},
+    de:{pending:'ENTWURF · NICHT VERSANDBEREIT',ready:'ENTWURF · ZUR PRÜFUNG BEREIT',price:'NOCH EINZUTRAGEN',excluded:'NICHT ENTHALTEN',subtotal:'Zwischensumme ohne Montage',heading:'Angebot — Entwurf zur Prüfung',why:'Der Montagepreis muss vor dem PDF-Export ergänzt werden.'}
+  };
+  return M[lang]||M.en;
+}
+function installationInput(){return E('pst-sale-install')||E('pst-of-install')||E('of-install');}
+function installTextRe(){return /(montaž|montaz|montim|installation|montage)/i;}
+function findInstallRow(root){
+  if(!root)return null;
+  var leaves=Array.prototype.slice.call(root.querySelectorAll('*')).filter(function(el){return !el.children.length&&installTextRe().test(String(el.textContent||''));});
+  for(var i=0;i<leaves.length;i++){
+    var p=leaves[i];
+    for(var j=0;j<5&&p&&p!==root;j++,p=p.parentElement){
+      var txt=String(p.textContent||'');
+      if(installTextRe().test(txt)&&(/0[,.]00\s*(?:€|EUR)/i.test(txt)||/cijena za dopunu|to be completed|për plotësim|noch einzutragen/i.test(txt)))return p;
+    }
+  }
+  return null;
+}
+function pendingInstallation(root){
+  var input=installationInput();
+  if(input&&num(input.value)>0)return false;
+  return !!findInstallRow(root);
+}
+function replaceZeroLeaves(row,lang){
+  if(!row)return;
+  var L=draftMap(lang),hits=[];
+  Array.prototype.slice.call(row.querySelectorAll('*')).forEach(function(el){
+    if(el.children.length)return;
+    var t=String(el.textContent||'').trim();
+    if(/^0[,.]00\s*(?:€|EUR)?$/i.test(t))hits.push(el);
+  });
+  if(hits[0])hits[0].textContent=L.price;
+  if(hits[1])hits[1].textContent=L.excluded;
+}
+function patchSubtotal(root,lang,pending){
+  var label=exactLeaf(root,totalLabelRe(lang));
+  if(!label)return;
+  var L=draftMap(lang);
+  if(pending)label.textContent=L.subtotal;
+}
+function currentOfferDraft(){
+  var d=window.__pstIntegrityLastData||{},o=d.currentOurOffer||((d.ourOffers||[])[0])||{};
+  var st=String(o.status||o.state||o.offer_status||'').toLowerCase();
+  var sent=!!(o.sent_at||o.sentAt||o.email_sent_at||o.dispatched_at);
+  if(sent||/(sent|d[eë]rguar|versendet|poslano|final)/i.test(st))return false;
+  return !st||/(draft|review|pending|open|prit)/i.test(st);
+}
+function setOuterHeading(lang,isDraft){
+  if(!isDraft)return;
+  var L=draftMap(lang),all=document.querySelectorAll('h1,h2,h3,h4,div,span');
+  for(var i=0;i<all.length;i++){
+    var el=all[i];if(el===preview()||el.closest&&el.closest('#of-pre'))continue;
+    if(el.children.length)continue;
+    var t=String(el.textContent||'').trim();
+    if(/Oferta jote\s*[—-]\s*pamja përfundimtare|Your offer\s*[—-]\s*final view|Dein Angebot\s*[—-]\s*final/i.test(t)){el.textContent=L.heading;break;}
+  }
+}
+function setDraftBanner(root,lang,pending,isDraft){
+  var old=root&&root.querySelector('[data-pst-offer-draft-banner="1"]');
+  if(!isDraft){if(old)old.remove();return;}
+  var L=draftMap(lang),b=old||document.createElement('div');
+  b.setAttribute('data-pst-offer-draft-banner','1');
+  b.style.cssText='margin:0 0 16px;padding:10px 14px;border:1px solid #DABF8A;border-radius:9px;background:#FFF8E8;color:#7B5A1D;font:800 12px Inter,sans-serif;letter-spacing:.7px;text-align:center';
+  b.textContent=pending?L.pending:L.ready;
+  if(!old&&root.firstChild)root.insertBefore(b,root.firstChild);else if(!old)root.appendChild(b);
+}
+function gatePdf(lang,pending){
+  var L=draftMap(lang);
+  Array.prototype.slice.call(document.querySelectorAll('button,a')).forEach(function(b){
+    if(String(b.textContent||'').trim().toUpperCase()!=='PDF')return;
+    if(pending){b.setAttribute('aria-disabled','true');b.disabled=true;b.dataset.pstDraftBlocked='1';b.title=L.why;b.style.opacity='.45';b.style.cursor='not-allowed';}
+    else if(b.dataset.pstDraftBlocked==='1'){b.removeAttribute('aria-disabled');b.disabled=false;delete b.dataset.pstDraftBlocked;b.title='';b.style.opacity='';b.style.cursor='';}
+  });
+}
+function patchDraftGate(root,lang){
+  var pending=pendingInstallation(root),isDraft=currentOfferDraft()||pending,row=findInstallRow(root);
+  if(pending){replaceZeroLeaves(row,lang);patchSubtotal(root,lang,true);}
+  setDraftBanner(root,lang,pending,isDraft);setOuterHeading(lang,isDraft);gatePdf(lang,pending);
+  return{pending:pending,isDraft:isDraft};
+}
 function patch(){
-  var root=preview();
-  if(!root)return false;
+  var root=preview();if(!root)return false;
   var lang=documentLang(root);
   normalizeClientLanguage(root,lang);
   ensureSerbianGsp(root,lang);
   ensureVatNote(root,lang);
   moveBomOutsideOffer(root);
+  patchDraftGate(root,lang);
   return true;
 }
 function wrap(name){
-  var fn=window[name];
-  if(typeof fn!=='function'||fn.__pstClientOutputFinalizer)return;
+  var fn=window[name];if(typeof fn!=='function'||fn.__pstClientOutputFinalizer)return;
   var w=function(){
-    var r=fn.apply(this,arguments);
-    patch();setTimeout(patch,0);setTimeout(patch,80);return r;
+    if(name==='printOfer'){
+      var r0=preview(),l0=documentLang(r0||document.body);if(r0&&pendingInstallation(r0)){patch();var L=draftMap(l0);if(typeof window.pstToast==='function')window.pstToast(L.why,'warn');else alert(L.why);return false;}
+    }
+    var r=fn.apply(this,arguments);patch();setTimeout(patch,0);setTimeout(patch,80);return r;
   };
   w.__pstClientOutputFinalizer=true;w.__base=fn;window[name]=w;
 }
 function install(){wrap('genOfer');wrap('printOfer');patch();}
 function loadNumberIntegrity(){
   if(window.PSTOfferNumberIntegrityV1||document.querySelector('script[data-pst-offer-number-integrity]'))return;
-  var s=document.createElement('script');
-  s.src='pristeel-offer-number-integrity-v1.js?v=20260810-1';
-  s.defer=true;
-  s.setAttribute('data-pst-offer-number-integrity','1');
-  document.head.appendChild(s);
+  var s=document.createElement('script');s.src='pristeel-offer-number-integrity-v1.js?v=20260810-1';s.defer=true;s.setAttribute('data-pst-offer-number-integrity','1');document.head.appendChild(s);
 }
-
 document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('button,a'):null;if(!b)return;
   var t=String(b.textContent||'').trim();
+  if(/^PDF$/i.test(t)&&b.dataset.pstDraftBlocked==='1'){e.preventDefault();e.stopImmediatePropagation();var root=preview(),lang=documentLang(root||document.body),L=draftMap(lang);if(typeof window.pstToast==='function')window.pstToast(L.why,'warn');else alert(L.why);return;}
   if(/Gjenero\s+Ofert/i.test(t)||/^PDF$/i.test(t)){setTimeout(patch,0);setTimeout(patch,100);}
 },true);
+document.addEventListener('input',function(e){if(e.target&&/pst-sale-install|pst-of-install|of-install/.test(e.target.id||'')){setTimeout(patch,0);}},true);
 document.addEventListener('pst:modules-ready',function(){install();loadNumberIntegrity();setTimeout(install,1000);});
 loadNumberIntegrity();install();setTimeout(install,1200);
-window.PSTOfferClientOutputFinalizerV1={patch:patch,install:install,documentLang:documentLang,normalizeClientLanguage:normalizeClientLanguage,ensureSerbianGsp:ensureSerbianGsp,ensureVatNote:ensureVatNote,moveBomOutsideOffer:moveBomOutsideOffer};
+window.PSTOfferClientOutputFinalizerV1={patch:patch,install:install,documentLang:documentLang,normalizeClientLanguage:normalizeClientLanguage,ensureSerbianGsp:ensureSerbianGsp,ensureVatNote:ensureVatNote,moveBomOutsideOffer:moveBomOutsideOffer,pendingInstallation:pendingInstallation,patchDraftGate:patchDraftGate,draftMap:draftMap};
 })();
