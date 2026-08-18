@@ -16,7 +16,7 @@ function loadEmailBodySync(){loadScript('pristeel-project-email-body-sync-v1.js?
 function loadContactViewDedupe(){loadScript('pristeel-project-contact-view-dedupe-v1.js?v=20260809-1','contact-view-dedupe',function(){return !!window.PSTProjectContactViewDedupeV1;});}
 function loadLinkedGmailAuthGate(){loadScript('pristeel-linked-gmail-auth-gate-v1.js?v=20260809-1','linked-gmail-auth-gate',function(){return !!window.PSTLinkedGmailAuthGateV1;});}
 function loadProjectSummary(){loadScript('pristeel-project-summary-command-v1.js?v=20260815-brief2','project-summary-command',function(){return !!window.PSTProjectSummaryCommandV1;});}
-function loadProjectAnalysisRunGuard(){loadScript('pristeel-project-analysis-run-guard-v1.js?v=20260816-5','project-analysis-run-guard',function(){return !!window.PSTProjectAnalysisRunGuardV1;});}
+function loadProjectAnalysisRunGuard(){loadScript('pristeel-project-analysis-run-guard-v1.js?v=20260818-6','project-analysis-run-guard',function(){return !!window.PSTProjectAnalysisRunGuardV1;});}
 function loadProjectConversation(){loadScript('pristeel-project-intelligence-conversation-v1.js?v=20260816-coverage1','project-intelligence-conversation',function(){return !!window.PSTProjectIntelligenceConversationV1;});}
 function loadProjectLiveIntelligence(){loadScript('pristeel-project-live-intelligence-v1.js?v=20260817-1','project-live-intelligence',function(){return !!window.PSTProjectLiveIntelligenceV1;});}
 function loadGmailProjectAutoLink(){loadScript('pristeel-gmail-project-auto-link-v1.js?v=20260816-autolink5','gmail-project-auto-link',function(){return !!window.PSTGmailProjectAutoLinkV1;});}
