@@ -6,7 +6,8 @@
  * - Provides one guarded programmatic path for Project Intelligence analysis runs.
  * - If an AI run returns without creating a project_analyses row, retries once with the existing rule engine.
  * - Clears stale per-project running locks so a completed UI cannot stay blocked forever.
- * - If Project Summary cannot run a fresh analysis because Google authorization failed, starts the guarded analysis from PPPP data after the summary settles.
+ * - Preserves a newer server-reactive analysis when Project Summary opens, instead of overwriting it with a weaker generic browser analysis.
+ * - If Project Summary has no authoritative server analysis and cannot run fresh analysis because Google authorization failed, starts the guarded analysis from PPPP data after the summary settles.
  * - Does not send email, write BOM/tasks, or change project status.
  */
 (function(){
@@ -18,7 +19,8 @@ var AUTH_WAIT_MS=8000;
 var RUN_STALE_MS=180000;
 var SUMMARY_RECHECK_MS=3500;
 var SUMMARY_MAX_CHECKS=8;
-var running={};
+var SUMMARY_INTENT_MS=180000;
+var running={},summaryIntent={};
 function str(v){return String(v==null?'':v);}
 function enc(v){return encodeURIComponent(str(v));}
 function activeId(id){var d=window.__pstIntegrityLastData;return str(id||window.__pstCurrentProjectId||window._curProjId||(d&&d.project&&d.project.id)||'').trim();}
@@ -29,6 +31,8 @@ async function latestRecord(pid){
   try{var rows=await window.supaFetch('project_analyses?project_id=eq.'+enc(pid)+'&select=id,created_at,engine&order=created_at.desc&limit=1');return Array.isArray(rows)&&rows[0]?rows[0]:null;}catch(e){return null;}
 }
 function isNewRecord(before,after){return !!after&&(!before||str(before.id)!==str(after.id)||str(before.created_at)!==str(after.created_at));}
+function authoritativeRecord(record){return !!record&&/^server_/i.test(str(record.engine));}
+function summaryIntentActive(pid){var x=summaryIntent[pid];if(!x)return false;if(Date.now()-x.at>SUMMARY_INTENT_MS){delete summaryIntent[pid];return false;}return true;}
 function timeoutPromise(p,ms,label){
   return new Promise(function(resolve,reject){
     var settled=false,t=setTimeout(function(){if(settled)return;settled=true;reject(new Error(label+' nuk u përfundua brenda '+Math.round(ms/1000)+' sekondave. Analiza vazhdon me të dhënat e PPPP-së.'));},ms);
@@ -70,6 +74,15 @@ function install(){
   if(chainHas(original,'__pstAnalysisRunGuardV1'))return true;
   async function wrapped(pid){
     pid=activeId(pid);if(!pid)return original.apply(this,arguments);
+    if(summaryIntentActive(pid)){
+      delete summaryIntent[pid];
+      var current=await latestRecord(pid);
+      if(authoritativeRecord(current)){
+        if(typeof window.pstProjectAnalysisLoad==='function')try{await window.pstProjectAnalysisLoad(pid);}catch(e){}
+        setState(pid,'Po shfaqet analiza automatike më e fundit e projektit.','#2F7657');
+        return current;
+      }
+    }
     var existing=activeRun(pid);
     if(existing){setState(pid,'Analiza është tashmë duke u përpunuar…');return existing.promise;}
     var self=this,args=arguments;
@@ -121,6 +134,7 @@ function buttonAndPid(target){
 }
 function onAnalysisClick(e){
   var hit=buttonAndPid(e.target);if(!hit||!hit.pid||hit.button.disabled)return;
+  delete summaryIntent[hit.pid];
   e.preventDefault();
   e.stopPropagation();
   if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
@@ -135,10 +149,12 @@ function summarySettled(){
 function summaryBusy(pid){var b=document.getElementById('pai-analyze-'+pid),p=document.getElementById('pai-progress-'+pid);return !!((b&&b.disabled)||(p&&p.classList&&p.classList.contains('on')));}
 function ensureSummaryAnalysis(pid,before,attempt){
   attempt=attempt||0;
-  if(!document.getElementById('pst-project-summary-bg'))return;
+  if(authoritativeRecord(before)){delete summaryIntent[pid];return;}
+  if(!document.getElementById('pst-project-summary-bg')){delete summaryIntent[pid];return;}
   if((!summarySettled()||summaryBusy(pid))&&attempt<SUMMARY_MAX_CHECKS){setTimeout(function(){ensureSummaryAnalysis(pid,before,attempt+1);},SUMMARY_RECHECK_MS);return;}
   latestRecord(pid).then(function(after){
-    if(isNewRecord(before,after)||summaryBusy(pid))return;
+    delete summaryIntent[pid];
+    if(authoritativeRecord(after)||isNewRecord(before,after)||summaryBusy(pid))return;
     setState(pid,'Google Workspace nuk e nisi analizën e re. Po vazhdohet automatikisht me të dhënat e PPPP-së…','#9B6A22');
     run(pid);
   });
@@ -146,6 +162,7 @@ function ensureSummaryAnalysis(pid,before,attempt){
 function onSummaryClick(e){
   if(!e.target||!e.target.closest||!e.target.closest('[data-pst-project-summary]'))return;
   var pid=activeId();if(!pid)return;
+  summaryIntent[pid]={at:Date.now()};
   latestRecord(pid).then(function(before){setTimeout(function(){ensureSummaryAnalysis(pid,before,0);},SUMMARY_RECHECK_MS);});
 }
 install();
@@ -153,5 +170,5 @@ document.addEventListener('click',onAnalysisClick,true);
 document.addEventListener('click',onSummaryClick,true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 setTimeout(install,300);setTimeout(install,1200);
-window.PSTProjectAnalysisRunGuardV1={version:'20260816-5',install:install,run:run,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord,activeRun:activeRun,summarySettled:summarySettled,summaryBusy:summaryBusy}};
+window.PSTProjectAnalysisRunGuardV1={version:'20260818-6',install:install,run:run,_test:{timeoutPromise:timeoutPromise,chainHas:chainHas,buttonAndPid:buttonAndPid,isNewRecord:isNewRecord,authoritativeRecord:authoritativeRecord,summaryIntentActive:summaryIntentActive,activeRun:activeRun,summarySettled:summarySettled,summaryBusy:summaryBusy}};
 })();
