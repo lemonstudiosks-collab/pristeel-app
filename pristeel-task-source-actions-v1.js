@@ -1,6 +1,6 @@
-/* PRISTEEL task source actions v3
+/* PRISTEEL task source actions v4
  * Safe, read-only source shortcut for Workspace action rows.
- * Intentionally does not style Home layout. Home visuals are owned by Home Command Center.
+ * Also refreshes the current Home visual owner after the ordered runtime so cached Home styling cannot win.
  */
 (function(){
 'use strict';
@@ -59,20 +59,32 @@ function decorate(){
 }
 function schedule(){[0,120,350,800,1600].forEach(function(ms){setTimeout(decorate,ms);});}
 function installStyle(){
-  if(document.getElementById('pst-task-source-actions-v3-css'))return;
+  if(document.getElementById('pst-task-source-actions-v4-css'))return;
   var style=document.createElement('style');
-  style.id='pst-task-source-actions-v3-css';
+  style.id='pst-task-source-actions-v4-css';
   style.textContent=`
 #page-workspace-home .pst-task-source-open{height:32px;border:1px solid #CFE0E7;border-radius:10px;padding:0 11px;background:#F8FBFC;color:#3F7F98;font-size:10px;font-weight:760;line-height:1;cursor:pointer;white-space:nowrap}
 #page-workspace-home .pst-task-source-open:hover{background:#EDF6F9;border-color:#B8D4DF;color:#2F6E86}
 `;
   document.head.appendChild(style);
 }
+function loadCurrentHomeVisual(){
+  if(document.querySelector('script[data-pst-home-command-live-v5]'))return;
+  /* The ordered bootstrap may have loaded an older cached copy. Allow the current source file to initialize again. */
+  window.__pstHomeCommandCenterV2=false;
+  var s=document.createElement('script');
+  s.src='pristeel-home-command-center-v2.js?home_v5='+String(Date.now());
+  s.defer=true;
+  s.setAttribute('data-pst-home-command-live-v5','1');
+  s.onload=function(){try{if(window.PSTHomeCommandCenterV2&&typeof window.PSTHomeCommandCenterV2.refresh==='function')window.PSTHomeCommandCenterV2.refresh();}catch(e){}};
+  s.onerror=function(){console.error('Nuk u ngarkua Home Command Center v5.');};
+  document.head.appendChild(s);
+}
 installStyle();
 window.addEventListener('pst-dashboard-rendered',schedule);
 document.addEventListener('pst:home-canonical-rendered',schedule);
-document.addEventListener('pst:modules-ready',schedule,{once:true});
-window.addEventListener('pageshow',schedule,{once:true});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.PSTTaskSourceActionsV1={sourceUrl:sourceUrl,metadataText:metadataText,enhanceRow:enhanceRow,decorate:decorate};
+document.addEventListener('pst:modules-ready',function(){schedule();loadCurrentHomeVisual();},{once:true});
+window.addEventListener('pageshow',function(){schedule();setTimeout(loadCurrentHomeVisual,100);},{once:true});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){schedule();setTimeout(loadCurrentHomeVisual,1400);},{once:true});else{schedule();setTimeout(loadCurrentHomeVisual,900);}
+window.PSTTaskSourceActionsV1={sourceUrl:sourceUrl,metadataText:metadataText,enhanceRow:enhanceRow,decorate:decorate,loadCurrentHomeVisual:loadCurrentHomeVisual};
 })();
