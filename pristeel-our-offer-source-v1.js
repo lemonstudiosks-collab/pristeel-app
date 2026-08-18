@@ -62,7 +62,20 @@ function loadUi(path,attr){
 function installInteractionCss(){
   if(document.getElementById('pst-offer-interaction-close-css'))return;
   var s=document.createElement('style');s.id='pst-offer-interaction-close-css';
-  s.textContent='#pst-offer-source-modal{display:none!important}#pst-offer-source-modal.on{display:block!important}';
+  s.textContent='#pst-offer-source-modal{display:none!important}#pst-offer-source-modal.on{display:block!important}'
+   +'#page-workspace-project [data-pf2-tab]{display:inline-flex!important;align-items:center!important;gap:7px!important}'
+   +'#page-workspace-project [data-pf2-tab]::before{display:inline-flex;width:16px;justify-content:center;color:#5B9BB3;font-size:15px;line-height:1;font-weight:700}'
+   +'#page-workspace-project [data-pf2-tab="overview"]::before{content:"⌂"}'
+   +'#page-workspace-project [data-pf2-tab="communication"]::before{content:"✉"}'
+   +'#page-workspace-project [data-pf2-tab="files"]::before{content:"▱"}'
+   +'#page-workspace-project [data-pf2-tab="bom"]::before{content:"≣"}'
+   +'#page-workspace-project [data-pf2-tab="procurement"]::before{content:"⇄"}'
+   +'#page-workspace-project [data-pf2-tab="commercial"]::before{content:"▣"}'
+   +'#page-workspace-project [data-pf2-tab="execution"]::before{content:"⚙"}'
+   +'#page-workspace-project [data-pf2-tab="finance"]::before{content:"€"}'
+   +'#page-workspace-project [data-pf2-tab="activity"]::before{content:"◷"}'
+   +'#page-workspace-project .pst-offer-clickable{cursor:pointer!important}'
+   +'#page-workspace-project .pst-offer-clickable:hover{background:#F5FAFB!important}';
   document.head.appendChild(s);
 }
 function currentDocNr(){
@@ -72,18 +85,19 @@ function currentDocNr(){
   return m?m[0]:'';
 }
 function previewLang(){
-  var l=String((document.getElementById('of-lang')||{}).value||'').toLowerCase().slice(0,2);
-  if(l)return l;
   var t=String((document.getElementById('of-pre')||{}).textContent||'');
-  if(/\bPONUDA\b|\bPONUĐAČ\b|\bUSLOVI\b/i.test(t))return'sr';
+  if(/\bPONUDA\b|\bPONUĐAČ\b|\bUSLOVI\b|\bKU PAC\b|\bVAŽNOST\b/i.test(t))return'sr';
   if(/\bOFERT[ËE]\b|\bKUSHTET\b/i.test(t))return'sq';
-  if(/\bANGEBOT\b/i.test(t))return'de';
-  return'en';
+  if(/\bANGEBOT\b|\bANBIETER\b/i.test(t))return'de';
+  if(/\bQUOTATION\b|\bOFFER\b/i.test(t))return'en';
+  var l=String((document.getElementById('of-lang')||{}).value||'').toLowerCase().slice(0,2);
+  return l||'sr';
 }
 function sent(row){
   var st=row&&row.offer_state||{},s=String(row&&(row.status||row.state||row.followup_status)||'').toLowerCase();
   return !!(row&&(row.sent_at||row.email_sent_at||row.dispatched_at)||st.pst_sent_at||st.sent_at||st.sent===true||/(sent|d[eë]rguar|versendet|poslano|submitted)/i.test(s));
 }
+function leaf(el){return el&&!el.children.length;}
 function applyPreviewState(row){
   var pre=document.getElementById('of-pre');if(!pre||!row)return false;
   var lang=previewLang(),isSent=sent(row),texts={
@@ -91,33 +105,48 @@ function applyPreviewState(row){
     sq:{head:'Oferta — versioni i ruajtur',saved:'RUAJTUR · NUK ËSHTË DËRGUAR',sent:'DËRGUAR'},
     en:{head:'Quotation — saved version',saved:'SAVED · NOT SENT',sent:'SENT'},
     de:{head:'Angebot — gespeicherte Version',saved:'GESPEICHERT · NICHT VERSENDET',sent:'VERSENDET'}
-  },L=texts[lang]||texts.sr,b=pre.querySelector('[data-pst-offer-draft-banner="1"]');
+  },L=texts[lang]||texts.sr,b=pre.querySelector('[data-pst-offer-draft-banner="1"]'),want=isSent?L.sent:L.saved;
   if(b){
-    b.textContent=isSent?L.sent:L.saved;
+    if(String(b.textContent||'').trim()!==want)b.textContent=want;
     b.style.background=isSent?'#EAF5EF':'#EEF7FA';
     b.style.borderColor=isSent?'#BFDCCA':'#C9DFE7';
     b.style.color=isSent?'#2F7657':'#3E7E96';
   }
   var all=document.querySelectorAll('h1,h2,h3,h4,div,span');
   for(var i=0;i<all.length;i++){
-    var x=all[i];if(x===pre||(x.closest&&x.closest('#of-pre'))||x.children.length)continue;
-    var t=String(x.textContent||'').trim();
-    if(/^(Angebot|Ponuda|Oferta|Quotation)\s*[—-]\s*(Entwurf|draft|review|pamja|final|gespeicherte|sačuvana|saved)/i.test(t)){x.textContent=L.head;break;}
+    var x=all[i];if(x===pre||(x.closest&&x.closest('#of-pre'))||!leaf(x))continue;
+    var tx=String(x.textContent||'').trim();
+    if(/^(Angebot|Ponuda|Oferta|Quotation)\s*[—-]\s*(Entwurf|draft|review|pamja|final|gespeicherte|sačuvana|saved)/i.test(tx)){
+      if(tx!==L.head)x.textContent=L.head;
+      break;
+    }
   }
   return true;
 }
+var savedCache={};
 async function patchSavedPreview(){
   var nr=currentDocNr(),pre=document.getElementById('of-pre');if(!nr||!pre)return false;
-  var d=window.__pstIntegrityLastData||{},row=arr(d.ourOffers).filter(function(x){return String(x&&(x.doc_nr||x.document_nr)||'')===nr;})[0]||null;
+  var d=window.__pstIntegrityLastData||{},row=arr(d.ourOffers).filter(function(x){return String(x&&(x.doc_nr||x.document_nr)||'')===nr;})[0]||savedCache[nr]||null;
   if(row)return applyPreviewState(row);
   if(typeof window.supaFetch!=='function')return false;
   try{
     var rows=await window.supaFetch('documents_registry?doc_nr=eq.'+encodeURIComponent(nr)+'&select=doc_nr,followup_status,offer_state,total_eur,client,project,created_at&limit=1');
     row=rows&&rows[0]||null;if(!row)return false;
+    savedCache[nr]=row;
     return applyPreviewState(row);
   }catch(e){return false;}
 }
-function schedulePreview(){[80,260,700,1400].forEach(function(ms){setTimeout(patchSavedPreview,ms);});}
+function decorateSupplierFallback(){
+  var page=document.getElementById('page-workspace-project'),d=window.__pstIntegrityLastData||{};if(!page)return;
+  var cards=page.querySelectorAll('.pf2-card'),card=null;
+  for(var i=0;i<cards.length;i++){var h=cards[i].querySelector('header b');if(h&&/oferta(?:t)?\s+(?:të\s+)?furnitor/i.test(String(h.textContent||''))){card=cards[i];break;}}
+  if(!card)return;
+  var rows=card.querySelectorAll('.pf2-line');
+  for(var j=0;j<rows.length&&j<arr(d.supplierOffers).length;j++){
+    rows[j].classList.add('pst-offer-clickable');rows[j].setAttribute('role','button');rows[j].setAttribute('tabindex','0');rows[j].setAttribute('data-pst-supplier-idx',String(j));
+  }
+}
+function schedulePreview(){[0,80,220,500,1000,1800].forEach(function(ms){setTimeout(function(){patchSavedPreview();decorateSupplierFallback();},ms);});}
 function loadIntegrityUi(){
   installInteractionCss();
   if(!window.PSTOurOfferHistoryUiV1)loadUi('pristeel-our-offer-history-ui-v1.js?v=20260818-3','data-pst-our-offer-history-ui');
@@ -127,12 +156,18 @@ function loadIntegrityUi(){
 }
 
 install();loadIntegrityUi();schedulePreview();
-document.addEventListener('pst:modules-ready',function(){install();loadIntegrityUi();schedulePreview();},{once:true});
+document.addEventListener('pst:modules-ready',function(){install();loadIntegrityUi();schedulePreview();});
 document.addEventListener('pst:offer-saved',schedulePreview);
 document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('button'):null;
   if(b&&/^(ruaj|save|sačuvaj|speichern|e dërgova|shëno ofertën si të dërguar)$/i.test(String(b.textContent||'').trim()))schedulePreview();
+  if(e.target&&e.target.closest&&e.target.closest('[data-pf2-tab], [data-pf2-action="tab:commercial"]'))setTimeout(decorateSupplierFallback,80);
 },true);
+var liveTimer=setInterval(function(){
+  if(document.getElementById('of-pre'))patchSavedPreview();
+  if(document.getElementById('page-workspace-project'))decorateSupplierFallback();
+},700);
+window.addEventListener('beforeunload',function(){clearInterval(liveTimer);},{once:true});
 window.PSTOurOfferSourceV1={
   install:install,
   canonicalize:canonicalize,
