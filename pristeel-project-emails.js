@@ -67,6 +67,7 @@ var files=[
   'pristeel-contract-classification-v2.js?v=20260805-2',
   'pristeel-project-data-integrity-v1.js?v=20260812-businessref1',
   'pristeel-project-load-stability-v2.js?v=20260809-linked1',
+  'pristeel-project-state-contract-v1.js?v=20260818-1',
   'pristeel-our-offer-source-v1.js?v=20260812-1',
   'pristeel-project-file-unifier-v2.js?v=20260805-1',
   'pristeel-document-routing-integrity-v1.js?v=20260804-1',
