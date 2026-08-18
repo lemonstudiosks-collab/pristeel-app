@@ -11,8 +11,7 @@ window.__pstHomeCanonicalInteractionV1=true;
 
 function str(v){return String(v==null?'':v);}
 function norm(v){return str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
-function interactiveTarget(target){return !!(target&&target.closest&&target.closest('button,a,input,select,textarea,[contenteditable="true"],[role="button"]'));
-}
+function interactiveTarget(target){return !!(target&&target.closest&&target.closest('button,a,input,select,textarea,[contenteditable="true"],[role="button"]'));}
 function openRow(row){
   if(!row)return false;
   var pid=str(row.getAttribute('data-action-project')||'').trim();
@@ -29,13 +28,14 @@ function openRow(row){
 }
 function urgentRow(row){
   if(!row)return false;
-  var title=norm(row.querySelector('.pst-ws-action-main b')&&row.querySelector('.pst-ws-action-main b').textContent);
-  var tag=norm(row.querySelector('.pst-ws-tag')&&row.querySelector('.pst-ws-tag').textContent);
+  var titleNode=row.querySelector('.pst-ws-action-main b');
+  var tagNode=row.querySelector('.pst-ws-tag');
+  var title=norm(titleNode&&titleNode.textContent);
+  var tag=norm(tagNode&&tagNode.textContent);
   return /^(urgjent|urgent)\b/.test(title)||tag==='kerkese e re e klientit'||tag==='kerkese e klientit';
 }
 function decorate(root){
   root=root&&root.querySelectorAll?root:document;
-  var rows=root.matches&&root.matches('.pst-canonical-action')?[root]:[].concat?null:null;
   var list=[];
   if(root.matches&&root.matches('.pst-canonical-action'))list.push(root);
   Array.prototype.push.apply(list,[].slice.call(root.querySelectorAll('.pst-canonical-action')));
@@ -82,5 +82,5 @@ function boot(){
 }
 document.addEventListener('click',onClick,true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTHomeCanonicalInteractionV1={version:'20260818-1',decorate:decorate,openRow:openRow,urgentRow:urgentRow,_test:{norm:norm,interactiveTarget:interactiveTarget}};
+window.PSTHomeCanonicalInteractionV1={version:'20260818-2',decorate:decorate,openRow:openRow,urgentRow:urgentRow,_test:{norm:norm,interactiveTarget:interactiveTarget}};
 })();
