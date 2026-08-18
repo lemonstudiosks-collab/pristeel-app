@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "a8ffe783d3d7f024ea1abe8d79b29fe70791ea03",
+  "auditedAtCommit": "6d1309c1453770d7802b246d4437edc72bc28c2b",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "c3a7afc1644c6cc95070554a61d944683e5e932c",
+    "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "aff22bca44e7d6efe9733a1f355543f004a2f9f0"
   },
@@ -39,7 +39,7 @@
     "LOADED_LEGACY_CANDIDATE": "Still loaded in production but likely superseded in visible behavior. Must not be removed until callers, globals, events and smoke tests are traced.",
     "LEGACY_FALLBACK_REQUIRED": "Legacy layer intentionally retained because a current user-accessible fallback still depends on its behavior. Do not retire it until that fallback is removed or replaced.",
     "ACTIVE_PROVIDER": "Conditionally active runtime provider loaded outside the main bootstrap.",
-    "DYNAMIC_CURRENT": "Current production module loaded dynamically by another current runtime file rather than by the main ordered bootstrap.",
+    "DYNAMIC_CURRENT": "Current production module loaded dynamically by another current runtime file rather than by the main bootstrap.",
     "LOADED_CURRENT_UNCLASSIFIED": "Loaded by the production bootstrap and therefore treated as required until explicitly classified."
   },
   "areas": [
@@ -148,6 +148,18 @@
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded before pristeel-project-emails.js. It captures Home routing before the ordered runtime starts and performs the final ownership handoff on pst:modules-ready."
+    },
+    {
+      "module": "pristeel-our-offer-source-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Preloaded with a live cache-busting URL before the ordered bootstrap so the current Commercial source/status behavior wins over an older cached bootstrap copy. The ordered entry remains as compatibility fallback."
+    },
+    {
+      "module": "pristeel-offer-resave-fix-v1.js",
+      "loader": "pristeel-roles.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Preloaded with a live cache-busting URL before the ordered bootstrap so saved-versus-sent offer state uses the current implementation. The ordered entry remains as compatibility fallback."
     },
     {
       "module": "pristeel-home-canonical-v1.js",
