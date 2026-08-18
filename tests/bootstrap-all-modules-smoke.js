@@ -74,9 +74,12 @@ retired.forEach(file => assert(!matches.includes(file), `Retired overlapping sta
 assert(bootstrap.includes('timeoutMs=8000,maxAttempts=2'), 'Ordered bootstrap must bound a hung module and retry once');
 assert(bootstrap.includes('__pstBootstrapDiagnostics'), 'Ordered bootstrap must expose diagnostics for timeout/error recovery');
 assert(bootstrap.includes("el.remove()"), 'Timed-out module element must be removed before retry/continuation');
+assert(bootstrap.includes('pristeel-project-first-commercial-v1.js?v=20260818-margin1'), 'Commercial margin guard cache-bust must be live');
+assert(bootstrap.includes('pristeel-offer-client-output-finalizer-v1.js?v=20260818-draftgate1'), 'Offer draft gate cache-bust must be live');
 
 console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules, including canonical project state protection.`);
 require('./bootstrap-timeout-safety-smoke.js');
 require('./project-discovery-runtime-smoke.js');
 require('./project-state-contract-smoke.js');
 require('./project-commercial-breakdown-smoke.js');
+require('./offer-client-output-finalizer-smoke.js');
