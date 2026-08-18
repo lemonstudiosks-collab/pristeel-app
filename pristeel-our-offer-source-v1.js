@@ -121,6 +121,7 @@ function schedulePreview(){[80,260,700,1400].forEach(function(ms){setTimeout(pat
 function loadIntegrityUi(){
   installInteractionCss();
   if(!window.PSTOurOfferHistoryUiV1)loadUi('pristeel-our-offer-history-ui-v1.js?v=20260818-3','data-pst-our-offer-history-ui');
+  if(!window.PSTOfferSourceDocumentOpenV1)loadUi('pristeel-offer-source-document-open-v1.js?v=20260818-1','data-pst-offer-source-document-open');
   if(!window.PSTProjectPipelineConsistencyV1)loadUi('pristeel-project-pipeline-consistency-v1.js?v=20260812-1','data-pst-pipeline-consistency');
   if(!window.PSTProjectEmailReviewUiV1)loadUi('pristeel-project-email-review-ui-v1.js?v=20260813-review2','data-pst-project-email-review-ui');
 }
