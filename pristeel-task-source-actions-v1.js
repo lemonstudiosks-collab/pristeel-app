@@ -110,6 +110,62 @@ function installStyle(){
 #page-workspace-home .pst-task-source-open{height:32px;border:1px solid #CFE0E7;border-radius:10px;padding:0 11px;background:#F8FBFC;color:#3F7F98;font-size:10px;font-weight:760;line-height:1;cursor:pointer;white-space:nowrap}
 #page-workspace-home .pst-task-source-open:hover{background:#EDF6F9;border-color:#B8D4DF;color:#2F6E86}
 body:has(#page-workspace-home.active) .pst-home-top-hide{display:none!important}
+
+/* Compatibility fix: Happy Home turns section headers into a grid, while the
+   canonical Home layer still exposes the older title/sub/link class names.
+   Keep the section header content-sized so cards sit directly underneath it. */
+html body #page-workspace-home .pst-ws-card-hd{
+  display:grid!important;
+  grid-template-columns:42px minmax(0,1fr) auto!important;
+  grid-template-rows:auto auto!important;
+  column-gap:10px!important;
+  row-gap:2px!important;
+  align-items:start!important;
+  align-content:start!important;
+  justify-content:stretch!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin-bottom:14px!important;
+  padding:5px 3px 12px!important;
+}
+html body #page-workspace-home .pst-ws-card-hd .pst-happy-section-icon{
+  grid-column:1!important;
+  grid-row:1 / 3!important;
+  align-self:start!important;
+}
+html body #page-workspace-home .pst-ws-card-hd .pst-ws-card-title,
+html body #page-workspace-home .pst-ws-card-hd .pst-ws-title{
+  grid-column:2!important;
+  grid-row:1!important;
+  align-self:end!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  white-space:normal!important;
+}
+html body #page-workspace-home .pst-ws-card-hd .pst-ws-card-sub,
+html body #page-workspace-home .pst-ws-card-hd .pst-ws-sub{
+  grid-column:2!important;
+  grid-row:2!important;
+  align-self:start!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin-top:0!important;
+  white-space:normal!important;
+}
+html body #page-workspace-home .pst-ws-card-hd .pst-ws-card-link,
+html body #page-workspace-home .pst-ws-card-hd .pst-ws-link{
+  grid-column:3!important;
+  grid-row:1 / 3!important;
+  align-self:center!important;
+  justify-self:end!important;
+  width:auto!important;
+  min-width:max-content!important;
+  white-space:nowrap!important;
+}
 `;
   document.head.appendChild(style);
 }
