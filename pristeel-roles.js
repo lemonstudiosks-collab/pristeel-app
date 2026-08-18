@@ -217,29 +217,46 @@ if(document.readyState === 'loading'){
   setTimeout(init, 900);
 }
 
-(function loadHomeRuntimeGuardThenProjectEmails(){
-  function loadProjectEmailsModule(){
-    if(document.querySelector('script[data-pst-project-emails]')) return;
-    var s=document.createElement('script');
-    s.src='pristeel-project-emails.js?v='+String(Date.now());
-    s.defer=true;
-    s.setAttribute('data-pst-project-emails','1');
-    document.head.appendChild(s);
+function loadScriptBeforeBootstrap(path,attr,done){
+  if(document.querySelector('script['+attr+']')){done();return;}
+  var s=document.createElement('script');
+  s.src=path+(path.indexOf('?')>-1?'&':'?')+'pst_live='+String(Date.now());
+  s.defer=true;
+  s.setAttribute(attr,'1');
+  s.onload=done;
+  s.onerror=function(){console.error('Nuk u ngarkua live override:',path);done();};
+  document.head.appendChild(s);
+}
+
+(function loadCommercialOverridesThenMainRuntime(){
+  function startMainRuntime(){
+    window.__pstCommercialLiveOverride='20260818-commercial-live1';
+    function loadProjectEmailsModule(){
+      if(document.querySelector('script[data-pst-project-emails]')) return;
+      var s=document.createElement('script');
+      s.src='pristeel-project-emails.js?v='+String(Date.now());
+      s.defer=true;
+      s.setAttribute('data-pst-project-emails','1');
+      document.head.appendChild(s);
+    }
+    if(window.PSTHomeRuntimeOwnerGuardV1){loadProjectEmailsModule();return;}
+    var existing=document.querySelector('script[data-pst-home-runtime-owner-guard]');
+    if(existing){
+      existing.addEventListener('load',loadProjectEmailsModule,{once:true});
+      existing.addEventListener('error',loadProjectEmailsModule,{once:true});
+      return;
+    }
+    var g=document.createElement('script');
+    g.src='pristeel-home-runtime-owner-guard-v1.js?v='+String(Date.now());
+    g.defer=true;
+    g.setAttribute('data-pst-home-runtime-owner-guard','1');
+    g.onload=loadProjectEmailsModule;
+    g.onerror=function(){console.error('Nuk u ngarkua Home runtime owner guard.');loadProjectEmailsModule();};
+    document.head.appendChild(g);
   }
-  if(window.PSTHomeRuntimeOwnerGuardV1){loadProjectEmailsModule();return;}
-  var existing=document.querySelector('script[data-pst-home-runtime-owner-guard]');
-  if(existing){
-    existing.addEventListener('load',loadProjectEmailsModule,{once:true});
-    existing.addEventListener('error',loadProjectEmailsModule,{once:true});
-    return;
-  }
-  var g=document.createElement('script');
-  g.src='pristeel-home-runtime-owner-guard-v1.js?v='+String(Date.now());
-  g.defer=true;
-  g.setAttribute('data-pst-home-runtime-owner-guard','1');
-  g.onload=loadProjectEmailsModule;
-  g.onerror=function(){console.error('Nuk u ngarkua Home runtime owner guard.');loadProjectEmailsModule();};
-  document.head.appendChild(g);
+  loadScriptBeforeBootstrap('pristeel-our-offer-source-v1.js','data-pst-commercial-source-live',function(){
+    loadScriptBeforeBootstrap('pristeel-offer-resave-fix-v1.js','data-pst-offer-resave-live',startMainRuntime);
+  });
 })();
 
 (function loadInvoiceOriginalDocumentModule(){
