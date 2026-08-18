@@ -1,5 +1,5 @@
 /* PRISTEEL redesign finalizer v1
- * Preview revision: 20260818-priority-card-click1.
+ * Preview revision: 20260818-priority-card-amber1.
  * Re-applies the read-only redesign after legacy workspace renders.
  * Also repairs Home priority-card interaction after visual decorators run.
  * Bounded timeouts only. No polling, observers, writes, auth or project-open overrides.
@@ -61,9 +61,6 @@ function repairPriorityControls(row){
   var controls=row.querySelector('.pst-ws-action-controls');
   if(!controls)return;
 
-  /* DashboardTaskCardsV1 used to add a second broken Open button and could
-   * move the canonical Done button into the overflow menu. Restore the
-   * canonical controls and keep their original handlers intact. */
   var canonicalOpen=row.querySelector('.pst-ws-action-open');
   var canonicalDone=row.querySelector('.pst-ws-action-done');
   var canonicalDismiss=row.querySelector('.pst-ws-action-dismiss');
@@ -81,7 +78,6 @@ function repairPriorityControls(row){
     canonicalDismiss.title='Hiqe nga lista';
   }
 
-  /* Move canonical nodes out of any generated menu before deleting it. */
   if(canonicalOpen)controls.appendChild(canonicalOpen);
   if(canonicalDone)controls.appendChild(canonicalDone);
   if(source)controls.appendChild(source);
@@ -126,10 +122,10 @@ function installPriorityStyle(){
   s.textContent=`
 #page-workspace-home #pst-ws-home-actions>.pst-canonical-action{cursor:pointer!important}
 #page-workspace-home #pst-ws-home-actions>.pst-canonical-action .pst-ws-action-main{cursor:pointer!important}
-#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent{background:#FFF2EF!important;border-color:#E3A198!important;border-left-color:#BF5548!important;box-shadow:0 3px 12px rgba(151,65,54,.10)!important}
-#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent:hover{background:#FFEAE6!important;border-color:#D98A80!important;border-left-color:#B5483C!important;box-shadow:0 7px 22px rgba(151,65,54,.14)!important}
-#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-title{color:#79372F!important}
-#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-tag{background:#B94F43!important;border-color:#B94F43!important;color:#fff!important}
+#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent{background:#FFF8E8!important;border-color:#E4C56B!important;border-left-color:#C9932E!important;box-shadow:0 3px 12px rgba(149,109,31,.10)!important}
+#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent:hover{background:#FFF2D6!important;border-color:#D8B34F!important;border-left-color:#B98222!important;box-shadow:0 7px 22px rgba(149,109,31,.14)!important}
+#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-title{color:#614C1E!important}
+#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-tag{background:#C9932E!important;border-color:#C9932E!important;color:#fff!important}
 `;
   document.head.appendChild(s);
 }
@@ -160,7 +156,6 @@ function apply(){
   }catch(e){console.warn('PRISTEEL finalizer project:',e);}
   try{installPriorityStyle();repairPriorityCards();}catch(e){console.warn('PRISTEEL finalizer priority cards:',e);}
 }
-/* Startup decoration is deliberately short. Later repairs are event-driven, not clock-driven. */
 function schedule(){[0,80,220,450].forEach(function(ms){setTimeout(apply,ms);});}
 
 document.addEventListener('pst:modules-ready',schedule,{once:true});
