@@ -98,6 +98,21 @@ function sent(row){
   return !!(row&&(row.sent_at||row.email_sent_at||row.dispatched_at)||st.pst_sent_at||st.sent_at||st.sent===true||/(sent|d[eë]rguar|versendet|poslano|submitted)/i.test(s));
 }
 function leaf(el){return el&&!el.children.length;}
+function fixTotalLabel(){
+  var pre=document.getElementById('of-pre');if(!pre)return false;
+  var text=String(pre.textContent||'');
+  var installationIncluded=/(Montaža\s*\/\s*Installation|Montaža čelične konstrukcije)/i.test(text)&&!/ZA DOPUNU|NIJE UKLJUČENO/i.test(text);
+  if(!installationIncluded)return false;
+  var all=pre.querySelectorAll('*');
+  for(var i=0;i<all.length;i++){
+    var e=all[i];if(e.children.length)continue;
+    if(/^Međuzbir bez montaže$/i.test(String(e.textContent||'').trim())){
+      e.textContent='Ukupna cena (neto)';
+      return true;
+    }
+  }
+  return false;
+}
 function applyPreviewState(row){
   var pre=document.getElementById('of-pre');if(!pre||!row)return false;
   var lang=previewLang(),isSent=sent(row),texts={
@@ -121,11 +136,13 @@ function applyPreviewState(row){
       break;
     }
   }
+  fixTotalLabel();
   return true;
 }
 var savedCache={};
 async function patchSavedPreview(){
   var nr=currentDocNr(),pre=document.getElementById('of-pre');if(!nr||!pre)return false;
+  fixTotalLabel();
   var d=window.__pstIntegrityLastData||{},row=arr(d.ourOffers).filter(function(x){return String(x&&(x.doc_nr||x.document_nr)||'')===nr;})[0]||savedCache[nr]||null;
   if(row)return applyPreviewState(row);
   if(typeof window.supaFetch!=='function')return false;
@@ -146,11 +163,11 @@ function decorateSupplierFallback(){
     rows[j].classList.add('pst-offer-clickable');rows[j].setAttribute('role','button');rows[j].setAttribute('tabindex','0');rows[j].setAttribute('data-pst-supplier-idx',String(j));
   }
 }
-function schedulePreview(){[0,80,220,500,1000,1800].forEach(function(ms){setTimeout(function(){patchSavedPreview();decorateSupplierFallback();},ms);});}
+function schedulePreview(){[0,80,220,500,1000,1800].forEach(function(ms){setTimeout(function(){patchSavedPreview();decorateSupplierFallback();fixTotalLabel();},ms);});}
 function loadIntegrityUi(){
   installInteractionCss();
   if(!window.PSTOurOfferHistoryUiV1)loadUi('pristeel-our-offer-history-ui-v1.js?v=20260818-3','data-pst-our-offer-history-ui');
-  if(!window.PSTOfferSourceDocumentOpenV1)loadUi('pristeel-offer-source-document-open-v1.js?v=20260818-1','data-pst-offer-source-document-open');
+  if(!window.PSTOfferSourceDocumentOpenV1)loadUi('pristeel-offer-source-document-open-v1.js?v=20260818-2','data-pst-offer-source-document-open');
   if(!window.PSTProjectPipelineConsistencyV1)loadUi('pristeel-project-pipeline-consistency-v1.js?v=20260812-1','data-pst-pipeline-consistency');
   if(!window.PSTProjectEmailReviewUiV1)loadUi('pristeel-project-email-review-ui-v1.js?v=20260813-review2','data-pst-project-email-review-ui');
 }
@@ -164,7 +181,7 @@ document.addEventListener('click',function(e){
   if(e.target&&e.target.closest&&e.target.closest('[data-pf2-tab], [data-pf2-action="tab:commercial"]'))setTimeout(decorateSupplierFallback,80);
 },true);
 var liveTimer=setInterval(function(){
-  if(document.getElementById('of-pre'))patchSavedPreview();
+  if(document.getElementById('of-pre')){fixTotalLabel();patchSavedPreview();}
   if(document.getElementById('page-workspace-project'))decorateSupplierFallback();
 },700);
 window.addEventListener('beforeunload',function(){clearInterval(liveTimer);},{once:true});
@@ -174,6 +191,7 @@ window.PSTOurOfferSourceV1={
   newestFirst:newestFirst,
   loadIntegrityUi:loadIntegrityUi,
   patchSavedPreview:patchSavedPreview,
+  fixTotalLabel:fixTotalLabel,
   isRegistryQuote:isRegistryQuote,
   isLegacyOurOffer:isLegacyOurOffer
 };
