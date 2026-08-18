@@ -22,6 +22,7 @@ const required = [
   'pristeel-drive-import.js',
   'pristeel-project-data-integrity-v1.js',
   'pristeel-project-load-stability-v2.js',
+  'pristeel-project-state-contract-v1.js',
   'pristeel-project-command-view-v1.js',
   'pristeel-project-drive-lifecycle-v1.js',
   'pristeel-rfq-no-bom-v1.js',
@@ -47,6 +48,11 @@ const required = [
 required.forEach(file => assert(matches.includes(file), `Critical module missing from bootstrap: ${file}`));
 
 assert(
+  matches.indexOf('pristeel-project-state-contract-v1.js') > matches.indexOf('pristeel-project-load-stability-v2.js') &&
+  matches.indexOf('pristeel-project-state-contract-v1.js') < matches.indexOf('pristeel-project-integrity-ui-v1.js'),
+  'Project state contract must load after the bounded loader and before project workspace renderers'
+);
+assert(
   matches.indexOf('pristeel-contacts-provenance-ui-v1.js') > matches.indexOf('pristeel-project-contacts-full-v1.js'),
   'Contacts provenance UI should load after the existing contacts module'
 );
@@ -69,6 +75,7 @@ assert(bootstrap.includes('timeoutMs=8000,maxAttempts=2'), 'Ordered bootstrap mu
 assert(bootstrap.includes('__pstBootstrapDiagnostics'), 'Ordered bootstrap must expose diagnostics for timeout/error recovery');
 assert(bootstrap.includes("el.remove()"), 'Timed-out module element must be removed before retry/continuation');
 
-console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules, including read-only Contacts provenance UI.`);
+console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules, including canonical project state protection.`);
 require('./bootstrap-timeout-safety-smoke.js');
 require('./project-discovery-runtime-smoke.js');
+require('./project-state-contract-smoke.js');
