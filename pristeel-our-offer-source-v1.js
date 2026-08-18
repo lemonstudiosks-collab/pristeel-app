@@ -60,7 +60,7 @@ function loadUi(path,attr){
   var s=document.createElement('script');s.src=path;s.defer=true;s.setAttribute(attr,'1');document.head.appendChild(s);
 }
 function loadIntegrityUi(){
-  if(!window.PSTOurOfferHistoryUiV1)loadUi('pristeel-our-offer-history-ui-v1.js?v=20260812-1','data-pst-our-offer-history-ui');
+  if(!window.PSTOurOfferHistoryUiV1)loadUi('pristeel-our-offer-history-ui-v1.js?v=20260818-2','data-pst-our-offer-history-ui');
   if(!window.PSTProjectPipelineConsistencyV1)loadUi('pristeel-project-pipeline-consistency-v1.js?v=20260812-1','data-pst-pipeline-consistency');
   if(!window.PSTProjectEmailReviewUiV1)loadUi('pristeel-project-email-review-ui-v1.js?v=20260813-review2','data-pst-project-email-review-ui');
 }
