@@ -79,3 +79,4 @@ console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules,
 require('./bootstrap-timeout-safety-smoke.js');
 require('./project-discovery-runtime-smoke.js');
 require('./project-state-contract-smoke.js');
+require('./project-commercial-breakdown-smoke.js');
