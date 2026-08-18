@@ -36,6 +36,50 @@ function stripComments(s){
   assert(/pristeel-platform-readability-v1\.js/.test(loader.getAttribute('src') || ''), 'Finalizer loaded the wrong readability asset');
   dom.window.close();
 
+  const priorityDom = new JSDOM(`<!doctype html><html><head></head><body>
+    <div id="page-workspace-home">
+      <div id="pst-ws-home-actions">
+        <div class="pst-ws-action pst-canonical-action pst-dash-task-card" data-kind="task" data-project-id="p-24" data-id="t-24">
+          <div class="pst-ws-action-main">
+            <div class="pst-ws-action-title" title="Urgjent: Drafti PST-OFF-2026-08-024 gati — plotëso montazhin">Urgjent: Drafti PST-OFF-2026-08-024 gati — plotëso montazhin</div>
+            <div class="pst-ws-action-meta">Kërkesë e re e klientit</div>
+          </div>
+          <div class="pst-ws-action-side">
+            <span class="pst-ws-action-tag">Vepro tani</span>
+            <div class="pst-ws-action-controls">
+              <button type="button" class="pst-dash-task-open">Hap</button>
+              <button type="button" class="pst-ws-action-open">Hap</button>
+              <button type="button" class="pst-ws-action-dismiss">•••</button>
+              <span class="pst-dash-task-menu">
+                <button type="button" class="pst-dash-task-more">⋯</button>
+                <span class="pst-dash-task-menu-panel">
+                  <button type="button" class="pst-ws-action-done pst-dash-task-done pst-dash-task-dismiss">Hiqe nga lista</button>
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body></html>`, { runScripts:'outside-only', url:'https://example.test/' });
+  const pw = priorityDom.window;
+  let openedProject = '';
+  pw.pstOpenProjectWorkspace = id => { openedProject = id; };
+  pw.eval(source);
+  pw.PSTRedesignFinalizerV1.apply();
+  const row = pw.document.querySelector('.pst-canonical-action');
+  const controls = row.querySelector('.pst-ws-action-controls');
+  assert(row.classList.contains('pst-final-priority-urgent'), 'Urgent priority card did not receive whole-card urgent styling class');
+  assert.strictEqual(controls.querySelectorAll('.pst-dash-task-open').length, 0, 'Broken duplicate Open button was not removed');
+  assert.strictEqual(controls.querySelectorAll('.pst-ws-action-open').length, 1, 'Canonical Open control was not preserved exactly once');
+  assert.strictEqual(controls.querySelectorAll('.pst-dash-task-menu').length, 0, 'Generated duplicate overflow menu was not removed');
+  const done = controls.querySelector('.pst-ws-action-done');
+  assert(done, 'Canonical Done button was not restored to the controls');
+  assert.strictEqual(done.textContent, 'Kryer', 'Canonical Done button label was not restored');
+  row.querySelector('.pst-ws-action-title').dispatchEvent(new pw.MouseEvent('click', { bubbles:true }));
+  assert.strictEqual(openedProject, 'p-24', 'Clicking the priority card body did not open its project');
+  priorityDom.window.close();
+
   const rdDom = new JSDOM(`<!doctype html><html><head></head><body>
     <span id="tiny" style="font-size:7px">tiny meta</span>
     <b id="small" style="font-size:9px">small title</b>
@@ -58,5 +102,5 @@ function stripComments(s){
   assert(css.includes('.pf2-compare td{font-size:11.5px!important'), 'Commercial comparison cells do not have the expected readable size');
   rdDom.window.close();
 
-  console.log('Redesign finalizer + platform readability smoke test passed.');
+  console.log('Redesign finalizer + priority card + platform readability smoke test passed.');
 })().catch(error => { console.error(error); process.exit(1); });
