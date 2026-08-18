@@ -40,7 +40,8 @@ const {JSDOM}=require('jsdom');
     contacts:[{email:'buyer@example.com'}],bom:[],rfqs:[],supplierOffers:[],ourOffers:[],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[{id:'f1',name:'drawing.pdf',modifiedTime:'2026-08-12T10:00:00Z',webViewLink:fileUrl}]}
   };
   w.PSTProjectDataIntegrity={load:async()=>integrity};
-  w.supaFetch=async path=>path.startsWith('suppliers?')?[]:[];
+  let analysisRows=[];
+  w.supaFetch=async path=>path.startsWith('project_analyses?')?analysisRows:[];
   w.pstOpenProjectWorkspace=async id=>{
     w.__pstCurrentProjectId=id;w._curProjId=id;w.__pstIntegrityLastData=integrity;
     return true;
@@ -81,6 +82,32 @@ const {JSDOM}=require('jsdom');
   assert(readability.textContent.includes('.pst-pi-tab{font-size:12.5px'),'Workspace tabs must use a readable desktop font size');
   assert(readability.textContent.includes('.pf2-line b{font-size:14px'),'Primary file/list labels must use a readable desktop font size');
   assert(readability.textContent.includes('.pf2-btn{min-height:36px'),'Workspace buttons must be easier to read and click');
+
+  /* A created quote is not a sent quote. This is the Dukley regression case. */
+  integrity.ourOffers=[{
+    doc_nr:'PST-OFF-2026-08-024',
+    total_eur:68009.98,
+    created_at:'2026-08-17T15:01:32Z',
+    followup_status:'draft',
+    offer_state:{revision_status:'draft_review',installation_price_pending:true}
+  }];
+  analysisRows=[{id:12,created_at:'2026-08-17T15:05:00Z',analysis:{next_actions:[
+    {text:'Plotëso çmimin e montimit në draftin PST-OFF-2026-08-024.',status:'open',priority:'critical'}
+  ]}}];
+  await w.PSTProjectFirstV2.mount('p1',true);
+  const draftOverview=w.document.getElementById('pst-pi-body').textContent;
+  assert(draftOverview.includes('Plotëso çmimin e montimit në draftin PST-OFF-2026-08-024.'),'Draft offer must surface the real open action from Project Intelligence');
+  assert(draftOverview.includes('nuk është dërguar te klienti'),'Draft offer must explicitly state that it has not been sent');
+  assert(!draftOverview.includes('Oferta te blerësi'),'Creating a quote must never imply that it was sent to the buyer');
+
+  /* Only explicit sent evidence may move the project to buyer-waiting/follow-up state. */
+  integrity.ourOffers[0].followup_status='sent';
+  integrity.ourOffers[0].offer_state={revision_status:'approved',installation_price_pending:false,sent_at:'2026-08-18T08:00:00Z'};
+  analysisRows=[];
+  await w.PSTProjectFirstV2.mount('p1',true);
+  const sentOverview=w.document.getElementById('pst-pi-body').textContent;
+  assert(sentOverview.includes('Oferta te blerësi'),'Explicit sent evidence must allow the buyer-waiting state');
+  assert(sentOverview.includes('regjistruar si e dërguar'),'Sent state must explain the evidence-backed transition');
 
   let refreshCalls=[];
   const liveOpen=w.pstOpenProjectWorkspace;
