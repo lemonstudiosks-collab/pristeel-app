@@ -37,9 +37,11 @@ const {JSDOM}=require('jsdom');
 
   w.eval(source);
   assert(w.PSTProjectAnalysisRunGuardV1,'Run guard must install');
-  assert.strictEqual(w.PSTProjectAnalysisRunGuardV1.version,'20260818-6','Reactive-authority run guard must be active');
+  assert.strictEqual(w.PSTProjectAnalysisRunGuardV1.version,'20260818-7','Canonical reactive-authority run guard must be active');
   assert.strictEqual(typeof w.PSTProjectAnalysisRunGuardV1.run,'function','Run guard must expose one explicit run path');
   assert.strictEqual(w.PSTProjectAnalysisRunGuardV1._test.authoritativeRecord({engine:'server_supplier_update_reactive'}),true,'Server reactive analyses must be authoritative');
+  assert.strictEqual(w.PSTProjectAnalysisRunGuardV1._test.authoritativeRecord({engine:'project_state_rules'}),true,'Canonical project decision snapshots must be authoritative');
+  assert.strictEqual(w.PSTProjectAnalysisRunGuardV1._test.authoritativeRecord({engine:'dynamic_plan_rules'}),true,'Deterministic dynamic-plan snapshots must be authoritative');
   assert.strictEqual(w.PSTProjectAnalysisRunGuardV1._test.authoritativeRecord({engine:'rules'}),false,'Generic browser rules must not be treated as authoritative');
 
   w.document.getElementById('pai-analyze-p1').click();
@@ -51,11 +53,11 @@ const {JSDOM}=require('jsdom');
   for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));
   assert.strictEqual(calls,2,'A settled Project Summary with no authoritative fresh record must self-heal by starting one guarded analysis run');
 
-  records.push({id:'server-reactive',created_at:'2026-08-18T09:30:00Z',engine:'server_supplier_update_reactive'});
+  records.push({id:'canonical-state',created_at:'2026-08-18T10:01:50Z',engine:'project_state_rules'});
   const beforeAuthorityCalls=calls;
   w.document.querySelector('[data-pst-project-summary]').click();
   for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));
-  assert.strictEqual(calls,beforeAuthorityCalls,'Opening Project Summary must not overwrite the latest authoritative server-reactive analysis with a generic browser run');
+  assert.strictEqual(calls,beforeAuthorityCalls,'Opening Project Summary must not overwrite the latest canonical project-state analysis with a generic browser run');
 
   dom.window.close();
   console.log('Project Analysis run guard smoke test passed.');
