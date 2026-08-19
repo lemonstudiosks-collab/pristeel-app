@@ -40,7 +40,7 @@
     },
     {
       "path": "pristeel-home-happy-v1.js",
-      "reason": "Loaded dynamically by pristeel-task-source-actions-v1.js after the canonical Home visual owner to provide the final premium/happy cosmetic layer."
+      "reason": "Loaded dynamically by pristeel-home-runtime-owner-guard-v1.js only after the ordered runtime and canonical Home render are complete."
     },
     {
       "path": "pristeel-gmail-launcher-v2.html",
@@ -83,9 +83,9 @@
       "reason": "Saved-offer PDF and Gmail draft workflow dependency."
     },
     {
-      "source": "pristeel-task-source-actions-v1.js",
+      "source": "pristeel-home-runtime-owner-guard-v1.js",
       "contains": "pristeel-home-happy-v1.js",
-      "reason": "Final Workspace Home cosmetic layer dependency."
+      "reason": "Final Workspace Home cosmetic layer dependency owned by the deterministic Home startup coordinator."
     },
     {
       "source": "gmail-addon/Code.gs",
