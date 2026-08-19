@@ -7,6 +7,14 @@
 'use strict';
 if(window.__pstSearchAuthorityInstalled)return;
 window.__pstSearchAuthorityInstalled=true;
+
+/* Startup safety contract.
+ * pristeel-roles.js is loaded after this file and contains a legacy 12-second
+ * Home reveal fallback. A truthy sentinel prevents that fallback from being
+ * scheduled, so an intermediate Home can never become visible mid-bootstrap.
+ * The Home Runtime Owner Guard replaces this sentinel during final startup. */
+if(typeof window.__pstRuntimeRevealFallback==='undefined')window.__pstRuntimeRevealFallback=-1;
+
 var pending=null;
 function stable(){return window.PSTSearchStableV2&&typeof window.PSTSearchStableV2.open==='function'?window.PSTSearchStableV2:null;}
 function hardClose(){
