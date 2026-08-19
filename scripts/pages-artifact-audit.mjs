@@ -165,6 +165,43 @@ for (const check of Array.isArray(artifactManifest.referenceChecks) ? artifactMa
   }
 }
 
+/* Home startup ownership contract.
+ * Production must never reveal one of the bootstrap's intermediate Home versions.
+ * Only the runtime owner guard may load the final visual Home layers. */
+const directRuntime = Array.isArray(runtime.applicationDirectRuntime) ? runtime.applicationDirectRuntime.map(cleanModule) : [];
+const searchIndex = directRuntime.indexOf('pristeel-search.js');
+const rolesIndex = directRuntime.indexOf('pristeel-roles.js');
+if (searchIndex < 0 || rolesIndex < 0 || searchIndex >= rolesIndex) {
+  fail('Startup safety requires pristeel-search.js to load before pristeel-roles.js.');
+}
+
+const searchSource = read('pristeel-search.js');
+if (!searchSource.includes("window.__pstRuntimeRevealFallback=-1")) {
+  fail('pristeel-search.js must block the legacy mid-bootstrap Home reveal timer before roles loads.');
+}
+
+const homeGuardSource = read('pristeel-home-runtime-owner-guard-v1.js');
+for (const needle of [
+  '__pstHomeRuntimeOwnerGuardV11',
+  "var bootVersion='20260819-'+Date.now().toString(36)",
+  'pst-home-final-ready',
+  "pristeel-home-command-center-v2.js?pst_boot=",
+  'pristeel-home-happy-v1.js',
+  'window.__pstHomeCommandCenterV2=true'
+]) {
+  if (!homeGuardSource.includes(needle)) fail(`Deterministic Home runtime guard is missing required contract: ${needle}`);
+}
+
+const taskSourceActions = read('pristeel-task-source-actions-v1.js');
+if (taskSourceActions.includes('pristeel-home-command-center-v2.js') || taskSourceActions.includes('pristeel-home-happy-v1.js')) {
+  fail('Task source actions must never load a Home visual owner.');
+}
+
+const offerPdfWorkflow = read('pristeel-offer-pdf-email-workflow-v1.js');
+if (offerPdfWorkflow.includes('pristeel-home-command-center-v2.js') || offerPdfWorkflow.includes('pristeel-home-happy-v1.js')) {
+  fail('Offer PDF/email workflow must never preload or reload Home.');
+}
+
 const allRepoFiles = walk(root).sort();
 const candidateFiles = [...candidate].sort();
 const excludedFiles = allRepoFiles.filter((rel) => !candidate.has(rel));
@@ -185,6 +222,7 @@ console.log(`Repository checkout size: ${human(repoBytes)}`);
 console.log(`Production artifact share of checkout bytes: ${pct.toFixed(1)}%`);
 console.log(`Repository files excluded from production Pages: ${excludedFiles.length}`);
 console.log('Production Pages deployment policy verified: build first, upload _site only.');
+console.log('Deterministic Home startup ownership verified.');
 
 if (failed) process.exitCode = 1;
 else console.log('Pages production artifact audit OK.');
