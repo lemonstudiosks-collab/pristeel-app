@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "6d1309c1453770d7802b246d4437edc72bc28c2b",
+  "auditedAtCommit": "9c38f51db88cac5fc0e8505fa6b820e5f1759a4f",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
@@ -48,15 +48,17 @@
       "finalOwners": [
         "pristeel-workspace-architecture-v1.js",
         "pristeel-ui-corrections-v2.js",
-        "pristeel-redesign-finalizer-v1.js"
-      ]
+        "pristeel-redesign-finalizer-v1.js",
+        "pristeel-task-source-actions-v1.js"
+      ],
+      "note": "Workspace Architecture provides the shell. Task Source Actions v15 is the final visual shell/navigation reconciler: one left Workspace sidebar, no legacy right rail, automation-first daily navigation, and no business-data writes."
     },
     {
       "area": "home",
       "finalOwners": [
         "pristeel-home-canonical-v1.js"
       ],
-      "note": "Workspace Architecture may create the Home shell during startup, but Home Canonical is the sole final data owner. The pre-bootstrap runtime owner guard keeps later Home navigation on Canonical after pst:modules-ready."
+      "note": "Workspace Architecture may create the Home shell during startup, but Home Canonical is the sole final data owner. Current Home is an event/action engine: maximum five concrete actions, waiting separated from action, Project Brief drill-down and obsolete-task reconciliation. The pre-bootstrap runtime owner guard keeps later Home navigation on Canonical after pst:modules-ready."
     },
     {
       "area": "projects-list",
@@ -85,6 +87,13 @@
         "pristeel-gmail-live-triage-v1.js",
         "pristeel-outreach-followup-v1.js"
       ]
+    },
+    {
+      "area": "contacts",
+      "finalOwners": [
+        "pristeel-contact-master-v1.js"
+      ],
+      "note": "Contact Master is the daily relationship register over canonical contacts/contact_sources/project_contacts. Gmail, HubSpot and Bitrix24 remain source systems/back-office capabilities; classic contacts remain a fallback."
     },
     {
       "area": "document-center",
@@ -195,7 +204,13 @@
       "module": "pristeel-task-source-actions-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader. Adds only a safe HTTPS source shortcut to current Workspace action rows and performs no data writes or task lifecycle changes."
+      "condition": "Loaded unconditionally by the production base loader. It is the final Workspace visual reconciler, exposes safe source shortcuts, normalizes automation-first navigation and performs no project/task/business-data writes."
+    },
+    {
+      "module": "pristeel-contact-master-v1.js",
+      "loader": "pristeel-task-source-actions-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded with cache busting by the final Workspace shell layer. It provides the read-only unified Contact Master over Gmail, HubSpot, Bitrix24 and project relationships."
     },
     {
       "module": "pristeel-project-summary-command-v1.js",
