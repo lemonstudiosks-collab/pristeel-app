@@ -1,14 +1,11 @@
-/* PRISTEEL task source actions v9
+/* PRISTEEL task source actions v10
  * Safe, read-only source shortcut for Workspace action rows.
- * Does not own, reload or rebuild Home. The ordered runtime owns Home Command Center.
- * Happy Home is loaded once, only after the ordered runtime is complete.
+ * This module never loads, rebuilds or styles the Home application itself.
  */
 (function(){
 'use strict';
 if(window.__pstTaskSourceActionsV1)return;
 window.__pstTaskSourceActionsV1=true;
-
-var happyLoadStarted=false;
 
 function sourceUrl(value){
   var text=String(value||'');
@@ -57,67 +54,24 @@ function decorate(){
   var page=document.getElementById('page-workspace-home');
   if(!page||page.style.display==='none')return 0;
   var count=0;
-  page.querySelectorAll('#pst-ws-home-actions > .pst-ws-action').forEach(function(row){
-    if(enhanceRow(row))count++;
-  });
-  try{
-    if(window.PSTHomeHappyV1&&typeof window.PSTHomeHappyV1.schedule==='function')window.PSTHomeHappyV1.schedule();
-  }catch(e){}
+  page.querySelectorAll('#pst-ws-home-actions > .pst-ws-action').forEach(function(row){if(enhanceRow(row))count++;});
   return count;
 }
-function schedule(){[0,120,350,800,1600].forEach(function(ms){setTimeout(decorate,ms);});}
+function schedule(){[0,120,350,800].forEach(function(ms){setTimeout(decorate,ms);});}
 function installStyle(){
-  if(document.getElementById('pst-task-source-actions-v9-css'))return;
+  if(document.getElementById('pst-task-source-actions-v10-css'))return;
   var style=document.createElement('style');
-  style.id='pst-task-source-actions-v9-css';
+  style.id='pst-task-source-actions-v10-css';
   style.textContent=`
 #page-workspace-home .pst-task-source-open{height:32px;border:1px solid #CFE0E7;border-radius:10px;padding:0 11px;background:#F8FBFC;color:#3F7F98;font-size:10px;font-weight:760;line-height:1;cursor:pointer;white-space:nowrap}
 #page-workspace-home .pst-task-source-open:hover{background:#EDF6F9;border-color:#B8D4DF;color:#2F6E86}
 `;
   document.head.appendChild(style);
 }
-function loadHappyHomeOnce(){
-  if(window.PSTHomeHappyV1){
-    try{if(typeof window.PSTHomeHappyV1.schedule==='function')window.PSTHomeHappyV1.schedule();}catch(e){}
-    return true;
-  }
-  if(happyLoadStarted)return false;
-  var existing=document.querySelector('script[data-pst-home-happy-v1],script[src*="pristeel-home-happy-v1.js"]');
-  if(existing){
-    happyLoadStarted=true;
-    existing.addEventListener('load',schedule,{once:true});
-    return false;
-  }
-  happyLoadStarted=true;
-  var h=document.createElement('script');
-  h.src='pristeel-home-happy-v1.js?v=20260819-stable1';
-  h.defer=true;
-  h.setAttribute('data-pst-home-happy-v1','1');
-  h.onload=function(){schedule();};
-  h.onerror=function(){happyLoadStarted=false;console.error('Nuk u ngarkua Home Happy v1.');};
-  document.head.appendChild(h);
-  return true;
-}
-
 installStyle();
 window.addEventListener('pst-dashboard-rendered',schedule);
 document.addEventListener('pst:home-canonical-rendered',schedule);
-document.addEventListener('pst:modules-ready',function(){
-  schedule();
-  loadHappyHomeOnce();
-},{once:true});
-
-/* If this helper arrives after the ordered runtime, attach the final cosmetic layer once. */
-if(window.__pstModulesReady){
-  schedule();
-  loadHappyHomeOnce();
-}
-
-window.PSTTaskSourceActionsV1={
-  sourceUrl:sourceUrl,
-  metadataText:metadataText,
-  enhanceRow:enhanceRow,
-  decorate:decorate,
-  loadHappyHomeOnce:loadHappyHomeOnce
-};
+document.addEventListener('pst:modules-ready',schedule,{once:true});
+if(window.__pstModulesReady)schedule();
+window.PSTTaskSourceActionsV1={sourceUrl:sourceUrl,metadataText:metadataText,enhanceRow:enhanceRow,decorate:decorate};
 })();
