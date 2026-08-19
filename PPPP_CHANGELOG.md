@@ -39,6 +39,9 @@ This file records material architecture/automation changes. It is not a substitu
 - Commit introducing UI: `3d5f0bf2bc30357a91da503702ad5877600ac8ba`.
 - Supabase migration `pppp_contact_master_gmail_sync_v1` added incoming Gmail-to-contact/project synchronization.
 - Historical backfill processed 86 email/project sender pairs.
+- `pppp_contact_party_guard_v1` corrects supplier identity from actual RFQ/partner evidence instead of treating every external sender as a client.
+- `pppp_contact_master_v1` now canonicalizes duplicate contact rows by email without deleting HubSpot/Bitrix24/Gmail source history.
+- Verified sample identities: Aleksandar Cingelic = Italian Style/client; Ermal Rula = Eurosteel/supplier; Zoran Ilievski = AKTIVA/supplier/production-side relationship.
 
 ### Durable PPPP continuity
 
@@ -54,6 +57,7 @@ This file records material architecture/automation changes. It is not a substitu
   - `PPPP_CONTINUITY_PROTOCOL.md`
   - `PPPP_CHANGELOG.md`
 - New sessions no longer need to reconstruct the platform only from chat memory.
+- `runtime-manifest.json` and `docs/ACTIVE_RUNTIME.md` were refreshed to record Canonical Home, the final Workspace shell reconciler and Contact Master ownership.
 
 ### Structured project requirements
 
@@ -62,6 +66,14 @@ This file records material architecture/automation changes. It is not a substitu
 - OCR/conflict evidence remains review-gated.
 - Historical analyzed-document backfill produced 482 structured requirement rows.
 - Migrations: `pppp_structured_project_requirements_v1`, `pppp_structured_requirements_project_id_cast_v1`.
+
+### Security verification for new automation objects
+
+- Supabase advisors were run after the new DDL.
+- New security-definer-view findings were removed by converting Contact Master and requirements summary views to `security_invoker`.
+- `project_requirements` now has RLS enabled with authenticated read access.
+- New SECURITY DEFINER trigger/helper functions have `search_path` fixed and are not executable by anon/authenticated users.
+- Remaining advisor warnings are pre-existing platform items, not introduced by this work.
 
 ### Regression project state corrected
 
