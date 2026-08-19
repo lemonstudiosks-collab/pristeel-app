@@ -1,13 +1,14 @@
-/* PRISTEEL task source actions v8
+/* PRISTEEL task source actions v9
  * Safe, read-only source shortcut for Workspace action rows.
- * Loads the Home visual owner exactly once, then applies cosmetic Home helpers.
+ * Does not own, reload or rebuild Home. The ordered runtime owns Home Command Center.
+ * Happy Home is loaded once, only after the ordered runtime is complete.
  */
 (function(){
 'use strict';
 if(window.__pstTaskSourceActionsV1)return;
 window.__pstTaskSourceActionsV1=true;
 
-var homeVisualLoadStarted=false;
+var happyLoadStarted=false;
 
 function sourceUrl(value){
   var text=String(value||'');
@@ -52,43 +53,6 @@ function enhanceRow(row){
   row.dataset.pstTaskSourceUrl=url;
   return true;
 }
-function homeActive(){
-  var page=document.getElementById('page-workspace-home');
-  return !!(page&&page.classList.contains('active')&&page.style.display!=='none');
-}
-function normText(value){
-  return String(value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
-}
-function smallestTopMatch(test,maxTop,maxHeight,maxWidth){
-  var best=null,bestArea=Infinity;
-  Array.prototype.forEach.call(document.body.querySelectorAll('div,section,header,nav,button,span,label'),function(el){
-    if(el.closest&&el.closest('#pst-ws-sidebar'))return;
-    var r=el.getBoundingClientRect();
-    if(r.width<20||r.height<12||r.top<0||r.top>maxTop||r.height>maxHeight||r.width>maxWidth)return;
-    var text=normText(el.textContent);
-    if(!text||!test(text,el))return;
-    var area=r.width*r.height;
-    if(area<bestArea){best=el;bestArea=area;}
-  });
-  return best;
-}
-function cleanHomeTopbar(){
-  if(!homeActive())return false;
-  var importBlock=smallestTopMatch(function(text){
-    return text.indexOf('import dokument')>-1&&text.indexOf('ngarko ose ngjit dokumentin e bleresit')>-1;
-  },155,125,720);
-  if(importBlock)importBlock.classList.add('pst-home-top-hide');
-
-  var projectText='';
-  var gp=document.getElementById('global-proj');
-  try{projectText=normText(gp&&gp.selectedOptions&&gp.selectedOptions[0]&&gp.selectedOptions[0].textContent||'');}catch(e){}
-  var projectBlock=smallestTopMatch(function(text){
-    if(projectText&&text===projectText)return true;
-    return /italian style.*dukley.*seafront.*(?:restoran|restaurant).*budva/.test(text);
-  },155,90,700);
-  if(projectBlock)projectBlock.classList.add('pst-home-top-hide');
-  return !!(importBlock||projectBlock);
-}
 function decorate(){
   var page=document.getElementById('page-workspace-home');
   if(!page||page.style.display==='none')return 0;
@@ -96,174 +60,64 @@ function decorate(){
   page.querySelectorAll('#pst-ws-home-actions > .pst-ws-action').forEach(function(row){
     if(enhanceRow(row))count++;
   });
-  cleanHomeTopbar();
   try{
-    if(window.PSTHomeHappyV1&&typeof window.PSTHomeHappyV1.schedule==='function'){
-      window.PSTHomeHappyV1.schedule();
-    }
+    if(window.PSTHomeHappyV1&&typeof window.PSTHomeHappyV1.schedule==='function')window.PSTHomeHappyV1.schedule();
   }catch(e){}
   return count;
 }
-function schedule(){
-  [0,120,350,800,1600].forEach(function(ms){setTimeout(decorate,ms);});
-}
+function schedule(){[0,120,350,800,1600].forEach(function(ms){setTimeout(decorate,ms);});}
 function installStyle(){
-  if(document.getElementById('pst-task-source-actions-v8-css'))return;
+  if(document.getElementById('pst-task-source-actions-v9-css'))return;
   var style=document.createElement('style');
-  style.id='pst-task-source-actions-v8-css';
+  style.id='pst-task-source-actions-v9-css';
   style.textContent=`
 #page-workspace-home .pst-task-source-open{height:32px;border:1px solid #CFE0E7;border-radius:10px;padding:0 11px;background:#F8FBFC;color:#3F7F98;font-size:10px;font-weight:760;line-height:1;cursor:pointer;white-space:nowrap}
 #page-workspace-home .pst-task-source-open:hover{background:#EDF6F9;border-color:#B8D4DF;color:#2F6E86}
-body:has(#page-workspace-home.active) .pst-home-top-hide{display:none!important}
-
-/* Actual Home DOM:
-   .pst-ws-card-hd
-     > div:first-child  [icon + title + subtitle]
-     > .pst-ws-link
-   Keep the outer header compact and grid the nested title wrapper itself. */
-html body #page-workspace-home .pst-ws-card-hd{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-  gap:16px!important;
-  width:100%!important;
-  height:auto!important;
-  min-height:0!important;
-  max-height:none!important;
-  margin:0 0 14px!important;
-  padding:5px 3px 12px!important;
-}
-html body #page-workspace-home .pst-ws-card-hd > div:first-child{
-  display:block!important;
-  flex:1 1 auto!important;
-  min-width:0!important;
-  width:auto!important;
-}
-html body #page-workspace-home .pst-ws-card-hd > div:first-child:has(.pst-happy-section-icon){
-  display:grid!important;
-  grid-template-columns:42px minmax(0,1fr)!important;
-  grid-template-rows:auto auto!important;
-  column-gap:10px!important;
-  row-gap:2px!important;
-  align-items:center!important;
-}
-html body #page-workspace-home .pst-ws-card-hd > div:first-child .pst-happy-section-icon{
-  grid-column:1!important;
-  grid-row:1 / 3!important;
-  align-self:start!important;
-}
-html body #page-workspace-home .pst-ws-card-hd > div:first-child .pst-ws-card-title{
-  grid-column:2!important;
-  grid-row:1!important;
-  min-width:0!important;
-  width:auto!important;
-  max-width:none!important;
-  white-space:normal!important;
-}
-html body #page-workspace-home .pst-ws-card-hd > div:first-child .pst-ws-card-sub{
-  grid-column:2!important;
-  grid-row:2!important;
-  min-width:0!important;
-  width:auto!important;
-  max-width:none!important;
-  margin-top:3px!important;
-  white-space:normal!important;
-}
-html body #page-workspace-home .pst-ws-card-hd > .pst-ws-link{
-  flex:0 0 auto!important;
-  width:auto!important;
-  min-width:max-content!important;
-  white-space:nowrap!important;
-  align-self:center!important;
-}
 `;
   document.head.appendChild(style);
 }
-function loadHappyHome(){
+function loadHappyHomeOnce(){
   if(window.PSTHomeHappyV1){
-    try{window.PSTHomeHappyV1.schedule();}catch(e){}
-    return;
-  }
-  if(document.querySelector('script[data-pst-home-happy-v1],script[src*="pristeel-home-happy-v1.js"]'))return;
-  var h=document.createElement('script');
-  h.src='pristeel-home-happy-v1.js?v=20260819-header1';
-  h.async=false;
-  h.setAttribute('data-pst-home-happy-v1','1');
-  h.onload=function(){
-    try{
-      if(window.PSTHomeHappyV1&&typeof window.PSTHomeHappyV1.schedule==='function'){
-        window.PSTHomeHappyV1.schedule();
-      }
-    }catch(e){}
-    schedule();
-  };
-  h.onerror=function(){console.error('Nuk u ngarkua Home Happy v1.');};
-  document.head.appendChild(h);
-}
-function afterHomeVisualReady(){
-  try{
-    if(window.PSTHomeCommandCenterV2&&typeof window.PSTHomeCommandCenterV2.refresh==='function'){
-      window.PSTHomeCommandCenterV2.refresh();
-    }
-  }catch(e){console.error('Home Command Center refresh dështoi.',e);}
-  schedule();
-  setTimeout(loadHappyHome,60);
-}
-function ensureCurrentHomeVisual(){
-  if(window.PSTHomeCommandCenterV2){
-    afterHomeVisualReady();
+    try{if(typeof window.PSTHomeHappyV1.schedule==='function')window.PSTHomeHappyV1.schedule();}catch(e){}
     return true;
   }
-
-  var existing=document.querySelector('script[src*="pristeel-home-command-center-v2.js"]');
+  if(happyLoadStarted)return false;
+  var existing=document.querySelector('script[data-pst-home-happy-v1],script[src*="pristeel-home-happy-v1.js"]');
   if(existing){
-    if(!existing.dataset.pstHomeLoaderBound){
-      existing.dataset.pstHomeLoaderBound='1';
-      existing.addEventListener('load',afterHomeVisualReady,{once:true});
-    }
+    happyLoadStarted=true;
+    existing.addEventListener('load',schedule,{once:true});
     return false;
   }
-
-  if(homeVisualLoadStarted)return false;
-  homeVisualLoadStarted=true;
-
-  var s=document.createElement('script');
-  s.src='pristeel-home-command-center-v2.js';
-  s.async=false;
-  s.setAttribute('data-pst-home-command-live-v8','1');
-  s.onload=function(){
-    afterHomeVisualReady();
-  };
-  s.onerror=function(){
-    homeVisualLoadStarted=false;
-    console.error('Nuk u ngarkua Home Command Center.');
-  };
-  document.head.appendChild(s);
+  happyLoadStarted=true;
+  var h=document.createElement('script');
+  h.src='pristeel-home-happy-v1.js?v=20260819-stable1';
+  h.defer=true;
+  h.setAttribute('data-pst-home-happy-v1','1');
+  h.onload=function(){schedule();};
+  h.onerror=function(){happyLoadStarted=false;console.error('Nuk u ngarkua Home Happy v1.');};
+  document.head.appendChild(h);
   return true;
 }
 
 installStyle();
 window.addEventListener('pst-dashboard-rendered',schedule);
-document.addEventListener('pst:home-canonical-rendered',function(){
-  if(window.PSTHomeCommandCenterV2)afterHomeVisualReady();
-  else ensureCurrentHomeVisual();
-});
+document.addEventListener('pst:home-canonical-rendered',schedule);
 document.addEventListener('pst:modules-ready',function(){
-  ensureCurrentHomeVisual();
+  schedule();
+  loadHappyHomeOnce();
 },{once:true});
 
-/* Single fallback for cases where this helper itself loads after modules-ready. */
-setTimeout(function(){
-  ensureCurrentHomeVisual();
-},700);
+/* If this helper arrives after the ordered runtime, attach the final cosmetic layer once. */
+if(window.__pstModulesReady){
+  schedule();
+  loadHappyHomeOnce();
+}
 
 window.PSTTaskSourceActionsV1={
   sourceUrl:sourceUrl,
   metadataText:metadataText,
   enhanceRow:enhanceRow,
   decorate:decorate,
-  cleanHomeTopbar:cleanHomeTopbar,
-  loadHappyHome:loadHappyHome,
-  ensureCurrentHomeVisual:ensureCurrentHomeVisual
+  loadHappyHomeOnce:loadHappyHomeOnce
 };
 })();
