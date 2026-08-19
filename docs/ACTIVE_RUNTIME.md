@@ -2,24 +2,31 @@
 
 This document is the human-readable companion to `runtime-manifest.json`.
 
+For project continuity also read:
+
+- `PPPP_MASTER_CONTEXT.md`
+- `PPPP_DO_NOT_BREAK.md`
+- `PPPP_CONTINUITY_PROTOCOL.md`
+- `PPPP_CHANGELOG.md`
+
 ## The rule that matters most
 
-**Current PPPP means the current HEAD of `main`.**
+**Current PPPP means the current HEAD of `main` plus the live Supabase state.**
 
-A file existing somewhere in the repository, an old branch, a closed PR, a backup branch, or an older commit does **not** describe the current application unless we are explicitly doing historical comparison.
+A file existing somewhere in the repository, an old branch, a backup branch or an older commit does not describe the current application unless historical comparison is the task.
 
-Before making a current-state claim about PPPP:
+Before making a current-state claim:
 
-1. Read `refs/heads/main` and record the exact commit SHA.
-2. Read `runtime-manifest.json` from that exact commit.
-3. Follow the manifest's actual boot chain from the application HTML through its bootstrap loader into the ordered bootstrap.
-4. Respect load order. A module loaded later can wrap, replace, hide, decorate or constrain an earlier module.
-5. For visible UI questions, prefer the manifest's `FINAL_OWNER` modules over older modules with plausible filenames.
-6. Do not use backup/feature/verification branches unless the task explicitly asks for them.
+1. Read `main` HEAD.
+2. Read `runtime-manifest.json` from current `main`.
+3. Follow the real boot chain and dynamic loaders.
+4. Respect load order and wrapping/finalizer behavior.
+5. Prefer manifest `FINAL_OWNER` modules over plausible older filenames.
+6. Read live Supabase state for operational project/automation claims.
 
-This rule exists because PPPP grew through additive safety layers. A filename may describe what a module originally did, not what owns the final visible behavior today.
+PPPP grew through additive safety layers. A filename may describe what a module originally did, not what owns final visible behavior today.
 
-## Traced production chain
+## Production chain
 
 ```text
 GitHub main HEAD
@@ -28,98 +35,138 @@ index.html
       ↓
 pristeel-procurement.html
       ↓
-9 local scripts loaded directly by the HTML
+application-direct scripts
       ↓
 pristeel-roles.js
-      ├── dynamically loads pristeel-project-emails.js
-      │         ↓
-      │   137 ordered runtime modules
-      │         ↓
-      │   late finalizers / safety layers
-      │
-      ├── dynamically loads pristeel-invoice-original-document-v1.js
-      └── dynamically loads pristeel-tender-business-flow-v1.js
-
-pristeel-gemini-test-ui-v1.js
-      └── dynamically loads pristeel-groq-gptoss-provider-v1.js
+      ├── Home runtime owner guard
+      ├── commercial live overrides
+      ├── tender/current utility modules
+      ├── Workspace shell cleanup
+      │      └── Contact Master
+      └── pristeel-project-emails.js
+               ↓
+         ordered runtime modules
+               ↓
+         late finalizers / safety layers
 ```
 
-The nine local files loaded directly by `pristeel-procurement.html`, in current order, are:
+The nine local application-direct files are still recorded in `runtime-manifest.json`. `pristeel-roles.js` is both RBAC and a historical runtime loader. `pristeel-project-emails.js` is historically named but acts as the large ordered bootstrap.
 
-1. `pristeel-kpi.js`
-2. `pristeel-search.js`
-3. `pristeel-drive.js`
-4. `pristeel-roles.js`
-5. `pristeel-export.js`
-6. `pristeel-offer-editor.js`
-7. `pristeel-finance.js`
-8. `pristeel-contracts.js`
-9. `pristeel-outreach.js`
-
-`index.html` is only the Pages entry/redirect. `pristeel-procurement.html` is the application document. `pristeel-roles.js` is both a real RBAC module and, historically, the hidden loader for the additive PPPP runtime. `pristeel-project-emails.js` is historically named but currently acts as the large ordered module bootstrap.
-
-## Status meanings
-
-- **BASE_DIRECT**: loaded directly by the application HTML before the additive runtime bootstrap.
-- **FOUNDATION_REQUIRED**: a current foundational shell/host layer required by later runtime owners. It can be visually superseded while still providing DOM, classes, globals or lifecycle hooks that later modules depend on.
-- **FINAL_OWNER**: a verified current owner/finalizer for a visible application area.
-- **COMPATIBILITY**: a bridge, adapter, wrapper or migration layer still required by current code.
-- **LOADED_LEGACY_CANDIDATE**: still loaded in production, but likely superseded for visible behavior. Investigation candidate, not deletion candidate.
-- **LEGACY_FALLBACK_REQUIRED**: older layer intentionally retained because a user-accessible current fallback still depends on it. It is not a deletion candidate while that fallback exists.
-- **DYNAMIC_CURRENT**: a current module loaded dynamically by another runtime file.
-- **ACTIVE_PROVIDER**: conditionally active runtime provider outside the main bootstrap.
-- **LOADED_CURRENT_UNCLASSIFIED**: safe default for bootstrap modules not yet explicitly classified.
-
-## Current visible ownership map
+## Current visible ownership
 
 ### Application shell
 
-Required foundation:
+Foundation:
+
 - `pristeel-ui-v2.js`
 
-Final/current owners:
+Current owners/finalizers:
+
 - `pristeel-workspace-architecture-v1.js`
 - `pristeel-ui-corrections-v2.js`
 - `pristeel-redesign-finalizer-v1.js`
+- `pristeel-task-source-actions-v1.js`
 
-`pristeel-ui-v2.js` is **FOUNDATION_REQUIRED**, not legacy. It creates the `pst-ui-v2` body state and the `#pst-v2-sidebar` host. Workspace Architecture later builds the current `#pst-ws-sidebar` inside that host and its boot loop explicitly waits for `#pst-v2-sidebar` before starting. The later workspace/finalizer layers own the visible shell, but they currently depend on the UI V2 host existing first. The manifest therefore enforces `pristeel-ui-v2.js → pristeel-workspace-architecture-v1.js` load order.
+`pristeel-ui-v2.js` remains a required foundation because it creates the shell host used by the Workspace.
+
+`pristeel-task-source-actions-v1.js` is the final visual shell/navigation reconciler. It keeps one Workspace sidebar, hides legacy right rail/chrome on Workspace routes, removes legacy lower-sidebar clutter and maintains the automation-first daily navigation without writing business data.
+
+Daily navigation intent:
+
+- Home
+- Projektet
+- Tenderat
+- Kontaktet
+
+Back-office tools remain available:
+
+- Gmail
+- Komerciale
+- Financa
+- Modulet
 
 ### Home
 
-- `pristeel-home-command-center-v2.js`
-- `pristeel-home-stability-v2.js`
-- `pristeel-home-visual-cleanup-v1.js`
-- `pristeel-redesign-finalizer-v1.js`
+**Final data owner:**
 
-The current Workspace also exposes **Apps → Pamja klasike**. That route intentionally keeps two older Home layers alive:
+- `pristeel-home-canonical-v1.js`
 
-- `pristeel-dashboard-calm.js` supplies the `renderHome` implementation captured by Workspace Architecture as the classic Home renderer.
-- `pristeel-ui-v2-polish.js` still reacts when legacy `page-home` becomes active and performs the classic dashboard's opportunity triage, KPI/inbox cleanup and row limiting.
+**Startup/final handoff owner:**
 
-These are classified as **LEGACY_FALLBACK_REQUIRED**, not as removal candidates. Retiring them would require first removing or replacing the user-accessible classic fallback.
+- `pristeel-home-runtime-owner-guard-v1.js`
 
-### Projects
+Home Canonical is now an event/action engine, not a passive dashboard aggregator.
 
-Projects list:
+Current behavior:
+
+- `Për mua tani` contains at most five concrete actions.
+- `Në pritje` separates projects waiting on another party.
+- Project events drive current state and next action.
+- Newer confirmed events reconcile obsolete automatic tasks.
+- Priority cards explain `Pse tani?`.
+- Priority cards open a Project Brief with current state, sources, recent events, missing information, risks/deadlines and recommended next actions.
+- Snooze/dismiss state is persisted.
+
+Older Home visual modules may still be loaded as compatibility/classic fallback providers, but they are not the final Home data owner.
+
+### Projects list
+
 - `pristeel-projects-modern-v1.js`
+- `pristeel-project-lifecycle-tracking-v1.js`
 
-Current project workspace:
+### Project workspace
+
 - `pristeel-project-first-v2.js`
 - `pristeel-project-first-actions-v1.js`
 - `pristeel-project-first-commercial-v1.js`
 - `pristeel-project-first-execution-v1.js`
+- `pristeel-project-summary-command-v1.js`
+- `pristeel-project-intelligence-conversation-v1.js`
+- `pristeel-project-lifecycle-tracking-v1.js`
+- `pristeel-project-intelligence-resilience-v1.js`
 
-The current Workspace replaces the normal `openOverview()` route with the modern 360 project workspace, but deliberately captures the previous `openOverview` implementation and exposes it through the current **“Pamja e vjetër”** project action.
+The classic project overview remains intentionally reachable as a fallback. Do not delete its providers until the fallback/merge behavior has an equivalent replacement.
 
-`pristeel-project-intelligence-ui.js` is therefore also **LEGACY_FALLBACK_REQUIRED**. In that old project overview, `pristeel-project-analysis.js` injects the analysis panel and `pristeel-project-intelligence-ui.js` repositions it to the top of the modal, widens the overview, manages scrolling, watches for legacy overview openings and provides the analysis-load fallback. Removing it while **Pamja e vjetër** remains accessible would change that fallback UI.
+### Contacts
 
-`pristeel-project-workspace.js` is also **LEGACY_FALLBACK_REQUIRED**. It mounts into the same legacy `ov-body` surface and provides the old project's email/Drive folder view plus the duplicate-project merge workflow. That merge workflow can transfer email links, project emails, contacts, attachment links, BOM items, offers, RFQ logs, documents, tasks and analyses to the chosen master project before archiving the source project. No equivalent current surface has been proven to replace that behavior, so removing this module while **Pamja e vjetër** remains available would remove user-accessible functionality.
+**Daily relationship owner:**
+
+- `pristeel-contact-master-v1.js`
+
+Contact Master is a read-only Workspace register over:
+
+- canonical `contacts`;
+- `contact_sources` for Gmail / HubSpot / Bitrix24 identities;
+- `project_contacts` for project relationships.
+
+Gmail, HubSpot and Bitrix24 remain connected systems. The daily UI unifies their identities rather than copying them into separate visible address books.
+
+Classic contacts remain a back-office fallback.
 
 ### Gmail / Inbox
 
 - `pristeel-gmail-live-inbox-v2.js`
 - `pristeel-gmail-live-triage-v1.js`
 - `pristeel-outreach-followup-v1.js`
+
+Linked project email is also a core event source for project-state automation.
+
+### Commercial
+
+Current project supplier comparison/final commercial decision view includes:
+
+- `pristeel-project-first-commercial-v1.js`
+
+It already contains component normalization, installation-scope safeguards and preliminary margin logic. Do not create a second comparison engine without tracing this one first.
+
+Project-to-client-offer prefill is supported by current commercial prefill/rescue layers. They prepare data but do not silently send/finalize an offer.
+
+### Document intelligence
+
+- `pristeel-project-analysis.js`
+- `pristeel-project-analysis-document-intelligence-v1.js`
+
+Supabase now also stores extracted structured evidence in `project_requirements`, with OCR/review evidence kept review-gated.
 
 ### Document Center
 
@@ -131,79 +178,63 @@ The current Workspace replaces the normal `openOverview()` route with the modern
 - `pristeel-finance-stability-v2.js`
 - `pristeel-invoice-project-link-v1.js`
 - `pristeel-document-currency-v1.js`
-- `pristeel-invoice-original-document-v1.js` (dynamically loaded by `pristeel-roles.js`)
+- `pristeel-invoice-original-document-v1.js`
 
 ### Tenders
 
 - `pristeel-kek-tender-watch-v1.js`
-- `pristeel-tender-business-flow-v1.js` (dynamically loaded by `pristeel-roles.js`)
+- `pristeel-tender-business-flow-v1.js`
+- `pristeel-tender-winner-contacts-v1.js`
 
-The first filename is legacy. The current tender layer covers Kosovo/KRPP and Albania/APP direct opportunities plus EU/TED awarded-contract winner outreach.
+The first filename is legacy. Current tender behavior covers KRPP Kosovo, APP Albania, TED direct opportunities and TED award-winner outreach layers.
 
 ### AI
 
 - `pristeel-gemini-test-ui-v1.js`
-- `pristeel-groq-gptoss-provider-v1.js` (dynamically loaded)
+- `pristeel-groq-gptoss-provider-v1.js`
+- Project Intelligence resilience/conversation layers recorded in the manifest.
 
-GPT-OSS routing becomes active after successful explicit activation. `pristeel-groq-rate-limit.js` is now a compatibility-layer concern, not a reliable description of the final provider architecture.
+Provider activation and rate-limit compatibility must be traced from the current runtime before changing AI routing.
 
-## Required foundations
+## Required legacy fallbacks
 
-- `pristeel-ui-v2.js` — creates the shell state and `#pst-v2-sidebar` host required by the current Workspace Architecture layer.
+These remain because current user-accessible fallbacks still depend on them:
 
-A foundation is not necessarily the visible owner. It remains loaded because later current modules depend on what it creates.
-
-## Compatibility layers that must not be casually removed
-
-The manifest records current bridge/compatibility files including project schema compatibility, AI routing, Gmail auth bridging, offer draft-editor bridging, commercial prefill rescue and workspace release compatibility.
-
-Awkward naming is technical debt, not evidence that a file is dead.
-
-## Legacy fallbacks required by current UI
-
-- `pristeel-ui-v2-polish.js` — classic Home triage/polish.
+- `pristeel-ui-v2-polish.js` — classic Home behavior.
 - `pristeel-dashboard-calm.js` — classic Home renderer captured by Workspace Architecture.
-- `pristeel-project-intelligence-ui.js` — classic project overview layout/analysis behavior used by **Pamja e vjetër**.
-- `pristeel-project-workspace.js` — classic project folder plus duplicate-project merge workflow used through **Pamja e vjetër**.
+- `pristeel-project-intelligence-ui.js` — classic project overview analysis/layout behavior.
+- `pristeel-project-workspace.js` — classic project folder/duplicate-project merge workflow.
 
-These have been traced and deliberately removed from the cleanup-candidate list. They remain loaded because current Workspace actions still expose their fallback surfaces.
+Do not delete these based on naming alone.
 
-## Legacy-review candidates still loaded
+## Deprecated runtime layers forbidden from returning
 
-**None.**
+See `runtime-manifest.json` `deprecatedForbidden`, currently including:
 
-The initial legacy-review queue is now fully traced. Every former candidate has either been retired from runtime, classified as a required user-accessible fallback, or classified as a current foundation. New candidates should only be added when fresh evidence identifies an untraced superseded layer.
+- `pristeel-document-adjustments.js`
+- `pristeel-dashboard-focus.js`
+- `pristeel-dashboard-operations.js`
 
-## Retired runtime layers
+## CI/runtime guard
 
-These files remain in repository history/reference but are forbidden from returning to the active runtime unless deliberately re-reviewed:
+`scripts/runtime-manifest-check.mjs` validates entrypoints, loader/bootstrap integrity, module existence, dynamic-loader relationships, ownership/compatibility declarations, critical ordering and forbidden runtime returns.
 
-- `pristeel-document-adjustments.js` — superseded by `pristeel-document-adjustments-v3.js`.
-- `pristeel-dashboard-focus.js` — its focus UI was destroyed by the later legacy Home layers and its polling loop had no surviving UI owner.
-- `pristeel-dashboard-operations.js` — its Home renderer was fully superseded by `pristeel-dashboard-calm`; its `page-all-modules` surface had no surviving trigger, while the current Workspace provides the authoritative Apps surface.
+A loader/bootstrap change is allowed only with deliberate manifest review.
 
-The runtime manifest's `deprecatedForbidden` list makes CI fail if one of these modules is accidentally re-added to the production bootstrap.
+## Supabase continuity
 
-## CI guard
+Cross-session state is available through:
 
-`scripts/runtime-manifest-check.mjs` validates that:
+- `public.pppp_platform_snapshot_v1()`
+- `public.pppp_platform_context`
+- `public.pppp_platform_changelog`
+- `public.pppp_platform_protected_rules`
+- `public.pppp_platform_integrations`
 
-- the production entrypoint files exist;
-- `index.html` still points to the application document;
-- expected local application scripts are loaded directly and in recorded order;
-- the audited `pristeel-roles.js` loader has not silently changed;
-- the loader still loads the ordered bootstrap;
-- the audited bootstrap blob has not silently changed;
-- bootstrap entries have no duplicates and every module exists;
-- all manifest final owners, compatibility layers, required foundations, required legacy fallbacks and review candidates remain valid;
-- critical load-order constraints remain true;
-- dynamic runtime modules still have their loader and target file;
-- deprecated/forbidden modules cannot silently return.
+These are the durable technical continuity layer. Chat memory is supporting context, not the operational source of truth.
 
-A loader/bootstrap change is allowed, but it must be accompanied by a deliberate manifest review/update.
+## Safe-change principle
 
-## What this manifest does not do
+The runtime manifest maps ownership. It does not authorize deletion.
 
-It does **not** claim the architecture is already clean. It prevents us from confusing repository history with current runtime while we clean it safely.
-
-It also does not authorize deletion. The manifest is the map before the broom.
+**Trace first, preserve working behavior, change narrowly, verify, then record the change.**
