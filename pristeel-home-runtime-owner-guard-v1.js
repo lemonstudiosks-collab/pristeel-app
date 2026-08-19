@@ -1,11 +1,12 @@
-/* PRISTEEL Home Runtime Owner Guard v10
+/* PRISTEEL Home Runtime Owner Guard v11
  * Deterministic Home startup coordinator.
  * Intermediate Home renderers stay hidden until the ordered runtime is complete.
  * Final sequence: Workspace shell -> Canonical data -> current Command Center -> Happy Home -> reveal.
  */
 (function(){
 'use strict';
-if(window.__pstHomeRuntimeOwnerGuardV10)return;
+if(window.__pstHomeRuntimeOwnerGuardV11)return;
+window.__pstHomeRuntimeOwnerGuardV11=true;
 window.__pstHomeRuntimeOwnerGuardV10=true;
 window.__pstHomeRuntimeOwnerGuardV9=true;
 window.__pstHomeRuntimeOwnerGuardV8=true;
@@ -16,6 +17,10 @@ window.__pstHomeRuntimeOwnerGuardV4=true;
 window.__pstHomeRuntimeOwnerGuardV3=true;
 window.__pstHomeRuntimeOwnerGuardV2=true;
 window.__pstHomeRuntimeOwnerGuardV1=true;
+
+/* One token per application boot. Dynamic final Home assets use this same token,
+ * so a new application opening cannot reuse an older cached visual bundle. */
+var bootVersion='20260819-'+Date.now().toString(36);
 
 /* Retire obsolete/competing Home writers before the ordered bootstrap reaches them. */
 window.__pstDashboardCalmLoaded=true;
@@ -31,7 +36,7 @@ window.__pstHomeOperationalPriorityV1=true;
 window.__pstHomeVisualCleanupV1=true;
 window.__pstLoginTransitionV2=true;
 /* The ordered bootstrap still contains Home Command Center with an old cache key.
- * Prevent that copy from initializing. v10 loads the current file exactly once at finalization. */
+ * Prevent that copy from initializing. v11 loads the current file exactly once at finalization. */
 window.__pstHomeCommandCenterV2=true;
 
 var runtimeReady=!!window.__pstModulesReady;
@@ -73,8 +78,9 @@ function ensureCompatScaffold(){
 function installStartupCss(){
   var old=document.getElementById('pst-home-owner-v8-style');if(old)old.remove();
   var old9=document.getElementById('pst-home-owner-v9-style');if(old9)old9.remove();
-  if(document.getElementById('pst-home-owner-v10-style'))return;
-  var s=document.createElement('style');s.id='pst-home-owner-v10-style';s.textContent=`
+  var old10=document.getElementById('pst-home-owner-v10-style');if(old10)old10.remove();
+  if(document.getElementById('pst-home-owner-v11-style'))return;
+  var s=document.createElement('style');s.id='pst-home-owner-v11-style';s.textContent=`
 body.pst-ui-v2 .sidebar>*:not(#pst-v2-sidebar){display:none!important}
 body.pst-ui-v2 #right-rail,body.pst-ui-v2 #modbar,body.pst-ui-v2 #util-fab{display:none!important}
 html:not(.pst-home-final-ready) #page-workspace-home.active>*{visibility:hidden!important}
@@ -113,7 +119,7 @@ function signalVisualReady(){
   forceHomeVisible();
   try{document.documentElement.classList.add('pst-home-final-ready','pst-runtime-ready');}catch(e){}
   try{if(window.PSTStartupGuard&&typeof window.PSTStartupGuard.visualReady==='function')window.PSTStartupGuard.visualReady();}catch(e){}
-  try{document.dispatchEvent(new CustomEvent('pst:visual-ready',{detail:{owner:'home-runtime-v10',final:true}}));}catch(e){}
+  try{document.dispatchEvent(new CustomEvent('pst:visual-ready',{detail:{owner:'home-runtime-v11',final:true,boot:bootVersion}}));}catch(e){}
 }
 function loadScriptOnce(path,attr,globalName){
   var api=globalName&&window[globalName];if(api)return Promise.resolve(api);
@@ -125,7 +131,7 @@ function loadScriptOnce(path,attr,globalName){
       existing.addEventListener('error',reject,{once:true});
       return;
     }
-    var s=document.createElement('script');s.src=path+'?v=20260819-home-final2';s.defer=true;s.setAttribute(attr,'1');
+    var s=document.createElement('script');s.src=path+'?pst_boot='+encodeURIComponent(bootVersion);s.defer=true;s.setAttribute(attr,'1');
     s.onload=function(){resolve(globalName?window[globalName]:true);};
     s.onerror=function(){reject(new Error('Nuk u ngarkua '+path));};
     document.head.appendChild(s);
@@ -139,8 +145,8 @@ function loadCurrentCommandCenter(){
     window.__pstHomeCommandCenterV2=false;
     try{delete window.PSTHomeCommandCenterV2;}catch(e){window.PSTHomeCommandCenterV2=null;}
     var previous=document.querySelector('script[data-pst-home-command-final]');if(previous&&previous.parentNode)previous.remove();
-    var s=document.createElement('script');s.src='pristeel-home-command-center-v2.js?v=20260819-home-final2';s.defer=true;s.setAttribute('data-pst-home-command-final','1');
-    s.onload=function(){var api=window.PSTHomeCommandCenterV2||null;if(api)api.__pstFinalCurrent=true;resolve(api);};
+    var s=document.createElement('script');s.src='pristeel-home-command-center-v2.js?pst_boot='+encodeURIComponent(bootVersion);s.defer=true;s.setAttribute('data-pst-home-command-final','1');
+    s.onload=function(){var api=window.PSTHomeCommandCenterV2||null;if(api){api.__pstFinalCurrent=true;api.__pstBootVersion=bootVersion;}resolve(api);};
     s.onerror=function(){reject(new Error('Nuk u ngarkua Home Command Center final.'));};
     document.head.appendChild(s);
   }).catch(function(e){commandPromise=null;console.error('PPPP Home Command Center:',e);return null;});
@@ -190,7 +196,7 @@ async function renderFinalHome(){
     if(happy&&typeof happy.decorate==='function')happy.decorate();
     if(window.PSTTaskSourceActionsV1&&typeof window.PSTTaskSourceActionsV1.decorate==='function')window.PSTTaskSourceActionsV1.decorate();
     forceHomeVisible();
-    var page=document.getElementById('page-workspace-home');if(page){page.dataset.pstHomeOwner='canonical-v1';page.dataset.pstHomeCommand='current-final2';page.dataset.pstHomeFinal='happy-v1';page.dataset.pstHomeFinalAt=new Date().toISOString();}
+    var page=document.getElementById('page-workspace-home');if(page){page.dataset.pstHomeOwner='canonical-v1';page.dataset.pstHomeCommand='current-boot';page.dataset.pstHomeFinal='happy-v1';page.dataset.pstHomeBoot=bootVersion;page.dataset.pstHomeFinalAt=new Date().toISOString();}
     homeReady=true;signalVisualReady();return true;
   })().catch(function(e){console.error('PPPP final Home startup:',e);forceHomeVisible();return false;}).finally(function(){finalizing=null;});
   return finalizing;
@@ -236,13 +242,14 @@ function bootstrapCompat(){
 }
 
 var API={
+  bootVersion:bootVersion,
   loadCanonical:loadCanonical,loadInteraction:loadInteraction,loadHappy:loadHappy,loadCurrentCommandCenter:loadCurrentCommandCenter,
   scheduleCanonical:scheduleCanonical,finalizeHome:finalizeHome,installFinalRouter:installFinalRouter,
   renderCanonical:renderCanonical,renderFinalHome:renderFinalHome,ensureCompatScaffold:ensureCompatScaffold,
   hideLegacyHome:hideLegacyHome,clearLegacyLoginBlocker:clearLegacyLoginBlocker,forceHomeVisible:forceHomeVisible,
   signalVisualReady:signalVisualReady,isRuntimeReady:function(){return runtimeReady;},isHomeReady:function(){return homeReady;},isVisualReady:function(){return visualReady;}
 };
-window.PSTHomeRuntimeOwnerGuardV1=window.PSTHomeRuntimeOwnerGuardV2=window.PSTHomeRuntimeOwnerGuardV3=window.PSTHomeRuntimeOwnerGuardV4=window.PSTHomeRuntimeOwnerGuardV5=window.PSTHomeRuntimeOwnerGuardV6=window.PSTHomeRuntimeOwnerGuardV7=window.PSTHomeRuntimeOwnerGuardV8=window.PSTHomeRuntimeOwnerGuardV9=window.PSTHomeRuntimeOwnerGuardV10=API;
+window.PSTHomeRuntimeOwnerGuardV1=window.PSTHomeRuntimeOwnerGuardV2=window.PSTHomeRuntimeOwnerGuardV3=window.PSTHomeRuntimeOwnerGuardV4=window.PSTHomeRuntimeOwnerGuardV5=window.PSTHomeRuntimeOwnerGuardV6=window.PSTHomeRuntimeOwnerGuardV7=window.PSTHomeRuntimeOwnerGuardV8=window.PSTHomeRuntimeOwnerGuardV9=window.PSTHomeRuntimeOwnerGuardV10=window.PSTHomeRuntimeOwnerGuardV11=API;
 
 clearLegacyLoginBlocker();installStartupCss();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrapCompat,{once:true});else bootstrapCompat();
