@@ -43,6 +43,10 @@
       "reason": "Loaded dynamically by pristeel-home-runtime-owner-guard-v1.js only after the ordered runtime and canonical Home render are complete."
     },
     {
+      "path": "pristeel-home-canonical-interaction-v1.js",
+      "reason": "Loaded dynamically by pristeel-home-runtime-owner-guard-v1.js as the UX interaction layer for the final Canonical Home."
+    },
+    {
       "path": "pristeel-gmail-launcher-v2.html",
       "reason": "Current Gmail Add-on entry URL points directly to this GitHub Pages file."
     },
@@ -86,6 +90,11 @@
       "source": "pristeel-home-runtime-owner-guard-v1.js",
       "contains": "pristeel-home-happy-v1.js",
       "reason": "Final Workspace Home cosmetic layer dependency owned by the deterministic Home startup coordinator."
+    },
+    {
+      "source": "pristeel-home-runtime-owner-guard-v1.js",
+      "contains": "pristeel-home-canonical-interaction-v1.js",
+      "reason": "Final Workspace Home interaction dependency owned by the deterministic Home startup coordinator."
     },
     {
       "source": "gmail-addon/Code.gs",
