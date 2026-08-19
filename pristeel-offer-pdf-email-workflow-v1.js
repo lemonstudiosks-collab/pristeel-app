@@ -1,15 +1,27 @@
-/* PRISTEEL saved-offer PDF + Gmail draft workflow v2
+/* PRISTEEL saved-offer PDF + Gmail draft workflow v3
  * Saved client offer => PDF enabled + Email button.
  * Email creates a Gmail draft with the generated PDF attached. It never sends automatically.
  * PDF generation uses the html2pdf bundle already used by PPPP, with a lazy CDN fallback.
  */
 (function(){
 'use strict';
-if(window.__pstOfferPdfEmailWorkflowV2)return;window.__pstOfferPdfEmailWorkflowV2=true;
+if(window.__pstOfferPdfEmailWorkflowV3)return;window.__pstOfferPdfEmailWorkflowV3=true;
 var composeToken='',composeExp=0,pdfLoader=null;
 function P(){return document.getElementById('of-pre');}
 function txt(){return String(P()&&P().textContent||'');}
-function complete(){return !!P()&&!/(ZA DOPUNU|NIJE UKLJUČENO|TO BE COMPLETED|NOT INCLUDED|PËR PLOTËSIM|NUK PËRFSHIHET|NOCH EINZUTRAGEN|NICHT ENTHALTEN)/i.test(txt());}
+function incompletePlaceholder(){
+  var root=P();if(!root)return true;
+  var all=root.querySelectorAll('*');
+  for(var i=0;i<all.length;i++){
+    var e=all[i];if(e.children.length)continue;
+    var t=String(e.textContent||'').replace(/\s+/g,' ').trim();
+    if(!t)continue;
+    if(/^(ZA DOPUNU|CIJENA ZA DOPUNU|TO BE COMPLETED|PËR PLOTËSIM|NOCH EINZUTRAGEN)$/i.test(t))return true;
+    if(/^(NIJE UKLJUČENO|NOT INCLUDED|NUK PËRFSHIHET|NICHT ENTHALTEN)$/i.test(t))return true;
+  }
+  return false;
+}
+function complete(){return !!P()&&!incompletePlaceholder();}
 function saved(){return /SAČUVANO|RUAJTUR|SAVED|GESPEICHERT|POSLATO|DËRGUAR|SENT|VERSENDET/i.test(txt());}
 function leaf(re){var root=P(),all=root?root.querySelectorAll('*'):[];for(var i=0;i<all.length;i++){var e=all[i];if(e.children.length)continue;if(re.test(String(e.textContent||'').trim()))return e;}return null;}
 function patchTotal(){if(!/Montaža\s*\/\s*Installation|Montaža čelične konstrukcije/i.test(txt()))return;var e=leaf(/^Međuzbir bez montaže$/i);if(e)e.textContent='Ukupna cena (neto)';}
