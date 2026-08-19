@@ -26,6 +26,6 @@ var css=document.createElement('style');css.textContent='.pst-real-source-row{di
 window.PSTOfferSourceDocumentOpenV1={decorate:decorate,openAttachment:openAttachment};
 })();
 (function(){
-  if(window.PSTOfferPdfEmailWorkflowV1||document.querySelector('script[data-pst-offer-pdf-email-workflow]'))return;
-  var s=document.createElement('script');s.src='pristeel-offer-pdf-email-workflow-v1.js?v=20260818-1';s.defer=true;s.setAttribute('data-pst-offer-pdf-email-workflow','1');document.head.appendChild(s);
+  if(window.__pstOfferPdfEmailWorkflowV3||document.querySelector('script[data-pst-offer-pdf-email-workflow-live-v3]'))return;
+  var s=document.createElement('script');s.src='pristeel-offer-pdf-email-workflow-v1.js?v=20260819-pdfemail3';s.defer=true;s.setAttribute('data-pst-offer-pdf-email-workflow-live-v3','1');document.head.appendChild(s);
 })();
