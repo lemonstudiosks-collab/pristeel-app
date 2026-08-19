@@ -1,11 +1,13 @@
-/* PRISTEEL task source actions v7
+/* PRISTEEL task source actions v8
  * Safe, read-only source shortcut for Workspace action rows.
- * Cosmetic Home compatibility only. Never owns or reloads Home structure.
+ * Loads the Home visual owner exactly once, then applies cosmetic Home helpers.
  */
 (function(){
 'use strict';
 if(window.__pstTaskSourceActionsV1)return;
 window.__pstTaskSourceActionsV1=true;
+
+var homeVisualLoadStarted=false;
 
 function sourceUrl(value){
   var text=String(value||'');
@@ -106,9 +108,9 @@ function schedule(){
   [0,120,350,800,1600].forEach(function(ms){setTimeout(decorate,ms);});
 }
 function installStyle(){
-  if(document.getElementById('pst-task-source-actions-v7-css'))return;
+  if(document.getElementById('pst-task-source-actions-v8-css'))return;
   var style=document.createElement('style');
-  style.id='pst-task-source-actions-v7-css';
+  style.id='pst-task-source-actions-v8-css';
   style.textContent=`
 #page-workspace-home .pst-task-source-open{height:32px;border:1px solid #CFE0E7;border-radius:10px;padding:0 11px;background:#F8FBFC;color:#3F7F98;font-size:10px;font-weight:760;line-height:1;cursor:pointer;white-space:nowrap}
 #page-workspace-home .pst-task-source-open:hover{background:#EDF6F9;border-color:#B8D4DF;color:#2F6E86}
@@ -185,7 +187,7 @@ function loadHappyHome(){
   if(document.querySelector('script[data-pst-home-happy-v1],script[src*="pristeel-home-happy-v1.js"]'))return;
   var h=document.createElement('script');
   h.src='pristeel-home-happy-v1.js?v=20260819-header1';
-  h.defer=true;
+  h.async=false;
   h.setAttribute('data-pst-home-happy-v1','1');
   h.onload=function(){
     try{
@@ -198,24 +200,70 @@ function loadHappyHome(){
   h.onerror=function(){console.error('Nuk u ngarkua Home Happy v1.');};
   document.head.appendChild(h);
 }
+function afterHomeVisualReady(){
+  try{
+    if(window.PSTHomeCommandCenterV2&&typeof window.PSTHomeCommandCenterV2.refresh==='function'){
+      window.PSTHomeCommandCenterV2.refresh();
+    }
+  }catch(e){console.error('Home Command Center refresh dështoi.',e);}
+  schedule();
+  setTimeout(loadHappyHome,60);
+}
+function ensureCurrentHomeVisual(){
+  if(window.PSTHomeCommandCenterV2){
+    afterHomeVisualReady();
+    return true;
+  }
+
+  var existing=document.querySelector('script[src*="pristeel-home-command-center-v2.js"]');
+  if(existing){
+    if(!existing.dataset.pstHomeLoaderBound){
+      existing.dataset.pstHomeLoaderBound='1';
+      existing.addEventListener('load',afterHomeVisualReady,{once:true});
+    }
+    return false;
+  }
+
+  if(homeVisualLoadStarted)return false;
+  homeVisualLoadStarted=true;
+
+  var s=document.createElement('script');
+  s.src='pristeel-home-command-center-v2.js';
+  s.async=false;
+  s.setAttribute('data-pst-home-command-live-v8','1');
+  s.onload=function(){
+    afterHomeVisualReady();
+  };
+  s.onerror=function(){
+    homeVisualLoadStarted=false;
+    console.error('Nuk u ngarkua Home Command Center.');
+  };
+  document.head.appendChild(s);
+  return true;
+}
 
 installStyle();
 window.addEventListener('pst-dashboard-rendered',schedule);
-document.addEventListener('pst:home-canonical-rendered',function(){schedule();loadHappyHome();});
-document.addEventListener('pst:modules-ready',function(){schedule();loadHappyHome();},{once:true});
-window.addEventListener('pageshow',function(){schedule();loadHappyHome();});
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',function(){schedule();loadHappyHome();},{once:true});
-}else{
-  schedule();
-  loadHappyHome();
-}
+document.addEventListener('pst:home-canonical-rendered',function(){
+  if(window.PSTHomeCommandCenterV2)afterHomeVisualReady();
+  else ensureCurrentHomeVisual();
+});
+document.addEventListener('pst:modules-ready',function(){
+  ensureCurrentHomeVisual();
+},{once:true});
+
+/* Single fallback for cases where this helper itself loads after modules-ready. */
+setTimeout(function(){
+  ensureCurrentHomeVisual();
+},700);
+
 window.PSTTaskSourceActionsV1={
   sourceUrl:sourceUrl,
   metadataText:metadataText,
   enhanceRow:enhanceRow,
   decorate:decorate,
   cleanHomeTopbar:cleanHomeTopbar,
-  loadHappyHome:loadHappyHome
+  loadHappyHome:loadHappyHome,
+  ensureCurrentHomeVisual:ensureCurrentHomeVisual
 };
 })();
