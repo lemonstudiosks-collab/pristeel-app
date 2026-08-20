@@ -36,6 +36,19 @@ This file records material architecture/automation changes. It is not a substitu
 - Existing/saved client offers are not overwritten.
 - Key commits: `288f4384083573877d9b783352850a9a11e48496`, `f98b23fe0c9d0c4b7c5e25ce338803939b0d1c24`, `5f5d8281e6cce2dec3948a3407261c9a78d995b1`.
 
+### Client-offer continuation fixed after supplier quote
+
+- `pristeel-project-commercial-prefill-rescue-v1.js` upgraded to v3 after reproducing the real `Krijo / edito ofertë` failure.
+- Root cause: the Commercial Document Builder deliberately reset a fresh offer again after opening it, so the earlier project prefill ran too early and was erased.
+- The project bridge now owns the explicit Project → Client Offer handoff and waits until the builder's fresh-form reset is complete before hydrating the draft.
+- For a project with one supplier quotation, the supplier's structured quotation rows are carried into the PRISTEEL offer editor as editable sales rows with selling price `0` / pending approval, while supplier costs remain internal metadata/reference.
+- CARINVEST therefore carries Eurosteel `ES287-08/2026` lines for the two fabrication rates, bolts/anchors, erection and transport into the client-offer preparation step instead of opening a blank generic offer.
+- The project identity, client, buyer contact and supplier quantity context are also carried forward.
+- Review flags remain visible internally, including the Budva transport inconsistency and the erection/fabrication quantity mismatch; they are not silently copied into customer-facing notes.
+- The bridge never saves, finalizes or sends the offer automatically. Pricing, margin and final commercial approval remain human-gated.
+- Runtime bootstrap cache key bumped to `20260820-bridge3` so the corrected bridge is loaded after deployment.
+- Key commits: `edc108eb90bf54a78fafc9cde6b14cb93d0f5429`, `b18835c1b432721c11715e72ec7d0218a3f30ecb`.
+
 ### Regression coverage updated
 
 - Home smoke coverage now protects stable five-action behavior, removal of legacy counters, neutral priority presentation and unambiguous action tagging.
