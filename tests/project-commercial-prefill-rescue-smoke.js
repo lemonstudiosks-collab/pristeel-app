@@ -14,7 +14,7 @@ const {JSDOM}=require('jsdom');
       <select id="pa-type"><option value="stahlbau" selected>Konstruksion çeliku</option></select>
       <select id="pa-exc"><option value="">— Zgjidh —</option><option>EXC2</option><option>EXC3</option></select>
       <input id="pa-cost" value="2.000">
-      <select id="of-lang"><option value="">— Zgjidh —</option><option value="de">DE</option><option value="sr">SR</option></select>
+      <select id="of-lang"><option value="" selected>— Zgjidh —</option><option value="de">DE</option><option value="sr">SR</option></select>
       <input id="of-proj" value="Lagerhalle Hamburg"><input id="of-ref" value="ANF-2026-001"><input id="of-cli" value="STACON GmbH"><input id="of-con" value="Herr Muller"><input id="of-em" value="muellerer@stacon.de"><input id="of-adr">
       <input id="of-pr" value="0.000"><input id="of-kg" value="0"><input id="of-zn" value="0.000"><input id="of-tr" value="0.00">
       <select id="of-inc"><option value="" selected>— Zgjidh —</option><option>DAP</option><option>DDP</option></select>
@@ -37,7 +37,11 @@ const {JSDOM}=require('jsdom');
       {name:'Marko Jovanovic',company:'Italian Style d.o.o.',email:'marko@italianstyle.me'}
     ],
     emails:[{from_name:'Ermal Rula',from_email:'ermalrula@gmail.com',body_text:'U prilogu ponuda za CARINVEST.'}],
-    supplierOffers:[{supplier:'Eurosteel',price_kg:1.80,qty_kg:171100,total_eur:359612.40,currency:'EUR',positions:[{description:'Fabrication Road River 1 and 2',qty:151100,unit:'kg',unit_price:1.80}]}],
+    supplierOffers:[{supplier:'Eurosteel',offer_ref:'ES287-08/2026',price_kg:1.80,qty_kg:171100,total_eur:359612.40,currency:'EUR',notes:'REVIEW REQUIRED: transport destination says Budva. Erection quantity does not reconcile.',positions:[
+      {description:'Fabrication Road River 1 and 2',qty:151100,unit:'kg',unit_price:1.80,total_eur:271980},
+      {description:'Fabrication Vinh Lam 2',qty:20000,unit:'kg',unit_price:1.60,total_eur:32000},
+      {description:'HDG bolts and anchors',qty:8500,unit:'kg',unit_price:4.50,total_eur:38250}
+    ]}],
     bom:[]
   };
   w.__pstIntegrityLastData=data;
@@ -54,7 +58,7 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(w.document.getElementById('of-con').value,'Marko Jovanovic');
   assert.strictEqual(w.document.getElementById('of-em').value,'marko@italianstyle.me');
   assert.strictEqual(w.document.getElementById('of-kg').value,'171100');
-  assert.strictEqual(w.document.getElementById('pa-cost').value,'1.8');
+  assert.strictEqual(w.document.getElementById('pa-cost').value,'','Mixed supplier rates must not be flattened into one automatic cost/kg');
   assert.strictEqual(w.document.getElementById('of-pr').value,'');
   assert.strictEqual(w.document.getElementById('of-loc').value,'');
   assert.strictEqual(w.document.getElementById('of-inc').value,'');
@@ -63,6 +67,10 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(w.document.getElementById('of-cer').value,'');
   assert.strictEqual(w.oferPos.length,0,'Legacy/demo line items must not leak into a new project offer');
   assert(w.document.getElementById('pst-project-cost-basis'),'Supplier cost basis panel should be injected for CARINVEST');
+  const summary=w.document.getElementById('pst-project-supplier-quote-summary');
+  assert(summary,'Exact supplier quote summary should be visible in the client-offer workspace');
+  assert(/151\.100/.test(summary.textContent)&&/1,80/.test(summary.textContent),'Supplier line detail is missing');
+  assert(/Kontroll i nevojshëm/.test(summary.textContent),'Mixed-rate/review warning is missing');
   dom.window.close();
   console.log('Project commercial prefill rescue smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
