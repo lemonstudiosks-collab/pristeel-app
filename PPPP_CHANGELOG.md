@@ -2,6 +2,44 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-08-20
+
+### Home visual ownership stabilized
+
+- Retired delayed `Home Happy` timers and legacy hero counter rewrites that continued modifying Home after the canonical render.
+- `pristeel-home-command-center-v2.js` v6 is the stable presentation owner over Canonical Home data.
+- Home keeps `Për mua tani` consistently, without switching back to `Prioritetet` after load.
+- Legacy hero counters are removed.
+- Priority cards use the same neutral white visual family as active project cards, with only a subtle top accent/category icon.
+- Home remains two-column for priorities and does not introduce business-data writes.
+- Key commits: `5c3dbc9f26cdde3c39d29659cab05a11209ce5af`, `448d8a69578b7dfd831777c4dd8ee3425bb7a605`.
+
+### CARINVEST supplier quote made operational
+
+- Eurosteel quotation `ES287-08/2026` from the verified CARINVEST Gmail thread is now registered as an actual supplier offer for project `ITALIAN STYLE - Hala - CARINVEST`.
+- Supplier offer total: `359,612.40 EUR`; structured lines retain the two fabrication rates, bolts/anchors, erection and transport.
+- Eurosteel RFQ is marked replied and linked to the supplier offer.
+- The attached PDF is linked/analyzed against CARINVEST with structured commercial data and review flags.
+- Review flags retained rather than silently corrected: the supplier PDF says transport to Budva, Montenegro, and the erection quantity `29,456 kg` does not reconcile with the fabrication quantity `171,100 kg`.
+- Project Commercial can therefore show the real supplier quote instead of `0 burime`.
+
+### Project-aware client offer bridge
+
+- `pristeel-project-commercial-prefill-rescue-v1.js` upgraded to v2.
+- Opening a new client offer explicitly from a project clears legacy/demo defaults only for that new offer.
+- The bridge reloads canonical project data before prefilling, so stale project state does not win over current procurement data.
+- Client offer identity is prefilled from the active project, including project name, reference, client and the best project-specific buyer contact.
+- CARINVEST reference `MARKO JOVANOVIC` therefore resolves to Marko Jovanovic / `marko@italianstyle.me`, rather than unrelated STACON demo data.
+- When there is one supplier quote, its procurement cost basis is selected and supplier quantity can seed the draft quantity; selling price/margin remain human-approved.
+- Existing/saved client offers are not overwritten.
+- Key commits: `288f4384083573877d9b783352850a9a11e48496`, `f98b23fe0c9d0c4b7c5e25ce338803939b0d1c24`.
+
+### Regression coverage updated
+
+- Home smoke coverage now protects stable five-action behavior, removal of legacy counters, neutral priority presentation and unambiguous action tagging.
+- Commercial prefill regression coverage now reproduces the CARINVEST case with legacy STACON defaults and verifies project/ref/contact/supplier cost replacement.
+- Key commits: `7b3118d7189d79c7924066179693d2ee32fdcdbf`, `6619de0e105e8012a79f022ddb1c5295244b2420`.
+
 ## 2026-08-19
 
 ### Home becomes an operational action engine
