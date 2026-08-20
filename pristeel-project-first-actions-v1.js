@@ -1,13 +1,35 @@
-/* PRISTEEL project-first actions v1
+/* PRISTEEL project-first actions v2
  * Explicit desktop upload and explicit repair for legacy projects missing a Drive folder.
  * Also loads read-only duplicate context, per-message linked-email full-body sync,
  * Gmail-equivalent contact view dedupe, explicit Gmail recovery auth, project summary command,
  * its read-only Project Intelligence conversation extension, live intelligence recovery,
- * Project Analysis run guard, and guarded Gmail project auto-link.
+ * Project Analysis run guard, guarded Gmail project auto-link,
+ * and a reliable Project -> Commercial document entry bridge.
  */
 (function(){
 'use strict';if(window.__pstProjectFirstActionsV1)return;window.__pstProjectFirstActionsV1=true;
 function data(){return window.__pstIntegrityLastData||null;}
+function projectId(){var d=data();return String(d&&d.project&&d.project.id||window.__pstCurrentProjectId||window._curProjId||'');}
+function legacyDocument(type){var page=type==='invoice'?'invoices':'oferta';var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(page);return true;}if(typeof window.pstWsLegacy==='function'){window.pstWsLegacy(page);return true;}if(typeof window.showPage==='function'){window.showPage(page);return true;}return false;}
+function openCommercialDocument(type){
+  type=type==='invoice'?'invoice':'offer';
+  var id=projectId();if(id){window.__pstCurrentProjectId=id;window._curProjId=id;}
+  var tries=0;
+  function go(){
+    var nav=window.PSTCommercialNavigationFixV1;if(nav&&typeof nav.createDocument==='function')return nav.createDocument(type)!==false;
+    var builder=window.PSTCommercialDocumentBuilderV1;if(builder&&typeof builder.begin==='function')return builder.begin(type)!==false;
+    if(++tries<30){setTimeout(go,50);return true;}
+    return legacyDocument(type);
+  }
+  return go();
+}
+function installCommercialEntryBridge(){
+  if(typeof window.pstPiNew==='function')return true;
+  var f=function(type){return openCommercialDocument(type);};
+  f.__pstProjectCommercialEntryBridge=true;
+  window.pstPiNew=f;
+  return true;
+}
 async function makeDrive(btn){var d=data(),id=d&&d.project&&d.project.id;if(!id||!window.PSTProjectDriveLifecycleV1)return;try{btn.disabled=true;btn.textContent='Duke krijuar…';var ok=await window.PSTProjectDriveLifecycleV1.ensureForCreatedProject(id);if(!ok)throw new Error('Dosja nuk u krijua. Kontrollo autorizimin Google Drive.');btn.textContent='U krijua';if(typeof window.pstPiRefresh==='function')window.pstPiRefresh();}catch(e){btn.disabled=false;btn.textContent='Krijo / lidh Drive';alert(e.message||e);}}
 function inject(){var d=data(),page=document.getElementById('page-workspace-project');if(!d||!page||!page.classList.contains('pf2-on'))return false;var cards=[].slice.call(page.querySelectorAll('.pf2-card')),c=cards.filter(function(x){var b=x.querySelector('header b');return b&&String(b.textContent).trim()==='Skedarët e projektit';})[0];if(!c)return false;var h=c.querySelector('header');if(!h)return false;if(d.project&&d.project.drive_folder_id&&d.drive&&d.drive.state==='not-authorized'){var sub=h.querySelector('div span');if(sub)sub.textContent='Drive pa autorizim';var empty=c.querySelector('.pf2-empty');if(empty)empty.textContent='Autorizo Gmail & Drive për të lexuar skedarët e dosjes së projektit.';}if(!h.querySelector('[data-pf2-desktop]')){var b=document.createElement('button');b.type='button';b.className='pf2-btn';b.dataset.pf2Desktop='1';b.textContent='Ngarko nga kompjuteri';b.onclick=function(){if(window.PSTProjectFileUpload&&window.PSTProjectFileUpload.open)window.PSTProjectFileUpload.open();else alert('Ngarkimi nga kompjuteri nuk është gati.');};h.appendChild(b);}if(!d.project.drive_folder_id&&!h.querySelector('[data-pf2-drive-create]')){var g=document.createElement('button');g.type='button';g.className='pf2-btn';g.dataset.pf2DriveCreate='1';g.textContent='Krijo / lidh Drive';g.onclick=function(){makeDrive(g);};h.appendChild(g);}if(window.PSTProjectSummaryCommandV1&&typeof window.PSTProjectSummaryCommandV1.decorateFiles==='function')window.PSTProjectSummaryCommandV1.decorateFiles();return true;}
 function loadScript(src,key,ready){if(ready()||document.querySelector('script[data-pst-'+key+']'))return;var s=document.createElement('script');s.src=src;s.defer=true;s.setAttribute('data-pst-'+key,'1');document.head.appendChild(s);}
@@ -49,6 +71,6 @@ function installFlowBridge(){
 }
 document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);
 document.addEventListener('click',refreshAfterGmailClose,true);
-document.addEventListener('pst:modules-ready',function(){installFlowBridge();if(window.PSTProjectSummaryCommandV1&&typeof window.PSTProjectSummaryCommandV1.decorate==='function')window.PSTProjectSummaryCommandV1.decorate();},{once:true});
-window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers,showSupplierOffers:showSupplierOffers};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();loadProjectSummary();loadProjectAnalysisRunGuard();loadProjectConversation();loadProjectLiveIntelligence();loadGmailProjectAutoLink();installFlowBridge();
+document.addEventListener('pst:modules-ready',function(){installFlowBridge();installCommercialEntryBridge();if(window.PSTProjectSummaryCommandV1&&typeof window.PSTProjectSummaryCommandV1.decorate==='function')window.PSTProjectSummaryCommandV1.decorate();},{once:true});
+window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers,showSupplierOffers:showSupplierOffers,openCommercialDocument:openCommercialDocument,installCommercialEntryBridge:installCommercialEntryBridge};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();loadProjectSummary();loadProjectAnalysisRunGuard();loadProjectConversation();loadProjectLiveIntelligence();loadGmailProjectAutoLink();installFlowBridge();installCommercialEntryBridge();
 })();
