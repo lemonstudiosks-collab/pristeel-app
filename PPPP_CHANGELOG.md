@@ -30,15 +30,17 @@ This file records material architecture/automation changes. It is not a substitu
 - The bridge reloads canonical project data before prefilling, so stale project state does not win over current procurement data.
 - Client offer identity is prefilled from the active project, including project name, reference, client and the best project-specific buyer contact.
 - CARINVEST reference `MARKO JOVANOVIC` therefore resolves to Marko Jovanovic / `marko@italianstyle.me`, rather than unrelated STACON demo data.
-- When there is one supplier quote, its procurement cost basis is selected and supplier quantity can seed the draft quantity; selling price/margin remain human-approved.
+- Supplier quantity can seed the draft quantity when the project itself has no BOM quantity.
+- A supplier quote with one coherent cost rate may be selected as procurement cost basis, but mixed-rate/review-flagged quotes are not flattened into one automatic €/kg value.
+- For mixed quotes such as CARINVEST, the offer editor shows the exact supplier line summary and total while leaving selling price/margin blank for human approval.
 - Existing/saved client offers are not overwritten.
-- Key commits: `288f4384083573877d9b783352850a9a11e48496`, `f98b23fe0c9d0c4b7c5e25ce338803939b0d1c24`.
+- Key commits: `288f4384083573877d9b783352850a9a11e48496`, `f98b23fe0c9d0c4b7c5e25ce338803939b0d1c24`, `5f5d8281e6cce2dec3948a3407261c9a78d995b1`.
 
 ### Regression coverage updated
 
 - Home smoke coverage now protects stable five-action behavior, removal of legacy counters, neutral priority presentation and unambiguous action tagging.
-- Commercial prefill regression coverage now reproduces the CARINVEST case with legacy STACON defaults and verifies project/ref/contact/supplier cost replacement.
-- Key commits: `7b3118d7189d79c7924066179693d2ee32fdcdbf`, `6619de0e105e8012a79f022ddb1c5295244b2420`.
+- Commercial prefill regression coverage reproduces CARINVEST with legacy STACON defaults, project/ref/contact replacement and a multi-rate supplier quote that must remain review-gated rather than flattened.
+- Key commits: `7b3118d7189d79c7924066179693d2ee32fdcdbf`, `bd6397a8b0e616a2d2cdb74fe521f279dc5abe92`.
 
 ## 2026-08-19
 
@@ -110,7 +112,7 @@ This file records material architecture/automation changes. It is not a substitu
 - Supabase advisors were run after the new DDL.
 - New security-definer-view findings were removed by converting Contact Master and requirements summary views to `security_invoker`.
 - `project_requirements` now has RLS enabled with authenticated read access.
-- New SECURITY DEFINER trigger/helper functions have `search_path` fixed and are not executable by anon/authenticated users.
+- New SECURITY DEFININER trigger/helper functions have `search_path` fixed and are not executable by anon/authenticated users.
 - Remaining advisor warnings are pre-existing platform items, not introduced by this work.
 
 ### Regression project state corrected
