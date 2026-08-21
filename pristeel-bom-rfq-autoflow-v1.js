@@ -29,7 +29,7 @@ function loadRfqNavigation(){
 function loadSemanticRfqUi(){
   if(window.PSTSemanticRfqDraftsV1||document.querySelector('script[data-pst-semantic-rfq-ui]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-semantic-rfq-drafts-v1.js?v=20260821-semantic1';
+  s.src='pristeel-semantic-rfq-drafts-v1.js?v=20260822-semantic2';
   s.defer=true;
   s.setAttribute('data-pst-semantic-rfq-ui','1');
   s.onload=function(){var R=window.PSTSemanticRfqDraftsV1;if(R&&typeof R.refresh==='function')R.refresh();};
