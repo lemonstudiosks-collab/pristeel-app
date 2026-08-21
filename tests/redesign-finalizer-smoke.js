@@ -13,7 +13,7 @@ function stripComments(s){
   const readabilityCode = stripComments(readability);
   assert(!/MutationObserver|setInterval\s*\(/.test(sourceCode), 'Finalizer must stay bounded and observer-free');
   assert(!/supaFetch|fetch\s*\(|localStorage\.setItem|sessionStorage\.setItem/.test(sourceCode), 'Finalizer must not write or fetch data');
-  assert(!/(?:pstOpenProjectWorkspace|authGetSession|doLogin|PSTEmail)\s*=/.test(sourceCode), 'Finalizer must not replace core project/auth/Gmail functions');
+  assert(!/(?:pstOpenProjectWorkspace|authGetSession|doLogin|PSTEmail)\s*=(?!=)/.test(sourceCode), 'Finalizer must not replace core project/auth/Gmail functions');
   assert(!/MutationObserver|setInterval\s*\(/.test(readabilityCode), 'Readability layer must stay bounded and observer-free');
   assert(!/supaFetch|fetch\s*\(|localStorage\.(?:setItem|removeItem)|sessionStorage\.(?:setItem|removeItem)/.test(readabilityCode), 'Readability layer must stay UI-only');
 
@@ -63,8 +63,9 @@ function stripComments(s){
     </div>
   </body></html>`, { runScripts:'outside-only', url:'https://example.test/' });
   const pw = priorityDom.window;
-  let openedProject = '';
-  pw.pstOpenProjectWorkspace = id => { openedProject = id; };
+  let canonicalClicks = 0;
+  const rowBefore = pw.document.querySelector('.pst-canonical-action');
+  rowBefore.onclick = () => { canonicalClicks++; };
   pw.eval(source);
   pw.PSTRedesignFinalizerV1.apply();
   const row = pw.document.querySelector('.pst-canonical-action');
@@ -77,7 +78,8 @@ function stripComments(s){
   assert(done, 'Canonical Done button was not restored to the controls');
   assert.strictEqual(done.textContent, 'Kryer', 'Canonical Done button label was not restored');
   row.querySelector('.pst-ws-action-title').dispatchEvent(new pw.MouseEvent('click', { bubbles:true }));
-  assert.strictEqual(openedProject, 'p-24', 'Clicking the priority card body did not open its project');
+  assert.strictEqual(canonicalClicks, 1, 'Finalizer must preserve canonical Home card navigation instead of adding a second owner');
+  assert.strictEqual(typeof pw.PSTRedesignFinalizerV1.openPriorityCard, 'undefined', 'Finalizer must not expose a competing Home navigation owner');
   priorityDom.window.close();
 
   const rdDom = new JSDOM(`<!doctype html><html><head></head><body>
