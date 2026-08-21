@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "9c38f51db88cac5fc0e8505fa6b820e5f1759a4f",
+  "auditedAtCommit": "79046b4bc1e5db07700653b5de983fbb4450e8c8",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "aff22bca44e7d6efe9733a1f355543f004a2f9f0"
+    "bootstrapGitBlobSha": "724e6c3e07d8af7490295769154536d1153885c8"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -58,7 +58,7 @@
       "finalOwners": [
         "pristeel-home-canonical-v1.js"
       ],
-      "note": "Workspace Architecture may create the Home shell during startup, but Home Canonical is the sole final data owner. Current Home is an event/action engine: maximum five concrete actions, waiting separated from action, Project Brief drill-down and obsolete-task reconciliation. The pre-bootstrap runtime owner guard keeps later Home navigation on Canonical after pst:modules-ready."
+      "note": "Workspace Architecture may create the Home shell during startup, but Home Canonical remains the sole final priority/project data owner. Automation Truth is a dynamic post-render safety/reconciliation decorator for verified waiting and supplier state; it does not replace Canonical routing or make outbound/commercial commitments."
     },
     {
       "area": "projects-list",
@@ -157,6 +157,12 @@
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded before pristeel-project-emails.js. It captures Home routing before the ordered runtime starts and performs the final ownership handoff on pst:modules-ready."
+    },
+    {
+      "module": "pristeel-automation-truth-v1.js",
+      "loader": "pristeel-auth-persistence.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded at the start of the remembered-auth bootstrap. It provides additive supplier and verified waiting-state reconciliation and performs no outbound email, pricing, order or contract commitment writes."
     },
     {
       "module": "pristeel-our-offer-source-v1.js",
