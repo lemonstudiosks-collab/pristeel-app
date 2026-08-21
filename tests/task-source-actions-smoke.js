@@ -6,7 +6,7 @@ const {JSDOM}=require('jsdom');
   const source=fs.readFileSync('pristeel-task-source-actions-v1.js','utf8');
   assert(!/new\s+MutationObserver|setInterval\s*\(/.test(source),'Task source actions must not observe or poll the page');
   assert(!/supaFetch\s*\(|fetch\s*\(|new\s+XMLHttpRequest/.test(source),'Task source actions must remain read-only and query-free');
-  assert(!/(?:window\.)?(?:pstWsActionOpen|pstWorkspaceGo|openTaskDetail)\s*=/.test(source),'Task source actions must not override navigation or task behavior');
+  assert(!/(?:window\.)?(?:pstWsActionOpen|pstWorkspaceGo|openTaskDetail)\s*=(?!=)/.test(source),'Task source actions must not override navigation or task behavior');
 
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
     <div id="page-workspace-home">
