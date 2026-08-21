@@ -15,6 +15,7 @@ LOGS="$ROOT/logs"
 LA="$HOME/Library/LaunchAgents"
 SERVER_PLIST="$LA/com.pristeel.pppp-llama.plist"
 WORKER_PLIST="$LA/com.pristeel.pppp-semantic-worker.plist"
+AWAKE_PLIST="$LA/com.pristeel.pppp-awake.plist"
 UID_NOW="$(id -u)"
 
 [[ -x "$BIN" ]] || { echo "Missing llama-server: $BIN"; exit 3; }
@@ -23,6 +24,7 @@ command -v python3 >/dev/null 2>&1 || { echo "python3 is required"; exit 5; }
 command -v curl >/dev/null 2>&1 || { echo "curl is required"; exit 6; }
 
 mkdir -p "$LOGS" "$LA"
+chmod 700 "$ROOT" "$LOGS"
 
 echo "Downloading PPPP semantic worker..."
 curl -fsSL "https://raw.githubusercontent.com/lemonstudiosks-collab/pristeel-app/main/local-ai/pppp_semantic_worker.py" -o "$WORKER"
@@ -63,8 +65,25 @@ cat > "$WORKER_PLIST" <<EOF
 </dict></plist>
 EOF
 
-launchctl bootout "gui/$UID_NOW" "$WORKER_PLIST" >/dev/null 2>&1 || true
-launchctl bootout "gui/$UID_NOW" "$SERVER_PLIST" >/dev/null 2>&1 || true
+cat > "$AWAKE_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>com.pristeel.pppp-awake</string>
+<key>ProgramArguments</key><array><string>/usr/bin/caffeinate</string><string>-dimsu</string></array>
+<key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
+<key>ProcessType</key><string>Background</string>
+</dict></plist>
+EOF
+
+chmod 600 "$SERVER_PLIST" "$WORKER_PLIST" "$AWAKE_PLIST"
+
+for plist in "$WORKER_PLIST" "$SERVER_PLIST" "$AWAKE_PLIST"; do
+  launchctl bootout "gui/$UID_NOW" "$plist" >/dev/null 2>&1 || true
+done
+
+launchctl bootstrap "gui/$UID_NOW" "$AWAKE_PLIST"
+launchctl enable "gui/$UID_NOW/com.pristeel.pppp-awake" || true
 launchctl bootstrap "gui/$UID_NOW" "$SERVER_PLIST"
 launchctl enable "gui/$UID_NOW/com.pristeel.pppp-llama" || true
 
@@ -81,6 +100,7 @@ sleep 2
 
 echo "=== PPPP LOCAL AI ==="
 echo "llama health: $(curl -fsS http://127.0.0.1:8080/health)"
+echo "awake service: $(launchctl print "gui/$UID_NOW/com.pristeel.pppp-awake" >/dev/null 2>&1 && echo RUNNING || echo ERROR)"
 echo "server service: $(launchctl print "gui/$UID_NOW/com.pristeel.pppp-llama" >/dev/null 2>&1 && echo RUNNING || echo ERROR)"
 echo "worker service: $(launchctl print "gui/$UID_NOW/com.pristeel.pppp-semantic-worker" >/dev/null 2>&1 && echo RUNNING || echo ERROR)"
 echo "logs: $LOGS"
