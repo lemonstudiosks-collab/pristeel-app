@@ -17,6 +17,16 @@ window.__pstAuthPersistenceLoaded=true;
   document.head.appendChild(s);
 })();
 
+/* General Commercial rule: supplier/manufacturer conditions flow into buyer offer drafts. */
+(function loadManufacturerTermsFlowdown(){
+  if(window.__pstManufacturerTermsFlowdownV1||document.querySelector('script[data-pst-manufacturer-flowdown]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-manufacturer-terms-flowdown-v1.js?v=20260821-flowdown1';
+  s.defer=true;
+  s.setAttribute('data-pst-manufacturer-flowdown','1');
+  document.head.appendChild(s);
+})();
+
 var SESSION_KEY='pristeel_session';
 var BACKUP_KEY='pst_auth_remembered_session_v3';
 var ATTEMPT_KEY='pst_auth_restore_attempt_v3';
