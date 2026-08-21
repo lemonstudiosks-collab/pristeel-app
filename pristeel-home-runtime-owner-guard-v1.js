@@ -44,6 +44,8 @@ var canonicalPromise=null;
 var interactionPromise=null;
 var commandPromise=null;
 var happyPromise=null;
+var releasePrime=null;
+var releasePrimeTimer=null;
 var routerBase=null;
 var finalizeTimer=null;
 var recoveryTimer=null;
@@ -194,6 +196,33 @@ function revealBestAvailable(reason){
   signalVisualReady();
   return true;
 }
+async function primeCanonicalAfterRelease(){
+  if(runtimeReady)return false;
+  if(releasePrime)return releasePrime;
+  releasePrime=(async function(){
+    clearLegacyLoginBlocker();ensureCompatScaffold();
+    var shell=await waitForHomeShell();
+    if(!shell||runtimeReady)return false;
+    var api=await loadCanonical();
+    if(!api||typeof api.render!=='function'||runtimeReady)return false;
+    hideLegacyHome();
+    if(typeof api.activateHome==='function')api.activateHome();
+    var ok=await Promise.resolve(api.render(true));
+    if(ok!==false)signalVisualReady();
+    return ok!==false;
+  })().catch(function(e){console.error('PPPP early Canonical Home:',e);return false;}).finally(function(){releasePrime=null;});
+  return releasePrime;
+}
+function armReleasePrime(){
+  if(runtimeReady||releasePrimeTimer)return;
+  var tries=0;
+  (function tick(){
+    if(runtimeReady){releasePrimeTimer=null;return;}
+    if(window.__pstWorkspaceReleaseFixV3Loaded){releasePrimeTimer=null;primeCanonicalAfterRelease();return;}
+    if(++tries>=300){releasePrimeTimer=null;return;}
+    releasePrimeTimer=setTimeout(tick,50);
+  })();
+}
 async function renderFinalHome(){
   if(!runtimeReady)return false;
   if(finalizing)return finalizing;
@@ -261,14 +290,16 @@ function installCompatApi(){
   window.pstV2OpenMail=window.pstV2OpenMail||function(url){if(url){window.open(url,'PRISTEEL_GMAIL');return true;}return compatGo('outreach');};
 }
 function finalizeHome(){
-  runtimeReady=true;clearLegacyLoginBlocker();installCompatApi();extendStartupDeadline();
+  runtimeReady=true;
+  if(releasePrimeTimer){clearTimeout(releasePrimeTimer);releasePrimeTimer=null;}
+  clearLegacyLoginBlocker();installCompatApi();extendStartupDeadline();
   if(finalizeTimer)clearTimeout(finalizeTimer);
   finalizeTimer=setTimeout(function(){installFinalRouter();renderFinalHome();},120);
   if(recoveryTimer)clearTimeout(recoveryTimer);
   recoveryTimer=setTimeout(function(){if(!visualReady)revealBestAvailable('modules-ready-timeout');},7000);
 }
 function bootstrapCompat(){
-  clearLegacyLoginBlocker();ensureCompatScaffold();installCompatApi();extendStartupDeadline();
+  clearLegacyLoginBlocker();ensureCompatScaffold();installCompatApi();extendStartupDeadline();armReleasePrime();
 }
 
 var API={
