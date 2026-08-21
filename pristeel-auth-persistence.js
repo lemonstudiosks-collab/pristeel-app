@@ -27,6 +27,16 @@ window.__pstAuthPersistenceLoaded=true;
   document.head.appendChild(s);
 })();
 
+/* Universal Home policy: one project has one operational role at a time. */
+(function loadHomeOperationalStatePolicy(){
+  if(window.__pstHomeOperationalStatePolicyV1||document.querySelector('script[data-pst-home-operational-policy]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-home-operational-state-policy-v1.js?v=20260821-homeop1';
+  s.defer=true;
+  s.setAttribute('data-pst-home-operational-policy','1');
+  document.head.appendChild(s);
+})();
+
 var SESSION_KEY='pristeel_session';
 var BACKUP_KEY='pst_auth_remembered_session_v3';
 var ATTEMPT_KEY='pst_auth_restore_attempt_v3';
