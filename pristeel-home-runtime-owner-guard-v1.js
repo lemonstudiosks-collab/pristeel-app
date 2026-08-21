@@ -240,6 +240,7 @@ async function renderFinalHome(){
     await loadFreshCommandCenter();
     await loadHappy();
     applyFinalDecorators();
+    installFinalRouter();
     var page=document.getElementById('page-workspace-home');
     if(page&&page.dataset){
       page.dataset.pstHomeOwner='canonical-v1';
@@ -260,13 +261,13 @@ async function renderFinalHome(){
 function installFinalRouter(){
   var current=window.pstWorkspaceGo;if(typeof current!=='function')return false;
   if(current.__pstCanonicalFinalRouter)return true;
-  routerBase=current;
+  var base=current;routerBase=base;
   function finalGo(key){
     var k=String(key||'home').toLowerCase();
     if(k==='home'){renderFinalHome();return true;}
-    return routerBase.apply(this,arguments);
+    return base.apply(this,arguments);
   }
-  finalGo.__pstCanonicalFinalRouter=true;finalGo.__base=routerBase;window.pstWorkspaceGo=finalGo;return true;
+  finalGo.__pstCanonicalFinalRouter=true;finalGo.__base=base;window.pstWorkspaceGo=finalGo;return true;
 }
 function compatGo(page){
   page=String(page||'home').toLowerCase();
