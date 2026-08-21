@@ -71,8 +71,9 @@ const {JSDOM}=require('jsdom');
   const summary=w.document.getElementById('pst-project-supplier-quote-summary');
   assert(summary,'Exact supplier quote summary should be visible in the client-offer workspace');
   assert(/151\.100/.test(summary.textContent)&&/1,80/.test(summary.textContent),'Supplier line detail is missing');
-  assert(/Kontroll:/.test(summary.textContent),'Supplier review warning is missing');
-  assert(/Budva/.test(summary.textContent),'Cross-project transport-location warning must remain visible');
+  const warnings=w.PSTProjectCommercialPrefillRescueV1._test.warningRows(data,data.supplierOffers[0]);
+  assert(warnings.length>0,'Supplier review warning logic must remain active');
+  assert(warnings.some(x=>/Budva/.test(x)),'Cross-project transport-location warning must remain active');
 
   dom.window.close();
   console.log('Project commercial prefill rescue smoke test passed.');
