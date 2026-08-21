@@ -268,7 +268,7 @@ function finalizeHome(){
   recoveryTimer=setTimeout(function(){if(!visualReady)revealBestAvailable('modules-ready-timeout');},7000);
 }
 function bootstrapCompat(){
-  clearLegacyLoginBlocker();ensureCompatScaffold();installCompatApi();extendStartupDeadline();loadInteraction();
+  clearLegacyLoginBlocker();ensureCompatScaffold();installCompatApi();extendStartupDeadline();
 }
 
 var API={
