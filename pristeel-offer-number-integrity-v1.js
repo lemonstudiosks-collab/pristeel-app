@@ -1,9 +1,10 @@
-/* PRISTEEL offer number integrity v1
+/* PRISTEEL offer number integrity v2
  * Existing project offer edit reuses the normal editor route but preserves the saved doc_nr.
  * New offers alone receive the next doc_nr.
+ * A new revision clones the currently displayed offer state so the user can edit only what changes.
  * Calculates the next offer number from doc_nr suffix, not legacy seq metadata.
  * Restores the current offer number in the generated client document.
- * Does not change pricing, BOM, VAT, PDF content structure or project data.
+ * Does not send, approve or commercially commit an offer automatically.
  */
 (function(){
 'use strict';
@@ -13,12 +14,15 @@ window.__pstOfferNumberIntegrityV1=true;
 var editDocNr='';
 var editOfferState=null;
 var originalNext=null;
+var revisionSourceDocNr='';
 
 function A(v){return Array.isArray(v)?v:[];}
 function E(id){return document.getElementById(id);}
 function currentData(){return window.__pstIntegrityLastData||null;}
 function currentYear(){return new Date().getFullYear();}
 function currentMonth(){return String(new Date().getMonth()+1).padStart(2,'0');}
+function todayInput(){var d=new Date(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return d.getFullYear()+'-'+m+'-'+day;}
+function cloneState(v){try{return JSON.parse(JSON.stringify(v||{}));}catch(e){return v&&typeof v==='object'?Object.assign({},v):{};}}
 function parseOfferNr(nr){
   var s=String(nr||'').trim();
   var m=s.match(/^PST-OFF-(\d{4})-(\d{2})-(\d{1,4})$/i);
@@ -69,6 +73,7 @@ function openExistingOffer(row){
   var p=row&&parseOfferNr(row.doc_nr||row.document_nr||row.reference);
   if(!row||!p)return false;
   editDocNr=p.nr;
+  revisionSourceDocNr='';
   editOfferState=stateObject(row.offer_state);
   if(!openNormalEditorRoute())return false;
   if(editOfferState){scheduleExistingState();return true;}
@@ -82,7 +87,7 @@ function interceptOfferAction(e){
   if(!b)return;
   var txt=String(b.textContent||'').trim();
   if(/Ofert[ëe]\s+e\s+re/i.test(txt)){
-    editDocNr='';editOfferState=null;
+    editDocNr='';editOfferState=null;revisionSourceDocNr='';
     return;
   }
   if(!/Krijo\s*\/\s*edito\s+ofert/i.test(txt))return;
@@ -129,6 +134,51 @@ function wrapFill(){
     return fn.apply(this,arguments);
   };
   w.__pstExistingOfferGuard=true;w.__base=fn;window.fillOfferNr=w;return true;
+}
+function captureRevisionState(){
+  var st=null;
+  if(typeof window.collectOfferFormState==='function'){
+    try{st=window.collectOfferFormState();}catch(e){if(window.console)console.warn('Offer revision state capture:',e);}
+  }
+  if(!st&&editOfferState)st=stateObject(editOfferState);
+  if(!st){var row=newestOwnOffer();st=stateObject(row&&row.offer_state);}
+  return st&&typeof st==='object'?cloneState(st):null;
+}
+function applyRevisionState(st){
+  if(!st||typeof window.applyOfferFormState!=='function')return false;
+  var copy=cloneState(st);
+  copy.date=todayInput();
+  try{window.applyOfferFormState(copy);}catch(e){if(window.console)console.warn('Offer revision state restore:',e);return false;}
+  var date=E('of-date');if(date)date.value=todayInput();
+  return true;
+}
+function finishRevisionNumber(sourceNr){
+  return safeNextOfferNr().then(function(next){
+    var nr=next&&next.nr,el=E('of-nr');
+    if(nr&&el){el.value=nr;try{el.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}
+    if(typeof window.genOfer==='function'){try{window.genOfer();}catch(e){}}
+    ensureVisibleNumber();
+    try{document.dispatchEvent(new CustomEvent('pst:offer-revision-started',{detail:{source_doc_nr:sourceNr||'',doc_nr:nr||''}}));}catch(e){}
+    return nr||'';
+  });
+}
+function startRevisionFromCurrent(base,scope,args){
+  var source=currentNumber()||editDocNr||String((newestOwnOffer()||{}).doc_nr||'');
+  var st=captureRevisionState();
+  revisionSourceDocNr=source;
+  editDocNr='';
+  editOfferState=null;
+  var result=base.apply(scope,args||[]);
+  if(st)applyRevisionState(st);
+  var nrEl=E('of-nr');if(nrEl&&source&&nrEl.value===source)nrEl.value='';
+  finishRevisionNumber(source).catch(function(e){if(window.console)console.warn('Offer revision number:',e);});
+  return result;
+}
+function wrapRevisionStart(){
+  var fn=window.ofertaStartNewDraft;
+  if(typeof fn!=='function'||fn.__pstRevisionClone)return false;
+  var w=function(){return startRevisionFromCurrent(fn,this,arguments);};
+  w.__pstRevisionClone=true;w.__base=fn;window.ofertaStartNewDraft=w;return true;
 }
 function wrapRegister(){
   var fn=window.registerDocNr;
@@ -177,7 +227,7 @@ function wrapOutput(){
   var w=function(){var r=fn.apply(this,arguments);ensureVisibleNumber();setTimeout(ensureVisibleNumber,0);setTimeout(ensureVisibleNumber,120);return r;};
   w.__pstNumberVisible=true;w.__base=fn;window.genOfer=w;return true;
 }
-function install(){wrapNext();wrapFill();wrapRegister();wrapOutput();if(editDocNr)applyExistingState();ensureVisibleNumber();}
+function install(){wrapNext();wrapFill();wrapRevisionStart();wrapRegister();wrapOutput();if(editDocNr)applyExistingState();ensureVisibleNumber();}
 
 /* Window capture runs before project-first document capture. Existing edit reuses pstPiNew, new offer propagates normally. */
 window.addEventListener('click',interceptOfferAction,true);
@@ -187,5 +237,5 @@ document.addEventListener('click',function(e){
 },true);
 document.addEventListener('pst:modules-ready',function(){install();},{once:true});
 install();[150,500,1200].forEach(function(ms){setTimeout(install,ms);});
-window.PSTOfferNumberIntegrityV1={install:install,openExistingOffer:openExistingOffer,parseOfferNr:parseOfferNr,safeNextOfferNr:safeNextOfferNr,ensureVisibleNumber:ensureVisibleNumber};
+window.PSTOfferNumberIntegrityV1={install:install,openExistingOffer:openExistingOffer,parseOfferNr:parseOfferNr,safeNextOfferNr:safeNextOfferNr,ensureVisibleNumber:ensureVisibleNumber,startRevisionFromCurrent:function(){var fn=window.ofertaStartNewDraft;return typeof fn==='function'?fn():false;},_test:{captureRevisionState:captureRevisionState,applyRevisionState:applyRevisionState,todayInput:todayInput,getRevisionSource:function(){return revisionSourceDocNr;}}};
 })();
