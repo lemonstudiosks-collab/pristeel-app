@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, re, sys, time, urllib.request
+import json, os, re, sys, time, urllib.request, urllib.error
 
 QUEUE=os.environ.get('PPPP_SEMANTIC_QUEUE_URL','https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/semantic-local-queue')
 KEY=os.environ.get('PPPP_SEMANTIC_WORKER_KEY','').strip()
@@ -16,8 +16,14 @@ def request_json(url,payload,headers=None,timeout=180):
     h={'Content-Type':'application/json'}
     if headers:h.update(headers)
     req=urllib.request.Request(url,data=raw,headers=h,method='POST')
-    with urllib.request.urlopen(req,timeout=timeout) as r:
-        return json.loads(r.read().decode('utf-8'))
+    try:
+        with urllib.request.urlopen(req,timeout=timeout) as r:
+            return json.loads(r.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        body=''
+        try: body=e.read().decode('utf-8','replace')[:1200]
+        except Exception: pass
+        raise RuntimeError('HTTP %s: %s' % (e.code,body or e.reason))
 
 def queue(payload):
     return request_json(QUEUE,payload,{'x-pppp-worker-key':KEY},60)
@@ -60,32 +66,39 @@ def validate(result,payload):
     result['required_capabilities']=[x for x in result['required_capabilities'] if x in caps]
     return hard_guard(result,payload)
 
-def compact_payload(p):
+def compact_payload(p,tiny=False):
     ctx=p.get('context') or {}
+    source_limit=4 if tiny else 6
+    source_chars=420 if tiny else 650
+    candidate_limit=6 if tiny else 8
     src=[]
-    for s in (p.get('sources') or [])[:8]:
-        src.append({'id':s.get('id'),'type':s.get('type'),'label':str(s.get('label') or '')[:180],'date':s.get('date'),'text':str(s.get('text') or '')[:900],'meta':s.get('meta')})
+    for s in (p.get('sources') or [])[:source_limit]:
+        src.append({'id':s.get('id'),'type':s.get('type'),'label':str(s.get('label') or '')[:140],'date':s.get('date'),'text':str(s.get('text') or '')[:source_chars],'meta':s.get('meta')})
     candidates=[]
-    for s in (p.get('supplier_candidates') or [])[:10]:
+    for s in (p.get('supplier_candidates') or [])[:candidate_limit]:
         contacts=[]
-        for c in (s.get('contacts') or [])[:2]:
+        for c in (s.get('contacts') or [])[:1]:
             contacts.append({'full_name':c.get('full_name'),'email':c.get('email'),'language':c.get('language'),'is_primary':c.get('is_primary')})
         candidates.append({'name':s.get('name'),'business_type':s.get('business_type'),'categories':s.get('categories'),'grades':s.get('grades'),'class_approval':s.get('class_approval'),'deterministic_score':s.get('deterministic_score'),'contacts':contacts})
+    project=dict(ctx.get('project') or {})
+    if tiny and 'notes' in project: project['notes']=str(project.get('notes') or '')[:700]
     return {
       'guard':p.get('guard'),'bom':p.get('bom'),'deterministic':p.get('deterministic'),'supplier_candidates':candidates,'meta':p.get('meta'),
-      'context':{'project':ctx.get('project'),'current_rfqs':(ctx.get('current_rfqs') or [])[:8],'supplier_offers':(ctx.get('supplier_offers') or [])[:5]},
+      'context':{'project':project,'current_rfqs':(ctx.get('current_rfqs') or [])[:(4 if tiny else 6)],'supplier_offers':(ctx.get('supplier_offers') or [])[:(3 if tiny else 4)]},
       'sources':src
     }
 
-def analyze(job):
+def analyze(job,tiny=False):
     p=job.get('payload') or {}
     schema=p.get('response_schema') or {}
-    user=compact_payload(p)
+    user=compact_payload(p,tiny=tiny)
+    user_json=json.dumps(user,ensure_ascii=False,separators=(',',':'))
+    print('  semantic input bytes:',len(user_json.encode('utf-8')),'mode:',('tiny' if tiny else 'normal'),flush=True)
     body={
-      'model':'local','temperature':0,'max_tokens':800,
+      'model':'local','temperature':0,'max_tokens':650,
       'messages':[
         {'role':'system','content':str(p.get('system') or 'You are PRISTEEL PPPP semantic AI. /no_think Return JSON only.')},
-        {'role':'user','content':'/no_think Analyze this PPPP context. Use only supplied facts. Return JSON matching the schema.\n'+json.dumps(user,ensure_ascii=False,separators=(',',':'))}
+        {'role':'user','content':'/no_think Analyze this PPPP context. Use only supplied facts. Return JSON matching the schema.\n'+user_json}
       ],
       'response_format':{'type':'json_schema','json_schema':{'name':'pppp_semantic_analysis','strict':True,'schema':schema}}
     }
@@ -109,14 +122,14 @@ def main():
             last=None
             for attempt in range(1,4):
                 try:
-                    result=analyze(job)
+                    result=analyze(job,tiny=(attempt>1))
                     queue({'action':'complete','job_id':jid,'model':MODEL,'result':result})
                     print(time.strftime('%Y-%m-%d %H:%M:%S'),'completed',jid,result.get('priority'),result.get('category'),flush=True)
                     last=None;break
                 except Exception as e:
                     last=e
                     print(time.strftime('%Y-%m-%d %H:%M:%S'),'attempt',attempt,'failed:',repr(e),flush=True)
-                    time.sleep(min(12,attempt*3))
+                    time.sleep(min(8,attempt*2))
             if last is not None:
                 try:queue({'action':'complete','job_id':jid,'model':MODEL,'error':str(last)[:2500]})
                 except Exception:pass
