@@ -6,6 +6,7 @@ const {JSDOM}=require('jsdom');
   const prefill=fs.readFileSync('pristeel-project-commercial-prefill-v1.js','utf8');
   const rescue=fs.readFileSync('pristeel-project-commercial-prefill-rescue-v1.js','utf8');
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
+    <div id="page-workspace-project" class="pf2-on"></div>
     <button id="open" data-pf2-action="offer">Krijo / edito ofertë</button>
     <div id="page-oferta" class="page" style="display:none">
       <div>Ende s'ka ofertë të ruajtur për këtë projekt — kjo është një ofertë e re.</div>
