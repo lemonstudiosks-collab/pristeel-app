@@ -7,6 +7,16 @@
 if(window.__pstAuthPersistenceLoaded)return;
 window.__pstAuthPersistenceLoaded=true;
 
+/* Load the automation/state truth layer as the first ordered runtime dependency. */
+(function loadAutomationTruth(){
+  if(window.__pstAutomationTruthV1||document.querySelector('script[data-pst-automation-truth]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-automation-truth-v1.js?v=20260821-truth1';
+  s.defer=true;
+  s.setAttribute('data-pst-automation-truth','1');
+  document.head.appendChild(s);
+})();
+
 var SESSION_KEY='pristeel_session';
 var BACKUP_KEY='pst_auth_remembered_session_v3';
 var ATTEMPT_KEY='pst_auth_restore_attempt_v3';
