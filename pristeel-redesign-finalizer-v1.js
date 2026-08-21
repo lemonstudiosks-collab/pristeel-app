@@ -1,7 +1,7 @@
 /* PRISTEEL redesign finalizer v1
- * Preview revision: 20260818-priority-card-amber1.
- * Re-applies the read-only redesign after legacy workspace renders.
- * Also repairs Home priority-card interaction after visual decorators run.
+ * Revision: 20260821-canonical-home-owner1.
+ * Re-applies presentation-only styling after workspace renders.
+ * Canonical Home exclusively owns priority-card navigation and business state.
  * Bounded timeouts only. No polling, observers, writes, auth or project-open overrides.
  */
 (function(){
@@ -21,27 +21,6 @@ function readability(){
     s.onload=function(){var x=window.PSTPlatformReadabilityV1;if(x&&typeof x.apply==='function')x.apply(document);};
     document.head.appendChild(s);
   }catch(e){console.warn('PRISTEEL finalizer readability:',e);}
-}
-
-function openPriorityCard(row){
-  if(!row)return false;
-  var pid=String(row.getAttribute('data-project-id')||'').trim();
-  var kind=String(row.getAttribute('data-kind')||'').trim().toLowerCase();
-  try{
-    if(pid&&typeof window.pstOpenProjectWorkspace==='function'){
-      window.pstOpenProjectWorkspace(pid);
-      return true;
-    }
-    if(kind==='task'&&typeof window.pstWorkspaceGo==='function'){
-      window.pstWorkspaceGo('tasks');
-      return true;
-    }
-    if(typeof window.pstWorkspaceGo==='function'){
-      window.pstWorkspaceGo('projects');
-      return true;
-    }
-  }catch(e){console.warn('PRISTEEL finalizer priority open:',e);}
-  return false;
 }
 
 function priorityIsUrgent(row){
@@ -94,22 +73,6 @@ function repairPriorityCards(){
     row.classList.toggle('pst-final-priority-urgent',priorityIsUrgent(row));
     row.style.cursor='pointer';
     row.setAttribute('title','Kliko për ta hapur');
-
-    if(row.dataset.pstFinalPriorityClick!=='1'){
-      row.dataset.pstFinalPriorityClick='1';
-      row.addEventListener('click',function(event){
-        var interactive=event.target&&event.target.closest?event.target.closest('button,a,input,select,textarea,[role="button"]'):null;
-        if(interactive)return;
-        openPriorityCard(row);
-      });
-      row.addEventListener('keydown',function(event){
-        if(event.key!=='Enter'&&event.key!==' ')return;
-        var interactive=event.target&&event.target.closest?event.target.closest('button,a,input,select,textarea,[role="button"]'):null;
-        if(interactive)return;
-        event.preventDefault();
-        openPriorityCard(row);
-      });
-    }
     count++;
   });
   return count;
@@ -166,5 +129,5 @@ document.addEventListener('click',function(event){
   if(t)[0,80,250,700].forEach(function(ms){setTimeout(apply,ms);});
 },true);
 if(document.readyState!=='loading')schedule();
-window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability,repairPriorityCards:repairPriorityCards,openPriorityCard:openPriorityCard};
+window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability,repairPriorityCards:repairPriorityCards};
 })();
