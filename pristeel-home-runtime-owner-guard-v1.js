@@ -192,7 +192,7 @@ function revealBestAvailable(reason){
     }
   }catch(e){}
   applyFinalDecorators();
-  var page=document.getElementById('page-workspace-home');if(page)page.dataset.pstHomeRecovery=String(reason||'fallback');
+  var page=document.getElementById('page-workspace-home');if(page&&page.dataset)page.dataset.pstHomeRecovery=String(reason||'fallback');
   signalVisualReady();
   return true;
 }
@@ -241,7 +241,7 @@ async function renderFinalHome(){
     await loadHappy();
     applyFinalDecorators();
     var page=document.getElementById('page-workspace-home');
-    if(page){
+    if(page&&page.dataset){
       page.dataset.pstHomeOwner='canonical-v1';
       page.dataset.pstHomeCommand='fresh-current';
       page.dataset.pstHomeFinal='happy-v1';
