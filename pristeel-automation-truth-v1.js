@@ -25,6 +25,8 @@ function db(path){return typeof window.supaFetch==='function'?window.supaFetch(p
 function activeProject(p){return !/(humbur|arkivuar|mbyllur|realizuar|lost|closedlost|cancelled|canceled)/i.test(S(p&&p.status));}
 function internalEmail(e){e=N(e);return INTERNAL.indexOf(e)>-1||/@prissteel\.com$/.test(e);}
 function autoReply(e){var t=N((e&&e.subject||'')+' '+(e&&e.snippet||''));return /(automatisch antwoord|automatic reply|auto reply|out of office|abwesenheits|delivery status notification|mailer-daemon|undeliver)/.test(t);}
+function isOut(e){return N(e&&e.direction)==='outgoing';}
+function isIn(e){return N(e&&e.direction)==='incoming';}
 
 /* Prevent the 12s fail-open from revealing intermediate Home owners. */
 (function stabilizeStartup(){
@@ -100,32 +102,50 @@ async function waitingRows(){
  var rows=await Promise.all([
   db('projects?select=id,name,client,ref,status,pipeline_stage,deadline,last_email_at,notes&limit=3000'),
   db('documents_registry?series=eq.QUO&select=id,project_id,doc_nr,created_at,followup_status,offer_state&order=created_at.desc&limit=4000'),
-  db('project_emails?select=id,project_id,subject,snippet,sent_at,direction,from_email,from_name,has_attachments&order=sent_at.desc&limit=7000'),
-  db('rfq_log?select=project_id,supplier_email&limit=4000')
+  db('project_emails?select=id,project_id,subject,snippet,sent_at,direction,from_email,from_name,to_emails,has_attachments&order=sent_at.desc&limit=7000'),
+  db('rfq_log?select=project_id,supplier_email&limit=4000'),
+  db('project_analyses?status=eq.complete&select=project_id,created_at,analysis&order=created_at.desc&limit=5000')
  ]);
- var projects={},docs={},emails={},supplier={};
- A(rows[0]).filter(activeProject).forEach(function(p){projects[S(p.id)]=p;});
+ var projects={},docs={},emails={},supplier={},analyses={};
+ A(rows[0]).filter(activeProject).filter(function(p){return N(p.status)==='pritje';}).forEach(function(p){projects[S(p.id)]=p;});
  A(rows[1]).forEach(function(d){var id=S(d.project_id);if(!id||docs[id])return;docs[id]=d;});
  A(rows[2]).forEach(function(e){var id=S(e.project_id);if(!id)return;(emails[id]||(emails[id]=[])).push(e);});
  A(rows[3]).forEach(function(r){var id=S(r.project_id),em=N(r.supplier_email);if(id&&em)(supplier[id]||(supplier[id]={}))[em]=1;});
+ A(rows[4]).forEach(function(a){var id=S(a.project_id);if(!id||analyses[id])return;analyses[id]=a;});
  var out=[];
  Object.keys(projects).forEach(function(id){
-  var p=projects[id],es=A(emails[id]),sm=supplier[id]||{};
+  var p=projects[id],es=A(emails[id]),sm=supplier[id]||{},an=analyses[id],rec=an&&an.analysis&&an.analysis.recommendation||{},decision=N(rec.decision),analysisAt=ms(an&&an.created_at);
   if(id===TC_BUTICO_ID){
-   var lastOut=es.filter(function(e){return N(e.direction)==='outgoing';})[0];
-   if(lastOut)out.push({project_id:id,name:p.name,client:'linkut të ri nga Aleksandar',text:'Ridërgimi i dokumentacionit u kërkua '+date(lastOut.sent_at),activity:ms(lastOut.sent_at),kind:'document_resend'});
+   var lastOut=es.filter(isOut)[0];
+   var returned=lastOut&&es.filter(function(e){var em=N(e.from_email);return isIn(e)&&ms(e.sent_at)>ms(lastOut.sent_at)&&!internalEmail(em)&&!sm[em]&&!autoReply(e);})[0];
+   if(lastOut&&!returned)out.push({project_id:id,name:p.name,client:'linkut të ri nga Aleksandar',text:'Ridërgimi i dokumentacionit u kërkua '+date(lastOut.sent_at),activity:ms(lastOut.sent_at),kind:'document_resend'});
    return;
   }
-  var d=docs[id];if(!d||S(d.followup_status)!=='open')return;
-  var st=d.offer_state&&typeof d.offer_state==='object'?d.offer_state:{},sent=ms(st.pst_sent_at),nr=S(d.doc_nr||'Oferta jonë');
-  if(!sent){
-   var cand=es.filter(function(e){if(N(e.direction)!=='outgoing')return false;var t=N((e.subject||'')+' '+(e.snippet||''));return t.indexOf(N(nr))>-1;})[0];
-   if(cand)sent=ms(cand.sent_at);
+  var explicitWait=decision==='wait_for_client';
+  if(decision&&!explicitWait)return;
+  var d=docs[id];
+  if(!d&&S(p.pipeline_stage)!=='client_offer')return;
+  if(d&&S(d.followup_status)==='draft'&&!explicitWait)return;
+  if(d&&S(d.followup_status)!=='open'&&!explicitWait&&S(p.pipeline_stage)!=='client_offer')return;
+  var st=d&&d.offer_state&&typeof d.offer_state==='object'?d.offer_state:{},sent=ms(st.pst_sent_at),nr=S(d&&d.doc_nr||rec.label||'Oferta PRISTEEL');
+  if(!sent&&d&&S(d.doc_nr)){
+   var exact=es.filter(function(e){return isOut(e)&&N((e.subject||'')+' '+(e.snippet||'')).indexOf(N(d.doc_nr))>-1;})[0];
+   if(exact)sent=ms(exact.sent_at);
+  }
+  if(!sent&&(S(p.pipeline_stage)==='client_offer'||(d&&S(d.followup_status)==='open')||explicitWait)){
+   var offer=es.filter(function(e){
+    if(!isOut(e))return false;
+    var tos=A(e.to_emails).map(N).filter(Boolean);if(tos.length&&tos.every(function(em){return !!sm[em];}))return false;
+    var t=N((e.subject||'')+' '+(e.snippet||''));
+    return /(anbei.{0,100}(angebot|offerte)|(?:angebot|offerte).{0,100}anbei|u prilogu.{0,100}ponud|dostavljamo.{0,100}ponud|nasu ponudu|našu ponudu|our (commercial )?(offer|quotation)|commercial offer)/.test(t);
+   })[0];
+   if(offer)sent=ms(offer.sent_at);
   }
   if(!sent)return;
-  var reply=es.filter(function(e){var em=N(e.from_email);return N(e.direction)==='incoming'&&ms(e.sent_at)>sent&&!internalEmail(em)&&!sm[em]&&!autoReply(e);})[0];
+  var replyAfter=Math.max(sent,explicitWait?analysisAt:0);
+  var reply=es.filter(function(e){var em=N(e.from_email);return isIn(e)&&ms(e.sent_at)>replyAfter&&!internalEmail(em)&&!sm[em]&&!autoReply(e);})[0];
   if(reply)return;
-  out.push({project_id:id,name:p.name,client:p.client||'klientit',text:nr+' u dërgua '+date(sent)+(p.deadline?' · afati i projektit '+date(p.deadline):''),activity:sent,kind:'client_offer'});
+  out.push({project_id:id,name:p.name,client:p.client||'klientit',text:nr+' u dërgua '+date(sent)+(p.deadline?' · afati i projektit '+date(p.deadline):''),activity:Math.max(sent,analysisAt),kind:'client_offer'});
  });
  return out.sort(function(a,b){return b.activity-a.activity;});
 }
