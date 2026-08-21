@@ -11,7 +11,7 @@ var TC_BUTICO_ID='8017a2e4-9e87-4028-bf0b-ed692c9c642f';
 var HINKLEY_ID='a0ab0b00-8898-452d-bdb6-ec5afda80268';
 var STACON_D22_ID='38bdf772-d73e-47b2-9d0f-6020e105aa62';
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
-var integrityBase=null,projectOpenBase=null,homeBusy=null;
+var homeBusy=null;
 
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v).trim();}
@@ -58,9 +58,9 @@ async function enrichIntegrityData(d,id){
 function installIntegrityWrapper(){
  var api=window.PSTProjectDataIntegrity;if(!api||typeof api.load!=='function')return false;
  if(api.load.__pstTruthWrapped)return true;
- integrityBase=api.load;
- api.load=async function(id){var d=await integrityBase.apply(this,arguments);return enrichIntegrityData(d,String(id||''));};
- api.load.__pstTruthWrapped=true;api.load.__base=integrityBase;
+ var base=api.load;
+ async function wrapped(id){var d=await base.apply(this,arguments);return enrichIntegrityData(d,String(id||''));}
+ wrapped.__pstTruthWrapped=true;wrapped.__base=base;api.load=wrapped;
  if(window.__pstIntegrityLastData){var id=S(window.__pstIntegrityLastData.project&&window.__pstIntegrityLastData.project.id);enrichIntegrityData(window.__pstIntegrityLastData,id).then(function(){decorateCommercial();});}
  return true;
 }
@@ -86,11 +86,10 @@ function decorateCommercial(){
 
 function installProjectTransition(){
  var base=window.pstOpenProjectWorkspace;if(typeof base!=='function')return false;if(base.__pstTruthTransition)return true;
- projectOpenBase=base;
  async function wrapped(id){
   try{document.documentElement.classList.add('pst-project-switching');}catch(e){}
   var fail=setTimeout(function(){try{document.documentElement.classList.remove('pst-project-switching');}catch(e){}},9000);
-  try{var r=await projectOpenBase.apply(this,arguments);await new Promise(function(res){requestAnimationFrame(function(){requestAnimationFrame(res);});});return r;}
+  try{var r=await base.apply(this,arguments);await new Promise(function(res){requestAnimationFrame(function(){requestAnimationFrame(res);});});return r;}
   finally{clearTimeout(fail);try{document.documentElement.classList.remove('pst-project-switching');}catch(e){}}
  }
  wrapped.__pstTruthTransition=true;wrapped.__base=base;window.pstOpenProjectWorkspace=wrapped;return true;
