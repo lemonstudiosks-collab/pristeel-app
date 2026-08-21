@@ -11,7 +11,7 @@ window.__pstAuthPersistenceLoaded=true;
 (function loadAutomationTruth(){
   if(window.__pstAutomationTruthV1||document.querySelector('script[data-pst-automation-truth]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-automation-truth-v1.js?v=20260821-truth1';
+  s.src='pristeel-automation-truth-v1.js?v=20260821-stackfix1';
   s.defer=true;
   s.setAttribute('data-pst-automation-truth','1');
   document.head.appendChild(s);
