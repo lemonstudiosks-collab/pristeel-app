@@ -1,16 +1,19 @@
-/* PRISTEEL project commercial prefill rescue v3
+/* PRISTEEL project commercial prefill rescue v4
  * Reliable Project -> client offer bridge.
  * Waits until the Commercial Document Builder has finished its fresh-form reset,
  * then carries project identity and supplier quotation rows into the PRISTEEL client-offer draft.
- * Supplier costs stay internal; selling prices remain human-approved. Never saves or sends automatically.
+ * Manufacturer/supplier terms flow down to the buyer draft by default.
+ * Supplier costs stay internal; selling prices and deliberate deviations remain human-approved.
+ * Never saves or sends automatically.
  */
 (function(){
 'use strict';
-if(window.__pstProjectCommercialPrefillRescueV3)return;
+if(window.__pstProjectCommercialPrefillRescueV4)return;
+window.__pstProjectCommercialPrefillRescueV4=true;
 window.__pstProjectCommercialPrefillRescueV3=true;
 window.__pstProjectCommercialPrefillRescueV1=true;
 
-var running=null,installed=false,basePiNew=null;
+var running=null,installed=false,basePiNew=null,flowdown=null;
 function A(v){return Array.isArray(v)?v:[];}
 function L(v){return String(v==null?'':v).trim();}
 function N(v){return L(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
@@ -24,6 +27,7 @@ function visible(p){if(!p)return false;if(p.classList.contains('active'))return 
 function put(id,v){var e=document.getElementById(id);if(!e)return false;e.value=v==null?'':String(v);try{e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}catch(x){}return true;}
 function blankSelect(id,label){var e=document.getElementById(id);if(!e)return false;var hit=Array.prototype.find.call(e.options||[],function(o){return o.value==='';});if(!hit){hit=document.createElement('option');hit.value='';hit.textContent=label||'— Zgjidh —';e.insertBefore(hit,e.firstChild);}e.value='';try{e.dispatchEvent(new Event('change',{bubbles:true}));}catch(x){}return true;}
 function optionValue(id,v){var e=document.getElementById(id);if(!e||!v)return false;var want=N(v),hit=Array.prototype.find.call(e.options||[],function(o){return N(o.value)===want||N(o.textContent)===want;});if(!hit)return false;e.value=hit.value;try{e.dispatchEvent(new Event('change',{bubbles:true}));}catch(x){}return true;}
+function ensureOption(id,value,label){var e=document.getElementById(id);if(!e||!value)return false;var hit=Array.prototype.find.call(e.options||[],function(o){return String(o.value)===String(value);});if(!hit){hit=document.createElement('option');hit.value=String(value);hit.textContent=label||String(value);e.appendChild(hit);}e.value=String(value);try{e.dispatchEvent(new Event('change',{bubbles:true}));}catch(x){}return true;}
 function supplierOffers(d){return A(d&&d.supplierOffers).filter(function(o){return num(o&&o.total_eur)>0||num(o&&o.price_kg)>0||A(o&&o.positions).length>0;});}
 function existingClientOffers(d){return A(d&&d.ourOffers);}
 function bestContact(d){
@@ -52,6 +56,7 @@ async function loadData(id){
 }
 function modeFor(d){return N(d&&d.project&&d.project.deal_type)==='trading'?'trading':'production';}
 function clearFreshDefaults(){
+ flowdown=null;
  ['of-proj','of-ref','of-cli','of-con','of-em','of-adr','of-loc','of-pr','of-kg','of-zn','of-tr','pa-cost','of-not'].forEach(function(id){put(id,'');});
  ['pa-country','pa-exc','of-inc','of-pay-preset','of-cer','of-lang'].forEach(function(id){blankSelect(id,'— Zgjidh —');});
  if(Array.isArray(window.oferPos))window.oferPos.length=0;
@@ -76,13 +81,35 @@ function seedPositions(o,mode){
  try{if(typeof window.renderOferPos==='function')window.renderOferPos();}catch(e){}
  return rows.length>0;
 }
+
+/* General PPPP rule: manufacturer/supplier conditions flow down to the buyer offer. */
+function paymentPlan(text){var t=L(text);if(!t)return[];var parts=t.split(/[;\n]+/).map(L).filter(Boolean),plan=[];parts.forEach(function(s){var m=s.match(/(\d+(?:[\.,]\d+)?)\s*%/);if(m)plan.push({pct:num(m[1]),ev:'supplierTerms',label:s});});var sum=plan.reduce(function(a,p){return a+num(p.pct);},0);if(plan.length&&Math.abs(sum-100)<0.01)return plan;return[{pct:100,ev:'supplierTerms',label:t}];}
+function flowFrom(o){if(!o)return null;var f={supplier:L(o.supplier||o.supplier_name),offerRef:L(o.offer_ref||o.reference),paymentTerms:L(o.payment_terms),inclusions:L(o.inclusions),exclusions:L(o.exclusions),conditions:L(o.conditions||o.technical_conditions||o.commercial_terms||o.terms),incoterms:L(o.incoterms||o.incoterm).toUpperCase(),cert:L(o.cert||o.certificate),validityDays:num(o.validity_days||o.validity),deliveryWeeks:num(o.delivery_weeks||o.delivery),sourceHasRaw:!!L(o.raw_text),sourceOrigin:L(o.origin),appliedAt:new Date().toISOString()};f.paymentPlan=paymentPlan(f.paymentTerms);return f;}
+function ensureSupplierPaymentOption(f){var s=document.getElementById('of-pay-preset');if(!s)return false;var hit=Array.prototype.find.call(s.options||[],function(o){return o.value==='supplier_terms';});if(f&&f.paymentTerms){if(!hit){hit=document.createElement('option');hit.value='supplier_terms';hit.textContent='Sipas kushteve të prodhuesit';s.appendChild(hit);}s.value='supplier_terms';try{s.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}return true;}if(hit){if(s.value==='supplier_terms')s.value='';hit.remove();}return false;}
+function bulletize(s){return L(s).split(/\s*;\s*|\n+/).map(function(x){return L(x).replace(/^[-•]\s*/,'');}).filter(Boolean).map(function(x){return'• '+x;}).join('\n');}
+var FLOW_LABELS={
+ sr:{title:'TEHNIČKI I KOMERCIJALNI USLOVI',inc:'UKLJUČENO U PONUDU',exc:'NIJE UKLJUČENO / OBEZBJEĐUJE KUPAC'},
+ de:{title:'TECHNISCHE UND KAUFMÄNNISCHE BEDINGUNGEN',inc:'IM ANGEBOT ENTHALTEN',exc:'NICHT ENTHALTEN / VOM KUNDEN BEREITZUSTELLEN'},
+ en:{title:'TECHNICAL AND COMMERCIAL CONDITIONS',inc:'INCLUDED IN THE OFFER',exc:'NOT INCLUDED / BY CUSTOMER'},
+ sq:{title:'KUSHTET TEKNIKE DHE KOMERCIALE',inc:'PËRFSHIHET NË OFERTË',exc:'NUK PËRFSHIHET / SIGUROHET NGA BLERËSI'}
+};
+function flowText(f){if(!f)return'';var lc=L((document.getElementById('of-lang')||{}).value)||'en',lb=FLOW_LABELS[lc]||FLOW_LABELS.en,parts=[];if(f.inclusions)parts.push(lb.inc+'\n'+bulletize(f.inclusions));if(f.exclusions)parts.push(lb.exc+'\n'+bulletize(f.exclusions));if(f.conditions)parts.push(bulletize(f.conditions));return parts.length?lb.title+'\n'+parts.join('\n\n'):'';}
+function applyFlowdown(o){flowdown=flowFrom(o);if(!flowdown)return false;if(flowdown.incoterms){if(!optionValue('of-inc',flowdown.incoterms))ensureOption('of-inc',flowdown.incoterms,flowdown.incoterms);}if(flowdown.validityDays>0)put('of-val',String(flowdown.validityDays));if(flowdown.deliveryWeeks>0)put('of-del',String(flowdown.deliveryWeeks));if(flowdown.cert){if(!optionValue('of-cer',flowdown.cert))ensureOption('of-cer',flowdown.cert,flowdown.cert);}ensureSupplierPaymentOption(flowdown);var txt=flowText(flowdown);if(txt)put('of-not',txt);try{if(typeof window.payPresetChanged==='function')window.payPresetChanged();}catch(e){}return true;}
+function flowWarnings(o){var f=flowFrom(o),w=[];if(!f)return w;if(f.sourceHasRaw&&!f.conditions)w.push('Oferta e furnitorit ka tekst burimor. PPPP ka bartur fushat e strukturuara; kontrollo që kushtet e pa-strukturuara janë kapur para dërgimit.');if(!f.paymentTerms)w.push('Kushtet e pagesës së furnitorit nuk janë të strukturuara.');if(!f.inclusions&&!f.exclusions)w.push('Përfshirjet/përjashtimet e furnitorit nuk janë të strukturuara.');return w;}
+function wrapCommercialState(){
+ var c=window.collectOfferFormState;if(typeof c==='function'&&!c.__pstSupplierFlowdownState){var cw=function(){var st=c.apply(this,arguments)||{};st.supplierFlowdown=flowdown?JSON.parse(JSON.stringify(flowdown)):null;return st;};cw.__pstSupplierFlowdownState=true;cw.__base=c;window.collectOfferFormState=cw;}
+ var a=window.applyOfferFormState;if(typeof a==='function'&&!a.__pstSupplierFlowdownState){var aw=function(st){flowdown=st&&st.supplierFlowdown?JSON.parse(JSON.stringify(st.supplierFlowdown)):null;if(flowdown)ensureSupplierPaymentOption(flowdown);var r=a.apply(this,arguments);return r;};aw.__pstSupplierFlowdownState=true;aw.__base=a;window.applyOfferFormState=aw;}
+ var b=window.buildPayPlan;if(typeof b==='function'&&!b.__pstSupplierFlowdownPay){var bw=function(){var s=document.getElementById('of-pay-preset');if(s&&s.value==='supplier_terms'&&flowdown&&flowdown.paymentTerms)return A(flowdown.paymentPlan).length?flowdown.paymentPlan:[{pct:100,ev:'supplierTerms',label:flowdown.paymentTerms}];return b.apply(this,arguments);};bw.__pstSupplierFlowdownPay=true;bw.__base=b;window.buildPayPlan=bw;}
+ var p=window.payPlanText;if(typeof p==='function'&&!p.__pstSupplierFlowdownText){var pw=function(plan){var rows=A(plan);if(rows.length&&rows.some(function(x){return L(x&&x.label);}))return rows.map(function(x){return L(x.label)||((x.pct||'')+'%');}).filter(Boolean).join(' / ');return p.apply(this,arguments);};pw.__pstSupplierFlowdownText=true;pw.__base=p;window.payPlanText=pw;}
+}
+
 function warningRows(d,o){
  var w=[],projectName=N(d&&d.project&&d.project.name),text=N((o&&o.notes||'')+' '+(o&&o.raw_text||'')+' '+(o&&o.inclusions||'')+' '+(o&&o.exclusions||''));
  if(/budva/.test(text)&&!/budva/.test(projectName))w.push('Dokumenti i furnitorit përmend Budva/Monenegro për transportin. Verifiko destinacionin para ofertës klientit.');
  var fab=A(o&&o.positions).filter(function(r){return /fabric|prodh|izrad|konstruksion|structure/.test(N(r.description||r.desc));}).reduce(function(s,r){return s+num(r.qty||r.quantity);},0);
  var er=A(o&&o.positions).filter(function(r){return /erection|monta/.test(N(r.description||r.desc));}).reduce(function(s,r){return s+num(r.qty||r.quantity);},0);
  if(fab>0&&er>0&&Math.abs(fab-er)>1)w.push('Sasia e montimit '+er.toLocaleString('de-DE')+' kg nuk përputhet me sasinë e fabrikimit '+fab.toLocaleString('de-DE')+' kg. Verifiko scope-in.');
- return w;
+ return w.concat(flowWarnings(o));
 }
 function quotePanel(d,o){
  var old=document.getElementById('pst-project-supplier-quote-summary');if(old)old.remove();
@@ -90,13 +117,15 @@ function quotePanel(d,o){
  var rows=A(o&&o.positions),box=document.createElement('div');box.id='pst-project-supplier-quote-summary';box.style.cssText='border:1px solid #cfe1e7;background:#f7fbfc;border-radius:11px;padding:12px 14px;margin:10px 0 14px;font-size:11px;color:#526872';
  var html='<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start"><div><b style="display:block;color:#367d97;font-size:12px">Baza e kostos nga Prokurimi</b><span>'+E(o.supplier||o.supplier_name||'Furnitor')+(o.offer_ref?' · '+E(o.offer_ref):'')+'</span></div>'+(num(o.total_eur)>0?'<b style="white-space:nowrap;color:#334951">'+E(num(o.total_eur).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}))+' EUR</b>':'')+'</div>';
  html+='<div style="margin-top:8px;border-top:1px solid #e4eef1">'+rows.map(function(r){var q=num(r.qty!=null?r.qty:r.quantity),p=num(r.unit_price!=null?r.unit_price:r.price),t=num(r.total_eur||r.total);return '<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:6px 0;border-bottom:1px solid #e9f0f2"><span>'+E(r.description||r.desc||'Pozicion')+(q?' · '+E(q.toLocaleString('de-DE'))+' '+E(r.unit||''):'')+'</span><b style="white-space:nowrap">'+(p?E(p.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:3}))+' €/ '+E(r.unit||'nj.'):(t?E(t.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2}))+' €':'—'))+'</b></div>';}).join('')+'</div>';
- html+='<div style="margin-top:9px;padding:8px 9px;border-radius:8px;background:#fff6e8;color:#825b1e"><b>Çmimet e shitjes janë bosh.</b> Pozicionet e furnitorit janë sjellë vetëm si bazë kostoje. PRISTEEL duhet të vendosë çmimin/marzhin dhe ta aprovojë ofertën.</div>';
+ var f=flowFrom(o),terms=[];if(f){if(f.paymentTerms)terms.push('Pagesa');if(f.validityDays)terms.push('Validiteti');if(f.incoterms)terms.push('Incoterm');if(f.deliveryWeeks)terms.push('Afati');if(f.cert)terms.push('Certifikimi');if(f.inclusions)terms.push('Përfshirjet');if(f.exclusions)terms.push('Përjashtimet');}
+ html+='<div style="margin-top:9px;padding:8px 9px;border-radius:8px;background:#edf7ef;color:#356741"><b>Kushtet e prodhuesit → blerësi.</b> '+(terms.length?E(terms.join(' · ')):'Nuk ka kushte të strukturuara për bartje.')+'</div>';
+ html+='<div style="margin-top:7px;padding:8px 9px;border-radius:8px;background:#fff6e8;color:#825b1e"><b>Çmimet e shitjes janë bosh.</b> Pozicionet e furnitorit janë sjellë vetëm si bazë kostoje. PRISTEEL duhet të vendosë çmimin/marzhin dhe ta aprovojë ofertën.</div>';
  warningRows(d,o).forEach(function(x){html+='<div style="margin-top:7px;padding:7px 9px;border-radius:8px;background:#fff1ef;color:#8a433b"><b>Kontroll:</b> '+E(x)+'</div>';});
  box.innerHTML=html;anchor.insertAdjacentElement('afterend',box);return true;
 }
 function hydrate(d,mode){
  if(!d||!d.project||!visible(offerPage()))return false;
- clearFreshDefaults();
+ clearFreshDefaults();wrapCommercialState();
  var p=d.project,c=bestContact(d),os=supplierOffers(d),o=os.length===1?os[0]:null;
  put('of-proj',p.name||'');put('of-ref',p.ref||'');put('of-cli',p.client||'');
  if(c){put('of-con',c.name||c.contact_name||c.person||'');put('of-em',c.email||'');if(c.address||c.full_address)put('of-adr',c.address||c.full_address);}
@@ -104,7 +133,7 @@ function hydrate(d,mode){
  var lg=language(d,c);if(lg)optionValue('of-lang',lg);else blankSelect('of-lang','— Zgjidh gjuhën —');
  blankSelect('pa-country','— Zgjidh vendin —');blankSelect('pa-exc','— Zgjidh EXC —');blankSelect('of-inc','— Zgjidh Incoterm —');blankSelect('of-pay-preset','— Zgjidh kushtet e pagesës —');blankSelect('of-cer','— Zgjidh certifikatën —');
  put('of-pr','');put('of-zn','');put('of-tr','');put('pa-cost','');
- if(o){seedPositions(o,mode);quotePanel(d,o);}
+ if(o){seedPositions(o,mode);applyFlowdown(o);quotePanel(d,o);}
  try{if(window.PSTCommercialDocumentBuilderV1&&typeof window.PSTCommercialDocumentBuilderV1.enhance==='function')window.PSTCommercialDocumentBuilderV1.enhance();}catch(e){}
  return true;
 }
@@ -124,15 +153,16 @@ async function openProjectOffer(){
  return running;
 }
 function install(){
+ wrapCommercialState();
  var fn=window.pstPiNew;if(typeof fn!=='function')return false;
- if(fn.__pstProjectClientOfferBridgeV3){installed=true;return true;}
+ if(fn.__pstProjectClientOfferBridgeV4){installed=true;return true;}
  basePiNew=fn;
  var w=function(type){if(type==='offer'&&projectFirstVisible())return openProjectOffer();return basePiNew.apply(this,arguments);};
- w.__pstProjectClientOfferBridgeV3=true;w.__base=basePiNew;window.pstPiNew=w;installed=true;return true;
+ w.__pstProjectClientOfferBridgeV4=true;w.__pstProjectClientOfferBridgeV3=true;w.__base=basePiNew;window.pstPiNew=w;installed=true;return true;
 }
-function scheduleInstall(){[0,80,240,700].forEach(function(ms){setTimeout(function(){if(!installed)install();},ms);});}
+function scheduleInstall(){[0,80,240,700].forEach(function(ms){setTimeout(function(){install();},ms);});}
 
 document.addEventListener('pst:modules-ready',scheduleInstall,{once:true});
 scheduleInstall();
-window.PSTProjectCommercialPrefillRescueV1=window.PSTProjectCommercialPrefillRescueV3={install:install,openProjectOffer:openProjectOffer,hydrate:hydrate,seedPositions:seedPositions,quotePanel:quotePanel,_test:{bestContact:bestContact,supplierOffers:supplierOffers,warningRows:warningRows,modeFor:modeFor,editorUnit:editorUnit}};
+window.PSTProjectCommercialPrefillRescueV1=window.PSTProjectCommercialPrefillRescueV3=window.PSTProjectCommercialPrefillRescueV4={install:install,openProjectOffer:openProjectOffer,hydrate:hydrate,seedPositions:seedPositions,quotePanel:quotePanel,applyFlowdown:applyFlowdown,_test:{bestContact:bestContact,supplierOffers:supplierOffers,warningRows:warningRows,modeFor:modeFor,editorUnit:editorUnit,paymentPlan:paymentPlan,flowFrom:flowFrom,flowText:flowText}};
 })();
