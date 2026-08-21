@@ -1,21 +1,27 @@
 /* PRISTEEL Home Canonical Interaction v1
- * UX-only decorator for the canonical Home owner.
- * - Whole action card opens its project/task target, not only the small Hap button.
- * - Urgent/new-client-request cards get a warm amber treatment across the whole card.
- * - No project/task/email data writes.
+ * Final UX/state decorator for the canonical Home owner.
+ * - Whole action card opens its project/task target.
+ * - Urgent/new-client-request cards get a warm amber treatment.
+ * - Operational project state is enforced after the canonical/final Home render.
+ * - Read-only: no project/task/email data writes.
  */
 (function(){
 'use strict';
 if(window.__pstHomeCanonicalInteractionV1)return;
 window.__pstHomeCanonicalInteractionV1=true;
 
+var VERSION='20260821-4';
+var stateApplying=false,stateQueued=false;
+
 function str(v){return String(v==null?'':v);}
 function norm(v){return str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
+function esc(v){return str(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function arr(v){return Array.isArray(v)?v:[];}
 function interactiveTarget(target){return !!(target&&target.closest&&target.closest('button,a,input,select,textarea,[contenteditable="true"],[role="button"]'));}
 function openRow(row){
   if(!row)return false;
-  var pid=str(row.getAttribute('data-action-project')||'').trim();
-  var kind=str(row.getAttribute('data-action-kind')||'').trim().toLowerCase();
+  var pid=str(row.getAttribute('data-action-project')||row.getAttribute('data-project-id')||'').trim();
+  var kind=str(row.getAttribute('data-action-kind')||row.getAttribute('data-kind')||'').trim().toLowerCase();
   if(pid&&typeof window.pstOpenProjectWorkspace==='function'){
     window.pstOpenProjectWorkspace(pid);
     return true;
@@ -28,8 +34,8 @@ function openRow(row){
 }
 function urgentRow(row){
   if(!row)return false;
-  var titleNode=row.querySelector('.pst-ws-action-main b');
-  var tagNode=row.querySelector('.pst-ws-tag');
+  var titleNode=row.querySelector('.pst-ws-action-main b,.pst-ws-action-title');
+  var tagNode=row.querySelector('.pst-ws-tag,.pst-ws-action-tag');
   var title=norm(titleNode&&titleNode.textContent);
   var tag=norm(tagNode&&tagNode.textContent);
   return /^(urgjent|urgent)\b/.test(title)||tag==='kerkese e re e klientit'||tag==='kerkese e klientit';
@@ -59,23 +65,119 @@ function installStyle(){
 ';
   document.head.appendChild(s);
 }
-function loadOperationalPolicy(){
-  var expected='20260821-2';
-  if(window.PSTHomeOperationalStatePolicyV1&&window.PSTHomeOperationalStatePolicyV1.version===expected){
-    if(typeof window.PSTHomeOperationalStatePolicyV1.apply==='function')setTimeout(function(){window.PSTHomeOperationalStatePolicyV1.apply();},0);
-    return;
+function inactiveProject(p){
+  var s=norm(p&&p.status);
+  return ['mbyllur','humbur','arkivuar','closedlost','cancelled','canceled','realizuar','archived','lost'].indexOf(s)>-1;
+}
+function ensureWaitingSection(actionsHost){
+  var sec=document.getElementById('pst-home-waiting');
+  if(sec)return sec;
+  var owner=actionsHost&&(actionsHost.closest('.pst-ws-card')||actionsHost.parentElement);
+  if(!owner)return null;
+  owner.insertAdjacentHTML('afterend','<section id="pst-home-waiting"><div class="pst-home-wait-head"><div><b>Në pritje</b><span>PPPP po pret palën tjetër; nuk kërkohet veprim tani.</span></div></div><div class="pst-home-wait-list"></div></section>');
+  return document.getElementById('pst-home-waiting');
+}
+function waitingItem(p){
+  return '<button type="button" class="pst-home-wait-item" data-project-id="'+esc(p.id)+'" data-pst-operational-wait="1"><span class="pst-home-wait-dot"></span><span class="pst-home-wait-copy"><b>'+esc(p.name||'Projekt')+'</b><small>Në pritje të '+esc(p.client||'klientit')+' · presim përgjigjen e palës tjetër</small></span><span class="pst-home-wait-arrow">›</span></button>';
+}
+function snapshotActionMap(){
+  var out={};
+  try{
+    var snap=window.PSTHomeCanonicalV1&&typeof window.PSTHomeCanonicalV1.snapshot==='function'?window.PSTHomeCanonicalV1.snapshot():null;
+    arr(snap&&snap.actions).forEach(function(a){if(a&&a.key)out[str(a.key)]=a;});
+  }catch(e){}
+  return out;
+}
+function bindOperationalWaiting(sec){
+  if(!sec)return;
+  sec.querySelectorAll('[data-pst-operational-wait="1"]').forEach(function(b){
+    if(b.__pstOperationalBound)return;
+    b.__pstOperationalBound=true;
+    b.addEventListener('click',function(e){
+      e.preventDefault();e.stopPropagation();
+      var id=b.getAttribute('data-project-id');
+      if(id&&typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);
+    });
+  });
+}
+async function applyOperationalStatePolicy(){
+  if(stateApplying){stateQueued=true;return false;}
+  stateApplying=true;
+  try{
+    if(typeof window.supaFetch!=='function')return false;
+    var page=document.getElementById('page-workspace-home');
+    var actionsHost=document.getElementById('pst-ws-home-actions');
+    var projectsHost=document.getElementById('pst-ws-home-projects');
+    if(!page||!actionsHost||!projectsHost)return false;
+
+    var rows=arr(await window.supaFetch('projects?select=id,name,client,status,pipeline_stage,operational_state,operational_state_at,last_activity_at&limit=3000'));
+    var wait={},execution={},stateBy={};
+    rows.forEach(function(p){
+      var id=str(p&&p.id).trim();if(!id||inactiveProject(p))return;
+      var st=norm(p.operational_state);stateBy[id]=st;
+      if(st==='wait_for_client')wait[id]=p;
+      else if(st==='execution')execution[id]=p;
+    });
+
+    var actionMap=snapshotActionMap();
+    actionsHost.querySelectorAll('.pst-canonical-action[data-project-id]').forEach(function(card){
+      var id=card.getAttribute('data-project-id');
+      var key=card.getAttribute('data-ws-action');
+      var a=actionMap[key]||null;
+      if(wait[id]){card.remove();return;}
+      if(execution[id]&&a&&norm(a.source)==='execution_won')card.remove();
+    });
+
+    var sec=document.getElementById('pst-home-waiting');
+    var existing=[];
+    if(sec){
+      sec.querySelectorAll('.pst-home-wait-item[data-project-id]').forEach(function(b){
+        var id=b.getAttribute('data-project-id');
+        if(!id||wait[id]||execution[id])return;
+        existing.push({id:id,html:b.outerHTML});
+      });
+    }
+    if(Object.keys(wait).length||existing.length)sec=ensureWaitingSection(actionsHost);
+    if(sec){
+      var list=sec.querySelector('.pst-home-wait-list');
+      if(list){
+        var html='';
+        Object.keys(wait).sort(function(a,b){return str(wait[a].name).localeCompare(str(wait[b].name));}).forEach(function(id){html+=waitingItem(wait[id]);});
+        existing.forEach(function(x){if(!wait[x.id]&&!execution[x.id])html+=x.html;});
+        list.innerHTML=html;
+      }
+      if(!sec.querySelector('.pst-home-wait-item'))sec.remove();else bindOperationalWaiting(sec);
+    }
+
+    var occupied={};
+    actionsHost.querySelectorAll('.pst-canonical-action[data-project-id]').forEach(function(card){var id=card.getAttribute('data-project-id');if(id)occupied[id]=1;});
+    document.querySelectorAll('#pst-home-waiting .pst-home-wait-item[data-project-id]').forEach(function(card){var id=card.getAttribute('data-project-id');if(id)occupied[id]=1;});
+    projectsHost.querySelectorAll('.pst-canonical-project[data-project-id]').forEach(function(card){
+      var id=card.getAttribute('data-project-id');
+      if(occupied[id]){card.remove();return;}
+      if(execution[id]){
+        var next=card.querySelector('.pst-ws-projectcard-next');
+        if(next)next.innerHTML='<b>Hapi i radhës:</b> Projekt në ekzekutim · ndiq prodhimin dhe dokumentacionin';
+      }
+    });
+
+    var actionCount=actionsHost.querySelectorAll('.pst-canonical-action').length;
+    var hb=document.getElementById('pst-ws-b-home');
+    if(hb){hb.textContent=str(actionCount);hb.style.display=actionCount?'inline-flex':'none';}
+    page.dataset.pstOperationalPolicy='canonical-interaction-v4';
+    page.dataset.pstOperationalPolicyAt=new Date().toISOString();
+    decorate(page);
+    return true;
+  }catch(e){
+    if(window.console)console.warn('PPPP Home operational-state enforcement:',e);
+    return false;
+  }finally{
+    stateApplying=false;
+    if(stateQueued){stateQueued=false;setTimeout(applyOperationalStatePolicy,0);}
   }
-  var old=document.querySelector('script[data-pst-home-operational-policy-fresh]');
-  if(old&&old.parentNode)old.remove();
-  window.__pstHomeOperationalStatePolicyV1=false;
-  try{delete window.PSTHomeOperationalStatePolicyV1;}catch(e){window.PSTHomeOperationalStatePolicyV1=null;}
-  var s=document.createElement('script');
-  s.src='pristeel-home-operational-state-policy-v1.js?pst_home_policy='+String(Date.now());
-  s.defer=true;
-  s.setAttribute('data-pst-home-operational-policy-fresh','1');
-  s.onload=function(){try{if(window.PSTHomeOperationalStatePolicyV1&&typeof window.PSTHomeOperationalStatePolicyV1.apply==='function')window.PSTHomeOperationalStatePolicyV1.apply();}catch(e){}};
-  s.onerror=function(){console.error('Nuk u ngarkua Home operational-state policy.');};
-  document.head.appendChild(s);
+}
+function scheduleOperationalStatePolicy(){
+  [0,180,650].forEach(function(ms){setTimeout(applyOperationalStatePolicy,ms);});
 }
 function onClick(e){
   var row=e.target&&e.target.closest?e.target.closest('.pst-canonical-action'):null;
@@ -88,7 +190,7 @@ function onClick(e){
 function boot(){
   installStyle();
   decorate(document);
-  loadOperationalPolicy();
+  scheduleOperationalStatePolicy();
   if(window.MutationObserver&&document.body){
     var observer=new MutationObserver(function(changes){
       changes.forEach(function(change){
@@ -100,6 +202,9 @@ function boot(){
   }
 }
 document.addEventListener('click',onClick,true);
+document.addEventListener('pst:home-canonical-rendered',scheduleOperationalStatePolicy);
+document.addEventListener('pst:visual-ready',applyOperationalStatePolicy);
+window.addEventListener('pageshow',function(){setTimeout(applyOperationalStatePolicy,0);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTHomeCanonicalInteractionV1={version:'20260821-3',decorate:decorate,openRow:openRow,urgentRow:urgentRow,loadOperationalPolicy:loadOperationalPolicy,_test:{norm:norm,interactiveTarget:interactiveTarget}};
+window.PSTHomeCanonicalInteractionV1={version:VERSION,decorate:decorate,openRow:openRow,urgentRow:urgentRow,applyOperationalStatePolicy:applyOperationalStatePolicy,_test:{norm:norm,interactiveTarget:interactiveTarget}};
 })();
