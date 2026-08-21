@@ -109,16 +109,38 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare v_state text;
 begin
+  select state into v_state
+  from public.semantic_ai_jobs
+  where id=p_job_id
+    and coalesce(worker_id,'')=coalesce(p_worker_label,'')
+  for update;
+
+  if not found or v_state not in ('claimed','superseded') then
+    return false;
+  end if;
+
+  -- A worker may finish a legacy job after the server has superseded it.
+  -- Accept the completion so the local worker can move on, but never reactivate/apply that job.
+  if v_state='superseded' then
+    update public.semantic_ai_jobs
+    set model=coalesce(nullif(p_model,''),model),
+        result=case when nullif(p_error,'') is null then coalesce(p_result,result) else result end,
+        error=coalesce(error,nullif(p_error,'')),
+        completed_at=coalesce(completed_at,now()),
+        updated_at=now()
+    where id=p_job_id;
+    return true;
+  end if;
+
   update public.semantic_ai_jobs
   set state=case when nullif(p_error,'') is null then 'completed' else 'failed' end,
       model=coalesce(nullif(p_model,''),model),
       result=case when nullif(p_error,'') is null then coalesce(p_result,'{}'::jsonb) else result end,
       error=nullif(p_error,''),completed_at=now(),updated_at=now()
-  where id=p_job_id
-    and state='claimed'
-    and coalesce(worker_id,'')=coalesce(p_worker_label,'');
-  return found;
+  where id=p_job_id;
+  return true;
 end;
 $$;
 
