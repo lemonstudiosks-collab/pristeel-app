@@ -59,6 +59,24 @@ function installStyle(){
 ';
   document.head.appendChild(s);
 }
+function loadOperationalPolicy(){
+  var expected='20260821-2';
+  if(window.PSTHomeOperationalStatePolicyV1&&window.PSTHomeOperationalStatePolicyV1.version===expected){
+    if(typeof window.PSTHomeOperationalStatePolicyV1.apply==='function')setTimeout(function(){window.PSTHomeOperationalStatePolicyV1.apply();},0);
+    return;
+  }
+  var old=document.querySelector('script[data-pst-home-operational-policy-fresh]');
+  if(old&&old.parentNode)old.remove();
+  window.__pstHomeOperationalStatePolicyV1=false;
+  try{delete window.PSTHomeOperationalStatePolicyV1;}catch(e){window.PSTHomeOperationalStatePolicyV1=null;}
+  var s=document.createElement('script');
+  s.src='pristeel-home-operational-state-policy-v1.js?pst_home_policy='+String(Date.now());
+  s.defer=true;
+  s.setAttribute('data-pst-home-operational-policy-fresh','1');
+  s.onload=function(){try{if(window.PSTHomeOperationalStatePolicyV1&&typeof window.PSTHomeOperationalStatePolicyV1.apply==='function')window.PSTHomeOperationalStatePolicyV1.apply();}catch(e){}};
+  s.onerror=function(){console.error('Nuk u ngarkua Home operational-state policy.');};
+  document.head.appendChild(s);
+}
 function onClick(e){
   var row=e.target&&e.target.closest?e.target.closest('.pst-canonical-action'):null;
   if(!row||interactiveTarget(e.target))return;
@@ -70,6 +88,7 @@ function onClick(e){
 function boot(){
   installStyle();
   decorate(document);
+  loadOperationalPolicy();
   if(window.MutationObserver&&document.body){
     var observer=new MutationObserver(function(changes){
       changes.forEach(function(change){
@@ -82,5 +101,5 @@ function boot(){
 }
 document.addEventListener('click',onClick,true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTHomeCanonicalInteractionV1={version:'20260818-2',decorate:decorate,openRow:openRow,urgentRow:urgentRow,_test:{norm:norm,interactiveTarget:interactiveTarget}};
+window.PSTHomeCanonicalInteractionV1={version:'20260821-3',decorate:decorate,openRow:openRow,urgentRow:urgentRow,loadOperationalPolicy:loadOperationalPolicy,_test:{norm:norm,interactiveTarget:interactiveTarget}};
 })();
