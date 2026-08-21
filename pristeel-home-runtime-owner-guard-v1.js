@@ -1,11 +1,12 @@
-/* PRISTEEL Home Runtime Owner Guard v12
+/* PRISTEEL Home Runtime Owner Guard v13
  * Startup visibility belongs to the startup curtain/guard.
  * This module owns only the final Workspace Home handoff:
- * Workspace shell -> Canonical data -> fresh Command Center -> Happy Home -> reveal.
+ * Workspace shell -> Canonical data -> final router -> decorators -> reveal.
  */
 (function(){
 'use strict';
-if(window.__pstHomeRuntimeOwnerGuardV12)return;
+if(window.__pstHomeRuntimeOwnerGuardV13)return;
+window.__pstHomeRuntimeOwnerGuardV13=true;
 window.__pstHomeRuntimeOwnerGuardV12=true;
 window.__pstHomeRuntimeOwnerGuardV11=true;
 window.__pstHomeRuntimeOwnerGuardV10=true;
@@ -35,7 +36,7 @@ window.__pstLoginTransitionV2=true;
 /* Suppress the stale ordered bootstrap copy. A fresh cache-busted Command Center is loaded after modules-ready. */
 window.__pstHomeCommandCenterV2=true;
 
-var bootVersion='20260819-'+Date.now().toString(36);
+var bootVersion='20260821-home13-'+Date.now().toString(36);
 var runtimeReady=!!window.__pstModulesReady;
 var homeReady=false;
 var visualReady=false;
@@ -93,7 +94,7 @@ function signalVisualReady(){
   try{
     if(window.PSTStartupGuard&&typeof window.PSTStartupGuard.visualReady==='function')window.PSTStartupGuard.visualReady();
   }catch(e){}
-  try{document.dispatchEvent(new CustomEvent('pst:visual-ready',{detail:{owner:'home-runtime-v12',boot:bootVersion}}));}catch(e){}
+  try{document.dispatchEvent(new CustomEvent('pst:visual-ready',{detail:{owner:'home-runtime-v13',boot:bootVersion}}));}catch(e){}
 }
 function loadScriptOnce(path,attr,globalName){
   if(globalName&&window[globalName])return Promise.resolve(window[globalName]);
@@ -194,6 +195,17 @@ function revealBestAvailable(reason){
   signalVisualReady();
   return true;
 }
+function installFinalRouter(){
+  var current=window.pstWorkspaceGo;if(typeof current!=='function')return false;
+  if(current.__pstCanonicalFinalRouter)return true;
+  routerBase=current;
+  function finalGo(key){
+    var k=String(key||'home').toLowerCase();
+    if(k==='home'){renderFinalHome();return true;}
+    return routerBase.apply(this,arguments);
+  }
+  finalGo.__pstCanonicalFinalRouter=true;finalGo.__base=routerBase;window.pstWorkspaceGo=finalGo;return true;
+}
 async function renderFinalHome(){
   if(!runtimeReady)return false;
   if(finalizing)return finalizing;
@@ -203,6 +215,8 @@ async function renderFinalHome(){
     if(!shell)throw new Error('Workspace Home shell mungon.');
     var api=await loadCanonical();
     if(!api||typeof api.render!=='function')throw new Error('Canonical Home nuk është gati.');
+    /* Canonical installs its compatibility router when it loads. Wrap that final canonical chain only now. */
+    installFinalRouter();
     hideLegacyHome();
     if(typeof api.activateHome==='function')api.activateHome();
     var ok=await Promise.resolve(api.render(true));
@@ -213,7 +227,7 @@ async function renderFinalHome(){
     applyFinalDecorators();
     var page=document.getElementById('page-workspace-home');
     if(page){
-      page.dataset.pstHomeOwner='canonical-v1';
+      page.dataset.pstHomeOwner='canonical-v3';
       page.dataset.pstHomeCommand='fresh-current';
       page.dataset.pstHomeFinal='happy-v1';
       page.dataset.pstHomeBoot=bootVersion;
@@ -227,17 +241,6 @@ async function renderFinalHome(){
     return revealBestAvailable('final-error');
   }).finally(function(){finalizing=null;});
   return finalizing;
-}
-function installFinalRouter(){
-  var current=window.pstWorkspaceGo;if(typeof current!=='function')return false;
-  if(current.__pstCanonicalFinalRouter)return true;
-  routerBase=current;
-  function finalGo(key){
-    var k=String(key||'home').toLowerCase();
-    if(k==='home'){renderFinalHome();return true;}
-    return routerBase.apply(this,arguments);
-  }
-  finalGo.__pstCanonicalFinalRouter=true;finalGo.__base=routerBase;window.pstWorkspaceGo=finalGo;return true;
 }
 function compatGo(page){
   page=String(page||'home').toLowerCase();
@@ -263,7 +266,7 @@ function installCompatApi(){
 function finalizeHome(){
   runtimeReady=true;clearLegacyLoginBlocker();installCompatApi();extendStartupDeadline();
   if(finalizeTimer)clearTimeout(finalizeTimer);
-  finalizeTimer=setTimeout(function(){installFinalRouter();renderFinalHome();},120);
+  finalizeTimer=setTimeout(function(){renderFinalHome();},120);
   if(recoveryTimer)clearTimeout(recoveryTimer);
   recoveryTimer=setTimeout(function(){if(!visualReady)revealBestAvailable('modules-ready-timeout');},7000);
 }
@@ -279,7 +282,7 @@ var API={
   signalVisualReady:signalVisualReady,revealBestAvailable:revealBestAvailable,
   isRuntimeReady:function(){return runtimeReady;},isHomeReady:function(){return homeReady;},isVisualReady:function(){return visualReady;}
 };
-window.PSTHomeRuntimeOwnerGuardV1=window.PSTHomeRuntimeOwnerGuardV2=window.PSTHomeRuntimeOwnerGuardV3=window.PSTHomeRuntimeOwnerGuardV4=window.PSTHomeRuntimeOwnerGuardV5=window.PSTHomeRuntimeOwnerGuardV6=window.PSTHomeRuntimeOwnerGuardV7=window.PSTHomeRuntimeOwnerGuardV8=window.PSTHomeRuntimeOwnerGuardV9=window.PSTHomeRuntimeOwnerGuardV10=window.PSTHomeRuntimeOwnerGuardV11=window.PSTHomeRuntimeOwnerGuardV12=API;
+window.PSTHomeRuntimeOwnerGuardV1=window.PSTHomeRuntimeOwnerGuardV2=window.PSTHomeRuntimeOwnerGuardV3=window.PSTHomeRuntimeOwnerGuardV4=window.PSTHomeRuntimeOwnerGuardV5=window.PSTHomeRuntimeOwnerGuardV6=window.PSTHomeRuntimeOwnerGuardV7=window.PSTHomeRuntimeOwnerGuardV8=window.PSTHomeRuntimeOwnerGuardV9=window.PSTHomeRuntimeOwnerGuardV10=window.PSTHomeRuntimeOwnerGuardV11=window.PSTHomeRuntimeOwnerGuardV12=window.PSTHomeRuntimeOwnerGuardV13=API;
 
 clearLegacyLoginBlocker();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootstrapCompat,{once:true});else bootstrapCompat();
