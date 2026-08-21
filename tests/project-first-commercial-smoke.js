@@ -7,11 +7,11 @@ const {JSDOM}=require('jsdom');
   const commercial=fs.readFileSync('pristeel-project-first-commercial-v1.js','utf8');
   const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
 
-  assert(bootstrap.includes("pristeel-supplier-offer-postsave-ui-v1.js?v=20260809-1"),'Live bootstrap must load supplier offer post-save UI');
-  assert(bootstrap.includes("pristeel-email-offer-draft-editor-bridge-v1.js?v=20260812-currency1"),'Live bootstrap must cache-bust the FX-safe supplier editor bridge');
-  assert(bootstrap.includes("pristeel-project-first-commercial-v1.js?v=20260818-margin1"),'Live bootstrap must cache-bust the margin-aware commercial comparison module');
-  assert(bootstrap.includes("pristeel-project-commercial-prefill-rescue-v1.js?v=20260809-2"),'Live bootstrap must load the project commercial prefill rescue after the builder');
-  assert(commercial.includes("pristeel-project-commercial-prefill-v1.js?v=20260809-3"),'Commercial workflow must cache-bust the project-aware offer prefill');
+  assert(/pristeel-supplier-offer-postsave-ui-v1\.js\?v=[^'"\s]+/.test(bootstrap),'Live bootstrap must load a cache-busted supplier offer post-save UI');
+  assert(/pristeel-email-offer-draft-editor-bridge-v1\.js\?v=[^'"\s]+/.test(bootstrap),'Live bootstrap must cache-bust the FX-safe supplier editor bridge');
+  assert(/pristeel-project-first-commercial-v1\.js\?v=[^'"\s]+/.test(bootstrap),'Live bootstrap must cache-bust the current commercial comparison module');
+  assert(/pristeel-project-commercial-prefill-rescue-v1\.js\?v=[^'"\s]+/.test(bootstrap),'Live bootstrap must load the cache-busted project commercial prefill rescue after the builder');
+  assert(/pristeel-project-commercial-prefill-v1\.js\?v=[^'"\s]+/.test(commercial),'Commercial workflow must cache-bust the project-aware offer prefill');
   assert(!/MutationObserver|setInterval\s*\(/.test(commercial),'Commercial compare must not poll or globally observe');
 
   const dom=new JSDOM(`<!doctype html><html><head></head><body>

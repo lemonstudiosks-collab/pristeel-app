@@ -182,8 +182,8 @@ if (!searchSource.includes("window.__pstRuntimeRevealFallback=-1")) {
 
 const homeGuardSource = read('pristeel-home-runtime-owner-guard-v1.js');
 for (const needle of [
-  '__pstHomeRuntimeOwnerGuardV11',
-  "var bootVersion='20260819-'+Date.now().toString(36)",
+  '__pstHomeRuntimeOwnerGuardV13',
+  "var bootVersion='20260821-home13-'+Date.now().toString(36)",
   'pst-home-final-ready',
   "pristeel-home-command-center-v2.js?pst_boot=",
   'pristeel-home-happy-v1.js',

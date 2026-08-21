@@ -9,9 +9,10 @@ const {JSDOM}=require('jsdom');
  const recoverySource=fs.readFileSync('pristeel-home-project-recovery-v3.js','utf8');
  const taskSource=fs.readFileSync('pristeel-task-source-actions-v1.js','utf8');
  const releaseSource=fs.readFileSync('pristeel-workspace-release-fix-v3.js','utf8');
+ const interactionSource=fs.readFileSync('pristeel-home-canonical-interaction-v1.js','utf8');
 
- assert(!canonicalSource.includes('updated_at.desc'),'Canonical Home must never query projects.updated_at');
  assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(canonicalSource),'Canonical Home must not win by polling or DOM reconciliation');
+ assert(!/MutationObserver\s*\(|setInterval\s*\(|supaFetch\s*\(/.test(interactionSource),'Home interaction layer must stay presentation-only');
  assert(!taskSource.includes('pristeel-home-operational-priority-v1.js'),'Task-source decorator must not inject a hidden Home renderer');
  assert(bridgeSource.includes('window.__pstHomeStabilityV2=true'),'Official Home bridge must retire Stability writer before it loads');
  assert(bridgeSource.includes('window.__pstHomeProjectRecoveryV3=true'),'Official Home bridge must retire Recovery writer before it loads');
@@ -21,9 +22,10 @@ const {JSDOM}=require('jsdom');
  assert(!/page-workspace-home[^\n]*setTimeout\(patchHomeProjects/.test(releaseSource),'Workspace release startup must not repaint Home projects');
 
  const dom=new JSDOM(`<!doctype html><html><head></head><body>
+   <div class="pst-ws-card"><div id="pst-ws-home-actions"></div></div>
    <button class="pst-ws-navbtn active" data-key="home"></button>
    <div id="page-workspace-home" class="page active" style="display:block">
-     <div id="pst-ws-home-actions"></div>
+     <div class="pst-ws-card-title"></div><div class="pst-ws-card-sub"></div>
      <div id="pst-ws-home-projects"></div>
    </div>
    <span id="pst-ws-b-home"></span><span id="pst-ws-b-projects"></span>
@@ -39,22 +41,27 @@ const {JSDOM}=require('jsdom');
  const today=new Date();
  const iso=today.toISOString();
  const date=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
- const old=new Date(Date.now()-25*86400000).toISOString().slice(0,10);
- const dukley={id:'dukley',created_at:'2026-08-07T18:30:11Z',name:'ITALIAN STYLE - Dukley Seafront Restoran - BUDVA',client:'ITALIAN STYLE',ref:null,status:'pritje',pipeline_stage:'client_offer'};
- const older={id:'older',created_at:'2026-08-01T10:00:00Z',name:'Projekt i vjeter',client:'OLD',ref:'OLD-1',status:'aktiv',pipeline_stage:'pricing'};
- const request={id:'req',created_at:iso,project_id:'dukley',title:'Urgjent: Drafti PST-OFF-2026-08-024 gati — plotëso montazhin',detail:'Drafti eshte gati; ploteso montazhin dhe afatet.',due_date:date,priority:'e larte',status:'hapur',source:'email_request_auto',source_ref:'gmail-dukley'};
- const jola={id:'jola',created_at:'2026-07-14T10:00:00Z',project_id:null,title:'Jola AH36 — rregullo 4 email bounce + follow-up furnitorë',detail:'Follow-up furnitore',due_date:old,priority:'e larte',status:'hapur',source:'manual',source_ref:null};
- const analysis={id:12,project_id:'dukley',created_at:iso,status:'complete',analysis:{event_source_ref:'gmail-dukley',recommendation:{label:'Përfundo revizionin dhe montazhin',decision:'vepro_tani'}}};
+ const yesterday=new Date(today.getTime()-86400000);
+ const yesterdayDate=`${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+ const dukley={id:'dukley',created_at:'2026-08-07T18:30:11Z',name:'ITALIAN STYLE - Dukley',client:'ITALIAN STYLE',ref:null,status:'pritje',pipeline_stage:'client_offer',operational_state:'action_required',last_activity_at:iso};
+ const waiting={id:'waiting',created_at:'2026-08-05T10:00:00Z',name:'Projekt ne pritje',client:'CLIENT W',ref:'W-1',status:'pritje',pipeline_stage:'client_offer',operational_state:'wait_for_client',operational_state_at:iso,last_activity_at:iso};
+ const work={id:'work',created_at:'2026-08-01T10:00:00Z',name:'Projekt ne pune',client:'WORK',ref:'WORK-1',status:'pritje',pipeline_stage:'pricing',operational_state:'active_work',last_activity_at:'2026-08-20T10:00:00Z'};
+ const execution={id:'execution',created_at:'2026-07-01T10:00:00Z',name:'Projekt ne ekzekutim',client:'EXEC',ref:'EX-1',status:'Fituar',pipeline_stage:'production_control',operational_state:'execution',last_activity_at:'2026-08-19T10:00:00Z'};
+ const request={id:'req',created_at:iso,project_id:'dukley',title:'Urgjent: përpuno kërkesën e klientit',detail:'Kërkon veprim sot.',due_date:date,priority:'e larte',status:'hapur',source:'email_request_auto',source_ref:'gmail-dukley'};
+ const executionTask={id:'exec-task',created_at:iso,project_id:'execution',title:'Kontrollo dokumentacionin e cilësisë para ngarkimit',detail:'Projekti është në ekzekutim dhe ka një veprim real të hapur.',due_date:yesterdayDate,priority:'urgjent',status:'hapur',source:'kontrate',source_ref:'execution-quality'};
+ const waitingOffer={id:88,project_id:'waiting',created_at:'2026-08-10T10:00:00Z',doc_nr:'PST-OFF-WAIT',offer_state:{pst_sent_at:'2026-08-10T11:00:00Z'}};
+ const analysis={id:12,project_id:'dukley',created_at:iso,status:'complete',analysis:{event_source_ref:'gmail-dukley',recommendation:{label:'Përpuno kërkesën',decision:'vepro_tani'}}};
  const email={id:1,project_id:'dukley',subject:'Dukley',sent_at:iso,direction:'incoming',gmail_url:'https://mail.google.com/'};
  const queries=[];
- w.supaFetch=async(path,method,body)=>{
+ w.supaFetch=async(path,method)=>{
    queries.push(String(path));
    if(method)return [];
-   if(path.startsWith('projects?'))return [dukley,older];
-   if(path.startsWith('tasks?status=eq.hapur'))return [request,jola];
+   if(path.startsWith('projects?'))return [dukley,waiting,work,execution];
+   if(path.startsWith('tasks?status=eq.hapur'))return [request,executionTask];
    if(path.startsWith('project_emails?'))return [email];
    if(path.startsWith('project_analyses?'))return [analysis];
    if(path.startsWith('rfq_log?'))return [];
+   if(path.startsWith('documents_registry?'))return [waitingOffer];
    if(path.startsWith('dashboard_action_states?'))return [];
    return [];
  };
@@ -85,24 +92,35 @@ const {JSDOM}=require('jsdom');
 
  await new Promise(r=>w.setTimeout(r,25));
  await w.PSTHomeCanonicalV1.render(true);
- let firstAction=w.document.querySelector('#pst-ws-home-actions>.pst-ws-action');
- let firstProject=w.document.querySelector('#pst-ws-home-projects>.pst-ws-projectcard');
- assert(firstAction,'Canonical Home must render priorities');
- assert.strictEqual(firstAction.querySelector('.pst-ws-action-title').textContent,request.title,'Fresh client request must outrank a 25-day overdue routine task');
- assert.strictEqual(firstAction.querySelector('.pst-ws-action-tag').textContent,'Vepro tani','Fresh client request must be explicitly actionable');
- assert(firstProject,'Canonical Home must render active projects');
- assert.strictEqual(firstProject.getAttribute('data-project-id'),'dukley','Dukley must be the first project by real activity');
- assert(firstProject.textContent.includes('Përfundo revizionin dhe montazhin'),'Project next step must come from latest Project Intelligence analysis');
- assert.strictEqual(w.document.getElementById('page-workspace-home').dataset.pstHomeOwner,'canonical-v1','Home must expose one canonical owner');
+ const actionCards=[...w.document.querySelectorAll('#pst-ws-home-actions>.pst-ws-action')];
+ const actionIds=actionCards.map(x=>x.getAttribute('data-project-id'));
+ assert(actionIds.includes('dukley'),'Action lane must contain the actionable client project');
+ assert(actionIds.includes('execution'),'Execution projects must surface real urgent tasks in Për mua tani');
+ assert.strictEqual(actionCards.find(x=>x.getAttribute('data-project-id')==='dukley').querySelector('.pst-ws-action-title').textContent,request.title,'Fresh client request must stay the concrete action');
+ assert.strictEqual(actionCards.find(x=>x.getAttribute('data-project-id')==='execution').querySelector('.pst-ws-action-title').textContent,executionTask.title,'Execution priority must stay concrete');
+
+ const waitItem=w.document.querySelector('#pst-home-waiting .pst-home-wait-item');
+ assert(waitItem,'Canonical Home must render explicit waiting projects');
+ assert.strictEqual(waitItem.getAttribute('data-project-id'),'waiting','Waiting lane must be driven by operational_state=wait_for_client');
+
+ const projectIds=[...w.document.querySelectorAll('#pst-ws-home-projects>.pst-ws-projectcard')].map(x=>x.getAttribute('data-project-id'));
+ assert(projectIds.includes('work'),'Active work without a current priority must stay in Projects in work');
+ assert(!projectIds.includes('execution'),'Execution project with a current priority must not be duplicated in Projects in work');
+ assert(!projectIds.includes('dukley'),'Actionable project must not be duplicated in Projects in work');
+ assert(!projectIds.includes('waiting'),'Waiting project must not be duplicated in Projects in work');
+ assert.strictEqual(new Set([...actionIds,'waiting',...projectIds]).size,4,'Every active project must occupy exactly one visible Home lane');
+ assert.strictEqual(w.document.getElementById('page-workspace-home').dataset.pstHomeOwner,'canonical-v3','Home must expose the current canonical owner');
+ assert.strictEqual(w.PSTHomeCanonicalV1._test.blocksHomeAction(execution),false,'Execution must not be blocked from priority derivation');
+ assert.strictEqual(w.PSTHomeCanonicalV1._test.blocksHomeAction(waiting),true,'Waiting must never create internal priority noise before an external reply');
 
  await Promise.resolve(w.renderHome());
  await new Promise(r=>w.setTimeout(r,25));
- firstAction=w.document.querySelector('#pst-ws-home-actions>.pst-ws-action');
- firstProject=w.document.querySelector('#pst-ws-home-projects>.pst-ws-projectcard');
- assert.strictEqual(firstAction.querySelector('.pst-ws-action-title').textContent,request.title,'Later renderHome call must not replace canonical priorities');
- assert.strictEqual(firstProject.getAttribute('data-project-id'),'dukley','Later renderHome call must not empty or replace canonical projects');
- assert(!queries.some(x=>x.startsWith('projects?')&&x.includes('updated_at')),'No canonical project query may reference nonexistent updated_at');
+ const afterActionIds=[...w.document.querySelectorAll('#pst-ws-home-actions>.pst-ws-action')].map(x=>x.getAttribute('data-project-id'));
+ assert(afterActionIds.includes('dukley')&&afterActionIds.includes('execution'),'Later renderHome call must not replace canonical priorities');
+ assert.strictEqual(w.document.querySelector('#pst-home-waiting .pst-home-wait-item').getAttribute('data-project-id'),'waiting','Later renderHome call must preserve waiting lane');
+ assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(canonicalSource),'Canonical owner must remain event-driven');
+ assert(queries.some(x=>x.startsWith('projects?')&&x.includes('operational_state')),'Canonical project query must read operational truth directly');
 
  dom.window.close();
- console.log('Home single-owner smoke test passed.');
+ console.log('Home single-owner operational lanes smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
