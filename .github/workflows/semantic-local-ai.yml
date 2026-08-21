@@ -32,9 +32,9 @@ jobs:
         run: python3 -m py_compile local-ai/pppp_semantic_worker.py
       - name: Check Edge Functions
         run: |
-          deno check supabase/functions/semantic-local-queue/index.ts
-          deno check supabase/functions/semantic-local-orchestrator/index.ts
-          deno check supabase/functions/project-semantic-brain/index.ts
+          deno check --node-modules-dir=auto supabase/functions/semantic-local-queue/index.ts
+          deno check --node-modules-dir=auto supabase/functions/semantic-local-orchestrator/index.ts
+          deno check --node-modules-dir=auto supabase/functions/project-semantic-brain/index.ts
       - name: Enforce local-only semantic provider
         run: |
           ! grep -R -E 'GOOGLE_SA_JSON|aiplatform.googleapis.com|generativelanguage.googleapis.com' \
