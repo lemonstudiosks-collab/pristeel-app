@@ -110,7 +110,7 @@ async function waitingRows(){
  var out=[];
  Object.keys(projects).forEach(function(id){
   var p=projects[id],es=A(emails[id]),sm=supplier[id]||{};
-  if(id===TC_BUTICO_ID){
+  if(id===TC_BUTICO_ID&&S(p.pipeline_stage)==='rfq_in'){
    var lastOut=es.filter(function(e){return N(e.direction)==='outgoing';})[0];
    if(lastOut)out.push({project_id:id,name:p.name,client:'linkut të ri nga Aleksandar',text:'Ridërgimi i dokumentacionit u kërkua '+date(lastOut.sent_at),activity:ms(lastOut.sent_at),kind:'document_resend'});
    return;
