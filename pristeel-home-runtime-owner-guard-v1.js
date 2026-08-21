@@ -293,8 +293,9 @@ function finalizeHome(){
   runtimeReady=true;
   if(releasePrimeTimer){clearTimeout(releasePrimeTimer);releasePrimeTimer=null;}
   clearLegacyLoginBlocker();installCompatApi();extendStartupDeadline();
+  installFinalRouter();
   if(finalizeTimer)clearTimeout(finalizeTimer);
-  finalizeTimer=setTimeout(function(){installFinalRouter();renderFinalHome();},120);
+  finalizeTimer=setTimeout(function(){renderFinalHome();},20);
   if(recoveryTimer)clearTimeout(recoveryTimer);
   recoveryTimer=setTimeout(function(){if(!visualReady)revealBestAvailable('modules-ready-timeout');},7000);
 }
