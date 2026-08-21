@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, sys, time, urllib.request, urllib.error
+import json, os, subprocess, sys, tempfile, time, urllib.request, urllib.error
 
 QUEUE=os.environ.get('PPPP_SEMANTIC_QUEUE_URL','https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/semantic-local-queue')
 KEY=os.environ.get('PPPP_SEMANTIC_WORKER_KEY','').strip()
@@ -7,12 +7,13 @@ LLAMA=os.environ.get('PPPP_LLAMA_URL','http://127.0.0.1:8080/v1/chat/completions
 MODEL=os.environ.get('PPPP_LOCAL_MODEL','Qwen3-1.7B-Q4_K_M')
 POLL=float(os.environ.get('PPPP_SEMANTIC_POLL_SECONDS','4'))
 SUPPORTED_PAYLOAD_VERSION=3
+CURL=os.environ.get('PPPP_CURL_BIN','/usr/bin/curl')
 
 if not KEY:
     print('PPPP_SEMANTIC_WORKER_KEY missing',file=sys.stderr)
     sys.exit(2)
 
-def request_json(url,payload,headers=None,timeout=180):
+def request_json(url,payload,headers=None,timeout=60):
     raw=json.dumps(payload,ensure_ascii=False).encode('utf-8')
     h={'Content-Type':'application/json'}
     if headers:h.update(headers)
@@ -25,6 +26,22 @@ def request_json(url,payload,headers=None,timeout=180):
         try:body=e.read().decode('utf-8','replace')[:1200]
         except Exception:pass
         raise RuntimeError('HTTP %s: %s'%(e.code,body or e.reason))
+
+def llama_json(payload,timeout):
+    raw=json.dumps(payload,ensure_ascii=False).encode('utf-8')
+    with tempfile.NamedTemporaryFile(prefix='pppp-llama-',suffix='.json',delete=True) as f:
+        f.write(raw);f.flush()
+        cmd=[CURL,'--silent','--show-error','--fail-with-body','--connect-timeout','5','--max-time',str(int(timeout)),'-H','Content-Type: application/json','--data-binary','@'+f.name,LLAMA]
+        try:
+            p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout+8,check=False)
+        except subprocess.TimeoutExpired:
+            raise TimeoutError('local llama hard timeout after %ss'%timeout)
+        body=p.stdout.decode('utf-8','replace')
+        err=p.stderr.decode('utf-8','replace').strip()
+        if p.returncode!=0:
+            raise RuntimeError('local llama curl %s: %s'%(p.returncode,(body or err)[:1400]))
+        try:return json.loads(body)
+        except Exception as e:raise RuntimeError('invalid llama JSON: %s; body=%s'%(e,body[:800]))
 
 def queue(payload):
     return request_json(QUEUE,payload,{'x-pppp-worker-key':KEY},60)
@@ -82,7 +99,7 @@ def analyze(job,tiny=False):
       ],
       'response_format':{'type':'json_schema','json_schema':{'name':'pppp_semantic_analysis','strict':True,'schema':schema}}
     }
-    out=request_json(LLAMA,body,timeout=(180 if tiny else 210))
+    out=llama_json(body,150 if tiny else 180)
     content=(((out.get('choices') or [{}])[0].get('message') or {}).get('content'))
     result=content if isinstance(content,dict) else json.loads(str(content or '').strip())
     return validate(result,p)
