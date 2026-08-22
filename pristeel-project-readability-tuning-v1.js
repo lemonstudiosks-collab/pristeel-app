@@ -52,5 +52,19 @@ s.textContent=`
 #page-workspace-project.pf2-on .pf2-time small{font-size:11.5px!important}
 `;
 document.head.appendChild(s);
+
+/* The ordered runtime already loads this tuning module. Use it as the single
+ * bridge to the platform-wide typography policy instead of adding another
+ * bootstrap owner. The policy is visual-only and applies to future DOM too. */
+(function loadPlatformReadability(){
+  if(window.__pstPlatformReadabilityV1||document.querySelector('script[data-pst-platform-readability]'))return;
+  var r=document.createElement('script');
+  r.src='pristeel-platform-readability-v1.js?v=20260822-standard1';
+  r.defer=true;
+  r.setAttribute('data-pst-platform-readability','1');
+  r.onerror=function(){console.error('Nuk u ngarkua standardi i lexueshmërisë së platformës.');};
+  document.head.appendChild(r);
+})();
+
 window.PSTProjectReadabilityTuningV1={styleId:s.id};
 })();
