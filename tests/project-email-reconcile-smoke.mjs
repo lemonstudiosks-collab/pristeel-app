@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
-import { loadIdentityTools,autoEligibleHit,trustedMethod,ownerMap,classifyEmail } from '../scripts/project-email-reconcile.mjs';
+import {
+  loadIdentityTools,autoEligibleHit,trustedMethod,ownerMap,classifyEmail,
+  normalizeContactEmail,isExternalContactEmail,deriveProjectContacts,mergeProjectContact,projectContactPatchChanged
+} from '../scripts/project-email-reconcile.mjs';
 
 const tools=await loadIdentityTools();
 const projects=[
@@ -71,4 +74,65 @@ assert.equal(d.reason,'system-mail');
 d=classifyEmail({id:7,gmail_thread_id:'t4',subject:'ANF-8910',snippet:'',match_method:'manual-ignored'},index,owners,tools,{allowThread:true});
 assert.equal(d.reason,'manual-ignored');
 
-console.log('Project email reconciliation safety smoke test passed.');
+assert.equal(normalizeContactEmail('Buyer <BUYER@Example.com>'),'buyer@example.com');
+assert.equal(isExternalContactEmail('oltian.vllahiu@prissteel.com'),false,'Any PRISTEEL mailbox must be excluded from project relationships');
+assert.equal(isExternalContactEmail('other@sub.prissteel.com'),false,'PRISTEEL subdomains must be excluded too');
+assert.equal(isExternalContactEmail('noreply@vendor.com'),false,'System no-reply addresses must be excluded');
+assert.equal(isExternalContactEmail('postmaster@vendor.com'),false,'Postmaster addresses must be excluded');
+assert.equal(isExternalContactEmail('buyer@vendor.com'),true);
+
+const contactEmails=[
+  {id:'e1',gmail_message_id:'m1',project_id:'p1',sent_at:'2026-08-01T10:00:00Z',from_email:'buyer@example.com',from_name:'Buyer From Gmail',to_emails:['sales@prissteel.com','supplier@example.com'],cc_emails:['cc@example.com','noreply@vendor.com']},
+  {id:'e2',gmail_message_id:'m2',project_id:'p1',sent_at:'2026-08-03T12:00:00Z',from_email:'arianit.vllahiu@prissteel.com',from_name:'Arianit',to_emails:['buyer@example.com'],cc_emails:['cc@example.com']},
+  {id:'e3',gmail_message_id:'m3',project_id:'p2',sent_at:'2026-08-02T08:00:00Z',from_email:'notifications@system.com',to_emails:['sales@prissteel.com'],cc_emails:[]},
+  {id:'e4',gmail_message_id:'m4',project_id:null,sent_at:'2026-08-04T08:00:00Z',from_email:'unlinked@example.com',to_emails:['sales@prissteel.com'],cc_emails:[]}
+];
+const globalContacts=[
+  {email:'buyer@example.com',person:'Christian Meyer',company:'RSB',role:'Buyer'},
+  {email:'supplier@example.com',person:'Supplier Person',company:'Supplier GmbH',role:'Sales'}
+];
+const derived=deriveProjectContacts(contactEmails,globalContacts);
+assert.equal(derived.length,3,'Only external people on linked project emails should become project contacts');
+assert(!derived.some(x=>x.email.endsWith('@prissteel.com')),'Internal PRISTEEL mailboxes leaked into project contacts');
+assert(!derived.some(x=>x.email==='notifications@system.com'),'System notification mailbox leaked into project contacts');
+assert(!derived.some(x=>x.email==='unlinked@example.com'),'Unlinked email participant leaked into project contacts');
+
+const buyer=derived.find(x=>x.email==='buyer@example.com');
+assert(buyer);
+assert.equal(buyer.project_id,'p1');
+assert.equal(buyer.name,'Christian Meyer','Canonical global contact identity must outrank sender display text');
+assert.equal(buyer.company,'RSB');
+assert.equal(buyer.role,'Buyer');
+assert.equal(buyer.email_count,2);
+assert.equal(buyer.direct_count,2);
+assert.equal(buyer.cc_count,0);
+assert.equal(buyer.first_seen,'2026-08-01T10:00:00.000Z');
+assert.equal(buyer.last_seen,'2026-08-03T12:00:00.000Z');
+assert.deepEqual(buyer.source_message_ids,['m1','m2']);
+
+const cc=derived.find(x=>x.email==='cc@example.com');
+assert(cc);
+assert.equal(cc.email_count,2);
+assert.equal(cc.direct_count,0);
+assert.equal(cc.cc_count,2);
+
+const manualExisting={id:'pc1',project_id:'p1',email:'buyer@example.com',name:'Manual Name',company:'Manual Co',role:'Decision maker',first_seen:'2026-07-01T00:00:00Z',last_seen:'2026-07-02T00:00:00Z',email_count:1,direct_count:1,cc_count:0,source_message_ids:['old'],is_primary:true,source:'manual',status:'vip'};
+const manualPatch=mergeProjectContact(manualExisting,buyer);
+assert.equal(manualPatch.name,'Manual Name');
+assert.equal(manualPatch.company,'Manual Co');
+assert.equal(manualPatch.role,'Decision maker');
+assert.equal(manualPatch.source,'manual');
+assert.equal(Object.hasOwn(manualPatch,'status'),false,'Manual status must not be overwritten');
+assert.equal(Object.hasOwn(manualPatch,'is_primary'),false,'Primary-contact choice must never be overwritten by email reconciliation');
+assert.equal(projectContactPatchChanged(manualExisting,manualPatch),true,'Changed email statistics must be detected');
+
+const autoExisting={...buyer,id:'pc2',name:'',company:'',role:'',source:'email-auto',status:'inactive',is_primary:false};
+const autoPatch=mergeProjectContact(autoExisting,buyer);
+assert.equal(autoPatch.name,'Christian Meyer');
+assert.equal(autoPatch.company,'RSB');
+assert.equal(autoPatch.role,'Buyer');
+assert.equal(autoPatch.source,'email-auto');
+assert.equal(autoPatch.status,'active');
+assert.equal(projectContactPatchChanged({...autoExisting,...autoPatch},autoPatch),false,'An already synchronized row must not generate another write');
+
+console.log('Project email and project contact reconciliation safety smoke test passed.');
