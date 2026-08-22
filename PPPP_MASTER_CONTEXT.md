@@ -44,11 +44,32 @@ Key current ownership:
 - **Home data owner:** `pristeel-home-canonical-v1.js`
 - **Home startup owner:** `pristeel-home-runtime-owner-guard-v1.js`
 - **Projects list:** `pristeel-projects-modern-v1.js` + lifecycle tracking
-- **Project workspace:** `pristeel-project-first-v2.js` and its current project-first extensions
+- **Project workspace data/tool owners:** `pristeel-project-first-v2.js` and its current project-first extensions
+- **Final Project Workspace UI reconciler:** `pristeel-project-workflow-canonical-v1.js`
+- **Legacy project ribbon compatibility bridge:** `pristeel-project-workflow-legacy-capture-v1.js`
 - **Commercial comparison:** `pristeel-project-first-commercial-v1.js`
 - **Gmail inbox:** live inbox + triage + follow-up layers in manifest
 - **Tenders:** current tender business-flow layers in manifest
 - **Contact Master:** `pristeel-contact-master-v1.js`, loaded by the final Workspace shell cleanup layer
+
+The canonical Project Workspace now keeps one active project context with six top-level areas:
+
+`Përmbledhja | Prokurimi | Ekzekutimi | Financat | Skedarët | Komunikimi`
+
+Inside `Prokurimi`, the canonical sequence is:
+
+`BOM -> RFQ -> Ofertat e furnitorëve -> Krahasimi i ofertave -> Çmimi i shitjes -> Oferta për klientin`
+
+Important project-workflow rules:
+
+- Every procurement stage is independently clickable.
+- A stage status describes what data/state exists; it must not block navigation.
+- Empty stages render an explicit explanation and next action instead of a blank page.
+- Existing BOM, RFQ, normalized comparison, pricing calculator and client-offer engines are reused rather than duplicated.
+- Where an older editor remains necessary, the canonical workflow opens it through a project-context bridge and returns the user to the same project.
+- The old horizontal ribbon is compatibility-only and is captured back into the canonical flow instead of opening disconnected routes.
+- The canonical workflow and legacy capture layers are UI-only: no business-data writes and no outbound actions.
+- Final sell price, client offer and external send remain human-gated.
 
 Do not infer authority from filenames alone. Later layers may intentionally wrap or constrain earlier ones.
 
@@ -202,7 +223,7 @@ Integration policy is also recorded in `public.pppp_platform_integrations`.
 
 ## 12. Current regression projects
 
-These projects are the minimum regression set for event automation.
+These projects are the minimum regression set for event automation and project-workflow continuity.
 
 ### Dukley Seafront Restaurant, Budva
 - Project id: `6e0d2d19-3a51-4079-882f-b73f81cbe95e`
@@ -210,19 +231,21 @@ These projects are the minimum regression set for event automation.
 - Latest offer: `PST-OFF-2026-08-025`
 - Execution commitment recorded: **10.10.2026**
 - Old `Aprovo planin dinamik` work is obsolete and must not return while the newer sent offer remains the current event.
+- Project workflow must distinguish supplier offers, supplier comparison, selling price and the client offer without losing Dukley project context.
 
 ### ITALIAN STYLE - Hala - CARINVEST
 - Project id: `655c4ce3-9845-4c15-8ecc-0306d9f1aa50`
 - Eurosteel supplier response is linked.
 - Current intended action: **Përgatit ofertën PRISTEEL**.
 - Supplier response should automatically make the project actionable.
+- Commercial workflow must retain Eurosteel cost basis and review flags while keeping selling price/final offer human-approved.
 
 ### TenneT / SPIE
 - Project id: `c937aea1-af5e-4807-ae1e-e36864e46794`
 - Offer deadline: **21.08.2026**
 - Current intended action: close concrete technical issues before final offer, not a vague generic `process request` instruction.
 
-Any future Home/event-engine change should be checked against all three.
+Any future Home/event-engine or Project Workspace change should be checked against all three.
 
 ## 13. Continuity registry
 
@@ -266,4 +289,4 @@ Read `PPPP_DO_NOT_BREAK.md` and `public.pppp_platform_protected_rules` before re
 
 The core rule is simple: **improve the verified current system; do not restart PPPP from zero.**
 
-Last major runtime change recorded here: Home event engine + automation-first navigation + Contact Master, 19.08.2026.
+Last major runtime change recorded here: canonical end-to-end Project Workspace workflow with six project areas and six procurement stages, 22.08.2026.
