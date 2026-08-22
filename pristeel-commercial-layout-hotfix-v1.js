@@ -1,7 +1,7 @@
 /* PRISTEEL commercial layout hotfix v1
  * Visual-only fix for the normalized supplier comparison.
  * Loaded after the canonical commercial module so source CSS cannot override it.
- * No data access, calculations, polling, routing or business logic.
+ * No data access, calculations, polling or business-data writes.
  */
 (function(){
 'use strict';
@@ -112,5 +112,18 @@ s.textContent=`
 }
 `;
 document.head.appendChild(s);
+
+/* Ordered bridge: this module already runs after Project-First commercial/actions.
+ * Load one continuity wrapper over the existing routers, rather than adding a parallel router. */
+(function loadWorkflowContinuity(){
+  if(window.PSTProjectWorkflowNavigationV1||document.querySelector('script[data-pst-project-workflow-navigation]'))return;
+  var q=document.createElement('script');
+  q.src='pristeel-project-workflow-navigation-v1.js?v=20260822-nav1';
+  q.defer=true;
+  q.setAttribute('data-pst-project-workflow-navigation','1');
+  q.onerror=function(){console.error('Nuk u ngarkua vazhdimësia e navigimit të projektit.');};
+  document.head.appendChild(q);
+})();
+
 window.PSTCommercialLayoutHotfixV1={styleId:s.id};
 })();
