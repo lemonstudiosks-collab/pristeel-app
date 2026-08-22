@@ -68,25 +68,63 @@ function css(){
 .pst-eoi-modal footer button{font-size:14px!important;min-height:38px!important}
 
 /* Commercial margin + normalized supplier comparison.
-   This area is intentionally one step larger because it carries dense pricing data. */
+   Dense data is allowed to wrap so typography can remain readable without
+   pushing the entire commercial workspace off-screen. */
 .pf2-decision>div:first-child b,.pf2-margin-title b{font-size:15px!important}
 .pf2-decision>div:first-child span,.pf2-margin-title span{font-size:12.5px!important;line-height:1.4!important;padding:4px 8px!important}
 .pf2-decision>p,.pf2-margin>p{font-size:13.5px!important;line-height:1.55!important}
 .pf2-decision-grid b{font-size:14px!important}.pf2-decision-grid strong{font-size:17px!important}.pf2-decision-grid small{font-size:13px!important}
 .pf2-margin-grid span,.pf2-margin-grid small{font-size:13px!important;line-height:1.45!important}.pf2-margin-grid b{font-size:18px!important;line-height:1.3!important}
-.pf2-compare{font-size:14px!important}
-.pf2-compare th{font-size:13px!important;padding:12px 11px!important;line-height:1.4!important}
-.pf2-compare td{font-size:14px!important;padding:13px 11px!important;line-height:1.48!important}
+
+.pf2-compare-wrap{width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important}
+.pf2-compare{width:100%!important;min-width:1480px!important;table-layout:fixed!important;font-size:14px!important}
+.pf2-compare th{font-size:13px!important;padding:12px 9px!important;line-height:1.4!important;white-space:normal!important;overflow-wrap:anywhere!important;vertical-align:bottom!important}
+.pf2-compare td{font-size:14px!important;padding:13px 9px!important;line-height:1.48!important;white-space:normal!important;overflow-wrap:anywhere!important;vertical-align:middle!important}
+.pf2-compare th:nth-child(1),.pf2-compare td:nth-child(1){width:12%!important}
+.pf2-compare th:nth-child(2),.pf2-compare td:nth-child(2){width:9%!important}
+.pf2-compare th:nth-child(3),.pf2-compare td:nth-child(3){width:7%!important}
+.pf2-compare th:nth-child(4),.pf2-compare td:nth-child(4){width:8%!important}
+.pf2-compare th:nth-child(5),.pf2-compare td:nth-child(5){width:8%!important}
+.pf2-compare th:nth-child(6),.pf2-compare td:nth-child(6){width:7%!important}
+.pf2-compare th:nth-child(7),.pf2-compare td:nth-child(7){width:12%!important}
+.pf2-compare th:nth-child(8),.pf2-compare td:nth-child(8){width:7%!important}
+.pf2-compare th:nth-child(9),.pf2-compare td:nth-child(9){width:8%!important}
+.pf2-compare th:nth-child(10),.pf2-compare td:nth-child(10){width:6%!important}
+.pf2-compare th:nth-child(11),.pf2-compare td:nth-child(11){width:6%!important}
+.pf2-compare th:nth-child(12),.pf2-compare td:nth-child(12){width:7%!important}
+.pf2-compare th:nth-child(13),.pf2-compare td:nth-child(13){width:7%!important}
+.pf2-compare th:nth-child(14),.pf2-compare td:nth-child(14){width:6%!important}
 .pf2-compare td span{font-size:12.5px!important;line-height:1.4!important;padding:4px 7px!important}
 .pf2-compare td em{font-size:13px!important;line-height:1.45!important}
 .pf2-detail-btn{font-size:13px!important;line-height:1.35!important;padding:6px 10px!important}
-.pf2-break-row,.pf2-break-total{padding:12px 13px!important}
+
+/* The source breakdown used a two-column layout that clipped the terms panel.
+   Keep the financial breakdown full-width and place terms underneath it. */
+.pf2-break{grid-template-columns:minmax(0,1fr)!important;gap:12px!important;padding:16px!important}
+.pf2-break-list,.pf2-break-terms{min-width:0!important;width:100%!important;max-width:100%!important}
+.pf2-break-row,.pf2-break-total{grid-template-columns:minmax(260px,1.55fr) minmax(230px,1fr) minmax(150px,.55fr)!important;padding:12px 13px!important}
 .pf2-break-row span{font-size:13.5px!important;line-height:1.5!important}
 .pf2-break-row b{font-size:13.5px!important;line-height:1.5!important}
 .pf2-break-row strong,.pf2-break-total strong{font-size:14.5px!important}
 .pf2-break-total span{font-size:13.5px!important}
 .pf2-break-terms p{font-size:13.5px!important;line-height:1.65!important}
 .pf2-empty{font-size:13.5px!important;line-height:1.5!important}
+
+/* On wide desktop screens there is enough room for a small extra lift. */
+@media(min-width:1600px){
+  .pf2-compare{font-size:14.5px!important}
+  .pf2-compare td{font-size:14.5px!important;padding-top:14px!important;padding-bottom:14px!important}
+  .pf2-break-row span,.pf2-break-row b,.pf2-break-total span,.pf2-break-terms p{font-size:14px!important}
+  .pf2-break-row strong,.pf2-break-total strong{font-size:15px!important}
+}
+@media(max-width:1200px){
+  .pf2-compare{min-width:1380px!important}
+  .pf2-break-row,.pf2-break-total{grid-template-columns:minmax(220px,1.4fr) minmax(200px,1fr) minmax(130px,.55fr)!important}
+}
+@media(max-width:760px){
+  .pf2-break-row,.pf2-break-total{grid-template-columns:1fr!important;gap:4px!important}
+  .pf2-break-row strong,.pf2-break-total strong{text-align:left!important}
+}
 
 /* Collapsed utility rail stays compact, but legible. */
 .rail-lbl{font-size:11px!important;line-height:1.1!important}
