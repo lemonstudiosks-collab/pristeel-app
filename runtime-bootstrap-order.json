@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 144,
-  "sequenceSha256": "32c93143db6af22c66502ec1300fac96e1dbf716286ddc953fa0832572e7aa70",
+  "sequenceSha256": "b85f1c02a47d3488cabc210475cfd7b32078eceb33ba960bdb2dd098e5cffe7a",
   "files": [
     "pristeel-auth-persistence.js?v=20260812-remember1",
     "pristeel-login-brand-v1.js?v=20260812-readable1",
@@ -147,7 +147,7 @@
     "pristeel-kek-tender-watch-v1.js?v=20260812-1",
     "pristeel-project-lifecycle-tracking-v1.js?v=20260815-1",
     "pristeel-project-intelligence-resilience-v1.js?v=20260815-1",
-    "pristeel-project-workflow-canonical-v1.js?v=20260822-flow1",
-    "pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow1"
+    "pristeel-project-workflow-canonical-v1.js?v=20260822-flow2",
+    "pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2"
   ]
 }
