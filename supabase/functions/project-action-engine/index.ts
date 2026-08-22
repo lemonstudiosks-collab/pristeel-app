@@ -13,6 +13,7 @@ function extractPositions(raw:string){const m=raw.match(/\bPOS\s*([0-9,;\s]{5,10
 function extractMass(raw:string){const m=raw.match(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?)\s*kg\b/i);return m?m[1].replace(/\s/g,""):"";}
 function parseLocalized(raw:any){let s=text(raw).replace(/\s/g,"");if(!s)return 0;if(s.includes(",")){s=s.replace(/\./g,"").replace(",",".");}else if((s.match(/\./g)||[]).length>1)s=s.replace(/\./g,"");const n=Number(s);return Number.isFinite(n)?n:0;}
 function round2(v:any){return Math.round((Number(v)||0)*100+Number.EPSILON)/100;}
+function errorText(e:any){if(e instanceof Error)return e.message;try{return JSON.stringify(e);}catch{return String(e);}}
 
 function extractRequest(row:any){
   if(String(row.direction||"").toLowerCase()!=="incoming")return null;
@@ -66,8 +67,12 @@ function taskDetail(row:any,r:any,quote:any){const lines=["Kërkesa e emailit (n
 async function ensureTask(row:any,project:any,r:any,quote:any){
   const due=new Date();if(!r.urgent)due.setUTCDate(due.getUTCDate()+1);
   const patch={project_id:project.id,title:taskTitle(project,r,quote),detail:taskDetail(row,r,quote),due_date:due.toISOString().slice(0,10),priority:r.urgent?"e larte":"mesatare",contact_email:row.from_email||null,category:"klient"};
-  const {data}=await db.from("tasks").select("id,status").eq("source","email_request_auto").eq("source_ref",row.gmail_message_id).limit(1);
-  if(data?.length){const {error}=await db.from("tasks").update(patch).eq("id",data[0].id);if(error)throw error;return{action:"updated",id:data[0].id};}
+  const {data,error:lookupError}=await db.from("tasks").select("id,status,source,project_id,title,category,priority").eq("source_ref",row.gmail_message_id).in("source",["email_request_auto","supplier_update_auto"]).order("created_at",{ascending:false}).limit(1);if(lookupError)throw lookupError;
+  if(data?.length){
+    const existing=data[0];
+    const updatePatch=existing.source==="supplier_update_auto"?{...patch,title:existing.title||patch.title,category:existing.category||"furnitor",priority:r.urgent?"e larte":(existing.priority||"e larte")} : patch;
+    const {error}=await db.from("tasks").update(updatePatch).eq("id",existing.id);if(error)throw error;return{action:"updated",id:existing.id};
+  }
   const {data:created,error}=await db.from("tasks").insert({...patch,status:"hapur",source:"email_request_auto",source_ref:row.gmail_message_id}).select("id").single();if(error)throw error;return{action:"created",id:created?.id};
 }
 
@@ -113,5 +118,5 @@ async function reconcile(days=3,limit=500){
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   if(!(await authorized(req)))return new Response(JSON.stringify({ok:false,error:"unauthorized"}),{status:401,headers:{...cors,"Content-Type":"application/json"}});
-  try{const url=new URL(req.url);let payload:any={};if(req.method==="POST")try{payload=await req.json();}catch{}const days=Number(url.searchParams.get("days")??payload.days??3),limit=Number(url.searchParams.get("limit")??payload.limit??500);const res=await reconcile(days,limit);return new Response(JSON.stringify({ok:true,...res}),{headers:{...cors,"Content-Type":"application/json"}});}catch(e){console.error(e);return new Response(JSON.stringify({ok:false,error:String(e)}),{status:500,headers:{...cors,"Content-Type":"application/json"}});}
+  try{const url=new URL(req.url);let payload:any={};if(req.method==="POST")try{payload=await req.json();}catch{}const days=Number(url.searchParams.get("days")??payload.days??3),limit=Number(url.searchParams.get("limit")??payload.limit??500);const res=await reconcile(days,limit);return new Response(JSON.stringify({ok:true,...res}),{headers:{...cors,"Content-Type":"application/json"}});}catch(e){const msg=errorText(e);console.error("project-action-engine error",e);return new Response(JSON.stringify({ok:false,error:msg}),{status:500,headers:{...cors,"Content-Type":"application/json"}});}
 });
