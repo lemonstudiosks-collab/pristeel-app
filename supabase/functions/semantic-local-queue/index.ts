@@ -11,9 +11,11 @@ async function worker(req:Request){const key=req.headers.get('x-pppp-worker-key'
 function reply(body:any,status=200){return new Response(JSON.stringify(body),{status,headers:H})}
 function compactForMonterey(p:any){
   const ctx=p?.context||{};
+  const latest=p?.meta?.latest_incoming||null;
+  const meta={latest_incoming:latest?{gmail_message_id:latest.gmail_message_id,subject:T(latest.subject).slice(0,240),snippet:T(latest.snippet).slice(0,700),sent_at:latest.sent_at,from_email:latest.from_email,sender_role:latest.sender_role}:null};
   const sources=A(p?.sources).slice(0,5).map((s:any)=>({id:s?.id,type:s?.type,label:T(s?.label).slice(0,120),date:s?.date,text:T(s?.text).slice(0,520),meta:s?.meta}));
   const candidates=A(p?.supplier_candidates).slice(0,7).map((s:any)=>({name:s?.name,business_type:s?.business_type,categories:s?.categories,grades:s?.grades,class_approval:s?.class_approval,deterministic_score:s?.deterministic_score,contacts:A(s?.contacts).slice(0,1).map((c:any)=>({full_name:c?.full_name,email:c?.email,language:c?.language,is_primary:c?.is_primary}))}));
-  return {worker_payload_version:3,server_semantic_version:4,system:p?.system,response_schema:p?.response_schema,trigger:p?.trigger,guard:p?.guard,bom:p?.bom,deterministic:p?.deterministic,supplier_candidates:candidates,meta:p?.meta,context:{project:ctx?.project,current_rfqs:A(ctx?.current_rfqs).slice(0,5),supplier_offers:A(ctx?.supplier_offers).slice(0,3)},sources};
+  return {worker_payload_version:3,server_semantic_version:4,system:p?.system,response_schema:p?.response_schema,trigger:p?.trigger,guard:p?.guard,bom:p?.bom,deterministic:p?.deterministic,supplier_candidates:candidates,meta,context:{project:ctx?.project,current_rfqs:A(ctx?.current_rfqs).slice(0,5),supplier_offers:A(ctx?.supplier_offers).slice(0,3)},sources};
 }
 
 Deno.serve(async req=>{
