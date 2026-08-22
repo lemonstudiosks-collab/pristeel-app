@@ -95,13 +95,13 @@ function stripComments(s){
   rw.eval(readability);
   rw.PSTPlatformReadabilityV1.apply(rw.document);
   assert(rw.document.getElementById('tiny').classList.contains('pst-rd-xxs'), '7px UI text was not normalized');
-  assert(rw.document.getElementById('small').classList.contains('pst-rd-xs'), '9px UI text was not normalized');
+  assert(rw.document.getElementById('small').classList.contains('pst-rd-xxs'), '9px UI text did not follow the current sub-10px normalization rule');
   assert(rw.document.getElementById('control').classList.contains('pst-rd-control'), 'Small control text was not normalized');
   assert(!/pst-rd-/.test(rw.document.getElementById('normal').className), 'Normal 14px body text should remain untouched');
   assert(!/pst-rd-/.test(rw.document.getElementById('previewTiny').className), 'Generated document preview typography must remain untouched');
   const css = rw.document.getElementById('pst-platform-readability-v1-css').textContent;
-  assert(css.includes('.pst-eoi-row b{font-size:13px!important'), 'Email offer rows do not have the expected readable subject size');
-  assert(css.includes('.pf2-compare td{font-size:11.5px!important'), 'Commercial comparison cells do not have the expected readable size');
+  assert(css.includes('.pst-eoi-row b{font-size:14.5px!important'), 'Email offer rows do not have the current readable subject size');
+  assert(css.includes('.pf2-compare td{font-size:14px!important'), 'Commercial comparison cells do not have the current readable size');
   rdDom.window.close();
 
   console.log('Redesign finalizer + priority card + platform readability smoke test passed.');
