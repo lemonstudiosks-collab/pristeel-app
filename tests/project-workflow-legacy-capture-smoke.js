@@ -9,13 +9,16 @@ const {JSDOM}=require('jsdom');
   assert(!/supaFetch\s*\(/.test(source),'Legacy workflow capture must remain UI-only');
 
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
-    <div id="page-workspace-project" class="page active" data-pwf-area="overview">
-      <div id="pst-pi-body"><div class="pwf-project-context"></div><div class="pf2-grid"><section class="pf2-card wide">Workflow</section></div></div>
+    <div id="legacy-global-strip">
+      <span>ADMINISTRATOR</span><span>34° Kthjellët</span><span>Dukley</span>
+      <button id="close">Mbyll projektin</button><button id="save">Ruaj</button><button id="new">Projekt i ri</button><button id="export">Eksporto</button>
     </div>
-    <button id="offers" class="flow-step" onclick="flowGoto('offers')">Ofertat</button>
-    <button id="ranking" class="flow-step" onclick="flowGoto('ranking')">Krahasimi</button>
-    <button id="pricing" class="flow-step" onclick="flowGoto('kalkulator')">Çmimi</button>
-    <button id="client" class="flow-step" onclick="flowGoto('oferta')">Oferta jonë</button>
+    <div id="legacy-ribbon"><button id="bom" class="flow-step" onclick="flowGoto('bom')">BOM</button><button id="offers" class="flow-step" onclick="flowGoto('offers')">Ofertat</button><button id="ranking" class="flow-step" onclick="flowGoto('ranking')">Krahasimi</button><button id="pricing" class="flow-step" onclick="flowGoto('kalkulator')">Çmimi</button><button id="client" class="flow-step" onclick="flowGoto('oferta')">Oferta jonë</button></div>
+    <div id="page-workspace-project" class="page active" data-pwf-area="overview">
+      <div class="pst-pi-head"><div class="pst-pi-actions"><button class="pst-pi-btn">Projektet</button><button class="pst-pi-btn">Pamja e vjetër</button><button class="pst-pi-btn">Rifresko</button><button class="pst-pi-btn">Puno me projektin</button></div></div>
+      <div id="pst-pi-body"><div class="pwf-project-context"></div><div class="pf2-grid"><section id="workflow-card" class="pf2-card"><header><b>Workflow</b></header><div>Project-first</div></section></div></div>
+      <table><tbody><tr><td><button id="sector-detail" data-pf2-offer-detail="1">Detaje</button></td></tr><tr id="sector-row" class="pf2-detail-row" data-pf2-offer-detail-row="1" hidden><td>Sector Construction breakdown</td></tr></tbody></table>
+    </div>
   </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
   w.__pstCurrentProjectId='p1';
@@ -25,6 +28,9 @@ const {JSDOM}=require('jsdom');
   w.PSTCanonicalProjectWorkflowV1={render:(area,stage)=>{calls.push([area,stage]);return true;}};
   w.pstOpenProjectWorkspace=async()=>true;
   w.flowGoto=()=>{throw new Error('legacy flowGoto must not win');};
+  w.pstWorkspaceGo=(key)=>calls.push(['workspace',key]);
+  w.pstPiOld=()=>calls.push(['legacy','old']);
+  w.HTMLElement.prototype.scrollIntoView=function(){};
 
   w.eval(source);
   const api=w.PSTProjectWorkflowLegacyCaptureV1;
@@ -34,28 +40,42 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(JSON.stringify(api.destination('kalkulator')),JSON.stringify(['procurement','pricing']));
   assert.strictEqual(JSON.stringify(api.destination('oferta')),JSON.stringify(['procurement','client_offer']));
 
-  /* Repeated install attempts must never stack capture listeners. */
   api.install();
   api.install();
+  api.clean();
 
-  ['offers','ranking','pricing','client'].forEach(id=>{
-    const btn=w.document.getElementById(id);
-    btn.removeAttribute('onclick');
-  });
+  assert(w.document.getElementById('legacy-global-strip').classList.contains('pwf-global-project-strip'),'Redundant global project strip must be marked for hiding');
+  assert(w.document.getElementById('legacy-ribbon').classList.contains('pwf-legacy-ribbon'),'Old project ribbon must be marked for hiding');
+  assert(w.document.getElementById('workflow-card').classList.contains('pwf-duplicate-workflow-card'),'Duplicate workflow card must be removed from canonical overview');
+  assert.strictEqual(w.document.querySelectorAll('.pwf-header-clean-actions').length,1,'Canonical project header actions must be injected once');
+  assert([...w.document.querySelectorAll('.pst-pi-actions>.pst-pi-btn')].every(x=>x.classList.contains('pwf-header-old-action')),'Legacy project header actions must be hidden');
+
+  ['bom','offers','ranking','pricing','client'].forEach(id=>w.document.getElementById(id).removeAttribute('onclick'));
   w.document.getElementById('offers').click();
   w.document.getElementById('ranking').click();
   w.document.getElementById('pricing').click();
   w.document.getElementById('client').click();
-
-  assert.strictEqual(JSON.stringify(calls),JSON.stringify([
+  assert.deepStrictEqual(calls.slice(0,4),[
     ['procurement','offers'],
     ['procurement','comparison'],
     ['procurement','pricing'],
     ['procurement','client_offer']
-  ]),'Old ribbon stages must land exactly once in the canonical project flow');
+  ],'Old ribbon stages must land exactly once in the canonical project flow');
+
+  const beforeDetailCalls=calls.length;
+  const detail=w.document.getElementById('sector-detail'),row=w.document.getElementById('sector-row');
+  detail.click();
+  assert.strictEqual(row.hidden,false,'Supplier Detaje must expand the inline breakdown');
+  assert.strictEqual(detail.textContent,'Mbyll','Detail button must reflect expanded state');
+  assert.strictEqual(detail.getAttribute('aria-expanded'),'true');
+  assert.strictEqual(calls.length,beforeDetailCalls,'Supplier Detaje must not navigate or rerender the project');
+  detail.click();
+  assert.strictEqual(row.hidden,true,'Supplier detail must close inline');
+  assert.strictEqual(detail.textContent,'Detaje');
 
   const css=w.document.getElementById('pwf-legacy-capture-css');
-  assert(css&&css.textContent.includes('data-pwf-area="overview"'),'Overview duplicate-workflow cleanup CSS must be installed');
+  assert(css&&css.textContent.includes('pwf-global-project-strip'),'Project chrome cleanup CSS must be installed');
+  assert(css.textContent.includes('pwf-legacy-ribbon'),'Legacy ribbon cleanup CSS must be installed');
   dom.window.close();
-  console.log('Canonical legacy workflow capture smoke test passed.');
+  console.log('Canonical legacy workflow + project chrome smoke test passed.');
 })();
