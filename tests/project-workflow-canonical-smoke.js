@@ -85,7 +85,10 @@ const {JSDOM}=require('jsdom');
 
   w.PSTCanonicalProjectWorkflowV1.render('procurement','offers');
   assert(w.document.getElementById('pst-pi-body').textContent.includes('Ende nuk ka oferta të furnitorëve'),'Supplier-offer stage must have a meaningful empty state');
-  assert(!w.document.getElementById('pst-pi-body').textContent.includes('Ofertat tona'),'Supplier-offer stage must not mix the client-offer list into the same focus');
+  const clientOfferCard=[...w.document.querySelectorAll('.pf2-card')].find(c=>{
+    const b=c.querySelector('header b');return b&&b.textContent.trim()==='Ofertat tona';
+  });
+  assert(clientOfferCard&&clientOfferCard.classList.contains('pwf-hidden'),'Supplier-offer stage must visually exclude the client-offer list from the same focus');
 
   integrity.rfqs=[{id:'r1',supplier_name:'Eurosteel',status:'sent'}];
   integrity.supplierOffers=[
