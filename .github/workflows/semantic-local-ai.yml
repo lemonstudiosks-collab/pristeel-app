@@ -42,8 +42,17 @@ jobs:
             supabase/functions/semantic-local-orchestrator/index.ts
           grep -q "SUPPORTED_PAYLOAD_VERSION=3" local-ai/pppp_semantic_worker.py
           grep -q "worker_payload_version:VERSION" supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "server_semantic_version=4\|server_semantic_version.*4" supabase/functions/semantic-local-queue/index.ts
           grep -q "semantic_worker_authorize" supabase/functions/semantic-local-queue/index.ts
           grep -q "status.*410" supabase/functions/project-semantic-brain/index.ts
+      - name: Enforce semantic feedback-loop guard
+        run: |
+          grep -q "function externalRfqs" supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "function stableFingerprint" supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "PPPP_LOCAL_SEMANTIC_V" supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "semantic_ai_deterministic_routing_guard" supabase/migrations/20260822053500_semantic_ai_deterministic_routing_guard.sql
+          grep -q "required_grades.*deterministic" supabase/migrations/20260822053500_semantic_ai_deterministic_routing_guard.sql
+          grep -q "required_capabilities.*deterministic" supabase/migrations/20260822053500_semantic_ai_deterministic_routing_guard.sql
       - name: Enforce RFQ human gate
         run: |
           grep -q "draft_review" pristeel-semantic-rfq-drafts-v1.js
