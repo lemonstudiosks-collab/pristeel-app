@@ -6,7 +6,7 @@ KEY=os.environ.get('PPPP_SEMANTIC_WORKER_KEY','').strip()
 LLAMA=os.environ.get('PPPP_LLAMA_URL','http://127.0.0.1:8080/v1/chat/completions')
 MODEL=os.environ.get('PPPP_LOCAL_MODEL','Qwen3-1.7B-Q4_K_M')
 POLL=float(os.environ.get('PPPP_SEMANTIC_POLL_SECONDS','4'))
-SUPPORTED_PAYLOAD_VERSION=4
+SUPPORTED_PAYLOAD_VERSION=3
 CURL=os.environ.get('PPPP_CURL_BIN','/usr/bin/curl')
 
 if not KEY:
