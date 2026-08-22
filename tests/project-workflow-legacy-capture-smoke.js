@@ -29,10 +29,10 @@ const {JSDOM}=require('jsdom');
   w.eval(source);
   const api=w.PSTProjectWorkflowLegacyCaptureV1;
   assert(api,'Legacy capture API must be installed');
-  assert.deepStrictEqual(api.destination('offers'),['procurement','offers']);
-  assert.deepStrictEqual(api.destination('ranking'),['procurement','comparison']);
-  assert.deepStrictEqual(api.destination('kalkulator'),['procurement','pricing']);
-  assert.deepStrictEqual(api.destination('oferta'),['procurement','client_offer']);
+  assert.strictEqual(JSON.stringify(api.destination('offers')),JSON.stringify(['procurement','offers']));
+  assert.strictEqual(JSON.stringify(api.destination('ranking')),JSON.stringify(['procurement','comparison']));
+  assert.strictEqual(JSON.stringify(api.destination('kalkulator')),JSON.stringify(['procurement','pricing']));
+  assert.strictEqual(JSON.stringify(api.destination('oferta')),JSON.stringify(['procurement','client_offer']));
 
   ['offers','ranking','pricing','client'].forEach(id=>{
     const btn=w.document.getElementById(id);
@@ -43,12 +43,12 @@ const {JSDOM}=require('jsdom');
   w.document.getElementById('pricing').click();
   w.document.getElementById('client').click();
 
-  assert.deepStrictEqual(calls,[
+  assert.strictEqual(JSON.stringify(calls),JSON.stringify([
     ['procurement','offers'],
     ['procurement','comparison'],
     ['procurement','pricing'],
     ['procurement','client_offer']
-  ],'Old ribbon stages must land in the canonical project flow');
+  ]),'Old ribbon stages must land in the canonical project flow');
 
   const css=w.document.getElementById('pwf-legacy-capture-css');
   assert(css&&css.textContent.includes('data-pwf-area="overview"'),'Overview duplicate-workflow cleanup CSS must be installed');
