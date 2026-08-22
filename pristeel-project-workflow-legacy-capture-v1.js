@@ -7,6 +7,7 @@
 'use strict';
 if(window.__pstProjectWorkflowLegacyCaptureV1)return;
 window.__pstProjectWorkflowLegacyCaptureV1=true;
+var installed=false;
 
 function C(){return window.PSTCanonicalProjectWorkflowV1||null;}
 function projectId(){
@@ -76,9 +77,11 @@ function css(){
   document.head.appendChild(s);
 }
 function install(){
+  if(installed)return true;
   if(!C())return false;
   css();
   window.addEventListener('click',capture,true);
+  installed=true;
   return true;
 }
 if(!install()){
