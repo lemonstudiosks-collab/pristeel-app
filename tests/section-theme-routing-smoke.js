@@ -16,7 +16,10 @@ const {JSDOM}=require('jsdom');
       <button class="pst-ws-navbtn" data-key="finance">Financa</button>
       <button class="pst-ws-navbtn" data-key="apps">Modulet</button>
     </aside>
-    <main class="content"><section id="page-workspace-home" class="active"></section></main>
+    <main class="content">
+      <section id="page-workspace-home" class="active"></section>
+      <section id="page-workspace-apps"></section>
+    </main>
   </body></html>`,{runScripts:'outside-only',url:'https://pppp.example/'});
   const w=dom.window;
   w.eval(source);
@@ -36,9 +39,14 @@ const {JSDOM}=require('jsdom');
   assert(text.includes('body[data-pst-section="apps"]'),'Modules section family is missing');
   assert(text.includes(':not(.danger):not(.btn-danger)'),'Destructive controls are not excluded from generic theming');
 
-  w.document.querySelector('[data-key="apps"]').click();
-  await new Promise(resolve=>w.setTimeout(resolve,5));
-  assert.strictEqual(w.document.body.dataset.pstSection,'apps','Sidebar section click did not switch the visual family');
+  const apps=w.document.querySelector('[data-key="apps"]');
+  apps.addEventListener('click',()=>{
+    w.document.getElementById('page-workspace-home').classList.remove('active');
+    w.document.getElementById('page-workspace-apps').classList.add('active');
+  });
+  apps.click();
+  await new Promise(resolve=>w.setTimeout(resolve,120));
+  assert.strictEqual(w.document.body.dataset.pstSection,'apps','Sidebar navigation did not preserve the Modules visual family after the route changed pages');
   dom.window.close();
   console.log('Section theme smoke: OK');
 })().catch(err=>{console.error(err);process.exitCode=1;});
