@@ -1,7 +1,7 @@
-/* PRISTEEL canonical project workflow legacy capture v2
- * Compatibility bridge + project chrome cleanup for the canonical workspace.
- * Keeps legacy editors reachable without allowing old ribbons/chrome to take
- * over the project experience. UI-only: no business-data writes or polling.
+/* PRISTEEL canonical project workflow legacy capture v3
+ * Compatibility bridge + project-local chrome cleanup for the canonical workspace.
+ * IMPORTANT: this module is forbidden from hiding or mutating ancestors outside
+ * #page-workspace-project. UI-only: no business-data writes or polling.
  */
 (function(){
 'use strict';
@@ -17,6 +17,7 @@ function projectId(){
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_]+/g,' ').trim();}
 function workspace(){return document.getElementById('page-workspace-project');}
 function workspaceActive(){var p=workspace();return !!(p&&p.classList.contains('active'));}
+function insideWorkspace(el){var p=workspace();return !!(p&&el&&p.contains(el));}
 function flowTarget(el){
   if(!el)return'';
   var oc=String(el.getAttribute('onclick')||'');
@@ -72,30 +73,12 @@ function actionKey(txt){
   if(txt==='eksporto')return'export';
   return'';
 }
-function findGlobalProjectStrip(){
-  if(!workspaceActive())return null;
-  var buttons=[].slice.call(document.querySelectorAll('button'));
-  var seeds=buttons.filter(function(b){return ['close','new','export'].indexOf(actionKey(labelOf(b)))>-1;});
-  for(var i=0;i<seeds.length;i++){
-    var n=seeds[i].parentElement,depth=0;
-    while(n&&n!==document.body&&depth++<7){
-      var count=[].slice.call(n.querySelectorAll('button')).filter(function(b){return ['close','new','export'].indexOf(actionKey(labelOf(b)))>-1;}).length;
-      if(count>=3){
-        n.classList.add('pwf-global-project-strip');
-        [].slice.call(n.querySelectorAll('button')).forEach(function(b){var k=actionKey(labelOf(b));if(k)b.setAttribute('data-pwf-proxy-source',k);});
-        return n;
-      }
-      n=n.parentElement;
-    }
-  }
-  return null;
-}
 function findLegacyRibbon(){
-  if(!workspaceActive())return null;
-  var steps=[].slice.call(document.querySelectorAll('.flow-step')).filter(function(el){var p=el.closest&&el.closest('.page');return !p||p.classList.contains('active');});
+  var p=workspace();if(!workspaceActive()||!p)return null;
+  var steps=[].slice.call(p.querySelectorAll('.flow-step'));
   if(steps.length<3)return null;
   var n=steps[0].parentElement,depth=0;
-  while(n&&n!==document.body&&depth++<8){
+  while(n&&n!==p&&depth++<8){
     if(n.querySelectorAll('.flow-step').length>=3){n.classList.add('pwf-legacy-ribbon');return n;}
     n=n.parentElement;
   }
@@ -110,9 +93,7 @@ function hideDuplicateWorkflowCard(){
     if(txt==='workflow'||txt==='workflow project first'||/^workflow\b/.test(txt))card.classList.add('pwf-duplicate-workflow-card');
   });
 }
-function projectHeader(){
-  var p=workspace();return p&&p.querySelector('.pst-pi-head');
-}
+function projectHeader(){var p=workspace();return p&&p.querySelector('.pst-pi-head');}
 function cleanProjectHeader(){
   if(!workspaceActive())return;
   var head=projectHeader(),actions=head&&head.querySelector('.pst-pi-actions');
@@ -131,7 +112,6 @@ function cleanProjectHeader(){
 }
 function clean(){
   if(!workspaceActive())return false;
-  findGlobalProjectStrip();
   findLegacyRibbon();
   hideDuplicateWorkflowCard();
   cleanProjectHeader();
@@ -143,17 +123,19 @@ function scheduleClean(){
   [0,80,220,500].forEach(function(ms){setTimeout(function(){clean();if(ms===500)cleanScheduled=false;},ms);});
 }
 function originalAction(key){
-  var el=document.querySelector('[data-pwf-proxy-source="'+key+'"]');
-  if(el)return el;
-  var target={close:'mbyll projektin',save:'ruaj',new:'projekt i ri',export:'eksporto'}[key]||'';
-  return [].slice.call(document.querySelectorAll('button')).filter(function(b){return !b.closest('.pwf-more-menu')&&labelOf(b)===target;})[0]||null;
+  var p=workspace();if(!p)return null;
+  var head=projectHeader(),target={close:'mbyll projektin',save:'ruaj',new:'projekt i ri',export:'eksporto'}[key]||'';
+  var scope=head||p;
+  return [].slice.call(scope.querySelectorAll('button')).filter(function(b){return !b.closest('.pwf-more-menu')&&labelOf(b)===target;})[0]||null;
+}
+function goTop(key){
+  var R=window.PSTWorkspaceNavigationV1;
+  if(R&&typeof R.go==='function')return R.go(key);
+  if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo(key)!==false;
+  return false;
 }
 function proxy(key){
-  if(key==='projects'){
-    if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('projects');return true;}
-    if(typeof window.showPage==='function'){window.showPage('projects');return true;}
-    return false;
-  }
+  if(key==='projects')return goTop('projects');
   if(key==='old'){
     if(typeof window.pstPiOld==='function'){window.pstPiOld();return true;}
     return false;
@@ -163,7 +145,7 @@ function proxy(key){
   return false;
 }
 function supplierDetail(e,detail){
-  if(!workspaceActive()||!detail)return false;
+  if(!workspaceActive()||!detail||!insideWorkspace(detail))return false;
   var p=workspace(),idx=detail.getAttribute('data-pf2-offer-detail'),row=p&&p.querySelector('[data-pf2-offer-detail-row="'+idx+'"]');
   if(!row)return false;
   e.preventDefault();
@@ -182,14 +164,14 @@ function capture(e){
   if(detail&&supplierDetail(e,detail))return;
 
   var cleanAction=e.target.closest('[data-pwf-clean-action]');
-  if(cleanAction&&workspaceActive()){
+  if(cleanAction&&workspaceActive()&&insideWorkspace(cleanAction)){
     e.preventDefault();e.stopImmediatePropagation();
     proxy(cleanAction.getAttribute('data-pwf-clean-action'));
     return;
   }
 
   var el=e.target.closest('.flow-step');
-  if(el){
+  if(el&&insideWorkspace(el)){
     var target=flowTarget(el),dest=destination(target);
     if(dest&&projectId()&&C()){
       e.preventDefault();
@@ -198,7 +180,7 @@ function capture(e){
       return;
     }
   }
-  scheduleClean();
+  if(workspaceActive())scheduleClean();
 }
 function css(){
   if(document.getElementById('pwf-legacy-capture-css'))return;
@@ -206,7 +188,6 @@ function css(){
   s.id='pwf-legacy-capture-css';
   s.textContent='\
 #page-workspace-project[data-pwf-area="overview"] #pst-pi-body>.pwf-project-context+.pf2-grid>.pf2-card.wide:first-child{display:none!important}\
-body:has(#page-workspace-project.active) .pwf-global-project-strip{display:none!important}\
 #page-workspace-project.active .pwf-legacy-ribbon,#page-workspace-project.active .pwf-legacy-step,#page-workspace-project.active .pwf-duplicate-workflow-card{display:none!important}\
 #page-workspace-project.active .pst-pi-head .pwf-header-old-action{display:none!important}\
 #page-workspace-project.active .pst-pi-actions{display:flex!important;align-items:center!important;gap:8px!important}\
@@ -237,13 +218,8 @@ if(!install()){
 }
 [0,180,650,1400].forEach(function(ms){setTimeout(scheduleClean,ms);});
 window.PSTProjectWorkflowLegacyCaptureV1={
-  install:install,
-  clean:clean,
-  flowTarget:flowTarget,
-  destination:destination,
-  openCanonical:openCanonical,
-  supplierDetail:supplierDetail,
-  proxy:proxy,
-  _test:{actionKey:actionKey,workspaceActive:workspaceActive}
+  install:install,clean:clean,flowTarget:flowTarget,destination:destination,openCanonical:openCanonical,
+  supplierDetail:supplierDetail,proxy:proxy,
+  _test:{actionKey:actionKey,workspaceActive:workspaceActive,insideWorkspace:insideWorkspace}
 };
 })();
