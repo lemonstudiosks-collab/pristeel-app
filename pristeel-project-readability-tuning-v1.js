@@ -59,7 +59,7 @@ document.head.appendChild(s);
 (function loadPlatformReadability(){
   if(window.__pstPlatformReadabilityV1||document.querySelector('script[data-pst-platform-readability]'))return;
   var r=document.createElement('script');
-  r.src='pristeel-platform-readability-v1.js?v=20260822-standard2';
+  r.src='pristeel-platform-readability-v1.js?v=20260822-standard3';
   r.defer=true;
   r.setAttribute('data-pst-platform-readability','1');
   r.onerror=function(){console.error('Nuk u ngarkua standardi i lexueshmërisë së platformës.');};
