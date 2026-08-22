@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "7a8e8bf40fa54cae8bc273cd8d89aa85314f3128",
+  "auditedAtCommit": "4d3b00a5655bed589a98e26e662d5579b3065e7c",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "def640f72d2799c1fdc1a27e3ff431176f1cd8d8"
+    "bootstrapGitBlobSha": "b50ac1184e6f2837fa62d785d7cde56e9b226453"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -141,7 +141,8 @@
     "pristeel-project-commercial-prefill-rescue-v1.js",
     "pristeel-workspace-release-fix-v3.js",
     "pristeel-project-intake-continuity-v1.js",
-    "pristeel-project-analysis-document-intelligence-v1.js"
+    "pristeel-project-analysis-document-intelligence-v1.js",
+    "pristeel-project-workflow-legacy-capture-v1.js"
   ],
   "foundationRequired": [
     "pristeel-ui-v2.js"
@@ -289,6 +290,11 @@
       "before": "pristeel-project-intelligence-resilience-v1.js",
       "after": "pristeel-project-workflow-canonical-v1.js",
       "reason": "The canonical workflow is UI-only and deliberately loads after project data, lifecycle, commercial and intelligence owners so it reconciles presentation without replacing their engines."
+    },
+    {
+      "before": "pristeel-project-workflow-canonical-v1.js",
+      "after": "pristeel-project-workflow-legacy-capture-v1.js",
+      "reason": "The old horizontal workflow ribbon is captured only after the canonical project workflow exists, preventing legacy navigation from escaping the active project context."
     }
   ],
   "deprecatedForbidden": [
