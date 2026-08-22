@@ -144,7 +144,8 @@ var files=[
   'pristeel-kek-tender-watch-v1.js?v=20260812-1',
   'pristeel-project-lifecycle-tracking-v1.js?v=20260815-1',
   'pristeel-project-intelligence-resilience-v1.js?v=20260815-1',
-  'pristeel-project-workflow-canonical-v1.js?v=20260822-flow1'
+  'pristeel-project-workflow-canonical-v1.js?v=20260822-flow1',
+  'pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
 var diag=window.__pstBootstrapDiagnostics=window.__pstBootstrapDiagnostics||{started_at:new Date().toISOString(),total:files.length,loaded:0,errors:[],timeouts:[],retries:[],completed:false};
@@ -163,7 +164,7 @@ function load(i,attempt){
   try{el.remove();}catch(e){}
   var row={index:i,module:base,attempt:attempt,at:new Date().toISOString(),error:error?String(error):null};
   if(kind==='timeout')diag.timeouts.push(row);else diag.errors.push(row);
-  if(attempt<maxAttempts){diag.retries.push({index:i,module:base,attempt:attempt+1,reason:kind,at:new Date().toISOString()});load(i,attempt+1,1);return;}
+  if(attempt<maxAttempts){diag.retries.push({index:i,module:base,attempt:attempt+1,reason:kind,at:new Date().toISOString()});load(i,attempt+1);return;}
   console.error('Nuk u ngarkua moduli pas '+maxAttempts+' tentimeve:',base,kind,error||'');next(i);
  }
  el.onload=function(){finish('load');};
