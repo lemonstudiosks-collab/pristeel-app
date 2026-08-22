@@ -56,6 +56,8 @@ jobs:
         run: node tests/contact-master-system-mail-guard-smoke.mjs
       - name: Run Contact party classification guard smoke
         run: node tests/contact-party-classification-guard-smoke.mjs
+      - name: Run Contact Master final cleanup smoke
+        run: node --check pristeel-contact-master-v1.js && node tests/contact-master-final-cleanup-smoke.mjs
       - name: Run Gmail client request execution smoke
         run: node tests/gmail-project-intake-execution-smoke.mjs
       - name: Run project action engine source smoke
