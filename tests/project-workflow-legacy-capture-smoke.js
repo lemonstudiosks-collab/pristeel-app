@@ -34,6 +34,10 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(JSON.stringify(api.destination('kalkulator')),JSON.stringify(['procurement','pricing']));
   assert.strictEqual(JSON.stringify(api.destination('oferta')),JSON.stringify(['procurement','client_offer']));
 
+  /* Repeated install attempts must never stack capture listeners. */
+  api.install();
+  api.install();
+
   ['offers','ranking','pricing','client'].forEach(id=>{
     const btn=w.document.getElementById(id);
     btn.removeAttribute('onclick');
@@ -48,7 +52,7 @@ const {JSDOM}=require('jsdom');
     ['procurement','comparison'],
     ['procurement','pricing'],
     ['procurement','client_offer']
-  ]),'Old ribbon stages must land in the canonical project flow');
+  ]),'Old ribbon stages must land exactly once in the canonical project flow');
 
   const css=w.document.getElementById('pwf-legacy-capture-css');
   assert(css&&css.textContent.includes('data-pwf-area="overview"'),'Overview duplicate-workflow cleanup CSS must be installed');
