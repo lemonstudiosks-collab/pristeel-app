@@ -1,5 +1,5 @@
 /* PRISTEEL redesign finalizer v1
- * Revision: 20260821-canonical-home-owner1.
+ * Revision: 20260822-section-theme1.
  * Re-applies presentation-only styling after workspace renders.
  * Canonical Home exclusively owns priority-card navigation and business state.
  * Bounded timeouts only. No polling, observers, writes, auth or project-open overrides.
@@ -21,6 +21,19 @@ function readability(){
     s.onload=function(){var x=window.PSTPlatformReadabilityV1;if(x&&typeof x.apply==='function')x.apply(document);};
     document.head.appendChild(s);
   }catch(e){console.warn('PRISTEEL finalizer readability:',e);}
+}
+
+function sectionTheme(){
+  try{
+    var T=window.PSTSectionThemeV1;
+    if(T&&typeof T.apply==='function'){T.apply();return;}
+    if(document.querySelector('script[data-pst-section-theme]'))return;
+    var s=document.createElement('script');
+    s.src='pristeel-section-theme-v1.js?v=20260822-1';
+    s.defer=true;
+    s.setAttribute('data-pst-section-theme','1');
+    document.head.appendChild(s);
+  }catch(e){console.warn('PRISTEEL finalizer section theme:',e);}
 }
 
 function priorityIsUrgent(row){
@@ -94,6 +107,7 @@ function installPriorityStyle(){
 }
 
 function apply(){
+  sectionTheme();
   readability();
   try{
     var C=window.PSTBusinessCommandCenterV1;
@@ -129,5 +143,5 @@ document.addEventListener('click',function(event){
   if(t)[0,80,250,700].forEach(function(ms){setTimeout(apply,ms);});
 },true);
 if(document.readyState!=='loading')schedule();
-window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability,repairPriorityCards:repairPriorityCards};
+window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability,sectionTheme:sectionTheme,repairPriorityCards:repairPriorityCards};
 })();

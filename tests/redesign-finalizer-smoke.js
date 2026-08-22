@@ -1,6 +1,7 @@
 const fs = require('fs');
 const assert = require('assert');
 const { JSDOM } = require('jsdom');
+require('./section-theme-routing-smoke.js');
 
 function stripComments(s){
   return s.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|\s)\/\/.*$/gm,'$1');
@@ -34,6 +35,9 @@ function stripComments(s){
   const loader = w.document.querySelector('script[data-pst-platform-readability]');
   assert(loader, 'Finalizer did not request the platform readability layer');
   assert(/pristeel-platform-readability-v1\.js/.test(loader.getAttribute('src') || ''), 'Finalizer loaded the wrong readability asset');
+  const themeLoader = w.document.querySelector('script[data-pst-section-theme]');
+  assert(themeLoader, 'Finalizer did not request the top-level section theme');
+  assert(/pristeel-section-theme-v1\.js/.test(themeLoader.getAttribute('src') || ''), 'Finalizer loaded the wrong section theme asset');
   dom.window.close();
 
   const priorityDom = new JSDOM(`<!doctype html><html><head></head><body>
