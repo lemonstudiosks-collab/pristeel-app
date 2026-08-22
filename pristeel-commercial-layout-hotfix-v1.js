@@ -118,7 +118,7 @@ document.head.appendChild(s);
 (function loadWorkflowContinuity(){
   if(window.PSTProjectWorkflowNavigationV1||document.querySelector('script[data-pst-project-workflow-navigation]'))return;
   var q=document.createElement('script');
-  q.src='pristeel-project-workflow-navigation-v1.js?v=20260822-nav1';
+  q.src='pristeel-project-workflow-navigation-v1.js?v=20260822-nav2';
   q.defer=true;
   q.setAttribute('data-pst-project-workflow-navigation','1');
   q.onerror=function(){console.error('Nuk u ngarkua vazhdimësia e navigimit të projektit.');};
