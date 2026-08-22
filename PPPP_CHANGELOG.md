@@ -2,6 +2,31 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-08-22
+
+### Project Workspace becomes one canonical end-to-end workflow
+
+- Added `pristeel-project-workflow-canonical-v1.js` as the final UI-only reconciler over the existing Project-First workspace.
+- The Project Workspace now exposes six top-level areas: `Përmbledhja`, `Prokurimi`, `Ekzekutimi`, `Financat`, `Skedarët`, `Komunikimi`.
+- `Prokurimi` now has one explicit six-stage sequence: `BOM -> RFQ -> Ofertat e furnitorëve -> Krahasimi i ofertave -> Çmimi i shitjes -> Oferta për klientin`.
+- Every procurement stage is independently clickable; state badges describe what exists instead of blocking navigation.
+- Empty states now explain what is missing and what the next action is instead of leaving blank pages.
+- Existing BOM, RFQ, normalized supplier comparison, pricing calculator and client-offer engines are reused rather than duplicated.
+- Added `pristeel-project-workflow-legacy-capture-v1.js` so the old horizontal ribbon is compatibility-only and returns into the same canonical project flow instead of opening disconnected legacy routes.
+- Legacy capture installation is idempotent, preventing duplicate global click listeners across delayed bootstrap retries.
+- Project context is preserved when a legacy editor is still required, with explicit return to the same active project.
+- Supplier offers and the PRISTEEL client offer are separated as distinct stages so `Ofertat` is no longer commercially ambiguous.
+- Final sell price, client offer and outbound communication remain human-gated.
+- The new workflow layers perform no business-data writes.
+
+### Runtime ownership and regression protection updated
+
+- `runtime-manifest.json`, `runtime-bootstrap-order.json`, `docs/ACTIVE_RUNTIME.md` and bootstrap-sequence guards were updated deliberately for the new final workflow layers.
+- Canonical workflow loads after lifecycle, commercial and Project Intelligence owners; legacy ribbon capture loads after the canonical workflow.
+- Regression coverage now protects the six project areas, six procurement stages, no-BOM path, supplier-offer empty state, normalized comparison reuse, pricing bridge, client-offer draft-vs-sent state, legacy-ribbon capture and duplicate-listener prevention.
+- GitHub checks passed for runtime manifest, production Pages build, Pages artifact audit, Local Semantic AI and the full PRISTEEL test suite before merge.
+- Backup branch before the change: `backup/pre-canonical-project-workflow-20260822` at `ea1b2976916fbebd402740137fec6320269b4406`.
+
 ## 2026-08-20
 
 ### Home visual ownership stabilized
@@ -40,7 +65,7 @@ This file records material architecture/automation changes. It is not a substitu
 
 - `pristeel-project-commercial-prefill-rescue-v1.js` upgraded to v3 after reproducing the real `Krijo / edito ofertë` failure.
 - Root cause: the Commercial Document Builder deliberately reset a fresh offer again after opening it, so the earlier project prefill ran too early and was erased.
-- The project bridge now owns the explicit Project → Client Offer handoff and waits until the builder's fresh-form reset is complete before hydrating the draft.
+- The project bridge now owns the explicit Project -> Client Offer handoff and waits until the builder's fresh-form reset is complete before hydrating the draft.
 - For a project with one supplier quotation, the supplier's structured quotation rows are carried into the PRISTEEL offer editor as editable sales rows with selling price `0` / pending approval, while supplier costs remain internal metadata/reference.
 - CARINVEST therefore carries Eurosteel `ES287-08/2026` lines for the two fabrication rates, bolts/anchors, erection and transport into the client-offer preparation step instead of opening a blank generic offer.
 - The project identity, client, buyer contact and supplier quantity context are also carried forward.
