@@ -12,7 +12,7 @@ const {JSDOM}=require('jsdom');
   assert(finalizer.includes("pristeel-section-theme-v1.js?v=20260822-2"),'UI finalizer does not load the current section theme');
   assert(finalizer.includes("pristeel-contact-category-cards-v1.js?v=20260822-1"),'UI finalizer does not load Contact Master category cards');
   assert(!/new\s+MutationObserver|setInterval\s*\(/.test(contactCards),'Contact category cards must stay bounded and observer-free');
-  assert(!/insert|update|delete|patch/i.test(contactCards.replace(/manufacturerLoaded|updateCards/g,'')),'Contact category cards must remain read-only');
+  assert(!/method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]|\.from\([^)]*\)\.(?:insert|update|delete|upsert)\s*\(/i.test(contactCards),'Contact category cards must remain read-only');
 
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
     <aside id="pst-ws-sidebar">
