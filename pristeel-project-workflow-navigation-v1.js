@@ -1,4 +1,4 @@
-/* PRISTEEL project workflow navigation continuity v1
+/* PRISTEEL project workflow navigation continuity v2
  * Keeps Project-First context when a project workflow temporarily enters legacy pages.
  * Fixes backward navigation from our offer / calculator / legacy ranking without creating
  * a second router or changing any project/commercial data.
@@ -45,6 +45,18 @@ function returnProjectId(){
     if(explicit)return explicit;
   }
   return liveProjectId();
+}
+function visible(el){
+  if(!el)return false;
+  var st=window.getComputedStyle?window.getComputedStyle(el):null;
+  if(st&&(st.display==='none'||st.visibility==='hidden'))return false;
+  return !!(el.offsetWidth||el.offsetHeight||el.getClientRects().length);
+}
+function offerViewState(){
+  return{
+    preview:visible(document.getElementById('of-preview-col')),
+    editor:visible(document.getElementById('of-edit-col'))
+  };
 }
 function logWarn(label,e){try{console.warn('PRISTEEL workflow navigation '+label+':',e);}catch(x){}}
 function activateProject(id){
@@ -115,7 +127,9 @@ function installBackBridge(){
   var base=window.goBack;
   if(typeof base!=='function'||base.__pstWorkflowContinuityV1)return false;
   var wrapped=function(){
-    var page=activeLegacyPage(),id=returnProjectId();
+    var page=activeLegacyPage(),id=returnProjectId(),state=offerViewState();
+    /* The saved preview owns its first back step. Do not skip the editor. */
+    if(page==='oferta'&&state.preview)return base.apply(this,arguments);
     if(id&&(page==='oferta'||page==='kalkulator')){
       if(openModern(id,'comparison'))return;
     }
@@ -140,6 +154,40 @@ function installOfferEntryBridge(){
 }
 function install(){installFlowBridge();installBackBridge();installOfferEntryBridge();}
 
+/* Capture the visible shell controls themselves. Some legacy modules retain an older
+ * function reference in inline handlers; this keeps the project workflow deterministic
+ * without replacing those modules or their state. */
+document.addEventListener('click',function(e){
+  var target=e.target&&e.target.closest?e.target.closest('#modbar-back,.flow-step'):null;
+  if(!target)return;
+  var page=activeLegacyPage(),id=returnProjectId();
+  if(!id)return;
+
+  if(target.id==='modbar-back'){
+    var state=offerViewState();
+    /* Preview -> editor remains the existing first step. */
+    if(page==='oferta'&&state.preview)return;
+    if(page==='oferta'&&state.editor){
+      e.preventDefault();e.stopImmediatePropagation();openModern(id,'comparison');return;
+    }
+    if(page==='kalkulator'){
+      e.preventDefault();e.stopImmediatePropagation();openModern(id,'comparison');return;
+    }
+    if(page==='ranking'){
+      e.preventDefault();e.stopImmediatePropagation();openModern(id,'offers');return;
+    }
+    return;
+  }
+
+  var oc=String(target.getAttribute('onclick')||'');
+  if(/flowGoto\(['\"]ranking['\"]\)/.test(oc)){
+    e.preventDefault();e.stopImmediatePropagation();remember('flow-click-ranking');openModern(id,'comparison');return;
+  }
+  if(/flowGoto\(['\"]offers['\"]\)/.test(oc)){
+    e.preventDefault();e.stopImmediatePropagation();remember('flow-click-offers');openModern(id,'offers');return;
+  }
+},true);
+
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('#page-workspace-project [data-pf2-action="offer"],#page-workspace-project [data-pf2-tab="commercial"]'):null;
   if(t)remember('project-commercial');
@@ -153,6 +201,7 @@ window.PSTProjectWorkflowNavigationV1={
   openSupplierOffers:openSupplierOffers,
   install:install,
   activeLegacyPage:activeLegacyPage,
-  returnProjectId:returnProjectId
+  returnProjectId:returnProjectId,
+  offerViewState:offerViewState
 };
 })();
