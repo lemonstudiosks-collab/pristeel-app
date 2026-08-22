@@ -14,8 +14,10 @@ Backup: `backup/pre-navigation-recovery-20260822` at `6d3fabd7e196ac3f63c50b6a6e
 - [x] Add Home waiting project -> brief -> Project Workspace -> Projects smoke.
 - [x] Add static router/ownership guard.
 - [x] Add release-surface navigation matrix guard.
+- [x] Add explicit blank-ancestor regression guard.
 - [x] Make canonical workflow/navigation tests part of `npm test`.
 - [x] Document routing contract and release matrix.
+- [x] Branch is ready for pull-request CI.
 
 ## Pending before production merge
 
