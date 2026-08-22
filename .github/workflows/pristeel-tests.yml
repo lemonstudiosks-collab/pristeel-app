@@ -50,6 +50,8 @@ jobs:
         run: node --check pristeel-project-intake-continuity-v1.js && node tests/project-intake-continuity-smoke.js
       - name: Run Gmail project auto-link smoke
         run: node --check pristeel-gmail-project-auto-link-v1.js && node tests/gmail-project-auto-link-smoke.js
+      - name: Run project email and contact reconciliation smoke
+        run: node --check scripts/project-email-reconcile.mjs && node tests/project-email-reconcile-smoke.mjs
       - name: Run Gmail client request execution smoke
         run: node tests/gmail-project-intake-execution-smoke.mjs
       - name: Run project action engine source smoke
