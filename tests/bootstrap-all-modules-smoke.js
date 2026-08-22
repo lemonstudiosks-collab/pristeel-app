@@ -87,8 +87,8 @@ assert(bootstrap.includes("el.remove()"), 'Timed-out module element must be remo
 assert(bootstrap.includes('pristeel-project-first-actions-v1.js?v=20260818-reactive2'), 'Canonical Project Intelligence guard cache-bust must be live');
 assert(bootstrap.includes('pristeel-project-first-commercial-v1.js?v=20260822-layout1'), 'Current installation-aware commercial comparison cache-bust must be live');
 assert(bootstrap.includes('pristeel-offer-client-output-finalizer-v1.js?v=20260818-draftgate2'), 'Offer draft gate cache-bust must be live');
-assert(bootstrap.includes('pristeel-project-workflow-canonical-v1.js?v=20260822-flow1'), 'Canonical project workflow must be live');
-assert(bootstrap.includes('pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow1'), 'Legacy ribbon capture must be live after canonical workflow');
+assert(bootstrap.includes('pristeel-project-workflow-canonical-v1.js?v=20260822-flow2'), 'Corrected canonical project workflow cache-bust must be live');
+assert(bootstrap.includes('pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2'), 'Corrected legacy ribbon capture cache-bust must be live after canonical workflow');
 
 console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules, including canonical project state protection.`);
 require('./bootstrap-timeout-safety-smoke.js');
