@@ -97,3 +97,4 @@ require('./project-state-contract-smoke.js');
 require('./project-commercial-breakdown-smoke.js');
 require('./offer-client-output-finalizer-smoke.js');
 require('./project-workflow-canonical-smoke.js');
+require('./project-workflow-legacy-capture-smoke.js');
