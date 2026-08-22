@@ -1,6 +1,6 @@
 /* PRISTEEL BOM -> RFQ autoflow v1
  * Connects an explicit successful BOM save to the native Project-first RFQ draft.
- * RFQ presentation is owned exclusively by pristeel-project-first-rfq-draft-v1.js.
+ * RFQ presentation is owned exclusively by pristeel-project-first-rfq-draft-v1.js unless server semantic drafts exist.
  * No email is sent and no RFQ is logged as sent here.
  */
 (function(){
@@ -24,6 +24,15 @@ function loadRfqNavigation(){
   s.defer=true;
   s.setAttribute('data-pst-rfq-navigation','1');
   s.onload=function(){var N=window.PSTProjectFirstRfqNavigationV1;if(N&&typeof N.install==='function')N.install();};
+  document.head.appendChild(s);
+}
+function loadSemanticRfqUi(){
+  if(window.PSTSemanticRfqDraftsV1||document.querySelector('script[data-pst-semantic-rfq-ui]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-semantic-rfq-drafts-v1.js?v=20260822-semantic2';
+  s.defer=true;
+  s.setAttribute('data-pst-semantic-rfq-ui','1');
+  s.onload=function(){var R=window.PSTSemanticRfqDraftsV1;if(R&&typeof R.refresh==='function')R.refresh();};
   document.head.appendChild(s);
 }
 function loadHistorySync(done){
@@ -129,15 +138,16 @@ document.addEventListener('click',function(e){
 },false);
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab="procurement"]'):null;
-  if(t){setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);setTimeout(installHistoryButton,360);}
+  if(t){loadSemanticRfqUi();setTimeout(nativeButtons,0);setTimeout(nativeButtons,120);setTimeout(installHistoryButton,360);}
   var b=e.target&&e.target.closest?e.target.closest('[data-prfq-open]'):null;
   if(b){setTimeout(nativeButtons,180);setTimeout(nativeButtons,360);}
 },true);
-document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();loadFinalOfferOutputFix();installGateCss();setTimeout(nativeButtons,0);setTimeout(installHistoryButton,240);},{once:true});
+document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();loadFinalOfferOutputFix();loadSemanticRfqUi();installGateCss();setTimeout(nativeButtons,0);setTimeout(installHistoryButton,240);},{once:true});
 installGateCss();
 loadBomClarity();
 loadRfqNavigation();
 loadFinalOfferOutputFix();
+loadSemanticRfqUi();
 [0,120,400].forEach(function(ms){setTimeout(installHistoryButton,ms);});
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,installHistoryButton:installHistoryButton,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation,loadFinalOfferOutputFix:loadFinalOfferOutputFix};
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,installHistoryButton:installHistoryButton,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation,loadFinalOfferOutputFix:loadFinalOfferOutputFix,loadSemanticRfqUi:loadSemanticRfqUi};
 })();

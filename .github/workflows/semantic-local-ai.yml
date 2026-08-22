@@ -1,0 +1,60 @@
+name: PPPP Local Semantic AI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  semantic-local-ai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check browser runtime syntax
+        run: |
+          node --check pristeel-semantic-rfq-drafts-v1.js
+          node --check pristeel-bom-rfq-autoflow-v1.js
+      - name: Check local worker syntax
+        run: python3 -m py_compile local-ai/pppp_semantic_worker.py
+      - name: Check Edge Functions
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/semantic-local-queue/index.ts
+          deno check --node-modules-dir=auto supabase/functions/semantic-local-orchestrator/index.ts
+          deno check --node-modules-dir=auto supabase/functions/project-semantic-brain/index.ts
+      - name: Enforce local-only semantic provider
+        run: |
+          ! grep -R -E 'GOOGLE_SA_JSON|aiplatform.googleapis.com|generativelanguage.googleapis.com' \
+            local-ai/pppp_semantic_worker.py \
+            supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "SUPPORTED_PAYLOAD_VERSION=3" local-ai/pppp_semantic_worker.py
+          grep -q "worker_payload_version:VERSION" supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "server_semantic_version=4\|server_semantic_version.*4" supabase/functions/semantic-local-queue/index.ts
+          grep -q "semantic_worker_authorize" supabase/functions/semantic-local-queue/index.ts
+          grep -q "status.*410" supabase/functions/project-semantic-brain/index.ts
+      - name: Enforce semantic feedback-loop guard
+        run: |
+          grep -q "function externalRfqs" supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "function stableFingerprint" supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "PPPP_LOCAL_SEMANTIC_V" supabase/functions/semantic-local-orchestrator/index.ts
+          grep -q "pppp_semantic_routing_truth_guard" supabase/migrations/20260822053500_semantic_ai_deterministic_routing_guard.sql
+          grep -q "v_grades.*required_grades" supabase/migrations/20260822053500_semantic_ai_deterministic_routing_guard.sql
+          grep -q "v_caps.*required_capabilities" supabase/migrations/20260822053500_semantic_ai_deterministic_routing_guard.sql
+      - name: Enforce RFQ human gate
+        run: |
+          grep -q "draft_review" pristeel-semantic-rfq-drafts-v1.js
+          grep -q "Mirato draftet pas kontrollit" pristeel-semantic-rfq-drafts-v1.js
+          grep -q "Asgje nuk dergohet automatikisht" pristeel-semantic-rfq-drafts-v1.js
