@@ -1,6 +1,6 @@
 /* PRISTEEL section theme v1
  * Calm, page-specific color families for the top-level PPPP surfaces.
- * Presentation-only: no data reads/writes, observers, polling, or business-state changes.
+ * Presentation/routing only: no data reads/writes, observers, polling, or business-state changes.
  */
 (function(){
 'use strict';
@@ -114,6 +114,25 @@ body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-proje
   document.head.appendChild(s);
 }
 
+function routeSidebarGmail(event){
+  var target=event&&event.target&&event.target.closest?event.target.closest('#pst-ws-sidebar .pst-ws-navbtn[data-key="inbox"]'):null;
+  if(!target||typeof window.pstWorkspaceGo!=='function')return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  window.pstWorkspaceGo('inbox');
+  setTimeout(function(){
+    var G=window.PSTGmailLiveInboxV2;
+    if(G&&typeof G.decorate==='function')G.decorate();
+  },0);
+}
+
+function installRouting(){
+  if(window.__pstSectionThemeRoutingV1)return;
+  window.__pstSectionThemeRoutingV1=true;
+  document.addEventListener('click',routeSidebarGmail,true);
+}
+
 css();
-window.PSTSectionThemeV1={apply:css};
+installRouting();
+window.PSTSectionThemeV1={apply:css,routeSidebarGmail:routeSidebarGmail};
 })();
