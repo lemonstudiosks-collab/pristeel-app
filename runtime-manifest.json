@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "9c38f51db88cac5fc0e8505fa6b820e5f1759a4f",
+  "auditedAtCommit": "7a8e8bf40fa54cae8bc273cd8d89aa85314f3128",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "724e6c3e07d8af7490295769154536d1153885c8"
+    "bootstrapGitBlobSha": "def640f72d2799c1fdc1a27e3ff431176f1cd8d8"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -77,8 +77,10 @@
         "pristeel-project-summary-command-v1.js",
         "pristeel-project-intelligence-conversation-v1.js",
         "pristeel-project-lifecycle-tracking-v1.js",
-        "pristeel-project-intelligence-resilience-v1.js"
-      ]
+        "pristeel-project-intelligence-resilience-v1.js",
+        "pristeel-project-workflow-canonical-v1.js"
+      ],
+      "note": "Project-First remains the data/tool workspace. Canonical Project Workflow is the final UI-only reconciler: six project areas and one six-stage procurement flow, while BOM/RFQ/comparison/pricing/client-offer engines remain reused and human-gated."
     },
     {
       "area": "gmail-inbox",
@@ -276,12 +278,17 @@
     {
       "before": "pristeel-kek-tender-watch-v1.js",
       "after": "pristeel-project-lifecycle-tracking-v1.js",
-      "reason": "Project lifecycle tracking is the deliberate final ordered reconciliation layer for modern project list and workspace UX."
+      "reason": "Project lifecycle tracking is the deliberate final ordered data reconciliation layer for modern project list and workspace UX."
     },
     {
       "before": "pristeel-project-lifecycle-tracking-v1.js",
       "after": "pristeel-project-intelligence-resilience-v1.js",
-      "reason": "Project Intelligence resilience is deliberately last so task-state correction and AI rate-limit fallback wrap the final project workspace behavior without changing lifecycle status."
+      "reason": "Project Intelligence resilience wraps final project task-state correction and AI rate-limit fallback before UI-only reconciliation."
+    },
+    {
+      "before": "pristeel-project-intelligence-resilience-v1.js",
+      "after": "pristeel-project-workflow-canonical-v1.js",
+      "reason": "The canonical workflow is UI-only and deliberately loads after project data, lifecycle, commercial and intelligence owners so it reconciles presentation without replacing their engines."
     }
   ],
   "deprecatedForbidden": [
