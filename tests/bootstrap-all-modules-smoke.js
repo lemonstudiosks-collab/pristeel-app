@@ -43,7 +43,9 @@ const required = [
   'pristeel-home-live-fix-v1.js',
   'pristeel-home-stability-v2.js',
   'pristeel-redesign-finalizer-v1.js',
-  'pristeel-commercial-navigation-fix-v1.js'
+  'pristeel-commercial-navigation-fix-v1.js',
+  'pristeel-project-workflow-canonical-v1.js',
+  'pristeel-project-workflow-legacy-capture-v1.js'
 ];
 required.forEach(file => assert(matches.includes(file), `Critical module missing from bootstrap: ${file}`));
 
@@ -55,6 +57,14 @@ assert(
 assert(
   matches.indexOf('pristeel-contacts-provenance-ui-v1.js') > matches.indexOf('pristeel-project-contacts-full-v1.js'),
   'Contacts provenance UI should load after the existing contacts module'
+);
+assert(
+  matches.indexOf('pristeel-project-workflow-canonical-v1.js') > matches.indexOf('pristeel-project-intelligence-resilience-v1.js'),
+  'Canonical project workflow must load after lifecycle/intelligence data owners'
+);
+assert(
+  matches.indexOf('pristeel-project-workflow-legacy-capture-v1.js') > matches.indexOf('pristeel-project-workflow-canonical-v1.js'),
+  'Legacy project ribbon capture must load after canonical project workflow'
 );
 
 const contactsUi = fs.readFileSync('pristeel-contacts-provenance-ui-v1.js','utf8');
@@ -75,8 +85,10 @@ assert(bootstrap.includes('timeoutMs=8000,maxAttempts=2'), 'Ordered bootstrap mu
 assert(bootstrap.includes('__pstBootstrapDiagnostics'), 'Ordered bootstrap must expose diagnostics for timeout/error recovery');
 assert(bootstrap.includes("el.remove()"), 'Timed-out module element must be removed before retry/continuation');
 assert(bootstrap.includes('pristeel-project-first-actions-v1.js?v=20260818-reactive2'), 'Canonical Project Intelligence guard cache-bust must be live');
-assert(bootstrap.includes('pristeel-project-first-commercial-v1.js?v=20260818-install2'), 'Installation-aware commercial comparison cache-bust must be live');
+assert(bootstrap.includes('pristeel-project-first-commercial-v1.js?v=20260822-layout1'), 'Current installation-aware commercial comparison cache-bust must be live');
 assert(bootstrap.includes('pristeel-offer-client-output-finalizer-v1.js?v=20260818-draftgate2'), 'Offer draft gate cache-bust must be live');
+assert(bootstrap.includes('pristeel-project-workflow-canonical-v1.js?v=20260822-flow1'), 'Canonical project workflow must be live');
+assert(bootstrap.includes('pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow1'), 'Legacy ribbon capture must be live after canonical workflow');
 
 console.log(`Bootstrap coverage smoke test passed for ${matches.length} modules, including canonical project state protection.`);
 require('./bootstrap-timeout-safety-smoke.js');
@@ -84,3 +96,5 @@ require('./project-discovery-runtime-smoke.js');
 require('./project-state-contract-smoke.js');
 require('./project-commercial-breakdown-smoke.js');
 require('./offer-client-output-finalizer-smoke.js');
+require('./project-workflow-canonical-smoke.js');
+require('./project-workflow-legacy-capture-smoke.js');

@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "9c38f51db88cac5fc0e8505fa6b820e5f1759a4f",
+  "auditedAtCommit": "4d3b00a5655bed589a98e26e662d5579b3065e7c",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "724e6c3e07d8af7490295769154536d1153885c8"
+    "bootstrapGitBlobSha": "b50ac1184e6f2837fa62d785d7cde56e9b226453"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -77,8 +77,10 @@
         "pristeel-project-summary-command-v1.js",
         "pristeel-project-intelligence-conversation-v1.js",
         "pristeel-project-lifecycle-tracking-v1.js",
-        "pristeel-project-intelligence-resilience-v1.js"
-      ]
+        "pristeel-project-intelligence-resilience-v1.js",
+        "pristeel-project-workflow-canonical-v1.js"
+      ],
+      "note": "Project-First remains the data/tool workspace. Canonical Project Workflow is the final UI-only reconciler: six project areas and one six-stage procurement flow, while BOM/RFQ/comparison/pricing/client-offer engines remain reused and human-gated."
     },
     {
       "area": "gmail-inbox",
@@ -139,7 +141,8 @@
     "pristeel-project-commercial-prefill-rescue-v1.js",
     "pristeel-workspace-release-fix-v3.js",
     "pristeel-project-intake-continuity-v1.js",
-    "pristeel-project-analysis-document-intelligence-v1.js"
+    "pristeel-project-analysis-document-intelligence-v1.js",
+    "pristeel-project-workflow-legacy-capture-v1.js"
   ],
   "foundationRequired": [
     "pristeel-ui-v2.js"
@@ -276,12 +279,22 @@
     {
       "before": "pristeel-kek-tender-watch-v1.js",
       "after": "pristeel-project-lifecycle-tracking-v1.js",
-      "reason": "Project lifecycle tracking is the deliberate final ordered reconciliation layer for modern project list and workspace UX."
+      "reason": "Project lifecycle tracking is the deliberate final ordered data reconciliation layer for modern project list and workspace UX."
     },
     {
       "before": "pristeel-project-lifecycle-tracking-v1.js",
       "after": "pristeel-project-intelligence-resilience-v1.js",
-      "reason": "Project Intelligence resilience is deliberately last so task-state correction and AI rate-limit fallback wrap the final project workspace behavior without changing lifecycle status."
+      "reason": "Project Intelligence resilience wraps final project task-state correction and AI rate-limit fallback before UI-only reconciliation."
+    },
+    {
+      "before": "pristeel-project-intelligence-resilience-v1.js",
+      "after": "pristeel-project-workflow-canonical-v1.js",
+      "reason": "The canonical workflow is UI-only and deliberately loads after project data, lifecycle, commercial and intelligence owners so it reconciles presentation without replacing their engines."
+    },
+    {
+      "before": "pristeel-project-workflow-canonical-v1.js",
+      "after": "pristeel-project-workflow-legacy-capture-v1.js",
+      "reason": "The old horizontal workflow ribbon is captured only after the canonical project workflow exists, preventing legacy navigation from escaping the active project context."
     }
   ],
   "deprecatedForbidden": [

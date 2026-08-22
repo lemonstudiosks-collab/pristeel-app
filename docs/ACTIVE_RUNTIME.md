@@ -116,6 +116,8 @@ Older Home visual modules may still be loaded as compatibility/classic fallback 
 
 ### Project workspace
 
+Core data/tool owners remain:
+
 - `pristeel-project-first-v2.js`
 - `pristeel-project-first-actions-v1.js`
 - `pristeel-project-first-commercial-v1.js`
@@ -124,6 +126,33 @@ Older Home visual modules may still be loaded as compatibility/classic fallback 
 - `pristeel-project-intelligence-conversation-v1.js`
 - `pristeel-project-lifecycle-tracking-v1.js`
 - `pristeel-project-intelligence-resilience-v1.js`
+
+**Final project-workflow UI reconciler:**
+
+- `pristeel-project-workflow-canonical-v1.js`
+
+**Legacy ribbon compatibility bridge:**
+
+- `pristeel-project-workflow-legacy-capture-v1.js`
+
+The canonical project workspace now keeps the user inside one project context with six top-level areas:
+
+`Përmbledhja | Prokurimi | Ekzekutimi | Financat | Skedarët | Komunikimi`
+
+Inside `Prokurimi`, the canonical sequence is:
+
+`BOM → RFQ → Ofertat e furnitorëve → Krahasimi i ofertave → Çmimi i shitjes → Oferta për klientin`
+
+Important behavior:
+
+- Every procurement stage is independently clickable.
+- Stage status describes the data/state that exists; it does not block navigation.
+- Empty stages render an explicit explanation and next action instead of a blank page.
+- The existing normalized supplier comparison engine is reused, not duplicated.
+- Existing BOM, RFQ, calculator and client-offer engines remain available behind controlled project-context bridges where a legacy editor is still required.
+- The old horizontal workflow ribbon is captured back into the canonical project flow so it cannot silently escape into a disconnected legacy route.
+- Final offer, sell price and outbound communication remain human-gated.
+- The canonical workflow layer performs no business-data writes.
 
 The classic project overview remains intentionally reachable as a fallback. Do not delete its providers until the fallback/merge behavior has an equivalent replacement.
 
