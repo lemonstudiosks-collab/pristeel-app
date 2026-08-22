@@ -4,10 +4,17 @@ import {createClient} from "jsr:@supabase/supabase-js@2";
 const db=createClient(Deno.env.get('SUPABASE_URL')||'',Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'');
 const H={'content-type':'application/json'};
 const T=(v:any)=>String(v??'').trim();
+const A=(v:any)=>Array.isArray(v)?v:[];
 const UUID=(v:any)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(T(v));
 
 async function worker(req:Request){const key=req.headers.get('x-pppp-worker-key')||'';if(!key)return null;const {data,error}=await db.rpc('semantic_worker_authorize',{p_key:key});if(error||!data)return null;return T(data)}
 function reply(body:any,status=200){return new Response(JSON.stringify(body),{status,headers:H})}
+function compactForMonterey(p:any){
+  const ctx=p?.context||{};
+  const sources=A(p?.sources).slice(0,5).map((s:any)=>({id:s?.id,type:s?.type,label:T(s?.label).slice(0,120),date:s?.date,text:T(s?.text).slice(0,520),meta:s?.meta}));
+  const candidates=A(p?.supplier_candidates).slice(0,7).map((s:any)=>({name:s?.name,business_type:s?.business_type,categories:s?.categories,grades:s?.grades,class_approval:s?.class_approval,deterministic_score:s?.deterministic_score,contacts:A(s?.contacts).slice(0,1).map((c:any)=>({full_name:c?.full_name,email:c?.email,language:c?.language,is_primary:c?.is_primary}))}));
+  return {worker_payload_version:3,server_semantic_version:4,system:p?.system,response_schema:p?.response_schema,trigger:p?.trigger,guard:p?.guard,bom:p?.bom,deterministic:p?.deterministic,supplier_candidates:candidates,meta:p?.meta,context:{project:ctx?.project,current_rfqs:A(ctx?.current_rfqs).slice(0,5),supplier_offers:A(ctx?.supplier_offers).slice(0,3)},sources};
+}
 
 Deno.serve(async req=>{
   try{
@@ -20,13 +27,10 @@ Deno.serve(async req=>{
       const {data,error}=await db.rpc('semantic_claim_job',{p_worker_label:label});
       if(error)throw error;
       let job=data||null;
-      // The currently running Monterey worker validates payload version 3.
-      // Server v4 payloads are schema-compatible, so only the copy returned to the worker is downgraded.
-      // The canonical DB payload remains v4 and is applied by the v4 orchestrator after completion.
+      // Keep canonical v4 payload in DB. Return a bounded v3-compatible copy to the Monterey worker.
       if(job?.payload&&Number(job.payload.worker_payload_version||0)===4){
         job=structuredClone(job);
-        job.payload.worker_payload_version=3;
-        job.payload.server_semantic_version=4;
+        job.payload=compactForMonterey(job.payload);
       }
       return reply({ok:true,job});
     }
