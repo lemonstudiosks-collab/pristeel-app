@@ -66,7 +66,7 @@ const {JSDOM}=require('jsdom');
   w.PSTCanonicalProjectWorkflowV1.install();
   w.PSTCanonicalProjectWorkflowV1.render('overview');
 
-  const areas=[...w.document.querySelectorAll('[data-pwf-area]')];
+  const areas=[...w.document.querySelectorAll('.pwf-area-btn[data-pwf-area]')];
   assert.strictEqual(areas.length,6,'Project workspace must expose six canonical top-level areas');
   assert.deepStrictEqual(areas.map(x=>x.textContent.trim()),['Përmbledhja','Prokurimi','Ekzekutimi','Financat','Skedarët','Komunikimi']);
   assert(w.document.getElementById('pst-pi-body').textContent.includes(project.name),'Active project name must remain visible in the canonical context');
@@ -78,7 +78,7 @@ const {JSDOM}=require('jsdom');
     'BOM','RFQ','Ofertat e furnitorëve','Krahasimi i ofertave','Çmimi i shitjes','Oferta për klientin'
   ]);
   assert(w.document.getElementById('pst-pi-body').textContent.includes('Nuk ka BOM'),'No-BOM state must be explicit instead of blank');
-  assert(w.document.querySelector('[data-pwf-stage="rfq"]'),'RFQ must remain clickable when BOM is absent');
+  assert(w.document.querySelector('.pwf-stage[data-pwf-stage="rfq"]'),'RFQ must remain clickable when BOM is absent');
 
   w.PSTCanonicalProjectWorkflowV1.render('procurement','rfq');
   assert(w.document.querySelector('[data-pwf-action="open-rfq"]'),'RFQ editor action must be retargeted through the project-context bridge');
