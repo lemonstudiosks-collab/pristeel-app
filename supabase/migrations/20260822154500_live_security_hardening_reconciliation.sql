@@ -53,7 +53,7 @@ begin
       execute format('grant execute on function %s to service_role', fn);
     end if;
   end loop;
-end
+end;
 $$;
 
 -- Pin trigger-function name resolution so caller-controlled search paths cannot affect it.
@@ -75,7 +75,7 @@ begin
       execute format('alter function %s set search_path = public, pg_catalog', fn);
     end if;
   end loop;
-end
+end;
 $$;
 
 -- FK-supporting indexes identified by the Supabase performance advisor.
