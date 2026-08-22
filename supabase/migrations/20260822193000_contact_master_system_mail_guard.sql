@@ -1,7 +1,7 @@
 -- Keep automated/system mailboxes out of Contact Master and preserve manual project-contact curation.
 -- Root cause: the Gmail project-email trigger treated every non-PRISTEEL incoming sender as a client.
--- This migration updates both the live trigger path and the rebuild helper, then removes only
--- Gmail-auto-created system identities with no CRM provenance.
+-- This migration updates both the live trigger path and the rebuild helper, adds a project-contact
+-- database invariant, then removes only Gmail-auto-created system identities with no CRM provenance.
 
 create or replace function public.pppp_sync_contact_from_project_email_v1()
 returns trigger
@@ -30,10 +30,12 @@ begin
   if v_email = '' then return new; end if;
 
   -- Internal mailboxes and automated senders are operational traffic, not business relationships.
+  -- Token-aware matching catches both `noreply@...` and forms such as `drive-shares-dm-noreply@...`
+  -- or `calendar-notification@...` without treating ordinary business addresses as system mail.
   if split_part(v_email,'@',2) = 'prissteel.com'
      or split_part(v_email,'@',2) like '%.prissteel.com'
      or v_email in ('arianitti@me.com','arianit.vllahiu@gmail.com')
-     or split_part(v_email,'@',1) ~* '^(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
+     or split_part(v_email,'@',1) ~* '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
   then
     return new;
   end if;
@@ -149,7 +151,7 @@ begin
   if split_part(v_email,'@',2) = 'prissteel.com'
      or split_part(v_email,'@',2) like '%.prissteel.com'
      or v_email in ('arianitti@me.com','arianit.vllahiu@gmail.com')
-     or split_part(v_email,'@',1) ~* '^(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
+     or split_part(v_email,'@',1) ~* '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
   then
     return;
   end if;
@@ -252,7 +254,7 @@ begin
       and split_part(lower(trim(from_email)),'@',2) <> 'prissteel.com'
       and split_part(lower(trim(from_email)),'@',2) not like '%.prissteel.com'
       and lower(trim(from_email)) not in ('arianitti@me.com','arianit.vllahiu@gmail.com')
-      and split_part(lower(trim(from_email)),'@',1) !~* '^(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
+      and split_part(lower(trim(from_email)),'@',1) !~* '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
     order by lower(from_email),project_id,coalesce(sent_at,created_at) desc
   loop
     perform public.pppp_sync_contact_from_project_email_v1_row(r.id);
@@ -262,11 +264,47 @@ begin
 end;
 $function$;
 
+-- Last-line database invariant for every writer, including browser and scheduled server reconciliation.
+create or replace function public.pppp_project_contact_system_mail_guard_v1()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_email text;
+begin
+  v_email := lower(trim(coalesce(new.email,'')));
+  if v_email='' then return new; end if;
+  if split_part(v_email,'@',2) = 'prissteel.com'
+     or split_part(v_email,'@',2) like '%.prissteel.com'
+     or v_email in ('arianitti@me.com','arianit.vllahiu@gmail.com')
+     or split_part(v_email,'@',1) ~* '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
+  then
+    return null;
+  end if;
+  return new;
+end;
+$function$;
+
+revoke all on function public.pppp_project_contact_system_mail_guard_v1() from public, anon, authenticated;
+grant execute on function public.pppp_project_contact_system_mail_guard_v1() to service_role;
+
+drop trigger if exists trg_pppp_project_contact_system_mail_guard_v1 on public.project_contacts;
+create trigger trg_pppp_project_contact_system_mail_guard_v1
+before insert or update on public.project_contacts
+for each row execute function public.pppp_project_contact_system_mail_guard_v1();
+
 -- Remove only auto-generated project relationships for automated mailboxes.
 delete from public.project_contacts
 where coalesce(is_primary,false)=false
   and source in ('gmail','email-auto')
-  and split_part(lower(trim(email)),'@',1) ~* '^(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)';
+  and (
+    split_part(lower(trim(email)),'@',2) = 'prissteel.com'
+    or split_part(lower(trim(email)),'@',2) like '%.prissteel.com'
+    or lower(trim(email)) in ('arianitti@me.com','arianit.vllahiu@gmail.com')
+    or split_part(lower(trim(email)),'@',1) ~* '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
+  );
 
 -- Remove Gmail provenance only for canonical contacts that were created by the Gmail auto-link path.
 delete from public.contact_sources cs
@@ -275,13 +313,13 @@ where cs.contact_id=c.id::text
   and cs.source='gmail'
   and c.hubspot_id is null
   and c.notes='Auto-linked from Gmail through PPPP project context'
-  and split_part(lower(trim(c.email)),'@',1) ~* '^(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)';
+  and split_part(lower(trim(c.email)),'@',1) ~* '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)';
 
 -- Delete the now-orphaned fake canonical contacts only when no other CRM/source identity remains.
 delete from public.contacts c
 where c.hubspot_id is null
   and c.notes='Auto-linked from Gmail through PPPP project context'
-  and split_part(lower(trim(c.email)),'@',1) ~* '^(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
+  and split_part(lower(trim(c.email)),'@',1) ~* '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
   and not exists (
     select 1 from public.contact_sources cs where cs.contact_id=c.id::text
   );
