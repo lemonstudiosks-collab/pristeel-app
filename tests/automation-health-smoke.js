@@ -33,7 +33,7 @@ const {JSDOM}=require('jsdom');
     backlog:{legacy_needs_vision:0,needs_ocr:8,local_ocr_queued:2,local_ocr_failed:0,document_review_tasks:16,rfq_draft_review:146,projects_without_drive:12,project_discovery_open:0}
   };
   let calls=0;
-  w.supaFetch=async(path,method,body)=>{calls++;assert.strictEqual(path,'rpc/pppp_automation_health_v1');assert.strictEqual(method,'POST');assert.deepStrictEqual(body,{});return payload;};
+  w.supaFetch=async(path,method,body)=>{calls++;assert.strictEqual(path,'rpc/pppp_automation_health_v1');assert.strictEqual(method,'POST');assert.strictEqual(JSON.stringify(body),'{}');return payload;};
   w.eval(fs.readFileSync('pristeel-automation-health-v1.js','utf8'));
   await new Promise(r=>setTimeout(r,30));
   const panel=w.document.getElementById('pst-auto-health');
