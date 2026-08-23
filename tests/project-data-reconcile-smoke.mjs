@@ -46,3 +46,4 @@ assert(!fields.candidates.some(x=>x.id==='o2'),'Natural-language offer must rema
 console.log('Project data reconciliation safety smoke test passed.');
 await import('./commercial-intake-candidates-smoke.mjs');
 await import('./commercial-intake-approval-smoke.js');
+await import('./quality-readiness-smoke.js');
