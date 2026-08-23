@@ -12,7 +12,7 @@ on:
       - 'tests/project-email-reconcile-smoke.mjs'
       - 'tests/project-discovery-queue-smoke.mjs'
       - 'tests/commercial-intake-candidates-smoke.mjs'
-      - 'gmail-project-auto-link-smoke.js'
+      - 'tests/gmail-project-auto-link-smoke.js'
       - 'pristeel-project-discovery.js'
       - 'pristeel-gmail-project-identity-guard-v1.js'
       - 'pristeel-gmail-project-auto-link-v1.js'
