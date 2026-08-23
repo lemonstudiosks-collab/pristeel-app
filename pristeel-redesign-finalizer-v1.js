@@ -1,5 +1,5 @@
 /* PRISTEEL redesign finalizer v1
- * Revision: 20260822-contact-cards1.
+ * Revision: 20260823-operating-experience1.
  * Re-applies presentation-only styling after workspace renders.
  * Canonical Home exclusively owns priority-card navigation and business state.
  * Bounded timeouts only. No polling, observers, writes, auth or project-open overrides.
@@ -33,6 +33,20 @@ function sectionTheme(){
     s.setAttribute('data-pst-section-theme','1');
     document.head.appendChild(s);
   }catch(e){console.warn('PRISTEEL finalizer section theme:',e);}
+}
+function operatingExperience(){
+  try{
+    var X=window.PSTOperatingExperienceV1;
+    if(X&&typeof X.apply==='function'){X.apply();return;}
+    var existing=document.querySelector('script[data-pst-operating-experience]');
+    if(existing)return;
+    var s=document.createElement('script');
+    s.src='pristeel-operating-experience-v1.js?v=20260823-1';
+    s.defer=true;
+    s.setAttribute('data-pst-operating-experience','1');
+    s.onload=function(){var x=window.PSTOperatingExperienceV1;if(x&&typeof x.apply==='function')x.apply();};
+    document.head.appendChild(s);
+  }catch(e){console.warn('PRISTEEL finalizer operating experience:',e);}
 }
 function contactCards(){
   try{
@@ -80,19 +94,20 @@ function installPriorityStyle(){
   document.head.appendChild(s);
 }
 function apply(){
-  sectionTheme();readability();contactCards();
+  sectionTheme();readability();contactCards();operatingExperience();
   try{var C=window.PSTBusinessCommandCenterV1;if(C&&typeof C.open==='function')window.openCmdK=C.open;if(C&&typeof C.decorateHome==='function')C.decorateHome();}catch(e){console.warn('PRISTEEL finalizer search:',e);}
   try{var D=window.PSTDashboardTaskCardsV1;if(D&&typeof D.decorate==='function')D.decorate();}catch(e){console.warn('PRISTEEL finalizer cards:',e);}
   try{var H=window.PSTHomeCommandCenterV2;if(H&&typeof H.decorate==='function')H.decorate(false);}catch(e){console.warn('PRISTEEL finalizer home:',e);}
   try{var G=window.PSTBusinessCommandCenterDeepGmail;if(G&&document.getElementById('pst-bcc')&&typeof G.decorate==='function')G.decorate();}catch(e){console.warn('PRISTEEL finalizer Gmail search:',e);}
   try{var P=window.PSTProjectCommandViewV1,projectPage=document.getElementById('page-workspace-project');if(P&&projectPage&&projectPage.style.display!=='none'&&typeof P.load==='function')P.load(window.__pstCurrentProjectId||window._curProjId||'',false);}catch(e){console.warn('PRISTEEL finalizer project:',e);}
   try{installPriorityStyle();repairPriorityCards();}catch(e){console.warn('PRISTEEL finalizer priority cards:',e);}
+  try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){console.warn('PRISTEEL finalizer operating experience apply:',e);}
 }
 function schedule(){[0,80,220,450].forEach(function(ms){setTimeout(apply,ms);});}
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 document.addEventListener('DOMContentLoaded',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
-document.addEventListener('click',function(event){var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,#pst-ws-home-refresh,[onclick*="pstWorkspaceGo"],[data-pm-open],[data-release-filter],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,250,700].forEach(function(ms){setTimeout(apply,ms);});},true);
+document.addEventListener('click',function(event){var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,#pst-ws-home-refresh,[onclick*="pstWorkspaceGo"],[data-pm-open],[data-release-filter],[data-pwf-area],[data-pwf-stage],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,250,700].forEach(function(ms){setTimeout(apply,ms);});},true);
 if(document.readyState!=='loading')schedule();
-window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability,sectionTheme:sectionTheme,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
+window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
 })();
