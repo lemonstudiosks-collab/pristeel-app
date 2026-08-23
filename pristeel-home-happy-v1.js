@@ -1,4 +1,4 @@
-/* PRISTEEL Home Happy v5
+/* PRISTEEL Home Happy v6
  * Compatibility shim + live navigation stability guard.
  * Loads Operational Truth for consistent Home/Projects/Opportunities routing.
  */
@@ -12,12 +12,13 @@ function S(v){return String(v==null?'':v);}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
 function mark(key){document.querySelectorAll('#pst-ws-canonical-nav .pst-ws-navbtn,.pst-ws-navbtn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-key')===key);});}
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);return true;}
+function primeProjects(){var r=window.__pstWorkspaceProjectRows||window._allProjectsCache;if(Array.isArray(r)&&r.length)return Promise.resolve(r);var H=window.PSTHomeOperatingGridV1;if(H&&typeof H.loadData==='function')return Promise.resolve(H.loadData(false)).then(function(d){var p=d&&Array.isArray(d.projects)?d.projects:[];if(p.length)window._allProjectsCache=p;return p;}).catch(function(){return[];});return Promise.resolve([]);}
 function ensureTruth(){
  if(window.PSTOperationalTruthV1)return Promise.resolve(window.PSTOperationalTruthV1);
  if(truthLoading)return truthLoading;
  var old=document.querySelector('script[data-pst-operational-truth]');
  if(old){truthLoading=new Promise(function(resolve){var n=0;(function wait(){if(window.PSTOperationalTruthV1||++n>50){resolve(window.PSTOperationalTruthV1||null);return;}setTimeout(wait,40);})();});return truthLoading;}
- truthLoading=new Promise(function(resolve){var s=document.createElement('script');s.src='pristeel-operational-truth-v1.js?v=20260823-truth1';s.defer=true;s.setAttribute('data-pst-operational-truth','1');s.onload=function(){resolve(window.PSTOperationalTruthV1||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);}).finally(function(){truthLoading=null;});
+ truthLoading=primeProjects().then(function(){return new Promise(function(resolve){var s=document.createElement('script');s.src='pristeel-operational-truth-v1.js?v=20260823-truth1';s.defer=true;s.setAttribute('data-pst-operational-truth','1');s.onload=function(){resolve(window.PSTOperationalTruthV1||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);});}).finally(function(){truthLoading=null;});
  return truthLoading;
 }
 function openProjects(filter){var T=window.PSTOperationalTruthV1;if(T&&typeof T.openProjects==='function')return T.openProjects(filter||'operative');var out;if(typeof window.pstProjectsModernOpen==='function')out=window.pstProjectsModernOpen();else out=activate('page-workspace-projects','projects');mark('projects');return out===undefined?true:out;}
