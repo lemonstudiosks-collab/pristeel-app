@@ -1,25 +1,46 @@
-/* PRISTEEL Primary Navigation Resilience v2
+/* PRISTEEL Primary Navigation Resilience v3
  * Direct navigation ownership for six daily PPPP zones.
- * Also owns late loading of the decision-first Home/Tender/Project classification presentation layers.
+ * Owns the final decision-first navigation without re-entering the redesign finalizer.
  */
 (function(){
 'use strict';
-if(window.__pstPrimaryNavResilienceV2)return;
+if(window.__pstPrimaryNavResilienceV3)return;
+window.__pstPrimaryNavResilienceV3=true;
 window.__pstPrimaryNavResilienceV2=true;
 window.__pstPrimaryNavResilienceV1=true;
 var KEYS={home:1,tenders:1,projects:1,contacts:1,finance:1,apps:1};
-var assistantLoading=false,commandLoading=null;
+var assistantLoading=false,commandLoading=null,decoratorEpoch=0;
 function S(v){return String(v==null?'':v);}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
 function mark(key){document.querySelectorAll('#pst-ws-canonical-nav .pst-ws-navbtn,.pst-ws-navbtn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-key')===key);});}
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);return p;}
-function applyDecorators(force){[0,70,220,650].forEach(function(ms){setTimeout(function(){try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){}try{var A=window.PSTOperatingAssistantV2;if(A&&typeof A.apply==='function')A.apply(!!force);}catch(e){}try{var H=window.PSTHomeOperatingGridV1;if(H&&typeof H.render==='function')H.render(!!force);}catch(e){}try{var P=window.PSTProjectClassificationV1;if(P&&typeof P.decorate==='function')P.decorate();}catch(e){}try{var T=window.PSTTenderPriorityActionsV1;if(T&&typeof T.wrapPromotion==='function')T.wrapPromotion();}catch(e){}try{var R=window.PSTRedesignFinalizerV1;if(R&&typeof R.apply==='function')R.apply();}catch(e){}},ms);});}
-function loadScript(path,attr,globalName){if(window[globalName])return Promise.resolve(window[globalName]);var old=document.querySelector('script['+attr+']');if(old)return new Promise(function(resolve){var tries=0;(function wait(){if(window[globalName]||++tries>40){resolve(window[globalName]||null);return;}setTimeout(wait,50);})();});return new Promise(function(resolve){var s=document.createElement('script');s.src=path+'?v=20260823-command1';s.defer=true;s.setAttribute(attr,'1');s.onload=function(){resolve(window[globalName]||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);});}
+function applyDecorators(force){
+  var epoch=++decoratorEpoch;
+  [0,70,220,650].forEach(function(ms){setTimeout(function(){
+    if(epoch!==decoratorEpoch&&ms>0)return;
+    try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){}
+    try{var A=window.PSTOperatingAssistantV2;if(A&&typeof A.apply==='function')A.apply(!!force);}catch(e){}
+    try{var H=window.PSTHomeOperatingGridV1;if(H&&typeof H.render==='function')H.render(!!force);}catch(e){}
+    try{var P=window.PSTProjectClassificationV1;if(P&&typeof P.decorate==='function')P.decorate();}catch(e){}
+    try{var T=window.PSTTenderPriorityActionsV1;if(T&&typeof T.wrapPromotion==='function')T.wrapPromotion();}catch(e){}
+  },ms);});
+}
+function loadScript(path,attr,globalName){if(window[globalName])return Promise.resolve(window[globalName]);var old=document.querySelector('script['+attr+']');if(old)return new Promise(function(resolve){var tries=0;(function wait(){if(window[globalName]||++tries>40){resolve(window[globalName]||null);return;}setTimeout(wait,50);})();});return new Promise(function(resolve){var s=document.createElement('script');s.src=path+'?v=20260823-command2';s.defer=true;s.setAttribute(attr,'1');s.onload=function(){resolve(window[globalName]||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);});}
 function ensureCommandCenter(){if(window.PSTTenderPriorityActionsV1&&window.PSTHomeOperatingGridV1&&window.PSTProjectClassificationV1){applyDecorators(true);return Promise.resolve(true);}if(commandLoading)return commandLoading;commandLoading=loadScript('pristeel-tender-priority-actions-v1.js','data-pst-tender-priority-actions','PSTTenderPriorityActionsV1').then(function(){return loadScript('pristeel-home-operating-grid-v1.js','data-pst-home-operating-grid','PSTHomeOperatingGridV1');}).then(function(){return loadScript('pristeel-project-classification-v1.js','data-pst-project-classification','PSTProjectClassificationV1');}).then(function(){applyDecorators(true);return true;}).finally(function(){commandLoading=null;});return commandLoading;}
 function ensureAssistant(){ensureCommandCenter();if(window.PSTOperatingAssistantV2){applyDecorators(true);return true;}if(assistantLoading||document.querySelector('script[data-pst-operating-assistant-resilience]'))return false;assistantLoading=true;var s=document.createElement('script');s.src='pristeel-operating-assistant-v2.js?v=20260823-2';s.defer=true;s.setAttribute('data-pst-operating-assistant-resilience','1');s.onload=function(){assistantLoading=false;applyDecorators(true);};s.onerror=function(){assistantLoading=false;};document.head.appendChild(s);return false;}
 function openHome(){var H=window.PSTHomeCanonicalV1;if(H&&typeof H.activateHome==='function')H.activateHome();else activate('page-workspace-home','home');if(H&&typeof H.render==='function')Promise.resolve(H.render(true)).then(function(){ensureAssistant();ensureCommandCenter();applyDecorators(true);});else{ensureAssistant();ensureCommandCenter();applyDecorators(true);}mark('home');return true;}
 function openOpportunities(){var out=false;if(typeof window.pstTenderBizOpenMonitor==='function')out=window.pstTenderBizOpenMonitor();else if(typeof window.pstWsKekTenders==='function')out=window.pstWsKekTenders();else if(typeof window.showPage==='function')out=window.showPage('kek-tenders');else out=activate('page-kek-tenders','tenders');mark('tenders');ensureCommandCenter();applyDecorators(false);return out===undefined?true:out;}
-function openProjects(){var out=false;if(typeof window.pstProjectsModernOpen==='function')out=window.pstProjectsModernOpen();else{var page=activate('page-workspace-projects','projects');if(page&&typeof window.pstWsRenderProjects==='function')try{window.pstWsRenderProjects();}catch(e){}out=!!page;}mark('projects');ensureCommandCenter();applyDecorators(false);return out===undefined?true:out;}
+function existingProjectsReady(){var page=document.getElementById('page-workspace-projects');return !!(page&&page.querySelector('.pst-pm-page')&&Array.isArray(window.__pstWorkspaceProjectRows)&&window.__pstWorkspaceProjectRows.length);}
+function applyProjectFilter(filter){if(!filter)return;var tries=0;(function wait(){var b=document.querySelector('#page-workspace-projects [data-pm-filter="'+S(filter)+'"]');if(b){b.click();return;}if(++tries<20)setTimeout(wait,50);})();}
+function openProjects(filter){
+  var out=false;
+  if(existingProjectsReady())out=!!activate('page-workspace-projects','projects');
+  else if(typeof window.pstProjectsModernOpen==='function')out=window.pstProjectsModernOpen();
+  else{var page=activate('page-workspace-projects','projects');if(page&&typeof window.pstWsRenderProjects==='function')try{window.pstWsRenderProjects();}catch(e){}out=!!page;}
+  mark('projects');ensureCommandCenter();applyDecorators(false);
+  Promise.resolve(out).then(function(){applyProjectFilter(filter);}).catch(function(e){console.warn('PRISTEEL Projects navigation:',e);});
+  return out===undefined?true:out;
+}
 function openPartners(){var C=window.PSTContactMasterV1,out=false;if(C&&typeof C.open==='function')out=C.open();else if(typeof window.showPage==='function')out=window.showPage('contacts');else out=activate('page-contacts','contacts')||activate('page-workspace-contacts','contacts');mark('contacts');applyDecorators(false);return out===undefined?true:out;}
 function legacyShow(page){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(page);return true;}}catch(e){}try{if(typeof window.showPage==='function'){window.showPage(page);return true;}}catch(e){}return false;}
 function openFinance(){var ok=legacyShow('finance');if(!ok)ok=!!activate('page-finance','finance');mark('finance');setTimeout(function(){try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}applyDecorators(false);},40);return ok;}
@@ -27,6 +48,9 @@ function systemFallback(){var p=activate('page-workspace-apps','apps');if(!p)ret
 function openSystem(){var current=document.getElementById('page-workspace-apps');if(current&&S(current.innerHTML).trim()){activate('page-workspace-apps','apps');mark('apps');applyDecorators(false);return true;}if(typeof window.openModuleHub==='function'){try{window.openModuleHub();mark('apps');applyDecorators(false);return true;}catch(e){}}var ok=systemFallback();mark('apps');applyDecorators(false);return ok;}
 function route(key){key=S(key).toLowerCase();if(key==='home')return openHome();if(key==='tenders')return openOpportunities();if(key==='projects')return openProjects();if(key==='contacts')return openPartners();if(key==='finance')return openFinance();if(key==='apps')return openSystem();return false;}
 function intercept(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key]'):null;if(!b)return;var key=S(b.getAttribute('data-key')).toLowerCase();if(!KEYS[key])return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();route(key);}
-document.addEventListener('click',intercept,true);document.addEventListener('pst:modules-ready',function(){ensureAssistant();ensureCommandCenter();applyDecorators(true);},{once:true});document.addEventListener('pst:home-canonical-rendered',function(){ensureAssistant();ensureCommandCenter();applyDecorators(true);});if(document.readyState!=='loading'){ensureAssistant();ensureCommandCenter();applyDecorators(false);}else document.addEventListener('DOMContentLoaded',function(){ensureAssistant();ensureCommandCenter();applyDecorators(false);},{once:true});
-window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2={route:route,go:route,openHome:openHome,openProjects:openProjects,openFinance:openFinance,openSystem:openSystem,ensureAssistant:ensureAssistant,ensureCommandCenter:ensureCommandCenter};
+function interceptHomeTile(e){var b=e.target&&e.target.closest?e.target.closest('.pst-hog-tile[data-hog-act]'):null;if(!b)return;var act=S(b.getAttribute('data-hog-act')).toLowerCase();if(act===''||act==='waiting'){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openProjects(act==='waiting'?'waiting':null);}}
+document.addEventListener('click',intercept,true);
+document.addEventListener('click',interceptHomeTile,true);
+document.addEventListener('pst:modules-ready',function(){ensureAssistant();ensureCommandCenter();applyDecorators(true);},{once:true});document.addEventListener('pst:home-canonical-rendered',function(){ensureAssistant();ensureCommandCenter();applyDecorators(true);});if(document.readyState!=='loading'){ensureAssistant();ensureCommandCenter();applyDecorators(false);}else document.addEventListener('DOMContentLoaded',function(){ensureAssistant();ensureCommandCenter();applyDecorators(false);},{once:true});
+window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3={route:route,go:route,openHome:openHome,openProjects:openProjects,openFinance:openFinance,openSystem:openSystem,ensureAssistant:ensureAssistant,ensureCommandCenter:ensureCommandCenter,_test:{applyDecorators:applyDecorators,interceptHomeTile:interceptHomeTile,existingProjectsReady:existingProjectsReady}};
 })();
