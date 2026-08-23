@@ -11,7 +11,8 @@ on:
       - 'tests/project-data-reconcile-smoke.mjs'
       - 'tests/project-email-reconcile-smoke.mjs'
       - 'tests/project-discovery-queue-smoke.mjs'
-      - 'tests/gmail-project-auto-link-smoke.js'
+      - 'tests/commercial-intake-candidates-smoke.mjs'
+      - 'gmail-project-auto-link-smoke.js'
       - 'pristeel-project-discovery.js'
       - 'pristeel-gmail-project-identity-guard-v1.js'
       - 'pristeel-gmail-project-auto-link-v1.js'
@@ -62,6 +63,8 @@ jobs:
         run: node tests/gmail-project-auto-link-smoke.js
       - name: Test Project Discovery queue safety
         run: node tests/project-discovery-queue-smoke.mjs
+      - name: Test commercial intake candidate safety
+        run: node tests/commercial-intake-candidates-smoke.mjs
       - name: Reconcile project data
         env:
           SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
@@ -76,12 +79,12 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           EMAIL_RECONCILE_MODE: ${{ github.event_name == 'schedule' && 'apply' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'preview') }}
         run: node scripts/project-email-reconcile.mjs
-      - name: Preview Project Discovery queue
+      - name: Sync Project Discovery queue
         env:
           SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          PROJECT_DISCOVERY_MODE: preview
+          PROJECT_DISCOVERY_MODE: ${{ github.event_name == 'schedule' && 'apply' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'preview') }}
         run: node scripts/project-discovery-queue.mjs
       - name: Upload reconciliation reports
         if: always()
