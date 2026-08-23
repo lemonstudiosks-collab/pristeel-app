@@ -27,3 +27,4 @@ require('./operating-experience-smoke.js');
 require('./operating-experience-owner-collision-smoke.js');
 require('./operating-assistant-v2-smoke.js');
 require('./primary-nav-resilience-smoke.js');
+require('./home-tender-command-grid-smoke.js');
