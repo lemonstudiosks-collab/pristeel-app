@@ -122,3 +122,15 @@ css();setSection(detect());install();
 window.PSTSectionThemeV1={apply:apply,setSection:setSection,detect:detect};
 window.PSTSectionThemeV2=window.PSTSectionThemeV1;
 })();
+
+/* Automation Health is a read-only dynamic child of the current top-level section layer. */
+(function(){
+'use strict';
+if(window.__pstAutomationHealthLoaderV1)return;window.__pstAutomationHealthLoaderV1=true;
+function ensure(){
+ if(window.PSTAutomationHealthV1)return true;
+ if(document.querySelector('script[data-pst-automation-health]'))return false;
+ var s=document.createElement('script');s.src='pristeel-automation-health-v1.js?v='+Date.now();s.defer=true;s.setAttribute('data-pst-automation-health','1');document.head.appendChild(s);return false;
+}
+ensure();document.addEventListener('pst:modules-ready',ensure,{once:true});
+})();

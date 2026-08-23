@@ -21,3 +21,5 @@ assert.strictEqual(w.document.querySelector('#page-finance td').textContent, 'IN
 assert.strictEqual(w.document.querySelector('#page-contacts .ct-avatar').textContent, 'UG', 'Contact content was changed');
 console.log('Unified modules smoke test passed.');
 dom.window.close();
+
+require('./automation-health-smoke.js');
