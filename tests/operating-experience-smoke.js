@@ -55,8 +55,8 @@ assert.strictEqual(w.document.body.dataset.pstProjectPhase,'execution');
 const next=w.document.querySelector('.pwf-next');
 assert.strictEqual(next.getAttribute('data-pwf-area'),'execution','won/execution project should route next action to Execution');
 assert.strictEqual(next.querySelector('b').textContent,'Vazhdo ekzekutimin');
-assert.strictEqual(w.document.querySelector('[data-pwf-stage="bom"]').classList.contains('pst-procurement-stage'),true);
-assert.strictEqual(w.document.querySelector('[data-pwf-stage="pricing"]').classList.contains('pst-commercial-stage'),true);
+assert.strictEqual(w.document.querySelector('.pwf-stage-nav [data-pwf-stage="bom"]').classList.contains('pst-procurement-stage'),true);
+assert.strictEqual(w.document.querySelector('.pwf-stage-nav [data-pwf-stage="pricing"]').classList.contains('pst-commercial-stage'),true);
 
 w.__pstIntegrityLastData.project={id:'p1',status:'pritje',pipeline_stage:'client_offer',operational_state:'wait_for_client'};
 w.PSTOperatingExperienceV1.rewriteNextAction();
