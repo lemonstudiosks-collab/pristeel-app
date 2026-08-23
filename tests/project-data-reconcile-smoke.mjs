@@ -44,3 +44,4 @@ assert(fields.ambiguous.some(x=>x.id==='o5'),'Locale-ambiguous 15.200 must requi
 assert(!fields.candidates.some(x=>x.id==='o2'),'Natural-language offer must remain out of deterministic apply');
 
 console.log('Project data reconciliation safety smoke test passed.');
+await import('./commercial-intake-candidates-smoke.mjs');
