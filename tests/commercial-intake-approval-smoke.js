@@ -51,7 +51,7 @@ const {JSDOM}=require('jsdom');
   const panel=w.document.getElementById('pst-commercial-intake-review');
   assert.ok(panel,'commercial intake review panel did not render');
   assert.match(panel.textContent,/Supplier A/);
-  assert.match(panel.textContent,/1\.85/);
+  assert.match(panel.textContent,/1[,.]85/,'commercial value should render in the active locale');
   assert.strictEqual(rpcCalls,0,'candidate was approved without a human click');
   const btn=panel.querySelector('[data-cir-approve]');
   assert.ok(btn,'strong reviewed candidate should expose an approval button');
