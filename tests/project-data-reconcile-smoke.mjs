@@ -48,3 +48,4 @@ await import('./commercial-intake-candidates-smoke.mjs');
 await import('./commercial-intake-approval-smoke.js');
 await import('./local-ocr-no-text-classification-smoke.mjs');
 await import('./execution-release-readiness-smoke.mjs');
+await import('./swift-payment-evidence-routing-smoke.mjs');
