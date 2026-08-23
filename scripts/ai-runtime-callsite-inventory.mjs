@@ -89,7 +89,8 @@ const expected = {
     { file: 'pristeel-project-analysis.js', count: 2 },
     { file: 'pristeel-project-intelligence-conversation-v1.js', count: 1 },
     { file: 'pristeel-project-intelligence-resilience-v1.js', count: 1 },
-    { file: 'pristeel-tender-business-flow-v1.js', count: 1 }
+    { file: 'pristeel-tender-business-flow-v1.js', count: 1 },
+    { file: 'pristeel-tender-priority-actions-v1.js', count: 1 }
   ],
   pstai_error_code: [
     { file: 'pristeel-gmail-audit.js', count: 1 },
