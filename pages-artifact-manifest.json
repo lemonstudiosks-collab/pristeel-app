@@ -43,6 +43,10 @@
       "reason": "Loaded dynamically by the final primary navigation owner to provide the user-driven project offer revision workflow."
     },
     {
+      "path": "pristeel-project-commercial-simplified-v1.js",
+      "reason": "Loaded dynamically by the offer-revision bridge as the final simplified Project Commercial presentation/action layer."
+    },
+    {
       "path": "pristeel-project-pipeline-consistency-v1.js",
       "reason": "Loaded dynamically by pristeel-our-offer-source-v1.js and required by the current project commercial consistency layer."
     },
@@ -116,6 +120,11 @@
       "source": "pristeel-primary-nav-resilience-v1.js",
       "contains": "pristeel-project-offer-revision-assistant-v1.js",
       "reason": "Final navigation owner loads the project offer revision assistant."
+    },
+    {
+      "source": "pristeel-offer-revision-email-bridge-v1.js",
+      "contains": "pristeel-project-commercial-simplified-v1.js",
+      "reason": "Offer-revision bridge loads the final simplified Project Commercial workflow layer."
     },
     {
       "source": "pristeel-home-runtime-owner-guard-v1.js",
