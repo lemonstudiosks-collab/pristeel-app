@@ -1,4 +1,4 @@
-/* PRISTEEL Home Happy v7
+/* PRISTEEL Home Happy v8
  * Compatibility shim + live navigation stability guard.
  * Loads Operational Truth for consistent Home/Projects/Opportunities routing.
  */
@@ -7,7 +7,7 @@
 if(window.__pstHomeHappyV1)return;
 window.__pstHomeHappyV1=true;
 
-var truthLoading=null;
+var truthLoading=null,projectRouteSeq=0;
 function S(v){return String(v==null?'':v);}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
 function mark(key){document.querySelectorAll('#pst-ws-canonical-nav .pst-ws-navbtn,.pst-ws-navbtn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-key')===key);});}
@@ -23,7 +23,7 @@ function ensureTruth(){
 }
 function projectsAlreadyLoaded(){var p=document.getElementById('page-workspace-projects'),r=window.__pstWorkspaceProjectRows||window._allProjectsCache;return !!(p&&p.querySelector('.pst-pm-page')&&Array.isArray(r)&&r.length);}
 function openProjects(filter){
- filter=filter||'operative';var T=window.PSTOperationalTruthV1;
+ filter=filter||'operative';var seq=++projectRouteSeq,T=window.PSTOperationalTruthV1;
  if(projectsAlreadyLoaded()){
   activate('page-workspace-projects','projects');
   if(T&&typeof T.setProjectFilter==='function')T.setProjectFilter(filter);
@@ -31,7 +31,7 @@ function openProjects(filter){
  }
  if(T&&typeof T.openProjects==='function')return T.openProjects(filter);
  var out;if(typeof window.pstProjectsModernOpen==='function')out=window.pstProjectsModernOpen();else out=activate('page-workspace-projects','projects');mark('projects');
- Promise.resolve(out).then(function(){ensureTruth().then(function(X){if(X&&typeof X.setProjectFilter==='function')X.setProjectFilter(filter);});}).catch(function(){});
+ Promise.resolve(out).then(function(){ensureTruth().then(function(X){if(seq===projectRouteSeq&&X&&typeof X.setProjectFilter==='function')X.setProjectFilter(filter);});}).catch(function(){});
  return out===undefined?true:out;
 }
 function fallbackFinance(){try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('finance');}catch(e){}activate('page-finance','finance');try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}return true;}
