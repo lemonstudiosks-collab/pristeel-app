@@ -31,6 +31,18 @@
       "reason": "Loaded dynamically by the Commercial source-document layer to enable PDF export and Gmail draft creation with the saved offer PDF attached."
     },
     {
+      "path": "pristeel-offer-revision-email-draft-v1.js",
+      "reason": "Loaded dynamically by the final primary navigation owner for explicit offer-revision Gmail draft creation with PDF attachment and optional CC."
+    },
+    {
+      "path": "pristeel-offer-revision-email-bridge-v1.js",
+      "reason": "Loaded dynamically with the project offer revision workflow to bridge the revision assistant to the controlled Gmail draft helper."
+    },
+    {
+      "path": "pristeel-project-offer-revision-assistant-v1.js",
+      "reason": "Loaded dynamically by the final primary navigation owner to provide the user-driven project offer revision workflow."
+    },
+    {
       "path": "pristeel-project-pipeline-consistency-v1.js",
       "reason": "Loaded dynamically by pristeel-our-offer-source-v1.js and required by the current project commercial consistency layer."
     },
@@ -89,6 +101,21 @@
       "source": "pristeel-offer-source-document-open-v1.js",
       "contains": "pristeel-offer-pdf-email-workflow-v1.js",
       "reason": "Saved-offer PDF and Gmail draft workflow dependency."
+    },
+    {
+      "source": "pristeel-primary-nav-resilience-v1.js",
+      "contains": "pristeel-offer-revision-email-draft-v1.js",
+      "reason": "Final navigation owner loads the explicit revision Gmail draft helper."
+    },
+    {
+      "source": "pristeel-primary-nav-resilience-v1.js",
+      "contains": "pristeel-offer-revision-email-bridge-v1.js",
+      "reason": "Final navigation owner loads the revision email bridge after the helper."
+    },
+    {
+      "source": "pristeel-primary-nav-resilience-v1.js",
+      "contains": "pristeel-project-offer-revision-assistant-v1.js",
+      "reason": "Final navigation owner loads the project offer revision assistant."
     },
     {
       "source": "pristeel-home-runtime-owner-guard-v1.js",
