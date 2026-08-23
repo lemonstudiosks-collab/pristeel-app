@@ -1,4 +1,4 @@
-/* PRISTEEL Home Happy v6
+/* PRISTEEL Home Happy v7
  * Compatibility shim + live navigation stability guard.
  * Loads Operational Truth for consistent Home/Projects/Opportunities routing.
  */
@@ -21,7 +21,19 @@ function ensureTruth(){
  truthLoading=primeProjects().then(function(){return new Promise(function(resolve){var s=document.createElement('script');s.src='pristeel-operational-truth-v1.js?v=20260823-truth1';s.defer=true;s.setAttribute('data-pst-operational-truth','1');s.onload=function(){resolve(window.PSTOperationalTruthV1||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);});}).finally(function(){truthLoading=null;});
  return truthLoading;
 }
-function openProjects(filter){var T=window.PSTOperationalTruthV1;if(T&&typeof T.openProjects==='function')return T.openProjects(filter||'operative');var out;if(typeof window.pstProjectsModernOpen==='function')out=window.pstProjectsModernOpen();else out=activate('page-workspace-projects','projects');mark('projects');return out===undefined?true:out;}
+function projectsAlreadyLoaded(){var p=document.getElementById('page-workspace-projects'),r=window.__pstWorkspaceProjectRows||window._allProjectsCache;return !!(p&&p.querySelector('.pst-pm-page')&&Array.isArray(r)&&r.length);}
+function openProjects(filter){
+ filter=filter||'operative';var T=window.PSTOperationalTruthV1;
+ if(projectsAlreadyLoaded()){
+  activate('page-workspace-projects','projects');
+  if(T&&typeof T.setProjectFilter==='function')T.setProjectFilter(filter);
+  return true;
+ }
+ if(T&&typeof T.openProjects==='function')return T.openProjects(filter);
+ var out;if(typeof window.pstProjectsModernOpen==='function')out=window.pstProjectsModernOpen();else out=activate('page-workspace-projects','projects');mark('projects');
+ Promise.resolve(out).then(function(){ensureTruth().then(function(X){if(X&&typeof X.setProjectFilter==='function')X.setProjectFilter(filter);});}).catch(function(){});
+ return out===undefined?true:out;
+}
 function fallbackFinance(){try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('finance');}catch(e){}activate('page-finance','finance');try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}return true;}
 function fallbackSystem(){try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('apps');}catch(e){}activate('page-workspace-apps','apps');return true;}
 function route(key){
@@ -30,14 +42,14 @@ function route(key){
   var H=window.PSTHomeCanonicalV1;if(H&&typeof H.activateHome==='function')H.activateHome();else activate('page-workspace-home','home');
   if(H&&typeof H.render==='function')Promise.resolve(H.render(true)).then(function(){ensureTruth().then(function(X){if(X&&typeof X.syncHome==='function')X.syncHome(true);});}).catch(function(){});mark('home');return true;
  }
- if(key==='projects')return T&&T.openProjects?T.openProjects('operative'):openProjects('operative');
+ if(key==='projects')return openProjects('operative');
  if(key==='tenders')return T&&T.openOpportunities?T.openOpportunities(false):(typeof window.pstTenderBizOpenMonitor==='function'?window.pstTenderBizOpenMonitor():false);
  if(key==='contacts'){var C=window.PSTContactMasterV1,x=false;if(C&&typeof C.open==='function')x=C.open();else if(typeof window.showPage==='function')x=window.showPage('contacts');var p=document.getElementById('page-contacts');if(p){p.classList.add('active');p.style.display='block';}mark('contacts');return x===undefined?true:x;}
  if(key==='finance')return T&&T.openFinance?T.openFinance():fallbackFinance();
  if(key==='apps')return T&&T.openSystem?T.openSystem():fallbackSystem();
  return false;
 }
-function tileRoute(act){var T=window.PSTOperationalTruthV1;if(act===''||act==='projects')return T&&T.openProjects?T.openProjects('operative'):openProjects('operative');if(act==='waiting')return T&&T.openProjects?T.openProjects('waiting'):openProjects('waiting');if(act==='tenders')return T&&T.openOpportunities?T.openOpportunities(true):route('tenders');if(act==='events')return T&&T.openActivity?T.openActivity():false;if(act==='finance')return T&&T.openFinance?T.openFinance():fallbackFinance();return false;}
+function tileRoute(act){var T=window.PSTOperationalTruthV1;if(act===''||act==='projects')return openProjects('operative');if(act==='waiting')return openProjects('waiting');if(act==='tenders')return T&&T.openOpportunities?T.openOpportunities(true):route('tenders');if(act==='events')return T&&T.openActivity?T.openActivity():false;if(act==='finance')return T&&T.openFinance?T.openFinance():fallbackFinance();return false;}
 function installNavigationStability(){
  if(window.__pstNavigationInteractionStabilityV2)return true;
  window.__pstNavigationInteractionStabilityV2=true;window.__pstNavigationInteractionStabilityV1=true;
