@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "4d3b00a5655bed589a98e26e662d5579b3065e7c",
+  "auditedAtCommit": "48c264cab7116ee36f7c485231510e6529891ba6",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
@@ -49,16 +49,17 @@
         "pristeel-workspace-architecture-v1.js",
         "pristeel-ui-corrections-v2.js",
         "pristeel-redesign-finalizer-v1.js",
-        "pristeel-task-source-actions-v1.js"
+        "pristeel-task-source-actions-v1.js",
+        "pristeel-operating-experience-v1.js"
       ],
-      "note": "Workspace Architecture provides the shell. Task Source Actions v15 is the final visual shell/navigation reconciler: one left Workspace sidebar, no legacy right rail, automation-first daily navigation, and no business-data writes."
+      "note": "Workspace Architecture provides the shell. Task Source Actions v15 remains the safe shell/navigation reconciler. Operating Experience v1 is the late presentation/navigation layer loaded by the redesign finalizer: it exposes Home, Opportunities, Projects, Partners, Finance and System as the primary business zones, applies distinct zone colors, and performs no business-data writes or outbound actions."
     },
     {
       "area": "home",
       "finalOwners": [
         "pristeel-home-canonical-v1.js"
       ],
-      "note": "Workspace Architecture may create the Home shell during startup, but Home Canonical is the sole final data owner. Current Home is an event/action engine: maximum five concrete actions, waiting separated from action, Project Brief drill-down and obsolete-task reconciliation. The pre-bootstrap runtime owner guard keeps later Home navigation on Canonical after pst:modules-ready."
+      "note": "Workspace Architecture may create the Home shell during startup, but Home Canonical is the sole final data owner. Current Home is an event/action engine: maximum five concrete actions, waiting separated from action, Project Brief drill-down and obsolete-task reconciliation. Operating Experience may decorate Home and route Vepro directly to an existing decision surface, but does not own Home data/state."
     },
     {
       "area": "projects-list",
@@ -78,9 +79,10 @@
         "pristeel-project-intelligence-conversation-v1.js",
         "pristeel-project-lifecycle-tracking-v1.js",
         "pristeel-project-intelligence-resilience-v1.js",
-        "pristeel-project-workflow-canonical-v1.js"
+        "pristeel-project-workflow-canonical-v1.js",
+        "pristeel-operating-experience-v1.js"
       ],
-      "note": "Project-First remains the data/tool workspace. Canonical Project Workflow is the final UI-only reconciler: six project areas and one six-stage procurement flow, while BOM/RFQ/comparison/pricing/client-offer engines remain reused and human-gated."
+      "note": "Project-First remains the data/tool workspace and Canonical Project Workflow remains the UI workflow reconciler over the existing engines. Operating Experience is the later presentation layer that groups the project into Përgatitja, Prokurimi, Komerciale, Ekzekutimi and Financa, keeps Skedarët/Komunikimi as utilities, and makes Hapi i radhës lifecycle-aware without replacing BOM/RFQ/comparison/pricing/client-offer engines or human gates."
     },
     {
       "area": "gmail-inbox",
@@ -118,9 +120,10 @@
       "finalOwners": [
         "pristeel-kek-tender-watch-v1.js",
         "pristeel-tender-business-flow-v1.js",
-        "pristeel-tender-winner-contacts-v1.js"
+        "pristeel-tender-winner-contacts-v1.js",
+        "pristeel-operating-experience-v1.js"
       ],
-      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania, TED direct-bid opportunities and TED award-winner outreach. Winner Contacts is a read-only dynamic decorator over researched public business contacts."
+      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania, TED direct-bid opportunities and TED award-winner outreach. Operating Experience adds only the final GO / REVIEW / NO-GO presentation and does not change tender status/project-promotion gates."
     },
     {
       "area": "ai",
@@ -207,13 +210,19 @@
       "module": "pristeel-task-source-actions-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader. It is the final Workspace visual reconciler, exposes safe source shortcuts, normalizes automation-first navigation and performs no project/task/business-data writes."
+      "condition": "Loaded unconditionally by the production base loader. It remains the safe Workspace shell reconciler and source-shortcut provider; later Operating Experience presentation is loaded by the redesign finalizer."
     },
     {
       "module": "pristeel-contact-master-v1.js",
       "loader": "pristeel-task-source-actions-v1.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded with cache busting by the final Workspace shell layer. It provides the read-only unified Contact Master over Gmail, HubSpot, Bitrix24 and project relationships."
+    },
+    {
+      "module": "pristeel-operating-experience-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded dynamically by the redesign finalizer with cache busting. It is a bounded presentation/navigation layer only: business-zone colors, simplified primary navigation, project phase grouping, lifecycle-aware next actions, direct Home action routing and Opportunities decision labels. No Supabase reads/writes or outbound actions."
     },
     {
       "module": "pristeel-project-summary-command-v1.js",
@@ -269,7 +278,7 @@
     {
       "before": "pristeel-home-command-center-v2.js",
       "after": "pristeel-redesign-finalizer-v1.js",
-      "reason": "The redesign finalizer is intentionally later than the Home command-center layer."
+      "reason": "The redesign finalizer is intentionally later than the Home command-center layer. Operating Experience is then loaded dynamically by that finalizer."
     },
     {
       "before": "pristeel-gmail-live-inbox-v2.js",

@@ -2,6 +2,28 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-08-23
+
+### PPPP operating experience simplified without replacing backend engines
+
+- Added `pristeel-operating-experience-v1.js` as a late presentation/navigation layer loaded dynamically by `pristeel-redesign-finalizer-v1.js`.
+- Primary daily navigation is now `Home`, `Opportunities`, `Projects`, `Partners`, `Finance`, `System`.
+- Gmail, Commercial intake/review and technical automation surfaces remain connected but are moved out of primary daily navigation and remain reachable through `System` or direct contextual actions.
+- Added distinct visual color identity by business zone so location is recognizable through both text and color.
+- Project Workspace is presented as five business phases: `Përgatitja -> Prokurimi -> Komerciale -> Ekzekutimi -> Financa`, with `Skedarët` and `Komunikimi` treated as utilities.
+- Existing detailed project engines remain reused: `BOM -> RFQ -> Ofertat e furnitorëve -> Krahasimi i ofertave -> Çmimi i shitjes -> Oferta për klientin`.
+- Procurement and Commercial are visually separated without creating duplicate comparison/pricing/client-offer engines.
+- `Hapi i radhës` is now lifecycle-aware: won/execution projects route to Execution, technical review routes to preparation, pricing/client-offer states route to the commercial decision, and `wait_for_client` explicitly shows that no user action is required.
+- Home action surface is presented as `Duhet veprimi yt`.
+- Where a safe existing target is known, Home `Vepro` routes directly to Communication, RFQ, supplier comparison, client offer, Execution or Commercial intake review instead of forcing the user to navigate manually.
+- Opportunities now exposes clearer final decision labels: `GO · Krijo projekt`, `REVIEW`, `NO-GO`; underlying tender status/promotion gates are unchanged.
+- The new layer performs no Supabase reads/writes, no outbound actions and does not own Home/project business state.
+- Final client offer, sell price/margin, supplier commitment, external send and final financial commitment remain human-gated.
+- PR #233 merged to `main` as `48c264cab7116ee36f7c485231510e6529891ba6`.
+- Before merge, the synthetic merge tree passed the full PRISTEEL test suite, runtime-manifest guard, Pages artifact audit, production Pages build and Local Semantic AI checks.
+- Post-merge live backend verification confirmed all active pg_cron jobs at their latest run were `succeeded`; Semantic AI had `48 completed / 21 superseded / 0 pending/failed`; local OCR had `14 completed / 17 no_text` and no failed/pending jobs; `mac-mini-01` remained enabled and online.
+- Continuity docs and runtime ownership records were updated in the follow-up continuity PR.
+
 ## 2026-08-22
 
 ### Project Workspace becomes one canonical end-to-end workflow

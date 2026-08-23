@@ -24,13 +24,14 @@ The intended operating loop is:
 
 `incoming event -> identify project/contact -> classify event -> update project state -> reconcile obsolete work -> choose next best action -> prioritize -> prepare the work -> human approval where required`
 
-The user should normally answer three questions without searching through modules:
+The user should normally answer these questions without searching through technical modules:
 
 - **Home:** What requires my attention now?
-- **Project Brief:** What is happening, what is missing, why now, and what should I do?
-- **Project Workspace:** Give me the sources and tools to execute the work.
+- **Opportunities:** Which opportunity is GO, REVIEW or NO-GO?
+- **Project:** Where are we in the business lifecycle, and what is the next action?
+- **System:** Where are the integrations/technical tools when an exception needs investigation?
 
-Complexity stays under the hood. Daily UI should remain calm and action-oriented.
+Complexity stays under the hood. Daily UI must remain calm, action-oriented and obvious enough that the user should not need to ask “where do I click next?”.
 
 ## 3. Current runtime architecture
 
@@ -40,65 +41,136 @@ Key current ownership:
 
 - **Shell foundation:** `pristeel-ui-v2.js`
 - **Workspace shell:** `pristeel-workspace-architecture-v1.js`
-- **Final shell cleanup/navigation:** `pristeel-task-source-actions-v1.js`
+- **Safe shell/source-shortcut reconciler:** `pristeel-task-source-actions-v1.js`
+- **Late redesign finalizer:** `pristeel-redesign-finalizer-v1.js`
+- **Final cross-area operating presentation/navigation:** `pristeel-operating-experience-v1.js`
 - **Home data owner:** `pristeel-home-canonical-v1.js`
 - **Home startup owner:** `pristeel-home-runtime-owner-guard-v1.js`
 - **Projects list:** `pristeel-projects-modern-v1.js` + lifecycle tracking
-- **Project workspace data/tool owners:** `pristeel-project-first-v2.js` and its current project-first extensions
-- **Final Project Workspace UI reconciler:** `pristeel-project-workflow-canonical-v1.js`
+- **Project workspace data/tool owners:** `pristeel-project-first-v2.js` and current Project-First extensions
+- **Canonical Project Workspace workflow reconciler:** `pristeel-project-workflow-canonical-v1.js`
 - **Legacy project ribbon compatibility bridge:** `pristeel-project-workflow-legacy-capture-v1.js`
 - **Commercial comparison:** `pristeel-project-first-commercial-v1.js`
 - **Gmail inbox:** live inbox + triage + follow-up layers in manifest
-- **Tenders:** current tender business-flow layers in manifest
-- **Contact Master:** `pristeel-contact-master-v1.js`, loaded by the final Workspace shell cleanup layer
+- **Opportunities/tenders:** current tender business-flow layers in manifest
+- **Contact Master:** `pristeel-contact-master-v1.js`
 
-The canonical Project Workspace now keeps one active project context with six top-level areas:
+`pristeel-operating-experience-v1.js` is dynamically loaded by `pristeel-redesign-finalizer-v1.js`. It is presentation/navigation only: no Supabase reads/writes, no business-state ownership and no outbound actions.
 
-`Përmbledhja | Prokurimi | Ekzekutimi | Financat | Skedarët | Komunikimi`
+Do not infer authority from filenames alone. Later layers may intentionally wrap or constrain earlier ones.
 
-Inside `Prokurimi`, the canonical sequence is:
+## 4. Daily operating model
+
+Primary daily business zones are:
+
+- **Home**
+- **Opportunities**
+- **Projects**
+- **Partners**
+- **Finance**
+- **System**
+
+Each zone has a distinct visual color identity. Color is orientation, not state truth: business state still comes from canonical data owners.
+
+Technical/back-office surfaces remain connected but are not primary daily navigation:
+
+- Gmail
+- Commercial intake/review tools
+- Automation Health
+- other module/debug/exception surfaces
+
+These are grouped under **System** or opened directly from a concrete Home/project action.
+
+The `+ Krijo` path remains for exceptional/manual cases. Normal work should increasingly be created from events and next actions.
+
+## 5. Home / action engine
+
+`pristeel-home-canonical-v1.js` remains the sole final Home data owner.
+
+Current model:
+
+- Action surface is presented as **Duhet veprimi yt**.
+- Maximum five concrete actions.
+- A priority must explain **Pse tani?** and state a concrete next action.
+- Waiting on another party is separated into **Në pritje** and is not treated as user work until follow-up becomes due.
+- The whole priority card can open **Project Brief**.
+- Project Brief exposes current state, recent events, what exists, what is missing, deadlines/risks, sources and recommended actions.
+- Snooze and dismiss remain persisted by Canonical Home.
+- `Kryer` is reserved for work PPPP cannot verify automatically.
+- Newer confirmed events supersede obsolete automatic tasks.
+
+Operating Experience may make **Vepro** route directly to the existing decision surface when the target is safely known, including:
+
+- Communication for client/email work;
+- RFQ for procurement preparation;
+- supplier comparison for procurement decisions;
+- client offer for review/finalization;
+- Execution for execution-readiness work;
+- Commercial intake review for candidate review.
+
+Direct routing is navigation only. It does not approve, save, send or create commitments.
+
+Important event examples:
+
+- Supplier quote arrives -> project becomes actionable -> **Përgatit ofertën PRISTEEL**.
+- Our offer is sent -> stale preparation tasks close -> project becomes **Në pritje të klientit**.
+- Client responds after our offer -> **Shqyrto përgjigjen e klientit**.
+- Tender/offer deadline with technical work open -> concrete technical action is promoted.
+- Execution/won state -> next action points to Execution rather than restarting procurement.
+
+## 6. Opportunities
+
+Underlying source/business owners cover:
+
+- KRPP Kosovo;
+- APP Albania;
+- TED direct opportunities;
+- TED awarded-contract / winner intelligence.
+
+Current user-facing decision vocabulary is:
+
+- **GO · Krijo projekt**
+- **REVIEW**
+- **NO-GO**
+
+This vocabulary is presentation only. Existing tender review/status/project-promotion logic remains authoritative and human-gated.
+
+Raw discovery/candidate queues are not promoted into daily UI merely because they exist. Technical candidate queues stay under the hood until they become an actionable business decision.
+
+## 7. Project Workspace
+
+Project-First remains the data/tool workspace and `pristeel-project-workflow-canonical-v1.js` remains the canonical workflow reconciler.
+
+The user-facing business phases are now:
+
+`Përgatitja -> Prokurimi -> Komerciale -> Ekzekutimi -> Financa`
+
+Utilities remain separately accessible:
+
+`Skedarët | Komunikimi`
+
+The existing detailed workflow remains reused under those phases:
 
 `BOM -> RFQ -> Ofertat e furnitorëve -> Krahasimi i ofertave -> Çmimi i shitjes -> Oferta për klientin`
 
 Important project-workflow rules:
 
-- Every procurement stage is independently clickable.
+- Every detailed stage remains independently clickable.
 - A stage status describes what data/state exists; it must not block navigation.
 - Empty stages render an explicit explanation and next action instead of a blank page.
 - Existing BOM, RFQ, normalized comparison, pricing calculator and client-offer engines are reused rather than duplicated.
-- Where an older editor remains necessary, the canonical workflow opens it through a project-context bridge and returns the user to the same project.
-- The old horizontal ribbon is compatibility-only and is captured back into the canonical flow instead of opening disconnected routes.
-- The canonical workflow and legacy capture layers are UI-only: no business-data writes and no outbound actions.
-- Final sell price, client offer and external send remain human-gated.
+- Procurement and Commercial are visually distinct, but not duplicated as separate engines.
+- Where an older editor remains necessary, canonical project context is preserved through the existing bridge.
+- The old horizontal ribbon is compatibility-only and is captured back into the canonical flow.
+- `Hapi i radhës` must respect lifecycle/operational state, not just procurement completeness.
+- `wait_for_client` must explicitly show that no user action is required now.
+- Won/execution projects must point to Execution and must not regress to RFQ/procurement suggestions.
+- Final sell price, client offer, supplier commitment and external send remain human-gated.
+- Canonical Workflow and Operating Experience perform no business-data writes.
 
-Do not infer authority from filenames alone. Later layers may intentionally wrap or constrain earlier ones.
+## 8. Project event automation
 
-## 4. Home / action engine
-
-`pristeel-home-canonical-v1.js` is the sole final Home data owner.
-
-Current model:
-
-- Home section is **Për mua tani**.
-- Maximum five concrete actions.
-- A priority must explain **Pse tani?** and state a concrete next action.
-- Waiting on another party is separated into **Në pritje** and is not treated as user work until follow-up becomes due.
-- The whole priority card can open a **Project Brief**.
-- Project Brief exposes current state, recent events, what exists, what is missing, deadlines/risks, sources and recommended actions.
-- Snooze and dismiss are persisted.
-- `Kryer` is reserved for work PPPP cannot verify automatically.
-- Newer confirmed events supersede obsolete automatic tasks.
-
-Important event examples:
-
-- Supplier quote arrives -> project becomes actionable -> **Përgatit ofertën PRISTEEL**.
-- Our offer is sent -> stale quote/dynamic-plan preparation tasks close -> project becomes **Në pritje të klientit**.
-- Client responds after our offer -> **Shqyrto përgjigjen e klientit**.
-- Tender/offer deadline with technical work open -> concrete technical action is promoted.
-
-## 5. Project event automation
-
-Supabase contains event/reactivity logic around linked `project_emails`, RFQs, offers and project decisions.
+Supabase contains event/reactivity logic around linked `project_emails`, RFQs, offers, project decisions, document intake and execution readiness.
 
 Critical behavior includes:
 
@@ -107,13 +179,17 @@ Critical behavior includes:
 - outgoing PRISTEEL offer recognition;
 - project stage updates only where the current stage can safely move forward;
 - stale-task reconciliation after a superseding event;
-- current project decision snapshot generation.
+- current project decision snapshot generation;
+- execution-release readiness checks;
+- commercial-intake candidate review queues;
+- local semantic orchestration;
+- local OCR orchestration.
 
-Relevant functions/triggers must be inspected live before modification. Use `public.pppp_platform_snapshot_v1()` for a continuity snapshot and query trigger definitions when changing event logic.
+Relevant functions/triggers must be inspected live before modification. Use `public.pppp_platform_snapshot_v1()` for continuity and query trigger definitions when changing event logic.
 
-## 6. Document intelligence -> structured requirements
+## 9. Document intelligence -> structured requirements
 
-Analyzed project attachments feed Project Intelligence and now also populate `public.project_requirements`.
+Analyzed project attachments feed Project Intelligence and populate `public.project_requirements`.
 
 Structured requirement categories include, when present in extracted evidence:
 
@@ -130,21 +206,26 @@ OCR-derived or conflict/review evidence remains `review`, not silently upgraded 
 
 `public.pppp_project_requirements_summary_v1` is the read model for project requirement summaries.
 
-## 7. Commercial automation
+Local OCR is a backend capability. `local_ocr_jobs` and `local_ocr_workers` are not daily navigation surfaces.
+
+## 10. Commercial automation
 
 Do not build a second supplier comparison engine without first reading `pristeel-project-first-commercial-v1.js`.
 
-Existing behavior already includes:
+Existing behavior includes:
 
 - normalized supplier component comparison;
 - installation scope warnings;
 - landed/same-scope comparison logic;
 - preliminary margin checks;
-- human gate where supplier scopes are not comparable.
+- human gate where supplier scopes are not comparable;
+- project-to-offer prefill/rescue for carrying supplier cost context into a new PRISTEEL offer draft.
 
-Existing project-to-offer prefill helpers can carry supplier cost basis into a new PRISTEEL offer draft. Automation may prepare the draft, but it must not silently decide the sell price or send the offer.
+Automation may prepare the draft, but it must not silently decide the sell price, select a committing supplier or send the offer.
 
-## 8. Contact Master and CRM identity
+The technical Commercial intake/review surface may be opened directly from a Home action when a candidate needs human review, but it remains a back-office decision tool rather than a primary navigation destination.
+
+## 11. Contact Master and CRM identity
 
 PPPP keeps Gmail, HubSpot and Bitrix24 connected. They are sources/capabilities, not three separate people databases from the user's perspective.
 
@@ -157,33 +238,15 @@ Canonical relationship model:
 
 Incoming linked Gmail messages update Contact Master automatically. The same email should resolve to an existing canonical contact before a new person is created.
 
-Contact/project role is operational context:
-
-- known supplier sender -> supplier event context;
-- known client sender -> client event context;
-- project linkage and RFQ history help decide the event type.
-
 Do not disconnect HubSpot or Bitrix24 as part of simplification. Simplification means fewer daily navigation steps, not loss of data sources.
 
-## 9. Daily navigation intent
+## 12. Finance
 
-Primary daily work:
+Finance is now a first-class daily business zone. Existing finance/invoice engines and gates remain unchanged.
 
-- Home
-- Projektet
-- Tenderat
-- Kontaktet
+The UI change must not weaken invoice/payment evidence routing, project linkage, currency handling or final financial approval boundaries.
 
-Back-office / tools remain available:
-
-- Gmail
-- Komerciale
-- Financa
-- Modulet
-
-The `+ Krijo` path remains for exceptional/manual cases, but normal work should increasingly be created from project events and next actions.
-
-## 10. Human approval boundaries
+## 13. Human approval boundaries
 
 PPPP may automatically:
 
@@ -195,7 +258,8 @@ PPPP may automatically:
 - close obsolete automatic tasks;
 - generate next actions;
 - prepare drafts;
-- prepare follow-ups.
+- prepare follow-ups;
+- route the user directly to an existing decision surface.
 
 Human approval remains required for:
 
@@ -207,7 +271,7 @@ Human approval remains required for:
 - final invoice/financial commitment;
 - terminal commercial decisions such as won/lost where not already explicitly confirmed.
 
-## 11. Connected systems
+## 14. Connected systems
 
 Keep connected and treat as systems of record/capabilities:
 
@@ -221,33 +285,41 @@ Keep connected and treat as systems of record/capabilities:
 
 Integration policy is also recorded in `public.pppp_platform_integrations`.
 
-## 12. Current regression projects
+## 15. Current regression projects
 
-These projects are the minimum regression set for event automation and project-workflow continuity.
+These projects are the minimum regression set for event automation and workflow continuity.
 
 ### Dukley Seafront Restaurant, Budva
+
 - Project id: `6e0d2d19-3a51-4079-882f-b73f81cbe95e`
-- Current commercial phase: client offer / waiting for client
+- Commercial phase: client offer / waiting for client
 - Latest offer: `PST-OFF-2026-08-025`
 - Execution commitment recorded: **10.10.2026**
-- Old `Aprovo planin dinamik` work is obsolete and must not return while the newer sent offer remains the current event.
-- Project workflow must distinguish supplier offers, supplier comparison, selling price and the client offer without losing Dukley project context.
+- Old `Aprovo planin dinamik` work is obsolete and must not return while the newer sent offer remains current.
+- UI must show waiting rather than a false procurement action.
 
 ### ITALIAN STYLE - Hala - CARINVEST
+
 - Project id: `655c4ce3-9845-4c15-8ecc-0306d9f1aa50`
 - Eurosteel supplier response is linked.
-- Current intended action: **Përgatit ofertën PRISTEEL**.
-- Supplier response should automatically make the project actionable.
-- Commercial workflow must retain Eurosteel cost basis and review flags while keeping selling price/final offer human-approved.
+- Current decision is client-offer review/send while preserving supplier cost basis and review flags.
+- Selling price/final offer remain human-approved.
 
 ### TenneT / SPIE
+
 - Project id: `c937aea1-af5e-4807-ae1e-e36864e46794`
-- Offer deadline: **21.08.2026**
-- Current intended action: close concrete technical issues before final offer, not a vague generic `process request` instruction.
+- Recorded offer deadline: **21.08.2026**
+- Technical-closeout logic must remain concrete and source-grounded rather than a vague generic task.
 
-Any future Home/event-engine or Project Workspace change should be checked against all three.
+### STACON - Lagerhalle Hamburg
 
-## 13. Continuity registry
+- Project id: `38bdf772-d73e-47b2-9d0f-6020e105aa62`
+- Won / execution project.
+- UI and Home routing must keep it in execution and must not fall back to offer/procurement actions.
+
+Any future Home/event-engine or Project Workspace change should be checked against these states as appropriate.
+
+## 16. Continuity registry
 
 Supabase continuity objects:
 
@@ -259,34 +331,27 @@ Supabase continuity objects:
 
 These make cross-chat continuity independent of one conversation window.
 
-## 14. Session start protocol
+## 17. Current protected principles
 
-A new PPPP engineering session should begin by reading, in order:
+At minimum preserve these live protected rules:
 
-1. GitHub `main` HEAD.
-2. `PPPP_MASTER_CONTEXT.md`.
-3. `PPPP_DO_NOT_BREAK.md`.
-4. `runtime-manifest.json`.
-5. `docs/ACTIVE_RUNTIME.md`.
-6. Supabase `public.pppp_platform_snapshot_v1()` and latest `pppp_platform_changelog` entries.
+- `main_is_current`
+- `no_rebuild_from_zero`
+- `preserve_gmail_matching`
+- `preserve_drive_identity`
+- `no_duplicate_entities`
+- `human_gate_outbound`
+- `no_sent_offer_overwrite`
+- `event_supersedes_old_tasks`
+- `automation_prepares_not_hides`
+- `legacy_not_dead_by_name`
+- `manufacturer_terms_flow_down`
+- `project_improvements_must_be_platform_level`
 
-Only then make architecture changes.
+The live table `public.pppp_platform_protected_rules` is authoritative for exact current wording.
 
-## 15. After a material change
+## 18. Latest operating-experience rollout
 
-Before considering work finished:
+PR #233 introduced the current simplified operating experience and was merged to `main` as commit `48c264cab7116ee36f7c485231510e6529891ba6` after the full PRISTEEL test suite, runtime-manifest guard, Pages artifact audit, production Pages build and Local Semantic AI checks all passed.
 
-1. Verify the live DB/code state.
-2. Run appropriate regression checks.
-3. Update `PPPP_CHANGELOG.md` for architecture/automation changes.
-4. Append the same material change to `public.pppp_platform_changelog`.
-5. Update this file if architecture intent, ownership or protected behavior changed.
-6. Run Supabase advisors after DDL.
-
-## 16. Protected rules
-
-Read `PPPP_DO_NOT_BREAK.md` and `public.pppp_platform_protected_rules` before removing/replacing existing behavior.
-
-The core rule is simple: **improve the verified current system; do not restart PPPP from zero.**
-
-Last major runtime change recorded here: canonical end-to-end Project Workspace workflow with six project areas and six procurement stages, 22.08.2026.
+The rollout intentionally changed presentation/navigation, not backend ownership. Live Supabase automation, Gmail matching, Drive identity, supplier/commercial engines and human gates remain in place.

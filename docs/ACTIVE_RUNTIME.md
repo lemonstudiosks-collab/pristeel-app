@@ -21,7 +21,7 @@ Before making a current-state claim:
 2. Read `runtime-manifest.json` from current `main`.
 3. Follow the real boot chain and dynamic loaders.
 4. Respect load order and wrapping/finalizer behavior.
-5. Prefer manifest `FINAL_OWNER` modules over plausible older filenames.
+5. Prefer manifest `FINAL_OWNER` / `DYNAMIC_CURRENT` relationships over plausible older filenames.
 6. Read live Supabase state for operational project/automation claims.
 
 PPPP grew through additive safety layers. A filename may describe what a module originally did, not what owns final visible behavior today.
@@ -47,43 +47,44 @@ pristeel-roles.js
                ↓
          ordered runtime modules
                ↓
-         late finalizers / safety layers
+         pristeel-redesign-finalizer-v1.js
+               ↓ dynamic
+         pristeel-operating-experience-v1.js
 ```
 
-The nine local application-direct files are still recorded in `runtime-manifest.json`. `pristeel-roles.js` is both RBAC and a historical runtime loader. `pristeel-project-emails.js` is historically named but acts as the large ordered bootstrap.
+The nine local application-direct files remain recorded in `runtime-manifest.json`. `pristeel-roles.js` is both RBAC and a historical runtime loader. `pristeel-project-emails.js` is historically named but acts as the large ordered bootstrap.
 
 ## Current visible ownership
 
-### Application shell
+### Application shell and daily operating experience
 
 Foundation:
 
 - `pristeel-ui-v2.js`
 
-Current owners/finalizers:
+Shell/current reconciler layers:
 
 - `pristeel-workspace-architecture-v1.js`
 - `pristeel-ui-corrections-v2.js`
-- `pristeel-redesign-finalizer-v1.js`
 - `pristeel-task-source-actions-v1.js`
+- `pristeel-redesign-finalizer-v1.js`
 
-`pristeel-ui-v2.js` remains a required foundation because it creates the shell host used by the Workspace.
+**Final cross-area presentation/navigation layer:**
 
-`pristeel-task-source-actions-v1.js` is the final visual shell/navigation reconciler. It keeps one Workspace sidebar, hides legacy right rail/chrome on Workspace routes, removes legacy lower-sidebar clutter and maintains the automation-first daily navigation without writing business data.
+- `pristeel-operating-experience-v1.js`
 
-Daily navigation intent:
+`pristeel-task-source-actions-v1.js` remains the safe shell/source-shortcut reconciler. `pristeel-operating-experience-v1.js` is loaded dynamically by the redesign finalizer and applies only bounded presentation/navigation changes. It performs no Supabase reads/writes and no outbound actions.
 
-- Home
-- Projektet
-- Tenderat
-- Kontaktet
+Primary daily business zones are now:
 
-Back-office tools remain available:
+- **Home**
+- **Opportunities**
+- **Projects**
+- **Partners**
+- **Finance**
+- **System**
 
-- Gmail
-- Komerciale
-- Financa
-- Modulet
+Each zone has a distinct color identity so the user can orient by both text and visual context. Technical/back-office surfaces such as Gmail, Commercial intake and automation health are kept under **System** instead of competing with the daily business path.
 
 ### Home
 
@@ -95,19 +96,37 @@ Back-office tools remain available:
 
 - `pristeel-home-runtime-owner-guard-v1.js`
 
-Home Canonical is now an event/action engine, not a passive dashboard aggregator.
+Home Canonical remains the sole business-state/data owner. Operating Experience may decorate the surface and route an existing action button, but it does not create or infer Home business state.
 
 Current behavior:
 
-- `Për mua tani` contains at most five concrete actions.
+- The action section is presented as **Duhet veprimi yt**.
+- Home exposes at most five concrete actions.
 - `Në pritje` separates projects waiting on another party.
 - Project events drive current state and next action.
 - Newer confirmed events reconcile obsolete automatic tasks.
-- Priority cards explain `Pse tani?`.
-- Priority cards open a Project Brief with current state, sources, recent events, missing information, risks/deadlines and recommended next actions.
-- Snooze/dismiss state is persisted.
+- Priority cards explain `Pse tani?` and can open Project Brief.
+- Where a safe existing target is known, **Vepro** routes directly to the decision surface, e.g. Communication, RFQ, supplier comparison, client offer, Execution or Commercial intake review.
+- Direct routing changes navigation only. It does not approve, save, send or commit on behalf of the user.
+- Snooze/dismiss state remains persisted by Canonical Home.
 
-Older Home visual modules may still be loaded as compatibility/classic fallback providers, but they are not the final Home data owner.
+### Opportunities
+
+Underlying owners remain:
+
+- `pristeel-kek-tender-watch-v1.js`
+- `pristeel-tender-business-flow-v1.js`
+- `pristeel-tender-winner-contacts-v1.js`
+
+The first filename is legacy. Current behavior covers KRPP Kosovo, APP Albania, TED direct opportunities and TED award-winner outreach.
+
+Operating Experience adds the final decision vocabulary:
+
+- **GO · Krijo projekt**
+- **REVIEW**
+- **NO-GO**
+
+This is presentation only. Existing review/project-promotion/status gates remain authoritative.
 
 ### Projects list
 
@@ -127,50 +146,50 @@ Core data/tool owners remain:
 - `pristeel-project-lifecycle-tracking-v1.js`
 - `pristeel-project-intelligence-resilience-v1.js`
 
-**Final project-workflow UI reconciler:**
+**Canonical workflow reconciler:**
 
 - `pristeel-project-workflow-canonical-v1.js`
+
+**Final presentation/navigation grouping:**
+
+- `pristeel-operating-experience-v1.js`
 
 **Legacy ribbon compatibility bridge:**
 
 - `pristeel-project-workflow-legacy-capture-v1.js`
 
-The canonical project workspace now keeps the user inside one project context with six top-level areas:
+The user-facing project flow is now grouped into five business phases:
 
-`Përmbledhja | Prokurimi | Ekzekutimi | Financat | Skedarët | Komunikimi`
+`Përgatitja → Prokurimi → Komerciale → Ekzekutimi → Financa`
 
-Inside `Prokurimi`, the canonical sequence is:
+Utilities remain separately accessible:
+
+`Skedarët | Komunikimi`
+
+The existing detailed flow is still reused under those phases:
 
 `BOM → RFQ → Ofertat e furnitorëve → Krahasimi i ofertave → Çmimi i shitjes → Oferta për klientin`
 
 Important behavior:
 
-- Every procurement stage is independently clickable.
-- Stage status describes the data/state that exists; it does not block navigation.
-- Empty stages render an explicit explanation and next action instead of a blank page.
-- The existing normalized supplier comparison engine is reused, not duplicated.
-- Existing BOM, RFQ, calculator and client-offer engines remain available behind controlled project-context bridges where a legacy editor is still required.
-- The old horizontal workflow ribbon is captured back into the canonical project flow so it cannot silently escape into a disconnected legacy route.
-- Final offer, sell price and outbound communication remain human-gated.
-- The canonical workflow layer performs no business-data writes.
+- Every detailed stage remains independently clickable.
+- Stage status describes available data/state and does not block navigation.
+- Procurement and Commercial are visually distinct, but they still reuse the same existing engines.
+- `Hapi i radhës` is lifecycle-aware. Execution/won projects point to Execution; technical review points to preparation; pricing/client-offer states point to their commercial decision; `wait_for_client` explicitly shows that no user action is required now.
+- Existing normalized supplier comparison, BOM, RFQ, calculator and client-offer engines are reused, not duplicated.
+- The old horizontal workflow ribbon remains captured back into the canonical project flow.
+- Final offer, sell price, supplier commitment and outbound communication remain human-gated.
+- Neither Canonical Workflow nor Operating Experience performs business-data writes.
 
 The classic project overview remains intentionally reachable as a fallback. Do not delete its providers until the fallback/merge behavior has an equivalent replacement.
 
-### Contacts
+### Partners / Contact Master
 
 **Daily relationship owner:**
 
 - `pristeel-contact-master-v1.js`
 
-Contact Master is a read-only Workspace register over:
-
-- canonical `contacts`;
-- `contact_sources` for Gmail / HubSpot / Bitrix24 identities;
-- `project_contacts` for project relationships.
-
-Gmail, HubSpot and Bitrix24 remain connected systems. The daily UI unifies their identities rather than copying them into separate visible address books.
-
-Classic contacts remain a back-office fallback.
+Contact Master is the read-only Workspace register over canonical `contacts`, `contact_sources` and `project_contacts`. Gmail, HubSpot and Bitrix24 remain connected systems and classic contacts remain a fallback.
 
 ### Gmail / Inbox
 
@@ -178,24 +197,22 @@ Classic contacts remain a back-office fallback.
 - `pristeel-gmail-live-triage-v1.js`
 - `pristeel-outreach-followup-v1.js`
 
-Linked project email is also a core event source for project-state automation.
+Linked project email is also a core event source for project-state automation. Gmail is no longer a top-level daily business zone; it remains available through System and project Communication.
 
 ### Commercial
 
-Current project supplier comparison/final commercial decision view includes:
+Current supplier comparison/final commercial decision logic includes:
 
 - `pristeel-project-first-commercial-v1.js`
 
-It already contains component normalization, installation-scope safeguards and preliminary margin logic. Do not create a second comparison engine without tracing this one first.
-
-Project-to-client-offer prefill is supported by current commercial prefill/rescue layers. They prepare data but do not silently send/finalize an offer.
+It contains component normalization, installation-scope safeguards and preliminary margin logic. Project-to-client-offer prefill/rescue layers may prepare data but do not silently send/finalize an offer. The technical Commercial intake/review surface remains available through System or direct Home routing where appropriate.
 
 ### Document intelligence
 
 - `pristeel-project-analysis.js`
 - `pristeel-project-analysis-document-intelligence-v1.js`
 
-Supabase now also stores extracted structured evidence in `project_requirements`, with OCR/review evidence kept review-gated.
+Supabase also stores extracted structured evidence in `project_requirements`, with OCR/review evidence kept review-gated.
 
 ### Document Center
 
@@ -209,13 +226,7 @@ Supabase now also stores extracted structured evidence in `project_requirements`
 - `pristeel-document-currency-v1.js`
 - `pristeel-invoice-original-document-v1.js`
 
-### Tenders
-
-- `pristeel-kek-tender-watch-v1.js`
-- `pristeel-tender-business-flow-v1.js`
-- `pristeel-tender-winner-contacts-v1.js`
-
-The first filename is legacy. Current tender behavior covers KRPP Kosovo, APP Albania, TED direct opportunities and TED award-winner outreach layers.
+Finance is now a first-class daily business zone; underlying financial gates are unchanged.
 
 ### AI
 
@@ -229,16 +240,16 @@ Provider activation and rate-limit compatibility must be traced from the current
 
 These remain because current user-accessible fallbacks still depend on them:
 
-- `pristeel-ui-v2-polish.js` — classic Home behavior.
-- `pristeel-dashboard-calm.js` — classic Home renderer captured by Workspace Architecture.
-- `pristeel-project-intelligence-ui.js` — classic project overview analysis/layout behavior.
-- `pristeel-project-workspace.js` — classic project folder/duplicate-project merge workflow.
+- `pristeel-ui-v2-polish.js`
+- `pristeel-dashboard-calm.js`
+- `pristeel-project-intelligence-ui.js`
+- `pristeel-project-workspace.js`
 
 Do not delete these based on naming alone.
 
 ## Deprecated runtime layers forbidden from returning
 
-See `runtime-manifest.json` `deprecatedForbidden`, currently including:
+See `runtime-manifest.json` `deprecatedForbidden`, including:
 
 - `pristeel-document-adjustments.js`
 - `pristeel-dashboard-focus.js`
@@ -250,6 +261,8 @@ See `runtime-manifest.json` `deprecatedForbidden`, currently including:
 
 A loader/bootstrap change is allowed only with deliberate manifest review.
 
+The Operating Experience rollout is protected by `tests/operating-experience-smoke.js` plus the full PRISTEEL suite. The rollout was merged as PR #233 after PRISTEEL Tests, runtime-manifest guard, Pages artifact audit, production Pages build and Local Semantic AI all passed.
+
 ## Supabase continuity
 
 Cross-session state is available through:
@@ -260,10 +273,4 @@ Cross-session state is available through:
 - `public.pppp_platform_protected_rules`
 - `public.pppp_platform_integrations`
 
-These are the durable technical continuity layer. Chat memory is supporting context, not the operational source of truth.
-
-## Safe-change principle
-
-The runtime manifest maps ownership. It does not authorize deletion.
-
-**Trace first, preserve working behavior, change narrowly, verify, then record the change.**
+The operating-experience layer does not replace Supabase automation. Cron/event engines, semantic jobs, OCR workers and human approval boundaries remain under the existing backend owners.
