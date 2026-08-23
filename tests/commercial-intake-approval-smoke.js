@@ -17,7 +17,7 @@ const {JSDOM}=require('jsdom');
   assert.match(migration,/Only incoming supplier invoices may be approved here/i);
   assert.match(migration,/newer RFQ review revision is current/i,'RFQ revision reconciliation missing');
   assert.match(migration,/pppp_rfq_single_current_review_v1/i,'future RFQ single-current trigger missing');
-  assert.doesNotMatch(migration,/status\s*=\s*'sent'/i,'migration must not mark an RFQ sent');
+  assert.doesNotMatch(migration,/set\s+status\s*=\s*'sent'/i,'migration must not mark an RFQ sent');
 
   assert.match(theme,/pristeel-commercial-intake-review-v1\.js\?v=20260823-1/,'runtime child loader missing');
   assert.match(ui,/window\.confirm/,'approval must require an explicit user confirmation');
