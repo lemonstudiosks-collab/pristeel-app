@@ -1,7 +1,8 @@
-/* PRISTEEL task source actions v19
+/* PRISTEEL task source actions v20
  * Final Workspace shell + safe source shortcut.
  * Presentation-only. No project/task/business data writes.
  * Event-driven and bounded: no observers or polling loops.
+ * The final shell now shares one navigation/Home contract with Operating Experience.
  */
 (function(){
 'use strict';
@@ -17,6 +18,18 @@ var SURFACE_SEL=[
  '#page-oferta.active','#page-invoices.active','#page-finance.active',
  '#page-workspace-apps.active','#module-hub.active','#page-home.active'
 ].join(',');
+var PRIMARY=[
+ {key:'home',label:'Home',badge:'pst-ws-b-home'},
+ {key:'tenders',label:'Opportunities'},
+ {key:'projects',label:'Projects',badge:'pst-ws-b-projects'},
+ {key:'contacts',label:'Partners'},
+ {key:'finance',label:'Finance',badge:'pst-ws-b-finance'},
+ {key:'apps',label:'System'}
+];
+var SECONDARY=[
+ {key:'inbox',label:'Gmail',badge:'pst-ws-b-inbox'},
+ {key:'commercial',label:'Komerciale',badge:'pst-ws-b-commercial'}
+];
 function workspace(){return document.querySelector(SURFACE_SEL);}
 function home(){var p=document.getElementById('page-workspace-home');return p&&p.classList.contains('active')&&p.style.display!=='none'?p:null;}
 function icon(k){var p={
@@ -46,6 +59,13 @@ function ensureTheme(){
  if(document.querySelector('script[data-pst-section-theme-v2-live]'))return false;
  var s=document.createElement('script');s.src='pristeel-section-theme-v1.js?v='+Date.now();s.defer=true;s.setAttribute('data-pst-section-theme-v2-live','1');document.head.appendChild(s);return false;
 }
+function ensureOperatingExperience(onReady){
+ if(window.PSTOperatingExperienceV1){if(typeof onReady==='function')onReady();return true;}
+ var existing=document.querySelector('script[data-pst-operating-experience]');
+ if(existing){if(typeof onReady==='function')existing.addEventListener('load',onReady,{once:true});return false;}
+ var s=document.createElement('script');s.src='pristeel-operating-experience-v1.js?v=20260823-2';s.defer=true;s.setAttribute('data-pst-operating-experience','1');if(typeof onReady==='function')s.addEventListener('load',onReady,{once:true});document.head.appendChild(s);return false;
+}
+function handoffOperatingExperience(){try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){console.warn('PPPP shell operating handoff:',e);}}
 function setTheme(k){try{var T=window.PSTSectionThemeV1;if(T&&typeof T.setSection==='function')T.setSection(k);}catch(e){}}
 function go(k,e){
  if(e){e.preventDefault();e.stopPropagation();}
@@ -61,38 +81,39 @@ function go(k,e){
 }
 function badge(ws,id){var e=document.getElementById(id);if(e&&ws.contains(e))return e;e=document.createElement('i');e.id=id;e.className='pst-ws-badge';return e;}
 function nav(ws,k,label,badgeId){var b=document.createElement('button');b.type='button';b.className='pst-ws-navbtn pst-canonical-navbtn';b.dataset.key=k;b.innerHTML=icon(k)+'<span class="pst-nav-label">'+label+'</span>';if(badgeId)b.appendChild(badge(ws,badgeId));b.onclick=function(e){go(k,e);};return b;}
+function ensureNav(ws,host,item){var b=host.querySelector('.pst-ws-navbtn[data-key="'+item.key+'"]');if(!b)b=nav(ws,item.key,item.label,item.badge);b.classList.add('pst-canonical-navbtn');var l=b.querySelector('.pst-nav-label');if(!l){l=document.createElement('span');l.className='pst-nav-label';b.appendChild(l);}l.textContent=item.label;return b;}
 function currentKey(){
  if(document.querySelector('#page-workspace-home.active'))return'home';
  if(document.querySelector('#page-workspace-projects.active,#page-workspace-project.active'))return'projects';
  if(document.querySelector('#page-kek-tenders.active'))return'tenders';
  if(document.querySelector('#page-workspace-contacts.active,#page-contacts.active'))return'contacts';
- if(document.querySelector('#page-workspace-inbox.active'))return'inbox';
- if(document.querySelector('#page-workspace-commercial.active,#page-document-center.active,#page-oferta.active,#page-invoices.active'))return'commercial';
  if(document.querySelector('#page-finance.active'))return'finance';
- if(document.querySelector('#page-workspace-apps.active,#module-hub.active,#page-home.active'))return'apps';
+ if(document.querySelector('#page-workspace-inbox.active,#page-workspace-commercial.active,#page-document-center.active,#page-oferta.active,#page-invoices.active,#page-workspace-apps.active,#module-hub.active,#page-home.active'))return'apps';
  return'';
 }
 function activeNav(host){var k=currentKey();if(k)setTheme(k);host.querySelectorAll('.pst-canonical-navbtn').forEach(function(b){b.classList.toggle('active',b.dataset.key===k);});return k;}
-function stabilizeLabels(host){var labels={home:'Home',projects:'Projektet',tenders:'Tenderat',contacts:'Kontaktet',inbox:'Gmail',commercial:'Komerciale',finance:'Financa',apps:'Modulet'};host.querySelectorAll('.pst-canonical-navbtn').forEach(function(b){var l=b.querySelector('.pst-nav-label');if(l&&labels[b.dataset.key])l.textContent=labels[b.dataset.key];});}
+function stabilizeLabels(host){
+ var title=host.querySelector('.pst-ws-navtitle');if(title)title.textContent='PPPP';
+ PRIMARY.concat(SECONDARY).forEach(function(item){var b=host.querySelector('.pst-ws-navbtn[data-key="'+item.key+'"]'),l=b&&b.querySelector('.pst-nav-label');if(l)l.textContent=item.label;});
+}
 function sidebar(){
  if(!workspace())return false;
  var ws=document.getElementById('pst-ws-sidebar');if(!ws)return false;
  var host=ws.querySelector('#pst-ws-canonical-nav');
- if(!host){
-   host=document.createElement('div');host.id='pst-ws-canonical-nav';
-   host.innerHTML='<div class="pst-ws-navtitle">Puna</div><div class="pst-ws-nav pst-canon-work"></div><div class="pst-ws-navtitle pst-canon-tools-title">Mjetet</div><div class="pst-ws-nav pst-canon-tools"></div>';
-   var create=ws.querySelector('.pst-ws-create');if(create)create.insertAdjacentElement('afterend',host);else ws.prepend(host);
-   var w=host.querySelector('.pst-canon-work'),t=host.querySelector('.pst-canon-tools');
-   w.append(nav(ws,'home','Home','pst-ws-b-home'),nav(ws,'projects','Projektet','pst-ws-b-projects'),nav(ws,'tenders','Tenderat'),nav(ws,'contacts','Kontaktet'));
-   t.append(nav(ws,'inbox','Gmail','pst-ws-b-inbox'),nav(ws,'commercial','Komerciale','pst-ws-b-commercial'),nav(ws,'finance','Financa','pst-ws-b-finance'),nav(ws,'apps','Modulet'));
- }
+ if(!host){host=document.createElement('div');host.id='pst-ws-canonical-nav';host.innerHTML='<div class="pst-ws-navtitle">PPPP</div><div class="pst-ws-nav pst-canon-work"></div><div class="pst-ws-navtitle pst-canon-tools-title">Mjetet</div><div class="pst-ws-nav pst-canon-tools"></div>';var create=ws.querySelector('.pst-ws-create');if(create)create.insertAdjacentElement('afterend',host);else ws.prepend(host);}
+ var work=host.querySelector('.pst-canon-work'),tools=host.querySelector('.pst-canon-tools');
+ if(!work){work=document.createElement('div');work.className='pst-ws-nav pst-canon-work';host.appendChild(work);}
+ if(!tools){tools=document.createElement('div');tools.className='pst-ws-nav pst-canon-tools';host.appendChild(tools);}
+ PRIMARY.forEach(function(item){work.appendChild(ensureNav(ws,host,item));});
+ SECONDARY.forEach(function(item){tools.appendChild(ensureNav(ws,host,item));});
+ var toolsTitle=host.querySelector('.pst-canon-tools-title');hidden(toolsTitle,true);hidden(tools,true);
  Array.prototype.forEach.call(ws.children,function(ch){hidden(ch,!(ch===host||ch.classList.contains('pst-ws-brand')||ch.classList.contains('pst-ws-create')||ch.classList.contains('pst-ws-spacer')||ch.classList.contains('pst-ws-search')));});
  stabilizeLabels(host);activeNav(host);return true;
 }
 function hideBottomSearch(){if(!workspace())return;var ws=document.getElementById('pst-ws-sidebar');document.querySelectorAll('button,div').forEach(function(el){if(!el||el===ws||(ws&&ws.contains(el)))return;var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(!/^(Kërko|Kerko)(\s*[⌘⌃]?\s*K)?$/i.test(txt))return;var r=el.getBoundingClientRect();if(r.left<285&&r.bottom>window.innerHeight-135&&r.width<220&&r.height<80)el.classList.add('pst-ws-legacy-floating-hide');});}
 function compactSort(){var s=document.getElementById('pst-pm-sort');if(!s)return false;s.setAttribute('aria-label','Rendit projektet sipas');s.title='Rendit projektet sipas aktivitetit, afatit ose klientit';var w=s.parentElement;if(w&&!w.querySelector('.pst-pm-sort-label')){var l=document.createElement('span');l.className='pst-pm-sort-label';l.textContent='Rendit sipas';w.insertBefore(l,s);}return true;}
 function hideCounters(p){var re=/^\s*\d+\s+(prioritete?\s+aktive|projekte?\s+n[eë]\s+pun[eë]|follow-?up\s+aktiv(?:e)?)\s*$/i;p.querySelectorAll('span,div,button').forEach(function(el){var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(txt.length<60&&re.test(txt))hidden(el,true);});}
-function stabilizeHome(){var p=home();if(!p)return false;var flow=document.getElementById('flow-bar');if(flow)hidden(flow,true);var a=document.getElementById('pst-ws-home-actions'),card=a&&a.closest('.pst-ws-card');if(card){var title=card.querySelector('.pst-ws-card-title'),sub=card.querySelector('.pst-ws-card-sub');if(title)title.textContent='Për mua tani';if(sub)sub.textContent='Maksimumi pesë veprime konkrete që kërkojnë vendim ose veprim.';}p.querySelectorAll('.pst-ws-action-tag').forEach(function(tag){var t=S(tag.textContent).trim().toUpperCase();if(t==='VEPRO TANI'||t==='VEPRIM')tag.textContent='KËRKON VEPRIM';});hideCounters(p);return true;}
+function stabilizeHome(){var p=home();if(!p)return false;var flow=document.getElementById('flow-bar');if(flow)hidden(flow,true);var a=document.getElementById('pst-ws-home-actions'),card=a&&a.closest('.pst-ws-card');if(card){var title=card.querySelector('.pst-ws-card-title'),sub=card.querySelector('.pst-ws-card-sub');if(title)title.textContent='Duhet veprimi yt';if(sub)sub.textContent='PPPP shfaq vetëm vendimet dhe veprimet që kërkojnë ndërhyrjen tënde.';}p.querySelectorAll('.pst-ws-action-tag').forEach(function(tag){var t=S(tag.textContent).trim().toUpperCase();if(t==='VEPRO TANI'||t==='VEPRIM')tag.textContent='KËRKON VEPRIM';});hideCounters(p);return true;}
 function shell(){
  if(!workspace())return false;
  var app=document.getElementById('app-sidebar'),v2=document.getElementById('pst-v2-sidebar'),ws=document.getElementById('pst-ws-sidebar');
@@ -103,13 +124,13 @@ function shell(){
  document.querySelectorAll('.rail').forEach(function(r){hidden(r,true);r.classList.remove('open');});
  sidebar();hideBottomSearch();compactSort();stabilizeHome();return true;
 }
-function decorate(){shell();var p=home();if(!p)return 0;var n=0;p.querySelectorAll('#pst-ws-home-actions > .pst-ws-action').forEach(function(r){if(enhanceRow(r))n++;});stabilizeHome();return n;}
+function decorate(){shell();var p=home(),n=0;if(p)p.querySelectorAll('#pst-ws-home-actions > .pst-ws-action').forEach(function(r){if(enhanceRow(r))n++;});if(p)stabilizeHome();handoffOperatingExperience();return n;}
 function schedule(){[0,40,120,280,650,1200].forEach(function(ms){setTimeout(decorate,ms);});}
 function css(){
- ['pst-task-source-actions-v10-css','pst-task-source-actions-v11-css','pst-task-source-actions-v12-css','pst-task-source-actions-v13-css','pst-task-source-actions-v14-css','pst-task-source-actions-v15-css','pst-task-source-actions-v16-css','pst-task-source-actions-v17-css','pst-task-source-actions-v18-css'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
- if(document.getElementById('pst-task-source-actions-v19-css'))return;
- var s=document.createElement('style');s.id='pst-task-source-actions-v19-css';
- var top= [
+ ['pst-task-source-actions-v10-css','pst-task-source-actions-v11-css','pst-task-source-actions-v12-css','pst-task-source-actions-v13-css','pst-task-source-actions-v14-css','pst-task-source-actions-v15-css','pst-task-source-actions-v16-css','pst-task-source-actions-v17-css','pst-task-source-actions-v18-css','pst-task-source-actions-v19-css'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
+ if(document.getElementById('pst-task-source-actions-v20-css'))return;
+ var s=document.createElement('style');s.id='pst-task-source-actions-v20-css';
+ var top=[
  '#page-workspace-home.active','#page-workspace-projects.active','#page-workspace-inbox.active',
  '#page-workspace-commercial.active','#page-workspace-apps.active','#page-workspace-project.active',
  '#page-workspace-contacts.active','#page-contacts.active','#page-kek-tenders.active',
@@ -122,7 +143,7 @@ body:has(#page-workspace-home.active) #flow-bar{display:none!important}
 #pst-ws-sidebar>#pst-ws-canonical-nav{display:block!important}
 #pst-ws-canonical-nav .pst-ws-navbtn{display:grid!important;grid-template-columns:20px minmax(0,1fr) auto!important;align-items:center!important;column-gap:11px!important;min-height:42px!important;width:100%!important}
 #pst-ws-canonical-nav .pst-ws-navbtn svg{width:18px!important;height:18px!important;justify-self:center!important;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}
-#pst-ws-canonical-nav .pst-canon-tools-title{margin-top:8px!important}
+#pst-ws-canonical-nav .pst-canon-tools-title,#pst-ws-canonical-nav .pst-canon-tools{display:none!important}
 #page-workspace-home .pst-task-source-open{height:32px;border:1px solid #CFE0E7;border-radius:10px;padding:0 11px;background:#F8FBFC;color:#3F7F98;font-size:10px;font-weight:760;cursor:pointer}
 body:has(${top}) .topbar,
 body:has(${top}) #modbar,
@@ -136,11 +157,11 @@ body:has(${top}) #pst-ws-sidebar{display:flex!important;flex-direction:column!im
 `;
  document.head.appendChild(s);
 }
-css();ensureTheme();ensureContacts();schedule();
+css();ensureTheme();ensureContacts();ensureOperatingExperience(schedule);schedule();
 window.addEventListener('pst-dashboard-rendered',schedule);
 document.addEventListener('pst:home-canonical-rendered',schedule);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
 document.addEventListener('click',function(e){if(e.target&&e.target.closest&&e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn,[onclick*="pstWorkspaceGo"],[onclick*="pstOpenProjectWorkspace"],[onclick*="showPage"],[onclick*="openModuleHub"]'))schedule();},true);
-window.PSTTaskSourceActionsV1={sourceUrl:sourceUrl,metadataText:metadata,enhanceRow:enhanceRow,decorate:decorate,stabilizeWorkspaceShell:shell,normalizeSidebar:sidebar,compactProjectSort:compactSort,stabilizeHome:stabilizeHome,currentKey:currentKey};
+window.PSTTaskSourceActionsV1={sourceUrl:sourceUrl,metadataText:metadata,enhanceRow:enhanceRow,decorate:decorate,stabilizeWorkspaceShell:shell,normalizeSidebar:sidebar,compactProjectSort:compactSort,stabilizeHome:stabilizeHome,currentKey:currentKey,handoffOperatingExperience:handoffOperatingExperience};
 })();
