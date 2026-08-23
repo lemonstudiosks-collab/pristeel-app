@@ -19,15 +19,16 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body>
 </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
 const w=dom.window;
 w.scrollTo=()=>{};
-let projectLoads=0,waitingClicks=0,staleEnsureCalls=0;
+let projectLoads=0,legacyWaitingClicks=0,semanticFilter='',staleEnsureCalls=0;
 w.__pstWorkspaceProjectRows=[];
-w.pstProjectsModernOpen=()=>{projectLoads++;w.__pstWorkspaceProjectRows=[{id:'p1'}];const p=w.document.getElementById('page-workspace-projects');p.classList.add('active');p.style.display='block';return true;};
-w.document.querySelector('[data-pm-filter="waiting"]').addEventListener('click',()=>waitingClicks++);
+w.pstProjectsModernOpen=()=>{projectLoads++;w.__pstWorkspaceProjectRows=[{id:'p1',status:'pritje',operational_state:'active_work'}];const p=w.document.getElementById('page-workspace-projects');p.classList.add('active');p.style.display='block';return true;};
+w.document.querySelector('[data-pm-filter="waiting"]').addEventListener('click',()=>legacyWaitingClicks++);
 w.PSTOperatingAssistantV2={apply(){}};
 w.PSTOperatingExperienceV1={apply(){}};
 w.PSTHomeOperatingGridV1={render(){return true;}};
 w.PSTProjectClassificationV1={decorate(){}};
 w.PSTTenderPriorityActionsV1={wrapPromotion(){}};
+w.PSTOperationalTruthV1={setProjectFilter(f){semanticFilter=f;return true;},decorateProjects(){},syncHome(){}};
 
 w.eval(navSrc);
 assert.ok(w.PSTPrimaryNavResilienceV1,'Primary navigation API missing');
@@ -43,11 +44,13 @@ assert.strictEqual(staleEnsureCalls,0,'Live guard must neutralize stale cached e
   w.document.getElementById('page-workspace-home').classList.add('active');
   w.document.querySelector('.pst-hog-tile[data-hog-act=""]').click();
   assert.strictEqual(projectLoads,1,'Zero-state Home tile must reuse an already-loaded Projects page');
+  assert.strictEqual(semanticFilter,'operative','Projects Home tile must use the operational project view');
   w.document.getElementById('page-workspace-home').classList.add('active');
   w.document.querySelector('.pst-hog-tile[data-hog-act="waiting"]').click();
   await Promise.resolve();
   await new Promise(r=>setTimeout(r,5));
-  assert.ok(waitingClicks>=1,'Waiting Home tile must route to the waiting project filter');
+  assert.strictEqual(semanticFilter,'waiting','Waiting Home tile must use the operational waiting filter');
+  assert.strictEqual(legacyWaitingClicks,0,'Waiting Home tile must not fall back to legacy status=pritje filtering');
   console.log('Navigation interaction stability smoke test passed.');
   dom.window.close();
 })().catch(err=>{console.error(err);process.exit(1);});
