@@ -24,3 +24,4 @@ dom.window.close();
 
 require('./automation-health-smoke.js');
 require('./operating-experience-smoke.js');
+require('./operating-experience-owner-collision-smoke.js');
