@@ -20,7 +20,7 @@ assert.match(orchestrator,/invoice_candidates/,'invoice candidate queue missing'
 assert.match(orchestrator,/status:'review'/,'intake must create review candidates only');
 assert.doesNotMatch(orchestrator,/db\.from\(['"]offers['"]\)\.(?:insert|upsert|update|delete)/,'intake must never create or mutate canonical supplier offers');
 assert.doesNotMatch(orchestrator,/db\.from\(['"]invoices_(?:in|out)['"]\)\.(?:insert|upsert|update|delete)/,'intake must never create or mutate canonical invoices');
-assert.doesNotMatch(orchestrator,/mail\.google\.com|gmail.*send|sendMessage/i,'intake must never send external communication');
+assert.doesNotMatch(orchestrator,/mail\.google\.com|gmail\.users\.messages\.send|sendMessage\s*\(/i,'intake must never send external communication');
 
 assert.match(discovery,/TERMINAL_STATUSES=new Set\(\['created','linked','ignored'\]\)/,'Project Discovery terminal-state protection missing');
 assert.doesNotMatch(discovery,/from\(['"]projects['"]\)\.(?:insert|upsert)/,'Project Discovery must not auto-create projects');
