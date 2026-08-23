@@ -32,3 +32,4 @@ require('./live-home-command-grid-loader-smoke.js');
 require('./navigation-interaction-stability-smoke.js');
 require('./operational-truth-smoke.js');
 require('./project-offer-revision-workflow-smoke.js');
+require('./project-commercial-simplified-smoke.js');
