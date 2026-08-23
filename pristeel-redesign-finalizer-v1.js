@@ -103,11 +103,11 @@ function apply(){
   try{installPriorityStyle();repairPriorityCards();}catch(e){console.warn('PRISTEEL finalizer priority cards:',e);}
   try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){console.warn('PRISTEEL finalizer operating experience apply:',e);}
 }
-function schedule(){[0,80,220,450].forEach(function(ms){setTimeout(apply,ms);});}
+function schedule(){[0,80,220,450,1400].forEach(function(ms){setTimeout(apply,ms);});}
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 document.addEventListener('DOMContentLoaded',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
-document.addEventListener('click',function(event){var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,#pst-ws-home-refresh,[onclick*="pstWorkspaceGo"],[data-pm-open],[data-release-filter],[data-pwf-area],[data-pwf-stage],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,250,700].forEach(function(ms){setTimeout(apply,ms);});},true);
+document.addEventListener('click',function(event){var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,#pst-ws-home-refresh,[onclick*="pstWorkspaceGo"],[data-pm-open],[data-release-filter],[data-pwf-area],[data-pwf-stage],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,250,700,1450].forEach(function(ms){setTimeout(apply,ms);});},true);
 if(document.readyState!=='loading')schedule();
 window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
 })();
