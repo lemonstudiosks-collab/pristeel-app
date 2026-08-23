@@ -30,3 +30,4 @@ require('./primary-nav-resilience-smoke.js');
 require('./home-tender-command-grid-smoke.js');
 require('./live-home-command-grid-loader-smoke.js');
 require('./navigation-interaction-stability-smoke.js');
+require('./operational-truth-smoke.js');
