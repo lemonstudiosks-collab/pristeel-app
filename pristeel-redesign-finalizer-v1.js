@@ -1,5 +1,5 @@
 /* PRISTEEL redesign finalizer v1
- * Revision: 20260823-operating-assistant2.
+ * Revision: 20260823-primary-nav-resilience1.
  * Re-applies presentation-only styling after workspace renders.
  * Canonical Home exclusively owns priority-card navigation and business state.
  * Bounded timeouts only. No polling, observers, auth or project-open overrides.
@@ -9,6 +9,20 @@
 if(window.__pstRedesignFinalizerV1)return;
 window.__pstRedesignFinalizerV1=true;
 
+function primaryNavigationResilience(){
+  try{
+    var X=window.PSTPrimaryNavResilienceV1;
+    if(X&&typeof X.ensureAssistant==='function'){X.ensureAssistant();return;}
+    var existing=document.querySelector('script[data-pst-primary-nav-resilience]');
+    if(existing)return;
+    var s=document.createElement('script');
+    s.src='pristeel-primary-nav-resilience-v1.js?v=20260823-1';
+    s.defer=true;
+    s.setAttribute('data-pst-primary-nav-resilience','1');
+    s.onload=function(){var x=window.PSTPrimaryNavResilienceV1;if(x&&typeof x.ensureAssistant==='function')x.ensureAssistant();};
+    document.head.appendChild(s);
+  }catch(e){console.warn('PRISTEEL finalizer primary navigation:',e);}
+}
 function readability(){
   try{
     var R=window.PSTPlatformReadabilityV1;
@@ -55,7 +69,7 @@ function operatingAssistant(){
     var existing=document.querySelector('script[data-pst-operating-assistant-v2]');
     if(existing)return;
     var s=document.createElement('script');
-    s.src='pristeel-operating-assistant-v2.js?v=20260823-1';
+    s.src='pristeel-operating-assistant-v2.js?v=20260823-2';
     s.defer=true;
     s.setAttribute('data-pst-operating-assistant-v2','1');
     s.onload=function(){var x=window.PSTOperatingAssistantV2;if(x&&typeof x.apply==='function')x.apply(true);};
@@ -108,7 +122,7 @@ function installPriorityStyle(){
   document.head.appendChild(s);
 }
 function apply(){
-  sectionTheme();readability();contactCards();operatingExperience();operatingAssistant();
+  primaryNavigationResilience();sectionTheme();readability();contactCards();operatingExperience();operatingAssistant();
   try{var C=window.PSTBusinessCommandCenterV1;if(C&&typeof C.open==='function')window.openCmdK=C.open;if(C&&typeof C.decorateHome==='function')C.decorateHome();}catch(e){console.warn('PRISTEEL finalizer search:',e);}
   try{var D=window.PSTDashboardTaskCardsV1;if(D&&typeof D.decorate==='function')D.decorate();}catch(e){console.warn('PRISTEEL finalizer cards:',e);}
   try{var H=window.PSTHomeCommandCenterV2;if(H&&typeof H.decorate==='function')H.decorate(false);}catch(e){console.warn('PRISTEEL finalizer home:',e);}
@@ -124,5 +138,5 @@ document.addEventListener('DOMContentLoaded',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
 document.addEventListener('click',function(event){var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,#pst-ws-home-refresh,[onclick*="pstWorkspaceGo"],[data-pm-open],[data-release-filter],[data-pwf-area],[data-pwf-stage],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,250,700,1450,2200].forEach(function(ms){setTimeout(apply,ms);});},true);
 if(document.readyState!=='loading')schedule();
-window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,operatingAssistant:operatingAssistant,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
+window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,operatingAssistant:operatingAssistant,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
 })();
