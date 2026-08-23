@@ -21,8 +21,9 @@ const {JSDOM}=require('jsdom');
 
   assert.match(theme,/pristeel-commercial-intake-review-v1\.js\?v=20260823-1/,'runtime child loader missing');
   assert.match(ui,/window\.confirm/,'approval must require an explicit user confirmation');
-  assert.match(ui,/rpc\/pppp_approve_supplier_offer_candidate_v1/);
-  assert.match(ui,/rpc\/pppp_approve_invoice_candidate_v1/);
+  assert.match(ui,/pppp_approve_supplier_offer_candidate_v1/);
+  assert.match(ui,/pppp_approve_invoice_candidate_v1/);
+  assert.match(ui,/db\('rpc\/'\+fn,'POST'/,'approval UI must route through the selected RPC');
   assert.doesNotMatch(ui,/gmail.*send|messages\.send|sendMessage\s*\(/i,'review UI must never send email');
 
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
