@@ -71,8 +71,26 @@ declare
   v_checked integer:=0;
   v_ready_count integer:=0;
   v_blocked_count integer:=0;
+  v_terminal_reviews_closed integer:=0;
   v_detail text;
 begin
+  -- Document-review work is no longer ACTIVE work after a project is terminal.
+  -- The attachment/evidence rows themselves are intentionally preserved unchanged.
+  with closed as (
+    update public.tasks t
+       set status='mbyllur',
+           done_at=coalesce(done_at,now()),
+           detail=concat_ws(E'\n',nullif(t.detail,''),'Auto-closed by PPPP: project is terminal, so document review is no longer active work.')
+     where t.source in ('document_bom_review','document_image_review')
+       and lower(coalesce(t.status,'')) not in ('kryer','mbyllur','done','closed')
+       and exists(
+         select 1 from public.projects p0
+         where p0.id=t.project_id
+           and lower(coalesce(p0.status,'')) in ('realizuar','mbyllur','closed','humbur','lost','arkivuar','archived','cancelled','canceled')
+       )
+     returning t.id
+  ) select count(*) into v_terminal_reviews_closed from closed;
+
   -- Close the automated readiness signal when a project leaves execution or becomes terminal.
   update public.tasks t
      set status='mbyllur',done_at=coalesce(done_at,now())
@@ -126,7 +144,10 @@ begin
           category=excluded.category;
   end loop;
 
-  return jsonb_build_object('checked',v_checked,'ready',v_ready_count,'blocked',v_blocked_count,'generated_at',now());
+  return jsonb_build_object(
+    'checked',v_checked,'ready',v_ready_count,'blocked',v_blocked_count,
+    'terminal_document_reviews_closed',v_terminal_reviews_closed,'generated_at',now()
+  );
 end;
 $$;
 revoke all on function public.pppp_sync_execution_release_readiness_v1() from public,anon,authenticated;
