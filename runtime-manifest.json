@@ -78,6 +78,7 @@
         "pristeel-project-first-v2.js",
         "pristeel-project-first-actions-v1.js",
         "pristeel-project-first-commercial-v1.js",
+        "pristeel-project-commercial-simplified-v1.js",
         "pristeel-project-first-execution-v1.js",
         "pristeel-project-summary-command-v1.js",
         "pristeel-project-intelligence-conversation-v1.js",
@@ -86,7 +87,7 @@
         "pristeel-project-workflow-canonical-v1.js",
         "pristeel-operating-experience-v1.js"
       ],
-      "note": "Project-First remains the data/tool workspace and Canonical Project Workflow remains the UI workflow reconciler over the existing engines. Operating Experience groups the project into Përgatitja, Prokurimi, Komerciale, Ekzekutimi and Financa, keeps Skedarët/Komunikimi as utilities, and makes Hapi i radhës lifecycle-aware without replacing BOM/RFQ/comparison/pricing/client-offer engines or human gates."
+      "note": "Project-First remains the data/tool workspace and Canonical Project Workflow remains the UI workflow reconciler over the existing engines. Operating Experience groups the project into Përgatitja, Prokurimi, Komerciale, Ekzekutimi and Financa. Project Commercial Simplified is the final Commercial presentation/action owner: supplier offers first, one obvious next action, direct draft editing/revision, inline supplier detail and advanced comparison collapsed by default. It does not replace supplier, pricing, PDF or Gmail engines and performs no business-data write itself."
     },
     {
       "area": "gmail-inbox",
@@ -228,6 +229,12 @@
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded dynamically by the redesign finalizer with cache busting. It is a bounded presentation/navigation layer only: business-zone colors, simplified primary navigation, project phase grouping, lifecycle-aware next actions, direct Home action routing and Opportunities decision labels. No Supabase reads/writes or outbound actions."
+    },
+    {
+      "module": "pristeel-project-commercial-simplified-v1.js",
+      "loader": "pristeel-offer-revision-email-bridge-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded with the project offer-revision bundle. It is the final Project Commercial presentation/action layer: supplier offers first, direct draft editing or revision, inline details, optional advanced analysis and a collapsed price advisor. It performs no Supabase/Gmail writes."
     },
     {
       "module": "pristeel-project-summary-command-v1.js",
