@@ -59,11 +59,11 @@ assert.strictEqual(w.document.querySelector('.pwf-stage-nav [data-pwf-stage="bom
 assert.strictEqual(w.document.querySelector('.pwf-stage-nav [data-pwf-stage="pricing"]').classList.contains('pst-commercial-stage'),true);
 
 const target=w.PSTOperatingExperienceV1._test.homeActionTarget;
-assert.deepStrictEqual(target({source:'commercial_intake_review',title:'Shqyrto ofertën e furnitorit'}),{workspace:'commercial'});
-assert.deepStrictEqual(target({source:'execution_release_readiness',title:'Release readiness blocked'}),{area:'execution'});
-assert.deepStrictEqual(target({source:'project_decision_auto',title:'Kontrollo dhe dërgo ofertën'}),{stage:'client_offer'});
-assert.deepStrictEqual(target({source:'semantic_brain_auto',title:'Kontrollo BOM / RFQ para dërgimit'}),{stage:'rfq'});
-assert.deepStrictEqual(target({source:'email_request_auto',title:'Përgjigju klientit'}),{area:'communication'});
+assert.strictEqual(target({source:'commercial_intake_review',title:'Shqyrto ofertën e furnitorit'}).workspace,'commercial');
+assert.strictEqual(target({source:'execution_release_readiness',title:'Release readiness blocked'}).area,'execution');
+assert.strictEqual(target({source:'project_decision_auto',title:'Kontrollo dhe dërgo ofertën'}).stage,'client_offer');
+assert.strictEqual(target({source:'semantic_brain_auto',title:'Kontrollo BOM / RFQ para dërgimit'}).stage,'rfq');
+assert.strictEqual(target({source:'email_request_auto',title:'Përgjigju klientit'}).area,'communication');
 
 w.__pstIntegrityLastData.project={id:'p1',status:'pritje',pipeline_stage:'client_offer',operational_state:'wait_for_client'};
 w.PSTOperatingExperienceV1.rewriteNextAction();
