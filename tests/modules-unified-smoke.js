@@ -23,3 +23,4 @@ console.log('Unified modules smoke test passed.');
 dom.window.close();
 
 require('./automation-health-smoke.js');
+require('./operating-experience-smoke.js');
