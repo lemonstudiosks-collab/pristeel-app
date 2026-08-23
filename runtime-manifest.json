@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "48c264cab7116ee36f7c485231510e6529891ba6",
+  "auditedAtCommit": "38eb78074e0ec75e1e8892593cb0253e111b811c",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "dfc61ad40f954d19a98b6cfb2c6b0173f73ac2d7"
+    "bootstrapGitBlobSha": "7d6ddfb5022bf5200bfdbb11655b8aa339efc07e"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -50,23 +50,27 @@
         "pristeel-ui-corrections-v2.js",
         "pristeel-redesign-finalizer-v1.js",
         "pristeel-task-source-actions-v1.js",
-        "pristeel-operating-experience-v1.js"
+        "pristeel-operating-experience-v1.js",
+        "pristeel-primary-nav-resilience-v1.js"
       ],
-      "note": "Workspace Architecture provides the shell. Task Source Actions v15 remains the safe shell/navigation reconciler. Operating Experience v1 is the late presentation/navigation layer loaded by the redesign finalizer: it exposes Home, Opportunities, Projects, Partners, Finance and System as the primary business zones, applies distinct zone colors, and performs no business-data writes or outbound actions."
+      "note": "Workspace Architecture provides the shell. Task Source Actions v15 remains the safe shell/navigation reconciler. Operating Experience exposes Home, Opportunities, Projects, Partners, Finance and System as the primary business zones. Primary Navigation Resilience is now the final ordered bootstrap owner for those six routes, after all legacy layers."
     },
     {
       "area": "home",
       "finalOwners": [
-        "pristeel-home-canonical-v1.js"
+        "pristeel-home-canonical-v1.js",
+        "pristeel-home-operating-grid-v1.js"
       ],
-      "note": "Workspace Architecture may create the Home shell during startup, but Home Canonical is the sole final data owner. Current Home is an event/action engine: maximum five concrete actions, waiting separated from action, Project Brief drill-down and obsolete-task reconciliation. Operating Experience may decorate Home and route Vepro directly to an existing decision surface, but does not own Home data/state."
+      "note": "Home Canonical remains the sole final data/state owner. Home Operating Grid is the final presentation owner and renders the System-style command-card layout after all legacy Home layers. It does not replace Canonical Home action/waiting state."
     },
     {
       "area": "projects-list",
       "finalOwners": [
         "pristeel-projects-modern-v1.js",
-        "pristeel-project-lifecycle-tracking-v1.js"
-      ]
+        "pristeel-project-lifecycle-tracking-v1.js",
+        "pristeel-project-classification-v1.js"
+      ],
+      "note": "Project Classification decorates the existing project register with origin/work-model badges and filters after project lifecycle data owners."
     },
     {
       "area": "project-workspace",
@@ -82,7 +86,7 @@
         "pristeel-project-workflow-canonical-v1.js",
         "pristeel-operating-experience-v1.js"
       ],
-      "note": "Project-First remains the data/tool workspace and Canonical Project Workflow remains the UI workflow reconciler over the existing engines. Operating Experience is the later presentation layer that groups the project into Përgatitja, Prokurimi, Komerciale, Ekzekutimi and Financa, keeps Skedarët/Komunikimi as utilities, and makes Hapi i radhës lifecycle-aware without replacing BOM/RFQ/comparison/pricing/client-offer engines or human gates."
+      "note": "Project-First remains the data/tool workspace and Canonical Project Workflow remains the UI workflow reconciler over the existing engines. Operating Experience groups the project into Përgatitja, Prokurimi, Komerciale, Ekzekutimi and Financa, keeps Skedarët/Komunikimi as utilities, and makes Hapi i radhës lifecycle-aware without replacing BOM/RFQ/comparison/pricing/client-offer engines or human gates."
     },
     {
       "area": "gmail-inbox",
@@ -121,9 +125,10 @@
         "pristeel-kek-tender-watch-v1.js",
         "pristeel-tender-business-flow-v1.js",
         "pristeel-tender-winner-contacts-v1.js",
-        "pristeel-operating-experience-v1.js"
+        "pristeel-operating-experience-v1.js",
+        "pristeel-tender-priority-actions-v1.js"
       ],
-      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania, TED direct-bid opportunities and TED award-winner outreach. Operating Experience adds only the final GO / REVIEW / NO-GO presentation and does not change tender status/project-promotion gates."
+      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania, TED direct-bid opportunities and TED award-winner outreach. Tender Priority Actions is the final ordered presentation/action adapter for priority ranking, controlled Gmail draft preparation and explicit REVIEW/GO/NO-GO gates."
     },
     {
       "area": "ai",
@@ -304,6 +309,26 @@
       "before": "pristeel-project-workflow-canonical-v1.js",
       "after": "pristeel-project-workflow-legacy-capture-v1.js",
       "reason": "The old horizontal workflow ribbon is captured only after the canonical project workflow exists, preventing legacy navigation from escaping the active project context."
+    },
+    {
+      "before": "pristeel-project-workflow-legacy-capture-v1.js",
+      "after": "pristeel-tender-priority-actions-v1.js",
+      "reason": "The Home/tender command release intentionally starts only after all legacy project workflow layers are loaded."
+    },
+    {
+      "before": "pristeel-tender-priority-actions-v1.js",
+      "after": "pristeel-home-operating-grid-v1.js",
+      "reason": "Home priority rendering consumes the tender priority adapter."
+    },
+    {
+      "before": "pristeel-home-operating-grid-v1.js",
+      "after": "pristeel-project-classification-v1.js",
+      "reason": "Project register classification decorates project views after Home command presentation is installed."
+    },
+    {
+      "before": "pristeel-project-classification-v1.js",
+      "after": "pristeel-primary-nav-resilience-v1.js",
+      "reason": "Primary Navigation Resilience is the final ordered bootstrap owner and re-applies the command grid after route changes."
     }
   ],
   "deprecatedForbidden": [
