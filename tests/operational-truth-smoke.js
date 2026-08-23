@@ -9,7 +9,7 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <div id="page-finance" class="page" style="display:none"></div><div id="page-workspace-apps" class="page" style="display:none"></div>
 <div id="page-kek-tenders" class="page"><input id="pst-kek-search"><select id="pst-kek-source"><option value="all">all</option><option value="KRPP">KRPP</option></select><select id="pst-kek-phase"><option value="focus">focus</option></select><select id="pst-kek-category"><option value="all">all</option></select><select id="pst-kek-fit"><option value="all">all</option></select><select id="pst-kek-status"><option value="open">open</option><option value="review">review</option></select><div id="pst-kek-list"><table><tbody><tr><td><div class="pst-kek-name">A</div></td></tr><tr><td><div class="pst-kek-name">B</div></td></tr><tr><td><div class="pst-kek-name">C</div></td></tr><tr><td><div class="pst-kek-name">D</div></td></tr></tbody></table></div></div>
 </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
-const w=dom.window;w.scrollTo=()=>{};w.open=()=>{};
+const w=dom.window;w.scrollTo=()=>{};w.open=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};
 w.__pstWorkspaceProjectRows=[
  {id:'a',status:'pritje',operational_state:'action_required'},
  {id:'w',status:'pritje',operational_state:'wait_for_client'},
