@@ -1,10 +1,12 @@
-/* PRISTEEL startup guard v3
+/* PRISTEEL startup guard v4
  * Single owner of startup visibility. Never blocks the usable app indefinitely.
+ * Also preempts the legacy blocking unsaved-work confirm so the final UX can
+ * surface recovery as a non-blocking in-app banner.
  */
 (function(){
 'use strict';
-if(window.__pstStartupGuardV3)return;
-window.__pstStartupGuardV3=true;window.__pstStartupGuardV2=true;
+if(window.__pstStartupGuardV4)return;
+window.__pstStartupGuardV4=true;window.__pstStartupGuardV3=true;window.__pstStartupGuardV2=true;
 var root=document.documentElement;
 var state={dom:false,loaded:false,modules:false,visual:false,revealed:false,started:Date.now(),quietTimer:null,maxTimer:null,observer:null,poll:null};
 root.classList.add('pst-booting');
@@ -18,16 +20,31 @@ function logo(){return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12
 function ensureShell(){if(document.getElementById('pst-startup-shell'))return;var shell=document.createElement('div');shell.id='pst-startup-shell';shell.innerHTML='<div class="pst-startup-card"><div class="pst-startup-mark">'+logo()+'</div><div class="pst-startup-name">PRISTEEL</div><div class="pst-startup-copy" id="pst-startup-copy">Duke përgatitur workspace-in…</div><div class="pst-startup-line"><i></i></div></div>';(document.body||document.documentElement).appendChild(shell);}
 ensureShell();
 function polishLogin(){var gate=document.getElementById('auth-gate'),form=document.getElementById('auth-form');if(!gate||!form)return false;var card=gate.firstElementChild;if(!card)return false;card.classList.add('pst-auth-card');if(!card.querySelector('.pst-auth-head')){var children=card.children,title=children[0],sub=children[1];if(title&&sub){title.className='pst-auth-brand';sub.className='pst-auth-sub';sub.textContent='Workspace i sigurt për ekipin PRISTEEL';var head=document.createElement('div');head.className='pst-auth-head';var mark=document.createElement('div');mark.className='pst-auth-mark';mark.innerHTML=logo();var words=document.createElement('div');card.insertBefore(head,title);head.appendChild(mark);head.appendChild(words);words.appendChild(title);words.appendChild(sub);}}var button=form.querySelector('button[type="submit"]');if(button)button.textContent='Hyr në PRISTEEL';if(!card.querySelector('.pst-auth-note')){var note=document.createElement('div');note.className='pst-auth-note';note.textContent='Qasje e mbrojtur · PRISTEEL Sh.p.k.';card.appendChild(note);}return true;}
+function preemptLegacyRecovery(){
+  var f=window.recoverUnsavedWork;
+  if(typeof f!=='function'||f.__pstRecoveryPreempted)return false;
+  if(!window.__pstLegacyRecoverUnsavedWork)window.__pstLegacyRecoverUnsavedWork=f;
+  var safe=function(){
+    window.__pstPendingRecoveryNotice=true;
+    try{document.dispatchEvent(new CustomEvent('pst:unsaved-recovery-detected'));}catch(e){}
+    try{var A=window.PSTOperatingAssistantV2;if(A&&typeof A.renderRecovery==='function')A.renderRecovery();}catch(e){}
+    return false;
+  };
+  safe.__pstRecoveryPreempted=true;
+  window.recoverUnsavedWork=safe;
+  return true;
+}
+function preemptSchedule(){[0,80,220,480,780,1050,1160].forEach(function(ms){setTimeout(preemptLegacyRecovery,ms);});}
 function sessionExists(){try{return !!localStorage.getItem('pristeel_session');}catch(e){return false;}}
 function intendedVisible(el){if(!el||el.hidden)return false;return !(el.style&&el.style.display==='none');}
 function setCopy(text){var e=document.getElementById('pst-startup-copy');if(e&&e.textContent!==text)e.textContent=text;}
-function finish(kind){if(state.revealed)return;state.revealed=true;clearTimeout(state.maxTimer);clearTimeout(state.quietTimer);clearInterval(state.poll);polishLogin();root.classList.remove('pst-booting');root.classList.add(kind==='auth'?'pst-auth-ready':'pst-app-ready');var preload=document.getElementById('pst-startup-preload-css');if(preload)preload.remove();var shell=document.getElementById('pst-startup-shell');if(shell){shell.classList.add('pst-leaving');setTimeout(function(){if(shell.parentNode)shell.remove();},260);}}
+function finish(kind){if(state.revealed)return;state.revealed=true;clearTimeout(state.maxTimer);clearTimeout(state.quietTimer);clearInterval(state.poll);polishLogin();preemptLegacyRecovery();root.classList.remove('pst-booting');root.classList.add(kind==='auth'?'pst-auth-ready':'pst-app-ready');var preload=document.getElementById('pst-startup-preload-css');if(preload)preload.remove();var shell=document.getElementById('pst-startup-shell');if(shell){shell.classList.add('pst-leaving');setTimeout(function(){if(shell.parentNode)shell.remove();},260);}}
 function settleApp(){if(state.revealed||state.quietTimer)return;state.quietTimer=setTimeout(function(){state.quietTimer=null;var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');if(app&&intendedVisible(app)&&(!gate||!intendedVisible(gate)))finish('app');else check();},180);}
-function check(){if(state.revealed)return;ensureShell();polishLogin();var gate=document.getElementById('auth-gate'),app=document.getElementById('app-shell-root');var gateOn=intendedVisible(gate),appOn=intendedVisible(app);if(gateOn&&!appOn){if(!sessionExists()||state.loaded){finish('auth');return;}setCopy('Duke verifikuar sesionin…');}if(appOn&&!gateOn){if(state.visual){settleApp();return;}setCopy(state.modules?'Duke stabilizuar pamjen finale…':'Duke finalizuar workspace-in…');}}
-function domReady(){state.dom=true;ensureShell();polishLogin();check();}
-function modulesReady(){state.modules=true;setCopy('Duke stabilizuar pamjen finale…');check();}
-function visualReady(){state.visual=true;setCopy('Gati…');check();}
-function failOpen(){if(state.revealed)return;var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');var appOn=intendedVisible(app),gateOn=intendedVisible(gate);if(appOn&&!gateOn){finish('app');return;}if(gateOn&&!appOn){finish('auth');return;}if(sessionExists()&&app){finish('app');return;}if(gate){finish('auth');return;}/* Last resort: never retain the branded blocker. */root.classList.remove('pst-booting');var shell=document.getElementById('pst-startup-shell');if(shell)shell.remove();state.revealed=true;clearInterval(state.poll);}
-window.PSTStartupGuard={modulesReady:modulesReady,visualReady:visualReady,reveal:check,failOpen:failOpen,state:state};
-document.addEventListener('pst:modules-ready',modulesReady);document.addEventListener('pst:visual-ready',visualReady);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',domReady,{once:true});else domReady();window.addEventListener('load',function(){state.loaded=true;check();});state.poll=setInterval(check,120);state.maxTimer=setTimeout(failOpen,12000);
+function check(){if(state.revealed)return;ensureShell();polishLogin();preemptLegacyRecovery();var gate=document.getElementById('auth-gate'),app=document.getElementById('app-shell-root');var gateOn=intendedVisible(gate),appOn=intendedVisible(app);if(gateOn&&!appOn){if(!sessionExists()||state.loaded){finish('auth');return;}setCopy('Duke verifikuar sesionin…');}if(appOn&&!gateOn){if(state.visual){settleApp();return;}setCopy(state.modules?'Duke stabilizuar pamjen finale…':'Duke finalizuar workspace-in…');}}
+function domReady(){state.dom=true;ensureShell();polishLogin();preemptSchedule();check();}
+function modulesReady(){state.modules=true;setCopy('Duke stabilizuar pamjen finale…');preemptLegacyRecovery();check();}
+function visualReady(){state.visual=true;setCopy('Gati…');preemptLegacyRecovery();check();}
+function failOpen(){if(state.revealed)return;var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');var appOn=intendedVisible(app),gateOn=intendedVisible(gate);preemptLegacyRecovery();if(appOn&&!gateOn){finish('app');return;}if(gateOn&&!appOn){finish('auth');return;}if(sessionExists()&&app){finish('app');return;}if(gate){finish('auth');return;}root.classList.remove('pst-booting');var shell=document.getElementById('pst-startup-shell');if(shell)shell.remove();state.revealed=true;clearInterval(state.poll);}
+window.PSTStartupGuard={modulesReady:modulesReady,visualReady:visualReady,reveal:check,failOpen:failOpen,state:state,preemptLegacyRecovery:preemptLegacyRecovery};
+document.addEventListener('pst:modules-ready',modulesReady);document.addEventListener('pst:visual-ready',visualReady);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',domReady,{once:true});else domReady();window.addEventListener('load',function(){state.loaded=true;preemptSchedule();check();});state.poll=setInterval(check,120);state.maxTimer=setTimeout(failOpen,12000);preemptSchedule();
 })();
