@@ -6,10 +6,10 @@ const dsn=fs.readFileSync('supabase/migrations/20260823110500_dsn_icon_metadata_
 
 assert.match(sql,/pppp_execution_release_snapshot_v1/i);
 assert.match(sql,/pppp_sync_execution_release_readiness_v1/i);
-assert.match(sql,/project_requirements[\s\S]*status='review'/i,'requirements review must be a release blocker');
-assert.match(sql,/bom_items[\s\S]*needs_review is true/i,'unreviewed BOM must be a release blocker');
-assert.match(sql,/local_ocr_failed[\s\S]*image_review/i,'attachment/OCR visual review states must be included');
-assert.match(sql,/document_bom_review','document_image_review'/i,'document review tasks must be included');
+assert.match(sql,/count\(\*\) filter\(where status='review'\)[\s\S]{0,180}from public\.project_requirements/i,'requirements review must be a release blocker');
+assert.match(sql,/from public\.bom_items[\s\S]{0,120}needs_review is true/i,'unreviewed BOM must be a release blocker');
+assert.match(sql,/local_ocr_failed','image_review/i,'attachment/OCR visual review states must be included');
+assert.match(sql,/document_bom_review','document_image_review/i,'document review tasks must be included');
 assert.match(sql,/source='execution_release_readiness'/i,'release readiness must use one idempotent task source');
 assert.match(sql,/execution-release-readiness-hourly/i,'hourly readiness reconciliation cron missing');
 assert.match(sql,/HUMAN GATE/i,'release signal must explicitly preserve the human release decision');
