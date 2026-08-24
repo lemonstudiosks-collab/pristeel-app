@@ -33,3 +33,4 @@ require('./navigation-interaction-stability-smoke.js');
 require('./operational-truth-smoke.js');
 require('./project-offer-revision-workflow-smoke.js');
 require('./project-commercial-simplified-smoke.js');
+require('./project-workspace-clean-chrome-smoke.js');
