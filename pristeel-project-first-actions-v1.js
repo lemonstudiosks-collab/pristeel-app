@@ -5,6 +5,7 @@
  * its read-only Project Intelligence conversation extension, live intelligence recovery,
  * Project Analysis run guard, guarded Gmail project auto-link,
  * and a reliable Project -> Commercial document entry bridge.
+ * Previous conversation runtime cache key: pristeel-project-intelligence-conversation-v1.js?v=20260816-coverage1
  */
 (function(){
 'use strict';if(window.__pstProjectFirstActionsV1)return;window.__pstProjectFirstActionsV1=true;
