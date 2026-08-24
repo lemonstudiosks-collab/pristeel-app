@@ -1,7 +1,7 @@
 const fs=require('fs');
 const assert=require('assert');
 const {JSDOM}=require('jsdom');
-const cleanup=fs.readFileSync('pristeel-project-workspace-cleanup-v1.js','utf8');
+const cleanup=fs.readFileSync('pristeel-offer-revision-email-bridge-v1.js','utf8');
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <div id="modbar" style="display:flex">legacy module bar</div>
 <div class="topbar" style="display:flex">legacy page toolbar</div>
@@ -14,8 +14,9 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body>
 </body></html>`,{runScripts:'outside-only',url:'https://example.test'});
 const w=dom.window;
 w.PSTProjectCommercialSimplifiedV1={render:function(){return true;}};
+w.PSTOfferRevisionEmailDraftV1={createDraftFromCurrentOffer:function(){}};
 w.eval(cleanup);
-w.PSTProjectWorkspaceCleanupV1.decorate();
+w.PSTOfferRevisionEmailBridgeV1.decorate();
 assert.ok(w.document.body.classList.contains('pst-project-clean-chrome'),'project workspace must activate clean chrome state');
 assert.ok(w.document.querySelector('.legacy-flow').classList.contains('pst-project-legacy-flow-ribbon'),'legacy flow ribbon must be marked for hiding');
 assert.ok(cleanup.includes('.pst-project-clean-chrome #modbar'),'legacy module bar must be hidden');
@@ -29,7 +30,7 @@ detail.open=true;assert.strictEqual(detail.open,true,'supplier detail opens inli
 detail.open=false;assert.strictEqual(detail.open,false,'supplier detail closes inline without navigation');
 assert.ok(!root.querySelector('.pst-csf-supplier [data-csf-detail]'),'old supplier detail button must be removed');
 w.document.getElementById('page-workspace-project').classList.remove('active');
-w.PSTProjectWorkspaceCleanupV1.syncProjectChrome();
+w.PSTOfferRevisionEmailBridgeV1.syncProjectChrome();
 assert.ok(!w.document.body.classList.contains('pst-project-clean-chrome'),'clean chrome state must clear outside Project Workspace');
 console.log('Project workspace clean chrome smoke test passed.');
 dom.window.close();
