@@ -34,3 +34,4 @@ require('./operational-truth-smoke.js');
 require('./project-offer-revision-workflow-smoke.js');
 require('./project-commercial-simplified-smoke.js');
 require('./rollback-pr244-smoke.js');
+require('./project-commercial-supplier-data-smoke.js');
