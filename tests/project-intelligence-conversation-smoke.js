@@ -12,7 +12,11 @@ assert(!source.includes('MutationObserver'), 'conversation layer must not add a 
 assert(!source.includes('setInterval('), 'conversation layer must not add polling');
 assert(!/supaFetch\([^\n]*['"](?:POST|PATCH|PUT|DELETE)['"]/i.test(source), 'conversation layer must not write through Supabase');
 assert.strictEqual((source.match(/\.requestJson\(/g) || []).length, 1, 'conversation layer should have one explicit AI request callsite');
-assert(source.includes('[data-pst-project-summary]'), 'conversation must mount from the explicit Project Summary action');
+assert(source.includes('page-workspace-project'), 'conversation must support the modern Project-first workspace');
+assert(source.includes('pst-pic-project-shell'), 'modern workspace must expose a persistent project conversation card');
+assert(source.includes('pst-pi-body'), 'modern conversation card must anchor to the Project-first body instead of the retired summary modal');
+assert(source.includes('[data-pst-project-summary]'), 'legacy Project Summary entry must remain a compatibility fallback');
+assert(source.includes('pstOpenProjectWorkspace'), 'conversation must remount after a project is opened');
 assert(source.includes('kjo bisede eshte vetem read-only'), 'AI prompt must preserve the read-only boundary');
 assert(source.includes('Mos shpik scope, sasi, cmime, afate, kontakte'), 'AI prompt must prohibit invented project facts');
 assert(source.includes('COMMERCIAL_SNAPSHOT eshte llogaritur nga PPPP'), 'AI prompt must prioritize deterministic commercial context');
@@ -35,7 +39,10 @@ assert(inventory.includes("{ file: 'pristeel-project-intelligence-conversation-v
 
 (async () => {
   const dom = new JSDOM(`<!doctype html><html><head></head><body>
-    <div id="pst-project-summary-bg"><div class="pst-ps-wrap"><section id="pai-42"></section></div></div>
+    <div id="page-workspace-project" class="page active pf2-on">
+      <div class="pst-pi-tabs"><button data-pf2-tab="overview">Përmbledhja</button></div>
+      <div id="pst-pi-body"><section class="pf2-hero"><h2>Project-first overview</h2></section></div>
+    </div>
   </body></html>`, { runScripts: 'outside-only', url: 'https://example.test/' });
   const { window } = dom;
   window.__pstCurrentProjectId = '42';
@@ -126,11 +133,27 @@ assert(inventory.includes("{ file: 'pristeel-project-intelligence-conversation-v
   window.eval(source);
   const api = window.PSTProjectIntelligenceConversationV1;
   assert(api, 'conversation API must be exposed');
+  assert(window.PSTProjectIntelligenceConversationV2, 'v2 alias must be exposed');
   assert.strictEqual(aiCalls, 0, 'loading the module must not call AI');
   assert.strictEqual(integrityLoads, 0, 'loading the module must not refresh project data');
-  assert.strictEqual(api.mount('42'), true, 'conversation should mount inside Project Summary');
+  assert.strictEqual(api.mount('42'), true, 'conversation should mount directly in the modern Project-first workspace');
   assert.strictEqual(aiCalls, 0, 'mounting must not call AI');
   assert.strictEqual(integrityLoads, 0, 'mounting must not refresh project data');
+  const shell = window.document.getElementById('pst-pic-project-shell');
+  assert(shell, 'every Project-first workspace must get the project conversation shell');
+  assert.strictEqual(shell.dataset.projectId, '42');
+  assert(shell.open, 'conversation card should be open by default but remain collapsible');
+  assert(window.document.querySelector('#pst-pic-project-shell .pst-pic-project-host #pst-pic-42'), 'project-scoped conversation must live in the modern shell');
+  assert(window.document.body.textContent.includes('Pyete PPPP për këtë projekt'), 'visible card must clearly expose PPPP project conversation');
+  assert(!window.document.getElementById('pst-project-summary-bg'), 'modern mount must not recreate the retired Project Summary modal');
+
+  // DOM can switch projects without mixing sessions. The old card leaves the DOM, but its in-memory session remains scoped by ID.
+  assert.strictEqual(api.mount('84'), true, 'a second project should reuse the shell with a different project-scoped card');
+  assert.strictEqual(shell.dataset.projectId, '84');
+  assert(!window.document.getElementById('pst-pic-42'), 'previous project card must not remain visible after switching projects');
+  assert(window.document.getElementById('pst-pic-84'), 'new project must get its own conversation card');
+  window.__pstCurrentProjectId = '42';
+  assert.strictEqual(api.mount('42'), true, 'returning to the original project should restore its project-scoped UI');
 
   const ctx = await api._test.context('42');
   assert.strictEqual(integrityLoads, 1, 'explicit context build must refresh through the existing integrity adapter');
