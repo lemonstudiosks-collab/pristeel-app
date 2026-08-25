@@ -55,7 +55,7 @@ async function load(force){
 }
 function openRow(r){
   if(!r)return false;var src=N(r.source),ref=N(r.source_ref);
-  if(src==='invoice_receivable'&&typeof window.finSwitchTab==='function'){window.finSwitchTab('inv');setTimeout(function(){if(typeof window.finInvFilter==='function')window.finInvFilter('overdue');},0);return true;}
+  if(src==='invoice_receivable'&&typeof window.finSwitchTab==='function'){window.finSwitchTab('inv');if(typeof window.finInvFilter==='function')window.finInvFilter('overdue');return true;}
   if(src==='invoice_due_date_missing'&&typeof window.finSwitchTab==='function'){window.finSwitchTab('supp');return true;}
   if(src==='commercial_intake_review'&&/invoice/.test(ref)&&typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('commercial');return true;}
   if(r.project_id&&typeof window.pstOpenProjectWorkspace==='function'){window.pstOpenProjectWorkspace(r.project_id);return true;}
