@@ -15,8 +15,12 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body>
  <section class="pcm-card"><div class="pcm-card-head"><b>Contact Master</b><small id="pcm-count">42 kontakte</small></div></section>
 </div>
 <div id="page-workspace-project" class="page"><section class="pwf-project-context"><div class="pwf-project-kpis">4 RFQ · 3 oferta</div></section></div>
+<div id="page-workspace-apps" class="page"><div class="pst-ws-head"><div><div class="pst-ws-eyebrow">Apps</div><div class="pst-ws-title">Mjetet dhe regjistrat</div><div class="pst-ws-sub">old</div></div></div><div class="pst-ws-appgrid"><button class="pst-ws-app">Tool</button></div></div>
+<div id="page-finance" class="page"></div><div id="page-kek-tenders" class="page"></div>
 </body></html>`,{runScripts:'outside-only',url:'https://example.test'});
 const w=dom.window;
+let healthLoads=0;
+w.PSTAutomationHealthV1={load:()=>{healthLoads++;return true;}};
 w.eval(source);
 w.PSTDailyZonesCleanupV1.apply();
 const contacts=w.document.getElementById('page-workspace-contacts');
@@ -35,6 +39,15 @@ w.document.getElementById('page-workspace-project').classList.add('active');
 w.PSTDailyZonesCleanupV1.apply();
 assert(w.document.querySelector('.pwf-project-kpis').classList.contains('pst-daily-passive-count'));
 assert(css.includes('#page-workspace-project.active .pst-daily-passive-count{display:none!important}'));
+
+w.document.getElementById('page-workspace-project').classList.remove('active');
+const system=w.document.getElementById('page-workspace-apps');system.classList.add('active');
+w.PSTDailyZonesCleanupV1.apply();
+assert.equal(system.querySelector('.pst-ws-eyebrow').textContent,'SYSTEM');
+assert.equal(system.querySelector('.pst-ws-title').textContent,'Sistemi dhe automatizimet');
+assert.match(system.querySelector('.pst-ws-sub').textContent,/motorët teknikë/i);
+assert.equal(system.querySelector('.pst-ws-appgrid').getAttribute('data-pst-system-tools'),'1');
+assert(healthLoads>0,'System must hand off to the existing Automation Health engine');
 
 dom.window.close();
 console.log('Daily zones cleanup smoke test passed.');
