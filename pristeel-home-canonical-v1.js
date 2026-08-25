@@ -116,8 +116,20 @@ function currentState(ctx){
  if(relDays(p.deadline)!==null&&relDays(p.deadline)<=3&&norm(p.pipeline_stage)==='technical_review')return'Sqarime teknike para ofertës';
  return stageName(p.pipeline_stage);
 }
-function taskScore(t){var d=relDays(t&&t.due_date);if(norm(t&&t.source)==='email_request_auto')return 780;if(d===null)return 0;if(d<0)return 700+Math.min(120,Math.abs(d));if(d===0)return 690;if(d<=3)return 650-d;return 0;}
-function taskWhy(t){var d=relDays(t&&t.due_date),bits=[];if(norm(t&&t.source)==='email_request_auto')bits.push('Kërkesë e hapur që ende kërkon vendim ose përgjigje');else if(d<0)bits.push(Math.abs(d)+' ditë vonë');else if(d===0)bits.push('Afati është sot');else if(d!==null)bits.push('Afati është pas '+d+' ditësh');if(t&&t.detail)bits.push(short(t.detail,190));return bits.join(' · ');}
+function taskAgeDays(t){var d=safeDate(t&&t.created_at);if(!d)return 999;return Math.max(0,Math.floor((Date.now()-d.getTime())/86400000));}
+function taskScore(t){
+ var d=relDays(t&&t.due_date),src=norm(t&&t.source),age=taskAgeDays(t);
+ if(src==='project_discovery_auto')return age<=2?970:880;
+ if(src==='execution_release_readiness')return 940;
+ if(src==='email_request_auto')return Math.max(820,900-Math.min(age,30)*3);
+ if(d===null)return 0;
+ if(d<0)return 760+Math.min(40,Math.abs(d));
+ if(d===0)return 750;
+ if(d<=3)return 720-d;
+ return 0;
+}
+function taskWhy(t){var d=relDays(t&&t.due_date),src=norm(t&&t.source),bits=[];if(src==='project_discovery_auto')bits.push('Projekt i ri i regjistruar automatikisht; duhet përcaktuar hapi i parë');else if(src==='execution_release_readiness')bits.push('Ekzekutimi ka blocker të konfirmuar që kërkon zgjidhje');else if(src==='email_request_auto')bits.push('Kërkesë e hapur që ende kërkon vendim ose përgjigje');else if(d<0)bits.push(Math.abs(d)+' ditë vonë');else if(d===0)bits.push('Afati është sot');else if(d!==null)bits.push('Afati është pas '+d+' ditësh');if(t&&t.detail)bits.push(short(t.detail,190));return bits.join(' · ');}
+function taskTag(t){var src=norm(t&&t.source);if(src==='project_discovery_auto')return 'PROJEKT I RI';if(src==='execution_release_readiness')return 'BLLOKUES';if(src==='email_request_auto')return 'VEPRIM';return relDays(t&&t.due_date)<0?'VONUAR':'DETYRË';}
 function specificTaskTitle(ctx,t){
  var p=flat(ctx&&ctx.project&&ctx.project.name),x=flat((t&&t.title||'')+' '+(t&&t.detail||''));
  if(/tennet|spie/.test(p)&&/(galvan|en 1090|weld|ndt|bolt|toler|technical|teknik|iso)/.test(x))return'Finalizo çështjet teknike për ofertën TenneT / SPIE';
@@ -137,7 +149,7 @@ function buildActions(data,contexts){
   if(dd!==null&&dd<=3&&dd>=-2&&norm(p.pipeline_stage)==='technical_review'){
    var kt=derivedKey('deadline_technical',pid,p.deadline);if(!hiddenByState(data,kt))candidates.push({key:kt,score:dd<0?990:930-dd,title:'Finalizo çështjet teknike para ofertës',why:'Afati i ofertës është '+dateText(p.deadline)+' dhe projekti ka ende sqarime teknike të hapura.',meta:(p.name||'Projekt')+' · afati '+dateText(p.deadline),tag:dd<0?'VONUAR':'AFAT',kind:'deadline_technical',project_id:pid,email:latestRelevantEmail(ctx),route:'communication',manual:false});
   }
-  arr(ctx.tasks).forEach(function(t){if(taskIsSuperseded(ctx,t))return;var score=taskScore(t);if(!score)return;var key=actionStateKey(t);if(hiddenByState(data,key))return;candidates.push({key:key,score:score,title:specificTaskTitle(ctx,t),why:taskWhy(t),meta:(p.name||'Projekt')+' · '+taskWhy(t),tag:relDays(t.due_date)<0?'VONUAR':(norm(t.source)==='email_request_auto'?'VEPRIM':'DETYRË'),kind:'task',id:t.id,project_id:pid,source:t.source||'',source_ref:t.source_ref||'',email:latestRelevantEmail(ctx),route:norm(t.source)==='email_request_auto'?'communication':'project',manual:norm(t.source)!=='email_request_auto'});});
+  arr(ctx.tasks).forEach(function(t){if(taskIsSuperseded(ctx,t))return;var score=taskScore(t);if(!score)return;var key=actionStateKey(t);if(hiddenByState(data,key))return;candidates.push({key:key,score:score,title:specificTaskTitle(ctx,t),why:taskWhy(t),meta:(p.name||'Projekt')+' · '+taskWhy(t),tag:taskTag(t),kind:'task',id:t.id,project_id:pid,source:t.source||'',source_ref:t.source_ref||'',email:latestRelevantEmail(ctx),route:norm(t.source)==='email_request_auto'?'communication':'project',manual:norm(t.source)!=='email_request_auto'});});
  });
  arr(data.rfqs).forEach(function(r){
   var pid=String(r.project_id||''),ctx=contexts[pid],p=ctx&&ctx.project;if(!p||inactiveProject(p)||blocksHomeAction(p))return;var st=norm(r.status);if(['replied','won','lost','planned'].indexOf(st)>-1)return;
