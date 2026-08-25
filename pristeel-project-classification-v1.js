@@ -18,7 +18,7 @@ function modelLabel(v){return({supply:'FURNIZIM',production:'PRODHIM',production
 function classification(r){return[originLabel(r&&r.origin_type),modelLabel(r&&r.work_model)].filter(Boolean);}
 function terminal(r){var s=N(r&&r.status);return /humb|lost|cancel|refuz|arkiv|archiv|realizuar|mbyllur|closed/.test(s);}
 function execution(r){var stage=S(r&&r.pipeline_stage);var op=N(r&&r.operational_state);var s=N(r&&r.status);return !terminal(r)&&(/execution/.test(op)||/fituar|won/.test(s)||['production_control','factory_audit','transport'].indexOf(stage)>-1);}
-function waiting(r){if(terminal(r)||execution(r))return false;var op=N(r&&r.operational_state),s=N(r&&r.status);return /^wait_/.test(op)||/pritje|waiting|pending/.test(s);}
+function waiting(r){if(terminal(r)||execution(r))return false;var op=N(r&&r.operational_state),s=N(r&&r.status);if(/^wait_/.test(op))return true;if(/action_required|active_work|execution/.test(op))return false;return /pritje|waiting|pending/.test(s);}
 function workState(r){if(terminal(r))return'closed';if(execution(r))return'execution';if(waiting(r))return'waiting';return'action';}
 function stateLabel(r){return({action:'Action',waiting:'Waiting',execution:'Execution',closed:'Closed'})[workState(r)]||'Action';}
 function stageAction(r){
