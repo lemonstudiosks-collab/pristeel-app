@@ -28,10 +28,14 @@ const {JSDOM}=require('jsdom');
 
   const theme=fs.readFileSync('pristeel-section-theme-v1.js','utf8');
   assert.match(theme,/pristeel-automation-health-v1\.js\?v=/,'current section layer does not load Automation Health');
+  const healthSource=fs.readFileSync('pristeel-automation-health-v1.js','utf8');
+  assert.match(healthSource,/15\*60\*1000/,'worker freshness window must stay bounded');
+  assert.match(healthSource,/last_used_at/,'semantic worker heartbeat must be inspected');
+  assert.match(healthSource,/last_seen_at/,'OCR worker heartbeat must be inspected');
 
   const dom=new JSDOM(`<!doctype html><html><head></head><body><div id="page-workspace-apps" class="active"><div class="pst-ws-app-grid"></div></div></body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
-  const payload={
+  let payload={
     generated_at:'2026-08-25T21:30:00Z',
     crons:{active:13,latest_succeeded:13,latest_failed:0,http_recent_failed:2,http_recent_5xx:2,http_latest_failed_at:'2026-08-25T21:29:00Z',jobs:[{name:'gmail-fast-ingest-5m',schedule:'*/5 * * * *',status:'succeeded',started_at:'2026-08-25T21:25:00Z'}]},
     workers:{ocr:[{worker_id:'mac-mini-01',enabled:true,last_seen_at:'2026-08-25T21:29:00Z'}],semantic:[{label:'Mac mini local semantic worker v2',active:true,last_used_at:'2026-08-25T21:28:00Z'}]},
@@ -40,7 +44,7 @@ const {JSDOM}=require('jsdom');
   };
   let calls=0;
   w.supaFetch=async(path,method,body)=>{calls++;assert.strictEqual(path,'rpc/pppp_automation_health_v1');assert.strictEqual(method,'POST');assert.strictEqual(JSON.stringify(body),'{}');return payload;};
-  w.eval(fs.readFileSync('pristeel-automation-health-v1.js','utf8'));
+  w.eval(healthSource);
   await new Promise(r=>setTimeout(r,30));
   const panel=w.document.getElementById('pst-auto-health');
   assert.ok(panel,'Automation Health panel did not mount on Modules');
@@ -49,8 +53,18 @@ const {JSDOM}=require('jsdom');
   assert.match(panel.textContent,/2 HTTP problem/,'async HTTP failure count must be visible even when cron scheduler says success');
   assert.match(panel.textContent,/Edge HTTP failures/,'real pg_net failure row must be visible');
   assert.match(panel.textContent,/RFQ draft review/);
-  assert.ok(calls>=1,'Automation Health did not read its RPC');
-  assert.doesNotMatch(fs.readFileSync('pristeel-automation-health-v1.js','utf8'),/supaFetch\([^\n]*['"](?:PATCH|PUT|DELETE)['"]/,'Automation Health UI must stay read-only');
+  assert.match(panel.textContent,/Semantic AI4/,'semantic queue count must remain visible');
+  assert.match(panel.textContent,/worker online/,'fresh semantic heartbeat must be reported as online');
+
+  payload={...payload,generated_at:'2026-08-25T21:30:00Z',workers:{...payload.workers,semantic:[{label:'Mac mini local semantic worker v2',active:true,last_used_at:'2026-08-22T11:47:52Z'}]}};
+  await w.PSTAutomationHealthV1.load(true);
+  assert.match(panel.textContent,/worker stale/,'configured but stale semantic worker must not be reported online');
+  const semanticRow=[...panel.querySelectorAll('.ah-row')].find(x=>/Semantic worker/.test(x.textContent));
+  assert.ok(semanticRow,'semantic worker row missing');
+  assert.match(semanticRow.textContent,/stale/,'stale worker must be explicit in engine list');
+  assert.ok(semanticRow.querySelector('.ah-pill.bad'),'stale semantic worker must be rendered as a failure state');
+  assert.ok(calls>=2,'Automation Health refresh did not re-read its RPC');
+  assert.doesNotMatch(healthSource,/supaFetch\([^\n]*['"](?:PATCH|PUT|DELETE)['"]/,'Automation Health UI must stay read-only');
   dom.window.close();
-  console.log('Automation health async HTTP guard smoke test passed.');
+  console.log('Automation health async HTTP and worker heartbeat smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
