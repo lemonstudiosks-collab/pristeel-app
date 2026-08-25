@@ -107,7 +107,6 @@ function cleanProjectHeader(){
   var clean=document.createElement('div');clean.className='pwf-header-clean-actions';
   clean.innerHTML='<button type="button" class="pwf-clean-back" data-pwf-clean-action="projects">← Projektet</button>'+
     '<details class="pwf-more"><summary aria-label="Më shumë veprime">⋯</summary><div class="pwf-more-menu">'+
-    '<button type="button" data-pwf-clean-action="old">Pamja e vjetër</button>'+
     '<button type="button" data-pwf-clean-action="new">Projekt i ri</button>'+
     '<button type="button" data-pwf-clean-action="export">Eksporto</button>'+
     '<button type="button" class="danger" data-pwf-clean-action="close">Mbyll projektin</button>'+
@@ -193,6 +192,10 @@ function css(){
   s.id='pwf-legacy-capture-css';
   s.textContent='\
 #page-workspace-project[data-pwf-area="overview"] #pst-pi-body>.pwf-project-context+.pf2-grid>.pf2-card.wide:first-child{display:none!important}\
+#page-workspace-project.active .pwf-project-kpis{display:none!important}\
+#page-workspace-project.active .pwf-project-context{grid-template-columns:minmax(0,1fr) minmax(280px,420px)!important}\
+#page-workspace-project.active .pwf-project-main{min-width:0!important}\
+#page-workspace-project.active .pwf-next{min-width:0!important}\
 #page-workspace-project.active .pwf-legacy-ribbon,#page-workspace-project.active .pwf-legacy-step,#page-workspace-project.active .pwf-duplicate-workflow-card{display:none!important}\
 #page-workspace-project.active .pst-pi-head .pwf-header-old-action{display:none!important}\
 #page-workspace-project.active .pst-pi-actions{display:flex!important;align-items:center!important;gap:8px!important}\
@@ -204,6 +207,7 @@ function css(){
 #page-workspace-project.active .pwf-more-menu button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:9px 10px;border-radius:7px;color:#405058;font:700 11.5px Inter,sans-serif;cursor:pointer}#page-workspace-project.active .pwf-more-menu button:hover{background:#F2F7F9}#page-workspace-project.active .pwf-more-menu button.danger{color:#A64B42}\
 #page-workspace-project.active .pf2-detail-btn[aria-expanded="true"]{background:#EAF5F8;border-color:#9CC4D2;color:#2F7089}\
 #page-workspace-project.active .pf2-detail-row.pwf-detail-open>td{box-shadow:inset 0 2px 0 #D8E9EE}\
+@media(max-width:900px){#page-workspace-project.active .pwf-project-context{grid-template-columns:1fr!important}}\
 ';
   document.head.appendChild(s);
 }
