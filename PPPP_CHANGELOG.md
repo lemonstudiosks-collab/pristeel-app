@@ -2,6 +2,20 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-08-25
+
+### Final daily-surface polish removes the remaining visible control clutter
+
+- PR #268 tightens the already-canonical daily surfaces without replacing any business engine.
+- Projects keeps search plus `Të gjitha / Action / Waiting / Execution / Closed` and retires the remaining normal-page maintenance chrome: duplicate manager, manual refresh, board/list toggle, legacy counters/filters, sort selector and the header-level `+ Projekt i ri` button.
+- Manual project creation is not deleted. The exceptional `+ Krijo` path remains available, while normal project intake is expected to come increasingly from confirmed Gmail/tender/project events and existing automation.
+- System now treats `Automation Health` as the primary visible operational surface.
+- The large System app/module grid remains intact but is collapsed under `Mjete teknike` by default, instead of presenting a wall of technical tiles during normal work.
+- The duplicate System shortcut strip is hidden from daily use. Gmail, Commercial intake, integrations, diagnostics and fallback modules remain connected and reachable.
+- The cleanup remains presentation-only: no Supabase reads/writes, no routing ownership, no polling, no MutationObserver, no provider deletion and no automatic external/financial commitment.
+- `tests/daily-zones-cleanup-smoke.js` now protects the calmer Projects/System presentation and `.github/workflows/finance-daily-smoke.yml` runs that regression in CI.
+- Canonical daily operating documentation was updated in `docs/DAILY_OPERATING_SURFACES_2026-08-25.md`.
+
 ## 2026-08-23
 
 ### PPPP operating experience simplified without replacing backend engines
@@ -172,7 +186,7 @@ This file records material architecture/automation changes. It is not a substitu
 - Supabase advisors were run after the new DDL.
 - New security-definer-view findings were removed by converting Contact Master and requirements summary views to `security_invoker`.
 - `project_requirements` now has RLS enabled with authenticated read access.
-- New SECURITY DEFININER trigger/helper functions have `search_path` fixed and are not executable by anon/authenticated users.
+- New SECURITY DEFINER trigger/helper functions have `search_path` fixed and are not executable by anon/authenticated users.
 - Remaining advisor warnings are pre-existing platform items, not introduced by this work.
 
 ### Regression project state corrected
