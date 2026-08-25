@@ -42,6 +42,8 @@ jobs:
         run: node tests/redesign-finalizer-smoke.js
       - name: Run full test suite
         run: npm test
+      - name: Run per-piece supplier offer card smoke
+        run: node --check pristeel-offer-revision-email-bridge-v1.js && node tests/project-commercial-piece-offer-card-smoke.js
       - name: Run trading project display smoke
         run: node --check pristeel-projects-modern-v1.js && node tests/project-trading-display-smoke.js
       - name: Run operational lifecycle smoke
