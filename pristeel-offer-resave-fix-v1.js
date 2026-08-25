@@ -1,12 +1,13 @@
-/* PRISTEEL repeated offer save fix v2
+/* PRISTEEL repeated offer save fix v3
  * Keeps the same QUO record editable across multiple days/sessions.
  * Saving is not sending: a saved QUO is stored as open/saved unless it already has a sent marker.
  * Existing sent markers are preserved when a saved offer is edited again.
  * The legacy registerDocNr collision guard remains authoritative.
  *
- * Production hotfix: this module is loaded with pst_live=Date.now() before the project
- * Commercial modules. It therefore owns structured-draft edit clicks before any stale
- * cached Commercial capture handler can swallow them.
+ * Structured draft edit ownership is loaded with pst_live=Date.now() before Project Commercial.
+ * Modern Workspace leaves legacy pages with inline display:none, while the captured legacy
+ * showPage router only changes active classes. This module therefore owns both the click and
+ * the final visible page state before loading structured positions into the legacy offer editor.
  */
 (function(){
 'use strict';
@@ -124,14 +125,31 @@ function structuredRows(o){
   });
 }
 function structuredRef(o){return clean(o&&(o.offer_ref||o.doc_nr||o.document_nr||o.reference)||'');}
+function forceVisiblePage(id){
+  var target=document.getElementById(id);
+  if(!target)return false;
+  document.querySelectorAll('.page').forEach(function(page){
+    if(page===target)return;
+    page.classList.remove('active');
+    page.style.display='none';
+  });
+  target.classList.add('active');
+  target.style.display='block';
+  return true;
+}
 function openOfferEditorPage(){
-  var L=window.__pstWorkspaceLegacy;
-  if(L&&typeof L.showPage==='function'){L.showPage('oferta');return true;}
-  if(typeof window.pstWsLegacy==='function'){window.pstWsLegacy('oferta');return true;}
-  if(typeof window.showPage==='function'){window.showPage('oferta');return true;}
-  var C=window.PSTCommercialNavigationFixV1;
-  if(C&&typeof C.openLegacyPage==='function'){C.openLegacyPage('oferta');return true;}
-  return false;
+  var routed=false,L=window.__pstWorkspaceLegacy;
+  try{
+    if(L&&typeof L.showPage==='function'){L.showPage('oferta');routed=true;}
+    else if(typeof window.pstWsLegacy==='function'){window.pstWsLegacy('oferta');routed=true;}
+    else if(typeof window.showPage==='function'){window.showPage('oferta');routed=true;}
+    else{
+      var C=window.PSTCommercialNavigationFixV1;
+      if(C&&typeof C.openLegacyPage==='function'){C.openLegacyPage('oferta');routed=true;}
+    }
+  }catch(e){console.error('[offer-resave-fix] legacy offer route failed',e);}
+  var visible=forceVisiblePage('page-oferta');
+  return routed||visible;
 }
 function openStructuredOffer(o){
   if(!o||!A(o.positions).length)return false;
@@ -142,6 +160,7 @@ function openStructuredOffer(o){
   var rows=structuredRows(o),ref=structuredRef(o);
   window.__pstStructuredOfferBeingEdited=o;
   setTimeout(function(){
+    forceVisiblePage('page-oferta');
     try{
       if(!Array.isArray(window.oferPos))window.oferPos=[];
       window.oferPos.length=0;
@@ -165,7 +184,7 @@ function structuredEditCapture(ev){
   openStructuredOffer(o);
 }
 
-/* Registered now, before the cached Commercial modules are bootstrapped. */
+/* Registered now, before cached Commercial modules are bootstrapped. */
 window.addEventListener('click',structuredEditCapture,true);
 
 if(!install()){
@@ -175,6 +194,6 @@ window.PSTOfferResaveFixV1={
   install:install,
   bestStructuredOffer:bestStructuredOffer,
   openStructuredOffer:openStructuredOffer,
-  _test:{structuredOffers:structuredOffers,structuredRows:structuredRows,structuredEditCapture:structuredEditCapture}
+  _test:{structuredOffers:structuredOffers,structuredRows:structuredRows,structuredEditCapture:structuredEditCapture,forceVisiblePage:forceVisiblePage,openOfferEditorPage:openOfferEditorPage}
 };
 })();
