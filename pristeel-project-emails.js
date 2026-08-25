@@ -30,7 +30,7 @@ var files=[
   'pristeel-project-gmail-safety.js?v=20260802-3',
   'pristeel-gmail-cross-thread-safety-v1.js?v=20260809-3',
   'pristeel-gmail-audit.js?v=20260814-ai1',
-  'pristeel-project-discovery.js?v=20260825-intake2',
+  'pristeel-project-discovery.js?v=20260801-1',
   'pristeel-project-discovery-create-fix.js?v=20260801-1',
   'pristeel-supplier-project-guard.js?v=20260802-2',
   'pristeel-project-schema-compat.js?v=20260801-2',
@@ -168,7 +168,7 @@ function load(i,attempt){
   try{el.remove();}catch(e){}
   var row={index:i,module:base,attempt:attempt,at:new Date().toISOString(),error:error?String(error):null};
   if(kind==='timeout')diag.timeouts.push(row);else diag.errors.push(row);
-  if(attempt<maxAttempts){diag.retries.push({index:i,module:base,attempt:attempt+1,reason:kind,at:new Date().toISOString()});load(i,attempt+1);return;}
+  if(attempt<maxAttempts){diag.retries.push({index:i,module:base,attempt:attempt+1,reason:kind,at:new Date().toISOString()});load(i,attempt+1,1);return;}
   console.error('Nuk u ngarkua moduli pas '+maxAttempts+' tentimeve:',base,kind,error||'');next(i);
  }
  el.onload=function(){finish('load');};
