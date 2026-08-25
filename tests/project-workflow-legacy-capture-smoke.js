@@ -2,7 +2,7 @@ const fs=require('fs');
 const assert=require('assert');
 const {JSDOM}=require('jsdom');
 
-(()=>{
+(async()=>{
   const source=fs.readFileSync('pristeel-project-workflow-legacy-capture-v1.js','utf8');
   new Function(source);
   assert(!/MutationObserver|setInterval\s*\(/.test(source),'Legacy workflow capture must not observe or poll globally');
@@ -12,6 +12,8 @@ const {JSDOM}=require('jsdom');
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
     <div id="app-shell">
       <div id="global-strip"><button>Mbyll projektin</button><button>Ruaj</button><button>Projekt i ri</button><button>Eksporto</button></div>
+      <div id="flow-bar"><button id="global-client" class="flow-step" onclick="flowGoto('oferta')">Oferta jonë</button></div>
+      <div id="page-oferta" class="page" style="display:none"><div id="pfb-wrap-oferta">Generic file bucket</div></div>
       <div id="page-workspace-project" class="page active" data-pwf-area="overview" style="display:block">
         <div class="pst-pi-head"><div class="pst-pi-actions"><button class="pst-pi-btn">Projektet</button><button class="pst-pi-btn">Pamja e vjetër</button><button class="pst-pi-btn">Rifresko</button><button class="pst-pi-btn">Puno me projektin</button></div></div>
         <div id="legacy-ribbon"><button id="bom" class="flow-step" onclick="flowGoto('bom')">BOM</button><button id="offers" class="flow-step" onclick="flowGoto('offers')">Ofertat</button><button id="ranking" class="flow-step" onclick="flowGoto('ranking')">Krahasimi</button><button id="pricing" class="flow-step" onclick="flowGoto('kalkulator')">Çmimi</button><button id="client" class="flow-step" onclick="flowGoto('oferta')">Oferta jonë</button></div>
@@ -26,8 +28,8 @@ const {JSDOM}=require('jsdom');
   w.__pstIntegrityLastData={project:{id:'p1',name:'Dukley'}};
   const calls=[];
   w.PSTCanonicalProjectWorkflowV1={render:(area,stage)=>{calls.push([area,stage]);return true;}};
-  w.pstOpenProjectWorkspace=async()=>true;
-  w.flowGoto=()=>{throw new Error('legacy flowGoto must not win');};
+  w.pstOpenProjectWorkspace=async(id)=>{calls.push(['open-project',id]);return true;};
+  w.flowGoto=()=>{throw new Error('legacy flowGoto must not win for captured routes');};
   w.pstWorkspaceGo=(key)=>{calls.push(['workspace',key]);return true;};
   w.pstPiOld=()=>calls.push(['legacy','old']);
   w.HTMLElement.prototype.scrollIntoView=function(){};
@@ -39,6 +41,8 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(JSON.stringify(api.destination('ranking')),JSON.stringify(['procurement','comparison']));
   assert.strictEqual(JSON.stringify(api.destination('kalkulator')),JSON.stringify(['procurement','pricing']));
   assert.strictEqual(JSON.stringify(api.destination('oferta')),JSON.stringify(['procurement','client_offer']));
+  assert.strictEqual(api._test.globalClientOfferStep(w.document.getElementById('global-client'),'oferta'),true,'Global legacy Oferta jone step must be recognized as the one safe global interception');
+  assert.strictEqual(api._test.globalClientOfferStep(w.document.getElementById('client'),'oferta'),false,'Workspace-local offer step must use the normal local capture path');
 
   api.install();api.install();api.clean();
 
@@ -75,9 +79,23 @@ const {JSDOM}=require('jsdom');
   back.click();
   assert(calls.some(x=>x[0]==='workspace'&&x[1]==='projects'),'Project back action must call top-level Projects route');
 
+  // Exact screenshot regression: the global legacy project flow-bar is visible while page-oferta
+  // would otherwise render only its generic attachment bucket. Clicking Oferta jone must return to
+  // the canonical project client-offer stage before inline flowGoto('oferta') can win.
+  const projectPage=w.document.getElementById('page-workspace-project');
+  projectPage.classList.remove('active');projectPage.style.display='none';
+  const legacyOfferPage=w.document.getElementById('page-oferta');
+  legacyOfferPage.classList.add('active');legacyOfferPage.style.display='block';
+  const beforeGlobal=calls.length;
+  w.document.getElementById('global-client').click();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.deepStrictEqual(calls.slice(beforeGlobal,beforeGlobal+2),[
+    ['open-project','p1'],['procurement','client_offer']
+  ],'Global Oferta jone step must open the project and land in canonical client-offer flow, not the file bucket');
+
   const css=w.document.getElementById('pwf-legacy-capture-css');
   assert(css&&css.textContent.includes('pwf-legacy-ribbon'),'Legacy ribbon cleanup CSS must be installed');
   assert(!css.textContent.includes('body:has'),'Cleanup CSS must stay scoped to project workspace');
   dom.window.close();
-  console.log('Project-local chrome + inline supplier detail smoke test passed.');
-})();
+  console.log('Project-local chrome + global client-offer routing + inline supplier detail smoke test passed.');
+})().catch(err=>{console.error(err);process.exit(1);});
