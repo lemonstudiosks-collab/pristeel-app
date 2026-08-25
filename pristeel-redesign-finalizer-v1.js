@@ -1,5 +1,5 @@
 /* PRISTEEL redesign finalizer v1
- * Revision: 20260825-daily-zones1.
+ * Revision: 20260825-openai-assistant1.
  * Re-applies presentation-only styling after workspace renders.
  * Canonical Home exclusively owns priority-card navigation and business state.
  * Bounded timeouts only. No polling, observers, auth or project-open overrides.
@@ -84,6 +84,20 @@ function operatingAssistant(){
     document.head.appendChild(s);
   }catch(e){console.warn('PRISTEEL finalizer operating assistant:',e);}
 }
+function openAIAssistant(){
+  try{
+    var X=window.PSTOpenAIAssistantV1;
+    if(X&&typeof X.apply==='function'){X.apply();return;}
+    var existing=document.querySelector('script[data-pst-openai-assistant-v1]');
+    if(existing)return;
+    var s=document.createElement('script');
+    s.src='pristeel-openai-operating-assistant-v1.js?v=20260825-1';
+    s.defer=true;
+    s.setAttribute('data-pst-openai-assistant-v1','1');
+    s.onload=function(){var x=window.PSTOpenAIAssistantV1;if(x&&typeof x.apply==='function')x.apply();};
+    document.head.appendChild(s);
+  }catch(e){console.warn('PRISTEEL finalizer OpenAI assistant:',e);}
+}
 function contactCards(){
   try{
     var C=window.PSTContactCategoryCardsV1;
@@ -103,7 +117,7 @@ function installPriorityStyle(){if(document.getElementById('pst-final-priority-c
 #page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-title{color:#614C1E!important}
 #page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-tag{background:#C9932E!important;border-color:#C9932E!important;color:#fff!important}`;document.head.appendChild(s);}
 function apply(){
-  primaryNavigationResilience();sectionTheme();readability();contactCards();operatingExperience();dailyZones();operatingAssistant();
+  primaryNavigationResilience();sectionTheme();readability();contactCards();operatingExperience();dailyZones();operatingAssistant();openAIAssistant();
   try{var C=window.PSTBusinessCommandCenterV1;if(C&&typeof C.open==='function')window.openCmdK=C.open;if(C&&typeof C.decorateHome==='function')C.decorateHome();}catch(e){console.warn('PRISTEEL finalizer search:',e);}
   try{var D=window.PSTDashboardTaskCardsV1;if(D&&typeof D.decorate==='function')D.decorate();}catch(e){console.warn('PRISTEEL finalizer cards:',e);}
   try{var H=window.PSTHomeCommandCenterV2;if(H&&typeof H.decorate==='function')H.decorate(false);}catch(e){console.warn('PRISTEEL finalizer home:',e);}
@@ -113,6 +127,7 @@ function apply(){
   try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){console.warn('PRISTEEL finalizer operating experience apply:',e);}
   try{var Z=window.PSTDailyZonesCleanupV1;if(Z&&typeof Z.apply==='function')Z.apply();}catch(e){console.warn('PRISTEEL finalizer daily zones apply:',e);}
   try{var A=window.PSTOperatingAssistantV2;if(A&&typeof A.apply==='function')A.apply(false);}catch(e){console.warn('PRISTEEL finalizer operating assistant apply:',e);}
+  try{var O=window.PSTOpenAIAssistantV1;if(O&&typeof O.apply==='function')O.apply();}catch(e){console.warn('PRISTEEL finalizer OpenAI assistant apply:',e);}
 }
 function schedule(){[0,80,220,450,1400,2100].forEach(function(ms){setTimeout(apply,ms);});}
 document.addEventListener('pst:modules-ready',schedule,{once:true});
@@ -120,5 +135,5 @@ document.addEventListener('DOMContentLoaded',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
 document.addEventListener('click',function(event){var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,#pst-ws-home-refresh,[onclick*="pstWorkspaceGo"],[data-pm-open],[data-release-filter],[data-pwf-area],[data-pwf-stage],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,250,700,1450,2200].forEach(function(ms){setTimeout(apply,ms);});},true);
 if(document.readyState!=='loading')schedule();
-window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,dailyZones:dailyZones,operatingAssistant:operatingAssistant,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
+window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,dailyZones:dailyZones,operatingAssistant:operatingAssistant,openAIAssistant:openAIAssistant,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
 })();

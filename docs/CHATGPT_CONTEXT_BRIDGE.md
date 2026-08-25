@@ -1,16 +1,19 @@
-# PPPP ChatGPT / OpenAI Context Bridge
+# PPPP ChatGPT / OpenAI Bridge
 
 ## Purpose
 
-The bridge exists so durable business facts discovered or confirmed during AI-assisted work can become canonical PPPP project context instead of remaining trapped in a chat transcript.
+The bridge has two complementary jobs:
 
-PPPP remains the source of truth. ChatGPT/OpenAI is an extraction and reasoning layer, not a second project database.
+1. durable business facts discovered or confirmed during AI-assisted work can become canonical PPPP project context instead of remaining trapped in a chat transcript; and
+2. the user can ask PPPP questions in natural language from Home or from a Project Workspace and receive an answer grounded in live PPPP data.
+
+PPPP remains the source of truth. OpenAI is a reasoning/extraction layer, not a second project database or a second workflow engine.
 
 ## Live backend
 
 Supabase project: `isymxqfqzkchbsrbhucf`
 
-Edge Function:
+### Durable context Edge Function
 
 - `pppp-openai-context`
 - current deployed version: **v3**
@@ -24,9 +27,57 @@ Canonical storage/read contracts:
 
 The current view excludes dismissed facts and keeps the latest active fact per `(project_id, fact_key)`.
 
-## Supported intake
+### Operating assistant Edge Function
 
-The edge function accepts either:
+- `pppp-openai-assistant`
+- first deployed version: **v1** on 2026-08-25
+- `verify_jwt = true`
+- OpenAI is called only from the server-side Edge Function. The OpenAI API key is not exposed in the browser.
+- default model follows `OPENAI_ASSISTANT_MODEL`, then `OPENAI_CONTEXT_MODEL`, with `gpt-5.6-luna` as the final configured fallback.
+
+The assistant is **read-only**. It reads the current user-visible PPPP project/task/email/context/commercial records, optionally receives the richer current Project Intelligence context, and returns:
+
+- a grounded answer;
+- confidence and uncertainty;
+- one suggested next step;
+- evidence labels;
+- an optional validated project navigation target.
+
+It does not perform business writes.
+
+## User-facing runtime
+
+`pristeel-openai-operating-assistant-v1.js` is loaded by `pristeel-redesign-finalizer-v1.js`.
+
+It provides:
+
+- one compact **PPPP AI / Pyete platformën** command bar on Home;
+- only the latest answer is shown so Home does not become another long chat transcript;
+- optional direct navigation to an existing project when the backend returns a validated project id;
+- a server-side OpenAI transport for the existing `pristeel-project-intelligence-conversation-v1.js` project discussion surface;
+- `PSTProjectContextBridge.ask(...)` as the common authenticated read-only assistant contract.
+
+The old browser AI provider remains available for legacy/fallback functions, but the daily PPPP question flow no longer requires a browser OpenAI/Groq/Gemini key.
+
+## Ask PPPP flow
+
+```text
+User question in PPPP
+        ↓
+pristeel-openai-operating-assistant-v1.js
+        ↓ authenticated JWT
+pppp-openai-assistant
+        ↓ read-only live PPPP records
+OpenAI Responses API
+        ↓ structured answer
+PPPP Home / Project Intelligence
+```
+
+This is intentionally different from a generic chatbot. The assistant reasons over the platform's current operational records and uses existing project navigation instead of creating a parallel task/project state model.
+
+## Supported durable-context intake
+
+`pppp-openai-context` accepts either:
 
 1. already structured `facts[]`; or
 2. source `content`, which may be extracted through the OpenAI Responses API when `OPENAI_API_KEY` is configured in the Edge Function environment.
@@ -61,7 +112,7 @@ Automated fact state is restricted to:
 
 Never trust a project UUID remembered from a conversation.
 
-The bridge supports:
+The durable context bridge supports:
 
 - `project_id`
 - `project_name`
@@ -78,13 +129,15 @@ Rules:
 - A UUID/hint conflict returns `project_identity_mismatch` and ingest nothing.
 - The bridge must never fuzzy-autoselect between projects.
 
+The operating assistant applies the same principle to explicit project-scoped questions: supplied project identity is validated against the projects visible to the authenticated PPPP user. A navigation target returned by the model is accepted only if the id exists in that live project set.
+
 This guard was added after a live audit on 2026-08-25 found manually seeded conversational context attached to the wrong projects. The historical rows were retained for audit, marked `dismissed`, and correct copies were inserted through the canonical ingest RPC.
 
 ## Human gates
 
-The bridge must not create an approved/committed business state from AI output.
+Neither bridge may create an approved/committed business state from AI output.
 
-It must never automatically:
+They must never automatically:
 
 - send an external email;
 - approve the final client offer;
@@ -94,13 +147,13 @@ It must never automatically:
 - mark a project won/lost;
 - turn an assumption into a confirmed fact.
 
-AI may extract observations and suggestions. Human approval remains authoritative for commitments.
+AI may explain, calculate, extract observations, propose drafts and suggest next actions. Human approval remains authoritative for commitments.
 
 ## ChatGPT account limitation
 
-This bridge does **not** give PPPP unrestricted access to a user's personal ChatGPT conversation history or ChatGPT Memory.
+This integration does **not** give PPPP unrestricted access to a user's personal ChatGPT conversation history or ChatGPT Memory.
 
-The intended flow is:
+The durable-fact flow remains:
 
 ```text
 ChatGPT / AI-assisted work
@@ -113,7 +166,7 @@ pppp_project_context_facts
         ↓
 pppp_project_context_current_v
         ↓
-Project Workspace / Project Intelligence / future PPPP automations
+Project Workspace / Project Intelligence / PPPP automations
 ```
 
 Do not store entire chat transcripts when a smaller structured fact with provenance is sufficient.

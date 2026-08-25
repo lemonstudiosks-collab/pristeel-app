@@ -2,6 +2,8 @@ const fs = require('fs');
 const assert = require('assert');
 
 const source = fs.readFileSync('pristeel-project-emails.js', 'utf8');
+const finalizer = fs.readFileSync('pristeel-redesign-finalizer-v1.js', 'utf8');
+const openaiAssistant = fs.readFileSync('pristeel-openai-operating-assistant-v1.js', 'utf8');
 const required = [
   'pristeel-login-brand-v1.js',
   'pristeel-login-transition-v2.js',
@@ -52,4 +54,13 @@ assert(cleanupPos>stabilityPos,'Home visual cleanup must load after Home stabili
 assert(source.includes("document.dispatchEvent(new CustomEvent('pst:modules-ready'))"), 'Bootstrap readiness event is missing');
 assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source), 'Bootstrap must not poll or observe the platform');
 
-console.log('Redesign bootstrap contract smoke test passed.');
+assert(finalizer.includes('pristeel-openai-operating-assistant-v1.js?v=20260825-1'), 'Finalizer must load the server-side OpenAI operating assistant');
+assert(finalizer.includes('data-pst-openai-assistant-v1'), 'OpenAI assistant loader must be idempotent');
+assert(openaiAssistant.includes('/functions/v1/pppp-openai-assistant'), 'OpenAI assistant must use the authenticated server-side Edge Function');
+assert(openaiAssistant.includes('PSTProjectContextBridge'), 'OpenAI assistant must extend the project context bridge instead of creating a second project store');
+assert(openaiAssistant.includes('PSTProjectIntelligenceConversationV2'), 'Existing project conversation surface must be upgraded to the server assistant');
+assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(openaiAssistant), 'OpenAI assistant must stay bounded and observer-free');
+assert(!/\.supaFetch\([^\n]*['\"](?:PATCH|POST|DELETE)['\"]/.test(openaiAssistant), 'OpenAI assistant must not write business data through Supabase REST');
+assert(!/gmail\/v1\/.*send|mark.*won|mark.*lost|supplier_orders.*POST/i.test(openaiAssistant), 'OpenAI assistant must not bypass human commitment gates');
+
+console.log('Redesign bootstrap + OpenAI assistant contract smoke test passed.');
