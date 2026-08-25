@@ -1,4 +1,4 @@
-/* PRISTEEL repeated offer save fix v3
+/* PRISTEEL repeated offer save fix v4
  * Keeps the same QUO record editable across multiple days/sessions.
  * Saving is not sending: a saved QUO is stored as open/saved unless it already has a sent marker.
  * Existing sent markers are preserved when a saved offer is edited again.
@@ -8,6 +8,8 @@
  * Modern Workspace leaves legacy pages with inline display:none, while the captured legacy
  * showPage router only changes active classes. This module therefore owns both the click and
  * the final visible page state before loading structured positions into the legacy offer editor.
+ * For structured project offers it also removes the old non-printable preview toolbar/status
+ * strip so the user sees only the offer document, not duplicated legacy page chrome.
  */
 (function(){
 'use strict';
@@ -137,6 +139,34 @@ function forceVisiblePage(id){
   target.style.display='block';
   return true;
 }
+function cleanStructuredOfferChrome(){
+  if(!window.__pstStructuredOfferBeingEdited)return false;
+  var preview=document.getElementById('of-preview-col');
+  if(!preview)return false;
+  var children=preview.children||[];
+  for(var i=0;i<children.length;i++){
+    var row=children[i];
+    if(!row||!row.querySelector)continue;
+    var isToolbar=row.querySelector('[onclick*="ofBackToEdit"],[onclick*="copyOferte"],[onclick*="downloadPDF"],[onclick*="saveCurrentOffer"]');
+    if(!isToolbar)continue;
+    row.style.setProperty('display','none','important');
+    row.setAttribute('data-pst-structured-preview-toolbar-hidden','1');
+    return true;
+  }
+  return false;
+}
+function scheduleStructuredOfferChromeCleanup(){
+  [0,40,100,220,500,900].forEach(function(ms){setTimeout(cleanStructuredOfferChrome,ms);});
+}
+function watchStructuredOfferChrome(){
+  var preview=document.getElementById('of-preview-col');
+  if(!preview||typeof MutationObserver==='undefined')return false;
+  if(preview.__pstStructuredChromeObserver)return true;
+  var observer=new MutationObserver(function(){cleanStructuredOfferChrome();});
+  observer.observe(preview,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+  preview.__pstStructuredChromeObserver=observer;
+  return true;
+}
 function openOfferEditorPage(){
   var routed=false,L=window.__pstWorkspaceLegacy;
   try{
@@ -159,8 +189,12 @@ function openStructuredOffer(o){
   }
   var rows=structuredRows(o),ref=structuredRef(o);
   window.__pstStructuredOfferBeingEdited=o;
+  cleanStructuredOfferChrome();
+  watchStructuredOfferChrome();
+  scheduleStructuredOfferChromeCleanup();
   setTimeout(function(){
     forceVisiblePage('page-oferta');
+    cleanStructuredOfferChrome();
     try{
       if(!Array.isArray(window.oferPos))window.oferPos=[];
       window.oferPos.length=0;
@@ -169,6 +203,9 @@ function openStructuredOffer(o){
     }catch(err){console.error('[offer-resave-fix] structured rows failed',err);}
     try{var nr=document.getElementById('of-nr');if(nr)nr.value=ref;}catch(e){}
     try{if(typeof window.genOfer==='function')window.genOfer();}catch(e){}
+    cleanStructuredOfferChrome();
+    watchStructuredOfferChrome();
+    scheduleStructuredOfferChromeCleanup();
     try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}
   },120);
   return true;
@@ -194,6 +231,6 @@ window.PSTOfferResaveFixV1={
   install:install,
   bestStructuredOffer:bestStructuredOffer,
   openStructuredOffer:openStructuredOffer,
-  _test:{structuredOffers:structuredOffers,structuredRows:structuredRows,structuredEditCapture:structuredEditCapture,forceVisiblePage:forceVisiblePage,openOfferEditorPage:openOfferEditorPage}
+  _test:{structuredOffers:structuredOffers,structuredRows:structuredRows,structuredEditCapture:structuredEditCapture,forceVisiblePage:forceVisiblePage,openOfferEditorPage:openOfferEditorPage,cleanStructuredOfferChrome:cleanStructuredOfferChrome,scheduleStructuredOfferChromeCleanup:scheduleStructuredOfferChromeCleanup,watchStructuredOfferChrome:watchStructuredOfferChrome}
 };
 })();
