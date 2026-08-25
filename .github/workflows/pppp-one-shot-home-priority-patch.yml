@@ -18,7 +18,7 @@ jobs:
           ref: pppp/task-lifecycle-home-priority-20260825
           fetch-depth: 0
 
-      - name: Patch canonical Home scoring and CI guard
+      - name: Patch canonical Home scoring
         shell: python
         run: |
           from pathlib import Path
@@ -40,17 +40,6 @@ jobs:
               raise SystemExit('Canonical Home task tag source block not found')
           home.write_text(s)
 
-          wf = Path('.github/workflows/pristeel-tests.yml')
-          w = wf.read_text()
-          marker = 'Run Home human-needed priority and task lifecycle smoke'
-          if marker not in w:
-              anchor = "      - name: Run legacy Home retirement smoke\n"
-              step = "      - name: Run Home human-needed priority and task lifecycle smoke\n        run: node tests/home-human-needed-priority-smoke.js && node tests/task-lifecycle-reconcile-smoke.mjs\n"
-              if anchor not in w:
-                  raise SystemExit('PRISTEEL Tests Home anchor not found')
-              w = w.replace(anchor, step + anchor, 1)
-              wf.write_text(w)
-
       - name: Validate patch
         run: |
           node --check pristeel-home-canonical-v1.js
@@ -59,12 +48,12 @@ jobs:
 
       - name: Commit patch
         run: |
-          if git diff --quiet -- pristeel-home-canonical-v1.js .github/workflows/pristeel-tests.yml; then
+          if git diff --quiet -- pristeel-home-canonical-v1.js; then
             echo "Patch already present"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pristeel-home-canonical-v1.js .github/workflows/pristeel-tests.yml
+          git add pristeel-home-canonical-v1.js
           git commit -m "feat: prioritize human-needed Home actions"
           git push origin HEAD:pppp/task-lifecycle-home-priority-20260825
