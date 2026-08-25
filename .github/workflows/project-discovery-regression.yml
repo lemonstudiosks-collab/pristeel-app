@@ -1,0 +1,38 @@
+name: Project Discovery Regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'pristeel-project-discovery.js'
+      - 'pristeel-project-emails.js'
+      - 'scripts/project-discovery-queue.mjs'
+      - 'tests/project-discovery-new-intake-smoke.mjs'
+      - '.github/workflows/project-discovery-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-project-discovery.js'
+      - 'pristeel-project-emails.js'
+      - 'scripts/project-discovery-queue.mjs'
+      - 'tests/project-discovery-new-intake-smoke.mjs'
+      - '.github/workflows/project-discovery-regression.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check
+        run: node --check pristeel-project-discovery.js && node --check scripts/project-discovery-queue.mjs
+      - name: SSP siren-pole intake regression
+        run: node tests/project-discovery-new-intake-smoke.mjs
