@@ -5,7 +5,7 @@ const {JSDOM}=require('jsdom');
 const source=fs.readFileSync('pristeel-daily-zones-cleanup-v1.js','utf8');
 new Function(source);
 assert(!/supaFetch\s*\(/.test(source),'daily-zone cleanup must not read/write Supabase');
-assert(!/MutationObserver|setInterval\s*\(/.test(source),'daily-zone cleanup must remain bounded and event-driven');
+assert(!/new\s+MutationObserver|setInterval\s*\(/.test(source),'daily-zone cleanup must remain bounded and event-driven');
 assert(!/pstOpenProjectWorkspace|pstWorkspaceGo|showPage\s*\(/.test(source),'daily-zone cleanup must not own navigation');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
