@@ -61,7 +61,9 @@ Daily list focuses on:
 - meaningful deadline;
 - Open.
 
-Old board view, passive badges/counters and technical classification controls are not part of the normal daily surface.
+Old board view, passive badges/counters, duplicate-manager control, manual refresh, technical classification controls and the daily sort selector are not part of the normal work surface. The page keeps search plus the five canonical work-state filters.
+
+`+ Projekt i ri` is no longer a daily Projects-header action. Manual project creation remains available through the exceptional `+ Krijo` path, while normal project creation/intake should increasingly come from confirmed business events and the existing automation.
 
 A project must open through `pstOpenProjectWorkspace(project_id)`.
 
@@ -103,7 +105,7 @@ Canonical relationship engine remains `pristeel-contact-master-v1.js`.
 
 Daily presentation is `Partners`, with Gmail / HubSpot / Bitrix24 treated as sources under one person/company identity rather than separate contact systems.
 
-Maintenance controls and passive counters are hidden from daily use, not deleted.
+Maintenance controls and passive counters are hidden from daily use, not deleted. Search, useful business-category filters and source filtering remain available.
 
 ## Finance
 
@@ -126,6 +128,8 @@ System is the engine room, not a competing business workspace.
 
 `pristeel-daily-zones-cleanup-v1.js` presents the System shell and loads the existing `pristeel-automation-health-v1.js` health owner when System is active.
 
+Automation Health is the primary visible System surface. The large technical app/module grid is preserved but collapsed under **Mjete teknike** by default. The old duplicate System shortcut strip is hidden from daily use.
+
 System contains or provides access to technical/back-office surfaces such as:
 
 - Gmail raw inbox;
@@ -134,6 +138,14 @@ System contains or provides access to technical/back-office surfaces such as:
 - OCR / semantic processing status;
 - integrations;
 - diagnostic and fallback modules.
+
+No integration is disconnected by hiding or collapsing its daily UI entry point.
+
+## Automation posture
+
+Daily work should not depend on manual refresh buttons or on the user moving records between technical queues. Existing event/cron engines continue to ingest Gmail, intake projects/documents, reconcile actions/tasks, process commercial intake, check execution readiness, and orchestrate OCR/semantic work in the background.
+
+Automation may prepare and reconcile work aggressively where evidence is safe, but the existing human gates for commitments remain unchanged.
 
 ## ChatGPT / OpenAI project context
 
