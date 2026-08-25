@@ -11,6 +11,7 @@ window.__pstProjectsDailyWorklistV1=true;
 var PAGE_ID='page-workspace-projects';
 var dailyFilter='all';
 var forcingBaseAll=false;
+var forcingBaseList=false;
 
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -95,11 +96,20 @@ function installStyle(){
 function resetHiddenClassification(){
   try{var C=window.PSTProjectClassificationV1;if(C&&C._state){C._state.origin='all';C._state.model='all';if(typeof C.decorate==='function')C.decorate();}}catch(e){console.warn('PPPP Projects daily classification reset:',e);}
 }
+function forceBaseList(){
+  if(forcingBaseList)return false;
+  var page=document.getElementById(PAGE_ID);if(!page||!page.classList.contains('active'))return false;
+  var list=page.querySelector('[data-pm-view="list"]');
+  if(!list||list.classList.contains('on'))return false;
+  forcingBaseList=true;
+  try{list.click();try{localStorage.setItem('pristeel_projects_modern_view','list');}catch(e){}}finally{setTimeout(function(){forcingBaseList=false;decorate();},40);}
+  return true;
+}
 function forceBaseAll(){
   if(forcingBaseAll)return false;
   var page=document.getElementById(PAGE_ID);if(!page||!page.classList.contains('active'))return false;
   var all=page.querySelector('[data-pm-filter="all"]');
-  if(!all||all.classList.contains('active')||all.classList.contains('on'))return false;
+  if(!all||all.classList.contains('on'))return false;
   forcingBaseAll=true;
   try{all.click();}finally{setTimeout(function(){forcingBaseAll=false;decorate();},40);}
   return true;
@@ -116,15 +126,16 @@ function ensureFilters(){
 function renderMeta(row,p){
   var meta=row.querySelector('.pst-pm-meta');if(!meta)return;
   var state=stateOf(p),tone=deadlineTone(p,state);
-  meta.innerHTML='<div class="pst-pdw-kv"><span class="pst-pm-label">Gjendja</span><span class="pst-pdw-state '+E(state)+'">'+E(stateLabel(state))+'</span></div>'+
-    '<div class="pst-pdw-kv"><span class="pst-pm-label">Hapi tjetër</span><span class="pst-pdw-next">'+E(nextAction(p,state))+'</span></div>'+
-    '<div class="pst-pdw-kv"><span class="pst-pm-label">Afati</span><span class="pst-pdw-deadline '+E(tone)+'">'+E(deadlineValue(p,state))+'</span></div>';
+  meta.innerHTML='<div class="pst-pdw-kv"><div class="pst-pm-meta-label">Gjendja</div><span class="pst-pdw-state '+E(state)+'">'+E(stateLabel(state))+'</span></div>'+
+    '<div class="pst-pdw-kv"><div class="pst-pm-meta-label">Hapi tjetër</div><div class="pst-pdw-next">'+E(nextAction(p,state))+'</div></div>'+
+    '<div class="pst-pdw-kv"><div class="pst-pm-meta-label">Afati</div><div class="pst-pdw-deadline '+E(tone)+'">'+E(deadlineValue(p,state))+'</div></div>';
   row.setAttribute('data-pdw-state',state);
   row.classList.toggle('pst-pdw-hidden',dailyFilter!=='all'&&dailyFilter!==state);
 }
 function decorate(){
   var page=document.getElementById(PAGE_ID);if(!page||!page.classList.contains('active'))return false;
   installStyle();resetHiddenClassification();
+  if(forceBaseList())return true;
   if(forceBaseAll())return true;
   var bar=ensureFilters();if(bar)bar.querySelectorAll('[data-pdw-filter]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-pdw-filter')===dailyFilter);});
   var map=mapRows();
@@ -134,14 +145,14 @@ function decorate(){
 function schedule(){[0,70,180,420].forEach(function(ms){setTimeout(decorate,ms);});}
 function canonicalOpen(target,event){
   if(!target||typeof window.pstOpenProjectWorkspace!=='function')return false;
-  var row=target.closest('.pst-pm-row[data-project-id]');var id=row&&row.getAttribute('data-project-id');if(!id)return false;
+  var row=target.closest('.pst-pm-row[data-project-id]');var id=(row&&row.getAttribute('data-project-id'))||target.getAttribute('data-pm-open');if(!id)return false;
   event.preventDefault();event.stopPropagation();if(typeof event.stopImmediatePropagation==='function')event.stopImmediatePropagation();
   window.pstOpenProjectWorkspace(id);return true;
 }
 document.addEventListener('click',function(e){
   var page=e.target&&e.target.closest?e.target.closest('#'+PAGE_ID):null;if(!page)return;
   var f=e.target.closest('[data-pdw-filter]');if(f){e.preventDefault();dailyFilter=f.getAttribute('data-pdw-filter')||'all';decorate();return;}
-  var open=e.target.closest('[data-pm-open="1"]');if(open&&canonicalOpen(open,e))return;
+  var open=e.target.closest('[data-pm-open]');if(open&&canonicalOpen(open,e))return;
   if(e.target.closest('#pst-pm-search,#pst-pm-new,[data-pm-filter],[data-pm-more]'))schedule();
 },true);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
