@@ -3,12 +3,20 @@
  * Saving is not sending: a saved QUO is stored as open/saved unless it already has a sent marker.
  * Existing sent markers are preserved when a saved offer is edited again.
  * The legacy registerDocNr collision guard remains authoritative.
+ *
+ * Production hotfix: this module is loaded with pst_live=Date.now() before the project
+ * Commercial modules. It therefore owns structured-draft edit clicks before any stale
+ * cached Commercial capture handler can swallow them.
  */
 (function(){
 'use strict';
 if(window.__pstOfferResaveFixV1)return;
 window.__pstOfferResaveFixV1=true;
 
+function A(v){return Array.isArray(v)?v:[];}
+function N(v){var x=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(x)?x:0;}
+function clean(v){return String(v==null?'':v).trim();}
+function clone(v){try{return JSON.parse(JSON.stringify(v));}catch(e){return v;}}
 function obj(v){
   if(v&&typeof v==='object'&&!Array.isArray(v))return Object.assign({},v);
   if(typeof v==='string'&&v.trim())try{var x=JSON.parse(v);return x&&typeof x==='object'?x:{};}catch(e){}
@@ -80,8 +88,93 @@ function install(){
   return true;
 }
 
+function structuredOffers(){
+  var d=window.__pstIntegrityLastData||{},rows=A(d.ourOffers).slice(),seen={},out=[];
+  function add(o){
+    if(!o||!A(o.positions).length)return;
+    var id=clean(o.id||o.offer_ref||o.doc_nr||o.document_nr||o.reference||'');
+    var key=id||('offer_'+out.length);
+    if(seen[key])return;
+    seen[key]=true;out.push(o);
+  }
+  rows.forEach(add);
+  add(d.currentOurOffer);
+  out.sort(function(a,b){
+    var ta=Date.parse(a&&a.updated_at||a&&a.created_at||a&&a.date||0)||0;
+    var tb=Date.parse(b&&b.updated_at||b&&b.created_at||b&&b.date||0)||0;
+    return tb-ta;
+  });
+  return out;
+}
+function bestStructuredOffer(){return structuredOffers()[0]||null;}
+function structuredPrice(p){return N(p&&(p.unit_price_net_eur!=null?p.unit_price_net_eur:(p.price!=null?p.price:p.price_neg)));}
+function structuredRows(o){
+  return A(o&&o.positions).map(function(p){
+    var row={
+      desc:clean(p&&p.description||p&&p.desc||p&&p.key||'Pozicion'),
+      qty:p&&p.qty==null?'':p.qty,
+      unit:clean(p&&p.unit||''),
+      price:structuredPrice(p),
+      _pstStructured:true
+    };
+    var w=N(p&&p.theoretical_steel_weight_kg),kg=N(p&&p.our_net_eur_per_kg);
+    if(w>0)row.theoretical_steel_weight_kg=w;
+    if(kg>0)row.eur_per_kg=kg;
+    return row;
+  });
+}
+function structuredRef(o){return clean(o&&(o.offer_ref||o.doc_nr||o.document_nr||o.reference)||'');}
+function openOfferEditorPage(){
+  var L=window.__pstWorkspaceLegacy;
+  if(L&&typeof L.showPage==='function'){L.showPage('oferta');return true;}
+  if(typeof window.pstWsLegacy==='function'){window.pstWsLegacy('oferta');return true;}
+  if(typeof window.showPage==='function'){window.showPage('oferta');return true;}
+  var C=window.PSTCommercialNavigationFixV1;
+  if(C&&typeof C.openLegacyPage==='function'){C.openLegacyPage('oferta');return true;}
+  return false;
+}
+function openStructuredOffer(o){
+  if(!o||!A(o.positions).length)return false;
+  if(!openOfferEditorPage()){
+    console.error('[offer-resave-fix] structured offer editor route unavailable');
+    return false;
+  }
+  var rows=structuredRows(o),ref=structuredRef(o);
+  window.__pstStructuredOfferBeingEdited=o;
+  setTimeout(function(){
+    try{
+      if(!Array.isArray(window.oferPos))window.oferPos=[];
+      window.oferPos.length=0;
+      rows.forEach(function(row){window.oferPos.push(clone(row));});
+      if(typeof window.renderOferPos==='function')window.renderOferPos();
+    }catch(err){console.error('[offer-resave-fix] structured rows failed',err);}
+    try{var nr=document.getElementById('of-nr');if(nr)nr.value=ref;}catch(e){}
+    try{if(typeof window.genOfer==='function')window.genOfer();}catch(e){}
+    try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}
+  },120);
+  return true;
+}
+function structuredEditCapture(ev){
+  var t=ev.target&&ev.target.closest?ev.target.closest('[data-csf-action="edit"],[data-pst-structured-edit="1"]'):null;
+  if(!t)return;
+  var o=bestStructuredOffer();
+  if(!o)return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  if(typeof ev.stopImmediatePropagation==='function')ev.stopImmediatePropagation();
+  openStructuredOffer(o);
+}
+
+/* Registered now, before the cached Commercial modules are bootstrapped. */
+window.addEventListener('click',structuredEditCapture,true);
+
 if(!install()){
   [0,150,500,1200,2500].forEach(function(ms){setTimeout(install,ms);});
 }
-window.PSTOfferResaveFixV1={install:install};
+window.PSTOfferResaveFixV1={
+  install:install,
+  bestStructuredOffer:bestStructuredOffer,
+  openStructuredOffer:openStructuredOffer,
+  _test:{structuredOffers:structuredOffers,structuredRows:structuredRows,structuredEditCapture:structuredEditCapture}
+};
 })();
