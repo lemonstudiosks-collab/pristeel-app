@@ -8,6 +8,7 @@ on:
       - 'pristeel-daily-zones-cleanup-v1.js'
       - 'tests/finance-daily-smoke.js'
       - 'tests/opportunities-daily-smoke.js'
+      - 'tests/daily-zones-cleanup-smoke.js'
       - '.github/workflows/finance-daily-smoke.yml'
   push:
     branches: [main]
@@ -17,6 +18,7 @@ on:
       - 'pristeel-daily-zones-cleanup-v1.js'
       - 'tests/finance-daily-smoke.js'
       - 'tests/opportunities-daily-smoke.js'
+      - 'tests/daily-zones-cleanup-smoke.js'
       - '.github/workflows/finance-daily-smoke.yml'
 
 jobs:
@@ -32,3 +34,5 @@ jobs:
       - run: node tests/finance-daily-smoke.js
       - run: node --check pristeel-opportunities-daily-v1.js
       - run: node tests/opportunities-daily-smoke.js
+      - run: node --check pristeel-daily-zones-cleanup-v1.js
+      - run: node tests/daily-zones-cleanup-smoke.js
