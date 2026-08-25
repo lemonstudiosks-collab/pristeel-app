@@ -22,6 +22,8 @@ on:
       - 'tests/ted-winner-contact-history-reuse-smoke.mjs'
       - 'scripts/ted-winner-contact-enrichment.mjs'
       - 'tests/ted-winner-contact-enrichment-smoke.mjs'
+      - 'scripts/ted-winner-company-classification.mjs'
+      - 'tests/ted-winner-company-classification-smoke.mjs'
       - 'scripts/ted-winner-contact-ranking.mjs'
       - 'tests/ted-winner-contact-ranking-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
@@ -29,6 +31,7 @@ on:
       - 'pristeel-tender-winner-contacts-v1.js'
       - 'tests/tender-winner-contacts-smoke.js'
       - 'pristeel-roles.js'
+      - 'supabase/migrations/**'
       - '.github/workflows/ted-tender-sync.yml'
   schedule:
     - cron: '47 */2 * * *'
@@ -43,6 +46,8 @@ on:
       - 'tests/ted-winner-contact-history-reuse-smoke.mjs'
       - 'scripts/ted-winner-contact-enrichment.mjs'
       - 'tests/ted-winner-contact-enrichment-smoke.mjs'
+      - 'scripts/ted-winner-company-classification.mjs'
+      - 'tests/ted-winner-company-classification-smoke.mjs'
       - 'scripts/ted-winner-contact-ranking.mjs'
       - 'tests/ted-winner-contact-ranking-smoke.mjs'
       - 'pristeel-tender-business-flow-v1.js'
@@ -50,6 +55,7 @@ on:
       - 'pristeel-tender-winner-contacts-v1.js'
       - 'tests/tender-winner-contacts-smoke.js'
       - 'pristeel-roles.js'
+      - 'supabase/migrations/**'
       - '.github/workflows/ted-tender-sync.yml'
 
 permissions:
@@ -75,6 +81,8 @@ jobs:
       TED_CONTACT_MAX_ROWS: '12'
       TED_CONTACT_REFRESH_DAYS: '30'
       TED_CONTACT_WEB_SEARCH: '1'
+      TED_COMPANY_MIN_SCORE: '85'
+      TED_COMPANY_MAX_ROWS: '20'
       TED_HISTORY_REUSE_MAX_ROWS: '50'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
 
@@ -96,6 +104,7 @@ jobs:
           node --check scripts/ted-award-winner-sync.mjs
           node --check scripts/ted-winner-contact-history-reuse.mjs
           node --check scripts/ted-winner-contact-enrichment.mjs
+          node --check scripts/ted-winner-company-classification.mjs
           node --check scripts/ted-winner-contact-ranking.mjs
           node --check pristeel-tender-business-flow-v1.js
           node --check pristeel-tender-winner-contacts-v1.js
@@ -111,6 +120,9 @@ jobs:
 
       - name: Run TED winner contact enrichment smoke
         run: node tests/ted-winner-contact-enrichment-smoke.mjs
+
+      - name: Run TED winner company classification smoke
+        run: node tests/ted-winner-company-classification-smoke.mjs
 
       - name: Run TED winner contact ranking smoke
         run: node tests/ted-winner-contact-ranking-smoke.mjs
@@ -135,6 +147,10 @@ jobs:
         if: github.event_name != 'pull_request'
         run: node scripts/ted-winner-contact-enrichment.mjs
 
+      - name: Classify winner business role and cooperation angle
+        if: github.event_name != 'pull_request'
+        run: node scripts/ted-winner-company-classification.mjs
+
       - name: Rank winner contacts for procurement outreach
         if: github.event_name != 'pull_request'
         run: node scripts/ted-winner-contact-ranking.mjs
@@ -149,6 +165,7 @@ jobs:
             tmp/ted-award-winner-sync.json
             tmp/ted-winner-contact-history-reuse.json
             tmp/ted-winner-contact-enrichment.json
+            tmp/ted-winner-company-classification.json
             tmp/ted-winner-contact-ranking.json
           if-no-files-found: ignore
           retention-days: 14
