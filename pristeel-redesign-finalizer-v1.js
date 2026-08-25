@@ -1,5 +1,5 @@
 /* PRISTEEL redesign finalizer v1
- * Revision: 20260823-navigation-loop-fix1.
+ * Revision: 20260825-projects-daily1.
  * Re-applies presentation-only styling after workspace renders.
  * Canonical Home exclusively owns priority-card navigation and business state.
  * Bounded timeouts only. No polling, observers, auth or project-open overrides.
@@ -42,6 +42,19 @@ function sectionTheme(){
     s.setAttribute('data-pst-section-theme','1');
     document.head.appendChild(s);
   }catch(e){console.warn('PRISTEEL finalizer section theme:',e);}
+}
+function projectsDailyWorklist(){
+  try{
+    var X=window.PSTProjectsDailyWorklistV1;
+    if(X&&typeof X.apply==='function'){X.apply();return;}
+    if(document.querySelector('script[data-pst-projects-daily-worklist]'))return;
+    var s=document.createElement('script');
+    s.src='pristeel-projects-daily-worklist-v1.js?v=20260825-1';
+    s.defer=true;
+    s.setAttribute('data-pst-projects-daily-worklist','1');
+    s.onload=function(){var x=window.PSTProjectsDailyWorklistV1;if(x&&typeof x.apply==='function')x.apply();};
+    document.head.appendChild(s);
+  }catch(e){console.warn('PRISTEEL finalizer Projects daily worklist:',e);}
 }
 function operatingExperience(){
   try{
@@ -90,7 +103,7 @@ function installPriorityStyle(){if(document.getElementById('pst-final-priority-c
 #page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-title{color:#614C1E!important}
 #page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-tag{background:#C9932E!important;border-color:#C9932E!important;color:#fff!important}`;document.head.appendChild(s);}
 function apply(){
-  primaryNavigationResilience();sectionTheme();readability();contactCards();operatingExperience();operatingAssistant();
+  primaryNavigationResilience();sectionTheme();readability();contactCards();operatingExperience();operatingAssistant();projectsDailyWorklist();
   try{var C=window.PSTBusinessCommandCenterV1;if(C&&typeof C.open==='function')window.openCmdK=C.open;if(C&&typeof C.decorateHome==='function')C.decorateHome();}catch(e){console.warn('PRISTEEL finalizer search:',e);}
   try{var D=window.PSTDashboardTaskCardsV1;if(D&&typeof D.decorate==='function')D.decorate();}catch(e){console.warn('PRISTEEL finalizer cards:',e);}
   try{var H=window.PSTHomeCommandCenterV2;if(H&&typeof H.decorate==='function')H.decorate(false);}catch(e){console.warn('PRISTEEL finalizer home:',e);}
@@ -98,6 +111,7 @@ function apply(){
   try{var P=window.PSTProjectCommandViewV1,projectPage=document.getElementById('page-workspace-project');if(P&&projectPage&&projectPage.style.display!=='none'&&typeof P.load==='function')P.load(window.__pstCurrentProjectId||window._curProjId||'',false);}catch(e){console.warn('PRISTEEL finalizer project:',e);}
   try{installPriorityStyle();repairPriorityCards();}catch(e){console.warn('PRISTEEL finalizer priority cards:',e);}
   try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){console.warn('PRISTEEL finalizer operating experience apply:',e);}
+  try{var W=window.PSTProjectsDailyWorklistV1;if(W&&typeof W.apply==='function')W.apply();}catch(e){console.warn('PRISTEEL finalizer Projects daily worklist apply:',e);}
   try{var A=window.PSTOperatingAssistantV2;if(A&&typeof A.apply==='function')A.apply(false);}catch(e){console.warn('PRISTEEL finalizer operating assistant apply:',e);}
 }
 function schedule(){[0,80,220,450,1400,2100].forEach(function(ms){setTimeout(apply,ms);});}
@@ -106,5 +120,5 @@ document.addEventListener('DOMContentLoaded',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
 document.addEventListener('click',function(event){var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,#pst-ws-home-refresh,[onclick*="pstWorkspaceGo"],[data-pm-open],[data-release-filter],[data-pwf-area],[data-pwf-stage],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,250,700,1450,2200].forEach(function(ms){setTimeout(apply,ms);});},true);
 if(document.readyState!=='loading')schedule();
-window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,operatingAssistant:operatingAssistant,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
+window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,projectsDailyWorklist:projectsDailyWorklist,operatingExperience:operatingExperience,operatingAssistant:operatingAssistant,contactCards:contactCards,repairPriorityCards:repairPriorityCards};
 })();
