@@ -53,6 +53,8 @@ assert(window.document.querySelector('[data-project-id="p1"]').getAttribute('dat
 assert(window.document.querySelector('[data-project-id="p2"]').getAttribute('data-pws-state') === 'waiting', 'wait_for_client must be Waiting');
 assert(window.document.querySelector('[data-project-id="p3"]').getAttribute('data-pws-state') === 'execution', 'Won production project must be Execution');
 assert(window.document.querySelector('[data-project-id="p4"]').getAttribute('data-pws-state') === 'closed', 'Closed status must win over execution stage');
+assert(window.PSTProjectClassificationV1.workState({status:'pritje',pipeline_stage:'client_offer',operational_state:'action_required'}) === 'action', 'action_required must override legacy pritje status');
+assert(window.PSTProjectClassificationV1.workState({status:'pritje',pipeline_stage:'supplier_selection',operational_state:'active_work'}) === 'action', 'active_work must override legacy pritje status');
 assert(/Vendos çmimin e shitjes/.test(window.document.querySelector('[data-project-id="p1"] .pst-pm-meta').textContent), 'Pricing project next action must be clear');
 assert(!window.document.querySelector('.pst-pc-badges'), 'Classification badges must be removed from daily UI');
 assert(window.document.querySelector('[data-project-id="p1"] .pst-pm-desc').style.display === 'none', 'Description noise must be hidden');
