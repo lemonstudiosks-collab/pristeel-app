@@ -1,6 +1,7 @@
 const fs=require('fs');
 const assert=require('assert');
 const {JSDOM}=require('jsdom');
+const resave=fs.readFileSync('pristeel-offer-resave-fix-v1.js','utf8');
 const simplified=fs.readFileSync('pristeel-project-commercial-simplified-v1.js','utf8');
 const bridge=fs.readFileSync('pristeel-offer-revision-email-bridge-v1.js','utf8');
 
@@ -23,6 +24,9 @@ w.__pstIntegrityLastData={supplierOffers:[{
   {key:'pole_12m',qty:1,unit:'pc',desc:'Shtyllë sirene 12 m',price_neg:2245.76,total_neg:2245.76,price_gross:2650,vat_pct:18,main_chs:{od_mm:323.9,t_mm:8,length_mm:12000},top_spigot:{od_mm:88.9,t_mm:4,length_mm:1500}}
  ]
 }],ourOffers:[]};
+
+// Production order: offer-resave is loaded fresh before bootstrap and before Commercial.
+w.eval(resave);
 w.eval(simplified);
 w.eval(bridge);
 w.PSTProjectCommercialSimplifiedV1.render();
@@ -46,7 +50,7 @@ assert.ok(Math.abs(w.PSTOfferRevisionEmailBridgeV1._test.pieceWeight(w.__pstInte
 assert.ok(Math.abs(w.PSTOfferRevisionEmailBridgeV1._test.pieceNetKg(w.__pstIntegrityLastData.supplierOffers[0].positions[0])-3.0603)<0.001);
 
 w.__pstIntegrityLastData.ourOffers=[{
- supplier:'OFERTA JONE - PRISTEEL -> SSP / Fiva Investment',offer_ref:'PRISTEEL / EWAS / 25.08.2026 / DRAFT',currency:'EUR',vat_pct:18,created_at:'2026-08-25T10:50:20Z',positions:[
+ id:'ssp-ewas-draft',supplier:'OFERTA JONE - PRISTEEL -> SSP / Fiva Investment',offer_ref:'PRISTEEL / EWAS / 25.08.2026 / DRAFT',currency:'EUR',vat_pct:18,created_at:'2026-08-25T10:50:20Z',positions:[
   {key:'pole_6m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 6 m siren pole',unit_price_net_eur:823.73,unit_price_gross_eur:972,theoretical_steel_weight_kg:224.31,our_net_eur_per_kg:3.672,our_gross_eur_per_kg:4.333},
   {key:'pole_9m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 9 m siren pole',unit_price_net_eur:1315.68,unit_price_gross_eur:1552.50,theoretical_steel_weight_kg:385.49,our_net_eur_per_kg:3.413,our_gross_eur_per_kg:4.027},
   {key:'pole_12m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 12 m siren pole',unit_price_net_eur:2470.34,unit_price_gross_eur:2915,theoretical_steel_weight_kg:760.46,our_net_eur_per_kg:3.248,our_gross_eur_per_kg:3.833},
@@ -54,7 +58,7 @@ w.__pstIntegrityLastData.ourOffers=[{
   {key:'crane',qty:null,unit:'day',description:'Mobile crane',unit_price_net_eur:500,unit_price_gross_eur:590}
  ]
 }];
-// Simulate a stale pointer that must not hide the real structured draft.
+// Simulate the stale pointer seen in production. It must not hide the real structured draft.
 w.__pstIntegrityLastData.currentOurOffer={offer_ref:'STALE EMPTY POINTER',created_at:'2026-08-25T11:00:00Z'};
 w.PSTProjectCommercialSimplifiedV1.render();
 w.PSTOfferRevisionEmailBridgeV1.decorateClientOfferCard();
@@ -70,22 +74,35 @@ assert.ok(clientText.includes('760,46 kg')&&clientText.includes('2.470,34 EUR/pc
 const editorRows=w.PSTOfferRevisionEmailBridgeV1._test.structuredEditorRows(w.__pstIntegrityLastData.ourOffers[0]);
 assert.equal(editorRows.length,5);assert.equal(editorRows[0].price,823.73);assert.equal(editorRows[0].qty,'');
 
-// Critical regression: simplified Commercial registers its capture listener before the bridge.
-// Structured buttons must be re-marked so the old handler does not swallow the click.
-const editButton=w.document.querySelector('.pst-csf-next [data-pst-structured-edit="1"]');
-assert.ok(editButton,'top Continue editing button should be owned by structured edit bridge');
-assert.equal(editButton.hasAttribute('data-csf-action'),false,'legacy edit action must be removed for structured drafts');
+// Exact live regression: the fresh pre-bootstrap listener must run before a stale cached
+// Commercial capture handler that calls stopImmediatePropagation().
+let staleCommercialRan=false;
+w.addEventListener('click',function(ev){
+ const b=ev.target&&ev.target.closest?ev.target.closest('[data-csf-action="edit"]'):null;
+ if(!b)return;
+ staleCommercialRan=true;
+ ev.preventDefault();
+ if(typeof ev.stopImmediatePropagation==='function')ev.stopImmediatePropagation();
+},true);
+const rawLiveButton=w.document.createElement('button');
+rawLiveButton.type='button';
+rawLiveButton.setAttribute('data-csf-action','edit');
+rawLiveButton.textContent='Vazhdo editimin';
+w.document.body.appendChild(rawLiveButton);
+editorOpened=0;rowsRendered=0;offerGenerated=0;w.oferPos.length=0;
 const realSetTimeout=w.setTimeout;
 w.setTimeout=(fn)=>{fn();return 1;};
-editButton.dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true}));
+rawLiveButton.dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true}));
 w.setTimeout=realSetTimeout;
-assert.equal(editorOpened,1,'click must navigate to offer editor exactly once');
-assert.equal(w.oferPos.length,5,'structured offer rows must be loaded into editor');
+assert.equal(staleCommercialRan,false,'stale Commercial handler must never receive structured edit click');
+assert.equal(editorOpened,1,'live hotfix must navigate to offer editor exactly once');
+assert.equal(w.oferPos.length,5,'live hotfix must load all structured positions');
 assert.equal(w.oferPos[0].price,823.73);
 assert.equal(w.oferPos[0].qty,'');
 assert.equal(w.document.getElementById('of-nr').value,'PRISTEEL / EWAS / 25.08.2026 / DRAFT');
 assert.ok(rowsRendered>0,'editor rows must render');
 assert.ok(offerGenerated>0,'offer preview must regenerate');
+assert.equal(w.PSTOfferResaveFixV1.bestStructuredOffer().id,'ssp-ewas-draft','fresh module must ignore stale empty pointer');
 
-console.log('Project Commercial per-piece supplier, structured client offer and real edit-click smoke test passed.');
+console.log('Project Commercial per-piece supplier and live pre-bootstrap structured edit-click smoke test passed.');
 dom.window.close();
