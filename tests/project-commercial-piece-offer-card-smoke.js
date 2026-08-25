@@ -6,15 +6,17 @@ const simplified=fs.readFileSync('pristeel-project-commercial-simplified-v1.js',
 const bridge=fs.readFileSync('pristeel-offer-revision-email-bridge-v1.js','utf8');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
-<div id="page-workspace-project" class="pf2-on"><div class="pst-pi-tabs"><button class="on" data-pf2-tab="commercial">Komercialja</button></div><div id="pst-pi-body"></div></div>
-<div id="page-oferta"></div><input id="of-nr" />
+<div id="page-workspace-project" class="page pf2-on active" style="display:block"><div class="pst-pi-tabs"><button class="on" data-pf2-tab="commercial">Komercialja</button></div><div id="pst-pi-body"></div></div>
+<div id="page-oferta" class="page" style="display:none"><input id="of-nr" /></div>
 </body></html>`,{runScripts:'outside-only',url:'https://example.test'});
 const w=dom.window;
 let editorOpened=0,rowsRendered=0,offerGenerated=0;
-w.__pstWorkspaceLegacy={showPage:(name)=>{if(name==='oferta')editorOpened++;}};
+w.__pstWorkspaceLegacy={showPage:(name)=>{if(name==='oferta')editorOpened++;w.document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));const p=w.document.getElementById('page-'+name);if(p)p.classList.add('active');}};
 w.oferPos=[];
 w.renderOferPos=()=>{rowsRendered++;};
 w.genOfer=()=>{offerGenerated++;};
+w.scrollTo=()=>{};
+w.registerDocNr=function(){};
 w.__pstIntegrityLastData={supplierOffers:[{
  supplier:'Sector Construction',currency:'EUR',pricing_unit:'pc',vat_pct:18,total_eur:null,
  inclusions:'Steel material; fabrication; hot-dip galvanizing; pole erection/installation',
@@ -74,8 +76,8 @@ assert.ok(clientText.includes('760,46 kg')&&clientText.includes('2.470,34 EUR/pc
 const editorRows=w.PSTOfferRevisionEmailBridgeV1._test.structuredEditorRows(w.__pstIntegrityLastData.ourOffers[0]);
 assert.equal(editorRows.length,5);assert.equal(editorRows[0].price,823.73);assert.equal(editorRows[0].qty,'');
 
-// Exact live regression: the fresh pre-bootstrap listener must run before a stale cached
-// Commercial capture handler that calls stopImmediatePropagation().
+// Exact live regression: modern Workspace hides all non-active pages with inline display:none.
+// The captured legacy showPage only toggles active classes, so the offer page used to remain invisible.
 let staleCommercialRan=false;
 w.addEventListener('click',function(ev){
  const b=ev.target&&ev.target.closest?ev.target.closest('[data-csf-action="edit"]'):null;
@@ -95,8 +97,11 @@ w.setTimeout=(fn)=>{fn();return 1;};
 rawLiveButton.dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true}));
 w.setTimeout=realSetTimeout;
 assert.equal(staleCommercialRan,false,'stale Commercial handler must never receive structured edit click');
-assert.equal(editorOpened,1,'live hotfix must navigate to offer editor exactly once');
-assert.equal(w.oferPos.length,5,'live hotfix must load all structured positions');
+assert.equal(editorOpened,1,'live owner must invoke the legacy offer route exactly once');
+assert.equal(w.document.getElementById('page-workspace-project').style.display,'none','Project workspace must be hidden after edit navigation');
+assert.equal(w.document.getElementById('page-oferta').style.display,'block','Offer editor must be visibly displayed after legacy navigation');
+assert.ok(w.document.getElementById('page-oferta').classList.contains('active'),'Offer editor must own active page state');
+assert.equal(w.oferPos.length,5,'live owner must load all structured positions');
 assert.equal(w.oferPos[0].price,823.73);
 assert.equal(w.oferPos[0].qty,'');
 assert.equal(w.document.getElementById('of-nr').value,'PRISTEEL / EWAS / 25.08.2026 / DRAFT');
@@ -104,5 +109,5 @@ assert.ok(rowsRendered>0,'editor rows must render');
 assert.ok(offerGenerated>0,'offer preview must regenerate');
 assert.equal(w.PSTOfferResaveFixV1.bestStructuredOffer().id,'ssp-ewas-draft','fresh module must ignore stale empty pointer');
 
-console.log('Project Commercial per-piece supplier and live pre-bootstrap structured edit-click smoke test passed.');
+console.log('Project Commercial per-piece supplier and visible live structured edit-click smoke test passed.');
 dom.window.close();
