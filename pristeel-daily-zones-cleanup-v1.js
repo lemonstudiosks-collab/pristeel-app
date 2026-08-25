@@ -8,7 +8,6 @@
 if(window.__pstDailyZonesCleanupV1)return;
 window.__pstDailyZonesCleanupV1=true;
 
-function E(v){return String(v==null?'':v);}
 function active(id){var p=document.getElementById(id);return p&&p.classList.contains('active')?p:null;}
 function cleanPartners(){
   var p=active('page-workspace-contacts');if(!p)return false;
@@ -24,13 +23,20 @@ function cleanProjectSummary(){
   p.querySelectorAll('.pwf-project-kpis').forEach(function(x){x.classList.add('pst-daily-passive-count');});
   return true;
 }
+function systemHealth(){
+  var p=active('page-workspace-apps');if(!p)return false;
+  var X=window.PSTAutomationHealthV1;if(X&&typeof X.load==='function'){X.load(false);return true;}
+  if(document.querySelector('script[data-pst-automation-health]'))return true;
+  var s=document.createElement('script');s.src='pristeel-automation-health-v1.js?v=20260825-system1';s.defer=true;s.setAttribute('data-pst-automation-health','1');s.onload=function(){var H=window.PSTAutomationHealthV1;if(H&&typeof H.load==='function')H.load(false);};document.head.appendChild(s);return true;
+}
 function cleanSystemLabels(){
   var p=active('page-workspace-apps');if(!p)return false;
   var eyebrow=p.querySelector('.pst-ws-eyebrow'),title=p.querySelector('.pst-ws-title'),sub=p.querySelector('.pst-ws-sub');
   if(eyebrow)eyebrow.textContent='SYSTEM';
   if(title)title.textContent='Sistemi dhe automatizimet';
   if(sub)sub.textContent='Integrimet, motorët teknikë, diagnostika dhe mjetet rezervë që punojnë në prapaskenë.';
-  p.querySelectorAll('[data-system-tool]').forEach(function(x){x.setAttribute('data-pst-system-owned','1');});
+  var grid=p.querySelector('.pst-ws-appgrid');if(grid)grid.setAttribute('data-pst-system-tools','1');
+  systemHealth();
   return true;
 }
 function financeDaily(){
@@ -47,11 +53,13 @@ function css(){if(document.getElementById('pst-daily-zones-cleanup-css'))return;
 #page-workspace-contacts.active .pcm-business-card{min-width:0!important;padding-left:14px!important;padding-right:14px!important}
 #page-workspace-contacts.active .pcm-card-head{padding-bottom:8px!important}
 #page-workspace-project.active .pst-daily-passive-count{display:none!important}
+#page-workspace-apps.active [data-pst-system-tools="1"]{margin-top:4px!important}
+#page-workspace-apps.active [data-pst-system-tools="1"] .pst-ws-app{min-height:92px!important}
 `;document.head.appendChild(s);}
 function schedule(){[0,80,220,650].forEach(function(ms){setTimeout(apply,ms);});}
 css();
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[data-pcm-business],[data-pcm-refresh],[data-pcm-classic],[data-pwf-area],[data-pwf-stage],[onclick*="finSwitchTab"],[onclick*="finShowHub"]'):null;if(t)schedule();},true);
 if(document.readyState!=='loading')schedule();
-window.PSTDailyZonesCleanupV1={apply:apply,schedule:schedule,cleanPartners:cleanPartners,cleanProjectSummary:cleanProjectSummary,cleanSystemLabels:cleanSystemLabels,financeDaily:financeDaily};
+window.PSTDailyZonesCleanupV1={apply:apply,schedule:schedule,cleanPartners:cleanPartners,cleanProjectSummary:cleanProjectSummary,cleanSystemLabels:cleanSystemLabels,systemHealth:systemHealth,financeDaily:financeDaily};
 })();
