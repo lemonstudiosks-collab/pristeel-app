@@ -7,7 +7,21 @@ const bridge=fs.readFileSync('pristeel-offer-revision-email-bridge-v1.js','utf8'
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <div id="page-workspace-project" class="page pf2-on active" style="display:block"><div class="pst-pi-tabs"><button class="on" data-pf2-tab="commercial">Komercialja</button></div><div id="pst-pi-body"></div></div>
-<div id="page-oferta" class="page" style="display:none"><input id="of-nr" /></div>
+<div id="page-oferta" class="page" style="display:none">
+ <input id="of-nr" />
+ <div id="of-preview-col">
+  <div id="of-preview-toolbar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+   <div class="section-title">Angebot — Entwurf zur Prüfung</div>
+   <div>
+    <button onclick="ofBackToEdit()">← Kthehu / Edito</button>
+    <button onclick="copyOferte()">Kopjo</button>
+    <button onclick="downloadPDF()">PDF</button>
+    <button onclick="saveCurrentOffer()">Ruaj</button>
+   </div>
+  </div>
+  <div id="of-pre"></div>
+ </div>
+</div>
 </body></html>`,{runScripts:'outside-only',url:'https://example.test'});
 const w=dom.window;
 let editorOpened=0,rowsRendered=0,offerGenerated=0;
@@ -108,6 +122,11 @@ assert.equal(w.document.getElementById('of-nr').value,'PRISTEEL / EWAS / 25.08.2
 assert.ok(rowsRendered>0,'editor rows must render');
 assert.ok(offerGenerated>0,'offer preview must regenerate');
 assert.equal(w.PSTOfferResaveFixV1.bestStructuredOffer().id,'ssp-ewas-draft','fresh module must ignore stale empty pointer');
+const toolbar=w.document.getElementById('of-preview-toolbar');
+assert.equal(toolbar.style.display,'none','structured offer preview status/action strip must stay hidden');
+assert.equal(toolbar.getAttribute('data-pst-structured-preview-toolbar-hidden'),'1','hidden strip must be explicitly marked');
+assert.ok(w.document.getElementById('of-pre'),'printable offer preview must remain mounted');
+assert.notEqual(w.document.getElementById('of-pre').style.display,'none','printable offer preview must remain visible');
 
-console.log('Project Commercial per-piece supplier and visible live structured edit-click smoke test passed.');
+console.log('Project Commercial per-piece supplier and clean visible structured edit smoke test passed.');
 dom.window.close();
