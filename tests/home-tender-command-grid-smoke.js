@@ -13,7 +13,7 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body>
   <div id="pst-home-waiting">Passive waiting lane</div>
   <div id="pst-ws-alertbar">Passive alert bar</div>
 </div>
-<div id="page-workspace-projects" class="page"><div id="pst-pm-filters"></div><div class="pst-pm-row" data-project-id="p1"><div class="pst-pm-main"><div class="pst-pm-client">Client</div></div></div></div>
+<div id="page-workspace-projects" class="page"><div class="pst-pm-controls"><div id="pst-pm-filters"></div></div><div class="pst-pm-row" data-project-id="p1"><div class="pst-pm-main"><div class="pst-pm-client">Client</div><div class="pst-pc-badges"><span>TENDER</span><span>PRODHIM</span></div></div><div class="pst-pm-meta"></div></div></div>
 </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
 const w=dom.window;
 w.confirm=()=>true; w.alert=()=>{}; w.open=()=>{};
@@ -67,14 +67,16 @@ assert.ok(!homeSrc.includes('supaFetch'),'final Home presentation must not perfo
 assert.ok(!/setInterval\s*\(|MutationObserver/.test(homeSrc),'Home must remain event-driven');
 assert.ok(homeSrc.includes("pst:home-canonical-rendered"),'Home must refresh from canonical render events');
 
-// Project classification stays separate from Home simplification.
-w.__pstWorkspaceProjectRows=[{id:'p1',origin_type:'tender',work_model:'production'}];
+// Project classification remains available as internal metadata but is retired from the daily Projects surface.
+w.__pstWorkspaceProjectRows=[{id:'p1',origin_type:'tender',work_model:'production',status:'aktiv',pipeline_stage:'supplier_selection',operational_state:'action_required'}];
 page.classList.remove('active');
 w.document.getElementById('page-workspace-projects').classList.add('active');
 w.eval(fs.readFileSync('pristeel-project-classification-v1.js','utf8'));
 w.PSTProjectClassificationV1.decorate();
-assert.ok(w.document.body.textContent.includes('TENDER'));
-assert.ok(w.document.body.textContent.includes('PRODHIM'));
+assert.deepStrictEqual(Array.from(w.PSTProjectClassificationV1.classification(w.__pstWorkspaceProjectRows[0])),['TENDER','PRODHIM'],'classification metadata must remain available to system logic');
+assert.ok(!w.document.body.textContent.includes('TENDER'),'origin badge must not remain visible in daily Projects UI');
+assert.ok(!w.document.body.textContent.includes('PRODHIM'),'work-model badge must not remain visible in daily Projects UI');
+assert.ok(w.document.body.textContent.includes('Action'),'daily Projects UI must show human work state instead');
 
 const navSrc=fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 assert.ok(navSrc.includes('pristeel-home-operating-grid-v1.js'));
