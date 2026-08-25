@@ -5,6 +5,7 @@ const resave=fs.readFileSync('pristeel-offer-resave-fix-v1.js','utf8');
 const simplified=fs.readFileSync('pristeel-project-commercial-simplified-v1.js','utf8');
 const bridge=fs.readFileSync('pristeel-offer-revision-email-bridge-v1.js','utf8');
 
+async function main(){
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <div id="page-workspace-project" class="page pf2-on active" style="display:block"><div class="pst-pi-tabs"><button class="on" data-pf2-tab="commercial">Komercialja</button></div><div id="pst-pi-body"></div></div>
 <div id="page-oferta" class="page" style="display:none">
@@ -66,7 +67,7 @@ assert.ok(Math.abs(w.PSTOfferRevisionEmailBridgeV1._test.pieceWeight(w.__pstInte
 assert.ok(Math.abs(w.PSTOfferRevisionEmailBridgeV1._test.pieceNetKg(w.__pstIntegrityLastData.supplierOffers[0].positions[0])-3.0603)<0.001);
 
 w.__pstIntegrityLastData.ourOffers=[{
- id:'ssp-ewas-draft',supplier:'OFERTA JONE - PRISTEEL -> SSP / Fiva Investment',offer_ref:'PRISTEEL / EWAS / 25.08.2026 / DRAFT',currency:'EUR',vat_pct:18,created_at:'2026-08-25T10:50:20Z',positions:[
+ id:'ssp-ewas-draft',project_id:'25f7c374-6830-4cae-b2b5-bd5d694c00e0',supplier:'OFERTA JONE - PRISTEEL -> SSP / Fiva Investment',offer_ref:'PRISTEEL / EWAS / 25.08.2026 / DRAFT',currency:'EUR',vat_pct:18,created_at:'2026-08-25T10:50:20Z',positions:[
   {key:'pole_6m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 6 m siren pole',unit_price_net_eur:823.73,unit_price_gross_eur:972,theoretical_steel_weight_kg:224.31,our_net_eur_per_kg:3.672,our_gross_eur_per_kg:4.333},
   {key:'pole_9m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 9 m siren pole',unit_price_net_eur:1315.68,unit_price_gross_eur:1552.50,theoretical_steel_weight_kg:385.49,our_net_eur_per_kg:3.413,our_gross_eur_per_kg:4.027},
   {key:'pole_12m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 12 m siren pole',unit_price_net_eur:2470.34,unit_price_gross_eur:2915,theoretical_steel_weight_kg:760.46,our_net_eur_per_kg:3.248,our_gross_eur_per_kg:3.833},
@@ -110,6 +111,7 @@ const realSetTimeout=w.setTimeout;
 w.setTimeout=(fn)=>{fn();return 1;};
 rawLiveButton.dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true}));
 w.setTimeout=realSetTimeout;
+await new Promise(resolve=>setImmediate(resolve));
 assert.equal(staleCommercialRan,false,'stale Commercial handler must never receive structured edit click');
 assert.equal(editorOpened,1,'live owner must invoke the legacy offer route exactly once');
 assert.equal(w.document.getElementById('page-workspace-project').style.display,'none','Project workspace must be hidden after edit navigation');
@@ -118,7 +120,10 @@ assert.ok(w.document.getElementById('page-oferta').classList.contains('active'),
 assert.equal(w.oferPos.length,5,'live owner must load all structured positions');
 assert.equal(w.oferPos[0].price,823.73);
 assert.equal(w.oferPos[0].qty,'');
-assert.equal(w.document.getElementById('of-nr').value,'PRISTEEL / EWAS / 25.08.2026 / DRAFT');
+assert.equal(w.oferPos[0]._pstQtyPending,true,'unknown quantity must stay explicitly pending');
+assert.match(w.document.getElementById('of-nr').value,/^PST-OFF-\d{4}-\d{2}-\d+$/,'structured draft must receive a canonical customer quote number');
+assert.notEqual(w.document.getElementById('of-nr').value,'PRISTEEL / EWAS / 25.08.2026 / DRAFT','source DRAFT ref must never become the quote number');
+assert.ok(w.PSTOfferResaveFixV1._test.canonicalOfferNr(w.document.getElementById('of-nr').value),'generated quote number must pass the canonical parser');
 assert.ok(rowsRendered>0,'editor rows must render');
 assert.ok(offerGenerated>0,'offer preview must regenerate');
 assert.equal(w.PSTOfferResaveFixV1.bestStructuredOffer().id,'ssp-ewas-draft','fresh module must ignore stale empty pointer');
@@ -128,5 +133,8 @@ assert.equal(toolbar.getAttribute('data-pst-structured-preview-toolbar-hidden'),
 assert.ok(w.document.getElementById('of-pre'),'printable offer preview must remain mounted');
 assert.notEqual(w.document.getElementById('of-pre').style.display,'none','printable offer preview must remain visible');
 
-console.log('Project Commercial per-piece supplier and clean visible structured edit smoke test passed.');
 dom.window.close();
+console.log('Project Commercial per-piece supplier and canonical structured edit smoke test passed.');
+}
+
+main().catch(err=>{console.error(err);process.exit(1);});
