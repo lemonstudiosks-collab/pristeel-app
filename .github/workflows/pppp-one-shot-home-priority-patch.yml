@@ -1,0 +1,70 @@
+name: PPPP one-shot Home priority patch
+
+on:
+  push:
+    branches:
+      - pppp/task-lifecycle-home-priority-20260825
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: pppp/task-lifecycle-home-priority-20260825
+          fetch-depth: 0
+
+      - name: Patch canonical Home scoring and CI guard
+        shell: python
+        run: |
+          from pathlib import Path
+
+          home = Path('pristeel-home-canonical-v1.js')
+          s = home.read_text()
+          old = """function taskScore(t){var d=relDays(t&&t.due_date);if(norm(t&&t.source)==='email_request_auto')return 780;if(d===null)return 0;if(d<0)return 700+Math.min(120,Math.abs(d));if(d===0)return 690;if(d<=3)return 650-d;return 0;}\nfunction taskWhy(t){var d=relDays(t&&t.due_date),bits=[];if(norm(t&&t.source)==='email_request_auto')bits.push('Kërkesë e hapur që ende kërkon vendim ose përgjigje');else if(d<0)bits.push(Math.abs(d)+' ditë vonë');else if(d===0)bits.push('Afati është sot');else if(d!==null)bits.push('Afati është pas '+d+' ditësh');if(t&&t.detail)bits.push(short(t.detail,190));return bits.join(' · ');}\n"""
+          new = """function taskAgeDays(t){var d=safeDate(t&&t.created_at);if(!d)return 999;return Math.max(0,Math.floor((Date.now()-d.getTime())/86400000));}\nfunction taskScore(t){\n var d=relDays(t&&t.due_date),src=norm(t&&t.source),age=taskAgeDays(t);\n if(src==='project_discovery_auto')return age<=2?970:880;\n if(src==='execution_release_readiness')return 940;\n if(src==='email_request_auto')return Math.max(820,900-Math.min(age,30)*3);\n if(d===null)return 0;\n if(d<0)return 760+Math.min(40,Math.abs(d));\n if(d===0)return 750;\n if(d<=3)return 720-d;\n return 0;\n}\nfunction taskWhy(t){var d=relDays(t&&t.due_date),src=norm(t&&t.source),bits=[];if(src==='project_discovery_auto')bits.push('Projekt i ri i regjistruar automatikisht; duhet përcaktuar hapi i parë');else if(src==='execution_release_readiness')bits.push('Ekzekutimi ka blocker të konfirmuar që kërkon zgjidhje');else if(src==='email_request_auto')bits.push('Kërkesë e hapur që ende kërkon vendim ose përgjigje');else if(d<0)bits.push(Math.abs(d)+' ditë vonë');else if(d===0)bits.push('Afati është sot');else if(d!==null)bits.push('Afati është pas '+d+' ditësh');if(t&&t.detail)bits.push(short(t.detail,190));return bits.join(' · ');}\nfunction taskTag(t){var src=norm(t&&t.source);if(src==='project_discovery_auto')return 'PROJEKT I RI';if(src==='execution_release_readiness')return 'BLLOKUES';if(src==='email_request_auto')return 'VEPRIM';return relDays(t&&t.due_date)<0?'VONUAR':'DETYRË';}\n"""
+          if old not in s:
+              if "function taskAgeDays(t)" not in s:
+                  raise SystemExit('Canonical Home taskScore/taskWhy source block not found')
+          else:
+              s = s.replace(old, new, 1)
+
+          old_tag = "tag:relDays(t.due_date)<0?'VONUAR':(norm(t.source)==='email_request_auto'?'VEPRIM':'DETYRË'),"
+          if old_tag in s:
+              s = s.replace(old_tag, 'tag:taskTag(t),', 1)
+          elif 'tag:taskTag(t),' not in s:
+              raise SystemExit('Canonical Home task tag source block not found')
+          home.write_text(s)
+
+          wf = Path('.github/workflows/pristeel-tests.yml')
+          w = wf.read_text()
+          marker = 'Run Home human-needed priority and task lifecycle smoke'
+          if marker not in w:
+              anchor = "      - name: Run legacy Home retirement smoke\n"
+              step = "      - name: Run Home human-needed priority and task lifecycle smoke\n        run: node tests/home-human-needed-priority-smoke.js && node tests/task-lifecycle-reconcile-smoke.mjs\n"
+              if anchor not in w:
+                  raise SystemExit('PRISTEEL Tests Home anchor not found')
+              w = w.replace(anchor, step + anchor, 1)
+              wf.write_text(w)
+
+      - name: Validate patch
+        run: |
+          node --check pristeel-home-canonical-v1.js
+          node tests/home-human-needed-priority-smoke.js
+          node tests/task-lifecycle-reconcile-smoke.mjs
+
+      - name: Commit patch
+        run: |
+          if git diff --quiet -- pristeel-home-canonical-v1.js .github/workflows/pristeel-tests.yml; then
+            echo "Patch already present"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pristeel-home-canonical-v1.js .github/workflows/pristeel-tests.yml
+          git commit -m "feat: prioritize human-needed Home actions"
+          git push origin HEAD:pppp/task-lifecycle-home-priority-20260825
