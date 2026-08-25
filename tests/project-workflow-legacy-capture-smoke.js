@@ -17,7 +17,7 @@ const {JSDOM}=require('jsdom');
       <div id="page-workspace-project" class="page active" data-pwf-area="overview" style="display:block">
         <div class="pst-pi-head"><div class="pst-pi-actions"><button class="pst-pi-btn">Projektet</button><button class="pst-pi-btn">Pamja e vjetër</button><button class="pst-pi-btn">Rifresko</button><button class="pst-pi-btn">Puno me projektin</button></div></div>
         <div id="legacy-ribbon"><button id="bom" class="flow-step" onclick="flowGoto('bom')">BOM</button><button id="offers" class="flow-step" onclick="flowGoto('offers')">Ofertat</button><button id="ranking" class="flow-step" onclick="flowGoto('ranking')">Krahasimi</button><button id="pricing" class="flow-step" onclick="flowGoto('kalkulator')">Çmimi</button><button id="client" class="flow-step" onclick="flowGoto('oferta')">Oferta jonë</button></div>
-        <div id="pst-pi-body"><div class="pwf-project-context"></div><div class="pf2-grid"><section id="workflow-card" class="pf2-card"><header><b>Workflow</b></header><div>Project-first</div></section></div></div>
+        <div id="pst-pi-body"><section class="pwf-project-context"><div class="pwf-project-main">Project identity</div><div class="pwf-project-kpis"><span>RFQ 2</span><span>Skedarë 18</span></div><button class="pwf-next">Next action</button></section><div class="pf2-grid"><section id="workflow-card" class="pf2-card"><header><b>Workflow</b></header><div>Project-first</div></section></div></div>
         <table><tbody><tr><td><button id="sector-detail" data-pf2-offer-detail="1">Detaje</button></td></tr><tr id="sector-row" class="pf2-detail-row" data-pf2-offer-detail-row="1" hidden><td>Sector Construction breakdown</td></tr></tbody></table>
       </div>
     </div>
@@ -54,6 +54,8 @@ const {JSDOM}=require('jsdom');
   assert(w.document.getElementById('workflow-card').classList.contains('pwf-duplicate-workflow-card'),'Duplicate workflow card must be removed from canonical overview');
   assert.strictEqual(w.document.querySelectorAll('.pwf-header-clean-actions').length,1,'Canonical project header actions must be injected once');
   assert([...w.document.querySelectorAll('.pst-pi-actions>.pst-pi-btn')].every(x=>x.classList.contains('pwf-header-old-action')),'Legacy project header actions must be hidden only inside project header');
+  assert.strictEqual(w.document.querySelector('[data-pwf-clean-action="old"]'),null,'Old view must not be offered in daily Project Workspace chrome');
+  assert.strictEqual(w.document.querySelectorAll('.pwf-header-clean-actions [data-pwf-clean-action]').length,4,'Daily project header must contain only Projects, new project, export and close actions');
 
   ['bom','offers','ranking','pricing','client'].forEach(id=>w.document.getElementById(id).removeAttribute('onclick'));
   w.document.getElementById('offers').click();
@@ -79,9 +81,6 @@ const {JSDOM}=require('jsdom');
   back.click();
   assert(calls.some(x=>x[0]==='workspace'&&x[1]==='projects'),'Project back action must call top-level Projects route');
 
-  // Exact screenshot regression: the global legacy project flow-bar is visible while page-oferta
-  // would otherwise render only its generic attachment bucket. Clicking Oferta jone must return to
-  // the canonical project client-offer stage before inline flowGoto('oferta') can win.
   const projectPage=w.document.getElementById('page-workspace-project');
   projectPage.classList.remove('active');projectPage.style.display='none';
   const legacyOfferPage=w.document.getElementById('page-oferta');
@@ -95,7 +94,11 @@ const {JSDOM}=require('jsdom');
 
   const css=w.document.getElementById('pwf-legacy-capture-css');
   assert(css&&css.textContent.includes('pwf-legacy-ribbon'),'Legacy ribbon cleanup CSS must be installed');
+  assert(css.textContent.includes('.pwf-project-kpis{display:none!important}'),'Passive Project Workspace KPI counters must be hidden from daily work');
+  assert(css.textContent.includes('.pwf-project-context{grid-template-columns:minmax(0,1fr) minmax(280px,420px)!important}'),'Project identity and next action must own the context bar');
   assert(!css.textContent.includes('body:has'),'Cleanup CSS must stay scoped to project workspace');
+  assert.strictEqual(api.proxy('old'),true,'Legacy view fallback must remain technically reachable for compatibility even when removed from daily UI');
+  assert(calls.some(x=>x[0]==='legacy'&&x[1]==='old'),'Legacy fallback must not be deleted');
   dom.window.close();
-  console.log('Project-local chrome + global client-offer routing + inline supplier detail smoke test passed.');
+  console.log('Project-local calm chrome + fallback safety + canonical routing smoke test passed.');
 })().catch(err=>{console.error(err);process.exit(1);});
