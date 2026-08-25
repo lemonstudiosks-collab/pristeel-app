@@ -1,0 +1,28 @@
+name: Automation health async HTTP smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pristeel-automation-health-v1.js'
+      - 'tests/automation-health-smoke.js'
+      - 'supabase/migrations/20260825211500_automation_health_async_http_guard.sql'
+      - '.github/workflows/automation-health-async-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-automation-health-v1.js'
+      - 'tests/automation-health-smoke.js'
+      - 'supabase/migrations/20260825211500_automation_health_async_http_guard.sql'
+      - '.github/workflows/automation-health-async-smoke.yml'
+
+jobs:
+  automation-health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: node --check pristeel-automation-health-v1.js
+      - run: node tests/automation-health-smoke.js
