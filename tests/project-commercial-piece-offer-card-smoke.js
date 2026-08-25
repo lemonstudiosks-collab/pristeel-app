@@ -39,5 +39,28 @@ assert.equal(w.PSTOfferRevisionEmailBridgeV1._test.piecePositions(w.__pstIntegri
 assert.ok(Math.abs(w.PSTOfferRevisionEmailBridgeV1._test.pieceWeight(w.__pstIntegrityLastData.supplierOffers[0].positions[0])-224.306)<0.02);
 assert.ok(Math.abs(w.PSTOfferRevisionEmailBridgeV1._test.pieceNetKg(w.__pstIntegrityLastData.supplierOffers[0].positions[0])-3.0603)<0.001);
 
-console.log('Project Commercial per-piece supplier card weight and EUR/kg smoke test passed.');
+w.__pstIntegrityLastData.ourOffers=[{
+ supplier:'OFERTA JONE - PRISTEEL -> SSP / Fiva Investment',offer_ref:'PRISTEEL / EWAS / 25.08.2026 / DRAFT',currency:'EUR',vat_pct:18,created_at:'2026-08-25T10:50:20Z',positions:[
+  {key:'pole_6m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 6 m siren pole',unit_price_net_eur:823.73,unit_price_gross_eur:972,theoretical_steel_weight_kg:224.31,our_net_eur_per_kg:3.672,our_gross_eur_per_kg:4.333},
+  {key:'pole_9m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 9 m siren pole',unit_price_net_eur:1315.68,unit_price_gross_eur:1552.50,theoretical_steel_weight_kg:385.49,our_net_eur_per_kg:3.413,our_gross_eur_per_kg:4.027},
+  {key:'pole_12m',qty:null,unit:'pc',description:'Supply, hot-dip galvanizing and erection of 12 m siren pole',unit_price_net_eur:2470.34,unit_price_gross_eur:2915,theoretical_steel_weight_kg:760.46,our_net_eur_per_kg:3.248,our_gross_eur_per_kg:3.833},
+  {key:'transport',qty:null,unit:'truck',description:'Transport to site',unit_price_net_eur:250,unit_price_gross_eur:295},
+  {key:'crane',qty:null,unit:'day',description:'Mobile crane',unit_price_net_eur:500,unit_price_gross_eur:590}
+ ]
+}];
+w.PSTProjectCommercialSimplifiedV1.render();
+w.PSTOfferRevisionEmailBridgeV1.decorateClientOfferCard();
+const client=w.document.querySelector('.pst-csf-client');
+assert.ok(client,'structured client offer should render');
+assert.equal(client.getAttribute('data-pst-structured-client-offer'),'1');
+assert.ok(client.querySelector('h3').textContent.includes('PRISTEEL / EWAS'));
+assert.ok(client.querySelector('p').textContent.includes('5 pozicione'));
+const clientText=client.querySelector('[data-csf-detail-panel="client"]').textContent.replace(/\s+/g,' ');
+assert.ok(clientText.includes('224,31 kg')&&clientText.includes('823,73 EUR/pc net')&&clientText.includes('3,672 EUR/kg net'));
+assert.ok(clientText.includes('385,49 kg')&&clientText.includes('1.315,68 EUR/pc net'));
+assert.ok(clientText.includes('760,46 kg')&&clientText.includes('2.470,34 EUR/pc net'));
+const editorRows=w.PSTOfferRevisionEmailBridgeV1._test.structuredEditorRows(w.__pstIntegrityLastData.ourOffers[0]);
+assert.equal(editorRows.length,5);assert.equal(editorRows[0].price,823.73);assert.equal(editorRows[0].qty,'');
+
+console.log('Project Commercial per-piece supplier and structured client offer smoke test passed.');
 dom.window.close();
