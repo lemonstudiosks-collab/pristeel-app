@@ -1,7 +1,9 @@
-/* PRISTEEL canonical project workflow legacy capture v3
+/* PRISTEEL canonical project workflow legacy capture v4
  * Compatibility bridge + project-local chrome cleanup for the canonical workspace.
- * IMPORTANT: this module is forbidden from hiding or mutating ancestors outside
- * #page-workspace-project. UI-only: no business-data writes or polling.
+ * IMPORTANT: cleanup is forbidden from hiding or mutating ancestors outside
+ * #page-workspace-project. The only global interception is the legacy flow-bar
+ * "Oferta jone" navigation, which is routed back into the canonical client-offer stage.
+ * UI-only: no business-data writes or polling.
  */
 (function(){
 'use strict';
@@ -18,6 +20,7 @@ function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\
 function workspace(){return document.getElementById('page-workspace-project');}
 function workspaceActive(){var p=workspace();return !!(p&&p.classList.contains('active'));}
 function insideWorkspace(el){var p=workspace();return !!(p&&el&&p.contains(el));}
+function insideGlobalFlowBar(el){var bar=document.getElementById('flow-bar');return !!(bar&&el&&bar.contains(el));}
 function flowTarget(el){
   if(!el)return'';
   var oc=String(el.getAttribute('onclick')||'');
@@ -47,6 +50,7 @@ function destination(target){
   if(target==='project'||target==='projects'||target==='overview')return['overview',''];
   return null;
 }
+function globalClientOfferStep(el,target){return !!(el&&insideGlobalFlowBar(el)&&(target||flowTarget(el))==='oferta');}
 function openCanonical(dest){
   var c=C(),id=projectId();
   if(!c||!dest||!id)return false;
@@ -171,9 +175,10 @@ function capture(e){
   }
 
   var el=e.target.closest('.flow-step');
-  if(el&&insideWorkspace(el)){
+  if(el){
     var target=flowTarget(el),dest=destination(target);
-    if(dest&&projectId()&&C()){
+    var allowed=insideWorkspace(el)||globalClientOfferStep(el,target);
+    if(allowed&&dest&&projectId()&&C()){
       e.preventDefault();
       e.stopImmediatePropagation();
       openCanonical(dest);
@@ -220,6 +225,6 @@ if(!install()){
 window.PSTProjectWorkflowLegacyCaptureV1={
   install:install,clean:clean,flowTarget:flowTarget,destination:destination,openCanonical:openCanonical,
   supplierDetail:supplierDetail,proxy:proxy,
-  _test:{actionKey:actionKey,workspaceActive:workspaceActive,insideWorkspace:insideWorkspace}
+  _test:{actionKey:actionKey,workspaceActive:workspaceActive,insideWorkspace:insideWorkspace,insideGlobalFlowBar:insideGlobalFlowBar,globalClientOfferStep:globalClientOfferStep}
 };
 })();
