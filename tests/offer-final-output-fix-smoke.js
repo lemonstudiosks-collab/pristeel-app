@@ -3,6 +3,7 @@ const assert=require('assert');
 const {JSDOM}=require('jsdom');
 
 const code=fs.readFileSync('pristeel-offer-final-output-fix-v1.js','utf8');
+const resaveCode=fs.readFileSync('pristeel-offer-resave-fix-v1.js','utf8');
 const dom=new JSDOM(`<!doctype html><html><body>
 <div id="page-oferta">
   <select id="of-lang"><option value="sr" selected>Srpski</option><option value="de">Deutsch</option><option value="en">English</option><option value="sq">Shqip</option></select>
@@ -148,6 +149,16 @@ d.getElementById('of-lang').value='en';
 assert.strictEqual(w.payPlanText([{pct:100,ev:'agreement',days:0}]),'As agreed');
 d.getElementById('of-lang').value='sq';
 assert.strictEqual(w.payPlanText([{pct:100,ev:'agreement',days:0}]),'Sipas marrëveshjes');
+
+// Structured project offers must cross the full legacy persistence bridge safely.
+assert(resaveCode.includes('PST-OFF-(\\d{4})-(\\d{2})-(\\d{1,4})'),'modern monthly PST-OFF numbers must be recognized');
+assert(resaveCode.includes("payload.series='QUO';payload.year=parsed.year;payload.seq=parsed.seq;payload.doc_nr=parsed.nr"),'modern numbers must create a canonical QUO when the legacy registrar no-ops');
+assert(resaveCode.includes('structured_source_offer_id'),'saved QUO must keep traceability to its structured source draft');
+assert(resaveCode.includes('_pstQtyPending:pending'),'unknown structured quantities must stay explicitly pending');
+assert(resaveCode.includes("cells[2].textContent='—';cells[5].textContent='—'"),'client preview must not render pending quantity rows as zero totals');
+assert(resaveCode.includes('structuredHasPendingRows()?null:totalEur'),'a unit-price quote with pending quantities must not persist a false zero total');
+assert(resaveCode.includes('data-pst-document-state-marker'),'saved state must be visible to the PDF/Gmail gate without entering the client PDF');
+assert(!resaveCode.includes('if(nr)nr.value=ref'),'structured DRAFT reference must never be copied into the canonical offer-number field');
 
 dom.window.close();
 console.log('Final offer output and agreement payment default smoke test passed.');
