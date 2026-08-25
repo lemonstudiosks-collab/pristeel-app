@@ -149,6 +149,7 @@ function cleanStructuredOfferChrome(){
     if(!row||!row.querySelector)continue;
     var isToolbar=row.querySelector('[onclick*="ofBackToEdit"],[onclick*="copyOferte"],[onclick*="downloadPDF"],[onclick*="saveCurrentOffer"]');
     if(!isToolbar)continue;
+    if(row.getAttribute('data-pst-structured-preview-toolbar-hidden')==='1'&&row.style.display==='none')return true;
     row.style.setProperty('display','none','important');
     row.setAttribute('data-pst-structured-preview-toolbar-hidden','1');
     return true;
