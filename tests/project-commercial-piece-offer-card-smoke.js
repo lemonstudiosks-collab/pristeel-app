@@ -6,8 +6,14 @@ const bridge=fs.readFileSync('pristeel-offer-revision-email-bridge-v1.js','utf8'
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <div id="page-workspace-project" class="pf2-on"><div class="pst-pi-tabs"><button class="on" data-pf2-tab="commercial">Komercialja</button></div><div id="pst-pi-body"></div></div>
+<div id="page-oferta"></div><input id="of-nr" />
 </body></html>`,{runScripts:'outside-only',url:'https://example.test'});
 const w=dom.window;
+let editorOpened=0,rowsRendered=0,offerGenerated=0;
+w.__pstWorkspaceLegacy={showPage:(name)=>{if(name==='oferta')editorOpened++;}};
+w.oferPos=[];
+w.renderOferPos=()=>{rowsRendered++;};
+w.genOfer=()=>{offerGenerated++;};
 w.__pstIntegrityLastData={supplierOffers:[{
  supplier:'Sector Construction',currency:'EUR',pricing_unit:'pc',vat_pct:18,total_eur:null,
  inclusions:'Steel material; fabrication; hot-dip galvanizing; pole erection/installation',
@@ -48,6 +54,8 @@ w.__pstIntegrityLastData.ourOffers=[{
   {key:'crane',qty:null,unit:'day',description:'Mobile crane',unit_price_net_eur:500,unit_price_gross_eur:590}
  ]
 }];
+// Simulate a stale pointer that must not hide the real structured draft.
+w.__pstIntegrityLastData.currentOurOffer={offer_ref:'STALE EMPTY POINTER',created_at:'2026-08-25T11:00:00Z'};
 w.PSTProjectCommercialSimplifiedV1.render();
 w.PSTOfferRevisionEmailBridgeV1.decorateClientOfferCard();
 const client=w.document.querySelector('.pst-csf-client');
@@ -62,5 +70,22 @@ assert.ok(clientText.includes('760,46 kg')&&clientText.includes('2.470,34 EUR/pc
 const editorRows=w.PSTOfferRevisionEmailBridgeV1._test.structuredEditorRows(w.__pstIntegrityLastData.ourOffers[0]);
 assert.equal(editorRows.length,5);assert.equal(editorRows[0].price,823.73);assert.equal(editorRows[0].qty,'');
 
-console.log('Project Commercial per-piece supplier and structured client offer smoke test passed.');
+// Critical regression: simplified Commercial registers its capture listener before the bridge.
+// Structured buttons must be re-marked so the old handler does not swallow the click.
+const editButton=w.document.querySelector('.pst-csf-next [data-pst-structured-edit="1"]');
+assert.ok(editButton,'top Continue editing button should be owned by structured edit bridge');
+assert.equal(editButton.hasAttribute('data-csf-action'),false,'legacy edit action must be removed for structured drafts');
+const realSetTimeout=w.setTimeout;
+w.setTimeout=(fn)=>{fn();return 1;};
+editButton.dispatchEvent(new w.MouseEvent('click',{bubbles:true,cancelable:true}));
+w.setTimeout=realSetTimeout;
+assert.equal(editorOpened,1,'click must navigate to offer editor exactly once');
+assert.equal(w.oferPos.length,5,'structured offer rows must be loaded into editor');
+assert.equal(w.oferPos[0].price,823.73);
+assert.equal(w.oferPos[0].qty,'');
+assert.equal(w.document.getElementById('of-nr').value,'PRISTEEL / EWAS / 25.08.2026 / DRAFT');
+assert.ok(rowsRendered>0,'editor rows must render');
+assert.ok(offerGenerated>0,'offer preview must regenerate');
+
+console.log('Project Commercial per-piece supplier, structured client offer and real edit-click smoke test passed.');
 dom.window.close();
