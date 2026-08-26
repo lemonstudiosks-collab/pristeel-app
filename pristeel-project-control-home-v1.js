@@ -1,7 +1,7 @@
-/* PRISTEEL Live Home v3.1
- * Daily Home shows current user actions and recent linked project movement.
- * The mount is fail-open: legacy Home content is never hidden by this module
- * before the live root has mounted successfully.
+/* PRISTEEL Live Home v4
+ * Home is an operator surface, not a task/event dump.
+ * It shows only explicit verified actions plus one current confirmed state per project.
+ * Raw Gmail, supplier, document and system queues remain evidence backstage.
  */
 (function(){
 'use strict';
@@ -10,9 +10,10 @@ if(window.__pstProjectControlHomeV2){
   return;
 }
 window.__pstProjectControlHomeV2=true;
-window.__pstLiveHomeV3=true;
+window.__pstLiveHomeV3=true; // compatibility marker used by the retired Home renderer
+window.__pstLiveHomeV4=true;
 
-var state={busy:false,loading:false,projects:[],actions:[],emails:[],facts:[],activities:[],last:null,loadedAt:0};
+var state={busy:false,loading:false,projects:[],actions:[],facts:[],updates:[],last:null,loadedAt:0};
 function S(v){return String(v==null?'':v);}
 function A(v){return Array.isArray(v)?v:[];}
 function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
@@ -50,7 +51,7 @@ function priorityScore(a){
   var p=N(a.priority),s=10;
   if(/urgjent|critical/.test(p))s=40;else if(/e larte|larte|high/.test(p))s=30;else if(/mesatare|medium/.test(p))s=20;
   var d=ts(a.due_date?String(a.due_date)+'T12:00:00':'');if(d&&d<Date.now()+86400000)s+=8;
-  var source=N(a.source);if(source==='semantic brain auto')s+=7;if(source==='email request auto')s+=6;if(source==='manual')s+=5;
+  var source=N(a.source);if(source==='email request auto')s+=7;if(source==='manual')s+=6;
   return s;
 }
 function groupedActions(){
@@ -59,30 +60,38 @@ function groupedActions(){
   Object.keys(by).forEach(function(id){
     var rows=by[id].sort(function(a,b){return priorityScore(b)-priorityScore(a)||ts(b.created_at)-ts(a.created_at);});
     var top=rows[0],p=state.projects.find(function(x){return S(x.id)===id;});
-    out.push({project:p||{id:id,name:top.project_name,client:top.client},top:top,count:rows.length,score:priorityScore(top),time:Math.max(ts(top.created_at),ts(p&&p.last_email_at),ts(p&&p.last_activity_at))});
+    out.push({project:p||{id:id,name:top.project_name,client:top.client},top:top,count:rows.length,score:priorityScore(top),time:ts(top.created_at)});
   });
   return out.sort(function(a,b){return b.score-a.score||b.time-a.time;}).slice(0,8);
 }
-function factText(f){var v=f&&f.value;if(v&&typeof v==='object')return S(v.summary||v.text||v.next_action||'');return S(v);}
-function buildActivities(){
-  var pmap=projectMap(),rows=[];
-  state.emails.forEach(function(r){
-    var p=pmap[S(r.project_id)];if(!p||!r.sent_at)return;
-    rows.push({type:'email',project_id:p.id,project:p.name,time:ts(r.sent_at),title:r.subject||'(pa subjekt)',detail:clamp(r.snippet,190),direction:N(r.direction)==='outgoing'?'outgoing':'incoming'});
-  });
-  state.facts.forEach(function(f){
-    var p=pmap[S(f.project_id)],txt=factText(f);if(!p||!txt)return;
-    var cat=N(f.category);if(cat!=='operator update'&&cat!=='email event ai'&&cat!=='execution')return;
-    rows.push({type:'context',project_id:p.id,project:p.name,time:ts(f.updated_at||f.created_at),title:cat==='email event ai'?'PPPP e analizoi lëvizjen':'Update i konfirmuar',detail:clamp(txt,190),direction:'context'});
-  });
-  rows.sort(function(a,b){return b.time-a.time;});
-  var seen={},out=[];
-  rows.forEach(function(x){var k=[x.type,x.project_id,N(x.title),x.direction].join('|');if(seen[k]&&Math.abs(seen[k]-x.time)<120000)return;seen[k]=x.time;out.push(x);});
-  state.activities=out.slice(0,18);
+function factText(f){
+  var v=f&&f.value;
+  if(v&&typeof v==='object')return S(v.summary||v.text||v.current_state||v.next_action||'');
+  return S(v);
 }
-function latestSync(){var vals=[state.loadedAt].concat(state.activities.map(function(a){return a.time;})),t=Math.max.apply(null,vals);return t?shortDate(t):'';}
-function activityIcon(a){if(a.type==='context')return'✓';return a.direction==='outgoing'?'↗':'↙';}
-function activityLabel(a){if(a.type==='context')return'PPPP update';return a.direction==='outgoing'?'Email dërguar':'Email pranuar';}
+function updateStateLabel(txt){
+  var n=N(txt);
+  if(/nuk ka.{0,80}(veprim|ndjek)|pa veprim|no action|nothing.{0,50}follow/.test(n))return'Pa veprim';
+  if(/ne pritje|pret |presim|waiting|afatin|deri me|deri më/.test(n))return'Në pritje';
+  if(/aprov|approved|green light|driten e gjelber|dritën e gjelbër/.test(n))return'Konfirmuar';
+  return'Aktiv';
+}
+function buildProjectUpdates(){
+  var pmap=projectMap(),latest={};
+  A(state.facts).forEach(function(f){
+    if(N(f.category)!=='operator update')return;
+    if(N(f.evidence_status)!=='confirmed'||N(f.fact_status)!=='observed')return;
+    var p=pmap[S(f.project_id)],txt=factText(f),time=ts(f.updated_at||f.created_at);
+    if(!p||!txt||!time)return;
+    var row={project_id:p.id,project:p.name,client:p.client||'',time:time,detail:clamp(txt,420),state:updateStateLabel(txt)};
+    if(!latest[p.id]||time>latest[p.id].time)latest[p.id]=row;
+  });
+  state.updates=Object.keys(latest).map(function(k){return latest[k];}).sort(function(a,b){return b.time-a.time;}).slice(0,10);
+}
+function latestSync(){
+  var vals=[state.loadedAt].concat(state.updates.map(function(a){return a.time;})),t=Math.max.apply(null,vals);
+  return t?shortDate(t):'';
+}
 function renderResult(root){
   var r=root.querySelector('.pst-live-result');if(!r)return;
   if(!state.last){r.hidden=true;r.innerHTML='';return;}r.hidden=false;
@@ -95,18 +104,26 @@ function renderResult(root){
 }
 function render(){
   var page=activeHome();if(!page)return false;
-  var root=ensureRoot(page),actions=groupedActions(),feed=state.activities.slice(0,13);
+  var root=ensureRoot(page),actions=groupedActions(),updates=state.updates;
   if(!root)return false;
   root.querySelector('.pst-live-sync').textContent=state.loading?'Po sinkronizohet…':(latestSync()?'Sinkronizuar '+latestSync():'');
-  root.querySelector('.pst-live-action-count').textContent=actions.length?actions.length+' projekte':'';
+  root.querySelector('.pst-live-action-count').textContent=actions.length?actions.length+' projekt'+(actions.length===1?'':'e'):'';
   root.querySelector('.pst-live-actions').innerHTML=actions.length?actions.map(function(x){
     var a=x.top,p=x.project,d=dueLabel(a.due_date);
-    return '<article class="pst-live-action" role="button" tabindex="0" data-live-project="'+E(p.id)+'"><div class="pst-live-action-dot"></div><div class="pst-live-action-main"><div class="pst-live-action-top"><span>'+E(p.name||a.project_name||'Projekt')+'</span>'+(d?'<time>'+E(d)+'</time>':'')+'</div><h3>'+E(clamp(a.title,150))+'</h3>'+(a.detail?'<p>'+E(clamp(a.detail,230))+'</p>':'')+'<div class="pst-live-action-foot"><span>'+E(p.client||'')+'</span>'+(x.count>1?'<small>+'+(x.count-1)+' veprime të tjera në projekt</small>':'')+'</div></div><div class="pst-live-arrow">→</div></article>';
-  }).join(''):'<div class="pst-live-clear"><div>✓</div><b>Nuk ka veprime të konfirmuara për momentin.</b><span>PPPP nuk krijon urgjencë vetëm për ta mbushur Home-in.</span></div>';
-  root.querySelector('.pst-live-feed').innerHTML=feed.length?feed.map(function(a){
-    return '<article class="pst-live-feed-row" role="button" tabindex="0" data-live-project="'+E(a.project_id)+'"><div class="pst-live-feed-icon '+E(a.direction)+'">'+activityIcon(a)+'</div><div class="pst-live-feed-copy"><div><b>'+E(a.project)+'</b><time>'+E(shortDate(a.time))+'</time></div><span>'+E(activityLabel(a))+' · '+E(clamp(a.title,92))+'</span>'+(a.detail?'<p>'+E(clamp(a.detail,145))+'</p>':'')+'</div></article>';
-  }).join(''):'<div class="pst-live-empty">Ende pa lëvizje të lidhura.</div>';
-  var btn=root.querySelector('.pst-live-send'),input=root.querySelector('.pst-live-input');if(btn){btn.disabled=state.busy;btn.textContent=state.busy?'…':'↑';}if(input)input.disabled=state.busy;
+    return '<article class="pst-live-action" role="button" tabindex="0" data-live-project="'+E(p.id)+'">'
+      +'<div class="pst-live-action-main"><div class="pst-live-action-top"><span>'+E(p.name||a.project_name||'Projekt')+'</span>'+(d?'<time>'+E(d)+'</time>':'')+'</div>'
+      +'<h3>'+E(clamp(a.title,170))+'</h3>'
+      +(a.detail?'<p>'+E(clamp(a.detail,340))+'</p>':'')
+      +'<div class="pst-live-action-foot"><span>'+E(p.client||'')+'</span>'+(x.count>1?'<small>+'+(x.count-1)+' veprime të tjera të konfirmuara</small>':'')+'</div></div><div class="pst-live-arrow">→</div></article>';
+  }).join(''):'<div class="pst-live-clear"><div>✓</div><b>Nuk ka asgjë të konfirmuar që kërkon veprimin tënd tani.</b><span>Kjo është normale. Home nuk shfaq review queues, certifikata, follow-up automatik ose draft-e vetëm sepse ekzistojnë në sistem.</span></div>';
+  root.querySelector('.pst-live-updates').innerHTML=updates.length?updates.map(function(a){
+    return '<article class="pst-live-update" role="button" tabindex="0" data-live-project="'+E(a.project_id)+'">'
+      +'<div class="pst-live-update-top"><div><span>'+E(a.client||'PROJEKT')+'</span><h3>'+E(a.project)+'</h3></div><div class="pst-live-update-meta"><b>'+E(a.state)+'</b><time>'+E(shortDate(a.time))+'</time></div></div>'
+      +'<p>'+E(a.detail)+'</p><div class="pst-live-update-open">Hap projektin →</div></article>';
+  }).join(''):'<div class="pst-live-empty">Nuk ka update të konfirmuara të projekteve për këtë periudhë.</div>';
+  var btn=root.querySelector('.pst-live-send'),input=root.querySelector('.pst-live-input');
+  if(btn){btn.disabled=state.busy;btn.textContent=state.busy?'…':'↑';}
+  if(input)input.disabled=state.busy;
   renderResult(root);return true;
 }
 function ensureRoot(page){
@@ -116,10 +133,10 @@ function ensureRoot(page){
   var old=document.getElementById('pst-project-control-home-v1');if(old)old.remove();
   root=document.createElement('section');root.id='pst-project-control-home-v2';
   root.innerHTML=''
-    +'<header class="pst-live-head"><div><span class="pst-live-kicker"><i></i> PPPP LIVE</span><h1>Çfarë kërkon vëmendjen tënde tani</h1><p>Home reflekton lëvizjet aktuale të projekteve. Projektet e plota mbeten te Projects.</p></div><small class="pst-live-sync"></small></header>'
+    +'<header class="pst-live-head"><div><span class="pst-live-kicker"><i></i> PPPP LIVE</span><h1>Çfarë duhet të dish tani</h1><p>Home tregon vetëm veprimet e konfirmuara dhe gjendjen më të fundit të projekteve. Gjithçka tjetër mbetet backstage.</p></div><small class="pst-live-sync"></small></header>'
     +'<form class="pst-live-command"><div class="pst-live-command-mark">P</div><textarea rows="1" class="pst-live-input" placeholder="Pyet PPPP, ose jep një update për një projekt"></textarea><button class="pst-live-send" type="submit" aria-label="Dërgo">↑</button></form><div class="pst-live-result" hidden></div>'
-    +'<div class="pst-live-grid"><section class="pst-live-panel pst-live-needs"><header><div><span>KËRKON VEPRIMIN TËND</span><h2>Vetëm ajo që është aktuale</h2></div><small class="pst-live-action-count"></small></header><div class="pst-live-actions"></div></section>'
-    +'<aside class="pst-live-panel pst-live-moves"><header><div><span>LËVIZJET E FUNDIT</span><h2>Çfarë ka ndryshuar</h2></div><i></i></header><div class="pst-live-feed"></div></aside></div>';
+    +'<section class="pst-live-panel pst-live-needs"><header><div><span>PËR TY TANI</span><h2>Veprime të konfirmuara</h2><p>Vetëm kur PPPP ka evidencë të qartë se duhet të bësh diçka.</p></div><small class="pst-live-action-count"></small></header><div class="pst-live-actions"></div></section>'
+    +'<section class="pst-live-panel pst-live-status"><header><div><span>GJENDJA E FUNDIT</span><h2>Projektet që kanë ndryshuar</h2><p>Një përmbledhje aktuale për projekt, jo listë emailash.</p></div></header><div class="pst-live-updates"></div></section>';
   page.appendChild(root);bind(root);return root;
 }
 function isQuestion(q){return /\?|^(cka|çka|cfare|çfarë|kush|ku|kur|pse|si|a ka|a kemi|me trego|trego|cil|what|which|who|where|when|why|how)\b/i.test(S(q).trim());}
@@ -160,35 +177,47 @@ async function load(force){
   if(!activeHome())return false;if(state.loading)return false;if(!force&&state.loadedAt&&Date.now()-state.loadedAt<15000){render();return true;}
   state.loading=true;render();
   try{
-    var now=new Date(),since=new Date(now.getTime()-14*86400000),lte=new Date(now.getTime()+10*60000);
+    var since=new Date(Date.now()-30*86400000);
     var out=await Promise.all([
       db('projects?select=id,name,client,status,pipeline_stage,operational_state,last_activity_at,last_email_at,updated_at,business_ref,ref,identity_aliases&order=last_activity_at.desc.nullslast&limit=500'),
-      db('pppp_home_current_actions_v1?select=id,project_id,project_name,client,title,detail,due_date,priority,status,source,source_ref,category,created_at,operational_state,operational_state_at,pipeline_stage,last_activity_at,last_email_at&order=created_at.desc&limit=250').catch(function(){return[];}),
-      db('project_emails?project_id=not.is.null&select=id,project_id,gmail_message_id,subject,snippet,sent_at,direction,from_email,to_emails&sent_at=gte.'+encodeURIComponent(iso(since))+'&sent_at=lte.'+encodeURIComponent(iso(lte))+'&order=sent_at.desc&limit=500'),
-      db('pppp_project_context_current_v?select=id,project_id,category,subject,fact_key,value,source_type,evidence_status,fact_status,created_at,updated_at&fact_status=eq.observed&order=updated_at.desc&limit=400').catch(function(){return[];})
+      db('pppp_home_current_actions_v1?select=id,project_id,project_name,client,title,detail,due_date,priority,status,source,source_ref,category,created_at,operational_state,operational_state_at,pipeline_stage,last_activity_at,last_email_at&order=created_at.desc&limit=100').catch(function(){return[];}),
+      db('pppp_project_context_current_v?select=id,project_id,category,subject,fact_key,value,source_type,evidence_status,fact_status,created_at,updated_at&category=eq.operator_update&evidence_status=eq.confirmed&fact_status=eq.observed&updated_at=gte.'+encodeURIComponent(iso(since))+'&order=updated_at.desc&limit=300').catch(function(){return[];})
     ]);
-    state.projects=A(out[0]);state.actions=A(out[1]);state.emails=A(out[2]);state.facts=A(out[3]);buildActivities();state.loadedAt=Date.now();return true;
+    state.projects=A(out[0]);state.actions=A(out[1]);state.facts=A(out[2]);buildProjectUpdates();state.loadedAt=Date.now();return true;
   }catch(e){console.warn('PPPP Live Home:',e);state.last={kind:'error',text:'Home nuk arriti të lexojë gjendjen live: '+S(e&&e.message||e)};return false;}
   finally{state.loading=false;render();}
 }
 function css(){
-  var old=document.getElementById('pst-project-control-home-v1-css');if(old)old.remove();var old2=document.getElementById('pst-project-control-home-v2-css');if(old2)old2.remove();if(document.getElementById('pst-live-home-v3-css'))return;
-  var s=document.createElement('style');s.id='pst-live-home-v3-css';s.textContent=`
+  ['pst-project-control-home-v1-css','pst-project-control-home-v2-css','pst-live-home-v3-css','pst-live-home-v4-css'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
+  var s=document.createElement('style');s.id='pst-live-home-v4-css';s.textContent=`
 #page-workspace-home{background:#f5f8f9!important;min-height:100vh!important}
-#pst-project-control-home-v2{display:block!important;max-width:1220px;margin:0 auto;padding:42px 26px 64px;color:#20333b;font-family:Inter,system-ui,-apple-system,sans-serif}
-.pst-live-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;padding:0 2px 22px;border-bottom:1px solid #dfe8ea}.pst-live-kicker{display:inline-flex;align-items:center;gap:8px;font-size:9px;font-weight:850;letter-spacing:1.5px;color:#66808a}.pst-live-kicker i,.pst-live-moves>header i{width:7px;height:7px;border-radius:50%;background:#54b77c;box-shadow:0 0 0 4px rgba(84,183,124,.11)}.pst-live-head h1{margin:7px 0 5px;font-size:29px;line-height:1.12;letter-spacing:-.9px;color:#20343c}.pst-live-head p{font-size:11.5px;color:#738890;line-height:1.5}.pst-live-sync{font-size:9px;color:#87999f;white-space:nowrap}
-.pst-live-command{display:flex;align-items:center;gap:10px;margin:20px 0 18px;background:#fff;border:1px solid #dce7ea;border-radius:15px;padding:7px 8px 7px 10px;box-shadow:0 5px 18px rgba(35,67,77,.05)}.pst-live-command-mark{width:35px;height:35px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#e7f2f5;color:#377286;font-weight:850}.pst-live-input{flex:1;min-height:39px;max-height:110px;resize:vertical;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#243942!important;padding:9px 4px!important;font-size:12.5px!important}.pst-live-input::placeholder{color:#91a2a8}.pst-live-send{width:39px;height:39px;border:0;border-radius:11px;background:#3c8298;color:#fff;font-size:18px;cursor:pointer}.pst-live-send:disabled{opacity:.5}
-.pst-live-result{margin:-7px 0 18px;padding:13px 15px;border-radius:13px;background:#eef5f7;border:1px solid #d9e8ec}.pst-live-answer{font-size:11.5px;line-height:1.6;color:#314b55}.pst-live-suggest{display:flex;gap:9px;margin-top:8px;font-size:10px}.pst-live-suggest b{color:#39778a}.pst-live-msg{display:flex;gap:10px;font-size:10.5px}.pst-live-msg.ok b{color:#387256}.pst-live-msg.err{color:#9c4b3c}.pst-live-open-answer{margin-top:8px;border:0;background:transparent;color:#39798c;font-size:10px;font-weight:800;padding:0;cursor:pointer}
-.pst-live-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(330px,.8fr);gap:18px;align-items:start}.pst-live-panel{background:#fff;border:1px solid #dce6e9;border-radius:18px;box-shadow:0 5px 18px rgba(32,62,72,.045);overflow:hidden}.pst-live-panel>header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 15px;border-bottom:1px solid #e7eef0}.pst-live-panel header span{font-size:8px;letter-spacing:1.25px;font-weight:850;color:#82949a}.pst-live-panel h2{margin-top:2px;font-size:16px;letter-spacing:-.3px;color:#2a4048}.pst-live-panel header small{font-size:9px;color:#66808a}
-.pst-live-actions{padding:8px}.pst-live-action{display:grid;grid-template-columns:10px minmax(0,1fr) 24px;gap:11px;padding:14px 13px;margin:5px 0;border:1px solid #e4ebed;border-radius:13px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s,transform .14s}.pst-live-action:hover{border-color:#cadadd;box-shadow:0 6px 16px rgba(36,67,77,.06);transform:translateY(-1px)}.pst-live-action-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;background:#4a91a6}.pst-live-action-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.pst-live-action-top span{font-size:9px;font-weight:800;color:#60808b}.pst-live-action-top time{font-size:8.5px;color:#8a9a9f;white-space:nowrap}.pst-live-action h3{margin:3px 0 0;font-size:13px;line-height:1.35;color:#263c45}.pst-live-action p{margin-top:5px;font-size:9.5px;line-height:1.45;color:#73858c}.pst-live-action-foot{display:flex;justify-content:space-between;gap:12px;margin-top:7px;padding-top:7px;border-top:1px dashed #e5ebed;font-size:8.5px;color:#92a0a5}.pst-live-action-foot small{font-size:8.5px;color:#758b94}.pst-live-arrow{font-size:17px;color:#70a0af;padding-top:14px}
-.pst-live-clear{padding:40px 24px;text-align:center;color:#72868d}.pst-live-clear div{margin:0 auto 8px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e9f5ee;color:#4e8a67}.pst-live-clear b{display:block;font-size:11px;color:#526a73}.pst-live-clear span{display:block;margin-top:5px;font-size:9.5px}.pst-live-moves{position:sticky;top:18px}.pst-live-feed{padding:7px 9px 10px;background:#fafcfc}.pst-live-feed-row{display:grid;grid-template-columns:29px minmax(0,1fr);gap:10px;padding:10px;margin:5px 0;border:1px solid #e5ebed;border-radius:11px;background:#fff;cursor:pointer}.pst-live-feed-row:hover{border-color:#d0dde0}.pst-live-feed-icon{width:27px;height:27px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#eef5f7;color:#47798a;font-size:11px;font-weight:800}.pst-live-feed-icon.outgoing{background:#eef3f8;color:#55758d}.pst-live-feed-icon.context{background:#edf7f1;color:#4b7b60}.pst-live-feed-copy>div{display:flex;justify-content:space-between;gap:8px}.pst-live-feed-copy b{font-size:9.5px;color:#324a54;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pst-live-feed-copy time{font-size:8px;color:#9aa9ae;white-space:nowrap}.pst-live-feed-copy>span{display:block;margin-top:2px;font-size:9px;color:#667c85;line-height:1.35}.pst-live-feed-copy p{margin-top:4px;font-size:8.5px;color:#93a1a6;line-height:1.35}.pst-live-empty{padding:30px 18px;text-align:center;font-size:9.5px;color:#87999f}
-.pst-live-action:focus-visible,.pst-live-feed-row:focus-visible,.pst-live-send:focus-visible{outline:3px solid rgba(74,145,166,.25);outline-offset:2px}@media(max-width:1000px){.pst-live-grid{grid-template-columns:1fr}.pst-live-moves{position:static}}@media(max-width:720px){#pst-project-control-home-v2{padding:24px 10px 44px}.pst-live-head{display:block}.pst-live-sync{display:block;margin-top:8px}.pst-live-head h1{font-size:24px}.pst-live-action{grid-template-columns:8px minmax(0,1fr) 18px}.pst-live-action-top{display:block}.pst-live-action-top time{display:block;margin-top:3px}.pst-live-action-foot{display:block}.pst-live-action-foot small{display:block;margin-top:3px}}
+#pst-project-control-home-v2{display:block!important;max-width:1180px;margin:0 auto;padding:40px 28px 70px;color:#20333b;font-family:Inter,system-ui,-apple-system,sans-serif}
+.pst-live-head{display:flex;justify-content:space-between;gap:28px;align-items:flex-end;padding:0 2px 24px;border-bottom:1px solid #dfe8ea}
+.pst-live-kicker{display:inline-flex;align-items:center;gap:9px;font-size:11px;font-weight:850;letter-spacing:1.3px;color:#617d87}
+.pst-live-kicker i{width:8px;height:8px;border-radius:50%;background:#54b77c;box-shadow:0 0 0 4px rgba(84,183,124,.11)}
+.pst-live-head h1{margin:8px 0 7px;font-size:32px;line-height:1.1;letter-spacing:-.9px;color:#20343c}
+.pst-live-head p{max-width:760px;font-size:14px;color:#6f858d;line-height:1.55}
+.pst-live-sync{font-size:12px;color:#87999f;white-space:nowrap}
+.pst-live-command{display:flex;align-items:center;gap:12px;margin:22px 0;background:#fff;border:1px solid #dce7ea;border-radius:16px;padding:9px 10px 9px 12px;box-shadow:0 5px 18px rgba(35,67,77,.05)}
+.pst-live-command-mark{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#e7f2f5;color:#377286;font-weight:850}
+.pst-live-input{flex:1;min-height:42px;max-height:120px;resize:vertical;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#243942!important;padding:10px 4px!important;font-size:15px!important;line-height:1.45!important}
+.pst-live-input::placeholder{color:#8ea0a6}.pst-live-send{width:42px;height:42px;border:0;border-radius:11px;background:#3c8298;color:#fff;font-size:19px;cursor:pointer}.pst-live-send:disabled{opacity:.5}
+.pst-live-result{margin:-8px 0 22px;padding:16px 18px;border-radius:14px;background:#eef5f7;border:1px solid #d9e8ec}.pst-live-answer{font-size:14px;line-height:1.65;color:#314b55}.pst-live-suggest{display:flex;gap:10px;margin-top:10px;font-size:13px}.pst-live-suggest b{color:#39778a}.pst-live-msg{display:flex;gap:10px;font-size:14px}.pst-live-msg.ok b{color:#387256}.pst-live-msg.err{color:#9c4b3c}.pst-live-open-answer{margin-top:10px;border:0;background:transparent;color:#39798c;font-size:13px;font-weight:800;padding:0;cursor:pointer}
+.pst-live-panel{background:#fff;border:1px solid #dce6e9;border-radius:18px;box-shadow:0 5px 18px rgba(32,62,72,.045);overflow:hidden;margin-top:18px}
+.pst-live-panel>header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:22px 24px 18px;border-bottom:1px solid #e7eef0}
+.pst-live-panel header span{font-size:11px;letter-spacing:1.15px;font-weight:850;color:#789098}.pst-live-panel h2{margin:4px 0 3px;font-size:21px;letter-spacing:-.35px;color:#2a4048}.pst-live-panel header p{font-size:13px;color:#7b8f96;line-height:1.45}.pst-live-panel header small{font-size:12px;color:#66808a;padding-top:5px}
+.pst-live-actions{padding:10px}.pst-live-action{display:grid;grid-template-columns:minmax(0,1fr) 28px;gap:16px;padding:19px 18px;margin:7px 0;border:1px solid #e2eaec;border-radius:14px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s,transform .14s}
+.pst-live-action:hover{border-color:#c8dade;box-shadow:0 7px 18px rgba(36,67,77,.06);transform:translateY(-1px)}.pst-live-action-top{display:flex;justify-content:space-between;gap:16px;align-items:center}.pst-live-action-top span{font-size:12px;font-weight:800;color:#557987}.pst-live-action-top time{font-size:12px;color:#84989f;white-space:nowrap}.pst-live-action h3{margin:5px 0 0;font-size:17px;line-height:1.35;color:#263c45}.pst-live-action p{margin-top:8px;font-size:14px;line-height:1.52;color:#657b84}.pst-live-action-foot{display:flex;justify-content:space-between;gap:12px;margin-top:11px;padding-top:10px;border-top:1px dashed #e4ebed;font-size:12px;color:#87999f}.pst-live-action-foot small{font-size:12px;color:#758b94}.pst-live-arrow{font-size:20px;color:#70a0af;padding-top:19px}
+.pst-live-clear{padding:44px 28px;text-align:center;color:#72868d}.pst-live-clear div{margin:0 auto 11px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e9f5ee;color:#4e8a67;font-size:18px}.pst-live-clear b{display:block;font-size:16px;color:#4d6670}.pst-live-clear span{display:block;max-width:720px;margin:7px auto 0;font-size:13px;line-height:1.5}
+.pst-live-updates{padding:10px}.pst-live-update{padding:19px 20px;margin:7px 0;border:1px solid #e2eaec;border-radius:14px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s}.pst-live-update:hover{border-color:#c8dade;box-shadow:0 7px 18px rgba(36,67,77,.055)}
+.pst-live-update-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.pst-live-update-top span{font-size:11px;font-weight:800;letter-spacing:.4px;color:#789098}.pst-live-update h3{margin:3px 0 0;font-size:17px;color:#29414a}.pst-live-update-meta{display:flex;align-items:center;gap:10px;white-space:nowrap}.pst-live-update-meta b{font-size:11px;color:#4f7660;background:#edf7f1;border-radius:999px;padding:5px 8px}.pst-live-update-meta time{font-size:12px;color:#8b9da3}.pst-live-update p{margin:10px 0 0;font-size:14.5px;line-height:1.58;color:#596f78}.pst-live-update-open{margin-top:11px;font-size:12px;font-weight:800;color:#4f8293}.pst-live-empty{padding:38px 24px;text-align:center;font-size:14px;color:#7e9299}
+.pst-live-action:focus-visible,.pst-live-update:focus-visible,.pst-live-send:focus-visible{outline:3px solid rgba(74,145,166,.25);outline-offset:2px}
+@media(max-width:720px){#pst-project-control-home-v2{padding:24px 12px 46px}.pst-live-head{display:block}.pst-live-sync{display:block;margin-top:10px}.pst-live-head h1{font-size:27px}.pst-live-panel>header{display:block;padding:19px 17px 15px}.pst-live-panel header small{display:block;margin-top:6px}.pst-live-action{padding:16px 14px}.pst-live-action-top,.pst-live-update-top{display:block}.pst-live-action-top time,.pst-live-update-meta{display:flex;margin-top:6px}.pst-live-action-foot{display:block}.pst-live-action-foot small{display:block;margin-top:4px}.pst-live-update{padding:16px 15px}}
 `;
   document.head.appendChild(s);
 }
 function apply(force){
-  var page=activeHome();
-  if(!page)return false;
+  var page=activeHome();if(!page)return false;
   css();
   var root=ensureRoot(page);if(!root)return false;
   render();load(!!force);return true;
