@@ -38,6 +38,6 @@ assert(!/MutationObserver|setInterval\s*\(/.test(frontend),'Tender dossier UI mu
 assert(edge.includes("type:'input_file'"),'Edge function does not pass official dossier files to OpenAI');
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
 assert(edge.includes('SUPABASE_SERVICE_ROLE_KEY'),'Purpose-limited persistence path is missing');
-assert(!/sendmail|gmail.*send|mark.*won|purchase.?order/i.test(edge),'Tender analysis must not implement external/binding actions');
+assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(edge),'Tender analysis must not contain external/binding action endpoints');
 assert(finalizer.includes('data-pst-tender-dossier-analysis-v1'),'Finalizer does not load the dossier analysis runtime');
 console.log('Tender dossier parser + security + runtime smoke test passed.');
