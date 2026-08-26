@@ -22,11 +22,11 @@ function ensureTruth(){
  return truthLoading;
 }
 function ensureControlRoom(force){
- if(window.PSTProjectControlHomeV1&&typeof window.PSTProjectControlHomeV1.apply==='function'){try{window.PSTProjectControlHomeV1.apply(!!force);}catch(e){}return Promise.resolve(window.PSTProjectControlHomeV1);}
+ if(window.__pstProjectControlHomeV2&&window.PSTProjectControlHomeV1&&typeof window.PSTProjectControlHomeV1.apply==='function'){try{window.PSTProjectControlHomeV1.apply(!!force);}catch(e){}return Promise.resolve(window.PSTProjectControlHomeV1);}
  if(controlLoading)return controlLoading;
  var existing=document.querySelector('script[data-pst-project-control-home-final]');
- if(existing){controlLoading=new Promise(function(resolve){var n=0;(function wait(){if(window.PSTProjectControlHomeV1||++n>80){var x=window.PSTProjectControlHomeV1||null;if(x&&typeof x.apply==='function')try{x.apply(!!force);}catch(e){}resolve(x);return;}setTimeout(wait,40);})();});return controlLoading;}
- controlLoading=new Promise(function(resolve){var s=document.createElement('script');s.src='pristeel-project-control-home-v1.js?pst_home='+Date.now();s.defer=true;s.setAttribute('data-pst-project-control-home-final','1');s.onload=function(){var x=window.PSTProjectControlHomeV1||null;if(x&&typeof x.apply==='function')try{x.apply(true);}catch(e){}resolve(x);};s.onerror=function(){console.error('PPPP Control Room nuk u ngarkua.');resolve(null);};document.head.appendChild(s);}).finally(function(){controlLoading=null;});
+ if(existing){controlLoading=new Promise(function(resolve){var n=0;(function wait(){if(window.__pstProjectControlHomeV2||++n>80){var x=window.__pstProjectControlHomeV2?window.PSTProjectControlHomeV1:null;if(x&&typeof x.apply==='function')try{x.apply(!!force);}catch(e){}resolve(x);return;}setTimeout(wait,40);})();});return controlLoading;}
+ controlLoading=new Promise(function(resolve){var s=document.createElement('script');s.src='pristeel-project-control-home-v1.js?pst_home='+Date.now();s.defer=true;s.setAttribute('data-pst-project-control-home-final','1');s.onload=function(){var x=window.__pstProjectControlHomeV2?window.PSTProjectControlHomeV1:null;if(x&&typeof x.apply==='function')try{x.apply(true);}catch(e){}resolve(x);};s.onerror=function(){console.error('PPPP Control Room nuk u ngarkua.');resolve(null);};document.head.appendChild(s);}).finally(function(){controlLoading=null;});
  return controlLoading;
 }
 function projectsAlreadyLoaded(){var p=document.getElementById('page-workspace-projects'),r=window.__pstWorkspaceProjectRows||window._allProjectsCache;return !!(p&&p.querySelector('.pst-pm-page')&&Array.isArray(r)&&r.length);}
