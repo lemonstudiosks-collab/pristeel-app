@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 
 const home = fs.readFileSync('pristeel-project-control-home-v1.js','utf8');
 const finalizer = fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
+const homeHappy = fs.readFileSync('pristeel-home-happy-v1.js','utf8');
 const pages = JSON.parse(fs.readFileSync('pages-artifact-manifest.json','utf8'));
 
 assert.match(finalizer,/pristeel-project-control-home-v1\.js\?v=20260826-1/,'finalizer must load Project Control Home');
 assert.match(finalizer,/projectControlHome\(\)/,'finalizer must apply Project Control Home');
+assert.match(homeHappy,/pristeel-project-control-home-v1\.js\?pst_home=['"]?\+Date\.now\(\)/,'cache-busted final Home owner must load Control Room');
+assert.match(homeHappy,/ensureControlRoom\(true\)/,'final Home route/decorator must re-apply Control Room');
 assert.ok((pages.additionalPublicAssets||[]).some(x=>x.path==='pristeel-project-control-home-v1.js'),'production Pages artifact must ship Project Control Home');
 assert.ok((pages.referenceChecks||[]).some(x=>x.source==='pristeel-redesign-finalizer-v1.js'&&x.contains==='pristeel-project-control-home-v1.js'),'Pages audit must verify the finalizer dependency');
 
