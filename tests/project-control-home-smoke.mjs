@@ -9,10 +9,12 @@ const pages = JSON.parse(fs.readFileSync('pages-artifact-manifest.json','utf8'))
 assert.match(finalizer,/pristeel-project-control-home-v1\.js\?v=20260826-1/,'finalizer must load Project Control Home');
 assert.match(finalizer,/projectControlHome\(\)/,'finalizer must apply Project Control Home');
 assert.match(homeHappy,/pristeel-project-control-home-v1\.js\?pst_home=['"]?\+Date\.now\(\)/,'cache-busted final Home owner must load Control Room');
+assert.match(homeHappy,/window\.__pstProjectControlHomeV2&&window\.PSTProjectControlHomeV1/,'final Home owner must reject a stale v1 Home API');
 assert.match(homeHappy,/ensureControlRoom\(true\)/,'final Home route/decorator must re-apply Control Room');
 assert.ok((pages.additionalPublicAssets||[]).some(x=>x.path==='pristeel-project-control-home-v1.js'),'production Pages artifact must ship Project Control Home');
 assert.ok((pages.referenceChecks||[]).some(x=>x.source==='pristeel-redesign-finalizer-v1.js'&&x.contains==='pristeel-project-control-home-v1.js'),'Pages audit must verify the finalizer dependency');
 
+assert.match(home,/__pstProjectControlHomeV2/,'Control Room v2 runtime marker is required');
 assert.match(home,/PSTProjectControlHomeV1/,'module export is required');
 assert.match(home,/project_emails\?select=/,'Home must read project email activity');
 assert.match(home,/direction===['"]outgoing['"]/,'Home must distinguish sent email');
