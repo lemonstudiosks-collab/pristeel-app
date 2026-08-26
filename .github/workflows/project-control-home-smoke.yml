@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'pristeel-project-control-home-v1.js'
+      - 'pristeel-home-live-sync-v1.js'
       - 'pristeel-home-operating-grid-v1.js'
       - 'pristeel-redesign-finalizer-v1.js'
       - 'pristeel-home-happy-v1.js'
@@ -14,6 +15,7 @@ on:
     branches: [main]
     paths:
       - 'pristeel-project-control-home-v1.js'
+      - 'pristeel-home-live-sync-v1.js'
       - 'pristeel-home-operating-grid-v1.js'
       - 'pristeel-redesign-finalizer-v1.js'
       - 'pristeel-home-happy-v1.js'
@@ -36,6 +38,8 @@ jobs:
       - name: Check syntax
         run: |
           node --check pristeel-project-control-home-v1.js
+          node --check pristeel-home-live-sync-v1.js
           node --check pristeel-home-operating-grid-v1.js
+          node --check pristeel-redesign-finalizer-v1.js
       - name: Verify PPPP Home control-room contract
         run: node tests/project-control-home-smoke.mjs
