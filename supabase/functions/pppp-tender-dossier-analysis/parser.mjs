@@ -9,9 +9,9 @@ export function stripTags(v){return text(decodeEntities(String(v||'').replace(/<
 export function officialUrl(value,base=''){
  try{const u=base?new URL(decodeEntities(text(value)),base):new URL(decodeEntities(text(value)));if(u.protocol!=='https:'||!ALLOWED_HOSTS.has(u.hostname.toLowerCase()))return'';return u.href;}catch{return'';}
 }
-function attr(attrs,name){const m=String(attrs||'').match(new RegExp('\\b'+name+'\\s*=\\s*(["\\\'])([\\s\\S]*?)\\1','i'));return m?decodeEntities(m[2]):'';}
+function attr(attrs,name){const m=String(attrs||'').match(new RegExp("\\b"+name+"\\s*=\\s*([\\\"'])([\\s\\S]*?)\\1",'i'));return m?decodeEntities(m[2]):'';}
 function filenameFromUrl(url){try{const u=new URL(url);const p=decodeURIComponent(u.pathname.split('/').pop()||'');return text(p);}catch{return'';}}
-function candidateUrl(raw,base){const safe=officialUrl(raw,base);return safe||'';}
+function candidateUrl(raw,base){return officialUrl(raw,base)||'';}
 function pushUnique(out,seen,url,name){if(!url||seen.has(url))return;seen.add(url);out.push({url,name:text(name)||filenameFromUrl(url)||'Dokument'});}
 export function extractDocumentLinks(html,base){
  const out=[],seen=new Set(),src=String(html||'');let m;
