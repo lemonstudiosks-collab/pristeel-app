@@ -4,42 +4,13 @@ const assert = require('assert');
 const source = fs.readFileSync('pristeel-project-emails.js', 'utf8');
 const finalizer = fs.readFileSync('pristeel-redesign-finalizer-v1.js', 'utf8');
 const openaiAssistant = fs.readFileSync('pristeel-openai-operating-assistant-v1.js', 'utf8');
+const projectCentric = fs.readFileSync('pristeel-project-centric-workflow-v1.js', 'utf8');
 const required = [
-  'pristeel-login-brand-v1.js',
-  'pristeel-login-transition-v2.js',
-  'pristeel-ui-corrections-v2.js',
-  'pristeel-dashboard-task-cards-v1.js',
-  'pristeel-business-command-center-v1.js',
-  'pristeel-gmail-deep-search-v1.js',
-  'pristeel-business-command-center-deep-gmail-v1.js',
-  'pristeel-search-stable-v2.js',
-  'pristeel-project-command-view-v1.js',
-  'pristeel-home-command-center-v2.js',
-  'pristeel-home-live-fix-v1.js',
-  'pristeel-home-stability-v2.js',
-  'pristeel-home-visual-cleanup-v1.js',
-  'pristeel-gmail-live-inbox-v2.js',
-  'pristeel-gmail-intake-v3.js',
-  'pristeel-project-load-stability-v2.js',
-  'pristeel-rfq-stability-v2.js',
-  'pristeel-offer-pricing-stability-v2.js',
-  'pristeel-our-offer-stability-v2.js',
-  'pristeel-finance-stability-v2.js',
-  'pristeel-document-center-stable-v2.js',
-  'pristeel-modal-navigation-safety-v2.js',
-  'pristeel-redesign-finalizer-v1.js'
+  'pristeel-login-brand-v1.js','pristeel-login-transition-v2.js','pristeel-ui-corrections-v2.js','pristeel-dashboard-task-cards-v1.js','pristeel-business-command-center-v1.js','pristeel-gmail-deep-search-v1.js','pristeel-business-command-center-deep-gmail-v1.js','pristeel-search-stable-v2.js','pristeel-project-command-view-v1.js','pristeel-home-command-center-v2.js','pristeel-home-live-fix-v1.js','pristeel-home-stability-v2.js','pristeel-home-visual-cleanup-v1.js','pristeel-gmail-live-inbox-v2.js','pristeel-gmail-intake-v3.js','pristeel-project-load-stability-v2.js','pristeel-rfq-stability-v2.js','pristeel-offer-pricing-stability-v2.js','pristeel-our-offer-stability-v2.js','pristeel-finance-stability-v2.js','pristeel-document-center-stable-v2.js','pristeel-modal-navigation-safety-v2.js','pristeel-redesign-finalizer-v1.js'
 ];
-
-required.forEach(entry => {
-  assert(source.includes(entry), `${entry} is missing from the current redesign bootstrap`);
-});
-
+required.forEach(entry => assert(source.includes(entry), `${entry} is missing from the current redesign bootstrap`));
 [
-  'pristeel-gmail-intake-create-project-fix-v1.js',
-  'pristeel-gmail-live-inbox-v1.js',
-  'pristeel-document-center-v2.js',
-  'pristeel-dashboard-focus.js',
-  'pristeel-dashboard-operations.js'
+  'pristeel-gmail-intake-create-project-fix-v1.js','pristeel-gmail-live-inbox-v1.js','pristeel-document-center-v2.js','pristeel-dashboard-focus.js','pristeel-dashboard-operations.js'
 ].forEach(entry=>assert(!source.includes(entry),`${entry} is retired and must not return to the bootstrap`));
 
 const searchPos=source.indexOf('pristeel-search-stable-v2.js');
@@ -63,4 +34,19 @@ assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(openaiAssistant), 'OpenAI 
 assert(!/\.supaFetch\([^\n]*['\"](?:PATCH|POST|DELETE)['\"]/.test(openaiAssistant), 'OpenAI assistant must not write business data through Supabase REST');
 assert(!/gmail\/v1\/.*send|mark.*won|mark.*lost|supplier_orders.*POST/i.test(openaiAssistant), 'OpenAI assistant must not bypass human commitment gates');
 
-console.log('Redesign bootstrap + OpenAI assistant contract smoke test passed.');
+// Project-centric final layer: Projects are the daily center, TED is awards-only, and operator text can drive safe internal organization.
+assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260826-1'), 'Finalizer must load the project-centric workflow layer');
+assert(finalizer.includes('data-pst-project-centric-workflow-v1'), 'Project-centric loader must be idempotent');
+new Function(projectCentric);
+assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
+assert(projectCentric.includes("if(src==='TED')return phase==='award'"), 'Open TED opportunities must stay out of the daily Opportunities surface');
+assert(projectCentric.includes('KRPP / APP') && projectCentric.includes('Fitues TED'), 'Daily tender filters must separate local bids from TED winners');
+assert(projectCentric.includes('pppp-project-operator-update'), 'Project operator update must use the authenticated safe Edge Function');
+assert(projectCentric.includes('contact_sources?') && projectCentric.includes('project_contacts?') && projectCentric.includes('project_emails?'), 'Contact Brief must hydrate real relationship and email data');
+assert(projectCentric.includes('PSTOpenAIAssistantV1') && projectCentric.includes('candidate_partners'), 'Tender analysis must use server AI plus registered PPPP partners');
+assert(projectCentric.includes('navigator.clipboard') && projectCentric.includes('Numri i Referencës'), 'APP fallback must preserve the exact reference instead of pretending a generic page is a deep link');
+assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(projectCentric), 'Project-centric layer must remain bounded and observer-free');
+assert(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(projectCentric), 'Project-centric layer must never send external mail');
+assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Project-centric layer must preserve commitment gates');
+
+console.log('Redesign bootstrap + OpenAI + project-centric workflow contract smoke test passed.');
