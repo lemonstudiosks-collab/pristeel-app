@@ -1,14 +1,15 @@
 /* PRISTEEL redesign finalizer v1
- * Revision: 20260826-project-control-home1.
+ * Revision: 20260826-project-control-home2.
  * Re-applies presentation-only styling after workspace renders.
  * Project Control Home owns the daily Home presentation; canonical engines remain backstage.
- * Bounded timeouts only. No polling, observers, auth or project-open overrides.
+ * Bounded presentation retries plus an ownership observer that prevents retired Home renderers from reclaiming the page.
  */
 (function(){
 'use strict';
 if(window.__pstRedesignFinalizerV1)return;
 window.__pstRedesignFinalizerV1=true;
 
+var controlObserver=null,claimingControl=false,reclaimTimer=null;
 function primaryNavigationResilience(){try{return !!window.PSTPrimaryNavResilienceV1;}catch(e){console.warn('PRISTEEL finalizer primary navigation:',e);return false;}}
 function readability(){try{var R=window.PSTPlatformReadabilityV1;if(R&&typeof R.apply==='function'){R.apply(document);return;}if(document.querySelector('script[data-pst-platform-readability]'))return;var s=document.createElement('script');s.src='pristeel-platform-readability-v1.js?v=20260812-1';s.defer=true;s.setAttribute('data-pst-platform-readability','1');s.onload=function(){var x=window.PSTPlatformReadabilityV1;if(x&&typeof x.apply==='function')x.apply(document);};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer readability:',e);}}
 function sectionTheme(){try{var T=window.PSTSectionThemeV1;if(T&&typeof T.apply==='function'){T.apply();return;}if(document.querySelector('script[data-pst-section-theme]'))return;var s=document.createElement('script');s.src='pristeel-section-theme-v1.js?v=20260822-2';s.defer=true;s.setAttribute('data-pst-section-theme','1');document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer section theme:',e);}}
@@ -18,11 +19,50 @@ function operatingAssistant(){try{var X=window.PSTOperatingAssistantV2;if(X&&typ
 function openAIAssistant(){try{var X=window.PSTOpenAIAssistantV1;if(X&&typeof X.apply==='function'){X.apply();return;}if(document.querySelector('script[data-pst-openai-assistant-v1]'))return;var s=document.createElement('script');s.src='pristeel-openai-operating-assistant-v1.js?v=20260825-1';s.defer=true;s.setAttribute('data-pst-openai-assistant-v1','1');s.onload=function(){var x=window.PSTOpenAIAssistantV1;if(x&&typeof x.apply==='function')x.apply();};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer OpenAI assistant:',e);}}
 function contactCards(){try{var C=window.PSTContactCategoryCardsV1;if(C&&typeof C.decorate==='function'){C.decorate();return;}if(document.querySelector('script[data-pst-contact-category-cards]'))return;var s=document.createElement('script');s.src='pristeel-contact-category-cards-v1.js?v=20260822-1';s.defer=true;s.setAttribute('data-pst-contact-category-cards','1');s.onload=function(){var x=window.PSTContactCategoryCardsV1;if(x&&typeof x.decorate==='function')x.decorate();};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer contact cards:',e);}}
 function projectCentricWorkflow(){try{var X=window.PSTProjectCentricWorkflowV1;if(X&&typeof X.apply==='function'){X.apply(false);return;}if(document.querySelector('script[data-pst-project-centric-workflow-v1]'))return;var s=document.createElement('script');s.src='pristeel-project-centric-workflow-v1.js?v=20260826-1';s.defer=true;s.setAttribute('data-pst-project-centric-workflow-v1','1');s.onload=function(){var x=window.PSTProjectCentricWorkflowV1;if(x&&typeof x.apply==='function')x.apply(true);};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer project-centric workflow:',e);}}
-function projectControlHome(){try{var X=window.PSTProjectControlHomeV1;if(X&&typeof X.apply==='function'){X.apply(false);return;}if(document.querySelector('script[data-pst-project-control-home-v1]'))return;var s=document.createElement('script');s.src='pristeel-project-control-home-v1.js?v=20260826-1';s.defer=true;s.setAttribute('data-pst-project-control-home-v1','1');s.onload=function(){var x=window.PSTProjectControlHomeV1;if(x&&typeof x.apply==='function')x.apply(true);};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer project control home:',e);}}
+function retireOtherHomeChildren(page,root){
+  if(!page||!root||!page.contains(root))return false;
+  Array.prototype.slice.call(page.children).forEach(function(child){
+    if(child===root)return;
+    child.hidden=true;
+    child.style.display='none';
+    child.setAttribute('aria-hidden','true');
+    child.setAttribute('data-pst-retired-home-owner','1');
+  });
+  page.dataset.pstHomeOwner='project-control-v2';
+  page.dataset.pstHomeExclusive='1';
+  return true;
+}
+function claimControlRoom(){
+  var page=document.getElementById('page-workspace-home'),root=document.getElementById('pst-project-control-home-v2');
+  if(!page||!root||!page.contains(root))return false;
+  if(claimingControl)return true;
+  claimingControl=true;
+  try{retireOtherHomeChildren(page,root);}finally{claimingControl=false;}
+  if(!controlObserver&&typeof MutationObserver==='function'){
+    controlObserver=new MutationObserver(function(){
+      if(claimingControl)return;
+      if(reclaimTimer)clearTimeout(reclaimTimer);
+      reclaimTimer=setTimeout(function(){
+        reclaimTimer=null;
+        var p=document.getElementById('page-workspace-home'),r=document.getElementById('pst-project-control-home-v2');
+        if(!p)return;
+        if(r&&p.contains(r)){claimControlRoom();return;}
+        var X=window.PSTProjectControlHomeV1;
+        if(X&&typeof X.apply==='function'){
+          try{X.apply(true);}catch(e){}
+          setTimeout(claimControlRoom,0);
+        }
+      },0);
+    });
+    controlObserver.observe(page,{childList:true});
+  }
+  return true;
+}
+function projectControlHome(){try{var X=window.PSTProjectControlHomeV1;if(X&&typeof X.apply==='function'){X.apply(true);setTimeout(claimControlRoom,0);return;}if(document.querySelector('script[data-pst-project-control-home-v1]')){setTimeout(claimControlRoom,0);return;}var s=document.createElement('script');s.src='pristeel-project-control-home-v1.js?v=20260826-2';s.defer=true;s.setAttribute('data-pst-project-control-home-v1','1');s.onload=function(){var x=window.PSTProjectControlHomeV1;if(x&&typeof x.apply==='function')x.apply(true);setTimeout(claimControlRoom,0);};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer project control home:',e);}}
 function tenderDossierAnalysis(){try{var X=window.PSTTenderDossierAnalysisV1;if(X&&typeof X.apply==='function'){X.apply();return;}if(document.querySelector('script[data-pst-tender-dossier-analysis-v1]'))return;var s=document.createElement('script');s.src='pristeel-tender-dossier-analysis-v1.js?v=20260826-1';s.defer=true;s.setAttribute('data-pst-tender-dossier-analysis-v1','1');s.onload=function(){var x=window.PSTTenderDossierAnalysisV1;if(x&&typeof x.apply==='function')x.apply();};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer tender dossier analysis:',e);}}
 function priorityIsUrgent(row){if(!row)return false;var title=row.dataset&&row.dataset.pstOriginalTitle||'';if(!title){var t=row.querySelector('.pst-ws-action-title');title=t?String(t.getAttribute('title')||t.textContent||''):'';}var tag=row.querySelector('.pst-ws-action-tag'),label=tag?String(tag.textContent||''):'';return /^\s*urgjent\b/i.test(title)||/\burgjent\b/i.test(label)||String(row.getAttribute('data-urgent')||'')==='1';}
 function repairPriorityControls(row){if(!row)return;var controls=row.querySelector('.pst-ws-action-controls');if(!controls)return;var canonicalOpen=row.querySelector('.pst-ws-action-open'),canonicalDone=row.querySelector('.pst-ws-action-done'),canonicalDismiss=row.querySelector('.pst-ws-action-dismiss'),source=row.querySelector('.pst-task-source-open');row.querySelectorAll('.pst-dash-task-open').forEach(function(b){if(b.parentNode)b.remove();});if(canonicalDone){canonicalDone.textContent='Kryer';canonicalDone.title='Shënoje si të kryer';canonicalDone.classList.remove('pst-dash-task-dismiss');}if(canonicalDismiss){canonicalDismiss.textContent='•••';canonicalDismiss.title='Hiqe nga lista';}if(canonicalOpen)controls.appendChild(canonicalOpen);if(canonicalDone)controls.appendChild(canonicalDone);if(source)controls.appendChild(source);if(canonicalDismiss)controls.appendChild(canonicalDismiss);row.querySelectorAll('.pst-dash-task-menu').forEach(function(menu){if(menu.parentNode)menu.remove();});}
-function repairPriorityCards(){var page=document.getElementById('page-workspace-home');if(!page)return 0;var count=0;page.querySelectorAll('#pst-ws-home-actions > .pst-canonical-action').forEach(function(row){repairPriorityControls(row);row.classList.toggle('pst-final-priority-urgent',priorityIsUrgent(row));row.style.cursor='pointer';row.setAttribute('title','Kliko për ta hapur');count++;});return count;}
+function repairPriorityCards(){var page=document.getElementById('page-workspace-home');if(!page||page.dataset.pstHomeExclusive==='1')return 0;var count=0;page.querySelectorAll('#pst-ws-home-actions > .pst-canonical-action').forEach(function(row){repairPriorityControls(row);row.classList.toggle('pst-final-priority-urgent',priorityIsUrgent(row));row.style.cursor='pointer';row.setAttribute('title','Kliko për ta hapur');count++;});return count;}
 function installPriorityStyle(){if(document.getElementById('pst-final-priority-card-css'))return;var s=document.createElement('style');s.id='pst-final-priority-card-css';s.textContent=`#page-workspace-home #pst-ws-home-actions>.pst-canonical-action{cursor:pointer!important}#page-workspace-home #pst-ws-home-actions>.pst-canonical-action .pst-ws-action-main{cursor:pointer!important}#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent{background:#FFF8E8!important;border-color:#E4C56B!important;border-left-color:#C9932E!important;box-shadow:0 3px 12px rgba(149,109,31,.10)!important}#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent:hover{background:#FFF2D6!important;border-color:#D8B34F!important;border-left-color:#B98222!important;box-shadow:0 7px 22px rgba(149,109,31,.14)!important}#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-title{color:#614C1E!important}#page-workspace-home #pst-ws-home-actions>.pst-canonical-action.pst-final-priority-urgent .pst-ws-action-tag{background:#C9932E!important;border-color:#C9932E!important;color:#fff!important}`;document.head.appendChild(s);}
 function apply(){
   primaryNavigationResilience();sectionTheme();readability();contactCards();operatingExperience();dailyZones();operatingAssistant();openAIAssistant();
@@ -36,11 +76,11 @@ function apply(){
   try{var Z=window.PSTDailyZonesCleanupV1;if(Z&&typeof Z.apply==='function')Z.apply();}catch(e){console.warn('PRISTEEL finalizer daily zones apply:',e);}
   try{var A=window.PSTOperatingAssistantV2;if(A&&typeof A.apply==='function')A.apply(false);}catch(e){console.warn('PRISTEEL finalizer operating assistant apply:',e);}
   try{var O=window.PSTOpenAIAssistantV1;if(O&&typeof O.apply==='function')O.apply();}catch(e){console.warn('PRISTEEL finalizer OpenAI assistant apply:',e);}
-  projectCentricWorkflow();projectControlHome();tenderDossierAnalysis();
+  projectCentricWorkflow();projectControlHome();tenderDossierAnalysis();setTimeout(claimControlRoom,0);
 }
 function schedule(){[0,80,220,450,1400,2100].forEach(function(ms){setTimeout(apply,ms);});}
 document.addEventListener('pst:modules-ready',schedule,{once:true});document.addEventListener('DOMContentLoaded',schedule,{once:true});window.addEventListener('pageshow',schedule,{once:true});
 document.addEventListener('click',function(event){var t=event.target&&event.target.closest?event.target.closest('.pst-ws-navbtn,#pst-ws-home-refresh,[onclick*="pstWorkspaceGo"],[data-pm-open],[data-release-filter],[data-pwf-area],[data-pwf-stage],[onclick*="showPage"],[onclick*="openModuleHub"],[data-pcm-id]'):null;if(t)[0,80,250,700,1450,2200].forEach(function(ms){setTimeout(apply,ms);});},true);
 if(document.readyState!=='loading')schedule();
-window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,dailyZones:dailyZones,operatingAssistant:operatingAssistant,openAIAssistant:openAIAssistant,contactCards:contactCards,projectCentricWorkflow:projectCentricWorkflow,projectControlHome:projectControlHome,tenderDossierAnalysis:tenderDossierAnalysis,repairPriorityCards:repairPriorityCards};
+window.PSTRedesignFinalizerV1={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,dailyZones:dailyZones,operatingAssistant:operatingAssistant,openAIAssistant:openAIAssistant,contactCards:contactCards,projectCentricWorkflow:projectCentricWorkflow,projectControlHome:projectControlHome,claimControlRoom:claimControlRoom,tenderDossierAnalysis:tenderDossierAnalysis,repairPriorityCards:repairPriorityCards};
 })();
