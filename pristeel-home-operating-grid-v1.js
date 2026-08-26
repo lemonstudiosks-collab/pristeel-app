@@ -29,6 +29,9 @@ function retireForLiveHome(){
   if(h&&h.parentNode)h.parentNode.removeChild(h);
   return true;
 }
+function scheduleLiveHomeHandoff(){
+  [0,100,350,900,1800,3000].forEach(function(ms){setTimeout(retireForLiveHome,ms);});
+}
 function active(){var p=page();return !!(p&&p.classList.contains('active'));}
 function nativeRow(key){
   var rows=document.querySelectorAll('#pst-ws-home-actions .pst-canonical-action[data-ws-action]');
@@ -106,13 +109,13 @@ function renderLoaded(data){
   if(retireForLiveHome())return false;
   var p=page();if(!p||!p.classList.contains('active'))return false;installStyle();var h=host();if(!h)return false;var snap=data&&data.snap?data.snap:snapshot();var actions=displayActions(snap);
   h.innerHTML='<header class="pst-hao-head"><div><span>HOME</span><h1>Projektet që kërkojnë veprimin tënd</h1><p>PPPP vendos projektet përpara: çfarë po ndodh, pse kërkon vëmendje dhe cili është hapi i radhës.</p></div>'+(actions.length?'<div class="pst-hao-count">'+actions.length+' për tani</div>':'')+'</header>'
-    +(actions.length?'<section class="pst-hao-list">'+actions.map(card).join('')+'</section>':'<section class="pst-hao-empty"><b>Asnjë projekt nuk kërkon ndërhyrjen tënde tani.</b><span>PPPP vazhdon të monitorojë projektet dhe do ta nxjerrë këtu veprimin e radhës kur nevojitet.</span></section>');bind(h);return true;
+    +(actions.length?'<section class="pst-hao-list">'+actions.map(card).join('')+'</section>':'<section class="pst-hao-empty"><b>Asnjë projekt nuk kërkon ndërhyrjen tënde tani.</b><span>PPPP vazhdon të monitorojë projektet dhe do ta nxjerrë këtu veprimin e radhës kur nevojitet.</span></section>');bind(h);scheduleLiveHomeHandoff();return true;
 }
 function render(){if(retireForLiveHome())return false;if(!active())return false;return renderLoaded({snap:snapshot()});}
 function schedule(){if(retireForLiveHome())return;if(typeof queueMicrotask==='function')queueMicrotask(render);else Promise.resolve().then(render);}
 function homeIntent(el){if(!el||!el.closest)return false;var n=el.closest('[data-ws-go="home"],[data-nav="home"],[data-pst-nav="home"],a[href="#home"],button');if(!n)return false;var t=S(n.textContent).toLowerCase().trim();return n.matches('[data-ws-go="home"],[data-nav="home"],[data-pst-nav="home"],a[href="#home"]')||t==='home';}
-function boot(){installStyle();if(retireForLiveHome())return;if(active())render();}
+function boot(){installStyle();if(retireForLiveHome())return;scheduleLiveHomeHandoff();if(active())render();}
 document.addEventListener('pst:home-canonical-rendered',schedule);document.addEventListener('pst:modules-ready',schedule);document.addEventListener('click',function(e){if(homeIntent(e.target))schedule();},true);window.addEventListener('focus',function(){if(active())schedule();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTHomeOperatingGridV1={version:VERSION,render:render,refresh:render,renderLoaded:renderLoaded,snapshot:snapshot,_test:{proxyAction:proxyAction,nativeRow:nativeRow,openProject:openProject,displayActions:displayActions,actionProject:actionProject,actionTitle:actionTitle,actionWhy:actionWhy,actionTag:actionTag,active:active,homeIntent:homeIntent,liveHomeRoot:liveHomeRoot,retireForLiveHome:retireForLiveHome}};
+window.PSTHomeOperatingGridV1={version:VERSION,render:render,refresh:render,renderLoaded:renderLoaded,snapshot:snapshot,_test:{proxyAction:proxyAction,nativeRow:nativeRow,openProject:openProject,displayActions:displayActions,actionProject:actionProject,actionTitle:actionTitle,actionWhy:actionWhy,actionTag:actionTag,active:active,homeIntent:homeIntent,liveHomeRoot:liveHomeRoot,retireForLiveHome:retireForLiveHome,scheduleLiveHomeHandoff:scheduleLiveHomeHandoff}};
 })();
