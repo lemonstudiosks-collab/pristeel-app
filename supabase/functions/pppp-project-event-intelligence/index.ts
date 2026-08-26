@@ -1,11 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const URL=Deno.env.get('SUPABASE_URL')||'';
+const SUPABASE_URL=Deno.env.get('SUPABASE_URL')||'';
 const SERVICE=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
 const OPENAI=Deno.env.get('OPENAI_API_KEY')||'';
 const MODEL=Deno.env.get('OPENAI_CONTEXT_MODEL')||Deno.env.get('OPENAI_ASSISTANT_MODEL')||'gpt-5.6-luna';
-const db=createClient(URL,SERVICE);
+const db=createClient(SUPABASE_URL,SERVICE);
 const H={'content-type':'application/json','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'x-pppp-cron-secret,content-type','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
 const T=(v:any,n=6000)=>String(v??'').trim().slice(0,n);
 const N=(v:any)=>T(v,1000).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
@@ -48,4 +48,4 @@ async function run(limit=6,days=3){
  for(const e of queue){try{items.push(await processOne(e))}catch(err){items.push({gmail_message_id:e.gmail_message_id,error:T((err as any)?.message||err,600)})}}
  return{checked:(em.data||[]).length,queued:queue.length,processed:items.length,items};
 }
-Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:H});if(!(await auth(req)))return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:H});try{const u=new URL(req.url),limit=Number(u.searchParams.get('limit')||6),days=Number(u.searchParams.get('days')||3),out=await run(limit,days);return new Response(JSON.stringify({ok:true,...out}),{headers:H})}catch(e){console.error(e);return new Response(JSON.stringify({ok:false,error:T((e as any)?.message||e,900)}),{status:500,headers:H})}});
+Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:H});if(!(await auth(req)))return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:H});try{const u=new globalThis.URL(req.url),limit=Number(u.searchParams.get('limit')||6),days=Number(u.searchParams.get('days')||3),out=await run(limit,days);return new Response(JSON.stringify({ok:true,...out}),{headers:H})}catch(e){console.error(e);return new Response(JSON.stringify({ok:false,error:T((e as any)?.message||e,900)}),{status:500,headers:H})}});
