@@ -1,11 +1,12 @@
 # Isolated PPPP production Pages recovery deploy.
-# Kept separate from the legacy Pages pipeline so production can recover if that workflow is disabled/stuck.
-# Recovery trigger v2: workflow already exists on main before this push.
+# Temporary scheduled trigger lets production recover when connector-authored commits do not emit push workflow runs.
 name: PPPP production recovery deploy
 
 on:
   push:
     branches: ["main"]
+  schedule:
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
