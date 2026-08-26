@@ -8,7 +8,7 @@
 if(window.__pstHomeOperatingGridV1)return;
 window.__pstHomeOperatingGridV1=true;
 
-var VERSION='20260826-action-cards-2';
+var VERSION='20260826-action-cards-3';
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -49,17 +49,18 @@ function actionTitle(a){return S(a&&((a.title||a.text||a.action)||'Hap veprimin'
 function actionWhy(a){return S(a&&((a.why||a.reason||a.meta)||''));}
 function actionTag(a){return S(a&&((a.tag||a.label)||'VEPRIM'));}
 function projectId(p){return S(p&&((p.id||p.project_id)||''));}
-function projectName(p){return S(p&&((p.name||p.project_name||p.title)||'Projekt aktiv'));}
+function projectName(p){return S(p&&((p.name||p.project_name||p.title)||'Projekt'));}
 function projectClient(p){return S(p&&((p.client||p.client_name)||''));}
 function projectStage(p){return S(p&&((p.next_action||p.next_step||p.stage_label||p.pipeline_stage)||''));}
 function fallbackProjectAction(p){
   var id=projectId(p);
-  return{key:'project:'+id,title:projectStage(p)||'Vazhdo punën në projekt',project_name:projectName(p),why:projectClient(p)?'Klienti: '+projectClient(p):'Projekt aktiv pa veprim të veçantë të krijuar.',tag:'PROJEKT'};
+  return{key:'project:'+id,title:projectStage(p)||'Vazhdo punën në projekt',project_name:projectName(p),why:projectClient(p)?'Klienti: '+projectClient(p):'Projekt pa veprim të veçantë të krijuar.',tag:'PROJEKT'};
 }
 function displayActions(snap){
-  var actions=A(snap&&snap.actions).filter(function(a){return a&&S(a.key).trim();});
-  if(actions.length)return actions.slice(0,5);
-  return A(snap&&snap.projects).filter(function(p){return projectId(p);}).slice(0,5).map(fallbackProjectAction);
+  snap=snap||{actions:[],projects:[]};
+  var actions=A(snap.actions).slice(0,5).filter(function(a){return a&&S(a.key).trim();});
+  if(actions.length)return actions;
+  return A(snap.projects).filter(function(p){return projectId(p);}).slice(0,5).map(fallbackProjectAction);
 }
 function card(a){
   var project=actionProject(a),why=actionWhy(a),key=S(a&&a.key);
@@ -77,10 +78,11 @@ function installStyle(){
   var s=document.createElement('style');
   s.id='pst-home-action-only-css';
   s.textContent='\
-#page-workspace-home.pst-home-action-only> :not(#pst-home-operating-grid-v1):not(#pst-openai-assistant-v1){display:none!important}\
+#page-workspace-home.pst-home-action-only> :not(#pst-home-operating-grid-v1){display:none!important}\
+#page-workspace-home.pst-home-action-only>#pst-openai-assistant-v1{display:block!important}\
 #page-workspace-home.pst-home-action-only{padding-top:0!important}\
 #pst-home-operating-grid-v1{display:block!important;max-width:1120px;margin:0 auto;padding:34px 28px 24px}\
-#page-workspace-home.pst-home-action-only>#pst-openai-assistant-v1{display:block!important;max-width:1120px;margin:0 auto 64px!important}\
+#page-workspace-home.pst-home-action-only>#pst-openai-assistant-v1{max-width:1120px;margin:0 auto 64px!important}\
 .pst-hao-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid #e5e8ea}\
 .pst-hao-head span{display:block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7a838b;margin-bottom:6px}\
 .pst-hao-head h1{font-size:28px;line-height:1.15;letter-spacing:-.025em;color:#17263d;margin:0}\
@@ -128,7 +130,7 @@ function renderLoaded(data){
   var h=host();if(!h)return false;
   var snap=data&&data.snap?data.snap:snapshot();
   var actions=displayActions(snap);
-  h.innerHTML='<header class="pst-hao-head"><div><span>HOME</span><h1>Duhet veprimi yt</h1><p>Puna që kërkon ndërhyrjen tënde tani. Projektet aktive nuk zhduken vetëm sepse ende nuk kanë një task të krijuar.</p></div>'
+  h.innerHTML='<header class="pst-hao-head"><div><span>HOME</span><h1>Duhet veprimi yt</h1><p>Puna që kërkon ndërhyrjen tënde tani. Projektet nuk zhduken vetëm sepse ende nuk kanë një task të krijuar.</p></div>'
     +(actions.length?'<div class="pst-hao-count">'+actions.length+' për tani</div>':'')+'</header>'
     +(actions.length?'<section class="pst-hao-list">'+actions.map(card).join('')+'</section>':'<section class="pst-hao-empty"><b>Asgjë nuk kërkon ndërhyrjen tënde tani.</b><span>PPPP vazhdon të monitorojë projektet dhe do të nxjerrë këtu veprimin e radhës kur nevojitet.</span></section>');
   bind(h);
