@@ -1,0 +1,31 @@
+name: Project Control Home smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pristeel-project-control-home-v1.js'
+      - 'pristeel-redesign-finalizer-v1.js'
+      - 'tests/project-control-home-smoke.mjs'
+      - '.github/workflows/project-control-home-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-project-control-home-v1.js'
+      - 'pristeel-redesign-finalizer-v1.js'
+      - 'tests/project-control-home-smoke.mjs'
+      - '.github/workflows/project-control-home-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check pristeel-project-control-home-v1.js
+      - run: node --check pristeel-redesign-finalizer-v1.js
+      - run: node tests/project-control-home-smoke.mjs
