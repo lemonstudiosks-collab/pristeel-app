@@ -1,10 +1,14 @@
-/* PRISTEEL Live Home v3
- * Home shows only current user actions and recent linked project movement.
- * Projects remains the full register. Technical/review queues stay backstage.
+/* PRISTEEL Live Home v3.1
+ * Daily Home shows current user actions and recent linked project movement.
+ * The mount is fail-open: legacy Home content is never hidden by this module
+ * before the live root has mounted successfully.
  */
 (function(){
 'use strict';
-if(window.__pstProjectControlHomeV2){try{if(window.PSTProjectControlHomeV1&&typeof window.PSTProjectControlHomeV1.apply==='function')window.PSTProjectControlHomeV1.apply(true);}catch(e){}return;}
+if(window.__pstProjectControlHomeV2){
+  try{if(window.PSTProjectControlHomeV1&&typeof window.PSTProjectControlHomeV1.apply==='function')window.PSTProjectControlHomeV1.apply(true);}catch(e){}
+  return;
+}
 window.__pstProjectControlHomeV2=true;
 window.__pstLiveHomeV3=true;
 
@@ -16,44 +20,184 @@ function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 function ts(v){var n=Date.parse(v||'');return Number.isFinite(n)?n:0;}
 function clamp(v,n){v=S(v).replace(/\s+/g,' ').trim();return v.length>n?v.slice(0,n-1)+'…':v;}
 function iso(d){return new Date(d).toISOString();}
-function activeHome(){var p=document.getElementById('page-workspace-home');return p&&p.classList.contains('active')&&p.style.display!=='none'?p:null;}
+function activeHome(){
+  var p=document.getElementById('page-workspace-home');
+  if(!p)return null;
+  if(p.style&&p.style.display==='none')return null;
+  try{var cs=window.getComputedStyle?window.getComputedStyle(p):null;if(cs&&cs.display==='none')return null;}catch(e){}
+  return p;
+}
 function db(path){if(typeof window.supaFetch!=='function')return Promise.reject(new Error('Databaza nuk është gati.'));return window.supaFetch(path);}
 function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null;}catch(e){return null;}}
 async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow();}catch(e){return sessionNow();}}
-function shortDate(v){var d=new Date(v);if(isNaN(d.getTime()))return'';var now=new Date(),y=new Date(now);y.setDate(now.getDate()-1);var hm=d.toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'});if(d.toDateString()===now.toDateString())return'Sot · '+hm;if(d.toDateString()===y.toDateString())return'Dje · '+hm;return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short'})+' · '+hm;}
-function dueLabel(v){if(!v)return'';var d=new Date(v+'T12:00:00'),now=new Date();if(isNaN(d.getTime()))return'';var days=Math.round((d-new Date(now.getFullYear(),now.getMonth(),now.getDate(),12))/86400000);if(days===0)return'Sot';if(days===1)return'Nesër';return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short'});}
+function shortDate(v){
+  var d=new Date(v);if(isNaN(d.getTime()))return'';
+  var now=new Date(),y=new Date(now);y.setDate(now.getDate()-1);
+  var hm=d.toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString()===now.toDateString())return'Sot · '+hm;
+  if(d.toDateString()===y.toDateString())return'Dje · '+hm;
+  return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short'})+' · '+hm;
+}
+function dueLabel(v){
+  if(!v)return'';
+  var d=new Date(v+'T12:00:00'),now=new Date();if(isNaN(d.getTime()))return'';
+  var days=Math.round((d-new Date(now.getFullYear(),now.getMonth(),now.getDate(),12))/86400000);
+  if(days===0)return'Sot';if(days===1)return'Nesër';
+  return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short'});
+}
 function projectMap(){var m={};state.projects.forEach(function(p){m[S(p.id)]=p;});return m;}
-function priorityScore(a){var p=N(a.priority),s=0;if(/urgjent|critical/.test(p))s=40;else if(/e larte|larte|high/.test(p))s=30;else if(/mesatare|medium/.test(p))s=20;else s=10;var d=ts(a.due_date?String(a.due_date)+'T12:00:00':'');if(d&&d<Date.now()+86400000)s+=8;var source=N(a.source);if(source==='semantic brain auto')s+=7;if(source==='email request auto')s+=6;if(source==='manual')s+=5;return s;}
-function groupedActions(){var by={},out=[];A(state.actions).forEach(function(a){var id=S(a.project_id);if(!id)return;if(!by[id])by[id]=[];by[id].push(a);});Object.keys(by).forEach(function(id){var rows=by[id].sort(function(a,b){return priorityScore(b)-priorityScore(a)||ts(b.created_at)-ts(a.created_at);});var top=rows[0],p=state.projects.find(function(x){return S(x.id)===id;});out.push({project:p||{id:id,name:top.project_name,client:top.client},top:top,count:rows.length,score:priorityScore(top),time:Math.max(ts(top.created_at),ts(p&&p.last_email_at),ts(p&&p.last_activity_at))});});return out.sort(function(a,b){return b.score-a.score||b.time-a.time;}).slice(0,8);}
+function priorityScore(a){
+  var p=N(a.priority),s=10;
+  if(/urgjent|critical/.test(p))s=40;else if(/e larte|larte|high/.test(p))s=30;else if(/mesatare|medium/.test(p))s=20;
+  var d=ts(a.due_date?String(a.due_date)+'T12:00:00':'');if(d&&d<Date.now()+86400000)s+=8;
+  var source=N(a.source);if(source==='semantic brain auto')s+=7;if(source==='email request auto')s+=6;if(source==='manual')s+=5;
+  return s;
+}
+function groupedActions(){
+  var by={},out=[];
+  A(state.actions).forEach(function(a){var id=S(a.project_id);if(!id)return;(by[id]||(by[id]=[])).push(a);});
+  Object.keys(by).forEach(function(id){
+    var rows=by[id].sort(function(a,b){return priorityScore(b)-priorityScore(a)||ts(b.created_at)-ts(a.created_at);});
+    var top=rows[0],p=state.projects.find(function(x){return S(x.id)===id;});
+    out.push({project:p||{id:id,name:top.project_name,client:top.client},top:top,count:rows.length,score:priorityScore(top),time:Math.max(ts(top.created_at),ts(p&&p.last_email_at),ts(p&&p.last_activity_at))});
+  });
+  return out.sort(function(a,b){return b.score-a.score||b.time-a.time;}).slice(0,8);
+}
 function factText(f){var v=f&&f.value;if(v&&typeof v==='object')return S(v.summary||v.text||v.next_action||'');return S(v);}
-function buildActivities(){var pmap=projectMap(),rows=[];state.emails.forEach(function(r){var p=pmap[S(r.project_id)];if(!p||!r.sent_at)return;rows.push({type:'email',project_id:p.id,project:p.name,time:ts(r.sent_at),title:r.subject||'(pa subjekt)',detail:clamp(r.snippet,190),direction:N(r.direction)==='outgoing'?'outgoing':'incoming'});});state.facts.forEach(function(f){var p=pmap[S(f.project_id)],txt=factText(f);if(!p||!txt)return;var cat=N(f.category);if(cat!=='operator update'&&cat!=='email event ai'&&cat!=='execution')return;rows.push({type:'context',project_id:p.id,project:p.name,time:ts(f.updated_at||f.created_at),title:cat==='email event ai'?'PPPP e analizoi lëvizjen':'Update i konfirmuar',detail:clamp(txt,190),direction:'context'});});rows.sort(function(a,b){return b.time-a.time;});var seen={},out=[];rows.forEach(function(x){var k=[x.type,x.project_id,N(x.title),x.direction].join('|');if(seen[k]&&Math.abs(seen[k]-x.time)<120000)return;seen[k]=x.time;out.push(x);});state.activities=out.slice(0,18);}
-function latestSync(){var t=Math.max.apply(null,[state.loadedAt].concat(state.activities.map(function(a){return a.time;})));return t?shortDate(t):'';}
+function buildActivities(){
+  var pmap=projectMap(),rows=[];
+  state.emails.forEach(function(r){
+    var p=pmap[S(r.project_id)];if(!p||!r.sent_at)return;
+    rows.push({type:'email',project_id:p.id,project:p.name,time:ts(r.sent_at),title:r.subject||'(pa subjekt)',detail:clamp(r.snippet,190),direction:N(r.direction)==='outgoing'?'outgoing':'incoming'});
+  });
+  state.facts.forEach(function(f){
+    var p=pmap[S(f.project_id)],txt=factText(f);if(!p||!txt)return;
+    var cat=N(f.category);if(cat!=='operator update'&&cat!=='email event ai'&&cat!=='execution')return;
+    rows.push({type:'context',project_id:p.id,project:p.name,time:ts(f.updated_at||f.created_at),title:cat==='email event ai'?'PPPP e analizoi lëvizjen':'Update i konfirmuar',detail:clamp(txt,190),direction:'context'});
+  });
+  rows.sort(function(a,b){return b.time-a.time;});
+  var seen={},out=[];
+  rows.forEach(function(x){var k=[x.type,x.project_id,N(x.title),x.direction].join('|');if(seen[k]&&Math.abs(seen[k]-x.time)<120000)return;seen[k]=x.time;out.push(x);});
+  state.activities=out.slice(0,18);
+}
+function latestSync(){var vals=[state.loadedAt].concat(state.activities.map(function(a){return a.time;})),t=Math.max.apply(null,vals);return t?shortDate(t):'';}
 function activityIcon(a){if(a.type==='context')return'✓';return a.direction==='outgoing'?'↗':'↙';}
 function activityLabel(a){if(a.type==='context')return'PPPP update';return a.direction==='outgoing'?'Email dërguar':'Email pranuar';}
-function renderResult(root){var r=root.querySelector('.pst-live-result');if(!r)return;if(!state.last){r.hidden=true;r.innerHTML='';return;}r.hidden=false;if(state.last.kind==='error'){r.innerHTML='<div class="pst-live-msg err">'+E(state.last.text)+'</div>';return;}if(state.last.kind==='update'){r.innerHTML='<div class="pst-live-msg ok"><b>'+E(state.last.project||'Projekti')+'</b><span>'+E(state.last.text||'Update-i u ruajt.')+'</span></div>';return;}var x=state.last.data||{},html='<div class="pst-live-answer">'+E(x.answer||state.last.text||'').replace(/\n/g,'<br>')+'</div>';if(x.suggested_next_step)html+='<div class="pst-live-suggest"><b>Hapi i sugjeruar</b><span>'+E(x.suggested_next_step)+'</span></div>';if(x.navigation&&x.navigation.project_id)html+='<button type="button" class="pst-live-open-answer" data-live-open="'+E(x.navigation.project_id)+'">Hap '+E(x.navigation.project_name||'projektin')+' →</button>';r.innerHTML=html;}
-function render(){var page=activeHome();if(!page)return false;var root=ensureRoot(page),actions=groupedActions(),feed=state.activities.slice(0,13);root.querySelector('.pst-live-sync').textContent=state.loading?'Po sinkronizohet…':(latestSync()?'Sinkronizuar '+latestSync():'');root.querySelector('.pst-live-action-count').textContent=actions.length?actions.length+' projekte':'';root.querySelector('.pst-live-actions').innerHTML=actions.length?actions.map(function(x){var a=x.top,p=x.project,d=dueLabel(a.due_date);return '<article class="pst-live-action" role="button" tabindex="0" data-live-project="'+E(p.id)+'"><div class="pst-live-action-dot"></div><div class="pst-live-action-main"><div class="pst-live-action-top"><span>'+E(p.name||a.project_name||'Projekt')+'</span>'+(d?'<time>'+E(d)+'</time>':'')+'</div><h3>'+E(clamp(a.title,150))+'</h3>'+(a.detail?'<p>'+E(clamp(a.detail,230))+'</p>':'')+'<div class="pst-live-action-foot"><span>'+E(p.client||'')+'</span>'+(x.count>1?'<small>+'+(x.count-1)+' veprime të tjera në projekt</small>':'')+'</div></div><div class="pst-live-arrow">→</div></article>';}).join(''):'<div class="pst-live-clear"><div>✓</div><b>Nuk ka veprime të konfirmuara për momentin.</b><span>PPPP nuk do të krijojë urgjencë vetëm për ta mbushur Home-in.</span></div>';
-root.querySelector('.pst-live-feed').innerHTML=feed.length?feed.map(function(a){return '<article class="pst-live-feed-row" role="button" tabindex="0" data-live-project="'+E(a.project_id)+'"><div class="pst-live-feed-icon '+E(a.direction)+'">'+activityIcon(a)+'</div><div class="pst-live-feed-copy"><div><b>'+E(a.project)+'</b><time>'+E(shortDate(a.time))+'</time></div><span>'+E(activityLabel(a))+' · '+E(clamp(a.title,92))+'</span>'+(a.detail?'<p>'+E(clamp(a.detail,145))+'</p>':'')+'</div></article>';}).join(''):'<div class="pst-live-empty">Ende pa lëvizje të lidhura.</div>';
-var btn=root.querySelector('.pst-live-send'),input=root.querySelector('.pst-live-input');if(btn){btn.disabled=state.busy;btn.textContent=state.busy?'…':'↑';}if(input)input.disabled=state.busy;renderResult(root);return true;}
-function ensureRoot(page){var root=document.getElementById('pst-project-control-home-v2');if(root)return root;var old=document.getElementById('pst-project-control-home-v1');if(old)old.remove();root=document.createElement('section');root.id='pst-project-control-home-v2';root.innerHTML=''
-+'<header class="pst-live-head"><div><span class="pst-live-kicker"><i></i> PPPP LIVE</span><h1>Çfarë kërkon vëmendjen tënde tani</h1><p>Home reflekton lëvizjet aktuale të projekteve. Projektet e plota mbeten te Projects.</p></div><small class="pst-live-sync"></small></header>'
-+'<form class="pst-live-command"><div class="pst-live-command-mark">P</div><textarea rows="1" class="pst-live-input" placeholder="Pyet PPPP, ose jep një update: ‘STACON po pret datën e auditimit nga Eurosteel’"></textarea><button class="pst-live-send" type="submit" aria-label="Dërgo">↑</button></form><div class="pst-live-result" hidden></div>'
-+'<div class="pst-live-grid"><section class="pst-live-panel pst-live-needs"><header><div><span>KËRKON VEPRIMIN TËND</span><h2>Vetëm ajo që është aktuale</h2></div><small class="pst-live-action-count"></small></header><div class="pst-live-actions"></div></section>'
-+'<aside class="pst-live-panel pst-live-moves"><header><div><span>LËVIZJET E FUNDIT</span><h2>Çfarë ka ndryshuar</h2></div><i></i></header><div class="pst-live-feed"></div></aside></div>';
-page.appendChild(root);bind(root);return root;}
+function renderResult(root){
+  var r=root.querySelector('.pst-live-result');if(!r)return;
+  if(!state.last){r.hidden=true;r.innerHTML='';return;}r.hidden=false;
+  if(state.last.kind==='error'){r.innerHTML='<div class="pst-live-msg err">'+E(state.last.text)+'</div>';return;}
+  if(state.last.kind==='update'){r.innerHTML='<div class="pst-live-msg ok"><b>'+E(state.last.project||'Projekti')+'</b><span>'+E(state.last.text||'Update-i u ruajt.')+'</span></div>';return;}
+  var x=state.last.data||{},html='<div class="pst-live-answer">'+E(x.answer||state.last.text||'').replace(/\n/g,'<br>')+'</div>';
+  if(x.suggested_next_step)html+='<div class="pst-live-suggest"><b>Hapi i sugjeruar</b><span>'+E(x.suggested_next_step)+'</span></div>';
+  if(x.navigation&&x.navigation.project_id)html+='<button type="button" class="pst-live-open-answer" data-live-open="'+E(x.navigation.project_id)+'">Hap '+E(x.navigation.project_name||'projektin')+' →</button>';
+  r.innerHTML=html;
+}
+function render(){
+  var page=activeHome();if(!page)return false;
+  var root=ensureRoot(page),actions=groupedActions(),feed=state.activities.slice(0,13);
+  if(!root)return false;
+  root.querySelector('.pst-live-sync').textContent=state.loading?'Po sinkronizohet…':(latestSync()?'Sinkronizuar '+latestSync():'');
+  root.querySelector('.pst-live-action-count').textContent=actions.length?actions.length+' projekte':'';
+  root.querySelector('.pst-live-actions').innerHTML=actions.length?actions.map(function(x){
+    var a=x.top,p=x.project,d=dueLabel(a.due_date);
+    return '<article class="pst-live-action" role="button" tabindex="0" data-live-project="'+E(p.id)+'"><div class="pst-live-action-dot"></div><div class="pst-live-action-main"><div class="pst-live-action-top"><span>'+E(p.name||a.project_name||'Projekt')+'</span>'+(d?'<time>'+E(d)+'</time>':'')+'</div><h3>'+E(clamp(a.title,150))+'</h3>'+(a.detail?'<p>'+E(clamp(a.detail,230))+'</p>':'')+'<div class="pst-live-action-foot"><span>'+E(p.client||'')+'</span>'+(x.count>1?'<small>+'+(x.count-1)+' veprime të tjera në projekt</small>':'')+'</div></div><div class="pst-live-arrow">→</div></article>';
+  }).join(''):'<div class="pst-live-clear"><div>✓</div><b>Nuk ka veprime të konfirmuara për momentin.</b><span>PPPP nuk krijon urgjencë vetëm për ta mbushur Home-in.</span></div>';
+  root.querySelector('.pst-live-feed').innerHTML=feed.length?feed.map(function(a){
+    return '<article class="pst-live-feed-row" role="button" tabindex="0" data-live-project="'+E(a.project_id)+'"><div class="pst-live-feed-icon '+E(a.direction)+'">'+activityIcon(a)+'</div><div class="pst-live-feed-copy"><div><b>'+E(a.project)+'</b><time>'+E(shortDate(a.time))+'</time></div><span>'+E(activityLabel(a))+' · '+E(clamp(a.title,92))+'</span>'+(a.detail?'<p>'+E(clamp(a.detail,145))+'</p>':'')+'</div></article>';
+  }).join(''):'<div class="pst-live-empty">Ende pa lëvizje të lidhura.</div>';
+  var btn=root.querySelector('.pst-live-send'),input=root.querySelector('.pst-live-input');if(btn){btn.disabled=state.busy;btn.textContent=state.busy?'…':'↑';}if(input)input.disabled=state.busy;
+  renderResult(root);return true;
+}
+function ensureRoot(page){
+  if(!page)return null;
+  var root=document.getElementById('pst-project-control-home-v2');
+  if(root){if(!page.contains(root))page.appendChild(root);return root;}
+  var old=document.getElementById('pst-project-control-home-v1');if(old)old.remove();
+  root=document.createElement('section');root.id='pst-project-control-home-v2';
+  root.innerHTML=''
+    +'<header class="pst-live-head"><div><span class="pst-live-kicker"><i></i> PPPP LIVE</span><h1>Çfarë kërkon vëmendjen tënde tani</h1><p>Home reflekton lëvizjet aktuale të projekteve. Projektet e plota mbeten te Projects.</p></div><small class="pst-live-sync"></small></header>'
+    +'<form class="pst-live-command"><div class="pst-live-command-mark">P</div><textarea rows="1" class="pst-live-input" placeholder="Pyet PPPP, ose jep një update për një projekt"></textarea><button class="pst-live-send" type="submit" aria-label="Dërgo">↑</button></form><div class="pst-live-result" hidden></div>'
+    +'<div class="pst-live-grid"><section class="pst-live-panel pst-live-needs"><header><div><span>KËRKON VEPRIMIN TËND</span><h2>Vetëm ajo që është aktuale</h2></div><small class="pst-live-action-count"></small></header><div class="pst-live-actions"></div></section>'
+    +'<aside class="pst-live-panel pst-live-moves"><header><div><span>LËVIZJET E FUNDIT</span><h2>Çfarë ka ndryshuar</h2></div><i></i></header><div class="pst-live-feed"></div></aside></div>';
+  page.appendChild(root);bind(root);return root;
+}
 function isQuestion(q){return /\?|^(cka|çka|cfare|çfarë|kush|ku|kur|pse|si|a ka|a kemi|me trego|trego|cil|what|which|who|where|when|why|how)\b/i.test(S(q).trim());}
 function identityValues(p){return [p.name,p.business_ref,p.ref].concat(A(p.identity_aliases)).map(N).filter(function(x){return x.length>=5;});}
-function resolveLocal(q){var n=N(q),hits=[];state.projects.forEach(function(p){var score=0;identityValues(p).forEach(function(x){if(n.indexOf(x)>-1)score=Math.max(score,x.length);});if(score)hits.push({p:p,score:score});});hits.sort(function(a,b){return b.score-a.score;});return hits.length&&(!hits[1]||hits[0].score>hits[1].score+1)?hits[0].p:null;}
+function resolveLocal(q){
+  var n=N(q),hits=[];
+  state.projects.forEach(function(p){var score=0;identityValues(p).forEach(function(x){if(n.indexOf(x)>-1)score=Math.max(score,x.length);});if(score)hits.push({p:p,score:score});});
+  hits.sort(function(a,b){return b.score-a.score;});return hits.length&&(!hits[1]||hits[0].score>hits[1].score+1)?hits[0].p:null;
+}
 async function askAI(q){var AI=window.PSTOpenAIAssistantV1;if(!AI||typeof AI.ask!=='function')throw new Error('PPPP AI nuk është gati.');return AI.ask(q,{scope:'global'});}
-async function edgeOperator(projectId,update){var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase nuk është gati.');var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');async function run(t){return fetch(base+'/functions/v1/pppp-project-operator-update',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({project_id:projectId,update:update})});}var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}if(!res.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,700));return data;}
-async function submit(q){state.busy=true;render();try{if(isQuestion(q)){state.last={kind:'answer',data:await askAI(q)};return;}var p=resolveLocal(q),probe=null;if(!p){probe=await askAI('Identifiko vetëm projektin PPPP që i përket këtij update-i operativ. Mos hamendëso nëse nuk është unik. Update: '+q);var pid=probe&&probe.navigation&&probe.navigation.project_id;p=state.projects.find(function(x){return S(x.id)===S(pid);})||null;}if(!p)throw new Error('Nuk e lidha dot me një projekt unik. Përmend emrin e projektit në update.');var out=await edgeOperator(p.id,q);state.last={kind:'update',project:p.name,text:out.summary||'Update-i u ruajt.'};await load(true);}catch(e){state.last={kind:'error',text:S(e&&e.message||e)};}finally{state.busy=false;render();}}
+async function edgeOperator(projectId,update){
+  var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase nuk është gati.');
+  var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
+  async function run(t){return fetch(base+'/functions/v1/pppp-project-operator-update',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({project_id:projectId,update:update})});}
+  var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}
+  if(!res.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,700));return data;
+}
+async function submit(q){
+  state.busy=true;render();
+  try{
+    if(isQuestion(q)){state.last={kind:'answer',data:await askAI(q)};return;}
+    var p=resolveLocal(q),probe=null;
+    if(!p){probe=await askAI('Identifiko vetëm projektin PPPP që i përket këtij update-i operativ. Mos hamendëso nëse nuk është unik. Update: '+q);var pid=probe&&probe.navigation&&probe.navigation.project_id;p=state.projects.find(function(x){return S(x.id)===S(pid);})||null;}
+    if(!p)throw new Error('Nuk e lidha dot me një projekt unik. Përmend emrin e projektit në update.');
+    var out=await edgeOperator(p.id,q);state.last={kind:'update',project:p.name,text:out.summary||'Update-i u ruajt.'};await load(true);
+  }catch(e){state.last={kind:'error',text:S(e&&e.message||e)};}finally{state.busy=false;render();}
+}
 function openProject(id){if(id&&typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);}
-function bind(root){if(root.dataset.bound==='1')return;root.dataset.bound='1';var form=root.querySelector('.pst-live-command'),input=root.querySelector('.pst-live-input');form.addEventListener('submit',function(e){e.preventDefault();var q=S(input.value).trim();if(!q||state.busy)return;input.value='';submit(q);});input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit();}});root.addEventListener('click',function(e){var t=e.target.closest('[data-live-project],[data-live-open]');if(t)openProject(t.getAttribute('data-live-project')||t.getAttribute('data-live-open'));});root.addEventListener('keydown',function(e){var t=e.target.closest('[data-live-project]');if(t&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openProject(t.getAttribute('data-live-project'));}});}
-async function load(force){if(!activeHome())return false;if(state.loading)return false;if(!force&&state.loadedAt&&Date.now()-state.loadedAt<15000){render();return true;}state.loading=true;render();try{var now=new Date(),since=new Date(now.getTime()-14*86400000),lte=new Date(now.getTime()+10*60000);var out=await Promise.all([db('projects?select=id,name,client,status,pipeline_stage,operational_state,last_activity_at,last_email_at,updated_at,business_ref,ref,identity_aliases&order=last_activity_at.desc.nullslast&limit=500'),db('pppp_home_current_actions_v1?select=id,project_id,project_name,client,title,detail,due_date,priority,status,source,source_ref,category,created_at,operational_state,operational_state_at,pipeline_stage,last_activity_at,last_email_at&order=created_at.desc&limit=250').catch(function(){return[];}),db('project_emails?project_id=not.is.null&select=id,project_id,gmail_message_id,subject,snippet,sent_at,direction,from_email,to_emails&sent_at=gte.'+encodeURIComponent(iso(since))+'&sent_at=lte.'+encodeURIComponent(iso(lte))+'&order=sent_at.desc&limit=500'),db('pppp_project_context_current_v?select=id,project_id,category,subject,fact_key,value,source_type,evidence_status,fact_status,created_at,updated_at&fact_status=eq.observed&order=updated_at.desc&limit=400').catch(function(){return[];})]);state.projects=A(out[0]);state.actions=A(out[1]);state.emails=A(out[2]);state.facts=A(out[3]);buildActivities();state.loadedAt=Date.now();return true;}catch(e){console.warn('PPPP Live Home:',e);state.last={kind:'error',text:'Home nuk arriti të lexojë gjendjen live: '+S(e&&e.message||e)};return false;}finally{state.loading=false;render();}}
-function css(){var old=document.getElementById('pst-project-control-home-v1-css');if(old)old.remove();var old2=document.getElementById('pst-project-control-home-v2-css');if(old2)old2.remove();if(document.getElementById('pst-live-home-v3-css'))return;var s=document.createElement('style');s.id='pst-live-home-v3-css';s.textContent=`
-#page-workspace-home>*:not(#pst-project-control-home-v2){display:none!important}#page-workspace-home{background:#f5f8f9!important;min-height:100vh!important}#pst-project-control-home-v2{display:block!important;max-width:1220px;margin:0 auto;padding:42px 26px 64px;color:#20333b;font-family:Inter,system-ui,-apple-system,sans-serif}.pst-live-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;padding:0 2px 22px;border-bottom:1px solid #dfe8ea}.pst-live-kicker{display:inline-flex;align-items:center;gap:8px;font-size:9px;font-weight:850;letter-spacing:1.5px;color:#66808a}.pst-live-kicker i,.pst-live-moves>header i{width:7px;height:7px;border-radius:50%;background:#54b77c;box-shadow:0 0 0 4px rgba(84,183,124,.11)}.pst-live-head h1{margin:7px 0 5px;font-size:29px;line-height:1.12;letter-spacing:-.9px;color:#20343c}.pst-live-head p{font-size:11.5px;color:#738890;line-height:1.5}.pst-live-sync{font-size:9px;color:#87999f;white-space:nowrap}.pst-live-command{display:flex;align-items:center;gap:10px;margin:20px 0 18px;background:#fff;border:1px solid #dce7ea;border-radius:15px;padding:7px 8px 7px 10px;box-shadow:0 5px 18px rgba(35,67,77,.05)}.pst-live-command-mark{width:35px;height:35px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#e7f2f5;color:#377286;font-weight:850}.pst-live-input{flex:1;min-height:39px;max-height:110px;resize:vertical;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#243942!important;padding:9px 4px!important;font-size:12.5px!important}.pst-live-input::placeholder{color:#91a2a8}.pst-live-send{width:39px;height:39px;border:0;border-radius:11px;background:#3c8298;color:#fff;font-size:18px;cursor:pointer}.pst-live-send:disabled{opacity:.5}.pst-live-result{margin:-7px 0 18px;padding:13px 15px;border-radius:13px;background:#eef5f7;border:1px solid #d9e8ec}.pst-live-answer{font-size:11.5px;line-height:1.6;color:#314b55}.pst-live-suggest{display:flex;gap:9px;margin-top:8px;font-size:10px}.pst-live-suggest b{color:#39778a}.pst-live-msg{display:flex;gap:10px;font-size:10.5px}.pst-live-msg.ok b{color:#387256}.pst-live-msg.err{color:#9c4b3c}.pst-live-open-answer{margin-top:8px;border:0;background:transparent;color:#39798c;font-size:10px;font-weight:800;padding:0;cursor:pointer}.pst-live-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(330px,.8fr);gap:18px;align-items:start}.pst-live-panel{background:#fff;border:1px solid #dce6e9;border-radius:18px;box-shadow:0 5px 18px rgba(32,62,72,.045);overflow:hidden}.pst-live-panel>header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 15px;border-bottom:1px solid #e7eef0}.pst-live-panel header span{font-size:8px;letter-spacing:1.25px;font-weight:850;color:#82949a}.pst-live-panel h2{margin-top:2px;font-size:16px;letter-spacing:-.3px;color:#2a4048}.pst-live-panel header small{font-size:9px;color:#66808a}.pst-live-actions{padding:8px}.pst-live-action{display:grid;grid-template-columns:10px minmax(0,1fr) 24px;gap:11px;padding:14px 13px;margin:5px 0;border:1px solid #e4ebed;border-radius:13px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s,transform .14s}.pst-live-action:hover{border-color:#cadadd;box-shadow:0 6px 16px rgba(36,67,77,.06);transform:translateY(-1px)}.pst-live-action-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;background:#4a91a6}.pst-live-action-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.pst-live-action-top span{font-size:9px;font-weight:800;color:#60808b;text-transform:none}.pst-live-action-top time{font-size:8.5px;color:#8a9a9f;white-space:nowrap}.pst-live-action h3{margin:3px 0 0;font-size:13px;line-height:1.35;color:#263c45}.pst-live-action p{margin-top:5px;font-size:9.5px;line-height:1.45;color:#73858c}.pst-live-action-foot{display:flex;justify-content:space-between;gap:12px;margin-top:7px;padding-top:7px;border-top:1px dashed #e5ebed;font-size:8.5px;color:#92a0a5}.pst-live-action-foot small{font-size:8.5px;color:#758b94}.pst-live-arrow{font-size:17px;color:#70a0af;padding-top:14px}.pst-live-clear{padding:40px 24px;text-align:center;color:#72868d}.pst-live-clear div{margin:0 auto 8px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e9f5ee;color:#4e8a67}.pst-live-clear b{display:block;font-size:11px;color:#526a73}.pst-live-clear span{display:block;margin-top:5px;font-size:9.5px}.pst-live-moves{position:sticky;top:18px}.pst-live-feed{padding:7px 9px 10px;background:#fafcfc}.pst-live-feed-row{display:grid;grid-template-columns:29px minmax(0,1fr);gap:10px;padding:10px;margin:5px 0;border:1px solid #e5ebed;border-radius:11px;background:#fff;cursor:pointer}.pst-live-feed-row:hover{border-color:#d0dde0}.pst-live-feed-icon{width:27px;height:27px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#eef5f7;color:#47798a;font-size:11px;font-weight:800}.pst-live-feed-icon.outgoing{background:#eef3f8;color:#55758d}.pst-live-feed-icon.context{background:#edf7f1;color:#4b7b60}.pst-live-feed-copy>div{display:flex;justify-content:space-between;gap:8px}.pst-live-feed-copy b{font-size:9.5px;color:#324a54;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pst-live-feed-copy time{font-size:8px;color:#9aa9ae;white-space:nowrap}.pst-live-feed-copy>span{display:block;margin-top:2px;font-size:9px;color:#667c85;line-height:1.35}.pst-live-feed-copy p{margin-top:4px;font-size:8.5px;color:#93a1a6;line-height:1.35}.pst-live-empty{padding:30px 18px;text-align:center;font-size:9.5px;color:#87999f}.pst-live-action:focus-visible,.pst-live-feed-row:focus-visible,.pst-live-send:focus-visible{outline:3px solid rgba(74,145,166,.25);outline-offset:2px}@media(max-width:1000px){.pst-live-grid{grid-template-columns:1fr}.pst-live-moves{position:static}}@media(max-width:720px){#pst-project-control-home-v2{padding:24px 10px 44px}.pst-live-head{display:block}.pst-live-sync{display:block;margin-top:8px}.pst-live-head h1{font-size:24px}.pst-live-action{grid-template-columns:8px minmax(0,1fr) 18px}.pst-live-action-top{display:block}.pst-live-action-top time{display:block;margin-top:3px}.pst-live-action-foot{display:block}.pst-live-action-foot small{display:block;margin-top:3px}}
-`;document.head.appendChild(s);}
-function apply(force){css();var page=activeHome();if(!page)return false;ensureRoot(page);render();load(!!force);return true;}
+function bind(root){
+  if(root.dataset.bound==='1')return;root.dataset.bound='1';
+  var form=root.querySelector('.pst-live-command'),input=root.querySelector('.pst-live-input');
+  form.addEventListener('submit',function(e){e.preventDefault();var q=S(input.value).trim();if(!q||state.busy)return;input.value='';submit(q);});
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit();}});
+  root.addEventListener('click',function(e){var t=e.target.closest('[data-live-project],[data-live-open]');if(t)openProject(t.getAttribute('data-live-project')||t.getAttribute('data-live-open'));});
+  root.addEventListener('keydown',function(e){var t=e.target.closest('[data-live-project]');if(t&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openProject(t.getAttribute('data-live-project'));}});
+}
+async function load(force){
+  if(!activeHome())return false;if(state.loading)return false;if(!force&&state.loadedAt&&Date.now()-state.loadedAt<15000){render();return true;}
+  state.loading=true;render();
+  try{
+    var now=new Date(),since=new Date(now.getTime()-14*86400000),lte=new Date(now.getTime()+10*60000);
+    var out=await Promise.all([
+      db('projects?select=id,name,client,status,pipeline_stage,operational_state,last_activity_at,last_email_at,updated_at,business_ref,ref,identity_aliases&order=last_activity_at.desc.nullslast&limit=500'),
+      db('pppp_home_current_actions_v1?select=id,project_id,project_name,client,title,detail,due_date,priority,status,source,source_ref,category,created_at,operational_state,operational_state_at,pipeline_stage,last_activity_at,last_email_at&order=created_at.desc&limit=250').catch(function(){return[];}),
+      db('project_emails?project_id=not.is.null&select=id,project_id,gmail_message_id,subject,snippet,sent_at,direction,from_email,to_emails&sent_at=gte.'+encodeURIComponent(iso(since))+'&sent_at=lte.'+encodeURIComponent(iso(lte))+'&order=sent_at.desc&limit=500'),
+      db('pppp_project_context_current_v?select=id,project_id,category,subject,fact_key,value,source_type,evidence_status,fact_status,created_at,updated_at&fact_status=eq.observed&order=updated_at.desc&limit=400').catch(function(){return[];})
+    ]);
+    state.projects=A(out[0]);state.actions=A(out[1]);state.emails=A(out[2]);state.facts=A(out[3]);buildActivities();state.loadedAt=Date.now();return true;
+  }catch(e){console.warn('PPPP Live Home:',e);state.last={kind:'error',text:'Home nuk arriti të lexojë gjendjen live: '+S(e&&e.message||e)};return false;}
+  finally{state.loading=false;render();}
+}
+function css(){
+  var old=document.getElementById('pst-project-control-home-v1-css');if(old)old.remove();var old2=document.getElementById('pst-project-control-home-v2-css');if(old2)old2.remove();if(document.getElementById('pst-live-home-v3-css'))return;
+  var s=document.createElement('style');s.id='pst-live-home-v3-css';s.textContent=`
+#page-workspace-home{background:#f5f8f9!important;min-height:100vh!important}
+#pst-project-control-home-v2{display:block!important;max-width:1220px;margin:0 auto;padding:42px 26px 64px;color:#20333b;font-family:Inter,system-ui,-apple-system,sans-serif}
+.pst-live-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;padding:0 2px 22px;border-bottom:1px solid #dfe8ea}.pst-live-kicker{display:inline-flex;align-items:center;gap:8px;font-size:9px;font-weight:850;letter-spacing:1.5px;color:#66808a}.pst-live-kicker i,.pst-live-moves>header i{width:7px;height:7px;border-radius:50%;background:#54b77c;box-shadow:0 0 0 4px rgba(84,183,124,.11)}.pst-live-head h1{margin:7px 0 5px;font-size:29px;line-height:1.12;letter-spacing:-.9px;color:#20343c}.pst-live-head p{font-size:11.5px;color:#738890;line-height:1.5}.pst-live-sync{font-size:9px;color:#87999f;white-space:nowrap}
+.pst-live-command{display:flex;align-items:center;gap:10px;margin:20px 0 18px;background:#fff;border:1px solid #dce7ea;border-radius:15px;padding:7px 8px 7px 10px;box-shadow:0 5px 18px rgba(35,67,77,.05)}.pst-live-command-mark{width:35px;height:35px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#e7f2f5;color:#377286;font-weight:850}.pst-live-input{flex:1;min-height:39px;max-height:110px;resize:vertical;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#243942!important;padding:9px 4px!important;font-size:12.5px!important}.pst-live-input::placeholder{color:#91a2a8}.pst-live-send{width:39px;height:39px;border:0;border-radius:11px;background:#3c8298;color:#fff;font-size:18px;cursor:pointer}.pst-live-send:disabled{opacity:.5}
+.pst-live-result{margin:-7px 0 18px;padding:13px 15px;border-radius:13px;background:#eef5f7;border:1px solid #d9e8ec}.pst-live-answer{font-size:11.5px;line-height:1.6;color:#314b55}.pst-live-suggest{display:flex;gap:9px;margin-top:8px;font-size:10px}.pst-live-suggest b{color:#39778a}.pst-live-msg{display:flex;gap:10px;font-size:10.5px}.pst-live-msg.ok b{color:#387256}.pst-live-msg.err{color:#9c4b3c}.pst-live-open-answer{margin-top:8px;border:0;background:transparent;color:#39798c;font-size:10px;font-weight:800;padding:0;cursor:pointer}
+.pst-live-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(330px,.8fr);gap:18px;align-items:start}.pst-live-panel{background:#fff;border:1px solid #dce6e9;border-radius:18px;box-shadow:0 5px 18px rgba(32,62,72,.045);overflow:hidden}.pst-live-panel>header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 15px;border-bottom:1px solid #e7eef0}.pst-live-panel header span{font-size:8px;letter-spacing:1.25px;font-weight:850;color:#82949a}.pst-live-panel h2{margin-top:2px;font-size:16px;letter-spacing:-.3px;color:#2a4048}.pst-live-panel header small{font-size:9px;color:#66808a}
+.pst-live-actions{padding:8px}.pst-live-action{display:grid;grid-template-columns:10px minmax(0,1fr) 24px;gap:11px;padding:14px 13px;margin:5px 0;border:1px solid #e4ebed;border-radius:13px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s,transform .14s}.pst-live-action:hover{border-color:#cadadd;box-shadow:0 6px 16px rgba(36,67,77,.06);transform:translateY(-1px)}.pst-live-action-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;background:#4a91a6}.pst-live-action-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.pst-live-action-top span{font-size:9px;font-weight:800;color:#60808b}.pst-live-action-top time{font-size:8.5px;color:#8a9a9f;white-space:nowrap}.pst-live-action h3{margin:3px 0 0;font-size:13px;line-height:1.35;color:#263c45}.pst-live-action p{margin-top:5px;font-size:9.5px;line-height:1.45;color:#73858c}.pst-live-action-foot{display:flex;justify-content:space-between;gap:12px;margin-top:7px;padding-top:7px;border-top:1px dashed #e5ebed;font-size:8.5px;color:#92a0a5}.pst-live-action-foot small{font-size:8.5px;color:#758b94}.pst-live-arrow{font-size:17px;color:#70a0af;padding-top:14px}
+.pst-live-clear{padding:40px 24px;text-align:center;color:#72868d}.pst-live-clear div{margin:0 auto 8px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e9f5ee;color:#4e8a67}.pst-live-clear b{display:block;font-size:11px;color:#526a73}.pst-live-clear span{display:block;margin-top:5px;font-size:9.5px}.pst-live-moves{position:sticky;top:18px}.pst-live-feed{padding:7px 9px 10px;background:#fafcfc}.pst-live-feed-row{display:grid;grid-template-columns:29px minmax(0,1fr);gap:10px;padding:10px;margin:5px 0;border:1px solid #e5ebed;border-radius:11px;background:#fff;cursor:pointer}.pst-live-feed-row:hover{border-color:#d0dde0}.pst-live-feed-icon{width:27px;height:27px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#eef5f7;color:#47798a;font-size:11px;font-weight:800}.pst-live-feed-icon.outgoing{background:#eef3f8;color:#55758d}.pst-live-feed-icon.context{background:#edf7f1;color:#4b7b60}.pst-live-feed-copy>div{display:flex;justify-content:space-between;gap:8px}.pst-live-feed-copy b{font-size:9.5px;color:#324a54;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pst-live-feed-copy time{font-size:8px;color:#9aa9ae;white-space:nowrap}.pst-live-feed-copy>span{display:block;margin-top:2px;font-size:9px;color:#667c85;line-height:1.35}.pst-live-feed-copy p{margin-top:4px;font-size:8.5px;color:#93a1a6;line-height:1.35}.pst-live-empty{padding:30px 18px;text-align:center;font-size:9.5px;color:#87999f}
+.pst-live-action:focus-visible,.pst-live-feed-row:focus-visible,.pst-live-send:focus-visible{outline:3px solid rgba(74,145,166,.25);outline-offset:2px}@media(max-width:1000px){.pst-live-grid{grid-template-columns:1fr}.pst-live-moves{position:static}}@media(max-width:720px){#pst-project-control-home-v2{padding:24px 10px 44px}.pst-live-head{display:block}.pst-live-sync{display:block;margin-top:8px}.pst-live-head h1{font-size:24px}.pst-live-action{grid-template-columns:8px minmax(0,1fr) 18px}.pst-live-action-top{display:block}.pst-live-action-top time{display:block;margin-top:3px}.pst-live-action-foot{display:block}.pst-live-action-foot small{display:block;margin-top:3px}}
+`;
+  document.head.appendChild(s);
+}
+function apply(force){
+  var page=activeHome();
+  if(!page)return false;
+  css();
+  var root=ensureRoot(page);if(!root)return false;
+  render();load(!!force);return true;
+}
 function schedule(){[0,90,320,900,1800].forEach(function(ms){setTimeout(function(){apply(false);},ms);});}
-document.addEventListener('pst:modules-ready',function(){[0,100,400,1000].forEach(function(ms){setTimeout(function(){apply(true);},ms);});},{once:true});document.addEventListener('click',function(e){var nav=e.target&&e.target.closest&&e.target.closest('.pst-ws-navbtn,[onclick*="pstWorkspaceGo"],[onclick*="showPage"]');if(nav)setTimeout(function(){apply(false);},120);},true);window.addEventListener('pageshow',function(){setTimeout(function(){apply(true);},100);},{once:true});document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(function(){apply(true);},100);});if(document.readyState!=='loading')schedule();else document.addEventListener('DOMContentLoaded',schedule,{once:true});
+document.addEventListener('pst:modules-ready',function(){[0,100,400,1000].forEach(function(ms){setTimeout(function(){apply(true);},ms);});},{once:true});
+document.addEventListener('click',function(e){var nav=e.target&&e.target.closest&&e.target.closest('.pst-ws-navbtn,[onclick*="pstWorkspaceGo"],[onclick*="showPage"]');if(nav)setTimeout(function(){apply(false);},120);},true);
+window.addEventListener('pageshow',function(){setTimeout(function(){apply(true);},100);},{once:true});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(function(){apply(true);},100);});
+if(document.readyState!=='loading')schedule();else document.addEventListener('DOMContentLoaded',schedule,{once:true});
 window.PSTProjectControlHomeV1={apply:apply,load:load,render:render,_state:state};
 })();

@@ -22,15 +22,21 @@ assert.match(home,/pppp_project_context_current_v/,'Home must read current proje
 assert.match(home,/PSTOpenAIAssistantV1/,'Home input must reuse authenticated PPPP AI');
 assert.match(home,/pppp-project-operator-update/,'operator statements must use the safe project update boundary');
 assert.match(home,/data-live-project/,'action and movement rows must open the project');
-assert.match(home,/#page-workspace-home>\*:not\(#pst-project-control-home-v2\)\{display:none!important\}/,'legacy Home renderers must stay backstage');
 assert.match(home,/KËRKON VEPRIMIN TËND/,'Home must answer what needs the user now');
 assert.match(home,/LËVIZJET E FUNDIT/,'Home must answer what changed recently');
 assert.match(home,/PPPP LIVE/,'Home must expose live-state identity');
 assert.match(home,/Nuk ka veprime të konfirmuara/,'Home must allow a calm empty state');
+
+// Blank-screen regression guard: the live module may only replace the old Home after it mounts.
+assert.doesNotMatch(home,/#page-workspace-home>\*:not\(#pst-project-control-home-v2\)\{display:none!important\}/,'Home must never hide fallback content before the live root mounts');
+assert.doesNotMatch(home,/classList\.contains\(['"]active['"]\)/,'Home visibility must not depend on a fragile active CSS class');
+assert.match(home,/getComputedStyle/,'Home mount must use actual visibility as a fallback');
+assert.match(home,/var root=ensureRoot\(page\);if\(!root\)return false;/,'Home must confirm the live root exists before rendering/loading');
+
 assert.doesNotMatch(home,/RADARI I PROJEKTEVE|AKTIVITET SOT|PROJEKTE AKTIVE/,'Home must not revert to project-register metrics');
 assert.doesNotMatch(home,/MutationObserver/,'Home must not use MutationObserver');
 assert.doesNotMatch(home,/setInterval\s*\(/,'Home must not poll');
 assert.doesNotMatch(home,/gmail.*send|send.*gmail/i,'Home must not implement outbound mail sending');
 assert.doesNotMatch(home,/\bBLLOKUES\b|\bVONUAR\b|\[AUTO\]/,'Home must not reproduce heuristic alarm labels');
 
-console.log('PPPP Live Home v3 smoke: OK');
+console.log('PPPP Live Home v3 fail-open smoke: OK');
