@@ -67,6 +67,10 @@
       "reason": "Loaded dynamically by pristeel-redesign-finalizer-v1.js as the final daily Home presentation. It replaces the heuristic action-card wall with the PPPP Control Room over real project activity."
     },
     {
+      "path": "pristeel-home-live-sync-v1.js",
+      "reason": "Loaded dynamically by pristeel-redesign-finalizer-v1.js to refresh the visible operator Home every five minutes and surface only protected, high-confidence project changes."
+    },
+    {
       "path": "pristeel-automation-truth-v1.js",
       "reason": "Loaded dynamically at bootstrap start by pristeel-auth-persistence.js to stabilize runtime presentation and reconcile supplier/waiting truth."
     },
@@ -144,6 +148,11 @@
       "source": "pristeel-redesign-finalizer-v1.js",
       "contains": "pristeel-project-control-home-v1.js",
       "reason": "Final redesign layer loads the PPPP Control Room Home."
+    },
+    {
+      "source": "pristeel-redesign-finalizer-v1.js",
+      "contains": "pristeel-home-live-sync-v1.js",
+      "reason": "Final redesign layer loads the autonomous Home refresh and protected project-change adapter."
     },
     {
       "source": "pristeel-auth-persistence.js",
