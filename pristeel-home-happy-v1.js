@@ -1,6 +1,7 @@
-/* PRISTEEL Home Happy v9
+/* PRISTEEL Home Happy v10
  * Compatibility shim + live navigation stability guard.
  * Loads Operational Truth and the final PPPP Control Room Home with live cache busting.
+ * v10 hardens initial production boot so the legacy Home cannot remain the visible owner.
  */
 (function(){
 'use strict';
@@ -80,6 +81,18 @@ function decorate(){
  ensureControlRoom(true);
  return true;
 }
+function bootControlRoom(){
+ try{decorate();}catch(e){}
+}
+function scheduleInitialBoot(){
+ bootControlRoom();
+ setTimeout(bootControlRoom,180);
+ setTimeout(bootControlRoom,700);
+ setTimeout(bootControlRoom,1600);
+}
 ensureTruth();installNavigationStability();
 window.PSTHomeHappyV1={decorate:decorate,refresh:decorate,applyNow:decorate,installNavigationStability:installNavigationStability,ensureTruth:ensureTruth,ensureControlRoom:ensureControlRoom,route:route,openProjects:openProjects};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scheduleInitialBoot,{once:true});else scheduleInitialBoot();
+window.addEventListener('pageshow',bootControlRoom);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)bootControlRoom();});
 })();
