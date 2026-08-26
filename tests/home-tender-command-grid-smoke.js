@@ -23,7 +23,6 @@ w.PSTHomeCanonicalV1={snapshot:()=>({actions:[
   {key:'a1',title:'Shqyrto përgjigjen e klientit',why:'Ka ardhur përgjigje e re që kërkon vendim.',tag:'VEPRIM',project_name:'SSP - EWAS'}
 ],waiting:[{project_id:'p2',name:'Dukley',text:'Po pritet klienti'}],projects:[{id:'p1',name:'Active'}]})};
 
-// Tender logic remains tested independently. It is no longer duplicated as a passive Home cockpit.
 const award={id:'t1',title:'Denmark – Structural steelworks – FMV2 - Smedeentreprise - Bassin Folemarksvej',authority:'HOFOR',relevance_score:96,category:'steel_structure',status:'new',payload:{source:'TED',notice_phase:'award',workflow:'winner_outreach',capability_fit:'strong',winner:{name:'Holmskov Rustfri A/S',country:'DNK',email:'th@holmskov.dk'}}};
 const open={id:'t2',title:'Steel supply',authority:'Authority',deadline:null,relevance_score:100,category:'raw_material',status:'new',payload:{source:'KRPP',notice_phase:'opportunity',capability_fit:'strong'}};
 const otherOpen={id:'t3',title:'Another steel opportunity',authority:'Authority',deadline:null,relevance_score:99,category:'steel_structure',status:'new',payload:{source:'TED',notice_phase:'opportunity',capability_fit:'strong'}};
@@ -42,7 +41,6 @@ const tenderSrc=fs.readFileSync('pristeel-tender-priority-actions-v1.js','utf8')
 assert.ok(tenderSrc.includes('/users/me/drafts'),'outreach must create Gmail drafts, not send directly');
 assert.ok(!tenderSrc.match(/messages\/send|GmailApp\.send|sendEmail\s*\(/),'runtime must never auto-send email');
 
-// Final Home presentation must be action-only and reuse Canonical Home state/click ownership.
 w.eval(fs.readFileSync('pristeel-home-operating-grid-v1.js','utf8'));
 const H=w.PSTHomeOperatingGridV1;
 assert.ok(H,'home action-only API missing');
@@ -50,16 +48,17 @@ assert.ok(H.renderLoaded({snap:w.PSTHomeCanonicalV1.snapshot()}));
 const page=w.document.getElementById('page-workspace-home');
 assert.ok(page.classList.contains('pst-home-action-only'),'Home must enter action-only mode');
 assert.strictEqual(w.document.querySelectorAll('.pst-hao-card').length,1,'only canonical human-needed actions should render');
+assert.strictEqual(w.document.querySelectorAll('.pst-hao-go').length,0,'Home must not render a separate Vepro button');
 assert.strictEqual(w.document.querySelectorAll('.pst-hog-tile').length,0,'passive command tiles must be retired');
 assert.strictEqual(w.document.querySelectorAll('.pst-hog-priority').length,0,'tender cockpit must not be duplicated on Home');
-assert.ok(w.document.body.textContent.includes('Duhet veprimi yt'));
+assert.ok(w.document.body.textContent.includes('Projektet që kërkojnë veprimin tënd'));
 assert.ok(w.document.getElementById('pst-home-operating-grid-v1').textContent.includes('Shqyrto përgjigjen e klientit'));
 assert.ok(w.document.getElementById('pst-home-operating-grid-v1').textContent.includes('Pse tani?'));
 assert.ok(!w.document.getElementById('pst-home-operating-grid-v1').textContent.includes('Projektet në pritje'),'waiting lane must not be visible on action-only Home');
 assert.ok(!w.document.getElementById('pst-home-operating-grid-v1').textContent.includes('aktive'),'passive active-project counters must not be visible');
 assert.ok(w.document.getElementById('pst-home-action-only-css').textContent.includes('> :not(#pst-home-operating-grid-v1){display:none!important}'),'all legacy/passive direct Home children must be visually retired');
-w.document.querySelector('.pst-hao-go').click();
-assert.strictEqual(canonicalOpen,1,'Vepro must proxy the existing canonical action click instead of inventing a second action engine');
+w.document.querySelector('.pst-hao-card').click();
+assert.strictEqual(canonicalOpen,1,'whole Home card must proxy the existing canonical action click');
 
 const homeSrc=fs.readFileSync('pristeel-home-operating-grid-v1.js','utf8');
 assert.ok(homeSrc.includes("A(snap.actions).slice(0,5)"),'Home must cap visible work at five actions');
@@ -67,7 +66,6 @@ assert.ok(!homeSrc.includes('supaFetch'),'final Home presentation must not perfo
 assert.ok(!/setInterval\s*\(|MutationObserver/.test(homeSrc),'Home must remain event-driven');
 assert.ok(homeSrc.includes("pst:home-canonical-rendered"),'Home must refresh from canonical render events');
 
-// Project classification remains available as internal metadata but is retired from the daily Projects surface.
 w.__pstWorkspaceProjectRows=[{id:'p1',origin_type:'tender',work_model:'production',status:'aktiv',pipeline_stage:'supplier_selection',operational_state:'action_required'}];
 page.classList.remove('active');
 w.document.getElementById('page-workspace-projects').classList.add('active');
@@ -82,5 +80,5 @@ const navSrc=fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 assert.ok(navSrc.includes('pristeel-home-operating-grid-v1.js'));
 assert.ok(navSrc.includes('pristeel-tender-priority-actions-v1.js'));
 assert.ok(navSrc.includes('pristeel-project-classification-v1.js'));
-console.log('Home action-only and tender priority smoke test passed.');
+console.log('Home full-card action and tender priority smoke test passed.');
 dom.window.close();
