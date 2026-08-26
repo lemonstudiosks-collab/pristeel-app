@@ -1,5 +1,6 @@
 # Isolated PPPP production Pages recovery deploy.
 # Kept separate from the legacy Pages pipeline so production can recover if that workflow is disabled/stuck.
+# Recovery trigger v2: workflow already exists on main before this push.
 name: PPPP production recovery deploy
 
 on:
