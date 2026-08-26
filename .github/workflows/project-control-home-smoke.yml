@@ -4,14 +4,18 @@ on:
   pull_request:
     paths:
       - 'pristeel-project-control-home-v1.js'
+      - 'pristeel-home-happy-v1.js'
       - 'pristeel-redesign-finalizer-v1.js'
+      - 'pages-artifact-manifest.json'
       - 'tests/project-control-home-smoke.mjs'
       - '.github/workflows/project-control-home-smoke.yml'
   push:
     branches: [main]
     paths:
       - 'pristeel-project-control-home-v1.js'
+      - 'pristeel-home-happy-v1.js'
       - 'pristeel-redesign-finalizer-v1.js'
+      - 'pages-artifact-manifest.json'
       - 'tests/project-control-home-smoke.mjs'
       - '.github/workflows/project-control-home-smoke.yml'
 
@@ -27,5 +31,6 @@ jobs:
         with:
           node-version: '22'
       - run: node --check pristeel-project-control-home-v1.js
+      - run: node --check pristeel-home-happy-v1.js
       - run: node --check pristeel-redesign-finalizer-v1.js
       - run: node tests/project-control-home-smoke.mjs
