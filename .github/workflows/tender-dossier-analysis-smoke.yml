@@ -1,0 +1,33 @@
+name: Tender dossier analysis smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pristeel-tender-dossier-analysis-v1.js'
+      - 'pristeel-redesign-finalizer-v1.js'
+      - 'supabase/functions/pppp-tender-dossier-analysis/**'
+      - 'tests/tender-dossier-analysis-smoke.mjs'
+      - '.github/workflows/tender-dossier-analysis-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-tender-dossier-analysis-v1.js'
+      - 'pristeel-redesign-finalizer-v1.js'
+      - 'supabase/functions/pppp-tender-dossier-analysis/**'
+      - 'tests/tender-dossier-analysis-smoke.mjs'
+      - '.github/workflows/tender-dossier-analysis-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check pristeel-tender-dossier-analysis-v1.js
+      - run: node --check supabase/functions/pppp-tender-dossier-analysis/parser.mjs
+      - run: node tests/tender-dossier-analysis-smoke.mjs
