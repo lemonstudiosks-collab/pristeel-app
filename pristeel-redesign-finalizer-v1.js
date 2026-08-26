@@ -1,15 +1,15 @@
 /* PRISTEEL redesign finalizer v1
- * Revision: 20260826-project-control-home2.
+ * Revision: 20260826-project-control-home3.
  * Re-applies presentation-only styling after workspace renders.
  * Project Control Home owns the daily Home presentation; canonical engines remain backstage.
- * Bounded presentation retries plus an ownership observer that prevents retired Home renderers from reclaiming the page.
+ * Bounded presentation retries only; no persistent DOM ownership observer.
  */
 (function(){
 'use strict';
 if(window.__pstRedesignFinalizerV1)return;
 window.__pstRedesignFinalizerV1=true;
 
-var controlObserver=null,claimingControl=false,reclaimTimer=null;
+var claimingControl=false;
 function primaryNavigationResilience(){try{return !!window.PSTPrimaryNavResilienceV1;}catch(e){console.warn('PRISTEEL finalizer primary navigation:',e);return false;}}
 function readability(){try{var R=window.PSTPlatformReadabilityV1;if(R&&typeof R.apply==='function'){R.apply(document);return;}if(document.querySelector('script[data-pst-platform-readability]'))return;var s=document.createElement('script');s.src='pristeel-platform-readability-v1.js?v=20260812-1';s.defer=true;s.setAttribute('data-pst-platform-readability','1');s.onload=function(){var x=window.PSTPlatformReadabilityV1;if(x&&typeof x.apply==='function')x.apply(document);};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer readability:',e);}}
 function sectionTheme(){try{var T=window.PSTSectionThemeV1;if(T&&typeof T.apply==='function'){T.apply();return;}if(document.querySelector('script[data-pst-section-theme]'))return;var s=document.createElement('script');s.src='pristeel-section-theme-v1.js?v=20260822-2';s.defer=true;s.setAttribute('data-pst-section-theme','1');document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer section theme:',e);}}
@@ -37,28 +37,9 @@ function claimControlRoom(){
   if(!page||!root||!page.contains(root))return false;
   if(claimingControl)return true;
   claimingControl=true;
-  try{retireOtherHomeChildren(page,root);}finally{claimingControl=false;}
-  if(!controlObserver&&typeof MutationObserver==='function'){
-    controlObserver=new MutationObserver(function(){
-      if(claimingControl)return;
-      if(reclaimTimer)clearTimeout(reclaimTimer);
-      reclaimTimer=setTimeout(function(){
-        reclaimTimer=null;
-        var p=document.getElementById('page-workspace-home'),r=document.getElementById('pst-project-control-home-v2');
-        if(!p)return;
-        if(r&&p.contains(r)){claimControlRoom();return;}
-        var X=window.PSTProjectControlHomeV1;
-        if(X&&typeof X.apply==='function'){
-          try{X.apply(true);}catch(e){}
-          setTimeout(claimControlRoom,0);
-        }
-      },0);
-    });
-    controlObserver.observe(page,{childList:true});
-  }
-  return true;
+  try{return retireOtherHomeChildren(page,root);}finally{claimingControl=false;}
 }
-function projectControlHome(){try{var X=window.PSTProjectControlHomeV1;if(X&&typeof X.apply==='function'){X.apply(true);setTimeout(claimControlRoom,0);return;}if(document.querySelector('script[data-pst-project-control-home-v1]')){setTimeout(claimControlRoom,0);return;}var s=document.createElement('script');s.src='pristeel-project-control-home-v1.js?v=20260826-2';s.defer=true;s.setAttribute('data-pst-project-control-home-v1','1');s.onload=function(){var x=window.PSTProjectControlHomeV1;if(x&&typeof x.apply==='function')x.apply(true);setTimeout(claimControlRoom,0);};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer project control home:',e);}}
+function projectControlHome(){try{var X=window.PSTProjectControlHomeV1;if(X&&typeof X.apply==='function'){X.apply(true);setTimeout(claimControlRoom,0);return;}if(document.querySelector('script[data-pst-project-control-home-v1]')){setTimeout(claimControlRoom,0);return;}var s=document.createElement('script');s.src='pristeel-project-control-home-v1.js?v=20260826-3';s.defer=true;s.setAttribute('data-pst-project-control-home-v1','1');s.onload=function(){var x=window.PSTProjectControlHomeV1;if(x&&typeof x.apply==='function')x.apply(true);setTimeout(claimControlRoom,0);};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer project control home:',e);}}
 function tenderDossierAnalysis(){try{var X=window.PSTTenderDossierAnalysisV1;if(X&&typeof X.apply==='function'){X.apply();return;}if(document.querySelector('script[data-pst-tender-dossier-analysis-v1]'))return;var s=document.createElement('script');s.src='pristeel-tender-dossier-analysis-v1.js?v=20260826-1';s.defer=true;s.setAttribute('data-pst-tender-dossier-analysis-v1','1');s.onload=function(){var x=window.PSTTenderDossierAnalysisV1;if(x&&typeof x.apply==='function')x.apply();};document.head.appendChild(s);}catch(e){console.warn('PRISTEEL finalizer tender dossier analysis:',e);}}
 function priorityIsUrgent(row){if(!row)return false;var title=row.dataset&&row.dataset.pstOriginalTitle||'';if(!title){var t=row.querySelector('.pst-ws-action-title');title=t?String(t.getAttribute('title')||t.textContent||''):'';}var tag=row.querySelector('.pst-ws-action-tag'),label=tag?String(tag.textContent||''):'';return /^\s*urgjent\b/i.test(title)||/\burgjent\b/i.test(label)||String(row.getAttribute('data-urgent')||'')==='1';}
 function repairPriorityControls(row){if(!row)return;var controls=row.querySelector('.pst-ws-action-controls');if(!controls)return;var canonicalOpen=row.querySelector('.pst-ws-action-open'),canonicalDone=row.querySelector('.pst-ws-action-done'),canonicalDismiss=row.querySelector('.pst-ws-action-dismiss'),source=row.querySelector('.pst-task-source-open');row.querySelectorAll('.pst-dash-task-open').forEach(function(b){if(b.parentNode)b.remove();});if(canonicalDone){canonicalDone.textContent='Kryer';canonicalDone.title='Shënoje si të kryer';canonicalDone.classList.remove('pst-dash-task-dismiss');}if(canonicalDismiss){canonicalDismiss.textContent='•••';canonicalDismiss.title='Hiqe nga lista';}if(canonicalOpen)controls.appendChild(canonicalOpen);if(canonicalDone)controls.appendChild(canonicalDone);if(source)controls.appendChild(source);if(canonicalDismiss)controls.appendChild(canonicalDismiss);row.querySelectorAll('.pst-dash-task-menu').forEach(function(menu){if(menu.parentNode)menu.remove();});}
