@@ -1,6 +1,6 @@
-/* PRISTEEL Home Operating Grid v4
- * Final Home presentation: project/action-first work surface.
- * Canonical Home remains the sole data/state owner.
+/* PRISTEEL Home Operating Grid v4.1
+ * Legacy compatibility fallback only. Live Home v3 is the production Home owner.
+ * Canonical Home remains a backstage data/state source.
  * This module performs no Supabase reads/writes and no outbound actions.
  */
 (function(){
@@ -8,7 +8,7 @@
 if(window.__pstHomeOperatingGridV1)return;
 window.__pstHomeOperatingGridV1=true;
 
-var VERSION='20260826-project-cards-4';
+var VERSION='20260826-live-home-retired-1';
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -17,6 +17,18 @@ function snapshot(){
   catch(e){return{actions:[],waiting:[],projects:[]};}
 }
 function page(){return document.getElementById('page-workspace-home');}
+function liveHomeRoot(){
+  var p=page(),root=document.getElementById('pst-project-control-home-v2');
+  return p&&root&&p.contains(root)&&window.__pstLiveHomeV3?root:null;
+}
+function retireForLiveHome(){
+  var p=page(),root=liveHomeRoot();if(!p||!root)return false;
+  p.classList.remove('pst-home-action-only','pst-home-grid-final');
+  p.setAttribute('data-pst-home-owner','live-home-v3');
+  var h=document.getElementById('pst-home-operating-grid-v1');
+  if(h&&h.parentNode)h.parentNode.removeChild(h);
+  return true;
+}
 function active(){var p=page();return !!(p&&p.classList.contains('active'));}
 function nativeRow(key){
   var rows=document.querySelectorAll('#pst-ws-home-actions .pst-canonical-action[data-ws-action]');
@@ -84,21 +96,23 @@ function installStyle(){
 ';document.head.appendChild(s);
 }
 function host(){
+  if(retireForLiveHome())return null;
   var p=page();if(!p)return null;p.classList.add('pst-home-action-only','pst-home-grid-final');var h=document.getElementById('pst-home-operating-grid-v1');
   if(!h){h=document.createElement('main');h.id='pst-home-operating-grid-v1';h.setAttribute('data-pst-home-final-presentation','action-only');p.appendChild(h);}return h;
 }
 function runAction(key){if(!proxyAction(key))console.warn('PPPP Home: canonical action target missing',key);}
 function bind(h){h.querySelectorAll('[data-pst-home-action]').forEach(function(c){c.onclick=function(){runAction(c.getAttribute('data-pst-home-action'));};c.onkeydown=function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();runAction(c.getAttribute('data-pst-home-action'));}};});}
 function renderLoaded(data){
+  if(retireForLiveHome())return false;
   var p=page();if(!p||!p.classList.contains('active'))return false;installStyle();var h=host();if(!h)return false;var snap=data&&data.snap?data.snap:snapshot();var actions=displayActions(snap);
   h.innerHTML='<header class="pst-hao-head"><div><span>HOME</span><h1>Projektet që kërkojnë veprimin tënd</h1><p>PPPP vendos projektet përpara: çfarë po ndodh, pse kërkon vëmendje dhe cili është hapi i radhës.</p></div>'+(actions.length?'<div class="pst-hao-count">'+actions.length+' për tani</div>':'')+'</header>'
     +(actions.length?'<section class="pst-hao-list">'+actions.map(card).join('')+'</section>':'<section class="pst-hao-empty"><b>Asnjë projekt nuk kërkon ndërhyrjen tënde tani.</b><span>PPPP vazhdon të monitorojë projektet dhe do ta nxjerrë këtu veprimin e radhës kur nevojitet.</span></section>');bind(h);return true;
 }
-function render(){if(!active())return false;return renderLoaded({snap:snapshot()});}
-function schedule(){if(typeof queueMicrotask==='function')queueMicrotask(render);else Promise.resolve().then(render);}
+function render(){if(retireForLiveHome())return false;if(!active())return false;return renderLoaded({snap:snapshot()});}
+function schedule(){if(retireForLiveHome())return;if(typeof queueMicrotask==='function')queueMicrotask(render);else Promise.resolve().then(render);}
 function homeIntent(el){if(!el||!el.closest)return false;var n=el.closest('[data-ws-go="home"],[data-nav="home"],[data-pst-nav="home"],a[href="#home"],button');if(!n)return false;var t=S(n.textContent).toLowerCase().trim();return n.matches('[data-ws-go="home"],[data-nav="home"],[data-pst-nav="home"],a[href="#home"]')||t==='home';}
-function boot(){installStyle();if(active())render();}
+function boot(){installStyle();if(retireForLiveHome())return;if(active())render();}
 document.addEventListener('pst:home-canonical-rendered',schedule);document.addEventListener('pst:modules-ready',schedule);document.addEventListener('click',function(e){if(homeIntent(e.target))schedule();},true);window.addEventListener('focus',function(){if(active())schedule();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTHomeOperatingGridV1={version:VERSION,render:render,refresh:render,renderLoaded:renderLoaded,snapshot:snapshot,_test:{proxyAction:proxyAction,nativeRow:nativeRow,openProject:openProject,displayActions:displayActions,actionProject:actionProject,actionTitle:actionTitle,actionWhy:actionWhy,actionTag:actionTag,active:active,homeIntent:homeIntent}};
+window.PSTHomeOperatingGridV1={version:VERSION,render:render,refresh:render,renderLoaded:renderLoaded,snapshot:snapshot,_test:{proxyAction:proxyAction,nativeRow:nativeRow,openProject:openProject,displayActions:displayActions,actionProject:actionProject,actionTitle:actionTitle,actionWhy:actionWhy,actionTag:actionTag,active:active,homeIntent:homeIntent,liveHomeRoot:liveHomeRoot,retireForLiveHome:retireForLiveHome}};
 })();
