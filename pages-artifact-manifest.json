@@ -63,6 +63,10 @@
       "reason": "Loaded dynamically by pristeel-home-runtime-owner-guard-v1.js as the UX interaction layer for the final Canonical Home."
     },
     {
+      "path": "pristeel-project-control-home-v1.js",
+      "reason": "Loaded dynamically by pristeel-redesign-finalizer-v1.js as the final daily Home presentation. It replaces the heuristic action-card wall with the PPPP Control Room over real project activity."
+    },
+    {
       "path": "pristeel-automation-truth-v1.js",
       "reason": "Loaded dynamically at bootstrap start by pristeel-auth-persistence.js to stabilize runtime presentation and reconcile supplier/waiting truth."
     },
@@ -135,6 +139,11 @@
       "source": "pristeel-home-runtime-owner-guard-v1.js",
       "contains": "pristeel-home-canonical-interaction-v1.js",
       "reason": "Final Workspace Home interaction dependency owned by the deterministic Home startup coordinator."
+    },
+    {
+      "source": "pristeel-redesign-finalizer-v1.js",
+      "contains": "pristeel-project-control-home-v1.js",
+      "reason": "Final redesign layer loads the PPPP Control Room Home."
     },
     {
       "source": "pristeel-auth-persistence.js",
