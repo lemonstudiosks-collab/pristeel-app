@@ -1,7 +1,7 @@
-/* PRISTEEL Home Happy v10
+/* PRISTEEL Home Happy v11
  * Compatibility shim + live navigation stability guard.
- * Loads Operational Truth and the final PPPP Control Room Home with live cache busting.
- * v10 hardens initial production boot so the legacy Home cannot remain the visible owner.
+ * Loads Operational Truth, the final PPPP Control Room Home and its production visual layer.
+ * v11 keeps Control Room boot deterministic and wires the dedicated Home visual refresh.
  */
 (function(){
 'use strict';
@@ -13,6 +13,15 @@ function S(v){return String(v==null?'':v);}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
 function mark(key){document.querySelectorAll('#pst-ws-canonical-nav .pst-ws-navbtn,.pst-ws-navbtn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-key')===key);});}
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);return true;}
+function ensureVisualCss(){
+ if(document.querySelector('link[data-pst-home-visual-refresh]'))return true;
+ var l=document.createElement('link');
+ l.rel='stylesheet';
+ l.href='pristeel-home-visual-refresh-v1.css?v=20260826-v1';
+ l.setAttribute('data-pst-home-visual-refresh','1');
+ document.head.appendChild(l);
+ return true;
+}
 function primeProjects(){var r=window.__pstWorkspaceProjectRows||window._allProjectsCache;if(Array.isArray(r)&&r.length)return Promise.resolve(r);var H=window.PSTHomeOperatingGridV1;if(H&&typeof H.loadData==='function')return Promise.resolve(H.loadData(false)).then(function(d){var p=d&&Array.isArray(d.projects)?d.projects:[];if(p.length)window._allProjectsCache=p;return p;}).catch(function(){return[];});return Promise.resolve([]);}
 function ensureTruth(){
  if(window.PSTOperationalTruthV1)return Promise.resolve(window.PSTOperationalTruthV1);
@@ -23,6 +32,7 @@ function ensureTruth(){
  return truthLoading;
 }
 function ensureControlRoom(force){
+ ensureVisualCss();
  if(window.__pstProjectControlHomeV2&&window.PSTProjectControlHomeV1&&typeof window.PSTProjectControlHomeV1.apply==='function'){try{window.PSTProjectControlHomeV1.apply(!!force);}catch(e){}return Promise.resolve(window.PSTProjectControlHomeV1);}
  if(controlLoading)return controlLoading;
  var existing=document.querySelector('script[data-pst-project-control-home-final]');
@@ -72,6 +82,7 @@ function installNavigationStability(){
  return true;
 }
 function decorate(){
+ ensureVisualCss();
  installNavigationStability();ensureTruth().then(function(T){if(T){try{T.decorateProjects();}catch(e){}try{T.syncHome(false);}catch(e){}}});
  var p=document.getElementById('page-workspace-home');
  if(!p||!p.classList.contains('active')||p.style.display==='none')return false;
@@ -85,13 +96,14 @@ function bootControlRoom(){
  try{decorate();}catch(e){}
 }
 function scheduleInitialBoot(){
+ ensureVisualCss();
  bootControlRoom();
  setTimeout(bootControlRoom,180);
  setTimeout(bootControlRoom,700);
  setTimeout(bootControlRoom,1600);
 }
-ensureTruth();installNavigationStability();
-window.PSTHomeHappyV1={decorate:decorate,refresh:decorate,applyNow:decorate,installNavigationStability:installNavigationStability,ensureTruth:ensureTruth,ensureControlRoom:ensureControlRoom,route:route,openProjects:openProjects};
+ensureVisualCss();ensureTruth();installNavigationStability();
+window.PSTHomeHappyV1={decorate:decorate,refresh:decorate,applyNow:decorate,installNavigationStability:installNavigationStability,ensureTruth:ensureTruth,ensureControlRoom:ensureControlRoom,ensureVisualCss:ensureVisualCss,route:route,openProjects:openProjects};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scheduleInitialBoot,{once:true});else scheduleInitialBoot();
 window.addEventListener('pageshow',bootControlRoom);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)bootControlRoom();});
