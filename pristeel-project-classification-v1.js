@@ -1,4 +1,4 @@
-/* PRISTEEL Project Work Surface v1
+/* PRISTEEL Project Work Surface v2
  * Final presentation/filter layer for Projects.
  * Keeps origin/work-model classification as hidden data, removes it from daily UI.
  * No business-data writes. No observers or polling.
@@ -8,6 +8,7 @@
 if(window.__pstProjectClassificationV1)return;
 window.__pstProjectClassificationV1=true;
 var state={work:'all'};
+var repair={attempts:0,pending:false};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
@@ -66,10 +67,15 @@ function ensureWorkFilters(p){
   bar.querySelectorAll('[data-pws-work]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-pws-work')===state.work);});
   return bar;
 }
+function forceAllProjects(p){
+  var all=p.querySelector('[data-pm-filter="all"]');
+  if(all&&!all.classList.contains('on')){all.click();return false;}
+  return true;
+}
 function forceList(p){
   try{localStorage.setItem('pristeel_projects_modern_view','list');}catch(e){}
   var list=p.querySelector('[data-pm-view="list"]'),board=p.querySelector('[data-pm-view="board"]');
-  if(board&&board.classList.contains('on')&&list&&!list.__pstPwsClicked){list.__pstPwsClicked=true;list.click();return false;}
+  if(board&&board.classList.contains('on')&&list){list.click();return false;}
   return true;
 }
 function rewriteRow(el,r){
@@ -87,12 +93,25 @@ function simplifyHeader(p){
   p.querySelectorAll('.pst-pc-badges').forEach(function(x){x.remove();});
   var sub=p.querySelector('.pst-pm-sub');if(sub)sub.textContent='Projekt → gjendja reale → hapi tjetër → afati kritik.';
 }
+function repairBlankList(p,map){
+  var rows=p.querySelectorAll('.pst-pm-row[data-project-id]');
+  if(rows.length){repair.attempts=0;return rows;}
+  var known=Object.keys(map).length;
+  if(!known||repair.pending||repair.attempts>=2||typeof window.pstProjectsModernRefresh!=='function')return rows;
+  repair.pending=true;repair.attempts++;
+  try{
+    Promise.resolve(window.pstProjectsModernRefresh()).finally(function(){repair.pending=false;schedule();});
+  }catch(e){repair.pending=false;}
+  return rows;
+}
 function decorate(){
   var p=document.getElementById('page-workspace-projects');if(!p||!p.classList.contains('active'))return false;
+  if(!forceAllProjects(p))return false;
   if(!forceList(p))return false;
   simplifyHeader(p);ensureWorkFilters(p);
-  var map=rowMap();p.querySelectorAll('.pst-pm-row[data-project-id]').forEach(function(el){rewriteRow(el,map[S(el.getAttribute('data-project-id'))]);});
-  return true;
+  var map=rowMap(),rows=repairBlankList(p,map);
+  rows.forEach(function(el){rewriteRow(el,map[S(el.getAttribute('data-project-id'))]);});
+  return rows.length>0||Object.keys(map).length===0;
 }
 function css(){if(document.getElementById('pst-project-classification-css'))return;var s=document.createElement('style');s.id='pst-project-classification-css';s.textContent=`
 #pst-pws-filterbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
@@ -123,6 +142,6 @@ function scheduleContext(){[60,220,700].forEach(function(ms){setTimeout(function
 css();wrap();[0,300,900,1800].forEach(function(ms){setTimeout(function(){wrap();decorate();},ms);});
 document.addEventListener('click',function(e){var t=e.target&&e.target.closest?e.target.closest('#page-workspace-projects,[data-pm-open],[onclick*="pstOpenProjectWorkspace"]'):null;if(t){setTimeout(decorate,20);scheduleContext();}},true);
 document.addEventListener('pst:modules-ready',function(){wrap();schedule();scheduleContext();},{once:true});
-window.PSTProjectClassificationV1={decorate:decorate,schedule:schedule,classification:classification,matches:function(r){return state.work==='all'||workState(r)===state.work;},workState:workState,nextAction:stageAction,_state:state};
+window.PSTProjectClassificationV1={decorate:decorate,schedule:schedule,classification:classification,matches:function(r){return state.work==='all'||workState(r)===state.work;},workState:workState,nextAction:stageAction,_state:state,_repair:repair};
 window.PSTProjectContextBridge={load:loadContext,get:function(projectId){return contextCache[S(projectId||window.__pstCurrentProjectId||window._curProjId)]||[];},clear:function(projectId){if(projectId)delete contextCache[S(projectId)];else contextCache={};}};
 })();
