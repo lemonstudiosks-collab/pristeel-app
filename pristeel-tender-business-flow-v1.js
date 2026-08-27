@@ -37,12 +37,12 @@ function capabilityFit(r){
  var s=Number(r&&r.relevance_score)||0;
  return s>=95?'strong':s>=85?'possible':'weak';
 }
-function capabilityFitLabel(v){return v==='strong'?'Strong':v==='possible'?'Për shqyrtim':'Low';}
+function capabilityFitLabel(v){return v==='strong'?'Përshtatje e fortë':v==='possible'?'Për shqyrtim':'Përshtatje e dobët';}
 function capabilityReason(r){
  var cm=capabilityMatches(r),parts=[];
  cm.slice(0,2).forEach(function(x){var t=String((x&&x.reason)||(x&&x.label)||'').trim();if(t)parts.push(t);});
  if(!parts.length&&Array.isArray(r&&r.match_reasons))parts=r.match_reasons.filter(Boolean).slice(0,2).map(String);
- return parts.join(' · ')||'Kërkon verifikim të scope-it dhe dokumenteve.';
+ return parts.join(' · ')||'Kërkon verifikim të fushës së punës dhe dokumenteve.';
 }
 function winner(r){
  var w=payload(r).winner;
@@ -165,7 +165,7 @@ function tenderBriefFallback(r,reason){
   next=w.email?'Shqyrto kompaninë fituese si kontakt potencial për sourcing/partneritet dhe përgatit outreach vetëm nëse ka kuptim.':'Hap TED/web dhe verifiko kompaninë e fituesit para çdo kontakti.';
   angle='Trajtoje si lead furnizimi/partneriteti për material ose kapacitet prodhimi, jo si mundësi për të ofertuar në kontratën e përfunduar.';
  }
- return{priority:fallbackPriority(r),fit:fallbackFit(r),business_mode:mode,summary:mode==='direct_bid'?'Mundësi për shqyrtim nga PRISTEEL bazuar në Capability Fit dhe të dhënat publike të tenderit.':mode==='winner_outreach'?'Kontratë TED e dhënë me fitues të identifikuar; vlera për PRISTEEL është një paketë e mundshme furnizimi/fabrikimi për fituesin, jo ofertimi në tender.':'Kontratë TED e dhënë; fituesi mund të jetë relevant për sourcing ose partneritet sipas paketës së identifikuar.',why_relevant:why,checks:checks,next_action:next,outreach_angle:angle,engine:'rules',fallback_reason:reason||null};
+ return{priority:fallbackPriority(r),fit:fallbackFit(r),business_mode:mode,summary:mode==='direct_bid'?'Mundësi për shqyrtim nga PRISTEEL bazuar në përshtatjen me kapacitetet dhe të dhënat publike të tenderit.':mode==='winner_outreach'?'Kontratë TED e dhënë me fitues të identifikuar; vlera për PRISTEEL është një paketë e mundshme furnizimi/fabrikimi për fituesin, jo ofertimi në tender.':'Kontratë TED e dhënë; fituesi mund të jetë relevant për sourcing ose partneritet sipas paketës së identifikuar.',why_relevant:why,checks:checks,next_action:next,outreach_angle:angle,engine:'rules',fallback_reason:reason||null};
 }
 function tenderBriefContext(r){
  var w=winner(r),p=payload(r);
@@ -206,7 +206,7 @@ function renderTenderBrief(r,brief){
  document.getElementById('pst-ti-title').textContent=r.title||'Tender';
  document.getElementById('pst-ti-meta').textContent=sourceLabel(r)+(w.name&&phase(r)==='award'?' · '+w.name:'')+' · Përshtatja '+capabilityFitLabel(capabilityFit(r))+' · '+String(r.relevance_score||0)+'%';
  var engine=brief.engine==='ai'?'AI':'Rregulla operative';
- body.innerHTML='<div style="display:flex;gap:7px;flex-wrap:wrap"><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.priority))+'</span><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.fit))+'</span><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.business_mode))+'</span><span class="pst-kek-chip">'+esc(engine)+'</span></div><div style="font-size:12.5px;line-height:1.65;color:#2C3237;margin-top:14px">'+esc(brief.summary)+'</div>'+briefList('Pse është për PRISTEEL',brief.why_relevant)+briefList('Çfarë duhet verifikuar',brief.checks)+'<div style="margin-top:14px;padding:11px 12px;border-radius:9px;background:#F6F8F9;font-size:12px;line-height:1.55;color:#30363B"><b>Hapi i rekomanduar:</b> '+esc(brief.next_action)+'</div>'+(brief.outreach_angle?'<div style="margin-top:10px;padding:11px 12px;border-radius:9px;background:#F8F5F2;font-size:12px;line-height:1.55;color:#4B4038"><b>Angle:</b> '+esc(brief.outreach_angle)+'</div>':'')+(brief.fallback_reason?'<div style="font-size:9.5px;color:#8B6B4E;margin-top:10px">'+esc(brief.fallback_reason)+'</div>':'');
+ body.innerHTML='<div style="display:flex;gap:7px;flex-wrap:wrap"><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.priority))+'</span><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.fit))+'</span><span class="pst-kek-chip">'+esc(intelligenceLabel(brief.business_mode))+'</span><span class="pst-kek-chip">'+esc(engine)+'</span></div><div style="font-size:12.5px;line-height:1.65;color:#2C3237;margin-top:14px">'+esc(brief.summary)+'</div>'+briefList('Pse është për PRISTEEL',brief.why_relevant)+briefList('Çfarë duhet verifikuar',brief.checks)+'<div style="margin-top:14px;padding:11px 12px;border-radius:9px;background:#F6F8F9;font-size:12px;line-height:1.55;color:#30363B"><b>Hapi i rekomanduar:</b> '+esc(brief.next_action)+'</div>'+(brief.outreach_angle?'<div style="margin-top:10px;padding:11px 12px;border-radius:9px;background:#F8F5F2;font-size:12px;line-height:1.55;color:#4B4038"><b>Qasja:</b> '+esc(brief.outreach_angle)+'</div>':'')+(brief.fallback_reason?'<div style="font-size:9.5px;color:#8B6B4E;margin-top:10px">'+esc(brief.fallback_reason)+'</div>':'');
  b.style.display='flex';
 }
 window.pstTenderIntelligenceClose=function(){var b=document.getElementById('pst-ti-backdrop');if(b)b.style.display='none';};
@@ -256,7 +256,7 @@ function setupShell(){
  addCapabilityCss();ensureSummary();ensureFitFilter();
  var title=page.querySelector('.pst-kek-title');if(title)title.textContent='Mundësi për PRISTEEL';
  var sub=page.querySelector('.pst-kek-sub');
- if(sub)sub.textContent='KRPP, APP dhe TED monitorohen automatikisht. Çdo njoftim vlerësohet kundrejt kapaciteteve reale të PRISTEEL, edhe kur titulli nuk përmend çelik. Strong kalon në fokus; sinjalet kontekstuale mbeten Për shqyrtim. Projekti krijohet vetëm pas aprovimit tonë.';
+ if(sub)sub.textContent='KRPP, APP dhe TED monitorohen automatikisht. Çdo njoftim vlerësohet kundrejt kapaciteteve reale të PRISTEEL, edhe kur titulli nuk përmend çelik. Përshtatja e fortë kalon në fokus; sinjalet kontekstuale mbeten Për shqyrtim. Projekti krijohet vetëm pas aprovimit tonë.';
  var eye=page.querySelector('.pst-kek-eye');if(eye)eye.textContent='INTELIGJENCA E PROKURIMIT PUBLIK · PËRSHTATJA';
  var tile=page.querySelector('[data-pst-kek-app] .pst-ws-app-sub');if(tile)tile.textContent='KRPP + APP + TED · mundësi të vlerësuara sipas kapaciteteve PRISTEEL';
  var ph=document.getElementById('pst-kek-phase');
@@ -341,7 +341,7 @@ function render(){
   if(q&&n([r.title,r.authority,r.procurement_no,r.publication_no,r.fpp,r.fpp_description,winner(r).name,winner(r).email,capabilityReason(r)].join(' ')).indexOf(q)<0)return false;
   return true;
  });
- if(!list.length){h.innerHTML='<div class="pst-kek-empty">Nuk ka mundësi që përputhen me filtrin. KRPP, APP dhe TED vlerësohen sipas Capability Fit të PRISTEEL; sinjalet kontekstuale mbeten për shqyrtim njerëzor.</div>';return;}
+ if(!list.length){h.innerHTML='<div class="pst-kek-empty">Nuk ka mundësi që përputhen me filtrin. KRPP, APP dhe TED vlerësohen sipas kapaciteteve të PRISTEEL; sinjalet kontekstuale mbeten për shqyrtim njerëzor.</div>';return;}
  h.innerHTML='<table class="pst-kek-table"><thead><tr><th>Tenderi</th><th>Burimi</th><th class="pst-capability-col">Përshtatja</th><th class="pst-reason-col">Pse për PRISTEEL</th><th>Publikuar</th><th>Afati</th><th>Statusi</th><th></th></tr></thead><tbody>'+list.map(function(r){
   var cf=capabilityFit(r),reason=capabilityReason(r),meta=esc(r.procurement_no||'')+(r.fpp?' · '+codeLabel(r)+' '+esc(r.fpp):'')+(r.authority?' · '+esc(r.authority):'');
   var isAward=phase(r)==='award';var actions=source(r)==='TED'&&isAward?tedActions(r):localActions(r);
