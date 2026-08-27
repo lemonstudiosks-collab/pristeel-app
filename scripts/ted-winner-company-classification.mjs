@@ -3,22 +3,23 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
 const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
-const VERSION='winner-company-v2';
+const VERSION='winner-company-v3';
 const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const unique=arr=>[...new Set((arr||[]).filter(Boolean))];
 
 const PRODUCER_RULES=[
+  [/\b(stahl(?:-|\s+und\s+)?metallbau|stahlbau|metallbau|schlosserei|maschinenfabrik|steel fabrication|steel construction|steel structures?|structural steel|metal structures?)\b/gi,4,'explicit steel-fabrication company terms'],
   [/\b(manufactur|fabricat|production|factory|workshop|plant)\w*/gi,3,'manufacturing/fabrication'],
-  [/\b(stahlbau|steel construction|steel structures?|structural steel|metallbau|metal structures?|maschinenfabrik)\b/gi,3,'structural-steel production'],
   [/\b(welding|schweiss|schweiß|laser cutting|plasma cutting|cnc|galvaniz|beschicht)\w*/gi,2,'fabrication processes'],
   [/\b(fertigung|produktion|werkstatt|stahlkonstruktion)\w*/gi,3,'German production terms'],
   [/\b(smed|smedearbejde|rustfri st[aå]l|vaerksted|værksted|produktion)\w*/gi,2,'Nordic fabrication terms']
 ];
 const GC_RULES=[
-  [/\b(general contractor|main contractor|building contractor|construction company|construction services)\b/gi,3,'general construction'],
+  [/\b(general contractor|main contractor|building contractor|construction company|construction services)\b/gi,4,'general construction'],
   [/\b(epc|engineering procurement construction|turnkey|design[ -]?build)\b/gi,4,'EPC/turnkey'],
-  [/\b(generalunternehmer|bauunternehmen|schluesselfertig|schlüsselfertig|hochbau|tiefbau)\w*/gi,3,'German GC terms'],
+  [/\b(generalunternehmer|bauunternehmen)\w*/gi,4,'explicit German GC terms'],
+  [/\b(schluesselfertig|schlüsselfertig|hochbau|tiefbau)\w*/gi,3,'German construction terms'],
   [/\b(project management|construction management|civil engineering)\b/gi,1,'project/construction management']
 ];
 const TRADER_RULES=[
@@ -83,7 +84,10 @@ function siteSeeds(w){return unique([...organizations(w).map(o=>o?.official_webs
 async function researchRow(row,{fetchImpl=fetch}={}){
   const w=winner(row),orgs=organizations(w),names=winnerNames(w),sites=siteSeeds(w);
   if(names.length>1||orgs.length>1){const c=classifyCompanyText('',{organizationCount:Math.max(names.length,orgs.length)});return{...c,source_urls:sites.slice(0,5)};}
-  let combined=` awarded company ${names.join(' ')}`,sources=[];
+  const nameEvidence=` awarded company ${names.join(' ')}`;
+  const nameOnly=classifyCompanyText(nameEvidence,{organizationCount:1});
+  if(nameOnly.company_type!=='unknown'&&['medium','high'].includes(nameOnly.confidence))return{...nameOnly,source_urls:[],text_chars:nameEvidence.length,classification_method:'legal_name'};
+  let combined=nameEvidence,sources=[];
   for(const seed of sites.slice(0,2)){
     try{
       const home=await fetchPage(seed,{fetchImpl});
@@ -95,7 +99,7 @@ async function researchRow(row,{fetchImpl=fetch}={}){
     }catch{}
   }
   const c=classifyCompanyText(combined,{organizationCount:1});
-  return{...c,source_urls:unique(sources).slice(0,6),text_chars:combined.length};
+  return{...c,source_urls:unique(sources).slice(0,6),text_chars:combined.length,classification_method:sources.length?'public_web':'legal_name_unresolved'};
 }
 async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',body,prefer}){
   const r=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
@@ -106,7 +110,7 @@ async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',bod
 async function patchRow(access,row,result){
   const p={...(row.payload||{})},w={...winner(row)};
   w.company_type=result.company_type;
-  w.company_classification={version:VERSION,company_type:result.company_type,confidence:result.confidence,scores:result.scores,evidence:result.evidence,source_urls:result.source_urls||[],classified_at:new Date().toISOString()};
+  w.company_classification={version:VERSION,company_type:result.company_type,confidence:result.confidence,scores:result.scores,evidence:result.evidence,source_urls:result.source_urls||[],classification_method:result.classification_method||'rules',classified_at:new Date().toISOString()};
   p.winner=w;p.workflow_track='ted_award_sales';p.business_mode='winner_outreach';p.company_verification_required=result.company_type==='unknown';p.cooperation_angle=cooperationAngle(result.company_type);
   await rest({...access,path:`kek_tender_watch?id=eq.${encodeURIComponent(row.id)}`,method:'PATCH',body:{payload:p,updated_at:new Date().toISOString()},prefer:'return=minimal'});
 }
@@ -115,10 +119,10 @@ export async function runTedWinnerCompanyClassification({mode=process.env.SYNC_M
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
   const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
   const raw=await rest({...access,path:`kek_tender_watch?select=id,title,relevance_score,status,payload&relevance_score=gte.${encodeURIComponent(minScore)}&order=published_date.desc&limit=500`});
-  const candidates=(Array.isArray(raw)?raw:[]).filter(r=>{const p=r?.payload||{},w=winner(r),c=w.company_classification;return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&r.status!=='ignored'&&winnerNames(w).length&&w.contact_enrichment&&(!c||c.version!==VERSION);}).slice(0,Math.max(0,maxRows));
+  const candidates=(Array.isArray(raw)?raw:[]).filter(r=>{const p=r?.payload||{},w=winner(r),c=w.company_classification,current=String(w.company_type||c?.company_type||'unknown');return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&r.status!=='ignored'&&winnerNames(w).length&&!['producer','gc_epc','trader_consortium'].includes(current);}).slice(0,Math.max(0,maxRows));
   const results=[];
   for(const row of candidates){
-    try{const result=await researchRow(row,{fetchImpl});if(mode==='apply')await patchRow(access,row,result);results.push({id:row.id,title:row.title,company_type:result.company_type,confidence:result.confidence,scores:result.scores,source_urls:result.source_urls||[]});}
+    try{const result=await researchRow(row,{fetchImpl});if(mode==='apply')await patchRow(access,row,result);results.push({id:row.id,title:row.title,company_type:result.company_type,confidence:result.confidence,scores:result.scores,source_urls:result.source_urls||[],classification_method:result.classification_method||'rules'});}
     catch(e){results.push({id:row.id,title:row.title,company_type:'unknown',confidence:'error',error:String(e?.message||e)});}
   }
   const summary={mode,version:VERSION,auth_mode:access.authMode||'service_key',minimum_score:minScore,max_rows:maxRows,candidates:candidates.length,classified:results.filter(x=>x.confidence!=='error').length,producer:results.filter(x=>x.company_type==='producer').length,gc_epc:results.filter(x=>x.company_type==='gc_epc').length,trader_consortium:results.filter(x=>x.company_type==='trader_consortium').length,unknown:results.filter(x=>x.company_type==='unknown').length,errors:results.filter(x=>x.confidence==='error').length,results};
