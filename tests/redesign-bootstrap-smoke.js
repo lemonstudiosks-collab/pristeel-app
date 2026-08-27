@@ -25,7 +25,7 @@ assert(cleanupPos>stabilityPos,'Home visual cleanup must load after Home stabili
 assert(source.includes("document.dispatchEvent(new CustomEvent('pst:modules-ready'))"), 'Bootstrap readiness event is missing');
 assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source), 'Bootstrap must not poll or observe the platform');
 
-assert(finalizer.includes('pristeel-openai-operating-assistant-v1.js?v=20260825-1'), 'Finalizer must load the server-side OpenAI operating assistant');
+assert(finalizer.includes('pristeel-openai-operating-assistant-v1.js?v=20260827-home1'), 'Finalizer must load the server-side OpenAI operating assistant');
 assert(finalizer.includes('data-pst-openai-assistant-v1'), 'OpenAI assistant loader must be idempotent');
 assert(openaiAssistant.includes('/functions/v1/pppp-openai-assistant'), 'OpenAI assistant must use the authenticated server-side Edge Function');
 assert(openaiAssistant.includes('PSTProjectContextBridge'), 'OpenAI assistant must extend the project context bridge instead of creating a second project store');
