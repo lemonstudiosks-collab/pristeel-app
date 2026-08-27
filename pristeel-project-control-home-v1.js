@@ -69,21 +69,31 @@ function factText(f){
   if(v&&typeof v==='object')return S(v.summary||v.text||v.current_state||v.next_action||'');
   return S(v);
 }
-function updateStateLabel(txt){
-  var n=N(txt);
+function updateStateLabel(txt,workflow){
+  var w=N(workflow),n=N(txt);
+  if(w==='wait for client')return'Në pritje të klientit';
+  if(w==='wait for supplier')return'Në pritje të furnitorit';
+  if(w==='wait internal')return'Në pritje të brendshme';
+  if(w==='action required')return'Kërkon veprim';
+  if(w==='execution')return'Në realizim';
   if(/nuk ka.{0,80}(veprim|ndjek)|pa veprim|no action|nothing.{0,50}follow/.test(n))return'Pa veprim';
-  if(/ne pritje|pret |presim|waiting|afatin|deri me|deri më/.test(n))return'Në pritje';
-  if(/aprov|approved|green light|driten e gjelber|dritën e gjelbër/.test(n))return'Konfirmuar';
+  if(/ne pritje|pret |presim|waiting|afatin|deri me/.test(n))return'Në pritje';
+  if(/aprov|approved|green light|driten e gjelber/.test(n))return'Konfirmuar';
   return'Aktiv';
 }
 function buildProjectUpdates(){
   var pmap=projectMap(),latest={};
   A(state.facts).forEach(function(f){
-    if(N(f.category)!=='operator update')return;
-    if(N(f.evidence_status)!=='confirmed'||N(f.fact_status)!=='observed')return;
-    var p=pmap[S(f.project_id)],txt=factText(f),time=ts(f.updated_at||f.created_at);
+    var cat=N(f.category),v=f&&f.value&&typeof f.value==='object'?f.value:{};
+    if(N(f.fact_status)!=='observed')return;
+    if(cat==='operator update'){
+      if(N(f.evidence_status)!=='confirmed')return;
+    }else if(cat==='email event ai'){
+      if(v.suppressed_by_operator_update===true||v.home_visible!==true||Number(v.confidence||0)<90)return;
+    }else return;
+    var p=pmap[S(f.project_id)],txt=factText(f),time=ts(v.source_sent_at||f.updated_at||f.created_at);
     if(!p||!txt||!time)return;
-    var row={project_id:p.id,project:p.name,client:p.client||'',time:time,detail:clamp(txt,420),state:updateStateLabel(txt)};
+    var row={project_id:p.id,project:p.name,client:p.client||'',time:time,detail:clamp(txt,520),state:updateStateLabel(txt,v.workflow_state||'')};
     if(!latest[p.id]||time>latest[p.id].time)latest[p.id]=row;
   });
   state.updates=Object.keys(latest).map(function(k){return latest[k];}).sort(function(a,b){return b.time-a.time;}).slice(0,10);
@@ -140,13 +150,69 @@ function ensureRoot(page){
   page.appendChild(root);bind(root);return root;
 }
 function isQuestion(q){return /\?|^(cka|çka|cfare|çfarë|kush|ku|kur|pse|si|a ka|a kemi|me trego|trego|cil|what|which|who|where|when|why|how)\b/i.test(S(q).trim());}
-function identityValues(p){return [p.name,p.business_ref,p.ref].concat(A(p.identity_aliases)).map(N).filter(function(x){return x.length>=5;});}
-function resolveLocal(q){
-  var n=N(q),hits=[];
-  state.projects.forEach(function(p){var score=0;identityValues(p).forEach(function(x){if(n.indexOf(x)>-1)score=Math.max(score,x.length);});if(score)hits.push({p:p,score:score});});
-  hits.sort(function(a,b){return b.score-a.score;});return hits.length&&(!hits[1]||hits[0].score>hits[1].score+1)?hits[0].p:null;
+function identityValues(p){return [p.name,p.client,p.business_ref,p.ref].concat(A(p.identity_aliases)).map(N).filter(function(x){return x.length>=3;});}
+function identityScore(q,p){
+  var n=N(q),score=0;
+  identityValues(p).forEach(function(x){
+    if(n.indexOf(x)>-1)score=Math.max(score,100+x.length);
+    var words=x.split(' ').filter(function(w){return w.length>=4;});
+    words.forEach(function(w){if(n.indexOf(w)>-1)score=Math.max(score,20+w.length);});
+  });
+  return score;
 }
-async function askAI(q){var AI=window.PSTOpenAIAssistantV1;if(!AI||typeof AI.ask!=='function')throw new Error('PPPP AI nuk është gati.');return AI.ask(q,{scope:'global'});}
+function resolveLocal(q){
+  var hits=[];
+  state.projects.forEach(function(p){var score=identityScore(q,p);if(score)hits.push({p:p,score:score,time:ts(p.last_activity_at||p.last_email_at||p.updated_at)});});
+  hits.sort(function(a,b){return b.score-a.score||b.time-a.time;});
+  if(!hits.length)return null;
+  if(!hits[1]||hits[0].score>hits[1].score+4)return hits[0].p;
+  if(hits[0].time&&hits[1].time&&hits[0].time-hits[1].time>3*86400000)return hits[0].p;
+  return null;
+}
+function factsForProject(id){
+  return A(state.facts).filter(function(f){return S(f.project_id)===S(id)&&N(f.fact_status)==='observed';}).sort(function(a,b){
+    var av=a&&a.value&&typeof a.value==='object'?a.value:{},bv=b&&b.value&&typeof b.value==='object'?b.value:{};
+    return ts(bv.source_sent_at||b.updated_at||b.created_at)-ts(av.source_sent_at||a.updated_at||a.created_at);
+  });
+}
+function localAnswer(q){
+  var p=resolveLocal(q);
+  if(!p)return null;
+  var facts=factsForProject(p.id),chosen=[],seen={};
+  facts.forEach(function(f){
+    var cat=N(f.category),v=f&&f.value&&typeof f.value==='object'?f.value:{},txt=factText(f);
+    if(!txt||v.suppressed_by_operator_update===true)return;
+    if(cat!=='email event ai'&&cat!=='operator update'&&cat!=='execution schedule')return;
+    var k=cat;if(seen[k])return;seen[k]=1;chosen.push({txt:txt,cat:cat,time:v.source_sent_at||f.updated_at||f.created_at,workflow:v.workflow_state||''});
+  });
+  var first=chosen[0],lines=[];
+  lines.push((p.name||'Projekti')+' është '+(N(p.operational_state)==='execution'?'në ekzekutim':N(p.operational_state)==='action required'?'duke kërkuar veprim':'aktiv')+'.');
+  chosen.slice(0,2).forEach(function(x){lines.push(clamp(x.txt,650));});
+  if(!first&&p.last_email_at)lines.push('Aktiviteti i fundit me email është '+shortDate(p.last_email_at)+'.');
+  var next='';
+  if(first){
+    var w=N(first.workflow);
+    if(w==='wait for client')next='Prit konfirmimin e klientit; nuk ka nevojë për follow-up të ri tani.';
+    else if(w==='action required')next='Ka një veprim të ri që kërkon shqyrtimin tënd.';
+    else if(w==='wait for supplier')next='Prit përgjigjen e furnitorit.';
+  }
+  return{ok:true,answer:lines.join('\n'),confidence:'high',uncertainty:'',suggested_next_step:next,navigation:{project_id:p.id,project_name:p.name,area:'execution'},evidence:chosen.slice(0,3).map(function(x){return{source:x.cat==='email event ai'?'Email i lidhur me projektin':x.cat==='execution schedule'?'Plan i prodhimit':'Update i konfirmuar',reason:clamp(x.txt,500)};}),provider:{name:'pppp-live-fallback',model:'deterministic-v1'},read_only:true};
+}
+async function ensureAssistant(){
+  var AI=window.PSTOpenAIAssistantV1;if(AI&&typeof AI.ask==='function')return AI;
+  var existing=document.querySelector('script[data-pst-openai-assistant-v1],script[data-pst-home-openai-fallback]');
+  if(!existing){existing=document.createElement('script');existing.src='pristeel-openai-operating-assistant-v1.js?v=20260827-home1';existing.defer=true;existing.setAttribute('data-pst-home-openai-fallback','1');document.head.appendChild(existing);}
+  await new Promise(function(resolve){var n=0,t=setInterval(function(){var x=window.PSTOpenAIAssistantV1;if(x&&typeof x.ask==='function'||++n>=20){clearInterval(t);resolve();}},50);});
+  return window.PSTOpenAIAssistantV1||null;
+}
+async function askAI(q){
+  var AI=await ensureAssistant();
+  if(AI&&typeof AI.ask==='function'){
+    try{return await AI.ask(q,{scope:'global'});}catch(e){var fallback=localAnswer(q);if(fallback)return fallback;throw e;}
+  }
+  var local=localAnswer(q);if(local)return local;
+  throw new Error('PPPP nuk arriti ta lidhë pyetjen me një projekt unik.');
+}
 async function edgeOperator(projectId,update){
   var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase nuk është gati.');
   var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
@@ -181,7 +247,7 @@ async function load(force){
     var out=await Promise.all([
       db('projects?select=id,name,client,status,pipeline_stage,operational_state,last_activity_at,last_email_at,updated_at,business_ref,ref,identity_aliases&order=last_activity_at.desc.nullslast&limit=500'),
       db('pppp_home_current_actions_v1?select=id,project_id,project_name,client,title,detail,due_date,priority,status,source,source_ref,category,created_at,operational_state,operational_state_at,pipeline_stage,last_activity_at,last_email_at&order=created_at.desc&limit=100').catch(function(){return[];}),
-      db('pppp_project_context_current_v?select=id,project_id,category,subject,fact_key,value,source_type,evidence_status,fact_status,created_at,updated_at&category=eq.operator_update&evidence_status=eq.confirmed&fact_status=eq.observed&updated_at=gte.'+encodeURIComponent(iso(since))+'&order=updated_at.desc&limit=300').catch(function(){return[];})
+      db('pppp_project_context_current_v?select=id,project_id,category,subject,fact_key,value,source_type,evidence_status,fact_status,created_at,updated_at&fact_status=eq.observed&updated_at=gte.'+encodeURIComponent(iso(since))+'&order=updated_at.desc&limit=500').catch(function(){return[];})
     ]);
     state.projects=A(out[0]);state.actions=A(out[1]);state.facts=A(out[2]);buildProjectUpdates();state.loadedAt=Date.now();return true;
   }catch(e){console.warn('PPPP Live Home:',e);state.last={kind:'error',text:'Home nuk arriti të lexojë gjendjen live: '+S(e&&e.message||e)};return false;}
