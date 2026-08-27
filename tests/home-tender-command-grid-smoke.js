@@ -74,7 +74,7 @@ w.PSTProjectClassificationV1.decorate();
 assert.deepStrictEqual(Array.from(w.PSTProjectClassificationV1.classification(w.__pstWorkspaceProjectRows[0])),['TENDER','PRODHIM'],'classification metadata must remain available to system logic');
 assert.ok(!w.document.body.textContent.includes('TENDER'),'origin badge must not remain visible in daily Projects UI');
 assert.ok(!w.document.body.textContent.includes('PRODHIM'),'work-model badge must not remain visible in daily Projects UI');
-assert.ok(w.document.body.textContent.includes('Action'),'daily Projects UI must show human work state instead');
+assert.ok(w.document.body.textContent.includes('Kërkon veprim'),'daily Projects UI must show the Albanian human work state instead');
 
 const navSrc=fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 assert.ok(navSrc.includes('pristeel-home-operating-grid-v1.js'));
