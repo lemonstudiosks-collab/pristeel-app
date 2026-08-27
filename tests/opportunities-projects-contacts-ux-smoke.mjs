@@ -73,3 +73,4 @@ assert.match(kek,/if\(handoffFinalOpportunities\(true\)\)return true/,'legacy te
 assert.match(biz,/if\(handoffFinalOpportunities\(false\)\)return/,'Tender Business Flow render/load must not reclaim visible Opportunities from the final owner');
 assert.match(nav,/if\(handoffOpportunities\(true\)\)/,'primary navigation must prefer the final Opportunities owner before legacy monitor routes');
 assert.match(nav,/PSTProjectCentricWorkflowV1/,'primary navigation must route directly to the whole-card Opportunities runtime');
+assert.doesNotMatch(nav,/PSTRedesignFinalizerV1/,'primary navigation must not re-enter the redesign finalizer while handing off Opportunities');
