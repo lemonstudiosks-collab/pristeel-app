@@ -92,3 +92,9 @@ assert.match(home,/Në pritje të klientit/,'waiting-for-client state must be pr
 assert.match(home,/pppp-live-fallback/,'Pyet PPPP must have a live-data fallback when the AI provider is unavailable');
 assert.match(home,/identityScore/,'short project names must resolve against live project identity');
 assert.match(home,/pristeel-openai-operating-assistant-v1\.js\?v=20260827-home1/,'Home must load the assistant on demand instead of racing it');
+
+assert.match(home,/function looksLikeProjectLookup\(q\)/,'a short project name must be treated as a status lookup, not an operator update');
+assert.match(home,/if\(isQuestion\(q\)\|\|looksLikeProjectLookup\(q\)\)/,'Home submit must route project-name lookups to read-only status');
+assert.match(home,/var local=localAnswer\(q\);if\(local\)return local;/,'Home must prefer live PPPP data before calling an external AI provider');
+assert.match(home,/friendlyAssistantError/,'Home must translate provider failures into operator-safe messages');
+assert.doesNotMatch(home,/kind:'error',text:S\(e&&e\.message\|\|e\)/,'Home must never expose raw provider errors directly to the operator');
