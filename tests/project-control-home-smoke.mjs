@@ -23,8 +23,12 @@ assert.match(home,/__pstLiveHomeV4/,'current Live Home marker is required');
 assert.match(home,/PSTProjectControlHomeV1/,'module export is required');
 assert.match(home,/pppp_home_current_actions_v1/,'Home must read the strict current-action projection');
 assert.match(home,/pppp_project_context_current_v/,'Home must read current project context');
-assert.match(home,/category=eq\.operator_update/,'Home project movement must come from operator/current-state context, not raw email rows');
-assert.match(home,/evidence_status=eq\.confirmed/,'Home project movement must require confirmed context evidence');
+assert.match(home,/fact_status=eq\.observed/,'Home project movement must come from observed current context, not raw email rows');
+assert.match(home,/cat==='operator update'/,'Home must preserve confirmed human operator truth');
+assert.match(home,/cat==='email event ai'/,'Home must consume high-confidence email event intelligence');
+assert.match(home,/v\.home_visible!==true/,'automated email events must opt in before Home displays them');
+assert.match(home,/v\.suppressed_by_operator_update===true/,'events suppressed by newer operator truth must stay backstage');
+assert.match(home,/Number\(v\.confidence\|\|0\)<90/,'automated Home updates require at least 90 percent confidence');
 assert.doesNotMatch(home,/project_emails\?/,'Home must not render a raw linked-email stream as project intelligence');
 assert.match(home,/PSTOpenAIAssistantV1/,'Home input must reuse authenticated PPPP AI');
 assert.match(home,/pppp-project-operator-update/,'operator statements must use the safe project update boundary');
@@ -82,3 +86,9 @@ assert.match(legacyGrid,/\[0,100,350,900,1800,3000\]/,'handoff retries must stay
 assert.doesNotMatch(legacyGrid,/MutationObserver|setInterval\s*\(/,'legacy handoff must not introduce persistent polling/observers');
 
 console.log('PPPP Live Home v4 operator-signal + autonomous sync smoke: OK');
+
+assert.match(home,/wait for client/,'Home must expose waiting-for-client state from current email evidence');
+assert.match(home,/Në pritje të klientit/,'waiting-for-client state must be presented in Albanian');
+assert.match(home,/pppp-live-fallback/,'Pyet PPPP must have a live-data fallback when the AI provider is unavailable');
+assert.match(home,/identityScore/,'short project names must resolve against live project identity');
+assert.match(home,/pristeel-openai-operating-assistant-v1\.js\?v=20260827-home1/,'Home must load the assistant on demand instead of racing it');
