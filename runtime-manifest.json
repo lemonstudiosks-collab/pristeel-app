@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "6a92007f88b388b9ab07617dedd9aac4f0bd29d9"
+    "bootstrapGitBlobSha": "e6e843581a91dec4d04355c445536e0fce483239"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -132,7 +132,7 @@
         "pristeel-project-centric-workflow-v1.js",
         "pristeel-tender-dossier-analysis-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the final visible whole-card Opportunities surface; official KRPP/APP dossier download and technical/commercial analysis are explicit actions before project creation. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the single final visible whole-card Opportunities owner. Legacy KEK/Tender Business Flow routes must hand off instead of rebuilding the old table. Official KRPP/APP dossier download and technical/commercial analysis are explicit actions before project creation. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
     },
     {
       "area": "ai",
