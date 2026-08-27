@@ -5,6 +5,7 @@ const source = fs.readFileSync('pristeel-project-emails.js', 'utf8');
 const finalizer = fs.readFileSync('pristeel-redesign-finalizer-v1.js', 'utf8');
 const openaiAssistant = fs.readFileSync('pristeel-openai-operating-assistant-v1.js', 'utf8');
 const projectCentric = fs.readFileSync('pristeel-project-centric-workflow-v1.js', 'utf8');
+const tenderActions = fs.readFileSync('pristeel-tender-priority-actions-v1.js', 'utf8');
 const required = [
   'pristeel-login-brand-v1.js','pristeel-login-transition-v2.js','pristeel-ui-corrections-v2.js','pristeel-dashboard-task-cards-v1.js','pristeel-business-command-center-v1.js','pristeel-gmail-deep-search-v1.js','pristeel-business-command-center-deep-gmail-v1.js','pristeel-search-stable-v2.js','pristeel-project-command-view-v1.js','pristeel-home-command-center-v2.js','pristeel-home-live-fix-v1.js','pristeel-home-stability-v2.js','pristeel-home-visual-cleanup-v1.js','pristeel-gmail-live-inbox-v2.js','pristeel-gmail-intake-v3.js','pristeel-project-load-stability-v2.js','pristeel-rfq-stability-v2.js','pristeel-offer-pricing-stability-v2.js','pristeel-our-offer-stability-v2.js','pristeel-finance-stability-v2.js','pristeel-document-center-stable-v2.js','pristeel-modal-navigation-safety-v2.js','pristeel-redesign-finalizer-v1.js'
 ];
@@ -35,8 +36,8 @@ assert(!/\.supaFetch\([^\n]*['\"](?:PATCH|POST|DELETE)['\"]/.test(openaiAssistan
 assert(!/gmail\/v1\/.*send|mark.*won|mark.*lost|supplier_orders.*POST/i.test(openaiAssistant), 'OpenAI assistant must not bypass human commitment gates');
 
 // Project-centric final layer: Projects are the daily center, TED is awards-only, and operator text can drive safe internal organization.
-assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260827-owner2'), 'Finalizer must load the current project-centric workflow layer');
-assert(finalizer.includes('data-pst-project-centric-workflow-v2'), 'Project-centric loader must be idempotent for the current generation');
+assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260827-owner3'), 'Finalizer must load the current project-centric workflow layer');
+assert(finalizer.includes('data-pst-project-centric-workflow-v3'), 'Project-centric loader must be idempotent for the current generation');
 new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
 assert(projectCentric.includes("if(src==='TED')return phase==='award'"), 'Open TED opportunities must stay out of the daily Opportunities surface');
@@ -50,10 +51,14 @@ assert(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(projectCentric), 'Pr
 assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Project-centric layer must preserve commitment gates');
 
 console.log('Redesign bootstrap + OpenAI + project-centric workflow contract smoke test passed.');
-assert(projectCentric.includes('Merr dhe analizo dosjen') && projectCentric.includes('dossierReady(id)'), 'Project creation must be gated behind explicit dossier analysis');
+assert(projectCentric.includes('Shkarko dosjen') && projectCentric.includes('Analizo kushtet') && projectCentric.includes('dossierReady(id)'), 'KRPP/APP action console must separate dossier download, condition analysis and project creation gate');
+assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includes('GC / EPC') && projectCentric.includes('Kontaktet e fituesit'), 'TED popup must expose winner role and contacts');
+new Function(tenderActions);
+assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
+assert(tenderActions.includes('Roli i fituesit është i paqartë'), 'Unknown TED winner role must block automatic draft preparation');
 
 assert(finalizer.includes('pristeel-project-control-home-v1.js?v=20260827-owner6'),'Finalizer must cache-bust the current Home owner');
 assert(finalizer.includes('data-pst-project-control-home-v6'),'Finalizer must not accept a stale Home script tag');
-assert(finalizer.includes('pristeel-tender-dossier-analysis-v1.js?v=20260827-readable2'),'Finalizer must load the readable dossier generation');
-assert(projectCentric.includes('__pstProjectCentricWorkflowV2'),'Project-centric runtime must expose its current generation marker');
+assert(finalizer.includes('pristeel-tender-dossier-analysis-v1.js?v=20260827-readable3'),'Finalizer must load the readable dossier generation');
+assert(projectCentric.includes('__pstProjectCentricWorkflowV3'),'Project-centric runtime must expose its current generation marker');
 assert(projectCentric.includes("p.setAttribute('data-pcw-opportunities-owner','2')"),'whole-card Opportunities must claim visible ownership');
