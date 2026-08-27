@@ -6,7 +6,7 @@ const dom = new JSDOM(`<!doctype html><html><head></head><body>
 <div id="page-workspace-projects" class="active">
   <div class="pst-pm-page">
     <div class="pst-pm-head"><div><div class="pst-pm-sub"></div></div><div class="pst-pm-head-actions"><button id="pst-pdm-btn">Dublikatat</button><button id="pst-pm-refresh">Rifresko</button><button id="pst-pm-new">+ Projekt i ri</button></div></div>
-    <div class="pst-pm-controls"><div class="pst-pm-control-top"><div class="pst-pm-toggle"><button data-pm-view="list" class="on">Listë</button><button data-pm-view="board">Board</button></div></div><div id="pst-pm-filters"></div></div>
+    <div class="pst-pm-controls"><div class="pst-pm-control-top"><select id="pst-pm-sort"><option>Aktiviteti i fundit</option></select><div class="pst-pm-toggle"><button data-pm-view="list" class="on">Listë</button><button data-pm-view="board">Board</button></div></div><div id="pst-pm-filters"></div></div>
     <div class="pst-pm-row" data-project-id="p1"><div class="pst-pm-main"><div class="pst-pm-name">Action Project</div><div class="pst-pm-client">Client</div><div class="pst-pm-desc">Noise</div><div class="pst-pc-badges"><span>TENDER</span></div></div><div class="pst-pm-meta"></div><div class="pst-pm-actions"></div></div>
     <div class="pst-pm-row" data-project-id="p2"><div class="pst-pm-main"><div class="pst-pm-name">Waiting Project</div><div class="pst-pm-client">Client</div></div><div class="pst-pm-meta"></div><div class="pst-pm-actions"></div></div>
     <div class="pst-pm-row" data-project-id="p3"><div class="pst-pm-main"><div class="pst-pm-name">Execution Project</div><div class="pst-pm-client">Client</div></div><div class="pst-pm-meta"></div><div class="pst-pm-actions"></div></div>
@@ -48,8 +48,13 @@ assert(window.document.getElementById('pst-pdm-btn').style.display === 'none', '
 assert(window.document.getElementById('pst-pm-refresh').style.display === 'none', 'Manual refresh must be hidden from daily Projects UI');
 assert(window.document.querySelector('.pst-pm-toggle').style.display === 'none', 'Board/list toggle must be hidden');
 assert(window.document.getElementById('pst-pm-filters').style.display === 'none', 'Legacy status counters must be hidden');
-assert(window.document.querySelectorAll('#pst-pws-filterbar [data-pws-work]').length === 5, 'Work-state filter must expose all/action/waiting/execution/closed');
-assert(window.document.querySelector('[data-project-id="p1"]').getAttribute('data-pws-state') === 'action', 'Active pricing project must be Action');
+assert(window.document.getElementById('pst-pm-sort').style.display === 'none', 'Old full-width sort selector must be hidden from daily Projects UI');
+assert(window.document.querySelectorAll('#pst-pws-filterbar [data-pws-work]').length === 5, 'Work-state filter must expose all five operational groups');
+const filterText=window.document.getElementById('pst-pws-filterbar').textContent;
+assert(filterText.includes('Kërkon veprim')&&filterText.includes('Në pritje')&&filterText.includes('Në realizim')&&filterText.includes('Të mbyllura'),'Project work filters must be fully Albanian');
+assert(!/\bAction\b|\bWaiting\b|\bExecution\b|\bClosed\b/.test(filterText),'English work-state labels must not remain visible');
+assert(window.document.querySelector('[data-project-id="p1"]').getAttribute('data-pws-state') === 'action', 'Active pricing project must remain in the action state internally');
+assert(window.document.querySelector('[data-project-id="p1"] .pst-pm-meta').textContent.includes('Kërkon veprim'),'Action badge must be presented in Albanian');
 assert(window.document.querySelector('[data-project-id="p2"]').getAttribute('data-pws-state') === 'waiting', 'wait_for_client must be Waiting');
 assert(window.document.querySelector('[data-project-id="p3"]').getAttribute('data-pws-state') === 'execution', 'Won production project must be Execution');
 assert(window.document.querySelector('[data-project-id="p4"]').getAttribute('data-pws-state') === 'closed', 'Closed status must win over execution stage');
