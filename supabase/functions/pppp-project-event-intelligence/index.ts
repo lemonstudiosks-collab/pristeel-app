@@ -51,7 +51,7 @@ function deterministicAnalyze(event:any,project:any,attachments:any[]){
  const dir=N(event?.direction),incoming=dir==='incoming',outgoing=dir==='outgoing',raw=T(event?.snippet,9000),body=N(raw+' '+T(event?.subject,1000));
  const plans=scheduleAttachments(attachments),hasPlan=plans.length>0||/(plan pune|plan prodh|plan dinamik|schedule|fertigungsablauf|fabrication schedule)/i.test(raw);
  const hasVisit=/(vizit|visit|besichtigung|vor ort|factory|fabrik)/i.test(raw);
- const asks=incoming&&(/\?/.test(raw)||/(bitte|können sie|koennen sie|mund|me bejne te ditur|më bëjnë të ditur|njoftoni|teilen sie|sagen sie|si e ka me te pershtatshme|si e ka më të përshtatshme)/i.test(raw));
+ const asks=incoming&&(/\?/.test(raw)||/(bitte|können sie|koennen sie|mund|me bejne te ditur|më bëjnë të ditur|njoftoni|teilen sie|sagen sie|si e ka me te pershtatshme|si e ka më të përshtatshme|let me know|please let|could you|when would|which phase|which period)/i.test(raw));
  const range=dateRange(raw),execution=N(project?.operational_state)==='execution'||/production|execution/.test(N(project?.pipeline_stage));
  let result:any={action_required:false,priority:'medium',category:'other',summary:'U regjistrua komunikim i ri në projekt.',next_action:'',workflow_state:'no_change',confidence:88,supersedes_prior_event_actions:false};
  if(outgoing&&hasVisit&&hasPlan){
