@@ -277,9 +277,9 @@
     },
     {
       "module": "pristeel-project-control-home-v1.js",
-      "loader": "pristeel-redesign-finalizer-v1.js / pristeel-home-happy-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Visible Home owner. Generation v6 is loaded dynamically and explicitly replaces stale mounted Home generations while preserving canonical Home data/state engines."
+      "condition": "Visible Home owner. Generation v6 is loaded dynamically by the redesign finalizer and explicitly replaces stale mounted Home generations. pristeel-home-happy-v1.js remains a recovery path."
     }
   ],
   "loadOrderConstraints": [
