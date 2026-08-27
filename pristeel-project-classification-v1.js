@@ -21,7 +21,7 @@ function terminal(r){var s=N(r&&r.status);return /humb|lost|cancel|refuz|arkiv|a
 function execution(r){var stage=S(r&&r.pipeline_stage);var op=N(r&&r.operational_state);var s=N(r&&r.status);return !terminal(r)&&(/execution/.test(op)||/fituar|won/.test(s)||['production_control','factory_audit','transport'].indexOf(stage)>-1);}
 function waiting(r){if(terminal(r)||execution(r))return false;var op=N(r&&r.operational_state),s=N(r&&r.status);if(/^wait_/.test(op))return true;if(/action_required|active_work|execution/.test(op))return false;return /pritje|waiting|pending/.test(s);}
 function workState(r){if(terminal(r))return'closed';if(execution(r))return'execution';if(waiting(r))return'waiting';return'action';}
-function stateLabel(r){return({action:'Action',waiting:'Waiting',execution:'Execution',closed:'Closed'})[workState(r)]||'Action';}
+function stateLabel(r){return({action:'Kërkon veprim',waiting:'Në pritje',execution:'Në realizim',closed:'Mbyllur'})[workState(r)]||'Kërkon veprim';}
 function stageAction(r){
   var stage=S(r&&r.pipeline_stage),op=N(r&&r.operational_state);
   if(workState(r)==='closed')return'Projekti është mbyllur';
@@ -60,11 +60,14 @@ function deadlineText(r){
   if(days<=7)return'Edhe '+days+' ditë';
   return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});
 }
+function workFilterLabel(k){return({all:'Të gjitha',action:'Kërkon veprim',waiting:'Në pritje',execution:'Në realizim',closed:'Të mbyllura'})[k]||k;}
+function workCounts(){var c={all:0,action:0,waiting:0,execution:0,closed:0};Object.values(rowMap()).forEach(function(r){var k=workState(r);c.all++;if(c[k]!=null)c[k]++;});return c;}
 function ensureWorkFilters(p){
   var controls=p.querySelector('.pst-pm-controls');if(!controls)return null;
   var bar=document.getElementById('pst-pws-filterbar');
-  if(!bar){bar=document.createElement('div');bar.id='pst-pws-filterbar';bar.innerHTML='<button data-pws-work="all">Të gjitha</button><button data-pws-work="action">Action</button><button data-pws-work="waiting">Waiting</button><button data-pws-work="execution">Execution</button><button data-pws-work="closed">Closed</button>';controls.appendChild(bar);bar.addEventListener('click',function(e){var b=e.target.closest('[data-pws-work]');if(!b)return;state.work=b.getAttribute('data-pws-work')||'all';decorate();});}
-  bar.querySelectorAll('[data-pws-work]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-pws-work')===state.work);});
+  if(!bar){bar=document.createElement('div');bar.id='pst-pws-filterbar';controls.appendChild(bar);bar.addEventListener('click',function(e){var b=e.target.closest('[data-pws-work]');if(!b)return;state.work=b.getAttribute('data-pws-work')||'all';decorate();});}
+  var c=workCounts(),keys=['all','action','waiting','execution','closed'];
+  bar.innerHTML=keys.map(function(k){return'<button type="button" data-pws-work="'+k+'" class="'+(state.work===k?'on':'')+'"><span>'+E(workFilterLabel(k))+'</span><b>'+Number(c[k]||0)+'</b></button>';}).join('');
   return bar;
 }
 function forceAllProjects(p){
@@ -88,8 +91,8 @@ function rewriteRow(el,r){
   el.style.display=state.work==='all'||state.work===k?'':'none';
 }
 function simplifyHeader(p){
-  var dup=p.querySelector('#pst-pdm-btn'),refresh=p.querySelector('#pst-pm-refresh'),toggle=p.querySelector('.pst-pm-toggle'),oldFilters=p.querySelector('#pst-pm-filters'),classFilters=p.querySelector('#pst-pc-filterbar');
-  if(dup)dup.style.display='none';if(refresh)refresh.style.display='none';if(toggle)toggle.style.display='none';if(oldFilters)oldFilters.style.display='none';if(classFilters)classFilters.style.display='none';
+  var dup=p.querySelector('#pst-pdm-btn'),refresh=p.querySelector('#pst-pm-refresh'),toggle=p.querySelector('.pst-pm-toggle'),sort=p.querySelector('#pst-pm-sort'),oldFilters=p.querySelector('#pst-pm-filters'),classFilters=p.querySelector('#pst-pc-filterbar');
+  if(dup)dup.style.display='none';if(refresh)refresh.style.display='none';if(toggle)toggle.style.display='none';if(sort)sort.style.display='none';if(oldFilters)oldFilters.style.display='none';if(classFilters)classFilters.style.display='none';
   p.querySelectorAll('.pst-pc-badges').forEach(function(x){x.remove();});
   var sub=p.querySelector('.pst-pm-sub');if(sub)sub.textContent='Projekt → gjendja reale → hapi tjetër → afati kritik.';
 }
@@ -114,9 +117,13 @@ function decorate(){
   return rows.length>0||Object.keys(map).length===0;
 }
 function css(){if(document.getElementById('pst-project-classification-css'))return;var s=document.createElement('style');s.id='pst-project-classification-css';s.textContent=`
-#pst-pws-filterbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
-#pst-pws-filterbar button{height:30px;border:1px solid #E0E8EB;border-radius:999px;background:#fff;padding:0 11px;color:#6E7A81;font-size:8.5px;font-weight:760;cursor:pointer}
-#pst-pws-filterbar button.on{background:#EAF5F8;border-color:#BFDDE8;color:#3F7F98}
+#page-workspace-projects #pst-pm-sort{display:none!important}
+#pst-pws-filterbar{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-top:11px}
+#pst-pws-filterbar button{min-height:48px;border:1px solid #DCE6E9;border-radius:12px;background:#fff;padding:0 13px;color:#61747C;font-size:9.5px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(38,62,72,.025);transition:.15s}
+#pst-pws-filterbar button:hover{border-color:#B9D3DC;background:#F8FBFC}
+#pst-pws-filterbar button b{min-width:24px;height:24px;border-radius:999px;background:#F0F4F5;color:#6B7B82;display:inline-flex;align-items:center;justify-content:center;font-size:8.5px}
+#pst-pws-filterbar button.on{background:#EAF5F8;border-color:#9FC9D7;color:#2F7890;box-shadow:0 5px 15px rgba(63,127,152,.08)}
+#pst-pws-filterbar button.on b{background:#fff;color:#2F7890}
 #page-workspace-projects .pst-pm-row{grid-template-columns:minmax(260px,1.35fr) minmax(500px,1.65fr) auto}
 #page-workspace-projects .pst-pm-meta{grid-template-columns:minmax(100px,.6fr) minmax(240px,1.65fr) minmax(105px,.7fr)}
 #page-workspace-projects .pst-pws-next .pst-pm-meta-value{font-weight:730;color:#34444C}
