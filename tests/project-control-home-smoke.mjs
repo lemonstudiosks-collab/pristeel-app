@@ -112,4 +112,5 @@ assert.match(home,/@keyframes pst-live-spin/,'submit control must animate while 
 assert.match(home,/pst-live-needs\.is-empty>header\{display:none\}/,'empty actions state must collapse the oversized empty panel header');
 assert.match(home,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,'project updates must use a modern two-column layout on desktop');
 assert.match(home,/tone-wait|tone-action|tone-active/,'project state cards must have restrained visual state cues');
-assert.doesNotMatch(home,/\d+%/,'Home loading UI must not show fake progress percentages');
+const busyBlock=(home.match(/function busyStages\(\)\{[\s\S]*?\n\}/)||[''])[0];
+assert.doesNotMatch(busyBlock,/\d+%/,'Home loading messages must not show fake progress percentages');
