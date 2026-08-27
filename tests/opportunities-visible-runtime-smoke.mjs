@@ -43,12 +43,7 @@ window.PSTTenderPriorityActionsV1={
   go:async()=>true,review:async()=>true,noGo:async()=>true,prepareDraft:async()=>true,
   openSource:()=>true
 };
-window.pstTenderIntelligence=async id=>{
-  let body=window.document.getElementById('pst-ti-body');
-  if(!body){body=window.document.createElement('div');body.id='pst-ti-body';window.document.body.appendChild(body);}
-  body.innerHTML='<div id="legacy-popup">Legacy modal base for '+id+'</div>';
-  return true;
-};
+window.pstTenderIntelligence=async()=>null;
 window.eval(src);
 
 const api=window.PSTProjectCentricWorkflowV1;
@@ -67,13 +62,21 @@ assert.equal(window.document.querySelector('.pst-kek-filter').style.display,'non
 assert.equal(window.document.querySelector('.pst-kek-card').style.display,'none','legacy table must be retired from the visible surface');
 assert.equal(window.document.getElementById('pst-tender-fit-summary').style.display,'none','legacy fit strip must be retired');
 
-await api.openTender('t-1');
+window.document.querySelector('.pst-pcw-tender').click();
+const modal=window.document.getElementById('pst-ti-backdrop');
+assert(modal,'card click must create an action-console modal without relying on legacy Tender Intelligence');
+assert.equal(modal.style.display,'flex','card click must make the action console visible');
 const body=window.document.getElementById('pst-ti-body');
-assert(body.textContent.includes('Merr dosjen'),'popup must explain the dossier-first route');
+assert(body.textContent.includes('Shkarko dosjen'),'popup must explain the dossier-first route');
 assert(body.querySelector('[data-pcw-ti="download"]'),'popup must offer dossier ZIP download');
 assert(body.querySelector('[data-pcw-ti="dossier"]'),'popup must offer dossier retrieval/analysis');
 const create=body.querySelector('[data-pcw-ti="go"]');
 assert(create&&create.disabled,'project creation must remain disabled until dossier analysis is ready');
 assert(body.querySelector('[data-pcw-ti="nogo"]'),'popup must allow removing the opportunity from the list');
+assert(!body.querySelector('#legacy-popup'),'popup must not depend on the legacy Tender Intelligence modal body');
+const close=modal.querySelector('[data-pcw-close-modal]');
+assert(close,'action console must expose an explicit close button');
+close.click();
+assert.equal(modal.style.display,'none','close button must hide the action console');
 
 console.log('Visible no-.active Opportunities runtime ownership: OK');
