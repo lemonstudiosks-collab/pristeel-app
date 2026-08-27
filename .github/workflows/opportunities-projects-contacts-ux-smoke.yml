@@ -27,5 +27,5 @@ jobs:
         run: node tests/opportunities-projects-contacts-ux-smoke.mjs
       - name: Reproduce visible Opportunities page without active class
         run: |
-          npm ci --ignore-scripts
+          npm install --ignore-scripts --no-package-lock
           node tests/opportunities-visible-runtime-smoke.mjs
