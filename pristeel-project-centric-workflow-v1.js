@@ -5,9 +5,10 @@
  */
 (function(){
 'use strict';
-if(window.__pstProjectCentricWorkflowV2&&window.PSTProjectCentricWorkflowV1)return;
+if(window.__pstProjectCentricWorkflowV3&&window.PSTProjectCentricWorkflowV1)return;
 window.__pstProjectCentricWorkflowV1=true;
 window.__pstProjectCentricWorkflowV2=true;
+window.__pstProjectCentricWorkflowV3=true;
 
 var tenderState={rows:[],mode:'all',query:'',busy:false,last:0,partners:null};
 var contactBusy={};
