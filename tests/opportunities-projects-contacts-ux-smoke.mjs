@@ -23,6 +23,9 @@ assert.match(pcw,/Analizo kushtet/,'local opportunity must expose dossier techni
 assert.match(pcw,/data-pcw-ti="go"[^>]*disabled/,'project creation must start disabled before dossier analysis');
 assert.match(pcw,/if\(tenderMode\(r\)==='local'&&!dossierReady\(id\)\)throw new Error/,'project creation must enforce the dossier gate in code, not only in CSS');
 assert.match(pcw,/PSTTenderDossierAnalysisV1/,'opportunity popup must reuse the canonical dossier engine');
+assert.match(pcw,/function ensureTenderModal\(r\)/,'whole-card action console must create its own modal');
+assert.doesNotMatch(pcw,/await window\.pstTenderIntelligence\(id\)/,'whole-card click must not depend on legacy Tender Intelligence state to create the modal');
+assert.match(pcw,/data-pcw-close-modal/,'action console must include its own close control');
 assert.doesNotMatch(pcw,/window\.open\(['"]https:\/\/www\.app\.gov\.al/,'APP must not open the insecure generic website from the active workflow');
 assert.match(pcw,/data-pcw-ti="review"[^>]*>Lëre për më vonë/,'popup must offer a non-destructive later decision');
 assert.match(pcw,/data-pcw-ti="nogo"[^>]*>Hiqe nga lista/,'popup must offer explicit removal');
