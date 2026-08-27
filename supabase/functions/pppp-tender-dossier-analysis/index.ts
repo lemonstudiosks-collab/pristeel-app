@@ -8,11 +8,12 @@ const corsHeaders={
   'Access-Control-Expose-Headers':'Content-Disposition, X-PPPP-Document-Count',
   'Content-Type':'application/json',
 };
-const VERSION='v3';
+const VERSION='v4';
 const CACHE_MS=6*60*60*1000;
 const MAX_HTML_BYTES=8*1024*1024;
 const MAX_FILE_BYTES=14*1024*1024;
 const MAX_BUNDLE_BYTES=48*1024*1024;
+const MAX_KRPP_PACKAGES=6;
 
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:corsHeaders});}
 function text(v,max=6000){return String(v==null?'':v).trim().slice(0,max);}
@@ -23,23 +24,64 @@ function clipJson(v,max=80000){let raw='';try{raw=JSON.stringify(v==null?null:v)
 function sourceOf(row){const x=text(row?.payload?.source||'KRPP',30).toUpperCase();return x==='APP'||x==='APP_AL'?'APP_AL':x==='TED'?'TED':'KRPP';}
 function cacheFresh(row){const p=row?.payload||{},at=Date.parse(p.dossier_analyzed_at||p.dossier_analysis?.analyzed_at||'');return p.dossier_analysis_version===VERSION&&Number.isFinite(at)&&(Date.now()-at)<CACHE_MS&&p.dossier_analysis&&p.dossier_analysis?.provider?.name!=='deterministic';}
 async function restJson(url,headers,init={}){const r=await fetch(url,{...init,headers:{...headers,...(init.headers||{})}});const raw=await r.text();let body=null;try{body=raw?JSON.parse(raw):null;}catch{body=raw;}if(!r.ok)throw new Error(`DB ${r.status}: ${typeof body==='string'?body.slice(0,300):JSON.stringify(body).slice(0,300)}`);return body;}
+function setCookiePairs(headers){
+ try{if(typeof headers.getSetCookie==='function')return headers.getSetCookie().map(v=>v.split(';',1)[0]).filter(Boolean);}catch{}
+ const raw=headers.get('set-cookie')||'';if(!raw)return[];const out=[];for(const part of raw.split(/,(?=\s*[^;,=]+=[^;,]+)/)){const p=part.trim().split(';',1)[0];if(p)out.push(p);}return out;
+}
+function mergeCookies(current,pairs){
+ const map=new Map();for(const p of String(current||'').split(/;\s*/)){const i=p.indexOf('=');if(i>0)map.set(p.slice(0,i),p.slice(i+1));}
+ for(const p of pairs||[]){const i=p.indexOf('=');if(i>0)map.set(p.slice(0,i),p.slice(i+1));}
+ return[...map.entries()].map(([k,v])=>k+'='+v).join('; ');
+}
+function dispositionFilename(v){
+ const raw=String(v||'');let m=raw.match(/filename\*=UTF-8''([^;]+)/i);if(m){try{return decodeURIComponent(m[1].replace(/^["']|["']$/g,''));}catch{return m[1];}}
+ m=raw.match(/filename\s*=\s*["']?([^;"']+)/i);return m?m[1].trim():'';
+}
+function payloadLooksHtml(bytes,contentType=''){
+ if(/(?:text\/html|application\/xhtml\+xml)/i.test(contentType))return true;
+ const head=new TextDecoder('utf-8',{fatal:false}).decode(bytes.slice(0,700)).trim().toLowerCase();
+ return head.startsWith('<!doctype html')||head.startsWith('<html')||head.includes('<form')&&head.includes('__viewstate');
+}
+function inferredExtension(contentType,bytes,fallback=''){
+ const t=String(contentType||'').toLowerCase();
+ if(/pdf/.test(t)||new TextDecoder().decode(bytes.slice(0,4))==='%PDF')return'.pdf';
+ if(/zip|compressed/.test(t)||(bytes[0]===0x50&&bytes[1]===0x4b))return'.zip';
+ if(/word|msword/.test(t))return'.doc';
+ if(/spreadsheet|excel/.test(t))return'.xls';
+ return fallback;
+}
 async function fetchOfficialHtml(url){
- let current=officialUrl(url);if(!current)throw new Error('source_url_not_allowed');
+ let current=officialUrl(url);if(!current)throw new Error('source_url_not_allowed');let cookies='';
  for(let hop=0;hop<4;hop++){
-   const r=await fetch(current,{method:'GET',redirect:'manual',headers:{'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Reader; +https://prissteel.com)','Accept':'text/html,application/xhtml+xml','Cache-Control':'no-cache'},signal:AbortSignal.timeout(18000)});
+   const headers={'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Reader; +https://prissteel.com)','Accept':'text/html,application/xhtml+xml','Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;
+   const r=await fetch(current,{method:'GET',redirect:'manual',headers,signal:AbortSignal.timeout(18000)});cookies=mergeCookies(cookies,setCookiePairs(r.headers));
    if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('source_redirect_not_allowed');current=next;continue;}
-   if(!r.ok)throw new Error(`source_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_HTML_BYTES)throw new Error('source_page_too_large');const buf=new Uint8Array(await r.arrayBuffer());if(buf.byteLength>MAX_HTML_BYTES)throw new Error('source_page_too_large');return{html:new TextDecoder('utf-8').decode(buf),url:current,status:r.status};
+   if(!r.ok)throw new Error(`source_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_HTML_BYTES)throw new Error('source_page_too_large');const buf=new Uint8Array(await r.arrayBuffer());if(buf.byteLength>MAX_HTML_BYTES)throw new Error('source_page_too_large');return{html:new TextDecoder('utf-8').decode(buf),url:current,status:r.status,cookies};
  }
  throw new Error('too_many_source_redirects');
 }
-async function fetchOfficialBinary(url){
+async function fetchOfficialBinary(url,cookies=''){
  let current=officialUrl(url);if(!current)throw new Error('document_url_not_allowed');
  for(let hop=0;hop<4;hop++){
-   const r=await fetch(current,{method:'GET',redirect:'manual',headers:{'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Downloader; +https://prissteel.com)','Accept':'*/*','Cache-Control':'no-cache'},signal:AbortSignal.timeout(22000)});
+   const headers={'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Downloader; +https://prissteel.com)','Accept':'application/pdf,application/zip,application/octet-stream,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*;q=0.6','Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;
+   const r=await fetch(current,{method:'GET',redirect:'manual',headers,signal:AbortSignal.timeout(22000)});cookies=mergeCookies(cookies,setCookiePairs(r.headers));
    if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('document_redirect_not_allowed');current=next;continue;}
-   if(!r.ok)throw new Error(`document_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('document_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('document_too_large');return{bytes,url:current,content_type:r.headers.get('content-type')||''};
+   if(!r.ok)throw new Error(`document_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('document_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('document_too_large');const content_type=r.headers.get('content-type')||'';if(payloadLooksHtml(bytes,content_type))throw new Error('document_response_was_html');return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition')),cookies};
  }
  throw new Error('too_many_document_redirects');
+}
+async function fetchKrppPostback(page,postback){
+ const state=page?.dossier?.form_state;if(!state?.found||!state.action)throw new Error('krpp_form_state_missing');
+ const target=text(postback?.event_target,500);if(!target)throw new Error('krpp_postback_target_missing');
+ const form=new URLSearchParams();for(const [k,v] of Object.entries(state.fields||{}))form.set(k,String(v??''));form.set('__EVENTTARGET',target);form.set('__EVENTARGUMENT','');
+ let current=state.action,cookies=page.cookies||'';
+ for(let hop=0;hop<4;hop++){
+   const headers={'User-Agent':'Mozilla/5.0 (PPPP KRPP Dossier Downloader; +https://prissteel.com)','Accept':'application/zip,application/pdf,application/octet-stream,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*;q=0.5','Content-Type':'application/x-www-form-urlencoded','Origin':new URL(current).origin,'Referer':page.url||current,'Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;
+   const r=await fetch(current,{method:hop===0?'POST':'GET',redirect:'manual',headers:hop===0?headers:{...headers,'Content-Type':undefined},body:hop===0?form.toString():undefined,signal:AbortSignal.timeout(26000)});cookies=mergeCookies(cookies,setCookiePairs(r.headers));
+   if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('krpp_postback_redirect_not_allowed');current=next;continue;}
+   if(!r.ok)throw new Error(`krpp_postback_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const content_type=r.headers.get('content-type')||'';if(payloadLooksHtml(bytes,content_type))throw new Error('krpp_postback_returned_html');const fallback=/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'';return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition'))||safeFilename(postback.name,'Dokument')+inferredExtension(content_type,bytes,fallback),cookies};
+ }
+ throw new Error('too_many_krpp_postback_redirects');
 }
 function safeFilename(value,fallback='Dokument'){
  const raw=text(value,220).replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').replace(/\s+/g,' ').trim().replace(/^\.+/,'');
@@ -49,26 +91,39 @@ function dossierDocuments(dossier){
  return (dossier?.documents||[]).filter(d=>officialUrl(d.url)).map(d=>({name:text(d.name,500),url:officialUrl(d.url)})).filter(d=>d.url).slice(0,16);
 }
 async function resolveOfficialDossier(row,source){
- let dossier={found:false,detail_text:'',documents:[],source_url:''},warnings=[];
+ let dossier={found:false,detail_text:'',documents:[],source_url:''},warnings=[],page=null;
  if(source==='APP_AL'){
-   const ref=text(row.procurement_no||row.publication_no||row.payload?.reference,300),page=tenderDossierConstants.APP_NOTICE_URL;let fetched=await fetchOfficialHtml(page);dossier=extractAppDossier(fetched.html,ref,fetched.url);
+   const ref=text(row.procurement_no||row.publication_no||row.payload?.reference,300),pageUrl=tenderDossierConstants.APP_NOTICE_URL;let fetched=await fetchOfficialHtml(pageUrl);dossier=extractAppDossier(fetched.html,ref,fetched.url);
    if(!dossier.found){try{fetched=await fetchOfficialHtml('https://app.gov.al/njoftimi-i-kontrat%C3%ABs-s%C3%AB-shpallur/');dossier=extractAppDossier(fetched.html,ref,fetched.url);}catch{}}
    if(!dossier.found)warnings.push('APP: referenca nuk u gjet në faqen aktuale të njoftimeve; dosja mund të jetë e paplotë.');
  }else{
-   const sourceUrl=officialUrl(row.detail_url||row.source_url||'');if(!sourceUrl)throw new Error('krpp_detail_url_missing_or_not_allowed');const fetched=await fetchOfficialHtml(sourceUrl);dossier=extractKrppDossier(fetched.html,fetched.url);
+   const sourceUrl=officialUrl(row.detail_url||row.source_url||'');if(!sourceUrl)throw new Error('krpp_detail_url_missing_or_not_allowed');const fetched=await fetchOfficialHtml(sourceUrl);dossier=extractKrppDossier(fetched.html,fetched.url);page={...fetched,dossier};
+   if(!dossier.postbacks?.length&&!dossier.documents?.length)warnings.push('KRPP: faqja u gjet, por nuk u identifikua asnjë veprim zyrtar shkarkimi.');
  }
- return{dossier,warnings,documents:dossierDocuments(dossier)};
+ return{dossier,warnings,documents:dossierDocuments(dossier),page};
 }
-async function dossierBundle(row,dossier,documents){
- if(!documents.length)throw new Error('dossier_documents_not_available');
- const files={},used=new Set(),failed=[];let total=0,downloaded=0;
- for(const doc of documents.slice(0,12)){
-   try{
-     const got=await fetchOfficialBinary(doc.url);if(total+got.bytes.byteLength>MAX_BUNDLE_BYTES){failed.push(`${doc.name}: bundle_size_limit`);continue;}
-     let name=safeFilename(doc.name,`Dokument-${downloaded+1}`),base=name,idx=2;while(used.has(name.toLowerCase())){const dot=base.lastIndexOf('.');name=dot>0?base.slice(0,dot)+'-'+idx+base.slice(dot):base+'-'+idx;idx++;}used.add(name.toLowerCase());files[name]=got.bytes;total+=got.bytes.byteLength;downloaded++;
-   }catch(error){failed.push(`${text(doc.name,160)}: ${text(error?.message||error,120)}`);}
+async function dossierBundle(row,resolved,source){
+ const dossier=resolved.dossier,documents=resolved.documents||[],files={},used=new Set(),failed=[];let total=0,downloaded=0;
+ function addFile(rawName,got){
+   if(total+got.bytes.byteLength>MAX_BUNDLE_BYTES){failed.push(`${rawName}: bundle_size_limit`);return false;}
+   let name=safeFilename(got.filename||rawName,`Dokument-${downloaded+1}`);if(!/\.[a-z0-9]{2,5}$/i.test(name))name+=inferredExtension(got.content_type,got.bytes,'');
+   let base=name,idx=2;while(used.has(name.toLowerCase())){const dot=base.lastIndexOf('.');name=dot>0?base.slice(0,dot)+'-'+idx+base.slice(dot):base+'-'+idx;idx++;}used.add(name.toLowerCase());files[name]=got.bytes;total+=got.bytes.byteLength;downloaded++;return true;
  }
- if(!downloaded)throw new Error('dossier_documents_download_failed');
+ if(source==='KRPP'&&resolved.page&&Array.isArray(dossier.postbacks)&&dossier.postbacks.length){
+   const all=dossier.postbacks.find(x=>/uiDownloadAll$/.test(x.event_target||''));
+   let fullWorked=false;
+   if(all){try{const got=await fetchKrppPostback(resolved.page,all);fullWorked=addFile(all.name,got);}catch(error){failed.push(`${all.name}: ${text(error?.message||error,140)}`);}}
+   if(!fullWorked){
+     const actions=dossier.postbacks.filter(x=>x!==all).slice(0,MAX_KRPP_PACKAGES);
+     for(const action of actions){try{const got=await fetchKrppPostback(resolved.page,action);addFile(action.name,got);}catch(error){failed.push(`${action.name}: ${text(error?.message||error,140)}`);}}
+   }
+ }
+ if(!downloaded){
+   for(const doc of documents.slice(0,12)){
+     try{const got=await fetchOfficialBinary(doc.url,resolved.page?.cookies||'');addFile(doc.name,got);}catch(error){failed.push(`${text(doc.name,160)}: ${text(error?.message||error,120)}`);}
+   }
+ }
+ if(!downloaded)throw new Error(failed.length?`dossier_documents_download_failed: ${failed.slice(0,3).join(' | ')}`:'dossier_documents_not_available');
  const ref=safeFilename(row.procurement_no||row.publication_no||row.id,'Tender');
  const index=[
    'PPPP - PRISTEEL Tender Dossier',
@@ -167,8 +222,10 @@ Deno.serve(async req=>{
   const source=sourceOf(row);if(source==='TED')return json({ok:false,error:'dossier_analysis_not_used_for_ted_awards'},409);
   const mode=text(body?.mode,40).toLowerCase();
   if(mode==='bundle'||mode==='download'){
-    const resolved=await resolveOfficialDossier(row,source);if(!resolved.documents.length)return json({ok:false,error:'dossier_documents_not_available',message:'Burimi zyrtar nuk ekspozoi dokumente të shkarkueshme për këtë tender.'},422);
-    const bundle=await dossierBundle(row,resolved.dossier,resolved.documents);
+    const resolved=await resolveOfficialDossier(row,source);
+    const hasKrppPostbacks=source==='KRPP'&&Array.isArray(resolved.dossier?.postbacks)&&resolved.dossier.postbacks.length>0;
+    if(!resolved.documents.length&&!hasKrppPostbacks)return json({ok:false,error:'dossier_documents_not_available',message:'Burimi zyrtar nuk ekspozoi dokumente të shkarkueshme për këtë tender.'},422);
+    const bundle=await dossierBundle(row,resolved,source);
     return new Response(bundle.bytes,{status:200,headers:{...corsHeaders,'Content-Type':'application/zip','Content-Disposition':`attachment; filename="${bundle.filename.replace(/"/g,'')}"`,'X-PPPP-Document-Count':String(bundle.downloaded),'Cache-Control':'no-store'}});
   }
   const cached=!body?.force&&cacheFresh(row);if(cached)return json({ok:true,cached:true,tender_id:row.id,source,source_url:cached.source_url||row.detail_url||row.source_url||null,documents:cached.documents||row.payload?.dossier_documents||[],analysis:cached.analysis||cached,provider:cached.provider||null,file_mode:cached.file_mode||'cached',files_analyzed:cached.files_analyzed||[],warnings:cached.warnings||[],persisted:true,read_only_external:true});
