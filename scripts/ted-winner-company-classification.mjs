@@ -119,7 +119,7 @@ export async function runTedWinnerCompanyClassification({mode=process.env.SYNC_M
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
   const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
   const raw=await rest({...access,path:`kek_tender_watch?select=id,title,relevance_score,status,payload&relevance_score=gte.${encodeURIComponent(minScore)}&order=published_date.desc&limit=500`});
-  const candidates=(Array.isArray(raw)?raw:[]).filter(r=>{const p=r?.payload||{},w=winner(r),c=w.company_classification,current=String(w.company_type||c?.company_type||'unknown');return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&r.status!=='ignored'&&winnerNames(w).length&&!['producer','gc_epc','trader_consortium'].includes(current);}).slice(0,Math.max(0,maxRows));
+  const candidates=(Array.isArray(raw)?raw:[]).filter(r=>{const p=r?.payload||{},w=winner(r),c=w.company_classification,current=String(w.company_type||c?.company_type||'unknown');return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&r.status!=='ignored'&&winnerNames(w).length&&!['producer','gc_epc','trader_consortium'].includes(current)&&(!c||c.version!==VERSION);}).slice(0,Math.max(0,maxRows));
   const results=[];
   for(const row of candidates){
     try{const result=await researchRow(row,{fetchImpl});if(mode==='apply')await patchRow(access,row,result);results.push({id:row.id,title:row.title,company_type:result.company_type,confidence:result.confidence,scores:result.scores,source_urls:result.source_urls||[],classification_method:result.classification_method||'rules'});}
