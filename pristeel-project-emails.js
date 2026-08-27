@@ -146,9 +146,9 @@ var files=[
   'pristeel-project-intelligence-resilience-v1.js?v=20260815-1',
   'pristeel-project-workflow-canonical-v1.js?v=20260822-flow2',
   'pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2',
-  'pristeel-tender-priority-actions-v1.js?v=20260823-homegrid2',
+  'pristeel-tender-priority-actions-v1.js?v=20260827-ux1',
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
-  'pristeel-project-classification-v1.js?v=20260823-homegrid2',
+  'pristeel-project-classification-v1.js?v=20260827-ux1',
   'pristeel-primary-nav-resilience-v1.js?v=20260823-homegrid2'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;

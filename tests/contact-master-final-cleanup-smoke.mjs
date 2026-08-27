@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 const ui = fs.readFileSync('pristeel-contact-master-v1.js','utf8');
 const migration = fs.readFileSync('supabase/migrations/20260822203500_toneatti_contact_reconcile.sql','utf8');
 
-assert.match(ui,/return'Klient \/ Lead'/,'canonical client bucket must be labelled Klient / Lead');
+assert.match(ui,/return'Klient'/,'canonical client bucket must use the Albanian label Klient');
 assert(!ui.includes('id="pcm-kind"'),'Contact Master must not expose the legacy Role dropdown');
-assert.match(ui,/businessCard\('all','Të gjithë'\)\+businessCard\('client','Klient \/ Lead'\)\+businessCard\('supplier','Furnitorë'\)\+businessCard\('manufacturer','Prodhues'\)/,'business category cards must remain in the requested direct order');
+assert.match(ui,/businessCard\('all','Të gjithë'\)\+businessCard\('client','Klientë'\)\+businessCard\('supplier','Furnitorë'\)\+businessCard\('manufacturer','Prodhues'\)/,'business category cards must remain in Albanian and in the requested direct order');
 assert.match(ui,/partners\?select=name,aliases,relation&limit=1000/,'manufacturer category must be derived from partner relationships');
 assert.match(ui,/rel\.indexOf\('manufacturer'\)<0/,'manufacturer filter must require the manufacturer relation');
 assert.match(ui,/mode==='manufacturer'&&isManufacturer\(r\)/,'manufacturer card must filter Contact Master rows directly');
@@ -24,3 +24,7 @@ assert.match(migration,/delete from public\.contact_sources[\s\S]*delete from pu
 assert.match(migration,/crm_contacts[\s\S]*758778400454[\s\S]*raise exception/,'migration must abort if the retired HubSpot identity reappears in the current CRM feed');
 
 console.log('Contact Master native cards + final cleanup smoke passed.');
+
+assert.match(ui,/DOSJA E KONTAKTIT/,'contact popup heading must be Albanian');
+assert.match(ui,/pppp_contact_master_v1\?contact_id=eq\./,'contact popup must refresh the selected contact from the live canonical view');
+assert.match(ui,/project_email_count/,'contact popup must expose real project email activity');

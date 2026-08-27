@@ -173,6 +173,16 @@
       "source": "pristeel-gmail-launcher-v2.html",
       "contains": "pristeel-procurement.html",
       "reason": "Launcher forwards into the main PPPP application document."
+    },
+    {
+      "source": "pristeel-redesign-finalizer-v1.js",
+      "contains": "pristeel-project-centric-workflow-v1.js",
+      "reason": "Final UX layer loads the whole-card Opportunities and project/contact workflow."
+    },
+    {
+      "source": "pristeel-redesign-finalizer-v1.js",
+      "contains": "pristeel-tender-dossier-analysis-v1.js",
+      "reason": "Final UX layer loads explicit official tender dossier analysis."
     }
   ],
   "knownRepositoryOnlyClasses": [

@@ -1,0 +1,27 @@
+name: Opportunities Projects Contacts UX smoke
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Check changed UI syntax
+        run: |
+          node --check pristeel-project-centric-workflow-v1.js
+          node --check pristeel-tender-dossier-analysis-v1.js
+          node --check pristeel-project-classification-v1.js
+          node --check pristeel-contact-master-v1.js
+      - name: Verify dossier-first Albanian UX contract
+        run: node tests/opportunities-projects-contacts-ux-smoke.mjs

@@ -25,7 +25,7 @@ assert(cleanupPos>stabilityPos,'Home visual cleanup must load after Home stabili
 assert(source.includes("document.dispatchEvent(new CustomEvent('pst:modules-ready'))"), 'Bootstrap readiness event is missing');
 assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source), 'Bootstrap must not poll or observe the platform');
 
-assert(finalizer.includes('pristeel-openai-operating-assistant-v1.js?v=20260825-1'), 'Finalizer must load the server-side OpenAI operating assistant');
+assert(finalizer.includes('pristeel-openai-operating-assistant-v1.js?v=20260827-home1'), 'Finalizer must load the server-side OpenAI operating assistant');
 assert(finalizer.includes('data-pst-openai-assistant-v1'), 'OpenAI assistant loader must be idempotent');
 assert(openaiAssistant.includes('/functions/v1/pppp-openai-assistant'), 'OpenAI assistant must use the authenticated server-side Edge Function');
 assert(openaiAssistant.includes('PSTProjectContextBridge'), 'OpenAI assistant must extend the project context bridge instead of creating a second project store');
@@ -35,18 +35,19 @@ assert(!/\.supaFetch\([^\n]*['\"](?:PATCH|POST|DELETE)['\"]/.test(openaiAssistan
 assert(!/gmail\/v1\/.*send|mark.*won|mark.*lost|supplier_orders.*POST/i.test(openaiAssistant), 'OpenAI assistant must not bypass human commitment gates');
 
 // Project-centric final layer: Projects are the daily center, TED is awards-only, and operator text can drive safe internal organization.
-assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260826-1'), 'Finalizer must load the project-centric workflow layer');
+assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260827-1'), 'Finalizer must load the project-centric workflow layer');
 assert(finalizer.includes('data-pst-project-centric-workflow-v1'), 'Project-centric loader must be idempotent');
 new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
 assert(projectCentric.includes("if(src==='TED')return phase==='award'"), 'Open TED opportunities must stay out of the daily Opportunities surface');
-assert(projectCentric.includes('KRPP / APP') && projectCentric.includes('Fitues TED'), 'Daily tender filters must separate local bids from TED winners');
+assert(projectCentric.includes('Për ofertim') && projectCentric.includes('Fitues nga TED'), 'Daily tender filters must separate bid opportunities from TED winners in Albanian');
 assert(projectCentric.includes('pppp-project-operator-update'), 'Project operator update must use the authenticated safe Edge Function');
-assert(projectCentric.includes('contact_sources?') && projectCentric.includes('project_contacts?') && projectCentric.includes('project_emails?'), 'Contact Brief must hydrate real relationship and email data');
+assert(projectCentric.includes('pppp_contact_master_v1?contact_id=eq.') && projectCentric.includes('project_emails?'), 'Contact popup must refresh canonical live relationships and recent project email data');
 assert(projectCentric.includes('PSTOpenAIAssistantV1') && projectCentric.includes('candidate_partners'), 'Tender analysis must use server AI plus registered PPPP partners');
-assert(projectCentric.includes('navigator.clipboard') && projectCentric.includes('Numri i Referencës'), 'APP fallback must preserve the exact reference instead of pretending a generic page is a deep link');
+assert(projectCentric.includes("if(src==='APP_AL')") && projectCentric.includes('nuk ka lidhje të drejtpërdrejtë të sigurt'), 'APP active workflow must refuse the unsafe generic external page and keep dossier retrieval inside PPPP');
 assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(projectCentric), 'Project-centric layer must remain bounded and observer-free');
 assert(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(projectCentric), 'Project-centric layer must never send external mail');
 assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Project-centric layer must preserve commitment gates');
 
 console.log('Redesign bootstrap + OpenAI + project-centric workflow contract smoke test passed.');
+assert(projectCentric.includes('Merr dhe analizo dosjen') && projectCentric.includes('dossierReady(id)'), 'Project creation must be gated behind explicit dossier analysis');
