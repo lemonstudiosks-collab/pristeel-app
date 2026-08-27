@@ -175,10 +175,9 @@ function closeTenderModal(){
 }
 function ensureTenderModal(r){
  var modal=document.getElementById('pst-ti-backdrop');
- if(!modal){
-   modal=document.createElement('div');modal.id='pst-ti-backdrop';modal.className='pst-pcw-modal';modal.hidden=true;modal.setAttribute('aria-hidden','true');
-   modal.innerHTML='<div id="pst-ti-card" role="dialog" aria-modal="true" aria-labelledby="pst-ti-title"><div class="pst-pcw-modal-head"><div><span>ACTION CONSOLE</span><h2 id="pst-ti-title"></h2><p id="pst-ti-meta"></p></div><button type="button" data-pcw-close-modal>Mbyll</button></div><div id="pst-ti-body"></div><div class="pst-pcw-modal-foot">PPPP nuk krijon projekt, nuk dërgon email dhe nuk merr angazhim pa veprimin tënd.</div></div>';
-   document.body.appendChild(modal);
+ if(!modal){modal=document.createElement('div');modal.id='pst-ti-backdrop';document.body.appendChild(modal);}
+ if(!modal.classList.contains('pst-pcw-modal')){
+   modal.className='pst-pcw-modal';modal.removeAttribute('style');modal.innerHTML='<div id="pst-ti-card" role="dialog" aria-modal="true" aria-labelledby="pst-ti-title"><div class="pst-pcw-modal-head"><div><span>ACTION CONSOLE</span><h2 id="pst-ti-title"></h2><p id="pst-ti-meta"></p></div><button type="button" data-pcw-close-modal>Mbyll</button></div><div id="pst-ti-body"></div><div class="pst-pcw-modal-foot">PPPP nuk krijon projekt, nuk dërgon email dhe nuk merr angazhim pa veprimin tënd.</div></div>';
  }
  var card=modal.querySelector('#pst-ti-card'),title=modal.querySelector('#pst-ti-title'),meta=modal.querySelector('#pst-ti-meta'),body=modal.querySelector('#pst-ti-body');
  if(!card||!title||!meta||!body)return null;
