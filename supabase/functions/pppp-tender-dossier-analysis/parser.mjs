@@ -52,16 +52,16 @@ function krppPostbackName(label,target){
  return l||'Dokument KRPP';
 }
 function krppPostbackPriority(target){
- if(/uiDownloadAll$/.test(target))return100;
- if(/uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentZip$/.test(target))return95;
- if(/uiTroskovnikRepeater.*uiOpenDocumentZip$/.test(target))return90;
- if(/uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentDoc_5$/.test(target))return80;
- if(/uiTroskovnikRepeater.*uiOpenDocument_5$/.test(target))return78;
- if(/uiDocumentCtl\$uiOpenDocumentPdf_5$/.test(target))return55;
- if(/uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentDoc$/.test(target))return45;
- if(/uiTroskovnikRepeater.*uiOpenDocument$/.test(target))return42;
- if(/uiDocumentCtl\$uiOpenDocumentPdf$/.test(target))return30;
- return10;
+ if(/uiDownloadAll$/.test(target))return 100;
+ if(/uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentZip$/.test(target))return 95;
+ if(/uiTroskovnikRepeater.*uiOpenDocumentZip$/.test(target))return 90;
+ if(/uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentDoc_5$/.test(target))return 80;
+ if(/uiTroskovnikRepeater.*uiOpenDocument_5$/.test(target))return 78;
+ if(/uiDocumentCtl\$uiOpenDocumentPdf_5$/.test(target))return 55;
+ if(/uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentDoc$/.test(target))return 45;
+ if(/uiTroskovnikRepeater.*uiOpenDocument$/.test(target))return 42;
+ if(/uiDocumentCtl\$uiOpenDocumentPdf$/.test(target))return 30;
+ return 10;
 }
 export function extractKrppPostbackActions(html){
  const out=[],seen=new Set(),src=String(html||'');let m;
