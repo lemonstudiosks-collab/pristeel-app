@@ -1,18 +1,19 @@
-/* PRISTEEL Live Home v5
+/* PRISTEEL Live Home v6
  * Home is an operator surface, not a task/event dump.
  * It shows only explicit verified actions plus one current confirmed state per project.
  * Raw Gmail, supplier, document and system queues remain evidence backstage.
  */
 (function(){
 'use strict';
-if(window.__pstProjectControlHomeV2){
-  try{if(window.PSTProjectControlHomeV1&&typeof window.PSTProjectControlHomeV1.apply==='function')window.PSTProjectControlHomeV1.apply(true);}catch(e){}
+if(window.__pstLiveHomeV6&&window.PSTProjectControlHomeV1&&typeof window.PSTProjectControlHomeV1.apply==='function'){
+  try{window.PSTProjectControlHomeV1.apply(true);}catch(e){}
   return;
 }
 window.__pstProjectControlHomeV2=true;
-window.__pstLiveHomeV3=true; // compatibility marker used by the retired Home renderer
+window.__pstLiveHomeV3=true;
 window.__pstLiveHomeV4=true;
 window.__pstLiveHomeV5=true;
+window.__pstLiveHomeV6=true;
 
 var state={busy:false,busyStage:0,busyToken:0,pendingQuestion:'',loading:false,projects:[],actions:[],facts:[],updates:[],last:null,loadedAt:0};
 function S(v){return String(v==null?'':v);}
@@ -178,9 +179,10 @@ function render(){
 function ensureRoot(page){
   if(!page)return null;
   var root=document.getElementById('pst-project-control-home-v2');
+  if(root&&root.getAttribute('data-pst-home-version')!=='6'){try{root.remove();}catch(e){}root=null;}
   if(root){if(!page.contains(root))page.appendChild(root);return root;}
   var old=document.getElementById('pst-project-control-home-v1');if(old)old.remove();
-  root=document.createElement('section');root.id='pst-project-control-home-v2';
+  root=document.createElement('section');root.id='pst-project-control-home-v2';root.setAttribute('data-pst-home-version','6');
   root.innerHTML=''
     +'<header class="pst-live-head"><div><span class="pst-live-kicker"><i></i> PPPP LIVE</span><h1 class="pst-live-title">Ja çfarë po ndodh.</h1><p>Gjendja reale e projekteve, e përmbledhur nga lëvizjet që kanë rëndësi. Pa zhurmë, pa lista teknike.</p></div><small class="pst-live-sync"></small></header>'
     +'<section class="pst-live-command-shell"><div class="pst-live-command-intro"><span>PYET PPPP</span><b>Pyet platformën për çdo projekt</b><small>PPPP lexon gjendjen live dhe të kthen përgjigje nga të dhënat e platformës.</small></div><form class="pst-live-command"><div class="pst-live-command-mark">P</div><textarea rows="1" class="pst-live-input" placeholder="P.sh. Çfarë po ndodh me STACON?"></textarea><button class="pst-live-send" type="submit" aria-label="Dërgo">↑</button></form><div class="pst-live-result" hidden></div></section>'
@@ -307,8 +309,8 @@ async function load(force){
   finally{state.loading=false;render();}
 }
 function css(){
-  ['pst-project-control-home-v1-css','pst-project-control-home-v2-css','pst-live-home-v3-css','pst-live-home-v4-css','pst-live-home-v5-css'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
-  var s=document.createElement('style');s.id='pst-live-home-v5-css';s.textContent=`
+  ['pst-project-control-home-v1-css','pst-project-control-home-v2-css','pst-live-home-v3-css','pst-live-home-v4-css','pst-live-home-v5-css','pst-live-home-v6-css'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
+  var s=document.createElement('style');s.id='pst-live-home-v6-css';s.textContent=`
 #page-workspace-home{background:
   radial-gradient(circle at 12% 2%,rgba(87,167,183,.14),transparent 30%),
   radial-gradient(circle at 92% 18%,rgba(89,139,202,.08),transparent 27%),
