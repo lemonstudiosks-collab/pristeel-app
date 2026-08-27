@@ -5,11 +5,17 @@ const pcw=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
 const dossier=fs.readFileSync('pristeel-tender-dossier-analysis-v1.js','utf8');
 const projects=fs.readFileSync('pristeel-project-classification-v1.js','utf8');
 const contacts=fs.readFileSync('pristeel-contact-master-v1.js','utf8');
+const kek=fs.readFileSync('pristeel-kek-tender-watch-v1.js','utf8');
+const biz=fs.readFileSync('pristeel-tender-business-flow-v1.js','utf8');
+const nav=fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 
 new Function(pcw);
 new Function(dossier);
 new Function(projects);
 new Function(contacts);
+new Function(kek);
+new Function(biz);
+new Function(nav);
 
 assert.match(pcw,/data-pcw-tender/,'whole tender card must be the primary interaction');
 assert.match(pcw,/Shkarko dosjen/,'local opportunity must expose official dossier download');
@@ -61,3 +67,9 @@ assert.match(pcw,/GC \/ EPC/,'TED winner role must identify GC/EPC clients');
 assert.match(pcw,/Kontaktet e fituesit/,'TED action console must expose researched winner contacts');
 assert.match(pcw,/Shkarko dosjen/,'KRPP/APP action console must expose dossier download');
 assert.match(pcw,/Analizo kushtet/,'KRPP/APP action console must expose technical/commercial analysis');
+
+assert.match(kek,/handoffFinalOpportunities/,'legacy tender opener must hand off to the final whole-card owner');
+assert.match(kek,/if\(handoffFinalOpportunities\(true\)\)return true/,'legacy tender opener must not rebuild the old shell once final owner exists');
+assert.match(biz,/if\(handoffFinalOpportunities\(false\)\)return/,'Tender Business Flow render/load must not reclaim visible Opportunities from the final owner');
+assert.match(nav,/if\(handoffOpportunities\(true\)\)/,'primary navigation must prefer the final Opportunities owner before legacy monitor routes');
+assert.match(nav,/PSTProjectCentricWorkflowV1/,'primary navigation must route directly to the whole-card Opportunities runtime');
