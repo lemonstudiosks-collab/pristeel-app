@@ -10,6 +10,8 @@ on:
       - 'pristeel-home-happy-v1.js'
       - 'pages-artifact-manifest.json'
       - 'tests/project-control-home-smoke.mjs'
+      - 'supabase/functions/pppp-openai-assistant/index.ts'
+      - 'tests/pppp-openai-assistant-fallback-smoke.mjs'
       - '.github/workflows/project-control-home-smoke.yml'
   push:
     branches: [main]
@@ -21,6 +23,8 @@ on:
       - 'pristeel-home-happy-v1.js'
       - 'pages-artifact-manifest.json'
       - 'tests/project-control-home-smoke.mjs'
+      - 'supabase/functions/pppp-openai-assistant/index.ts'
+      - 'tests/pppp-openai-assistant-fallback-smoke.mjs'
       - '.github/workflows/project-control-home-smoke.yml'
   workflow_dispatch:
 
@@ -43,3 +47,5 @@ jobs:
           node --check pristeel-redesign-finalizer-v1.js
       - name: Verify PPPP Home control-room contract
         run: node tests/project-control-home-smoke.mjs
+      - name: Verify PPPP assistant live-data fallback
+        run: node tests/pppp-openai-assistant-fallback-smoke.mjs

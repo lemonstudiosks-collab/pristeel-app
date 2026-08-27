@@ -1,4 +1,4 @@
-/* PRISTEEL Live Home v4
+/* PRISTEEL Live Home v5
  * Home is an operator surface, not a task/event dump.
  * It shows only explicit verified actions plus one current confirmed state per project.
  * Raw Gmail, supplier, document and system queues remain evidence backstage.
@@ -12,8 +12,9 @@ if(window.__pstProjectControlHomeV2){
 window.__pstProjectControlHomeV2=true;
 window.__pstLiveHomeV3=true; // compatibility marker used by the retired Home renderer
 window.__pstLiveHomeV4=true;
+window.__pstLiveHomeV5=true;
 
-var state={busy:false,loading:false,projects:[],actions:[],facts:[],updates:[],last:null,loadedAt:0};
+var state={busy:false,busyStage:0,busyToken:0,pendingQuestion:'',loading:false,projects:[],actions:[],facts:[],updates:[],last:null,loadedAt:0};
 function S(v){return String(v==null?'':v);}
 function A(v){return Array.isArray(v)?v:[];}
 function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
@@ -102,8 +103,43 @@ function latestSync(){
   var vals=[state.loadedAt].concat(state.updates.map(function(a){return a.time;})),t=Math.max.apply(null,vals);
   return t?shortDate(t):'';
 }
+function homeTitle(){
+  var h=new Date().getHours();
+  if(h<11)return'Mirëmëngjes. Ja çfarë po ndodh.';
+  if(h<18)return'Mirëdita. Ja çfarë po ndodh.';
+  return'Mirëmbrëma. Ja çfarë po ndodh.';
+}
+function stateTone(v){
+  var n=N(v);
+  if(/kerkon veprim|action/.test(n))return'action';
+  if(/pritje/.test(n))return'wait';
+  if(/realizim|ekzekutim|konfirmuar|aktiv/.test(n))return'active';
+  return'neutral';
+}
+function busyStages(){
+  return[
+    'Po identifikoj projektin dhe pyetjen…',
+    'Po lexoj gjendjen, emailat dhe dokumentet më të fundit…',
+    'Po lidh lëvizjet e fundit me gjendjen aktuale…',
+    'Po përgatis përgjigjen…',
+    'Ende po punoj. Po verifikoj që përgjigjja të mbështetet vetëm në të dhëna reale.'
+  ];
+}
+function startBusy(q){
+  state.busy=true;state.pendingQuestion=S(q).trim();state.busyStage=0;
+  var token=++state.busyToken,delays=[900,2600,5200,9000];
+  delays.forEach(function(ms,i){setTimeout(function(){if(!state.busy||state.busyToken!==token)return;state.busyStage=i+1;render();},ms);});
+  render();
+}
+function stopBusy(){state.busy=false;state.pendingQuestion='';state.busyStage=0;state.busyToken++;}
 function renderResult(root){
   var r=root.querySelector('.pst-live-result');if(!r)return;
+  if(state.busy){
+    var stages=busyStages(),msg=stages[Math.min(state.busyStage,stages.length-1)];
+    r.hidden=false;
+    r.innerHTML='<div class="pst-live-thinking"><span class="pst-live-thinking-orb"><i></i><i></i><i></i></span><div><b>PPPP po punon</b><span>'+E(msg)+'</span>'+(state.pendingQuestion?'<small>'+E(clamp(state.pendingQuestion,120))+'</small>':'')+'</div></div>';
+    return;
+  }
   if(!state.last){r.hidden=true;r.innerHTML='';return;}r.hidden=false;
   if(state.last.kind==='error'){r.innerHTML='<div class="pst-live-msg err">'+E(state.last.text)+'</div>';return;}
   if(state.last.kind==='update'){r.innerHTML='<div class="pst-live-msg ok"><b>'+E(state.last.project||'Projekti')+'</b><span>'+E(state.last.text||'Update-i u ruajt.')+'</span></div>';return;}
@@ -116,6 +152,9 @@ function render(){
   var page=activeHome();if(!page)return false;
   var root=ensureRoot(page),actions=groupedActions(),updates=state.updates;
   if(!root)return false;
+  var title=root.querySelector('.pst-live-title');if(title)title.textContent=homeTitle();
+  var needs=root.querySelector('.pst-live-needs');if(needs)needs.classList.toggle('is-empty',!actions.length);
+  root.classList.toggle('is-busy',state.busy);
   root.querySelector('.pst-live-sync').textContent=state.loading?'Po sinkronizohet…':(latestSync()?'Sinkronizuar '+latestSync():'');
   root.querySelector('.pst-live-action-count').textContent=actions.length?actions.length+' projekt'+(actions.length===1?'':'e'):'';
   root.querySelector('.pst-live-actions').innerHTML=actions.length?actions.map(function(x){
@@ -125,14 +164,14 @@ function render(){
       +'<h3>'+E(clamp(a.title,170))+'</h3>'
       +(a.detail?'<p>'+E(clamp(a.detail,340))+'</p>':'')
       +'<div class="pst-live-action-foot"><span>'+E(p.client||'')+'</span>'+(x.count>1?'<small>+'+(x.count-1)+' veprime të tjera të konfirmuara</small>':'')+'</div></div><div class="pst-live-arrow">→</div></article>';
-  }).join(''):'<div class="pst-live-clear"><div>✓</div><b>Nuk ka asgjë të konfirmuar që kërkon veprimin tënd tani.</b><span>Kjo është normale. Home nuk shfaq review queues, certifikata, follow-up automatik ose draft-e vetëm sepse ekzistojnë në sistem.</span></div>';
+  }).join(''):'<div class="pst-live-clear"><div>✓</div><span><b>Nuk ka veprime të konfirmuara për ty tani.</b><small>PPPP po vazhdon të monitorojë projektet dhe do ta sjellë këtu vetëm atë që kërkon vërtet veprimin tënd.</small></span></div>';
   root.querySelector('.pst-live-updates').innerHTML=updates.length?updates.map(function(a){
-    return '<article class="pst-live-update" role="button" tabindex="0" data-live-project="'+E(a.project_id)+'">'
+    return '<article class="pst-live-update tone-'+stateTone(a.state)+'" role="button" tabindex="0" data-live-project="'+E(a.project_id)+'">'
       +'<div class="pst-live-update-top"><div><span>'+E(a.client||'PROJEKT')+'</span><h3>'+E(a.project)+'</h3></div><div class="pst-live-update-meta"><b>'+E(a.state)+'</b><time>'+E(shortDate(a.time))+'</time></div></div>'
       +'<p>'+E(a.detail)+'</p><div class="pst-live-update-open">Hap projektin →</div></article>';
   }).join(''):'<div class="pst-live-empty">Nuk ka update të konfirmuara të projekteve për këtë periudhë.</div>';
   var btn=root.querySelector('.pst-live-send'),input=root.querySelector('.pst-live-input');
-  if(btn){btn.disabled=state.busy;btn.textContent=state.busy?'…':'↑';}
+  if(btn){btn.disabled=state.busy;btn.classList.toggle('is-busy',state.busy);btn.textContent=state.busy?'':'↑';}
   if(input)input.disabled=state.busy;
   renderResult(root);return true;
 }
@@ -143,8 +182,8 @@ function ensureRoot(page){
   var old=document.getElementById('pst-project-control-home-v1');if(old)old.remove();
   root=document.createElement('section');root.id='pst-project-control-home-v2';
   root.innerHTML=''
-    +'<header class="pst-live-head"><div><span class="pst-live-kicker"><i></i> PPPP LIVE</span><h1>Çfarë duhet të dish tani</h1><p>Home tregon vetëm veprimet e konfirmuara dhe gjendjen më të fundit të projekteve. Gjithçka tjetër mbetet backstage.</p></div><small class="pst-live-sync"></small></header>'
-    +'<form class="pst-live-command"><div class="pst-live-command-mark">P</div><textarea rows="1" class="pst-live-input" placeholder="Pyet PPPP, ose jep një update për një projekt"></textarea><button class="pst-live-send" type="submit" aria-label="Dërgo">↑</button></form><div class="pst-live-result" hidden></div>'
+    +'<header class="pst-live-head"><div><span class="pst-live-kicker"><i></i> PPPP LIVE</span><h1 class="pst-live-title">Ja çfarë po ndodh.</h1><p>Gjendja reale e projekteve, e përmbledhur nga lëvizjet që kanë rëndësi. Pa zhurmë, pa lista teknike.</p></div><small class="pst-live-sync"></small></header>'
+    +'<section class="pst-live-command-shell"><div class="pst-live-command-intro"><span>PYET PPPP</span><b>Pyet platformën për çdo projekt</b><small>PPPP lexon gjendjen live dhe të kthen përgjigje nga të dhënat e platformës.</small></div><form class="pst-live-command"><div class="pst-live-command-mark">P</div><textarea rows="1" class="pst-live-input" placeholder="P.sh. Çfarë po ndodh me STACON?"></textarea><button class="pst-live-send" type="submit" aria-label="Dërgo">↑</button></form><div class="pst-live-result" hidden></div></section>'
     +'<section class="pst-live-panel pst-live-needs"><header><div><span>PËR TY TANI</span><h2>Veprime të konfirmuara</h2><p>Vetëm kur PPPP ka evidencë të qartë se duhet të bësh diçka.</p></div><small class="pst-live-action-count"></small></header><div class="pst-live-actions"></div></section>'
     +'<section class="pst-live-panel pst-live-status"><header><div><span>GJENDJA E FUNDIT</span><h2>Projektet që kanë ndryshuar</h2><p>Një përmbledhje aktuale për projekt, jo listë emailash.</p></div></header><div class="pst-live-updates"></div></section>';
   page.appendChild(root);bind(root);return root;
@@ -232,7 +271,7 @@ function looksLikeProjectLookup(q){
   return false;
 }
 async function submit(q){
-  state.busy=true;render();
+  startBusy(q);
   try{
     if(isQuestion(q)||looksLikeProjectLookup(q)){state.last={kind:'answer',data:await askAI(q)};return;}
     var p=resolveLocal(q),probe=null;
@@ -242,7 +281,7 @@ async function submit(q){
     }
     if(!p)throw new Error('Nuk e lidha dot me një projekt unik. Përmend emrin e projektit në update.');
     var out=await edgeOperator(p.id,q);state.last={kind:'update',project:p.name,text:out.summary||'Update-i u ruajt.'};await load(true);
-  }catch(e){state.last={kind:'error',text:friendlyAssistantError(e)};}finally{state.busy=false;render();}
+  }catch(e){state.last={kind:'error',text:friendlyAssistantError(e)};}finally{stopBusy();render();}
 }
 function openProject(id){if(id&&typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);}
 function bind(root){
@@ -268,31 +307,51 @@ async function load(force){
   finally{state.loading=false;render();}
 }
 function css(){
-  ['pst-project-control-home-v1-css','pst-project-control-home-v2-css','pst-live-home-v3-css','pst-live-home-v4-css'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
-  var s=document.createElement('style');s.id='pst-live-home-v4-css';s.textContent=`
-#page-workspace-home{background:#f5f8f9!important;min-height:100vh!important}
-#pst-project-control-home-v2{display:block!important;max-width:1180px;margin:0 auto;padding:40px 28px 70px;color:#20333b;font-family:Inter,system-ui,-apple-system,sans-serif}
-.pst-live-head{display:flex;justify-content:space-between;gap:28px;align-items:flex-end;padding:0 2px 24px;border-bottom:1px solid #dfe8ea}
-.pst-live-kicker{display:inline-flex;align-items:center;gap:9px;font-size:11px;font-weight:850;letter-spacing:1.3px;color:#617d87}
-.pst-live-kicker i{width:8px;height:8px;border-radius:50%;background:#54b77c;box-shadow:0 0 0 4px rgba(84,183,124,.11)}
-.pst-live-head h1{margin:8px 0 7px;font-size:32px;line-height:1.1;letter-spacing:-.9px;color:#20343c}
-.pst-live-head p{max-width:760px;font-size:14px;color:#6f858d;line-height:1.55}
-.pst-live-sync{font-size:12px;color:#87999f;white-space:nowrap}
-.pst-live-command{display:flex;align-items:center;gap:12px;margin:22px 0;background:#fff;border:1px solid #dce7ea;border-radius:16px;padding:9px 10px 9px 12px;box-shadow:0 5px 18px rgba(35,67,77,.05)}
-.pst-live-command-mark{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#e7f2f5;color:#377286;font-weight:850}
+  ['pst-project-control-home-v1-css','pst-project-control-home-v2-css','pst-live-home-v3-css','pst-live-home-v4-css','pst-live-home-v5-css'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
+  var s=document.createElement('style');s.id='pst-live-home-v5-css';s.textContent=`
+#page-workspace-home{background:
+  radial-gradient(circle at 12% 2%,rgba(87,167,183,.14),transparent 30%),
+  radial-gradient(circle at 92% 18%,rgba(89,139,202,.08),transparent 27%),
+  linear-gradient(180deg,#f8fbfc 0%,#f3f7f8 52%,#f8fafb 100%)!important;min-height:100vh!important}
+#pst-project-control-home-v2{display:block!important;max-width:1240px;margin:0 auto;padding:46px 34px 78px;color:#20333b;font-family:Inter,system-ui,-apple-system,sans-serif}
+.pst-live-head{display:flex;justify-content:space-between;gap:30px;align-items:flex-end;padding:4px 4px 24px}
+.pst-live-kicker{display:inline-flex;align-items:center;gap:9px;padding:7px 11px;border:1px solid rgba(72,135,153,.16);border-radius:999px;background:rgba(255,255,255,.7);backdrop-filter:blur(10px);font-size:11px;font-weight:850;letter-spacing:1.25px;color:#557784}
+.pst-live-kicker i{width:8px;height:8px;border-radius:50%;background:#55b97b;box-shadow:0 0 0 5px rgba(85,185,123,.11)}
+.pst-live-head h1{margin:13px 0 8px;font-size:38px;line-height:1.06;letter-spacing:-1.25px;color:#1f343d}
+.pst-live-head p{max-width:760px;font-size:14px;color:#6e848c;line-height:1.55}
+.pst-live-sync{font-size:12px;color:#718990;white-space:nowrap;padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.7);border:1px solid rgba(94,131,143,.12)}
+.pst-live-command-shell{position:relative;margin:10px 0 22px;padding:22px;border-radius:24px;background:linear-gradient(135deg,#234c5b 0%,#2f7188 56%,#438ca0 100%);box-shadow:0 18px 42px rgba(31,70,84,.18);overflow:hidden}
+.pst-live-command-shell:before{content:'';position:absolute;right:-70px;top:-120px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.08)}
+.pst-live-command-intro{position:relative;z-index:1;margin:0 2px 15px;color:#fff}
+.pst-live-command-intro span{display:block;font-size:11px;font-weight:850;letter-spacing:1.2px;color:rgba(255,255,255,.68)}
+.pst-live-command-intro b{display:block;margin-top:4px;font-size:20px;letter-spacing:-.25px}
+.pst-live-command-intro small{display:block;margin-top:4px;font-size:12px;line-height:1.45;color:rgba(255,255,255,.72)}
+.pst-live-command{position:relative;z-index:1;display:flex;align-items:center;gap:12px;margin:0;background:#fff;border:1px solid rgba(255,255,255,.28);border-radius:16px;padding:8px 9px 8px 11px;box-shadow:0 8px 22px rgba(18,54,68,.12)}
+.pst-live-command:focus-within{box-shadow:0 0 0 4px rgba(213,242,250,.16),0 10px 26px rgba(18,54,68,.16)}
+.pst-live-command-mark{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#e8f3f6;color:#34778d;font-weight:900}
 .pst-live-input{flex:1;min-height:42px;max-height:120px;resize:vertical;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#243942!important;padding:10px 4px!important;font-size:15px!important;line-height:1.45!important}
-.pst-live-input::placeholder{color:#8ea0a6}.pst-live-send{width:42px;height:42px;border:0;border-radius:11px;background:#3c8298;color:#fff;font-size:19px;cursor:pointer}.pst-live-send:disabled{opacity:.5}
-.pst-live-result{margin:-8px 0 22px;padding:16px 18px;border-radius:14px;background:#eef5f7;border:1px solid #d9e8ec}.pst-live-answer{font-size:14px;line-height:1.65;color:#314b55}.pst-live-suggest{display:flex;gap:10px;margin-top:10px;font-size:13px}.pst-live-suggest b{color:#39778a}.pst-live-msg{display:flex;gap:10px;font-size:14px}.pst-live-msg.ok b{color:#387256}.pst-live-msg.err{color:#9c4b3c}.pst-live-open-answer{margin-top:10px;border:0;background:transparent;color:#39798c;font-size:13px;font-weight:800;padding:0;cursor:pointer}
-.pst-live-panel{background:#fff;border:1px solid #dce6e9;border-radius:18px;box-shadow:0 5px 18px rgba(32,62,72,.045);overflow:hidden;margin-top:18px}
-.pst-live-panel>header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:22px 24px 18px;border-bottom:1px solid #e7eef0}
-.pst-live-panel header span{font-size:11px;letter-spacing:1.15px;font-weight:850;color:#789098}.pst-live-panel h2{margin:4px 0 3px;font-size:21px;letter-spacing:-.35px;color:#2a4048}.pst-live-panel header p{font-size:13px;color:#7b8f96;line-height:1.45}.pst-live-panel header small{font-size:12px;color:#66808a;padding-top:5px}
-.pst-live-actions{padding:10px}.pst-live-action{display:grid;grid-template-columns:minmax(0,1fr) 28px;gap:16px;padding:19px 18px;margin:7px 0;border:1px solid #e2eaec;border-radius:14px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s,transform .14s}
-.pst-live-action:hover{border-color:#c8dade;box-shadow:0 7px 18px rgba(36,67,77,.06);transform:translateY(-1px)}.pst-live-action-top{display:flex;justify-content:space-between;gap:16px;align-items:center}.pst-live-action-top span{font-size:12px;font-weight:800;color:#557987}.pst-live-action-top time{font-size:12px;color:#84989f;white-space:nowrap}.pst-live-action h3{margin:5px 0 0;font-size:17px;line-height:1.35;color:#263c45}.pst-live-action p{margin-top:8px;font-size:14px;line-height:1.52;color:#657b84}.pst-live-action-foot{display:flex;justify-content:space-between;gap:12px;margin-top:11px;padding-top:10px;border-top:1px dashed #e4ebed;font-size:12px;color:#87999f}.pst-live-action-foot small{font-size:12px;color:#758b94}.pst-live-arrow{font-size:20px;color:#70a0af;padding-top:19px}
-.pst-live-clear{padding:44px 28px;text-align:center;color:#72868d}.pst-live-clear div{margin:0 auto 11px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e9f5ee;color:#4e8a67;font-size:18px}.pst-live-clear b{display:block;font-size:16px;color:#4d6670}.pst-live-clear span{display:block;max-width:720px;margin:7px auto 0;font-size:13px;line-height:1.5}
-.pst-live-updates{padding:10px}.pst-live-update{padding:19px 20px;margin:7px 0;border:1px solid #e2eaec;border-radius:14px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s}.pst-live-update:hover{border-color:#c8dade;box-shadow:0 7px 18px rgba(36,67,77,.055)}
-.pst-live-update-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.pst-live-update-top span{font-size:11px;font-weight:800;letter-spacing:.4px;color:#789098}.pst-live-update h3{margin:3px 0 0;font-size:17px;color:#29414a}.pst-live-update-meta{display:flex;align-items:center;gap:10px;white-space:nowrap}.pst-live-update-meta b{font-size:11px;color:#4f7660;background:#edf7f1;border-radius:999px;padding:5px 8px}.pst-live-update-meta time{font-size:12px;color:#8b9da3}.pst-live-update p{margin:10px 0 0;font-size:14.5px;line-height:1.58;color:#596f78}.pst-live-update-open{margin-top:11px;font-size:12px;font-weight:800;color:#4f8293}.pst-live-empty{padding:38px 24px;text-align:center;font-size:14px;color:#7e9299}
-.pst-live-action:focus-visible,.pst-live-update:focus-visible,.pst-live-send:focus-visible{outline:3px solid rgba(74,145,166,.25);outline-offset:2px}
-@media(max-width:720px){#pst-project-control-home-v2{padding:24px 12px 46px}.pst-live-head{display:block}.pst-live-sync{display:block;margin-top:10px}.pst-live-head h1{font-size:27px}.pst-live-panel>header{display:block;padding:19px 17px 15px}.pst-live-panel header small{display:block;margin-top:6px}.pst-live-action{padding:16px 14px}.pst-live-action-top,.pst-live-update-top{display:block}.pst-live-action-top time,.pst-live-update-meta{display:flex;margin-top:6px}.pst-live-action-foot{display:block}.pst-live-action-foot small{display:block;margin-top:4px}.pst-live-update{padding:16px 15px}}
+.pst-live-input::placeholder{color:#91a1a7}
+.pst-live-send{position:relative;width:44px;height:44px;border:0;border-radius:12px;background:#347f98;color:#fff;font-size:19px;cursor:pointer;box-shadow:0 5px 14px rgba(52,127,152,.22);transition:transform .15s,box-shadow .15s}
+.pst-live-send:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 18px rgba(52,127,152,.28)}
+.pst-live-send:disabled{opacity:.95;cursor:default}.pst-live-send.is-busy:before{content:'';position:absolute;inset:12px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:pst-live-spin .75s linear infinite}
+.pst-live-result{position:relative;z-index:1;margin:12px 0 0;padding:14px 16px;border-radius:14px;background:rgba(9,37,48,.18);border:1px solid rgba(255,255,255,.16);color:#fff}
+.pst-live-answer{font-size:14px;line-height:1.65;color:#fff}.pst-live-suggest{display:flex;gap:10px;margin-top:11px;padding-top:10px;border-top:1px solid rgba(255,255,255,.14);font-size:13px}.pst-live-suggest b{color:#d5f2fa}.pst-live-msg{display:flex;gap:10px;font-size:14px}.pst-live-msg.ok b{color:#c8f2d7}.pst-live-msg.err{color:#ffd3cb}.pst-live-open-answer{margin-top:11px;border:1px solid rgba(255,255,255,.24);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;font-size:13px;font-weight:800;padding:8px 10px;cursor:pointer}
+.pst-live-thinking{display:flex;align-items:center;gap:13px;min-height:48px}.pst-live-thinking>div{display:flex;flex-direction:column;gap:3px}.pst-live-thinking b{font-size:14px;color:#fff}.pst-live-thinking span{font-size:13px;color:rgba(255,255,255,.82)}.pst-live-thinking small{font-size:11px;color:rgba(255,255,255,.56)}
+.pst-live-thinking-orb{display:flex!important;align-items:center;gap:4px;min-width:46px}.pst-live-thinking-orb i{display:block;width:8px;height:8px;border-radius:50%;background:#d9f6ff;animation:pst-live-pulse 1.05s ease-in-out infinite}.pst-live-thinking-orb i:nth-child(2){animation-delay:.14s}.pst-live-thinking-orb i:nth-child(3){animation-delay:.28s}
+.pst-live-panel{background:rgba(255,255,255,.82);border:1px solid rgba(93,128,139,.14);border-radius:22px;box-shadow:0 10px 30px rgba(32,62,72,.06);overflow:hidden;margin-top:18px;backdrop-filter:blur(12px)}
+.pst-live-panel>header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:21px 23px 16px;border-bottom:1px solid rgba(111,143,152,.12)}
+.pst-live-panel header span{font-size:11px;letter-spacing:1.15px;font-weight:850;color:#76909a}.pst-live-panel h2{margin:5px 0 3px;font-size:22px;letter-spacing:-.4px;color:#294049}.pst-live-panel header p{font-size:13px;color:#7b8f96;line-height:1.45}.pst-live-panel header small{font-size:12px;color:#66808a;padding-top:5px}
+.pst-live-needs.is-empty{background:transparent;border:0;box-shadow:none;backdrop-filter:none;overflow:visible}.pst-live-needs.is-empty>header{display:none}.pst-live-needs.is-empty .pst-live-actions{padding:0}
+.pst-live-actions{padding:10px}.pst-live-action{display:grid;grid-template-columns:minmax(0,1fr) 30px;gap:16px;padding:19px 18px;margin:7px 0;border:1px solid rgba(101,139,149,.16);border-radius:16px;background:#fff;cursor:pointer;transition:border-color .14s,box-shadow .14s,transform .14s}
+.pst-live-action:hover{border-color:#bdd6de;box-shadow:0 10px 22px rgba(36,67,77,.08);transform:translateY(-2px)}.pst-live-action-top{display:flex;justify-content:space-between;gap:16px;align-items:center}.pst-live-action-top span{font-size:12px;font-weight:800;color:#557987}.pst-live-action-top time{font-size:12px;color:#84989f;white-space:nowrap}.pst-live-action h3{margin:5px 0 0;font-size:17px;line-height:1.35;color:#263c45}.pst-live-action p{margin-top:8px;font-size:14px;line-height:1.52;color:#657b84}.pst-live-action-foot{display:flex;justify-content:space-between;gap:12px;margin-top:11px;padding-top:10px;border-top:1px dashed #e4ebed;font-size:12px;color:#87999f}.pst-live-action-foot small{font-size:12px;color:#758b94}.pst-live-arrow{font-size:20px;color:#70a0af;padding-top:19px}
+.pst-live-clear{display:flex;align-items:center;gap:13px;padding:15px 17px;border:1px solid rgba(82,151,112,.16);border-radius:16px;background:linear-gradient(90deg,rgba(235,247,239,.88),rgba(248,252,250,.9));color:#5d7667}.pst-live-clear>div{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#dff1e6;color:#4e8a67;font-size:17px}.pst-live-clear>span{display:block}.pst-live-clear b{display:block;font-size:14px;color:#486253}.pst-live-clear small{display:block;margin-top:2px;font-size:12px;line-height:1.45;color:#74877a}
+.pst-live-status{padding-bottom:10px}.pst-live-updates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:12px}.pst-live-update{position:relative;display:flex;flex-direction:column;min-height:190px;padding:19px 19px 17px;margin:0;border:1px solid rgba(97,132,142,.15);border-radius:17px;background:linear-gradient(180deg,#fff 0%,#fbfdfd 100%);cursor:pointer;transition:border-color .14s,box-shadow .14s,transform .14s;overflow:hidden}.pst-live-update:before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#7aa4b1}.pst-live-update:hover{border-color:#bfd5dc;box-shadow:0 12px 24px rgba(36,67,77,.08);transform:translateY(-2px)}
+.pst-live-update.tone-wait:before{background:#78a9c3}.pst-live-update.tone-action:before{background:#d49c56}.pst-live-update.tone-active:before{background:#65a87d}.pst-live-update.tone-neutral:before{background:#99a9ae}
+.pst-live-update-top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.pst-live-update-top span{font-size:11px;font-weight:800;letter-spacing:.45px;color:#789098}.pst-live-update h3{margin:4px 0 0;font-size:17px;line-height:1.3;color:#29414a}.pst-live-update-meta{display:flex;align-items:center;gap:8px;white-space:nowrap}.pst-live-update-meta b{font-size:11px;color:#4e6f5b;background:#eef7f1;border-radius:999px;padding:6px 9px}.tone-wait .pst-live-update-meta b{color:#477087;background:#eaf4f8}.tone-action .pst-live-update-meta b{color:#8a6231;background:#fbf1e4}.tone-neutral .pst-live-update-meta b{color:#687a80;background:#f0f4f5}.pst-live-update-meta time{font-size:12px;color:#8b9da3}.pst-live-update p{margin:12px 0 0;font-size:14.5px;line-height:1.58;color:#596f78}.pst-live-update-open{margin-top:auto;padding-top:14px;font-size:12px;font-weight:800;color:#4f8293}.pst-live-empty{grid-column:1/-1;padding:38px 24px;text-align:center;font-size:14px;color:#7e9299}
+.pst-live-action:focus-visible,.pst-live-update:focus-visible,.pst-live-send:focus-visible,.pst-live-open-answer:focus-visible{outline:3px solid rgba(74,145,166,.25);outline-offset:2px}
+@keyframes pst-live-spin{to{transform:rotate(360deg)}}@keyframes pst-live-pulse{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-4px);opacity:1}}
+@media(max-width:900px){.pst-live-updates{grid-template-columns:1fr}.pst-live-update{min-height:0}}
+@media(max-width:720px){#pst-project-control-home-v2{padding:26px 13px 52px}.pst-live-head{display:block}.pst-live-sync{display:inline-block;margin-top:11px}.pst-live-head h1{font-size:30px}.pst-live-command-shell{padding:17px;border-radius:20px}.pst-live-command-intro b{font-size:18px}.pst-live-panel>header{display:block;padding:19px 17px 15px}.pst-live-panel header small{display:block;margin-top:6px}.pst-live-action{padding:16px 14px}.pst-live-action-top,.pst-live-update-top{display:block}.pst-live-action-top time,.pst-live-update-meta{display:flex;margin-top:7px}.pst-live-action-foot{display:block}.pst-live-action-foot small{display:block;margin-top:4px}.pst-live-update{padding:16px 15px}.pst-live-clear{align-items:flex-start}}
 `;
   document.head.appendChild(s);
 }

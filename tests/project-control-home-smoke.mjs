@@ -40,8 +40,8 @@ assert.match(home,/Veprime të konfirmuara/,'Home actions must be explicitly des
 assert.match(home,/GJENDJA E FUNDIT/,'Home must expose current project state');
 assert.match(home,/Projektet që kanë ndryshuar/,'Home must show project-level change summaries');
 assert.match(home,/jo listë emailash/,'Home must explicitly avoid an email-feed mental model');
-assert.match(home,/Nuk ka asgjë të konfirmuar që kërkon veprimin tënd tani/,'Home must allow a calm empty action state');
-assert.match(home,/Home nuk shfaq review queues, certifikata, follow-up automatik ose draft-e/,'empty state must explain that backstage mechanics are not operator work');
+assert.match(home,/Nuk ka veprime të konfirmuara për ty tani/,'Home must allow a compact calm empty action state');
+assert.match(home,/PPPP po vazhdon të monitorojë projektet/,'empty state must explain that monitoring continues backstage');
 
 assert.doesNotMatch(home,/pst-live-moves|position:sticky/,'Home must not recreate the narrow sticky movement column');
 assert.match(home,/\.pst-live-input\{[^}]*font-size:15px/,'AI input must be comfortably readable');
@@ -85,7 +85,7 @@ assert.match(legacyGrid,/function scheduleLiveHomeHandoff\(/,'legacy grid must r
 assert.match(legacyGrid,/\[0,100,350,900,1800,3000\]/,'handoff retries must stay bounded');
 assert.doesNotMatch(legacyGrid,/MutationObserver|setInterval\s*\(/,'legacy handoff must not introduce persistent polling/observers');
 
-console.log('PPPP Live Home v4 operator-signal + autonomous sync smoke: OK');
+console.log('PPPP Live Home v5 operator-signal + autonomous sync smoke: OK');
 
 assert.match(home,/wait for client/,'Home must expose waiting-for-client state from current email evidence');
 assert.match(home,/Në pritje të klientit/,'waiting-for-client state must be presented in Albanian');
@@ -98,3 +98,19 @@ assert.match(home,/if\(isQuestion\(q\)\|\|looksLikeProjectLookup\(q\)\)/,'Home s
 assert.match(home,/var local=localAnswer\(q\);if\(local\)return local;/,'Home must prefer live PPPP data before calling an external AI provider');
 assert.match(home,/friendlyAssistantError/,'Home must translate provider failures into operator-safe messages');
 assert.doesNotMatch(home,/kind:'error',text:S\(e&&e\.message\|\|e\)/,'Home must never expose raw provider errors directly to the operator');
+
+assert.match(home,/__pstLiveHomeV5/,'visual refresh must expose the v5 marker');
+assert.match(home,/function homeTitle\(\)/,'Home must provide a warmer time-aware greeting');
+assert.match(home,/pst-live-command-shell/,'Pyet PPPP must be a first-class command surface');
+assert.match(home,/function busyStages\(\)/,'Pyet PPPP must expose visible work stages');
+assert.match(home,/Po identifikoj projektin dhe pyetjen/,'initial assistant work stage must be explicit');
+assert.match(home,/Po lexoj gjendjen, emailat dhe dokumentet më të fundit/,'longer waits must explain what PPPP is doing');
+assert.match(home,/Ende po punoj\. Po verifikoj/,'slow requests must reassure the operator without fake percentages');
+assert.match(home,/pst-live-thinking-orb/,'assistant wait state must include a visible animated indicator');
+assert.match(home,/@keyframes pst-live-pulse/,'thinking indicator must animate');
+assert.match(home,/@keyframes pst-live-spin/,'submit control must animate while busy');
+assert.match(home,/pst-live-needs\.is-empty>header\{display:none\}/,'empty actions state must collapse the oversized empty panel header');
+assert.match(home,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,'project updates must use a modern two-column layout on desktop');
+assert.match(home,/tone-wait|tone-action|tone-active/,'project state cards must have restrained visual state cues');
+const busyBlock=(home.match(/function busyStages\(\)\{[\s\S]*?\n\}/)||[''])[0];
+assert.doesNotMatch(busyBlock,/\d+%/,'Home loading messages must not show fake progress percentages');

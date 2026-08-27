@@ -10,3 +10,8 @@ assert.match(src,/deterministic\(project,facts,emails,tasks\)/,'project question
 assert.match(src,/nuk lidhet me një projekt unik/,'general fallback must be human-readable');
 assert.doesNotMatch(src,/required_secret/,'secret names must never be exposed to the UI');
 console.log('PPPP assistant server-side live-data fallback: OK');
+
+assert.match(src,/projectFilter=project\?'&project_id=eq\.'/,'project questions must query facts, emails and tasks by project_id');
+assert.match(src,/project\?'120':'700'/,'project-scoped facts query must reduce the row budget');
+assert.match(src,/project\?'60':'250'/,'project-scoped email query must reduce the row budget');
+assert.match(src,/project\?'80':'300'/,'project-scoped task query must reduce the row budget');
