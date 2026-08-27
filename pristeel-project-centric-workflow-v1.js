@@ -158,7 +158,7 @@ async function openTender(id){
 }
 async function exactSource(r){
  var P=tenderApi(),src=tenderSource(r);
- if(src==='APP_AL'){alert('Për tenderët APP, PPPP e merr dosjen server-side sipas referencës së saktë. Nuk po të dërgojmë te faqja e përgjithshme e APP-së sepse nuk ka deep-link të sigurt për këtë rekord.');return false;}
+ if(src==='APP_AL'){alert('Për tenderët APP, PPPP e merr dosjen në prapaskenë sipas referencës së saktë. Nuk po të dërgojmë te faqja e përgjithshme e APP-së sepse nuk ka lidhje të drejtpërdrejtë të sigurt për këtë rekord.');return false;}
  if(P&&typeof P.openSource==='function'){P.openSource(r.id);return true;}
  var u=safeUrl(r.detail_url)||safeUrl(r.source_url);if(u){window.open(u,'_blank','noopener');return true;}return false;
 }
