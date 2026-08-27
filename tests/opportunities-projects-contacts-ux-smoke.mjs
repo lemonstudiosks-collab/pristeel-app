@@ -12,7 +12,8 @@ new Function(projects);
 new Function(contacts);
 
 assert.match(pcw,/data-pcw-tender/,'whole tender card must be the primary interaction');
-assert.match(pcw,/Merr dhe analizo dosjen/,'local opportunity must expose the dossier-first action');
+assert.match(pcw,/Shkarko dosjen/,'local opportunity must expose official dossier download');
+assert.match(pcw,/Analizo kushtet/,'local opportunity must expose dossier technical/commercial analysis');
 assert.match(pcw,/data-pcw-ti="go"[^>]*disabled/,'project creation must start disabled before dossier analysis');
 assert.match(pcw,/if\(tenderMode\(r\)==='local'&&!dossierReady\(id\)\)throw new Error/,'project creation must enforce the dossier gate in code, not only in CSS');
 assert.match(pcw,/PSTTenderDossierAnalysisV1/,'opportunity popup must reuse the canonical dossier engine');
