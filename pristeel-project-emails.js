@@ -141,7 +141,7 @@ var files=[
   'pristeel-gmail-live-inbox-v2.js?v=20260808-2',
   'pristeel-gmail-live-triage-v1.js?v=20260813-1',
   'pristeel-gmail-intake-click-fix-v1.js?v=20260808-1',
-  'pristeel-kek-tender-watch-v1.js?v=20260812-1',
+  'pristeel-kek-tender-watch-v1.js?v=20260827-singleowner1',
   'pristeel-project-lifecycle-tracking-v1.js?v=20260815-1',
   'pristeel-project-intelligence-resilience-v1.js?v=20260815-1',
   'pristeel-project-workflow-canonical-v1.js?v=20260822-flow2',
@@ -149,7 +149,7 @@ var files=[
   'pristeel-tender-priority-actions-v1.js?v=20260827-ux1',
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
   'pristeel-project-classification-v1.js?v=20260827-ux1',
-  'pristeel-primary-nav-resilience-v1.js?v=20260823-homegrid2'
+  'pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
 var diag=window.__pstBootstrapDiagnostics=window.__pstBootstrapDiagnostics||{started_at:new Date().toISOString(),total:files.length,loaded:0,errors:[],timeouts:[],retries:[],completed:false};
