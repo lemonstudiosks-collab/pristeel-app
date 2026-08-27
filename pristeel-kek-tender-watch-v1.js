@@ -61,7 +61,18 @@ function pageShell(){
  p.innerHTML='<div class="pst-kek-head"><div><div class="pst-kek-eye">PUBLIC STEEL TENDER MONITOR · AUTOMATIK</div><div class="pst-kek-title">Tenderat e çelikut</div><div class="pst-kek-sub">Mundësitë nga KRPP në Kosovë, APP në Shqipëri dhe TED në BE mblidhen automatikisht. Rezultatet e dhënies ruhen veç si market intelligence. Projekti krijohet vetëm pasi ta aprovojmë ne.</div></div><div class="pst-kek-actions"><button class="pst-kek-btn" onclick="pstKekLoad()">Rifresko listën</button><button class="pst-kek-btn" onclick="window.open(\'https://e-prokurimi.rks-gov.net\',\'_blank\')">KRPP ↗</button><button class="pst-kek-btn" onclick="window.open(\'https://app.gov.al/eksportimi-i-procedurave-te-publikuara/\',\'_blank\')">APP ↗</button><button class="pst-kek-btn" onclick="window.open(\'https://ted.europa.eu\',\'_blank\')">TED ↗</button></div></div><div class="pst-kek-filter"><input id="pst-kek-search" placeholder="Kërko titull, numër, FPP/CPV ose blerës" oninput="pstKekRender()"><select id="pst-kek-source" onchange="pstKekRender()"><option value="all">Të gjitha burimet</option><option value="KRPP">Kosovë · KRPP</option><option value="APP_AL">Shqipëri · APP</option><option value="TED">EU · TED</option></select><select id="pst-kek-phase" onchange="pstKekRender()"><option value="opportunity">Mundësi aktive</option><option value="award">Rezultate / awards</option><option value="all">Mundësi + rezultate</option></select><select id="pst-kek-category" onchange="pstKekRender()"><option value="all">Të gjitha kategoritë</option><option value="raw_material">Lëndë e parë</option><option value="steel_structure">Struktura çeliku</option><option value="possible">Për shqyrtim</option></select><select id="pst-kek-status" onchange="pstKekRender()"><option value="open">Të hapura</option><option value="new">Vetëm të reja</option><option value="review">Në shqyrtim</option><option value="promoted">Të kthyera në projekt</option><option value="ignored">Të anashkaluara</option><option value="all">Të gjitha</option></select></div><div class="pst-kek-card"><div id="pst-kek-list" class="pst-kek-empty">Duke ngarkuar tenderat…</div></div>';
 }
 
-window.pstWsKekTenders=function(){activate();pageShell();window.pstKekLoad();};
+function handoffFinalOpportunities(force){
+ var X=window.PSTProjectCentricWorkflowV1;
+ if(X&&typeof X.loadOpportunities==='function'){Promise.resolve(X.loadOpportunities(!!force)).catch(function(e){console.warn('PPPP Opportunities handoff:',e);});return true;}
+ return false;
+}
+window.pstWsKekTenders=function(){
+ activate();
+ if(handoffFinalOpportunities(true))return true;
+ pageShell();window.pstKekLoad();
+ [0,80,250,700].forEach(function(ms){setTimeout(function(){handoffFinalOpportunities(true);},ms);});
+ return true;
+};
 window.pstKekLoad=async function(){
  var h=document.getElementById('pst-kek-list');if(h)h.innerHTML='<div class="pst-kek-empty">Duke ngarkuar tenderat…</div>';
  try{

@@ -81,9 +81,20 @@ function capabilitySummary(rows){
   ignored:rows.filter(function(r){return bizStatus(r)==='ignored';}).length
  };
 }
+function handoffFinalOpportunities(force){
+ var page=document.getElementById('page-kek-tenders'),X=window.PSTProjectCentricWorkflowV1;
+ if(X&&typeof X.loadOpportunities==='function'&&page&&page.style.display!=='none'){
+   Promise.resolve(X.loadOpportunities(!!force)).catch(function(e){console.warn('PPPP final Opportunities handoff:',e);});
+   return true;
+ }
+ return false;
+}
 function openTenderMonitor(){
- if(typeof window.pstWsKekTenders==='function'){window.pstWsKekTenders();return;}
- if(typeof window.showPage==='function')window.showPage('kek-tenders');
+ if(handoffFinalOpportunities(true))return true;
+ if(typeof window.pstWsKekTenders==='function')window.pstWsKekTenders();
+ else if(typeof window.showPage==='function')window.showPage('kek-tenders');
+ [0,80,250,700].forEach(function(ms){setTimeout(function(){handoffFinalOpportunities(true);},ms);});
+ return true;
 }
 window.pstTenderBizOpenMonitor=openTenderMonitor;
 function homeSignalLabel(s){
@@ -272,6 +283,7 @@ function updateBadge(){
  badge.textContent=String(c);badge.style.display=c?'inline-flex':'none';
 }
 async function load(){
+ if(handoffFinalOpportunities(false))return;
  var h=document.getElementById('pst-kek-list');if(h)h.innerHTML='<div class="pst-kek-empty">Duke ngarkuar mundësitë…</div>';
  setupShell();loading=true;
  try{
@@ -324,6 +336,7 @@ function localActions(r){
  return a;
 }
 function render(){
+ if(handoffFinalOpportunities(false))return;
  var h=document.getElementById('pst-kek-list');if(!h||loading)return;
  setupShell();renderSummary();
  var q=n((document.getElementById('pst-kek-search')||{}).value||'');
