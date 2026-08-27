@@ -52,7 +52,7 @@ window.pstTenderIntelligence=async id=>{
 window.eval(src);
 
 const api=window.PSTProjectCentricWorkflowV1;
-assert(api&&api.version==='2','current project-centric runtime did not load');
+assert(api&&api.version==='3','current project-centric runtime did not load');
 assert.equal(window.document.getElementById('page-kek-tenders').classList.contains('active'),false,'fixture must reproduce a visible page without .active');
 
 await api.loadOpportunities(true);
@@ -70,6 +70,7 @@ assert.equal(window.document.getElementById('pst-tender-fit-summary').style.disp
 await api.openTender('t-1');
 const body=window.document.getElementById('pst-ti-body');
 assert(body.textContent.includes('Merr dosjen'),'popup must explain the dossier-first route');
+assert(body.querySelector('[data-pcw-ti="download"]'),'popup must offer dossier ZIP download');
 assert(body.querySelector('[data-pcw-ti="dossier"]'),'popup must offer dossier retrieval/analysis');
 const create=body.querySelector('[data-pcw-ti="go"]');
 assert(create&&create.disabled,'project creation must remain disabled until dossier analysis is ready');

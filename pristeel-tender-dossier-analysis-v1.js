@@ -1,13 +1,14 @@
-/* PRISTEEL Tender Dossier Analysis v2
+/* PRISTEEL Tender Dossier Analysis v3
  * Extends the project-centric Opportunities surface with authenticated, server-side
  * reading of official KRPP/APP dossier documents. TED awards keep the existing winner workflow.
  * No external communication, commercial approval or parallel tender store.
  */
 (function(){
 'use strict';
-if(window.__pstTenderDossierAnalysisV2&&window.PSTTenderDossierAnalysisV1)return;
+if(window.__pstTenderDossierAnalysisV3&&window.PSTTenderDossierAnalysisV1)return;
 window.__pstTenderDossierAnalysisV1=true;
 window.__pstTenderDossierAnalysisV2=true;
+window.__pstTenderDossierAnalysisV3=true;
 var busy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -16,11 +17,14 @@ function safeUrl(v){v=S(v).trim();return /^https:\/\//i.test(v)?v:'';}
 function db(path){if(typeof window.supaFetch!=='function')return Promise.reject(new Error('Databaza nuk është gati.'));return window.supaFetch(path);}
 function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null;}catch(e){return null;}}
 async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow();}catch(e){return sessionNow();}}
-async function edge(payload){
+async function edgeResponse(payload){
  var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
  var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
  async function run(t){return fetch(base+'/functions/v1/pppp-tender-dossier-analysis',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(payload)});}
- var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}if(!res.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,900));return data;
+ var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}return res;
+}
+async function edge(payload){
+ var res=await edgeResponse(payload),raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}if(!res.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,900));return data;
 }
 async function tenderRow(id){var rows=A(await db('kek_tender_watch?id=eq.'+encodeURIComponent(id)+'&select=id,title,authority,procurement_no,publication_no,detail_url,source_url,payload&limit=1'));return rows[0]||null;}
 function source(row){var p=row&&row.payload&&typeof row.payload==='object'?row.payload:{},x=S(p.source||'KRPP').toUpperCase();return x==='APP'||x==='APP_AL'?'APP_AL':x==='TED'?'TED':'KRPP';}
@@ -47,15 +51,17 @@ function render(panel,out,row){
     +'<div class="pst-tda-list wide"><b>Dokumentet zyrtare</b>'+docsHtml(docs,out&&out.files_analyzed)+'</div>'
     +(warnings.length?'<div class="pst-tda-list wide warn"><b>Kufizime të leximit</b><ul>'+warnings.map(function(w){return'<li>'+E(w)+'</li>';}).join('')+'</ul></div>':'')
   +'</div></details>'
-  +'<button type="button" class="pst-tda-refresh" data-tda-force="'+E(row.id)+'">Rilexo dosjen zyrtare</button>';
+  +'<div class="pst-tda-footer-actions"><button type="button" class="pst-tda-download" data-tda-download="'+E(row.id)+'">Shkarko dosjen ZIP</button><button type="button" class="pst-tda-refresh" data-tda-force="'+E(row.id)+'">Rilexo dosjen zyrtare</button></div>';
  panel.setAttribute('data-tender-id',S(row.id));panel.setAttribute('data-analysis-ready','1');
  var generic=panel.parentNode&&panel.parentNode.querySelector('#pst-pcw-server-analysis');if(generic)generic.classList.add('pst-tda-generic-hidden');
  var create=panel.parentNode&&panel.parentNode.querySelector('[data-pcw-ti="go"][data-id="'+CSS.escape(S(row.id))+'"]');if(create){create.disabled=false;create.removeAttribute('title');}
  try{document.dispatchEvent(new CustomEvent('pst:tender-dossier-ready',{detail:{tender_id:S(row.id),analysis:x,documents:docs.length,cached:!!(out&&out.cached)}}));}catch(e){}
 }
+function downloadFilename(res,id){var h=S(res&&res.headers&&res.headers.get('content-disposition')),m=h.match(/filename="?([^";]+)"?/i);return S(m&&m[1]||('PPPP-Dosja-'+id+'.zip')).replace(/[\\/:*?"<>|]/g,'_');}
+async function download(id,btn){id=S(id);if(!id)return false;var old=btn&&btn.textContent;try{var row=await tenderRow(id);if(!row||source(row)==='TED')throw new Error('Shkarkimi i dosjes vlen vetëm për KRPP dhe APP.');if(btn)btn.textContent='Duke shkarkuar dosjen…';var res=await edgeResponse({tender_id:id,mode:'bundle'});if(!res.ok){var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,900));}var blob=await res.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=downloadFilename(res,id);a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);if(typeof window.pstToast==='function')window.pstToast('Dosja zyrtare u shkarkua si ZIP.','ok');return true;}catch(err){alert(err&&err.message||err);return false;}finally{if(btn&&old)btn.textContent=old;}}
 async function analyze(id,force){id=S(id);if(!id||busy[id])return false;busy[id]=true;var panel=null;try{var row=await tenderRow(id);if(!row||source(row)==='TED')return false;var body=await waitBody();if(!body)return false;panel=ensurePanel(body);panel.setAttribute('data-tender-id',id);panel.setAttribute('data-analysis-ready','0');panel.innerHTML='<div class="pst-tda-loading">PPPP po merr dosjen zyrtare'+(source(row)==='APP_AL'?' nga APP':' nga KRPP')+', po gjen dokumentet dhe po nxjerr kushtet e tenderit…</div>';var out=await edge({tender_id:id,force:!!force});render(panel,out,row);return true;}catch(err){if(panel){panel.setAttribute('data-analysis-ready','0');panel.innerHTML='<div class="pst-tda-error"><b>Dosja nuk u lexua plotësisht.</b><span>'+E(err&&err.message||err)+'</span><button type="button" data-tda-force="'+E(id)+'">Provo përsëri</button></div>';}console.warn('PPPP tender dossier analysis:',err);return false;}finally{delete busy[id];}}
 function scheduleFromTarget(target){return target&&target.closest?target.closest('[data-pcw-tender]'):null;}
-function click(e){var force=e.target&&e.target.closest?e.target.closest('[data-tda-force]'):null;if(force){e.preventDefault();e.stopPropagation();analyze(force.getAttribute('data-tda-force'),true);}}
+function click(e){var dl=e.target&&e.target.closest?e.target.closest('[data-tda-download]'):null;if(dl){e.preventDefault();e.stopPropagation();download(dl.getAttribute('data-tda-download'),dl);return;}var force=e.target&&e.target.closest?e.target.closest('[data-tda-force]'):null;if(force){e.preventDefault();e.stopPropagation();analyze(force.getAttribute('data-tda-force'),true);}}
 function keydown(e){return;}
 function css(){
  var old=document.getElementById('pst-tender-dossier-analysis-css');if(old)old.remove();
@@ -72,11 +78,11 @@ function css(){
 .pst-tda-partners{margin-top:13px;padding:13px 14px;border:1px solid #e0e8ea;border-radius:12px;background:#fafcfc}.pst-tda-partners>b{font-size:12px;color:#445e67}.pst-tda-partners>div{padding:8px 0;border-bottom:1px solid #eef1f2}.pst-tda-partners>div:last-child{border-bottom:0}.pst-tda-partners span,.pst-tda-partners small{display:block}.pst-tda-partners span{font-size:12px;font-weight:800;color:#40545d}.pst-tda-partners small{font-size:11px;color:#77868c;margin-top:3px}
 .pst-tda-next{margin-top:14px;padding:14px 15px;border-radius:12px;background:#eaf4f7}.pst-tda-next span,.pst-tda-next b,.pst-tda-next small{display:block}.pst-tda-next span{font-size:10px;font-weight:900;letter-spacing:.1em;color:#397f98}.pst-tda-next b{font-size:13px;line-height:1.45;color:#30464f;margin-top:4px}.pst-tda-next small{font-size:11px;color:#70838b;margin-top:4px}
 .pst-tda-more{margin-top:14px;border:1px solid #e0e8ea;border-radius:12px;padding:0 14px 12px;background:#fff}.pst-tda-more summary{padding:12px 0;font-size:12px;font-weight:850;color:#4f6973;cursor:pointer}.pst-tda-more-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px}.pst-tda-more-grid .wide{grid-column:1/-1}.pst-tda-more-grid>.pst-tda-list{padding:11px 12px;border-radius:10px;background:#f9fbfc}
-.pst-tda-docs{display:grid;gap:6px;margin-top:7px}.pst-tda-docs a,.pst-tda-docs>span{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid #dfe7ea;border-radius:9px;background:#fff;color:#48636e;text-decoration:none;font-size:11.5px}.pst-tda-docs a:hover{border-color:#bcd0d7;background:#f7fbfc}.pst-tda-docs i{font-style:normal;color:#397f98;font-size:10px}.pst-tda-muted{font-size:11px;color:#819096}.pst-tda-list.warn{padding:11px 12px!important;background:#faf7f2!important}.pst-tda-refresh{margin-top:12px;border:0;background:transparent;color:#557b89;font-size:11px;font-weight:800;text-decoration:underline;cursor:pointer;padding:4px 0}
+.pst-tda-docs{display:grid;gap:6px;margin-top:7px}.pst-tda-docs a,.pst-tda-docs>span{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid #dfe7ea;border-radius:9px;background:#fff;color:#48636e;text-decoration:none;font-size:11.5px}.pst-tda-docs a:hover{border-color:#bcd0d7;background:#f7fbfc}.pst-tda-docs i{font-style:normal;color:#397f98;font-size:10px}.pst-tda-muted{font-size:11px;color:#819096}.pst-tda-list.warn{padding:11px 12px!important;background:#faf7f2!important}.pst-tda-footer-actions{display:flex;gap:10px;align-items:center;margin-top:12px}.pst-tda-download{border:1px solid #397f98;background:#397f98;color:#fff;border-radius:9px;padding:8px 11px;font-size:11px;font-weight:800;cursor:pointer}.pst-tda-refresh{border:0;background:transparent;color:#557b89;font-size:11px;font-weight:800;text-decoration:underline;cursor:pointer;padding:4px 0}
 @media(max-width:760px){.pst-tda-head{flex-direction:column}.pst-tda-fit,.pst-tda-core-grid,.pst-tda-more-grid{grid-template-columns:1fr}.pst-tda-more-grid .wide{grid-column:auto}}
 `;document.head.appendChild(s);
 }
 function apply(){css();return true;}
 document.addEventListener('click',click,true);document.addEventListener('keydown',keydown,true);if(document.readyState!=='loading')apply();else document.addEventListener('DOMContentLoaded',apply,{once:true});
-window.PSTTenderDossierAnalysisV1={version:'2',apply:apply,analyze:analyze,isReady:function(id){var p=document.getElementById('pst-tda-analysis');return !!(p&&p.getAttribute('data-analysis-ready')==='1'&&S(p.getAttribute('data-tender-id'))===S(id));},_test:{source:source,rating:rating,recommendationLabel:recommendationLabel,scheduleFromTarget:scheduleFromTarget}};
+window.PSTTenderDossierAnalysisV1={version:'3',apply:apply,analyze:analyze,download:download,isReady:function(id){var p=document.getElementById('pst-tda-analysis');return !!(p&&p.getAttribute('data-analysis-ready')==='1'&&S(p.getAttribute('data-tender-id'))===S(id));},_test:{source:source,rating:rating,recommendationLabel:recommendationLabel,scheduleFromTarget:scheduleFromTarget}};
 })();

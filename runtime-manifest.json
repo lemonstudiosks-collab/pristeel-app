@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "4bd80fa491808ad2c4a330f981c53f36bf27e04e"
+    "bootstrapGitBlobSha": "6a92007f88b388b9ab07617dedd9aac4f0bd29d9"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -53,7 +53,7 @@
         "pristeel-operating-experience-v1.js",
         "pristeel-primary-nav-resilience-v1.js"
       ],
-      "note": "Workspace Architecture provides the shell. Redesign Finalizer owner2 now requires current runtime generations for Home, Opportunities and tender dossier UI instead of accepting stale globals. Task Source Actions and Primary Navigation Resilience remain safe shell/navigation reconcilers."
+      "note": "Workspace Architecture provides the shell. Redesign Finalizer owner3 now requires current runtime generations for Home, Opportunities and tender dossier UI instead of accepting stale globals. Task Source Actions and Primary Navigation Resilience remain safe shell/navigation reconcilers."
     },
     {
       "area": "home",
@@ -132,7 +132,7 @@
         "pristeel-project-centric-workflow-v1.js",
         "pristeel-tender-dossier-analysis-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the final visible whole-card Opportunities surface; official KRPP/APP dossier analysis is an explicit gate before project creation. TED awards remain winner-outreach opportunities. No tender becomes a project without a human decision."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the final visible whole-card Opportunities surface; official KRPP/APP dossier download and technical/commercial analysis are explicit actions before project creation. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
     },
     {
       "area": "ai",

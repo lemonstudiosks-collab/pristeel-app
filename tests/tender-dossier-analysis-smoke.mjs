@@ -37,9 +37,12 @@ assert(frontend.includes('[data-pcw-tender]'),'Whole tender-card interaction is 
 assert(!/MutationObserver|setInterval\s*\(/.test(frontend),'Tender dossier UI must remain bounded and polling-free');
 assert(edge.includes("type:'input_file'"),'Edge function does not pass official dossier files to OpenAI');
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
+assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
+assert(edge.includes("npm:fflate@0.8.2")&&edge.includes('zipSync')&&edge.includes('fetchOfficialBinary'),'Edge function must bundle official dossier documents server-side');
+assert(edge.includes('MAX_BUNDLE_BYTES')&&edge.includes('officialUrl(loc,current)'),'Dossier bundle must preserve size and redirect allowlist boundaries');
 assert(edge.includes('SUPABASE_SERVICE_ROLE_KEY'),'Purpose-limited persistence path is missing');
 assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(edge),'Tender analysis must not contain external/binding action endpoints');
-assert(finalizer.includes('data-pst-tender-dossier-analysis-v2'),'Finalizer does not load the current dossier analysis runtime');
+assert(finalizer.includes('data-pst-tender-dossier-analysis-v3'),'Finalizer does not load the current dossier analysis runtime');
 console.log('Tender dossier parser + security + runtime smoke test passed.');
 
 assert(frontend.includes('Kushtet teknike')&&frontend.includes('Kushtet komerciale'),'Primary dossier view must expose technical and commercial conditions');

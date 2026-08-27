@@ -1,14 +1,18 @@
+import {zipSync,strToU8} from 'npm:fflate@0.8.2';
 import {extractAppDossier,extractKrppDossier,chooseAnalysisDocuments,officialUrl,tenderDossierConstants} from './parser.mjs';
 
 const corsHeaders={
   'Access-Control-Allow-Origin':'*',
   'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods':'POST, OPTIONS',
+  'Access-Control-Expose-Headers':'Content-Disposition, X-PPPP-Document-Count',
   'Content-Type':'application/json',
 };
-const VERSION='v2';
+const VERSION='v3';
 const CACHE_MS=6*60*60*1000;
 const MAX_HTML_BYTES=8*1024*1024;
+const MAX_FILE_BYTES=14*1024*1024;
+const MAX_BUNDLE_BYTES=48*1024*1024;
 
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:corsHeaders});}
 function text(v,max=6000){return String(v==null?'':v).trim().slice(0,max);}
@@ -27,6 +31,58 @@ async function fetchOfficialHtml(url){
    if(!r.ok)throw new Error(`source_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_HTML_BYTES)throw new Error('source_page_too_large');const buf=new Uint8Array(await r.arrayBuffer());if(buf.byteLength>MAX_HTML_BYTES)throw new Error('source_page_too_large');return{html:new TextDecoder('utf-8').decode(buf),url:current,status:r.status};
  }
  throw new Error('too_many_source_redirects');
+}
+async function fetchOfficialBinary(url){
+ let current=officialUrl(url);if(!current)throw new Error('document_url_not_allowed');
+ for(let hop=0;hop<4;hop++){
+   const r=await fetch(current,{method:'GET',redirect:'manual',headers:{'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Downloader; +https://prissteel.com)','Accept':'*/*','Cache-Control':'no-cache'},signal:AbortSignal.timeout(22000)});
+   if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('document_redirect_not_allowed');current=next;continue;}
+   if(!r.ok)throw new Error(`document_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('document_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('document_too_large');return{bytes,url:current,content_type:r.headers.get('content-type')||''};
+ }
+ throw new Error('too_many_document_redirects');
+}
+function safeFilename(value,fallback='Dokument'){
+ const raw=text(value,220).replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').replace(/\s+/g,' ').trim().replace(/^\.+/,'');
+ return (raw||fallback).slice(0,150);
+}
+function dossierDocuments(dossier){
+ return (dossier?.documents||[]).filter(d=>officialUrl(d.url)).map(d=>({name:text(d.name,500),url:officialUrl(d.url)})).filter(d=>d.url).slice(0,16);
+}
+async function resolveOfficialDossier(row,source){
+ let dossier={found:false,detail_text:'',documents:[],source_url:''},warnings=[];
+ if(source==='APP_AL'){
+   const ref=text(row.procurement_no||row.publication_no||row.payload?.reference,300),page=tenderDossierConstants.APP_NOTICE_URL;let fetched=await fetchOfficialHtml(page);dossier=extractAppDossier(fetched.html,ref,fetched.url);
+   if(!dossier.found){try{fetched=await fetchOfficialHtml('https://app.gov.al/njoftimi-i-kontrat%C3%ABs-s%C3%AB-shpallur/');dossier=extractAppDossier(fetched.html,ref,fetched.url);}catch{}}
+   if(!dossier.found)warnings.push('APP: referenca nuk u gjet në faqen aktuale të njoftimeve; dosja mund të jetë e paplotë.');
+ }else{
+   const sourceUrl=officialUrl(row.detail_url||row.source_url||'');if(!sourceUrl)throw new Error('krpp_detail_url_missing_or_not_allowed');const fetched=await fetchOfficialHtml(sourceUrl);dossier=extractKrppDossier(fetched.html,fetched.url);
+ }
+ return{dossier,warnings,documents:dossierDocuments(dossier)};
+}
+async function dossierBundle(row,dossier,documents){
+ if(!documents.length)throw new Error('dossier_documents_not_available');
+ const files={},used=new Set(),failed=[];let total=0,downloaded=0;
+ for(const doc of documents.slice(0,12)){
+   try{
+     const got=await fetchOfficialBinary(doc.url);if(total+got.bytes.byteLength>MAX_BUNDLE_BYTES){failed.push(`${doc.name}: bundle_size_limit`);continue;}
+     let name=safeFilename(doc.name,`Dokument-${downloaded+1}`),base=name,idx=2;while(used.has(name.toLowerCase())){const dot=base.lastIndexOf('.');name=dot>0?base.slice(0,dot)+'-'+idx+base.slice(dot):base+'-'+idx;idx++;}used.add(name.toLowerCase());files[name]=got.bytes;total+=got.bytes.byteLength;downloaded++;
+   }catch(error){failed.push(`${text(doc.name,160)}: ${text(error?.message||error,120)}`);}
+ }
+ if(!downloaded)throw new Error('dossier_documents_download_failed');
+ const ref=safeFilename(row.procurement_no||row.publication_no||row.id,'Tender');
+ const index=[
+   'PPPP - PRISTEEL Tender Dossier',
+   `Tender: ${text(row.title,500)}`,
+   `Reference: ${text(row.procurement_no||row.publication_no||row.id,300)}`,
+   `Official source: ${text(dossier.source_url||row.detail_url||row.source_url,700)}`,
+   `Downloaded documents: ${downloaded}`,
+   failed.length?`Skipped/failed: ${failed.join(' | ')}`:'',
+   '',
+   'These files were downloaded from the official public-procurement source by PPPP.'
+ ].filter(Boolean).join('\n');
+ files['PPPP-DOSJA-INDEX.txt']=strToU8(index);
+ const zipped=zipSync(files,{level:6});
+ return{bytes:zipped,filename:`PPPP-Dosja-${ref}.zip`,downloaded,failed,total_source_bytes:total};
 }
 function partnerRows(rows){return(Array.isArray(rows)?rows:[]).filter(r=>{const rel=Array.isArray(r?.relation)?r.relation.map(x=>text(x,80).toLowerCase()):[],cat=Array.isArray(r?.categories)?r.categories.map(x=>text(x,80).toLowerCase()):[];return rel.some(x=>['manufacturer','subcontractor','supplier'].includes(x))||cat.some(x=>x.includes('fabrication'));}).slice(0,80);}
 function compactTender(row){return{id:row.id,title:row.title,authority:row.authority,procurement_no:row.procurement_no,publication_no:row.publication_no,document_type:row.document_type,fpp:row.fpp,fpp_description:row.fpp_description,contract_type:row.contract_type,procedure:row.procedure,estimated_value:row.estimated_value,currency:row.currency,deadline:row.deadline,published_date:row.published_date,relevance_score:row.relevance_score,match_reasons:row.match_reasons,payload:row.payload};}
@@ -109,16 +165,14 @@ Deno.serve(async req=>{
   const supabaseUrl=Deno.env.get('SUPABASE_URL')||'',anonKey=Deno.env.get('SUPABASE_ANON_KEY')||'';if(!supabaseUrl||!anonKey)return json({ok:false,error:'supabase_environment_missing'},500);const headers=dbHeaders(auth,anonKey);
   const rows=await restJson(`${supabaseUrl}/rest/v1/kek_tender_watch?id=eq.${encodeURIComponent(tenderId)}&select=*&limit=1`,headers);const row=Array.isArray(rows)?rows[0]:null;if(!row)return json({ok:false,error:'tender_not_found_or_not_visible'},404);
   const source=sourceOf(row);if(source==='TED')return json({ok:false,error:'dossier_analysis_not_used_for_ted_awards'},409);
-  const cached=!body?.force&&cacheFresh(row);if(cached)return json({ok:true,cached:true,tender_id:row.id,source,source_url:cached.source_url||row.detail_url||row.source_url||null,documents:cached.documents||row.payload?.dossier_documents||[],analysis:cached.analysis||cached,provider:cached.provider||null,file_mode:cached.file_mode||'cached',files_analyzed:cached.files_analyzed||[],warnings:cached.warnings||[],persisted:true,read_only_external:true});
-  let dossier={found:false,detail_text:'',documents:[],source_url:''},warnings=[];
-  if(source==='APP_AL'){
-    const ref=text(row.procurement_no||row.publication_no||row.payload?.reference,300);const page=tenderDossierConstants.APP_NOTICE_URL;let fetched=await fetchOfficialHtml(page);dossier=extractAppDossier(fetched.html,ref,fetched.url);
-    if(!dossier.found){try{fetched=await fetchOfficialHtml('https://app.gov.al/njoftimi-i-kontrat%C3%ABs-s%C3%AB-shpallur/');dossier=extractAppDossier(fetched.html,ref,fetched.url);}catch{} }
-    if(!dossier.found)warnings.push('APP: referenca nuk u gjet në faqen aktuale të njoftimeve; analiza përdor rekordin e monitorimit dhe e shënon dosjen si të paplotë.');
-  }else{
-    const sourceUrl=officialUrl(row.detail_url||row.source_url||'');if(!sourceUrl)throw new Error('krpp_detail_url_missing_or_not_allowed');const fetched=await fetchOfficialHtml(sourceUrl);dossier=extractKrppDossier(fetched.html,fetched.url);
+  const mode=text(body?.mode,40).toLowerCase();
+  if(mode==='bundle'||mode==='download'){
+    const resolved=await resolveOfficialDossier(row,source);if(!resolved.documents.length)return json({ok:false,error:'dossier_documents_not_available',message:'Burimi zyrtar nuk ekspozoi dokumente të shkarkueshme për këtë tender.'},422);
+    const bundle=await dossierBundle(row,resolved.dossier,resolved.documents);
+    return new Response(bundle.bytes,{status:200,headers:{...corsHeaders,'Content-Type':'application/zip','Content-Disposition':`attachment; filename="${bundle.filename.replace(/"/g,'')}"`,'X-PPPP-Document-Count':String(bundle.downloaded),'Cache-Control':'no-store'}});
   }
-  const docs=(dossier.documents||[]).filter(d=>officialUrl(d.url)).map(d=>({name:text(d.name,500),url:officialUrl(d.url)})).filter(d=>d.url).slice(0,16);
+  const cached=!body?.force&&cacheFresh(row);if(cached)return json({ok:true,cached:true,tender_id:row.id,source,source_url:cached.source_url||row.detail_url||row.source_url||null,documents:cached.documents||row.payload?.dossier_documents||[],analysis:cached.analysis||cached,provider:cached.provider||null,file_mode:cached.file_mode||'cached',files_analyzed:cached.files_analyzed||[],warnings:cached.warnings||[],persisted:true,read_only_external:true});
+  const resolved=await resolveOfficialDossier(row,source),dossier=resolved.dossier,docs=resolved.documents,warnings=resolved.warnings;
   let partners=[];try{const p=await restJson(`${supabaseUrl}/rest/v1/partners?select=name,country,business_type,relation,categories,certifications,importance_reason,notes&limit=500`,headers);partners=partnerRows(p);}catch(error){warnings.push(`Partnerët PPPP nuk u lexuan: ${String(error?.message||error).slice(0,180)}`);}
   const ai=await askOpenAI({tender:compactTender(row),dossier,documents:docs,partners});if(ai.file_warning)warnings.push(ai.file_warning);
   const snapshot={version:VERSION,analyzed_at:new Date().toISOString(),source,source_url:dossier.source_url||row.detail_url||row.source_url||null,source_record_found:!!dossier.found,documents:docs,analysis:ai.result,provider:ai.provider,file_mode:ai.file_mode,files_analyzed:ai.files_analyzed,warnings};

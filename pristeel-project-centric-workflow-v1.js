@@ -5,9 +5,10 @@
  */
 (function(){
 'use strict';
-if(window.__pstProjectCentricWorkflowV2&&window.PSTProjectCentricWorkflowV1)return;
+if(window.__pstProjectCentricWorkflowV3&&window.PSTProjectCentricWorkflowV1)return;
 window.__pstProjectCentricWorkflowV1=true;
 window.__pstProjectCentricWorkflowV2=true;
+window.__pstProjectCentricWorkflowV3=true;
 
 var tenderState={rows:[],mode:'all',query:'',busy:false,last:0,partners:null};
 var contactBusy={};
@@ -64,7 +65,14 @@ function tenderVisible(r){
 }
 function tenderMode(r){return tenderSource(r)==='TED'?'award':'local';}
 function tenderScore(r){var n=Number(r&&r.relevance_score);return isFinite(n)&&n>0?Math.round(n):0;}
-function winnerName(r){var w=tenderPayload(r).winner;return S(w&&w.name);}
+function winnerObj(r){var w=tenderPayload(r).winner;return w&&typeof w==='object'?w:{};}
+function winnerName(r){return S(winnerObj(r).name);}
+function winnerRole(r){var w=winnerObj(r),x=N(w.company_type||(w.company_classification&&w.company_classification.company_type)||'unknown');return ['producer','gc_epc','trader_consortium'].indexOf(x)>-1?x:'unknown';}
+function winnerRoleLabel(r){var x=winnerRole(r);return x==='gc_epc'?'GC / EPC':x==='producer'?'PRODHUES / KONKURRENT':x==='trader_consortium'?'TRADER / KONSORCIUM':'ROL I PAQARTË';}
+function winnerConfidence(r){var w=winnerObj(r),x=N(w.company_classification&&w.company_classification.confidence);return x==='high'?'besueshmëri e lartë':x==='medium'?'besueshmëri mesatare':x==='low'?'besueshmëri e ulët':'rol i paverifikuar';}
+function winnerContacts(r){var P=tenderApi();if(P&&typeof P.enrichedContacts==='function')return A(P.enrichedContacts(r));var w=winnerObj(r),out=[];A(w.emails).forEach(function(x){if(x)out.push({email:S(x),purpose:'',confidence:''});});if(w.email)out.push({email:S(w.email),purpose:'',confidence:''});return out;}
+function winnerWebsite(r){var w=winnerObj(r),u=safeUrl(w.website);if(u)return u;var e=w.contact_enrichment&&typeof w.contact_enrichment==='object'?w.contact_enrichment:{},org=A(e.organizations)[0];return safeUrl(org&&org.official_website);}
+function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient potencial: qasje direkte me PRISTEEL si nënkontraktor/prodhues i paketave të çelikut.';if(x==='producer')return'Konkurrent / prodhues: qasje si kapacitet shtesë, overflow fabrication, paketë e ndarë ose mbështetje në prodhim dhe dorëzim.';if(x==='trader_consortium')return'Verifiko rolin e fituesit dhe nëse ka hapësirë për furnizim ose prodhim të nënkontraktuar.';return'Roli i kompanisë duhet verifikuar para se PPPP të përgatisë outreach.';}
 function sourceLabel(r){return tenderSource(r)==='TED'?'EU · TED':tenderSource(r)==='APP_AL'?'Shqipëri · APP':'Kosovë · KRPP';}
 function tenderDate(v){var d=v?new Date(v+'T00:00:00'):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
 function tenderReason(r){var P=tenderApi();return P&&typeof P.reason==='function'?P.reason(r):A(r&&r.match_reasons).slice(0,2).join(' · ');}
@@ -72,14 +80,14 @@ function opportunityRows(){
  var rows=tenderState.rows.filter(tenderVisible),q=N(tenderState.query);
  if(tenderState.mode==='local')rows=rows.filter(function(r){return tenderMode(r)==='local';});
  if(tenderState.mode==='award')rows=rows.filter(function(r){return tenderMode(r)==='award';});
- if(q)rows=rows.filter(function(r){return N([r.title,r.authority,r.procurement_no,r.publication_no,tenderReason(r),winnerName(r)].join(' ')).indexOf(q)>-1;});
+ if(q)rows=rows.filter(function(r){return N([r.title,r.authority,r.procurement_no,r.publication_no,tenderReason(r),winnerName(r),winnerRoleLabel(r)].join(' ')).indexOf(q)>-1;});
  rows.sort(function(a,b){return tenderScore(b)-tenderScore(a)||S(b.published_date).localeCompare(S(a.published_date));});
  return rows.slice(0,80);
 }
 function opportunityCard(r){
- var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PËR OFERTIM';
+ var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PËR OFERTIM',role=award?winnerRoleLabel(r):'';
  return '<article class="pst-pcw-tender" role="button" tabindex="0" data-pcw-tender="'+E(r.id)+'">'
-   +'<div class="pst-pcw-tender-copy"><div class="pst-pcw-tender-meta"><span class="kind">'+status+'</span><span>'+E(sourceLabel(r))+'</span><span>'+tenderScore(r)+'% përshtatje</span></div>'
+   +'<div class="pst-pcw-tender-copy"><div class="pst-pcw-tender-meta"><span class="kind">'+status+'</span><span>'+E(sourceLabel(r))+'</span><span>'+tenderScore(r)+'% relevant për PRISTEEL</span>'+(award?'<span class="winner-role '+E(winnerRole(r))+'">'+E(role)+'</span>':'')+'</div>'
    +'<h3>'+E(r.title||'Tender')+'</h3>'
    +'<p>'+E(tenderReason(r)||'Kliko për ta hapur mundësinë dhe për të vendosur hapin e radhës.')+'</p>'
    +'<small>'+(award?(winner?'Fituesi: '+E(winner):'Fituesi duhet verifikuar'):'Afati: '+E(tenderDate(r.deadline)))+(r.authority?' · '+E(r.authority):'')+'</small></div>'
@@ -138,14 +146,28 @@ async function partnerContext(){
 function tenderById(id){return tenderState.rows.find(function(r){return S(r.id)===S(id);})||null;}
 async function serverTenderAnalysis(r){
  var AI=window.PSTOpenAIAssistantV1;if(!AI||typeof AI.ask!=='function')return null;
- var partners=await partnerContext();
- var q=tenderMode(r)==='award'?'Analizo këtë kontratë të fituar. Shpjego çfarë pakete mund të ofrojë PRISTEEL te kompania fituese dhe cilët partnerë/prodhues të regjistruar në PPPP janë potencialisht relevantë. Mos sugjero ofertim në tenderin e mbyllur.':'Analizo këtë tender për PRISTEEL. Vlerëso scope-in e mundshëm, çfarë duhet verifikuar në dosje dhe cilët partnerë/prodhues të regjistruar në PPPP mund të jenë relevantë për realizim. Nëse Eurosteel është realisht i përshtatshëm sipas të dhënave, thuaje; mos e favorizo pa bazë.';
- try{return await AI.ask(q,{scope:'global',context:{tender:r,candidate_partners:partners}});}catch(e){return null;}
+ var partners=await partnerContext(),role=winnerRole(r),q='';
+ if(tenderMode(r)==='award'){
+   if(role==='gc_epc')q='Ky është një tender TED i fituar nga një GC/EPC. Analizo sa relevant është projekti për PRISTEEL dhe çfarë pakete konkrete steel fabrication/subcontracting mund t’i ofrojmë fituesit. Mos sugjero ofertim në tenderin e mbyllur.';
+   else if(role==='producer')q='Ky është një tender TED i fituar nga një prodhues/metalpërpunues që mund të jetë konkurrent. Analizo vetëm mundësinë për overflow fabrication, kapacitet shtesë, ndarje pakete, furnizim ose mbështetje tjetër B2B. Mos e trajto si GC dhe mos sugjero ofertim në tenderin e mbyllur.';
+   else if(role==='trader_consortium')q='Ky është një tender TED i fituar nga trader/konsorcium. Analizo rolin e mundshëm të fituesit dhe nëse PRISTEEL mund të ofrojë furnizim ose prodhim të nënkontraktuar. Trego qartë çfarë duhet verifikuar.';
+   else q='Ky është një tender TED i fituar, por roli i fituesit nuk është verifikuar. Vlerëso relevancën për PRISTEEL dhe thuaj çfarë duhet verifikuar para outreach. Mos përgatit ose rekomando email derisa roli të jetë i qartë.';
+ }else q='Analizo këtë tender për PRISTEEL. Vlerëso scope-in e mundshëm, çfarë duhet verifikuar në dosje dhe cilët partnerë/prodhues të regjistruar në PPPP mund të jenë relevantë për realizim. Nëse Eurosteel është realisht i përshtatshëm sipas të dhënave, thuaje; mos e favorizo pa bazë.';
+ try{return await AI.ask(q,{scope:'global',context:{tender:r,winner_role:role,candidate_partners:partners}});}catch(e){return null;}
+}
+function winnerBriefHtml(r){
+ var w=winnerObj(r),contacts=winnerContacts(r).slice(0,5),site=winnerWebsite(r),confidence=winnerConfidence(r),role=winnerRole(r);
+ var contactHtml=contacts.length?'<div class="pst-pcw-winner-contacts"><b>Kontaktet më të mira</b>'+contacts.map(function(c){var email=S(c.email),meta=[c.purpose,c.confidence].filter(Boolean).join(' · ');return'<a href="mailto:'+E(email)+'"><span>'+E(email)+'</span>'+(meta?'<small>'+E(meta)+'</small>':'')+'</a>';}).join('')+'</div>':'<div class="pst-pcw-winner-none">PPPP nuk ka ende email të verifikueshëm për këtë fitues.</div>';
+ return '<div class="pst-pcw-winner-brief"><div class="pst-pcw-winner-head"><div><span>FITUESI TED</span><h3>'+E(w.name||'Fitues i publikuar')+'</h3></div><b class="role '+E(role)+'">'+E(winnerRoleLabel(r))+'</b></div>'
+   +'<p>'+E(winnerApproach(r))+'</p><div class="pst-pcw-winner-facts"><span><b>'+tenderScore(r)+'%</b> relevant për PRISTEEL</span><span><b>'+E(confidence)+'</b> klasifikim</span>'+(site?'<a href="'+E(site)+'" target="_blank" rel="noopener">Website ↗</a>':'')+'</div>'+contactHtml+'</div>';
 }
 function modalActionBar(r){
- var id=E(r.id),award=tenderMode(r)==='award';
- if(award)return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="draft" data-id="'+id+'">Përgatit draft kontakti</button><button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
- return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary dossier" data-pcw-ti="dossier" data-id="'+id+'">Merr dhe analizo dosjen</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ketë analizuar dosjen.">Krijo projekt</button><button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+ var id=E(r.id),award=tenderMode(r)==='award',role=winnerRole(r);
+ if(award){
+   var primary=role==='gc_epc'?'Përgatit draft për GC':role==='producer'?'Përgatit draft kapaciteti':role==='trader_consortium'?'Përgatit draft partneriteti':'';
+   return '<div id="pst-pcw-ti-actions">'+(primary?'<button class="primary" data-pcw-ti="draft" data-id="'+id+'">'+primary+'</button>':'')+'<button data-pcw-ti="contacts" data-id="'+id+'">Kontaktet e fituesit</button><button data-pcw-ti="source" data-id="'+id+'">Burimi TED</button><button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+ }
+ return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary download" data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen</button><button class="dossier" data-pcw-ti="dossier" data-id="'+id+'">Analizo kushtet</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ketë analizuar dosjen.">Krijo projekt</button><button data-pcw-ti="source" data-id="'+id+'">Burimi zyrtar</button><button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
 }
 async function openTender(id){
  var r=tenderById(id);if(!r)return false;
@@ -154,9 +176,9 @@ async function openTender(id){
  var old=b.querySelector('#pst-pcw-server-analysis');if(old)old.remove();
  var sec=document.createElement('section');sec.id='pst-pcw-server-analysis';
  if(tenderMode(r)==='award'){
-   sec.innerHTML='<div class="pst-pcw-ai-loading">PPPP po e lidh fituesin me kapacitetet dhe partnerët tanë…</div>';b.appendChild(sec);
-   var out=await serverTenderAnalysis(r);
-   sec.innerHTML=out?'<div class="pst-pcw-ai"><span>PPPP AI</span><p>'+E(out.answer||'').replace(/\n/g,'<br>')+'</p>'+(out.suggested_next_step?'<small><b>Hapi i radhës:</b> '+E(out.suggested_next_step)+'</small>':'')+'</div>':'<div class="pst-pcw-ai-loading">Analiza bazë mbetet e vlefshme. Analiza shtesë e AI nuk u përgjigj në këtë hap.</div>';
+   sec.innerHTML=winnerBriefHtml(r)+'<div id="pst-pcw-award-ai" class="pst-pcw-ai-loading">PPPP po analizon mundësinë e bashkëpunimit…</div>';b.appendChild(sec);
+   var out=await serverTenderAnalysis(r),aiBox=sec.querySelector('#pst-pcw-award-ai');
+   if(aiBox)aiBox.innerHTML=out?'<div class="pst-pcw-ai"><span>PPPP AI</span><p>'+E(out.answer||'').replace(/\n/g,'<br>')+'</p>'+(out.suggested_next_step?'<small><b>Hapi i radhës:</b> '+E(out.suggested_next_step)+'</small>':'')+'</div>':'Analiza shtesë e AI nuk u përgjigj. Klasifikimi dhe kontaktet e verifikuara më sipër mbeten të vlefshme.';
  }else{
    sec.innerHTML='<div class="pst-pcw-decision-intro"><span>RRUGA E MUNDËSISË</span><b>1. Merr dosjen → 2. PPPP nxjerr kushtet → 3. Ti vendos nëse bëhet projekt</b><small>Nuk krijohet projekt dhe nuk merret angazhim para analizës së dosjes.</small></div>';b.appendChild(sec);
  }
@@ -177,6 +199,11 @@ async function tenderAction(kind,id,btn){
  if(btn)btn.disabled=true;
  try{
    if(kind==='source')return await exactSource(r);
+   if(kind==='contacts'){if(P&&typeof P.contacts==='function')return P.contacts(id);return false;}
+   if(kind==='download'){
+     var DL=window.PSTTenderDossierAnalysisV1;if(!DL||typeof DL.download!=='function')throw new Error('Shkarkimi i dosjes nuk është gati. Rifresko platformën dhe provo përsëri.');
+     return await DL.download(id,btn);
+   }
    if(kind==='dossier'){
      var D=window.PSTTenderDossierAnalysisV1;if(!D||typeof D.analyze!=='function')throw new Error('Leximi i dosjes nuk është gati. Rifresko platformën dhe provo përsëri.');
      var ok=await D.analyze(id,false);if(!ok)throw new Error('Dosja nuk u analizua. Shiko mesazhin në popup dhe provo përsëri.');
@@ -269,8 +296,8 @@ function css(){if(document.getElementById('pst-project-centric-workflow-css'))re
 #pst-opportunities-list{display:grid!important;gap:9px!important}
 .pst-pcw-tender{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;padding:20px 21px;border:1px solid #DFE7EA;border-left:5px solid #6D9BAA;border-radius:16px;background:#fff;cursor:pointer;transition:.15s;box-shadow:0 3px 14px rgba(40,65,77,.035)}
 .pst-pcw-tender:hover,.pst-pcw-tender:focus-visible{border-color:#B9D0D8;border-left-color:#397F98;background:#F8FBFC;box-shadow:0 7px 20px rgba(43,75,86,.07);transform:translateY(-1px);outline:none}
-.pst-pcw-tender-meta{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;font-weight:850;color:#849197;letter-spacing:.05em}.pst-pcw-tender-meta span{padding:4px 7px;border-radius:999px;background:#F3F6F7}.pst-pcw-tender-meta .kind{color:#397F98;background:#EAF4F7}.pst-pcw-tender h3{margin:8px 0 0;font-size:17px;color:#2D434D;line-height:1.35}.pst-pcw-tender p{margin:7px 0 0;font-size:13px;color:#6F8087;line-height:1.5;max-width:900px}.pst-pcw-tender small{display:block;margin-top:9px;font-size:11.5px;color:#8A979C}.pst-pcw-tender-open{display:flex;align-items:center;gap:10px;color:#397F98;white-space:nowrap;padding:9px 12px;border-radius:10px;background:#F0F7F9}.pst-pcw-tender-open b{font-size:12px}.pst-pcw-tender-open span{font-size:19px}.pst-pcw-empty{padding:24px;color:#819096;text-align:center}
-#pst-pcw-server-analysis{margin-top:16px;padding-top:14px;border-top:1px solid #E5ECEE}.pst-pcw-ai>span{font-size:8px;font-weight:900;letter-spacing:.12em;color:#397F98}.pst-pcw-ai p{font-size:11.5px;line-height:1.62;color:#354B54;margin:7px 0}.pst-pcw-ai small{display:block;color:#657A83}.pst-pcw-ai-loading{font-size:9.5px;color:#7F8E94}
+.pst-pcw-tender-meta{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;font-weight:850;color:#849197;letter-spacing:.05em}.pst-pcw-tender-meta span{padding:4px 7px;border-radius:999px;background:#F3F6F7}.pst-pcw-tender-meta .kind{color:#397F98;background:#EAF4F7}.pst-pcw-tender-meta .winner-role.gc_epc{background:#E9F5ED;color:#35734A}.pst-pcw-tender-meta .winner-role.producer{background:#FFF3E4;color:#8A6327}.pst-pcw-tender-meta .winner-role.trader_consortium{background:#F0ECF8;color:#6A5494}.pst-pcw-tender-meta .winner-role.unknown{background:#F4F4F4;color:#777}.pst-pcw-tender h3{margin:8px 0 0;font-size:17px;color:#2D434D;line-height:1.35}.pst-pcw-tender p{margin:7px 0 0;font-size:13px;color:#6F8087;line-height:1.5;max-width:900px}.pst-pcw-tender small{display:block;margin-top:9px;font-size:11.5px;color:#8A979C}.pst-pcw-tender-open{display:flex;align-items:center;gap:10px;color:#397F98;white-space:nowrap;padding:9px 12px;border-radius:10px;background:#F0F7F9}.pst-pcw-tender-open b{font-size:12px}.pst-pcw-tender-open span{font-size:19px}.pst-pcw-empty{padding:24px;color:#819096;text-align:center}
+#pst-pcw-server-analysis{margin-top:16px;padding-top:14px;border-top:1px solid #E5ECEE}.pst-pcw-winner-brief{padding:15px 16px;border:1px solid #DCE7EA;border-radius:14px;background:#FAFCFD}.pst-pcw-winner-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.pst-pcw-winner-head span{font-size:9px;font-weight:900;letter-spacing:.1em;color:#397F98}.pst-pcw-winner-head h3{margin:4px 0 0;font-size:18px;color:#2E4650}.pst-pcw-winner-head .role{padding:7px 10px;border-radius:999px;font-size:10px}.pst-pcw-winner-head .role.gc_epc{background:#E9F5ED;color:#35734A}.pst-pcw-winner-head .role.producer{background:#FFF3E4;color:#8A6327}.pst-pcw-winner-head .role.trader_consortium{background:#F0ECF8;color:#6A5494}.pst-pcw-winner-head .role.unknown{background:#F1F2F3;color:#6E777B}.pst-pcw-winner-brief>p{font-size:12.5px;line-height:1.55;color:#596E77;margin:11px 0}.pst-pcw-winner-facts{display:flex;gap:8px;flex-wrap:wrap}.pst-pcw-winner-facts>*{padding:8px 10px;border-radius:9px;background:#fff;border:1px solid #E2E9EB;font-size:10.5px;color:#64777F;text-decoration:none}.pst-pcw-winner-facts b{color:#344E58}.pst-pcw-winner-contacts{margin-top:12px}.pst-pcw-winner-contacts>b{display:block;font-size:11px;color:#405761;margin-bottom:6px}.pst-pcw-winner-contacts a{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid #E8EDEF;color:#397F98;text-decoration:none;font-size:11px}.pst-pcw-winner-contacts a small{color:#859399}.pst-pcw-winner-none{margin-top:12px;font-size:11px;color:#8A969B}.pst-pcw-ai-loading{margin-top:12px}.pst-pcw-ai>span{font-size:8px;font-weight:900;letter-spacing:.12em;color:#397F98}.pst-pcw-ai p{font-size:11.5px;line-height:1.62;color:#354B54;margin:7px 0}.pst-pcw-ai small{display:block;color:#657A83}.pst-pcw-ai-loading{font-size:9.5px;color:#7F8E94}
 #pst-pcw-ti-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid #E5ECEE}#pst-pcw-ti-actions button{min-height:41px;border:1px solid #D9E3E6;border-radius:10px;background:#fff;color:#536870;padding:0 13px;font-size:9px;font-weight:850;cursor:pointer}#pst-pcw-ti-actions button.primary{background:#397F98;border-color:#397F98;color:#fff}#pst-pcw-ti-actions button.create{background:#35734A;border-color:#35734A;color:#fff;margin-left:auto}#pst-pcw-ti-actions button.danger{color:#995151;border-color:#E6CCCC;background:#FFF9F9}#pst-pcw-ti-actions button:disabled{opacity:.42;cursor:not-allowed}.pst-pcw-decision-intro{padding:13px 14px;border:1px solid #DCE8EC;border-radius:12px;background:#F7FBFC}.pst-pcw-decision-intro span,.pst-pcw-decision-intro b,.pst-pcw-decision-intro small{display:block}.pst-pcw-decision-intro span{font-size:8px;font-weight:900;letter-spacing:.11em;color:#397F98}.pst-pcw-decision-intro b{font-size:11px;color:#314B55;margin-top:4px}.pst-pcw-decision-intro small{font-size:8.5px;color:#788A91;margin-top:4px}
 /* Project operator update */
 #pst-project-operator-update{display:grid;grid-template-columns:minmax(260px,.75fr) minmax(360px,1.25fr);gap:18px;align-items:center;margin:12px 0 16px;padding:16px 17px;border:1px solid #DCE7EA;border-left:4px solid #397F98;border-radius:13px;background:#F9FBFC}.pst-pou-copy>span{font-size:8px;font-weight:900;letter-spacing:.12em;color:#397F98}.pst-pou-copy>b{display:block;margin-top:3px;font-size:14px;color:#30464F}.pst-pou-copy>small{display:block;margin-top:4px;font-size:9px;line-height:1.45;color:#76868D}#pst-project-operator-update form{display:flex;gap:8px;align-items:stretch}#pst-project-operator-update textarea{flex:1;min-height:66px;border:1px solid #CADADF;border-radius:10px;padding:9px 10px;font-size:11px;line-height:1.45;resize:vertical;background:#fff}#pst-project-operator-update form button{width:126px;border:0;border-radius:10px;background:#397F98;color:#fff;font-size:9px;font-weight:850;cursor:pointer;padding:0 10px}#pst-project-operator-update form button:disabled{opacity:.55}.pst-pou-result{grid-column:1/-1;padding:10px 12px;border-radius:9px;background:#EFF6F8;color:#4C626B;font-size:9.5px}.pst-pou-result b{display:block;color:#30464F}.pst-pou-result span{display:block;margin-top:3px}
@@ -283,5 +310,5 @@ function schedule(force){[0,90,260,700].forEach(function(ms){setTimeout(function
 document.addEventListener('click',click,true);document.addEventListener('keydown',keydown,true);document.addEventListener('pst:modules-ready',function(){schedule(false);},{once:true});document.addEventListener('pst:project-operator-updated',function(){schedule(true);});window.addEventListener('pageshow',function(){schedule(false);},{once:true});
 document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[data-pm-open],[data-pwf-area],[data-pwf-stage],[data-pcm-id]'):null;if(n)schedule(false);},true);
 if(document.readyState!=='loading')schedule(false);else document.addEventListener('DOMContentLoaded',function(){schedule(false);},{once:true});
-window.PSTProjectCentricWorkflowV1={version:'2',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,renderOpportunities:renderOpportunities,openTender:openTender,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_test:{tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,opportunityRows:opportunityRows}};
+window.PSTProjectCentricWorkflowV1={version:'3',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,renderOpportunities:renderOpportunities,openTender:openTender,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_test:{tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,opportunityRows:opportunityRows,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach}};
 })();
