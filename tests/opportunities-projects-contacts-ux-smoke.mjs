@@ -38,3 +38,19 @@ assert.match(contacts,/project_email_count/,'contact popup must carry real proje
 assert.doesNotMatch(contacts,/CONTACT BRIEF|RELATIONSHIPS|Klient \/ Lead/,'old English contact labels must not remain visible');
 
 console.log('Opportunities + Projects + Contacts UX contract: OK');
+
+assert.match(pcw,/__pstProjectCentricWorkflowV2/,'whole-card Opportunities must expose a current runtime generation');
+assert.doesNotMatch(pcw,/classList\.contains\('active'\).*page-kek-tenders/,'visible Opportunities must not depend on an .active class');
+assert.match(pcw,/getComputedStyle/,'visible-page detection must follow actual browser visibility');
+assert.match(pcw,/legacy\.hidden=true;legacy\.style\.display='none'/,'old opportunity details/table must be retired directly at runtime');
+assert.match(pcw,/querySelectorAll\('\.pst-kek-filter,\.pst-kek-card,#pst-tender-fit-summary'\)/,'legacy long filters and table must be hidden by the final owner');
+assert.doesNotMatch(pcw,/#page-kek-tenders\.active #pst-opportunities-focus/,'modern opportunity styling must not depend on the obsolete active class');
+assert.match(pcw,/font-size:17px/,'opportunity titles must be comfortably readable');
+assert.match(pcw,/font-size:13px/,'opportunity descriptions must be comfortably readable');
+
+assert.match(dossier,/__pstTenderDossierAnalysisV2/,'dossier analysis must expose current runtime generation');
+assert.match(dossier,/Kushtet teknike/,'technical conditions must be visible in the primary dossier view');
+assert.match(dossier,/Kushtet komerciale/,'commercial conditions must be visible in the primary dossier view');
+assert.match(dossier,/pst-tda-core-grid/,'technical and commercial conditions must be presented as first-class blocks');
+assert.match(dossier,/font-size:12\.5px/,'dossier requirement text must be readable');
+assert.doesNotMatch(dossier,/\.pst-tda-list li\{font-size:9\.5px/,'dossier must not keep micro-font requirement lists');

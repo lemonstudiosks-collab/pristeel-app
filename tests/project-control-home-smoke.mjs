@@ -13,7 +13,7 @@ assert.match(finalizer,/projectControlHome\(\)/,'finalizer must apply the final 
 assert.match(finalizer,/pristeel-home-live-sync-v1\.js/,'finalizer must load autonomous Home sync');
 assert.match(finalizer,/homeLiveSync\(\)/,'finalizer must apply autonomous Home sync');
 assert.match(homeHappy,/pristeel-project-control-home-v1\.js\?pst_home=['"]?\+Date\.now\(\)/,'final Home owner must be cache-busted on recovery');
-assert.match(homeHappy,/window\.__pstProjectControlHomeV2&&window\.PSTProjectControlHomeV1/,'compatibility marker must remain supported');
+assert.match(homeHappy,/window\.__pstLiveHomeV6&&window\.PSTProjectControlHomeV1/,'recovery loader must require the current Home generation');
 assert.ok((pages.additionalPublicAssets||[]).some(x=>x.path==='pristeel-project-control-home-v1.js'),'production Pages artifact must ship the live Home');
 assert.ok((pages.additionalPublicAssets||[]).some(x=>x.path==='pristeel-home-live-sync-v1.js'),'production Pages artifact must ship autonomous Home sync');
 
@@ -99,7 +99,8 @@ assert.match(home,/var local=localAnswer\(q\);if\(local\)return local;/,'Home mu
 assert.match(home,/friendlyAssistantError/,'Home must translate provider failures into operator-safe messages');
 assert.doesNotMatch(home,/kind:'error',text:S\(e&&e\.message\|\|e\)/,'Home must never expose raw provider errors directly to the operator');
 
-assert.match(home,/__pstLiveHomeV5/,'visual refresh must expose the v5 marker');
+assert.match(home,/__pstLiveHomeV5/,'v5 compatibility marker must remain');
+assert.match(home,/__pstLiveHomeV6/,'current Home runtime must expose the v6 marker');
 assert.match(home,/function homeTitle\(\)/,'Home must provide a warmer time-aware greeting');
 assert.match(home,/pst-live-command-shell/,'Pyet PPPP must be a first-class command surface');
 assert.match(home,/function busyStages\(\)/,'Pyet PPPP must expose visible work stages');
@@ -114,3 +115,10 @@ assert.match(home,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,'project u
 assert.match(home,/tone-wait|tone-action|tone-active/,'project state cards must have restrained visual state cues');
 const busyBlock=(home.match(/function busyStages\(\)\{[\s\S]*?\n\}/)||[''])[0];
 assert.doesNotMatch(busyBlock,/\d+%/,'Home loading messages must not show fake progress percentages');
+
+assert.match(home,/if\(window\.__pstLiveHomeV6&&window\.PSTProjectControlHomeV1/,'only an already-current Home may short-circuit runtime loading');
+assert.doesNotMatch(home,/if\(window\.__pstProjectControlHomeV2\)\{/,'a stale compatibility marker must never block a newer Home runtime');
+assert.match(home,/data-pst-home-version/,'Home root must carry an explicit runtime generation');
+assert.match(home,/getAttribute\('data-pst-home-version'\)!=='6'/,'Home v6 must replace a stale mounted root');
+assert.match(finalizer,/__pstLiveHomeV6/,'finalizer must require current Home generation before reusing a global');
+assert.match(finalizer,/data-pst-project-control-home-v6/,'finalizer must load v6 independently of stale script tags');

@@ -35,8 +35,8 @@ assert(!/\.supaFetch\([^\n]*['\"](?:PATCH|POST|DELETE)['\"]/.test(openaiAssistan
 assert(!/gmail\/v1\/.*send|mark.*won|mark.*lost|supplier_orders.*POST/i.test(openaiAssistant), 'OpenAI assistant must not bypass human commitment gates');
 
 // Project-centric final layer: Projects are the daily center, TED is awards-only, and operator text can drive safe internal organization.
-assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260827-1'), 'Finalizer must load the project-centric workflow layer');
-assert(finalizer.includes('data-pst-project-centric-workflow-v1'), 'Project-centric loader must be idempotent');
+assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260827-owner2'), 'Finalizer must load the current project-centric workflow layer');
+assert(finalizer.includes('data-pst-project-centric-workflow-v2'), 'Project-centric loader must be idempotent for the current generation');
 new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
 assert(projectCentric.includes("if(src==='TED')return phase==='award'"), 'Open TED opportunities must stay out of the daily Opportunities surface');
@@ -51,3 +51,9 @@ assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Pro
 
 console.log('Redesign bootstrap + OpenAI + project-centric workflow contract smoke test passed.');
 assert(projectCentric.includes('Merr dhe analizo dosjen') && projectCentric.includes('dossierReady(id)'), 'Project creation must be gated behind explicit dossier analysis');
+
+assert(finalizer.includes('pristeel-project-control-home-v1.js?v=20260827-owner6'),'Finalizer must cache-bust the current Home owner');
+assert(finalizer.includes('data-pst-project-control-home-v6'),'Finalizer must not accept a stale Home script tag');
+assert(finalizer.includes('pristeel-tender-dossier-analysis-v1.js?v=20260827-readable2'),'Finalizer must load the readable dossier generation');
+assert(projectCentric.includes('__pstProjectCentricWorkflowV2'),'Project-centric runtime must expose its current generation marker');
+assert(projectCentric.includes("p.setAttribute('data-pcw-opportunities-owner','2')"),'whole-card Opportunities must claim visible ownership');

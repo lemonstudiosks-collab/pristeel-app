@@ -25,3 +25,7 @@ jobs:
           node --check pristeel-contact-master-v1.js
       - name: Verify dossier-first Albanian UX contract
         run: node tests/opportunities-projects-contacts-ux-smoke.mjs
+      - name: Reproduce visible Opportunities page without active class
+        run: |
+          npm install --ignore-scripts --no-package-lock
+          node tests/opportunities-visible-runtime-smoke.mjs

@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "d17c2ccf520877e4ff80dc701882c2b8a0f627a1"
+    "bootstrapGitBlobSha": "4bd80fa491808ad2c4a330f981c53f36bf27e04e"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -53,15 +53,16 @@
         "pristeel-operating-experience-v1.js",
         "pristeel-primary-nav-resilience-v1.js"
       ],
-      "note": "Workspace Architecture provides the shell. Task Source Actions v15 remains the safe shell/navigation reconciler. Operating Experience exposes Home, Opportunities, Projects, Partners, Finance and System as the primary business zones. Primary Navigation Resilience is now the final ordered bootstrap owner for those six routes, after all legacy layers."
+      "note": "Workspace Architecture provides the shell. Redesign Finalizer owner2 now requires current runtime generations for Home, Opportunities and tender dossier UI instead of accepting stale globals. Task Source Actions and Primary Navigation Resilience remain safe shell/navigation reconcilers."
     },
     {
       "area": "home",
       "finalOwners": [
         "pristeel-home-canonical-v1.js",
-        "pristeel-home-operating-grid-v1.js"
+        "pristeel-home-operating-grid-v1.js",
+        "pristeel-project-control-home-v1.js"
       ],
-      "note": "Home Canonical remains the sole final data/state owner. Home Operating Grid is the final presentation owner and renders the System-style command-card layout after all legacy Home layers. It does not replace Canonical Home action/waiting state."
+      "note": "Home Canonical remains the data/state foundation. Project Control Home v6 is the visible operator Home owner and must replace stale mounted generations; Home Live Sync keeps its bounded refresh adapter."
     },
     {
       "area": "projects-list",
@@ -273,6 +274,12 @@
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded dynamically by the redesign finalizer and invoked explicitly from an Opportunity popup to retrieve and analyze official KRPP/APP tender dossiers before project creation is enabled."
+    },
+    {
+      "module": "pristeel-project-control-home-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Visible Home owner. Generation v6 is loaded dynamically by the redesign finalizer and explicitly replaces stale mounted Home generations. pristeel-home-happy-v1.js remains a recovery path."
     }
   ],
   "loadOrderConstraints": [
