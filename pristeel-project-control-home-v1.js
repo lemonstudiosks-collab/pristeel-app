@@ -205,12 +205,17 @@ async function ensureAssistant(){
   await new Promise(function(resolve){var n=0;function check(){var x=window.PSTOpenAIAssistantV1;if(x&&typeof x.ask==='function'||++n>=20){resolve();return;}setTimeout(check,50);}check();});
   return window.PSTOpenAIAssistantV1||null;
 }
+function friendlyAssistantError(e){
+  var msg=S(e&&e.message||e),n=N(msg);
+  if(/openai api key|provider unconfigured|required secret|provider unavailable/.test(n))return'PPPP AI nuk është konfiguruar ende për pyetje të përgjithshme. Për një projekt, shkruaj emrin e projektit dhe PPPP do të përdorë të dhënat live.';
+  return msg||'PPPP AI nuk u përgjigj.';
+}
 async function askAI(q){
+  var local=localAnswer(q);if(local)return local;
   var AI=await ensureAssistant();
   if(AI&&typeof AI.ask==='function'){
-    try{return await AI.ask(q,{scope:'global'});}catch(e){var fallback=localAnswer(q);if(fallback)return fallback;throw e;}
+    try{return await AI.ask(q,{scope:'global'});}catch(e){throw new Error(friendlyAssistantError(e));}
   }
-  var local=localAnswer(q);if(local)return local;
   throw new Error('PPPP nuk arriti ta lidhë pyetjen me një projekt unik.');
 }
 async function edgeOperator(projectId,update){
@@ -220,15 +225,24 @@ async function edgeOperator(projectId,update){
   var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}
   if(!res.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,700));return data;
 }
+function looksLikeProjectLookup(q){
+  var p=resolveLocal(q);if(!p)return false;
+  var words=N(q).split(' ').filter(Boolean);
+  if(words.length<=4)return true;
+  return false;
+}
 async function submit(q){
   state.busy=true;render();
   try{
-    if(isQuestion(q)){state.last={kind:'answer',data:await askAI(q)};return;}
+    if(isQuestion(q)||looksLikeProjectLookup(q)){state.last={kind:'answer',data:await askAI(q)};return;}
     var p=resolveLocal(q),probe=null;
-    if(!p){probe=await askAI('Identifiko vetëm projektin PPPP që i përket këtij update-i operativ. Mos hamendëso nëse nuk është unik. Update: '+q);var pid=probe&&probe.navigation&&probe.navigation.project_id;p=state.projects.find(function(x){return S(x.id)===S(pid);})||null;}
+    if(!p){
+      try{probe=await askAI('Identifiko vetëm projektin PPPP që i përket këtij update-i operativ. Mos hamendëso nëse nuk është unik. Update: '+q);}catch(e){probe=null;}
+      var pid=probe&&probe.navigation&&probe.navigation.project_id;p=state.projects.find(function(x){return S(x.id)===S(pid);})||null;
+    }
     if(!p)throw new Error('Nuk e lidha dot me një projekt unik. Përmend emrin e projektit në update.');
     var out=await edgeOperator(p.id,q);state.last={kind:'update',project:p.name,text:out.summary||'Update-i u ruajt.'};await load(true);
-  }catch(e){state.last={kind:'error',text:S(e&&e.message||e)};}finally{state.busy=false;render();}
+  }catch(e){state.last={kind:'error',text:friendlyAssistantError(e)};}finally{state.busy=false;render();}
 }
 function openProject(id){if(id&&typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);}
 function bind(root){
