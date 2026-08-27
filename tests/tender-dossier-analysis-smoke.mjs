@@ -39,5 +39,7 @@ assert(edge.includes("type:'input_file'"),'Edge function does not pass official 
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
 assert(edge.includes('SUPABASE_SERVICE_ROLE_KEY'),'Purpose-limited persistence path is missing');
 assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(edge),'Tender analysis must not contain external/binding action endpoints');
-assert(finalizer.includes('data-pst-tender-dossier-analysis-v1'),'Finalizer does not load the dossier analysis runtime');
+assert(finalizer.includes('data-pst-tender-dossier-analysis-v2'),'Finalizer does not load the current dossier analysis runtime');
 console.log('Tender dossier parser + security + runtime smoke test passed.');
+
+assert(frontend.includes('Kushtet teknike')&&frontend.includes('Kushtet komerciale'),'Primary dossier view must expose technical and commercial conditions');
