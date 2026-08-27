@@ -3,7 +3,7 @@ const N=(v)=>T(v,1000).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g
 
 export function dateRange(v){
  const raw=T(v,9000);
- const m=raw.match(/\b(\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?)\s*[–—-]\s*(\d{1,2}[./]\d{1,2}[./]\d{2,4})\b/);
+ const m=raw.match(/\b(\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?[.]?)\s*[–—-]\s*(\d{1,2}[./]\d{1,2}[./]\d{2,4}[.]?)/);
  return m?m[1]+' – '+m[2]:'';
 }
 export function scheduleAttachments(rows){
