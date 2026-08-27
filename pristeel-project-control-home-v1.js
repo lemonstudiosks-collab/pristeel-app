@@ -202,7 +202,7 @@ async function ensureAssistant(){
   var AI=window.PSTOpenAIAssistantV1;if(AI&&typeof AI.ask==='function')return AI;
   var existing=document.querySelector('script[data-pst-openai-assistant-v1],script[data-pst-home-openai-fallback]');
   if(!existing){existing=document.createElement('script');existing.src='pristeel-openai-operating-assistant-v1.js?v=20260827-home1';existing.defer=true;existing.setAttribute('data-pst-home-openai-fallback','1');document.head.appendChild(existing);}
-  await new Promise(function(resolve){var n=0,t=setInterval(function(){var x=window.PSTOpenAIAssistantV1;if(x&&typeof x.ask==='function'||++n>=20){clearInterval(t);resolve();}},50);});
+  await new Promise(function(resolve){var n=0;function check(){var x=window.PSTOpenAIAssistantV1;if(x&&typeof x.ask==='function'||++n>=20){resolve();return;}setTimeout(check,50);}check();});
   return window.PSTOpenAIAssistantV1||null;
 }
 async function askAI(q){
