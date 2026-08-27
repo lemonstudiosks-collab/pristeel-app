@@ -87,7 +87,6 @@ function handoffFinalOpportunities(force){
    Promise.resolve(X.loadOpportunities(!!force)).catch(function(e){console.warn('PPPP final Opportunities handoff:',e);});
    return true;
  }
- try{var F=window.PSTRedesignFinalizerV1;if(F&&typeof F.projectCentricWorkflow==='function')F.projectCentricWorkflow();}catch(e){}
  return false;
 }
 function openTenderMonitor(){
