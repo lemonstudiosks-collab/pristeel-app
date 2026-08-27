@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "7d6ddfb5022bf5200bfdbb11655b8aa339efc07e"
+    "bootstrapGitBlobSha": "d17c2ccf520877e4ff80dc701882c2b8a0f627a1"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -70,7 +70,7 @@
         "pristeel-project-lifecycle-tracking-v1.js",
         "pristeel-project-classification-v1.js"
       ],
-      "note": "Project Classification decorates the existing project register with origin/work-model badges and filters after project lifecycle data owners."
+      "note": "Project Classification is the final operational list-state presentation: prominent Albanian filters for Kërkon veprim, Në pritje, Në realizim and Të mbyllura; legacy full-width sorting is hidden from the daily surface."
     },
     {
       "area": "project-workspace",
@@ -102,7 +102,7 @@
       "finalOwners": [
         "pristeel-contact-master-v1.js"
       ],
-      "note": "Contact Master is the daily relationship register over canonical contacts/contact_sources/project_contacts. Gmail, HubSpot and Bitrix24 remain source systems/back-office capabilities; classic contacts remain a fallback."
+      "note": "Contact Master is the final relationship register. Opening a contact refreshes that identity from pppp_contact_master_v1 so linked projects and project-email activity are current rather than stale cached counts."
     },
     {
       "area": "document-center",
@@ -127,9 +127,11 @@
         "pristeel-tender-business-flow-v1.js",
         "pristeel-tender-winner-contacts-v1.js",
         "pristeel-operating-experience-v1.js",
-        "pristeel-tender-priority-actions-v1.js"
+        "pristeel-tender-priority-actions-v1.js",
+        "pristeel-project-centric-workflow-v1.js",
+        "pristeel-tender-dossier-analysis-v1.js"
       ],
-      "note": "The first filename is legacy. The current tender UI/business layer covers KRPP Kosovo, APP Albania, TED direct-bid opportunities and TED award-winner outreach. Tender Priority Actions is the final ordered presentation/action adapter for priority ranking, controlled Gmail draft preparation and explicit REVIEW/GO/NO-GO gates."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the final visible whole-card Opportunities surface; official KRPP/APP dossier analysis is an explicit gate before project creation. TED awards remain winner-outreach opportunities. No tender becomes a project without a human decision."
     },
     {
       "area": "ai",
@@ -259,6 +261,18 @@
       "loader": "pristeel-gemini-test-ui-v1.js",
       "status": "ACTIVE_PROVIDER",
       "condition": "The provider module is loaded; GPT-OSS routing becomes active when pristeel_ai_provider === groq-gptoss and a Groq key is present."
+    },
+    {
+      "module": "pristeel-project-centric-workflow-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded dynamically by the redesign finalizer as the visible whole-card Opportunities workflow and bounded Projects/Contacts UX layer. It reuses canonical tender, project and contact engines and preserves human approval gates."
+    },
+    {
+      "module": "pristeel-tender-dossier-analysis-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded dynamically by the redesign finalizer and invoked explicitly from an Opportunity popup to retrieve and analyze official KRPP/APP tender dossiers before project creation is enabled."
     }
   ],
   "loadOrderConstraints": [
