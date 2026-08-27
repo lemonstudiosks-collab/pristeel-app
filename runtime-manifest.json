@@ -274,6 +274,12 @@
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded dynamically by the redesign finalizer and invoked explicitly from an Opportunity popup to retrieve and analyze official KRPP/APP tender dossiers before project creation is enabled."
+    },
+    {
+      "module": "pristeel-project-control-home-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js / pristeel-home-happy-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Visible Home owner. Generation v6 is loaded dynamically and explicitly replaces stale mounted Home generations while preserving canonical Home data/state engines."
     }
   ],
   "loadOrderConstraints": [
