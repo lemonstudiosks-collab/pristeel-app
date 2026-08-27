@@ -83,6 +83,8 @@ function opportunityCard(r){
 function ensureOpportunitySurface(){
  var p=activePage('page-kek-tenders');if(!p)return null;
  var focus=p.querySelector('#pst-opportunities-focus'),head=p.querySelector('.pst-kek-head');
+ var eye=p.querySelector('.pst-kek-eye'),title=p.querySelector('.pst-kek-title'),sub=p.querySelector('.pst-kek-sub');
+ if(eye)eye.textContent='MONITORI AUTOMATIK I TENDERËVE TË ÇELIKUT';if(title)title.textContent='Mundësitë';if(sub)sub.textContent='KRPP, APP dhe TED mblidhen në prapaskenë. Këtu punojmë vetëm me mundësitë që mund të kthehen në projekt.';
  if(!focus){
    focus=document.createElement('section');focus.id='pst-opportunities-focus';
    focus.innerHTML='<header></header><div id="pst-pcw-opportunity-tools"><label><span>Kërko</span><input id="pst-pcw-opportunity-search" placeholder="Titull, institucion, referencë ose përshkrim"></label></div><div id="pst-pcw-opportunity-tabs"></div><div id="pst-opportunities-list"></div>';
@@ -245,10 +247,10 @@ function css(){if(document.getElementById('pst-project-centric-workflow-css'))re
 #page-workspace-projects.active .pst-pm-row:focus-visible{outline:2px solid #6B9FAF;outline-offset:2px}
 /* Opportunities */
 #page-kek-tenders.active #pst-opportunities-all.pst-pcw-backstage{display:none!important}
-#page-kek-tenders.active[data-pcw-opportunities-owner="1"]>.pst-kek-filter,
-#page-kek-tenders.active[data-pcw-opportunities-owner="1"]>.pst-kek-card,
-#page-kek-tenders.active[data-pcw-opportunities-owner="1"]>.pst-kek-actions,
-#page-kek-tenders.active[data-pcw-opportunities-owner="1"]>#pst-tender-fit-summary{display:none!important}
+#page-kek-tenders.active[data-pcw-opportunities-owner="1"] .pst-kek-filter,
+#page-kek-tenders.active[data-pcw-opportunities-owner="1"] .pst-kek-card,
+#page-kek-tenders.active[data-pcw-opportunities-owner="1"] .pst-kek-head>.pst-kek-actions,
+#page-kek-tenders.active[data-pcw-opportunities-owner="1"] #pst-tender-fit-summary{display:none!important}
 #page-kek-tenders.active #pst-opportunities-focus{border:0!important;border-radius:20px!important;padding:23px!important;background:linear-gradient(180deg,#fff 0%,#fbfdfe 100%)!important;box-shadow:0 12px 36px rgba(32,58,70,.07)!important}
 #page-kek-tenders.active #pst-opportunities-focus>header span{font-size:9px!important;color:#397F98!important}
 #page-kek-tenders.active #pst-opportunities-focus>header h2{font-size:24px!important;letter-spacing:-.02em!important;color:#263E48!important}
