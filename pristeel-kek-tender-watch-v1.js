@@ -64,7 +64,6 @@ function pageShell(){
 function handoffFinalOpportunities(force){
  var X=window.PSTProjectCentricWorkflowV1;
  if(X&&typeof X.loadOpportunities==='function'){Promise.resolve(X.loadOpportunities(!!force)).catch(function(e){console.warn('PPPP Opportunities handoff:',e);});return true;}
- try{var F=window.PSTRedesignFinalizerV1;if(F&&typeof F.projectCentricWorkflow==='function')F.projectCentricWorkflow();}catch(e){}
  return false;
 }
 window.pstWsKekTenders=function(){
