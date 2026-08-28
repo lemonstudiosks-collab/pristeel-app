@@ -25,9 +25,9 @@ const krppHtml=`<html><body><form method="post" action="./DokumentPodaciFrm.aspx
 <a href="#top">Povratak na vrh</a>
 <a href="DokumentPodaciFrm.aspx?id=4255945">B05 Njoftim per Kontrat</a>
 <a href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;uiDokumentPodaci$uiDocumentCtl$uiOpenDocumentHtml&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, true))">Ueb faqja</a>
-<a href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;uiDokumentPodaci$uiDownloadAll&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, true))">Shkarko plotë "Dosje tenderi"</a>
-<a href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;uiDokumentPodaci$uiDokumentacijaZaNadmetanjeCtl$uiOpenDocumentZip&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, true))">Shkarko të gjithë dokumentacionin</a>
-<a href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;uiDokumentPodaci$uiTroskovnikRepeater$ctl00$uiTroskovnikCtl$uiOpenDocumentZip&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, true))">Shkarko të gjithë dokumentacionin</a>
+<a href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;uiDokumentPodaci$uiDownloadAll&quot;, &quot;FULL-4255945&quot;, true, &quot;&quot;, &quot;&quot;, false, true))">Shkarko plotë "Dosje tenderi"</a>
+<a href="javascript:__doPostBack(&quot;uiDokumentPodaci$uiDokumentacijaZaNadmetanjeCtl$uiOpenDocumentZip&quot;,&quot;DOC-17&quot;)">Shkarko të gjithë dokumentacionin</a>
+<input type="submit" name="uiDokumentPodaci$uiTroskovnikRepeater$ctl00$uiTroskovnikCtl$uiOpenDocumentZip" value="Shkarko paramasën">
 <a href="/SPIN_PROD/download/DST.pdf">DST.pdf</a>
 <a href="https://evil.example/file.pdf">evil.pdf</a>
 </form></body></html>`;
@@ -38,7 +38,10 @@ assert.equal(krpp.documents.length,1,'KRPP parser must keep only real official d
 assert.equal(krpp.documents[0].name,'DST.pdf');
 assert.equal(krpp.postbacks.length,3,'KRPP parser must capture only allowlisted real download postbacks');
 assert.equal(krpp.postbacks[0].event_target,'uiDokumentPodaci$uiDownloadAll','Full dossier postback must have highest priority');
-assert(!krpp.postbacks.some(x=>/uiOpenDocumentHtml/.test(x.event_target)),'KRPP HTML/web-page postbacks must never be treated as dossier files');
+assert.equal(krpp.postbacks[0].event_argument,'FULL-4255945','KRPP parser must preserve the exact WebForms event argument');
+assert(krpp.postbacks.some(x=>x.event_target==='uiDokumentPodaci$uiDokumentacijaZaNadmetanjeCtl$uiOpenDocumentZip'&&x.event_argument==='DOC-17'),'KRPP parser must support classic __doPostBack target + argument');
+assert(krpp.postbacks.some(x=>x.kind==='krpp_submit'&&x.submit_name==='uiDokumentPodaci$uiTroskovnikRepeater$ctl00$uiTroskovnikCtl$uiOpenDocumentZip'),'KRPP parser must preserve real WebForms submit controls');
+assert(!krpp.postbacks.some(x=>/uiOpenDocumentHtml/.test(x.event_target||x.submit_name||'')),'KRPP HTML/web-page actions must never be treated as dossier files');
 const krppState=extractAspNetFormState(krppHtml,krppDetail);
 assert.equal(krppState.found,true,'KRPP ASP.NET form state was not found');
 assert.equal(krppState.action,krppDetail,'KRPP form action must resolve to the allowlisted official page');
@@ -62,11 +65,12 @@ assert(edge.includes("type:'input_file'"),'Edge function does not pass official 
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
 assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
 assert(edge.includes("npm:fflate@0.8.2")&&edge.includes('zipSync')&&edge.includes('fetchOfficialBinary'),'Edge function must bundle official dossier documents server-side');
-assert(edge.includes("const VERSION='v6'"),'KRPP intermediate-download fix must advance the analysis generation');
-assert(edge.includes('fetchKrppPostback')&&edge.includes("application/x-www-form-urlencoded")&&edge.includes("__EVENTTARGET"),'KRPP bundle must execute the official ASP.NET postback with captured form state');
-assert(edge.includes('document_response_was_html')&&edge.includes('krpp_postback_returned_html'),'Downloader must reject HTML/login/navigation responses instead of packaging them as tender files');
+assert(edge.includes("const VERSION='v7'"),'KRPP full WebForms action fix must advance the analysis generation');
+assert(edge.includes('fetchKrppAction')&&edge.includes("application/x-www-form-urlencoded")&&edge.includes("__EVENTTARGET")&&edge.includes("__EVENTARGUMENT"),'KRPP bundle must execute exact ASP.NET postbacks with captured form state and argument');
+assert(edge.includes("action?.kind==='krpp_submit'")&&edge.includes('submit_name')&&edge.includes("submitName+'.x'"),'KRPP bundle must support named WebForms submit/image controls as well as postbacks');
+assert(edge.includes('document_response_was_html')&&edge.includes('krpp_action_returned_html'),'Downloader must reject HTML/login/navigation responses instead of packaging them as tender files');
 assert(edge.includes('fetchOfficialHtml(listingUrl)')&&edge.includes('seedCookies'),'KRPP download must warm the public listing session before opening the tender detail');
-assert(edge.includes('extractKrppIntermediateDownloadUrl')&&edge.includes('fetchOfficialBinary(next,cookies,current)'),'KRPP postback HTML must inspect only an official intermediate download URL and preserve the referer');
+assert(edge.includes('extractKrppIntermediateDownloadUrl')&&edge.includes('fetchOfficialBinary(next,cookies,current)'),'KRPP action HTML must inspect only an official intermediate download URL and preserve the referer');
 assert(edge.includes("kind:'script'")&&edge.includes("kind:'href'"),'Intermediate download parsing must distinguish explicit script navigation from ordinary anchors');
 assert(!edge.includes("/[\"']([^\"']*(?:download|dokument|document|attachment|file)[^\"']*)[\"']/gi"),'Downloader must not treat arbitrary quoted document/file strings as download URLs');
 assert(edge.includes("document_response_was_html:'+krppHtmlDiagnostic(html)"),'Secondary HTML responses must expose bounded diagnostic context instead of a generic failure');

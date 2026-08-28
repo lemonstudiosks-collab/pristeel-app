@@ -37,9 +37,13 @@ export function extractDocumentLinks(html,base){
  while((m=direct.exec(src))){const raw=m[1];if(!DOC_EXT_RE.test(raw)&&!DOC_HINT_RE.test(raw))continue;const url=candidateUrl(raw,base);if(url)pushUnique(out,seen,url,'Dokument',base);}
  return out;
 }
-function postbackTargetFromHref(href){
- const m=String(href||'').match(/WebForm_DoPostBackWithOptions\(new WebForm_PostBackOptions\(["']([^"']+)["']/i);
- return m?decodeEntities(m[1]):'';
+function postbackFromJs(raw){
+ const src=decodeEntities(String(raw||''));
+ let m=src.match(/WebForm_DoPostBackWithOptions\(new WebForm_PostBackOptions\(["']([^"']+)["']\s*,\s*["']([^"']*)["']/i);
+ if(m)return{target:m[1],argument:m[2]||''};
+ m=src.match(/__doPostBack\(\s*["']([^"']+)["']\s*,\s*["']([^"']*)["']\s*\)/i);
+ if(m)return{target:m[1],argument:m[2]||''};
+ return{target:'',argument:''};
 }
 function krppPostbackName(label,target){
  const l=text(label);
@@ -65,11 +69,33 @@ function krppPostbackPriority(target){
 }
 export function extractKrppPostbackActions(html){
  const out=[],seen=new Set(),src=String(html||'');let m;
+ function pushPostback(label,raw){
+  const pb=postbackFromJs(raw),target=pb.target;
+  if(!target||!KRPP_POSTBACK_ALLOW.some(re=>re.test(target)))return;
+  const key='pb|'+target+'|'+pb.argument;if(seen.has(key))return;seen.add(key);
+  out.push({kind:'krpp_postback',event_target:target,event_argument:pb.argument||'',name:krppPostbackName(label,target),priority:krppPostbackPriority(target)});
+ }
+ function pushSubmit(label,attrs){
+  const name=decodeEntities(attr(attrs,'name')||attr(attrs,'id')),value=decodeEntities(attr(attrs,'value'));
+  if(!name||!KRPP_POSTBACK_ALLOW.some(re=>re.test(name)))return;
+  const key='submit|'+name+'|'+value;if(seen.has(key))return;seen.add(key);
+  out.push({kind:'krpp_submit',submit_name:name,submit_value:value||label||'',submit_type:(attr(attrs,'type')||'submit').toLowerCase(),name:krppPostbackName(label,name),priority:krppPostbackPriority(name)+3});
+ }
  const anchor=/<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
  while((m=anchor.exec(src))){
-  const href=attr(m[1]||'','href'),label=stripTags(m[2]||''),target=postbackTargetFromHref(href);
-  if(!target||!KRPP_POSTBACK_ALLOW.some(re=>re.test(target))||seen.has(target))continue;
-  seen.add(target);out.push({kind:'krpp_postback',event_target:target,name:krppPostbackName(label,target),priority:krppPostbackPriority(target)});
+  const attrs=m[1]||'',label=stripTags(m[2]||''),href=attr(attrs,'href'),onclick=attr(attrs,'onclick');
+  pushPostback(label,href);pushPostback(label,onclick);
+ }
+ const input=/<input\b([^>]*)>/gi;
+ while((m=input.exec(src))){
+  const attrs=m[1]||'',type=(attr(attrs,'type')||'').toLowerCase();if(!['submit','button','image'].includes(type))continue;
+  pushSubmit(attr(attrs,'value')||attr(attrs,'title')||attr(attrs,'aria-label')||'',attrs);
+  pushPostback(attr(attrs,'value')||'',attr(attrs,'onclick'));
+ }
+ const button=/<button\b([^>]*)>([\s\S]*?)<\/button>/gi;
+ while((m=button.exec(src))){
+  const attrs=m[1]||'',label=stripTags(m[2]||'')||attr(attrs,'value')||attr(attrs,'title')||'';
+  pushSubmit(label,attrs);pushPostback(label,attr(attrs,'onclick'));
  }
  return out.sort((a,b)=>b.priority-a.priority);
 }
