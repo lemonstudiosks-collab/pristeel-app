@@ -74,6 +74,7 @@ assert(ordered.some(d=>d.name==='DST.docx')&&ordered.some(d=>d.name==='Specifiki
 
 const frontend=fs.readFileSync('pristeel-tender-dossier-analysis-v1.js','utf8');
 const edge=fs.readFileSync('supabase/functions/pppp-tender-dossier-analysis/index.ts','utf8');
+const parserSource=fs.readFileSync('supabase/functions/pppp-tender-dossier-analysis/parser.mjs','utf8');
 const finalizer=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
 assert(frontend.includes('/functions/v1/pppp-tender-dossier-analysis'),'Frontend is not wired to the dossier edge function');
 assert(frontend.includes('[data-pcw-tender]'),'Whole tender-card interaction is not preserved');
@@ -90,9 +91,9 @@ assert(edge.includes("action?.kind==='krpp_submit'")&&edge.includes('submit_name
 assert(edge.includes('document_response_was_html')&&edge.includes('krpp_action_returned_html'),'Downloader must reject HTML/login/navigation responses instead of packaging them as tender files');
 assert(edge.includes('fetchOfficialHtml(listingUrl)')&&edge.includes('seedCookies'),'KRPP download must warm the public listing session before opening the tender detail');
 assert(edge.includes('extractKrppIntermediateDownloadUrl')&&edge.includes('fetchOfficialBinary(next,cookies,current)'),'KRPP action HTML must inspect only an official intermediate download URL and preserve the referer');
-assert(fs.readFileSync('supabase/functions/pppp-tender-dossier-analysis/parser.mjs','utf8').includes('documentfordispositionfrm'),'KRPP parser must preserve the verified DocumentForDisposition download route');
-assert(edge.includes("kind:'script'")&&edge.includes("kind:'href'"),'Intermediate download parsing must distinguish explicit script navigation from ordinary anchors');
-assert(!edge.includes("/[\"']([^\"']*(?:download|dokument|document|attachment|file)[^\"']*)[\"']/gi"),'Downloader must not treat arbitrary quoted document/file strings as download URLs');
+assert(parserSource.includes('documentfordispositionfrm'),'KRPP parser must preserve the verified DocumentForDisposition download route');
+assert(parserSource.includes("kind:'script'")&&parserSource.includes("kind:'href'"),'Intermediate download parsing must distinguish explicit script navigation from ordinary anchors');
+assert(!parserSource.includes("/[\"']([^\"']*(?:download|dokument|document|attachment|file)[^\"']*)[\"']/gi"),'Downloader must not treat arbitrary quoted document/file strings as download URLs');
 assert(edge.includes("document_response_was_html:'+krppHtmlDiagnostic(html)"),'Secondary HTML responses must expose bounded diagnostic context instead of a generic failure');
 assert(edge.includes('krppHtmlDiagnostic'),'KRPP HTML fallback must retain bounded diagnostic context for the next live failure');
 assert(edge.includes('MAX_BUNDLE_BYTES')&&edge.includes('officialUrl(loc,current)'),'Dossier bundle must preserve size and redirect allowlist boundaries');
