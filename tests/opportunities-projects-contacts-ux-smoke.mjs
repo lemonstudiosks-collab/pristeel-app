@@ -42,10 +42,17 @@ assert.match(projects,/Në realizim/,'project execution state must be Albanian')
 assert.match(projects,/Të mbyllura/,'project closed filter must be Albanian');
 assert.match(projects,/#page-workspace-projects #pst-pm-sort\{display:none!important\}/,'old full-width project sort must be removed from the visible work surface');
 
-assert.match(contacts,/DOSJA E KONTAKTIT/,'contact popup title must be Albanian');
+assert.match(contacts,/MARRËDHËNIA ME PRISTEEL/,'contact drawer must use a business-first Albanian relationship heading');
 assert.match(contacts,/pppp_contact_master_v1\?contact_id=eq\./,'contact popup must refresh the selected person from the canonical live view');
 assert.match(contacts,/project_email_count/,'contact popup must carry real project-email activity');
 assert.doesNotMatch(contacts,/CONTACT BRIEF|RELATIONSHIPS|Klient \/ Lead/,'old English contact labels must not remain visible');
+assert.match(contacts,/MARRËDHËNIA ME PRISTEEL/,'contact drawer must lead with the business relationship, not source metadata');
+assert.match(contacts,/Hap projektin e fundit/,'contact drawer must expose the most useful project action');
+assert.match(contacts,/pcm-profile/,'contact drawer must have a human profile header');
+assert.match(contacts,/Burimet e të dhënave/,'CRM provenance must remain available but secondary');
+assert.match(pcw,/Komunikimi i fundit/,'contact drawer must show a readable communication timeline');
+assert.match(pcw,/gmailLink\(m\.gmail_url\)/,'recent contact emails must preserve a direct Gmail path when available');
+assert.match(pcw,/projectNames\[S\(m\.project_id\)\]/,'contact activity must show project context rather than isolated email metadata');
 
 console.log('Opportunities + Projects + Contacts UX contract: OK');
 
