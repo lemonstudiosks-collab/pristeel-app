@@ -8,12 +8,13 @@ const corsHeaders={
   'Access-Control-Expose-Headers':'Content-Disposition, X-PPPP-Document-Count',
   'Content-Type':'application/json',
 };
-const VERSION='v7';
+const VERSION='v8';
 const CACHE_MS=6*60*60*1000;
 const MAX_HTML_BYTES=8*1024*1024;
 const MAX_FILE_BYTES=14*1024*1024;
 const MAX_BUNDLE_BYTES=48*1024*1024;
 const MAX_KRPP_PACKAGES=6;
+const MAX_KRPP_SECONDARY_ACTIONS=8;
 
 function json(data,status=200){return new Response(JSON.stringify(data),{status,headers:corsHeaders});}
 function text(v,max=6000){return String(v==null?'':v).trim().slice(0,max);}
@@ -96,7 +97,29 @@ function krppHtmlDiagnostic(html){
  return text(plain,180).replace(/[|\r\n]+/g,' ');
 }
 
-async function fetchKrppAction(page,action){
+function krppActionControl(action){return text(action?.event_target||action?.submit_name,700);}
+function krppActionSignature(action){return [text(action?.kind,40),krppActionControl(action),text(action?.event_argument||action?.submit_value,1200)].join('|');}
+function krppActionFamily(action){
+ const control=krppActionControl(action);
+ if(/uiDownloadAll$/.test(control))return'all';
+ if(/uiDokumentacijaZaNadmetanjeCtl/.test(control))return'dossier';
+ if(/uiTroskovnikRepeater/.test(control))return'cost';
+ if(/uiDocumentCtl/.test(control))return'notice';
+ return'other';
+}
+function krppChildActions(parent,dossier,seen){
+ const family=krppActionFamily(parent),rows=Array.isArray(dossier?.postbacks)?dossier.postbacks:[];
+ let out=rows.filter(a=>!seen.has(krppActionSignature(a)));
+ if(family!=='all'&&family!=='other')out=out.filter(a=>krppActionFamily(a)===family);
+ out.sort((a,b)=>{
+   const la=text(a?.raw_label,120).toLowerCase(),lb=text(b?.raw_label,120).toLowerCase();
+   const langA=/shqip|alban/.test(la)?30:/english/.test(la)?10:0,langB=/shqip|alban/.test(lb)?30:/english/.test(lb)?10:0;
+   return (Number(b?.priority||0)+langB)-(Number(a?.priority||0)+langA);
+ });
+ return out.slice(0,MAX_KRPP_SECONDARY_ACTIONS);
+}
+async function fetchKrppActionFiles(page,action,depth=0,seen=new Set()){
+ const signature=krppActionSignature(action);if(seen.has(signature))throw new Error('krpp_action_cycle');seen.add(signature);
  const state=page?.dossier?.form_state;if(!state?.found||!state.action)throw new Error('krpp_form_state_missing');
  const form=new URLSearchParams();for(const [k,v] of Object.entries(state.fields||{}))form.set(k,String(v??''));
  form.set('__EVENTTARGET','');form.set('__EVENTARGUMENT','');
@@ -115,14 +138,29 @@ async function fetchKrppAction(page,action){
    const requestHeaders={...headers};if(hop>0)delete requestHeaders['Content-Type'];
    const r=await fetch(current,{method:hop===0?'POST':'GET',redirect:'manual',headers:requestHeaders,body:hop===0?form.toString():undefined,signal:AbortSignal.timeout(26000)});cookies=mergeCookies(cookies,setCookiePairs(r.headers));
    if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('krpp_action_redirect_not_allowed');current=next;continue;}
-   if(!r.ok)throw new Error(`krpp_action_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('krpp_action_file_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('krpp_action_file_too_large');const content_type=r.headers.get('content-type')||'';
+   if(!r.ok)throw new Error(`krpp_action_http_${r.status}`);
+   const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('krpp_action_file_too_large');
+   const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('krpp_action_file_too_large');
+   const content_type=r.headers.get('content-type')||'';
    if(payloadLooksHtml(bytes,content_type)){
      const html=new TextDecoder('utf-8',{fatal:false}).decode(bytes),next=extractKrppIntermediateDownloadUrl(html,current);
-     if(next){const got=await fetchOfficialBinary(next,cookies,current);return{...got,filename:got.filename||safeFilename(action.name,'Dokument')+inferredExtension(got.content_type,got.bytes,/uiOpenDocumentPdf/.test(control)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(control)?'.zip':/uiOpenDocumentDoc/.test(control)?'.doc':'')};}
+     if(next){const got=await fetchOfficialBinary(next,cookies,current);return[{...got,filename:got.filename||safeFilename(action.name,'Dokument')+inferredExtension(got.content_type,got.bytes,/uiOpenDocumentPdf/.test(control)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(control)?'.zip':/uiOpenDocumentDoc/.test(control)?'.doc':'')}];}
+     if(depth<2){
+       const nextDossier=extractKrppDossier(html,current),children=krppChildActions(action,nextDossier,seen);
+       if(children.length){
+         const nextPage={html,url:current,status:r.status,cookies,dossier:nextDossier},files=[],errors=[];
+         for(const child of children){
+           try{files.push(...await fetchKrppActionFiles(nextPage,child,depth+1,seen));}
+           catch(error){errors.push(text(error?.message||error,180));}
+         }
+         if(files.length)return files;
+         if(errors.length)throw new Error('krpp_secondary_actions_failed:'+errors.slice(0,3).join(' | '));
+       }
+     }
      throw new Error('krpp_action_returned_html:'+krppHtmlDiagnostic(html));
    }
    const fallback=/uiOpenDocumentPdf/.test(control)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(control)?'.zip':/uiOpenDocumentDoc/.test(control)?'.doc':'';
-   return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition'))||safeFilename(action.name,'Dokument')+inferredExtension(content_type,bytes,fallback),cookies};
+   return[{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition'))||safeFilename(action.name,'Dokument')+inferredExtension(content_type,bytes,fallback),cookies}];
  }
  throw new Error('too_many_krpp_action_redirects');
 }
@@ -159,10 +197,10 @@ async function dossierBundle(row,resolved,source){
  if(source==='KRPP'&&resolved.page&&Array.isArray(dossier.postbacks)&&dossier.postbacks.length){
    const all=dossier.postbacks.find(x=>/uiDownloadAll$/.test(x.event_target||x.submit_name||''));
    let fullWorked=false;
-   if(all){try{const got=await fetchKrppAction(resolved.page,all);fullWorked=addFile(all.name,got);}catch(error){failed.push(`${all.name}: ${text(error?.message||error,140)}`);}}
+   if(all){try{const gotFiles=await fetchKrppActionFiles(resolved.page,all);for(const got of gotFiles)fullWorked=addFile(all.name,got)||fullWorked;}catch(error){failed.push(`${all.name}: ${text(error?.message||error,220)}`);}}
    if(!fullWorked){
      const actions=dossier.postbacks.filter(x=>x!==all).slice(0,MAX_KRPP_PACKAGES);
-     for(const action of actions){try{const got=await fetchKrppAction(resolved.page,action);addFile(action.name,got);}catch(error){failed.push(`${action.name}: ${text(error?.message||error,140)}`);}}
+     for(const action of actions){try{const gotFiles=await fetchKrppActionFiles(resolved.page,action);for(const got of gotFiles)addFile(action.name,got);}catch(error){failed.push(`${action.name}: ${text(error?.message||error,220)}`);}}
    }
  }
  if(!downloaded){

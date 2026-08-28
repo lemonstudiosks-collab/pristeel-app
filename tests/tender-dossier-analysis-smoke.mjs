@@ -48,6 +48,19 @@ assert.equal(krppState.action,krppDetail,'KRPP form action must resolve to the a
 assert.equal(krppState.fields.__VIEWSTATE,'STATE-1');
 assert.equal(krppState.fields.__EVENTVALIDATION,'VALID-1');
 assert.equal(extractKrppPostbackActions(krppHtml).length,3);
+
+const krppSecondaryHtml=`<html><body><form action="./DokumentPodaciFrm.aspx?id=4255945">
+<input type="hidden" name="__VIEWSTATE" value="STATE-2">
+<input type="hidden" name="__EVENTVALIDATION" value="VALID-2">
+<div>Njoftim - B05 Njoftim per Kontrat</div>
+<a href="javascript:__doPostBack(&quot;uiDokumentPodaci$uiDokumentacijaZaNadmetanjeCtl$uiOpenDocumentDoc_7&quot;,&quot;AL&quot;)">Shqip</a>
+<a href="javascript:__doPostBack(&quot;uiDokumentPodaci$uiDokumentacijaZaNadmetanjeCtl$uiOpenDocumentDoc_8&quot;,&quot;EN&quot;)">English</a>
+<a href="javascript:__doPostBack(&quot;uiDokumentPodaci$uiDocumentCtl$uiOpenDocumentPdf_9&quot;,&quot;AL&quot;)">Shqip</a>
+</form></body></html>`;
+const secondary=extractKrppDossier(krppSecondaryHtml,krppDetail);
+assert.equal(secondary.form_state.fields.__VIEWSTATE,'STATE-2','Second-step KRPP page must expose the updated WebForms state');
+assert(secondary.postbacks.some(x=>x.event_target.endsWith('uiOpenDocumentDoc_7')&&x.event_argument==='AL'),'Second-step KRPP dossier-language action must be captured');
+assert(secondary.postbacks.some(x=>x.event_target.endsWith('uiOpenDocumentPdf_9')),'Second-step numeric language suffixes must remain allowlisted');
 assert.equal(officialUrl('https://evil.example/file.pdf'),'','SSRF allowlist accepted an external host');
 assert.equal(officialUrl('http://www.app.gov.al/file.pdf'),'','SSRF allowlist accepted insecure HTTP');
 
@@ -65,8 +78,10 @@ assert(edge.includes("type:'input_file'"),'Edge function does not pass official 
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
 assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
 assert(edge.includes("npm:fflate@0.8.2")&&edge.includes('zipSync')&&edge.includes('fetchOfficialBinary'),'Edge function must bundle official dossier documents server-side');
-assert(edge.includes("const VERSION='v7'"),'KRPP full WebForms action fix must advance the analysis generation');
-assert(edge.includes('fetchKrppAction')&&edge.includes("application/x-www-form-urlencoded")&&edge.includes("__EVENTTARGET")&&edge.includes("__EVENTARGUMENT"),'KRPP bundle must execute exact ASP.NET postbacks with captured form state and argument');
+assert(edge.includes("const VERSION='v8'"),'KRPP two-step WebForms download fix must advance the analysis generation');
+assert(edge.includes('fetchKrppActionFiles')&&edge.includes("application/x-www-form-urlencoded")&&edge.includes("__EVENTTARGET")&&edge.includes("__EVENTARGUMENT"),'KRPP bundle must execute exact ASP.NET postbacks with captured form state and argument');
+assert(edge.includes("depth<2")&&edge.includes('extractKrppDossier(html,current)')&&edge.includes('krppChildActions'),'KRPP HTML response must be reparsed with its updated WebForms state and followed through a bounded second step');
+assert(edge.includes('MAX_KRPP_SECONDARY_ACTIONS'),'KRPP secondary action traversal must stay bounded');
 assert(edge.includes("action?.kind==='krpp_submit'")&&edge.includes('submit_name')&&edge.includes("submitName+'.x'"),'KRPP bundle must support named WebForms submit/image controls as well as postbacks');
 assert(edge.includes('document_response_was_html')&&edge.includes('krpp_action_returned_html'),'Downloader must reject HTML/login/navigation responses instead of packaging them as tender files');
 assert(edge.includes('fetchOfficialHtml(listingUrl)')&&edge.includes('seedCookies'),'KRPP download must warm the public listing session before opening the tender detail');
