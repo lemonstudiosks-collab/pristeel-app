@@ -5,10 +5,10 @@ const DOC_HINT_RE=/(?:\/GetData\/DownloadDocument\b|\/download(?:\/|\?|$)|\/atta
 const KRPP_POSTBACK_ALLOW=[
  /^uiDokumentPodaci\$uiDownloadAll$/,
  /^uiDokumentPodaci\$uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentZip$/,
- /^uiDokumentPodaci\$uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentDoc(?:_5)?$/,
- /^uiDokumentPodaci\$uiDocumentCtl\$uiOpenDocumentPdf(?:_5)?$/,
+ /^uiDokumentPodaci\$uiDokumentacijaZaNadmetanjeCtl\$uiOpenDocumentDoc(?:_\d+)?$/,
+ /^uiDokumentPodaci\$uiDocumentCtl\$uiOpenDocumentPdf(?:_\d+)?$/,
  /^uiDokumentPodaci\$uiTroskovnikRepeater\$ctl\d+\$uiTroskovnikCtl\$uiOpenDocumentZip$/,
- /^uiDokumentPodaci\$uiTroskovnikRepeater\$ctl\d+\$uiTroskovnikCtl\$uiOpenDocument(?:_5)?$/,
+ /^uiDokumentPodaci\$uiTroskovnikRepeater\$ctl\d+\$uiTroskovnikCtl\$uiOpenDocument(?:_\d+)?$/,
 ];
 
 const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
@@ -73,13 +73,13 @@ export function extractKrppPostbackActions(html){
   const pb=postbackFromJs(raw),target=pb.target;
   if(!target||!KRPP_POSTBACK_ALLOW.some(re=>re.test(target)))return;
   const key='pb|'+target+'|'+pb.argument;if(seen.has(key))return;seen.add(key);
-  out.push({kind:'krpp_postback',event_target:target,event_argument:pb.argument||'',name:krppPostbackName(label,target),priority:krppPostbackPriority(target)});
+  out.push({kind:'krpp_postback',event_target:target,event_argument:pb.argument||'',raw_label:label||'',name:krppPostbackName(label,target),priority:krppPostbackPriority(target)});
  }
  function pushSubmit(label,attrs){
   const name=decodeEntities(attr(attrs,'name')||attr(attrs,'id')),value=decodeEntities(attr(attrs,'value'));
   if(!name||!KRPP_POSTBACK_ALLOW.some(re=>re.test(name)))return;
   const key='submit|'+name+'|'+value;if(seen.has(key))return;seen.add(key);
-  out.push({kind:'krpp_submit',submit_name:name,submit_value:value||label||'',submit_type:(attr(attrs,'type')||'submit').toLowerCase(),name:krppPostbackName(label,name),priority:krppPostbackPriority(name)+3});
+  out.push({kind:'krpp_submit',submit_name:name,submit_value:value||label||'',submit_type:(attr(attrs,'type')||'submit').toLowerCase(),raw_label:label||'',name:krppPostbackName(label,name),priority:krppPostbackPriority(name)+3});
  }
  const anchor=/<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
  while((m=anchor.exec(src))){
