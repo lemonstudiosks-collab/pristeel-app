@@ -37,6 +37,27 @@ export function extractDocumentLinks(html,base){
  while((m=direct.exec(src))){const raw=m[1];if(!DOC_EXT_RE.test(raw)&&!DOC_HINT_RE.test(raw))continue;const url=candidateUrl(raw,base);if(url)pushUnique(out,seen,url,'Dokument',base);}
  return out;
 }
+export function extractKrppIntermediateDownloadUrl(html,base){
+ const src=String(html||'').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'");
+ const candidates=[];let m;
+ const script=/(?:window\.open|location(?:\.href)?\s*=|document\.location(?:\.href)?\s*=)\s*\(?\s*["']([^"']+)["']/gi;
+ while((m=script.exec(src)))candidates.push({raw:m[1],kind:'script'});
+ const href=/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi;
+ while((m=href.exec(src)))candidates.push({raw:m[1],kind:'href'});
+ for(const candidate of candidates){
+  const u=officialUrl(candidate.raw,base);if(!u)continue;
+  try{
+   const x=new URL(u),b=new URL(base);if(x.href===b.href)continue;
+   const clue=(x.pathname+x.search).toLowerCase();
+   const file=/\.(pdf|zip|doc|docx|xls|xlsx)(?:$|[?#&])/.test(clue);
+   const explicit=/(?:\/getdata\/downloaddocument\b|\/downloaddocument\b|\/downloadfile\b|\/download(?:\/|\?|$)|\/attachment(?:\/|\?|$)|[?&](?:download|fileid|attachmentid)=)/.test(clue);
+   const disposition=/\/documentfordispositionfrm\.aspx\b/.test(clue)&&/[?&](?:id|extension|filename|documentidmultiple)=/i.test(clue);
+   if(file||explicit||disposition||candidate.kind==='script'&&/download|attachment|getdata|documentfordisposition/i.test(clue))return u;
+  }catch{}
+ }
+ return'';
+}
+
 function postbackFromJs(raw){
  const src=decodeEntities(String(raw||''));
  let m=src.match(/WebForm_DoPostBackWithOptions\(new WebForm_PostBackOptions\(["']([^"']+)["']\s*,\s*["']([^"']*)["']/i);

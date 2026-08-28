@@ -1,5 +1,5 @@
 import {zipSync,strToU8} from 'npm:fflate@0.8.2';
-import {extractAppDossier,extractKrppDossier,chooseAnalysisDocuments,officialUrl,stripTags,tenderDossierConstants} from './parser.mjs';
+import {extractAppDossier,extractKrppDossier,extractKrppIntermediateDownloadUrl,chooseAnalysisDocuments,officialUrl,stripTags,tenderDossierConstants} from './parser.mjs';
 
 const corsHeaders={
   'Access-Control-Allow-Origin':'*',
@@ -8,7 +8,7 @@ const corsHeaders={
   'Access-Control-Expose-Headers':'Content-Disposition, X-PPPP-Document-Count',
   'Content-Type':'application/json',
 };
-const VERSION='v8';
+const VERSION='v9';
 const CACHE_MS=6*60*60*1000;
 const MAX_HTML_BYTES=8*1024*1024;
 const MAX_FILE_BYTES=14*1024*1024;
@@ -72,25 +72,6 @@ async function fetchOfficialBinary(url,cookies='',referer=''){
    return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition')),cookies};
  }
  throw new Error('too_many_document_redirects');
-}
-function extractKrppIntermediateDownloadUrl(html,base){
- const src=String(html||'').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'");
- const candidates=[];let m;
- const script=/(?:window\.open|location(?:\.href)?\s*=|document\.location(?:\.href)?\s*=)\s*\(?\s*["']([^"']+)["']/gi;
- while((m=script.exec(src)))candidates.push({raw:m[1],kind:'script'});
- const href=/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi;
- while((m=href.exec(src)))candidates.push({raw:m[1],kind:'href'});
- for(const candidate of candidates){
-  const u=officialUrl(candidate.raw,base);if(!u)continue;
-  try{
-   const x=new URL(u),b=new URL(base);if(x.href===b.href)continue;
-   const clue=(x.pathname+x.search).toLowerCase();
-   const file=/\.(pdf|zip|doc|docx|xls|xlsx)(?:$|[?#])/.test(clue);
-   const explicit=/(?:\/getdata\/downloaddocument\b|\/downloaddocument\b|\/downloadfile\b|\/download(?:\/|\?|$)|\/attachment(?:\/|\?|$)|[?&](?:download|fileid|attachmentid)=)/.test(clue);
-   if(file||explicit||candidate.kind==='script'&&/download|attachment|getdata/i.test(clue))return u;
-  }catch{}
- }
- return'';
 }
 function krppHtmlDiagnostic(html){
  const plain=stripTags(String(html||'')).replace(/\s+/g,' ').trim();

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {extractAppDossier,extractKrppDossier,extractKrppPostbackActions,extractAspNetFormState,officialUrl,chooseAnalysisDocuments} from '../supabase/functions/pppp-tender-dossier-analysis/parser.mjs';
+import {extractAppDossier,extractKrppDossier,extractKrppPostbackActions,extractAspNetFormState,extractKrppIntermediateDownloadUrl,officialUrl,chooseAnalysisDocuments} from '../supabase/functions/pppp-tender-dossier-analysis/parser.mjs';
 
 const appHtml=`<html><body>
 <div>Numri i referencës: REF-111</div>
@@ -61,6 +61,10 @@ const secondary=extractKrppDossier(krppSecondaryHtml,krppDetail);
 assert.equal(secondary.form_state.fields.__VIEWSTATE,'STATE-2','Second-step KRPP page must expose the updated WebForms state');
 assert(secondary.postbacks.some(x=>x.event_target.endsWith('uiOpenDocumentDoc_7')&&x.event_argument==='AL'),'Second-step KRPP dossier-language action must be captured');
 assert(secondary.postbacks.some(x=>x.event_target.endsWith('uiOpenDocumentPdf_9')),'Second-step numeric language suffixes must remain allowlisted');
+const liveDispositionHtml=`<script>window.open('/SPIN_PROD/APPLICATION/IPN/DocumentManagement/DocumentForDispositionFrm.aspx?id=33bed637-dd89-4ab0-9cfb-7d4c620bcea4&Extension=Pdf&fileName=B05 Njoftim per Kontrat.Pdf&DocumentIdMultiple=4255945', '_blank');</script>`;
+const dispositionUrl=extractKrppIntermediateDownloadUrl(liveDispositionHtml,krppDetail);
+assert(dispositionUrl.includes('/DocumentForDispositionFrm.aspx?'),'KRPP live disposition endpoint must be recognized from window.open');
+assert(dispositionUrl.includes('Extension=Pdf')&&dispositionUrl.includes('DocumentIdMultiple=4255945'),'KRPP disposition URL must preserve its official file parameters');
 assert.equal(officialUrl('https://evil.example/file.pdf'),'','SSRF allowlist accepted an external host');
 assert.equal(officialUrl('http://www.app.gov.al/file.pdf'),'','SSRF allowlist accepted insecure HTTP');
 
@@ -70,6 +74,7 @@ assert(ordered.some(d=>d.name==='DST.docx')&&ordered.some(d=>d.name==='Specifiki
 
 const frontend=fs.readFileSync('pristeel-tender-dossier-analysis-v1.js','utf8');
 const edge=fs.readFileSync('supabase/functions/pppp-tender-dossier-analysis/index.ts','utf8');
+const parserSource=fs.readFileSync('supabase/functions/pppp-tender-dossier-analysis/parser.mjs','utf8');
 const finalizer=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
 assert(frontend.includes('/functions/v1/pppp-tender-dossier-analysis'),'Frontend is not wired to the dossier edge function');
 assert(frontend.includes('[data-pcw-tender]'),'Whole tender-card interaction is not preserved');
@@ -78,7 +83,7 @@ assert(edge.includes("type:'input_file'"),'Edge function does not pass official 
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
 assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
 assert(edge.includes("npm:fflate@0.8.2")&&edge.includes('zipSync')&&edge.includes('fetchOfficialBinary'),'Edge function must bundle official dossier documents server-side');
-assert(edge.includes("const VERSION='v8'"),'KRPP two-step WebForms download fix must advance the analysis generation');
+assert(edge.includes("const VERSION='v9'"),'KRPP verified disposition-endpoint fix must advance the analysis generation');
 assert(edge.includes('fetchKrppActionFiles')&&edge.includes("application/x-www-form-urlencoded")&&edge.includes("__EVENTTARGET")&&edge.includes("__EVENTARGUMENT"),'KRPP bundle must execute exact ASP.NET postbacks with captured form state and argument');
 assert(edge.includes("depth<2")&&edge.includes('extractKrppDossier(html,current)')&&edge.includes('krppChildActions'),'KRPP HTML response must be reparsed with its updated WebForms state and followed through a bounded second step');
 assert(edge.includes('MAX_KRPP_SECONDARY_ACTIONS'),'KRPP secondary action traversal must stay bounded');
@@ -86,8 +91,9 @@ assert(edge.includes("action?.kind==='krpp_submit'")&&edge.includes('submit_name
 assert(edge.includes('document_response_was_html')&&edge.includes('krpp_action_returned_html'),'Downloader must reject HTML/login/navigation responses instead of packaging them as tender files');
 assert(edge.includes('fetchOfficialHtml(listingUrl)')&&edge.includes('seedCookies'),'KRPP download must warm the public listing session before opening the tender detail');
 assert(edge.includes('extractKrppIntermediateDownloadUrl')&&edge.includes('fetchOfficialBinary(next,cookies,current)'),'KRPP action HTML must inspect only an official intermediate download URL and preserve the referer');
-assert(edge.includes("kind:'script'")&&edge.includes("kind:'href'"),'Intermediate download parsing must distinguish explicit script navigation from ordinary anchors');
-assert(!edge.includes("/[\"']([^\"']*(?:download|dokument|document|attachment|file)[^\"']*)[\"']/gi"),'Downloader must not treat arbitrary quoted document/file strings as download URLs');
+assert(parserSource.includes('documentfordispositionfrm'),'KRPP parser must preserve the verified DocumentForDisposition download route');
+assert(parserSource.includes("kind:'script'")&&parserSource.includes("kind:'href'"),'Intermediate download parsing must distinguish explicit script navigation from ordinary anchors');
+assert(!parserSource.includes("/[\"']([^\"']*(?:download|dokument|document|attachment|file)[^\"']*)[\"']/gi"),'Downloader must not treat arbitrary quoted document/file strings as download URLs');
 assert(edge.includes("document_response_was_html:'+krppHtmlDiagnostic(html)"),'Secondary HTML responses must expose bounded diagnostic context instead of a generic failure');
 assert(edge.includes('krppHtmlDiagnostic'),'KRPP HTML fallback must retain bounded diagnostic context for the next live failure');
 assert(edge.includes('MAX_BUNDLE_BYTES')&&edge.includes('officialUrl(loc,current)'),'Dossier bundle must preserve size and redirect allowlist boundaries');
