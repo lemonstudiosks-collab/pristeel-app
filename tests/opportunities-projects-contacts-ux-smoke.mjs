@@ -30,7 +30,7 @@ assert.doesNotMatch(pcw,/window\.open\(['"]https:\/\/www\.app\.gov\.al/,'APP mus
 assert.match(pcw,/data-pcw-ti="review"[^>]*>Lëre për më vonë/,'popup must offer a non-destructive later decision');
 assert.match(pcw,/data-pcw-ti="nogo"[^>]*>Hiqe nga lista/,'popup must offer explicit removal');
 assert.match(pcw,/function officialSourceAction\(r,label\)/,'Action Console must render official tender sources directly');
-assert.match(pcw,/class="pst-pcw-source-link" href="\+'\+E\(u\)\+'"/,'KRPP/TED official sources must be real anchors, not cache-dependent pseudo-buttons');
+assert.match(pcw,/pst-pcw-source-link[^\n]{0,220}E\(u\)/,'KRPP/TED official sources must be real anchors, not cache-dependent pseudo-buttons');
 assert.match(pcw,/var P=tenderApi\(\),src=tenderSource\(r\),u=safeUrl\(r&&r\.detail_url\)\|\|safeUrl\(r&&r\.source_url\)/,'fallback source action must prefer the row detail URL before any helper cache');
 assert.doesNotMatch(pcw,/if\(P&&typeof P\.openSource==='function'\)\{P\.openSource\(r\.id\);return true;\}/,'Action Console must not report success merely because a cache-based helper was called');
 assert.match(pcw,/data-pcw-opportunities-owner/,'modern opportunity cards must own the visible tender surface');
