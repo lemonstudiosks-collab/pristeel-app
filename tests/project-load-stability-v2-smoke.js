@@ -5,6 +5,10 @@ const { JSDOM } = require('jsdom');
 (async()=>{
   const source=fs.readFileSync('pristeel-project-load-stability-v2.js','utf8');
   assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source),'Project load stability must not observe or poll');
+  assert(source.includes('window.__pstProjectFullWait||3500'),'Default full-loader wait must stay bounded for responsive project open');
+  assert(source.includes('window.__pstProjectReadWait||1800'),'Fallback reads must use the shorter bounded wait');
+  assert(!source.includes('linked=linked.concat(await q('),'Linked Gmail batches must not load sequentially');
+  assert(source.includes('var chunks=await Promise.all(jobs)'),'Linked Gmail fallback batches must run in parallel');
   const dom=new JSDOM('<!doctype html><html><body></body></html>',{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
   w.__pstProjectFullWait=25;w.__pstProjectReadWait=20;
