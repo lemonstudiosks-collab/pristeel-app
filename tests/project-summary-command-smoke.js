@@ -6,9 +6,10 @@ const {JSDOM}=require('jsdom');
   const source=fs.readFileSync('pristeel-project-summary-command-v1.js','utf8');
   const actionsSource=fs.readFileSync('pristeel-project-first-actions-v1.js','utf8');
   const bootstrapSource=fs.readFileSync('pristeel-project-emails.js','utf8');
+  const workspaceSource=fs.readFileSync('pristeel-workspace-architecture-v1.js','utf8');
   assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source),'Project summary command must not poll or globally observe');
   assert(!/\/send\b|messages\/send|drafts\/send/.test(source),'Project summary command must never send Gmail messages');
-  assert(source.includes('Përmbledh projektin'),'Visible project summary command label is missing');
+  assert(source.includes("var old=actions.querySelector('[data-pst-project-summary]');if(old)old.remove()"),'Project summary engine must remove any stale header summary button');
   assert(source.includes('PSTProjectIntakeContinuityV1'),'Summary command must reconcile confirmed project Gmail before analysis');
   assert(source.includes('pstAnalyzeProject'),'Summary command must reuse existing Project Intelligence');
   assert(source.includes('Vlera e kontratës'),'Summary must prioritize the commercial contract value');
@@ -18,10 +19,13 @@ const {JSDOM}=require('jsdom');
   assert(bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260818-reactive2'),'ProjectFirst actions cache-bust must remain on the current audited production bootstrap');
   assert(!bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260810-offers2'),'Stale pre-summary ProjectFirst actions cache key must not remain in runtime bootstrap');
   assert(actionsSource.includes("sub.textContent='Drive pa autorizim'"),'Unauthorized permanent Drive must not be labeled as zero files');
+  assert(!workspaceSource.includes('>Pamja e vjetër</button>'),'Legacy project-view button must not remain in the main project header');
+  assert(!workspaceSource.includes('>Puno me projektin</button>'),'Generic legacy work button must not remain in the main project header');
+  assert(!workspaceSource.includes('Butoni “Puno me projektin”'),'Legacy explanatory note must not remain in the project overview');
 
   const dom=new JSDOM(`<!doctype html><html><head></head><body>
     <div id="page-workspace-project" class="pf2-on">
-      <div class="pst-pi-head"><div class="pst-pi-actions"><button type="button">Pamja e vjetër</button><button type="button">Puno me projektin</button></div></div>
+      <div class="pst-pi-head"><div class="pst-pi-actions"><button type="button" data-pst-project-summary="1">Përmbledh projektin</button><button type="button">Mbyll projektin</button></div></div>
       <section class="pf2-card"><header><div><b>Skedarët e projektit</b><span>0 skedarë</span></div></header><div><div class="pf2-empty">Nuk ka të dhëna.</div></div></section>
     </div>
   </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
@@ -45,10 +49,8 @@ const {JSDOM}=require('jsdom');
   api.decorate();
   const actions=w.document.querySelector('.pst-pi-actions');
   const btn=actions.querySelector('[data-pst-project-summary]');
-  assert(btn,'Project summary button was not injected');
-  assert.strictEqual(btn.textContent,'Përmbledh projektin');
-  const work=[...actions.querySelectorAll('button')].find(b=>b.textContent==='Puno me projektin');
-  assert.strictEqual(btn.nextElementSibling,work,'Summary command should be placed immediately before the main work action');
+  assert.strictEqual(btn,null,'Project summary must not occupy the main project header');
+  assert(actions.textContent.includes('Mbyll projektin'),'Useful project-close action must remain in the header');
 
   const driveNote=w.document.querySelector('.pst-ps-drive-note');
   assert(driveNote,'Unauthorized Drive state must be explained instead of looking like an empty folder');

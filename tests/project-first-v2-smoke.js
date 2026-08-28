@@ -40,6 +40,9 @@ const {JSDOM}=require('jsdom');
     contacts:[{email:'buyer@example.com'}],bom:[],rfqs:[],supplierOffers:[],ourOffers:[],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[{id:'f1',name:'drawing.pdf',modifiedTime:'2026-08-12T10:00:00Z',webViewLink:fileUrl}]}
   };
   w.PSTProjectDataIntegrity={load:async()=>integrity};
+  let stableSearchQueries=[],deepSearchCalls=0;
+  w.PSTSearchStableV2={open:q=>{stableSearchQueries.push(String(q||''));return true;}};
+  w.PSTBusinessCommandCenterDeepGmail={openForProject:()=>{deepSearchCalls++;return true;}};
   let analysisRows=[];
   w.supaFetch=async path=>path.startsWith('project_analyses?')?analysisRows:[];
   w.pstOpenProjectWorkspace=async id=>{
@@ -54,6 +57,24 @@ const {JSDOM}=require('jsdom');
   assert.deepStrictEqual(tabs.map(x=>x.getAttribute('data-pf2-tab')),
     ['overview','communication','files','bom','procurement','commercial','execution','finance','activity']);
   assert(w.document.getElementById('pst-pi-body').textContent.includes('Kërkesa → RFQ'),'No-BOM project must recommend direct RFQ path');
+  const overviewBody=w.document.getElementById('pst-pi-body');
+  assert(!overviewBody.textContent.includes('Workflow'),'Overview must not render the decorative Project-first workflow card');
+  assert.strictEqual(overviewBody.querySelectorAll('.pf2-flow').length,0,'Inactive workflow strip must be removed from the project overview');
+  const shortcuts=[...overviewBody.querySelectorAll('.pf2-shortcut')];
+  assert.strictEqual(shortcuts.length,4,'Project overview must expose exactly four useful active shortcuts');
+  assert(shortcuts.every(x=>x.getAttribute('data-pf2-action')),'Every overview shortcut must have a real action');
+  assert(shortcuts.some(x=>x.getAttribute('data-pf2-action')==='tab:communication'),'Communication shortcut must open the communication tab');
+  assert(shortcuts.some(x=>x.getAttribute('data-pf2-action')==='tab:commercial'),'Offer shortcut must open the commercial tab');
+  assert(shortcuts.some(x=>x.getAttribute('data-pf2-action')==='tab:files'),'Files shortcut must open the files tab');
+  const commShortcut=shortcuts.find(x=>x.getAttribute('data-pf2-action')==='tab:communication');
+  commShortcut.click();
+  assert(w.document.getElementById('pst-pi-body').textContent.includes('Emailat e projektit'),'Communication shortcut must actually navigate to project communication');
+  w.PSTProjectFirstV2.render('overview');
+  const searchBtn=w.document.querySelector('[data-pf2-action="search"]');
+  searchBtn.click();
+  assert.deepStrictEqual(stableSearchQueries,['Dukley Budva'],'Project search must route directly through stable search with project context');
+  assert.strictEqual(deepSearchCalls,0,'Project search must not invoke the old Deep Gmail owner directly');
+
 
   w.PSTProjectFirstV2.render('bom');
   assert(w.document.getElementById('pst-pi-body').textContent.includes('RRUGA PA BOM'),'No-BOM gate is missing');
@@ -101,8 +122,8 @@ const {JSDOM}=require('jsdom');
   assert(draftOverview.includes('Plotëso çmimin e montimit në draftin PST-OFF-2026-08-024.'),'Draft offer must surface the real open action from Project Intelligence');
   assert(draftOverview.includes('nuk është dërguar te klienti'),'Draft offer must explicitly state that it has not been sent');
   assert(!draftOverview.includes('Oferta te blerësi'),'Creating a quote must never imply that it was sent to the buyer');
-  assert(draftOverview.includes('StatusiAktiv'),'Open technical status "pritje" must render as business status Aktiv');
-  assert(draftOverview.includes('FazaPërgatitje oferte'),'Draft client offer must render business phase Përgatitje oferte');
+  assert(draftOverview.includes('Statusi: Aktiv'),'Open technical status "pritje" must render as compact business status Aktiv');
+  assert(draftOverview.includes('FazaPërgatitje oferte'),'Draft client offer must render business phase Përgatitje oferte in the active shortcut');
   assert(draftOverview.includes('OfertaDraft'),'Draft offer badge must be visible in project summary');
   assert(draftOverview.includes('Montimi pending'),'Open installation price must be visible as a blocker badge');
 
