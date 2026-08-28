@@ -36,7 +36,7 @@ assert(!/\.supaFetch\([^\n]*['\"](?:PATCH|POST|DELETE)['\"]/.test(openaiAssistan
 assert(!/gmail\/v1\/.*send|mark.*won|mark.*lost|supplier_orders.*POST/i.test(openaiAssistant), 'OpenAI assistant must not bypass human commitment gates');
 
 // Project-centric final layer: Projects are the daily center, TED is awards-only, and operator text can drive safe internal organization.
-assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260827-owner3'), 'Finalizer must load the current project-centric workflow layer');
+assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260828-sourcelink1'), 'Finalizer must load the current project-centric workflow layer');
 assert(finalizer.includes('data-pst-project-centric-workflow-v3'), 'Project-centric loader must be idempotent for the current generation');
 new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
@@ -46,6 +46,7 @@ assert(projectCentric.includes('pppp-project-operator-update'), 'Project operato
 assert(projectCentric.includes('pppp_contact_master_v1?contact_id=eq.') && projectCentric.includes('project_emails?'), 'Contact popup must refresh canonical live relationships and recent project email data');
 assert(projectCentric.includes('PSTOpenAIAssistantV1') && projectCentric.includes('candidate_partners'), 'Tender analysis must use server AI plus registered PPPP partners');
 assert(projectCentric.includes("if(src==='APP_AL')") && projectCentric.includes('nuk ka lidhje të drejtpërdrejtë të sigurt'), 'APP active workflow must refuse the unsafe generic external page and keep dossier retrieval inside PPPP');
+assert(projectCentric.includes('pst-pcw-source-link') && projectCentric.includes('safeUrl(r&&r.detail_url)||safeUrl(r&&r.source_url)'), 'KRPP/TED official source must be a direct row-specific link before any helper cache');
 assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(projectCentric), 'Project-centric layer must remain bounded and observer-free');
 assert(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(projectCentric), 'Project-centric layer must never send external mail');
 assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Project-centric layer must preserve commitment gates');
