@@ -73,7 +73,9 @@ async function ensureTask(row:any,project:any,r:any,quote:any){
     const updatePatch=existing.source==="supplier_update_auto"?{...patch,title:existing.title||patch.title,category:existing.category||"furnitor",priority:r.urgent?"e larte":(existing.priority||"e larte")} : patch;
     const {error}=await db.from("tasks").update(updatePatch).eq("id",existing.id);if(error)throw error;return{action:"updated",id:existing.id};
   }
-  const {data:created,error}=await db.from("tasks").insert({...patch,status:"hapur",source:"email_request_auto",source_ref:row.gmail_message_id}).select("id").single();if(error)throw error;return{action:"created",id:created?.id};
+  const {data:created,error}=await db.from("tasks").insert({...patch,status:"hapur",source:"email_request_auto",source_ref:row.gmail_message_id}).select("id");if(error)throw error;
+  if(!created?.length)return{action:"suppressed",id:null};
+  return{action:"created",id:created[0]?.id};
 }
 
 async function ensureEventAnalysis(row:any,project:any,r:any,quote:any,task:any){
@@ -101,14 +103,20 @@ async function authorized(req:Request){const provided=req.headers.get("x-pppp-cr
 async function reconcile(days=3,limit=500){
   const since=new Date(Date.now()-Math.max(1,Math.min(14,days))*86400000).toISOString();
   const {data:rows,error}=await db.from("project_emails").select("id,gmail_message_id,gmail_thread_id,project_id,from_email,from_name,subject,snippet,sent_at,direction").not("project_id","is",null).eq("direction","incoming").gte("sent_at",since).order("sent_at",{ascending:false}).limit(Math.max(1,Math.min(1500,limit)));if(error)throw error;
-  const summary:any={checked:(rows||[]).length,requests:0,tasks_created:0,tasks_updated:0,quotes_created:0,analyses_created:0,items:[]};
+  const summary:any={checked:(rows||[]).length,requests:0,tasks_created:0,tasks_updated:0,tasks_suppressed:0,quotes_created:0,analyses_created:0,items:[]};
   const projectCache=new Map<string,any>();
   for(const row of rows||[]){
     const req=extractRequest(row);if(!req)continue;summary.requests++;
     let project=projectCache.get(String(row.project_id));
     if(!project){const {data:p,error:pe}=await db.from("projects").select("id,name,client,status,pipeline_stage").eq("id",row.project_id).maybeSingle();if(pe)throw pe;if(!p)continue;project=p;projectCache.set(String(row.project_id),p);}
     const quote=await ensureQuoteRevision(row,project,req);if(quote?.created)summary.quotes_created++;
-    const task=await ensureTask(row,project,req,quote);if(task.action==="created")summary.tasks_created++;else summary.tasks_updated++;
+    const task=await ensureTask(row,project,req,quote);
+    if(task.action==="suppressed"){
+      summary.tasks_suppressed++;
+      summary.items.push({gmail_message_id:row.gmail_message_id,project_id:project.id,project_name:project.name,task_action:task.action,quote:quote?{doc_nr:quote.doc_nr,created:quote.created,installation_pending:quote.installation_pending}:null,analysis_created:false});
+      continue;
+    }
+    if(task.action==="created")summary.tasks_created++;else summary.tasks_updated++;
     const analysisCreated=await ensureEventAnalysis(row,project,req,quote,task);if(analysisCreated)summary.analyses_created++;
     summary.items.push({gmail_message_id:row.gmail_message_id,project_id:project.id,project_name:project.name,task_action:task.action,quote:quote?{doc_nr:quote.doc_nr,created:quote.created,installation_pending:quote.installation_pending}:null,analysis_created:analysisCreated});
   }
