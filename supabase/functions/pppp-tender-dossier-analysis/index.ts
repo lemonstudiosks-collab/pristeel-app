@@ -8,7 +8,7 @@ const corsHeaders={
   'Access-Control-Expose-Headers':'Content-Disposition, X-PPPP-Document-Count',
   'Content-Type':'application/json',
 };
-const VERSION='v6';
+const VERSION='v7';
 const CACHE_MS=6*60*60*1000;
 const MAX_HTML_BYTES=8*1024*1024;
 const MAX_FILE_BYTES=14*1024*1024;
@@ -96,25 +96,35 @@ function krppHtmlDiagnostic(html){
  return text(plain,180).replace(/[|\r\n]+/g,' ');
 }
 
-async function fetchKrppPostback(page,postback){
+async function fetchKrppAction(page,action){
  const state=page?.dossier?.form_state;if(!state?.found||!state.action)throw new Error('krpp_form_state_missing');
- const target=text(postback?.event_target,500);if(!target)throw new Error('krpp_postback_target_missing');
- const form=new URLSearchParams();for(const [k,v] of Object.entries(state.fields||{}))form.set(k,String(v??''));form.set('__EVENTTARGET',target);form.set('__EVENTARGUMENT','');
+ const form=new URLSearchParams();for(const [k,v] of Object.entries(state.fields||{}))form.set(k,String(v??''));
+ form.set('__EVENTTARGET','');form.set('__EVENTARGUMENT','');
+ let control='';
+ if(action?.kind==='krpp_submit'){
+   const submitName=text(action?.submit_name,500);if(!submitName)throw new Error('krpp_submit_name_missing');control=submitName;
+   if(String(action?.submit_type||'').toLowerCase()==='image'){form.set(submitName+'.x','1');form.set(submitName+'.y','1');}
+   else form.set(submitName,text(action?.submit_value,1000));
+ }else{
+   const target=text(action?.event_target,500);if(!target)throw new Error('krpp_postback_target_missing');control=target;
+   form.set('__EVENTTARGET',target);form.set('__EVENTARGUMENT',text(action?.event_argument,2000));
+ }
  let current=state.action,cookies=page.cookies||'';
  for(let hop=0;hop<4;hop++){
    const headers:Record<string,string>={'User-Agent':'Mozilla/5.0 (PPPP KRPP Dossier Downloader; +https://prissteel.com)','Accept':'application/zip,application/pdf,application/octet-stream,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*;q=0.5','Accept-Language':'sq,en-US;q=0.8,en;q=0.7','Content-Type':'application/x-www-form-urlencoded','Origin':new URL(current).origin,'Referer':page.url||current,'Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;
    const requestHeaders={...headers};if(hop>0)delete requestHeaders['Content-Type'];
    const r=await fetch(current,{method:hop===0?'POST':'GET',redirect:'manual',headers:requestHeaders,body:hop===0?form.toString():undefined,signal:AbortSignal.timeout(26000)});cookies=mergeCookies(cookies,setCookiePairs(r.headers));
-   if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('krpp_postback_redirect_not_allowed');current=next;continue;}
-   if(!r.ok)throw new Error(`krpp_postback_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const content_type=r.headers.get('content-type')||'';
+   if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('krpp_action_redirect_not_allowed');current=next;continue;}
+   if(!r.ok)throw new Error(`krpp_action_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('krpp_action_file_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('krpp_action_file_too_large');const content_type=r.headers.get('content-type')||'';
    if(payloadLooksHtml(bytes,content_type)){
      const html=new TextDecoder('utf-8',{fatal:false}).decode(bytes),next=extractKrppIntermediateDownloadUrl(html,current);
-     if(next){const got=await fetchOfficialBinary(next,cookies,current);return{...got,filename:got.filename||safeFilename(postback.name,'Dokument')+inferredExtension(got.content_type,got.bytes,/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'')};}
-     throw new Error('krpp_postback_returned_html:'+krppHtmlDiagnostic(html));
+     if(next){const got=await fetchOfficialBinary(next,cookies,current);return{...got,filename:got.filename||safeFilename(action.name,'Dokument')+inferredExtension(got.content_type,got.bytes,/uiOpenDocumentPdf/.test(control)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(control)?'.zip':/uiOpenDocumentDoc/.test(control)?'.doc':'')};}
+     throw new Error('krpp_action_returned_html:'+krppHtmlDiagnostic(html));
    }
-   const fallback=/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'';return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition'))||safeFilename(postback.name,'Dokument')+inferredExtension(content_type,bytes,fallback),cookies};
+   const fallback=/uiOpenDocumentPdf/.test(control)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(control)?'.zip':/uiOpenDocumentDoc/.test(control)?'.doc':'';
+   return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition'))||safeFilename(action.name,'Dokument')+inferredExtension(content_type,bytes,fallback),cookies};
  }
- throw new Error('too_many_krpp_postback_redirects');
+ throw new Error('too_many_krpp_action_redirects');
 }
 function safeFilename(value,fallback='Dokument'){
  const raw=text(value,220).replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').replace(/\s+/g,' ').trim().replace(/^\.+/,'');
@@ -147,12 +157,12 @@ async function dossierBundle(row,resolved,source){
    let base=name,idx=2;while(used.has(name.toLowerCase())){const dot=base.lastIndexOf('.');name=dot>0?base.slice(0,dot)+'-'+idx+base.slice(dot):base+'-'+idx;idx++;}used.add(name.toLowerCase());files[name]=got.bytes;total+=got.bytes.byteLength;downloaded++;return true;
  }
  if(source==='KRPP'&&resolved.page&&Array.isArray(dossier.postbacks)&&dossier.postbacks.length){
-   const all=dossier.postbacks.find(x=>/uiDownloadAll$/.test(x.event_target||''));
+   const all=dossier.postbacks.find(x=>/uiDownloadAll$/.test(x.event_target||x.submit_name||''));
    let fullWorked=false;
-   if(all){try{const got=await fetchKrppPostback(resolved.page,all);fullWorked=addFile(all.name,got);}catch(error){failed.push(`${all.name}: ${text(error?.message||error,140)}`);}}
+   if(all){try{const got=await fetchKrppAction(resolved.page,all);fullWorked=addFile(all.name,got);}catch(error){failed.push(`${all.name}: ${text(error?.message||error,140)}`);}}
    if(!fullWorked){
      const actions=dossier.postbacks.filter(x=>x!==all).slice(0,MAX_KRPP_PACKAGES);
-     for(const action of actions){try{const got=await fetchKrppPostback(resolved.page,action);addFile(action.name,got);}catch(error){failed.push(`${action.name}: ${text(error?.message||error,140)}`);}}
+     for(const action of actions){try{const got=await fetchKrppAction(resolved.page,action);addFile(action.name,got);}catch(error){failed.push(`${action.name}: ${text(error?.message||error,140)}`);}}
    }
  }
  if(!downloaded){
