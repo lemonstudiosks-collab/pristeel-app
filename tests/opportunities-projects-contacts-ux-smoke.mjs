@@ -42,7 +42,7 @@ assert.match(projects,/Në realizim/,'project execution state must be Albanian')
 assert.match(projects,/Të mbyllura/,'project closed filter must be Albanian');
 assert.match(projects,/#page-workspace-projects #pst-pm-sort\{display:none!important\}/,'old full-width project sort must be removed from the visible work surface');
 
-assert.match(contacts,/DOSJA E KONTAKTIT/,'contact popup title must be Albanian');
+assert.match(contacts,/MARRËDHËNIA ME PRISTEEL/,'contact drawer must use a business-first Albanian relationship heading');
 assert.match(contacts,/pppp_contact_master_v1\?contact_id=eq\./,'contact popup must refresh the selected person from the canonical live view');
 assert.match(contacts,/project_email_count/,'contact popup must carry real project-email activity');
 assert.doesNotMatch(contacts,/CONTACT BRIEF|RELATIONSHIPS|Klient \/ Lead/,'old English contact labels must not remain visible');
