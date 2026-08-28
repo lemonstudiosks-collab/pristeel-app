@@ -62,11 +62,14 @@ assert(edge.includes("type:'input_file'"),'Edge function does not pass official 
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
 assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
 assert(edge.includes("npm:fflate@0.8.2")&&edge.includes('zipSync')&&edge.includes('fetchOfficialBinary'),'Edge function must bundle official dossier documents server-side');
-assert(edge.includes("const VERSION='v5'"),'KRPP session-aware dossier fix must advance the analysis generation');
+assert(edge.includes("const VERSION='v6'"),'KRPP intermediate-download fix must advance the analysis generation');
 assert(edge.includes('fetchKrppPostback')&&edge.includes("application/x-www-form-urlencoded")&&edge.includes("__EVENTTARGET"),'KRPP bundle must execute the official ASP.NET postback with captured form state');
 assert(edge.includes('document_response_was_html')&&edge.includes('krpp_postback_returned_html'),'Downloader must reject HTML/login/navigation responses instead of packaging them as tender files');
 assert(edge.includes('fetchOfficialHtml(listingUrl)')&&edge.includes('seedCookies'),'KRPP download must warm the public listing session before opening the tender detail');
-assert(edge.includes('extractKrppIntermediateDownloadUrl')&&edge.includes('fetchOfficialBinary(next,cookies)'),'KRPP postback HTML must be inspected for an official intermediate download URL before failing');
+assert(edge.includes('extractKrppIntermediateDownloadUrl')&&edge.includes('fetchOfficialBinary(next,cookies,current)'),'KRPP postback HTML must inspect only an official intermediate download URL and preserve the referer');
+assert(edge.includes("kind:'script'")&&edge.includes("kind:'href'"),'Intermediate download parsing must distinguish explicit script navigation from ordinary anchors');
+assert(!edge.includes("/[\"']([^\"']*(?:download|dokument|document|attachment|file)[^\"']*)[\"']/gi"),'Downloader must not treat arbitrary quoted document/file strings as download URLs');
+assert(edge.includes("document_response_was_html:'+krppHtmlDiagnostic(html)"),'Secondary HTML responses must expose bounded diagnostic context instead of a generic failure');
 assert(edge.includes('krppHtmlDiagnostic'),'KRPP HTML fallback must retain bounded diagnostic context for the next live failure');
 assert(edge.includes('MAX_BUNDLE_BYTES')&&edge.includes('officialUrl(loc,current)'),'Dossier bundle must preserve size and redirect allowlist boundaries');
 assert(edge.includes('SUPABASE_SERVICE_ROLE_KEY'),'Purpose-limited persistence path is missing');

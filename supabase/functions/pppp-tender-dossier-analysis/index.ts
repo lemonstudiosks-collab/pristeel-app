@@ -8,7 +8,7 @@ const corsHeaders={
   'Access-Control-Expose-Headers':'Content-Disposition, X-PPPP-Document-Count',
   'Content-Type':'application/json',
 };
-const VERSION='v5';
+const VERSION='v6';
 const CACHE_MS=6*60*60*1000;
 const MAX_HTML_BYTES=8*1024*1024;
 const MAX_FILE_BYTES=14*1024*1024;
@@ -60,32 +60,33 @@ async function fetchOfficialHtml(url,seedCookies='',referer=''){
  }
  throw new Error('too_many_source_redirects');
 }
-async function fetchOfficialBinary(url,cookies=''){
+async function fetchOfficialBinary(url,cookies='',referer=''){
  let current=officialUrl(url);if(!current)throw new Error('document_url_not_allowed');
  for(let hop=0;hop<4;hop++){
-   const headers:Record<string,string>={'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Downloader; +https://prissteel.com)','Accept':'application/pdf,application/zip,application/octet-stream,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*;q=0.6','Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;
+   const headers:Record<string,string>={'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Downloader; +https://prissteel.com)','Accept':'application/pdf,application/zip,application/octet-stream,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*;q=0.6','Accept-Language':'sq,en-US;q=0.8,en;q=0.7','Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;if(referer)headers.Referer=referer;
    const r=await fetch(current,{method:'GET',redirect:'manual',headers,signal:AbortSignal.timeout(22000)});cookies=mergeCookies(cookies,setCookiePairs(r.headers));
-   if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('document_redirect_not_allowed');current=next;continue;}
-   if(!r.ok)throw new Error(`document_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('document_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('document_too_large');const content_type=r.headers.get('content-type')||'';if(payloadLooksHtml(bytes,content_type))throw new Error('document_response_was_html');return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition')),cookies};
+   if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('document_redirect_not_allowed');referer=current;current=next;continue;}
+   if(!r.ok)throw new Error(`document_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('document_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('document_too_large');const content_type=r.headers.get('content-type')||'';
+   if(payloadLooksHtml(bytes,content_type)){const html=new TextDecoder('utf-8',{fatal:false}).decode(bytes);throw new Error('document_response_was_html:'+krppHtmlDiagnostic(html));}
+   return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition')),cookies};
  }
  throw new Error('too_many_document_redirects');
 }
 function extractKrppIntermediateDownloadUrl(html,base){
  const src=String(html||'').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'");
  const candidates=[];let m;
- const patterns=[
-  /(?:window\.open|location(?:\.href)?\s*=|document\.location(?:\.href)?\s*=)\s*\(?\s*["']([^"']+)["']/gi,
-  /(?:href|src)\s*=\s*["']([^"']+)["']/gi,
-  /["']([^"']*(?:download|dokument|document|attachment|file)[^"']*)["']/gi
- ];
- for(const re of patterns){while((m=re.exec(src)))candidates.push(m[1]);}
- for(const raw of candidates){
-  const u=officialUrl(raw,base);if(!u)continue;
+ const script=/(?:window\.open|location(?:\.href)?\s*=|document\.location(?:\.href)?\s*=)\s*\(?\s*["']([^"']+)["']/gi;
+ while((m=script.exec(src)))candidates.push({raw:m[1],kind:'script'});
+ const href=/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi;
+ while((m=href.exec(src)))candidates.push({raw:m[1],kind:'href'});
+ for(const candidate of candidates){
+  const u=officialUrl(candidate.raw,base);if(!u)continue;
   try{
-   const x=new URL(u),b=new URL(base);
-   if(x.href===b.href)continue;
+   const x=new URL(u),b=new URL(base);if(x.href===b.href)continue;
    const clue=(x.pathname+x.search).toLowerCase();
-   if(/\.(pdf|zip|doc|docx|xls|xlsx)(?:$|[?#])/.test(clue)||/(download|dokument|document|attachment|file)/.test(clue))return u;
+   const file=/\.(pdf|zip|doc|docx|xls|xlsx)(?:$|[?#])/.test(clue);
+   const explicit=/(?:\/getdata\/downloaddocument\b|\/downloaddocument\b|\/downloadfile\b|\/download(?:\/|\?|$)|\/attachment(?:\/|\?|$)|[?&](?:download|fileid|attachmentid)=)/.test(clue);
+   if(file||explicit||candidate.kind==='script'&&/download|attachment|getdata/i.test(clue))return u;
   }catch{}
  }
  return'';
@@ -108,7 +109,7 @@ async function fetchKrppPostback(page,postback){
    if(!r.ok)throw new Error(`krpp_postback_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const content_type=r.headers.get('content-type')||'';
    if(payloadLooksHtml(bytes,content_type)){
      const html=new TextDecoder('utf-8',{fatal:false}).decode(bytes),next=extractKrppIntermediateDownloadUrl(html,current);
-     if(next){const got=await fetchOfficialBinary(next,cookies);return{...got,filename:got.filename||safeFilename(postback.name,'Dokument')+inferredExtension(got.content_type,got.bytes,/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'')};}
+     if(next){const got=await fetchOfficialBinary(next,cookies,current);return{...got,filename:got.filename||safeFilename(postback.name,'Dokument')+inferredExtension(got.content_type,got.bytes,/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'')};}
      throw new Error('krpp_postback_returned_html:'+krppHtmlDiagnostic(html));
    }
    const fallback=/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'';return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition'))||safeFilename(postback.name,'Dokument')+inferredExtension(content_type,bytes,fallback),cookies};
