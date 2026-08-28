@@ -25,6 +25,6 @@ assert.match(migration,/crm_contacts[\s\S]*758778400454[\s\S]*raise exception/,'
 
 console.log('Contact Master native cards + final cleanup smoke passed.');
 
-assert.match(ui,/DOSJA E KONTAKTIT/,'contact popup heading must be Albanian');
+assert.match(ui,/MARRËDHËNIA ME PRISTEEL/,'contact drawer must use the Albanian relationship-first heading');
 assert.match(ui,/pppp_contact_master_v1\?contact_id=eq\./,'contact popup must refresh the selected contact from the live canonical view');
 assert.match(ui,/project_email_count/,'contact popup must expose real project email activity');
