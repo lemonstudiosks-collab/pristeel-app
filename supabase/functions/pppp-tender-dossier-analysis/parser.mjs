@@ -79,7 +79,7 @@ export function extractKrppPostbackActions(html){
   const name=decodeEntities(attr(attrs,'name')||attr(attrs,'id')),value=decodeEntities(attr(attrs,'value'));
   if(!name||!KRPP_POSTBACK_ALLOW.some(re=>re.test(name)))return;
   const key='submit|'+name+'|'+value;if(seen.has(key))return;seen.add(key);
-  out.push({kind:'krpp_submit',submit_name:name,submit_value:value||label||'',name:krppPostbackName(label,name),priority:krppPostbackPriority(name)+3});
+  out.push({kind:'krpp_submit',submit_name:name,submit_value:value||label||'',submit_type:(attr(attrs,'type')||'submit').toLowerCase(),name:krppPostbackName(label,name),priority:krppPostbackPriority(name)+3});
  }
  const anchor=/<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
  while((m=anchor.exec(src))){
