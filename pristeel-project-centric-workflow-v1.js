@@ -209,7 +209,7 @@ async function exactSource(r){
  var u=safeUrl(r.detail_url)||safeUrl(r.source_url);if(u){window.open(u,'_blank','noopener');return true;}return false;
 }
 function dossierReady(id){
- var panel=document.getElementById('pst-tda-analysis');return !!(panel&&S(panel.getAttribute('data-tender-id'))===S(id)&&panel.getAttribute('data-analysis-ready')==='1');
+ var panel=document.getElementById('pst-tda-analysis');return !!(panel&&S(panel.getAttribute('data-tender-id'))===S(id)&&panel.getAttribute('data-analysis-ready')==='1'&&panel.getAttribute('data-dossier-complete')==='1');
 }
 async function tenderAction(kind,id,btn){
  var P=tenderApi(),r=tenderById(id);if(!P||!r)return false;
@@ -224,7 +224,7 @@ async function tenderAction(kind,id,btn){
    if(kind==='dossier'){
      var D=window.PSTTenderDossierAnalysisV1;if(!D||typeof D.analyze!=='function')throw new Error('Leximi i dosjes nuk është gati. Rifresko platformën dhe provo përsëri.');
      var ok=await D.analyze(id,false);if(!ok)throw new Error('Dosja nuk u analizua. Shiko mesazhin në popup dhe provo përsëri.');
-     var create=document.querySelector('#pst-pcw-ti-actions [data-pcw-ti="go"][data-id="'+CSS.escape(S(id))+'"]');if(create){create.disabled=false;create.removeAttribute('title');}
+     var ready=typeof D.isReady==='function'?D.isReady(id):dossierReady(id),create=document.querySelector('#pst-pcw-ti-actions [data-pcw-ti="go"][data-id="'+CSS.escape(S(id))+'"]');if(create){if(ready){create.disabled=false;create.removeAttribute('title');}else{create.disabled=true;create.title='Kërkohet Dosja e Tenderit / paramasa nga KRPP para krijimit të projektit.';}}
      return true;
    }
    if(kind==='go'){
