@@ -51,7 +51,7 @@ export function extractKrppIntermediateDownloadUrl(html,base){
    const clue=(x.pathname+x.search).toLowerCase();
    const file=/\.(pdf|zip|doc|docx|xls|xlsx)(?:$|[?#&])/.test(clue);
    const explicit=/(?:\/getdata\/downloaddocument\b|\/downloaddocument\b|\/downloadfile\b|\/download(?:\/|\?|$)|\/attachment(?:\/|\?|$)|[?&](?:download|fileid|attachmentid)=)/.test(clue);
-   const disposition=/\/documentfordispositionfrm\.aspx\b/.test(clue)&&/[?&](?:id|extension|filename|documentidmultiple)=/i.test(clue);
+   const disposition=/\/documentfordisposition(?:private)?frm\.aspx\b/.test(clue)&&/[?&](?:id|extension|filename|documentidmultiple)=/i.test(clue);
    if(file||explicit||disposition||candidate.kind==='script'&&/download|attachment|getdata|documentfordisposition/i.test(clue))return u;
   }catch{}
  }
