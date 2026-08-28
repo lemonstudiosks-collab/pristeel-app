@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "b97cf2647cc95f0f06d38fec42d1a7933e67ba07",
+  "auditedAtCommit": "91a1989173e5e833491b26e632cbd8f3a03f86ce",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "fbfa57498d005cf65cf7e8f44565b643ae6e0755"
+    "bootstrapGitBlobSha": "ae9d7196e2f8739eb4ba21726485b282d2d20c14"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -133,7 +133,7 @@
         "pristeel-project-centric-workflow-v1.js",
         "pristeel-tender-dossier-analysis-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the single final visible whole-card Opportunities owner. Legacy KEK/Tender Business Flow routes must hand off instead of rebuilding the old table. Official KRPP/APP dossier download and technical/commercial analysis are explicit actions before project creation. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the single final visible whole-card Opportunities owner. KRPP/TED official sources are exposed as direct row-specific links when available; APP stays reference-based when no safe deep link exists. Official dossier download and technical/commercial analysis remain explicit actions before project creation. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
     },
     {
       "area": "ai",
@@ -268,7 +268,7 @@
       "module": "pristeel-project-centric-workflow-v1.js",
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded dynamically by the redesign finalizer as the visible whole-card Opportunities workflow and bounded Projects/Contacts UX layer. It reuses canonical tender, project and contact engines and preserves human approval gates."
+      "condition": "Loaded by pristeel-redesign-finalizer-v1.js with a cache-busted runtime URL. It owns the visible whole-card Opportunities surface and renders row-specific official-source anchors directly from detail_url/source_url where safe."
     },
     {
       "module": "pristeel-tender-dossier-analysis-v1.js",
