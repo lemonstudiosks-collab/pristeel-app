@@ -131,6 +131,12 @@ function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
   await w.pstOpenProjectWorkspace('project-1');
   assert.ok(w.document.body.textContent.includes('EVOSYS Laser'), 'Project workspace title missing');
   assert.ok(w.document.body.textContent.includes('Emaila'), 'Project email count missing');
+  const projectHeader=w.document.querySelector('#page-workspace-project .pst-pi-actions');
+  assert.ok(projectHeader,'Project header actions missing');
+  assert.ok(projectHeader.textContent.includes('Projektet'),'Project back action must remain');
+  assert.ok(!projectHeader.textContent.includes('Pamja e vjetër'),'Legacy project-view action must not be rendered by the integrity UI owner');
+  assert.ok(!projectHeader.textContent.includes('Puno me projektin'),'Generic legacy work action must not be rendered by the integrity UI owner');
+  assert.ok(!projectHeader.textContent.includes('Rifresko'),'Manual refresh noise must not be rendered in the main project header');
   w.pstPiTab('communication');
   assert.ok(w.document.body.textContent.includes('Ulli Göthel'), 'Project contacts are not visible');
   w.pstPiTab('commercial');
