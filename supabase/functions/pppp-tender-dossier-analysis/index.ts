@@ -1,5 +1,5 @@
 import {zipSync,strToU8} from 'npm:fflate@0.8.2';
-import {extractAppDossier,extractKrppDossier,chooseAnalysisDocuments,officialUrl,tenderDossierConstants} from './parser.mjs';
+import {extractAppDossier,extractKrppDossier,chooseAnalysisDocuments,officialUrl,stripTags,tenderDossierConstants} from './parser.mjs';
 
 const corsHeaders={
   'Access-Control-Allow-Origin':'*',
@@ -8,7 +8,7 @@ const corsHeaders={
   'Access-Control-Expose-Headers':'Content-Disposition, X-PPPP-Document-Count',
   'Content-Type':'application/json',
 };
-const VERSION='v4';
+const VERSION='v5';
 const CACHE_MS=6*60*60*1000;
 const MAX_HTML_BYTES=8*1024*1024;
 const MAX_FILE_BYTES=14*1024*1024;
@@ -50,12 +50,12 @@ function inferredExtension(contentType,bytes,fallback=''){
  if(/spreadsheet|excel/.test(t))return'.xls';
  return fallback;
 }
-async function fetchOfficialHtml(url){
- let current=officialUrl(url);if(!current)throw new Error('source_url_not_allowed');let cookies='';
+async function fetchOfficialHtml(url,seedCookies='',referer=''){
+ let current=officialUrl(url);if(!current)throw new Error('source_url_not_allowed');let cookies=String(seedCookies||'');
  for(let hop=0;hop<4;hop++){
-   const headers:Record<string,string>={'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Reader; +https://prissteel.com)','Accept':'text/html,application/xhtml+xml','Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;
+   const headers:Record<string,string>={'User-Agent':'Mozilla/5.0 (PPPP Tender Dossier Reader; +https://prissteel.com)','Accept':'text/html,application/xhtml+xml','Accept-Language':'sq,en-US;q=0.8,en;q=0.7','Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;if(referer)headers.Referer=referer;
    const r=await fetch(current,{method:'GET',redirect:'manual',headers,signal:AbortSignal.timeout(18000)});cookies=mergeCookies(cookies,setCookiePairs(r.headers));
-   if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('source_redirect_not_allowed');current=next;continue;}
+   if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('source_redirect_not_allowed');referer=current;current=next;continue;}
    if(!r.ok)throw new Error(`source_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_HTML_BYTES)throw new Error('source_page_too_large');const buf=new Uint8Array(await r.arrayBuffer());if(buf.byteLength>MAX_HTML_BYTES)throw new Error('source_page_too_large');return{html:new TextDecoder('utf-8').decode(buf),url:current,status:r.status,cookies};
  }
  throw new Error('too_many_source_redirects');
@@ -70,17 +70,48 @@ async function fetchOfficialBinary(url,cookies=''){
  }
  throw new Error('too_many_document_redirects');
 }
+function extractKrppIntermediateDownloadUrl(html,base){
+ const src=String(html||'').replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'");
+ const candidates=[];let m;
+ const patterns=[
+  /(?:window\.open|location(?:\.href)?\s*=|document\.location(?:\.href)?\s*=)\s*\(?\s*["']([^"']+)["']/gi,
+  /(?:href|src)\s*=\s*["']([^"']+)["']/gi,
+  /["']([^"']*(?:download|dokument|document|attachment|file)[^"']*)["']/gi
+ ];
+ for(const re of patterns){while((m=re.exec(src)))candidates.push(m[1]);}
+ for(const raw of candidates){
+  const u=officialUrl(raw,base);if(!u)continue;
+  try{
+   const x=new URL(u),b=new URL(base);
+   if(x.href===b.href)continue;
+   const clue=(x.pathname+x.search).toLowerCase();
+   if(/\.(pdf|zip|doc|docx|xls|xlsx)(?:$|[?#])/.test(clue)||/(download|dokument|document|attachment|file)/.test(clue))return u;
+  }catch{}
+ }
+ return'';
+}
+function krppHtmlDiagnostic(html){
+ const plain=stripTags(String(html||'')).replace(/\s+/g,' ').trim();
+ return text(plain,180).replace(/[|\r\n]+/g,' ');
+}
+
 async function fetchKrppPostback(page,postback){
  const state=page?.dossier?.form_state;if(!state?.found||!state.action)throw new Error('krpp_form_state_missing');
  const target=text(postback?.event_target,500);if(!target)throw new Error('krpp_postback_target_missing');
  const form=new URLSearchParams();for(const [k,v] of Object.entries(state.fields||{}))form.set(k,String(v??''));form.set('__EVENTTARGET',target);form.set('__EVENTARGUMENT','');
  let current=state.action,cookies=page.cookies||'';
  for(let hop=0;hop<4;hop++){
-   const headers:Record<string,string>={'User-Agent':'Mozilla/5.0 (PPPP KRPP Dossier Downloader; +https://prissteel.com)','Accept':'application/zip,application/pdf,application/octet-stream,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*;q=0.5','Content-Type':'application/x-www-form-urlencoded','Origin':new URL(current).origin,'Referer':page.url||current,'Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;
+   const headers:Record<string,string>={'User-Agent':'Mozilla/5.0 (PPPP KRPP Dossier Downloader; +https://prissteel.com)','Accept':'application/zip,application/pdf,application/octet-stream,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*;q=0.5','Accept-Language':'sq,en-US;q=0.8,en;q=0.7','Content-Type':'application/x-www-form-urlencoded','Origin':new URL(current).origin,'Referer':page.url||current,'Cache-Control':'no-cache'};if(cookies)headers.Cookie=cookies;
    const requestHeaders={...headers};if(hop>0)delete requestHeaders['Content-Type'];
    const r=await fetch(current,{method:hop===0?'POST':'GET',redirect:'manual',headers:requestHeaders,body:hop===0?form.toString():undefined,signal:AbortSignal.timeout(26000)});cookies=mergeCookies(cookies,setCookiePairs(r.headers));
    if(r.status>=300&&r.status<400){const loc=r.headers.get('location');const next=loc?officialUrl(loc,current):'';if(!next)throw new Error('krpp_postback_redirect_not_allowed');current=next;continue;}
-   if(!r.ok)throw new Error(`krpp_postback_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const content_type=r.headers.get('content-type')||'';if(payloadLooksHtml(bytes,content_type))throw new Error('krpp_postback_returned_html');const fallback=/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'';return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition'))||safeFilename(postback.name,'Dokument')+inferredExtension(content_type,bytes,fallback),cookies};
+   if(!r.ok)throw new Error(`krpp_postback_http_${r.status}`);const len=Number(r.headers.get('content-length')||0);if(len>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.byteLength>MAX_FILE_BYTES)throw new Error('krpp_postback_file_too_large');const content_type=r.headers.get('content-type')||'';
+   if(payloadLooksHtml(bytes,content_type)){
+     const html=new TextDecoder('utf-8',{fatal:false}).decode(bytes),next=extractKrppIntermediateDownloadUrl(html,current);
+     if(next){const got=await fetchOfficialBinary(next,cookies);return{...got,filename:got.filename||safeFilename(postback.name,'Dokument')+inferredExtension(got.content_type,got.bytes,/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'')};}
+     throw new Error('krpp_postback_returned_html:'+krppHtmlDiagnostic(html));
+   }
+   const fallback=/uiOpenDocumentPdf/.test(target)?'.pdf':/uiOpenDocumentZip|uiDownloadAll/.test(target)?'.zip':/uiOpenDocumentDoc/.test(target)?'.doc':'';return{bytes,url:current,content_type,filename:dispositionFilename(r.headers.get('content-disposition'))||safeFilename(postback.name,'Dokument')+inferredExtension(content_type,bytes,fallback),cookies};
  }
  throw new Error('too_many_krpp_postback_redirects');
 }
@@ -98,7 +129,11 @@ async function resolveOfficialDossier(row,source){
    if(!dossier.found){try{fetched=await fetchOfficialHtml('https://app.gov.al/njoftimi-i-kontrat%C3%ABs-s%C3%AB-shpallur/');dossier=extractAppDossier(fetched.html,ref,fetched.url);}catch{}}
    if(!dossier.found)warnings.push('APP: referenca nuk u gjet në faqen aktuale të njoftimeve; dosja mund të jetë e paplotë.');
  }else{
-   const sourceUrl=officialUrl(row.detail_url||row.source_url||'');if(!sourceUrl)throw new Error('krpp_detail_url_missing_or_not_allowed');const fetched=await fetchOfficialHtml(sourceUrl);dossier=extractKrppDossier(fetched.html,fetched.url);page={...fetched,dossier};
+   const detailUrl=officialUrl(row.detail_url||'');if(!detailUrl)throw new Error('krpp_detail_url_missing_or_not_allowed');
+   const listingUrl=officialUrl(row.source_url||'');
+   let seedCookies='',referer='';
+   if(listingUrl&&listingUrl!==detailUrl){try{const warm=await fetchOfficialHtml(listingUrl);seedCookies=warm.cookies||'';referer=warm.url||listingUrl;}catch(error){warnings.push('KRPP: inicializimi i sesionit publik nga lista dështoi; po provohet dosja drejtpërdrejt.');}}
+   const fetched=await fetchOfficialHtml(detailUrl,seedCookies,referer);dossier=extractKrppDossier(fetched.html,fetched.url);page={...fetched,dossier};
    if(!dossier.postbacks?.length&&!dossier.documents?.length)warnings.push('KRPP: faqja u gjet, por nuk u identifikua asnjë veprim zyrtar shkarkimi.');
  }
  return{dossier,warnings,documents:dossierDocuments(dossier),page};
