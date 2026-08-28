@@ -50,6 +50,9 @@ assert.match(contacts,/MARRËDHËNIA ME PRISTEEL/,'contact drawer must lead with
 assert.match(contacts,/Hap projektin e fundit/,'contact drawer must expose the most useful project action');
 assert.match(contacts,/pcm-profile/,'contact drawer must have a human profile header');
 assert.match(contacts,/Burimet e të dhënave/,'CRM provenance must remain available but secondary');
+assert.match(contacts,/\.pcm-backdrop\{position:absolute;inset:0;background:transparent;backdrop-filter:none\}/,'contact drawer must not dim or blur the entire PPPP workspace');
+assert.doesNotMatch(contacts,/\.pcm-backdrop\{[^}]*rgba\(/,'contact drawer must not use a dark visual backdrop');
+assert.match(contacts,/box-shadow:-10px 0 28px rgba\(25,43,52,\.12\)/,'contact drawer should separate itself with a light panel shadow instead');
 assert.match(pcw,/Komunikimi i fundit/,'contact drawer must show a readable communication timeline');
 assert.match(pcw,/gmailLink\(m\.gmail_url\)/,'recent contact emails must preserve a direct Gmail path when available');
 assert.match(pcw,/projectNames\[S\(m\.project_id\)\]/,'contact activity must show project context rather than isolated email metadata');
