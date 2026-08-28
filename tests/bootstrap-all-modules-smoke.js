@@ -84,7 +84,7 @@ retired.forEach(file => assert(!matches.includes(file), `Retired overlapping sta
 assert(bootstrap.includes('timeoutMs=8000,maxAttempts=2'), 'Ordered bootstrap must bound a hung module and retry once');
 assert(bootstrap.includes('__pstBootstrapDiagnostics'), 'Ordered bootstrap must expose diagnostics for timeout/error recovery');
 assert(bootstrap.includes("el.remove()"), 'Timed-out module element must be removed before retry/continuation');
-assert(bootstrap.includes('pristeel-project-first-actions-v1.js?v=20260818-reactive2'), 'Canonical Project Intelligence guard cache-bust must be live');
+assert(bootstrap.includes('pristeel-project-first-actions-v1.js?v=20260828-headerclean1'), 'Current Project-first actions header-clean cache-bust must be live');
 assert(bootstrap.includes('pristeel-project-first-commercial-v1.js?v=20260822-layout1'), 'Current installation-aware commercial comparison cache-bust must be live');
 assert(bootstrap.includes('pristeel-offer-client-output-finalizer-v1.js?v=20260818-draftgate2'), 'Offer draft gate cache-bust must be live');
 assert(bootstrap.includes('pristeel-project-workflow-canonical-v1.js?v=20260822-flow2'), 'Corrected canonical project workflow cache-bust must be live');
