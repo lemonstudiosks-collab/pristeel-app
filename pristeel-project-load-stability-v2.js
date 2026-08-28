@@ -9,7 +9,7 @@ if(window.__pstProjectLoadStabilityV2)return;
 window.__pstProjectLoadStabilityV2=true;
 if(!window.PSTProjectDataIntegrity||typeof window.PSTProjectDataIntegrity.load!=='function')return;
 var original=window.PSTProjectDataIntegrity.load.bind(window.PSTProjectDataIntegrity);
-var FULL_WAIT=Number(window.__pstProjectFullWait||8500),READ_WAIT=Number(window.__pstProjectReadWait||3200);
+var FULL_WAIT=Number(window.__pstProjectFullWait||3500),READ_WAIT=Number(window.__pstProjectReadWait||1800);
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
 function arr(v){return Array.isArray(v)?v:[];}
 function enc(v){return encodeURIComponent(String(v==null?'':v));}
@@ -25,11 +25,12 @@ function email(v){var m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0
 function external(v){var e=email(v);return e&&INTERNAL.indexOf(e)<0&&!/(no-?reply|mailer-daemon|postmaster|dmarc|calendar-notification)@/i.test(e);}
 function ourOffer(row){return String(row&&row.series||'').toUpperCase()==='QUO'||/oferta jone|our offer|pristeel/i.test(String(row&&(row.supplier||row.origin||row.source)||''));}
 function supplierOffer(row){if(!row||ourOffer(row))return false;var text=flatText(row),supplier=String(row.supplier||row.supplier_name||row.company||'').trim();return !!supplier||/offer|ofert|angebot|quotation|quote|rfq response|price proposal/i.test(text);}
-async function projectNamed(table,id,p){var direct=await byId(table,id,'');if(direct.length)return direct;if(!p||!p.name)return[];return q(table+'?project=ilike.'+pattern(p.name)+'&select=*&limit=1200');}
+async function projectNamed(table,id,p){var named=p&&p.name?q(table+'?project=ilike.'+pattern(p.name)+'&select=*&limit=1200'):Promise.resolve([]);var both=await Promise.all([byId(table,id,''),named]);return uniq(both[0].concat(both[1]),rowKey);}
 async function linkedEmails(id){
  var pair=await Promise.all([byId('project_emails',id,'order=sent_at.desc'),byId('project_email_links',id,'order=created_at.desc')]);
- var direct=pair[0],links=pair[1],ids=uniq(links,function(x){return x.gmail_message_id;}).map(function(x){return x.gmail_message_id;}).filter(Boolean),linked=[];
- for(var i=0;i<ids.length;i+=30){var part=ids.slice(i,i+30).map(function(x){return'"'+String(x).replace(/"/g,'')+'"';}).join(',');linked=linked.concat(await q('project_emails?gmail_message_id=in.('+part+')&select=*&order=sent_at.desc&limit=1500'));}
+ var direct=pair[0],links=pair[1],ids=uniq(links,function(x){return x.gmail_message_id;}).map(function(x){return x.gmail_message_id;}).filter(Boolean),jobs=[];
+ for(var i=0;i<ids.length;i+=30){var part=ids.slice(i,i+30).map(function(x){return'"'+String(x).replace(/"/g,'')+'"';}).join(',');jobs.push(q('project_emails?gmail_message_id=in.('+part+')&select=*&order=sent_at.desc&limit=1500'));}
+ var chunks=await Promise.all(jobs),linked=[].concat.apply([],chunks);
  var rows=uniq(direct.concat(linked),function(x){return x.gmail_message_id||x.id;}).sort(function(a,b){return String(b.sent_at||'').localeCompare(String(a.sent_at||''));});
  return{rows:rows,links:links,linkedOnly:rows.filter(function(x){return String(x.project_id||'')!==String(id);})};
 }
