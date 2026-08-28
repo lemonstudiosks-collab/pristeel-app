@@ -32,8 +32,9 @@ window.supaFetch=async path=>{
     status:'new',
     published_date:'2026-08-26',
     deadline:'2026-08-27',
-    match_reasons:['sinjal lënde: metal','CPV shufra/profile'],
-    payload:{source:'APP_AL',notice_phase:'opportunity'}
+    detail_url:'https://e-prokurimi.rks-gov.net/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=4255945',
+    match_reasons:['sinjal lënde: metal','FPP shufra/profile'],
+    payload:{source:'KRPP',notice_phase:'opportunity'}
   }];
   if(String(path).startsWith('partners?')) return [];
   return [];
@@ -73,6 +74,10 @@ assert(body.querySelector('[data-pcw-ti="dossier"]'),'popup must offer dossier r
 const create=body.querySelector('[data-pcw-ti="go"]');
 assert(create&&create.disabled,'project creation must remain disabled until dossier analysis is ready');
 assert(body.querySelector('[data-pcw-ti="nogo"]'),'popup must allow removing the opportunity from the list');
+const sourceLink=body.querySelector('a.pst-pcw-source-link');
+assert(sourceLink,'KRPP Action Console must expose the official source as a real link');
+assert.equal(sourceLink.getAttribute('href'),'https://e-prokurimi.rks-gov.net/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=4255945','official-source link must use the exact row detail_url');
+assert.equal(sourceLink.getAttribute('target'),'_blank','official-source link must open in a new tab');
 assert(!body.querySelector('#legacy-popup'),'popup must not depend on the legacy Tender Intelligence modal body');
 const close=modal.querySelector('[data-pcw-close-modal]');
 assert(close,'action console must expose an explicit close button');
