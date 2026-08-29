@@ -8,6 +8,10 @@ MODEL=os.environ.get('PPPP_LOCAL_MODEL','Qwen3-1.7B-Q4_K_M')
 POLL=float(os.environ.get('PPPP_SEMANTIC_POLL_SECONDS','4'))
 SUPPORTED_PAYLOAD_VERSION=3
 CURL=os.environ.get('PPPP_CURL_BIN','/usr/bin/curl')
+LLAMA_TIMEOUT_NORMAL=float(os.environ.get('PPPP_LLAMA_TIMEOUT_NORMAL','300'))
+LLAMA_TIMEOUT_TINY=float(os.environ.get('PPPP_LLAMA_TIMEOUT_TINY','240'))
+MAX_TOKENS_NORMAL=int(os.environ.get('PPPP_LLAMA_MAX_TOKENS_NORMAL','320'))
+MAX_TOKENS_TINY=int(os.environ.get('PPPP_LLAMA_MAX_TOKENS_TINY','220'))
 
 if not KEY:
     print('PPPP_SEMANTIC_WORKER_KEY missing',file=sys.stderr)
@@ -91,15 +95,17 @@ def analyze(job,tiny=False):
     user=compact_payload(p,tiny=tiny)
     user_json=json.dumps(user,ensure_ascii=False,separators=(',',':'))
     print('  semantic input bytes:',len(user_json.encode('utf-8')),'mode:',('tiny' if tiny else 'normal'),flush=True)
+    max_tokens=MAX_TOKENS_TINY if tiny else MAX_TOKENS_NORMAL
+    timeout=LLAMA_TIMEOUT_TINY if tiny else LLAMA_TIMEOUT_NORMAL
     body={
-      'model':'local','temperature':0,'max_tokens':500,
+      'model':'local','temperature':0,'max_tokens':max_tokens,
       'messages':[
         {'role':'system','content':str(p.get('system') or 'You are PRISTEEL PPPP semantic AI. /no_think Return JSON only.')},
         {'role':'user','content':'/no_think Analyze this PPPP context. Use only supplied facts. Return JSON matching the schema.\n'+user_json}
       ],
       'response_format':{'type':'json_schema','json_schema':{'name':'pppp_semantic_analysis','strict':True,'schema':schema}}
     }
-    out=llama_json(body,150 if tiny else 180)
+    out=llama_json(body,timeout)
     content=(((out.get('choices') or [{}])[0].get('message') or {}).get('content'))
     result=content if isinstance(content,dict) else json.loads(str(content or '').strip())
     return validate(result,p)
@@ -108,6 +114,7 @@ def main():
     print('PPPP local semantic worker started',flush=True)
     print('queue:',QUEUE,flush=True)
     print('llama:',LLAMA,flush=True)
+    print('inference limits: normal=%ss/%s tokens tiny=%ss/%s tokens'%(LLAMA_TIMEOUT_NORMAL,MAX_TOKENS_NORMAL,LLAMA_TIMEOUT_TINY,MAX_TOKENS_TINY),flush=True)
     while True:
         try:
             q=queue({'action':'claim'})
