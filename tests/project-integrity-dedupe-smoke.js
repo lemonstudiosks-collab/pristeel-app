@@ -24,6 +24,7 @@ async function main(){
   vm.runInNewContext(fs.readFileSync('pristeel-project-integrity-safety-v2.js','utf8'), context, { filename:'pristeel-project-integrity-safety-v2.js' });
 
   assert.strictEqual(window.PSTProjectIntegritySafetyV2.loadDeduperInstalled, true, 'deduper must install');
+  assert.strictEqual(typeof window.PSTProjectDataIntegrity.load.__base, 'function', 'wrapped loader must retain its base');
 
   const a = window.PSTProjectDataIntegrity.load('p1');
   const b = window.PSTProjectDataIntegrity.load('p1');
