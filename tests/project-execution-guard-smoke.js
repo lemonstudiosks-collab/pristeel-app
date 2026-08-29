@@ -99,6 +99,7 @@ const {JSDOM}=require('jsdom');
   w.flowGoto('bom');
   assert(legacyCalls.some(x=>x[0]==='flow'&&x[1]==='bom'),'Pre-award BOM navigation must remain available');
 
+  await new Promise(resolve=>setTimeout(resolve,1550));
   dom.window.close();
   console.log('Project execution guard smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
