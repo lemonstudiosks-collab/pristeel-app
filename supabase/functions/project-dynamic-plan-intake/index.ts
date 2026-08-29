@@ -68,20 +68,25 @@ async function archiveSource(link:any,bytes:Uint8Array,now:string){
   return {attachment_mime_type:mime,attachment_size_bytes:bytes.byteLength,content_sha256:hash,storage_backend:'supabase-storage',storage_bucket:SOURCE_BUCKET,storage_path:path,archived_at:now,archive_method:'gmail-storage-v1'};
 }
 async function processOne(link:any){
-  const b=await gmailAttachment(link.gmail_message_id,link.attachment_id),plan=parsePlan(b),now=new Date().toISOString();
+  const b=await gmailAttachment(link.gmail_message_id,link.attachment_id),now=new Date().toISOString();
+  const archive=s(link.storage_path)?{}:await archiveSource(link,b,now);
+  if(Object.keys(archive).length){const {error:archiveError}=await db.from('project_attachment_links').update({...archive,updated_at:now}).eq('id',link.id);if(archiveError)throw archiveError;}
+  const storagePath=s(link.storage_path)||String((archive as any).storage_path||'');
+  const alreadyAnalyzed=s(link.analysis_method)==='xlsx-dynamic-plan-v1'||s(link.extracted_data?.document_type)==='dynamic_plan';
+  if(alreadyAnalyzed)return {id:link.id,project_id:link.project_id,name:link.attachment_name,archive_only:true,analysis_preserved:true,storage_path:storagePath};
+  const plan=parsePlan(b);
   const existing=(link.extracted_data&&typeof link.extracted_data==='object')?link.extracted_data:{};
   const merged={...existing,...plan,dynamic_plan:plan,source_email:link.gmail_message_id};
-  const archive=s(link.storage_path)?{}:await archiveSource(link,b,now);
-  const {error}=await db.from('project_attachment_links').update({...archive,analysis_status:'analyzed',analysis_method:'xlsx-dynamic-plan-v1',extracted_text:`PLANI DINAMIK\n${summary(plan)}`,extracted_data:merged,analysis_confidence:.99,analysis_error:null,analyzed_at:now,updated_at:now}).eq('id',link.id);if(error)throw error;
+  const {error}=await db.from('project_attachment_links').update({analysis_status:'analyzed',analysis_method:'xlsx-dynamic-plan-v1',extracted_text:`PLANI DINAMIK\n${summary(plan)}`,extracted_data:merged,analysis_confidence:.99,analysis_error:null,analyzed_at:now,updated_at:now}).eq('id',link.id);if(error)throw error;
   const ref=`DYNAMIC_PLAN:${link.id}`;
-  const {data:task}=await db.from('tasks').select('id').eq('source','dynamic_plan_auto').eq('source_ref',ref).limit(1);
+  const {data:task}=await db.from('tasks').select('id,status').eq('source','dynamic_plan_auto').eq('source_ref',ref).limit(1);
   const detail=`Plani dinamik u lexua automatikisht nga ${link.attachment_name}.\n${summary(plan)}\nPlan relativ ndaj pikës së nisjes; kërkon aprovim njerëzor para përdorimit si afat kontraktual.`;
-  if(task?.length)await db.from('tasks').update({title:'Aprovo planin dinamik — '+(link.attachment_name||'projekti'),detail,due_date:new Date().toISOString().slice(0,10),priority:'e larte',status:'hapur'}).eq('id',task[0].id);else await db.from('tasks').insert({project_id:link.project_id,title:'Aprovo planin dinamik — '+(link.attachment_name||'projekti'),detail,due_date:new Date().toISOString().slice(0,10),priority:'e larte',status:'hapur',source:'dynamic_plan_auto',source_ref:ref,category:'intern'});
+  if(task?.length){const {error:taskError}=await db.from('tasks').update({title:'Aprovo planin dinamik — '+(link.attachment_name||'projekti'),detail,due_date:new Date().toISOString().slice(0,10),priority:'e larte'}).eq('id',task[0].id);if(taskError)throw taskError;}else{const {error:taskError}=await db.from('tasks').insert({project_id:link.project_id,title:'Aprovo planin dinamik — '+(link.attachment_name||'projekti'),detail,due_date:new Date().toISOString().slice(0,10),priority:'e larte',status:'hapur',source:'dynamic_plan_auto',source_ref:ref,category:'intern'});if(taskError)throw taskError;}
   const marker=`dynamic-plan:${link.id}`;
   const {data:pa}=await db.from('project_analyses').select('id').eq('project_id',String(link.project_id)).contains('analysis',{event_source_ref:marker}).limit(1);
   if(!pa?.length){await db.from('project_analyses').insert({project_id:String(link.project_id),status:'complete',engine:'dynamic_plan_rules',model:'xlsx-style-gantt-v1',analysis:{event_source_ref:marker,executive_summary:`U lexua automatikisht plani dinamik: ${plan.phases.length} faza, Java 0-${plan.last_active_week}.`,current_stage:'client_offer',health:{label:'plan për aprovim',score:86,reason:'Plani ekziston dhe është strukturuar; duhet aprovuar para se të përdoret në ofertë.'},confidence:{score:99,reason:'Javët u nxorën nga header-i dhe qelizat e ngjyrosura të XLSX.'},recommendation:{decision:'human_gate_schedule','label':'Aprovo planin dinamik','reason':'Afatet janë tani të lexuara; aprovimi njerëzor mbetet i detyrueshëm.',source_ids:['D1']},next_actions:[{text:'Verifiko fazat dhe aprovo planin dinamik para finalizimit të ofertës.',owner:'PRISTEEL',priority:'high',status:'open',source_ids:['D1']}],risks:[{text:'Plani është relativ dhe preliminar; mos e trajto si datë kontraktuale pa pikënisje të konfirmuar.',severity:'high',status:'open',source_ids:['D1']}],requirements:[{text:summary(plan),status:'confirmed',category:'schedule',priority:'high',source_ids:['D1']}],missing_information:[],changes_since_last:[{text:'Plani dinamik u lexua dhe u strukturua automatikisht.',status:'confirmed',source_ids:['D1']}],deadlines:[],decisions:[],assumptions:[],scope:[]},source_manifest:[{id:'D1',type:'attachment',label:link.attachment_name,meta:{attachment_link_id:link.id,gmail_message_id:link.gmail_message_id}}],source_counts:{dynamic_plans:1},created_at:now});}
   await db.from('projects').update({updated_at:now}).eq('id',link.project_id);
-  return {id:link.id,project_id:link.project_id,name:link.attachment_name,phases:plan.phases,last_active_week:plan.last_active_week,storage_path:s(link.storage_path)||String((archive as any).storage_path||'')};
+  return {id:link.id,project_id:link.project_id,name:link.attachment_name,phases:plan.phases,last_active_week:plan.last_active_week,storage_path:storagePath};
 }
 async function run(limit=10){
   const {data,error}=await db.from('project_attachment_links').select('id,gmail_message_id,attachment_id,attachment_name,attachment_mime_type,project_id,extracted_data,analysis_method,storage_path,created_at').not('project_id','is',null).ilike('attachment_name','%.xlsx').order('created_at',{ascending:false}).limit(100);if(error)throw error;
