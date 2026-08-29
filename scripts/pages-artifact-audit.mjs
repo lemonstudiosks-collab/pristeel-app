@@ -54,6 +54,49 @@ function add(set, value) {
   if (clean) set.add(clean);
 }
 
+function isExternal(ref) {
+  return /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(ref);
+}
+
+function resolveRuntimeJsReference(sourceRel, rawRef) {
+  const ref = String(rawRef || '').trim();
+  if (!ref || isExternal(ref)) return '';
+  const clean = ref.split('#')[0].split('?')[0];
+  if (!clean || /[{}<>]/.test(clean) || !/\.js$/i.test(clean)) return '';
+  const sourceDir = path.posix.dirname(sourceRel);
+  const resolved = clean.startsWith('/')
+    ? clean.replace(/^\/+/, '')
+    : path.posix.normalize(path.posix.join(sourceDir === '.' ? '' : sourceDir, clean));
+  return /(^|\/)pristeel-[A-Za-z0-9._-]+\.js$/i.test(resolved) ? resolved : '';
+}
+
+function expandRuntimeJsDependencies(candidate) {
+  const queue = [...candidate].filter((rel) => /\.js$/i.test(rel));
+  const scanned = new Set();
+  let added = 0;
+  while (queue.length) {
+    const sourceRel = queue.shift();
+    if (!sourceRel || scanned.has(sourceRel)) continue;
+    scanned.add(sourceRel);
+    if (!exists(sourceRel)) continue;
+    const source = fs.readFileSync(path.join(root, sourceRel), 'utf8');
+    for (const match of source.matchAll(/['"]([^'"]+\.js(?:\?[^'"]*)?)['"]/g)) {
+      const resolved = resolveRuntimeJsReference(sourceRel, match[1]);
+      if (!resolved) continue;
+      if (!exists(resolved)) {
+        fail(`${sourceRel} references runtime dependency '${match[1]}', but ${resolved} is missing from the repository.`);
+        continue;
+      }
+      if (!candidate.has(resolved)) {
+        candidate.add(resolved);
+        queue.push(resolved);
+        added += 1;
+      }
+    }
+  }
+  return added;
+}
+
 function walk(dir, base = '') {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -148,6 +191,8 @@ for (const item of Array.isArray(runtime.dynamicRuntime) ? runtime.dynamicRuntim
 for (const item of Array.isArray(artifactManifest.additionalPublicAssets) ? artifactManifest.additionalPublicAssets : []) add(candidate, item.path);
 for (const item of Array.isArray(artifactManifest.compatibilityPublicAssets) ? artifactManifest.compatibilityPublicAssets : []) add(candidate, item.path);
 
+const discoveredRuntimeDependencies = expandRuntimeJsDependencies(candidate);
+
 for (const rel of candidate) {
   if (!exists(rel)) fail(`Production public artifact source is missing: ${rel}`);
 }
@@ -215,6 +260,7 @@ console.log(`Mode: ${mode}`);
 console.log(`Production switch baseline commit: ${artifactManifest.productionSwitchBaselineCommit || '(not recorded)'}`);
 console.log(`Production Pages upload path: ${expectedUploadPath}`);
 console.log(`Runtime bootstrap modules discovered: ${bootstrapModules.length}`);
+console.log(`Dynamic runtime dependencies discovered recursively: ${discoveredRuntimeDependencies}`);
 console.log(`Production public artifact source files: ${candidateFiles.length}`);
 console.log(`Production public artifact size: ${human(candidateBytes)}`);
 console.log(`Repository checkout files (excluding .git/node_modules/_site): ${allRepoFiles.length}`);
@@ -222,6 +268,7 @@ console.log(`Repository checkout size: ${human(repoBytes)}`);
 console.log(`Production artifact share of checkout bytes: ${pct.toFixed(1)}%`);
 console.log(`Repository files excluded from production Pages: ${excludedFiles.length}`);
 console.log('Production Pages deployment policy verified: build first, upload _site only.');
+console.log('Recursive dynamic runtime dependency closure verified.');
 console.log('Deterministic Home startup ownership verified.');
 
 if (failed) process.exitCode = 1;
