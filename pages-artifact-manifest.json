@@ -47,6 +47,10 @@
       "reason": "Loaded dynamically by the final primary navigation owner after modules-ready. It owns the calm lifecycle-aware daily Project presentation, explicit back navigation, project-open progress feedback and post-award visible action reduction."
     },
     {
+      "path": "pristeel-unified-project-flow-v1.js",
+      "reason": "Loaded dynamically by the final primary navigation owner after modules-ready. It owns the single-surface Project flow, evidence popups, stable project opening and logical next-step navigation."
+    },
+    {
       "path": "pristeel-project-commercial-simplified-v1.js",
       "reason": "Loaded dynamically by the offer-revision bridge as the final simplified Project Commercial presentation/action layer."
     },
@@ -137,6 +141,11 @@
       "source": "pristeel-primary-nav-resilience-v1.js",
       "contains": "pristeel-operator-flow-v1.js",
       "reason": "Final navigation owner loads the lifecycle-aware Operator Flow only after the established runtime is ready."
+    },
+    {
+      "source": "pristeel-primary-nav-resilience-v1.js",
+      "contains": "pristeel-unified-project-flow-v1.js",
+      "reason": "Final navigation owner loads the single-surface unified Project flow after the established runtime is ready."
     },
     {
       "source": "pristeel-offer-revision-email-bridge-v1.js",
