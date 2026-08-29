@@ -17,6 +17,9 @@ SERVER_PLIST="$LA/com.pristeel.pppp-llama.plist"
 WORKER_PLIST="$LA/com.pristeel.pppp-semantic-worker.plist"
 AWAKE_PLIST="$LA/com.pristeel.pppp-awake.plist"
 UID_NOW="$(id -u)"
+THREADS="$(sysctl -n hw.physicalcpu 2>/dev/null || echo 2)"
+if (( THREADS > 4 )); then THREADS=4; fi
+if (( THREADS < 2 )); then THREADS=2; fi
 
 [[ -x "$BIN" ]] || { echo "Missing llama-server: $BIN"; exit 3; }
 [[ -f "$MODEL" ]] || { echo "Missing model: $MODEL"; exit 4; }
@@ -36,7 +39,7 @@ cat > "$SERVER_PLIST" <<EOF
 <plist version="1.0"><dict>
 <key>Label</key><string>com.pristeel.pppp-llama</string>
 <key>ProgramArguments</key><array>
-<string>$BIN</string><string>-m</string><string>$MODEL</string><string>-c</string><string>8192</string><string>-t</string><string>2</string><string>-np</string><string>1</string><string>--host</string><string>127.0.0.1</string><string>--port</string><string>8080</string>
+<string>$BIN</string><string>-m</string><string>$MODEL</string><string>-c</string><string>4096</string><string>-t</string><string>$THREADS</string><string>-np</string><string>1</string><string>--host</string><string>127.0.0.1</string><string>--port</string><string>8080</string>
 </array>
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
 <key>StandardOutPath</key><string>$LOGS/llama.out.log</string>
@@ -103,4 +106,5 @@ echo "llama health: $(curl -fsS http://127.0.0.1:8080/health)"
 echo "awake service: $(launchctl print "gui/$UID_NOW/com.pristeel.pppp-awake" >/dev/null 2>&1 && echo RUNNING || echo ERROR)"
 echo "server service: $(launchctl print "gui/$UID_NOW/com.pristeel.pppp-llama" >/dev/null 2>&1 && echo RUNNING || echo ERROR)"
 echo "worker service: $(launchctl print "gui/$UID_NOW/com.pristeel.pppp-semantic-worker" >/dev/null 2>&1 && echo RUNNING || echo ERROR)"
+echo "threads: $THREADS"
 echo "logs: $LOGS"
