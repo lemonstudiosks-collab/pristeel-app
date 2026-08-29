@@ -34,7 +34,7 @@ function ensureOperatorFlow(){
   if(window.PSTOperatorFlowV1){try{window.PSTOperatorFlowV1.apply();}catch(e){}return true;}
   if(operatorFlowLoading||document.querySelector('script[data-pst-operator-flow-resilience]'))return false;
   operatorFlowLoading=true;
-  var s=document.createElement('script');s.src='pristeel-operator-flow-v1.js?v=20260829-flow1';s.defer=true;s.setAttribute('data-pst-operator-flow-resilience','1');
+  var s=document.createElement('script');s.src='pristeel-operator-flow-v1.js?v=20260829-flow2';s.defer=true;s.setAttribute('data-pst-operator-flow-resilience','1');
   s.onload=function(){operatorFlowLoading=false;try{if(window.PSTOperatorFlowV1)window.PSTOperatorFlowV1.apply();}catch(e){}};
   s.onerror=function(){operatorFlowLoading=false;};document.head.appendChild(s);return true;
 }
