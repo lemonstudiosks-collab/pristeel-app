@@ -4,6 +4,7 @@
  * Gmail-equivalent contact view dedupe, explicit Gmail recovery auth, project summary command,
  * its read-only Project Intelligence conversation extension, live intelligence recovery,
  * Project Analysis run guard, guarded Gmail project auto-link,
+ * the final modern workspace cleanup/reconciler,
  * and a reliable Project -> Commercial document entry bridge.
  * Previous conversation runtime cache key: pristeel-project-intelligence-conversation-v1.js?v=20260816-coverage1
  */
@@ -43,6 +44,7 @@ function loadProjectAnalysisRunGuard(){loadScript('pristeel-project-analysis-run
 function loadProjectConversation(){loadScript('pristeel-project-intelligence-conversation-v1.js?v=20260824-project-chat2','project-intelligence-conversation',function(){return !!window.PSTProjectIntelligenceConversationV1;});}
 function loadProjectLiveIntelligence(){loadScript('pristeel-project-live-intelligence-v1.js?v=20260817-1','project-live-intelligence',function(){return !!window.PSTProjectLiveIntelligenceV1;});}
 function loadGmailProjectAutoLink(){loadScript('pristeel-gmail-project-auto-link-v1.js?v=20260816-autolink5','gmail-project-auto-link',function(){return !!window.PSTGmailProjectAutoLinkV1;});}
+function loadWorkspaceCleanup(){loadScript('pristeel-project-workspace-cleanup-v1.js?v=20260829-project-clean1','project-workspace-cleanup',function(){return !!window.PSTProjectWorkspaceCleanupV1;});}
 function refreshAfterGmailClose(e){var t=e.target&&e.target.closest?e.target.closest('#pgc-close'):null;if(!t)return;var modal=t.closest('#pgc-bg'),st=modal&&modal.querySelector('#pgc-status'),msg=String(st&&st.textContent||'');if(msg.indexOf('U lidhën')!==0)return;var id=String(window.__pstCurrentProjectId||window._curProjId||'');if(!id)return;setTimeout(function(){if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);},0);}
 function projectFirstVisible(){var p=document.getElementById('page-workspace-project');return !!(p&&p.classList.contains('pf2-on'));}
 function supplierOfferCard(){var p=document.getElementById('page-workspace-project');if(!p)return null;return [].slice.call(p.querySelectorAll('.pf2-card')).filter(function(c){var b=c.querySelector('header b');return b&&String(b.textContent||'').trim()==='Oferta furnitorësh';})[0]||null;}
@@ -72,6 +74,6 @@ function installFlowBridge(){
 }
 document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-pf2-tab="files"]')){setTimeout(inject,0);setTimeout(inject,120);}},true);
 document.addEventListener('click',refreshAfterGmailClose,true);
-document.addEventListener('pst:modules-ready',function(){installFlowBridge();installCommercialEntryBridge();if(window.PSTProjectSummaryCommandV1&&typeof window.PSTProjectSummaryCommandV1.decorate==='function')window.PSTProjectSummaryCommandV1.decorate();},{once:true});
-window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers,showSupplierOffers:showSupplierOffers,openCommercialDocument:openCommercialDocument,installCommercialEntryBridge:installCommercialEntryBridge};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();loadProjectSummary();loadProjectAnalysisRunGuard();loadProjectConversation();loadProjectLiveIntelligence();loadGmailProjectAutoLink();installFlowBridge();installCommercialEntryBridge();
+document.addEventListener('pst:modules-ready',function(){installFlowBridge();installCommercialEntryBridge();if(window.PSTProjectSummaryCommandV1&&typeof window.PSTProjectSummaryCommandV1.decorate==='function')window.PSTProjectSummaryCommandV1.decorate();if(window.PSTProjectWorkspaceCleanupV1&&typeof window.PSTProjectWorkspaceCleanupV1.schedule==='function')window.PSTProjectWorkspaceCleanupV1.schedule();},{once:true});
+window.PSTProjectFirstActionsV1={inject:inject,refreshAfterGmailClose:refreshAfterGmailClose,installFlowBridge:installFlowBridge,openSupplierOffers:openSupplierOffers,showSupplierOffers:showSupplierOffers,openCommercialDocument:openCommercialDocument,installCommercialEntryBridge:installCommercialEntryBridge};loadDuplicateContext();loadEmailBodySync();loadContactViewDedupe();loadLinkedGmailAuthGate();loadProjectSummary();loadProjectAnalysisRunGuard();loadProjectConversation();loadProjectLiveIntelligence();loadGmailProjectAutoLink();loadWorkspaceCleanup();installFlowBridge();installCommercialEntryBridge();
 })();
