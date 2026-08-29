@@ -15,4 +15,6 @@ jobs:
           node-version: 20
       - run: npm install --no-audit --no-fund
       - run: node --check pristeel-project-classification-v1.js
+      - run: node --check pristeel-project-open-direct-v1.js
       - run: node tests/projects-work-surface-smoke.js
+      - run: node tests/project-open-single-path-smoke.js
