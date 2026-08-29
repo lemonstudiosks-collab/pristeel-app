@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "91a1989173e5e833491b26e632cbd8f3a03f86ce",
+  "auditedAtCommit": "d3163bc1313854ed2cb15cd620323fec84b06a03",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "ae9d7196e2f8739eb4ba21726485b282d2d20c14"
+    "bootstrapGitBlobSha": "b36eb3ec40197922fc27d815e001678af8f00ec0"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -87,9 +87,10 @@
         "pristeel-project-lifecycle-tracking-v1.js",
         "pristeel-project-intelligence-resilience-v1.js",
         "pristeel-project-workflow-canonical-v1.js",
-        "pristeel-operating-experience-v1.js"
+        "pristeel-operating-experience-v1.js",
+        "pristeel-project-execution-guard-v1.js"
       ],
-      "note": "Project Integrity UI owns the bounded base project load and minimal header. Project-First owns the visible project content and active shortcuts; Canonical Project Workflow reconciles workflow navigation over the existing engines. Legacy header actions are not part of the daily surface. Project Commercial Simplified remains the final Commercial presentation/action owner. No ownership layer performs automatic outbound communication."
+      "note": "Project Integrity UI owns the bounded base project load and minimal header. Project-First owns the visible project content and active shortcuts; Canonical Project Workflow reconciles workflow navigation over the existing engines. The post-award Execution Guard is the final lifecycle owner: won/execution projects cannot re-enter BOM, RFQ, supplier comparison, pricing or client-offer editing; those records remain historical while execution, finance, files and invoicing stay operational. Legacy header actions are not part of the daily surface. Project Commercial Simplified remains the final pre-award Commercial presentation/action owner. No ownership layer performs automatic outbound communication."
     },
     {
       "area": "gmail-inbox",
@@ -133,7 +134,7 @@
         "pristeel-project-centric-workflow-v1.js",
         "pristeel-tender-dossier-analysis-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the single final visible whole-card Opportunities owner. KRPP/TED official sources are exposed as direct row-specific links when available; APP stays reference-based when no safe deep link exists. Official dossier download and technical/commercial analysis remain explicit actions before project creation. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the single final visible whole-card Opportunities owner. KRPP/TED official sources are exposed as direct row-specific links when available; APP stays reference-based when no safe deep link exists. Official dossier download and technical/commercial analysis remain explicit actions before project creation is enabled. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
     },
     {
       "area": "ai",
@@ -358,6 +359,11 @@
       "before": "pristeel-project-classification-v1.js",
       "after": "pristeel-primary-nav-resilience-v1.js",
       "reason": "Primary Navigation Resilience is the final ordered bootstrap owner and re-applies the command grid after route changes."
+    },
+    {
+      "before": "pristeel-primary-nav-resilience-v1.js",
+      "after": "pristeel-project-execution-guard-v1.js",
+      "reason": "The post-award lifecycle guard deliberately loads last so won/execution projects cannot be reopened by later navigation or workflow decorators."
     }
   ],
   "deprecatedForbidden": [
