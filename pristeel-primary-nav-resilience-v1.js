@@ -1,16 +1,20 @@
-/* PRISTEEL Primary Navigation Resilience v9
+/* PRISTEEL Primary Navigation Resilience v10
  * Single owner for the six daily PPPP navigation zones.
  * Stabilizes the visible sidebar, removes duplicate daily controls conservatively,
- * and surfaces only tender decisions that require human review on Home.
+ * and surfaces only genuinely relevant tender decisions on Home.
  * Existing engines, records and approval gates remain authoritative.
  *
- * Retired production overlays remain bounded compatibility fallbacks only:
- * pristeel-operator-flow-v1.js
- * pristeel-unified-project-flow-v1.js
+ * Bounded compatibility assets (not normal daily UI owners):
+ * pristeel-operator-flow-v1.js?v=20260829-flow2
+ * pristeel-unified-project-flow-v1.js?v=20260829-flow1
+ * pristeel-offer-revision-email-draft-v1.js
+ * pristeel-offer-revision-email-bridge-v1.js
+ * pristeel-project-offer-revision-assistant-v1.js
  */
 (function(){
 'use strict';
-if(window.__pstPrimaryNavResilienceV9)return;
+if(window.__pstPrimaryNavResilienceV10)return;
+window.__pstPrimaryNavResilienceV10=true;
 window.__pstPrimaryNavResilienceV9=true;
 window.__pstPrimaryNavResilienceV8=true;
 window.__pstPrimaryNavResilienceV7=true;
@@ -78,8 +82,7 @@ function hidePages(except){document.querySelectorAll('.page').forEach(function(p
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);return p;}
 function legacyShow(name){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(name);return true;}}catch(e){}try{if(typeof window.showPage==='function'){window.showPage(name);return true;}}catch(e){}return false;}
 
-/* Compatibility hook retained for the project-flow smoke contract. It does not
- * load the old overlay during normal daily navigation, preventing ownership races. */
+/* Compatibility hooks stay opt-in so legacy visual owners cannot race the final UI. */
 function ensureUnifiedProjectFlow(){
  if(window.PSTUnifiedProjectFlowV1)return Promise.resolve(window.PSTUnifiedProjectFlowV1);
  if(window.__pstAllowUnifiedProjectFallback!==true)return Promise.resolve(null);
@@ -88,6 +91,16 @@ function ensureUnifiedProjectFlow(){
    var existing=document.querySelector('script[data-pst-unified-project-flow]');
    if(existing){existing.addEventListener('load',function(){resolve(window.PSTUnifiedProjectFlowV1||null);},{once:true});return;}
    var s=document.createElement('script');s.src=src;s.async=true;s.dataset.pstUnifiedProjectFlow='1';s.onload=function(){resolve(window.PSTUnifiedProjectFlowV1||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);
+ });
+}
+function ensureOperatorFlow(){
+ if(window.PSTOperatorFlowV1)return Promise.resolve(window.PSTOperatorFlowV1);
+ if(window.__pstAllowOperatorFlowFallback!==true)return Promise.resolve(null);
+ return new Promise(function(resolve){
+   var src='pristeel-operator-flow-v1.js?v=20260829-flow2';
+   var existing=document.querySelector('script[data-pst-operator-flow]');
+   if(existing){existing.addEventListener('load',function(){resolve(window.PSTOperatorFlowV1||null);},{once:true});return;}
+   var s=document.createElement('script');s.src=src;s.async=true;s.dataset.pstOperatorFlow='1';s.onload=function(){resolve(window.PSTOperatorFlowV1||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);
  });
 }
 function openHome(){
@@ -161,14 +174,14 @@ function sourceLabel(row){var k=S(row&&row.source_key);if(k.indexOf('TED:')===0)
 function tenderMeta(row){var a=[sourceLabel(row),row.authority||'',row.procurement_no||''];if(row.deadline)a.push('Afati '+S(row.deadline));if(Number(row.relevance_score)>0)a.push('Relevanca '+Number(row.relevance_score)+'%');return a.filter(Boolean).join(' · ');}
 async function renderHomeTenderDecisions(){
  var token=++tenderRenderToken,page=document.getElementById('page-workspace-home');if(!visible(page)||typeof window.supaFetch!=='function')return false;
- var rows=[];try{rows=await window.supaFetch('pppp_tender_operating_lanes_v1?human_action_required=eq.true&select=id,source_key,procurement_no,authority,title,estimated_value,currency,deadline,relevance_score,operating_lane,status,project_id,detail_url,source_url&order=relevance_score.desc,deadline.asc&limit=5')||[];}catch(e){return false;}
+ var rows=[];try{rows=await window.supaFetch('pppp_tender_operating_lanes_v1?human_action_required=eq.true&operating_lane=in.(discovery,scored_review)&relevance_score=gte.75&project_id=is.null&select=id,source_key,procurement_no,authority,title,estimated_value,currency,deadline,relevance_score,operating_lane,status,project_id,detail_url,source_url&order=relevance_score.desc,deadline.asc&limit=5')||[];}catch(e){return false;}
  if(token!==tenderRenderToken)return false;
  rows=(Array.isArray(rows)?rows:[]).filter(function(r){return ['rejected','no_go','closed'].indexOf(norm(r&&r.status))<0;}).slice(0,5);
  var old=document.getElementById('pst-home-tender-decisions');if(old)old.remove();if(!rows.length)return true;
  var actions=document.getElementById('pst-ws-home-actions'),anchor=document.getElementById('pst-home-waiting');if(!anchor&&actions)anchor=actions.closest('.pst-ws-card')||actions.parentElement;if(!anchor)return false;
  installTenderStyle();
  var card=document.createElement('section');card.id='pst-home-tender-decisions';card.className='pst-ws-card';
- card.innerHTML='<div class="pst-ws-card-head"><div><div class="pst-ws-card-kicker">MUNDËSI</div><div class="pst-ws-card-title">Tenderë që kërkojnë vendim</div><div class="pst-ws-card-sub">Vetëm mundësitë e filtruara ku duhet vendosur GO / NO-GO.</div></div></div><div class="pst-tender-decision-list">'+rows.map(function(r){return'<div class="pst-tender-decision"><div><b>'+esc(r.title||r.procurement_no||'Tender relevant')+'</b><small>'+esc(tenderMeta(r))+'</small></div><button type="button" data-pst-open-opportunities="1">Shqyrto</button></div>';}).join('')+'</div>';
+ card.innerHTML='<div class="pst-ws-card-head"><div><div class="pst-ws-card-kicker">MUNDËSI</div><div class="pst-ws-card-title">Tenderë që kërkojnë vendim</div><div class="pst-ws-card-sub">Vetëm tenderët relevantë pa projekt aktiv, ku duhet vendosur GO / NO-GO.</div></div></div><div class="pst-tender-decision-list">'+rows.map(function(r){return'<div class="pst-tender-decision"><div><b>'+esc(r.title||r.procurement_no||'Tender relevant')+'</b><small>'+esc(tenderMeta(r))+'</small></div><button type="button" data-pst-open-opportunities="1">Shqyrto</button></div>';}).join('')+'</div>';
  anchor.insertAdjacentElement('afterend',card);
  Array.prototype.forEach.call(card.querySelectorAll('[data-pst-open-opportunities]'),function(b){b.addEventListener('click',function(){openOpportunities();});});
  return true;
@@ -180,6 +193,6 @@ document.addEventListener('pst:modules-ready',function(){scheduleRepair();schedu
 document.addEventListener('pst:home-canonical-rendered',function(){scheduleRepair();schedulePolish();});
 document.addEventListener('pst:project-opened',function(){scheduleRepair();schedulePolish();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){scheduleRepair();schedulePolish();},{once:true});else{scheduleRepair();schedulePolish();}
-var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature}};
-window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=window.PSTPrimaryNavResilienceV9=API;
+var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature}};
+window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=window.PSTPrimaryNavResilienceV9=window.PSTPrimaryNavResilienceV10=API;
 })();
