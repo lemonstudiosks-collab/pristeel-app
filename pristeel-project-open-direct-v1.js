@@ -19,8 +19,10 @@ function setContext(id){
   try{localStorage.setItem('pristeel_cur_proj',id);}catch(e){}
   var select=document.getElementById('global-proj');
   if(select){
+    // Synchronize the visible selector only. Its inline onchange calls the legacy
+    // loadProject path, while this module opens the canonical workspace explicitly.
+    // Dispatching change here therefore started two project loaders for one click.
     select.value=id;
-    try{select.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}
   }
 }
 function showError(error){
