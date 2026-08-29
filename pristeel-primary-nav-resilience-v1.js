@@ -1,16 +1,17 @@
-/* PRISTEEL Primary Navigation Resilience v8
+/* PRISTEEL Primary Navigation Resilience v9
  * Single owner for the six daily PPPP navigation zones.
  * Stabilizes the visible sidebar, removes duplicate daily controls conservatively,
  * and surfaces only tender decisions that require human review on Home.
  * Existing engines, records and approval gates remain authoritative.
  *
- * Retired production overlays kept as manifest references only:
+ * Retired production overlays remain bounded compatibility fallbacks only:
  * pristeel-operator-flow-v1.js
  * pristeel-unified-project-flow-v1.js
  */
 (function(){
 'use strict';
-if(window.__pstPrimaryNavResilienceV8)return;
+if(window.__pstPrimaryNavResilienceV9)return;
+window.__pstPrimaryNavResilienceV9=true;
 window.__pstPrimaryNavResilienceV8=true;
 window.__pstPrimaryNavResilienceV7=true;
 window.__pstPrimaryNavResilienceV6=true;
@@ -76,6 +77,19 @@ function mark(key){key=canon(key);var host=document.getElementById('pst-ws-canon
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);return p;}
 function legacyShow(name){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(name);return true;}}catch(e){}try{if(typeof window.showPage==='function'){window.showPage(name);return true;}}catch(e){}return false;}
+
+/* Compatibility hook retained for the project-flow smoke contract. It does not
+ * load the old overlay during normal daily navigation, preventing ownership races. */
+function ensureUnifiedProjectFlow(){
+ if(window.PSTUnifiedProjectFlowV1)return Promise.resolve(window.PSTUnifiedProjectFlowV1);
+ if(window.__pstAllowUnifiedProjectFallback!==true)return Promise.resolve(null);
+ return new Promise(function(resolve){
+   var src='pristeel-unified-project-flow-v1.js?v=20260829-flow1';
+   var existing=document.querySelector('script[data-pst-unified-project-flow]');
+   if(existing){existing.addEventListener('load',function(){resolve(window.PSTUnifiedProjectFlowV1||null);},{once:true});return;}
+   var s=document.createElement('script');s.src=src;s.async=true;s.dataset.pstUnifiedProjectFlow='1';s.onload=function(){resolve(window.PSTUnifiedProjectFlowV1||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);
+ });
+}
 function openHome(){
  var H=window.PSTHomeCanonicalV1;
  try{if(H&&typeof H.activateHome==='function')H.activateHome();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('home');else activate('page-workspace-home','home');}catch(e){activate('page-workspace-home','home');}
@@ -114,7 +128,11 @@ function openSystem(){
  try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('apps');else if(typeof window.openModuleHub==='function')window.openModuleHub();else activate('page-workspace-apps','apps');}catch(e){activate('page-workspace-apps','apps');}
  mark('apps');scheduleRepair();schedulePolish();return true;
 }
-function route(key){key=canon(key);if(key==='home')return openHome();if(key==='tenders')return openOpportunities();if(key==='projects')return openProjects();if(key==='contacts')return openPartners();if(key==='finance')return openFinance();if(key==='apps')return openSystem();return false;}
+function route(key){
+ key=S(key).toLowerCase();
+ if(key==='tenders'||key==='opportunities')return openOpportunities();
+ key=canon(key);if(key==='home')return openHome();if(key==='projects')return openProjects();if(key==='contacts')return openPartners();if(key==='finance')return openFinance();if(key==='apps')return openSystem();return false;
+}
 function intercept(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key]'):null;if(!b)return;var key=canon(b.dataset.key);if(!KEYS[key])return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();route(key);}
 document.addEventListener('click',intercept,true);
 
@@ -162,6 +180,6 @@ document.addEventListener('pst:modules-ready',function(){scheduleRepair();schedu
 document.addEventListener('pst:home-canonical-rendered',function(){scheduleRepair();schedulePolish();});
 document.addEventListener('pst:project-opened',function(){scheduleRepair();schedulePolish();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){scheduleRepair();schedulePolish();},{once:true});else{scheduleRepair();schedulePolish();}
-var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature}};
-window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=API;
+var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature}};
+window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=window.PSTPrimaryNavResilienceV9=API;
 })();
