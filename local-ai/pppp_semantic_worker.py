@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, subprocess, sys, tempfile, time, urllib.request, urllib.error
+import json, os, subprocess, tempfile, time, urllib.request, urllib.error
 
 QUEUE=os.environ.get('PPPP_SEMANTIC_QUEUE_URL','https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/semantic-local-queue')
 KEY=os.environ.get('PPPP_SEMANTIC_WORKER_KEY','').strip()
@@ -8,14 +8,13 @@ MODEL=os.environ.get('PPPP_LOCAL_MODEL','Qwen3-1.7B-Q4_K_M')
 POLL=float(os.environ.get('PPPP_SEMANTIC_POLL_SECONDS','4'))
 SUPPORTED_PAYLOAD_VERSION=3
 CURL=os.environ.get('PPPP_CURL_BIN','/usr/bin/curl')
-LLAMA_TIMEOUT_NORMAL=float(os.environ.get('PPPP_LLAMA_TIMEOUT_NORMAL','300'))
-LLAMA_TIMEOUT_TINY=float(os.environ.get('PPPP_LLAMA_TIMEOUT_TINY','240'))
-MAX_TOKENS_NORMAL=int(os.environ.get('PPPP_LLAMA_MAX_TOKENS_NORMAL','320'))
-MAX_TOKENS_TINY=int(os.environ.get('PPPP_LLAMA_MAX_TOKENS_TINY','220'))
+LLAMA_TIMEOUT_NORMAL=float(os.environ.get('PPPP_LLAMA_TIMEOUT_NORMAL','240'))
+LLAMA_TIMEOUT_TINY=float(os.environ.get('PPPP_LLAMA_TIMEOUT_TINY','180'))
+MAX_TOKENS_NORMAL=int(os.environ.get('PPPP_LLAMA_MAX_TOKENS_NORMAL','220'))
+MAX_TOKENS_TINY=int(os.environ.get('PPPP_LLAMA_MAX_TOKENS_TINY','180'))
 
 if not KEY:
-    print('PPPP_SEMANTIC_WORKER_KEY missing',file=sys.stderr)
-    sys.exit(2)
+    raise SystemExit('PPPP_SEMANTIC_WORKER_KEY missing')
 
 def request_json(url,payload,headers=None,timeout=60):
     raw=json.dumps(payload,ensure_ascii=False).encode('utf-8')
@@ -31,7 +30,7 @@ def request_json(url,payload,headers=None,timeout=60):
         except Exception:pass
         raise RuntimeError('HTTP %s: %s'%(e.code,body or e.reason))
 
-def llama_json(payload,timeout):
+def llama_text(payload,timeout):
     raw=json.dumps(payload,ensure_ascii=False).encode('utf-8')
     with tempfile.NamedTemporaryFile(prefix='pppp-llama-',suffix='.json',delete=True) as f:
         f.write(raw);f.flush()
@@ -44,11 +43,25 @@ def llama_json(payload,timeout):
         err=p.stderr.decode('utf-8','replace').strip()
         if p.returncode!=0:
             raise RuntimeError('local llama curl %s: %s'%(p.returncode,(body or err)[:1400]))
-        try:return json.loads(body)
-        except Exception as e:raise RuntimeError('invalid llama JSON: %s; body=%s'%(e,body[:800]))
+        try:out=json.loads(body)
+        except Exception as e:raise RuntimeError('invalid llama response JSON: %s'%e)
+        content=(((out.get('choices') or [{}])[0].get('message') or {}).get('content'))
+        if not isinstance(content,str) or not content.strip():
+            raise ValueError('empty model content')
+        return content.strip()
 
 def queue(payload):
     return request_json(QUEUE,payload,{'x-pppp-worker-key':KEY},60)
+
+def as_list(value,limit=2):
+    if not value or value.strip() in ('-','none','None','[]'):
+        return []
+    out=[]
+    for item in value.split(';'):
+        item=' '.join(item.strip().split())
+        if item and item not in out:out.append(item[:180])
+        if len(out)>=limit:break
+    return out
 
 def validate(result,payload):
     if not isinstance(result,dict):raise ValueError('model result is not an object')
@@ -57,7 +70,8 @@ def validate(result,payload):
     if miss:raise ValueError('missing fields: '+','.join(miss))
     if not isinstance(result['action_required'],bool):raise ValueError('action_required must be boolean')
     if result['priority'] not in ['critical','high','medium','low']:raise ValueError('invalid priority')
-    if not isinstance(result['summary'],str):raise ValueError('summary must be string')
+    if result['category'] not in ['production_change','client_request','supplier_update','acknowledgement','technical_change','commercial_change','procurement_request','no_action','other']:raise ValueError('invalid category')
+    if result['workflow_intent'] not in ['procurement_prepare','await_supplier','supplier_response','await_client','commercial_offer','execution','review_required','no_action']:raise ValueError('invalid workflow_intent')
     result['confidence']=max(0,min(100,int(result.get('confidence') or 0)))
     for k in ['required_capabilities','required_grades','requirements','risks','missing_information','recommended_supplier_names','rfq_scope_lines']:
         if not isinstance(result.get(k),list):result[k]=[]
@@ -67,23 +81,54 @@ def validate(result,payload):
     result['required_capabilities']=[x for x in result['required_capabilities'] if x in caps]
     return result
 
+def parse_tagged(text,payload):
+    vals={}
+    for raw in text.replace('```','').splitlines():
+        if '|' not in raw:continue
+        k,v=raw.split('|',1)
+        k=k.strip().upper();v=v.strip()
+        if k in {'A','P','C','W','F','S','R','K','M','N','Q'} and k not in vals:
+            vals[k]=v
+    missing=[k for k in ('A','P','C','W','F','S') if not vals.get(k)]
+    if missing:raise ValueError('tagged output missing: '+','.join(missing))
+    deterministic=payload.get('deterministic') or {}
+    try:confidence=int(float(vals['F']))
+    except Exception:confidence=0
+    result={
+      'action_required':vals['A'].lower() in ('1','true','yes','y'),
+      'priority':vals['P'].lower(),
+      'category':vals['C'].lower(),
+      'summary':' '.join(vals['S'].split())[:240],
+      'workflow_intent':vals['W'].lower(),
+      'confidence':confidence,
+      'required_capabilities':[str(x) for x in (deterministic.get('required_capabilities') or [])],
+      'required_grades':[str(x) for x in (deterministic.get('required_grades') or [])],
+      'requirements':as_list(vals.get('R','')),
+      'risks':as_list(vals.get('K','')),
+      'missing_information':as_list(vals.get('M','')),
+      'recommended_supplier_names':as_list(vals.get('N','')),
+      'rfq_scope_lines':as_list(vals.get('Q','')),
+    }
+    return validate(result,payload)
+
 def compact_payload(p,tiny=False):
     ctx=p.get('context') or {}
-    source_limit=3 if tiny else 5
-    source_chars=320 if tiny else 520
-    candidate_limit=5 if tiny else 7
+    source_limit=1 if tiny else 2
+    source_chars=180 if tiny else 280
+    candidate_limit=3 if tiny else 5
     src=[]
     for s in (p.get('sources') or [])[:source_limit]:
-        src.append({'id':s.get('id'),'type':s.get('type'),'label':str(s.get('label') or '')[:120],'date':s.get('date'),'text':str(s.get('text') or '')[:source_chars],'meta':s.get('meta')})
+        src.append({'type':s.get('type'),'label':str(s.get('label') or '')[:100],'date':s.get('date'),'text':str(s.get('text') or '')[:source_chars]})
     candidates=[]
     for s in (p.get('supplier_candidates') or [])[:candidate_limit]:
-        contacts=[]
-        for c in (s.get('contacts') or [])[:1]:
-            contacts.append({'full_name':c.get('full_name'),'email':c.get('email'),'language':c.get('language'),'is_primary':c.get('is_primary')})
-        candidates.append({'name':s.get('name'),'business_type':s.get('business_type'),'categories':s.get('categories'),'grades':s.get('grades'),'class_approval':s.get('class_approval'),'deterministic_score':s.get('deterministic_score'),'contacts':contacts})
+        candidates.append({'name':s.get('name'),'business_type':s.get('business_type'),'categories':s.get('categories'),'grades':s.get('grades'),'score':s.get('deterministic_score')})
+    bom=p.get('bom') or {}
     return {
-      'guard':p.get('guard'),'bom':p.get('bom'),'deterministic':p.get('deterministic'),'supplier_candidates':candidates,'meta':p.get('meta'),
-      'context':{'project':ctx.get('project'),'current_rfqs':(ctx.get('current_rfqs') or [])[:(3 if tiny else 5)],'supplier_offers':(ctx.get('supplier_offers') or [])[:(2 if tiny else 3)]},
+      'guard':p.get('guard'),
+      'bom':{'kg':bom.get('kg'),'rows':bom.get('rows'),'grades':(bom.get('grades') or [])[:4],'profiles':(bom.get('profiles') or [])[:6],'surfaces':(bom.get('surfaces') or [])[:3],'needs_review_rows':bom.get('needs_review_rows')},
+      'deterministic':p.get('deterministic'),
+      'supplier_candidates':candidates,
+      'project':ctx.get('project'),
       'sources':src
     }
 
@@ -91,30 +136,35 @@ def analyze(job,tiny=False):
     p=job.get('payload') or {}
     if int(p.get('worker_payload_version') or 0)!=SUPPORTED_PAYLOAD_VERSION:
         raise ValueError('unsupported semantic payload version')
-    schema=p.get('response_schema') or {}
     user=compact_payload(p,tiny=tiny)
     user_json=json.dumps(user,ensure_ascii=False,separators=(',',':'))
     print('  semantic input bytes:',len(user_json.encode('utf-8')),'mode:',('tiny' if tiny else 'normal'),flush=True)
-    max_tokens=MAX_TOKENS_TINY if tiny else MAX_TOKENS_NORMAL
     timeout=LLAMA_TIMEOUT_TINY if tiny else LLAMA_TIMEOUT_NORMAL
+    max_tokens=MAX_TOKENS_TINY if tiny else MAX_TOKENS_NORMAL
+    format_spec=(
+      'Return exactly 11 lines, no markdown and no extra text. Use this format:\n'
+      'A|true or false\nP|critical/high/medium/low\n'
+      'C|production_change/client_request/supplier_update/acknowledgement/technical_change/commercial_change/procurement_request/no_action/other\n'
+      'W|procurement_prepare/await_supplier/supplier_response/await_client/commercial_offer/execution/review_required/no_action\n'
+      'F|0-100\nS|summary max 18 words\nR|up to 2 requirements separated by ; or -\n'
+      'K|up to 2 risks separated by ; or -\nM|up to 2 missing facts separated by ; or -\n'
+      'N|up to 2 supplier names exactly as supplied, separated by ; or -\nQ|up to 2 RFQ scope lines separated by ; or -\n'
+      'Use only supplied facts. Prefer - instead of guessing. /no_think\n'
+    )
     body={
       'model':'local','temperature':0,'max_tokens':max_tokens,
       'messages':[
-        {'role':'system','content':str(p.get('system') or 'You are PRISTEEL PPPP semantic AI. /no_think Return JSON only.')},
-        {'role':'user','content':'/no_think Analyze this PPPP context. Use only supplied facts. Return JSON matching the schema.\n'+user_json}
-      ],
-      'response_format':{'type':'json_schema','json_schema':{'name':'pppp_semantic_analysis','strict':True,'schema':schema}}
+        {'role':'system','content':'You are PRISTEEL PPPP semantic classifier. /no_think Be terse and factual.'},
+        {'role':'user','content':format_spec+user_json}
+      ]
     }
-    out=llama_json(body,timeout)
-    content=(((out.get('choices') or [{}])[0].get('message') or {}).get('content'))
-    result=content if isinstance(content,dict) else json.loads(str(content or '').strip())
-    return validate(result,p)
+    return parse_tagged(llama_text(body,timeout),p)
 
 def main():
     print('PPPP local semantic worker started',flush=True)
     print('queue:',QUEUE,flush=True)
     print('llama:',LLAMA,flush=True)
-    print('inference limits: normal=%ss/%s tokens tiny=%ss/%s tokens'%(LLAMA_TIMEOUT_NORMAL,MAX_TOKENS_NORMAL,LLAMA_TIMEOUT_TINY,MAX_TOKENS_TINY),flush=True)
+    print('mode: compact-tagged-v1',flush=True)
     while True:
         try:
             q=queue({'action':'claim'})
@@ -135,13 +185,13 @@ def main():
                     last=e
                     print(time.strftime('%Y-%m-%d %H:%M:%S'),'attempt',attempt,'failed:',repr(e),flush=True)
                     if 'unsupported semantic payload version' in str(e):break
-                    time.sleep(min(6,attempt*2))
+                    time.sleep(min(4,attempt*2))
             if last is not None:
                 try:queue({'action':'complete','job_id':jid,'model':MODEL,'error':str(last)[:2500]})
                 except Exception as qerr:print('queue failure report rejected:',repr(qerr),flush=True)
                 print(time.strftime('%Y-%m-%d %H:%M:%S'),'job failed',jid,repr(last),flush=True)
         except KeyboardInterrupt:
-            print('stopped');return
+            return
         except Exception as e:
             print(time.strftime('%Y-%m-%d %H:%M:%S'),'worker error:',repr(e),flush=True)
             time.sleep(8)
