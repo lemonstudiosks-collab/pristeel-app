@@ -1,45 +1,114 @@
-/* PRISTEEL Primary Navigation Resilience v5
- * Final navigation owner for the six daily PPPP zones.
- * Accepts legacy and current nav keys and loads the unified project-flow owner
- * only after the runtime is ready. No database writes or outbound actions.
+/* PRISTEEL Primary Navigation Resilience v6
+ * Single owner for the six daily PPPP navigation zones.
+ * Stabilizes the visible sidebar atomically and routes through the established
+ * application owners. The experimental project overlays are intentionally NOT
+ * loaded here because they competed for pstOpenProjectWorkspace ownership.
+ *
+ * Retired production overlays kept as manifest references only:
+ * pristeel-operator-flow-v1.js
+ * pristeel-unified-project-flow-v1.js
  */
 (function(){
 'use strict';
-if(window.__pstPrimaryNavResilienceV5)return;
+if(window.__pstPrimaryNavResilienceV6)return;
+window.__pstPrimaryNavResilienceV6=true;
 window.__pstPrimaryNavResilienceV5=true;
-window.__pstPrimaryNavResilienceV4=true;window.__pstPrimaryNavResilienceV3=true;window.__pstPrimaryNavResilienceV2=true;window.__pstPrimaryNavResilienceV1=true;
+window.__pstPrimaryNavResilienceV4=true;
+window.__pstPrimaryNavResilienceV3=true;
+window.__pstPrimaryNavResilienceV2=true;
+window.__pstPrimaryNavResilienceV1=true;
+
 var KEYS={home:1,tenders:1,opportunities:1,projects:1,contacts:1,partners:1,finance:1,apps:1,system:1};
-var assistantLoading=false,commandLoading=null,revisionLoading=null,operatorFlowLoading=false,unifiedLoading=false,decoratorEpoch=0;
+var LABELS={home:'Home',tenders:'Mundësitë',projects:'Projektet',contacts:'Partnerët',finance:'Financat',apps:'Sistemi'};
+var ICONS={
+ home:'<path d="M3.5 11 12 4l8.5 7v8.5a1.5 1.5 0 0 1-1.5 1.5h-4.5v-6h-5v6H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
+ tenders:'<path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
+ projects:'<rect x="3" y="6" width="18" height="14" rx="2.5"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/>',
+ contacts:'<circle cx="9" cy="8" r="3"/><path d="M3.5 20c.2-4.3 2.2-6.7 5.5-6.7s5.3 2.4 5.5 6.7M16 8h5M18.5 5.5v5"/>',
+ finance:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3.5 10h17M7 14h5"/>',
+ apps:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'
+};
+var ORDER=['home','tenders','projects','contacts','finance','apps'];
+var repairTimer=0;
 function S(v){return String(v==null?'':v);}
 function canon(key){key=S(key).toLowerCase();if(key==='opportunities')return'tenders';if(key==='partners')return'contacts';if(key==='system')return'apps';return key;}
-function aliases(key){key=canon(key);return key==='tenders'?['tenders','opportunities']:key==='contacts'?['contacts','partners']:key==='apps'?['apps','system']:[key];}
+function svg(key){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[key]||'')+'</svg>';}
+function visible(el){return !!(el&&el.classList.contains('active')&&el.style.display!=='none');}
+function currentKey(){
+ if(visible(document.getElementById('page-workspace-home')))return'home';
+ if(visible(document.getElementById('page-kek-tenders')))return'tenders';
+ if(visible(document.getElementById('page-workspace-projects'))||visible(document.getElementById('page-workspace-project')))return'projects';
+ if(visible(document.getElementById('page-workspace-contacts'))||visible(document.getElementById('page-contacts')))return'contacts';
+ if(visible(document.getElementById('page-finance')))return'finance';
+ if(visible(document.getElementById('page-workspace-apps'))||visible(document.getElementById('module-hub')))return'apps';
+ return 'home';
+}
+function badgeSnapshot(ws){
+ var out={};['home','projects','finance'].forEach(function(k){var id=k==='home'?'pst-ws-b-home':k==='projects'?'pst-ws-b-projects':'pst-ws-b-finance';var e=document.getElementById(id);if(e&&ws.contains(e)){out[k]={text:S(e.textContent),display:e.style.display};}});return out;
+}
+function repairSidebar(){
+ var ws=document.getElementById('pst-ws-sidebar');if(!ws)return false;
+ var snap=badgeSnapshot(ws);
+ var hosts=Array.prototype.slice.call(ws.querySelectorAll('#pst-ws-canonical-nav'));
+ var host=hosts.shift();hosts.forEach(function(x){x.remove();});
+ if(!host){host=document.createElement('div');host.id='pst-ws-canonical-nav';var create=ws.querySelector('.pst-ws-create');if(create)create.insertAdjacentElement('afterend',host);else ws.prepend(host);}
+ host.innerHTML='<div class="pst-ws-navtitle">PPPP</div><div class="pst-ws-nav pst-canon-work"></div>';
+ var work=host.querySelector('.pst-canon-work');
+ ORDER.forEach(function(key){
+   var b=document.createElement('button');b.type='button';b.className='pst-ws-navbtn pst-canonical-navbtn pst-business-primary';b.dataset.key=key;b.dataset.pstBusinessZone=key==='tenders'?'opportunities':key==='contacts'?'partners':key==='apps'?'system':key;
+   b.innerHTML=svg(key)+'<span class="pst-nav-label">'+LABELS[key]+'</span>';
+   if(snap[key]){var i=document.createElement('i');i.className='pst-ws-badge';i.id=key==='home'?'pst-ws-b-home':key==='projects'?'pst-ws-b-projects':'pst-ws-b-finance';i.textContent=snap[key].text;if(snap[key].display)i.style.display=snap[key].display;b.appendChild(i);}
+   work.appendChild(b);
+ });
+ Array.prototype.forEach.call(ws.children,function(ch){
+   var keep=ch===host||ch.classList.contains('pst-ws-brand')||ch.classList.contains('pst-ws-create')||ch.classList.contains('pst-ws-spacer')||ch.classList.contains('pst-ws-search');
+   if(keep)ch.style.removeProperty('display');else ch.style.setProperty('display','none','important');
+ });
+ mark(currentKey());
+ return true;
+}
+function scheduleRepair(){clearTimeout(repairTimer);repairTimer=setTimeout(repairSidebar,0);[120,420,1450].forEach(function(ms){setTimeout(repairSidebar,ms);});}
+function mark(key){key=canon(key);var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){b.classList.toggle('active',canon(b.dataset.key)===key);});}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
-function mark(key){var xs=aliases(key);document.querySelectorAll('#pst-ws-canonical-nav .pst-ws-navbtn,.pst-ws-navbtn').forEach(function(b){b.classList.toggle('active',xs.indexOf(S(b.getAttribute('data-key')).toLowerCase())>-1);});}
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);return p;}
-function applyDecorators(force){var epoch=++decoratorEpoch;[0,70,220,650].forEach(function(ms){setTimeout(function(){if(epoch!==decoratorEpoch&&ms>0)return;try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){}try{var A=window.PSTOperatingAssistantV2;if(A&&typeof A.apply==='function')A.apply(!!force);}catch(e){}try{var H=window.PSTHomeOperatingGridV1;if(H&&typeof H.render==='function')H.render(!!force);}catch(e){}try{var P=window.PSTProjectClassificationV1;if(P&&typeof P.decorate==='function')P.decorate();}catch(e){}try{var T=window.PSTTenderPriorityActionsV1;if(T&&typeof T.wrapPromotion==='function')T.wrapPromotion();}catch(e){}try{var R=window.PSTProjectOfferRevisionAssistantV1;if(R&&typeof R.inject==='function')R.inject();}catch(e){}try{var O=window.PSTOperatorFlowV1;if(O&&typeof O.apply==='function')O.apply();}catch(e){}try{var U=window.PSTUnifiedProjectFlowV1;if(U&&typeof U.apply==='function')U.apply();}catch(e){}},ms);});}
-function loadScript(path,attr,globalName){if(window[globalName])return Promise.resolve(window[globalName]);var old=document.querySelector('script['+attr+']');if(old)return new Promise(function(resolve){var tries=0;(function wait(){if(window[globalName]||++tries>60){resolve(window[globalName]||null);return;}setTimeout(wait,50);})();});return new Promise(function(resolve){var s=document.createElement('script');s.src=path;s.defer=true;s.setAttribute(attr,'1');s.onload=function(){resolve(window[globalName]||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);});}
-function ensureOperatorFlow(){if(window.PSTOperatorFlowV1){try{window.PSTOperatorFlowV1.apply();}catch(e){}return true;}if(operatorFlowLoading||document.querySelector('script[data-pst-operator-flow-resilience]'))return false;operatorFlowLoading=true;var s=document.createElement('script');s.src='pristeel-operator-flow-v1.js?v=20260829-flow2';s.defer=true;s.setAttribute('data-pst-operator-flow-resilience','1');s.onload=function(){operatorFlowLoading=false;try{if(window.PSTOperatorFlowV1)window.PSTOperatorFlowV1.apply();}catch(e){}};s.onerror=function(){operatorFlowLoading=false;};document.head.appendChild(s);return true;}
-function ensureUnifiedProjectFlow(){if(window.PSTUnifiedProjectFlowV1){try{window.PSTUnifiedProjectFlowV1.apply();}catch(e){}return true;}if(unifiedLoading||document.querySelector('script[data-pst-unified-project-flow]'))return false;unifiedLoading=true;var s=document.createElement('script');s.src='pristeel-unified-project-flow-v1.js?v=20260829-flow1';s.defer=true;s.setAttribute('data-pst-unified-project-flow','1');s.onload=function(){unifiedLoading=false;try{if(window.PSTUnifiedProjectFlowV1)window.PSTUnifiedProjectFlowV1.apply();}catch(e){}};s.onerror=function(){unifiedLoading=false;};document.head.appendChild(s);return true;}
-function ensureCommandCenter(){if(window.PSTTenderPriorityActionsV1&&window.PSTHomeOperatingGridV1&&window.PSTProjectClassificationV1){applyDecorators(true);return Promise.resolve(true);}if(commandLoading)return commandLoading;commandLoading=loadScript('pristeel-tender-priority-actions-v1.js?v=20260827-ux1','data-pst-tender-priority-actions','PSTTenderPriorityActionsV1').then(function(){return loadScript('pristeel-home-operating-grid-v1.js?v=20260823-homegrid2','data-pst-home-operating-grid','PSTHomeOperatingGridV1');}).then(function(){return loadScript('pristeel-project-classification-v1.js?v=20260827-ux1','data-pst-project-classification','PSTProjectClassificationV1');}).then(function(){applyDecorators(true);return true;}).finally(function(){commandLoading=null;});return commandLoading;}
-function ensureOfferRevisionWorkflow(){if(window.PSTProjectOfferRevisionAssistantV1&&window.PSTOfferRevisionEmailDraftV1){applyDecorators(false);return Promise.resolve(true);}if(revisionLoading)return revisionLoading;revisionLoading=loadScript('pristeel-offer-revision-email-draft-v1.js?v=20260823-command3','data-pst-offer-revision-email-draft','PSTOfferRevisionEmailDraftV1').then(function(){return loadScript('pristeel-offer-revision-email-bridge-v1.js?v=20260823-command3','data-pst-offer-revision-email-bridge','PSTOfferRevisionEmailBridgeV1');}).then(function(){return loadScript('pristeel-project-offer-revision-assistant-v1.js?v=20260823-command3','data-pst-project-offer-revision-assistant','PSTProjectOfferRevisionAssistantV1');}).then(function(){applyDecorators(false);return true;}).finally(function(){revisionLoading=null;});return revisionLoading;}
-function ensureAssistant(){ensureCommandCenter();ensureOfferRevisionWorkflow();if(window.PSTOperatingAssistantV2){applyDecorators(true);return true;}if(assistantLoading||document.querySelector('script[data-pst-operating-assistant-resilience]'))return false;assistantLoading=true;var s=document.createElement('script');s.src='pristeel-operating-assistant-v2.js?v=20260823-2';s.defer=true;s.setAttribute('data-pst-operating-assistant-resilience','1');s.onload=function(){assistantLoading=false;applyDecorators(true);};s.onerror=function(){assistantLoading=false;};document.head.appendChild(s);return false;}
-function openHome(){var H=window.PSTHomeCanonicalV1;if(H&&typeof H.activateHome==='function')H.activateHome();else activate('page-workspace-home','home');if(H&&typeof H.render==='function')Promise.resolve(H.render(true)).then(function(){ensureAssistant();ensureCommandCenter();applyDecorators(true);});else{ensureAssistant();ensureCommandCenter();applyDecorators(true);}mark('home');return true;}
-function handoffOpportunities(force){var X=window.PSTProjectCentricWorkflowV1,page=document.getElementById('page-kek-tenders');if(X&&typeof X.loadOpportunities==='function'&&page){activate('page-kek-tenders','tenders');Promise.resolve(X.loadOpportunities(!!force)).catch(function(e){console.warn('PPPP Opportunities navigation:',e);});return true;}return false;}
-function openOpportunities(){var out=false;if(handoffOpportunities(true)){mark('tenders');ensureCommandCenter();applyDecorators(false);return true;}if(typeof window.pstTenderBizOpenMonitor==='function')out=window.pstTenderBizOpenMonitor();else if(typeof window.pstWsKekTenders==='function')out=window.pstWsKekTenders();else if(typeof window.showPage==='function')out=window.showPage('kek-tenders');else out=activate('page-kek-tenders','tenders');mark('tenders');ensureCommandCenter();applyDecorators(false);[0,80,250,700].forEach(function(ms){setTimeout(function(){handoffOpportunities(true);},ms);});return out===undefined?true:out;}
-function existingProjectsReady(){var p=document.getElementById('page-workspace-projects');return !!(p&&p.querySelector('.pst-pm-page')&&Array.isArray(window.__pstWorkspaceProjectRows)&&window.__pstWorkspaceProjectRows.length);}
-function applyProjectFilter(filter){if(!filter)return;var tries=0;(function wait(){var b=document.querySelector('#page-workspace-projects [data-pm-filter="'+S(filter)+'"]');if(b){b.click();return;}if(++tries<20)setTimeout(wait,50);})();}
-function openProjects(filter){var out=false;if(existingProjectsReady())out=!!activate('page-workspace-projects','projects');else if(typeof window.pstProjectsModernOpen==='function')out=window.pstProjectsModernOpen();else{var p=activate('page-workspace-projects','projects');if(p&&typeof window.pstWsRenderProjects==='function')try{window.pstWsRenderProjects();}catch(e){}out=!!p;}mark('projects');ensureCommandCenter();ensureOfferRevisionWorkflow();ensureUnifiedProjectFlow();applyDecorators(false);Promise.resolve(out).then(function(){applyProjectFilter(filter);}).catch(function(e){console.warn('PRISTEEL Projects navigation:',e);});return out===undefined?true:out;}
-function openPartners(){var C=window.PSTContactMasterV1,out=false;if(C&&typeof C.open==='function')out=C.open();else if(typeof window.showPage==='function')out=window.showPage('contacts');else out=activate('page-contacts','contacts')||activate('page-workspace-contacts','contacts');mark('contacts');applyDecorators(false);return out===undefined?true:out;}
 function legacyShow(name){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(name);return true;}}catch(e){}try{if(typeof window.showPage==='function'){window.showPage(name);return true;}}catch(e){}return false;}
-function openFinance(){var ok=legacyShow('finance');if(!ok)ok=!!activate('page-finance','finance');mark('finance');setTimeout(function(){try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}applyDecorators(false);},40);return ok;}
-function systemFallback(){var p=activate('page-workspace-apps','apps');if(!p)return false;if(!p.querySelector('.pst-primary-system-fallback')){var s=document.createElement('section');s.className='pst-primary-system-fallback';s.style.cssText='max-width:980px;margin:26px auto;padding:24px;border:1px solid #dce6ea;border-radius:18px;background:#fff';s.innerHTML='<div style="font-size:9px;font-weight:800;letter-spacing:.12em;color:#526b76">SYSTEM</div><h1 style="margin:5px 0 4px;font-size:24px">Sistemi</h1><p style="margin:0 0 18px;color:#77878e;font-size:11px">Integrimet dhe mjetet teknike. Puna e përditshme fillon nga Home ose Projektet.</p><div style="display:flex;gap:9px;flex-wrap:wrap"><button type="button" data-sys-gmail>Gmail</button><button type="button" data-sys-docs>Dokumentet</button><button type="button" data-sys-all>Të gjitha modulet</button></div>';p.appendChild(s);s.querySelectorAll('button').forEach(function(b){b.style.cssText='min-height:38px;padding:0 14px;border:1px solid #d9e3e7;border-radius:10px;background:#f7fafb;color:#455b65;font-weight:700;cursor:pointer';});s.querySelector('[data-sys-gmail]').onclick=function(){if(typeof window.pstWsGmail==='function')window.pstWsGmail('inbox');};s.querySelector('[data-sys-docs]').onclick=function(){if(typeof window.pstOpenDocumentCenter==='function')window.pstOpenDocumentCenter();};s.querySelector('[data-sys-all]').onclick=function(){if(typeof window.openModuleHub==='function')window.openModuleHub();};}return true;}
-function openSystem(){var p=document.getElementById('page-workspace-apps');if(p&&S(p.innerHTML).trim()){activate('page-workspace-apps','apps');mark('apps');applyDecorators(false);return true;}if(typeof window.openModuleHub==='function'){try{window.openModuleHub();mark('apps');applyDecorators(false);return true;}catch(e){}}var ok=systemFallback();mark('apps');applyDecorators(false);return ok;}
-function route(key){key=S(key).toLowerCase();if(key==='home')return openHome();if(key==='tenders'||key==='opportunities')return openOpportunities();if(key==='projects')return openProjects();if(key==='contacts'||key==='partners')return openPartners();if(key==='finance')return openFinance();if(key==='apps'||key==='system')return openSystem();return false;}
-function intercept(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key],.pst-ws-navbtn[data-key]'):null;if(!b)return;var key=S(b.getAttribute('data-key')).toLowerCase();if(!KEYS[key])return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();route(key);}
-function interceptHomeTile(e){var b=e.target&&e.target.closest?e.target.closest('.pst-hog-tile[data-hog-act]'):null;if(!b)return;var act=S(b.getAttribute('data-hog-act')).toLowerCase();if(act===''||act==='waiting'){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openProjects(act==='waiting'?'waiting':null);}}
-document.addEventListener('click',intercept,true);document.addEventListener('click',interceptHomeTile,true);
-document.addEventListener('pst:modules-ready',function(){ensureAssistant();ensureCommandCenter();ensureOfferRevisionWorkflow();applyDecorators(true);setTimeout(function(){ensureOperatorFlow();ensureUnifiedProjectFlow();},0);},{once:true});
-document.addEventListener('pst:home-canonical-rendered',function(){ensureAssistant();ensureCommandCenter();applyDecorators(true);if(window.PSTOperatorFlowV1)window.PSTOperatorFlowV1.apply();ensureUnifiedProjectFlow();});
-if(document.readyState!=='loading'){ensureAssistant();ensureCommandCenter();ensureOfferRevisionWorkflow();applyDecorators(false);if(window.__pstModulesReady){ensureOperatorFlow();ensureUnifiedProjectFlow();}}else document.addEventListener('DOMContentLoaded',function(){ensureAssistant();ensureCommandCenter();ensureOfferRevisionWorkflow();applyDecorators(false);if(window.__pstModulesReady){ensureOperatorFlow();ensureUnifiedProjectFlow();}},{once:true});
-window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,ensureAssistant:ensureAssistant,ensureCommandCenter:ensureCommandCenter,ensureOfferRevisionWorkflow:ensureOfferRevisionWorkflow,ensureOperatorFlow:ensureOperatorFlow,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,_test:{applyDecorators:applyDecorators,interceptHomeTile:interceptHomeTile,existingProjectsReady:existingProjectsReady,canon:canon}};
+function openHome(){
+ var H=window.PSTHomeCanonicalV1;
+ try{if(H&&typeof H.activateHome==='function')H.activateHome();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('home');else activate('page-workspace-home','home');}catch(e){activate('page-workspace-home','home');}
+ try{if(H&&typeof H.render==='function')Promise.resolve(H.render(true)).catch(function(){});}catch(e){}
+ mark('home');scheduleRepair();return true;
+}
+function openOpportunities(){
+ var page=document.getElementById('page-kek-tenders'),X=window.PSTProjectCentricWorkflowV1;
+ try{if(page&&X&&typeof X.loadOpportunities==='function'){activate('page-kek-tenders','tenders');Promise.resolve(X.loadOpportunities(true)).catch(function(){});mark('tenders');scheduleRepair();return true;}}catch(e){}
+ try{if(typeof window.pstTenderBizOpenMonitor==='function')window.pstTenderBizOpenMonitor();else if(typeof window.pstWsKekTenders==='function')window.pstWsKekTenders();else if(!legacyShow('kek-tenders'))activate('page-kek-tenders','tenders');}catch(e){activate('page-kek-tenders','tenders');}
+ mark('tenders');scheduleRepair();return true;
+}
+function openProjects(filter){
+ try{if(typeof window.pstProjectsModernOpen==='function')window.pstProjectsModernOpen();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('projects');else activate('page-workspace-projects','projects');}catch(e){activate('page-workspace-projects','projects');}
+ mark('projects');scheduleRepair();
+ if(filter)setTimeout(function(){var b=document.querySelector('#page-workspace-projects [data-pm-filter="'+S(filter)+'"]');if(b)b.click();},120);
+ return true;
+}
+function openPartners(){
+ try{var C=window.PSTContactMasterV1;if(C&&typeof C.open==='function')C.open();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('contacts');else if(!legacyShow('contacts'))activate('page-contacts','contacts');}catch(e){activate('page-contacts','contacts');}
+ mark('contacts');scheduleRepair();return true;
+}
+function openFinance(){
+ try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('finance');else if(!legacyShow('finance'))activate('page-finance','finance');}catch(e){activate('page-finance','finance');}
+ mark('finance');scheduleRepair();return true;
+}
+function openSystem(){
+ try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('apps');else if(typeof window.openModuleHub==='function')window.openModuleHub();else activate('page-workspace-apps','apps');}catch(e){activate('page-workspace-apps','apps');}
+ mark('apps');scheduleRepair();return true;
+}
+function route(key){key=canon(key);if(key==='home')return openHome();if(key==='tenders')return openOpportunities();if(key==='projects')return openProjects();if(key==='contacts')return openPartners();if(key==='finance')return openFinance();if(key==='apps')return openSystem();return false;}
+function intercept(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key]'):null;if(!b)return;var key=canon(b.dataset.key);if(!KEYS[key])return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();route(key);}
+document.addEventListener('click',intercept,true);
+function apply(){repairSidebar();}
+document.addEventListener('pst:modules-ready',scheduleRepair,{once:true});
+document.addEventListener('pst:home-canonical-rendered',scheduleRepair);
+document.addEventListener('pst:project-opened',scheduleRepair);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',scheduleRepair,{once:true});else scheduleRepair();
+window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,_test:{canon:canon,currentKey:currentKey}};
 })();
