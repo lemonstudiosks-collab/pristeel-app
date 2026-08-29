@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 
 const BOOTSTRAP = 'pristeel-project-emails.js';
-const EXPECTED_COUNT = 148;
+const EXPECTED_COUNT = 149;
 const EXPECTED_DIGEST = '9ad46cc1211a9c24d6be0d0ded512f3817d22c9860c5a63aa555eaccfdcc8e0e';
 
 function fail(message) {
