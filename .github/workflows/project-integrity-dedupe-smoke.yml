@@ -1,0 +1,28 @@
+name: Project integrity dedupe smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-project-integrity-safety-v2.js'
+      - 'tests/project-integrity-dedupe-smoke.js'
+      - '.github/workflows/project-integrity-dedupe-smoke.yml'
+  pull_request:
+    paths:
+      - 'pristeel-project-integrity-safety-v2.js'
+      - 'tests/project-integrity-dedupe-smoke.js'
+      - '.github/workflows/project-integrity-dedupe-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --check pristeel-project-integrity-safety-v2.js
+      - run: node tests/project-integrity-dedupe-smoke.js
