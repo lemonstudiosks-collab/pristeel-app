@@ -149,7 +149,8 @@ var files=[
   'pristeel-tender-priority-actions-v1.js?v=20260827-ux1',
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
   'pristeel-project-classification-v1.js?v=20260827-ux1',
-  'pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1'
+  'pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1',
+  'pristeel-project-execution-guard-v1.js?v=20260829-postaward1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
 var diag=window.__pstBootstrapDiagnostics=window.__pstBootstrapDiagnostics||{started_at:new Date().toISOString(),total:files.length,loaded:0,errors:[],timeouts:[],retries:[],completed:false};
