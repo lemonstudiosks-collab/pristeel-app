@@ -25,8 +25,25 @@ fi
 MAKE_BIN="/usr/bin/make"
 [[ -x "$MAKE_BIN" ]] || { echo "ERROR: /usr/bin/make not found"; exit 8; }
 
+# Build for the actual Mac instead of disabling every vector instruction.
+# Feature detection keeps the binary portable across supported/older Intel Mac minis.
+CPU_FEATURES="$(sysctl -n machdep.cpu.features 2>/dev/null || true) $(sysctl -n machdep.cpu.leaf7_features 2>/dev/null || true)"
+feature_flag() {
+  local name="$1"
+  if echo " $CPU_FEATURES " | grep -Eiq "[[:space:]]${name}([[:space:]]|$)"; then
+    echo ON
+  else
+    echo OFF
+  fi
+}
+AVX_FLAG="$(feature_flag 'AVX|AVX1\.0')"
+AVX2_FLAG="$(feature_flag 'AVX2')"
+FMA_FLAG="$(feature_flag 'FMA')"
+F16C_FLAG="$(feature_flag 'F16C')"
+
 echo "Using CMake: $CMAKE_BIN"
 echo "Using make: $MAKE_BIN"
+echo "CPU acceleration: AVX=$AVX_FLAG AVX2=$AVX2_FLAG FMA=$FMA_FLAG F16C=$F16C_FLAG"
 
 for label in com.pristeel.pppp-semantic-worker com.pristeel.pppp-llama; do
   launchctl bootout "gui/$UID_NOW/$label" >/dev/null 2>&1 || true
@@ -42,15 +59,15 @@ rm -rf "$BUILD"
   -DGGML_METAL=OFF \
   -DGGML_BLAS=OFF \
   -DGGML_ACCELERATE=OFF \
-  -DGGML_AVX=OFF \
-  -DGGML_AVX2=OFF \
-  -DGGML_FMA=OFF \
-  -DGGML_F16C=OFF
+  -DGGML_AVX="$AVX_FLAG" \
+  -DGGML_AVX2="$AVX2_FLAG" \
+  -DGGML_FMA="$FMA_FLAG" \
+  -DGGML_F16C="$F16C_FLAG"
 
 "$CMAKE_BIN" --build "$BUILD" --target llama-server -j 2
 
 NEW_BIN="$BUILD/bin/llama-server"
-[[ -x "$NEW_BIN" ]] || { echo "ERROR: portable llama-server was not built"; exit 6; }
+[[ -x "$NEW_BIN" ]] || { echo "ERROR: optimized llama-server was not built"; exit 6; }
 
 mkdir -p "$LIVE_BUILD/bin"
 if [[ -x "$LIVE_BIN" ]]; then
