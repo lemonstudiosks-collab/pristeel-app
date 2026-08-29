@@ -1,0 +1,31 @@
+name: Unified project flow smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-unified-project-flow-v1.js'
+      - 'pristeel-primary-nav-resilience-v1.js'
+      - 'tests/unified-project-flow-smoke.mjs'
+      - '.github/workflows/unified-project-flow-smoke.yml'
+  pull_request:
+    paths:
+      - 'pristeel-unified-project-flow-v1.js'
+      - 'pristeel-primary-nav-resilience-v1.js'
+      - 'tests/unified-project-flow-smoke.mjs'
+      - '.github/workflows/unified-project-flow-smoke.yml'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check pristeel-unified-project-flow-v1.js
+          node --check pristeel-primary-nav-resilience-v1.js
+      - name: Unified project flow smoke
+        run: node tests/unified-project-flow-smoke.mjs
