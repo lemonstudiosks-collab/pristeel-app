@@ -54,6 +54,51 @@ function add(set, value) {
   if (clean) set.add(clean);
 }
 
+function isExternal(ref) {
+  return /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(ref);
+}
+
+function resolveRuntimeJsReference(sourceRel, rawRef) {
+  const ref = String(rawRef || '').trim();
+  if (!ref || isExternal(ref)) return '';
+  const clean = ref.split('#')[0].split('?')[0];
+  if (!clean || /[{}<>]/.test(clean) || !/\.js$/i.test(clean)) return '';
+  const sourceDir = path.posix.dirname(sourceRel);
+  const resolved = clean.startsWith('/')
+    ? clean.replace(/^\/+/, '')
+    : path.posix.normalize(path.posix.join(sourceDir === '.' ? '' : sourceDir, clean));
+  return /(^|\/)pristeel-[A-Za-z0-9._-]+\.js$/i.test(resolved) ? resolved : '';
+}
+
+function expandRuntimeJsDependencies(candidate) {
+  const queue = [...candidate].filter((rel) => /\.js$/i.test(rel));
+  const scanned = new Set();
+  let added = 0;
+  while (queue.length) {
+    const sourceRel = queue.shift();
+    if (!sourceRel || scanned.has(sourceRel)) continue;
+    scanned.add(sourceRel);
+    const full = path.join(root, sourceRel);
+    if (!fs.existsSync(full) || !fs.statSync(full).isFile()) continue;
+    const source = fs.readFileSync(full, 'utf8');
+    for (const match of source.matchAll(/['"]([^'"]+\.js(?:\?[^'"]*)?)['"]/g)) {
+      const resolved = resolveRuntimeJsReference(sourceRel, match[1]);
+      if (!resolved) continue;
+      const dependency = path.join(root, resolved);
+      if (!fs.existsSync(dependency) || !fs.statSync(dependency).isFile()) {
+        fail(`${sourceRel} references runtime dependency '${match[1]}', but ${resolved} is missing from the repository.`);
+        continue;
+      }
+      if (!candidate.has(resolved)) {
+        candidate.add(resolved);
+        queue.push(resolved);
+        added += 1;
+      }
+    }
+  }
+  return added;
+}
+
 function walk(dir, base = '') {
   if (!fs.existsSync(dir)) return [];
   const out = [];
@@ -74,10 +119,6 @@ function human(n) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KiB`;
   return `${(n / 1024 / 1024).toFixed(2)} MiB`;
-}
-
-function isExternal(ref) {
-  return /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(ref);
 }
 
 function checkLocalReference(sourceRel, rawRef) {
@@ -135,7 +176,7 @@ if (artifactManifest.productionArtifactDeploymentEnabled !== true) {
 }
 const configuredUploadPath = String(artifactManifest.currentDeployment?.uploadPath || '').trim();
 if (configuredUploadPath !== outputName) {
-  fail(`Builder output '${outputName}' does not match production upload path '${configuredUploadPath || '(missing)'}'.`);
+  fail(`Builder output '${outputName}' does not match production upload path '${configuredUploadPath || '(missing)'}.`);
 }
 if (artifactManifest.currentDeployment?.wholeRepository !== false) {
   fail('Production deployment must not be configured as wholeRepository.');
@@ -157,6 +198,8 @@ for (const file of extractBootstrapModules(bootstrapSource)) add(candidate, file
 for (const item of Array.isArray(runtime.dynamicRuntime) ? runtime.dynamicRuntime : []) add(candidate, item.module);
 for (const item of Array.isArray(artifactManifest.additionalPublicAssets) ? artifactManifest.additionalPublicAssets : []) add(candidate, item.path);
 for (const item of Array.isArray(artifactManifest.compatibilityPublicAssets) ? artifactManifest.compatibilityPublicAssets : []) add(candidate, item.path);
+
+const discoveredRuntimeDependencies = expandRuntimeJsDependencies(candidate);
 
 for (const rel of candidate) {
   const full = path.join(root, rel);
@@ -238,6 +281,7 @@ for (const rel of siteFiles) totalBytes += fs.statSync(path.join(outputDir, rel)
 
 console.log(`Output directory: ${outputName}`);
 console.log(`Verified production source files: ${expectedFiles.length}`);
+console.log(`Discovered dynamic runtime dependencies: ${discoveredRuntimeDependencies}`);
 console.log(`Built files including .nojekyll: ${siteFiles.length}`);
 console.log(`Built production artifact size: ${human(totalBytes)}`);
 console.log(`JavaScript files syntax-checked: ${actualCandidateFiles.filter((file) => file.endsWith('.js')).length}`);
