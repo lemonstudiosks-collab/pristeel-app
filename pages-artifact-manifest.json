@@ -89,6 +89,114 @@
     {
       "path": "gmail-addon/pristeel-addon-icon.svg",
       "reason": "Current Gmail Add-on manifest loads this icon directly from GitHub Pages."
+    },
+    {
+      "path": "pristeel-commercial-document-open-hotfix-v1.js",
+      "reason": "Loaded dynamically by the active Commercial navigation repair and required to open Commercial documents reliably."
+    },
+    {
+      "path": "pristeel-contact-category-cards-v1.js",
+      "reason": "Loaded dynamically by the redesign finalizer for the current Partner/Contact presentation."
+    },
+    {
+      "path": "pristeel-daily-zones-cleanup-v1.js",
+      "reason": "Loaded dynamically by the redesign finalizer to remove duplicate technical chrome from the daily business workspaces."
+    },
+    {
+      "path": "pristeel-final-offer-output-fix-v1.js",
+      "reason": "Loaded dynamically by the BOM/RFQ autoflow and required for the final client-offer output path."
+    },
+    {
+      "path": "pristeel-gmail-project-auto-link-v1.js",
+      "reason": "Loaded dynamically by Project First actions to preserve explicit Gmail-to-project continuity."
+    },
+    {
+      "path": "pristeel-gmail-project-identity-guard-v1.js",
+      "reason": "Loaded dynamically by the Gmail intake revision layer to prevent cross-project identity drift."
+    },
+    {
+      "path": "pristeel-home-operational-state-policy-v1.js",
+      "reason": "Loaded dynamically by authentication persistence to keep Home operational-state semantics consistent."
+    },
+    {
+      "path": "pristeel-linked-gmail-auth-gate-v1.js",
+      "reason": "Loaded dynamically by Project First actions to gate linked Gmail actions behind the current authenticated session."
+    },
+    {
+      "path": "pristeel-manufacturer-terms-flowdown-v1.js",
+      "reason": "Loaded dynamically during authenticated startup to preserve manufacturer commercial-term flowdown rules."
+    },
+    {
+      "path": "pristeel-openai-operating-assistant-v1.js",
+      "reason": "Loaded dynamically by the current Home/finalizer assistant surfaces and backed by the authenticated Supabase assistant function."
+    },
+    {
+      "path": "pristeel-operating-assistant-v2.js",
+      "reason": "Loaded dynamically by the redesign finalizer to present what PPPP observed and what requires a human decision."
+    },
+    {
+      "path": "pristeel-operational-truth-v1.js",
+      "reason": "Loaded dynamically by the final Home happiness layer to compute protected operational truth from current project data."
+    },
+    {
+      "path": "pristeel-platform-readability-v1.js",
+      "reason": "Loaded dynamically by final UI presentation layers to normalize daily typography without changing business data."
+    },
+    {
+      "path": "pristeel-project-analysis-run-guard-v1.js",
+      "reason": "Loaded dynamically by Project First actions to prevent duplicate or unsafe project-analysis runs."
+    },
+    {
+      "path": "pristeel-project-commercial-prefill-v1.js",
+      "reason": "Loaded dynamically by Project Commercial to prefill current project data into the commercial workspace."
+    },
+    {
+      "path": "pristeel-project-contact-view-dedupe-v1.js",
+      "reason": "Loaded dynamically by Project First actions to prevent duplicate contact views inside project context."
+    },
+    {
+      "path": "pristeel-project-duplicate-context-v1.js",
+      "reason": "Loaded dynamically by Project First actions to reconcile duplicate project context safely."
+    },
+    {
+      "path": "pristeel-project-email-body-sync-v1.js",
+      "reason": "Loaded dynamically by Project First actions to keep linked project email bodies synchronized."
+    },
+    {
+      "path": "pristeel-project-execution-surface-v1.js",
+      "reason": "Loaded dynamically by the redesign finalizer to simplify won/execution projects to execution and finance while retaining pre-award history read-only."
+    },
+    {
+      "path": "pristeel-project-first-bom-clarity-v1.js",
+      "reason": "Loaded dynamically by BOM/RFQ autoflow to keep the Project First BOM surface clear and actionable."
+    },
+    {
+      "path": "pristeel-project-first-rfq-navigation-v1.js",
+      "reason": "Loaded dynamically by BOM/RFQ autoflow to keep RFQ navigation inside the active project flow."
+    },
+    {
+      "path": "pristeel-project-live-intelligence-v1.js",
+      "reason": "Loaded dynamically by Project First actions to provide current project intelligence in the active workspace."
+    },
+    {
+      "path": "pristeel-project-workflow-navigation-v1.js",
+      "reason": "Loaded dynamically by Commercial layout stabilization to preserve canonical project workflow navigation."
+    },
+    {
+      "path": "pristeel-rfq-draft-governance-v1.js",
+      "reason": "Loaded dynamically by workflow governance to enforce controlled RFQ draft behavior."
+    },
+    {
+      "path": "pristeel-section-theme-v1.js",
+      "reason": "Loaded dynamically by current shell/finalizer presentation owners to provide stable section identity."
+    },
+    {
+      "path": "pristeel-semantic-rfq-drafts-v1.js",
+      "reason": "Loaded dynamically by BOM/RFQ autoflow for semantic RFQ draft preparation behind explicit user actions."
+    },
+    {
+      "path": "pristeel-supplier-offer-currency-v1.js",
+      "reason": "Loaded dynamically by the supplier-offer draft bridge to preserve supplier offer currency correctly."
     }
   ],
   "compatibilityPublicAssets": [
