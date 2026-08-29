@@ -32,6 +32,7 @@ const {JSDOM}=require('jsdom');
     </div>
   </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
+  w.__PST_PF2_EXTRA_TIMEOUT_MS=25;
   const project={id:'p1',name:'Dukley Budva',client:'ITALIAN STYLE',ref:'',status:'aktiv',pipeline_stage:'rfq_in',drive_folder_id:'drive1',drive_folder_url:'https://drive.google.com/drive/folders/drive1'};
   const fileUrl='https://drive.google.com/file/d/f1/view';
   const integrity={
@@ -74,7 +75,6 @@ const {JSDOM}=require('jsdom');
   searchBtn.click();
   assert.deepStrictEqual(stableSearchQueries,['Dukley Budva'],'Project search must route directly through stable search with project context');
   assert.strictEqual(deepSearchCalls,0,'Project search must not invoke the old Deep Gmail owner directly');
-
 
   w.PSTProjectFirstV2.render('bom');
   assert(w.document.getElementById('pst-pi-body').textContent.includes('RRUGA PA BOM'),'No-BOM gate is missing');
@@ -153,6 +153,16 @@ const {JSDOM}=require('jsdom');
   w.document.getElementById('pgc-close').click();
   await new Promise(r=>setTimeout(r,30));
   assert.strictEqual(refreshCalls.length,0,'Closing Gmail without a successful link must not reload the workspace');
+
+  /* Optional Project-First enrichments must never keep the project workspace waiting forever. */
+  const workingFetch=w.supaFetch;
+  w.supaFetch=()=>new Promise(()=>{});
+  const boundedMount=await Promise.race([
+    w.PSTProjectFirstV2.mount('p1',true),
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('optional Project-First enrichment blocked workspace open')),250))
+  ]);
+  assert.strictEqual(boundedMount,true,'Project workspace must still render when every optional enrichment request hangs');
+  w.supaFetch=workingFetch;
 
   dom.window.close();
   console.log('Project-first V2 smoke test passed.');
