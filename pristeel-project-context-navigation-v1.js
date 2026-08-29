@@ -11,6 +11,7 @@ var A=window.PSTProjectDataIntegrity;
 if(!A||typeof A.load!=='function')return;
 var originalLoad=A.load;
 var currentProject=null;
+var READ_WAIT=Number(window.__pstProjectReadWait||1800);
 
 function arr(v){return Array.isArray(v)?v:[];}
 function enc(v){return encodeURIComponent(String(v==null?'':v));}
@@ -44,6 +45,11 @@ function isSupplierOffer(row){
   return !!String(row.supplier||row.supplier_name||row.company||'').trim()||/offer|ofert|angebot|quotation|quote|rfq response|price proposal/i.test(String(row.title||row.subject||row.description||row.file_name||row.filename||''));
 }
 function tag(rows,source){return arr(rows).map(function(row){try{row.__pstSource=row.__pstSource||source;}catch(e){}return row;});}
+function bounded(promise,ms,fallback){return new Promise(function(resolve){var done=false,t=setTimeout(function(){if(done)return;done=true;resolve(fallback);},ms);Promise.resolve(promise).then(function(v){if(done)return;done=true;clearTimeout(t);resolve(v);}).catch(function(){if(done)return;done=true;clearTimeout(t);resolve(fallback);});});}
+function optionalSafe(path){
+  if(typeof A.safe!=='function')return Promise.resolve([]);
+  return bounded(A.safe(path),READ_WAIT,[]).then(arr);
+}
 
 A.load=async function(id){
   var data=await originalLoad(id),p=data.project;
@@ -55,7 +61,9 @@ A.load=async function(id){
   data.attachmentLinks=tag(arr(data.attachmentLinks).filter(function(row){return strictProjectMatch(row,p,true);}), 'project_attachment_links');
   data.inboxDocs=tag(arr(data.inboxDocs).filter(function(row){return strictProjectMatch(row,p,true);}), 'offers_inbox');
 
-  var databaseFiles=await A.safe('files?project_id=eq.'+enc(p.id)+'&select=id,file_name,file_type,size_kb,created_at,project_id,page_context&order=created_at.desc&limit=1000');
+  // This is optional enrichment: never let one slow `files` request hold the
+  // canonical project workspace open. Core project data has already loaded.
+  var databaseFiles=await optionalSafe('files?project_id=eq.'+enc(p.id)+'&select=id,file_name,file_type,size_kb,created_at,project_id,page_context&order=created_at.desc&limit=1000');
   data.databaseFiles=tag(databaseFiles,'files');
   data.projectDocs=unique(data.projectDocs.concat(data.databaseFiles));
 
