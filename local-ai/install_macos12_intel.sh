@@ -18,6 +18,7 @@ WORKER_PLIST="$LA/com.pristeel.pppp-semantic-worker.plist"
 AWAKE_PLIST="$LA/com.pristeel.pppp-awake.plist"
 UID_NOW="$(id -u)"
 THREADS="$(sysctl -n hw.physicalcpu 2>/dev/null || echo 2)"
+WORKER_URL="https://raw.githubusercontent.com/lemonstudiosks-collab/pristeel-app/eafbdeabf8a2177788b386a27fe5bbad75fa4d4d/local-ai/pppp_semantic_worker.py"
 if (( THREADS > 4 )); then THREADS=4; fi
 if (( THREADS < 2 )); then THREADS=2; fi
 
@@ -30,7 +31,7 @@ mkdir -p "$LOGS" "$LA"
 chmod 700 "$ROOT" "$LOGS"
 
 echo "Downloading PPPP semantic worker..."
-curl -fsSL "https://raw.githubusercontent.com/lemonstudiosks-collab/pristeel-app/main/local-ai/pppp_semantic_worker.py" -o "$WORKER"
+curl -fsSL "$WORKER_URL" -o "$WORKER"
 chmod 700 "$WORKER"
 
 cat > "$SERVER_PLIST" <<EOF
