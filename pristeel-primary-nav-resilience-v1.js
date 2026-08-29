@@ -10,6 +10,9 @@
  * pristeel-offer-revision-email-draft-v1.js
  * pristeel-offer-revision-email-bridge-v1.js
  * pristeel-project-offer-revision-assistant-v1.js
+ * pristeel-home-operating-grid-v1.js
+ * pristeel-tender-priority-actions-v1.js
+ * pristeel-project-classification-v1.js
  */
 (function(){
 'use strict';
