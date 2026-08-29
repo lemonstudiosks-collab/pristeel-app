@@ -1,18 +1,20 @@
 /* PRISTEEL Project Load Stability v2
- * Keeps the full integrity loader as first choice, but prevents an indefinite project-open spinner.
- * On timeout/error, returns a bounded project-specific fallback with the same data shape.
- * Fallback also resolves linked Gmail messages and supplier-offer sources so refreshes do not hide project data.
+ * Uses bounded project-specific reads for the normal project-open path.
+ * The legacy rich integrity loader remains available explicitly for diagnostics only;
+ * it is not started in parallel, so opening a project cannot double the database/network work.
  */
 (function(){
 'use strict';
 if(window.__pstProjectLoadStabilityV2)return;
 window.__pstProjectLoadStabilityV2=true;
 if(!window.PSTProjectDataIntegrity||typeof window.PSTProjectDataIntegrity.load!=='function')return;
-var original=window.PSTProjectDataIntegrity.load.bind(window.PSTProjectDataIntegrity);
-var FULL_WAIT=Number(window.__pstProjectFullWait||3500),READ_WAIT=Number(window.__pstProjectReadWait||1800);
+var A=window.PSTProjectDataIntegrity;
+var original=A.load.bind(A);
+var READ_WAIT=Number(window.__pstProjectReadWait||1800);
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
 function arr(v){return Array.isArray(v)?v:[];}
 function enc(v){return encodeURIComponent(String(v==null?'':v));}
+function text(v){return String(v==null?'':v).trim();}
 function bounded(promise,ms,fallback){return new Promise(function(resolve){var done=false,t=setTimeout(function(){if(done)return;done=true;resolve(fallback);},ms);Promise.resolve(promise).then(function(v){if(done)return;done=true;clearTimeout(t);resolve(v);}).catch(function(){if(done)return;done=true;clearTimeout(t);resolve(fallback);});});}
 function q(path){if(typeof window.supaFetch!=='function')return Promise.resolve([]);return bounded(window.supaFetch(path),READ_WAIT,[]).then(arr);}
 function byId(table,id,order){return q(table+'?project_id=eq.'+enc(id)+'&select=*'+(order?'&'+order:'')+'&limit=1500');}
@@ -24,8 +26,24 @@ function flatText(row){if(!row||typeof row!=='object')return norm(row);var field
 function email(v){var m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
 function external(v){var e=email(v);return e&&INTERNAL.indexOf(e)<0&&!/(no-?reply|mailer-daemon|postmaster|dmarc|calendar-notification)@/i.test(e);}
 function ourOffer(row){return String(row&&row.series||'').toUpperCase()==='QUO'||/oferta jone|our offer|pristeel/i.test(String(row&&(row.supplier||row.origin||row.source)||''));}
-function supplierOffer(row){if(!row||ourOffer(row))return false;var text=flatText(row),supplier=String(row.supplier||row.supplier_name||row.company||'').trim();return !!supplier||/offer|ofert|angebot|quotation|quote|rfq response|price proposal/i.test(text);}
-async function projectNamed(table,id,p){var named=p&&p.name?q(table+'?project=ilike.'+pattern(p.name)+'&select=*&limit=1200'):Promise.resolve([]);var both=await Promise.all([byId(table,id,''),named]);return uniq(both[0].concat(both[1]),rowKey);}
+function supplierOffer(row){if(!row||ourOffer(row))return false;var t=flatText(row),supplier=String(row.supplier||row.supplier_name||row.company||'').trim();return !!supplier||/offer|ofert|angebot|quotation|quote|rfq response|price proposal/i.test(t);}
+function canonicalRef(p){
+ try{if(typeof A.canonicalRef==='function')return text(A.canonicalRef(p));}catch(_){}
+ return text(p&&(p.business_ref||p.project_ref||p.ref||p.reference));
+}
+async function projectNamed(table,id,p){
+ var jobs=[byId(table,id,'')],name=text(p&&p.name),ref=canonicalRef(p);
+ if(name){
+   jobs.push(q(table+'?project=ilike.'+pattern(name)+'&select=*&limit=1200'));
+   jobs.push(q(table+'?project_name=ilike.'+pattern(name)+'&select=*&limit=1200'));
+ }
+ if(ref){
+   jobs.push(q(table+'?project=ilike.'+pattern(ref)+'&select=*&limit=1200'));
+   jobs.push(q(table+'?project_name=ilike.'+pattern(ref)+'&select=*&limit=1200'));
+ }
+ var chunks=await Promise.all(jobs);
+ return uniq([].concat.apply([],chunks),rowKey);
+}
 async function linkedEmails(id){
  var pair=await Promise.all([byId('project_emails',id,'order=sent_at.desc'),byId('project_email_links',id,'order=created_at.desc')]);
  var direct=pair[0],links=pair[1],ids=uniq(links,function(x){return x.gmail_message_id;}).map(function(x){return x.gmail_message_id;}).filter(Boolean),jobs=[];
@@ -64,7 +82,7 @@ async function fallback(id){
  var emails=em.rows,contacts=fallbackContacts(out[0],emails),offers=out[3],docs=out[4],projectDocs=out[8],attachmentLinks=out[9],inboxDocs=out[10];
  var ours=uniq(docs.filter(ourOffer).concat(offers.filter(ourOffer)),rowKey);
  var suppliers=uniq(offers.concat(inboxDocs,projectDocs,attachmentLinks,docs).filter(supplierOffer),rowKey);
- return{
+ var data={
    project:p,emails:emails,emailLinks:em.links,linkedOnly:em.linkedOnly,contacts:contacts,bom:out[1],rfqs:out[2],offers:offers,
    ourOffers:ours,supplierOffers:suppliers,docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],
    projectDocs:projectDocs,attachmentLinks:attachmentLinks,inboxDocs:inboxDocs,guarantees:out[11],deals:[],deal:null,
@@ -73,14 +91,12 @@ async function fallback(id){
    integration:{gmailModule:!!(window.PSTEmail&&window.PSTGoogleWorkspaceAuth),gmailLinked:emails.length>0,driveFolder:!!p.drive_folder_id,driveState:'deferred',hubspotCached:false,hubspotBcc:false},
    __stabilityFallback:true
  };
+ try{if(typeof A.buildTimeline==='function')data.timeline=A.buildTimeline(data);}catch(_){}
+ try{if(typeof A.calcReadiness==='function')data.readiness=A.calcReadiness(data);}catch(_){}
+ try{if(typeof A.calcCommercial==='function')data.commercial=A.calcCommercial(data);}catch(_){}
+ return data;
 }
-async function load(id){
- var timeout;
- var full=new Promise(function(resolve){timeout=setTimeout(function(){resolve({kind:'timeout'});},FULL_WAIT);original(id).then(function(data){clearTimeout(timeout);resolve({kind:'full',data:data});}).catch(function(error){clearTimeout(timeout);resolve({kind:'error',error:error});});});
- var result=await full;
- if(result.kind==='full')return result.data;
- try{return await fallback(id);}catch(e){if(result.error)throw result.error;throw e;}
-}
-window.PSTProjectDataIntegrity.load=load;
-window.PSTProjectLoadStabilityV2={load:load,fallback:fallback};
+async function load(id){return fallback(id);}
+A.load=load;
+window.PSTProjectLoadStabilityV2={installed:true,load:load,fallback:fallback,full:original,original:original};
 })();
