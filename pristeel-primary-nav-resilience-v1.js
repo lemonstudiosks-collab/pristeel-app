@@ -1,4 +1,4 @@
-/* PRISTEEL Primary Navigation Resilience v7
+/* PRISTEEL Primary Navigation Resilience v8
  * Single owner for the six daily PPPP navigation zones.
  * Stabilizes the visible sidebar, removes duplicate daily controls conservatively,
  * and surfaces only tender decisions that require human review on Home.
@@ -10,7 +10,8 @@
  */
 (function(){
 'use strict';
-if(window.__pstPrimaryNavResilienceV7)return;
+if(window.__pstPrimaryNavResilienceV8)return;
+window.__pstPrimaryNavResilienceV8=true;
 window.__pstPrimaryNavResilienceV7=true;
 window.__pstPrimaryNavResilienceV6=true;
 window.__pstPrimaryNavResilienceV5=true;
@@ -81,9 +82,17 @@ function openHome(){
  try{if(H&&typeof H.render==='function')Promise.resolve(H.render(true)).catch(function(){});}catch(e){}
  mark('home');scheduleRepair();schedulePolish();return true;
 }
+function handoffOpportunities(force){
+ var page=document.getElementById('page-kek-tenders'),X=window.PSTProjectCentricWorkflowV1;if(!page||!X)return false;
+ try{
+   activate('page-kek-tenders','tenders');
+   if(typeof X.openOpportunities==='function'){Promise.resolve(X.openOpportunities(force)).catch(function(){});return true;}
+   if(typeof X.loadOpportunities==='function'){Promise.resolve(X.loadOpportunities(force)).catch(function(){});return true;}
+ }catch(e){}
+ return false;
+}
 function openOpportunities(){
- var page=document.getElementById('page-kek-tenders'),X=window.PSTProjectCentricWorkflowV1;
- try{if(page&&X&&typeof X.loadOpportunities==='function'){activate('page-kek-tenders','tenders');Promise.resolve(X.loadOpportunities(true)).catch(function(){});mark('tenders');scheduleRepair();schedulePolish();return true;}}catch(e){}
+ if(handoffOpportunities(true)){mark('tenders');scheduleRepair();schedulePolish();return true;}
  try{if(typeof window.pstTenderBizOpenMonitor==='function')window.pstTenderBizOpenMonitor();else if(typeof window.pstWsKekTenders==='function')window.pstWsKekTenders();else if(!legacyShow('kek-tenders'))activate('page-kek-tenders','tenders');}catch(e){activate('page-kek-tenders','tenders');}
  mark('tenders');scheduleRepair();schedulePolish();return true;
 }
@@ -134,7 +143,7 @@ function sourceLabel(row){var k=S(row&&row.source_key);if(k.indexOf('TED:')===0)
 function tenderMeta(row){var a=[sourceLabel(row),row.authority||'',row.procurement_no||''];if(row.deadline)a.push('Afati '+S(row.deadline));if(Number(row.relevance_score)>0)a.push('Relevanca '+Number(row.relevance_score)+'%');return a.filter(Boolean).join(' · ');}
 async function renderHomeTenderDecisions(){
  var token=++tenderRenderToken,page=document.getElementById('page-workspace-home');if(!visible(page)||typeof window.supaFetch!=='function')return false;
- var rows=[];try{rows=await window.supaFetch('pppp_tender_operating_lanes_v1?human_action_required=eq.true&select=id,source_key,procurement_no,authority,title,estimated_value,currency,deadline,relevance_score,operating_lane,status,project_id,detail_url,source_url&order=relevance_score.desc&order=deadline.asc&limit=5')||[];}catch(e){return false;}
+ var rows=[];try{rows=await window.supaFetch('pppp_tender_operating_lanes_v1?human_action_required=eq.true&select=id,source_key,procurement_no,authority,title,estimated_value,currency,deadline,relevance_score,operating_lane,status,project_id,detail_url,source_url&order=relevance_score.desc,deadline.asc&limit=5')||[];}catch(e){return false;}
  if(token!==tenderRenderToken)return false;
  rows=(Array.isArray(rows)?rows:[]).filter(function(r){return ['rejected','no_go','closed'].indexOf(norm(r&&r.status))<0;}).slice(0,5);
  var old=document.getElementById('pst-home-tender-decisions');if(old)old.remove();if(!rows.length)return true;
@@ -154,5 +163,5 @@ document.addEventListener('pst:home-canonical-rendered',function(){scheduleRepai
 document.addEventListener('pst:project-opened',function(){scheduleRepair();schedulePolish();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){scheduleRepair();schedulePolish();},{once:true});else{scheduleRepair();schedulePolish();}
 var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature}};
-window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=API;
+window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=API;
 })();
