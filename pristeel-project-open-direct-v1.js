@@ -1,5 +1,5 @@
 /* PRISTEEL direct project opener
- * Keeps project-list clicks synchronous and independent from background observers.
+ * Makes the complete project row clickable while keeping row actions independent.
  * Restores the Gmail collection action only after the selected workspace has opened.
  */
 (function(){
@@ -8,8 +8,28 @@ if(window.__pstProjectOpenDirectV1)return;
 window.__pstProjectOpenDirectV1=true;
 
 var busy=false;
+
+function ensureRowUi(){
+  if(!document.getElementById('pst-project-row-open-css')){
+    var style=document.createElement('style');
+    style.id='pst-project-row-open-css';
+    style.textContent='.pst-pm-row{cursor:pointer}.pst-pm-open{display:none!important}';
+    document.head.appendChild(style);
+  }
+  document.querySelectorAll('.pst-pm-row .pst-pm-open').forEach(function(button){button.remove();});
+  var menu=document.getElementById('pst-pm-menu');
+  if(menu){var openAction=menu.querySelector('[data-act="open"]');if(openAction)openAction.remove();}
+}
+
 function projectIdFrom(target){
-  var node=target&&target.closest?target.closest('[data-pm-open]'):null;
+  if(!target||!target.closest)return'';
+  if(target.closest('.pst-pm-more,#pst-pm-menu'))return'';
+  var row=target.closest('.pst-pm-row');
+  if(row){
+    var rowOpen=row.querySelector('[data-pm-open]');
+    return rowOpen?String(rowOpen.getAttribute('data-pm-open')||''):String(row.getAttribute('data-project-id')||'');
+  }
+  var node=target.closest('[data-pm-open]');
   return node?String(node.getAttribute('data-pm-open')||''):'';
 }
 function setContext(id){
@@ -82,6 +102,8 @@ function click(event){
   event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
   open(id);
 }
+ensureRowUi();
+new MutationObserver(function(){ensureRowUi();}).observe(document.documentElement,{childList:true,subtree:true});
 document.addEventListener('click',click,true);
 window.pstOpenProjectDirect=open;
 window.pstEnsureProjectGmailButton=ensureGmailButton;
