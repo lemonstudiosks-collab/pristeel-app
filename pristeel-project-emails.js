@@ -148,7 +148,7 @@ var files=[
   'pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2',
   'pristeel-tender-priority-actions-v1.js?v=20260827-ux1',
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
-  'pristeel-project-classification-v1.js?v=20260827-ux1',
+  'pristeel-project-classification-v1.js?v=20260830-rowopen1',
   'pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1',
   'pristeel-project-execution-guard-v1.js?v=20260829-postaward1'
 ];
