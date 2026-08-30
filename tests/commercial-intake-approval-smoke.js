@@ -23,7 +23,7 @@ const {JSDOM}=require('jsdom');
     assert.doesNotMatch(setClause,/\bstatus\s*=\s*'sent'/i,'migration must not mark an RFQ sent');
   }
 
-  assert.match(theme,/pristeel-commercial-intake-review-v1\.js\?v=20260823-1/,'runtime child loader missing');
+  assert.match(theme,/pristeel-commercial-intake-review-v1\.js\?v=20260830-unitprice2/,'current commercial review runtime cache-bust missing');
   assert.match(ui,/window\.confirm/,'approval must require an explicit user confirmation');
   assert.match(ui,/pppp_approve_supplier_offer_candidate_v1/);
   assert.match(ui,/pppp_approve_invoice_candidate_v1/);
@@ -40,7 +40,7 @@ const {JSDOM}=require('jsdom');
   w.confirm=()=>{confirmCalls++;return true;};
   w.alert=(m)=>{throw new Error('Unexpected alert: '+m);};
   w.supaFetch=async(path,method,body)=>{
-    if(path.startsWith('supplier_offer_candidates?'))return[{id:'c1',project_id:'p1',gmail_message_id:'gm1',supplier_name:'Supplier A',supplier_email:'a@supplier.test',subject:'Offer 1',extracted:{currency:'EUR',price_kg:1.85,total_amount:18500,qty_kg:10000,incoterms:'DAP'},confidence:91,status:'review',updated_at:'2026-08-23T08:00:00Z'}];
+    if(path.startsWith('supplier_offer_candidates?'))return[{id:'c1',project_id:'p1',gmail_message_id:'gm1',supplier_name:'Supplier A',supplier_email:'a@supplier.test',subject:'Offer 1',matched_rfq_id:'rfq1',extracted:{currency:'USD',unit_price:120000,pricing_unit:'set',incoterms:'EXW',delivery_weeks:10},confidence:91,status:'review',updated_at:'2026-08-23T08:00:00Z'}];
     if(path.startsWith('invoice_candidates?'))return[];
     if(path==='rpc/pppp_approve_supplier_offer_candidate_v1'){rpcCalls++;assert.strictEqual(method,'POST');assert.strictEqual(body.p_candidate_id,'c1');return{ok:true,offer_id:'o1'};}
     if(path==='rpc/pppp_ignore_commercial_candidate_v1')return{ok:true};
@@ -51,15 +51,18 @@ const {JSDOM}=require('jsdom');
   const panel=w.document.getElementById('pst-commercial-intake-review');
   assert.ok(panel,'commercial intake review panel did not render');
   assert.match(panel.textContent,/Supplier A/);
-  assert.match(panel.textContent,/1[,.]85/,'commercial value should render in the active locale');
+  assert.match(panel.textContent,/120[.\s]?000/,'unit price should render in the active locale');
+  assert.match(panel.textContent,/set/i,'pricing unit should render');
+  assert.match(panel.textContent,/RFQ:\s*i lidhur/i,'matched RFQ should be visible');
   assert.strictEqual(rpcCalls,0,'candidate was approved without a human click');
   const btn=panel.querySelector('[data-cir-approve]');
-  assert.ok(btn,'strong reviewed candidate should expose an approval button');
+  assert.ok(btn,'reviewed unit-priced candidate should expose an approval button');
   btn.click();
   await new Promise(r=>setTimeout(r,80));
   assert.strictEqual(confirmCalls,1,'approval confirmation was not requested');
   assert.strictEqual(rpcCalls,1,'approval RPC was not called exactly once after confirmation');
   assert.strictEqual(w.PSTCommercialIntakeReviewV1.directOfferReady({extracted:{price_kg:1.85,currency:null}}),false,'missing currency must block direct approval');
+  assert.strictEqual(w.PSTCommercialIntakeReviewV1.directOfferReady({extracted:{unit_price:120000,pricing_unit:'set',currency:'USD'}}),true,'reviewed unit price with currency must be approval-ready');
   assert.strictEqual(w.PSTCommercialIntakeReviewV1.directInvoiceReady({extracted:{invoice_number:'INV-1',total_amount:100,currency:'EUR'}}),true);
   dom.window.close();
   console.log('Commercial intake approval human-gate smoke: OK');
