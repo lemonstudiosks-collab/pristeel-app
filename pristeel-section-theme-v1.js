@@ -142,7 +142,7 @@ if(window.__pstCommercialIntakeReviewLoaderV1)return;window.__pstCommercialIntak
 function ensure(){
  if(window.PSTCommercialIntakeReviewV1)return true;
  if(document.querySelector('script[data-pst-commercial-intake-review]'))return false;
- var s=document.createElement('script');s.src='pristeel-commercial-intake-review-v1.js?v=20260823-1';s.defer=true;s.setAttribute('data-pst-commercial-intake-review','1');document.head.appendChild(s);return false;
+ var s=document.createElement('script');s.src='pristeel-commercial-intake-review-v1.js?v=20260830-unitprice2';s.defer=true;s.setAttribute('data-pst-commercial-intake-review','1');document.head.appendChild(s);return false;
 }
 ensure();document.addEventListener('pst:modules-ready',ensure,{once:true});
 })();
