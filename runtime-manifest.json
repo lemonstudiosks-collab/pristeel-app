@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "8d4a567c8801a2ab984188118dbe7f94f94bc1ec",
+  "auditedAtCommit": "eb5396fadee1b41eec9bd8e949681d1cf8ef04de",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
@@ -71,7 +71,7 @@
         "pristeel-project-lifecycle-tracking-v1.js",
         "pristeel-project-classification-v1.js"
       ],
-      "note": "Project Classification is the final operational list-state presentation and final row-navigation owner: the whole visible project row opens the canonical project workspace, while the overflow menu remains separate. The legacy Hap action is hidden. Operational filters remain Albanian: Kërkon veprim, Në pritje, Në realizim and Të mbyllura."
+      "note": "Project Classification is the final operational list-state and row-navigation presentation: the entire visible project row opens the canonical project workspace, the overflow menu remains separate, and the legacy Hap action stays hidden. Albanian work-state filters remain Kërkon veprim, Në pritje, Në realizim and Të mbyllura."
     },
     {
       "area": "project-workspace",
@@ -218,70 +218,157 @@
       "condition": "Loaded unconditionally by the production base loader to recover confirmed single-project Gmail thread continuity before linked-file recovery."
     },
     {
-      "module": "pristeel-project-action-engine-v1.js",
-      "loader": "pristeel-roles.js",
-      "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader."
-    },
-    {
-      "module": "pristeel-gmail-outreach-tracker-v1.js",
-      "loader": "pristeel-roles.js",
-      "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader."
-    },
-    {
-      "module": "pristeel-project-document-intake-v1.js",
-      "loader": "pristeel-roles.js",
-      "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader."
-    },
-    {
-      "module": "pristeel-project-email-body-hydration-v1.js",
-      "loader": "pristeel-roles.js",
-      "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader."
-    },
-    {
       "module": "pristeel-task-source-actions-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader."
+      "condition": "Loaded unconditionally by the production base loader. It remains the safe Workspace shell reconciler and source-shortcut provider; later Operating Experience presentation is loaded by the redesign finalizer."
     },
     {
-      "module": "pristeel-rfq-gmail-history-sync-v1.js",
-      "loader": "pristeel-roles.js",
+      "module": "pristeel-contact-master-v1.js",
+      "loader": "pristeel-task-source-actions-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader."
+      "condition": "Loaded with cache busting by the final Workspace shell layer. It provides the read-only unified Contact Master over Gmail, HubSpot, Bitrix24 and project relationships."
+    },
+    {
+      "module": "pristeel-operating-experience-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded dynamically by the redesign finalizer with cache busting. It is a bounded presentation/navigation layer only: business-zone colors, simplified primary navigation, project phase grouping, lifecycle-aware next actions, direct Home action routing and Opportunities decision labels. No Supabase reads/writes or outbound actions."
+    },
+    {
+      "module": "pristeel-project-commercial-simplified-v1.js",
+      "loader": "pristeel-offer-revision-email-bridge-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded with the project offer-revision bundle. It is the final Project Commercial presentation/action layer: supplier offers first, direct draft editing or revision, inline details, optional advanced analysis and a collapsed price advisor. It performs no Supabase/Gmail writes."
     },
     {
       "module": "pristeel-project-summary-command-v1.js",
-      "loader": "pristeel-roles.js",
+      "loader": "pristeel-project-first-actions-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader."
+      "condition": "Loaded unconditionally by ProjectFirst actions as an available whole-project synchronization and intelligence engine. It no longer injects a main-header button; the daily Project surface stays compact."
     },
     {
       "module": "pristeel-project-intelligence-conversation-v1.js",
-      "loader": "pristeel-roles.js",
+      "loader": "pristeel-project-first-actions-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader. Read-only project conversation over the existing deterministic project brief; it performs no project mutations."
+      "condition": "Loaded unconditionally beside the Project Summary command. It mounts only in the explicit project-summary UI and calls AI only after a user question; it performs no workflow writes or outbound actions."
+    },
+    {
+      "module": "pristeel-rfq-gmail-history-sync-v1.js",
+      "loader": "pristeel-bom-rfq-autoflow-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded only after the user explicitly chooses Sinkronizo nga Gmail in the Project-first RFQ area. Gmail scanning is read-only; project/RFQ writes remain behind explicit candidate confirmation."
     },
     {
       "module": "pristeel-groq-gptoss-provider-v1.js",
-      "loader": "pristeel-roles.js",
-      "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded only after explicit activation of GPT-OSS from the provider control in AI Settings."
+      "loader": "pristeel-gemini-test-ui-v1.js",
+      "status": "ACTIVE_PROVIDER",
+      "condition": "The provider module is loaded; GPT-OSS routing becomes active when pristeel_ai_provider === groq-gptoss and a Groq key is present."
     },
     {
-      "module": "pristeel-project-live-intelligence-v1.js",
-      "loader": "pristeel-roles.js",
+      "module": "pristeel-project-centric-workflow-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader. Read-only Home/Project live intelligence surface over canonical sources; it performs no writes."
+      "condition": "Loaded by pristeel-redesign-finalizer-v1.js with a cache-busted runtime URL. It owns the visible whole-card Opportunities surface and renders row-specific official-source anchors directly from detail_url/source_url where safe."
     },
     {
-      "module": "pristeel-ai-request-v1.js",
-      "loader": "pristeel-roles.js",
+      "module": "pristeel-tender-dossier-analysis-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded unconditionally by the production base loader and exposes the explicit AI request API used by current workspace actions."
+      "condition": "Loaded dynamically by the redesign finalizer and invoked explicitly from an Opportunity popup to retrieve and analyze official KRPP/APP tender dossiers before project creation is enabled."
+    },
+    {
+      "module": "pristeel-project-control-home-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Visible Home owner. Generation v6 is loaded dynamically by the redesign finalizer and explicitly replaces stale mounted Home generations. pristeel-home-happy-v1.js remains a recovery path."
     }
+  ],
+  "loadOrderConstraints": [
+    {
+      "before": "pristeel-project-reference-v1.js",
+      "after": "pristeel-project-create-dedupe-guard-v1.js",
+      "reason": "Project duplicate identity uses canonical project reference helpers."
+    },
+    {
+      "before": "pristeel-groq-rate-limit.js",
+      "after": "pristeel-gemini-test-ui-v1.js",
+      "reason": "AI compatibility layer must exist before provider settings/testing is installed."
+    },
+    {
+      "before": "pristeel-project-analysis.js",
+      "after": "pristeel-project-analysis-document-intelligence-v1.js",
+      "reason": "The base Project Intelligence analysis must exist before the document-intelligence read-context adapter wraps its load and analyze functions."
+    },
+    {
+      "before": "pristeel-ui-v2.js",
+      "after": "pristeel-workspace-architecture-v1.js",
+      "reason": "Workspace Architecture mounts the current workspace sidebar inside #pst-v2-sidebar and waits for the UI V2 shell host before booting."
+    },
+    {
+      "before": "pristeel-projects-modern-v1.js",
+      "after": "pristeel-project-first-v2.js",
+      "reason": "Current project workspace layers build after modern project navigation/list behavior."
+    },
+    {
+      "before": "pristeel-home-command-center-v2.js",
+      "after": "pristeel-redesign-finalizer-v1.js",
+      "reason": "The redesign finalizer is intentionally later than the Home command-center layer. Operating Experience is then loaded dynamically by that finalizer."
+    },
+    {
+      "before": "pristeel-gmail-live-inbox-v2.js",
+      "after": "pristeel-gmail-live-triage-v1.js",
+      "reason": "Triage decorates and constrains the Gmail live inbox after the inbox module exists."
+    },
+    {
+      "before": "pristeel-kek-tender-watch-v1.js",
+      "after": "pristeel-project-lifecycle-tracking-v1.js",
+      "reason": "Project lifecycle tracking is the deliberate final ordered data reconciliation layer for modern project list and workspace UX."
+    },
+    {
+      "before": "pristeel-project-lifecycle-tracking-v1.js",
+      "after": "pristeel-project-intelligence-resilience-v1.js",
+      "reason": "Project Intelligence resilience wraps final project task-state correction and AI rate-limit fallback before UI-only reconciliation."
+    },
+    {
+      "before": "pristeel-project-intelligence-resilience-v1.js",
+      "after": "pristeel-project-workflow-canonical-v1.js",
+      "reason": "The canonical workflow is UI-only and deliberately loads after project data, lifecycle, commercial and intelligence owners so it reconciles presentation without replacing their engines."
+    },
+    {
+      "before": "pristeel-project-workflow-canonical-v1.js",
+      "after": "pristeel-project-workflow-legacy-capture-v1.js",
+      "reason": "The old horizontal workflow ribbon is captured only after the canonical project workflow exists, preventing legacy navigation from escaping the active project context."
+    },
+    {
+      "before": "pristeel-project-workflow-legacy-capture-v1.js",
+      "after": "pristeel-tender-priority-actions-v1.js",
+      "reason": "The Home/tender command release intentionally starts only after all legacy project workflow layers are loaded."
+    },
+    {
+      "before": "pristeel-tender-priority-actions-v1.js",
+      "after": "pristeel-home-operating-grid-v1.js",
+      "reason": "Home priority rendering consumes the tender priority adapter."
+    },
+    {
+      "before": "pristeel-home-operating-grid-v1.js",
+      "after": "pristeel-project-classification-v1.js",
+      "reason": "Project register classification decorates project views after Home command presentation is installed."
+    },
+    {
+      "before": "pristeel-project-classification-v1.js",
+      "after": "pristeel-primary-nav-resilience-v1.js",
+      "reason": "Primary Navigation Resilience is the final ordered bootstrap owner and re-applies the command grid after route changes."
+    },
+    {
+      "before": "pristeel-primary-nav-resilience-v1.js",
+      "after": "pristeel-project-execution-guard-v1.js",
+      "reason": "The post-award lifecycle guard deliberately loads last so won/execution projects cannot be reopened by later navigation or workflow decorators."
+    }
+  ],
+  "deprecatedForbidden": [
+    "pristeel-document-adjustments.js",
+    "pristeel-dashboard-focus.js",
+    "pristeel-dashboard-operations.js"
   ]
 }
