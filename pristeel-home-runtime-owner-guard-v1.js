@@ -374,8 +374,8 @@ function primeHomeAsSoonAsShellExists(){
   normalizePrimaryLabels();
   if(earlyHomeStarted||!hasHomeShell())return false;
   earlyHomeStarted=true;
-  /* Internal Home readiness only. The ordered bootstrap keeps running and owns __pstModulesReady. */
-  runtimeReady=true;clearLegacyLoginBlocker();installCompatApi();renderFinalHome();return true;
+  /* Reveal the stable Workspace shell early, but preserve the audited rule that canonical Home starts only after modules-ready. */
+  clearLegacyLoginBlocker();installCompatApi();revealBestAvailable('early-shell');return true;
 }
 function startupReconcile(){normalizePrimaryLabels();primeHomeAsSoonAsShellExists();}
 function startStartupWatch(){
