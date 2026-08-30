@@ -8,7 +8,5 @@ const document={
  dispatchEvent(){readyEvents++;}
 };
 const context=vm.createContext({console,document,setTimeout,clearTimeout,Date,CustomEvent:function(name){this.type=name;}});context.window=context;
-/* This harness validates only the ordered files[] timeout/retry contract. The browser-only critical startup lane is covered by startup/navigation smokes and is intentionally disabled in this minimal VM. */
-context.__pstCriticalStartupLaneV1=true;
 vm.runInContext(source,context,{filename:'pristeel-project-emails.js'});
 (async()=>{for(let i=0;i<100&&!context.__pstModulesReady;i++)await new Promise(r=>setTimeout(r,5));assert.strictEqual(context.__pstModulesReady,true,'bootstrap must complete after a timed-out module retry');const d=context.__pstBootstrapDiagnostics;assert(d&&d.completed,'diagnostics must mark completion');assert.strictEqual(d.timeouts.length,1,'first hung attempt must be recorded');assert.strictEqual(d.retries.length,1,'hung module must retry exactly once');assert.strictEqual(d.retries[0].index,0);assert.strictEqual(d.loaded,d.total,'all modules must eventually be counted as loaded');assert.strictEqual(readyEvents,1,'modules-ready must fire exactly once');assert(appendCount>d.total,'retry must append one additional script');console.log('Ordered bootstrap timeout safety smoke: OK');})().catch(e=>{console.error(e);process.exit(1);});
