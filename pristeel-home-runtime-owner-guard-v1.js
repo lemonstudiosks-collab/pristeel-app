@@ -384,14 +384,19 @@ function startStartupWatch(){
     startupObserver=new MutationObserver(function(){startupReconcile();});
     startupObserver.observe(document.body,{subtree:true,childList:true,characterData:true});
   }else{
-    var started=Date.now();startupFallbackTimer=setInterval(function(){startupReconcile();if(Date.now()-started>60000){clearInterval(startupFallbackTimer);startupFallbackTimer=null;}},200);
+    var started=Date.now();
+    (function tick(){
+      startupReconcile();
+      if(Date.now()-started>60000){startupFallbackTimer=null;return;}
+      startupFallbackTimer=setTimeout(tick,200);
+    })();
   }
   var tries=0;(function waitShell(){startupReconcile();if(earlyHomeStarted||++tries>=300)return;setTimeout(waitShell,50);})();
 }
 function stopStartupWatch(){
   normalizePrimaryLabels();
   if(startupObserver){try{startupObserver.disconnect();}catch(e){}startupObserver=null;}
-  if(startupFallbackTimer){clearInterval(startupFallbackTimer);startupFallbackTimer=null;}
+  if(startupFallbackTimer){clearTimeout(startupFallbackTimer);startupFallbackTimer=null;}
 }
 function bootstrapCompat(){
   clearLegacyLoginBlocker();ensureCompatScaffold();installCompatApi();extendStartupDeadline();
