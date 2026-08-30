@@ -18,7 +18,7 @@ assert.match(orchestrator,/sup=await (?:supplierEvidence|suppliers)\(\)/,'suppli
 assert.match(orchestrator,/!sup\.emails\.has\(se\)/,'supplier evidence gate missing');
 assert.match(orchestrator,/supplier_offer_candidates/,'supplier candidate queue missing');
 assert.match(orchestrator,/invoice_candidates/,'invoice candidate queue missing');
-assert.match(orchestrator,/status:'review'/,'intake must create review candidates only');
+assert.match(orchestrator,/status\s*:\s*['"]review['"]/,'intake must create review candidates only');
 assert.doesNotMatch(orchestrator,/db\.from\(['"]offers['"]\)\.(?:insert|upsert|update|delete)/,'intake must never create or mutate canonical supplier offers');
 assert.doesNotMatch(orchestrator,/db\.from\(['"]invoices_(?:in|out)['"]\)\.(?:insert|upsert|update|delete)/,'intake must never create or mutate canonical invoices');
 assert.doesNotMatch(orchestrator,/mail\.google\.com|gmail\.users\.messages\.send|sendMessage\s*\(/i,'intake must never send external communication');
