@@ -1,4 +1,4 @@
-/* PRISTEEL Home Operating Grid v4.1
+/* PRISTEEL Home Operating Grid v4.2
  * Legacy compatibility fallback only. Live Home v3 is the production Home owner.
  * Canonical Home remains a backstage data/state source.
  * This module performs no Supabase reads/writes and no outbound actions.
@@ -8,10 +8,11 @@
 if(window.__pstHomeOperatingGridV1)return;
 window.__pstHomeOperatingGridV1=true;
 
-var VERSION='20260826-live-home-retired-1';
+var VERSION='20260830-live-home-search-nav-resilience-2';
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function snapshot(){
   try{var H=window.PSTHomeCanonicalV1;return H&&typeof H.snapshot==='function'?H.snapshot():{actions:[],waiting:[],projects:[]};}
   catch(e){return{actions:[],waiting:[],projects:[]};}
@@ -32,21 +33,38 @@ function retireForLiveHome(){
 function scheduleLiveHomeHandoff(){
   [0,100,350,900,1800,3000].forEach(function(ms){setTimeout(retireForLiveHome,ms);});
 }
+
+/* Read-only resilience for the actual Live Home owner. The project-control owner
+ * already owns and refreshes the project dataset; this layer only reuses that
+ * in-memory state so a broad term such as STACON does not enter the slow unique-
+ * project AI/update path. */
+function liveProjectState(){var H=window.PSTProjectControlHomeV1,s=H&&H._state;return s&&A(s.projects).length?A(s.projects):[];}
+async function ensureLiveProjects(){var rows=liveProjectState(),H=window.PSTProjectControlHomeV1;if(rows.length)return rows;if(H&&typeof H.load==='function'){try{await H.load(true);}catch(e){}}return liveProjectState();}
+function identityValues(p){return [p&&p.name,p&&p.client,p&&p.business_ref,p&&p.ref].concat(A(p&&p.identity_aliases)).map(N).filter(function(x){return x.length>=3;});}
+function identityScore(q,p){var n=N(q),score=0;identityValues(p).forEach(function(x){if(n.indexOf(x)>-1)score=Math.max(score,100+x.length);x.split(' ').filter(function(w){return w.length>=4;}).forEach(function(w){if(n.indexOf(w)>-1)score=Math.max(score,20+w.length);});});return score;}
+function matchingProjects(q,rows){var out=[];A(rows).forEach(function(p){var score=identityScore(q,p);if(score)out.push({p:p,score:score,time:Date.parse(p.last_activity_at||p.last_email_at||p.updated_at||'')||0});});out.sort(function(a,b){return b.score-a.score||b.time-a.time;});return out;}
+function lookupIntent(q){var n=N(q),words=n.split(' ').filter(Boolean);if(!n)return false;if(/\?$/.test(S(q).trim())||/^(cka|cfare|kush|ku|kur|pse|si|a ka|a kemi|me trego|trego|cil|what|which|who|where|when|why|how)\b/.test(n))return true;return words.length<=4;}
+function stateLabel(p){var o=N(p&&p.operational_state),s=N(p&&p.status);if(o==='execution')return'Në realizim';if(o==='action required')return'Kërkon veprim';if(o==='wait for client')return'Në pritje të klientit';if(o==='wait for supplier')return'Në pritje të furnitorit';if(/humb|lost/.test(s))return'Humbur';if(/fituar|won/.test(s))return'Fituar';if(/pritje|pending|waiting/.test(s))return'Në pritje';return S(p&&p.status||'Aktiv');}
+function shortDate(v){var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short'}):'';}
+function renderMatches(form,q,hits){var root=form.closest('#pst-project-control-home-v2'),r=root&&root.querySelector('.pst-live-result');if(!r)return false;r.hidden=false;r.innerHTML='<div class="pst-live-answer"><b>U gjetën '+hits.length+' projekte që lidhen me “'+E(S(q).trim())+'”.</b><br>Zgjidh projektin që dëshiron:</div><div style="display:grid;gap:7px;margin-top:10px">'+hits.slice(0,8).map(function(h){var p=h.p,d=shortDate(p.last_activity_at||p.last_email_at||p.updated_at);return'<button type="button" data-live-open="'+E(p.id)+'" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:1px solid rgba(255,255,255,.22);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;padding:9px 11px;cursor:pointer"><span><b style="display:block;font-size:13px">'+E(p.name||'Projekt')+'</b><small style="display:block;margin-top:2px;color:rgba(255,255,255,.7)">'+E([p.client,stateLabel(p),p.ref||p.business_ref,d?('aktivitet '+d):''].filter(Boolean).join(' · '))+'</small></span><span aria-hidden="true">→</span></button>';}).join('')+'</div>';var input=form.querySelector('.pst-live-input');if(input)input.value='';return true;}
+async function broadLookupSubmit(e){var form=e.target;if(!form||!form.matches||!form.matches('#pst-project-control-home-v2 .pst-live-command'))return;if(form.dataset.pstLookupBypass==='1'){delete form.dataset.pstLookupBypass;return;}var input=form.querySelector('.pst-live-input'),q=S(input&&input.value).trim();if(!lookupIntent(q))return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();var hits=[];try{hits=matchingProjects(q,await ensureLiveProjects());}catch(x){}if(hits.length>1){renderMatches(form,q,hits);return;}form.dataset.pstLookupBypass='1';if(typeof form.requestSubmit==='function')form.requestSubmit();else form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));}
+function projectPageVisible(){var p=document.getElementById('page-workspace-project');return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
+function setProjectIdentity(id){window.__pstCurrentProjectId=S(id);window._curProjId=S(id);var s=document.getElementById('global-proj');if(s){s.value=S(id);try{s.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}}
+async function openProjectResilient(id){id=S(id).trim();if(!id)return false;setProjectIdentity(id);if(typeof window.pstOpenProjectWorkspace==='function'){try{await Promise.resolve(window.pstOpenProjectWorkspace(id));if(projectPageVisible())return true;}catch(e){console.warn('PPPP project open:',e);}}if(typeof window.loadProject==='function'){try{await Promise.resolve(window.loadProject(id));return true;}catch(e){}}var L=window.__pstWorkspaceLegacy||{},old=L.openOverview||window.openOverview;if(typeof old==='function'){try{await Promise.resolve(old(id));return true;}catch(e){}}if(typeof window.pstWorkspaceGo==='function'){try{window.pstWorkspaceGo('projects');}catch(e){}}return false;}
+function projectTarget(t){return t&&t.closest?t.closest('#pst-project-control-home-v2 [data-live-project],#pst-project-control-home-v2 [data-live-open],#page-workspace-projects [data-pm-open],#page-workspace-projects [data-project-id]'):null;}
+function captureProjectOpen(e){var t=projectTarget(e.target);if(!t)return;var id=t.getAttribute('data-live-project')||t.getAttribute('data-live-open')||t.getAttribute('data-pm-open')||t.getAttribute('data-project-id');if(!id)return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openProjectResilient(id);}
+function captureProjectKey(e){if(e.key!=='Enter'&&e.key!==' ')return;var t=projectTarget(e.target);if(!t)return;var id=t.getAttribute('data-live-project')||t.getAttribute('data-live-open')||t.getAttribute('data-pm-open')||t.getAttribute('data-project-id');if(!id)return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openProjectResilient(id);}
+document.addEventListener('submit',broadLookupSubmit,true);
+document.addEventListener('click',captureProjectOpen,true);
+document.addEventListener('keydown',captureProjectKey,true);
+
 function active(){var p=page();return !!(p&&p.classList.contains('active'));}
 function nativeRow(key){
   var rows=document.querySelectorAll('#pst-ws-home-actions .pst-canonical-action[data-ws-action]');
   for(var i=0;i<rows.length;i++)if(S(rows[i].getAttribute('data-ws-action'))===S(key))return rows[i];
   return null;
 }
-function openProject(id){
-  id=S(id).trim();if(!id)return false;
-  try{
-    if(typeof window.pstOpenProjectWorkspace==='function'){window.pstOpenProjectWorkspace(id);return true;}
-    window.__pstCurrentProjectId=id;window._curProjId=id;
-    if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('projects');return true;}
-  }catch(e){console.warn('PPPP Home project open failed',e);}
-  return false;
-}
+function openProject(id){return openProjectResilient(id);}
 function proxyAction(key){
   key=S(key);if(key.indexOf('project:')===0)return openProject(key.slice(8));
   var row=nativeRow(key);if(!row)return false;
@@ -117,5 +135,5 @@ function homeIntent(el){if(!el||!el.closest)return false;var n=el.closest('[data
 function boot(){installStyle();if(retireForLiveHome())return;scheduleLiveHomeHandoff();if(active())render();}
 document.addEventListener('pst:home-canonical-rendered',schedule);document.addEventListener('pst:modules-ready',schedule);document.addEventListener('click',function(e){if(homeIntent(e.target))schedule();},true);window.addEventListener('focus',function(){if(active())schedule();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTHomeOperatingGridV1={version:VERSION,render:render,refresh:render,renderLoaded:renderLoaded,snapshot:snapshot,_test:{proxyAction:proxyAction,nativeRow:nativeRow,openProject:openProject,displayActions:displayActions,actionProject:actionProject,actionTitle:actionTitle,actionWhy:actionWhy,actionTag:actionTag,active:active,homeIntent:homeIntent,liveHomeRoot:liveHomeRoot,retireForLiveHome:retireForLiveHome,scheduleLiveHomeHandoff:scheduleLiveHomeHandoff}};
+window.PSTHomeOperatingGridV1={version:VERSION,render:render,refresh:render,renderLoaded:renderLoaded,snapshot:snapshot,openProjectResilient:openProjectResilient,_test:{proxyAction:proxyAction,nativeRow:nativeRow,openProject:openProject,displayActions:displayActions,actionProject:actionProject,actionTitle:actionTitle,actionWhy:actionWhy,actionTag:actionTag,active:active,homeIntent:homeIntent,liveHomeRoot:liveHomeRoot,retireForLiveHome:retireForLiveHome,scheduleLiveHomeHandoff:scheduleLiveHomeHandoff,matchingProjects:matchingProjects,lookupIntent:lookupIntent,projectTarget:projectTarget}};
 })();
