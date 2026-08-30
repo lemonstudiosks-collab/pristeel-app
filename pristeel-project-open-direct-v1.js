@@ -1,7 +1,8 @@
 /* PRISTEEL direct project opener
- * Makes the complete project row clickable while keeping row actions independent.
- * The original [data-pm-open] control stays in the DOM as the canonical project-id source;
- * it is hidden visually instead of being removed.
+ * Compatibility fallback for project navigation.
+ * Project Classification is the canonical row-navigation owner.
+ * This module keeps the direct-open API and only installs its legacy row-click
+ * listener when the canonical classification owner did not load.
  */
 (function(){
 'use strict';
@@ -9,6 +10,7 @@ if(window.__pstProjectOpenDirectV1)return;
 window.__pstProjectOpenDirectV1=true;
 
 var busy=false;
+var fallbackInstalled=false;
 
 function ensureRowUi(){
   if(document.getElementById('pst-project-row-open-css'))return;
@@ -109,8 +111,18 @@ function click(event){
   event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
   open(id);
 }
+function installLegacyFallback(){
+  if(fallbackInstalled)return;
+  // The current runtime manifest assigns Projects row navigation to Project
+  // Classification. Do not register a competing capture listener when it exists.
+  if(window.PSTProjectClassificationV1||window.__pstProjectClassificationV1)return;
+  fallbackInstalled=true;
+  document.addEventListener('click',click,true);
+  console.warn('PRISTEEL: Project Classification unavailable; using legacy direct project-click fallback.');
+}
 ensureRowUi();
-document.addEventListener('click',click,true);
+if(window.__pstModulesReady){installLegacyFallback();}
+else document.addEventListener('pst:modules-ready',installLegacyFallback,{once:true});
 window.pstOpenProjectDirect=open;
 window.pstEnsureProjectGmailButton=ensureGmailButton;
 })();
