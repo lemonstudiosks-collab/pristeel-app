@@ -14,7 +14,8 @@ assert.match(migration,/revoke all on function public\.commercial_intake_interna
 assert.match(migration,/commercial-intake-10m/i,'candidate intake cron missing');
 
 assert.match(orchestrator,/gmail_tracker_cron_authorized/,'orchestrator must use the existing cron authorization contract');
-assert.match(orchestrator,/supplierEvidence\(\)/,'supplier evidence gate missing');
+assert.match(orchestrator,/sup=await (?:supplierEvidence|suppliers)\(\)/,'supplier evidence must be loaded before intake');
+assert.match(orchestrator,/!sup\.emails\.has\(se\)/,'supplier evidence gate missing');
 assert.match(orchestrator,/supplier_offer_candidates/,'supplier candidate queue missing');
 assert.match(orchestrator,/invoice_candidates/,'invoice candidate queue missing');
 assert.match(orchestrator,/status:'review'/,'intake must create review candidates only');
