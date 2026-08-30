@@ -1,16 +1,15 @@
 /* PRISTEEL direct project opener
- * Compatibility fallback for project navigation.
- * Project Classification is the canonical row-navigation owner.
- * This module keeps the direct-open API and only installs its legacy row-click
- * listener when the canonical classification owner did not load.
+ * Canonical Projects row-navigation owner.
+ * Loaded before Project Classification so one early capture listener owns row clicks.
+ * Keeps row actions independent and falls back when the modern workspace cannot open.
  */
 (function(){
 'use strict';
 if(window.__pstProjectOpenDirectV1)return;
 window.__pstProjectOpenDirectV1=true;
+window.__pstProjectRowOpenOwner='direct-v1';
 
 var busy=false;
-var fallbackInstalled=false;
 
 function ensureRowUi(){
   if(document.getElementById('pst-project-row-open-css'))return;
@@ -28,7 +27,7 @@ function interactiveTarget(target,row){
 
 function projectIdFrom(target){
   if(!target||!target.closest)return'';
-  var row=target.closest('.pst-pm-row');
+  var row=target.closest('#page-workspace-projects .pst-pm-row');
   if(row){
     if(interactiveTarget(target,row))return'';
     return String(
@@ -36,24 +35,21 @@ function projectIdFrom(target){
       row.getAttribute('data-pm-open')||
       (row.querySelector('[data-pm-open]')&&row.querySelector('[data-pm-open]').getAttribute('data-pm-open'))||
       ''
-    );
+    ).trim();
   }
   var node=target.closest('[data-pm-open]');
-  return node?String(node.getAttribute('data-pm-open')||''):'';
+  return node?String(node.getAttribute('data-pm-open')||'').trim():'';
 }
+
 function setContext(id){
-  id=String(id||'');
+  id=String(id||'').trim();
   window.__pstCurrentProjectId=id;
   window._curProjId=id;
   try{localStorage.setItem('pristeel_cur_proj',id);}catch(e){}
   var select=document.getElementById('global-proj');
-  if(select){
-    // Synchronize the visible selector only. Its inline onchange calls the legacy
-    // loadProject path, while this module opens the canonical workspace explicitly.
-    // Dispatching change here therefore starts two project loaders for one click.
-    select.value=id;
-  }
+  if(select)select.value=id;
 }
+
 function showError(error){
   console.error('PRISTEEL direct project open:',error);
   var old=document.getElementById('pst-project-open-error');if(old)old.remove();
@@ -62,6 +58,7 @@ function showError(error){
   el.style.cssText='position:fixed;right:20px;bottom:20px;z-index:9000;max-width:420px;padding:11px 14px;border-radius:10px;background:#A64B42;color:#fff;font:650 11px Inter,sans-serif;box-shadow:0 14px 36px rgba(30,40,45,.24)';
   document.body.appendChild(el);setTimeout(function(){if(el.parentNode)el.remove();},5500);
 }
+
 function ensureGmailButton(id){
   var actions=document.querySelector('#page-workspace-project .pst-pi-actions')||document.querySelector('.pst-pi-actions');
   if(!actions)return false;
@@ -85,44 +82,60 @@ function ensureGmailButton(id){
   };
   return true;
 }
+
 async function open(id){
-  if(!id||busy)return;
-  busy=true;setContext(id);
+  id=String(id||'').trim();
+  if(!id||busy)return false;
+  busy=true;
+  setContext(id);
+  var firstError=null;
   try{
     if(typeof window.pstOpenProjectWorkspace==='function'){
-      await window.pstOpenProjectWorkspace(id);
-      ensureGmailButton(id);
-      return;
+      try{
+        await window.pstOpenProjectWorkspace(id);
+        ensureGmailButton(id);
+        return true;
+      }catch(error){
+        firstError=error;
+        console.warn('PRISTEEL: modern project workspace failed; trying legacy loader.',error);
+      }
     }
     if(typeof window.loadProject==='function'){
-      await window.loadProject(id);
-      ensureGmailButton(id);
-      return;
+      try{
+        await window.loadProject(id);
+        ensureGmailButton(id);
+        return true;
+      }catch(error){
+        if(!firstError)firstError=error;
+        console.warn('PRISTEEL: legacy loadProject failed; trying overview fallback.',error);
+      }
+    }
+    var legacy=window.__pstWorkspaceLegacy||{};
+    if(typeof legacy.openOverview==='function'){
+      legacy.openOverview(id);
+      return true;
     }
     if(typeof window.openOverview==='function'){
       window.openOverview(id);
-      return;
+      return true;
     }
-    throw new Error('Funksioni i projektit nuk është ngarkuar.');
-  }catch(error){showError(error);}finally{busy=false;}
+    throw firstError||new Error('Funksioni i projektit nuk është ngarkuar.');
+  }catch(error){
+    showError(error);
+    return false;
+  }finally{
+    busy=false;
+  }
 }
+
 function click(event){
   var id=projectIdFrom(event.target);if(!id)return;
   event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
   open(id);
 }
-function installLegacyFallback(){
-  if(fallbackInstalled)return;
-  // The current runtime manifest assigns Projects row navigation to Project
-  // Classification. Do not register a competing capture listener when it exists.
-  if(window.PSTProjectClassificationV1||window.__pstProjectClassificationV1)return;
-  fallbackInstalled=true;
-  document.addEventListener('click',click,true);
-  console.warn('PRISTEEL: Project Classification unavailable; using legacy direct project-click fallback.');
-}
+
 ensureRowUi();
-if(window.__pstModulesReady){installLegacyFallback();}
-else document.addEventListener('pst:modules-ready',installLegacyFallback,{once:true});
+document.addEventListener('click',click,true);
 window.pstOpenProjectDirect=open;
 window.pstEnsureProjectGmailButton=ensureGmailButton;
 })();
