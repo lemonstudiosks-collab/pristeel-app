@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "e9059e9cc6802ea85c498892d1b2866e641f1905",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "e76c07ab5c7084b797e72a0a1c859d65a5f8a354"
+    "bootstrapGitBlobSha": "75054d475b1d5f25731a37825788865d8578f09e"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -134,7 +134,7 @@
         "pristeel-project-centric-workflow-v1.js",
         "pristeel-tender-dossier-analysis-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the single final visible whole-card Opportunities owner. KRPP/TED official sources are exposed as direct row-specific links when available; APP stays reference-based when no safe deep link exists. Official dossier download and technical/commercial analysis remain explicit actions before project creation is enabled. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow is the single final visible whole-card Opportunities owner. KRPP/TED official sources are exposed as direct row-specific links directly from detail_url/source_url where safe. Official dossier download and technical/commercial analysis remain explicit actions before project creation is enabled. TED awards show winner role and contacts, with GC/EPC versus producer outreach handled differently. No tender becomes a project without a human decision."
     },
     {
       "area": "ai",
