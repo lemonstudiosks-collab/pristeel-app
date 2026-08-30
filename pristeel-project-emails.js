@@ -109,7 +109,7 @@
     if(navRequested||!document.getElementById('pst-ws-sidebar'))return false;
     navRequested=true;
     var s=document.createElement('script');
-    s.src='pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1&pst_critical=20260830-startup1';
+    s.src='pristeel-primary-nav-resilience-v1.js'+'?v=20260827-singleowner1&pst_critical=20260830-startup1';
     s.defer=true;s.setAttribute('data-pst-primary-nav-critical','1');
     s.onload=function(){try{if(window.PSTPrimaryNavResilienceV1)window.PSTPrimaryNavResilienceV1.apply();}catch(e){}};
     s.onerror=function(){navRequested=false;};document.head.appendChild(s);return true;
