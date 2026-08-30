@@ -86,6 +86,8 @@ assert.match(legacyGrid,/\[0,50,120,240,400,700,1000,1400,1900,2500,3200,4500,60
 assert.match(legacyGrid,/pst-home-awaiting-live/,'legacy Home content must stay hidden while the final Live Home owner is mounting');
 assert.match(legacyGrid,/PPPP po ngarkohet/,'pending Home state must visibly explain that the final surface is loading');
 assert.match(legacyGrid,/PPPP po kërkon projektet/,'project lookup must expose immediate visible feedback before async loading');
+assert.doesNotMatch(legacyGrid,/#page-workspace-projects \[data-pm-open\]/,'Home compatibility layer must not intercept the dedicated Projects list opener');
+assert.doesNotMatch(legacyGrid,/#page-workspace-projects \[data-project-id\]/,'Home compatibility layer must not swallow Projects list row clicks');
 assert.doesNotMatch(legacyGrid,/MutationObserver|setInterval\s*\(/,'legacy handoff must not introduce persistent polling/observers');
 
 console.log('PPPP Live Home v5 operator-signal + autonomous sync smoke: OK');
