@@ -113,9 +113,25 @@ function observe(){
 }
 function domReady(){state.dom=true;ensureShell();polishLogin();observe();check();}
 function modulesReady(){state.modules=true;setCopy('Duke finalizuar workspace-in…');settleApp();}
+function intendedVisible(el){
+  if(!el||el.hidden)return false;
+  var d=String(el.style&&el.style.display||'').toLowerCase();
+  return d!=='none';
+}
+function visualReady(){
+  if(state.revealed)return true;
+  var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');
+  var appIntended=intendedVisible(app),gateIntended=intendedVisible(gate);
+  if(appIntended&&!gateIntended){finish('app');return true;}
+  if(gateIntended&&!appIntended){if(state.loaded)finish('auth');return false;}
+  var home=document.getElementById('page-workspace-home');
+  if(app&&home&&home.classList.contains('active')){finish('app');return true;}
+  check();return state.revealed;
+}
 
 window.PSTStartupGuard={
   modulesReady:modulesReady,
+  visualReady:visualReady,
   reveal:function(){check();},
   state:state
 };
