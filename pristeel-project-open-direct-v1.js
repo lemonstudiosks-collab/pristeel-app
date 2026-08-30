@@ -47,10 +47,10 @@ function targetProject(target){
     if(rowId)return{id:rowId,kind:'projects',node:row};
   }
 
-  var legacy=target.closest('#page-workspace-projects [data-pm-open]');
+  var legacy=target.closest('[data-pm-open]');
   if(legacy){
     var legacyId=S(legacy.getAttribute('data-pm-open')).trim();
-    if(legacyId)return{id:legacyId,kind:'projects',node:legacy};
+    if(legacyId)return{id:legacyId,kind:'legacy',node:legacy};
   }
   return null;
 }
@@ -85,6 +85,18 @@ function projectPageVisible(){
   if(p.style&&p.style.display==='none')return false;
   try{var cs=window.getComputedStyle&&window.getComputedStyle(p);if(cs&&cs.display==='none')return false;}catch(e){}
   return true;
+}
+
+function forceProjectPageVisible(){
+  var p=ensureProjectPage();
+  [].slice.call(document.querySelectorAll('.page')).forEach(function(page){
+    if(page===p)return;
+    page.classList.remove('active');
+    if(page.id==='page-workspace-projects'||page.id==='page-home'||page.id==='page-dashboard')page.style.display='none';
+  });
+  p.classList.add('active');
+  p.style.display='block';
+  return p;
 }
 
 function showError(error){
@@ -125,6 +137,8 @@ async function open(id){
     if(typeof window.pstOpenProjectWorkspace==='function'){
       try{
         await Promise.resolve(window.pstOpenProjectWorkspace(id));
+        var modernPage=document.getElementById('page-workspace-project');
+        if(modernPage&&(modernPage.childElementCount||S(modernPage.textContent).trim()))forceProjectPageVisible();
         if(projectPageVisible()){
           ensureGmailButton(id);
           try{document.dispatchEvent(new CustomEvent('pst:project-opened',{detail:{project_id:id,source:'direct-v2'}}));}catch(e){}
@@ -140,6 +154,8 @@ async function open(id){
     if(typeof window.loadProject==='function'){
       try{
         await Promise.resolve(window.loadProject(id));
+        var loadedPage=document.getElementById('page-workspace-project');
+        if(loadedPage&&(loadedPage.childElementCount||S(loadedPage.textContent).trim()))forceProjectPageVisible();
         if(projectPageVisible()){ensureGmailButton(id);return true;}
       }catch(error){if(!firstError)firstError=error;console.warn('PRISTEEL: loadProject failed.',error);}
     }
