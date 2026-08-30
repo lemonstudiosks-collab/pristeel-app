@@ -1,0 +1,1 @@
+pristeel-project-workspace-repair-loader-v1.js must be loaded before pristeel-project-emails.js so the project repair observer is active before layered project modules.
