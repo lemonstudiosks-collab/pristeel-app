@@ -9,6 +9,7 @@ window.__pstStartupGuardV1=true;
 
 var root=document.documentElement;
 var state={dom:false,loaded:false,modules:false,revealed:false,started:Date.now(),quietTimer:null,maxTimer:null,observer:null};
+var workspacePrimeStarted=false;
 root.classList.add('pst-booting');
 
 var style=document.createElement('style');
@@ -81,6 +82,23 @@ function polishLogin(){
 function sessionExists(){try{return !!localStorage.getItem('pristeel_session');}catch(e){return false;}}
 function visible(el){if(!el)return false;var s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden';}
 function setCopy(text){var e=document.getElementById('pst-startup-copy');if(e)e.textContent=text;}
+function ensureWorkspaceScaffold(){
+  var sidebar=document.getElementById('app-sidebar')||document.querySelector('.sidebar');
+  if(sidebar&&!document.getElementById('pst-v2-sidebar')){
+    var host=document.createElement('div');host.id='pst-v2-sidebar';host.style.height='100%';sidebar.insertBefore(host,sidebar.firstChild||null);
+  }
+  return !!document.getElementById('pst-v2-sidebar');
+}
+function primeWorkspaceArchitecture(){
+  if(window.__pstWorkspaceArchitectureV1Loaded||workspacePrimeStarted)return true;
+  workspacePrimeStarted=true;ensureWorkspaceScaffold();
+  var existing=document.querySelector('script[data-pst-workspace-architecture-critical]');if(existing)return true;
+  var s=document.createElement('script');
+  s.src='pristeel-workspace-architecture-v1.js?v=20260804-1&pst_critical=20260830-startup2';
+  s.defer=true;s.setAttribute('data-pst-workspace-architecture-critical','1');
+  s.onerror=function(){workspacePrimeStarted=false;};
+  document.head.appendChild(s);return true;
+}
 function finish(kind){
   if(state.revealed)return;state.revealed=true;
   clearTimeout(state.maxTimer);clearTimeout(state.quietTimer);if(state.observer)state.observer.disconnect();
@@ -108,10 +126,10 @@ function check(){
 }
 function observe(){
   if(!document.body||state.observer)return;
-  state.observer=new MutationObserver(function(){check();if(state.modules)settleApp();});
+  state.observer=new MutationObserver(function(){ensureWorkspaceScaffold();check();if(state.modules)settleApp();});
   state.observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['style','class']});
 }
-function domReady(){state.dom=true;ensureShell();polishLogin();observe();check();}
+function domReady(){state.dom=true;ensureShell();polishLogin();ensureWorkspaceScaffold();primeWorkspaceArchitecture();observe();check();}
 function modulesReady(){state.modules=true;setCopy('Duke finalizuar workspace-in…');settleApp();}
 function intendedVisible(el){
   if(!el||el.hidden)return false;
@@ -132,12 +150,13 @@ function visualReady(){
 window.PSTStartupGuard={
   modulesReady:modulesReady,
   visualReady:visualReady,
+  primeWorkspace:primeWorkspaceArchitecture,
   reveal:function(){check();},
   state:state
 };
 document.addEventListener('pst:modules-ready',modulesReady);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',domReady,{once:true});else domReady();
-window.addEventListener('load',function(){state.loaded=true;check();setTimeout(check,250);});
+window.addEventListener('load',function(){state.loaded=true;ensureWorkspaceScaffold();primeWorkspaceArchitecture();check();setTimeout(check,250);});
 state.maxTimer=setTimeout(function(){
   if(state.revealed)return;
   var app=document.getElementById('app-shell-root'),gate=document.getElementById('auth-gate');
