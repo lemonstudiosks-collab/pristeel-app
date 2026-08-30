@@ -8,7 +8,7 @@
 if(window.__pstHomeOperatingGridV1)return;
 window.__pstHomeOperatingGridV1=true;
 
-var VERSION='20260830-live-home-stability-3';
+var VERSION='20260830-live-home-stability-4';
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -73,9 +73,9 @@ async function broadLookupSubmit(e){
 function projectPageVisible(){var p=document.getElementById('page-workspace-project');return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
 function setProjectIdentity(id){window.__pstCurrentProjectId=S(id);window._curProjId=S(id);var s=document.getElementById('global-proj');if(s){s.value=S(id);try{s.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}}
 async function openProjectResilient(id){id=S(id).trim();if(!id)return false;setProjectIdentity(id);if(typeof window.pstOpenProjectWorkspace==='function'){try{await Promise.resolve(window.pstOpenProjectWorkspace(id));if(projectPageVisible())return true;}catch(e){console.warn('PPPP project open:',e);}}if(typeof window.loadProject==='function'){try{await Promise.resolve(window.loadProject(id));return true;}catch(e){}}var L=window.__pstWorkspaceLegacy||{},old=L.openOverview||window.openOverview;if(typeof old==='function'){try{await Promise.resolve(old(id));return true;}catch(e){}}if(typeof window.pstWorkspaceGo==='function'){try{window.pstWorkspaceGo('projects');}catch(e){}}return false;}
-function projectTarget(t){return t&&t.closest?t.closest('#pst-project-control-home-v2 [data-live-project],#pst-project-control-home-v2 [data-live-open],#page-workspace-projects [data-pm-open],#page-workspace-projects [data-project-id]'):null;}
-function captureProjectOpen(e){var t=projectTarget(e.target);if(!t)return;var id=t.getAttribute('data-live-project')||t.getAttribute('data-live-open')||t.getAttribute('data-pm-open')||t.getAttribute('data-project-id');if(!id)return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openProjectResilient(id);}
-function captureProjectKey(e){if(e.key!=='Enter'&&e.key!==' ')return;var t=projectTarget(e.target);if(!t)return;var id=t.getAttribute('data-live-project')||t.getAttribute('data-live-open')||t.getAttribute('data-pm-open')||t.getAttribute('data-project-id');if(!id)return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openProjectResilient(id);}
+function projectTarget(t){return t&&t.closest?t.closest('#pst-project-control-home-v2 [data-live-project],#pst-project-control-home-v2 [data-live-open]'):null;}
+function captureProjectOpen(e){var t=projectTarget(e.target);if(!t)return;var id=t.getAttribute('data-live-project')||t.getAttribute('data-live-open');if(!id)return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openProjectResilient(id);}
+function captureProjectKey(e){if(e.key!=='Enter'&&e.key!==' ')return;var t=projectTarget(e.target);if(!t)return;var id=t.getAttribute('data-live-project')||t.getAttribute('data-live-open');if(!id)return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openProjectResilient(id);}
 document.addEventListener('submit',broadLookupSubmit,true);
 document.addEventListener('click',captureProjectOpen,true);
 document.addEventListener('keydown',captureProjectKey,true);
