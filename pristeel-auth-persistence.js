@@ -7,6 +7,16 @@
 if(window.__pstAuthPersistenceLoaded)return;
 window.__pstAuthPersistenceLoaded=true;
 
+/* Critical project workspace recovery: activate before layered project UI modules. */
+(function loadProjectWorkspaceRepair(){
+  if(window.__pstProjectWorkspaceRepairLoaderV1||document.querySelector('script[data-pst-project-workspace-repair-loader]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-project-workspace-repair-loader-v1.js?v=20260830-workspace2';
+  s.defer=true;
+  s.setAttribute('data-pst-project-workspace-repair-loader','1');
+  document.head.appendChild(s);
+})();
+
 /* Load the automation/state truth layer as the first ordered runtime dependency. */
 (function loadAutomationTruth(){
   if(window.__pstAutomationTruthV1||document.querySelector('script[data-pst-automation-truth]'))return;
