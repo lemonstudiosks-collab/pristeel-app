@@ -1,47 +1,159 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const db=createClient(Deno.env.get('SUPABASE_URL')||'',Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'');
-const H={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Content-Type':'application/json'};
-const T=(v:any)=>String(v??'').trim();
-const N=(v:any)=>T(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
-const A=(v:any)=>Array.isArray(v)?v:[];
-const E=(v:any)=>(T(v).toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/)||[])[0]||'';
-const CL=(v:any,n=25000)=>T(v).replace(/\u0000/g,' ').slice(0,n);
-function uniq<T>(v:T[]){return[...new Set(v)];}
-function parseNumber(v:any){let s=T(v).replace(/[\s'’]/g,'');if(!s)return null;const commas=(s.match(/,/g)||[]).length,dots=(s.match(/\./g)||[]).length;if(commas&&dots){if(s.lastIndexOf(',')>s.lastIndexOf('.'))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(/,/g,'');}else if(commas){const p=s.split(',');s=(p.length===2&&p[1].length<=3)?p[0].replace(/\./g,'')+'.'+p[1]:s.replace(/,/g,'');}else if(dots>1)s=s.replace(/\./g,'');const n=Number(s.replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:null;}
-function firstNumber(text:string,res:RegExp[]){for(const re of res){const m=text.match(re);if(m){const n=parseNumber(m[1]);if(n!=null)return n;}}return null;}
-function currency(text:string){if(/(?:^|[^A-Z])CHF(?:$|[^A-Z])/i.test(text))return'CHF';if(/(?:^|[^A-Z])USD(?:$|[^A-Z])/i.test(text)|\$/i.test(text))return'USD';if(/(?:^|[^A-Z])GBP(?:$|[^A-Z])/i.test(text)|£/i.test(text))return'GBP';return /(?:^|[^A-Z])EUR(?:O)?(?:$|[^A-Z])/i.test(text)|€/i.test(text)?'EUR':null;}
-function moneyPattern(word:string){return new RegExp(`${word}[^\\n\\r0-9]{0,30}(?:EUR|EURO|€|CHF|USD|GBP|£|\\$)?\\s*([0-9][0-9 .,'’]*[0-9](?:[.,][0-9]{1,3})?)`,'i');}
-function perKg(text:string){return firstNumber(text,[/(?:EUR|EURO|€|CHF|USD|GBP|£|\$)\s*([0-9][0-9.,]*)\s*(?:\/|per)\s*kg\b/i,/([0-9][0-9.,]*)\s*(?:EUR|EURO|€|CHF|USD|GBP|£|\$)\s*(?:\/|per)\s*kg\b/i,/\bprice\s*(?:per|\/)\s*kg[^0-9]{0,16}([0-9][0-9.,]*)/i,/\bpreis\s*(?:pro|\/)\s*kg[^0-9]{0,16}([0-9][0-9.,]*)/i,/\bcijen[aeu]?\s*(?:po|za|\/)?\s*kg[^0-9]{0,16}([0-9][0-9.,]*)/i]);}
-function unitPrice(text:string){const unit='(sets?|units?|pieces?|pcs?|pc|komad(?:a)?|cop[eë]|copë)';const res=[new RegExp(`(?:EUR|EURO|€|CHF|USD|GBP|£|\\$)\\s*([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)\\s*(?:\\/|per)\\s*${unit}\\b`,'i'),new RegExp(`([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)\\s*(?:EUR|EURO|€|CHF|USD|GBP|£|\\$)\\s*(?:\\/|per)\\s*${unit}\\b`,'i')];for(const re of res){const m=text.match(re);if(!m)continue;const value=parseNumber(m[1]);if(value==null||value<=0)continue;const raw=N(m[2]||'unit');let pricing_unit='unit';if(raw.startsWith('set'))pricing_unit='set';else if(raw.startsWith('pc')||raw.startsWith('piece')||raw.startsWith('komad')||raw.startsWith('cop'))pricing_unit='piece';return{unit_price:value,pricing_unit};}return{unit_price:null,pricing_unit:null};}
-function total(text:string){return firstNumber(text,[moneyPattern('grand\\s+total'),moneyPattern('total'),moneyPattern('gesamt'),moneyPattern('ukupno'),moneyPattern('totali'),moneyPattern('summe'),moneyPattern('amount')]);}
-function quantityKg(text:string){return firstNumber(text,[/\b(?:qty|quantity|menge|kolicina|količina|sasia|weight|gewicht|tezina|težina)\b[^0-9]{0,25}([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)\s*kg\b/i,/\b([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)\s*kg\b/i]);}
-function scopedKgPrice(text:string,scope:RegExp){for(const line of text.split(/\r?\n/)){if(!scope.test(N(line)))continue;const n=perKg(line);if(n!=null)return n;}return null;}
-function capture(text:string,re:RegExp,max=180){const m=text.match(re);return m?CL(m[1],max):null;}
-function dateValue(text:string,re:RegExp){const m=text.match(re);if(!m)return null;const raw=T(m[1]);let y='',mo='',d='';let x=raw.match(/(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})/);if(x){y=x[1];mo=x[2];d=x[3];}else{x=raw.match(/(\d{1,2})[./-](\d{1,2})[./-](20\d{2})/);if(x){d=x[1];mo=x[2];y=x[3];}}if(!y)return null;const iso=`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;return Number.isNaN(Date.parse(iso+'T00:00:00Z'))?null:iso;}
-function offerRef(text:string){for(const re of[/(?:quotation|offer|quote|angebot)\s*(?:no\.?|nr\.?|number|nummer|ref(?:erence)?\.?|#)\s*[:#-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,50})/i,/(?:ponud[aeu]?|ofert[ae]?)\s*(?:no\.?|nr\.?|number|br\.?|#)\s*[:#-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,50})/i]){const v=capture(text,re,80);if(v)return v;}return null;}
-function invoiceNr(text:string){return capture(text,/(?:invoice|rechnung|faktur[ae]?|fatur[ae]?|račun|racun)\s*(?:no\.?|nr\.?|number|nummer|br\.?|#)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,50})/i,80);}
-function paymentTerms(text:string){const direct=capture(text,/(?:payment\s+terms?|zahlungsbedingungen|uslovi\s+placanja|uslovi\s+plaćanja|kushtet\s+e\s+pageses|kushtet\s+e\s+pagesës)\s*[:\-]?\s*([^\n\r]{3,240})/i,240);if(direct)return direct;const m=text.match(/(?:terms?\s+of\s+payment|payment\s+conditions?)\s*:?\s*([\s\S]{3,500}?)(?=\n\s*(?:validity|terms?\s+of\s+delivery|delivery|in\s+case\s+of|kind\s+regards|best\s+regards|$))/i);return m?CL(m[1].replace(/[•·]/g,' ').replace(/\s*\n\s*/g,'; ').replace(/\s{2,}/g,' '),320):null;}
-function validityDays(text:string){return firstNumber(text,[/\b(?:validity|valid|gültig|gueltig|vazi|važi|vlefshm)\w*[\s\S]{0,120}?\(?([0-9]{1,4})\)?\s*(?:days?|tage|dana|dit[ëe]?)\b/i]);}
-function deliveryWeeks(text:string){const start=text.search(/\b(?:terms?\s+of\s+delivery|delivery|lead\s*time|lieferzeit|rok\s+isporuke|afati\s+i\s+dorezimit)\b/i);const scope=start>=0?text.slice(start,start+700):text;let m=scope.match(/([0-9]+(?:[.,][0-9]+)?)\s*[-–]\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:weeks?|wochen|nedelj[ae]?|jav[ëe]?)\b/i);if(m){let w=Math.max(parseNumber(m[1])||0,parseNumber(m[2])||0);const tail=scope.slice((m.index||0)+m[0].length,Math.min(scope.length,(m.index||0)+m[0].length+220)),a=tail.match(/(?:additional|plus|\+|with\s+additional|and\s+additional)[^0-9]{0,40}([0-9]+(?:[.,][0-9]+)?)\s*(?:weeks?|wochen|nedelj[ae]?|jav[ëe]?)\b/i);if(a)w+=(parseNumber(a[1])||0);return w>0?Math.round(w):null;}m=scope.match(/([0-9]+(?:[.,][0-9]+)?)\s*(?:weeks?|wochen|nedelj[ae]?|jav[ëe]?)\b/i);if(m)return Math.round(parseNumber(m[1])||0)||null;let d=scope.match(/([0-9]+(?:[.,][0-9]+)?)\s*[-–]\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:days?|tage|dana|dit[ëe]?)\b/i);if(d){const days=Math.max(parseNumber(d[1])||0,parseNumber(d[2])||0);return days>0?Math.ceil(days/7):null;}d=scope.match(/([0-9]+(?:[.,][0-9]+)?)\s*(?:days?|tage|dana|dit[ëe]?)\b/i);if(d){const days=parseNumber(d[1])||0;return days>0?Math.ceil(days/7):null;}return null;}
-function offerExtract(text:string){const cur=currency(text),pk=perKg(text),up=unitPrice(text),tot=total(text),qty=quantityKg(text),zinc=scopedKgPrice(text,/galvan|zinc|zink|cink|verzink/),coat=scopedKgPrice(text,/powder|coat|plastifik|pulver|lack/),transport=firstNumber(text,[/\b(?:transport|freight|fracht|prevoz)\b[^\n\r0-9]{0,30}(?:EUR|€|CHF|USD|GBP|£|\$)?\s*([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)/i]),weeks=deliveryWeeks(text),inc=(text.match(/\b(EXW|FCA|FOB|CFR|CIF|CPT|CIP|DAP|DPU|DDP)\b/i)||[])[1]||null,ref=offerRef(text),terms=paymentTerms(text),valid=validityDays(text),cert=capture(text,/\b(EN\s*10204(?:\s*(?:3\.1|3\.2))?[^\n\r]{0,80})/i,100),origin=capture(text,/\b(?:country\s+of\s+origin|origin|ursprung|poreklo|origjina)\b\s*[:\-]?\s*([^\n\r]{2,80})/i,80);return{currency:cur,price_kg:pk,unit_price:up.unit_price,pricing_unit:pk!=null?'kg':up.pricing_unit,total_amount:tot,total_eur:cur==='EUR'?tot:null,qty_kg:qty,zinc_eur_kg:cur==='EUR'?zinc:null,coating_eur_kg:cur==='EUR'?coat:null,transport_amount:transport,transport_eur:cur==='EUR'?transport:null,delivery_weeks:weeks,incoterms:inc?inc.toUpperCase():null,payment_terms:terms,validity_days:valid==null?null:Math.round(valid),offer_ref:ref,cert,origin};}
-function invoiceExtract(text:string){const cur=currency(text),tot=total(text),nr=invoiceNr(text),date=dateValue(text,/(?:invoice\s+date|date|datum|data|datë|date\s+of\s+issue)\s*[:\-]?\s*((?:20\d{2}[-/.]\d{1,2}[-/.]\d{1,2})|(?:\d{1,2}[./-]\d{1,2}[./-]20\d{2}))/i),due=dateValue(text,/(?:due\s+date|zahlbar\s+bis|faellig|fällig|rok\s+placanja|rok\s+plaćanja|afati\s+i\s+pageses|afati\s+i\s+pagesës)\s*[:\-]?\s*((?:20\d{2}[-/.]\d{1,2}[-/.]\d{1,2})|(?:\d{1,2}[./-]\d{1,2}[./-]20\d{2}))/i),vat=firstNumber(text,[/\b(?:VAT|MWST|PDV|TVSH)\b[^0-9]{0,15}([0-9]{1,2}(?:[.,][0-9]+)?)\s*%/i]),terms=paymentTerms(text);return{invoice_number:nr,date,total_amount:tot,currency:cur,total_eur:cur==='EUR'?tot:null,vat_pct:vat,due_date:due,payment_terms:terms};}
-function offerSignal(text:string){const n=N(text),up=unitPrice(text);let s=0;if(/\b(offer|quotation|quote|angebot|offerte|ofert|ponud|price|preis|cijena|cena)\b/.test(n))s+=20;if(perKg(text)!=null)s+=25;if(up.unit_price!=null)s+=25;if(total(text)!=null)s+=15;if(offerRef(text))s+=10;if(/\b(EXW|FCA|CPT|CIP|DAP|DPU|DDP|FOB|CIF|CFR)\b/i.test(text))s+=5;if(/\b(delivery|lieferzeit|lead\s*time|rok\s+isporuke|afati)\b/.test(n))s+=5;return s;}
-function invoiceSignal(text:string){const n=N(text);let s=0;if(/\b(invoice|rechnung|faktura|fatura|racun|račun)\b/.test(n))s+=30;if(invoiceNr(text))s+=20;if(total(text)!=null)s+=20;if(/\b(due\s+date|payment\s+due|zahlbar|faellig|fällig|rok\s+placanja|rok\s+plaćanja)\b/.test(n))s+=10;return s;}
-async function auth(req:Request){const x=req.headers.get('x-pppp-cron-secret')||'';if(!x)return false;const {data,error}=await db.rpc('gmail_tracker_cron_authorized',{provided:x});return !error&&data===true;}
-async function supplierEvidence(){const emails=new Set<string>(),names=new Map<string,string>();const [p,c,r]=await Promise.all([db.from('partners').select('id,name').contains('relation',['supplier']).eq('stage','active').limit(1000),db.from('contacts').select('email,company').eq('kind','supplier').not('email','is',null).limit(5000),db.from('rfq_log').select('supplier_email,supplier_name').not('supplier_email','is',null).limit(10000)]);if(p.error)throw p.error;if(c.error)throw c.error;if(r.error)throw r.error;const ids=A(p.data).map((x:any)=>x.id);if(ids.length){const pc=await db.from('partner_contacts').select('partner_id,email,email_alt,full_name').in('partner_id',ids).limit(5000);if(pc.error)throw pc.error;for(const x of A(pc.data)){for(const v of[x.email,x.email_alt]){const e=E(v);if(e){emails.add(e);const pn=A(p.data).find((z:any)=>z.id===x.partner_id);if(pn?.name)names.set(e,T(pn.name));}}}}for(const x of A(c.data)){const e=E(x.email);if(e){emails.add(e);if(x.company)names.set(e,T(x.company));}}for(const x of A(r.data)){const e=E(x.supplier_email);if(e){emails.add(e);if(x.supplier_name)names.set(e,T(x.supplier_name));}}return{emails,names};}
-async function existingStatus(table:string,keys:string[]){const out=new Map<string,string>();for(let i=0;i<keys.length;i+=100){const part=keys.slice(i,i+100);if(!part.length)continue;const r=await db.from(table).select('candidate_key,status').in('candidate_key',part);if(r.error)throw r.error;for(const x of A(r.data))out.set(T(x.candidate_key),T(x.status));}return out;}
-async function upsertReview(table:string,row:any,current:Map<string,string>){const st=current.get(row.candidate_key);if(st&&st!=='review')return'protected';const {error}=await db.from(table).upsert(row,{onConflict:'candidate_key'});if(error)throw error;return st?'updated':'created';}
-async function reviewTask(projectId:string,kind:string,count:number){if(!count)return;const sourceRef=`commercial-intake:${projectId}:${kind}`,title=kind==='offer'?`Shqyrto ${count} ofertë/a furnitori të gjetura automatikisht`:`Shqyrto ${count} faturë/a furnitori të gjetura automatikisht`,detail=`PPPP i ka strukturuar si kandidat review-first. Kontrollo burimin origjinal para aprovimit. Asnjë dokument canonical nuk është krijuar automatikisht.`;const {error}=await db.from('tasks').upsert({project_id:projectId,title,detail,due_date:new Date().toISOString().slice(0,10),priority:'larte',status:'hapur',source:'commercial_intake_review',source_ref:sourceRef,category:'furnitor'},{onConflict:'source,source_ref'});if(error)throw error;}
-async function matchRfq(projectId:string,supplierEmail:string,receivedAt:string){if(!projectId||!supplierEmail||!receivedAt)return null;const {data,error}=await db.from('rfq_log').select('id,status,sent_at').eq('project_id',projectId).ilike('supplier_email',supplierEmail).in('status',['sent','replied']).lte('sent_at',receivedAt).order('sent_at',{ascending:false}).order('created_at',{ascending:false}).limit(1);if(error)throw error;return A(data)[0]||null;}
-async function reconcileReply(match:any,receivedAt:string){if(!match||T(match.status)!=='sent')return false;const {data,error}=await db.from('rfq_log').update({status:'replied',replied_at:receivedAt}).eq('id',match.id).eq('status','sent').select('id');if(error)throw error;return A(data).length>0;}
-async function run(limit=250){const max=Math.max(20,Math.min(800,Number(limit)||250)),since=new Date(Date.now()-60*86400000).toISOString(),sup=await supplierEvidence();const r=await db.from('project_emails').select('id,project_id,gmail_message_id,gmail_thread_id,from_email,from_name,subject,snippet,sent_at,direction').not('project_id','is',null).eq('direction','incoming').gte('sent_at',since).order('sent_at',{ascending:false}).limit(max);if(r.error)throw r.error;const emails=A(r.data),ids=emails.map((x:any)=>T(x.gmail_message_id)).filter(Boolean);let attachments:any[]=[];for(let i=0;i<ids.length;i+=100){const part=ids.slice(i,i+100);if(!part.length)continue;const a=await db.from('project_attachment_links').select('id,gmail_message_id,attachment_name,analysis_status,analysis_confidence,extracted_text,extracted_data').in('gmail_message_id',part).in('analysis_status',['analyzed','complete','local_ocr_complete']).limit(3000);if(a.error)throw a.error;attachments.push(...A(a.data));}
- const offerKeys=emails.map((x:any)=>`offer:email:${x.gmail_message_id}`),invoiceKeys=emails.map((x:any)=>`invoice:email:${x.gmail_message_id}`),offerCurrent=await existingStatus('supplier_offer_candidates',offerKeys),invoiceCurrent=await existingStatus('invoice_candidates',invoiceKeys);const summary:any={checked:emails.length,supplier_messages:0,offer_candidates:0,invoice_candidates:0,created:0,updated:0,protected:0,rfq_replies_reconciled:0,items:[]},perProject=new Map<string,{offer:number,invoice:number}>();
- for(const m of emails){const sender=E(m.from_email);if(!sender||!sup.emails.has(sender))continue;summary.supplier_messages++;const at=attachments.filter(x=>T(x.gmail_message_id)===T(m.gmail_message_id)),parts=[T(m.subject),T(m.snippet),...at.map(x=>T(x.extracted_text))].filter(Boolean),raw=CL(parts.join('\n\n'),25000);if(!raw)continue;const invScore=45+invoiceSignal(raw),offSignal=offerSignal(raw),offScore=40+offSignal,invoiceStrong=invoiceSignal(raw)>=50;const sourceKind=at.length?'email_attachment':'email',attachmentIds=at.map(x=>Number(x.id)).filter(Number.isFinite),supplierName=sup.names.get(sender)||T(m.from_name)||sender.split('@')[1]||'Furnitor';let p=perProject.get(T(m.project_id));if(!p){p={offer:0,invoice:0};perProject.set(T(m.project_id),p);}
-   if(invoiceStrong&&invScore>=70){const ex=invoiceExtract(raw),key=`invoice:email:${m.gmail_message_id}`,act=await upsertReview('invoice_candidates',{candidate_key:key,project_id:m.project_id,gmail_message_id:m.gmail_message_id,attachment_link_ids:attachmentIds,party_name:supplierName,party_email:sender,direction:'incoming',subject:m.subject||null,extracted:{...ex,source_sent_at:m.sent_at,source_attachment_names:at.map(x=>x.attachment_name),warnings:['Kandidat automatik: verifiko numrin, totalin, VAT dhe afatin në dokumentin origjinal para aprovimit.']},raw_text:raw,confidence:Math.min(98,invScore),status:'review',updated_at:new Date().toISOString()},invoiceCurrent);summary.invoice_candidates++;summary[act]=(summary[act]||0)+1;p.invoice++;summary.items.push({kind:'invoice',project_id:m.project_id,gmail_message_id:m.gmail_message_id,confidence:Math.min(98,invScore),action:act});continue;}
-   if(offSignal>=35&&offScore>=65){const ex=offerExtract(raw),rfq=await matchRfq(T(m.project_id),sender,T(m.sent_at));if(await reconcileReply(rfq,T(m.sent_at)))summary.rfq_replies_reconciled++;const key=`offer:email:${m.gmail_message_id}`,act=await upsertReview('supplier_offer_candidates',{candidate_key:key,project_id:m.project_id,gmail_message_id:m.gmail_message_id,attachment_link_ids:attachmentIds,supplier_name:supplierName,supplier_email:sender,subject:m.subject||null,source_kind:sourceKind,matched_rfq_id:rfq?.id||null,extracted:{...ex,source_sent_at:m.sent_at,source_attachment_names:at.map(x=>x.attachment_name),warnings:['Kandidat automatik: verifiko scope-in, valutën, sasitë, çmimet dhe kushtet para aprovimit.']},raw_text:raw,confidence:Math.min(98,offScore),status:'review',updated_at:new Date().toISOString()},offerCurrent);summary.offer_candidates++;summary[act]=(summary[act]||0)+1;p.offer++;summary.items.push({kind:'offer',project_id:m.project_id,gmail_message_id:m.gmail_message_id,confidence:Math.min(98,offScore),action:act,matched_rfq_id:rfq?.id||null});}
- }
- for(const [pid,c] of perProject){if(c.offer)await reviewTask(pid,'offer',c.offer);if(c.invoice)await reviewTask(pid,'invoice',c.invoice);}
- return summary;}
-Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:H});if(!(await auth(req)))return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:H});try{const u=new URL(req.url);let body:any={};if(req.method==='POST')try{body=await req.json();}catch{}const res=await run(Number(u.searchParams.get('limit')||body.limit||250));return new Response(JSON.stringify({ok:true,...res}),{headers:H});}catch(e){console.error('commercial intake',e);return new Response(JSON.stringify({ok:false,error:T((e as any)?.message||e)}),{status:500,headers:H});}});
+const db = createClient(Deno.env.get("SUPABASE_URL") || "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "");
+const H = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-pppp-cron-secret","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Content-Type":"application/json"};
+const text = (v: unknown) => String(v ?? "").trim();
+const norm = (v: unknown) => text(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+const arr = <T = any>(v: unknown): T[] => Array.isArray(v) ? v as T[] : [];
+const emailOf = (v: unknown) => (text(v).toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/) || [""])[0];
+const clip = (v: unknown, n = 25000) => text(v).replace(/\u0000/g, " ").slice(0, n);
+
+function parseNumber(v: unknown): number | null {
+  let s = text(v).replace(/[\s'’]/g, "");
+  if (!s) return null;
+  const commas = (s.match(/,/g) || []).length;
+  const dots = (s.match(/\./g) || []).length;
+  if (commas && dots) s = s.lastIndexOf(",") > s.lastIndexOf(".") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  else if (commas) { const p = s.split(","); s = p.length === 2 && p[1].length <= 3 ? `${p[0].replace(/\./g, "")}.${p[1]}` : s.replace(/,/g, ""); }
+  else if (dots > 1) s = s.replace(/\./g, "");
+  const n = Number(s.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+function firstNumber(source: string, patterns: RegExp[]): number | null {
+  for (const re of patterns) { const m = source.match(re); if (m) { const n = parseNumber(m[1]); if (n != null) return n; } }
+  return null;
+}
+function currency(source: string): string | null {
+  if (/\bCHF\b/i.test(source)) return "CHF";
+  if (/\bUSD\b/i.test(source) || /\$/i.test(source)) return "USD";
+  if (/\bGBP\b/i.test(source) || /£/i.test(source)) return "GBP";
+  if (/\bEUR(?:O)?\b/i.test(source) || /€/i.test(source)) return "EUR";
+  return null;
+}
+function perKg(source: string): number | null {
+  return firstNumber(source, [
+    /(?:EUR|EURO|€|CHF|USD|GBP|£|\$)\s*([0-9][0-9.,]*)\s*(?:\/|per|pro)\s*kg\b/i,
+    /([0-9][0-9.,]*)\s*(?:EUR|EURO|€|CHF|USD|GBP|£|\$)\s*(?:\/|per|pro)\s*kg\b/i,
+    /\b(?:price|preis|cijena|cena)\s*(?:per|pro|\/)?\s*kg[^0-9]{0,20}([0-9][0-9.,]*)/i,
+  ]);
+}
+function unitPrice(source: string): { unit_price: number | null; pricing_unit: string | null } {
+  const unit = "(sets?|units?|pieces?|pcs?|pc|komad(?:a)?|cop[eë]|copë)";
+  const patterns = [
+    new RegExp(`(?:EUR|EURO|€|CHF|USD|GBP|£|\\$)\\s*([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)\\s*(?:\\/|per)\\s*${unit}\\b`, "i"),
+    new RegExp(`([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)\\s*(?:EUR|EURO|€|CHF|USD|GBP|£|\\$)\\s*(?:\\/|per)\\s*${unit}\\b`, "i"),
+  ];
+  for (const re of patterns) {
+    const m = source.match(re); if (!m) continue;
+    const value = parseNumber(m[1]); if (value == null || value <= 0) continue;
+    const u = norm(m[2]);
+    const pricing_unit = u.startsWith("set") ? "set" : u.startsWith("pc") || u.startsWith("piece") || u.startsWith("komad") || u.startsWith("cop") ? "piece" : "unit";
+    return { unit_price: value, pricing_unit };
+  }
+  return { unit_price: null, pricing_unit: null };
+}
+function moneyAfter(source: string, word: string): number | null {
+  const re = new RegExp(`${word}[^\\n\\r0-9]{0,30}(?:EUR|EURO|€|CHF|USD|GBP|£|\\$)?\\s*([0-9][0-9 .,'’]*[0-9](?:[.,][0-9]{1,3})?)`, "i");
+  const m = source.match(re); return m ? parseNumber(m[1]) : null;
+}
+function total(source: string): number | null {
+  for (const w of ["grand\\s+total", "total", "gesamt", "ukupno", "totali", "summe", "amount"]) { const n = moneyAfter(source, w); if (n != null) return n; }
+  return null;
+}
+function qtyKg(source: string): number | null {
+  return firstNumber(source, [
+    /\b(?:qty|quantity|menge|kolicina|količina|sasia|weight|gewicht|tezina|težina)\b[^0-9]{0,25}([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)\s*kg\b/i,
+    /\b([0-9][0-9 .,'’]*(?:[.,][0-9]+)?)\s*kg\b/i,
+  ]);
+}
+function capture(source: string, re: RegExp, max = 180): string | null { const m = source.match(re); return m ? clip(m[1], max) : null; }
+function offerRef(source: string): string | null {
+  for (const re of [
+    /(?:quotation|offer|quote|angebot)\s*(?:no\.?|nr\.?|number|nummer|ref(?:erence)?\.?|#)\s*[:#-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,50})/i,
+    /(?:ponud[aeu]?|ofert[ae]?)\s*(?:no\.?|nr\.?|number|br\.?|#)\s*[:#-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,50})/i,
+  ]) { const v = capture(source, re, 80); if (v) return v; }
+  return null;
+}
+function paymentTerms(source: string): string | null {
+  const direct = capture(source, /(?:payment\s+terms?|zahlungsbedingungen|uslovi\s+pla[cć]anja|kushtet\s+e\s+pages[eë]s)\s*[:\-]?\s*([^\n\r]{3,240})/i, 240);
+  if (direct) return direct;
+  const m = source.match(/(?:terms?\s+of\s+payment|payment\s+conditions?)\s*:?\s*([\s\S]{3,500}?)(?=\n\s*(?:validity|terms?\s+of\s+delivery|delivery|in\s+case\s+of|kind\s+regards|best\s+regards|$))/i);
+  return m ? clip(m[1].replace(/[•·]/g, " ").replace(/\s*\n\s*/g, "; ").replace(/\s{2,}/g, " "), 320) : null;
+}
+function validityDays(source: string): number | null {
+  return firstNumber(source, [/\b(?:validity|valid|gültig|gueltig|vazi|važi|vlefshm)\w*[\s\S]{0,120}?\(?([0-9]{1,4})\)?\s*(?:days?|tage|dana|dit[ëe]?)\b/i]);
+}
+function deliveryWeeks(source: string): number | null {
+  const pos = source.search(/\b(?:terms?\s+of\s+delivery|delivery|lead\s*time|lieferzeit|rok\s+isporuke|afati\s+i\s+dorezimit)\b/i);
+  const scope = pos >= 0 ? source.slice(pos, pos + 700) : source;
+  let m = scope.match(/([0-9]+(?:[.,][0-9]+)?)\s*[-–]\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:weeks?|wochen|nedelj[ae]?|jav[ëe]?)\b/i);
+  if (m) {
+    let w = Math.max(parseNumber(m[1]) || 0, parseNumber(m[2]) || 0);
+    const tail = scope.slice((m.index || 0) + m[0].length, (m.index || 0) + m[0].length + 240);
+    const extra = tail.match(/(?:additional|plus|\+|with\s+additional|and\s+additional)[^0-9]{0,40}([0-9]+(?:[.,][0-9]+)?)\s*(?:weeks?|wochen|nedelj[ae]?|jav[ëe]?)\b/i);
+    if (extra) w += parseNumber(extra[1]) || 0;
+    return w > 0 ? Math.round(w) : null;
+  }
+  m = scope.match(/([0-9]+(?:[.,][0-9]+)?)\s*(?:weeks?|wochen|nedelj[ae]?|jav[ëe]?)\b/i);
+  if (m) return Math.round(parseNumber(m[1]) || 0) || null;
+  let d = scope.match(/([0-9]+(?:[.,][0-9]+)?)\s*[-–]\s*([0-9]+(?:[.,][0-9]+)?)\s*(?:days?|tage|dana|dit[ëe]?)\b/i);
+  if (d) return Math.ceil(Math.max(parseNumber(d[1]) || 0, parseNumber(d[2]) || 0) / 7) || null;
+  d = scope.match(/([0-9]+(?:[.,][0-9]+)?)\s*(?:days?|tage|dana|dit[ëe]?)\b/i);
+  return d ? Math.ceil((parseNumber(d[1]) || 0) / 7) || null : null;
+}
+function invoiceNumber(source: string): string | null { return capture(source, /(?:invoice|rechnung|faktur[ae]?|fatur[ae]?|račun|racun)\s*(?:no\.?|nr\.?|number|nummer|br\.?|#)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9._\/-]{2,50})/i, 80); }
+function dateValue(source: string, label: RegExp): string | null {
+  const m = source.match(label); if (!m) return null; const raw = text(m[1]);
+  let z = raw.match(/(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})/); if (z) return `${z[1]}-${z[2].padStart(2,"0")}-${z[3].padStart(2,"0")}`;
+  z = raw.match(/(\d{1,2})[./-](\d{1,2})[./-](20\d{2})/); return z ? `${z[3]}-${z[2].padStart(2,"0")}-${z[1].padStart(2,"0")}` : null;
+}
+function offerExtract(source: string) {
+  const cur = currency(source), pk = perKg(source), up = unitPrice(source), tt = total(source), q = qtyKg(source);
+  const inc = (source.match(/\b(EXW|FCA|FOB|CFR|CIF|CPT|CIP|DAP|DPU|DDP)\b/i) || [])[1] || null;
+  return {currency:cur,price_kg:pk,unit_price:up.unit_price,pricing_unit:pk != null ? "kg" : up.pricing_unit,total_amount:tt,total_eur:cur === "EUR" ? tt : null,qty_kg:q,delivery_weeks:deliveryWeeks(source),incoterms:inc ? inc.toUpperCase() : null,payment_terms:paymentTerms(source),validity_days:validityDays(source),offer_ref:offerRef(source),cert:capture(source,/\b(EN\s*10204(?:\s*(?:3\.1|3\.2))?[^\n\r]{0,80})/i,100),origin:capture(source,/\b(?:country\s+of\s+origin|origin|ursprung|poreklo|origjina)\b\s*[:\-]?\s*([^\n\r]{2,80})/i,80)};
+}
+function invoiceExtract(source: string) {
+  const cur = currency(source), tt = total(source);
+  return {invoice_number:invoiceNumber(source),date:dateValue(source,/(?:invoice\s+date|date|datum|data|datë)\s*[:\-]?\s*((?:20\d{2}[-/.]\d{1,2}[-/.]\d{1,2})|(?:\d{1,2}[./-]\d{1,2}[./-]20\d{2}))/i),due_date:dateValue(source,/(?:due\s+date|zahlbar\s+bis|faellig|fällig|rok\s+pla[cć]anja|afati\s+i\s+pages[eë]s)\s*[:\-]?\s*((?:20\d{2}[-/.]\d{1,2}[-/.]\d{1,2})|(?:\d{1,2}[./-]\d{1,2}[./-]20\d{2}))/i),total_amount:tt,total_eur:cur === "EUR" ? tt : null,currency:cur,vat_pct:firstNumber(source,[/\b(?:VAT|MWST|PDV|TVSH)\b[^0-9]{0,15}([0-9]{1,2}(?:[.,][0-9]+)?)\s*%/i]),payment_terms:paymentTerms(source)};
+}
+function offerSignal(source: string): number { let s = 0; const n = norm(source), up = unitPrice(source); if (/\b(offer|quotation|quote|angebot|offerte|ofert|ponud|price|preis|cijena|cena)\b/.test(n)) s += 20; if (perKg(source) != null) s += 25; if (up.unit_price != null) s += 25; if (total(source) != null) s += 15; if (offerRef(source)) s += 10; if (/\b(EXW|FCA|CPT|CIP|DAP|DPU|DDP|FOB|CIF|CFR)\b/i.test(source)) s += 5; if (/\b(delivery|lieferzeit|lead\s*time|rok\s+isporuke|afati)\b/.test(n)) s += 5; return s; }
+function invoiceSignal(source: string): number { let s = 0; const n = norm(source); if (/\b(invoice|rechnung|faktura|fatura|racun|račun)\b/.test(n)) s += 30; if (invoiceNumber(source)) s += 20; if (total(source) != null) s += 20; if (/\b(due\s+date|payment\s+due|zahlbar|faellig|fällig|rok\s+pla[cć]anja)\b/.test(n)) s += 10; return s; }
+
+async function authorized(req: Request) { const key = req.headers.get("x-pppp-cron-secret") || ""; if (!key) return false; const {data,error}=await db.rpc("gmail_tracker_cron_authorized",{provided:key}); return !error && data === true; }
+async function supplierEvidence() {
+  const emails = new Set<string>(), names = new Map<string,string>();
+  const [p,c,r] = await Promise.all([db.from("partners").select("id,name").contains("relation",["supplier"]).eq("stage","active").limit(1000),db.from("contacts").select("email,company").eq("kind","supplier").not("email","is",null).limit(5000),db.from("rfq_log").select("supplier_email,supplier_name").not("supplier_email","is",null).limit(10000)]);
+  if (p.error) throw p.error; if (c.error) throw c.error; if (r.error) throw r.error;
+  const partners=arr<any>(p.data), ids=partners.map(x=>x.id); if(ids.length){const pc=await db.from("partner_contacts").select("partner_id,email,email_alt").in("partner_id",ids).limit(5000);if(pc.error)throw pc.error;for(const x of arr<any>(pc.data)){const pn=partners.find(z=>z.id===x.partner_id);for(const v of [x.email,x.email_alt]){const e=emailOf(v);if(e){emails.add(e);if(pn?.name)names.set(e,text(pn.name));}}}}
+  for(const x of arr<any>(c.data)){const e=emailOf(x.email);if(e){emails.add(e);if(x.company)names.set(e,text(x.company));}}
+  for(const x of arr<any>(r.data)){const e=emailOf(x.supplier_email);if(e){emails.add(e);if(x.supplier_name)names.set(e,text(x.supplier_name));}}
+  return {emails,names};
+}
+async function existingStatuses(table:string, keys:string[]){const out=new Map<string,string>();for(let i=0;i<keys.length;i+=100){const part=keys.slice(i,i+100);const q=await db.from(table).select("candidate_key,status").in("candidate_key",part);if(q.error)throw q.error;for(const x of arr<any>(q.data))out.set(text(x.candidate_key),text(x.status));}return out;}
+async function upsertReview(table:string,row:any,current:Map<string,string>){const st=current.get(row.candidate_key);if(st&&st!=="review")return"protected";const q=await db.from(table).upsert(row,{onConflict:"candidate_key"});if(q.error)throw q.error;return st?"updated":"created";}
+async function reviewTask(projectId:string,kind:"offer"|"invoice",count:number){if(!count)return;const q=await db.from("tasks").upsert({project_id:projectId,title:kind==="offer"?`Shqyrto ${count} ofertë/a furnitori të gjetura automatikisht`:`Shqyrto ${count} faturë/a furnitori të gjetura automatikisht`,detail:"PPPP i ka strukturuar si kandidat review-first. Kontrollo burimin origjinal para aprovimit. Asnjë dokument canonical nuk krijohet automatikisht.",due_date:new Date().toISOString().slice(0,10),priority:"larte",status:"hapur",source:"commercial_intake_review",source_ref:`commercial-intake:${projectId}:${kind}`,category:"furnitor"},{onConflict:"source,source_ref"});if(q.error)throw q.error;}
+async function matchRfq(projectId:string,supplierEmail:string,receivedAt:string){const q=await db.from("rfq_log").select("id,status,sent_at,created_at,supplier_email").eq("project_id",projectId).in("status",["sent","replied"]).lte("sent_at",receivedAt).order("sent_at",{ascending:false}).order("created_at",{ascending:false}).limit(100);if(q.error)throw q.error;return arr<any>(q.data).find(x=>emailOf(x.supplier_email)===supplierEmail)||null;}
+async function reconcileReply(match:any,receivedAt:string){if(!match||text(match.status)!=="sent")return false;const q=await db.from("rfq_log").update({status:"replied",replied_at:receivedAt}).eq("id",match.id).eq("status","sent").select("id");if(q.error)throw q.error;return arr(q.data).length>0;}
+
+async function run(limit=250){
+  const max=Math.max(20,Math.min(800,Number(limit)||250)),since=new Date(Date.now()-60*86400000).toISOString(),sup=await supplierEvidence();
+  const em=await db.from("project_emails").select("project_id,gmail_message_id,from_email,from_name,subject,snippet,sent_at,direction").not("project_id","is",null).eq("direction","incoming").gte("sent_at",since).order("sent_at",{ascending:false}).limit(max); if(em.error)throw em.error;
+  const rows=arr<any>(em.data), ids=rows.map(x=>text(x.gmail_message_id)).filter(Boolean); let attachments:any[]=[];
+  for(let i=0;i<ids.length;i+=100){const q=await db.from("project_attachment_links").select("id,gmail_message_id,attachment_name,analysis_status,extracted_text").in("gmail_message_id",ids.slice(i,i+100)).in("analysis_status",["analyzed","complete","local_ocr_complete"]).limit(3000);if(q.error)throw q.error;attachments.push(...arr(q.data));}
+  const offerCurrent=await existingStatuses("supplier_offer_candidates",rows.map(x=>`offer:email:${x.gmail_message_id}`));
+  const invoiceCurrent=await existingStatuses("invoice_candidates",rows.map(x=>`invoice:email:${x.gmail_message_id}`));
+  const summary:any={checked:rows.length,supplier_messages:0,offer_candidates:0,invoice_candidates:0,created:0,updated:0,protected:0,rfq_replies_reconciled:0,items:[]};
+  const counts=new Map<string,{offer:number,invoice:number}>();
+  for(const m of rows){
+    const sender=emailOf(m.from_email); if(!sender||!sup.emails.has(sender))continue; summary.supplier_messages++;
+    const aa=attachments.filter(x=>text(x.gmail_message_id)===text(m.gmail_message_id)); const raw=clip([m.subject,m.snippet,...aa.map(x=>x.extracted_text)].filter(Boolean).join("\n\n")); if(!raw)continue;
+    const pid=text(m.project_id), name=sup.names.get(sender)||text(m.from_name)||sender, inv=invoiceSignal(raw), off=offerSignal(raw); let c=counts.get(pid);if(!c){c={offer:0,invoice:0};counts.set(pid,c);}
+    if(inv>=50){const ex=invoiceExtract(raw),key=`invoice:email:${m.gmail_message_id}`,action=await upsertReview("invoice_candidates",{candidate_key:key,project_id:pid,gmail_message_id:m.gmail_message_id,attachment_link_ids:aa.map(x=>x.id),party_name:name,party_email:sender,direction:"incoming",subject:m.subject||null,extracted:{...ex,source_sent_at:m.sent_at,source_attachment_names:aa.map(x=>x.attachment_name),warnings:["Kandidat automatik: verifiko numrin, totalin, VAT dhe afatin në dokumentin origjinal para aprovimit."]},raw_text:raw,confidence:Math.min(98,45+inv),status:"review",updated_at:new Date().toISOString()},invoiceCurrent);summary.invoice_candidates++;summary[action]=(summary[action]||0)+1;c.invoice++;continue;}
+    if(off>=35){const ex=offerExtract(raw),match=await matchRfq(pid,sender,text(m.sent_at));if(await reconcileReply(match,text(m.sent_at)))summary.rfq_replies_reconciled++;const key=`offer:email:${m.gmail_message_id}`,action=await upsertReview("supplier_offer_candidates",{candidate_key:key,project_id:pid,gmail_message_id:m.gmail_message_id,attachment_link_ids:aa.map(x=>x.id),supplier_name:name,supplier_email:sender,subject:m.subject||null,source_kind:aa.length?"email_attachment":"email",matched_rfq_id:match?.id||null,extracted:{...ex,source_sent_at:m.sent_at,source_attachment_names:aa.map(x=>x.attachment_name),warnings:["Kandidat automatik: verifiko scope-in, valutën, sasitë, çmimet dhe kushtet para aprovimit."]},raw_text:raw,confidence:Math.min(98,40+off),status:"review",updated_at:new Date().toISOString()},offerCurrent);summary.offer_candidates++;summary[action]=(summary[action]||0)+1;c.offer++;summary.items.push({kind:"offer",gmail_message_id:m.gmail_message_id,matched_rfq_id:match?.id||null,extracted:ex});}
+  }
+  for(const [pid,c] of counts){if(c.offer)await reviewTask(pid,"offer",c.offer);if(c.invoice)await reviewTask(pid,"invoice",c.invoice);}
+  return summary;
+}
+
+Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:H});if(!(await authorized(req)))return new Response(JSON.stringify({ok:false,error:"unauthorized"}),{status:401,headers:H});try{const u=new URL(req.url);let p:any={};if(req.method==="POST")try{p=await req.json();}catch{}const res=await run(Number(u.searchParams.get("limit")||p.limit||250));return new Response(JSON.stringify({ok:true,...res}),{headers:H});}catch(e){return new Response(JSON.stringify({ok:false,error:text((e as any)?.message||e)}),{status:500,headers:H});}});
