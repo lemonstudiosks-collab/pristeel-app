@@ -79,10 +79,13 @@ assert.match(legacyGrid,/Legacy compatibility fallback only/,'old Home grid must
 assert.match(legacyGrid,/function liveHomeRoot\(/,'legacy grid must detect the mounted Live Home root');
 assert.match(legacyGrid,/pst-project-control-home-v2/,'legacy grid must target the actual Live Home root');
 assert.match(legacyGrid,/function retireForLiveHome\(/,'legacy grid must have a deterministic retirement path');
-assert.match(legacyGrid,/classList\.remove\('pst-home-action-only','pst-home-grid-final'\)/,'retirement must clear the CSS classes that hid Live Home');
+assert.match(legacyGrid,/classList\.remove\('pst-home-action-only','pst-home-grid-final','pst-home-awaiting-live'\)/,'retirement must clear the legacy and pending classes once Live Home mounts');
 assert.match(legacyGrid,/if\(retireForLiveHome\(\)\)return false/,'legacy render must yield when Live Home already exists');
 assert.match(legacyGrid,/function scheduleLiveHomeHandoff\(/,'legacy grid must retry the handoff for late Live Home mounts');
-assert.match(legacyGrid,/\[0,100,350,900,1800,3000\]/,'handoff retries must stay bounded');
+assert.match(legacyGrid,/\[0,50,120,240,400,700,1000,1400,1900,2500,3200,4500,6000\]/,'handoff retries must stay bounded while yielding quickly to Live Home');
+assert.match(legacyGrid,/pst-home-awaiting-live/,'legacy Home content must stay hidden while the final Live Home owner is mounting');
+assert.match(legacyGrid,/PPPP po ngarkohet/,'pending Home state must visibly explain that the final surface is loading');
+assert.match(legacyGrid,/PPPP po kërkon projektet/,'project lookup must expose immediate visible feedback before async loading');
 assert.doesNotMatch(legacyGrid,/MutationObserver|setInterval\s*\(/,'legacy handoff must not introduce persistent polling/observers');
 
 console.log('PPPP Live Home v5 operator-signal + autonomous sync smoke: OK');
