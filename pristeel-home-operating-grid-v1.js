@@ -1,5 +1,5 @@
-/* PRISTEEL Home Operating Grid v4.2
- * Legacy compatibility fallback only. Live Home v3 is the production Home owner.
+/* PRISTEEL Home Operating Grid v4.3
+ * Legacy compatibility fallback only. Live Home is the production Home owner.
  * Canonical Home remains a backstage data/state source.
  * This module performs no Supabase reads/writes and no outbound actions.
  */
@@ -8,7 +8,7 @@
 if(window.__pstHomeOperatingGridV1)return;
 window.__pstHomeOperatingGridV1=true;
 
-var VERSION='20260830-live-home-search-nav-resilience-2';
+var VERSION='20260830-live-home-stability-3';
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -22,16 +22,24 @@ function liveHomeRoot(){
   var p=page(),root=document.getElementById('pst-project-control-home-v2');
   return p&&root&&p.contains(root)&&window.__pstLiveHomeV3?root:null;
 }
+function liveOwnerName(){if(window.__pstLiveHomeV7)return'live-home-v7';if(window.__pstLiveHomeV6)return'live-home-v6';if(window.__pstLiveHomeV5)return'live-home-v5';return'live-home-v3';}
+function markAwaitingLive(){
+  var p=page();if(!p)return false;
+  if(liveHomeRoot())return retireForLiveHome();
+  p.classList.add('pst-home-awaiting-live');
+  p.setAttribute('data-pst-home-owner','live-home-pending');
+  return true;
+}
 function retireForLiveHome(){
   var p=page(),root=liveHomeRoot();if(!p||!root)return false;
-  p.classList.remove('pst-home-action-only','pst-home-grid-final');
-  p.setAttribute('data-pst-home-owner','live-home-v3');
+  p.classList.remove('pst-home-action-only','pst-home-grid-final','pst-home-awaiting-live');
+  p.setAttribute('data-pst-home-owner',liveOwnerName());
   var h=document.getElementById('pst-home-operating-grid-v1');
   if(h&&h.parentNode)h.parentNode.removeChild(h);
   return true;
 }
 function scheduleLiveHomeHandoff(){
-  [0,100,350,900,1800,3000].forEach(function(ms){setTimeout(retireForLiveHome,ms);});
+  [0,50,120,240,400,700,1000,1400,1900,2500,3200,4500,6000].forEach(function(ms){setTimeout(retireForLiveHome,ms);});
 }
 
 /* Read-only resilience for the actual Live Home owner. The project-control owner
@@ -46,8 +54,22 @@ function matchingProjects(q,rows){var out=[];A(rows).forEach(function(p){var sco
 function lookupIntent(q){var n=N(q),words=n.split(' ').filter(Boolean);if(!n)return false;if(/\?$/.test(S(q).trim())||/^(cka|cfare|kush|ku|kur|pse|si|a ka|a kemi|me trego|trego|cil|what|which|who|where|when|why|how)\b/.test(n))return true;return words.length<=4;}
 function stateLabel(p){var o=N(p&&p.operational_state),s=N(p&&p.status);if(o==='execution')return'Në realizim';if(o==='action required')return'Kërkon veprim';if(o==='wait for client')return'Në pritje të klientit';if(o==='wait for supplier')return'Në pritje të furnitorit';if(/humb|lost/.test(s))return'Humbur';if(/fituar|won/.test(s))return'Fituar';if(/pritje|pending|waiting/.test(s))return'Në pritje';return S(p&&p.status||'Aktiv');}
 function shortDate(v){var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short'}):'';}
-function renderMatches(form,q,hits){var root=form.closest('#pst-project-control-home-v2'),r=root&&root.querySelector('.pst-live-result');if(!r)return false;r.hidden=false;r.innerHTML='<div class="pst-live-answer"><b>U gjetën '+hits.length+' projekte që lidhen me “'+E(S(q).trim())+'”.</b><br>Zgjidh projektin që dëshiron:</div><div style="display:grid;gap:7px;margin-top:10px">'+hits.slice(0,8).map(function(h){var p=h.p,d=shortDate(p.last_activity_at||p.last_email_at||p.updated_at);return'<button type="button" data-live-open="'+E(p.id)+'" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:1px solid rgba(255,255,255,.22);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;padding:9px 11px;cursor:pointer"><span><b style="display:block;font-size:13px">'+E(p.name||'Projekt')+'</b><small style="display:block;margin-top:2px;color:rgba(255,255,255,.7)">'+E([p.client,stateLabel(p),p.ref||p.business_ref,d?('aktivitet '+d):''].filter(Boolean).join(' · '))+'</small></span><span aria-hidden="true">→</span></button>';}).join('')+'</div>';var input=form.querySelector('.pst-live-input');if(input)input.value='';return true;}
-async function broadLookupSubmit(e){var form=e.target;if(!form||!form.matches||!form.matches('#pst-project-control-home-v2 .pst-live-command'))return;if(form.dataset.pstLookupBypass==='1'){delete form.dataset.pstLookupBypass;return;}var input=form.querySelector('.pst-live-input'),q=S(input&&input.value).trim();if(!lookupIntent(q))return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();var hits=[];try{hits=matchingProjects(q,await ensureLiveProjects());}catch(x){}if(hits.length>1){renderMatches(form,q,hits);return;}form.dataset.pstLookupBypass='1';if(typeof form.requestSubmit==='function')form.requestSubmit();else form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));}
+function renderMatches(form,q,hits){var root=form.closest('#pst-project-control-home-v2'),r=root&&root.querySelector('.pst-live-result');if(!r)return false;var count=hits.length;r.hidden=false;r.innerHTML='<div class="pst-live-answer"><b>U gjet'+(count===1?'':'ën')+' '+count+' projekt'+(count===1?'':'e')+' që lidhen me “'+E(S(q).trim())+'”.</b><br>'+(count===1?'Hap projektin:':'Zgjidh projektin që dëshiron:')+'</div><div style="display:grid;gap:7px;margin-top:10px">'+hits.slice(0,8).map(function(h){var p=h.p,d=shortDate(p.last_activity_at||p.last_email_at||p.updated_at);return'<button type="button" data-live-open="'+E(p.id)+'" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:1px solid rgba(255,255,255,.22);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;padding:9px 11px;cursor:pointer"><span><b style="display:block;font-size:13px">'+E(p.name||'Projekt')+'</b><small style="display:block;margin-top:2px;color:rgba(255,255,255,.7)">'+E([p.client,stateLabel(p),p.ref||p.business_ref,d?('aktivitet '+d):''].filter(Boolean).join(' · '))+'</small></span><span aria-hidden="true">→</span></button>';}).join('')+'</div>';var input=form.querySelector('.pst-live-input');if(input)input.value='';return true;}
+function renderLookupBusy(form,q){var root=form.closest('#pst-project-control-home-v2'),r=root&&root.querySelector('.pst-live-result');if(!r)return false;r.hidden=false;r.innerHTML='<div class="pst-live-thinking"><span class="pst-live-thinking-orb"><i></i><i></i><i></i></span><div><b>PPPP po kërkon projektet</b><span>Po kontrolloj projektet që përputhen me “'+E(S(q).trim())+'”…</span><small>Faqja është aktive; mund të vazhdosh sapo të shfaqen rezultatet.</small></div></div>';return true;}
+function nextPaint(){return new Promise(function(resolve){if(typeof window.requestAnimationFrame==='function')window.requestAnimationFrame(function(){setTimeout(resolve,0);});else setTimeout(resolve,0);});}
+async function broadLookupSubmit(e){
+  var form=e.target;if(!form||!form.matches||!form.matches('#pst-project-control-home-v2 .pst-live-command'))return;
+  if(form.dataset.pstLookupBypass==='1'){delete form.dataset.pstLookupBypass;return;}
+  var input=form.querySelector('.pst-live-input'),q=S(input&&input.value).trim();if(!lookupIntent(q))return;
+  var rows=liveProjectState(),hits=matchingProjects(q,rows);
+  if(hits.length>1){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();renderMatches(form,q,hits);return;}
+  if(rows.length)return;
+  e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+  renderLookupBusy(form,q);await nextPaint();
+  try{hits=matchingProjects(q,await ensureLiveProjects());}catch(x){hits=[];}
+  if(hits.length){renderMatches(form,q,hits);return;}
+  form.dataset.pstLookupBypass='1';if(typeof form.requestSubmit==='function')form.requestSubmit();else form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+}
 function projectPageVisible(){var p=document.getElementById('page-workspace-project');return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
 function setProjectIdentity(id){window.__pstCurrentProjectId=S(id);window._curProjId=S(id);var s=document.getElementById('global-proj');if(s){s.value=S(id);try{s.dispatchEvent(new Event('change',{bubbles:true}));}catch(e){}}}
 async function openProjectResilient(id){id=S(id).trim();if(!id)return false;setProjectIdentity(id);if(typeof window.pstOpenProjectWorkspace==='function'){try{await Promise.resolve(window.pstOpenProjectWorkspace(id));if(projectPageVisible())return true;}catch(e){console.warn('PPPP project open:',e);}}if(typeof window.loadProject==='function'){try{await Promise.resolve(window.loadProject(id));return true;}catch(e){}}var L=window.__pstWorkspaceLegacy||{},old=L.openOverview||window.openOverview;if(typeof old==='function'){try{await Promise.resolve(old(id));return true;}catch(e){}}if(typeof window.pstWorkspaceGo==='function'){try{window.pstWorkspaceGo('projects');}catch(e){}}return false;}
@@ -94,6 +116,9 @@ function card(a){
 }
 function installStyle(){
   if(document.getElementById('pst-home-action-only-css'))return;var s=document.createElement('style');s.id='pst-home-action-only-css';s.textContent='\
+#page-workspace-home.pst-home-awaiting-live> :not(#pst-project-control-home-v2){display:none!important}\
+#page-workspace-home.pst-home-awaiting-live{min-height:100vh!important;padding-top:0!important}\
+#page-workspace-home.pst-home-awaiting-live:before{content:"PPPP po ngarkohet…";display:block;max-width:1120px;margin:0 auto;padding:54px 28px;font-size:13px;font-weight:750;color:#6f858d}\
 #page-workspace-home.pst-home-action-only> :not(#pst-home-operating-grid-v1){display:none!important}\
 #page-workspace-home.pst-home-action-only>#pst-openai-assistant-v1{display:block!important}\
 #page-workspace-home.pst-home-action-only{padding-top:0!important}\
@@ -118,7 +143,7 @@ function installStyle(){
 }
 function host(){
   if(retireForLiveHome())return null;
-  var p=page();if(!p)return null;p.classList.add('pst-home-action-only','pst-home-grid-final');var h=document.getElementById('pst-home-operating-grid-v1');
+  var p=page();if(!p)return null;p.classList.remove('pst-home-awaiting-live');p.classList.add('pst-home-action-only','pst-home-grid-final');var h=document.getElementById('pst-home-operating-grid-v1');
   if(!h){h=document.createElement('main');h.id='pst-home-operating-grid-v1';h.setAttribute('data-pst-home-final-presentation','action-only');p.appendChild(h);}return h;
 }
 function runAction(key){if(!proxyAction(key))console.warn('PPPP Home: canonical action target missing',key);}
@@ -130,10 +155,11 @@ function renderLoaded(data){
     +(actions.length?'<section class="pst-hao-list">'+actions.map(card).join('')+'</section>':'<section class="pst-hao-empty"><b>Asnjë projekt nuk kërkon ndërhyrjen tënde tani.</b><span>PPPP vazhdon të monitorojë projektet dhe do ta nxjerrë këtu veprimin e radhës kur nevojitet.</span></section>');bind(h);scheduleLiveHomeHandoff();return true;
 }
 function render(){if(retireForLiveHome())return false;if(!active())return false;return renderLoaded({snap:snapshot()});}
-function schedule(){if(retireForLiveHome())return;if(typeof queueMicrotask==='function')queueMicrotask(render);else Promise.resolve().then(render);}
+function schedule(){if(retireForLiveHome())return;installStyle();markAwaitingLive();scheduleLiveHomeHandoff();}
 function homeIntent(el){if(!el||!el.closest)return false;var n=el.closest('[data-ws-go="home"],[data-nav="home"],[data-pst-nav="home"],a[href="#home"],button');if(!n)return false;var t=S(n.textContent).toLowerCase().trim();return n.matches('[data-ws-go="home"],[data-nav="home"],[data-pst-nav="home"],a[href="#home"]')||t==='home';}
-function boot(){installStyle();if(retireForLiveHome())return;scheduleLiveHomeHandoff();if(active())render();}
+function boot(){installStyle();markAwaitingLive();if(retireForLiveHome())return;scheduleLiveHomeHandoff();}
 document.addEventListener('pst:home-canonical-rendered',schedule);document.addEventListener('pst:modules-ready',schedule);document.addEventListener('click',function(e){if(homeIntent(e.target))schedule();},true);window.addEventListener('focus',function(){if(active())schedule();});
+markAwaitingLive();
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTHomeOperatingGridV1={version:VERSION,render:render,refresh:render,renderLoaded:renderLoaded,snapshot:snapshot,openProjectResilient:openProjectResilient,_test:{proxyAction:proxyAction,nativeRow:nativeRow,openProject:openProject,displayActions:displayActions,actionProject:actionProject,actionTitle:actionTitle,actionWhy:actionWhy,actionTag:actionTag,active:active,homeIntent:homeIntent,liveHomeRoot:liveHomeRoot,retireForLiveHome:retireForLiveHome,scheduleLiveHomeHandoff:scheduleLiveHomeHandoff,matchingProjects:matchingProjects,lookupIntent:lookupIntent,projectTarget:projectTarget}};
+window.PSTHomeOperatingGridV1={version:VERSION,render:render,refresh:render,renderLoaded:renderLoaded,snapshot:snapshot,openProjectResilient:openProjectResilient,_test:{proxyAction:proxyAction,nativeRow:nativeRow,openProject:openProject,displayActions:displayActions,actionProject:actionProject,actionTitle:actionTitle,actionWhy:actionWhy,actionTag:actionTag,active:active,homeIntent:homeIntent,liveHomeRoot:liveHomeRoot,retireForLiveHome:retireForLiveHome,scheduleLiveHomeHandoff:scheduleLiveHomeHandoff,matchingProjects:matchingProjects,lookupIntent:lookupIntent,projectTarget:projectTarget,markAwaitingLive:markAwaitingLive}};
 })();
