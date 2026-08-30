@@ -7,7 +7,7 @@ const dom = new JSDOM(`<!doctype html><html><head></head><body>
   <div class="pst-pm-page">
     <div class="pst-pm-head"><div><div class="pst-pm-sub"></div></div><div class="pst-pm-head-actions"><button id="pst-pdm-btn">Dublikatat</button><button id="pst-pm-refresh">Rifresko</button><button id="pst-pm-new">+ Projekt i ri</button></div></div>
     <div class="pst-pm-controls"><div class="pst-pm-control-top"><select id="pst-pm-sort"><option>Aktiviteti i fundit</option></select><div class="pst-pm-toggle"><button data-pm-view="list" class="on">Listë</button><button data-pm-view="board">Board</button></div></div><div id="pst-pm-filters"></div></div>
-    <div class="pst-pm-row" data-project-id="p1"><div class="pst-pm-main"><div class="pst-pm-name">Action Project</div><div class="pst-pm-client">Client</div><div class="pst-pm-desc">Noise</div><div class="pst-pc-badges"><span>TENDER</span></div></div><div class="pst-pm-meta"></div><div class="pst-pm-actions"></div></div>
+    <div class="pst-pm-row" data-project-id="p1"><div class="pst-pm-main"><div class="pst-pm-name">Action Project</div><div class="pst-pm-client">Client</div><div class="pst-pm-desc">Noise</div><div class="pst-pc-badges"><span>TENDER</span></div></div><div class="pst-pm-meta"></div><div class="pst-pm-actions"><button class="pst-pm-more" data-pm-more="p1">⋯</button></div></div>
     <div class="pst-pm-row" data-project-id="p2"><div class="pst-pm-main"><div class="pst-pm-name">Waiting Project</div><div class="pst-pm-client">Client</div></div><div class="pst-pm-meta"></div><div class="pst-pm-actions"></div></div>
     <div class="pst-pm-row" data-project-id="p3"><div class="pst-pm-main"><div class="pst-pm-name">Execution Project</div><div class="pst-pm-client">Client</div></div><div class="pst-pm-meta"></div><div class="pst-pm-actions"></div></div>
     <div class="pst-pm-row" data-project-id="p4"><div class="pst-pm-main"><div class="pst-pm-name">Closed Project</div><div class="pst-pm-client">Client</div></div><div class="pst-pm-meta"></div><div class="pst-pm-actions"></div></div>
@@ -27,12 +27,15 @@ window.supaFetch = async (path) => path.startsWith('pppp_project_context_current
 window.__pstCurrentProjectId = 'p1';
 window.pstProjectsModernOpen = () => Promise.resolve();
 window.pstProjectsModernRefresh = () => Promise.resolve();
+let openedProject = null;
+window.pstOpenProjectWorkspace = (id) => { openedProject = String(id); };
 
 const context = vm.createContext(window);
 context.window = window;
 context.document = window.document;
 context.CustomEvent = window.CustomEvent;
 context.Event = window.Event;
+context.MouseEvent = window.MouseEvent;
 context.setTimeout = setTimeout;
 context.clearTimeout = clearTimeout;
 context.console = console;
@@ -63,6 +66,21 @@ assert(window.PSTProjectClassificationV1.workState({status:'pritje',pipeline_sta
 assert(/Vendos çmimin e shitjes/.test(window.document.querySelector('[data-project-id="p1"] .pst-pm-meta').textContent), 'Pricing project next action must be clear');
 assert(!window.document.querySelector('.pst-pc-badges'), 'Classification badges must be removed from daily UI');
 assert(window.document.querySelector('[data-project-id="p1"] .pst-pm-desc').style.display === 'none', 'Description noise must be hidden');
+
+// Regression: the entire visible row (name, status, next step, deadline whitespace) must open the canonical project workspace.
+openedProject = null;
+window.document.querySelector('[data-project-id="p1"] .pst-pm-meta').dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
+assert(openedProject === 'p1', 'Clicking anywhere on a Projects row must open that project');
+assert(window.__pstCurrentProjectId === 'p1' && window._curProjId === 'p1', 'Row click must preserve the selected project identity');
+
+// The overflow menu remains a separate control and must not trigger row opening.
+openedProject = null;
+window.document.querySelector('[data-project-id="p1"] .pst-pm-more').dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
+assert(openedProject === null, 'Overflow menu click must not open the project row');
+
+// The bootstrap must force a fresh copy of the final Projects owner after row-navigation fixes.
+const bootstrap = fs.readFileSync('pristeel-project-emails.js', 'utf8');
+assert(bootstrap.includes('pristeel-project-classification-v1.js?v=20260830-rowopen1'), 'Projects row-open owner must be cache-busted in runtime bootstrap');
 
 window.PSTProjectClassificationV1._state.work = 'waiting';
 window.PSTProjectClassificationV1.decorate();
