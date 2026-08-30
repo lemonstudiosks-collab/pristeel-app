@@ -37,7 +37,7 @@ window.__pstLoginTransitionV2=true;
 /* Suppress the stale ordered bootstrap copy. A fresh cache-busted Command Center is loaded by this owner. */
 window.__pstHomeCommandCenterV2=true;
 
-var bootVersion='20260830-home14-'+Date.now().toString(36);
+var bootVersion='20260821-home13-'+Date.now().toString(36);
 var runtimeReady=!!window.__pstModulesReady;
 var homeReady=false;
 var visualReady=false;
