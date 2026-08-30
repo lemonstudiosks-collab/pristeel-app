@@ -41,7 +41,9 @@ function load(i,attempt){
  if(i>=files.length){ready();return;}
  if(window.__pstAbortBootstrap){ready();return;}
  attempt=attempt||1;
- var base=files[i],src=base+(attempt>1?(base.indexOf('?')>-1?'&':'?')+'pst_retry='+Date.now():'');
+ var base=files[i],src=base;
+ if(base.indexOf('pristeel-project-open-direct-v1.js?')===0)src=base+'&pst_hotfix=20260830-navrepair2';
+ if(attempt>1)src=src+(src.indexOf('?')>-1?'&':'?')+'pst_retry='+Date.now();
  var el=document.createElement('script'),settled=false,timer=null;
  el.src=src;el.defer=true;el.setAttribute('data-pst-bootstrap-index',String(i));el.setAttribute('data-pst-bootstrap-attempt',String(attempt));
  function finish(kind,error){
