@@ -32,6 +32,7 @@ var chain=Promise.resolve()
   .then(function(){return load('pristeel-project-data-integrity-v1.js?v=20260831-canonical1','data-pst-project-data-integrity-critical',function(){return window.PSTProjectDataIntegrity&&typeof window.PSTProjectDataIntegrity.load==='function';});})
   .then(function(){return load('pristeel-project-engine-v1.js?v=20260831-canonical1','data-pst-project-engine-critical',function(){return window.PSTProjectEngineV1&&typeof window.PSTProjectEngineV1.loadProjectDossier==='function';});})
   .then(function(){return load('pristeel-project-integrity-ui-v1.js?v=20260831-canonical1','data-pst-project-integrity-ui-critical',function(){return typeof window.pstOpenProjectWorkspace==='function'&&window.pstOpenProjectWorkspace.__pstCanonicalOwner==='pristeel-project-integrity-ui-v1';});})
+  .then(function(){return load('pristeel-project-owner-lock-v1.js?v=20260831-canonical1','data-pst-project-owner-lock-critical',function(){return window.PSTProjectOwnerLockV1&&typeof window.PSTProjectOwnerLockV1.open==='function';});})
   .then(function(){
     window.__pstProjectCriticalReady=true;
     try{document.dispatchEvent(new CustomEvent('pst:project-critical-ready'));}catch(e){}
