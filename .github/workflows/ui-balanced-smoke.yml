@@ -19,9 +19,13 @@ jobs:
         with:
           node-version: '20'
       - name: Syntax check balanced UI
-        run: node --check pristeel-ui-balanced-v1.js
+        run: |
+          node --check pristeel-ui-balanced-v1.js
+          node --check pristeel-home-insights-v1.js
       - name: Presentation safety smoke
-        run: node tests/ui-balanced-v1-smoke.js
+        run: |
+          node tests/ui-balanced-v1-smoke.js
+          node tests/home-insights-v1-smoke.js
       - name: Preview contract smoke
         run: |
           grep -q "PPPP COMMAND CENTER" pppp-ui-standard-v1-preview.html
