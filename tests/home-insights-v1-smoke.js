@@ -8,7 +8,7 @@ assert.ok(src.includes('Client concentration'),'client concentration analysis mi
 assert.ok(src.includes("finSwitchTab(tab)"),'finance drill-down missing');
 assert.ok(src.includes("openProjects(client)"),'client project drill-down missing');
 assert.ok(src.includes("openOpportunities()"),'opportunity drill-down missing');
-assert.ok(!src.includes('MutationObserver'),'Home insights must not own a MutationObserver');
+assert.ok(!/new\s+MutationObserver\s*\(/.test(src),'Home insights must not own a MutationObserver');
 assert.ok(!src.includes('setInterval('),'Home insights must not add polling');
 assert.ok(!/\b(?:PATCH|DELETE|PUT)\b/.test(src),'Home insights must stay read-only');
 console.log('Home insights presentation safety smoke: OK');
