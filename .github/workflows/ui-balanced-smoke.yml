@@ -1,4 +1,4 @@
-name: PPPP Balanced UI smoke
+name: PPPP Command Center smoke
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  balanced-ui-smoke:
+  command-center-smoke:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,17 +18,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Syntax check balanced UI
+      - name: Syntax check command center
         run: |
-          node --check pristeel-ui-balanced-v1.js
-          node --check pristeel-home-insights-v1.js
-      - name: Presentation safety smoke
+          node --check pristeel-command-center-v2.js
+          node --check pristeel-ui-standard-v1.js
+      - name: Single-owner presentation safety smoke
+        run: node tests/ui-balanced-v1-smoke.js
+      - name: Retired overlay guard
         run: |
-          node tests/ui-balanced-v1-smoke.js
-          node tests/home-insights-v1-smoke.js
-      - name: Preview contract smoke
-        run: |
-          grep -q "PPPP COMMAND CENTER" pppp-ui-standard-v1-preview.html
-          grep -q "Automation & platform health" pppp-ui-standard-v1-preview.html
-          grep -q "TED Sales Outreach" pppp-ui-standard-v1-preview.html
-          grep -q "Financial control" pppp-ui-standard-v1-preview.html
+          ! grep -q "pristeel-ui-balanced-v1.js" pristeel-ui-standard-v1.js
+          ! grep -q "pristeel-home-insights-v1.js" pristeel-ui-standard-v1.js
+          grep -q "pristeel-command-center-v2.js" pristeel-ui-standard-v1.js
