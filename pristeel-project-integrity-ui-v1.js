@@ -3,7 +3,8 @@
 'use strict';
 if(window.__pstProjectIntegrityUi)return;window.__pstProjectIntegrityUi=true;
 var A=window.PSTProjectDataIntegrity,BLUE='#5B9BB3',DEEP='#3E7E96',PALE='#EAF5F8',GREEN='#2F7657',GBG='#EAF5EF',AMBER='#9B6A22',ABG='#FAF2E3',RED='#A64B42',RBG='#F9ECEA';
-var state={id:'',data:null,tab:'overview'};
+var state={id:'',data:null,dossier:null,tab:'overview',request:0};
+function workspaceData(d){var x=Object.assign({},d.evidence||{});x.project=Object.assign({},d.project||{});x.project.client=x.project.client||(d.client&&d.client.name)||'';x.dossier=d;x.supplierOffers=d.supplier_offers||x.supplierOffers||[];x.guarantees=d.guarantees||x.guarantees||[];return x;}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function date(v){var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
 function money(v,c){var n=parseFloat(v);return isFinite(n)?n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+(c||'EUR'):'—';}
@@ -31,7 +32,43 @@ function commercial(d){var deal=d.deal?line(d.deal.dealname||'HubSpot deal',(d.d
 function files(d){var all=d.projectDocs.concat(d.attachmentLinks,d.inboxDocs,d.drive.rows);return'<div class="pst-pi-note">Kjo pamje bashkon project_docs, attachment links, dokumentet hyrëse, Drive dhe emailat me attachment. Skedari origjinal nuk zhvendoset.</div><div class="pst-pi-grid">'+card('Skedarët e projektit',all.length+' skedarë nga regjistrat/Drive',generic(all,'doc'),'<button class="pst-pi-link" onclick="pstPiImport()">Importo nga Gmail</button>',false)+card('Emaila me attachment',d.mailAttachments.length+' emaila',generic(d.mailAttachments,'email'),'',false)+card('Regjistri i dokumenteve',d.docs.length+' dokumente',generic(d.docs,'doc'),'',true)+'</div>';}
 function history(d){var x=d.emails.map(function(r){return{n:r.subject||'Email',m:'Email · '+date(r.sent_at),u:r.gmail_url};}).concat(d.docs.map(function(r){return{n:name(r),m:'Dokument · '+date(r.created_at),u:url(r)}}),d.offers.map(function(r){return{n:r.supplier||'Ofertë',m:'Ofertë · '+money(r.total_eur,'EUR'),u:''}}),d.invoicesOut.map(function(r){return{n:r.invoice_nr||'Faturë',m:'Faturë · '+money(r.gross_amount||r.total_price,r.currency),u:''}}));return card('Historiku i projektit',x.length+' ngjarje',x.map(function(r){return line(r.n,r.m,r.u,BLUE,PALE);}).join(''),'',true);}
 function body(){var h=document.getElementById('pst-pi-body'),d=state.data;if(!h||!d)return;h.innerHTML=state.tab==='communication'?communication(d):state.tab==='procurement'?procurement(d):state.tab==='commercial'?commercial(d):state.tab==='files'?files(d):state.tab==='history'?history(d):overview(d);}
-window.pstOpenProjectWorkspace=async function(id){css();var p=activate();p.innerHTML='<div class="pst-ws-page"><div class="pst-pi-card"><div class="pst-pi-empty">Duke bashkuar emailat, kontaktet, skedarët dhe dokumentet…</div></div></div>';try{state.id=String(id);state.data=await A.load(id);state.tab='overview';window.__pstIntegrityLastData=state.data;p.innerHTML='<div class="pst-ws-page">'+header(state.data)+tabs()+'<div id="pst-pi-body"></div></div>';body();}catch(e){p.innerHTML='<div class="pst-ws-page"><div class="pst-pi-note">'+esc(e.message||e)+'</div></div>';}};
+async function openProject(id){
+  id=String(id||'').trim();
+  if(!/^[a-z0-9-]{8,}$/i.test(id))throw new Error('ID-ja e projektit nuk është e vlefshme.');
+  var request=++state.request,p=activate();
+  css();state.id=id;state.data=null;state.dossier=null;state.tab='overview';
+  window.__pstCurrentProjectId=id;window._curProjId=id;
+  try{localStorage.setItem('pristeel_cur_proj',id);localStorage.setItem('pst_exact_project_id_v1',id);sessionStorage.setItem('pst_exact_project_id_v1',id);}catch(x){}
+  try{var u=new window.URL(window.location.href);u.searchParams.set('project_id',id);window.history.replaceState(window.history.state||null,'',u.pathname+u.search+u.hash);}catch(x){}
+  var select=document.getElementById('global-proj');if(select)select.value=id;
+  p.innerHTML='<div class="pst-ws-page"><div class="pst-pi-card"><div class="pst-pi-empty">Duke bashkuar emailat, kontaktet, skedarët dhe dokumentet…</div></div></div>';
+  try{
+    var engine=window.PSTProjectEngineV1;
+    if(!engine||typeof engine.loadProjectDossier!=='function')throw new Error('Project Engine nuk është i disponueshëm.');
+    var dossier=await engine.loadProjectDossier(id),loaded=workspaceData(dossier);
+    if(request!==state.request)return false;
+    if(!loaded||!loaded.project||String(loaded.project.id)!==id)throw new Error('Të dhënat e projektit nuk përputhen me UUID-në e kërkuar.');
+    state.data=loaded;state.dossier=dossier;window.__pstIntegrityLastData=loaded;window.__pstProjectDossier=dossier;
+    p.innerHTML='<div class="pst-ws-page">'+header(loaded)+tabs()+'<div id="pst-pi-body"></div></div>';
+    body();
+    var workflow=window.PSTCanonicalProjectWorkflowV1;
+    if(workflow&&typeof workflow.render==='function')workflow.render('overview');
+    try{document.dispatchEvent(new CustomEvent('pst:project-workspace-rendered',{detail:{projectId:id}}));}catch(x){}
+    return true;
+  }catch(e){
+    if(request!==state.request)return false;
+    p.innerHTML='<div class="pst-ws-page"><div class="pst-pi-card"><div class="pst-pi-note"><b>Projekti nuk u ngarkua.</b><br>'+esc(e&&e.message||e)+'</div></div></div>';
+    console.error('PRISTEEL canonical project open:',e);return false;
+  }
+}
+window.pstOpenProjectWorkspace=openProject;
+window.pstOpenProjectWorkspace.__pstCanonicalOwner='pristeel-project-integrity-ui-v1';
+window.pstOpenProjectWorkspace.__pstTruthTransition=true;
+window.PSTProjectIntegrityUIV1={open:openProject,state:state};
+document.addEventListener('pst:modules-ready',function(){
+  var restore='';try{restore=String(new window.URL(window.location.href).searchParams.get('project_id')||'').trim();}catch(e){}
+  if(restore&&restore!==state.id)window.pstOpenProjectWorkspace(restore);
+},{once:true});
 window.pstPiTab=function(t){state.tab=t;var x=document.querySelector('.pst-pi-tabs');if(x)x.outerHTML=tabs();body();};window.pstPiRefresh=function(){if(state.id)window.pstOpenProjectWorkspace(state.id);};window.pstPiOld=function(){if(state.data&&typeof window.openOverview==='function')window.openOverview(state.data.project.id);};window.pstPiWork=function(){if(!state.data)return;var p=state.data.project;if(typeof window.loadProject==='function')window.loadProject(p.id);else legacy('import','projects');};window.pstPiLegacy=function(p){legacy(p,'apps');};window.pstPiMail=function(to){window.open('https://mail.google.com/mail/u/0/?view=cm&fs=1&to='+encodeURIComponent(to),'PRISTEEL_GMAIL');};window.pstPiNew=function(t){if(window.PST_DOC_CENTER)window.PST_DOC_CENTER.selectedType=t;if(typeof window.pstCreateSelectedDocument==='function')window.pstCreateSelectedDocument();};
 window.pstPiGmail=async function(){var G=window.PSTGoogleWorkspaceAuth,E=window.PSTEmail;if(!G||!E){toast('Modulet Gmail/Google mungojnë.',true);return;}try{var token=await G.getGmailToken();await E.gmail('/profile',token);toast('Gmail API u verifikua.');window.pstPiRefresh();}catch(e){toast('Gmail: '+(e.message||e),true);}};
 window.pstPiRepair=async function(){var d=state.data;if(!d||!d.linkedOnly.length)return;try{for(var i=0;i<d.linkedOnly.length;i++){var m=d.linkedOnly[i];await window.supaFetch('project_emails?gmail_message_id=eq.'+A.enc(m.gmail_message_id),'PATCH',{project_id:d.project.id,suggested_project_id:d.project.id,match_method:'integrity-sync',match_confidence:100,updated_at:new Date().toISOString()});}toast(d.linkedOnly.length+' lidhje Gmail u sinkronizuan.');window.pstPiRefresh();}catch(e){toast('Sinkronizimi dështoi: '+(e.message||e),true);}};
