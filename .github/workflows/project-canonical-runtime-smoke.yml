@@ -1,0 +1,45 @@
+name: Project Canonical Runtime Smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  project-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Syntax
+        run: |
+          node --check pristeel-project-engine-v1.js
+          node --check pristeel-project-integrity-ui-v1.js
+          node --check pristeel-project-owner-lock-v1.js
+          node --check pristeel-project-workspace-repair-loader-v1.js
+      - name: Project engine lifecycle
+        run: node tests/project-engine-smoke.js
+      - name: Project runtime switching
+        run: node tests/project-runtime-owner-regression-smoke.js
+      - name: Project owner lock
+        run: node tests/project-owner-lock-smoke.js
+      - name: Existing project smoke suite
+        run: |
+          node tests/workspace-integrity-smoke.js
+          node tests/project-load-stability-v2-smoke.js
+          node tests/project-open-direct-smoke.js
+          node tests/project-first-v2-smoke.js
+          node tests/project-workflow-canonical-smoke.js
+          node tests/project-execution-guard-smoke.js
