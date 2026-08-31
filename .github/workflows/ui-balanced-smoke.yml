@@ -24,6 +24,8 @@ jobs:
           node --check pristeel-ui-standard-v1.js
       - name: Single-owner presentation safety smoke
         run: node tests/ui-balanced-v1-smoke.js
+      - name: English visible-language smoke
+        run: node tests/command-center-language-smoke.js
       - name: Retired overlay guard
         run: |
           ! grep -q "pristeel-ui-balanced-v1.js" pristeel-ui-standard-v1.js
