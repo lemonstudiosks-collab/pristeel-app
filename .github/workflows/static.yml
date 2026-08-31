@@ -79,6 +79,11 @@ jobs:
           node-version: '20'
       - name: Build verified production Pages artifact
         run: node scripts/pages-artifact-build.mjs
+      - name: Include TED sales dashboard
+        run: |
+          test -s ted-sales.html
+          cp ted-sales.html _site/ted-sales.html
+          test -s _site/ted-sales.html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload verified Pages artifact
