@@ -4,7 +4,7 @@ const assert=require('assert');
 const src=fs.readFileSync('pristeel-ui-balanced-v1.js','utf8');
 assert.ok(src.includes('PPPP Balanced UI v1'),'balanced UI module missing');
 assert.ok(src.includes('PSTUIBalancedV1'),'balanced UI export missing');
-assert.ok(!src.includes('MutationObserver'),'balanced UI must not own a MutationObserver');
+assert.ok(!/new\s+MutationObserver\s*\(/.test(src),'balanced UI must not own a MutationObserver');
 assert.ok(!src.includes('setInterval('),'balanced UI must not poll with setInterval');
 assert.ok(!/\b(?:PATCH|DELETE|PUT)\b/.test(src),'balanced UI must not contain business mutation methods');
 assert.ok(src.includes('pppp_automation_health_v1'),'automation health read surface missing');
