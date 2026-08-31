@@ -25,10 +25,13 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Syntax
         run: |
+          node --check pristeel-project-data-integrity-v1.js
           node --check pristeel-project-engine-v1.js
           node --check pristeel-project-integrity-ui-v1.js
           node --check pristeel-project-owner-lock-v1.js
           node --check pristeel-project-workspace-repair-loader-v1.js
+      - name: Project data isolation
+        run: node tests/project-data-isolation-smoke.js
       - name: Project engine lifecycle
         run: node tests/project-engine-smoke.js
       - name: Project runtime switching
