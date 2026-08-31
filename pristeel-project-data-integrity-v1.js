@@ -7,6 +7,7 @@
 if(window.PSTProjectDataIntegrity)return;
 
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
+var LEGACY_FALLBACK_TABLES={bom_items:1,rfq_log:1,offers:1,documents_registry:1,project_docs:1,project_attachment_links:1,offers_inbox:1};
 function arr(v){
   if(Array.isArray(v))return v;
   if(!v)return[];
@@ -29,7 +30,6 @@ function safe(path){
   });
 }
 function uniq(rows,key){var seen={};return arr(rows).filter(function(x){var k=String(key(x)||'');if(!k||seen[k])return false;seen[k]=1;return true;});}
-function pattern(name){return '*'+enc(String(name||'').replace(/[*,()]/g,' ').trim())+'*';}
 function rowKey(row){return row&&(
   row.id||row.gmail_message_id||row.document_id||row.doc_nr||row.document_nr||row.invoice_nr||
   row.file_id||row.drive_file_id||row.file_name||row.filename||row.name||JSON.stringify(row)
@@ -49,10 +49,14 @@ function projectIdentity(project){
   var tokens=norm(identitySource).split(' ').filter(function(x){return x.length>=5&&!/^(projekt|project|anfrage|fertigung|steel|stahl|construction|angebot|offer)$/.test(x);});
   return{name:name,ref:ref,client:client,numbers:uniq(numbers,function(x){return x;}),tokens:uniq(tokens,function(x){return x;})};
 }
+function explicitProjectIds(row){
+  return [row&&row.project_id,row&&row.source_project_id,row&&row.linked_project_id,row&&row.parent_project_id].filter(function(x){return x!==undefined&&x!==null&&String(x).trim()!=='';}).map(String);
+}
 function relationScore(row,project){
   if(!row||!project)return 0;
-  var pid=String(project.id||''),idFields=[row.project_id,row.source_project_id,row.linked_project_id,row.parent_project_id].map(String);
+  var pid=String(project.id||''),idFields=explicitProjectIds(row);
   if(pid&&idFields.indexOf(pid)>-1)return 1000;
+  if(idFields.length)return 0;
   var i=projectIdentity(project),text=flatText(row),dedicated=dedicatedText(row),score=0;
   if(i.ref&&i.ref.length>=4&&text.indexOf(i.ref)>-1)score+=260;
   if(i.name&&i.name.length>=7&&text.indexOf(i.name)>-1)score+=210;
@@ -66,8 +70,18 @@ function relationScore(row,project){
   return score;
 }
 async function byProject(table,pid,projectOrName,order){
+  var project=typeof projectOrName==='object'?projectOrName:{id:pid,name:projectOrName||'',ref:'',client:''};
   var tail='&select=*'+(order?'&'+order:'');
-  return uniq(await safe(table+'?project_id=eq.'+enc(pid)+tail),rowKey);
+  var rows=uniq(await safe(table+'?project_id=eq.'+enc(pid)+tail),rowKey);
+  if(!LEGACY_FALLBACK_TABLES[table])return rows;
+  var broad=await safe(table+'?select=*'+(order?'&'+order:'&limit=3000'));
+  broad.forEach(function(row){
+    if(explicitProjectIds(row).length)return;
+    if(relationScore(row,project)<260)return;
+    var key=String(rowKey(row)||'');if(!key||rows.some(function(x){return String(rowKey(x))===key;}))return;
+    rows.push(row);
+  });
+  return rows;
 }
 async function emails(pid){
   var links=await safe('project_email_links?project_id=eq.'+enc(pid)+'&select=*&order=created_at.desc&limit=5000');
