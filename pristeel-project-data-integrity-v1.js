@@ -7,7 +7,6 @@
 if(window.PSTProjectDataIntegrity)return;
 
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
-var BROAD_TABLES={bom_items:1,rfq_log:1,offers:1,documents_registry:1,project_docs:1,project_attachment_links:1,offers_inbox:1};
 function arr(v){
   if(Array.isArray(v))return v;
   if(!v)return[];
@@ -67,23 +66,8 @@ function relationScore(row,project){
   return score;
 }
 async function byProject(table,pid,projectOrName,order){
-  var project=typeof projectOrName==='object'?projectOrName:{id:pid,name:projectOrName||'',ref:'',client:''};
   var tail='&select=*'+(order?'&'+order:'');
-  var batches=[];
-  batches.push(await safe(table+'?project_id=eq.'+enc(pid)+tail));
-  if(project.name)batches.push(await safe(table+'?project=ilike.'+pattern(project.name)+tail));
-  if(project.name)batches.push(await safe(table+'?project_name=ilike.'+pattern(project.name)+tail));
-  var pref=canonicalRef(project);
-  if(pref){
-    batches.push(await safe(table+'?project=ilike.'+pattern(pref)+tail));
-    batches.push(await safe(table+'?project_name=ilike.'+pattern(pref)+tail));
-  }
-  var rows=uniq([].concat.apply([],batches),rowKey);
-  if(BROAD_TABLES[table]){
-    var broad=await safe(table+'?select=*'+(order?'&'+order:'&limit=3000'));
-    broad.forEach(function(row){if(relationScore(row,project)>=100&&!rows.some(function(x){return String(rowKey(x))===String(rowKey(row));}))rows.push(row);});
-  }
-  return rows;
+  return uniq(await safe(table+'?project_id=eq.'+enc(pid)+tail),rowKey);
 }
 async function emails(pid){
   var links=await safe('project_email_links?project_id=eq.'+enc(pid)+'&select=*&order=created_at.desc&limit=5000');
@@ -94,8 +78,10 @@ async function emails(pid){
     linked=linked.concat(await safe('project_emails?gmail_message_id=in.('+part+')&select=*&order=sent_at.desc&limit=3000'));
   }
   var direct=await directP;
+  var conflicts=linked.filter(function(x){return x.project_id&&String(x.project_id)!==String(pid);});
+  linked=linked.filter(function(x){return !x.project_id||String(x.project_id)===String(pid);});
   var rows=uniq(direct.concat(linked),function(x){return x.gmail_message_id||x.id;}).sort(function(a,b){return String(b.sent_at||'').localeCompare(String(a.sent_at||''));});
-  return{rows:rows,links:links,linkedOnly:rows.filter(function(x){return String(x.project_id||'')!==String(pid);})};
+  return{rows:rows,links:links,linkedOnly:rows.filter(function(x){return !x.project_id;}),conflicts:conflicts};
 }
 async function contacts(pid,mails){
   var saved=await safe('project_contacts?project_id=eq.'+enc(pid)+'&select=*&limit=3000');
@@ -164,7 +150,7 @@ async function load(id){
     byProject('project_docs',id,p,'order=created_at.desc&limit=3000'),
     byProject('project_attachment_links',id,p,'order=created_at.desc&limit=3000'),
     byProject('offers_inbox',id,p,'order=created_at.desc&limit=3000'),
-    safe('bank_guarantees?project=ilike.'+pattern(p.name)+'&select=*&order=created_at.desc&limit=500'),
+    byProject('bank_guarantees',id,p,'order=created_at.desc&limit=500'),
     safe('crm_deals?select=dealname,amount,dealstage,closedate,description,hs_object_id&limit=1500'),
     drive(p)
   ]);
@@ -172,7 +158,7 @@ async function load(id){
   var ours=docs.filter(ourOffer).concat(offers.filter(ourOffer));
   var supplierPool=offers.concat(inboxDocs,projectDocs,attachmentLinks,docs).filter(supplierOffer);
   var suppliers=uniq(supplierPool,function(x){return rowKey(x);});
-  var data={project:p,emails:em.rows,emailLinks:em.links,linkedOnly:em.linkedOnly,contacts:out[0],bom:out[1],rfqs:out[2],offers:offers,ourOffers:uniq(ours,function(x){return rowKey(x);}),supplierOffers:suppliers,docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],projectDocs:projectDocs,attachmentLinks:attachmentLinks,inboxDocs:inboxDocs,guarantees:out[11],deals:out[12],drive:out[13]};
+  var data={project:p,emails:em.rows,emailLinks:em.links,linkedOnly:em.linkedOnly,emailConflicts:em.conflicts,contacts:out[0],bom:out[1],rfqs:out[2],offers:offers,ourOffers:uniq(ours,function(x){return rowKey(x);}),supplierOffers:suppliers,docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],projectDocs:projectDocs,attachmentLinks:attachmentLinks,inboxDocs:inboxDocs,guarantees:out[11],deals:out[12],drive:out[13]};
   data.deal=matchDeal(p,data.deals);
   data.mailAttachments=data.emails.filter(function(x){return x.has_attachments||arr(x.attachments).length;});
   data.files=uniq(data.docs.concat(data.projectDocs,data.attachmentLinks,data.inboxDocs,data.drive.rows,data.mailAttachments),rowKey);
