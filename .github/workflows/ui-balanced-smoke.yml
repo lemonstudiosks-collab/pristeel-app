@@ -22,3 +22,9 @@ jobs:
         run: node --check pristeel-ui-balanced-v1.js
       - name: Presentation safety smoke
         run: node tests/ui-balanced-v1-smoke.js
+      - name: Preview contract smoke
+        run: |
+          grep -q "PPPP COMMAND CENTER" pppp-ui-standard-v1-preview.html
+          grep -q "Automation & platform health" pppp-ui-standard-v1-preview.html
+          grep -q "TED Sales Outreach" pppp-ui-standard-v1-preview.html
+          grep -q "Financial control" pppp-ui-standard-v1-preview.html
