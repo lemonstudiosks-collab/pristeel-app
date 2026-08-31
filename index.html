@@ -5,9 +5,12 @@
   <title>PRISTEEL Procurement Projects Platform</title>
   <script>
     (function(){
-      var requested = new URLSearchParams(window.location.search).get('v');
+      var params = new URLSearchParams(window.location.search);
+      var requested = params.get('v');
       var version = requested || String(Date.now());
-      window.location.replace('pristeel-procurement.html?v=' + encodeURIComponent(version));
+      var view = params.get('view') || (window.location.hash === '#ted-sales' ? 'ted-sales' : '');
+      var target = view === 'ted-sales' ? 'ted-sales.html' : 'pristeel-procurement.html';
+      window.location.replace(target + '?v=' + encodeURIComponent(version));
     })();
   </script>
 </head>
