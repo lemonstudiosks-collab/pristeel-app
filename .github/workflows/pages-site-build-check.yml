@@ -27,6 +27,16 @@ jobs:
       - name: Build production Pages site
         run: node scripts/pages-artifact-build.mjs
 
+      - name: Include routed TED sales assets
+        run: |
+          set -euo pipefail
+          test -s ted-sales.html
+          test -s pristeel-ui-standard-v1.css
+          cp ted-sales.html _site/ted-sales.html
+          cp pristeel-ui-standard-v1.css _site/pristeel-ui-standard-v1.css
+          test -s _site/ted-sales.html
+          test -s _site/pristeel-ui-standard-v1.css
+
       - name: Serve production artifact locally
         run: |
           set -euo pipefail
@@ -46,19 +56,24 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-gmail-launcher-v2.html >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-document-center.css >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:4173/gmail-addon/pristeel-addon-icon.svg >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:4173/ted-sales.html >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-ui-standard-v1.css >/dev/null
+          grep -Fq 'pristeel-ui-standard-v1.css' _site/ted-sales.html
 
-          echo "Production Pages artifact HTTP smoke OK."
+          echo "Production Pages artifact HTTP smoke OK, including TED sales route."
 
       - name: Confirm production deploy uses verified artifact
         run: |
           set -e
           grep -Fq "node scripts/pages-artifact-build.mjs" .github/workflows/static.yml
+          grep -Fq "cp ted-sales.html _site/ted-sales.html" .github/workflows/static.yml
+          grep -Fq "cp pristeel-ui-standard-v1.css _site/pristeel-ui-standard-v1.css" .github/workflows/static.yml
           grep -Fq "path: '_site'" .github/workflows/static.yml
           if grep -Fq "path: '.'" .github/workflows/static.yml; then
             echo "ERROR: whole-repository Pages upload path is still present"
             exit 1
           fi
-          echo "Production Pages builds and uploads only _site."
+          echo "Production Pages builds and uploads only _site, with routed TED assets included."
 
       - name: Upload production site check artifact
         uses: actions/upload-artifact@v4
