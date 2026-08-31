@@ -21,6 +21,7 @@ jobs:
       - name: Syntax check command center
         run: |
           node --check pristeel-command-center-v2.js
+          node --check pristeel-ui-english-guard-v1.js
           node --check pristeel-ui-standard-v1.js
       - name: Single-owner presentation safety smoke
         run: node tests/ui-balanced-v1-smoke.js
@@ -31,3 +32,4 @@ jobs:
           ! grep -q "pristeel-ui-balanced-v1.js" pristeel-ui-standard-v1.js
           ! grep -q "pristeel-home-insights-v1.js" pristeel-ui-standard-v1.js
           grep -q "pristeel-command-center-v2.js" pristeel-ui-standard-v1.js
+          grep -q "pristeel-ui-english-guard-v1.js" pristeel-ui-standard-v1.js
