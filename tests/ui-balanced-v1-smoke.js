@@ -11,4 +11,6 @@ assert.ok(src.includes('pppp_automation_health_v1'),'automation health read surf
 assert.ok(src.includes('Priority actions'),'balanced Home priority surface missing');
 assert.ok(src.includes('Meaningful project changes'),'balanced Home anti-duplication surface missing');
 assert.ok(src.includes('nav(area,f)'),'click-through navigation missing');
+assert.ok(src.includes('setProjectFilter(filter)'),'project chart drill-down filtering missing');
+assert.ok(src.includes('window.finInvFilter'),'finance KPI drill-down filtering missing');
 console.log('Balanced UI presentation safety smoke: OK');
