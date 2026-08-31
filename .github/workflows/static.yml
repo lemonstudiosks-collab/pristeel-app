@@ -79,11 +79,15 @@ jobs:
           node-version: '20'
       - name: Build verified production Pages artifact
         run: node scripts/pages-artifact-build.mjs
-      - name: Include TED sales dashboard
+      - name: Include routed TED sales dashboard
         run: |
+          set -euo pipefail
           test -s ted-sales.html
+          test -s pristeel-ui-standard-v1.css
           cp ted-sales.html _site/ted-sales.html
+          cp pristeel-ui-standard-v1.css _site/pristeel-ui-standard-v1.css
           test -s _site/ted-sales.html
+          test -s _site/pristeel-ui-standard-v1.css
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload verified Pages artifact
