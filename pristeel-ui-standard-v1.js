@@ -1,0 +1,310 @@
+/* PPPP UI Standard v1 runtime style module
+ * Visual-only. Injects the approved global design system without owning data,
+ * navigation, auth, project, Gmail, finance or tender behavior.
+ */
+(function(){
+'use strict';
+if(window.__pstUIStandardV1){try{if(window.PSTUIStandardV1)window.PSTUIStandardV1.apply();}catch(e){}return;}
+window.__pstUIStandardV1=true;
+var CSS=`/* PPPP UI Standard v1
+ * Visual-only design system layer.
+ * No navigation, data, auth, Supabase, Gmail or project-engine behavior.
+ * Reference direction: calm steel-blue accent, soft neutral canvas, white surfaces,
+ * restrained statuses, readable tables and consistent controls.
+ */
+
+:root,
+html,
+body{
+  --pst-ui-bg:#F5F7FA;
+  --pst-ui-surface:#FFFFFF;
+  --pst-ui-surface-muted:#F8FAFC;
+  --pst-ui-surface-strong:#EEF2F6;
+  --pst-ui-text:#182230;
+  --pst-ui-text-muted:#52616F;
+  --pst-ui-text-soft:#7A8794;
+  --pst-ui-border:#E2E8F0;
+  --pst-ui-border-strong:#D4DDE8;
+  --pst-ui-primary:#4E7495;
+  --pst-ui-primary-hover:#3B6283;
+  --pst-ui-primary-soft:#EDF4FA;
+  --pst-ui-success:#3E8061;
+  --pst-ui-success-soft:#ECF7F1;
+  --pst-ui-warning:#A87424;
+  --pst-ui-warning-soft:#FFF6E6;
+  --pst-ui-danger:#B45151;
+  --pst-ui-danger-soft:#FFF0F0;
+  --pst-ui-neutral:#667789;
+  --pst-ui-neutral-soft:#EEF3F7;
+  --pst-ui-shadow:0 1px 2px rgba(24,34,48,.035),0 4px 14px rgba(24,34,48,.045);
+  --pst-ui-shadow-raised:0 10px 28px rgba(24,34,48,.09);
+  --pst-ui-radius:10px;
+  --pst-ui-radius-lg:14px;
+
+  /* Legacy token bridge: keeps existing modules visually coherent without
+     changing their business logic or markup. */
+  --bg:var(--pst-ui-bg)!important;
+  --bg2:var(--pst-ui-surface-muted)!important;
+  --bg3:var(--pst-ui-surface-strong)!important;
+  --bg-card:var(--pst-ui-surface)!important;
+  --bg-hover:#F3F6F9!important;
+  --text:var(--pst-ui-text)!important;
+  --text2:var(--pst-ui-text-muted)!important;
+  --text3:var(--pst-ui-text-soft)!important;
+  --border:var(--pst-ui-border)!important;
+  --border2:var(--pst-ui-border-strong)!important;
+  --bronze:var(--pst-ui-primary)!important;
+  --bronze-light:#6F91AE!important;
+  --bronze-dark:var(--pst-ui-primary-hover)!important;
+  --bronze-bg:rgba(78,116,149,.09)!important;
+  --bronze-text:#365B7B!important;
+  --copper:var(--pst-ui-primary)!important;
+  --copper-bg:rgba(78,116,149,.09)!important;
+  --green:var(--pst-ui-success)!important;
+  --green-bg:var(--pst-ui-success-soft)!important;
+  --green-text:#326D50!important;
+  --red:var(--pst-ui-danger)!important;
+  --red-bg:var(--pst-ui-danger-soft)!important;
+  --red-text:#9D4040!important;
+  --blue:var(--pst-ui-primary)!important;
+  --blue-bg:var(--pst-ui-primary-soft)!important;
+  --blue-text:#365B7B!important;
+  --radius:var(--pst-ui-radius)!important;
+  --radius-lg:var(--pst-ui-radius-lg)!important;
+  --sh-1:0 1px 2px rgba(24,34,48,.04)!important;
+  --sh-2:var(--pst-ui-shadow)!important;
+  --sh-3:var(--pst-ui-shadow-raised)!important;
+}
+
+html{background:var(--pst-ui-bg)!important}
+body{
+  background:var(--pst-ui-bg)!important;
+  color:var(--pst-ui-text)!important;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* Remove decorative motion/glow from normal business controls. */
+.card,.metric,.btn-primary,.page.active{animation:none!important}
+
+/* App shell / navigation */
+.app-shell,#app-shell-root{background:var(--pst-ui-bg)!important}
+.sidebar{
+  background:#FBFCFD!important;
+  border-right:1px solid var(--pst-ui-border)!important;
+  box-shadow:none!important;
+}
+.sidebar-logo{
+  background:#FBFCFD!important;
+  border-bottom:1px solid var(--pst-ui-border)!important;
+}
+.logo-mark{color:var(--pst-ui-text)!important;letter-spacing:1.3px!important}
+.logo-sub{color:var(--pst-ui-text-soft)!important}
+.sidebar:not(.open) .sidebar-logo::after{color:var(--pst-ui-primary)!important}
+.nav-item{
+  margin:2px 9px!important;
+  padding:9px 11px!important;
+  border:1px solid transparent!important;
+  border-radius:9px!important;
+  color:var(--pst-ui-text-muted)!important;
+  font-weight:550!important;
+}
+.nav-item:hover{
+  background:#F2F6F9!important;
+  color:var(--pst-ui-text)!important;
+  border-color:#E7EDF3!important;
+}
+.nav-item.active{
+  background:var(--pst-ui-primary-soft)!important;
+  color:#2F5677!important;
+  border-color:#D8E5EF!important;
+  font-weight:650!important;
+}
+.nav-item svg{color:inherit!important;stroke:currentColor!important}
+.nav-section{color:#8A96A3!important;letter-spacing:1.25px!important}
+.sidebar-footer{border-top:1px solid var(--pst-ui-border)!important;color:var(--pst-ui-text-soft)!important}
+
+.main{background:var(--pst-ui-bg)!important}
+.topbar{
+  background:rgba(255,255,255,.93)!important;
+  border-bottom:1px solid var(--pst-ui-border)!important;
+  box-shadow:0 1px 0 rgba(24,34,48,.015)!important;
+  backdrop-filter:saturate(140%) blur(8px);
+}
+.topbar-title{color:var(--pst-ui-text)!important;font-weight:650!important}
+.topbar-sub{color:var(--pst-ui-text-soft)!important;text-transform:none!important;letter-spacing:.15px!important}
+.content{background:var(--pst-ui-bg)!important}
+.page{--page-accent:var(--pst-ui-primary)!important}
+.page-dot{background:var(--pst-ui-primary)!important}
+
+/* Surfaces */
+.card,.metric,.pj,.ct,.tk,.stat,.filters,.pst-modal{
+  background:var(--pst-ui-surface)!important;
+  border:1px solid var(--pst-ui-border)!important;
+  box-shadow:var(--pst-ui-shadow)!important;
+}
+.card,.pst-modal{border-radius:var(--pst-ui-radius-lg)!important}
+.metric,.pj,.ct,.tk,.stat,.filters{border-radius:var(--pst-ui-radius)!important}
+.card:hover,.metric:hover,.pj:hover,.ct:hover,.tk:hover,.stat:hover{
+  border-color:var(--pst-ui-border-strong)!important;
+  box-shadow:0 4px 16px rgba(24,34,48,.065)!important;
+  transform:none!important;
+}
+.card-title{color:var(--pst-ui-text)!important;font-weight:650!important;letter-spacing:0!important}
+.metric::before{background:var(--pst-ui-primary)!important;height:2px!important;opacity:.75}
+.metric-val{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;letter-spacing:-.35px!important}
+
+/* Project-first / Home surfaces produced by runtime modules. */
+#page-workspace-home,
+#pst-project-control-home-v2{
+  color:var(--pst-ui-text)!important;
+}
+#page-workspace-home .pst-canonical-action,
+#page-workspace-home .pst-dash-task-card,
+#page-workspace-home [class*="pst-ws-card"],
+#pst-project-control-home-v2 [class*="card"]{
+  background:var(--pst-ui-surface)!important;
+  border-color:var(--pst-ui-border)!important;
+  box-shadow:var(--pst-ui-shadow)!important;
+}
+#page-workspace-home .pst-canonical-action:hover,
+#page-workspace-home .pst-dash-task-card:hover{
+  border-color:var(--pst-ui-border-strong)!important;
+  box-shadow:0 5px 18px rgba(24,34,48,.07)!important;
+}
+#page-workspace-home .pst-final-priority-urgent{
+  background:var(--pst-ui-warning-soft)!important;
+  border-color:#E8D29E!important;
+  border-left-color:var(--pst-ui-warning)!important;
+}
+
+/* Buttons: one calm hierarchy across modules. */
+.btn,button.btn,.pst-eoi-btn{
+  border:1px solid var(--pst-ui-border-strong)!important;
+  border-radius:8px!important;
+  background:var(--pst-ui-surface)!important;
+  color:var(--pst-ui-text-muted)!important;
+  box-shadow:none!important;
+  font-weight:600!important;
+  letter-spacing:0!important;
+  transition:background .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease!important;
+}
+.btn:hover,button.btn:hover,.pst-eoi-btn:hover{
+  background:#F6F8FA!important;
+  border-color:#C9D4DF!important;
+  color:var(--pst-ui-text)!important;
+  transform:none!important;
+  box-shadow:none!important;
+}
+.btn-primary,button.btn-primary,
+button[class*="primary"],a[class*="primary"]{
+  background:var(--pst-ui-primary)!important;
+  border-color:var(--pst-ui-primary)!important;
+  color:#fff!important;
+  box-shadow:0 1px 2px rgba(54,91,123,.15)!important;
+}
+.btn-primary:hover,button.btn-primary:hover,
+button[class*="primary"]:hover,a[class*="primary"]:hover{
+  background:var(--pst-ui-primary-hover)!important;
+  border-color:var(--pst-ui-primary-hover)!important;
+  color:#fff!important;
+  filter:none!important;
+}
+.btn-success{background:var(--pst-ui-success)!important;border-color:var(--pst-ui-success)!important;color:#fff!important}
+.btn-danger{background:var(--pst-ui-danger-soft)!important;border-color:#F0CDCD!important;color:#9D4040!important}
+
+/* Inputs / filters */
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=search],select,textarea,
+.filters input,.filters select{
+  background:#fff!important;
+  color:var(--pst-ui-text)!important;
+  border:1px solid var(--pst-ui-border-strong)!important;
+  border-radius:8px!important;
+  box-shadow:none!important;
+}
+input:hover,select:hover,textarea:hover{border-color:#C5D1DD!important}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--pst-ui-primary)!important;
+  box-shadow:0 0 0 3px rgba(78,116,149,.11)!important;
+  outline:none!important;
+}
+:focus-visible{outline:2px solid rgba(78,116,149,.55)!important;outline-offset:2px!important}
+label.lbl{color:var(--pst-ui-text-soft)!important;letter-spacing:.55px!important}
+
+/* Tables */
+.tbl-wrap,.scroll{border-radius:10px!important}
+table.tbl,table{color:var(--pst-ui-text)!important}
+table.tbl th,th{
+  background:#F7F9FB!important;
+  color:#6D7A88!important;
+  border-bottom:1px solid var(--pst-ui-border-strong)!important;
+  font-weight:650!important;
+  letter-spacing:.55px!important;
+}
+table.tbl td,td{border-bottom-color:var(--pst-ui-border)!important}
+tbody tr:hover,table.tbl tr:hover td,tr:hover td{background:#F8FAFC!important}
+table.tbl td input,table.tbl td select{background:transparent!important}
+
+/* Badges / status language */
+.badge{border:1px solid transparent!important;font-weight:650!important;letter-spacing:.25px!important;text-transform:none!important}
+.badge-blue,.b-gc{background:var(--pst-ui-primary-soft)!important;color:#365B7B!important;border-color:#DCE8F1!important}
+.badge-green,.b-good{background:var(--pst-ui-success-soft)!important;color:#326D50!important;border-color:#D7EADF!important}
+.badge-amber,.b-prod{background:var(--pst-ui-warning-soft)!important;color:#8A641F!important;border-color:#F0DFB7!important}
+.badge-red,.b-stop{background:var(--pst-ui-danger-soft)!important;color:#9D4040!important;border-color:#F1D1D1!important}
+.badge-gray{background:var(--pst-ui-neutral-soft)!important;color:#5E6F80!important;border-color:#DEE6ED!important}
+.ct-tag.client{background:var(--pst-ui-primary-soft)!important;color:#365B7B!important}
+.ct-tag.supplier{background:var(--pst-ui-neutral-soft)!important;color:#5E6F80!important}
+
+/* Modal / overlay */
+.pst-modal-bg{background:rgba(24,34,48,.38)!important;backdrop-filter:blur(2px)}
+.pst-modal{box-shadow:0 18px 50px rgba(24,34,48,.18)!important}
+.pst-modal-hd{border-bottom:1px solid var(--pst-ui-border)!important}
+
+/* Secondary UI elements */
+.rail{background:#FBFCFD!important;border-left:1px solid var(--pst-ui-border)!important}
+.rail.open{background:#fff!important}
+.rail-ic{background:#fff!important;border-color:var(--pst-ui-border)!important;color:var(--pst-ui-text-muted)!important}
+.rail-ic:hover,.rail-ic.active{background:var(--pst-ui-primary-soft)!important;border-color:#CEDDEA!important;color:#365B7B!important}
+.rail-tab.on{color:#365B7B!important;border-bottom-color:var(--pst-ui-primary)!important;background:var(--pst-ui-primary-soft)!important}
+.seg{background:#EEF2F6!important;border-color:var(--pst-ui-border)!important}
+.seg-btn.active{background:#fff!important;color:var(--pst-ui-text)!important;box-shadow:0 1px 3px rgba(24,34,48,.07)!important}
+.drop-zone,.src-box{background:#FAFBFC!important;border-color:#CDD7E1!important}
+.drop-zone:hover,.drop-zone.over,.src-box:hover{background:var(--pst-ui-primary-soft)!important;border-color:var(--pst-ui-primary)!important;box-shadow:none!important;transform:none!important}
+.warn-box,.api-note{background:var(--pst-ui-warning-soft)!important;color:#7F5A1A!important}
+.success-box{background:var(--pst-ui-success-soft)!important;color:#326D50!important}
+
+/* TED standalone page uses the same system. */
+.wrap{max-width:1580px!important;padding:28px!important}
+.top{margin-bottom:20px!important}
+.title{color:var(--pst-ui-text)!important;font-weight:680!important;letter-spacing:-.45px!important}
+.eyebrow{color:var(--pst-ui-text-soft)!important;letter-spacing:1.25px!important}
+.sub,.muted,.mini,.foot{color:var(--pst-ui-text-soft)!important}
+.stats{gap:12px!important;margin-bottom:16px!important}
+.stat{padding:15px 16px!important}
+.stat .v{color:var(--pst-ui-text)!important;letter-spacing:-.35px!important}
+.filters{padding:12px!important;gap:10px!important}
+.card>.scroll{background:#fff!important}
+a{color:#365B7B}
+
+/* Keep the design usable on narrower Windows laptop screens. */
+@media(max-width:1100px){
+  .content{padding:20px!important}
+  .topbar{padding-left:20px!important;padding-right:20px!important}
+  .wrap{padding:20px!important}
+}
+@media(max-width:700px){
+  .content{padding:14px!important}
+  .wrap{padding:14px!important}
+  .card{padding:16px!important}
+}`;
+function apply(){
+  try{document.documentElement.classList.add('pst-ui-standard-v1');}catch(e){}
+  var s=document.getElementById('pst-ui-standard-v1-css');
+  if(!s){s=document.createElement('style');s.id='pst-ui-standard-v1-css';(document.head||document.documentElement).appendChild(s);}
+  if(s.textContent!==CSS)s.textContent=CSS;
+  return true;
+}
+window.PSTUIStandardV1={apply:apply,version:'20260831-2'};
+apply();
+})();
