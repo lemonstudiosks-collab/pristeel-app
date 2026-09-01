@@ -42,10 +42,10 @@ css.textContent = `
 .rl-sel:hover{border-color:var(--border2)}
 .rl-note{font-size:11px;color:var(--text3);line-height:1.6;margin-top:12px;
   padding-top:11px;border-top:1px solid var(--border)}
-/* Do not expose intermediate Home owners while the ordered runtime is still booting. */
-html:not(.pst-runtime-ready) #page-workspace-home.active{min-height:68vh!important;position:relative!important}
-html:not(.pst-runtime-ready) #page-workspace-home.active>*{visibility:hidden!important}
-html:not(.pst-runtime-ready) #page-workspace-home.active::after{content:'Po përgatitet platforma…';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;visibility:visible!important;font-size:12px;font-weight:650;color:#6F838C;letter-spacing:.1px;background:#F7FAFB}
+/* Hide intermediate Home owners only until the early native UI is ready. */
+html:not(.pst-runtime-ready):not(.pst-native-ui-ready) #page-workspace-home.active{min-height:68vh!important;position:relative!important}
+html:not(.pst-runtime-ready):not(.pst-native-ui-ready) #page-workspace-home.active>*{visibility:hidden!important}
+html:not(.pst-runtime-ready):not(.pst-native-ui-ready) #page-workspace-home.active::after{content:'Preparing platform…';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;visibility:visible!important;font-size:12px;font-weight:650;color:#6F838C;letter-spacing:.1px;background:#F7FAFB}
 `;
 document.head.appendChild(css);
 
@@ -228,34 +228,38 @@ function loadScriptBeforeBootstrap(path,attr,done){
   document.head.appendChild(s);
 }
 
-(function loadCommercialOverridesThenMainRuntime(){
-  function startMainRuntime(){
-    window.__pstCommercialLiveOverride='20260818-commercial-live1';
-    function loadProjectEmailsModule(){
-      if(document.querySelector('script[data-pst-project-emails]')) return;
-      var s=document.createElement('script');
-      s.src='pristeel-project-emails.js?v='+String(Date.now());
-      s.defer=true;
-      s.setAttribute('data-pst-project-emails','1');
-      document.head.appendChild(s);
-    }
-    if(window.PSTHomeRuntimeOwnerGuardV1){loadProjectEmailsModule();return;}
-    var existing=document.querySelector('script[data-pst-home-runtime-owner-guard]');
-    if(existing){
-      existing.addEventListener('load',loadProjectEmailsModule,{once:true});
-      existing.addEventListener('error',loadProjectEmailsModule,{once:true});
-      return;
-    }
-    var g=document.createElement('script');
-    g.src='pristeel-home-runtime-owner-guard-v1.js?v='+String(Date.now());
-    g.defer=true;
-    g.setAttribute('data-pst-home-runtime-owner-guard','1');
-    g.onload=loadProjectEmailsModule;
-    g.onerror=function(){console.error('Nuk u ngarkua Home runtime owner guard.');loadProjectEmailsModule();};
-    document.head.appendChild(g);
-  }
-  loadScriptBeforeBootstrap('pristeel-our-offer-source-v1.js','data-pst-commercial-source-live',function(){
-    loadScriptBeforeBootstrap('pristeel-offer-resave-fix-v1.js','data-pst-offer-resave-live',startMainRuntime);
+(function loadNativeUiThenRuntime(){
+  loadScriptBeforeBootstrap('pristeel-native-ui-v3.js?v=20260901-1','data-pst-native-ui-v3',function(){
+    (function loadCommercialOverridesThenMainRuntime(){
+      function startMainRuntime(){
+        window.__pstCommercialLiveOverride='20260818-commercial-live1';
+        function loadProjectEmailsModule(){
+          if(document.querySelector('script[data-pst-project-emails]')) return;
+          var s=document.createElement('script');
+          s.src='pristeel-project-emails.js?v='+String(Date.now());
+          s.defer=true;
+          s.setAttribute('data-pst-project-emails','1');
+          document.head.appendChild(s);
+        }
+        if(window.PSTHomeRuntimeOwnerGuardV1){loadProjectEmailsModule();return;}
+        var existing=document.querySelector('script[data-pst-home-runtime-owner-guard]');
+        if(existing){
+          existing.addEventListener('load',loadProjectEmailsModule,{once:true});
+          existing.addEventListener('error',loadProjectEmailsModule,{once:true});
+          return;
+        }
+        var g=document.createElement('script');
+        g.src='pristeel-home-runtime-owner-guard-v1.js?v='+String(Date.now());
+        g.defer=true;
+        g.setAttribute('data-pst-home-runtime-owner-guard','1');
+        g.onload=loadProjectEmailsModule;
+        g.onerror=function(){console.error('Nuk u ngarkua Home runtime owner guard.');loadProjectEmailsModule();};
+        document.head.appendChild(g);
+      }
+      loadScriptBeforeBootstrap('pristeel-our-offer-source-v1.js','data-pst-commercial-source-live',function(){
+        loadScriptBeforeBootstrap('pristeel-offer-resave-fix-v1.js','data-pst-offer-resave-live',startMainRuntime);
+      });
+    })();
   });
 })();
 
