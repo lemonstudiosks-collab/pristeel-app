@@ -16,6 +16,7 @@ on:
       - 'scripts/opportunity-engine-v2-runner.mjs'
       - 'scripts/opportunity-protected-archive-runner.mjs'
       - 'scripts/opportunity-rfq-drafts-v1.mjs'
+      - 'scripts/krpp-authenticated-fetch-worker.mjs'
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
       - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
       - 'supabase/functions/pppp-tender-fetch-worker/**'
@@ -29,6 +30,7 @@ on:
       - 'scripts/opportunity-engine-v2-runner.mjs'
       - 'scripts/opportunity-protected-archive-runner.mjs'
       - 'scripts/opportunity-rfq-drafts-v1.mjs'
+      - 'scripts/krpp-authenticated-fetch-worker.mjs'
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
       - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
       - 'supabase/functions/pppp-tender-fetch-worker/**'
@@ -60,6 +62,7 @@ jobs:
           node --check scripts/opportunity-engine-v2-runner.mjs
           node --check scripts/opportunity-protected-archive-runner.mjs
           node --check scripts/opportunity-rfq-drafts-v1.mjs
+          node --check scripts/krpp-authenticated-fetch-worker.mjs
 
   run:
     if: github.event_name != 'pull_request'
