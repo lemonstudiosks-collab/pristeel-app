@@ -1,0 +1,19 @@
+name: PPPP real redesign smoke
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check presentation owners
+        run: |
+          node --check pristeel-platform-redesign-v2.js
+          node --check pristeel-redesign-finalizer-v1.js
+      - name: Redesign safety and behavior smoke
+        run: node tests/platform-redesign-v2-smoke.js
+      - name: Build Pages artifact
+        run: node scripts/pages-artifact-build.mjs
+      - name: Verify redesign is packaged
+        run: test -f _site/pristeel-platform-redesign-v2.js && grep -q "pristeel-platform-redesign-v2.js" _site/pristeel-redesign-finalizer-v1.js
