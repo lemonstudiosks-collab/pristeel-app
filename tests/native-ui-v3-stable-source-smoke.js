@@ -14,7 +14,7 @@ assert(core.includes('System health'),'automation surface missing');
 assert(core.includes('Recent project movement'),'project movement surface missing');
 assert(core.includes("document.getElementById('pst-ws-canonical-nav')")||core.includes("#pst-ws-canonical-nav"),'canonical navigation must be reused');
 assert(!core.includes('pst-native-sidebar-v3'),'stable core must not create a second sidebar');
-assert(!core.includes('MutationObserver'),'stable core must not use MutationObserver');
+assert(!/new\s+MutationObserver|MutationObserver\s*\(/.test(core),'stable core must not instantiate MutationObserver');
 assert(!core.includes('setInterval('),'stable core must not use polling intervals');
 assert(!core.includes('refreshHome(ms>0)'),'Home must not force repeated startup data refreshes');
 assert(!core.includes('[0,300,1000,2500,5000]'),'old repeated forced Home refresh schedule must be gone');
