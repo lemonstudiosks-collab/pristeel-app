@@ -1,0 +1,81 @@
+name: PPPP Direct Tender Opportunity v1
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        required: true
+        default: apply
+        type: choice
+        options: [preview, apply]
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/opportunity-engine-v2.mjs'
+      - 'scripts/opportunity-engine-v2-runner.mjs'
+      - 'scripts/opportunity-rfq-drafts-v1.mjs'
+      - 'supabase/functions/pppp-tender-dossier-analysis/**'
+      - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
+      - 'supabase/migrations/20260901214000_opportunity_promotion_security_and_failure_reconcile.sql'
+      - '.github/workflows/opportunity-direct-tender-v1.yml'
+  schedule:
+    - cron: '10 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pppp-direct-tender-opportunity-v1
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check scripts/opportunity-engine-v2.mjs
+          node --check scripts/opportunity-engine-v2-runner.mjs
+          node --check scripts/opportunity-rfq-drafts-v1.mjs
+
+  run:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+      SYNC_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'apply' }}
+      PPPP_OPPORTUNITY_DOSSIER_MAX: '30'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Analyze KRPP APP dossiers and route direct opportunities
+        run: node scripts/opportunity-engine-v2-runner.mjs
+
+      - name: Prepare supplier RFQ draft-review rows for qualified raw-material opportunities
+        run: node scripts/opportunity-rfq-drafts-v1.mjs
+
+      - name: Upload sanitized direct-tender summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: direct-tender-opportunity-v1
+          path: |
+            tmp/opportunity-engine-v2.json
+            tmp/opportunity-rfq-drafts-v1.json
+          if-no-files-found: ignore
+          retention-days: 14
