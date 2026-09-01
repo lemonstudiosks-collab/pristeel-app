@@ -1,0 +1,25 @@
+const fs=require('fs');
+const assert=require('assert');
+const entry=fs.readFileSync('pristeel-native-ui-v3.js','utf8');
+const core=fs.readFileSync('pristeel-native-ui-v3-core-stable.js','utf8');
+
+assert(entry.includes("pristeel-native-ui-v3-core-stable.js?v=20260901-stable1"),'entry must load stable core');
+assert(entry.includes("key.indexOf('pristeel_unsaved_')===0"),'recovery gate must include localStorage unsaved work');
+assert(entry.includes("sessionStorage.setItem('pst_recovery_deferred_v3','1')"),'recovery deferral must persist for the session');
+assert(!entry.includes("querySelectorAll('body *')"),'recovery cleanup must not scan the entire DOM');
+assert(core.includes("version:'stable-20260901-1'"),'stable core version marker missing');
+assert(core.includes('PPPP COMMAND CENTER'),'Command Center owner missing');
+assert(core.includes('Financial attention'),'finance exception surface missing');
+assert(core.includes('System health'),'automation surface missing');
+assert(core.includes('Recent project movement'),'project movement surface missing');
+assert(core.includes("document.getElementById('pst-ws-canonical-nav')")||core.includes("#pst-ws-canonical-nav"),'canonical navigation must be reused');
+assert(!core.includes('pst-native-sidebar-v3'),'stable core must not create a second sidebar');
+assert(!core.includes('MutationObserver'),'stable core must not use MutationObserver');
+assert(!core.includes('setInterval('),'stable core must not use polling intervals');
+assert(!core.includes('refreshHome(ms>0)'),'Home must not force repeated startup data refreshes');
+assert(!core.includes('[0,300,1000,2500,5000]'),'old repeated forced Home refresh schedule must be gone');
+assert(core.includes("if(done)return"),'bounded Home readiness retries must stop after first successful data render');
+assert(core.includes("if(typeof window.supaFetch==='function')"),'Home should wait for runtime data boundary without polling');
+assert(core.includes("document.documentElement.lang='en'"),'English UI language marker missing');
+assert(core.includes("primary:'#1E3A8A'")&&core.includes("blue:'#3B82F6'")&&core.includes("warning:'#F59E0B'"),'approved restrained palette missing');
+console.log('native-ui-v3 stable source smoke: PASS');
