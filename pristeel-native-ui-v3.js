@@ -14,6 +14,7 @@ var TEXT={
   'PPPP lexon gjendjen live dhe të kthen përgjigje nga të dhënat e platformës.':'PPPP reads live platform data and answers from the current project state.',
   'PPPP ruajti punë të pambyllur':'PPPP found unfinished work','Rikthe':'Restore','Mbaje për më vonë':'Keep for later'
 };
+var cleanupStarted=false;
 
 function pendingRecovery(){
   try{
@@ -94,22 +95,22 @@ function suppressLegacyRecovery(){
 function installOwnershipCss(){
   var id='pst-ui-ownership-cleanup-css',s=document.getElementById(id);if(s)return;
   s=document.createElement('style');s.id=id;s.textContent=`
-#pst-ui-recovery-clean{position:fixed;z-index:2147483000;top:16px;left:50%;transform:translateX(-50%);width:min(720px,calc(100vw - 32px));display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 16px;background:#fff;border:1px solid #E5E7EB;border-left:3px solid #F59E0B;border-radius:12px;box-shadow:0 12px 34px rgba(17,24,39,.14);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111827}
-#pst-ui-recovery-clean>div:first-child{display:grid;gap:3px}#pst-ui-recovery-clean b{font-size:13px}#pst-ui-recovery-clean span{font-size:11px;color:#6B7280;line-height:1.45}.pst-rec-actions{display:flex;gap:8px;flex-shrink:0}.pst-rec-actions button{min-height:36px;padding:0 13px;border-radius:8px;border:1px solid #D1D5DB;background:#fff;color:#374151;font-weight:700;cursor:pointer}.pst-rec-actions button[data-rec="restore"]{background:#1E3A8A;border-color:#1E3A8A;color:#fff}
-#pst-native-home-v3 #pn-ask .pst-live-command-shell{background:#fff!important;border:1px solid #E5E7EB!important;border-left:3px solid #1E3A8A!important;border-radius:10px!important;box-shadow:none!important;padding:14px 16px!important;color:#111827!important;min-height:0!important}
+#pst-ui-recovery-clean{position:fixed;z-index:2147483000;top:16px;left:50%;transform:translateX(-50%);width:min(720px,calc(100vw - 32px));display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 16px;background:#fff;border:1px solid #E3E8EE;border-left:3px solid #A7874F;border-radius:12px;box-shadow:0 12px 34px rgba(36,52,71,.12);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#243447}
+#pst-ui-recovery-clean>div:first-child{display:grid;gap:3px}#pst-ui-recovery-clean b{font-size:13px}#pst-ui-recovery-clean span{font-size:11px;color:#7A8798;line-height:1.45}.pst-rec-actions{display:flex;gap:8px;flex-shrink:0}.pst-rec-actions button{min-height:36px;padding:0 13px;border-radius:8px;border:1px solid #D8E0E8;background:#fff;color:#526170;font-weight:700;cursor:pointer}.pst-rec-actions button[data-rec="restore"]{background:#2F5F86;border-color:#2F5F86;color:#fff}
+#pst-native-home-v3 #pn-ask .pst-live-command-shell{background:#fff!important;border:1px solid #E3E8EE!important;border-left:3px solid #2F5F86!important;border-radius:10px!important;box-shadow:none!important;padding:14px 16px!important;color:#243447!important;min-height:0!important}
 #pst-native-home-v3 #pn-ask .pst-live-command-shell *{text-shadow:none!important}
-#pst-native-home-v3 #pn-ask .pst-live-command-shell h1,#pst-native-home-v3 #pn-ask .pst-live-command-shell h2,#pst-native-home-v3 #pn-ask .pst-live-command-shell h3,#pst-native-home-v3 #pn-ask .pst-live-command-shell b,#pst-native-home-v3 #pn-ask .pst-live-command-shell strong{color:#111827!important}
-#pst-native-home-v3 #pn-ask .pst-live-command-shell p,#pst-native-home-v3 #pn-ask .pst-live-command-shell small,#pst-native-home-v3 #pn-ask .pst-live-command-shell span{color:#6B7280!important}
-#pst-native-home-v3 #pn-ask .pst-live-command-shell form{margin-top:10px!important;background:#F8FAFC!important;border:1px solid #E5E7EB!important;border-radius:9px!important;padding:7px!important}
-#pst-native-home-v3 #pn-ask .pst-live-command-shell input,#pst-native-home-v3 #pn-ask .pst-live-command-shell textarea{background:transparent!important;color:#111827!important;border:0!important;box-shadow:none!important}
-#pst-native-home-v3 #pn-ask .pst-live-command-shell button{background:#1E3A8A!important;border-color:#1E3A8A!important;color:#fff!important;border-radius:8px!important;box-shadow:none!important}
+#pst-native-home-v3 #pn-ask .pst-live-command-shell h1,#pst-native-home-v3 #pn-ask .pst-live-command-shell h2,#pst-native-home-v3 #pn-ask .pst-live-command-shell h3,#pst-native-home-v3 #pn-ask .pst-live-command-shell b,#pst-native-home-v3 #pn-ask .pst-live-command-shell strong{color:#243447!important}
+#pst-native-home-v3 #pn-ask .pst-live-command-shell p,#pst-native-home-v3 #pn-ask .pst-live-command-shell small,#pst-native-home-v3 #pn-ask .pst-live-command-shell span{color:#7A8798!important}
+#pst-native-home-v3 #pn-ask .pst-live-command-shell form{margin-top:10px!important;background:#F4F6F8!important;border:1px solid #E3E8EE!important;border-radius:9px!important;padding:7px!important}
+#pst-native-home-v3 #pn-ask .pst-live-command-shell input,#pst-native-home-v3 #pn-ask .pst-live-command-shell textarea{background:transparent!important;color:#243447!important;border:0!important;box-shadow:none!important}
+#pst-native-home-v3 #pn-ask .pst-live-command-shell button{background:#2F5F86!important;border-color:#2F5F86!important;color:#fff!important;border-radius:8px!important;box-shadow:none!important}
 @media(max-width:720px){#pst-ui-recovery-clean{align-items:stretch;flex-direction:column}.pst-rec-actions{justify-content:flex-end}}
 `;
   document.head.appendChild(s);
 }
 
 function cleanVisibleUi(){installRecoveryGate();normalizeNav();translateAsk();suppressLegacyRecovery();}
-function boundedCleanup(){[0,100,350,900,1700,5200].forEach(function(ms){setTimeout(cleanVisibleUi,ms);});}
+function boundedCleanup(){if(cleanupStarted){cleanVisibleUi();return;}cleanupStarted=true;[0,250].forEach(function(ms){setTimeout(cleanVisibleUi,ms);});}
 
 installOwnershipCss();installRecoveryGate();
 [0,40,120,300].forEach(function(ms){setTimeout(installRecoveryGate,ms);});
@@ -122,7 +123,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 function loadCore(){
   if(document.querySelector('script[data-pst-native-ui-v3-core]'))return;
-  var s=document.createElement('script');s.src='pristeel-native-ui-v3-core.js?v=20260901-ownership1';s.defer=true;s.setAttribute('data-pst-native-ui-v3-core','1');
+  var s=document.createElement('script');s.src='pristeel-native-ui-v3-core.js?v=20260901-stable1';s.defer=true;s.setAttribute('data-pst-native-ui-v3-core','1');
   s.onload=function(){installOwnershipCss();boundedCleanup();};
   s.onerror=function(){console.error('Native UI v3 core failed to load');};document.head.appendChild(s);
 }
