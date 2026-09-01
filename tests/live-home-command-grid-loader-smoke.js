@@ -2,14 +2,14 @@ const fs = require('fs');
 const assert = require('assert');
 
 const src = fs.readFileSync('pristeel-project-emails.js', 'utf8');
-const finalizer = src.indexOf("pristeel-redesign-finalizer-v1.js?v=20260828-sourcelink1");
+const finalizer = src.indexOf("pristeel-redesign-finalizer-v1.js?v=20260831-tedsales2");
 const legacy = src.indexOf("pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2");
 const tender = src.indexOf("pristeel-tender-priority-actions-v1.js?v=20260827-ux1");
 const home = src.indexOf("pristeel-home-operating-grid-v1.js?v=20260823-homegrid2");
 const classification = src.indexOf("pristeel-project-classification-v1.js?v=");
 const nav = src.indexOf("pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1");
 
-assert.ok(finalizer >= 0, 'Redesign finalizer cache key was not bumped for the current runtime ownership release');
+assert.ok(finalizer >= 0, 'Redesign finalizer cache key does not match the audited current bootstrap');
 assert.ok(legacy >= 0 && tender > legacy, 'Tender priority must load after all legacy workflow layers');
 assert.ok(home > tender, 'Home operating grid must load after tender priority actions');
 assert.ok(classification > home, 'Project classification must load after the Home grid');
