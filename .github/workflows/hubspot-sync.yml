@@ -1,5 +1,8 @@
 name: HubSpot CRM Sync
 
+# Production cadence is owned by Supabase pg_cron (hubspot-sync-every-15min).
+# Keep this workflow for explicit/manual or legacy-branch validation only so two
+# independent schedulers do not race the same CRM synchronization.
 on:
   push:
     branches:
@@ -10,8 +13,6 @@ on:
       - 'scripts/contact-provenance-common.mjs'
       - '.github/workflows/hubspot-sync.yml'
   workflow_dispatch:
-  schedule:
-    - cron: '17 * * * *'
 
 permissions:
   contents: read
