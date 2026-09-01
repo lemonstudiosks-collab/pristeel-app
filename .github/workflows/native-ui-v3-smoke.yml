@@ -27,7 +27,8 @@ jobs:
         run: |
           test -f _site/pristeel-native-ui-v3.js
           test -f _site/pristeel-native-ui-v3-core.js
-          grep -Fq 'pristeel-native-ui-v3.js?v=20260901-1' _site/pristeel-roles.js
+          grep -Fq 'pristeel-native-ui-v3.js?v=20260901-softperf1' _site/pristeel-roles.js
+          grep -Fq 's.src=path;' _site/pristeel-roles.js
           grep -Fq 'pristeel-native-ui-v3-core.js?v=20260901-softperf1' _site/pristeel-native-ui-v3.js
           grep -Fq '#365565' _site/pristeel-native-ui-v3-core.js
           grep -Fq '#87A191' _site/pristeel-native-ui-v3-core.js
