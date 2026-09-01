@@ -1,0 +1,16 @@
+const fs=require('fs');
+const assert=(c,m)=>{if(!c)throw new Error(m)};
+const ui=fs.readFileSync('pristeel-platform-redesign-v2.js','utf8');
+const finalizer=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
+assert(ui.includes('window.__pstPlatformRedesignV2'),'redesign v2 owner missing');
+assert(finalizer.includes("pristeel-platform-redesign-v2.js?v=20260901-2"),'finalizer does not load redesign v2');
+assert(ui.includes("'Mundësitë':'Opportunities'")&&ui.includes("'Projektet':'Projects'")&&ui.includes("'Financat':'Finance'"),'English navigation mapping missing');
+assert(ui.includes('PPPP COMMAND CENTER')&&ui.includes('Priority actions')&&ui.includes('Next 7 days')&&ui.includes('Client concentration'),'balanced Home sections missing');
+assert(ui.includes('actionIds')&&ui.includes('!actionIds[S(p.id)]'),'Home anti-duplication rule missing');
+assert(ui.includes('data-rd-area')&&ui.includes("area==='project'")&&ui.includes("area==='finance'")&&ui.includes("area==='opportunities'"),'click drill-down routing missing');
+assert(ui.includes('--rd-primary:#1E3A8A')&&ui.includes('--rd-blue:#3B82F6')&&ui.includes('--rd-bg:#F7F8FA'),'approved visual palette missing');
+assert(!/new\s+MutationObserver\s*\(/.test(ui),'redesign must not own a MutationObserver');
+assert(!/\bsetInterval\s*\(/.test(ui),'redesign must not add polling');
+assert(!/supaFetch\([^\n]{0,160},\s*['\"](?:PATCH|PUT|DELETE)['\"]/.test(ui),'redesign must not mutate business data');
+assert(ui.includes("db('rpc/pppp_automation_health_v1','POST',{})"),'automation health read missing');
+console.log('PPPP Platform Redesign v2 smoke: PASS');
