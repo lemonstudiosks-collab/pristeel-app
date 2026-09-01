@@ -27,6 +27,15 @@ jobs:
       - name: Build production Pages site
         run: node scripts/pages-artifact-build.mjs
 
+      - name: Mirror standalone TED sales production asset
+        run: |
+          set -euo pipefail
+          test -s ted-sales.html
+          cp ted-sales.html _site/ted-sales.html
+          test -s _site/ted-sales.html
+          grep -Fq '<html lang="en">' _site/ted-sales.html
+          grep -Fq 'PPPP · Opportunities · TED Award Sales' _site/ted-sales.html
+
       - name: Serve production artifact locally
         run: |
           set -euo pipefail
@@ -46,6 +55,8 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-gmail-launcher-v2.html >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-document-center.css >/dev/null
           curl --fail --silent --show-error http://127.0.0.1:4173/gmail-addon/pristeel-addon-icon.svg >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:4173/ted-sales.html >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:4173/pristeel-platform-redesign-v2.js >/dev/null
 
           echo "Production Pages artifact HTTP smoke OK."
 
@@ -53,6 +64,7 @@ jobs:
         run: |
           set -e
           grep -Fq "node scripts/pages-artifact-build.mjs" .github/workflows/static.yml
+          grep -Fq "cp ted-sales.html _site/ted-sales.html" .github/workflows/static.yml
           grep -Fq "path: '_site'" .github/workflows/static.yml
           if grep -Fq "path: '.'" .github/workflows/static.yml; then
             echo "ERROR: whole-repository Pages upload path is still present"
