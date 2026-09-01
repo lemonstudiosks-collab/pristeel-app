@@ -42,16 +42,18 @@ css.textContent = `
 .rl-sel:hover{border-color:var(--border2)}
 .rl-note{font-size:11px;color:var(--text3);line-height:1.6;margin-top:12px;
   padding-top:11px;border-top:1px solid var(--border)}
+/* Hide intermediate Home owners only until the early native UI is ready. */
 html:not(.pst-runtime-ready):not(.pst-native-ui-ready) #page-workspace-home.active{min-height:68vh!important;position:relative!important}
 html:not(.pst-runtime-ready):not(.pst-native-ui-ready) #page-workspace-home.active>*{visibility:hidden!important}
-html:not(.pst-runtime-ready):not(.pst-native-ui-ready) #page-workspace-home.active::after{content:'Preparing platform…';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;visibility:visible!important;font-size:12px;font-weight:650;color:#6F838C;letter-spacing:.1px;background:#F5F7F7}
+html:not(.pst-runtime-ready):not(.pst-native-ui-ready) #page-workspace-home.active::after{content:'Preparing platform…';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;visibility:visible!important;font-size:12px;font-weight:650;color:#6F838C;letter-spacing:.1px;background:#F7FAFB}
 `;
 document.head.appendChild(css);
 
+/* Failsafe: a partial bootstrap must never leave Home permanently hidden. */
 if(!window.__pstRuntimeRevealFallback){
   window.__pstRuntimeRevealFallback=setTimeout(function(){
     document.documentElement.classList.add('pst-runtime-ready');
-  },7000);
+  },12000);
 }
 
 var myRole = null, myEmail = null, allUsers = [];
@@ -130,8 +132,8 @@ function watchPages(){
   var orig = window.showPage;
   window.showPage = function(p){
     orig.apply(this, arguments);
-    if(myRole && !canWrite()) setTimeout(lockUI, 120);
-    if(p === 'settings' && isAdmin()) setTimeout(renderUsers, 180);
+    if(myRole && !canWrite()) setTimeout(lockUI, 180);
+    if(p === 'settings' && isAdmin()) setTimeout(renderUsers, 250);
   };
   window.showPage.__rl = true;
   return true;
@@ -200,7 +202,7 @@ function tryReady(){
   return true;
 }
 function init(){
-  var waits=[0,300,900,2000,4200];
+  var waits=[0,400,1200,2500,5000,9000];
   waits.forEach(function(ms){
     setTimeout(function(){
       if(myRole) return;
@@ -210,15 +212,15 @@ function init(){
 }
 
 if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 250); });
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 900); });
 } else {
-  setTimeout(init, 250);
+  setTimeout(init, 900);
 }
 
 function loadScriptBeforeBootstrap(path,attr,done){
   if(document.querySelector('script['+attr+']')){done();return;}
   var s=document.createElement('script');
-  s.src=path;
+  s.src=path+(path.indexOf('?')>-1?'&':'?')+'pst_live='+String(Date.now());
   s.defer=true;
   s.setAttribute(attr,'1');
   s.onload=done;
@@ -227,7 +229,7 @@ function loadScriptBeforeBootstrap(path,attr,done){
 }
 
 (function loadNativeUiThenRuntime(){
-  loadScriptBeforeBootstrap('pristeel-native-ui-v3.js?v=20260901-softperf1','data-pst-native-ui-v3',function(){
+  loadScriptBeforeBootstrap('pristeel-native-ui-v3.js?v=20260901-1','data-pst-native-ui-v3',function(){
     (function loadCommercialOverridesThenMainRuntime(){
       function startMainRuntime(){
         window.__pstCommercialLiveOverride='20260818-commercial-live1';
@@ -247,15 +249,15 @@ function loadScriptBeforeBootstrap(path,attr,done){
           return;
         }
         var g=document.createElement('script');
-        g.src='pristeel-home-runtime-owner-guard-v1.js?v=20260901-1';
+        g.src='pristeel-home-runtime-owner-guard-v1.js?v='+String(Date.now());
         g.defer=true;
         g.setAttribute('data-pst-home-runtime-owner-guard','1');
         g.onload=loadProjectEmailsModule;
         g.onerror=function(){console.error('Nuk u ngarkua Home runtime owner guard.');loadProjectEmailsModule();};
         document.head.appendChild(g);
       }
-      loadScriptBeforeBootstrap('pristeel-our-offer-source-v1.js?v=20260901-1','data-pst-commercial-source-live',function(){
-        loadScriptBeforeBootstrap('pristeel-offer-resave-fix-v1.js?v=20260901-1','data-pst-offer-resave-live',startMainRuntime);
+      loadScriptBeforeBootstrap('pristeel-our-offer-source-v1.js','data-pst-commercial-source-live',function(){
+        loadScriptBeforeBootstrap('pristeel-offer-resave-fix-v1.js','data-pst-offer-resave-live',startMainRuntime);
       });
     })();
   });
@@ -264,7 +266,7 @@ function loadScriptBeforeBootstrap(path,attr,done){
 (function loadInvoiceOriginalDocumentModule(){
   if(document.querySelector('script[data-pst-invoice-original-document]')) return;
   var s=document.createElement('script');
-  s.src='pristeel-invoice-original-document-v1.js?v=20260901-1';
+  s.src='pristeel-invoice-original-document-v1.js?v='+String(Date.now());
   s.defer=true;
   s.setAttribute('data-pst-invoice-original-document','1');
   document.head.appendChild(s);
@@ -273,7 +275,7 @@ function loadScriptBeforeBootstrap(path,attr,done){
 (function loadTenderBusinessFlowModule(){
   if(document.querySelector('script[data-pst-tender-business-flow]')) return;
   var s=document.createElement('script');
-  s.src='pristeel-tender-business-flow-v1.js?v=20260901-1';
+  s.src='pristeel-tender-business-flow-v1.js?v='+String(Date.now());
   s.defer=true;
   s.setAttribute('data-pst-tender-business-flow','1');
   document.head.appendChild(s);
@@ -282,7 +284,7 @@ function loadScriptBeforeBootstrap(path,attr,done){
 (function loadTenderWinnerContactsModule(){
   if(document.querySelector('script[data-pst-tender-winner-contacts]')) return;
   var s=document.createElement('script');
-  s.src='pristeel-tender-winner-contacts-v1.js?v=20260901-1';
+  s.src='pristeel-tender-winner-contacts-v1.js?v='+String(Date.now());
   s.defer=true;
   s.setAttribute('data-pst-tender-winner-contacts','1');
   document.head.appendChild(s);
@@ -291,7 +293,7 @@ function loadScriptBeforeBootstrap(path,attr,done){
 (function loadProjectIntakeContinuityModule(){
   if(document.querySelector('script[data-pst-project-intake-continuity]')) return;
   var s=document.createElement('script');
-  s.src='pristeel-project-intake-continuity-v1.js?v=20260901-1';
+  s.src='pristeel-project-intake-continuity-v1.js?v='+String(Date.now());
   s.defer=true;
   s.setAttribute('data-pst-project-intake-continuity','1');
   document.head.appendChild(s);
@@ -300,7 +302,7 @@ function loadScriptBeforeBootstrap(path,attr,done){
 (function loadTaskSourceActionsModule(){
   if(document.querySelector('script[data-pst-task-source-actions]')) return;
   var s=document.createElement('script');
-  s.src='pristeel-task-source-actions-v1.js?v=20260901-1';
+  s.src='pristeel-task-source-actions-v1.js?v='+String(Date.now());
   s.defer=true;
   s.setAttribute('data-pst-task-source-actions','1');
   document.head.appendChild(s);

@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "bad31cd5aae0ffedc8b4a4158821fe8dc8e92bac",
+  "auditedAtCommit": "cf8e32bb726c4a08350a29e000985d248eef7e32",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "680b520bfdfa6e5ddbcaaea60d9d28a8b9e037ed",
+    "bootstrapLoaderGitBlobSha": "3e4c3ac88bef313fb2a37ca229770326d8ad55cb",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "427a685acf45c47db68e8c38a11a595748aaed86"
   },
@@ -175,25 +175,25 @@
       "module": "pristeel-native-ui-v3.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded first by pristeel-roles.js from a stable versioned URL before commercial overrides, the Home runtime guard and the ordered bootstrap. Presentation/read-only owner only."
+      "condition": "Loaded first by pristeel-roles.js before commercial overrides, the Home runtime guard and the 149-module ordered bootstrap. Presentation/read-only owner only."
     },
     {
       "module": "pristeel-home-runtime-owner-guard-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded before pristeel-project-emails.js as a versioned compatibility/runtime ownership guard."
+      "condition": "Loaded before pristeel-project-emails.js as a compatibility/runtime ownership guard."
     },
     {
       "module": "pristeel-our-offer-source-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Preloaded with a stable versioned URL before the ordered bootstrap."
+      "condition": "Preloaded with a live cache-busting URL before the ordered bootstrap."
     },
     {
       "module": "pristeel-offer-resave-fix-v1.js",
       "loader": "pristeel-roles.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Preloaded from a stable versioned URL before the ordered bootstrap so saved-versus-sent offer state uses the current implementation."
+      "condition": "Preloaded before the ordered bootstrap so saved-versus-sent offer state uses the current implementation."
     },
     {
       "module": "pristeel-home-canonical-v1.js",
