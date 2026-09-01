@@ -1,0 +1,71 @@
+name: PPPP Native UI v3 browser verification
+
+on:
+  push:
+    branches:
+      - ui/pppp-command-center-v2-verify
+    paths:
+      - 'pristeel-native-ui-v3.js'
+      - 'pristeel-native-ui-v3-core-stable.js'
+      - 'tests/native-ui-v3-browser-smoke.js'
+      - 'tests/native-ui-v3-stable-source-smoke.js'
+      - '.github/workflows/native-ui-v3-browser-verification.yml'
+  pull_request:
+    paths:
+      - 'pristeel-native-ui-v3.js'
+      - 'pristeel-native-ui-v3-core-stable.js'
+      - 'tests/native-ui-v3-browser-smoke.js'
+      - 'tests/native-ui-v3-stable-source-smoke.js'
+      - '.github/workflows/native-ui-v3-browser-verification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact branch build
+        uses: actions/checkout@v4
+
+      - name: Syntax and source ownership checks
+        run: |
+          node --check pristeel-native-ui-v3.js
+          node --check pristeel-native-ui-v3-core-stable.js
+          node --check tests/native-ui-v3-browser-smoke.js
+          node tests/native-ui-v3-stable-source-smoke.js
+
+      - name: Install Playwright Chromium
+        run: |
+          mkdir -p /tmp/pppp-playwright
+          cd /tmp/pppp-playwright
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Serve exact repository build
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/pppp-http.log 2>&1 &
+          echo $! >/tmp/pppp-http.pid
+          sleep 2
+          curl --fail --silent http://127.0.0.1:4173/pristeel-procurement.html >/dev/null
+
+      - name: Verify exact app in Chromium and capture all key surfaces
+        env:
+          NODE_PATH: /tmp/pppp-playwright/node_modules
+        run: node tests/native-ui-v3-browser-smoke.js
+
+      - name: Upload visual verification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pppp-native-ui-v3-browser-verification
+          path: qa-artifacts/native-ui-v3
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Show local server log on failure
+        if: failure()
+        run: cat /tmp/pppp-http.log || true
