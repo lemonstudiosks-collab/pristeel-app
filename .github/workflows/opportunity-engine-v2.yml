@@ -1,0 +1,115 @@
+name: PPPP Opportunity Engine v2
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        required: true
+        default: preview
+        type: choice
+        options: [preview, apply]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/opportunity-engine-v2.mjs'
+      - 'scripts/ted-gc-award-sync-v2.mjs'
+      - 'scripts/ted-company-role-actions-v2.mjs'
+      - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
+      - '.github/workflows/opportunity-engine-v2.yml'
+  schedule:
+    # Existing TED/KRPP collectors run on even hours. Run the closed-loop engine
+    # shortly afterwards on odd hours so enrichment and dossier analysis see fresh data.
+    - cron: '20 1-23/2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pppp-opportunity-engine-v2
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check scripts/opportunity-engine-v2.mjs
+          node --check scripts/ted-gc-award-sync-v2.mjs
+          node --check scripts/ted-company-role-actions-v2.mjs
+          node --check scripts/ted-winner-contact-history-reuse.mjs
+          node --check scripts/ted-winner-contact-enrichment.mjs
+          node --check scripts/ted-winner-company-classification.mjs
+          node --check scripts/ted-winner-contact-ranking.mjs
+
+  run:
+    if: github.event_name != 'pull_request'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+      SYNC_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'apply' }}
+      TED_GC_AWARD_DAYS: '45'
+      TED_GC_MIN_SCORE: '82'
+      TED_CONTACT_MIN_SCORE: '70'
+      TED_CONTACT_MAX_ROWS: '40'
+      TED_CONTACT_REFRESH_DAYS: '14'
+      TED_CONTACT_WEB_SEARCH: '1'
+      TED_COMPANY_MIN_SCORE: '70'
+      TED_COMPANY_MAX_ROWS: '40'
+      TED_HISTORY_REUSE_MAX_ROWS: '100'
+      TED_ROLE_RETRY_MAX: '30'
+      PPPP_OPPORTUNITY_DOSSIER_MAX: '20'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Discover broader TED GC project awards
+        run: node scripts/ted-gc-award-sync-v2.mjs
+
+      - name: Reuse known winner contacts
+        run: node scripts/ted-winner-contact-history-reuse.mjs
+
+      - name: Enrich winner public contacts
+        run: node scripts/ted-winner-contact-enrichment.mjs
+
+      - name: Run baseline winner company classification
+        run: node scripts/ted-winner-company-classification.mjs
+
+      - name: Rank winner procurement contacts
+        run: node scripts/ted-winner-contact-ranking.mjs
+
+      - name: Retry unresolved company roles and create route-specific draft actions
+        run: node scripts/ted-company-role-actions-v2.mjs
+
+      - name: Analyze KRPP APP dossiers and route direct opportunities
+        run: node scripts/opportunity-engine-v2.mjs
+
+      - name: Upload sanitized Opportunity Engine summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opportunity-engine-v2
+          path: |
+            tmp/ted-gc-award-sync-v2.json
+            tmp/ted-winner-contact-history-reuse.json
+            tmp/ted-winner-contact-enrichment.json
+            tmp/ted-winner-company-classification.json
+            tmp/ted-winner-contact-ranking.json
+            tmp/ted-company-role-actions-v2.json
+            tmp/opportunity-engine-v2.json
+          if-no-files-found: ignore
+          retention-days: 14

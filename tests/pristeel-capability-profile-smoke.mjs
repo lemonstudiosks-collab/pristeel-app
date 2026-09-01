@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { assessPristeelTender, attachCapabilityPayload, capabilityCandidateHint, PRISTEEL_CAPABILITY_PROFILE_VERSION } from '../scripts/pristeel-capability-profile.mjs';
 import { classifyKrppOpportunity, prepareRows, selectCandidates } from '../scripts/krpp-public-capability-runner.mjs';
+import { runOpportunityEngineV2 } from '../scripts/opportunity-engine-v2.mjs';
+import { runTedGcAwardSyncV2 } from '../scripts/ted-gc-award-sync-v2.mjs';
+import { runTedCompanyRoleActionsV2 } from '../scripts/ted-company-role-actions-v2.mjs';
+
+assert.equal(typeof runOpportunityEngineV2,'function','Opportunity Engine v2 module must import cleanly');
+assert.equal(typeof runTedGcAwardSyncV2,'function','TED GC award module must import cleanly');
+assert.equal(typeof runTedCompanyRoleActionsV2,'function','TED role/action module must import cleanly');
 
 function score(title,extra={}){return classifyKrppOpportunity({title,...extra});}
 
