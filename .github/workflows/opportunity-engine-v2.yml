@@ -13,21 +13,25 @@ on:
     branches: [main]
     paths:
       - 'scripts/opportunity-engine-v2.mjs'
+      - 'scripts/opportunity-rfq-drafts-v1.mjs'
       - 'scripts/ted-gc-award-sync-v2.mjs'
       - 'scripts/ted-company-role-actions-v2.mjs'
+      - 'supabase/functions/pppp-opportunity-draft-generator/**'
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
+      - 'supabase/migrations/20260901200500_opportunity_gmail_drafts_v1.sql'
       - '.github/workflows/opportunity-engine-v2.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/opportunity-engine-v2.mjs'
+      - 'scripts/opportunity-rfq-drafts-v1.mjs'
       - 'scripts/ted-gc-award-sync-v2.mjs'
       - 'scripts/ted-company-role-actions-v2.mjs'
+      - 'supabase/functions/pppp-opportunity-draft-generator/**'
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
+      - 'supabase/migrations/20260901200500_opportunity_gmail_drafts_v1.sql'
       - '.github/workflows/opportunity-engine-v2.yml'
   schedule:
-    # Existing TED/KRPP collectors run on even hours. Run the closed-loop engine
-    # shortly afterwards on odd hours so enrichment and dossier analysis see fresh data.
     - cron: '20 1-23/2 * * *'
 
 permissions:
@@ -49,6 +53,7 @@ jobs:
       - name: Syntax checks
         run: |
           node --check scripts/opportunity-engine-v2.mjs
+          node --check scripts/opportunity-rfq-drafts-v1.mjs
           node --check scripts/ted-gc-award-sync-v2.mjs
           node --check scripts/ted-company-role-actions-v2.mjs
           node --check scripts/ted-winner-contact-history-reuse.mjs
@@ -106,6 +111,9 @@ jobs:
       - name: Analyze KRPP APP dossiers and route direct opportunities
         run: node scripts/opportunity-engine-v2.mjs
 
+      - name: Prepare supplier RFQ draft-review rows for qualified raw-material opportunities
+        run: node scripts/opportunity-rfq-drafts-v1.mjs
+
       - name: Upload sanitized Opportunity Engine summary
         if: always()
         uses: actions/upload-artifact@v4
@@ -119,5 +127,6 @@ jobs:
             tmp/ted-winner-contact-ranking.json
             tmp/ted-company-role-actions-v2.json
             tmp/opportunity-engine-v2.json
+            tmp/opportunity-rfq-drafts-v1.json
           if-no-files-found: ignore
           retention-days: 14
