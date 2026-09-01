@@ -11,6 +11,9 @@ assert.ok(!loader.includes('pristeel-home-insights-v1.js'),'retired Home insight
 assert.ok(!/new\s+MutationObserver\s*\(/.test(src),'command center must not own a MutationObserver');
 assert.ok(!src.includes('setInterval('),'command center must not poll with setInterval');
 assert.ok(!/\b(?:PATCH|DELETE|PUT)\b/.test(src),'command center must not contain business mutation methods');
+assert.ok(!/new\s+MutationObserver\s*\(/.test(loader),'UI Standard must not own a MutationObserver');
+assert.ok(!loader.includes('setInterval('),'UI Standard must not poll with setInterval');
+assert.ok(!/\b(?:PATCH|DELETE|PUT)\b/.test(loader),'UI Standard must stay presentation-only');
 assert.ok(src.includes('pppp_home_current_actions_v1'),'confirmed action source missing');
 assert.ok(src.includes('pppp_automation_health_v1'),'automation health surface missing');
 assert.ok(src.includes('Next 7 days'),'seven-day outlook missing');
@@ -23,4 +26,7 @@ assert.ok(src.includes('ASK PPPP'),'Ask PPPP English UI missing');
 assert.ok(src.includes('>.pst-live-head')&&src.includes('>.pst-live-needs')&&src.includes('>.pst-live-status'),'legacy Home sections must be explicitly retired from visible Home');
 assert.ok(src.includes("data-cc-area=\"projects\"")||src.includes("data-cc-area=\\\"projects\\\""),'click-through project navigation missing');
 assert.ok(src.includes("area==='finance'")&&src.includes("area==='opportunities'")&&src.includes("area==='system'"),'module drill-down navigation missing');
-console.log('PPPP Command Center v2 single-owner safety smoke: OK');
+['page-workspace-home','page-workspace-projects','page-workspace-project','page-finance','page-workspace-opportunities','page-document-center'].forEach(id=>assert.ok(loader.includes(id),`real workspace selector missing: ${id}`));
+assert.ok(loader.includes('--pst-ui-primary:#4E7495'),'approved steel-blue primary token missing');
+assert.ok(loader.includes('20260901-real-surfaces-v1'),'real-surface UI Standard revision missing');
+console.log('PPPP Command Center v2 + real workspace UI safety smoke: OK');
