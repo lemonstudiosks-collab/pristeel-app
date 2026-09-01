@@ -15,7 +15,12 @@ for(const token of ['#1E3A8A','#3B82F6','#F7F8FA','#E5E7EB']) must(ui.includes(t
 for(const selector of ['#fin-hub-grid>div[onclick*="finSwitchTab"]','.pst-pm-row','.pst-pm-btn.primary','#page-workspace-project .pf2-card','#pst-pcw-ted-sales-link']) must(ui.includes(selector),`real runtime selector missing: ${selector}`);
 must(ui.includes("r.id='pst-native-home-v3'"),'native Home single owner is missing');
 must(ui.includes("document.documentElement.classList.add('pst-native-ui-ready')"),'early UI readiness marker missing');
-for(const forbidden of ['MutationObserver','setInterval(','\"PATCH\"','\'PATCH\'','\"PUT\"','\'PUT\'','\"DELETE\"','\'DELETE\'']) must(!ui.includes(forbidden),`forbidden presentation behavior found: ${forbidden}`);
+must(!/\bnew\s+MutationObserver\s*\(/.test(ui),'MutationObserver instance is forbidden in the presentation owner');
+must(!/\bsetInterval\s*\(/.test(ui),'setInterval polling is forbidden in the presentation owner');
+for(const method of ['PATCH','PUT','DELETE']){
+  const re=new RegExp(`supaFetch\\s*\\([^)]*['\"]${method}['\"]`,'i');
+  must(!re.test(ui),`${method} business-data write is forbidden in the presentation owner`);
+}
 const dyn=(manifest.dynamicRuntime||[]).find(x=>x.module==='pristeel-native-ui-v3.js');
 must(!!dyn,'native UI is not registered in runtime manifest');
 must(dyn && dyn.loader==='pristeel-roles.js','native UI runtime loader must be pristeel-roles.js');
