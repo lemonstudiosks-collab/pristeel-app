@@ -123,7 +123,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 function loadCore(){
   if(document.querySelector('script[data-pst-native-ui-v3-core]'))return;
-  var s=document.createElement('script');s.src='pristeel-native-ui-v3-core.js?v=20260901-stable1';s.defer=true;s.setAttribute('data-pst-native-ui-v3-core','1');
+  var s=document.createElement('script');s.src='pristeel-native-ui-v3-core.js?v=20260901-ownership1';s.defer=true;s.setAttribute('data-pst-native-ui-v3-core','1');
   s.onload=function(){installOwnershipCss();boundedCleanup();};
   s.onerror=function(){console.error('Native UI v3 core failed to load');};document.head.appendChild(s);
 }
