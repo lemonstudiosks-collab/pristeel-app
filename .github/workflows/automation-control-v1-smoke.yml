@@ -1,0 +1,31 @@
+name: Automation control v1 smoke
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20260901150530_automation_http_control_core_v1.sql'
+      - 'supabase/migrations/20260901150632_automation_http_routing_v1.sql'
+      - 'supabase/migrations/20260901150758_tender_project_promotion_v1.sql'
+      - 'tests/automation-control-v1-smoke.mjs'
+      - '.github/workflows/automation-control-v1-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20260901150530_automation_http_control_core_v1.sql'
+      - 'supabase/migrations/20260901150632_automation_http_routing_v1.sql'
+      - 'supabase/migrations/20260901150758_tender_project_promotion_v1.sql'
+      - 'tests/automation-control-v1-smoke.mjs'
+      - '.github/workflows/automation-control-v1-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/automation-control-v1-smoke.mjs
