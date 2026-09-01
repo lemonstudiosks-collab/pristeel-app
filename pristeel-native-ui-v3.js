@@ -5,7 +5,7 @@
 'use strict';
 if(window.__pstNativeUiV3Entry)return;
 window.__pstNativeUiV3Entry=true;
-window.PSTNativeUIV3Entry={version:'stable-20260901-2'};
+window.PSTNativeUIV3Entry={version:'stable-20260901-3'};
 
 var NAV={home:'Home',tenders:'Opportunities',projects:'Projects',contacts:'Partners',finance:'Finance',apps:'System'};
 var TEXT={
@@ -95,18 +95,20 @@ function suppressLegacyRecovery(){
 function installOwnershipCss(){
   var id='pst-ui-ownership-cleanup-css',s=document.getElementById(id);if(s)return;
   s=document.createElement('style');s.id=id;s.textContent=`
+#page-workspace-home>#pst-native-home-v3{display:block!important;visibility:visible!important}#page-workspace-home>*:not(#pst-native-home-v3){display:none!important;visibility:hidden!important}
 #pst-ui-recovery-clean{position:fixed;z-index:2147483000;top:16px;left:50%;transform:translateX(-50%);width:min(720px,calc(100vw - 32px));display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 16px;background:#fff;border:1px solid #E5E7EB;border-left:3px solid #F59E0B;border-radius:12px;box-shadow:0 12px 34px rgba(17,24,39,.14);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111827}#pst-ui-recovery-clean>div:first-child{display:grid;gap:3px}#pst-ui-recovery-clean b{font-size:13px}#pst-ui-recovery-clean span{font-size:11px;color:#6B7280;line-height:1.45}.pst-rec-actions{display:flex;gap:8px;flex-shrink:0}.pst-rec-actions button{min-height:36px;padding:0 13px;border-radius:8px;border:1px solid #D1D5DB;background:#fff;color:#374151;font-weight:700;cursor:pointer}.pst-rec-actions button[data-rec="restore"]{background:#1E3A8A;border-color:#1E3A8A;color:#fff}@media(max-width:720px){#pst-ui-recovery-clean{align-items:stretch;flex-direction:column}.pst-rec-actions{justify-content:flex-end}}
 `;
   document.head.appendChild(s);
 }
 function cleanVisibleUi(){installRecoveryGate();normalizeNav();translateAsk();suppressLegacyRecovery();}
-function boundedCleanup(){[0,120,450,1200,3000,6500].forEach(function(ms){setTimeout(cleanVisibleUi,ms);});}
+function boundedCleanup(){[0,120,450,1200,3000,6500,12000].forEach(function(ms){setTimeout(cleanVisibleUi,ms);});}
 
 installOwnershipCss();
-[0,40,120,300,700,1400,2800,5200,8500].forEach(function(ms){setTimeout(installRecoveryGate,ms);});
+[0,40,120,300,700,1400,2800,5200,8500,12000,20000].forEach(function(ms){setTimeout(installRecoveryGate,ms);});
 document.addEventListener('pst:modules-ready',function(){cleanVisibleUi();setTimeout(cleanVisibleUi,300);},{once:true});
 document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(cleanVisibleUi,0);});
-document.addEventListener('click',function(){setTimeout(function(){normalizeNav();translateAsk();},0);},true);
+document.addEventListener('click',function(){installRecoveryGate();setTimeout(function(){installRecoveryGate();normalizeNav();translateAsk();},0);},true);
+document.addEventListener('submit',function(){installRecoveryGate();setTimeout(installRecoveryGate,0);},true);
 window.addEventListener('pageshow',boundedCleanup,{once:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boundedCleanup,{once:true});else boundedCleanup();
 
