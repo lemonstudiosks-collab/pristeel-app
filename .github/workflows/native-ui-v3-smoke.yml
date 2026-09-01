@@ -1,0 +1,28 @@
+name: PPPP native UI v3 smoke
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check early presentation owner
+        run: |
+          node --check pristeel-native-ui-v3.js
+          node --check pristeel-roles.js
+      - name: Verify native UI contracts
+        run: node tests/native-ui-v3-smoke.js
+      - name: Verify active runtime manifest
+        run: node scripts/runtime-manifest-check.mjs
+      - name: Build production-shaped Pages artifact
+        run: node scripts/pages-artifact-build.mjs
+      - name: Verify early UI is packaged
+        run: |
+          test -f _site/pristeel-native-ui-v3.js
+          grep -Fq 'pristeel-native-ui-v3.js?v=20260901-1' _site/pristeel-roles.js
+          grep -Fq '#1E3A8A' _site/pristeel-native-ui-v3.js
+          grep -Fq '#fin-hub-grid>div[onclick*="finSwitchTab"]' _site/pristeel-native-ui-v3.js
