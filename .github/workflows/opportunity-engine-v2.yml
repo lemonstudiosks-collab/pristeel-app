@@ -17,6 +17,14 @@ on:
       - 'scripts/ted-company-role-actions-v2.mjs'
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
       - '.github/workflows/opportunity-engine-v2.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/opportunity-engine-v2.mjs'
+      - 'scripts/ted-gc-award-sync-v2.mjs'
+      - 'scripts/ted-company-role-actions-v2.mjs'
+      - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
+      - '.github/workflows/opportunity-engine-v2.yml'
   schedule:
     # Existing TED/KRPP collectors run on even hours. Run the closed-loop engine
     # shortly afterwards on odd hours so enrichment and dossier analysis see fresh data.
