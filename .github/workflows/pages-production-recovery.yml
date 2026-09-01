@@ -1,18 +1,13 @@
 # Isolated PPPP production Pages recovery deploy.
-# Temporary recovery triggers publish production when connector-authored commits do not emit push workflow runs.
+# Recovery stays available for main commits that do not emit the primary Pages workflow.
+# Pull requests must never deploy their unmerged artifact to production.
 name: PPPP production recovery deploy
 
 on:
   push:
     branches: ["main"]
-  pull_request:
-    branches: ["main"]
-    types: [opened, synchronize, reopened]
   schedule:
-    - cron: '*/5 * * * *'
-  workflow_run:
-    workflows: ["TED steel tender + award monitor"]
-    types: [completed]
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -29,7 +24,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
