@@ -13,7 +13,16 @@ jobs:
           node --check pristeel-redesign-finalizer-v1.js
       - name: Redesign safety and behavior smoke
         run: node tests/platform-redesign-v2-smoke.js
-      - name: Build Pages artifact
-        run: node scripts/pages-artifact-build.mjs
+      - name: Build production-shaped Pages artifact
+        run: |
+          set -euo pipefail
+          node scripts/pages-artifact-build.mjs
+          cp ted-sales.html _site/ted-sales.html
       - name: Verify redesign is packaged
-        run: test -f _site/pristeel-platform-redesign-v2.js && grep -q "pristeel-platform-redesign-v2.js" _site/pristeel-redesign-finalizer-v1.js
+        run: |
+          set -euo pipefail
+          test -f _site/pristeel-platform-redesign-v2.js
+          test -f _site/ted-sales.html
+          grep -q "pristeel-platform-redesign-v2.js?v=20260901-2" _site/pristeel-redesign-finalizer-v1.js
+          grep -Fq '<html lang="en">' _site/ted-sales.html
+          grep -Fq 'PPPP · Opportunities · TED Award Sales' _site/ted-sales.html
