@@ -1,0 +1,33 @@
+name: PPPP Command Center smoke
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  command-center-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check command center
+        run: |
+          node --check pristeel-command-center-v2.js
+          node --check pristeel-ui-standard-v1.js
+      - name: Single-owner presentation safety smoke
+        run: node tests/ui-balanced-v1-smoke.js
+      - name: English visible-language smoke
+        run: node tests/command-center-language-smoke.js
+      - name: Retired overlay guard
+        run: |
+          ! grep -q "pristeel-ui-balanced-v1.js" pristeel-ui-standard-v1.js
+          ! grep -q "pristeel-home-insights-v1.js" pristeel-ui-standard-v1.js
+          grep -q "pristeel-command-center-v2.js" pristeel-ui-standard-v1.js
