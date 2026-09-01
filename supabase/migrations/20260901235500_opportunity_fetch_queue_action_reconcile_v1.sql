@@ -27,15 +27,14 @@ begin
 
   if new.status = 'analyzed' then
     update public.tasks
-    set status='mbyllur', done_at=coalesce(done_at,now()), updated_at=now()
+    set status='mbyllur', done_at=coalesce(done_at,now())
     where source='opportunity_engine_v2'
       and source_ref='OPPORTUNITY:'||new.tender_watch_id::text||':krpp_authenticated_fetch_required'
       and status not in ('mbyllur','kryer','arkivuar');
   elsif new.status = 'failed' then
     update public.tasks
     set status='hapur', done_at=null, priority='larte',
-        detail=coalesce(detail,'')||E'\n\nKRPP authenticated fetch failed after retries: '||coalesce(new.last_error,'unknown error'),
-        updated_at=now()
+        detail=coalesce(detail,'')||E'\n\nKRPP authenticated fetch failed after retries: '||coalesce(new.last_error,'unknown error')
     where source='opportunity_engine_v2'
       and source_ref='OPPORTUNITY:'||new.tender_watch_id::text||':krpp_authenticated_fetch_required';
   end if;
