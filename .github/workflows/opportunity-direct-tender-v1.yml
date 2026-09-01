@@ -14,8 +14,11 @@ on:
     paths:
       - 'scripts/opportunity-engine-v2.mjs'
       - 'scripts/opportunity-engine-v2-runner.mjs'
+      - 'scripts/opportunity-protected-archive-runner.mjs'
       - 'scripts/opportunity-rfq-drafts-v1.mjs'
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
+      - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
+      - 'supabase/functions/pppp-tender-fetch-worker/**'
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
       - 'supabase/migrations/20260901214000_opportunity_promotion_security_and_failure_reconcile.sql'
       - '.github/workflows/opportunity-direct-tender-v1.yml'
@@ -24,8 +27,11 @@ on:
     paths:
       - 'scripts/opportunity-engine-v2.mjs'
       - 'scripts/opportunity-engine-v2-runner.mjs'
+      - 'scripts/opportunity-protected-archive-runner.mjs'
       - 'scripts/opportunity-rfq-drafts-v1.mjs'
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
+      - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
+      - 'supabase/functions/pppp-tender-fetch-worker/**'
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
       - 'supabase/migrations/20260901214000_opportunity_promotion_security_and_failure_reconcile.sql'
       - '.github/workflows/opportunity-direct-tender-v1.yml'
@@ -52,13 +58,14 @@ jobs:
         run: |
           node --check scripts/opportunity-engine-v2.mjs
           node --check scripts/opportunity-engine-v2-runner.mjs
+          node --check scripts/opportunity-protected-archive-runner.mjs
           node --check scripts/opportunity-rfq-drafts-v1.mjs
 
   run:
     if: github.event_name != 'pull_request'
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
@@ -67,11 +74,15 @@ jobs:
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       SYNC_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'apply' }}
       PPPP_OPPORTUNITY_DOSSIER_MAX: '30'
+      PPPP_PROTECTED_ARCHIVE_MAX: '10'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Analyze authenticated KRPP protected archives first
+        run: node scripts/opportunity-protected-archive-runner.mjs
 
       - name: Analyze KRPP APP dossiers and route direct opportunities
         run: node scripts/opportunity-engine-v2-runner.mjs
@@ -85,6 +96,7 @@ jobs:
         with:
           name: direct-tender-opportunity-v1
           path: |
+            tmp/opportunity-protected-archive-v1.json
             tmp/opportunity-engine-v2.json
             tmp/opportunity-rfq-drafts-v1.json
           if-no-files-found: ignore
