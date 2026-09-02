@@ -50,7 +50,10 @@ window.__pstAuthPersistenceLoaded=true;
 var SESSION_KEY='pristeel_session';
 var BACKUP_KEY='pst_auth_remembered_session_v3';
 var ATTEMPT_KEY='pst_auth_restore_attempt_v3';
+var REFRESH_LOCK_KEY='pst_auth_refresh_lock_v1';
 var BACKUP_TTL=30*24*60*60*1000;
+var refreshInFlight=null;
+var refreshBackoffUntil=0;
 
 function parse(v){try{return JSON.parse(v||'null');}catch(e){return null;}}
 function currentSession(){
@@ -73,6 +76,7 @@ function readBackup(){
 }
 function clearRemembered(){
   try{localStorage.removeItem(BACKUP_KEY);}catch(e){}
+  try{localStorage.removeItem(REFRESH_LOCK_KEY);}catch(e){}
   try{sessionStorage.removeItem(ATTEMPT_KEY);}catch(e){}
 }
 function restoreOnce(){
@@ -81,12 +85,64 @@ function restoreOnce(){
   var marker=String(b.at)+'|'+location.pathname;
   try{if(sessionStorage.getItem(ATTEMPT_KEY)===marker)return false;}catch(e){}
   var s={};Object.keys(b.session||{}).forEach(function(k){s[k]=b.session[k];});
-  s.expires_at=0; // force the existing auth code to validate/rotate the refresh token
+  /* Keep an unexpired access token. Only expired/invalid backups need one refresh validation. */
+  if(!Number(s.expires_at)||Date.now()>=Number(s.expires_at))s.expires_at=0;
   try{
     localStorage.setItem(SESSION_KEY,JSON.stringify(s));
     sessionStorage.setItem(ATTEMPT_KEY,marker);
     return true;
   }catch(e){return false;}
+}
+function readRefreshLock(){
+  try{return parse(localStorage.getItem(REFRESH_LOCK_KEY));}catch(e){return null;}
+}
+function releaseRefreshLock(owner){
+  try{var l=readRefreshLock();if(l&&l.owner===owner)localStorage.removeItem(REFRESH_LOCK_KEY);}catch(e){}
+}
+function waitForPeerRefresh(beforeToken,timeoutMs){
+  var started=Date.now();
+  return new Promise(function(resolve){
+    function check(){
+      var s=currentSession();
+      if(s&&s.access_token&&s.access_token!==beforeToken&&Number(s.expires_at)>Date.now()){resolve(s);return;}
+      if(Date.now()-started>=timeoutMs){resolve(null);return;}
+      setTimeout(check,120);
+    }
+    setTimeout(check,120);
+  });
+}
+function installRefreshSingleFlight(){
+  var original=window.authRefreshIfNeeded;
+  if(typeof original!=='function')return false;
+  if(original.__pstSingleFlightV1)return true;
+  function guardedRefresh(){
+    var s=currentSession(),now=Date.now();
+    if(!s||!s.refresh_token)return Promise.resolve(null);
+    if(Number(s.expires_at)&&now<Number(s.expires_at))return Promise.resolve(s);
+    if(refreshInFlight)return refreshInFlight;
+    if(now<refreshBackoffUntil)return Promise.resolve(currentSession());
+    var lock=readRefreshLock(),before=s.access_token||'',owner=String(now)+'|'+Math.random().toString(36).slice(2);
+    if(lock&&Number(lock.until)>now){
+      refreshInFlight=waitForPeerRefresh(before,Math.min(4000,Math.max(500,Number(lock.until)-now+250))).then(function(peer){
+        return peer||currentSession();
+      }).finally(function(){refreshInFlight=null;});
+      return refreshInFlight;
+    }
+    try{localStorage.setItem(REFRESH_LOCK_KEY,JSON.stringify({owner:owner,until:now+8000}));}catch(e){}
+    refreshInFlight=Promise.resolve().then(function(){return original();}).then(function(fresh){
+      if(fresh){refreshBackoffUntil=0;remember();return fresh;}
+      refreshBackoffUntil=Date.now()+5000;
+      return null;
+    }).catch(function(){
+      refreshBackoffUntil=Date.now()+10000;
+      return null;
+    }).finally(function(){releaseRefreshLock(owner);refreshInFlight=null;});
+    return refreshInFlight;
+  }
+  guardedRefresh.__pstSingleFlightV1=true;
+  guardedRefresh.__pstOriginal=original;
+  window.authRefreshIfNeeded=guardedRefresh;
+  return true;
 }
 function gateVisible(){
   var gate=document.getElementById('auth-gate');if(!gate)return false;
@@ -106,6 +162,7 @@ function enhanceForm(){
   return true;
 }
 function recoverVisibleGate(){
+  installRefreshSingleFlight();
   if(!gateVisible()){remember();return;}
   var s=currentSession();
   if(!usable(s)&&!restoreOnce())return;
@@ -125,13 +182,14 @@ function onLogoutClick(event){
   if(/\bdil\b|logout|log out|signout|sign out|dologout/.test(text))clearRemembered();
 }
 function init(){
+  installRefreshSingleFlight();
   enhanceForm();
   if(usable(currentSession()))remember();else restoreOnce();
   document.addEventListener('click',onLogoutClick,true);
   if(document.readyState==='complete')setTimeout(recoverVisibleGate,120);
   else window.addEventListener('load',function(){setTimeout(recoverVisibleGate,120);},{once:true});
-  window.addEventListener('pageshow',function(){enhanceForm();if(usable(currentSession()))remember();});
+  window.addEventListener('pageshow',function(){installRefreshSingleFlight();enhanceForm();if(usable(currentSession()))remember();});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.PSTAuthPersistence={remember:remember,restoreOnce:restoreOnce,clear:clearRemembered,enhanceForm:enhanceForm,recover:recoverVisibleGate,_test:{currentSession:currentSession,readBackup:readBackup,usable:usable}};
+window.PSTAuthPersistence={remember:remember,restoreOnce:restoreOnce,clear:clearRemembered,enhanceForm:enhanceForm,recover:recoverVisibleGate,installRefreshSingleFlight:installRefreshSingleFlight,_test:{currentSession:currentSession,readBackup:readBackup,usable:usable,readRefreshLock:readRefreshLock}};
 })();
