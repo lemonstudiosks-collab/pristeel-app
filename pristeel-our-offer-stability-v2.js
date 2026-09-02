@@ -30,6 +30,10 @@ function lockButton(b){
   },LOCK_MS);
   return true;
 }
+function loadClientOfferFinalize(){
+  if(window.PSTClientOfferFinalizeV1||document.querySelector('script[data-pst-client-offer-finalize]'))return;
+  var s=document.createElement('script');s.src='pristeel-client-offer-finalize-v1.js?v=20260902-1';s.defer=true;s.setAttribute('data-pst-client-offer-finalize','1');document.head.appendChild(s);
+}
 document.addEventListener('click',function(e){
   var b=isSaveButton(e.target);if(!b)return;
   if(b.dataset.pstSaving==='1'){
@@ -37,5 +41,7 @@ document.addEventListener('click',function(e){
   }
   lockButton(b);
 },true);
-window.PSTOurOfferStabilityV2={lockButton:lockButton};
+document.addEventListener('pst:modules-ready',loadClientOfferFinalize);
+loadClientOfferFinalize();
+window.PSTOurOfferStabilityV2={lockButton:lockButton,loadClientOfferFinalize:loadClientOfferFinalize};
 })();
