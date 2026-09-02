@@ -37,7 +37,7 @@ const {JSDOM}=require('jsdom');
   const fileUrl='https://drive.google.com/file/d/f1/view';
   const integrity={
     project,
-    emails:[{id:'e1',gmail_message_id:'m1',subject:'Request for quotation',from_email:'buyer@example.com',sent_at:'2026-08-08T09:00:00Z',snippet:'Please quote the steel structure. Delivery required in October.',gmail_url:'https://mail.google.com/mail/u/0/#all/e1'}],
+    emails:[{id:'e1',gmail_message_id:'m1',gmail_thread_id:'t1',subject:'Request for quotation',from_name:'Christina',from_email:'buyer@example.com',sent_at:'2026-08-08T09:00:00Z',snippet:'Please quote the steel structure. Delivery required in October.'}],
     contacts:[{email:'buyer@example.com'}],bom:[],rfqs:[],supplierOffers:[],ourOffers:[],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[{id:'f1',name:'drawing.pdf',modifiedTime:'2026-08-12T10:00:00Z',webViewLink:fileUrl}]}
   };
   w.PSTProjectDataIntegrity={load:async()=>integrity};
@@ -50,6 +50,10 @@ const {JSDOM}=require('jsdom');
     w.__pstCurrentProjectId=id;w._curProjId=id;w.__pstIntegrityLastData=integrity;
     return true;
   };
+  const priorityContext={id:'a1',project_id:'p1',project_name:'Dukley Budva',client:'ITALIAN STYLE',title:'Analizo përgjigjen e Christina-s',detail:'Christina kërkon konfirmim teknik për shtyllat dhe duhet t’i përgjigjemi.',priority:'high',source:'project_email',captured_at:Date.now()};
+  w.sessionStorage.setItem('pst_priority_action_context_v1',JSON.stringify(priorityContext));
+  const openedMail=[];
+  w.open=(url,name)=>{openedMail.push([String(url),String(name)]);return{focus(){}};};
   w.eval(source);
   await w.pstOpenProjectWorkspace('p1');
 
@@ -59,6 +63,16 @@ const {JSDOM}=require('jsdom');
     ['overview','communication','files','bom','procurement','commercial','execution','finance','activity']);
   assert(w.document.getElementById('pst-pi-body').textContent.includes('Kërkesa → RFQ'),'No-BOM project must recommend direct RFQ path');
   const overviewBody=w.document.getElementById('pst-pi-body');
+  const priorityPanel=overviewBody.querySelector('.pf2-priority-context');
+  assert(priorityPanel,'Opening a project from Priority Actions must retain the selected priority context');
+  assert(priorityPanel.textContent.includes(priorityContext.title),'Priority context must show the exact selected action');
+  assert(priorityPanel.textContent.includes(priorityContext.detail),'Priority context must explain what the user needs to do next');
+  const priorityCta=priorityPanel.querySelector('[data-pf2-action="tab:communication"]');
+  assert(priorityCta,'An email-derived priority must route directly to project communication');
+  assert.strictEqual(priorityCta.getAttribute('data-pwf-area'),'communication','Priority CTA must remain compatible with the canonical project navigation owner');
+  priorityCta.click();
+  assert(w.document.getElementById('pst-pi-body').textContent.includes('Emailat e projektit'),'Priority CTA must open the promised communication surface');
+  w.PSTProjectFirstV2.render('overview');
   assert(!overviewBody.textContent.includes('Workflow'),'Overview must not render the decorative Project-first workflow card');
   assert.strictEqual(overviewBody.querySelectorAll('.pf2-flow').length,0,'Inactive workflow strip must be removed from the project overview');
   const shortcuts=[...overviewBody.querySelectorAll('.pf2-shortcut')];
@@ -84,6 +98,14 @@ const {JSDOM}=require('jsdom');
   const comm=w.document.getElementById('pst-pi-body').textContent;
   assert(comm.includes('Request for quotation'),'Email record must remain visible even without attachment');
   assert(comm.includes('Please quote the steel structure'),'Email content/snippet must be visible as project documentation');
+  const mailCard=w.document.querySelector('.pf2-mail-clickable[data-pf2-mail-url]');
+  assert(mailCard,'An email with a Gmail message ID must make the complete email card clickable');
+  assert.strictEqual(mailCard.getAttribute('data-pf2-mail-url'),'https://mail.google.com/mail/u/0/#all/t1','Gmail URL must be derived from the linked thread ID when gmail_url is absent');
+  mailCard.querySelector('b').click();
+  assert.deepStrictEqual(openedMail,[['https://mail.google.com/mail/u/0/#all/t1','PRISTEEL_GMAIL']],'Clicking anywhere on the email card must open the exact Gmail thread');
+  mailCard.insertAdjacentHTML('beforeend','<button type="button" data-pst-mail-expand>Shfaq emailin e plotë</button>');
+  mailCard.querySelector('[data-pst-mail-expand]').click();
+  assert.strictEqual(openedMail.length,1,'The inline full-email expansion control must not also open Gmail');
 
   w.eval(contactDedupeSource);
   const gmailKey=w.PSTProjectContactViewDedupeV1._test.gmailKey;
@@ -169,3 +191,4 @@ const {JSDOM}=require('jsdom');
 })().catch(e=>{console.error(e);process.exit(1);});
 
 require('./project-duplicate-context-smoke.js');
+require('./native-ui-priority-context-smoke.js');
