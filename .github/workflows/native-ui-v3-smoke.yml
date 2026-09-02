@@ -28,7 +28,7 @@ jobs:
           test -f _site/pristeel-native-ui-v3.js
           test -f _site/pristeel-native-ui-v3-core.js
           grep -Fq 'pristeel-native-ui-v3.js?v=20260901-1' _site/pristeel-roles.js
-          grep -Fq 'pristeel-native-ui-v3-core.js?v=20260902-prioritycontext1' _site/pristeel-native-ui-v3.js
-          grep -Fq '#1E3A8A' _site/pristeel-native-ui-v3-core.js
+          grep -Fq 'pristeel-native-ui-v3-core.js?v=20260902-softpalette1' _site/pristeel-native-ui-v3.js
+          grep -Fq '#806E5A' _site/pristeel-native-ui-v3-core.js
           grep -Fq '#fin-hub-grid>div[onclick*="finSwitchTab"]' _site/pristeel-native-ui-v3-core.js
           grep -Fq 'PPPP found unfinished work' _site/pristeel-native-ui-v3.js

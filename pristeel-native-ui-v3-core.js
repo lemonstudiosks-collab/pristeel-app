@@ -8,7 +8,7 @@ if(window.__pstNativeUiV3)return;
 window.__pstNativeUiV3=true;
 document.documentElement.classList.add('pst-native-ui-ready');
 
-var C={bg:'#F7F8FA',card:'#FFFFFF',text:'#243447',muted:'#7A8798',soft:'#9AA6B2',border:'#E5E7EB',border2:'#D8E0E8',primary:'#2F5F86',blue:'#4F7FA3',accent:'#A7874F',success:'#5F7F68',warning:'#A7874F',danger:'#A86A64'};
+var C={bg:'#F7F5F1',card:'#FCFBF9',text:'#30373B',muted:'#6E7579',soft:'#92989B',border:'#E4DFD7',border2:'#DAD4CB',primary:'#806E5A',blue:'#7F9299',accent:'#A88E68',success:'#7E8E7B',warning:'#A88E68',danger:'#A57B75'};
 function S(v){return String(v==null?'':v);}
 function A(v){return Array.isArray(v)?v:[];}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');}
