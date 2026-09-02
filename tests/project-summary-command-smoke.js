@@ -20,7 +20,7 @@ const {JSDOM}=require('jsdom');
   assert(!bootstrapSource.includes('pristeel-project-first-actions-v1.js?v=20260810-offers2'),'Stale pre-summary ProjectFirst actions cache key must not remain in runtime bootstrap');
   assert(bootstrapSource.includes('pristeel-project-integrity-ui-v1.js?v=20260828-cleanowner1'),'Integrity UI must use the clean-owner cache key');
   assert(bootstrapSource.includes('pristeel-project-load-stability-v2.js?v=20260828-fastopen1'),'Project load stability must use the fast-open cache key');
-  assert(bootstrapSource.includes('pristeel-project-first-v2.js?v=20260828-activeoverview1'),'Project-first overview must use the active-overview cache key');
+  assert(bootstrapSource.includes('pristeel-project-first-v2.js?v=20260902-prioritycontext1'),'Project-first overview must use the priority-context cache key');
   assert(actionsSource.includes("sub.textContent='Drive pa autorizim'"),'Unauthorized permanent Drive must not be labeled as zero files');
   assert(!workspaceSource.includes('>Pamja e vjetër</button>'),'Legacy project-view button must not remain in the main project header');
   assert(!workspaceSource.includes('>Puno me projektin</button>'),'Generic legacy work button must not remain in the main project header');

@@ -16,7 +16,7 @@ for(const token of ['#1E3A8A','#3B82F6','#F7F8FA','#E5E7EB']) must(core.includes
 for(const selector of ['#fin-hub-grid>div[onclick*="finSwitchTab"]','.pst-pm-row','.pst-pm-btn.primary','#page-workspace-project .pf2-card','#pst-pcw-ted-sales-link']) must(core.includes(selector),`real runtime selector missing from core: ${selector}`);
 must(core.includes("r.id='pst-native-home-v3'"),'native Home single owner is missing');
 must(core.includes("document.documentElement.classList.add('pst-native-ui-ready')"),'early UI readiness marker missing');
-must(entry.includes('pristeel-native-ui-v3-core.js?v=20260901-ownership1'),'entry does not load preserved native UI core');
+must(entry.includes('pristeel-native-ui-v3-core.js?v=20260902-prioritycontext1'),'entry does not load the current native UI core');
 must(entry.includes('installRecoveryGate'),'early recovery gate is missing');
 must(entry.includes('__pstOriginalRecoverUnsavedWork'),'recovery gate does not preserve original recovery action');
 must(!entry.includes('window.confirm'),'entry must never monkeypatch or invoke browser confirm');
@@ -35,5 +35,5 @@ const dyn=(manifest.dynamicRuntime||[]).find(x=>x.module==='pristeel-native-ui-v
 must(!!dyn,'native UI entry is not registered in runtime manifest');
 must(dyn&&dyn.loader==='pristeel-roles.js','native UI runtime loader must be pristeel-roles.js');
 must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='3e4c3ac88bef313fb2a37ca229770326d8ad55cb','manifest loader SHA does not match audited roles blob');
-must(manifest.entrypoints.bootstrapGitBlobSha==='427a685acf45c47db68e8c38a11a595748aaed86','manifest bootstrap SHA does not match production bootstrap');
+must(manifest.entrypoints.bootstrapGitBlobSha==='c030a095c6c4395161c5c9448884071ad3232382','manifest bootstrap SHA does not match production bootstrap');
 if(!process.exitCode) console.log('Native UI v3 ownership cleanup smoke OK.');

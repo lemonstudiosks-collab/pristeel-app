@@ -16,11 +16,11 @@ The production bootstrap must preserve strict sequential module loading. Load or
 
 ## Current invariant
 
-The audited registry contains 137 versioned module entries.
+The audited registry contains 149 versioned module entries.
 
 Sequence SHA-256:
 
-`bc0da189bfa60f45ab76c1cc2077c62dbe9525af91dbad096d3e6e2ed2a7979d`
+`96de57adc1d370cd160702e37e487c1046391f7b71c4c2db4a4021a6b843eacc`
 
 At introduction of this registry, the generator reproduces the existing production `pristeel-project-emails.js` byte-for-byte, including its current Git blob SHA.
 
