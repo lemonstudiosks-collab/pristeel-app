@@ -16,6 +16,8 @@ on:
       - 'scripts/opportunity-engine-v2-runner.mjs'
       - 'scripts/opportunity-rfq-drafts-v1.mjs'
       - 'scripts/ted-gc-award-sync-v2.mjs'
+      - 'scripts/ted-gc-award-precision-v3.mjs'
+      - 'scripts/ted-gc-project-role-fallback-v1.mjs'
       - 'scripts/ted-company-role-actions-v2.mjs'
       - 'supabase/functions/pppp-opportunity-draft-generator/**'
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
@@ -29,6 +31,8 @@ on:
       - 'scripts/opportunity-engine-v2-runner.mjs'
       - 'scripts/opportunity-rfq-drafts-v1.mjs'
       - 'scripts/ted-gc-award-sync-v2.mjs'
+      - 'scripts/ted-gc-award-precision-v3.mjs'
+      - 'scripts/ted-gc-project-role-fallback-v1.mjs'
       - 'scripts/ted-company-role-actions-v2.mjs'
       - 'supabase/functions/pppp-opportunity-draft-generator/**'
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
@@ -60,6 +64,8 @@ jobs:
           node --check scripts/opportunity-engine-v2-runner.mjs
           node --check scripts/opportunity-rfq-drafts-v1.mjs
           node --check scripts/ted-gc-award-sync-v2.mjs
+          node --check scripts/ted-gc-award-precision-v3.mjs
+          node --check scripts/ted-gc-project-role-fallback-v1.mjs
           node --check scripts/ted-company-role-actions-v2.mjs
           node --check scripts/ted-winner-contact-history-reuse.mjs
           node --check scripts/ted-winner-contact-enrichment.mjs
@@ -80,6 +86,7 @@ jobs:
       SYNC_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'apply' }}
       TED_GC_AWARD_DAYS: '45'
       TED_GC_MIN_SCORE: '82'
+      TED_GC_FALLBACK_MAX: '20'
       TED_CONTACT_MIN_SCORE: '70'
       TED_CONTACT_MAX_ROWS: '40'
       TED_CONTACT_REFRESH_DAYS: '14'
@@ -94,31 +101,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - name: Discover broader TED GC project awards
         run: node scripts/ted-gc-award-sync-v2.mjs
-
+      - name: Apply TED GC precision gate
+        run: node scripts/ted-gc-award-precision-v3.mjs
       - name: Reuse known winner contacts
         run: node scripts/ted-winner-contact-history-reuse.mjs
-
       - name: Enrich winner public contacts
         run: node scripts/ted-winner-contact-enrichment.mjs
-
       - name: Run baseline winner company classification
         run: node scripts/ted-winner-company-classification.mjs
-
       - name: Rank winner procurement contacts
         run: node scripts/ted-winner-contact-ranking.mjs
-
       - name: Retry unresolved company roles and create route-specific draft actions
         run: node scripts/ted-company-role-actions-v2.mjs
-
+      - name: Route unresolved award-holders by verified GC project role
+        run: node scripts/ted-gc-project-role-fallback-v1.mjs
       - name: Analyze KRPP APP dossiers and route direct opportunities
         run: node scripts/opportunity-engine-v2-runner.mjs
-
       - name: Prepare supplier RFQ draft-review rows for qualified raw-material opportunities
         run: node scripts/opportunity-rfq-drafts-v1.mjs
-
       - name: Upload sanitized Opportunity Engine summary
         if: always()
         uses: actions/upload-artifact@v4
@@ -126,11 +128,13 @@ jobs:
           name: opportunity-engine-v2
           path: |
             tmp/ted-gc-award-sync-v2.json
+            tmp/ted-gc-award-precision-v3.json
             tmp/ted-winner-contact-history-reuse.json
             tmp/ted-winner-contact-enrichment.json
             tmp/ted-winner-company-classification.json
             tmp/ted-winner-contact-ranking.json
             tmp/ted-company-role-actions-v2.json
+            tmp/ted-gc-project-role-fallback-v1.json
             tmp/opportunity-engine-v2.json
             tmp/opportunity-rfq-drafts-v1.json
           if-no-files-found: ignore
