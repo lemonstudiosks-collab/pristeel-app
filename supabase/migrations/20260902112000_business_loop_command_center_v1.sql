@@ -431,7 +431,7 @@ select jsonb_build_object(
   'project',(select to_jsonb(p) from (select id,name,client,ref,business_ref,status,pipeline_stage,operational_state,origin_type,work_model,last_activity_at,last_email_at,updated_at from public.projects where id=p_project_id) p),
   'open_tasks',coalesce((select jsonb_agg(to_jsonb(t) order by t.due_date asc nulls last,t.created_at desc) from (select id,title,detail,due_date,priority,status,source,category,contact_email,created_at from public.tasks where project_id=p_project_id and status not in ('kryer','mbyllur','done','closed') order by due_date asc nulls last,created_at desc limit 12) t),'[]'::jsonb),
   'recent_emails',coalesce((select jsonb_agg(to_jsonb(e) order by e.sent_at desc) from (select gmail_message_id,gmail_thread_id,from_email,subject,snippet,sent_at,direction,has_attachments from public.project_emails where project_id=p_project_id order by sent_at desc limit 8) e),'[]'::jsonb),
-  'latest_analysis',(select jsonb_build_object('analysis',a.analysis,'created_at',a.created_at,'model',a.model) from public.project_analyses a where a.project_id=p_project_id and a.status='complete' order by a.created_at desc limit 1)
+  'latest_analysis',(select jsonb_build_object('analysis',a.analysis,'created_at',a.created_at,'model',a.model) from public.project_analyses a where a.project_id=p_project_id::text and a.status='complete' order by a.created_at desc limit 1)
 );
 $$;
 
@@ -440,8 +440,15 @@ grant execute on function public.pppp_project_brief_v1(uuid) to authenticated, s
 
 -- Use existing 5-minute business intake cadence, but insert two bounded DB-local
 -- incremental steps before the existing edge-function reconciliation.
-update cron.job
-set command = $$
+do $cron$
+declare
+  v_job_id bigint;
+begin
+  select jobid into v_job_id from cron.job where jobname='gmail-project-intake-5m';
+  if v_job_id is not null then
+    perform cron.alter_job(
+      job_id := v_job_id,
+      command := $cmd$
 select public.pppp_promote_new_client_rfq_v1(true,25);
 select public.pppp_reconcile_supplier_waits_v1(true,100);
 select private.gmail_ted_sales_reconcile_internal_request(150);
@@ -451,5 +458,8 @@ select public.pppp_enqueue_automation_http_v1(
   'https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/gmail-project-intake?days=1&limit=120',
   'gmail_tracker_cron_secret',120000,3
 );
-$$
-where jobname='gmail-project-intake-5m';
+$cmd$
+    );
+  end if;
+end;
+$cron$;
