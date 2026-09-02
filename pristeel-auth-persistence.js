@@ -7,6 +7,16 @@
 if(window.__pstAuthPersistenceLoaded)return;
 window.__pstAuthPersistenceLoaded=true;
 
+/* Free-plan safety: coalesce duplicate browser reads before legacy modules start. */
+(function loadSupabaseReadGuard(){
+  if(window.__pstSupabaseReadGuardV1||document.querySelector('script[data-pst-supabase-read-guard]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-supabase-read-guard-v1.js?v=20260902-free1';
+  s.defer=true;
+  s.setAttribute('data-pst-supabase-read-guard','1');
+  document.head.appendChild(s);
+})();
+
 /* Critical project workspace recovery: activate before layered project UI modules. */
 (function loadProjectWorkspaceRepair(){
   if(window.__pstProjectWorkspaceRepairLoaderV1||document.querySelector('script[data-pst-project-workspace-repair-loader]'))return;
