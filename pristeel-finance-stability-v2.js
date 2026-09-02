@@ -1,11 +1,16 @@
 /* PRISTEEL Finance Stability v2
- * Keeps Finance usable if a read request stalls. Does not retry or alter write operations.
+ * Keeps Finance usable if a read request stalls and aligns the Finance surface
+ * with the approved calm PPPP palette. This layer is presentation/read-only:
+ * it does not issue database requests, retry writes, or replace Finance business logic.
  */
 (function(){
 'use strict';
 if(window.__pstFinanceStabilityV2)return;
 window.__pstFinanceStabilityV2=true;
+
 var WAIT=6000;
+var lastActive=false;
+
 function loadingText(el){return el&&/duke ngarkuar/i.test(String(el.textContent||''));}
 function guard(id,label){
   setTimeout(function(){
@@ -14,22 +19,139 @@ function guard(id,label){
     el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:10px 0">'+label+' nuk u ngarkua brenda afatit. Mund të vazhdosh në modul tjetër dhe të provosh përsëri.</div>';
   },WAIT);
 }
-function install(){
-  if(typeof window.finSwitchTab!=='function'||window.finSwitchTab.__pstStabilityV2)return;
-  var original=window.finSwitchTab;
+
+function installStyle(){
+  if(document.getElementById('pst-finance-stability-style'))return;
+  var s=document.createElement('style');
+  s.id='pst-finance-stability-style';
+  s.textContent='\
+#page-finance{--bg:#F7F8FA;--bg2:#F7F8FA;--bg3:#F1F4F7;--bg-card:#fff;--bg-hover:#F5F7F9;--text:#243447;--text2:#526576;--text3:#7A8798;--border:#E5E7EB;--border2:#D8E0E7;--bronze:#2F5F86;--bronze-light:#4F7FA3;--bronze-dark:#254E70;--bronze-bg:rgba(47,95,134,.08);--bronze-text:#2F5F86;--copper:#4F7FA3;--copper-bg:rgba(79,127,163,.08);--green:#5F7F68;--green-bg:rgba(95,127,104,.10);--green-text:#506E58;--red:#A86A64;--red-bg:rgba(168,106,100,.10);--red-text:#925A55;background:#F7F8FA!important;color:#243447!important}\
+#page-finance>.card,#page-finance .card{background:#fff!important;border-color:#E5E7EB!important;box-shadow:0 1px 2px rgba(36,52,71,.04)!important}\
+#fin-hub{padding:16px!important;border:1px solid #E5E7EB!important;border-radius:14px!important}\
+#fin-hub-grid{gap:12px!important}\
+#fin-hub-grid>*{border:1px solid #E5E7EB!important;background:#fff!important;box-shadow:0 1px 2px rgba(36,52,71,.04)!important;transform:none!important;border-radius:12px!important}\
+#fin-hub-grid>*:hover{border-color:#D3DDE6!important;box-shadow:0 5px 16px rgba(36,52,71,.08)!important;transform:translateY(-1px)!important}\
+#fin-hub-grid>a{border-style:solid!important}\
+#fin-hub-grid>*>div[style*="position:absolute"]{background:#4F7FA3!important;height:3px!important}\
+#fin-hub-grid>*>div[style*="font-weight:650"]{color:#243447!important}\
+#fin-hub-grid>a>div[style*="font-weight:650"]{color:#2F5F86!important}\
+#fin-tabs{gap:7px!important;padding:2px 0 4px}\
+#fin-tabs .btn{background:#fff!important;border:1px solid #DDE4EA!important;color:#526576!important;box-shadow:none!important}\
+#fin-tabs .btn:hover{background:#F4F7F9!important;border-color:#CBD7E0!important;color:#243447!important}\
+#fin-tabs .btn.btn-primary{background:#2F5F86!important;border-color:#2F5F86!important;color:#fff!important}\
+#fin-atk-types>div{border:1px solid #E5E7EB!important;background:#fff!important;box-shadow:0 1px 2px rgba(36,52,71,.04)!important;transform:none!important}\
+#fin-atk-types>div:hover{border-color:#D3DDE6!important;box-shadow:0 4px 14px rgba(36,52,71,.07)!important}\
+#fin-atk-types>div>div[style*="position:absolute"]{background:#A7874F!important;height:3px!important}\
+#fin-atk-types>div>div[style*="font-weight:650"]{color:#243447!important}\
+#fin-inv-sum>div{border:1px solid #E5E7EB!important;border-left:3px solid #4F7FA3!important;box-shadow:none!important}\
+#fin-inv-sum>div:nth-child(2){border-left-color:#A7874F!important}\
+#page-finance input,#page-finance select,#page-finance textarea{background:#fff!important;border-color:#DDE4EA!important;color:#243447!important}\
+#page-finance input:focus,#page-finance select:focus,#page-finance textarea:focus{border-color:#4F7FA3!important;box-shadow:0 0 0 3px rgba(79,127,163,.10)!important}\
+#page-finance table{color:#243447}\
+#page-finance thead th{color:#7A8798!important;border-bottom-color:#E5E7EB!important}\
+#page-finance tbody tr{border-bottom-color:#EEF1F4!important}\
+';
+  document.head.appendChild(s);
+}
+
+function markTab(tab){
+  ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(key){
+    var b=document.getElementById('fin-tab-'+key);
+    if(!b)return;
+    b.classList.toggle('btn-primary',key===tab);
+  });
+}
+function clearTabs(){
+  ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(key){
+    var b=document.getElementById('fin-tab-'+key);
+    if(b)b.classList.remove('btn-primary');
+  });
+}
+function polish(){
+  installStyle();
+  var p=document.getElementById('page-finance');
+  if(p)p.setAttribute('data-pst-finance-owned','1');
+}
+
+function guardTab(tab){
+  if(tab==='inv')guard('fin-inv-list','Faturat');
+  if(tab==='supp')guard('ivin-list','Faturat e furnitorëve');
+  if(tab==='exp')guard('fin-exp-list','Shpenzimet');
+  if(tab==='atk')guard('fin-atk-list','Tatimet');
+  if(tab==='aging')guard('fin-aging-list','Afatet e pagesave');
+}
+
+function installSwitch(){
+  var current=window.finSwitchTab;
+  if(typeof current!=='function'||current.__pstStabilityV2)return false;
   var wrapped=function(tab){
-    var out=original.apply(this,arguments);
-    if(tab==='inv')guard('fin-inv-list','Faturat');
-    if(tab==='supp')guard('ivin-list','Faturat e furnitorëve');
-    if(tab==='exp')guard('fin-exp-list','Shpenzimet');
-    if(tab==='atk')guard('fin-atk-list','Tatimet');
-    if(tab==='aging')guard('fin-aging-list','Afatet e pagesave');
+    var out=current.apply(this,arguments);
+    markTab(tab);
+    guardTab(tab);
+    setTimeout(polish,0);
     return out;
   };
   wrapped.__pstStabilityV2=true;
+  wrapped.__pstFinanceBase=current;
   window.finSwitchTab=wrapped;
+  return true;
 }
+
+function installHub(){
+  var current=window.finShowHub;
+  if(typeof current!=='function'||current.__pstStabilityV2)return false;
+  var wrapped=function(){
+    var out=current.apply(this,arguments);
+    clearTabs();
+    setTimeout(polish,0);
+    return out;
+  };
+  wrapped.__pstStabilityV2=true;
+  wrapped.__pstFinanceBase=current;
+  window.finShowHub=wrapped;
+  return true;
+}
+
+function isFinanceActive(){
+  var p=document.getElementById('page-finance');
+  return !!(p&&p.classList.contains('active')&&p.style.display!=='none');
+}
+function syncActivation(){
+  var active=isFinanceActive();
+  if(active&&!lastActive){
+    setTimeout(function(){
+      if(!isFinanceActive())return;
+      installSwitch();
+      installHub();
+      polish();
+      if(typeof window.finShowHub==='function')window.finShowHub();
+    },60);
+  }
+  lastActive=active;
+}
+function watchFinancePage(){
+  var p=document.getElementById('page-finance');
+  if(!p||p.__pstFinanceStabilityObserved)return false;
+  p.__pstFinanceStabilityObserved=true;
+  if(typeof MutationObserver==='function'){
+    var o=new MutationObserver(syncActivation);
+    o.observe(p,{attributes:true,attributeFilter:['class','style']});
+    p.__pstFinanceStabilityObserver=o;
+  }
+  syncActivation();
+  return true;
+}
+
+function install(){
+  installStyle();
+  installSwitch();
+  installHub();
+  watchFinancePage();
+  polish();
+}
+
 install();
+[120,500,1200,2500].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTFinanceStabilityV2={install:install,guard:guard};
+window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation};
 })();
