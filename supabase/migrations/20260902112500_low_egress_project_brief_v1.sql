@@ -43,7 +43,7 @@ select jsonb_build_object(
       'created_at',a.created_at,'model',a.model
     )
     from public.project_analyses a
-    where a.project_id=p_project_id and a.status='complete'
+    where a.project_id=p_project_id::text and a.status='complete'
     order by a.created_at desc limit 1
   )
 );
