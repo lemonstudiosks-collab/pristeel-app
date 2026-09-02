@@ -73,7 +73,7 @@ async function closeStaleWork(access,row,mode){
   if(mode!=='apply')return;
   const now=new Date().toISOString();
   await rest(access,`pppp_opportunity_actions?tender_watch_id=eq.${encodeURIComponent(row.id)}&status=in.(background,draft_review)`,{
-    method:'PATCH',body:{status:'resolved',payload:{precision_closed:true,precision_version:VERSION},updated_at:now},prefer:'return=minimal'
+    method:'PATCH',body:{status:'resolved',updated_at:now},prefer:'return=minimal'
   }).catch(()=>{});
   const pattern=encodeURIComponent(`OPPORTUNITY:${row.id}:*`);
   await rest(access,`tasks?source=eq.opportunity_engine_v2&source_ref=like.${pattern}&status=eq.hapur`,{
@@ -91,10 +91,9 @@ export async function runTedGcAwardPrecisionV3({mode=process.env.SYNC_MODE||'pre
   const access=await resolveSupabaseWorkflowAccess({supabaseUrl});
   const rows=await rest(access,'kek_tender_watch?select=*&relevance_score=gte.70&order=published_date.desc&limit=2000');
   const candidates=array(rows).filter(r=>String(r?.payload?.source||'').toUpperCase()==='TED'&&r?.payload?.notice_phase==='award'&&r?.payload?.discovery_lane==='gc_project_award'&&r.status!=='ignored');
-  const checked=[],excluded=[];
+  const excluded=[];
   for(const row of candidates){
     const p=evaluateGcAwardPrecision(row,{minScore});
-    checked.push({id:row.id,title:row.title,score:p.score,relevant:p.relevant,reason:p.reason,cpvs:p.cpvs});
     if(p.relevant)continue;
     excluded.push({id:row.id,title:row.title,reason:p.reason,cpvs:p.cpvs});
     if(mode==='apply'){
