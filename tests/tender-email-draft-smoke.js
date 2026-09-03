@@ -4,6 +4,7 @@ const assert=require('assert');
 
 const source=fs.readFileSync('pristeel-tender-priority-actions-v1.js','utf8');
 const projectCentric=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
+const securityHardening=fs.readFileSync('supabase/migrations/20260903111000_tender_security_hardening_v1.sql','utf8');
 const sandbox={
   window:{},
   document:{getElementById:()=>null,addEventListener:()=>{},head:{appendChild:()=>{}},createElement:()=>({})},
@@ -69,4 +70,13 @@ assert.ok(source.includes('/users/me/drafts'),'Email workflow must create a Gmai
 assert.ok(source.includes("preferred='arianit.vllahiu@prissteel.com'"),'The Arianit Gmail alias must be preferred for the real signature');
 assert.ok(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(source),'Email must remain human-gated');
 
-console.log('Tender email draft language, template, signature and human-gate smoke test passed.');
+assert.ok(/alter table public\.tender_email_links enable row level security/i.test(securityHardening),'TED email links must have RLS enabled');
+assert.ok(/tender_email_links_select_authenticated/.test(securityHardening),'Authenticated TED email-link reads must be explicit');
+assert.ok(/tender_email_links_(insert|update|delete)_can_write/.test(securityHardening),'TED email-link writes must remain can_write gated');
+assert.ok(/pppp_tender_operating_lanes_v1 set \(security_invoker=true\)/i.test(securityHardening),'Tender lane view must respect caller RLS');
+assert.ok(/pppp_ted_sales_outreach_v1 set \(security_invoker=true\)/i.test(securityHardening),'TED outreach view must respect caller RLS');
+assert.ok(/pppp_ted_award_candidates_by_email_v1[\s\S]*security invoker/i.test(securityHardening),'TED award lookup RPC must not elevate privileges');
+assert.ok(/tender_email_links_gmail_message_id_idx/.test(securityHardening),'TED email-link Gmail FK must have a covering index');
+assert.ok(!/messages\/send|sendEmail\s*\(/.test(securityHardening),'Security hardening must not introduce external email sending');
+
+console.log('Tender email draft language, template, signature, human-gate and security hardening smoke test passed.');
