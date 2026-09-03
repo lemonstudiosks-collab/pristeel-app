@@ -54,6 +54,42 @@ function installStyle(){
   document.head.appendChild(s);
 }
 
+/* Invoice PDF/preview only: preserve the approved shared document model and
+ * change only its colour palette. Offers remain on the original copper palette. */
+var INVOICE_DOC_PALETTE={
+  '#B87333':'#2F5F86',
+  '#F8F6F3':'#F4F7FA',
+  '#EAE5DE':'#DCE5EC',
+  '#FCFBF9':'#F8FAFC',
+  '#E8E4DE':'#DDE5EB',
+  '#8A8378':'#6E7F8E'
+};
+function applyInvoiceDocumentTheme(){
+  var el=document.getElementById('iv-preview');
+  if(!el||!el.innerHTML||/Plotëso të dhënat/i.test(el.textContent||''))return false;
+  var html=String(el.innerHTML);
+  Object.keys(INVOICE_DOC_PALETTE).forEach(function(from){
+    html=html.split(from).join(INVOICE_DOC_PALETTE[from]);
+    html=html.split(from.toLowerCase()).join(INVOICE_DOC_PALETTE[from]);
+  });
+  el.innerHTML=html;
+  el.setAttribute('data-pst-invoice-document-theme','steel-blue-v1');
+  return true;
+}
+function installInvoiceDocumentTheme(){
+  var current=window.genInvoiceOut;
+  if(typeof current!=='function'||current.__pstInvoiceDocumentThemeV1)return false;
+  var wrapped=function(){
+    var out=current.apply(this,arguments);
+    applyInvoiceDocumentTheme();
+    return out;
+  };
+  wrapped.__pstInvoiceDocumentThemeV1=true;
+  wrapped.__pstInvoiceDocumentBase=current;
+  window.genInvoiceOut=wrapped;
+  return true;
+}
+
 function markTab(tab){
   ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(key){
     var b=document.getElementById('fin-tab-'+key);
@@ -69,6 +105,7 @@ function clearTabs(){
 }
 function polish(){
   installStyle();
+  installInvoiceDocumentTheme();
   var p=document.getElementById('page-finance');
   if(p)p.setAttribute('data-pst-finance-owned','1');
 }
@@ -123,6 +160,7 @@ function syncActivation(){
       if(!isFinanceActive())return;
       installSwitch();
       installHub();
+      installInvoiceDocumentTheme();
       polish();
       if(typeof window.finShowHub==='function')window.finShowHub();
     },60);
@@ -146,6 +184,7 @@ function install(){
   installStyle();
   installSwitch();
   installHub();
+  installInvoiceDocumentTheme();
   watchFinancePage();
   polish();
 }
@@ -153,5 +192,5 @@ function install(){
 install();
 [120,500,1200,2500].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation};
+window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation,applyInvoiceDocumentTheme:applyInvoiceDocumentTheme,installInvoiceDocumentTheme:installInvoiceDocumentTheme,invoiceDocumentPalette:INVOICE_DOC_PALETTE};
 })();
