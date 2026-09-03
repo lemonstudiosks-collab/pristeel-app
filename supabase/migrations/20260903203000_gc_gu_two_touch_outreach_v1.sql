@@ -82,7 +82,9 @@ begin
    where id=p.id;
 
   if p.contact_id is not null then
-    update public.contacts set last_contact=greatest(coalesce(last_contact,p_sent_at),p_sent_at) where id=p.contact_id;
+    update public.contacts
+       set last_contact=greatest(coalesce(last_contact,(p_sent_at at time zone 'Europe/Belgrade')::date),(p_sent_at at time zone 'Europe/Belgrade')::date)
+     where id=p.contact_id;
   end if;
 
   return jsonb_build_object('ok',true,'outreach_contact_id',v_outreach_id,'followup_due_date',v_due,'status','contacted_1');
@@ -130,7 +132,9 @@ begin
    where id=p.id;
 
   if p.contact_id is not null then
-    update public.contacts set last_contact=greatest(coalesce(last_contact,p_sent_at),p_sent_at) where id=p.contact_id;
+    update public.contacts
+       set last_contact=greatest(coalesce(last_contact,(p_sent_at at time zone 'Europe/Belgrade')::date),(p_sent_at at time zone 'Europe/Belgrade')::date)
+     where id=p.contact_id;
   end if;
   return jsonb_build_object('ok',true,'status','contacted_2','no_more_auto',true);
 end;
