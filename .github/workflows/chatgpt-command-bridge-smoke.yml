@@ -1,0 +1,29 @@
+name: ChatGPT command bridge smoke
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/chatgpt-command-bridge/**'
+      - 'supabase/migrations/20260903134500_chatgpt_command_write_bridge_v1.sql'
+      - 'tests/chatgpt-command-bridge-smoke.mjs'
+      - '.github/workflows/chatgpt-command-bridge-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/chatgpt-command-bridge/**'
+      - 'supabase/migrations/20260903134500_chatgpt_command_write_bridge_v1.sql'
+      - 'tests/chatgpt-command-bridge-smoke.mjs'
+      - '.github/workflows/chatgpt-command-bridge-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/chatgpt-command-bridge-smoke.mjs
