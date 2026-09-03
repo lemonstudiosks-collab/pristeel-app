@@ -6,6 +6,7 @@ const enforcer = fs.readFileSync('supabase/migrations/20260825101200_task_lifecy
 const hardening = fs.readFileSync('supabase/migrations/20260903073000_automation_backlog_hardening_v1.sql', 'utf8');
 const closeout = fs.readFileSync('supabase/migrations/20260903085000_automation_operational_closeout_v1.sql', 'utf8');
 const chatgptBridge = fs.readFileSync('supabase/migrations/20260903113500_chatgpt_plus_bridge_v1.sql', 'utf8');
+const chatgptReadonly = fs.readFileSync('supabase/migrations/20260903115000_chatgpt_plus_readonly_connector_access_v1.sql', 'utf8');
 
 assert.match(lifecycle, /pppp_task_lifecycle_reconcile_v1/);
 assert.match(lifecycle, /task-lifecycle-reconcile-15m/);
@@ -62,5 +63,12 @@ assert.match(chatgptBridge, /'chatgpt_pppp_bridge'/);
 assert.match(chatgptBridge, /revoke all on function public\.pppp_chatgpt_project_snapshot_v1[\s\S]*authenticated/);
 assert.match(chatgptBridge, /grant execute on function public\.pppp_chatgpt_project_snapshot_v1[\s\S]*service_role/);
 assert(!/gmail\.users\.messages\.send|net\.http_post\(|status\s*=\s*'won'|insert\s+into\s+public\.(purchase_orders|contracts)/i.test(chatgptBridge), 'ChatGPT Plus bridge must not perform external or commitment actions');
+
+assert.match(chatgptReadonly, /rolname='supabase_read_only_user'/);
+assert.match(chatgptReadonly, /GRANT EXECUTE ON FUNCTION public\.pppp_chatgpt_search_projects_v1/);
+assert.match(chatgptReadonly, /GRANT EXECUTE ON FUNCTION public\.pppp_chatgpt_priority_actions_v1/);
+assert.match(chatgptReadonly, /GRANT EXECUTE ON FUNCTION public\.pppp_chatgpt_project_snapshot_v1/);
+assert.match(chatgptReadonly, /REVOKE ALL ON FUNCTION public\.pppp_chatgpt_record_context_suggestion_v1[\s\S]*FROM supabase_read_only_user/);
+assert(!/GRANT EXECUTE ON FUNCTION public\.pppp_chatgpt_record_context_suggestion_v1[\s\S]*TO supabase_read_only_user/i.test(chatgptReadonly), 'read-only ChatGPT connector must never receive the context write helper');
 
 console.log('Task lifecycle reconciliation smoke: OK');
