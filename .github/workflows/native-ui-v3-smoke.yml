@@ -13,7 +13,7 @@ jobs:
       - name: Syntax check early presentation owner
         run: |
           node --check pristeel-native-ui-v3.js
-          node --check pristeel-native-ui-v3-core.js
+          node --check pristeel-native-ui-v4-core.js
           node --check pristeel-roles.js
       - name: Verify native UI contracts
         run: |
@@ -26,9 +26,10 @@ jobs:
       - name: Verify early UI is packaged
         run: |
           test -f _site/pristeel-native-ui-v3.js
-          test -f _site/pristeel-native-ui-v3-core.js
+          test -f _site/pristeel-native-ui-v4-core.js
           grep -Fq 'pristeel-native-ui-v3.js?v=20260901-1' _site/pristeel-roles.js
-          grep -Fq 'pristeel-native-ui-v3-core.js?v=20260902-softpalette1' _site/pristeel-native-ui-v3.js
-          grep -Fq '#806E5A' _site/pristeel-native-ui-v3-core.js
+          grep -Fq 'pristeel-native-ui-v4-core.js?v=20260903-singleowner1' _site/pristeel-native-ui-v3.js
+          grep -Fq '#4F97AF' _site/pristeel-native-ui-v4-core.js
+          grep -Fq 'Pasqyra operative' _site/pristeel-native-ui-v4-core.js
           grep -Fq '#fin-hub-grid>div[onclick*="finSwitchTab"]' _site/pristeel-native-ui-v3-core.js
-          grep -Fq 'PPPP found unfinished work' _site/pristeel-native-ui-v3.js
+          grep -Fq 'PPPP gjeti punë të pambyllur' _site/pristeel-native-ui-v3.js
