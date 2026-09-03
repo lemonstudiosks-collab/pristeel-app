@@ -19,6 +19,7 @@ jobs:
         run: |
           node tests/native-ui-v3-smoke.js
           node tests/ui-ownership-cleanup-smoke.js
+          node tests/home-single-owner-albanian-smoke.js
       - name: Verify active runtime manifest
         run: node scripts/runtime-manifest-check.mjs
       - name: Build production-shaped Pages artifact
