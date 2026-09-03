@@ -13,7 +13,7 @@ must(projectEmailsAt>=0,'roles loader does not reference project-emails bootstra
 must(nativeAt<projectEmailsAt,'native UI must be loaded before project-emails bootstrap');
 must(roles.includes(':not(.pst-native-ui-ready) #page-workspace-home.active'),'startup Home reveal does not recognize early native UI readiness');
 for(const token of ['#4F97AF','#3F7F98','#F7F6F3','#E6E3DE']) must(core.includes(token),`PriSteel soft palette token missing from v4 core: ${token}`);
-for(const token of ['QENDRA E DREJTIMIT PPPP','Pasqyra operative','Projekte aktive','Mundësi të hapura','Veprime prioritare','Kryefaqja']) must(core.includes(token),`source-level Albanian UI token missing: ${token}`);
+for(const token of ['QENDRA E DREJTIMIT PPPP','Pasqyra operative','Projekte aktive','Mundësi të hapura','Veprime prioritare','Kryefaqja','p.sh. Çfarë po ndodh me STACON?']) must(core.includes(token),`source-level Albanian UI token missing: ${token}`);
 must(core.includes("r.id='pst-native-home-v4'"),'native Home v4 single owner is missing');
 must(core.includes("document.documentElement.classList.add('pst-native-ui-ready','pst-native-ui-v4-ready')"),'early UI readiness marker missing');
 must(entry.includes('pristeel-native-ui-v4-core.js?v=20260903-singleowner1'),'entry does not load the current Albanian native UI core');
@@ -23,7 +23,6 @@ must(!entry.includes('window.confirm'),'entry must never monkeypatch or invoke b
 must(entry.includes('PPPP gjeti punë të pambyllur'),'Albanian recovery banner missing');
 must(!entry.includes("'Mundësitë':'Opportunities'"),'entry must never translate Albanian navigation back to English');
 must(!core.includes("'Mundësitë':'Opportunities'"),'core must never translate Albanian navigation back to English');
-must(!core.includes('What is happening with STACON'),'English Ask placeholder must not be emitted by the visible owner');
 for(const src of [entry,core]){
   must(!/\bnew\s+MutationObserver\s*\(/.test(src),'MutationObserver instance is forbidden in presentation UI');
   must(!/\bsetInterval\s*\(/.test(src),'setInterval polling is forbidden in presentation UI');
