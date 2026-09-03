@@ -4,6 +4,8 @@ const assert=require('assert');
 
 const source=fs.readFileSync('pristeel-tender-priority-actions-v1.js','utf8');
 const projectCentric=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
+const draftStateSource=fs.readFileSync('pristeel-opportunity-draft-state-v1.js','utf8');
+const askBridgeSource=fs.readFileSync('pristeel-home-ask-functional-owner-v1.js','utf8');
 const securityHardening=fs.readFileSync('supabase/migrations/20260903111000_tender_security_hardening_v1.sql','utf8');
 const sandbox={
   window:{},
@@ -70,6 +72,16 @@ assert.ok(source.includes('/users/me/drafts'),'Email workflow must create a Gmai
 assert.ok(source.includes("preferred='arianit.vllahiu@prissteel.com'"),'The Arianit Gmail alias must be preferred for the real signature');
 assert.ok(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(source),'Email must remain human-gated');
 
+assert.ok(draftStateSource.includes("outreach_draft"),'Opportunity draft state must persist on the canonical tender payload');
+assert.ok(draftStateSource.includes("pst-pcw-has-draft")&&draftStateSource.includes('DRAFT EMAILI U KRIJUA'),'Persisted draft state must visibly distinguish the Opportunity card');
+assert.ok(draftStateSource.includes("Drafti ekziston · Hap Gmail"),'Existing draft state must prevent the normal create-draft CTA from appearing unchanged');
+assert.ok(draftStateSource.includes("human_send_required:true"),'Persisted draft state must preserve the human-send requirement');
+assert.ok(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(draftStateSource),'Draft-state persistence must never send email');
+
+assert.ok(askBridgeSource.includes('MutationObserver'),'Ask bridge must survive the late Project Control Home owner instead of expiring after early startup retries');
+assert.ok(askBridgeSource.includes('installAskOwnerQueryBridge')&&askBridgeSource.includes("PSTProjectControlHomeV1.render"),'Visible Ask shell must remain connected to the canonical owner render path after DOM adoption');
+assert.ok(askBridgeSource.includes('90000'),'Ask bridge must remain bounded but cover the known long ordered bootstrap window');
+
 assert.ok(/alter table public\.tender_email_links enable row level security/i.test(securityHardening),'TED email links must have RLS enabled');
 assert.ok(/tender_email_links_select_authenticated/.test(securityHardening),'Authenticated TED email-link reads must be explicit');
 assert.ok(/tender_email_links_(insert|update|delete)_can_write/.test(securityHardening),'TED email-link writes must remain can_write gated');
@@ -79,4 +91,4 @@ assert.ok(/pppp_ted_award_candidates_by_email_v1[\s\S]*security invoker/i.test(s
 assert.ok(/tender_email_links_gmail_message_id_idx/.test(securityHardening),'TED email-link Gmail FK must have a covering index');
 assert.ok(!/messages\/send|sendEmail\s*\(/.test(securityHardening),'Security hardening must not introduce external email sending');
 
-console.log('Tender email draft language, template, signature, human-gate and security hardening smoke test passed.');
+console.log('Tender email draft language, persistence, duplicate guard, Ask owner bridge and security smoke test passed.');
