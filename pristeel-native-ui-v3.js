@@ -91,11 +91,26 @@ function installCompactHomeCss(){
 }
 function currentAskResult(){return document.querySelector('#pst-native-home-v4 .pst-live-result')||document.querySelector('#page-workspace-home .pst-live-result');}
 function dismissAskModal(){var r=currentAskResult();if(!r)return false;r.setAttribute('data-pst-dismissed','1');r.hidden=true;return true;}
+function installAskOwnerQueryBridge(){
+  var owner=document.getElementById('pst-project-control-home-v2'),shell=document.querySelector('#pst-native-home-v4 .pst-live-command-shell');
+  if(!owner||!shell||owner.__pstAskQueryBridge)return !!(owner&&owner.__pstAskQueryBridge);
+  var original=owner.querySelector.bind(owner);
+  owner.querySelector=function(selector){
+    if(selector==='.pst-live-result'||selector==='.pst-live-send'||selector==='.pst-live-input'||selector==='.pst-live-command'){
+      var live=document.querySelector('#pst-native-home-v4 .pst-live-command-shell'),found=live&&live.querySelector(selector);
+      if(found)return found;
+    }
+    return original(selector);
+  };
+  owner.__pstAskQueryBridge=true;
+  return true;
+}
 function installAskModalChrome(){
   var shell=document.querySelector('#pst-native-home-v4 .pst-live-command-shell');
   if(!shell)return false;
   var result=shell.querySelector('.pst-live-result');
   if(!result)return false;
+  installAskOwnerQueryBridge();
   var close=shell.querySelector('.pst-ask-modal-close');
   if(!close){close=document.createElement('button');close.type='button';close.className='pst-ask-modal-close';close.setAttribute('aria-label','Mbyll përgjigjen');close.title='Mbyll';close.textContent='×';result.insertAdjacentElement('afterend',close);close.addEventListener('click',dismissAskModal);}
   if(shell.dataset.pstAskModalBound!=='1'){
@@ -118,7 +133,8 @@ function loadCore(){
 }
 installEntryCss();installRecoveryGate();[0,80,220].forEach(function(ms){setTimeout(installRecoveryGate,ms);});
 document.addEventListener('pst:modules-ready',apply,{once:true});
+document.addEventListener('pst:native-home-ready',function(){applyHomePresentation();setTimeout(applyHomePresentation,240);});
 window.addEventListener('pageshow',apply,{once:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installRecoveryGate();loadCore();},{once:true});else loadCore();
-window.PSTUiOwnershipCleanupV1={apply:apply,installRecoveryGate:installRecoveryGate,installAskModalChrome:installAskModalChrome,dismissAskModal:dismissAskModal};
+window.PSTUiOwnershipCleanupV1={apply:apply,installRecoveryGate:installRecoveryGate,installAskModalChrome:installAskModalChrome,installAskOwnerQueryBridge:installAskOwnerQueryBridge,dismissAskModal:dismissAskModal};
 })();
