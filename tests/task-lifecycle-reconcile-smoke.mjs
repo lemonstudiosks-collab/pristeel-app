@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 const lifecycle = fs.readFileSync('supabase/migrations/20260825101000_task_lifecycle_reconcile_v1.sql', 'utf8');
 const enforcer = fs.readFileSync('supabase/migrations/20260825101200_task_lifecycle_close_enforcer_v1.sql', 'utf8');
 const hardening = fs.readFileSync('supabase/migrations/20260903073000_automation_backlog_hardening_v1.sql', 'utf8');
+const closeout = fs.readFileSync('supabase/migrations/20260903085000_automation_operational_closeout_v1.sql', 'utf8');
 
 assert.match(lifecycle, /pppp_task_lifecycle_reconcile_v1/);
 assert.match(lifecycle, /task-lifecycle-reconcile-15m/);
@@ -34,5 +35,16 @@ assert.match(hardening, /pppp_documents_registry_doc_nr_guard_v1/);
 assert.match(hardening, /pg_advisory_xact_lock\(hashtext\('documents_registry:doc_nr:'/);
 assert.match(hardening, /errcode='23505'/);
 assert(!hardening.includes('update public.documents_registry\nset doc_nr'), 'historical document numbers must never be rewritten by collision prevention');
+
+assert.match(closeout, /pppp_automation_success_closes_failure_alerts_v1/);
+assert.match(closeout, /automation-recovered/);
+assert.match(closeout, /project-drive-reconciler-30m/);
+assert.match(closeout, /cron\.alter_job\(v_jobid,active:=false\)/);
+assert.match(closeout, /google-drive-dwd-scope/);
+assert.match(closeout, /pppp_drive_dwd_failure_collapse_v1/);
+assert.match(closeout, /supplier-level follow-up/);
+assert.match(closeout, /pppp_followup_rfq_identity_guard_v1/);
+assert.match(closeout, /supplier-followup-dedup/);
+assert(!closeout.includes('send email'), 'closeout migration must not introduce external sending');
 
 console.log('Task lifecycle reconciliation smoke: OK');
