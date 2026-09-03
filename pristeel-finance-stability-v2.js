@@ -64,15 +64,34 @@ var INVOICE_DOC_PALETTE={
   '#E8E4DE':'#DDE5EB',
   '#8A8378':'#6E7F8E'
 };
+var INVOICE_DOC_RGB_PALETTE={
+  'rgb(184, 115, 51)':'rgb(47, 95, 134)',
+  'rgb(248, 246, 243)':'rgb(244, 247, 250)',
+  'rgb(234, 229, 222)':'rgb(220, 229, 236)',
+  'rgb(252, 251, 249)':'rgb(248, 250, 252)',
+  'rgb(232, 228, 222)':'rgb(221, 229, 235)',
+  'rgb(138, 131, 120)':'rgb(110, 127, 142)'
+};
+function replaceInvoicePaletteText(text){
+  var out=String(text||'');
+  Object.keys(INVOICE_DOC_PALETTE).forEach(function(from){
+    out=out.split(from).join(INVOICE_DOC_PALETTE[from]);
+    out=out.split(from.toLowerCase()).join(INVOICE_DOC_PALETTE[from]);
+  });
+  Object.keys(INVOICE_DOC_RGB_PALETTE).forEach(function(from){
+    out=out.split(from).join(INVOICE_DOC_RGB_PALETTE[from]);
+  });
+  return out;
+}
 function applyInvoiceDocumentTheme(){
   var el=document.getElementById('iv-preview');
   if(!el||!el.innerHTML||/Plotëso të dhënat/i.test(el.textContent||''))return false;
-  var html=String(el.innerHTML);
-  Object.keys(INVOICE_DOC_PALETTE).forEach(function(from){
-    html=html.split(from).join(INVOICE_DOC_PALETTE[from]);
-    html=html.split(from.toLowerCase()).join(INVOICE_DOC_PALETTE[from]);
+  el.innerHTML=replaceInvoicePaletteText(el.innerHTML);
+  Array.prototype.forEach.call(el.querySelectorAll('[style]'),function(node){
+    var css=node.getAttribute('style');
+    var themed=replaceInvoicePaletteText(css);
+    if(themed!==css)node.setAttribute('style',themed);
   });
-  el.innerHTML=html;
   el.setAttribute('data-pst-invoice-document-theme','steel-blue-v1');
   return true;
 }
