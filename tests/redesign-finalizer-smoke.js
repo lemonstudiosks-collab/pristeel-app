@@ -87,9 +87,12 @@ function stripComments(s){
   priorityDom.window.close();
 
   const rdDom = new JSDOM(`<!doctype html><html><head></head><body>
+    <div id="pst-ws-sidebar"><nav id="pst-ws-canonical-nav"><button class="pst-ws-navbtn" data-key="tenders"><span class="pst-nav-label">Opportunities</span></button></nav><div class="pst-ws-brand"><small>Workspace</small></div></div>
+    <div id="page-workspace-home"><h2 id="ops">Operations overview</h2><span id="platform-live">Live platform data</span></div>
     <span id="tiny" style="font-size:7px">tiny meta</span>
     <b id="small" style="font-size:9px">small title</b>
     <button id="control" style="font-size:10px">Action</button>
+    <button id="dark" style="background-color:rgb(63,127,152);font-size:12px">Dark action</button>
     <p id="normal" style="font-size:14px">Normal body</p>
     <div id="of-pre"><span id="previewTiny" style="font-size:7px">PDF preview</span></div>
     <section class="pst-eoi-card"><header><div><b>Email offers</b><span>Meta</span></div><button class="pst-eoi-btn">Scan</button></header></section>
@@ -103,9 +106,18 @@ function stripComments(s){
   assert(rw.document.getElementById('control').classList.contains('pst-rd-control'), 'Small control text was not normalized');
   assert(!/pst-rd-/.test(rw.document.getElementById('normal').className), 'Normal 14px body text should remain untouched');
   assert(!/pst-rd-/.test(rw.document.getElementById('previewTiny').className), 'Generated document preview typography must remain untouched');
+  assert.strictEqual(rw.document.querySelector('[data-key="tenders"] .pst-nav-label').textContent, 'Mundësitë', 'Primary navigation was not normalized to Albanian');
+  assert.strictEqual(rw.document.querySelector('.pst-ws-brand small').textContent, 'Platforma', 'Workspace brand subtitle was not normalized to Albanian');
+  assert.strictEqual(rw.document.getElementById('ops').textContent, 'Pasqyra operative', 'Home heading was not normalized to Albanian');
+  assert.strictEqual(rw.document.getElementById('platform-live').textContent, 'Të dhëna aktuale të platformës', 'Home live-data label was not normalized to Albanian');
+  assert(rw.document.documentElement.classList.contains('pst-final-cosmetics-ready'), 'Final cosmetic readiness marker was not applied');
+  assert.strictEqual(rw.document.getElementById('dark').getAttribute('data-pst-dark-button'), '1', 'Dark button contrast was not normalized');
   const css = rw.document.getElementById('pst-platform-readability-v1-css').textContent;
   assert(css.includes('.pst-eoi-row b{font-size:14.5px!important'), 'Email offer rows do not have the current readable subject size');
   assert(css.includes('.pf2-compare td{font-size:14px!important'), 'Commercial comparison cells do not have the current readable size');
+  const finalCss = rw.document.getElementById('pst-final-cosmetics-v1-css').textContent;
+  assert(finalCss.includes('--pst-final-blue:#4F97AF'), 'Final cosmetic layer does not preserve PriSteel blue as primary color');
+  assert(finalCss.includes('.main::before'), 'Final cosmetic layer does not suppress shell-level decorative artifacts');
   rdDom.window.close();
 
   console.log('Redesign finalizer + priority card + platform readability smoke test passed.');
