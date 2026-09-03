@@ -36,7 +36,7 @@ assert(!/\.supaFetch\([^\n]*['\"](?:PATCH|POST|DELETE)['\"]/.test(openaiAssistan
 assert(!/gmail\/v1\/.*send|mark.*won|mark.*lost|supplier_orders.*POST/i.test(openaiAssistant), 'OpenAI assistant must not bypass human commitment gates');
 
 // Project-centric final layer: Projects are the daily center, TED is awards-only, and operator text can drive safe internal organization.
-assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260828-sourcelink1'), 'Finalizer must load the current project-centric workflow layer');
+assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260903-email1'), 'Finalizer must load the current project-centric workflow layer');
 assert(finalizer.includes('data-pst-project-centric-workflow-v3'), 'Project-centric loader must be idempotent for the current generation');
 new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
@@ -53,10 +53,11 @@ assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Pro
 
 console.log('Redesign bootstrap + OpenAI + project-centric workflow contract smoke test passed.');
 assert(projectCentric.includes('Shkarko dosjen') && projectCentric.includes('Analizo kushtet') && projectCentric.includes('dossierReady(id)'), 'KRPP/APP action console must separate dossier download, condition analysis and project creation gate');
-assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includes('GC / EPC') && projectCentric.includes('Kontaktet e fituesit'), 'TED popup must expose winner role and contacts');
+assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includes('GC / EPC') && projectCentric.includes('Shiko kontaktet'), 'TED popup must expose winner role and contacts');
 new Function(tenderActions);
 assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
-assert(tenderActions.includes('Roli i fituesit është i paqartë'), 'Unknown TED winner role must block automatic draft preparation');
+assert(projectCentric.includes('Përgatit emailin'), 'Every TED winner popup must expose the human-gated email preparation action');
+assert(!tenderActions.includes("if(role==='unknown')throw new Error"), 'Unknown TED winner role must use a cautious draft instead of hiding email preparation');
 
 assert(finalizer.includes('pristeel-project-control-home-v1.js?v=20260827-owner6'),'Finalizer must cache-bust the current Home owner');
 assert(finalizer.includes('data-pst-project-control-home-v6'),'Finalizer must not accept a stale Home script tag');
