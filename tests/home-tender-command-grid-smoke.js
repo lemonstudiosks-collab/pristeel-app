@@ -40,6 +40,14 @@ assert.strictEqual(T.workModel(award),'production');
 const tenderSrc=fs.readFileSync('pristeel-tender-priority-actions-v1.js','utf8');
 assert.ok(tenderSrc.includes('/users/me/drafts'),'outreach must create Gmail drafts, not send directly');
 assert.ok(!tenderSrc.match(/messages\/send|GmailApp\.send|sendEmail\s*\(/),'runtime must never auto-send email');
+assert.strictEqual(T._test.languageFor(award),'en','Denmark must use English');
+assert.strictEqual(T._test.languageFor({...award,payload:{...award.payload,winner:{...award.payload.winner,country:'CHE'}}}),'de','Switzerland must use German under the DACH rule');
+assert.strictEqual(T._test.languageFor({...award,payload:{...award.payload,winner:{...award.payload.winner,country:'HRV'}}}),'sh','Croatia must use Serbo-Croatian');
+assert.strictEqual(T._test.languageFor({...award,payload:{...award.payload,winner:{...award.payload.winner,country:'MNE'}}}),'sh','Montenegro must use Serbo-Croatian');
+assert.strictEqual(T._test.languageFor({...award,payload:{...award.payload,winner:{...award.payload.winner,country:'SRB'}}}),'sh','Serbia must use Serbo-Croatian');
+const cautious=T._test.fallbackDraft(award,{name:'Holmskov Rustfri A/S',email:'th@holmskov.dk'},'en');
+assert.ok(cautious.body.includes('public award')&&cautious.body.includes('DAP delivery')&&cautious.body.includes('EN 1090-2 up to EXC-4'),'English draft must preserve the approved 2 September outreach model');
+assert.ok(cautious.body.endsWith('Kind regards'),'draft body must preserve the language-specific courteous close before the real Gmail signature');
 
 w.eval(fs.readFileSync('pristeel-home-operating-grid-v1.js','utf8'));
 const H=w.PSTHomeOperatingGridV1;
