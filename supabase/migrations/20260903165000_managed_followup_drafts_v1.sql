@@ -113,8 +113,7 @@ begin
     on conflict(source,source_ref) do update
       set contact_email=excluded.contact_email,
           due_date=least(public.tasks.due_date,excluded.due_date),
-          detail=excluded.detail,
-          updated_at=now()
+          detail=excluded.detail
     where lower(coalesce(public.tasks.status,'')) not in ('kryer','mbyllur','done','closed','arkivuar');
     if found then v_created:=v_created+1; end if;
   end loop;
