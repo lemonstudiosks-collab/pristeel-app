@@ -5,6 +5,7 @@ const lifecycle = fs.readFileSync('supabase/migrations/20260825101000_task_lifec
 const enforcer = fs.readFileSync('supabase/migrations/20260825101200_task_lifecycle_close_enforcer_v1.sql', 'utf8');
 const hardening = fs.readFileSync('supabase/migrations/20260903073000_automation_backlog_hardening_v1.sql', 'utf8');
 const closeout = fs.readFileSync('supabase/migrations/20260903085000_automation_operational_closeout_v1.sql', 'utf8');
+const chatgptBridge = fs.readFileSync('supabase/migrations/20260903113500_chatgpt_plus_bridge_v1.sql', 'utf8');
 
 assert.match(lifecycle, /pppp_task_lifecycle_reconcile_v1/);
 assert.match(lifecycle, /task-lifecycle-reconcile-15m/);
@@ -47,5 +48,19 @@ assert.match(closeout, /split_part\(er\.supplier_email,'@',2\)/);
 assert.match(closeout, /pppp_followup_rfq_identity_guard_v1/);
 assert.match(closeout, /supplier-followup-dedup/);
 assert(!closeout.includes('send email'), 'closeout migration must not introduce external sending');
+
+assert.match(chatgptBridge, /pppp_chatgpt_search_projects_v1/);
+assert.match(chatgptBridge, /pppp_chatgpt_priority_actions_v1/);
+assert.match(chatgptBridge, /pppp_chatgpt_project_snapshot_v1/);
+assert.match(chatgptBridge, /pppp_chatgpt_record_context_suggestion_v1/);
+assert.match(chatgptBridge, /security invoker/i);
+assert.match(chatgptBridge, /public\.pppp_home_current_actions_v1/);
+assert.match(chatgptBridge, /'chatgpt'/);
+assert.match(chatgptBridge, /'unverified'/);
+assert.match(chatgptBridge, /'suggested'/);
+assert.match(chatgptBridge, /'chatgpt_pppp_bridge'/);
+assert.match(chatgptBridge, /revoke all on function public\.pppp_chatgpt_project_snapshot_v1[\s\S]*authenticated/);
+assert.match(chatgptBridge, /grant execute on function public\.pppp_chatgpt_project_snapshot_v1[\s\S]*service_role/);
+assert(!/gmail\.users\.messages\.send|net\.http_post\(|status\s*=\s*'won'|insert\s+into\s+public\.(purchase_orders|contracts)/i.test(chatgptBridge), 'ChatGPT Plus bridge must not perform external or commitment actions');
 
 console.log('Task lifecycle reconciliation smoke: OK');
