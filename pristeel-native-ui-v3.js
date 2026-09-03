@@ -41,7 +41,26 @@ function installEntryCss(){
 `;
   document.head.appendChild(s);
 }
-function apply(){installEntryCss();installRecoveryGate();var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function')X.apply();return true;}
+function installCompactHomeCss(){
+  var s=document.getElementById('pst-home-compact-normal-css');
+  if(!s){s=document.createElement('style');s.id='pst-home-compact-normal-css';}
+  s.textContent=`
+#pst-native-home-v4{padding-top:22px!important}
+#pst-native-home-v4 .pn-head{margin-bottom:10px!important}
+#pst-native-home-v4 .pn-ask-slot{min-height:118px!important;margin-bottom:10px!important}
+#pst-native-home-v4 .pn-ask-wait,#pst-native-home-v4 .pst-live-command-shell{min-height:118px!important}
+#pst-native-home-v4 .pst-live-command-shell{padding:11px 14px!important}
+#pst-native-home-v4 .pn-kpis{gap:8px!important;margin-bottom:10px!important}
+#pst-native-home-v4 .pn-kpi{min-height:68px!important;padding:8px 10px!important;border-radius:10px!important}
+#pst-native-home-v4 .pn-kpi span{font-size:8.5px!important}
+#pst-native-home-v4 .pn-kpi b{font-size:19px!important;margin-top:3px!important}
+#pst-native-home-v4 .pn-kpi small{font-size:8px!important;margin-top:2px!important;line-height:1.25!important}
+#pst-native-home-v4 .pn-kpi em{right:8px!important;top:7px!important}
+#pst-native-home-v4 .pn-kpi:nth-child(-n+2):after{left:10px!important;right:10px!important}
+`;
+  document.head.appendChild(s);
+}
+function apply(){installEntryCss();installRecoveryGate();var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();installCompactHomeCss();}return true;}
 function loadCore(){
   if(window.PSTNativeUiV4){apply();return;}
   if(document.querySelector('script[data-pst-native-ui-v4-core]'))return;
