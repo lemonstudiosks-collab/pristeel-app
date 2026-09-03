@@ -72,7 +72,7 @@ function winnerRoleLabel(r){var x=winnerRole(r);return x==='gc_epc'?'GC / EPC':x
 function winnerConfidence(r){var w=winnerObj(r),x=N(w.company_classification&&w.company_classification.confidence);return x==='high'?'besueshmëri e lartë':x==='medium'?'besueshmëri mesatare':x==='low'?'besueshmëri e ulët':'rol i paverifikuar';}
 function winnerContacts(r){var P=tenderApi();if(P&&typeof P.enrichedContacts==='function')return A(P.enrichedContacts(r));var w=winnerObj(r),out=[];A(w.emails).forEach(function(x){if(x)out.push({email:S(x),purpose:'',confidence:''});});if(w.email)out.push({email:S(w.email),purpose:'',confidence:''});return out;}
 function winnerWebsite(r){var w=winnerObj(r),u=safeUrl(w.website);if(u)return u;var e=w.contact_enrichment&&typeof w.contact_enrichment==='object'?w.contact_enrichment:{},org=A(e.organizations)[0];return safeUrl(org&&org.official_website);}
-function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient potencial: qasje direkte me PRISTEEL si nënkontraktor/prodhues i paketave të çelikut.';if(x==='producer')return'Konkurrent / prodhues: qasje si kapacitet shtesë, overflow fabrication, paketë e ndarë ose mbështetje në prodhim dhe dorëzim.';if(x==='trader_consortium')return'Verifiko rolin e fituesit dhe nëse ka hapësirë për furnizim ose prodhim të nënkontraktuar.';return'Roli i kompanisë duhet verifikuar para se PPPP të përgatisë outreach.';}
+function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient potencial: qasje direkte me PRISTEEL si nënkontraktor/prodhues i paketave të çelikut.';if(x==='producer')return'Konkurrent / prodhues: qasje si kapacitet shtesë, overflow fabrication, paketë e ndarë ose mbështetje në prodhim dhe dorëzim.';if(x==='trader_consortium')return'Qasje e kujdesshme për furnizim ose prodhim të nënkontraktuar, sipas paketës konkrete.';return'Roli ende nuk është verifikuar; emaili përgatitet me formulim neutral për kapacitet shtesë dhe kontrollohet nga ti para krijimit në Gmail.';}
 function sourceLabel(r){return tenderSource(r)==='TED'?'EU · TED':tenderSource(r)==='APP_AL'?'Shqipëri · APP':'Kosovë · KRPP';}
 function tenderDate(v){var d=v?new Date(v+'T00:00:00'):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
 function tenderReason(r){var P=tenderApi();return P&&typeof P.reason==='function'?P.reason(r):A(r&&r.match_reasons).slice(0,2).join(' · ');}
@@ -167,10 +167,9 @@ function officialSourceAction(r,label){
  return'<button data-pcw-ti="source" data-id="'+E(r.id)+'">'+E(label||'Burimi zyrtar')+'</button>';
 }
 function modalActionBar(r){
- var id=E(r.id),award=tenderMode(r)==='award',role=winnerRole(r);
+ var id=E(r.id),award=tenderMode(r)==='award';
  if(award){
-   var primary=role==='gc_epc'?'Përgatit draft për GC':role==='producer'?'Përgatit draft kapaciteti':role==='trader_consortium'?'Përgatit draft partneriteti':'';
-   return '<div id="pst-pcw-ti-actions">'+(primary?'<button class="primary" data-pcw-ti="draft" data-id="'+id+'">'+primary+'</button>':'')+'<button data-pcw-ti="contacts" data-id="'+id+'">Kontaktet e fituesit</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+   return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="draft" data-id="'+id+'">Përgatit emailin</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
  }
  return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary download" data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen</button><button class="dossier" data-pcw-ti="dossier" data-id="'+id+'">Analizo kushtet</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ketë analizuar dosjen.">Krijo projekt</button>'+officialSourceAction(r,'Burimi zyrtar')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
 }
