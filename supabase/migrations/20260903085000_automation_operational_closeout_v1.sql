@@ -4,7 +4,7 @@
 -- Goals:
 -- 1) Auto-close historical automation failure alerts after a later successful run.
 -- 2) Pause the known-broken Drive 30m reconciler while Google Workspace Drive DWD scope is blocked.
--- 3) Collapse supplier follow-up tasks to one actionable task per project + supplier + RFQ subject.
+-- 3) Collapse supplier follow-up tasks to one actionable task per project + supplier email domain + RFQ subject.
 --
 -- No client pricing, supplier selection, email-send or other human approval gate is changed.
 
@@ -161,8 +161,9 @@ create trigger a_pppp_drive_dwd_failure_collapse_v1
 before insert on public.tasks
 for each row execute function public.pppp_drive_dwd_failure_collapse_v1();
 
--- Supplier-level RFQ follow-up identity. Multiple recipients at the same supplier for the
--- same project/subject are one human action, not multiple Priority Actions.
+-- Follow-up identity is deliberately based on the exact supplier email domain rather
+-- than supplier_name. This avoids collapsing separate entities such as eurometali.ba
+-- and eurometali.hr merely because their display name is similar.
 create or replace function public.pppp_followup_rfq_identity_guard_v1()
 returns trigger
 language plpgsql
@@ -173,9 +174,8 @@ declare
   v_rfq_id uuid;
   v_ref text;
   v_existing_id uuid;
-  v_supplier_name text;
   v_subject text;
-  v_supplier_key text;
+  v_supplier_domain text;
   v_subject_key text;
   v_peer_count integer:=0;
 begin
@@ -191,8 +191,8 @@ begin
     v_sent_date := null;
   end;
 
-  select r.id,r.supplier_name,r.subject
-    into v_rfq_id,v_supplier_name,v_subject
+  select r.id,r.subject
+    into v_rfq_id,v_subject
   from public.rfq_log r
   where r.project_id = new.project_id
     and lower(coalesce(r.supplier_email,'')) = lower(new.contact_email)
@@ -209,8 +209,13 @@ begin
   end if;
 
   v_ref := 'RFQ:' || v_rfq_id::text;
-  v_supplier_key := lower(btrim(coalesce(nullif(v_supplier_name,''),split_part(new.contact_email,'@',2))));
+  v_supplier_domain := lower(btrim(split_part(new.contact_email,'@',2)));
   v_subject_key := lower(btrim(coalesce(v_subject,'')));
+
+  if v_supplier_domain='' then
+    new.source_ref:=v_ref;
+    return new;
+  end if;
 
   select count(*)::integer
     into v_peer_count
@@ -219,12 +224,12 @@ begin
     and lower(coalesce(r.status,''))='sent'
     and r.sent_at is not null
     and r.replied_at is null
-    and lower(btrim(coalesce(nullif(r.supplier_name,''),split_part(r.supplier_email,'@',2))))=v_supplier_key
+    and lower(btrim(split_part(r.supplier_email,'@',2)))=v_supplier_domain
     and lower(btrim(coalesce(r.subject,'')))=v_subject_key;
 
-  if v_peer_count>1 and position('PPPP: supplier-level follow-up —' in coalesce(new.detail,''))=0 then
+  if v_peer_count>1 and position('PPPP: supplier-domain follow-up —' in coalesce(new.detail,''))=0 then
     new.detail:=concat_ws(E'\n',nullif(new.detail,''),
-      'PPPP: supplier-level follow-up — '||v_peer_count::text||' kontakte të të njëjtit furnitor kanë marrë këtë RFQ; shfaqet vetëm një veprim njerëzor.');
+      'PPPP: supplier-domain follow-up — '||v_peer_count::text||' kontakte në të njëjtin domain kanë marrë këtë RFQ; shfaqet vetëm një veprim njerëzor.');
   end if;
 
   select t.id
@@ -251,7 +256,7 @@ begin
         lower(coalesce(t.status,'')) not in ('kryer','mbyllur','done','closed')
         and er.project_id=new.project_id
         and er.replied_at is null
-        and lower(btrim(coalesce(nullif(er.supplier_name,''),split_part(er.supplier_email,'@',2))))=v_supplier_key
+        and lower(btrim(split_part(er.supplier_email,'@',2)))=v_supplier_domain
         and lower(btrim(coalesce(er.subject,'')))=v_subject_key
       )
     )
@@ -283,12 +288,12 @@ $function$;
 revoke all on function public.pppp_followup_rfq_identity_guard_v1() from public,anon,authenticated;
 grant execute on function public.pppp_followup_rfq_identity_guard_v1() to service_role;
 
--- One-time supplier-level cleanup for open follow-up duplicates already created.
+-- One-time domain-level cleanup for open follow-up duplicates already created.
 with ranked as (
   select t.id,
          row_number() over(
            partition by t.project_id,
-             lower(btrim(coalesce(nullif(r.supplier_name,''),split_part(r.supplier_email,'@',2)))),
+             lower(btrim(split_part(r.supplier_email,'@',2))),
              lower(btrim(coalesce(r.subject,'')))
            order by t.created_at desc,t.id desc
          ) as rn
@@ -298,6 +303,7 @@ with ranked as (
     and lower(coalesce(t.status,'')) not in ('kryer','mbyllur','done','closed')
     and r.project_id=t.project_id
     and r.replied_at is null
+    and btrim(coalesce(split_part(r.supplier_email,'@',2),''))<>''
 ), duplicates as (
   select id from ranked where rn>1
 )
@@ -307,11 +313,11 @@ set status='mbyllur',
     detail=case
       when position('PPPP: supplier-followup-dedup —' in coalesce(t.detail,''))>0 then t.detail
       else concat_ws(E'\n',nullif(t.detail,''),
-        'PPPP: supplier-followup-dedup — u zëvendësua nga një follow-up më i ri për të njëjtin furnitor/projekt/RFQ.')
+        'PPPP: supplier-followup-dedup — u zëvendësua nga një follow-up më i ri për të njëjtin supplier domain/projekt/RFQ.')
     end
 where t.id in (select id from duplicates);
 
 comment on function public.pppp_automation_success_closes_failure_alerts_v1() is
   'Closes stale per-run automation failure tasks when the same managed automation later succeeds.';
 comment on function public.pppp_followup_rfq_identity_guard_v1() is
-  'Canonicalizes supplier RFQ follow-up tasks to one human action per project, supplier identity and RFQ subject.';
+  'Canonicalizes supplier RFQ follow-up tasks to one human action per project, supplier email domain and RFQ subject.';
