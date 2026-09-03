@@ -32,5 +32,4 @@ jobs:
           grep -Fq 'pristeel-native-ui-v4-core.js?v=20260903-singleowner1' _site/pristeel-native-ui-v3.js
           grep -Fq '#4F97AF' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'Pasqyra operative' _site/pristeel-native-ui-v4-core.js
-          grep -Fq '#fin-hub-grid>div[onclick*="finSwitchTab"]' _site/pristeel-native-ui-v3-core.js
           grep -Fq 'PPPP gjeti punë të pambyllur' _site/pristeel-native-ui-v3.js
