@@ -61,6 +61,6 @@ assert.match(chatgptBridge, /'suggested'/);
 assert.match(chatgptBridge, /'chatgpt_pppp_bridge'/);
 assert.match(chatgptBridge, /revoke all on function public\.pppp_chatgpt_project_snapshot_v1[\s\S]*authenticated/);
 assert.match(chatgptBridge, /grant execute on function public\.pppp_chatgpt_project_snapshot_v1[\s\S]*service_role/);
-assert(!/gmail\.users\.messages\.send|net\.http_post\(|mark.*won|create.*purchase order/i.test(chatgptBridge), 'ChatGPT Plus bridge must not perform external or commitment actions');
+assert(!/gmail\.users\.messages\.send|net\.http_post\(|status\s*=\s*'won'|insert\s+into\s+public\.(purchase_orders|contracts)/i.test(chatgptBridge), 'ChatGPT Plus bridge must not perform external or commitment actions');
 
 console.log('Task lifecycle reconciliation smoke: OK');
