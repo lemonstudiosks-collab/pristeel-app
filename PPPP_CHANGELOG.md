@@ -2,6 +2,17 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-09-03
+
+### TED winner email preparation restored in Action Console
+
+- Every TED award-winner popup now exposes `Përgatit emailin`, including rows whose company role is still unverified; those rows use neutral capacity-support wording instead of losing the email action.
+- Outreach copy follows the actual PRISTEEL messages sent on 2 September 2026: public-award context, additional fabrication capacity, PRISTEEL technical/fabrication coordination, DAP delivery, partner-plant EN 1090-2 / EXC-4 capability and a request for drawings/BOQ/BOM.
+- Language routing is deterministic: German for DACH, Serbo-Croatian for Croatia/Montenegro/Serbia and English for all other countries.
+- The editable preview remains mandatory. An explicit user click creates a Gmail draft; no message is sent automatically.
+- Gmail draft creation prefers the verified `arianit.vllahiu@prissteel.com` send-as alias and appends that alias's live Gmail HTML signature, including its stored logo and links.
+- Runtime cache keys were bumped for both the tender-action provider and the Action Console owner. No tender discovery, automation, Supabase schema or project-state logic changed.
+
 ## 2026-08-25
 
 ### Final daily-surface polish removes the remaining visible control clutter

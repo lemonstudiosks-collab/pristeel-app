@@ -4,7 +4,7 @@ const assert = require('assert');
 const src = fs.readFileSync('pristeel-project-emails.js', 'utf8');
 const finalizer = src.indexOf("pristeel-redesign-finalizer-v1.js?v=20260831-tedsales2");
 const legacy = src.indexOf("pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2");
-const tender = src.indexOf("pristeel-tender-priority-actions-v1.js?v=20260827-ux1");
+const tender = src.indexOf("pristeel-tender-priority-actions-v1.js?v=20260903-email1");
 const home = src.indexOf("pristeel-home-operating-grid-v1.js?v=20260823-homegrid2");
 const classification = src.indexOf("pristeel-project-classification-v1.js?v=");
 const nav = src.indexOf("pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1");

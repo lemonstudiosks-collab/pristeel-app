@@ -81,7 +81,7 @@ assert.doesNotMatch(dossier,/\.pst-tda-list li\{font-size:9\.5px/,'dossier must 
 
 assert.match(pcw,/PRODHUES \/ KONKURRENT/,'TED winner role must identify producer competitors');
 assert.match(pcw,/GC \/ EPC/,'TED winner role must identify GC/EPC clients');
-assert.match(pcw,/Kontaktet e fituesit/,'TED action console must expose researched winner contacts');
+assert.match(pcw,/Shiko kontaktet/,'TED action console must expose researched winner contacts');
 assert.match(pcw,/Shkarko dosjen/,'KRPP/APP action console must expose dossier download');
 assert.match(pcw,/Analizo kushtet/,'KRPP/APP action console must expose technical/commercial analysis');
 
