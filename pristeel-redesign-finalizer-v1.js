@@ -1,11 +1,12 @@
-/* PRISTEEL redesign finalizer v2
- * Revision: 20260829-single-owner1.
+/* PRISTEEL redesign finalizer v3
  * Final presentation handoff only: no polling, no DOM observer and no click-driven re-application loops.
- * Home, Opportunities, Project and navigation owners are loaded once and then left in control.
+ * Native UI v4 is the sole visible Home owner; project-control Home may still load
+ * as a compatibility/data surface, but it is never allowed to replace the visible Home.
  */
 (function(){
 'use strict';
-if(window.__pstRedesignFinalizerV2)return;
+if(window.__pstRedesignFinalizerV3)return;
+window.__pstRedesignFinalizerV3=true;
 window.__pstRedesignFinalizerV2=true;
 window.__pstRedesignFinalizerV1=true;
 var claimingControl=false,scheduled=false;
@@ -22,8 +23,9 @@ function contactCards(){try{var C=window.PSTContactCategoryCardsV1;if(C&&typeof 
 function projectCentricWorkflow(){try{var X=window.PSTProjectCentricWorkflowV1;if(window.__pstProjectCentricWorkflowV3&&X&&typeof X.apply==='function'){X.apply(false);tedSalesSurface();return;}loadOnce('data-pst-project-centric-workflow-v3','pristeel-project-centric-workflow-v1.js?v=20260903-email1',function(){var x=window.PSTProjectCentricWorkflowV1;if(x&&typeof x.apply==='function')x.apply(true);tedSalesSurface();});}catch(e){}}
 function projectExecutionSurface(){try{var X=window.PSTProjectExecutionSurfaceV1;if(X&&typeof X.clean==='function'){X.clean();return;}loadOnce('data-pst-project-execution-surface-v1','pristeel-project-execution-surface-v1.js?v=20260829-1',function(){var x=window.PSTProjectExecutionSurfaceV1;if(x&&typeof x.schedule==='function')x.schedule();});}catch(e){}}
 function unifiedProjectFlow(){try{var X=window.PSTUnifiedProjectFlowV1;if(X&&typeof X.apply==='function'){X.apply();return;}loadOnce('data-pst-unified-project-flow','pristeel-unified-project-flow-v1.js?v=20260829-flow2',function(){var x=window.PSTUnifiedProjectFlowV1;if(x&&typeof x.apply==='function')x.apply();});}catch(e){}}
-function retireOtherHomeChildren(page,root){if(!page||!root||!page.contains(root))return false;Array.prototype.slice.call(page.children).forEach(function(child){if(child===root)return;child.hidden=true;child.style.display='none';child.setAttribute('aria-hidden','true');child.setAttribute('data-pst-retired-home-owner','1');});page.dataset.pstHomeOwner='project-control-v2';page.dataset.pstHomeExclusive='1';return true;}
-function claimControlRoom(){var page=document.getElementById('page-workspace-home'),root=document.getElementById('pst-project-control-home-v2');if(!page||!root||!page.contains(root))return false;if(claimingControl)return true;claimingControl=true;try{return retireOtherHomeChildren(page,root);}finally{claimingControl=false;}}
+function nativeHomeRoot(page){if(!page)return null;return document.getElementById('pst-native-home-v4')||document.getElementById('pst-native-home-v3');}
+function retireOtherHomeChildren(page,root){if(!page||!root||!page.contains(root))return false;Array.prototype.slice.call(page.children).forEach(function(child){if(child===root){child.hidden=false;child.removeAttribute('aria-hidden');child.removeAttribute('data-pst-retired-home-owner');child.style.removeProperty('display');return;}child.hidden=true;child.style.display='none';child.setAttribute('aria-hidden','true');child.setAttribute('data-pst-retired-home-owner','1');});page.dataset.pstHomeOwner=root.id==='pst-native-home-v4'?'native-v4':'native-v3';page.dataset.pstHomeExclusive='1';return true;}
+function claimControlRoom(){var page=document.getElementById('page-workspace-home'),root=nativeHomeRoot(page);if(!page||!root||!page.contains(root))return false;if(claimingControl)return true;claimingControl=true;try{var ok=retireOtherHomeChildren(page,root);try{var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function')X.apply();}catch(e){}return ok;}finally{claimingControl=false;}}
 function projectControlHome(){try{var X=window.PSTProjectControlHomeV1;if(window.__pstLiveHomeV6&&X&&typeof X.apply==='function'){X.apply(true);setTimeout(claimControlRoom,0);return;}loadOnce('data-pst-project-control-home-v6','pristeel-project-control-home-v1.js?v=20260827-owner6',function(){var x=window.PSTProjectControlHomeV1;if(x&&typeof x.apply==='function')x.apply(true);setTimeout(claimControlRoom,0);});}catch(e){}}
 function homeLiveSync(){try{var X=window.PSTHomeLiveSyncV1;if(X&&typeof X.refresh==='function'){X.refresh(false);return;}loadOnce('data-pst-home-live-sync-v1','pristeel-home-live-sync-v1.js?v=20260826-1',function(){var x=window.PSTHomeLiveSyncV1;if(x&&typeof x.refresh==='function')x.refresh(true);});}catch(e){}}
 function tenderDossierAnalysis(){try{var X=window.PSTTenderDossierAnalysisV1;if(window.__pstTenderDossierAnalysisV3&&X&&typeof X.apply==='function'){X.apply();return;}loadOnce('data-pst-tender-dossier-analysis-v3','pristeel-tender-dossier-analysis-v1.js?v=20260827-readable3',function(){var x=window.PSTTenderDossierAnalysisV1;if(x&&typeof x.apply==='function')x.apply();});}catch(e){}}
@@ -35,6 +37,7 @@ function decorateExisting(){try{var C=window.PSTBusinessCommandCenterV1;if(C&&ty
 function apply(){primaryNavigationResilience();sectionTheme();readability();contactCards();operatingExperience();dailyZones();operatingAssistant();openAIAssistant();projectCentricWorkflow();projectControlHome();homeLiveSync();tenderDossierAnalysis();projectExecutionSurface();unifiedProjectFlow();decorateExisting();setTimeout(claimControlRoom,0);}
 function schedule(){if(scheduled)return;scheduled=true;setTimeout(apply,0);setTimeout(function(){apply();scheduled=false;},320);}
 document.addEventListener('pst:modules-ready',schedule,{once:true});
+document.addEventListener('pst:native-home-ready',claimControlRoom);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.PSTRedesignFinalizerV1=window.PSTRedesignFinalizerV2={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,tedSalesSurface:tedSalesSurface,dailyZones:dailyZones,operatingAssistant:operatingAssistant,openAIAssistant:openAIAssistant,contactCards:contactCards,projectCentricWorkflow:projectCentricWorkflow,projectExecutionSurface:projectExecutionSurface,unifiedProjectFlow:unifiedProjectFlow,projectControlHome:projectControlHome,homeLiveSync:homeLiveSync,claimControlRoom:claimControlRoom,tenderDossierAnalysis:tenderDossierAnalysis,repairPriorityCards:repairPriorityCards};
+window.PSTRedesignFinalizerV1=window.PSTRedesignFinalizerV2=window.PSTRedesignFinalizerV3={apply:apply,schedule:schedule,primaryNavigationResilience:primaryNavigationResilience,readability:readability,sectionTheme:sectionTheme,operatingExperience:operatingExperience,tedSalesSurface:tedSalesSurface,dailyZones:dailyZones,operatingAssistant:operatingAssistant,openAIAssistant:openAIAssistant,contactCards:contactCards,projectCentricWorkflow:projectCentricWorkflow,projectExecutionSurface:projectExecutionSurface,unifiedProjectFlow:unifiedProjectFlow,projectControlHome:projectControlHome,homeLiveSync:homeLiveSync,claimControlRoom:claimControlRoom,tenderDossierAnalysis:tenderDossierAnalysis,repairPriorityCards:repairPriorityCards};
 })();
