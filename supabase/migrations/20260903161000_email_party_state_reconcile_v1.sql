@@ -292,7 +292,6 @@ begin
       and public.pppp_project_email_party_role_v1(p.id,pe.from_email)='supplier'
       and abs(extract(epoch from (coalesce(pe.sent_at,pe.created_at)-p.operational_state_at)))<=2
   loop
-    prior_mail:=null;
     select q.* into prior_mail
     from (
       select e.id,e.direction,e.sent_at,e.created_at,e.from_email,e.to_emails,
