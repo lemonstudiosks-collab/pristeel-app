@@ -4,6 +4,12 @@ This file records material architecture/automation changes. It is not a substitu
 
 ## 2026-09-04
 
+### Finance navigation recursion hotfix
+
+- Stopped late Finance, Tender and canonical Home wrappers from repeatedly recapturing one another.
+- The canonical Home router now closes over its immutable base instead of a mutable shared reference, preventing cyclic calls and `Maximum call stack size exceeded` on Finance navigation.
+- Added regression coverage for repeated router installation through later wrapper owners.
+
 ### Inline boot continuity and canonical project preload stabilized
 
 - Removed a synchronous `loadHub is not defined` failure from the application HTML. The retired cockpit owner is now an optional compatibility callback, so its absence cannot abort the remaining inline runtime.

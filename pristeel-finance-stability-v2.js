@@ -265,9 +265,19 @@ function installCanonicalFinanceCapture(){
   },true);
   return true;
 }
+function routeChainHas(fn,marker){
+  var seen=[];
+  for(var i=0;i<64&&typeof fn==='function';i++){
+    if(fn[marker])return true;
+    if(seen.indexOf(fn)>=0)return true;
+    seen.push(fn);
+    fn=fn.__pstRouteBase||fn.__pstFinanceRouteBase||fn.__pstTenderHomeSignalBase||fn.__base;
+  }
+  return false;
+}
 function installWorkspaceFinanceRoute(){
   var current=window.pstWorkspaceGo;
-  if(typeof current!=='function'||current.__pstFinanceRouteRecoveryV1)return false;
+  if(typeof current!=='function'||routeChainHas(current,'__pstFinanceRouteRecoveryV1'))return false;
   var wrapped=function(key){
     if(String(key||'').toLowerCase()==='finance'){
       recoverFinance();
@@ -278,6 +288,7 @@ function installWorkspaceFinanceRoute(){
   };
   wrapped.__pstFinanceRouteRecoveryV1=true;
   wrapped.__pstFinanceRouteBase=current;
+  wrapped.__pstRouteBase=current;
   window.pstWorkspaceGo=wrapped;
   return true;
 }

@@ -201,16 +201,26 @@ function revealBestAvailable(reason){
   signalVisualReady();
   return true;
 }
+function routeChainHas(fn,marker){
+  var seen=[];
+  for(var i=0;i<64&&typeof fn==='function';i++){
+    if(fn[marker])return true;
+    if(seen.indexOf(fn)>=0)return true;
+    seen.push(fn);
+    fn=fn.__pstRouteBase||fn.__pstFinanceRouteBase||fn.__pstTenderHomeSignalBase||fn.__base;
+  }
+  return false;
+}
 function installFinalRouter(){
   var current=window.pstWorkspaceGo;if(typeof current!=='function')return false;
-  if(current.__pstCanonicalFinalRouter)return true;
-  routerBase=current;
+  if(routeChainHas(current,'__pstCanonicalFinalRouter'))return true;
+  var base=current;routerBase=base;
   function finalGo(key){
     var k=String(key||'home').toLowerCase();
     if(k==='home'){renderFinalHome();return true;}
-    return routerBase.apply(this,arguments);
+    return base.apply(this,arguments);
   }
-  finalGo.__pstCanonicalFinalRouter=true;finalGo.__base=routerBase;window.pstWorkspaceGo=finalGo;return true;
+  finalGo.__pstCanonicalFinalRouter=true;finalGo.__base=base;finalGo.__pstRouteBase=base;window.pstWorkspaceGo=finalGo;return true;
 }
 async function renderFinalHome(){
   if(!runtimeReady)return false;
