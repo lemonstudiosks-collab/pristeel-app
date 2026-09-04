@@ -63,4 +63,14 @@ if(missing.length){
 }
 
 assert(seen.size>100,'Runtime closure unexpectedly small; audit may not be following the real production graph');
+
+const askBridge=fs.readFileSync(path.join(ROOT,'pristeel-home-ask-functional-owner-v1.js'),'utf8');
+assert.doesNotThrow(()=>new Function(askBridge),'Home Ask functional-owner bridge must remain valid JavaScript');
+assert(askBridge.includes('function portfolioAnswer('),'Home Ask must aggregate company/client portfolios');
+assert(askBridge.includes('function confirmedVisit('),'Home Ask must recognize confirmed execution visit evidence');
+assert(askBridge.includes("N(p.pipeline_stage)==='offer submitted'"),'Home Ask portfolio must surface submitted-offer records');
+assert(askBridge.includes("src==='email'&&ev==='confirmed'"),'Confirmed raw email evidence must outrank derived summaries');
+const nativeEntry=fs.readFileSync(path.join(ROOT,'pristeel-native-ui-v3.js'),'utf8');
+assert(nativeEntry.includes('pristeel-home-ask-functional-owner-v1.js?v=20260904-ask3'),'Native UI must fetch the current Home Ask bridge version');
+
 console.log('Dynamic runtime reference closure: OK ('+seen.size+' local JS modules verified).');
