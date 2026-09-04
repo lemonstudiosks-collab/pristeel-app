@@ -91,7 +91,7 @@ var files=[
   'pristeel-our-offer-stability-v2.js?v=20260807-stability1',
   'pristeel-offer-project-status-sync-v1.js?v=20260808-1',
   'pristeel-offer-resave-fix-v1.js?v=20260808-1',
-  'pristeel-finance-stability-v2.js?v=20260807-stability1',
+  'pristeel-finance-stability-v2.js?v=20260904-route2',
   'pristeel-workflow-governance-v1.js?v=20260808-6',
   'pristeel-quote-followup-governance-v1.js?v=20260808-2',
   'pristeel-modal-navigation-safety-v2.js?v=20260807-stability1',
@@ -150,7 +150,8 @@ var files=[
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
   'pristeel-project-classification-v1.js?v=20260830-rowopen1',
   'pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1',
-  'pristeel-project-execution-guard-v1.js?v=20260829-postaward1'
+  'pristeel-project-execution-guard-v1.js?v=20260829-postaward1',
+  'pristeel-finance-final-route-guard-v1.js?v=20260904-finalroute1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
 var diag=window.__pstBootstrapDiagnostics=window.__pstBootstrapDiagnostics||{started_at:new Date().toISOString(),total:files.length,loaded:0,errors:[],timeouts:[],retries:[],completed:false};
