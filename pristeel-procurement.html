@@ -9460,7 +9460,10 @@ function saveProjectNotes(id){
 function openProjectDetail(projectId){
   openOverview(projectId);
 }
-var loadCockpit=loadHub;
+/* The old cockpit renderer is optional. Do not abort the rest of this inline
+ * runtime when its legacy owner is not loaded; current Home owners refresh
+ * independently and callers may safely treat this as a no-op. */
+var loadCockpit=typeof window.loadHub==='function'?window.loadHub:function(){};
 // ══ ANALIZË MASIVE E INBOX-IT ══
 async function qAnalyzeAll(){
   var ai=window.PSTAI;

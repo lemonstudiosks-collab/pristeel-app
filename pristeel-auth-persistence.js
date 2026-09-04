@@ -21,7 +21,7 @@ window.__pstAuthPersistenceLoaded=true;
 (function loadProjectWorkspaceRepair(){
   if(window.__pstProjectWorkspaceRepairLoaderV1||document.querySelector('script[data-pst-project-workspace-repair-loader]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-project-workspace-repair-loader-v1.js?v=20260830-workspace2';
+  s.src='pristeel-project-workspace-repair-loader-v1.js?v=20260904-activation2';
   s.defer=true;
   s.setAttribute('data-pst-project-workspace-repair-loader','1');
   document.head.appendChild(s);

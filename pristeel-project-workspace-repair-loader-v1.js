@@ -31,7 +31,10 @@ function load(src,attr,test){
 var chain=Promise.resolve()
   .then(function(){return load('pristeel-project-data-integrity-v1.js?v=20260831-canonical1','data-pst-project-data-integrity-critical',function(){return window.PSTProjectDataIntegrity&&typeof window.PSTProjectDataIntegrity.load==='function';});})
   .then(function(){return load('pristeel-project-engine-v1.js?v=20260831-canonical1','data-pst-project-engine-critical',function(){return window.PSTProjectEngineV1&&typeof window.PSTProjectEngineV1.loadProjectDossier==='function';});})
-  .then(function(){return load('pristeel-project-integrity-ui-v1.js?v=20260831-canonical1','data-pst-project-integrity-ui-critical',function(){return typeof window.pstOpenProjectWorkspace==='function'&&window.pstOpenProjectWorkspace.__pstCanonicalOwner==='pristeel-project-integrity-ui-v1';});})
+  /* During early boot the presentation guard may wrap the public opener before
+   * this script's load event fires. The module API is the stable activation
+   * signal; the owner lock in the next step restores the canonical public path. */
+  .then(function(){return load('pristeel-project-integrity-ui-v1.js?v=20260831-canonical2','data-pst-project-integrity-ui-critical',function(){return window.PSTProjectIntegrityUIV1&&typeof window.PSTProjectIntegrityUIV1.open==='function';});})
   .then(function(){return load('pristeel-project-owner-lock-v1.js?v=20260831-canonical1','data-pst-project-owner-lock-critical',function(){return window.PSTProjectOwnerLockV1&&typeof window.PSTProjectOwnerLockV1.open==='function';});})
   .then(function(){
     window.__pstProjectCriticalReady=true;

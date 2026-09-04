@@ -25,7 +25,9 @@ function exists(rel) {
 }
 
 function gitBlobSha(text) {
-  const body = Buffer.from(text, 'utf8');
+  // Git stores these text assets with LF. Normalize a Windows checkout before
+  // comparing it with the canonical blob recorded in the manifest.
+  const body = Buffer.from(text.replace(/\r\n/g, '\n'), 'utf8');
   return crypto
     .createHash('sha1')
     .update(Buffer.from(`blob ${body.length}\0`, 'utf8'))
