@@ -1,0 +1,1 @@
+After deploy: hard-refresh, open Home, click Financat, verify existing Finance hub/data surface renders and navigation away still works. Do not exercise Receipt Inbox, Camera or OCR in this change.
