@@ -128,7 +128,7 @@ function applyHomePresentation(){installCompactHomeCss();installAskModalChrome()
 function apply(){installEntryCss();installRecoveryGate();var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
 function loadAskFunctionalOwner(){
   if(window.PSTHomeAskFunctionalOwnerV1||document.querySelector('script[data-pst-home-ask-functional-owner]'))return;
-  var s=document.createElement('script');s.src='pristeel-home-ask-functional-owner-v1.js?v=20260903-ask1';s.defer=true;s.setAttribute('data-pst-home-ask-functional-owner','1');document.head.appendChild(s);
+  var s=document.createElement('script');s.src='pristeel-home-ask-functional-owner-v1.js?v=20260904-ask3';s.defer=true;s.setAttribute('data-pst-home-ask-functional-owner','1');document.head.appendChild(s);
 }
 function loadCore(){
   loadAskFunctionalOwner();
