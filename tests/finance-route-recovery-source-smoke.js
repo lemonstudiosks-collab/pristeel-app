@@ -1,0 +1,10 @@
+const fs=require('fs');
+const assert=require('assert');
+const s=fs.readFileSync('pristeel-finance-stability-v2.js','utf8');
+assert(/financeSurfaceReady/.test(s),'Rendered Finance readiness check missing');
+assert(/getComputedStyle/.test(s),'Finance must verify computed visibility, not only active class');
+assert(/installWorkspaceFinanceRoute/.test(s),'Workspace Finance route recovery missing');
+assert(/activateExistingFinance/.test(s),'Existing page-finance recovery missing');
+assert(!/supaFetch\s*\(/.test(s),'Finance stability layer must stay presentation/read-only');
+assert(!/Receipt Inbox|camera|OCR/i.test(s),'Finance-only recovery must not absorb Receipt/Camera/OCR work');
+console.log('Finance route recovery source smoke passed.');
