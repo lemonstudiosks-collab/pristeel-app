@@ -1,0 +1,22 @@
+name: Finance final route guard smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pristeel-finance-final-route-guard-v1.js'
+      - 'pristeel-project-emails.js'
+      - 'tests/finance-final-route-guard-smoke.js'
+      - '.github/workflows/finance-final-route-guard-smoke.yml'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: node --check pristeel-finance-final-route-guard-v1.js
+      - run: node --check pristeel-project-emails.js
+      - run: node tests/finance-final-route-guard-smoke.js
