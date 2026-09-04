@@ -11,6 +11,7 @@ window.__pstFinanceStabilityV2=true;
 var WAIT=6000;
 var lastActive=false;
 var forcedPageDisplay=false;
+var financeClickCaptureInstalled=false;
 
 function loadingText(el){return el&&/duke ngarkuar/i.test(String(el.textContent||''));}
 function guard(id,label){
@@ -242,6 +243,28 @@ function recoverFinance(){
     return ok;
   });
 }
+function markFinanceNav(){
+  var host=document.getElementById('pst-ws-canonical-nav');
+  if(!host)return;
+  host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){
+    b.classList.toggle('active',String(b.dataset.key||'').toLowerCase()==='finance');
+  });
+}
+function installCanonicalFinanceCapture(){
+  if(financeClickCaptureInstalled)return true;
+  financeClickCaptureInstalled=true;
+  document.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="finance"]'):null;
+    if(!b)return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+    markFinanceNav();
+    recoverFinance();
+    [60,180,500].forEach(function(ms){setTimeout(function(){if(!financeSurfaceReady())recoverFinance();},ms);});
+  },true);
+  return true;
+}
 function installWorkspaceFinanceRoute(){
   var current=window.pstWorkspaceGo;
   if(typeof current!=='function'||current.__pstFinanceRouteRecoveryV1)return false;
@@ -295,6 +318,7 @@ function install(){
   installSwitch();
   installHub();
   installInvoiceDocumentTheme();
+  installCanonicalFinanceCapture();
   installWorkspaceFinanceRoute();
   watchFinancePage();
   polish();
@@ -303,5 +327,5 @@ function install(){
 install();
 [120,500,1200,2500].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation,recoverFinance:recoverFinance,financeSurfaceReady:financeSurfaceReady,activateExistingFinance:activateExistingFinance,applyInvoiceDocumentTheme:applyInvoiceDocumentTheme,installInvoiceDocumentTheme:installInvoiceDocumentTheme,invoiceDocumentPalette:INVOICE_DOC_PALETTE};
+window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation,recoverFinance:recoverFinance,financeSurfaceReady:financeSurfaceReady,activateExistingFinance:activateExistingFinance,installCanonicalFinanceCapture:installCanonicalFinanceCapture,applyInvoiceDocumentTheme:applyInvoiceDocumentTheme,installInvoiceDocumentTheme:installInvoiceDocumentTheme,invoiceDocumentPalette:INVOICE_DOC_PALETTE};
 })();
