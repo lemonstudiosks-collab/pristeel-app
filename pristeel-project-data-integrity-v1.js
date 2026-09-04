@@ -8,6 +8,7 @@ if(window.PSTProjectDataIntegrity)return;
 
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
 var LEGACY_FALLBACK_TABLES={bom_items:1,rfq_log:1,offers:1,documents_registry:1,project_docs:1,project_attachment_links:1,offers_inbox:1};
+var READ_TIMEOUT=3500;
 function arr(v){
   if(Array.isArray(v))return v;
   if(!v)return[];
@@ -22,9 +23,13 @@ function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\
 function canonicalRef(project){var R=window.PSTProjectReferenceV1;return R&&typeof R.canonical==='function'?R.canonical(project):String(project&&(project.business_ref||project.ref)||'').trim();}
 function email(v){var m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
 function external(v){var e=email(v);return e&&INTERNAL.indexOf(e)<0&&!/(no-?reply|mailer-daemon|postmaster|dmarc|calendar-notification)@/i.test(e);}
+function bounded(p,ms,label){
+  return Promise.race([Promise.resolve(p),new Promise(function(_,reject){setTimeout(function(){reject(new Error(label||'Leximi tejkaloi afatin.'));},ms||READ_TIMEOUT);})]);
+}
 function safe(path){
   if(typeof window.supaFetch!=='function')return Promise.resolve([]);
-  return window.supaFetch(path).then(function(x){return arr(x);}).catch(function(error){
+  var request;try{request=window.supaFetch(path);}catch(error){request=Promise.reject(error);}
+  return bounded(request,READ_TIMEOUT,'Leximi tejkaloi afatin: '+path).then(function(x){return arr(x);}).catch(function(error){
     if(window.console&&console.debug)console.debug('PRISTEEL optional query skipped:',path,error&&error.message);
     return[];
   });
@@ -72,10 +77,12 @@ function relationScore(row,project){
 async function byProject(table,pid,projectOrName,order){
   var project=typeof projectOrName==='object'?projectOrName:{id:pid,name:projectOrName||'',ref:'',client:''};
   var tail='&select=*'+(order?'&'+order:'');
-  var rows=uniq(await safe(table+'?project_id=eq.'+enc(pid)+tail),rowKey);
+  var directP=safe(table+'?project_id=eq.'+enc(pid)+tail);
+  var broadP=LEGACY_FALLBACK_TABLES[table]?safe(table+'?select=*'+(order?'&'+order:'&limit=3000')):Promise.resolve([]);
+  var pair=await Promise.all([directP,broadP]);
+  var rows=uniq(pair[0],rowKey);
   if(!LEGACY_FALLBACK_TABLES[table])return rows;
-  var broad=await safe(table+'?select=*'+(order?'&'+order:'&limit=3000'));
-  broad.forEach(function(row){
+  pair[1].forEach(function(row){
     if(explicitProjectIds(row).length)return;
     if(relationScore(row,project)<260)return;
     var key=String(rowKey(row)||'');if(!key||rows.some(function(x){return String(rowKey(x))===key;}))return;
@@ -84,13 +91,16 @@ async function byProject(table,pid,projectOrName,order){
   return rows;
 }
 async function emails(pid){
-  var links=await safe('project_email_links?project_id=eq.'+enc(pid)+'&select=*&order=created_at.desc&limit=5000');
+  var linksP=safe('project_email_links?project_id=eq.'+enc(pid)+'&select=*&order=created_at.desc&limit=5000');
   var directP=safe('project_emails?project_id=eq.'+enc(pid)+'&select=*&order=sent_at.desc&limit=3000');
-  var ids=uniq(links,function(x){return x.gmail_message_id;}).map(function(x){return x.gmail_message_id;}).filter(Boolean),linked=[];
+  var links=await linksP;
+  var ids=uniq(links,function(x){return x.gmail_message_id;}).map(function(x){return x.gmail_message_id;}).filter(Boolean),jobs=[];
   for(var i=0;i<ids.length;i+=30){
     var part=ids.slice(i,i+30).map(function(x){return'"'+String(x).replace(/"/g,'')+'"';}).join(',');
-    linked=linked.concat(await safe('project_emails?gmail_message_id=in.('+part+')&select=*&order=sent_at.desc&limit=3000'));
+    jobs.push(safe('project_emails?gmail_message_id=in.('+part+')&select=*&order=sent_at.desc&limit=3000'));
   }
+  var batches=jobs.length?await Promise.all(jobs):[],linked=[];
+  batches.forEach(function(rows){linked=linked.concat(rows);});
   var direct=await directP;
   var conflicts=linked.filter(function(x){return x.project_id&&String(x.project_id)!==String(pid);});
   linked=linked.filter(function(x){return !x.project_id||String(x.project_id)===String(pid);});
@@ -98,8 +108,10 @@ async function emails(pid){
   return{rows:rows,links:links,linkedOnly:rows.filter(function(x){return !x.project_id;}),conflicts:conflicts};
 }
 async function contacts(pid,mails){
-  var saved=await safe('project_contacts?project_id=eq.'+enc(pid)+'&select=*&limit=3000');
-  var global=await safe('contacts?email=not.is.null&select=id,email,person,company,role,kind&limit=4000');
+  var pair=await Promise.all([
+    safe('project_contacts?project_id=eq.'+enc(pid)+'&select=*&limit=3000'),
+    safe('contacts?email=not.is.null&select=id,email,person,company,role,kind&limit=4000')
+  ]),saved=pair[0],global=pair[1];
   var gm={},map={};
   global.forEach(function(x){var e=email(x.email);if(e)gm[e]=x;});
   function add(addr,name,date,role){
@@ -129,13 +141,17 @@ async function drive(project){
   if(!project.drive_folder_id||!G)return{rows:[],state:project.drive_folder_id?'module-missing':'no-folder'};
   var token=G.currentToken?G.currentToken([G.driveScope]):'';
   if(!token)return{rows:[],state:'not-authorized'};
+  var controller=typeof AbortController==='function'?new AbortController():null,timer=0;
   try{
     var query="'"+project.drive_folder_id+"' in parents and trashed=false";
     var url='https://www.googleapis.com/drive/v3/files?q='+enc(query)+'&fields='+enc('files(id,name,size,modifiedTime,webViewLink,mimeType)')+'&pageSize=1000';
-    var r=await fetch(url,{headers:{Authorization:'Bearer '+token}});
+    if(controller)timer=setTimeout(function(){try{controller.abort();}catch(e){}},READ_TIMEOUT);
+    var opts={headers:{Authorization:'Bearer '+token}};if(controller)opts.signal=controller.signal;
+    var r=await fetch(url,opts);
+    if(timer)clearTimeout(timer);
     if(!r.ok)throw new Error('Drive '+r.status);
     var j=await r.json();return{rows:arr(j.files),state:'ok'};
-  }catch(e){return{rows:[],state:'error',error:e.message};}
+  }catch(e){if(timer)clearTimeout(timer);return{rows:[],state:'error',error:e.message};}
 }
 function matchDeal(project,deals){
   var tokens=norm([project.name,canonicalRef(project),project.client].join(' ')).split(' ').filter(function(x){return x.length>=4;}),best=null,score=0;
@@ -150,7 +166,7 @@ function supplierOffer(row){
 }
 async function load(id){
   var p=(await safe('projects?id=eq.'+enc(id)+'&select=*&limit=1'))[0];
-  if(!p)throw new Error('Projekti nuk u gjet.');
+  if(!p)throw new Error('Projekti nuk u gjet ose leximi tejkaloi afatin.');
   var em=await emails(id);
   var out=await Promise.all([
     contacts(id,em.rows),
@@ -186,5 +202,5 @@ async function load(id){
   };
   return data;
 }
-window.PSTProjectDataIntegrity={load:load,arr:arr,enc:enc,safe:safe,byProject:byProject,email:email,external:external,relationScore:relationScore,canonicalRef:canonicalRef};
+window.PSTProjectDataIntegrity={load:load,arr:arr,enc:enc,safe:safe,byProject:byProject,email:email,external:external,relationScore:relationScore,canonicalRef:canonicalRef,readTimeout:READ_TIMEOUT};
 })();
