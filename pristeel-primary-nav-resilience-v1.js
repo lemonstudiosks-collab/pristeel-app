@@ -136,9 +136,18 @@ function openPartners(){
  try{var C=window.PSTContactMasterV1;if(C&&typeof C.open==='function')C.open();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('contacts');else if(!legacyShow('contacts'))activate('page-contacts','contacts');}catch(e){activate('page-contacts','contacts');}
  mark('contacts');scheduleRepair();schedulePolish();return true;
 }
+function financeReady(){return visible(document.getElementById('page-finance'));}
+function hydrateFinance(){
+ try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}
+ try{var F=window.PSTFinanceDailyV1;if(F&&typeof F.apply==='function')F.apply(true);}catch(e){}
+}
 function openFinance(){
- try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('finance');else if(!legacyShow('finance'))activate('page-finance','finance');}catch(e){activate('page-finance','finance');}
- mark('finance');scheduleRepair();schedulePolish();return true;
+ var ok=false;
+ try{if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('finance');ok=financeReady();}}catch(e){}
+ if(!ok){try{legacyShow('finance');ok=financeReady();}catch(e){}}
+ if(!ok)ok=!!activate('page-finance','finance');
+ if(ok){hydrateFinance();setTimeout(hydrateFinance,0);}
+ mark('finance');scheduleRepair();schedulePolish();return ok;
 }
 function openSystem(){
  try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('apps');else if(typeof window.openModuleHub==='function')window.openModuleHub();else activate('page-workspace-apps','apps');}catch(e){activate('page-workspace-apps','apps');}
@@ -196,6 +205,6 @@ document.addEventListener('pst:modules-ready',function(){scheduleRepair();schedu
 document.addEventListener('pst:home-canonical-rendered',function(){scheduleRepair();schedulePolish();});
 document.addEventListener('pst:project-opened',function(){scheduleRepair();schedulePolish();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){scheduleRepair();schedulePolish();},{once:true});else{scheduleRepair();schedulePolish();}
-var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature}};
+var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature,financeReady:financeReady}};
 window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=window.PSTPrimaryNavResilienceV9=window.PSTPrimaryNavResilienceV10=API;
 })();
