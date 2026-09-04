@@ -2,6 +2,17 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-09-04
+
+### Inline boot continuity and canonical project preload stabilized
+
+- Removed a synchronous `loadHub is not defined` failure from the application HTML. The retired cockpit owner is now an optional compatibility callback, so its absence cannot abort the remaining inline runtime.
+- Changed the early Project Workspace preloader to verify the stable `PSTProjectIntegrityUIV1.open` module API instead of racing presentation wrappers on the mutable global opener.
+- Bumped the preloader cache key so production browsers receive the corrected activation contract.
+- Added a regression smoke for both failures and made the ordered-bootstrap timeout smoke portable to Windows timer granularity.
+- Made the runtime-manifest blob check normalize CRLF checkouts to Git's canonical LF representation.
+- No Supabase schema/data, automation, Gmail, OCR, scheduled job, outbound action or approval-gate logic changed.
+
 ## 2026-09-03
 
 ### TED winner email preparation restored in Action Console
