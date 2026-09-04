@@ -10,6 +10,7 @@ window.__pstFinanceStabilityV2=true;
 
 var WAIT=6000;
 var lastActive=false;
+var forcedPageDisplay=false;
 
 function loadingText(el){return el&&/duke ngarkuar/i.test(String(el.textContent||''));}
 function guard(id,label){
@@ -168,21 +169,111 @@ function installHub(){
   return true;
 }
 
+function computedVisible(el){
+  if(!el||el.hidden)return false;
+  try{var cs=window.getComputedStyle&&window.getComputedStyle(el);if(cs&&(cs.display==='none'||cs.visibility==='hidden'))return false;}catch(e){}
+  return !(el.style&&el.style.display==='none');
+}
 function isFinanceActive(){
   var p=document.getElementById('page-finance');
-  return !!(p&&p.classList.contains('active')&&p.style.display!=='none');
+  return !!(p&&p.classList.contains('active')&&computedVisible(p));
+}
+function financeSurfaceReady(){
+  var p=document.getElementById('page-finance'),hub=document.getElementById('fin-hub'),grid=document.getElementById('fin-hub-grid');
+  return !!(p&&p.classList.contains('active')&&computedVisible(p)&&computedVisible(hub)&&grid&&grid.children&&grid.children.length>0);
+}
+function clearForcedPageDisplay(){
+  var p=document.getElementById('page-finance');
+  if(!p||!forcedPageDisplay)return;
+  p.style.removeProperty('display');
+  forcedPageDisplay=false;
+}
+function activateExistingFinance(){
+  var p=document.getElementById('page-finance');
+  if(!p)return false;
+  document.querySelectorAll('.page').forEach(function(page){
+    if(page===p)return;
+    page.classList.remove('active');
+    page.style.display='none';
+  });
+  p.hidden=false;
+  p.removeAttribute('hidden');
+  p.classList.add('active');
+  p.style.display='block';
+  try{
+    var cs=window.getComputedStyle&&window.getComputedStyle(p);
+    if(cs&&cs.display==='none'){
+      p.style.setProperty('display','block','important');
+      forcedPageDisplay=true;
+    }
+  }catch(e){}
+  installSwitch();
+  installHub();
+  installInvoiceDocumentTheme();
+  polish();
+  if(typeof window.finShowHub==='function'){
+    try{window.finShowHub();}catch(e){}
+  }
+  try{
+    var D=window.PSTFinanceDailyV1;
+    if(D&&typeof D.apply==='function')D.apply(true);
+  }catch(e){}
+  return financeSurfaceReady()||isFinanceActive();
+}
+function ensureFinanceCore(){
+  if(typeof window.finShowHub==='function')return Promise.resolve(true);
+  var old=document.querySelector('script[data-pst-finance-core-recovery]');
+  if(old)return new Promise(function(resolve){old.addEventListener('load',function(){resolve(typeof window.finShowHub==='function');},{once:true});old.addEventListener('error',function(){resolve(false);},{once:true});});
+  return new Promise(function(resolve){
+    var s=document.createElement('script');
+    s.src='pristeel-finance.js?v=20260904-finance-recovery1';
+    s.defer=true;
+    s.setAttribute('data-pst-finance-core-recovery','1');
+    s.onload=function(){installSwitch();installHub();resolve(typeof window.finShowHub==='function');};
+    s.onerror=function(){resolve(false);};
+    document.head.appendChild(s);
+  });
+}
+function recoverFinance(){
+  if(activateExistingFinance()&&financeSurfaceReady())return Promise.resolve(true);
+  return ensureFinanceCore().then(function(){
+    var ok=activateExistingFinance();
+    setTimeout(function(){if(isFinanceActive()&&!financeSurfaceReady())activateExistingFinance();},80);
+    return ok;
+  });
+}
+function installWorkspaceFinanceRoute(){
+  var current=window.pstWorkspaceGo;
+  if(typeof current!=='function'||current.__pstFinanceRouteRecoveryV1)return false;
+  var wrapped=function(key){
+    if(String(key||'').toLowerCase()==='finance'){
+      recoverFinance();
+      return true;
+    }
+    clearForcedPageDisplay();
+    return current.apply(this,arguments);
+  };
+  wrapped.__pstFinanceRouteRecoveryV1=true;
+  wrapped.__pstFinanceRouteBase=current;
+  window.pstWorkspaceGo=wrapped;
+  return true;
 }
 function syncActivation(){
-  var active=isFinanceActive();
+  var p=document.getElementById('page-finance');
+  var active=!!(p&&p.classList.contains('active'));
+  if(!active){
+    clearForcedPageDisplay();
+    lastActive=false;
+    return;
+  }
   if(active&&!lastActive){
     setTimeout(function(){
-      if(!isFinanceActive())return;
-      installSwitch();
-      installHub();
-      installInvoiceDocumentTheme();
-      polish();
-      if(typeof window.finShowHub==='function')window.finShowHub();
+      var page=document.getElementById('page-finance');
+      if(!page||!page.classList.contains('active'))return;
+      recoverFinance();
     },60);
+  }else if(active&&!financeSurfaceReady()){
+    setTimeout(function(){if(document.getElementById('page-finance')&&document.getElementById('page-finance').classList.contains('active'))recoverFinance();},60);
   }
   lastActive=active;
 }
@@ -192,7 +283,7 @@ function watchFinancePage(){
   p.__pstFinanceStabilityObserved=true;
   if(typeof MutationObserver==='function'){
     var o=new MutationObserver(syncActivation);
-    o.observe(p,{attributes:true,attributeFilter:['class','style']});
+    o.observe(p,{attributes:true,attributeFilter:['class','style','hidden']});
     p.__pstFinanceStabilityObserver=o;
   }
   syncActivation();
@@ -204,6 +295,7 @@ function install(){
   installSwitch();
   installHub();
   installInvoiceDocumentTheme();
+  installWorkspaceFinanceRoute();
   watchFinancePage();
   polish();
 }
@@ -211,5 +303,5 @@ function install(){
 install();
 [120,500,1200,2500].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation,applyInvoiceDocumentTheme:applyInvoiceDocumentTheme,installInvoiceDocumentTheme:installInvoiceDocumentTheme,invoiceDocumentPalette:INVOICE_DOC_PALETTE};
+window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation,recoverFinance:recoverFinance,financeSurfaceReady:financeSurfaceReady,activateExistingFinance:activateExistingFinance,applyInvoiceDocumentTheme:applyInvoiceDocumentTheme,installInvoiceDocumentTheme:installInvoiceDocumentTheme,invoiceDocumentPalette:INVOICE_DOC_PALETTE};
 })();
