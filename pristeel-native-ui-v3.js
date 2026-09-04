@@ -1,6 +1,7 @@
 /* PRISTEEL Native UI v3 compatibility entry
- * The former v3 presentation layer translated Albanian back to English and
- * competed with later Home renderers. v4 is now the only visible Home owner.
+ * v4 remains the visible Home owner. This compatibility layer now only keeps
+ * presentation stable and provides bounded recovery for the two daily routes
+ * that must never remain blank: Finance and Project workspace.
  */
 (function(){
 'use strict';
@@ -41,25 +42,23 @@ function installEntryCss(){
 `;
   document.head.appendChild(s);
 }
-function installCompactHomeCss(){
+function installStablePresentationCss(){
   var s=document.getElementById('pst-home-compact-normal-css');
-  if(!s){s=document.createElement('style');s.id='pst-home-compact-normal-css';}
+  if(!s){s=document.createElement('style');s.id='pst-home-compact-normal-css';document.head.appendChild(s);}
   s.textContent=`
-@media(min-width:1025px){
-  html.pst-native-ui-v4-ready #pst-ws-sidebar,
-  html.pst-native-ui-v4-ready .workspace-shell>.sidebar{width:200px!important;min-width:200px!important;max-width:200px!important;flex:0 0 200px!important}
-}
-#pst-native-home-v4{padding-top:22px!important}
-#pst-native-home-v4 .pn-head{margin-bottom:10px!important}
-#pst-native-home-v4 .pn-ask-slot{min-height:56px!important;height:56px!important;margin-bottom:10px!important;overflow:visible!important}
-#pst-native-home-v4 .pn-ask-wait{min-height:56px!important;height:56px!important;padding:0 14px!important}
-#pst-native-home-v4 .pst-live-command-shell{position:relative!important;min-height:56px!important;height:56px!important;margin:0!important;padding:0!important;overflow:visible!important;border:1px solid #D9E2E5!important;border-left:3px solid #4F97AF!important;border-radius:12px!important;background:#FCFCFA!important;box-shadow:0 3px 12px rgba(48,58,62,.025)!important}
-#pst-native-home-v4 .pst-live-command-shell:before{display:none!important}
-#pst-native-home-v4 .pst-live-command-intro{display:none!important}
-#pst-native-home-v4 .pst-live-command{display:flex!important;align-items:center!important;min-height:54px!important;height:54px!important;margin:0!important;padding:5px 6px!important;border:0!important;border-radius:10px!important;background:#F4F5F3!important}
-#pst-native-home-v4 .pst-live-command-mark{width:32px!important;height:32px!important;min-width:32px!important}
-#pst-native-home-v4 .pst-live-input{min-height:42px!important;height:42px!important;max-height:42px!important;resize:none!important;padding:9px 4px!important;font-size:13px!important}
-#pst-native-home-v4 .pst-live-send{width:42px!important;height:42px!important;min-width:42px!important;border-radius:10px!important;background:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important}
+/* Stable presentation: do not resize the sidebar or shrink typography after startup. */
+#pst-ws-sidebar .pst-nav-label,#pst-ws-canonical-nav .pst-nav-label{font-size:13px!important;line-height:1.25!important}
+#pst-ws-sidebar .pst-ws-navbtn,#pst-ws-canonical-nav .pst-ws-navbtn{font-size:13px!important;min-height:48px!important}
+#pst-native-home-v4{padding-top:24px!important}
+#pst-native-home-v4 .pn-head{margin-bottom:12px!important}
+#pst-native-home-v4 .pn-ask-slot{min-height:60px!important;margin-bottom:12px!important;overflow:visible!important}
+#pst-native-home-v4 .pn-ask-wait{min-height:60px!important;padding:0 14px!important}
+#pst-native-home-v4 .pst-live-command-shell{position:relative!important;min-height:60px!important;margin:0!important;padding:0!important;overflow:visible!important;border:1px solid #D9E2E5!important;border-left:3px solid #4F97AF!important;border-radius:12px!important;background:#FCFCFA!important;box-shadow:0 3px 12px rgba(48,58,62,.025)!important}
+#pst-native-home-v4 .pst-live-command-shell:before,#pst-native-home-v4 .pst-live-command-intro{display:none!important}
+#pst-native-home-v4 .pst-live-command{display:flex!important;align-items:center!important;min-height:58px!important;margin:0!important;padding:6px!important;border:0!important;border-radius:10px!important;background:#F4F5F3!important}
+#pst-native-home-v4 .pst-live-command-mark{width:34px!important;height:34px!important;min-width:34px!important}
+#pst-native-home-v4 .pst-live-input{min-height:44px!important;height:44px!important;max-height:44px!important;resize:none!important;padding:10px 6px!important;font-size:14px!important}
+#pst-native-home-v4 .pst-live-send{width:44px!important;height:44px!important;min-width:44px!important;border-radius:10px!important;background:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important}
 #pst-native-home-v4 .pst-live-result[hidden],#pst-native-home-v4 .pst-live-result[data-pst-dismissed="1"]{display:none!important}
 #pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"]){position:fixed!important;z-index:2147482500!important;left:50%!important;top:12vh!important;transform:translateX(-50%)!important;width:min(720px,calc(100vw - 32px))!important;max-height:76vh!important;overflow:auto!important;margin:0!important;padding:24px 56px 24px 24px!important;border:1px solid #D9E2E5!important;border-left:4px solid #4F97AF!important;border-radius:14px!important;background:#FCFCFA!important;color:#2F3437!important;box-shadow:0 0 0 100vmax rgba(24,38,43,.42),0 24px 70px rgba(24,38,43,.22)!important}
 #pst-native-home-v4 .pst-live-result .pst-live-answer{color:#2F3437!important;font-size:14px!important;line-height:1.65!important}
@@ -75,19 +74,26 @@ function installCompactHomeCss(){
 #pst-native-home-v4 .pst-live-result .pst-live-open-answer{background:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important}
 #pst-native-home-v4 .pst-ask-modal-close{display:none;position:fixed;z-index:2147482600;top:calc(12vh + 14px);right:max(24px,calc((100vw - 720px)/2 + 16px));width:32px;height:32px;place-items:center;border:1px solid #D9E2E5;border-radius:9px;background:#FCFCFA;color:#59666B;font-size:20px;line-height:1;cursor:pointer;box-shadow:none}
 #pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"])+.pst-ask-modal-close{display:grid!important}
-#pst-native-home-v4 .pn-kpis{gap:8px!important;margin-bottom:10px!important}
-#pst-native-home-v4 .pn-kpi{min-height:68px!important;padding:8px 10px!important;border-radius:10px!important}
-#pst-native-home-v4 .pn-kpi span{font-size:8.5px!important}
-#pst-native-home-v4 .pn-kpi b{font-size:19px!important;margin-top:3px!important}
-#pst-native-home-v4 .pn-kpi small{font-size:8px!important;margin-top:2px!important;line-height:1.25!important}
-#pst-native-home-v4 .pn-kpi em{right:8px!important;top:7px!important}
-#pst-native-home-v4 .pn-kpi:nth-child(-n+2):after{left:10px!important;right:10px!important}
+#pst-native-home-v4 .pn-kpis{gap:10px!important;margin-bottom:12px!important}
+#pst-native-home-v4 .pn-kpi{min-height:82px!important;padding:11px 12px!important;border-radius:10px!important}
+#pst-native-home-v4 .pn-kpi span{font-size:10.5px!important;line-height:1.25!important}
+#pst-native-home-v4 .pn-kpi b{font-size:22px!important;margin-top:4px!important;line-height:1.15!important}
+#pst-native-home-v4 .pn-kpi small{font-size:10px!important;margin-top:4px!important;line-height:1.3!important}
+#pst-native-home-v4 .pn-kpi em{right:10px!important;top:9px!important}
+#pst-native-home-v4 .pn-kpi:nth-child(-n+2):after{left:12px!important;right:12px!important}
+/* Keep the project workspace readable; late compatibility layers must not reduce it to 7–9px text. */
+#page-workspace-project .pst-pi-sub{font-size:12px!important}
+#page-workspace-project .pst-pi-btn,#page-workspace-project .pst-pi-tab{font-size:11.5px!important}
+#page-workspace-project .pst-pi-stat span,#page-workspace-project .pst-pi-hd small,#page-workspace-project .pst-pi-meta,#page-workspace-project .pst-pi-contactmain div,#page-workspace-project .pst-pi-integr span{font-size:10.5px!important}
+#page-workspace-project .pst-pi-hd b,#page-workspace-project .pst-pi-name,#page-workspace-project .pst-pi-contactmain b,#page-workspace-project .pst-pi-integr b{font-size:12px!important}
+#page-workspace-project .pst-pi-link,#page-workspace-project .pst-pi-empty,#page-workspace-project .pst-pi-note{font-size:10.5px!important}
+#page-workspace-project .pst-pi-badge{font-size:9px!important}
+#page-workspace-project .pst-pi-step{font-size:9.5px!important}
 @media(max-width:760px){
   #pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"]){top:7vh!important;max-height:84vh!important;padding:20px 48px 20px 18px!important}
   #pst-native-home-v4 .pst-ask-modal-close{top:calc(7vh + 10px);right:22px}
 }
 `;
-  document.head.appendChild(s);
 }
 function currentAskResult(){return document.querySelector('#pst-native-home-v4 .pst-live-result')||document.querySelector('#page-workspace-home .pst-live-result');}
 function dismissAskModal(){var r=currentAskResult();if(!r)return false;r.setAttribute('data-pst-dismissed','1');r.hidden=true;return true;}
@@ -124,8 +130,68 @@ function installAskModalChrome(){
   }
   return true;
 }
-function applyHomePresentation(){installCompactHomeCss();installAskModalChrome();}
-function apply(){installEntryCss();installRecoveryGate();var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
+function markFinanceNav(){
+  var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;
+  host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){b.classList.toggle('active',String(b.dataset.key||'').toLowerCase()==='finance');});
+}
+function showFinancePage(){
+  var p=document.getElementById('page-finance');if(!p)return false;
+  document.querySelectorAll('.page').forEach(function(x){if(x!==p){x.classList.remove('active');x.style.display='none';}});
+  p.hidden=false;p.removeAttribute('hidden');p.classList.add('active');p.style.setProperty('display','block','important');markFinanceNav();
+  return true;
+}
+function ensureFinanceCore(){
+  if(typeof window.finShowHub==='function')return Promise.resolve(true);
+  var old=document.querySelector('script[data-pst-ui-finance-core]');
+  if(old)return new Promise(function(resolve){if(typeof window.finShowHub==='function')return resolve(true);old.addEventListener('load',function(){resolve(typeof window.finShowHub==='function');},{once:true});old.addEventListener('error',function(){resolve(false);},{once:true});});
+  return new Promise(function(resolve){var s=document.createElement('script');s.src='pristeel-finance.js?v=20260904-finance-hardfix2';s.defer=true;s.setAttribute('data-pst-ui-finance-core','1');s.onload=function(){resolve(typeof window.finShowHub==='function');};s.onerror=function(){resolve(false);};document.head.appendChild(s);});
+}
+function recoverFinanceHard(){
+  markFinanceNav();showFinancePage();
+  var F=window.PSTFinanceStabilityV2;
+  if(F&&typeof F.recoverFinance==='function'){
+    try{return Promise.resolve(F.recoverFinance()).then(function(){showFinancePage();if(typeof window.finShowHub==='function')window.finShowHub();return true;}).catch(function(){return false;});}catch(e){}
+  }
+  return ensureFinanceCore().then(function(){showFinancePage();if(typeof window.finShowHub==='function'){try{window.finShowHub();}catch(e){}}try{var D=window.PSTFinanceDailyV1;if(D&&typeof D.apply==='function')D.apply(true);}catch(e){}return true;});
+}
+function installFinanceWindowOwner(){
+  if(window.__pstFinanceWindowOwnerV1)return true;window.__pstFinanceWindowOwnerV1=true;
+  /* Window capture runs before document capture, so a later navigation owner cannot blank Finance. */
+  window.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="finance"]'):null;if(!b)return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();recoverFinanceHard();[80,240,700].forEach(function(ms){setTimeout(recoverFinanceHard,ms);});},true);
+  return true;
+}
+function timeoutPromise(p,ms,label){
+  return Promise.race([Promise.resolve(p),new Promise(function(_,reject){setTimeout(function(){reject(new Error(label||'Veprimi tejkaloi afatin.'));},ms);})]);
+}
+function renderProjectCoreFallback(id,reason){
+  var p=document.getElementById('page-workspace-project');if(!p)return Promise.resolve(false);
+  function draw(project){
+    var name=project&&project.name||'Projekti';var client=project&&(project.client||project.client_name)||'';var ref=project&&(project.business_ref||project.ref)||'';var status=project&&(project.operational_state||project.pipeline_stage||project.status)||'';
+    p.innerHTML='<div class="pst-ws-page"><section class="pst-pi-head"><div class="pst-pi-top"><div><div class="pst-pi-title">'+String(name).replace(/</g,'&lt;')+'</div><div class="pst-pi-sub">'+[client,ref,status].filter(Boolean).map(function(x){return String(x).replace(/</g,'&lt;');}).join(' · ')+'</div></div><div class="pst-pi-actions"><button class="pst-pi-btn" type="button" onclick="pstWorkspaceGo(\'projects\')">Projektet</button><button class="pst-pi-btn primary" type="button" onclick="pstOpenProjectWorkspace(\''+String(id).replace(/'/g,'')+'\')">Riprovo</button></div></div></section><section class="pst-pi-card"><div class="pst-pi-body"><div class="pst-pi-note"><b>Projekti është hapur.</b><br>Të dhënat plotësuese nuk u kthyen brenda afatit; mund të vazhdosh me projektin ose të përdorësh “Riprovo”.</div></div></section></div>';
+    return true;
+  }
+  if(typeof window.supaFetch!=='function'){draw(null);return Promise.resolve(true);}
+  return timeoutPromise(window.supaFetch('projects?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1'),3500,'').then(function(rows){draw(Array.isArray(rows)&&rows[0]||null);return true;}).catch(function(){draw(null);return true;});
+}
+function projectStillLoading(id){
+  var p=document.getElementById('page-workspace-project');if(!p||!p.classList.contains('active'))return false;
+  if(id&&window.__pstCurrentProjectId&&String(window.__pstCurrentProjectId)!==String(id))return false;
+  return /duke (hapur|bashkuar|ngarkuar)/i.test(String(p.textContent||''));
+}
+function installProjectOpenGuard(){
+  var current=window.pstOpenProjectWorkspace;
+  if(typeof current!=='function'||current.__pstBoundedUiGuard)return false;
+  var wrapped=function(id){
+    var self=this,args=arguments,result;
+    try{result=current.apply(self,args);}catch(e){renderProjectCoreFallback(id,e);return Promise.resolve(false);}
+    return timeoutPromise(result,16000,'Ngarkimi i projektit tejkaloi afatin.').catch(function(error){if(projectStillLoading(id))return renderProjectCoreFallback(id,error);return false;});
+  };
+  wrapped.__pstBoundedUiGuard=true;wrapped.__pstBoundedUiBase=current;wrapped.__pstCanonicalOwner=current.__pstCanonicalOwner||'pristeel-project-integrity-ui-v1';wrapped.__pstTruthTransition=true;
+  window.pstOpenProjectWorkspace=wrapped;
+  return true;
+}
+function applyHomePresentation(){installStablePresentationCss();installAskModalChrome();installFinanceWindowOwner();installProjectOpenGuard();}
+function apply(){installEntryCss();installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
 function loadAskFunctionalOwner(){
   if(window.PSTHomeAskFunctionalOwnerV1||document.querySelector('script[data-pst-home-ask-functional-owner]'))return;
   var s=document.createElement('script');s.src='pristeel-home-ask-functional-owner-v1.js?v=20260904-ask3';s.defer=true;s.setAttribute('data-pst-home-ask-functional-owner','1');document.head.appendChild(s);
@@ -137,11 +203,11 @@ function loadCore(){
   var s=document.createElement('script');s.src='pristeel-native-ui-v4-core.js?v=20260903-singleowner1';s.defer=true;s.setAttribute('data-pst-native-ui-v4-core','1');
   s.onload=apply;s.onerror=function(){console.error('Nuk u ngarkua Native UI v4 core.');};document.head.appendChild(s);
 }
-installEntryCss();installRecoveryGate();loadAskFunctionalOwner();[0,80,220].forEach(function(ms){setTimeout(installRecoveryGate,ms);});
+installEntryCss();installStablePresentationCss();installRecoveryGate();installFinanceWindowOwner();loadAskFunctionalOwner();[0,80,220,700,1600].forEach(function(ms){setTimeout(function(){installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installStablePresentationCss();},ms);});
 document.addEventListener('pst:modules-ready',apply,{once:true});
 document.addEventListener('pst:native-home-ready',function(){applyHomePresentation();setTimeout(applyHomePresentation,240);});
 document.addEventListener('pst:project-control-home-rendered',function(){loadAskFunctionalOwner();setTimeout(function(){try{if(window.PSTHomeAskFunctionalOwnerV1)window.PSTHomeAskFunctionalOwnerV1.apply();}catch(e){}},0);});
 window.addEventListener('pageshow',apply,{once:true});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installRecoveryGate();loadCore();},{once:true});else loadCore();
-window.PSTUiOwnershipCleanupV1={apply:apply,installRecoveryGate:installRecoveryGate,installAskModalChrome:installAskModalChrome,installAskOwnerQueryBridge:installAskOwnerQueryBridge,dismissAskModal:dismissAskModal};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installRecoveryGate();installFinanceWindowOwner();loadCore();},{once:true});else loadCore();
+window.PSTUiOwnershipCleanupV1={apply:apply,installRecoveryGate:installRecoveryGate,installAskModalChrome:installAskModalChrome,installAskOwnerQueryBridge:installAskOwnerQueryBridge,dismissAskModal:dismissAskModal,recoverFinance:recoverFinanceHard,installProjectOpenGuard:installProjectOpenGuard};
 })();
