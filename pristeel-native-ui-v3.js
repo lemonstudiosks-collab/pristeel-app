@@ -211,3 +211,21 @@ window.addEventListener('pageshow',apply,{once:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installRecoveryGate();installFinanceWindowOwner();loadCore();},{once:true});else loadCore();
 window.PSTUiOwnershipCleanupV1={apply:apply,installRecoveryGate:installRecoveryGate,installAskModalChrome:installAskModalChrome,installAskOwnerQueryBridge:installAskOwnerQueryBridge,dismissAskModal:dismissAskModal,recoverFinance:recoverFinanceHard,installProjectOpenGuard:installProjectOpenGuard};
 })();
+
+/* Exact Home destination owner. Kept separate from the visual owner so it can
+ * be retired independently without touching Home rendering or business logic. */
+(function(){
+'use strict';
+if(window.__pstHomeRoutePrecisionLoaderV1)return;
+window.__pstHomeRoutePrecisionLoaderV1=true;
+function load(){
+  if(window.PSTHomeRoutePrecisionV1||document.querySelector('script[data-pst-home-route-precision]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-home-route-precision-v1.js?v=20260904-route2';
+  s.defer=true;
+  s.setAttribute('data-pst-home-route-precision','1');
+  document.head.appendChild(s);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+document.addEventListener('pst:native-home-ready',load,{once:true});
+})();
