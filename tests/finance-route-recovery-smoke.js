@@ -23,7 +23,6 @@ const {JSDOM}=require('jsdom');
   w.eval(src);
   await new Promise(r=>setTimeout(r,20));
   assert.strictEqual(typeof w.PSTFinanceStabilityV2.recoverFinance,'function','Finance recovery API missing');
-  w.document.getElementById('page-finance').classList.remove('css-hidden');
   const out=w.pstWorkspaceGo('finance');
   assert.strictEqual(out,true,'Finance route wrapper should own Finance navigation');
   await new Promise(r=>setTimeout(r,30));
