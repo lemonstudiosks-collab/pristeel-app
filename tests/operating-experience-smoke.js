@@ -34,6 +34,7 @@ const dom = new JSDOM(`<!doctype html><html><head></head><body>
     </div></section>
   </div>
   <div id="page-workspace-apps" class="page"></div>
+  <div id="page-home" class="page"></div>
 </div>
 </body></html>`, {runScripts:'outside-only', url:'https://example.test'});
 const w = dom.window;
@@ -75,6 +76,17 @@ w.document.getElementById('page-workspace-home').classList.add('active');
 w.PSTOperatingExperienceV1.apply();
 assert.strictEqual(w.document.querySelector('.pst-ws-card-title').textContent,'Duhet veprimi yt');
 assert.strictEqual(w.document.body.dataset.pstBusinessZone,'home');
+
+// A System panel created by a legacy page owner must follow the active canonical System host.
+w.document.getElementById('page-workspace-home').classList.remove('active');
+w.document.getElementById('page-home').classList.add('active');
+w.PSTOperatingExperienceV1.apply();
+const systemBox=w.document.getElementById('pst-system-operating-tools');
+assert.strictEqual(systemBox.parentNode.id,'page-home','legacy System host should receive the initial panel');
+w.document.getElementById('page-home').classList.remove('active');
+w.document.getElementById('page-workspace-apps').classList.add('active');
+w.PSTOperatingExperienceV1.apply();
+assert.strictEqual(systemBox.parentNode.id,'page-workspace-apps','existing System panel must move to the active canonical host');
 
 console.log('Operating experience smoke test passed.');
 dom.window.close();

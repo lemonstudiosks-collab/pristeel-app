@@ -4,6 +4,8 @@ function must(cond,m){ if(!cond) fail(m); }
 const roles=fs.readFileSync('pristeel-roles.js','utf8');
 const entry=fs.readFileSync('pristeel-native-ui-v3.js','utf8');
 const core=fs.readFileSync('pristeel-native-ui-v4-core.js','utf8');
+const projectsModern=fs.readFileSync('pristeel-projects-modern-v1.js','utf8');
+const primaryNav=fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
 const nativeNeedle='pristeel-native-ui-v3.js?v=20260905-finance-terminal1';
 const nativeAt=roles.indexOf(nativeNeedle);
@@ -24,6 +26,12 @@ must(!entry.includes('window.confirm'),'entry must never monkeypatch or invoke b
 must(entry.includes('PPPP gjeti punë të pambyllur'),'Albanian recovery banner missing');
 must(!entry.includes("'Mundësitë':'Opportunities'"),'entry must never translate Albanian navigation back to English');
 must(!core.includes("'Mundësitë':'Opportunities'"),'core must never translate Albanian navigation back to English');
+must(core.includes('homeRouteContext'),'Home cards must resolve a destination context before navigation');
+must(core.includes("filter='due'")&&core.includes("filter='review'")&&core.includes("area='outreach'"),'Home opportunity and follow-up cards must route to their exact work subset');
+must(core.includes("p.openFinance(filter||'')")&&core.includes("p.openOpportunities(filter||'')"),'Home filters must be forwarded to the terminal page owners');
+must(projectsModern.includes('operationalGroup')&&projectsModern.includes("state.operational=value"),'Project cards must open the requested operational subset');
+must(projectsModern.includes("state.search=value")&&projectsModern.includes("value=\"'+esc(state.search)+'\""),'Client cards must open Projects with the client search visibly retained');
+must(primaryNav.includes("window.pstProjectsModernOpen(filter||'')")&&primaryNav.includes('openFinance(filter)'),'Primary navigation must pass Home context to Projects and Finance');
 for(const src of [entry,core]){
   must(!/\bnew\s+MutationObserver\s*\(/.test(src),'MutationObserver instance is forbidden in presentation UI');
   must(!/\bsetInterval\s*\(/.test(src),'setInterval polling is forbidden in presentation UI');
