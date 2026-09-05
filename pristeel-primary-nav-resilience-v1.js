@@ -112,7 +112,9 @@ function openHome(){
  try{if(H&&typeof H.render==='function')Promise.resolve(H.render(true)).catch(function(){});}catch(e){}
  mark('home');scheduleRepair();schedulePolish();return true;
 }
+var pendingOpportunityContext={};
 function handoffOpportunities(force,context){
+ context=context||pendingOpportunityContext;
  var page=document.getElementById('page-kek-tenders'),X=window.PSTProjectCentricWorkflowV1;if(!page||!X)return false;
  try{
    activate('page-kek-tenders','tenders');
@@ -123,8 +125,8 @@ function handoffOpportunities(force,context){
  return false;
 }
 function openOpportunities(filter){
- var context=typeof filter==='object'&&filter?filter:{focus:S(filter)};
- if(handoffOpportunities(true,context)){mark('tenders');scheduleRepair();schedulePolish();return true;}
+ pendingOpportunityContext=typeof filter==='object'&&filter?filter:{focus:S(filter)};
+ if(handoffOpportunities(true)){mark('tenders');scheduleRepair();schedulePolish();return true;}
  try{if(typeof window.pstTenderBizOpenMonitor==='function')window.pstTenderBizOpenMonitor();else if(typeof window.pstWsKekTenders==='function')window.pstWsKekTenders();else if(!legacyShow('kek-tenders'))activate('page-kek-tenders','tenders');}catch(e){activate('page-kek-tenders','tenders');}
  mark('tenders');scheduleRepair();schedulePolish();return true;
 }
