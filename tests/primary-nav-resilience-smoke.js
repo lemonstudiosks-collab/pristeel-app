@@ -47,6 +47,7 @@ R.route('apps');
 assert.ok(!calls.includes('system'), 'System must not need the fallback hub when its terminal page exists');
 assert.ok(w.document.getElementById('page-workspace-apps').classList.contains('active'), 'System must activate its terminal page directly');
 assert.ok(calls.includes('assistant'), 'System must ask the presentation owner to render after the terminal route activates');
+assert.ok(calls.includes('experience'), 'System must explicitly ask its base presenter to populate the otherwise-empty terminal page');
 
 R.route('tenders');
 assert.ok(calls.includes('tenders'), 'Opportunities route must remain functional');

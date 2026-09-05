@@ -153,7 +153,9 @@ function openFinance(){
 }
 function openSystem(){
  try{if(!activate('page-workspace-apps','apps')&&typeof window.openModuleHub==='function')window.openModuleHub();}catch(e){activate('page-workspace-apps','apps');}
+ try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){}
  try{var O=window.PSTOperatingAssistantV2;if(O&&typeof O.apply==='function')O.apply(false);}catch(e){}
+ setTimeout(function(){try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){}try{var O=window.PSTOperatingAssistantV2;if(O&&typeof O.apply==='function')O.apply(false);}catch(e){}},0);
  mark('apps');scheduleRepair();schedulePolish();return true;
 }
 function route(key){

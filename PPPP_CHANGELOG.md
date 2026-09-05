@@ -8,6 +8,7 @@ This file records material architecture/automation changes. It is not a substitu
 
 - Production verification of the Finance repair exposed that the Operating Assistant received the canonical `apps` route name while its presentation switch expected `system`, leaving the otherwise-active System page empty.
 - The presentation owner now normalizes `apps` to `system` before rendering, with a regression that covers the exact production route contract and the same fail-open behavior used by Finance.
+- The terminal navigation owner also invokes the existing Operating Experience presenter directly (and once after activation), so the empty System host is populated even when the later assistant layer is unavailable or still loading.
 - No business data, Supabase schema, automation, outbound action or approval gate changed.
 
 ### Finance presentation now fails open instead of rendering a blank page
