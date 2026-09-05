@@ -71,5 +71,17 @@ const code=fs.readFileSync('pristeel-operating-assistant-v2.js','utf8');
   assert(!code.includes('#page-finance:not(.pst-oa-finance-expanded)>*:not(#pst-oa-finance-home)'),'Unsafe hide-before-render Finance selector must stay retired');
   finance.window.close();
 
+  const system=new JSDOM(`<!doctype html><html><head></head><body><div id="page-workspace-apps" class="page active" style="display:block"><div class="card">Core system tools</div></div></body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
+  system.window.PSTOperatingExperienceV1={currentZone:()=> 'apps'};
+  system.window.eval(code);
+  const systemPage=system.window.document.getElementById('page-workspace-apps');
+  assert.strictEqual(systemPage.hasAttribute('data-pst-oa-compact'),false,'System core must remain fail-open before the compact owner renders');
+  system.window.PSTOperatingAssistantV2.apply(false);
+  assert(system.window.document.getElementById('pst-oa-system-home'),'Apps route must render the compact System owner');
+  assert.strictEqual(systemPage.getAttribute('data-pst-oa-compact'),'system','System core may be hidden only after its compact owner exists');
+  system.window.document.querySelector('.pst-oa-show-all-system').click();
+  assert.strictEqual(systemPage.hasAttribute('data-pst-oa-compact'),false,'Expanding System must reveal the existing core tools');
+  system.window.close();
+
   console.log('PPPP Operating Assistant v2 smoke: OK');
 })().catch(e=>{console.error(e);process.exit(1);});
