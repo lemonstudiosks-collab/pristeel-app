@@ -92,6 +92,7 @@ var files=[
   'pristeel-offer-project-status-sync-v1.js?v=20260808-1',
   'pristeel-offer-resave-fix-v1.js?v=20260808-1',
   'pristeel-finance-stability-v2.js?v=20260905-clickowner1',
+  'pristeel-finance-receipts-v1.js?v=20260905-1',
   'pristeel-workflow-governance-v1.js?v=20260808-6',
   'pristeel-quote-followup-governance-v1.js?v=20260808-2',
   'pristeel-modal-navigation-safety-v2.js?v=20260807-stability1',
