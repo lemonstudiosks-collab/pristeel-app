@@ -233,3 +233,9 @@ This file records material architecture/automation changes. It is not a substitu
 ### Human gates retained
 
 Automation may read, classify, reconcile, calculate, compare and prepare drafts. External sends, final commercial commitments, supplier commitment, PO/contract and final financial commitments remain human-approved.
+
+# 2026-09-05 — Finance canonical click owner follow-up
+
+- Production verification after #389 showed that the earlier Finance stability capture listener still consumed `Partnerët → Financat` before the refreshed primary navigation owner could run.
+- The early capture now hands Finance directly to `PSTPrimaryNavResilienceV1.openFinance()` when available and retains only a bounded local recovery fallback during bootstrap.
+- Cache identities for both the early Finance capture and the terminal primary navigation owner were advanced together so returning browsers cannot retain the stale routing behavior.

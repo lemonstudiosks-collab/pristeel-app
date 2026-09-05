@@ -49,6 +49,14 @@ const {JSDOM}=require('jsdom');
   finance.style.display='block';
   w.document.getElementById('fin-hub').style.display='none';
   w.document.getElementById('fin-hub-grid').innerHTML='';
+  let terminalOwnerCalls=0;
+  w.PSTPrimaryNavResilienceV1={openFinance(){
+    terminalOwnerCalls++;
+    finance.classList.add('active');
+    finance.style.display='block';
+    w.finShowHub();
+    return true;
+  }};
   let lateCanonicalCalls=0;
   w.document.addEventListener('click',function(e){
     const b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="finance"]'):null;
@@ -61,6 +69,7 @@ const {JSDOM}=require('jsdom');
 
   w.document.getElementById('finance-label').click();
   await new Promise(r=>setTimeout(r,40));
+  assert.strictEqual(terminalOwnerCalls,1,'Early Finance capture did not hand off to the terminal navigation owner exactly once');
   assert.strictEqual(lateCanonicalCalls,0,'Later canonical Finance owner was allowed to consume the click before recovery');
   assert(finance.classList.contains('active'),'Captured Finance click did not activate existing Finance page');
   assert.notStrictEqual(w.getComputedStyle(finance).display,'none','Captured Finance click left page computed-hidden');
