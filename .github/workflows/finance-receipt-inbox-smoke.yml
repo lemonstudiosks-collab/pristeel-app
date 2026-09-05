@@ -1,0 +1,45 @@
+name: Finance receipt inbox smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pristeel-finance-receipts-v1.js'
+      - 'pristeel-project-emails.js'
+      - 'tests/finance-receipt-inbox-smoke.js'
+      - 'supabase/functions/local-ocr-worker/index.ts'
+      - 'supabase/functions/pppp-expense-drive-ingest/index.ts'
+      - 'supabase/functions/pppp-expense-receipt-upload/index.ts'
+      - 'supabase/migrations/20260904052000_expense_receipt_inbox_v1.sql'
+      - 'supabase/migrations/20260904053500_expense_drive_inbox_cron_v1.sql'
+      - '.github/workflows/finance-receipt-inbox-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-finance-receipts-v1.js'
+      - 'pristeel-project-emails.js'
+      - 'tests/finance-receipt-inbox-smoke.js'
+      - 'supabase/functions/local-ocr-worker/index.ts'
+      - 'supabase/functions/pppp-expense-drive-ingest/index.ts'
+      - 'supabase/functions/pppp-expense-receipt-upload/index.ts'
+      - 'supabase/migrations/20260904052000_expense_receipt_inbox_v1.sql'
+      - 'supabase/migrations/20260904053500_expense_drive_inbox_cron_v1.sql'
+      - '.github/workflows/finance-receipt-inbox-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: node --check pristeel-finance-receipts-v1.js
+      - name: Receipt inbox regression smoke
+        run: node tests/finance-receipt-inbox-smoke.js
+      - name: Ordered bootstrap coverage
+        run: node tests/bootstrap-all-modules-smoke.js
