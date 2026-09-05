@@ -4,6 +4,12 @@ This file records material architecture/automation changes. It is not a substitu
 
 ## 2026-09-05
 
+### System presentation recognizes the canonical apps route
+
+- Production verification of the Finance repair exposed that the Operating Assistant received the canonical `apps` route name while its presentation switch expected `system`, leaving the otherwise-active System page empty.
+- The presentation owner now normalizes `apps` to `system` before rendering, with a regression that covers the exact production route contract and the same fail-open behavior used by Finance.
+- No business data, Supabase schema, automation, outbound action or approval gate changed.
+
 ### Finance presentation now fails open instead of rendering a blank page
 
 - Production verification after PR #390 exposed a separate presentation-owner conflict: the Operating Assistant CSS hid every Finance child before its compact Finance panel existed.
