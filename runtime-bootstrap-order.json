@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 149,
-  "sequenceSha256": "d92466db9b11186b4e91f078ee3818f615adeb1142441cc57cdd40f50ce3df18",
+  "sequenceSha256": "b965ad3e7dcf046e37d2e2a3c2426cdb9dfcf35a31e26ce624007cb724904737",
   "files": [
     "pristeel-auth-persistence.js?v=20260812-remember1",
     "pristeel-login-brand-v1.js?v=20260812-readable1",
@@ -94,7 +94,7 @@
     "pristeel-our-offer-stability-v2.js?v=20260807-stability1",
     "pristeel-offer-project-status-sync-v1.js?v=20260808-1",
     "pristeel-offer-resave-fix-v1.js?v=20260808-1",
-    "pristeel-finance-stability-v2.js?v=20260904-routechain2",
+    "pristeel-finance-stability-v2.js?v=20260905-clickowner1",
     "pristeel-workflow-governance-v1.js?v=20260808-6",
     "pristeel-quote-followup-governance-v1.js?v=20260808-2",
     "pristeel-modal-navigation-safety-v2.js?v=20260807-stability1",
@@ -152,7 +152,7 @@
     "pristeel-tender-priority-actions-v1.js?v=20260903-email1",
     "pristeel-home-operating-grid-v1.js?v=20260823-homegrid2",
     "pristeel-project-classification-v1.js?v=20260830-rowopen1",
-    "pristeel-primary-nav-resilience-v1.js?v=20260827-singleowner1",
+    "pristeel-primary-nav-resilience-v1.js?v=20260905-finance-terminal2",
     "pristeel-project-execution-guard-v1.js?v=20260829-postaward1"
   ]
 }

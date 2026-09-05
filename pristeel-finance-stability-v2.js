@@ -260,6 +260,15 @@ function installCanonicalFinanceCapture(){
     e.stopPropagation();
     if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
     markFinanceNav();
+    /* This capture owner is registered before the final sidebar owner. Hand the
+     * terminal route to that owner once it exists; otherwise use the bounded
+     * local recovery path during early bootstrap. This keeps a canonical click
+     * out of the multiply-decorated global router and avoids recovery loops. */
+    var nav=window.PSTPrimaryNavResilienceV1;
+    if(nav&&typeof nav.openFinance==='function'){
+      nav.openFinance();
+      return;
+    }
     recoverFinance();
     [60,180,500].forEach(function(ms){setTimeout(function(){if(!financeSurfaceReady())recoverFinance();},ms);});
   },true);
