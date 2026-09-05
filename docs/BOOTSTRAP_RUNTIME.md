@@ -20,7 +20,7 @@ The audited registry contains 149 versioned module entries.
 
 Sequence SHA-256:
 
-`e0ca71879783e49a71ed0b8185e893458e407f0088934d5c5dff98e14fdcecd4`
+`d92466db9b11186b4e91f078ee3818f615adeb1142441cc57cdd40f50ce3df18`
 
 At introduction of this registry, the generator reproduces the existing production `pristeel-project-emails.js` byte-for-byte, including its current Git blob SHA.
 
