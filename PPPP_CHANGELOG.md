@@ -2,6 +2,15 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-09-05
+
+### Finance presentation now fails open instead of rendering a blank page
+
+- Production verification after PR #390 exposed a separate presentation-owner conflict: the Operating Assistant CSS hid every Finance child before its compact Finance panel existed.
+- The terminal navigation owner now explicitly asks the presentation owner to render after Finance or System activation.
+- Compact Finance/System CSS is enabled only after the corresponding replacement panel exists; if that layer is late or unavailable, the existing core tools remain visible.
+- Updated regression coverage reproduces the terminal-route handoff and protects the fail-open contract. No business data, Supabase schema, automation, outbound action or approval gate changed.
+
 ## 2026-09-04
 
 ### Finance and System terminal routes isolated from shared router wrappers
