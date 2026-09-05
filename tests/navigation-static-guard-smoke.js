@@ -13,7 +13,7 @@ assert(/function insideWorkspace\(/.test(capture),'Project click interception mu
 assert(/data-pf2-offer-detail/.test(capture),'Inline supplier detail contract must remain protected');
 assert(/if\(key==='projects'\)return renderProjects\(\)/.test(release),'Release router must own deterministic Projects navigation');
 assert(/function go\(key\)[\s\S]*return legacyGo\?legacyGo\.apply/.test(home),'Canonical Home must delegate non-Home routes');
-assert(/function finalGo\(key\)[\s\S]*return routerBase\.apply/.test(guard),'Final Home wrapper must delegate non-Home routes');
+assert(/var base=current;routerBase=base;[\s\S]*function finalGo\(key\)[\s\S]*return base\.apply/.test(guard),'Final Home wrapper must delegate non-Home routes through its immutable captured base');
 assert(/pstOpenProjectWorkspace/.test(home),'Home project actions must enter the canonical project opener');
 assert(/installOpenBridge/.test(canonical)&&/base\.open=window\.pstOpenProjectWorkspace/.test(canonical),'Canonical project workflow must wrap the single project opener instead of replacing it');
 assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(capture),'Project navigation may not win races by observing/polling globally');

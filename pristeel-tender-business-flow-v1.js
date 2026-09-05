@@ -138,11 +138,21 @@ function afterHomeRender(force){
  setTimeout(function(){renderHomeSignal(homeSignalCache);},900);
  setTimeout(function(){renderHomeSignal(homeSignalCache);},2200);
 }
+function routeChainHas(fn,marker){
+ var seen=[];
+ for(var i=0;i<64&&typeof fn==='function';i++){
+  if(fn[marker])return true;
+  if(seen.indexOf(fn)>=0)return true;
+  seen.push(fn);
+  fn=fn.__pstRouteBase||fn.__pstFinanceRouteBase||fn.__pstTenderHomeSignalBase||fn.__base;
+ }
+ return false;
+}
 function installHomeNavigationHooks(){
- if(typeof window.pstWorkspaceGo==='function'&&!window.pstWorkspaceGo.__pstTenderHomeSignal){
+ if(typeof window.pstWorkspaceGo==='function'&&!routeChainHas(window.pstWorkspaceGo,'__pstTenderHomeSignal')){
   var go=window.pstWorkspaceGo;
   var wrappedGo=function(key){var result=go.apply(this,arguments);if(key==='home')afterHomeRender(false);return result;};
-  wrappedGo.__pstTenderHomeSignal=true;window.pstWorkspaceGo=wrappedGo;
+  wrappedGo.__pstTenderHomeSignal=true;wrappedGo.__pstTenderHomeSignalBase=go;wrappedGo.__pstRouteBase=go;window.pstWorkspaceGo=wrappedGo;
  }
  if(typeof window.pstWsRefreshHome==='function'&&!window.pstWsRefreshHome.__pstTenderHomeSignal){
   var refresh=window.pstWsRefreshHome;

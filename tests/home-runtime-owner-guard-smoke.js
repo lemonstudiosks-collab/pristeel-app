@@ -86,5 +86,13 @@ const afterRelease=context.window.pstWorkspaceGo;context.window.pstWorkspaceGo=f
  calls.length=0;context.window.pstWorkspaceGo('home');await new Promise(r=>setTimeout(r,20));
  assert.deepStrictEqual(calls,['dynamic:home'],'A later wrapper must still reach canonical Home without recursion');
 
+ // Re-install attempts happen in production when late modules finish booting. The
+ // final router must be discovered inside the wrapper chain and never recaptured.
+ const dynamicRouter=context.window.pstWorkspaceGo;
+ assert.strictEqual(context.window.PSTHomeRuntimeOwnerGuardV13.installFinalRouter(),true);
+ assert.strictEqual(context.window.pstWorkspaceGo,dynamicRouter,'Final router was wrapped again through a later owner');
+ calls.length=0;context.window.pstWorkspaceGo('projects');
+ assert.deepStrictEqual(calls,['dynamic:projects','later:projects','release:projects','base:projects'],'Repeated final-router install introduced recursion or duplicate routing');
+
  console.log('Home runtime owner guard event-driven non-recursive smoke: OK');
 })().catch(e=>{console.error(e);process.exit(1)});

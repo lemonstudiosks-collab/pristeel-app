@@ -67,6 +67,15 @@ const {JSDOM}=require('jsdom');
   assert(w.document.getElementById('fin-hub-grid').children.length>=2,'Captured Finance click did not render the existing Finance hub');
   assert(w.document.querySelector('[data-key="finance"]').classList.contains('active'),'Finance nav was not marked active');
 
+  // A later module may wrap the shared router. Re-running the Finance installer
+  // must find its existing owner in the chain instead of adding another layer.
+  const financeRouter=w.pstWorkspaceGo;
+  function lateWrapper(key){return financeRouter.apply(this,arguments);}
+  lateWrapper.__pstRouteBase=financeRouter;
+  w.pstWorkspaceGo=lateWrapper;
+  w.PSTFinanceStabilityV2.install();
+  assert.strictEqual(w.pstWorkspaceGo,lateWrapper,'Finance route owner was duplicated inside an existing wrapper chain');
+
   w.pstWorkspaceGo('projects');
   assert(baseRoutes.includes('projects'),'Non-Finance routes must continue to the existing router');
   dom.window.close();
