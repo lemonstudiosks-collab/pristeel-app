@@ -40,10 +40,13 @@ assert.ok(calls.includes('projects'), 'Projects must use the direct modern proje
 R.route('finance');
 assert.ok(!calls.includes('legacy:finance'), 'Finance must not enter a legacy or decorated router chain');
 assert.ok(w.document.getElementById('page-finance').classList.contains('active'), 'Finance must activate its terminal page directly');
+assert.ok(calls.includes('assistant'), 'Finance must ask the presentation owner to render after the terminal route activates');
 
+calls=[];
 R.route('apps');
 assert.ok(!calls.includes('system'), 'System must not need the fallback hub when its terminal page exists');
 assert.ok(w.document.getElementById('page-workspace-apps').classList.contains('active'), 'System must activate its terminal page directly');
+assert.ok(calls.includes('assistant'), 'System must ask the presentation owner to render after the terminal route activates');
 
 R.route('tenders');
 assert.ok(calls.includes('tenders'), 'Opportunities route must remain functional');

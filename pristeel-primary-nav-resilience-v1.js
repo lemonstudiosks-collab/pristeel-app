@@ -140,6 +140,7 @@ function financeReady(){return visible(document.getElementById('page-finance'));
 function hydrateFinance(){
  try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}
  try{var F=window.PSTFinanceDailyV1;if(F&&typeof F.apply==='function')F.apply(true);}catch(e){}
+ try{var O=window.PSTOperatingAssistantV2;if(O&&typeof O.apply==='function')O.apply(false);}catch(e){}
 }
 function openFinance(){
  /* Keep the daily Finance destination independent from the decorated global
@@ -152,6 +153,7 @@ function openFinance(){
 }
 function openSystem(){
  try{if(!activate('page-workspace-apps','apps')&&typeof window.openModuleHub==='function')window.openModuleHub();}catch(e){activate('page-workspace-apps','apps');}
+ try{var O=window.PSTOperatingAssistantV2;if(O&&typeof O.apply==='function')O.apply(false);}catch(e){}
  mark('apps');scheduleRepair();schedulePolish();return true;
 }
 function route(key){

@@ -59,5 +59,17 @@ const code=fs.readFileSync('pristeel-operating-assistant-v2.js','utf8');
   assert.strictEqual(opp.window.document.querySelectorAll('.pst-oa-advanced-filter').length,2,'Only advanced Opportunity filters should be collapsed');
   opp.window.close();
 
+  const finance=new JSDOM(`<!doctype html><html><head></head><body><div id="page-finance" class="page active" style="display:block"><div id="fin-hub" class="card">Core finance tools</div></div></body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
+  finance.window.eval(code);
+  const financePage=finance.window.document.getElementById('page-finance');
+  assert.strictEqual(financePage.hasAttribute('data-pst-oa-compact'),false,'Finance core must remain fail-open before the compact owner renders');
+  finance.window.PSTOperatingAssistantV2.apply(false);
+  assert(finance.window.document.getElementById('pst-oa-finance-home'),'Compact Finance owner was not rendered');
+  assert.strictEqual(financePage.getAttribute('data-pst-oa-compact'),'finance','Finance core may be hidden only after its compact owner exists');
+  finance.window.document.querySelector('.pst-oa-show-all-finance').click();
+  assert.strictEqual(financePage.hasAttribute('data-pst-oa-compact'),false,'Expanding Finance must reveal the existing core tools');
+  assert(!code.includes('#page-finance:not(.pst-oa-finance-expanded)>*:not(#pst-oa-finance-home)'),'Unsafe hide-before-render Finance selector must stay retired');
+  finance.window.close();
+
   console.log('PPPP Operating Assistant v2 smoke: OK');
 })().catch(e=>{console.error(e);process.exit(1);});
