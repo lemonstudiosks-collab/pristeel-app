@@ -232,3 +232,18 @@ window.PSTProjectWorkflowLegacyCaptureV1={
   _test:{actionKey:actionKey,workspaceActive:workspaceActive,insideWorkspace:insideWorkspace,insideGlobalFlowBar:insideGlobalFlowBar,globalClientOfferStep:globalClientOfferStep}
 };
 })();
+
+/* Load the human-gated manual supplier offer bridge without changing canonical workflow ownership. */
+(function(){
+  if(window.__pstManualSupplierOfferLoaderV1)return;
+  window.__pstManualSupplierOfferLoaderV1=true;
+  function load(){
+    if(window.PSTManualSupplierOfferV1||document.querySelector('script[data-pst-manual-supplier-offer]'))return;
+    var s=document.createElement('script');
+    s.src='pristeel-manual-supplier-offer-v1.js?v=20260905-manual-supplier-offer-v1';
+    s.defer=true;
+    s.setAttribute('data-pst-manual-supplier-offer','1');
+    document.head.appendChild(s);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+})();
