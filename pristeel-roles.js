@@ -229,7 +229,7 @@ function loadScriptBeforeBootstrap(path,attr,done){
 }
 
 (function loadNativeUiThenRuntime(){
-  loadScriptBeforeBootstrap('pristeel-native-ui-v3.js?v=20260901-1','data-pst-native-ui-v3',function(){
+  loadScriptBeforeBootstrap('pristeel-native-ui-v3.js?v=20260905-finance-terminal1','data-pst-native-ui-v3',function(){
     (function loadCommercialOverridesThenMainRuntime(){
       function startMainRuntime(){
         window.__pstCommercialLiveOverride='20260818-commercial-live1';

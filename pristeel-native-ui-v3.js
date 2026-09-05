@@ -148,10 +148,9 @@ function ensureFinanceCore(){
 }
 function recoverFinanceHard(){
   markFinanceNav();showFinancePage();
-  var F=window.PSTFinanceStabilityV2;
-  if(F&&typeof F.recoverFinance==='function'){
-    try{return Promise.resolve(F.recoverFinance()).then(function(){showFinancePage();if(typeof window.finShowHub==='function')window.finShowHub();return true;}).catch(function(){return false;});}catch(e){}
-  }
+  /* Finance is a terminal UI route. Never enter the shared workspace router or
+   * another recovery wrapper from this capture lane: both can be decorated by
+   * late modules, while the existing Finance page/core are sufficient here. */
   return ensureFinanceCore().then(function(){showFinancePage();if(typeof window.finShowHub==='function'){try{window.finShowHub();}catch(e){}}try{var D=window.PSTFinanceDailyV1;if(D&&typeof D.apply==='function')D.apply(true);}catch(e){}return true;});
 }
 function installFinanceWindowOwner(){

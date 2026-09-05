@@ -5,7 +5,7 @@ const roles=fs.readFileSync('pristeel-roles.js','utf8');
 const entry=fs.readFileSync('pristeel-native-ui-v3.js','utf8');
 const core=fs.readFileSync('pristeel-native-ui-v4-core.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
-const nativeNeedle='pristeel-native-ui-v3.js?v=20260901-1';
+const nativeNeedle='pristeel-native-ui-v3.js?v=20260905-finance-terminal1';
 const nativeAt=roles.indexOf(nativeNeedle);
 const projectEmailsAt=roles.indexOf('pristeel-project-emails.js');
 must(nativeAt>=0,'roles loader does not reference native UI compatibility entry');
@@ -18,6 +18,7 @@ must(core.includes("r.id='pst-native-home-v4'"),'native Home v4 single owner is 
 must(core.includes("document.documentElement.classList.add('pst-native-ui-ready','pst-native-ui-v4-ready')"),'early UI readiness marker missing');
 must(entry.includes('pristeel-native-ui-v4-core.js?v=20260903-singleowner1'),'entry does not load the current Albanian native UI core');
 must(entry.includes('installRecoveryGate'),'early recovery gate is missing');
+must(entry.includes('Never enter the shared workspace router'),'Finance capture is not isolated from decorated workspace routing');
 must(entry.includes('__pstOriginalRecoverUnsavedWork'),'recovery gate does not preserve original recovery action');
 must(!entry.includes('window.confirm'),'entry must never monkeypatch or invoke browser confirm');
 must(entry.includes('PPPP gjeti punë të pambyllur'),'Albanian recovery banner missing');
@@ -34,6 +35,6 @@ for(const src of [entry,core]){
 const dyn=(manifest.dynamicRuntime||[]).find(x=>x.module==='pristeel-native-ui-v3.js');
 must(!!dyn,'native UI compatibility entry is not registered in runtime manifest');
 must(dyn&&dyn.loader==='pristeel-roles.js','native UI runtime loader must remain pristeel-roles.js');
-must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='3e4c3ac88bef313fb2a37ca229770326d8ad55cb','manifest loader SHA does not match audited roles blob');
+must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='6110ccff0e59b96f0c3ceec8a8ff27de3d504204','manifest loader SHA does not match audited roles blob');
 must(manifest.entrypoints.bootstrapGitBlobSha==='c6a3297d3f5dcd02f3b755d9f93c8058d06c3d2c','manifest bootstrap SHA does not match production bootstrap');
 if(!process.exitCode) console.log('Native UI v4 Albanian single-owner smoke OK.');

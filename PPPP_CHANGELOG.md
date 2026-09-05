@@ -4,6 +4,13 @@ This file records material architecture/automation changes. It is not a substitu
 
 ## 2026-09-04
 
+### Finance and System terminal routes isolated from shared router wrappers
+
+- Production verification after PR #388 proved that Partnerët → Financat could still block the browser before any Finance surface became active.
+- Daily Finance and System navigation now activates its authoritative page directly and never enters the multiply decorated `pstWorkspaceGo` chain.
+- The early native Finance capture hydrates the existing Finance core directly, and its asset version is bumped so returning browsers cannot reuse the stale route owner.
+- Dynamic navigation regressions, the complete 175-check suite, runtime manifest and deterministic bootstrap guards pass. No business data, Supabase schema, automation or approval gate changed.
+
 ### Finance navigation recursion hotfix
 
 - Stopped late Finance, Tender and canonical Home wrappers from repeatedly recapturing one another.

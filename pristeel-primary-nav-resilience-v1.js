@@ -142,15 +142,16 @@ function hydrateFinance(){
  try{var F=window.PSTFinanceDailyV1;if(F&&typeof F.apply==='function')F.apply(true);}catch(e){}
 }
 function openFinance(){
- var ok=false;
- try{if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('finance');ok=financeReady();}}catch(e){}
+ /* Keep the daily Finance destination independent from the decorated global
+  * router. The page and its renderer are the authoritative local surface. */
+ var ok=!!activate('page-finance','finance');
  if(!ok){try{legacyShow('finance');ok=financeReady();}catch(e){}}
  if(!ok)ok=!!activate('page-finance','finance');
  if(ok){hydrateFinance();setTimeout(hydrateFinance,0);}
  mark('finance');scheduleRepair();schedulePolish();return ok;
 }
 function openSystem(){
- try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('apps');else if(typeof window.openModuleHub==='function')window.openModuleHub();else activate('page-workspace-apps','apps');}catch(e){activate('page-workspace-apps','apps');}
+ try{if(!activate('page-workspace-apps','apps')&&typeof window.openModuleHub==='function')window.openModuleHub();}catch(e){activate('page-workspace-apps','apps');}
  mark('apps');scheduleRepair();schedulePolish();return true;
 }
 function route(key){

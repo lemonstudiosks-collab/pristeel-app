@@ -63,8 +63,8 @@ function syncHomeProjects(){var h=document.getElementById('pst-home-operating-gr
 function syncHome(force){syncHomeProjects();syncHomeActivity(!!force);return true;}
 
 function showLegacyPage(id,key){var page=document.getElementById(id);if(page){document.querySelectorAll('.page').forEach(function(p){if(p!==page){p.classList.remove('active');p.style.display='none';}});page.classList.add('active');page.style.display='block';}document.querySelectorAll('.pst-ws-navbtn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-key')===key);});return !!page;}
-function openFinance(){try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('finance');}catch(e){}showLegacyPage('page-finance','finance');try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}return true;}
-function openSystem(){try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('apps');}catch(e){}var p=document.getElementById('page-workspace-apps');if(p){p.classList.add('active');p.style.display='block';}document.querySelectorAll('.pst-ws-navbtn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-key')==='apps');});return true;}
+function openFinance(){showLegacyPage('page-finance','finance');try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}return true;}
+function openSystem(){showLegacyPage('page-workspace-apps','apps');return true;}
 
 function installEvents(){
  window.addEventListener('click',function(e){
