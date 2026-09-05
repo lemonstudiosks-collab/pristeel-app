@@ -89,7 +89,7 @@ const {JSDOM}=require('jsdom');
   w.eval(navSource);
   const financeOpened=w.PSTPrimaryNavResilienceV1.openFinance();
   assert.strictEqual(financeOpened,true,'Finance resilience route must report success after fallback activation');
-  assert(topCalls.includes('finance'),'Finance must still try the existing workspace router first');
+  assert(!topCalls.includes('finance'),'Finance must bypass the decorated workspace router');
   assert(w.document.getElementById('page-finance').classList.contains('active'),'Finance fallback must activate the existing page-finance surface');
   assert.strictEqual(w.document.getElementById('page-finance').style.display,'block','Finance fallback must make the existing Finance page visible');
   assert(!w.document.getElementById('page-workspace-projects').classList.contains('active'),'Finance fallback must retire the previously active page');

@@ -38,10 +38,12 @@ R.route('projects');
 assert.ok(calls.includes('projects'), 'Projects must use the direct modern project opener');
 
 R.route('finance');
-assert.ok(calls.includes('legacy:finance'), 'Finance must bypass the broken workspace wrapper chain');
+assert.ok(!calls.includes('legacy:finance'), 'Finance must not enter a legacy or decorated router chain');
+assert.ok(w.document.getElementById('page-finance').classList.contains('active'), 'Finance must activate its terminal page directly');
 
 R.route('apps');
-assert.ok(calls.includes('system'), 'System must have an independent opening path');
+assert.ok(!calls.includes('system'), 'System must not need the fallback hub when its terminal page exists');
+assert.ok(w.document.getElementById('page-workspace-apps').classList.contains('active'), 'System must activate its terminal page directly');
 
 R.route('tenders');
 assert.ok(calls.includes('tenders'), 'Opportunities route must remain functional');

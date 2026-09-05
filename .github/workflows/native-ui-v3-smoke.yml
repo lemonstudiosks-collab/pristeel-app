@@ -28,7 +28,7 @@ jobs:
         run: |
           test -f _site/pristeel-native-ui-v3.js
           test -f _site/pristeel-native-ui-v4-core.js
-          grep -Fq 'pristeel-native-ui-v3.js?v=20260901-1' _site/pristeel-roles.js
+          grep -Fq 'pristeel-native-ui-v3.js?v=20260905-finance-terminal1' _site/pristeel-roles.js
           grep -Fq 'pristeel-native-ui-v4-core.js?v=20260903-singleowner1' _site/pristeel-native-ui-v3.js
           grep -Fq '#4F97AF' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'Pasqyra operative' _site/pristeel-native-ui-v4-core.js

@@ -75,8 +75,8 @@ function openProjects(filter){
  Promise.resolve(out).then(function(){ensureTruth().then(function(X){if(seq===projectRouteSeq&&X&&typeof X.setProjectFilter==='function')X.setProjectFilter(filter);});}).catch(function(){});
  return out===undefined?true:out;
 }
-function fallbackFinance(){try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('finance');}catch(e){}activate('page-finance','finance');try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}return true;}
-function fallbackSystem(){try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('apps');}catch(e){}activate('page-workspace-apps','apps');return true;}
+function fallbackFinance(){activate('page-finance','finance');try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}return true;}
+function fallbackSystem(){activate('page-workspace-apps','apps');return true;}
 function route(key){
  key=S(key).toLowerCase();var T=window.PSTOperationalTruthV1;
  if(key==='home'){
