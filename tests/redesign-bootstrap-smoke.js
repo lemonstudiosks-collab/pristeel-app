@@ -42,6 +42,8 @@ new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
 assert(projectCentric.includes("if(src==='TED')return phase==='award'"), 'Open TED opportunities must stay out of the daily Opportunities surface');
 assert(projectCentric.includes('Për ofertim') && projectCentric.includes('Fitues nga TED'), 'Daily tender filters must separate bid opportunities from TED winners in Albanian');
+assert(projectCentric.includes('dedupeOpportunities')&&projectCentric.includes('hasDraft(old)'), 'Opportunity duplicates must collapse while preferring the row with a recorded Gmail draft');
+assert(projectCentric.includes('setOpportunityContext')&&projectCentric.includes("tenderState.focus==='due'")&&projectCentric.includes("tenderState.focus==='review'"), 'Opportunity routes must preserve Home deadline/review context');
 assert(projectCentric.includes('pppp-project-operator-update'), 'Project operator update must use the authenticated safe Edge Function');
 assert(projectCentric.includes('pppp_contact_master_v1?contact_id=eq.') && projectCentric.includes('project_emails?'), 'Contact popup must refresh canonical live relationships and recent project email data');
 assert(projectCentric.includes('PSTOpenAIAssistantV1') && projectCentric.includes('candidate_partners'), 'Tender analysis must use server AI plus registered PPPP partners');

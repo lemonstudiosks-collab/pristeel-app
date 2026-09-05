@@ -20,7 +20,7 @@ var STAGES=[
   {id:'factory_audit',name:'Auditim'},
   {id:'transport',name:'Dorëzim'}
 ];
-var state={rows:[],filter:'active',search:'',sort:'activity',view:'list',loading:false};
+var state={rows:[],filter:'active',search:'',operational:'',sort:'activity',view:'list',loading:false};
 var baseGo=window.pstWorkspaceGo;
 
 function arr(v){return Array.isArray(v)?v:[];}
@@ -48,6 +48,13 @@ function groupStatus(row){
   if(/realizuar|mbyllur|closed/.test(s))return'closed';
   if(/pritje|waiting|pending/.test(s))return'waiting';
   return'active';
+}
+function operationalGroup(row){
+  var s=norm(row&&row.operational_state)+' '+norm(row&&row.status)+' '+norm(row&&row.pipeline_stage);
+  if(/execution|realiz|production|prodhim/.test(s))return'execution';
+  if(/action required|attention|urgent|kerkon/.test(s))return'action';
+  if(/wait|pending|prit/.test(s))return'waiting';
+  return'other';
 }
 function statusInfo(row){
   var g=groupStatus(row),label=String(row.status||'').trim();
@@ -81,6 +88,7 @@ function visibleRows(){
   var q=norm(state.search),rows=state.rows.filter(function(r){
     var g=groupStatus(r),ok=state.filter==='all'||g===state.filter||(state.filter==='active'&&g==='won')||(state.filter==='archived'&&g==='closed');
     if(!ok)return false;
+    if(state.operational&&operationalGroup(r)!==state.operational)return false;
     if(!q)return true;
     return norm([r.name,r.client,r.ref,r.reference,r.pipeline_stage,description(r)].join(' ')).indexOf(q)>-1;
   });
@@ -121,11 +129,14 @@ async function fetchProjects(){
 }
 function filtersHtml(){
   var c=counts(),labels={all:'Të gjitha',active:'Aktive',waiting:'Në pritje',postponed:'Shtyra',lost:'Të humbura',won:'Të fituara',archived:'Arkivuara'};
-  return Object.keys(labels).map(function(k){return'<button class="pst-pm-chip'+(state.filter===k?' on':'')+'" data-pm-filter="'+k+'">'+labels[k]+' <i>'+c[k]+'</i></button>';}).join('');
+  var html=Object.keys(labels).map(function(k){return'<button class="pst-pm-chip'+(state.filter===k?' on':'')+'" data-pm-filter="'+k+'">'+labels[k]+' <i>'+c[k]+'</i></button>';}).join('');
+  var focus={action:'Kërkon vëmendje',execution:'Në realizim',waiting:'Në pritje operative',other:'Të tjera aktive'};
+  if(state.operational)html+='<button class="pst-pm-chip on" data-pm-operational-clear title="Hiq fokusin nga Kryefaqja">Fokus: '+esc(focus[state.operational]||state.operational)+' <i>×</i></button>';
+  return html;
 }
 function shell(){
   var p=ensurePage();if(!p)return null;
-  p.innerHTML='<div class="pst-pm-page"><div class="pst-pm-head"><div><div class="pst-pm-eyebrow">Projektet</div><div class="pst-pm-title">Të gjitha projektet</div><div class="pst-pm-sub">Komunikimi, prokurimi, dokumentet dhe financat në një dosje operative.</div></div><div class="pst-pm-head-actions"><button class="pst-pm-btn" id="pst-pdm-btn">Dublikatat</button><button class="pst-pm-btn" id="pst-pm-refresh">Rifresko</button><button class="pst-pm-btn primary" id="pst-pm-new">+ Projekt i ri</button></div></div><div class="pst-pm-controls"><div class="pst-pm-control-top"><input class="pst-pm-search" id="pst-pm-search" placeholder="Kërko projekt, klient, referencë ose përshkrim"><select class="pst-pm-select" id="pst-pm-sort"><option value="activity">Aktiviteti i fundit</option><option value="deadline">Afati</option><option value="client">Klienti</option></select><div class="pst-pm-toggle"><button data-pm-view="list" class="'+(state.view==='list'?'on':'')+'">Listë</button><button data-pm-view="board" class="'+(state.view==='board'?'on':'')+'">Board</button></div></div><div class="pst-pm-filters" id="pst-pm-filters">'+filtersHtml()+'</div></div><div id="pst-pm-content"><div class="pst-pm-loading">Duke ngarkuar projektet…</div></div></div>';
+  p.innerHTML='<div class="pst-pm-page"><div class="pst-pm-head"><div><div class="pst-pm-eyebrow">Projektet</div><div class="pst-pm-title">Të gjitha projektet</div><div class="pst-pm-sub">Komunikimi, prokurimi, dokumentet dhe financat në një dosje operative.</div></div><div class="pst-pm-head-actions"><button class="pst-pm-btn" id="pst-pdm-btn">Dublikatat</button><button class="pst-pm-btn" id="pst-pm-refresh">Rifresko</button><button class="pst-pm-btn primary" id="pst-pm-new">+ Projekt i ri</button></div></div><div class="pst-pm-controls"><div class="pst-pm-control-top"><input class="pst-pm-search" id="pst-pm-search" value="'+esc(state.search)+'" placeholder="Kërko projekt, klient, referencë ose përshkrim"><select class="pst-pm-select" id="pst-pm-sort"><option value="activity">Aktiviteti i fundit</option><option value="deadline">Afati</option><option value="client">Klienti</option></select><div class="pst-pm-toggle"><button data-pm-view="list" class="'+(state.view==='list'?'on':'')+'">Listë</button><button data-pm-view="board" class="'+(state.view==='board'?'on':'')+'">Board</button></div></div><div class="pst-pm-filters" id="pst-pm-filters">'+filtersHtml()+'</div></div><div id="pst-pm-content"><div class="pst-pm-loading">Duke ngarkuar projektet…</div></div></div>';
   bind(p);return p;
 }
 function rowHtml(r){
@@ -187,10 +198,11 @@ async function projectAction(id,act){
   }catch(e){alert('Veprimi dështoi: '+(e.message||e));}
 }
 function bind(p){
-  p.addEventListener('input',function(e){if(e.target.id==='pst-pm-search'){state.search=e.target.value;render();}});
+  p.addEventListener('input',function(e){if(e.target.id==='pst-pm-search'){state.search=e.target.value;state.operational='';render();}});
   p.addEventListener('change',function(e){if(e.target.id==='pst-pm-sort'){state.sort=e.target.value;render();}});
   p.addEventListener('click',function(e){
-    var filter=e.target.closest('[data-pm-filter]');if(filter){state.filter=filter.getAttribute('data-pm-filter');render();return;}
+    var filter=e.target.closest('[data-pm-filter]');if(filter){state.filter=filter.getAttribute('data-pm-filter');state.operational='';render();return;}
+    var clear=e.target.closest('[data-pm-operational-clear]');if(clear){state.operational='';state.filter='active';render();return;}
     var view=e.target.closest('[data-pm-view]');if(view){state.view=view.getAttribute('data-pm-view');try{localStorage.setItem('pristeel_projects_modern_view',state.view);}catch(x){}render();return;}
     var open=e.target.closest('[data-pm-open]');if(open){openProject(open.getAttribute('data-pm-open'));return;}
     var more=e.target.closest('[data-pm-more]');if(more){e.stopPropagation();menuFor(more.getAttribute('data-pm-more'),more);return;}
@@ -210,9 +222,19 @@ async function load(force){
   try{state.rows=await fetchProjects();window.__pstWorkspaceProjectRows=state.rows;window._allProjectsCache=state.rows;state.loading=false;render();var b=document.getElementById('pst-ws-b-projects');if(b){var n=state.rows.filter(function(r){return['active','waiting','postponed','won'].indexOf(groupStatus(r))>-1;}).length;b.textContent=String(n);b.style.display=n?'inline-flex':'none';}}
   catch(e){state.loading=false;var h=document.getElementById('pst-pm-content');if(h)h.innerHTML='<div class="pst-pm-empty">Projektet nuk u ngarkuan: '+esc(e.message||e)+'</div>';}
 }
-window.pstProjectsModernOpen=function(){return load(false);};
+function setContext(context){
+  var value=typeof context==='string'?context:S(context&&context.filter),valid=['all','active','waiting','postponed','lost','won','archived'];
+  state.search='';state.operational='';state.filter='active';
+  if(['action','execution','waiting','other'].indexOf(value)>-1){state.operational=value;state.filter='all';}
+  else if(valid.indexOf(value)>-1)state.filter=value;
+  else if(value)state.search=value;
+  if(context&&typeof context==='object'&&context.search)state.search=S(context.search);
+  return state;
+}
+window.pstProjectsModernOpen=function(context){setContext(context||'');return load(false);};
 window.pstProjectsModernRefresh=function(){return load(true);};
 window.pstProjectsModernAction=projectAction;
+window.PSTProjectsModernV1={open:window.pstProjectsModernOpen,setContext:setContext,state:state,_test:{groupStatus:groupStatus,operationalGroup:operationalGroup,visibleRows:visibleRows}};
 window.pstWorkspaceGo=function(key){if(key==='projects')return load(false);return typeof baseGo==='function'?baseGo.apply(this,arguments):undefined;};
 css();
 })();
