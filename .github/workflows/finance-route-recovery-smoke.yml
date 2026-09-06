@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'pristeel-finance-stability-v2.js'
+      - 'pristeel-finance-canonical-v1.js'
       - 'tests/finance-route-recovery-smoke.js'
+      - 'tests/finance-canonical-runtime-smoke.js'
       - '.github/workflows/finance-route-recovery-smoke.yml'
 
 jobs:
@@ -17,4 +19,6 @@ jobs:
           node-version: 20
       - run: npm install --ignore-scripts --no-audit --no-fund
       - run: node --check pristeel-finance-stability-v2.js
+      - run: node --check pristeel-finance-canonical-v1.js
       - run: node tests/finance-route-recovery-smoke.js
+      - run: node tests/finance-canonical-runtime-smoke.js
