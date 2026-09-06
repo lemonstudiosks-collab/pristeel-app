@@ -59,7 +59,7 @@ async function snapshot(){
     read('expenses','expenses?select=id,amount,currency,date,due_date,paid,paid_date&order=date.desc'),
     read('taxes','tax_obligations?select=id,tax_type,period_year,period_label,amount,due_date,paid,paid_date&order=due_date.asc'),
     read('guarantees','bank_guarantees?select=id,status,amount_guaranteed,fee_amount,expiry_date'),
-    read('other','other_costs?select=id,amount,currency&limit=1000')
+    read('other','other_costs?select=id,amount&limit=1000')
   ]);
   var out={};r.forEach(function(x){out[x.name]=x;});return out;
 }
@@ -94,7 +94,7 @@ async function hydrate(){
     liveBox(tile('bg'),activeBg.length+' aktive',eur(bgValue)+' vlerë e garantuar',activeBg.length?'warn':'ok');
   }
   if(d.other.error){readError('oc','Kostot e tjera');}
-  else{liveBox(tile('oc'),d.other.rows.length+' regjistrime',eur(sum(d.other.rows,function(x){return x.amount;}))+' kosto të tjera',d.other.rows.length?'warn':'ok');}
+  else{liveBox(tile('oc'),d.other.rows.length+' regjistrime',eur(d.other.rows.reduce(function(s,x){return s+N(x.amount);},0))+' kosto të tjera',d.other.rows.length?'warn':'ok');}
   return true;
 }
 function refreshHubSoon(){
@@ -116,10 +116,7 @@ function forceSubview(tab){
   VIEW_IDS.forEach(function(v){var el=document.getElementById('fin-view-'+v);if(el)el.style.display=(v===tab)?'':'none';});
 }
 function installSwitch(){
-  return chainWrap('finSwitchTab','__pstFinanceCanonicalSwitchV2',function(tab){
-    forceSubview(S(tab));
-    setTimeout(function(){forceSubview(S(tab));},0);
-  });
+  return chainWrap('finSwitchTab','__pstFinanceCanonicalSwitchV2',function(tab){forceSubview(S(tab));setTimeout(function(){forceSubview(S(tab));},0);});
 }
 function installHub(){
   var wrapped=chainWrap('finShowHub','__pstFinanceCanonicalHubV2',refreshHubSoon);
@@ -149,9 +146,7 @@ function installSafeActivationObserver(){
       var r=window.PSTFinanceStabilityV2;if(r&&typeof r.recoverFinance==='function')r.recoverFinance();
     },70);
   });
-  o.observe(p,{attributes:true,attributeFilter:['class','style','hidden']});
-  p.__pstFinanceCanonicalObserver=o;
-  return true;
+  o.observe(p,{attributes:true,attributeFilter:['class','style','hidden']});p.__pstFinanceCanonicalObserver=o;return true;
 }
 function install(){installStyle();installSwitch();installHub();installSafeActivationObserver();}
 install();
