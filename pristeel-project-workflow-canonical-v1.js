@@ -482,7 +482,7 @@ function handleAction(action){
 }
 function click(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pwf-area],[data-pwf-stage],[data-pwf-action]'):null;
-  if(!t)return;
+  if(!t||t.id==='page-workspace-project')return;
   if(t.hasAttribute('data-pwf-area')){
     e.preventDefault();e.stopImmediatePropagation();
     var a=t.getAttribute('data-pwf-area');
