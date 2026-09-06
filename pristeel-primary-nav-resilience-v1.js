@@ -160,11 +160,20 @@ function openOutreach(filter){
  mark('outreach');scheduleRepair();schedulePolish();return true;
 }
 function openSystem(){
- try{if(!activate('page-workspace-apps','apps')&&typeof window.openModuleHub==='function')window.openModuleHub();}catch(e){activate('page-workspace-apps','apps');}
+ /* The workspace page is created empty during boot. Let its canonical renderer
+  * populate it before the presentation layers simplify it; merely activating
+  * that placeholder leaves System visibly blank. */
+ var ok=false;
+ try{
+   if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('apps');
+   ok=visible(document.getElementById('page-workspace-apps'))||visible(document.getElementById('module-hub'));
+   if(!ok)ok=!!activate('page-workspace-apps','apps');
+   if(!ok&&typeof window.openModuleHub==='function'){window.openModuleHub();ok=visible(document.getElementById('module-hub'));}
+ }catch(e){ok=!!activate('page-workspace-apps','apps');}
  try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){}
  try{var O=window.PSTOperatingAssistantV2;if(O&&typeof O.apply==='function')O.apply(false);}catch(e){}
  setTimeout(function(){try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){}try{var O=window.PSTOperatingAssistantV2;if(O&&typeof O.apply==='function')O.apply(false);}catch(e){}},0);
- mark('apps');scheduleRepair();schedulePolish();return true;
+ mark('apps');scheduleRepair();schedulePolish();return ok;
 }
 function route(key){
  key=S(key).toLowerCase();
