@@ -16,6 +16,7 @@ assert(runtime.includes("mode:'upload'")&&runtime.includes("mode:'reconcile'"),'
 assert(runtime.includes('expected_name')&&runtime.includes('fileBase64'),'Runtime must bind each selected file to the exact missing KRPP document');
 assert(runtime.includes('PSTTenderDossierAnalysisV1')&&runtime.includes('__pstProtectedImportWrapped'),'Import runtime must return to and reconcile through the canonical dossier analyzer');
 assert(runtime.includes('canonicalAnalyze')&&runtime.includes('refreshCanonical'),'Imported dossiers must refresh through the original canonical analyzer instead of creating a parallel UI owner');
+assert(runtime.includes("querySelector('.pst-tda-partial li')"),'Automatic reconciliation must run only when the canonical analyzer names protected documents');
 assert(!/MutationObserver|setInterval\s*\(/.test(runtime),'Tender import runtime must remain bounded and polling-free');
 
 assert(importer.includes("const CACHE_VERSION='v10'"),'Importer cache version must stay compatible with the current canonical dossier analyzer');
