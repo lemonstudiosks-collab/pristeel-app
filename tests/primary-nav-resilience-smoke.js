@@ -25,6 +25,14 @@ w.pstProjectsModernOpen = () => { calls.push('projects'); const p=w.document.get
 w.PSTContactMasterV1 = { open(){ calls.push('contacts'); } };
 w.__pstWorkspaceLegacy = { showPage(page){ calls.push('legacy:'+page); if(page==='finance'){ const p=w.document.getElementById('page-finance'); p.classList.add('active'); p.style.display='block'; } } };
 w.finShowHub = () => calls.push('finance-hub');
+w.pstWorkspaceGo = key => {
+  calls.push('workspace:'+key);
+  if(key==='apps'){
+    const p=w.document.getElementById('page-workspace-apps');
+    p.classList.add('active');p.style.display='block';
+    p.innerHTML='<div class="pst-ws-page">Rendered System</div>';
+  }
+};
 w.openModuleHub = () => calls.push('system');
 w.PSTOperatingAssistantV2 = { apply(){ calls.push('assistant'); } };
 w.PSTOperatingExperienceV1 = { apply(){ calls.push('experience'); } };
@@ -45,7 +53,9 @@ assert.ok(calls.includes('assistant'), 'Finance must ask the presentation owner 
 calls=[];
 R.route('apps');
 assert.ok(!calls.includes('system'), 'System must not need the fallback hub when its terminal page exists');
+assert.ok(calls.includes('workspace:apps'), 'System must invoke the canonical workspace renderer, not only activate its empty placeholder');
 assert.ok(w.document.getElementById('page-workspace-apps').classList.contains('active'), 'System must activate its terminal page directly');
+assert.ok(w.document.querySelector('#page-workspace-apps .pst-ws-page'), 'System canonical renderer must populate the terminal page');
 assert.ok(calls.includes('assistant'), 'System must ask the presentation owner to render after the terminal route activates');
 assert.ok(calls.includes('experience'), 'System must explicitly ask its base presenter to populate the otherwise-empty terminal page');
 
