@@ -17,8 +17,11 @@ function page(){return document.getElementById('page-finance');}
 function active(){var p=page();return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
 function isOpen(r){return !/(done|closed|complete|completed|kryer|resolved|cancel|arkiv)/i.test(S(r&&r.status));}
 function financeTask(r){
-  var src=N(r&&r.source),cat=N(r&&r.category),txt=N([r&&r.title,r&&r.detail,r&&r.source_ref].join(' '));
-  return /invoice|payment|finance|swift/.test(src)||/finance|invoice|payment/.test(cat)||/fatur|invoice|pages|payment|swift/.test(txt);
+  var src=N(r&&r.source),cat=N(r&&r.category),ref=N(r&&r.source_ref);
+  if(/^(invoice|payment|finance|swift)(_|$)/.test(src))return true;
+  if(src==='commercial_intake_review'&&/(^|:)invoice($|:)/.test(ref))return true;
+  if(src==='manual'&&/^(finance|financa|invoice|fature|payment|pagese)$/.test(cat))return true;
+  return false;
 }
 function urgency(r){
   var p=N(r&&r.priority),due=S(r&&r.due_date),today=new Date().toISOString().slice(0,10);
