@@ -25,6 +25,7 @@ async function adminSession(){
 async function counts(){const [o,d]=await Promise.all([J(`${SB}/rest/v1/offers?project_id=eq.${PID}&origin=eq.manual&select=id`,{headers:H()}),J(`${SB}/rest/v1/project_supplier_decisions?project_id=eq.${PID}&status=eq.active&select=id`,{headers:H()})]);return{manual_offers:(o||[]).length,active_supplier_decisions:(d||[]).length};}
 async function snap(page,name){await page.screenshot({path:path.join(OUT,name+'.png'),fullPage:true}).catch(()=>{});const t=await page.locator('body').innerText().catch(()=>'');await fs.writeFile(path.join(OUT,name+'.txt'),String(t).slice(0,50000));}
 function safeUrl(raw){try{const u=new URL(raw);return u.origin+u.pathname+u.search;}catch{return String(raw||'').slice(0,1000);}}
+async function visibleControls(page){return page.evaluate(()=>{const p=document.getElementById('page-workspace-project');if(!p)return[];return [...p.querySelectorAll('button,[role="button"],[data-pwf-area],[data-pwf-stage],[data-pwf-action],[data-mso-open]')].filter(el=>{const s=getComputedStyle(el),r=el.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0;}).slice(0,120).map(el=>({tag:el.tagName,text:(el.textContent||'').trim().replace(/\s+/g,' ').slice(0,300),id:el.id||'',className:String(el.className||'').slice(0,300),pwfArea:el.getAttribute('data-pwf-area'),pwfStage:el.getAttribute('data-pwf-stage'),pwfAction:el.getAttribute('data-pwf-action'),mso:el.getAttribute('data-mso-open')}));});}
 let browser,page;
 const consoleErrors=[];
 const requestFailures=[];
@@ -68,18 +69,25 @@ try{
 
   let area=page.locator('.pwf-area-btn[data-pwf-area="procurement"]').first();
   if(!(await area.count())||!(await area.isVisible().catch(()=>false)))area=page.getByRole('button',{name:'Prokurimi',exact:true}).first();
-  await area.waitFor({state:'visible',timeout:60000});await area.click({noWaitAfter:true});await page.waitForTimeout(1200);report.checks.procurement_clicked=true;
-  let stage=page.locator('.pwf-stage[data-pwf-stage="offers"]').first();
+  await area.waitFor({state:'visible',timeout:60000});await area.click({noWaitAfter:true});await page.waitForTimeout(1400);report.checks.procurement_clicked=true;
+  report.procurement_controls=await visibleControls(page);await snap(page,'03-procurement');
+
+  let stage=page.getByRole('button',{name:'Furnitorët',exact:true}).first();
+  if(!(await stage.count())||!(await stage.isVisible().catch(()=>false)))stage=page.locator('.pwf-stage[data-pwf-stage="offers"]').first();
   if(!(await stage.count())||!(await stage.isVisible().catch(()=>false)))stage=page.getByRole('button',{name:/Ofertat? e furnitorëve/i}).first();
-  if(await stage.count()){await stage.waitFor({state:'visible',timeout:60000});await stage.click({noWaitAfter:true});await page.waitForTimeout(1600);}
-  report.checks.supplier_offer_stage=(await page.locator('[data-mso-open]').count())>0;if(!report.checks.supplier_offer_stage)throw new Error('Manual supplier action not present after opening procurement supplier offers');
+  if(!(await stage.count())||!(await stage.isVisible().catch(()=>false)))throw new Error('Supplier flow control not found after opening procurement');
+  report.supplier_control=await stage.evaluate(el=>({text:(el.textContent||'').trim().replace(/\s+/g,' '),outerHTML:el.outerHTML.slice(0,2000)}));
+  await stage.click({noWaitAfter:true});await page.waitForTimeout(1800);report.checks.supplier_flow_clicked=true;
+  report.supplier_controls=await visibleControls(page);await snap(page,'04-supplier-flow');
+  report.checks.supplier_offer_stage=(await page.locator('[data-mso-open]').count())>0;if(!report.checks.supplier_offer_stage)throw new Error('Manual supplier action not present after opening supplier flow');
 
   const btn=page.locator('[data-mso-open]').first();await btn.waitFor({state:'visible',timeout:30000});report.checks.manual_action_visible=await btn.isVisible();report.checks.manual_action_enabled=await btn.isEnabled();
+  report.manual_action=await btn.evaluate(el=>({text:(el.textContent||'').trim().replace(/\s+/g,' '),disabled:!!el.disabled,pointerEvents:getComputedStyle(el).pointerEvents,outerHTML:el.outerHTML.slice(0,2000)}));
   const box=await btn.boundingBox();if(!box)throw new Error('Manual supplier action has no hit box');report.hit_target=await page.evaluate(({x,y})=>{const e=document.elementFromPoint(x,y);return e?{tag:e.tagName,className:String(e.className||''),text:(e.textContent||'').trim().slice(0,250)}:null;},{x:box.x+box.width/2,y:box.y+box.height/2});
-  await snap(page,'03-before-click');
+  await snap(page,'05-before-manual-click');
   await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await page.waitForTimeout(700);
-  const modal=page.locator('#pst-mso-modal');report.checks.real_click_opened_modal=await modal.isVisible().catch(()=>false);if(!report.checks.real_click_opened_modal){await snap(page,'04-click-no-modal');throw new Error('Candidate failed: real click did not open manual supplier modal');}
-  report.modal_title=(await page.locator('#pst-mso-title').textContent())?.trim()||'';report.checks.correct_modal_title=report.modal_title==='Shto ofertë furnitori';await snap(page,'04-modal-open');if(!report.checks.correct_modal_title)throw new Error(`Unexpected modal title: ${report.modal_title}`);
+  const modal=page.locator('#pst-mso-modal');report.checks.real_click_opened_modal=await modal.isVisible().catch(()=>false);if(!report.checks.real_click_opened_modal){await snap(page,'06-click-no-modal');throw new Error('Candidate failed: real click did not open manual supplier modal');}
+  report.modal_title=(await page.locator('#pst-mso-title').textContent())?.trim()||'';report.checks.correct_modal_title=report.modal_title==='Shto ofertë furnitori';await snap(page,'06-modal-open');if(!report.checks.correct_modal_title)throw new Error(`Unexpected modal title: ${report.modal_title}`);
 
   report.after_open=await counts();report.checks.no_offer_created_on_open=report.after_open.manual_offers===report.before.manual_offers;report.checks.no_supplier_selected_on_open=report.after_open.active_supplier_decisions===report.before.active_supplier_decisions;if(!report.checks.no_offer_created_on_open||!report.checks.no_supplier_selected_on_open)throw new Error('Protected business state changed on modal open');
   await page.locator('[data-mso-close]').first().click();await page.waitForTimeout(300);report.checks.modal_closed=!(await modal.isVisible().catch(()=>false));
