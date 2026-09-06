@@ -136,7 +136,7 @@
         "pristeel-project-centric-workflow-v1.js",
         "pristeel-tender-dossier-analysis-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow remains the visible Opportunities owner and no tender becomes a project without a human decision."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow remains the visible Opportunities owner. The dossier analyzer owns public/partial dossier reading; protected KRPP documents are imported through the purpose-limited pristeel-tender-dossier-import-v1.js companion into the existing protected_archive, then finalized only by pppp-tender-protected-archive-analysis. No tender becomes a project without a human decision."
     },
     {
       "area": "ai",
@@ -284,6 +284,12 @@
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded dynamically and invoked explicitly from an Opportunity popup."
+    },
+    {
+      "module": "pristeel-tender-dossier-import-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded only as the purpose-limited protected KRPP document upload companion. It writes into the existing protected_archive; final dossier analysis remains owned by pppp-tender-protected-archive-analysis."
     },
     {
       "module": "pristeel-project-control-home-v1.js",
