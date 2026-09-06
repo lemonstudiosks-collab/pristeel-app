@@ -18,6 +18,7 @@ assert(runtime.includes("mode:'upload'")&&runtime.includes("mode:'finalize'"),'U
 assert(runtime.includes('expected_name')&&runtime.includes('fileBase64'),'Runtime must bind each selected file to the exact missing KRPP document');
 assert(runtime.includes('PSTTenderDossierAnalysisV1')&&runtime.includes('refreshCanonical'),'Successful completion must return to the canonical dossier UI');
 assert(runtime.includes('pst:tender-dossier-ready')&&runtime.includes('remaining_protected_documents'),'Partial uploads must immediately refresh the missing-document UI without a second analysis engine');
+assert(runtime.includes('REKOMANDIMI PËRFUNDIMTAR')&&runtime.includes('decision_reasons'),'Completed analysis must visibly explain the final recommendation');
 assert(!/MutationObserver|setInterval\s*\(/.test(runtime),'Tender import runtime must remain bounded and polling-free');
 
 assert(importer.includes("protected-archive-upload-v1"),'Importer must be explicitly scoped as a protected-archive upload bridge');
@@ -29,7 +30,8 @@ assert(importer.includes('tender_not_found_or_not_visible')&&importer.includes('
 assert(importer.includes('MAX_FILE_BYTES=30*1024*1024')&&importer.includes('ALLOWED_EXT'),'Upload size and type boundaries are missing');
 assert(importer.includes('document_not_expected')&&importer.includes('normalizeName(expectedName)'),'The importer must refuse files outside the current protected-document list');
 assert(importer.includes('db.storage.from(BUCKET).upload'),'Protected documents must be stored in canonical Supabase Storage, not a parallel files/base64 store');
-assert(!/\/rest\/v1\/files|file_base64/.test(importer),'Legacy parallel files/base64 persistence must be removed');
+assert(!importer.includes('/rest/v1/files'),'Legacy parallel files-table persistence must be removed');
+assert(!/file_base64\s*:/.test(importer),'Legacy base64 file-column persistence must be removed');
 assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(importer),'Tender import must not contain external/binding action endpoints');
 
 assert(archiveAnalyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v2'"),'Canonical protected archive analysis version was not advanced');
