@@ -18,13 +18,29 @@ function api(path,method,body){if(typeof window.supaFetch!=='function')return Pr
 function canonical(){return window.PSTCanonicalProjectWorkflowV1||null;}
 function activeOffers(){var p=document.getElementById('page-workspace-project');return !!(p&&p.classList.contains('active')&&p.getAttribute('data-pwf-area')==='procurement'&&p.getAttribute('data-pwf-stage')==='offers');}
 function findSupplierCard(){var p=document.getElementById('pst-pi-body');if(!p)return null;var current=p.querySelector('.pst-csf-suppliers');if(current)return current;var cards=[].slice.call(p.querySelectorAll('.pf2-card,section'));for(var i=0;i<cards.length;i++){var h=cards[i].querySelector('header h2,header h3,.pst-pi-hd b,header b');var t=S(h?h.textContent:'').trim().toLowerCase();if(t==='oferta furnitorësh'||t==='ofertat e furnitorëve')return cards[i];}return null;}
-function totalFromForm(){return +(N(val('pst-mso-price'))*N(val('pst-mso-qty'))+N(val('pst-mso-mech'))+N(val('pst-mso-pack'))+N(val('pst-mso-trans'))).toFixed(2);}
 function val(id){var e=document.getElementById(id);return e?e.value:'';}
+function extraRows(){return [].slice.call(document.querySelectorAll('#pst-mso-extra-list .pst-mso-extra-row'));}
+function extraPositions(){return extraRows().map(function(row){return{label:S((row.querySelector('[data-mso-extra-label]')||{}).value).trim(),amount:N((row.querySelector('[data-mso-extra-amount]')||{}).value)};}).filter(function(x){return x.label||x.amount>0;});}
+function extraTotal(){return extraPositions().reduce(function(sum,x){return sum+(x.amount>0?x.amount:0);},0);}
+function totalFromForm(){return +(N(val('pst-mso-price'))*N(val('pst-mso-qty'))+N(val('pst-mso-mech'))+N(val('pst-mso-pack'))+N(val('pst-mso-trans'))+extraTotal()).toFixed(2);}
 function setStatus(msg,err){var e=document.getElementById('pst-mso-status');if(!e)return;e.textContent=msg||'';e.classList.toggle('err',!!err);}
 function updateTotal(){var e=document.getElementById('pst-mso-total');if(e)e.textContent=money(totalFromForm(),val('pst-mso-cur')||'EUR');}
 function escClose(e){if(e.key==='Escape')closeModal();}
 function closeModal(){var m=document.getElementById('pst-mso-modal');if(m)m.remove();document.removeEventListener('keydown',escClose);busy=false;}
 function field(label,id,type,extra){return'<label class="pst-mso-field"><span>'+E(label)+'</span><input id="'+id+'" type="'+(type||'text')+'" '+(extra||'')+'></label>';}
+function addExtraPosition(label,amount){
+  var list=document.getElementById('pst-mso-extra-list');if(!list)return false;
+  if(list.querySelectorAll('.pst-mso-extra-row').length>=50){setStatus('Mund të shtohen deri në 50 pozicione/faktorë shtesë.',true);return false;}
+  var row=document.createElement('div');row.className='pst-mso-extra-row';
+  row.innerHTML='<label><span>Pozicioni / faktori</span><input type="text" maxlength="120" data-mso-extra-label placeholder="p.sh. Galvanizim, lyerje, testim"></label>'+
+    '<label><span>Vlera</span><input type="number" min="0" step="0.01" inputmode="decimal" data-mso-extra-amount value="'+E(amount==null?'0':amount)+'"></label>'+
+    '<button type="button" data-mso-remove-extra aria-label="Hiq pozicionin">×</button>';
+  list.appendChild(row);
+  if(label!=null)row.querySelector('[data-mso-extra-label]').value=S(label);
+  updateTotal();
+  var inp=row.querySelector('[data-mso-extra-label]');if(inp)inp.focus();
+  return true;
+}
 function openModal(){
   if(!pid()){alert('Zgjidh projektin fillimisht.');return;}
   var old=document.getElementById('pst-mso-modal');if(old){old.remove();}
@@ -49,14 +65,19 @@ function openModal(){
       field('Burimi','pst-mso-source','text','placeholder="p.sh. Bisedë telefonike / WhatsApp"')+
       '<label class="pst-mso-field pst-mso-wide"><span>Shënime</span><textarea id="pst-mso-notes" rows="3" placeholder="Scope, përjashtime ose sqarime të ofertës"></textarea></label>'+
     '</div>'+
-    '<div class="pst-mso-total"><span>Totali i llogaritur</span><b id="pst-mso-total">0,00 EUR</b><small>Prodhim/kg × peshë + mekanikë + paketim + transport</small></div>'+
+    '<section class="pst-mso-extra"><div class="pst-mso-extra-head"><div><b>Pozicione / faktorë shtesë</b><small>Shto çdo kosto tjetër që nuk mbulohet nga pozicionet standarde.</small></div><button type="button" data-mso-add-extra>+ Shto pozicion / faktor</button></div><div id="pst-mso-extra-list"></div></section>'+
+    '<div class="pst-mso-total"><span>Totali i llogaritur</span><b id="pst-mso-total">0,00 EUR</b><small>Prodhim/kg × peshë + mekanikë + paketim + transport + pozicione shtesë</small></div>'+
     '<div id="pst-mso-fx-wrap" class="pst-mso-fx" hidden>'+field('Kursi → EUR (1 valutë = ? EUR)','pst-mso-fx','number','min="0" step="0.000001" placeholder="i detyrueshëm për jo-EUR"')+'</div>'+
     '<div id="pst-mso-status" class="pst-mso-status"></div>'+
     '<footer><button type="button" class="pst-mso-secondary" data-mso-close>Anulo</button><button type="button" class="pst-mso-primary" id="pst-mso-save">Ruaj ofertën</button></footer>'+
   '</div>';
   document.body.appendChild(m);
-  m.addEventListener('click',function(e){if(e.target===m||e.target.closest('[data-mso-close]'))closeModal();});
-  [].slice.call(m.querySelectorAll('input')).forEach(function(x){x.addEventListener('input',updateTotal);});
+  m.addEventListener('click',function(e){
+    if(e.target===m||e.target.closest('[data-mso-close]')){closeModal();return;}
+    if(e.target.closest('[data-mso-add-extra]')){e.preventDefault();addExtraPosition();return;}
+    var rm=e.target.closest('[data-mso-remove-extra]');if(rm){e.preventDefault();var row=rm.closest('.pst-mso-extra-row');if(row)row.remove();updateTotal();}
+  });
+  m.addEventListener('input',updateTotal);
   var c=m.querySelector('#pst-mso-cur');c.addEventListener('change',function(){var w=m.querySelector('#pst-mso-fx-wrap');w.hidden=c.value==='EUR';updateTotal();});
   m.querySelector('#pst-mso-save').addEventListener('click',save);
   document.addEventListener('keydown',escClose);
@@ -69,12 +90,16 @@ function payload(){return{
   delivery_weeks:S(val('pst-mso-delivery')).trim(),incoterms:S(val('pst-mso-inco')).trim(),
   payment_terms:S(val('pst-mso-pay')).trim(),validity_days:S(val('pst-mso-valid')).trim(),offer_ref:S(val('pst-mso-ref')).trim(),
   contact_person:S(val('pst-mso-contact')).trim(),cert:S(val('pst-mso-cert')).trim(),source:S(val('pst-mso-source')).trim(),
-  notes:S(val('pst-mso-notes')).trim(),exchange_rate_to_eur:N(val('pst-mso-fx'))
+  notes:S(val('pst-mso-notes')).trim(),exchange_rate_to_eur:N(val('pst-mso-fx')),extra_positions:extraPositions()
 };}
 async function save(){
   if(busy)return;var p=payload();
   if(!p.supplier){setStatus('Shkruaj emrin e furnitorit.',true);return;}
   if(p.price_kg>0&&p.qty_kg<=0){setStatus('Për çmim/kg duhet edhe pesha/baza në kg.',true);return;}
+  for(var i=0;i<p.extra_positions.length;i++){
+    if(!p.extra_positions[i].label){setStatus('Çdo pozicion/faktor shtesë me vlerë duhet të ketë emër.',true);return;}
+    if(!(p.extra_positions[i].amount>0)){setStatus('Çdo pozicion/faktor shtesë i plotësuar duhet të ketë vlerë pozitive.',true);return;}
+  }
   if(totalFromForm()<=0){setStatus('Oferta duhet të ketë të paktën një vlerë pozitive.',true);return;}
   if(p.currency!=='EUR'&&!(p.exchange_rate_to_eur>0)){setStatus('Për valutë jo-EUR duhet kursi i kontrolluar drejt EUR.',true);return;}
   busy=true;var b=document.getElementById('pst-mso-save');if(b){b.disabled=true;b.textContent='Duke ruajtur…';}setStatus('');
@@ -120,10 +145,11 @@ function css(){if(document.getElementById('pst-mso-css'))return;var x=document.c
 #pst-manual-offers-panel{margin:10px;border-top:1px solid #E7EEF0;padding-top:10px}\
 .pst-mso-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}.pst-mso-panel-head b{font-size:11px;color:#526269}.pst-mso-panel-head span{font-size:10px;color:#839096}\
 .pst-mso-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 10px;border:1px solid #E3EAEC;border-radius:9px;background:#fff;margin-top:6px}.pst-mso-row>div{min-width:0}.pst-mso-row b{display:block;font-size:11.5px;color:#34444B}.pst-mso-row small{display:block;font-size:9.5px;color:#7D898E;margin-top:2px}.pst-mso-select{border:1px solid #5B9BB3;background:#EDF7FA;color:#34758F;border-radius:8px;padding:7px 10px;font:750 10.5px Inter,sans-serif;cursor:pointer;white-space:nowrap}.pst-mso-selected{font:800 9.5px Inter,sans-serif;color:#2F7657;background:#E8F5EE;border-radius:999px;padding:5px 8px;white-space:nowrap}.pst-mso-loading{font-size:10px;color:#849197}\
-.pst-mso-backdrop{position:fixed;inset:0;z-index:2147483100;background:rgba(24,38,43,.42);display:grid;place-items:center;padding:20px}.pst-mso-modal{width:min(860px,96vw);max-height:92vh;overflow:auto;background:#FCFCFA;border:1px solid #D9E2E5;border-radius:15px;box-shadow:0 24px 80px rgba(20,35,41,.25);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#2F3437}.pst-mso-modal>header{display:flex;justify-content:space-between;gap:20px;padding:18px 20px;border-bottom:1px solid #E6ECEE}.pst-mso-modal>header span{font-size:9px;font-weight:800;letter-spacing:.7px;color:#4F97AF}.pst-mso-modal>header h2{font-size:18px;margin:3px 0 0}.pst-mso-modal>header p{font-size:10.5px;color:#7C898E;margin:5px 0 0;line-height:1.45}.pst-mso-modal>header button{border:0;background:transparent;font-size:24px;color:#6E7B80;cursor:pointer}.pst-mso-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:16px 20px 8px}.pst-mso-field{display:grid;gap:5px}.pst-mso-field>span{font-size:10px;font-weight:750;color:#58686F}.pst-mso-field input,.pst-mso-field select,.pst-mso-field textarea{width:100%;box-sizing:border-box;border:1px solid #D7E1E4;border-radius:8px;background:#fff;padding:9px 10px;font:500 12px Inter,sans-serif;color:#2F3437;outline:none}.pst-mso-field input:focus,.pst-mso-field select:focus,.pst-mso-field textarea:focus{border-color:#7DB0C2;box-shadow:0 0 0 2px #DDEFF5}.pst-mso-wide{grid-column:1/-1}.pst-mso-total{margin:8px 20px 0;padding:12px 14px;border:1px solid #D8E7EC;border-radius:10px;background:#F5FAFB}.pst-mso-total span{font-size:9.5px;color:#75848A}.pst-mso-total b{display:block;font-size:18px;color:#2F687F;margin-top:2px}.pst-mso-total small{display:block;font-size:9.5px;color:#8A969A;margin-top:2px}.pst-mso-fx{padding:10px 20px 0}.pst-mso-status{min-height:18px;margin:10px 20px 0;font-size:10.5px;color:#2F7657}.pst-mso-status.err{color:#A64B42}.pst-mso-modal>footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px 18px}.pst-mso-modal>footer button{min-height:38px;border-radius:9px;padding:0 14px;font:750 11px Inter,sans-serif;cursor:pointer}.pst-mso-secondary{border:1px solid #D5E0E3;background:#fff;color:#5F6D72}.pst-mso-primary{border:1px solid #4F97AF;background:#4F97AF;color:#fff}.pst-mso-primary:disabled{opacity:.55;cursor:wait}\
-@media(max-width:700px){.pst-mso-grid{grid-template-columns:1fr}.pst-mso-wide{grid-column:auto}.pst-mso-row{align-items:flex-start;flex-direction:column}.pst-mso-select{width:100%}}\
+.pst-mso-backdrop{position:fixed;inset:0;z-index:2147483100;background:rgba(24,38,43,.42);display:grid;place-items:center;padding:20px}.pst-mso-modal{width:min(860px,96vw);max-height:92vh;overflow:auto;background:#FCFCFA;border:1px solid #D9E2E5;border-radius:15px;box-shadow:0 24px 80px rgba(20,35,41,.25);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#2F3437}.pst-mso-modal>header{display:flex;justify-content:space-between;gap:20px;padding:18px 20px;border-bottom:1px solid #E6ECEE}.pst-mso-modal>header span{font-size:9px;font-weight:800;letter-spacing:.7px;color:#4F97AF}.pst-mso-modal>header h2{font-size:18px;margin:3px 0 0}.pst-mso-modal>header p{font-size:10.5px;color:#7C898E;margin:5px 0 0;line-height:1.45}.pst-mso-modal>header button{border:0;background:transparent;font-size:24px;color:#6E7B80;cursor:pointer}.pst-mso-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:16px 20px 8px}.pst-mso-field{display:grid;gap:5px}.pst-mso-field>span{font-size:10px;font-weight:750;color:#58686F}.pst-mso-field input,.pst-mso-field select,.pst-mso-field textarea{width:100%;box-sizing:border-box;border:1px solid #D7E1E4;border-radius:8px;background:#fff;padding:9px 10px;font:500 12px Inter,sans-serif;color:#2F3437;outline:none}.pst-mso-field input:focus,.pst-mso-field select:focus,.pst-mso-field textarea:focus{border-color:#7DB0C2;box-shadow:0 0 0 2px #DDEFF5}.pst-mso-wide{grid-column:1/-1}.pst-mso-extra{margin:6px 20px 0;padding:12px 14px;border:1px dashed #CADADD;border-radius:10px;background:#FAFCFC}.pst-mso-extra-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.pst-mso-extra-head b{display:block;font-size:11px;color:#4A5B61}.pst-mso-extra-head small{display:block;margin-top:2px;font-size:9.5px;color:#839096}.pst-mso-extra-head button{border:1px solid #AFC9D2;background:#F1F8FA;color:#39758B;border-radius:8px;padding:7px 10px;font:750 10px Inter,sans-serif;cursor:pointer;white-space:nowrap}.pst-mso-extra-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,180px) 32px;gap:8px;align-items:end;margin-top:9px}.pst-mso-extra-row label{display:grid;gap:4px}.pst-mso-extra-row label span{font-size:9.5px;font-weight:700;color:#607077}.pst-mso-extra-row input{width:100%;box-sizing:border-box;border:1px solid #D7E1E4;border-radius:8px;background:#fff;padding:8px 9px;font:500 11px Inter,sans-serif;color:#2F3437}.pst-mso-extra-row button{height:34px;border:1px solid #E0D7D5;background:#FFF9F8;color:#A45C52;border-radius:8px;font-size:17px;cursor:pointer}\
+.pst-mso-total{margin:8px 20px 0;padding:12px 14px;border:1px solid #D8E7EC;border-radius:10px;background:#F5FAFB}.pst-mso-total span{font-size:9.5px;color:#75848A}.pst-mso-total b{display:block;font-size:18px;color:#2F687F;margin-top:2px}.pst-mso-total small{display:block;font-size:9.5px;color:#8A969A;margin-top:2px}.pst-mso-fx{padding:10px 20px 0}.pst-mso-status{min-height:18px;margin:10px 20px 0;font-size:10.5px;color:#2F7657}.pst-mso-status.err{color:#A64B42}.pst-mso-modal>footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px 18px}.pst-mso-modal>footer button{min-height:38px;border-radius:9px;padding:0 14px;font:750 11px Inter,sans-serif;cursor:pointer}.pst-mso-secondary{border:1px solid #D5E0E3;background:#fff;color:#5F6D72}.pst-mso-primary{border:1px solid #4F97AF;background:#4F97AF;color:#fff}.pst-mso-primary:disabled{opacity:.55;cursor:wait}\
+@media(max-width:700px){.pst-mso-grid{grid-template-columns:1fr}.pst-mso-wide{grid-column:auto}.pst-mso-row{align-items:flex-start;flex-direction:column}.pst-mso-select{width:100%}.pst-mso-extra-head{align-items:flex-start;flex-direction:column}.pst-mso-extra-head button{width:100%}.pst-mso-extra-row{grid-template-columns:1fr 1fr 32px}}\
 ';document.head.appendChild(x);}
 function boot(){css();document.addEventListener('click',click,true);var mo=new MutationObserver(function(){if(activeOffers())setTimeout(inject,0);});mo.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-pwf-stage','data-pwf-area']});[0,120,420,900].forEach(function(ms){setTimeout(inject,ms);});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTManualSupplierOfferV1={open:openModal,inject:inject,refresh:refresh,select:selectOffer};
+window.PSTManualSupplierOfferV1={open:openModal,inject:inject,refresh:refresh,select:selectOffer,addExtraPosition:addExtraPosition};
 })();
