@@ -45,10 +45,13 @@ assert(!importer.includes('/rest/v1/files'),'Legacy parallel files-table persist
 assert(!/file_base64\s*:/.test(importer),'Legacy base64 file-column persistence must be removed');
 assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(importer),'Tender import must not contain external/binding action endpoints');
 
-assert(archiveAnalyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v3'"),'Canonical protected archive analysis version was not advanced');
-assert(archiveAnalyzer.includes('npm:fflate@0.8.2')&&archiveAnalyzer.includes('docxText'),'Protected DOCX files must be extracted server-side before AI analysis');
-assert(archiveAnalyzer.includes('npm:xlsx@0.18.5')&&archiveAnalyzer.includes('spreadsheetText'),'Protected XLS/XLSX files must be extracted server-side before AI analysis');
-assert(archiveAnalyzer.includes("analysis_mode:'server_extracted_text'")&&archiveAnalyzer.includes('OFFICIAL_PROTECTED_DOCUMENT'),'Office document content must enter the same canonical protected archive analysis as evidence text');
+assert(archiveAnalyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v4'"),'Canonical protected archive analysis version was not advanced');
+assert(archiveAnalyzer.includes('npm:fflate@0.8.2')&&archiveAnalyzer.includes('docxText'),'Protected DOCX files must be extracted server-side before final analysis');
+assert(archiveAnalyzer.includes('npm:xlsx@0.18.5')&&archiveAnalyzer.includes('spreadsheetText'),'Protected XLS/XLSX files must be extracted server-side before final analysis');
+assert(archiveAnalyzer.includes("analysis_mode:'server_extracted_text'")&&archiveAnalyzer.includes('OFFICIAL_PROTECTED_DOCUMENT'),'Office document content must enter the same canonical protected archive analyzer as evidence text');
+assert(archiveAnalyzer.includes('basicProtectedAnalysis')&&archiveAnalyzer.includes("provider:{name:'deterministic-protected-archive'"),'Canonical protected archive analyzer must remain operational when the optional OpenAI provider is unavailable');
+assert(archiveAnalyzer.includes("if(!OPENAI_API_KEY)return basicProtectedAnalysis"),'Missing OpenAI credentials must not strand a completed protected archive');
+assert(archiveAnalyzer.includes('Protected archive OpenAI provider failed; canonical deterministic fallback used'),'Provider failures must fall back inside the same canonical analyzer, not create a parallel workflow');
 assert(archiveAnalyzer.includes("enum:['VAZHDO','LËRE']"),'Complete dossier analysis must return a binary VAZHDO/LËRE recommendation');
 assert(archiveAnalyzer.includes('decision_reasons')&&archiveAnalyzer.includes('2-6 concrete evidence-based reasons'),'Final recommendation must include concrete reasons');
 assert(archiveAnalyzer.includes("file_mode:'authenticated_protected_archive'"),'Completed dossier must stay on the existing authenticated protected archive path');
