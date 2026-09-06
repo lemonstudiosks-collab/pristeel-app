@@ -69,6 +69,8 @@ assert.ok(german.body.endsWith('Mit freundlichen Grüßen'));
 
 assert.ok(projectCentric.includes('data-pcw-ti="draft"')&&projectCentric.includes('Përgatit emailin'),'Action Console must expose email preparation for every TED winner');
 assert.ok(source.includes('/users/me/drafts'),'Email workflow must create a Gmail draft');
+assert.ok(source.includes('pst:tender-gmail-draft-created'),'Successful Gmail creation must emit a direct persistence event instead of relying only on button polling');
+assert.ok(source.includes('gmail_draft_id')&&source.includes('gmail_message_id'),'The draft event must retain Gmail identifiers for reliable duplicate protection');
 assert.ok(source.includes("preferred='arianit.vllahiu@prissteel.com'"),'The Arianit Gmail alias must be preferred for the real signature');
 assert.ok(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(source),'Email must remain human-gated');
 
@@ -76,7 +78,20 @@ assert.ok(draftStateSource.includes("outreach_draft"),'Opportunity draft state m
 assert.ok(draftStateSource.includes("pst-pcw-has-draft")&&draftStateSource.includes('DRAFT EMAILI U KRIJUA'),'Persisted draft state must visibly distinguish the Opportunity card');
 assert.ok(draftStateSource.includes("Drafti ekziston · Hap Gmail"),'Existing draft state must prevent the normal create-draft CTA from appearing unchanged');
 assert.ok(draftStateSource.includes("human_send_required:true"),'Persisted draft state must preserve the human-send requirement');
+assert.ok(draftStateSource.includes('bindCreatedEvent')&&draftStateSource.includes("source:created?'gmail_api'"),'Draft state must persist the direct Gmail success event as its canonical source');
 assert.ok(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(draftStateSource),'Draft-state persistence must never send email');
+
+const workflowSandbox={window:{addEventListener:()=>{}},document:{readyState:'loading',addEventListener:()=>{},getElementById:()=>null,querySelector:()=>null},console,Date,Promise,URL,encodeURIComponent,isFinite,setTimeout:()=>0,clearTimeout:()=>{}};
+vm.createContext(workflowSandbox);vm.runInContext(projectCentric,workflowSandbox);
+const W=workflowSandbox.window.PSTProjectCentricWorkflowV1;
+const duplicateBase={title:'Portugal transformer substation',authority:'Public authority',publication_no:'TED-123',status:'new',relevance_score:91,payload:{source:'TED',notice_phase:'award',winner:{name:'MARQUES, S.A.'}}};
+const duplicatePlain=Object.assign({id:'plain'},duplicateBase),duplicateDraft=Object.assign({id:'drafted'},duplicateBase,{relevance_score:88,payload:{source:'TED',notice_phase:'award',winner:{name:'MARQUES, S.A.'},outreach_draft:{status:'created',gmail_draft_id:'g-draft-1'}}});
+const uniqueReview={id:'unique',title:'Another award',authority:'Other',publication_no:'TED-999',status:'review',relevance_score:80,payload:{source:'TED',notice_phase:'award',winner:{name:'OTHER WINNER'}}};
+const deduped=W._test.dedupeOpportunities([duplicatePlain,duplicateDraft,uniqueReview]);
+assert.strictEqual(deduped.length,2,'Exact award duplicates must collapse to one Opportunity');
+assert.strictEqual(deduped.find(x=>x.publication_no==='TED-123').id,'drafted','Deduplication must retain the row carrying the Gmail draft state');
+W._state.rows=[duplicatePlain,duplicateDraft,uniqueReview];W.setOpportunityContext({focus:'review'});
+assert.strictEqual(W._test.opportunityRows().map(x=>x.id).join(','),'unique','Home review context must show only Opportunities waiting for review');
 
 assert.ok(askBridgeSource.includes('MutationObserver'),'Ask bridge must survive the late Project Control Home owner instead of expiring after early startup retries');
 assert.ok(askBridgeSource.includes('installAskOwnerQueryBridge')&&askBridgeSource.includes("PSTProjectControlHomeV1.render"),'Visible Ask shell must remain connected to the canonical owner render path after DOM adoption');

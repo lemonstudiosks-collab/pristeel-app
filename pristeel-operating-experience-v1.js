@@ -261,7 +261,7 @@ function decorateSystem(){
   var box=document.getElementById('pst-system-operating-tools');
   if(!box){box=document.createElement('section');box.id='pst-system-operating-tools';box.innerHTML='<div><span>SYSTEM</span><b>Integrimet dhe automatizimet</b><small>Mjetet teknike që punojnë në prapaskenë janë këtu, jo në rrjedhën e përditshme.</small></div><nav><button type="button" data-pst-system-tool="gmail">Gmail</button><button type="button" data-pst-system-tool="commercial">Mjete komerciale</button><button type="button" data-pst-system-tool="automation">Automation Health</button></nav>';
     h.insertBefore(box,h.firstChild);box.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('[data-pst-system-tool]'):null;if(b)openTool(b.getAttribute('data-pst-system-tool'));});
-  }
+  }else if(box.parentNode!==h)h.insertBefore(box,h.firstChild);
   return true;
 }
 function css(){

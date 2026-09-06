@@ -79,12 +79,12 @@ function watchList(){
   var list=document.getElementById('pst-opportunities-list');if(!list||list.__pstDraftStateObserved)return false;list.__pstDraftStateObserved=true;
   listObserver=new MutationObserver(function(){setTimeout(function(){decorate(false);},0);});listObserver.observe(list,{childList:true});return true;
 }
-async function persistCreated(id,edited){
+async function persistCreated(id,edited,created){
   id=S(id);if(!id)return false;
   var rows=A(await db('kek_tender_watch?id=eq.'+encodeURIComponent(id)+'&select=id,payload&limit=1')),r=rows[0];if(!r)return false;
   var p=Object.assign({},payload(r)),existing=p.outreach_draft&&typeof p.outreach_draft==='object'?p.outreach_draft:{};
   if(S(existing.status).toLowerCase()==='scheduled')return true;
-  p.outreach_draft=Object.assign({},existing,{status:'created',created_at:existing.created_at||new Date().toISOString(),recorded_at:new Date().toISOString(),to:S(edited&&edited.to),subject:S(edited&&edited.subject),source:'gmail_ui',human_send_required:true});
+  p.outreach_draft=Object.assign({},existing,{status:'created',created_at:existing.created_at||S(created&&created.created_at)||new Date().toISOString(),recorded_at:new Date().toISOString(),to:S(edited&&edited.to),subject:S(edited&&edited.subject),gmail_draft_id:S(created&&created.gmail_draft_id)||S(existing.gmail_draft_id),gmail_message_id:S(created&&created.gmail_message_id)||S(existing.gmail_message_id),source:created?'gmail_api':S(existing.source)||'gmail_ui',human_send_required:true});
   await db('kek_tender_watch?id=eq.'+encodeURIComponent(id),'PATCH',{payload:p,updated_at:new Date().toISOString()});
   cache.loadedAt=0;await refresh(true);decorate(false);try{document.dispatchEvent(new CustomEvent('pst:opportunity-draft-state-changed',{detail:{tender_id:id,status:'created'}}));}catch(e){}return true;
 }
@@ -116,6 +116,10 @@ function bindGmailSuccessCapture(){
     var done=false;[250,700,1400,2800,5500,9000,15000,22000].forEach(function(ms){setTimeout(function(){if(done)return;var btn=document.querySelector('#pst-tender-draft-modal [data-td-gmail]');if(btn&&/Drafti u krijua/i.test(S(btn.textContent))){done=true;persistCreated(id,edited).catch(function(err){console.warn('PPPP draft state persist:',err);});}},ms);});
   },true);
 }
+function bindCreatedEvent(){
+  if(window.__pstOpportunityDraftCreatedEvent)return;window.__pstOpportunityDraftCreatedEvent=true;
+  document.addEventListener('pst:tender-gmail-draft-created',function(e){var d=e&&e.detail||{},id=S(d.tender_id);if(!id)return;persistCreated(id,{to:d.to,subject:d.subject},d).catch(function(err){console.warn('PPPP draft event persist:',err);});});
+}
 function bindOpportunityClicks(){
   if(window.__pstOpportunityDraftClickBridge)return;window.__pstOpportunityDraftClickBridge=true;
   document.addEventListener('click',function(e){
@@ -123,7 +127,7 @@ function bindOpportunityClicks(){
     var nav=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[data-key="tenders"],[data-key="opportunities"]'):null;if(nav)[100,450,1000,2200].forEach(function(ms){setTimeout(function(){decorate(ms>500);},ms);});
   },true);
 }
-function install(){ensureCss();wrapPrepareDraft();bindGmailSuccessCapture();bindOpportunityClicks();if(activeOpportunities())decorate(false);}
+function install(){ensureCss();wrapPrepareDraft();bindCreatedEvent();bindGmailSuccessCapture();bindOpportunityClicks();if(activeOpportunities())decorate(false);}
 [0,250,700,1500,3500,7000,15000,30000,60000].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',function(){[0,300,1000,3000].forEach(function(ms){setTimeout(install,ms);});},{once:true});
 document.addEventListener('pst:opportunity-draft-state-changed',function(){decorate(true);});

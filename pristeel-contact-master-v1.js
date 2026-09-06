@@ -113,7 +113,7 @@ async function openDetail(r){
 function bindShell(p){var s=p.querySelector('#pcm-search'),src=p.querySelector('#pcm-source');[s,src].forEach(function(x){if(x){x.oninput=renderList;x.onchange=renderList;}});p.querySelectorAll('[data-pcm-business]').forEach(function(b){b.onclick=function(){setCategory(b.getAttribute('data-pcm-business'));};});var ref=p.querySelector('[data-pcm-refresh]');if(ref)ref.onclick=function(){load(true);loadManufacturers(true);};var classic=p.querySelector('[data-pcm-classic]');if(classic)classic.onclick=function(){var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function')L.showPage('contacts');else if(typeof window.showPage==='function')window.showPage('contacts');};}
 
 async function fetchArray(path){if(typeof window.supaFetch!=='function')throw new Error('Lidhja me databazën nuk është gati.');var rows=await window.supaFetch(path);if(!Array.isArray(rows))throw new Error('Databaza ktheu format të papritur.');return rows;}
-async function loadPrimary(){return fetchArray('pppp_contact_master_v1?select=contact_id,kind,company,person,email,phone,country,role,last_contact,sources,projects,project_email_count,last_seen_at&order=last_seen_at.desc.nullslast&limit=2000');}
+async function loadPrimary(){return fetchArray('pppp_contact_master_v1?select=contact_id,kind,company,person,email,phone,country,role,last_contact,sources,projects,project_email_count,last_seen_at&order=last_seen_at.desc.nullslast&limit=600');}
 async function loadFallback(){var rows=await fetchArray('contacts?select=id,kind,company,person,email,phone,country,role,last_contact,hubspot_id,hubspot_url&order=last_contact.desc.nullslast&limit=2000');return rows.map(function(r){r=Object.assign({_fallback:true},r);return normalizeRow(r);});}
 async function loadManufacturers(force){if(cache.manufacturersLoading&&!force)return cache.manufacturersLoading;if(cache.manufacturersLoaded&&!force)return;cache.manufacturersLoading=(async function(){try{var ps=await fetchArray('partners?select=name,aliases,relation&limit=1000');cache.manufacturerNames.clear();ps.forEach(function(r){var rel=A(r.relation).map(N);if(rel.indexOf('manufacturer')<0)return;[r.name].concat(A(r.aliases)).forEach(function(x){x=N(x);if(x)cache.manufacturerNames.add(x);});});cache.manufacturersLoaded=true;}catch(e){console.warn('Contact manufacturer categories:',e);}finally{cache.manufacturersLoading=null;}renderList();})();return cache.manufacturersLoading;}
 async function load(force){
@@ -121,15 +121,16 @@ async function load(force){
  var h=document.getElementById('pcm-list'),c=document.getElementById('pcm-count');if(h)h.innerHTML='<div class="pcm-empty">Duke ngarkuar kontaktet…</div>';if(c)c.textContent='Duke ngarkuar…';
  cache.loading=(async function(){
    cache.error='';var rows=[];
-   try{rows=(await loadPrimary()).map(normalizeRow);cache.source='master';}
+   try{rows=(await loadPrimary()).map(normalizeRow);if(!rows.length)throw new Error('Pamja e unifikuar nuk ktheu kontakte.');cache.source='master';}
    catch(primaryError){
      console.warn('PPPP Contact Master primary load:',primaryError);
      try{rows=await loadFallback();cache.source='contacts';}
      catch(fallbackError){
        console.error('PPPP Contact Master fallback load:',fallbackError);
-       cache.rows=[];cache.filtered=[];cache.error=(primaryError&&primaryError.message?primaryError.message:String(primaryError))+' · '+(fallbackError&&fallbackError.message?fallbackError.message:String(fallbackError));renderError();return[];
+       cache.error=(primaryError&&primaryError.message?primaryError.message:String(primaryError))+' · '+(fallbackError&&fallbackError.message?fallbackError.message:String(fallbackError));if(!cache.rows.length){cache.filtered=[];renderError();}else renderList();return cache.rows;
      }
    }
+   if(!rows.length){cache.error='Kontaktet nuk u kthyen nga asnjë burim. Provo përsëri; PPPP nuk do ta paraqesë këtë si zero reale.';renderError();return cache.rows;}
    cache.rows=rows;renderList();return rows;
  })().finally(function(){cache.loading=null;});
  return cache.loading;
