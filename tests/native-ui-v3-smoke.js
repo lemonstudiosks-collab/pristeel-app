@@ -44,5 +44,5 @@ const dyn=(manifest.dynamicRuntime||[]).find(x=>x.module==='pristeel-native-ui-v
 must(!!dyn,'native UI compatibility entry is not registered in runtime manifest');
 must(dyn&&dyn.loader==='pristeel-roles.js','native UI runtime loader must remain pristeel-roles.js');
 must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='6110ccff0e59b96f0c3ceec8a8ff27de3d504204','manifest loader SHA does not match audited roles blob');
-must(manifest.entrypoints.bootstrapGitBlobSha==='7be6c5167e46328a1ec3e9f242d5343ed06d0b86','manifest bootstrap SHA does not match production bootstrap');
+must(manifest.entrypoints.bootstrapGitBlobSha==='5f40652c18a283309d9020d3a06824e979429411','manifest bootstrap SHA does not match production bootstrap');
 if(!process.exitCode) console.log('Native UI v4 Albanian single-owner smoke OK.');
