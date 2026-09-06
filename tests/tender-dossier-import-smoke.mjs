@@ -2,15 +2,21 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const finalizer=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
+const runtime=fs.readFileSync('pristeel-tender-dossier-import-v1.js','utf8');
 const importer=fs.readFileSync('supabase/functions/pppp-tender-dossier-import/index.ts','utf8');
 
-assert(finalizer.includes('/functions/v1/pppp-tender-dossier-import'),'Protected KRPP upload UI is not wired to the importer Edge Function');
+assert(finalizer.includes('pristeel-tender-dossier-import-v1.js'),'Finalizer must load the purpose-limited tender import companion');
 assert(finalizer.includes('data-pst-krpp-upload')&&finalizer.includes('Ngarko në PPPP'),'Missing protected-document upload action');
-assert(finalizer.includes("mode:'upload'")&&finalizer.includes("mode:'reconcile'"),'Upload and reconciliation modes must both be wired');
-assert(finalizer.includes('expected_name')&&finalizer.includes('tenderFileBase64'),'Frontend must bind each selected file to the exact missing KRPP document');
-assert(finalizer.includes('PSTTenderDossierAnalysisV1')&&finalizer.includes('D.analyze(id,false)'),'Successful import must return to the canonical dossier analyzer');
-assert(finalizer.includes('__pstProtectedImportWrapped'),'Canonical analyzer must reconcile persisted imports after refresh/force analysis');
-assert(!/MutationObserver|setInterval\s*\(/.test(finalizer),'Import UI must remain bounded and polling-free');
+assert(finalizer.includes('X.pickAndUpload'),'Finalizer must delegate the selected-file action to the tender import companion');
+assert(!/supaFetch|fetch\s*\(|localStorage\.setItem|sessionStorage\.setItem/.test(finalizer),'Finalizer must remain presentation-only and must not fetch or write data');
+assert(!/MutationObserver|setInterval\s*\(/.test(finalizer),'Import presentation must remain bounded and polling-free');
+
+assert(runtime.includes('/functions/v1/pppp-tender-dossier-import'),'Tender import runtime is not wired to the importer Edge Function');
+assert(runtime.includes("mode:'upload'")&&runtime.includes("mode:'reconcile'"),'Upload and reconciliation modes must both be wired');
+assert(runtime.includes('expected_name')&&runtime.includes('fileBase64'),'Runtime must bind each selected file to the exact missing KRPP document');
+assert(runtime.includes('PSTTenderDossierAnalysisV1')&&runtime.includes('__pstProtectedImportWrapped'),'Import runtime must return to and reconcile through the canonical dossier analyzer');
+assert(runtime.includes('canonicalAnalyze')&&runtime.includes('refreshCanonical'),'Imported dossiers must refresh through the original canonical analyzer instead of creating a parallel UI owner');
+assert(!/MutationObserver|setInterval\s*\(/.test(runtime),'Tender import runtime must remain bounded and polling-free');
 
 assert(importer.includes("const CACHE_VERSION='v10'"),'Importer cache version must stay compatible with the current canonical dossier analyzer');
 assert(importer.includes("const IMPORT_VERSION='v1'"),'Importer version marker is missing');
