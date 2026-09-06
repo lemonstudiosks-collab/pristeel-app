@@ -10,10 +10,11 @@ assert.doesNotThrow(()=>new Function(source),'Canonical Finance runtime must rem
 [
  'paid_date','period_year','period_label','amount,due_date,paid,paid_date',
  'bank_guarantees?select=id,status,amount_guaranteed,fee_amount,expiry_date',
- 'other_costs?select=id,amount,currency'
+ 'other_costs?select=id,amount&limit=1000'
 ].forEach(token=>assert(source.includes(token),'Real production Finance schema token missing: '+token));
 [
- 'payment_date','tax_amount','base_amount','status,payment_date','amount_guaranteed,fee_amount,currency'
+ 'payment_date','tax_amount','base_amount','status,payment_date',
+ 'amount_guaranteed,fee_amount,currency','other_costs?select=id,amount,currency'
 ].forEach(token=>assert(!source.includes(token),'Non-production Finance schema token leaked: '+token));
 assert(!/supaFetch\([^\n]+['"](?:POST|PATCH|DELETE)['"]/.test(source),'Finance KPI bridge must not perform writes');
 
@@ -54,9 +55,7 @@ w.supaFetch=async(path,method,body)=>{
 let baseSwitchCalls=0;
 w.finShowHub=function(){};w.finShowHub.__pstStabilityV2=true;
 w.finSwitchTab=function(){baseSwitchCalls++;};w.finSwitchTab.__pstStabilityV2=true;
-const writeOwners={
- finMarkPaid:function(){},expSave:function(){},expMarkPaid:function(){},atkSave:function(){},atkMarkPaid:function(){}
-};
+const writeOwners={finMarkPaid:function(){},expSave:function(){},expMarkPaid:function(){},atkSave:function(){},atkMarkPaid:function(){}};
 Object.assign(w,writeOwners);
 let oldDisconnected=0;
 w.document.getElementById('page-finance').__pstFinanceStabilityObserver={disconnect(){oldDisconnected++;}};
