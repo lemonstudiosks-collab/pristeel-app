@@ -1,4 +1,4 @@
-/* Regression: manual supplier offer is project-agnostic and supports flexible extra cost positions. */
+/* Regression: manual supplier offer is project-agnostic, stable and supports flexible extra cost positions. */
 'use strict';
 const fs=require('fs');
 const assert=require('assert');
@@ -17,6 +17,10 @@ assert(!/fc96208d-356c-410a-a356-96ce9e9b4d2f|Evosys/i.test(source),
   'Manual supplier offer runtime must not contain EVOSYS-specific routing');
 assert(source.includes('data-mso-add-extra'),'Manual supplier offer must expose an extra-position action');
 assert(source.includes('extra_positions:extraPositions()'),'Manual supplier offer payload must include flexible extra positions');
+assert(source.includes('if(!panel||lastProject!==current){lastProject=current;renderManualPanel(card);'),
+  'Repeated observer injections must not rebuild an already-mounted supplier panel');
+assert(source.includes('function scheduleInject()'),
+  'Mutation-driven injection must be debounced rather than scheduling an unbounded render burst');
 assert(/create or replace function public\.pppp_create_manual_supplier_offer_v1\s*\(\s*p_project_id uuid,\s*p_payload jsonb\s*\)/i.test(migrationSource),
   'Migration must preserve the existing RPC signature');
 assert(migrationSource.includes("p_payload->'extra_positions'"),
@@ -60,11 +64,27 @@ async function exerciseProject(projectId,withExtras){
   assert(w.PSTManualSupplierOfferV1,'Manual supplier bridge must install');
   assert.strictEqual(w.PSTManualSupplierOfferV1.inject(),true,
     'Manual supplier bridge must attach for arbitrary project '+projectId);
-  await new Promise(r=>setTimeout(r,10));
+  await new Promise(r=>setTimeout(r,60));
 
   const card=w.document.querySelector('.pst-csf-suppliers');
   const btn=card.querySelector('[data-mso-open]');
   assert(btn,'Arbitrary project must expose the manual-offer action');
+
+  const panel=card.querySelector('#pst-manual-offers-panel');
+  assert(panel,'Manual-offer panel must be mounted once');
+  const manualReadCount=()=>calls.filter(x=>String(x.path).startsWith('offers?')||String(x.path).startsWith('project_supplier_decisions?')).length;
+  const readsAfterFirstRender=manualReadCount();
+  assert.strictEqual(readsAfterFirstRender,2,'Initial panel render should perform exactly the two expected read queries');
+
+  for(let i=0;i<20;i++)assert.strictEqual(w.PSTManualSupplierOfferV1.inject(),true);
+  const noise=w.document.createElement('span');noise.textContent='unrelated mutation';card.appendChild(noise);
+  await new Promise(r=>setTimeout(r,80));
+  assert.strictEqual(card.querySelector('#pst-manual-offers-panel'),panel,
+    'Repeated injects and unrelated DOM mutations must preserve the same panel node');
+  assert.strictEqual(manualReadCount(),readsAfterFirstRender,
+    'Repeated observer activity must not refetch or rerender an already-mounted panel');
+  noise.remove();
+
   btn.click();
   assert(w.document.getElementById('pst-mso-modal'),
     'Manual-offer action must open the entry modal for arbitrary project');
@@ -119,5 +139,5 @@ async function exerciseProject(projectId,withExtras){
     '33333333-3333-4333-8333-333333333333'
   ];
   for(let i=0;i<projects.length;i++)await exerciseProject(projects[i],i===0);
-  console.log('Manual supplier offer universal-project and flexible-position smoke test passed.');
+  console.log('Manual supplier offer universal-project, stability and flexible-position smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
