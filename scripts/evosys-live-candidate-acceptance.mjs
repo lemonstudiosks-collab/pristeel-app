@@ -24,7 +24,11 @@ async function adminSession(){
 }
 async function counts(){const [o,d]=await Promise.all([J(`${SB}/rest/v1/offers?project_id=eq.${PID}&origin=eq.manual&select=id`,{headers:H()}),J(`${SB}/rest/v1/project_supplier_decisions?project_id=eq.${PID}&status=eq.active&select=id`,{headers:H()})]);return{manual_offers:(o||[]).length,active_supplier_decisions:(d||[]).length};}
 async function snap(page,name){await page.screenshot({path:path.join(OUT,name+'.png'),fullPage:true}).catch(()=>{});const t=await page.locator('body').innerText().catch(()=>'');await fs.writeFile(path.join(OUT,name+'.txt'),String(t).slice(0,50000));}
+function safeUrl(raw){try{const u=new URL(raw);return u.origin+u.pathname+u.search;}catch{return String(raw||'').slice(0,1000);}}
 let browser,page;
+const consoleErrors=[];
+const requestFailures=[];
+const projectNetwork=[];
 try{
   if(!KEY)throw new Error('Missing Supabase privileged key');
   if(!CANDIDATE_URL)throw new Error('Missing CANDIDATE_URL');
@@ -33,20 +37,34 @@ try{
   report.checks.candidate_guard_present=true;
   const session=await adminSession();report.before=await counts();
   browser=await chromium.launch({headless:true});page=await browser.newPage({viewport:{width:1600,height:1000}});
-  const consoleErrors=[];page.on('pageerror',e=>consoleErrors.push(String(e.message||e).slice(0,600)));page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text().slice(0,600));});
+  page.on('pageerror',e=>consoleErrors.push({type:'pageerror',text:String(e.message||e).slice(0,800)}));
+  page.on('console',m=>{if(m.type()==='error'||m.type()==='warning')consoleErrors.push({type:m.type(),text:m.text().slice(0,800)});});
+  page.on('requestfailed',req=>requestFailures.push({url:safeUrl(req.url()),method:req.method(),failure:req.failure()?.errorText||''}));
+  page.on('response',resp=>{const u=resp.url();if(u.includes('/rest/v1/')&&(u.includes('project')||u.includes(PID)))projectNetwork.push({status:resp.status(),method:resp.request().method(),url:safeUrl(u)});});
   let intercepted=0;
   await page.route('**/pristeel-project-workflow-canonical-v1.js*',async route=>{intercepted++;await route.fulfill({status:200,contentType:'application/javascript; charset=utf-8',body:candidate,headers:{'cache-control':'no-store'}});});
   await page.goto(SITE,{waitUntil:'domcontentloaded',timeout:60000});
   await page.evaluate(x=>localStorage.setItem('pristeel_session',JSON.stringify(x)),{...session,expires_at:Date.now()+Math.max(60,Number(session.expires_in||3600))*1000});
   await page.reload({waitUntil:'domcontentloaded',timeout:60000});
-  await page.waitForFunction(()=>{const g=document.getElementById('auth-gate'),r=document.getElementById('app-shell-root');return !!r&&getComputedStyle(r).display!=='none'&&(!g||getComputedStyle(g).display==='none');},{timeout:60000});
+  await page.waitForFunction(()=>{const g=document.getElementById('auth-gate'),r=document.getElementById('app-shell-root');return !!r&&getComputedStyle(r).display!=='none'&&(!g||getComputedStyle(g).display==='none');},null,{timeout:60000});
   report.checks.authenticated_ui=true;report.checks.candidate_intercepted=intercepted>0;report.intercept_count=intercepted;if(!report.checks.candidate_intercepted)throw new Error('Candidate canonical module was not intercepted in live Pages');
 
   const nav=page.locator('.pst-ws-navbtn[data-key="projects"]').first();await nav.waitFor({state:'visible',timeout:90000});await nav.click();
-  const row=page.locator(`.pst-pm-row[data-project-id="${PID}"]`).first();await row.waitFor({state:'visible',timeout:90000});report.checks.evosys_row_visible=true;await snap(page,'01-evosys-row');
-  await row.locator(`[data-pm-open="${PID}"]`).first().click();
-  await page.waitForFunction(()=>/Evosys Laser GmbH/i.test(document.getElementById('page-workspace-project')?.innerText||'')&&!/Projekti nuk u gjet/i.test(document.getElementById('page-workspace-project')?.innerText||''),{timeout:60000});report.checks.evosys_open=true;
-  await page.waitForTimeout(2200);await snap(page,'02-evosys-open');
+  const row=page.locator(`.pst-pm-row[data-project-id="${PID}"]`).first();await row.waitFor({state:'visible',timeout:90000});report.checks.evosys_row_visible=true;
+  const opener=row.locator(`[data-pm-open="${PID}"]`).first();await opener.waitFor({state:'visible',timeout:30000});
+  report.project_row=await row.evaluate((el,pid)=>({tag:el.tagName,project_id:el.getAttribute('data-project-id'),text:(el.innerText||'').slice(0,1500),open_count:el.querySelectorAll(`[data-pm-open="${pid}"]`).length,open_html:(el.querySelector(`[data-pm-open="${pid}"]`)?.outerHTML||'').slice(0,1500)}),PID);
+  report.pre_open_state=await page.evaluate(()=>({url:location.href,workspace_display:getComputedStyle(document.getElementById('page-workspace-project')||document.body).display,workspace_text:(document.getElementById('page-workspace-project')?.innerText||'').slice(0,2500),globals:Object.keys(window).filter(k=>/project/i.test(k)&&/open|manager|detail|workspace/i.test(k)).slice(0,80)}));
+  await snap(page,'01-evosys-row');
+  await opener.click();
+  await page.waitForTimeout(2200);
+  report.post_open_state=await page.evaluate(()=>{const p=document.getElementById('page-workspace-project');return{url:location.href,workspace_exists:!!p,workspace_display:p?getComputedStyle(p).display:null,workspace_text:(p?.innerText||'').slice(0,5000),body_has_not_found:/Projekti nuk u gjet/i.test(document.body?.innerText||''),body_has_load_failed:/Projekti nuk u ngarkua/i.test(document.body?.innerText||''),workspace_dataset:p?{...p.dataset}:null};});
+  report.project_network=projectNetwork.slice(-80);
+  report.request_failures=requestFailures.slice(-40);
+  report.console_errors=consoleErrors.slice(-40);
+  await snap(page,'02-project-open-attempt');
+  if(report.post_open_state.body_has_not_found||report.post_open_state.body_has_load_failed)throw new Error('Project open failed before supplier-offer acceptance: production UI reported project not found/load failure');
+  await page.waitForFunction(()=>/Evosys Laser GmbH/i.test(document.getElementById('page-workspace-project')?.innerText||'')&&!/Projekti nuk u gjet/i.test(document.getElementById('page-workspace-project')?.innerText||''),null,{timeout:60000});report.checks.evosys_open=true;
+  await snap(page,'02-evosys-open');
 
   let area=page.locator('.pwf-area-btn[data-pwf-area="procurement"]').first();
   if(!(await area.count())||!(await area.isVisible().catch(()=>false)))area=page.getByRole('button',{name:'Prokurimi',exact:true}).first();
@@ -66,6 +84,6 @@ try{
   report.after_open=await counts();report.checks.no_offer_created_on_open=report.after_open.manual_offers===report.before.manual_offers;report.checks.no_supplier_selected_on_open=report.after_open.active_supplier_decisions===report.before.active_supplier_decisions;if(!report.checks.no_offer_created_on_open||!report.checks.no_supplier_selected_on_open)throw new Error('Protected business state changed on modal open');
   await page.locator('[data-mso-close]').first().click();await page.waitForTimeout(300);report.checks.modal_closed=!(await modal.isVisible().catch(()=>false));
   report.after_close=await counts();report.checks.no_offer_created_after_close=report.after_close.manual_offers===report.before.manual_offers;report.checks.no_supplier_selected_after_close=report.after_close.active_supplier_decisions===report.before.active_supplier_decisions;if(!report.checks.no_offer_created_after_close||!report.checks.no_supplier_selected_after_close)throw new Error('Protected business state changed after modal close');
-  report.console_errors=consoleErrors.slice(0,30);report.ok=true;
-}catch(e){report.errors.push(String(e?.message||e));if(page)await snap(page,'99-failure').catch(()=>{});}finally{report.finished_at=new Date().toISOString();await fs.writeFile(path.join(OUT,'report.json'),JSON.stringify(report,null,2));if(browser)await browser.close();}
+  report.project_network=projectNetwork.slice(-80);report.request_failures=requestFailures.slice(-40);report.console_errors=consoleErrors.slice(-40);report.ok=true;
+}catch(e){report.errors.push(String(e?.message||e));report.project_network=projectNetwork.slice(-80);report.request_failures=requestFailures.slice(-40);report.console_errors=consoleErrors.slice(-40);if(page)await snap(page,'99-failure').catch(()=>{});}finally{report.finished_at=new Date().toISOString();await fs.writeFile(path.join(OUT,'report.json'),JSON.stringify(report,null,2));if(browser)await browser.close();}
 console.log(JSON.stringify(report,null,2));if(!report.ok)process.exit(1);
