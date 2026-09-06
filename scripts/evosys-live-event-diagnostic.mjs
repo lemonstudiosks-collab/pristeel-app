@@ -23,6 +23,7 @@ async function adminSession(){
 }
 async function counts(){const [o,d]=await Promise.all([J(`${SB}/rest/v1/offers?project_id=eq.${PID}&origin=eq.manual&select=id`,{headers:H()}),J(`${SB}/rest/v1/project_supplier_decisions?project_id=eq.${PID}&status=eq.active&select=id`,{headers:H()})]);return{manual_offers:(o||[]).length,active_supplier_decisions:(d||[]).length};}
 async function snap(page,name){await page.screenshot({path:path.join(OUT,name+'.png'),fullPage:true}).catch(()=>{});}
+async function visibleFirst(locators){for(const l of locators){if(await l.count()){const x=l.first();if(await x.isVisible().catch(()=>false))return x;}}return null;}
 let browser,page;
 try{
   if(!KEY)throw new Error('Missing Supabase privileged key');
@@ -30,27 +31,13 @@ try{
   browser=await chromium.launch({headless:true});page=await browser.newPage({viewport:{width:1600,height:1000}});
   await page.addInitScript(()=>{
     window.__pstDiag={listeners:[],rdStacks:[],stops:[]};
-    function isManualEvent(ev){
-      try{return !!(ev&&ev.type==='click'&&ev.target&&ev.target.closest&&ev.target.closest('[data-mso-open]'));}catch(e){return false;}
-    }
+    function isManualEvent(ev){try{return !!(ev&&ev.type==='click'&&ev.target&&ev.target.closest&&ev.target.closest('[data-mso-open]'));}catch(e){return false;}}
     const add=EventTarget.prototype.addEventListener;
-    EventTarget.prototype.addEventListener=function(type,fn,opts){
-      if(type==='click'&&(this===window||this===document)){
-        const cap=typeof opts==='boolean'?opts:!!(opts&&opts.capture);
-        window.__pstDiag.listeners.push({target:this===window?'window':'document',capture:cap,stack:String(new Error().stack||'').slice(0,1800)});
-      }
-      return add.call(this,type,fn,opts);
-    };
-    const pd=Event.prototype.preventDefault;
-    Event.prototype.preventDefault=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'preventDefault',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return pd.call(this);};
-    const sp=Event.prototype.stopPropagation;
-    Event.prototype.stopPropagation=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'stopPropagation',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return sp.call(this);};
-    const si=Event.prototype.stopImmediatePropagation;
-    Event.prototype.stopImmediatePropagation=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'stopImmediatePropagation',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return si.call(this);};
-    const clsAdd=DOMTokenList.prototype.add;
-    DOMTokenList.prototype.add=function(...tokens){if(tokens.includes('pst-rd-control'))window.__pstDiag.rdStacks.push({kind:'classList.add',stack:String(new Error().stack||'').slice(0,2000)});return clsAdd.apply(this,tokens);};
-    const setAttr=Element.prototype.setAttribute;
-    Element.prototype.setAttribute=function(name,value){if(name==='class'&&String(value).includes('pst-rd-control'))window.__pstDiag.rdStacks.push({kind:'setAttribute',stack:String(new Error().stack||'').slice(0,2000)});return setAttr.call(this,name,value);};
+    EventTarget.prototype.addEventListener=function(type,fn,opts){if(type==='click'&&(this===window||this===document)){const cap=typeof opts==='boolean'?opts:!!(opts&&opts.capture);window.__pstDiag.listeners.push({target:this===window?'window':'document',capture:cap,stack:String(new Error().stack||'').slice(0,1800)});}return add.call(this,type,fn,opts);};
+    const pd=Event.prototype.preventDefault;Event.prototype.preventDefault=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'preventDefault',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return pd.call(this);};
+    const sp=Event.prototype.stopPropagation;Event.prototype.stopPropagation=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'stopPropagation',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return sp.call(this);};
+    const si=Event.prototype.stopImmediatePropagation;Event.prototype.stopImmediatePropagation=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'stopImmediatePropagation',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return si.call(this);};
+    const clsAdd=DOMTokenList.prototype.add;DOMTokenList.prototype.add=function(...tokens){if(tokens.includes('pst-rd-control'))window.__pstDiag.rdStacks.push({kind:'classList.add',stack:String(new Error().stack||'').slice(0,2000)});return clsAdd.apply(this,tokens);};
   });
   const consoleErrors=[];page.on('pageerror',e=>consoleErrors.push(String(e.message||e).slice(0,600)));page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text().slice(0,600));});
   await page.goto(SITE,{waitUntil:'domcontentloaded',timeout:60000});
@@ -61,31 +48,37 @@ try{
   const nav=page.locator('.pst-ws-navbtn[data-key="projects"]').first();await nav.waitFor({state:'visible',timeout:90000});await nav.click();
   const row=page.locator(`.pst-pm-row[data-project-id="${PID}"]`).first();await row.waitFor({state:'visible',timeout:90000});await row.locator(`[data-pm-open="${PID}"]`).first().click();
   await page.waitForFunction(()=>/Evosys Laser GmbH/i.test(document.getElementById('page-workspace-project')?.innerText||'')&&!/Projekti nuk u gjet/i.test(document.getElementById('page-workspace-project')?.innerText||''),{timeout:60000});
-  report.checks.evosys_open=true;
-  const area=page.locator('.pwf-area-btn[data-pwf-area="procurement"]').first();await area.waitFor({state:'visible',timeout:60000});await area.click();
-  const stage=page.locator('.pwf-stage[data-pwf-stage="offers"]').first();await stage.waitFor({state:'visible',timeout:60000});await stage.click();await page.waitForTimeout(1700);
-  report.checks.offers_stage=true;
+  report.checks.evosys_open=true;await page.waitForTimeout(3500);await snap(page,'00-evosys-settled');
+
+  let procurement=await visibleFirst([
+    page.locator('.pwf-area-btn[data-pwf-area="procurement"]'),
+    page.locator('[data-pwf-area="procurement"]'),
+    page.getByRole('button',{name:'Prokurimi',exact:true})
+  ]);
+  if(!procurement)throw new Error('Visible Prokurimi control not found in authenticated EVOSYS UI');
+  report.procurement_control=await procurement.evaluate(e=>({tag:e.tagName,className:e.className||'',text:(e.textContent||'').replace(/\s+/g,' ').trim()}));
+  await procurement.click({noWaitAfter:true});await page.waitForTimeout(1800);report.checks.procurement_clicked=true;await snap(page,'01-procurement-open');
+
+  let stage=await visibleFirst([
+    page.locator('.pwf-stage[data-pwf-stage="offers"]'),
+    page.locator('[data-pwf-stage="offers"]'),
+    page.getByRole('button',{name:/Ofertat? e furnitorëve/i}),
+    page.locator('button').filter({hasText:/Ofertat? e furnitorëve/i})
+  ]);
+  if(stage){report.offer_stage_control=await stage.evaluate(e=>({tag:e.tagName,className:e.className||'',text:(e.textContent||'').replace(/\s+/g,' ').trim()}));await stage.click({noWaitAfter:true});await page.waitForTimeout(1900);}
+  report.checks.offers_stage=!!stage||await page.locator('[data-mso-open]').count()>0;
+  if(!report.checks.offers_stage)throw new Error('Visible supplier-offers stage not found after Prokurimi');
+
   const btn=page.locator('[data-mso-open]').first();await btn.waitFor({state:'visible',timeout:30000});report.button=await btn.evaluate(b=>({className:b.className,disabled:b.disabled,pointerEvents:getComputedStyle(b).pointerEvents,text:(b.textContent||'').trim()}));
-  report.pre_diag=await page.evaluate(()=>window.__pstDiag);
-  await snap(page,'01-before-click');
+  report.pre_diag=await page.evaluate(()=>window.__pstDiag);await snap(page,'02-before-manual-click');
   const box=await btn.boundingBox();if(!box)throw new Error('Manual supplier button has no live hit box');
-  report.href_before_click=page.url();
-  await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
-  await page.waitForTimeout(900);
-  report.href_after_click=page.url();
-  const modal=page.locator('#pst-mso-modal');report.checks.real_click_opened=await modal.isVisible().catch(()=>false);
-  report.after_real_click_diag=await page.evaluate(()=>window.__pstDiag);
-  await snap(page,report.checks.real_click_opened?'02-real-click-modal':'02-real-click-no-modal');
+  report.href_before_click=page.url();await page.mouse.click(box.x+box.width/2,box.y+box.height/2);await page.waitForTimeout(900);report.href_after_click=page.url();
+  const modal=page.locator('#pst-mso-modal');report.checks.real_click_opened=await modal.isVisible().catch(()=>false);report.after_real_click_diag=await page.evaluate(()=>window.__pstDiag);await snap(page,report.checks.real_click_opened?'03-real-click-modal':'03-real-click-no-modal');
   if(!report.checks.real_click_opened){
-    report.direct_open_result=await page.evaluate(async()=>{
-      try{const api=window.PSTManualSupplierOfferV1;if(!api||typeof api.open!=='function')return{called:false,error:'API open unavailable'};const r=api.open();if(r&&typeof r.then==='function')await r;return{called:true,error:null};}catch(e){return{called:true,error:String(e&&e.message||e)};}
-    });
-    await page.waitForTimeout(800);
-    report.checks.direct_open_opened=await modal.isVisible().catch(()=>false);
-    await snap(page,'03-after-direct-open');
+    report.direct_open_result=await page.evaluate(async()=>{try{const api=window.PSTManualSupplierOfferV1;if(!api||typeof api.open!=='function')return{called:false,error:'API open unavailable'};const r=api.open();if(r&&typeof r.then==='function')await r;return{called:true,error:null};}catch(e){return{called:true,error:String(e&&e.message||e)};}});
+    await page.waitForTimeout(800);report.checks.direct_open_opened=await modal.isVisible().catch(()=>false);await snap(page,'04-after-direct-open');
   }
-  report.after_open=await counts();report.checks.no_offer_created=report.after_open.manual_offers===report.before.manual_offers;report.checks.no_supplier_selected=report.after_open.active_supplier_decisions===report.before.active_supplier_decisions;
-  report.console_errors=consoleErrors;report.final_diag=await page.evaluate(()=>window.__pstDiag);
-  report.ok=report.checks.direct_open_opened===true&&report.checks.no_offer_created&&report.checks.no_supplier_selected;
+  report.after_open=await counts();report.checks.no_offer_created=report.after_open.manual_offers===report.before.manual_offers;report.checks.no_supplier_selected=report.after_open.active_supplier_decisions===report.before.active_supplier_decisions;report.console_errors=consoleErrors;report.final_diag=await page.evaluate(()=>window.__pstDiag);
+  report.ok=(report.checks.real_click_opened||report.checks.direct_open_opened===true)&&report.checks.no_offer_created&&report.checks.no_supplier_selected;
 }catch(e){report.errors.push(String(e?.message||e));if(page)await snap(page,'99-failure');}finally{report.finished_at=new Date().toISOString();await fs.writeFile(path.join(OUT,'report.json'),JSON.stringify(report,null,2));if(browser)await browser.close();}
-console.log(JSON.stringify({ok:report.ok,checks:report.checks,errors:report.errors,button:report.button,href_before_click:report.href_before_click,href_after_click:report.href_after_click,stops:report.after_real_click_diag?.stops,direct_open_result:report.direct_open_result,console_errors:report.console_errors},null,2));if(!report.ok)process.exit(1);
+console.log(JSON.stringify({ok:report.ok,checks:report.checks,errors:report.errors,procurement_control:report.procurement_control,offer_stage_control:report.offer_stage_control,button:report.button,href_before_click:report.href_before_click,href_after_click:report.href_after_click,stops:report.after_real_click_diag?.stops,direct_open_result:report.direct_open_result,console_errors:report.console_errors},null,2));if(!report.ok)process.exit(1);
