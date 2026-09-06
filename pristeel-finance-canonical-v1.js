@@ -1,7 +1,7 @@
 /* PRISTEEL Finance Canonical v1
- * Live Finance hub + schema compatibility for the existing Finance UI.
- * Reads canonical production tables. Writes happen only after the existing
- * explicit human actions/confirmations; this module never auto-pays or auto-saves.
+ * Read-only live KPIs for the existing Finance UI.
+ * This layer never replaces Finance business-write handlers. The established
+ * pristeel-finance.js remains the owner of explicit user-confirmed writes.
  */
 (function(){
 'use strict';
@@ -9,6 +9,7 @@ if(window.__pstFinanceCanonicalV1)return;
 window.__pstFinanceCanonicalV1=true;
 
 var seq=0,refreshTimer=0;
+var VIEW_IDS=['inv','supp','exp','atk','tax','aging','bg','oc'];
 function A(v){return Array.isArray(v)?v:[];}
 function N(v){var n=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(n)?n:0;}
 function S(v){return String(v==null?'':v);}
@@ -18,8 +19,16 @@ function isEur(r){return S(r&&r.currency||'EUR').toUpperCase()==='EUR';}
 function sum(rows,pick){return A(rows).reduce(function(s,r){return s+(isEur(r)?N(pick(r)):0);},0);}
 function unpaid(rows){return A(rows).filter(function(r){return !r.paid;});}
 function overdue(rows){var t=today();return unpaid(rows).filter(function(r){return r.due_date&&r.due_date<t;});}
-function api(path,method,body){if(typeof window.supaFetch!=='function')return Promise.reject(new Error('PPPP API nuk është gati.'));return window.supaFetch(path,method,body);}
-function salesAmount(r){return N(r.gross_amount)||N(r.total_price)||N(r.net_amount);}
+function api(path){
+  if(typeof window.supaFetch!=='function')return Promise.reject(new Error('PPPP API nuk është gati.'));
+  return Promise.resolve(window.supaFetch(path));
+}
+function read(name,path){
+  return api(path).then(function(rows){return{name:name,rows:A(rows),error:null};}).catch(function(err){
+    return{name:name,rows:[],error:err||new Error('Gabim i panjohur')};
+  });
+}
+function salesAmount(r){return N(r.gross_amount)||N(r.net_amount);}
 function supplierAmount(r){return N(r.amount)||N(r.net_amount);}
 function tile(id){
   var nodes=[].slice.call(document.querySelectorAll('#fin-hub-grid>div[onclick]'));
@@ -27,10 +36,13 @@ function tile(id){
 }
 function liveBox(card,primary,secondary,tone){
   if(!card)return;
-  var old=card.querySelector('[data-fin-live]');if(!old){old=document.createElement('div');old.setAttribute('data-fin-live','1');card.appendChild(old);}
-  old.className='pst-fin-live '+(tone||'');
-  old.innerHTML='<b>'+S(primary)+'</b><span>'+S(secondary)+'</span>';
+  var old=card.querySelector('[data-fin-live]');
+  if(!old){old=document.createElement('div');old.setAttribute('data-fin-live','1');card.appendChild(old);}
+  old.className='pst-fin-live '+(tone||'');old.textContent='';
+  var b=document.createElement('b'),sp=document.createElement('span');
+  b.textContent=S(primary);sp.textContent=S(secondary);old.appendChild(b);old.appendChild(sp);
 }
+function readError(id,label){liveBox(tile(id),'Gabim në lexim',label+' nuk u lexuan nga databaza.','bad');}
 function installStyle(){
   if(document.getElementById('pst-finance-canonical-style'))return;
   var s=document.createElement('style');s.id='pst-finance-canonical-style';s.textContent='\
@@ -42,39 +54,52 @@ function installStyle(){
 }
 async function snapshot(){
   var r=await Promise.all([
-    api('invoices_out?select=id,gross_amount,total_price,net_amount,currency,paid,due_date,payment_date&order=date.desc').catch(function(){return[];}),
-    api('invoices_in?select=id,amount,net_amount,currency,paid,due_date,payment_date&order=date.desc').catch(function(){return[];}),
-    api('expenses?select=id,amount,currency,date,due_date,paid,payment_date&order=date.desc').catch(function(){return[];}),
-    api('tax_obligations?select=id,tax_type,period,base_amount,tax_amount,due_date,status,payment_date&order=due_date.asc').catch(function(){return[];}),
-    api('bank_guarantees?select=id,status,amount_guaranteed,fee_amount,currency,expiry_date').catch(function(){return[];}),
-    api('other_costs?select=id&limit=1000').catch(function(){return[];})
+    read('sales','invoices_out?select=id,gross_amount,net_amount,currency,paid,due_date,paid_date&order=date.desc'),
+    read('suppliers','invoices_in?select=id,amount,net_amount,currency,paid,due_date,paid_date&order=date.desc'),
+    read('expenses','expenses?select=id,amount,currency,date,due_date,paid,paid_date&order=date.desc'),
+    read('taxes','tax_obligations?select=id,tax_type,period_year,period_label,amount,due_date,paid,paid_date&order=due_date.asc'),
+    read('guarantees','bank_guarantees?select=id,status,amount_guaranteed,fee_amount,expiry_date'),
+    read('other','other_costs?select=id,amount&limit=1000')
   ]);
-  return{sales:A(r[0]),suppliers:A(r[1]),expenses:A(r[2]),taxes:A(r[3]),guarantees:A(r[4]),other:A(r[5])};
+  var out={};r.forEach(function(x){out[x.name]=x;});return out;
 }
 async function hydrate(){
   installStyle();var g=document.getElementById('fin-hub-grid');if(!g||!g.children.length)return false;
   var my=++seq;
-  ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(id){liveBox(tile(id),'Duke ngarkuar…','Të dhëna live nga Financat');});
+  VIEW_IDS.forEach(function(id){liveBox(tile(id),'Duke ngarkuar…','Të dhëna live nga Financat');});
   var d=await snapshot();if(my!==seq)return false;
-  var su=unpaid(d.sales),iu=unpaid(d.suppliers),eu=unpaid(d.expenses),so=overdue(d.sales),io=overdue(d.suppliers),eo=overdue(d.expenses);
-  var salesTotal=sum(d.sales,salesAmount),salesUnpaid=sum(su,salesAmount),suppTotal=sum(d.suppliers,supplierAmount),suppUnpaid=sum(iu,supplierAmount),expTotal=sum(d.expenses,function(x){return x.amount;}),expUnpaid=sum(eu,function(x){return x.amount;});
-  liveBox(tile('inv'),d.sales.length+' fatura · '+eur(salesTotal),su.length+' pa paguar · '+eur(salesUnpaid),so.length?'bad':'ok');
-  liveBox(tile('supp'),d.suppliers.length+' fatura · '+eur(suppTotal),iu.length+' pa paguar · '+eur(suppUnpaid),io.length?'bad':'ok');
-  liveBox(tile('exp'),d.expenses.length+' shpenzime · '+eur(expTotal),eu.length+' pa paguar · '+eur(expUnpaid),eo.length?'warn':'ok');
-  var taxOpen=d.taxes.filter(function(x){return S(x.status).toLowerCase()!=='paid';}),taxOver=taxOpen.filter(function(x){return x.due_date&&x.due_date<today();});
-  liveBox(tile('atk'),d.taxes.length+' obligime',taxOpen.length+' të hapura'+(taxOver.length?' · '+taxOver.length+' me vonesë':''),taxOver.length?'bad':'ok');
-  var taxAmt=taxOpen.reduce(function(s,x){return s+N(x.tax_amount);},0);
-  liveBox(tile('tax'),eur(taxAmt)+' detyrime të hapura',d.taxes.length?d.taxes.length+' regjistrime canonical':'0 regjistrime',taxOver.length?'bad':'ok');
-  var dueCount=so.length+io.length+eo.length;
-  liveBox(tile('aging'),dueCount+' me vonesë',(su.length+iu.length+eu.length)+' pagesa të hapura',dueCount?'bad':'ok');
-  var activeBg=d.guarantees.filter(function(x){return ['expired','closed','released','cancelled'].indexOf(S(x.status).toLowerCase())<0;});
-  liveBox(tile('bg'),activeBg.length+' aktive',eur(sum(activeBg,function(x){return x.amount_guaranteed;}))+' vlerë e garantuar',activeBg.length?'warn':'ok');
-  liveBox(tile('oc'),d.other.length+' regjistrime','Kosto të tjera operative',d.other.length?'warn':'ok');
+
+  if(d.sales.error){readError('inv','Faturat e shitjes');}
+  else{var su=unpaid(d.sales.rows),so=overdue(d.sales.rows);liveBox(tile('inv'),d.sales.rows.length+' fatura · '+eur(sum(d.sales.rows,salesAmount)),su.length+' pa paguar · '+eur(sum(su,salesAmount)),so.length?'bad':'ok');}
+  if(d.suppliers.error){readError('supp','Faturat e furnitorëve');}
+  else{var iu=unpaid(d.suppliers.rows),io=overdue(d.suppliers.rows);liveBox(tile('supp'),d.suppliers.rows.length+' fatura · '+eur(sum(d.suppliers.rows,supplierAmount)),iu.length+' pa paguar · '+eur(sum(iu,supplierAmount)),io.length?'bad':'ok');}
+  if(d.expenses.error){readError('exp','Shpenzimet');}
+  else{var eu=unpaid(d.expenses.rows),eo=overdue(d.expenses.rows);liveBox(tile('exp'),d.expenses.rows.length+' shpenzime · '+eur(sum(d.expenses.rows,function(x){return x.amount;})),eu.length+' pa paguar · '+eur(sum(eu,function(x){return x.amount;})),eo.length?'warn':'ok');}
+  if(d.taxes.error){readError('atk','Tatimet');readError('tax','Përmbledhja tatimore');}
+  else{
+    var taxOpen=d.taxes.rows.filter(function(x){return !x.paid;}),taxOver=overdue(d.taxes.rows),taxAmt=sum(taxOpen,function(x){return x.amount;});
+    liveBox(tile('atk'),d.taxes.rows.length+' obligime',taxOpen.length+' të hapura'+(taxOver.length?' · '+taxOver.length+' me vonesë':''),taxOver.length?'bad':'ok');
+    liveBox(tile('tax'),eur(taxAmt)+' detyrime të hapura',d.taxes.rows.length+' regjistrime',taxOver.length?'bad':'ok');
+  }
+  if(d.sales.error||d.suppliers.error||d.expenses.error){readError('aging','Afatet e pagesave');}
+  else{
+    var salesUnpaid=unpaid(d.sales.rows),supplierUnpaid=unpaid(d.suppliers.rows),expenseUnpaid=unpaid(d.expenses.rows);
+    var dueCount=overdue(d.sales.rows).length+overdue(d.suppliers.rows).length+overdue(d.expenses.rows).length;
+    liveBox(tile('aging'),dueCount+' me vonesë',(salesUnpaid.length+supplierUnpaid.length+expenseUnpaid.length)+' pagesa të hapura',dueCount?'bad':'ok');
+  }
+  if(d.guarantees.error){readError('bg','Garancitë bankare');}
+  else{
+    var activeBg=d.guarantees.rows.filter(function(x){return ['expired','closed','released','cancelled','skaduar','mbyllur','lëshuar'].indexOf(S(x.status).toLowerCase())<0;});
+    var bgValue=activeBg.reduce(function(s,x){return s+N(x.amount_guaranteed);},0);
+    liveBox(tile('bg'),activeBg.length+' aktive',eur(bgValue)+' vlerë e garantuar',activeBg.length?'warn':'ok');
+  }
+  if(d.other.error){readError('oc','Kostot e tjera');}
+  else{liveBox(tile('oc'),d.other.rows.length+' regjistrime',eur(d.other.rows.reduce(function(s,x){return s+N(x.amount);},0))+' kosto të tjera',d.other.rows.length?'warn':'ok');}
   return true;
 }
 function refreshHubSoon(){
   if(refreshTimer)clearTimeout(refreshTimer);
-  refreshTimer=setTimeout(function(){refreshTimer=0;hydrate().catch(function(){});},35);
+  refreshTimer=setTimeout(function(){refreshTimer=0;hydrate().catch(function(){VIEW_IDS.forEach(function(id){readError(id,'Financat');});});},35);
 }
 function chainWrap(name,marker,after){
   var cur=window[name];if(typeof cur!=='function'||cur[marker])return false;
@@ -84,53 +109,48 @@ function chainWrap(name,marker,after){
   if(cur.__pstFinanceBase)w.__pstFinanceBase=cur.__pstFinanceBase;
   window[name]=w;return true;
 }
+function forceSubview(tab){
+  if(VIEW_IDS.indexOf(tab)<0)return;
+  var hub=document.getElementById('fin-hub'),tabs=document.getElementById('fin-tabs');
+  if(hub)hub.style.display='none';if(tabs)tabs.style.display='flex';
+  VIEW_IDS.forEach(function(v){var el=document.getElementById('fin-view-'+v);if(el)el.style.display=(v===tab)?'':'none';});
+}
+function installSwitch(){
+  return chainWrap('finSwitchTab','__pstFinanceCanonicalSwitchV2',function(tab){forceSubview(S(tab));setTimeout(function(){forceSubview(S(tab));},0);});
+}
 function installHub(){
-  var hubWrapped=chainWrap('finShowHub','__pstFinanceCanonicalHubV1',function(){refreshHubSoon();});
-  chainWrap('finSwitchTab','__pstFinanceCanonicalTabV1',function(tab){if(tab==='atk')setTimeout(renderTaxCanonical,180);});
-  var g=document.getElementById('fin-hub-grid');if(g&&g.children.length&&(hubWrapped||!g.querySelector('[data-fin-live]')))refreshHubSoon();
+  var wrapped=chainWrap('finShowHub','__pstFinanceCanonicalHubV2',refreshHubSoon);
+  var g=document.getElementById('fin-hub-grid');if(g&&g.children.length&&(wrapped||!g.querySelector('[data-fin-live]')))refreshHubSoon();
 }
-function refValue(id){var e=document.getElementById(id);return e?S(e.value).trim():'';}
-function confirmDo(msg){return typeof window.confirm!=='function'||window.confirm(msg);}
-function alertErr(e){if(typeof window.alert==='function')window.alert('Gabim: '+S(e&&e.message||e));}
-function refreshTab(tab){if(typeof window.finSwitchTab==='function')setTimeout(function(){window.finSwitchTab(tab);},20);refreshHubSoon();}
-function installCanonicalWrites(){
-  window.finMarkPaid=async function(kind,id){
-    if(!confirmDo('A jeni i sigurt që kjo faturë është paguar sot?'))return;
-    try{await api((kind==='out'?'invoices_out':'invoices_in')+'?id=eq.'+encodeURIComponent(id),'PATCH',{paid:true,payment_date:today()});refreshTab('aging');}catch(e){alertErr(e);}
-  };
-  window.finMarkPaid.__pstFinanceCanonicalV1=true;
-  window.expSave=async function(){
-    var amt=N(refValue('exp-amt'));if(!(amt>0)){if(window.alert)window.alert('Shkruaj shumën.');return;}
-    if(!confirmDo('A jeni i sigurt që doni ta ruani këtë shpenzim?'))return;
-    var paid=refValue('exp-paid')==='true',supplier=refValue('exp-sup'),nr=refValue('exp-nr'),vat=refValue('exp-vat'),notes=refValue('exp-notes'),desc=[];
-    if(supplier)desc.push('Furnitori: '+supplier);if(nr)desc.push('Fatura: '+nr);if(vat)desc.push('TVSH e deklaruar në formular: '+vat+'%');
-    var rec={category:refValue('exp-cat')||'other',amount:amt,date:refValue('exp-date')||today(),due_date:refValue('exp-due')||null,currency:'EUR',paid:paid,payment_date:paid?today():null,description:desc.join(' · ')||null,notes:notes||null};
-    try{await api('expenses','POST',rec);var f=document.getElementById('exp-form');if(f)f.style.display='none';refreshTab('exp');}catch(e){alertErr(e);}
-  };
-  window.expSave.__pstFinanceCanonicalV1=true;
-  window.expMarkPaid=async function(id){if(!confirmDo('A jeni i sigurt që ky shpenzim është paguar sot?'))return;try{await api('expenses?id=eq.'+encodeURIComponent(id),'PATCH',{paid:true,payment_date:today()});refreshTab('exp');}catch(e){alertErr(e);}};
-  window.expMarkPaid.__pstFinanceCanonicalV1=true;
-  window.atkSave=async function(){
-    var amt=N(refValue('atk-amt')),period=refValue('atk-period'),due=refValue('atk-due');if(!period||!due){if(window.alert)window.alert('Plotëso periudhën dhe afatin e pagesës.');return;}if(!confirmDo('A jeni i sigurt që doni ta ruani këtë detyrim tatimor?'))return;
-    var year=refValue('atk-year'),paid=refValue('atk-paid')==='true',ref=refValue('atk-ref'),notes=refValue('atk-notes');if(year&&period.indexOf(year)<0)period=period+' · '+year;
-    var n=[ref?'Referenca: '+ref:'',notes].filter(Boolean).join(' · ');
-    var rec={tax_type:refValue('atk-type'),period:period,base_amount:0,tax_amount:amt,due_date:due,status:paid?'paid':'open',payment_date:paid?today():null,notes:n||null};
-    try{await api('tax_obligations','POST',rec);var f=document.getElementById('atk-form');if(f)f.style.display='none';refreshTab('atk');}catch(e){alertErr(e);}
-  };
-  window.atkSave.__pstFinanceCanonicalV1=true;
-  window.atkMarkPaid=async function(id){if(!confirmDo('A jeni i sigurt që ky detyrim është paguar sot?'))return;try{await api('tax_obligations?id=eq.'+encodeURIComponent(id),'PATCH',{status:'paid',payment_date:today()});refreshTab('atk');}catch(e){alertErr(e);}};
-  window.atkMarkPaid.__pstFinanceCanonicalV1=true;
+function computedVisible(el){
+  if(!el||el.hidden)return false;
+  try{var cs=window.getComputedStyle&&window.getComputedStyle(el);if(cs&&(cs.display==='none'||cs.visibility==='hidden'))return false;}catch(e){}
+  return !(el.style&&el.style.display==='none');
 }
-async function renderTaxCanonical(){
-  var list=document.getElementById('fin-atk-list');if(!list)return false;
-  try{var rows=A(await api('tax_obligations?select=id,tax_type,period,base_amount,tax_amount,due_date,status,payment_date,notes&order=due_date.asc'));var open=rows.filter(function(r){return S(r.status).toLowerCase()!=='paid';});
-    if(!rows.length){list.innerHTML='<div style="padding:18px;color:var(--text3);font-size:11px">0 obligime tatimore të regjistruara.</div>';return true;}
-    list.innerHTML='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th>Lloji</th><th>Periudha</th><th>Afati</th><th style="text-align:right">Shuma</th><th>Statusi</th><th></th></tr></thead><tbody>'+rows.map(function(r){var paid=S(r.status).toLowerCase()==='paid',late=!paid&&r.due_date&&r.due_date<today();return'<tr><td>'+S(r.tax_type||'—')+'</td><td>'+S(r.period||'—')+'</td><td>'+S(r.due_date||'—')+'</td><td style="text-align:right;font-weight:700">'+eur(r.tax_amount)+'</td><td>'+(paid?'Paguar':late?'Me vonesë':'Hapur')+'</td><td>'+(!paid?'<button class="btn btn-sm" onclick="atkMarkPaid(\''+r.id+'\')">Paguar</button>':'')+'</td></tr>';}).join('')+'</tbody></table></div>';
-    var sum=document.getElementById('fin-atk-sum');if(sum)sum.innerHTML='<div class="card" style="padding:10px 12px"><b>'+open.length+' obligime të hapura</b><div style="font-size:11px;color:var(--text3);margin-top:3px">'+eur(open.reduce(function(s,r){return s+N(r.tax_amount);},0))+'</div></div>';
-    return true;
-  }catch(e){list.innerHTML='<div style="padding:12px;color:var(--red-text);font-size:11px">Gabim: '+S(e.message)+'</div>';return false;}
+function safeSurfaceReady(){
+  var p=document.getElementById('page-finance');if(!p||!p.classList.contains('active')||!computedVisible(p))return false;
+  var hub=document.getElementById('fin-hub'),grid=document.getElementById('fin-hub-grid');
+  if(computedVisible(hub)&&grid&&grid.children&&grid.children.length)return true;
+  return VIEW_IDS.some(function(v){return computedVisible(document.getElementById('fin-view-'+v));});
 }
-function install(){installStyle();installHub();installCanonicalWrites();}
-install();[120,500,1200].forEach(function(ms){setTimeout(install,ms);});document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTFinanceCanonicalV1={install:install,hydrate:hydrate,snapshot:snapshot,renderTaxCanonical:renderTaxCanonical};
+function installSafeActivationObserver(){
+  var p=document.getElementById('page-finance');if(!p)return false;
+  var old=p.__pstFinanceStabilityObserver;
+  if(old&&old!==p.__pstFinanceCanonicalObserver&&typeof old.disconnect==='function')old.disconnect();
+  if(p.__pstFinanceCanonicalObserver)return true;
+  if(typeof MutationObserver!=='function')return false;
+  var o=new MutationObserver(function(){
+    if(!p.classList.contains('active')||safeSurfaceReady())return;
+    setTimeout(function(){
+      if(!p.classList.contains('active')||safeSurfaceReady())return;
+      var r=window.PSTFinanceStabilityV2;if(r&&typeof r.recoverFinance==='function')r.recoverFinance();
+    },70);
+  });
+  o.observe(p,{attributes:true,attributeFilter:['class','style','hidden']});p.__pstFinanceCanonicalObserver=o;return true;
+}
+function install(){installStyle();installSwitch();installHub();installSafeActivationObserver();}
+install();
+[120,500,1200,2500].forEach(function(ms){setTimeout(install,ms);});
+document.addEventListener('pst:modules-ready',install,{once:true});
+window.PSTFinanceCanonicalV1={install:install,hydrate:hydrate,snapshot:snapshot,forceSubview:forceSubview,safeSurfaceReady:safeSurfaceReady,installSafeActivationObserver:installSafeActivationObserver};
 })();
