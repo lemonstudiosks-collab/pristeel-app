@@ -41,11 +41,18 @@ w.supaFetch=async(path,method,body)=>{
  if(method==='PATCH')return [];
  return [];
 };
-w.finShowHub=function(){};
-w.finSwitchTab=function(){};
+w.finShowHub=function(){};w.finShowHub.__pstStabilityV2=true;
+w.finSwitchTab=function(){};w.finSwitchTab.__pstStabilityV2=true;
 w.eval(source);
 
 (async()=>{
+  const hubOwner=w.finShowHub,tabOwner=w.finSwitchTab;
+  assert.strictEqual(hubOwner.__pstStabilityV2,true,'Canonical hub wrapper must preserve the existing Finance stability owner marker');
+  assert.strictEqual(tabOwner.__pstStabilityV2,true,'Canonical tab wrapper must preserve the existing Finance stability owner marker');
+  w.PSTFinanceCanonicalV1.install();w.PSTFinanceCanonicalV1.install();
+  assert.strictEqual(w.finShowHub,hubOwner,'Repeated Finance install must not grow the hub wrapper chain');
+  assert.strictEqual(w.finSwitchTab,tabOwner,'Repeated Finance install must not grow the tab wrapper chain');
+
   const beforeWrites=calls.filter(c=>c.method!=='GET').length;
   assert.strictEqual(await w.PSTFinanceCanonicalV1.hydrate(),true,'Finance hub hydration failed');
   assert.strictEqual(calls.filter(c=>c.method!=='GET').length,beforeWrites,'Finance hydration must be read-only');
