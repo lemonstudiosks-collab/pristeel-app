@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'pristeel-tender-dossier-analysis-v1.js'
+      - 'pristeel-tender-dossier-import-v1.js'
       - 'pristeel-redesign-finalizer-v1.js'
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
       - 'supabase/functions/pppp-tender-dossier-import/**'
@@ -14,6 +15,7 @@ on:
     branches: [main]
     paths:
       - 'pristeel-tender-dossier-analysis-v1.js'
+      - 'pristeel-tender-dossier-import-v1.js'
       - 'pristeel-redesign-finalizer-v1.js'
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
       - 'supabase/functions/pppp-tender-dossier-import/**'
@@ -33,6 +35,7 @@ jobs:
         with:
           node-version: '22'
       - run: node --check pristeel-tender-dossier-analysis-v1.js
+      - run: node --check pristeel-tender-dossier-import-v1.js
       - run: node --check pristeel-redesign-finalizer-v1.js
       - run: node --check supabase/functions/pppp-tender-dossier-analysis/parser.mjs
       - run: node tests/tender-dossier-analysis-smoke.mjs
