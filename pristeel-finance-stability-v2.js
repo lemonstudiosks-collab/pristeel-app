@@ -332,12 +332,23 @@ function watchFinancePage(){
   syncActivation();
   return true;
 }
+function installCanonicalFinanceData(){
+  if(window.PSTFinanceCanonicalV1)return true;
+  if(document.querySelector('script[data-pst-finance-canonical]'))return true;
+  var s=document.createElement('script');
+  s.src='pristeel-finance-canonical-v1.js?v=20260906-1';
+  s.defer=true;
+  s.setAttribute('data-pst-finance-canonical','1');
+  document.head.appendChild(s);
+  return true;
+}
 
 function install(){
   installStyle();
   installSwitch();
   installHub();
   installInvoiceDocumentTheme();
+  installCanonicalFinanceData();
   installCanonicalFinanceCapture();
   installWorkspaceFinanceRoute();
   watchFinancePage();
@@ -347,5 +358,5 @@ function install(){
 install();
 [120,500,1200,2500].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation,recoverFinance:recoverFinance,financeSurfaceReady:financeSurfaceReady,activateExistingFinance:activateExistingFinance,installCanonicalFinanceCapture:installCanonicalFinanceCapture,applyInvoiceDocumentTheme:applyInvoiceDocumentTheme,installInvoiceDocumentTheme:installInvoiceDocumentTheme,invoiceDocumentPalette:INVOICE_DOC_PALETTE};
+window.PSTFinanceStabilityV2={install:install,guard:guard,polish:polish,syncActivation:syncActivation,recoverFinance:recoverFinance,financeSurfaceReady:financeSurfaceReady,activateExistingFinance:activateExistingFinance,installCanonicalFinanceCapture:installCanonicalFinanceCapture,installCanonicalFinanceData:installCanonicalFinanceData,applyInvoiceDocumentTheme:applyInvoiceDocumentTheme,installInvoiceDocumentTheme:installInvoiceDocumentTheme,invoiceDocumentPalette:INVOICE_DOC_PALETTE};
 })();
