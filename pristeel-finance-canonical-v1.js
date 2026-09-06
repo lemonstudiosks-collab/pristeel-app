@@ -9,6 +9,7 @@ if(window.__pstFinanceCanonicalV1)return;
 window.__pstFinanceCanonicalV1=true;
 
 var seq=0,refreshTimer=0;
+var VIEW_IDS=['inv','supp','exp','atk','tax','aging','bg','oc'];
 function A(v){return Array.isArray(v)?v:[];}
 function N(v){var n=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(n)?n:0;}
 function S(v){return String(v==null?'':v);}
@@ -37,8 +38,7 @@ function liveBox(card,primary,secondary,tone){
   if(!card)return;
   var old=card.querySelector('[data-fin-live]');
   if(!old){old=document.createElement('div');old.setAttribute('data-fin-live','1');card.appendChild(old);}
-  old.className='pst-fin-live '+(tone||'');
-  old.textContent='';
+  old.className='pst-fin-live '+(tone||'');old.textContent='';
   var b=document.createElement('b'),sp=document.createElement('span');
   b.textContent=S(primary);sp.textContent=S(secondary);old.appendChild(b);old.appendChild(sp);
 }
@@ -64,36 +64,24 @@ async function snapshot(){
   var out={};r.forEach(function(x){out[x.name]=x;});return out;
 }
 async function hydrate(){
-  installStyle();
-  var g=document.getElementById('fin-hub-grid');if(!g||!g.children.length)return false;
+  installStyle();var g=document.getElementById('fin-hub-grid');if(!g||!g.children.length)return false;
   var my=++seq;
-  ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(id){liveBox(tile(id),'Duke ngarkuar…','Të dhëna live nga Financat');});
+  VIEW_IDS.forEach(function(id){liveBox(tile(id),'Duke ngarkuar…','Të dhëna live nga Financat');});
   var d=await snapshot();if(my!==seq)return false;
 
   if(d.sales.error){readError('inv','Faturat e shitjes');}
-  else{
-    var su=unpaid(d.sales.rows),so=overdue(d.sales.rows);
-    liveBox(tile('inv'),d.sales.rows.length+' fatura · '+eur(sum(d.sales.rows,salesAmount)),su.length+' pa paguar · '+eur(sum(su,salesAmount)),so.length?'bad':'ok');
-  }
+  else{var su=unpaid(d.sales.rows),so=overdue(d.sales.rows);liveBox(tile('inv'),d.sales.rows.length+' fatura · '+eur(sum(d.sales.rows,salesAmount)),su.length+' pa paguar · '+eur(sum(su,salesAmount)),so.length?'bad':'ok');}
   if(d.suppliers.error){readError('supp','Faturat e furnitorëve');}
-  else{
-    var iu=unpaid(d.suppliers.rows),io=overdue(d.suppliers.rows);
-    liveBox(tile('supp'),d.suppliers.rows.length+' fatura · '+eur(sum(d.suppliers.rows,supplierAmount)),iu.length+' pa paguar · '+eur(sum(iu,supplierAmount)),io.length?'bad':'ok');
-  }
+  else{var iu=unpaid(d.suppliers.rows),io=overdue(d.suppliers.rows);liveBox(tile('supp'),d.suppliers.rows.length+' fatura · '+eur(sum(d.suppliers.rows,supplierAmount)),iu.length+' pa paguar · '+eur(sum(iu,supplierAmount)),io.length?'bad':'ok');}
   if(d.expenses.error){readError('exp','Shpenzimet');}
-  else{
-    var eu=unpaid(d.expenses.rows),eo=overdue(d.expenses.rows);
-    liveBox(tile('exp'),d.expenses.rows.length+' shpenzime · '+eur(sum(d.expenses.rows,function(x){return x.amount;})),eu.length+' pa paguar · '+eur(sum(eu,function(x){return x.amount;})),eo.length?'warn':'ok');
-  }
+  else{var eu=unpaid(d.expenses.rows),eo=overdue(d.expenses.rows);liveBox(tile('exp'),d.expenses.rows.length+' shpenzime · '+eur(sum(d.expenses.rows,function(x){return x.amount;})),eu.length+' pa paguar · '+eur(sum(eu,function(x){return x.amount;})),eo.length?'warn':'ok');}
   if(d.taxes.error){readError('atk','Tatimet');readError('tax','Përmbledhja tatimore');}
   else{
     var taxOpen=d.taxes.rows.filter(function(x){return !x.paid;}),taxOver=overdue(d.taxes.rows),taxAmt=sum(taxOpen,function(x){return x.amount;});
     liveBox(tile('atk'),d.taxes.rows.length+' obligime',taxOpen.length+' të hapura'+(taxOver.length?' · '+taxOver.length+' me vonesë':''),taxOver.length?'bad':'ok');
     liveBox(tile('tax'),eur(taxAmt)+' detyrime të hapura',d.taxes.rows.length+' regjistrime',taxOver.length?'bad':'ok');
   }
-
-  var dueErrors=d.sales.error||d.suppliers.error||d.expenses.error;
-  if(dueErrors){readError('aging','Afatet e pagesave');}
+  if(d.sales.error||d.suppliers.error||d.expenses.error){readError('aging','Afatet e pagesave');}
   else{
     var salesUnpaid=unpaid(d.sales.rows),supplierUnpaid=unpaid(d.suppliers.rows),expenseUnpaid=unpaid(d.expenses.rows);
     var dueCount=overdue(d.sales.rows).length+overdue(d.suppliers.rows).length+overdue(d.expenses.rows).length;
@@ -101,7 +89,7 @@ async function hydrate(){
   }
   if(d.guarantees.error){readError('bg','Garancitë bankare');}
   else{
-    var activeBg=d.guarantees.rows.filter(function(x){return ['expired','closed','released','cancelled'].indexOf(S(x.status).toLowerCase())<0;});
+    var activeBg=d.guarantees.rows.filter(function(x){return ['expired','closed','released','cancelled','skaduar','mbyllur','lëshuar'].indexOf(S(x.status).toLowerCase())<0;});
     var bgValue=activeBg.reduce(function(s,x){return s+N(x.amount_guaranteed);},0);
     liveBox(tile('bg'),activeBg.length+' aktive',eur(bgValue)+' vlerë e garantuar',activeBg.length?'warn':'ok');
   }
@@ -111,9 +99,7 @@ async function hydrate(){
 }
 function refreshHubSoon(){
   if(refreshTimer)clearTimeout(refreshTimer);
-  refreshTimer=setTimeout(function(){refreshTimer=0;hydrate().catch(function(){
-    ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(id){readError(id,'Financat');});
-  });},35);
+  refreshTimer=setTimeout(function(){refreshTimer=0;hydrate().catch(function(){VIEW_IDS.forEach(function(id){readError(id,'Financat');});});},35);
 }
 function chainWrap(name,marker,after){
   var cur=window[name];if(typeof cur!=='function'||cur[marker])return false;
@@ -123,14 +109,53 @@ function chainWrap(name,marker,after){
   if(cur.__pstFinanceBase)w.__pstFinanceBase=cur.__pstFinanceBase;
   window[name]=w;return true;
 }
-function installHub(){
-  var wrapped=chainWrap('finShowHub','__pstFinanceCanonicalHubV1',refreshHubSoon);
-  var g=document.getElementById('fin-hub-grid');
-  if(g&&g.children.length&&(wrapped||!g.querySelector('[data-fin-live]')))refreshHubSoon();
+function forceSubview(tab){
+  if(VIEW_IDS.indexOf(tab)<0)return;
+  var hub=document.getElementById('fin-hub'),tabs=document.getElementById('fin-tabs');
+  if(hub)hub.style.display='none';if(tabs)tabs.style.display='flex';
+  VIEW_IDS.forEach(function(v){var el=document.getElementById('fin-view-'+v);if(el)el.style.display=(v===tab)?'':'none';});
 }
-function install(){installStyle();installHub();}
+function installSwitch(){
+  return chainWrap('finSwitchTab','__pstFinanceCanonicalSwitchV2',function(tab){
+    forceSubview(S(tab));
+    setTimeout(function(){forceSubview(S(tab));},0);
+  });
+}
+function installHub(){
+  var wrapped=chainWrap('finShowHub','__pstFinanceCanonicalHubV2',refreshHubSoon);
+  var g=document.getElementById('fin-hub-grid');if(g&&g.children.length&&(wrapped||!g.querySelector('[data-fin-live]')))refreshHubSoon();
+}
+function computedVisible(el){
+  if(!el||el.hidden)return false;
+  try{var cs=window.getComputedStyle&&window.getComputedStyle(el);if(cs&&(cs.display==='none'||cs.visibility==='hidden'))return false;}catch(e){}
+  return !(el.style&&el.style.display==='none');
+}
+function safeSurfaceReady(){
+  var p=document.getElementById('page-finance');if(!p||!p.classList.contains('active')||!computedVisible(p))return false;
+  var hub=document.getElementById('fin-hub'),grid=document.getElementById('fin-hub-grid');
+  if(computedVisible(hub)&&grid&&grid.children&&grid.children.length)return true;
+  return VIEW_IDS.some(function(v){return computedVisible(document.getElementById('fin-view-'+v));});
+}
+function installSafeActivationObserver(){
+  var p=document.getElementById('page-finance');if(!p)return false;
+  var old=p.__pstFinanceStabilityObserver;
+  if(old&&old!==p.__pstFinanceCanonicalObserver&&typeof old.disconnect==='function')old.disconnect();
+  if(p.__pstFinanceCanonicalObserver)return true;
+  if(typeof MutationObserver!=='function')return false;
+  var o=new MutationObserver(function(){
+    if(!p.classList.contains('active')||safeSurfaceReady())return;
+    setTimeout(function(){
+      if(!p.classList.contains('active')||safeSurfaceReady())return;
+      var r=window.PSTFinanceStabilityV2;if(r&&typeof r.recoverFinance==='function')r.recoverFinance();
+    },70);
+  });
+  o.observe(p,{attributes:true,attributeFilter:['class','style','hidden']});
+  p.__pstFinanceCanonicalObserver=o;
+  return true;
+}
+function install(){installStyle();installSwitch();installHub();installSafeActivationObserver();}
 install();
-[120,500,1200].forEach(function(ms){setTimeout(install,ms);});
+[120,500,1200,2500].forEach(function(ms){setTimeout(install,ms);});
 document.addEventListener('pst:modules-ready',install,{once:true});
-window.PSTFinanceCanonicalV1={install:install,hydrate:hydrate,snapshot:snapshot};
+window.PSTFinanceCanonicalV1={install:install,hydrate:hydrate,snapshot:snapshot,forceSubview:forceSubview,safeSurfaceReady:safeSurfaceReady,installSafeActivationObserver:installSafeActivationObserver};
 })();
