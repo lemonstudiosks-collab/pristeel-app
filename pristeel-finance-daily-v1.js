@@ -15,7 +15,7 @@ function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function page(){return document.getElementById('page-finance');}
 function active(){var p=page();return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
-function isOpen(r){return !/(done|closed|complete|completed|kryer|resolved|cancel|arkiv)/i.test(S(r&&r.status));}
+function isOpen(r){return !/(done|closed|complete|completed|kryer|mbyllur|resolved|cancel|arkiv)/i.test(S(r&&r.status));}
 function financeTask(r){
   var src=N(r&&r.source),cat=N(r&&r.category),ref=N(r&&r.source_ref);
   if(/^(invoice|payment|finance|swift)(_|$)/.test(src))return true;
