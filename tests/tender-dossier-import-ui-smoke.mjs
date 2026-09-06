@@ -39,15 +39,15 @@ window.PSTTenderDossierAnalysisV1={
 };
 window.__pstTenderDossierAnalysisV3=true;
 
-const responses=[
-  {ok:true,tender_id:tenderId,dossier_complete:false,uploaded_document:docA,remaining_protected_documents:[docB]},
-  {ok:true,tender_id:tenderId,dossier_complete:true,uploaded_document:docB,remaining_protected_documents:[],analysis:{ok:true,recommendation:'VAZHDO'}}
-];
+let requests=0;
 window.fetch=globalThis.fetch=async(url,init)=>{
+  requests++;
   assert(String(url).includes('/functions/v1/pppp-tender-dossier-import'),'UI called an unexpected backend path');
-  const sent=JSON.parse(init.body);assert.equal(sent.mode,'upload');assert.equal(sent.tender_id,tenderId);
-  const body=responses.shift();assert(body,'Unexpected extra upload request');
-  return {ok:true,status:200,text:async()=>JSON.stringify(body)};
+  const sent=JSON.parse(init.body);
+  assert.equal(sent.mode,'upload_archive','ZIP flow must use the consolidated archive upload mode');
+  assert.equal(sent.tender_id,tenderId);
+  assert.equal(sent.file.name,'Dosja e Tenderit.zip');
+  return {ok:true,status:200,text:async()=>JSON.stringify({ok:true,tender_id:tenderId,dossier_complete:true,archive_file_name:'Dosja e Tenderit.zip',contained_documents:[docA,docB,'PPPP-DOSJA-INDEX.txt'],matched_documents:[docA,docB],remaining_protected_documents:[],analysis:{ok:true,recommendation:'VAZHDO'}})};
 };
 
 window.eval(fs.readFileSync('pristeel-tender-dossier-import-v1.js','utf8'));
@@ -55,25 +55,26 @@ window.PSTTenderDossierImportV1.apply();
 window.eval(fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8'));
 window.PSTRedesignFinalizerV3.installTenderProtectedDocumentGuide();
 window.PSTRedesignFinalizerV3.renderTenderProtectedGuide({tender_id:tenderId,dossier_complete:false,protected_documents:[docA,docB]});
+window.PSTTenderDossierImportV1._test.renderZipGuide({tender_id:tenderId,dossier_complete:false,protected_documents:[docA,docB]});
 
-let uploadButtons=[...document.querySelectorAll('[data-pst-krpp-upload]')];
-let krppLinks=[...document.querySelectorAll('.pst-final-krpp-doc a')];
-assert.equal(uploadButtons.length,2,'Both missing documents must expose Ngarko në PPPP');
-assert.equal(krppLinks.length,2,'Both missing documents must expose a KRPP link');
+const zipButton=document.querySelector('[data-pst-krpp-zip-upload]');
+const dropZone=document.querySelector('[data-pst-krpp-zip-drop]');
+const uploadButtons=[...document.querySelectorAll('[data-pst-krpp-upload]')];
+const krppLinks=[...document.querySelectorAll('.pst-final-krpp-doc a')];
+assert(zipButton,'Incomplete dossier must show a clear ZIP upload button');
+assert.equal(zipButton.textContent.trim(),'Ngarko Dosja e Tenderit.zip');
+assert(dropZone,'Incomplete dossier must expose a ZIP drag-and-drop target');
+assert.equal(dropZone.getAttribute('data-tender-id'),tenderId,'ZIP drop target must be bound to the current tender');
+assert.equal(uploadButtons.length,2,'Individual missing-document upload must remain as a safe fallback');
+assert.equal(krppLinks.length,2,'Both missing documents must keep a KRPP link');
 assert(krppLinks.every(a=>a.href.includes('DocumentForDispositionPrivateFrm.aspx')),'Protected-document actions must route to the KRPP protected document endpoint');
-assert(krppLinks[0].href.includes(encodeURIComponent(docA).replace(/%20/g,'+'))||decodeURIComponent(krppLinks[0].href).includes(docA),'First KRPP link must identify the exact missing file');
+assert(document.querySelector('.pst-tender-zip-import').textContent.includes('Browser-i nuk lejon'),'UI must explain that automatic access to the local Downloads folder is not allowed');
+assert.equal(document.getElementById('create-project').disabled,true,'Krijo projekt must stay blocked before the ZIP is processed');
 
-const fileA=new window.File(['doc-a'],docA,{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
-assert.equal(await window.PSTTenderDossierImportV1.uploadProtected(tenderId,docA,fileA,uploadButtons[0]),true);
-uploadButtons=[...document.querySelectorAll('[data-pst-krpp-upload]')];
-assert.equal(uploadButtons.length,1,'After the first upload only the remaining protected document should stay in the UI');
-assert.equal(uploadButtons[0].getAttribute('data-expected-name'),docB);
-assert.equal(document.getElementById('create-project').disabled,true,'Krijo projekt must stay blocked while the dossier is incomplete');
-assert.equal(canonicalAnalyzeCalls,0,'Partial upload must not run a parallel/final analysis');
-
-const fileB=new window.File(['doc-b'],docB,{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-assert.equal(await window.PSTTenderDossierImportV1.uploadProtected(tenderId,docB,fileB,uploadButtons[0]),true);
-assert.equal(canonicalAnalyzeCalls,1,'Completed archive must return exactly once to the canonical dossier analyzer');
+const zipFile=new window.File(['fake-zip-bytes'],'Dosja e Tenderit.zip',{type:'application/zip'});
+assert.equal(await window.PSTTenderDossierImportV1.uploadArchive(tenderId,zipFile,zipButton),true);
+assert.equal(requests,1,'Complete ZIP import should need one archive import request');
+assert.equal(canonicalAnalyzeCalls,1,'Completed ZIP archive must return exactly once to the canonical dossier analyzer');
 assert.equal(document.getElementById('pst-tda-analysis').getAttribute('data-dossier-complete'),'1');
 assert.equal(document.getElementById('create-project').disabled,false,'Krijo projekt may become available only after the complete dossier analysis');
 assert.equal(projectClicks,0,'Completing the dossier must never create a project automatically');
@@ -81,6 +82,5 @@ const decision=document.querySelector('.pst-tender-final-decision');
 assert(decision,'Completed dossier must show an explicit final recommendation block');
 assert.equal(decision.querySelector('b').textContent,'VAZHDO');
 assert.equal(decision.querySelectorAll('li').length,2,'Final recommendation must show concrete reasons');
-assert.equal(responses.length,0);
 
-console.log('Tender UI flow: KRPP links -> uploads -> canonical archive analysis -> human project gate passed.');
+console.log('Tender UI ZIP flow: KRPP -> choose/drop ZIP -> canonical archive analysis -> human project gate passed.');
