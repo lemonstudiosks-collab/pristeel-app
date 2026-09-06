@@ -8,7 +8,7 @@
 if(window.__pstFinanceCanonicalV1)return;
 window.__pstFinanceCanonicalV1=true;
 
-var installed=false,seq=0;
+var seq=0,refreshTimer=0;
 function A(v){return Array.isArray(v)?v:[];}
 function N(v){var n=parseFloat(String(v==null?'':v).replace(',','.'));return isFinite(n)?n:0;}
 function S(v){return String(v==null?'':v);}
@@ -51,7 +51,7 @@ async function snapshot(){
   ]);
   return{sales:A(r[0]),suppliers:A(r[1]),expenses:A(r[2]),taxes:A(r[3]),guarantees:A(r[4]),other:A(r[5])};
 }
-async function hydrate(force){
+async function hydrate(){
   installStyle();var g=document.getElementById('fin-hub-grid');if(!g||!g.children.length)return false;
   var my=++seq;
   ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(id){liveBox(tile(id),'Duke ngarkuar…','Të dhëna live nga Financat');});
@@ -72,15 +72,22 @@ async function hydrate(force){
   liveBox(tile('oc'),d.other.length+' regjistrime','Kosto të tjera operative',d.other.length?'warn':'ok');
   return true;
 }
-function refreshHubSoon(){[0,120,500].forEach(function(ms){setTimeout(function(){hydrate().catch(function(){});},ms);});}
+function refreshHubSoon(){
+  if(refreshTimer)clearTimeout(refreshTimer);
+  refreshTimer=setTimeout(function(){refreshTimer=0;hydrate().catch(function(){});},35);
+}
 function chainWrap(name,marker,after){
   var cur=window[name];if(typeof cur!=='function'||cur[marker])return false;
-  var w=function(){var out=cur.apply(this,arguments);try{after.apply(this,arguments);}catch(e){}return out;};w[marker]=true;w.__base=cur;window[name]=w;return true;
+  var w=function(){var out=cur.apply(this,arguments);try{after.apply(this,arguments);}catch(e){}return out;};
+  w[marker]=true;w.__base=cur;
+  if(cur.__pstStabilityV2)w.__pstStabilityV2=true;
+  if(cur.__pstFinanceBase)w.__pstFinanceBase=cur.__pstFinanceBase;
+  window[name]=w;return true;
 }
 function installHub(){
-  chainWrap('finShowHub','__pstFinanceCanonicalHubV1',function(){refreshHubSoon();});
+  var hubWrapped=chainWrap('finShowHub','__pstFinanceCanonicalHubV1',function(){refreshHubSoon();});
   chainWrap('finSwitchTab','__pstFinanceCanonicalTabV1',function(tab){if(tab==='atk')setTimeout(renderTaxCanonical,180);});
-  if(document.getElementById('fin-hub-grid')&&document.getElementById('fin-hub-grid').children.length)refreshHubSoon();
+  var g=document.getElementById('fin-hub-grid');if(g&&g.children.length&&(hubWrapped||!g.querySelector('[data-fin-live]')))refreshHubSoon();
 }
 function refValue(id){var e=document.getElementById(id);return e?S(e.value).trim():'';}
 function confirmDo(msg){return typeof window.confirm!=='function'||window.confirm(msg);}
@@ -123,7 +130,7 @@ async function renderTaxCanonical(){
     return true;
   }catch(e){list.innerHTML='<div style="padding:12px;color:var(--red-text);font-size:11px">Gabim: '+S(e.message)+'</div>';return false;}
 }
-function install(){installStyle();installHub();installCanonicalWrites();installed=true;}
+function install(){installStyle();installHub();installCanonicalWrites();}
 install();[120,500,1200].forEach(function(ms){setTimeout(install,ms);});document.addEventListener('pst:modules-ready',install,{once:true});
 window.PSTFinanceCanonicalV1={install:install,hydrate:hydrate,snapshot:snapshot,renderTaxCanonical:renderTaxCanonical};
 })();
