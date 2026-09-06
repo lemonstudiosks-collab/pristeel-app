@@ -86,6 +86,45 @@ function stripComments(s){
   assert.strictEqual(typeof pw.PSTRedesignFinalizerV1.openPriorityCard, 'undefined', 'Finalizer must not expose a competing Home navigation owner');
   priorityDom.window.close();
 
+  const krppDom = new JSDOM(`<!doctype html><html><head></head><body>
+    <div id="pst-pcw-ti-actions">
+      <a class="pst-pcw-source-link" href="https://e-prokurimi.rks-gov.net/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=4248232">Burimi zyrtar</a>
+    </div>
+    <section id="pst-tda-analysis" data-dossier-complete="0">
+      <div class="pst-tda-partial"><b>DOSJA NUK ËSHTË E PLOTË</b></div>
+    </section>
+  </body></html>`, { runScripts:'outside-only', url:'https://example.test/' });
+  const kw = krppDom.window;
+  let analyzedAfterDownload = 0;
+  kw.PSTTenderDossierAnalysisV1 = {
+    apply(){},
+    download(){ return Promise.resolve(true); },
+    analyze(){ analyzedAfterDownload++; return Promise.resolve(true); }
+  };
+  kw.__pstTenderDossierAnalysisV3 = true;
+  kw.eval(source);
+  kw.PSTRedesignFinalizerV1.installTenderProtectedDocumentGuide();
+  const protectedDocs = [
+    'Dosja e Tenderit 20.08.2026.Docx',
+    'Lista e pershkrimit te çmimeve - Furnizim me Material Metalik.xlsx'
+  ];
+  assert.strictEqual(kw.PSTRedesignFinalizerV1.renderTenderProtectedGuide({dossier_complete:false, protected_documents:protectedDocs}), true, 'Protected KRPP guide was not rendered');
+  const protectedRows = kw.document.querySelectorAll('.pst-final-krpp-doc');
+  assert.strictEqual(protectedRows.length, 2, 'Both missing KRPP documents must be shown');
+  const protectedLinks = kw.document.querySelectorAll('.pst-final-krpp-doc a');
+  assert.strictEqual(protectedLinks.length, 2, 'Each missing KRPP document must have its own link');
+  protectedLinks.forEach((a, i) => {
+    const u = new URL(a.href);
+    assert.strictEqual(u.hostname, 'e-prokurimi.rks-gov.net', 'Protected document link must stay on KRPP');
+    assert(/\/DocumentForDispositionPrivateFrm\.aspx$/i.test(u.pathname), 'Protected document link must target the KRPP protected-document endpoint');
+    assert.strictEqual(u.searchParams.get('fileName'), protectedDocs[i], 'Protected document link must preserve the exact missing filename');
+  });
+  assert(kw.document.querySelector('.pst-final-krpp-source'), 'Full official tender page fallback must remain available');
+  await kw.PSTTenderDossierAnalysisV1.download('a0c8ff1f-bd41-484a-8b82-6c9b0ee6d37e');
+  await new Promise(resolve => kw.setTimeout(resolve, 5));
+  assert.strictEqual(analyzedAfterDownload, 1, 'A successful ZIP download must immediately refresh dossier analysis and reveal protected files');
+  krppDom.window.close();
+
   const rdDom = new JSDOM(`<!doctype html><html><head></head><body>
     <div id="pst-ws-sidebar"><nav id="pst-ws-canonical-nav"><button class="pst-ws-navbtn" data-key="tenders"><span class="pst-nav-label">Opportunities</span></button></nav><div class="pst-ws-brand"><small>Workspace</small></div></div>
     <div id="page-workspace-home"><h2 id="ops">Operations overview</h2><span id="platform-live">Live platform data</span></div>
@@ -120,5 +159,5 @@ function stripComments(s){
   assert(finalCss.includes('.main::before'), 'Final cosmetic layer does not suppress shell-level decorative artifacts');
   rdDom.window.close();
 
-  console.log('Redesign finalizer + priority card + platform readability smoke test passed.');
+  console.log('Redesign finalizer + priority card + KRPP protected document guidance + platform readability smoke test passed.');
 })().catch(error => { console.error(error); process.exit(1); });
