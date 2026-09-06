@@ -29,7 +29,10 @@ try{
   const session=await adminSession();report.before=await counts();
   browser=await chromium.launch({headless:true});page=await browser.newPage({viewport:{width:1600,height:1000}});
   await page.addInitScript(()=>{
-    window.__pstDiag={listeners:[],rdStacks:[]};
+    window.__pstDiag={listeners:[],rdStacks:[],stops:[]};
+    function isManualEvent(ev){
+      try{return !!(ev&&ev.type==='click'&&ev.target&&ev.target.closest&&ev.target.closest('[data-mso-open]'));}catch(e){return false;}
+    }
     const add=EventTarget.prototype.addEventListener;
     EventTarget.prototype.addEventListener=function(type,fn,opts){
       if(type==='click'&&(this===window||this===document)){
@@ -38,6 +41,12 @@ try{
       }
       return add.call(this,type,fn,opts);
     };
+    const pd=Event.prototype.preventDefault;
+    Event.prototype.preventDefault=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'preventDefault',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return pd.call(this);};
+    const sp=Event.prototype.stopPropagation;
+    Event.prototype.stopPropagation=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'stopPropagation',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return sp.call(this);};
+    const si=Event.prototype.stopImmediatePropagation;
+    Event.prototype.stopImmediatePropagation=function(){if(isManualEvent(this))window.__pstDiag.stops.push({kind:'stopImmediatePropagation',phase:this.eventPhase,stack:String(new Error().stack||'').slice(0,2400)});return si.call(this);};
     const clsAdd=DOMTokenList.prototype.add;
     DOMTokenList.prototype.add=function(...tokens){if(tokens.includes('pst-rd-control'))window.__pstDiag.rdStacks.push({kind:'classList.add',stack:String(new Error().stack||'').slice(0,2000)});return clsAdd.apply(this,tokens);};
     const setAttr=Element.prototype.setAttribute;
@@ -56,23 +65,27 @@ try{
   const area=page.locator('.pwf-area-btn[data-pwf-area="procurement"]').first();await area.waitFor({state:'visible',timeout:60000});await area.click();
   const stage=page.locator('.pwf-stage[data-pwf-stage="offers"]').first();await stage.waitFor({state:'visible',timeout:60000});await stage.click();await page.waitForTimeout(1700);
   report.checks.offers_stage=true;
-  const btn=page.locator('[data-mso-open]').first();await btn.waitFor({state:'visible',timeout:30000});report.button=await btn.evaluate(b=>({className:b.className,disabled:b.disabled,pointerEvents:getComputedStyle(b).pointerEvents}));
+  const btn=page.locator('[data-mso-open]').first();await btn.waitFor({state:'visible',timeout:30000});report.button=await btn.evaluate(b=>({className:b.className,disabled:b.disabled,pointerEvents:getComputedStyle(b).pointerEvents,text:(b.textContent||'').trim()}));
   report.pre_diag=await page.evaluate(()=>window.__pstDiag);
   await snap(page,'01-before-click');
-  await btn.click({timeout:10000});await page.waitForTimeout(700);
+  const box=await btn.boundingBox();if(!box)throw new Error('Manual supplier button has no live hit box');
+  report.href_before_click=page.url();
+  await page.mouse.click(box.x+box.width/2,box.y+box.height/2);
+  await page.waitForTimeout(900);
+  report.href_after_click=page.url();
   const modal=page.locator('#pst-mso-modal');report.checks.real_click_opened=await modal.isVisible().catch(()=>false);
   report.after_real_click_diag=await page.evaluate(()=>window.__pstDiag);
+  await snap(page,report.checks.real_click_opened?'02-real-click-modal':'02-real-click-no-modal');
   if(!report.checks.real_click_opened){
     report.direct_open_result=await page.evaluate(async()=>{
       try{const api=window.PSTManualSupplierOfferV1;if(!api||typeof api.open!=='function')return{called:false,error:'API open unavailable'};const r=api.open();if(r&&typeof r.then==='function')await r;return{called:true,error:null};}catch(e){return{called:true,error:String(e&&e.message||e)};}
     });
     await page.waitForTimeout(800);
     report.checks.direct_open_opened=await modal.isVisible().catch(()=>false);
-    await snap(page,'02-after-direct-open');
+    await snap(page,'03-after-direct-open');
   }
   report.after_open=await counts();report.checks.no_offer_created=report.after_open.manual_offers===report.before.manual_offers;report.checks.no_supplier_selected=report.after_open.active_supplier_decisions===report.before.active_supplier_decisions;
-  report.console_errors=consoleErrors;
-  report.final_diag=await page.evaluate(()=>window.__pstDiag);
+  report.console_errors=consoleErrors;report.final_diag=await page.evaluate(()=>window.__pstDiag);
   report.ok=report.checks.direct_open_opened===true&&report.checks.no_offer_created&&report.checks.no_supplier_selected;
 }catch(e){report.errors.push(String(e?.message||e));if(page)await snap(page,'99-failure');}finally{report.finished_at=new Date().toISOString();await fs.writeFile(path.join(OUT,'report.json'),JSON.stringify(report,null,2));if(browser)await browser.close();}
-console.log(JSON.stringify(report,null,2));if(!report.ok)process.exit(1);
+console.log(JSON.stringify({ok:report.ok,checks:report.checks,errors:report.errors,button:report.button,href_before_click:report.href_before_click,href_after_click:report.href_after_click,stops:report.after_real_click_diag?.stops,direct_open_result:report.direct_open_result,console_errors:report.console_errors},null,2));if(!report.ok)process.exit(1);
