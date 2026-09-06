@@ -5,6 +5,8 @@ const {JSDOM}=require('jsdom');
 
 (async()=>{
   const source=fs.readFileSync('pristeel-manual-supplier-offer-v1.js','utf8');
+  const workflowSource=fs.readFileSync('pristeel-project-workflow-canonical-v1.js','utf8');
+  assert(workflowSource.includes("if(!t||t.id==='page-workspace-project')return;"),'Canonical project workflow must not treat the workspace state root as a clickable workflow control');
   assert.doesNotThrow(()=>new Function(source),'Manual supplier offer bridge must remain valid JavaScript');
   assert(source.includes(".pst-csf-suppliers"),'Manual supplier bridge must recognize the current simplified commercial supplier card');
   assert(source.includes('header h2'),'Manual supplier bridge must recognize the current supplier-card title');
