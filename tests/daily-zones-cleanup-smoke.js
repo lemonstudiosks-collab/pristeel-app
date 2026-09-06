@@ -70,4 +70,21 @@ assert(healthLoads>0,'System must hand off to the existing Automation Health eng
 assert(css.includes('#page-workspace-apps.active .pst-daily-system-duplicate{display:none!important}'));
 
 dom.window.close();
+
+const financeSource=fs.readFileSync('pristeel-finance-daily-v1.js','utf8');
+new Function(financeSource);
+const financeDom=new JSDOM('<!doctype html><html><head></head><body><div id="page-finance" class="page active"><div id="fin-hub"><div id="fin-hub-grid"></div></div></div></body></html>',{runScripts:'outside-only',url:'https://example.test'});
+const fw=financeDom.window;
+fw.eval(financeSource);
+const financeTask=fw.PSTFinanceDailyV1._test.financeTask;
+assert.equal(financeTask({source:'invoice_receivable',category:'klient',title:'Pagesë klienti'}),true,'canonical receivable task must stay in Finance');
+assert.equal(financeTask({source:'invoice_due_date_missing',category:'furnitor',title:'Plotëso afatin e pagesës'}),true,'canonical supplier invoice task must stay in Finance');
+assert.equal(financeTask({source:'commercial_intake_review',category:'furnitor',source_ref:'commercial-intake:project:invoice'}),true,'invoice review must stay in Finance');
+assert.equal(financeTask({source:'commercial_intake_review',category:'furnitor',source_ref:'commercial-intake:project:offer',title:'Shqyrto ofertën'}),false,'supplier offer review must not leak into Finance');
+assert.equal(financeTask({source:'document_bom_review',category:'intern',title:'Rishiko dokumentin teknik',detail:'SWIFT payment confirmation appears in OCR'}),false,'technical/OCR task must not enter Finance because of finance words in text');
+assert.equal(financeTask({source:'document_bom_review',category:'intern',title:'Rishiko dokumentin teknik',detail:'Lista e dokumenteve për analizë financiare'}),false,'technical document review must remain outside Finance');
+assert.equal(financeTask({source:'manual',category:'financa',title:'Kontrollo pagesën'}),true,'explicit manual Finance task remains supported');
+assert.equal(financeTask({source:'manual',category:'intern',title:'Kontrollo payment në kontratë'}),false,'generic manual/internal task must not be classified from title text');
+financeDom.window.close();
+
 console.log('Daily zones cleanup smoke test passed.');
