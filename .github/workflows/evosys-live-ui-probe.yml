@@ -5,7 +5,7 @@ on:
     branches:
       - fix/evosys-manual-supplier-live-20260906
     paths:
-      - 'scripts/evosys-live-ui-click-probe.mjs'
+      - 'scripts/evosys-live-event-diagnostic.mjs'
       - 'pristeel-manual-supplier-offer-v1.js'
       - '.github/workflows/evosys-live-ui-probe.yml'
   workflow_dispatch:
@@ -31,20 +31,20 @@ jobs:
           npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Probe authenticated EVOSYS live UI
+      - name: Diagnose authenticated EVOSYS live click
         env:
           PPPP_LIVE_URL: https://lemonstudiosks-collab.github.io/pristeel-app/
           SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          PROBE_OUT: tmp/evosys-live-ui-click-probe
-        run: node scripts/evosys-live-ui-click-probe.mjs
+          PROBE_OUT: tmp/evosys-live-event-diagnostic
+        run: node scripts/evosys-live-event-diagnostic.mjs
 
       - name: Upload live UI evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: evosys-live-ui-click-probe-${{ github.run_number }}
-          path: tmp/evosys-live-ui-click-probe
+          name: evosys-live-event-diagnostic-${{ github.run_number }}
+          path: tmp/evosys-live-event-diagnostic
           if-no-files-found: warn
           retention-days: 3
