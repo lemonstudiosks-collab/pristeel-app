@@ -6,7 +6,9 @@ on:
       - 'pristeel-tender-dossier-analysis-v1.js'
       - 'pristeel-redesign-finalizer-v1.js'
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
+      - 'supabase/functions/pppp-tender-dossier-import/**'
       - 'tests/tender-dossier-analysis-smoke.mjs'
+      - 'tests/tender-dossier-import-smoke.mjs'
       - '.github/workflows/tender-dossier-analysis-smoke.yml'
   push:
     branches: [main]
@@ -14,7 +16,9 @@ on:
       - 'pristeel-tender-dossier-analysis-v1.js'
       - 'pristeel-redesign-finalizer-v1.js'
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
+      - 'supabase/functions/pppp-tender-dossier-import/**'
       - 'tests/tender-dossier-analysis-smoke.mjs'
+      - 'tests/tender-dossier-import-smoke.mjs'
       - '.github/workflows/tender-dossier-analysis-smoke.yml'
 
 permissions:
@@ -29,5 +33,7 @@ jobs:
         with:
           node-version: '22'
       - run: node --check pristeel-tender-dossier-analysis-v1.js
+      - run: node --check pristeel-redesign-finalizer-v1.js
       - run: node --check supabase/functions/pppp-tender-dossier-analysis/parser.mjs
       - run: node tests/tender-dossier-analysis-smoke.mjs
+      - run: node tests/tender-dossier-import-smoke.mjs
