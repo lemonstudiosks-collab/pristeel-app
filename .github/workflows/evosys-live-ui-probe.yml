@@ -5,7 +5,7 @@ on:
     branches:
       - fix/evosys-manual-supplier-live-20260906
     paths:
-      - 'scripts/evosys-live-ui-probe-modern.mjs'
+      - 'scripts/evosys-live-ui-click-probe.mjs'
       - 'pristeel-manual-supplier-offer-v1.js'
       - '.github/workflows/evosys-live-ui-probe.yml'
   workflow_dispatch:
@@ -17,10 +17,6 @@ jobs:
   live-ui:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        operator_index: [0, 1]
     steps:
       - name: Checkout isolated branch
         uses: actions/checkout@v4
@@ -35,36 +31,20 @@ jobs:
           npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Prepare session-indexed probe
-        env:
-          OPERATOR_INDEX: ${{ matrix.operator_index }}
-        run: |
-          python - <<'PY'
-          import os
-          from pathlib import Path
-          src=Path('scripts/evosys-live-ui-probe-modern.mjs').read_text()
-          old='const u=list[0];'
-          new="const u=list[Math.min(Number(process.env.OPERATOR_INDEX||0),list.length-1)];"
-          if old not in src:
-              raise SystemExit('operator selector marker not found')
-          Path('scripts/.evosys-live-ui-probe-run.mjs').write_text(src.replace(old,new,1))
-          PY
-
       - name: Probe authenticated EVOSYS live UI
         env:
-          OPERATOR_INDEX: ${{ matrix.operator_index }}
           PPPP_LIVE_URL: https://lemonstudiosks-collab.github.io/pristeel-app/
           SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          PROBE_OUT: tmp/evosys-live-ui-probe-${{ matrix.operator_index }}
-        run: node scripts/.evosys-live-ui-probe-run.mjs
+          PROBE_OUT: tmp/evosys-live-ui-click-probe
+        run: node scripts/evosys-live-ui-click-probe.mjs
 
       - name: Upload live UI evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: evosys-live-ui-probe-${{ github.run_number }}-${{ matrix.operator_index }}
-          path: tmp/evosys-live-ui-probe-${{ matrix.operator_index }}
+          name: evosys-live-ui-click-probe-${{ github.run_number }}
+          path: tmp/evosys-live-ui-click-probe
           if-no-files-found: warn
           retention-days: 3
