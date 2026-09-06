@@ -24,6 +24,7 @@ w.supaFetch=async(path)=>{
   {id:'t1',project_id:'p1',title:'[AUTO] Pagesë klienti — INV-1',detail:'3 ditë vonë',due_date:'2026-08-22',priority:'urgjent',status:'hapur',source:'invoice_receivable',category:'klient',source_ref:'out:1'},
   {id:'t2',project_id:'p2',title:'Plotëso afatin e pagesës — 035/2026',detail:'Fatura pa due_date',due_date:'2026-08-25',priority:'e larte',status:'hapur',source:'invoice_due_date_missing',category:'furnitor',source_ref:'in:2'},
   {id:'t3',project_id:'p3',title:'Shqyrto faturën e furnitorit',detail:'Candidate review-first',due_date:'2026-08-25',priority:'larte',status:'hapur',source:'commercial_intake_review',category:'furnitor',source_ref:'commercial-intake:p3:invoice'},
+  {id:'t4',project_id:'p4',title:'Shqyrto faturën e mbyllur',detail:'Already closed',due_date:'2026-08-20',priority:'larte',status:'mbyllur',source:'commercial_intake_review',category:'furnitor',source_ref:'commercial-intake:p4:invoice'},
   {id:'x',title:'RFQ supplier',status:'hapur',source:'rfq',category:'furnitor'}
  ];
 };
@@ -35,7 +36,8 @@ w.eval(source);
 await w.PSTFinanceDailyV1.apply(true);
 await new Promise(r=>setImmediate(r));
 
-assert.equal(w.document.querySelectorAll('.pst-fin-work').length,3,'only human-needed finance tasks should surface');
+assert.equal(w.document.querySelectorAll('.pst-fin-work').length,3,'only open human-needed finance tasks should surface');
+assert.equal(w.document.querySelector('[data-fin-task="t4"]'),null,'Albanian closed status mbyllur must stay out of Finance attention');
 assert.equal(w.document.querySelectorAll('.pst-fin-work.urgent').length>=1,true,'overdue finance work should be visibly urgent');
 assert.ok(w.document.getElementById('pst-finance-tools'),'legacy finance tools must remain reachable');
 assert.ok(w.document.getElementById('pst-finance-tools').contains(w.document.getElementById('fin-hub-grid')),'existing finance engine grid must be preserved under tools');
