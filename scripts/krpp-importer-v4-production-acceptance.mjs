@@ -13,11 +13,18 @@ const encPath=v=>String(v).split('/').map(encodeURIComponent).join('/');
 
 async function main(){
   const access=await resolveSupabaseWorkflowAccess();
+  const edgeAccess=await resolveSupabaseWorkflowAccess({
+    serviceKey:'',
+    syncEmail:process.env.PPPP_SYNC_EMAIL||'',
+    syncPassword:process.env.PPPP_SYNC_PASSWORD||''
+  });
+  if(edgeAccess.authMode!=='pppp_sync_account')throw new Error('KRPP acceptance requires the authenticated PPPP sync account for tender visibility.');
   const base=access.supabaseUrl.replace(/\/$/,'');
   const authHeaders={apikey:access.apiKey,Authorization:`Bearer ${access.bearerToken}`};
+  const edgeHeaders={apikey:edgeAccess.apiKey,Authorization:`Bearer ${edgeAccess.bearerToken}`};
   const tempId=randomUUID();
   let tempStoragePaths=[];
-  const result={ok:false,acceptance:'krpp-importer-v4-production',source_tender_id:SOURCE_TENDER_ID,temp_tender_id:tempId,auth_mode:access.authMode,started_at:new Date().toISOString(),checks:{},cleanup:{}};
+  const result={ok:false,acceptance:'krpp-importer-v4-production',source_tender_id:SOURCE_TENDER_ID,temp_tender_id:tempId,auth_mode:access.authMode,edge_auth_mode:edgeAccess.authMode,started_at:new Date().toISOString(),checks:{},cleanup:{}};
 
   async function rest(path,{method='GET',body,headers={}}={}){
     const r=await fetch(`${base}/rest/v1/${path}`,{method,headers:{...authHeaders,'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
@@ -26,7 +33,7 @@ async function main(){
     return{body:parsed,headers:r.headers,status:r.status};
   }
   async function edge(slug,body){
-    const r=await fetch(`${base}/functions/v1/${slug}`,{method:'POST',headers:{...authHeaders,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const r=await fetch(`${base}/functions/v1/${slug}`,{method:'POST',headers:{...edgeHeaders,'Content-Type':'application/json'},body:JSON.stringify(body)});
     const raw=await r.text();let parsed=null;try{parsed=raw?JSON.parse(raw):null;}catch{}
     if(!r.ok||!parsed||parsed.ok===false)throw new Error(`${slug} HTTP ${r.status}: ${text(parsed?.message||parsed?.error||raw,1000)}`);
     return parsed;
