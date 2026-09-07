@@ -1,0 +1,30 @@
+name: Client offer registry canonical smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pristeel-procurement.html'
+      - 'supabase/migrations/**'
+      - 'tests/client-offer-registry-canonical-smoke.mjs'
+      - '.github/workflows/client-offer-registry-canonical-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-procurement.html'
+      - 'supabase/migrations/**'
+      - 'tests/client-offer-registry-canonical-smoke.mjs'
+      - '.github/workflows/client-offer-registry-canonical-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  canonical-offer-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify canonical offer registry invariant
+        run: node tests/client-offer-registry-canonical-smoke.mjs
