@@ -24,3 +24,4 @@ jobs:
         run: |
           node tests/opportunity-draft-multi-contact-smoke.mjs
           node tests/opportunity-gmail-registry-preservation-smoke.mjs
+          node tests/opportunity-future-cutoff-smoke.mjs
