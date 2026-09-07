@@ -67,13 +67,16 @@ window.PSTTenderDossierImportV1._test.normalizeProtectedUi({tender_id:tenderId,d
 const zipButton=document.querySelector('[data-pst-krpp-zip-upload]');
 const dropZone=document.querySelector('[data-pst-krpp-zip-drop]');
 const uploadButtons=[...document.querySelectorAll('[data-pst-krpp-upload]')];
+const docDropZones=[...document.querySelectorAll('[data-pst-krpp-doc-drop="1"]')];
 const krppLinks=[...document.querySelectorAll('.pst-final-krpp-doc a')];
 const partialBundle=document.querySelector('[data-tda-download]');
-assert(zipButton,'Incomplete dossier must show a clear ZIP upload button');
-assert.equal(zipButton.textContent.trim(),'Ngarko Dosja e Tenderit.zip');
-assert(dropZone,'Incomplete dossier must expose a ZIP drag-and-drop target');
-assert.equal(dropZone.getAttribute('data-tender-id'),tenderId,'ZIP drop target must be bound to the current tender');
+assert(zipButton,'Incomplete dossier must show a clear upload button');
+assert.equal(zipButton.textContent.trim(),'Ngarko dokumentet / ZIP-in');
+assert(dropZone,'Incomplete dossier must expose a main drag-and-drop target');
+assert.equal(dropZone.getAttribute('data-tender-id'),tenderId,'Main drop target must be bound to the current tender');
 assert.equal(uploadButtons.length,2,'Individual missing-document upload must remain as a safe fallback');
+assert.equal(docDropZones.length,2,'Every missing document must be a direct drag-and-drop target');
+assert(docDropZones.every(row=>row.querySelector('.pst-krpp-drop-hint')),'Every per-document drop target must visibly explain drag-and-drop');
 assert.equal(krppLinks.length,2,'Both missing documents must keep a KRPP action');
 assert(krppLinks.every(a=>a.href===detailUrl),'Protected-document actions must route to the real tender detail page, not a guessed private endpoint');
 assert(krppLinks.every(a=>a.textContent.includes('Hap tenderin në KRPP')),'Protected-document links must explain that the user returns to the tender page');
@@ -83,13 +86,14 @@ assert.equal(document.getElementById('create-project').disabled,true,'Krijo proj
 
 let pickerClicks=0;
 const nativeInputClick=window.HTMLInputElement.prototype.click;
-window.HTMLInputElement.prototype.click=function(){pickerClicks++;};
+window.HTMLInputElement.prototype.click=function(){pickerClicks++;assert(this.accept.includes('.zip'),'Per-document picker must also accept the KRPP ZIP wrapper');};
 uploadButtons[0].dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
 assert.equal(pickerClicks,1,'Individual Ngarko në PPPP must open exactly one file picker through the canonical importer');
 window.HTMLInputElement.prototype.click=nativeInputClick;
 
 const partialMsg=window.PSTTenderDossierImportV1._test.archiveErrorMessage({name:'PPPP-Dosja-214_30400.zip'},new Error('ZIP-i u lexua, por nuk u gjet asnjë nga dokumentet që PPPP i pret për këtë tender.'));
-assert(partialMsg.includes('ZIP-i i pjesshëm i krijuar nga PPPP')&&partialMsg.includes('Shkarko të gjithë dokumentacionin'),'PPPP partial ZIP mistakes must get a precise recovery message');
+assert(partialMsg.includes('ZIP-i i pjesshëm i krijuar nga PPPP')&&partialMsg.includes('Dosja e Tenderit'),'PPPP partial ZIP mistakes must get a precise recovery message');
+assert(window.PSTTenderDossierImportV1._test.clientMatchScore('339-Dosja e Tenderit -korrigjuar.doc','339-Dosja e Tenderit -korigjuar.doc')>=65,'Harmless KRPP correction-spelling differences must still match the expected document');
 
 const zipFile=new window.File(['fake-zip-bytes'],'Dosja e Tenderit.zip',{type:'application/zip'});
 assert.equal(await window.PSTTenderDossierImportV1.uploadArchive(tenderId,zipFile,zipButton),true);
@@ -104,4 +108,4 @@ assert(decision,'Completed dossier must show an explicit final recommendation bl
 assert.equal(decision.querySelector('b').textContent,'VAZHDO');
 assert.equal(decision.querySelectorAll('li').length,2,'Final recommendation must show concrete reasons');
 
-console.log('Tender UI real flow: KRPP detail -> choose/drop complete archive or individual file -> canonical archive analysis -> human project gate passed.');
+console.log('Tender UI real flow: KRPP detail -> click or drag ZIP/file on main/per-document target -> canonical archive analysis -> human project gate passed.');
