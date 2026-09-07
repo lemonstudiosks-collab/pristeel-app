@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { resolveTedRecipients, recipientGreeting, normalizeEmail } from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
 import { encodeRfc2047Header } from '../supabase/functions/pppp-opportunity-draft-generator/mime-headers.mjs';
-import { buildTedDraftContent, resolveDraftLanguage, tedReference, PRISTEEL_SIGNATURE } from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
+import { buildTedDraftContent, resolveDraftLanguage, tedReference, PRISTEEL_SIGNATURE, PRISTEEL_SIGNATURE_HTML, PRISTEEL_LOGO_URL } from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
+import { shouldCreateFutureDraft, hasExistingDraft } from '../supabase/functions/pppp-opportunity-draft-generator/draft-write-policy.mjs';
 
 const action={
   id:'11111111-1111-4111-8111-111111111111',
@@ -55,13 +56,13 @@ assert.equal(recipientGreeting(action.target_company,functional),'Dear Acme Stee
 assert.equal(normalizeEmail(' Alice@Example.COM '),'alice@example.com');
 assert.equal(resolveTedRecipients(action,payload,2).length,2,'recipient cap must be respected');
 
-const subject='PriSteel · Görres – München';
+const subject='PRISTEEL · Görres – München';
 const encodedSubject=encodeRfc2047Header(subject);
 assert(encodedSubject.includes('=?UTF-8?B?'),'international subject must use RFC 2047 encoded-word syntax');
 for(const word of encodedSubject.split(/\s+/))assert(word.length<=75,'each RFC 2047 encoded-word must fit the 75-character limit');
 const decodedSubject=encodedSubject.split(/\s+/).map(word=>{const m=/^=\?UTF-8\?B\?([^?]+)\?=$/i.exec(word);return m?Buffer.from(m[1],'base64').toString('utf8'):word;}).join('');
 assert.equal(decodedSubject,subject,'RFC 2047 subject must round-trip international characters exactly');
-assert.equal(encodeRfc2047Header('PriSteel Opportunity'),'PriSteel Opportunity','ASCII-only subject should remain readable ASCII');
+assert.equal(encodeRfc2047Header('PRISTEEL Opportunity'),'PRISTEEL Opportunity','ASCII-only subject should remain readable ASCII');
 const injected=encodeRfc2047Header('Safe\r\nBcc: attacker@example.com');
 assert(!injected.includes('\r')&&!injected.includes('\n'),'subject encoder must strip header line breaks');
 
@@ -85,40 +86,62 @@ const beckTender={
 const beckPerson={email:'benjamin.beck@beck-stahlbau.de',name:'Benjamin Beck',purpose:'person'};
 const beckGeneral={email:'info@beck-stahlbau.de',name:'',purpose:'general'};
 assert.equal(resolveDraftLanguage(beckAction,beckTender,beckPerson),'de','German company/contact/market must resolve to German');
-assert.equal(tedReference(beckTender),'613835-2026','TED publication reference must be canonicalized');
+assert.equal(tedReference(beckTender),'613835-2026','internal publication reference must remain available for PPPP metadata');
 const german=buildTedDraftContent(beckAction,beckTender,beckPerson);
 assert.equal(german.language,'de');
-assert(german.subject.includes('TED 613835-2026'),'subject must carry the concrete TED reference');
+assert.equal(german.subject,'Zusätzliche Stahlbau-Fertigungskapazität | PRISTEEL');
+assert(!/TED|613835-2026/i.test(german.subject),'customer-facing subject must not expose source name or notice reference');
 assert(german.body.startsWith('Guten Tag Benjamin Beck,'),'German person draft must use a German personal greeting');
-assert(german.body.includes('TED-Referenz: 613835-2026'),'German body must carry the concrete TED reference');
-assert(german.body.includes('Stadtverwaltung Neckarsulm'),'German body must name the contracting authority');
-assert(german.body.includes('https://ted.europa.eu/en/notice/613835-2026/html'),'German body must carry the TED notice link');
-assert(german.body.includes('Mit freundlichen Grüßen,'),'German draft must close in German');
-for(const line of ['Arianit Vllahiu','Head of Business Development','+383 (0) 44 244 699','arianit.vllahiu@prissteel.com','www.prissteel.com','linkedin.com/in/arianit-vllahiu-8a779b3b4'])assert(german.body.toLowerCase().includes(line.toLowerCase()),`signature must include ${line}`);
+assert(german.body.includes('Sanierung Hermann-Greiner-Realschule'),'project may be referenced naturally in the prose');
+assert(!/TED-Referenz|Auftraggeber|ted\.europa\.eu|613835-2026|\bTED\b/i.test(german.body),'plain body must not expose technical source metadata');
+assert(!german.body.includes('Stadtverwaltung Neckarsulm'),'contracting authority metadata must not be inserted as a technical block');
+assert(german.body.includes('Mit freundlichen Grüßen'),'German draft must close in German');
+for(const line of ['Arianit Vllahiu','Head of Business Development','+383 (0) 44 244 699','arianit.vllahiu@prissteel.com','www.prissteel.com','linkedin.com/in/arianit-vllahiu-8a779b3b4'])assert(german.body.toLowerCase().includes(line.toLowerCase()),`plain signature must include ${line}`);
 assert(!german.body.includes('Ky tekst'),'internal Albanian draft brief must never leak into outgoing copy');
-assert(!/\bBest regards\b|\bDear\b|\bwe noted\b/i.test(german.body),'German draft must not mix English body copy');
+assert(!/\bBest regards\b|\bDear\b|\bwe became aware\b/i.test(german.body),'German draft must not mix English body copy');
+assert(german.html_body.includes('<img'),'HTML body must include the PRISTEEL logo image');
+assert(german.html_body.includes(PRISTEEL_LOGO_URL),'HTML signature must use the canonical PRISTEEL logo from the real Gmail signature');
+assert(german.html_body.includes('Arianit Vllahiu')&&german.html_body.includes('Head of Business Development'),'HTML signature must be complete');
+assert(!/TED-Referenz|Auftraggeber|ted\.europa\.eu|613835-2026|\bTED\b/i.test(german.html_body),'HTML body must not expose technical source metadata');
+assert.equal(german.signature,PRISTEEL_SIGNATURE,'canonical plain signature must be reused exactly');
+assert.equal(german.signature_html,PRISTEEL_SIGNATURE_HTML,'canonical HTML signature must be reused exactly');
 const germanGeneral=buildTedDraftContent(beckAction,beckTender,beckGeneral);
 assert(germanGeneral.body.startsWith('Sehr geehrte Damen und Herren,'),'functional German mailbox must use company/general greeting');
-assert.equal(german.signature,PRISTEEL_SIGNATURE,'canonical signature must be reused exactly');
 
 const enAction={...beckAction,target_company:'Example Steel Ltd',target_email:'procurement@example.co.uk',tender_title:'United Kingdom – Structural steelworks'};
 const enTender={...beckTender,title:enAction.tender_title,publication_no:'700001-2026',procurement_no:'TED-700001-2026',source_url:'https://ted.europa.eu/en/notice/700001-2026/html',winner:{name:'Example Steel Ltd',country:'GBR'},place_of_performance:['UK']};
 const english=buildTedDraftContent(enAction,enTender,{email:'procurement@example.co.uk',purpose:'procurement'});
 assert.equal(english.language,'en');
-assert(english.body.includes('TED reference: 700001-2026'),'English draft must carry TED reference');
-assert(english.body.includes('Best regards,'),'English draft must stay English');
+assert.equal(english.subject,'Additional steel fabrication capacity | PRISTEEL');
+assert(!/TED|700001-2026/i.test(english.subject),'English subject must not expose source metadata');
+assert(english.body.includes('United Kingdom – Structural steelworks'),'English copy may naturally mention the project');
+assert(english.body.includes('Best regards'),'English draft must stay English');
+assert(!/TED reference|Contracting authority|ted\.europa\.eu|700001-2026|\bTED\b/i.test(english.body),'English body must not expose technical source metadata');
 assert(!/Përshëndetje|Me respekt|Mit freundlichen Grüßen/.test(english.body),'English draft must not mix Albanian or German copy');
+assert(english.html_body.includes(PRISTEEL_LOGO_URL),'English HTML signature must also include the PRISTEEL logo');
+
+assert.equal(hasExistingDraft({draft_id:'r123'}),true);
+assert.equal(shouldCreateFutureDraft({draft_id:'r123'}),false,'existing Gmail drafts must be immutable under the future-only rollout');
+assert.equal(shouldCreateFutureDraft({}),true,'a missing recipient draft may be created in the future');
+assert.equal(shouldCreateFutureDraft(null),true,'absence of a registry row may create a future draft');
 
 const src=fs.readFileSync(new URL('../supabase/functions/pppp-opportunity-draft-generator/index.ts',import.meta.url),'utf8');
 assert(src.includes('recipient-policy.mjs'),'generator must use canonical recipient policy');
 assert(src.includes('mime-headers.mjs'),'generator must use canonical MIME subject encoder');
-assert(src.includes('draft-content.mjs'),'generator must use canonical language/TED/signature content policy');
+assert(src.includes('draft-content.mjs'),'generator must use canonical language/content/signature policy');
+assert(src.includes('draft-write-policy.mjs'),'generator must enforce future-only write policy');
 assert(src.includes('encodeRfc2047Header'),'generator subject must use RFC 2047 encoding');
+assert(src.includes('Content-Type: multipart/alternative'),'future drafts must use multipart HTML mail');
+assert(src.includes('Content-Type: text/html; charset=UTF-8'),'future drafts must include a text/html MIME part');
+assert(src.includes('Content-Type: text/plain; charset=UTF-8'),'future drafts must retain a plain-text fallback');
+assert(src.includes("method:'POST'"),'future drafts must be created through Gmail drafts POST');
+assert(!src.includes("method:'PUT'"),'existing Gmail drafts must never be rewritten by this rollout');
+assert(src.includes("write_policy:'future_only_no_rewrites'"),'generator result must disclose future-only behavior');
+assert(src.includes("gmail_draft_write_policy:'future_only_no_rewrites'"),'PPPP state must persist the future-only policy');
 assert(src.includes('gmail_drafts'),'generator must persist per-recipient draft registry');
-assert(src.includes('gmail_draft_generator_complete'),'generator must track completion of rewrite migration');
-assert(src.includes("method:draftId?'PUT':'POST'"),'stale drafts must be rewritten in place rather than duplicated');
 assert(src.includes('separate_draft_per_recipient:true'),'result must explicitly report separate-draft behavior');
 assert(src.includes('human_send_required:true'),'human send gate must remain explicit');
+assert(src.includes('gmail_auto_send:false'),'persisted state must keep Gmail auto-send disabled');
 assert(src.includes("auto_send:false"),'generator must state that auto-send is disabled');
 assert(src.includes('/drafts'),'Gmail draft endpoint must remain in use');
 assert(!src.includes('/messages/send'),'Gmail send endpoint must not be introduced');
@@ -127,4 +150,4 @@ assert(src.includes('To: ${headerSafe(to)}'),'each draft must have exactly its o
 assert(!src.includes('draft_brief'),'internal draft brief must not be interpolated into the outgoing message generator');
 assert(src.includes("action_id"),'narrow action-scoped production verification must be supported');
 
-console.log('TED multi-contact RFC2047/personalization/language/reference/signature Gmail draft policy smoke passed.');
+console.log('TED future-only HTML/language/signature/no-source-metadata Gmail draft policy smoke passed.');
