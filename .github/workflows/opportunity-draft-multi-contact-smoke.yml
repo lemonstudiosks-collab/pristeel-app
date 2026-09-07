@@ -21,4 +21,6 @@ jobs:
         with:
           node-version: '20'
       - name: Run multi-contact draft smoke
-        run: node tests/opportunity-draft-multi-contact-smoke.mjs
+        run: |
+          node tests/opportunity-draft-multi-contact-smoke.mjs
+          node tests/opportunity-gmail-registry-preservation-smoke.mjs
