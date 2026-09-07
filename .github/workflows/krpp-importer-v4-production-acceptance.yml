@@ -1,0 +1,44 @@
+name: KRPP importer v4 production acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/krpp-importer-v4-production-acceptance.mjs'
+      - '.github/workflows/krpp-importer-v4-production-acceptance.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: krpp-importer-v4-production-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check isolated production acceptance harness
+        run: node --check scripts/krpp-importer-v4-production-acceptance.mjs
+      - name: Run isolated production acceptance
+        run: node scripts/krpp-importer-v4-production-acceptance.mjs
+      - name: Upload sanitized acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: krpp-importer-v4-production-acceptance
+          path: tmp/krpp-importer-v4-production-acceptance.json
+          if-no-files-found: warn
+          retention-days: 14
