@@ -1,0 +1,65 @@
+name: KRPP importer v4 real ZIP production acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/krpp-importer-v4-zip-production-acceptance.mjs'
+      - 'tests/krpp-importer-v4-zip-acceptance-smoke.mjs'
+      - '.github/workflows/krpp-importer-v4-zip-production-acceptance.yml'
+      - 'supabase/functions/pppp-tender-dossier-import/**'
+      - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/krpp-importer-v4-zip-production-acceptance.mjs'
+      - 'tests/krpp-importer-v4-zip-acceptance-smoke.mjs'
+      - '.github/workflows/krpp-importer-v4-zip-production-acceptance.yml'
+      - 'supabase/functions/pppp-tender-dossier-import/**'
+      - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: krpp-importer-v4-real-zip-production-acceptance
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/krpp-importer-v4-zip-production-acceptance.mjs
+      - run: node tests/krpp-importer-v4-zip-acceptance-smoke.mjs
+
+  acceptance:
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run real KRPP ZIP production acceptance
+        run: node scripts/krpp-importer-v4-zip-production-acceptance.mjs
+      - name: Upload sanitized ZIP acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: krpp-importer-v4-real-zip-production-acceptance
+          path: tmp/krpp-importer-v4-zip-production-acceptance.json
+          if-no-files-found: warn
+          retention-days: 14
