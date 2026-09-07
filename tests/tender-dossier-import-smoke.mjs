@@ -18,27 +18,34 @@ assert(runtime.includes('/functions/v1/pppp-tender-dossier-import'),'Tender impo
 assert(runtime.includes("mode:'upload_archive'")&&runtime.includes("mode:'upload'")&&runtime.includes("mode:'finalize'")&&runtime.includes("mode:'status'"),'ZIP, individual upload, recovery status and finalization paths must be wired');
 assert(runtime.includes('pickArchiveAndUpload')&&runtime.includes('uploadArchive'),'ZIP chooser must be wired to the upload bridge');
 assert(runtime.includes('pickAndUpload')&&runtime.includes("closest('[data-pst-krpp-upload]')"),'Individual Ngarko në PPPP must be owned directly by the canonical importer');
-assert(runtime.includes('renderZipGuide')&&runtime.includes('Ngarko Dosja e Tenderit.zip'),'Importer must render the visible ZIP upload action inside the canonical incomplete dossier panel');
-assert(runtime.includes('Shkarko të gjithë dokumentacionin')&&runtime.includes('PPPP-Dosja-'),'UI must distinguish the real KRPP full archive from PPPP public-only bundles');
+assert(runtime.includes('renderZipGuide')&&runtime.includes('Ngarko dokumentet / ZIP-in'),'Importer must render one visible upload action for KRPP ZIPs or individual files');
+assert(runtime.includes('Shkarko dokumentet nga KRPP')&&runtime.includes('PPPP-Dosja-'),'UI must distinguish protected KRPP downloads from PPPP public-only bundles');
 assert(runtime.includes('currentKrppSource')&&runtime.includes('Hap tenderin në KRPP'),'Protected-document actions must be normalized to the real tender detail page instead of guessed private endpoints');
 assert(runtime.includes('data-pst-partial-bundle-hidden'),'Misleading PPPP public ZIP download must be hidden while protected documents remain');
-assert(runtime.includes('data-pst-krpp-zip-drop')&&runtime.includes("addEventListener('drop'"),'ZIP drag-and-drop must be handled without polling');
+assert(runtime.includes('data-pst-krpp-zip-drop')&&runtime.includes('data-pst-krpp-doc-drop')&&runtime.includes("addEventListener('drop'"),'Panel and per-document drag-and-drop must be handled without polling');
+assert(runtime.includes('Tërhiq këtu skedarin ose ZIP-in')&&runtime.includes('decorateDocumentDropTargets'),'Every missing-document row must visibly accept drag-and-drop');
+assert(runtime.includes("input.multiple=true")&&runtime.includes('uploadFiles'),'The main import action must accept multiple KRPP files/ZIPs in one pass');
+assert(runtime.includes("if(isZip(f))uploadArchive(id,f,btn);else uploadProtected(id,name,f,btn)"),'Individual Ngarko në PPPP must accept either the real document or its KRPP ZIP wrapper');
+assert(runtime.includes('clientMatchScore')&&runtime.includes('bestRowForFile'),'Loose files dropped on the main panel must be matched to the visible missing-document list');
 assert(runtime.includes('recoverCompletedArchive')&&runtime.includes("mode:'status'")&&runtime.includes("mode:'finalize'"),'Already-uploaded complete archives must self-heal into the canonical final analysis on reload');
 assert(runtime.includes('PSTTenderDossierAnalysisV1')&&runtime.includes('refreshCanonical'),'Successful completion must return to the canonical dossier UI');
 assert(runtime.includes('pst:tender-dossier-ready')&&runtime.includes('remaining_protected_documents'),'Partial imports must immediately refresh the missing-document UI without a second analysis engine');
 assert(runtime.includes('REKOMANDIMI PËRFUNDIMTAR')&&runtime.includes('decision_reasons'),'Completed analysis must visibly explain the final recommendation');
 assert(!/MutationObserver|setInterval\s*\(/.test(runtime),'Tender import runtime must remain bounded and polling-free');
 
-assert(importer.includes("protected-archive-upload-v2"),'Importer must remain explicitly scoped as the protected-archive upload bridge');
+assert(importer.includes("protected-archive-upload-v3"),'Importer must remain explicitly scoped as the protected-archive upload bridge and advance the import version');
 assert(importer.includes('npm:fflate@0.8.2')&&importer.includes('unzipSync'),'ZIP import must extract the user-selected KRPP archive server-side');
 assert(importer.includes("mode==='upload_archive'")&&importer.includes('contained_documents')&&importer.includes('matched_documents'),'ZIP import must report contained, matched and still-missing documents');
+assert(importer.includes('nameMatchScore')&&importer.includes('bestExpectedMatch'),'KRPP archive filenames must tolerate harmless filename differences such as correction spelling/copy suffixes');
+assert(importer.includes('collectZipCandidates')&&importer.includes('MAX_ZIP_DEPTH=2')&&importer.includes("ext==='zip'"),'Nested KRPP ZIP wrappers must be inspected within bounded depth and size limits');
+assert(importer.includes('candidate_documents')&&importer.includes('stats.contained'),'Failed archive matching must expose what PPPP actually found inside the ZIP for useful diagnostics');
 assert(importer.includes("BUCKET='project-source-files'")&&importer.includes('protected_archive'),'Uploaded KRPP documents must enter the existing canonical protected archive');
 assert(importer.includes('pppp_tender_fetch_queue')&&importer.includes('protected_documents'),'Upload completion must reconcile against the existing protected-document queue');
 assert(importer.includes('/functions/v1/pppp-tender-protected-archive-analysis'),'Final analysis must call the existing protected archive analyzer');
 assert(!/api\.openai\.com\/v1\/responses|analysisSchema\(|previous_partial_analysis/.test(importer),'Upload bridge must not contain a parallel AI analysis engine');
 assert(importer.includes('tender_not_found_or_not_visible')&&importer.includes('visibleTender'),'Tender visibility must be checked with the caller session before privileged archive writes');
 assert(importer.includes('MAX_ZIP_BYTES=30*1024*1024')&&importer.includes('MAX_ZIP_ENTRIES')&&importer.includes('MAX_ZIP_EXTRACTED_BYTES'),'ZIP upload size and zip-bomb boundaries are missing');
-assert(importer.includes('zip_contains_no_expected_documents')&&importer.includes('expectedByName'),'ZIP importer must refuse archives that do not contain current missing KRPP documents');
+assert(importer.includes('zip_contains_no_expected_documents')&&importer.includes('bestExpectedMatch'),'ZIP importer must refuse archives that still cannot be matched to current missing KRPP documents');
 assert(importer.includes('document_not_expected')&&importer.includes('normalizeName(expectedName)'),'Individual importer must still refuse files outside the current protected-document list');
 assert(importer.includes('db.storage.from(BUCKET).upload'),'Protected documents must be stored in canonical Supabase Storage, not a parallel files/base64 store');
 assert(!importer.includes('/rest/v1/files'),'Legacy parallel files-table persistence must be removed');
@@ -58,4 +65,4 @@ assert(archiveAnalyzer.includes("file_mode:'authenticated_protected_archive'"),'
 assert(archiveAnalyzer.includes('dossier_complete:true')&&archiveAnalyzer.includes('protected_documents:[]'),'Project readiness may be unlocked only by the completed canonical archive analysis');
 assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(archiveAnalyzer),'Final analysis must preserve all human approval gates');
 
-console.log('Tender KRPP real ZIP/individual import -> canonical protected archive analysis smoke test passed.');
+console.log('Tender KRPP ZIP/file drag-drop -> canonical protected archive analysis smoke test passed.');

@@ -6,11 +6,12 @@ const SUPABASE_URL=Deno.env.get('SUPABASE_URL')||'';
 const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
 const ANON_KEY=Deno.env.get('SUPABASE_ANON_KEY')||'';
 const BUCKET='project-source-files';
-const IMPORT_VERSION='protected-archive-upload-v2';
+const IMPORT_VERSION='protected-archive-upload-v3';
 const MAX_FILE_BYTES=30*1024*1024;
 const MAX_ZIP_BYTES=30*1024*1024;
-const MAX_ZIP_ENTRIES=200;
+const MAX_ZIP_ENTRIES=240;
 const MAX_ZIP_EXTRACTED_BYTES=90*1024*1024;
+const MAX_ZIP_DEPTH=2;
 const ALLOWED_EXT=new Set(['pdf','doc','docx','xls','xlsx','csv','txt','rtf']);
 const db=createClient(SUPABASE_URL,SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 const cors={
@@ -18,6 +19,9 @@ const cors={
   'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods':'POST, OPTIONS',
 };
+
+type ZipCandidate={name:string,path:string,bytes:Uint8Array};
+type ZipStats={entries:number,extracted:number,contained:string[]};
 
 function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{...cors,'Content-Type':'application/json','Cache-Control':'no-store'}});}
 function text(v:unknown,max=6000){return String(v==null?'':v).trim().slice(0,max);}
@@ -33,6 +37,57 @@ function archiveRows(payload:any){const a=payload?.protected_archive;return Arra
 function mergeArchive(rows:any[],entry:any){const out=[] as any[],seen=new Set<string>(),key=normalizeName(entry?.name);for(const row of rows||[]){const k=normalizeName(row?.name);if(!k||k===key||seen.has(k))continue;seen.add(k);out.push(row);}out.push(entry);return out;}
 function remainingExpected(expected:string[],archive:any[]){const got=new Set(archive.map(x=>normalizeName(x?.name)).filter(Boolean));return expected.filter(x=>!got.has(normalizeName(x)));}
 function publicArchiveRows(archive:any[]){return archive.map(x=>({name:x.name,sha256:x.sha256||null,archived_at:x.archived_at||null}));}
+
+function normalizedStem(v:unknown){
+  const b=baseName(v).replace(/\.[a-z0-9]{2,5}$/i,'').replace(/\s*\(\d+\)\s*$/,'').replace(/\s+(?:copy|kopje)\s*$/i,'');
+  return normalizeName(b);
+}
+function significantTokens(v:string){return v.split(' ').filter(x=>x.length>=2);}
+function nameMatchScore(actual:unknown,expected:unknown){
+  const actualExt=extension(actual),expectedExt=extension(expected);
+  if(!ALLOWED_EXT.has(actualExt)||!ALLOWED_EXT.has(expectedExt)||actualExt!==expectedExt)return 0;
+  const aName=normalizeName(baseName(actual)),eName=normalizeName(baseName(expected));
+  if(aName&&aName===eName)return 100;
+  const a=normalizedStem(actual),e=normalizedStem(expected);if(!a||!e)return 0;
+  if(a===e)return 99;
+  if(a.includes(e)||e.includes(a))return 94;
+  const aTokens=significantTokens(a),eTokens=significantTokens(e),aSet=new Set(aTokens);
+  let shared=0;for(const token of eTokens)if(aSet.has(token))shared++;
+  const eNumbers=eTokens.filter(x=>/^\d+$/.test(x));if(eNumbers.some(x=>!aSet.has(x)))return 0;
+  const ratio=shared/Math.max(aTokens.length,eTokens.length,1);
+  if(shared>=2&&ratio>=0.72)return Math.round(ratio*90);
+  return 0;
+}
+function bestExpectedMatch(actual:string,needed:string[],used:Set<string>){
+  const scored=needed.filter(x=>!used.has(normalizeName(x))).map(x=>({name:x,score:nameMatchScore(actual,x)})).sort((a,b)=>b.score-a.score);
+  if(!scored.length||scored[0].score<65)return null;
+  if(scored[1]&&scored[0].score<95&&scored[0].score-scored[1].score<8)return null;
+  return scored[0];
+}
+function collectZipCandidates(bytes:Uint8Array,stats:ZipStats,depth=0,prefix=''){
+  if(depth>MAX_ZIP_DEPTH)throw new Error('zip_nested_too_deep');
+  let files:Record<string,Uint8Array>={};
+  files=unzipSync(bytes,{filter(info){
+    stats.entries++;if(stats.entries>MAX_ZIP_ENTRIES)throw new Error('zip_too_many_entries');
+    const b=baseName(info.name);if(!b)return false;
+    const ext=extension(b),keep=ext==='zip'||ALLOWED_EXT.has(ext);if(!keep)return false;
+    if(info.originalSize>MAX_FILE_BYTES&&ext!=='zip')throw new Error('file_too_large_30mb');
+    stats.extracted+=Number(info.originalSize||0);if(stats.extracted>MAX_ZIP_EXTRACTED_BYTES)throw new Error('zip_extract_too_large');
+    if(stats.contained.length<MAX_ZIP_ENTRIES)stats.contained.push(prefix?`${prefix}!/${b}`:b);
+    return true;
+  }}) as Record<string,Uint8Array>;
+  const out:ZipCandidate[]=[];
+  for(const [path,entryBytes] of Object.entries(files)){
+    const b=baseName(path),ext=extension(b),full=prefix?`${prefix}!/${path}`:path;
+    if(ext==='zip'){
+      if(depth<MAX_ZIP_DEPTH&&entryBytes.byteLength<=MAX_ZIP_BYTES)out.push(...collectZipCandidates(entryBytes,stats,depth+1,full));
+      continue;
+    }
+    if(ALLOWED_EXT.has(ext)&&entryBytes.byteLength)out.push({name:b,path:full,bytes:entryBytes});
+  }
+  return out;
+}
+
 async function visibleTender(auth:string,tenderId:string){const u=`${SUPABASE_URL}/rest/v1/kek_tender_watch?id=eq.${encodeURIComponent(tenderId)}&select=*&limit=1`;const r=await fetch(u,{headers:{apikey:ANON_KEY,Authorization:auth,'Content-Type':'application/json'}});const raw=await r.text();let body:any=null;try{body=raw?JSON.parse(raw):null;}catch{}if(!r.ok)throw new Error(`tender_visibility_${r.status}`);return Array.isArray(body)?body[0]:null;}
 async function runProtectedArchiveAnalysis(auth:string,tenderId:string){const r=await fetch(`${SUPABASE_URL}/functions/v1/pppp-tender-protected-archive-analysis`,{method:'POST',headers:{apikey:ANON_KEY,Authorization:auth,'Content-Type':'application/json'},body:JSON.stringify({tender_id:tenderId})});const raw=await r.text();let body:any=null;try{body=raw?JSON.parse(raw):null;}catch{}if(!r.ok||!body||body.ok===false)throw new Error(text(body?.message||body?.error||`protected_archive_analysis_${r.status}`,1000));return body;}
 async function persistPartialState(tender:any,archive:any[],remaining:string[],now:string){const prior=tender?.payload?.dossier_analysis&&typeof tender.payload.dossier_analysis==='object'?tender.payload.dossier_analysis:null;const partial=prior?{...prior,dossier_complete:false,protected_documents:remaining,import_state:'protected_archive_partial',imported_documents:archive.map(x=>({name:x.name,sha256:x.sha256||null,archived_at:x.archived_at||null}))}:prior;const payload={...(tender?.payload||{}),protected_archive:archive,protected_archive_updated_at:now,protected_archive_import_version:IMPORT_VERSION,protected_archive_imported_at:now,...(partial?{dossier_analysis:partial}:{} )};const {error}=await db.from('kek_tender_watch').update({payload,updated_at:now}).eq('id',tender.id);if(error)throw error;}
@@ -40,55 +95,70 @@ async function updateQueue(queue:any,tenderId:string,archive:any[],remaining:str
 async function storeExpected(tenderId:string,expectedName:string,bytes:Uint8Array,mimeHint:unknown,source:string,now:string,archiveName?:string){const name=safeName(expectedName),hash=await sha256Hex(bytes),path=`tender-protected/${tenderId}/${hash.slice(0,16)}-${name}`,mime=mimeFor(name,mimeHint);const up=await db.storage.from(BUCKET).upload(path,bytes,{contentType:mime,upsert:true});if(up.error)throw up.error;return{name,mime_type:mime,bucket:BUCKET,path,sha256:hash,size_bytes:bytes.byteLength,archived_at:now,source,...(archiveName?{import_archive_name:archiveName}:{})};}
 
 Deno.serve(async(req:Request)=>{
- if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
- if(req.method!=='POST')return json({ok:false,error:'method_not_allowed'},405);
- try{
-  const auth=req.headers.get('Authorization')||'';if(!auth.toLowerCase().startsWith('bearer '))return json({ok:false,error:'unauthorized'},401);
-  if(!SUPABASE_URL||!SERVICE_KEY||!ANON_KEY)return json({ok:false,error:'supabase_environment_missing'},500);
-  let body:any={};try{body=await req.json();}catch{}
-  const tenderId=text(body?.tender_id,80);if(!isUuid(tenderId))return json({ok:false,error:'valid_tender_id_required'},400);
-  const tender=await visibleTender(auth,tenderId);if(!tender)return json({ok:false,error:'tender_not_found_or_not_visible'},404);
-  const mode=text(body?.mode||'upload',40).toLowerCase();
-  const q=await db.from('pppp_tender_fetch_queue').select('*').eq('tender_watch_id',tenderId).maybeSingle();if(q.error)throw q.error;const queue=q.data;
-  const expected=((Array.isArray(queue?.protected_documents)&&queue.protected_documents.length?queue.protected_documents:tender?.payload?.dossier_analysis?.protected_documents)||[]).map(String).filter(Boolean);
-  if(!expected.length)return json({ok:false,error:'protected_document_list_missing',message:'Rilexo dosjen zyrtare në PPPP para importimit.'},409);
-  let archive=archiveRows(tender.payload);
-  if(mode==='status')return json({ok:true,tender_id:tenderId,dossier_complete:remainingExpected(expected,archive).length===0,remaining_protected_documents:remainingExpected(expected,archive),archived_documents:publicArchiveRows(archive)});
-  if(mode==='finalize'){
-    const remaining=remainingExpected(expected,archive);if(remaining.length)return json({ok:false,error:'protected_archive_incomplete',remaining_protected_documents:remaining},409);
-    const analysis=await runProtectedArchiveAnalysis(auth,tenderId);return json({ok:true,tender_id:tenderId,dossier_complete:true,remaining_protected_documents:[],analysis});
-  }
+  if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
+  if(req.method!=='POST')return json({ok:false,error:'method_not_allowed'},405);
+  try{
+    const auth=req.headers.get('Authorization')||'';if(!auth.toLowerCase().startsWith('bearer '))return json({ok:false,error:'unauthorized'},401);
+    if(!SUPABASE_URL||!SERVICE_KEY||!ANON_KEY)return json({ok:false,error:'supabase_environment_missing'},500);
+    let body:any={};try{body=await req.json();}catch{}
+    const tenderId=text(body?.tender_id,80);if(!isUuid(tenderId))return json({ok:false,error:'valid_tender_id_required'},400);
+    const tender=await visibleTender(auth,tenderId);if(!tender)return json({ok:false,error:'tender_not_found_or_not_visible'},404);
+    const mode=text(body?.mode||'upload',40).toLowerCase();
+    const q=await db.from('pppp_tender_fetch_queue').select('*').eq('tender_watch_id',tenderId).maybeSingle();if(q.error)throw q.error;const queue=q.data;
+    const expected=((Array.isArray(queue?.protected_documents)&&queue.protected_documents.length?queue.protected_documents:tender?.payload?.dossier_analysis?.protected_documents)||[]).map(String).filter(Boolean);
+    if(!expected.length)return json({ok:false,error:'protected_document_list_missing',message:'Rilexo dosjen zyrtare në PPPP para importimit.'},409);
+    let archive=archiveRows(tender.payload);
+    if(mode==='status')return json({ok:true,tender_id:tenderId,dossier_complete:remainingExpected(expected,archive).length===0,remaining_protected_documents:remainingExpected(expected,archive),archived_documents:publicArchiveRows(archive)});
+    if(mode==='finalize'){
+      const remaining=remainingExpected(expected,archive);if(remaining.length)return json({ok:false,error:'protected_archive_incomplete',remaining_protected_documents:remaining},409);
+      const analysis=await runProtectedArchiveAnalysis(auth,tenderId);return json({ok:true,tender_id:tenderId,dossier_complete:true,remaining_protected_documents:[],analysis});
+    }
 
-  if(mode==='upload_archive'){
-    const file=body?.file||{},archiveName=safeName(file?.name||'Dosja e Tenderit.zip');
-    if(extension(archiveName)!=='zip')return json({ok:false,error:'zip_required',message:'Zgjidh skedarin ZIP të shkarkuar nga KRPP.'},400);
-    const zipBytes=bytesFromBase64(file?.base64||'');if(!zipBytes.length)return json({ok:false,error:'empty_file'},400);if(zipBytes.byteLength>MAX_ZIP_BYTES)return json({ok:false,error:'file_too_large_30mb'},413);
-    const needed=remainingExpected(expected,archive),expectedByName=new Map(needed.map(x=>[normalizeName(x),x]));
-    const contained:string[]=[],matchedPaths=new Map<string,string>();let entries=0,plannedBytes=0;
-    let files:Record<string,Uint8Array>={};
-    try{
-      files=unzipSync(zipBytes,{filter(info){entries++;if(entries>MAX_ZIP_ENTRIES)throw new Error('zip_too_many_entries');const b=baseName(info.name);if(!b)return false;if(contained.length<MAX_ZIP_ENTRIES)contained.push(b);const canonical=expectedByName.get(normalizeName(b));if(!canonical)return false;const ext=extension(b),expectedExt=extension(canonical);if(!ALLOWED_EXT.has(ext)||!ALLOWED_EXT.has(expectedExt)||ext!==expectedExt)throw new Error('wrong_file_type');if(info.originalSize>MAX_FILE_BYTES)throw new Error('file_too_large_30mb');plannedBytes+=Number(info.originalSize||0);if(plannedBytes>MAX_ZIP_EXTRACTED_BYTES)throw new Error('zip_extract_too_large');matchedPaths.set(normalizeName(canonical),info.name);return true;}}) as Record<string,Uint8Array>;
-    }catch(e){const msg=text((e as any)?.message||e,300);if(/zip_too_many_entries|zip_extract_too_large|wrong_file_type|file_too_large/.test(msg))throw e;throw new Error('invalid_zip_archive');}
-    const now=new Date().toISOString(),matched:string[]=[];
-    for(const expectedName of needed){const key=matchedPaths.get(normalizeName(expectedName));if(!key)continue;const bytes=files[key];if(!bytes||!bytes.length)continue;const entry=await storeExpected(tenderId,expectedName,bytes,null,'manual_authenticated_krpp_zip',now,archiveName);archive=mergeArchive(archive,entry);matched.push(expectedName);}
-    const remaining=remainingExpected(expected,archive);
-    if(!matched.length)return json({ok:false,error:'zip_contains_no_expected_documents',message:'ZIP-i u lexua, por nuk u gjet asnjë nga dokumentet që PPPP i pret për këtë tender.',contained_documents:contained,remaining_protected_documents:remaining},409);
-    await persistPartialState(tender,archive,remaining,now);
-    await updateQueue(queue,tenderId,archive,remaining,now,{archive_upload_at:now,archive_file_name:archiveName,archive_contained_documents:contained,archive_matched_documents:matched});
-    if(remaining.length)return json({ok:true,tender_id:tenderId,dossier_complete:false,archive_file_name:archiveName,contained_documents:contained,matched_documents:matched,remaining_protected_documents:remaining,archived_documents:publicArchiveRows(archive)});
+    if(mode==='upload_archive'){
+      const file=body?.file||{},archiveName=safeName(file?.name||'Dosja e Tenderit.zip');
+      if(extension(archiveName)!=='zip')return json({ok:false,error:'zip_required',message:'Zgjidh skedarin ZIP të shkarkuar nga KRPP.'},400);
+      const zipBytes=bytesFromBase64(file?.base64||'');if(!zipBytes.length)return json({ok:false,error:'empty_file'},400);if(zipBytes.byteLength>MAX_ZIP_BYTES)return json({ok:false,error:'file_too_large_30mb'},413);
+      const needed=remainingExpected(expected,archive),stats:ZipStats={entries:0,extracted:0,contained:[]};let candidates:ZipCandidate[]=[];
+      try{candidates=collectZipCandidates(zipBytes,stats,0,'');}
+      catch(e){const msg=text((e as any)?.message||e,300);if(/zip_too_many_entries|zip_extract_too_large|zip_nested_too_deep|file_too_large/.test(msg))throw e;throw new Error('invalid_zip_archive');}
+      const used=new Set<string>(),matches=new Map<string,ZipCandidate>();
+      for(const candidate of candidates){
+        const best=bestExpectedMatch(candidate.name,needed,used);if(!best)continue;
+        const key=normalizeName(best.name);used.add(key);matches.set(key,candidate);
+      }
+      const now=new Date().toISOString(),matched:string[]=[];
+      for(const expectedName of needed){
+        const candidate=matches.get(normalizeName(expectedName));if(!candidate)continue;
+        const bytes=candidate.bytes;if(!bytes||!bytes.length)continue;
+        const entry=await storeExpected(tenderId,expectedName,bytes,null,'manual_authenticated_krpp_zip',now,archiveName);
+        archive=mergeArchive(archive,entry);matched.push(expectedName);
+      }
+      const remaining=remainingExpected(expected,archive);
+      if(!matched.length)return json({ok:false,error:'zip_contains_no_expected_documents',message:'ZIP-i u lexua, por nuk u gjet asnjë nga dokumentet që PPPP i pret për këtë tender.',contained_documents:stats.contained,candidate_documents:candidates.map(x=>x.name).slice(0,80),remaining_protected_documents:remaining},409);
+      await persistPartialState(tender,archive,remaining,now);
+      await updateQueue(queue,tenderId,archive,remaining,now,{archive_upload_at:now,archive_file_name:archiveName,archive_contained_documents:stats.contained,archive_matched_documents:matched});
+      if(remaining.length)return json({ok:true,tender_id:tenderId,dossier_complete:false,archive_file_name:archiveName,contained_documents:stats.contained,matched_documents:matched,remaining_protected_documents:remaining,archived_documents:publicArchiveRows(archive)});
+      const analysis=await runProtectedArchiveAnalysis(auth,tenderId);
+      return json({ok:true,tender_id:tenderId,dossier_complete:true,archive_file_name:archiveName,contained_documents:stats.contained,matched_documents:matched,remaining_protected_documents:[],archived_documents:publicArchiveRows(archive),analysis});
+    }
+
+    if(mode!=='upload')return json({ok:false,error:'unsupported_mode'},400);
+    const expectedName=safeName(body?.expected_name||'');
+    if(!expectedName||!expected.some(x=>normalizeName(x)===normalizeName(expectedName)))return json({ok:false,error:'document_not_expected',message:'Ky dokument nuk është në listën aktuale të dokumenteve të munguara.'},409);
+    const file=body?.file||{},actualName=safeName(file?.name||expectedName),expectedExt=extension(expectedName),actualExt=extension(actualName);
+    if(!ALLOWED_EXT.has(expectedExt)||!ALLOWED_EXT.has(actualExt))return json({ok:false,error:'unsupported_file_type'},400);
+    if(expectedExt&&actualExt&&expectedExt!==actualExt)return json({ok:false,error:'wrong_file_type',message:`Dokumenti duhet të jetë .${expectedExt}.`},400);
+    const bytes=bytesFromBase64(file?.base64||'');if(!bytes.length)return json({ok:false,error:'empty_file'},400);if(bytes.byteLength>MAX_FILE_BYTES)return json({ok:false,error:'file_too_large_30mb'},413);
+    const now=new Date().toISOString(),entry=await storeExpected(tenderId,expectedName,bytes,file?.type,'manual_authenticated_krpp',now);
+    archive=mergeArchive(archive,entry);const remaining=remainingExpected(expected,archive);
+    await persistPartialState(tender,archive,remaining,now);await updateQueue(queue,tenderId,archive,remaining,now);
+    if(remaining.length)return json({ok:true,tender_id:tenderId,dossier_complete:false,uploaded_document:entry.name,remaining_protected_documents:remaining,archived_documents:publicArchiveRows(archive)});
     const analysis=await runProtectedArchiveAnalysis(auth,tenderId);
-    return json({ok:true,tender_id:tenderId,dossier_complete:true,archive_file_name:archiveName,contained_documents:contained,matched_documents:matched,remaining_protected_documents:[],archived_documents:publicArchiveRows(archive),analysis});
+    return json({ok:true,tender_id:tenderId,dossier_complete:true,uploaded_document:entry.name,remaining_protected_documents:[],archived_documents:publicArchiveRows(archive),analysis});
+  }catch(error){
+    console.error('pppp-tender-dossier-import',error);
+    const msg=text((error as any)?.message||error,1000);
+    const status=/file_too_large/.test(msg)?413:/unsupported|wrong_file_type|invalid_file_base64|empty_file|zip_required|invalid_zip_archive|zip_too_many_entries|zip_extract_too_large|zip_nested_too_deep/.test(msg)?400:500;
+    return json({ok:false,error:'tender_dossier_import_failed',message:msg},status);
   }
-
-  if(mode!=='upload')return json({ok:false,error:'unsupported_mode'},400);
-  const expectedName=safeName(body?.expected_name||'');if(!expectedName||!expected.some(x=>normalizeName(x)===normalizeName(expectedName)))return json({ok:false,error:'document_not_expected',message:'Ky dokument nuk është në listën aktuale të dokumenteve të munguara.'},409);
-  const file=body?.file||{},actualName=safeName(file?.name||expectedName),expectedExt=extension(expectedName),actualExt=extension(actualName);if(!ALLOWED_EXT.has(expectedExt)||!ALLOWED_EXT.has(actualExt))return json({ok:false,error:'unsupported_file_type'},400);if(expectedExt&&actualExt&&expectedExt!==actualExt)return json({ok:false,error:'wrong_file_type',message:`Dokumenti duhet të jetë .${expectedExt}.`},400);
-  const bytes=bytesFromBase64(file?.base64||'');if(!bytes.length)return json({ok:false,error:'empty_file'},400);if(bytes.byteLength>MAX_FILE_BYTES)return json({ok:false,error:'file_too_large_30mb'},413);
-  const now=new Date().toISOString(),entry=await storeExpected(tenderId,expectedName,bytes,file?.type,'manual_authenticated_krpp',now);archive=mergeArchive(archive,entry);const remaining=remainingExpected(expected,archive);
-  await persistPartialState(tender,archive,remaining,now);
-  await updateQueue(queue,tenderId,archive,remaining,now);
-  if(remaining.length)return json({ok:true,tender_id:tenderId,dossier_complete:false,uploaded_document:entry.name,remaining_protected_documents:remaining,archived_documents:publicArchiveRows(archive)});
-  const analysis=await runProtectedArchiveAnalysis(auth,tenderId);
-  return json({ok:true,tender_id:tenderId,dossier_complete:true,uploaded_document:entry.name,remaining_protected_documents:[],archived_documents:publicArchiveRows(archive),analysis});
- }catch(error){console.error('pppp-tender-dossier-import',error);const msg=text((error as any)?.message||error,1000);const status=/file_too_large/.test(msg)?413:/unsupported|wrong_file_type|invalid_file_base64|empty_file|zip_required|invalid_zip_archive|zip_too_many_entries|zip_extract_too_large/.test(msg)?400:500;return json({ok:false,error:'tender_dossier_import_failed',message:msg},status);}
 });

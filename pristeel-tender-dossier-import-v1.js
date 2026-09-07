@@ -8,58 +8,398 @@
 'use strict';
 if(window.__pstTenderDossierImportV1&&window.PSTTenderDossierImportV1)return;
 window.__pstTenderDossierImportV1=true;
-var busy={},recovering={},canonicalAnalyze=null,canonicalOwner=null,decisionBound=false,importUiBound=false,zipGuideBound=false;
+
+var busy={},recovering={},canonicalAnalyze=null,canonicalOwner=null;
+var decisionBound=false,importUiBound=false,zipGuideBound=false;
+
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function safeHttps(v){v=S(v).trim();return /^https:\/\//i.test(v)?v:'';}
 function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null;}catch(e){return null;}}
 async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow();}catch(e){return sessionNow();}}
+
 async function edge(payload){
- var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
- var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
- async function run(t){return fetch(base+'/functions/v1/pppp-tender-dossier-import',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(payload)});}
- var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}if(!res.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,900));return data;
+  var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);
+  if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
+  var s=sessionNow();
+  if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();
+  var token=s&&s.access_token?s.access_token:'';
+  if(!token)throw new Error('Sesioni ka skaduar.');
+  async function run(t){
+    return fetch(base+'/functions/v1/pppp-tender-dossier-import',{
+      method:'POST',
+      headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+  }
+  var res=await run(token);
+  if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}
+  var raw=await res.text(),data=null;
+  try{data=raw?JSON.parse(raw):null;}catch(e){}
+  if(!res.ok||!data||data.ok===false){
+    var err=new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,900));
+    err.ppppData=data||null;
+    throw err;
+  }
+  return data;
 }
-function fileBase64(file){return new Promise(function(resolve,reject){try{var r=new FileReader();r.onerror=function(){reject(new Error('Skedari nuk u lexua.'));};r.onload=function(){var v=S(r.result),i=v.indexOf(',');resolve(i>-1?v.slice(i+1):v);};r.readAsDataURL(file);}catch(e){reject(e);}});}
-function ensureCanonical(){try{var D=window.PSTTenderDossierAnalysisV1;if(D&&typeof D.analyze==='function'){canonicalAnalyze=D.analyze;canonicalOwner=D;return true;}}catch(e){}return false;}
-async function refreshCanonical(id){try{if(!canonicalAnalyze&&!ensureCanonical())return false;return await canonicalAnalyze.call(canonicalOwner,S(id),false);}catch(e){console.warn('PPPP tender import canonical refresh:',e);return false;}}
-function installDecisionStyle(){if(document.getElementById('pst-tender-final-decision-css'))return;var s=document.createElement('style');s.id='pst-tender-final-decision-css';s.textContent='.pst-tender-final-decision{margin:14px 0;padding:15px 16px;border:1px solid #cbdde3;border-left:4px solid #397f98;border-radius:12px;background:#f7fbfc}.pst-tender-final-decision.leave{border-color:#ead1d1;border-left-color:#a65b5b;background:#fff8f8}.pst-tender-final-decision>span{display:block;font-size:10px;font-weight:900;letter-spacing:.08em;color:#6b8089}.pst-tender-final-decision>b{display:block;margin-top:4px;font-size:18px;color:#2f7188}.pst-tender-final-decision.leave>b{color:#934b4b}.pst-tender-final-decision ul{margin:8px 0 0;padding-left:19px}.pst-tender-final-decision li{font-size:12px;line-height:1.5;color:#50666f;margin:3px 0}';document.head.appendChild(s);}
-function renderDecision(detail){try{detail=detail||{};if(detail.dossier_complete!==true)return false;var x=detail.analysis||{},rec=S(x.recommendation).toUpperCase();if(rec!=='VAZHDO'&&rec!=='LËRE')return false;var reasons=Array.isArray(x.decision_reasons)?x.decision_reasons.filter(Boolean).slice(0,6):[];if(!reasons.length&&x.capability_fit&&x.capability_fit.reason)reasons=[x.capability_fit.reason];var panel=document.getElementById('pst-tda-analysis');if(!panel)return false;installDecisionStyle();var old=panel.querySelector('.pst-tender-final-decision');if(old)old.remove();var box=document.createElement('div');box.className='pst-tender-final-decision'+(rec==='LËRE'?' leave':'');box.innerHTML='<span>REKOMANDIMI PËRFUNDIMTAR</span><b>'+E(rec)+'</b>'+(reasons.length?'<ul>'+reasons.map(function(r){return'<li>'+E(r)+'</li>';}).join('')+'</ul>':'');var summary=panel.querySelector('.pst-tda-summary');if(summary)summary.insertAdjacentElement('afterend',box);else panel.appendChild(box);return true;}catch(e){return false;}}
-function bindDecision(){if(decisionBound)return;decisionBound=true;document.addEventListener('pst:tender-dossier-ready',function(ev){renderDecision(ev&&ev.detail||{});});}
-function installZipGuideStyle(){if(document.getElementById('pst-tender-zip-import-css'))return;var s=document.createElement('style');s.id='pst-tender-zip-import-css';s.textContent='.pst-tender-zip-import{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 14px;align-items:center;margin:10px 0 12px;padding:13px 14px;border:1px dashed #8ebdcb;border-radius:12px;background:#f4fbfd}.pst-tender-zip-import.drag{border-style:solid;background:#eaf7fb}.pst-tender-zip-import b{display:block!important;font-size:11px!important;color:#2f6476!important;letter-spacing:0!important}.pst-tender-zip-import small{display:block!important;margin-top:4px!important;font-size:10px!important;line-height:1.45!important;color:#58727d!important}.pst-tender-zip-import button{border:1px solid #397f98;border-radius:10px;padding:9px 12px;background:#397f98;color:#fff;font-size:10px;font-weight:850;cursor:pointer;white-space:nowrap}.pst-tender-zip-import button:disabled{opacity:.55;cursor:wait}.pst-tender-zip-import>span{grid-column:1/-1;display:block!important;margin:0!important;font-size:9.5px!important;line-height:1.4!important;color:#6f858e!important}@media(max-width:760px){.pst-tender-zip-import{grid-template-columns:1fr}.pst-tender-zip-import button{justify-self:start}}';document.head.appendChild(s);}
-function currentKrppSource(){try{var a=document.querySelector('#pst-pcw-ti-actions .pst-pcw-source-link');return safeHttps(a&&a.getAttribute('href'));}catch(e){return'';}}
-function normalizeProtectedUi(detail){try{detail=detail||{};var panel=document.getElementById('pst-tda-analysis');if(!panel)return false;var complete=detail.dossier_complete===true||panel.getAttribute('data-dossier-complete')==='1';var dl=panel.querySelector('[data-tda-download]');if(dl){if(complete){if(dl.getAttribute('data-pst-partial-bundle-hidden')==='1'){dl.hidden=false;dl.removeAttribute('data-pst-partial-bundle-hidden');dl.removeAttribute('title');}}else{dl.hidden=true;dl.setAttribute('data-pst-partial-bundle-hidden','1');dl.title='Ky ZIP përmban vetëm pjesën publike dhe nuk e plotëson dosjen e mbrojtur. Shkarko dosjen e plotë nga KRPP.';}}
- var src=currentKrppSource();if(src&&!complete){Array.prototype.slice.call(panel.querySelectorAll('.pst-final-krpp-doc a')).forEach(function(a){a.href=src;a.textContent='Hap tenderin në KRPP ↗';a.setAttribute('data-pst-krpp-source-link','1');});var source=panel.querySelector('.pst-final-krpp-source');if(source){source.href=src;source.textContent='Hap tenderin në KRPP ↗';}}
- return true;}catch(e){return false;}}
-async function recoverCompletedArchive(id){id=S(id);if(!id||recovering[id])return false;recovering[id]=true;try{var status=await edge({tender_id:id,mode:'status'});if(!status||status.dossier_complete!==true)return false;var out=await edge({tender_id:id,mode:'finalize'});if(out&&out.dossier_complete){await refreshCanonical(id);return true;}return false;}catch(e){console.warn('PPPP tender protected archive recovery:',e);return false;}finally{delete recovering[id];}}
-function renderZipGuide(detail){try{detail=detail||{};var panel=document.getElementById('pst-tda-analysis');if(!panel)return false;var existing=panel.querySelector('.pst-tender-zip-import');if(detail.dossier_complete===true||panel.getAttribute('data-dossier-complete')==='1'){if(existing)existing.remove();normalizeProtectedUi({dossier_complete:true});return false;}var partial=panel.querySelector('.pst-tda-partial');if(!partial)return false;var id=S(detail.tender_id||panel.getAttribute('data-tender-id')||'');if(!id)return false;installZipGuideStyle();if(!existing){existing=document.createElement('div');existing.className='pst-tender-zip-import';existing.setAttribute('data-pst-krpp-zip-drop','1');partial.insertBefore(existing,partial.firstChild);}existing.setAttribute('data-tender-id',id);existing.innerHTML='<div><b>Ke shkarkuar dosjen e plotë nga KRPP?</b><small>Në KRPP përdor “Shkarko të gjithë dokumentacionin”, pastaj ngarkoje ZIP-in këtu. PPPP do ta lidhë vetëm me këtë tender dhe do të identifikojë dokumentet brenda.</small></div><button type="button" data-pst-krpp-zip-upload="1" data-tender-id="'+E(id)+'">Ngarko Dosja e Tenderit.zip</button><span>Ose tërhiqe ZIP-in këtu. Mos përdor ZIP-et me emër “PPPP-Dosja-…”, sepse ato përmbajnë vetëm pjesën publike dhe nuk i zëvendësojnë dokumentet e mbrojtura të KRPP.</span>';normalizeProtectedUi({tender_id:id,dossier_complete:false});setTimeout(function(){recoverCompletedArchive(id);},0);return true;}catch(e){return false;}}
-function bindZipGuide(){if(zipGuideBound)return;zipGuideBound=true;document.addEventListener('pst:tender-dossier-ready',function(ev){var d=ev&&ev.detail||{};setTimeout(function(){renderZipGuide(d);normalizeProtectedUi(d);},0);});setTimeout(function(){var p=document.getElementById('pst-tda-analysis');if(p&&p.getAttribute('data-dossier-complete')==='0')renderZipGuide({tender_id:p.getAttribute('data-tender-id')||'',dossier_complete:false});else normalizeProtectedUi({dossier_complete:true});},0);}
-function announcePartial(id,out){try{var panel=document.getElementById('pst-tda-analysis');if(panel){panel.setAttribute('data-tender-id',S(id));panel.setAttribute('data-dossier-complete','0');}document.dispatchEvent(new CustomEvent('pst:tender-dossier-ready',{detail:{tender_id:S(id),dossier_complete:false,protected_documents:Array.isArray(out&&out.remaining_protected_documents)?out.remaining_protected_documents:[],analysis:null,documents:0,cached:false}}));}catch(e){}}
-async function uploadProtected(id,name,file,btn){id=S(id);name=S(name);if(!id||!name||!file)return false;var k=id+'|'+name;if(busy[k])return false;busy[k]=true;var old=btn&&btn.textContent;try{
- if(Number(file.size||0)>30*1024*1024)throw new Error('Dokumenti është më i madh se 30 MB.');
- if(btn){btn.disabled=true;btn.textContent='Duke ngarkuar…';}
- var b64=await fileBase64(file),out=await edge({tender_id:id,mode:'upload',expected_name:name,file:{name:file.name,type:file.type,size:file.size,base64:b64}});
- if(out.dossier_complete){if(typeof window.pstToast==='function')window.pstToast('Dosja u kompletua. PPPP po rifreskon analizën përfundimtare.','ok');await refreshCanonical(id);}else{if(typeof window.pstToast==='function')window.pstToast('Dokumenti u ngarkua. Mungojnë edhe '+Number((out.remaining_protected_documents||[]).length||0)+' dokument(e).','info');announcePartial(id,out);}
- try{document.dispatchEvent(new CustomEvent('pst:tender-dossier-imported',{detail:out}));}catch(e){}return true;
- }catch(e){alert(e&&e.message||e);return false;}finally{delete busy[k];if(btn&&document.contains(btn)){btn.disabled=false;if(old)btn.textContent=old;}}
+
+function fileBase64(file){
+  return new Promise(function(resolve,reject){
+    try{
+      var r=new FileReader();
+      r.onerror=function(){reject(new Error('Skedari nuk u lexua.'));};
+      r.onload=function(){var v=S(r.result),i=v.indexOf(',');resolve(i>-1?v.slice(i+1):v);};
+      r.readAsDataURL(file);
+    }catch(e){reject(e);}
+  });
 }
-function pickAndUpload(id,name,btn){try{var input=document.createElement('input');input.type='file';input.accept='.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.rtf';input.style.display='none';input.addEventListener('change',function(){var f=input.files&&input.files[0];input.remove();if(f)uploadProtected(id,name,f,btn);},{once:true});document.body.appendChild(input);input.click();return true;}catch(e){alert(e&&e.message||e);return false;}}
+
+function ensureCanonical(){
+  try{
+    var D=window.PSTTenderDossierAnalysisV1;
+    if(D&&typeof D.analyze==='function'){canonicalAnalyze=D.analyze;canonicalOwner=D;return true;}
+  }catch(e){}
+  return false;
+}
+async function refreshCanonical(id){
+  try{
+    if(!canonicalAnalyze&&!ensureCanonical())return false;
+    return await canonicalAnalyze.call(canonicalOwner,S(id),false);
+  }catch(e){console.warn('PPPP tender import canonical refresh:',e);return false;}
+}
+
+function installDecisionStyle(){
+  if(document.getElementById('pst-tender-final-decision-css'))return;
+  var s=document.createElement('style');
+  s.id='pst-tender-final-decision-css';
+  s.textContent='.pst-tender-final-decision{margin:14px 0;padding:15px 16px;border:1px solid #cbdde3;border-left:4px solid #397f98;border-radius:12px;background:#f7fbfc}.pst-tender-final-decision.leave{border-color:#ead1d1;border-left-color:#a65b5b;background:#fff8f8}.pst-tender-final-decision>span{display:block;font-size:10px;font-weight:900;letter-spacing:.08em;color:#6b8089}.pst-tender-final-decision>b{display:block;margin-top:4px;font-size:18px;color:#2f7188}.pst-tender-final-decision.leave>b{color:#934b4b}.pst-tender-final-decision ul{margin:8px 0 0;padding-left:19px}.pst-tender-final-decision li{font-size:12px;line-height:1.5;color:#50666f;margin:3px 0}';
+  document.head.appendChild(s);
+}
+function renderDecision(detail){
+  try{
+    detail=detail||{};
+    if(detail.dossier_complete!==true)return false;
+    var x=detail.analysis||{},rec=S(x.recommendation).toUpperCase();
+    if(rec!=='VAZHDO'&&rec!=='LËRE')return false;
+    var reasons=Array.isArray(x.decision_reasons)?x.decision_reasons.filter(Boolean).slice(0,6):[];
+    if(!reasons.length&&x.capability_fit&&x.capability_fit.reason)reasons=[x.capability_fit.reason];
+    var panel=document.getElementById('pst-tda-analysis');if(!panel)return false;
+    installDecisionStyle();
+    var old=panel.querySelector('.pst-tender-final-decision');if(old)old.remove();
+    var box=document.createElement('div');
+    box.className='pst-tender-final-decision'+(rec==='LËRE'?' leave':'');
+    box.innerHTML='<span>REKOMANDIMI PËRFUNDIMTAR</span><b>'+E(rec)+'</b>'+(reasons.length?'<ul>'+reasons.map(function(r){return'<li>'+E(r)+'</li>';}).join('')+'</ul>':'');
+    var summary=panel.querySelector('.pst-tda-summary');
+    if(summary)summary.insertAdjacentElement('afterend',box);else panel.appendChild(box);
+    return true;
+  }catch(e){return false;}
+}
+function bindDecision(){
+  if(decisionBound)return;
+  decisionBound=true;
+  document.addEventListener('pst:tender-dossier-ready',function(ev){renderDecision(ev&&ev.detail||{});});
+}
+
+function installZipGuideStyle(){
+  if(document.getElementById('pst-tender-zip-import-css'))return;
+  var s=document.createElement('style');
+  s.id='pst-tender-zip-import-css';
+  s.textContent=''
+    +'.pst-tender-zip-import{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 14px;align-items:center;margin:10px 0 12px;padding:13px 14px;border:1px dashed #8ebdcb;border-radius:12px;background:#f4fbfd}'
+    +'.pst-tender-zip-import.drag{border-style:solid;background:#eaf7fb;box-shadow:0 0 0 2px rgba(57,127,152,.12) inset}'
+    +'.pst-tender-zip-import b{display:block!important;font-size:11px!important;color:#2f6476!important;letter-spacing:0!important}'
+    +'.pst-tender-zip-import small{display:block!important;margin-top:4px!important;font-size:10px!important;line-height:1.45!important;color:#58727d!important}'
+    +'.pst-tender-zip-import button{border:1px solid #397f98;border-radius:10px;padding:9px 12px;background:#397f98;color:#fff;font-size:10px;font-weight:850;cursor:pointer;white-space:nowrap}'
+    +'.pst-tender-zip-import button:disabled{opacity:.55;cursor:wait}'
+    +'.pst-tender-zip-import>span{grid-column:1/-1;display:block!important;margin:0!important;font-size:9.5px!important;line-height:1.4!important;color:#6f858e!important}'
+    +'.pst-final-krpp-doc[data-pst-krpp-doc-drop="1"]{position:relative;transition:border-color .12s ease,background .12s ease,box-shadow .12s ease}'
+    +'.pst-final-krpp-doc[data-pst-krpp-doc-drop="1"].drag{border-color:#78adbd!important;background:#f1fbfd!important;box-shadow:0 0 0 2px rgba(57,127,152,.12) inset}'
+    +'.pst-final-krpp-doc .pst-krpp-drop-hint{display:block!important;margin-top:4px!important;font-size:9px!important;line-height:1.35!important;color:#4e7a88!important;font-weight:700!important}'
+    +'@media(max-width:760px){.pst-tender-zip-import{grid-template-columns:1fr}.pst-tender-zip-import button{justify-self:start}}';
+  document.head.appendChild(s);
+}
+
+function currentKrppSource(){
+  try{var a=document.querySelector('#pst-pcw-ti-actions .pst-pcw-source-link');return safeHttps(a&&a.getAttribute('href'));}catch(e){return'';}
+}
+function decorateDocumentDropTargets(){
+  try{
+    var panel=document.getElementById('pst-tda-analysis');if(!panel)return false;
+    Array.prototype.slice.call(panel.querySelectorAll('[data-pst-krpp-upload]')).forEach(function(btn){
+      var row=btn.closest&&btn.closest('.pst-final-krpp-doc');if(!row)return;
+      row.setAttribute('data-pst-krpp-doc-drop','1');
+      row.setAttribute('data-tender-id',btn.getAttribute('data-tender-id')||'');
+      row.setAttribute('data-expected-name',btn.getAttribute('data-expected-name')||'');
+      if(!row.querySelector('.pst-krpp-drop-hint')){
+        var left=row.querySelector('span');
+        if(left){var h=document.createElement('small');h.className='pst-krpp-drop-hint';h.textContent='Tërhiq këtu skedarin ose ZIP-in e shkarkuar nga KRPP.';left.appendChild(h);}
+      }
+    });
+    return true;
+  }catch(e){return false;}
+}
+function normalizeProtectedUi(detail){
+  try{
+    detail=detail||{};
+    var panel=document.getElementById('pst-tda-analysis');if(!panel)return false;
+    var complete=detail.dossier_complete===true||panel.getAttribute('data-dossier-complete')==='1';
+    var dl=panel.querySelector('[data-tda-download]');
+    if(dl){
+      if(complete){
+        if(dl.getAttribute('data-pst-partial-bundle-hidden')==='1'){
+          dl.hidden=false;dl.removeAttribute('data-pst-partial-bundle-hidden');dl.removeAttribute('title');
+        }
+      }else{
+        dl.hidden=true;dl.setAttribute('data-pst-partial-bundle-hidden','1');
+        dl.title='Ky ZIP përmban vetëm pjesën publike dhe nuk e plotëson dosjen e mbrojtur. Shkarko dokumentet nga KRPP.';
+      }
+    }
+    var src=currentKrppSource();
+    if(src&&!complete){
+      Array.prototype.slice.call(panel.querySelectorAll('.pst-final-krpp-doc a')).forEach(function(a){
+        a.href=src;a.textContent='Hap tenderin në KRPP ↗';a.setAttribute('data-pst-krpp-source-link','1');
+      });
+      var source=panel.querySelector('.pst-final-krpp-source');
+      if(source){source.href=src;source.textContent='Hap tenderin në KRPP ↗';}
+    }
+    decorateDocumentDropTargets();
+    return true;
+  }catch(e){return false;}
+}
+
+async function recoverCompletedArchive(id){
+  id=S(id);if(!id||recovering[id])return false;recovering[id]=true;
+  try{
+    var status=await edge({tender_id:id,mode:'status'});
+    if(!status||status.dossier_complete!==true)return false;
+    var out=await edge({tender_id:id,mode:'finalize'});
+    if(out&&out.dossier_complete){await refreshCanonical(id);return true;}
+    return false;
+  }catch(e){console.warn('PPPP tender protected archive recovery:',e);return false;}
+  finally{delete recovering[id];}
+}
+
+function renderZipGuide(detail){
+  try{
+    detail=detail||{};
+    var panel=document.getElementById('pst-tda-analysis');if(!panel)return false;
+    var existing=panel.querySelector('.pst-tender-zip-import');
+    if(detail.dossier_complete===true||panel.getAttribute('data-dossier-complete')==='1'){
+      if(existing)existing.remove();normalizeProtectedUi({dossier_complete:true});return false;
+    }
+    var partial=panel.querySelector('.pst-tda-partial');if(!partial)return false;
+    var id=S(detail.tender_id||panel.getAttribute('data-tender-id')||'');if(!id)return false;
+    installZipGuideStyle();
+    if(!existing){
+      existing=document.createElement('div');existing.className='pst-tender-zip-import';
+      existing.setAttribute('data-pst-krpp-zip-drop','1');partial.insertBefore(existing,partial.firstChild);
+    }
+    existing.setAttribute('data-tender-id',id);
+    existing.innerHTML=''
+      +'<div><b>Ke shkarkuar dokumentet nga KRPP?</b><small>Tërhiq këtu ZIP-in ose skedarët e shkarkuar. PPPP do t’i krahasojë me dokumentet që mungojnë për këtë tender.</small></div>'
+      +'<button type="button" data-pst-krpp-zip-upload="1" data-tender-id="'+E(id)+'">Ngarko dokumentet / ZIP-in</button>'
+      +'<span>Mund të hedhësh edhe ZIP-et individuale që KRPP krijon për “Dosja e Tenderit” ose “Përshkrimi i çmimeve”. ZIP-et “PPPP-Dosja-…” mbeten vetëm kopje të pjesës publike.</span>';
+    normalizeProtectedUi({tender_id:id,dossier_complete:false});
+    setTimeout(function(){recoverCompletedArchive(id);},0);
+    return true;
+  }catch(e){return false;}
+}
+function bindZipGuide(){
+  if(zipGuideBound)return;zipGuideBound=true;
+  document.addEventListener('pst:tender-dossier-ready',function(ev){
+    var d=ev&&ev.detail||{};
+    setTimeout(function(){renderZipGuide(d);normalizeProtectedUi(d);},0);
+  });
+  setTimeout(function(){
+    var p=document.getElementById('pst-tda-analysis');
+    if(p&&p.getAttribute('data-dossier-complete')==='0')renderZipGuide({tender_id:p.getAttribute('data-tender-id')||'',dossier_complete:false});
+    else normalizeProtectedUi({dossier_complete:true});
+  },0);
+}
+
+function announcePartial(id,out){
+  try{
+    var panel=document.getElementById('pst-tda-analysis');
+    if(panel){panel.setAttribute('data-tender-id',S(id));panel.setAttribute('data-dossier-complete','0');}
+    document.dispatchEvent(new CustomEvent('pst:tender-dossier-ready',{detail:{
+      tender_id:S(id),dossier_complete:false,
+      protected_documents:Array.isArray(out&&out.remaining_protected_documents)?out.remaining_protected_documents:[],
+      analysis:null,documents:0,cached:false
+    }}));
+  }catch(e){}
+}
+
+async function uploadProtected(id,name,file,btn){
+  id=S(id);name=S(name);if(!id||!name||!file)return false;
+  var k=id+'|'+name;if(busy[k])return false;busy[k]=true;
+  var old=btn&&btn.textContent;
+  try{
+    if(Number(file.size||0)>30*1024*1024)throw new Error('Dokumenti është më i madh se 30 MB.');
+    if(btn){btn.disabled=true;btn.textContent='Duke ngarkuar…';}
+    var b64=await fileBase64(file),out=await edge({
+      tender_id:id,mode:'upload',expected_name:name,
+      file:{name:file.name,type:file.type,size:file.size,base64:b64}
+    });
+    if(out.dossier_complete){
+      if(typeof window.pstToast==='function')window.pstToast('Dosja u kompletua. PPPP po rifreskon analizën përfundimtare.','ok');
+      await refreshCanonical(id);
+    }else{
+      if(typeof window.pstToast==='function')window.pstToast('Dokumenti u ngarkua. Mungojnë edhe '+Number((out.remaining_protected_documents||[]).length||0)+' dokument(e).','info');
+      announcePartial(id,out);
+    }
+    try{document.dispatchEvent(new CustomEvent('pst:tender-dossier-imported',{detail:out}));}catch(e){}
+    return true;
+  }catch(e){alert(e&&e.message||e);return false;}
+  finally{delete busy[k];if(btn&&document.contains(btn)){btn.disabled=false;if(old)btn.textContent=old;}}
+}
+
 function isZip(file){return !!(file&&/\.zip$/i.test(S(file.name)));}
-function archiveErrorMessage(file,error){var msg=S(error&&error.message||error);if(/ZIP-i u lexua, por nuk u gjet asnjë|zip_contains_no_expected_documents/i.test(msg)){if(/^PPPP-Dosja-/i.test(S(file&&file.name)))return 'Ky është ZIP-i i pjesshëm i krijuar nga PPPP, jo dosja e plotë e KRPP. Hape tenderin në KRPP, zgjidh “Shkarko të gjithë dokumentacionin” dhe ngarko atë ZIP këtu.';return 'ZIP-i u lexua, por nuk përmban dokumentet që ky tender pret. Verifiko që ke shkarkuar “Shkarko të gjithë dokumentacionin” nga tenderi i njëjtë në KRPP.';}return msg;}
-async function uploadArchive(id,file,btn){id=S(id);if(!id||!file)return false;var k=id+'|archive';if(busy[k])return false;busy[k]=true;var old=btn&&btn.textContent;try{
- if(!isZip(file))throw new Error('Zgjidh skedarin ZIP të shkarkuar nga KRPP.');
- if(Number(file.size||0)>30*1024*1024)throw new Error('Dosja ZIP është më e madhe se 30 MB.');
- if(btn){btn.disabled=true;btn.textContent='Duke lexuar ZIP-in…';}
- var b64=await fileBase64(file),out=await edge({tender_id:id,mode:'upload_archive',file:{name:file.name,type:file.type||'application/zip',size:file.size,base64:b64}});
- var matched=Array.isArray(out&&out.matched_documents)?out.matched_documents.length:0,remaining=Array.isArray(out&&out.remaining_protected_documents)?out.remaining_protected_documents.length:0;
- if(out.dossier_complete){if(typeof window.pstToast==='function')window.pstToast('ZIP-i u lidh me tenderin dhe dosja u kompletua. PPPP po rifillon analizën përfundimtare.','ok');await refreshCanonical(id);}else{if(typeof window.pstToast==='function')window.pstToast('ZIP-i u lexua: '+matched+' dokument(e) u lidhën me tenderin; mungojnë edhe '+remaining+'.','info');announcePartial(id,out);}
- try{document.dispatchEvent(new CustomEvent('pst:tender-dossier-imported',{detail:out}));}catch(e){}return true;
- }catch(e){alert(archiveErrorMessage(file,e));return false;}finally{delete busy[k];if(btn&&document.contains(btn)){btn.disabled=false;if(old)btn.textContent=old;}}
+function supportedDocument(file){return !!(file&&/\.(pdf|doc|docx|xls|xlsx|csv|txt|rtf)$/i.test(S(file.name)));}
+function archiveErrorMessage(file,error){
+  var msg=S(error&&error.message||error),data=error&&error.ppppData||null;
+  if(/ZIP-i u lexua, por nuk u gjet asnjë|zip_contains_no_expected_documents/i.test(msg)){
+    if(/^PPPP-Dosja-/i.test(S(file&&file.name)))return 'Ky është ZIP-i i pjesshëm i krijuar nga PPPP, jo dokumenti i mbrojtur i KRPP. Përdor ZIP-in ose skedarin që KRPP shkarkon te “Dosja e Tenderit” / “Përshkrimi i çmimeve”.';
+    var found=data&&Array.isArray(data.contained_documents)?data.contained_documents.slice(0,5).join(', '):'';
+    return 'ZIP-i u lexua, por nuk u lidh me dokumentet që ky tender pret.'+(found?' Brenda u gjetën: '+found+'.':'')+' Provo ZIP-in tjetër të shkarkuar nga i njëjti tender ose tërhiq skedarin direkt te rreshti përkatës.';
+  }
+  return msg;
 }
-function pickArchiveAndUpload(id,btn){try{var input=document.createElement('input');input.type='file';input.accept='.zip,application/zip,application/x-zip-compressed';input.style.display='none';input.addEventListener('change',function(){var f=input.files&&input.files[0];input.remove();if(f)uploadArchive(id,f,btn);},{once:true});document.body.appendChild(input);input.click();return true;}catch(e){alert(e&&e.message||e);return false;}}
-function bindImportUi(){if(importUiBound)return;importUiBound=true;document.addEventListener('click',function(e){var zipBtn=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-zip-upload]'):null;if(zipBtn){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();pickArchiveAndUpload(zipBtn.getAttribute('data-tender-id')||'',zipBtn);return;}var docBtn=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-upload]'):null;if(docBtn){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();pickAndUpload(docBtn.getAttribute('data-tender-id')||'',docBtn.getAttribute('data-expected-name')||'',docBtn);}},true);document.addEventListener('dragover',function(e){var z=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-zip-drop]'):null;if(!z)return;e.preventDefault();try{e.dataTransfer.dropEffect='copy';}catch(x){}z.classList.add('drag');},true);document.addEventListener('dragleave',function(e){var z=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-zip-drop]'):null;if(z)z.classList.remove('drag');},true);document.addEventListener('drop',function(e){var z=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-zip-drop]'):null;if(!z)return;e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();z.classList.remove('drag');var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(!f)return;var btn=z.querySelector('[data-pst-krpp-zip-upload]');uploadArchive(z.getAttribute('data-tender-id')||'',f,btn);},true);}
-async function finalize(id){id=S(id);if(!id)return false;try{var out=await edge({tender_id:id,mode:'finalize'});if(out&&out.dossier_complete){await refreshCanonical(id);return true;}return false;}catch(e){alert(e&&e.message||e);return false;}}
-function apply(){ensureCanonical();bindDecision();bindImportUi();bindZipGuide();return true;}
+
+async function uploadArchive(id,file,btn){
+  id=S(id);if(!id||!file)return false;
+  var k=id+'|archive';if(busy[k])return false;busy[k]=true;
+  var old=btn&&btn.textContent;
+  try{
+    if(!isZip(file))throw new Error('Zgjidh ZIP-in e shkarkuar nga KRPP.');
+    if(Number(file.size||0)>30*1024*1024)throw new Error('Dosja ZIP është më e madhe se 30 MB.');
+    if(btn){btn.disabled=true;btn.textContent='Duke lexuar ZIP-in…';}
+    var b64=await fileBase64(file),out=await edge({
+      tender_id:id,mode:'upload_archive',
+      file:{name:file.name,type:file.type||'application/zip',size:file.size,base64:b64}
+    });
+    var matched=Array.isArray(out&&out.matched_documents)?out.matched_documents.length:0;
+    var remaining=Array.isArray(out&&out.remaining_protected_documents)?out.remaining_protected_documents.length:0;
+    if(out.dossier_complete){
+      if(typeof window.pstToast==='function')window.pstToast('ZIP-i u lidh me tenderin dhe dosja u kompletua. PPPP po rifillon analizën përfundimtare.','ok');
+      await refreshCanonical(id);
+    }else{
+      if(typeof window.pstToast==='function')window.pstToast('ZIP-i u lexua: '+matched+' dokument(e) u lidhën me tenderin; mungojnë edhe '+remaining+'.','info');
+      announcePartial(id,out);
+    }
+    try{document.dispatchEvent(new CustomEvent('pst:tender-dossier-imported',{detail:out}));}catch(e){}
+    return true;
+  }catch(e){alert(archiveErrorMessage(file,e));return false;}
+  finally{delete busy[k];if(btn&&document.contains(btn)){btn.disabled=false;if(old)btn.textContent=old;}}
+}
+
+function normalizeStem(v){
+  return S(v).replace(/^.*[\\/]/,'').replace(/\.[a-z0-9]{2,5}$/i,'').replace(/\s*\(\d+\)\s*$/,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function fileExt(v){var m=S(v).toLowerCase().match(/\.([a-z0-9]{2,5})$/);return m?m[1]:'';}
+function clientMatchScore(actual,expected){
+  var ae=fileExt(actual),ee=fileExt(expected);if(!ae||!ee||ae!==ee)return 0;
+  var a=normalizeStem(actual),e=normalizeStem(expected);if(!a||!e)return 0;if(a===e)return 100;if(a.indexOf(e)>=0||e.indexOf(a)>=0)return 94;
+  var at=a.split(' ').filter(Boolean),et=e.split(' ').filter(Boolean),set={};at.forEach(function(x){set[x]=1;});
+  var shared=0;et.forEach(function(x){if(set[x])shared++;});
+  return shared>=2?Math.round(90*shared/Math.max(at.length,et.length)):0;
+}
+function expectedRows(id){
+  var panel=document.getElementById('pst-tda-analysis');if(!panel)return[];
+  return Array.prototype.slice.call(panel.querySelectorAll('[data-pst-krpp-upload]')).map(function(btn){return{btn:btn,id:btn.getAttribute('data-tender-id')||id||'',name:btn.getAttribute('data-expected-name')||''};}).filter(function(x){return x.name;});
+}
+function bestRowForFile(id,file){
+  var rows=expectedRows(id),scored=rows.map(function(r){return{row:r,score:clientMatchScore(file.name,r.name)};}).sort(function(a,b){return b.score-a.score;});
+  if(!scored.length||scored[0].score<65)return null;
+  if(scored[1]&&scored[0].score<95&&scored[0].score-scored[1].score<8)return null;
+  return scored[0].row;
+}
+
+async function uploadLooseFile(id,file,btn){
+  if(isZip(file))return uploadArchive(id,file,btn);
+  if(!supportedDocument(file)){alert('Lejohen ZIP, PDF, DOC/DOCX, XLS/XLSX, CSV, TXT ose RTF.');return false;}
+  var row=bestRowForFile(id,file);
+  if(!row){alert('PPPP nuk e lidhi automatikisht këtë skedar me një dokument të munguar. Tërhiqe skedarin direkt mbi rreshtin e dokumentit përkatës.');return false;}
+  return uploadProtected(row.id,row.name,file,row.btn||btn);
+}
+async function uploadFiles(id,files,btn){
+  var list=Array.prototype.slice.call(files||[]).filter(Boolean);if(!list.length)return false;
+  var ok=false;
+  for(var i=0;i<list.length;i++)ok=(await uploadLooseFile(id,list[i],btn))||ok;
+  return ok;
+}
+
+function pickAndUpload(id,name,btn){
+  try{
+    var input=document.createElement('input');
+    input.type='file';
+    input.accept='.zip,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.rtf,application/zip,application/x-zip-compressed';
+    input.style.display='none';
+    input.addEventListener('change',function(){
+      var f=input.files&&input.files[0];input.remove();
+      if(f){if(isZip(f))uploadArchive(id,f,btn);else uploadProtected(id,name,f,btn);}
+    },{once:true});
+    document.body.appendChild(input);input.click();return true;
+  }catch(e){alert(e&&e.message||e);return false;}
+}
+function pickArchiveAndUpload(id,btn){
+  try{
+    var input=document.createElement('input');
+    input.type='file';input.multiple=true;
+    input.accept='.zip,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.rtf,application/zip,application/x-zip-compressed';
+    input.style.display='none';
+    input.addEventListener('change',function(){var files=input.files;input.remove();if(files&&files.length)uploadFiles(id,files,btn);},{once:true});
+    document.body.appendChild(input);input.click();return true;
+  }catch(e){alert(e&&e.message||e);return false;}
+}
+
+function dragTarget(e){
+  var doc=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-doc-drop="1"]'):null;
+  if(doc)return{kind:'doc',el:doc};
+  var zip=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-zip-drop]'):null;
+  return zip?{kind:'guide',el:zip}:null;
+}
+function bindImportUi(){
+  if(importUiBound)return;importUiBound=true;
+  document.addEventListener('click',function(e){
+    var zipBtn=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-zip-upload]'):null;
+    if(zipBtn){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();pickArchiveAndUpload(zipBtn.getAttribute('data-tender-id')||'',zipBtn);return;}
+    var docBtn=e.target&&e.target.closest?e.target.closest('[data-pst-krpp-upload]'):null;
+    if(docBtn){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();pickAndUpload(docBtn.getAttribute('data-tender-id')||'',docBtn.getAttribute('data-expected-name')||'',docBtn);}
+  },true);
+  document.addEventListener('dragover',function(e){
+    var t=dragTarget(e);if(!t)return;e.preventDefault();try{e.dataTransfer.dropEffect='copy';}catch(x){}t.el.classList.add('drag');
+  },true);
+  document.addEventListener('dragleave',function(e){var t=dragTarget(e);if(t)t.el.classList.remove('drag');},true);
+  document.addEventListener('drop',function(e){
+    var t=dragTarget(e);if(!t)return;
+    e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();t.el.classList.remove('drag');
+    var files=e.dataTransfer&&e.dataTransfer.files;if(!files||!files.length)return;
+    var id=t.el.getAttribute('data-tender-id')||'';
+    if(t.kind==='doc'){
+      var name=t.el.getAttribute('data-expected-name')||'',btn=t.el.querySelector('[data-pst-krpp-upload]'),f=files[0];
+      if(isZip(f))uploadArchive(id,f,btn);else uploadProtected(id,name,f,btn);
+      return;
+    }
+    var guideBtn=t.el.querySelector('[data-pst-krpp-zip-upload]');uploadFiles(id,files,guideBtn);
+  },true);
+}
+
+async function finalize(id){
+  id=S(id);if(!id)return false;
+  try{var out=await edge({tender_id:id,mode:'finalize'});if(out&&out.dossier_complete){await refreshCanonical(id);return true;}return false;}
+  catch(e){alert(e&&e.message||e);return false;}
+}
+function apply(){ensureCanonical();bindDecision();bindImportUi();bindZipGuide();decorateDocumentDropTargets();return true;}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else setTimeout(apply,0);
-window.PSTTenderDossierImportV1={version:'3',apply:apply,pickAndUpload:pickAndUpload,uploadProtected:uploadProtected,pickArchiveAndUpload:pickArchiveAndUpload,uploadArchive:uploadArchive,finalize:finalize,renderDecision:renderDecision,_test:{edge:edge,fileBase64:fileBase64,announcePartial:announcePartial,isZip:isZip,bindImportUi:bindImportUi,renderZipGuide:renderZipGuide,normalizeProtectedUi:normalizeProtectedUi,archiveErrorMessage:archiveErrorMessage,recoverCompletedArchive:recoverCompletedArchive}};
+
+window.PSTTenderDossierImportV1={
+  version:'4',apply:apply,pickAndUpload:pickAndUpload,uploadProtected:uploadProtected,
+  pickArchiveAndUpload:pickArchiveAndUpload,uploadArchive:uploadArchive,uploadFiles:uploadFiles,
+  finalize:finalize,renderDecision:renderDecision,
+  _test:{edge:edge,fileBase64:fileBase64,announcePartial:announcePartial,isZip:isZip,supportedDocument:supportedDocument,
+    bindImportUi:bindImportUi,renderZipGuide:renderZipGuide,normalizeProtectedUi:normalizeProtectedUi,
+    archiveErrorMessage:archiveErrorMessage,recoverCompletedArchive:recoverCompletedArchive,
+    decorateDocumentDropTargets:decorateDocumentDropTargets,clientMatchScore:clientMatchScore,bestRowForFile:bestRowForFile}
+};
 })();
