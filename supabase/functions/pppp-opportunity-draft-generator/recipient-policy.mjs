@@ -1,5 +1,6 @@
 const EMAIL_RE=/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/i;
 const FREE_DOMAINS=new Set(['gmail.com','googlemail.com','hotmail.com','outlook.com','live.com','yahoo.com','yahoo.de','yahoo.fr','icloud.com','aol.com','gmx.com','gmx.de','web.de','proton.me','protonmail.com']);
+const GENERIC_LOCAL_PARTS=new Set(['info','office','contact','kontakt','sales','verkauf','procurement','purchasing','einkauf','tender','tenders','ausschreibung','vergabe','post','mail','hello','service','support','faktury','invoice','billing','commercial','comercial','admin','webmaster','pr']);
 
 const txt=(v,max=500)=>String(v==null?'':v).trim().slice(0,max);
 export function normalizeEmail(v){return txt(v,320).toLowerCase().replace(/^mailto:/,'').replace(/[\s,;]+$/,'');}
@@ -8,7 +9,15 @@ export function domainFromEmail(v){const e=normalizeEmail(v),i=e.lastIndexOf('@'
 export function normalizeDomain(v){let s=txt(v,500).toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//i,'').split('/')[0].split('?')[0].split('#')[0].split(':')[0].replace(/^www\./,'');return s||'';}
 export function sameCompanyDomain(email,domain){const ed=domainFromEmail(email),d=normalizeDomain(domain);return !!ed&&!!d&&(ed===d||ed.endsWith('.'+d)||d.endsWith('.'+ed));}
 function explicitName(v){const s=txt(v,180).replace(/\s+/g,' ');if(!s||s.includes('@')||/^https?:/i.test(s))return'';return s;}
-function contactName(row){return explicitName(row?.full_name||row?.contact_name||row?.person_name||row?.name||'');}
+function titleCaseNamePart(v){return v?`${v[0].toUpperCase()}${v.slice(1).toLowerCase()}`:'';}
+export function inferredPersonName(email,meta={}){
+  const purpose=txt(meta?.purpose,80).toLowerCase();if(purpose!=='person')return'';
+  const e=normalizeEmail(email),local=e.split('@')[0]||'';if(!local||GENERIC_LOCAL_PARTS.has(local))return'';
+  const parts=local.split(/[._-]+/).filter(Boolean);if(parts.length!==2)return'';
+  if(parts.some(p=>p.length<2||p.length>40||GENERIC_LOCAL_PARTS.has(p)||!/^[a-zà-öø-ÿ]+$/i.test(p)))return'';
+  return parts.map(titleCaseNamePart).join(' ');
+}
+function contactName(row,email){return explicitName(row?.full_name||row?.contact_name||row?.person_name||row?.name||'')||inferredPersonName(email,row);}
 function confidenceRank(v){const s=txt(v,40).toLowerCase();return s==='high'?3:s==='medium'?2:s==='verified'?3:s==='low'?1:0;}
 function websiteDomain(v){return normalizeDomain(v);}
 
@@ -26,7 +35,7 @@ function belongsToCompany(email,domains){if(!domains.size)return true;for(const 
 
 function candidate(email,meta={}){
   const e=normalizeEmail(email);if(!validEmail(e))return null;
-  return {email:e,name:contactName(meta),job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0};
+  return {email:e,name:contactName(meta,e),job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0};
 }
 function mergeCandidate(a,b){
   if(!a)return b;if(!b)return a;
