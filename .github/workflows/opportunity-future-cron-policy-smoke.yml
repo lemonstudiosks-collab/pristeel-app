@@ -1,0 +1,31 @@
+name: Opportunity future-only cron smoke
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20260907162000_restore_future_opportunity_draft_cron_v1.sql'
+      - 'supabase/functions/pppp-opportunity-draft-generator/**'
+      - 'tests/opportunity-future-cron-policy-smoke.mjs'
+      - '.github/workflows/opportunity-future-cron-policy-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20260907162000_restore_future_opportunity_draft_cron_v1.sql'
+      - 'supabase/functions/pppp-opportunity-draft-generator/**'
+      - 'tests/opportunity-future-cron-policy-smoke.mjs'
+      - '.github/workflows/opportunity-future-cron-policy-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/opportunity-future-cron-policy-smoke.mjs
