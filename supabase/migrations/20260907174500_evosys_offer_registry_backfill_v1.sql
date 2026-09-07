@@ -6,20 +6,27 @@
 do $$
 declare
   v_project public.projects%rowtype;
+  v_project_count integer;
   v_exact public.documents_registry%rowtype;
   v_seq_conflict public.documents_registry%rowtype;
   v_state jsonb;
 begin
+  select count(*)::integer
+    into v_project_count
+  from public.projects
+  where (btrim(coalesce(ref, '')) = 'ANF-9203' or btrim(coalesce(business_ref, '')) = 'ANF-9203')
+    and lower(coalesce(client, '')) like 'evosys laser%';
+
+  if v_project_count <> 1 then
+    raise exception 'Expected exactly one EVOSYS ANF-9203 project, found %; refusing offer backfill', v_project_count;
+  end if;
+
   select *
     into v_project
   from public.projects
-  where id = 'fc96208d-356c-410a-a356-96ce9e9b4d2f'::uuid
-    and coalesce(ref, business_ref, '') ilike '%ANF-9203%'
+  where (btrim(coalesce(ref, '')) = 'ANF-9203' or btrim(coalesce(business_ref, '')) = 'ANF-9203')
+    and lower(coalesce(client, '')) like 'evosys laser%'
   limit 1;
-
-  if v_project.id is null then
-    raise exception 'EVOSYS ANF-9203 project not found; refusing offer backfill';
-  end if;
 
   select *
     into v_exact
