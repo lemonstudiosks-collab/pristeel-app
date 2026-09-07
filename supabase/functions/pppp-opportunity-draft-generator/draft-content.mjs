@@ -2,15 +2,19 @@ const txt=(v,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,m
 const emailDomain=v=>{const e=txt(v,320).toLowerCase(),i=e.lastIndexOf('@');return i>0?e.slice(i+1):'';};
 const norm=v=>txt(v,300).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const first=(...xs)=>xs.map(x=>txt(x,1000)).find(Boolean)||'';
+const esc=v=>txt(v,12000).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
+export const PRISTEEL_LOGO_URL='https://ci3.googleusercontent.com/mail-sig/AIorK4zBbQr6xZC9wHaoIhmL0bKLl8uPOlacg1Q4uZvshbApeKuRiHczkMprJts9P2a3CvsPovpqy2N5ZRba';
+const LINKEDIN_URL='https://www.linkedin.com/in/arianit-vllahiu-8a779b3b4/';
 const SIGNATURE=[
   'Arianit Vllahiu',
   'Head of Business Development',
   '+383 (0) 44 244 699',
   'arianit.vllahiu@prissteel.com',
   'www.prissteel.com',
-  'https://www.linkedin.com/in/arianit-vllahiu-8a779b3b4/'
+  LINKEDIN_URL
 ].join('\n');
+const SIGNATURE_HTML=`<div style="margin-top:14px;font-family:Arial,sans-serif;color:#202124;line-height:1.45"><div>Arianit Vllahiu</div><div>Head of Business Development</div><div>+383 (0) 44 244 699</div><div><a href="mailto:arianit.vllahiu@prissteel.com">arianit.vllahiu@prissteel.com</a></div><div><a href="https://www.prissteel.com/">www.prissteel.com</a></div><div style="margin-top:8px"><img src="${PRISTEEL_LOGO_URL}" width="200" height="50" alt="PRISTEEL" style="display:block;border:0;outline:none;text-decoration:none;width:200px;height:50px"></div><div style="margin-top:6px"><a href="${LINKEDIN_URL}">LinkedIn</a></div></div>`;
 
 function explicitLanguage(v){
   const s=norm(v);
@@ -55,26 +59,18 @@ export function tedReference(tender={}){
 }
 export function tedUrl(tender={}){return first(tender?.source_url,tender?.detail_url,tender?.payload?.source_url,tender?.payload?.detail_url);}
 function greeting(language,company,recipient){
-  const name=txt(recipient?.name,180).replace(/\s+/g,' '),co=txt(company,300)||'PriSteel partner';
+  const name=txt(recipient?.name,180).replace(/\s+/g,' '),co=txt(company,300)||'PRISTEEL partner';
   if(language==='de')return name?`Guten Tag ${name},`:'Sehr geehrte Damen und Herren,';
   if(language==='sq')return name?`Përshëndetje ${name},`:'Përshëndetje,';
   if(language==='bcs')return name?`Poštovani ${name},`:'Poštovani,';
   return name?`Dear ${name},`:`Dear ${co} team,`;
 }
-function closing(language){return language==='de'?'Mit freundlichen Grüßen,':language==='sq'?'Me respekt,':language==='bcs'?'Srdačan pozdrav,':'Best regards,';}
-function referenceBlock(language,ref,authority,url){
-  const rows=[];
-  if(ref)rows.push(language==='de'?`TED-Referenz: ${ref}`:language==='sq'?`Referenca TED: ${ref}`:language==='bcs'?`TED referenca: ${ref}`:`TED reference: ${ref}`);
-  if(authority)rows.push(language==='de'?`Auftraggeber: ${authority}`:language==='sq'?`Autoriteti kontraktues: ${authority}`:language==='bcs'?`Naručilac: ${authority}`:`Contracting authority: ${authority}`);
-  if(url)rows.push(`TED: ${url}`);
-  return rows.join('\n');
-}
-function subjectFor(language,route,ref){
-  const r=ref?` – TED ${ref}`:'';
-  if(language==='de')return `${route==='TED_GC'?'Stahlbau-Unterstützung für Ihr Projekt':'Zusätzliche Stahlbau-Fertigungskapazität'}${r} | PRISTEEL`;
-  if(language==='sq')return `${route==='TED_GC'?'Mbështetje për paketat e çelikut':'Kapacitet shtesë për fabrikim çeliku'}${r} | PRISTEEL`;
-  if(language==='bcs')return `${route==='TED_GC'?'Podrška za čelične pakete':'Dodatni kapacitet za čelične konstrukcije'}${r} | PRISTEEL`;
-  return `${route==='TED_GC'?'Structural-steel support for your project':'Additional steel fabrication capacity'}${r} | PRISTEEL`;
+function closing(language){return language==='de'?'Mit freundlichen Grüßen':language==='sq'?'Me respekt':language==='bcs'?'Srdačan pozdrav':'Best regards';}
+function subjectFor(language,route){
+  if(language==='de')return `${route==='TED_GC'?'Stahlbau-Unterstützung für Ihr Projekt':'Zusätzliche Stahlbau-Fertigungskapazität'} | PRISTEEL`;
+  if(language==='sq')return `${route==='TED_GC'?'Mbështetje për paketat e çelikut':'Kapacitet shtesë për fabrikim çeliku'} | PRISTEEL`;
+  if(language==='bcs')return `${route==='TED_GC'?'Podrška za čelične pakete':'Dodatni kapacitet za čelične konstrukcije'} | PRISTEEL`;
+  return `${route==='TED_GC'?'Structural-steel support for your project':'Additional steel fabrication capacity'} | PRISTEEL`;
 }
 function routeParagraph(language,route){
   const producer=route==='TED_PRODUCER';
@@ -97,17 +93,28 @@ function capabilityParagraph(language){
   if(language==='bcs')return 'Naše partnerske fabrike proizvode čelične konstrukcije prema EN 1090-2 do EXC-4. Rado možemo pregledati nacrte ili troškovnike i brzo potvrditi koje pakete možemo podržati.';
   return 'Our partner factories fabricate structural steel to EN 1090-2 up to EXC-4. We would be glad to review drawings or bills of quantities and quickly confirm which packages we can support.';
 }
-function intro(language,title){
-  if(language==='de')return `wir sind über TED auf die Zuschlagsbekanntmachung zum Projekt „${title}“ aufmerksam geworden.`;
-  if(language==='sq')return `përmes TED kemi parë njoftimin për dhënien e kontratës për projektin “${title}”.`;
-  if(language==='bcs')return `putem TED-a smo vidjeli obavještenje o dodjeli ugovora za projekat „${title}“.`;
-  return `we noted the TED contract-award notice for the project “${title}”.`;
+function cleanProjectTitle(v,ref=''){
+  let s=txt(v,1400);
+  if(ref)s=s.replace(new RegExp(ref.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),' ');
+  s=s.replace(/\bTED\b(?:\s*[-:#]?\s*\d{5,}-\d{4})?/gi,' ').replace(/\s+/g,' ').replace(/^[\s|:;,.\-–—]+|[\s|:;,.\-–—]+$/g,'').trim();
+  return s;
 }
+function intro(language,title){
+  if(!title)return'';
+  if(language==='de')return `wir sind auf das Projekt „${title}“ aufmerksam geworden.`;
+  if(language==='sq')return `jemi informuar për projektin “${title}”.`;
+  if(language==='bcs')return `upoznati smo sa projektom „${title}“.`;
+  return `we became aware of the project “${title}”.`;
+}
+function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v)}</p>`:'';}
 
 export function buildTedDraftContent(action={},tender={},recipient={}){
-  const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),company=txt(action?.target_company,300),title=first(action?.tender_title,tender?.title,action?.payload?.project_title)||'Project',authority=first(action?.authority,tender?.authority,tender?.buyer,tender?.winner?.buyer),ref=tedReference(tender),url=tedUrl(tender),subject=subjectFor(language,route,ref);
-  const blocks=[greeting(language,company,recipient),intro(language,title),referenceBlock(language,ref,authority,url),routeParagraph(language,route),capabilityParagraph(language),closing(language),SIGNATURE].filter(Boolean);
-  return{language,subject,body:blocks.join('\n\n'),tender_reference:ref||null,tender_url:url||null,signature:SIGNATURE};
+  const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref),subject=subjectFor(language,route);
+  const greet=greeting(language,company,recipient),introText=intro(language,title),routeText=routeParagraph(language,route),capability=capabilityParagraph(language),close=closing(language);
+  const body=[greet,introText,routeText,capability,close,SIGNATURE].filter(Boolean).join('\n\n');
+  const htmlBody=`<div dir="ltr" style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#202124">${htmlParagraph(greet)}${htmlParagraph(introText)}${htmlParagraph(routeText)}${htmlParagraph(capability)}<p style="margin:0">${esc(close)}</p>${SIGNATURE_HTML}</div>`;
+  return{language,subject,body,html_body:htmlBody,tender_reference:ref||null,tender_url:url||null,signature:SIGNATURE,signature_html:SIGNATURE_HTML};
 }
 
 export const PRISTEEL_SIGNATURE=SIGNATURE;
+export const PRISTEEL_SIGNATURE_HTML=SIGNATURE_HTML;
