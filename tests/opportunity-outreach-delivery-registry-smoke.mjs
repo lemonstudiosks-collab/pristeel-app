@@ -8,10 +8,13 @@ const migration=await readFile(new URL('../supabase/migrations/20260907143500_op
 
 for(const token of ['Message-ID: ${headerSafe(rfcId)}','X-PPPP-Outreach-ID','X-PPPP-Action-ID','pppp_opportunity_outreach_registry_v1','status:\'draft_created\'','human_send_required:true','gmail_auto_send:false'])assert.ok(generator.includes(token),`generator missing ${token}`);
 assert.ok(generator.includes('gmail.compose')&&generator.includes('gmail.readonly'),'generator must compose drafts and verify mailbox state');
+assert.ok(generator.includes('/threads/')&&generator.includes("sent_match_policy:'thread_id_plus_pppp_headers'"),'generator must detect manually sent drafts through stable Gmail thread + PPPP headers');
+assert.ok(generator.includes('to:${row.recipient_email}')&&generator.includes('X-PPPP-Outreach-ID'),'generator fallback may search by recipient only when stable PPPP header verification is still required');
 for(const forbidden of ['/messages/send','/drafts/send','gmail.send'])assert.equal(generator.includes(forbidden),false,`automatic send surface forbidden: ${forbidden}`);
 assert.equal(generator.includes('FUTURE_DRAFT_CUTOFF'),false,'historical cutoff must not block operator-approved regeneration');
 
-for(const token of ['rfc822msgid:','X-PPPP-Outreach-ID','Message-ID','status:\'sent\'','gmail_message_id','gmail_thread_id','sent_at','gmail.readonly'])assert.ok(sync.includes(token),`sent sync missing ${token}`);
+for(const token of ['rfc822msgid:','X-PPPP-Outreach-ID','X-PPPP-Action-ID','/threads/','thread_id_plus_pppp_headers','status:\'sent\'','gmail_message_id','gmail_thread_id','sent_at','gmail.readonly'])assert.ok(sync.includes(token),`sent sync missing ${token}`);
+assert.ok(sync.includes('to:${row.recipient_email}')&&sync.includes('isSentMatch'),'sent sync recipient fallback must still verify stable PPPP headers/thread metadata');
 for(const forbidden of ['/messages/send','/drafts/send','gmail.send','gmail.compose'])assert.equal(sync.includes(forbidden),false,`sent sync must remain read-only: ${forbidden}`);
 
 for(const token of ['create table if not exists public.pppp_opportunity_outreach_registry_v1','gmail_draft_id text','recipient_email text','action_id uuid','status text','draft_created','sent','human_send_required boolean not null default true','gmail_auto_send boolean not null default false','unique (action_id, recipient_email)','opportunity-outreach-sent-sync-15m'])assert.ok(migration.includes(token),`migration missing ${token}`);
