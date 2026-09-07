@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import { resolveTedRecipients, recipientGreeting, normalizeEmail } from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
 import { encodeRfc2047Header } from '../supabase/functions/pppp-opportunity-draft-generator/mime-headers.mjs';
 import { buildTedDraftContent, resolveDraftLanguage, tedReference, PRISTEEL_SIGNATURE, PRISTEEL_SIGNATURE_HTML, PRISTEEL_LOGO_URL } from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
-import { shouldCreateFutureDraft, hasExistingDraft } from '../supabase/functions/pppp-opportunity-draft-generator/draft-write-policy.mjs';
 
 const action={
   id:'11111111-1111-4111-8111-111111111111',
@@ -120,34 +119,33 @@ assert(!/TED reference|Contracting authority|ted\.europa\.eu|700001-2026|\bTED\b
 assert(!/Përshëndetje|Me respekt|Mit freundlichen Grüßen/.test(english.body),'English draft must not mix Albanian or German copy');
 assert(english.html_body.includes(PRISTEEL_LOGO_URL),'English HTML signature must also include the PRISTEEL logo');
 
-assert.equal(hasExistingDraft({draft_id:'r123'}),true);
-assert.equal(shouldCreateFutureDraft({draft_id:'r123'}),false,'existing Gmail drafts must be immutable under the future-only rollout');
-assert.equal(shouldCreateFutureDraft({}),true,'a missing recipient draft may be created in the future');
-assert.equal(shouldCreateFutureDraft(null),true,'absence of a registry row may create a future draft');
-
 const src=fs.readFileSync(new URL('../supabase/functions/pppp-opportunity-draft-generator/index.ts',import.meta.url),'utf8');
 assert(src.includes('recipient-policy.mjs'),'generator must use canonical recipient policy');
 assert(src.includes('mime-headers.mjs'),'generator must use canonical MIME subject encoder');
 assert(src.includes('draft-content.mjs'),'generator must use canonical language/content/signature policy');
-assert(src.includes('draft-write-policy.mjs'),'generator must enforce future-only write policy');
 assert(src.includes('encodeRfc2047Header'),'generator subject must use RFC 2047 encoding');
 assert(src.includes('Content-Type: multipart/alternative'),'future drafts must use multipart HTML mail');
 assert(src.includes('Content-Type: text/html; charset=UTF-8'),'future drafts must include a text/html MIME part');
 assert(src.includes('Content-Type: text/plain; charset=UTF-8'),'future drafts must retain a plain-text fallback');
-assert(src.includes("method:'POST'"),'future drafts must be created through Gmail drafts POST');
-assert(!src.includes("method:'PUT'"),'existing Gmail drafts must never be rewritten by this rollout');
-assert(src.includes("write_policy:'future_only_no_rewrites'"),'generator result must disclose future-only behavior');
-assert(src.includes("gmail_draft_write_policy:'future_only_no_rewrites'"),'PPPP state must persist the future-only policy');
-assert(src.includes('gmail_drafts'),'generator must persist per-recipient draft registry');
+assert(src.includes("method:'POST'"),'drafts must be created through Gmail drafts POST');
+assert(!src.includes("method:'PUT'"),'existing Gmail drafts must not be rewritten in place');
+assert(src.includes("write_policy:'registry_state_machine_v1'"),'generator result must disclose registry-based behavior');
+assert(src.includes("gmail_draft_write_policy:'registry_state_machine_v1'"),'PPPP state must persist the registry policy');
+assert(src.includes('pppp_opportunity_outreach_registry_v1'),'durable registry must be canonical');
+assert(src.includes('X-PPPP-Outreach-ID')&&src.includes('X-PPPP-Action-ID')&&src.includes('Message-ID'),'stable non-body identifiers must be embedded in MIME headers');
+assert(src.includes('rfc822msgid:'),'generator must check Sent state before recreating a missing draft');
+assert(src.includes('gmail_drafts'),'generator must mirror per-recipient registry state into action payload');
 assert(src.includes('separate_draft_per_recipient:true'),'result must explicitly report separate-draft behavior');
 assert(src.includes('human_send_required:true'),'human send gate must remain explicit');
 assert(src.includes('gmail_auto_send:false'),'persisted state must keep Gmail auto-send disabled');
 assert(src.includes("auto_send:false"),'generator must state that auto-send is disabled');
 assert(src.includes('/drafts'),'Gmail draft endpoint must remain in use');
 assert(!src.includes('/messages/send'),'Gmail send endpoint must not be introduced');
+assert(!src.includes('/drafts/send'),'Gmail draft send endpoint must not be introduced');
 assert(!src.includes('gmail.send'),'Gmail send scope/action must not be introduced');
+assert(!src.includes('FUTURE_DRAFT_CUTOFF'),'deleted historical drafts must be eligible for approved regeneration');
 assert(src.includes('To: ${headerSafe(to)}'),'each draft must have exactly its own recipient');
 assert(!src.includes('draft_brief'),'internal draft brief must not be interpolated into the outgoing message generator');
-assert(src.includes("action_id"),'narrow action-scoped production verification must be supported');
+assert(src.includes("actionId"),'narrow action-scoped production verification must be supported');
 
-console.log('TED future-only HTML/language/signature/no-source-metadata Gmail draft policy smoke passed.');
+console.log('TED registry-tracked HTML/language/signature/no-source-metadata Gmail draft policy smoke passed.');
