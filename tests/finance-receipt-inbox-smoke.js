@@ -19,8 +19,8 @@ const receiptMarker = "pristeel-finance-receipts-v1.js?v=20260905-1";
 assert(bootstrap.includes(receiptMarker), 'Receipt inbox must be loaded by the ordered bootstrap');
 assert(bootstrap.indexOf(receiptMarker) > bootstrap.indexOf(stabilityMarker), 'Receipt inbox must load after the Finance stability owner');
 
-assert(ui.includes("accept=\"image/*\" capture=\"environment\""), 'Camera file input fallback must still request the environment camera on supporting devices');
-assert(ui.includes("accept=\"image/*,application/pdf\""), 'Receipt inbox must accept image and PDF upload');
+assert(ui.includes('accept="image/*" capture="environment"'), 'Camera file input fallback must still request the environment camera on supporting devices');
+assert(ui.includes('accept="image/*,application/pdf"'), 'Receipt inbox must accept image and PDF upload');
 assert(ui.includes('onclick="finReceiptCameraOpen()"'), 'Bëj foto must open the real browser camera flow instead of the file picker');
 assert(ui.includes("navigator.mediaDevices.getUserMedia"), 'Desktop camera flow must request a real browser MediaStream');
 assert(ui.includes("facingMode:{ideal:'environment'}"), 'Camera flow should prefer the rear/environment camera when available');
@@ -29,8 +29,13 @@ assert(ui.includes("uploadReceiptFile(file,'camera',null)"), 'Captured camera im
 assert(ui.includes("if(fallback)fallback.click()"), 'Devices without MediaDevices support must retain the native camera/file fallback');
 assert(ui.includes("edgeFetch('pppp-expense-receipt-upload'"), 'Receipt upload must use the authenticated receipt Edge Function');
 assert(ui.includes("edgeFetch('pppp-expense-receipt-vision'"), 'Unreadable image receipts must have an authenticated vision fallback');
+assert(ui.includes("if(s&&typeof s.then==='function')s=await s"), 'Authenticated Edge calls must resolve an async session object before choosing a token');
+assert(ui.includes("timeoutMs:60000"), 'Vision fallback must have a bounded request timeout rather than hang indefinitely');
+assert(ui.includes("VISION_AUTO_COOLDOWN_MS"), 'Automatic vision retry must use a cooldown instead of a permanent in-memory suppression flag');
+assert(!ui.includes("_visionAutoTried"), 'A failed vision attempt must not permanently suppress automatic retry for the rest of the browser session');
+assert(ui.includes("await runVisionFallback(r.id,false);"), 'Opening an already unreadable receipt must start vision fallback directly, not rely only on a delayed timer');
 assert(ui.includes("fresh.status==='no_text'"), 'Active receipt polling must detect a local OCR no-text result');
-assert(ui.includes("setInterval(async function()"), 'The open review must refresh live processing status rather than stay stale');
+assert(ui.includes("await window.finReceiptOpen(id,true);") && ui.includes("await runVisionFallback(id,false);"), 'OCR transition to no_text must redraw the review and immediately invoke vision fallback');
 assert(ui.includes("finReceiptVisionRetry"), 'Operator must be able to retry visual extraction without re-uploading the receipt');
 assert(ui.includes("rpc/pppp_confirm_expense_receipt_v1"), 'Receipt confirmation must use the dedicated confirmation RPC');
 assert(ui.includes("rpc/pppp_ignore_expense_receipt_v1"), 'Receipt ignore flow must use the dedicated ignore RPC');
@@ -65,6 +70,10 @@ assert(upload.includes("no_paid_api:true"), 'Upload Edge Function remains local-
 assert(vision.includes("OPENAI_API_KEY"), 'Vision fallback must use the existing server-side provider secret, never a browser key');
 assert(vision.includes("input_image"), 'Vision fallback must actually read the receipt image');
 assert(vision.includes("await requireUser(req)"), 'Vision fallback must require an authenticated PPPP user');
+assert(vision.includes("vision_state:'processing'"), 'Vision fallback must persist that a visual extraction attempt has started');
+assert(vision.includes("vision_state:'success'"), 'Vision fallback must persist successful completion for production observability');
+assert(vision.includes("vision_state:'failed'"), 'Vision fallback must persist failed completion for production observability');
+assert(vision.includes("last_error:'Leximi vizual dështoi: '+safeMessage"), 'Vision failures must remain visible after the modal is reopened');
 assert(vision.includes(".update({"), 'Vision fallback must only enrich the receipt review record');
 assert(vision.includes("status:'review'"), 'Vision fallback must stop at review');
 assert(vision.includes("human_confirmation_required:true"), 'Vision fallback must explicitly preserve human confirmation');
@@ -74,4 +83,4 @@ assert(drive.includes("gmail_tracker_cron_authorized"), 'Drive ingestion must re
 assert(drive.includes("human_confirmation_required:true"), 'Drive ingestion must also stop at human confirmation');
 assert(cronMigration.includes("pppp-expense-drive-inbox-10m"), 'Drive receipt inbox cron must be installed');
 
-console.log('Finance receipt inbox smoke passed: camera/upload stay intact, local OCR is first, unreadable image receipts get authenticated vision autofill, the open modal refreshes automatically, and expense creation remains human-confirmed only.');
+console.log('Finance receipt inbox smoke passed: camera/upload stay intact, local OCR remains first, no_text now starts vision directly with bounded retries and persisted failures, and expense creation remains human-confirmed only.');
