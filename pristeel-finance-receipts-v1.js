@@ -112,21 +112,68 @@ function ensureView(){
   page.appendChild(v);
   return v;
 }
+function setReceiptSurface(open){
+  var page=byId('page-finance'),hub=byId('fin-hub'),grid=byId('fin-hub-grid');
+  var focus=byId('pst-finance-focus'),tools=byId('pst-finance-tools');
+  if(page){
+    if(open) page.setAttribute('data-pst-finance-subview','receipts');
+    else if(page.getAttribute('data-pst-finance-subview')==='receipts') page.removeAttribute('data-pst-finance-subview');
+  }
+  /* Keep the Finance hub itself alive while the receipt inbox is open. The
+     Finance stability/canonical owners use the visible hub as their healthy
+     surface signal; hiding it made their recovery logic reopen the hub and
+     immediately erase the receipt view. We hide only the hub's daily content,
+     not the canonical Finance surface. */
+  if(hub) hub.style.display='';
+  [focus,tools].forEach(function(el){
+    if(!el)return;
+    if(open){
+      if(!el.hasAttribute('data-fin-receipt-prev-display'))el.setAttribute('data-fin-receipt-prev-display',el.style.display||'');
+      el.style.display='none';
+    }else if(el.hasAttribute('data-fin-receipt-prev-display')){
+      var prev=el.getAttribute('data-fin-receipt-prev-display');
+      if(prev)el.style.display=prev;else el.style.removeProperty('display');
+      el.removeAttribute('data-fin-receipt-prev-display');
+    }
+  });
+  /* Before Finance Daily has wrapped the grid in #pst-finance-tools, hide the
+     grid directly. Its DOM remains mounted so Finance's surface-ready guard
+     can still verify the canonical hub without triggering recovery. */
+  if(grid&&!tools){
+    if(open){
+      if(!grid.hasAttribute('data-fin-receipt-prev-display'))grid.setAttribute('data-fin-receipt-prev-display',grid.style.display||'');
+      grid.style.display='none';
+    }else if(grid.hasAttribute('data-fin-receipt-prev-display')){
+      var gp=grid.getAttribute('data-fin-receipt-prev-display');
+      if(gp)grid.style.display=gp;else grid.style.removeProperty('display');
+      grid.removeAttribute('data-fin-receipt-prev-display');
+    }
+  }
+}
 function injectTile(){
   var g=byId('fin-hub-grid'); if(!g||byId(TILE_ID)) return;
-  var d=document.createElement('div'); d.id=TILE_ID;
+  var d=document.createElement('button'); d.id=TILE_ID; d.type='button';
   d.setAttribute('title','Kuponët dhe faturat e shpenzimeve');
-  d.style.cssText='position:relative;border:2.5px solid #46647A;border-radius:12px;padding:16px;cursor:pointer;background:#fff;transition:box-shadow .15s,transform .1s;min-height:110px;display:flex;flex-direction:column';
+  d.setAttribute('aria-label','Hap kuponët dhe faturat e shpenzimeve');
+  d.style.cssText='position:relative;border:2.5px solid #46647A;border-radius:12px;padding:16px;cursor:pointer;background:#fff;transition:box-shadow .15s,transform .1s;min-height:110px;display:flex;flex-direction:column;text-align:left;width:100%;font:inherit;color:inherit';
   d.onmouseover=function(){this.style.boxShadow='0 5px 18px rgba(30,40,50,.14)';this.style.transform='translateY(-1px)';};
   d.onmouseout=function(){this.style.boxShadow='none';this.style.transform='none';};
-  d.onclick=function(){window.finReceiptShow();};
+  d.addEventListener('click',function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    window.finReceiptShow();
+  });
   d.innerHTML='<div style="position:absolute;top:0;left:0;right:0;height:5px;background:#46647A;border-radius:9px 9px 0 0"></div>'
     +'<div style="font-size:22px;margin:6px 0 8px">📷</div>'
     +'<div style="font-size:13.5px;font-weight:650;color:var(--text)">Kuponët e shpenzimeve</div>'
     +'<div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4">Foto/PDF, OCR lokal dhe kontroll para regjistrimit</div>';
   g.appendChild(d);
 }
-function hideReceipt(){ var v=byId(VIEW_ID); if(v) v.style.display='none'; stopPolling(); }
+function hideReceipt(){
+  var v=byId(VIEW_ID); if(v) v.style.display='none';
+  setReceiptSurface(false);
+  stopPolling();
+}
 function installHubHook(){
   var orig=window.finShowHub;
   if(typeof orig==='function'&&!orig.__receiptInboxV1){
@@ -178,8 +225,9 @@ function startPollingIfNeeded(){
 }
 window.finReceiptShow=function(){
   var v=ensureView(); if(!v) return;
-  var hub=byId('fin-hub'),tabs=byId('fin-tabs'); if(hub)hub.style.display='none'; if(tabs)tabs.style.display='none';
+  var tabs=byId('fin-tabs'); if(tabs)tabs.style.display='none';
   ['inv','supp','exp','atk','tax','aging','bg','oc'].forEach(function(x){var n=byId('fin-view-'+x);if(n)n.style.display='none';});
+  setReceiptSurface(true);
   v.style.display=''; clearMessage(); loadRows(false);
 };
 window.finReceiptBack=function(){hideReceipt();if(typeof finShowHub==='function')finShowHub();};
