@@ -35,10 +35,15 @@ jobs:
               if not starts:
                   raise SystemExit(f'{path}: no hunks')
               starts.append(len(lines))
+              hunks=[]
               for h in range(len(starts)-1):
-                  block=lines[starts[h]+1:starts[h+1]]
+                  header=lines[starts[h]]
+                  m=re.match(r'@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@',header)
+                  if not m:
+                      raise SystemExit(f'{path}: bad hunk header {header.strip()}')
+                  old_start=int(m.group(1))
                   old=[]; new=[]
-                  for l in block:
+                  for l in lines[starts[h]+1:starts[h+1]]:
                       if l.startswith('\\ No newline'):
                           continue
                       if l.startswith(' '):
@@ -50,10 +55,18 @@ jobs:
                   old_s=''.join(old); new_s=''.join(new)
                   if not old_s:
                       raise SystemExit(f'{path}: empty old hunk {h+1}')
+                  hunks.append((old_start,h+1,old_s,new_s))
+              for old_start,hnum,old_s,new_s in sorted(hunks,key=lambda x:x[0],reverse=True):
                   n=text.count(old_s)
-                  if n != 1:
-                      raise SystemExit(f'{path}: hunk {h+1} old block matches {n} times in {target}')
-                  text=text.replace(old_s,new_s,1)
+                  if n==1:
+                      text=text.replace(old_s,new_s,1)
+                      continue
+                  current_lines=text.splitlines(keepends=True)
+                  pos=sum(len(x) for x in current_lines[:max(0,old_start-1)])
+                  if text[pos:pos+len(old_s)]==old_s:
+                      text=text[:pos]+new_s+text[pos+len(old_s):]
+                      continue
+                  raise SystemExit(f'{path}: hunk {hnum} old block matches {n} times in {target}')
               Path(target).write_text(text,encoding='utf-8')
               print(f'Applied {path} -> {target}')
 
@@ -67,11 +80,12 @@ jobs:
           node --check pristeel-native-ui-v3.js
           node --check pristeel-native-ui-v4-core.js
           node --check pristeel-platform-readability-v1.js
-      - name: Commit isolated source changes
+      - name: Commit isolated source changes and remove temporary scaffolding
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add pristeel-workspace-architecture-v1.js pristeel-native-ui-v3.js pristeel-native-ui-v4-core.js pristeel-platform-readability-v1.js
+          git rm -f .github/workflows/apply-home-ops-patch-temp.yml tools/home-ops-patches/*
           git commit -m "Structural create owner and operational Home"
           git push
