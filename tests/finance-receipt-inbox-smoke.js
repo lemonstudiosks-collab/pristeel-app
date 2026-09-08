@@ -2,6 +2,8 @@ const fs = require('fs');
 const assert = require('assert');
 
 const ui = fs.readFileSync('pristeel-finance-receipts-v1.js','utf8');
+const stability = fs.readFileSync('pristeel-finance-stability-v2.js','utf8');
+const canonical = fs.readFileSync('pristeel-finance-canonical-v1.js','utf8');
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 const migration = fs.readFileSync('supabase/migrations/20260904052000_expense_receipt_inbox_v1.sql','utf8');
 const cronMigration = fs.readFileSync('supabase/migrations/20260904053500_expense_drive_inbox_cron_v1.sql','utf8');
@@ -26,6 +28,21 @@ assert(!/window\.showPage\s*=/.test(ui), 'Receipt inbox must not take ownership 
 assert(!/window\.finSwitchTab\s*=/.test(ui), 'Receipt inbox must not take ownership of the Finance tab router');
 assert(ui.includes('window.finShowHub=wrapped'), 'Receipt inbox may only decorate the Finance hub so its tile survives hub rerenders');
 
+// Regression: Finance recovery considers its mounted hub the healthy surface. The
+// receipt inbox must therefore keep that canonical surface alive instead of hiding
+// it and triggering a late recovery that makes the click look like a no-op.
+assert(stability.includes("computedVisible(hub)&&grid&&grid.children&&grid.children.length>0"), 'Finance stability still uses the canonical hub as its ready signal');
+assert(canonical.includes("computedVisible(hub)&&grid&&grid.children&&grid.children.length"), 'Canonical Finance guard still accepts the mounted hub as healthy');
+assert(ui.includes("function setReceiptSurface(open)"), 'Receipt inbox must own an explicit subview surface transition');
+assert(ui.includes("page.setAttribute('data-pst-finance-subview','receipts')"), 'Receipt view must mark its Finance subview state');
+assert(ui.includes("if(hub) hub.style.display=''"), 'Opening receipts must keep the canonical Finance hub mounted');
+assert(!ui.includes("if(hub)hub.style.display='none'"), 'Receipt opening must not hide the Finance hub and trigger recovery');
+assert(ui.includes("var d=document.createElement('button')"), 'Receipt tile must be a real button control');
+assert(ui.includes("d.addEventListener('click'"), 'Receipt tile must have an explicit click handler');
+assert(ui.includes("e.stopPropagation()"), 'Receipt click must not leak into competing Finance click owners');
+assert(ui.includes("setReceiptSurface(true)"), 'Receipt click must switch to the receipt surface');
+assert(ui.includes("setReceiptSurface(false)"), 'Back navigation must restore the normal Finance surface');
+
 assert(migration.includes('create table if not exists public.pppp_expense_receipts_v1'), 'Receipt inbox table must be created');
 assert(migration.includes("values('expense-receipts','expense-receipts',false"), 'Receipt storage bucket must remain private');
 assert(migration.includes('create or replace function public.pppp_confirm_expense_receipt_v1'), 'Human-confirmed expense RPC must exist');
@@ -41,4 +58,4 @@ assert(drive.includes("gmail_tracker_cron_authorized"), 'Drive ingestion must re
 assert(drive.includes("human_confirmation_required:true"), 'Drive ingestion must also stop at human confirmation');
 assert(cronMigration.includes("pppp-expense-drive-inbox-10m"), 'Drive receipt inbox cron must be installed');
 
-console.log('Finance receipt inbox smoke passed: isolated Finance UI, local OCR, private storage and human confirmation gate verified.');
+console.log('Finance receipt inbox smoke passed: click surface remains open, upload/OCR path is isolated, and human confirmation gate is preserved.');
