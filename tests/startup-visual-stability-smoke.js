@@ -63,25 +63,18 @@ async function firstPaintHomeLayoutCase(){
   let created=0;
   w.pstWsToggleCreate=function(e){if(e){e.preventDefault();e.stopPropagation();}const wrap=w.document.getElementById('pst-ws-create');wrap.classList.toggle('open');wrap.querySelector('.pst-ws-create-main').setAttribute('aria-expanded',wrap.classList.contains('open')?'true':'false');};
   w.pstWsCreate=function(){created++;};
-  w.PSTNativeUiV4={apply(){
-    w.document.documentElement.classList.add('pst-native-ui-v4-ready');
-    if(!w.document.getElementById('late-v4-css')){const s=w.document.createElement('style');s.id='late-v4-css';s.textContent='#pst-native-home-v4 .pn-head p{font-size:11.5px!important}#pst-native-home-v4 .pn-kicker{font-size:9px!important}#pst-native-home-v4 .pst-live-command-shell{min-height:150px!important}#pst-native-home-v4 .pn-panel>header h2{font-size:9px!important}#pst-native-home-v4 .pn-work-row .pn-row-title{font-size:8px!important}#pst-native-home-v4 .pn-pulse-item b{font-size:11px!important}';w.document.head.appendChild(s);}
-    return true;
-  }};
+  w.PSTNativeUiV4={apply(){w.document.documentElement.classList.add('pst-native-ui-v4-ready');if(!w.document.getElementById('late-v4-css')){const s=w.document.createElement('style');s.id='late-v4-css';s.textContent='#pst-native-home-v4 .pn-head p{font-size:11.5px!important}#pst-native-home-v4 .pn-kicker{font-size:9px!important}#pst-native-home-v4 .pst-live-command-shell{min-height:150px!important}#pst-native-home-v4 .pn-panel>header h2{font-size:9px!important}#pst-native-home-v4 .pn-work-row .pn-row-title{font-size:8px!important}#pst-native-home-v4 .pn-pulse-item b{font-size:11px!important}';w.document.head.appendChild(s);}return true;}};
   w.eval(entry);
   w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
   w.PSTUiOwnershipCleanupV1.apply();
-  const snapshot=()=>{
-    const css=sel=>w.getComputedStyle(w.document.querySelector(sel));
-    return {subtitle:css('#pst-native-home-v4 .pn-head p').fontSize,kicker:css('#pst-native-home-v4 .pn-kicker').fontSize,commandMinHeight:css('#pst-native-home-v4 .pst-live-command-shell').minHeight,panelTitle:css('#pst-native-home-v4 .pn-panel>header h2').fontSize,rowTitle:css('#pst-native-home-v4 .pn-work-row .pn-row-title').fontSize,pulseValue:css('#pst-native-home-v4 .pn-pulse-item b').fontSize};
-  };
+  const snapshot=()=>{const css=sel=>w.getComputedStyle(w.document.querySelector(sel));return {subtitle:css('#pst-native-home-v4 .pn-head p').fontSize,kicker:css('#pst-native-home-v4 .pn-kicker').fontSize,commandMinHeight:css('#pst-native-home-v4 .pst-live-command-shell').minHeight,panelTitle:css('#pst-native-home-v4 .pn-panel>header h2').fontSize,rowTitle:css('#pst-native-home-v4 .pn-work-row .pn-row-title').fontSize,pulseValue:css('#pst-native-home-v4 .pn-pulse-item b').fontSize};};
   const first=snapshot();
   assert.deepStrictEqual(first,{subtitle:'14px',kicker:'12px',commandMinHeight:'64px',panelTitle:'14px',rowTitle:'12px',pulseValue:'18px'},'First-paint four-zone Home contract is not the intended stable size');
   assert.strictEqual(w.document.getElementById('pst-native-home-v4').getAttribute('data-pst-font-lock'),'1','Home must be excluded from late readability resizing');
   assert.strictEqual(w.document.querySelector('.pst-live-input').getAttribute('placeholder'),'Pyet PPPP për një projekt…','Home command copy must match the supported project-data scope');
-  const before=w.document.getElementById('pst-ws-create').innerHTML;
+  const canonicalClosed=w.document.getElementById('pst-ws-create').innerHTML;
   w.PSTNativeUiV4.apply();
-  assert.strictEqual(w.document.getElementById('pst-ws-create').innerHTML,before,'Native UI apply must not rewrite the workspace-owned + Krijo DOM');
+  assert.strictEqual(w.document.getElementById('pst-ws-create').innerHTML,canonicalClosed,'Native UI apply must not rewrite the workspace-owned + Krijo DOM');
   w.pstWsToggleCreate({preventDefault(){},stopPropagation(){}});
   assert(w.document.getElementById('pst-ws-create').classList.contains('open'),'+ Krijo must open its dropdown');
   assert.strictEqual(w.document.querySelector('.pst-ws-create-main').getAttribute('aria-expanded'),'true','+ Krijo aria-expanded must match open state');
@@ -89,15 +82,15 @@ async function firstPaintHomeLayoutCase(){
   assert.strictEqual(w.document.querySelectorAll('.pst-ws-create-item').length,4,'+ Krijo must preserve exactly four canonical options');
   const actions=Array.from(w.document.querySelectorAll('.pst-ws-create-item')).map(x=>x.getAttribute('onclick')||'').join('|');
   for(const type of ['project','offer','invoice','task'])assert(actions.includes(`pstWsCreate('${type}')`),`Missing create option: ${type}`);
-  const late=w.document.createElement('style');
-  late.textContent='#page-workspace-home.active.pst-ux-home .pn-head p{font-size:18px!important}#page-workspace-home.active.pst-ux-home .pst-live-command-shell{min-height:180px!important}#page-workspace-home.active.pst-ux-home .pn-panel>header h2{font-size:20px!important}#page-workspace-home.active.pst-ux-home .pn-work-row .pn-row-title{font-size:18px!important}#page-workspace-home.active.pst-ux-home .pn-pulse-item b{font-size:24px!important}';
-  w.document.head.appendChild(late);
+  w.pstWsToggleCreate({preventDefault(){},stopPropagation(){}});
+  assert(!w.document.getElementById('pst-ws-create').classList.contains('open'),'+ Krijo must return to closed state');
+  assert.strictEqual(w.document.querySelector('.pst-ws-create-main').getAttribute('aria-expanded'),'false','aria-expanded must return to false when closed');
+  assert.strictEqual(w.document.getElementById('pst-ws-create').innerHTML,canonicalClosed,'Open/close may change state attributes but must preserve canonical structure');
+  const late=w.document.createElement('style');late.textContent='#page-workspace-home.active.pst-ux-home .pn-head p{font-size:18px!important}#page-workspace-home.active.pst-ux-home .pst-live-command-shell{min-height:180px!important}#page-workspace-home.active.pst-ux-home .pn-panel>header h2{font-size:20px!important}#page-workspace-home.active.pst-ux-home .pn-work-row .pn-row-title{font-size:18px!important}#page-workspace-home.active.pst-ux-home .pn-pulse-item b{font-size:24px!important}';w.document.head.appendChild(late);
   w.document.getElementById('page-workspace-home').classList.add('pst-ux-home');
-  await wait(1500);
-  w.PSTNativeUiV4.apply();
-  await wait(1650);
+  await wait(1500);w.PSTNativeUiV4.apply();await wait(1650);
   assert.deepStrictEqual(snapshot(),first,'Home typography or command dimensions changed after ~3 seconds');
-  assert.strictEqual(w.document.getElementById('pst-ws-create').innerHTML,before,'Late Native UI apply rewrote + Krijo');
+  assert.strictEqual(w.document.getElementById('pst-ws-create').innerHTML,canonicalClosed,'Late Native UI apply rewrote + Krijo');
   assert.strictEqual(created,0,'Regression smoke must not create any object');
   dom.window.close();
 }
