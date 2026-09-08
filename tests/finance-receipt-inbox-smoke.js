@@ -9,6 +9,7 @@ const migration = fs.readFileSync('supabase/migrations/20260904052000_expense_re
 const cronMigration = fs.readFileSync('supabase/migrations/20260904053500_expense_drive_inbox_cron_v1.sql','utf8');
 const localOcr = fs.readFileSync('supabase/functions/local-ocr-worker/index.ts','utf8');
 const upload = fs.readFileSync('supabase/functions/pppp-expense-receipt-upload/index.ts','utf8');
+const vision = fs.readFileSync('supabase/functions/pppp-expense-receipt-vision/index.ts','utf8');
 const drive = fs.readFileSync('supabase/functions/pppp-expense-drive-ingest/index.ts','utf8');
 
 assert.doesNotThrow(() => new Function(ui), 'Receipt inbox browser module must parse as JavaScript');
@@ -27,6 +28,10 @@ assert(ui.includes("canvas.toBlob"), 'Camera flow must capture the live video fr
 assert(ui.includes("uploadReceiptFile(file,'camera',null)"), 'Captured camera image must reuse the canonical receipt upload path');
 assert(ui.includes("if(fallback)fallback.click()"), 'Devices without MediaDevices support must retain the native camera/file fallback');
 assert(ui.includes("edgeFetch('pppp-expense-receipt-upload'"), 'Receipt upload must use the authenticated receipt Edge Function');
+assert(ui.includes("edgeFetch('pppp-expense-receipt-vision'"), 'Unreadable image receipts must have an authenticated vision fallback');
+assert(ui.includes("fresh.status==='no_text'"), 'Active receipt polling must detect a local OCR no-text result');
+assert(ui.includes("setInterval(async function()"), 'The open review must refresh live processing status rather than stay stale');
+assert(ui.includes("finReceiptVisionRetry"), 'Operator must be able to retry visual extraction without re-uploading the receipt');
 assert(ui.includes("rpc/pppp_confirm_expense_receipt_v1"), 'Receipt confirmation must use the dedicated confirmation RPC');
 assert(ui.includes("rpc/pppp_ignore_expense_receipt_v1"), 'Receipt ignore flow must use the dedicated ignore RPC');
 assert(ui.includes("confirm('Konfirmon që i ke kontrolluar të dhënat"), 'Expense creation must retain an explicit human confirmation gate');
@@ -34,14 +39,11 @@ assert(!/window\.showPage\s*=/.test(ui), 'Receipt inbox must not take ownership 
 assert(!/window\.finSwitchTab\s*=/.test(ui), 'Receipt inbox must not take ownership of the Finance tab router');
 assert(ui.includes('window.finShowHub=wrapped'), 'Receipt inbox may only decorate the Finance hub so its tile survives hub rerenders');
 
-// Regression: Finance recovery considers its mounted hub the healthy surface. The
-// receipt inbox must therefore keep that canonical surface alive instead of hiding
-// it and triggering a late recovery that makes the click look like a no-op.
 assert(stability.includes("computedVisible(hub)&&grid&&grid.children&&grid.children.length>0"), 'Finance stability still uses the canonical hub as its ready signal');
 assert(canonical.includes("computedVisible(hub)&&grid&&grid.children&&grid.children.length"), 'Canonical Finance guard still accepts the mounted hub as healthy');
 assert(ui.includes("function setReceiptSurface(open)"), 'Receipt inbox must own an explicit subview surface transition');
 assert(ui.includes("page.setAttribute('data-pst-finance-subview','receipts')"), 'Receipt view must mark its Finance subview state');
-assert(ui.includes("if(hub) hub.style.display=''"), 'Opening receipts must keep the canonical Finance hub mounted');
+assert(ui.includes("if(hub)hub.style.display=''"), 'Opening receipts must keep the canonical Finance hub mounted');
 assert(!ui.includes("if(hub)hub.style.display='none'"), 'Receipt opening must not hide the Finance hub and trigger recovery');
 assert(ui.includes("var d=document.createElement('button')"), 'Receipt tile must be a real button control');
 assert(ui.includes("d.addEventListener('click'"), 'Receipt tile must have an explicit click handler');
@@ -59,9 +61,17 @@ assert(migration.includes("status='review'"), 'OCR completion must stop at revie
 assert(localOcr.includes('expense_receipt_id'), 'Local OCR worker must understand receipt jobs');
 assert(localOcr.includes("service:'local-ocr-worker-v4'"), 'Local OCR worker receipt-capable version must be exposed');
 assert(upload.includes("human_confirmation_required:true"), 'Upload Edge Function must advertise the human confirmation gate');
-assert(upload.includes("no_paid_api:true"), 'Upload Edge Function must remain local-first/no-paid-OCR');
+assert(upload.includes("no_paid_api:true"), 'Upload Edge Function remains local-first; paid vision is only a fallback');
+assert(vision.includes("OPENAI_API_KEY"), 'Vision fallback must use the existing server-side provider secret, never a browser key');
+assert(vision.includes("input_image"), 'Vision fallback must actually read the receipt image');
+assert(vision.includes("await requireUser(req)"), 'Vision fallback must require an authenticated PPPP user');
+assert(vision.includes(".update({"), 'Vision fallback must only enrich the receipt review record');
+assert(vision.includes("status:'review'"), 'Vision fallback must stop at review');
+assert(vision.includes("human_confirmation_required:true"), 'Vision fallback must explicitly preserve human confirmation');
+assert(vision.includes("expense_created:false"), 'Vision fallback must never create an expense by itself');
+assert(!vision.includes(".from('expenses').insert"), 'Vision fallback must not insert into expenses');
 assert(drive.includes("gmail_tracker_cron_authorized"), 'Drive ingestion must retain cron-secret authentication');
 assert(drive.includes("human_confirmation_required:true"), 'Drive ingestion must also stop at human confirmation');
 assert(cronMigration.includes("pppp-expense-drive-inbox-10m"), 'Drive receipt inbox cron must be installed');
 
-console.log('Finance receipt inbox smoke passed: surface stays open, Bëj foto uses a real browser camera with fallback, upload/OCR stays isolated, and human confirmation is preserved.');
+console.log('Finance receipt inbox smoke passed: camera/upload stay intact, local OCR is first, unreadable image receipts get authenticated vision autofill, the open modal refreshes automatically, and expense creation remains human-confirmed only.');
