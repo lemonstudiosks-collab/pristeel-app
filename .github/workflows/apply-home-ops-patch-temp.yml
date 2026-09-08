@@ -22,48 +22,48 @@ jobs:
           import re, difflib
 
           def apply_patch(path):
-              lines=Path(path).read_text(encoding='utf-8').splitlines(keepends=True)
-              target=next((line[6:].strip() for line in lines if line.startswith('+++ b/')),None)
+              plines=Path(path).read_text(encoding='utf-8').splitlines(keepends=True)
+              target=next((line[6:].strip() for line in plines if line.startswith('+++ b/')),None)
               if not target: raise SystemExit(f'{path}: missing target')
-              text=Path(target).read_text(encoding='utf-8')
-              starts=[i for i,l in enumerate(lines) if l.startswith('@@')]
+              src=Path(target).read_text(encoding='utf-8').splitlines(keepends=True)
+              starts=[i for i,l in enumerate(plines) if l.startswith('@@')]
               if not starts: raise SystemExit(f'{path}: no hunks')
-              starts.append(len(lines)); hunks=[]
+              starts.append(len(plines)); hunks=[]
               for h in range(len(starts)-1):
-                  header=lines[starts[h]]
+                  header=plines[starts[h]]
                   m=re.match(r'@@ -(\d+)(?:,(\d+))? \+\d+(?:,\d+)? @@',header)
                   if not m: raise SystemExit(f'{path}: bad hunk header {header.strip()}')
                   old_start=int(m.group(1)); old_count=int(m.group(2) or 1)
                   old=[]; new=[]
-                  for l in lines[starts[h]+1:starts[h+1]]:
+                  for l in plines[starts[h]+1:starts[h+1]]:
                       if l.startswith('\\ No newline'): continue
                       if l.rstrip('\n')=='-})();+})();': old.append('})();\n'); new.append('})();\n'); continue
                       if l.startswith(' '): old.append(l[1:]); new.append(l[1:])
                       elif l.startswith('-') and not l.startswith('---'): old.append(l[1:])
                       elif l.startswith('+') and not l.startswith('+++'): new.append(l[1:])
-                  old_s=''.join(old); new_s=''.join(new)
-                  if old_s==new_s:
-                      print(f'Skipping no-op hunk {h+1} in {path}'); continue
-                  if not old_s: raise SystemExit(f'{path}: empty old hunk {h+1}')
-                  hunks.append((old_start,old_count,h+1,old_s,new_s))
-              for old_start,old_count,hnum,old_s,new_s in sorted(hunks,key=lambda x:x[0],reverse=True):
-                  n=text.count(old_s)
-                  if n==1:
-                      text=text.replace(old_s,new_s,1); continue
-                  src=text.splitlines(keepends=True)
+                  if old==new:
+                      print(f'Skip no-op hunk {h+1}: {path}'); continue
+                  if not old: raise SystemExit(f'{path}: empty old hunk {h+1}')
+                  hunks.append((old_start,old_count,h+1,old,new))
+              for old_start,old_count,hnum,old,new in sorted(hunks,key=lambda x:x[0],reverse=True):
+                  old_s=''.join(old); full=''.join(src)
+                  if full.count(old_s)==1:
+                      pos=full.index(old_s); prefix=full[:pos].splitlines(keepends=True); replacement=''.join(new)
+                      full=full[:pos]+replacement+full[pos+len(old_s):]
+                      src=full.splitlines(keepends=True); continue
                   best=None
-                  for st in range(max(0,old_start-7),min(len(src),old_start+6)):
-                      for ln in range(max(1,old_count-8),min(len(src)-st,old_count+8)+1):
-                          cand=''.join(src[st:st+ln])
-                          ratio=difflib.SequenceMatcher(None,old_s,cand,autojunk=False).ratio()
-                          if best is None or ratio>best[0]: best=(ratio,st,ln,cand)
-                  if best and best[0]>=0.72:
-                      ratio,st,ln,cand=best
-                      pos=sum(len(x) for x in src[:st]); end=pos+len(cand)
-                      print(f'Fuzzy hunk {hnum} in {path}: ratio={ratio:.3f}, lines={st+1}:{st+ln}')
-                      text=text[:pos]+new_s+text[end:]; continue
-                  raise SystemExit(f'{path}: hunk {hnum} unmatched; best={best[0] if best else 0:.3f} in {target}')
-              Path(target).write_text(text,encoding='utf-8')
+                  expected=max(0,old_start-1)
+                  for st in range(max(0,expected-6),min(len(src),expected+7)):
+                      for ln in range(max(1,old_count-6),min(len(src)-st,old_count+6)+1):
+                          cand=src[st:st+ln]
+                          ratio=difflib.SequenceMatcher(None,old,cand,autojunk=False).ratio()
+                          if best is None or ratio>best[0]: best=(ratio,st,ln)
+                  if not best or best[0]<0.66:
+                      raise SystemExit(f'{path}: hunk {hnum} unmatched; best={best[0] if best else 0:.3f} in {target}')
+                  ratio,st,ln=best
+                  print(f'Bounded hunk {hnum}: {path} ratio={ratio:.3f} lines={st+1}:{st+ln}')
+                  src[st:st+ln]=new
+              Path(target).write_text(''.join(src),encoding='utf-8')
               print(f'Applied {path} -> {target}')
 
           for p in sorted(Path('tools/home-ops-patches').glob('*.patch')): apply_patch(p)
