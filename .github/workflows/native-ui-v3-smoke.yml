@@ -10,14 +10,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install functional smoke dependency
+        run: npm install --no-save --ignore-scripts jsdom@26.1.0
       - name: Syntax check early presentation owner
         run: |
           node --check pristeel-native-ui-v3.js
           node --check pristeel-native-ui-v4-core.js
+          node --check pristeel-workspace-architecture-v1.js
           node --check pristeel-roles.js
       - name: Verify native UI contracts
         run: |
           node tests/native-ui-v3-smoke.js
+          node tests/create-control-structural-smoke.js
           node tests/ui-ownership-cleanup-smoke.js
           node tests/home-single-owner-albanian-smoke.js
       - name: Verify active runtime manifest
@@ -32,4 +36,6 @@ jobs:
           grep -Fq 'pristeel-native-ui-v4-core.js?v=20260903-singleowner1' _site/pristeel-native-ui-v3.js
           grep -Fq '#4F97AF' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'Pasqyra operative' _site/pristeel-native-ui-v4-core.js
+          grep -Fq 'PËR TY TANI' _site/pristeel-native-ui-v4-core.js
+          grep -Fq 'pn-portfolio-pulse' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'PPPP gjeti punë të pambyllur' _site/pristeel-native-ui-v3.js
