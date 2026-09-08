@@ -19,64 +19,54 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          import re
+          import re, difflib
 
           def apply_patch(path):
               lines=Path(path).read_text(encoding='utf-8').splitlines(keepends=True)
-              target=None
-              for line in lines:
-                  if line.startswith('+++ b/'):
-                      target=line[6:].strip()
-                      break
-              if not target:
-                  raise SystemExit(f'{path}: missing target')
+              target=next((line[6:].strip() for line in lines if line.startswith('+++ b/')),None)
+              if not target: raise SystemExit(f'{path}: missing target')
               text=Path(target).read_text(encoding='utf-8')
               starts=[i for i,l in enumerate(lines) if l.startswith('@@')]
-              if not starts:
-                  raise SystemExit(f'{path}: no hunks')
-              starts.append(len(lines))
-              hunks=[]
+              if not starts: raise SystemExit(f'{path}: no hunks')
+              starts.append(len(lines)); hunks=[]
               for h in range(len(starts)-1):
                   header=lines[starts[h]]
-                  m=re.match(r'@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@',header)
-                  if not m:
-                      raise SystemExit(f'{path}: bad hunk header {header.strip()}')
-                  old_start=int(m.group(1))
+                  m=re.match(r'@@ -(\d+)(?:,(\d+))? \+\d+(?:,\d+)? @@',header)
+                  if not m: raise SystemExit(f'{path}: bad hunk header {header.strip()}')
+                  old_start=int(m.group(1)); old_count=int(m.group(2) or 1)
                   old=[]; new=[]
                   for l in lines[starts[h]+1:starts[h+1]]:
-                      if l.startswith('\\ No newline'):
-                          continue
-                      if l.rstrip('\n')=='-})();+})();':
-                          old.append('})();\n'); new.append('})();\n'); continue
-                      if l.startswith(' '):
-                          old.append(l[1:]); new.append(l[1:])
-                      elif l.startswith('-') and not l.startswith('---'):
-                          old.append(l[1:])
-                      elif l.startswith('+') and not l.startswith('+++'):
-                          new.append(l[1:])
+                      if l.startswith('\\ No newline'): continue
+                      if l.rstrip('\n')=='-})();+})();': old.append('})();\n'); new.append('})();\n'); continue
+                      if l.startswith(' '): old.append(l[1:]); new.append(l[1:])
+                      elif l.startswith('-') and not l.startswith('---'): old.append(l[1:])
+                      elif l.startswith('+') and not l.startswith('+++'): new.append(l[1:])
                   old_s=''.join(old); new_s=''.join(new)
                   if old_s==new_s:
-                      print(f'Skipping no-op hunk {h+1} in {path}')
-                      continue
-                  if not old_s:
-                      raise SystemExit(f'{path}: empty old hunk {h+1}')
-                  hunks.append((old_start,h+1,old_s,new_s))
-              for old_start,hnum,old_s,new_s in sorted(hunks,key=lambda x:x[0],reverse=True):
+                      print(f'Skipping no-op hunk {h+1} in {path}'); continue
+                  if not old_s: raise SystemExit(f'{path}: empty old hunk {h+1}')
+                  hunks.append((old_start,old_count,h+1,old_s,new_s))
+              for old_start,old_count,hnum,old_s,new_s in sorted(hunks,key=lambda x:x[0],reverse=True):
                   n=text.count(old_s)
                   if n==1:
-                      text=text.replace(old_s,new_s,1)
-                      continue
-                  current_lines=text.splitlines(keepends=True)
-                  pos=sum(len(x) for x in current_lines[:max(0,old_start-1)])
-                  if text[pos:pos+len(old_s)]==old_s:
-                      text=text[:pos]+new_s+text[pos+len(old_s):]
-                      continue
-                  raise SystemExit(f'{path}: hunk {hnum} old block matches {n} times in {target}')
+                      text=text.replace(old_s,new_s,1); continue
+                  src=text.splitlines(keepends=True)
+                  best=None
+                  for st in range(max(0,old_start-7),min(len(src),old_start+6)):
+                      for ln in range(max(1,old_count-8),min(len(src)-st,old_count+8)+1):
+                          cand=''.join(src[st:st+ln])
+                          ratio=difflib.SequenceMatcher(None,old_s,cand,autojunk=False).ratio()
+                          if best is None or ratio>best[0]: best=(ratio,st,ln,cand)
+                  if best and best[0]>=0.72:
+                      ratio,st,ln,cand=best
+                      pos=sum(len(x) for x in src[:st]); end=pos+len(cand)
+                      print(f'Fuzzy hunk {hnum} in {path}: ratio={ratio:.3f}, lines={st+1}:{st+ln}')
+                      text=text[:pos]+new_s+text[end:]; continue
+                  raise SystemExit(f'{path}: hunk {hnum} unmatched; best={best[0] if best else 0:.3f} in {target}')
               Path(target).write_text(text,encoding='utf-8')
               print(f'Applied {path} -> {target}')
 
-          for p in sorted(Path('tools/home-ops-patches').glob('*.patch')):
-              apply_patch(p)
+          for p in sorted(Path('tools/home-ops-patches').glob('*.patch')): apply_patch(p)
           PY
       - name: Verify isolated source syntax
         run: |
