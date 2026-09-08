@@ -18,8 +18,14 @@ const receiptMarker = "pristeel-finance-receipts-v1.js?v=20260905-1";
 assert(bootstrap.includes(receiptMarker), 'Receipt inbox must be loaded by the ordered bootstrap');
 assert(bootstrap.indexOf(receiptMarker) > bootstrap.indexOf(stabilityMarker), 'Receipt inbox must load after the Finance stability owner');
 
-assert(ui.includes("accept=\"image/*\" capture=\"environment\""), 'Camera capture input must request the environment camera');
+assert(ui.includes("accept=\"image/*\" capture=\"environment\""), 'Camera file input fallback must still request the environment camera on supporting devices');
 assert(ui.includes("accept=\"image/*,application/pdf\""), 'Receipt inbox must accept image and PDF upload');
+assert(ui.includes('onclick="finReceiptCameraOpen()"'), 'Bëj foto must open the real browser camera flow instead of the file picker');
+assert(ui.includes("navigator.mediaDevices.getUserMedia"), 'Desktop camera flow must request a real browser MediaStream');
+assert(ui.includes("facingMode:{ideal:'environment'}"), 'Camera flow should prefer the rear/environment camera when available');
+assert(ui.includes("canvas.toBlob"), 'Camera flow must capture the live video frame as an image');
+assert(ui.includes("uploadReceiptFile(file,'camera',null)"), 'Captured camera image must reuse the canonical receipt upload path');
+assert(ui.includes("if(fallback)fallback.click()"), 'Devices without MediaDevices support must retain the native camera/file fallback');
 assert(ui.includes("edgeFetch('pppp-expense-receipt-upload'"), 'Receipt upload must use the authenticated receipt Edge Function');
 assert(ui.includes("rpc/pppp_confirm_expense_receipt_v1"), 'Receipt confirmation must use the dedicated confirmation RPC');
 assert(ui.includes("rpc/pppp_ignore_expense_receipt_v1"), 'Receipt ignore flow must use the dedicated ignore RPC');
@@ -58,4 +64,4 @@ assert(drive.includes("gmail_tracker_cron_authorized"), 'Drive ingestion must re
 assert(drive.includes("human_confirmation_required:true"), 'Drive ingestion must also stop at human confirmation');
 assert(cronMigration.includes("pppp-expense-drive-inbox-10m"), 'Drive receipt inbox cron must be installed');
 
-console.log('Finance receipt inbox smoke passed: click surface remains open, upload/OCR path is isolated, and human confirmation gate is preserved.');
+console.log('Finance receipt inbox smoke passed: surface stays open, Bëj foto uses a real browser camera with fallback, upload/OCR stays isolated, and human confirmation is preserved.');

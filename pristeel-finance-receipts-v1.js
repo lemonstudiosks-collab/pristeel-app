@@ -11,6 +11,7 @@ var _projects=[];
 var _projectsLoaded=false;
 var _pollTimer=null;
 var _activeReceiptId=null;
+var _cameraStream=null;
 
 function esc(v){
   return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -94,7 +95,7 @@ function ensureView(){
           +'<div style="font-size:11.5px;color:var(--text3);margin-top:4px">Foto/PDF → OCR lokal → kontroll njerëzor → regjistrim në Shpenzime operative.</div></div>'
         +'<div style="display:flex;gap:7px;flex-wrap:wrap">'
           +'<button class="btn btn-sm" onclick="finReceiptBack()">← Të gjitha financat</button>'
-          +'<button class="btn btn-primary btn-sm" onclick="document.getElementById(\'fin-receipt-camera-v1\').click()">📷 Bëj foto</button>'
+          +'<button class="btn btn-primary btn-sm" onclick="finReceiptCameraOpen()">📷 Bëj foto</button>'
           +'<button class="btn btn-sm" onclick="document.getElementById(\'fin-receipt-file-v1\').click()">Ngarko foto/PDF</button>'
           +'<button class="btn btn-sm" onclick="finReceiptReload()">Rifresko</button>'
         +'</div>'
@@ -169,8 +170,16 @@ function injectTile(){
     +'<div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4">Foto/PDF, OCR lokal dhe kontroll para regjistrimit</div>';
   g.appendChild(d);
 }
+function stopCamera(){
+  if(_cameraStream){
+    try{_cameraStream.getTracks().forEach(function(t){t.stop();});}catch(e){}
+    _cameraStream=null;
+  }
+}
 function hideReceipt(){
   var v=byId(VIEW_ID); if(v) v.style.display='none';
+  stopCamera();
+  var cm=byId('fin-receipt-camera-modal-v1');if(cm)cm.style.display='none';
   setReceiptSurface(false);
   stopPolling();
 }
@@ -232,20 +241,83 @@ window.finReceiptShow=function(){
 };
 window.finReceiptBack=function(){hideReceipt();if(typeof finShowHub==='function')finShowHub();};
 window.finReceiptReload=function(){loadRows(false);};
-window.finReceiptUpload=async function(input,source){
-  var f=input&&input.files&&input.files[0]; if(!f) return;
-  if(f.size>20*1024*1024){showMessage('Skedari është më i madh se 20 MB.','error');input.value='';return;}
+
+async function uploadReceiptFile(f,source,input){
+  if(!f) return;
+  if(f.size>20*1024*1024){showMessage('Skedari është më i madh se 20 MB.','error');if(input)input.value='';return;}
   showMessage('Po ruhet kuponi dhe po dërgohet në OCR lokal…','ok');
   try{
-    var form=new FormData(); form.append('file',f,f.name||'receipt'); form.append('source_type',source==='camera'?'camera':'upload');
+    var form=new FormData(); form.append('file',f,f.name||'receipt.jpg'); form.append('source_type',source==='camera'?'camera':'upload');
     var res=await edgeFetch('pppp-expense-receipt-upload',{method:'POST',body:form});
     if(res.duplicate) showMessage('Ky dokument ekziston tashmë. Po hapet regjistrimi ekzistues.','ok');
     else if(res.warning) showMessage('Dokumenti u ruajt, por OCR nuk hyri në radhë. Mund ta plotësosh manualisht.','error');
     else showMessage('Dokumenti u ruajt. OCR lokal është në radhë; lista do të rifreskohet automatikisht.','ok');
-    input.value=''; await loadRows(true);
+    if(input)input.value=''; await loadRows(true);
     var id=res&&res.receipt&&res.receipt.id;if(id)setTimeout(function(){window.finReceiptOpen(id);},150);
-  }catch(e){showMessage('Ngarkimi dështoi: '+e.message,'error');input.value='';}
+  }catch(e){showMessage('Ngarkimi dështoi: '+e.message,'error');if(input)input.value='';}
+}
+window.finReceiptUpload=async function(input,source){
+  var f=input&&input.files&&input.files[0]; if(!f) return;
+  return uploadReceiptFile(f,source,input);
 };
+
+function cameraShell(){
+  var m=byId('fin-receipt-camera-modal-v1'); if(m)return m;
+  m=document.createElement('div');m.id='fin-receipt-camera-modal-v1';m.style.cssText='display:none;position:fixed;inset:0;background:rgba(26,26,25,.58);z-index:1300;padding:22px;overflow:auto';
+  m.onclick=function(e){if(e.target===m)window.finReceiptCameraClose();};document.body.appendChild(m);return m;
+}
+window.finReceiptCameraClose=function(){
+  stopCamera();
+  var m=byId('fin-receipt-camera-modal-v1');if(m)m.style.display='none';
+};
+window.finReceiptCameraOpen=async function(){
+  var fallback=byId('fin-receipt-camera-v1');
+  if(!navigator.mediaDevices||typeof navigator.mediaDevices.getUserMedia!=='function'){
+    if(fallback)fallback.click();
+    return;
+  }
+  var m=cameraShell();
+  m.innerHTML='<div style="max-width:760px;margin:0 auto;background:#fff;border-radius:13px;box-shadow:0 18px 60px rgba(0,0,0,.28);overflow:hidden">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)"><div><div style="font-size:14px;font-weight:700">Bëj foto të kuponit</div><div style="font-size:10.5px;color:var(--text3);margin-top:2px">Lejo kamerën në shfletues, vendose kuponin qartë në kornizë dhe shkrep foton.</div></div><button class="btn btn-sm" onclick="finReceiptCameraClose()">✕</button></div>'
+    +'<div style="padding:14px 16px"><div style="background:#111;border-radius:10px;overflow:hidden;min-height:280px;display:flex;align-items:center;justify-content:center"><video id="fin-receipt-camera-video-v1" autoplay playsinline muted style="display:block;width:100%;max-height:62vh;object-fit:contain;background:#111"></video></div>'
+    +'<div id="fin-receipt-camera-status-v1" style="font-size:11px;color:var(--text3);margin-top:9px">Po hapet kamera…</div>'
+    +'<div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-sm" onclick="finReceiptCameraClose()">Anulo</button><button id="fin-receipt-camera-shot-v1" class="btn btn-primary btn-sm" onclick="finReceiptCameraCapture()" disabled>📷 Shkrep foton</button></div></div></div>';
+  m.style.display='block';
+  try{
+    stopCamera();
+    _cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    var video=byId('fin-receipt-camera-video-v1');
+    if(!video)throw new Error('Pamja e kamerës nuk u inicializua.');
+    video.srcObject=_cameraStream;
+    await video.play();
+    var status=byId('fin-receipt-camera-status-v1'),shot=byId('fin-receipt-camera-shot-v1');
+    if(status)status.textContent='Kamera është gati. Mbaje kuponin të palëvizshëm dhe shkrep foton.';
+    if(shot)shot.disabled=false;
+  }catch(e){
+    window.finReceiptCameraClose();
+    var denied=e&&((e.name==='NotAllowedError')||(e.name==='PermissionDeniedError'));
+    showMessage(denied?'Kamera nuk u lejua nga shfletuesi. Lejo kamerën për PPPP ose përdor “Ngarko foto/PDF”.':'Kamera nuk mund të hapej në këtë pajisje. Përdor “Ngarko foto/PDF”.','error');
+  }
+};
+window.finReceiptCameraCapture=function(){
+  var video=byId('fin-receipt-camera-video-v1');
+  if(!video||!video.videoWidth||!video.videoHeight){showMessage('Kamera nuk është ende gati për fotografim.','error');return;}
+  var shot=byId('fin-receipt-camera-shot-v1');if(shot)shot.disabled=true;
+  var canvas=document.createElement('canvas');
+  canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+  var ctx=canvas.getContext('2d');
+  if(!ctx){if(shot)shot.disabled=false;showMessage('Fotografia nuk mund të përgatitej.','error');return;}
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  canvas.toBlob(function(blob){
+    if(!blob){if(shot)shot.disabled=false;showMessage('Fotografia nuk mund të krijohej.','error');return;}
+    var name='receipt-'+new Date().toISOString().replace(/[:.]/g,'-')+'.jpg';
+    var file;
+    try{file=new File([blob],name,{type:'image/jpeg',lastModified:Date.now()});}catch(e){file=blob;}
+    window.finReceiptCameraClose();
+    uploadReceiptFile(file,'camera',null);
+  },'image/jpeg',0.92);
+};
+
 async function loadProjects(){
   if(_projectsLoaded)return;_projectsLoaded=true;
   try{_projects=await supaFetch('projects?select=id,name&order=last_activity_at.desc&limit=250')||[];}catch(e){try{_projects=await supaFetch('projects?select=id,name&order=created_at.desc&limit=250')||[];}catch(_e){_projects=[];}}
