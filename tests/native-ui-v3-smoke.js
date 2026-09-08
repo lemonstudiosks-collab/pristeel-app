@@ -4,6 +4,7 @@ function must(cond,m){ if(!cond) fail(m); }
 const roles=fs.readFileSync('pristeel-roles.js','utf8');
 const entry=fs.readFileSync('pristeel-native-ui-v3.js','utf8');
 const core=fs.readFileSync('pristeel-native-ui-v4-core.js','utf8');
+const workspace=fs.readFileSync('pristeel-workspace-architecture-v1.js','utf8');
 const projectsModern=fs.readFileSync('pristeel-projects-modern-v1.js','utf8');
 const primaryNav=fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
@@ -27,36 +28,42 @@ must(entry.includes('PPPP gjeti punë të pambyllur'),'Albanian recovery banner 
 must(!entry.includes("'Mundësitë':'Opportunities'"),'entry must never translate Albanian navigation back to English');
 must(!core.includes("'Mundësitë':'Opportunities'"),'core must never translate Albanian navigation back to English');
 
-// First-paint Home contract: these rules must already exist in the early owner,
-// with specificity above late Home/readability decorators.
+// First-paint Home geometry must already match the operational four-zone owner.
 must(entry.includes("home.setAttribute('data-pst-font-lock','1')"),'Home typography is not locked against late readability resizing');
-must(entry.includes('html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-head p{font-size:14px!important'),'Home subtitle does not have a first-paint readable size');
-must(entry.includes('html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kicker{font-size:12px!important'),'Home kicker does not have a first-paint readable size');
+must(entry.includes('html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-head p{font-size:14px!important'),'Home subtitle does not have a stable first-paint size');
+must(entry.includes('html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kicker{font-size:12px!important'),'Home kicker does not have a stable first-paint size');
 must(entry.includes('.pn-ask-slot{min-height:64px!important'),'Home command slot is not compact at first paint');
 must(entry.includes('.pst-live-command-shell{position:relative!important;min-height:64px!important;height:auto!important'),'Home command shell is not compact/expandable');
-must(entry.includes('.pn-kpi span{font-size:11.5px!important'),'Home KPI label does not use the stable first-paint size');
-must(entry.includes('.pn-kpi small{font-size:10.5px!important'),'Home KPI helper does not use the stable first-paint size');
+for(const token of ['.pn-work-grid{gap:12px!important;margin-bottom:12px!important}', '.pn-panel>header{padding:12px 13px!important}', '.pn-work-row{min-height:58px!important', '.pn-pulse{min-height:66px!important']) must(entry.includes(token),`Operational Home first-paint token missing: ${token}`);
 
-// Canonical create control must survive Native UI normalization without any
-// automatic business-object creation.
-must(entry.includes('snapshotCreateControl'),'canonical + Krijo markup is not preserved before Native UI apply');
-must(entry.includes('repairCreateControl'),'canonical + Krijo repair is missing');
-must(entry.includes('installNativeUiApplyGuard'),'future Native UI apply calls are not guarded');
-for(const type of ['project','offer','invoice','task'])must(entry.includes(`pstWsCreate(\\'${type}\\')`),`+ Krijo missing canonical option: ${type}`);
-must(entry.includes('aria-haspopup="menu"'),'+ Krijo is missing dropdown accessibility contract');
+// + Krijo has exactly one structural owner. Native/readability layers may style it,
+// but may not snapshot, destroy or repair its DOM.
+must(workspace.includes('function createControlMarkup()'),'+ Krijo canonical markup factory missing from workspace owner');
+must(workspace.includes("data-pst-create-owner','workspace-v1'"),'+ Krijo owner marker missing');
+must(workspace.includes('window.PSTWorkspaceCreateControlV1={owner:\'pristeel-workspace-architecture-v1\''),'+ Krijo public ownership contract missing');
+must(workspace.includes('width="16" height="16" aria-hidden="true" focusable="false"'),'+ Krijo SVG dimensions are not owned by component markup');
+must(workspace.includes('aria-haspopup="menu"')&&workspace.includes('aria-expanded="false"'),'+ Krijo accessibility contract missing');
+for(const type of ['project','offer','invoice','task']) must(workspace.includes(`item('${type}'`),`+ Krijo missing canonical option: ${type}`);
+must(!entry.includes('snapshotCreateControl'),'v3 must not snapshot + Krijo for later repair');
+must(!entry.includes('repairCreateControl'),'v3 must not repair + Krijo after another owner destroys it');
+must(!core.includes("create.textContent='+"),'Home owner must not destroy + Krijo canonical children');
 
-// Application-shell geometry is owned here according to runtime-manifest.json.
+// Four daily operating zones replace analytic/noisy Home cards.
+for(const token of ['PËR TY TANI','NË VIJIM','pn-portfolio-pulse','KËRKON VËMENDJE']) must(core.includes(token),`Home operational zone missing: ${token}`);
+for(const retired of ['pn-kpis','pn-clients-movement','pn-projects-commercial','pn-fin-auto-balance','pn-donut','pn-funnel']) must(!core.includes(retired),`Retired analytical Home surface returned: ${retired}`);
+must(core.includes("if(blockers.length)exceptions.push")&&core.includes("if(issues>0)exceptions.push"),'Exception zone is not value-driven');
+must(core.includes("else{ex.hidden=true;ex.innerHTML='';}"),'Zero-value exception zone must disappear completely');
+for(const icon of ['project:','action:','clock:','target:','finance:','warning:','execution:','waiting:']) must(core.includes(icon),`Unified operational icon family missing: ${icon}`);
+
+// Application-shell geometry remains stable.
 must(entry.includes('.sidebar{width:204px!important;min-width:204px!important;max-width:204px!important}'),'canonical desktop sidebar width is not 204px');
 must(entry.includes('#pst-v2-sidebar{width:204px!important;min-width:204px!important;max-width:204px!important}'),'sidebar host width is not locked to 204px');
-
-// Copy and spacing are intentionally applied after the stable geometry contract.
 must(entry.includes('Pyet PPPP për një projekt…'),'Home command copy overpromises beyond the supported project-data scope');
 must(entry.includes('max-width:1360px!important'),'Home content width is not balanced');
-must(entry.includes('.pn-grid{gap:10px!important;margin-bottom:10px!important}'),'Home micro-spacing contract missing');
 
-must(core.includes('homeRouteContext'),'Home cards must resolve a destination context before navigation');
-must(core.includes("filter='due'")&&core.includes("filter='review'")&&core.includes("area='outreach'"),'Home opportunity and follow-up cards must route to their exact work subset');
-must(core.includes("p.openFinance(filter||'')")&&core.includes("p.openOpportunities(filter||'')"),'Home filters must be forwarded to the terminal page owners');
+must(core.includes('homeRouteContext'),'Home surfaces must resolve a destination context before navigation');
+must(core.includes("filter='due'")&&core.includes("filter='review'")&&core.includes("area='outreach'"),'Home opportunity and reminder routes must preserve exact work subsets');
+must(core.includes("p.openFinance(filter||'')")&&core.includes("p.openOpportunities(filter||'')"),'Home filters must be forwarded to terminal page owners');
 must(projectsModern.includes('operationalGroup')&&projectsModern.includes("state.operational=value"),'Project cards must open the requested operational subset');
 must(projectsModern.includes("state.search=value")&&projectsModern.includes("value=\"'+esc(state.search)+'\""),'Client cards must open Projects with the client search visibly retained');
 must(primaryNav.includes("window.pstProjectsModernOpen(filter||'')")&&primaryNav.includes('openFinance(filter)'),'Primary navigation must pass Home context to Projects and Finance');
@@ -73,4 +80,4 @@ must(!!dyn,'native UI compatibility entry is not registered in runtime manifest'
 must(dyn&&dyn.loader==='pristeel-roles.js','native UI runtime loader must remain pristeel-roles.js');
 must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='6110ccff0e59b96f0c3ceec8a8ff27de3d504204','manifest loader SHA does not match audited roles blob');
 must(manifest.entrypoints.bootstrapGitBlobSha==='5f40652c18a283309d9020d3a06824e979429411','manifest bootstrap SHA does not match production bootstrap');
-if(!process.exitCode) console.log('Native UI v4 Albanian single-owner smoke OK.');
+if(!process.exitCode) console.log('Native UI v4 structural create + four-zone Home smoke OK.');
