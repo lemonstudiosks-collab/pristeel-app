@@ -19,9 +19,16 @@ jobs:
           set -euo pipefail
           for p in tools/home-ops-patches/*.patch; do
             echo "Checking $p"
-            git apply --check "$p"
-            git apply "$p"
+            git apply --recount --check "$p"
+            git apply --recount "$p"
           done
+      - name: Verify isolated source syntax
+        run: |
+          set -euo pipefail
+          node --check pristeel-workspace-architecture-v1.js
+          node --check pristeel-native-ui-v3.js
+          node --check pristeel-native-ui-v4-core.js
+          node --check pristeel-platform-readability-v1.js
       - name: Commit isolated source changes
         run: |
           set -euo pipefail
