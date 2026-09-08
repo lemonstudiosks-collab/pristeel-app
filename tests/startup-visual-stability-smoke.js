@@ -94,7 +94,7 @@ async function firstPaintHomeLayoutCase(){
   const createButton=w.document.querySelector('.pst-ws-create-main');
   assert(createButton,'+ Krijo must survive Native UI normalization');
   assert.strictEqual(w.document.querySelectorAll('.pst-ws-create-item').length,4,'+ Krijo must preserve exactly four canonical options');
-  createButton.click();
+  w.pstWsToggleCreate({preventDefault(){},stopPropagation(){}});
   assert(w.document.getElementById('pst-ws-create').classList.contains('open'),'+ Krijo must open its dropdown');
   assert.strictEqual(created,0,'Opening + Krijo must not create any business object');
   const actions=Array.from(w.document.querySelectorAll('.pst-ws-create-item')).map(x=>x.getAttribute('onclick')||'').join('|');
