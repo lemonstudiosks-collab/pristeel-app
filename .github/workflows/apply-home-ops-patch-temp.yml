@@ -46,6 +46,8 @@ jobs:
                   for l in lines[starts[h]+1:starts[h+1]]:
                       if l.startswith('\\ No newline'):
                           continue
+                      if l.rstrip('\n')=='-})();+})();':
+                          old.append('})();\n'); new.append('})();\n'); continue
                       if l.startswith(' '):
                           old.append(l[1:]); new.append(l[1:])
                       elif l.startswith('-') and not l.startswith('---'):
@@ -53,6 +55,9 @@ jobs:
                       elif l.startswith('+') and not l.startswith('+++'):
                           new.append(l[1:])
                   old_s=''.join(old); new_s=''.join(new)
+                  if old_s==new_s:
+                      print(f'Skipping no-op hunk {h+1} in {path}')
+                      continue
                   if not old_s:
                       raise SystemExit(f'{path}: empty old hunk {h+1}')
                   hunks.append((old_start,h+1,old_s,new_s))
