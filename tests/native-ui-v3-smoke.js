@@ -26,6 +26,34 @@ must(!entry.includes('window.confirm'),'entry must never monkeypatch or invoke b
 must(entry.includes('PPPP gjeti punë të pambyllur'),'Albanian recovery banner missing');
 must(!entry.includes("'Mundësitë':'Opportunities'"),'entry must never translate Albanian navigation back to English');
 must(!core.includes("'Mundësitë':'Opportunities'"),'core must never translate Albanian navigation back to English');
+
+// First-paint Home contract: these rules must already exist in the early owner,
+// with specificity above late Home/readability decorators.
+must(entry.includes("home.setAttribute('data-pst-font-lock','1')"),'Home typography is not locked against late readability resizing');
+must(entry.includes('html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-head p{font-size:14px!important'),'Home subtitle does not have a first-paint readable size');
+must(entry.includes('html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kicker{font-size:12px!important'),'Home kicker does not have a first-paint readable size');
+must(entry.includes('.pn-ask-slot{min-height:64px!important'),'Home command slot is not compact at first paint');
+must(entry.includes('.pst-live-command-shell{position:relative!important;min-height:64px!important;height:auto!important'),'Home command shell is not compact/expandable');
+must(entry.includes('.pn-kpi span{font-size:11.5px!important'),'Home KPI label does not use the stable first-paint size');
+must(entry.includes('.pn-kpi small{font-size:10.5px!important'),'Home KPI helper does not use the stable first-paint size');
+
+// Canonical create control must survive Native UI normalization without any
+// automatic business-object creation.
+must(entry.includes('snapshotCreateControl'),'canonical + Krijo markup is not preserved before Native UI apply');
+must(entry.includes('repairCreateControl'),'canonical + Krijo repair is missing');
+must(entry.includes('installNativeUiApplyGuard'),'future Native UI apply calls are not guarded');
+for(const type of ['project','offer','invoice','task'])must(entry.includes(`pstWsCreate(\\'${type}\\')`),`+ Krijo missing canonical option: ${type}`);
+must(entry.includes('aria-haspopup="menu"'),'+ Krijo is missing dropdown accessibility contract');
+
+// Application-shell geometry is owned here according to runtime-manifest.json.
+must(entry.includes('.sidebar{width:204px!important;min-width:204px!important;max-width:204px!important}'),'canonical desktop sidebar width is not 204px');
+must(entry.includes('#pst-v2-sidebar{width:204px!important;min-width:204px!important;max-width:204px!important}'),'sidebar host width is not locked to 204px');
+
+// Copy and spacing are intentionally applied after the stable geometry contract.
+must(entry.includes('Pyet PPPP për një projekt…'),'Home command copy overpromises beyond the supported project-data scope');
+must(entry.includes('max-width:1360px!important'),'Home content width is not balanced');
+must(entry.includes('.pn-grid{gap:10px!important;margin-bottom:10px!important}'),'Home micro-spacing contract missing');
+
 must(core.includes('homeRouteContext'),'Home cards must resolve a destination context before navigation');
 must(core.includes("filter='due'")&&core.includes("filter='review'")&&core.includes("area='outreach'"),'Home opportunity and follow-up cards must route to their exact work subset');
 must(core.includes("p.openFinance(filter||'')")&&core.includes("p.openOpportunities(filter||'')"),'Home filters must be forwarded to the terminal page owners');
