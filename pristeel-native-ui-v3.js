@@ -1,7 +1,7 @@
 /* PRISTEEL Native UI v3 compatibility entry
- * v4 remains the visible Home owner. This compatibility layer now only keeps
- * presentation stable and provides bounded recovery for the two daily routes
- * that must never remain blank: Finance and Project workspace.
+ * v4 remains the visible Home owner. This early presentation layer locks the
+ * first-paint typography/layout, preserves the canonical create control and
+ * provides bounded recovery for Finance and Project workspace.
  */
 (function(){
 'use strict';
@@ -46,41 +46,69 @@ function installStablePresentationCss(){
   var s=document.getElementById('pst-home-compact-normal-css');
   if(!s){s=document.createElement('style');s.id='pst-home-compact-normal-css';document.head.appendChild(s);}
   s.textContent=`
-/* Stable presentation: do not resize the sidebar or shrink typography after startup. */
-#pst-ws-sidebar .pst-nav-label,#pst-ws-canonical-nav .pst-nav-label{font-size:13px!important;line-height:1.25!important}
-#pst-ws-sidebar .pst-ws-navbtn,#pst-ws-canonical-nav .pst-ws-navbtn{font-size:13px!important;min-height:48px!important}
-#pst-native-home-v4{padding-top:24px!important}
-#pst-native-home-v4 .pn-head{margin-bottom:12px!important}
-#pst-native-home-v4 .pn-ask-slot{min-height:60px!important;margin-bottom:12px!important;overflow:visible!important}
-#pst-native-home-v4 .pn-ask-wait{min-height:60px!important;padding:0 14px!important}
-#pst-native-home-v4 .pst-live-command-shell{position:relative!important;min-height:60px!important;margin:0!important;padding:0!important;overflow:visible!important;border:1px solid #D9E2E5!important;border-left:3px solid #4F97AF!important;border-radius:12px!important;background:#FCFCFA!important;box-shadow:0 3px 12px rgba(48,58,62,.025)!important}
-#pst-native-home-v4 .pst-live-command-shell:before,#pst-native-home-v4 .pst-live-command-intro{display:none!important}
-#pst-native-home-v4 .pst-live-command{display:flex!important;align-items:center!important;min-height:58px!important;margin:0!important;padding:6px!important;border:0!important;border-radius:10px!important;background:#F4F5F3!important}
-#pst-native-home-v4 .pst-live-command-mark{width:34px!important;height:34px!important;min-width:34px!important}
-#pst-native-home-v4 .pst-live-input{min-height:44px!important;height:44px!important;max-height:44px!important;resize:none!important;padding:10px 6px!important;font-size:14px!important}
-#pst-native-home-v4 .pst-live-send{width:44px!important;height:44px!important;min-width:44px!important;border-radius:10px!important;background:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important}
-#pst-native-home-v4 .pst-live-result[hidden],#pst-native-home-v4 .pst-live-result[data-pst-dismissed="1"]{display:none!important}
-#pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"]){position:fixed!important;z-index:2147482500!important;left:50%!important;top:12vh!important;transform:translateX(-50%)!important;width:min(720px,calc(100vw - 32px))!important;max-height:76vh!important;overflow:auto!important;margin:0!important;padding:24px 56px 24px 24px!important;border:1px solid #D9E2E5!important;border-left:4px solid #4F97AF!important;border-radius:14px!important;background:#FCFCFA!important;color:#2F3437!important;box-shadow:0 0 0 100vmax rgba(24,38,43,.42),0 24px 70px rgba(24,38,43,.22)!important}
-#pst-native-home-v4 .pst-live-result .pst-live-answer{color:#2F3437!important;font-size:14px!important;line-height:1.65!important}
-#pst-native-home-v4 .pst-live-result .pst-live-suggest{border-top-color:#E6E3DE!important;color:#59666B!important}
-#pst-native-home-v4 .pst-live-result .pst-live-suggest b{color:#3F7F98!important}
-#pst-native-home-v4 .pst-live-result .pst-live-msg{color:#2F3437!important}
-#pst-native-home-v4 .pst-live-result .pst-live-msg.ok b{color:#55775F!important}
-#pst-native-home-v4 .pst-live-result .pst-live-msg.err{color:#934C45!important}
-#pst-native-home-v4 .pst-live-result .pst-live-thinking b{color:#2F3437!important}
-#pst-native-home-v4 .pst-live-result .pst-live-thinking span{color:#647278!important}
-#pst-native-home-v4 .pst-live-result .pst-live-thinking small{color:#8A9599!important}
-#pst-native-home-v4 .pst-live-result .pst-live-thinking-orb i{background:#4F97AF!important}
-#pst-native-home-v4 .pst-live-result .pst-live-open-answer{background:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important}
-#pst-native-home-v4 .pst-ask-modal-close{display:none;position:fixed;z-index:2147482600;top:calc(12vh + 14px);right:max(24px,calc((100vw - 720px)/2 + 16px));width:32px;height:32px;place-items:center;border:1px solid #D9E2E5;border-radius:9px;background:#FCFCFA;color:#59666B;font-size:20px;line-height:1;cursor:pointer;box-shadow:none}
-#pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"])+.pst-ask-modal-close{display:grid!important}
-#pst-native-home-v4 .pn-kpis{gap:10px!important;margin-bottom:12px!important}
-#pst-native-home-v4 .pn-kpi{min-height:82px!important;padding:11px 12px!important;border-radius:10px!important}
-#pst-native-home-v4 .pn-kpi span{font-size:10.5px!important;line-height:1.25!important}
-#pst-native-home-v4 .pn-kpi b{font-size:22px!important;margin-top:4px!important;line-height:1.15!important}
-#pst-native-home-v4 .pn-kpi small{font-size:10px!important;margin-top:4px!important;line-height:1.3!important}
-#pst-native-home-v4 .pn-kpi em{right:10px!important;top:9px!important}
-#pst-native-home-v4 .pn-kpi:nth-child(-n+2):after{left:12px!important;right:12px!important}
+/* First-paint presentation contract. Specificity is intentionally above later
+   compatibility/readability layers so computed dimensions do not jump after load. */
+@media(min-width:901px){
+html.pst-native-ui-v4-ready body.pst-ui-v2 .sidebar{width:204px!important;min-width:204px!important;max-width:204px!important}
+html.pst-native-ui-v4-ready body.pst-ui-v2 #pst-v2-sidebar{width:204px!important;min-width:204px!important;max-width:204px!important}
+}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar{padding:14px 10px 12px!important}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar .pst-ws-brand{padding:2px 6px 13px!important;gap:9px!important}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar .pst-ws-create{position:relative!important;margin:0 0 13px!important;background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important;color:inherit!important}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar .pst-ws-create-main{width:100%!important;height:36px!important;min-height:36px!important;border:1px solid #4F97AF!important;border-radius:9px!important;background:#4F97AF!important;color:#fff!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;padding:0 11px!important;font-size:12.5px!important;font-weight:760!important;box-shadow:none!important;cursor:pointer!important}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar .pst-ws-create-main:hover{background:#3F7F98!important;border-color:#3F7F98!important}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar .pst-ws-create-menu{top:41px!important;left:0!important;right:0!important;border-radius:10px!important;padding:5px!important}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar .pst-ws-create-item{min-height:36px!important;padding:8px 9px!important;font-size:12px!important;border-radius:7px!important}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar .pst-nav-label,html.pst-native-ui-v4-ready body #pst-ws-canonical-nav .pst-nav-label{font-size:13px!important;line-height:1.25!important}
+html.pst-native-ui-v4-ready body #pst-ws-sidebar .pst-ws-navbtn,html.pst-native-ui-v4-ready body #pst-ws-canonical-nav .pst-ws-navbtn{font-size:13px!important;min-height:44px!important;padding-top:8px!important;padding-bottom:8px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4{max-width:1360px!important;margin:0 auto!important;padding:22px 28px 44px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-head{margin-bottom:12px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kicker{font-size:12px!important;line-height:1.25!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-head h1{font-size:29px!important;line-height:1.13!important;margin:5px 0 0!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-head p{font-size:14px!important;line-height:1.45!important;margin:5px 0 0!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-live{font-size:11px!important;padding:7px 11px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-ask-slot{min-height:64px!important;margin-bottom:14px!important;overflow:visible!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-ask-wait{min-height:64px!important;padding:0 14px!important;font-size:12px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-command-shell{position:relative!important;min-height:64px!important;height:auto!important;margin:0!important;padding:0!important;overflow:visible!important;border:1px solid #D9E2E5!important;border-left:1px solid #D9E2E5!important;border-radius:11px!important;background:#FCFCFA!important;box-shadow:0 2px 10px rgba(48,58,62,.035)!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-command-shell:before,html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-command-intro{display:none!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-command{display:flex!important;align-items:center!important;min-height:62px!important;height:auto!important;margin:0!important;padding:7px!important;border:0!important;border-radius:10px!important;background:#F4F5F3!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-command-mark{width:34px!important;height:34px!important;min-width:34px!important;font-size:12px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-input{min-height:44px!important;height:44px!important;max-height:120px!important;resize:none!important;padding:10px 8px!important;font-size:14px!important;line-height:1.45!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-send{width:44px!important;height:44px!important;min-width:44px!important;border-radius:10px!important;background:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result[hidden],html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result[data-pst-dismissed="1"]{display:none!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"]){position:fixed!important;z-index:2147482500!important;left:50%!important;top:12vh!important;transform:translateX(-50%)!important;width:min(720px,calc(100vw - 32px))!important;max-height:76vh!important;overflow:auto!important;margin:0!important;padding:24px 56px 24px 24px!important;border:1px solid #D9E2E5!important;border-left:4px solid #4F97AF!important;border-radius:14px!important;background:#FCFCFA!important;color:#2F3437!important;box-shadow:0 0 0 100vmax rgba(24,38,43,.42),0 24px 70px rgba(24,38,43,.22)!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-answer{color:#2F3437!important;font-size:14px!important;line-height:1.65!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-suggest{border-top-color:#E6E3DE!important;color:#59666B!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-suggest b{color:#3F7F98!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-msg{color:#2F3437!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-msg.ok b{color:#55775F!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-msg.err{color:#934C45!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-thinking b{color:#2F3437!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-thinking span{color:#647278!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-thinking small{color:#8A9599!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-thinking-orb i{background:#4F97AF!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-open-answer{background:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-ask-modal-close{display:none;position:fixed;z-index:2147482600;top:calc(12vh + 14px);right:max(24px,calc((100vw - 720px)/2 + 16px));width:32px;height:32px;place-items:center;border:1px solid #D9E2E5;border-radius:9px;background:#FCFCFA;color:#59666B;font-size:20px;line-height:1;cursor:pointer;box-shadow:none}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"])+.pst-ask-modal-close{display:grid!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpis{gap:8px!important;margin:0 0 14px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi{min-height:72px!important;padding:9px 11px!important;border-radius:9px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi span{font-size:11.5px!important;line-height:1.25!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi b{font-size:21px!important;margin-top:3px!important;line-height:1.12!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi small{font-size:10.5px!important;margin-top:3px!important;line-height:1.3!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi em{right:9px!important;top:8px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi:nth-child(-n+2):after{left:11px!important;right:11px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-grid{gap:10px!important;margin-bottom:10px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-card>header{padding:11px 12px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-card>header span{font-size:10px!important;line-height:1.25!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-card>header h2{font-size:14px!important;line-height:1.3!important;margin-top:3px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-card>header p{font-size:11.5px!important;line-height:1.4!important;margin-top:3px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-card>header button{font-size:11px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-list{padding:4px 8px 7px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-row{padding:7px 4px!important;gap:7px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-row div span{font-size:10.5px!important;line-height:1.35!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-row div b{font-size:12px!important;line-height:1.32!important;margin-top:2px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-row strong{font-size:11.5px!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-clear,html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-empty{font-size:11.5px!important;line-height:1.4!important;padding:13px 11px!important}
 /* Keep the project workspace readable; late compatibility layers must not reduce it to 7–9px text. */
 #page-workspace-project .pst-pi-sub{font-size:12px!important}
 #page-workspace-project .pst-pi-btn,#page-workspace-project .pst-pi-tab{font-size:11.5px!important}
@@ -90,10 +118,45 @@ function installStablePresentationCss(){
 #page-workspace-project .pst-pi-badge{font-size:9px!important}
 #page-workspace-project .pst-pi-step{font-size:9.5px!important}
 @media(max-width:760px){
-  #pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"]){top:7vh!important;max-height:84vh!important;padding:20px 48px 20px 18px!important}
-  #pst-native-home-v4 .pst-ask-modal-close{top:calc(7vh + 10px);right:22px}
+  html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4{padding:18px 14px 36px!important}
+  html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result:not([hidden]):not([data-pst-dismissed="1"]){top:7vh!important;max-height:84vh!important;padding:20px 48px 20px 18px!important}
+  html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-ask-modal-close{top:calc(7vh + 10px);right:22px}
 }
 `;
+}
+function createFallbackMarkup(){
+  return '<button type="button" class="pst-ws-create-main" aria-haspopup="menu" aria-expanded="false" onclick="pstWsToggleCreate(event)">+ Krijo</button><div class="pst-ws-create-menu" role="menu"><button type="button" class="pst-ws-create-item" role="menuitem" onclick="pstWsCreate(\'project\')">Projekt i ri</button><button type="button" class="pst-ws-create-item" role="menuitem" onclick="pstWsCreate(\'offer\')">Ofertë e re</button><button type="button" class="pst-ws-create-item" role="menuitem" onclick="pstWsCreate(\'invoice\')">Faturë e re</button><button type="button" class="pst-ws-create-item" role="menuitem" onclick="pstWsCreate(\'task\')">Detyrë e re</button></div>';
+}
+function snapshotCreateControl(){
+  var wrap=document.getElementById('pst-ws-create');if(!wrap)return false;
+  var main=wrap.querySelector('.pst-ws-create-main'),items=wrap.querySelectorAll('.pst-ws-create-item');
+  if(main&&items.length===4){window.__pstCanonicalCreateMarkup=wrap.innerHTML;return true;}return false;
+}
+function repairCreateControl(){
+  var wrap=document.getElementById('pst-ws-create');if(!wrap)return false;
+  var main=wrap.querySelector('.pst-ws-create-main'),items=wrap.querySelectorAll('.pst-ws-create-item');
+  if(!main||items.length!==4){wrap.innerHTML=window.__pstCanonicalCreateMarkup||createFallbackMarkup();main=wrap.querySelector('.pst-ws-create-main');items=wrap.querySelectorAll('.pst-ws-create-item');}
+  if(!main||items.length!==4)return false;
+  main.setAttribute('aria-haspopup','menu');main.setAttribute('aria-expanded',wrap.classList.contains('open')?'true':'false');main.title='Krijo projekt, ofertë, faturë ose detyrë';
+  if(!/Krijo/i.test(String(main.textContent||'')))main.appendChild(document.createTextNode(' Krijo'));
+  wrap.setAttribute('data-pst-create-preserved','1');return true;
+}
+function lockHomeTypography(){
+  var home=document.getElementById('pst-native-home-v4');if(!home)return false;
+  home.setAttribute('data-pst-font-lock','1');home.setAttribute('data-pst-first-paint-stable','1');return true;
+}
+function normalizeHomeCopy(){
+  var home=document.getElementById('pst-native-home-v4');if(!home)return false;
+  var input=home.querySelector('.pst-live-input');if(input)input.setAttribute('placeholder','Pyet PPPP për një projekt…');
+  var wait=home.querySelector('.pn-ask-wait');if(wait&&/shfaqet sapo/i.test(String(wait.textContent||'')))wait.textContent='Pyet PPPP për një projekt sapo të dhënat live të jenë gati.';
+  return true;
+}
+function installNativeUiApplyGuard(){
+  var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(!X||typeof X.apply!=='function')return false;
+  if(X.apply.__pstFirstPaintGuard)return true;
+  var base=X.apply;
+  var guarded=function(){snapshotCreateControl();var out=base.apply(this,arguments);repairCreateControl();lockHomeTypography();normalizeHomeCopy();installStablePresentationCss();return out;};
+  guarded.__pstFirstPaintGuard=true;guarded.__pstFirstPaintBase=base;X.apply=guarded;return true;
 }
 function currentAskResult(){return document.querySelector('#pst-native-home-v4 .pst-live-result')||document.querySelector('#page-workspace-home .pst-live-result');}
 function dismissAskModal(){var r=currentAskResult();if(!r)return false;r.setAttribute('data-pst-dismissed','1');r.hidden=true;return true;}
@@ -189,8 +252,8 @@ function installProjectOpenGuard(){
   window.pstOpenProjectWorkspace=wrapped;
   return true;
 }
-function applyHomePresentation(){installStablePresentationCss();installAskModalChrome();installFinanceWindowOwner();installProjectOpenGuard();}
-function apply(){installEntryCss();installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
+function applyHomePresentation(){installStablePresentationCss();lockHomeTypography();repairCreateControl();normalizeHomeCopy();installAskModalChrome();installFinanceWindowOwner();installProjectOpenGuard();}
+function apply(){installEntryCss();installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installNativeUiApplyGuard();var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){snapshotCreateControl();X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
 function loadAskFunctionalOwner(){
   if(window.PSTHomeAskFunctionalOwnerV1||document.querySelector('script[data-pst-home-ask-functional-owner]'))return;
   var s=document.createElement('script');s.src='pristeel-home-ask-functional-owner-v1.js?v=20260904-ask3';s.defer=true;s.setAttribute('data-pst-home-ask-functional-owner','1');document.head.appendChild(s);
@@ -202,13 +265,13 @@ function loadCore(){
   var s=document.createElement('script');s.src='pristeel-native-ui-v4-core.js?v=20260903-singleowner1';s.defer=true;s.setAttribute('data-pst-native-ui-v4-core','1');
   s.onload=apply;s.onerror=function(){console.error('Nuk u ngarkua Native UI v4 core.');};document.head.appendChild(s);
 }
-installEntryCss();installStablePresentationCss();installRecoveryGate();installFinanceWindowOwner();loadAskFunctionalOwner();[0,80,220,700,1600].forEach(function(ms){setTimeout(function(){installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installStablePresentationCss();},ms);});
+installEntryCss();installStablePresentationCss();installRecoveryGate();installFinanceWindowOwner();loadAskFunctionalOwner();[0,80,220,700,1600].forEach(function(ms){setTimeout(function(){installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installStablePresentationCss();lockHomeTypography();repairCreateControl();normalizeHomeCopy();installNativeUiApplyGuard();},ms);});
 document.addEventListener('pst:modules-ready',apply,{once:true});
 document.addEventListener('pst:native-home-ready',function(){applyHomePresentation();setTimeout(applyHomePresentation,240);});
 document.addEventListener('pst:project-control-home-rendered',function(){loadAskFunctionalOwner();setTimeout(function(){try{if(window.PSTHomeAskFunctionalOwnerV1)window.PSTHomeAskFunctionalOwnerV1.apply();}catch(e){}},0);});
 window.addEventListener('pageshow',apply,{once:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installRecoveryGate();installFinanceWindowOwner();loadCore();},{once:true});else loadCore();
-window.PSTUiOwnershipCleanupV1={apply:apply,installRecoveryGate:installRecoveryGate,installAskModalChrome:installAskModalChrome,installAskOwnerQueryBridge:installAskOwnerQueryBridge,dismissAskModal:dismissAskModal,recoverFinance:recoverFinanceHard,installProjectOpenGuard:installProjectOpenGuard};
+window.PSTUiOwnershipCleanupV1={apply:apply,installRecoveryGate:installRecoveryGate,installAskModalChrome:installAskModalChrome,installAskOwnerQueryBridge:installAskOwnerQueryBridge,dismissAskModal:dismissAskModal,recoverFinance:recoverFinanceHard,installProjectOpenGuard:installProjectOpenGuard,repairCreateControl:repairCreateControl,lockHomeTypography:lockHomeTypography,normalizeHomeCopy:normalizeHomeCopy};
 })();
 
 /* Exact Home destination owner. Kept separate from the visual owner so it can
