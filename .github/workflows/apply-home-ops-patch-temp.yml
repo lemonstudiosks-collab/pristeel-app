@@ -1,0 +1,32 @@
+name: TEMP apply isolated Home/create source patch
+on:
+  push:
+    branches:
+      - home-ops-create-structural-20260908
+    paths:
+      - tools/home-ops-patches/READY
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply audited source patches
+        run: |
+          set -euo pipefail
+          for p in tools/home-ops-patches/*.patch; do
+            echo "Checking $p"
+            git apply --check "$p"
+            git apply "$p"
+          done
+      - name: Commit isolated source changes
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pristeel-workspace-architecture-v1.js pristeel-native-ui-v3.js pristeel-native-ui-v4-core.js pristeel-platform-readability-v1.js
+          git commit -m "Structural create owner and operational Home"
+          git push
