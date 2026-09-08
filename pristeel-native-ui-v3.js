@@ -96,7 +96,7 @@ html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-r
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpis{gap:8px!important;margin:0 0 14px!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi{min-height:72px!important;padding:9px 11px!important;border-radius:9px!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi span{font-size:11.5px!important;line-height:1.25!important}
-html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi b{font-size:21px!important;margin-top:3px!important;letter-spacing:-.35px!important;line-height:1.12!important;color:#3F7F98!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi b{font-size:21px!important;margin-top:3px!important;line-height:1.12!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi small{font-size:10.5px!important;margin-top:3px!important;line-height:1.3!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi em{right:9px!important;top:8px!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pn-kpi:nth-child(-n+2):after{left:11px!important;right:11px!important}
