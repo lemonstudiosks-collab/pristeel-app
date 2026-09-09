@@ -38,7 +38,7 @@ assert.match(pcw,/data-pcw-opportunities-owner/,'modern opportunity cards must o
 assert.match(dossier,/data-analysis-ready/,'dossier engine must expose a verified analysis-ready state');
 assert.match(dossier,/pst:tender-dossier-ready/,'dossier engine must emit a completion event');
 assert.doesNotMatch(dossier,/scheduleFromTarget\([^)]*\)[\s\S]{0,180}analyze\(id,false\)/,'opening a tender card must not silently start dossier analysis');
-assert.match(dossier,/Fusha e punës/,'dossier presentation must use Albanian labels');
+assert.match(dossier,/Fusha e çelikut \/ punës metalike/,'dossier presentation must keep the work-scope label explicit and Albanian');
 
 assert.match(projects,/Kërkon veprim/,'project action state must be Albanian');
 assert.match(projects,/Në pritje/,'project waiting state must be Albanian');

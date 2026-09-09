@@ -9,10 +9,13 @@ on:
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
       - 'supabase/functions/pppp-tender-dossier-import/**'
       - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
+      - 'supabase/migrations/20260909140000_tender_dossier_canonical_integrity_guards.sql'
       - 'tests/tender-dossier-analysis-smoke.mjs'
       - 'tests/tender-dossier-import-smoke.mjs'
       - 'tests/tender-dossier-import-ui-smoke.mjs'
       - 'tests/tender-dossier-rate-limit-upload-smoke.mjs'
+      - 'tests/tender-dossier-integrity-guards-smoke.mjs'
+      - 'tests/tender-dossier-p2-ui-smoke.mjs'
       - '.github/workflows/tender-dossier-analysis-smoke.yml'
   push:
     branches: [main]
@@ -23,10 +26,13 @@ on:
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
       - 'supabase/functions/pppp-tender-dossier-import/**'
       - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
+      - 'supabase/migrations/20260909140000_tender_dossier_canonical_integrity_guards.sql'
       - 'tests/tender-dossier-analysis-smoke.mjs'
       - 'tests/tender-dossier-import-smoke.mjs'
       - 'tests/tender-dossier-import-ui-smoke.mjs'
       - 'tests/tender-dossier-rate-limit-upload-smoke.mjs'
+      - 'tests/tender-dossier-integrity-guards-smoke.mjs'
+      - 'tests/tender-dossier-p2-ui-smoke.mjs'
       - '.github/workflows/tender-dossier-analysis-smoke.yml'
 
 permissions:
@@ -40,12 +46,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - run: npm install --no-audit --no-fund
       - run: node --check pristeel-tender-dossier-analysis-v1.js
       - run: node --check pristeel-tender-dossier-import-v1.js
       - run: node --check pristeel-redesign-finalizer-v1.js
       - run: node --check supabase/functions/pppp-tender-dossier-analysis/parser.mjs
+      - name: Deno check dossier importer
+        id: deno_importer
+        continue-on-error: true
+        run: deno check --node-modules-dir=auto supabase/functions/pppp-tender-dossier-import/index.ts > deno-importer-check.log 2>&1
+      - name: Upload importer type-check diagnostics
+        if: steps.deno_importer.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deno-importer-check-log
+          path: deno-importer-check.log
+          retention-days: 1
+      - name: Enforce importer type-check
+        if: steps.deno_importer.outcome == 'failure'
+        run: |
+          cat deno-importer-check.log
+          exit 1
+      - run: deno check --node-modules-dir=auto supabase/functions/pppp-tender-protected-archive-analysis/index.ts
       - run: node tests/tender-dossier-analysis-smoke.mjs
       - run: node tests/tender-dossier-import-smoke.mjs
       - run: node tests/tender-dossier-import-ui-smoke.mjs
       - run: node tests/tender-dossier-rate-limit-upload-smoke.mjs
+      - run: node tests/tender-dossier-integrity-guards-smoke.mjs
+      - run: node tests/tender-dossier-p2-ui-smoke.mjs
