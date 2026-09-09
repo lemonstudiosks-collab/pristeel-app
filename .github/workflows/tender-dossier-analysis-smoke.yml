@@ -9,10 +9,12 @@ on:
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
       - 'supabase/functions/pppp-tender-dossier-import/**'
       - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
+      - 'supabase/migrations/20260909140000_tender_dossier_canonical_integrity_guards.sql'
       - 'tests/tender-dossier-analysis-smoke.mjs'
       - 'tests/tender-dossier-import-smoke.mjs'
       - 'tests/tender-dossier-import-ui-smoke.mjs'
       - 'tests/tender-dossier-rate-limit-upload-smoke.mjs'
+      - 'tests/tender-dossier-integrity-guards-smoke.mjs'
       - '.github/workflows/tender-dossier-analysis-smoke.yml'
   push:
     branches: [main]
@@ -23,10 +25,12 @@ on:
       - 'supabase/functions/pppp-tender-dossier-analysis/**'
       - 'supabase/functions/pppp-tender-dossier-import/**'
       - 'supabase/functions/pppp-tender-protected-archive-analysis/**'
+      - 'supabase/migrations/20260909140000_tender_dossier_canonical_integrity_guards.sql'
       - 'tests/tender-dossier-analysis-smoke.mjs'
       - 'tests/tender-dossier-import-smoke.mjs'
       - 'tests/tender-dossier-import-ui-smoke.mjs'
       - 'tests/tender-dossier-rate-limit-upload-smoke.mjs'
+      - 'tests/tender-dossier-integrity-guards-smoke.mjs'
       - '.github/workflows/tender-dossier-analysis-smoke.yml'
 
 permissions:
@@ -49,3 +53,4 @@ jobs:
       - run: node tests/tender-dossier-import-smoke.mjs
       - run: node tests/tender-dossier-import-ui-smoke.mjs
       - run: node tests/tender-dossier-rate-limit-upload-smoke.mjs
+      - run: node tests/tender-dossier-integrity-guards-smoke.mjs
