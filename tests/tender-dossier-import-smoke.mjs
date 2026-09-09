@@ -31,6 +31,8 @@ assert(importer.includes('mime=mimeFor(sourceName)'),'Extracted ZIP entries must
 assert(importer.includes('tender_watch_id:tender.id')&&importer.includes('identity_status:identity.status'),'Archive metadata must bind each newly imported document to the tender and identity verdict');
 assert(importer.includes('isCanonicalProtectedAnalysis')&&importer.includes('!canonical&&prior'),'Partial import must not downgrade an existing canonical protected analysis');
 assert(importer.includes('/functions/v1/pppp-tender-protected-archive-analysis'),'Completion must still use the canonical protected-archive analyzer');
+assert(importer.includes('runProtectedArchiveAnalysisPreservingUpload')&&importer.includes('deferredAnalysis'),'Successful upload must remain successful when AI completion is temporarily deferred');
+assert(importer.includes('[429,502,503].includes(status)')&&importer.includes('dossier_saved:true')&&importer.includes('analysis_ready:false'),'AI rate/provider limits must preserve the saved dossier and report not-ready without converting upload into a generic 500');
 assert(!/api\.openai\.com\/v1\/responses|finalSchema\(/.test(importer),'Upload bridge must not contain a parallel analysis engine');
 
 assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v6'"),'Canonical analyzer must be on protected archive analysis v6');
