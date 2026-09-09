@@ -88,7 +88,7 @@ assert(edge.includes("type:'input_file'"),'Edge function does not pass official 
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
 assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
 assert(edge.includes("npm:fflate@0.8.2")&&edge.includes('zipSync')&&edge.includes('fetchOfficialBinary'),'Edge function must bundle official dossier documents server-side');
-assert(edge.includes("const VERSION='v10'"),'KRPP protected-dossier state must advance the analysis generation');
+assert(edge.includes("const VERSION='v11'"),'Tender dossier analysis generation must include the rate-limit state fix');
 assert(edge.includes('fetchKrppActionFiles')&&edge.includes("application/x-www-form-urlencoded")&&edge.includes("__EVENTTARGET")&&edge.includes("__EVENTARGUMENT"),'KRPP bundle must execute exact ASP.NET postbacks with captured form state and argument');
 assert(edge.includes("depth<2")&&edge.includes('extractKrppDossier(html,current)')&&edge.includes('krppChildActions'),'KRPP HTML response must be reparsed with its updated WebForms state and followed through a bounded second step');
 assert(edge.includes('MAX_KRPP_SECONDARY_ACTIONS'),'KRPP secondary action traversal must stay bounded');
@@ -115,6 +115,17 @@ assert(pcw.includes("typeof D.isReady==='function'?D.isReady(id):dossierReady(id
 assert(edge.includes('SUPABASE_SERVICE_ROLE_KEY'),'Purpose-limited persistence path is missing');
 assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(edge),'Tender analysis must not contain external/binding action endpoints');
 assert(finalizer.includes('data-pst-tender-dossier-analysis-v3'),'Finalizer does not load the current dossier analysis runtime');
+
+assert(edge.includes("code:'AI_RATE_LIMITED'")&&edge.includes("error:'ai_rate_limited'"),'OpenAI 429 must become a structured rate-limit state');
+assert(edge.includes('if(isRateLimitError(first))throw first')&&edge.includes('if(isRateLimitError(second))throw second'),'OpenAI 429 must stop fallback retries immediately');
+assert(edge.includes('dossier_saved:saved')&&edge.includes("dossier_analysis_status:status||'awaiting_ai'"),'Resolved dossier state must be persisted before AI analysis');
+assert(edge.includes('body?.retry_saved')&&edge.includes('savedDossierState(row,source)'),'Retry must reuse the persisted dossier state');
+assert(edge.includes('retry_uses_saved_dossier:true')&&edge.includes('analysis_ready:false'),'Rate-limit response must keep retry possible while analysis remains blocked');
+assert(edge.includes("message:RATE_LIMIT_MESSAGE")&&!edge.includes('`OpenAI ${r.status}: ${raw.slice(0,500)}`'),'Raw OpenAI provider error must not be returned to the UI');
+assert(frontend.includes('Dosja është ruajtur; analiza AI nuk u përfundua për shkak të limitit të përkohshëm'),'Action Console must show the safe Albanian rate-limit message');
+assert(frontend.includes('data-tda-retry-saved')&&frontend.includes('retry_saved:!!retrySaved'),'Retry button must explicitly request saved-dossier reuse');
+assert(frontend.includes('if(complete&&ready)')&&frontend.includes("data-analysis-ready',ready?'1':'0'"),'Krijo projekt must remain blocked until a successful analysis is ready');
+
 console.log('Tender dossier parser + security + runtime smoke test passed.');
 
 assert(frontend.includes('Kushtet teknike')&&frontend.includes('Kushtet komerciale'),'Primary dossier view must expose technical and commercial conditions');
