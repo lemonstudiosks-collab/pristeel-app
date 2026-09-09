@@ -132,8 +132,10 @@ async function main(){
     result.checks.temp_record_created=true;
 
     const imported=await edge('pppp-tender-dossier-import',{tender_id:tempId,mode:'upload_archive',file:{name:ZIP_NAME,type:'application/zip',base64:Buffer.from(zipBytes).toString('base64')}});
-    result.checks.import_response={dossier_complete:imported.dossier_complete===true,matched_documents:imported.matched_documents||[],resolved_documents:imported.resolved_documents||[],contained_documents:imported.contained_documents||[],remaining_protected_documents:imported.remaining_protected_documents||[],recommendation:imported.analysis?.recommendation||null};
+    const aiDeferred=imported.analysis_ready===false&&imported.dossier_saved===true&&imported.retryable===true;
+    result.checks.import_response={dossier_complete:imported.dossier_complete===true,analysis_ready:imported.analysis_ready!==false,ai_deferred:aiDeferred,analysis_error:imported.analysis_error||null,message:imported.message||null,matched_documents:imported.matched_documents||[],resolved_documents:imported.resolved_documents||[],contained_documents:imported.contained_documents||[],remaining_protected_documents:imported.remaining_protected_documents||[],recommendation:imported.analysis?.recommendation||null};
     if(imported.dossier_complete!==true)throw new Error('ZIP importer did not complete the isolated two-document dossier.');
+    if(aiDeferred&&imported.retry_uses_saved_dossier!==true)throw new Error('Deferred AI analysis must explicitly reuse the saved dossier on retry.');
     for(const expected of EXPECTED)if(!(imported.matched_documents||[]).includes(expected))throw new Error(`ZIP importer did not match expected family variant: ${expected}`);
     const resolved=Array.isArray(imported.resolved_documents)?imported.resolved_documents:[];
     const docResolved=resolved.find(x=>x.expected_name===EXPECTED_DOC),xlsResolved=resolved.find(x=>x.expected_name===EXPECTED_XLS);
@@ -149,11 +151,16 @@ async function main(){
     tempStoragePaths=archive.map(x=>text(x?.path,1900)).filter(p=>p.startsWith(`tender-protected/${tempId}/`));
     if(archive.length!==2)throw new Error(`Expected two imported archive rows, got ${archive.length}.`);
     if(t.payload?.protected_archive_import_version!=='protected-archive-upload-v5')throw new Error(`Wrong importer version: ${t.payload?.protected_archive_import_version||'missing'}`);
-    if(t.payload?.protected_archive_analysis_version!=='protected-archive-analysis-v6')throw new Error(`Wrong analyzer version: ${t.payload?.protected_archive_analysis_version||'missing'}`);
-    if(t.payload?.dossier_analysis?.dossier_complete!==true)throw new Error('Canonical protected archive analysis is not complete.');
-    if(t.payload?.dossier_analysis?.file_mode!=='authenticated_protected_archive')throw new Error(`Wrong canonical file mode: ${t.payload?.dossier_analysis?.file_mode||'missing'}`);
-    if(t.payload?.dossier_analysis?.provider?.name!=='openai')throw new Error('Canonical production acceptance requires real OpenAI dossier analysis.');
-    if(q.status!=='analyzed'||q.auth_required!==false||text(q.last_error,500)!=='')throw new Error(`Queue final state invalid: status=${q.status}, auth_required=${q.auth_required}, last_error=${text(q.last_error,300)}`);
+    if(aiDeferred){
+      if(q.status!=='ready'||q.auth_required!==false)throw new Error(`Deferred AI queue state invalid: status=${q.status}, auth_required=${q.auth_required}`);
+      if(!['rate_limited','ai_failed','ai_unavailable'].includes(text(t.payload?.dossier_analysis_status,80)))throw new Error(`Deferred AI status was not persisted safely: ${text(t.payload?.dossier_analysis_status,120)}`);
+    }else{
+      if(t.payload?.protected_archive_analysis_version!=='protected-archive-analysis-v6')throw new Error(`Wrong analyzer version: ${t.payload?.protected_archive_analysis_version||'missing'}`);
+      if(t.payload?.dossier_analysis?.dossier_complete!==true)throw new Error('Canonical protected archive analysis is not complete.');
+      if(t.payload?.dossier_analysis?.file_mode!=='authenticated_protected_archive')throw new Error(`Wrong canonical file mode: ${t.payload?.dossier_analysis?.file_mode||'missing'}`);
+      if(t.payload?.dossier_analysis?.provider?.name!=='openai')throw new Error('Canonical production acceptance requires real OpenAI dossier analysis.');
+      if(q.status!=='analyzed'||q.auth_required!==false||text(q.last_error,500)!=='')throw new Error(`Queue final state invalid: status=${q.status}, auth_required=${q.auth_required}, last_error=${text(q.last_error,300)}`);
+    }
     const byExpected=new Map(archive.map(x=>[text(x.expected_name,500),x]));
     const aDoc=byExpected.get(EXPECTED_DOC),aXls=byExpected.get(EXPECTED_XLS);
     if(!aDoc||!aXls)throw new Error('Archive did not preserve both canonical expected names.');
@@ -168,7 +175,7 @@ async function main(){
       if(a.mime_type==='application/zip'||a.mime_type==='application/x-zip-compressed')throw new Error('Extracted document inherited ZIP MIME type.');
       if(a.identity_status==='mismatch')throw new Error('Cross-tender mismatch entered canonical archive.');
     }
-    result.checks.production_state={import_version:t.payload.protected_archive_import_version,analysis_version:t.payload.protected_archive_analysis_version,dossier_complete:true,queue_status:q.status,auth_required:q.auth_required,last_error:q.last_error||null,archive_count:archive.length,bucket:BUCKET,bucket_private:true,storage_paths_safe:true,identity_bound:true,inner_mime_verified:true,doc_family:{expected:aDoc.expected_name,source:aDoc.source_name,expected_ext:aDoc.expected_ext,source_ext:aDoc.source_ext},sheet_family:{expected:aXls.expected_name,source:aXls.source_name,expected_ext:aXls.expected_ext,source_ext:aXls.source_ext},files_analyzed:t.payload?.dossier_analysis?.files_analyzed||[],coverage:t.payload?.dossier_analysis?.coverage||t.payload?.dossier_analysis?.analysis?.coverage||null};
+    result.checks.production_state={import_version:t.payload.protected_archive_import_version,analysis_version:t.payload.protected_archive_analysis_version||null,dossier_complete:true,analysis_ready:!aiDeferred,ai_deferred:aiDeferred,queue_status:q.status,auth_required:q.auth_required,last_error:q.last_error||null,archive_count:archive.length,bucket:BUCKET,bucket_private:true,storage_paths_safe:true,identity_bound:true,inner_mime_verified:true,doc_family:{expected:aDoc.expected_name,source:aDoc.source_name,expected_ext:aDoc.expected_ext,source_ext:aDoc.source_ext},sheet_family:{expected:aXls.expected_name,source:aXls.source_name,expected_ext:aXls.expected_ext,source_ext:aXls.source_ext},files_analyzed:t.payload?.dossier_analysis?.files_analyzed||[],coverage:t.payload?.dossier_analysis?.coverage||t.payload?.dossier_analysis?.analysis?.coverage||null};
 
     const invalidAfter=await invalidKeyRows();
     result.checks.invalid_key_after=invalidAfter.length;
