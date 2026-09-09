@@ -44,11 +44,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - run: npm install --no-audit --no-fund
       - run: node --check pristeel-tender-dossier-analysis-v1.js
       - run: node --check pristeel-tender-dossier-import-v1.js
       - run: node --check pristeel-redesign-finalizer-v1.js
       - run: node --check supabase/functions/pppp-tender-dossier-analysis/parser.mjs
+      - run: deno check supabase/functions/pppp-tender-dossier-import/index.ts
+      - run: deno check supabase/functions/pppp-tender-protected-archive-analysis/index.ts
       - run: node tests/tender-dossier-analysis-smoke.mjs
       - run: node tests/tender-dossier-import-smoke.mjs
       - run: node tests/tender-dossier-import-ui-smoke.mjs
