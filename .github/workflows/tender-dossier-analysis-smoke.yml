@@ -52,8 +52,8 @@ jobs:
       - run: node --check pristeel-tender-dossier-import-v1.js
       - run: node --check pristeel-redesign-finalizer-v1.js
       - run: node --check supabase/functions/pppp-tender-dossier-analysis/parser.mjs
-      - run: deno check supabase/functions/pppp-tender-dossier-import/index.ts
-      - run: deno check supabase/functions/pppp-tender-protected-archive-analysis/index.ts
+      - run: deno check --node-modules-dir=auto supabase/functions/pppp-tender-dossier-import/index.ts
+      - run: deno check --node-modules-dir=auto supabase/functions/pppp-tender-protected-archive-analysis/index.ts
       - run: node tests/tender-dossier-analysis-smoke.mjs
       - run: node tests/tender-dossier-import-smoke.mjs
       - run: node tests/tender-dossier-import-ui-smoke.mjs
