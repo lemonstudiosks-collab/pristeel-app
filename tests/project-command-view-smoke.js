@@ -4,10 +4,16 @@ const {JSDOM}=require('jsdom');
 
 (async()=>{
  const source=fs.readFileSync('pristeel-project-command-view-v1.js','utf8');
+ const migration=fs.readFileSync('supabase/migrations/20260909060000_project_terminal_operational_truth.sql','utf8');
  assert(!/MutationObserver|setInterval\s*\(/.test(source),'Project command view must not observe or poll');
  assert(!/supaFetch\([^)]*,\s*['\"](?:POST|PATCH|DELETE)/i.test(source),'Project command view must not write');
  assert(!/(?:window\.)?pstOpenProjectWorkspace\s*=(?!=)/.test(source),'Project opener must not be replaced');
  assert(source.includes('terminalStage(p.status)||STAGES[p.pipeline_stage]'),'Terminal project status must take precedence over pipeline stage');
+ assert(migration.includes('pppp_project_status_is_terminal_v1'),'Migration must centralize terminal status detection');
+ assert(migration.indexOf('if public.pppp_project_status_is_terminal_v1(v_project_status)')<migration.indexOf("v_sender_role:=public.pppp_project_email_party_role_v1"),'Terminal guard must run before email direction can change operational state');
+ assert(migration.includes("operational_state='closed'"),'Terminal projects must reconcile to a non-active operational state');
+ assert(migration.includes("'terminal_no_active_followup'"),'Project Intelligence must receive terminal lifecycle truth');
+ assert(migration.includes('it does not decide won/lost or change project.status'),'Migration must preserve the human won/lost gate');
  const dom=new JSDOM(`<!doctype html><html><body><div id="page-workspace-project" class="page" style="display:block"><div class="pst-pi-head"><div class="pst-pi-actions"><button class="pst-pi-btn">Projektet</button><button class="pst-pi-btn">Pamja e vjetër</button><button class="pst-pi-btn">Rifresko</button></div><div class="pst-pi-stats"></div></div><div class="pst-pi-tabs"></div></div></body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
  const w=dom.window;
  w.__pstCurrentProjectId='p1';
