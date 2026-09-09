@@ -14,6 +14,7 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body>
 </body></html>`,{url:'https://lemonstudiosks-collab.github.io/pristeel-app/',runScripts:'outside-only'});
 const {window}=dom,{document}=window;
 window.console=console;
+window.CSS={escape:(value)=>String(value).replace(/(["\\])/g,'\\$1')};
 window.alert=(msg)=>{throw new Error('Unexpected alert: '+msg);};
 window._SB_URL='https://example.supabase.co';
 window._SB_KEY='anon-key';
