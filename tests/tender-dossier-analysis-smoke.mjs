@@ -81,7 +81,7 @@ const edge=fs.readFileSync('supabase/functions/pppp-tender-dossier-analysis/inde
 const parserSource=fs.readFileSync('supabase/functions/pppp-tender-dossier-analysis/parser.mjs','utf8');
 const finalizer=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
 const pcw=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
-assert(frontend.includes('/functions/v1/pppp-tender-dossier-analysis'),'Frontend is not wired to the dossier edge function');
+assert(frontend.includes("slug=S(slug||'pppp-tender-dossier-analysis')")&&frontend.includes("base+'/functions/v1/'+slug"),'Frontend is not wired to the dossier edge function');
 assert(frontend.includes('[data-pcw-tender]'),'Whole tender-card interaction is not preserved');
 assert(!/MutationObserver|setInterval\s*\(/.test(frontend),'Tender dossier UI must remain bounded and polling-free');
 assert(edge.includes("type:'input_file'"),'Edge function does not pass official dossier files to OpenAI');
