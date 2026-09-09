@@ -32,7 +32,8 @@ assert(importer.includes('tender_watch_id:tender.id')&&importer.includes('identi
 assert(importer.includes('isCanonicalProtectedAnalysis')&&importer.includes('!canonical&&prior'),'Partial import must not downgrade an existing canonical protected analysis');
 assert(importer.includes('/functions/v1/pppp-tender-protected-archive-analysis'),'Completion must still use the canonical protected-archive analyzer');
 assert(importer.includes('runProtectedArchiveAnalysisPreservingUpload')&&importer.includes('deferredAnalysis'),'Successful upload must remain successful when AI completion is temporarily deferred');
-assert(importer.includes('[429,502,503].includes(status)')&&importer.includes('dossier_saved:true')&&importer.includes('analysis_ready:false'),'AI rate/provider limits must preserve the saved dossier and report not-ready without converting upload into a generic 500');
+assert(importer.includes('transient=status>=500||status===429')&&importer.includes('dossier_saved:true')&&importer.includes('analysis_ready:false'),'Any downstream 5xx/429 analysis infrastructure failure must preserve the saved dossier and report not-ready instead of converting upload into a generic 500');
+assert(importer.includes('review=[409,422].includes(status)')&&importer.includes('requires_review:review'),'Integrity/readability analysis blockers must preserve the upload but require review rather than blind retry');
 assert(!/api\.openai\.com\/v1\/responses|finalSchema\(/.test(importer),'Upload bridge must not contain a parallel analysis engine');
 
 assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v6'"),'Canonical analyzer must be on protected archive analysis v6');
