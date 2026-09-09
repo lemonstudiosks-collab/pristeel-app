@@ -65,14 +65,16 @@ async function analyze(event:any,project:any,recent:any[],facts:any[],tasks:any[
  const raw=await res.text();if(!res.ok)return deterministicAnalyze(event,project,attachments);let data:any={};try{data=JSON.parse(raw)}catch{}const out=outputText(data);if(!out)return deterministicAnalyze(event,project,attachments);return{result:JSON.parse(out),model:data?.model||MODEL,response_id:data?.id||null,provider:'openai'};
 }
 async function processOne(e:any){
+ const eventAt=e.sent_at||new Date().toISOString();
+ if(W(eventAt)>Date.now()+5*60*1000)return{skip:'future_email',gmail_message_id:e.gmail_message_id};
  const {data:p,error:pe}=await db.from('projects').select('id,name,client,status,pipeline_stage,operational_state,operational_state_at').eq('id',e.project_id).maybeSingle();if(pe||!p||isTerminal(p))return{skip:'project'};
  const [rm,rf,rt,ra]=await Promise.all([
-  db.from('project_emails').select('gmail_message_id,direction,from_email,from_name,to_emails,subject,snippet,sent_at,has_attachments').eq('project_id',p.id).lte('sent_at',e.sent_at).order('sent_at',{ascending:false}).limit(10),
+  db.from('project_emails').select('gmail_message_id,direction,from_email,from_name,to_emails,subject,snippet,sent_at,has_attachments').eq('project_id',p.id).lte('sent_at',eventAt).order('sent_at',{ascending:false}).limit(10),
   db.from('pppp_project_context_current_v').select('category,subject,value,evidence_status,fact_status,source_type,created_at,updated_at').eq('project_id',p.id).eq('fact_status','observed').order('updated_at',{ascending:false}).limit(20),
   db.from('tasks').select('id,title,detail,status,source,source_ref,due_date,created_at').eq('project_id',p.id).order('created_at',{ascending:false}).limit(30),
   db.from('project_attachment_links').select('id,gmail_message_id,gmail_thread_id,attachment_name,analysis_status,analysis_method,extracted_text,extracted_data,archived_at,storage_path').eq('project_id',String(p.id)).eq('gmail_thread_id',T(e.gmail_thread_id,120)).order('created_at',{ascending:false}).limit(20)
  ]);if(rm.error)throw rm.error;if(rf.error)throw rf.error;if(rt.error)throw rt.error;if(ra.error)throw ra.error;
- const facts=rf.data||[],eventAt=e.sent_at||new Date().toISOString(),anchor=latestConfirmedOperator(facts);
+ const facts=rf.data||[],anchor=latestConfirmedOperator(rf.data||[]);
  if(anchor&&W(eventAt)<=anchor.at){
   await recordSuppressedEvent(e,p,anchor,eventAt);
   return{project_id:p.id,gmail_message_id:e.gmail_message_id,action_required:false,confidence:100,task_id:null,state:'no_change',suppressed_by_operator_update:true,summary:'Backstage: email më i vjetër se update-i i konfirmuar.'};
@@ -100,7 +102,8 @@ async function processOne(e:any){
 }
 async function run(limit=6,days=3){
  const since=new Date(Date.now()-Math.max(1,Math.min(days,7))*86400000).toISOString();
- const em=await db.from('project_emails').select('id,gmail_message_id,gmail_thread_id,project_id,direction,from_email,from_name,to_emails,subject,snippet,sent_at,has_attachments').not('project_id','is',null).gte('sent_at',since).order('sent_at',{ascending:false}).limit(180);if(em.error)throw em.error;
+ const nowIso=new Date().toISOString();
+ const em=await db.from('project_emails').select('id,gmail_message_id,gmail_thread_id,project_id,direction,from_email,from_name,to_emails,subject,snippet,sent_at,has_attachments').not('project_id','is',null).gte('sent_at',since).lte('sent_at',nowIso).order('sent_at',{ascending:false}).limit(180);if(em.error)throw em.error;
  const done=await db.from('pppp_project_context_facts').select('source_ref').like('idempotency_key','email-event-v2:%').gte('created_at',since).limit(500);if(done.error)throw done.error;
  const seen=new Set((done.data||[]).map((x:any)=>T(x.source_ref,100))),queue=(em.data||[]).filter((x:any)=>x.gmail_message_id&&!seen.has(T(x.gmail_message_id,100))).sort((a:any,b:any)=>W(a.sent_at)-W(b.sent_at)).slice(0,Math.max(1,Math.min(limit,12))),items:any[]=[];
  for(const e of queue){try{items.push(await processOne(e))}catch(err){items.push({gmail_message_id:e.gmail_message_id,error:T((err as any)?.message||err,600)})}}
