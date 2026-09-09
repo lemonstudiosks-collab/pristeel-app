@@ -37,7 +37,7 @@ async function main(){
   const localDir=await mkdtemp(join(tmpdir(),'pppp-krpp-zip-'));
   let tempStoragePaths=[];
   let queueDeleted=false,tenderDeleted=false;
-  const result={ok:false,acceptance:'krpp-importer-v4-real-zip-production',source_tender_id:SOURCE_TENDER_ID,temp_tender_id:tempId,auth_mode:access.authMode,edge_auth_mode:edgeAccess.authMode,started_at:new Date().toISOString(),checks:{},cleanup:{}};
+  const result={ok:false,acceptance:'krpp-importer-v5-real-zip-production',source_tender_id:SOURCE_TENDER_ID,temp_tender_id:tempId,auth_mode:access.authMode,edge_auth_mode:edgeAccess.authMode,started_at:new Date().toISOString(),checks:{},cleanup:{}};
 
   async function rest(path,{method='GET',body,headers={}}={}){
     const r=await fetch(`${base}/rest/v1/${path}`,{method,headers:{...authHeaders,'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
@@ -116,17 +116,19 @@ async function main(){
     const now=new Date().toISOString();
     const tempTender={
       id:tempId,source_key:`acceptance-zip:${tempId}`,
-      procurement_no:`ACCEPTANCE-ZIP-${tempId.slice(0,8)}`,publication_no:`ACCEPTANCE-ZIP-${tempId}`,
-      authority:sourceBefore.authority||'KRPP acceptance',title:`[PPPP ZIP ACCEPTANCE] ${sourceBefore.title||'KRPP importer v4'}`,
+      // Identity deliberately mirrors the source tender. v5 must reject the same files
+      // when procurement identity is changed to an unrelated tender.
+      procurement_no:sourceBefore.procurement_no,publication_no:sourceBefore.publication_no,
+      authority:sourceBefore.authority||'KRPP acceptance',title:sourceBefore.title||'KRPP importer v5 acceptance',
       document_type:sourceBefore.document_type||null,fpp:sourceBefore.fpp||null,fpp_description:sourceBefore.fpp_description||null,
       contract_type:sourceBefore.contract_type||null,contract_value_band:sourceBefore.contract_value_band||null,procedure:sourceBefore.procedure||null,
       estimated_value:sourceBefore.estimated_value||null,currency:sourceBefore.currency||null,deadline:sourceBefore.deadline||null,published_date:sourceBefore.published_date||null,
       is_retender:false,category:sourceBefore.category||null,relevance_score:sourceBefore.relevance_score||0,match_reasons:['production_zip_acceptance_only'],
       status:'watch',project_id:null,source_url:sourceBefore.source_url||null,detail_url:sourceBefore.detail_url||null,
-      payload:{acceptance_test:true,acceptance_mode:'real_zip_family_matching',acceptance_source_tender_id:SOURCE_TENDER_ID,dossier_analysis:{dossier_complete:false,protected_documents:EXPECTED}}
+      payload:{acceptance_test:true,acceptance_mode:'real_zip_identity_and_family_matching',acceptance_source_tender_id:SOURCE_TENDER_ID,dossier_analysis:{dossier_complete:false,protected_documents:EXPECTED}}
     };
     await rest('kek_tender_watch',{method:'POST',body:tempTender,headers:{Prefer:'return=minimal'}});
-    await rest('pppp_tender_fetch_queue',{method:'POST',body:{tender_watch_id:tempId,source:'KRPP',status:'queued',auth_required:true,protected_documents:EXPECTED,requested_at:now,attempt_count:0,last_error:null,payload:{acceptance_test:true,acceptance_mode:'real_zip_family_matching',detail_url:sourceBefore.detail_url||null,procurement_no:tempTender.procurement_no,title:tempTender.title},updated_at:now},headers:{Prefer:'return=minimal'}});
+    await rest('pppp_tender_fetch_queue',{method:'POST',body:{tender_watch_id:tempId,source:'KRPP',status:'queued',auth_required:true,protected_documents:EXPECTED,requested_at:now,attempt_count:0,last_error:null,payload:{acceptance_test:true,acceptance_mode:'real_zip_identity_and_family_matching',detail_url:sourceBefore.detail_url||null,procurement_no:sourceBefore.procurement_no,title:sourceBefore.title},updated_at:now},headers:{Prefer:'return=minimal'}});
     result.checks.temp_record_created=true;
 
     const imported=await edge('pppp-tender-dossier-import',{tender_id:tempId,mode:'upload_archive',file:{name:ZIP_NAME,type:'application/zip',base64:Buffer.from(zipBytes).toString('base64')}});
@@ -137,7 +139,8 @@ async function main(){
     const docResolved=resolved.find(x=>x.expected_name===EXPECTED_DOC),xlsResolved=resolved.find(x=>x.expected_name===EXPECTED_XLS);
     if(docResolved?.source_name!==DOCX_NAME)throw new Error(`DOC/DOCX family match failed: ${JSON.stringify(docResolved)}`);
     if(xlsResolved?.source_name!==XLSX_NAME)throw new Error(`XLS/XLSX family match failed: ${JSON.stringify(xlsResolved)}`);
-    if(Number(docResolved?.score||0)<55||Number(xlsResolved?.score||0)<55)throw new Error('Family matches did not meet importer confidence threshold.');
+    if(Number(docResolved?.score||0)<60||Number(xlsResolved?.score||0)<60)throw new Error('Family/identity matches did not meet importer v5 confidence threshold.');
+    if(!['verified','supported'].includes(text(docResolved?.identity_status,30))&&!['verified','supported'].includes(text(xlsResolved?.identity_status,30)))throw new Error('At least one real source document must positively support the tender identity.');
 
     const tRes=await rest(`kek_tender_watch?id=eq.${tempId}&select=id,payload`),t=Array.isArray(tRes.body)?tRes.body[0]:null;
     const qRes=await rest(`pppp_tender_fetch_queue?tender_watch_id=eq.${tempId}&select=*`),q=Array.isArray(qRes.body)?qRes.body[0]:null;
@@ -145,9 +148,11 @@ async function main(){
     const archive=Array.isArray(t.payload?.protected_archive)?t.payload.protected_archive:[];
     tempStoragePaths=archive.map(x=>text(x?.path,1900)).filter(p=>p.startsWith(`tender-protected/${tempId}/`));
     if(archive.length!==2)throw new Error(`Expected two imported archive rows, got ${archive.length}.`);
-    if(t.payload?.protected_archive_import_version!=='protected-archive-upload-v4')throw new Error(`Wrong importer version: ${t.payload?.protected_archive_import_version||'missing'}`);
-    if(t.payload?.protected_archive_analysis_version!=='protected-archive-analysis-v5')throw new Error(`Wrong analyzer version: ${t.payload?.protected_archive_analysis_version||'missing'}`);
+    if(t.payload?.protected_archive_import_version!=='protected-archive-upload-v5')throw new Error(`Wrong importer version: ${t.payload?.protected_archive_import_version||'missing'}`);
+    if(t.payload?.protected_archive_analysis_version!=='protected-archive-analysis-v6')throw new Error(`Wrong analyzer version: ${t.payload?.protected_archive_analysis_version||'missing'}`);
     if(t.payload?.dossier_analysis?.dossier_complete!==true)throw new Error('Canonical protected archive analysis is not complete.');
+    if(t.payload?.dossier_analysis?.file_mode!=='authenticated_protected_archive')throw new Error(`Wrong canonical file mode: ${t.payload?.dossier_analysis?.file_mode||'missing'}`);
+    if(t.payload?.dossier_analysis?.provider?.name!=='openai')throw new Error('Canonical production acceptance requires real OpenAI dossier analysis.');
     if(q.status!=='analyzed'||q.auth_required!==false||text(q.last_error,500)!=='')throw new Error(`Queue final state invalid: status=${q.status}, auth_required=${q.auth_required}, last_error=${text(q.last_error,300)}`);
     const byExpected=new Map(archive.map(x=>[text(x.expected_name,500),x]));
     const aDoc=byExpected.get(EXPECTED_DOC),aXls=byExpected.get(EXPECTED_XLS);
@@ -159,8 +164,11 @@ async function main(){
       if(a.bucket!==BUCKET)throw new Error(`Wrong storage bucket: ${a.bucket}`);
       if(!new RegExp(`^tender-protected/${tempId}/[a-f0-9]{64}\\.(docx|xlsx)$`).test(text(a.path,1900)))throw new Error(`Unsafe or incorrect storage path: ${text(a.path,500)}`);
       if(a.import_archive_name!==ZIP_NAME)throw new Error('Archive provenance did not preserve ZIP filename.');
+      if(a.tender_watch_id!==tempId)throw new Error('Archive entry is not bound to the isolated tender id.');
+      if(a.mime_type==='application/zip'||a.mime_type==='application/x-zip-compressed')throw new Error('Extracted document inherited ZIP MIME type.');
+      if(a.identity_status==='mismatch')throw new Error('Cross-tender mismatch entered canonical archive.');
     }
-    result.checks.production_state={import_version:t.payload.protected_archive_import_version,analysis_version:t.payload.protected_archive_analysis_version,dossier_complete:true,queue_status:q.status,auth_required:q.auth_required,last_error:q.last_error||null,archive_count:archive.length,bucket:BUCKET,bucket_private:true,storage_paths_safe:true,doc_family:{expected:aDoc.expected_name,source:aDoc.source_name,expected_ext:aDoc.expected_ext,source_ext:aDoc.source_ext},sheet_family:{expected:aXls.expected_name,source:aXls.source_name,expected_ext:aXls.expected_ext,source_ext:aXls.source_ext},files_analyzed:t.payload?.dossier_analysis?.files_analyzed||[]};
+    result.checks.production_state={import_version:t.payload.protected_archive_import_version,analysis_version:t.payload.protected_archive_analysis_version,dossier_complete:true,queue_status:q.status,auth_required:q.auth_required,last_error:q.last_error||null,archive_count:archive.length,bucket:BUCKET,bucket_private:true,storage_paths_safe:true,identity_bound:true,inner_mime_verified:true,doc_family:{expected:aDoc.expected_name,source:aDoc.source_name,expected_ext:aDoc.expected_ext,source_ext:aDoc.source_ext},sheet_family:{expected:aXls.expected_name,source:aXls.source_name,expected_ext:aXls.expected_ext,source_ext:aXls.source_ext},files_analyzed:t.payload?.dossier_analysis?.files_analyzed||[],coverage:t.payload?.dossier_analysis?.coverage||t.payload?.dossier_analysis?.analysis?.coverage||null};
 
     const invalidAfter=await invalidKeyRows();
     result.checks.invalid_key_after=invalidAfter.length;
