@@ -54,7 +54,22 @@ jobs:
       - run: node --check pristeel-tender-dossier-import-v1.js
       - run: node --check pristeel-redesign-finalizer-v1.js
       - run: node --check supabase/functions/pppp-tender-dossier-analysis/parser.mjs
-      - run: deno check --node-modules-dir=auto supabase/functions/pppp-tender-dossier-import/index.ts
+      - name: Deno check dossier importer
+        id: deno_importer
+        continue-on-error: true
+        run: deno check --node-modules-dir=auto supabase/functions/pppp-tender-dossier-import/index.ts > deno-importer-check.log 2>&1
+      - name: Upload importer type-check diagnostics
+        if: steps.deno_importer.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deno-importer-check-log
+          path: deno-importer-check.log
+          retention-days: 1
+      - name: Enforce importer type-check
+        if: steps.deno_importer.outcome == 'failure'
+        run: |
+          cat deno-importer-check.log
+          exit 1
       - run: deno check --node-modules-dir=auto supabase/functions/pppp-tender-protected-archive-analysis/index.ts
       - run: node tests/tender-dossier-analysis-smoke.mjs
       - run: node tests/tender-dossier-import-smoke.mjs
