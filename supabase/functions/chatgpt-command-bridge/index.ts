@@ -15,12 +15,17 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_ACTIONS = new Set(['context_fact', 'task']);
+const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project']);
 const ALLOWED_EVIDENCE = new Set(['unverified', 'observed', 'verbal', 'documented', 'confirmed']);
 const ALLOWED_FACT_STATUS = new Set(['observed', 'suggested']);
+const ALLOWED_BUSINESS_TYPES = new Set(['trading', 'fabrication', 'hybrid']);
 
 function text(v: unknown, max = 4000) {
   return String(v == null ? '' : v).trim().slice(0, max);
+}
+function validUuid(v: unknown) {
+  const value = text(v, 80);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ? value : null;
 }
 function b64url(input: Uint8Array | string) {
   const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : input;
@@ -63,7 +68,7 @@ async function driveToken() {
   const r = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion }),
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth-grant-type:jwt-bearer', assertion }),
   });
   const j = await r.json();
   if (!r.ok) throw new Error(`Google token ${r.status}: ${text(j?.error_description || j?.error, 300)}`);
@@ -123,19 +128,30 @@ async function authorized(req: Request) {
 
 async function receipt(commandId: string) {
   const { data, error } = await db.from('pppp_chatgpt_command_receipts')
-    .select('command_id,status,attempts')
+    .select('command_id,project_id,status,attempts')
     .eq('command_id', commandId)
     .maybeSingle();
   if (error) throw error;
-  return data as { command_id: string; status: string; attempts: number } | null;
+  return data as { command_id: string; project_id: string | null; status: string; attempts: number } | null;
 }
 
-async function markReceipt(command: Record<string, string>, status: string, result: Record<string, unknown>, attempts: number) {
-  const projectId = /^[0-9a-f-]{36}$/i.test(text(command.project_id, 80)) ? text(command.project_id, 80) : null;
+async function markReceipt(
+  command: Record<string, string>,
+  status: string,
+  result: Record<string, unknown>,
+  attempts: number,
+  projectIdOverride: string | null = null,
+) {
+  const commandId = text(command.command_id, 160);
+  let projectId = validUuid(projectIdOverride) || validUuid(command.project_id);
+  if (!projectId && commandId) {
+    const existing = await receipt(commandId);
+    projectId = validUuid(existing?.project_id);
+  }
   const payload = {
-    command_id: text(command.command_id, 160),
+    command_id: commandId,
     project_id: projectId,
-    action_type: text(command.action_type, 80),
+    action_type: text(command.action_type, 80).toLowerCase(),
     approval: text(command.approval, 40),
     requested_by: text(command.requested_by, 240) || null,
     source_ref: text(command.source_ref, 500) || null,
@@ -212,6 +228,45 @@ async function processTask(command: Record<string, string>) {
   return { task_id: data?.id || null, source_ref: sourceRef, title, due_date: dueDate };
 }
 
+async function processCreateProject(command: Record<string, string>) {
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 12000) || '{}'); }
+  catch { throw new Error('create_project value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('create_project value_json must be a JSON object');
+
+  const commandId = text(command.command_id, 160);
+  const name = text(command.project_name, 500) || text(value?.name, 500);
+  if (!name) throw new Error('project_name is required');
+
+  const deadline = text(value?.deadline, 20);
+  if (deadline && !/^\d{4}-\d{2}-\d{2}$/.test(deadline)) throw new Error('deadline must be YYYY-MM-DD');
+  const businessType = text(value?.business_type, 40);
+  if (businessType && !ALLOWED_BUSINESS_TYPES.has(businessType)) throw new Error('business_type must be trading, fabrication, or hybrid');
+
+  const metadata = {
+    transport: 'command_sheet',
+    sheet_row: Number(command._row || 0) || null,
+    requested_by: text(command.requested_by, 240) || null,
+    source_ref: text(command.source_ref, 500) || `chatgpt-command:${commandId}`,
+  };
+  const { data, error } = await db.rpc('pppp_chatgpt_create_project_v1', {
+    p_command_id: commandId,
+    p_name: name,
+    p_client: text(value?.client, 500) || null,
+    p_reference: text(value?.reference, 500) || null,
+    p_location: text(value?.location, 500) || null,
+    p_deadline: deadline || null,
+    p_notes: text(value?.notes, 4000) || null,
+    p_deal_type: text(value?.deal_type, 80) || null,
+    p_business_type: businessType || null,
+    p_source: 'chatgpt',
+    p_metadata: metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.project_id)) throw new Error('create_project did not return a valid project_id');
+  return data as Record<string, unknown>;
+}
+
 async function reconcile(limit = 50) {
   const max = Math.max(1, Math.min(200, Number(limit) || 50));
   const csv = await exportCommandsCsv();
@@ -235,14 +290,19 @@ async function reconcile(limit = 50) {
       summary.rejected++; summary.processed++; summary.items.push({ command_id: commandId, status: 'rejected', ...result });
       continue;
     }
+    let resultProjectId: string | null = validUuid(existing?.project_id);
     try {
-      await markReceipt(command, 'processing', { action_type: actionType }, attempts);
-      const result = actionType === 'context_fact' ? await processContextFact(command) : await processTask(command);
-      await markReceipt(command, 'succeeded', result, attempts);
+      await markReceipt(command, 'processing', { action_type: actionType }, attempts, resultProjectId);
+      let result: Record<string, unknown>;
+      if (actionType === 'context_fact') result = await processContextFact(command);
+      else if (actionType === 'task') result = await processTask(command);
+      else result = await processCreateProject(command);
+      resultProjectId = validUuid(result?.project_id) || resultProjectId;
+      await markReceipt(command, 'succeeded', result, attempts, resultProjectId);
       summary.succeeded++; summary.processed++; summary.items.push({ command_id: commandId, status: 'succeeded', action_type: actionType, result });
     } catch (e) {
       const result = { error: text((e as any)?.message || e, 1000), action_type: actionType };
-      await markReceipt(command, 'failed', result, attempts);
+      await markReceipt(command, 'failed', result, attempts, resultProjectId);
       summary.failed++; summary.processed++; summary.items.push({ command_id: commandId, status: 'failed', ...result });
     }
   }
@@ -258,7 +318,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'POST') try { body = await req.json(); } catch {}
     const limit = Number(u.searchParams.get('limit') || body.limit || 50);
     const result = await reconcile(limit);
-    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v1', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
+    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v3', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: text((e as any)?.message || e, 1200) }), { status: 500, headers: cors });
   }
