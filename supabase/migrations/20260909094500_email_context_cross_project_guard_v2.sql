@@ -190,7 +190,7 @@ begin
 
   -- Remove the wrong relationship rows, never the Gmail messages themselves.
   delete from public.project_email_links l
-  where l.project_id=v_evosys
+  where l.project_id=v_evosys::text
     and l.gmail_thread_id=v_thread;
 
   update public.project_emails e
