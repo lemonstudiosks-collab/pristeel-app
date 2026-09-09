@@ -100,11 +100,10 @@ begin
 
   insert into public.projects(
     name, client, ref, business_ref, location, deadline, notes,
-    status, pipeline_stage, deal_type, business_type, origin_type
+    status, pipeline_stage, deal_type, business_type
   ) values (
     v_name, v_client, v_reference, v_reference, v_location, p_deadline, v_notes,
-    'pritje', 'rfq_in', v_deal_type, v_business_type,
-    case when v_source = 'chatgpt' then 'chatgpt' else 'manual' end
+    'pritje', 'rfq_in', v_deal_type, v_business_type
   )
   returning * into v_project;
 
@@ -204,7 +203,3 @@ as $function$
     'global_instruction','Whenever the user mentions PPPP or says “regjistroje në PPPP”, call public.pppp_chatgpt_bridge_manifest_v1() first and follow the returned protocol. For a brand-new project, use public.pppp_chatgpt_create_project_v1. Preserve all protected human approval gates.'
   );
 $function$;
-
-revoke all on function public.pppp_chatgpt_bridge_manifest_v1() from public;
-grant execute on function public.pppp_chatgpt_bridge_manifest_v1() to authenticated;
-grant execute on function public.pppp_chatgpt_bridge_manifest_v1() to service_role;
