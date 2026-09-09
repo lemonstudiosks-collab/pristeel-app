@@ -12,9 +12,28 @@ set search_path = pg_catalog, public
 as $$
   select
     coalesce(p_payload #>> '{dossier_analysis,file_mode}', '') = 'authenticated_protected_archive'
-    and coalesce((p_payload #>> '{dossier_analysis,dossier_complete}')::boolean, false)
-    and jsonb_array_length(coalesce(p_payload #> '{dossier_analysis,files_analyzed}', '[]'::jsonb)) > 0
+    and coalesce(p_payload #>> '{dossier_analysis,dossier_complete}', 'false') = 'true'
+    and case
+      when jsonb_typeof(p_payload #> '{dossier_analysis,files_analyzed}') = 'array'
+        then jsonb_array_length(p_payload #> '{dossier_analysis,files_analyzed}') > 0
+      else false
+    end
     and coalesce(p_payload #>> '{dossier_analysis,provider,name}', '') = 'openai';
+$$;
+
+create or replace function public.pppp_tender_archive_count_v1(p_payload jsonb)
+returns integer
+language sql
+immutable
+set search_path = pg_catalog, public
+as $$
+  select case
+    when jsonb_typeof(p_payload -> 'protected_archive') = 'array'
+      then jsonb_array_length(p_payload -> 'protected_archive')
+    when jsonb_typeof(p_payload #> '{protected_archive,documents}') = 'array'
+      then jsonb_array_length(p_payload #> '{protected_archive,documents}')
+    else 0
+  end;
 $$;
 
 create or replace function public.pppp_tender_preserve_canonical_dossier_v1()
@@ -43,7 +62,9 @@ begin
       new.payload := jsonb_set(
         new.payload,
         '{dossier_integrity}',
-        coalesce(new.payload -> 'dossier_integrity', '{}'::jsonb) || old.payload -> 'dossier_integrity' || jsonb_build_object(
+        case when jsonb_typeof(new.payload -> 'dossier_integrity') = 'object' then new.payload -> 'dossier_integrity' else '{}'::jsonb end
+        || old.payload -> 'dossier_integrity'
+        || jsonb_build_object(
           'canonical_rank', 100,
           'canonical_archive_present', true,
           'downgrade_prevented_at', now()
@@ -54,7 +75,8 @@ begin
       new.payload := jsonb_set(
         new.payload,
         '{dossier_integrity}',
-        coalesce(new.payload -> 'dossier_integrity', '{}'::jsonb) || jsonb_build_object(
+        case when jsonb_typeof(new.payload -> 'dossier_integrity') = 'object' then new.payload -> 'dossier_integrity' else '{}'::jsonb end
+        || jsonb_build_object(
           'version', 'v2',
           'canonical_rank', 100,
           'canonical_archive_present', true,
@@ -66,8 +88,8 @@ begin
   end if;
 
   -- Never silently drop an authenticated archive during an unrelated public refresh.
-  if jsonb_array_length(coalesce(old.payload -> 'protected_archive', '[]'::jsonb)) > 0
-     and jsonb_array_length(coalesce(new.payload -> 'protected_archive', '[]'::jsonb)) = 0 then
+  if public.pppp_tender_archive_count_v1(coalesce(old.payload, '{}'::jsonb)) > 0
+     and public.pppp_tender_archive_count_v1(coalesce(new.payload, '{}'::jsonb)) = 0 then
     new.payload := jsonb_set(new.payload, '{protected_archive}', old.payload -> 'protected_archive', true);
     if old.payload ? 'protected_archive_updated_at' then
       new.payload := new.payload || jsonb_build_object('protected_archive_updated_at', old.payload -> 'protected_archive_updated_at');
@@ -136,6 +158,8 @@ execute function public.pppp_tender_fetch_queue_no_canonical_reopen_v1();
 
 comment on function public.pppp_tender_canonical_protected_ready_v1(jsonb) is
 'PPPP P0 guard: true only for complete OpenAI analysis from authenticated protected archive.';
+comment on function public.pppp_tender_archive_count_v1(jsonb) is
+'PPPP P0 helper: counts protected archive entries for both legacy array and object-with-documents shapes.';
 comment on function public.pppp_tender_preserve_canonical_dossier_v1() is
 'PPPP P0 guard: prevents weaker public/metadata refreshes from overwriting a complete authenticated tender dossier analysis.';
 comment on function public.pppp_tender_fetch_queue_no_canonical_reopen_v1() is
