@@ -56,6 +56,13 @@ function syncBusinessType(project){
 function isProjectByIdGet(endpoint,verb){
   return verb==='GET'&&tableOf(endpoint)==='projects'&&/(?:\?|&)id=eq\.[^&]+/.test(String(endpoint||''));
 }
+function scheduleBusinessTypeSync(project){
+  if(!project||!project.id)return;
+  setTimeout(function(){
+    var active=String(window._curProjId||window.__pstCurrentProjectId||'').trim();
+    if(active&&active===String(project.id))syncBusinessType(project);
+  },0);
+}
 function cleanBody(endpoint,method,body){
   if(!body||typeof body!=='object'||Array.isArray(body))return body;
   var table=tableOf(endpoint);
@@ -106,7 +113,7 @@ function install(){
     var result=current.apply(this,args);
     if(result&&typeof result.then==='function'&&isProjectByIdGet(endpoint,verb)){
       result=result.then(function(rows){
-        if(Array.isArray(rows)&&rows.length)syncBusinessType(rows[0]);
+        if(Array.isArray(rows)&&rows.length)scheduleBusinessTypeSync(rows[0]);
         return rows;
       });
     }
