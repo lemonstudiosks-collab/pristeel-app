@@ -41,6 +41,8 @@ for(const token of ['.pn-work-grid{gap:12px!important;margin-bottom:12px!importa
 must(workspace.includes('function createControlMarkup()'),'+ Krijo canonical markup factory missing from workspace owner');
 must(workspace.includes("data-pst-create-owner','workspace-v1'"),'+ Krijo owner marker missing');
 must(workspace.includes('window.PSTWorkspaceCreateControlV1={owner:\'pristeel-workspace-architecture-v1\''),'+ Krijo public ownership contract missing');
+must(workspace.includes('if(window.__pstWorkspaceArchitectureV1SystemContract2Loaded)return;'),'workspace runtime upgrade guard is missing');
+must(!workspace.includes('if(window.__pstWorkspaceArchitectureV1Loaded)return;'),'legacy workspace guard must not suppress the System renderer upgrade');
 must(workspace.includes('width="16" height="16" aria-hidden="true" focusable="false"'),'+ Krijo SVG dimensions are not owned by component markup');
 must(workspace.includes('aria-haspopup="menu"')&&workspace.includes('aria-expanded="false"'),'+ Krijo accessibility contract missing');
 for(const type of ['project','offer','invoice','task']) must(workspace.includes(`item('${type}'`),`+ Krijo missing canonical option: ${type}`);
@@ -79,5 +81,5 @@ const dyn=(manifest.dynamicRuntime||[]).find(x=>x.module==='pristeel-native-ui-v
 must(!!dyn,'native UI compatibility entry is not registered in runtime manifest');
 must(dyn&&dyn.loader==='pristeel-roles.js','native UI runtime loader must remain pristeel-roles.js');
 must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='6110ccff0e59b96f0c3ceec8a8ff27de3d504204','manifest loader SHA does not match audited roles blob');
-must(manifest.entrypoints.bootstrapGitBlobSha==='7c5da6741f389c705716acdc2ba220e5add6d544','manifest bootstrap SHA does not match production bootstrap');
+must(manifest.entrypoints.bootstrapGitBlobSha==='01c058685e4d93772a879ddaa101a77adcc46b16','manifest bootstrap SHA does not match production bootstrap');
 if(!process.exitCode) console.log('Native UI v4 structural create + four-zone Home smoke OK.');
