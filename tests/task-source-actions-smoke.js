@@ -66,7 +66,7 @@ const {JSDOM}=require('jsdom');
 
   const contactDom=new JSDOM(`<!doctype html><html><head></head><body>
     <aside id="pst-ws-sidebar"><button class="pst-ws-navbtn" data-key="contacts">Kontaktet</button></aside>
-    <main class="content"></main>
+    <main class="content"><section id="page-contacts" class="page"></section></main>
   </body></html>`,{runScripts:'outside-only',url:'https://pppp.example/'});
   const cw=contactDom.window;
   const calls=[];
@@ -80,11 +80,16 @@ const {JSDOM}=require('jsdom');
     return [];
   };
   cw.eval(contacts);
-  await cw.PSTContactMasterV1.open();
+  const contactOpen=cw.PSTContactMasterV1.open();
+  const legacyContacts=cw.document.getElementById('page-contacts');
+  legacyContacts.classList.add('active');legacyContacts.style.display='block';
+  await contactOpen;
   assert.strictEqual(cw.PSTContactMasterV1.snapshot().length,2,'Contact fallback did not recover canonical contacts');
   assert(/2 kontakte/.test(cw.document.getElementById('pcm-count').textContent),'Recovered contacts are not visible in the UI');
   assert(calls.some(x=>x.startsWith('pppp_contact_master_v1?'))&&calls.some(x=>x.startsWith('contacts?')),'Contact Master did not use primary then safe fallback');
   assert(!/0 kontakte/.test(cw.document.getElementById('pcm-count').textContent),'Contact load failure was falsely rendered as zero contacts');
+  assert(!legacyContacts.classList.contains('active')&&legacyContacts.style.display==='none','Legacy Contacts must not remain visible beside Contact Master');
+  assert(cw.document.getElementById('page-workspace-contacts').classList.contains('active'),'Contact Master must reclaim the single visible Partners surface after loading');
   contactDom.window.close();
 
   const errorDom=new JSDOM('<!doctype html><html><head></head><body><main class="content"></main></body></html>',{runScripts:'outside-only',url:'https://pppp.example/'});
