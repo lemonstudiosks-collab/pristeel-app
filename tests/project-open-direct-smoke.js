@@ -25,6 +25,9 @@ const { JSDOM } = require('jsdom');
   assert.strictEqual(w.__pstCurrentProjectId, 'p1', 'Current project context was not set');
   assert.strictEqual(w._curProjId, 'p1', 'Legacy project context was not set');
   assert.strictEqual(w.localStorage.getItem('pristeel_cur_proj'), 'p1', 'Project context was not persisted');
+  assert.strictEqual(w.localStorage.getItem('pst_exact_project_id_v1'), 'p1', 'Exact project context was not persisted');
+  assert.strictEqual(w.sessionStorage.getItem('pst_exact_project_id_v1'), 'p1', 'Session project context was not persisted');
+  assert.strictEqual(new URL(w.location.href).searchParams.get('project_id'), 'p1', 'Project URL did not follow the opened project');
 
   const gmailButton = w.document.getElementById('pst-gmail-collect-project');
   assert.ok(gmailButton, 'Gmail collection button was not restored');

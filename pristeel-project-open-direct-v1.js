@@ -59,7 +59,18 @@ function setContext(id){
   id=S(id).trim();
   window.__pstCurrentProjectId=id;
   window._curProjId=id;
-  try{localStorage.setItem('pristeel_cur_proj',id);}catch(e){}
+  try{
+    localStorage.setItem('pristeel_cur_proj',id);
+    localStorage.setItem('pst_exact_project_id_v1',id);
+    sessionStorage.setItem('pst_exact_project_id_v1',id);
+  }catch(e){}
+  try{
+    var url=new URL(window.location.href);
+    if(url.searchParams.get('project_id')!==id){
+      url.searchParams.set('project_id',id);
+      window.history.replaceState(window.history.state||null,'',url.pathname+url.search+url.hash);
+    }
+  }catch(e){}
   var select=document.getElementById('global-proj');
   if(select&&[].slice.call(select.options||[]).some(function(o){return S(o.value)===id;}))select.value=id;
 }
