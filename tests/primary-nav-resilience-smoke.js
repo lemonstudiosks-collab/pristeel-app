@@ -26,6 +26,7 @@ w.PSTContactMasterV1 = { open(){ calls.push('contacts'); } };
 w.__pstWorkspaceLegacy = { showPage(page){ calls.push('legacy:'+page); if(page==='finance'){ const p=w.document.getElementById('page-finance'); p.classList.add('active'); p.style.display='block'; } } };
 w.finShowHub = () => calls.push('finance-hub');
 w.openModuleHub = () => calls.push('system');
+w.PSTWorkspaceArchitectureV1 = { renderApps(){ calls.push('system-render'); const p=w.document.getElementById('page-workspace-apps'); p.innerHTML='<div class="pst-ws-page"><div class="pst-ws-appgrid"><button>Automation Health</button></div></div>'; p.classList.add('active'); p.style.display='block'; } };
 w.PSTOperatingAssistantV2 = { apply(){ calls.push('assistant'); } };
 w.PSTOperatingExperienceV1 = { apply(){ calls.push('experience'); } };
 w.PSTRedesignFinalizerV1 = { apply(){} };
@@ -45,9 +46,17 @@ assert.ok(calls.includes('assistant'), 'Finance must ask the presentation owner 
 calls=[];
 R.route('apps');
 assert.ok(!calls.includes('system'), 'System must not need the fallback hub when its terminal page exists');
+assert.ok(calls.includes('system-render'), 'System must render its canonical base before presentation owners run');
 assert.ok(w.document.getElementById('page-workspace-apps').classList.contains('active'), 'System must activate its terminal page directly');
+assert.ok(w.document.querySelector('#page-workspace-apps .pst-ws-appgrid'), 'System must not present an empty terminal page');
 assert.ok(calls.includes('assistant'), 'System must ask the presentation owner to render after the terminal route activates');
 assert.ok(calls.includes('experience'), 'System must explicitly ask its base presenter to populate the otherwise-empty terminal page');
+
+calls=[];
+w.document.getElementById('page-workspace-apps').innerHTML='<div class="pst-ws-page"></div>';
+R.route('apps');
+assert.ok(calls.includes('system-render'), 'System must repair a shell-only terminal page that has no app grid');
+assert.ok(w.document.querySelector('#page-workspace-apps .pst-ws-appgrid'), 'System repair must restore its actionable app grid');
 
 R.route('tenders');
 assert.ok(calls.includes('tenders'), 'Opportunities route must remain functional');

@@ -55,7 +55,7 @@ var files=[
   'pristeel-document-center-stable-v2.js?v=20260808-3',
   'pristeel-document-adjustments-v3.js?v=20260803-1',
   'pristeel-dashboard-calm.js?v=20260803-1',
-  'pristeel-workspace-architecture-v1.js?v=20260804-1',
+  'pristeel-workspace-architecture-v1.js?v=20260910-system-contract1',
   'pristeel-outreach-followup-v1.js?v=20260813-1',
   'pristeel-workspace-release-fix-v3.js?v=20260804-2',
   'pristeel-email-relation-safety-v2.js?v=20260804-1',
@@ -151,7 +151,7 @@ var files=[
   'pristeel-tender-priority-actions-v1.js?v=20260903-email1',
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
   'pristeel-project-classification-v1.js?v=20260830-rowopen1',
-  'pristeel-primary-nav-resilience-v1.js?v=20260905-system-present2',
+  'pristeel-primary-nav-resilience-v1.js?v=20260910-system-render2',
   'pristeel-project-execution-guard-v1.js?v=20260829-postaward1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
