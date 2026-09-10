@@ -135,7 +135,7 @@ async function load(force){
  })().finally(function(){cache.loading=null;});
  return cache.loading;
 }
-async function open(){renderShell();var jobs=[load(true),loadManufacturers(false)];await Promise.allSettled(jobs);renderList();try{if(window.PSTTaskSourceActionsV1&&window.PSTTaskSourceActionsV1.decorate)window.PSTTaskSourceActionsV1.decorate();}catch(e){}return true;}
+async function open(){renderShell();Promise.resolve().then(function(){activate();});var jobs=[load(true),loadManufacturers(false)];await Promise.allSettled(jobs);activate();renderList();try{if(window.PSTTaskSourceActionsV1&&window.PSTTaskSourceActionsV1.decorate)window.PSTTaskSourceActionsV1.decorate();}catch(e){}return true;}
 function intercept(){document.addEventListener('click',function(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-sidebar .pst-ws-navbtn[data-key="contacts"]'):null;if(!b)return;e.preventDefault();e.stopImmediatePropagation();open();},true);document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDetail();});}
 
 function css(){if(document.getElementById('pcm-css-v3'))return;var old=document.getElementById('pcm-css');if(old)old.remove();var s=document.createElement('style');s.id='pcm-css-v3';s.textContent=`
