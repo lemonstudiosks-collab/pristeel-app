@@ -31,6 +31,14 @@ w.PSTOperatingAssistantV2 = { apply(){ calls.push('assistant'); } };
 w.PSTOperatingExperienceV1 = { apply(){ calls.push('experience'); } };
 w.PSTRedesignFinalizerV1 = { apply(){} };
 
+let legacySystemIntercepts = 0;
+w.document.addEventListener('click', (event) => {
+  const button = event.target.closest && event.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="apps"]');
+  if (!button) return;
+  legacySystemIntercepts++;
+  event.stopImmediatePropagation();
+}, true);
+
 w.eval(fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8'));
 const R=w.PSTPrimaryNavResilienceV1;
 assert.ok(R, 'Primary navigation resilience API missing');
@@ -70,6 +78,12 @@ assert.ok(calls.includes('home-activate') && calls.includes('home-render'), 'Hom
 calls=[];
 w.document.querySelector('[data-key="projects"]').click();
 assert.ok(calls.includes('projects'), 'Sidebar click interception must route Projects directly');
+
+calls=[];
+w.document.getElementById('page-workspace-apps').innerHTML='';
+w.document.querySelector('[data-key="apps"]').click();
+assert.ok(calls.includes('system-render'), 'Window-level System interception must beat older document capture owners');
+assert.strictEqual(legacySystemIntercepts, 0, 'Older document capture owner must not consume the System click');
 
 console.log('Primary navigation resilience smoke test passed.');
 dom.window.close();
