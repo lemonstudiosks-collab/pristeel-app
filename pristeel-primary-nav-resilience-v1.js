@@ -160,6 +160,11 @@ function openOutreach(filter){
  mark('outreach');scheduleRepair();schedulePolish();return true;
 }
 function openSystem(){
+ /* The terminal page is created before this late navigation owner loads, but it
+  * may still be empty. Render its canonical base before presentation layers are
+  * allowed to compact or decorate it. */
+ var W=window.PSTWorkspaceArchitectureV1,p=document.getElementById('page-workspace-apps');
+ try{if(W&&typeof W.renderApps==='function'&&(!p||!p.querySelector('.pst-ws-appgrid')))W.renderApps();}catch(e){}
  try{if(!activate('page-workspace-apps','apps')&&typeof window.openModuleHub==='function')window.openModuleHub();}catch(e){activate('page-workspace-apps','apps');}
  try{var X=window.PSTOperatingExperienceV1;if(X&&typeof X.apply==='function')X.apply();}catch(e){}
  try{var O=window.PSTOperatingAssistantV2;if(O&&typeof O.apply==='function')O.apply(false);}catch(e){}

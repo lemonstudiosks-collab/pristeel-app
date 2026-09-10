@@ -238,6 +238,10 @@ function wrapNavigation(){
  window.renderHome=function(){window.pstWorkspaceGo('home');};
  if(typeof window.openOverview==='function'&&!window.openOverview.__pstWorkspace360){if(!legacy.openOverview)legacy.openOverview=window.openOverview;var w=function(id){window.pstOpenProjectWorkspace(id);};w.__pstWorkspace360=true;window.openOverview=w;}
 }
+/* Stable rendering contract for the final navigation owner. Keep the renderer
+ * inside this module, but expose the bounded entry point so later presentation
+ * layers do not have to activate an empty terminal page. */
+window.PSTWorkspaceArchitectureV1={renderApps:renderApps};
 function boot(){css();buildSidebar();ensurePage('page-workspace-home');ensurePage('page-workspace-projects');ensurePage('page-workspace-inbox');ensurePage('page-workspace-commercial');ensurePage('page-workspace-apps');ensurePage('page-workspace-project');wrapNavigation();window.pstWorkspaceGo('home');var n=0,t=setInterval(function(){buildSidebar();wrapNavigation();if(++n>80)clearInterval(t);},300);}
 var tries=0,timer=setInterval(function(){if(document.querySelector('.content')&&document.getElementById('pst-v2-sidebar')){clearInterval(timer);boot();}else if(++tries>160)clearInterval(timer);},250);
 })();
