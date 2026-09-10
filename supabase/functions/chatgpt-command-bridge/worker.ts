@@ -15,10 +15,15 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project']);
+const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer']);
 const ALLOWED_EVIDENCE = new Set(['unverified', 'observed', 'verbal', 'documented', 'confirmed']);
 const ALLOWED_FACT_STATUS = new Set(['observed', 'suggested']);
 const ALLOWED_BUSINESS_TYPES = new Set(['trading', 'fabrication', 'hybrid']);
+const SUPPLIER_OFFER_FIELDS = new Set([
+  'supplier', 'currency', 'price_kg', 'qty_kg', 'mechanical_eur', 'packaging_eur', 'transport_eur',
+  'extra_positions', 'delivery_weeks', 'validity_days', 'exchange_rate_to_eur', 'incoterms', 'cert',
+  'notes', 'payment_terms', 'inclusions', 'exclusions', 'offer_ref', 'contact_person', 'source',
+]);
 
 function text(v: unknown, max = 4000) {
   return String(v == null ? '' : v).trim().slice(0, max);
@@ -267,6 +272,49 @@ async function processCreateProject(command: Record<string, string>) {
   return data as Record<string, unknown>;
 }
 
+async function processSupplierOffer(command: Record<string, string>) {
+  const projectId = validUuid(command.project_id);
+  if (!projectId) throw new Error('valid project_id is required');
+
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 12000) || '{}'); }
+  catch { throw new Error('supplier_offer value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('supplier_offer value_json must be a JSON object');
+
+  for (const key of Object.keys(value)) {
+    if (!SUPPLIER_OFFER_FIELDS.has(key)) throw new Error(`supplier_offer field not allowed: ${text(key, 120)}`);
+  }
+  if (!text(value?.supplier, 500)) throw new Error('supplier is required');
+  if (value?.extra_positions != null && !Array.isArray(value.extra_positions)) throw new Error('extra_positions must be an array');
+
+  const commandId = text(command.command_id, 160);
+  const payload: Record<string, unknown> = {};
+  for (const key of SUPPLIER_OFFER_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(value, key)) payload[key] = value[key];
+  }
+  const metadata = {
+    transport: 'command_sheet',
+    sheet_row: Number(command._row || 0) || null,
+    requested_by: text(command.requested_by, 240) || null,
+    source_ref: text(command.source_ref, 500) || `chatgpt-command:${commandId}`,
+  };
+  const { data, error } = await db.rpc('pppp_chatgpt_create_supplier_offer_v1', {
+    p_command_id: commandId,
+    p_project_id: projectId,
+    p_payload: payload,
+    p_source: 'chatgpt',
+    p_metadata: metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.offer_id) || !validUuid(data.project_id)) {
+    throw new Error('supplier_offer did not return valid offer_id and project_id');
+  }
+  if (data.selected !== false || data.human_supplier_selection_required !== true) {
+    throw new Error('supplier_offer response did not preserve supplier-selection gate');
+  }
+  return data as Record<string, unknown>;
+}
+
 async function reconcile(limit = 50) {
   const max = Math.max(1, Math.min(200, Number(limit) || 50));
   const csv = await exportCommandsCsv();
@@ -296,6 +344,7 @@ async function reconcile(limit = 50) {
       let result: Record<string, unknown>;
       if (actionType === 'context_fact') result = await processContextFact(command);
       else if (actionType === 'task') result = await processTask(command);
+      else if (actionType === 'supplier_offer') result = await processSupplierOffer(command);
       else result = await processCreateProject(command);
       resultProjectId = validUuid(result?.project_id) || resultProjectId;
       await markReceipt(command, 'succeeded', result, attempts, resultProjectId);
@@ -318,7 +367,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'POST') try { body = await req.json(); } catch {}
     const limit = Number(u.searchParams.get('limit') || body.limit || 50);
     const result = await reconcile(limit);
-    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v3', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
+    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v4', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: text((e as any)?.message || e, 1200) }), { status: 500, headers: cors });
   }
