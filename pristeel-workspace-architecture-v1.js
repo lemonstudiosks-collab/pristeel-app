@@ -4,7 +4,8 @@
  */
 (function(){
 'use strict';
-if(window.__pstWorkspaceArchitectureV1Loaded)return;
+if(window.__pstWorkspaceArchitectureV1SystemContract2Loaded)return;
+window.__pstWorkspaceArchitectureV1SystemContract2Loaded=true;
 window.__pstWorkspaceArchitectureV1Loaded=true;
 
 var BLUE='#2B67AD',BLUE_DARK='#1F528C',BLUE_SOFT='#EAF2FB',GREEN='#2F7657',GREEN_SOFT='#EAF5EF',RED='#A64B42',RED_SOFT='#F9ECEA',AMBER='#9B6A22',AMBER_SOFT='#FAF2E3',TEXT='#202326',MUTED='#7A8086',LINE='#E5E8EA';
