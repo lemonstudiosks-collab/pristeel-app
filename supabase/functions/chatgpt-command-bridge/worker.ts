@@ -278,11 +278,11 @@ async function reconcile(limit = 50) {
     if (!commandId) continue;
     const approval = text(command.approval, 40).toLowerCase();
     if (approval !== 'approved') continue;
-    summary.checked++;
     const existing = await receipt(commandId);
     if (existing && ['succeeded', 'rejected'].includes(existing.status)) { summary.skipped++; continue; }
     const attempts = Math.max(1, Number(existing?.attempts || 0) + 1);
     if (attempts > 3) { summary.skipped++; continue; }
+    summary.checked++;
     const actionType = text(command.action_type, 80).toLowerCase();
     if (!ALLOWED_ACTIONS.has(actionType)) {
       const result = { reason: 'action_type_not_allowed', allowed: Array.from(ALLOWED_ACTIONS) };

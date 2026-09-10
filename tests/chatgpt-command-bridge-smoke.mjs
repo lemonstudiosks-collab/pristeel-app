@@ -23,6 +23,15 @@ assert.match(fn,/https:\/\/www\.googleapis\.com\/auth\/drive/,'Drive-only DWD sc
 assert.match(fn,/mimeType=.*text%2Fcsv|encodeURIComponent\('text\/csv'\)/,'Drive CSV export missing');
 assert.doesNotMatch(fn,/gmail\.googleapis\.com|messages\/send|sendMail|supplier_decision|mark.*won|mark.*lost/i,'bridge must not perform protected commercial/external actions');
 
+const receiptLookup=fn.indexOf('const existing = await receipt(commandId)');
+const terminalReceiptSkip=fn.indexOf("['succeeded', 'rejected'].includes(existing.status)",receiptLookup);
+const attemptsGuard=fn.indexOf('if (attempts > 3)',terminalReceiptSkip);
+const checkedIncrement=fn.indexOf('summary.checked++',attemptsGuard);
+assert.ok(
+  receiptLookup>=0 && terminalReceiptSkip>receiptLookup && attemptsGuard>terminalReceiptSkip && checkedIncrement>attemptsGuard,
+  'already-processed or attempt-exhausted receipts must be skipped before consuming the reconciliation limit',
+);
+
 assert.match(mig,/create table if not exists public\.pppp_chatgpt_command_receipts/,'receipt table missing');
 assert.match(mig,/pppp_chatgpt_command_status_v1/,'read-only status contract missing');
 assert.match(mig,/supabase_read_only_user/,'ChatGPT read-only connector grant missing');
