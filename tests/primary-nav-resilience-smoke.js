@@ -80,6 +80,7 @@ w.document.querySelector('[data-key="projects"]').click();
 assert.ok(calls.includes('projects'), 'Sidebar click interception must route Projects directly');
 
 calls=[];
+w.document.getElementById('page-workspace-apps').innerHTML='';
 w.document.querySelector('[data-key="apps"]').click();
 assert.ok(calls.includes('system-render'), 'Window-level System interception must beat older document capture owners');
 assert.strictEqual(legacySystemIntercepts, 0, 'Older document capture owner must not consume the System click');
