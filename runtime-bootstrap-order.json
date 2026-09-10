@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 151,
-  "sequenceSha256": "52d116820d455f10441879bb212c3a8265a604bd34e0846c52f20202503f019e",
+  "sequenceSha256": "469f8e6562275a76346f69bdcc1d6bf414dd37f6cb15fc1df7ec6b35d6f4c0c9",
   "files": [
     "pristeel-auth-persistence.js?v=20260812-remember1",
     "pristeel-login-brand-v1.js?v=20260812-readable1",
@@ -99,7 +99,7 @@
     "pristeel-workflow-governance-v1.js?v=20260808-6",
     "pristeel-quote-followup-governance-v1.js?v=20260808-2",
     "pristeel-modal-navigation-safety-v2.js?v=20260807-stability1",
-    "pristeel-project-open-direct-v1.js?v=20260805-2",
+    "pristeel-project-open-direct-v1.js?v=20260910-urltruth1",
     "pristeel-project-contacts-full-v1.js?v=20260805-1",
     "pristeel-contacts-provenance-ui-v1.js?v=20260811-1",
     "pristeel-dashboard-task-cards-v1.js?v=20260807-10",

@@ -40,6 +40,9 @@ window.pstOpenProjectDirect('p1').then(() => {
   assert(select.value === 'p1', 'Global project selector must still reflect the active project');
   assert(window.__pstCurrentProjectId === 'p1' && window._curProjId === 'p1', 'Project context must be synchronized');
   assert(window.localStorage.getItem('pristeel_cur_proj') === 'p1', 'Project context must persist');
+  assert(window.localStorage.getItem('pst_exact_project_id_v1') === 'p1', 'Exact project context must persist');
+  assert(window.sessionStorage.getItem('pst_exact_project_id_v1') === 'p1', 'Session project context must persist');
+  assert(new URL(window.location.href).searchParams.get('project_id') === 'p1', 'Project URL must follow the canonical open');
   console.log('project-open-single-path-smoke: ok');
 }).catch((err) => {
   console.error(err);
