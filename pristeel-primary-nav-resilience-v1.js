@@ -177,6 +177,8 @@ function route(key){
  key=canon(key);if(key==='home')return openHome();if(key==='projects')return openProjects();if(key==='contacts')return openPartners();if(key==='finance')return openFinance();if(key==='apps')return openSystem();return false;
 }
 function intercept(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key]'):null;if(!b)return;var key=canon(b.dataset.key);if(!KEYS[key])return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();route(key);}
+function interceptSystemAtWindow(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key]'):null;if(!b||canon(b.dataset.key)!=='apps')return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openSystem();}
+window.addEventListener('click',interceptSystemAtWindow,true);
 document.addEventListener('click',intercept,true);
 
 function actionSignature(el){
