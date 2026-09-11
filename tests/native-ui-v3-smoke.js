@@ -16,10 +16,10 @@ must(projectEmailsAt>=0,'roles loader does not reference project-emails bootstra
 must(nativeAt<projectEmailsAt,'native UI must be loaded before project-emails bootstrap');
 must(roles.includes(':not(.pst-native-ui-ready) #page-workspace-home.active'),'startup Home reveal does not recognize early native UI readiness');
 for(const token of ['#4F97AF','#3F7F98','#F7F6F3','#E6E3DE']) must(core.includes(token),`PriSteel soft palette token missing from v4 core: ${token}`);
-for(const token of ['QENDRA E DREJTIMIT PPPP','Pasqyra operative','Projekte aktive','Mundësi të hapura','Veprime prioritare','Kryefaqja','p.sh. Çfarë po ndodh me STACON?']) must(core.includes(token),`source-level Albanian UI token missing: ${token}`);
+for(const token of ['QENDRA E DREJTIMIT PPPP','Rrjedha e ditës','Pulsi i biznesit','Projekte aktive','Mundësi','Ballina','p.sh. Çfarë po ndodh me STACON?']) must(core.includes(token),`source-level Albanian UI token missing: ${token}`);
 must(core.includes("r.id='pst-native-home-v4'"),'native Home v4 single owner is missing');
 must(core.includes("document.documentElement.classList.add('pst-native-ui-ready','pst-native-ui-v4-ready')"),'early UI readiness marker missing');
-must(entry.includes('pristeel-native-ui-v4-core.js?v=20260903-singleowner1'),'entry does not load the current Albanian native UI core');
+must(entry.includes('pristeel-native-ui-v4-core.js?v=20260911-dailyflow1'),'entry does not load the current Albanian native UI core');
 must(entry.includes('installRecoveryGate'),'early recovery gate is missing');
 must(entry.includes('Never enter the shared workspace router'),'Finance capture is not isolated from decorated workspace routing');
 must(entry.includes('__pstOriginalRecoverUnsavedWork'),'recovery gate does not preserve original recovery action');
@@ -51,7 +51,7 @@ must(!entry.includes('repairCreateControl'),'v3 must not repair + Krijo after an
 must(!core.includes("create.textContent='+"),'Home owner must not destroy + Krijo canonical children');
 
 // Four daily operating zones replace analytic/noisy Home cards.
-for(const token of ['PËR TY TANI','NË VIJIM','pn-portfolio-pulse','KËRKON VËMENDJE']) must(core.includes(token),`Home operational zone missing: ${token}`);
+for(const token of ['PËR TY TANI','MË PAS','NË PRITJE','pn-portfolio-pulse','KËRKON VËMENDJE']) must(core.includes(token),`Home operational zone missing: ${token}`);
 for(const retired of ['pn-kpis','pn-clients-movement','pn-projects-commercial','pn-fin-auto-balance','pn-donut','pn-funnel']) must(!core.includes(retired),`Retired analytical Home surface returned: ${retired}`);
 must(core.includes("if(blockers.length)exceptions.push")&&core.includes("if(issues>0)exceptions.push"),'Exception zone is not value-driven');
 must(core.includes("else{ex.hidden=true;ex.innerHTML='';}"),'Zero-value exception zone must disappear completely');

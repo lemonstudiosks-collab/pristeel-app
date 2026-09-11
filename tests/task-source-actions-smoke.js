@@ -55,7 +55,7 @@ const {JSDOM}=require('jsdom');
   assert(sw.document.querySelector('#pst-ws-canonical-nav [data-key="tenders"].active'),'Opportunities sidebar entry was not activated');
   const primary=[...sw.document.querySelectorAll('#pst-ws-canonical-nav .pst-canon-work > .pst-ws-navbtn')];
   assert.deepStrictEqual(primary.map(x=>x.dataset.key),['home','tenders','projects','contacts','finance','apps'],'Final shell did not preserve simplified primary order');
-  assert.deepStrictEqual(primary.map(x=>x.querySelector('.pst-nav-label').textContent),['Home','Opportunities','Projects','Partners','Finance','System'],'Final shell restored legacy labels');
+  assert.deepStrictEqual(primary.map(x=>x.querySelector('.pst-nav-label').textContent),['Home','Opportunities','Projects','Partners','Finance','System'],'Fallback shell must preserve its stable labels until the operating layer localizes them');
   const shellCss=sw.document.getElementById('pst-task-source-actions-v20-css').textContent;
   assert(shellCss.includes('#page-kek-tenders.active'),'Tender shell selector missing');
   assert(shellCss.includes('#page-finance.active'),'Finance shell selector missing');
