@@ -154,7 +154,7 @@ function cleanFilesAndCommunication(){
   if(area==='communication'){p.classList.add('pst-ux-communication');p.querySelectorAll('.pf2-mail').forEach(function(m){m.classList.add('pst-ux-thread');var body=m.querySelector('p');if(body)body.title=S(body.textContent).trim();var op=m.querySelector('.pf2-mail-open');if(op)op.textContent='Hap thread-in ↗';});}else p.classList.remove('pst-ux-communication');return true;
 }
 function cleanVisibleEnglish(){
-  var p=document.querySelector('.page.active');if(!p)return;var exact={Home:'Kryefaqja',Projects:'Projektet',Partners:'Partnerët',Finance:'Financat',System:'Sistemi',Files:'Skedarët',Communication:'Komunikimi',Procurement:'Prokurimi',Commercial:'Komerciale',Execution:'Ekzekutimi',Status:'Gjendja','Next step':'Hapi tjetër',Refresh:'Rifresko',Search:'Kërko',Close:'Mbyll',Cancel:'Anulo',Save:'Ruaj',Open:'Hap',Draft:'Paraprak',Waiting:'Në pritje'};
+  var p=document.querySelector('.page.active');if(!p)return;var exact={Home:'Ballina',Projects:'Projektet',Partners:'Partnerët',Finance:'Financat',System:'Sistemi',Files:'Skedarët',Communication:'Komunikimi',Procurement:'Prokurimi',Commercial:'Komerciale',Execution:'Ekzekutimi',Status:'Gjendja','Next step':'Hapi tjetër',Refresh:'Rifresko',Search:'Kërko',Close:'Mbyll',Cancel:'Anulo',Save:'Ruaj',Open:'Hap',Draft:'Paraprak',Waiting:'Në pritje'};
   p.querySelectorAll('button,label,small,span,b,strong,h1,h2,h3,h4,h5,h6').forEach(function(el){if(el.children.length)return;var t=S(el.textContent).trim();if(exact[t])el.textContent=exact[t];});
 }
 function apply(){cleanPartners();cleanHome();cleanProjectsList();cleanProjectSummary();cleanFilesAndCommunication();cleanSystemLabels();financeDaily();opportunitiesDaily();cleanVisibleEnglish();}

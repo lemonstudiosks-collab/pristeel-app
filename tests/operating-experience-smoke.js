@@ -15,6 +15,9 @@ const dom = new JSDOM(`<!doctype html><html><head></head><body>
     <button class="pst-ws-navbtn" data-key="projects"><span class="pst-nav-label">Projektet</span></button>
     <button class="pst-ws-navbtn" data-key="tenders"><span class="pst-nav-label">Tenderat</span></button>
     <button class="pst-ws-navbtn" data-key="contacts"><span class="pst-nav-label">Kontaktet</span></button>
+    <button class="pst-ws-navbtn pst-business-primary" data-key="opportunities"><span class="pst-nav-label">Mundësitë duplicate</span></button>
+    <button class="pst-ws-navbtn pst-business-primary" data-key="partners"><span class="pst-nav-label">Partnerët duplicate</span></button>
+    <button class="pst-ws-navbtn pst-business-primary" data-key="system"><span class="pst-nav-label">Sistemi duplicate</span></button>
   </div>
   <div class="pst-ws-navtitle pst-canon-tools-title">Mjetet</div>
   <div class="pst-ws-nav pst-canon-tools">
@@ -48,6 +51,7 @@ assert.deepStrictEqual(main.map(b=>b.dataset.key), ['home','tenders','projects',
 assert.deepStrictEqual(main.map(b=>b.querySelector('.pst-nav-label').textContent), ['Ballina','Mundësitë','Projektet','Partnerët','Financat','Sistemi']);
 assert.strictEqual(w.document.querySelector('[data-key="inbox"]').style.display, 'none', 'Gmail must not remain a primary navigation item');
 assert.strictEqual(w.document.querySelector('[data-key="commercial"]').style.display, 'none', 'Commercial tools must not remain a primary navigation item');
+for(const key of ['opportunities','partners','system']) assert.strictEqual(w.document.querySelector(`[data-key="${key}"]`).style.display,'none',`Alias ${key} must not duplicate primary navigation`);
 assert.strictEqual(w.document.body.dataset.pstBusinessZone, 'projects');
 
 const phaseLabels=[...w.document.querySelectorAll('.pst-phase-btn>b')].map(x=>x.textContent);

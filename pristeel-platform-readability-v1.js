@@ -14,7 +14,7 @@ var SKIP='svg,canvas,pre,code,#of-pre,#inv-pre,#in-pre,#oc-pre,#rfq-pre,#doc-pre
 var CANDIDATES='button,a,label,small,p,td,th,input,select,textarea,b,strong,span,h5,h6,li,summary';
 var UI_SCOPES='#pst-ws-sidebar,#page-workspace-home,#page-workspace-projects,#page-workspace-project,#page-kek-tenders,#page-finance,#page-workspace-finance,#page-workspace-contacts,#page-contacts,#page-workspace-apps,#page-document-center,#page-settings,#pst-system-operating-tools,#pst-ui-recovery-clean';
 var ALBANIAN={
-  'Home':'Kryefaqja','Opportunities':'Mundësitë','Projects':'Projektet','Partners':'Partnerët','Finance':'Financat','System':'Sistemi','Workspace':'Platforma',
+  'Home':'Ballina','Opportunities':'Mundësitë','Projects':'Projektet','Partners':'Partnerët','Finance':'Financat','System':'Sistemi','Workspace':'Platforma',
   'Create':'Krijo','+ Create':'+ Krijo','Refresh':'Rifresko','Search':'Kërko','Close':'Mbyll','Cancel':'Anulo','Save':'Ruaj','Add':'Shto','Delete':'Fshi','Review':'Shqyrto','Done':'Kryer','Open':'Hap','Open project':'Hap projektin',
   'All projects':'Të gjitha projektet','New project':'Projekt i ri','Duplicates':'Dublikatat','Latest activity':'Aktiviteti i fundit','Deadline':'Afati','Client':'Klienti','Reference':'Referenca','Description':'Përshkrimi','List':'Listë','Stage':'Faza','Status':'Statusi','Activity':'Aktiviteti','Actions':'Veprime','All':'Të gjitha','Source':'Burimi','Contacts':'Kontaktet','Clients':'Klientët','Suppliers':'Furnitorët','Manufacturers':'Prodhuesit','Company':'Kompania','Country':'Vendi','Value':'Vlera','Updated':'Përditësuar','Summary':'Përmbledhja','Communication':'Komunikimi','Files':'Skedarët','Procurement':'Prokurimi','Commercial':'Komerciale','Execution':'Ekzekutimi','Tasks':'Detyrat','Next step':'Hapi i radhës','Documents':'Dokumentet',
   'Active':'Aktiv','In execution':'Në realizim','Waiting':'Në pritje','Waiting for client':'Në pritje të klientit','Waiting for supplier':'Në pritje të furnitorit','Waiting internally':'Në pritje të brendshme','Action required':'Kërkon veprim','Needs attention':'Kërkon vëmendje','No action':'Pa veprim','Confirmed':'Konfirmuar','Won':'Fituar','Lost':'Humbur','Postponed':'Shtyrë','Archived':'Arkivuar','Completed':'Realizuar','Closed':'Mbyllur','Overdue':'Vonuar','Technical review':'Shqyrtim teknik','Manufacturer':'Prodhuesi','Pricing':'Përcaktimi i çmimit','Offer':'Ofertë','Offers':'Oferta','Production':'Prodhim','Audit':'Auditim','Delivery':'Dorëzim','No deadline':'Pa afat','No activity':'Pa aktivitet','Today':'Sot','Yesterday':'Dje','Tomorrow':'Nesër',
@@ -270,7 +270,7 @@ function translateScope(scope){
 
 function translateUi(){
   Array.prototype.forEach.call(document.querySelectorAll(UI_SCOPES),translateScope);
-  var nav={home:'Kryefaqja',tenders:'Mundësitë',projects:'Projektet',contacts:'Partnerët',finance:'Financat',apps:'Sistemi'};
+  var nav={home:'Ballina',tenders:'Mundësitë',projects:'Projektet',contacts:'Partnerët',finance:'Financat',apps:'Sistemi'};
   Object.keys(nav).forEach(function(k){var b=document.querySelector('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'+k+'"]');if(!b)return;var l=b.querySelector('.pst-nav-label')||b.querySelector('span');if(l)l.textContent=nav[k];});
   var sub=document.querySelector('#pst-ws-sidebar .pst-ws-brand small');if(sub&&/^Workspace$/i.test(String(sub.textContent||'').trim()))sub.textContent='Platforma';
 }
