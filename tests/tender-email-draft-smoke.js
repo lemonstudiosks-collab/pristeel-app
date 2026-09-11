@@ -122,7 +122,7 @@ assert.ok(/pppp_ted_award_candidates_by_email_v1[\s\S]*security invoker/i.test(s
 assert.ok(/tender_email_links_gmail_message_id_idx/.test(securityHardening),'TED email-link Gmail FK must have a covering index');
 assert.ok(!/messages\/send|sendEmail\s*\(/.test(securityHardening),'Security hardening must not introduce external email sending');
 assert.ok(/for select\s+to authenticated/i.test(outreachReadPolicy),'Outreach lifecycle must be readable only by signed-in PPPP operators');
-assert.ok(/using \(\(select auth\.uid\(\)\) is not null\)/i.test(outreachReadPolicy),'Outreach read policy must reject unauthenticated requests explicitly');
+assert.ok(/using \(\(select public\.can_write\(\)\)\)/i.test(outreachReadPolicy),'Outreach read policy must remain limited to approved PPPP business roles');
 assert.ok(!/for (insert|update|delete)/i.test(outreachReadPolicy),'Lifecycle UI migration must not grant browser writes to the delivery registry');
 
 console.log('Tender email draft language, persistence, duplicate guard, Ask owner bridge and security smoke test passed.');
