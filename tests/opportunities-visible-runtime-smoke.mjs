@@ -23,19 +23,44 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body>
 const {window}=dom;
 window.console=console;
 window.supaFetch=async path=>{
-  if(String(path).startsWith('kek_tender_watch?')) return [{
-    id:'t-1',
-    title:'Blerje rampa metalike',
-    authority:'Agjencia e Shërbimeve Publike Urbane',
-    procurement_no:'REF-97738-08-26-2026',
-    relevance_score:92,
-    status:'new',
-    published_date:'2026-08-26',
-    deadline:'2026-08-27',
-    detail_url:'https://e-prokurimi.rks-gov.net/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=4255945',
-    match_reasons:['sinjal lënde: metal','FPP shufra/profile'],
-    payload:{source:'KRPP',notice_phase:'opportunity'}
-  }];
+  if(String(path).startsWith('kek_tender_watch?')) return [
+    {
+      id:'t-1',
+      title:'Blerje rampa metalike',
+      authority:'Agjencia e Shërbimeve Publike Urbane',
+      procurement_no:'REF-97738-08-26-2026',
+      relevance_score:92,
+      status:'new',
+      published_date:'2026-08-26',
+      deadline:'2026-08-27',
+      detail_url:'https://e-prokurimi.rks-gov.net/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=4255945',
+      match_reasons:['sinjal lënde: metal','FPP shufra/profile'],
+      payload:{source:'KRPP',notice_phase:'opportunity'}
+    },
+    {
+      id:'t-2',
+      title:'APP konstruksion metalik',
+      authority:'Autoriteti Kontraktor Shqipëri',
+      procurement_no:'APP-2026-001',
+      relevance_score:88,
+      status:'new',
+      published_date:'2026-08-25',
+      deadline:'2026-09-05',
+      match_reasons:['konstruksion metalik'],
+      payload:{source:'APP_AL',notice_phase:'opportunity'}
+    },
+    {
+      id:'t-3',
+      title:'TED structural steelworks award',
+      authority:'EU Contracting Authority',
+      publication_no:'TED-2026-001',
+      relevance_score:94,
+      status:'new',
+      published_date:'2026-08-24',
+      match_reasons:['structural steelworks'],
+      payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',company_type:'gc_epc'}}
+    }
+  ];
   if(String(path).startsWith('partners?')) return [];
   return [];
 };
@@ -57,13 +82,30 @@ const page=window.document.getElementById('page-kek-tenders');
 assert.equal(page.getAttribute('data-pcw-opportunities-owner'),'2','current whole-card surface did not claim ownership');
 assert.equal(window.document.querySelector('.pst-kek-title').textContent,'Mundësitë','page title must be Albanian and operator-oriented');
 assert(window.document.querySelector('#pst-opportunities-focus'),'modern opportunity focus surface was not mounted');
-assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'one whole-card opportunity should render');
-assert(window.document.querySelector('.pst-pcw-tender').textContent.includes('Blerje rampa metalike'),'whole card must contain the tender');
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all three source fixtures should render initially');
+assert(window.document.querySelector('[data-pcw-source="TED"]'),'TED source tab must be visible');
+assert(window.document.querySelector('[data-pcw-source="KRPP"]'),'KRPP source tab must be visible');
+assert(window.document.querySelector('[data-pcw-source="APP_AL"]'),'APP source tab must be visible');
+
+window.document.querySelector('[data-pcw-source="TED"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'TED source tab must isolate TED opportunities');
+assert(window.document.querySelector('[data-pcw-tender="t-3"]'),'TED source tab must show the TED fixture');
+
+window.document.querySelector('[data-pcw-source="KRPP"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'KRPP source tab must isolate KRPP opportunities');
+assert(window.document.querySelector('[data-pcw-tender="t-1"]'),'KRPP source tab must show the KRPP fixture');
+
+window.document.querySelector('[data-pcw-source="APP_AL"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'APP source tab must isolate APP opportunities');
+assert(window.document.querySelector('[data-pcw-tender="t-2"]'),'APP source tab must show the APP fixture');
+
+window.document.querySelector('[data-pcw-source="all"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all source tab must restore TED, KRPP and APP opportunities');
 assert.equal(window.document.querySelector('.pst-kek-filter').style.display,'none','legacy long filters must be retired from the visible surface');
 assert.equal(window.document.querySelector('.pst-kek-card').style.display,'none','legacy table must be retired from the visible surface');
 assert.equal(window.document.getElementById('pst-tender-fit-summary').style.display,'none','legacy fit strip must be retired');
 
-window.document.querySelector('.pst-pcw-tender').click();
+window.document.querySelector('[data-pcw-tender="t-1"]').click();
 const modal=window.document.getElementById('pst-ti-backdrop');
 assert(modal,'card click must create an action-console modal without relying on legacy Tender Intelligence');
 assert.equal(modal.style.display,'flex','card click must make the action console visible');
@@ -84,4 +126,4 @@ assert(close,'action console must expose an explicit close button');
 close.click();
 assert.equal(modal.style.display,'none','close button must hide the action console');
 
-console.log('Visible no-.active Opportunities runtime ownership: OK');
+console.log('Visible Opportunities source separation + runtime ownership: OK');

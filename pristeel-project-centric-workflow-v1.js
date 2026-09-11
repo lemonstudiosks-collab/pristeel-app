@@ -11,7 +11,7 @@ window.__pstProjectCentricWorkflowV2=true;
 window.__pstProjectCentricWorkflowV3=true;
 window.__pstProjectCentricWorkflowV4=true;
 
-var tenderState={rows:[],mode:'all',lifecycle:'new',query:'',focus:'',busy:false,last:0,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{}};
+var tenderState={rows:[],mode:'all',source:'all',lifecycle:'new',query:'',focus:'',busy:false,last:0,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{}};
 var contactBusy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -127,6 +127,7 @@ function opportunityRows(){
  var rows=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),q=N(tenderState.query);
  if(tenderState.mode==='local')rows=rows.filter(function(r){return tenderMode(r)==='local';});
  if(tenderState.mode==='award')rows=rows.filter(function(r){return tenderMode(r)==='award';});
+ if(tenderState.source!=='all')rows=rows.filter(function(r){return tenderSource(r)===tenderState.source;});
  if(tenderState.lifecycle!=='all')rows=rows.filter(function(r){return opportunityLifecycle(r)===tenderState.lifecycle;});
  if(tenderState.focus==='due')rows=rows.filter(function(r){return dueSoon(r.deadline);});
  if(tenderState.focus==='review')rows=rows.filter(function(r){return /review|shqyr/.test(N(r.operating_lane||r.status));});
@@ -173,11 +174,11 @@ function renderOpportunities(){
  var p=activePage('page-kek-tenders');if(!p)return false;
  var focus=ensureOpportunitySurface();if(!focus)return false;
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return false;
- var all=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),local=all.filter(function(r){return tenderMode(r)==='local';}).length,award=all.filter(function(r){return tenderMode(r)==='award';}).length,rows=opportunityRows(),counts={new:0,draft:0,waiting:0,replied:0};all.forEach(function(r){counts[opportunityLifecycle(r)]++;});
+ var all=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),rows=opportunityRows(),counts={new:0,draft:0,waiting:0,replied:0},sources={TED:0,KRPP:0,APP_AL:0};all.forEach(function(r){var src=tenderSource(r);if(Object.prototype.hasOwnProperty.call(sources,src))sources[src]++;counts[opportunityLifecycle(r)]++;});
  var header=focus.querySelector('header');if(header)header.innerHTML='<div><span>MUNDËSITË</span><h2>Tenderat që mund të bëhen projekte</h2><p>'+(tenderState.focus==='due'?'Po shfaqen vetëm tenderët me afat brenda shtatë ditësh.':tenderState.focus==='review'?'Po shfaqen vetëm tenderët që presin shqyrtim.':'Kliko një mundësi. PPPP merr dosjen, nxjerr kushtet dhe vetëm pastaj vendos ti nëse krijohet projekt.')+'</p></div>';
  var search=focus.querySelector('#pst-pcw-opportunity-search');if(search&&search.value!==tenderState.query)search.value=tenderState.query;
  var tabs=focus.querySelector('#pst-pcw-opportunity-tabs');
- tabs.innerHTML='<button data-pcw-mode="all" class="'+(tenderState.mode==='all'?'on':'')+'"><span>Të gjitha</span><i>'+(local+award)+'</i></button><button data-pcw-mode="local" class="'+(tenderState.mode==='local'?'on':'')+'"><span>Për ofertim</span><i>'+local+'</i></button><button data-pcw-mode="award" class="'+(tenderState.mode==='award'?'on':'')+'"><span>Fitues nga TED</span><i>'+award+'</i></button>';
+ tabs.innerHTML='<button data-pcw-source="all" class="'+(tenderState.source==='all'?'on':'')+'"><span>Të gjitha</span><i>'+all.length+'</i></button><button data-pcw-source="TED" class="'+(tenderState.source==='TED'?'on':'')+'"><span>TED</span><i>'+sources.TED+'</i></button><button data-pcw-source="KRPP" class="'+(tenderState.source==='KRPP'?'on':'')+'"><span>KRPP</span><i>'+sources.KRPP+'</i></button><button data-pcw-source="APP_AL" class="'+(tenderState.source==='APP_AL'?'on':'')+'"><span>APP</span><i>'+sources.APP_AL+'</i></button>';
  var life=focus.querySelector('#pst-pcw-lifecycle-tabs');life.innerHTML='<button data-pcw-lifecycle="new" class="'+(tenderState.lifecycle==='new'?'on':'')+'"><span>Të rinj</span><i>'+counts.new+'</i></button><button data-pcw-lifecycle="draft" class="'+(tenderState.lifecycle==='draft'?'on':'')+'"><span>Draft i përgatitur</span><i>'+counts.draft+'</i></button><button data-pcw-lifecycle="waiting" class="'+(tenderState.lifecycle==='waiting'?'on':'')+'"><span>Në pritje</span><i>'+counts.waiting+'</i></button><button data-pcw-lifecycle="replied" class="'+(tenderState.lifecycle==='replied'?'on':'')+'"><span>Përgjigje</span><i>'+counts.replied+'</i></button><button data-pcw-lifecycle="all" class="'+(tenderState.lifecycle==='all'?'on':'')+'"><span>Të gjitha</span><i>'+all.length+'</i></button>';
  list.innerHTML=rows.length?rows.map(opportunityCard).join(''):'<div class="pst-pcw-empty">Nuk ka mundësi që përputhen me këtë filtër.</div>';
  var legacy=p.querySelector('#pst-opportunities-all');if(legacy){legacy.classList.add('pst-pcw-backstage');legacy.hidden=true;legacy.style.display='none';}
@@ -193,9 +194,11 @@ async function loadOpportunities(force){
  catch(e){console.warn('PPPP opportunities project-centric:',e);return false;}finally{tenderState.busy=false;}
 }
 function setOpportunityContext(context){
- context=typeof context==='string'?{focus:context}:(context||{});var f=S(context.focus).toLowerCase();
+ context=typeof context==='string'?{focus:context}:(context||{});var f=S(context.focus).toLowerCase(),src=S(context.source).toUpperCase(),mode=f==='award'||f==='local'?f:S(context.mode||'all').toLowerCase();
+ if(src==='APP')src='APP_AL';
  tenderState.focus=['due','review'].indexOf(f)>-1?f:'';
- tenderState.mode=f==='award'||f==='local'?f:(context.mode||'all');
+ tenderState.source=['TED','KRPP','APP_AL'].indexOf(src)>-1?src:(mode==='award'?'TED':'all');
+ tenderState.mode=tenderState.source!=='all'?'all':(['local','award'].indexOf(mode)>-1?mode:'all');
  tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(S(context.lifecycle).toLowerCase())>-1?S(context.lifecycle).toLowerCase():'new';
  tenderState.query=S(context.query||'');return tenderState;
 }
@@ -352,7 +355,8 @@ function ensureProjectUpdate(){
 function click(e){
  var close=e.target&&e.target.closest?e.target.closest('[data-pcw-close-modal]'):null;if(close||e.target&&e.target.id==='pst-ti-backdrop'){e.preventDefault();e.stopPropagation();closeTenderModal();return;}
  var lifecycle=e.target&&e.target.closest?e.target.closest('[data-pcw-lifecycle]'):null;if(lifecycle){tenderState.lifecycle=lifecycle.getAttribute('data-pcw-lifecycle')||'new';renderOpportunities();return;}
- var tab=e.target&&e.target.closest?e.target.closest('[data-pcw-mode]'):null;if(tab){tenderState.mode=tab.getAttribute('data-pcw-mode')||'all';renderOpportunities();return;}
+ var source=e.target&&e.target.closest?e.target.closest('[data-pcw-source]'):null;if(source){tenderState.source=source.getAttribute('data-pcw-source')||'all';tenderState.mode='all';renderOpportunities();return;}
+ var tab=e.target&&e.target.closest?e.target.closest('[data-pcw-mode]'):null;if(tab){tenderState.mode=tab.getAttribute('data-pcw-mode')||'all';tenderState.source='all';renderOpportunities();return;}
  var ti=e.target&&e.target.closest?e.target.closest('[data-pcw-ti]'):null;if(ti){e.preventDefault();e.stopPropagation();tenderAction(ti.getAttribute('data-pcw-ti'),ti.getAttribute('data-id'),ti);return;}
  var tender=e.target&&e.target.closest?e.target.closest('[data-pcw-tender]'):null;if(tender){e.preventDefault();openTender(tender.getAttribute('data-pcw-tender'));return;}
  var cp=e.target&&e.target.closest?e.target.closest('[data-pcw-contact-project]'):null;if(cp){var id=cp.getAttribute('data-pcw-contact-project');if(id&&window.pstOpenProjectWorkspace)window.pstOpenProjectWorkspace(id);return;}
