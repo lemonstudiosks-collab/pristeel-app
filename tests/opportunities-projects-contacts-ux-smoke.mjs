@@ -64,7 +64,7 @@ assert.match(pcw,/projectNames\[S\(m\.project_id\)\]/,'contact activity must sho
 
 console.log('Opportunities + Projects + Contacts UX contract: OK');
 
-assert.match(pcw,/__pstProjectCentricWorkflowV3/,'whole-card Opportunities must expose a current runtime generation');
+assert.match(pcw,/__pstProjectCentricWorkflowV4/,'whole-card Opportunities must expose a current runtime generation');
 assert.doesNotMatch(pcw,/classList\.contains\('active'\).*page-kek-tenders/,'visible Opportunities must not depend on an .active class');
 assert.match(pcw,/getComputedStyle/,'visible-page detection must follow actual browser visibility');
 assert.match(pcw,/legacy\.hidden=true;legacy\.style\.display='none'/,'old opportunity details/table must be retired directly at runtime');

@@ -7,6 +7,7 @@ const projectCentric=fs.readFileSync('pristeel-project-centric-workflow-v1.js','
 const draftStateSource=fs.readFileSync('pristeel-opportunity-draft-state-v1.js','utf8');
 const askBridgeSource=fs.readFileSync('pristeel-home-ask-functional-owner-v1.js','utf8');
 const securityHardening=fs.readFileSync('supabase/migrations/20260903111000_tender_security_hardening_v1.sql','utf8');
+const outreachReadPolicy=fs.readFileSync('supabase/migrations/20260911064638_opportunity_outreach_registry_authenticated_read.sql','utf8');
 const sandbox={
   window:{},
   document:{getElementById:()=>null,addEventListener:()=>{},head:{appendChild:()=>{}},createElement:()=>({})},
@@ -93,6 +94,21 @@ assert.strictEqual(deduped.find(x=>x.publication_no==='TED-123').id,'drafted','D
 W._state.rows=[duplicatePlain,duplicateDraft,uniqueReview];W.setOpportunityContext({focus:'review'});
 assert.strictEqual(W._test.opportunityRows().map(x=>x.id).join(','),'unique','Home review context must show only Opportunities waiting for review');
 
+const waiting=Object.assign({},award('DEU'),{id:'waiting',publication_no:'TED-WAIT'});
+const replied=Object.assign({},award('AUT'),{id:'replied',publication_no:'TED-REPLY'});
+W._state.rows=[duplicateDraft,waiting,replied,uniqueReview];
+W._state.outreachByTender={
+  waiting:[{status:'draft_created',recipient_email:'wait@example.com',draft_created_at:'2026-09-10T07:00:00Z',gmail_thread_id:'thread-wait'}],
+  replied:[{status:'sent',recipient_email:'reply@example.com',sent_at:'2026-09-09T08:00:00Z',gmail_thread_id:'thread-reply'}]
+};
+W._state.emailByThread={'thread-wait':[{direction:'outgoing',sent_at:'2026-09-10T08:00:00Z'}],'thread-reply':[{direction:'outgoing',sent_at:'2026-09-09T08:00:00Z'},{direction:'incoming',sent_at:'2026-09-10T09:00:00Z',subject:'Re: capacity'}]};
+assert.strictEqual(W._test.opportunityLifecycle(duplicateDraft),'draft','A persisted Gmail draft must move out of the new-tender list');
+assert.strictEqual(W._test.opportunityLifecycle(waiting),'waiting','Outgoing Gmail evidence must move a freshly sent draft into waiting even before the periodic registry sync');
+assert.strictEqual(W._test.opportunityLifecycle(replied),'replied','A later inbound message in the Gmail thread must move into replies');
+W.setOpportunityContext({lifecycle:'draft'});assert.deepStrictEqual(Array.from(W._test.opportunityRows(),x=>x.id),['drafted'],'Draft list must contain only tenders with a prepared draft');
+W.setOpportunityContext({lifecycle:'waiting'});assert.deepStrictEqual(Array.from(W._test.opportunityRows(),x=>x.id),['waiting'],'Waiting list must contain only sent outreach without a reply');
+W.setOpportunityContext({lifecycle:'replied'});assert.deepStrictEqual(Array.from(W._test.opportunityRows(),x=>x.id),['replied'],'Reply list must contain only tenders with inbound reply evidence');
+
 assert.ok(askBridgeSource.includes('MutationObserver'),'Ask bridge must survive the late Project Control Home owner instead of expiring after early startup retries');
 assert.ok(askBridgeSource.includes('installAskOwnerQueryBridge')&&askBridgeSource.includes("PSTProjectControlHomeV1.render"),'Visible Ask shell must remain connected to the canonical owner render path after DOM adoption');
 assert.ok(askBridgeSource.includes('90000'),'Ask bridge must remain bounded but cover the known long ordered bootstrap window');
@@ -105,5 +121,8 @@ assert.ok(/pppp_ted_sales_outreach_v1 set \(security_invoker=true\)/i.test(secur
 assert.ok(/pppp_ted_award_candidates_by_email_v1[\s\S]*security invoker/i.test(securityHardening),'TED award lookup RPC must not elevate privileges');
 assert.ok(/tender_email_links_gmail_message_id_idx/.test(securityHardening),'TED email-link Gmail FK must have a covering index');
 assert.ok(!/messages\/send|sendEmail\s*\(/.test(securityHardening),'Security hardening must not introduce external email sending');
+assert.ok(/for select\s+to authenticated/i.test(outreachReadPolicy),'Outreach lifecycle must be readable only by signed-in PPPP operators');
+assert.ok(/using \(\(select auth\.uid\(\)\) is not null\)/i.test(outreachReadPolicy),'Outreach read policy must reject unauthenticated requests explicitly');
+assert.ok(!/for (insert|update|delete)/i.test(outreachReadPolicy),'Lifecycle UI migration must not grant browser writes to the delivery registry');
 
 console.log('Tender email draft language, persistence, duplicate guard, Ask owner bridge and security smoke test passed.');
