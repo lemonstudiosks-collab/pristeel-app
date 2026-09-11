@@ -48,7 +48,7 @@ window.pstTenderIntelligence=async()=>null;
 window.eval(src);
 
 const api=window.PSTProjectCentricWorkflowV1;
-assert(api&&api.version==='3','current project-centric runtime did not load');
+assert(api&&api.version==='4','current project-centric runtime did not load');
 assert.equal(window.document.getElementById('page-kek-tenders').classList.contains('active'),false,'fixture must reproduce a visible page without .active');
 
 await api.loadOpportunities(true);

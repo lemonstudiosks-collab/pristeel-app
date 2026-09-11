@@ -5,12 +5,13 @@
  */
 (function(){
 'use strict';
-if(window.__pstProjectCentricWorkflowV3&&window.PSTProjectCentricWorkflowV1)return;
+if(window.__pstProjectCentricWorkflowV4&&window.PSTProjectCentricWorkflowV1)return;
 window.__pstProjectCentricWorkflowV1=true;
 window.__pstProjectCentricWorkflowV2=true;
 window.__pstProjectCentricWorkflowV3=true;
+window.__pstProjectCentricWorkflowV4=true;
 
-var tenderState={rows:[],mode:'all',query:'',focus:'',busy:false,last:0,partners:null};
+var tenderState={rows:[],mode:'all',lifecycle:'new',query:'',focus:'',busy:false,last:0,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{}};
 var contactBusy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -76,7 +77,7 @@ function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient pot
 function sourceLabel(r){return tenderSource(r)==='TED'?'EU · TED':tenderSource(r)==='APP_AL'?'Shqipëri · APP':'Kosovë · KRPP';}
 function tenderDate(v){var d=v?new Date(v+'T00:00:00'):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
 function tenderReason(r){var P=tenderApi();return P&&typeof P.reason==='function'?P.reason(r):A(r&&r.match_reasons).slice(0,2).join(' · ');}
-function hasDraft(r){var p=tenderPayload(r),d=p.outreach_draft||p.gmail_draft;return !!(d&&/^(created|scheduled)$/i.test(S(d.status)));}
+function hasDraft(r){return opportunityLifecycle(r)!=='new';}
 function opportunityKey(r){
  var ref=N(r&&r.publication_no||r&&r.procurement_no),title=N(r&&r.title),winner=N(winnerName(r));
  return ref?'ref:'+ref+'|'+winner:'title:'+title+'|'+N(r&&r.authority)+'|'+winner;
@@ -86,10 +87,47 @@ function dedupeOpportunities(rows){
  return Object.keys(byKey).map(function(k){return byKey[k];});
 }
 function dueSoon(v){if(!v)return false;var d=new Date(S(v).slice(0,10)+'T23:59:59'),now=Date.now();return !isNaN(d.getTime())&&d.getTime()>=now&&d.getTime()<=now+7*86400000;}
+function outreachRows(r){return A(tenderState.outreachByTender[S(r&&r.id)]);}
+function latestDate(rows,key){var out='';A(rows).forEach(function(x){var v=S(x&&x[key]);if(v&&(!out||Date.parse(v)>Date.parse(out)))out=v;});return out;}
+function outgoingFor(r){var latest=null,after=Date.parse(r.draft_created_at||r.updated_at||0)-300000;A(tenderState.emailByThread[S(r.gmail_thread_id)]).forEach(function(m){var at=Date.parse(m.sent_at||0);if(N(m.direction)==='outgoing'&&at>=after&&(!latest||at>Date.parse(latest.sent_at||0)))latest=m;});return latest;}
+function deliveredRows(rows){return A(rows).map(function(r){var mail=outgoingFor(r),sent=S(r.sent_at||mail&&mail.sent_at);return sent?Object.assign({},r,{sent_at:sent,status:'sent'}):null;}).filter(Boolean);}
+function replyFor(rows){var latest=null;A(rows).forEach(function(r){var sent=Date.parse(r.sent_at||0),messages=A(tenderState.emailByThread[S(r.gmail_thread_id)]);messages.forEach(function(m){var at=Date.parse(m.sent_at||0);if(N(m.direction)==='incoming'&&at>sent&&(!latest||at>Date.parse(latest.sent_at||0)))latest=m;});});return latest;}
+function opportunityLifecycle(r){
+ var rows=outreachRows(r),sent=deliveredRows(rows);
+ if(replyFor(sent))return'replied';
+ if(sent.length)return'waiting';
+ if(rows.some(function(x){return /^(draft_pending|draft_created)$/.test(S(x.status).toLowerCase());}))return'draft';
+ var p=tenderPayload(r),d=p.outreach_draft||p.gmail_draft,s=S(d&&d.status).toLowerCase();
+ if(d&&/^(created|scheduled)$/.test(s))return'draft';
+ if(S(p.ted_contact_status).toLowerCase()==='contacted')return'waiting';
+ return'new';
+}
+function lifecycleMeta(r){
+ var lane=opportunityLifecycle(r),rows=outreachRows(r),sent=deliveredRows(rows),reply=replyFor(sent),p=tenderPayload(r),d=p.outreach_draft||p.gmail_draft||{},when='',recipients=[];
+ rows.forEach(function(x){var e=S(x.recipient_email).trim();if(e&&recipients.indexOf(e)<0)recipients.push(e);});
+ if(lane==='replied')when=S(reply&&reply.sent_at);
+ else if(lane==='waiting')when=latestDate(sent,'sent_at')||S(p.ted_contacted_at);
+ else if(lane==='draft')when=latestDate(rows,'draft_created_at')||S(d.created_at||d.scheduled_at);
+ return{lane:lane,when:when,recipients:recipients,reply:reply};
+}
+function lifecycleLabel(meta){if(meta.lane==='draft')return'Draft i përgatitur';if(meta.lane==='waiting')return'Në pritje';if(meta.lane==='replied')return'Përgjigje e pranuar';return'E re';}
+function lifecycleWhen(meta){if(!meta.when)return'';try{var d=new Date(meta.when);return isNaN(d.getTime())?'':d.toLocaleString('sq-AL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
+function lifecycleDateLabel(meta){var when=lifecycleWhen(meta);if(!when)return'';if(meta.lane==='draft')return'Drafti: '+when;if(meta.lane==='waiting')return'Dërguar: '+when;if(meta.lane==='replied')return'Përgjigjja: '+when;return'';}
+async function loadOpportunityOutreach(){
+ tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.emailByThread={};
+ try{
+   var rows=A(await db('pppp_opportunity_outreach_registry_v1?select=tender_watch_id,recipient_email,status,draft_created_at,sent_at,gmail_thread_id,gmail_message_id,updated_at&order=updated_at.desc&limit=2000'));
+   tenderState.outreachRows=rows;rows.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.outreachByTender[id]||(tenderState.outreachByTender[id]=[])).push(r);});
+   var threads=[];rows.forEach(function(r){if(/^[a-zA-Z0-9_-]+$/.test(S(r.gmail_thread_id))&&threads.indexOf(S(r.gmail_thread_id))<0)threads.push(S(r.gmail_thread_id));});
+   if(threads.length){var mails=A(await db('project_emails?gmail_thread_id=in.('+threads.join(',')+')&select=gmail_thread_id,gmail_message_id,direction,from_email,to_emails,subject,sent_at&order=sent_at.asc&limit=2000'));mails.forEach(function(m){var t=S(m.gmail_thread_id);if(t)(tenderState.emailByThread[t]||(tenderState.emailByThread[t]=[])).push(m);});}
+ }catch(e){console.warn('PPPP opportunity outreach state:',e);}
+ return tenderState.outreachRows;
+}
 function opportunityRows(){
  var rows=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),q=N(tenderState.query);
  if(tenderState.mode==='local')rows=rows.filter(function(r){return tenderMode(r)==='local';});
  if(tenderState.mode==='award')rows=rows.filter(function(r){return tenderMode(r)==='award';});
+ if(tenderState.lifecycle!=='all')rows=rows.filter(function(r){return opportunityLifecycle(r)===tenderState.lifecycle;});
  if(tenderState.focus==='due')rows=rows.filter(function(r){return dueSoon(r.deadline);});
  if(tenderState.focus==='review')rows=rows.filter(function(r){return /review|shqyr/.test(N(r.operating_lane||r.status));});
  if(q)rows=rows.filter(function(r){return N([r.title,r.authority,r.procurement_no,r.publication_no,tenderReason(r),winnerName(r),winnerRoleLabel(r)].join(' ')).indexOf(q)>-1;});
@@ -97,12 +135,13 @@ function opportunityRows(){
  return rows.slice(0,80);
 }
 function opportunityCard(r){
- var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PËR OFERTIM',role=award?winnerRoleLabel(r):'';
- return '<article class="pst-pcw-tender" role="button" tabindex="0" data-pcw-tender="'+E(r.id)+'">'
-   +'<div class="pst-pcw-tender-copy"><div class="pst-pcw-tender-meta"><span class="kind">'+status+'</span><span>'+E(sourceLabel(r))+'</span><span>'+tenderScore(r)+'% relevant për PRISTEEL</span>'+(award?'<span class="winner-role '+E(winnerRole(r))+'">'+E(role)+'</span>':'')+'</div>'
+ var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PËR OFERTIM',role=award?winnerRoleLabel(r):'',meta=lifecycleMeta(r),contact=lifecycleDateLabel(meta);
+ if(meta.recipients.length)contact+=(contact?' · ':'')+'Për: '+meta.recipients.slice(0,2).join(', ')+(meta.recipients.length>2?' +'+(meta.recipients.length-2):'');
+ return '<article class="pst-pcw-tender pst-pcw-life-'+E(meta.lane)+'" role="button" tabindex="0" data-pcw-tender="'+E(r.id)+'">'
+   +'<div class="pst-pcw-tender-copy"><div class="pst-pcw-tender-meta"><span class="kind">'+status+'</span><span class="pst-pcw-life-badge '+E(meta.lane)+'">'+E(lifecycleLabel(meta))+'</span><span>'+E(sourceLabel(r))+'</span><span>'+tenderScore(r)+'% relevant për PRISTEEL</span>'+(award?'<span class="winner-role '+E(winnerRole(r))+'">'+E(role)+'</span>':'')+'</div>'
    +'<h3>'+E(r.title||'Tender')+'</h3>'
    +'<p>'+E(tenderReason(r)||'Kliko për ta hapur mundësinë dhe për të vendosur hapin e radhës.')+'</p>'
-   +'<small>'+(award?(winner?'Fituesi: '+E(winner):'Fituesi duhet verifikuar'):'Afati: '+E(tenderDate(r.deadline)))+(r.authority?' · '+E(r.authority):'')+'</small></div>'
+   +'<small>'+(award?(winner?'Fituesi: '+E(winner):'Fituesi duhet verifikuar'):'Afati: '+E(tenderDate(r.deadline)))+(r.authority?' · '+E(r.authority):'')+'</small><div class="pst-pcw-contact-state">'+E(contact)+'</div></div>'
    +'<div class="pst-pcw-tender-open"><b>'+ (award?'Shqyrto fituesin':'Hap mundësinë') +'</b><span>→</span></div>'
  +'</article>';
 }
@@ -113,7 +152,7 @@ function ensureOpportunitySurface(){
  if(eye)eye.textContent='MONITORI AUTOMATIK I TENDERËVE TË ÇELIKUT';if(title)title.textContent='Mundësitë';if(sub)sub.textContent='KRPP, APP dhe TED mblidhen në prapaskenë. Këtu punojmë vetëm me mundësitë që mund të kthehen në projekt.';
  if(!focus){
    focus=document.createElement('section');focus.id='pst-opportunities-focus';
-   focus.innerHTML='<header></header><div id="pst-pcw-opportunity-tools"><label><span>Kërko</span><input id="pst-pcw-opportunity-search" placeholder="Titull, institucion, referencë ose përshkrim"></label></div><div id="pst-pcw-opportunity-tabs"></div><div id="pst-opportunities-list"></div>';
+   focus.innerHTML='<header></header><div id="pst-pcw-opportunity-tools"><label><span>Kërko</span><input id="pst-pcw-opportunity-search" placeholder="Titull, institucion, referencë ose përshkrim"></label></div><div id="pst-pcw-lifecycle-tabs"></div><div id="pst-pcw-opportunity-tabs"></div><div id="pst-opportunities-list"></div>';
    if(head)head.insertAdjacentElement('afterend',focus);else p.prepend(focus);
  }else{
    if(!focus.querySelector('#pst-pcw-opportunity-tools')){
@@ -123,6 +162,7 @@ function ensureOpportunitySurface(){
    if(!focus.querySelector('#pst-pcw-opportunity-tabs')){
      var tabs=document.createElement('div');tabs.id='pst-pcw-opportunity-tabs';var list2=focus.querySelector('#pst-opportunities-list');if(list2)focus.insertBefore(tabs,list2);else focus.appendChild(tabs);
    }
+   if(!focus.querySelector('#pst-pcw-lifecycle-tabs')){var life=document.createElement('div');life.id='pst-pcw-lifecycle-tabs';var modeTabs=focus.querySelector('#pst-pcw-opportunity-tabs');if(modeTabs)focus.insertBefore(life,modeTabs);else focus.appendChild(life);}
    if(!focus.querySelector('#pst-opportunities-list')){var list3=document.createElement('div');list3.id='pst-opportunities-list';focus.appendChild(list3);}
  }
  var input=focus.querySelector('#pst-pcw-opportunity-search');
@@ -133,11 +173,12 @@ function renderOpportunities(){
  var p=activePage('page-kek-tenders');if(!p)return false;
  var focus=ensureOpportunitySurface();if(!focus)return false;
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return false;
- var all=tenderState.rows.filter(tenderVisible),local=all.filter(function(r){return tenderMode(r)==='local';}).length,award=all.filter(function(r){return tenderMode(r)==='award';}).length,rows=opportunityRows();
+ var all=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),local=all.filter(function(r){return tenderMode(r)==='local';}).length,award=all.filter(function(r){return tenderMode(r)==='award';}).length,rows=opportunityRows(),counts={new:0,draft:0,waiting:0,replied:0};all.forEach(function(r){counts[opportunityLifecycle(r)]++;});
  var header=focus.querySelector('header');if(header)header.innerHTML='<div><span>MUNDËSITË</span><h2>Tenderat që mund të bëhen projekte</h2><p>'+(tenderState.focus==='due'?'Po shfaqen vetëm tenderët me afat brenda shtatë ditësh.':tenderState.focus==='review'?'Po shfaqen vetëm tenderët që presin shqyrtim.':'Kliko një mundësi. PPPP merr dosjen, nxjerr kushtet dhe vetëm pastaj vendos ti nëse krijohet projekt.')+'</p></div>';
  var search=focus.querySelector('#pst-pcw-opportunity-search');if(search&&search.value!==tenderState.query)search.value=tenderState.query;
  var tabs=focus.querySelector('#pst-pcw-opportunity-tabs');
  tabs.innerHTML='<button data-pcw-mode="all" class="'+(tenderState.mode==='all'?'on':'')+'"><span>Të gjitha</span><i>'+(local+award)+'</i></button><button data-pcw-mode="local" class="'+(tenderState.mode==='local'?'on':'')+'"><span>Për ofertim</span><i>'+local+'</i></button><button data-pcw-mode="award" class="'+(tenderState.mode==='award'?'on':'')+'"><span>Fitues nga TED</span><i>'+award+'</i></button>';
+ var life=focus.querySelector('#pst-pcw-lifecycle-tabs');life.innerHTML='<button data-pcw-lifecycle="new" class="'+(tenderState.lifecycle==='new'?'on':'')+'"><span>Të rinj</span><i>'+counts.new+'</i></button><button data-pcw-lifecycle="draft" class="'+(tenderState.lifecycle==='draft'?'on':'')+'"><span>Draft i përgatitur</span><i>'+counts.draft+'</i></button><button data-pcw-lifecycle="waiting" class="'+(tenderState.lifecycle==='waiting'?'on':'')+'"><span>Në pritje</span><i>'+counts.waiting+'</i></button><button data-pcw-lifecycle="replied" class="'+(tenderState.lifecycle==='replied'?'on':'')+'"><span>Përgjigje</span><i>'+counts.replied+'</i></button><button data-pcw-lifecycle="all" class="'+(tenderState.lifecycle==='all'?'on':'')+'"><span>Të gjitha</span><i>'+all.length+'</i></button>';
  list.innerHTML=rows.length?rows.map(opportunityCard).join(''):'<div class="pst-pcw-empty">Nuk ka mundësi që përputhen me këtë filtër.</div>';
  var legacy=p.querySelector('#pst-opportunities-all');if(legacy){legacy.classList.add('pst-pcw-backstage');legacy.hidden=true;legacy.style.display='none';}
  p.querySelectorAll('.pst-kek-filter,.pst-kek-card,#pst-tender-fit-summary').forEach(function(x){if(!focus.contains(x)){x.hidden=true;x.style.display='none';x.setAttribute('aria-hidden','true');}});
@@ -148,13 +189,14 @@ async function loadOpportunities(force){
  if(!activePage('page-kek-tenders')||tenderState.busy)return false;
  if(!force&&tenderState.last&&Date.now()-tenderState.last<30000){renderOpportunities();return true;}
  tenderState.busy=true;
- try{tenderState.rows=A(await db('kek_tender_watch?select=*&status=in.(new,review,watch)&order=published_date.desc,relevance_score.desc&limit=2000'));tenderState.last=Date.now();renderOpportunities();return true;}
+ try{tenderState.rows=A(await db('kek_tender_watch?select=*&status=in.(new,review,watch)&order=published_date.desc,relevance_score.desc&limit=2000'));await loadOpportunityOutreach();tenderState.last=Date.now();renderOpportunities();return true;}
  catch(e){console.warn('PPPP opportunities project-centric:',e);return false;}finally{tenderState.busy=false;}
 }
 function setOpportunityContext(context){
  context=typeof context==='string'?{focus:context}:(context||{});var f=S(context.focus).toLowerCase();
  tenderState.focus=['due','review'].indexOf(f)>-1?f:'';
  tenderState.mode=f==='award'||f==='local'?f:(context.mode||'all');
+ tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(S(context.lifecycle).toLowerCase())>-1?S(context.lifecycle).toLowerCase():'new';
  tenderState.query=S(context.query||'');return tenderState;
 }
 function openOpportunities(context,force){setOpportunityContext(context);return loadOpportunities(force!==false);}
@@ -309,6 +351,7 @@ function ensureProjectUpdate(){
 
 function click(e){
  var close=e.target&&e.target.closest?e.target.closest('[data-pcw-close-modal]'):null;if(close||e.target&&e.target.id==='pst-ti-backdrop'){e.preventDefault();e.stopPropagation();closeTenderModal();return;}
+ var lifecycle=e.target&&e.target.closest?e.target.closest('[data-pcw-lifecycle]'):null;if(lifecycle){tenderState.lifecycle=lifecycle.getAttribute('data-pcw-lifecycle')||'new';renderOpportunities();return;}
  var tab=e.target&&e.target.closest?e.target.closest('[data-pcw-mode]'):null;if(tab){tenderState.mode=tab.getAttribute('data-pcw-mode')||'all';renderOpportunities();return;}
  var ti=e.target&&e.target.closest?e.target.closest('[data-pcw-ti]'):null;if(ti){e.preventDefault();e.stopPropagation();tenderAction(ti.getAttribute('data-pcw-ti'),ti.getAttribute('data-id'),ti);return;}
  var tender=e.target&&e.target.closest?e.target.closest('[data-pcw-tender]'):null;if(tender){e.preventDefault();openTender(tender.getAttribute('data-pcw-tender'));return;}
@@ -338,13 +381,13 @@ function css(){if(document.getElementById('pst-project-centric-workflow-css'))re
 #page-kek-tenders #pst-opportunities-focus>header h2{font-size:24px!important;letter-spacing:-.02em!important;color:#263E48!important}
 #page-kek-tenders #pst-opportunities-focus>header p{font-size:11px!important;max-width:760px!important;color:#71858E!important;line-height:1.5!important}
 #pst-pcw-opportunity-tools{margin:18px 0 10px}#pst-pcw-opportunity-tools label{display:flex;align-items:center;gap:10px;border:1px solid #D9E5E9;border-radius:13px;background:#fff;padding:0 13px}#pst-pcw-opportunity-tools label span{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.09em;color:#6B8792}#pst-pcw-opportunity-search{height:48px;flex:1;border:0;outline:0;background:transparent;font-size:14px;color:#30464F}
-#pst-pcw-opportunity-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0 10px}
-#pst-pcw-opportunity-tabs button{min-height:44px;border:1px solid #DDE6E9;border-radius:12px;background:#fff;color:#66777E;padding:0 15px;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
-#pst-pcw-opportunity-tabs button.on{background:#EAF4F7;border-color:#9FC6D2;color:#2F758E;box-shadow:0 4px 12px rgba(57,127,152,.08)}#pst-pcw-opportunity-tabs i{font-style:normal;min-width:22px;height:22px;border-radius:999px;background:#F0F5F7;display:inline-flex;align-items:center;justify-content:center;opacity:.85}#pst-pcw-opportunity-tabs button.on i{background:#fff}
+#pst-pcw-lifecycle-tabs,#pst-pcw-opportunity-tabs{display:flex;gap:7px;flex-wrap:wrap}#pst-pcw-lifecycle-tabs{margin:13px 0 8px;padding-bottom:10px;border-bottom:1px solid #E8EDEF}#pst-pcw-opportunity-tabs{margin:8px 0 10px}
+#pst-pcw-lifecycle-tabs button,#pst-pcw-opportunity-tabs button{min-height:40px;border:1px solid #DDE6E9;border-radius:12px;background:#fff;color:#66777E;padding:0 13px;font-size:11px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+#pst-pcw-lifecycle-tabs button.on,#pst-pcw-opportunity-tabs button.on{background:#EAF4F7;border-color:#9FC6D2;color:#2F758E;box-shadow:0 4px 12px rgba(57,127,152,.08)}#pst-pcw-lifecycle-tabs i,#pst-pcw-opportunity-tabs i{font-style:normal;min-width:22px;height:22px;border-radius:999px;background:#F0F5F7;display:inline-flex;align-items:center;justify-content:center;opacity:.85}#pst-pcw-lifecycle-tabs button.on i,#pst-pcw-opportunity-tabs button.on i{background:#fff}
 #pst-opportunities-list{display:grid!important;gap:9px!important}
 .pst-pcw-tender{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;padding:20px 21px;border:1px solid #DFE7EA;border-left:5px solid #6D9BAA;border-radius:16px;background:#fff;cursor:pointer;transition:.15s;box-shadow:0 3px 14px rgba(40,65,77,.035)}
 .pst-pcw-tender:hover,.pst-pcw-tender:focus-visible{border-color:#B9D0D8;border-left-color:#397F98;background:#F8FBFC;box-shadow:0 7px 20px rgba(43,75,86,.07);transform:translateY(-1px);outline:none}
-.pst-pcw-tender-meta{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;font-weight:850;color:#849197;letter-spacing:.05em}.pst-pcw-tender-meta span{padding:4px 7px;border-radius:999px;background:#F3F6F7}.pst-pcw-tender-meta .kind{color:#397F98;background:#EAF4F7}.pst-pcw-tender-meta .winner-role.gc_epc{background:#E9F5ED;color:#35734A}.pst-pcw-tender-meta .winner-role.producer{background:#FFF3E4;color:#8A6327}.pst-pcw-tender-meta .winner-role.trader_consortium{background:#F0ECF8;color:#6A5494}.pst-pcw-tender-meta .winner-role.unknown{background:#F4F4F4;color:#777}.pst-pcw-tender h3{margin:8px 0 0;font-size:17px;color:#2D434D;line-height:1.35}.pst-pcw-tender p{margin:7px 0 0;font-size:13px;color:#6F8087;line-height:1.5;max-width:900px}.pst-pcw-tender small{display:block;margin-top:9px;font-size:11.5px;color:#8A979C}.pst-pcw-tender-open{display:flex;align-items:center;gap:10px;color:#397F98;white-space:nowrap;padding:9px 12px;border-radius:10px;background:#F0F7F9}.pst-pcw-tender-open b{font-size:12px}.pst-pcw-tender-open span{font-size:19px}.pst-pcw-empty{padding:24px;color:#819096;text-align:center}
+.pst-pcw-tender-meta{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;font-weight:850;color:#849197;letter-spacing:.05em}.pst-pcw-tender-meta span{padding:4px 7px;border-radius:999px;background:#F3F6F7}.pst-pcw-tender-meta .kind{color:#397F98;background:#EAF4F7}.pst-pcw-tender-meta .pst-pcw-life-badge.new{background:#EDF5F7;color:#397F98}.pst-pcw-tender-meta .pst-pcw-life-badge.draft{background:#F4F0E9;color:#806C4D}.pst-pcw-tender-meta .pst-pcw-life-badge.waiting{background:#EEF1F5;color:#596F88}.pst-pcw-tender-meta .pst-pcw-life-badge.replied{background:#EAF4ED;color:#477257}.pst-pcw-tender-meta .winner-role.gc_epc{background:#E9F5ED;color:#35734A}.pst-pcw-tender-meta .winner-role.producer{background:#FFF3E4;color:#8A6327}.pst-pcw-tender-meta .winner-role.trader_consortium{background:#F0ECF8;color:#6A5494}.pst-pcw-tender-meta .winner-role.unknown{background:#F4F4F4;color:#777}.pst-pcw-tender h3{margin:8px 0 0;font-size:17px;color:#2D434D;line-height:1.35}.pst-pcw-tender p{margin:7px 0 0;font-size:13px;color:#6F8087;line-height:1.5;max-width:900px}.pst-pcw-tender small{display:block;margin-top:9px;font-size:11.5px;color:#8A979C}.pst-pcw-contact-state{margin-top:8px;font-size:11px;font-weight:780;color:#66777E}.pst-pcw-life-draft{border-left-color:#A99674}.pst-pcw-life-waiting{border-left-color:#7389A0}.pst-pcw-life-replied{border-left-color:#62856E}.pst-pcw-tender-open{display:flex;align-items:center;gap:10px;color:#397F98;white-space:nowrap;padding:9px 12px;border-radius:10px;background:#F0F7F9}.pst-pcw-tender-open b{font-size:12px}.pst-pcw-tender-open span{font-size:19px}.pst-pcw-empty{padding:24px;color:#819096;text-align:center}
 .pst-pcw-modal{position:fixed;inset:0;z-index:10080;background:rgba(28,38,43,.48);display:none;align-items:center;justify-content:center;padding:18px}.pst-pcw-modal #pst-ti-card{width:min(820px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #D8E2E5;box-shadow:0 24px 80px rgba(0,0,0,.2);padding:22px}.pst-pcw-modal-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.pst-pcw-modal-head span{font-size:9px;font-weight:900;letter-spacing:.12em;color:#397F98}.pst-pcw-modal-head h2{font-size:20px;line-height:1.35;color:#2C434D;margin:4px 0 0}.pst-pcw-modal-head p{font-size:11px;color:#7A8A91;margin:5px 0 0}.pst-pcw-modal-head button{border:1px solid #D6E0E4;background:#fff;border-radius:9px;padding:7px 10px;color:#536970;font-size:10px;font-weight:800;cursor:pointer}.pst-pcw-modal-foot{margin-top:16px;padding-top:11px;border-top:1px solid #E7ECEE;font-size:9px;color:#87949A}
 #pst-pcw-server-analysis{margin-top:16px;padding-top:14px;border-top:1px solid #E5ECEE}.pst-pcw-winner-brief{padding:15px 16px;border:1px solid #DCE7EA;border-radius:14px;background:#FAFCFD}.pst-pcw-winner-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.pst-pcw-winner-head span{font-size:9px;font-weight:900;letter-spacing:.1em;color:#397F98}.pst-pcw-winner-head h3{margin:4px 0 0;font-size:18px;color:#2E4650}.pst-pcw-winner-head .role{padding:7px 10px;border-radius:999px;font-size:10px}.pst-pcw-winner-head .role.gc_epc{background:#E9F5ED;color:#35734A}.pst-pcw-winner-head .role.producer{background:#FFF3E4;color:#8A6327}.pst-pcw-winner-head .role.trader_consortium{background:#F0ECF8;color:#6A5494}.pst-pcw-winner-head .role.unknown{background:#F1F2F3;color:#6E777B}.pst-pcw-winner-brief>p{font-size:12.5px;line-height:1.55;color:#596E77;margin:11px 0}.pst-pcw-winner-facts{display:flex;gap:8px;flex-wrap:wrap}.pst-pcw-winner-facts>*{padding:8px 10px;border-radius:9px;background:#fff;border:1px solid #E2E9EB;font-size:10.5px;color:#64777F;text-decoration:none}.pst-pcw-winner-facts b{color:#344E58}.pst-pcw-winner-contacts{margin-top:12px}.pst-pcw-winner-contacts>b{display:block;font-size:11px;color:#405761;margin-bottom:6px}.pst-pcw-winner-contacts a{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid #E8EDEF;color:#397F98;text-decoration:none;font-size:11px}.pst-pcw-winner-contacts a small{color:#859399}.pst-pcw-winner-none{margin-top:12px;font-size:11px;color:#8A969B}.pst-pcw-ai-loading{margin-top:12px}.pst-pcw-ai>span{font-size:8px;font-weight:900;letter-spacing:.12em;color:#397F98}.pst-pcw-ai p{font-size:11.5px;line-height:1.62;color:#354B54;margin:7px 0}.pst-pcw-ai small{display:block;color:#657A83}.pst-pcw-ai-loading{font-size:9.5px;color:#7F8E94}
 #pst-pcw-ti-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid #E5ECEE}#pst-pcw-ti-actions button,#pst-pcw-ti-actions .pst-pcw-source-link{min-height:41px;box-sizing:border-box;border:1px solid #D9E3E6;border-radius:10px;background:#fff;color:#536870;padding:0 13px;font-size:9px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}#pst-pcw-ti-actions button.primary{background:#397F98;border-color:#397F98;color:#fff}#pst-pcw-ti-actions button.create{background:#35734A;border-color:#35734A;color:#fff;margin-left:auto}#pst-pcw-ti-actions button.danger{color:#995151;border-color:#E6CCCC;background:#FFF9F9}#pst-pcw-ti-actions button:disabled{opacity:.42;cursor:not-allowed}.pst-pcw-decision-intro{padding:13px 14px;border:1px solid #DCE8EC;border-radius:12px;background:#F7FBFC}.pst-pcw-decision-intro span,.pst-pcw-decision-intro b,.pst-pcw-decision-intro small{display:block}.pst-pcw-decision-intro span{font-size:8px;font-weight:900;letter-spacing:.11em;color:#397F98}.pst-pcw-decision-intro b{font-size:11px;color:#314B55;margin-top:4px}.pst-pcw-decision-intro small{font-size:8.5px;color:#788A91;margin-top:4px}
@@ -359,5 +402,5 @@ function schedule(force){[0,90,260,700].forEach(function(ms){setTimeout(function
 document.addEventListener('click',click,true);document.addEventListener('keydown',keydown,true);document.addEventListener('pst:modules-ready',function(){schedule(false);},{once:true});document.addEventListener('pst:project-operator-updated',function(){schedule(true);});window.addEventListener('pageshow',function(){schedule(false);},{once:true});
 document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[data-pm-open],[data-pwf-area],[data-pwf-stage],[data-pcm-id]'):null;if(n)schedule(false);},true);
 if(document.readyState!=='loading')schedule(false);else document.addEventListener('DOMContentLoaded',function(){schedule(false);},{once:true});
-window.PSTProjectCentricWorkflowV1={version:'3',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,renderOpportunities:renderOpportunities,openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,opportunityRows:opportunityRows,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal}};
+window.PSTProjectCentricWorkflowV1={version:'4',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,renderOpportunities:renderOpportunities,openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,opportunityRows:opportunityRows,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal}};
 })();
