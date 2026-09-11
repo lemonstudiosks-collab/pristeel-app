@@ -81,7 +81,8 @@ function normalizeNav(){
     var l=b.querySelector('.pst-nav-label');setText(l,x.label);work.appendChild(b);
   });
   host.querySelectorAll('.pst-ws-navbtn').forEach(function(b){
-    if(!b.classList.contains('pst-business-primary'))b.style.setProperty('display','none','important');
+    var allowed=PRIMARY.some(function(x){return x.key===b.dataset.key;});
+    if(!allowed){b.classList.remove('pst-business-primary');b.style.setProperty('display','none','important');}
   });
   var toolsTitle=host.querySelector('.pst-canon-tools-title');if(toolsTitle)toolsTitle.style.setProperty('display','none','important');
   if(tools)tools.style.setProperty('display','none','important');
