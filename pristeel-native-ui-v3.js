@@ -237,7 +237,7 @@ function loadCore(){
   loadAskFunctionalOwner();
   if(window.PSTNativeUiV5){apply();return;}
   if(document.querySelector('script[data-pst-native-ui-v4-core]'))return;
-  var s=document.createElement('script');s.src='pristeel-native-ui-v4-core.js?v=20260911-dailyflow1';s.defer=true;s.setAttribute('data-pst-native-ui-v4-core','1');
+  var s=document.createElement('script');s.src='pristeel-native-ui-v4-core.js?v=20260911-fullredesign1';s.defer=true;s.setAttribute('data-pst-native-ui-v4-core','1');
   s.onload=apply;s.onerror=function(){console.error('Nuk u ngarkua Native UI v4 core.');};document.head.appendChild(s);
 }
 installEntryCss();installStablePresentationCss();installRecoveryGate();installFinanceWindowOwner();loadAskFunctionalOwner();[0,80,220,700,1600].forEach(function(ms){setTimeout(function(){installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installNativeUiApplyGuard();},ms);});

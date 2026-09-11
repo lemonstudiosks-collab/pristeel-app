@@ -16,6 +16,7 @@ jobs:
         run: |
           node --check pristeel-native-ui-v3.js
           node --check pristeel-native-ui-v4-core.js
+          node --check pristeel-creative-ui-v1.js
           node --check pristeel-workspace-architecture-v1.js
           node --check pristeel-roles.js
       - name: Verify native UI contracts
@@ -24,6 +25,8 @@ jobs:
           node tests/create-control-structural-smoke.js
           node tests/ui-ownership-cleanup-smoke.js
           node tests/home-single-owner-albanian-smoke.js
+          node tests/native-ui-v5-daily-flow-smoke.js
+          node tests/creative-ui-v1-smoke.js
       - name: Verify active runtime manifest
         run: node scripts/runtime-manifest-check.mjs
       - name: Build production-shaped Pages artifact
@@ -32,10 +35,13 @@ jobs:
         run: |
           test -f _site/pristeel-native-ui-v3.js
           test -f _site/pristeel-native-ui-v4-core.js
-          grep -Fq 'pristeel-native-ui-v3.js?v=20260905-finance-terminal1' _site/pristeel-roles.js
-          grep -Fq 'pristeel-native-ui-v4-core.js?v=20260911-dailyflow1' _site/pristeel-native-ui-v3.js
+          test -f _site/pristeel-creative-ui-v1.js
+          grep -Fq 'pristeel-native-ui-v3.js?v=20260911-fullredesign1' _site/pristeel-roles.js
+          grep -Fq 'pristeel-native-ui-v4-core.js?v=20260911-fullredesign1' _site/pristeel-native-ui-v3.js
           grep -Fq '#4F97AF' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'Rrjedha e ditës' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'PËR TY TANI' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'pn-portfolio-pulse' _site/pristeel-native-ui-v4-core.js
+          grep -Fq '.pn-lane-wait{grid-column:1/-1' _site/pristeel-creative-ui-v1.js
+          grep -Fq 'pst-creative-fin-icon' _site/pristeel-creative-ui-v1.js
           grep -Fq 'PPPP gjeti punë të pambyllur' _site/pristeel-native-ui-v3.js

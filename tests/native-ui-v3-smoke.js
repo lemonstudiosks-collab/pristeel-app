@@ -8,7 +8,7 @@ const workspace=fs.readFileSync('pristeel-workspace-architecture-v1.js','utf8');
 const projectsModern=fs.readFileSync('pristeel-projects-modern-v1.js','utf8');
 const primaryNav=fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
-const nativeNeedle='pristeel-native-ui-v3.js?v=20260905-finance-terminal1';
+const nativeNeedle='pristeel-native-ui-v3.js?v=20260911-fullredesign1';
 const nativeAt=roles.indexOf(nativeNeedle);
 const projectEmailsAt=roles.indexOf('pristeel-project-emails.js');
 must(nativeAt>=0,'roles loader does not reference native UI compatibility entry');
@@ -19,7 +19,7 @@ for(const token of ['#4F97AF','#3F7F98','#F7F6F3','#E6E3DE']) must(core.includes
 for(const token of ['QENDRA E DREJTIMIT PPPP','Rrjedha e ditës','Pulsi i biznesit','Projekte aktive','Mundësi','Ballina','p.sh. Çfarë po ndodh me STACON?']) must(core.includes(token),`source-level Albanian UI token missing: ${token}`);
 must(core.includes("r.id='pst-native-home-v4'"),'native Home v4 single owner is missing');
 must(core.includes("document.documentElement.classList.add('pst-native-ui-ready','pst-native-ui-v4-ready')"),'early UI readiness marker missing');
-must(entry.includes('pristeel-native-ui-v4-core.js?v=20260911-dailyflow1'),'entry does not load the current Albanian native UI core');
+must(entry.includes('pristeel-native-ui-v4-core.js?v=20260911-fullredesign1'),'entry does not load the current Albanian native UI core');
 must(entry.includes('installRecoveryGate'),'early recovery gate is missing');
 must(entry.includes('Never enter the shared workspace router'),'Finance capture is not isolated from decorated workspace routing');
 must(entry.includes('__pstOriginalRecoverUnsavedWork'),'recovery gate does not preserve original recovery action');
@@ -80,6 +80,6 @@ for(const src of [entry,core]){
 const dyn=(manifest.dynamicRuntime||[]).find(x=>x.module==='pristeel-native-ui-v3.js');
 must(!!dyn,'native UI compatibility entry is not registered in runtime manifest');
 must(dyn&&dyn.loader==='pristeel-roles.js','native UI runtime loader must remain pristeel-roles.js');
-must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='6110ccff0e59b96f0c3ceec8a8ff27de3d504204','manifest loader SHA does not match audited roles blob');
-must(manifest.entrypoints.bootstrapGitBlobSha==='63ce03db3d3f612c158c66982db9dba000535875','manifest bootstrap SHA does not match production bootstrap');
+must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='311a4594f0305ddc8e670d25c1a85ccc103ce19e','manifest loader SHA does not match audited roles blob');
+must(manifest.entrypoints.bootstrapGitBlobSha==='92e377a41d66678515680170393404211ceda802','manifest bootstrap SHA does not match production bootstrap');
 if(!process.exitCode) console.log('Native UI v4 structural create + four-zone Home smoke OK.');
