@@ -37,6 +37,19 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(legacy.currentOurOffer.id,'l-new','Newest legacy quote must be current when registry is absent');
   assert.deepStrictEqual(Array.from(legacy.ourOfferHistory,x=>x.id),['l-old'],'Older legacy quote must remain history');
 
+  const gmail={project:{id:'p-kropp',name:'Kropp Bau GmbH – 979306 TB Thalaubach',client:'Kropp Bau GmbH'},docs:[],offers:[],emails:[{
+    gmail_message_id:'m-kropp',direction:'outgoing',subject:'Angebot 979306 TB Thalaubach – Basisangebot und Alternativangebot HEM280',sent_at:'2026-09-10T14:12:56Z',gmail_url:'https://mail.google.com/mail/u/0/#sent/m-kropp'
+  }],attachmentLinks:[
+    {id:2062,gmail_message_id:'m-kropp',attachment_name:'Kropp_Basisangebot_FINAL.pdf'},
+    {id:2063,gmail_message_id:'m-kropp',attachment_name:'Kropp_Alternativangebot_HEM280_FINAL.pdf'},
+    {id:2064,gmail_message_id:'m-kropp',attachment_name:'logo.png'}
+  ]};
+  api.canonicalize(gmail);
+  assert.strictEqual(gmail.ourOfferSource,'email_attachments','Sent offer PDFs must be a truthful fallback when the registry is empty');
+  assert.strictEqual(gmail.ourOffers.length,2,'Each sent client-offer PDF variant must remain visible');
+  assert(gmail.ourOffers.every(x=>x.status==='sent'&&x.gmail_url),'Email-derived offers must retain sent proof and Gmail source');
+  assert.deepStrictEqual(Array.from(gmail.ourOffers,x=>x.doc_nr).sort(),['Kropp_Alternativangebot_HEM280_FINAL','Kropp_Basisangebot_FINAL']);
+
   const empty={docs:[],offers:[]};
   api.canonicalize(empty);
   assert.strictEqual(empty.ourOfferSource,'none');

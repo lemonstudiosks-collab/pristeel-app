@@ -28,6 +28,16 @@ const {JSDOM}=require('jsdom');
   assert(text.includes('Historiku i revizioneve (1)'),'Older quote must be kept in revision history');
   assert(text.includes('D-23/26'),'Historic quote must remain accessible');
   assert.strictEqual(card.querySelectorAll('.pst-quo-row.current').length,1,'Exactly one quote must be visually current');
+
+  w.__pstIntegrityLastData={ourOfferSource:'email_attachments',ourOffers:[
+    {id:'mail-1',doc_nr:'Kropp_Basisangebot_FINAL',status:'sent',created_at:'2026-09-10T14:12:56Z'},
+    {id:'mail-2',doc_nr:'Kropp_Alternativangebot_HEM280_FINAL',status:'sent',created_at:'2026-09-10T14:12:56Z'}
+  ]};
+  assert(w.PSTOurOfferHistoryUiV1.render(),'Sent Gmail offer fallback must render');
+  const sentText=card.textContent.replace(/\s+/g,' ');
+  assert(sentText.includes('2 oferta të dërguara'),'Email variants must not be mislabeled as revisions');
+  assert.strictEqual(card.querySelectorAll('.pst-quo-title span').length,2,'Both sent variants must carry a visible sent badge');
+  assert.strictEqual(card.querySelectorAll('.pst-quo-row.current').length,0,'Email variants must not invent a canonical current revision');
   dom.window.close();
   console.log('Our-offer revision UI smoke test passed.');
 })();
