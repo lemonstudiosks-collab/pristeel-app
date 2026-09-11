@@ -18,7 +18,7 @@ for (const token of [
 
 assert(!/supaFetch\s*\(/.test(source), 'creative UI must not access business data');
 assert(!/new\s+MutationObserver|setInterval\s*\(/.test(source), 'creative UI must stay bounded and event-driven');
-assert(bootstrap.indexOf('pristeel-creative-ui-v1.js?v=20260911-fullredesign2') > bootstrap.indexOf('pristeel-project-execution-guard-v1.js'), 'creative UI must load last');
+assert(bootstrap.indexOf('pristeel-creative-ui-v1.js?v=20260911-fullredesign3') > bootstrap.indexOf('pristeel-project-execution-guard-v1.js'), 'creative UI must load last');
 
 const dom = new JSDOM(`<!doctype html><html><head></head><body>
   <div id="fin-hub-grid">
