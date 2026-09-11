@@ -10,16 +10,16 @@ if(window.__pstOperatingExperienceV1)return;
 window.__pstOperatingExperienceV1=true;
 
 var PRIMARY=[
-  {key:'home',label:'Home',zone:'home'},
-  {key:'tenders',label:'Opportunities',zone:'opportunities'},
-  {key:'projects',label:'Projects',zone:'projects'},
-  {key:'contacts',label:'Partners',zone:'partners'},
-  {key:'finance',label:'Finance',zone:'finance'},
-  {key:'apps',label:'System',zone:'system'}
+  {key:'home',label:'Ballina',zone:'home'},
+  {key:'tenders',label:'Mundësitë',zone:'opportunities'},
+  {key:'projects',label:'Projektet',zone:'projects'},
+  {key:'contacts',label:'Partnerët',zone:'partners'},
+  {key:'finance',label:'Financat',zone:'finance'},
+  {key:'apps',label:'Sistemi',zone:'system'}
 ];
 var ZONE_COLORS={
   home:['#4F97AF','#34758B','#E8F3F6','#BDD9E2','#F6FAFB'],
-  opportunities:['#8473A8','#655786','#F2EFF7','#D7D0E5','#FAF9FC'],
+  opportunities:['#C77868','#9C5B50','#FAEFEC','#E9D1CB','#FCF8F6'],
   projects:['#647FA6','#486482','#EDF1F7','#CBD6E4','#F7F9FB'],
   partners:['#4F9686','#397366','#EAF5F2','#C4DFD8','#F7FBFA'],
   finance:['#B18A4F','#856738','#F8F1E6','#E3D3B8','#FCFAF6'],
@@ -272,6 +272,21 @@ body[data-pst-business-zone] .content{background:var(--pst-section-wash)!importa
 #pst-ws-canonical-nav .pst-business-primary{border-radius:11px!important;min-height:44px!important;padding:0 11px!important;transition:background .14s ease,color .14s ease,box-shadow .14s ease!important}
 #pst-ws-canonical-nav .pst-business-primary.active{background:var(--pst-section-soft)!important;color:var(--pst-section-deep)!important;box-shadow:inset 3px 0 0 var(--pst-section-accent)!important}
 #pst-ws-canonical-nav>.pst-ws-navtitle:first-child{color:#87959c!important;letter-spacing:.12em!important;font-size:9px!important}
+body[data-pst-business-zone] .content>.page.active,body[data-pst-business-zone] .content>#module-hub.active{color:#2F3437!important}
+body[data-pst-business-zone] .content>.page.active :is(.pst-ws-card,.card,.panel,.pst-kek-card,.pst-pi-card,.pwf-card,.pst-fin-card,.pst-contact-card),body[data-pst-business-zone] .content>#module-hub.active :is(.card,.panel){border-color:#E6E3DE!important;border-radius:14px!important;box-shadow:0 6px 22px rgba(48,58,62,.045)!important}
+body[data-pst-business-zone] .content>.page.active :is(input,select,textarea){border-color:#DDE3E3!important;border-radius:10px!important;background:#FCFCFA!important;color:#2F3437!important;box-shadow:none!important}
+body[data-pst-business-zone] .content>.page.active :is(input,select,textarea):focus{border-color:var(--pst-section-accent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--pst-section-accent) 13%,transparent)!important;outline:0!important}
+body[data-pst-business-zone] .content>.page.active table{border-collapse:separate!important;border-spacing:0!important;background:#FCFCFA!important}
+body[data-pst-business-zone] .content>.page.active table th{background:#F3F3F0!important;color:#69767A!important;font-size:10px!important;letter-spacing:.04em!important;border-color:#E8E6E1!important}
+body[data-pst-business-zone] .content>.page.active table td{border-color:#EEECE8!important;color:#3C474B!important}
+body[data-pst-business-zone] .content>.page.active table tbody tr:hover td{background:#F6F8F7!important}
+body[data-pst-business-zone] .content>.page.active :is(.btn-primary,.primary,[data-primary="1"]){background:var(--pst-section-accent)!important;border-color:var(--pst-section-accent)!important;color:#fff!important;border-radius:10px!important;box-shadow:none!important}
+body[data-pst-business-zone] .content>.page.active :is(.btn,.pst-kek-btn,.pst-ws-btn,.pwf-btn,button){transition:background .15s ease,border-color .15s ease,transform .15s ease!important}
+body[data-pst-business-zone] .content>.page.active :is(.btn,.pst-kek-btn,.pst-ws-btn,.pwf-btn,button):not(:disabled):active{transform:translateY(1px)}
+#page-kek-tenders .pst-kek-layout,#page-workspace-projects .pst-projects-modern,#page-workspace-contacts .pst-contacts-shell,#page-finance .pst-finance-shell,#page-workspace-project .pst-project-first{max-width:1440px!important;margin-inline:auto!important}
+#page-kek-tenders .pst-kek-head,#page-workspace-projects .pst-pm-head,#page-workspace-contacts .pst-contacts-head,#page-finance .pst-fin-head{background:linear-gradient(135deg,var(--pst-section-wash),#FCFCFA 68%)!important;border-color:var(--pst-section-line)!important;border-radius:16px!important}
+#page-kek-tenders .pst-kek-tabs button,#page-workspace-projects .pst-pm-tabs button,#page-finance .pst-fin-tabs button{border-radius:999px!important}
+#page-kek-tenders .pst-kek-tabs button.active,#page-workspace-projects .pst-pm-tabs button.active,#page-finance .pst-fin-tabs button.active{background:var(--pst-section-soft)!important;color:var(--pst-section-deep)!important;border-color:var(--pst-section-line)!important}
 body[data-pst-business-zone] .content>.page.active,body[data-pst-business-zone] .content>#module-hub.active{animation:pst-zone-in .12s ease-out both}
 @keyframes pst-zone-in{from{opacity:.78;transform:translateY(2px)}to{opacity:1;transform:none}}
 #page-workspace-home [data-pst-decision-queue="1"]{border-top:3px solid var(--pst-section-accent)!important}

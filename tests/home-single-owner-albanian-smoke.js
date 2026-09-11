@@ -5,8 +5,8 @@ const core=fs.readFileSync('pristeel-native-ui-v4-core.js','utf8');
 const finalizer=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
 
 assert(core.includes("p.dataset.pstHomeOwner='native-v4'"),'Native v4 must own visible Home');
-assert(core.includes('QENDRA E DREJTIMIT PPPP')&&core.includes('Pasqyra operative'),'Visible Home must be authored in Albanian');
-assert(core.includes('Kryefaqja')&&core.includes('Mundësitë')&&core.includes('Projektet')&&core.includes('Partnerët')&&core.includes('Financat')&&core.includes('Sistemi'),'Sidebar must be authored in Albanian');
+assert(core.includes('QENDRA E DREJTIMIT PPPP')&&core.includes('Rrjedha e ditës'),'Visible Home must be authored in Albanian');
+assert(core.includes('Ballina')&&core.includes('Mundësitë')&&core.includes('Projektet')&&core.includes('Partnerët')&&core.includes('Financat')&&core.includes('Sistemi'),'Sidebar must be authored in Albanian');
 assert(!entry.includes("'Mundësitë':'Opportunities'"),'Early entry must not reverse Albanian to English');
 assert(!core.includes("'Mundësitë':'Opportunities'"),'Visible Home owner must not reverse Albanian to English');
 assert(!core.includes('function burst('),'Delayed translation burst must remain retired');

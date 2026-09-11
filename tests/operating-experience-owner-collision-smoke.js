@@ -33,7 +33,7 @@ const host=w.document.getElementById('pst-ws-canonical-nav');
 assert(host,'Canonical sidebar was not created');
 const primary=[...host.querySelectorAll('.pst-canon-work > .pst-ws-navbtn')];
 assert.deepStrictEqual(primary.map(x=>x.dataset.key),['home','tenders','projects','contacts','finance','apps'],'Late shell changed simplified primary navigation order');
-assert.deepStrictEqual(primary.map(x=>x.querySelector('.pst-nav-label').textContent),['Home','Opportunities','Projects','Partners','Finance','System'],'Late shell restored legacy navigation labels');
+assert.deepStrictEqual(primary.map(x=>x.querySelector('.pst-nav-label').textContent),['Ballina','Mundësitë','Projektet','Partnerët','Financat','Sistemi'],'Late shell restored legacy navigation labels');
 assert.strictEqual(host.querySelector('.pst-canon-tools').style.getPropertyValue('display'),'none','Technical tools became primary navigation again');
 assert.strictEqual(w.document.querySelector('.pst-ws-card-title').textContent,'Duhet veprimi yt','Late shell restored legacy Home heading');
 assert.strictEqual(w.document.querySelector('.pst-ws-card-sub').textContent,'PPPP shfaq vetëm vendimet dhe veprimet që kërkojnë ndërhyrjen tënde.','Late shell restored legacy Home explanation');

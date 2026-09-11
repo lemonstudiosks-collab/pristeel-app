@@ -126,7 +126,7 @@ function normalizeHomeCopy(){
   return true;
 }
 function installNativeUiApplyGuard(){
-  var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(!X||typeof X.apply!=='function')return false;
+  var X=window.PSTNativeUiV5||window.PSTNativeUiV4||window.PSTNativeUiV3;if(!X||typeof X.apply!=='function')return false;
   if(X.apply.__pstFirstPaintGuard)return true;
   var base=X.apply;
   var guarded=function(){var out=base.apply(this,arguments);lockHomeTypography();normalizeHomeCopy();installStablePresentationCss();return out;};
@@ -227,16 +227,16 @@ function installProjectOpenGuard(){
   return true;
 }
 function applyHomePresentation(){installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installAskModalChrome();installFinanceWindowOwner();installProjectOpenGuard();}
-function apply(){installEntryCss();installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installNativeUiApplyGuard();var X=window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
+function apply(){installEntryCss();installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installNativeUiApplyGuard();var X=window.PSTNativeUiV5||window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
 function loadAskFunctionalOwner(){
   if(window.PSTHomeAskFunctionalOwnerV1||document.querySelector('script[data-pst-home-ask-functional-owner]'))return;
   var s=document.createElement('script');s.src='pristeel-home-ask-functional-owner-v1.js?v=20260904-ask3';s.defer=true;s.setAttribute('data-pst-home-ask-functional-owner','1');document.head.appendChild(s);
 }
 function loadCore(){
   loadAskFunctionalOwner();
-  if(window.PSTNativeUiV4){apply();return;}
+  if(window.PSTNativeUiV5){apply();return;}
   if(document.querySelector('script[data-pst-native-ui-v4-core]'))return;
-  var s=document.createElement('script');s.src='pristeel-native-ui-v4-core.js?v=20260903-singleowner1';s.defer=true;s.setAttribute('data-pst-native-ui-v4-core','1');
+  var s=document.createElement('script');s.src='pristeel-native-ui-v4-core.js?v=20260911-dailyflow1';s.defer=true;s.setAttribute('data-pst-native-ui-v4-core','1');
   s.onload=apply;s.onerror=function(){console.error('Nuk u ngarkua Native UI v4 core.');};document.head.appendChild(s);
 }
 installEntryCss();installStablePresentationCss();installRecoveryGate();installFinanceWindowOwner();loadAskFunctionalOwner();[0,80,220,700,1600].forEach(function(ms){setTimeout(function(){installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installNativeUiApplyGuard();},ms);});

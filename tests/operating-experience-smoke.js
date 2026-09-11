@@ -45,7 +45,7 @@ w.PSTOperatingExperienceV1.apply();
 
 const main = [...w.document.querySelectorAll('.pst-canon-work>.pst-business-primary')];
 assert.deepStrictEqual(main.map(b=>b.dataset.key), ['home','tenders','projects','contacts','finance','apps'], 'primary navigation order should match the simplified business areas');
-assert.deepStrictEqual(main.map(b=>b.querySelector('.pst-nav-label').textContent), ['Home','Opportunities','Projects','Partners','Finance','System']);
+assert.deepStrictEqual(main.map(b=>b.querySelector('.pst-nav-label').textContent), ['Ballina','Mundësitë','Projektet','Partnerët','Financat','Sistemi']);
 assert.strictEqual(w.document.querySelector('[data-key="inbox"]').style.display, 'none', 'Gmail must not remain a primary navigation item');
 assert.strictEqual(w.document.querySelector('[data-key="commercial"]').style.display, 'none', 'Commercial tools must not remain a primary navigation item');
 assert.strictEqual(w.document.body.dataset.pstBusinessZone, 'projects');
