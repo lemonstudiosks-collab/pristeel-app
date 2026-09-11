@@ -121,6 +121,7 @@ function lockHomeTypography(){
 }
 function normalizeHomeCopy(){
   var home=document.getElementById('pst-native-home-v4');if(!home)return false;
+  var homeLabel=document.querySelector('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="home"] .pst-nav-label');if(homeLabel)homeLabel.textContent='Ballina';
   var input=home.querySelector('.pst-live-input');if(input)input.setAttribute('placeholder','Pyet PPPP për një projekt…');
   var wait=home.querySelector('.pn-ask-wait');if(wait&&/shfaqet sapo/i.test(String(wait.textContent||'')))wait.textContent='Pyet PPPP për një projekt sapo të dhënat live të jenë gati.';
   return true;
