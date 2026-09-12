@@ -1,0 +1,42 @@
+name: Multilateral source diagnostics
+
+on:
+  push:
+    branches:
+      - feat/tender-sources-multilateral-20260912
+    paths:
+      - .github/workflows/multilateral-source-diag.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect EBRD and EEAS public listings
+        run: |
+          node <<'NODE'
+          const UA='PriSteel-PPPP-Procurement-Monitor/1.0 (+https://prissteel.com)';
+          const urls={
+            EBRD:'https://ecepp.ebrd.com/delta/noticeSearchResults.html?form_fields%5Bkeyword%5D=Kosovo&form_fields%5BnoticeType%5D=&form_fields%5Bstatus%5D=&form_id=190d54e&locale=en&post_id=544&queried_id=10&referer_title=Welcome+to+the+EBRD+Client+e-Procurement+Portal+%28ECEPP%29+-+ECEPP',
+            EEAS:'https://www.eeas.europa.eu/eeas/tenders_en?f%5B0%5D=tender_site%3AKosovo%2A'
+          };
+          function clean(s){return String(s||'').replace(/\s+/g,' ').trim();}
+          for(const [name,url] of Object.entries(urls)){
+            try{
+              const r=await fetch(url,{redirect:'follow',headers:{'User-Agent':UA,Accept:'text/html,application/xhtml+xml,*/*;q=0.8',Referer:name==='EBRD'?'https://ecepp.ebrd.com/':'https://www.eeas.europa.eu/'}});
+              const h=await r.text();
+              const hrefs=[...h.matchAll(/href\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
+              const interesting=hrefs.filter(x=>/viewNotice|displayNoticeId|accessCode|delegations\/kosovo|tender/i.test(x));
+              const kos=h.toLowerCase().indexOf('kosovo');
+              console.log(`SOURCE=${name} status=${r.status} final=${r.url} bytes=${h.length} hrefs=${hrefs.length} interesting=${interesting.length}`);
+              console.log(`SOURCE=${name} viewNotice=${(h.match(/viewNotice/gi)||[]).length} displayNoticeId=${(h.match(/displayNoticeId/gi)||[]).length} accessCode=${(h.match(/accessCode/gi)||[]).length} delegationKosovo=${(h.match(/delegations\/kosovo/gi)||[]).length}`);
+              console.log(`SOURCE=${name} SAMPLE_LINKS=${JSON.stringify(interesting.slice(0,12))}`);
+              console.log(`SOURCE=${name} KOSOVO_EXCERPT=${JSON.stringify(kos>=0?clean(h.slice(Math.max(0,kos-1000),kos+3000)).slice(0,3500):'NO_KOSOVO_TEXT')}`);
+            }catch(e){console.log(`SOURCE=${name} ERROR=${e.message}`);}
+          }
+          NODE
