@@ -41,7 +41,8 @@ assert(finalizer.includes('data-pst-project-centric-workflow-v4'), 'Project-cent
 new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
 assert(projectCentric.includes("if(src==='TED')return phase==='award'"), 'Open TED opportunities must stay out of the daily Opportunities surface');
-assert(projectCentric.includes('data-pcw-source="all"') && projectCentric.includes('data-pcw-source="TED"') && projectCentric.includes('data-pcw-source="KRPP"') && projectCentric.includes('data-pcw-source="APP_AL"'), 'Daily Opportunities must expose separate Të gjitha, TED, KRPP and APP source tabs');
+['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'].forEach(src=>assert(projectCentric.includes(`'${src}'`), `${src} must be registered as an Opportunities source`));
+['TED','KRPP','APP','MCA Kosovo','KCF','RCF','EBRD','World Bank','UNGM','UNDP Kosovo','EU Office Kosovo'].forEach(tab=>assert(projectCentric.includes(`tab:'${tab}'`), `${tab} source tab must be exposed in Opportunities`));
 assert(projectCentric.includes('dedupeOpportunities')&&projectCentric.includes('hasDraft(old)'), 'Opportunity duplicates must collapse while preferring the row with a recorded Gmail draft');
 assert(projectCentric.includes('setOpportunityContext')&&projectCentric.includes("tenderState.focus==='due'")&&projectCentric.includes("tenderState.focus==='review'"), 'Opportunity routes must preserve Home deadline/review context');
 assert(projectCentric.includes('pppp-project-operator-update'), 'Project operator update must use the authenticated safe Edge Function');
