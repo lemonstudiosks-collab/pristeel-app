@@ -9,10 +9,11 @@ const mig=fs.readFileSync('supabase/migrations/20260903134500_chatgpt_command_wr
 const projectMig=fs.readFileSync('supabase/migrations/20260909222500_chatgpt_project_creation_command_bridge_v3.sql','utf8');
 const cronMig=fs.readFileSync('supabase/migrations/20260909224000_chatgpt_command_bridge_cron_direct_v1.sql','utf8');
 const supplierOfferMig=fs.readFileSync('supabase/migrations/20260910120500_chatgpt_supplier_offer_command_bridge_v4.sql','utf8');
+const dispositionMig=fs.readFileSync('supabase/migrations/20260912154500_add_chatgpt_project_disposition_v1.sql','utf8');
 
 assert.match(entry,/import\s+["']\.\/worker\.ts["']/,'v3 worker entrypoint missing');
 assert.match(fn,/COMMAND_SHEET_ID\s*=\s*'1ZoU1-aqHaN0CLI_1bcAUDXtGKdm97ixvopkusB96hZ8'/,'canonical command sheet missing');
-assert.match(fn,/new Set\(\['context_fact',\s*'task',\s*'create_project',\s*'supplier_offer'\]\)/,'safe action allowlist missing controlled actions');
+assert.match(fn,/new Set\(\['context_fact',\s*'task',\s*'create_project',\s*'supplier_offer',\s*'project_disposition'\]\)/,'safe action allowlist missing controlled actions');
 assert.match(fn,/approval\s*!==\s*'approved'/,'explicit approval gate missing');
 assert.match(fn,/pppp_ingest_context_fact_v1/,'context ingestion RPC missing');
 assert.match(fn,/source:\s*'chatgpt_bridge'/,'ChatGPT task source missing');
@@ -23,6 +24,12 @@ assert.match(fn,/pppp_chatgpt_create_supplier_offer_v1/,'canonical supplier offe
 assert.match(fn,/SUPPLIER_OFFER_FIELDS/,'supplier offer safe field allowlist missing');
 assert.match(fn,/data\.selected\s*!==\s*false/,'supplier offer must verify that no supplier selection occurred');
 assert.match(fn,/human_supplier_selection_required\s*!==\s*true/,'supplier-selection human gate verification missing');
+assert.match(fn,/pppp_chatgpt_project_disposition_v1/,'canonical project disposition RPC missing');
+assert.match(fn,/PROJECT_DISPOSITION_FIELDS/,'project disposition safe field allowlist missing');
+assert.match(fn,/disposition.*no_bid/s,'No Bid disposition validation missing');
+assert.match(fn,/project_status\s*!==\s*'mbyllur'/,'project close status verification missing');
+assert.match(fn,/operational_state\s*!==\s*'closed'/,'project operational close verification missing');
+assert.match(fn,/human_approval_gate_preserved\s*!==\s*true/,'project disposition human approval verification missing');
 assert.match(fn,/resultProjectId\s*=\s*validUuid\(result\?\.project_id\)/,'created project ID is not preserved into receipt');
 assert.match(fn,/https:\/\/www\.googleapis\.com\/auth\/drive/,'Drive-only DWD scope missing');
 assert.match(fn,/mimeType=.*text%2Fcsv|encodeURIComponent\('text\/csv'\)/,'Drive CSV export missing');
@@ -62,5 +69,18 @@ assert.doesNotMatch(supplierOfferMig,/pppp_record_supplier_decision_v1|insert\s+
 assert.doesNotMatch(supplierOfferMig,/pppp_approve_client_offer_pricing_v1/,'supplier offer bridge migration must not approve client pricing');
 assert.match(supplierOfferMig,/revoke all on function public\.pppp_chatgpt_create_supplier_offer_v1\([^)]*\) from authenticated/i,'authenticated direct execution must be revoked');
 assert.match(supplierOfferMig,/grant execute on function public\.pppp_chatgpt_create_supplier_offer_v1\([^)]*\) to service_role/i,'trusted service worker execution grant missing for supplier offer');
+
+assert.match(dispositionMig,/bridge_version','chatgpt-command-v5'/,'v5 project-disposition bridge manifest missing');
+assert.match(dispositionMig,/allowed_action_types'.*project_disposition/s,'project_disposition action not advertised by manifest');
+assert.match(dispositionMig,/explicit_human_approval_required/,'project disposition RPC must enforce explicit approval');
+assert.match(dispositionMig,/v_disposition\s*<>\s*'no_bid'/,'project disposition RPC must currently allow only No Bid');
+assert.match(dispositionMig,/status\s*=\s*'mbyllur'/,'No Bid must close project status');
+assert.match(dispositionMig,/operational_state\s*=\s*'closed'/,'No Bid must close operational state');
+assert.match(dispositionMig,/update\s+public\.tasks[\s\S]*status\s*=\s*'mbyllur'/i,'No Bid must close active project tasks');
+assert.match(dispositionMig,/project_already_terminal_conflict/,'terminal project overwrite guard missing');
+assert.match(dispositionMig,/human_approval_gate_preserved',\s*true/,'project disposition RPC must report preserved approval gate');
+assert.match(dispositionMig,/revoke all on function public\.pppp_chatgpt_project_disposition_v1\([^)]*\) from authenticated/i,'authenticated direct disposition execution must be revoked');
+assert.match(dispositionMig,/grant execute on function public\.pppp_chatgpt_project_disposition_v1\([^)]*\) to service_role/i,'trusted service worker execution grant missing for project disposition');
+assert.doesNotMatch(dispositionMig,/pppp_record_supplier_decision_v1|pppp_approve_client_offer_pricing_v1/is,'project disposition must not cross supplier/pricing approval gates');
 
 console.log('ChatGPT command bridge smoke: OK');

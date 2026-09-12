@@ -2,11 +2,17 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const LEGACY_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+let CURRENT_SECRET_KEY = '';
+try {
+  const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}');
+  CURRENT_SECRET_KEY = typeof keys?.default === 'string' ? keys.default : '';
+} catch {}
+const ADMIN_KEY = CURRENT_SECRET_KEY || LEGACY_SERVICE_KEY;
 const SA_JSON = Deno.env.get('GOOGLE_SA_JSON') || '';
 const DRIVE_USER = Deno.env.get('GMAIL_USER') || '';
 const COMMAND_SHEET_ID = '1ZoU1-aqHaN0CLI_1bcAUDXtGKdm97ixvopkusB96hZ8';
-const db = createClient(SUPABASE_URL, SERVICE_KEY);
+const db = createClient(SUPABASE_URL, ADMIN_KEY);
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -15,7 +21,7 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer']);
+const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition']);
 const ALLOWED_EVIDENCE = new Set(['unverified', 'observed', 'verbal', 'documented', 'confirmed']);
 const ALLOWED_FACT_STATUS = new Set(['observed', 'suggested']);
 const ALLOWED_BUSINESS_TYPES = new Set(['trading', 'fabrication', 'hybrid']);
@@ -23,6 +29,9 @@ const SUPPLIER_OFFER_FIELDS = new Set([
   'supplier', 'currency', 'price_kg', 'qty_kg', 'mechanical_eur', 'packaging_eur', 'transport_eur',
   'extra_positions', 'delivery_weeks', 'validity_days', 'exchange_rate_to_eur', 'incoterms', 'cert',
   'notes', 'payment_terms', 'inclusions', 'exclusions', 'offer_ref', 'contact_person', 'source',
+]);
+const PROJECT_DISPOSITION_FIELDS = new Set([
+  'disposition', 'reason', 'notes', 'operator_note', 'approved_by', 'approved_on', 'tender_ref', 'subject',
 ]);
 
 function text(v: unknown, max = 4000) {
@@ -315,6 +324,48 @@ async function processSupplierOffer(command: Record<string, string>) {
   return data as Record<string, unknown>;
 }
 
+async function processProjectDisposition(command: Record<string, string>) {
+  const projectId = validUuid(command.project_id);
+  if (!projectId) throw new Error('valid project_id is required');
+
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 12000) || '{}'); }
+  catch { throw new Error('project_disposition value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('project_disposition value_json must be a JSON object');
+
+  for (const key of Object.keys(value)) {
+    if (!PROJECT_DISPOSITION_FIELDS.has(key)) throw new Error(`project_disposition field not allowed: ${text(key, 120)}`);
+  }
+  if (text(value?.disposition, 80).toLowerCase() !== 'no_bid') throw new Error('project_disposition currently supports only no_bid');
+
+  const commandId = text(command.command_id, 160);
+  const approval = text(command.approval, 40).toLowerCase();
+  if (approval !== 'approved') throw new Error('explicit human approval is required');
+
+  const metadata = {
+    transport: 'command_sheet',
+    sheet_row: Number(command._row || 0) || null,
+    requested_by: text(command.requested_by, 240) || null,
+    source_ref: text(command.source_ref, 500) || `chatgpt-command:${commandId}`,
+  };
+  const { data, error } = await db.rpc('pppp_chatgpt_project_disposition_v1', {
+    p_command_id: commandId,
+    p_project_id: projectId,
+    p_payload: value,
+    p_approval: approval,
+    p_source: 'chatgpt',
+    p_metadata: metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.project_id)) {
+    throw new Error('project_disposition did not return a valid project_id');
+  }
+  if (data.disposition !== 'no_bid' || data.project_status !== 'mbyllur' || data.operational_state !== 'closed' || data.human_approval_gate_preserved !== true) {
+    throw new Error('project_disposition response did not preserve the approved close-project contract');
+  }
+  return data as Record<string, unknown>;
+}
+
 async function reconcile(limit = 50) {
   const max = Math.max(1, Math.min(200, Number(limit) || 50));
   const csv = await exportCommandsCsv();
@@ -345,6 +396,7 @@ async function reconcile(limit = 50) {
       if (actionType === 'context_fact') result = await processContextFact(command);
       else if (actionType === 'task') result = await processTask(command);
       else if (actionType === 'supplier_offer') result = await processSupplierOffer(command);
+      else if (actionType === 'project_disposition') result = await processProjectDisposition(command);
       else result = await processCreateProject(command);
       resultProjectId = validUuid(result?.project_id) || resultProjectId;
       await markReceipt(command, 'succeeded', result, attempts, resultProjectId);
@@ -367,7 +419,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'POST') try { body = await req.json(); } catch {}
     const limit = Number(u.searchParams.get('limit') || body.limit || 50);
     const result = await reconcile(limit);
-    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v4', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
+    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v5', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: text((e as any)?.message || e, 1200) }), { status: 500, headers: cors });
   }
