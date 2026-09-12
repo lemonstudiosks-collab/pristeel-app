@@ -22,7 +22,7 @@ on:
       - 'tests/multilateral-procurement-sync-smoke.mjs'
       - '.github/workflows/multilateral-procurement-sync.yml'
   schedule:
-    - cron: '23 */6 * * *'
+    - cron: '23 * * * *'
   push:
     branches: [main]
     paths:
