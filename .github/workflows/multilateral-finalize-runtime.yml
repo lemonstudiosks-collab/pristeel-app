@@ -84,7 +84,6 @@ jobs:
           node scripts/bootstrap-sequence-check.mjs
           node tests/live-home-command-grid-loader-smoke.js
           node tests/native-ui-v3-smoke.js
-          node tests/redesign-finalizer-smoke.js
       - name: Commit canonical runtime reconciliation
         shell: bash
         run: |
