@@ -1,14 +1,17 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
-import { SOURCE_REGISTRY, clean, htmlToText, extractLinks, isoDate, phase, docType, field, dateAfter, parseHeadingRecords, parseEbrd, parseUngm, parseEaas, normalizeRecord, filterActionable, dedupe } from './multilateral-procurement-core.mjs';
+import { SOURCE_REGISTRY, clean, htmlToText, isoDate, phase, docType, dateAfter, parseHeadingRecords, parseEbrd, parseUngm, parseEaas, normalizeRecord, filterActionable, dedupe } from './multilateral-procurement-core.mjs';
 
 const SUPABASE='https://isymxqfqzkchbsrbhucf.supabase.co';
 const UA='PriSteel-PPPP-Procurement-Monitor/1.0 (+https://prissteel.com)';
 const UNGM_PUBLIC_SEARCH='https://www.ungm.org/Public/Notice/Search';
 const UNGM_KOSOVO_COUNTRY_ID=2525;
 const EBRD_KOSOVO_SEARCH='https://ecepp.ebrd.com/delta/noticeSearchResults.html?form_fields%5Bkeyword%5D=Kosovo&form_fields%5BnoticeType%5D=&form_fields%5Bstatus%5D=&form_id=190d54e&locale=en&post_id=544&queried_id=10&referer_title=Welcome+to+the+EBRD+Client+e-Procurement+Portal+%28ECEPP%29+-+ECEPP';
-const EEAS_KOSOVO_TENDERS='https://www.eeas.europa.eu/eeas/tenders_en?f%5B0%5D=tender_site%3AKosovo%2A';
+const EEAS_KOSOVO_TENDER_SEARCH='https://www.eeas.europa.eu/search_en?f%5B0%5D=owner%3A321&f%5B1%5D=ct%3Atender';
+
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const uniq=xs=>[...new Set(xs.filter(Boolean))];
 
 async function fetchOk(url,{timeout=30000,accept='text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',method='GET',body,headers={}}={}){
   const c=new AbortController(),t=setTimeout(()=>c.abort(),timeout);
@@ -48,25 +51,47 @@ function mcaLoose(html,s){
 }
 
 function ungmSearchPayload(PageIndex){
-  return{
-    PageIndex,PageSize:50,Title:'',Description:'',Reference:'',PublishedFrom:'',PublishedTo:'',DeadlineFrom:'',DeadlineTo:'',
-    Countries:[UNGM_KOSOVO_COUNTRY_ID],Agencies:[],UNSPSCs:[],NoticeTypes:[],SortField:'DatePublished',SortAscending:false,isPicker:false,
-    NoticeTASStatus:[],IsSustainable:false,NoticeDisplayType:null,NoticeSearchTotalLabelId:'noticeSearchTotal',TypeOfCompetitions:[]
-  };
+  return{PageIndex,PageSize:50,Title:'',Description:'',Reference:'',PublishedFrom:'',PublishedTo:'',DeadlineFrom:'',DeadlineTo:'',Countries:[UNGM_KOSOVO_COUNTRY_ID],Agencies:[],UNSPSCs:[],NoticeTypes:[],SortField:'DatePublished',SortAscending:false,isPicker:false,NoticeTASStatus:[],IsSustainable:false,NoticeDisplayType:null,NoticeSearchTotalLabelId:'noticeSearchTotal',TypeOfCompetitions:[]};
 }
 
-function ungmNoticeIds(html){
-  return[...new Set([...String(html??'').matchAll(/data-noticeid\s*=\s*["']?(\d+)/gi)].map(m=>m[1]))];
+function ungmNoticeIds(html){return uniq([...String(html??'').matchAll(/data-noticeid\s*=\s*["']?(\d+)/gi)].map(m=>m[1]));}
+
+export function ebrdKosovoLinks(html,base=EBRD_KOSOVO_SEARCH){
+  const out=[];
+  for(const row of [...String(html??'').matchAll(/<tr\b[\s\S]*?<\/tr>/gi)].map(m=>m[0])){
+    if(!/\bKosovo\b/i.test(row))continue;
+    for(const m of row.matchAll(/href\s*=\s*["']([^"']*viewNotice\.html[^"']*)["']/gi)){
+      try{out.push(new URL(m[1].replace(/&amp;/gi,'&'),base).toString());}catch{}
+    }
+  }
+  return uniq(out);
+}
+
+export function eeasKosovoTenderLinks(html,base=EEAS_KOSOVO_TENDER_SEARCH){
+  const out=[];
+  for(const m of String(html??'').matchAll(/href\s*=\s*["']([^"']*delegations\/kosovo[^"']*)["']/gi)){
+    const href=m[1].replace(/&amp;/gi,'&');
+    if(/(?:vacancy|news|press|event|story|project)/i.test(href))continue;
+    try{out.push(new URL(href,base).toString());}catch{}
+  }
+  return uniq(out);
 }
 
 async function fetchDetailRows(s,links){
   const out=[];
   for(const url of links.slice(0,s.maxDetails||60)){
-    try{
-      const h=await(await fetchOk(url,{timeout:20000})).text();
-      const r=detailParser({...s,url},h);
-      if(r)out.push({...r,detail_url:url,body:clean(r.body||htmlToText(h)).slice(0,12000)});
-    }catch(e){console.warn(`${s.key} detail skipped: ${e.message}`);}
+    let h='';
+    for(let attempt=1;attempt<=2;attempt++){
+      try{h=await(await fetchOk(url,{timeout:20000})).text();break;}
+      catch(e){
+        if(attempt<2&&/HTTP 429/.test(String(e?.message||e))){await sleep(1200);continue;}
+        console.warn(`${s.key} detail skipped: ${e.message}`);h='';break;
+      }
+    }
+    if(!h)continue;
+    const r=detailParser({...s,url},h);
+    if(r)out.push({...r,detail_url:url,body:clean(r.body||htmlToText(h)).slice(0,12000)});
+    if(s.key==='UNGM')await sleep(180);
   }
   return out;
 }
@@ -82,9 +107,19 @@ async function collectUngm(s){
   return fetchDetailRows(s,ids.map(id=>`https://www.ungm.org/Public/Notice/${id}`));
 }
 
-async function collectDetailListing(s,listingUrl,{headers={}}={}){
-  const html=await(await fetchOk(listingUrl,{headers})).text();
-  const links=extractLinks(html,listingUrl,s.detailPattern);
+async function collectEbrd(s){
+  const listing=process.env.EBRD_NOTICE_SEARCH_URL||EBRD_KOSOVO_SEARCH;
+  const html=await(await fetchOk(listing,{headers:{Referer:'https://ecepp.ebrd.com/'}})).text();
+  const links=ebrdKosovoLinks(html,listing);
+  if(!links.length)console.warn('EBRD_ECEPP listing returned no Kosovo notice links.');
+  return fetchDetailRows(s,links);
+}
+
+async function collectEaas(s){
+  const listing=process.env.EEAS_KOSOVO_TENDERS_URL||EEAS_KOSOVO_TENDER_SEARCH;
+  const html=await(await fetchOk(listing,{headers:{Referer:'https://www.eeas.europa.eu/'}})).text();
+  const links=eeasKosovoTenderLinks(html,listing);
+  if(!links.length)console.warn('EU_OFFICE_KOSOVO search returned no Kosovo tender links.');
   return fetchDetailRows(s,links);
 }
 
@@ -94,13 +129,9 @@ async function collect(s){
     return largestArray(j).map(wbRecord).filter(Boolean);
   }
   if(s.key==='UNGM')return collectUngm(s);
-  if(s.key==='EBRD_ECEPP')return collectDetailListing(s,process.env.EBRD_NOTICE_SEARCH_URL||EBRD_KOSOVO_SEARCH,{headers:{Referer:'https://ecepp.ebrd.com/'}});
-  if(s.key==='EU_OFFICE_KOSOVO')return collectDetailListing(s,process.env.EEAS_KOSOVO_TENDERS_URL||EEAS_KOSOVO_TENDERS);
+  if(s.key==='EBRD_ECEPP')return collectEbrd(s);
+  if(s.key==='EU_OFFICE_KOSOVO')return collectEaas(s);
   const html=await(await fetchOk(s.url)).text();
-  if(s.kind==='detail'){
-    const links=extractLinks(html,s.url,s.detailPattern);
-    return fetchDetailRows(s,links);
-  }
   const rows=parseHeadingRecords(html,s);
   if(s.key==='MCA_KOSOVO')rows.push(...mcaLoose(html,s));
   return rows;
