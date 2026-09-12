@@ -76,6 +76,13 @@ function winnerWebsite(r){var w=winnerObj(r),u=safeUrl(w.website);if(u)return u;
 function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient potencial: qasje direkte me PRISTEEL si nënkontraktor/prodhues i paketave të çelikut.';if(x==='producer')return'Konkurrent / prodhues: qasje si kapacitet shtesë, overflow fabrication, paketë e ndarë ose mbështetje në prodhim dhe dorëzim.';if(x==='trader_consortium')return'Qasje e kujdesshme për furnizim ose prodhim të nënkontraktuar, sipas paketës konkrete.';return'Roli ende nuk është verifikuar; emaili përgatitet me formulim neutral për kapacitet shtesë dhe kontrollohet nga ti para krijimit në Gmail.';}
 function sourceLabel(r){return tenderSource(r)==='TED'?'EU · TED':tenderSource(r)==='APP_AL'?'Shqipëri · APP':'Kosovë · KRPP';}
 function tenderDate(v){var d=v?new Date(v+'T00:00:00'):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+function tenderValueLabel(r){
+ var raw=r&&r.estimated_value,cur=S(r&&r.currency||tenderPayload(r).currency).trim().toUpperCase();
+ if(raw==null||S(raw).trim()==='')return'—';
+ var n=Number(raw),amount='';
+ try{amount=isFinite(n)?new Intl.NumberFormat('sq-AL',{minimumFractionDigits:0,maximumFractionDigits:2}).format(n):S(raw).trim();}catch(e){amount=isFinite(n)?String(n):S(raw).trim();}
+ return amount+(cur?' '+cur:'');
+}
 function tenderReason(r){var P=tenderApi();return P&&typeof P.reason==='function'?P.reason(r):A(r&&r.match_reasons).slice(0,2).join(' · ');}
 function hasDraft(r){return opportunityLifecycle(r)!=='new';}
 function opportunityKey(r){
@@ -136,10 +143,10 @@ function opportunityRows(){
  return rows.slice(0,80);
 }
 function opportunityCard(r){
- var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PËR OFERTIM',role=award?winnerRoleLabel(r):'',meta=lifecycleMeta(r),contact=lifecycleDateLabel(meta);
+ var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PËR OFERTIM',role=award?winnerRoleLabel(r):'',meta=lifecycleMeta(r),contact=lifecycleDateLabel(meta),value=tenderValueLabel(r);
  if(meta.recipients.length)contact+=(contact?' · ':'')+'Për: '+meta.recipients.slice(0,2).join(', ')+(meta.recipients.length>2?' +'+(meta.recipients.length-2):'');
  return '<article class="pst-pcw-tender pst-pcw-life-'+E(meta.lane)+'" role="button" tabindex="0" data-pcw-tender="'+E(r.id)+'">'
-   +'<div class="pst-pcw-tender-copy"><div class="pst-pcw-tender-meta"><span class="kind">'+status+'</span><span class="pst-pcw-life-badge '+E(meta.lane)+'">'+E(lifecycleLabel(meta))+'</span><span>'+E(sourceLabel(r))+'</span><span>'+tenderScore(r)+'% relevant për PRISTEEL</span>'+(award?'<span class="winner-role '+E(winnerRole(r))+'">'+E(role)+'</span>':'')+'</div>'
+   +'<div class="pst-pcw-tender-copy"><div class="pst-pcw-tender-meta"><span class="kind">'+status+'</span><span class="pst-pcw-life-badge '+E(meta.lane)+'">'+E(lifecycleLabel(meta))+'</span><span>'+E(sourceLabel(r))+'</span><span>Vlera: '+E(value)+'</span><span>'+tenderScore(r)+'% relevant për PRISTEEL</span>'+(award?'<span class="winner-role '+E(winnerRole(r))+'">'+E(role)+'</span>':'')+'</div>'
    +'<h3>'+E(r.title||'Tender')+'</h3>'
    +'<p>'+E(tenderReason(r)||'Kliko për ta hapur mundësinë dhe për të vendosur hapin e radhës.')+'</p>'
    +'<small>'+(award?(winner?'Fituesi: '+E(winner):'Fituesi duhet verifikuar'):'Afati: '+E(tenderDate(r.deadline)))+(r.authority?' · '+E(r.authority):'')+'</small><div class="pst-pcw-contact-state">'+E(contact)+'</div></div>'
@@ -251,7 +258,7 @@ function ensureTenderModal(r){
  var card=modal.querySelector('#pst-ti-card'),title=modal.querySelector('#pst-ti-title'),meta=modal.querySelector('#pst-ti-meta'),body=modal.querySelector('#pst-ti-body');
  if(!card||!title||!meta||!body)return null;
  title.textContent=S(r.title||'Mundësi');
- meta.textContent=sourceLabel(r)+' · '+tenderScore(r)+'% relevant për PRISTEEL'+(winnerName(r)?' · '+winnerName(r):'');
+ meta.textContent=sourceLabel(r)+' · Vlera: '+tenderValueLabel(r)+' · '+tenderScore(r)+'% relevant për PRISTEEL'+(winnerName(r)?' · '+winnerName(r):'');
  body.innerHTML='';
  modal.hidden=false;modal.removeAttribute('aria-hidden');modal.style.display='flex';
  return body;
@@ -406,5 +413,5 @@ function schedule(force){[0,90,260,700].forEach(function(ms){setTimeout(function
 document.addEventListener('click',click,true);document.addEventListener('keydown',keydown,true);document.addEventListener('pst:modules-ready',function(){schedule(false);},{once:true});document.addEventListener('pst:project-operator-updated',function(){schedule(true);});window.addEventListener('pageshow',function(){schedule(false);},{once:true});
 document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[data-pm-open],[data-pwf-area],[data-pwf-stage],[data-pcm-id]'):null;if(n)schedule(false);},true);
 if(document.readyState!=='loading')schedule(false);else document.addEventListener('DOMContentLoaded',function(){schedule(false);},{once:true});
-window.PSTProjectCentricWorkflowV1={version:'4',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,renderOpportunities:renderOpportunities,openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,opportunityRows:opportunityRows,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal}};
+window.PSTProjectCentricWorkflowV1={version:'4',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,renderOpportunities:renderOpportunities,openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,tenderValueLabel:tenderValueLabel,opportunityRows:opportunityRows,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal}};
 })();
