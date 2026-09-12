@@ -79,15 +79,19 @@ export function classifyKrppSteel(row) {
   return {category,relevance_score:best,match_reasons:reasons};
 }
 
-function lastMatch(v,re){let out='';const r=new RegExp(re.source,re.flags.includes('g')?re.flags:`${re.flags}g`);let m;while((m=r.exec(String(v||''))))out=m[1]||m[0];return out;}
+function markerList(v,re,pick=1){const out=[];const r=new RegExp(re.source,re.flags.includes('g')?re.flags:`${re.flags}g`);let m;while((m=r.exec(String(v||''))))out.push({index:m.index,value:m[pick]||m[0]});return out;}
+function markerBefore(markers,index){let lo=0,hi=markers.length-1,best=null;while(lo<=hi){const mid=(lo+hi)>>1;if(markers[mid].index<index){best=markers[mid];lo=mid+1;}else hi=mid-1;}return best&&best.value||'';}
 export function parseNoticeIndexHtml(html, sourceUrl=DEFAULT_INDEX_URL){
-  const src=String(html||''), out=[]; const re=/<a\b[^>]*href\s*=\s*["']([^"']*DokumentPodaciFrm\.aspx\?[^"']*\bid=\d+[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi; let m;
-  while((m=re.exec(src))){
+  const src=String(html||''), out=[];
+  const anchorRe=/<a\b[^>]*href\s*=\s*["']([^"']*DokumentPodaciFrm\.aspx\?[^"']*\bid=\d+[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let dateMarkers=markerList(src,/On-line\s+njoftimet\s+(\d{1,2}\.\d{1,2}\.\d{4})/gi);
+  if(!dateMarkers.length)dateMarkers=markerList(src,/(\d{1,2}\.\d{1,2}\.\d{4})/g);
+  const typeMarkers=markerList(src,/(?:PlusMinus)?(B(?:05|08|10|52|54|58))\b/gi);
+  let m;
+  while((m=anchorRe.exec(src))){
     const title=stripTags(m[2]).replace(/^\d+\.\s*/,''); if(!title||title.length<4) continue;
     const detailUrl=absoluteUrl(sourceUrl,m[1]); const id=(detailUrl.match(/[?&]id=(\d+)/i)||[])[1]; if(!id) continue;
-    const ctx=src.slice(Math.max(0,m.index-5000),m.index);
-    const date=lastMatch(ctx,/(?:On-line\s+njoftimet\s+)?(\d{1,2}\.\d{1,2}\.\d{4})/gi);
-    const type=lastMatch(ctx,/(?:PlusMinus)?(B(?:05|08|10|52|54|58))\b/gi).toUpperCase();
+    const date=markerBefore(dateMarkers,m.index), type=text(markerBefore(typeMarkers,m.index)).toUpperCase();
     out.push({detail_id:id,title,notice_type:type||null,published_date:isoDate(date)||null,source_url:sourceUrl,detail_url:detailUrl});
   }
   const map=new Map(); for(const x of out) if(!map.has(x.detail_id)) map.set(x.detail_id,x); return [...map.values()];
@@ -121,7 +125,7 @@ export function parseDetailHtml(html, detailUrl='', fallback={}){
   };
 }
 
-const HINTS=['celik','çelik','hekur','metal','llamar','profile','shufr','trar','gyp','tub','konstruksion','strukture','strukturë','platform','shkalle','shkallë','rretho','grating','shtyll','fabrikim','saldim','galvan','bravari','armature','b500','ipe','hea','heb'];
+const HINTS=['celik','çelik','hekur','metal','llamar','profile','shufr','trar','gyp','tub','konstruksion','strukture','strukturë','platform','shkalle','shkallë','skele','skel','scaffold','rretho','fence','fencing','railing','guardrail','grating','shtyll','fabrikim','saldim','galvan','bravari','armature','b500','ipe','hea','heb'];
 export function selectCandidates(notices,{recentDateCount=30,fullScanDateCount=2,maxCandidates=180}={}){
   const dates=[...new Set((notices||[]).map(x=>x.published_date).filter(Boolean))].sort((a,b)=>b.localeCompare(a)).slice(0,recentDateCount);
   const allowed=new Set(dates), full=new Set(dates.slice(0,fullScanDateCount)), out=[];
@@ -131,7 +135,7 @@ export function selectCandidates(notices,{recentDateCount=30,fullScanDateCount=2
 function sourceKey(row){return text(row.publication_no)||`KRPP:${text(row.procurement_no)}:${createHash('sha1').update(norm(row.title)).digest('hex').slice(0,14)}`;}
 export function prepareRelevantRows(rows,seenAt=new Date().toISOString(),minScore=35){return(rows||[]).map(r=>({...r,source_key:sourceKey(r),...classifyKrppSteel(r),last_seen_at:seenAt,updated_at:seenAt})).filter(r=>r.relevance_score>=minScore);}
 
-async function getHtml(url,{timeoutMs=20000,referer=KRPP_ORIGIN}={}){const c=new AbortController();const t=setTimeout(()=>c.abort(),timeoutMs);try{const r=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0 AppleWebKit/537.36 Chrome/151 Safari/537.36','Accept-Language':'sq-AL,sq;q=0.9,en;q=0.7',Referer:referer},signal:c.signal,redirect:'follow'});const body=await r.text();if(!r.ok)throw new Error(`KRPP HTTP ${r.status}`);return body;}finally{clearTimeout(t);}}
+async function getHtml(url,{timeoutMs=20000,referer=KRPP_ORIGIN,retries=2}={}){let last;for(let attempt=0;attempt<=retries;attempt++){const c=new AbortController();const t=setTimeout(()=>c.abort(),timeoutMs);try{const r=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0 AppleWebKit/537.36 Chrome/151 Safari/537.36','Accept-Language':'sq-AL,sq;q=0.9,en;q=0.7',Referer:referer},signal:c.signal,redirect:'follow'});const body=await r.text();if(!r.ok)throw new Error(`KRPP HTTP ${r.status}`);return body;}catch(e){last=e;if(attempt>=retries)throw e;await new Promise(resolve=>setTimeout(resolve,750*(attempt+1)));}finally{clearTimeout(t);}}throw last;}
 async function mapLimit(items,limit,worker){const out=new Array(items.length);let cur=0;async function run(){while(true){const i=cur++;if(i>=items.length)return;try{out[i]=await worker(items[i]);}catch(e){out[i]={__error:String(e?.message||e),__item:items[i]};}}}await Promise.all(Array.from({length:Math.max(1,Math.min(limit,items.length||1))},run));return out;}
 async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',body,prefer}){const r=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});const raw=await r.text();if(!r.ok)throw new Error(`${method} ${path} failed: HTTP ${r.status} ${raw.slice(0,500)}`);return raw?JSON.parse(raw):[];}
 async function upsert(access,rows){if(!rows.length)return;const body=rows.map(r=>({source_key:r.source_key,procurement_no:r.procurement_no,publication_no:r.publication_no,authority:r.authority,title:r.title,document_type:r.document_type,fpp:r.fpp,fpp_description:r.fpp_description,contract_type:r.contract_type,contract_value_band:r.contract_value_band,procedure:r.procedure,estimated_value:r.estimated_value,currency:r.currency||'EUR',deadline:r.deadline,published_date:r.published_date,is_retender:!!r.is_retender,category:r.category,relevance_score:r.relevance_score,match_reasons:r.match_reasons||[],source_url:r.source_url,detail_url:r.detail_url,payload:r.payload||{},last_seen_at:r.last_seen_at,updated_at:r.updated_at}));await rest({...access,path:'kek_tender_watch?on_conflict=source_key',method:'POST',body,prefer:'resolution=merge-duplicates,return=minimal'});}
