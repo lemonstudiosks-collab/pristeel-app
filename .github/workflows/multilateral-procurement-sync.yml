@@ -1,0 +1,74 @@
+name: Multilateral procurement monitor
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Sync mode
+        required: true
+        default: preview
+        type: choice
+        options: [preview, apply]
+      source:
+        description: Optional source key (blank = all)
+        required: false
+        default: ''
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/multilateral-procurement-core.mjs'
+      - 'scripts/multilateral-procurement-sync.mjs'
+      - 'tests/multilateral-procurement-sync-smoke.mjs'
+      - '.github/workflows/multilateral-procurement-sync.yml'
+  schedule:
+    - cron: '23 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/multilateral-procurement-core.mjs'
+      - 'scripts/multilateral-procurement-sync.mjs'
+      - 'tests/multilateral-procurement-sync-smoke.mjs'
+      - '.github/workflows/multilateral-procurement-sync.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: multilateral-procurement-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+      MULTILATERAL_MIN_SCORE: '45'
+      MULTILATERAL_RECENT_DAYS: '120'
+      MULTILATERAL_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source || '' }}
+      SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check collector syntax
+        run: node --check scripts/multilateral-procurement-core.mjs && node --check scripts/multilateral-procurement-sync.mjs
+      - name: Run parser, classifier and dedupe smoke tests
+        run: node tests/multilateral-procurement-sync-smoke.mjs
+      - name: Collect procurement opportunities
+        run: node scripts/multilateral-procurement-sync.mjs
+      - name: Upload sanitized summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multilateral-procurement-monitor
+          path: tmp/multilateral-procurement-sync.json
+          if-no-files-found: ignore
+          retention-days: 14

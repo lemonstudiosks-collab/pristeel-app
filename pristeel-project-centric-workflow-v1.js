@@ -57,7 +57,19 @@ function projects(){
 /* ---------- Opportunities: local bids + TED awards only ---------- */
 function tenderApi(){return window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1||null;}
 function tenderPayload(r){return r&&r.payload&&typeof r.payload==='object'?r.payload:{};}
-function tenderSource(r){var x=S(tenderPayload(r).source||'KRPP').toUpperCase();return x==='TED'?'TED':(x==='APP'||x==='APP_AL')?'APP_AL':'KRPP';}
+var TENDER_SOURCE_ORDER=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'];
+var TENDER_SOURCE_META={
+ TED:{label:'EU · TED',tab:'TED'},KRPP:{label:'Kosovë · KRPP',tab:'KRPP'},APP_AL:{label:'Shqipëri · APP',tab:'APP'},
+ MCA_KOSOVO:{label:'Kosovë · MCA',tab:'MCA Kosovo'},KCF:{label:'Kosovë · KCF',tab:'KCF'},RCF:{label:'Kosovë · RCF',tab:'RCF'},
+ EBRD_ECEPP:{label:'EBRD · ECEPP',tab:'EBRD'},WORLD_BANK:{label:'World Bank',tab:'World Bank'},UNGM:{label:'UNGM',tab:'UNGM'},
+ UNDP_KOSOVO:{label:'Kosovë · UNDP',tab:'UNDP Kosovo'},EU_OFFICE_KOSOVO:{label:'Kosovë · EU Office',tab:'EU Office Kosovo'}
+};
+function normalizeTenderSource(v){
+ var x=S(v).trim().toUpperCase().replace(/[\s-]+/g,'_');
+ var aliases={APP:'APP_AL',APP_ALBANIA:'APP_AL',MCA:'MCA_KOSOVO',EBRD:'EBRD_ECEPP',WB:'WORLD_BANK',WORLDBANK:'WORLD_BANK',UNDP:'UNDP_KOSOVO',EEAS:'EU_OFFICE_KOSOVO',EU_OFFICE:'EU_OFFICE_KOSOVO'};
+ return aliases[x]||x;
+}
+function tenderSource(r){var p=tenderPayload(r),x=normalizeTenderSource(p.source||(r&&r.source_key)||'KRPP');return x||'KRPP';}
 function tenderPhase(r){return tenderPayload(r).notice_phase==='award'?'award':'opportunity';}
 function tenderVisible(r){
  var src=tenderSource(r),phase=tenderPhase(r),st=S(r&&r.status);
@@ -74,7 +86,7 @@ function winnerConfidence(r){var w=winnerObj(r),x=N(w.company_classification&&w.
 function winnerContacts(r){var P=tenderApi();if(P&&typeof P.enrichedContacts==='function')return A(P.enrichedContacts(r));var w=winnerObj(r),out=[];A(w.emails).forEach(function(x){if(x)out.push({email:S(x),purpose:'',confidence:''});});if(w.email)out.push({email:S(w.email),purpose:'',confidence:''});return out;}
 function winnerWebsite(r){var w=winnerObj(r),u=safeUrl(w.website);if(u)return u;var e=w.contact_enrichment&&typeof w.contact_enrichment==='object'?w.contact_enrichment:{},org=A(e.organizations)[0];return safeUrl(org&&org.official_website);}
 function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient potencial: qasje direkte me PRISTEEL si nënkontraktor/prodhues i paketave të çelikut.';if(x==='producer')return'Konkurrent / prodhues: qasje si kapacitet shtesë, overflow fabrication, paketë e ndarë ose mbështetje në prodhim dhe dorëzim.';if(x==='trader_consortium')return'Qasje e kujdesshme për furnizim ose prodhim të nënkontraktuar, sipas paketës konkrete.';return'Roli ende nuk është verifikuar; emaili përgatitet me formulim neutral për kapacitet shtesë dhe kontrollohet nga ti para krijimit në Gmail.';}
-function sourceLabel(r){return tenderSource(r)==='TED'?'EU · TED':tenderSource(r)==='APP_AL'?'Shqipëri · APP':'Kosovë · KRPP';}
+function sourceLabel(r){var src=tenderSource(r),m=TENDER_SOURCE_META[src];return m?m.label:src;}
 function tenderDate(v){var d=v?new Date(v+'T00:00:00'):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
 function tenderValueLabel(r){
  var raw=r&&r.estimated_value,cur=S(r&&r.currency||tenderPayload(r).currency).trim().toUpperCase();
@@ -157,7 +169,7 @@ function ensureOpportunitySurface(){
  var p=activePage('page-kek-tenders');if(!p)return null;
  var focus=p.querySelector('#pst-opportunities-focus'),head=p.querySelector('.pst-kek-head');
  var eye=p.querySelector('.pst-kek-eye'),title=p.querySelector('.pst-kek-title'),sub=p.querySelector('.pst-kek-sub');
- if(eye)eye.textContent='MONITORI AUTOMATIK I TENDERËVE TË ÇELIKUT';if(title)title.textContent='Mundësitë';if(sub)sub.textContent='KRPP, APP dhe TED mblidhen në prapaskenë. Këtu punojmë vetëm me mundësitë që mund të kthehen në projekt.';
+ if(eye)eye.textContent='MONITORI AUTOMATIK I MUNDËSIVE TË NDËRTIMIT & INDUSTRISË';if(title)title.textContent='Mundësitë';if(sub)sub.textContent='TED, KRPP, APP dhe burimet donor/IFI mblidhen në një radhë të vetme për shqyrtim, kualifikim dhe veprim.';
  if(!focus){
    focus=document.createElement('section');focus.id='pst-opportunities-focus';
    focus.innerHTML='<header></header><div id="pst-pcw-opportunity-tools"><label><span>Kërko</span><input id="pst-pcw-opportunity-search" placeholder="Titull, institucion, referencë ose përshkrim"></label></div><div id="pst-pcw-lifecycle-tabs"></div><div id="pst-pcw-opportunity-tabs"></div><div id="pst-opportunities-list"></div>';
@@ -181,11 +193,11 @@ function renderOpportunities(){
  var p=activePage('page-kek-tenders');if(!p)return false;
  var focus=ensureOpportunitySurface();if(!focus)return false;
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return false;
- var all=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),rows=opportunityRows(),counts={new:0,draft:0,waiting:0,replied:0},sources={TED:0,KRPP:0,APP_AL:0};all.forEach(function(r){var src=tenderSource(r);if(Object.prototype.hasOwnProperty.call(sources,src))sources[src]++;counts[opportunityLifecycle(r)]++;});
+ var all=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),rows=opportunityRows(),counts={new:0,draft:0,waiting:0,replied:0},sources={};TENDER_SOURCE_ORDER.forEach(function(src){sources[src]=0;});all.forEach(function(r){var src=tenderSource(r);if(Object.prototype.hasOwnProperty.call(sources,src))sources[src]++;counts[opportunityLifecycle(r)]++;});
  var header=focus.querySelector('header');if(header)header.innerHTML='<div><span>MUNDËSITË</span><h2>Tenderat që mund të bëhen projekte</h2><p>'+(tenderState.focus==='due'?'Po shfaqen vetëm tenderët me afat brenda shtatë ditësh.':tenderState.focus==='review'?'Po shfaqen vetëm tenderët që presin shqyrtim.':'Kliko një mundësi. PPPP merr dosjen, nxjerr kushtet dhe vetëm pastaj vendos ti nëse krijohet projekt.')+'</p></div>';
  var search=focus.querySelector('#pst-pcw-opportunity-search');if(search&&search.value!==tenderState.query)search.value=tenderState.query;
  var tabs=focus.querySelector('#pst-pcw-opportunity-tabs');
- tabs.innerHTML='<button data-pcw-source="all" class="'+(tenderState.source==='all'?'on':'')+'"><span>Të gjitha</span><i>'+all.length+'</i></button><button data-pcw-source="TED" class="'+(tenderState.source==='TED'?'on':'')+'"><span>TED</span><i>'+sources.TED+'</i></button><button data-pcw-source="KRPP" class="'+(tenderState.source==='KRPP'?'on':'')+'"><span>KRPP</span><i>'+sources.KRPP+'</i></button><button data-pcw-source="APP_AL" class="'+(tenderState.source==='APP_AL'?'on':'')+'"><span>APP</span><i>'+sources.APP_AL+'</i></button>';
+ tabs.innerHTML='<button data-pcw-source="all" class="'+(tenderState.source==='all'?'on':'')+'"><span>Të gjitha</span><i>'+all.length+'</i></button>'+TENDER_SOURCE_ORDER.map(function(src){var m=TENDER_SOURCE_META[src]||{tab:src};return '<button data-pcw-source="'+E(src)+'" class="'+(tenderState.source===src?'on':'')+'"><span>'+E(m.tab)+'</span><i>'+Number(sources[src]||0)+'</i></button>';}).join('');
  var life=focus.querySelector('#pst-pcw-lifecycle-tabs');life.innerHTML='<button data-pcw-lifecycle="new" class="'+(tenderState.lifecycle==='new'?'on':'')+'"><span>Të rinj</span><i>'+counts.new+'</i></button><button data-pcw-lifecycle="draft" class="'+(tenderState.lifecycle==='draft'?'on':'')+'"><span>Draft i përgatitur</span><i>'+counts.draft+'</i></button><button data-pcw-lifecycle="waiting" class="'+(tenderState.lifecycle==='waiting'?'on':'')+'"><span>Në pritje</span><i>'+counts.waiting+'</i></button><button data-pcw-lifecycle="replied" class="'+(tenderState.lifecycle==='replied'?'on':'')+'"><span>Përgjigje</span><i>'+counts.replied+'</i></button><button data-pcw-lifecycle="all" class="'+(tenderState.lifecycle==='all'?'on':'')+'"><span>Të gjitha</span><i>'+all.length+'</i></button>';
  list.innerHTML=rows.length?rows.map(opportunityCard).join(''):'<div class="pst-pcw-empty">Nuk ka mundësi që përputhen me këtë filtër.</div>';
  var legacy=p.querySelector('#pst-opportunities-all');if(legacy){legacy.classList.add('pst-pcw-backstage');legacy.hidden=true;legacy.style.display='none';}
@@ -201,10 +213,9 @@ async function loadOpportunities(force){
  catch(e){console.warn('PPPP opportunities project-centric:',e);return false;}finally{tenderState.busy=false;}
 }
 function setOpportunityContext(context){
- context=typeof context==='string'?{focus:context}:(context||{});var f=S(context.focus).toLowerCase(),src=S(context.source).toUpperCase(),mode=f==='award'||f==='local'?f:S(context.mode||'all').toLowerCase();
- if(src==='APP')src='APP_AL';
+ context=typeof context==='string'?{focus:context}:(context||{});var f=S(context.focus).toLowerCase(),src=normalizeTenderSource(context.source),mode=f==='award'||f==='local'?f:S(context.mode||'all').toLowerCase();
  tenderState.focus=['due','review'].indexOf(f)>-1?f:'';
- tenderState.source=['TED','KRPP','APP_AL'].indexOf(src)>-1?src:(mode==='award'?'TED':'all');
+ tenderState.source=TENDER_SOURCE_ORDER.indexOf(src)>-1?src:(mode==='award'?'TED':'all');
  tenderState.mode=tenderState.source!=='all'?'all':(['local','award'].indexOf(mode)>-1?mode:'all');
  tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(S(context.lifecycle).toLowerCase())>-1?S(context.lifecycle).toLowerCase():'new';
  tenderState.query=S(context.query||'');return tenderState;

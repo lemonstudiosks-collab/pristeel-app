@@ -1,0 +1,12 @@
+const fs=require('fs');
+const assert=require('assert');
+const src=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
+const keys=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'];
+for(const key of keys) assert(src.includes("'"+key+"'"), 'missing source '+key);
+for(const label of ['MCA Kosovo','KCF','RCF','EBRD','World Bank','UNGM','UNDP Kosovo','EU Office Kosovo']) assert(src.includes(label), 'missing tab '+label);
+assert(src.includes("APP:'APP_AL'"),'APP alias missing');
+assert(src.includes("UNDP:'UNDP_KOSOVO'"),'UNDP alias missing');
+assert(src.includes("EEAS:'EU_OFFICE_KOSOVO'"),'EEAS alias missing');
+assert(src.includes("TENDER_SOURCE_ORDER.indexOf(src)>-1"),'source context does not allow new sources');
+assert(src.includes('MONITORI AUTOMATIK I MUNDËSIVE TË NDËRTIMIT & INDUSTRISË'),'broadened monitor copy missing');
+console.log('multilateral opportunities source smoke: ok');
