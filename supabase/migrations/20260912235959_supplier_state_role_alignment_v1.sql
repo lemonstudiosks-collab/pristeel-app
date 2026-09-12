@@ -89,7 +89,7 @@ begin
     return new;
   end if;
 
-  if v_project_role<>'supplier' then
+  if coalesce(v_project_role,'')<>'supplier' then
     v_supplier:=null;
   end if;
 
