@@ -1,14 +1,15 @@
 /* PRISTEEL TED Sales Surface v1
- * Presentation/read-only bridge from the active Opportunities workspace to the
- * TED Sales outreach register. No Supabase writes or outbound actions.
+ * Opportunities lifecycle bridge for Gmail outreach state.
+ * It never sends external email; manual Gmail drafts are registered only after the human creates them.
  */
 (function(){
 'use strict';
 if(window.__pstTedSalesSurfaceV1)return;
 window.__pstTedSalesSurfaceV1=true;
 
-var emailReadInstalled=false,sentStateRefreshed=false,sentStateRefreshing=false;
+var emailReadInstalled=false,sentStateRefreshed=false,sentStateRefreshing=false,draftRegisterBusy={};
 
+function S(v){return String(v==null?'':v).trim();}
 function css(){
  if(document.getElementById('pst-ted-sales-surface-css'))return;
  var s=document.createElement('style');s.id='pst-ted-sales-surface-css';s.textContent=`
@@ -46,7 +47,22 @@ function cleanOpportunityLifecycle(focus){
  var waiting=life.querySelector('[data-pcw-lifecycle="waiting"]');if(waiting){var ws=waiting.querySelector('span');if(ws)ws.textContent='Email i dërguar';}
  var draft=life.querySelector('[data-pcw-lifecycle="draft"]');if(draft){var count=Number((draft.querySelector('i')||{}).textContent||0),ds=draft.querySelector('span');if(count===0)draft.remove();else if(ds)ds.textContent='Draft i papërfunduar';}
  focus.querySelectorAll('.pst-pcw-life-badge.waiting').forEach(function(b){b.textContent='Email i dërguar';});
+ focus.querySelectorAll('.pst-pcw-life-badge.draft').forEach(function(b){b.textContent='Draft i papërfunduar';});
  return true;
+}
+function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null;}catch(e){return null;}}
+async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow();}catch(e){return sessionNow();}}
+async function edge(slug,payload){
+ var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
+ var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
+ async function run(t){return fetch(base+'/functions/v1/'+slug,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(payload)});}
+ var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}if(!res.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,800));return data;
+}
+async function registerManualDraft(detail){
+ detail=detail||{};var tenderId=S(detail.tender_id),email=S(detail.to).toLowerCase(),draftId=S(detail.gmail_draft_id),messageId=S(detail.gmail_message_id);if(!tenderId||!email||(!draftId&&!messageId))return false;
+ var key=tenderId+'|'+email+'|'+(draftId||messageId);if(draftRegisterBusy[key])return draftRegisterBusy[key];
+ draftRegisterBusy[key]=edge('pppp-opportunity-draft-register',{tender_id:tenderId,recipient_email:email,subject:S(detail.subject),gmail_draft_id:draftId||null,gmail_message_id:messageId||null,created_at:S(detail.created_at)||new Date().toISOString(),human_send_required:true}).then(function(out){sentStateRefreshed=false;var X=window.PSTProjectCentricWorkflowV1;if(X&&typeof X.loadOpportunities==='function')return Promise.resolve(X.loadOpportunities(true)).then(function(){schedule();return out;});schedule();return out;}).catch(function(err){console.warn('PPPP opportunity draft lifecycle register:',err);try{if(typeof window.pstToast==='function')window.pstToast('Drafti u krijua në Gmail, por statusi në PPPP nuk u regjistrua: '+S(err&&err.message||err),'warn');}catch(e){}return false;}).finally(function(){delete draftRegisterBusy[key];});
+ return draftRegisterBusy[key];
 }
 function refreshSentState(){
  if(sentStateRefreshed||sentStateRefreshing||!installChunkedOpportunityEmailRead())return;
@@ -70,7 +86,8 @@ function mount(){
 function schedule(){[0,80,240,700,1500].forEach(function(ms){setTimeout(mount,ms);});}
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
+document.addEventListener('pst:tender-gmail-draft-created',function(ev){registerManualDraft(ev&&ev.detail||{});});
 document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn[data-key="tenders"],.pst-ws-navbtn[data-pst-business-zone="opportunities"],#pst-pcw-lifecycle-tabs button,#pst-pcw-opportunity-tabs button'):null;if(n)schedule();},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.PSTTedSalesSurfaceV1={mount:mount,schedule:schedule};
+window.PSTTedSalesSurfaceV1={mount:mount,schedule:schedule,registerDraft:registerManualDraft};
 })();
