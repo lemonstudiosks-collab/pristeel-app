@@ -41,7 +41,7 @@ assert(finalizer.includes('data-pst-project-centric-workflow-v4'), 'Project-cent
 new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
 assert(projectCentric.includes("if(src==='TED')return phase==='award'"), 'Open TED opportunities must stay out of the daily Opportunities surface');
-assert(projectCentric.includes('Për ofertim') && projectCentric.includes('Fitues nga TED'), 'Daily tender filters must separate bid opportunities from TED winners in Albanian');
+assert(projectCentric.includes('data-pcw-source="all"') && projectCentric.includes('data-pcw-source="TED"') && projectCentric.includes('data-pcw-source="KRPP"') && projectCentric.includes('data-pcw-source="APP_AL"'), 'Daily Opportunities must expose separate Të gjitha, TED, KRPP and APP source tabs');
 assert(projectCentric.includes('dedupeOpportunities')&&projectCentric.includes('hasDraft(old)'), 'Opportunity duplicates must collapse while preferring the row with a recorded Gmail draft');
 assert(projectCentric.includes('setOpportunityContext')&&projectCentric.includes("tenderState.focus==='due'")&&projectCentric.includes("tenderState.focus==='review'"), 'Opportunity routes must preserve Home deadline/review context');
 assert(projectCentric.includes('pppp-project-operator-update'), 'Project operator update must use the authenticated safe Edge Function');
