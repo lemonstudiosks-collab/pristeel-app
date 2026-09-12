@@ -8,7 +8,7 @@ const UA='PriSteel-PPPP-Procurement-Monitor/1.0 (+https://prissteel.com)';
 const UNGM_PUBLIC_SEARCH='https://www.ungm.org/Public/Notice/Search';
 const UNGM_KOSOVO_COUNTRY_ID=2525;
 const EBRD_KOSOVO_SEARCH='https://ecepp.ebrd.com/delta/noticeSearchResults.html?form_fields%5Bkeyword%5D=Kosovo&form_fields%5BnoticeType%5D=&form_fields%5Bstatus%5D=&form_id=190d54e&locale=en&post_id=544&queried_id=10&referer_title=Welcome+to+the+EBRD+Client+e-Procurement+Portal+%28ECEPP%29+-+ECEPP';
-const EEAS_KOSOVO_TENDER_SEARCH='https://www.eeas.europa.eu/search_en?f%5B0%5D=owner%3A321&f%5B1%5D=ct%3Atender';
+const EEAS_KOSOVO_TENDER_SEARCH='https://www.eeas.europa.eu/eeas/tenders_en?f%5B0%5D=tender_site%3AKosovo%2A';
 
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const uniq=xs=>[...new Set(xs.filter(Boolean))];
@@ -139,7 +139,7 @@ async function collectEaas(s){
   const listing=process.env.EEAS_KOSOVO_TENDERS_URL||EEAS_KOSOVO_TENDER_SEARCH;
   const html=await(await fetchOk(listing,{headers:{Referer:'https://www.eeas.europa.eu/'}})).text();
   const links=eeasKosovoTenderLinks(html,listing);
-  if(!links.length)console.warn('EU_OFFICE_KOSOVO search returned no Kosovo tender links.');
+  if(!links.length)console.warn('EU_OFFICE_KOSOVO: no current Kosovo tender links on the official EEAS tender facet.');
   return fetchDetailRows(s,links);
 }
 
