@@ -5,7 +5,7 @@ export const SOURCE_REGISTRY = Object.freeze([
   { key:'KCF', label:'KCF', country:'XK', kind:'html', url:'https://kcf-kosovo.org/kcf-procurement/' },
   { key:'RCF', label:'RCF', country:'XK', kind:'html', url:'https://rcf-wb6.org/procurement-in-kosovo/' },
   { key:'EBRD_ECEPP', label:'EBRD', country:'XK', kind:'detail', url:'https://ecepp.ebrd.com/', detailPattern:/\/delta\/viewNotice\.html\?[^"'<>\s]+/gi, maxDetails:50 },
-  { key:'WORLD_BANK', label:'World Bank', country:'XK', kind:'world-bank', url:'https://search.worldbank.org/api/procnotices?format=json&rows=100&os=0&country_exact=Kosovo' },
+  { key:'WORLD_BANK', label:'World Bank', country:'XK', kind:'world-bank', url:'https://search.worldbank.org/api/v2/procnotices?format=json&rows=100&os=0&project_ctry_name=Kosovo' },
   { key:'UNGM', label:'UNGM', country:'XK', kind:'detail', url:'https://www.ungm.org/Public/Notice', detailPattern:/\/Public\/Notice\/\d+/gi, maxDetails:60 },
   { key:'UNDP_KOSOVO', label:'UNDP Kosovo', country:'XK', kind:'html', url:'https://www.undp.org/kosovo/procurement' },
   { key:'EU_OFFICE_KOSOVO', label:'EU Office Kosovo', country:'XK', kind:'detail', url:'https://www.eeas.europa.eu/eeas/tenders_en?s=113', detailPattern:/\/delegations\/kosovo\/[^"'<>\s]+/gi, maxDetails:40 }
@@ -69,8 +69,25 @@ export function parseEbrd(html,source){const body=htmlToText(html);if(field(body
 export function parseUngm(html,source){const body=htmlToText(html);if(!/\bkosovo\b/i.test(body))return null;const title=firstH1(html);if(!title)return null;const agency=String(html).match(/<h[2-4]\b[^>]*>\s*(UNDP|UNOPS|UNICEF|UNHCR|FAO|WHO|IOM|UN WOMEN|UNFPA|WFP)\s*<\/h[2-4]>/i)?.[1];return{title,body,authority:clean(agency)||(/\bUNDP\b/i.test(body)?'UNDP':source.label),reference:field(body,['Reference']),published_date:dateAfter(body,['Published on','Published'])||null,deadline:dateAfter(body,['Deadline on','Deadline'])||null,notice_phase:phase(title,body),document_type:docType(title,body),detail_url:source.url};}
 export function parseEaas(html,source){const body=htmlToText(html),title=firstH1(html);if(!title||!/\bkosovo\b/i.test(body)||/^tenders$/i.test(title))return null;return{title,body,authority:/european union special representative/i.test(body)?'EU Special Representative in Kosovo':'European Union Office in Kosovo',reference:field(body,['Publication reference','Identification number','Contract number']),published_date:dateAfter(body,['Publication Date','Published'])||isoDate(body.slice(0,500))||null,deadline:dateAfter(body,['Deadline to express your interest','Deadline for submission of proposals','Deadline for applications','Deadline'])||null,notice_phase:/contract award notice/i.test(title)?'award':phase(title,body),document_type:docType(title,body),detail_url:source.url};}
 
+function sourceSanity(r,source){
+  if(!r)return null;
+  if(source.key==='MCA_KOSOVO'){
+    const title=clean(r.title);
+    if(!title||title.length>320||/^(data protection|cookie policy|cookie settings|privacy policy|manage consent|contact|sitemap)$/i.test(title))return null;
+  }
+  if(source.key==='WORLD_BANK'){
+    let raw=null;
+    try{raw=JSON.parse(String(r.body||''));}catch{}
+    if(!raw||norm(raw.project_ctry_name)!=='kosovo')return null;
+    const title=clean(raw.bid_description)||clean(r.title);
+    const id=clean(raw.id);
+    return{...r,title,authority:clean(raw.contact_organization)||clean(raw.borrower)||clean(r.authority),reference:clean(raw.bid_reference_no)||id||clean(r.reference),published_date:isoDate(raw.noticedate||raw.submission_date)||r.published_date||null,deadline:isoDate(raw.submission_deadline_date)||r.deadline||null,notice_phase:phase(title,`${raw.notice_type||''} ${raw.notice_status||''}`),document_type:clean(raw.notice_type)||r.document_type,contract_type:clean(raw.procurement_group)||r.contract_type,procedure:clean(raw.procurement_method_name)||r.procedure,detail_url:id?`https://projects.worldbank.org/en/projects-operations/procurement-detail/${encodeURIComponent(id)}`:r.detail_url};
+  }
+  return r;
+}
+
 export function normalizeRecord(r,source,seenAt=new Date().toISOString()){
-  if(!r?.title)return null;if(['EBRD_ECEPP','UNGM','EU_OFFICE_KOSOVO'].includes(source.key)&&!/\bkosovo\b/i.test(`${r.title} ${r.body}`))return null;const ext=clean(r.reference)||sha1(`${norm(r.authority)}|${norm(r.title)}|${r.published_date??''}|${r.deadline??''}`).slice(0,20),notice_phase=r.notice_phase||phase(r.title,r.body);
+  r=sourceSanity(r,source);if(!r?.title)return null;if(['EBRD_ECEPP','UNGM','EU_OFFICE_KOSOVO'].includes(source.key)&&!/\bkosovo\b/i.test(`${r.title} ${r.body}`))return null;const ext=clean(r.reference)||sha1(`${norm(r.authority)}|${norm(r.title)}|${r.published_date??''}|${r.deadline??''}`).slice(0,20),notice_phase=r.notice_phase||phase(r.title,r.body);
   const base={source_key:`${source.key}:${ext}`,procurement_no:clean(r.reference)||ext,publication_no:clean(r.reference)||null,authority:clean(r.authority)||source.label,title:clean(r.title),document_type:r.document_type||'Procurement notice',fpp:null,fpp_description:null,contract_type:clean(r.contract_type)||null,contract_value_band:null,procedure:clean(r.procedure)||null,estimated_value:Number.isFinite(r.estimated_value)?r.estimated_value:null,currency:clean(r.currency)||'EUR',deadline:r.deadline||null,published_date:r.published_date||null,is_retender:/re.?tender|relaunch|re-public/i.test(norm(r.title)),source_url:source.url,detail_url:r.detail_url||source.url,notice_phase,body:clean(r.body),last_seen_at:seenAt,updated_at:seenAt};
   const fit=classify(base),fp=sha1(`${norm(base.title)}|${norm(r.reference)||base.deadline||''}`).slice(0,24);return{...base,category:fit.category,relevance_score:fit.relevance_score,match_reasons:fit.match_reasons,payload:{source:source.key,source_label:source.label,country:source.country,source_kind:source.kind,external_id:ext,notice_phase,sector:fit.sector,pristeel_fit:fit.pristeel_fit,competition_mode:fit.competition_mode,qualification_signals:fit.qualification_signals,qualification_review_needed:fit.qualification_review_needed,recommended_lane:fit.recommended_lane,canonical_fingerprint:fp,provenance:[{source:source.key,url:base.detail_url}]}};
 }
