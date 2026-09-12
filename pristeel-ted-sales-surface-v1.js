@@ -1,11 +1,13 @@
 /* PRISTEEL TED Sales Surface v1
- * Presentation-only bridge from the active Opportunities workspace to the
- * read-only TED Sales outreach register. No Supabase writes or outbound actions.
+ * Presentation/read-only bridge from the active Opportunities workspace to the
+ * TED Sales outreach register. No Supabase writes or outbound actions.
  */
 (function(){
 'use strict';
 if(window.__pstTedSalesSurfaceV1)return;
 window.__pstTedSalesSurfaceV1=true;
+
+var emailReadInstalled=false,sentStateRefreshed=false,sentStateRefreshing=false;
 
 function css(){
  if(document.getElementById('pst-ted-sales-surface-css'))return;
@@ -20,6 +22,38 @@ function css(){
 `;
  document.head.appendChild(s);
 }
+function installChunkedOpportunityEmailRead(){
+ if(emailReadInstalled)return true;
+ var base=window.supaFetch;if(typeof base!=='function')return false;
+ if(base.__pstOpportunityEmailChunked){emailReadInstalled=true;return true;}
+ function wrapped(path,method,body){
+   var raw=String(path==null?'':path),m=raw.match(/^project_emails\?gmail_thread_id=in\.\(([^)]*)\)(&.*)$/);
+   if(!m)return base.apply(this,arguments);
+   var ids=m[1].split(',').map(function(x){return x.trim();}).filter(Boolean);
+   if(ids.length<=40)return base.apply(this,arguments);
+   var calls=[],ctx=this;
+   for(var i=0;i<ids.length;i+=40){calls.push(base.call(ctx,'project_emails?gmail_thread_id=in.('+ids.slice(i,i+40).join(',')+')'+m[2],method,body));}
+   return Promise.all(calls).then(function(groups){var out=[];groups.forEach(function(group){if(Array.isArray(group))out=out.concat(group);});return out;});
+ }
+ wrapped.__pstOpportunityEmailChunked=true;
+ wrapped.__pstOpportunityEmailChunkedBase=base;
+ window.supaFetch=wrapped;emailReadInstalled=true;return true;
+}
+function cleanOpportunityLifecycle(focus){
+ if(!focus)return false;
+ var life=focus.querySelector('#pst-pcw-lifecycle-tabs');if(!life)return false;
+ var all=life.querySelector('[data-pcw-lifecycle="all"]');if(all)all.remove();
+ var waiting=life.querySelector('[data-pcw-lifecycle="waiting"]');if(waiting){var ws=waiting.querySelector('span');if(ws)ws.textContent='Email i dërguar';}
+ var draft=life.querySelector('[data-pcw-lifecycle="draft"]');if(draft){var count=Number((draft.querySelector('i')||{}).textContent||0),ds=draft.querySelector('span');if(count===0)draft.remove();else if(ds)ds.textContent='Draft i papërfunduar';}
+ focus.querySelectorAll('.pst-pcw-life-badge.waiting').forEach(function(b){b.textContent='Email i dërguar';});
+ return true;
+}
+function refreshSentState(){
+ if(sentStateRefreshed||sentStateRefreshing||!installChunkedOpportunityEmailRead())return;
+ var X=window.PSTProjectCentricWorkflowV1;if(!X||typeof X.loadOpportunities!=='function')return;
+ sentStateRefreshing=true;
+ Promise.resolve(X.loadOpportunities(true)).then(function(ok){sentStateRefreshing=false;if(ok){sentStateRefreshed=true;schedule();}else setTimeout(refreshSentState,220);}).catch(function(){sentStateRefreshing=false;});
+}
 function mount(){
  css();
  var page=document.getElementById('page-kek-tenders');if(!page)return false;
@@ -29,12 +63,14 @@ function mount(){
  if(!row){row=document.createElement('div');row.id='pst-pcw-opportunity-navrow';tabs.parentNode.insertBefore(row,tabs);row.appendChild(tabs);}
  var link=row.querySelector('#pst-pcw-ted-sales-link');
  if(!link){link=document.createElement('a');link.id='pst-pcw-ted-sales-link';link.href='ted-sales.html';link.title='Hap regjistrin TED Sales: outreach, Gmail, follow-up dhe projektet';link.innerHTML='<span>TED Sales</span><small>Outreach &amp; follow-up</small><b>→</b>';row.appendChild(link);}
+ cleanOpportunityLifecycle(focus);
+ refreshSentState();
  return true;
 }
 function schedule(){[0,80,240,700,1500].forEach(function(ms){setTimeout(mount,ms);});}
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 window.addEventListener('pageshow',schedule,{once:true});
-document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn[data-key="tenders"],.pst-ws-navbtn[data-pst-business-zone="opportunities"]'):null;if(n)schedule();},true);
+document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn[data-key="tenders"],.pst-ws-navbtn[data-pst-business-zone="opportunities"],#pst-pcw-lifecycle-tabs button,#pst-pcw-opportunity-tabs button'):null;if(n)schedule();},true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.PSTTedSalesSurfaceV1={mount:mount,schedule:schedule};
 })();
