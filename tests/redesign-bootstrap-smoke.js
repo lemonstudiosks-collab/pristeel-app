@@ -36,7 +36,7 @@ assert(!/\.supaFetch\([^\n]*['\"](?:PATCH|POST|DELETE)['\"]/.test(openaiAssistan
 assert(!/gmail\/v1\/.*send|mark.*won|mark.*lost|supplier_orders.*POST/i.test(openaiAssistant), 'OpenAI assistant must not bypass human commitment gates');
 
 // Project-centric final layer: Projects are the daily center, TED is awards-only, and operator text can drive safe internal organization.
-assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260911-lifecycle1'), 'Finalizer must load the current project-centric workflow layer');
+assert(finalizer.includes('pristeel-project-centric-workflow-v1.js?v=20260912-multisource1'), 'Finalizer must load the current project-centric workflow layer');
 assert(finalizer.includes('data-pst-project-centric-workflow-v4'), 'Project-centric loader must be idempotent for the current generation');
 new Function(projectCentric);
 assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED must have a dedicated award mode');
