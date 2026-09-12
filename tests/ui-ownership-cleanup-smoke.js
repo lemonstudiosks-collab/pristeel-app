@@ -6,7 +6,7 @@ function must(x,m){if(!x){console.error('UI OWNERSHIP CLEANUP SMOKE ERROR:',m);p
 must(entry.includes('installRecoveryGate'),'startup recovery gate missing');
 must(!entry.includes('window.confirm'),'browser confirm must not be used by ownership cleanup');
 must(entry.includes('PPPP gjeti punë të pambyllur'),'single Albanian recovery banner missing');
-must(entry.includes('pristeel-native-ui-v4-core.js?v=20260911-dailyflow1'),'compatibility entry must load v5 daily-flow core');
+must(entry.includes('pristeel-native-ui-v4-core.js?v=20260911-fullredesign1'),'compatibility entry must load the current native UI core');
 must(!entry.includes('installWarmEarthTheme'),'retired warm-earth presentation owner must not return');
 must(!entry.includes("'Mundësitë':'Opportunities'"),'entry must not translate Albanian back to English');
 must(!core.includes("'Mundësitë':'Opportunities'"),'v4 core must not translate Albanian back to English');
