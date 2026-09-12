@@ -17,37 +17,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Inspect EBRD and EEAS public listings
+      - name: Inspect canonical EEAS Kosovo tender search
         run: |
           node <<'NODE'
           const UA='PriSteel-PPPP-Procurement-Monitor/1.0 (+https://prissteel.com)';
-          const urls={
-            EBRD:'https://ecepp.ebrd.com/delta/noticeSearchResults.html?form_fields%5Bkeyword%5D=Kosovo&form_fields%5BnoticeType%5D=&form_fields%5Bstatus%5D=&form_id=190d54e&locale=en&post_id=544&queried_id=10&referer_title=Welcome+to+the+EBRD+Client+e-Procurement+Portal+%28ECEPP%29+-+ECEPP',
-            EEAS:'https://www.eeas.europa.eu/eeas/tenders_en?f%5B0%5D=tender_site%3AKosovo%2A'
-          };
-          function clean(s){return String(s||'').replace(/\s+/g,' ').trim();}
-          for(const [name,url] of Object.entries(urls)){
-            try{
-              const r=await fetch(url,{redirect:'follow',headers:{'User-Agent':UA,Accept:'text/html,application/xhtml+xml,*/*;q=0.8',Referer:name==='EBRD'?'https://ecepp.ebrd.com/':'https://www.eeas.europa.eu/'}});
-              const h=await r.text();
-              const hrefs=[...h.matchAll(/href\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
-              console.log(`SOURCE=${name} status=${r.status} bytes=${h.length} hrefs=${hrefs.length}`);
-              if(name==='EBRD'){
-                const rows=[...h.matchAll(/<tr\b[\s\S]*?<\/tr>/gi)].map(m=>m[0]);
-                const krows=rows.filter(x=>/\bKosovo\b/i.test(x)&&/viewNotice\.html/i.test(x));
-                const links=[];
-                for(const row of krows){for(const m of row.matchAll(/href\s*=\s*["']([^"']*viewNotice\.html[^"']*)["']/gi))links.push(m[1]);}
-                console.log(`SOURCE=EBRD rows=${rows.length} kosovoRows=${krows.length} kosovoNoticeLinks=${new Set(links).size}`);
-                console.log(`SOURCE=EBRD KOSOVO_LINKS=${JSON.stringify([...new Set(links)].slice(0,30))}`);
-                console.log(`SOURCE=EBRD ROW_SAMPLE=${JSON.stringify(krows.length?clean(krows[0]).slice(0,3500):'NO_KOSOVO_ROW')}`);
-              }else{
-                const kl=[...new Set(hrefs.filter(x=>/\/delegations\/kosovo\//i.test(x)))];
-                console.log(`SOURCE=EEAS kosovoLinks=${kl.length} KOSOVO_LINKS=${JSON.stringify(kl)}`);
-                for(const link of kl.slice(0,10)){
-                  const i=h.indexOf(link);
-                  console.log(`SOURCE=EEAS LINK_CONTEXT=${JSON.stringify(clean(h.slice(Math.max(0,i-700),i+1600)).slice(0,2200))}`);
-                }
-              }
-            }catch(e){console.log(`SOURCE=${name} ERROR=${e.message}`);}
+          const urls=[
+            'https://www.eeas.europa.eu/search_en?f%5B0%5D=owner%3A321&f%5B1%5D=ct%3Atender',
+            'https://www.eeas.europa.eu/eeas/tenders_en?s=113'
+          ];
+          const clean=s=>String(s||'').replace(/\s+/g,' ').trim();
+          for(const url of urls){
+            const r=await fetch(url,{redirect:'follow',headers:{'User-Agent':UA,Accept:'text/html,application/xhtml+xml,*/*;q=0.8',Referer:'https://www.eeas.europa.eu/'}});
+            const h=await r.text();
+            const hrefs=[...h.matchAll(/href\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
+            const kos=[...new Set(hrefs.filter(x=>/kosovo/i.test(x)))];
+            const delegation=[...new Set(hrefs.filter(x=>/delegations\/kosovo/i.test(x)))];
+            const known='Strengthening Information Integrity';
+            const idx=h.toLowerCase().indexOf(known.toLowerCase());
+            console.log(`URL=${url} status=${r.status} final=${r.url} bytes=${h.length} hrefs=${hrefs.length} kosovoHrefs=${kos.length} delegationKosovo=${delegation.length}`);
+            console.log(`KOSOVO_HREFS=${JSON.stringify(kos.slice(0,30))}`);
+            console.log(`KNOWN_TITLE_FOUND=${idx>=0}`);
+            if(idx>=0)console.log(`KNOWN_CONTEXT=${JSON.stringify(clean(h.slice(Math.max(0,idx-1800),idx+3000)).slice(0,4700))}`);
+            const tenderMarkers=(h.match(/\bTENDER\b/gi)||[]).length;
+            console.log(`TENDER_MARKERS=${tenderMarkers}`);
           }
           NODE
