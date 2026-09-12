@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
-import { SOURCE_REGISTRY, clean, htmlToText, isoDate, phase, docType, dateAfter, parseHeadingRecords, parseEbrd, parseUngm, parseEaas, normalizeRecord, filterActionable, dedupe } from './multilateral-procurement-core.mjs';
+import { SOURCE_REGISTRY, clean, htmlToText, isoDate, phase, docType, dateAfter, parseHeadingRecords, parseUngm, parseEaas, normalizeRecord, filterActionable, dedupe } from './multilateral-procurement-core.mjs';
 
 const SUPABASE='https://isymxqfqzkchbsrbhucf.supabase.co';
 const UA='PriSteel-PPPP-Procurement-Monitor/1.0 (+https://prissteel.com)';
@@ -22,7 +22,7 @@ async function fetchOk(url,{timeout=30000,accept='text/html,application/xhtml+xm
   }finally{clearTimeout(t);}
 }
 
-const detailParser=(s,h)=>s.key==='EBRD_ECEPP'?parseEbrd(h,s):s.key==='UNGM'?parseUngm(h,s):s.key==='EU_OFFICE_KOSOVO'?parseEaas(h,s):parseHeadingRecords(h,s)[0]||null;
+const detailParser=(s,h)=>s.key==='UNGM'?parseUngm(h,s):s.key==='EU_OFFICE_KOSOVO'?parseEaas(h,s):parseHeadingRecords(h,s)[0]||null;
 
 function wbRecord(o){
   const pick=(...ks)=>ks.map(k=>o?.[k]).find(v=>v!=null&&clean(v))??'';
@@ -57,14 +57,34 @@ function ungmSearchPayload(PageIndex){
 function ungmNoticeIds(html){return uniq([...String(html??'').matchAll(/data-noticeid\s*=\s*["']?(\d+)/gi)].map(m=>m[1]));}
 
 export function ebrdKosovoLinks(html,base=EBRD_KOSOVO_SEARCH){
+  return uniq(parseEbrdListingRows(html,base).map(r=>r.detail_url));
+}
+
+export function parseEbrdListingRows(html,base=EBRD_KOSOVO_SEARCH){
   const out=[];
   for(const row of [...String(html??'').matchAll(/<tr\b[\s\S]*?<\/tr>/gi)].map(m=>m[0])){
-    if(!/\bKosovo\b/i.test(row))continue;
-    for(const m of row.matchAll(/href\s*=\s*["']([^"']*viewNotice\.html[^"']*)["']/gi)){
-      try{out.push(new URL(m[1].replace(/&amp;/gi,'&'),base).toString());}catch{}
-    }
+    if(!/\bKosovo\b/i.test(row)||!/viewNotice\.html/i.test(row))continue;
+    const cells=[...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(m=>m[1]);
+    const linkMatch=row.match(/href\s*=\s*["']([^"']*viewNotice\.html[^"']*)["']/i);
+    if(!linkMatch)continue;
+    let detail='';
+    try{detail=new URL(linkMatch[1].replace(/&amp;/gi,'&'),base).toString();}catch{continue;}
+    const titleCell=htmlToText(cells[0]||'');
+    const noticeType=htmlToText(cells[1]||'');
+    const exercise=htmlToText(cells[2]||'');
+    const datePrimary=isoDate(htmlToText(cells[3]||''));
+    const accessMode=htmlToText(cells[5]||'');
+    const issueDate=isoDate(htmlToText(cells[6]||''));
+    const metadata=htmlToText(cells[9]||'');
+    const body=clean(`${htmlToText(row)} ${metadata}`);
+    const reference=new URL(detail).searchParams.get('displayNoticeId')||'';
+    const title=exercise||titleCell;
+    const noticePhase=phase(noticeType||title,body);
+    const contractType=/\bworks?\b/i.test(body)?'Works':/\bconsult(?:ancy|ing)\b/i.test(body)?'Consultancy':/\bgoods?\b|\bsuppl(?:y|ies)\b/i.test(body)?'Goods':'';
+    const deadline=noticePhase==='opportunity'&&!/information only/i.test(accessMode)?(datePrimary||null):null;
+    out.push({title,body,authority:'EBRD ECEPP',reference,published_date:issueDate||datePrimary||null,deadline,notice_phase:noticePhase,document_type:noticeType||docType(title,body),contract_type:contractType||null,detail_url:detail});
   }
-  return uniq(out);
+  return out;
 }
 
 export function eeasKosovoTenderLinks(html,base=EEAS_KOSOVO_TENDER_SEARCH){
@@ -107,12 +127,12 @@ async function collectUngm(s){
   return fetchDetailRows(s,ids.map(id=>`https://www.ungm.org/Public/Notice/${id}`));
 }
 
-async function collectEbrd(s){
+async function collectEbrd(){
   const listing=process.env.EBRD_NOTICE_SEARCH_URL||EBRD_KOSOVO_SEARCH;
   const html=await(await fetchOk(listing,{headers:{Referer:'https://ecepp.ebrd.com/'}})).text();
-  const links=ebrdKosovoLinks(html,listing);
-  if(!links.length)console.warn('EBRD_ECEPP listing returned no Kosovo notice links.');
-  return fetchDetailRows(s,links);
+  const rows=parseEbrdListingRows(html,listing);
+  if(!rows.length)console.warn('EBRD_ECEPP listing returned no Kosovo notice rows.');
+  return rows;
 }
 
 async function collectEaas(s){
@@ -129,7 +149,7 @@ async function collect(s){
     return largestArray(j).map(wbRecord).filter(Boolean);
   }
   if(s.key==='UNGM')return collectUngm(s);
-  if(s.key==='EBRD_ECEPP')return collectEbrd(s);
+  if(s.key==='EBRD_ECEPP')return collectEbrd();
   if(s.key==='EU_OFFICE_KOSOVO')return collectEaas(s);
   const html=await(await fetchOk(s.url)).text();
   const rows=parseHeadingRecords(html,s);
