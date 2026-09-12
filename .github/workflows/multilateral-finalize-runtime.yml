@@ -1,0 +1,88 @@
+name: Multilateral final runtime guard
+
+on:
+  push:
+    branches:
+      - feat/tender-sources-multilateral-20260912
+    paths:
+      - .github/workflows/multilateral-finalize-runtime.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/tender-sources-multilateral-20260912
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reconcile bootstrap source of truth
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const crypto=require('crypto');
+          const registryPath='runtime-bootstrap-order.json';
+          const manifestPath='runtime-manifest.json';
+          const sequencePath='scripts/bootstrap-sequence-check.mjs';
+          const testPath='tests/live-home-command-grid-loader-smoke.js';
+          const oldEntry='pristeel-redesign-finalizer-v1.js?v=20260906-krppzip1';
+          const newEntry='pristeel-redesign-finalizer-v1.js?v=20260912-multisource1';
+          const registry=JSON.parse(fs.readFileSync(registryPath,'utf8'));
+          const hits=registry.files.filter(x=>x===oldEntry).length;
+          if(hits!==1) throw new Error(`guard: expected one old finalizer entry, got ${hits}`);
+          registry.files=registry.files.map(x=>x===oldEntry?newEntry:x);
+          const digest=crypto.createHash('sha256').update(`${registry.files.join('\n')}\n`,'utf8').digest('hex');
+          registry.sequenceSha256=digest;
+          fs.writeFileSync(registryPath,JSON.stringify(registry,null,2)+'\n');
+
+          let test=fs.readFileSync(testPath,'utf8');
+          if(!test.includes(oldEntry)) throw new Error('guard: live-home cache-key baseline changed');
+          test=test.replace(oldEntry,newEntry);
+          fs.writeFileSync(testPath,test);
+
+          let seq=fs.readFileSync(sequencePath,'utf8');
+          if(!/const EXPECTED_DIGEST = '[0-9a-f]{64}';/.test(seq)) throw new Error('guard: sequence baseline missing');
+          seq=seq.replace(/const EXPECTED_DIGEST = '[0-9a-f]{64}';/,`const EXPECTED_DIGEST = '${digest}';`);
+          fs.writeFileSync(sequencePath,seq);
+          console.log(`registry digest=${digest}`);
+          NODE
+          node scripts/generate-bootstrap.mjs
+          node <<'NODE'
+          const fs=require('fs');
+          const crypto=require('crypto');
+          const bootstrap='pristeel-project-emails.js';
+          const text=fs.readFileSync(bootstrap,'utf8');
+          const body=Buffer.from(text,'utf8');
+          const blob=crypto.createHash('sha1').update(Buffer.from(`blob ${body.length}\0`,'utf8')).update(body).digest('hex');
+          const manifest=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
+          if(manifest.entrypoints.bootstrap!==bootstrap) throw new Error('guard: bootstrap owner changed');
+          manifest.entrypoints.bootstrapGitBlobSha=blob;
+          fs.writeFileSync('runtime-manifest.json',JSON.stringify(manifest,null,2)+'\n');
+          console.log(`bootstrap blob=${blob}`);
+          NODE
+      - name: Verify canonical runtime and tests
+        run: |
+          node scripts/generate-bootstrap.mjs --check
+          node scripts/runtime-manifest-check.mjs
+          node scripts/bootstrap-sequence-check.mjs
+          node tests/live-home-command-grid-loader-smoke.js
+          node tests/native-ui-v3-smoke.js
+          node tests/redesign-finalizer-smoke.js
+      - name: Commit canonical runtime reconciliation
+        shell: bash
+        run: |
+          if git diff --quiet -- runtime-bootstrap-order.json pristeel-project-emails.js runtime-manifest.json scripts/bootstrap-sequence-check.mjs tests/live-home-command-grid-loader-smoke.js; then
+            echo 'No runtime reconciliation changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add runtime-bootstrap-order.json pristeel-project-emails.js runtime-manifest.json scripts/bootstrap-sequence-check.mjs tests/live-home-command-grid-loader-smoke.js
+          git commit -m 'Reconcile multilateral runtime source of truth'
+          git push origin HEAD:feat/tender-sources-multilateral-20260912
