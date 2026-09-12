@@ -60,7 +60,6 @@ as $function$
 declare
   v_sender_name text;
   v_sender_email text;
-  v_project_role text;
   v_supplier text;
 begin
   if new.source <> 'email_request_auto' or new.project_id is null or coalesce(new.source_ref,'')='' then
@@ -73,25 +72,26 @@ begin
   limit 1;
   if v_sender_name is null and v_sender_email is null then return new; end if;
 
-  -- Project-specific role is the strongest contact-role evidence. An explicit
-  -- client role also prevents a global supplier master entry from overriding
-  -- the role that was confirmed for this project.
-  select nullif(lower(btrim(pc.role)),''),
-         coalesce(nullif(btrim(pc.company),''),nullif(btrim(pc.name),''),nullif(btrim(pc.email),''))
-    into v_project_role,v_supplier
-  from public.project_contacts pc
-  where pc.project_id=new.project_id::text
-    and lower(coalesce(pc.email,''))=lower(coalesce(v_sender_email,''))
-  order by coalesce(pc.is_primary,false) desc,pc.last_seen desc nulls last,pc.id desc
-  limit 1;
-
-  if v_project_role='client' then
+  -- Project-specific client evidence vetoes global supplier inference for the
+  -- same email address. This keeps ambiguous/multi-role contacts human-safe.
+  if exists(
+    select 1 from public.project_contacts pc
+    where pc.project_id=new.project_id::text
+      and lower(coalesce(pc.email,''))=lower(coalesce(v_sender_email,''))
+      and lower(coalesce(pc.role,''))='client'
+  ) then
     return new;
   end if;
 
-  if coalesce(v_project_role,'')<>'supplier' then
-    v_supplier:=null;
-  end if;
+  -- An explicit supplier role on this project is the strongest positive signal.
+  select coalesce(nullif(btrim(pc.company),''),nullif(btrim(pc.name),''),nullif(btrim(pc.email),''))
+    into v_supplier
+  from public.project_contacts pc
+  where pc.project_id=new.project_id::text
+    and lower(coalesce(pc.email,''))=lower(coalesce(v_sender_email,''))
+    and lower(coalesce(pc.role,''))='supplier'
+  order by coalesce(pc.is_primary,false) desc,pc.last_seen desc nulls last,pc.id desc
+  limit 1;
 
   -- If the project has no explicit supplier role, use the canonical active
   -- supplier master by exact email address.
@@ -175,6 +175,12 @@ where t.source='email_request_auto'
     from public.project_emails e
     where e.gmail_message_id=t.source_ref
       and e.direction='incoming'
+      and not exists(
+        select 1 from public.project_contacts pc
+        where pc.project_id=t.project_id::text
+          and lower(coalesce(pc.email,''))=lower(coalesce(e.from_email,''))
+          and lower(coalesce(pc.role,''))='client'
+      )
       and (
         exists(
           select 1 from public.project_contacts pc
@@ -182,21 +188,13 @@ where t.source='email_request_auto'
             and lower(coalesce(pc.email,''))=lower(coalesce(e.from_email,''))
             and lower(coalesce(pc.role,''))='supplier'
         )
-        or (
-          not exists(
-            select 1 from public.project_contacts pc
-            where pc.project_id=t.project_id::text
-              and lower(coalesce(pc.email,''))=lower(coalesce(e.from_email,''))
-              and lower(coalesce(pc.role,''))='client'
-          )
-          and exists(
-            select 1
-            from public.partner_contacts pc
-            join public.partners p on p.id=pc.partner_id
-            where lower(coalesce(pc.email,''))=lower(coalesce(e.from_email,''))
-              and p.stage='active'
-              and coalesce(p.relation,'{}'::text[]) @> array['supplier']::text[]
-          )
+        or exists(
+          select 1
+          from public.partner_contacts pc
+          join public.partners p on p.id=pc.partner_id
+          where lower(coalesce(pc.email,''))=lower(coalesce(e.from_email,''))
+            and p.stage='active'
+            and coalesce(p.relation,'{}'::text[]) @> array['supplier']::text[]
         )
       )
   );
