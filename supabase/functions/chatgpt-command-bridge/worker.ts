@@ -2,11 +2,17 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const LEGACY_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+let CURRENT_SECRET_KEY = '';
+try {
+  const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}');
+  CURRENT_SECRET_KEY = typeof keys?.default === 'string' ? keys.default : '';
+} catch {}
+const ADMIN_KEY = CURRENT_SECRET_KEY || LEGACY_SERVICE_KEY;
 const SA_JSON = Deno.env.get('GOOGLE_SA_JSON') || '';
 const DRIVE_USER = Deno.env.get('GMAIL_USER') || '';
 const COMMAND_SHEET_ID = '1ZoU1-aqHaN0CLI_1bcAUDXtGKdm97ixvopkusB96hZ8';
-const db = createClient(SUPABASE_URL, SERVICE_KEY);
+const db = createClient(SUPABASE_URL, ADMIN_KEY);
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
