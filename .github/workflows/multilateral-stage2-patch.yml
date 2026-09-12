@@ -27,7 +27,8 @@ jobs:
         run: |
           node --check pristeel-project-centric-workflow-v1.js
           node tests/multilateral-opportunities-source-smoke.js
-          node scripts/multilateral-procurement-sync.test.mjs
+          node --check scripts/multilateral-procurement-core.mjs
+          node --check scripts/multilateral-procurement-sync.mjs
       - name: Commit guarded patch
         shell: bash
         run: |
