@@ -16,6 +16,7 @@ on:
       - 'tests/tender-dossier-rate-limit-upload-smoke.mjs'
       - 'tests/tender-dossier-integrity-guards-smoke.mjs'
       - 'tests/tender-dossier-p2-ui-smoke.mjs'
+      - 'tests/tender-dossier-trusted-companion-smoke.mjs'
       - '.github/workflows/tender-dossier-analysis-smoke.yml'
   push:
     branches: [main]
@@ -33,6 +34,7 @@ on:
       - 'tests/tender-dossier-rate-limit-upload-smoke.mjs'
       - 'tests/tender-dossier-integrity-guards-smoke.mjs'
       - 'tests/tender-dossier-p2-ui-smoke.mjs'
+      - 'tests/tender-dossier-trusted-companion-smoke.mjs'
       - '.github/workflows/tender-dossier-analysis-smoke.yml'
 
 permissions:
@@ -77,3 +79,4 @@ jobs:
       - run: node tests/tender-dossier-rate-limit-upload-smoke.mjs
       - run: node tests/tender-dossier-integrity-guards-smoke.mjs
       - run: node tests/tender-dossier-p2-ui-smoke.mjs
+      - run: node tests/tender-dossier-trusted-companion-smoke.mjs
