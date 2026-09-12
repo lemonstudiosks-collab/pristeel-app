@@ -22,6 +22,19 @@ assert.equal(notices.length,4);
 const candidates=selectCandidates(notices,{recentDateCount:30,fullScanDateCount:2,maxCandidates:50});
 assert.deepEqual(candidates.map(x=>x.detail_id).sort(),['7001','7002','7004']);
 
+const longSectionHtml=`
+<h1>On-line njoftimet 12.09.2026</h1><h2>PlusMinusB05 Njoftim per Kontrat</h2>
+<div>${'x'.repeat(8000)}</div>
+<a href="/SPIN_PROD/application/ipn/DocumentManagement/DokumentPodaciFrm.aspx?id=7100">1. Furnizim me pajisje laboratorike</a>`;
+const longSectionNotices=parseNoticeIndexHtml(longSectionHtml,'https://e-prokurimi.rks-gov.net/index');
+assert.equal(longSectionNotices.length,1);
+assert.equal(longSectionNotices[0].published_date,'2026-09-12','date heading must survive long KRPP sections');
+assert.equal(longSectionNotices[0].notice_type,'B05','notice type must survive long KRPP sections');
+assert.deepEqual(selectCandidates(longSectionNotices,{recentDateCount:30,fullScanDateCount:2,maxCandidates:50}).map(x=>x.detail_id),['7100'],'fresh B05 notices must be detail-checked even without title keywords');
+
+const scaffoldCandidate={detail_id:'7200',title:'Furnizim me material për skele për kaldajen B1',notice_type:'B05',published_date:'2026-09-01'};
+assert.deepEqual(selectCandidates([scaffoldCandidate],{recentDateCount:30,fullScanDateCount:0,maxCandidates:50}).map(x=>x.detail_id),['7200'],'scaffold wording must remain discoverable outside the full-scan window');
+
 const trepcaHtml=`<table>
 <tr><td>Blerësi</td><td>TREPÇA Sh.A.</td></tr>
 <tr><td>Kodi/Numri</td><td>2026/TREPCA-26-100-1-2-1/B05-0010001</td></tr>
@@ -35,6 +48,8 @@ const trepcaHtml=`<table>
 const trepca=parseDetailHtml(trepcaHtml,notices[0].detail_url,notices[0]);
 assert.equal(trepca.procurement_no,'TREPCA-26-100-1-2-1');
 assert.equal(trepca.payload.authority_priority,'A');
+assert.equal(trepca.estimated_value,120000);
+assert.equal(trepca.currency,'EUR');
 const c1=classifyKrppSteel(trepca);
 assert.equal(c1.category,'raw_material');
 assert.ok(c1.relevance_score>=65);
