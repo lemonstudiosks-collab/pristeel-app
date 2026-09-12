@@ -50,6 +50,8 @@ jobs:
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       KRPP_PUBLIC_MIN_SCORE: '35'
       KRPP_PUBLIC_MAX_CANDIDATES: '240'
+      KRPP_PUBLIC_UPSERT_BATCH_SIZE: '25'
+      KRPP_PUBLIC_UPSERT_RETRIES: '2'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
 
     steps:

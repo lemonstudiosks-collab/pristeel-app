@@ -9,8 +9,10 @@ const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
 const KRPP_ORIGIN='https://e-prokurimi.rks-gov.net';
 const DEFAULT_INDEX_URL=`${KRPP_ORIGIN}/SPIN_PROD/application/ipn/DocumentManagement/NewPreglediDokumenataFrm.aspx`;
 const ACTIONABLE_NOTICE_TYPES=new Set(['B05','B54']);
+const TRANSIENT_HTTP_STATUSES=new Set([408,425,429,500,502,503,504]);
 const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 export function classifyKrppOpportunity(row){return assessPristeelTender(row);}
 // Backward-compatible export for existing tests/callers while semantics move from keyword steel to PRISTEEL capability fit.
@@ -44,6 +46,13 @@ export function prepareRows(rows,{seenAt=new Date().toISOString(),minScore=35,to
   }).filter(r=>r.relevance_score>=minScore).filter(r=>!r.deadline||r.deadline>=todayIso);
 }
 
+export function chunkRows(rows,batchSize=25){
+  const size=Math.max(1,Math.floor(Number(batchSize)||25));
+  const out=[];
+  for(let i=0;i<(rows||[]).length;i+=size)out.push(rows.slice(i,i+size));
+  return out;
+}
+
 async function getHtml(url,{timeoutMs=20000,referer=KRPP_ORIGIN}={}){
   const c=new AbortController(),t=setTimeout(()=>c.abort(),timeoutMs);
   try{
@@ -61,23 +70,49 @@ async function mapLimit(items,limit,worker){
   return out;
 }
 
-async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',body,prefer}){
-  const r=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
-  const raw=await r.text();
-  if(!r.ok)throw new Error(`${method} ${path} failed: HTTP ${r.status} ${raw.slice(0,500)}`);
-  return raw?JSON.parse(raw):[];
+async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',body,prefer,retries=0}){
+  const maxRetries=Math.max(0,Math.floor(Number(retries)||0));
+  let attempt=0;
+  while(true){
+    try{
+      const r=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
+      const raw=await r.text();
+      if(r.ok)return raw?JSON.parse(raw):[];
+      if(attempt<maxRetries&&TRANSIENT_HTTP_STATUSES.has(r.status)){
+        await sleep(Math.min(4000,750*(2**attempt)));
+        attempt+=1;
+        continue;
+      }
+      throw new Error(`${method} ${path} failed: HTTP ${r.status} ${raw.slice(0,500)}`);
+    }catch(error){
+      if(attempt<maxRetries&&!/^\w+ .* failed: HTTP /.test(String(error?.message||''))){
+        await sleep(Math.min(4000,750*(2**attempt)));
+        attempt+=1;
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
-async function upsert(access,rows){
-  if(!rows.length)return;
-  const body=rows.map(r=>({
+function toUpsertBody(rows){
+  return rows.map(r=>({
     source_key:r.source_key,procurement_no:r.procurement_no,publication_no:r.publication_no,authority:r.authority,title:r.title,document_type:r.document_type,
     fpp:r.fpp,fpp_description:r.fpp_description,contract_type:r.contract_type,contract_value_band:r.contract_value_band,procedure:r.procedure,
     estimated_value:r.estimated_value,currency:r.currency||'EUR',deadline:r.deadline,published_date:r.published_date,is_retender:!!r.is_retender,
     category:r.category,relevance_score:r.relevance_score,match_reasons:r.match_reasons||[],source_url:r.source_url,detail_url:r.detail_url,payload:r.payload||{},
     last_seen_at:r.last_seen_at,updated_at:r.updated_at
   }));
-  await rest({...access,path:'kek_tender_watch?on_conflict=source_key',method:'POST',body,prefer:'resolution=merge-duplicates,return=minimal'});
+}
+
+async function upsert(access,rows,{batchSize=25,retries=2}={}){
+  if(!rows.length)return 0;
+  let batches=0;
+  for(const batch of chunkRows(rows,batchSize)){
+    await rest({...access,path:'kek_tender_watch?on_conflict=source_key',method:'POST',body:toUpsertBody(batch),prefer:'resolution=merge-duplicates,return=minimal',retries});
+    batches+=1;
+  }
+  return batches;
 }
 
 async function writeSummary(s){await mkdir('tmp',{recursive:true});await writeFile('tmp/krpp-public-steel-sync.json',JSON.stringify(s,null,2));}
@@ -86,6 +121,7 @@ export async function run({
   mode=process.env.SYNC_MODE||'preview',sourceUrl=process.env.KRPP_PUBLIC_INDEX_URL||DEFAULT_INDEX_URL,minScore=Number(process.env.KRPP_PUBLIC_MIN_SCORE||35),
   recentDateCount=Number(process.env.KRPP_PUBLIC_RECENT_DATE_COUNT||30),fullScanDateCount=Number(process.env.KRPP_PUBLIC_FULL_SCAN_DATES||2),
   maxCandidates=Number(process.env.KRPP_PUBLIC_MAX_CANDIDATES||240),detailConcurrency=Number(process.env.KRPP_PUBLIC_DETAIL_CONCURRENCY||5),
+  upsertBatchSize=Number(process.env.KRPP_PUBLIC_UPSERT_BATCH_SIZE||25),upsertRetries=Number(process.env.KRPP_PUBLIC_UPSERT_RETRIES||2),
   supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL,apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||''
 }={}){
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
@@ -99,10 +135,11 @@ export async function run({
   const seenAt=new Date().toISOString();
   const assessed=rows.map(r=>attachCapabilityPayload(r,classifyKrppOpportunity(r))).filter(r=>r.relevance_score>=minScore);
   const relevant=prepareRows(rows,{seenAt,minScore});
-  let authMode='not_needed';
+  let authMode='not_needed',upsertBatches=0;
   if(mode==='apply'&&relevant.length){
     const access=apiKey?{supabaseUrl,apiKey,bearerToken:apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
-    authMode=access.authMode;await upsert(access,relevant);
+    authMode=access.authMode;
+    upsertBatches=await upsert(access,relevant,{batchSize:upsertBatchSize,retries:upsertRetries});
   }
   const reviewCount=relevant.filter(r=>r.payload?.capability_review_required).length;
   const strongCount=relevant.filter(r=>r.payload?.capability_fit==='strong').length;
@@ -110,13 +147,14 @@ export async function run({
     mode,auth_mode:authMode,classifier:'pristeel-capability-fit-v1',capability_profile_version:PRISTEEL_CAPABILITY_PROFILE_VERSION,source:'KRPP',
     notice_links:notices.length,index_candidates:candidates.length,detail_failures:failures.length,capability_scored_rows:assessed.length,
     expired_filtered:assessed.length-relevant.length,relevant_rows:relevant.length,strong_matches:strongCount,review_matches:reviewCount,minimum_score:minScore,
+    upsert_batches:upsertBatches,upsert_batch_size:Math.max(1,Math.floor(Number(upsertBatchSize)||25)),
     priority:relevant.reduce((a,r)=>(a[r.payload?.authority_priority||'other']=(a[r.payload?.authority_priority||'other']||0)+1,a),{}),
     tenders:relevant.map(r=>({procurement_no:r.procurement_no,authority:r.authority,authority_priority:r.payload?.authority_priority,title:r.title,fpp:r.fpp,category:r.category,
       relevance_score:r.relevance_score,capability_fit:r.payload?.capability_fit,capability_review_required:!!r.payload?.capability_review_required,
       capability_matches:r.payload?.capability_matches||[],published_date:r.published_date,deadline:r.deadline,match_reasons:r.match_reasons}))
   };
   await writeSummary(summary);
-  console.log(`KRPP capability monitor ${mode}: notices=${notices.length}, candidates=${candidates.length}, relevant=${relevant.length}, review=${reviewCount}.`);
+  console.log(`KRPP capability monitor ${mode}: notices=${notices.length}, candidates=${candidates.length}, relevant=${relevant.length}, review=${reviewCount}, upsert_batches=${upsertBatches}.`);
   return summary;
 }
 

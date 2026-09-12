@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { authorityPriority, classifyKrppSteel, parseDetailHtml, parseNoticeIndexHtml, prepareRelevantRows, selectCandidates } from '../scripts/krpp-public-steel-sync.mjs';
+import { chunkRows } from '../scripts/krpp-public-capability-runner.mjs';
 
 assert.equal(authorityPriority('TREPÇA Sh.A.'),'A');
 assert.equal(authorityPriority('KOSTT sh.a.'),'A');
 assert.equal(authorityPriority('Kompania Rajonale e Ujësjellësit Prishtina'),'B');
 assert.equal(authorityPriority('Komuna e Prizrenit'),'other');
+assert.deepEqual(chunkRows([1,2,3,4,5,6,7],3),[[1,2,3],[4,5,6],[7]]);
+assert.deepEqual(chunkRows([1,2],0),[[1,2]]);
 
 const indexHtml=`
 <h1>On-line njoftimet 14.08.2026</h1><h2>PlusMinusB05 Njoftim per Kontrat</h2>
