@@ -8,7 +8,7 @@
 if(window.__pstHomeCanonicalInteractionV1)return;
 window.__pstHomeCanonicalInteractionV1=true;
 
-var VERSION='20260821-5';
+var VERSION='20260913-opportunities-polish1';
 function str(v){return String(v==null?'':v);}
 function norm(v){return str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function urgentRow(row){
@@ -44,7 +44,16 @@ function installStyle(){
 ';
   document.head.appendChild(s);
 }
-function boot(){installStyle();decorate(document);}
+function loadOpportunitiesFilterPolish(){
+  if(window.__pstOpportunitiesFilterPolishV1||document.querySelector('script[data-pst-opportunities-filter-polish]'))return;
+  var p=document.createElement('script');
+  p.src='pristeel-opportunities-filter-polish-v1.js?v=20260913-compact1';
+  p.defer=true;
+  p.setAttribute('data-pst-opportunities-filter-polish','1');
+  p.onerror=function(){console.error('Nuk u ngarkua pamja kompakte e filtrave të Mundësive.');};
+  document.head.appendChild(p);
+}
+function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();}
 document.addEventListener('pst:home-canonical-rendered',function(){decorate(document);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.PSTHomeCanonicalInteractionV1={version:VERSION,decorate:decorate,urgentRow:urgentRow,_test:{norm:norm}};
