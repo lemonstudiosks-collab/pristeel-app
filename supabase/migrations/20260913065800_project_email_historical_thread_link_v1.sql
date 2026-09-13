@@ -1,11 +1,19 @@
 -- Safe historical email linking for unique Gmail threads.
 --
 -- Historical backfills enrich project memory/search context only. They must not
--- replay old email events into current operational state, RFQs, supplier offers,
--- tasks, or project decisions.
+-- replay old email events into current operational state, project recency, RFQs,
+-- supplier offers, tasks, or project decisions.
 
 -- Keep the existing operational trigger functions unchanged, but do not run
 -- them when an email is linked explicitly through the historical-only path.
+drop trigger if exists pppp_project_email_activity on public.project_emails;
+create trigger pppp_project_email_activity
+after insert or update of project_id, sent_at
+on public.project_emails
+for each row
+when (coalesce(new.match_method, '') not like 'historical-link-only:%')
+execute function public.pppp_touch_project_from_email();
+
 drop trigger if exists trg_pppp_project_email_event_engine_v1 on public.project_emails;
 create trigger trg_pppp_project_email_event_engine_v1
 after insert or update of project_id, subject, snippet, direction, from_email, has_attachments
