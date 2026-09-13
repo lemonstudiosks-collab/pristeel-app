@@ -23,9 +23,7 @@ with x as (
 select case
   when email='' then 'unknown'
   when domain='prissteel.com' then 'internal'
-  when email='eprokurimi@rks-gov.net'
-    or email='bieter@dtvp.de'
-    or domain in ('dtvp.de')
+  when email='eprokurimi@rks-gov.net' or email='bieter@dtvp.de' or domain='dtvp.de'
     then 'procurement_system'
   when localpart ~ '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc|dmarcreport|mailrobot)([+._-]|$)'
     or email ~ '(ted-no-reply|noreply-dmarc|apps-scripts-notifications)'
@@ -58,37 +56,20 @@ security definer
 set search_path = pg_catalog, public
 as $function$
 with params as (
-  select
-    lower(btrim(coalesce(p_query,''))) as q,
-    greatest(1,least(coalesce(p_limit,20),50)) as lim
+  select lower(btrim(coalesce(p_query,''))) as q,
+         greatest(1,least(coalesce(p_limit,20),50)) as lim
 ),
 counterpart_events as (
-  select
-    lower(btrim(e.from_email)) as email,
-    nullif(btrim(e.from_name),'') as display_name,
-    e.sent_at,
-    e.direction,
-    e.project_id,
-    e.gmail_message_id,
-    e.gmail_thread_id,
-    e.subject,
-    e.match_method,
-    e.match_confidence
+  select lower(btrim(e.from_email)) as email,
+         nullif(btrim(e.from_name),'') as display_name,
+         e.sent_at,e.direction,e.project_id,e.gmail_thread_id
   from public.project_emails e
   where e.direction='incoming'
     and nullif(btrim(coalesce(e.from_email,'')),'') is not null
   union all
-  select
-    lower(btrim(x.email)) as email,
-    null::text as display_name,
-    e.sent_at,
-    e.direction,
-    e.project_id,
-    e.gmail_message_id,
-    e.gmail_thread_id,
-    e.subject,
-    e.match_method,
-    e.match_confidence
+  select lower(btrim(x.email)) as email,
+         null::text as display_name,
+         e.sent_at,e.direction,e.project_id,e.gmail_thread_id
   from public.project_emails e
   cross join lateral unnest(coalesce(e.to_emails,'{}'::text[])) x(email)
   where e.direction='outgoing'
@@ -96,58 +77,49 @@ counterpart_events as (
     and lower(split_part(btrim(x.email),'@',2))<>'prissteel.com'
 ),
 email_rollup as (
-  select
-    ce.email,
-    lower(split_part(ce.email,'@',2)) as domain,
-    (array_agg(ce.display_name order by ce.sent_at desc nulls last)
-      filter (where ce.display_name is not null))[1] as display_name,
-    min(ce.sent_at) as first_seen_at,
-    max(ce.sent_at) as last_seen_at,
-    count(*)::int as message_count,
-    count(*) filter (where ce.direction='incoming')::int as incoming_count,
-    count(*) filter (where ce.direction='outgoing')::int as outgoing_count,
-    count(*) filter (where ce.project_id is not null)::int as linked_project_messages,
-    count(*) filter (where ce.project_id is null)::int as unresolved_messages,
-    count(distinct ce.gmail_thread_id)::int as thread_count
+  select ce.email,
+         lower(split_part(ce.email,'@',2)) as domain,
+         (array_agg(ce.display_name order by ce.sent_at desc nulls last)
+           filter (where ce.display_name is not null))[1] as display_name,
+         min(ce.sent_at) as first_seen_at,
+         max(ce.sent_at) as last_seen_at,
+         count(*)::int as message_count,
+         count(*) filter (where ce.direction='incoming')::int as incoming_count,
+         count(*) filter (where ce.direction='outgoing')::int as outgoing_count,
+         count(*) filter (where ce.project_id is not null)::int as linked_project_messages,
+         count(*) filter (where ce.project_id is null)::int as unresolved_messages,
+         count(distinct ce.gmail_thread_id)::int as thread_count
   from counterpart_events ce
   group by ce.email
 ),
 contact_exact as (
-  select
-    lower(btrim(c.email)) as email,
-    c.contact_id,
-    c.kind,
-    c.company,
-    c.person,
-    c.role,
-    c.country,
-    c.project_email_count,
-    c.projects
+  select lower(btrim(c.email)) as email,
+         c.contact_id,c.kind,c.company,c.person,c.role,c.country,
+         c.project_email_count,c.projects
   from public.pppp_contact_master_v1 c
   where nullif(btrim(coalesce(c.email,'')),'') is not null
 ),
-partner_exact as (
-  select
-    lower(btrim(x.email)) as email,
-    count(distinct pc.partner_id)::int as partner_count,
-    min(pc.partner_id::text)::uuid as partner_id,
-    min(p.name) as partner_name,
-    min(p.relation) as relation,
-    min(p.business_type) as business_type,
-    min(p.country) as country,
-    bool_or(coalesce(pc.is_primary,false)) as is_primary
+partner_email_group as (
+  select lower(btrim(x.email)) as email,
+         count(distinct pc.partner_id)::int as partner_count,
+         min(pc.partner_id::text)::uuid as partner_id,
+         bool_or(coalesce(pc.is_primary,false)) as is_primary
   from public.partner_contacts pc
   join public.partners p on p.id=pc.partner_id and p.stage='active'
   cross join lateral (values(pc.email),(pc.email_alt)) x(email)
   where nullif(btrim(coalesce(x.email,'')),'') is not null
   group by lower(btrim(x.email))
 ),
-domain_partner as (
-  select
-    lower(split_part(btrim(x.email),'@',2)) as domain,
-    count(distinct pc.partner_id)::int as partner_count,
-    min(pc.partner_id::text)::uuid as partner_id,
-    min(p.name) as partner_name
+partner_exact as (
+  select g.email,g.partner_count,g.partner_id,g.is_primary,
+         p.name as partner_name,p.relation,p.business_type,p.country
+  from partner_email_group g
+  left join public.partners p on p.id=g.partner_id and g.partner_count=1
+),
+domain_partner_group as (
+  select lower(split_part(btrim(x.email),'@',2)) as domain,
+         count(distinct pc.partner_id)::int as partner_count,
+         min(pc.partner_id::text)::uuid as partner_id
   from public.partner_contacts pc
   join public.partners p on p.id=pc.partner_id and p.stage='active'
   cross join lateral (values(pc.email),(pc.email_alt)) x(email)
@@ -157,11 +129,15 @@ domain_partner as (
     )
   group by lower(split_part(btrim(x.email),'@',2))
 ),
+domain_partner as (
+  select g.domain,g.partner_count,g.partner_id,p.name as partner_name
+  from domain_partner_group g
+  left join public.partners p on p.id=g.partner_id and g.partner_count=1
+),
 domain_company_norm as (
-  select
-    lower(split_part(btrim(c.email),'@',2)) as domain,
-    public.pppp_gc_normalize_company_v1(c.company) as company_norm,
-    min(c.company) as company_name
+  select lower(split_part(btrim(c.email),'@',2)) as domain,
+         public.pppp_gc_normalize_company_v1(c.company) as company_norm,
+         min(c.company) as company_name
   from public.contacts c
   where nullif(btrim(coalesce(c.email,'')),'') is not null
     and nullif(btrim(coalesce(c.company,'')),'') is not null
@@ -171,31 +147,27 @@ domain_company_norm as (
   group by lower(split_part(btrim(c.email),'@',2)),public.pppp_gc_normalize_company_v1(c.company)
 ),
 domain_company as (
-  select
-    domain,
-    count(*)::int as company_count,
-    min(company_name) as company_name
+  select domain,count(*)::int as company_count,min(company_name) as company_name
   from domain_company_norm
-  where company_norm is not null
+  where nullif(company_norm,'') is not null
   group by domain
 ),
 resolved as (
-  select
-    e.*,
-    public.pppp_email_sender_class_v1(e.email,e.display_name,null) as sender_class,
-    c.contact_id,c.kind as contact_kind,c.company as contact_company,c.person as contact_person,
-    c.role as contact_role,c.country as contact_country,c.project_email_count,c.projects as contact_projects,
-    pe.partner_count as exact_partner_count,pe.partner_id as exact_partner_id,pe.partner_name as exact_partner_name,
-    pe.relation as exact_partner_relation,pe.business_type as exact_partner_business_type,pe.country as exact_partner_country,
-    dp.partner_count as domain_partner_count,dp.partner_id as domain_partner_id,dp.partner_name as domain_partner_name,
-    dc.company_count as domain_company_count,dc.company_name as domain_company_name,
-    case
-      when pe.partner_count=1 and c.contact_id is not null
-        and nullif(public.pppp_gc_normalize_company_v1(c.contact_company),'') is not null
-        and public.pppp_gc_normalize_company_v1(c.contact_company)
-          is distinct from public.pppp_gc_normalize_company_v1(pe.partner_name)
-      then true else false
-    end as secondary_contact_conflict
+  select e.*,
+         public.pppp_email_sender_class_v1(e.email,e.display_name,null) as sender_class,
+         c.contact_id,c.kind as contact_kind,c.company as contact_company,c.person as contact_person,
+         c.role as contact_role,c.country as contact_country,c.project_email_count,c.projects as contact_projects,
+         pe.partner_count as exact_partner_count,pe.partner_id as exact_partner_id,pe.partner_name as exact_partner_name,
+         pe.relation as exact_partner_relation,pe.business_type as exact_partner_business_type,pe.country as exact_partner_country,
+         dp.partner_count as domain_partner_count,dp.partner_id as domain_partner_id,dp.partner_name as domain_partner_name,
+         dc.company_count as domain_company_count,dc.company_name as domain_company_name,
+         case
+           when pe.partner_count=1 and c.contact_id is not null
+             and nullif(public.pppp_gc_normalize_company_v1(c.company),'') is not null
+             and public.pppp_gc_normalize_company_v1(c.company)
+                 is distinct from public.pppp_gc_normalize_company_v1(pe.partner_name)
+           then true else false
+         end as secondary_contact_conflict
   from email_rollup e
   left join contact_exact c on c.email=e.email
   left join partner_exact pe on pe.email=e.email
@@ -203,48 +175,45 @@ resolved as (
   left join domain_company dc on dc.domain=e.domain
 ),
 classified as (
-  select
-    r.*,
-    case
-      when r.sender_class='internal' then 'internal'
-      when r.sender_class in ('procurement_system','automated_service') then 'system'
-      when r.exact_partner_count=1 then 'canonical_partner_contact'
-      when r.contact_id is not null then 'canonical_contact'
-      when r.domain_partner_count=1 then 'partner_domain_hint'
-      when r.domain_company_count=1 then 'company_domain_hint'
-      else 'unresolved_external'
-    end as identity_status,
-    case
-      when r.sender_class='internal' then 100
-      when r.sender_class in ('procurement_system','automated_service') then 100
-      when r.exact_partner_count=1 then 100
-      when r.contact_id is not null then 98
-      when r.domain_partner_count=1 then 82
-      when r.domain_company_count=1 then 78
-      else 0
-    end as identity_confidence,
-    case
-      when r.sender_class in ('internal','procurement_system','automated_service') then false
-      when r.exact_partner_count=1 then r.secondary_contact_conflict
-      when r.contact_id is not null then false
-      when r.domain_partner_count=1 or r.domain_company_count=1 then true
-      else true
-    end as needs_review
+  select r.*,
+         case
+           when r.sender_class='internal' then 'internal'
+           when r.sender_class in ('procurement_system','automated_service') then 'system'
+           when r.exact_partner_count=1 then 'canonical_partner_contact'
+           when r.contact_id is not null then 'canonical_contact'
+           when r.domain_partner_count=1 then 'partner_domain_hint'
+           when r.domain_company_count=1 then 'company_domain_hint'
+           else 'unresolved_external'
+         end as identity_status,
+         case
+           when r.sender_class in ('internal','procurement_system','automated_service') then 100
+           when r.exact_partner_count=1 then 100
+           when r.contact_id is not null then 98
+           when r.domain_partner_count=1 then 82
+           when r.domain_company_count=1 then 78
+           else 0
+         end as identity_confidence,
+         case
+           when r.sender_class in ('internal','procurement_system','automated_service') then false
+           when r.exact_partner_count=1 then r.secondary_contact_conflict
+           when r.contact_id is not null then false
+           else true
+         end as needs_review
   from resolved r
 ),
 scored as (
   select c.*,
-    greatest(
-      case when c.email=(select q from params) then 100 else 0 end,
-      case when length((select q from params))>=3 and c.email like '%'||(select q from params)||'%' then 92 else 0 end,
-      case when length((select q from params))>=3 and lower(coalesce(c.display_name,'')) like '%'||(select q from params)||'%' then 90 else 0 end,
-      case when length((select q from params))>=3 and c.domain like '%'||(select q from params)||'%' then 86 else 0 end,
-      case when length((select q from params))>=3 and lower(coalesce(c.contact_person,'')) like '%'||(select q from params)||'%' then 90 else 0 end,
-      case when length((select q from params))>=3 and lower(coalesce(c.contact_company,'')) like '%'||(select q from params)||'%' then 88 else 0 end,
-      case when length((select q from params))>=3 and lower(coalesce(c.exact_partner_name,'')) like '%'||(select q from params)||'%' then 88 else 0 end,
-      case when length((select q from params))>=3 and lower(coalesce(c.domain_partner_name,'')) like '%'||(select q from params)||'%' then 80 else 0 end,
-      case when length((select q from params))>=3 and lower(coalesce(c.domain_company_name,'')) like '%'||(select q from params)||'%' then 76 else 0 end
-    ) as query_match_score
+         greatest(
+           case when c.email=(select q from params) then 100 else 0 end,
+           case when length((select q from params))>=3 and c.email like '%'||(select q from params)||'%' then 92 else 0 end,
+           case when length((select q from params))>=3 and lower(coalesce(c.display_name,'')) like '%'||(select q from params)||'%' then 90 else 0 end,
+           case when length((select q from params))>=3 and c.domain like '%'||(select q from params)||'%' then 86 else 0 end,
+           case when length((select q from params))>=3 and lower(coalesce(c.contact_person,'')) like '%'||(select q from params)||'%' then 90 else 0 end,
+           case when length((select q from params))>=3 and lower(coalesce(c.contact_company,'')) like '%'||(select q from params)||'%' then 88 else 0 end,
+           case when length((select q from params))>=3 and lower(coalesce(c.exact_partner_name,'')) like '%'||(select q from params)||'%' then 88 else 0 end,
+           case when length((select q from params))>=3 and lower(coalesce(c.domain_partner_name,'')) like '%'||(select q from params)||'%' then 80 else 0 end,
+           case when length((select q from params))>=3 and lower(coalesce(c.domain_company_name,'')) like '%'||(select q from params)||'%' then 76 else 0 end
+         ) as query_match_score
   from classified c
 ),
 matched as (
