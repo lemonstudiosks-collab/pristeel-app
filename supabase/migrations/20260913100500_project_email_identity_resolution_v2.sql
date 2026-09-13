@@ -2,8 +2,8 @@
 --
 -- Strong, explicit project identity may link a current email only when the email
 -- is newer than the project's canonical operational state. Older evidence is
--- memory-only. Contact/history agreement is useful identity context, but is not
--- project identity and therefore remains suggestion-only.
+-- memory-only. Contact/history agreement is useful entity context, but is not
+-- project identity and therefore remains a low-confidence review hint only.
 
 create or replace function public.pppp_project_email_identity_autolink_v1(
   p_limit integer default 500
@@ -147,7 +147,7 @@ begin
     ) c on c.id=g.id
     where c.project_count=1 and g.score>=95
   ), incoming_contact_hits as (
-    select i.id,cu.project_id,90 score,'contact_sender_history' method
+    select i.id,cu.project_id,70 score,'contact_sender_history' method
     from inbox i
     join contact_unique cu on cu.email=lower(trim(i.from_email))
     join sender_history sh on sh.email=lower(trim(i.from_email)) and sh.project_id=cu.project_id
@@ -162,7 +162,7 @@ begin
     where i.direction='outgoing'
       and i.event_at>=now()-interval '30 days'
   ), outgoing_contact_hits as (
-    select id,min(project_id::text)::uuid project_id,90 score,'contact_recipient_history' method
+    select id,min(project_id::text)::uuid project_id,70 score,'contact_recipient_history' method
     from outgoing_contact_rows
     group by id
     having count(distinct project_id)=1
@@ -235,10 +235,10 @@ begin
   ), contact_updates as (
     update public.project_emails e
        set suggested_project_id=w.project_id,
-           match_method='identity-suggest-v2:'||w.method,
+           match_method='entity-history-suggest-v2:'||w.method,
            match_confidence=w.score,
            needs_review=true,
-           review_reason='Contact identity and project history agree, but contact identity alone is not project identity. Confirm from subject, reference, thread, or content before linking.',
+           review_reason='Entity/contact history agrees with one project, but this is not project identity. Confirm from subject, reference, thread, or content before linking.',
            updated_at=now()
       from contact_winners w
      where e.id=w.id
@@ -258,7 +258,7 @@ begin
     'current_linked',v_current_linked,
     'historical_linked',v_historical_linked,
     'review_suggested',v_review_suggested,
-    'contact_history_suggested',v_contact_suggested,
+    'entity_history_suggested',v_contact_suggested,
     'current_window_days',7,
     'historical_window_days',14,
     'future_guard_minutes',5,
