@@ -63,6 +63,8 @@ begin
       and coalesce(e.sent_at, e.created_at) < now() - interval '14 days'
       and not public.pppp_project_status_is_terminal_v1(p.status)
       and coalesce(e.match_method, '') not like 'project-contact-unique-detached%'
+      and lower(coalesce(e.from_email, '')) !~ '(mailer-daemon|postmaster|ted-no-reply|dmarc|noreply-dmarc|email\.openai|tm\.openai|supabase\.com|bitrix24\.com|apps-scripts-notifications)'
+      and lower(trim(coalesce(e.from_email, ''))) <> 'eprokurimi@rks-gov.net'
     order by coalesce(e.sent_at, e.created_at) desc, e.id desc
     limit greatest(1, least(coalesce(p_limit, 200), 1000))
   ), updated as (
