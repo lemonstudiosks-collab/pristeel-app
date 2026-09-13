@@ -32,6 +32,8 @@ jobs:
         run: node tests/opportunities-lifecycle-sent-smoke.mjs
       - name: Verify waiting lifecycle and compact source layout
         run: node tests/opportunities-waiting-layout-smoke.mjs
+      - name: Verify safe outreach registry read migration
+        run: node tests/opportunities-waiting-registry-migration-smoke.mjs
       - name: Reproduce visible Opportunities page without active class
         run: |
           npm install --ignore-scripts --no-package-lock
