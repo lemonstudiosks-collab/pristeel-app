@@ -64,6 +64,24 @@ function installGateCss(){
 }
 function projectId(){var d=window.__pstIntegrityLastData||{};return String(window.__pstCurrentProjectId||window._curProjId||(d.project&&d.project.id)||'');}
 function currentDraft(){return document.getElementById('pst-pf2-rfq-draft');}
+function installLegacyProjectHydration(){
+  var base=window.pstPiLegacy;
+  if(typeof base!=='function')return false;
+  if(base.__pstBomProjectHydration)return true;
+  function wrapped(page,key){
+    var id=projectId();
+    if((page==='bom'||page==='rfq')&&id&&typeof window.loadProject==='function'){
+      window._curProjId=id;
+      window.__pstCurrentProjectId=id;
+      try{window.loadProject(id,true);}catch(err){console.error('PPPP legacy project hydration failed:',err);}
+    }
+    return base.apply(this,arguments);
+  }
+  wrapped.__pstBomProjectHydration=true;
+  wrapped.__base=base;
+  window.pstPiLegacy=wrapped;
+  return true;
+}
 function installHistoryButton(){
   var draft=currentDraft();if(!draft)return false;
   var actions=draft.querySelector('.prfq-actions');if(!actions)return false;
@@ -142,12 +160,13 @@ document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('[data-prfq-open]'):null;
   if(b){setTimeout(nativeButtons,180);setTimeout(nativeButtons,360);}
 },true);
-document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();loadFinalOfferOutputFix();loadSemanticRfqUi();installGateCss();setTimeout(nativeButtons,0);setTimeout(installHistoryButton,240);},{once:true});
+document.addEventListener('pst:modules-ready',function(){loadBomClarity();loadRfqNavigation();loadFinalOfferOutputFix();loadSemanticRfqUi();installGateCss();installLegacyProjectHydration();setTimeout(nativeButtons,0);setTimeout(installHistoryButton,240);},{once:true});
 installGateCss();
 loadBomClarity();
 loadRfqNavigation();
 loadFinalOfferOutputFix();
 loadSemanticRfqUi();
+[0,120,400,900].forEach(function(ms){setTimeout(installLegacyProjectHydration,ms);});
 [0,120,400].forEach(function(ms){setTimeout(installHistoryButton,ms);});
-window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,installHistoryButton:installHistoryButton,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation,loadFinalOfferOutputFix:loadFinalOfferOutputFix,loadSemanticRfqUi:loadSemanticRfqUi};
+window.PSTBomRfqAutoflowV1={nativeButtons:nativeButtons,installHistoryButton:installHistoryButton,installLegacyProjectHydration:installLegacyProjectHydration,loadBomClarity:loadBomClarity,loadRfqNavigation:loadRfqNavigation,loadFinalOfferOutputFix:loadFinalOfferOutputFix,loadSemanticRfqUi:loadSemanticRfqUi};
 })();
