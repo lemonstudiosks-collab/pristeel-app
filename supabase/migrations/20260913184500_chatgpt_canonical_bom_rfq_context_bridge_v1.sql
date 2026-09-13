@@ -14,7 +14,6 @@ declare
   v_item jsonb;
   v_drafts jsonb;
   v_draft jsonb;
-  v_count integer := 0;
   v_total numeric := 0;
   v_expected numeric := 0;
   v_code text;
@@ -22,6 +21,7 @@ declare
   v_email text;
   v_subject text;
   v_existing uuid;
+  v_notes text;
 begin
   -- Only facts created by the trusted ChatGPT command bridge are eligible.
   if new.source_type <> 'chatgpt' or new.created_by <> 'chatgpt_pppp_bridge' then
@@ -81,7 +81,6 @@ begin
       if replace(coalesce(nullif(v_item->>'kg',''),'0'),',','.')::numeric <= 0 then
         raise exception using errcode = '22023', message = 'canonical_bom_positive_kg_required';
       end if;
-      v_count := v_count + 1;
     end loop;
 
     if v_expected > 0 and abs(v_total - v_expected) > 0.01 then
@@ -89,20 +88,16 @@ begin
     end if;
 
     insert into public.bom_items(
-      project_id, project_name, pozicioni, materiali, dimensionet, sasia,
-      description, weight_kg, total_kg, profile, dim, grade, std, len_mm, kg,
-      auto_generated, needs_review, source_item_key, extraction_method
+      project_id, project_name, pozicioni, materiali, dimensionet,
+      profile, dim, grade, std, len_mm, kg,
+      auto_generated, needs_review, source_item_key, extraction_method, extraction_confidence
     )
     select
       new.project_id,
       coalesce(v_project.name,''),
       coalesce(x.value->>'position',''),
-      coalesce(x.value->>'material',''),
+      concat_ws(' — ', nullif(x.value->>'material_code',''), nullif(x.value->>'material','')),
       coalesce(x.value->>'dimensions',''),
-      replace(coalesce(nullif(x.value->>'kg',''),'0'),',','.')::numeric,
-      coalesce(x.value->>'description', x.value->>'material',''),
-      replace(coalesce(nullif(x.value->>'kg',''),'0'),',','.')::numeric,
-      replace(coalesce(nullif(x.value->>'kg',''),'0'),',','.')::numeric,
       coalesce(x.value->>'profile', x.value->>'material',''),
       coalesce(x.value->>'dimensions',''),
       coalesce(x.value->>'grade',''),
@@ -112,7 +107,8 @@ begin
       false,
       false,
       'chatgpt:' || coalesce(x.value->>'material_code', x.ordinality::text),
-      'chatgpt_verified_tender_schedule'
+      'chatgpt_verified_tender_schedule',
+      1
     from jsonb_array_elements(v_items) with ordinality as x(value, ordinality);
 
     return new;
@@ -142,6 +138,13 @@ begin
       raise exception using errcode = '22023', message = 'canonical_rfq_valid_email_required';
     end if;
 
+    v_notes := concat_ws(E'\n',
+      'PPPP state: draft prepared; external send is handled separately by the human-approved Gmail schedule.',
+      case when nullif(btrim(coalesce(v_draft->>'scheduled_for','')),'') is not null
+        then 'Scheduled: ' || btrim(v_draft->>'scheduled_for') else null end,
+      nullif(btrim(coalesce(v_draft->>'notes','')),'')
+    );
+
     select id into v_existing
     from public.rfq_log
     where project_id = new.project_id
@@ -153,7 +156,7 @@ begin
     if v_existing is null then
       insert into public.rfq_log(
         project_id, project_name, supplier_name, supplier_email, lang,
-        subject, body, status, sent_at, meta
+        subject, body, status, sent_at, notes
       ) values (
         new.project_id,
         coalesce(v_project.name,''),
@@ -164,15 +167,7 @@ begin
         coalesce(v_draft->>'body',''),
         'planned',
         null,
-        jsonb_build_object(
-          'source','chatgpt_bridge',
-          'workflow_state','draft_prepared',
-          'external_send',false,
-          'gmail_draft_id',nullif(btrim(coalesce(v_draft->>'gmail_draft_id','')),''),
-          'gmail_message_id',nullif(btrim(coalesce(v_draft->>'gmail_message_id','')),''),
-          'scheduled_for',nullif(btrim(coalesce(v_draft->>'scheduled_for','')),''),
-          'notes',nullif(btrim(coalesce(v_draft->>'notes','')),'')
-        )
+        v_notes
       );
     elsif exists (select 1 from public.rfq_log where id=v_existing and lower(coalesce(status,''))='planned') then
       update public.rfq_log
@@ -180,15 +175,7 @@ begin
           supplier_email=v_email,
           lang=coalesce(nullif(btrim(coalesce(v_draft->>'lang','')),''),lang,'en'),
           body=coalesce(v_draft->>'body',body,''),
-          meta=coalesce(meta,'{}'::jsonb) || jsonb_build_object(
-            'source','chatgpt_bridge',
-            'workflow_state','draft_prepared',
-            'external_send',false,
-            'gmail_draft_id',nullif(btrim(coalesce(v_draft->>'gmail_draft_id','')),''),
-            'gmail_message_id',nullif(btrim(coalesce(v_draft->>'gmail_message_id','')),''),
-            'scheduled_for',nullif(btrim(coalesce(v_draft->>'scheduled_for','')),''),
-            'notes',nullif(btrim(coalesce(v_draft->>'notes','')),'')
-          )
+          notes=v_notes
       where id=v_existing;
     end if;
   end loop;
