@@ -77,7 +77,8 @@ const opportunityPolish=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-f
 const waitingBridge=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-waiting-bridge-v1.js'),'utf8');
 assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260913-compact2'),'Fresh presentation bridge must load the current Opportunities filter polish');
 assert(opportunityPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunities polish must load the waiting lifecycle bridge');
-assert(doesNotThrow=(()=>{assert.doesNotThrow(()=>new Function(opportunityPolish));assert.doesNotThrow(()=>new Function(waitingBridge));return true;})(),'Opportunities runtime modules must remain valid JavaScript');
+assert.doesNotThrow(()=>new Function(opportunityPolish),'Opportunities filter polish must remain valid JavaScript');
+assert.doesNotThrow(()=>new Function(waitingBridge),'Opportunities waiting bridge must remain valid JavaScript');
 assert(opportunityPolish.includes("#pst-pcw-lifecycle-tabs")&&opportunityPolish.includes("#pst-pcw-opportunity-tabs"),'Opportunities polish must target both status and source filter groups');
 assert(opportunityPolish.includes("button[data-pcw-source='WORLD_BANK']")&&opportunityPolish.includes("button[data-pcw-source='KRPP']")&&opportunityPolish.includes("button[data-pcw-source='TED']"),'Opportunities polish must preserve source-specific controls');
 assert(!/MutationObserver\s*\(|setInterval\s*\(|supaFetch\s*\(|addEventListener\s*\(\s*['\"]click/i.test(opportunityPolish),'Opportunities polish must remain presentation-only and must not own clicks, polling or data access');
