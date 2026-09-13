@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 
 const src=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
+const finalizerSrc=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
+const bootstrapSrc=fs.readFileSync('pristeel-project-emails.js','utf8');
+
+assert(finalizerSrc.includes("pristeel-project-centric-workflow-v1.js?v='+Date.now()"),'project-centric owner must be cache-busted by the finalizer');
+assert(bootstrapSrc.includes('pristeel-redesign-finalizer-v1.js?v=20260913-opportunityfilter1'),'bootstrap must request the fresh Opportunities finalizer revision');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <section id="page-kek-tenders" style="display:block">
@@ -38,18 +43,6 @@ window.supaFetch=async path=>{
       payload:{source:'KRPP',notice_phase:'opportunity'}
     },
     {
-      id:'t-2',
-      title:'APP konstruksion metalik',
-      authority:'Autoriteti Kontraktor Shqipëri',
-      procurement_no:'APP-2026-001',
-      relevance_score:88,
-      status:'new',
-      published_date:'2026-08-25',
-      deadline:'2026-09-05',
-      match_reasons:['konstruksion metalik'],
-      payload:{source:'APP_AL',notice_phase:'opportunity'}
-    },
-    {
       id:'t-3',
       title:'TED structural steelworks award',
       authority:'EU Contracting Authority',
@@ -59,6 +52,18 @@ window.supaFetch=async path=>{
       published_date:'2026-08-24',
       match_reasons:['structural steelworks'],
       payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',company_type:'gc_epc'}}
+    },
+    {
+      id:'t-4',
+      title:'World Bank road safety works',
+      authority:'World Bank / PIU',
+      procurement_no:'WB-2026-001',
+      relevance_score:90,
+      status:'new',
+      published_date:'2026-08-23',
+      deadline:'2026-09-10',
+      match_reasons:['road safety works'],
+      payload:{source:'WORLD_BANK',notice_phase:'opportunity'}
     }
   ];
   if(String(path).startsWith('partners?')) return [];
@@ -82,25 +87,44 @@ const page=window.document.getElementById('page-kek-tenders');
 assert.equal(page.getAttribute('data-pcw-opportunities-owner'),'2','current whole-card surface did not claim ownership');
 assert.equal(window.document.querySelector('.pst-kek-title').textContent,'Mundësitë','page title must be Albanian and operator-oriented');
 assert(window.document.querySelector('#pst-opportunities-focus'),'modern opportunity focus surface was not mounted');
-assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all three source fixtures should render initially');
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all populated source fixtures should render initially');
 assert(window.document.querySelector('[data-pcw-source="TED"]'),'TED source tab must be visible');
 assert(window.document.querySelector('[data-pcw-source="KRPP"]'),'KRPP source tab must be visible');
-assert(window.document.querySelector('[data-pcw-source="APP_AL"]'),'APP source tab must be visible');
+assert(window.document.querySelector('[data-pcw-source="APP_AL"]'),'APP source tab must stay visible even with zero matches');
+assert(window.document.querySelector('[data-pcw-source="WORLD_BANK"]'),'World Bank source tab must be visible');
+
+const appTab=window.document.querySelector('[data-pcw-source="APP_AL"]');
+assert.equal(appTab.querySelector('i').textContent,'0','APP fixture must reproduce the zero-result production source');
+appTab.click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,0,'zero-result APP source must empty only the opportunity list');
+assert(window.document.querySelector('.pst-pcw-empty'),'zero-result APP source must show a safe empty state');
+assert(window.document.querySelector('[data-pcw-source="APP_AL"]').classList.contains('on'),'APP source must remain selected after empty render');
 
 window.document.querySelector('[data-pcw-source="TED"]').click();
-assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'TED source tab must isolate TED opportunities');
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'TED source tab must recover immediately after an empty APP result');
 assert(window.document.querySelector('[data-pcw-tender="t-3"]'),'TED source tab must show the TED fixture');
 
 window.document.querySelector('[data-pcw-source="KRPP"]').click();
-assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'KRPP source tab must isolate KRPP opportunities');
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'KRPP source tab must remain responsive after rerenders');
 assert(window.document.querySelector('[data-pcw-tender="t-1"]'),'KRPP source tab must show the KRPP fixture');
 
-window.document.querySelector('[data-pcw-source="APP_AL"]').click();
-assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'APP source tab must isolate APP opportunities');
-assert(window.document.querySelector('[data-pcw-tender="t-2"]'),'APP source tab must show the APP fixture');
+window.document.querySelector('[data-pcw-source="WORLD_BANK"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,1,'World Bank source tab must remain responsive after repeated filter changes');
+assert(window.document.querySelector('[data-pcw-tender="t-4"]'),'World Bank source tab must show the World Bank fixture');
 
 window.document.querySelector('[data-pcw-source="all"]').click();
-assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all source tab must restore TED, KRPP and APP opportunities');
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all source tab must restore every populated source after repeated filtering');
+
+window.document.querySelector('[data-pcw-source="APP_AL"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,0,'zero-result source must remain safe on a second pass');
+window.document.querySelector('[data-pcw-source="all"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all source tab must recover repeatedly without listener loss');
+
+window.document.querySelector('[data-pcw-lifecycle="all"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'lifecycle filter must remain responsive after source-filter rerenders');
+window.document.querySelector('[data-pcw-lifecycle="new"]').click();
+assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'new lifecycle filter must restore the current new opportunities');
+
 assert.equal(window.document.querySelector('.pst-kek-filter').style.display,'none','legacy long filters must be retired from the visible surface');
 assert.equal(window.document.querySelector('.pst-kek-card').style.display,'none','legacy table must be retired from the visible surface');
 assert.equal(window.document.getElementById('pst-tender-fit-summary').style.display,'none','legacy fit strip must be retired');
@@ -126,4 +150,4 @@ assert(close,'action console must expose an explicit close button');
 close.click();
 assert.equal(modal.style.display,'none','close button must hide the action console');
 
-console.log('Visible Opportunities source separation + runtime ownership: OK');
+console.log('Visible Opportunities zero-result recovery + runtime freshness: OK');
