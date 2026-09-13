@@ -106,7 +106,8 @@ begin
         limit greatest(1,least(coalesce(p_limit,500),2000))
       )
       and coalesce(e.sent_at,e.created_at)<=now()+interval '5 minutes'
-      and lower(coalesce(e.from_email,'')) !~ '(mailer-daemon|postmaster|ted-no-reply|dmarc|noreply-dmarc|email\\.openai|tm\\.openai|supabase\\.com|bitrix24\\.com|apps-scripts-notifications)'
+      and split_part(lower(trim(coalesce(e.from_email,''))),'@',1) !~ '(^|[+._-])(no-?reply|do-?not-?reply|mailer-daemon|postmaster|notifications?|dmarc)([+._-]|$)'
+      and lower(coalesce(e.from_email,'')) !~ '(ted-no-reply|noreply-dmarc|email\\.openai|tm\\.openai|supabase\\.com|bitrix24\\.com|apps-scripts-notifications)'
       and lower(trim(coalesce(e.from_email,'')))<>'eprokurimi@rks-gov.net'
       and coalesce(e.match_method,'') not like 'project-contact-unique-detached%'
       and coalesce(e.match_method,'') not like 'system-mail-detached:%'
