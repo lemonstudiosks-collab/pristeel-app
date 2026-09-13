@@ -73,4 +73,12 @@ assert(askBridge.includes("src==='email'&&ev==='confirmed'"),'Confirmed raw emai
 const nativeEntry=fs.readFileSync(path.join(ROOT,'pristeel-native-ui-v3.js'),'utf8');
 assert(nativeEntry.includes('pristeel-home-ask-functional-owner-v1.js?v=20260904-ask3'),'Native UI must fetch the current Home Ask bridge version');
 
+const homeInteraction=fs.readFileSync(path.join(ROOT,'pristeel-home-canonical-interaction-v1.js'),'utf8');
+const opportunityPolish=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-filter-polish-v1.js'),'utf8');
+assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260913-compact1'),'Fresh presentation bridge must load the current Opportunities filter polish');
+assert.doesNotThrow(()=>new Function(opportunityPolish),'Opportunities filter polish must remain valid JavaScript');
+assert(opportunityPolish.includes("#pst-pcw-lifecycle-tabs")&&opportunityPolish.includes("#pst-pcw-opportunity-tabs"),'Opportunities polish must target both status and source filter groups');
+assert(opportunityPolish.includes("button[data-pcw-source='WORLD_BANK']")&&opportunityPolish.includes("button[data-pcw-source='KRPP']")&&opportunityPolish.includes("button[data-pcw-source='TED']"),'Opportunities polish must preserve source-specific controls');
+assert(!/MutationObserver\s*\(|setInterval\s*\(|supaFetch\s*\(|addEventListener\s*\(\s*['\"]click/i.test(opportunityPolish),'Opportunities polish must remain presentation-only and must not own clicks, polling or data access');
+
 console.log('Dynamic runtime reference closure: OK ('+seen.size+' local JS modules verified).');
