@@ -1,7 +1,9 @@
 const fs = require('fs');
+const crypto = require('crypto');
 function fail(m){ console.error('NATIVE UI V4 SMOKE ERROR:',m); process.exitCode=1; }
 function must(cond,m){ if(!cond) fail(m); }
 const roles=fs.readFileSync('pristeel-roles.js','utf8');
+const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
 const entry=fs.readFileSync('pristeel-native-ui-v3.js','utf8');
 const core=fs.readFileSync('pristeel-native-ui-v4-core.js','utf8');
 const workspace=fs.readFileSync('pristeel-workspace-architecture-v1.js','utf8');
@@ -81,5 +83,6 @@ const dyn=(manifest.dynamicRuntime||[]).find(x=>x.module==='pristeel-native-ui-v
 must(!!dyn,'native UI compatibility entry is not registered in runtime manifest');
 must(dyn&&dyn.loader==='pristeel-roles.js','native UI runtime loader must remain pristeel-roles.js');
 must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='311a4594f0305ddc8e670d25c1a85ccc103ce19e','manifest loader SHA does not match audited roles blob');
-must(manifest.entrypoints.bootstrapGitBlobSha==='4a89208e8d5a010d82b0dc55d9b8cec7b63812cc','manifest bootstrap SHA does not match production bootstrap');
+const bootstrapBlobSha=crypto.createHash('sha1').update(`blob ${Buffer.byteLength(bootstrap)}\0`).update(bootstrap).digest('hex');
+must(manifest.entrypoints.bootstrapGitBlobSha===bootstrapBlobSha,'manifest bootstrap SHA does not match current production bootstrap');
 if(!process.exitCode) console.log('Native UI v4 structural create + four-zone Home smoke OK.');
