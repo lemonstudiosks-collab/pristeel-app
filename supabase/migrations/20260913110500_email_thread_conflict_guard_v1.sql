@@ -307,7 +307,7 @@ $block$;
 delete from public.project_email_links l
 using pppp_email_thread_conflict_repair_candidates c
 where l.gmail_message_id=c.gmail_message_id
-  and l.project_id is distinct from c.correct_project_id;
+  and l.project_id::uuid is distinct from c.correct_project_id;
 
 update public.project_emails e
    set project_id=c.correct_project_id,
