@@ -307,7 +307,7 @@ $block$;
 delete from public.project_email_links l
 using pppp_email_thread_conflict_repair_candidates c
 where l.gmail_message_id=c.gmail_message_id
-  and l.project_id::uuid is distinct from c.correct_project_id;
+  and l.project_id is distinct from c.correct_project_id::text;
 
 update public.project_emails e
    set project_id=c.correct_project_id,
@@ -387,8 +387,7 @@ with corrected_projects as (
 update public.tasks t
    set status='mbyllur',
        done_at=coalesce(t.done_at,now()),
-       detail=concat_ws(E'\n',nullif(t.detail,''),'[data-quality-reconcile-v1] Closed because the project correction fact explicitly identifies this automation prompt as stale.'),
-       updated_at=now()
+       detail=concat_ws(E'\n',nullif(t.detail,''),'[data-quality-reconcile-v1] Closed because the project correction fact explicitly identifies this automation prompt as stale.')
   from corrected_projects c
  where t.project_id=c.old_project_id
    and t.status='hapur'
@@ -439,6 +438,47 @@ select
 from pppp_email_thread_conflict_repair_candidates c
 on conflict (idempotency_key) where idempotency_key is not null do nothing;
 
--- Refresh canonical project memory after the state/email correction. The
--- reconciler is idempotent and writes only changed fingerprints.
-select public.pppp_project_memory_baseline_reconcile_v1(true,20);
+-- Refresh baseline memory only for projects corrected by this migration. This
+-- avoids touching unrelated projects that may be changing in parallel.
+with targets as (
+  select distinct old_project_id as project_id
+  from pppp_email_thread_conflict_repair_candidates
+), prepared as (
+  select
+    t.project_id,
+    p.name,
+    public.pppp_project_memory_fingerprint_v2(t.project_id) as fp,
+    public.pppp_project_memory_payload_v2(t.project_id) as payload,
+    (
+      select f.id
+      from public.pppp_project_context_facts f
+      where f.project_id=t.project_id
+        and f.fact_key='project.memory.baseline.v1'
+        and f.fact_status<>'dismissed'
+      order by f.created_at desc,f.id desc
+      limit 1
+    ) as supersedes_id
+  from targets t
+  join public.projects p on p.id=t.project_id
+)
+insert into public.pppp_project_context_facts(
+  project_id,category,subject,fact_key,value,source_type,source_ref,evidence_status,
+  confidence,fact_status,supersedes_id,idempotency_key,created_by
+)
+select
+  x.project_id,
+  'project_memory',
+  'Memoria bazë — '||x.name,
+  'project.memory.baseline.v1',
+  x.payload,
+  'system',
+  x.project_id::text,
+  'observed',
+  1,
+  'observed',
+  x.supersedes_id,
+  'project-memory-baseline-v2:'||x.project_id::text||':'||x.fp,
+  'pppp-project-memory-baseline-v2'
+from prepared x
+where x.fp is not null
+on conflict do nothing;
