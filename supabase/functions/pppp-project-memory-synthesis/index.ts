@@ -6,6 +6,8 @@ const SERVICE=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
 const OPENAI=Deno.env.get('OPENAI_API_KEY')||'';
 const MODEL=Deno.env.get('OPENAI_CONTEXT_MODEL')||Deno.env.get('OPENAI_ASSISTANT_MODEL')||'gpt-5.6-luna';
 const VERSION=1;
+const BASELINE_KEY='project.memory.baseline.v1';
+const SYNTHESIS_KEY='project.memory.semantic.v1';
 const db=createClient(SUPABASE_URL,SERVICE);
 const H={'content-type':'application/json','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'x-pppp-cron-secret,content-type','Access-Control-Allow-Methods':'GET,OPTIONS'};
 const TERMINAL=['humbur','arkivuar','mbyllur','realizuar','lost','archived','cancelled','canceled','closed'];
@@ -20,7 +22,7 @@ async function hash(v:any){const b=await crypto.subtle.digest('SHA-256',new Text
 function isTerminal(status:any){return TERMINAL.includes(N(status))}
 
 function stableInput(value:any){
-  const currentFacts=A(value?.current_facts).filter((x:any)=>T(x?.fact_key,200)!=='project.memory.semantic.v1');
+  const currentFacts=A(value?.current_facts).filter((x:any)=>T(x?.fact_key,200)!==SYNTHESIS_KEY);
   return {
     synthesis_version:VERSION,
     project:value?.project||{},
@@ -66,17 +68,16 @@ async function synthesize(project:any,input:any){
   return{ok:true,configured:true,result,model:data?.model||MODEL,response_id:data?.id||null};
 }
 
-async function currentFact(projectId:string,factKey:string){
-  const {data,error}=await db.from('pppp_project_context_current_v').select('id,value,created_at,updated_at').eq('project_id',projectId).eq('fact_key',factKey).maybeSingle();
-  if(error)throw error;return data||null;
+function factMap(rows:any[]){
+  const out=new Map<string,any>();
+  for(const row of A(rows))out.set(`${row.project_id}:${row.fact_key}`,row);
+  return out;
 }
 
-async function processProject(project:any){
-  const baseline=await currentFact(project.id,'project.memory.baseline.v1');
+async function processProject(project:any,baseline:any,existing:any){
   const value=baseline?.value||{};
   if(String(value?.version||'')!=='2')return{project_id:project.id,name:project.name,state:'baseline_v2_missing'};
   const input=stableInput(value),inputFingerprint=await hash(input);
-  const existing=await currentFact(project.id,'project.memory.semantic.v1');
   if(existing?.value?.synthesis_version===VERSION&&existing?.value?.input_fingerprint===inputFingerprint)return{project_id:project.id,name:project.name,state:'unchanged'};
   const ai=await synthesize(project,input);
   if(ai.rate_limited)return{project_id:project.id,name:project.name,state:'rate_limited',rate_limited:true};
@@ -89,7 +90,7 @@ async function processProject(project:any){
     risks:A(r.risks).slice(0,10),missing_information:A(r.missing_information).slice(0,10),recommended_review:T(r.recommended_review,900),
     confidence,model:ai.model,response_id:ai.response_id,baseline_fact_id:baseline?.id||null,generated_at:now
   };
-  const row={project_id:project.id,category:'project_memory_semantic',subject:`Sinteza semantike · ${T(project.name,220)}`,fact_key:'project.memory.semantic.v1',value:factValue,source_type:'chatgpt',source_ref:`project:${project.id}:semantic-memory-v1`,evidence_status:'observed',confidence:confidence/100,fact_status:'observed',supersedes_id:existing?.id||null,idempotency_key:`project-memory-semantic-v1:${project.id}:${inputFingerprint}`,created_by:'pppp-project-memory-synthesis-v1'};
+  const row={project_id:project.id,category:'project_memory_semantic',subject:`Sinteza semantike · ${T(project.name,220)}`,fact_key:SYNTHESIS_KEY,value:factValue,source_type:'chatgpt',source_ref:`project:${project.id}:semantic-memory-v1`,evidence_status:'observed',confidence:confidence/100,fact_status:'observed',supersedes_id:existing?.id||null,idempotency_key:`project-memory-semantic-v1:${project.id}:${inputFingerprint}`,created_by:'pppp-project-memory-synthesis-v1'};
   const {error}=await db.from('pppp_project_context_facts').insert(row);
   if(error&&error.code!=='23505')throw error;
   return{project_id:project.id,name:project.name,state:error?.code==='23505'?'duplicate':'synthesized',confidence,model:ai.model};
@@ -101,11 +102,18 @@ async function run(req:Request){
   if(pid)q=q.eq('id',pid);
   const {data,error}=await q;if(error)throw error;
   const projects=A(data).filter((p:any)=>!isTerminal(p.status));
+  if(!projects.length)return{ok:true,version:VERSION,configured:!!OPENAI,limit,projects_checked:0,synthesized:0,rate_limited:false,items:[]};
+
+  const ids=projects.map((p:any)=>p.id);
+  const facts=await db.from('pppp_project_context_current_v').select('id,project_id,fact_key,value,created_at,updated_at').in('project_id',ids).in('fact_key',[BASELINE_KEY,SYNTHESIS_KEY]);
+  if(facts.error)throw facts.error;
+  const fm=factMap(facts.data||[]);
+
   const items:any[]=[];let synthesized=0,rateLimited=false;
   for(const p of projects){
     if(synthesized>=limit)break;
     try{
-      const item=await processProject(p);items.push(item);
+      const item=await processProject(p,fm.get(`${p.id}:${BASELINE_KEY}`),fm.get(`${p.id}:${SYNTHESIS_KEY}`));items.push(item);
       if(item.state==='synthesized')synthesized++;
       if(item.rate_limited){rateLimited=true;break}
     }catch(e){items.push({project_id:p.id,name:p.name,state:'error',error:T((e as any)?.message||e,700)})}
