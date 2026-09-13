@@ -40,7 +40,6 @@ while(queue.length){
   const file=queue.shift();
   const source=fs.readFileSync(path.join(ROOT,file),'utf8');
 
-  // Ordered bootstrap lists modules as string literals rather than direct src assignments.
   if(file===(manifest.entrypoints&&manifest.entrypoints.bootstrap)){
     const listMatch=source.match(/var\s+files\s*=\s*\[([\s\S]*?)\];/);
     assert(listMatch,'Ordered bootstrap must expose its files[] list');
@@ -75,10 +74,13 @@ assert(nativeEntry.includes('pristeel-home-ask-functional-owner-v1.js?v=20260904
 
 const homeInteraction=fs.readFileSync(path.join(ROOT,'pristeel-home-canonical-interaction-v1.js'),'utf8');
 const opportunityPolish=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-filter-polish-v1.js'),'utf8');
-assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260913-compact1'),'Fresh presentation bridge must load the current Opportunities filter polish');
-assert.doesNotThrow(()=>new Function(opportunityPolish),'Opportunities filter polish must remain valid JavaScript');
+const waitingBridge=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-waiting-bridge-v1.js'),'utf8');
+assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260913-compact2'),'Fresh presentation bridge must load the current Opportunities filter polish');
+assert(opportunityPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunities polish must load the waiting lifecycle bridge');
+assert(doesNotThrow=(()=>{assert.doesNotThrow(()=>new Function(opportunityPolish));assert.doesNotThrow(()=>new Function(waitingBridge));return true;})(),'Opportunities runtime modules must remain valid JavaScript');
 assert(opportunityPolish.includes("#pst-pcw-lifecycle-tabs")&&opportunityPolish.includes("#pst-pcw-opportunity-tabs"),'Opportunities polish must target both status and source filter groups');
 assert(opportunityPolish.includes("button[data-pcw-source='WORLD_BANK']")&&opportunityPolish.includes("button[data-pcw-source='KRPP']")&&opportunityPolish.includes("button[data-pcw-source='TED']"),'Opportunities polish must preserve source-specific controls');
 assert(!/MutationObserver\s*\(|setInterval\s*\(|supaFetch\s*\(|addEventListener\s*\(\s*['\"]click/i.test(opportunityPolish),'Opportunities polish must remain presentation-only and must not own clicks, polling or data access');
+assert(!/addEventListener\s*\(\s*['\"]click/i.test(waitingBridge),'Waiting bridge must not own click behavior');
 
 console.log('Dynamic runtime reference closure: OK ('+seen.size+' local JS modules verified).');
