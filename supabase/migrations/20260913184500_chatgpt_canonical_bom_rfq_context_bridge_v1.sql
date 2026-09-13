@@ -22,6 +22,7 @@ declare
   v_subject text;
   v_existing uuid;
   v_notes text;
+  v_rfq_status text;
 begin
   -- Only facts created by the trusted ChatGPT command bridge are eligible.
   if new.source_type <> 'chatgpt' or new.created_by <> 'chatgpt_pppp_bridge' then
@@ -114,7 +115,7 @@ begin
     return new;
   end if;
 
-  -- Planned RFQs are canonical workflow records only. They do not send email.
+  -- Planned/scheduled RFQs are canonical workflow records only. They do not send email.
   if jsonb_typeof(new.value) <> 'object' then
     raise exception using errcode = '22023', message = 'canonical_rfq_value_must_be_object';
   end if;
@@ -138,8 +139,12 @@ begin
       raise exception using errcode = '22023', message = 'canonical_rfq_valid_email_required';
     end if;
 
+    v_rfq_status := case
+      when nullif(btrim(coalesce(v_draft->>'scheduled_for','')),'') is not null then 'scheduled'
+      else 'planned'
+    end;
     v_notes := concat_ws(E'\n',
-      'PPPP state: draft prepared; external send is handled separately by the human-approved Gmail schedule.',
+      'PPPP state: RFQ prepared; external send is handled separately by the human-approved Gmail schedule.',
       case when nullif(btrim(coalesce(v_draft->>'scheduled_for','')),'') is not null
         then 'Scheduled: ' || btrim(v_draft->>'scheduled_for') else null end,
       nullif(btrim(coalesce(v_draft->>'notes','')),'')
@@ -165,16 +170,17 @@ begin
         coalesce(nullif(btrim(coalesce(v_draft->>'lang','')),''),'en'),
         v_subject,
         coalesce(v_draft->>'body',''),
-        'planned',
+        v_rfq_status,
         null,
         v_notes
       );
-    elsif exists (select 1 from public.rfq_log where id=v_existing and lower(coalesce(status,''))='planned') then
+    elsif exists (select 1 from public.rfq_log where id=v_existing and lower(coalesce(status,'')) in ('planned','scheduled')) then
       update public.rfq_log
       set supplier_name=v_supplier,
           supplier_email=v_email,
           lang=coalesce(nullif(btrim(coalesce(v_draft->>'lang','')),''),lang,'en'),
           body=coalesce(v_draft->>'body',body,''),
+          status=v_rfq_status,
           notes=v_notes
       where id=v_existing;
     end if;
