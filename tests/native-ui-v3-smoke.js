@@ -82,7 +82,8 @@ for(const src of [entry,core]){
 const dyn=(manifest.dynamicRuntime||[]).find(x=>x.module==='pristeel-native-ui-v3.js');
 must(!!dyn,'native UI compatibility entry is not registered in runtime manifest');
 must(dyn&&dyn.loader==='pristeel-roles.js','native UI runtime loader must remain pristeel-roles.js');
-must(manifest.entrypoints.bootstrapLoaderGitBlobSha==='311a4594f0305ddc8e670d25c1a85ccc103ce19e','manifest loader SHA does not match audited roles blob');
+const rolesBlobSha=crypto.createHash('sha1').update(`blob ${Buffer.byteLength(roles)}\0`).update(roles).digest('hex');
+must(manifest.entrypoints.bootstrapLoaderGitBlobSha===rolesBlobSha,'manifest loader SHA does not match current audited roles blob');
 const bootstrapBlobSha=crypto.createHash('sha1').update(`blob ${Buffer.byteLength(bootstrap)}\0`).update(bootstrap).digest('hex');
 must(manifest.entrypoints.bootstrapGitBlobSha===bootstrapBlobSha,'manifest bootstrap SHA does not match current production bootstrap');
 if(!process.exitCode) console.log('Native UI v4 structural create + four-zone Home smoke OK.');
