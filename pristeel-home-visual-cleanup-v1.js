@@ -1,11 +1,12 @@
-/* PRISTEEL Home visual cleanup v2
- * Presentation-only Home launchpad and technical catalog surface.
+/* PRISTEEL Home visual cleanup v3
+ * Presentation-only Home launchpad, sidebarless primary shell and technical catalog surface.
  * Keeps live PPPP search, canonical navigation and existing create workflows intact.
- * No business-data writes, auth changes, polling or observers.
+ * No business-data writes or auth changes.
  */
 (function(){
 'use strict';
-if(window.__pstHomeVisualCleanupV2)return;
+if(window.__pstHomeVisualCleanupV3)return;
+window.__pstHomeVisualCleanupV3=true;
 window.__pstHomeVisualCleanupV2=true;
 window.__pstHomeVisualCleanupV1=true;
 var settlePromise=null,visualSignaled=false;
@@ -50,45 +51,37 @@ function toggleCreate(force){var menu=document.getElementById('pst-launch-create
 
 function css(){
   var old=document.getElementById('pst-home-visual-cleanup-v1-css');if(old)old.remove();
-  if(document.getElementById('pst-home-visual-cleanup-v2-css'))return;
+  var old2=document.getElementById('pst-home-visual-cleanup-v2-css');if(old2)old2.remove();
+  if(document.getElementById('pst-home-visual-cleanup-v3-css'))return;
   var s=document.createElement('style');
-  s.id='pst-home-visual-cleanup-v2-css';
+  s.id='pst-home-visual-cleanup-v3-css';
   s.textContent=`
-/* The old project/import toolbar is redundant while a Workspace page is active. */
-body.pst-ui-v2:has(#page-workspace-home.active) .topbar,
-body.pst-ui-v2:has(#page-workspace-projects.active) .topbar,
-body.pst-ui-v2:has(#page-workspace-inbox.active) .topbar,
-body.pst-ui-v2:has(#page-workspace-commercial.active) .topbar,
-body.pst-ui-v2:has(#page-workspace-apps.active) .topbar,
-body.pst-ui-v2:has(#page-workspace-project.active) .topbar,
-body.pst-ui-v2:has(#page-finance.active) .topbar,
-body.pst-ui-v2:has(#page-contacts.active) .topbar,
-body.pst-ui-v2:has(#page-technical-catalog.active) .topbar{display:none!important}
-body.pst-ui-v2:has(#page-workspace-home.active) #modbar,
-body.pst-ui-v2:has(#page-workspace-projects.active) #modbar,
-body.pst-ui-v2:has(#page-workspace-inbox.active) #modbar,
-body.pst-ui-v2:has(#page-workspace-commercial.active) #modbar,
-body.pst-ui-v2:has(#page-workspace-apps.active) #modbar,
-body.pst-ui-v2:has(#page-workspace-project.active) #modbar,
-body.pst-ui-v2:has(#page-finance.active) #modbar,
-body.pst-ui-v2:has(#page-contacts.active) #modbar,
-body.pst-ui-v2:has(#page-technical-catalog.active) #modbar{display:none!important}
+/* Primary PPPP surfaces use the full canvas. The old permanent left rail is retired here. */
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) #app-sidebar,
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) #pst-v2-sidebar,
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) #pst-ws-sidebar,
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .app-shell>.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;padding:0!important;margin:0!important;border:0!important}
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .app-shell{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .main{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;margin-left:0!important;border-left:0!important}
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .content{width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
 
-/* Home is intentionally full-width. The normal sidebar remains untouched everywhere else. */
-body.pst-ui-v2:has(#page-workspace-home.active) #pst-v2-sidebar,
-body.pst-ui-v2:has(#page-workspace-home.active) #pst-ws-sidebar,
-body.pst-ui-v2:has(#page-workspace-home.active) .sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important}
-body.pst-ui-v2:has(#page-workspace-home.active) .content{width:100%!important;max-width:none!important;padding:0!important;margin:0!important}
-body.pst-ui-v2:has(#page-workspace-home.active) #page-workspace-home{width:100%!important}
+/* The legacy project/import bars are redundant on the modern primary surfaces. */
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .topbar,
+body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) #modbar{display:none!important}
 
-body.pst-ui-v2:has(#page-workspace-projects.active) .content,
-body.pst-ui-v2:has(#page-workspace-inbox.active) .content,
-body.pst-ui-v2:has(#page-workspace-commercial.active) .content,
-body.pst-ui-v2:has(#page-workspace-apps.active) .content,
-body.pst-ui-v2:has(#page-workspace-project.active) .content,
-body.pst-ui-v2:has(#page-finance.active) .content,
-body.pst-ui-v2:has(#page-contacts.active) .content,
-body.pst-ui-v2:has(#page-technical-catalog.active) .content{padding-top:14px!important}
+/* Home owns the complete viewport; no reserved sidebar gutter or separator may remain. */
+body:has(#page-workspace-home.active) .main,
+body:has(#page-workspace-home.active) .content{width:100%!important;max-width:none!important;padding:0!important;margin:0!important;border:0!important}
+body:has(#page-workspace-home.active) #page-workspace-home{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+
+body:has(#page-workspace-projects.active) .content,
+body:has(#page-workspace-inbox.active) .content,
+body:has(#page-workspace-commercial.active) .content,
+body:has(#page-workspace-apps.active) .content,
+body:has(#page-workspace-project.active) .content,
+body:has(#page-finance.active) .content,
+body:has(#page-contacts.active) .content,
+body:has(#page-technical-catalog.active) .content{padding-top:14px!important}
 
 /* Retire the dense operational dashboard only on Home; its data/services remain mounted. */
 #pst-native-home-v4.pst-home-launchpad-ready{max-width:none!important;padding:0!important;margin:0!important}
@@ -113,7 +106,7 @@ html.pst-native-ui-v4-ready body #pst-native-home-v4 #pst-home-launchpad-v1 .pst
 #page-technical-catalog{background:#F7F6F3!important;min-height:100vh;color:#2F3437}.pst-tech-page{max-width:1260px;margin:0 auto;padding:28px 30px 54px;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.pst-tech-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.pst-tech-head small{display:block;font-size:10px;font-weight:800;letter-spacing:.12em;color:#8B8170}.pst-tech-head h1{margin:4px 0 0;font-size:27px;letter-spacing:-.5px}.pst-tech-head p{margin:4px 0 0;color:#7C8488;font-size:12px}.pst-tech-back{height:38px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border:1px solid #D9E2E5;border-radius:10px;background:#FCFCFA;color:#59666B;font-size:11px;font-weight:700;cursor:pointer}.pst-tech-back svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.pst-tech-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(360px,1.1fr);gap:16px}.pst-tech-card{border:1px solid #E3E3DF;border-radius:16px;background:#FCFCFA;overflow:hidden}.pst-tech-card>header{padding:16px 17px;border-bottom:1px solid #ECEAE6}.pst-tech-card>header span{font-size:9px;font-weight:800;letter-spacing:.12em;color:#8B8170}.pst-tech-card>header h2{font-size:16px;margin:4px 0 0}.pst-tech-card>header p{font-size:11px;line-height:1.45;color:#8A9397;margin:3px 0 0}.pst-tech-materials{display:grid;gap:0;padding:5px 14px 14px}.pst-tech-material{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px 3px;border-bottom:1px solid #F0EEEA}.pst-tech-material:last-child{border-bottom:0}.pst-tech-material b{display:block;font-size:12px}.pst-tech-material small{display:block;margin-top:3px;color:#8B9396;font-size:10px;line-height:1.4}.pst-tech-grade{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}.pst-tech-grade i{font-style:normal;padding:4px 7px;border-radius:999px;background:#F0F4F4;color:#62747B;font-size:9px;font-weight:750}.pst-tech-calc{padding:15px 17px 17px}.pst-tech-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.pst-tech-field{display:grid;gap:5px}.pst-tech-field.hidden{display:none}.pst-tech-field label{font-size:10px;font-weight:700;color:#68777D}.pst-tech-field input,.pst-tech-field select{width:100%;height:40px;border:1px solid #D9E2E5;border-radius:9px;background:#fff;color:#344046;padding:0 10px;font-size:12px;outline:none}.pst-tech-field input:focus,.pst-tech-field select:focus{border-color:#7DB3C3;box-shadow:0 0 0 3px rgba(79,151,175,.09)}.pst-tech-result{margin-top:13px;padding:15px;border-radius:12px;background:#EFF5F5;border:1px solid #DDE9EA;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.pst-tech-result span{font-size:10px;color:#708087}.pst-tech-result b{display:block;margin-top:2px;font-size:22px;letter-spacing:-.4px}.pst-tech-result strong{font-size:13px;color:#3F7F98}.pst-tech-note{margin-top:11px;font-size:9.5px;line-height:1.5;color:#8B9396}.pst-tech-calc-title{display:flex;align-items:center;gap:8px;margin-bottom:13px}.pst-tech-calc-title span{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#EEF5F6;color:#4F879A}.pst-tech-calc-title svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.pst-tech-calc-title b{font-size:12px}
 @media(max-width:900px){.pst-launch-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pst-tech-grid{grid-template-columns:1fr}}
 @media(max-width:620px){#pst-home-launchpad-v1{padding:22px 14px 38px}.pst-launch-top{align-items:flex-start}.pst-launch-brand span{display:none}.pst-launch-ask-card{padding:16px}.pst-launch-ask-head{display:block}.pst-launch-ask-head small{display:block;margin-top:8px}.pst-launch-grid{grid-template-columns:1fr}.pst-launch-card{min-height:126px}.pst-tech-page{padding:20px 14px 38px}.pst-tech-head{align-items:flex-start}.pst-tech-grid{grid-template-columns:1fr}.pst-tech-form{grid-template-columns:1fr}}
-@media(max-width:800px){body.pst-ui-v2:has(#page-workspace-projects.active) .content,body.pst-ui-v2:has(#page-workspace-inbox.active) .content,body.pst-ui-v2:has(#page-workspace-commercial.active) .content,body.pst-ui-v2:has(#page-workspace-apps.active) .content,body.pst-ui-v2:has(#page-workspace-project.active) .content,body.pst-ui-v2:has(#page-finance.active) .content,body.pst-ui-v2:has(#page-contacts.active) .content,body.pst-ui-v2:has(#page-technical-catalog.active) .content{padding-top:10px!important}}
+@media(max-width:800px){body:has(#page-workspace-projects.active) .content,body:has(#page-workspace-inbox.active) .content,body:has(#page-workspace-commercial.active) .content,body:has(#page-workspace-apps.active) .content,body:has(#page-workspace-project.active) .content,body:has(#page-finance.active) .content,body:has(#page-contacts.active) .content,body:has(#page-technical-catalog.active) .content{padding-top:10px!important}}
 `;
   document.head.appendChild(s);
 }
@@ -200,5 +193,5 @@ document.addEventListener('pst:modules-ready',function(){schedule();scheduleFirs
 document.addEventListener('click',function(e){if(!e.target.closest('.pst-launch-create-wrap'))toggleCreate(false);});
 window.addEventListener('pageshow',schedule,{once:true});
 if(window.__pstModulesReady)scheduleFirstPaint();
-window.PSTHomeVisualCleanupV1=window.PSTHomeVisualCleanupV2={apply:apply,schedule:schedule,revealStableHome:revealStableHome,openCatalog:openCatalog,calculateTech:calculateTech,whenReady:function(){return settlePromise||revealStableHome();}};
+window.PSTHomeVisualCleanupV1=window.PSTHomeVisualCleanupV2=window.PSTHomeVisualCleanupV3={apply:apply,schedule:schedule,revealStableHome:revealStableHome,openCatalog:openCatalog,calculateTech:calculateTech,whenReady:function(){return settlePromise||revealStableHome();}};
 })();
