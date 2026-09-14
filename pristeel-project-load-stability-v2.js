@@ -10,13 +10,22 @@ window.__pstProjectLoadStabilityV2=true;
 if(!window.PSTProjectDataIntegrity||typeof window.PSTProjectDataIntegrity.load!=='function')return;
 var A=window.PSTProjectDataIntegrity;
 var original=A.load.bind(A);
-var READ_WAIT=Number(window.__pstProjectReadWait||1800);
+var READ_WAIT=Number(window.__pstProjectReadWait||5000);
+var PROJECT_WAIT=Number(window.__pstProjectRequiredWait||8000);
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
 function arr(v){return Array.isArray(v)?v:[];}
 function enc(v){return encodeURIComponent(String(v==null?'':v));}
 function text(v){return String(v==null?'':v).trim();}
 function bounded(promise,ms,fallback){return new Promise(function(resolve){var done=false,t=setTimeout(function(){if(done)return;done=true;resolve(fallback);},ms);Promise.resolve(promise).then(function(v){if(done)return;done=true;clearTimeout(t);resolve(v);}).catch(function(){if(done)return;done=true;clearTimeout(t);resolve(fallback);});});}
 function q(path){if(typeof window.supaFetch!=='function')return Promise.resolve([]);return bounded(window.supaFetch(path),READ_WAIT,[]).then(arr);}
+function requiredProject(id){
+ if(typeof window.supaFetch!=='function')return Promise.reject(new Error('Lidhja me databazën nuk është gati.'));
+ var path='projects?id=eq.'+enc(id)+'&select=*&limit=1',timer;
+ return Promise.race([
+   Promise.resolve().then(function(){return window.supaFetch(path);}),
+   new Promise(function(_,reject){timer=setTimeout(function(){reject(new Error('Leximi i projektit tejkaloi afatin. Provo përsëri.'));},PROJECT_WAIT);})
+ ]).then(function(rows){var p=arr(rows)[0];if(!p)throw new Error('Projekti nuk u gjet.');return p;}).finally(function(){clearTimeout(timer);});
+}
 function byId(table,id,order){return q(table+'?project_id=eq.'+enc(id)+'&select=*'+(order?'&'+order:'')+'&limit=1500');}
 function pattern(v){return'*'+enc(String(v||'').replace(/[*,()]/g,' ').trim())+'*';}
 function rowKey(row){return row&&(row.id||row.gmail_message_id||row.document_id||row.doc_nr||row.document_nr||row.invoice_nr||row.file_id||row.drive_file_id||row.file_name||row.filename||row.name||JSON.stringify(row));}
@@ -61,8 +70,7 @@ function fallbackContacts(saved,mails){
  return Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return Number(!!b.is_primary)-Number(!!a.is_primary)||Number(b.count||b.email_count||0)-Number(a.count||a.email_count||0);});
 }
 async function fallback(id){
- var p=(await q('projects?id=eq.'+enc(id)+'&select=*&limit=1'))[0];
- if(!p)throw new Error('Projekti nuk u gjet.');
+ var p=await requiredProject(id);
  var emP=linkedEmails(id);
  var outP=Promise.all([
    byId('project_contacts',id,''),

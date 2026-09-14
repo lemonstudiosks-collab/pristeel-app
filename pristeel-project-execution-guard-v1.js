@@ -242,26 +242,28 @@ function decorateOverview(){
 function decorateNav(){
   var page=document.getElementById('page-workspace-project');if(!page||!locked())return;
   page.classList.add('pxg-post-award');
-  [].slice.call(page.querySelectorAll('[data-pwf-area="procurement"],[data-pf2-tab="bom"],[data-pf2-tab="procurement"],[data-pf2-tab="commercial"]')).forEach(function(x){x.remove();});
-  [].slice.call(page.querySelectorAll('.pwf-procurement-head,.pwf-stage-nav')).forEach(function(x){x.remove();});
   var next=page.querySelector('.pwf-next');if(next){next.removeAttribute('data-pwf-stage');next.setAttribute('data-pxg-go','execution');var b=next.querySelector('b'),s=next.querySelector('small');if(b)b.textContent='Vazhdo ekzekutimin';if(s)s.textContent='Ndiq realizimin, kostot, faturat dhe fitimin e projektit.';}
   decorateOverview();executionBanner();injectFinanceSummary();
+}
+function clearExecutionView(){
+  var page=document.getElementById('page-workspace-project');if(page){page.classList.remove('pxg-post-award');page.querySelectorAll('#pxg-execution-lock,#pxg-finance-summary').forEach(function(x){x.remove();});}
+  var bar=document.getElementById('flow-bar');if(bar&&bar.querySelector('.pxg-legacy-flow')){bar.innerHTML='';bar.style.display='none';}
 }
 function decorateLegacyFlow(){
   if(!locked())return;var bar=document.getElementById('flow-bar');if(!bar)return;
   bar.innerHTML='<div class="pxg-legacy-flow"><b>PROJEKT NË EKZEKUTIM</b><button type="button" data-pxg-go="execution">Ekzekutimi</button><span>→</span><button type="button" data-pxg-go="finance">Financat</button><span>→</span><button type="button" data-pxg-go="invoices">Faturat</button><span>→</span><button type="button" data-pxg-go="files">Skedarët</button></div>';
   bar.style.display='block';
 }
-function decorate(){if(!locked())return;decorateNav();decorateLegacyFlow();}
+function decorate(){if(!locked()){clearExecutionView();return;}decorateNav();decorateLegacyFlow();}
 function scheduleDecorate(){[0,60,180,420].forEach(function(ms){setTimeout(decorate,ms);});}
 function enforceCurrentPage(){
   var p=currentPage();if(locked()&&preAwardPage(p)){routeExecution();return true;}decorate();return false;
 }
-function refreshState(){var id=activeId();if(!id)return Promise.resolve(null);return ensureProject(id).then(function(p){if(p&&isPostAward(p))enforceCurrentPage();return p;});}
+function refreshState(){var id=activeId();if(!id)return Promise.resolve(null);return ensureProject(id).then(function(p){if(p&&isPostAward(p))enforceCurrentPage();else decorate();return p;});}
 
 function css(){
   if(document.getElementById('pxg-css'))return;var s=document.createElement('style');s.id='pxg-css';s.textContent='\
-#page-workspace-project.pxg-post-award [data-pwf-area="procurement"],#page-workspace-project.pxg-post-award [data-pf2-tab="bom"],#page-workspace-project.pxg-post-award [data-pf2-tab="procurement"],#page-workspace-project.pxg-post-award [data-pf2-tab="commercial"],#page-workspace-project.pxg-post-award .pwf-procurement-head{display:none!important}\
+#page-workspace-project.pxg-post-award [data-pwf-area="procurement"],#page-workspace-project.pxg-post-award [data-pf2-tab="bom"],#page-workspace-project.pxg-post-award [data-pf2-tab="procurement"],#page-workspace-project.pxg-post-award [data-pf2-tab="commercial"],#page-workspace-project.pxg-post-award .pwf-procurement-head,#page-workspace-project.pxg-post-award .pwf-stage-nav{display:none!important}\
 #page-workspace-project .pxg-lock{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px;margin:0 0 12px;border:1px solid #CFE0D6;background:#F5FAF7;border-radius:13px}\
 #page-workspace-project .pxg-lock span,#page-workspace-project .pxg-finance-summary header span{display:block;font-size:9px;font-weight:800;letter-spacing:.6px;color:#3D7B5A}\
 #page-workspace-project .pxg-lock b{display:block;font-size:14px;color:#2F4238;margin-top:2px}#page-workspace-project .pxg-lock small{display:block;font-size:10.5px;color:#738078;margin-top:3px;line-height:1.4}\
@@ -276,6 +278,7 @@ function install(){
   if(installing)return true;installing=true;css();wrapLegacyNavigation();wrapCanonical();wrapCommercialCreators();
   window.addEventListener('click',clickCapture,true);
   document.addEventListener('change',function(e){if(e.target&&e.target.id==='global-proj'){cache={id:'',project:null,at:0};setTimeout(function(){refreshState();scheduleDecorate();},0);}},true);
+  document.addEventListener('pst:project-workspace-rendered',scheduleDecorate);
   refreshState();scheduleDecorate();return true;
 }
 

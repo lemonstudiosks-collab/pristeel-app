@@ -81,7 +81,8 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(newCalls.includes('invoice'),true,'Invoice creation must remain allowed after award');
 
   G.decorate();
-  assert(!w.document.querySelector('[data-pwf-area="procurement"]'),'Procurement top-level area must disappear for execution projects');
+  assert(w.document.getElementById('page-workspace-project').classList.contains('pxg-post-award'),'Execution projects must hide pre-award controls via reversible styling');
+  assert(w.document.querySelector('[data-pwf-area="procurement"]'),'The procurement control must not be deleted when an execution project is shown');
   assert(w.document.getElementById('pxg-execution-lock'),'Execution-lock explanation must be visible');
 
   const m=G.financeModel(integrity,[]);
@@ -96,6 +97,11 @@ const {JSDOM}=require('jsdom');
   w.__pstIntegrityLastData={project:pre,ourOffers:[],docs:[],offers:[],invoicesOut:[],invoicesIn:[]};
   w.__pstCurrentProjectId='p2';w._curProjId='p2';
   assert.strictEqual(G.isPostAward(pre),false,'Normal pre-award project must stay editable in procurement flow');
+  G.decorate();
+  assert(!w.document.getElementById('page-workspace-project').classList.contains('pxg-post-award'),'Execution-only styling must be removed after switching projects');
+  assert(!w.document.getElementById('pxg-execution-lock'),'Execution banner must not leak into a pre-award project');
+  assert(!w.document.querySelector('#flow-bar .pxg-legacy-flow'),'Execution flow must not leak into a pre-award project');
+  assert(w.document.querySelector('[data-pwf-area="procurement"]'),'Pre-award procurement navigation must remain available after switching projects');
   w.flowGoto('bom');
   assert(legacyCalls.some(x=>x[0]==='flow'&&x[1]==='bom'),'Pre-award BOM navigation must remain available');
 
