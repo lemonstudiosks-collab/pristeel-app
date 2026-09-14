@@ -57,6 +57,7 @@ if(!window.__pstRuntimeRevealFallback){
 }
 
 var myRole = null, myEmail = null, allUsers = [];
+var roleLoadPromise = null;
 
 function jwtPayload(tok){
   try{
@@ -65,17 +66,27 @@ function jwtPayload(tok){
   }catch(e){ return null; }
 }
 
-async function loadRole(){
-  if(typeof supaFetch !== 'function' || typeof authGetSession !== 'function') return;
+function loadRole(){
+  if(roleLoadPromise) return roleLoadPromise;
+  if(typeof supaFetch !== 'function' || typeof authGetSession !== 'function') return Promise.resolve(false);
   var s = authGetSession();
-  if(!s || !s.access_token) return;
+  if(!s || !s.access_token) return Promise.resolve(false);
   var jp = jwtPayload(s.access_token);
   myEmail = (jp && jp.email) || s.email || '';
-  try{
-    var r = await supaFetch('user_roles?select=role,full_name,email&limit=1');
-    myRole = (r && r[0] && r[0].role) || 'viewer';
-  }catch(e){ myRole = 'viewer'; }
-  applyRole();
+  roleLoadPromise = (async function(){
+    try{
+      var r = await supaFetch('user_roles?select=role,full_name,email&limit=1');
+      myRole = (r && r[0] && r[0].role) || 'viewer';
+      applyRole();
+      return true;
+    }catch(e){
+      console.warn('RBAC role lookup failed; retrying bounded startup check.', e);
+      return false;
+    }finally{
+      roleLoadPromise = null;
+    }
+  })();
+  return roleLoadPromise;
 }
 
 function canWrite(){ return myRole && myRole !== 'viewer'; }
@@ -195,18 +206,22 @@ window.pstSetRole = async function(uid, role){
 
 function tryReady(){
   watchPages();
-  if(typeof authGetSession !== 'function') return false;
+  if(typeof authGetSession !== 'function') return Promise.resolve(false);
   var session = authGetSession();
-  if(!session) return false;
-  loadRole();
-  return true;
+  if(!session) return Promise.resolve(false);
+  return loadRole();
 }
 function init(){
   var waits=[0,400,1200,2500,5000,9000];
-  waits.forEach(function(ms){
+  waits.forEach(function(ms, idx){
     setTimeout(function(){
       if(myRole) return;
-      tryReady();
+      Promise.resolve(tryReady()).then(function(){
+        if(idx === waits.length - 1 && !myRole){
+          myRole = 'viewer';
+          applyRole();
+        }
+      });
     },ms);
   });
 }
