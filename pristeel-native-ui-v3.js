@@ -85,7 +85,7 @@ html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-r
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-answer{color:#2F3437!important;font-size:14px!important;line-height:1.65!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-suggest{border-top-color:#E6E3DE!important;color:#59666B!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-suggest b{color:#3F7F98!important}
-html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-msg{color:#2F3437!important;font-size:14px!important;line-height:1.65!important}
+html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-msg{color:#2F3437!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-msg.ok b{color:#55775F!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-msg.err{color:#934C45!important}
 html.pst-native-ui-v4-ready #page-workspace-home #pst-native-home-v4 .pst-live-result .pst-live-thinking b{color:#2F3437!important}
