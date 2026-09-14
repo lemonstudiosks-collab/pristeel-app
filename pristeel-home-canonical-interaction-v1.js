@@ -44,6 +44,15 @@ function installStyle(){
 ';
   document.head.appendChild(s);
 }
+function loadOpportunityLifecycleTruth(){
+  if(window.__pstOpportunitiesWaitingBridgeV1||document.querySelector('script[data-pst-opportunities-waiting-bridge]'))return;
+  var b=document.createElement('script');
+  b.src='pristeel-opportunities-waiting-bridge-v1.js?v=20260914-truth1';
+  b.defer=true;
+  b.setAttribute('data-pst-opportunities-waiting-bridge','1');
+  b.onerror=function(){console.error('Nuk u ngarkua lifecycle-i faktik i Mundësive.');};
+  document.head.appendChild(b);
+}
 function loadOpportunitiesFilterPolish(){
   if(window.__pstOpportunitiesFilterPolishV1||document.querySelector('script[data-pst-opportunities-filter-polish]'))return;
   var p=document.createElement('script');
@@ -53,7 +62,7 @@ function loadOpportunitiesFilterPolish(){
   p.onerror=function(){console.error('Nuk u ngarkua pamja kompakte e filtrave të Mundësive.');};
   document.head.appendChild(p);
 }
-function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();}
+function boot(){installStyle();decorate(document);loadOpportunityLifecycleTruth();loadOpportunitiesFilterPolish();}
 document.addEventListener('pst:home-canonical-rendered',function(){decorate(document);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.PSTHomeCanonicalInteractionV1={version:VERSION,decorate:decorate,urgentRow:urgentRow,_test:{norm:norm}};
