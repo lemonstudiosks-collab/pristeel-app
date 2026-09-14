@@ -66,5 +66,19 @@ document.head.appendChild(s);
   document.head.appendChild(r);
 })();
 
+/* Projects Mindmap is a presentation-only companion. It loads through this
+ * already-current project presentation bridge, then waits for pst:modules-ready
+ * before decorating Projects and Project Workspace. Business engines remain
+ * authoritative and every protected approval gate stays untouched. */
+(function loadProjectMindmap(){
+  if(window.__pstProjectMindmapV1||document.querySelector('script[data-pst-project-mindmap-v1]'))return;
+  var r=document.createElement('script');
+  r.src='pristeel-project-mindmap-v1.js?v=20260914-1';
+  r.defer=true;
+  r.setAttribute('data-pst-project-mindmap-v1','1');
+  r.onerror=function(){console.error('Nuk u ngarkua mindmap-i i projekteve.');};
+  document.head.appendChild(r);
+})();
+
 window.PSTProjectReadabilityTuningV1={styleId:s.id};
 })();
