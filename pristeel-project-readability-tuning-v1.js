@@ -66,10 +66,7 @@ document.head.appendChild(s);
   document.head.appendChild(r);
 })();
 
-/* Projects Mindmap is a presentation-only companion. It loads through this
- * already-current project presentation bridge, then waits for pst:modules-ready
- * before decorating Projects and Project Workspace. Business engines remain
- * authoritative and every protected approval gate stays untouched. */
+/* Projects Mindmap remains the owner of the central Projects presentation. */
 (function loadProjectMindmap(){
   if(window.__pstProjectMindmapV1||document.querySelector('script[data-pst-project-mindmap-v1]'))return;
   var r=document.createElement('script');
@@ -77,6 +74,19 @@ document.head.appendChild(s);
   r.defer=true;
   r.setAttribute('data-pst-project-mindmap-v1','1');
   r.onerror=function(){console.error('Nuk u ngarkua mindmap-i i projekteve.');};
+  document.head.appendChild(r);
+})();
+
+/* Project Workbench v2 owns only the first screen inside an individual project.
+ * It is presentation/navigation only and routes actions into the canonical
+ * workflow; protected commercial/commitment gates remain authoritative. */
+(function loadProjectWorkbenchV2(){
+  if(window.__pstProjectWorkbenchV2||document.querySelector('script[data-pst-project-workbench-v2]'))return;
+  var r=document.createElement('script');
+  r.src='pristeel-project-workbench-v2.js?v=20260914-2';
+  r.defer=true;
+  r.setAttribute('data-pst-project-workbench-v2','1');
+  r.onerror=function(){console.error('Nuk u ngarkua Project Workbench v2.');};
   document.head.appendChild(r);
 })();
 
