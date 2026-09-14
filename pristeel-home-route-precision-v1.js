@@ -75,7 +75,40 @@ function handlePriorityClick(e){var b=e.target&&e.target.closest?e.target.closes
 function handleClear(e){var b=e.target&&e.target.closest?e.target.closest('[data-pst-route-clear]'):null;if(!b)return;e.preventDefault();clearFocus();}
 function handlePriorityDismiss(e){var b=e.target&&e.target.closest?e.target.closest('[data-pst-priority-dismiss]'):null;if(!b)return;e.preventDefault();clearPriorityContext();}
 function routeReapply(e){if(!routeState.area)return;var v=e.target&&e.target.closest?e.target.closest('[data-pm-view],[data-pm-sort],#pst-pm-refresh'):null;if(v)setTimeout(applyProjectsFocus,60);}
-function install(){if(routeState.installed)return true;routeState.installed=true;installCss();window.addEventListener('click',handleHomeClick,true);window.addEventListener('click',handlePriorityClick,true);document.addEventListener('click',handleClear,true);document.addEventListener('click',handlePriorityDismiss,true);document.addEventListener('click',routeReapply,true);document.addEventListener('pst:project-opened',function(e){var d=e&&e.detail||{};[0,120,420,900].forEach(function(ms){setTimeout(function(){applyPriorityProjectFocus(d.project_id||d.id||'');},ms);});});return true;}
+
+/* The active recovery renderer is owned by a later compatibility layer and uses
+ * the text “PPPP ruajti punë të pambyllur”. Keep recovery state intact, but do
+ * not let that legacy prompt cover the Home launcher. This guard is deliberately
+ * text- and Home-scoped so it cannot remove unrelated dialogs or recovery data. */
+function homeActive(){var h=document.getElementById('page-workspace-home');return !!(h&&h.classList.contains('active'));}
+function removeLegacyHomeRecoveryBanner(){
+  if(!homeActive()||!document.body)return false;
+  var buttons=document.body.querySelectorAll('button');
+  for(var i=0;i<buttons.length;i++){
+    if(S(buttons[i].textContent).replace(/\s+/g,' ').trim()!=='Rikthe')continue;
+    var node=buttons[i];
+    for(var depth=0;depth<7&&node&&node!==document.body;depth++,node=node.parentElement){
+      var text=S(node.textContent).replace(/\s+/g,' ').trim();
+      if(text.indexOf('PPPP ruajti punë të pambyllur')!==-1&&text.indexOf('Mbaje për më vonë')!==-1){node.remove();return true;}
+    }
+  }
+  return false;
+}
+function installHomeRecoveryBannerGuard(){
+  removeLegacyHomeRecoveryBanner();
+  if(window.__pstHomeRecoveryBannerGuardV1)return true;
+  window.__pstHomeRecoveryBannerGuardV1=true;
+  var scheduled=false;
+  var run=function(){scheduled=false;removeLegacyHomeRecoveryBanner();};
+  var request=function(){if(scheduled)return;scheduled=true;setTimeout(run,0);};
+  var observer=new MutationObserver(request);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener('pst:native-home-ready',request);
+  window.addEventListener('pageshow',request);
+  [0,80,220,700,1600,3200].forEach(function(ms){setTimeout(removeLegacyHomeRecoveryBanner,ms);});
+  return true;
+}
+function install(){if(routeState.installed)return true;routeState.installed=true;installCss();installHomeRecoveryBannerGuard();window.addEventListener('click',handleHomeClick,true);window.addEventListener('click',handlePriorityClick,true);document.addEventListener('click',handleClear,true);document.addEventListener('click',handlePriorityDismiss,true);document.addEventListener('click',routeReapply,true);document.addEventListener('pst:project-opened',function(e){var d=e&&e.detail||{};[0,120,420,900].forEach(function(ms){setTimeout(function(){applyPriorityProjectFocus(d.project_id||d.id||'');},ms);});});return true;}
 install();
-window.PSTHomeRoutePrecisionV1={install:install,openProjectsExact:openProjectsExact,openFinanceExact:openFinanceExact,applyProjectsFocus:applyProjectsFocus,applyFinanceFocus:applyFinanceFocus,applyPriorityProjectFocus:applyPriorityProjectFocus,clear:clearFocus,_state:routeState};
+window.PSTHomeRoutePrecisionV1={install:install,openProjectsExact:openProjectsExact,openFinanceExact:openFinanceExact,applyProjectsFocus:applyProjectsFocus,applyFinanceFocus:applyFinanceFocus,applyPriorityProjectFocus:applyPriorityProjectFocus,clear:clearFocus,removeLegacyHomeRecoveryBanner:removeLegacyHomeRecoveryBanner,_state:routeState};
 })();
