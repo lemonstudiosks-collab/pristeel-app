@@ -6,7 +6,8 @@ const { JSDOM } = require('jsdom');
   const source=fs.readFileSync('pristeel-project-load-stability-v2.js','utf8');
   assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(source),'Project load stability must not observe or poll');
   assert(!source.includes('window.__pstProjectFullWait'),'Normal project open must not wait for or start the legacy full loader');
-  assert(source.includes('window.__pstProjectReadWait||1800'),'Project-specific reads must stay bounded');
+  assert(source.includes('window.__pstProjectReadWait||5000'),'Project-specific reads must stay bounded without dropping normal production reads after 1.8 seconds');
+  assert(source.includes('window.__pstProjectRequiredWait||8000'),'The canonical project lookup must have a separate bounded deadline');
   assert(source.includes('async function load(id){return fallback(id);}'),'Bounded fallback must be the primary project-open loader');
   assert(source.includes('full:original'),'Legacy full loader must remain explicitly available for diagnostics');
   assert(!source.includes('linked=linked.concat(await q('),'Linked Gmail batches must not load sequentially');
@@ -15,6 +16,7 @@ const { JSDOM } = require('jsdom');
   const dom=new JSDOM('<!doctype html><html><body></body></html>',{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
   w.__pstProjectReadWait=20;
+  w.__pstProjectRequiredWait=100;
   let fullCalls=0;
   w.PSTProjectDataIntegrity={
     load:async()=>{fullCalls++;return{project:{id:'legacy-rich'}};},
@@ -72,6 +74,15 @@ const { JSDOM } = require('jsdom');
   const rich=await w.PSTProjectLoadStabilityV2.full('p1');
   assert.strictEqual(fullCalls,1,'Explicit full-loader diagnostic should remain callable');
   assert(rich&&rich.project&&rich.project.id==='legacy-rich','Explicit full-loader diagnostic was not preserved');
+
+  w.supaFetch=async path=>{
+    if(path.startsWith('projects?id=eq.p2')){await new Promise(resolve=>setTimeout(resolve,45));return[{id:'p2',name:'Slow valid project',status:'aktiv'}];}
+    if(path.startsWith('projects?id=eq.p3'))return new Promise(()=>{});
+    return[];
+  };
+  const slow=await w.PSTProjectLoadStabilityV2.load('p2');
+  assert.strictEqual(slow.project.id,'p2','A slow but valid canonical project must not be treated as missing');
+  await assert.rejects(w.PSTProjectLoadStabilityV2.load('p3'),/Leximi i projektit tejkaloi afatin/,'A timed-out canonical lookup must not claim that the project does not exist');
 
   dom.window.close();
   console.log('Project load stability v2 smoke test passed.');
