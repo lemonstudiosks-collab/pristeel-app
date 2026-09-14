@@ -77,12 +77,11 @@ function handlePriorityDismiss(e){var b=e.target&&e.target.closest?e.target.clos
 function routeReapply(e){if(!routeState.area)return;var v=e.target&&e.target.closest?e.target.closest('[data-pm-view],[data-pm-sort],#pst-pm-refresh'):null;if(v)setTimeout(applyProjectsFocus,60);}
 
 /* The active recovery renderer is owned by a later compatibility layer and uses
- * the text “PPPP ruajti punë të pambyllur”. Keep recovery state intact, but do
- * not let that legacy prompt cover the Home launcher. This guard is deliberately
- * text- and Home-scoped so it cannot remove unrelated dialogs or recovery data. */
-function homeActive(){var h=document.getElementById('page-workspace-home');return !!(h&&h.classList.contains('active'));}
+ * the text “PPPP ruajti punë të pambyllur”. Keep recovery state intact, but hide
+ * that legacy prompt everywhere in PPPP. Matching still requires the exact
+ * headline plus both recovery controls, so unrelated dialogs are left alone. */
 function removeLegacyHomeRecoveryBanner(){
-  if(!homeActive()||!document.body)return false;
+  if(!document.body)return false;
   var buttons=document.body.querySelectorAll('button');
   for(var i=0;i<buttons.length;i++){
     if(S(buttons[i].textContent).replace(/\s+/g,' ').trim()!=='Rikthe')continue;
