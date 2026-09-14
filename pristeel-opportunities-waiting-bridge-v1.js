@@ -32,7 +32,7 @@ function decorate(){
   var life=page.querySelector('#pst-pcw-lifecycle-tabs');
   if(life){
     var draft=life.querySelector('[data-pcw-lifecycle="draft"]');
-    if(draft){draft.hidden=false;draft.setAttribute('aria-hidden','false');}
+    if(draft){draft.hidden=false;draft.setAttribute('aria-hidden','false');draft.style.setProperty('display','inline-flex','important');}
   }
   var sources=page.querySelector('#pst-pcw-opportunity-tabs');
   if(sources){
