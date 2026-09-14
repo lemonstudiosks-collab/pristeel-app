@@ -17,8 +17,18 @@ function pendingRecovery(){
   }catch(e){}
   return [];
 }
+function recoveryHomeActive(){
+  var home=document.getElementById('page-workspace-home');
+  return !!(home&&home.classList.contains('active'));
+}
+function dismissRecoveryNoticeOnHome(){
+  if(!recoveryHomeActive())return false;
+  var box=document.getElementById('pst-ui-recovery-clean');if(box)box.remove();
+  return true;
+}
 function showRecovery(count){
   count=Number(count||0);if(!count)return;
+  if(recoveryHomeActive()){dismissRecoveryNoticeOnHome();return;}
   var old=document.getElementById('pst-ui-recovery-clean');if(old){var c=old.querySelector('[data-recovery-count]');if(c)c.textContent=String(count);return;}
   if(!document.body)return;
   var box=document.createElement('div');box.id='pst-ui-recovery-clean';box.setAttribute('role','status');
@@ -227,7 +237,7 @@ function installProjectOpenGuard(){
   window.pstOpenProjectWorkspace=wrapped;
   return true;
 }
-function applyHomePresentation(){installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installAskModalChrome();installFinanceWindowOwner();installProjectOpenGuard();}
+function applyHomePresentation(){dismissRecoveryNoticeOnHome();installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installAskModalChrome();installFinanceWindowOwner();installProjectOpenGuard();}
 function apply(){installEntryCss();installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installNativeUiApplyGuard();var X=window.PSTNativeUiV5||window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
 function loadAskFunctionalOwner(){
   if(window.PSTHomeAskFunctionalOwnerV1||document.querySelector('script[data-pst-home-ask-functional-owner]'))return;
