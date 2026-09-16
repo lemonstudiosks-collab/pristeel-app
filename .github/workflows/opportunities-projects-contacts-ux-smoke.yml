@@ -45,3 +45,4 @@ jobs:
           node tests/global-fullwidth-shell-smoke.mjs
           node tests/finance-mindmap-interaction-smoke.mjs
           node tests/production-surface-owner-smoke.mjs
+          node tests/runtime-ownership-multi-cycle-smoke.mjs
