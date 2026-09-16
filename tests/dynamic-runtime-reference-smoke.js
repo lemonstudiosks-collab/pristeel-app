@@ -75,13 +75,16 @@ assert(nativeEntry.includes('pristeel-home-ask-functional-owner-v1.js?v=20260904
 const homeInteraction=fs.readFileSync(path.join(ROOT,'pristeel-home-canonical-interaction-v1.js'),'utf8');
 const opportunityPolish=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-filter-polish-v1.js'),'utf8');
 const waitingBridge=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-waiting-bridge-v1.js'),'utf8');
-assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260913-compact2'),'Fresh presentation bridge must load the current Opportunities filter polish');
-assert(opportunityPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunities polish must load the waiting lifecycle bridge');
-assert.doesNotThrow(()=>new Function(opportunityPolish),'Opportunities filter polish must remain valid JavaScript');
+assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260916-mindmap4'),'Fresh presentation bridge must load the current Opportunities mindmap');
+assert(opportunityPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunities mindmap must load the waiting lifecycle bridge');
+assert.doesNotThrow(()=>new Function(opportunityPolish),'Opportunities mindmap must remain valid JavaScript');
 assert.doesNotThrow(()=>new Function(waitingBridge),'Opportunities waiting bridge must remain valid JavaScript');
-assert(opportunityPolish.includes("#pst-pcw-lifecycle-tabs")&&opportunityPolish.includes("#pst-pcw-opportunity-tabs"),'Opportunities polish must target both status and source filter groups');
-assert(opportunityPolish.includes("button[data-pcw-source='WORLD_BANK']")&&opportunityPolish.includes("button[data-pcw-source='KRPP']")&&opportunityPolish.includes("button[data-pcw-source='TED']"),'Opportunities polish must preserve source-specific controls');
-assert(!/MutationObserver\s*\(|setInterval\s*\(|supaFetch\s*\(|addEventListener\s*\(\s*['\"]click/i.test(opportunityPolish),'Opportunities polish must remain presentation-only and must not own clicks, polling or data access');
+assert(opportunityPolish.includes('#pst-pcw-lifecycle-tabs')&&opportunityPolish.includes('#pst-pcw-opportunity-tabs'),'Opportunities mindmap must retire the legacy status/source controls without removing their canonical owners');
+assert(opportunityPolish.includes('data-pst-opp-source')&&opportunityPolish.includes('WORLD_BANK')&&opportunityPolish.includes('KRPP')&&opportunityPolish.includes('TED'),'Opportunities mindmap must expose functional source branches');
+assert(opportunityPolish.includes('data-pst-opp-field')&&opportunityPolish.includes('classifyField'),'Opportunities mindmap must expose field branches over existing records');
+assert(opportunityPolish.includes('data-pst-opp-lifecycle')&&opportunityPolish.includes('renderOpportunities'),'Opportunities mindmap lifecycle controls must delegate to the canonical Project-Centric renderer');
+assert(!/setInterval\s*\(|supaFetch\s*\(/i.test(opportunityPolish),'Opportunities mindmap must not poll or access business data directly');
+assert(!/tenderAction\s*\(|openTender\s*\(/.test(opportunityPolish),'Opportunities mindmap must not take ownership of tender business actions');
 assert(!/addEventListener\s*\(\s*['\"]click/i.test(waitingBridge),'Waiting bridge must not own click behavior');
 
 console.log('Dynamic runtime reference closure: OK ('+seen.size+' local JS modules verified).');

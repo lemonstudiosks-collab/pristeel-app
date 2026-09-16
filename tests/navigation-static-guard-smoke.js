@@ -24,10 +24,15 @@ assert(projectMindmapNav.includes("typeof P.openHome==='function'"),'Projects Kt
 assert(/function intercept\(e\)[\s\S]*data-pmm-back[\s\S]*stopImmediatePropagation/.test(projectMindmapNav),'Projects Kthehu bridge must consume the back click before older handlers');
 assert(projectMindmapNav.includes("window.addEventListener('click',intercept,true);"),'Projects Kthehu bridge must register at window-capture level');
 assert(!/supaFetch\s*\(|fetch\s*\(|MutationObserver\s*\(|setInterval\s*\(/.test(projectMindmapNav),'Projects Kthehu bridge must stay navigation-only');
-assert(opportunitiesPolish.includes('#page-kek-tenders #pst-pcw-lifecycle-tabs{position:relative;display:grid!important;'),'Final Opportunities polish must preserve the lifecycle mindmap as a grid');
-assert(!opportunitiesPolish.includes('#page-kek-tenders #pst-pcw-lifecycle-tabs,\n#page-kek-tenders #pst-pcw-opportunity-tabs{position:relative;display:flex!important;'),'Final Opportunities polish must not collapse the lifecycle mindmap back into a flex pill row');
-assert(opportunitiesPolish.includes("button[data-pcw-lifecycle='draft']{display:none!important}"),'Draft-ready Opportunities must stay folded into the existing waiting lifecycle rule without breaking the map');
-assert(!/addEventListener\s*\(\s*['\"]click/i.test(opportunitiesPolish),'Opportunities polish must remain presentation-only');
+
+assert(opportunitiesPolish.includes('#pst-opp-v4-map{display:grid'),'Final Opportunities owner must render the approved connected mindmap as a grid');
+assert(opportunitiesPolish.includes('#pst-pcw-lifecycle-tabs,#pst-pcw-opportunity-tabs{display:none!important}'),'Legacy detached lifecycle/source controls must be retired from the visible Opportunities surface');
+assert(opportunitiesPolish.includes("data-pst-opp-source")&&opportunitiesPolish.includes("data-pst-opp-lifecycle")&&opportunitiesPolish.includes("data-pst-opp-field"),'Opportunities mindmap must expose functional source, lifecycle and field branches');
+assert(opportunitiesPolish.includes("life('new','Të reja'")&&opportunitiesPolish.includes("life('waiting','Në pritje'")&&opportunitiesPolish.includes("life('replied','Me përgjigje'")&&opportunitiesPolish.includes("life('all','Të gjitha'"),'Visible lifecycle branches must remain the approved four-state model');
+assert(opportunitiesPolish.includes('PSTPrimaryNavResilienceV10')&&opportunitiesPolish.includes("typeof N.openHome==='function'"),'Opportunities Kthehu must prefer the final primary navigation owner');
+assert(opportunitiesPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunities mindmap must retain the waiting lifecycle bridge');
+assert(!/supaFetch\s*\(|tenderAction\s*\(|openTender\s*\(/.test(opportunitiesPolish),'Opportunities mindmap may filter presentation state but must not own data writes, outbound actions or tender business actions');
+
 assert(/function go\(key\)[\s\S]*return legacyGo\?legacyGo\.apply/.test(home),'Canonical Home must delegate non-Home routes');
 assert(/var base=current;routerBase=base;[\s\S]*function finalGo\(key\)[\s\S]*return base\.apply/.test(guard),'Final Home wrapper must delegate non-Home routes through its immutable captured base');
 assert(/pstOpenProjectWorkspace/.test(home),'Home project actions must enter the canonical project opener');

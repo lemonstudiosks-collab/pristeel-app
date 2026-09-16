@@ -8,7 +8,7 @@
 if(window.__pstHomeCanonicalInteractionV1)return;
 window.__pstHomeCanonicalInteractionV1=true;
 
-var VERSION='20260913-opportunities-polish2';
+var VERSION='20260916-opportunities-mindmap4';
 function str(v){return String(v==null?'':v);}
 function norm(v){return str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function urgentRow(row){
@@ -45,12 +45,12 @@ function installStyle(){
   document.head.appendChild(s);
 }
 function loadOpportunitiesFilterPolish(){
-  if(window.__pstOpportunitiesFilterPolishV1||document.querySelector('script[data-pst-opportunities-filter-polish]'))return;
+  if(window.__pstOpportunitiesMindmapV4||document.querySelector('script[data-pst-opportunities-filter-polish]'))return;
   var p=document.createElement('script');
-  p.src='pristeel-opportunities-filter-polish-v1.js?v=20260913-compact2';
+  p.src='pristeel-opportunities-filter-polish-v1.js?v=20260916-mindmap4';
   p.defer=true;
   p.setAttribute('data-pst-opportunities-filter-polish','1');
-  p.onerror=function(){console.error('Nuk u ngarkua pamja kompakte e filtrave të Mundësive.');};
+  p.onerror=function(){console.error('Nuk u ngarkua mindmap-i i Mundësive.');};
   document.head.appendChild(p);
 }
 function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();}
