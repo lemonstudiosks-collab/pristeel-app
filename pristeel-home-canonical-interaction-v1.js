@@ -1,14 +1,14 @@
 /* PRISTEEL Home Canonical Interaction v2
  * Presentation-only decorator for the canonical Home owner.
  * Canonical Home owns data, lane classification and click behavior.
- * No Supabase reads/writes, no DOM reconciliation, no timers, no observers.
+ * No Supabase reads/writes and no DOM reconciliation, timers, or observers here.
  */
 (function(){
 'use strict';
 if(window.__pstHomeCanonicalInteractionV1)return;
 window.__pstHomeCanonicalInteractionV1=true;
 
-var VERSION='20260916-opportunities-mindmap5';
+var VERSION='20260916-global-shell-finance-map1';
 function str(v){return String(v==null?'':v);}
 function norm(v){return str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function urgentRow(row){
@@ -44,16 +44,21 @@ function installStyle(){
 ';
   document.head.appendChild(s);
 }
-function loadOpportunitiesFilterPolish(){
-  if(window.__pstOpportunitiesMindmapV5||document.querySelector('script[data-pst-opportunities-filter-polish]'))return;
-  var p=document.createElement('script');
-  p.src='pristeel-opportunities-filter-polish-v1.js?v=20260916-mindmap5';
-  p.defer=true;
-  p.setAttribute('data-pst-opportunities-filter-polish','1');
-  p.onerror=function(){console.error('Nuk u ngarkua mindmap-i i Mundësive.');};
-  document.head.appendChild(p);
+function loadScript(flag,selector,src,attr,errorText){
+  if(window[flag]||document.querySelector(selector))return;
+  var p=document.createElement('script');p.src=src;p.defer=true;p.setAttribute(attr,'1');
+  p.onerror=function(){console.error(errorText);};document.head.appendChild(p);
 }
-function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();}
+function loadOpportunitiesFilterPolish(){
+  loadScript('__pstOpportunitiesMindmapV5','script[data-pst-opportunities-filter-polish]','pristeel-opportunities-filter-polish-v1.js?v=20260916-mindmap5','data-pst-opportunities-filter-polish','Nuk u ngarkua mindmap-i i Mundësive.');
+}
+function loadGlobalShell(){
+  loadScript('__pstGlobalFullwidthShellV1','script[data-pst-global-fullwidth-shell]','pristeel-global-fullwidth-shell-v1.js?v=20260916-global1','data-pst-global-fullwidth-shell','Nuk u ngarkua full-width shell i PPPP.');
+}
+function loadFinanceMindmap(){
+  loadScript('__pstFinanceMindmapV1','script[data-pst-finance-mindmap]','pristeel-finance-mindmap-v1.js?v=20260916-finance1','data-pst-finance-mindmap','Nuk u ngarkua mindmap-i i Financave.');
+}
+function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();loadGlobalShell();loadFinanceMindmap();}
 document.addEventListener('pst:home-canonical-rendered',function(){decorate(document);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.PSTHomeCanonicalInteractionV1={version:VERSION,decorate:decorate,urgentRow:urgentRow,_test:{norm:norm}};
