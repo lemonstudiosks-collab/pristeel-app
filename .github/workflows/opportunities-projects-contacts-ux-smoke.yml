@@ -38,3 +38,4 @@ jobs:
         run: |
           npm install --ignore-scripts --no-package-lock
           node tests/opportunities-visible-runtime-smoke.mjs
+          node tests/opportunities-mindmap-v5-interaction-smoke.mjs
