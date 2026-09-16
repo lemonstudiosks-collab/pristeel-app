@@ -28,7 +28,7 @@ jobs:
     env:
       HUBSPOT_ACCESS_TOKEN: ${{ secrets.HUBSPOT_ACCESS_TOKEN || secrets.HUBSPOT_PRIVATE_APP_TOKEN || secrets.HUBSPOT_TOKEN }}
       HUBSPOT_PORTAL_ID: '147958987'
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co' }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
     steps:

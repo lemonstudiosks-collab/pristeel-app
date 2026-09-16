@@ -71,28 +71,28 @@ jobs:
         run: node tests/commercial-intake-candidates-smoke.mjs
       - name: Reconcile project data
         env:
-          SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SYNC_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'preview' }}
         run: node scripts/project-data-reconcile.mjs
       - name: Reconcile project emails
         env:
-          SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           EMAIL_RECONCILE_MODE: ${{ github.event_name == 'schedule' && 'apply' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'preview') }}
         run: node scripts/project-email-reconcile.mjs
       - name: Reconcile linked outgoing RFQs
         env:
-          SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RFQ_EMAIL_RECONCILE_MODE: ${{ github.event_name == 'schedule' && 'apply' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'preview') }}
         run: node scripts/project-rfq-email-reconcile.mjs
       - name: Sync Project Discovery queue
         env:
-          SUPABASE_URL: https://isymxqfqzkchbsrbhucf.supabase.co
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           PROJECT_DISCOVERY_MODE: ${{ github.event_name == 'schedule' && 'apply' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'preview') }}
