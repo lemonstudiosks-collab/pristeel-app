@@ -6,9 +6,11 @@ function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 
 async function finalCurtainCase(){
   const search=fs.readFileSync('pristeel-search.js','utf8');
+  const guard=fs.readFileSync('pristeel-startup-guard-v2.js','utf8');
   const dom=new JSDOM(`<!doctype html><html><head></head><body><div id="auth-gate" style="display:none"></div><div id="app-shell-root" style="display:flex"><div id="page-workspace-home" class="active" style="display:block">Final Home</div></div></body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
   w.localStorage.setItem('pristeel_session',JSON.stringify({access_token:'test'}));
+  w.eval(guard);
   w.eval(search);
   assert(w.document.documentElement.classList.contains('pst-stable-booting'),'Final startup curtain must engage for an authenticated app');
   assert(w.document.getElementById('pst-stable-startup-shell'),'Final startup curtain must have its own shell');
@@ -21,6 +23,8 @@ async function finalCurtainCase(){
   await wait(180);
   assert(!w.document.documentElement.classList.contains('pst-stable-booting'),'Curtain must release after modules + visual + cosmetics are ready');
   assert(w.PSTStartupCurtainV1.isReleased(),'Final curtain did not release after all three readiness gates');
+  assert(!w.document.getElementById('pst-startup-shell'),'Compatibility startup shell must not flash after the final curtain releases');
+  assert(w.document.documentElement.classList.contains('pst-app-ready'),'Compatibility guard must finish before the final curtain releases');
   dom.window.close();
 }
 

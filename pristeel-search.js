@@ -77,6 +77,7 @@ html.pst-stable-booting,html.pst-stable-booting body{min-height:100%;background:
 html.pst-stable-booting #app-shell-root,html.pst-stable-booting #auth-gate{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
 html.pst-stable-booting #app-shell-root *,html.pst-stable-booting #auth-gate *{animation:none!important;transition:none!important}
 #pst-stable-startup-shell{position:fixed;inset:0;z-index:2147483600;display:flex;align-items:center;justify-content:center;background:#F7F6F3;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#2F3437;opacity:1;transition:opacity .18s ease,visibility .18s ease}
+html.pst-stable-booting #pst-startup-shell{display:none!important}
 #pst-stable-startup-shell.pst-leaving{opacity:0;visibility:hidden;pointer-events:none}
 .pst-startup-card{display:flex;flex-direction:column;align-items:center;gap:13px;text-align:center;transform:translateY(-2vh)}
 .pst-startup-mark{width:48px;height:48px;border-radius:14px;background:#4F97AF;box-shadow:0 10px 26px rgba(79,151,175,.15);display:grid;place-items:center;color:#fff}
@@ -124,6 +125,12 @@ html.pst-stable-booting #app-shell-root *,html.pst-stable-booting #auth-gate *{a
   function release(reason){
     if(released)return;
     released=true;clearTimeout(authTimer);clearTimeout(cosmeticFallback);clearTimeout(watchdogTimer);clearTimeout(hardTimer);
+    /* The compatibility guard must finish while this curtain still covers the UI.
+       Otherwise its separate shell can flash between the two reveals. */
+    var guard=window.PSTStartupGuard;
+    if(guard&&typeof guard.failOpen==='function')guard.failOpen();
+    var compatibilityShell=document.getElementById('pst-startup-shell');
+    if(compatibilityShell)compatibilityShell.remove();
     root.classList.remove('pst-stable-booting');
     /* If a compatibility startup guard still owns pst-booting, the final stable
      * coordinator is now authoritative and may release that class as well. */
