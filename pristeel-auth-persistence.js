@@ -66,10 +66,50 @@ var refreshInFlight=null;
 var refreshBackoffUntil=0;
 
 function parse(v){try{return JSON.parse(v||'null');}catch(e){return null;}}
+function expectedProjectRef(){
+  var match=String(window._SB_URL||'').match(/^https?:\/\/([a-z0-9-]+)\.supabase\.co(?:\/|$)/i);
+  return match?match[1]:'';
+}
+function sessionProjectRef(s){
+  if(!s)return '';
+  if(s.project_ref)return String(s.project_ref);
+  var token=String(s.access_token||'');
+  try{
+    var part=token.split('.')[1]||'';
+    part=part.replace(/-/g,'+').replace(/_/g,'/');
+    while(part.length%4)part+='=';
+    var payload=JSON.parse(atob(part));
+    if(payload&&payload.ref)return String(payload.ref);
+    var match=String(payload&&payload.iss||'').match(/^https?:\/\/([a-z0-9-]+)\.supabase\.co(?:\/|$)/i);
+    return match?match[1]:'';
+  }catch(e){return '';}
+}
+function matchesCurrentProject(s){
+  var expected=expectedProjectRef(),actual=sessionProjectRef(s);
+  return !expected||!actual||expected===actual;
+}
 function currentSession(){
   try{return parse(localStorage.getItem(SESSION_KEY));}catch(e){return null;}
 }
-function usable(s){return !!(s&&s.refresh_token);}
+function usable(s){return !!(s&&s.refresh_token&&matchesCurrentProject(s));}
+function purgeIncompatibleSessions(){
+  var expected=expectedProjectRef();if(!expected)return false;
+  var current=currentSession(),backup=null,removed=false;
+  try{backup=parse(localStorage.getItem(BACKUP_KEY));}catch(e){}
+  if(current&&sessionProjectRef(current)&&!matchesCurrentProject(current)){
+    try{localStorage.removeItem(SESSION_KEY);}catch(e){}
+    removed=true;
+  }
+  if(backup&&backup.session&&sessionProjectRef(backup.session)&&!matchesCurrentProject(backup.session)){
+    try{localStorage.removeItem(BACKUP_KEY);}catch(e){}
+    removed=true;
+  }
+  if(removed){
+    try{localStorage.removeItem(REFRESH_LOCK_KEY);}catch(e){}
+    try{sessionStorage.removeItem(ATTEMPT_KEY);}catch(e){}
+  }
+  return removed;
+}
 function remember(){
   var s=currentSession();
   if(!usable(s))return false;
@@ -172,6 +212,7 @@ function enhanceForm(){
   return true;
 }
 function recoverVisibleGate(){
+  purgeIncompatibleSessions();
   installRefreshSingleFlight();
   if(!gateVisible()){remember();return;}
   var s=currentSession();
@@ -192,6 +233,7 @@ function onLogoutClick(event){
   if(/\bdil\b|logout|log out|signout|sign out|dologout/.test(text))clearRemembered();
 }
 function init(){
+  purgeIncompatibleSessions();
   installRefreshSingleFlight();
   enhanceForm();
   if(usable(currentSession()))remember();else restoreOnce();
@@ -201,5 +243,5 @@ function init(){
   window.addEventListener('pageshow',function(){installRefreshSingleFlight();enhanceForm();if(usable(currentSession()))remember();});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-window.PSTAuthPersistence={remember:remember,restoreOnce:restoreOnce,clear:clearRemembered,enhanceForm:enhanceForm,recover:recoverVisibleGate,installRefreshSingleFlight:installRefreshSingleFlight,_test:{currentSession:currentSession,readBackup:readBackup,usable:usable,readRefreshLock:readRefreshLock}};
+window.PSTAuthPersistence={remember:remember,restoreOnce:restoreOnce,clear:clearRemembered,enhanceForm:enhanceForm,recover:recoverVisibleGate,installRefreshSingleFlight:installRefreshSingleFlight,_test:{currentSession:currentSession,readBackup:readBackup,usable:usable,readRefreshLock:readRefreshLock,expectedProjectRef:expectedProjectRef,sessionProjectRef:sessionProjectRef,purgeIncompatibleSessions:purgeIncompatibleSessions}};
 })();

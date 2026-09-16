@@ -6631,17 +6631,46 @@ setTimeout(function(){
 // ── SUPABASE ─────────────────────────────────────────
 var _SB_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 var _SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3cWZwbnpxd2ZqcmplZm9rdGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0NzY0MzQsImV4cCI6MjEwNTA1MjQzNH0.T3FFElqBw4mb6mvh_WkfS35CNAsacPimiGG2H9J2G7E';
+var _SB_PROJECT_REF='awqfpnzqwfjrjefoktgd';
 
 // ── AUTH (Supabase Auth — login real, jo kozmetik) ────
+function authSessionProjectRef(s){
+  if(!s)return '';
+  if(s.project_ref)return String(s.project_ref);
+  var token=String(s.access_token||'');
+  try{
+    var part=token.split('.')[1]||'';
+    part=part.replace(/-/g,'+').replace(/_/g,'/');
+    while(part.length%4)part+='=';
+    var payload=JSON.parse(atob(part));
+    if(payload&&payload.ref)return String(payload.ref);
+    var match=String(payload&&payload.iss||'').match(/^https?:\/\/([a-z0-9-]+)\.supabase\.co(?:\/|$)/i);
+    return match?match[1]:'';
+  }catch(e){return '';}
+}
+function authClearIncompatibleSession(s){
+  var actual=authSessionProjectRef(s);
+  if(!actual||actual===_SB_PROJECT_REF)return false;
+  ['pristeel_session','pst_auth_remembered_session_v3','pst_auth_refresh_lock_v1'].forEach(function(key){
+    try{localStorage.removeItem(key);}catch(e){}
+  });
+  try{sessionStorage.removeItem('pst_auth_restore_attempt_v3');}catch(e){}
+  return true;
+}
 function authSaveSession(s){
   localStorage.setItem('pristeel_session', JSON.stringify({
     access_token:s.access_token, refresh_token:s.refresh_token,
     expires_at: Date.now() + ((s.expires_in||3600)*1000) - 30000,
-    email: s.user && s.user.email
+    email: s.user && s.user.email,
+    project_ref:_SB_PROJECT_REF
   }));
 }
 function authGetSession(){
-  try{ return JSON.parse(localStorage.getItem('pristeel_session')||'null'); }catch(e){ return null; }
+  try{
+    var s=JSON.parse(localStorage.getItem('pristeel_session')||'null');
+    if(authClearIncompatibleSession(s))return null;
+    return s;
+  }catch(e){ return null; }
 }
 function doLogin(){
   var email=document.getElementById('auth-email').value.trim();

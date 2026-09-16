@@ -4,6 +4,7 @@ const {JSDOM}=require('jsdom');
 
 const source=fs.readFileSync('pristeel-auth-persistence.js','utf8');
 const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
+const app=fs.readFileSync('pristeel-procurement.html','utf8');
 
 assert(!/setInterval\s*\(|BroadcastChannel|MutationObserver/.test(source),'Remembered login must stay event-driven and bounded');
 assert(!/auth-pass[^\n;]*\.value|pass(?:word)?\s*[:=][^\n]*(localStorage|sessionStorage)/i.test(source),'Remembered login must never read or persist the password value');
@@ -15,6 +16,10 @@ assert(source.includes('s.expires_at=0'),'Expired restored sessions must force r
 assert(source.includes("localStorage.removeItem(BACKUP_KEY)"),'Explicit clearing of the remembered session is missing');
 assert(source.includes("autocomplete','current-password'"),'Login password field should use browser credential autocomplete');
 assert(source.includes("autocomplete','username'"),'Login email field should use browser credential autocomplete');
+assert(app.includes("var _SB_PROJECT_REF='awqfpnzqwfjrjefoktgd'"),'Canonical Supabase project identity is missing');
+assert(app.includes('authClearIncompatibleSession(s)'),'Core auth must reject a session issued by another Supabase project');
+assert(app.includes('project_ref:_SB_PROJECT_REF'),'New sessions must retain their issuing Supabase project identity');
+assert(bootstrap.includes('pristeel-auth-persistence.js?v=20260916-project-cutover1'),'Cutover auth runtime cache key is stale');
 const authPos=bootstrap.indexOf('pristeel-auth-persistence.js?v=');
 const brandPos=bootstrap.indexOf('pristeel-login-brand-v1.js?v=');
 assert(authPos>=0&&brandPos>=0&&authPos<brandPos,'Remembered session recovery must load before login presentation modules');
@@ -22,7 +27,8 @@ assert(authPos>=0&&brandPos>=0&&authPos<brandPos,'Remembered session recovery mu
 async function main(){
   const dom=new JSDOM('<!doctype html><html><body><div id="auth-gate" style="display:flex"><form id="auth-form"><input id="auth-email"><input id="auth-pass" type="password"><button type="submit">Hyr</button></form></div></body></html>',{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
-  const remembered={access_token:'old-access',refresh_token:'refresh-1',expires_at:Date.now()-1000,email:'user@example.com'};
+  w._SB_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
+  const remembered={access_token:'old-access',refresh_token:'refresh-1',expires_at:Date.now()-1000,email:'user@example.com',project_ref:'awqfpnzqwfjrjefoktgd'};
   w.localStorage.setItem('pst_auth_remembered_session_v3',JSON.stringify({at:Date.now(),session:remembered}));
   w.eval(source);
   const api=w.PSTAuthPersistence;
@@ -38,9 +44,24 @@ async function main(){
   assert.strictEqual(w.localStorage.getItem('pst_auth_remembered_session_v3'),null,'Remembered session was not cleared');
   dom.window.close();
 
+  const domCutover=new JSDOM('<!doctype html><html><body><div id="auth-gate" style="display:flex"></div></body></html>',{runScripts:'outside-only',url:'https://example.test/'});
+  const wc=domCutover.window;
+  wc._SB_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
+  const stale={access_token:'old-access',refresh_token:'old-refresh',expires_at:Date.now()+3600000,email:'user@example.com',project_ref:'isymxqfqzkchbsrbhucf'};
+  wc.localStorage.setItem('pristeel_session',JSON.stringify(stale));
+  wc.localStorage.setItem('pst_auth_remembered_session_v3',JSON.stringify({at:Date.now(),session:stale}));
+  wc.localStorage.setItem('pst_auth_refresh_lock_v1',JSON.stringify({owner:'old',until:Date.now()+8000}));
+  wc.eval(source);
+  assert.strictEqual(wc.PSTAuthPersistence._test.purgeIncompatibleSessions(),true,'Cutover did not detect the previous Supabase project');
+  assert.strictEqual(wc.localStorage.getItem('pristeel_session'),null,'Cutover must clear a session issued by the previous Supabase project');
+  assert.strictEqual(wc.localStorage.getItem('pst_auth_remembered_session_v3'),null,'Cutover must clear the incompatible remembered session');
+  assert.strictEqual(wc.localStorage.getItem('pst_auth_refresh_lock_v1'),null,'Cutover must clear the stale refresh lock');
+  domCutover.window.close();
+
   const dom2=new JSDOM('<!doctype html><html><body><div id="auth-gate" style="display:none"></div></body></html>',{runScripts:'outside-only',url:'http://localhost:3000/'});
   const w2=dom2.window;
-  const expired={access_token:'expired-access',refresh_token:'refresh-2',expires_at:Date.now()-1000,email:'user@example.com'};
+  w2._SB_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
+  const expired={access_token:'expired-access',refresh_token:'refresh-2',expires_at:Date.now()-1000,email:'user@example.com',project_ref:'awqfpnzqwfjrjefoktgd'};
   w2.localStorage.setItem('pristeel_session',JSON.stringify(expired));
   let refreshCalls=0;
   w2.authRefreshIfNeeded=function(){

@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var files=[
-  'pristeel-auth-persistence.js?v=20260812-remember1',
+  'pristeel-auth-persistence.js?v=20260916-project-cutover1',
   'pristeel-login-brand-v1.js?v=20260812-readable1',
   'pristeel-login-transition-v2.js?v=20260809-identity1',
   'pristeel-project-identity-lock-v1.js?v=20260809-1',
