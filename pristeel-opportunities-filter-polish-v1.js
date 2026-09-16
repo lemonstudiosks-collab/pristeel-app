@@ -1,107 +1,45 @@
-/* PRISTEEL Opportunities Filter Polish v3
- * Final presentation owner for the visible Opportunities lifecycle mindmap and source filters.
- * Click/filter behavior remains owned by Project-Centric Workflow and its navigation layers.
+/* PRISTEEL Opportunities Mindmap v4
+ * Final presentation/filter owner for the visible Opportunities surface.
+ * Reuses Project-Centric Workflow state/actions; adds no database writes and sends nothing.
  */
 (function(){
 'use strict';
-if(window.__pstOpportunitiesFilterPolishV1)return;
+if(window.__pstOpportunitiesMindmapV4)return;
+window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-function loadWaitingBridge(){
-  if(window.__pstOpportunitiesWaitingBridgeV1||document.querySelector('script[data-pst-opportunities-waiting-bridge]'))return;
-  var b=document.createElement('script');
-  b.src='pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1';
-  b.defer=true;
-  b.setAttribute('data-pst-opportunities-waiting-bridge','1');
-  b.onerror=function(){console.error('Nuk u ngarkua lifecycle-i i Mundësive.');};
-  document.head.appendChild(b);
-}
-
-var s=document.createElement('style');
-s.id='pst-opportunities-filter-polish-v1-css';
-s.textContent=`
-#page-kek-tenders #pst-opportunities-focus{padding:25px 26px 28px!important}
-#page-kek-tenders #pst-pcw-opportunity-tools{margin:18px 0 14px!important}
-#page-kek-tenders #pst-pcw-opportunity-tools label{height:46px!important;padding:0 15px!important;border:1px solid #D9E5EA!important;border-radius:16px!important;background:#FFF!important;box-shadow:0 2px 8px rgba(38,69,82,.025)!important}
-#page-kek-tenders #pst-pcw-opportunity-tools label>span{font-size:10px!important;font-weight:800!important;letter-spacing:.09em!important;color:#7A8D96!important}
-#page-kek-tenders #pst-pcw-opportunity-search{height:44px!important;font-size:13px!important;color:#2D4651!important}
-
-/* Final lifecycle mindmap owner. Draft-ready work is intentionally folded into "Në pritje"
-   by the existing waiting bridge, so the visible map has four operational branches. */
-#page-kek-tenders #pst-pcw-lifecycle-tabs{position:relative;display:grid!important;grid-template-columns:minmax(190px,1fr) 176px minmax(190px,1fr)!important;grid-template-areas:"new center waiting" "replied center all"!important;grid-template-rows:minmax(86px,auto) minmax(86px,auto)!important;gap:20px clamp(42px,5vw,78px)!important;min-width:0!important;margin:14px 0 12px!important;padding:34px clamp(30px,6vw,92px) 30px!important;border:1px solid #E3ECEF!important;border-radius:22px!important;background:radial-gradient(circle at center,transparent 0 77px,#E6F0F3 78px 79px,transparent 80px 142px,#EAF1F3 143px 144px,transparent 145px),linear-gradient(135deg,#FBFDFE,#F7FAFB)!important;overflow:hidden!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs::before{content:""!important;position:absolute!important;inset:17% 20%!important;pointer-events:none!important;background:linear-gradient(31deg,transparent 49.86%,#DCEAEF 50%,transparent 50.14%),linear-gradient(-31deg,transparent 49.86%,#DCEAEF 50%,transparent 50.14%)!important;opacity:.82!important;width:auto!important;transform:none!important;top:17%!important;left:20%!important;color:transparent!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs::after{content:'Sipas statusit';position:absolute;left:16px;top:12px;color:#8799A1;font-size:10px;font-weight:800;letter-spacing:.01em}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center{position:relative!important;left:auto!important;top:auto!important;transform:none!important;grid-area:center!important;align-self:center!important;justify-self:center!important;width:160px!important;min-height:124px!important;height:auto!important;border-radius:24px!important;background:#FFF!important;border:1px solid #B9D8E2!important;box-shadow:0 14px 35px rgba(43,91,108,.10)!important;padding:12px!important;z-index:2!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:min(220px,100%)!important;min-height:66px!important;height:auto!important;border:1px solid #D6E6EB!important;border-radius:16px!important;background:rgba(255,255,255,.97)!important;color:#385762!important;padding:9px 11px!important;box-shadow:0 5px 17px rgba(48,85,98,.05)!important;display:flex!important;align-items:center!important;gap:10px!important;text-align:left!important;white-space:normal!important;z-index:3!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node:hover{transform:translateY(-2px)!important;border-color:#79AFC1!important;background:#FFF!important;box-shadow:0 10px 23px rgba(48,85,98,.12)!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node.on{background:#EAF6FA!important;border-color:#4F97AF!important;color:#285E72!important;box-shadow:0 9px 22px rgba(79,151,175,.16)!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-new{grid-area:new!important;justify-self:end!important;align-self:end!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-waiting{grid-area:waiting!important;justify-self:start!important;align-self:end!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-replied{grid-area:replied!important;justify-self:end!important;align-self:start!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-all{grid-area:all!important;justify-self:start!important;align-self:start!important;width:min(220px,100%)!important;min-height:66px!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs button[data-pcw-lifecycle='draft']{display:none!important}
-
-/* Source filters stay compact pills below the mindmap. */
-#page-kek-tenders #pst-pcw-opportunity-tabs{position:relative;display:flex!important;align-items:center!important;gap:6px!important;min-width:0!important;margin:0!important;padding:5px 0 5px 106px!important;flex-wrap:wrap!important;overflow:visible!important;border-bottom:1px solid #E7ECEF!important}
-#page-kek-tenders #pst-pcw-opportunity-tabs::before{content:'Sipas burimit';position:absolute;left:0;top:50%;transform:translateY(-50%);width:94px;color:#718692;font-size:10px;font-weight:800;letter-spacing:.01em;white-space:nowrap}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='all'],
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='UNDP_KOSOVO']{display:none!important}
-#page-kek-tenders #pst-pcw-opportunity-tabs button{position:relative;min-height:32px!important;height:32px!important;padding:0 9px 0 6px!important;border:1px solid #DCE6EA!important;border-radius:999px!important;background:#FFF!important;color:#344C57!important;font-size:10.25px!important;font-weight:760!important;letter-spacing:0!important;gap:5px!important;white-space:nowrap!important;box-shadow:0 2px 7px rgba(41,71,82,.025)!important;transition:background .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease!important}
-#page-kek-tenders #pst-pcw-opportunity-tabs button:hover{border-color:#B9D1DA!important;background:#F8FBFC!important;color:#2E718A!important;box-shadow:0 5px 14px rgba(51,112,136,.07)!important;transform:translateY(-1px)!important}
-#page-kek-tenders #pst-pcw-opportunity-tabs button:focus-visible{outline:2px solid rgba(57,127,152,.28)!important;outline-offset:2px!important}
-#page-kek-tenders #pst-pcw-opportunity-tabs button::before{content:'•';width:21px;height:21px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 21px;border-radius:7px;background:#EEF4F6;color:#477B8D;font-size:11px;font-weight:900;line-height:1}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='TED']::before{content:'★';background:#EAF0FF;color:#315BCB;font-size:10px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='KRPP']::before{content:'▣';background:#ECF2FF;color:#2F65B8;font-size:11px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='APP_AL']::before{content:'▤';background:#F0F3F6;color:#5D7180;font-size:11px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='MCA_KOSOVO']::before{content:'◈';background:#EAF8EE;color:#4C9566;font-size:11px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='KCF']::before{content:'◇';background:#EEF8F0;color:#4B9869;font-size:12px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='RCF']::before{content:'↔';background:#FFF0EF;color:#C76963;font-size:11px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='EBRD_ECEPP']::before{content:'▥';background:#EDF4FB;color:#33729B;font-size:11px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='WORLD_BANK']::before{content:'◎';background:#EAF6FF;color:#2683BF;font-size:12px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='UNGM']::before{content:'◉';background:#EAF6FF;color:#3F8DC3;font-size:10px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button[data-pcw-source='EU_OFFICE_KOSOVO']::before{content:'✦';background:#EAF0FF;color:#315BCB;font-size:10px}
-#page-kek-tenders #pst-pcw-opportunity-tabs button i{min-width:19px!important;height:19px!important;padding:0 4px!important;border-radius:999px!important;background:#F1F4F6!important;color:#6D7D84!important;font-size:9px!important;font-weight:800!important;opacity:1!important}
-#page-kek-tenders #pst-pcw-opportunity-tabs button.on{border-color:#397F98!important;background:linear-gradient(135deg,#3E89A3,#32778F)!important;color:#FFF!important;box-shadow:0 7px 16px rgba(50,119,143,.18)!important;transform:none!important}
-#page-kek-tenders #pst-pcw-opportunity-tabs button.on::before{background:rgba(255,255,255,.17)!important;color:#FFF!important}
-#page-kek-tenders #pst-pcw-opportunity-tabs button.on i{background:#FFF!important;color:#31768E!important}
-#page-kek-tenders .pst-pcw-empty{min-height:150px!important;display:flex!important;align-items:center!important;justify-content:center!important;color:#85969E!important;font-size:12px!important}
-
-@media(max-width:1050px) and (min-width:721px){
- #page-kek-tenders #pst-pcw-lifecycle-tabs{grid-template-columns:minmax(165px,1fr) 158px minmax(165px,1fr)!important;gap:16px 28px!important;padding:30px 24px 26px!important}
- #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node{width:100%!important}
- #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center{width:150px!important}
-}
-@media(max-width:720px){
- #page-kek-tenders #pst-opportunities-focus{padding:18px!important}
- #page-kek-tenders #pst-pcw-lifecycle-tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:"center center" "new waiting" "replied all"!important;grid-template-rows:auto!important;gap:9px!important;padding:36px 15px 15px!important;background:#F8FBFC!important;overflow:visible!important}
- #page-kek-tenders #pst-pcw-lifecycle-tabs::before{display:none!important}
- #page-kek-tenders #pst-pcw-lifecycle-tabs::after{left:15px;top:11px}
- #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center{grid-area:center!important;width:100%!important;min-height:76px!important;border-radius:16px!important}
- #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center span{display:none!important}
- #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node{width:100%!important;min-height:60px!important;justify-self:stretch!important;align-self:stretch!important;transform:none!important}
- #page-kek-tenders #pst-pcw-opportunity-tabs{padding-left:0!important;padding-top:27px!important}
- #page-kek-tenders #pst-pcw-opportunity-tabs::before{top:5px;transform:none;width:auto}
- #page-kek-tenders #pst-pcw-opportunity-tabs button{height:31px!important;min-height:31px!important;padding-right:7px!important}
-}
-@media(prefers-reduced-motion:reduce){
- #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node,#page-kek-tenders #pst-pcw-opportunity-tabs button{transition:none!important}
- #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node:hover,#page-kek-tenders #pst-pcw-opportunity-tabs button:hover{transform:none!important}
-}
-/* Connected decision map: a clear hub and four actionable paths, not floating cards. */
-#page-kek-tenders #pst-pcw-lifecycle-tabs{grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-areas:"center center center center" "new waiting replied all"!important;grid-template-rows:auto auto!important;gap:0 12px!important;min-height:0!important;padding:25px 27px 24px!important;background:linear-gradient(145deg,#FAFDFD,#F1F7F7)!important;border-color:#D9E8E9!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs::before{inset:auto!important;left:12.5%!important;right:12.5%!important;top:119px!important;width:auto!important;height:38px!important;transform:none!important;background:none!important;border-top:1px solid #AFCFD3!important;border-left:1px solid #AFCFD3!important;border-right:1px solid #AFCFD3!important;border-radius:16px 16px 0 0!important;opacity:1!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs::after{content:'Zgjidh rrugën e punës';left:26px;top:15px;color:#748B91;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center{grid-area:center!important;width:220px!important;min-height:90px!important;margin:0 auto 58px!important;background:#2D6878!important;border-color:#2D6878!important;color:#FFF!important;border-radius:20px!important;box-shadow:0 12px 28px rgba(45,104,120,.19)!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center span{color:#C8E8E9!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center strong{color:#FFF!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center small{color:#D4E8EB!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node{justify-self:stretch!important;align-self:stretch!important;width:100%!important;min-height:80px!important;padding:13px!important;border-radius:15px!important;background:#FFF!important;box-shadow:0 5px 17px rgba(48,85,98,.045)!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node:before{content:"";position:absolute;left:50%;top:-20px;width:1px;height:19px;background:#AFCFD3;pointer-events:none}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node.on{background:#E6F4F5!important;border-color:#4F97AF!important;box-shadow:0 9px 21px rgba(79,151,175,.14)!important}
-#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node .pst-pcw-map-label{font-size:12px!important}
-@media(max-width:850px){#page-kek-tenders #pst-pcw-lifecycle-tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:"center center" "new waiting" "replied all"!important;gap:10px!important;padding:35px 16px 17px!important}#page-kek-tenders #pst-pcw-lifecycle-tabs::before,#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node:before{display:none!important}#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center{width:100%!important;min-height:74px!important;margin:0!important}#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node{min-height:65px!important}}
-`;
-document.head.appendChild(s);
-loadWaitingBridge();
-window.PSTOpportunitiesFilterPolishV1={version:'20260916-final-owner1',styleId:s.id};
-})();
+var VERSION='20260916-mindmap4';
+var view='mindmap',field='all',filtersOpen=true,api=null,state=null,observer=null,scheduled=false;
+var SOURCE_ORDER=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'];
+var SOURCE_LABELS={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',UNDP_KOSOVO:'UNDP Kosovo',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
+var SOURCE_ICONS={TED:'★',KRPP:'▣',APP_AL:'▤',MCA_KOSOVO:'◆',KCF:'◇',RCF:'↗',EBRD_ECEPP:'▥',WORLD_BANK:'◎',UNGM:'◉',UNDP_KOSOVO:'◌',EU_OFFICE_KOSOVO:'✦'};
+var FIELDS=[
+ {id:'construction',label:'Ndërtim',icon:'▦',re:/\b(construction|ndertim|ndërtim|building|buildings|bau|hochbau|steel|çelik|celik|metal|structur|konstrukt|hall|roof|çati|cati|facade|fasad|weld|fabricat|montag|renov|rehabilit)/i},
+ {id:'infrastructure',label:'Infrastrukturë',icon:'╱╲',re:/\b(infrastruct|road|rrug|highway|motorway|rail|hekurudh|bridge|urë|ure|tunnel|airport|port|water|ujësjell|ujesjell|sewer|kanaliz|pipeline|transport network)/i},
+ {id:'energy',label:'Energji',icon:'ϟ',re:/\b(energy|energji|electric|elektr|power|solar|photovolta|\bpv\b|wind|battery|bess|substation|transformer|grid|transmission|distribution)/i},
+ {id:'supply',label:'Furnizim',icon:'⬡',re:/\b(supply|furniz|procurement|purchase|blerje|material|equipment|pajis|delivery|dorëzim|dorezim|goods|product)/i},
+ {id:'services',label:'Shërbime',icon:'♙',re:/\b(service|shërbim|sherbim|consult|design|projektim|engineering|inxhinier|supervision|mbikëqyr|mbikeqyr|study|audit|maintenance|mirëmbajt|mirembajt)/i},
+ {id:'other',label:'Të tjera',icon:'•••',re:null}
+];
+function A(v){return Array.isArray(v)?v:[];}
+function S(v){return String(v==null?'':v);}
+function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function norm(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
+function rowText(r){var p=r&&r.payload&&typeof r.payload==='object'?r.payload:{};return [r&&r.title,r&&r.description,r&&r.authority,r&&r.procurement_no,r&&r.publication_no,r&&r.cpv,r&&r.cpv_code,A(r&&r.match_reasons).join(' '),p.title,p.description,p.cpv,p.cpv_code,p.cpv_description,p.scope,p.category].map(S).join(' ');}
+function classifyField(r){var t=rowText(r);for(var i=0;i<FIELDS.length-1;i++)if(FIELDS[i].re.test(t))return FIELDS[i].id;return'other';}
+function fieldMeta(id){return FIELDS.find(function(x){return x.id===id;})||FIELDS[FIELDS.length-1];}
+function currentApi(){api=window.PSTProjectCentricWorkflowV1||api;state=api&&api._state||state;return api;}
+function sourceOf(r){var x=currentApi(),fn=x&&x._test&&x._test.tenderSource;return fn?fn(r):S(r&&r.source_key||r&&r.payload&&r.payload.source||'KRPP').toUpperCase();}
+function lifecycleOf(r){var x=currentApi(),fn=x&&x._test&&x._test.opportunityLifecycle,l=fn?fn(r):'new';return l==='draft'?'waiting':l;}
+function baseRows(){var x=currentApi();if(!x||!state)return[];var rows=A(state.rows),test=x._test||{};if(typeof test.tenderVisible==='function')rows=rows.filter(test.tenderVisible);if(typeof test.dedupeOpportunities==='function')rows=test.dedupeOpportunities(rows);return rows;}
+function currentRows(){var x=currentApi();if(!x)return[];try{if(x._test&&typeof x._test.opportunityRows==='function')return A(x._test.opportunityRows());}catch(e){}return baseRows();}
+function counts(){var rows=baseRows(),life={new:0,waiting:0,replied:0,all:rows.length},sources={},fields={};SOURCE_ORDER.forEach(function(k){sources[k]=0;});FIELDS.forEach(function(f){fields[f.id]=0;});rows.forEach(function(r){var l=lifecycleOf(r),src=sourceOf(r),f=classifyField(r);if(life[l]!=null)life[l]++;if(sources[src]!=null)sources[src]++;if(fields[f]!=null)fields[f]++;});return{life:life,sources:sources,fields:fields,total:rows.length};}
+function loadWaitingBridge(){if(window.__pstOpportunitiesWaitingBridgeV1||document.querySelector('script[data-pst-opportunities-waiting-bridge]'))return;var b=document.createElement('script');b.src='pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1';b.defer=true;b.setAttribute('data-pst-opportunities-waiting-bridge','1');b.onload=function(){schedule();};document.head.appendChild(b);}
+function installCss(){var old=document.getElementById('pst-opportunities-filter-polish-v1-css');if(old)old.remove();var s=document.createElement('style');s.id='pst-opportunities-filter-polish-v1-css';s.textContent=`
+#page-kek-tenders .pst-kek-head{display:none!important}
+#page-kek-tenders #pst-opportunities-focus{max-width:1460px!important;margin:0 auto!important;padding:18px 20px 28px!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#pst-opportunities-focus>header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;margin:0 0 10px!important;padding:0!important}
+.pst-opp-v4-head-left{display:flex;align-items:center;gap:18px;min-width:0}.pst-opp-v4-back{height:42px;padding:0 15px;border:1px solid #E2D5D0;border-radius:13px;background:#fff;color:#A45E4F;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}.pst-opp-v4-back:hover{background:#FFF8F5;border-color:#D6B7AC}.pst-opp-v4-title span{display:none}.pst-opp-v4-title h2{margin:0!important;font-size:25px!important;letter-spacing:-.03em!important;color:#203640!important}.pst-opp-v4-title p{margin:3px 0 0!important;font-size:11px!important;color:#74868D!important;max-width:760px!important}.pst-opp-v4-view{display:inline-flex;padding:3px;border:1px solid #DEE8EB;border-radius:14px;background:#F8FBFC}.pst-opp-v4-view button{height:34px;padding:0 13px;border:0;border-radius:10px;background:transparent;color:#657982;font-size:11px;font-weight:750;cursor:pointer}.pst-opp-v4-view button.on{background:#E8F4F8;color:#2F7893;box-shadow:0 2px 7px rgba(47,120,147,.08)}
+#pst-pcw-opportunity-tools{display:flex!important;align-items:center!important;gap:10px!important;margin:10px 0 12px!important}#pst-pcw-opportunity-tools label{height:48px!important;flex:1!important;display:flex!important;align-items:center!important;gap:10px!important;padding:0 14px!important;border:1px solid #DCE7EB!important;border-radius:15px!important;background:#fff!important;box-shadow:0 2px 8px rgba(38,69,82,.025)!important}#pst-pcw-opportunity-tools label>span{font-size:0!important}#pst-pcw-opportunity-tools label>span:before{content:'⌕';font-size:20px;color:#5E7C89}#pst-pcw-opportunity-search{height:44px!important;flex:1!important;border:0!important;outline:0!important;background:transparent!important;font-size:13px!important;color:#2D4651!important}.pst-opp-v4-filter-toggle{height:48px;padding:0 16px;border:1px solid #DCE7EB;border-radius:15px;background:#fff;color:#385461;font-size:11px;font-weight:800;cursor:pointer}.pst-opp-v4-filter-toggle.on{background:#EDF7FA;border-color:#A8CDD8;color:#2F7893}
+#pst-pcw-lifecycle-tabs,#pst-pcw-opportunity-tabs{display:none!important}
+#pst-opp-v4-map{

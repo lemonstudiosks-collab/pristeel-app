@@ -30,11 +30,11 @@ jobs:
         run: node tests/opportunities-projects-contacts-ux-smoke.mjs
       - name: Verify sent-email lifecycle presentation
         run: node tests/opportunities-lifecycle-sent-smoke.mjs
-      - name: Verify waiting lifecycle and compact source layout
+      - name: Verify waiting lifecycle and Opportunities mindmap layout
         run: node tests/opportunities-waiting-layout-smoke.mjs
       - name: Verify safe outreach registry read migration
         run: node tests/opportunities-waiting-registry-migration-smoke.mjs
-      - name: Reproduce visible Opportunities page without active class
+      - name: Reproduce visible Opportunities page and mindmap controls
         run: |
           npm install --ignore-scripts --no-package-lock
           node tests/opportunities-visible-runtime-smoke.mjs

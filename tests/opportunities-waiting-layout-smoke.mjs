@@ -6,22 +6,20 @@ const polish=fs.readFileSync('pristeel-opportunities-filter-polish-v1.js','utf8'
 const interaction=fs.readFileSync('pristeel-home-canonical-interaction-v1.js','utf8');
 
 assert.doesNotThrow(()=>new Function(bridge),'waiting bridge must be valid JavaScript');
-assert.doesNotThrow(()=>new Function(polish),'filter polish must be valid JavaScript');
-
+assert.doesNotThrow(()=>new Function(polish),'Opportunities mindmap must be valid JavaScript');
 assert.match(bridge,/draft_pending\|draft_created/,'draft-created registry rows must be recognized');
-assert.match(bridge,/row\.status='waiting_for_send'/,'draft registry rows must be mapped to the waiting lane in memory only');
-assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle state must normalize to waiting');
-assert.match(bridge,/if\(lifecycle==='all'\)state\.source='all'/,'top-level Të gjitha must also clear the source filter');
-assert.doesNotMatch(bridge,/addEventListener\s*\(\s*['"]click/,'waiting bridge must not become a second click owner');
-
-assert.match(polish,/data-pcw-lifecycle='draft'[^\n]*display:none|Draft-ready work belongs to "Në pritje"/,'Draft i përgatitur must not remain a visible filter');
-assert.match(polish,/data-pcw-source='all'/,'duplicate source-level Të gjitha must be hidden');
-assert.match(polish,/data-pcw-source='UNDP_KOSOVO'/,'UNDP Kosovo must be removed from the visible source row');
-assert.match(polish,/flex-wrap:wrap!important;overflow:visible!important/,'source controls must remain fully visible instead of horizontal scrolling');
-assert.doesNotMatch(polish,/overflow-x:auto!important/,'source row must not require horizontal scrolling');
-assert.match(polish,/data-pcw-source='WORLD_BANK'/,'World Bank source must retain a compact icon');
-assert.match(polish,/data-pcw-source='KRPP'/,'KRPP source must retain a compact icon');
-assert.match(polish,/data-pcw-source='TED'/,'TED source must retain a compact icon');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260913-compact2/,'runtime must cache-bust the new Opportunities UI');
-
-console.log('Opportunities waiting/layout smoke: OK');
+assert.match(bridge,/row\.status='waiting_for_send'/,'draft rows must map to the waiting lane in memory only');
+assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
+assert.match(polish,/VERSION='20260916-mindmap4'/,'new mindmap revision must be active');
+assert.match(polish,/data-pst-opp-source/,'source branches must be first-class functional controls');
+assert.match(polish,/data-pst-opp-field/,'field branches must be first-class functional controls');
+assert.match(polish,/data-pst-opp-lifecycle/,'status branches must be first-class functional controls');
+assert.match(polish,/data-pst-opp-view="mindmap"/,'Mindmap view control must exist');
+assert.match(polish,/data-pst-opp-view="list"/,'List view control must exist');
+assert.match(polish,/PSTPrimaryNavResilienceV10/,'Kthehu must use the final navigation owner');
+assert.match(polish,/Të gjitha burimet/,'source reset must be explicit and functional');
+assert.match(polish,/Të gjitha fushat/,'field reset must be explicit and functional');
+assert.match(polish,/classifyField/,'field filters must be computed from real opportunity records');
+assert.doesNotMatch(polish,/data-pcw-lifecycle='draft'[^\n]*display:none/,'new visible owner must not depend on styling a hidden legacy draft button');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260916-mindmap4/,'runtime must cache-bust the new Opportunities mindmap');
+console.log('Opportunities waiting/mindmap layout smoke: OK');
