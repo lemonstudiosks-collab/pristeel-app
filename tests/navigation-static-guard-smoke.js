@@ -6,12 +6,15 @@ const canonical=fs.readFileSync('pristeel-project-workflow-canonical-v1.js','utf
 const home=fs.readFileSync('pristeel-home-canonical-v1.js','utf8');
 const guard=fs.readFileSync('pristeel-home-runtime-owner-guard-v1.js','utf8');
 const release=fs.readFileSync('pristeel-workspace-release-fix-v3.js','utf8');
+const projectMindmap=fs.readFileSync('pristeel-project-mindmap-v1.js','utf8');
 
 assert(!/findGlobalProjectStrip|pwf-global-project-strip/.test(capture),'Global project ancestor discovery is forbidden');
 assert(!/body:has\(#page-workspace-project\.active\)/.test(capture),'Project CSS may not hide outer app ancestors');
 assert(/function insideWorkspace\(/.test(capture),'Project click interception must enforce workspace scope');
 assert(/data-pf2-offer-detail/.test(capture),'Inline supplier detail contract must remain protected');
 assert(/if\(key==='projects'\)return renderProjects\(\)/.test(release),'Release router must own deterministic Projects navigation');
+assert(/goBackProjects\(\)[\s\S]*pstWorkspaceGo\('home'\)/.test(projectMindmap),'Projects Kthehu must use canonical Home navigation');
+assert(/data-pmm-back[\s\S]*e\.stopPropagation\(\);goBackProjects\(\)/.test(projectMindmap),'Projects Kthehu must consume its click');
 assert(/function go\(key\)[\s\S]*return legacyGo\?legacyGo\.apply/.test(home),'Canonical Home must delegate non-Home routes');
 assert(/var base=current;routerBase=base;[\s\S]*function finalGo\(key\)[\s\S]*return base\.apply/.test(guard),'Final Home wrapper must delegate non-Home routes through its immutable captured base');
 assert(/pstOpenProjectWorkspace/.test(home),'Home project actions must enter the canonical project opener');
