@@ -127,7 +127,38 @@ function openProject(id){
   if(typeof window.loadProject==='function'){window.loadProject(id);return true;}
   return false;
 }
-function goBackProjects(){if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('home');if(typeof window.goHome==='function')return window.goHome();}
+function goBackProjects(){
+  state.focus='';
+  var home=document.getElementById('page-workspace-home');
+
+  if(typeof window.pstWorkspaceGo==='function'){
+    try{
+      window.pstWorkspaceGo('home');
+    }catch(e){
+      console.warn('PRISTEEL projects back route:',e);
+    }
+  }
+
+  home=document.getElementById('page-workspace-home');
+  if(home&&home.classList.contains('active')&&(!home.style||home.style.display!=='none')){
+    return true;
+  }
+
+  if(typeof window.goHome==='function'){
+    try{
+      window.goHome();
+    }catch(e){
+      console.warn('PRISTEEL projects back fallback:',e);
+    }
+  }
+
+  home=document.getElementById('page-workspace-home');
+  return !!(
+    home &&
+    home.classList.contains('active') &&
+    (!home.style || home.style.display!=='none')
+  );
+}
 
 function supplierName(o){return pick(o&&o.supplier,o&&o.supplier_name,o&&o.company,'Furnitor');}
 function offerTotal(o){return num(pick(o&&o.total_eur,o&&o.total_amount,o&&o.total,o&&o.amount));}
@@ -201,7 +232,7 @@ function click(e){
   var view=t.closest('[data-pmm-view]');if(view){e.preventDefault();setProjectsView(view.getAttribute('data-pmm-view'));return;}
   var focus=t.closest('[data-pmm-focus]');if(focus){e.preventDefault();var k=focus.getAttribute('data-pmm-focus');state.focus=state.focus===k?'':k;decorateProjects();return;}
   if(t.closest('[data-pmm-focus-clear]')){e.preventDefault();state.focus='';decorateProjects();return;}
-  if(t.closest('[data-pmm-back]')){e.preventDefault();goBackProjects();return;}
+  if(t.closest('[data-pmm-back]')){e.preventDefault();e.stopPropagation();goBackProjects();return;}
   if(t.closest('[data-pmm-projects]')){e.preventDefault();if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('projects');return;}
   if(t.closest('[data-pmm-map-collapse]')){e.preventDefault();state.projectMapCollapsed=!state.projectMapCollapsed;var map=document.getElementById('pst-project-map-v1');if(map){map.classList.toggle('collapsed',state.projectMapCollapsed);var b=map.querySelector('[data-pmm-map-collapse]');if(b)b.textContent=state.projectMapCollapsed?'Shfaq hartën':'Fshih hartën';}return;}
   var nav=t.closest('.pst-ws-navbtn[data-key="projects"],#pst-ws-projects,[data-key="projects"]');if(nav)scheduleProjects();

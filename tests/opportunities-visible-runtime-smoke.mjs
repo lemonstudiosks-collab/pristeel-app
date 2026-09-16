@@ -89,6 +89,7 @@ assert.equal(window.document.querySelector('.pst-kek-title').textContent,'Mundë
 assert(window.document.querySelector('#pst-opportunities-focus'),'modern opportunity focus surface was not mounted');
 assert(window.document.querySelector('.pst-pcw-map-center'),'Opportunities must show a central mindmap node');
 assert.equal(window.document.querySelectorAll('.pst-pcw-map-node').length,5,'Mindmap must expose all five lifecycle branches');
+assert(src.includes('grid-template-areas:"new center draft" "waiting center replied" ". all ."'),'Desktop Opportunities mindmap must use deterministic grid areas');
 assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all populated source fixtures should render initially');
 assert(window.document.querySelector('[data-pcw-source="TED"]'),'TED source tab must be visible');
 assert(window.document.querySelector('[data-pcw-source="KRPP"]'),'KRPP source tab must be visible');
