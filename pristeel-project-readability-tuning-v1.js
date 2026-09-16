@@ -1,6 +1,6 @@
 /* PRISTEEL project readability tuning v1
  * Typography-only adjustments for the project register and Project-First workspace.
- * No data access, routing changes, polling or business logic.
+ * No data access, polling or business logic; Project mindmap helpers are loaded separately.
  */
 (function(){
 'use strict';
@@ -74,6 +74,18 @@ document.head.appendChild(s);
   r.defer=true;
   r.setAttribute('data-pst-project-mindmap-v1','1');
   r.onerror=function(){console.error('Nuk u ngarkua mindmap-i i projekteve.');};
+  document.head.appendChild(r);
+})();
+
+/* The mindmap back button needs a navigation owner that runs before the older
+ * document-level compatibility handler. Keep that logic in a dedicated bridge. */
+(function loadProjectMindmapNavigation(){
+  if(window.__pstProjectMindmapNavigationV1||document.querySelector('script[data-pst-project-mindmap-navigation-v1]'))return;
+  var r=document.createElement('script');
+  r.src='pristeel-project-mindmap-navigation-v1.js?v=20260916-final1';
+  r.defer=true;
+  r.setAttribute('data-pst-project-mindmap-navigation-v1','1');
+  r.onerror=function(){console.error('Nuk u ngarkua navigimi i mindmap-it të projekteve.');};
   document.head.appendChild(r);
 })();
 
