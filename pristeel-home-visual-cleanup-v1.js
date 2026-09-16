@@ -56,22 +56,19 @@ function css(){
   var s=document.createElement('style');
   s.id='pst-home-visual-cleanup-v3-css';
   s.textContent=`
-/* Primary PPPP surfaces use the full canvas. The old permanent left rail is retired here. */
-body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) #app-sidebar,
-body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) #pst-v2-sidebar,
-body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) #pst-ws-sidebar,
-body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .app-shell>.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;padding:0!important;margin:0!important;border:0!important}
-body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .app-shell{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
-body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .main{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;margin-left:0!important;border-left:0!important}
-body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .content{width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
+/* Keep one stable left navigation rail on every page, including Finance. */
+body:has(.page.active) .app-shell{display:flex!important;width:100%!important;min-width:0!important;margin:0!important;padding:0!important}
+body:has(.page.active) .app-shell>.sidebar{display:flex!important;flex:0 0 246px!important;width:246px!important;min-width:246px!important;max-width:246px!important}
+body:has(.page.active) .main{flex:1 1 0!important;min-width:0!important;width:auto!important;margin:0!important;border-left:0!important}
+body:has(.page.active) .content{min-width:0!important;width:auto!important;margin-left:0!important}
 
 /* The legacy project/import bars are redundant on the modern primary surfaces. */
 body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) .topbar,
 body:has(:is(#page-workspace-home,#page-workspace-projects,#page-workspace-inbox,#page-workspace-commercial,#page-workspace-apps,#page-workspace-project,#page-finance,#page-contacts,#page-technical-catalog).active) #modbar{display:none!important}
 
-/* Home owns the complete viewport; no reserved sidebar gutter or separator may remain. */
+/* Home fills the content area beside the same navigation rail. */
 body:has(#page-workspace-home.active) .main,
-body:has(#page-workspace-home.active) .content{width:100%!important;max-width:none!important;padding:0!important;margin:0!important;border:0!important}
+body:has(#page-workspace-home.active) .content{width:auto!important;max-width:none!important;padding:0!important;margin:0!important;border:0!important}
 body:has(#page-workspace-home.active) #page-workspace-home{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
 
 body:has(#page-workspace-projects.active) .content,

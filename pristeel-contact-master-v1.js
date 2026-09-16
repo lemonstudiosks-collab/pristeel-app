@@ -65,7 +65,7 @@ function supplierInfo(r){
 }
 function categoryCounts(){var c={all:cache.rows.length,client:0,supplier:0,manufacturer:0};cache.rows.forEach(function(r){if(isClient(r))c.client++;if(isSupplier(r))c.supplier++;if(isManufacturer(r))c.manufacturer++;});return c;}
 function businessCard(k,label){return'<button type="button" class="pcm-business-card'+(k==='all'?' active':'')+'" data-pcm-business="'+k+'"><span>'+label+'</span><b data-pcm-business-count>0</b></button>';}
-function syncCategoryCards(){var p=document.getElementById('page-workspace-contacts');if(!p)return;var c=categoryCounts();p.querySelectorAll('[data-pcm-business]').forEach(function(b){var k=b.getAttribute('data-pcm-business');b.classList.toggle('active',k===cache.category);var n=b.querySelector('[data-pcm-business-count]');if(n)n.textContent=k==='manufacturer'&&!cache.manufacturersLoaded?'…':String(c[k]||0);});}
+function syncCategoryCards(){var p=document.getElementById('page-workspace-contacts');if(!p)return;var c=categoryCounts();p.querySelectorAll('[data-pcm-business]').forEach(function(b){var k=b.getAttribute('data-pcm-business'),active=k===cache.category;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false');var n=b.querySelector('[data-pcm-business-count]');if(n)n.textContent=k==='manufacturer'&&!cache.manufacturersLoaded?'…':String(c[k]||0);});}
 function setCategory(k){cache.category=['all','client','supplier','manufacturer'].indexOf(k)>-1?k:'all';renderList();}
 function procurementMode(){return cache.category==='supplier'||cache.category==='manufacturer';}
 function companyGroupKey(r){var p=partnerFor(r);if(p&&p.id)return'partner:'+String(p.id);var company=N(r&&r.company);return company?'company:'+company:'contact:'+String(r&&r.contact_id||r&&r.id||'');}
@@ -76,9 +76,32 @@ function procurementGroupSearch(g){var i=supplierInfo(g.primary),people=groupPeo
 function procurementContactsCell(g){return'<div class="pcm-company-contacts">'+groupPeople(g).map(function(p){var r=p.rows[0],meta=U(p.emails.concat(p.phones)).join(' · ')||'Pa email';return'<button type="button" class="pcm-company-contact" data-pcm-person-id="'+E(r.contact_id||r.id)+'"><b>'+E(p.label)+'</b><small>'+E(meta)+'</small></button>';}).join('')+'</div>';}
 function procurementGroupRow(g){var r=g.primary,i=supplierInfo(r);return'<tr tabindex="0" data-pcm-id="'+E(r.contact_id)+'" data-pcm-company-key="'+E(g.key)+'"><td>'+procurementContactsCell(g)+'</td><td><b>'+E(g.company||'—')+'</b><small>'+E([i.businessType||r.role||kindLabel(r.kind),g.rows.length>1?String(groupPeople(g).length)+' persona kontakti':''].filter(Boolean).join(' · ')||'—')+'</small></td><td><b>'+E(i.supplyMain)+'</b><small>'+E(i.supplyMore)+'</small></td><td><b>'+E(i.specMain)+'</b><small>'+E(i.specMore)+'</small></td><td><b>'+E(i.location)+'</b><small>'+E(i.website)+'</small></td></tr>';}
 
+function installRelationshipMapStyle(){
+ if(document.getElementById('pcm-relationship-map-css'))return;
+ var style=document.createElement('style');style.id='pcm-relationship-map-css';style.textContent=`
+#page-workspace-contacts .pcm-relationship-map{position:relative;margin:0 0 18px;padding:22px 26px 25px;border:1px solid #DCE9E8;border-radius:24px;background:linear-gradient(135deg,#FBFDFC,#F3F8F8);box-shadow:0 12px 28px rgba(39,77,78,.045);overflow:hidden}
+#page-workspace-contacts .pcm-map-core{position:relative;z-index:2;width:max-content;min-width:178px;margin:0 auto 46px;padding:14px 24px;border-radius:19px;background:#2D6874;color:#fff;text-align:center;box-shadow:0 12px 25px rgba(45,104,116,.18)}
+.pcm-map-core span{display:inline-block;margin-right:8px;color:#CBE9E4}.pcm-map-core strong{font-size:17px}.pcm-map-core small{display:block;margin-top:4px;color:#D4E9E9;font-size:10px}
+#page-workspace-contacts .pcm-relationship-map:before{content:"";position:absolute;top:86px;left:12%;right:12%;height:43px;border-top:1px solid #BAD8D7;border-left:1px solid #BAD8D7;border-right:1px solid #BAD8D7;border-radius:15px 15px 0 0;pointer-events:none}
+#page-workspace-contacts .pcm-relationship-map .pcm-business-cards{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;min-width:0!important;width:100%!important}
+#page-workspace-contacts .pcm-relationship-map .pcm-business-card{position:relative;width:100%;height:78px;min-width:0;padding:14px 15px;border:1px solid #D4E5E2;border-radius:16px;background:#FFF;color:#315B60;box-shadow:0 6px 17px rgba(34,75,73,.055);font-size:12px;transition:border-color .15s ease,transform .15s ease,box-shadow .15s ease}
+#page-workspace-contacts .pcm-relationship-map .pcm-business-card:before{content:"";position:absolute;left:50%;top:-25px;width:1px;height:24px;background:#BAD8D7}
+#page-workspace-contacts .pcm-relationship-map .pcm-business-card:hover{transform:translateY(-2px);border-color:#8EBEB7;box-shadow:0 11px 24px rgba(34,75,73,.10)}
+#page-workspace-contacts .pcm-relationship-map .pcm-business-card.active{background:#E8F5F1!important;color:#245B57!important;border-color:#65A79B!important;box-shadow:0 9px 23px rgba(58,132,118,.13)!important}
+#page-workspace-contacts .pcm-relationship-map .pcm-business-card b{background:#F1F7F5;color:#31746C}
+#page-workspace-contacts .pcm-relationship-map .pcm-business-card.active b{background:#FFF;color:#245B57}
+@media(max-width:760px){#page-workspace-contacts .pcm-relationship-map{padding:18px}#page-workspace-contacts .pcm-map-core{margin-bottom:18px}#page-workspace-contacts .pcm-relationship-map:before,#page-workspace-contacts .pcm-relationship-map .pcm-business-card:before{display:none}#page-workspace-contacts .pcm-relationship-map .pcm-business-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}#page-workspace-contacts .pcm-relationship-map .pcm-business-card{height:65px}}
+@media(prefers-reduced-motion:reduce){#page-workspace-contacts .pcm-relationship-map .pcm-business-card{transition:none}#page-workspace-contacts .pcm-relationship-map .pcm-business-card:hover{transform:none}}
+`;document.head.appendChild(style);
+}
 function renderShell(){
  var p=activate();if(!p)return null;
+ installRelationshipMapStyle();
  p.innerHTML='<div class="pcm-page"><header class="pcm-head"><div><span>MARRËDHËNIET</span><h1>Kontaktet</h1><p>Klientët, furnitorët dhe prodhuesit — me të dhënat operative që duhen për punë.</p></div><div class="pcm-head-actions"><button type="button" data-pcm-refresh>Rifresko</button><button type="button" data-pcm-classic>Pamja klasike</button></div></header><div class="pcm-toolbar"><label class="pcm-search-compact"><span>Kërko</span><input id="pcm-search" placeholder="Emër, kompani, email, furnizim, lokacion…"></label><div class="pcm-business-cards" data-pcm-native="1">'+businessCard('all','Të gjithë')+businessCard('client','Klientë')+businessCard('supplier','Furnitorë')+businessCard('manufacturer','Prodhues')+'</div></div><section class="pcm-card"><div class="pcm-card-head"><div><b id="pcm-list-title">Regjistri i kontakteve</b><small id="pcm-count">Duke ngarkuar…</small></div></div><div id="pcm-list"><div class="pcm-empty">Duke ngarkuar kontaktet…</div></div></section></div>';
+ var toolbar=p.querySelector('.pcm-toolbar'),branches=p.querySelector('.pcm-business-cards');
+ var map=document.createElement('section');map.className='pcm-relationship-map';map.setAttribute('aria-label','Harta e partnerëve');
+ map.innerHTML='<div class="pcm-map-core"><span aria-hidden="true">✦</span><strong>Partnerët</strong><small>Rrjeti i marrëdhënieve</small></div>';
+ toolbar.insertAdjacentElement('afterend',map);map.appendChild(branches);
  bindShell(p);syncCategoryCards();return p;
 }
 function renderError(){var h=document.getElementById('pcm-list'),c=document.getElementById('pcm-count');if(c)c.textContent='Gabim gjatë ngarkimit';if(h)h.innerHTML='<div class="pcm-error"><b>Kontaktet nuk u ngarkuan.</b><span>'+E(cache.error||'Gabim i panjohur')+'</span><button type="button" data-pcm-retry>Provo përsëri</button></div>';var b=h&&h.querySelector('[data-pcm-retry]');if(b)b.onclick=function(){load(true);};}

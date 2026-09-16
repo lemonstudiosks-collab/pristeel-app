@@ -7,6 +7,8 @@ const migration = fs.readFileSync('supabase/migrations/20260822203500_toneatti_c
 assert.match(ui,/return'Klient'/,'canonical client bucket must use the Albanian label Klient');
 assert(!ui.includes('id="pcm-kind"'),'Contact Master must not expose the legacy Role dropdown');
 assert.match(ui,/businessCard\('all','Të gjithë'\)\+businessCard\('client','Klientë'\)\+businessCard\('supplier','Furnitorë'\)\+businessCard\('manufacturer','Prodhues'\)/,'business category cards must remain in Albanian and in the requested direct order');
+assert.match(ui,/map\.appendChild\(branches\)/,'partner map must reuse the existing category buttons and their filters');
+assert.match(ui,/b\.setAttribute\('aria-pressed',active\?'true':'false'\)/,'partner map must expose selected branch accessibly');
 assert.match(ui,/partners\?select=[^']*relation[^']*&limit=1000/,'manufacturer category must still be derived from partner relationships');
 assert.match(ui,/rel\.indexOf\('manufacturer'\)>-1/,'manufacturer classification must still require the manufacturer relation');
 assert.match(ui,/function companyGroupKey\(r\)[\s\S]*'partner:'\+String\(p\.id\)/,'procurement grouping must prefer canonical partner identity over display spelling');

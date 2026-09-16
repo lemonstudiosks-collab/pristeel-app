@@ -87,6 +87,19 @@ s.textContent=`
  #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node,#page-kek-tenders #pst-pcw-opportunity-tabs button{transition:none!important}
  #page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node:hover,#page-kek-tenders #pst-pcw-opportunity-tabs button:hover{transform:none!important}
 }
+/* Connected decision map: a clear hub and four actionable paths, not floating cards. */
+#page-kek-tenders #pst-pcw-lifecycle-tabs{grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-areas:"center center center center" "new waiting replied all"!important;grid-template-rows:auto auto!important;gap:0 12px!important;min-height:0!important;padding:25px 27px 24px!important;background:linear-gradient(145deg,#FAFDFD,#F1F7F7)!important;border-color:#D9E8E9!important}
+#page-kek-tenders #pst-pcw-lifecycle-tabs::before{inset:auto!important;left:12.5%!important;right:12.5%!important;top:119px!important;width:auto!important;height:38px!important;transform:none!important;background:none!important;border-top:1px solid #AFCFD3!important;border-left:1px solid #AFCFD3!important;border-right:1px solid #AFCFD3!important;border-radius:16px 16px 0 0!important;opacity:1!important}
+#page-kek-tenders #pst-pcw-lifecycle-tabs::after{content:'Zgjidh rrugën e punës';left:26px;top:15px;color:#748B91;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center{grid-area:center!important;width:220px!important;min-height:90px!important;margin:0 auto 58px!important;background:#2D6878!important;border-color:#2D6878!important;color:#FFF!important;border-radius:20px!important;box-shadow:0 12px 28px rgba(45,104,120,.19)!important}
+#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center span{color:#C8E8E9!important}
+#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center strong{color:#FFF!important}
+#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center small{color:#D4E8EB!important}
+#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node{justify-self:stretch!important;align-self:stretch!important;width:100%!important;min-height:80px!important;padding:13px!important;border-radius:15px!important;background:#FFF!important;box-shadow:0 5px 17px rgba(48,85,98,.045)!important}
+#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node:before{content:"";position:absolute;left:50%;top:-20px;width:1px;height:19px;background:#AFCFD3;pointer-events:none}
+#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node.on{background:#E6F4F5!important;border-color:#4F97AF!important;box-shadow:0 9px 21px rgba(79,151,175,.14)!important}
+#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node .pst-pcw-map-label{font-size:12px!important}
+@media(max-width:850px){#page-kek-tenders #pst-pcw-lifecycle-tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-areas:"center center" "new waiting" "replied all"!important;gap:10px!important;padding:35px 16px 17px!important}#page-kek-tenders #pst-pcw-lifecycle-tabs::before,#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node:before{display:none!important}#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-center{width:100%!important;min-height:74px!important;margin:0!important}#page-kek-tenders #pst-pcw-lifecycle-tabs .pst-pcw-map-node{min-height:65px!important}}
 `;
 document.head.appendChild(s);
 loadWaitingBridge();
