@@ -42,6 +42,11 @@ assert.equal(w.document.querySelectorAll('.pst-fin-work.urgent').length>=1,true,
 assert.ok(w.document.getElementById('pst-finance-tools'),'legacy finance tools must remain reachable');
 assert.ok(w.document.getElementById('pst-finance-tools').contains(w.document.getElementById('fin-hub-grid')),'existing finance engine grid must be preserved under tools');
 assert.ok(w.document.getElementById('legacy-tile'),'existing finance tools must not be deleted');
+assert(w.document.getElementById('pst-finance-tools').open,'finance map should be visible by default');
+const homeButton=w.document.querySelector('[data-pst-fin-home]');
+assert(homeButton,'Finance must provide a direct Home control');
+homeButton.click();
+assert(calls.some(x=>x[0]==='workspace'&&x[1]==='home'),'Finance Home control must route to Home');
 assert.equal(calls.filter(x=>x[0]==='read').length>=1,true,'Finance Daily should read canonical tasks');
 
 w.PSTFinanceDailyV1.openRow({source:'invoice_receivable',project_id:'p1'});

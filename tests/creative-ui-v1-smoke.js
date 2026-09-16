@@ -34,6 +34,13 @@ assert(dom.window.document.getElementById('pst-creative-ui-v1-css'));
 assert.strictEqual(dom.window.document.querySelector('.pn-project-status').textContent, 'Në pritje të klientit');
 assert.strictEqual(dom.window.document.querySelectorAll('.pst-creative-fin-tile').length, 2);
 assert.strictEqual(dom.window.document.querySelectorAll('.pst-creative-fin-icon svg').length, 2);
+const financeGrid = dom.window.document.getElementById('fin-hub-grid');
+const financeTiles = Array.from(financeGrid.children).filter(el => el.classList.contains('pst-creative-fin-tile'));
+assert(financeGrid.classList.contains('pst-finance-map'));
+assert.strictEqual(financeGrid.querySelectorAll('.pst-finance-map-core').length, 1);
+dom.window.PSTCreativeUiV1.apply();
+assert.strictEqual(financeGrid.querySelectorAll('.pst-finance-map-core').length, 1, 'rerender must not duplicate map hub');
+assert.deepStrictEqual(Array.from(financeGrid.children).filter(el => el.classList.contains('pst-creative-fin-tile')), financeTiles, 'finance actions must retain their original nodes');
 assert.strictEqual(typeof dom.window.PSTCreativeUiV1.apply, 'function');
 
 console.log('Creative UI v1 smoke test passed.');
