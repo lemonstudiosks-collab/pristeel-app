@@ -21,7 +21,8 @@ assert(/data-pmm-back[\s\S]*e\.stopPropagation\(\);goBackProjects\(\)/.test(proj
 assert(projectReadability.includes('pristeel-project-mindmap-navigation-v1.js?v=20260916-final1'),'Projects runtime must load the dedicated mindmap navigation bridge');
 assert(projectMindmapNav.includes('PSTPrimaryNavResilienceV10'),'Projects Kthehu bridge must prefer the current primary navigation owner');
 assert(projectMindmapNav.includes("typeof P.openHome==='function'"),'Projects Kthehu bridge must call the final Home owner');
-assert(/window\.addEventListener\('click',[\s\S]*data-pmm-back[\s\S]*stopImmediatePropagation/.test(projectMindmapNav),'Projects Kthehu bridge must intercept at window-capture level before older document handlers');
+assert(/function intercept\(e\)[\s\S]*data-pmm-back[\s\S]*stopImmediatePropagation/.test(projectMindmapNav),'Projects Kthehu bridge must consume the back click before older handlers');
+assert(projectMindmapNav.includes("window.addEventListener('click',intercept,true);"),'Projects Kthehu bridge must register at window-capture level');
 assert(!/supaFetch\s*\(|fetch\s*\(|MutationObserver\s*\(|setInterval\s*\(/.test(projectMindmapNav),'Projects Kthehu bridge must stay navigation-only');
 assert(opportunitiesPolish.includes('#page-kek-tenders #pst-pcw-lifecycle-tabs{position:relative;display:grid!important;'),'Final Opportunities polish must preserve the lifecycle mindmap as a grid');
 assert(!opportunitiesPolish.includes('#page-kek-tenders #pst-pcw-lifecycle-tabs,\n#page-kek-tenders #pst-pcw-opportunity-tabs{position:relative;display:flex!important;'),'Final Opportunities polish must not collapse the lifecycle mindmap back into a flex pill row');
