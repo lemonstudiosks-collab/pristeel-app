@@ -1,8 +1,6 @@
 /* PRISTEEL Opportunities Filter Polish v3
  * Final presentation owner for the visible Opportunities lifecycle mindmap and source filters.
- * Also owns the Projects "Kthehu" click at window-capture level so older document-level
- * navigation handlers cannot reclaim the route after the final navigation owner runs.
- * No business-data writes or outbound actions are added here.
+ * Click/filter behavior remains owned by Project-Centric Workflow and its navigation layers.
  */
 (function(){
 'use strict';
@@ -17,35 +15,6 @@ function loadWaitingBridge(){
   b.setAttribute('data-pst-opportunities-waiting-bridge','1');
   b.onerror=function(){console.error('Nuk u ngarkua lifecycle-i i Mundësive.');};
   document.head.appendChild(b);
-}
-
-function openCanonicalHome(){
-  var P=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV9||window.PSTPrimaryNavResilienceV8||window.PSTPrimaryNavResilienceV7||window.PSTPrimaryNavResilienceV6||window.PSTPrimaryNavResilienceV5||window.PSTPrimaryNavResilienceV4||window.PSTPrimaryNavResilienceV3||window.PSTPrimaryNavResilienceV2||window.PSTPrimaryNavResilienceV1;
-  try{if(P&&typeof P.openHome==='function')return P.openHome()!==false;}catch(e){console.warn('PPPP final Home route:',e);}
-  var H=window.PSTHomeCanonicalV1;
-  try{
-    if(H&&typeof H.activateHome==='function'){
-      H.activateHome();
-      if(typeof H.render==='function')Promise.resolve(H.render(true)).catch(function(){});
-      return true;
-    }
-  }catch(e){console.warn('PPPP canonical Home fallback:',e);}
-  try{if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('home');return true;}}catch(e){}
-  try{if(typeof window.goHome==='function'){window.goHome();return true;}}catch(e){}
-  return false;
-}
-
-function installProjectsBackBridge(){
-  if(window.__pstProjectsBackFinalOwnerBridgeV1)return;
-  window.__pstProjectsBackFinalOwnerBridgeV1=true;
-  window.addEventListener('click',function(e){
-    var back=e.target&&e.target.closest?e.target.closest('[data-pmm-back]'):null;
-    if(!back)return;
-    e.preventDefault();
-    e.stopPropagation();
-    if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
-    openCanonicalHome();
-  },true);
 }
 
 var s=document.createElement('style');
@@ -120,7 +89,6 @@ s.textContent=`
 }
 `;
 document.head.appendChild(s);
-installProjectsBackBridge();
 loadWaitingBridge();
-window.PSTOpportunitiesFilterPolishV1={version:'20260916-final-owner1',styleId:s.id,openCanonicalHome:openCanonicalHome};
+window.PSTOpportunitiesFilterPolishV1={version:'20260916-final-owner1',styleId:s.id};
 })();
