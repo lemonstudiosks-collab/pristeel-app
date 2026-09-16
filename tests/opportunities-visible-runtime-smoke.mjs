@@ -87,6 +87,8 @@ const page=window.document.getElementById('page-kek-tenders');
 assert.equal(page.getAttribute('data-pcw-opportunities-owner'),'2','current whole-card surface did not claim ownership');
 assert.equal(window.document.querySelector('.pst-kek-title').textContent,'Mundësitë','page title must be Albanian and operator-oriented');
 assert(window.document.querySelector('#pst-opportunities-focus'),'modern opportunity focus surface was not mounted');
+assert(window.document.querySelector('.pst-pcw-map-center'),'Opportunities must show a central mindmap node');
+assert.equal(window.document.querySelectorAll('.pst-pcw-map-node').length,5,'Mindmap must expose all five lifecycle branches');
 assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all populated source fixtures should render initially');
 assert(window.document.querySelector('[data-pcw-source="TED"]'),'TED source tab must be visible');
 assert(window.document.querySelector('[data-pcw-source="KRPP"]'),'KRPP source tab must be visible');
@@ -122,6 +124,7 @@ assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'all s
 
 window.document.querySelector('[data-pcw-lifecycle="all"]').click();
 assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'lifecycle filter must remain responsive after source-filter rerenders');
+assert.equal(window.document.querySelector('[data-pcw-lifecycle="all"]').getAttribute('aria-pressed'),'true','Active map branch must remain accessible');
 window.document.querySelector('[data-pcw-lifecycle="new"]').click();
 assert.equal(window.document.querySelectorAll('.pst-pcw-tender').length,3,'new lifecycle filter must restore the current new opportunities');
 
