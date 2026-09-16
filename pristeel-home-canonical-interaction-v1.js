@@ -8,7 +8,7 @@
 if(window.__pstHomeCanonicalInteractionV1)return;
 window.__pstHomeCanonicalInteractionV1=true;
 
-var VERSION='20260916-global-shell-finance-map1';
+var VERSION='20260916-production-surface1';
 function str(v){return String(v==null?'':v);}
 function norm(v){return str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function urgentRow(row){
@@ -58,7 +58,10 @@ function loadGlobalShell(){
 function loadFinanceMindmap(){
   loadScript('__pstFinanceMindmapV1','script[data-pst-finance-mindmap]','pristeel-finance-mindmap-v1.js?v=20260916-finance1','data-pst-finance-mindmap','Nuk u ngarkua mindmap-i i Financave.');
 }
-function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();loadGlobalShell();loadFinanceMindmap();}
+function loadProductionSurfaceOwner(){
+  loadScript('__pstProductionSurfaceOwnerV1','script[data-pst-production-surface-owner]','pristeel-production-surface-owner-v1.js?v=20260916-production-surface1','data-pst-production-surface-owner','Nuk u ngarkua pronari final i sipërfaqes së PPPP.');
+}
+function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();loadGlobalShell();loadFinanceMindmap();loadProductionSurfaceOwner();}
 document.addEventListener('pst:home-canonical-rendered',function(){decorate(document);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.PSTHomeCanonicalInteractionV1={version:VERSION,decorate:decorate,urgentRow:urgentRow,_test:{norm:norm}};
