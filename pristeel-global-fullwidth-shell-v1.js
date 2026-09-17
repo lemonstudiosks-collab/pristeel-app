@@ -56,16 +56,15 @@ function goHome(){
   }catch(e){console.warn('PRISTEEL global Home navigation:',e);}
   return false;
 }
-function removeBack(){
-  var old=document.getElementById('pst-global-page-backbar');
-  if(old)old.remove();
-}
 function decorate(){
   scheduled=false;
   installStyle();
   var page=activePage();
-  removeBack();
+  document.querySelectorAll('#pst-global-page-backbar').forEach(function(bar){
+    if(!page||isHome(page)||bar.parentNode!==page)bar.remove();
+  });
   if(!page||isHome(page))return;
+  if(page.querySelector(':scope > #pst-global-page-backbar'))return;
   var bar=document.createElement('div');
   bar.id='pst-global-page-backbar';
   bar.setAttribute('data-pst-global-shell','1');

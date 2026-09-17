@@ -35,6 +35,12 @@ for(let cycle=0;cycle<3;cycle++){
     activate(id);
     await new Promise(r=>setTimeout(r,35));
     assert.equal(window.document.querySelectorAll('#pst-global-back-home').length,1,'Exactly one Back button after rerender');
+    const stableBack=page('pst-global-back-home');
+    window.PSTGlobalFullwidthShellV1.refresh();
+    window.PSTGlobalFullwidthShellV1.refresh();
+    page(id).classList.add('presentation-refresh');
+    await new Promise(r=>setTimeout(r,35));
+    assert.equal(page('pst-global-back-home'),stableBack,'Back node/listener survives presentation rerenders');
     window.document.querySelector('#pst-global-back-home').click();
     assert.equal(page('page-workspace-home').classList.contains('active'),true,'Back returns Home');
   }

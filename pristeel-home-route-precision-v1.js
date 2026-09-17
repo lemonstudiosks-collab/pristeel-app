@@ -97,11 +97,7 @@ function installHomeRecoveryBannerGuard(){
   removeLegacyHomeRecoveryBanner();
   if(window.__pstHomeRecoveryBannerGuardV1)return true;
   window.__pstHomeRecoveryBannerGuardV1=true;
-  var scheduled=false;
-  var run=function(){scheduled=false;removeLegacyHomeRecoveryBanner();};
-  var request=function(){if(scheduled)return;scheduled=true;setTimeout(run,0);};
-  var observer=new MutationObserver(request);
-  observer.observe(document.documentElement,{childList:true,subtree:true});
+  var request=function(){removeLegacyHomeRecoveryBanner();};
   document.addEventListener('pst:native-home-ready',request);
   window.addEventListener('pageshow',request);
   [0,80,220,700,1600,3200].forEach(function(ms){setTimeout(removeLegacyHomeRecoveryBanner,ms);});

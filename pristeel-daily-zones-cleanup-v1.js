@@ -127,7 +127,14 @@ function ensureProjectNav(p){
   var proc=nav.querySelector('[data-pwf-area="procurement"]'),commercial=nav.querySelector('[data-pst-ux-commercial]');
   if(proc&&!commercial){commercial=document.createElement('button');commercial.type='button';commercial.className='pwf-area-btn pst-ux-commercial-btn';commercial.setAttribute('data-pst-ux-commercial','1');commercial.textContent='3 Komerciale';proc.insertAdjacentElement('afterend',commercial);}
   var utils=p.querySelector('.pst-ux-project-utils');if(!utils){utils=document.createElement('div');utils.className='pst-ux-project-utils';nav.insertAdjacentElement('afterend',utils);}
-  [['files','Skedarët'],['communication','Komunikimi']].forEach(function(x){var b=nav.querySelector('[data-pwf-area="'+x[0]+'"]')||p.querySelector('.pst-ux-project-utils [data-pwf-area="'+x[0]+'"]');if(b){b.textContent=x[1];b.classList.add('pst-ux-utility-btn');utils.appendChild(b);}});
+  [['files','Skedarët'],['communication','Komunikimi']].forEach(function(x){
+    var selector='[data-pwf-area="'+x[0]+'"]',b=utils.querySelector(selector);
+    if(!b)b=nav.querySelector(selector);
+    if(!b)return;
+    b.textContent=x[1];b.classList.add('pst-ux-utility-btn');
+    if(b.parentNode!==utils)utils.appendChild(b);
+    p.querySelectorAll('.pst-ux-project-utils '+selector+',.pst-pi-tabs '+selector).forEach(function(other){if(other!==b)other.remove();});
+  });
   var area=p.getAttribute('data-pwf-area')||'',stage=p.getAttribute('data-pwf-stage')||'';p.classList.toggle('pst-ux-commercial-active',area==='procurement'&&(stage==='pricing'||stage==='client_offer'));p.classList.toggle('pst-ux-procurement-active',area==='procurement'&&stage!=='pricing'&&stage!=='client_offer');
   if(commercial)commercial.classList.toggle('on',p.classList.contains('pst-ux-commercial-active'));if(proc&&p.classList.contains('pst-ux-commercial-active'))proc.classList.remove('on');
   return true;

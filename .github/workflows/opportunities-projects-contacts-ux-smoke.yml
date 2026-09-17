@@ -42,6 +42,8 @@ jobs:
           npm install --ignore-scripts --no-package-lock
           node tests/opportunities-visible-runtime-smoke.mjs
           node tests/opportunities-mindmap-v5-interaction-smoke.mjs
+          node tests/opportunities-late-owner-smoke.mjs
+          node tests/project-utility-nav-rerender-smoke.mjs
           node tests/global-fullwidth-shell-smoke.mjs
           node tests/finance-mindmap-interaction-smoke.mjs
           node tests/production-surface-owner-smoke.mjs
