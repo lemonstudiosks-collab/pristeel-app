@@ -99,8 +99,12 @@ assert.match(home,/identityScore/,'short project names must resolve against live
 assert.match(home,/pristeel-openai-operating-assistant-v1\.js\?v=20260827-home1/,'Home must load the assistant on demand instead of racing it');
 
 assert.match(home,/function looksLikeProjectLookup\(q\)/,'a short project name must be treated as a status lookup, not an operator update');
-assert.match(home,/if\(isQuestion\(q\)\|\|looksLikeProjectLookup\(q\)\)/,'Home submit must route project-name lookups to read-only status');
-assert.match(home,/var local=localAnswer\(q\);if\(local\)return local;/,'Home must prefer live PPPP data before calling an external AI provider');
+assert.match(home,/function explicitWriteIntent\(q\)/,'Home must preserve explicit write routing');
+assert.match(home,/function evidenceReadIntent\(q\)/,'Home must recognize bare entities and project evidence as read intents');
+assert.match(home,/!explicitWriteIntent\(q\).*evidenceReadIntent\(q\)/s,'read routing must not capture explicit write commands');
+const assistantCall=home.indexOf("await AI.ask(q,{scope:'global'})");
+const localFallback=home.indexOf('var local=localAnswer(q);if(local)return local;');
+assert.ok(assistantCall>=0&&localFallback>assistantCall,'Home must call the live assistant before using the compact local fallback');
 assert.match(home,/friendlyAssistantError/,'Home must translate provider failures into operator-safe messages');
 assert.doesNotMatch(home,/kind:'error',text:S\(e&&e\.message\|\|e\)/,'Home must never expose raw provider errors directly to the operator');
 
