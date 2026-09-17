@@ -39,7 +39,7 @@ function loadPyetPpppRepair(){
   if(window.PSTPyetPpppFullAnalysisV1)return;
   if(document.querySelector('script[data-pst-pyet-pppp-full-analysis-v1]'))return;
   var s=document.createElement('script');
-  s.src='pristeel-pyet-pppp-full-analysis-v1.js?v=20260917-fullanalysis1';
+  s.src='pristeel-pyet-pppp-full-analysis-v1.js?v=20260917-fullanalysis2';
   s.defer=true;
   s.setAttribute('data-pst-pyet-pppp-full-analysis-v1','1');
   document.head.appendChild(s);
