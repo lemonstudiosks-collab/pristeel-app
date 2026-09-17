@@ -9,7 +9,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260916-mindmap5';
+var VERSION='20260917-mindmap5-deterministic';
 var view='mindmap',field='all',filtersOpen=true,api=null,state=null;
 var observer=null,observerRoot=null,scheduled=false,decorating=false;
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'];
@@ -73,7 +73,7 @@ function consume(e){if(!e)return;e.preventDefault();e.stopPropagation();if(typeo
 function click(e){var t=e.target&&e.target.closest?e.target:null,b;if(!t)return;current();if((b=t.closest('[data-pst-opp-back]'))){consume(e);back();return;}if((b=t.closest('[data-pst-opp-view]'))){consume(e);view=b.dataset.pstOppView==='list'?'list':'mindmap';decorate();return;}if((b=t.closest('[data-pst-opp-filter-toggle]'))){consume(e);filtersOpen=!filtersOpen;decorate();return;}if((b=t.closest('[data-pst-opp-reset]'))){consume(e);reset();return;}if((b=t.closest('[data-pst-opp-lifecycle]'))){consume(e);if(state){state.lifecycle=b.dataset.pstOppLifecycle||'new';if(state.lifecycle==='all')state.source='all';}render();return;}if((b=t.closest('[data-pst-opp-source]'))){consume(e);if(state){state.source=b.dataset.pstOppSource||'all';state.mode='all';}render();return;}if((b=t.closest('[data-pst-opp-field]'))){consume(e);field=b.dataset.pstOppField||'all';decorate();return;}}
 function change(e){var t=e.target;current();if(t.matches('[data-pst-list-lifecycle]')){if(state)state.lifecycle=t.value||'all';render();}else if(t.matches('[data-pst-list-source]')){if(state){state.source=t.value||'all';state.mode='all';}render();}else if(t.matches('[data-pst-list-field]')){field=t.value||'all';decorate();}}
 function observe(){var root=document.getElementById('pst-opportunities-focus');if(!root||typeof MutationObserver!=='function')return;if(observer)observer.disconnect();observerRoot=root;if(!observer)observer=new MutationObserver(function(){if(!decorating)schedule();});reconnectObserver();}
-function boot(){css();loadBridge();var tries=0;(function ready(){current();if(api&&state&&document.getElementById('pst-opportunities-focus')){decorate();observe();return;}if(tries++<120)setTimeout(ready,500);})();document.addEventListener('click',click,true);document.addEventListener('change',change,true);document.addEventListener('input',function(e){if(e.target&&e.target.id==='pst-pcw-opportunity-search')schedule();},true);document.addEventListener('pst:modules-ready',schedule,{once:true});}
+function boot(){css();loadBridge();(function ready(){current();if(api&&state&&document.getElementById('pst-opportunities-focus')){decorate();observe();return;}setTimeout(ready,1000);})();document.addEventListener('click',click,true);document.addEventListener('change',change,true);document.addEventListener('input',function(e){if(e.target&&e.target.id==='pst-pcw-opportunity-search')schedule();},true);document.addEventListener('pst:modules-ready',schedule,{once:true});}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.PSTOpportunitiesMindmapV4=window.PSTOpportunitiesMindmapV5={version:VERSION,apply:decorate,reset:reset,state:function(){return{view:view,field:field,filtersOpen:filtersOpen};},_test:{classifyField:classifyField,rowText:rowText,counts:counts,sourceOf:srcOf,lifecycleOf:lifeOf,decorate:decorate,schedule:schedule}};
 })();
