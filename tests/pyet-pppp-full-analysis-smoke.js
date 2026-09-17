@@ -60,5 +60,16 @@ const assert=require('assert');
   listeners.submit(ev);
   assert.strictEqual(prevented,false,'explicit write must not be captured by rich read router');
   assert.strictEqual(askCount,1,'explicit write must not call read assistant');
+
+  const canonical=fs.readFileSync('pristeel-project-control-home-v1.js','utf8');
+  const askStart=canonical.indexOf('async function askAI(q){');
+  const assistantCall=canonical.indexOf("await AI.ask(q,{scope:'global'})",askStart);
+  const localFallback=canonical.indexOf('var local=localAnswer(q);if(local)return local;',askStart);
+  assert.ok(askStart>=0&&assistantCall>askStart,'canonical Home must call the live assistant for reads');
+  assert.ok(localFallback>assistantCall,'canonical Home local summary must only be a fallback after the live assistant path');
+  assert.match(canonical,/function explicitWriteIntent\(q\)/,'canonical Home must preserve explicit write routing');
+  assert.match(canonical,/function evidenceReadIntent\(q\)/,'canonical Home must recognize evidence and bare-entity reads');
+  assert.match(canonical,/!explicitWriteIntent\(q\).*evidenceReadIntent\(q\)/s,'canonical Home must keep explicit writes out of the read path');
+
   console.log('pyet-pppp-full-analysis smoke: PASS');
 })().catch(err=>{console.error(err);process.exit(1);});
