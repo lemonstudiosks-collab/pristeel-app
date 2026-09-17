@@ -55,13 +55,10 @@ function loadOpportunitiesFilterPolish(){
 function loadGlobalShell(){
   loadScript('__pstGlobalFullwidthShellV1','script[data-pst-global-fullwidth-shell]','pristeel-global-fullwidth-shell-v1.js?v=20260916-global1','data-pst-global-fullwidth-shell','Nuk u ngarkua full-width shell i PPPP.');
 }
-function loadFinanceMindmap(){
-  loadScript('__pstFinanceMindmapV1','script[data-pst-finance-mindmap]','pristeel-finance-mindmap-v1.js?v=20260916-finance1','data-pst-finance-mindmap','Nuk u ngarkua mindmap-i i Financave.');
-}
 function loadProductionSurfaceOwner(){
   loadScript('__pstProductionSurfaceOwnerV1','script[data-pst-production-surface-owner]','pristeel-production-surface-owner-v1.js?v=20260916-production-surface1','data-pst-production-surface-owner','Nuk u ngarkua pronari final i sipërfaqes së PPPP.');
 }
-function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();loadGlobalShell();loadFinanceMindmap();loadProductionSurfaceOwner();}
+function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();loadGlobalShell();loadProductionSurfaceOwner();}
 document.addEventListener('pst:home-canonical-rendered',function(){decorate(document);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.PSTHomeCanonicalInteractionV1={version:VERSION,decorate:decorate,urgentRow:urgentRow,_test:{norm:norm}};

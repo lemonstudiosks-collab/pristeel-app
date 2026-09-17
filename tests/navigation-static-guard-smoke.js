@@ -26,7 +26,7 @@ assert(projectMindmapNav.includes("window.addEventListener('click',intercept,tru
 assert(!/supaFetch\s*\(|fetch\s*\(|MutationObserver\s*\(|setInterval\s*\(/.test(projectMindmapNav),'Projects Kthehu bridge must stay navigation-only');
 
 assert(opportunitiesPolish.includes('#pst-opp-v4-map{display:grid'),'Final Opportunities owner must render the approved connected mindmap as a grid');
-assert(opportunitiesPolish.includes('#pst-pcw-lifecycle-tabs,#pst-pcw-opportunity-tabs{display:none!important}'),'Legacy detached lifecycle/source controls must be retired from the visible Opportunities surface');
+assert(opportunitiesPolish.includes('#pst-opportunities-focus:has(#pst-opp-v4-map) #pst-pcw-lifecycle-tabs,#pst-opportunities-focus:has(#pst-opp-v4-map) #pst-pcw-opportunity-tabs{display:none!important}'),'Legacy controls must be hidden only after the replacement mindmap is present');
 assert(opportunitiesPolish.includes("data-pst-opp-source")&&opportunitiesPolish.includes("data-pst-opp-lifecycle")&&opportunitiesPolish.includes("data-pst-opp-field"),'Opportunities mindmap must expose functional source, lifecycle and field branches');
 assert(opportunitiesPolish.includes("life('new','Të reja'")&&opportunitiesPolish.includes("life('waiting','Në pritje'")&&opportunitiesPolish.includes("life('replied','Me përgjigje'")&&opportunitiesPolish.includes("life('all','Të gjitha'"),'Visible lifecycle branches must remain the approved four-state model');
 assert(opportunitiesPolish.includes('PSTPrimaryNavResilienceV10')&&opportunitiesPolish.includes("typeof N.openHome==='function'"),'Opportunities Kthehu must prefer the final primary navigation owner');

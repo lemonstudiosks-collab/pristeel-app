@@ -9,7 +9,6 @@ if(window.__pstProductionSurfaceOwnerV1)return;
 window.__pstProductionSurfaceOwnerV1=true;
 
 var VERSION='20260916-production-surface1';
-var selectedField='all';
 var scheduled=false;
 var observer=null;
 var FIN_BRANCHES=[
@@ -24,11 +23,10 @@ var FIN_BRANCHES=[
   {id:'portal',label:'Portali ATK — EDI',sub:'Hap e-deklarimin në dritare të re',icon:'↗',action:'portal'},
   {id:'receipts',label:'Kuponët e shpenzimeve',sub:'Foto/PDF, lexim automatik dhe kontroll',icon:'▥',action:'receipts'}
 ];
-function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function installStyle(){
-  var old=document.getElementById('pst-production-surface-owner-v1-css');if(old)old.remove();
+  if(document.getElementById('pst-production-surface-owner-v1-css'))return;
   var s=document.createElement('style');s.id='pst-production-surface-owner-v1-css';s.textContent=`
 html body.pst-global-fullwidth-shell #app-shell-root>#app-sidebar,
 html body.pst-global-fullwidth-shell #app-sidebar,
@@ -62,33 +60,10 @@ body.pst-global-fullwidth-shell #page-finance [data-pst-fin-home]{display:none!i
 }
 function hideSidebar(){
   document.body&&document.body.classList.add('pst-global-fullwidth-shell');
-  ['app-sidebar','pst-v2-sidebar','pst-ws-sidebar'].forEach(function(id){var el=document.getElementById(id);if(!el)return;['display','width','min-width','max-width','padding','margin','border'].forEach(function(p){el.style.setProperty(p,p==='display'?'none':'0','important');});el.style.setProperty('visibility','hidden','important');});
-  var main=document.querySelector('#app-shell-root>.main,.app-shell>.main');if(main){main.style.setProperty('width','100%','important');main.style.setProperty('max-width','none','important');main.style.setProperty('min-width','0','important');main.style.setProperty('margin','0','important');}
+  ['app-sidebar','pst-v2-sidebar','pst-ws-sidebar'].forEach(function(id){var el=document.getElementById(id);if(!el)return;['display','width','min-width','max-width','padding','margin','border'].forEach(function(p){var value=p==='display'?'none':'0';if(el.style.getPropertyValue(p)!==value||el.style.getPropertyPriority(p)!=='important')el.style.setProperty(p,value,'important');});if(el.style.getPropertyValue('visibility')!=='hidden'||el.style.getPropertyPriority('visibility')!=='important')el.style.setProperty('visibility','hidden','important');});
+  var main=document.querySelector('#app-shell-root>.main,.app-shell>.main');if(main){[['width','100%'],['max-width','none'],['min-width','0'],['margin','0']].forEach(function(pair){if(main.style.getPropertyValue(pair[0])!==pair[1]||main.style.getPropertyPriority(pair[0])!=='important')main.style.setProperty(pair[0],pair[1],'important');});}
 }
-function forceHome(){
-  var page=document.getElementById('page-workspace-home')||document.getElementById('page-dashboard')||document.getElementById('page-home');
-  try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.activateHome==='function'){var p=H.activateHome();if(p)page=p;}}catch(e){}
-  if(!page){try{var N=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(N&&typeof N.openHome==='function')N.openHome();}catch(e){}page=document.getElementById('page-workspace-home')||document.getElementById('page-dashboard')||document.getElementById('page-home');}
-  if(!page){try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('home');}catch(e){}page=document.getElementById('page-workspace-home')||document.getElementById('page-dashboard')||document.getElementById('page-home');}
-  if(page){document.querySelectorAll('.page').forEach(function(p){if(p===page)return;p.classList.remove('active');p.style.display='none';});page.classList.add('active');page.style.display='block';}
-  document.querySelectorAll('#pst-ws-canonical-nav .pst-ws-navbtn[data-key]').forEach(function(b){b.classList.toggle('active',S(b.dataset.key)==='home');});
-  var bar=document.getElementById('pst-global-page-backbar');if(bar)bar.remove();
-  try{var H2=window.PSTHomeCanonicalV1;if(H2&&typeof H2.render==='function')Promise.resolve(H2.render(true)).catch(function(){});}catch(e){}
-  return !!page;
-}
-function goHome(){var ok=forceHome();[0,60,220].forEach(function(ms){setTimeout(function(){forceHome();hideSidebar();},ms);});return ok;}
-function opportunityApi(){return window.PSTProjectCentricWorkflowV1||null;}
-function opportunityMindmap(){return window.PSTOpportunitiesMindmapV5||window.PSTOpportunitiesMindmapV4||null;}
-function selectedFieldFromOwner(){try{var M=opportunityMindmap(),st=M&&typeof M.state==='function'?M.state():null;if(st&&st.field)selectedField=st.field;}catch(e){}return selectedField;}
-function classifyRow(row){try{var M=opportunityMindmap(),fn=M&&M._test&&M._test.classifyField;if(typeof fn==='function')return fn(row);}catch(e){}return'other';}
-function applyOpportunityField(){
-  var page=document.getElementById('page-kek-tenders');if(!page||!page.classList.contains('active'))return false;
-  selectedFieldFromOwner();var api=opportunityApi(),rows=A(api&&api._state&&api._state.rows),by={};rows.forEach(function(r){by[S(r&&r.id)]=r;});
-  var shown=0;page.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').forEach(function(card){var row=by[S(card.getAttribute('data-pcw-tender'))],ok=selectedField==='all'||(row&&classifyRow(row)===selectedField);card.hidden=!ok;card.style.setProperty('display',ok?'':'none','important');if(ok)shown++;});
-  page.querySelectorAll('[data-pst-opp-field]').forEach(function(b){b.classList.toggle('on',S(b.getAttribute('data-pst-opp-field'))===selectedField);});
-  var head=page.querySelector('.pst-opp-v4-results-head small');if(head){var label='';try{var btn=page.querySelector('[data-pst-opp-field="'+selectedField+'"] b');label=btn?S(btn.textContent).trim():'';}catch(e){}head.textContent=shown+' rezultate'+(selectedField==='all'?'':label?' · '+label:'');}
-  return true;
-}
+function goHome(){try{var nav=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(nav&&typeof nav.openHome==='function')return nav.openHome();if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('home');}catch(e){}return false;}
 function financeMapHtml(){
   var nodes=FIN_BRANCHES.map(function(b,i){return '<button type="button" class="pst-fin-node" data-pst-finance-branch="'+E(b.id)+'" data-fin-pos="'+i+'"><span class="ico">'+E(b.icon)+'</span><span><b>'+E(b.label)+'</b><small>'+E(b.sub)+'</small></span><em>›</em></button>';}).join('');
   var ends=[[100,90],[300,90],[500,90],[700,90],[900,90],[100,510],[300,510],[500,510],[700,510],[900,510]];
@@ -98,9 +73,16 @@ function financeMapHtml(){
 function ensureFinanceMap(){
   var page=document.getElementById('page-finance'),hub=document.getElementById('fin-hub');if(!page||!hub)return false;
   var tools=document.getElementById('pst-finance-tools');if(tools)tools.style.setProperty('display','none','important');var grid=document.getElementById('fin-hub-grid');if(grid)grid.style.setProperty('display','none','important');
-  var map=document.getElementById('pst-finance-mindmap');if(!map){map=document.createElement('div');map.id='pst-finance-mindmap';map.setAttribute('aria-label','Harta e Financave');hub.insertBefore(map,hub.firstChild||null);}map.innerHTML=financeMapHtml();
-  var ret=document.getElementById('pst-finance-map-return');if(ret)ret.textContent='← Harta e Financave';return true;
+  var map=document.getElementById('pst-finance-mindmap');if(!map){map=document.createElement('div');map.id='pst-finance-mindmap';map.setAttribute('aria-label','Harta e Financave');hub.insertBefore(map,hub.firstChild||null);}
+  if(map.querySelectorAll('[data-pst-finance-branch]').length!==FIN_BRANCHES.length)map.innerHTML=financeMapHtml();
+  ensureFinanceReturn();return true;
 }
+function ensureFinanceReturn(){
+  var tabs=document.getElementById('fin-tabs');if(!tabs||!tabs.parentNode)return null;
+  var ret=document.getElementById('pst-finance-map-return');if(!ret){ret=document.createElement('button');ret.type='button';ret.id='pst-finance-map-return';tabs.parentNode.insertBefore(ret,tabs);}
+  if(ret.textContent!=='← Harta e Financave')ret.textContent='← Harta e Financave';syncFinanceReturn();return ret;
+}
+function syncFinanceReturn(){var hub=document.getElementById('fin-hub'),ret=document.getElementById('pst-finance-map-return');if(!hub||!ret)return;var display=hub.style.display==='none'?'inline-flex':'none';if(ret.style.display!==display)ret.style.display=display;}
 function showFinanceMap(){
   try{if(typeof window.finShowHub==='function')window.finShowHub();}catch(e){}
   var hub=document.getElementById('fin-hub'),tabs=document.getElementById('fin-tabs');if(hub)hub.style.display='block';if(tabs)tabs.style.display='none';
@@ -109,9 +91,9 @@ function showFinanceMap(){
 }
 function openFinanceBranch(id){
   var branch=FIN_BRANCHES.filter(function(x){return x.id===id;})[0];if(!branch)return false;
-  if(branch.action==='tab'&&typeof window.finSwitchTab==='function'){window.finSwitchTab(branch.id);return true;}
+  if(branch.action==='tab'&&typeof window.finSwitchTab==='function'){window.finSwitchTab(branch.id);syncFinanceReturn();return true;}
   if(branch.action==='receipts'){
-    if(typeof window.finReceiptShow==='function'){window.finReceiptShow();return true;}
+    if(typeof window.finReceiptShow==='function'){window.finReceiptShow();syncFinanceReturn();return true;}
     var tile=document.getElementById('fin-receipts-v1-tile');if(tile){tile.click();return true;}return false;
   }
   if(branch.action==='portal'){try{window.open('https://edeklarimi.atk-ks.org/','_blank','noopener');return true;}catch(e){return false;}}
@@ -119,18 +101,16 @@ function openFinanceBranch(id){
 }
 function clickCapture(e){
   var t=e.target&&e.target.closest?e.target:null;if(!t)return;
-  var back=t.closest('#pst-global-back-home,[data-pst-fin-home],[data-pst-opp-back],[data-pmm-back],.pmm-back');if(back){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();goHome();return;}
   var finReturn=t.closest('#pst-finance-map-return');if(finReturn){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();showFinanceMap();return;}
   var fin=t.closest('[data-pst-finance-branch]');if(fin){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openFinanceBranch(S(fin.getAttribute('data-pst-finance-branch')));return;}
-  var fieldBtn=t.closest('[data-pst-opp-field]');if(fieldBtn){selectedField=S(fieldBtn.getAttribute('data-pst-opp-field'))||'all';[0,30,120].forEach(function(ms){setTimeout(applyOpportunityField,ms);});}
 }
-function repair(){scheduled=false;installStyle();hideSidebar();ensureFinanceMap();applyOpportunityField();}
+function repair(){scheduled=false;installStyle();hideSidebar();ensureFinanceMap();}
 function schedule(){if(scheduled)return;scheduled=true;setTimeout(repair,0);}
-function observe(){if(observer||typeof MutationObserver!=='function'||!document.body)return;observer=new MutationObserver(function(records){for(var i=0;i<records.length;i++){var t=records[i].target;if(t&&t.nodeType===1){var id=S(t.id);if(id==='app-sidebar'||id==='pst-v2-sidebar'||id==='pst-ws-sidebar'||id==='page-finance'||id==='page-kek-tenders'||id==='pst-opportunities-list'||id==='fin-hub'){schedule();return;}}}});observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});}
-function boot(){repair();observe();[80,300,1000,2200].forEach(function(ms){setTimeout(repair,ms);});}
+function observe(){if(observer||typeof MutationObserver!=='function')return;var page=document.getElementById('page-finance');if(!page)return;observer=new MutationObserver(function(){if(!window.document)return;var map=document.getElementById('pst-finance-mindmap');if(!map||map.querySelectorAll('[data-pst-finance-branch]').length!==FIN_BRANCHES.length)schedule();syncFinanceReturn();});observer.observe(page,{subtree:true,childList:true,attributes:true,attributeFilter:['style']});}
+function boot(){repair();observe();}
 window.addEventListener('click',clickCapture,true);
 window.addEventListener('pst:page-opened',schedule);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTProductionSurfaceOwnerV1={version:VERSION,repair:repair,goHome:goHome,hideSidebar:hideSidebar,applyOpportunityField:applyOpportunityField,ensureFinanceMap:ensureFinanceMap,showFinanceMap:showFinanceMap,openFinanceBranch:openFinanceBranch,_test:{financeBranches:FIN_BRANCHES,getField:function(){return selectedField;}}};
+window.PSTProductionSurfaceOwnerV1={version:VERSION,repair:repair,goHome:goHome,hideSidebar:hideSidebar,ensureFinanceMap:ensureFinanceMap,showFinanceMap:showFinanceMap,openFinanceBranch:openFinanceBranch,_test:{financeBranches:FIN_BRANCHES}};
 })();

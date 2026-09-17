@@ -6,7 +6,7 @@
 (function(){
 'use strict';
 if(window.__pstOpportunitiesDailyV1)return;window.__pstOpportunitiesDailyV1=true;
-var busy=false,last=0,rows=[],tedEntryObserver=null;
+var busy=false,last=0,rows=[];
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -20,18 +20,12 @@ function ensureTedSalesEntry(){
  a.innerHTML='<span><b>TED Sales</b><small>Outreach &amp; follow-up</small></span><i>→</i>';
  head.appendChild(a);return true;
 }
-function watchTedSalesEntry(){
- if(tedEntryObserver)return;var p=page();if(!p)return;
- tedEntryObserver=new MutationObserver(function(){if(active())ensureTedSalesEntry();});
- tedEntryObserver.observe(p,{childList:true,subtree:true});
- ensureTedSalesEntry();
-}
 function ensureStructure(){
  var p=page();if(!p)return null;var head=p.querySelector('.pst-kek-head');if(!head)return null;
  var focus=p.querySelector('#pst-opportunities-focus');
  if(!focus){focus=document.createElement('section');focus.id='pst-opportunities-focus';focus.innerHTML='<header><div><span>VENDIMET</span><h2>Çfarë duhet të vendosim?</h2><p>PPPP filtron zhurmën. Këtu dalin vetëm mundësitë që meritojnë shqyrtim dhe vendim.</p></div></header><div id="pst-opportunities-list"><div class="pst-opp-loading">Duke përzgjedhur mundësitë…</div></div>';head.insertAdjacentElement('afterend',focus);}
  var details=p.querySelector('#pst-opportunities-all');if(!details){var actions=head.querySelector('.pst-kek-actions'),filter=p.querySelector('.pst-kek-filter'),card=p.querySelector('.pst-kek-card');details=document.createElement('details');details.id='pst-opportunities-all';details.innerHTML='<summary><div><b>Burimet dhe lista e plotë</b><span>Kërkimi, filtrat, KRPP, APP, TED dhe historiku i plotë</span></div><i>Hap</i></summary><div class="pst-opp-all-body"></div>';focus.insertAdjacentElement('afterend',details);var body=details.querySelector('.pst-opp-all-body');if(actions)body.appendChild(actions);if(filter)body.appendChild(filter);if(card)body.appendChild(card);}
- ensureTedSalesEntry();watchTedSalesEntry();return focus;
+ ensureTedSalesEntry();return focus;
 }
 function direct(r){var P=api();return P&&P.phase(r)==='opportunity';}
 function sourceText(r){var P=api();return P?P.sourceLabel(r):'Tender';}

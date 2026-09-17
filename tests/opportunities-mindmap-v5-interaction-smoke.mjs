@@ -79,6 +79,18 @@ window.document.querySelector('[data-pst-opp-field="construction"]').click();
 await new Promise(r=>setTimeout(r,20));
 assert.equal(mindmap.state().field,'construction','field branch must update presentation state');
 assert(window.document.querySelector('[data-pst-opp-field="construction"]').classList.contains('on'),'field branch must visibly stay selected');
+for(let cycle=0;cycle<3;cycle++){
+  window.document.querySelector('[data-pst-opp-source="APP_AL"]').click();
+  await new Promise(r=>setTimeout(r,35));
+  window.document.querySelector('[data-pst-opp-source="TED"]').click();
+  await new Promise(r=>setTimeout(r,35));
+  window.document.querySelector('[data-pst-opp-field="construction"]').click();
+  await new Promise(r=>setTimeout(r,20));
+  window.document.querySelector('[data-pst-opp-field="all"]').click();
+  await new Promise(r=>setTimeout(r,20));
+  assert.equal(mindmap.state().field,'all','All fields must reset after repeated source rerenders');
+  assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'Repeated cycles must retain one mindmap');
+}
 
 window.document.querySelector('[data-pst-opp-view="list"]').click();
 assert.equal(mindmap.state().view,'list','Listë control must switch presentation mode');

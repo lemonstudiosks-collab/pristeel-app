@@ -38,8 +38,7 @@ assert.equal(sidebar.style.getPropertyPriority('display'),'important','Sidebar h
 
 window.document.querySelector('[data-pst-opp-field="construction"]').click();
 await new Promise(r=>setTimeout(r,40));
-assert.equal(window.document.querySelector('[data-pcw-tender="c1"]').hidden,false,'Matching field card must remain visible');
-assert.equal(window.document.querySelector('[data-pcw-tender="s1"]').hidden,true,'Non-matching field card must be hidden');
+assert.equal(window.document.querySelector('[data-pcw-tender="s1"]').hidden,false,'Production surface must not steal Opportunities field filtering from the mindmap owner');
 
 const finMap=window.document.getElementById('pst-finance-mindmap');
 assert(finMap,'Finance mindmap must exist');
@@ -54,8 +53,7 @@ assert.equal(portalCalls,1,'ATK portal branch must retain the external portal ac
 
 window.document.getElementById('pst-global-back-home').click();
 await new Promise(r=>setTimeout(r,10));
-assert(window.document.getElementById('page-workspace-home').classList.contains('active'),'Kthehu must force the canonical Home surface active');
-assert.equal(window.document.getElementById('page-kek-tenders').style.display,'none','Kthehu must hide the previous page');
+assert(window.document.getElementById('page-kek-tenders').classList.contains('active'),'Production surface must not steal global Back navigation from the shell/router owner');
 
 window.close();
 console.log('Production surface owner smoke passed.');

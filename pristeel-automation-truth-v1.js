@@ -12,6 +12,7 @@ var HINKLEY_ID='a0ab0b00-8898-452d-bdb6-ec5afda80268';
 var STACON_D22_ID='38bdf772-d73e-47b2-9d0f-6020e105aa62';
 var INTERNAL=['sales@prissteel.com','arianit.vllahiu@prissteel.com','oltian.vllahiu@prissteel.com'];
 var homeBusy=null;
+var waitingCache=null,waitingCacheAt=0;
 
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v).trim();}
@@ -95,7 +96,7 @@ function installProjectTransition(){
  wrapped.__pstTruthTransition=true;wrapped.__base=base;window.pstOpenProjectWorkspace=wrapped;return true;
 }
 
-async function waitingRows(){
+async function fetchWaitingRows(){
  var rows=await Promise.all([
   db('projects?select=id,name,client,ref,status,pipeline_stage,deadline,last_email_at,notes&limit=3000'),
   db('documents_registry?series=eq.QUO&select=id,project_id,doc_nr,created_at,followup_status,offer_state&order=created_at.desc&limit=4000'),
@@ -128,12 +129,21 @@ async function waitingRows(){
  });
  return out.sort(function(a,b){return b.activity-a.activity;});
 }
+function waitingRows(){
+ var now=Date.now();
+ if(waitingCache&&now-waitingCacheAt<30000)return waitingCache;
+ waitingCacheAt=now;
+ waitingCache=fetchWaitingRows().catch(function(err){waitingCache=null;throw err;});
+ return waitingCache;
+}
 function actionProjectLabel(row){
  var pid=S(row.getAttribute('data-project-id'));if(!pid)return;
  var ctx=window.PSTHomeCanonicalV1&&typeof window.PSTHomeCanonicalV1.getContext==='function'?window.PSTHomeCanonicalV1.getContext(pid):null;
  var p=ctx&&ctx.project;if(!p){var card=document.querySelector('#pst-ws-home-projects [data-project-id="'+CSS.escape(pid)+'"]');if(card){p={name:S(card.querySelector('.pst-ws-projectcard-name')&&card.querySelector('.pst-ws-projectcard-name').textContent),client:S(card.querySelector('.pst-ws-projectcard-client')&&card.querySelector('.pst-ws-projectcard-client').textContent)};}}
  if(!p||!p.name)return;
- var main=row.querySelector('.pst-ws-action-main');if(!main)return;var old=main.querySelector('.pst-truth-project');if(old)old.remove();var e=document.createElement('div');e.className='pst-truth-project';e.textContent=p.name+(p.client?' · '+p.client:'');main.insertBefore(e,main.firstChild);
+ var main=row.querySelector('.pst-ws-action-main');if(!main)return;var old=main.querySelector('.pst-truth-project'),label=p.name+(p.client?' · '+p.client:'');
+ if(old&&old.textContent===label&&old===main.firstElementChild)return;
+ if(old)old.remove();var e=document.createElement('div');e.className='pst-truth-project';e.textContent=label;main.insertBefore(e,main.firstChild);
 }
 async function decorateHome(){
  if(homeBusy)return homeBusy;
@@ -143,8 +153,11 @@ async function decorateHome(){
   /* Hinkley already has a client-offer draft and a confirmed pricing basis; the action is send verification, not supplier selection. */
   page.querySelectorAll('#pst-ws-home-actions > .pst-ws-action[data-project-id="'+HINKLEY_ID+'"]').forEach(function(r){if(!/përgatit ofertën pristeel/i.test(S(r.textContent)))return;var t=r.querySelector('.pst-ws-action-title'),m=r.querySelector('.pst-ws-action-meta');if(t)t.textContent='Verifiko / dërgo ofertën PRISTEEL';if(m)m.innerHTML='<b>Pse tani:</b> KENTAUR IMPEX është baza e konfirmuar e çmimit. PST-QUO-2026-019 ekziston, por dërgimi te TISSOT nuk është verifikuar.';});
   var items=await waitingRows(),host=document.getElementById('pst-ws-home-actions');if(!host)return true;
-  var old=document.getElementById('pst-home-waiting');if(old)old.remove();if(!items.length)return true;
-  var owner=host.closest('.pst-ws-card')||host.parentElement,sec=document.createElement('section');sec.id='pst-home-waiting';sec.innerHTML='<div class="pst-home-wait-head"><div><b>Në pritje</b><span>PPPP po pret palën tjetër; nuk kërkohet veprim tani.</span></div></div><div class="pst-home-wait-list">'+items.map(function(w){return '<button type="button" class="pst-home-wait-item" data-project-id="'+E(w.project_id)+'"><span class="pst-home-wait-dot"></span><span class="pst-home-wait-copy"><b>'+E(w.name)+'</b><small>Në pritje të '+E(w.client)+' · '+E(w.text)+'</small></span><span class="pst-home-wait-arrow">›</span></button>';}).join('')+'</div>';
+  var old=document.getElementById('pst-home-waiting');if(!items.length){if(old)old.remove();return true;}
+  var html='<div class="pst-home-wait-head"><div><b>Në pritje</b><span>PPPP po pret palën tjetër; nuk kërkohet veprim tani.</span></div></div><div class="pst-home-wait-list">'+items.map(function(w){return '<button type="button" class="pst-home-wait-item" data-project-id="'+E(w.project_id)+'"><span class="pst-home-wait-dot"></span><span class="pst-home-wait-copy"><b>'+E(w.name)+'</b><small>Në pritje të '+E(w.client)+' · '+E(w.text)+'</small></span><span class="pst-home-wait-arrow">›</span></button>';}).join('')+'</div>';
+  if(old&&old.innerHTML===html)return true;
+  if(old)old.remove();
+  var owner=host.closest('.pst-ws-card')||host.parentElement,sec=document.createElement('section');sec.id='pst-home-waiting';sec.innerHTML=html;
   if(owner)owner.insertAdjacentElement('afterend',sec);else host.insertAdjacentElement('afterend',sec);
   sec.addEventListener('click',function(ev){var b=ev.target.closest&&ev.target.closest('.pst-home-wait-item');if(!b)return;var id=b.dataset.projectId;if(window.PSTHomeCanonicalInteractionV1&&typeof window.PSTHomeCanonicalInteractionV1.openProjectBrief==='function')return window.PSTHomeCanonicalInteractionV1.openProjectBrief(id,'waiting');if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(id);});
   return true;
@@ -155,13 +168,11 @@ function boot(){
  installIntegrityWrapper();
  setInterval(installIntegrityWrapper,700);
  document.addEventListener('pst:modules-ready',function(){setTimeout(function(){installIntegrityWrapper();installProjectTransition();decorateHome();decorateCommercial();},80);});
- document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(decorateHome,0);setTimeout(decorateHome,180);});
+ document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(decorateHome,0);});
  document.addEventListener('pst:project-integrity-loaded',function(){setTimeout(decorateCommercial,0);});
  document.addEventListener('click',function(e){
   if(e.target.closest&&e.target.closest('[data-pf2-tab="commercial"]'))setTimeout(decorateCommercial,80);
  },true);
- var mo=new MutationObserver(function(){if(document.getElementById('page-workspace-home')&&document.getElementById('page-workspace-home').classList.contains('active'))setTimeout(decorateHome,40);});
- mo.observe(document.documentElement,{childList:true,subtree:true});
  if(window.__pstModulesReady)setTimeout(function(){installProjectTransition();decorateHome();decorateCommercial();},80);
 }
 boot();
