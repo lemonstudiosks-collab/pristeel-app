@@ -141,7 +141,7 @@ async function recoverLinkedGmailEvidence(data){
 function pickerContainer(){
   var select=document.getElementById('global-proj');if(!select)return null;
   var node=select.parentElement,best=node;
-  for(var i=0;node&&i<4;i++,node=node.parentElement){
+  for(var i=0;node&&node!==document.body&&node!==document.documentElement&&i<4;i++,node=node.parentElement){
     var text=String(node.innerText||'').toLowerCase();
     if(text.indexOf('zgjidh një modul')>-1||text.indexOf('zgjidh nje modul')>-1){best=node;break;}
     if(node.children&&node.children.length<=5)best=node;
@@ -150,7 +150,8 @@ function pickerContainer(){
 }
 function syncPickerVisibility(){
   var box=pickerContainer();if(!box)return;
-  box.style.display=workspaceActive()?'none':'';
+  var display=workspaceActive()?'none':'';
+  if(box.style.display!==display)box.style.display=display;
 }
 
 function contactDetails(c){

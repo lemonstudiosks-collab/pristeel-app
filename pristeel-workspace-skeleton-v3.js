@@ -105,7 +105,7 @@ function wrapProjectRenderer(){
 function renameWorkspaceLabels(){
  var page=document.getElementById('page-workspace-project');if(!page||page.style.display==='none')return;
  var labels={overview:'Përmbledhja',communication:'Komunikimi',technical:'Teknika & Prokurimi',commercial:'Komercialja & Financat',files:'Skedarët'};
- page.querySelectorAll('.pst-ws-tab[data-tab]').forEach(function(t){var id=t.getAttribute('data-tab');if(labels[id])t.textContent=labels[id];});
+ page.querySelectorAll('.pst-ws-tab[data-tab]').forEach(function(t){var id=t.getAttribute('data-tab');if(labels[id]&&t.textContent!==labels[id])t.textContent=labels[id];});
  var old=page.querySelector('.pst-ws-project-sub');if(old&&old.textContent.indexOf(' · ')>-1)old.setAttribute('title',old.textContent);
 }
 

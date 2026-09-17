@@ -44,6 +44,8 @@ jobs:
           node tests/opportunities-mindmap-v5-interaction-smoke.mjs
           node tests/opportunities-late-owner-smoke.mjs
           node tests/project-utility-nav-rerender-smoke.mjs
+          node tests/operator-flow-idle-observer-smoke.mjs
+          node tests/project-observer-idle-smoke.mjs
           node tests/global-fullwidth-shell-smoke.mjs
           node tests/finance-mindmap-interaction-smoke.mjs
           node tests/production-surface-owner-smoke.mjs
