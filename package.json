@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "check:runtime-ownership": "node tests/runtime-ownership-multi-cycle-smoke.mjs && node tests/production-surface-owner-smoke.mjs && node tests/opportunities-mindmap-v5-interaction-smoke.mjs && node tests/opportunities-late-owner-smoke.mjs && node tests/project-utility-nav-rerender-smoke.mjs && node tests/operator-flow-idle-observer-smoke.mjs && node tests/project-observer-idle-smoke.mjs && node tests/global-fullwidth-shell-smoke.mjs",
+    "check:runtime-ownership": "node tests/runtime-ownership-multi-cycle-smoke.mjs && node tests/production-surface-owner-smoke.mjs && node tests/opportunities-mindmap-v5-interaction-smoke.mjs && node tests/opportunities-late-owner-smoke.mjs && node tests/project-utility-nav-rerender-smoke.mjs && node tests/operator-flow-idle-observer-smoke.mjs && node tests/project-observer-idle-smoke.mjs && node tests/automation-truth-idle-home-smoke.js && node tests/global-fullwidth-shell-smoke.mjs",
     "check:creative-ui": "node --check pristeel-creative-ui-v1.js && node tests/creative-ui-v1-smoke.js",
     "dev": "node preview-server.mjs",
     "start": "node preview-server.mjs",

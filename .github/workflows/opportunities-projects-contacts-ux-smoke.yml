@@ -46,6 +46,7 @@ jobs:
           node tests/project-utility-nav-rerender-smoke.mjs
           node tests/operator-flow-idle-observer-smoke.mjs
           node tests/project-observer-idle-smoke.mjs
+          node tests/automation-truth-idle-home-smoke.js
           node tests/global-fullwidth-shell-smoke.mjs
           node tests/finance-mindmap-interaction-smoke.mjs
           node tests/production-surface-owner-smoke.mjs
