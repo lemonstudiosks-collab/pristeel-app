@@ -22,16 +22,17 @@ function uniqueLocalProject(q){
   return !!(hits.length&&(!hits[1]||hits[0].score>hits[1].score+4));
 }
 function explicitWriteIntent(q){
-  return /^(regjistro(?:je)?|ruaj(?:e)?|shto|sh[eë]no|p[eë]rdit[eë]so|ndrysho|vendos|marko|mbyll(?:e)?|krijo)\b/i.test(S(q).trim());
+  return /^(regjistro(?:je)?|ruaj(?:e)?|shto|sh[eë]no|p[eë]rdit[eë]so|ndrysho|vendos|marko|mbyll(?:e)?|krijo|record|save|add|update|change|close|create)\b/i.test(S(q).trim());
 }
 function evidenceReadIntent(q){
   var raw=S(q).trim(),n=N(raw);if(!raw||explicitWriteIntent(raw))return false;
   if(/[?？]/.test(raw))return true;
   if(/^(cka|çka|cfare|çfar[eë]|kush|ku|kur|pse|si|a ka|a kemi|me trego|trego|cil|what|which|who|where|when|why|how)\b/i.test(raw))return true;
-  if(uniqueLocalProject(raw)&&n.split(' ').filter(Boolean).length<=6)return true;
+  if(uniqueLocalProject(raw)&&n.split(' ').filter(Boolean).length<=4)return true;
   if(/\b[\w.%+-]+@[\w.-]+\.[a-z]{2,}\b/i.test(raw))return true;
   if(/\.(pdf|docx?|xlsx?|xls|zip|rar|dwg|dxf|step|stp|ifc|xml|csv)\b/i.test(raw))return true;
-  if(/\b(rfq|rfi|ofert[eë]?|offer|quote|quotation|fatur[eë]?|invoice|tender|dosje|dokument|document|file|skedar|vizatim|drawing|boq|bom|po|purchase order|en\s*1090|s235|s275|s355|s420|s460)\b/i.test(raw))return true;
+  if(/\b(rfq|rfi|ofert[eë]?|offer|quote|quotation|angebot|ponud[aeu]?|fatur[eë]?|invoice|rechnung|lieferschein|tender|dosje|dokument|document|file|skedar|vizatim|drawing|materialauszug|werkvertrag|vertrag|boq|bom|purchase order|en\s*1090|s235|s275|s355|s420|s460)\b/i.test(raw))return true;
+  if(/\bpo\s*[-#: ]?\s*\d{2,}\b/i.test(raw))return true;
   if(/\b(?:ref|reference|nr|no|projekt|project)\s*[:#-]?\s*[a-z0-9][a-z0-9._\/-]{3,}\b/i.test(raw))return true;
   return false;
 }
