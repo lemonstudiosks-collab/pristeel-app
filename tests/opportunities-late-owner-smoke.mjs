@@ -12,10 +12,14 @@ window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
 const css=window.document.getElementById('pst-opportunities-filter-polish-v1-css')?.textContent||'';
 assert(css.includes('#pst-opportunities-focus:has(#pst-opp-v4-map) #pst-pcw-lifecycle-tabs'),'Legacy map stays visible until the replacement exists');
 assert.equal(window.document.querySelector('#pst-opp-v4-map'),null,'New map has not loaded before its owner');
-await new Promise(resolve=>setTimeout(resolve,80));
+
+// Wait longer than the old compressed 120-attempt readiness window.
+await new Promise(resolve=>setTimeout(resolve,180));
 window.PSTProjectCentricWorkflowV1={_state:{rows:[],source:'all',lifecycle:'all'},_test:{},renderOpportunities(){}};
-await new Promise(resolve=>setTimeout(resolve,120));
-assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'Late workflow owner still produces the map');
+await new Promise(resolve=>setTimeout(resolve,40));
+
+assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'Mindmap owner still activates after the old startup timeout');
+assert.equal(window.document.querySelectorAll('[data-pst-opp-back]').length,1,'Late activation restores one Kthehu control');
 assert.equal(window.document.querySelectorAll('#pst-opportunities-filter-polish-v1-css').length,1,'One stylesheet remains');
 window.close();
-console.log('Opportunities late-owner fallback smoke passed.');
+console.log('Opportunities deterministic late-owner fallback smoke passed.');
