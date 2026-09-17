@@ -6,6 +6,7 @@ const finalizer = fs.readFileSync('pristeel-redesign-finalizer-v1.js', 'utf8');
 const openaiAssistant = fs.readFileSync('pristeel-openai-operating-assistant-v1.js', 'utf8');
 const projectCentric = fs.readFileSync('pristeel-project-centric-workflow-v1.js', 'utf8');
 const tenderActions = fs.readFileSync('pristeel-tender-priority-actions-v1.js', 'utf8');
+const tenderImporter = fs.readFileSync('pristeel-tender-dossier-import-v1.js', 'utf8');
 const required = [
   'pristeel-login-brand-v1.js','pristeel-login-transition-v2.js','pristeel-ui-corrections-v2.js','pristeel-dashboard-task-cards-v1.js','pristeel-business-command-center-v1.js','pristeel-gmail-deep-search-v1.js','pristeel-business-command-center-deep-gmail-v1.js','pristeel-search-stable-v2.js','pristeel-project-command-view-v1.js','pristeel-home-command-center-v2.js','pristeel-home-live-fix-v1.js','pristeel-home-stability-v2.js','pristeel-home-visual-cleanup-v1.js','pristeel-gmail-live-inbox-v2.js','pristeel-gmail-intake-v3.js','pristeel-project-load-stability-v2.js','pristeel-rfq-stability-v2.js','pristeel-offer-pricing-stability-v2.js','pristeel-our-offer-stability-v2.js','pristeel-finance-stability-v2.js','pristeel-document-center-stable-v2.js','pristeel-modal-navigation-safety-v2.js','pristeel-redesign-finalizer-v1.js'
 ];
@@ -61,6 +62,17 @@ new Function(tenderActions);
 assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
 assert(projectCentric.includes('Përgatit emailin'), 'Every TED winner popup must expose the human-gated email preparation action');
 assert(!tenderActions.includes("if(role==='unknown')throw new Error"), 'Unknown TED winner role must use a cautious draft instead of hiding email preparation');
+
+// Tender dossier intake owns the new Price Intelligence presentation without creating another store.
+new Function(tenderImporter);
+assert(tenderImporter.includes('pppp_tender_price_dataset_v1'), 'Tender importer must read the canonical Price Intelligence dataset');
+assert(tenderImporter.includes("edgeNamed('pppp-ted-price-enrichment-v1'"), 'TED enrichment must use the bounded authenticated Price Intelligence Edge Function');
+assert(tenderImporter.includes("btn.textContent='Ngarko dosjen'"), 'KRPP/APP primary dossier action must be manual upload');
+assert(tenderImporter.includes('pickArchiveAndUpload(S(id),b)'), 'The legacy dossier download action must be redirected to the verified manual upload importer');
+assert(tenderImporter.includes('needs_dossier_upload') && tenderImporter.includes('needs_ted_enrichment') && tenderImporter.includes('price_model_eligible'), 'Price Intelligence UI must expose canonical readiness gates');
+assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(tenderImporter), 'Tender Price Intelligence must remain bounded and observer-free');
+assert(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(tenderImporter), 'Tender Price Intelligence must never send external mail');
+assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(tenderImporter), 'Tender Price Intelligence must preserve commitment gates');
 
 assert(finalizer.includes('pristeel-project-control-home-v1.js?v=20260827-owner6'),'Finalizer must cache-bust the current Home owner');
 assert(finalizer.includes('data-pst-project-control-home-v6'),'Finalizer must not accept a stale Home script tag');
