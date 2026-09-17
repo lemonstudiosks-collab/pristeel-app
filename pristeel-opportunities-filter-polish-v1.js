@@ -9,7 +9,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260917-mindmap5-deterministic';
+var VERSION='20260916-mindmap5';
 var view='mindmap',field='all',filtersOpen=true,api=null,state=null;
 var observer=null,observerRoot=null,scheduled=false,decorating=false;
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'];
