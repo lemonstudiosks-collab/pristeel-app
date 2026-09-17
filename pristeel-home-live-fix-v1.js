@@ -35,7 +35,17 @@ function load(){
   }).catch(function(error){loading=null;console.error('PPPP canonical Home bootstrap failed',error);return null;});
   return loading;
 }
-function apply(){return load().then(function(api){return api&&typeof api.render==='function'?api.render(true):false;});}
+function loadPyetPpppRepair(){
+  if(window.PSTPyetPpppFullAnalysisV1)return;
+  if(document.querySelector('script[data-pst-pyet-pppp-full-analysis-v1]'))return;
+  var s=document.createElement('script');
+  s.src='pristeel-pyet-pppp-full-analysis-v1.js?v=20260917-fullanalysis1';
+  s.defer=true;
+  s.setAttribute('data-pst-pyet-pppp-full-analysis-v1','1');
+  document.head.appendChild(s);
+}
+function apply(){loadPyetPpppRepair();return load().then(function(api){return api&&typeof api.render==='function'?api.render(true):false;});}
 window.PSTHomeLiveFixV1={apply:apply,loadCanonical:load,isBridge:true};
+loadPyetPpppRepair();
 load();
 })();
