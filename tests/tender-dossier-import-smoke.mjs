@@ -7,7 +7,7 @@ const runtime=fs.readFileSync('pristeel-tender-dossier-import-v1.js','utf8');
 const importer=fs.readFileSync('supabase/functions/pppp-tender-dossier-import/index.ts','utf8');
 const analyzer=fs.readFileSync('supabase/functions/pppp-tender-protected-archive-analysis/index.ts','utf8');
 
-assert(bootstrap.includes('pristeel-tender-dossier-import-v1.js?v=20260906-zip2'),'Bootstrap must load the canonical KRPP importer directly');
+assert(bootstrap.includes('pristeel-tender-dossier-import-v1.js?v=20260918-direct1'),'Bootstrap must load the canonical KRPP importer directly');
 assert(finalizer.includes('data-pst-krpp-upload')&&finalizer.includes('Ngarko në PPPP'),'Finalizer must keep only the presentation hook for individual uploads');
 assert(!/supaFetch|fetch\s*\(|localStorage\.setItem|sessionStorage\.setItem/.test(finalizer),'Finalizer must remain presentation-only');
 assert(!/MutationObserver|setInterval\s*\(/.test(runtime),'Tender importer UI must remain bounded and polling-free');
