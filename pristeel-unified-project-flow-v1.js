@@ -1,5 +1,5 @@
 /* PRISTEEL Unified Project Flow v1
- * One project surface: current state -> logical next step -> evidence popups.
+ * Compatibility fallback only when Project Workbench v3 is not the active/intended Project Detail owner.
  * Read/navigation owner only. No automatic outbound communication or commercial commitment.
  */
 (function(){
