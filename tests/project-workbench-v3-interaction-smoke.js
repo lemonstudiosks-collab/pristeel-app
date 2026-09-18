@@ -106,18 +106,18 @@ function last(a){return a[a.length-1];}
 
   window.PSTProjectWorkbenchV3.openNav('overview');
   let body=doc.getElementById('pst-pi-body');
-  calls.length=0; click(window,body.querySelector('[data-pwb3-card-route="supply"]')); assert(last(calls)&&last(calls)[1]==='procurement','Whole supply card failed');
+  calls.length=0; click(window,body.querySelector('[data-pwb3-card-route="supply"] header b')); assert(last(calls)&&last(calls)[1]==='procurement','Whole supply card failed: '+JSON.stringify(last(calls)));
   window.PSTProjectWorkbenchV3.openNav('overview'); body=doc.getElementById('pst-pi-body');
   calls.length=0; click(window,body.querySelector('[data-pwb3-stage="comparison"]')); assert(last(calls)&&last(calls)[1]==='procurement'&&last(calls)[2]==='comparison','Supplier source row failed');
   window.PSTProjectWorkbenchV3.openNav('overview'); body=doc.getElementById('pst-pi-body');
-  click(window,body.querySelector('[data-pwb3-card-route="offer"]')); assert(body.classList.contains('pwb3-view-offer'),'Whole own-offer card failed');
+  click(window,body.querySelector('[data-pwb3-card-route="offer"] header b')); assert(body.classList.contains('pwb3-view-offer'),'Whole own-offer card failed');
   calls.length=0; click(window,body.querySelector('[data-pwb3-stage="client_offer"]')); assert(last(calls)&&last(calls)[1]==='procurement'&&last(calls)[2]==='client_offer','Offer editor/revision button failed');
   window.PSTProjectWorkbenchV3.openNav('overview'); body=doc.getElementById('pst-pi-body');
-  calls.length=0; click(window,body.querySelector('[data-pwb3-card-route="client"]')); assert(last(calls)&&last(calls)[1]==='communication','Whole client card failed');
+  calls.length=0; click(window,body.querySelector('[data-pwb3-card-route="client"] header b')); assert(last(calls)&&last(calls)[1]==='communication','Whole client card failed: '+JSON.stringify(last(calls)));
   window.PSTProjectWorkbenchV3.openNav('overview'); body=doc.getElementById('pst-pi-body');
-  calls.length=0; click(window,body.querySelector('[data-pwb3-card-route="finance"]')); assert(last(calls)&&last(calls)[1]==='finance','Whole finance card failed');
+  calls.length=0; click(window,body.querySelector('[data-pwb3-card-route="finance"] header b')); assert(last(calls)&&last(calls)[1]==='finance','Whole finance card failed: '+JSON.stringify(last(calls)));
   window.PSTProjectWorkbenchV3.openNav('overview'); body=doc.getElementById('pst-pi-body');
-  click(window,body.querySelector('[data-pwb3-card-route="docscomms"]')); assert(body.classList.contains('pwb3-view-docscomms'),'Whole docs card failed');
+  click(window,body.querySelector('[data-pwb3-card-route="docscomms"] header b')); assert(body.classList.contains('pwb3-view-docscomms'),'Whole docs card failed');
 
   const drive=body.querySelector('a[href^="https://drive.google.com/"]');
   const gmail=body.querySelector('a[href^="https://mail.google.com/"]');
