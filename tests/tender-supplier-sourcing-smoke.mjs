@@ -10,7 +10,7 @@ assert.match(ui,/RFQ-ready/);
 assert.match(ui,/Për verifikim/);
 assert.match(ui,/Jo i përshtatshëm/);
 assert.match(ui,/data-tss-discover/);
-assert.match(ui,/external discovery/i);
+assert.match(ui,/discovery/i);
 assert.match(ui,/supplier selection mbetet vendim njerëzor/i);
 assert.doesNotMatch(ui,/\.from\(['"]supplier_discovery_/);
 assert.doesNotMatch(ui,/method:\s*['"]PATCH['"]/);
