@@ -19,7 +19,7 @@ assert(runtime.includes('uploadArchive(id,f,btn,name)'),'Dropping/selecting a ZI
 assert(runtime.includes('clientFamily')&&runtime.includes("'word'")&&runtime.includes("'sheet'"),'Client diagnostics must treat DOC/DOCX and XLS/XLSX as compatible families');
 assert(runtime.includes('REKOMANDIMI PËRFUNDIMTAR')&&runtime.includes('decision_reasons'),'Completed analysis must show VAZHDO/LËRE reasons');
 
-assert(importer.includes("IMPORT_VERSION='protected-archive-upload-v6'"),'Unified server resolver version must be v6');
+assert(importer.includes("IMPORT_VERSION='protected-archive-upload-v5'"),'Unified server resolver version must be v5');
 assert(importer.includes('repairMojibake')&&importer.includes("normalize('NFKD')"),'KRPP filename normalization must tolerate encoding and diacritic differences');
 assert(importer.includes('documentClass')&&importer.includes("return'dossier'")&&importer.includes("return'prices'"),'Server resolver must classify dossier and price-list semantics across filename languages');
 assert(importer.includes('familyCompatible')&&importer.includes('WORD_EXT')&&importer.includes('SHEET_EXT'),'DOC/DOCX and XLS/XLSX remain compatible file families');
