@@ -80,7 +80,8 @@ function resolveDirectDescriptors(files:DirectDescriptor[],needed:string[],hint:
 for(const file of files){
   for(const row of historical||[]){
     const rowSha=text(row?.sha256,80).toLowerCase(),role=text(row?.archive_role,30)==='supplemental'?'supplemental':'expected',canonical=displayName(archiveCanonicalName(row)||row?.source_name||file.name),expected=role==='expected'?displayName(row?.expected_name||row?.name||canonical):null,rowSource=displayName(row?.source_name||row?.name||'');
-    if(role==='expected'&&(!expected||!neededSet.has(normalizeName(expected))))continue;
+    if(role==='supplemental')continue;
+    if(!expected||!neededSet.has(normalizeName(expected)))continue;
     if(rowSha&&rowSha===file.sha256){pairs.push({file,expected,canonical,role,score:100,matched_by:'historical_sha256'});continue;}
     if(rowSource&&normalizeName(rowSource)===normalizeName(file.name)&&familyCompatible(extension(rowSource),extension(file.name)))pairs.push({file,expected,canonical,role,score:98,matched_by:'historical_source_name'});
   }
