@@ -28,6 +28,8 @@ assert(importer.includes('repairMojibake')&&importer.includes("normalize('NFKD')
 assert(importer.includes("mode==='prepare_direct'")&&importer.includes("mode==='finalize_direct'")&&importer.includes('createSignedUploadUrl(path,{upsert:true})'),'Importer must only broker short signed upload sessions; file bytes must bypass Edge Functions.');
 assert(importer.includes("'historical_sha256'")&&importer.includes("'historical_source_name'")&&importer.includes('prepareDirectUploads(tender,needed,body?.files,body?.expected_name_hint||\'\',archive)'),'Migrated protected dossiers must rehydrate missing Storage blobs from same-tender historical hashes/names before generic filename matching.');
 assert(importer.includes("'manual_zip_candidate'")&&importer.includes("archive_role:candidate?'candidate':'expected'"),'Manual KRPP ZIP upload must persist unmatched supported documents as candidates instead of rejecting them by filename.');
+assert(importer.includes("expectedRaw=text(row?.expected_name,500)")&&!importer.includes("const expected=displayName(row?.expected_name||'')")&&!importer.includes("const canonical=displayName(row?.expected_name||'')"),'Empty expected_name must stay empty for candidate documents; displayName must never turn it into document.bin.');
+
 assert(importer.includes("manual_full_zip_uploaded:true")&&importer.includes("dossier_complete:true")&&importer.includes("forceReady"),'A user-selected full ZIP must become analyzable after direct Storage persistence even when expected filenames remain advisory.');
 
 
