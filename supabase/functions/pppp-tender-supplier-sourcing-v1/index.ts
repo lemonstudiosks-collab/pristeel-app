@@ -120,6 +120,44 @@ async function internalMatch(r:Requirement,tender:any){
   const req=arr(data?.requirements)[0]||{};
   return {summary:data?.summary||{},coverage_sufficient:req.coverage_sufficient===true,discovery_needed:req.discovery_needed!==false,strict_rfq_ready_existing:Number(req.strict_rfq_ready_existing||0),review_rfq_ready_existing:Number(req.review_rfq_ready_existing||0),explicit_conflicts:Number(req.explicit_conflicts||0),evidence_gaps:Number(req.evidence_gaps||0),candidates:arr(req.candidates).filter((x:any)=>!x.explicit_conflict).slice(0,10),conflicts:arr(req.candidates).filter((x:any)=>x.explicit_conflict).slice(0,6)};
 }
+function catalogFamilies(r:Requirement){if(r.id==='round_bar')return['round_bar','profiles'];if(r.family==='tubes')return['seamless_pipe','tubes'];return[r.family];}
+function evidenceMatch(required:string,available:any[]){const req=norm(required);return arr(available).some((x:any)=>{const a=norm(x);return !!a&&(a.includes(req)||req.includes(a));});}
+function near(a:any,b:any,tol=.11){return Number.isFinite(Number(a))&&Number.isFinite(Number(b))&&Math.abs(Number(a)-Number(b))<=tol;}
+function catalogDimensionEvidence(r:Requirement,row:any){
+  const ds=arr(r.dimensions);if(!ds.length)return{verified:true,conflict:false,reason:'no_dimension_constraint'};
+  if(r.id==='round_bar'){
+    const req=Math.max(...ds.map((x:any)=>Number(x?.diameter_mm||0)).filter((x:number)=>x>0));if(!req)return{verified:false,conflict:false,reason:'round_dimension_unparsed'};
+    const max=Number(row?.max_diameter_mm||0);if(max&&max<req)return{verified:false,conflict:true,reason:`max Ø${max} mm < required Ø${req} mm`};
+    return{verified:!!(max&&max>=req),conflict:false,reason:max?`official range through Ø${max} mm`:'diameter range not explicitly catalogued'};
+  }
+  if(r.family==='tubes'){
+    const exact=arr(row?.verified_dimensions),allExact=ds.length>0&&ds.every((req:any)=>exact.some((x:any)=>near(x?.outer_diameter_mm,req?.outer_diameter_mm)&&(!Number(req?.wall_mm)||near(x?.wall_mm,req?.wall_mm))));
+    if(allExact)return{verified:true,conflict:false,reason:'official dimensional table covers requested OD/wall'};
+    const maxOd=Number(row?.max_outer_diameter_mm||0),maxWall=Number(row?.max_wall_mm||0),reqOd=Math.max(...ds.map((x:any)=>Number(x?.outer_diameter_mm||0)).filter((x:number)=>x>0)),reqWall=Math.max(...ds.map((x:any)=>Number(x?.wall_mm||0)).filter((x:number)=>x>0));
+    if(maxOd&&reqOd&&maxOd<reqOd)return{verified:false,conflict:true,reason:`max OD ${maxOd} mm < required ${reqOd} mm`};
+    if(maxWall&&reqWall&&maxWall<reqWall)return{verified:false,conflict:true,reason:`max wall ${maxWall} mm < required ${reqWall} mm`};
+    const verified=!!(maxOd&&reqOd&&maxOd>=reqOd&&(!reqWall||!maxWall||maxWall>=reqWall));
+    return{verified,conflict:false,reason:verified?`official OD range through ${maxOd} mm`:'requested dimensions require supplier confirmation'};
+  }
+  return{verified:false,conflict:false,reason:'dimension evidence not structured for this family'};
+}
+async function catalogMatch(r:Requirement){
+  const {data,error}=await db.from('pppp_supplier_public_catalog_v1').select('canonical_key,name,country,source_tier,families,product_focus,grades,standards,certifications,max_diameter_mm,max_outer_diameter_mm,max_wall_mm,verified_dimensions,email,website,evidence_url,contact_url,evidence_note,verification_status,evidence_checked_at').eq('active',true).limit(100);
+  if(error){console.warn('supplier catalog unavailable',error.message);return{candidates:[],rfq_ready_count:0,review_count:0};}
+  const families=catalogFamilies(r),rows:any[]=[];
+  for(const row of data||[]){
+    if(!arr(row.families).some((x:any)=>families.includes(text(x,80))))continue;
+    const dim=catalogDimensionEvidence(r,row);if(dim.conflict)continue;
+    const standardEvidence=!r.standards.length||r.standards.every(x=>evidenceMatch(x,row.standards));
+    const certificateEvidence=!r.certifications.length||r.certifications.every(x=>evidenceMatch(x,row.certifications));
+    const gradeEvidence=!r.grades.length||r.grades.some(x=>evidenceMatch(x,row.grades));
+    const contactReady=!!text(row.email,320),rfqReady=contactReady&&dim.verified&&standardEvidence&&certificateEvidence&&gradeEvidence;
+    let score=55+(contactReady?15:0)+(dim.verified?10:0)+(standardEvidence?8:0)+(certificateEvidence?8:0)+(gradeEvidence?4:0);
+    rows.push({...row,source:'verified_public_catalog',catalog_verified:true,product_evidence:true,dimension_evidence:dim,standard_evidence:standardEvidence,certificate_evidence:certificateEvidence,grade_evidence:gradeEvidence,contact_ready:contactReady,rfq_ready_candidate:rfqReady,verification_status:rfqReady?'rfq_ready_evidence_candidate':'catalog_verified_review',score:Math.min(100,score)});
+  }
+  rows.sort((a,b)=>Number(b.rfq_ready_candidate)-Number(a.rfq_ready_candidate)||Number(b.contact_ready)-Number(a.contact_ready)||b.score-a.score||String(a.name).localeCompare(String(b.name)));
+  return{candidates:rows.slice(0,12),rfq_ready_count:rows.filter(x=>x.rfq_ready_candidate).length,review_count:rows.filter(x=>!x.rfq_ready_candidate&&x.contact_ready).length};
+}
 function tierLocations(tier:string){if(tier==='local')return['Kosovo'];if(tier==='regional')return['North Macedonia','Serbia'];if(tier==='turkey')return['Turkey'];if(tier==='greece')return['Greece'];return['Germany','Italy','Romania','Poland'];}
 function familySearch(r:Requirement){
   if(r.id==='round_bar')return'steel round bar';
@@ -206,13 +244,15 @@ Deno.serve(async(req:Request)=>{
     const tenderId=text(body?.tender_id,80);if(!isUuid(tenderId))return json({ok:false,error:'valid_tender_id_required'},400);
     const tender=await visibleTender(auth,tenderId);if(!tender)return json({ok:false,error:'tender_not_found_or_not_visible'},404);
     const requirements=extractRequirements(tender);if(!requirements.length)return json({ok:true,tender_id:tenderId,title:tender.title,requirements:[],summary:{requirements:0,strict_ready:0,review_ready:0,external_discovery_needed:true},message:'PPPP nuk gjeti ende artikuj furnizimi të strukturuar në analizën e dosjes.'});
-    const discover=body?.discover===true,only=text(body?.requirement_id,80),rows:any[]=[];let strict=0,review=0,needs=false;
+    const discover=body?.discover===true,only=text(body?.requirement_id,80),rows:any[]=[];let strict=0,review=0,catalogReady=0,catalogReview=0,needs=false;
     for(const requirement of requirements){
       if(only&&requirement.id!==only)continue;
-      const internal=await internalMatch(requirement,tender);strict+=internal.strict_rfq_ready_existing;review+=internal.review_rfq_ready_existing;needs=needs||internal.discovery_needed;
-      let external:any=null;if(discover&&internal.discovery_needed)external=await discoverRequirement(requirement);
-      rows.push({...requirement,internal,external});
+      const [internal,catalog]=await Promise.all([internalMatch(requirement,tender),catalogMatch(requirement)]);
+      strict+=internal.strict_rfq_ready_existing;review+=internal.review_rfq_ready_existing;catalogReady+=catalog.rfq_ready_count;catalogReview+=catalog.review_count;
+      const covered=(internal.strict_rfq_ready_existing+catalog.rfq_ready_count)>=3;needs=needs||!covered;
+      let external:any=null;if(discover&&!covered)external=await discoverRequirement(requirement);
+      rows.push({...requirement,internal,catalog,external,coverage_sufficient:covered,discovery_needed:!covered});
     }
-    return json({ok:true,sourcing_version:1,read_only:true,tender_id:tenderId,title:tender.title,authority:tender.authority,deadline:tender.deadline,estimated_value:tender.estimated_value,currency:tender.currency,requirements:rows,summary:{requirements:rows.length,strict_ready:strict,review_ready:review,external_discovery_needed:needs,external_search_executed:discover},policy:{supplier_selection_allowed:false,supplier_commitment_allowed:false,email_send_allowed:false,rfq_draft_preparation_allowed:true,external_discovery_on_demand_only:true,no_supplier_master_write:true,no_rfq_write:true}});
+    return json({ok:true,sourcing_version:2,read_only:true,tender_id:tenderId,title:tender.title,authority:tender.authority,deadline:tender.deadline,estimated_value:tender.estimated_value,currency:tender.currency,requirements:rows,summary:{requirements:rows.length,strict_ready:strict,review_ready:review,catalog_rfq_ready:catalogReady,catalog_review_ready:catalogReview,external_discovery_needed:needs,external_search_executed:discover},policy:{supplier_selection_allowed:false,supplier_commitment_allowed:false,email_send_allowed:false,rfq_draft_preparation_allowed:true,external_discovery_on_demand_only:true,verified_catalog_is_evidence_cache_not_supplier_selection:true,no_supplier_master_write:true,no_rfq_write:true}});
   }catch(e){console.error('pppp-tender-supplier-sourcing-v1',e);return json({ok:false,error:'supplier_sourcing_failed',message:text((e as any)?.message||e,700)},500);}
 });
