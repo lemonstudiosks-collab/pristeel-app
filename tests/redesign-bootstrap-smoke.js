@@ -76,6 +76,6 @@ assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(tenderImporter), 'Ten
 
 assert(finalizer.includes('pristeel-project-control-home-v1.js?v=20260827-owner6'),'Finalizer must cache-bust the current Home owner');
 assert(finalizer.includes('data-pst-project-control-home-v6'),'Finalizer must not accept a stale Home script tag');
-assert(finalizer.includes('pristeel-tender-dossier-analysis-v1.js?v=20260827-readable3'),'Finalizer must load the readable dossier generation');
+assert(finalizer.includes('pristeel-tender-dossier-analysis-v1.js?v=20260918-local1'),'Finalizer must load the readable dossier generation');
 assert(projectCentric.includes('__pstProjectCentricWorkflowV4'),'Project-centric runtime must expose its current generation marker');
 assert(projectCentric.includes("p.setAttribute('data-pcw-opportunities-owner','2')"),'whole-card Opportunities must claim visible ownership');
