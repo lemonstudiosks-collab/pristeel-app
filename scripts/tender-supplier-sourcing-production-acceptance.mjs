@@ -19,7 +19,10 @@ const round=base.requirements.find(x=>x.id==='round_bar');
 const tubes=base.requirements.find(x=>x.id==='tubes');
 if(!round||!tubes)throw new Error('Expected round_bar and tubes requirements.');
 if(!Array.isArray(tubes.internal?.candidates))throw new Error('Internal supplier intelligence missing.');
-if(base.policy?.external_discovery_on_demand_only!==true||base.policy?.email_send_allowed!==false)throw new Error('Sourcing safety policy mismatch.');
+if(!Array.isArray(round.catalog?.candidates)||round.catalog.candidates.length<3)throw new Error('Verified round-bar public catalog coverage missing.');
+if(!Array.isArray(tubes.catalog?.candidates)||tubes.catalog.candidates.length<3)throw new Error('Verified seamless-tube public catalog coverage missing.');
+if(Number(tubes.catalog?.rfq_ready_count||0)<3)throw new Error('Expected at least three evidence-backed seamless-tube RFQ candidates from the verified catalog.');
+if(base.policy?.external_discovery_on_demand_only!==true||base.policy?.email_send_allowed!==false||base.policy?.no_supplier_master_write!==true)throw new Error('Sourcing safety policy mismatch.');
 
 const ext=await call({tender_id:TENDER,discover:true,requirement_id:'round_bar'});
 const row=ext.requirements?.[0];
@@ -29,6 +32,6 @@ if(!row.external.queries.some(q=>q.ok===true))throw new Error('No public search 
 
 console.log(JSON.stringify({
   ok:true,
-  requirements:base.requirements.map(x=>({id:x.id,label:x.label,strict_ready:x.internal?.strict_rfq_ready_existing||0,review_ready:x.internal?.review_rfq_ready_existing||0})),
+  requirements:base.requirements.map(x=>({id:x.id,label:x.label,strict_ready:x.internal?.strict_rfq_ready_existing||0,review_ready:x.internal?.review_rfq_ready_existing||0,catalog_ready:x.catalog?.rfq_ready_count||0,catalog_review:x.catalog?.review_count||0,catalog_candidates:(x.catalog?.candidates||[]).map(c=>({name:c.name,country:c.country,email:c.email,rfq_ready_candidate:c.rfq_ready_candidate,dimension_verified:c.dimension_evidence?.verified,standard_evidence:c.standard_evidence,certificate_evidence:c.certificate_evidence}))})),
   round_bar_discovery:{queries:row.external.queries.map(q=>({tier:q.tier,ok:q.ok})),candidates:(row.external.candidates||[]).slice(0,5).map(c=>({name:c.name,domain:c.domain,tier:c.source_tier,email:!!c.email,contact_ready:c.contact_ready,score:c.score}))}
 },null,2));
