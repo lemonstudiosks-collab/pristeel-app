@@ -30,7 +30,7 @@ function familyOf(line:string){
   if(/\b(hea|heb|hem|ipe|ipn|upn|upe|profil|profile|beam|angle|channel)\b/.test(s))return'profiles';
   if(/heavy plate|quarto|\bplate\b|pllak|blech/.test(s))return'heavy_plate';
   if(/sheet|coil|llamarin|\blim\b/.test(s))return'sheet';
-  if(/bolt|bulon|anker|anchor|fastener|washer|nut|screw/.test(s))return'hardware';
+  if(/\b(bolt|bulon|anker|anchor|fastener|washer|nut|screw)s?\b/.test(s))return'hardware';
   if(/fabricat|fabrik|konstruksion|steelwork|weld/.test(s))return'fabrication';
   return'';
 }
@@ -139,15 +139,17 @@ function dimensionSearch(r:Requirement){
   return'';
 }
 function buildQuery(r:Requirement,tier:string){
-  const terms=[familySearch(r),dimensionSearch(r),r.standards[0]||'',r.certifications[0]||'','manufacturer supplier',tierLocation(tier)].filter(Boolean);
-  return terms.map(x=>`"${text(x,120).replace(/"/g,'')}"`).join(' ');
+  const product=familySearch(r),dim=dimensionSearch(r),standard=r.standards[0]||'',cert=r.certifications[0]||'',loc=tierLocation(tier);
+  const largeRound=r.id==='round_bar'&&arr(r.dimensions).some((x:any)=>Number(x?.diameter_mm||0)>=300);
+  const productTerm=largeRound?'("steel round bar" OR "forged steel rounds" OR "rolled steel rounds")':`"${product}"`;
+  return [productTerm,dim,standard?`"${standard}"`:'',cert,'manufacturer supplier',loc].filter(Boolean).join(' ');
 }
 function decodeXml(v:string){return v.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();}
 function rssItems(xml:string){
   const out:any[]=[];for(const m of xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)){const b=m[1],title=decodeXml((b.match(/<title>([\s\S]*?)<\/title>/i)||[])[1]||''),link=decodeXml((b.match(/<link>([\s\S]*?)<\/link>/i)||[])[1]||''),desc=decodeXml((b.match(/<description>([\s\S]*?)<\/description>/i)||[])[1]||'');if(title&&/^https?:\/\//i.test(link))out.push({title,link,description:desc});}return out;
 }
 function domainOf(u:string){try{return new URL(u).hostname.toLowerCase().replace(/^www\./,'');}catch{return'';}}
-function badDomain(d:string){return !d||/(bing\.com|microsoft\.com|google\.|facebook\.com|instagram\.com|linkedin\.com|youtube\.com|wikipedia\.org|alibaba\.|made-in-china\.|indiamart\.|europages\.|kompass\.|globalsources\.|pinterest\.)/i.test(d);}
+function badDomain(d:string){return !d||/(bing\.com|microsoft\.com|google\.|facebook\.com|instagram\.com|linkedin\.com|youtube\.com|wikipedia\.org|alibaba\.|made-in-china\.|indiamart\.|europages\.|kompass\.|globalsources\.|pinterest\.|worldsteel\.org|mysteel\.com|steel-orbis\.|steelorbis\.)/i.test(d);}
 function emailFrom(html:string){
   const mail=(html.match(/mailto:([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i)||[])[1]||(html.match(/\b([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\b/i)||[])[1]||'';
   return mail&&!/example\.|wixpress|sentry|cloudflare|wordpress/i.test(mail)?mail.toLowerCase():null;
@@ -167,20 +169,22 @@ async function fetchText(url:string,timeout=4500){
   try{const r=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0 PPPP Supplier Discovery/1.0','Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'},redirect:'follow',signal:ac.signal});if(!r.ok)return'';return text(await r.text(),220000);}catch{return'';}finally{clearTimeout(timer);}
 }
 async function discoverRequirement(r:Requirement){
-  const tiers=['local','regional','turkey','greece','eu'],all:ExternalCandidate[]=[],queries:any[]=[];
+  const tiers=['local','regional','turkey','greece','eu'],all:ExternalCandidate[]=[],queries:any[]=[];let pageFetches=0;
   for(const tier of tiers){
     if(all.filter(x=>x.contact_ready).length>=3)break;
     const query=buildQuery(r,tier),url='https://www.bing.com/search?format=rss&q='+encodeURIComponent(query);
     const xml=await fetchText(url,5000);queries.push({tier,query,ok:!!xml});
-    const items=rssItems(xml).slice(0,8);
+    const items=rssItems(xml).slice(0,10);
     for(const item of items){
-      if(all.length>=12)break;
+      if(all.length>=12||pageFetches>=10)break;
       const d=domainOf(item.link);if(badDomain(d)||all.some(x=>x.domain===d))continue;
-      const page=await fetchText(item.link,3500),evidence=[item.title,item.description,page].join('\n');
-      const prod=productEvidence(r,evidence),std=r.standards.length?r.standards.some(s=>norm(evidence).includes(norm(s))):false,cert=r.certifications.length?r.certifications.some(s=>norm(evidence).includes(norm(s))):false,email=emailFrom(page);
-      let score=(prod?45:0)+(email?20:0)+(std?12:0)+(cert?8:0)+(tier==='local'?8:tier==='regional'?6:tier==='turkey'||tier==='greece'?5:3);
-      if(!prod&&score<25)continue;
-      all.push({name:clean(item.title).replace(/\s*[-|–].*$/,'').slice(0,120)||d,domain:d,website:item.link,email,source_tier:tier,query,title:item.title,snippet:item.description,product_evidence:prod,standard_evidence:std,certificate_evidence:cert,contact_ready:!!(prod&&email),verification_status:prod&&email?'contact_ready_review':'verification_required',score});
+      const searchEvidence=[item.title,item.description].join('\n');if(!productEvidence(r,searchEvidence))continue;
+      pageFetches++;const page=await fetchText(item.link,3500),evidence=[searchEvidence,page].join('\n');
+      const prod=productEvidence(r,evidence);if(!prod)continue;
+      let email=emailFrom(page);if(!email&&pageFetches<10){pageFetches++;const home=await fetchText('https://'+d+'/',3000);email=emailFrom(home);if(home)evidence+='\n'+home;}
+      const std=r.standards.length?r.standards.some(s=>norm(evidence).includes(norm(s))):false,cert=r.certifications.length?r.certifications.some(s=>norm(evidence).includes(norm(s))):false;
+      const score=45+(email?20:0)+(std?12:0)+(cert?8:0)+(tier==='local'?8:tier==='regional'?6:tier==='turkey'||tier==='greece'?5:3);
+      all.push({name:clean(item.title).replace(/\s*[-|–].*$/,'').slice(0,120)||d,domain:d,website:item.link,email,source_tier:tier,query,title:item.title,snippet:item.description,product_evidence:true,standard_evidence:std,certificate_evidence:cert,contact_ready:!!email,verification_status:email?'contact_ready_review':'verification_required',score});
     }
   }
   all.sort((a,b)=>Number(b.contact_ready)-Number(a.contact_ready)||b.score-a.score||a.name.localeCompare(b.name));
