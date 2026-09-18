@@ -115,13 +115,15 @@ assert(pcw.includes("panel.getAttribute('data-dossier-complete')==='1'"),'Projec
 assert(pcw.includes("typeof D.isReady==='function'?D.isReady(id):dossierReady(id)"),'Analyze action must not blindly re-enable project creation');
 assert(edge.includes('SUPABASE_SERVICE_ROLE_KEY'),'Purpose-limited persistence path is missing');
 assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(edge),'Tender analysis must not contain external/binding action endpoints');
-assert(protectedEdge.includes("const VERSION='v14'")&&protectedEdge.includes("protected-archive-analysis-v8"),'Protected dossier analysis must expose the same-pass Price Intelligence generation');
+assert(protectedEdge.includes("const VERSION='v15'")&&protectedEdge.includes("protected-archive-analysis-v9"),'Protected dossier analysis must expose the same-pass Price Intelligence generation');
 assert(protectedEdge.includes('price_features:priceFeatureSchema()')&&protectedEdge.includes("'price_features','coverage'"),'Price features must be part of the existing structured synthesis response, not a second AI request');
 assert(protectedEdge.includes('Never derive, back-calculate or estimate steel weight from contract value'),'Weight safety rule must explicitly forbid contract-value-derived tonnage');
 assert(protectedEdge.includes("weight_source=deterministic_boq")&&protectedEdge.includes('weight_evidence'),'Deterministic BOQ weight must require formula and cited evidence');
 assert(protectedEdge.includes("db.from('pppp_tender_price_features_v1')")&&protectedEdge.includes("extraction_source:manual?'manual':'dossier_ai'"),'Same-pass price features must persist into the canonical price feature table while preserving manual authority');
 assert(protectedEdge.includes("price_features_persisted:pricePersist.ok")&&protectedEdge.includes('Analiza e dosjes u ruajt, por Price Intelligence kërkon riprovim të sinkronizimit.'),'Price persistence failure must not discard a successful canonical dossier analysis');
 assert(!/openAI\([^\n]{0,180}price[_ -]?feature/i.test(protectedEdge),'Price Intelligence must not add a second dedicated OpenAI request');
+assert(protectedEdge.includes('createSignedUrl(path,SIGNED_URL_SECONDS)')&&protectedEdge.includes('signed_fetch_http_')&&protectedEdge.includes('storage_read_failed:'),'Protected archive reads must fall back to a signed Storage fetch when direct Supabase download fails.');
+assert(protectedEdge.includes('dossier_analysis_diagnostics')&&protectedEdge.includes('unreadable_documents:preparedRes.unreadable'),'Unreadable protected documents must persist bounded diagnostics for live troubleshooting.');
 assert(finalizer.includes('data-pst-tender-dossier-analysis-v3'),'Finalizer does not load the current dossier analysis runtime');
 
 assert(edge.includes("code:'AI_RATE_LIMITED'")&&edge.includes("error:'ai_rate_limited'"),'OpenAI 429 must become a structured rate-limit state');
