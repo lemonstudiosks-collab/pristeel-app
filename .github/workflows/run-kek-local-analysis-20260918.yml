@@ -1,0 +1,31 @@
+name: Run KEK local dossier analysis
+
+on:
+  push:
+    branches:
+      - chatgpt/run-kek-local-analysis-20260918-2
+    paths:
+      - 'scripts/run-kek-local-analysis-20260918.mjs'
+      - '.github/workflows/run-kek-local-analysis-20260918.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/run-kek-local-analysis-20260918.mjs
+      - name: Analyze saved dossier once and verify canonical state
+        run: node scripts/run-kek-local-analysis-20260918.mjs
