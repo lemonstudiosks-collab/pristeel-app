@@ -40,10 +40,11 @@ assert(importer.includes('transient=status>=500||status===429')&&importer.includ
 assert(importer.includes('review=[409,422].includes(status)')&&importer.includes('requires_review:review'),'Integrity/readability analysis blockers must preserve the upload but require review rather than blind retry');
 assert(!/api\.openai\.com\/v1\/responses|finalSchema\(/.test(importer),'Upload bridge must not contain a parallel analysis engine');
 
-assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v8'"),'Canonical analyzer must be on protected archive analysis v8');
-assert(analyzer.includes("const VERSION='v14'"),'Canonical analysis snapshot must be v14');
+assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v9'"),'Canonical analyzer must be on protected archive analysis v9');
+assert(analyzer.includes("const VERSION='v15'"),'Canonical analysis snapshot must be v15');
 assert(analyzer.includes('docxStructuredText')&&analyzer.includes('[PARAGRAPH')&&analyzer.includes('[TABLE'),'DOCX extraction must preserve paragraph and table locators');
 assert(analyzer.includes('spreadsheetStructuredText')&&analyzer.includes('CELLS A'),'Spreadsheet extraction must preserve sheet/row/cell-range locators');
+assert(analyzer.includes('createSignedUrl(path,SIGNED_URL_SECONDS)')&&analyzer.includes('storage_read_failed:'),'Analyzer must have a signed Storage fallback when direct download fails.');
 assert(analyzer.includes('splitChunks')&&analyzer.includes('batchTextUnits'),'All extracted tender text must be chunked/batched instead of silently clipped to one small prefix');
 assert(analyzer.includes('identityGuard')&&analyzer.includes('tender_dossier_integrity_mismatch'),'Analyzer must independently block cross-tender archive contamination');
 assert(analyzer.includes('administrative_conditions')&&analyzer.includes('qualification_criteria')&&analyzer.includes('financial_conditions'),'Final analysis must separate administrative, qualification and financial conditions');
