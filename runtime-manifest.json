@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "b0c7cffc04d1e18564cfde36d00fb347ab4c9bf3",
+  "auditedAtCommit": "682bc03a0684ce7ad9316b25eccb3906b6f14286",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "ea1e869daef2bc3d16d4fbb22f9b4abf0a9d9ba1"
+    "bootstrapGitBlobSha": "044591b9954b167d98230ce40eb81d259a285a1b"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -255,7 +255,7 @@
       "module": "pristeel-project-workbench-v2.js",
       "loader": "pristeel-project-readability-tuning-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Project Workbench v3 is loaded with the reviewed 20260918-workbench3 cache key and owns the single visible Project Detail work surface while delegating all business actions to existing canonical project engines."
+      "condition": "Project Workbench v3 is loaded with the reviewed 20260918-workbench3-audit1 cache key and owns the single visible Project Detail work surface while delegating all business actions to existing canonical project engines."
     },
     {
       "module": "pristeel-project-summary-command-v1.js",
