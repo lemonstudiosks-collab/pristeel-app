@@ -43,7 +43,7 @@ window.eval(mindmapSrc);
 await new Promise(r=>setTimeout(r,40));
 
 const mindmap=window.PSTOpportunitiesMindmapV5;
-assert(mindmap&&mindmap.version==='20260918-drilldown1','mindmap v5 must own the visible Opportunities presentation');
+assert(mindmap&&mindmap.version==='20260918-canonicalfilter1','mindmap v5 must own the visible Opportunities presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'mindmap must render exactly once');
 assert(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),'APP branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED branch must exist');
@@ -67,13 +67,13 @@ assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-sour
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="APP_AL"]'),'APP must render inside the center source mindmap');
 assert.equal(window.document.querySelector('.pst-opp-v4-field-side .pst-opp-v4-side-title')?.textContent,'Sipas fushës','right field filters must stay unchanged');
 
-let resultScrolls=0;
-window.HTMLElement.prototype.scrollIntoView=function(){if(this.classList&&this.classList.contains('pst-opp-v4-results-head'))resultScrolls++;};
 api._state.lifecycle='waiting';
 api._state.query='steel';
 window.document.querySelector('[data-pst-opp-field="construction"]').click();
 await new Promise(r=>setTimeout(r,20));
 window.document.querySelector('[data-pst-opp-view="mindmap"]').click();
+const appNodeBefore=window.document.querySelector('[data-pst-opp-source="APP_AL"]');
+const appStyleBefore=appNodeBefore.getAttribute('style');
 window.document.querySelector('[data-pst-opp-source="APP_AL"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'APP_AL','APP click must update canonical source state');
@@ -83,7 +83,10 @@ assert.equal(mindmap.state().field,'all','source click must clear a stale field 
 assert.equal(mindmap.state().view,'mindmap','source click must keep the mindmap in place');
 assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,1,'APP click must leave one APP result in this fixture');
 assert.match(window.document.querySelector('.pst-opp-v4-results-head')?.textContent||'',/1 rezultate të shfaqura.*APP/,'APP click must expose the active source and visible result count');
-assert(resultScrolls>0,'APP click must bring the filtered result area into view while keeping the mindmap fixed');
+const appNodeAfter=window.document.querySelector('[data-pst-opp-source="APP_AL"]');
+assert.equal(appNodeAfter,appNodeBefore,'source activation must preserve the same DOM node instead of rebuilding the mindmap');
+assert.equal(appNodeAfter.getAttribute('style'),appStyleBefore,'source activation must not change the node position');
+assert(appNodeAfter.classList.contains('on'),'source activation must be visible without moving the node');
 assert(window.document.querySelector('[data-pcw-tender="app-1"]'),'APP result must remain interactive after rerender');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'APP rerender must not duplicate the mindmap');
 
