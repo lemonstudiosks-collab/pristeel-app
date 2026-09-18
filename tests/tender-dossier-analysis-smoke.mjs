@@ -115,7 +115,7 @@ assert(pcw.includes("panel.getAttribute('data-dossier-complete')==='1'"),'Projec
 assert(pcw.includes("typeof D.isReady==='function'?D.isReady(id):dossierReady(id)"),'Analyze action must not blindly re-enable project creation');
 assert(edge.includes('SUPABASE_SERVICE_ROLE_KEY'),'Purpose-limited persistence path is missing');
 assert(!/gmail\.googleapis\.com|sendgrid\.com|api\.mailgun|\/rest\/v1\/(?:purchase_orders|contracts|client_offers)/i.test(edge),'Tender analysis must not contain external/binding action endpoints');
-assert(protectedEdge.includes("const VERSION='v15'")&&protectedEdge.includes("protected-archive-analysis-v9"),'Protected dossier analysis must expose the same-pass Price Intelligence generation');
+assert(protectedEdge.includes("const VERSION='v16'")&&protectedEdge.includes("protected-archive-analysis-v10"),'Protected dossier analysis must expose the same-pass Price Intelligence generation');
 assert(protectedEdge.includes('price_features:priceFeatureSchema()')&&protectedEdge.includes("'price_features','coverage'"),'Price features must be part of the existing structured synthesis response, not a second AI request');
 assert(protectedEdge.includes('Never derive, back-calculate or estimate steel weight from contract value'),'Weight safety rule must explicitly forbid contract-value-derived tonnage');
 assert(protectedEdge.includes("weight_source=deterministic_boq")&&protectedEdge.includes('weight_evidence'),'Deterministic BOQ weight must require formula and cited evidence');
@@ -135,6 +135,8 @@ assert(edge.includes("message:RATE_LIMIT_MESSAGE")&&!edge.includes('`OpenAI ${r.
 assert(frontend.includes('Dosja është ruajtur; analiza AI nuk u përfundua për shkak të limitit të përkohshëm'),'Action Console must show the safe Albanian rate-limit message');
 assert(frontend.includes('data-tda-retry-saved')&&frontend.includes('retry_saved:!!retrySaved'),'Retry button must explicitly request saved-dossier reuse');
 assert(frontend.includes('if(complete&&ready)')&&frontend.includes("data-analysis-ready',ready?'1':'0'"),'Krijo projekt must remain blocked until a successful analysis is ready');
+assert(frontend.includes('DOSJA DUHET RI-NGARKUAR')&&frontend.includes('storage_files_available===false'),'Frontend must distinguish orphaned Storage metadata from a real readable saved dossier.');
+assert(protectedEdge.includes("storage_status:'missing_blob'")&&protectedEdge.includes("dossier_analysis_status:storageMissing?'storage_missing':'unreadable'"),'Analyzer must persist missing Storage blobs as missing dossier state rather than retrying an unreadable archive forever.');
 
 console.log('Tender dossier parser + security + runtime smoke test passed.');
 
