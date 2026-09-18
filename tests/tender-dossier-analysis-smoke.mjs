@@ -137,6 +137,9 @@ assert(frontend.includes('data-tda-retry-saved')&&frontend.includes('retry_saved
 assert(frontend.includes('if(complete&&ready)')&&frontend.includes("data-analysis-ready',ready?'1':'0'"),'Krijo projekt must remain blocked until a successful analysis is ready');
 assert(frontend.includes('DOSJA DUHET RI-NGARKUAR')&&frontend.includes('storage_files_available===false'),'Frontend must distinguish orphaned Storage metadata from a real readable saved dossier.');
 assert(protectedEdge.includes("storage_status:'missing_blob'")&&protectedEdge.includes("dossier_analysis_status:storageMissing?'storage_missing':'unreadable'"),'Analyzer must persist missing Storage blobs as missing dossier state rather than retrying an unreadable archive forever.');
+assert(protectedEdge.includes("manualFullZip=tender?.payload?.dossier_integrity?.manual_full_zip_uploaded===true")&&protectedEdge.includes("if(missing.length&&!manualFullZip)"),'Protected analyzer must treat expected filenames as advisory after a user-selected complete ZIP while preserving normal completeness checks elsewhere.');
+assert(protectedEdge.includes("remaining_expected:[]")&&protectedEdge.includes("storage_files_available:true"),'Successful protected analysis must close advisory filename gaps and preserve the readable Storage truth.');
+
 
 console.log('Tender dossier parser + security + runtime smoke test passed.');
 
