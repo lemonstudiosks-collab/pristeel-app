@@ -9,7 +9,7 @@ assert.match(importer,/function resolveTrustedCompanions\(/,'trusted ZIPs must s
 assert.match(importer,/compatible\.length!==1/,'companion candidate must be unique inside its file family');
 assert.match(importer,/sameFamilyExpected\.length!==1/,'expected document must also be unique inside its file family');
 assert.match(importer,/verdicts\.get\(c\.path\)\?\.status!==['"]mismatch['"]/,'cross-tender mismatch candidates must remain excluded from fallback');
-assert.match(importer,/actualExt===['"]zip['"]&&hasTrustedArchiveAnchor\(candidates,matches,verdicts\)/,'companion fallback must be ZIP-only and batch-trust gated');
+assert.match(importer,/actualExt===['"]zip['"]&&!fastFilenameMode&&hasTrustedArchiveAnchor\(candidates,matches,verdicts\)/,'companion fallback must be ZIP-only, batch-trust gated, and disabled on the filename-first fast path');
 assert.doesNotMatch(importer,/if\(hinted&&hinted===normalizeName\(expected\)\)score\s*\+=\s*\d+/,'row hints must not blindly force an otherwise unqualified match');
 
 console.log('Tender trusted archive companion matching smoke passed.');
