@@ -2,12 +2,12 @@ const fs = require('fs');
 const assert = require('assert');
 
 const src = fs.readFileSync('pristeel-project-emails.js', 'utf8');
-const finalizer = src.indexOf("pristeel-redesign-finalizer-v1.js?v=20260918-uploadfix1");
+const finalizer = src.indexOf("pristeel-redesign-finalizer-v1.js?v=20260918-singleowner1");
 const legacy = src.indexOf("pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2");
 const tender = src.indexOf("pristeel-tender-priority-actions-v1.js?v=20260903-email1");
 const home = src.indexOf("pristeel-home-operating-grid-v1.js?v=20260823-homegrid2");
 const classification = src.indexOf("pristeel-project-classification-v1.js?v=");
-const nav = src.indexOf("pristeel-primary-nav-resilience-v1.js?v=20260910-system-render3");
+const nav = src.indexOf("pristeel-primary-nav-resilience-v1.js?v=20260918-singleowner1");
 
 assert.ok(finalizer >= 0, 'Redesign finalizer cache key does not match the audited current bootstrap');
 assert.ok(legacy >= 0 && tender > legacy, 'Tender priority must load after all legacy workflow layers');

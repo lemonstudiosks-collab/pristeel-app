@@ -28,7 +28,10 @@ need('MutationObserver', 'final DOM ownership after late runtime rebuilds');
 
 if(flow.includes('setInterval(')) throw new Error('Operator Flow must not poll with setInterval.');
 if(flow.includes("'PATCH'") || flow.includes("'POST'")) throw new Error('Operator Flow must remain read/presentation/navigation-only.');
-if(!nav.includes('pristeel-operator-flow-v1.js?v=20260829-flow2')) throw new Error('Primary navigation does not load the current Operator Flow cache version.');
+need('workbenchOwnsProject', 'Workbench ownership guard');
+need('retireRationalProject', 'legacy Project Detail retirement path');
+if(!nav.includes('pristeel-operator-flow-v1.js?v=20260918-workbench-yield1')) throw new Error('Primary navigation does not reference the guarded Operator Flow fallback cache version.');
+if(!nav.includes('window.__pstProjectWorkbenchV3Intended||window.PSTProjectWorkbenchV3')) throw new Error('Primary navigation must not load Operator Flow fallback when Workbench v3 owns Project Detail.');
 if(!nav.includes("document.addEventListener('pst:modules-ready'")) throw new Error('Operator Flow must be loaded after modules-ready.');
 
 console.log('operator-flow smoke: ok');

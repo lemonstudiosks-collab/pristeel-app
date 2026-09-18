@@ -11,6 +11,7 @@ window.__pstProjectExecutionSurfaceV1=true;
 
 function N(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9_]+/g,' ').replace(/\s+/g,' ').trim();}
 function page(){return document.getElementById('page-workspace-project');}
+function workbenchOwnsProject(){var p=page();return !!(window.__pstProjectWorkbenchV3Intended||window.PSTProjectWorkbenchV3||(p&&p.getAttribute('data-pst-project-surface-owner')==='workbench-v3'));}
 function project(){var d=window.__pstIntegrityLastData||null;return d&&d.project||null;}
 function postAward(){
   try{var G=window.PSTProjectExecutionGuardV1;if(G&&typeof G.locked==='function')return !!G.locked();}catch(e){}
@@ -91,7 +92,8 @@ function focusNote(root){
   if(ctx)ctx.insertAdjacentElement('afterend',sec);else body.insertAdjacentElement('afterbegin',sec);
 }
 function clean(){
-  ensureCss();var root=page();if(!root)return false;
+  var root=page();if(!root)return false;if(workbenchOwnsProject()){root.classList.remove('pxs-post-award');return false;}
+  ensureCss();
   if(!postAward()){root.classList.remove('pxs-post-award');return false;}
   root.classList.add('pxs-post-award');
   [].slice.call(root.querySelectorAll('[data-pwf-area="procurement"],[data-pf2-tab="bom"],[data-pf2-tab="procurement"],[data-pf2-tab="commercial"],.pst-pi-tab[data-tab="bom"],.pst-pi-tab[data-tab="procurement"],.pst-pi-tab[data-tab="commercial"],.pwf-procurement-head,.pwf-stage-nav,#pst-pipeline-consistency-card,.pst-pipeline-advisory')).forEach(hide);

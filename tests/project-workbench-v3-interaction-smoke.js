@@ -16,7 +16,7 @@ function last(a){return a[a.length-1];}
   });
   const {window}=dom;
   const calls=[];
-  let uploads=0,briefs=0;
+  let uploads=0,briefs=0,revisions=0;
 
   window.__pstCurrentProjectId='p1';
   window._curProjId='p1';
@@ -44,6 +44,7 @@ function last(a){return a[a.length-1];}
   };
   window.PSTProjectFileUpload={open:function(){uploads++;return true;}};
   window.PSTProjectSummaryCommandV1={open:function(id){briefs++;calls.push(['brief',id]);return true;}};
+  window.PSTProjectOfferRevisionAssistantV2={open:function(){revisions++;calls.push(['revision']);return true;}};
 
   const src=fs.readFileSync(path.join(__dirname,'..','pristeel-project-workbench-v2.js'),'utf8');
   window.eval(src);
@@ -111,7 +112,7 @@ function last(a){return a[a.length-1];}
   calls.length=0; click(window,body.querySelector('[data-pwb3-stage="comparison"]')); assert(last(calls)&&last(calls)[1]==='procurement'&&last(calls)[2]==='comparison','Supplier source row failed');
   window.PSTProjectWorkbenchV3.openNav('overview'); body=doc.getElementById('pst-pi-body');
   click(window,body.querySelector('[data-pwb3-card-route="offer"] header b')); assert(body.classList.contains('pwb3-view-offer'),'Whole own-offer card failed');
-  calls.length=0; click(window,body.querySelector('[data-pwb3-stage="client_offer"]')); assert(last(calls)&&last(calls)[1]==='procurement'&&last(calls)[2]==='client_offer','Offer editor/revision button failed');
+  calls.length=0; click(window,body.querySelector('[data-pwb3-action="revision"]')); assert(revisions===1&&last(calls)&&last(calls)[0]==='revision','Offer editor/revision button must delegate to revision assistant');
   window.PSTProjectWorkbenchV3.openNav('overview'); body=doc.getElementById('pst-pi-body');
   calls.length=0; click(window,body.querySelector('[data-pwb3-card-route="client"] header b')); assert(last(calls)&&last(calls)[1]==='communication','Whole client card failed: '+JSON.stringify(last(calls)));
   window.PSTProjectWorkbenchV3.openNav('overview'); body=doc.getElementById('pst-pi-body');
@@ -142,6 +143,33 @@ function last(a){return a[a.length-1];}
   base.business_type='trading'; assert(window.PSTProjectWorkbenchV3.businessType(window.__pstIntegrityLastData)==='trading','Trading type detection failed');
   base.business_type='fabrication'; assert(window.PSTProjectWorkbenchV3.businessType(window.__pstIntegrityLastData)==='fabrication','Fabrication type detection failed');
   base.business_type='hybrid'; assert(window.PSTProjectWorkbenchV3.businessType(window.__pstIntegrityLastData)==='hybrid','Hybrid type detection failed');
+
+  // Production-order ownership regression: late presentation modules must yield.
+  for(const rel of [
+    'pristeel-operating-experience-v1.js',
+    'pristeel-daily-zones-cleanup-v1.js',
+    'pristeel-operator-flow-v1.js',
+    'pristeel-unified-project-flow-v1.js',
+    'pristeel-project-execution-surface-v1.js',
+    'pristeel-project-offer-revision-assistant-v1.js'
+  ]){
+    window.eval(fs.readFileSync(path.join(__dirname,'..',rel),'utf8'));
+  }
+  doc.dispatchEvent(new window.Event('pst:modules-ready',{bubbles:true}));
+  await nextTick(1700);
+  window.PSTProjectWorkbenchV3.sync();
+  await nextTick(20);
+
+  const projectPage=doc.getElementById('page-workspace-project');
+  assert(projectPage.getAttribute('data-pst-project-surface-owner')==='workbench-v3','Workbench must retain explicit Project Detail ownership after late modules');
+  assert(doc.querySelectorAll('.pwb3-step').length===9,'Late owners must not replace the nine-step Workbench progress');
+  assert(doc.querySelectorAll('.pwb3-nav-btn').length===6,'Late owners must not replace the six-button Workbench menu');
+  assert(!doc.getElementById('pst-rational-head'),'Legacy Operator Flow header must stay retired');
+  assert(!doc.getElementById('pst-rational-summary'),'Legacy Operator Flow summary must stay retired');
+  assert(!doc.getElementById('pst-upf-shell'),'Unified Project Flow shell must stay retired');
+  assert(!doc.querySelector('.pro-tabs'),'Legacy Operator Flow tabs must stay retired');
+  assert(!doc.getElementById('pst-ora-open'),'Revision assistant must not inject a competing project tab');
+  assert(doc.getElementById('pst-project-workbench-v2'),'Workbench root must remain mounted after late-owner timers settle');
 
   console.log('project-workbench-v3 interaction smoke: ok');
 })().catch(err=>{console.error(err);process.exit(1);});
