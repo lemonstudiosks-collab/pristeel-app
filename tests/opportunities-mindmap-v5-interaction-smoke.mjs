@@ -4,6 +4,7 @@ import {JSDOM} from 'jsdom';
 
 const workflowSrc=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
 const mindmapSrc=fs.readFileSync('pristeel-opportunities-filter-polish-v1.js','utf8');
+const waitingSrc=fs.readFileSync('pristeel-opportunities-waiting-bridge-v1.js','utf8');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2">
 <div class="app-shell"><aside class="sidebar"><div id="pst-v2-sidebar"></div></aside><main class="main"><div class="topbar">legacy topbar</div><div class="content">
@@ -36,11 +37,13 @@ window.eval(workflowSrc);
 const api=window.PSTProjectCentricWorkflowV1;
 assert(api,'project-centric workflow must load');
 await api.loadOpportunities(true);
+window.eval(waitingSrc);
+await new Promise(r=>setTimeout(r,15));
 window.eval(mindmapSrc);
 await new Promise(r=>setTimeout(r,40));
 
 const mindmap=window.PSTOpportunitiesMindmapV5;
-assert(mindmap&&mindmap.version==='20260918-sourceradial2','mindmap v5 must own the visible Opportunities presentation');
+assert(mindmap&&mindmap.version==='20260918-drilldown1','mindmap v5 must own the visible Opportunities presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'mindmap must render exactly once');
 assert(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),'APP branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED branch must exist');
@@ -66,18 +69,28 @@ assert.equal(window.document.querySelector('.pst-opp-v4-field-side .pst-opp-v4-s
 
 let resultScrolls=0;
 window.HTMLElement.prototype.scrollIntoView=function(){if(this.classList&&this.classList.contains('pst-opp-v4-results-head'))resultScrolls++;};
+api._state.lifecycle='waiting';
+api._state.query='steel';
+window.document.querySelector('[data-pst-opp-field="construction"]').click();
+await new Promise(r=>setTimeout(r,20));
+window.document.querySelector('[data-pst-opp-view="mindmap"]').click();
 window.document.querySelector('[data-pst-opp-source="APP_AL"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'APP_AL','APP click must update canonical source state');
+assert.equal(api._state.lifecycle,'all','source click must clear lifecycle filtering so its displayed source count can be shown');
+assert.equal(api._state.query,'','source click must clear a stale search query instead of silently compounding filters');
+assert.equal(mindmap.state().field,'all','source click must clear a stale field filter instead of hiding valid source results');
+assert.equal(mindmap.state().view,'mindmap','source click must keep the mindmap in place');
 assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,1,'APP click must leave one APP result in this fixture');
-assert.match(window.document.querySelector('.pst-opp-v4-results-head')?.textContent||'',/1 rezultate të shfaqura.*APP.*Të reja/,'APP click must expose the active filter and its visible result count');
-assert(resultScrolls>0,'APP click must reveal the filtered result area instead of only outlining the source node');
+assert.match(window.document.querySelector('.pst-opp-v4-results-head')?.textContent||'',/1 rezultate të shfaqura.*APP/,'APP click must expose the active source and visible result count');
+assert(resultScrolls>0,'APP click must bring the filtered result area into view while keeping the mindmap fixed');
 assert(window.document.querySelector('[data-pcw-tender="app-1"]'),'APP result must remain interactive after rerender');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'APP rerender must not duplicate the mindmap');
 
 window.document.querySelector('[data-pst-opp-source="TED"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'TED','TED click must update canonical source state');
+assert.equal(api._state.lifecycle,'all','repeated source drilldown must keep lifecycle reset');
 assert(window.document.querySelector('[data-pcw-tender="ted-1"]'),'TED click must recover immediately after APP rerender');
 
 window.document.querySelector('[data-pst-opp-source="KRPP"]').click();
