@@ -220,12 +220,12 @@ async function internalMatch(r:Requirement,tender:any,projectId:string|null){
   const req=arr(data?.requirements)[0]||{};
   return {summary:data?.summary||{},coverage_sufficient:req.coverage_sufficient===true,discovery_needed:req.discovery_needed!==false,strict_rfq_ready_existing:Number(req.strict_rfq_ready_existing||0),review_rfq_ready_existing:Number(req.review_rfq_ready_existing||0),explicit_conflicts:Number(req.explicit_conflicts||0),evidence_gaps:Number(req.evidence_gaps||0),candidates:arr(req.candidates).filter((x:any)=>!x.explicit_conflict).slice(0,10),conflicts:arr(req.candidates).filter((x:any)=>x.explicit_conflict).slice(0,6)};
 }
-function catalogFamilies(r:Requirement){if(r.id==='round_bar')return['round_bar','profiles'];if(r.family==='tubes')return['seamless_pipe','tubes'];return[r.family];}
+function catalogFamilies(r:Requirement){if((r.id==='round_bar'||r.id.startsWith('round_bar_')))return['round_bar','profiles'];if(r.family==='tubes')return['seamless_pipe','tubes'];return[r.family];}
 function evidenceMatch(required:string,available:any[]){const req=norm(required);return arr(available).some((x:any)=>{const a=norm(x);return !!a&&(a.includes(req)||req.includes(a));});}
 function near(a:any,b:any,tol=.11){return Number.isFinite(Number(a))&&Number.isFinite(Number(b))&&Math.abs(Number(a)-Number(b))<=tol;}
 function catalogDimensionEvidence(r:Requirement,row:any){
   const ds=arr(r.dimensions);if(!ds.length)return{verified:true,conflict:false,reason:'no_dimension_constraint'};
-  if(r.id==='round_bar'){
+  if((r.id==='round_bar'||r.id.startsWith('round_bar_'))){
     const req=Math.max(...ds.map((x:any)=>Number(x?.diameter_mm||0)).filter((x:number)=>x>0));if(!req)return{verified:false,conflict:false,reason:'round_dimension_unparsed'};
     const max=Number(row?.max_diameter_mm||0);if(max&&max<req)return{verified:false,conflict:true,reason:`max Ø${max} mm < required Ø${req} mm`};
     return{verified:!!(max&&max>=req),conflict:false,reason:max?`official range through Ø${max} mm`:'diameter range not explicitly catalogued'};
@@ -260,7 +260,7 @@ async function catalogMatch(r:Requirement){
 }
 function tierLocations(tier:string){if(tier==='local')return['Kosovo'];if(tier==='regional')return['North Macedonia','Serbia'];if(tier==='turkey')return['Turkey'];if(tier==='greece')return['Greece'];return['Germany','Italy','Romania','Poland'];}
 function familySearch(r:Requirement){
-  if(r.id==='round_bar')return'steel round bar';
+  if((r.id==='round_bar'||r.id.startsWith('round_bar_')))return'steel round bar';
   if(r.family==='tubes')return /pa tegel|seamless/i.test(r.label+' '+r.description)?'seamless steel tube':'steel tube';
   if(r.family==='heavy_plate')return'heavy steel plate';
   if(r.family==='sheet')return'steel sheet coil';
@@ -277,7 +277,7 @@ function dimensionSearch(r:Requirement){
   return'';
 }
 function buildQuery(r:Requirement,location:string){
-  const product=familySearch(r),dim=dimensionSearch(r),largeRound=r.id==='round_bar'&&arr(r.dimensions).some((x:any)=>Number(x?.diameter_mm||0)>=300);
+  const product=familySearch(r),dim=dimensionSearch(r),largeRound=(r.id==='round_bar'||r.id.startsWith('round_bar_'))&&arr(r.dimensions).some((x:any)=>Number(x?.diameter_mm||0)>=300);
   const productTerm=largeRound?'"large diameter steel round bar"':`"${product}"`;
   return [productTerm,r.grades[0]||'',r.standards.find(x=>!/^EN\s*10204/i.test(x))||'',dim,'manufacturer supplier',location].filter(Boolean).join(' ');
 }
@@ -294,7 +294,7 @@ function emailFrom(html:string){
 function contactHref(html:string,base:string){for(const m of html.matchAll(/href=["']([^"']+)["']/gi)){const href=m[1];if(!/(contact|kontakt|iletisim|iletişim|contatti|kontaktai|contacts?)/i.test(href))continue;try{return new URL(href,base).toString();}catch{}}return'';}
 function productEvidence(r:Requirement,s:string){
   s=norm(s);
-  if(r.id==='round_bar')return /(round bar|rundstahl|bright bar|steel bar|rolled bar|forged bar)/.test(s);
+  if((r.id==='round_bar'||r.id.startsWith('round_bar_')))return /(round bar|rundstahl|bright bar|steel bar|rolled bar|forged bar)/.test(s);
   if(r.family==='tubes')return /(seamless|steel tube|steel pipe|boru|rohr)/.test(s);
   if(r.family==='heavy_plate')return /(heavy plate|steel plate|quarto)/.test(s);
   if(r.family==='sheet')return /(steel sheet|coil|sheet metal)/.test(s);
@@ -308,29 +308,32 @@ async function fetchText(url:string,timeout=4500){
 }
 async function discoverRequirement(r:Requirement){
   const tiers=['local','regional','turkey','greece','eu'],all:ExternalCandidate[]=[],queries:any[]=[];let pageFetches=0;
+  const evidenceComplete=()=>all.filter(x=>x.verification_status==='evidence_complete_review').length;
   for(const tier of tiers){
-    if(all.filter(x=>x.contact_ready).length>=3||pageFetches>=14)break;
+    if(evidenceComplete()>=3||pageFetches>=20)break;
+    let tierFetches=0;
     for(const location of tierLocations(tier)){
-      if(all.filter(x=>x.contact_ready).length>=3||pageFetches>=14)break;
+      if(evidenceComplete()>=3||pageFetches>=20||tierFetches>=4)break;
       const query=buildQuery(r,location),url='https://www.bing.com/search?format=rss&setlang=en-us&mkt=en-US&q='+encodeURIComponent(query);
       const xml=await fetchText(url,5000);queries.push({tier,location,query,ok:!!xml});
       const items=rssItems(xml).slice(0,8);
       for(const item of items){
-        if(all.length>=12||pageFetches>=14)break;
+        if(pageFetches>=20||tierFetches>=4)break;
         const d=domainOf(item.link);if(badDomain(d)||all.some(x=>x.domain===d))continue;
         const searchEvidence=[item.title,item.description].join('\n');
-        pageFetches++;let page=await fetchText(item.link,3500),evidence=[searchEvidence,page].join('\n');
+        pageFetches++;tierFetches++;let page=await fetchText(item.link,3500),evidence=[searchEvidence,page].join('\n');
         const prod=productEvidence(r,evidence);if(!prod)continue;
-        let email=emailFrom(page),home='';if(!email&&pageFetches<14){pageFetches++;home=await fetchText('https://'+d+'/',3000);email=emailFrom(home);if(home)evidence+='\n'+home;}
-        if(!email&&pageFetches<14){const contact=contactHref(page||home,item.link);if(contact){pageFetches++;const cp=await fetchText(contact,3000);email=emailFrom(cp);if(cp)evidence+='\n'+cp;}}
-        const std=r.standards.length?r.standards.some(s=>norm(evidence).includes(norm(s))):false,cert=r.certifications.length?r.certifications.some(s=>norm(evidence).includes(norm(s))):false,grade=r.grades.length?r.grades.some(s=>norm(evidence).includes(norm(s))):false,dimTerm=dimensionSearch(r),dimEvidence=!!dimTerm&&norm(evidence).includes(norm(dimTerm));
+        let email=emailFrom(page),home='';if(!email&&pageFetches<20&&tierFetches<4){pageFetches++;tierFetches++;home=await fetchText('https://'+d+'/',3000);email=emailFrom(home);if(home)evidence+='\n'+home;}
+        if(!email&&pageFetches<20&&tierFetches<4){const contact=contactHref(page||home,item.link);if(contact){pageFetches++;tierFetches++;const cp=await fetchText(contact,3000);email=emailFrom(cp);if(cp)evidence+='\n'+cp;}}
+        const ev=norm(evidence),std=r.standards.length?r.standards.every(s=>ev.includes(norm(s))):true,cert=r.certifications.length?r.certifications.every(s=>ev.includes(norm(s))):true,grade=r.grades.length?r.grades.every(s=>ev.includes(norm(s))):true,dimTerm=dimensionSearch(r),dimEvidence=!dimTerm||ev.includes(norm(dimTerm));
+        const complete=!!email&&std&&cert&&grade&&dimEvidence;
         const score=45+(email?20:0)+(std?12:0)+(cert?8:0)+(grade?8:0)+(dimEvidence?5:0)+(tier==='local'?8:tier==='regional'?6:tier==='turkey'||tier==='greece'?5:3);
-        all.push({name:clean(item.title).replace(/\s*[-|–].*$/,'').slice(0,120)||d,domain:d,website:item.link,email,source_tier:tier,query,title:item.title,snippet:item.description,product_evidence:true,standard_evidence:std,certificate_evidence:cert,grade_evidence:grade,dimension_evidence:dimEvidence,contact_ready:!!email,verification_status:email?'contact_ready_review':'verification_required',score});
+        all.push({name:clean(item.title).replace(/\s*[-|–].*$/,'').slice(0,120)||d,domain:d,website:item.link,email,source_tier:tier,query,title:item.title,snippet:item.description,product_evidence:true,standard_evidence:std,certificate_evidence:cert,grade_evidence:grade,dimension_evidence:dimEvidence,contact_ready:!!email,verification_status:complete?'evidence_complete_review':email?'contact_ready_review':'verification_required',score});
       }
     }
   }
-  all.sort((a,b)=>Number(b.contact_ready)-Number(a.contact_ready)||b.score-a.score||a.name.localeCompare(b.name));
-  return {queries,candidates:all.slice(0,10),contact_ready_count:all.filter(x=>x.contact_ready).length};
+  all.sort((a,b)=>Number(b.verification_status==='evidence_complete_review')-Number(a.verification_status==='evidence_complete_review')||Number(b.contact_ready)-Number(a.contact_ready)||b.score-a.score||a.name.localeCompare(b.name));
+  return {queries,candidates:all.slice(0,12),contact_ready_count:all.filter(x=>x.contact_ready).length,evidence_complete_review_count:evidenceComplete(),page_fetches:pageFetches};
 }
 
 Deno.serve(async(req:Request)=>{
