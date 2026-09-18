@@ -1,0 +1,63 @@
+name: KRPP direct Storage production acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/krpp-direct-storage-production-acceptance.mjs'
+      - '.github/workflows/krpp-direct-storage-production-acceptance.yml'
+      - 'supabase/functions/pppp-tender-dossier-import/**'
+      - 'pristeel-tender-dossier-import-v1.js'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/krpp-direct-storage-production-acceptance.mjs'
+      - '.github/workflows/krpp-direct-storage-production-acceptance.yml'
+      - 'supabase/functions/pppp-tender-dossier-import/**'
+      - 'pristeel-tender-dossier-import-v1.js'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: krpp-direct-storage-production-acceptance
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/krpp-direct-storage-production-acceptance.mjs
+      - run: node --check pristeel-tender-dossier-import-v1.js
+
+  acceptance:
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run direct Storage production acceptance
+        run: node scripts/krpp-direct-storage-production-acceptance.mjs
+      - name: Upload sanitized direct Storage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: krpp-direct-storage-production-acceptance
+          path: tmp/krpp-direct-storage-production-acceptance.json
+          if-no-files-found: warn
+          retention-days: 7
