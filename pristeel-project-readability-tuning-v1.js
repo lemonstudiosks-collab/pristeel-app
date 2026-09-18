@@ -89,16 +89,16 @@ document.head.appendChild(s);
   document.head.appendChild(r);
 })();
 
-/* Project Workbench v2 owns only the first screen inside an individual project.
+/* Project Workbench v3 owns the single daily-use surface inside an individual project.
  * It is presentation/navigation only and routes actions into the canonical
  * workflow; protected commercial/commitment gates remain authoritative. */
 (function loadProjectWorkbenchV2(){
   if(window.__pstProjectWorkbenchV2||document.querySelector('script[data-pst-project-workbench-v2]'))return;
   var r=document.createElement('script');
-  r.src='pristeel-project-workbench-v2.js?v=20260914-2';
+  r.src='pristeel-project-workbench-v2.js?v=20260918-workbench3';
   r.defer=true;
   r.setAttribute('data-pst-project-workbench-v2','1');
-  r.onerror=function(){console.error('Nuk u ngarkua Project Workbench v2.');};
+  r.onerror=function(){console.error('Nuk u ngarkua Project Workbench v3.');};
   document.head.appendChild(r);
 })();
 
