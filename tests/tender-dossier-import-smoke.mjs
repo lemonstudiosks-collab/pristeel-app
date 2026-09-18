@@ -24,6 +24,8 @@ assert(importer.includes('repairMojibake')&&importer.includes("normalize('NFKD')
 assert(importer.includes('documentClass')&&importer.includes("return'dossier'")&&importer.includes("return'prices'"),'Server resolver must classify dossier and price-list semantics across filename languages');
 assert(importer.includes('familyCompatible')&&importer.includes('WORD_EXT')&&importer.includes('SHEET_EXT'),'DOC/DOCX and XLS/XLSX remain compatible file families');
 assert(importer.includes('identityVerdict')&&importer.includes('foreign_procurement_reference_detected'),'Importer must perform tender-identity checks and reject explicit foreign references');
+assert(importer.includes('resolveFilenameOnlyMatches')&&importer.includes("reason:'filename_match_pending_protected_analysis'")&&importer.includes('fastFilenameMode'),'ZIP upload must use a filename-first fast path so DOCX/XLSX content verification does not consume upload Edge compute before Storage persistence.');
+assert(importer.includes("actualExt==='zip'&&!fastFilenameMode&&hasTrustedArchiveAnchor"),'Supplemental ZIP content parsing/storage must stay off the fast path; full content identity remains the analyzer\'s responsibility after persistence.');
 assert(importer.includes("error:mismatches.length?'document_tender_mismatch':'document_match_failed'"),'Cross-tender mismatch must have a dedicated blocking response');
 assert(!importer.includes("normalizeName(hint)===normalizeName(expected))score+=45"),'A row hint must never make an unrelated compatible file pass by itself');
 assert(importer.includes("archive_role:role")&&importer.includes("'supplemental'"),'ZIP ingest must preserve supplemental dossier documents after a trusted match');
