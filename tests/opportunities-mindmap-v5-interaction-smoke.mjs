@@ -40,7 +40,7 @@ window.eval(mindmapSrc);
 await new Promise(r=>setTimeout(r,40));
 
 const mindmap=window.PSTOpportunitiesMindmapV5;
-assert(mindmap&&mindmap.version==='20260918-sourcecenter1','mindmap v5 must own the visible Opportunities presentation');
+assert(mindmap&&mindmap.version==='20260918-sourceradial1','mindmap v5 must own the visible Opportunities presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'mindmap must render exactly once');
 assert(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),'APP branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED branch must exist');
@@ -48,6 +48,10 @@ assert(window.document.querySelector('[data-pst-opp-source="KRPP"]'),'KRPP branc
 assert.equal(window.document.querySelector('.pst-opp-v4-status-side .pst-opp-v4-side-title')?.textContent,'Sipas statusit','left side must be owned by lifecycle/status filters');
 assert.equal(window.document.querySelectorAll('.pst-opp-v4-status-side [data-pst-opp-source]').length,0,'left side must not contain source filters');
 assert.equal(window.document.querySelector('.pst-opp-v4-source-core .pst-opp-v4-core-title')?.textContent,'Sipas burimit','center must be the source mindmap');
+assert(window.document.querySelector('.pst-opp-v4-source-map'),'center source area must render as a connected mindmap canvas');
+assert(window.document.querySelector('.pst-opp-v4-source-lines line'),'source mindmap must include connector lines from the central hub');
+assert.equal(window.document.querySelectorAll('.pst-opp-v4-source-grid').length,0,'source filters must not fall back to a rectangular card grid');
+assert.equal(window.document.querySelectorAll('.pst-opp-v4-source-node').length,11,'all source branches must render as floating mindmap nodes');
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="TED"]'),'TED must render inside the center source mindmap');
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="KRPP"]'),'KRPP must render inside the center source mindmap');
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="APP_AL"]'),'APP must render inside the center source mindmap');
