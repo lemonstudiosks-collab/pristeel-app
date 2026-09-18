@@ -32,7 +32,7 @@ must(src.includes('context_fact_evidence:true'),'registered PPPP commercial fact
 must(src.includes('unit_price_eur_per_m'),'per-meter commercial evidence must stay unit-accurate');
 must(src.includes('regjistruar në PPPP'),'registered client offer evidence must be distinguished from Gmail-only evidence');
 must(src.includes('regjistrimi kanonik mund të mungojë'),'email evidence must stay distinct from canonical offer state');
-must(src.includes('nuk inferohet cash apo pagesë'),'finance summary must not infer cash/payment');
+must(src.includes('nuk inferohet total, cash apo pagesë'),'finance summary must not infer total/cash/payment from unit pricing');
 must(src.includes('.pwf-project-context')&&src.includes('.pwf-procurement-head'),'duplicate canonical context layers must be hidden in v3');
 must(!/supaFetch\s*\(/.test(src),'v3 presentation must not query Supabase directly');
 must(!/\b(fetch|XMLHttpRequest)\s*\(/.test(src),'v3 presentation must not make network calls');
