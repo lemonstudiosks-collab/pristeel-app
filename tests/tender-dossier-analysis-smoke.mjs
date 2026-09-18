@@ -119,7 +119,7 @@ assert(protectedEdge.includes("const VERSION='v16'")&&protectedEdge.includes("pr
 assert(protectedEdge.includes('price_features:priceFeatureSchema()')&&protectedEdge.includes("'price_features','coverage'"),'Price features must be part of the existing structured synthesis response, not a second AI request');
 assert(protectedEdge.includes('Never derive, back-calculate or estimate steel weight from contract value'),'Weight safety rule must explicitly forbid contract-value-derived tonnage');
 assert(protectedEdge.includes("weight_source=deterministic_boq")&&protectedEdge.includes('weight_evidence'),'Deterministic BOQ weight must require formula and cited evidence');
-assert(protectedEdge.includes("db.from('pppp_tender_price_features_v1')")&&protectedEdge.includes("extraction_source:manual?'manual':'dossier_ai'"),'Same-pass price features must persist into the canonical price feature table while preserving manual authority');
+assert(protectedEdge.includes("db.from('pppp_tender_price_features_v1')")&&protectedEdge.includes("extraction_source:manual?'manual':(local?'derived':'dossier_ai')"),'Same-pass price features must persist into the canonical price feature table while preserving manual authority and labeling local fallback as derived');
 assert(protectedEdge.includes("price_features_persisted:pricePersist.ok")&&protectedEdge.includes('Analiza e dosjes u ruajt, por Price Intelligence kërkon riprovim të sinkronizimit.'),'Price persistence failure must not discard a successful canonical dossier analysis');
 assert(!/openAI\([^\n]{0,180}price[_ -]?feature/i.test(protectedEdge),'Price Intelligence must not add a second dedicated OpenAI request');
 assert(protectedEdge.includes('createSignedUrl(path,SIGNED_URL_SECONDS)')&&protectedEdge.includes('signed_fetch_http_')&&protectedEdge.includes('storage_read_failed:'),'Protected archive reads must fall back to a signed Storage fetch when direct Supabase download fails.');
@@ -137,6 +137,11 @@ assert(frontend.includes('data-tda-retry-saved')&&frontend.includes('retry_saved
 assert(frontend.includes('if(complete&&ready)')&&frontend.includes("data-analysis-ready',ready?'1':'0'"),'Krijo projekt must remain blocked until a successful analysis is ready');
 assert(frontend.includes('DOSJA DUHET RI-NGARKUAR')&&frontend.includes('storage_files_available===false'),'Frontend must distinguish orphaned Storage metadata from a real readable saved dossier.');
 assert(protectedEdge.includes("storage_status:'missing_blob'")&&protectedEdge.includes("dossier_analysis_status:storageMissing?'storage_missing':'unreadable'"),'Analyzer must persist missing Storage blobs as missing dossier state rather than retrying an unreadable archive forever.');
+assert(protectedEdge.includes('localDeterministicSynthesis')&&protectedEdge.includes("provider:{name:'local_deterministic'"),'Protected analyzer must remain functional without an OpenAI key by using a bounded deterministic local fallback.');
+assert(protectedEdge.includes("extraction_source:manual?'manual':(local?'derived':'dossier_ai')"),'Local deterministic Price Intelligence must be persisted as derived evidence, never mislabeled as AI extraction.');
+assert(protectedEdge.includes("if(!OPENAI_API_KEY){complete=localDeterministicSynthesis"),'Missing OpenAI credentials must not make a saved dossier unusable.');
+assert(frontend.includes("['openai','local_deterministic']")&&frontend.includes('integrity.manual_full_zip_uploaded===true'),'Frontend must accept local canonical analysis and a successfully uploaded manual full ZIP as dossier-ready.');
+
 assert(protectedEdge.includes("manualFullZip=tender?.payload?.dossier_integrity?.manual_full_zip_uploaded===true")&&protectedEdge.includes("if(missing.length&&!manualFullZip)"),'Protected analyzer must treat expected filenames as advisory after a user-selected complete ZIP while preserving normal completeness checks elsewhere.');
 assert(protectedEdge.includes("remaining_expected:[]")&&protectedEdge.includes("storage_files_available:true"),'Successful protected analysis must close advisory filename gaps and preserve the readable Storage truth.');
 
