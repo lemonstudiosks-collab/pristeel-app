@@ -5,7 +5,9 @@ const nav = fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 
 function ok(cond,msg){ if(!cond){ console.error('FAIL:',msg); process.exit(1); } }
 
-ok(flow.includes('One project surface: current state -> logical next step -> evidence popups.'),'unified flow ownership comment missing');
+ok(flow.includes('Compatibility fallback only when Project Workbench v3 is not the active/intended Project Detail owner.'),'unified flow fallback comment missing');
+ok(flow.includes('workbenchOwnsProject'),'unified fallback must detect Workbench v3 ownership');
+ok(flow.includes('window.__pstProjectWorkbenchV3Intended||window.PSTProjectWorkbenchV3'),'unified fallback must yield to Workbench v3');
 ok(flow.includes("project_attachment_links?project_id=eq."),'attachment evidence must be loaded inside project flow');
 ok(flow.includes("documents_registry?project_id=eq."),'canonical client offers must be loaded inside project flow');
 ok(flow.includes("project_emails?project_id=eq."),'project communication evidence must be loaded inside project flow');
@@ -20,7 +22,8 @@ ok(!flow.includes("alert('Revisioni nuk u hap"),'unified flow must not use the o
 
 ok(nav.includes('opportunities:1'),'Mundësitë alias must be recognized');
 ok(nav.includes("key==='tenders'||key==='opportunities'"),'Mundësitë must route through the same canonical handler');
-ok(nav.includes('ensureUnifiedProjectFlow'),'primary navigation must load the unified flow owner');
-ok(nav.includes("pristeel-unified-project-flow-v1.js?v=20260829-flow1"),'unified flow cache key missing');
+ok(nav.includes('ensureUnifiedProjectFlow'),'primary navigation may retain the bounded unified fallback loader');
+ok(nav.includes("pristeel-unified-project-flow-v1.js?v=20260918-workbench-fallback1"),'guarded unified fallback cache key missing');
+ok(nav.includes('window.__pstProjectWorkbenchV3Intended||window.PSTProjectWorkbenchV3'),'primary navigation must suppress unified fallback under Workbench v3');
 
 console.log('Unified project flow smoke: OK');
