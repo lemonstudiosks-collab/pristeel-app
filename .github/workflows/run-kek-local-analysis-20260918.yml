@@ -3,6 +3,7 @@ name: Run KEK local dossier analysis
 on:
   push:
     branches:
+      - main
       - chatgpt/run-kek-local-analysis-20260918-2
     paths:
       - 'scripts/run-kek-local-analysis-20260918.mjs'
