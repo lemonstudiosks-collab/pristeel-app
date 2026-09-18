@@ -134,9 +134,10 @@
         "pristeel-operating-experience-v1.js",
         "pristeel-tender-priority-actions-v1.js",
         "pristeel-project-centric-workflow-v1.js",
-        "pristeel-tender-dossier-analysis-v1.js"
+        "pristeel-tender-dossier-analysis-v1.js",
+        "pristeel-tender-supplier-sourcing-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow remains the visible Opportunities owner. The dossier analyzer owns public/partial dossier reading; protected KRPP documents are imported through the purpose-limited pristeel-tender-dossier-import-v1.js companion into the existing protected_archive, then finalized only by pppp-tender-protected-archive-analysis. No tender becomes a project without a human decision."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow remains the visible Opportunities owner. The dossier analyzer owns public/partial dossier reading; protected KRPP documents are imported through the purpose-limited pristeel-tender-dossier-import-v1.js companion into the existing protected_archive, then finalized only by pppp-tender-protected-archive-analysis. Tender Supplier Sourcing is an additive read-only Action Console module: canonical BOM first when uniquely resolved, strict Supplier Intelligence evidence, and on-demand external discovery only. No tender becomes a project, no supplier is selected, and no RFQ/email is sent without a human decision."
     },
     {
       "area": "ai",
@@ -296,6 +297,12 @@
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Legacy Home compatibility owner retained behind the native visible Home."
+    },
+    {
+      "module": "pristeel-tender-supplier-sourcing-v1.js",
+      "loader": "pristeel-redesign-finalizer-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded additively for tender Action Console sourcing. Reads canonical BOM / Supplier Intelligence and performs bounded external discovery only when the user clicks Gjej furnitorë; no Supplier Master, RFQ-log or email mutation."
     }
   ],
   "loadOrderConstraints": [
