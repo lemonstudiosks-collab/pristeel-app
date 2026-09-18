@@ -1,0 +1,31 @@
+name: Tender supplier sourcing production acceptance
+
+on:
+  push:
+    branches:
+      - chatgpt/tender-supplier-sourcing-20260918
+    paths:
+      - 'scripts/tender-supplier-sourcing-production-acceptance.mjs'
+      - '.github/workflows/tender-supplier-sourcing-production-acceptance.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SUPABASE_URL: \${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: \${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: \${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: \${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: \${{ secrets.PPPP_SYNC_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/tender-supplier-sourcing-production-acceptance.mjs
+      - name: Run supplier sourcing acceptance
+        run: node scripts/tender-supplier-sourcing-production-acceptance.mjs
