@@ -34,8 +34,10 @@ assert(opportunitiesPolish.includes('pst-opp-v4-source-map')&&opportunitiesPolis
 assert(!opportunitiesPolish.includes('pst-opp-v4-source-grid'),'The retired center source card grid must not return');
 assert(opportunitiesPolish.includes('EU_OFFICE_KOSOVO:[6,50]'),'Every source, including EU Office, must remain on the outer radial ring');
 assert(opportunitiesPolish.includes("function drillSource(id)")&&opportunitiesPolish.includes("state.lifecycle='all'")&&opportunitiesPolish.includes("field='all'"),'Source branches must drill into source results without compounded status/field filters');
-assert(opportunitiesPolish.includes("scrollIntoView({behavior:'smooth',block:'nearest'})"),'Source drilldown must bring its result area into view');
 assert(!/pst-opp-v4-source-node:hover[^\n]*translateY\(-2px\)/.test(opportunitiesPolish),'Source nodes must remain fixed when activated');
+assert(opportunitiesPolish.includes('function syncChrome('),'Opportunities mindmap must preserve its DOM across filter changes');
+assert(opportunitiesPolish.includes("typeof api.applyOpportunityFilter==='function'"),'Mindmap source/status branches must delegate to the canonical Project-Centric Workflow filter owner');
+assert(!opportunitiesPolish.includes('scrollIntoView'),'Mindmap source/status filtering must not move the viewport');
 assert(opportunitiesPolish.includes('pst-opp-v4-field-side')&&opportunitiesPolish.includes('Sipas fushës'),'Opportunities field controls must remain on the right');
 assert(opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','new','Të reja'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','waiting','Në pritje'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','replied','Me përgjigje'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','all','Të gjitha'"),'Visible lifecycle branches must remain the approved four-state model');
 assert(opportunitiesPolish.includes('PSTPrimaryNavResilienceV10')&&opportunitiesPolish.includes("typeof N.openHome==='function'"),'Opportunities Kthehu must prefer the final primary navigation owner');
