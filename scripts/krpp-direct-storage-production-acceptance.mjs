@@ -4,8 +4,8 @@ import {resolveSupabaseWorkflowAccess} from './supabase-workflow-auth.mjs';
 
 const BUCKET='project-source-files';
 const OUT='tmp/krpp-direct-storage-production-acceptance.json';
-const DOC='KRPP actual uploaded dossier.docx';
-const XLS='KRPP actual uploaded prices.xlsx';
+const DOC='unrelated-manual-file-A.docx';
+const XLS='other-manual-file-B.xlsx';
 const EXPECTED_DOC='Dosja e tenderit SHQIP.Docx';
 const EXPECTED_XLS='PARAMASA.xlsx';
 const EXPECTED=[EXPECTED_DOC,EXPECTED_XLS];
@@ -29,7 +29,7 @@ async function main(){
     {name:DOC,bytes:Buffer.from('PPPP DIRECT STORAGE ACCEPTANCE DOCX '+tempId)},
     {name:XLS,bytes:Buffer.from('PPPP DIRECT STORAGE ACCEPTANCE XLSX '+tempId)}
   ];
-  const result={ok:false,version:'krpp-direct-storage-production-acceptance-v2',temp_tender_id:tempId,started_at:now,checks:{},cleanup:{storage_paths_removed:0,temp_queue_deleted:false,temp_tender_deleted:false,errors:[]}};
+  const result={ok:false,version:'krpp-direct-storage-production-acceptance-v3',temp_tender_id:tempId,started_at:now,checks:{},cleanup:{storage_paths_removed:0,temp_queue_deleted:false,temp_tender_deleted:false,errors:[]}};
 
   async function rest(path,{method='GET',body,headers={}}={}){
     const r=await fetch(`${base}/rest/v1/${path}`,{method,headers:{...authHeaders,'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
@@ -59,10 +59,7 @@ async function main(){
       id:tempId,source_key:`acceptance-direct:${tempId}`,procurement_no:`ACCEPT-${tempId.slice(0,8)}`,
       title:'Direct Storage acceptance tender',authority:'PRISTEEL acceptance',status:'watch',relevance_score:0,
       match_reasons:['direct_storage_acceptance_only'],
-      payload:{acceptance_test:true,source:'KRPP',dossier_analysis:{dossier_complete:false,protected_documents:EXPECTED},protected_archive:[
-        {name:EXPECTED_DOC,expected_name:EXPECTED_DOC,source_name:DOC,archive_role:'expected',storage_status:'missing_blob',sha256:sha(bodies[0].bytes),path:`tender-protected/${tempId}/${sha(bodies[0].bytes)}.docx`,bucket:BUCKET,size_bytes:bodies[0].bytes.length},
-        {name:EXPECTED_XLS,expected_name:EXPECTED_XLS,source_name:XLS,archive_role:'expected',storage_status:'missing_blob',sha256:sha(bodies[1].bytes),path:`tender-protected/${tempId}/${sha(bodies[1].bytes)}.xlsx`,bucket:BUCKET,size_bytes:bodies[1].bytes.length}
-      ]}
+      payload:{acceptance_test:true,source:'KRPP',dossier_analysis:{dossier_complete:false,protected_documents:EXPECTED}}
     }});
     await rest('pppp_tender_fetch_queue',{method:'POST',headers:{Prefer:'return=minimal'},body:{
       tender_watch_id:tempId,source:'KRPP',status:'queued',auth_required:true,protected_documents:EXPECTED,
@@ -73,8 +70,8 @@ async function main(){
     const descriptors=bodies.map((x,i)=>({client_index:i,name:x.name,source_path:x.name,size_bytes:x.bytes.length,sha256:sha(x.bytes)}));
     const prep=await edge({tender_id:tempId,mode:'prepare_direct',files:descriptors});
     if(prep.upload_mode!=='signed_direct_storage'||!Array.isArray(prep.uploads)||prep.uploads.length!==2)throw new Error(`prepare_direct returned unexpected payload: ${JSON.stringify(prep)}`);
-    if(prep.uploads.some(x=>x.matched_by!=='historical_sha256'))throw new Error(`Historical rehydration must prefer exact SHA-256 matching: ${JSON.stringify(prep.uploads)}`);
-    result.checks.prepare_direct={upload_mode:prep.upload_mode,uploads:prep.uploads.map(x=>({expected_name:x.expected_name,source_name:x.source_name,path:x.path,matched_by:x.matched_by,has_signed_url:!!x.signed_url,has_token:!!x.token}))};
+    if(prep.uploads.some(x=>x.matched_by!=='manual_zip_candidate'||x.expected_name!==null))throw new Error(`Manual full ZIP must upload unmatched filenames as candidates instead of blocking: ${JSON.stringify(prep.uploads)}`);
+    result.checks.prepare_direct={upload_mode:prep.upload_mode,manual_full_zip:prep.manual_full_zip===true,uploads:prep.uploads.map(x=>({expected_name:x.expected_name,source_name:x.source_name,path:x.path,matched_by:x.matched_by,has_signed_url:!!x.signed_url,has_token:!!x.token}))};
 
     for(const up of prep.uploads){
       const index=Number(up.client_index),body=bodies[index];
@@ -86,10 +83,11 @@ async function main(){
     }
     result.checks.signed_uploads={count:paths.length,paths};
 
-    const receipts=prep.uploads.map(x=>({expected_name:x.expected_name,canonical_name:x.canonical_name,archive_role:x.archive_role,matched_by:x.matched_by,source_name:x.source_name,source_path:x.source_path,size_bytes:x.size_bytes,sha256:x.sha256,path:x.path}));
+    const receipts=prep.uploads.map(x=>({expected_name:x.expected_name,source_name:x.source_name,source_path:x.source_path,size_bytes:x.size_bytes,sha256:x.sha256,path:x.path}));
     const fin=await edge({tender_id:tempId,mode:'finalize_direct',archive_name:'browser-local.zip',uploads:receipts});
-    if(fin.dossier_complete!==true||fin.dossier_saved!==true||fin.upload_mode!=='signed_direct_storage')throw new Error(`finalize_direct failed: ${JSON.stringify(fin)}`);
-    result.checks.finalize_direct={dossier_complete:fin.dossier_complete,dossier_saved:fin.dossier_saved,analysis_ready:fin.analysis_ready,remaining:fin.remaining_protected_documents||[]};
+    if(fin.dossier_complete!==true||fin.dossier_saved!==true||fin.upload_mode!=='signed_direct_storage'||fin.manual_full_zip!==true)throw new Error(`finalize_direct failed: ${JSON.stringify(fin)}`);
+    if(!Array.isArray(fin.remaining_protected_documents)||fin.remaining_protected_documents.length!==2)throw new Error('Expected-name gaps should remain advisory after manual full ZIP upload.');
+    result.checks.finalize_direct={dossier_complete:fin.dossier_complete,dossier_saved:fin.dossier_saved,manual_full_zip:fin.manual_full_zip,analysis_ready:fin.analysis_ready,remaining_advisory:fin.remaining_protected_documents||[]};
 
     for(const up of prep.uploads){
       const original=bodies[Number(up.client_index)].bytes,downloaded=await storageDownload(up.path);
@@ -99,8 +97,8 @@ async function main(){
 
     const rows=await rest(`kek_tender_watch?id=eq.${tempId}&select=payload`),row=Array.isArray(rows)?rows[0]:null;
     const archive=Array.isArray(row?.payload?.protected_archive)?row.payload.protected_archive:[];
-    if(archive.length!==2||archive.some(x=>x.storage_status!=='available'||x.source!=='browser_direct_signed_upload'))throw new Error('Canonical archive metadata was not finalized as direct signed upload.');
-    if(row?.payload?.dossier_integrity?.storage_missing!==false||row?.payload?.dossier_integrity?.storage_files_available!==true)throw new Error('Dossier integrity was not restored after direct upload.');
+    if(archive.length!==2||archive.some(x=>x.storage_status!=='available'||x.source!=='browser_direct_signed_upload'||x.archive_role!=='candidate'))throw new Error('Manual full ZIP candidates were not finalized correctly.');
+    if(row?.payload?.dossier_integrity?.storage_missing!==false||row?.payload?.dossier_integrity?.storage_files_available!==true||row?.payload?.dossier_integrity?.manual_full_zip_uploaded!==true)throw new Error('Manual full ZIP integrity was not restored after direct upload.');
     const qRows=await rest(`pppp_tender_fetch_queue?tender_watch_id=eq.${tempId}&select=status,auth_required,last_error`),q=Array.isArray(qRows)?qRows[0]:null;
     if(!q||q.status!=='ready'||q.auth_required!==false||text(q.last_error)!=='')throw new Error(`Queue not ready after direct upload: ${JSON.stringify(q)}`);
     result.checks.canonical_state={archive_count:archive.length,queue_status:q.status,auth_required:q.auth_required,storage_files_available:true};
