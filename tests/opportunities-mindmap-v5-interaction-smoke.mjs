@@ -40,11 +40,18 @@ window.eval(mindmapSrc);
 await new Promise(r=>setTimeout(r,40));
 
 const mindmap=window.PSTOpportunitiesMindmapV5;
-assert(mindmap&&mindmap.version==='20260916-mindmap5','mindmap v5 must own the visible Opportunities presentation');
+assert(mindmap&&mindmap.version==='20260918-sourcecenter1','mindmap v5 must own the visible Opportunities presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'mindmap must render exactly once');
 assert(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),'APP branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="KRPP"]'),'KRPP branch must exist');
+assert.equal(window.document.querySelector('.pst-opp-v4-status-side .pst-opp-v4-side-title')?.textContent,'Sipas statusit','left side must be owned by lifecycle/status filters');
+assert.equal(window.document.querySelectorAll('.pst-opp-v4-status-side [data-pst-opp-source]').length,0,'left side must not contain source filters');
+assert.equal(window.document.querySelector('.pst-opp-v4-source-core .pst-opp-v4-core-title')?.textContent,'Sipas burimit','center must be the source mindmap');
+assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="TED"]'),'TED must render inside the center source mindmap');
+assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="KRPP"]'),'KRPP must render inside the center source mindmap');
+assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="APP_AL"]'),'APP must render inside the center source mindmap');
+assert.equal(window.document.querySelector('.pst-opp-v4-field-side .pst-opp-v4-side-title')?.textContent,'Sipas fushës','right field filters must stay unchanged');
 
 window.document.querySelector('[data-pst-opp-source="APP_AL"]').click();
 await new Promise(r=>setTimeout(r,35));
