@@ -5,8 +5,8 @@
  * Existing engines, records and approval gates remain authoritative.
  *
  * Bounded compatibility assets (not normal daily UI owners):
- * pristeel-operator-flow-v1.js?v=20260829-flow2
- * pristeel-unified-project-flow-v1.js?v=20260829-flow1
+ * pristeel-operator-flow-v1.js?v=20260918-workbench-yield1
+ * pristeel-unified-project-flow-v1.js?v=20260918-workbench-fallback1
  * pristeel-offer-revision-email-draft-v1.js
  * pristeel-offer-revision-email-bridge-v1.js
  * pristeel-project-offer-revision-assistant-v1.js
@@ -87,20 +87,22 @@ function legacyShow(name){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.s
 
 /* Compatibility hooks stay opt-in so legacy visual owners cannot race the final UI. */
 function ensureUnifiedProjectFlow(){
+ if(window.__pstProjectWorkbenchV3Intended||window.PSTProjectWorkbenchV3)return Promise.resolve(null);
  if(window.PSTUnifiedProjectFlowV1)return Promise.resolve(window.PSTUnifiedProjectFlowV1);
  if(window.__pstAllowUnifiedProjectFallback!==true)return Promise.resolve(null);
  return new Promise(function(resolve){
-   var src='pristeel-unified-project-flow-v1.js?v=20260829-flow1';
+   var src='pristeel-unified-project-flow-v1.js?v=20260918-workbench-fallback1';
    var existing=document.querySelector('script[data-pst-unified-project-flow]');
    if(existing){existing.addEventListener('load',function(){resolve(window.PSTUnifiedProjectFlowV1||null);},{once:true});return;}
    var s=document.createElement('script');s.src=src;s.async=true;s.dataset.pstUnifiedProjectFlow='1';s.onload=function(){resolve(window.PSTUnifiedProjectFlowV1||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);
  });
 }
 function ensureOperatorFlow(){
+ if(window.__pstProjectWorkbenchV3Intended||window.PSTProjectWorkbenchV3)return Promise.resolve(null);
  if(window.PSTOperatorFlowV1)return Promise.resolve(window.PSTOperatorFlowV1);
  if(window.__pstAllowOperatorFlowFallback!==true)return Promise.resolve(null);
  return new Promise(function(resolve){
-   var src='pristeel-operator-flow-v1.js?v=20260829-flow2';
+   var src='pristeel-operator-flow-v1.js?v=20260918-workbench-yield1';
    var existing=document.querySelector('script[data-pst-operator-flow]');
    if(existing){existing.addEventListener('load',function(){resolve(window.PSTOperatorFlowV1||null);},{once:true});return;}
    var s=document.createElement('script');s.src=src;s.async=true;s.dataset.pstOperatorFlow='1';s.onload=function(){resolve(window.PSTOperatorFlowV1||null);};s.onerror=function(){resolve(null);};document.head.appendChild(s);
