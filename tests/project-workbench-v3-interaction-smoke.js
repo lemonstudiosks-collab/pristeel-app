@@ -96,14 +96,13 @@ function last(a){return a[a.length-1];}
     }
   }
 
-  const nav={};
-  [...doc.querySelectorAll('.pwb3-nav-btn')].forEach(b=>nav[b.getAttribute('data-pwb3-nav')]=b);
-  click(window,nav.overview); assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-overview'),'Overview nav failed');
-  calls.length=0; click(window,nav.supply); assert(last(calls)&&last(calls)[1]==='procurement','Supply/Production nav failed');
-  click(window,nav.offer); assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-offer'),'Own offer nav failed');
-  calls.length=0; click(window,nav.client); assert(last(calls)&&last(calls)[1]==='communication','Client nav failed');
-  click(window,nav.docscomms); assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-docscomms'),'Docs & Communication nav failed');
-  calls.length=0; click(window,nav.finance); assert(last(calls)&&last(calls)[1]==='finance','Finance nav failed');
+  function navButton(id){return doc.querySelector('.pwb3-nav-btn[data-pwb3-nav="'+id+'"]');}
+  click(window,navButton('overview')); assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-overview'),'Overview nav failed');
+  calls.length=0; click(window,navButton('supply')); assert(last(calls)&&last(calls)[1]==='procurement','Supply/Production nav failed');
+  click(window,navButton('offer')); assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-offer'),'Own offer nav failed');
+  calls.length=0; click(window,navButton('client')); assert(last(calls)&&last(calls)[1]==='communication','Client nav failed');
+  click(window,navButton('docscomms')); assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-docscomms'),'Docs & Communication nav failed');
+  calls.length=0; click(window,navButton('finance')); assert(last(calls)&&last(calls)[1]==='finance','Finance nav failed');
 
   window.PSTProjectWorkbenchV3.openNav('overview');
   let body=doc.getElementById('pst-pi-body');
