@@ -124,6 +124,20 @@ function last(a){return a[a.length-1];}
   assert(drive&&drive.getAttribute('target')==='_blank','Drive source link missing or not external-safe');
   assert(gmail&&gmail.getAttribute('target')==='_blank','Gmail source link missing or not external-safe');
 
+  const factOnly={
+    contextFacts:[
+      {id:'f1',category:'supplier_pricing',fact_key:'supplier_quote.sector',created_at:'2026-09-16T18:18:46Z',value:{supplier:'Sector Construction',currency:'EUR',unit_price_eur_per_m:155,pricing_unit:'m',received_at:'2026-09-16T18:18:46Z',gmail_thread_id:'thread-sector'}},
+      {id:'f2',category:'commercial_offer',fact_key:'client_offer.ognjen',created_at:'2026-09-17T06:00:00Z',value:{document_type:'client_offer',doc_nr:'PST-OFF-2026-09-031',currency:'EUR',unit_price_eur_per_m:180,pricing_unit:'m',status:'sent',sent_at:'2026-09-17T06:00:00Z',gmail_thread_id:'thread-client'}}
+    ]
+  };
+  const factSuppliers=window.PSTProjectWorkbenchV3._test.supplierOffers(factOnly);
+  assert(factSuppliers.length===1,'Supplier pricing context fact must surface as one supplier quote evidence');
+  assert(window.PSTProjectWorkbenchV3._test.offerMeta(factSuppliers[0]).includes('155,00 EUR/m'),'Supplier pricing context fact must preserve 155 EUR/m');
+  const factOffers=window.PSTProjectWorkbenchV3._test.ourOffers(factOnly);
+  assert(factOffers.length===1,'Client offer context fact must surface as one PriSteel offer evidence');
+  assert(window.PSTProjectWorkbenchV3._test.priceLabel(factOffers[0]).includes('180,00 EUR/m'),'Client offer context fact must preserve 180 EUR/m');
+  assert(window.PSTProjectWorkbenchV3._test.effectiveOffer(factOnly).doc_nr==='PST-OFF-2026-09-031','Registered client offer context fact must become effective offer evidence');
+
   const base=window.__pstIntegrityLastData.project;
   base.business_type='trading'; assert(window.PSTProjectWorkbenchV3.businessType(window.__pstIntegrityLastData)==='trading','Trading type detection failed');
   base.business_type='fabrication'; assert(window.PSTProjectWorkbenchV3.businessType(window.__pstIntegrityLastData)==='fabrication','Fabrication type detection failed');
