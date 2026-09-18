@@ -120,7 +120,7 @@ async function internalMatch(r:Requirement,tender:any){
   const req=arr(data?.requirements)[0]||{};
   return {summary:data?.summary||{},coverage_sufficient:req.coverage_sufficient===true,discovery_needed:req.discovery_needed!==false,strict_rfq_ready_existing:Number(req.strict_rfq_ready_existing||0),review_rfq_ready_existing:Number(req.review_rfq_ready_existing||0),explicit_conflicts:Number(req.explicit_conflicts||0),evidence_gaps:Number(req.evidence_gaps||0),candidates:arr(req.candidates).filter((x:any)=>!x.explicit_conflict).slice(0,10),conflicts:arr(req.candidates).filter((x:any)=>x.explicit_conflict).slice(0,6)};
 }
-function tierLocation(tier:string){return tier==='local'?'Kosovo':tier==='regional'?'North Macedonia Serbia Albania Montenegro Bosnia Croatia Slovenia':tier==='turkey'?'Turkey':tier==='greece'?'Greece':'Europe Germany Italy Romania Poland Bulgaria Czech Republic';}
+function tierLocations(tier:string){if(tier==='local')return['Kosovo'];if(tier==='regional')return['North Macedonia','Serbia'];if(tier==='turkey')return['Turkey'];if(tier==='greece')return['Greece'];return['Germany','Italy','Romania','Poland'];}
 function familySearch(r:Requirement){
   if(r.id==='round_bar')return'steel round bar';
   if(r.family==='tubes')return /pa tegel|seamless/i.test(r.label+' '+r.description)?'seamless steel tube':'steel tube';
@@ -138,11 +138,10 @@ function dimensionSearch(r:Requirement){
   if(x.outer_diameter_mm)return `${x.outer_diameter_mm} mm OD ${x.wall_mm||''} mm wall`;
   return'';
 }
-function buildQuery(r:Requirement,tier:string){
-  const product=familySearch(r),dim=dimensionSearch(r),standard=r.standards[0]||'',cert=r.certifications[0]||'',loc=tierLocation(tier);
-  const largeRound=r.id==='round_bar'&&arr(r.dimensions).some((x:any)=>Number(x?.diameter_mm||0)>=300);
-  const productTerm=largeRound?'("steel round bar" OR "forged steel rounds" OR "rolled steel rounds")':`"${product}"`;
-  return [productTerm,dim,standard?`"${standard}"`:'',cert,'manufacturer supplier',loc].filter(Boolean).join(' ');
+function buildQuery(r:Requirement,location:string){
+  const product=familySearch(r),dim=dimensionSearch(r),largeRound=r.id==='round_bar'&&arr(r.dimensions).some((x:any)=>Number(x?.diameter_mm||0)>=300);
+  const productTerm=largeRound?'"large diameter steel round bar"':`"${product}"`;
+  return [productTerm,dim,'manufacturer supplier',location].filter(Boolean).join(' ');
 }
 function decodeXml(v:string){return v.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();}
 function rssItems(xml:string){
@@ -154,6 +153,7 @@ function emailFrom(html:string){
   const mail=(html.match(/mailto:([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i)||[])[1]||(html.match(/\b([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\b/i)||[])[1]||'';
   return mail&&!/example\.|wixpress|sentry|cloudflare|wordpress/i.test(mail)?mail.toLowerCase():null;
 }
+function contactHref(html:string,base:string){for(const m of html.matchAll(/href=["']([^"']+)["']/gi)){const href=m[1];if(!/(contact|kontakt|iletisim|iletişim|contatti|kontaktai|contacts?)/i.test(href))continue;try{return new URL(href,base).toString();}catch{}}return'';}
 function productEvidence(r:Requirement,s:string){
   s=norm(s);
   if(r.id==='round_bar')return /(round bar|rundstahl|bright bar|steel bar|rolled bar|forged bar)/.test(s);
@@ -171,20 +171,24 @@ async function fetchText(url:string,timeout=4500){
 async function discoverRequirement(r:Requirement){
   const tiers=['local','regional','turkey','greece','eu'],all:ExternalCandidate[]=[],queries:any[]=[];let pageFetches=0;
   for(const tier of tiers){
-    if(all.filter(x=>x.contact_ready).length>=3)break;
-    const query=buildQuery(r,tier),url='https://www.bing.com/search?format=rss&q='+encodeURIComponent(query);
-    const xml=await fetchText(url,5000);queries.push({tier,query,ok:!!xml});
-    const items=rssItems(xml).slice(0,10);
-    for(const item of items){
-      if(all.length>=12||pageFetches>=10)break;
-      const d=domainOf(item.link);if(badDomain(d)||all.some(x=>x.domain===d))continue;
-      const searchEvidence=[item.title,item.description].join('\n');if(!productEvidence(r,searchEvidence))continue;
-      pageFetches++;const page=await fetchText(item.link,3500),evidence=[searchEvidence,page].join('\n');
-      const prod=productEvidence(r,evidence);if(!prod)continue;
-      let email=emailFrom(page);if(!email&&pageFetches<10){pageFetches++;const home=await fetchText('https://'+d+'/',3000);email=emailFrom(home);if(home)evidence+='\n'+home;}
-      const std=r.standards.length?r.standards.some(s=>norm(evidence).includes(norm(s))):false,cert=r.certifications.length?r.certifications.some(s=>norm(evidence).includes(norm(s))):false;
-      const score=45+(email?20:0)+(std?12:0)+(cert?8:0)+(tier==='local'?8:tier==='regional'?6:tier==='turkey'||tier==='greece'?5:3);
-      all.push({name:clean(item.title).replace(/\s*[-|–].*$/,'').slice(0,120)||d,domain:d,website:item.link,email,source_tier:tier,query,title:item.title,snippet:item.description,product_evidence:true,standard_evidence:std,certificate_evidence:cert,contact_ready:!!email,verification_status:email?'contact_ready_review':'verification_required',score});
+    if(all.filter(x=>x.contact_ready).length>=3||pageFetches>=14)break;
+    for(const location of tierLocations(tier)){
+      if(all.filter(x=>x.contact_ready).length>=3||pageFetches>=14)break;
+      const query=buildQuery(r,location),url='https://www.bing.com/search?format=rss&setlang=en-us&mkt=en-US&q='+encodeURIComponent(query);
+      const xml=await fetchText(url,5000);queries.push({tier,location,query,ok:!!xml});
+      const items=rssItems(xml).slice(0,8);
+      for(const item of items){
+        if(all.length>=12||pageFetches>=14)break;
+        const d=domainOf(item.link);if(badDomain(d)||all.some(x=>x.domain===d))continue;
+        const searchEvidence=[item.title,item.description].join('\n');
+        pageFetches++;let page=await fetchText(item.link,3500),evidence=[searchEvidence,page].join('\n');
+        const prod=productEvidence(r,evidence);if(!prod)continue;
+        let email=emailFrom(page),home='';if(!email&&pageFetches<14){pageFetches++;home=await fetchText('https://'+d+'/',3000);email=emailFrom(home);if(home)evidence+='\n'+home;}
+        if(!email&&pageFetches<14){const contact=contactHref(page||home,item.link);if(contact){pageFetches++;const cp=await fetchText(contact,3000);email=emailFrom(cp);if(cp)evidence+='\n'+cp;}}
+        const std=r.standards.length?r.standards.some(s=>norm(evidence).includes(norm(s))):false,cert=r.certifications.length?r.certifications.some(s=>norm(evidence).includes(norm(s))):false;
+        const score=45+(email?20:0)+(std?12:0)+(cert?8:0)+(tier==='local'?8:tier==='regional'?6:tier==='turkey'||tier==='greece'?5:3);
+        all.push({name:clean(item.title).replace(/\s*[-|–].*$/,'').slice(0,120)||d,domain:d,website:item.link,email,source_tier:tier,query,title:item.title,snippet:item.description,product_evidence:true,standard_evidence:std,certificate_evidence:cert,contact_ready:!!email,verification_status:email?'contact_ready_review':'verification_required',score});
+      }
     }
   }
   all.sort((a,b)=>Number(b.contact_ready)-Number(a.contact_ready)||b.score-a.score||a.name.localeCompare(b.name));
