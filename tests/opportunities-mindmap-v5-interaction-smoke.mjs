@@ -18,6 +18,15 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2">
 
 const {window}=dom;
 window.console=console;
+async function waitForSelector(selector,timeout=400){
+  const until=Date.now()+timeout;
+  while(Date.now()<until){
+    const el=window.document.querySelector(selector);
+    if(el)return el;
+    await new Promise(r=>setTimeout(r,10));
+  }
+  return null;
+}
 window.supaFetch=async path=>{
   if(String(path).startsWith('kek_tender_watch?')) return [
     {id:'app-1',title:'Materiale ndërtimi dhe furnizim me hekur',authority:'APP Albania',relevance_score:82,status:'new',published_date:'2026-09-16',payload:{source:'APP_AL',notice_phase:'opportunity'}},
@@ -70,8 +79,9 @@ assert.equal(window.document.querySelector('.pst-opp-v4-field-side .pst-opp-v4-s
 api._state.lifecycle='waiting';
 api._state.query='steel';
 window.document.querySelector('[data-pst-opp-field="construction"]').click();
-await new Promise(r=>setTimeout(r,20));
-window.document.querySelector('[data-pst-opp-view="mindmap"]').click();
+const mindmapViewAfterField=await waitForSelector('[data-pst-opp-view="mindmap"]');
+assert(mindmapViewAfterField,'mindmap view control must return after field rerender');
+mindmapViewAfterField.click();
 const appNodeBefore=window.document.querySelector('[data-pst-opp-source="APP_AL"]');
 const appStyleBefore=appNodeBefore.getAttribute('style');
 window.document.querySelector('[data-pst-opp-source="APP_AL"]').click();
