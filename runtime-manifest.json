@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "8c2a2a34318f94a00849e6cdb6f99a2d73e952a0",
+  "auditedAtCommit": "b0c7cffc04d1e18564cfde36d00fb347ab4c9bf3",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "f19c3ba88124dfc3260dc49f9d22ae49c2b0a5ba"
+    "bootstrapGitBlobSha": "ea1e869daef2bc3d16d4fbb22f9b4abf0a9d9ba1"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -89,10 +89,11 @@
         "pristeel-project-lifecycle-tracking-v1.js",
         "pristeel-project-intelligence-resilience-v1.js",
         "pristeel-project-workflow-canonical-v1.js",
+        "pristeel-project-workbench-v2.js",
         "pristeel-operating-experience-v1.js",
         "pristeel-project-execution-guard-v1.js"
       ],
-      "note": "Project Integrity UI owns the bounded base project load and minimal header. Project-First owns the visible project content and active shortcuts; Canonical Project Workflow reconciles workflow navigation over the existing engines. The post-award Execution Guard is the final lifecycle owner. No ownership layer performs automatic outbound communication."
+      "note": "Project Integrity UI owns the bounded base project load. Canonical Project Workflow remains the navigation/business-route owner. Project Workbench v3 (compatibility file pristeel-project-workbench-v2.js) owns the single visible daily-use project surface and delegates actions to canonical engines; the post-award Execution Guard remains the final lifecycle owner. No ownership layer performs automatic outbound communication."
     },
     {
       "area": "gmail-inbox",
@@ -249,6 +250,12 @@
       "loader": "pristeel-offer-revision-email-bridge-v1.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded with the project offer-revision bundle."
+    },
+    {
+      "module": "pristeel-project-workbench-v2.js",
+      "loader": "pristeel-project-readability-tuning-v1.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Project Workbench v3 is loaded with the reviewed 20260918-workbench3 cache key and owns the single visible Project Detail work surface while delegating all business actions to existing canonical project engines."
     },
     {
       "module": "pristeel-project-summary-command-v1.js",
