@@ -137,6 +137,11 @@ assert(frontend.includes('data-tda-retry-saved')&&frontend.includes('retry_saved
 assert(frontend.includes('if(complete&&ready)')&&frontend.includes("data-analysis-ready',ready?'1':'0'"),'Krijo projekt must remain blocked until a successful analysis is ready');
 assert(frontend.includes('DOSJA DUHET RI-NGARKUAR')&&frontend.includes('storage_files_available===false'),'Frontend must distinguish orphaned Storage metadata from a real readable saved dossier.');
 assert(protectedEdge.includes("storage_status:'missing_blob'")&&protectedEdge.includes("dossier_analysis_status:storageMissing?'storage_missing':'unreadable'"),'Analyzer must persist missing Storage blobs as missing dossier state rather than retrying an unreadable archive forever.');
+assert(protectedEdge.includes('localDeterministicSynthesis')&&protectedEdge.includes("provider:{name:'local_deterministic'"),'Protected analyzer must remain functional without an OpenAI key by using a bounded deterministic local fallback.');
+assert(protectedEdge.includes("extraction_source:manual?'manual':(local?'derived':'dossier_ai')"),'Local deterministic Price Intelligence must be persisted as derived evidence, never mislabeled as AI extraction.');
+assert(protectedEdge.includes("if(!OPENAI_API_KEY){complete=localDeterministicSynthesis"),'Missing OpenAI credentials must not make a saved dossier unusable.');
+assert(frontend.includes("['openai','local_deterministic']")&&frontend.includes('integrity.manual_full_zip_uploaded===true'),'Frontend must accept local canonical analysis and a successfully uploaded manual full ZIP as dossier-ready.');
+
 assert(protectedEdge.includes("manualFullZip=tender?.payload?.dossier_integrity?.manual_full_zip_uploaded===true")&&protectedEdge.includes("if(missing.length&&!manualFullZip)"),'Protected analyzer must treat expected filenames as advisory after a user-selected complete ZIP while preserving normal completeness checks elsewhere.');
 assert(protectedEdge.includes("remaining_expected:[]")&&protectedEdge.includes("storage_files_available:true"),'Successful protected analysis must close advisory filename gaps and preserve the readable Storage truth.');
 
