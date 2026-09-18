@@ -31,7 +31,7 @@ assert(importer.includes("'manual_zip_candidate'")&&importer.includes("archive_r
 assert(importer.includes("manual_full_zip_uploaded:true")&&importer.includes("dossier_complete:true")&&importer.includes("forceReady"),'A user-selected full ZIP must become analyzable after direct Storage persistence even when expected filenames remain advisory.');
 
 
-assert(importer.includes("source:'browser_direct_signed_upload'")&&importer.includes("identity_reason:'direct_signed_upload_pending_protected_analysis'"),'Direct uploads must retain provenance and defer content identity to the protected analyzer.');
+assert(importer.includes("source:'browser_direct_signed_upload'")&&importer.includes("'direct_signed_upload_pending_protected_analysis'")&&importer.includes("'manual_full_zip_candidate_pending_protected_analysis'"),'Direct uploads must retain provenance and defer expected/candidate content identity to the protected analyzer.');
 
 assert(importer.includes('documentClass')&&importer.includes("return'dossier'")&&importer.includes("return'prices'"),'Server resolver must classify dossier and price-list semantics across filename languages');
 assert(importer.includes('familyCompatible')&&importer.includes('WORD_EXT')&&importer.includes('SHEET_EXT'),'DOC/DOCX and XLS/XLSX remain compatible file families');
