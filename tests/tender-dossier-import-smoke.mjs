@@ -18,9 +18,16 @@ assert(runtime.includes('input.multiple=true')&&runtime.includes('uploadFiles'),
 assert(runtime.includes('uploadArchive(id,f,btn,name)'),'Dropping/selecting a ZIP on a document row must send that row as a UI hint');
 assert(runtime.includes('clientFamily')&&runtime.includes("'word'")&&runtime.includes("'sheet'"),'Client diagnostics must treat DOC/DOCX and XLS/XLSX as compatible families');
 assert(runtime.includes('REKOMANDIMI PËRFUNDIMTAR')&&runtime.includes('decision_reasons'),'Completed analysis must show VAZHDO/LËRE reasons');
+assert(runtime.includes('extractZipClient')&&runtime.includes("new DecompressionStream('deflate-raw')"),'Browser must unpack real KRPP ZIP files locally instead of sending ZIP bytes through Edge compute.');
+assert(runtime.includes("mode:'prepare_direct'")&&runtime.includes("mode:'finalize_direct'")&&runtime.includes('signed_url'),'Browser must use signed direct-to-Storage upload sessions and finalize metadata separately.');
+assert(runtime.includes("fetch(up.signed_url,{method:'PUT',body:form})"),'Browser must upload document bytes directly to Supabase Storage via signed URL.');
+
 
 assert(importer.includes("IMPORT_VERSION='protected-archive-upload-v5'"),'Unified server resolver version must be v5');
 assert(importer.includes('repairMojibake')&&importer.includes("normalize('NFKD')"),'KRPP filename normalization must tolerate encoding and diacritic differences');
+assert(importer.includes("mode==='prepare_direct'")&&importer.includes("mode==='finalize_direct'")&&importer.includes('createSignedUploadUrl(path,{upsert:true})'),'Importer must only broker short signed upload sessions; file bytes must bypass Edge Functions.');
+assert(importer.includes("source:'browser_direct_signed_upload'")&&importer.includes("identity_reason:'direct_signed_upload_pending_protected_analysis'"),'Direct uploads must retain provenance and defer content identity to the protected analyzer.');
+
 assert(importer.includes('documentClass')&&importer.includes("return'dossier'")&&importer.includes("return'prices'"),'Server resolver must classify dossier and price-list semantics across filename languages');
 assert(importer.includes('familyCompatible')&&importer.includes('WORD_EXT')&&importer.includes('SHEET_EXT'),'DOC/DOCX and XLS/XLSX remain compatible file families');
 assert(importer.includes('identityVerdict')&&importer.includes('foreign_procurement_reference_detected'),'Importer must perform tender-identity checks and reject explicit foreign references');
