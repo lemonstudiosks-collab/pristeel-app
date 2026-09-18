@@ -33,7 +33,9 @@ assert(opportunitiesPolish.includes('pst-opp-v4-source-core')&&opportunitiesPoli
 assert(opportunitiesPolish.includes('pst-opp-v4-source-map')&&opportunitiesPolish.includes('pst-opp-v4-source-lines'),'Center source controls must use a connected mindmap instead of a rectangular grid');
 assert(!opportunitiesPolish.includes('pst-opp-v4-source-grid'),'The retired center source card grid must not return');
 assert(opportunitiesPolish.includes('EU_OFFICE_KOSOVO:[6,50]'),'Every source, including EU Office, must remain on the outer radial ring');
-assert(opportunitiesPolish.includes('render(true)')&&opportunitiesPolish.includes('scrollIntoView'),'Mindmap filter clicks must visibly reveal their filtered result list');
+assert(opportunitiesPolish.includes("function drillSource(id)")&&opportunitiesPolish.includes("state.lifecycle='all'")&&opportunitiesPolish.includes("field='all'"),'Source branches must drill into source results without compounded status/field filters');
+assert(opportunitiesPolish.includes("scrollIntoView({behavior:'smooth',block:'nearest'})"),'Source drilldown must bring its result area into view');
+assert(!/pst-opp-v4-source-node:hover[^\n]*translateY\(-2px\)/.test(opportunitiesPolish),'Source nodes must remain fixed when activated');
 assert(opportunitiesPolish.includes('pst-opp-v4-field-side')&&opportunitiesPolish.includes('Sipas fushës'),'Opportunities field controls must remain on the right');
 assert(opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','new','Të reja'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','waiting','Në pritje'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','replied','Me përgjigje'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','all','Të gjitha'"),'Visible lifecycle branches must remain the approved four-state model');
 assert(opportunitiesPolish.includes('PSTPrimaryNavResilienceV10')&&opportunitiesPolish.includes("typeof N.openHome==='function'"),'Opportunities Kthehu must prefer the final primary navigation owner');
