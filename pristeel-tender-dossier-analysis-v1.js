@@ -1,18 +1,17 @@
-/* PRISTEEL Tender Dossier Analysis v7
+/* PRISTEEL Tender Dossier Analysis v6
  * Extends the project-centric Opportunities surface with authenticated, server-side
  * reading of official KRPP/APP dossier documents. TED awards keep the existing winner workflow.
  * No external communication, commercial approval or parallel tender store.
  */
 (function(){
 'use strict';
-if(window.__pstTenderDossierAnalysisV7&&window.PSTTenderDossierAnalysisV1)return;
+if(window.__pstTenderDossierAnalysisV6&&window.PSTTenderDossierAnalysisV1)return;
 window.__pstTenderDossierAnalysisV1=true;
 window.__pstTenderDossierAnalysisV2=true;
 window.__pstTenderDossierAnalysisV3=true;
 window.__pstTenderDossierAnalysisV4=true;
 window.__pstTenderDossierAnalysisV5=true;
 window.__pstTenderDossierAnalysisV6=true;
-window.__pstTenderDossierAnalysisV7=true;
 var busy={};
 var RATE_LIMIT_MESSAGE='Dosja është ruajtur; analiza AI nuk u përfundua për shkak të limitit të përkohshëm';
 function A(v){return Array.isArray(v)?v:[];}
@@ -116,5 +115,5 @@ function css(){
 }
 function apply(){css();return true;}
 document.addEventListener('click',click,true);document.addEventListener('keydown',keydown,true);if(document.readyState!=='loading')apply();else document.addEventListener('DOMContentLoaded',apply,{once:true});
-window.PSTTenderDossierAnalysisV1={version:'7',apply:apply,analyze:analyze,download:download,isReady:function(id){var p=document.getElementById('pst-tda-analysis');return !!(p&&p.getAttribute('data-analysis-ready')==='1'&&p.getAttribute('data-dossier-complete')==='1'&&S(p.getAttribute('data-tender-id'))===S(id));},_test:{source:source,rating:rating,recommendationLabel:recommendationLabel,scheduleFromTarget:scheduleFromTarget,rateLimitMessage:RATE_LIMIT_MESSAGE,renderFailure:renderFailure,citationsHtml:citationsHtml,coverageHtml:coverageHtml,canonicalOut:canonicalOut,manualArchiveComplete:manualArchiveComplete}};
+window.PSTTenderDossierAnalysisV1={version:'6',apply:apply,analyze:analyze,download:download,isReady:function(id){var p=document.getElementById('pst-tda-analysis');return !!(p&&p.getAttribute('data-analysis-ready')==='1'&&p.getAttribute('data-dossier-complete')==='1'&&S(p.getAttribute('data-tender-id'))===S(id));},_test:{source:source,rating:rating,recommendationLabel:recommendationLabel,scheduleFromTarget:scheduleFromTarget,rateLimitMessage:RATE_LIMIT_MESSAGE,renderFailure:renderFailure,citationsHtml:citationsHtml,coverageHtml:coverageHtml,canonicalOut:canonicalOut,manualArchiveComplete:manualArchiveComplete}};
 })();
