@@ -78,7 +78,7 @@ const {JSDOM}=require('jsdom');
 
   assert(bootstrap.includes("pristeel-project-reference-v1.js?v=20260812-3"),'Bootstrap must load the latest canonical reference layer early');
   assert(bootstrap.indexOf('pristeel-project-reference-v1.js')<bootstrap.indexOf('pristeel-project-create-dedupe-guard-v1.js'),'Reference layer must load before create dedupe guard');
-  assert(bootstrap.includes("pristeel-project-data-integrity-v1.js?v=20260812-businessref1"),'Integrity module must be cache-busted');
+  assert(bootstrap.includes("pristeel-project-data-integrity-v1.js?v=20260918-commercial-evidence1"),'Integrity module must be cache-busted');
   assert(bootstrap.includes("pristeel-project-duplicate-manager-v1.js?v=20260812-businessref1"),'Duplicate manager must be cache-busted');
 
   dom.window.close();

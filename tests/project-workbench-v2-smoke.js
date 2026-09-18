@@ -28,8 +28,11 @@ must(src.includes('data-pwb3-card-route="offer"'),'own-offer card must be action
 must(src.includes('data-pwb3-card-route="client"'),'client card must be actionable');
 must(src.includes('data-pwb3-card-route="docscomms"'),'files/activity cards must be actionable');
 must(src.includes('email_evidence:true'),'sent offer email evidence must be visible');
+must(src.includes('context_fact_evidence:true'),'registered PPPP commercial facts must be visible');
+must(src.includes('unit_price_eur_per_m'),'per-meter commercial evidence must stay unit-accurate');
+must(src.includes('regjistruar në PPPP'),'registered client offer evidence must be distinguished from Gmail-only evidence');
 must(src.includes('regjistrimi kanonik mund të mungojë'),'email evidence must stay distinct from canonical offer state');
-must(src.includes('nuk inferohet cash apo pagesë'),'finance summary must not infer cash/payment');
+must(src.includes('nuk inferohet total, cash apo pagesë'),'finance summary must not infer total/cash/payment from unit pricing');
 must(src.includes('.pwf-project-context')&&src.includes('.pwf-procurement-head'),'duplicate canonical context layers must be hidden in v3');
 must(!/supaFetch\s*\(/.test(src),'v3 presentation must not query Supabase directly');
 must(!/\b(fetch|XMLHttpRequest)\s*\(/.test(src),'v3 presentation must not make network calls');

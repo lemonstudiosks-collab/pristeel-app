@@ -181,6 +181,7 @@ async function load(id){
     byProject('project_attachment_links',id,p,'order=created_at.desc&limit=3000'),
     byProject('offers_inbox',id,p,'order=created_at.desc&limit=3000'),
     byProject('bank_guarantees',id,p,'order=created_at.desc&limit=500'),
+    byProject('pppp_project_context_facts',id,p,'order=updated_at.desc&limit=500'),
     safe('crm_deals?select=dealname,amount,dealstage,closedate,description,hs_object_id&limit=1500'),
     drive(p)
   ]);
@@ -188,7 +189,7 @@ async function load(id){
   var ours=docs.filter(ourOffer).concat(offers.filter(ourOffer));
   var supplierPool=offers.concat(inboxDocs,projectDocs,attachmentLinks,docs).filter(supplierOffer);
   var suppliers=uniq(supplierPool,function(x){return rowKey(x);});
-  var data={project:p,emails:em.rows,emailLinks:em.links,linkedOnly:em.linkedOnly,emailConflicts:em.conflicts,contacts:out[0],bom:out[1],rfqs:out[2],offers:offers,ourOffers:uniq(ours,function(x){return rowKey(x);}),supplierOffers:suppliers,docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],projectDocs:projectDocs,attachmentLinks:attachmentLinks,inboxDocs:inboxDocs,guarantees:out[11],deals:out[12],drive:out[13]};
+  var data={project:p,emails:em.rows,emailLinks:em.links,linkedOnly:em.linkedOnly,emailConflicts:em.conflicts,contacts:out[0],bom:out[1],rfqs:out[2],offers:offers,ourOffers:uniq(ours,function(x){return rowKey(x);}),supplierOffers:suppliers,docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],projectDocs:projectDocs,attachmentLinks:attachmentLinks,inboxDocs:inboxDocs,guarantees:out[11],contextFacts:out[12],deals:out[13],drive:out[14]};
   data.deal=matchDeal(p,data.deals);
   data.mailAttachments=data.emails.filter(function(x){return x.has_attachments||arr(x.attachments).length;});
   data.files=uniq(data.docs.concat(data.projectDocs,data.attachmentLinks,data.inboxDocs,data.drive.rows,data.mailAttachments),rowKey);
