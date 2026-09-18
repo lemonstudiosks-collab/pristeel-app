@@ -7,6 +7,8 @@ on:
     paths:
       - 'scripts/tender-supplier-sourcing-production-acceptance.mjs'
       - '.github/workflows/tender-supplier-sourcing-production-acceptance.yml'
+      - 'supabase/functions/pppp-tender-supplier-sourcing-v1/**'
+      - 'pristeel-tender-supplier-sourcing-v1.js'
 
 permissions:
   contents: read
