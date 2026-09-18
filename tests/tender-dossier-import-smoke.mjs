@@ -36,8 +36,8 @@ assert(importer.includes('transient=status>=500||status===429')&&importer.includ
 assert(importer.includes('review=[409,422].includes(status)')&&importer.includes('requires_review:review'),'Integrity/readability analysis blockers must preserve the upload but require review rather than blind retry');
 assert(!/api\.openai\.com\/v1\/responses|finalSchema\(/.test(importer),'Upload bridge must not contain a parallel analysis engine');
 
-assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v6'"),'Canonical analyzer must be on protected archive analysis v6');
-assert(analyzer.includes("const VERSION='v12'"),'Canonical analysis snapshot must be v12');
+assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v7'"),'Canonical analyzer must be on protected archive analysis v7');
+assert(analyzer.includes("const VERSION='v13'"),'Canonical analysis snapshot must be v13');
 assert(analyzer.includes('docxStructuredText')&&analyzer.includes('[PARAGRAPH')&&analyzer.includes('[TABLE'),'DOCX extraction must preserve paragraph and table locators');
 assert(analyzer.includes('spreadsheetStructuredText')&&analyzer.includes('CELLS A'),'Spreadsheet extraction must preserve sheet/row/cell-range locators');
 assert(analyzer.includes('splitChunks')&&analyzer.includes('batchTextUnits'),'All extracted tender text must be chunked/batched instead of silently clipped to one small prefix');
