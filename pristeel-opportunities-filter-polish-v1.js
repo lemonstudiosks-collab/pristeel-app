@@ -15,7 +15,7 @@ var observer=null,observerRoot=null,scheduled=false,decorating=false;
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',UNDP_KOSOVO:'UNDP Kosovo',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
 var ICON={TED:'★',KRPP:'▣',APP_AL:'▤',MCA_KOSOVO:'◆',KCF:'◇',RCF:'↔',EBRD_ECEPP:'▥',WORLD_BANK:'◎',UNGM:'◉',UNDP_KOSOVO:'◌',EU_OFFICE_KOSOVO:'✦'};
-var SOURCE_POS={TED:[12,14],KRPP:[37,7],APP_AL:[63,7],MCA_KOSOVO:[88,14],KCF:[7,48],RCF:[93,48],EBRD_ECEPP:[12,82],WORLD_BANK:[34,91],UNGM:[66,91],UNDP_KOSOVO:[88,82],EU_OFFICE_KOSOVO:[50,86]};
+var SOURCE_POS={TED:[10,22],KRPP:[35,6],APP_AL:[65,6],MCA_KOSOVO:[90,22],KCF:[7,48],RCF:[93,48],EBRD_ECEPP:[10,78],WORLD_BANK:[35,94],UNGM:[65,94],UNDP_KOSOVO:[90,78],EU_OFFICE_KOSOVO:[50,73]};
 var FIELDS=[
  {id:'construction',label:'Ndërtim',icon:'▦',re:/\b(construction|ndertim|ndërtim|building|buildings|bau|hochbau|steel|çelik|celik|metal|structur|konstrukt|hall|roof|çati|cati|facade|fasad|weld|fabricat|montag|renov|rehabilit)/i},
  {id:'infrastructure',label:'Infrastrukturë',icon:'╫',re:/\b(infrastruct|road|rrug|highway|motorway|rail|hekurudh|bridge|urë|ure|tunnel|airport|port|water|ujësjell|ujesjell|sewer|kanaliz|pipeline|transport network)/i},
