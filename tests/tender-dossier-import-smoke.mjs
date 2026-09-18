@@ -28,6 +28,7 @@ assert(importer.includes("error:mismatches.length?'document_tender_mismatch':'do
 assert(!importer.includes("normalizeName(hint)===normalizeName(expected))score+=45"),'A row hint must never make an unrelated compatible file pass by itself');
 assert(importer.includes("archive_role:role")&&importer.includes("'supplemental'"),'ZIP ingest must preserve supplemental dossier documents after a trusted match');
 assert(importer.includes('mime=mimeFor(sourceName)'),'Extracted ZIP entries must derive MIME type from the extracted file, never inherit ZIP MIME');
+assert(importer.includes("storage_status:'available'")&&importer.includes("text(x?.storage_status,30)!=='missing_blob'"),'Fresh uploads must restore blob availability while orphaned metadata must not satisfy dossier completeness.');
 assert(importer.includes('tender_watch_id:tender.id')&&importer.includes('identity_status:identity.status'),'Archive metadata must bind each newly imported document to the tender and identity verdict');
 assert(importer.includes('isCanonicalProtectedAnalysis')&&importer.includes('!canonical&&prior'),'Partial import must not downgrade an existing canonical protected analysis');
 assert(importer.includes('/functions/v1/pppp-tender-protected-archive-analysis'),'Completion must still use the canonical protected-archive analyzer');
@@ -40,8 +41,8 @@ assert(importer.includes('transient=status>=500||status===429')&&importer.includ
 assert(importer.includes('review=[409,422].includes(status)')&&importer.includes('requires_review:review'),'Integrity/readability analysis blockers must preserve the upload but require review rather than blind retry');
 assert(!/api\.openai\.com\/v1\/responses|finalSchema\(/.test(importer),'Upload bridge must not contain a parallel analysis engine');
 
-assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v9'"),'Canonical analyzer must be on protected archive analysis v9');
-assert(analyzer.includes("const VERSION='v15'"),'Canonical analysis snapshot must be v15');
+assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v10'"),'Canonical analyzer must be on protected archive analysis v10');
+assert(analyzer.includes("const VERSION='v16'"),'Canonical analysis snapshot must be v16');
 assert(analyzer.includes('docxStructuredText')&&analyzer.includes('[PARAGRAPH')&&analyzer.includes('[TABLE'),'DOCX extraction must preserve paragraph and table locators');
 assert(analyzer.includes('spreadsheetStructuredText')&&analyzer.includes('CELLS A'),'Spreadsheet extraction must preserve sheet/row/cell-range locators');
 assert(analyzer.includes('createSignedUrl(path,SIGNED_URL_SECONDS)')&&analyzer.includes('storage_read_failed:'),'Analyzer must have a signed Storage fallback when direct download fails.');
