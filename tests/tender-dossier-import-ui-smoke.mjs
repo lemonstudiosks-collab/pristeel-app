@@ -41,9 +41,20 @@ window.PSTTenderDossierAnalysisV1={
 };
 window.__pstTenderDossierAnalysisV3=true;
 
-let uploadArchiveRequests=0,statusRequests=0;
-window.fetch=globalThis.fetch=async(url,init)=>{
-  assert(String(url).includes('/functions/v1/pppp-tender-dossier-import'),'UI called an unexpected backend path');
+let uploadArchiveRequests=0,statusRequests=0,protectedAnalysisRequests=0,priceReadRequests=0;
+window.fetch=globalThis.fetch=async(url,init={})=>{
+  const u=String(url);
+  if(u.includes('/rest/v1/pppp_tender_price_dataset_v1')){
+    priceReadRequests++;
+    return {ok:true,status:200,text:async()=>JSON.stringify([])};
+  }
+  if(u.includes('/functions/v1/pppp-tender-protected-archive-analysis')){
+    protectedAnalysisRequests++;
+    const sent=JSON.parse(init.body||'{}');
+    assert.equal(sent.tender_id,tenderId);
+    return {ok:true,status:200,text:async()=>JSON.stringify({ok:true,tender_id:tenderId,dossier_complete:true,analysis_ready:true,recommendation:'VAZHDO',decision_reasons:['Evidenca teknike u lexua.','Dosja është e plotë.'],analysis:{recommendation:'VAZHDO'}})};
+  }
+  assert(u.includes('/functions/v1/pppp-tender-dossier-import'),'UI called an unexpected backend path');
   const sent=JSON.parse(init.body);
   assert.equal(sent.tender_id,tenderId);
   if(sent.mode==='status'){
@@ -51,9 +62,10 @@ window.fetch=globalThis.fetch=async(url,init)=>{
     return {ok:true,status:200,text:async()=>JSON.stringify({ok:true,tender_id:tenderId,dossier_complete:false,remaining_protected_documents:[docA,docB],archived_documents:[]})};
   }
   assert.equal(sent.mode,'upload_archive','ZIP flow must use the consolidated archive upload mode');
+  assert.equal(sent.defer_analysis,true,'ZIP upload must defer AI to a separate request');
   assert.equal(sent.file.name,'Dosja e Tenderit.zip');
   uploadArchiveRequests++;
-  return {ok:true,status:200,text:async()=>JSON.stringify({ok:true,tender_id:tenderId,dossier_complete:true,archive_file_name:'Dosja e Tenderit.zip',contained_documents:[docA,docB,'PPPP-DOSJA-INDEX.txt'],matched_documents:[docA,docB],remaining_protected_documents:[],analysis:{ok:true,recommendation:'VAZHDO'}})};
+  return {ok:true,status:200,text:async()=>JSON.stringify({ok:true,tender_id:tenderId,dossier_complete:true,dossier_saved:true,deferred_analysis:true,analysis_ready:false,archive_file_name:'Dosja e Tenderit.zip',contained_documents:[docA,docB,'PPPP-DOSJA-INDEX.txt'],matched_documents:[docA,docB],remaining_protected_documents:[]})};
 };
 
 window.eval(fs.readFileSync('pristeel-tender-dossier-import-v1.js','utf8'));
@@ -98,6 +110,8 @@ assert(window.PSTTenderDossierImportV1._test.clientMatchScore('339-Dosja e Tende
 const zipFile=new window.File(['fake-zip-bytes'],'Dosja e Tenderit.zip',{type:'application/zip'});
 assert.equal(await window.PSTTenderDossierImportV1.uploadArchive(tenderId,zipFile,zipButton),true);
 assert.equal(uploadArchiveRequests,1,'Complete ZIP import should need one archive import request');
+assert.equal(protectedAnalysisRequests,1,'Completed ZIP must run the saved-dossier analyzer in a separate request.');
+assert(priceReadRequests>=0,'Independent Price Intelligence reads must not break upload flow.');
 assert(statusRequests>=0,'Background recovery status checks are allowed but must not create projects');
 assert.equal(canonicalAnalyzeCalls,1,'Completed ZIP archive must return exactly once to the canonical dossier analyzer');
 assert.equal(document.getElementById('pst-tda-analysis').getAttribute('data-dossier-complete'),'1');

@@ -32,12 +32,15 @@ assert(importer.includes('tender_watch_id:tender.id')&&importer.includes('identi
 assert(importer.includes('isCanonicalProtectedAnalysis')&&importer.includes('!canonical&&prior'),'Partial import must not downgrade an existing canonical protected analysis');
 assert(importer.includes('/functions/v1/pppp-tender-protected-archive-analysis'),'Completion must still use the canonical protected-archive analyzer');
 assert(importer.includes('runProtectedArchiveAnalysisPreservingUpload')&&importer.includes('deferredAnalysis'),'Successful upload must remain successful when AI completion is temporarily deferred');
+assert(importer.includes("body?.defer_analysis===true")&&importer.includes("deferred_analysis:true")&&importer.includes("dossier_saved:true"),'Frontend may persist the dossier first and analyze it in a separate bounded request.');
+assert(runtime.includes('defer_analysis:true')&&runtime.includes('analyzeSavedDossier'),'Browser flow must split upload from saved-dossier AI analysis.');
+assert(runtime.includes('async function restRows')&&!runtime.includes("await db('pppp_tender_price_dataset_v1"),'Price Intelligence must use an authenticated REST reader rather than an undefined db helper.');
 assert(importer.includes('transient=status>=500||status===429')&&importer.includes('dossier_saved:true')&&importer.includes('analysis_ready:false'),'Any downstream 5xx/429 analysis infrastructure failure must preserve the saved dossier and report not-ready instead of converting upload into a generic 500');
 assert(importer.includes('review=[409,422].includes(status)')&&importer.includes('requires_review:review'),'Integrity/readability analysis blockers must preserve the upload but require review rather than blind retry');
 assert(!/api\.openai\.com\/v1\/responses|finalSchema\(/.test(importer),'Upload bridge must not contain a parallel analysis engine');
 
-assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v7'"),'Canonical analyzer must be on protected archive analysis v7');
-assert(analyzer.includes("const VERSION='v13'"),'Canonical analysis snapshot must be v13');
+assert(analyzer.includes("ARCHIVE_VERSION='protected-archive-analysis-v8'"),'Canonical analyzer must be on protected archive analysis v8');
+assert(analyzer.includes("const VERSION='v14'"),'Canonical analysis snapshot must be v14');
 assert(analyzer.includes('docxStructuredText')&&analyzer.includes('[PARAGRAPH')&&analyzer.includes('[TABLE'),'DOCX extraction must preserve paragraph and table locators');
 assert(analyzer.includes('spreadsheetStructuredText')&&analyzer.includes('CELLS A'),'Spreadsheet extraction must preserve sheet/row/cell-range locators');
 assert(analyzer.includes('splitChunks')&&analyzer.includes('batchTextUnits'),'All extracted tender text must be chunked/batched instead of silently clipped to one small prefix');
