@@ -3,6 +3,7 @@ import fs from 'node:fs';
 
 const migration=fs.readFileSync('supabase/migrations/20260909140000_tender_dossier_canonical_integrity_guards.sql','utf8');
 const cleanupMigration=fs.readFileSync('supabase/migrations/20260909183500_tender_dossier_explicit_cleanup_guard.sql','utf8');
+const localGuardMigration=fs.readFileSync('supabase/migrations/20260918110500_tender_canonical_local_deterministic_guard.sql','utf8');
 const importer=fs.readFileSync('supabase/functions/pppp-tender-dossier-import/index.ts','utf8');
 const analyzer=fs.readFileSync('supabase/functions/pppp-tender-protected-archive-analysis/index.ts','utf8');
 
@@ -19,6 +20,7 @@ assert(migration.includes('new.auth_required := false'),'Canonical archive must 
 assert(cleanupMigration.includes("force_archive_cleanup"),'Verified contamination cleanup must have an explicit escape hatch');
 assert(cleanupMigration.includes("v_integrity := v_integrity - 'force_archive_cleanup'"),'Cleanup escape hatch must self-clear');
 assert(cleanupMigration.includes('not v_force_cleanup'),'Ordinary refreshes must still preserve canonical/manual dossier state');
+assert(localGuardMigration.includes("in ('openai','local_deterministic')"),'Canonical protected guard must preserve the bounded local deterministic analyzer while excluding public metadata deterministic output.');
 
 assert(importer.includes('foreign_procurement_reference_detected'),'Importer must detect foreign tender references');
 assert(importer.includes("identity.status==='mismatch'"),'Mismatched candidates must be excluded from expected matching');
