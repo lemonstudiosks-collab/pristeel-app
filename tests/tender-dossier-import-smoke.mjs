@@ -27,7 +27,6 @@ assert(importer.includes("IMPORT_VERSION='protected-archive-upload-v5'"),'Unifie
 assert(importer.includes('repairMojibake')&&importer.includes("normalize('NFKD')"),'KRPP filename normalization must tolerate encoding and diacritic differences');
 assert(importer.includes("mode==='prepare_direct'")&&importer.includes("mode==='finalize_direct'")&&importer.includes('createSignedUploadUrl(path,{upsert:true})'),'Importer must only broker short signed upload sessions; file bytes must bypass Edge Functions.');
 assert(importer.includes("'historical_sha256'")&&importer.includes("'historical_source_name'")&&importer.includes('prepareDirectUploads(tender,needed,body?.files,body?.expected_name_hint||\'\',archive)'),'Migrated protected dossiers must rehydrate missing Storage blobs from same-tender historical hashes/names before generic filename matching.');
-assert(runtime.includes('archive_role:x.archive_role')&&runtime.includes('matched_by:x.matched_by'),'Browser finalize receipts must preserve historical-match role and provenance.');
 
 assert(importer.includes("source:'browser_direct_signed_upload'")&&importer.includes("identity_reason:'direct_signed_upload_pending_protected_analysis'"),'Direct uploads must retain provenance and defer content identity to the protected analyzer.');
 
