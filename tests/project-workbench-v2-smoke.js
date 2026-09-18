@@ -18,6 +18,15 @@ must(src.includes('data-pwb3-area="communication"'),'client controls must route 
 must(src.includes('data-pwb3-area="files"'),'file controls must route to canonical files');
 must(src.includes('data-pwb3-area="finance"'),'finance controls must route to canonical finance');
 must(src.includes('data-pwb3-area="execution"'),'won projects must route to canonical execution');
+must(src.includes('data-pwb3-action="upload"'),'quick upload must be wired');
+must(src.includes('PSTProjectFileUpload'),'quick upload must delegate to the existing file uploader');
+must(src.includes('data-pwb3-action="brief"'),'project brief quick action must be wired');
+must(src.includes('PSTProjectSummaryCommandV1'),'project brief must delegate to the existing summary owner');
+must(src.includes('data-pwb3-card-route="finance"'),'finance card must be actionable');
+must(src.includes('data-pwb3-card-route="supply"'),'supply/production card must be actionable');
+must(src.includes('data-pwb3-card-route="offer"'),'own-offer card must be actionable');
+must(src.includes('data-pwb3-card-route="client"'),'client card must be actionable');
+must(src.includes('data-pwb3-card-route="docscomms"'),'files/activity cards must be actionable');
 must(src.includes('email_evidence:true'),'sent offer email evidence must be visible');
 must(src.includes('regjistrimi kanonik mund të mungojë'),'email evidence must stay distinct from canonical offer state');
 must(src.includes('nuk inferohet cash apo pagesë'),'finance summary must not infer cash/payment');
