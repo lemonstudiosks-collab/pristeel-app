@@ -1,0 +1,58 @@
+name: One-off KEK local dossier analysis
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/kek-local-analysis-oneoff-20260918.mjs'
+      - '.github/workflows/kek-local-analysis-oneoff-20260918.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/kek-local-analysis-oneoff-20260918.mjs'
+      - '.github/workflows/kek-local-analysis-oneoff-20260918.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kek-local-analysis-oneoff-20260918
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/kek-local-analysis-oneoff-20260918.mjs
+
+  analyze:
+    if: github.event_name == 'push'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Analyze saved KEK dossier locally and verify canonical state
+        run: node scripts/kek-local-analysis-oneoff-20260918.mjs
+      - name: Upload sanitized verification result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kek-local-analysis-oneoff-20260918
+          path: tmp/kek-local-analysis-oneoff-20260918.json
+          if-no-files-found: warn
+          retention-days: 3
