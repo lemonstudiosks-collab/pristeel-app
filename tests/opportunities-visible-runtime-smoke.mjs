@@ -7,7 +7,7 @@ const finalizerSrc=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
 const bootstrapSrc=fs.readFileSync('pristeel-project-emails.js','utf8');
 
 assert(finalizerSrc.includes("pristeel-project-centric-workflow-v1.js?v='+Date.now()"),'project-centric owner must be cache-busted by the finalizer');
-assert(bootstrapSrc.includes('pristeel-redesign-finalizer-v1.js?v=20260918-uploadfix1'),'bootstrap must request the fresh Opportunities finalizer revision');
+assert(bootstrapSrc.includes('pristeel-redesign-finalizer-v1.js?v=20260918-singleowner1'),'bootstrap must request the fresh Opportunities finalizer revision');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <section id="page-kek-tenders" style="display:block">
