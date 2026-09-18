@@ -90,6 +90,7 @@ function normalizeNav(){
   return true;
 }
 function projectData(){return window.__pstIntegrityLastData||{};}
+function workbenchOwnsProject(){var p=document.getElementById('page-workspace-project');return !!(window.__pstProjectWorkbenchV3Intended||window.PSTProjectWorkbenchV3||(p&&p.getAttribute('data-pst-project-surface-owner')==='workbench-v3'));}
 function latestOurOffer(d){
   var xs=A(d&&d.ourOffers).slice();
   if(d&&d.currentOurOffer&&xs.indexOf(d.currentOurOffer)<0)xs.unshift(d.currentOurOffer);
@@ -327,7 +328,7 @@ function apply(){
   css();normalizeNav();var zone=applyZone(currentZone());
   if(zone==='home')stabilizeHome();
   if(zone==='opportunities')decorateOpportunities();
-  if(zone==='projects'&&active('page-workspace-project')){decorateProjectNav();decorateProcurementFlow();rewriteNextAction();applyProjectPhase(document.getElementById('page-workspace-project'));}
+  if(zone==='projects'&&active('page-workspace-project')&&!workbenchOwnsProject()){decorateProjectNav();decorateProcurementFlow();rewriteNextAction();applyProjectPhase(document.getElementById('page-workspace-project'));}
   if(zone==='system')decorateSystem();
   return zone;
 }
