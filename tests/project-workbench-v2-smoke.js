@@ -13,7 +13,8 @@ must(src.includes('Faturimi')&&src.includes('Arkëtimi'),'progress must expose i
 must(src.includes("k==='trading'?'Furnizimi':k==='fabrication'?'Prodhimi':'Furnizimi / Prodhimi'"),'business type must adapt the work tab');
 must(src.includes('data-pwb3-area="procurement"'),'supply cards must route to canonical procurement');
 must(src.includes('data-pwb3-stage="comparison"'),'supplier rows must route to canonical comparison');
-must(src.includes('data-pwb3-stage="client_offer"'),'offer editor must route to canonical client-offer');
+must(src.includes('data-pwb3-action="revision"'),'offer editor must route through the explicit revision action');
+must(src.includes('PSTProjectOfferRevisionAssistantV2'),'revision action must delegate to the existing revision assistant when available');
 must(src.includes('data-pwb3-area="communication"'),'client controls must route to canonical communication');
 must(src.includes('data-pwb3-area="files"'),'file controls must route to canonical files');
 must(src.includes('data-pwb3-area="finance"'),'finance controls must route to canonical finance');
@@ -34,6 +35,8 @@ must(src.includes('regjistruar në PPPP'),'registered client offer evidence must
 must(src.includes('regjistrimi kanonik mund të mungojë'),'email evidence must stay distinct from canonical offer state');
 must(src.includes('nuk inferohet total, cash apo pagesë'),'finance summary must not infer total/cash/payment from unit pricing');
 must(src.includes('.pwf-project-context')&&src.includes('.pwf-procurement-head'),'duplicate canonical context layers must be hidden in v3');
+must(src.includes("data-pst-project-surface-owner','workbench-v3"),'Workbench must claim explicit Project Detail ownership');
+must(src.includes("pst-rational-head")&&src.includes("pst-upf-shell"),'Workbench must retire stale competing Project Detail shells');
 must(!/supaFetch\s*\(/.test(src),'v3 presentation must not query Supabase directly');
 must(!/\b(fetch|XMLHttpRequest)\s*\(/.test(src),'v3 presentation must not make network calls');
 console.log('project-workbench-v3 smoke: ok');
