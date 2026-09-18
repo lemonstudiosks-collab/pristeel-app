@@ -25,7 +25,7 @@ function dbHeaders(auth,anonKey){return{apikey:anonKey,Authorization:auth,'Conte
 function outputText(data){if(data?.output_text)return data.output_text;if(!Array.isArray(data?.output))return'';for(const out of data.output){if(!Array.isArray(out?.content))continue;for(const part of out.content)if(part?.type==='output_text'&&part?.text)return part.text;}return'';}
 function clipJson(v,max=80000){let raw='';try{raw=JSON.stringify(v==null?null:v);}catch{raw='null';}return raw.length>max?raw.slice(0,max)+'…[clipped]':raw;}
 function sourceOf(row){const x=text(row?.payload?.source||'KRPP',30).toUpperCase();return x==='APP'||x==='APP_AL'?'APP_AL':x==='TED'?'TED':'KRPP';}
-function cacheFresh(row){const p=row?.payload||{},at=Date.parse(p.dossier_analyzed_at||p.dossier_analysis?.analyzed_at||'');return p.dossier_analysis_version===VERSION&&p.dossier_analysis_status==='ready'&&Number.isFinite(at)&&(Date.now()-at)<CACHE_MS&&p.dossier_analysis&&p.dossier_analysis?.provider?.name!=='deterministic';}
+function cacheFresh(row){const p=row?.payload||{},at=Date.parse(p.dossier_analyzed_at||p.dossier_analysis?.analyzed_at||'');return p.dossier_analysis_version===VERSION&&p.dossier_analysis_status==='ready'&&Number.isFinite(at)&&(Date.now()-at)<CACHE_MS&&p.dossier_analysis&&p.dossier_analysis?.provider?.name!=='deterministic';}function manualProtectedArchiveReady(row){const p=row?.payload||{},i=p?.dossier_integrity||{},archive=Array.isArray(p?.protected_archive)?p.protected_archive:[];return i.manual_full_zip_uploaded===true&&i.storage_files_available===true&&i.storage_missing!==true&&archive.some((x:any)=>text(x?.storage_status,30)==='available');}
 function providerError(status){const e:any=new Error(status===429?'openai_rate_limited':`openai_http_${status}`);e.status=Number(status||0);e.code=status===429?'AI_RATE_LIMITED':'AI_PROVIDER_ERROR';return e;}
 function isRateLimitError(error){return Number(error?.status||0)===429||text(error?.code,80).toUpperCase()==='AI_RATE_LIMITED'||text(error?.message,120).toLowerCase()==='openai_rate_limited';}
 async function restJson(url,headers,init={}){const r=await fetch(url,{...init,headers:{...headers,...(init.headers||{})}});const raw=await r.text();let body=null;try{body=raw?JSON.parse(raw):null;}catch{body=raw;}if(!r.ok)throw new Error(`DB ${r.status}: ${typeof body==='string'?body.slice(0,300):JSON.stringify(body).slice(0,300)}`);return body;}
@@ -358,6 +358,12 @@ Deno.serve(async req=>{
   const rows=await restJson(`${supabaseUrl}/rest/v1/kek_tender_watch?id=eq.${encodeURIComponent(tenderId)}&select=*&limit=1`,headers);const row=Array.isArray(rows)?rows[0]:null;if(!row)return json({ok:false,error:'tender_not_found_or_not_visible'},404);
   const source=sourceOf(row);if(source==='TED')return json({ok:false,error:'dossier_analysis_not_used_for_ted_awards'},409);
   const mode=text(body?.mode,40).toLowerCase();
+  if(mode!=='bundle'&&mode!=='download'&&source==='KRPP'&&manualProtectedArchiveReady(row)){
+    const delegated=await fetch(supabaseUrl.replace(/\/$/,'')+'/functions/v1/pppp-tender-protected-archive-analysis',{method:'POST',headers:{apikey:anonKey,Authorization:auth,'Content-Type':'application/json'},body:JSON.stringify({tender_id:tenderId})});
+    const raw=await delegated.text();let parsed:any=null;try{parsed=raw?JSON.parse(raw):null;}catch{}
+    if(!delegated.ok)return new Response(raw,{status:delegated.status,headers:corsHeaders});
+    return json({...parsed,delegated_from:'pppp-tender-dossier-analysis',protected_archive_precedence:true});
+  }
   if(mode==='bundle'||mode==='download'){
     const resolved=await resolveOfficialDossier(row,source);
     const hasKrppPostbacks=source==='KRPP'&&Array.isArray(resolved.dossier?.postbacks)&&resolved.dossier.postbacks.length>0;

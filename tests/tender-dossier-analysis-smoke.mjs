@@ -87,6 +87,7 @@ assert(frontend.includes('[data-pcw-tender]'),'Whole tender-card interaction is 
 assert(!/MutationObserver|setInterval\s*\(/.test(frontend),'Tender dossier UI must remain bounded and polling-free');
 assert(edge.includes("type:'input_file'"),'Edge function does not pass official dossier files to OpenAI');
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
+assert(edge.includes('manualProtectedArchiveReady')&&edge.includes("pppp-tender-protected-archive-analysis")&&edge.includes("protected_archive_precedence:true"),'Generic KRPP analysis must delegate to the saved protected archive once a manual full ZIP is available.');
 assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
 assert(edge.includes("npm:fflate@0.8.2")&&edge.includes('zipSync')&&edge.includes('fetchOfficialBinary'),'Edge function must bundle official dossier documents server-side');
 assert(edge.includes("const VERSION='v11'"),'Tender dossier analysis generation must include the rate-limit state fix');

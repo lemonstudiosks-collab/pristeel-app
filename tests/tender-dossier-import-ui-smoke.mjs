@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {JSDOM} from 'jsdom';
 
+const importerSource=fs.readFileSync('pristeel-tender-dossier-import-v1.js','utf8');
+assert(importerSource.includes('prep&&prep.already_available')&&importerSource.includes("mode:'status'")&&importerSource.includes("Dosja është tashmë në PPPP"),'Re-uploading the same KRPP ZIP must reuse saved Storage bytes instead of showing a false unsafe-document error.');
+
 const tenderId='a0c8ff1f-bd41-484a-8b82-6c9b0ee6d37e';
 const docA='Dosja e Tenderit 20.08.2026.Docx';
 const docB='Lista e pershkrimit te çmimeve - Furnizim me Material Metalik.xlsx';
