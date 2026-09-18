@@ -40,7 +40,7 @@ window.eval(mindmapSrc);
 await new Promise(r=>setTimeout(r,40));
 
 const mindmap=window.PSTOpportunitiesMindmapV5;
-assert(mindmap&&mindmap.version==='20260918-sourceradial1','mindmap v5 must own the visible Opportunities presentation');
+assert(mindmap&&mindmap.version==='20260918-sourceradial2','mindmap v5 must own the visible Opportunities presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'mindmap must render exactly once');
 assert(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),'APP branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED branch must exist');
@@ -52,15 +52,26 @@ assert(window.document.querySelector('.pst-opp-v4-source-map'),'center source ar
 assert(window.document.querySelector('.pst-opp-v4-source-lines line'),'source mindmap must include connector lines from the central hub');
 assert.equal(window.document.querySelectorAll('.pst-opp-v4-source-grid').length,0,'source filters must not fall back to a rectangular card grid');
 assert.equal(window.document.querySelectorAll('.pst-opp-v4-source-node').length,11,'all source branches must render as floating mindmap nodes');
+const sourceOrder=[...window.document.querySelectorAll('.pst-opp-v4-source-node')].map(n=>n.getAttribute('data-pst-opp-source'));
+assert.deepEqual(sourceOrder,['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'],'source nodes must follow the canonical source order around the ring');
+for(const [key,[x,y]] of Object.entries(mindmap._test.sourcePositions)){
+  const radius=Math.hypot((x-50)/44,(y-50)/45);
+  assert(radius>0.95&&radius<1.1,key+' must stay on the same outer mindmap ring instead of drifting inward');
+}
+
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="TED"]'),'TED must render inside the center source mindmap');
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="KRPP"]'),'KRPP must render inside the center source mindmap');
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="APP_AL"]'),'APP must render inside the center source mindmap');
 assert.equal(window.document.querySelector('.pst-opp-v4-field-side .pst-opp-v4-side-title')?.textContent,'Sipas fushës','right field filters must stay unchanged');
 
+let resultScrolls=0;
+window.HTMLElement.prototype.scrollIntoView=function(){if(this.classList&&this.classList.contains('pst-opp-v4-results-head'))resultScrolls++;};
 window.document.querySelector('[data-pst-opp-source="APP_AL"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'APP_AL','APP click must update canonical source state');
 assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,1,'APP click must leave one APP result in this fixture');
+assert.match(window.document.querySelector('.pst-opp-v4-results-head')?.textContent||'',/1 rezultate të shfaqura.*APP.*Të reja/,'APP click must expose the active filter and its visible result count');
+assert(resultScrolls>0,'APP click must reveal the filtered result area instead of only outlining the source node');
 assert(window.document.querySelector('[data-pcw-tender="app-1"]'),'APP result must remain interactive after rerender');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'APP rerender must not duplicate the mindmap');
 
@@ -73,6 +84,11 @@ window.document.querySelector('[data-pst-opp-source="KRPP"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'KRPP','KRPP click must remain functional after repeated rerenders');
 assert(window.document.querySelector('[data-pcw-tender="krpp-1"]'),'KRPP result must render');
+
+window.document.querySelector('[data-pst-opp-source="KCF"]').click();
+await new Promise(r=>setTimeout(r,35));
+assert.equal(api._state.source,'KCF','zero-count source click must still update canonical source state');
+assert(window.document.querySelector('#pst-opportunities-list .pst-pcw-empty'),'zero-count source click must visibly render the empty-result state');
 
 window.document.querySelector('[data-pst-opp-source="all"]').click();
 await new Promise(r=>setTimeout(r,35));

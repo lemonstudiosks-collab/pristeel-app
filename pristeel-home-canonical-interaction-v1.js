@@ -8,7 +8,7 @@
 if(window.__pstHomeCanonicalInteractionV1)return;
 window.__pstHomeCanonicalInteractionV1=true;
 
-var VERSION='20260918-opportunities-sourceradial1';
+var VERSION='20260918-opportunities-sourceradial2';
 function str(v){return String(v==null?'':v);}
 function norm(v){return str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function urgentRow(row){
@@ -50,7 +50,7 @@ function loadScript(flag,selector,src,attr,errorText){
   p.onerror=function(){console.error(errorText);};document.head.appendChild(p);
 }
 function loadOpportunitiesFilterPolish(){
-  loadScript('__pstOpportunitiesMindmapV5','script[data-pst-opportunities-filter-polish]','pristeel-opportunities-filter-polish-v1.js?v=20260918-sourceradial1','data-pst-opportunities-filter-polish','Nuk u ngarkua mindmap-i i Mundësive.');
+  loadScript('__pstOpportunitiesMindmapV5','script[data-pst-opportunities-filter-polish]','pristeel-opportunities-filter-polish-v1.js?v=20260918-sourceradial2','data-pst-opportunities-filter-polish','Nuk u ngarkua mindmap-i i Mundësive.');
 }
 function loadGlobalShell(){
   loadScript('__pstGlobalFullwidthShellV1','script[data-pst-global-fullwidth-shell]','pristeel-global-fullwidth-shell-v1.js?v=20260916-global1','data-pst-global-fullwidth-shell','Nuk u ngarkua full-width shell i PPPP.');

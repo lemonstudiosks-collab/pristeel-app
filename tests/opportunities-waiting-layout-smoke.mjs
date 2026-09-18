@@ -10,7 +10,7 @@ assert.doesNotThrow(()=>new Function(polish),'Opportunities mindmap must be vali
 assert.match(bridge,/draft_pending\|draft_created/,'draft-created registry rows must be recognized');
 assert.match(bridge,/row\.status='waiting_for_send'/,'draft rows must map to the waiting lane in memory only');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(polish,/VERSION='20260918-sourceradial1'/,'new mindmap revision must be active');
+assert.match(polish,/VERSION='20260918-sourceradial2'/,'new mindmap revision must be active');
 assert.match(polish,/data-pst-opp-source/,'source branches must be first-class functional controls');
 assert.match(polish,/data-pst-opp-field/,'field branches must be first-class functional controls');
 assert.match(polish,/data-pst-opp-lifecycle/,'status branches must be first-class functional controls');
@@ -18,6 +18,9 @@ assert.match(polish,/pst-opp-v4-status-side/,'status branches must render in the
 assert.match(polish,/pst-opp-v4-source-core/,'source branches must render in the center of the mindmap');
 assert.match(polish,/pst-opp-v4-source-map/,'source center must use a dedicated mindmap canvas');
 assert.match(polish,/pst-opp-v4-source-lines/,'source mindmap must draw connector lines');
+assert.match(polish,/EU_OFFICE_KOSOVO:\[6,50\]/,'EU Office must stay on the same outer source ring instead of sitting inside the mindmap');
+assert.match(polish,/render\(true\)/,'mindmap filter clicks must request visible result reveal after canonical rerender');
+assert.match(polish,/scrollIntoView/,'filtered results must be brought into view after a mindmap filter click');
 assert.doesNotMatch(polish,/pst-opp-v4-source-grid/,'source filters must not render as the rectangular grid from the previous version');
 assert.match(polish,/pst-opp-v4-field-side/,'field branches must remain on the right side of the mindmap');
 assert.match(polish,/data-pst-opp-view="mindmap"/,'Mindmap view control must exist');
@@ -31,5 +34,5 @@ assert.match(polish,/reconnectObserver/,'mindmap observer must reconnect only af
 assert.doesNotMatch(polish,/new MutationObserver\(schedule\)/,'mindmap must not wire an unbounded self-triggering observer directly to schedule');
 assert.match(polish,/body:has\(#page-kek-tenders\.active\) \.app-shell>\.sidebar/,'Opportunities must hide the left shell sidebar only while the Opportunities page is active');
 assert.doesNotMatch(polish,/data-pcw-lifecycle='draft'[^\n]*display:none/,'new visible owner must not depend on styling a hidden legacy draft button');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260918-sourceradial1/,'runtime must cache-bust the new Opportunities mindmap');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260918-sourceradial2/,'runtime must cache-bust the new Opportunities mindmap');
 console.log('Opportunities waiting/mindmap layout smoke: OK');
