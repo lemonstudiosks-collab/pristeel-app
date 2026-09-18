@@ -16,6 +16,7 @@ function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function active(id){var p=document.getElementById(id);return p&&p.classList.contains('active')?p:null;}
+function workbenchOwnsProject(){var p=document.getElementById('page-workspace-project');return !!(window.__pstProjectWorkbenchV3Intended||window.PSTProjectWorkbenchV3||(p&&p.getAttribute('data-pst-project-surface-owner')==='workbench-v3'));}
 function text(el){return N(el&&el.textContent);}
 function closestSurface(el,root){
   if(!el)return null;
@@ -164,7 +165,7 @@ function cleanVisibleEnglish(){
   var p=document.querySelector('.page.active');if(!p)return;var exact={Home:'Kryefaqja',Projects:'Projektet',Partners:'Partnerët',Finance:'Financat',System:'Sistemi',Files:'Skedarët',Communication:'Komunikimi',Procurement:'Prokurimi',Commercial:'Komerciale',Execution:'Ekzekutimi',Status:'Gjendja','Next step':'Hapi tjetër',Refresh:'Rifresko',Search:'Kërko',Close:'Mbyll',Cancel:'Anulo',Save:'Ruaj',Open:'Hap',Draft:'Paraprak',Waiting:'Në pritje'};
   p.querySelectorAll('button,label,small,span,b,strong,h1,h2,h3,h4,h5,h6').forEach(function(el){if(el.children.length)return;var t=S(el.textContent).trim();if(exact[t])el.textContent=exact[t];});
 }
-function apply(){cleanPartners();cleanHome();cleanProjectsList();cleanProjectSummary();cleanFilesAndCommunication();cleanSystemLabels();financeDaily();opportunitiesDaily();cleanVisibleEnglish();}
+function apply(){var wb=workbenchOwnsProject();cleanPartners();cleanHome();cleanProjectsList();if(!wb){cleanProjectSummary();cleanFilesAndCommunication();}cleanSystemLabels();financeDaily();opportunitiesDaily();if(!wb)cleanVisibleEnglish();}
 
 function css(){
   if(document.getElementById('pst-daily-zones-cleanup-css'))document.getElementById('pst-daily-zones-cleanup-css').remove();
