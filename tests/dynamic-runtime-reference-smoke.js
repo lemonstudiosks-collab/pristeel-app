@@ -76,6 +76,8 @@ const homeInteraction=fs.readFileSync(path.join(ROOT,'pristeel-home-canonical-in
 const opportunityPolish=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-filter-polish-v1.js'),'utf8');
 const waitingBridge=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-waiting-bridge-v1.js'),'utf8');
 assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260919-centered-back1'),'Fresh presentation bridge must load the current Opportunities mindmap');
+assert(homeInteraction.includes("loadScript('__pstGlobalFullwidthShellV2'"),'Fresh Home bridge must load Global Shell generation v2 even when v1 is already present');
+assert(homeInteraction.includes('pristeel-global-fullwidth-shell-v1.js?v=20260919-visible-page-back2'),'Fresh Home bridge must cache-bust the visible-page Global Shell fix');
 assert(opportunityPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunities mindmap must load the waiting lifecycle bridge');
 assert.doesNotThrow(()=>new Function(opportunityPolish),'Opportunities mindmap must remain valid JavaScript');
 assert.doesNotThrow(()=>new Function(waitingBridge),'Opportunities waiting bridge must remain valid JavaScript');
