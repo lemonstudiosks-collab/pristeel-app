@@ -102,6 +102,7 @@ jobs:
         with:
           node-version: '22'
       - name: Discover broader TED GC project awards
+        continue-on-error: true
         run: node scripts/ted-gc-award-sync-v2.mjs
       - name: Apply TED GC precision gate
         run: node scripts/ted-gc-award-precision-v3.mjs
