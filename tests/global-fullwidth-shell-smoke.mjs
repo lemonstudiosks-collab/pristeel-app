@@ -29,7 +29,9 @@ assert(window.document.body.classList.contains('pst-global-fullwidth-shell'),'Gl
 assert.equal(window.document.querySelectorAll('#pst-global-page-backbar').length,0,'Home must not show Kthehu');
 
 assert(window.__pstGlobalFullwidthShellV2,'v2 must take ownership even when stale v1 marker already exists');
-assert.equal(window.document.getElementById('pst-global-fullwidth-shell-v1-css'),null,'v2 must remove stale v1 shell CSS that could hide Opportunities Back');
+const canonicalShellStyle=window.document.getElementById('pst-global-fullwidth-shell-v1-css');
+assert(canonicalShellStyle,'v2 must preserve the single canonical shell stylesheet id');
+assert(!canonicalShellStyle.textContent.includes('#page-kek-tenders .pst-opp-v4-back{display:none!important}'),'v2 must overwrite stale CSS that hid the Opportunities Back control');
 
 
 // Reproduce production routing: Home can keep a stale .active class while only display changes.
