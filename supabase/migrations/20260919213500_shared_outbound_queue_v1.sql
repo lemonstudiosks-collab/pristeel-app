@@ -413,9 +413,9 @@ begin
   v_remaining:=greatest(0,v_limit-v_sent-v_reserved);
 
   -- Re-plan unapproved, unsent rows idempotently.
-  update public.pppp_outbound_queue_v1
+  update public.pppp_outbound_queue_v1 q
      set status='candidate',planned_date=null,planned_at=null,planned_rank=null,updated_at=now()
-   where planned_date=p_day and status='planned' and approved_for_send=false and sent_at is null;
+   where q.planned_date=p_day and q.status='planned' and q.approved_for_send=false and q.sent_at is null;
 
   with ranked_recipient as (
     select q.id,

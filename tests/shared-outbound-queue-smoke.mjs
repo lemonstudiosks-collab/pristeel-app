@@ -34,6 +34,8 @@ assert.ok(sql.includes('partition by lower(coalesce(q.company_domain'),'daily pl
 assert.ok(sql.includes('at time zone v_policy.timezone'),'planned slots must use the shared timezone');
 assert.ok(sql.includes('make_interval(mins=>v_policy.planned_gap_minutes'),'planned sends must be spaced by the policy gap');
 assert.ok(sql.includes('not (h.source=q.source and h.source_record_id=q.source_record_id)'),'same GC campaign follow-up must not be blocked by its own first touch');
+assert.ok(sql.includes("update public.pppp_outbound_queue_v1 q\n     set status='candidate'"),'planner reset update must use a table alias');
+assert.ok(sql.includes("q.approved_for_send=false"),'planner reset must qualify approved_for_send to avoid PL/pgSQL output-column ambiguity');
 
 for(const forbidden of [
   '/messages/send',
