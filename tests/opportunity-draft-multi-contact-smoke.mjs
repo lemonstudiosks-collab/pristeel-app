@@ -45,6 +45,15 @@ assert(!emails.includes('bad@acme'),'invalid email must be excluded');
 assert(!emails.includes('wrong.person@unrelated-vendor.com'),'wrong target_email must not validate itself as a company domain');
 assert(!emails.includes('verified.but.wrong@agency.net'),'verified label alone must not bypass company attribution');
 assert(!emails.includes('someone@gmail.com'),'free consumer email must never become an automatic B2B draft recipient');
+const unsafePayload={winner:{website:'https://www.example-steel.com/',contact_enrichment:{organizations:[{name:'Example Steel',domain:'example-steel.com',verified:true,contacts:[
+  {type:'email',value:'investorrelations@example-steel.com',source_type:'official_website',confidence:'high',purpose:'general'},
+  {type:'email',value:'werken@example-steel.com',source_type:'official_website',confidence:'high',purpose:'general'},
+  {type:'email',value:'imie.nazwisko@example-steel.com',source_type:'official_website',confidence:'high',purpose:'person'},
+  {type:'email',value:'u003einfo@example-steel.com',source_type:'official_website',confidence:'high',purpose:'general'},
+  {type:'email',value:'procurement@example-steel.com',source_type:'official_website',confidence:'high',purpose:'procurement'}
+]}]}}};
+const safeOnly=resolveTedRecipients({route:'TED_GC',target_company:'Example Steel'},unsafePayload,20).map(r=>r.email);
+assert.deepEqual(safeOnly,['procurement@example-steel.com'],'unsafe/placeholder recipients must be excluded before draft creation');
 
 assert.equal(emails.filter(e=>e==='alice@acme-steel.de').length,1,'same email must not get duplicate drafts');
 const alice=recipients.find(r=>r.email==='alice@acme-steel.de');
