@@ -5,10 +5,11 @@
  */
 (function(){
 'use strict';
-if(window.__pstProductionSurfaceOwnerV1)return;
+if(window.__pstProductionSurfaceOwnerV2)return;
+window.__pstProductionSurfaceOwnerV2=true;
 window.__pstProductionSurfaceOwnerV1=true;
 
-var VERSION='20260919-opportunities-back-visible1';
+var VERSION='20260919-opportunities-back-visible2';
 var scheduled=false;
 var observer=null;
 var FIN_BRANCHES=[
@@ -111,5 +112,5 @@ window.addEventListener('click',clickCapture,true);
 window.addEventListener('pst:page-opened',schedule);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTProductionSurfaceOwnerV1={version:VERSION,repair:repair,goHome:goHome,hideSidebar:hideSidebar,ensureFinanceMap:ensureFinanceMap,showFinanceMap:showFinanceMap,openFinanceBranch:openFinanceBranch,_test:{financeBranches:FIN_BRANCHES}};
+window.PSTProductionSurfaceOwnerV2=window.PSTProductionSurfaceOwnerV1={version:VERSION,repair:repair,goHome:goHome,hideSidebar:hideSidebar,ensureFinanceMap:ensureFinanceMap,showFinanceMap:showFinanceMap,openFinanceBranch:openFinanceBranch,_test:{financeBranches:FIN_BRANCHES}};
 })();
