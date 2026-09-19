@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "dba1b085f40400f0259f64a208b90874c11938c8",
+  "auditedAtCommit": "6bc741c63d7199371064ca7ce7d07c8c9b6269f4",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "c2266eafea3cab113ffa5d6b860ec4ae0cbf3523"
+    "bootstrapGitBlobSha": "4c7ceceee46b56efc5b8ae6d4a1bf15139030d17"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
