@@ -34,7 +34,14 @@ window.supaFetch=async path=>{
     {id:'ted-1',title:'Structural steelworks award',authority:'EU Authority',publication_no:'TED-1',relevance_score:94,status:'new',published_date:'2026-09-14',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',company_type:'gc_epc'}}},
     {id:'ted-other',title:'Bridge rehabilitation award',authority:'EU Authority',publication_no:'TED-2',relevance_score:93,status:'new',published_date:'2026-09-14',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Consortium',company_type:'unknown'}}},
     {id:'ted-producer',title:'Steel structure fabrication award',authority:'EU Authority',publication_no:'TED-3',relevance_score:99,status:'new',published_date:'2026-09-14',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Steelworks AG',company_type:'producer'}}},
-    {id:'wb-1',title:'World Bank road infrastructure works',authority:'World Bank',relevance_score:88,status:'new',published_date:'2026-09-13',payload:{source:'WORLD_BANK',notice_phase:'opportunity'}}
+    {id:'mca-1',title:'Solar power substation package',authority:'MCA Kosovo',relevance_score:87,status:'new',published_date:'2026-09-13',payload:{source:'MCA_KOSOVO',notice_phase:'opportunity'}},
+    {id:'kcf-1',title:'Furnizim me pajisje',authority:'KCF',relevance_score:86,status:'new',published_date:'2026-09-13',payload:{source:'KCF',notice_phase:'opportunity'}},
+    {id:'rcf-1',title:'Engineering supervision service',authority:'RCF',relevance_score:85,status:'new',published_date:'2026-09-13',payload:{source:'RCF',notice_phase:'opportunity'}},
+    {id:'ebrd-1',title:'Administrative opportunity package',authority:'EBRD',relevance_score:84,status:'new',published_date:'2026-09-13',payload:{source:'EBRD_ECEPP',notice_phase:'opportunity'}},
+    {id:'wb-1',title:'World Bank road infrastructure works',authority:'World Bank',relevance_score:88,status:'new',published_date:'2026-09-13',payload:{source:'WORLD_BANK',notice_phase:'opportunity'}},
+    {id:'ungm-1',title:'UNGM procurement package',authority:'UNGM',relevance_score:83,status:'new',published_date:'2026-09-13',payload:{source:'UNGM',notice_phase:'opportunity'}},
+    {id:'undp-1',title:'UNDP Kosovo procurement package',authority:'UNDP Kosovo',relevance_score:82,status:'new',published_date:'2026-09-13',payload:{source:'UNDP_KOSOVO',notice_phase:'opportunity'}},
+    {id:'euoffice-1',title:'EU Office Kosovo procurement package',authority:'EU Office Kosovo',relevance_score:81,status:'new',published_date:'2026-09-13',payload:{source:'EU_OFFICE_KOSOVO',notice_phase:'opportunity'}}
   ];
   if(String(path).startsWith('partners?')) return [];
   return [];
@@ -146,20 +153,61 @@ await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.winner_group,'all','returning to TED source must clear winner subfilter');
 assert(window.document.querySelector('[data-pcw-tender="ted-1"]'),'TED click must recover immediately after winner-role rerenders');
 
-window.document.querySelector('[data-pst-opp-source="KRPP"]').click();
-await new Promise(r=>setTimeout(r,35));
-assert.equal(api._state.source,'KRPP','KRPP click must remain functional after repeated rerenders');
-assert(window.document.querySelector('[data-pcw-tender="krpp-1"]'),'KRPP result must render');
-
-window.document.querySelector('[data-pst-opp-source="KCF"]').click();
-await new Promise(r=>setTimeout(r,35));
-assert.equal(api._state.source,'KCF','zero-count source click must still update canonical source state');
-assert(window.document.querySelector('#pst-opportunities-list .pst-pcw-empty'),'zero-count source click must visibly render the empty-result state');
-
+const sourceExpectations=[
+  ['TED',3],
+  ['KRPP',1],
+  ['APP_AL',1],
+  ['MCA_KOSOVO',1],
+  ['KCF',1],
+  ['RCF',1],
+  ['EBRD_ECEPP',1],
+  ['WORLD_BANK',1],
+  ['UNGM',1],
+  ['UNDP_KOSOVO',1],
+  ['EU_OFFICE_KOSOVO',1]
+];
+for(const [source,expectedCount] of sourceExpectations){
+  const node=window.document.querySelector('[data-pst-opp-source="'+source+'"]');
+  assert(node,source+' source node must exist before click');
+  node.click();
+  await new Promise(r=>setTimeout(r,35));
+  assert.equal(api._state.source,source,source+' click must update canonical source state');
+  assert.equal(api._state.lifecycle,'all',source+' click must clear lifecycle filtering');
+  assert.equal(api._state.field,'all',source+' click must clear field filtering');
+  assert.equal(api._state.winner_group,'all',source+' click must clear TED winner-role filtering');
+  const canonicalRows=Array.from(api._test.opportunityRows());
+  assert.equal(canonicalRows.length,expectedCount,source+' canonical filter must return the expected source rows');
+  assert(canonicalRows.every(r=>api._test.tenderSource(r)===source),source+' canonical rows must belong only to the selected source');
+  assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,expectedCount,source+' click must rerender the visible dataset');
+  const selected=window.document.querySelector('[data-pst-opp-source="'+source+'"]');
+  assert(selected&&selected.classList.contains('on'),source+' node must visibly stay selected after rerender');
+}
 window.document.querySelector('[data-pst-opp-source="all"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'all','all-sources control must reset the canonical source state');
-assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,6,'all sources must restore every fixture');
+assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,13,'all sources must restore every fixture');
+
+const fieldExpectations=['construction','infrastructure','energy','supply','services','other'];
+for(const fieldId of fieldExpectations){
+  const branch=window.document.querySelector('[data-pst-opp-field="'+fieldId+'"]');
+  assert(branch,fieldId+' field branch must exist before click');
+  branch.click();
+  await new Promise(r=>setTimeout(r,35));
+  assert.equal(api._state.field,fieldId,fieldId+' click must update canonical field state');
+  assert.equal(api._state.source,'all',fieldId+' click must clear source filtering');
+  assert.equal(api._state.lifecycle,'all',fieldId+' click must clear lifecycle filtering');
+  assert.equal(api._state.winner_group,'all',fieldId+' click must clear TED winner-role filtering');
+  const fieldRows=Array.from(api._test.opportunityRows());
+  assert(fieldRows.length>0,fieldId+' fixture must produce at least one real result');
+  assert(fieldRows.every(r=>api._test.opportunityField(r)===fieldId),fieldId+' canonical rows must satisfy only the selected field');
+  assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,fieldRows.length,fieldId+' click must rerender the visible dataset');
+  const selectedField=window.document.querySelector('[data-pst-opp-field="'+fieldId+'"]');
+  assert(selectedField&&selectedField.classList.contains('on'),fieldId+' branch must visibly stay selected after rerender');
+}
+window.document.querySelector('[data-pst-opp-field="all"]').click();
+await new Promise(r=>setTimeout(r,35));
+assert.equal(api._state.field,'all','all-fields control must reset the canonical field state');
+assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,13,'all fields must restore the complete fixture');
 
 window.document.querySelector('[data-pst-opp-lifecycle="all"]').click();
 await new Promise(r=>setTimeout(r,35));
