@@ -5,6 +5,8 @@ on:
     paths:
       - 'supabase/migrations/20260919213500_shared_outbound_queue_v1.sql'
       - 'supabase/migrations/20260919221000_shared_outbound_queue_email_regex_fix_v1.sql'
+      - 'supabase/migrations/20260919224500_outbound_live_draft_preflight_v1.sql'
+      - 'supabase/migrations/20260919224500_outbound_live_draft_preflight_v1.sql'
       - 'tests/shared-outbound-queue-smoke.mjs'
       - '.github/workflows/shared-outbound-queue-smoke.yml'
   push:
