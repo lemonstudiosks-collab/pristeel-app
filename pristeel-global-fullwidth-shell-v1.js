@@ -1,20 +1,22 @@
-/* PRISTEEL Global Full-width Shell v1
+/* PRISTEEL Global Full-width Shell v2
  * Presentation/navigation owner only.
  * Removes the persistent sidebar on every page and exposes one Home back control
  * on non-Home pages. No data reads/writes and no business actions.
  */
 (function(){
 'use strict';
-if(window.__pstGlobalFullwidthShellV1)return;
+if(window.__pstGlobalFullwidthShellV2)return;
+window.__pstGlobalFullwidthShellV2=true;
 window.__pstGlobalFullwidthShellV1=true;
 
-var VERSION='20260919-local-page-back1';
+var VERSION='20260919-visible-page-back2';
 var scheduled=false;
 
 function installStyle(){
-  if(document.getElementById('pst-global-fullwidth-shell-v1-css'))return;
+  if(document.getElementById('pst-global-fullwidth-shell-v2-css'))return;
+  var old=document.getElementById('pst-global-fullwidth-shell-v1-css');if(old)old.remove();
   var s=document.createElement('style');
-  s.id='pst-global-fullwidth-shell-v1-css';
+  s.id='pst-global-fullwidth-shell-v2-css';
   s.textContent=`
 .app-shell{grid-template-columns:minmax(0,1fr)!important}
 .app-shell>.sidebar,.app-shell>aside.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;overflow:hidden!important}
@@ -41,10 +43,10 @@ function isVisiblePage(page){
   return true;
 }
 function activePage(){
-  var pages=Array.prototype.slice.call(document.querySelectorAll('.page.active,[id^="page-"][class~="active"]'));
-  if(!pages.length)return null;
-  var visible=pages.filter(isVisiblePage);
-  return visible[visible.length-1]||pages[pages.length-1]||null;
+  var active=Array.prototype.slice.call(document.querySelectorAll('.page.active,[id^="page-"][class~="active"]')).filter(isVisiblePage);
+  if(active.length)return active[active.length-1];
+  var visible=Array.prototype.slice.call(document.querySelectorAll('.page,[id^="page-workspace-"],#page-kek-tenders,#page-dashboard,#page-home,#page-finance,#page-contacts,#page-partners,#page-system')).filter(isVisiblePage);
+  return visible[visible.length-1]||null;
 }
 function isHome(page){
   if(!page)return true;
@@ -70,7 +72,7 @@ function goHome(){
 function decorate(){
   scheduled=false;
   installStyle();
-  var page=activePage(),opportunitiesOwnsBack=!!(page&&page.id==='page-kek-tenders'&&page.querySelector('[data-pst-opp-back]'));
+  var page=activePage(),localBack=page&&page.id==='page-kek-tenders'?page.querySelector('[data-pst-opp-back]'):null,opportunitiesOwnsBack=!!(localBack&&isVisiblePage(localBack));
   document.querySelectorAll('#pst-global-page-backbar').forEach(function(bar){
     if(opportunitiesOwnsBack||!page||isHome(page)||bar.parentNode!==page)bar.remove();
   });
@@ -110,5 +112,5 @@ window.addEventListener('pst:page-opened',schedule);
 window.addEventListener('pst:home-canonical-rendered',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 
-window.PSTGlobalFullwidthShellV1={version:VERSION,refresh:decorate,goHome:goHome,_test:{activePage:activePage,isHome:isHome,isVisiblePage:isVisiblePage}};
+window.PSTGlobalFullwidthShellV2=window.PSTGlobalFullwidthShellV1={version:VERSION,refresh:decorate,goHome:goHome,_test:{activePage:activePage,isHome:isHome,isVisiblePage:isVisiblePage}};
 })();
