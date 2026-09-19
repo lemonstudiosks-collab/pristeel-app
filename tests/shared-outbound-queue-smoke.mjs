@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
 const sql=await readFile(new URL('../supabase/migrations/20260919213500_shared_outbound_queue_v1.sql',import.meta.url),'utf8');
+const live=await readFile(new URL('../supabase/migrations/20260919224500_outbound_live_draft_preflight_v1.sql',import.meta.url),'utf8');
 
 for(const token of [
   'create table if not exists public.pppp_outbound_policy_v1',
@@ -48,3 +49,19 @@ for(const forbidden of [
 ]) assert.equal(sql.includes(forbidden),false,'shared queue must not contain an email execution path: '+forbidden);
 
 console.log('shared TED + GC outbound queue smoke: ok');
+
+for(const token of [
+  'create table if not exists public.pppp_outbound_live_drafts_v1',
+  'pppp_outbound_reconcile_live_drafts_v1',
+  'gmail_draft_missing',
+  'manual_live_draft',
+  "lower(public.pppp_outbound_domain_v1(d.recipient_email,null)) <> 'prissteel.com'",
+  'exists (',
+  'public.pppp_outbound_live_drafts_v1 d where d.draft_id=q.gmail_draft_id',
+  'approved_for_send=false',
+  'human_send_required',
+  'auto_send'
+]) assert.ok(live.includes(token),'missing live draft preflight safeguard: '+token);
+
+for(const forbidden of ['/messages/send','/drafts/send','gmail.send','send_email(','send_draft('])
+  assert.equal(live.includes(forbidden),false,'live draft preflight must never send mail: '+forbidden);
