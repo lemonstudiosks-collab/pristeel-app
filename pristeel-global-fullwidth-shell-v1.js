@@ -8,7 +8,7 @@
 if(window.__pstGlobalFullwidthShellV1)return;
 window.__pstGlobalFullwidthShellV1=true;
 
-var VERSION='20260916-global-fullwidth1';
+var VERSION='20260919-local-page-back1';
 var scheduled=false;
 
 function installStyle(){
@@ -24,7 +24,6 @@ body.pst-global-fullwidth-shell .content{width:100%!important;max-width:none!imp
 #pst-global-back-home{height:42px;padding:0 17px;border:1px solid #3f8199;border-radius:13px;background:#4f97af;color:#fff;font:700 13px/1 inherit;letter-spacing:.01em;cursor:pointer;box-shadow:0 5px 14px rgba(63,127,152,.14);transition:background .15s ease,border-color .15s ease,transform .15s ease}
 #pst-global-back-home:hover{background:#3f7f98;border-color:#3f7f98;transform:translateY(-1px)}
 #pst-global-back-home:focus-visible{outline:3px solid rgba(79,151,175,.2);outline-offset:2px}
-body.pst-global-fullwidth-shell #page-kek-tenders .pst-opp-v4-back{display:none!important}
 body.pst-global-fullwidth-shell #page-workspace-projects [data-pmm-back]{display:none!important}
 @media(max-width:720px){body.pst-global-fullwidth-shell .content{padding-left:14px!important;padding-right:14px!important}#pst-global-page-backbar{margin-bottom:8px}#pst-global-back-home{height:40px;padding:0 14px}}
 `;
@@ -76,6 +75,7 @@ function decorate(){
     if(!page||isHome(page)||bar.parentNode!==page)bar.remove();
   });
   if(!page||isHome(page))return;
+  if(page.id==='page-kek-tenders'&&page.querySelector('[data-pst-opp-back]'))return;
   if(page.querySelector(':scope > #pst-global-page-backbar'))return;
   var bar=document.createElement('div');
   bar.id='pst-global-page-backbar';
