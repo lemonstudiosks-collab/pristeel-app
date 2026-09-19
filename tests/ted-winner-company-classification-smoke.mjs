@@ -33,11 +33,20 @@ assert.equal(consortium.confidence,'high');
 const legalNameGc=classifyCompanyText(`Awarded company Muster Bauunternehmen GmbH`);
 assert.equal(legalNameGc.company_type,'gc_epc');
 
+const birchmeierGc=classifyCompanyText('Awarded company Birchmeier Bau AG');
+assert.equal(birchmeierGc.company_type,'gc_epc','standalone Bau legal-name signal must classify a construction company as GC/EPC');
+assert.notEqual(birchmeierGc.company_type,'producer');
+const stahlbauStillProducer=classifyCompanyText('Awarded company Beispiel Stahlbau AG');
+assert.equal(stahlbauStillProducer.company_type,'producer','Stahlbau must remain a producer signal and must not be caught by standalone Bau');
+
+
 const unknown=classifyCompanyText(`Engineering solutions for demanding customers across several sectors.`);
 assert.equal(unknown.company_type,'unknown');
 
 const source=await import('node:fs').then(fs=>fs.readFileSync(new URL('../scripts/ted-winner-company-classification.mjs',import.meta.url),'utf8'));
 assert(!source.includes('winnerNames(w).length&&w.contact_enrichment'),'Company-role classification must not depend on contact enrichment.');
 assert(source.includes("(!c||c.version!==VERSION)"),'Current-generation unresolved classifications must be skipped after one pass so later awards are not starved.');
+assert(source.includes('canonicalNames'),'multilingual TED labels must be canonicalized before organization-count classification');
+assert(source.includes('winner-company-v4'),'classification generation must advance after identity correction');
 
 console.log('TED winner company classification smoke: OK');
