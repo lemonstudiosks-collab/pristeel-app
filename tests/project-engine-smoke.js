@@ -20,7 +20,8 @@ var stacon=E.buildDossier({
   guarantees:[{id:'g-1',status:'issued',amount:8737.50}],
   projectRequirements:[{id:'quality-1',title:'Quality documents approval',status:'review'}],
   tasks:[{id:'task-1',title:'Approve production quality documents',detail:'Client approval is required before factory inspection.',status:'hapur',source:'execution_release_readiness',priority:'high',due_at:'2026-09-02'}],
-  emails:[{gmail_message_id:'mail-1',subject:'Please confirm quality document approval',sent_at:'2026-08-29'}]
+  emails:[{gmail_message_id:'mail-1',subject:'Please confirm quality document approval',sent_at:'2026-08-29'}],
+  contextFacts:[{id:'fact-1',category:'supplier_pricing',fact_key:'supplier_quote.sector',value:{supplier:'Sector Construction',unit_price_eur_per_m:155,currency:'EUR'}}]
 });
 eq(stacon.lifecycle.code,'EXECUTION','STACON lifecycle');
 eq(stacon.lifecycle.pre_award_editable,false,'execution pre-award workflow must be read-only');
@@ -32,6 +33,8 @@ eq(stacon.invoices_out[0].paid,true,'client advance paid');
 eq(stacon.invoices_in[0].paid,true,'supplier advance paid');
 eq(stacon.next_action.title,'Approve production quality documents','execution next action comes from real task');
 ok(stacon.supplier_offers.some(function(x){return x.supplier_name==='Sector Construction';}),'historical supplier evidence retained');
+ok(stacon.evidence.contextFacts&&stacon.evidence.contextFacts.length===1,'context facts must survive canonical dossier assembly');
+eq(stacon.evidence.contextFacts[0].value.unit_price_eur_per_m,155,'context fact pricing must remain unchanged for Workbench consumers');
 
 var pre=E.buildDossier({project:project('11111111-1111-4111-8111-111111111111','Aktiv','analysis','rfq_in','Tender'),bom:[{id:'b'}],tasks:[{id:'t',title:'Send approved RFQ',status:'hapur',source:'rfq'}],emails:[{id:'pre-mail',subject:'Tender request'}],files:[{id:'pre-doc',file_name:'Tender.pdf'}],invoicesOut:[{id:'pre-invoice',gross_amount:100}]});
 eq(pre.lifecycle.code,'PRE_AWARD','pre-award lifecycle');
