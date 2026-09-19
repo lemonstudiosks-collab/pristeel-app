@@ -261,6 +261,28 @@ begin
     source_updated_at=excluded.source_updated_at,payload=excluded.payload,updated_at=now();
   get diagnostics v_gc2=row_count;
 
+  -- Retire queue rows whose canonical source is no longer send-ready.
+  update public.pppp_outbound_queue_v1 q
+     set status='stale',suppression_reason='canonical_source_not_send_ready',planned_date=null,planned_at=null,planned_rank=null,updated_at=now()
+   where q.source='TED' and q.source_record_id is not null and q.sent_at is null
+     and not exists (
+       select 1 from public.pppp_opportunity_outreach_registry_v1 r
+       where r.id=q.source_record_id and r.status in ('draft_created','sent')
+     );
+
+  update public.pppp_outbound_queue_v1 q
+     set status='stale',suppression_reason='canonical_source_not_send_ready',planned_date=null,planned_at=null,planned_rank=null,updated_at=now()
+   where q.source='GC' and q.source_record_id is not null and q.sent_at is null
+     and not exists (
+       select 1 from public.pppp_gc_prospects_v1 p
+       where p.id=q.source_record_id
+         and (
+           (q.touch_no=1 and (p.first_draft_id is not null or p.first_sent_at is not null))
+           or
+           (q.touch_no=2 and (p.second_draft_id is not null or p.second_sent_at is not null))
+         )
+     );
+
   -- Re-evaluate only unsent/unapproved rows. Human-approved rows are never silently changed.
   update public.pppp_outbound_queue_v1 q
      set status='candidate',suppression_reason=null,planned_date=null,planned_at=null,planned_rank=null,updated_at=now()
