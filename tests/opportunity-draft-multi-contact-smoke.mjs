@@ -8,7 +8,7 @@ const action={
   id:'11111111-1111-4111-8111-111111111111',
   route:'TED_GC',
   target_company:'Acme Steel GmbH',
-  target_email:'info@acme-steel.de'
+  target_email:'wrong.person@unrelated-vendor.com'
 };
 const payload={
   winner:{
@@ -28,7 +28,9 @@ const payload={
     }]}
   },
   winner_contacts:[
-    {email:'alice@acme-steel.de',full_name:'Alice Example',job_title:'Procurement Manager',verification_status:'verified',source_type:'official_website'},
+    {email:'alice@acme-steel.de',full_name:'Alice Example',job_title:'Procurement Manager',verification_status:'verified',source_type:'official_website',source_url:'https://www.acme-steel.de/team'},
+    {email:'verified.but.wrong@agency.net',full_name:'Wrong Person',verification_status:'verified',source_type:'official_website',source_url:'https://agency.net/profile'},
+    {email:'someone@gmail.com',full_name:'Free Mail',verification_status:'verified',source_type:'official_website',source_url:'https://www.acme-steel.de/team'},
     {email:'ALICE@ACME-STEEL.DE',full_name:'Alice Example',verification_status:'verified'},
     {email:'bob@acme-steel.de',contact_name:'Bob Example',confidence:'high',source_type:'TED'}
   ]
@@ -40,6 +42,10 @@ assert.equal(new Set(emails).size,emails.length,'recipient emails must be unique
 for(const expected of ['info@acme-steel.de','procurement@acme-steel.de','sales@acme-steel.de','person2@acme-steel.de','max.mustermann@acme-steel.de','office.team@acme-steel.de','alice@acme-steel.de','bob@acme-steel.de'])assert(emails.includes(expected),`missing ${expected}`);
 assert(!emails.includes('external@agency.example'),'unrelated external-domain enrichment email must be excluded');
 assert(!emails.includes('bad@acme'),'invalid email must be excluded');
+assert(!emails.includes('wrong.person@unrelated-vendor.com'),'wrong target_email must not validate itself as a company domain');
+assert(!emails.includes('verified.but.wrong@agency.net'),'verified label alone must not bypass company attribution');
+assert(!emails.includes('someone@gmail.com'),'free consumer email must never become an automatic B2B draft recipient');
+
 assert.equal(emails.filter(e=>e==='alice@acme-steel.de').length,1,'same email must not get duplicate drafts');
 const alice=recipients.find(r=>r.email==='alice@acme-steel.de');
 assert.equal(alice?.name,'Alice Example');
@@ -88,14 +94,16 @@ assert.equal(resolveDraftLanguage(beckAction,beckTender,beckPerson),'de','German
 assert.equal(tedReference(beckTender),'613835-2026','internal publication reference must remain available for PPPP metadata');
 const german=buildTedDraftContent(beckAction,beckTender,beckPerson);
 assert.equal(german.language,'de');
-assert.equal(german.subject,'Zusätzliche Stahlbau-Fertigungskapazität | PRISTEEL');
+assert.match(german.subject,/^Zusätzliche Fertigungskapazität – .+ \| PRISTEEL$/);
+assert(german.subject.length<140,'subject should stay concise even when the project title is long');
 assert(!/TED|613835-2026/i.test(german.subject),'customer-facing subject must not expose source name or notice reference');
 assert(german.body.startsWith('Guten Tag Benjamin Beck,'),'German person draft must use a German personal greeting');
 assert(german.body.includes('Sanierung Hermann-Greiner-Realschule'),'project may be referenced naturally in the prose');
 assert(!/TED-Referenz|Auftraggeber|ted\.europa\.eu|613835-2026|\bTED\b/i.test(german.body),'plain body must not expose technical source metadata');
 assert(!german.body.includes('Stadtverwaltung Neckarsulm'),'contracting authority metadata must not be inserted as a technical block');
 assert(german.body.includes('Mit freundlichen Grüßen'),'German draft must close in German');
-for(const line of ['Arianit Vllahiu','Head of Business Development','+383 (0) 44 244 699','arianit.vllahiu@prissteel.com','www.prissteel.com','linkedin.com/in/arianit-vllahiu-8a779b3b4'])assert(german.body.toLowerCase().includes(line.toLowerCase()),`plain signature must include ${line}`);
+for(const line of ['Arianit Vllahiu','Head of Business Development','+383 (0) 44 244 699','arianit.vllahiu@prissteel.com','www.prissteel.com'])assert(german.body.toLowerCase().includes(line.toLowerCase()),`plain signature must include ${line}`);
+assert(!/linkedin/i.test(german.body)&&!/linkedin/i.test(german.html_body),'LinkedIn must stay out of future drafts because it harmed deliverability');
 assert(!german.body.includes('Ky tekst'),'internal Albanian draft brief must never leak into outgoing copy');
 assert(!/\bBest regards\b|\bDear\b|\bwe became aware\b/i.test(german.body),'German draft must not mix English body copy');
 assert(german.html_body.includes('<img'),'HTML body must include the PRISTEEL logo image');
@@ -106,13 +114,33 @@ assert.equal(german.signature,PRISTEEL_SIGNATURE,'canonical plain signature must
 assert.equal(german.signature_html,PRISTEEL_SIGNATURE_HTML,'canonical HTML signature must be reused exactly');
 const germanGeneral=buildTedDraftContent(beckAction,beckTender,beckGeneral);
 assert(germanGeneral.body.startsWith('Sehr geehrte Damen und Herren,'),'functional German mailbox must use company/general greeting');
+assert.equal(germanGeneral.recipient_kind,'general');
+assert.match(germanGeneral.subject,/^Ansprechpartner externe Fertigung – /);
+assert(/wer bei Ihnen für externe Fertigungspartner/i.test(germanGeneral.body),'general producer inbox must route to the responsible person instead of receiving a full sales pitch');
+assert(!/EN 1090-2/i.test(germanGeneral.body),'generic inbox routing draft must stay short and must not include the capability pitch');
+
+const birchGcAction={route:'TED_GC',target_company:'Birchmeier Bau AG',target_email:'info@birchmeier-bau.ch',tender_title:'Switzerland – Construction work – UW Beznau PSU Los A Baumeister'};
+const birchGcTender={title:birchGcAction.tender_title,publication_no:'642032-2026',winner:{name:'Birchmeier Bau AG',country:'CHE'},place_of_performance:['CHE']};
+const birchGeneral=buildTedDraftContent(birchGcAction,birchGcTender,{email:'info@birchmeier-bau.ch',purpose:'general'});
+assert.equal(birchGeneral.language,'de');
+assert.equal(birchGeneral.recipient_kind,'general');
+assert.match(birchGeneral.subject,/^Ansprechpartner Stahlbeschaffung – /);
+assert(/wer bei Ihnen für die Beschaffung bzw. Vergabe/i.test(birchGeneral.body),'GC generic inbox must be used to find the responsible steel-procurement person');
+assert(!/EN 1090-2/i.test(birchGeneral.body),'GC routing message must be low-friction');
+
+const birchDirect=buildTedDraftContent(birchGcAction,birchGcTender,{email:'max.muster@birchmeier-bau.ch',name:'Max Muster',purpose:'procurement'});
+assert.equal(birchDirect.recipient_kind,'direct');
+assert.match(birchDirect.subject,/^Stahlbaupaket – /);
+assert(/bereits vergeben ist oder noch beschafft wird/i.test(birchDirect.body),'direct GC contact should receive the project-specific sourcing question');
+assert(/EN 1090-2/i.test(birchDirect.body),'direct contact may receive the concise capability proof');
+
 
 const enAction={...beckAction,target_company:'Example Steel Ltd',target_email:'procurement@example.co.uk',tender_title:'United Kingdom – Structural steelworks'};
 const enTender={...beckTender,title:enAction.tender_title,publication_no:'700001-2026',procurement_no:'TED-700001-2026',source_url:'https://ted.europa.eu/en/notice/700001-2026/html',winner:{name:'Example Steel Ltd',country:'GBR'},place_of_performance:['UK']};
 const english=buildTedDraftContent(enAction,enTender,{email:'procurement@example.co.uk',purpose:'procurement'});
 assert.equal(english.language,'en');
-assert.equal(english.subject,'Additional steel fabrication capacity | PRISTEEL');
-assert(!/TED|700001-2026/i.test(english.subject),'English subject must not expose source metadata');
+assert.match(english.subject,/^Additional fabrication capacity – United Kingdom – Structural steelworks \| PRISTEEL$/);
+assert(!/\bTED\b|700001-2026/i.test(english.subject),'English subject must not expose source metadata');
 assert(english.body.includes('United Kingdom – Structural steelworks'),'English copy may naturally mention the project');
 assert(english.body.includes('Best regards'),'English draft must stay English');
 assert(!/TED reference|Contracting authority|ted\.europa\.eu|700001-2026|\bTED\b/i.test(english.body),'English body must not expose technical source metadata');
@@ -147,5 +175,9 @@ assert(!src.includes('FUTURE_DRAFT_CUTOFF'),'deleted historical drafts must be e
 assert(src.includes('To: ${headerSafe(to)}'),'each draft must have exactly its own recipient');
 assert(!src.includes('draft_brief'),'internal draft brief must not be interpolated into the outgoing message generator');
 assert(src.includes("actionId"),'narrow action-scoped production verification must be supported');
+assert(src.includes('authorizationMode'),'draft generator must distinguish scheduler from explicit authenticated user requests');
+assert(src.includes('action_id_required_for_user_request'),'authenticated UI requests must never trigger a broad batch without an explicit action id');
+assert(src.includes("mode==='user'"),'user-triggered execution must remain action-scoped');
+
 
 console.log('TED registry-tracked HTML/language/signature/no-source-metadata Gmail draft policy smoke passed.');
