@@ -127,18 +127,18 @@ window.document.querySelector('[data-pst-opp-winner="gc_epc"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'TED');
 assert.equal(api._state.winner_group,'gc_epc','GC winner filter must update canonical state');
-assert.deepEqual(api._test.opportunityRows().map(x=>x.id),['ted-1'],'GC winner filter must return only GC/EPC winners');
+assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-1'],'GC winner filter must return only GC/EPC winners');
 assert(window.document.querySelector('[data-pcw-tender="ted-1"]'));
 
 window.document.querySelector('[data-pst-opp-winner="other"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.winner_group,'other','other/review winner filter must update canonical state');
-assert.deepEqual(api._test.opportunityRows().map(x=>x.id),['ted-other'],'other/review must exclude known producers and GC winners');
+assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-other'],'other/review must exclude known producers and GC winners');
 
 window.document.querySelector('[data-pst-opp-winner="producer"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.winner_group,'producer','producer filter must update canonical state');
-assert.deepEqual(api._test.opportunityRows().map(x=>x.id),['ted-producer'],'producer filter must isolate steel producers/competitors');
+assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-producer'],'producer filter must isolate steel producers/competitors');
 assert(window.document.querySelector('[data-pcw-tender="ted-producer"]'));
 
 window.document.querySelector('[data-pst-opp-source="TED"]').click();
