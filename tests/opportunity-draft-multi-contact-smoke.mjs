@@ -51,8 +51,8 @@ const alice=recipients.find(r=>r.email==='alice@acme-steel.de');
 assert.equal(alice?.name,'Alice Example');
 assert.equal(recipientGreeting(action.target_company,alice),'Dear Alice Example,','known contact name must be used');
 const inferred=recipients.find(r=>r.email==='max.mustermann@acme-steel.de');
-assert.equal(inferred?.name,'Max Mustermann','clear firstname.lastname person email may infer a conservative name');
-assert.equal(recipientGreeting(action.target_company,inferred),'Dear Max Mustermann,','clear classified person must receive personal greeting');
+assert.equal(inferred?.name,'','email local-parts must never be promoted into an unverified person name');
+assert.equal(recipientGreeting(action.target_company,inferred),'Dear Acme Steel GmbH team,','unnamed classified person email must use the company greeting');
 const general=recipients.find(r=>r.email==='info@acme-steel.de');
 assert.equal(recipientGreeting(action.target_company,general),'Dear Acme Steel GmbH team,','unnamed contact must use company greeting');
 const functional=recipients.find(r=>r.email==='office.team@acme-steel.de');
@@ -94,7 +94,7 @@ assert.equal(resolveDraftLanguage(beckAction,beckTender,beckPerson),'de','German
 assert.equal(tedReference(beckTender),'613835-2026','internal publication reference must remain available for PPPP metadata');
 const german=buildTedDraftContent(beckAction,beckTender,beckPerson);
 assert.equal(german.language,'de');
-assert.match(german.subject,/^Zusätzliche Fertigungskapazität – .+ \| PRISTEEL$/);
+assert.match(german.subject,/^Zusätzliche Fertigungskapazität – Sanierung Hermann-Greiner-Realschule/);
 assert(german.subject.length<140,'subject should stay concise even when the project title is long');
 assert(!/TED|613835-2026/i.test(german.subject),'customer-facing subject must not expose source name or notice reference');
 assert(german.body.startsWith('Guten Tag Benjamin Beck,'),'German person draft must use a German personal greeting');
@@ -115,36 +115,44 @@ assert.equal(german.signature_html,PRISTEEL_SIGNATURE_HTML,'canonical HTML signa
 const germanGeneral=buildTedDraftContent(beckAction,beckTender,beckGeneral);
 assert(germanGeneral.body.startsWith('Sehr geehrte Damen und Herren,'),'functional German mailbox must use company/general greeting');
 assert.equal(germanGeneral.recipient_kind,'general');
-assert.match(germanGeneral.subject,/^Ansprechpartner externe Fertigung – /);
-assert(/wer bei Ihnen für externe Fertigungspartner/i.test(germanGeneral.body),'general producer inbox must route to the responsible person instead of receiving a full sales pitch');
-assert(!/EN 1090-2/i.test(germanGeneral.body),'generic inbox routing draft must stay short and must not include the capability pitch');
+assert.match(germanGeneral.subject,/^Zusätzliche Fertigungskapazität – /);
+assert(/zertifiziertes Produktionsnetzwerk/i.test(germanGeneral.body),'general producer inbox must receive the full professional capacity proposition');
+assert(/Weiterleitung/i.test(germanGeneral.body),'general producer inbox must still make forwarding easy when another person is responsible');
 
 const birchGcAction={route:'TED_GC',target_company:'Birchmeier Bau AG',target_email:'info@birchmeier-bau.ch',tender_title:'Switzerland – Construction work – UW Beznau PSU Los A Baumeister'};
 const birchGcTender={title:birchGcAction.tender_title,publication_no:'642032-2026',winner:{name:'Birchmeier Bau AG',country:'CHE'},place_of_performance:['CHE']};
 const birchGeneral=buildTedDraftContent(birchGcAction,birchGcTender,{email:'info@birchmeier-bau.ch',purpose:'general'});
 assert.equal(birchGeneral.language,'de');
 assert.equal(birchGeneral.recipient_kind,'general');
-assert.match(birchGeneral.subject,/^Ansprechpartner Stahlbeschaffung – /);
-assert(/wer bei Ihnen für die Beschaffung bzw. Vergabe/i.test(birchGeneral.body),'GC generic inbox must be used to find the responsible steel-procurement person');
-assert(!/EN 1090-2/i.test(birchGeneral.body),'GC routing message must be low-friction');
+assert.match(birchGeneral.subject,/^Stahlbau & Fertigung – UW Beznau PSU Los A Baumeister \| PRISTEEL$/);
+assert(/Fertigungs- und Lieferpartner/i.test(birchGeneral.body),'GC generic inbox must receive a substantive project-specific introduction');
+assert(/Materialbeschaffung, Fertigung, Oberflächenschutz, Qualitätsdokumentation, Verpackung und Lieferung/i.test(birchGeneral.body),'GC draft must explain the coordinated supply scope');
+assert(/Weiterleitung an den zuständigen Einkauf/i.test(birchGeneral.body),'GC draft must make forwarding to procurement easy');
 
 const birchDirect=buildTedDraftContent(birchGcAction,birchGcTender,{email:'max.muster@birchmeier-bau.ch',name:'Max Muster',purpose:'procurement'});
 assert.equal(birchDirect.recipient_kind,'direct');
-assert.match(birchDirect.subject,/^Stahlbaupaket – /);
-assert(/bereits vergeben ist oder noch beschafft wird/i.test(birchDirect.body),'direct GC contact should receive the project-specific sourcing question');
-assert(/EN 1090-2/i.test(birchDirect.body),'direct contact may receive the concise capability proof');
+assert.match(birchDirect.subject,/^Stahlbau & Fertigung – /);
+assert(/Fertigungs- und Lieferpartner/i.test(birchDirect.body),'direct GC contact must receive the same professional project-specific proposition');
+assert(/technisches und kommerzielles Angebot/i.test(birchDirect.body),'direct GC contact must receive a concrete quotation call-to-action');
 
 
 const enAction={...beckAction,target_company:'Example Steel Ltd',target_email:'procurement@example.co.uk',tender_title:'United Kingdom – Structural steelworks'};
 const enTender={...beckTender,title:enAction.tender_title,publication_no:'700001-2026',procurement_no:'TED-700001-2026',source_url:'https://ted.europa.eu/en/notice/700001-2026/html',winner:{name:'Example Steel Ltd',country:'GBR'},place_of_performance:['UK']};
 const english=buildTedDraftContent(enAction,enTender,{email:'procurement@example.co.uk',purpose:'procurement'});
 assert.equal(english.language,'en');
-assert.match(english.subject,/^Additional fabrication capacity – United Kingdom – Structural steelworks \| PRISTEEL$/);
+assert.match(english.subject,/^Additional steel fabrication capacity – Structural steelworks \| PRISTEEL$/);
 assert(!/\bTED\b|700001-2026/i.test(english.subject),'English subject must not expose source metadata');
-assert(english.body.includes('United Kingdom – Structural steelworks'),'English copy may naturally mention the project');
-assert(english.body.includes('Best regards'),'English draft must stay English');
+assert(english.body.includes('Structural steelworks'),'English copy may naturally mention the cleaned project title');
+assert(english.body.includes('Kind regards'),'English draft must stay English');
 assert(!/TED reference|Contracting authority|ted\.europa\.eu|700001-2026|\bTED\b/i.test(english.body),'English body must not expose technical source metadata');
 assert(!/Përshëndetje|Me respekt|Mit freundlichen Grüßen/.test(english.body),'English draft must not mix Albanian or German copy');
+const albaniaEnglish=buildTedDraftContent({...enAction,tender_title:'Albania – Structural steelworks – Industrial steel package'},{...enTender,title:'Albania – Structural steelworks – Industrial steel package',winner:{name:'Example SHPK',country:'ALB'}},{email:'info@example.al',purpose:'general'});
+assert.equal(albaniaEnglish.language,'en','Albania must use English under the approved TED outreach language policy');
+const bosniaEnglish=buildTedDraftContent({...enAction,tender_title:'Bosnia and Herzegovina – Structural steelworks – Bridge package'},{...enTender,title:'Bosnia and Herzegovina – Structural steelworks – Bridge package',winner:{name:'Example d.o.o.',country:'BIH'}},{email:'info@example.ba',purpose:'general'});
+assert.equal(bosniaEnglish.language,'en','Bosnia and Herzegovina must use English under the approved TED outreach language policy');
+const croatiaBcs=buildTedDraftContent({...enAction,tender_title:'Croatia – Structural steelworks – Bridge package'},{...enTender,title:'Croatia – Structural steelworks – Bridge package',winner:{name:'Example d.o.o.',country:'HRV'}},{email:'info@example.hr',purpose:'general'});
+assert.equal(croatiaBcs.language,'bcs','Croatia must use Serbo-Croatian/BSC copy');
+assert(/Poštovani/.test(croatiaBcs.body),'BCS draft must use a local-language greeting');
 assert(english.html_body.includes(PRISTEEL_LOGO_URL),'English HTML signature must also include the PRISTEEL logo');
 
 const src=fs.readFileSync(new URL('../supabase/functions/pppp-opportunity-draft-generator/index.ts',import.meta.url),'utf8');
@@ -157,6 +165,8 @@ assert(src.includes('Content-Type: text/html; charset=UTF-8'),'future drafts mus
 assert(src.includes('Content-Type: text/plain; charset=UTF-8'),'future drafts must retain a plain-text fallback');
 assert(src.includes("method:'POST'"),'drafts must be created through Gmail drafts POST');
 assert(!src.includes("method:'PUT'"),'existing Gmail drafts must not be rewritten in place');
+assert(src.includes('refresh_existing'),'explicit refresh mode must exist for user-approved replacement of old drafts');
+assert(src.includes('deleteDraftForRefresh'),'refresh must replace an old draft without introducing a send path');
 assert(src.includes("write_policy:'registry_state_machine_v1'"),'generator result must disclose registry-based behavior');
 assert(src.includes("gmail_draft_write_policy:'registry_state_machine_v1'"),'PPPP state must persist the registry policy');
 assert(src.includes('pppp_opportunity_outreach_registry_v1'),'durable registry must be canonical');
@@ -175,6 +185,7 @@ assert(!src.includes('FUTURE_DRAFT_CUTOFF'),'deleted historical drafts must be e
 assert(src.includes('To: ${headerSafe(to)}'),'each draft must have exactly its own recipient');
 assert(!src.includes('draft_brief'),'internal draft brief must not be interpolated into the outgoing message generator');
 assert(src.includes("actionId"),'narrow action-scoped production verification must be supported');
+assert(src.includes('consortium_project_outreach_draft')&&src.includes('general_project_outreach_draft'),'generator must cover consortium and unresolved-role TED drafts when a verified recipient exists');
 assert(src.includes('authorizationMode'),'draft generator must distinguish scheduler from explicit authenticated user requests');
 assert(src.includes('action_id_required_for_user_request'),'authenticated UI requests must never trigger a broad batch without an explicit action id');
 assert(src.includes("mode==='user'"),'user-triggered execution must remain action-scoped');
