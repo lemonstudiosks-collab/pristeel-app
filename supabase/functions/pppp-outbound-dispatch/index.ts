@@ -40,7 +40,7 @@ async function gmailToken(){
   const key=await crypto.subtle.importKey("pkcs8",pemToArrayBuffer(sa.private_key),{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);
   const sig=new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5",key,new TextEncoder().encode(unsigned)));
   const jwt=`${unsigned}.${b64url(sig)}`;
-  const r=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"urn:ietf:params:oauth-type:jwt-bearer".replace("type:jwt","type:jwt-bearer"),assertion:jwt})});
+  const r=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer",assertion:jwt})});
   const data=await r.json().catch(()=>({}));
   if(!r.ok)throw new Error(`google_token_${r.status}:${JSON.stringify(data).slice(0,300)}`);
   cachedToken={token:data.access_token,exp:now+(data.expires_in||3600)};
