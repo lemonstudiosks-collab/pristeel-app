@@ -370,6 +370,7 @@ declare
   v_policy public.pppp_outbound_policy_v1%rowtype;
   v_limit integer;
   v_sent integer;
+  v_reserved integer;
   v_remaining integer;
 begin
   select * into v_policy from public.pppp_outbound_policy_v1 where id='global';
@@ -384,7 +385,10 @@ begin
   from public.pppp_outbound_queue_v1 q
   where q.sent_at is not null
     and (q.sent_at at time zone v_policy.timezone)::date=p_day;
-  v_remaining:=greatest(0,v_limit-v_sent);
+  select count(*) into v_reserved
+  from public.pppp_outbound_queue_v1 q
+  where q.planned_date=p_day and q.status='planned' and q.approved_for_send=true and q.sent_at is null;
+  v_remaining:=greatest(0,v_limit-v_sent-v_reserved);
 
   -- Re-plan unapproved, unsent rows idempotently.
   update public.pppp_outbound_queue_v1
@@ -439,9 +443,9 @@ begin
   update public.pppp_outbound_queue_v1 q
      set status='planned',
          planned_date=p_day,
-         planned_rank=c.rn+v_sent,
+         planned_rank=c.rn+v_sent+v_reserved,
          planned_at=((p_day::timestamp+v_policy.day_start)
-                     + make_interval(mins=>v_policy.planned_gap_minutes*(c.rn+v_sent-1)))
+                     + make_interval(mins=>v_policy.planned_gap_minutes*(c.rn+v_sent+v_reserved-1)))
                     at time zone v_policy.timezone,
          approved_for_send=false,
          updated_at=now()
