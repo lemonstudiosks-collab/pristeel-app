@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v9-professional-ted-outreach';
+const GENERATOR='pppp-opportunity-draft-generator-v10-preflight-safe';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=20;
 const MAX_DRAFT_WRITES_PER_RUN=60;
@@ -98,10 +98,63 @@ async function markSent(row:any,meta:any){const now=new Date().toISOString(),at=
 async function markMissing(row:any){const now=new Date().toISOString();const {data,error}=await db.from(REGISTRY).update({status:'draft_missing',last_checked_at:now,last_error:null,updated_at:now}).eq('id',row.id).select('*').single();if(error)throw error;return data;}
 async function markError(row:any,e:any){try{await db.from(REGISTRY).update({status:'error',last_error:text(e?.message||e,1000),last_checked_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',row.id);}catch{}}
 
+function expectedTedRoute(tender:any){
+  const w=tender?.winner&&typeof tender.winner==='object'?tender.winner:{};
+  const t=text(w.company_type||w?.company_classification?.company_type||'',80).toLowerCase();
+  if(t==='producer')return'TED_PRODUCER';
+  if(t==='trader_consortium'||t==='consortium_mixed')return'TED_CONSORTIUM';
+  if(t==='gc_epc')return'TED_GC';
+  if(t==='unknown'||!t)return'TED_GENERAL';
+  return'TED_GENERAL';
+}
+async function retireObsoleteDrafts(a:any,keepEmails:Set<string>,reason:string,budget:{writes:number}){
+  const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',a.id);
+  if(error)throw error;
+  let retired=0;
+  for(const row of data||[]){
+    if(row.status==='sent'||keepEmails.has(normalizeEmail(row.recipient_email)))continue;
+    if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)break;
+    try{
+      if(row.status==='draft_created'&&row.gmail_draft_id){
+        const live=await gmailDraft(row.gmail_draft_id);
+        if(live)await deleteDraftForRefresh(row.gmail_draft_id);
+      }
+      const now=new Date().toISOString();
+      const u=await db.from(REGISTRY).update({
+        status:'draft_missing',
+        last_checked_at:now,
+        last_error:reason,
+        updated_at:now,
+        payload:{...(row.payload||{}),retired_reason:reason,retired_by:GENERATOR,retired_at:now}
+      }).eq('id',row.id);
+      if(u.error)throw u.error;
+      retired++;budget.writes++;
+    }catch(e){await markError(row,e);}
+  }
+  return retired;
+}
+
 async function persistActionState(a:any,p:any,recipients:any[]){const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',a.id).order('created_at',{ascending:true});if(error)throw error;const rows=data||[],drafts=rows.map((r:any)=>({email:r.recipient_email,name:r.recipient_name||null,draft_id:r.gmail_draft_id||null,message_id:r.gmail_message_id||r.gmail_draft_message_id||null,thread_id:r.gmail_thread_id||null,created_at:r.draft_created_at||r.created_at,updated_at:r.updated_at,generator:r.generator||GENERATOR,language:r.language||null,subject:r.subject||null,mime_type:r.mime_type||null,html:r.html===true,status:r.status,outreach_id:r.outreach_id,rfc_message_id:r.rfc_message_id,sent_at:r.sent_at||null}));const byEmail=new Map(rows.map((r:any)=>[r.recipient_email,r])),allCovered=recipients.every((r:any)=>['draft_created','sent'].includes(byEmail.get(normalizeEmail(r.email))?.status)),firstDraft=rows.find((r:any)=>r.status==='draft_created'),firstAny=rows[0]||null,next={...p,gmail_drafts:drafts,gmail_draft_count:rows.filter((r:any)=>r.status==='draft_created').length,gmail_sent_count:rows.filter((r:any)=>r.status==='sent').length,gmail_recipient_count:recipients.length,gmail_recipients:recipients.map((r:any)=>({email:r.email,name:r.name||null,job_title:r.job_title||null,purpose:r.purpose||null,confidence:r.confidence||null,source_type:r.source_type||null,source_url:r.source_url||null,company_attribution:r.company_attribution||null})),gmail_outreach_registry_version:'v1',gmail_draft_generator_target:GENERATOR,gmail_draft_generator_complete:allCovered,gmail_draft_generator:GENERATOR,gmail_draft_write_policy:'registry_state_machine_v1',gmail_draft_html:true,gmail_auto_send:false,human_send_required:true,gmail_draft_id:firstDraft?.gmail_draft_id||null,gmail_message_id:firstAny?.gmail_message_id||firstAny?.gmail_draft_message_id||null,gmail_thread_id:firstAny?.gmail_thread_id||null,gmail_draft_created_at:firstDraft?.draft_created_at||null};const u=await db.from('pppp_opportunity_actions').update({payload:next,updated_at:new Date().toISOString()}).eq('id',a.id);if(u.error)throw u.error;return next;}
 
-async function processAction(a:any,budget:{writes:number},refreshExisting=false){let p=a.payload&&typeof a.payload==='object'?a.payload:{},tender=await tenderContext(a.tender_watch_id);const recipients=/^TED_/i.test(text(a.route,80))?resolveTedRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1);if(!recipients.length)return{action_key:a.action_key,event:'no_recipients',recipients:0,created:0,refreshed:0,preserved:0,sent:0,remaining:0};await seedLegacyTenderDraft(a,tender,recipients);let created=0,refreshed=0,preserved=0,sent=0,failures:any[]=[];
-  for(const recipient of recipients){let row=await ensureRegistry(a,recipient);try{
+async function processAction(a:any,budget:{writes:number},refreshExisting=false){
+  let p=a.payload&&typeof a.payload==='object'?a.payload:{},tender=await tenderContext(a.tender_watch_id);
+  const route=text(a.route,80).toUpperCase(),expected=/^TED_/i.test(route)?expectedTedRoute(tender):route;
+  if(/^TED_/i.test(route)&&route!==expected){
+    const retired=refreshExisting?await retireObsoleteDrafts(a,new Set(),`route_mismatch:${route}->${expected}`,budget):0;
+    return{action_key:a.action_key,company:a.target_company,event:'route_mismatch',route,expected_route:expected,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired,remaining:0};
+  }
+  const recipients=/^TED_/i.test(route)?resolveTedRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1);
+  const keepEmails=new Set(recipients.map((r:any)=>normalizeEmail(r.email)));
+  const retired=refreshExisting?await retireObsoleteDrafts(a,keepEmails,'recipient_no_longer_preflight_eligible',budget):0;
+  if(!recipients.length){
+    p=await persistActionState(a,p,recipients);
+    return{action_key:a.action_key,event:'no_recipients',recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired,remaining:0};
+  }
+  await seedLegacyTenderDraft(a,tender,recipients);
+  let created=0,refreshed=0,preserved=0,sent=0,failures:any[]=[];
+  for(const recipient of recipients){
+    let row=await ensureRegistry(a,recipient);
+    try{
       if(row.status==='sent'){sent++;continue;}
       if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)continue;
       let wasRefresh=false;
@@ -116,12 +169,30 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false)
       }
       if(row.status!=='draft_created'){const sentMessage=await findSent(row);if(sentMessage){row=await markSent(row,sentMessage);sent++;continue;}}
       if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)continue;
-      const d=await writeDraft(a,tender,recipient,row),at=new Date().toISOString(),patch={status:'draft_created',recipient_name:recipient.name||null,gmail_draft_id:d.data.id||null,gmail_draft_message_id:d.data.message?.id||null,gmail_thread_id:d.data.message?.threadId||null,draft_created_at:at,last_checked_at:at,last_error:null,generator:GENERATOR,language:d.content.language,subject:d.content.subject,mime_type:'multipart/alternative',html:true,updated_at:at,payload:{...(row.payload||{}),tender_reference:d.content.tender_reference||null,tender_url:d.content.tender_url||null,refreshed_from_generator:wasRefresh?text(row.generator,200)||'unknown':null}};const u=await db.from(REGISTRY).update(patch).eq('id',row.id).select('*').single();if(u.error){await deleteDraft(d.data.id||'');throw u.error;}row=u.data;created++;if(wasRefresh)refreshed++;budget.writes++;
+      const d=await writeDraft(a,tender,recipient,row),at=new Date().toISOString(),patch={status:'draft_created',recipient_name:recipient.name||null,gmail_draft_id:d.data.id||null,gmail_draft_message_id:d.data.message?.id||null,gmail_thread_id:d.data.message?.threadId||null,draft_created_at:at,last_checked_at:at,last_error:null,generator:GENERATOR,language:d.content.language,subject:d.content.subject,mime_type:'multipart/alternative',html:true,updated_at:at,payload:{...(row.payload||{}),tender_reference:d.content.tender_reference||null,tender_url:d.content.tender_url||null,refreshed_from_generator:wasRefresh?text(row.generator,200)||'unknown':null}};
+      const u=await db.from(REGISTRY).update(patch).eq('id',row.id).select('*').single();if(u.error){await deleteDraft(d.data.id||'');throw u.error;}row=u.data;created++;if(wasRefresh)refreshed++;budget.writes++;
     }catch(e){failures.push({email:normalizeEmail(recipient.email),error:text((e as any)?.message||e,500)});await markError(row,e);}
   }
-  p=await persistActionState(a,p,recipients);const {data:rows,error}=await db.from(REGISTRY).select('recipient_email,status').eq('action_id',a.id);if(error)throw error;const current=rows||[],covered=recipients.filter((r:any)=>['draft_created','sent'].includes(current.find((x:any)=>x.recipient_email===normalizeEmail(r.email))?.status)).length;
-  return{action_key:a.action_key,company:a.target_company,event:covered>=recipients.length?'outreach_ready':'outreach_partial',recipients:recipients.length,created,refreshed,preserved,sent,covered,remaining:Math.max(0,recipients.length-covered),failures};
+  p=await persistActionState(a,p,recipients);
+  const {data:rows,error}=await db.from(REGISTRY).select('recipient_email,status').eq('action_id',a.id);if(error)throw error;
+  const current=rows||[],covered=recipients.filter((r:any)=>['draft_created','sent'].includes(current.find((x:any)=>x.recipient_email===normalizeEmail(r.email))?.status)).length;
+  return{action_key:a.action_key,company:a.target_company,event:covered>=recipients.length?'outreach_ready':'outreach_partial',recipients:recipients.length,created,refreshed,preserved,sent,retired,covered,remaining:Math.max(0,recipients.length-covered),failures};
 }
 
-async function run(limit=500,actionId='',refreshExisting=false){let q=db.from('pppp_opportunity_action_queue_v2').select('*').eq('status','draft_review').in('action_type',['gc_project_outreach_draft','producer_capacity_outreach_draft','consortium_project_outreach_draft','general_project_outreach_draft']).order('updated_at',{ascending:true});if(text(actionId,80))q=q.eq('id',text(actionId,80));const {data,error}=await q.limit(Math.min(1000,Math.max(1,limit)));if(error)throw error;const budget={writes:0},results:any[]=[],errors:any[]=[];let ready=0,partial=0,noRecipients=0,created=0,refreshed=0,preserved=0,sent=0;for(const a of data||[]){try{const r=await processAction(a,budget,refreshExisting);results.push(r);created+=Number(r.created||0);refreshed+=Number(r.refreshed||0);preserved+=Number(r.preserved||0);sent+=Number(r.sent||0);if(r.event==='outreach_ready')ready++;else if(r.event==='outreach_partial')partial++;else if(r.event==='no_recipients')noRecipients++;if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)break;}catch(e){errors.push({action_key:a.action_key,error:text((e as any)?.message||e,500)});}}return{candidates:(data||[]).length,actions_ready:ready,actions_partial:partial,no_recipients:noRecipients,drafts_created:created,drafts_refreshed:refreshed,drafts_updated:0,drafts_preserved:preserved,sent_already:sent,draft_writes:budget.writes,failed:errors.length,errors:errors.slice(0,10),results:results.slice(0,50),generator:GENERATOR,registry:REGISTRY,write_policy:'registry_state_machine_v1',sent_match_policy:'thread_id_plus_pppp_headers',stable_headers:['X-PPPP-Outreach-ID','X-PPPP-Action-ID'],html:true,separate_draft_per_recipient:true,human_send_required:true,auto_send:false,refresh_existing:refreshExisting,max_contacts_per_action:MAX_CONTACTS_PER_ACTION,draft_write_budget_per_run:MAX_DRAFT_WRITES_PER_RUN};}
+async function run(limit=500,actionId='',refreshExisting=false){
+  let q=db.from('pppp_opportunity_action_queue_v2').select('*').eq('status','draft_review').in('action_type',['gc_project_outreach_draft','producer_capacity_outreach_draft','consortium_project_outreach_draft','general_project_outreach_draft']).order('updated_at',{ascending:true});
+  if(text(actionId,80))q=q.eq('id',text(actionId,80));
+  const {data,error}=await q.limit(Math.min(1000,Math.max(1,limit)));if(error)throw error;
+  const budget={writes:0},results:any[]=[],errors:any[]=[];
+  let ready=0,partial=0,noRecipients=0,routeMismatch=0,created=0,refreshed=0,preserved=0,sent=0,retired=0;
+  for(const a of data||[]){
+    try{
+      const r=await processAction(a,budget,refreshExisting);results.push(r);
+      created+=Number(r.created||0);refreshed+=Number(r.refreshed||0);preserved+=Number(r.preserved||0);sent+=Number(r.sent||0);retired+=Number(r.retired||0);
+      if(r.event==='outreach_ready')ready++;else if(r.event==='outreach_partial')partial++;else if(r.event==='no_recipients')noRecipients++;else if(r.event==='route_mismatch')routeMismatch++;
+      if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)break;
+    }catch(e){errors.push({action_key:a.action_key,error:text((e as any)?.message||e,500)});}
+  }
+  return{candidates:(data||[]).length,actions_ready:ready,actions_partial:partial,no_recipients:noRecipients,route_mismatch:routeMismatch,drafts_created:created,drafts_refreshed:refreshed,drafts_retired:retired,drafts_updated:0,drafts_preserved:preserved,sent_already:sent,draft_writes:budget.writes,failed:errors.length,errors:errors.slice(0,10),results:results.slice(0,50),generator:GENERATOR,registry:REGISTRY,write_policy:'registry_state_machine_v1',sent_match_policy:'thread_id_plus_pppp_headers',stable_headers:['X-PPPP-Outreach-ID','X-PPPP-Action-ID'],html:true,separate_draft_per_recipient:true,human_send_required:true,auto_send:false,refresh_existing:refreshExisting,max_contacts_per_action:MAX_CONTACTS_PER_ACTION,draft_write_budget_per_run:MAX_DRAFT_WRITES_PER_RUN};
+}
 Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});const mode=await authorizationMode(req);if(!mode)return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:cors});try{const u=new URL(req.url);let body:any={};if(req.method==='POST'){try{body=await req.json();}catch{}}const limit=Number(body?.limit||u.searchParams.get('limit')||500),actionId=text(body?.action_id||u.searchParams.get('action_id')||'',80),refreshExisting=String(body?.refresh_existing??u.searchParams.get('refresh_existing')??'false').toLowerCase()==='true';if(mode==='user'&&!actionId)return new Response(JSON.stringify({ok:false,error:'action_id_required_for_user_request',auto_send:false,human_send_required:true}),{status:400,headers:cors});const out=await run(limit,actionId,refreshExisting);return new Response(JSON.stringify({ok:true,...out,authorization_mode:mode}),{headers:cors});}catch(e){return new Response(JSON.stringify({ok:false,error:text((e as any)?.message||e,1000),auto_send:false,human_send_required:true}),{status:500,headers:cors});}});
