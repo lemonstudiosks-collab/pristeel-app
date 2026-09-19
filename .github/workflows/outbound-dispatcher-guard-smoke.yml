@@ -1,0 +1,25 @@
+name: Guarded outbound dispatcher smoke
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20260919233500_guarded_outbound_dispatcher_v1.sql'
+      - 'supabase/functions/pppp-outbound-dispatch/**'
+      - 'tests/outbound-dispatcher-guard-smoke.mjs'
+      - '.github/workflows/outbound-dispatcher-guard-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20260919233500_guarded_outbound_dispatcher_v1.sql'
+      - 'supabase/functions/pppp-outbound-dispatch/**'
+      - 'tests/outbound-dispatcher-guard-smoke.mjs'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/outbound-dispatcher-guard-smoke.mjs
