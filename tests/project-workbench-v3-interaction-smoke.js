@@ -144,8 +144,8 @@ function last(a){return a[a.length-1];}
 
   const factOnly={
     contextFacts:[
-      {id:'f1',category:'supplier_pricing',fact_key:'supplier_quote.sector',created_at:'2026-09-16T18:18:46Z',value:{supplier:'Sector Construction',currency:'EUR',unit_price_eur_per_m:155,pricing_unit:'m',received_at:'2026-09-16T18:18:46Z',gmail_thread_id:'thread-sector'}},
-      {id:'f2',category:'commercial_offer',fact_key:'client_offer.ognjen',created_at:'2026-09-17T06:00:00Z',value:{document_type:'client_offer',doc_nr:'PST-OFF-2026-09-031',currency:'EUR',unit_price_eur_per_m:180,pricing_unit:'m',status:'sent',sent_at:'2026-09-17T06:00:00Z',gmail_thread_id:'thread-client'}}
+      {id:'f1',category:'supplier_pricing',fact_key:'supplier_quote.sector',evidence_status:'observed',fact_status:'observed',created_at:'2026-09-16T18:18:46Z',value:{supplier:'Sector Construction',currency:'EUR',unit_price_eur_per_m:155,pricing_unit:'m',received_at:'2026-09-16T18:18:46Z',gmail_thread_id:'thread-sector'}},
+      {id:'f2',category:'commercial_offer',fact_key:'client_offer.ognjen',evidence_status:'observed',fact_status:'observed',created_at:'2026-09-17T06:00:00Z',value:{document_type:'client_offer',doc_nr:'PST-OFF-2026-09-031',currency:'EUR',unit_price_eur_per_m:180,pricing_unit:'m',status:'sent',sent_at:'2026-09-17T06:00:00Z',gmail_thread_id:'thread-client'}}
     ]
   };
   const factSuppliers=window.PSTProjectWorkbenchV3._test.supplierOffers(factOnly);
@@ -155,6 +155,12 @@ function last(a){return a[a.length-1];}
   assert(factOffers.length===1,'Client offer context fact must surface as one PriSteel offer evidence');
   assert(window.PSTProjectWorkbenchV3._test.priceLabel(factOffers[0]).includes('180,00 EUR/m'),'Client offer context fact must preserve 180 EUR/m');
   assert(window.PSTProjectWorkbenchV3._test.effectiveOffer(factOnly).doc_nr==='PST-OFF-2026-09-031','Registered client offer context fact must become effective offer evidence');
+  assert(window.PSTProjectWorkbenchV3.currentNext(factOnly).title==='Oferta është dërguar','Commercial context facts must outrank stale RFQ-only fallback without inferring a client wait');
+  const withFinalConfirmation={contextFacts:factOnly.contextFacts.concat([{id:'f3',category:'email_event_ai',fact_key:'email_event.ai.1a0b32b9a637ef9a',evidence_status:'observed',fact_status:'observed',created_at:'2026-09-18T06:19:00Z',value:{summary:'PriSteel kërkoi konfirmimin final të kalkulimit nga Sector Construction.',next_action:'Prit konfirmimin final nga Fadili / Sector Construction.',workflow_state:'wait_for_supplier',action_required:false,source_email:'1a0b32b9a637ef9a',source_sent_at:'2026-09-18T06:19:00Z',source_subject:'Konfirmim final i kalkulimit – Ognjen / Projekti 01 & 02'}}])};
+  assert(window.PSTProjectWorkbenchV3.currentNext(withFinalConfirmation).title==='Prit konfirmimin final nga Fadili / Sector Construction.','Newer verified event fact must drive the contextual next action');
+  assert(window.PSTProjectWorkbenchV3._test.workflowFacts(withFinalConfirmation)[0].gmail_message_id==='1a0b32b9a637ef9a','Verified event fact must preserve Gmail evidence identity');
+  const suggestedOnly={contextFacts:factOnly.contextFacts.concat([{id:'s1',category:'email_event_ai',fact_key:'email_event.ai.suggested',evidence_status:'unverified',fact_status:'suggested',created_at:'2026-09-19T06:00:00Z',value:{next_action:'This suggestion must not drive TANI',source_sent_at:'2026-09-19T06:00:00Z'}}])};
+  assert(window.PSTProjectWorkbenchV3.currentNext(suggestedOnly).title==='Oferta është dërguar','Unverified suggested facts must not drive Project Detail state');
 
   const base=window.__pstIntegrityLastData.project;
   base.business_type='trading'; assert(window.PSTProjectWorkbenchV3.businessType(window.__pstIntegrityLastData)==='trading','Trading type detection failed');
