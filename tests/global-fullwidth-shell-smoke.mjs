@@ -8,6 +8,7 @@ assert(!/supaFetch|\/rest\/v1\/|\.insert\(|\.update\(|\.delete\(/.test(src),'Glo
 assert(src.includes('.app-shell>.sidebar')&&src.includes('display:none!important'),'Global shell must hide the persistent sidebar');
 assert(src.includes("PSTPrimaryNavResilienceV10")&&src.includes("PSTHomeCanonicalV1")&&src.includes("pstWorkspaceGo('home')"),'Global back must use canonical Home navigation fallbacks');
 assert(src.includes("attributeFilter:['class','style','hidden']"),'Global shell must react when routing changes page visibility without cleaning stale active classes');
+assert(src.includes('childList:true'),'Global shell must notice when the Opportunities-local Back control mounts after the page route');
 assert(!src.includes('#page-kek-tenders .pst-opp-v4-back{display:none!important}'),'Global shell must never hide the Opportunities-local Back control');
 
 
