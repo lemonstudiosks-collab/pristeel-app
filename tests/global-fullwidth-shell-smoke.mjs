@@ -20,7 +20,7 @@ window.requestAnimationFrame=(fn)=>{fn();return 1;};
 let homeCalls=0;
 window.PSTPrimaryNavResilienceV10={openHome(){homeCalls++;}};
 window.__pstGlobalFullwidthShellV1=true;
-const stale=document.createElement('style');stale.id='pst-global-fullwidth-shell-v1-css';stale.textContent='body #page-kek-tenders .pst-opp-v4-back{display:none!important}';window.document.head.appendChild(stale);
+const stale=window.document.createElement('style');stale.id='pst-global-fullwidth-shell-v1-css';stale.textContent='body #page-kek-tenders .pst-opp-v4-back{display:none!important}';window.document.head.appendChild(stale);
 const ctx=dom.getInternalVMContext();
 vm.runInContext(src,ctx,{filename:'pristeel-global-fullwidth-shell-v1.js'});
 window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
