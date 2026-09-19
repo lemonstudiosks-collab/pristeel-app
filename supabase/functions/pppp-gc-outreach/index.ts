@@ -34,6 +34,13 @@ function encodeHeader(s:string){
 }
 function esc(s:any){return text(s,20000).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function domainFromEmail(v:any){const e=lower(v);const i=e.lastIndexOf('@');return i>0?e.slice(i+1).replace(/^www\./,''):null;}
+function contactDomain(p:any){return lower(domainFromEmail(p?.contact_email)||p?.company_domain||'')||null;}
+function safePersonName(v:any){
+  const n=text(v,160).replace(/\s+/g,' ').trim();
+  if(!n||n.length<3||n.length>80||/[0-9]/.test(n)||n.split(/\s+/).length>6)return '';
+  if(/[,;]|\b(gmbh|s\.?r\.?o|sp\.?\s*z|ltd|limited|a\/s|company|office|department|závod|strasse|straße|street|road)\b/i.test(n))return '';
+  return n;
+}
 function header(m:any,name:string){return text((m?.payload?.headers||[]).find((h:any)=>lower(h.name)===name.toLowerCase())?.value,2000);}
 function emailsIn(v:any){return (text(v,4000).match(emailRe)||[]).map((x:string)=>x.toLowerCase());}
 function sameDomain(email:string,domain:string|null){const d=domainFromEmail(email);return !!d&&!!domain&&(d===domain||d.endsWith('.'+domain)||domain.endsWith('.'+d));}
@@ -83,15 +90,15 @@ function projectName(p:any){
   const a=Array.isArray(p.current_projects)?p.current_projects:[];return text(a?.[0]?.name,500)||text(p.company_name,300)||'relevant projects';
 }
 function shortProject(p:any){const s=projectName(p).replace(/^.*?\s[–-]\s/,'').trim();return s.length>82?s.slice(0,79)+'…':s;}
-function greeting(p:any){const n=text(p.contact_name,160),c=text(p.company_name,250);if(p.language==='de')return n?`Guten Tag ${n},`:'Sehr geehrte Damen und Herren,';if(p.language==='sr')return n?`Poštovani ${n},`:'Poštovani,';return n?`Dear ${n},`:`Dear ${c||'Sir or Madam'} team,`;}
+function greeting(p:any){const n=safePersonName(p.contact_name);if(p.language==='de')return n?`Guten Tag ${n},`:'Sehr geehrte Damen und Herren,';if(p.language==='sr')return n?`Poštovani ${n},`:'Poštovani,';return n?`Dear ${n},`:'Dear Sir or Madam,';}
 function subject1(p:any){const proj=shortProject(p);if(p.language==='de')return `Zusätzliche Stahlbau-Fertigungskapazität – ${proj} | PRISTEEL`;if(p.language==='sr')return `Dodatni kapaciteti za čelične konstrukcije – ${proj} | PRISTEEL`;return `Additional steel fabrication capacity – ${proj} | PRISTEEL`;}
 function signaturePlain(lang:string){const close=lang==='de'?'Mit freundlichen Grüßen':lang==='sr'?'Srdačan pozdrav':'Kind regards';return `${close},\n\nArianit Vllahiu\nHead of Business Development\n+383 (0) 44 244 699\narianit.vllahiu@prissteel.com\nwww.prissteel.com`;}
 function signatureHtml(lang:string){const close=lang==='de'?'Mit freundlichen Grüßen':lang==='sr'?'Srdačan pozdrav':'Kind regards';return `${esc(close)},<br><br><strong>Arianit Vllahiu</strong><br>Head of Business Development<br><a href="tel:+38344244699">+383 (0) 44 244 699</a><br><a href="mailto:arianit.vllahiu@prissteel.com">arianit.vllahiu@prissteel.com</a><br><a href="https://www.prissteel.com">www.prissteel.com</a>`;}
 function body1(p:any){
   const g=greeting(p),company=text(p.company_name,300),proj=projectName(p);
-  if(p.language==='de')return `${g}\n\nwir haben den aktuellen Projektzuschlag bzw. das Projekt „${proj}“ von ${company} gesehen. Ich möchte Ihnen PRISTEEL als zusätzliche Fertigungskapazität für Stahlbau und ähnliche Projektpakete vorstellen.\n\nPRISTEEL arbeitet mit etablierten Fertigungspartnern und koordiniert die technische Ausführung, die Fertigungsnachverfolgung sowie die DAP-Lieferung. Damit haben Sie für das gesamte Paket einen kaufmännischen und technischen Ansprechpartner.\n\nUnsere Partnerwerke fertigen Stahlkonstruktionen nach EN 1090-2 bis EXC-4.\n\nFalls Sie aktuelle oder kommende Stahlbaupakete haben, bei denen zusätzliche Kapazität hilfreich wäre, prüfen wir gerne Zeichnungen oder Leistungsverzeichnisse und können kurzfristig einschätzen, was wir unterstützen können.\n\n${signaturePlain('de')}`;
-  if(p.language==='sr')return `${g}\n\nprimijetili smo aktuelni projekat odnosno nedavno dodijeljeni ugovor „${proj}“ kompanije ${company}. Želio bih predstaviti PRISTEEL kao dodatni kapacitet za izradu čeličnih konstrukcija za ovaj i slične projekte.\n\nPRISTEEL radi sa provjerenim proizvodnim partnerima i koordinira tehničku realizaciju, praćenje proizvodnje i DAP isporuku, tako da imate jednu komercijalnu i tehničku kontakt tačku za kompletan paket.\n\nNaši partnerski pogoni proizvode čelične konstrukcije prema EN 1090-2 do EXC-4.\n\nAko imate aktuelne ili predstojeće pakete čeličnih konstrukcija gdje bi dodatni kapacitet bio koristan, rado ćemo pregledati nacrte ili BOQ i brzo potvrditi šta možemo podržati.\n\n${signaturePlain('sr')}`;
-  return `${g}\n\nWe noted ${company}'s current or recently awarded project “${proj}”. I would like to introduce PRISTEEL as a source of additional structural steel fabrication capacity for this and similar projects.\n\nPRISTEEL works through established manufacturing partners and coordinates the technical execution, fabrication follow-up and DAP delivery, giving you one commercial and technical contact for the complete package.\n\nOur partner plants manufacture structural steel according to EN 1090-2 up to EXC-4.\n\nIf you have current or upcoming steel packages where additional capacity could be useful, we would be glad to review the drawings or BOQ and quickly indicate what we can support.\n\n${signaturePlain('en')}`;
+  if(p.language==='de')return `${g}\n\nwir haben den aktuellen Projektzuschlag bzw. das Projekt „${proj}“ von ${company} gesehen. Ich möchte Ihnen PRISTEEL als zusätzliche Fertigungskapazität für Stahlbau und ähnliche Projektpakete vorstellen.\n\nPRISTEEL arbeitet mit etablierten Fertigungspartnern und koordiniert die technische Ausführung, die Fertigungsnachverfolgung sowie die DAP-Lieferung. Damit haben Sie für das gesamte Paket einen kaufmännischen und technischen Ansprechpartner.\n\nJe nach Paket koordinieren wir auch die erforderliche Qualitäts- und Fertigungsdokumentation sowie Oberflächenbehandlung, Verpackung und Lieferung.\n\nFalls Sie aktuelle oder kommende Stahlbaupakete haben, bei denen zusätzliche Kapazität hilfreich wäre, prüfen wir gerne Zeichnungen oder Leistungsverzeichnisse und können kurzfristig einschätzen, was wir unterstützen können.\n\n${signaturePlain('de')}`;
+  if(p.language==='sr')return `${g}\n\nprimijetili smo aktuelni projekat odnosno nedavno dodijeljeni ugovor „${proj}“ kompanije ${company}. Želio bih predstaviti PRISTEEL kao dodatni kapacitet za izradu čeličnih konstrukcija za ovaj i slične projekte.\n\nPRISTEEL radi sa provjerenim proizvodnim partnerima i koordinira tehničku realizaciju, praćenje proizvodnje i DAP isporuku, tako da imate jednu komercijalnu i tehničku kontakt tačku za kompletan paket.\n\nU zavisnosti od paketa, koordiniramo i potrebnu dokumentaciju kvaliteta i proizvodnje, površinsku zaštitu, pakovanje i isporuku.\n\nAko imate aktuelne ili predstojeće pakete čeličnih konstrukcija gdje bi dodatni kapacitet bio koristan, rado ćemo pregledati nacrte ili BOQ i brzo potvrditi šta možemo podržati.\n\n${signaturePlain('sr')}`;
+  return `${g}\n\nWe noted ${company}'s current or recently awarded project “${proj}”. I would like to introduce PRISTEEL as a source of additional structural steel fabrication capacity for this and similar projects.\n\nPRISTEEL works through established manufacturing partners and coordinates the technical execution, fabrication follow-up and DAP delivery, giving you one commercial and technical contact for the complete package.\n\nDepending on the package, we also coordinate the required quality and fabrication documentation, surface protection, packing and delivery.\n\nIf you have current or upcoming steel packages where additional capacity could be useful, we would be glad to review the drawings or BOQ and quickly indicate what we can support.\n\n${signaturePlain('en')}`;
 }
 function body1Html(p:any){return body1(p).split('\n\n').slice(0,-1).map((x:string)=>esc(x).replace(/\n/g,'<br>')).join('<br><br>')+'<br><br>'+signatureHtml(p.language);}
 function body2(p:any){
@@ -122,7 +129,7 @@ async function existingDraftFor(p:any,subject:string,threadId:string|null=null){
   return null;
 }
 async function historySentToDomain(p:any){
-  const d=lower(p.company_domain||domainFromEmail(p.contact_email));if(!d)return false;
+  const d=contactDomain(p);if(!d)return false;
   const refs=await searchMessages(`in:sent newer_than:5y ${d}`,30);
   for(const ref of refs){
     try{const m=await message(ref.id),recips=[...emailsIn(header(m,'To')),...emailsIn(header(m,'Cc')),...emailsIn(header(m,'Bcc'))];if(recips.some(e=>sameDomain(e,d)))return true;}catch{}
@@ -137,7 +144,7 @@ function replyInThread(t:any,companyDomain:string|null,after:Date|null){
   return (t?.messages||[]).filter((m:any)=>!(m.labelIds||[]).includes('SENT')&&!(m.labelIds||[]).includes('DRAFT')&&sameDomain(emailsIn(header(m,'From'))[0]||'',companyDomain)&&((msgAt(m)?.getTime()||0)>after.getTime())).sort((a:any,b:any)=>(msgAt(a)?.getTime()||0)-(msgAt(b)?.getTime()||0))[0]||null;
 }
 async function domainReply(p:any,after:Date){
-  const d=lower(p.company_domain||domainFromEmail(p.contact_email));if(!d)return null;
+  const d=contactDomain(p);if(!d)return null;
   const refs=await searchMessages(`from:${d} after:${afterDateQuery(after)} -in:sent -in:drafts`,20);
   for(const ref of refs){try{const m=await message(ref.id),from=emailsIn(header(m,'From'))[0]||'',at=msgAt(m);if(at&&at>after&&sameDomain(from,d))return m;}catch{}}
   return null;
@@ -168,6 +175,27 @@ async function processOne(row:any){
     }catch{}
   }
 
+  // A DB draft_ready state is not authoritative if the Gmail draft was deleted.
+  if(!p.first_sent_at&&p.status==='draft_ready'){
+    const subj=subject1(p),existing=await existingDraftFor(p,subj);
+    if(existing){
+      if(existing.id!==p.first_draft_id||existing.message?.id!==p.first_gmail_message_id){
+        await db.from('pppp_gc_prospects_v1').update({
+          first_draft_id:existing.id,
+          first_gmail_message_id:existing.message?.id||null,
+          first_gmail_thread_id:existing.message?.threadId||null,
+          updated_at:nowIso(),last_error:null
+        }).eq('id',p.id).eq('status','draft_ready');
+      }
+      return {id:p.id,company:p.company_name,event:'live_draft_1_verified',draft_id:existing.id,human_send_required:true};
+    }
+    await db.from('pppp_gc_prospects_v1').update({
+      first_draft_id:null,first_gmail_message_id:null,first_gmail_thread_id:null,first_draft_created_at:null,
+      status:'contact_ready',updated_at:nowIso(),last_error:'Recovered missing Gmail draft #1'
+    }).eq('id',p.id).eq('status','draft_ready');
+    p=await loadProspect(p.id);
+  }
+
   // Before Draft #1, use both the DB hard guard and actual Gmail Sent history.
   if(!p.first_sent_at&&p.status==='contact_ready'){
     const hist=await rpc('pppp_gc_historical_outreach_v1',{p_company:p.company_name,p_domain:p.company_domain,p_email:p.contact_email});
@@ -188,7 +216,7 @@ async function processOne(row:any){
     }catch{}
   }
 
-  const firstAt=new Date(p.first_sent_at),companyDomain=lower(p.company_domain||domainFromEmail(p.contact_email));
+  const firstAt=new Date(p.first_sent_at),companyDomain=contactDomain(p);
   let t:any=null;try{if(p.first_gmail_thread_id)t=await thread(p.first_gmail_thread_id);}catch{}
   const threadReply=replyInThread(t,companyDomain,firstAt),externalReply=threadReply?null:await domainReply(p,firstAt);
   if(threadReply||externalReply){const m=threadReply||externalReply;await deleteDraft(p.second_draft_id);await rpc('pppp_gc_mark_replied_v1',{p_prospect_id:p.id,p_replied_at:msgAt(m)?.toISOString()||nowIso(),p_reason:threadReply?'gmail_thread_reply':'gmail_company_domain_reply'});return {id:p.id,company:p.company_name,event:'reply_detected'};}
@@ -202,6 +230,18 @@ async function processOne(row:any){
 
   const due=p.followup_due_date?new Date(`${p.followup_due_date}T00:00:00Z`):null;
   if(!due||due.getTime()>Date.now())return {id:p.id,company:p.company_name,event:'followup_not_due',due:p.followup_due_date};
+
+  if(p.second_draft_id&&p.status==='draft_2_ready'){
+    let firstMsg:any=null;try{if(p.first_gmail_message_id)firstMsg=await message(p.first_gmail_message_id);}catch{}
+    const firstSubject=header(firstMsg,'Subject')||subject1(p),replySubject=/^re:/i.test(firstSubject)?firstSubject:`Re: ${firstSubject}`;
+    const existing=await existingDraftFor(p,replySubject,p.first_gmail_thread_id);
+    if(existing)return {id:p.id,company:p.company_name,event:'live_draft_2_verified',draft_id:existing.id,human_send_required:true};
+    await db.from('pppp_gc_prospects_v1').update({
+      second_draft_id:null,second_gmail_message_id:null,second_draft_created_at:null,
+      status:'followup_due',updated_at:nowIso(),last_error:'Recovered missing Gmail draft #2'
+    }).eq('id',p.id).eq('status','draft_2_ready');
+    p=await loadProspect(p.id);
+  }
 
   if(!p.second_draft_id){
     await db.from('pppp_gc_prospects_v1').update({status:'followup_due',updated_at:nowIso()}).eq('id',p.id).in('status',['contacted_1','followup_due']);
