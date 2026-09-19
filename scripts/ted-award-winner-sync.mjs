@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 import { classifyTedNotice } from './ted-tender-sync.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const TED_API='https://api.ted.europa.eu/v3/notices/search';
 const AWARD_TYPES=['can-standard','can-social','can-desg','can-tran'];
 const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 44171000 OR classification-cpv = 44172000 OR classification-cpv = 44212220 OR classification-cpv = 44212240 OR classification-cpv = 44212313 OR classification-cpv = 44212410 OR classification-cpv = 44212500 OR classification-cpv = 44330000 OR classification-cpv = 44334000 OR classification-cpv = 45223100 OR classification-cpv = 45223110 OR classification-cpv = 45223210 OR FT IN (Stahlbau Stahlkonstruktion Stahltragwerk Stahlhalle steelwork staalbouw staalconstructie))';
@@ -17,6 +17,20 @@ const RAW_CPVS=new Set(['14622000','44171000','44172000','44330000','44334000'])
 const STRUCT_CPVS=new Set(['44212220','44212240','44212313','44212410','44212500','45223100','45223110','45223210']);
 const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
 const unique=arr=>[...new Set((arr||[]).filter(Boolean).map(text).filter(Boolean))];
+const TED_LANGUAGE_PREFIXES=new Set(['DE','DEU','GER','FR','FRA','EN','ENG','IT','ITA','NL','NLD','ES','SPA','PT','POR','PL','POL','CS','CZE','SK','SLK','HU','HUN','RO','RON','BG','BUL','DA','DAN','SV','SWE','FI','FIN','ET','EST','LV','LAV','LT','LIT','EL','GRE']);
+export function canonicalTedWinnerName(v){
+  const s=text(v);const m=s.match(/^([A-Z]{2,3})_(.+)$/);
+  if(m&&TED_LANGUAGE_PREFIXES.has(m[1].toUpperCase()))return text(m[2]);
+  return s;
+}
+function canonicalWinnerNames(values){return unique((values||[]).map(canonicalTedWinnerName));}
+function hasLanguageDuplicateArtifacts(w){
+  const raw=unique([...(Array.isArray(w?.raw_names)?w.raw_names:[]),...(Array.isArray(w?.names)?w.names:[]),w?.name]);
+  const canon=canonicalWinnerNames(raw);
+  const orgs=Array.isArray(w?.contact_enrichment?.organizations)?w.contact_enrichment.organizations:[];
+  const orgNames=unique(orgs.map(o=>text(o?.name))),canonOrgNames=canonicalWinnerNames(orgNames);
+  return (raw.length>canon.length)||(orgNames.length>canonOrgNames.length);
+}
 function ymd(date){return date.toISOString().slice(0,10).replace(/-/g,'');}
 function daysAgo(days){const d=new Date();d.setUTCDate(d.getUTCDate()-days);return d;}
 function firstScalar(value){
@@ -53,9 +67,10 @@ function noticeItems(json){for(const key of ['notices','results','content','item
 function cpvCodes(row){return listScalars(field(row,'classification-cpv')).map(v=>(v.match(/\b\d{8}\b/)||[])[0]).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);}
 function tedTitle(row){const value=field(row,'notice-title');if(typeof value==='object'&&!Array.isArray(value)){for(const key of ['eng','en','deu','de','fra','fr'])if(value[key])return firstScalar(value[key]);}return firstScalar(value);}
 function winnerValues(row,name){return listScalars(field(row,name));}
-function winnerNames(w){return unique([...(Array.isArray(w?.names)?w.names:[]),w?.name]);}
+function winnerNames(w){return canonicalWinnerNames([...(Array.isArray(w?.names)?w.names:[]),...(Array.isArray(w?.raw_names)?w.raw_names:[]),w?.name]);}
 function winnerData(row){
-  const names=winnerValues(row,'winner-name');
+  const rawNames=winnerValues(row,'winner-name');
+  const names=canonicalWinnerNames(rawNames);
   const emails=winnerValues(row,'winner-email');
   const websites=winnerValues(row,'winner-internet-address');
   const countries=winnerValues(row,'winner-country');
@@ -64,7 +79,8 @@ function winnerData(row){
   const contacts=winnerValues(row,'winner-contact-point');
   const decisionDates=winnerValues(row,'winner-decision-date').map(isoDate).filter(Boolean);
   return {
-    names,emails,websites,countries,cities,identifiers,contacts,decision_dates:decisionDates,
+    identity_version:'ted-winner-canonical-v2',raw_names:rawNames,names,emails,websites,countries,cities,identifiers,contacts,decision_dates:decisionDates,
+    organization_count:Math.max(1,unique(identifiers).length,names.length),
     name:names[0]||null,email:emails[0]||null,website:websites[0]||null,country:countries[0]||null,
     city:cities[0]||null,identifier:identifiers[0]||null,contact_point:contacts[0]||null,
     decision_date:decisionDates[0]||null
@@ -121,15 +137,16 @@ export function preserveWinnerIntelligence(rows,existingRows){
     const old=byKey.get(String(row?.source_key||''));
     const current=row?.payload?.winner,oldWinner=old?.payload?.winner;
     if(!current||!oldWinner)continue;
-    mergeWinnerArrays(current,oldWinner);
-    if(oldWinner.contact_enrichment)current.contact_enrichment=oldWinner.contact_enrichment;
-    if(oldWinner.history_contact_seed)current.history_contact_seed=oldWinner.history_contact_seed;
-    if(oldWinner.contact_ranking)current.contact_ranking=oldWinner.contact_ranking;
+    const staleIdentity=hasLanguageDuplicateArtifacts(oldWinner);
+    if(!staleIdentity)mergeWinnerArrays(current,oldWinner);
+    if(oldWinner.contact_enrichment&&!staleIdentity)current.contact_enrichment=oldWinner.contact_enrichment;
+    if(oldWinner.history_contact_seed&&!staleIdentity)current.history_contact_seed=oldWinner.history_contact_seed;
+    if(oldWinner.contact_ranking&&!staleIdentity)current.contact_ranking=oldWinner.contact_ranking;
     const oldOrganizations=Array.isArray(oldWinner?.contact_enrichment?.organizations)?oldWinner.contact_enrichment.organizations:[];
-    const multiSafe=winnerNames(oldWinner).length>1||oldOrganizations.length>1;
-    if(oldWinner.contact_enrichment&&multiSafe){
+    const multiSafe=winnerNames(oldWinner).length>1||canonicalWinnerNames(oldOrganizations.map(o=>o?.name)).length>1;
+    if(oldWinner.contact_enrichment&&!staleIdentity&&multiSafe){
       current.email=null;current.website=null;current.contact_point=null;
-    }else if(oldWinner.contact_enrichment){
+    }else if(oldWinner.contact_enrichment&&!staleIdentity){
       if(!current.email&&oldWinner.email)current.email=oldWinner.email;
       if(!current.website&&oldWinner.website)current.website=oldWinner.website;
       if(!current.contact_point&&oldWinner.contact_point)current.contact_point=oldWinner.contact_point;

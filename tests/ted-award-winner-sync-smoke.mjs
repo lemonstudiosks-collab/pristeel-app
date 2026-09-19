@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existingWinnerIntelligencePaths, normalizeTedAward, preserveWinnerIntelligence, runTedAwardWinnerSync } from '../scripts/ted-award-winner-sync.mjs';
+import { canonicalTedWinnerName, existingWinnerIntelligencePaths, normalizeTedAward, preserveWinnerIntelligence, runTedAwardWinnerSync } from '../scripts/ted-award-winner-sync.mjs';
 
 const sample={
   'publication-number':'563865-2026',
@@ -31,6 +31,26 @@ assert.equal(row.payload.winner.decision_date,'2026-08-12');
 assert.equal(row.deadline,null,'TED awards are not application opportunities');
 assert.ok(row.relevance_score>=75,'steel award should pass operational relevance');
 
+assert.equal(canonicalTedWinnerName('DE_Birchmeier Bau AG'),'Birchmeier Bau AG');
+assert.equal(canonicalTedWinnerName('FR_Birchmeier Bau AG'),'Birchmeier Bau AG');
+const birchmeier=normalizeTedAward({
+  ...sample,
+  'publication-number':'642032-2026',
+  'notice-title':{eng:'UW Beznau PSU Los A Baumeister'},
+  'winner-name':['DE_Birchmeier Bau AG','FR_Birchmeier Bau AG'],
+  'winner-email':[],
+  'winner-internet-address':[],
+  'winner-contact-point':[],
+  'winner-country':['CHE'],
+  'winner-city':['Döttingen'],
+  'winner-identifier':['27fc1c3c-ae04-43d6-b609-e8809ffec767']
+},'2026-09-17T01:00:00.000Z');
+assert.equal(birchmeier.payload.winner.name,'Birchmeier Bau AG','TED language prefixes must never become part of the legal winner name');
+assert.deepEqual(birchmeier.payload.winner.names,['Birchmeier Bau AG'],'DE_/FR_ translations of one legal entity must collapse to one winner');
+assert.deepEqual(birchmeier.payload.winner.raw_names,['DE_Birchmeier Bau AG','FR_Birchmeier Bau AG']);
+assert.equal(birchmeier.payload.winner.organization_count,1,'one legal identifier plus multilingual names must remain one organization');
+
+
 const savedResearch={version:'winner-contact-v1',status:'found',researched_at:'2026-08-17T10:00:00Z',contact_count:2,organizations:[{name:'Steel Winner GmbH',contacts:[{type:'email',value:'einkauf@steelwinner.example',purpose:'procurement'}]}]};
 const savedSeed={version:'ted-history-contact-v1',emails:['info@steelwinner.example']};
 const savedRanking={version:'winner-contact-rank-v1',selected_email:'einkauf@steelwinner.example',purpose:'procurement'};
@@ -60,6 +80,29 @@ assert.equal(currentMulti.payload.winner.website,null,'multi-winner global websi
 assert.equal(currentMulti.payload.winner.contact_point,null,'multi-winner global contact point must remain unset');
 assert(currentMulti.payload.winner.emails.includes('kovoreal4@kovoreal.sk'));
 assert(currentMulti.payload.winner.emails.includes('Angebot@rudolf-metallbau.at'));
+
+const currentBirchmeier=normalizeTedAward({
+  ...sample,
+  'publication-number':'642033-2026',
+  'winner-name':['DE_Birchmeier Bau AG','FR_Birchmeier Bau AG'],
+  'winner-email':[],
+  'winner-internet-address':[],
+  'winner-contact-point':[],
+  'winner-country':['CHE'],
+  'winner-city':['Döttingen'],
+  'winner-identifier':['27fc1c3c-ae04-43d6-b609-e8809ffec767']
+},'2026-09-17T02:00:00.000Z');
+const staleBirchmeier={source_key:currentBirchmeier.source_key,payload:{winner:{
+  name:'DE_Birchmeier Bau AG',
+  names:['DE_Birchmeier Bau AG','FR_Birchmeier Bau AG'],
+  contact_enrichment:{version:'winner-contact-v1',status:'not_found',organizations:[{name:'DE_Birchmeier Bau AG'},{name:'FR_Birchmeier Bau AG'}]},
+  history_contact_seed:{version:'ted-history-contact-v1'},
+  contact_ranking:{version:'winner-contact-rank-v1',selected_email:'wrong@example.invalid'}
+}}};
+preserveWinnerIntelligence([currentBirchmeier],[staleBirchmeier]);
+assert.equal(currentBirchmeier.payload.winner.contact_enrichment,undefined,'stale multilingual contact research must be discarded so the canonical company can be researched again');
+assert.equal(currentBirchmeier.payload.winner.contact_ranking,undefined,'ranking derived from the stale multilingual identity must not survive');
+
 
 const exactPaths=existingWinnerIntelligencePaths([{source_key:'TED:563865-2026'},{source_key:'TED:550551-2026'}],1);
 assert.equal(exactPaths.length,2,'exact source-key lookup should chunk rather than scan the whole table');

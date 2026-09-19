@@ -1,7 +1,7 @@
 const EMAIL_RE=/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/i;
 const FREE_DOMAINS=new Set(['gmail.com','googlemail.com','hotmail.com','outlook.com','live.com','yahoo.com','yahoo.de','yahoo.fr','icloud.com','aol.com','gmx.com','gmx.de','web.de','proton.me','protonmail.com']);
 const RESERVED_DOMAINS=new Set(['example.com','example.org','example.net']);
-const BLOCKED_OUTREACH_LOCAL_PARTS=new Set(['invoice','billing','faktury','accounting','accounts','payable','recruiting','jobs','careers','privacy','gdpr','datenschutz','skundai','webmaster']);
+const BLOCKED_OUTREACH_LOCAL_PARTS=new Set(['invoice','billing','faktury','accounting','accounts','payable','recruiting','jobs','careers','hr','humanresources','privacy','gdpr','datenschutz','skundai','webmaster','support','press','presse','media','newsletter','noreply','no-reply','donotreply','legal','dpo','security','abuse']);
 const GENERIC_LOCAL_PARTS=new Set(['info','office','contact','kontakt','sales','verkauf','procurement','purchasing','einkauf','tender','tenders','ausschreibung','vergabe','post','mail','hello','service','support','faktury','invoice','billing','commercial','comercial','admin','webmaster','pr']);
 
 const txt=(v,max=500)=>String(v==null?'':v).trim().slice(0,max);
@@ -32,14 +32,14 @@ function companyDomains(action,winner){
   add(websiteDomain(winner?.website));
   for(const u of Array.isArray(winner?.websites)?winner.websites:[])add(websiteDomain(u));
   for(const org of winner?.contact_enrichment?.organizations||[])add(org?.domain||websiteDomain(org?.official_website));
-  const targetDomain=domainFromEmail(action?.target_email);if(targetDomain&&!FREE_DOMAINS.has(targetDomain)&&!RESERVED_DOMAINS.has(targetDomain))add(targetDomain);
   return out;
 }
-function belongsToCompany(email,domains){if(!domains.size)return true;for(const d of domains)if(sameCompanyDomain(email,d))return true;return false;}
+function belongsToCompany(email,domains){if(!domains.size)return false;for(const d of domains)if(sameCompanyDomain(email,d))return true;return false;}
+function sourceDomainMatches(email,meta,domains){const sd=websiteDomain(meta?.source_url);if(!sd||!sameCompanyDomain(email,sd))return false;if(!domains.size)return true;for(const d of domains)if(sd===d||sd.endsWith('.'+d)||d.endsWith('.'+sd))return true;return false;}
 
 function candidate(email,meta={}){
-  const e=normalizeEmail(email);if(!validEmail(e)||isReservedEmail(e)||isBlockedOutreachEmail(e))return null;
-  return {email:e,name:contactName(meta,e),job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0};
+  const e=normalizeEmail(email),d=domainFromEmail(e);if(!validEmail(e)||isReservedEmail(e)||FREE_DOMAINS.has(d)||isBlockedOutreachEmail(e))return null;
+  return {email:e,name:contactName(meta,e),job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0,company_attribution:txt(meta?.company_attribution,80)||null,draft_eligible:meta?.draft_eligible!==false};
 }
 function mergeCandidate(a,b){
   if(!a)return b;if(!b)return a;
@@ -55,12 +55,13 @@ function mergeCandidate(a,b){
 
 export function resolveTedRecipients(action,tenderPayload,max=20){
   const winner=tenderPayload?.winner||{},domains=companyDomains(action,winner),rows=[];
-  const push=(email,meta={},trust='domain')=>{const c=candidate(email,meta);if(!c)return;if(trust==='domain'&&!belongsToCompany(c.email,domains))return;rows.push(c);};
-  push(action?.target_email,{priority:1000,source_type:'opportunity_action',confidence:'high'},'explicit');
+  const push=(email,meta={},trust='domain')=>{const c=candidate(email,meta);if(!c||c.draft_eligible===false)return;let ok=false,attribution='';if(trust==='domain'){ok=belongsToCompany(c.email,domains);attribution='company_domain';}else if(trust==='official'){ok=sourceDomainMatches(c.email,meta,domains);attribution='official_source';}else if(trust==='ted'){ok=domains.size?belongsToCompany(c.email,domains):true;attribution='ted_declared';}if(!ok)return;rows.push({...c,company_attribution:c.company_attribution||attribution});};
+  push(action?.target_email,{priority:1000,source_type:'opportunity_action',confidence:'high'},'domain');
   for(const r of Array.isArray(tenderPayload?.winner_contacts)?tenderPayload.winner_contacts:[]){
     const verified=/verified|high/i.test(txt(r?.verification_status||r?.confidence,40));
     const ted=/ted/i.test(txt(r?.source_type||r?.source,80));
-    push(r?.email||r?.value,{...r,priority:verified?900:760},(verified||ted)?'explicit':'domain');
+    const official=/official_website|company_website/i.test(txt(r?.source_type||r?.source,80));
+    push(r?.email||r?.value,{...r,priority:verified?900:760},ted?'ted':official&&verified?'official':'domain');
   }
   for(const r of Array.isArray(winner?.contacts)?winner.contacts:[]){
     if((r?.type&&txt(r.type,30).toLowerCase()!=='email'))continue;
@@ -74,11 +75,11 @@ export function resolveTedRecipients(action,tenderPayload,max=20){
       if(od&&!sameCompanyDomain(email,od))continue;
       if(!od&&!belongsToCompany(email,domains))continue;
       const cr=confidenceRank(r?.confidence),score=Number(r?.score||0);if(cr<2&&score<80)continue;
-      push(email,{...r,priority:700+Math.min(99,score)},'explicit');
+      push(email,{...r,priority:700+Math.min(99,score)},'domain');
     }
   }
-  for(const e of Array.isArray(winner?.emails)?winner.emails:[])push(e,{priority:650,source_type:'TED',confidence:'high'},'explicit');
-  push(winner?.email,{priority:640,source_type:'TED',confidence:'high'},'explicit');
+  for(const e of Array.isArray(winner?.emails)?winner.emails:[])push(e,{priority:650,source_type:'TED',confidence:'high'},'ted');
+  push(winner?.email,{priority:640,source_type:'TED',confidence:'high'},'ted');
   const map=new Map();for(const r of rows)map.set(r.email,mergeCandidate(map.get(r.email),r));
   return [...map.values()].sort((a,b)=>(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,Math.max(1,Math.min(50,Number(max)||20)));
 }

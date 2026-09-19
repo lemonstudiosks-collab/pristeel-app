@@ -47,5 +47,6 @@ function wait(ms=80){return new Promise(r=>setTimeout(r,ms));}
   assert(doc.querySelectorAll('.pwb3-nav-btn').length===6,'Real project open must render the Workbench navigation');
   assert(!doc.querySelector('.pst-pi-tab:not(.pwb3-nav-btn)'),'Legacy project tabs must be replaced on the real project-open lifecycle');
 
+  window.close();
   console.log('project-workbench open lifecycle smoke: ok');
 })().catch(err=>{console.error(err);process.exit(1);});

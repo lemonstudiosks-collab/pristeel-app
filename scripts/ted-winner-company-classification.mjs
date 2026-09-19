@@ -2,14 +2,18 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
-const VERSION='winner-company-v3';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
+const VERSION='winner-company-v4';
 const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const unique=arr=>[...new Set((arr||[]).filter(Boolean))];
+const TED_LANGUAGE_PREFIXES=new Set(['DE','DEU','GER','FR','FRA','EN','ENG','IT','ITA','NL','NLD','ES','SPA','PT','POR','PL','POL','CS','CZE','SK','SLK','HU','HUN','RO','RON','BG','BUL','DA','DAN','SV','SWE','FI','FIN','ET','EST','LV','LAV','LT','LIT','EL','GRE']);
+function canonicalWinnerName(v){const s=text(v),m=s.match(/^([A-Z]{2,3})_(.+)$/);return m&&TED_LANGUAGE_PREFIXES.has(m[1].toUpperCase())?text(m[2]):s;}
+function canonicalNames(values){return unique((values||[]).map(canonicalWinnerName));}
+function multilingualDuplicateArtifact(w){if(String(w?.identity_version||'')==='ted-winner-canonical-v2')return false;const raw=unique([...(Array.isArray(w?.raw_names)?w.raw_names:[]),...(Array.isArray(w?.names)?w.names:[]),w?.name]);return raw.length>canonicalNames(raw).length;}
 
 const PRODUCER_RULES=[
-  [/\b(stahl(?:-|\s+und\s+)?metallbau|stahlbau|metallbau|schlosserei|maschinenfabrik|steel fabrication|steel construction|steel structures?|structural steel|metal structures?)\b/gi,4,'explicit steel-fabrication company terms'],
+  [/\b(stahl(?:-|\s+und\s+)?metallbau|stahlbau|metallbau|schlosserei|maschinenfabrik|steel fabrication|steel construction|steel structures?|structural steel|metal structures?|steelworks|steel mill|rolling mill|tube manufacturer|pipe manufacturer|walzwerk|huttenwerk|hüttenwerk)\b/gi,4,'explicit steel manufacturing/fabrication company terms'],
   [/\b(manufactur|fabricat|production|factory|workshop|plant)\w*/gi,3,'manufacturing/fabrication'],
   [/\b(welding|schweiss|schweiß|laser cutting|plasma cutting|cnc|galvaniz|beschicht)\w*/gi,2,'fabrication processes'],
   [/\b(fertigung|produktion|werkstatt|stahlkonstruktion)\w*/gi,3,'German production terms'],
@@ -17,6 +21,7 @@ const PRODUCER_RULES=[
 ];
 const GC_RULES=[
   [/\b(general contractor|main contractor|building contractor|construction company|construction services)\b/gi,4,'general construction'],
+  [/(^|\s)bau(?=\s|$)/gi,4,'standalone Bau company term'],
   [/\b(epc|engineering procurement construction|turnkey|design[ -]?build)\b/gi,4,'EPC/turnkey'],
   [/\b(generalunternehmer|bauunternehmen)\w*/gi,4,'explicit German GC terms'],
   [/\b(schluesselfertig|schlüsselfertig|hochbau|tiefbau)\w*/gi,3,'German construction terms'],
@@ -79,11 +84,11 @@ async function fetchPage(url,{fetchImpl=fetch,timeoutMs=8000}={}){
 }
 function winner(row){const p=row?.payload&&typeof row.payload==='object'?row.payload:{};return p.winner&&typeof p.winner==='object'?p.winner:{};}
 function organizations(w){return Array.isArray(w?.contact_enrichment?.organizations)?w.contact_enrichment.organizations:[];}
-function winnerNames(w){return unique([...(Array.isArray(w?.names)?w.names:[]),w?.name].map(text).filter(Boolean));}
+function winnerNames(w){return canonicalNames([...(Array.isArray(w?.names)?w.names:[]),...(Array.isArray(w?.raw_names)?w.raw_names:[]),w?.name]);}
 function siteSeeds(w){return unique([...organizations(w).map(o=>o?.official_website),...(Array.isArray(w?.websites)?w.websites:[]),w?.website].map(text).filter(Boolean));}
 async function researchRow(row,{fetchImpl=fetch}={}){
   const w=winner(row),orgs=organizations(w),names=winnerNames(w),sites=siteSeeds(w);
-  if(names.length>1||orgs.length>1){const c=classifyCompanyText('',{organizationCount:Math.max(names.length,orgs.length)});return{...c,source_urls:sites.slice(0,5)};}
+  const orgCount=Math.max(Number(w?.organization_count||0),names.length,canonicalNames(orgs.map(o=>o?.name)).length);if(orgCount>1){const c=classifyCompanyText('',{organizationCount:orgCount});return{...c,source_urls:sites.slice(0,5)};}
   const nameEvidence=` awarded company ${names.join(' ')}`;
   const nameOnly=classifyCompanyText(nameEvidence,{organizationCount:1});
   if(nameOnly.company_type!=='unknown'&&['medium','high'].includes(nameOnly.confidence))return{...nameOnly,source_urls:[],text_chars:nameEvidence.length,classification_method:'legal_name'};
@@ -119,7 +124,7 @@ export async function runTedWinnerCompanyClassification({mode=process.env.SYNC_M
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
   const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
   const raw=await rest({...access,path:`kek_tender_watch?select=id,title,relevance_score,status,payload&relevance_score=gte.${encodeURIComponent(minScore)}&order=published_date.desc&limit=500`});
-  const candidates=(Array.isArray(raw)?raw:[]).filter(r=>{const p=r?.payload||{},w=winner(r),c=w.company_classification,current=String(w.company_type||c?.company_type||'unknown');return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&r.status!=='ignored'&&winnerNames(w).length&&!['producer','gc_epc','trader_consortium'].includes(current)&&(!c||c.version!==VERSION);}).slice(0,Math.max(0,maxRows));
+  const candidates=(Array.isArray(raw)?raw:[]).filter(r=>{const p=r?.payload||{},w=winner(r),c=w.company_classification,current=String(w.company_type||c?.company_type||'unknown');const staleMultilingual=multilingualDuplicateArtifact(w);return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&r.status!=='ignored'&&winnerNames(w).length&&((!['producer','gc_epc','trader_consortium'].includes(current)&&(!c||c.version!==VERSION))||staleMultilingual);}).slice(0,Math.max(0,maxRows));
   const results=[];
   for(const row of candidates){
     try{const result=await researchRow(row,{fetchImpl});if(mode==='apply')await patchRow(access,row,result);results.push({id:row.id,title:row.title,company_type:result.company_type,confidence:result.confidence,scores:result.scores,source_urls:result.source_urls||[],classification_method:result.classification_method||'rules'});}
