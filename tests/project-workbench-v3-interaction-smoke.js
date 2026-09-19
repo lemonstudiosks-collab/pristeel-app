@@ -62,7 +62,9 @@ function last(a){return a[a.length-1];}
   assert(continueBtn,'Vazhdo button missing');
   assert(activeNav,'Active Workbench navigation button missing');
   assert(window.getComputedStyle(continueBtn).color==='rgb(255, 255, 255)','Filled blue Vazhdo button text must be white');
+  assert(window.getComputedStyle(continueBtn).backgroundColor==='rgb(79, 151, 175)','Vazhdo must use the Kthehu brand blue #4F97AF');
   assert(window.getComputedStyle(activeNav).color==='rgb(255, 255, 255)','Active blue Workbench tab text must be white');
+  assert(window.getComputedStyle(activeNav).backgroundColor==='rgb(79, 151, 175)','Active Workbench tab must use the Kthehu brand blue #4F97AF');
 
   calls.length=0;
   click(window,doc.querySelector('.pwb3-now>button'),'Vazhdo missing');

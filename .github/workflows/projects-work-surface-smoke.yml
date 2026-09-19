@@ -20,4 +20,5 @@ jobs:
       - run: node tests/projects-work-surface-smoke.js
       - run: node tests/project-open-single-path-smoke.js
       - run: node tests/project-workbench-v3-interaction-smoke.js
+      - run: node tests/project-button-brand-contrast-smoke.js
       - run: node tests/project-context-files-timeout-smoke.js
