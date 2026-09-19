@@ -5,11 +5,14 @@ import {JSDOM} from 'jsdom';
 const src=fs.readFileSync('pristeel-production-surface-owner-v1.js','utf8');
 assert(!/supaFetch|\/rest\/v1\/|\.insert\(|\.update\(|\.delete\(/.test(src),'Production surface owner must stay presentation/navigation only');
 assert(src.includes("data-pst-finance-branch")&&src.includes("finReceiptShow")&&src.includes("edeklarimi.atk-ks.org"),'Finance map must preserve existing finance destinations');
+assert(src.includes('__pstProductionSurfaceOwnerV2'),'Production Surface Owner v2 must supersede stale v1 runtime');
+assert(!src.includes('body.pst-global-fullwidth-shell #page-kek-tenders .pst-opp-v4-back,'),'Production Surface Owner must never hide the Opportunities Back control');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2">
 <div class="app-shell" id="app-shell-root"><aside class="sidebar" id="app-sidebar"><div id="pst-v2-sidebar"><div id="pst-ws-sidebar"></div></div></aside><main class="main"><div class="content">
   <section class="page" id="page-workspace-home" style="display:none">HOME</section>
   <section class="page active" id="page-kek-tenders" style="display:block">
+    <button type="button" class="pst-opp-v4-back" data-pst-opp-back>← Kthehu</button>
     <button data-pst-opp-field="construction"><b>Ndërtim</b></button>
     <button data-pst-opp-field="services"><b>Shërbime</b></button>
     <div class="pst-opp-v4-results-head"><small></small></div>
@@ -35,6 +38,9 @@ await new Promise(r=>setTimeout(r,20));
 const sidebar=window.document.getElementById('app-sidebar');
 assert.equal(sidebar.style.getPropertyValue('display'),'none','Final owner must hide the real #app-sidebar');
 assert.equal(sidebar.style.getPropertyPriority('display'),'important','Sidebar hide must outrank late legacy !important rules');
+const opportunitiesBack=window.document.querySelector('[data-pst-opp-back]');
+assert(opportunitiesBack,'Fixture must contain the Opportunities Back control');
+assert.notEqual(window.getComputedStyle(opportunitiesBack).display,'none','Final Production Surface Owner must leave Opportunities Back visible');
 
 window.document.querySelector('[data-pst-opp-field="construction"]').click();
 await new Promise(r=>setTimeout(r,40));
