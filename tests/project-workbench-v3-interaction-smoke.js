@@ -177,5 +177,6 @@ function last(a){return a[a.length-1];}
   assert(!doc.getElementById('pst-ora-open'),'Revision assistant must not inject a competing project tab');
   assert(doc.getElementById('pst-project-workbench-v2'),'Workbench root must remain mounted after late-owner timers settle');
 
+  window.close();
   console.log('project-workbench-v3 interaction smoke: ok');
 })().catch(err=>{console.error(err);process.exit(1);});
