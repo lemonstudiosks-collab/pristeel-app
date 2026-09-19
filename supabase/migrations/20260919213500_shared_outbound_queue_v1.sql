@@ -96,7 +96,7 @@ set search_path=pg_catalog
 as $$
   select nullif(
     regexp_replace(
-      lower(trim(coalesce(nullif(p_domain,''),split_part(coalesce(p_email,''),'@',2)))),
+      lower(trim(coalesce(nullif(split_part(coalesce(p_email,''),'@',2),''),nullif(p_domain,'')))),
       '^www\\.','','i'
     ),
     ''
