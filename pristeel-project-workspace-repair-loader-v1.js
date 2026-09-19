@@ -30,7 +30,7 @@ function load(src,attr,test){
 
 var chain=Promise.resolve()
   .then(function(){return load('pristeel-project-data-integrity-v1.js?v=20260831-canonical1','data-pst-project-data-integrity-critical',function(){return window.PSTProjectDataIntegrity&&typeof window.PSTProjectDataIntegrity.load==='function';});})
-  .then(function(){return load('pristeel-project-engine-v1.js?v=20260831-canonical1','data-pst-project-engine-critical',function(){return window.PSTProjectEngineV1&&typeof window.PSTProjectEngineV1.loadProjectDossier==='function';});})
+  .then(function(){return load('pristeel-project-engine-v1.js?v=20260919-contextfacts1','data-pst-project-engine-critical',function(){return window.PSTProjectEngineV1&&typeof window.PSTProjectEngineV1.loadProjectDossier==='function';});})
   /* During early boot the presentation guard may wrap the public opener before
    * this script's load event fires. The module API is the stable activation
    * signal; the owner lock in the next step restores the canonical public path. */
