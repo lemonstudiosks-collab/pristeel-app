@@ -19,4 +19,5 @@ jobs:
       - run: node --check pristeel-project-context-navigation-v1.js
       - run: node tests/projects-work-surface-smoke.js
       - run: node tests/project-open-single-path-smoke.js
+      - run: node tests/project-workbench-v3-interaction-smoke.js
       - run: node tests/project-context-files-timeout-smoke.js
