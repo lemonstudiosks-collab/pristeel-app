@@ -1,0 +1,21 @@
+name: GC outreach recovery smoke
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/pppp-gc-outreach/index.ts'
+      - 'tests/gc-outreach-recovery-smoke.mjs'
+      - '.github/workflows/gc-outreach-recovery-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/pppp-gc-outreach/index.ts'
+      - 'tests/gc-outreach-recovery-smoke.mjs'
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/gc-outreach-recovery-smoke.mjs
