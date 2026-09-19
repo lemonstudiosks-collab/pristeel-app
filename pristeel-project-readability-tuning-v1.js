@@ -70,7 +70,7 @@ document.head.appendChild(s);
 (function loadProjectMindmap(){
   if(window.__pstProjectMindmapV1||document.querySelector('script[data-pst-project-mindmap-v1]'))return;
   var r=document.createElement('script');
-  r.src='pristeel-project-mindmap-v1.js?v=20260914-1';
+  r.src='pristeel-project-mindmap-v1.js?v=20260919-brandbutton1';
   r.defer=true;
   r.setAttribute('data-pst-project-mindmap-v1','1');
   r.onerror=function(){console.error('Nuk u ngarkua mindmap-i i projekteve.');};
@@ -96,7 +96,7 @@ document.head.appendChild(s);
   window.__pstProjectWorkbenchV3Intended=true;
   if(window.__pstProjectWorkbenchV2||document.querySelector('script[data-pst-project-workbench-v2]'))return;
   var r=document.createElement('script');
-  r.src='pristeel-project-workbench-v2.js?v=20260919-bluecontrast1';
+  r.src='pristeel-project-workbench-v2.js?v=20260919-brandbutton1';
   r.defer=true;
   r.setAttribute('data-pst-project-workbench-v2','1');
   r.onerror=function(){console.error('Nuk u ngarkua Project Workbench v3.');};
