@@ -61,8 +61,13 @@ window.eval(mindmapSrc);
 await new Promise(r=>setTimeout(r,40));
 
 const mindmap=window.PSTOpportunitiesMindmapV5;
-assert(mindmap&&mindmap.version==='20260919-tedroles-canonicalfilters2','mindmap v5 must own the visible Opportunities presentation');
+assert(mindmap&&mindmap.version==='20260919-centered-back1','mindmap v5 must own the visible Opportunities presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'mindmap must render exactly once');
+assert(window.document.querySelector('[data-pst-opp-back]'),'Opportunities header must always expose its local ← Kthehu control');
+const oppStyle=window.document.getElementById('pst-opportunities-filter-polish-v1-css')?.textContent||'';
+assert(oppStyle.includes('width:min(100%,1480px)')&&oppStyle.includes('margin:0 auto'),'Opportunities mindmap canvas must be bounded and centered instead of stretching asymmetrically');
+assert(oppStyle.includes('.pst-opp-v4-core{position:relative;min-height:470px;width:100%;max-width:980px;justify-self:center'),'source core must stay centered inside equal side columns');
+
 assert(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),'APP branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="KRPP"]'),'KRPP branch must exist');
