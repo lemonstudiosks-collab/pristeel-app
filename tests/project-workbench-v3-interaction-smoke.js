@@ -71,9 +71,9 @@ function last(a){return a[a.length-1];}
   externalBack.style.color='rgb(55, 87, 104)';
   doc.body.insertBefore(externalBack,doc.body.firstChild);
   window.PSTProjectWorkbenchV3._test.ensureBlueButtonContrast(doc);
-  assert(externalBack.style.getPropertyValue('color')==='#fff','Filled blue Kthehu outside Project container must be forced to white text');
+  assert(window.getComputedStyle(externalBack).color==='rgb(255, 255, 255)','Filled blue Kthehu outside Project container must be forced to white text');
   assert(externalBack.style.getPropertyPriority('color')==='important','Kthehu white text must win later CSS');
-  assert(externalBack.style.getPropertyValue('-webkit-text-fill-color')==='#fff','Kthehu WebKit text fill must be white');
+  assert(externalBack.style.getPropertyPriority('-webkit-text-fill-color')==='important','Kthehu WebKit text fill override must be important');
 
   calls.length=0;
   click(window,doc.querySelector('.pwb3-now>button'),'Vazhdo missing');
