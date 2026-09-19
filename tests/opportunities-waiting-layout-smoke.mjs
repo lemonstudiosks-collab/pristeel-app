@@ -10,9 +10,12 @@ assert.doesNotThrow(()=>new Function(polish),'Opportunities mindmap must be vali
 assert.match(bridge,/draft_pending\|draft_created/,'draft-created registry rows must be recognized');
 assert.match(bridge,/row\.status='waiting_for_send'/,'draft rows must map to the waiting lane in memory only');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(polish,/VERSION='20260918-canonicalfilter1'/,'new mindmap revision must be active');
+assert.match(polish,/VERSION='20260919-tedroles-canonicalfilters2'/,'TED-role canonical filter revision must be active');
 assert.match(polish,/data-pst-opp-source/,'source branches must be first-class functional controls');
 assert.match(polish,/data-pst-opp-field/,'field branches must be first-class functional controls');
+assert.match(polish,/data-pst-opp-winner/,'TED winner-role branches must be first-class functional controls');
+assert.match(polish,/GC \/ EPC · prioritet/,'GC/EPC priority branch must be visible');
+assert.match(polish,/Prodhues çeliku · konkurrent/,'steel producers must be visibly separated as competitors');
 assert.match(polish,/data-pst-opp-lifecycle/,'status branches must be first-class functional controls');
 assert.match(polish,/pst-opp-v4-status-side/,'status branches must render in the left side of the mindmap');
 assert.match(polish,/pst-opp-v4-source-core/,'source branches must render in the center of the mindmap');
@@ -21,7 +24,9 @@ assert.match(polish,/pst-opp-v4-source-lines/,'source mindmap must draw connecto
 assert.match(polish,/EU_OFFICE_KOSOVO:\[6,50\]/,'EU Office must stay on the same outer source ring instead of sitting inside the mindmap');
 assert.doesNotMatch(polish,/pst-opp-v4-source-node:hover[^\n]*translateY\(-2px\)/,'source nodes must not jump vertically on hover or activation');
 assert.match(polish,/function syncChrome\(/,'mindmap must update in place instead of rebuilding on each canonical render');
-assert.match(polish,/api&&typeof api\.applyOpportunityFilter==='function'/,'presentation layer must delegate source/status filtering to the canonical workflow owner');
+assert.match(polish,/api&&typeof api\.applyOpportunityFilter==='function'/,'presentation layer must delegate filtering to the canonical workflow owner');
+assert.match(polish,/api\.applyOpportunityFilter\('field'/,'field filtering must delegate to canonical opportunityRows state');
+assert.match(polish,/api\.applyOpportunityFilter\('winner'/,'winner-role filtering must delegate to canonical opportunityRows state');
 assert.doesNotMatch(polish,/scrollIntoView/,'mindmap filtering must not scroll the page and make nodes appear to jump');
 assert.doesNotMatch(polish,/pst-opp-v4-source-grid/,'source filters must not render as the rectangular grid from the previous version');
 assert.match(polish,/pst-opp-v4-field-side/,'field branches must remain on the right side of the mindmap');
