@@ -276,3 +276,16 @@ function load(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
 document.addEventListener('pst:native-home-ready',load,{once:true});
 })();
+
+
+/* The PriSteel Daily — final read-only Home editorial surface. */
+(function(){
+'use strict';
+if(window.__pstDailyNewspaperLoaderV1)return;window.__pstDailyNewspaperLoaderV1=true;
+function load(){
+  if(window.PSTDailyNewspaperV1||document.querySelector('script[data-pst-daily-newspaper]'))return;
+  var s=document.createElement('script');s.src='pristeel-daily-newspaper-v1.js?v=20260919-1';s.defer=true;s.setAttribute('data-pst-daily-newspaper','1');document.head.appendChild(s);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+document.addEventListener('pst:native-home-ready',load,{once:true});
+})();
