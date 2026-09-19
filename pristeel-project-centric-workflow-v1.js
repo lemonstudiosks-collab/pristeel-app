@@ -260,10 +260,10 @@ function applyOpportunityFilter(kind,value){
    var field=S(value).toLowerCase();
    tenderState.field=['construction','infrastructure','energy','supply','services','other','all'].indexOf(field)>-1?field:'all';
  }else if(kind==='winner'||kind==='winner_group'){
-   tenderState.source='TED';tenderState.lifecycle='all';tenderState.field='all';
+   tenderState.lifecycle='all';tenderState.field='all';
    var winner=S(value).toLowerCase();
    tenderState.winner_group=['gc_epc','producer','other','all'].indexOf(winner)>-1?winner:'all';
-   if(tenderState.winner_group==='all')tenderState.source='TED';
+   tenderState.source='TED';
  }else if(kind==='reset'){
    tenderState.source='all';tenderState.lifecycle='all';tenderState.field='all';tenderState.winner_group='all';
  }else return false;
