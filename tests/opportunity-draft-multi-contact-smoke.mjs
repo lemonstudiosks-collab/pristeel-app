@@ -54,6 +54,18 @@ const unsafePayload={winner:{website:'https://www.example-steel.com/',contact_en
 ]}]}}};
 const safeOnly=resolveTedRecipients({route:'TED_GC',target_company:'Example Steel'},unsafePayload,20).map(r=>r.email);
 assert.deepEqual(safeOnly,['procurement@example-steel.com'],'unsafe/placeholder recipients must be excluded before draft creation');
+const regionalNoise={winner:{website:'https://www.example-energy.com/',contact_enrichment:{organizations:[{name:'Example Energy',domain:'example-energy.com',verified:true,contacts:[
+  {type:'email',value:'serviceclient.dz@example-energy.com',source_type:'official_website',confidence:'high',purpose:'person'},
+  {type:'email',value:'siemensenergy.au@example-energy.com',source_type:'official_website',confidence:'high',purpose:'person'},
+  {type:'email',value:'information.se.at@example-energy.com',source_type:'official_website',confidence:'high',purpose:'person'},
+  {type:'email',value:'contact-latam@example-energy.com',source_type:'official_website',confidence:'high',purpose:'person'},
+  {type:'email',value:'project.procurement@example-energy.com',source_type:'official_website',confidence:'high',purpose:'procurement'}
+]}]}}};
+assert.deepEqual(resolveTedRecipients({route:'TED_GC',target_company:'Example Energy'},regionalNoise,20).map(r=>r.email),['project.procurement@example-energy.com'],'regional/global contact-page noise must not become outreach recipients');
+const registryNoise={winner:{website:'https://company.lursoft.lv/en/example/123',contact_enrichment:{organizations:[{name:'Actual Winner SIA',domain:'lursoft.lv',verified:true,contacts:[
+  {type:'email',value:'info@lursoft.lv',source_type:'official_website',source_url:'https://company.lursoft.lv/en/example/123',confidence:'high',purpose:'general'}
+]}]}}};
+assert.equal(resolveTedRecipients({route:'TED_CONSORTIUM',target_company:'Actual Winner SIA'},registryNoise,20).length,0,'business-registry source domains must never be treated as winner contact domains');
 
 assert.equal(emails.filter(e=>e==='alice@acme-steel.de').length,1,'same email must not get duplicate drafts');
 const alice=recipients.find(r=>r.email==='alice@acme-steel.de');
@@ -208,6 +220,10 @@ assert(src.includes('To: ${headerSafe(to)}'),'each draft must have exactly its o
 assert(!src.includes('draft_brief'),'internal draft brief must not be interpolated into the outgoing message generator');
 assert(src.includes("actionId"),'narrow action-scoped production verification must be supported');
 assert(src.includes('consortium_project_outreach_draft')&&src.includes('general_project_outreach_draft'),'generator must cover consortium and unresolved-role TED drafts when a verified recipient exists');
+assert(src.includes('expectedTedRoute'),'generator must compare each TED action route against the current canonical winner classification');
+assert(src.includes('route_mismatch'),'route-mismatched historical actions must be skipped instead of producing conflicting copy');
+assert(src.includes('retireObsoleteDrafts'),'refresh must retire drafts whose recipient no longer passes preflight');
+assert(src.includes('recipient_no_longer_preflight_eligible'),'recipient retirement reason must be auditable');
 assert(src.includes('authorizationMode'),'draft generator must distinguish scheduler from explicit authenticated user requests');
 assert(src.includes('action_id_required_for_user_request'),'authenticated UI requests must never trigger a broad batch without an explicit action id');
 assert(src.includes("mode==='user'"),'user-triggered execution must remain action-scoped');
