@@ -247,6 +247,7 @@ begin
       and q.sent_at is null
       and q.replied_at is null
       and q.bounced_at is null
+      and lower(public.pppp_outbound_domain_v1(q.recipient_email,q.company_domain)) <> 'prissteel.com'
       and exists (
         select 1 from public.pppp_outbound_live_drafts_v1 d where d.draft_id=q.gmail_draft_id
       )
