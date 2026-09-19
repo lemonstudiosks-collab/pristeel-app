@@ -8,6 +8,8 @@ const draftStateSource=fs.readFileSync('pristeel-opportunity-draft-state-v1.js',
 const askBridgeSource=fs.readFileSync('pristeel-home-ask-functional-owner-v1.js','utf8');
 const securityHardening=fs.readFileSync('supabase/migrations/20260903111000_tender_security_hardening_v1.sql','utf8');
 const outreachReadPolicy=fs.readFileSync('supabase/migrations/20260911064638_opportunity_outreach_registry_authenticated_read.sql','utf8');
+const multiDraftGenerator=fs.readFileSync('supabase/functions/pppp-opportunity-draft-generator/index.ts','utf8');
+const recipientPolicy=fs.readFileSync('supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs','utf8');
 const sandbox={
   window:{},
   document:{getElementById:()=>null,addEventListener:()=>{},head:{appendChild:()=>{}},createElement:()=>({})},
@@ -68,12 +70,15 @@ assert.ok(german.subject.includes('Zusätzliche Stahlbau-Fertigungskapazität'))
 assert.ok(german.body.startsWith('Sehr geehrte Damen und Herren,'));
 assert.ok(german.body.endsWith('Mit freundlichen Grüßen'));
 
-assert.ok(projectCentric.includes('data-pcw-ti="draft"')&&projectCentric.includes('Përgatit emailin'),'Action Console must expose email preparation for every TED winner');
-assert.ok(source.includes('/users/me/drafts'),'Email workflow must create a Gmail draft');
-assert.ok(source.includes('pst:tender-gmail-draft-created'),'Successful Gmail creation must emit a direct persistence event instead of relying only on button polling');
-assert.ok(source.includes('gmail_draft_id')&&source.includes('gmail_message_id'),'The draft event must retain Gmail identifiers for reliable duplicate protection');
-assert.ok(source.includes("preferred='arianit.vllahiu@prissteel.com'"),'The Arianit Gmail alias must be preferred for the real signature');
-assert.ok(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(source),'Email must remain human-gated');
+assert.ok(projectCentric.includes('data-pcw-ti="draft"')&&projectCentric.includes('Përgatit draftet'),'Action Console must expose verified multi-contact draft preparation for TED winners');
+assert.ok(source.includes('pppp-opportunity-draft-generator')&&source.includes('action_id'),'Action Console must route the selected tender through the action-scoped canonical multi-draft engine');
+assert.ok(source.includes('pst:tender-gmail-drafts-ready'),'Successful multi-draft completion must emit the plural canonical event');
+assert.ok(source.includes('__pstMultiContact=true'),'Canonical tender draft workflow must identify itself to legacy compatibility layers');
+assert.ok(multiDraftGenerator.includes('separate_draft_per_recipient:true'),'Generator must keep one separate Gmail draft per verified recipient');
+assert.ok(multiDraftGenerator.includes('seedLegacyTenderDraft'),'Existing legacy single drafts must be adopted before missing recipient drafts are created');
+assert.ok(multiDraftGenerator.includes('human_send_required:true')&&multiDraftGenerator.includes('auto_send:false'),'Multi-draft engine must preserve the human-send gate');
+assert.ok(recipientPolicy.includes('company_attribution')&&recipientPolicy.includes('belongsToCompany'),'Recipient selection must retain company-attribution evidence');
+assert.ok(!/messages\/send|\/drafts\/send|GmailApp\.send|sendEmail\s*\(/.test(multiDraftGenerator),'Canonical multi-draft engine must never send email');
 
 assert.ok(draftStateSource.includes("outreach_draft"),'Opportunity draft state must persist on the canonical tender payload');
 assert.ok(draftStateSource.includes("pst-pcw-has-draft")&&draftStateSource.includes('DRAFT EMAILI U KRIJUA'),'Persisted draft state must visibly distinguish the Opportunity card');
