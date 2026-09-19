@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "2b433628bbb032e4e062c6ab3b9c88d65e256999",
+  "auditedAtCommit": "c9b6e40d9aee04d15a4f3fedd81dc9e3a91510e6",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "e18eb4dbb28d3d6945ef2f1b859f20f0eaa11c90"
+    "bootstrapGitBlobSha": "186a97fb1ebee630caeead8cb5f8be78e69a732c"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -92,7 +92,7 @@
         "pristeel-project-workbench-v2.js",
         "pristeel-project-execution-guard-v1.js"
       ],
-      "note": "Project Integrity UI owns the bounded base project load. Canonical Project Workflow remains the navigation/business-route owner. Project Workbench v3 (compatibility file pristeel-project-workbench-v2.js) is the exclusive visible Project Detail presentation owner. It consumes bounded registered commercial context facts through Project Data Integrity and delegates business navigation/actions to the Canonical Project Workflow and existing engines. Operator Flow, Unified Project Flow, Operating Experience, Daily Zones and the post-award presentation simplifier must yield whenever Workbench v3 is intended or active; the Execution Guard remains the lifecycle safety owner. No ownership layer performs automatic outbound communication."
+      "note": "Project Integrity UI owns the bounded base project load. Canonical Project Workflow remains the navigation/business-route owner. Project Workbench v3 (compatibility file pristeel-project-workbench-v2.js) is the exclusive visible Project Detail presentation owner. It consumes bounded registered commercial context facts through Project Data Integrity and delegates business navigation/actions to the Canonical Project Workflow and existing engines. Operator Flow, Unified Project Flow, Operating Experience, Daily Zones and the post-award presentation simplifier must yield whenever Workbench v3 is intended or active. Workbench also listens to the canonical pst:project-workspace-rendered lifecycle event so a project opened after bootstrap immediately receives the Workbench surface; the Execution Guard remains the lifecycle safety owner. No ownership layer performs automatic outbound communication."
     },
     {
       "area": "gmail-inbox",
