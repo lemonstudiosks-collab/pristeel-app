@@ -295,7 +295,7 @@ begin
      set status='suppressed',suppression_reason='unsafe_or_invalid_recipient',updated_at=now()
    where q.status='candidate'
      and (
-       q.recipient_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+
+       q.recipient_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
        or lower(coalesce(q.company_domain,'')) in (
          'gmail.com','googlemail.com','hotmail.com','outlook.com','live.com','yahoo.com','icloud.com','aol.com',
          'lursoft.lv','implisense.com','forbes.pl','aleo.com','example.com','example.org','example.net'
