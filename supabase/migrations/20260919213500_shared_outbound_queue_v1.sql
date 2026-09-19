@@ -295,7 +295,273 @@ begin
      set status='suppressed',suppression_reason='unsafe_or_invalid_recipient',updated_at=now()
    where q.status='candidate'
      and (
-       q.recipient_email !~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'
+       q.recipient_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
+       or lower(coalesce(q.company_domain,'')) in (
+         'gmail.com','googlemail.com','hotmail.com','outlook.com','live.com','yahoo.com','icloud.com','aol.com',
+         'lursoft.lv','implisense.com','forbes.pl','aleo.com','example.com','example.org','example.net'
+       )
+       or lower(split_part(q.recipient_email,'@',1)) in (
+         'investorrelations','investor.relations','personalni','nabor','werken','imie.nazwisko','bieterportal-alt',
+         'recruiting','jobs','careers','career','hr','humanresources','privacy','gdpr','webmaster','press','presse',
+         'media','newsletter','noreply','no-reply','donotreply','dpo','security','abuse'
+       )
+       or lower(split_part(q.recipient_email,'@',1)) like 'u003e%'
+     );
+
+  -- Exact recipient hard suppression after bounce / explicit do-not-contact from the shared outreach history.
+  update public.pppp_outbound_queue_v1 q
+     set status='suppressed',suppression_reason='recipient_blocked_by_outreach_history',updated_at=now()
+   where q.status='candidate'
+     and exists (
+       select 1 from public.outreach_contacts o
+       where lower(coalesce(o.contact_email,''))=lower(q.recipient_email)
+         and (coalesce(o.bounced,false) or lower(coalesce(o.status,'')) like '%do not contact%')
+     );
+
+  -- A company reply means cold outreach pauses for that domain until a human decides what to do next.
+  update public.pppp_outbound_queue_v1 q
+     set status='suppressed',suppression_reason='company_reply_requires_human_followup',updated_at=now()
+   where q.status='candidate'
+     and q.company_domain is not null
+     and exists (
+       select 1 from public.outreach_contacts o
+       where lower(coalesce(o.company_domain,''))=lower(q.company_domain)
+         and coalesce(o.replied,false)
+     );
+
+  -- Shared cooldown: TED and GC cannot independently cold-contact the same recipient/company.
+  update public.pppp_outbound_queue_v1 q
+     set status='suppressed',suppression_reason='recipient_cooldown_'||v_policy.recipient_cooldown_days::text||'d',updated_at=now()
+   where q.status='candidate'
+     and exists (
+       select 1 from public.pppp_outbound_queue_v1 h
+       where h.id<>q.id and h.sent_at is not null
+         and lower(h.recipient_email)=lower(q.recipient_email)
+         and h.sent_at >= now() - make_interval(days=>v_policy.recipient_cooldown_days)
+         and not (h.source=q.source and h.source_record_id=q.source_record_id)
+     );
+
+  update public.pppp_outbound_queue_v1 q
+     set status='suppressed',suppression_reason='domain_cooldown_'||v_policy.domain_cooldown_days::text||'d',updated_at=now()
+   where q.status='candidate'
+     and q.company_domain is not null
+     and exists (
+       select 1 from public.pppp_outbound_queue_v1 h
+       where h.id<>q.id and h.sent_at is not null and h.company_domain is not null
+         and lower(h.company_domain)=lower(q.company_domain)
+         and h.sent_at >= now() - make_interval(days=>v_policy.domain_cooldown_days)
+         and not (h.source=q.source and h.source_record_id=q.source_record_id)
+     );
+
+  select count(*) into v_suppressed from public.pppp_outbound_queue_v1 where status='suppressed';
+
+  return jsonb_build_object(
+    'ok',true,'ted_upserted',v_ted,'gc_touch1_upserted',v_gc1,'gc_touch2_upserted',v_gc2,
+    'suppressed_total',v_suppressed,'send_enabled',v_policy.send_enabled,
+    'human_send_required',true,'daily_limit',v_policy.daily_limit
+  );
+end;
+$$;
+
+create or replace function public.pppp_outbound_plan_day_v1(
+  p_day date default current_date,
+  p_limit integer default null
+)
+returns table(
+  queue_id uuid,
+  planned_rank integer,
+  planned_at timestamptz,
+  source text,
+  touch_no smallint,
+  company_name text,
+  company_domain text,
+  recipient_email text,
+  recipient_name text,
+  project_title text,
+  relevance_score integer,
+  priority_score integer,
+  gmail_draft_id text,
+  approved_for_send boolean,
+  send_enabled boolean
+)
+language plpgsql
+security definer
+set search_path=public,pg_temp
+as $$
+declare
+  v_policy public.pppp_outbound_policy_v1%rowtype;
+  v_limit integer;
+  v_sent integer;
+  v_reserved integer;
+  v_remaining integer;
+begin
+  select * into v_policy from public.pppp_outbound_policy_v1 where id='global';
+  if p_day < v_policy.starts_on then
+    raise exception 'Outbound planning starts on %',v_policy.starts_on;
+  end if;
+
+  perform public.pppp_outbound_sync_v1();
+
+  v_limit:=least(v_policy.daily_limit,greatest(1,coalesce(p_limit,v_policy.daily_limit)));
+  select count(*) into v_sent
+  from public.pppp_outbound_queue_v1 q
+  where q.sent_at is not null
+    and (q.sent_at at time zone v_policy.timezone)::date=p_day;
+  select count(*) into v_reserved
+  from public.pppp_outbound_queue_v1 q
+  where q.planned_date=p_day and q.status='planned' and q.approved_for_send=true and q.sent_at is null;
+  v_remaining:=greatest(0,v_limit-v_sent-v_reserved);
+
+  -- Re-plan unapproved, unsent rows idempotently.
+  update public.pppp_outbound_queue_v1
+     set status='candidate',planned_date=null,planned_at=null,planned_rank=null,updated_at=now()
+   where planned_date=p_day and status='planned' and approved_for_send=false and sent_at is null;
+
+  with ranked_recipient as (
+    select q.id,
+           row_number() over(
+             partition by lower(q.recipient_email)
+             order by q.priority_score desc,q.relevance_score desc,
+                      case q.source when 'TED' then 1 else 2 end,
+                      q.source_updated_at desc nulls last,q.id
+           ) as rn_email
+    from public.pppp_outbound_queue_v1 q
+    where q.status='candidate'
+      and q.suppression_reason is null
+      and q.gmail_draft_id is not null
+      and q.sent_at is null
+      and q.replied_at is null
+      and q.bounced_at is null
+  ),
+  ranked_domain as (
+    select q.id,
+           row_number() over(
+             partition by lower(coalesce(q.company_domain,public.pppp_outbound_domain_v1(q.recipient_email,null)))
+             order by q.priority_score desc,q.relevance_score desc,
+                      case q.source when 'TED' then 1 else 2 end,
+                      q.source_updated_at desc nulls last,q.id
+           ) as rn_domain
+    from public.pppp_outbound_queue_v1 q
+    join ranked_recipient e on e.id=q.id and e.rn_email=1
+  ),
+  chosen as (
+    select q.id,
+           row_number() over(
+             order by q.priority_score desc,q.relevance_score desc,
+                      case q.source when 'TED' then 1 else 2 end,
+                      q.source_updated_at desc nulls last,q.id
+           )::integer as rn
+    from public.pppp_outbound_queue_v1 q
+    join ranked_domain d on d.id=q.id and d.rn_domain<=v_policy.max_per_domain_per_day
+    where not exists (
+      select 1 from public.pppp_outbound_queue_v1 x
+      where x.planned_date=p_day
+        and x.id<>q.id
+        and lower(coalesce(x.company_domain,''))=lower(coalesce(q.company_domain,''))
+        and x.status in ('planned','sent')
+    )
+    limit v_remaining
+  )
+  update public.pppp_outbound_queue_v1 q
+     set status='planned',
+         planned_date=p_day,
+         planned_rank=c.rn+v_sent+v_reserved,
+         planned_at=((p_day::timestamp+v_policy.day_start)
+                     + make_interval(mins=>v_policy.planned_gap_minutes*(c.rn+v_sent+v_reserved-1)))
+                    at time zone v_policy.timezone,
+         approved_for_send=false,
+         updated_at=now()
+    from chosen c
+   where q.id=c.id;
+
+  return query
+  select q.id,q.planned_rank,q.planned_at,q.source,q.touch_no,q.company_name,q.company_domain,
+         q.recipient_email,q.recipient_name,q.project_title,q.relevance_score,q.priority_score,
+         q.gmail_draft_id,q.approved_for_send,v_policy.send_enabled
+  from public.pppp_outbound_queue_v1 q
+  where q.planned_date=p_day and q.status='planned'
+  order by q.planned_rank,q.id;
+end;
+$$;
+
+create or replace view public.pppp_outbound_review_v1
+with (security_invoker=true)
+as
+select
+  q.id,q.source,q.touch_no,q.source_key,q.tender_watch_id,q.project_key,q.project_title,
+  q.company_name,q.company_domain,q.recipient_email,q.recipient_name,q.contact_role,
+  q.relevance_score,q.priority_score,q.gmail_draft_id,q.gmail_draft_message_id,q.gmail_thread_id,
+  q.status,q.suppression_reason,q.planned_date,q.planned_at,q.planned_rank,q.approved_for_send,
+  q.human_send_required,q.sent_at,q.replied_at,q.bounced_at,q.source_updated_at,q.updated_at,
+  count(*) over(partition by lower(q.recipient_email)) as same_recipient_candidates,
+  count(*) over(partition by lower(coalesce(q.company_domain,''))) as same_domain_candidates
+from public.pppp_outbound_queue_v1 q
+order by
+  case q.status when 'planned' then 1 when 'candidate' then 2 when 'suppressed' then 3 else 9 end,
+  q.planned_date nulls last,q.planned_rank nulls last,q.priority_score desc,q.updated_at desc;
+
+create or replace function public.pppp_outbound_status_v1(p_day date default current_date)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path=public,pg_temp
+as $$
+  select jsonb_build_object(
+    'policy',(select to_jsonb(p) from public.pppp_outbound_policy_v1 p where p.id='global'),
+    'day',p_day,
+    'queue_total',(select count(*) from public.pppp_outbound_queue_v1),
+    'candidate_count',(select count(*) from public.pppp_outbound_queue_v1 where status='candidate'),
+    'planned_count',(select count(*) from public.pppp_outbound_queue_v1 where status='planned' and planned_date=p_day),
+    'suppressed_count',(select count(*) from public.pppp_outbound_queue_v1 where status='suppressed'),
+    'sent_count',(select count(*) from public.pppp_outbound_queue_v1 q,public.pppp_outbound_policy_v1 p
+                  where q.sent_at is not null and p.id='global'
+                    and (q.sent_at at time zone p.timezone)::date=p_day),
+    'ted_open',(select count(*) from public.pppp_outbound_queue_v1 where source='TED' and status in ('candidate','planned')),
+    'gc_open',(select count(*) from public.pppp_outbound_queue_v1 where source='GC' and status in ('candidate','planned')),
+    'human_send_required',true,
+    'auto_send',false
+  );
+$$;
+
+alter table public.pppp_outbound_policy_v1 enable row level security;
+alter table public.pppp_outbound_queue_v1 enable row level security;
+
+drop policy if exists pppp_outbound_policy_authenticated_read on public.pppp_outbound_policy_v1;
+create policy pppp_outbound_policy_authenticated_read
+on public.pppp_outbound_policy_v1 for select to authenticated using (true);
+
+drop policy if exists pppp_outbound_queue_authenticated_read on public.pppp_outbound_queue_v1;
+create policy pppp_outbound_queue_authenticated_read
+on public.pppp_outbound_queue_v1 for select to authenticated using (true);
+
+revoke all on public.pppp_outbound_policy_v1 from public,anon;
+revoke all on public.pppp_outbound_queue_v1 from public,anon;
+grant select on public.pppp_outbound_policy_v1 to authenticated,service_role;
+grant select on public.pppp_outbound_queue_v1 to authenticated,service_role;
+grant select on public.pppp_outbound_review_v1 to authenticated,service_role;
+
+revoke all on function public.pppp_outbound_sync_v1() from public,anon,authenticated;
+revoke all on function public.pppp_outbound_plan_day_v1(date,integer) from public,anon,authenticated;
+grant execute on function public.pppp_outbound_sync_v1() to service_role;
+grant execute on function public.pppp_outbound_plan_day_v1(date,integer) to service_role;
+grant execute on function public.pppp_outbound_status_v1(date) to authenticated,service_role;
+
+do $$
+begin
+  if exists(select 1 from pg_roles where rolname='supabase_read_only_user') then
+    grant select on public.pppp_outbound_policy_v1 to supabase_read_only_user;
+    grant select on public.pppp_outbound_queue_v1 to supabase_read_only_user;
+    grant select on public.pppp_outbound_review_v1 to supabase_read_only_user;
+    grant execute on function public.pppp_outbound_status_v1(date) to supabase_read_only_user;
+  end if;
+end $$;
+
+-- Seed the shared queue from the current TED and GC registries.
+select public.pppp_outbound_sync_v1();
+
+commit;
+
        or lower(coalesce(q.company_domain,'')) in (
          'gmail.com','googlemail.com','hotmail.com','outlook.com','live.com','yahoo.com','icloud.com','aol.com',
          'lursoft.lv','implisense.com','forbes.pl','aleo.com','example.com','example.org','example.net'

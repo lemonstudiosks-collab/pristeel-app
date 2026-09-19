@@ -1,1 +1,25 @@
-name: Shared outbound queue smoke\n\non:\n  pull_request:\n    paths:\n      - 'supabase/migrations/20260919213500_shared_outbound_queue_v1.sql'\n      - 'tests/shared-outbound-queue-smoke.mjs'\n      - '.github/workflows/shared-outbound-queue-smoke.yml'\n  push:\n    branches: [main]\n    paths:\n      - 'supabase/migrations/20260919213500_shared_outbound_queue_v1.sql'\n      - 'tests/shared-outbound-queue-smoke.mjs'\n\njobs:\n  smoke:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 20\n      - run: node tests/shared-outbound-queue-smoke.mjs\n
+name: Shared outbound queue smoke
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20260919213500_shared_outbound_queue_v1.sql'
+      - 'supabase/migrations/20260919221000_shared_outbound_queue_email_regex_fix_v1.sql'
+      - 'tests/shared-outbound-queue-smoke.mjs'
+      - '.github/workflows/shared-outbound-queue-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20260919213500_shared_outbound_queue_v1.sql'
+      - 'supabase/migrations/20260919221000_shared_outbound_queue_email_regex_fix_v1.sql'
+      - 'tests/shared-outbound-queue-smoke.mjs'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/shared-outbound-queue-smoke.mjs
