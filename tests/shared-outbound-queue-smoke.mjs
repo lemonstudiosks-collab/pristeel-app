@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 
 const sql=await readFile(new URL('../supabase/migrations/20260919213500_shared_outbound_queue_v1.sql',import.meta.url),'utf8');
 const live=await readFile(new URL('../supabase/migrations/20260919224500_outbound_live_draft_preflight_v1.sql',import.meta.url),'utf8');
+const truth=await readFile(new URL('../supabase/migrations/20260919231500_outbound_stale_truth_preflight_v1.sql',import.meta.url),'utf8');
 
 for(const token of [
   'create table if not exists public.pppp_outbound_policy_v1',
@@ -65,3 +66,19 @@ for(const token of [
 
 for(const forbidden of ['/messages/send','/drafts/send','gmail.send','send_email(','send_draft('])
   assert.equal(live.includes(forbidden),false,'live draft preflight must never send mail: '+forbidden);
+
+
+for(const token of [
+  "suppression_reason='gmail_draft_missing'",
+  "then 'stale'",
+  "when q.status='stale' and q.suppression_reason='gmail_draft_missing' then 'candidate'",
+  'pppp_outbound_preflight_v1',
+  "'missing_draft_count'",
+  "'duplicate_recipient_count'",
+  "'duplicate_domain_count'",
+  "'ready_to_dispatch_count'",
+  "'auto_send',false"
+]) assert.ok(truth.includes(token),'missing stale-truth/preflight safeguard: '+token);
+
+for(const forbidden of ['/messages/send','/drafts/send','gmail.send','send_email(','send_draft('])
+  assert.equal(truth.includes(forbidden),false,'stale-truth/preflight migration must not send mail: '+forbidden);
