@@ -73,10 +73,10 @@ function offerLabel(o){if(!o)return'Pa ofertë';if(o.context_fact_evidence)retur
 function latestClientActivity(d){return latestIncomingAfterOffer(d,effectiveOffer(d))||latestEmailOf(d,'incoming');}
 function latestOperatorAction(d){var xs=contextFacts(d).filter(function(f){var v=factValue(f),k=N(f&&f.fact_key),cat=N(f&&f.category);return (cat==='operator_update'||k.indexOf('operator_update.')===0)&&pick(v.current_action,v.next_action,'');}).sort(function(a,b){return Math.max(ts(b&&b.updated_at),ts(b&&b.created_at))-Math.max(ts(a&&a.updated_at),ts(a&&a.created_at));});if(!xs.length)return null;var f=xs[0],v=factValue(f);return{title:pick(v.current_action,v.next_action,'Veprimi aktual'),copy:pick(v.summary,v.text,f.subject,''),area:pick(v.action_area,'overview'),hint:pick(v.hint,'Hap veprimin aktual')};}
 function currentNext(d){
-  var op=latestOperatorAction(d);if(op)return op;
   var q=effectiveOffer(d),reply=latestIncomingAfterOffer(d,q),won=projectWon(d),closed=projectClosed(d),so=supplierOffers(d),r=rfqs(d);
   if(closed)return{title:'Shiko historikun e projektit',copy:'Projekti është i mbyllur; të dhënat dhe dokumentet mbeten të aksesueshme.',view:'overview',hint:'Hap përmbledhjen'};
   if(won){var p=N([d.project&&d.project.pipeline_stage,d.project&&d.project.operational_state].join(' '));if(/invoice|fatur|finance|payment|ark/.test(p))return{title:'Vazhdo me faturimin / financat',copy:'Projekti është pas fitimit dhe kërkon veprim financiar.',area:'finance',hint:'Hap financat'};return{title:'Vazhdo ekzekutimin',copy:'Projekti është fituar. Fokusi kalon te realizimi, dokumentet dhe dorëzimi.',area:'execution',hint:'Hap ekzekutimin'};}
+  var op=latestOperatorAction(d);if(op)return op;
   if(q&&effectiveOfferSent(q)&&reply)return{title:'Shqyrto reagimin e klientit',copy:pick(reply.subject,reply.snippet,'Ka komunikim të ri pas ofertës së dërguar.'),area:'communication',hint:'Hap komunikimin e klientit'};
   if(q&&effectiveOfferSent(q))return{title:'Oferta është te klienti',copy:'Kontrollo përgjigjen ose follow-up-in. Çdo revizion i ri mbetet human-gated.',area:'communication',hint:'Hap komunikimin'};
   if(q)return{title:'Finalizo ofertën tonë',copy:'Drafti ekziston. Çmimi final dhe dërgimi mbeten human-gated.',view:'offer',hint:'Hap ofertën'};
