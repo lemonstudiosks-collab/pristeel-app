@@ -85,4 +85,4 @@ export function resolveTedRecipients(action,tenderPayload,max=20){
   return [...map.values()].sort((a,b)=>(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,Math.max(1,Math.min(50,Number(max)||20)));
 }
 
-export function recipientGreeting(company,recipient){const n=explicitName(recipient?.name);return n?`Dear ${n},`:`Dear ${txt(company,300)||'Sir or Madam'} team,`;}
+export function recipientGreeting(company,recipient){const e=normalizeEmail(recipient?.email),local=(e.split('@')[0]||'').replace(/\+.*/,''),purpose=txt(recipient?.purpose,80).toLowerCase(),general=purpose==='general'||GENERIC_LOCAL_PARTS.has(local);const n=general?'':explicitName(recipient?.name);return n?`Dear ${n},`:'Dear Sir or Madam,';}

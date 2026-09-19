@@ -52,12 +52,12 @@ assert.equal(alice?.name,'Alice Example');
 assert.equal(recipientGreeting(action.target_company,alice),'Dear Alice Example,','known contact name must be used');
 const inferred=recipients.find(r=>r.email==='max.mustermann@acme-steel.de');
 assert.equal(inferred?.name,'','email local-parts must never be promoted into an unverified person name');
-assert.equal(recipientGreeting(action.target_company,inferred),'Dear Acme Steel GmbH team,','unnamed classified person email must use the company greeting');
+assert.equal(recipientGreeting(action.target_company,inferred),'Dear Sir or Madam,','unnamed classified person email must use a formal generic greeting');
 const general=recipients.find(r=>r.email==='info@acme-steel.de');
-assert.equal(recipientGreeting(action.target_company,general),'Dear Acme Steel GmbH team,','unnamed contact must use company greeting');
+assert.equal(recipientGreeting(action.target_company,general),'Dear Sir or Madam,','unnamed contact must use a formal generic greeting');
 const functional=recipients.find(r=>r.email==='office.team@acme-steel.de');
 assert.equal(functional?.name,'','functional mailbox token must block name inference even when enrichment says person');
-assert.equal(recipientGreeting(action.target_company,functional),'Dear Acme Steel GmbH team,','functional mailbox must retain company greeting');
+assert.equal(recipientGreeting(action.target_company,functional),'Dear Sir or Madam,','functional mailbox must retain a formal generic greeting');
 assert.equal(normalizeEmail(' Alice@Example.COM '),'alice@example.com');
 assert.equal(resolveTedRecipients(action,payload,2).length,2,'recipient cap must be respected');
 
@@ -153,6 +153,19 @@ assert.equal(bosniaEnglish.language,'en','Bosnia and Herzegovina must use Englis
 const croatiaBcs=buildTedDraftContent({...enAction,tender_title:'Croatia – Structural steelworks – Bridge package'},{...enTender,title:'Croatia – Structural steelworks – Bridge package',winner:{name:'Example d.o.o.',country:'HRV'}},{email:'info@example.hr',purpose:'general'});
 assert.equal(croatiaBcs.language,'bcs','Croatia must use Serbo-Croatian/BSC copy');
 assert(/Poštovani/.test(croatiaBcs.body),'BCS draft must use a local-language greeting');
+const englishGeneral=buildTedDraftContent({...enAction,route:'TED_GC',target_company:'Example Construction Ltd',tender_title:'France – Construction work – Project Alpha'},{...enTender,title:'France – Construction work – Project Alpha',winner:{name:'Example Construction Ltd',country:'FRA'}},{email:'info@example-construction.fr',purpose:'general'});
+const englishNamed=buildTedDraftContent({...enAction,route:'TED_GC',target_company:'Example Construction Ltd',tender_title:'France – Construction work – Project Alpha'},{...enTender,title:'France – Construction work – Project Alpha',winner:{name:'Example Construction Ltd',country:'FRA'}},{email:'jane.doe@example-construction.fr',name:'Jane Doe',purpose:'procurement'});
+assert(englishGeneral.body.startsWith('Dear Sir or Madam,'),'generic English mailbox must use Dear Sir or Madam');
+assert(englishNamed.body.startsWith('Dear Jane Doe,'),'verified named contact must receive a personal greeting');
+const namedButGeneric=buildTedDraftContent({...enAction,route:'TED_GC',target_company:'Example Construction Ltd',tender_title:'France – Construction work – Project Alpha'},{...enTender,title:'France – Construction work – Project Alpha',winner:{name:'Example Construction Ltd',country:'FRA'}},{email:'info@example-construction.fr',name:'Jane Doe',purpose:'person'});
+assert(namedButGeneric.body.startsWith('Dear Sir or Madam,'),'generic mailbox must stay generic even if another source incorrectly associates a person name with it');
+const projectBeta=buildTedDraftContent({...enAction,route:'TED_GC',target_company:'Example Construction Ltd',tender_title:'France – Construction work – Project Beta'},{...enTender,title:'France – Construction work – Project Beta',winner:{name:'Example Construction Ltd',country:'FRA'}},{email:'info@example-construction.fr',purpose:'general'});
+assert.notEqual(englishGeneral.subject,projectBeta.subject,'different projects must produce different customer-facing subjects');
+assert(englishGeneral.subject.includes('Project Alpha')&&projectBeta.subject.includes('Project Beta'),'subject must identify the specific project');
+const longEast=buildTedDraftContent({...enAction,route:'TED_GC',tender_title:'Romania – Roadworks – Lucrari de intretinere multianuala vara a retelei de drumuri judetene din judetul Tulcea, zona Est, in perioada 2024-2027'},{...enTender,title:'Romania – Roadworks – Lucrari de intretinere multianuala vara a retelei de drumuri judetene din judetul Tulcea, zona Est, in perioada 2024-2027',winner:{name:'Example SRL',country:'ROU'}},{email:'info@example.ro',purpose:'general'});
+const longWest=buildTedDraftContent({...enAction,route:'TED_GC',tender_title:'Romania – Roadworks – Lucrari de intretinere multianuala vara a retelei de drumuri judetene din judetul Tulcea, zona Vest, in perioada 2024-2027'},{...enTender,title:'Romania – Roadworks – Lucrari de intretinere multianuala vara a retelei de drumuri judetene din judetul Tulcea, zona Vest, in perioada 2024-2027',winner:{name:'Example SRL',country:'ROU'}},{email:'info@example.ro',purpose:'general'});
+assert.notEqual(longEast.subject,longWest.subject,'long project titles that differ near the end must still yield different subjects');
+assert(longEast.subject.includes('zona Est')&&longWest.subject.includes('zona Vest'),'subject truncation must preserve distinguishing project suffixes');
 assert(english.html_body.includes(PRISTEEL_LOGO_URL),'English HTML signature must also include the PRISTEEL logo');
 
 const src=fs.readFileSync(new URL('../supabase/functions/pppp-opportunity-draft-generator/index.ts',import.meta.url),'utf8');
