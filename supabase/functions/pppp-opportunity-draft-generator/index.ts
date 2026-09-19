@@ -103,6 +103,7 @@ async function persistActionState(a:any,p:any,recipients:any[]){const {data,erro
 async function processAction(a:any,budget:{writes:number},refreshExisting=false){let p=a.payload&&typeof a.payload==='object'?a.payload:{},tender=await tenderContext(a.tender_watch_id);const recipients=/^TED_/i.test(text(a.route,80))?resolveTedRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1);if(!recipients.length)return{action_key:a.action_key,event:'no_recipients',recipients:0,created:0,refreshed:0,preserved:0,sent:0,remaining:0};await seedLegacyTenderDraft(a,tender,recipients);let created=0,refreshed=0,preserved=0,sent=0,failures:any[]=[];
   for(const recipient of recipients){let row=await ensureRegistry(a,recipient);try{
       if(row.status==='sent'){sent++;continue;}
+      if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)continue;
       let wasRefresh=false;
       if(row.status==='draft_created'&&row.gmail_draft_id){
         const live=await gmailDraft(row.gmail_draft_id);
