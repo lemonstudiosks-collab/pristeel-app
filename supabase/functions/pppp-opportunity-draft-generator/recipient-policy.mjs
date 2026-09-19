@@ -1,7 +1,7 @@
 const EMAIL_RE=/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/i;
 const FREE_DOMAINS=new Set(['gmail.com','googlemail.com','hotmail.com','outlook.com','live.com','yahoo.com','yahoo.de','yahoo.fr','icloud.com','aol.com','gmx.com','gmx.de','web.de','proton.me','protonmail.com']);
 const RESERVED_DOMAINS=new Set(['example.com','example.org','example.net']);
-const BLOCKED_SOURCE_DOMAINS=new Set(['forbes.pl','aleo.com','linkedin.com','facebook.com','instagram.com','wikipedia.org','bloomberg.com','crunchbase.com','kompass.com','europages.com']);
+const BLOCKED_SOURCE_DOMAINS=new Set(['forbes.pl','aleo.com','linkedin.com','facebook.com','instagram.com','wikipedia.org','bloomberg.com','crunchbase.com','kompass.com','europages.com','lursoft.lv']);
 const BLOCKED_OUTREACH_LOCAL_PARTS=new Set(['invoice','billing','faktury','accounting','accounts','payable','recruiting','jobs','careers','career','hr','humanresources','privacy','gdpr','datenschutz','skundai','webmaster','support','press','presse','media','newsletter','noreply','no-reply','donotreply','legal','dpo','security','abuse','investorrelations','investor.relations','personalni','nabor','werken','imie.nazwisko','bieterportal-alt','20info']);
 const GENERIC_LOCAL_PARTS=new Set(['info','office','contact','kontakt','sales','verkauf','procurement','purchasing','einkauf','tender','tenders','ausschreibung','vergabe','post','mail','hello','service','support','faktury','invoice','billing','commercial','comercial','admin','webmaster','pr']);
 
@@ -11,7 +11,7 @@ export function validEmail(v){return EMAIL_RE.test(normalizeEmail(v));}
 export function domainFromEmail(v){const e=normalizeEmail(v),i=e.lastIndexOf('@');return i>0?e.slice(i+1).replace(/^www\./,''):'';}
 export function normalizeDomain(v){let s=txt(v,500).toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//i,'').split('/')[0].split('?')[0].split('#')[0].split(':')[0].replace(/^www\./,'');return s||'';}
 export function isReservedEmail(v){const d=domainFromEmail(v);return !d||RESERVED_DOMAINS.has(d)||d.endsWith('.example')||d.endsWith('.invalid')||d==='localhost';}
-export function isBlockedOutreachEmail(v){const e=normalizeEmail(v),local=e.split('@')[0]||'';return BLOCKED_OUTREACH_LOCAL_PARTS.has(local)||/^u003e/i.test(local)||/^(?:&gt;|%3e)/i.test(local)||/^20[a-z]{2,}\.[a-z]{2,}$/.test(local);}
+export function isBlockedOutreachEmail(v){const e=normalizeEmail(v),local=e.split('@')[0]||'';return BLOCKED_OUTREACH_LOCAL_PARTS.has(local)||/^u003e/i.test(local)||/^(?:&gt;|%3e)/i.test(local)||/^20[a-z]{2,}\.[a-z]{2,}$/.test(local)||/^(serviceclient|siemensenergy|information)\.[a-z]{2}(?:\.[a-z]{2})?$/i.test(local)||/^contact-(latam|emea|apac)$/i.test(local);}
 export function sameCompanyDomain(email,domain){const ed=domainFromEmail(email),d=normalizeDomain(domain);return !!ed&&!!d&&(ed===d||ed.endsWith('.'+d)||d.endsWith('.'+ed));}
 function explicitName(v){const s=txt(v,180).replace(/\s+/g,' ');if(!s||s.includes('@')||/^https?:/i.test(s))return'';return s;}
 function titleCaseNamePart(v){return v?`${v[0].toUpperCase()}${v.slice(1).toLowerCase()}`:'';}
@@ -26,9 +26,10 @@ function contactName(row,email){return explicitName(row?.full_name||row?.contact
 function confidenceRank(v){const s=txt(v,40).toLowerCase();return s==='high'?3:s==='medium'?2:s==='verified'?3:s==='low'?1:0;}
 function websiteDomain(v){return normalizeDomain(v);}
 
+function blockedSourceDomain(d){d=normalizeDomain(d);if(!d)return false;for(const b of BLOCKED_SOURCE_DOMAINS)if(d===b||d.endsWith('.'+b))return true;return false;}
 function companyDomains(action,winner){
   const out=new Set();
-  const add=d=>{d=normalizeDomain(d);if(d&&!FREE_DOMAINS.has(d)&&!RESERVED_DOMAINS.has(d)&&!BLOCKED_SOURCE_DOMAINS.has(d))out.add(d);};
+  const add=d=>{d=normalizeDomain(d);if(d&&!FREE_DOMAINS.has(d)&&!RESERVED_DOMAINS.has(d)&&!blockedSourceDomain(d))out.add(d);};
   add(action?.company_domain);
   add(websiteDomain(winner?.website));
   for(const u of Array.isArray(winner?.websites)?winner.websites:[])add(websiteDomain(u));
@@ -36,7 +37,7 @@ function companyDomains(action,winner){
   return out;
 }
 function belongsToCompany(email,domains){if(!domains.size)return false;for(const d of domains)if(sameCompanyDomain(email,d))return true;return false;}
-function sourceDomainMatches(email,meta,domains){const sd=websiteDomain(meta?.source_url);if(!sd||BLOCKED_SOURCE_DOMAINS.has(sd)||!sameCompanyDomain(email,sd))return false;if(!domains.size)return true;for(const d of domains)if(sd===d||sd.endsWith('.'+d)||d.endsWith('.'+sd))return true;return false;}
+function sourceDomainMatches(email,meta,domains){const sd=websiteDomain(meta?.source_url);if(!sd||blockedSourceDomain(sd)||!sameCompanyDomain(email,sd))return false;if(!domains.size)return true;for(const d of domains)if(sd===d||sd.endsWith('.'+d)||d.endsWith('.'+sd))return true;return false;}
 
 function candidate(email,meta={}){
   const e=normalizeEmail(email),d=domainFromEmail(e);if(!validEmail(e)||isReservedEmail(e)||(!meta?.allow_free_domain&&FREE_DOMAINS.has(d))||isBlockedOutreachEmail(e))return null;
