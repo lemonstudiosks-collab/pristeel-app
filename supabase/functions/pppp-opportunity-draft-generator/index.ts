@@ -104,8 +104,8 @@ function expectedTedRoute(tender:any){
   if(t==='producer')return'TED_PRODUCER';
   if(t==='trader_consortium'||t==='consortium_mixed')return'TED_CONSORTIUM';
   if(t==='gc_epc')return'TED_GC';
-  if(t==='unknown'||!t)return'TED_GENERAL';
-  return'TED_GENERAL';
+  if(t==='unknown'||!t)return'';
+  return'';
 }
 async function retireObsoleteDrafts(a:any,keepEmails:Set<string>,reason:string,budget:{writes:number}){
   const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',a.id);
@@ -139,7 +139,7 @@ async function persistActionState(a:any,p:any,recipients:any[]){const {data,erro
 async function processAction(a:any,budget:{writes:number},refreshExisting=false){
   let p=a.payload&&typeof a.payload==='object'?a.payload:{},tender=await tenderContext(a.tender_watch_id);
   const route=text(a.route,80).toUpperCase(),expected=/^TED_/i.test(route)?expectedTedRoute(tender):route;
-  if(/^TED_/i.test(route)&&route!==expected){
+  if(/^TED_/i.test(route)&&expected&&route!==expected){
     const retired=refreshExisting?await retireObsoleteDrafts(a,new Set(),`route_mismatch:${route}->${expected}`,budget):0;
     return{action_key:a.action_key,company:a.target_company,event:'route_mismatch',route,expected_route:expected,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired,remaining:0};
   }
