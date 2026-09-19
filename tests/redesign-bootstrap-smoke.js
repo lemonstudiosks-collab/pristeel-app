@@ -60,8 +60,8 @@ assert(projectCentric.includes('Shkarko dosjen') && projectCentric.includes('Ana
 assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includes('GC / EPC') && projectCentric.includes('Shiko kontaktet'), 'TED popup must expose winner role and contacts');
 new Function(tenderActions);
 assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
-assert(projectCentric.includes('Përgatit emailin'), 'Every TED winner popup must expose the human-gated email preparation action');
-assert(!tenderActions.includes("if(role==='unknown')throw new Error"), 'Unknown TED winner role must use a cautious draft instead of hiding email preparation');
+assert(projectCentric.includes('Përgatit draftet'), 'TED winner popup must expose the human-gated verified multi-contact draft action');
+assert(tenderActions.includes("role!=='gc_epc'&&role!=='producer'"), 'Unknown TED winner role must be blocked until PPPP verifies GC/EPC vs producer classification');
 
 // Tender dossier intake owns the new Price Intelligence presentation without creating another store.
 new Function(tenderImporter);
