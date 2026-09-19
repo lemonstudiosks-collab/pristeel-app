@@ -1,5 +1,5 @@
--- Keep stale Gmail references stale across canonical sync, revive only when the draft is live,
--- and expose one cheap batch preflight for the shared TED + GC outbound queue.
+-- Keep Gmail-missing queue rows stale until a live draft reappears.
+-- Adds one low-cost batch preflight for the shared TED + GC outbound queue.
 
 begin;
 
@@ -418,74 +418,6 @@ begin
     payload=excluded.payload,
     updated_at=now();
   get diagnostics v_manual=row_count;
-
-  -- Apply recipient/history safety to manual Gmail-only drafts before planning.
-  update public.pppp_outbound_queue_v1 q
-     set status='suppressed',suppression_reason='unsafe_or_invalid_recipient',
-         planned_date=null,planned_at=null,planned_rank=null,approved_for_send=false,updated_at=now()
-   where q.sent_at is null
-     and coalesce((q.payload->>'manual_live_draft')::boolean,false)
-     and q.status='candidate'
-     and (
-       q.recipient_email !~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+
-  update public.pppp_outbound_queue_v1 q
-     set status='suppressed',suppression_reason='internal_pristeel_recipient',planned_date=null,planned_at=null,
-         planned_rank=null,approved_for_send=false,updated_at=now()
-   where q.sent_at is null
-     and lower(public.pppp_outbound_domain_v1(q.recipient_email,q.company_domain))='prissteel.com';
-
-  select count(*) into v_live from public.pppp_outbound_queue_v1 q
-  where q.sent_at is null
-    and q.status in ('candidate','planned')
-    and exists(select 1 from public.pppp_outbound_live_drafts_v1 d where d.draft_id=q.gmail_draft_id);
-
-  return jsonb_build_object(
-    'ok',true,
-    'gmail_drafts_seen',v_seen,
-    'queue_rows_marked_stale',v_stale,
-    'manual_live_drafts_registered',v_manual,
-    'live_send_ready_rows',v_live,
-    'human_send_required',true,
-    'auto_send',false
-  );
-end;
-$$;
-       or lower(coalesce(q.company_domain,'')) in (
-         'gmail.com','googlemail.com','hotmail.com','outlook.com','live.com','yahoo.com','icloud.com','aol.com',
-         'lursoft.lv','implisense.com','forbes.pl','aleo.com','example.com','example.org','example.net'
-       )
-       or lower(split_part(q.recipient_email,'@',1)) in (
-         'investorrelations','investor.relations','personalni','nabor','werken','imie.nazwisko','bieterportal-alt',
-         'recruiting','jobs','careers','career','hr','humanresources','privacy','gdpr','webmaster','press','presse',
-         'media','newsletter','noreply','no-reply','donotreply','dpo','security','abuse'
-       )
-       or lower(split_part(q.recipient_email,'@',1)) like 'u003e%'
-     );
-
-  update public.pppp_outbound_queue_v1 q
-     set status='suppressed',suppression_reason='recipient_blocked_by_outreach_history',
-         planned_date=null,planned_at=null,planned_rank=null,approved_for_send=false,updated_at=now()
-   where q.sent_at is null
-     and coalesce((q.payload->>'manual_live_draft')::boolean,false)
-     and q.status='candidate'
-     and exists (
-       select 1 from public.outreach_contacts o
-       where lower(coalesce(o.contact_email,''))=lower(q.recipient_email)
-         and (coalesce(o.bounced,false) or lower(coalesce(o.status,'')) like '%do not contact%')
-     );
-
-  update public.pppp_outbound_queue_v1 q
-     set status='suppressed',suppression_reason='company_reply_requires_human_followup',
-         planned_date=null,planned_at=null,planned_rank=null,approved_for_send=false,updated_at=now()
-   where q.sent_at is null
-     and coalesce((q.payload->>'manual_live_draft')::boolean,false)
-     and q.status='candidate'
-     and q.company_domain is not null
-     and exists (
-       select 1 from public.outreach_contacts o
-       where lower(coalesce(o.company_domain,''))=lower(q.company_domain)
-         and coalesce(o.replied,false)
-     );
 
   -- Never schedule internal PriSteel test/self drafts.
   update public.pppp_outbound_queue_v1 q
