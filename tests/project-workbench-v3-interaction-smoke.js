@@ -155,6 +155,7 @@ function last(a){return a[a.length-1];}
   assert(factOffers.length===1,'Client offer context fact must surface as one PriSteel offer evidence');
   assert(window.PSTProjectWorkbenchV3._test.priceLabel(factOffers[0]).includes('180,00 EUR/m'),'Client offer context fact must preserve 180 EUR/m');
   assert(window.PSTProjectWorkbenchV3._test.effectiveOffer(factOnly).doc_nr==='PST-OFF-2026-09-031','Registered client offer context fact must become effective offer evidence');
+  assert(window.PSTProjectWorkbenchV3.currentNext(factOnly).title==='Oferta është te klienti','Commercial context facts must outrank stale RFQ-only fallback state');
 
   const base=window.__pstIntegrityLastData.project;
   base.business_type='trading'; assert(window.PSTProjectWorkbenchV3.businessType(window.__pstIntegrityLastData)==='trading','Trading type detection failed');
