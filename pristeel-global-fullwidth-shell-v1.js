@@ -70,12 +70,11 @@ function goHome(){
 function decorate(){
   scheduled=false;
   installStyle();
-  var page=activePage();
+  var page=activePage(),opportunitiesOwnsBack=!!(page&&page.id==='page-kek-tenders'&&page.querySelector('[data-pst-opp-back]'));
   document.querySelectorAll('#pst-global-page-backbar').forEach(function(bar){
-    if(!page||isHome(page)||bar.parentNode!==page)bar.remove();
+    if(opportunitiesOwnsBack||!page||isHome(page)||bar.parentNode!==page)bar.remove();
   });
-  if(!page||isHome(page))return;
-  if(page.id==='page-kek-tenders'&&page.querySelector('[data-pst-opp-back]'))return;
+  if(!page||isHome(page)||opportunitiesOwnsBack)return;
   if(page.querySelector(':scope > #pst-global-page-backbar'))return;
   var bar=document.createElement('div');
   bar.id='pst-global-page-backbar';
@@ -96,11 +95,15 @@ function observe(){
   if(!window.MutationObserver||!document.body)return;
   var mo=new MutationObserver(function(records){
     for(var i=0;i<records.length;i++){
-      var t=records[i].target;
-      if(t&&t.nodeType===1&&(t.classList.contains('page')||String(t.id||'').indexOf('page-')===0)){schedule();return;}
+      var r=records[i],t=r.target;
+      if(r.type==='attributes'&&t&&t.nodeType===1&&(t.classList.contains('page')||String(t.id||'').indexOf('page-')===0)){schedule();return;}
+      if(r.type==='childList'){
+        var nodes=[].slice.call(r.addedNodes||[]).concat([].slice.call(r.removedNodes||[]));
+        for(var j=0;j<nodes.length;j++){var n=nodes[j];if(n&&n.nodeType===1&&(n.matches&&n.matches('[data-pst-opp-back],#pst-global-page-backbar')||n.querySelector&&n.querySelector('[data-pst-opp-back],#pst-global-page-backbar'))){schedule();return;}}
+      }
     }
   });
-  mo.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
+  mo.observe(document.body,{subtree:true,attributes:true,childList:true,attributeFilter:['class','style','hidden']});
 }
 function boot(){installStyle();decorate();observe();}
 window.addEventListener('pst:page-opened',schedule);
