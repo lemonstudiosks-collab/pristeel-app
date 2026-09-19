@@ -261,8 +261,8 @@ async function serverTenderAnalysis(r){
  try{return await AI.ask(q,{scope:'global',context:{tender:r,winner_role:role,candidate_partners:partners}});}catch(e){return null;}
 }
 function winnerBriefHtml(r){
- var w=winnerObj(r),contacts=winnerContacts(r).slice(0,5),site=winnerWebsite(r),confidence=winnerConfidence(r),role=winnerRole(r);
- var contactHtml=contacts.length?'<div class="pst-pcw-winner-contacts"><b>Kontaktet më të mira</b>'+contacts.map(function(c){var email=S(c.email),meta=[c.purpose,c.confidence].filter(Boolean).join(' · ');return'<a href="mailto:'+E(email)+'"><span>'+E(email)+'</span>'+(meta?'<small>'+E(meta)+'</small>':'')+'</a>';}).join('')+'</div>':'<div class="pst-pcw-winner-none">PPPP nuk ka ende email të verifikueshëm për këtë fitues.</div>';
+ var w=winnerObj(r),contacts=winnerContacts(r).slice(0,20),site=winnerWebsite(r),confidence=winnerConfidence(r),role=winnerRole(r);
+ var contactHtml=contacts.length?'<div class="pst-pcw-winner-contacts"><b>Kontaktet e verifikuara për draft · '+contacts.length+'</b><small>PPPP përgatit draft të veçantë për secilin email të verifikuar.</small>'+contacts.map(function(c){var email=S(c.email),meta=[c.purpose,c.confidence].filter(Boolean).join(' · ');return'<a href="mailto:'+E(email)+'"><span>'+E(email)+'</span>'+(meta?'<small>'+E(meta)+'</small>':'')+'</a>';}).join('')+'</div>':'<div class="pst-pcw-winner-none">PPPP nuk ka ende email të verifikueshëm për këtë fitues.</div>';
  return '<div class="pst-pcw-winner-brief"><div class="pst-pcw-winner-head"><div><span>FITUESI TED</span><h3>'+E(w.name||'Fitues i publikuar')+'</h3></div><b class="role '+E(role)+'">'+E(winnerRoleLabel(r))+'</b></div>'
    +'<p>'+E(winnerApproach(r))+'</p><div class="pst-pcw-winner-facts"><span><b>'+tenderScore(r)+'%</b> relevant për PRISTEEL</span><span><b>'+E(confidence)+'</b> klasifikim</span>'+(site?'<a href="'+E(site)+'" target="_blank" rel="noopener">Website ↗</a>':'')+'</div>'+contactHtml+'</div>';
 }
@@ -274,7 +274,7 @@ function officialSourceAction(r,label){
 function modalActionBar(r){
  var id=E(r.id),award=tenderMode(r)==='award';
  if(award){
-   return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="draft" data-id="'+id+'">Përgatit emailin</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+   return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="draft" data-id="'+id+'">Përgatit draftet</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
  }
  return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary download" data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen</button><button class="dossier" data-pcw-ti="dossier" data-id="'+id+'">Analizo kushtet</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ketë analizuar dosjen.">Krijo projekt</button>'+officialSourceAction(r,'Burimi zyrtar')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
 }
