@@ -161,7 +161,11 @@ html.pst-final-cosmetics-ready #pst-ws-sidebar,html.pst-final-cosmetics-ready .s
 html.pst-final-cosmetics-ready .card,html.pst-final-cosmetics-ready .pst-card,html.pst-final-cosmetics-ready #pst-native-home-v3 .pn-kpi,html.pst-final-cosmetics-ready #pst-native-home-v3 .pn-card,html.pst-final-cosmetics-ready #page-workspace-project .pf2-card,html.pst-final-cosmetics-ready #page-workspace-project .pf2-current,html.pst-final-cosmetics-ready #page-workspace-project .pf2-next,html.pst-final-cosmetics-ready #page-workspace-project .pf2-summary-tile,html.pst-final-cosmetics-ready #page-workspace-project .pf2-attention,html.pst-final-cosmetics-ready #page-workspace-project .pf2-gate,html.pst-final-cosmetics-ready #page-workspace-project .pf2-shortcut{background:#FCFCFA!important;border-color:#E6E3DE!important;box-shadow:0 4px 16px rgba(48,58,62,.025)!important}
 html.pst-final-cosmetics-ready #pst-ws-sidebar .pst-ws-create-main,html.pst-final-cosmetics-ready .btn-primary,html.pst-final-cosmetics-ready .pst-pm-btn.primary,html.pst-final-cosmetics-ready .pst-pm-open,html.pst-final-cosmetics-ready #page-workspace-project .pf2-btn.p,html.pst-final-cosmetics-ready #pst-native-home-v3 #pn-ask .pst-live-command-shell button,html.pst-final-cosmetics-ready #page-workspace-home .pst-ws-action-open[data-pst-direct-action="1"]{background:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important;box-shadow:none!important;text-shadow:none!important}
 html.pst-final-cosmetics-ready #pst-ws-sidebar .pst-ws-create-main:hover,html.pst-final-cosmetics-ready .btn-primary:hover,html.pst-final-cosmetics-ready .pst-pm-btn.primary:hover,html.pst-final-cosmetics-ready .pst-pm-open:hover,html.pst-final-cosmetics-ready #page-workspace-project .pf2-btn.p:hover{background:#3F7F98!important;border-color:#3F7F98!important;color:#fff!important}
-html.pst-final-cosmetics-ready [data-pst-dark-button="1"],html.pst-final-cosmetics-ready [data-pst-dark-button="1"] *{color:#fff!important;text-shadow:none!important}
+html.pst-final-cosmetics-ready [data-pst-dark-button="1"],html.pst-final-cosmetics-ready [data-pst-dark-button="1"] *{color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:none!important}
+html.pst-final-cosmetics-ready #page-workspace-project .pwb3-now>button,
+html.pst-final-cosmetics-ready #page-workspace-project .pwb3-now>button *,
+html.pst-final-cosmetics-ready #page-workspace-project .pwb3-nav-btn.on,
+html.pst-final-cosmetics-ready #page-workspace-project .pwb3-nav-btn.on *{background-color:#4F97AF!important;border-color:#4F97AF!important;color:#fff!important;-webkit-text-fill-color:#fff!important}
 html.pst-final-cosmetics-ready #pst-ws-canonical-nav .pst-ws-navbtn:hover{background:#F1F4F3!important;border-color:#E4E8E7!important;color:#374247!important}
 html.pst-final-cosmetics-ready #pst-ws-canonical-nav .pst-ws-navbtn.active{background:#EDF5F7!important;border-color:#D8E8ED!important;color:#3F7F98!important;box-shadow:inset 3px 0 0 #4F97AF!important}
 html.pst-final-cosmetics-ready #pst-ws-canonical-nav .pst-ws-navbtn.active:before{background:#4F97AF!important}
@@ -282,8 +286,26 @@ function ensureButtonContrast(root){
     if(skip(b))return;
     var c;try{c=rgb(window.getComputedStyle(b).backgroundColor);}catch(e){c=null;}
     var dark=!!(c&&c.a>.6&&((.2126*c.r+.7152*c.g+.0722*c.b)/255)<.53);
-    if(dark){b.setAttribute('data-pst-dark-button','1');b.style.setProperty('color','#fff','important');}
-    else if(b.getAttribute('data-pst-dark-button')==='1'){b.removeAttribute('data-pst-dark-button');b.style.removeProperty('color');}
+    var brandBlue=!!(c&&c.a>.6&&c.b>=c.r+18&&c.g>=c.r+18&&c.g>=105&&c.b>=125&&c.r<=115);
+    if(dark||brandBlue){
+      b.setAttribute('data-pst-dark-button','1');
+      b.style.setProperty('color','#fff','important');
+      b.style.setProperty('-webkit-text-fill-color','#fff','important');
+      Array.prototype.forEach.call(b.querySelectorAll('*'),function(ch){
+        if(!ch||!ch.style)return;
+        ch.style.setProperty('color','#fff','important');
+        ch.style.setProperty('-webkit-text-fill-color','#fff','important');
+      });
+    }else if(b.getAttribute('data-pst-dark-button')==='1'){
+      b.removeAttribute('data-pst-dark-button');
+      b.style.removeProperty('color');
+      b.style.removeProperty('-webkit-text-fill-color');
+      Array.prototype.forEach.call(b.querySelectorAll('*'),function(ch){
+        if(!ch||!ch.style)return;
+        ch.style.removeProperty('color');
+        ch.style.removeProperty('-webkit-text-fill-color');
+      });
+    }
   });
 }
 
