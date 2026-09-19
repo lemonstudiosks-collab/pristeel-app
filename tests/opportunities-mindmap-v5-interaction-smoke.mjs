@@ -5,6 +5,7 @@ import {JSDOM} from 'jsdom';
 const workflowSrc=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
 const mindmapSrc=fs.readFileSync('pristeel-opportunities-filter-polish-v1.js','utf8');
 const waitingSrc=fs.readFileSync('pristeel-opportunities-waiting-bridge-v1.js','utf8');
+const productionSurfaceSrc=fs.readFileSync('pristeel-production-surface-owner-v1.js','utf8');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2">
 <div class="app-shell"><aside class="sidebar"><div id="pst-v2-sidebar"></div></aside><main class="main"><div class="topbar">legacy topbar</div><div class="content">
@@ -55,6 +56,8 @@ window.eval(workflowSrc);
 const api=window.PSTProjectCentricWorkflowV1;
 assert(api,'project-centric workflow must load');
 await api.loadOpportunities(true);
+const canonicalBack=window.document.querySelector('[data-pcw-opportunities-back]');
+assert(canonicalBack,'Project-Centric Workflow must render ← Kthehu before the mindmap decorator exists');
 window.eval(waitingSrc);
 await new Promise(r=>setTimeout(r,15));
 window.eval(mindmapSrc);
@@ -65,6 +68,10 @@ assert(mindmap&&mindmap.version==='20260919-centered-back1','mindmap v5 must own
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'mindmap must render exactly once');
 const opportunitiesBack=await waitForSelector('[data-pst-opp-back]');
 assert(opportunitiesBack,'Opportunities header must always expose its local ← Kthehu control');
+window.eval(productionSurfaceSrc);
+window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
+await new Promise(r=>setTimeout(r,25));
+assert.notEqual(window.getComputedStyle(opportunitiesBack).display,'none','Late Production Surface Owner must not hide ← Kthehu after the mindmap renders it');
 const oppStyle=window.document.getElementById('pst-opportunities-filter-polish-v1-css')?.textContent||'';
 assert(oppStyle.includes('width:min(100%,1480px)')&&oppStyle.includes('margin:0 auto'),'Opportunities mindmap canvas must be bounded and centered instead of stretching asymmetrically');
 assert(oppStyle.includes('.pst-opp-v4-core{position:relative;min-height:470px;width:100%;max-width:980px;justify-self:center'),'source core must stay centered inside equal side columns');
