@@ -65,7 +65,7 @@ function decorateModal(id,r){
     }
     var b=actions.querySelector('[data-pcw-ti="draft"]');if(b){b.textContent=scheduled?'Emaili është planifikuar · Hap Gmail':'Drafti ekziston · Hap Gmail';b.classList.add('pst-pcw-draft-existing');b.disabled=false;}
   }else{
-    if(note)note.remove();var c=actions.querySelector('[data-pcw-ti="draft"]');if(c){c.textContent='Përgatit emailin';c.classList.remove('pst-pcw-draft-existing');}
+    if(note)note.remove();var c=actions.querySelector('[data-pcw-ti="draft"]');if(c){c.textContent='Përgatit draftet';c.classList.remove('pst-pcw-draft-existing');}
   }
   return true;
 }
@@ -98,7 +98,7 @@ function wrapPrepareDraft(){
   var P=tenderApi();if(!P||typeof P.prepareDraft!=='function')return false;if(P.prepareDraft.__pstDraftStateWrapped)return true;
   var original=P.prepareDraft;wrappedPrepare=original;
   var wrapped=async function(id){
-    await refresh(true);var r=row(id),d=draftState(r);if(d)return openExisting(id,d);
+    await refresh(true);var r=row(id),d=draftState(r);if(d&&!original.__pstMultiContact)return openExisting(id,d);
     var promise=original.apply(this,arguments),modal=document.getElementById('pst-tender-draft-modal');if(modal)modal.setAttribute('data-pst-tender-id',S(id));
     var out=await Promise.resolve(promise);modal=document.getElementById('pst-tender-draft-modal');if(modal)modal.setAttribute('data-pst-tender-id',S(id));return out;
   };
