@@ -51,7 +51,7 @@ function greeting(language,company,recipient){
   const name=txt(recipient?.name,180).replace(/\s+/g,' '),co=txt(company,300);
   if(language==='de')return name?'Guten Tag '+name+',':'Sehr geehrte Damen und Herren,';
   if(language==='bcs')return name?'Poštovani '+name+',':'Poštovani,';
-  return name?'Dear '+name+',':(co?'Dear '+co+' team,':'Dear Sir or Madam,');
+  return name?'Dear '+name+',':'Dear Sir or Madam,';
 }
 function closing(language){return language==='de'?'Mit freundlichen Grüßen':language==='bcs'?'S poštovanjem':'Kind regards';}
 const GENERAL_LOCAL_PARTS=new Set(['info','office','contact','kontakt','mail','hello','post','admin','sekretariat','service']);
