@@ -16,6 +16,7 @@ const SIGNATURE_HTML=`<div style="margin-top:14px;font-family:Arial,sans-serif;c
 
 const DACH_TOKENS=new Set(['de','deu','ger','germany','deutschland','at','aut','austria','osterreich','oesterreich','ch','che','switzerland','schweiz','li','lie','liechtenstein']);
 const BCS_TOKENS=new Set(['hr','hrv','croatia','hrvatska','rs','srb','serbia','srbija','me','mne','montenegro','crna gora']);
+const COUNTRY_PREFIXES=new Set(['albania','austria','belgium','bosnia and herzegovina','bulgaria','croatia','cyprus','czechia','czech republic','denmark','estonia','finland','france','germany','greece','hungary','iceland','ireland','italy','kosovo','latvia','liechtenstein','lithuania','luxembourg','malta','montenegro','netherlands','north macedonia','norway','poland','portugal','romania','serbia','slovakia','slovenia','spain','sweden','switzerland','united kingdom','uk']);
 function decodeEntities(v){return txt(v,1800).replace(/&amp;quot;/gi,'"').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');}
 function tokenLanguage(v){
   const s=norm(v).replace(/[^a-z0-9 ]+/g,' ').trim();if(!s)return'';
@@ -138,8 +139,8 @@ function cleanProjectTitle(v,ref=''){
   if(ref)s=s.split(ref).join(' ');
   s=s.replace(/\bTED\b(?:\s*[-:#]?\s*\d{5,}-\d{4})?/gi,' ').replace(/\s+/g,' ').replace(/^[\s|:;,.\-–—]+|[\s|:;,.\-–—]+$/g,'').trim();
   const parts=s.split(/\s+[–—]\s+/).map(x=>x.trim()).filter(Boolean);
-  if(parts.length>=3&&tokenLanguage(parts[0])!=='')s=parts.slice(2).join(' – ');
-  else if(parts.length>=2&&tokenLanguage(parts[0])!=='')s=parts.slice(1).join(' – ');
+  if(parts.length>=3&&COUNTRY_PREFIXES.has(norm(parts[0])))s=parts.slice(2).join(' – ');
+  else if(parts.length>=2&&COUNTRY_PREFIXES.has(norm(parts[0])))s=parts.slice(1).join(' – ');
   return s.trim();
 }
 function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v)}</p>`:'';}
