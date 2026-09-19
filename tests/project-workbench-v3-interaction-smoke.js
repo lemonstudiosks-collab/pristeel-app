@@ -57,6 +57,12 @@ function last(a){return a[a.length-1];}
   assert(doc.querySelectorAll('.pwb3-step').length===9,'Expected 9 progress steps');
   assert(doc.querySelectorAll('.pwb3-nav-btn').length===6,'Expected 6 work navigation buttons');
   assert(doc.querySelectorAll('.pwb3-quick button').length===4,'Expected 4 quick actions');
+  const continueBtn=doc.querySelector('.pwb3-now>button');
+  const activeNav=doc.querySelector('.pwb3-nav-btn.on');
+  assert(continueBtn,'Vazhdo button missing');
+  assert(activeNav,'Active Workbench navigation button missing');
+  assert(window.getComputedStyle(continueBtn).color==='rgb(255, 255, 255)','Filled blue Vazhdo button text must be white');
+  assert(window.getComputedStyle(activeNav).color==='rgb(255, 255, 255)','Active blue Workbench tab text must be white');
 
   calls.length=0;
   click(window,doc.querySelector('.pwb3-now>button'),'Vazhdo missing');
@@ -171,5 +177,6 @@ function last(a){return a[a.length-1];}
   assert(!doc.getElementById('pst-ora-open'),'Revision assistant must not inject a competing project tab');
   assert(doc.getElementById('pst-project-workbench-v2'),'Workbench root must remain mounted after late-owner timers settle');
 
+  window.close();
   console.log('project-workbench-v3 interaction smoke: ok');
 })().catch(err=>{console.error(err);process.exit(1);});
