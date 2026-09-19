@@ -64,7 +64,7 @@
         "pristeel-home-operating-grid-v1.js",
         "pristeel-project-control-home-v1.js"
       ],
-      "note": "Native UI v3 owns the visible Home shell early. Legacy Home modules remain loaded only as data/service compatibility layers and are visually retired by the native owner."
+      "note": "Native UI v3 owns the early Home shell. The PriSteel Daily is the final read-only editorial Home presentation over the canonical 06:30 morning snapshot; it adds no business writes. Legacy Home modules remain loaded as data/service compatibility layers."
     },
     {
       "area": "projects-list",
