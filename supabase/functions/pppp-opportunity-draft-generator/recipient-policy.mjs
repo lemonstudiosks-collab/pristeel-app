@@ -26,9 +26,10 @@ function contactName(row,email){return explicitName(row?.full_name||row?.contact
 function confidenceRank(v){const s=txt(v,40).toLowerCase();return s==='high'?3:s==='medium'?2:s==='verified'?3:s==='low'?1:0;}
 function websiteDomain(v){return normalizeDomain(v);}
 
+function blockedSourceDomain(d){d=normalizeDomain(d);if(!d)return false;for(const b of BLOCKED_SOURCE_DOMAINS)if(d===b||d.endsWith('.'+b))return true;return false;}
 function companyDomains(action,winner){
   const out=new Set();
-  const add=d=>{d=normalizeDomain(d);if(d&&!FREE_DOMAINS.has(d)&&!RESERVED_DOMAINS.has(d)&&!BLOCKED_SOURCE_DOMAINS.has(d))out.add(d);};
+  const add=d=>{d=normalizeDomain(d);if(d&&!FREE_DOMAINS.has(d)&&!RESERVED_DOMAINS.has(d)&&!blockedSourceDomain(d))out.add(d);};
   add(action?.company_domain);
   add(websiteDomain(winner?.website));
   for(const u of Array.isArray(winner?.websites)?winner.websites:[])add(websiteDomain(u));
@@ -36,7 +37,7 @@ function companyDomains(action,winner){
   return out;
 }
 function belongsToCompany(email,domains){if(!domains.size)return false;for(const d of domains)if(sameCompanyDomain(email,d))return true;return false;}
-function sourceDomainMatches(email,meta,domains){const sd=websiteDomain(meta?.source_url);if(!sd||BLOCKED_SOURCE_DOMAINS.has(sd)||!sameCompanyDomain(email,sd))return false;if(!domains.size)return true;for(const d of domains)if(sd===d||sd.endsWith('.'+d)||d.endsWith('.'+sd))return true;return false;}
+function sourceDomainMatches(email,meta,domains){const sd=websiteDomain(meta?.source_url);if(!sd||blockedSourceDomain(sd)||!sameCompanyDomain(email,sd))return false;if(!domains.size)return true;for(const d of domains)if(sd===d||sd.endsWith('.'+d)||d.endsWith('.'+sd))return true;return false;}
 
 function candidate(email,meta={}){
   const e=normalizeEmail(email),d=domainFromEmail(e);if(!validEmail(e)||isReservedEmail(e)||(!meta?.allow_free_domain&&FREE_DOMAINS.has(d))||isBlockedOutreachEmail(e))return null;
