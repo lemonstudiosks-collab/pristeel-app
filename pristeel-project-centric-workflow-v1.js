@@ -11,7 +11,7 @@ window.__pstProjectCentricWorkflowV2=true;
 window.__pstProjectCentricWorkflowV3=true;
 window.__pstProjectCentricWorkflowV4=true;
 
-var tenderState={rows:[],mode:'all',source:'all',lifecycle:'new',query:'',focus:'',busy:false,last:0,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{}};
+var tenderState={rows:[],mode:'all',source:'all',lifecycle:'new',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{}};
 var contactBusy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -82,6 +82,17 @@ function winnerObj(r){var w=tenderPayload(r).winner;return w&&typeof w==='object
 function winnerName(r){return S(winnerObj(r).name);}
 function winnerRole(r){var w=winnerObj(r),x=N(w.company_type||(w.company_classification&&w.company_classification.company_type)||'unknown');return ['producer','gc_epc','trader_consortium'].indexOf(x)>-1?x:'unknown';}
 function winnerRoleLabel(r){var x=winnerRole(r);return x==='gc_epc'?'GC / EPC':x==='producer'?'PRODHUES / KONKURRENT':x==='trader_consortium'?'TRADER / KONSORCIUM':'ROL I PAQARTË';}
+function winnerGroup(r){if(tenderSource(r)!=='TED')return'local';var x=winnerRole(r);return x==='gc_epc'?'gc_epc':x==='producer'?'producer':'other';}
+function winnerPriority(r){var g=winnerGroup(r);return g==='gc_epc'?0:g==='other'?1:g==='producer'?2:0;}
+var OPPORTUNITY_FIELD_RULES=[
+ ['construction',/\b(construction|ndertim|ndërtim|building|buildings|bau|hochbau|steel|çelik|celik|metal|structur|konstrukt|hall|roof|çati|cati|facade|fasad|weld|fabricat|montag|renov|rehabilit)/i],
+ ['infrastructure',/\b(infrastruct|road|rrug|highway|motorway|rail|hekurudh|bridge|urë|ure|tunnel|airport|port|water|ujësjell|ujesjell|sewer|kanaliz|pipeline|transport network)/i],
+ ['energy',/\b(energy|energji|electric|elektr|power|solar|photovoltaic|\bpv\b|wind|battery|bess|substation|transformer|grid|transmission|distribution)/i],
+ ['supply',/\b(supply|furniz|procurement|purchase|blerje|material|equipment|pajis|delivery|dorëzim|dorezim|goods|product)/i],
+ ['services',/\b(service|shërbim|sherbim|consult|design|projektim|engineering|inxhinier|supervision|mbikëqyr|mbikeqyr|study|audit|maintenance|mirëmbajt|mirembajt)/i]
+];
+function opportunityFieldText(r){var p=tenderPayload(r);return[r&&r.title,r&&r.description,r&&r.authority,r&&r.procurement_no,r&&r.publication_no,r&&r.cpv,r&&r.cpv_code,A(r&&r.match_reasons).join(' '),p.title,p.description,p.cpv,p.cpv_code,p.cpv_description,p.scope,p.category].map(S).join(' ');}
+function opportunityField(r){var t=opportunityFieldText(r);for(var i=0;i<OPPORTUNITY_FIELD_RULES.length;i++)if(OPPORTUNITY_FIELD_RULES[i][1].test(t))return OPPORTUNITY_FIELD_RULES[i][0];return'other';}
 function winnerConfidence(r){var w=winnerObj(r),x=N(w.company_classification&&w.company_classification.confidence);return x==='high'?'besueshmëri e lartë':x==='medium'?'besueshmëri mesatare':x==='low'?'besueshmëri e ulët':'rol i paverifikuar';}
 function winnerContacts(r){var P=tenderApi();if(P&&typeof P.enrichedContacts==='function')return A(P.enrichedContacts(r));var w=winnerObj(r),out=[];A(w.emails).forEach(function(x){if(x)out.push({email:S(x),purpose:'',confidence:''});});if(w.email)out.push({email:S(w.email),purpose:'',confidence:''});return out;}
 function winnerWebsite(r){var w=winnerObj(r),u=safeUrl(w.website);if(u)return u;var e=w.contact_enrichment&&typeof w.contact_enrichment==='object'?w.contact_enrichment:{},org=A(e.organizations)[0];return safeUrl(org&&org.official_website);}
@@ -148,10 +159,12 @@ function opportunityRows(){
  if(tenderState.mode==='award')rows=rows.filter(function(r){return tenderMode(r)==='award';});
  if(tenderState.source!=='all')rows=rows.filter(function(r){return tenderSource(r)===tenderState.source;});
  if(tenderState.lifecycle!=='all')rows=rows.filter(function(r){return opportunityLifecycle(r)===tenderState.lifecycle;});
+ if(tenderState.field!=='all')rows=rows.filter(function(r){return opportunityField(r)===tenderState.field;});
+ if(tenderState.winner_group!=='all')rows=rows.filter(function(r){return winnerGroup(r)===tenderState.winner_group;});
  if(tenderState.focus==='due')rows=rows.filter(function(r){return dueSoon(r.deadline);});
  if(tenderState.focus==='review')rows=rows.filter(function(r){return /review|shqyr/.test(N(r.operating_lane||r.status));});
  if(q)rows=rows.filter(function(r){return N([r.title,r.authority,r.procurement_no,r.publication_no,tenderReason(r),winnerName(r),winnerRoleLabel(r)].join(' ')).indexOf(q)>-1;});
- rows.sort(function(a,b){return tenderScore(b)-tenderScore(a)||S(b.published_date).localeCompare(S(a.published_date));});
+ rows.sort(function(a,b){var tedPriority=(tenderState.source==='TED'||tenderState.winner_group!=='all')?winnerPriority(a)-winnerPriority(b):0;return tedPriority||tenderScore(b)-tenderScore(a)||S(b.published_date).localeCompare(S(a.published_date));});
  return rows.slice(0,80);
 }
 function opportunityCard(r){
@@ -216,29 +229,43 @@ async function loadOpportunities(force){
  catch(e){console.warn('PPPP opportunities project-centric:',e);return false;}finally{tenderState.busy=false;}
 }
 function setOpportunityContext(context){
- context=typeof context==='string'?{focus:context}:(context||{});var f=S(context.focus).toLowerCase(),src=normalizeTenderSource(context.source),mode=f==='award'||f==='local'?f:S(context.mode||'all').toLowerCase(),life=S(context.lifecycle).toLowerCase();
+ context=typeof context==='string'?{focus:context}:(context||{});var f=S(context.focus).toLowerCase(),src=normalizeTenderSource(context.source),mode=f==='award'||f==='local'?f:S(context.mode||'all').toLowerCase(),life=S(context.lifecycle).toLowerCase(),field=S(context.field||'all').toLowerCase(),winner=S(context.winner_group||context.winner||'all').toLowerCase();
  tenderState.focus=['due','review'].indexOf(f)>-1?f:'';
  tenderState.mode=['local','award'].indexOf(mode)>-1?mode:'all';
  tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(life)>-1?life:'new';
+ tenderState.field=['construction','infrastructure','energy','supply','services','other','all'].indexOf(field)>-1?field:'all';
+ tenderState.winner_group=['gc_epc','producer','other','all'].indexOf(winner)>-1?winner:'all';
  tenderState.source=TENDER_SOURCE_ORDER.indexOf(src)>-1?src:(mode==='award'?'TED':'all');
+ if(tenderState.winner_group!=='all')tenderState.source='TED';
  if(tenderState.source!=='all')tenderState.mode='all';
  tenderState.query=S(context.query||'');return tenderState;
 }
 function emitOpportunityFilter(kind,value){
- try{document.dispatchEvent(new CustomEvent('pst:opportunities-filter-applied',{detail:{kind:kind,value:value,source:tenderState.source,lifecycle:tenderState.lifecycle,visible_count:opportunityRows().length}}));}catch(e){}
+ try{document.dispatchEvent(new CustomEvent('pst:opportunities-filter-applied',{detail:{kind:kind,value:value,source:tenderState.source,lifecycle:tenderState.lifecycle,field:tenderState.field,winner_group:tenderState.winner_group,visible_count:opportunityRows().length}}));}catch(e){}
 }
 function applyOpportunityFilter(kind,value){
  kind=S(kind).toLowerCase();value=S(value);
  tenderState.focus='';tenderState.mode='all';tenderState.query='';
  var input=document.getElementById('pst-pcw-opportunity-search');if(input)input.value='';
  if(kind==='source'){
-   tenderState.lifecycle='all';
+   tenderState.lifecycle='all';tenderState.field='all';tenderState.winner_group='all';
    var src=normalizeTenderSource(value);
    tenderState.source=TENDER_SOURCE_ORDER.indexOf(src)>-1?src:'all';
  }else if(kind==='lifecycle'){
-   tenderState.source='all';
+   tenderState.source='all';tenderState.field='all';tenderState.winner_group='all';
    var life=S(value).toLowerCase();
    tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(life)>-1?life:'all';
+ }else if(kind==='field'){
+   tenderState.source='all';tenderState.lifecycle='all';tenderState.winner_group='all';
+   var field=S(value).toLowerCase();
+   tenderState.field=['construction','infrastructure','energy','supply','services','other','all'].indexOf(field)>-1?field:'all';
+ }else if(kind==='winner'||kind==='winner_group'){
+   tenderState.lifecycle='all';tenderState.field='all';
+   var winner=S(value).toLowerCase();
+   tenderState.winner_group=['gc_epc','producer','other','all'].indexOf(winner)>-1?winner:'all';
+   tenderState.source='TED';
+ }else if(kind==='reset'){
+   tenderState.source='all';tenderState.lifecycle='all';tenderState.field='all';tenderState.winner_group='all';
  }else return false;
  renderOpportunities();emitOpportunityFilter(kind,value);return true;
 }
@@ -459,5 +486,5 @@ function schedule(force){[0,90,260,700].forEach(function(ms){setTimeout(function
 document.addEventListener('click',click,true);document.addEventListener('keydown',keydown,true);document.addEventListener('pst:modules-ready',function(){schedule(false);},{once:true});document.addEventListener('pst:project-operator-updated',function(){schedule(true);});window.addEventListener('pageshow',function(){schedule(false);},{once:true});
 document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[data-pm-open],[data-pwf-area],[data-pwf-stage],[data-pcm-id]'):null;if(n)schedule(false);},true);
 if(document.readyState!=='loading')schedule(false);else document.addEventListener('DOMContentLoaded',function(){schedule(false);},{once:true});
-window.PSTProjectCentricWorkflowV1={version:'5',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,applyOpportunityFilter:applyOpportunityFilter,renderOpportunities:renderOpportunities,openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,tenderValueLabel:tenderValueLabel,opportunityRows:opportunityRows,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal,applyOpportunityFilter:applyOpportunityFilter}};
+window.PSTProjectCentricWorkflowV1={version:'6',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,applyOpportunityFilter:applyOpportunityFilter,renderOpportunities:renderOpportunities,openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,tenderValueLabel:tenderValueLabel,opportunityRows:opportunityRows,opportunityField:opportunityField,winnerGroup:winnerGroup,winnerPriority:winnerPriority,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal,applyOpportunityFilter:applyOpportunityFilter}};
 })();

@@ -32,6 +32,8 @@ window.supaFetch=async path=>{
     {id:'app-1',title:'Materiale ndërtimi dhe furnizim me hekur',authority:'APP Albania',relevance_score:82,status:'new',published_date:'2026-09-16',payload:{source:'APP_AL',notice_phase:'opportunity'}},
     {id:'krpp-1',title:'Konstruksion metalik për objekt publik',authority:'KRPP',relevance_score:91,status:'new',published_date:'2026-09-15',payload:{source:'KRPP',notice_phase:'opportunity'}},
     {id:'ted-1',title:'Structural steelworks award',authority:'EU Authority',publication_no:'TED-1',relevance_score:94,status:'new',published_date:'2026-09-14',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',company_type:'gc_epc'}}},
+    {id:'ted-other',title:'Bridge rehabilitation award',authority:'EU Authority',publication_no:'TED-2',relevance_score:93,status:'new',published_date:'2026-09-14',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Consortium',company_type:'unknown'}}},
+    {id:'ted-producer',title:'Steel structure fabrication award',authority:'EU Authority',publication_no:'TED-3',relevance_score:99,status:'new',published_date:'2026-09-14',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Steelworks AG',company_type:'producer'}}},
     {id:'wb-1',title:'World Bank road infrastructure works',authority:'World Bank',relevance_score:88,status:'new',published_date:'2026-09-13',payload:{source:'WORLD_BANK',notice_phase:'opportunity'}}
   ];
   if(String(path).startsWith('partners?')) return [];
@@ -52,7 +54,7 @@ window.eval(mindmapSrc);
 await new Promise(r=>setTimeout(r,40));
 
 const mindmap=window.PSTOpportunitiesMindmapV5;
-assert(mindmap&&mindmap.version==='20260918-canonicalfilter1','mindmap v5 must own the visible Opportunities presentation');
+assert(mindmap&&mindmap.version==='20260919-tedroles-canonicalfilters2','mindmap v5 must own the visible Opportunities presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'mindmap must render exactly once');
 assert(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),'APP branch must exist');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED branch must exist');
@@ -74,11 +76,22 @@ for(const [key,[x,y]] of Object.entries(mindmap._test.sourcePositions)){
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="TED"]'),'TED must render inside the center source mindmap');
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="KRPP"]'),'KRPP must render inside the center source mindmap');
 assert(window.document.querySelector('.pst-opp-v4-source-core [data-pst-opp-source="APP_AL"]'),'APP must render inside the center source mindmap');
-assert.equal(window.document.querySelector('.pst-opp-v4-field-side .pst-opp-v4-side-title')?.textContent,'Sipas fushës','right field filters must stay unchanged');
+const rightTitles=[...window.document.querySelectorAll('.pst-opp-v4-field-side .pst-opp-v4-side-title')].map(x=>x.textContent);
+assert.deepEqual(rightTitles,['Sipas fituesit TED','Sipas fushës'],'right side must separate TED winner role from opportunity field');
+assert(window.document.querySelector('[data-pst-opp-winner="gc_epc"]'),'GC/EPC winner filter must exist');
+assert(window.document.querySelector('[data-pst-opp-winner="other"]'),'other/review winner filter must exist');
+assert(window.document.querySelector('[data-pst-opp-winner="producer"]'),'steel-producer winner filter must exist');
 
 api._state.lifecycle='waiting';
 api._state.query='steel';
-window.document.querySelector('[data-pst-opp-field="construction"]').click();
+window.document.querySelector('[data-pst-opp-field="infrastructure"]').click();
+await new Promise(r=>setTimeout(r,35));
+assert.equal(api._state.field,'infrastructure','field click must update canonical opportunity state');
+assert.equal(api._state.source,'all','field click must clear source filtering');
+assert.equal(api._state.lifecycle,'all','field click must clear lifecycle filtering');
+assert.equal(api._test.opportunityRows().length,1,'canonical opportunityRows must really apply the field filter');
+assert(window.document.querySelector('[data-pcw-tender="wb-1"]'),'infrastructure field must show the matching World Bank opportunity');
+assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,1,'field filter must rerender the dataset instead of only highlighting a branch');
 const mindmapViewAfterField=await waitForSelector('[data-pst-opp-view="mindmap"]');
 assert(mindmapViewAfterField,'mindmap view control must return after field rerender');
 mindmapViewAfterField.click();
@@ -90,6 +103,8 @@ assert.equal(api._state.source,'APP_AL','APP click must update canonical source 
 assert.equal(api._state.lifecycle,'all','source click must clear lifecycle filtering so its displayed source count can be shown');
 assert.equal(api._state.query,'','source click must clear a stale search query instead of silently compounding filters');
 assert.equal(mindmap.state().field,'all','source click must clear a stale field filter instead of hiding valid source results');
+assert.equal(api._state.field,'all','canonical field state must reset on source drilldown');
+assert.equal(api._state.winner_group,'all','source drilldown must clear TED winner-role filtering');
 assert.equal(mindmap.state().view,'mindmap','source click must keep the mindmap in place');
 assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,1,'APP click must leave one APP result in this fixture');
 assert.match(window.document.querySelector('.pst-opp-v4-results-head')?.textContent||'',/1 rezultate të shfaqura.*APP/,'APP click must expose the active source and visible result count');
@@ -104,7 +119,32 @@ window.document.querySelector('[data-pst-opp-source="TED"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'TED','TED click must update canonical source state');
 assert.equal(api._state.lifecycle,'all','repeated source drilldown must keep lifecycle reset');
-assert(window.document.querySelector('[data-pcw-tender="ted-1"]'),'TED click must recover immediately after APP rerender');
+assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,3,'TED source must show all three winner-role groups in this fixture');
+const tedOrder=[...window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]')].map(x=>x.getAttribute('data-pcw-tender'));
+assert.deepEqual(tedOrder,['ted-1','ted-other','ted-producer'],'TED must order GC first, other/review second and steel producers last');
+
+window.document.querySelector('[data-pst-opp-winner="gc_epc"]').click();
+await new Promise(r=>setTimeout(r,35));
+assert.equal(api._state.source,'TED');
+assert.equal(api._state.winner_group,'gc_epc','GC winner filter must update canonical state');
+assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-1'],'GC winner filter must return only GC/EPC winners');
+assert(window.document.querySelector('[data-pcw-tender="ted-1"]'));
+
+window.document.querySelector('[data-pst-opp-winner="other"]').click();
+await new Promise(r=>setTimeout(r,35));
+assert.equal(api._state.winner_group,'other','other/review winner filter must update canonical state');
+assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-other'],'other/review must exclude known producers and GC winners');
+
+window.document.querySelector('[data-pst-opp-winner="producer"]').click();
+await new Promise(r=>setTimeout(r,35));
+assert.equal(api._state.winner_group,'producer','producer filter must update canonical state');
+assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-producer'],'producer filter must isolate steel producers/competitors');
+assert(window.document.querySelector('[data-pcw-tender="ted-producer"]'));
+
+window.document.querySelector('[data-pst-opp-source="TED"]').click();
+await new Promise(r=>setTimeout(r,35));
+assert.equal(api._state.winner_group,'all','returning to TED source must clear winner subfilter');
+assert(window.document.querySelector('[data-pcw-tender="ted-1"]'),'TED click must recover immediately after winner-role rerenders');
 
 window.document.querySelector('[data-pst-opp-source="KRPP"]').click();
 await new Promise(r=>setTimeout(r,35));
@@ -119,7 +159,7 @@ assert(window.document.querySelector('#pst-opportunities-list .pst-pcw-empty'),'
 window.document.querySelector('[data-pst-opp-source="all"]').click();
 await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.source,'all','all-sources control must reset the canonical source state');
-assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,4,'all sources must restore every fixture');
+assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,6,'all sources must restore every fixture');
 
 window.document.querySelector('[data-pst-opp-lifecycle="all"]').click();
 await new Promise(r=>setTimeout(r,35));
@@ -129,8 +169,10 @@ await new Promise(r=>setTimeout(r,35));
 assert.equal(api._state.lifecycle,'new','new lifecycle branch must remain functional after rerenders');
 
 window.document.querySelector('[data-pst-opp-field="construction"]').click();
-await new Promise(r=>setTimeout(r,20));
+await new Promise(r=>setTimeout(r,35));
 assert.equal(mindmap.state().field,'construction','field branch must update presentation state');
+assert.equal(api._state.field,'construction','field branch must update canonical state');
+assert(api._test.opportunityRows().every(r=>api._test.opportunityField(r)==='construction'),'canonical result set must satisfy the selected field');
 assert(window.document.querySelector('[data-pst-opp-field="construction"]').classList.contains('on'),'field branch must visibly stay selected');
 for(let cycle=0;cycle<3;cycle++){
   window.document.querySelector('[data-pst-opp-source="APP_AL"]').click();

@@ -78,7 +78,9 @@ window.pstTenderIntelligence=async()=>null;
 window.eval(src);
 
 const api=window.PSTProjectCentricWorkflowV1;
-assert(api&&api.version==='5','current project-centric runtime did not load');
+assert(api&&api.version==='6','current project-centric runtime did not load');
+assert.equal(api._state.field,'all','canonical field filter must initialize safely');
+assert.equal(api._state.winner_group,'all','canonical TED winner-role filter must initialize safely');
 assert.equal(typeof api.applyOpportunityFilter,'function','canonical Opportunities owner must expose one filter entry point');
 assert.equal(window.document.getElementById('page-kek-tenders').classList.contains('active'),false,'fixture must reproduce a visible page without .active');
 
