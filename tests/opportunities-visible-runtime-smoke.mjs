@@ -78,7 +78,7 @@ window.pstTenderIntelligence=async()=>null;
 window.eval(src);
 
 const api=window.PSTProjectCentricWorkflowV1;
-assert(api&&api.version==='6','current project-centric runtime did not load');
+assert(api&&api.version==='7','current project-centric runtime did not load');
 assert.equal(api._state.field,'all','canonical field filter must initialize safely');
 assert.equal(api._state.winner_group,'all','canonical TED winner-role filter must initialize safely');
 assert.equal(typeof api.applyOpportunityFilter,'function','canonical Opportunities owner must expose one filter entry point');
@@ -90,6 +90,7 @@ const page=window.document.getElementById('page-kek-tenders');
 assert.equal(page.getAttribute('data-pcw-opportunities-owner'),'2','current whole-card surface did not claim ownership');
 assert.equal(window.document.querySelector('.pst-kek-title').textContent,'Mundësitë','page title must be Albanian and operator-oriented');
 assert(window.document.querySelector('#pst-opportunities-focus'),'modern opportunity focus surface was not mounted');
+assert(window.document.querySelector('[data-pcw-opportunities-back]'),'Canonical Project-Centric owner must render ← Kthehu even before the mindmap decorator loads');
 assert(window.document.querySelector('.pst-pcw-map-center'),'Opportunities must show a central mindmap node');
 assert.equal(window.document.querySelectorAll('.pst-pcw-map-node').length,5,'Mindmap must expose all five lifecycle branches');
 assert(src.includes('grid-template-areas:"new center draft" "waiting center replied" ". all ."'),'Desktop Opportunities mindmap must use deterministic grid areas');
