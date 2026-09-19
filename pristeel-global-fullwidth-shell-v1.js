@@ -13,10 +13,8 @@ var VERSION='20260919-visible-page-back2';
 var scheduled=false;
 
 function installStyle(){
-  if(document.getElementById('pst-global-fullwidth-shell-v2-css'))return;
-  var old=document.getElementById('pst-global-fullwidth-shell-v1-css');if(old)old.remove();
-  var s=document.createElement('style');
-  s.id='pst-global-fullwidth-shell-v2-css';
+  var s=document.getElementById('pst-global-fullwidth-shell-v1-css'),fresh=false;
+  if(!s){s=document.createElement('style');s.id='pst-global-fullwidth-shell-v1-css';fresh=true;}
   s.textContent=`
 .app-shell{grid-template-columns:minmax(0,1fr)!important}
 .app-shell>.sidebar,.app-shell>aside.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;overflow:hidden!important}
@@ -29,7 +27,7 @@ body.pst-global-fullwidth-shell .content{width:100%!important;max-width:none!imp
 body.pst-global-fullwidth-shell #page-workspace-projects [data-pmm-back]{display:none!important}
 @media(max-width:720px){body.pst-global-fullwidth-shell .content{padding-left:14px!important;padding-right:14px!important}#pst-global-page-backbar{margin-bottom:8px}#pst-global-back-home{height:40px;padding:0 14px}}
 `;
-  document.head.appendChild(s);
+  if(fresh)document.head.appendChild(s);
   document.body&&document.body.classList.add('pst-global-fullwidth-shell');
 }
 
