@@ -10,7 +10,7 @@ assert.doesNotThrow(()=>new Function(polish),'Opportunities mindmap must be vali
 assert.match(bridge,/draft_pending\|draft_created/,'draft-created registry rows must be recognized');
 assert.match(bridge,/row\.status='waiting_for_send'/,'draft rows must map to the waiting lane in memory only');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(polish,/VERSION='20260919-tedroles-canonicalfilters2'/,'TED-role canonical filter revision must be active');
+assert.match(polish,/VERSION='20260919-centered-back1'/,'TED-role canonical filter revision must be active');
 assert.match(polish,/data-pst-opp-source/,'source branches must be first-class functional controls');
 assert.match(polish,/data-pst-opp-field/,'field branches must be first-class functional controls');
 assert.match(polish,/data-pst-opp-winner/,'TED winner-role branches must be first-class functional controls');
@@ -41,5 +41,5 @@ assert.match(polish,/reconnectObserver/,'mindmap observer must reconnect only af
 assert.doesNotMatch(polish,/new MutationObserver\(schedule\)/,'mindmap must not wire an unbounded self-triggering observer directly to schedule');
 assert.match(polish,/body:has\(#page-kek-tenders\.active\) \.app-shell>\.sidebar/,'Opportunities must hide the left shell sidebar only while the Opportunities page is active');
 assert.doesNotMatch(polish,/data-pcw-lifecycle='draft'[^\n]*display:none/,'new visible owner must not depend on styling a hidden legacy draft button');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260918-canonicalfilter1/,'runtime must cache-bust the new Opportunities mindmap');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260919-centered-back1/,'runtime must cache-bust the new Opportunities mindmap');
 console.log('Opportunities waiting/mindmap layout smoke: OK');

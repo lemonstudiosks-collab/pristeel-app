@@ -282,6 +282,6 @@ document.addEventListener('pst:native-home-ready',load,{once:true});
 (function(){
 'use strict';
 if(window.__pstDailySafeLoaderV2)return;window.__pstDailySafeLoaderV2=true;
-function load(){if(window.PSTDailySafeV2||document.querySelector('script[data-pst-daily-safe-v2]'))return;var s=document.createElement('script');s.src='pristeel-daily-safe-v2.js?v=20260919-2';s.defer=true;s.setAttribute('data-pst-daily-safe-v2','1');document.head.appendChild(s);}
+function load(){if(window.PSTDailySafeV2||document.querySelector('script[data-pst-daily-safe-v2]'))return;var s=document.createElement('script');s.src='pristeel-daily-safe-v2.js?v=20260919-homeonly1';s.defer=true;s.setAttribute('data-pst-daily-safe-v2','1');document.head.appendChild(s);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
 })();
