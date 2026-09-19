@@ -25,9 +25,10 @@ assert(!generator.includes('/drafts/send'),'Gmail draft-send endpoint must not e
 assert(!generator.includes('gmail.send'),'gmail.send scope must not exist');
 
 assert(content.includes('PRISTEEL_LOGO_URL'),'HTML signature must include canonical PRISTEEL logo');
-assert(content.includes('Ansprechpartner Stahlbeschaffung'),'German GC routing subject policy must remain present');
+assert(content.includes('Stahlbau & Fertigung'),'German GC professional subject policy must remain present');
 assert(content.includes('Zusätzliche Fertigungskapazität'),'German producer direct-contact subject policy must remain present');
-assert(content.includes('recipientKind'),'generic and direct recipients must receive different outreach copy');
+assert(content.includes('recipientKind'),'recipient type must remain available for safe greeting/metadata handling');
+assert(content.includes('Materialbeschaffung, Fertigung, Oberflächenschutz, Qualitätsdokumentation, Verpackung und Lieferung'),'generic inbox drafts must retain substantive capability context');
 assert(!content.includes('TED-Referenz:'),'customer body template must not contain TED reference block');
 assert(!content.includes('Auftraggeber:'),'customer body template must not contain contracting-authority block');
 
