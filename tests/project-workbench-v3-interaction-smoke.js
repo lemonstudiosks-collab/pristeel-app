@@ -158,6 +158,10 @@ function last(a){return a[a.length-1];}
   const operatorAction=window.PSTProjectWorkbenchV3._test.latestOperatorAction({contextFacts:[{category:'operator_update',fact_key:'operator_update.ognjen.await_sector',updated_at:'2026-09-18T06:19:33Z',value:{current_action:'Prit konfirmimin final nga Sector Construction',summary:'Fadilit i është dërguar kalkulimi final për Projektin 01 & 02; nuk ka ardhur përgjigje e re.',action_area:'procurement',hint:'Hap furnizimin'}}]});
   assert(operatorAction&&operatorAction.title==='Prit konfirmimin final nga Sector Construction','Explicit operator action fact must override heuristic Workbench action');
   assert(operatorAction.area==='procurement','Operator action must preserve its canonical action area');
+  const closedAction=window.PSTProjectWorkbenchV3.currentNext({project:{status:'Mbyllur'},contextFacts:[{category:'operator_update',updated_at:'2026-09-18T06:19:33Z',value:{current_action:'Stale action',action_area:'procurement'}}]});
+  assert(closedAction.title==='Shiko historikun e projektit','Closed canonical state must override stale operator action');
+  const wonAction=window.PSTProjectWorkbenchV3.currentNext({project:{status:'Fituar',pipeline_stage:'production_control'},contextFacts:[{category:'operator_update',updated_at:'2026-09-18T06:19:33Z',value:{current_action:'Stale pre-award action',action_area:'procurement'}}]});
+  assert(wonAction.title==='Vazhdo ekzekutimin','Won canonical state must override stale operator action');
 
   const base=window.__pstIntegrityLastData.project;
   base.business_type='trading'; assert(window.PSTProjectWorkbenchV3.businessType(window.__pstIntegrityLastData)==='trading','Trading type detection failed');
