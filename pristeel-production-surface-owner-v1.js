@@ -8,7 +8,7 @@
 if(window.__pstProductionSurfaceOwnerV1)return;
 window.__pstProductionSurfaceOwnerV1=true;
 
-var VERSION='20260916-production-surface1';
+var VERSION='20260919-opportunities-back-visible1';
 var scheduled=false;
 var observer=null;
 var FIN_BRANCHES=[
@@ -36,7 +36,6 @@ html body.pst-global-fullwidth-shell #app-shell-root{display:flex!important;grid
 html body.pst-global-fullwidth-shell #app-shell-root>.main,
 html body.pst-global-fullwidth-shell .app-shell>.main{flex:1 1 auto!important;width:100%!important;max-width:none!important;min-width:0!important;margin:0!important}
 html body.pst-global-fullwidth-shell .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
-body.pst-global-fullwidth-shell #page-kek-tenders .pst-opp-v4-back,
 body.pst-global-fullwidth-shell #page-workspace-projects [data-pmm-back],
 body.pst-global-fullwidth-shell #page-finance [data-pst-fin-home]{display:none!important}
 #page-finance #pst-finance-tools,#page-finance #fin-hub-grid{display:none!important}
