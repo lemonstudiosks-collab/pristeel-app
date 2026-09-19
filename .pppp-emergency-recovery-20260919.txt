@@ -1,0 +1,1 @@
+Emergency recovery marker: restore pre-PriSteel-Daily Home runtime after blank Home regression. Safe to remove after stabilization.\n
