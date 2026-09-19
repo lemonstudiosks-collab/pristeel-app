@@ -48,7 +48,7 @@ export function tedReference(tender={}){
 }
 export function tedUrl(tender={}){return first(tender?.source_url,tender?.detail_url,tender?.payload?.source_url,tender?.payload?.detail_url);}
 function greeting(language,company,recipient){
-  const name=txt(recipient?.name,180).replace(/\s+/g,' '),co=txt(company,300);
+  const kind=recipientKind(recipient),name=kind==='general'?'':txt(recipient?.name,180).replace(/\s+/g,' '),co=txt(company,300);
   if(language==='de')return name?'Guten Tag '+name+',':'Sehr geehrte Damen und Herren,';
   if(language==='bcs')return name?'Poštovani '+name+',':'Poštovani,';
   return name?'Dear '+name+',':'Dear Sir or Madam,';
@@ -61,7 +61,7 @@ export function recipientKind(recipient={}){
   return'direct';
 }
 function roleFor(route){const r=txt(route,80).toUpperCase();if(r==='TED_PRODUCER')return'producer';if(r==='TED_CONSORTIUM')return'consortium';if(r==='TED_GC')return'gc';return'general';}
-function shortProject(v){const s=txt(v,180).replace(/\s+/g,' ');return s.length>92?s.slice(0,89).replace(/\s+\S*$/,'')+'…':s;}
+function shortProject(v){const s=txt(v,220).replace(/\s+/g,' ');if(s.length<=112)return s;const head=s.slice(0,72).replace(/\s+\S*$/,'').trim(),tail=s.slice(-34).replace(/^\S*\s+/,'').trim();return head+'…'+tail;}
 function subjectFor(language,role,title){
   const suffix=title?' – '+shortProject(title):'';
   if(language==='de')return (role==='producer'?'Zusätzliche Fertigungskapazität':role==='consortium'?'Stahlbeschaffung & Fertigung':'Stahlbau & Fertigung')+suffix+' | PRISTEEL';
