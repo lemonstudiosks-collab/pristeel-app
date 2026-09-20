@@ -137,7 +137,7 @@ const germanGeneral=buildTedDraftContent(beckAction,beckTender,beckGeneral);
 assert(germanGeneral.body.startsWith('Sehr geehrte Damen und Herren,'),'functional German mailbox must use company/general greeting');
 assert.equal(germanGeneral.recipient_kind,'general');
 assert.match(germanGeneral.subject,/^Fertigungskapazität – /);
-assert(/Build-to-Print-Fertigung/i.test(germanGeneral.body),'general producer inbox must retain the core fabrication proposition');
+assert(/Build-to-Print-Pakete/i.test(germanGeneral.body),'general producer inbox must retain the core fabrication proposition');
 assert(/Weiterleitung/i.test(germanGeneral.body),'general producer inbox must still make forwarding easy when another person is responsible');
 assert(/EN 1090-2 bis EXC4/i.test(germanGeneral.body)&&/ISO 3834-2/i.test(germanGeneral.body),'German producer draft must mention network certification level');
 assert(/DAP oder DDP/i.test(germanGeneral.body),'German producer draft must mention conditional DAP/DDP delivery');
