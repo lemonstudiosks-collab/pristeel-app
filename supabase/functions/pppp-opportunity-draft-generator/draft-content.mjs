@@ -61,7 +61,7 @@ export function recipientKind(recipient={}){
   return'direct';
 }
 function roleFor(route){const r=txt(route,80).toUpperCase();if(r==='TED_PRODUCER')return'producer';if(r==='TED_CONSORTIUM')return'consortium';if(r==='TED_GC')return'gc';return'general';}
-function shortProject(v){const s=txt(v,220).replace(/\s+/g,' ');if(s.length<=68)return s;const ref=(s.match(/\b(?:MDH\/\d+\/\d+|V\d{3,4}|NSW[_-][A-Z0-9_-]+|[A-Z]{1,5}[-_]\d{2,}[A-Z0-9_-]*)\b/i)||[])[0];if(ref)return ref;const head=s.slice(0,64).replace(/\s+\S*$/,'').trim();return head+'…';}
+function shortProject(v){const s=txt(v,220).replace(/\s+/g,' ');if(s.length<=68)return s;const ref=(s.match(/\b(?:MDH\/\d+\/\d+|V\d{3,4}|NSW[_-][A-Z0-9_-]+|[A-Z]{1,5}[-_]\d{2,}[A-Z0-9_-]*)\b/i)||[])[0];if(ref)return ref;const head=s.slice(0,38).replace(/\s+\S*$/,'').trim(),tail=s.slice(-25).replace(/^\S*\s+/,'').trim();return head+'…'+tail;}
 function subjectFor(language,role,title){
   const suffix=title?' – '+shortProject(title):'';
   if(language==='de')return (role==='producer'?'Fertigungskapazität':role==='consortium'?'Stahlbau & Fertigung':'Stahlbau & Fertigung')+suffix+' | PRISTEEL';
