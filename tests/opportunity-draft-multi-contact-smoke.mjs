@@ -156,7 +156,7 @@ const birchDirect=buildTedDraftContent(birchGcAction,birchGcTender,{email:'max.m
 assert.equal(birchDirect.recipient_kind,'direct');
 assert.match(birchDirect.subject,/^Stahlbau & Fertigung – /);
 assert(/Kapazitäts- und Terminfrage|Termin- oder Kapazitätsthema/i.test(birchDirect.body),'direct GC contact must lead with the same concrete project pressure point');
-assert(/Zeichnung, Stückliste oder ein konkretes Paket/i.test(birchDirect.body),'direct GC contact must receive a concrete low-friction call-to-action');
+assert(/Zeichnung oder Stückliste/i.test(birchDirect.body),'direct GC contact must receive a concrete low-friction call-to-action');
 
 
 const enAction={...beckAction,target_company:'Example Steel Ltd',target_email:'procurement@example.co.uk',tender_title:'United Kingdom – Structural steelworks'};
