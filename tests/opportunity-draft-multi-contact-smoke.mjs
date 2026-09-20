@@ -140,7 +140,7 @@ assert.match(germanGeneral.subject,/^Fertigungskapazität – /);
 assert(/Build-to-Print-Pakete/i.test(germanGeneral.body),'general producer inbox must retain the core fabrication proposition');
 assert(/Weiterleitung/i.test(germanGeneral.body),'general producer inbox must still make forwarding easy when another person is responsible');
 assert(/EN 1090-2 bis EXC4/i.test(germanGeneral.body)&&/ISO 3834-2/i.test(germanGeneral.body),'German producer draft must mention network certification level');
-assert(/DAP oder DDP/i.test(germanGeneral.body),'German producer draft must mention conditional DAP/DDP delivery');
+assert(/DAP/i.test(germanGeneral.body)&&/DDP/i.test(germanGeneral.body),'German producer draft must mention conditional DAP/DDP delivery');
 
 const birchGcAction={route:'TED_GC',target_company:'Birchmeier Bau AG',target_email:'info@birchmeier-bau.ch',tender_title:'Switzerland – Construction work – UW Beznau PSU Los A Baumeister'};
 const birchGcTender={title:birchGcAction.tender_title,publication_no:'642032-2026',winner:{name:'Birchmeier Bau AG',country:'CHE'},place_of_performance:['CHE']};
