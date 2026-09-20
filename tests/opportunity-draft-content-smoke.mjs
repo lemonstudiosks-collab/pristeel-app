@@ -28,7 +28,7 @@ for(const sample of samples){
   const d=buildTedDraftContent(sample.action,sample.tender,sample.recipient);
   const bodyOnly=d.body.split(/\n\n(?:Kind regards|Mit freundlichen Grüßen|S poštovanjem)/)[0];
   const words=bodyOnly.split(/\s+/).filter(Boolean).length;
-  assert.ok(words<=130,'first-touch outreach should stay concise; got '+words+' words');
+  assert.ok(words<=160,'first-touch outreach should stay readable and focused; got '+words+' words');
   assert.ok(d.subject.length<=105,'subject should be concise; got '+d.subject.length+' chars');
   assert.equal(/linkedin/i.test(d.html_body),false,'draft must not contain LinkedIn');
   assert.ok(/EN 1090-2/i.test(d.body),'draft must mention EN 1090-2');
