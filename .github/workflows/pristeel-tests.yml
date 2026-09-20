@@ -56,6 +56,8 @@ jobs:
         run: node --check scripts/project-email-reconcile.mjs && node tests/project-email-reconcile-smoke.mjs
       - name: Run shared TED and GC outbound queue smoke
         run: node tests/shared-outbound-queue-smoke.mjs
+      - name: Run concise opportunity draft and safe signature smoke
+        run: node tests/opportunity-draft-content-smoke.mjs
       - name: Run guarded outbound dispatcher smoke
         run: node tests/outbound-dispatcher-guard-smoke.mjs
       - name: Run Contact Master system-mail guard smoke

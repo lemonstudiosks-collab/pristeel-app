@@ -12,7 +12,7 @@ const SIGNATURE=[
   'arianit.vllahiu@prissteel.com',
   'www.prissteel.com'
 ].join('\n');
-const SIGNATURE_HTML=`<div style="margin-top:14px;font-family:Arial,sans-serif;color:#202124;line-height:1.45"><div>Arianit Vllahiu</div><div>Head of Business Development</div><div>+383 (0) 44 244 699</div><div><a href="mailto:arianit.vllahiu@prissteel.com">arianit.vllahiu@prissteel.com</a></div><div><a href="https://www.prissteel.com/">www.prissteel.com</a></div><div style="margin-top:8px"><img src="${PRISTEEL_LOGO_URL}" width="200" height="50" alt="PRISTEEL" style="display:block;border:0;outline:none;text-decoration:none;width:200px;height:50px"></div></div>`;
+const SIGNATURE_HTML=`<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;border-collapse:collapse;font-family:Arial,sans-serif;color:#1f2937"><tr><td valign="middle" style="padding:0 18px 0 0"><img src="${PRISTEEL_LOGO_URL}" width="182" alt="PRISTEEL" style="display:block;border:0;outline:none;text-decoration:none;width:182px;height:auto"></td><td valign="middle" style="border-left:2px solid #1a73e8;padding:0 0 0 18px"><div style="font-size:17px;line-height:1.25;font-weight:700;color:#1f2937">Arianit Vllahiu</div><div style="font-size:15px;line-height:1.35;color:#1f2937">Head of Business Development</div><div style="margin-top:8px;font-size:14px;line-height:1.5;color:#1a73e8">+383 (0) 44 244 699</div><div style="font-size:14px;line-height:1.5;color:#1f2937">arianit.vllahiu@prissteel.com</div><div style="font-size:14px;line-height:1.5;color:#1f2937">www.prissteel.com</div></td></tr></table>`;
 
 const DACH_TOKENS=new Set(['de','deu','ger','germany','deutschland','at','aut','austria','osterreich','oesterreich','ch','che','switzerland','schweiz','li','lie','liechtenstein']);
 const BCS_TOKENS=new Set(['hr','hrv','croatia','hrvatska','rs','srb','serbia','srbija','me','mne','montenegro','crna gora']);
@@ -61,77 +61,65 @@ export function recipientKind(recipient={}){
   return'direct';
 }
 function roleFor(route){const r=txt(route,80).toUpperCase();if(r==='TED_PRODUCER')return'producer';if(r==='TED_CONSORTIUM')return'consortium';if(r==='TED_GC')return'gc';return'general';}
-function shortProject(v){const s=txt(v,220).replace(/\s+/g,' ');if(s.length<=112)return s;const head=s.slice(0,72).replace(/\s+\S*$/,'').trim(),tail=s.slice(-34).replace(/^\S*\s+/,'').trim();return head+'…'+tail;}
+function shortProject(v){const s=txt(v,220).replace(/\s+/g,' ');if(s.length<=68)return s;const ref=(s.match(/\b(?:MDH\/\d+\/\d+|V\d{3,4}|NSW[_-][A-Z0-9_-]+|[A-Z]{1,5}[-_]\d{2,}[A-Z0-9_-]*)\b/i)||[])[0];if(ref)return ref;const marker=(s.match(/\b(?:zona\s+(?:Est|Vest|Nord|Sud)|East|West|North|South)\b/i)||[])[0],head=s.slice(0,38).replace(/\s+\S*$/,'').trim();if(marker)return head+'…'+marker;const tail=s.slice(-25).replace(/^\S*\s+/,'').trim();return head+'…'+tail;}
 function subjectFor(language,role,title){
   const suffix=title?' – '+shortProject(title):'';
-  if(language==='de')return (role==='producer'?'Zusätzliche Fertigungskapazität':role==='consortium'?'Stahlbeschaffung & Fertigung':'Stahlbau & Fertigung')+suffix+' | PRISTEEL';
-  if(language==='bcs')return (role==='producer'?'Dodatni kapacitet za čelične konstrukcije':role==='consortium'?'Nabavka i proizvodnja čeličnih komponenti':'Čelične konstrukcije i proizvodnja')+suffix+' | PRISTEEL';
-  return (role==='producer'?'Additional steel fabrication capacity':role==='consortium'?'Steel supply & fabrication support':'Steel fabrication support')+suffix+' | PRISTEEL';
+  if(language==='de')return (role==='producer'?'Fertigungskapazität':role==='consortium'?'Stahlbau & Fertigung':'Stahlbau & Fertigung')+suffix+' | PRISTEEL';
+  if(language==='bcs')return (role==='producer'?'Dodatni kapacitet':role==='consortium'?'Čelik & proizvodnja':'Čelične konstrukcije')+suffix+' | PRISTEEL';
+  return (role==='producer'?'Fabrication capacity':role==='consortium'?'Steel supply & fabrication':'Steel fabrication')+suffix+' | PRISTEEL';
 }
 function roleParagraphs(language,role,title){
   if(language==='de'){
     if(role==='producer')return[
-      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich Ihnen PRISTEEL als mögliche zusätzliche Fertigungskapazität für Stahlkonstruktionen und Stahlkomponenten vorstellen.',
-      'PRISTEEL koordiniert ein zertifiziertes Produktionsnetzwerk und unterstützt Hersteller bei Auslastungsspitzen, engen Terminen, ausgelagerten Baugruppen oder kompletten Build-to-Print-Paketen. Je nach Umfang können wir Materialbeschaffung, Fertigung, Oberflächenschutz, Qualitätsdokumentation, Verpackung und Lieferung übernehmen.',
-      'Falls Sie für dieses oder kommende Projekte Teile des Fertigungsumfangs auslagern möchten, prüfen wir gerne Zeichnungen, Stücklisten oder Spezifikationen und erstellen darauf basierend ein technisches und kommerzielles Angebot. Sollte externe Fertigung von einem anderen Kollegen betreut werden, wäre ich Ihnen für eine Weiterleitung an die zuständige Person dankbar.'
+      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich PRISTEEL als mögliche zusätzliche Fertigungskapazität vorstellen.',
+      'Wir unterstützen mit Build-to-Print-Stahlbau, Materialbeschaffung, Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung. Falls Sie Fertigung auslagern möchten, senden Sie uns gerne Zeichnungen, Stücklisten oder Spezifikationen. Sollte ein anderer Kollege zuständig sein, freue ich mich über eine Weiterleitung.'
     ];
     if(role==='consortium')return[
-      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich Ihnen PRISTEEL als möglichen Partner für projektbezogene Stahlmaterialien und gefertigte Stahlkomponenten vorstellen.',
-      'Über unser Produktionsnetzwerk können wir Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation, Verpackung und Lieferung als ein koordiniertes Paket abbilden.',
-      'Falls innerhalb Ihres konkreten Leistungsumfangs Stahlmaterialien, gefertigte Komponenten oder externe Fertigung beschafft werden, prüfen wir gerne Zeichnungen, Leistungsverzeichnisse, Stücklisten oder Spezifikationen und erstellen ein technisches und kommerzielles Angebot. Sollte hierfür ein anderes Konsortialmitglied oder ein anderer Kollege zuständig sein, wäre ich für eine Weiterleitung dankbar.'
+      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich PRISTEEL als möglichen Partner für Stahlmaterialien und gefertigte Stahlkomponenten vorstellen.',
+      'Wir koordinieren Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung. Wenn dies zu Ihrem Leistungsumfang gehört, prüfen wir gerne Zeichnungen oder Stücklisten und erstellen ein Angebot. Andernfalls freue ich mich über eine Weiterleitung an die zuständige Person.'
     ];
     if(role==='gc')return[
-      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich Ihnen PRISTEEL als möglichen Fertigungs- und Lieferpartner für projektspezifische Stahlbaupakete vorstellen.',
-      'PRISTEEL koordiniert ein zertifiziertes Produktionsnetzwerk für Build-to-Print-Stahlkonstruktionen und Stahlkomponenten. Je nach Leistungsumfang können wir Materialbeschaffung, Fertigung, Oberflächenschutz, Qualitätsdokumentation, Verpackung und Lieferung als ein abgestimmtes Gesamtpaket übernehmen.',
-      'Falls in Ihrem Leistungsumfang für dieses Projekt Stahlbau, gefertigte Stahlkomponenten oder ausgelagerte Fertigungspakete vorgesehen sind, prüfen wir gerne Zeichnungen, Leistungsverzeichnisse, Stücklisten oder Spezifikationen und erstellen darauf basierend ein technisches und kommerzielles Angebot. Sollte dieser Bereich von einem anderen Kollegen betreut werden, wäre ich Ihnen für eine Weiterleitung an den zuständigen Einkauf bzw. das Projektteam dankbar.'
+      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich PRISTEEL als möglichen Fertigungs- und Lieferpartner für projektspezifische Stahlbaupakete vorstellen.',
+      'Wir unterstützen mit Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung. Falls Stahlbau oder gefertigte Komponenten zu Ihrem Umfang gehören, prüfen wir gerne Zeichnungen oder Stücklisten und erstellen ein Angebot. Andernfalls freue ich mich über eine Weiterleitung an Einkauf oder Projektteam.'
     ];
     return[
-      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich Ihnen PRISTEEL als möglichen Partner für projektbezogene Stahlbau- und Stahlkomponenten vorstellen.',
-      'PRISTEEL koordiniert ein zertifiziertes Produktionsnetzwerk für Build-to-Print-Stahlkonstruktionen und Stahlkomponenten. Je nach Projektumfang können wir Materialbeschaffung, Fertigung, Oberflächenschutz, Qualitätsdokumentation, Verpackung und Lieferung koordinieren.',
-      'Falls Ihr Leistungsumfang Stahlkonstruktionen, Stahlkomponenten oder externe Fertigung umfasst, prüfen wir gerne Zeichnungen, Leistungsverzeichnisse, Stücklisten oder Spezifikationen und erstellen ein technisches und kommerzielles Angebot. Sollte dieser Bereich von einem anderen Kollegen betreut werden, wäre ich Ihnen für eine Weiterleitung an den zuständigen Einkauf bzw. das Projektteam dankbar.'
+      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich PRISTEEL als möglichen Partner für Stahlbau und gefertigte Stahlkomponenten vorstellen.',
+      'Wir unterstützen mit Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung. Falls dies zu Ihrem Umfang gehört, prüfen wir gerne Zeichnungen oder Stücklisten und erstellen ein Angebot. Andernfalls freue ich mich über eine Weiterleitung an die zuständige Person.'
     ];
   }
   if(language==='bcs'){
     if(role==='producer')return[
-      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogući dodatni proizvodni kapacitet za čelične konstrukcije i komponente.',
-      'PRISTEEL koordinira certificiranu proizvodnu mrežu i podržava proizvođače kada su potrebni dodatni kapaciteti, kratki rokovi, izdvojeni sklopovi ili kompletni build-to-print paketi. Ovisno o opsegu možemo organizirati nabavku materijala, proizvodnju, površinsku zaštitu, dokumentaciju kvalitete, pakiranje i isporuku.',
-      'Ako za ovaj ili buduće projekte želite dio proizvodnje povjeriti vanjskom partneru, rado ćemo pregledati nacrte, BOM liste ili specifikacije i pripremiti tehničko-komercijalnu ponudu. Ako je za vanjsku proizvodnju zadužena druga osoba, bili bismo zahvalni na prosljeđivanju poruke.'
+      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogući dodatni kapacitet za proizvodnju čeličnih konstrukcija i komponenti.',
+      'Možemo podržati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete i isporuku. Ako dio proizvodnje želite povjeriti vanjskom partneru, rado ćemo pregledati nacrte ili BOM i pripremiti ponudu. Ako je zadužen drugi kolega, molimo proslijedite poruku.'
     ];
     if(role==='consortium')return[
-      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za projektnu nabavku čelika i proizvodnju gotovih čeličnih komponenti.',
-      'Putem naše proizvodne mreže možemo koordinirati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete, pakiranje i isporuku kao objedinjeni paket.',
-      'Ako se u okviru vašeg konkretnog opsega nabavljaju čelični materijali, gotove komponente ili vanjska proizvodnja, rado ćemo pregledati nacrte, troškovnike/BOM liste ili specifikacije i pripremiti tehničko-komercijalnu ponudu. Ako je za to zadužen drugi član konzorcija ili kolega, bili bismo zahvalni na prosljeđivanju poruke.'
+      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za čelične materijale i gotove komponente.',
+      'Možemo koordinirati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete i isporuku. Ako je to dio vašeg opsega, rado ćemo pregledati nacrte ili BOM i pripremiti ponudu. Ako je zadužen drugi član tima, molimo proslijedite poruku.'
     ];
     if(role==='gc')return[
-      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za proizvodnju i isporuku projektno specifičnih čeličnih konstrukcija i komponenti.',
-      'PRISTEEL koordinira certificiranu proizvodnu mrežu za build-to-print izradu čeličnih konstrukcija i komponenti. Ovisno o opsegu možemo organizirati nabavku materijala, proizvodnju, površinsku zaštitu, dokumentaciju kvalitete, pakiranje i isporuku kao objedinjeni paket.',
-      'Ako vaš opseg na ovom projektu uključuje čelične konstrukcije, gotove čelične komponente ili vanjsku proizvodnju, rado ćemo pregledati nacrte, troškovnike/BOM liste ili specifikacije i pripremiti tehničko-komercijalnu ponudu. Ako je za ovo područje zadužena druga osoba, bili bismo zahvalni ako biste poruku proslijedili odgovornom kolegi u nabavci ili projektnom timu.'
+      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za proizvodnju i isporuku projektnih čeličnih paketa.',
+      'Možemo podržati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete i isporuku. Ako čelične konstrukcije ili komponente ulaze u vaš opseg, rado ćemo pregledati nacrte ili BOQ/BOM i pripremiti ponudu.'
     ];
     return[
-      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za projektnu nabavku i proizvodnju čeličnih konstrukcija i komponenti.',
-      'PRISTEEL koordinira certificiranu proizvodnu mrežu za build-to-print izradu čeličnih konstrukcija i komponenti, uključujući nabavku materijala, površinsku zaštitu, dokumentaciju kvalitete, pakiranje i isporuku.',
-      'Ako vaš opseg uključuje čelične konstrukcije, čelične komponente ili vanjsku proizvodnju, rado ćemo pregledati nacrte, troškovnike/BOM liste ili specifikacije i pripremiti tehničko-komercijalnu ponudu. Ako je za ovo područje zadužena druga osoba, bili bismo zahvalni na prosljeđivanju poruke odgovornom kolegi.'
+      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za čelične konstrukcije i komponente.',
+      'Možemo podržati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete i isporuku. Ako je to dio vašeg opsega, rado ćemo pregledati nacrte ili BOQ/BOM i pripremiti ponudu.'
     ];
   }
   if(role==='producer')return[
     'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential source of additional steel fabrication capacity.',
-    'PRISTEEL coordinates a certified production network and supports manufacturers when projects require overflow capacity, tight schedules, outsourced assemblies or complete build-to-print packages. Depending on the scope, we can cover material procurement, fabrication, surface protection, quality documentation, packing and delivery.',
-    'If you need to outsource part of the fabrication scope for this project, or require additional capacity for upcoming projects, we would be pleased to review drawings, BOMs or specifications and prepare a technical-commercial quotation. If external fabrication is handled by another colleague, I would appreciate it if you could forward my message to the responsible person.'
+    'We can support material procurement, build-to-print fabrication, surface protection, quality documentation and delivery. If you are outsourcing part of the fabrication scope, we would be pleased to review drawings, BOMs or specifications and provide a quotation. If another colleague handles this area, I would appreciate a referral.'
   ];
   if(role==='consortium')return[
-    'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential partner for project-specific steel supply and fabricated components.',
-    'Through our production network, we can coordinate material procurement, build-to-print fabrication, surface protection, quality documentation, packing and delivery as one package.',
-    'If steel materials, fabricated components or external manufacturing are being sourced within your specific awarded scope, we would be pleased to review drawings, BOQs/BOMs or specifications and prepare a technical-commercial quotation. If another consortium member or colleague is responsible for this area, I would appreciate it if you could forward my message accordingly.'
+    'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential partner for steel supply and fabricated components.',
+    'We can coordinate material procurement, build-to-print fabrication, surface protection, quality documentation and delivery. If this falls within your awarded scope, we would be pleased to review drawings or BOQs/BOMs and provide a quotation. If another consortium member handles it, I would appreciate a referral.'
   ];
   if(role==='gc')return[
     'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential fabrication and supply partner for project-specific steel packages.',
-    'PRISTEEL coordinates a certified production network for build-to-print steel structures and components. Depending on the scope, we can cover material procurement, fabrication, surface protection, quality documentation, packing and delivery as one coordinated package.',
-    'If structural steel, fabricated components or outsourced steel packages form part of your scope on this project, we would be pleased to review drawings, BOQs/BOMs or specifications and prepare a technical-commercial quotation. If this area is handled by another colleague, I would appreciate it if you could forward my message to the responsible procurement or project team.'
+    'We can support material procurement, build-to-print fabrication, surface protection, quality documentation and delivery. If steelwork or fabricated components form part of your scope, we would be pleased to review drawings or BOQs/BOMs and provide a quotation. If another colleague handles this package, I would appreciate a referral.'
   ];
   return[
-    'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential partner for project-specific steel supply and fabrication.',
-    'PRISTEEL coordinates a certified production network for build-to-print steel structures and components, including material procurement, fabrication, surface protection, quality documentation, packing and delivery.',
-    'If your scope includes structural steel, steel components or outsourced fabrication, we would be pleased to review drawings, BOQs/BOMs or specifications and prepare a technical-commercial quotation. If this area is handled by another colleague, I would appreciate it if you could forward my message to the responsible procurement or project team.'
+    'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential partner for steel fabrication and supply.',
+    'We can support material procurement, build-to-print fabrication, surface protection, quality documentation and delivery. If steelwork or fabricated components form part of your scope, we would be pleased to review drawings or BOQs/BOMs and provide a quotation. If another colleague handles this area, I would appreciate a referral.'
   ];
 }
 function cleanProjectTitle(v,ref=''){

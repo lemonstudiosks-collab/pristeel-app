@@ -115,7 +115,7 @@ assert.equal(resolveDraftLanguage(beckAction,beckTender,beckPerson),'de','German
 assert.equal(tedReference(beckTender),'613835-2026','internal publication reference must remain available for PPPP metadata');
 const german=buildTedDraftContent(beckAction,beckTender,beckPerson);
 assert.equal(german.language,'de');
-assert.match(german.subject,/^Zusätzliche Fertigungskapazität – Sanierung Hermann-Greiner-Realschule/);
+assert.match(german.subject,/^Fertigungskapazität – Sanierung Hermann-Greiner-Realschule/);
 assert(german.subject.length<140,'subject should stay concise even when the project title is long');
 assert(!/TED|613835-2026/i.test(german.subject),'customer-facing subject must not expose source name or notice reference');
 assert(german.body.startsWith('Guten Tag Benjamin Beck,'),'German person draft must use a German personal greeting');
@@ -136,8 +136,8 @@ assert.equal(german.signature_html,PRISTEEL_SIGNATURE_HTML,'canonical HTML signa
 const germanGeneral=buildTedDraftContent(beckAction,beckTender,beckGeneral);
 assert(germanGeneral.body.startsWith('Sehr geehrte Damen und Herren,'),'functional German mailbox must use company/general greeting');
 assert.equal(germanGeneral.recipient_kind,'general');
-assert.match(germanGeneral.subject,/^Zusätzliche Fertigungskapazität – /);
-assert(/zertifiziertes Produktionsnetzwerk/i.test(germanGeneral.body),'general producer inbox must receive the full professional capacity proposition');
+assert.match(germanGeneral.subject,/^Fertigungskapazität – /);
+assert(/Build-to-Print-Stahlbau/i.test(germanGeneral.body),'general producer inbox must retain the core fabrication proposition');
 assert(/Weiterleitung/i.test(germanGeneral.body),'general producer inbox must still make forwarding easy when another person is responsible');
 
 const birchGcAction={route:'TED_GC',target_company:'Birchmeier Bau AG',target_email:'info@birchmeier-bau.ch',tender_title:'Switzerland – Construction work – UW Beznau PSU Los A Baumeister'};
@@ -147,21 +147,21 @@ assert.equal(birchGeneral.language,'de');
 assert.equal(birchGeneral.recipient_kind,'general');
 assert.match(birchGeneral.subject,/^Stahlbau & Fertigung – UW Beznau PSU Los A Baumeister \| PRISTEEL$/);
 assert(/Fertigungs- und Lieferpartner/i.test(birchGeneral.body),'GC generic inbox must receive a substantive project-specific introduction');
-assert(/Materialbeschaffung, Fertigung, Oberflächenschutz, Qualitätsdokumentation, Verpackung und Lieferung/i.test(birchGeneral.body),'GC draft must explain the coordinated supply scope');
-assert(/Weiterleitung an den zuständigen Einkauf/i.test(birchGeneral.body),'GC draft must make forwarding to procurement easy');
+assert(/Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung/i.test(birchGeneral.body),'GC draft must explain the coordinated supply scope');
+assert(/Weiterleitung an Einkauf oder Projektteam/i.test(birchGeneral.body),'GC draft must make forwarding to procurement easy');
 
 const birchDirect=buildTedDraftContent(birchGcAction,birchGcTender,{email:'max.muster@birchmeier-bau.ch',name:'Max Muster',purpose:'procurement'});
 assert.equal(birchDirect.recipient_kind,'direct');
 assert.match(birchDirect.subject,/^Stahlbau & Fertigung – /);
 assert(/Fertigungs- und Lieferpartner/i.test(birchDirect.body),'direct GC contact must receive the same professional project-specific proposition');
-assert(/technisches und kommerzielles Angebot/i.test(birchDirect.body),'direct GC contact must receive a concrete quotation call-to-action');
+assert(/erstellen ein Angebot/i.test(birchDirect.body),'direct GC contact must receive a concrete quotation call-to-action');
 
 
 const enAction={...beckAction,target_company:'Example Steel Ltd',target_email:'procurement@example.co.uk',tender_title:'United Kingdom – Structural steelworks'};
 const enTender={...beckTender,title:enAction.tender_title,publication_no:'700001-2026',procurement_no:'TED-700001-2026',source_url:'https://ted.europa.eu/en/notice/700001-2026/html',winner:{name:'Example Steel Ltd',country:'GBR'},place_of_performance:['UK']};
 const english=buildTedDraftContent(enAction,enTender,{email:'procurement@example.co.uk',purpose:'procurement'});
 assert.equal(english.language,'en');
-assert.match(english.subject,/^Additional steel fabrication capacity – Structural steelworks \| PRISTEEL$/);
+assert.match(english.subject,/^Fabrication capacity – Structural steelworks \| PRISTEEL$/);
 assert(!/\bTED\b|700001-2026/i.test(english.subject),'English subject must not expose source metadata');
 assert(english.body.includes('Structural steelworks'),'English copy may naturally mention the cleaned project title');
 assert(english.body.includes('Kind regards'),'English draft must stay English');
