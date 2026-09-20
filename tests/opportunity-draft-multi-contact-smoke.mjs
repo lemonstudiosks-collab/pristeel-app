@@ -148,14 +148,14 @@ const birchGeneral=buildTedDraftContent(birchGcAction,birchGcTender,{email:'info
 assert.equal(birchGeneral.language,'de');
 assert.equal(birchGeneral.recipient_kind,'general');
 assert.match(birchGeneral.subject,/^Stahlbau & Fertigung – UW Beznau PSU Los A Baumeister \| PRISTEEL$/);
-assert(/praktische Ergänzung/i.test(birchGeneral.body),'GC generic inbox must receive a warm project-specific introduction');
+assert(/Kapazitäts- und Terminfrage|Termin- oder Kapazitätsthema/i.test(birchGeneral.body),'GC generic inbox must lead with a concrete project pressure point');
 assert(/EN 1090-2 bis EXC4/i.test(birchGeneral.body)&&/ISO 3834-2/i.test(birchGeneral.body),'GC draft must communicate technical production credentials');
 assert(/Weiterleitung an Einkauf oder Projektteam/i.test(birchGeneral.body),'GC draft must make forwarding to procurement easy');
 
 const birchDirect=buildTedDraftContent(birchGcAction,birchGcTender,{email:'max.muster@birchmeier-bau.ch',name:'Max Muster',purpose:'procurement'});
 assert.equal(birchDirect.recipient_kind,'direct');
 assert.match(birchDirect.subject,/^Stahlbau & Fertigung – /);
-assert(/praktische Ergänzung/i.test(birchDirect.body),'direct GC contact must receive the same warm project-specific proposition');
+assert(/Kapazitäts- und Terminfrage|Termin- oder Kapazitätsthema/i.test(birchDirect.body),'direct GC contact must lead with the same concrete project pressure point');
 assert(/Zeichnung, Stückliste oder ein konkretes Paket/i.test(birchDirect.body),'direct GC contact must receive a concrete low-friction call-to-action');
 
 
