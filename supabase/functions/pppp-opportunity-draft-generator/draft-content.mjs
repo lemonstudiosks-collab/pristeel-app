@@ -70,63 +70,75 @@ function subjectFor(language,role,title){
 }
 function roleParagraphs(language,role,title){
   if(language==='de'){
+    const common=[
+      'Genau dort kann PRISTEEL unterstützen.',
+      'Wir übernehmen Build-to-Print-Pakete – von Material und Fertigung bis Oberflächenschutz und Qualitätsdokumentation. Unser Produktionsnetzwerk umfasst nach EN 1090-2 bis EXC4 und ISO 3834-2 zertifizierte Werke für CE-konformen Stahlbau. Lieferung ist DAP oder, projektspezifisch, DDP möglich.'
+    ];
     if(role==='producer')return[
-      'ich bin auf Ihre Beteiligung am Projekt „'+title+'“ aufmerksam geworden und sehe eine mögliche praktische Ergänzung zwischen Ihrem Team und PRISTEEL.',
-      'Wenn interne Kapazitäten ausgelastet sind, Termine eng werden oder einzelne Pakete sinnvoll ausgelagert werden können, unterstützen wir als zusätzliche Build-to-Print-Fertigung. Unser Produktionsnetzwerk umfasst nach EN 1090-2 bis EXC4 und ISO 3834-2 zertifizierte Werke für CE-konformen Stahlbau; Lieferungen können je nach Projekt und Bestimmungsort DAP oder DDP strukturiert werden.',
-      'Statt Ihnen eine allgemeine Unternehmenspräsentation zu schicken, prüfe ich gerne eine Zeichnung, Stückliste oder ein konkretes Paket und sage Ihnen kurzfristig, ob wir es technisch und wirtschaftlich sinnvoll unterstützen können. Falls ein anderer Kollege dafür zuständig ist, freue ich mich über eine Weiterleitung.'
+      'Bei Projekten wie „'+title+'“ wird zusätzliche Fertigungskapazität oft dann wichtig, wenn Termine enger werden oder interne Kapazitäten bereits gebunden sind.',
+      ...common,
+      'Wenn Sie ein Paket haben, das Kapazität bindet oder zeitkritisch wird, schicken Sie mir gerne eine Zeichnung oder Stückliste. Ich sage Ihnen kurzfristig, ob wir es technisch und wirtschaftlich sinnvoll übernehmen können. Falls ein anderer Kollege externe Fertigung betreut, freue ich mich über eine Weiterleitung.'
     ];
     if(role==='consortium')return[
-      'ich bin auf Ihre Beteiligung am Projekt „'+title+'“ aufmerksam geworden und sehe eine mögliche praktische Ergänzung zwischen Ihrem Team und PRISTEEL.',
-      'Wir unterstützen projektbezogen mit Stahlbeschaffung und Build-to-Print-Fertigung. Unser Produktionsnetzwerk umfasst nach EN 1090-2 bis EXC4 und ISO 3834-2 zertifizierte Werke für CE-konformen Stahlbau; Lieferungen können je nach Projekt und Bestimmungsort DAP oder DDP strukturiert werden.',
-      'Wenn Stahlmaterialien oder gefertigte Komponenten zu Ihrem Leistungsumfang gehören, prüfe ich gerne eine Zeichnung, Stückliste oder ein Paket und gebe Ihnen kurzfristig Rückmeldung, ob wir wettbewerbsfähig unterstützen können. Falls ein anderes Konsortialmitglied zuständig ist, freue ich mich über eine Weiterleitung.'
+      'Bei einem Projekt wie „'+title+'“ kann zusätzlicher Stahlbau schnell zur Kapazitäts- und Terminfrage werden – besonders wenn mehrere Gewerke parallel laufen.',
+      ...common,
+      'Wenn Stahlmaterialien oder gefertigte Komponenten zu Ihrem Leistungsumfang gehören, schicken Sie mir gerne eine Zeichnung, Stückliste oder ein Paket. Ich sage Ihnen kurzfristig, ob wir sinnvoll unterstützen können. Falls ein anderes Konsortialmitglied zuständig ist, freue ich mich über eine Weiterleitung.'
     ];
     if(role==='gc')return[
-      'ich bin auf Ihre Beteiligung am Projekt „'+title+'“ aufmerksam geworden und sehe eine mögliche praktische Ergänzung zwischen Ihrem Team und PRISTEEL.',
-      'Wenn Stahlbaupakete zusätzliche Fertigungskapazität oder enge Liefertermine erfordern, können wir Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz und Dokumentation übernehmen. Unser Produktionsnetzwerk umfasst nach EN 1090-2 bis EXC4 und ISO 3834-2 zertifizierte Werke für CE-konformen Stahlbau; Lieferungen sind projektabhängig DAP oder DDP möglich.',
-      'Statt Ihnen eine allgemeine Präsentation zu schicken, prüfe ich gerne eine Zeichnung, Stückliste oder ein konkretes Paket und sage Ihnen kurzfristig, ob wir sinnvoll unterstützen können. Falls ein anderer Kollege den Stahlbau betreut, freue ich mich über eine Weiterleitung an Einkauf oder Projektteam.'
+      'Bei einem Projekt wie „'+title+'“ kann ein Stahlbaupaket schnell zum Termin- oder Kapazitätsthema werden, wenn interne Ressourcen bereits gebunden sind.',
+      ...common,
+      'Wenn Sie ein Paket haben, das extern vergeben werden soll oder zeitkritisch wird, schicken Sie mir gerne eine Zeichnung oder Stückliste. Ich sage Ihnen kurzfristig, ob wir es sinnvoll übernehmen können. Falls ein anderer Kollege den Stahlbau betreut, freue ich mich über eine Weiterleitung an Einkauf oder Projektteam.'
     ];
     return[
-      'ich bin auf Ihre Beteiligung am Projekt „'+title+'“ aufmerksam geworden und sehe eine mögliche praktische Ergänzung zwischen Ihrem Team und PRISTEEL.',
-      'Wir unterstützen mit Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz und Qualitätsdokumentation. Unser Produktionsnetzwerk umfasst nach EN 1090-2 bis EXC4 und ISO 3834-2 zertifizierte Werke für CE-konformen Stahlbau; Lieferungen können je nach Projekt und Bestimmungsort DAP oder DDP strukturiert werden.',
-      'Wenn Stahlbau oder gefertigte Komponenten zu Ihrem Umfang gehören, prüfe ich gerne eine Zeichnung, Stückliste oder ein Paket und gebe Ihnen kurzfristig Rückmeldung, ob wir sinnvoll unterstützen können. Falls ein anderer Kollege zuständig ist, freue ich mich über eine Weiterleitung.'
+      'Bei einem Projekt wie „'+title+'“ kann zusätzlicher Stahlbau schnell zur Kapazitäts- und Terminfrage werden.',
+      ...common,
+      'Wenn Sie ein Paket haben, das extern vergeben werden soll oder zeitkritisch wird, schicken Sie mir gerne eine Zeichnung oder Stückliste. Ich sage Ihnen kurzfristig, ob wir es sinnvoll übernehmen können. Falls ein anderer Kollege zuständig ist, freue ich mich über eine Weiterleitung.'
     ];
   }
   if(language==='bcs'){
+    const common=[
+      'Tu PRISTEEL može pomoći.',
+      'Preuzimamo build-to-print pakete – od materijala i proizvodnje do površinske zaštite i dokumentacije kvalitete. Naša proizvodna mreža uključuje pogone certificirane prema EN 1090-2 do EXC4 i ISO 3834-2 za CE-usaglašene čelične konstrukcije. Isporuka je moguća DAP ili, zavisno od projekta, DDP.'
+    ];
     if(role==='producer')return[
-      'primijetio sam vaše učešće na projektu „'+title+'“ i mislim da bi između vašeg tima i PRISTEEL-a mogla postojati praktična saradnja.',
-      'Kada su interni kapaciteti popunjeni, rokovi kratki ili je dio proizvodnje racionalnije izdvojiti, možemo djelovati kao dodatni build-to-print proizvodni kapacitet. Naša proizvodna mreža uključuje pogone certificirane prema EN 1090-2 do EXC4 i ISO 3834-2 za CE-usaglašene čelične konstrukcije, uz isporuku DAP ili DDP ovisno o projektu i odredištu.',
-      'Umjesto opće prezentacije, rado ću pregledati jedan nacrt, BOM ili konkretan paket i brzo vam reći možemo li ga tehnički i komercijalno podržati. Ako je za to zadužen drugi kolega, bio bih zahvalan na prosljeđivanju.'
+      'Kod projekata kao što je „'+title+'“, dodatni proizvodni kapacitet postaje važan kada su rokovi kratki ili su interne kapacitete već zauzete.',
+      ...common,
+      'Ako imate paket koji opterećuje kapacitet ili postaje vremenski kritičan, pošaljite mi jedan nacrt ili BOM. Brzo ću vam reći možemo li ga tehnički i komercijalno preuzeti. Ako je za vanjsku proizvodnju zadužen drugi kolega, bio bih zahvalan na prosljeđivanju.'
     ];
     if(role==='consortium')return[
-      'primijetio sam vaše učešće na projektu „'+title+'“ i mislim da bi između vašeg tima i PRISTEEL-a mogla postojati praktična saradnja.',
-      'Možemo podržati nabavku čelika i build-to-print proizvodnju. Naša proizvodna mreža uključuje pogone certificirane prema EN 1090-2 do EXC4 i ISO 3834-2 za CE-usaglašene čelične konstrukcije, uz isporuku DAP ili DDP ovisno o projektu i odredištu.',
-      'Ako čelični materijali ili gotove komponente ulaze u vaš opseg, rado ću pregledati jedan nacrt, BOM ili paket i brzo potvrditi možemo li ga konkurentno podržati. Ako je za to zadužen drugi član konzorcija, bio bih zahvalan na prosljeđivanju.'
+      'Kod projekta kao što je „'+title+'“, čelični paketi lako postanu pitanje kapaciteta i rokova kada više radova teče paralelno.',
+      ...common,
+      'Ako čelični materijali ili gotove komponente ulaze u vaš opseg, pošaljite mi jedan nacrt, BOM ili paket. Brzo ću vam reći možemo li ga smisleno podržati. Ako je zadužen drugi član konzorcija, bio bih zahvalan na prosljeđivanju.'
     ];
     return[
-      'primijetio sam vaše učešće na projektu „'+title+'“ i mislim da bi između vašeg tima i PRISTEEL-a mogla postojati praktična saradnja.',
-      'Možemo podržati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu i dokumentaciju kvalitete. Naša proizvodna mreža uključuje pogone certificirane prema EN 1090-2 do EXC4 i ISO 3834-2 za CE-usaglašene čelične konstrukcije, uz isporuku DAP ili DDP ovisno o projektu i odredištu.',
-      'Umjesto opće prezentacije, rado ću pregledati jedan nacrt, BOQ/BOM ili konkretan paket i brzo vam reći možemo li ga podržati. Ako je zadužen drugi kolega, bio bih zahvalan na prosljeđivanju.'
+      'Kod projekta kao što je „'+title+'“, čelični paket lako postane pitanje kapaciteta i rokova kada su interne resurse već zauzete.',
+      ...common,
+      'Ako imate paket koji treba eksterno ugovoriti ili postaje vremenski kritičan, pošaljite mi jedan nacrt ili BOQ/BOM. Brzo ću vam reći možemo li ga preuzeti. Ako je zadužen drugi kolega, bio bih zahvalan na prosljeđivanju.'
     ];
   }
+  const common=[
+    'That is where PRISTEEL can help.',
+    'We take on build-to-print packages – from material sourcing and fabrication to surface treatment and quality documentation. Our production network includes EN 1090-2 certified facilities up to EXC4 and ISO 3834-2 for CE-marked structural steelwork. Delivery can be arranged DAP or, project-specific, DDP.'
+  ];
   if(role==='producer')return[
-    'I came across your involvement in the project “'+title+'” and thought there may be a practical fit between your team and PRISTEEL.',
-    'When internal capacity is full, deadlines become tight, or a package is better outsourced, we can act as an additional build-to-print fabrication arm. Our production network includes EN 1090-2 certified facilities up to EXC4 and ISO 3834-2 for CE-marked structural steelwork, with delivery available on DAP or DDP terms depending on the project and destination.',
-    'Rather than sending a generic presentation, I would be happy to review one drawing, BOM or package and tell you quickly whether we can support it technically and competitively. If another colleague handles external fabrication, I would appreciate a referral.'
+    'On projects like “'+title+'”, additional fabrication capacity becomes valuable when deadlines tighten or internal production is already committed.',
+    ...common,
+    'If you have a package that is tying up capacity or becoming time-critical, send me one drawing or BOM. I will tell you quickly whether we can take it on technically and competitively. If another colleague handles external fabrication, I would appreciate a referral.'
   ];
   if(role==='consortium')return[
-    'I came across your involvement in the project “'+title+'” and thought there may be a practical fit between your team and PRISTEEL.',
-    'We can support project-specific steel supply and build-to-print fabrication. Our production network includes EN 1090-2 certified facilities up to EXC4 and ISO 3834-2 for CE-marked structural steelwork, with delivery available on DAP or DDP terms depending on the project and destination.',
-    'If steel materials or fabricated components fall within your awarded scope, I would be happy to review one drawing, BOQ/BOM or package and tell you quickly whether we can support it competitively. If another consortium member handles this scope, I would appreciate a referral.'
+    'On a project like “'+title+'”, steel packages can quickly become a capacity and schedule issue when several scopes are running in parallel.',
+    ...common,
+    'If steel materials or fabricated components fall within your scope, send me one drawing, BOQ/BOM or package. I will tell you quickly whether we can support it competitively. If another consortium member handles this scope, I would appreciate a referral.'
   ];
   if(role==='gc')return[
-    'I came across your involvement in the project “'+title+'” and thought there may be a practical fit between your team and PRISTEEL.',
-    'When a steel package creates extra fabrication load or tight delivery windows, we can support material sourcing, build-to-print fabrication, surface treatment and quality documentation. Our production network includes EN 1090-2 certified facilities up to EXC4 and ISO 3834-2 for CE-marked structural steelwork, with DAP or DDP delivery available depending on the project and destination.',
-    'Rather than sending a generic presentation, I would be happy to review one drawing, BOQ/BOM or package and tell you quickly whether we can support it competitively. If another colleague handles the steel package, I would appreciate a referral.'
+    'On a project like “'+title+'”, a steel package can quickly become a capacity or schedule issue when internal resources are already committed.',
+    ...common,
+    'If you have a package that should be outsourced or is becoming time-critical, send me one drawing or BOQ/BOM. I will tell you quickly whether we can take it on. If another colleague handles the steel package, I would appreciate a referral.'
   ];
   return[
-    'I came across your involvement in the project “'+title+'” and thought there may be a practical fit between your team and PRISTEEL.',
-    'We can support material sourcing, build-to-print fabrication, surface treatment and quality documentation. Our production network includes EN 1090-2 certified facilities up to EXC4 and ISO 3834-2 for CE-marked structural steelwork, with DAP or DDP delivery available depending on the project and destination.',
-    'Rather than sending a generic presentation, I would be happy to review one drawing, BOQ/BOM or package and tell you quickly whether we can support it competitively. If another colleague handles this area, I would appreciate a referral.'
+    'On a project like “'+title+'”, additional steelwork can quickly become a capacity and schedule issue.',
+    ...common,
+    'If you have a package that should be outsourced or is becoming time-critical, send me one drawing or BOQ/BOM. I will tell you quickly whether we can take it on. If another colleague handles this area, I would appreciate a referral.'
   ];
 }
 function cleanProjectTitle(v,ref=''){
