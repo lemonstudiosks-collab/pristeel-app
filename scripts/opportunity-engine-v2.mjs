@@ -118,8 +118,8 @@ function actionFor(row,out,route,amendment=false){
   return{type:'opportunity_review',subject:`Opportunity review · ${text(row.title,180)}`,brief:`PPPP gjeti një mundësi që kërkon verifikim. ${text(a.summary,900)} Hapi: ${text(a.next_step,900)}`};
 }
 
-async function upsertAction(access,row,out,route,{amendment=false,mode='apply'}={}){
-  const x=actionFor(row,out,route,amendment), key=`TENDER:${row.id}:${x.type}`;
+async function upsertAction(access,row,out,route,{amendment=false,mode='apply',action=null}={}){
+  const x=action||actionFor(row,out,route,amendment), key=`TENDER:${row.id}:${x.type}`;
   const body={tender_watch_id:row.id,project_id:row.project_id||null,action_key:key,action_type:x.type,route:route.route,status:'draft_review',priority:priorityFor(row),due_date:dueFor(row),target_company:row.authority||null,target_email:null,subject_hint:x.subject,draft_brief:x.brief,payload:{engine_version:VERSION,recommendation:out?.analysis?.recommendation||null,dossier_complete:out?.dossier_complete!==false,protected_documents:out?.protected_documents||[],suggested_partners:out?.analysis?.suggested_partners||[],human_approval_required:true},updated_at:new Date().toISOString()};
   if(mode==='apply'){
     await rest(access,'pppp_opportunity_actions?on_conflict=action_key',{method:'POST',body:[body],prefer:'resolution=merge-duplicates,return=minimal'});
