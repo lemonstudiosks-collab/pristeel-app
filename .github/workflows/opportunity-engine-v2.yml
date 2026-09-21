@@ -35,6 +35,7 @@ on:
       - 'supabase/migrations/20260901200500_opportunity_gmail_drafts_v1.sql'
       - 'supabase/migrations/20260901212500_ted_background_research_queue_v1.sql'
       - '.github/workflows/opportunity-engine-v2.yml'
+      - 'tests/opportunity-workflow-ownership-smoke.mjs'
   schedule:
     - cron: '20 1-23/2 * * *'
 
