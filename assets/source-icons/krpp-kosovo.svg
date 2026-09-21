@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Kosovo procurement source icon">
+  <rect width="64" height="64" rx="14" fill="#1f5ea8"/>
+  <g fill="#f6d24a">
+    <circle cx="20" cy="17" r="1.8"/><circle cx="25" cy="14" r="1.8"/><circle cx="31" cy="13" r="1.8"/>
+    <circle cx="37" cy="14" r="1.8"/><circle cx="42" cy="17" r="1.8"/><circle cx="46" cy="21" r="1.8"/>
+  </g>
+  <path d="M18 29h28M22 29v4h20v-4M24 35v13M32 35v13M40 35v13M20 49h24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 27l13-8 13 8" fill="none" stroke="#f6d24a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
