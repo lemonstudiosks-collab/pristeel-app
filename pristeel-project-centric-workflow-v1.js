@@ -152,10 +152,10 @@ function lifecycleDateLabel(meta){var when=lifecycleWhen(meta);if(!when)return''
 async function loadOpportunityOutreach(){
  tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.emailByThread={};
  try{
-   var rows=A(await db('pppp_opportunity_outreach_registry_v1?select=tender_watch_id,recipient_email,status,draft_created_at,sent_at,gmail_thread_id,gmail_message_id,updated_at&order=updated_at.desc&limit=2000'));
+   var rows=A(await db('pppp_opportunity_outreach_registry_v1?select=tender_watch_id,recipient_email,status,draft_created_at,sent_at,gmail_thread_id,updated_at&order=updated_at.desc&limit=2000'));
    tenderState.outreachRows=rows;rows.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.outreachByTender[id]||(tenderState.outreachByTender[id]=[])).push(r);});
    var threads=[];rows.forEach(function(r){if(/^[a-zA-Z0-9_-]+$/.test(S(r.gmail_thread_id))&&threads.indexOf(S(r.gmail_thread_id))<0)threads.push(S(r.gmail_thread_id));});
-   if(threads.length){var mails=A(await db('project_emails?gmail_thread_id=in.('+threads.join(',')+')&select=gmail_thread_id,gmail_message_id,direction,from_email,to_emails,subject,sent_at&order=sent_at.asc&limit=2000'));mails.forEach(function(m){var t=S(m.gmail_thread_id);if(t)(tenderState.emailByThread[t]||(tenderState.emailByThread[t]=[])).push(m);});}
+   if(threads.length){var mails=A(await db('project_emails?gmail_thread_id=in.('+threads.join(',')+')&select=gmail_thread_id,direction,sent_at&order=sent_at.asc&limit=2000'));mails.forEach(function(m){var t=S(m.gmail_thread_id);if(t)(tenderState.emailByThread[t]||(tenderState.emailByThread[t]=[])).push(m);});}
  }catch(e){console.warn('PPPP opportunity outreach state:',e);}
  return tenderState.outreachRows;
 }
@@ -231,7 +231,7 @@ function renderOpportunities(){
 }
 async function loadOpportunities(force){
  if(!activePage('page-kek-tenders')||tenderState.busy)return false;
- if(!force&&tenderState.last&&Date.now()-tenderState.last<30000){renderOpportunities();return true;}
+ if(!force&&tenderState.last&&Date.now()-tenderState.last<120000){renderOpportunities();return true;}
  tenderState.busy=true;
  try{tenderState.rows=A(await db('kek_tender_watch?select=*&status=in.(new,review,watch)&order=published_date.desc,relevance_score.desc&limit=2000'));await loadOpportunityOutreach();tenderState.last=Date.now();renderOpportunities();return true;}
  catch(e){console.warn('PPPP opportunities project-centric:',e);return false;}finally{tenderState.busy=false;}
@@ -244,8 +244,9 @@ function setOpportunityContext(context){
  tenderState.field=['construction','infrastructure','energy','supply','services','other','all'].indexOf(field)>-1?field:'all';
  tenderState.winner_group=['gc_epc','producer','other','all'].indexOf(winner)>-1?winner:'all';
  tenderState.source=TENDER_SOURCE_ORDER.indexOf(src)>-1?src:(mode==='award'?'TED':'all');
- if(tenderState.winner_group!=='all')tenderState.source='TED';
- if(tenderState.source!=='all')tenderState.mode='all';
+ if(tenderState.winner_group!=='all'){tenderState.source='TED';tenderState.mode='award';}
+ else if(tenderState.source==='TED')tenderState.mode='award';
+ else if(tenderState.source!=='all')tenderState.mode='local';
  tenderState.query=S(context.query||'');return tenderState;
 }
 function emitOpportunityFilter(kind,value){
@@ -281,7 +282,7 @@ function applyOpportunityFilter(kind,value){
  }else return false;
  renderOpportunities();emitOpportunityFilter(kind,value);return true;
 }
-function openOpportunities(context,force){setOpportunityContext(context);return loadOpportunities(force!==false);}
+function openOpportunities(context,force){setOpportunityContext(context);return loadOpportunities(force===true);}
 async function partnerContext(){
  if(tenderState.partners)return tenderState.partners;
  try{var rows=A(await db('partners?select=name,country,business_type,relation,categories,certifications,importance_reason,notes&limit=500'));tenderState.partners=rows.filter(function(r){var rel=A(r.relation).map(N),cat=A(r.categories).map(N);return rel.indexOf('manufacturer')>-1||rel.indexOf('subcontractor')>-1||rel.indexOf('supplier')>-1||cat.indexOf('fabrication')>-1;}).slice(0,80);}catch(e){tenderState.partners=[];}
