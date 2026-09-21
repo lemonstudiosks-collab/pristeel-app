@@ -209,7 +209,14 @@ function krppLoginRequiredNames(error){
  return out;
 }
 async function krppDossierAccessStatus(resolved,source){
- if(source!=='KRPP'||!resolved.page)return{complete:true,protected_documents:[],access_failures:[]};
+ if(source!=='KRPP'){
+   const found=resolved?.dossier?.found===true,docs=Array.isArray(resolved?.documents)?resolved.documents:[];
+   const access_failures=[];
+   if(!found)access_failures.push('APP: njoftimi i saktë nuk u gjet në burimin zyrtar.');
+   else if(!docs.length)access_failures.push('APP: burimi zyrtar nuk ekspozoi dokumente të dosjes për këtë tender.');
+   return{complete:found&&docs.length>0,protected_documents:[],access_failures};
+ }
+ if(!resolved.page)return{complete:false,protected_documents:[],access_failures:['KRPP: faqja zyrtare e dosjes nuk u ngarkua.']};
  const core=krppPreferredBundleActions(resolved.dossier).filter(a=>{const f=krppActionFamily(a);return f==='dossier'||f==='cost';});
  if(!core.length)return{complete:true,protected_documents:[],access_failures:[]};
  const protectedSet=new Set(),failures=[];
