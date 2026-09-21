@@ -1,5 +1,8 @@
 name: PPPP Direct Tender Opportunity v1
 
+# Sole scheduled owner for Direct Tender protected archives, dossier routing,
+# and supplier RFQ preparation. TED automation lives in opportunity-engine-v2.yml.
+
 on:
   workflow_dispatch:
     inputs:
@@ -23,6 +26,7 @@ on:
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
       - 'supabase/migrations/20260901214000_opportunity_promotion_security_and_failure_reconcile.sql'
       - '.github/workflows/opportunity-direct-tender-v1.yml'
+      - 'tests/opportunity-workflow-ownership-smoke.mjs'
   push:
     branches: [main]
     paths:
@@ -63,6 +67,7 @@ jobs:
           node --check scripts/opportunity-protected-archive-runner.mjs
           node --check scripts/opportunity-rfq-drafts-v1.mjs
           node --check scripts/krpp-authenticated-fetch-worker.mjs
+          node tests/opportunity-workflow-ownership-smoke.mjs
 
   run:
     if: github.event_name != 'pull_request'
