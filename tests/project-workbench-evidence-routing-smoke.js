@@ -34,7 +34,7 @@ function click(win,el,msg){assert(el,msg||'missing clickable element');el.dispat
       {id:'ooo',gmail_message_id:'m-ooo',direction:'incoming',subject:'Automatische Antwort: Projekt TenneT BUNT – Update zur Zoll- und Importabwicklung',sent_at:'2026-09-17T06:53:54Z',from_email:'matthias.fischer@spie.com',from_name:'Fischer, Matthias',to_emails:['arianit.vllahiu@prissteel.com'],gmail_thread_id:'t-ooo',snippet:'Ich bin bis zum 01.10.2026 nicht im Haus.'}
     ],
     attachmentLinks:[
-      {id:2106,attachment_name:'PRISTEEL_Angebot_TenneT_BUNT_DAP_14.09.2026.xlsx',gmail_message_id:'m-offer',gmail_thread_id:'t-offer',storage_bucket:'project-source-files',storage_path:'tennet/offer.xlsx',created_at:'2026-09-14T12:00:00Z'},
+      {id:2106,attachment_name:'PRISTEEL_Angebot_TenneT_BUNT_DAP_14.09.2026.xlsx',gmail_message_id:'m-offer',gmail_thread_id:'t-offer',storage_bucket:'project-source-files',storage_path:'tennet/offer.xlsx',created_at:'2026-09-14T12:00:00Z',extracted_text:'Sheet: Los Grün\nVerhandelter Endpreis,,,,,,,"4,244,765.86"\nSheet: Los Gelb\nVerhandelter Endpreis,,,,,,,"10,372,749.88"\nSheet: Los Rot\nVerhandelter Endpreis,,,,,,,"12,964,252.49"\nSheet: Los Blau\nVerhandelter Endpreis,,,,,,,"11,904,097.18"\nWährung EUR'},
       {id:2107,attachment_name:'PRISTEEL_Angebotsbedingungen_TenneT_BUNT_14.09.2026.pdf',gmail_message_id:'m-offer',gmail_thread_id:'t-offer',storage_bucket:'project-source-files',storage_path:'tennet/terms.pdf',created_at:'2026-09-14T12:00:00Z'},
       {id:2101,attachment_name:'AKTIVA Offer Rev 1 — DAP DDP, Painting Shown Separately.pdf',gmail_message_id:'m-supplier',gmail_thread_id:'t-supplier',storage_bucket:'project-source-files',storage_path:'tennet/aktiva.pdf',created_at:'2026-09-14T08:34:00Z'}
     ],
@@ -68,7 +68,9 @@ function click(win,el,msg){assert(el,msg||'missing clickable element');el.dispat
   assert(offerText.includes('PRISTEEL – Angebot TenneT BUNT – Lose Gelb, Rot, Blau und Grün'),'Actual outbound client offer must be selected');
   assert(offerText.includes('PRISTEEL_Angebot_TenneT_BUNT_DAP_14.09.2026.xlsx'),'Actual sent offer workbook must be visible directly in Overview');
   assert(offerText.includes('PRISTEEL_Angebotsbedingungen_TenneT_BUNT_14.09.2026.pdf'),'Actual sent offer terms must be visible directly in Overview');
-  assert(offerText.includes('hyrja kanonike në regjistrin e ofertave mungon'),'Overview must explain the registry gap without hiding the real offer');
+  assert(offerText.includes('39.485.865,41')||offerText.includes('39,485,865.41'),'Overview must show the full four-lot offer total from the sent workbook');
+  assert(offerText.includes('4 lotet'),'Overview must explain that the document total is based on four lots');
+  assert(offerText.includes('hyrja kanonike në regjistrin e ofertave')&&offerText.includes('mungon'),'Overview must explain the registry gap without hiding the real offer');
   assert(!offerText.includes('ponuda Aktive'),'Supplier/internal correspondence must not masquerade as our client offer');
   assert(offerCard.querySelector('a[href*="mail.google.com"]'),'Our offer must expose the exact sending email');
   assert(!offerCard.hasAttribute('data-pwb3-card-route')&&!offerCard.hasAttribute('data-pwb3-nav'),'Offer card itself must not be a hidden navigation button');
