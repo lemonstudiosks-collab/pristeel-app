@@ -85,7 +85,7 @@ function click(win,el,msg){assert(el,msg||'missing clickable element');el.dispat
   assert(gmailReads>0,'Storage-backed file must have a Gmail attachment fallback when no separate opener module is present');
   assert(browserTabs.some(x=>x.location.href==='blob:test-offer'),'Gmail fallback must open the actual attachment blob');
 
-  click(window,offerCard);
+  click(window,card('Oferta jonë'));
   assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-offer'),'Offer card must open offer detail');
   const detail=doc.getElementById('pst-pi-body').textContent.replace(/\s+/g,' ');
   assert(detail.includes('Dokumentet e ofertës së dërguar'),'Offer detail must expose the actual sent documents');
