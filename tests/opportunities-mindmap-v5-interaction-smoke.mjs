@@ -111,6 +111,8 @@ assert.equal(api._state.source,'all');
 assert.equal(api._state.lifecycle,'all');
 assert.equal(api._state.field,'all');
 assert.equal(api._state.winner_group,'all');
+desk.apply();
+await new Promise(r=>setTimeout(r,10));
 
 window.document.querySelector('[data-pst-opp-density="compact"]').click();
 assert.equal(desk.state().density,'compact','compact density must be available');
