@@ -388,3 +388,18 @@ The normal click-filter path is separate and works differently.
 Before finalizing the new UI, test deep/context navigation explicitly and ensure the resulting state preserves the intended lane rather than silently collapsing to `mode='all'`.
 
 This should be solved in runtime state handling, not by adding a presentation-layer workaround.
+
+
+## 19. Stale PR guard
+
+Open PR **#518 — `Fix Opportunities truth state and isolate TED analysis`** is stale relative to the current Opportunities architecture and must **not** be merged as-is.
+
+Conflicts observed:
+
+- it changes `pristeel-home-canonical-interaction-v1.js` to old 2026-09-14 Opportunities cache keys
+- it changes `pristeel-opportunities-waiting-bridge-v1.js` so a prepared draft becomes a separate visible `draft` lifecycle again
+- that conflicts with the current operator decision that draft-ready work belongs inside the waiting/operator-work model rather than creating another top-level column
+- it predates the 2026-09-21 Opportunity Desk runtime and would overwrite newer owner/cache behavior
+- it also mixes a Supabase assistant-function change with Opportunities presentation work
+
+Any useful idea from #518 must be cherry-picked/reimplemented deliberately against current `main`, with current tests. Do not merge the branch wholesale.
