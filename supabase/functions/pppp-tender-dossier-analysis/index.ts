@@ -334,11 +334,11 @@ async function askOpenAI({tender,dossier,documents,partners,access}){
 }
 function enforceIncompleteDossier(ai,access,source){
  if(!access||access.complete!==false||!ai?.result)return ai;
- const r=ai.result,protectedDocs=Array.isArray(access.protected_documents)?access.protected_documents:[],failures=Array.isArray(access.access_failures)?access.access_failures:[];
+ const r=ai.result,protectedDocs=Array.isArray(access.protected_documents)?access.protected_documents:[],failures=Array.isArray(access.access_failures)?access.access_failures:[],isKrpp=source==='KRPP';
  if(String(r.recommendation||'').toUpperCase()==='GO')r.recommendation='REVIEW';
  r.confidence='low';
- r.missing_information=uniqueText([...(Array.isArray(r.missing_information)?r.missing_information:[]),protectedDocs.length?`KRPP kërkon hyrje me llogari për: ${protectedDocs.join(', ')}`:'Dokumentacioni kryesor i tenderit nuk u lexua plotësisht.',...failures.map(x=>'Qasje e paplotë: '+text(x,500))],15);
- r.next_step='Hyr në KRPP dhe merre dokumentacionin e mbrojtur (Dosja e Tenderit / paramasa), pastaj importoje në PPPP para vendimit për krijimin e projektit.';
+ r.missing_information=uniqueText([...(Array.isArray(r.missing_information)?r.missing_information:[]),protectedDocs.length?`KRPP kërkon hyrje me llogari për: ${protectedDocs.join(', ')}`:isKrpp?'Dokumentacioni kryesor i tenderit nuk u lexua plotësisht.':'APP nuk ekspozoi dosjen e plotë të tenderit në burimin zyrtar.',...failures.map(x=>'Qasje e paplotë: '+text(x,500))],15);
+ r.next_step=isKrpp?'Hyr në KRPP dhe merre dokumentacionin e mbrojtur (Dosja e Tenderit / paramasa), pastaj importoje në PPPP para vendimit për krijimin e projektit.':'Verifiko dokumentet zyrtare në APP dhe merre dosjen e plotë, pastaj ri-analizoje në PPPP para vendimit për krijimin e projektit.';
  return ai;
 }
 function persistenceAuth(anonKey,auth){const service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';return{token:service||auth.replace(/^Bearer\s+/i,''),key:service||anonKey};}
