@@ -43,6 +43,9 @@ function last(a){return a[a.length-1];}
   assert(doc.querySelectorAll('.pwb3-nav-btn').length===6,'Expected six unique work navigation areas');
   assert([...doc.querySelectorAll('.pwb3-nav-btn')].some(x=>x.textContent.includes('Dokumentet & aktiviteti')),'Documents navigation must avoid duplicating the Client communication area');
   assert(doc.querySelectorAll('.pwb3-grid>.pwb3-card>header>button').length===0,'Clickable overview cards must not repeat the same action with header buttons');
+  const infoCard=[...doc.querySelectorAll('.pwb3-card')].find(x=>x.textContent.includes('Informacioni kryesor'));
+  assert(infoCard,'Primary information card missing');
+  assert(!infoCard.hasAttribute('data-pwb3-card-route')&&!infoCard.hasAttribute('data-pwb3-nav'),'Primary information card must be informative, not a dead self-navigation control');
   assert(!doc.querySelector('.pwb3-quick'),'Duplicate quick-actions panel must be removed');
   assert(!doc.querySelector('.pwb3-step'),'Legacy 9-step button strip must be removed');
 
