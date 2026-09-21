@@ -137,8 +137,10 @@ const germanGeneral=buildTedDraftContent(beckAction,beckTender,beckGeneral);
 assert(germanGeneral.body.startsWith('Sehr geehrte Damen und Herren,'),'functional German mailbox must use company/general greeting');
 assert.equal(germanGeneral.recipient_kind,'general');
 assert.match(germanGeneral.subject,/^Fertigungskapazität – /);
-assert(/Build-to-Print-Stahlbau/i.test(germanGeneral.body),'general producer inbox must retain the core fabrication proposition');
+assert(/Build-to-Print-Pakete/i.test(germanGeneral.body),'general producer inbox must retain the core fabrication proposition');
 assert(/Weiterleitung/i.test(germanGeneral.body),'general producer inbox must still make forwarding easy when another person is responsible');
+assert(/EN 1090-2 bis EXC4/i.test(germanGeneral.body)&&/ISO 3834-2/i.test(germanGeneral.body),'German producer draft must mention network certification level');
+assert(/DAP/i.test(germanGeneral.body)&&/DDP/i.test(germanGeneral.body),'German producer draft must mention conditional DAP/DDP delivery');
 
 const birchGcAction={route:'TED_GC',target_company:'Birchmeier Bau AG',target_email:'info@birchmeier-bau.ch',tender_title:'Switzerland – Construction work – UW Beznau PSU Los A Baumeister'};
 const birchGcTender={title:birchGcAction.tender_title,publication_no:'642032-2026',winner:{name:'Birchmeier Bau AG',country:'CHE'},place_of_performance:['CHE']};
@@ -146,15 +148,15 @@ const birchGeneral=buildTedDraftContent(birchGcAction,birchGcTender,{email:'info
 assert.equal(birchGeneral.language,'de');
 assert.equal(birchGeneral.recipient_kind,'general');
 assert.match(birchGeneral.subject,/^Stahlbau & Fertigung – UW Beznau PSU Los A Baumeister \| PRISTEEL$/);
-assert(/Fertigungs- und Lieferpartner/i.test(birchGeneral.body),'GC generic inbox must receive a substantive project-specific introduction');
-assert(/Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung/i.test(birchGeneral.body),'GC draft must explain the coordinated supply scope');
+assert(/Kapazitäts- und Terminfrage|Termin- oder Kapazitätsthema/i.test(birchGeneral.body),'GC generic inbox must lead with a concrete project pressure point');
+assert(/EN 1090-2 bis EXC4/i.test(birchGeneral.body)&&/ISO 3834-2/i.test(birchGeneral.body),'GC draft must communicate technical production credentials');
 assert(/Weiterleitung an Einkauf oder Projektteam/i.test(birchGeneral.body),'GC draft must make forwarding to procurement easy');
 
 const birchDirect=buildTedDraftContent(birchGcAction,birchGcTender,{email:'max.muster@birchmeier-bau.ch',name:'Max Muster',purpose:'procurement'});
 assert.equal(birchDirect.recipient_kind,'direct');
 assert.match(birchDirect.subject,/^Stahlbau & Fertigung – /);
-assert(/Fertigungs- und Lieferpartner/i.test(birchDirect.body),'direct GC contact must receive the same professional project-specific proposition');
-assert(/erstellen ein Angebot/i.test(birchDirect.body),'direct GC contact must receive a concrete quotation call-to-action');
+assert(/Kapazitäts- und Terminfrage|Termin- oder Kapazitätsthema/i.test(birchDirect.body),'direct GC contact must lead with the same concrete project pressure point');
+assert(/Zeichnung oder Stückliste/i.test(birchDirect.body),'direct GC contact must receive a concrete low-friction call-to-action');
 
 
 const enAction={...beckAction,target_company:'Example Steel Ltd',target_email:'procurement@example.co.uk',tender_title:'United Kingdom – Structural steelworks'};
@@ -167,6 +169,8 @@ assert(english.body.includes('Structural steelworks'),'English copy may naturall
 assert(english.body.includes('Kind regards'),'English draft must stay English');
 assert(!/TED reference|Contracting authority|ted\.europa\.eu|700001-2026|\bTED\b/i.test(english.body),'English body must not expose technical source metadata');
 assert(!/Përshëndetje|Me respekt|Mit freundlichen Grüßen/.test(english.body),'English draft must not mix Albanian or German copy');
+assert(/EN 1090-2 certified facilities up to EXC4/i.test(english.body)&&/ISO 3834-2/i.test(english.body),'English draft must mention network certification level');
+assert(/DAP or DDP/i.test(english.body),'English draft must mention conditional DAP/DDP delivery');
 const albaniaEnglish=buildTedDraftContent({...enAction,tender_title:'Albania – Structural steelworks – Industrial steel package'},{...enTender,title:'Albania – Structural steelworks – Industrial steel package',winner:{name:'Example SHPK',country:'ALB'}},{email:'info@example.al',purpose:'general'});
 assert.equal(albaniaEnglish.language,'en','Albania must use English under the approved TED outreach language policy');
 const bosniaEnglish=buildTedDraftContent({...enAction,tender_title:'Bosnia and Herzegovina – Structural steelworks – Bridge package'},{...enTender,title:'Bosnia and Herzegovina – Structural steelworks – Bridge package',winner:{name:'Example d.o.o.',country:'BIH'}},{email:'info@example.ba',purpose:'general'});

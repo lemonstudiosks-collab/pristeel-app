@@ -28,7 +28,8 @@ assert(content.includes('PRISTEEL_LOGO_URL'),'HTML signature must include canoni
 assert(content.includes('Stahlbau & Fertigung'),'German GC professional subject policy must remain present');
 assert(content.includes("role==='producer'?'Fertigungskapazität'"),'German producer direct-contact subject policy must remain present');
 assert(content.includes('recipientKind'),'recipient type must remain available for safe greeting/metadata handling');
-assert(content.includes('Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung'),'generic inbox drafts must retain substantive capability context');
+assert(content.includes('EN 1090-2 bis EXC4')&&content.includes('ISO 3834-2'),'generic inbox drafts must retain technical certification context');
+assert(content.includes('DAP oder')&&content.includes('DDP'),'generic inbox drafts must retain conditional DAP/DDP delivery positioning');
 assert(!content.includes('TED-Referenz:'),'customer body template must not contain TED reference block');
 assert(!content.includes('Auftraggeber:'),'customer body template must not contain contracting-authority block');
 

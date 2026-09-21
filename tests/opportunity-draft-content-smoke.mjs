@@ -28,9 +28,13 @@ for(const sample of samples){
   const d=buildTedDraftContent(sample.action,sample.tender,sample.recipient);
   const bodyOnly=d.body.split(/\n\n(?:Kind regards|Mit freundlichen Grüßen|S poštovanjem)/)[0];
   const words=bodyOnly.split(/\s+/).filter(Boolean).length;
-  assert.ok(words<=115,'first-touch outreach should stay concise; got '+words+' words');
+  assert.ok(words<=160,'first-touch outreach should stay readable and focused; got '+words+' words');
   assert.ok(d.subject.length<=105,'subject should be concise; got '+d.subject.length+' chars');
   assert.equal(/linkedin/i.test(d.html_body),false,'draft must not contain LinkedIn');
+  assert.ok(/EN 1090-2/i.test(d.body),'draft must mention EN 1090-2');
+  assert.ok(/EXC4/i.test(d.body),'draft must mention EXC4');
+  assert.ok(/ISO 3834-2/i.test(d.body),'draft must mention ISO 3834-2');
+  assert.ok(/\bDAP\b/.test(d.body)&&/\bDDP\b/.test(d.body),'draft must mention DAP and DDP as conditional delivery terms');
 }
 
 console.log('opportunity draft concise copy + safe signature smoke: ok');
