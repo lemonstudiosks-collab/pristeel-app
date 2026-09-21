@@ -44,7 +44,7 @@ window.eval(deskSrc);
 await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
-assert(desk&&desk.version==='20260921-opportunity-desk4','Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260921-opportunity-desk5','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 assert.equal(window.document.querySelector('.pst-opp-mini-stats'),null,'passive mini-stat summary row must not render');
 assert(window.document.querySelector('[data-pst-opp-mode="all"]'),'all route must exist');
@@ -58,6 +58,21 @@ assert(deskSrc.includes('grid-template-columns:repeat(auto-fit,minmax(145px,1fr)
 assert(deskSrc.includes('.pst-opp-chip-main'),'filter chips must use the richer icon + label layout');
 assert.equal(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),null,'zero-count sources must not clutter the Desk');
 assert.equal(window.document.querySelector('[data-pst-opp-source="UNDP_KOSOVO"]'),null,'UNDP Kosovo must not occupy a source chip in the Desk');
+
+window.document.querySelector('[data-pst-opp-source="KRPP"]').click();
+await new Promise(r=>setTimeout(r,40));
+assert.equal(desk.state().sourcePage,'KRPP','clicking KRPP must open the dedicated KRPP source page');
+assert.equal(api._state.source,'KRPP','dedicated source page must keep the canonical source filter');
+assert(window.document.getElementById('pst-opportunities-focus').classList.contains('pst-opp-source-page'),'source result view must be a distinct page surface');
+assert.equal(window.document.querySelector('#pst-opp-desk'),null,'overview cards and filters must not stay above source results');
+assert.match(window.document.querySelector('#pst-opportunities-focus>header h2').textContent,/KRPP/,'source page header must identify KRPP');
+assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,40,'KRPP page must show its bounded first result batch');
+assert(Array.from(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]')).every(el=>String(el.getAttribute('data-pcw-tender')).startsWith('krpp-')),'KRPP page must contain only KRPP results');
+window.document.querySelector('[data-pst-opp-back]').click();
+await new Promise(r=>setTimeout(r,40));
+assert.equal(desk.state().sourcePage,'','source-page Back must return to the Opportunities overview');
+assert.equal(api._state.source,'all','returning from a source page must clear only the source route');
+assert(window.document.querySelector('#pst-opp-desk'),'Opportunities overview must be restored after source-page Back');
 
 assert.equal(api._test.opportunityRows().length,49,'all canonical matching rows must remain available; no hard 80-row cap may exist');
 assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,40,'initial render must stay bounded for readability');
