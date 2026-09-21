@@ -27,6 +27,7 @@ on:
       - 'supabase/migrations/20260901214000_opportunity_promotion_security_and_failure_reconcile.sql'
       - '.github/workflows/opportunity-direct-tender-v1.yml'
       - 'tests/opportunity-workflow-ownership-smoke.mjs'
+      - 'tests/opportunity-direct-action-reconcile-smoke.mjs'
   push:
     branches: [main]
     paths:
@@ -68,6 +69,7 @@ jobs:
           node --check scripts/opportunity-rfq-drafts-v1.mjs
           node --check scripts/krpp-authenticated-fetch-worker.mjs
           node tests/opportunity-workflow-ownership-smoke.mjs
+          node tests/opportunity-direct-action-reconcile-smoke.mjs
 
   run:
     if: github.event_name != 'pull_request'
