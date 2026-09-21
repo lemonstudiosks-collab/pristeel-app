@@ -13,6 +13,7 @@ const unique=a=>[...new Set(array(a).filter(Boolean).map(String))];
 const today=()=>new Date().toISOString().slice(0,10);
 const source=row=>{const s=String(row?.payload?.source||'KRPP').toUpperCase();return s==='APP'||s==='APP_AL'?'APP_AL':s==='TED'?'TED':'KRPP';};
 const phase=row=>String(row?.payload?.notice_phase||'opportunity').toLowerCase();
+const DIRECT_MANAGED_ACTION_TYPES=new Set(['supplier_rfq_plan','bid_execution_review','partner_outreach_plan','krpp_authenticated_fetch_required','dossier_fetch_required','no_go_review','opportunity_review','dossier_analysis_failure']);
 const daysUntil=d=>{if(!d)return 999;const t=new Date(`${d}T00:00:00Z`).getTime();return Number.isFinite(t)?Math.ceil((t-Date.now())/86400000):999;};
 
 async function rest(access,path,{method='GET',body,prefer}={}){
@@ -109,13 +110,16 @@ function actionFor(row,out,route,amendment=false){
   if(route.route==='DIRECT_RAW_MATERIAL')return{type:'supplier_rfq_plan',subject:`Sourcing plan · ${text(row.title,180)}`,brief:`Tender direkt për lëndë/material. Përmbledhje: ${text(a.summary,900)}. Material/sasi: ${[...steel,...qty].join(' | ')||'duhet verifikuar'}. Kushtet/rreziqet: ${risks.join(' | ')||'—'}. Përgatit RFQ-të për furnitorët; asgjë nuk dërgohet pa miratim.`};
   if(route.route==='DIRECT_FABRICATION')return{type:'bid_execution_review',subject:`Bid plan · ${text(row.title,180)}`,brief:`Tender me përshtatje të fortë për PriSteel. Scope: ${steel.join(' | ')||text(a.scope,900)}. Sasi/specifika: ${qty.join(' | ')||'duhet verifikuar'}. Hapi: ${text(a.next_step,900)}. Vendimi final për ofertim/çmim mbetet njerëzor.`};
   if(route.route==='PARTNER_REQUIRED')return{type:'partner_outreach_plan',subject:`Partner plan · ${text(row.title,180)}`,brief:`Tender relevant ku nevojitet partner/prodhues. Kandidatë nga PPPP: ${partners.map(p=>`${p.name}: ${p.reason}`).join(' | ')||'ende pa kandidat të fortë'}. Scope: ${steel.join(' | ')||text(a.scope,700)}. Përgatit kontaktet/draftet; mos dërgo automatikisht.`};
-  if(route.route==='DOSSIER_REQUIRED')return{type:'krpp_authenticated_fetch_required',subject:`Dosja e plotë kërkohet · ${text(row.title,160)}`,brief:`PPPP nuk e ka dosjen e plotë. Dokumente të mbrojtura: ${unique(out?.protected_documents).join(', ')||'dokumentacioni kryesor'}. Queue për authenticated fetch është krijuar. Mos krijo ofertë finale pa dosjen e plotë.`};
+  if(route.route==='DOSSIER_REQUIRED'){
+    if(source(row)==='KRPP')return{type:'krpp_authenticated_fetch_required',subject:`Dosja e plotë kërkohet · ${text(row.title,160)}`,brief:`PPPP nuk e ka dosjen e plotë. Dokumente të mbrojtura: ${unique(out?.protected_documents).join(', ')||'dokumentacioni kryesor'}. Queue për authenticated fetch është krijuar. Mos krijo ofertë finale pa dosjen e plotë.`};
+    return{type:'dossier_fetch_required',subject:`Dosja APP kërkohet · ${text(row.title,160)}`,brief:`PPPP nuk e ka dosjen e plotë nga APP. Verifiko dokumentet zyrtare dhe merre dosjen e plotë para analizës së radhës. Mos krijo ofertë finale pa dosjen e plotë.`};
+  }
   if(route.route==='NO_GO_REVIEW')return{type:'no_go_review',subject:`NO_GO review · ${text(row.title,180)}`,brief:`Analiza rekomandon NO_GO: ${text(a?.capability_fit?.reason,900)}. Ky është rekomandim, jo vendim automatik. Verifiko para mbylljes.`};
   return{type:'opportunity_review',subject:`Opportunity review · ${text(row.title,180)}`,brief:`PPPP gjeti një mundësi që kërkon verifikim. ${text(a.summary,900)} Hapi: ${text(a.next_step,900)}`};
 }
 
-async function upsertAction(access,row,out,route,{amendment=false,mode='apply'}={}){
-  const x=actionFor(row,out,route,amendment), key=`TENDER:${row.id}:${x.type}`;
+async function upsertAction(access,row,out,route,{amendment=false,mode='apply',action=null}={}){
+  const x=action||actionFor(row,out,route,amendment), key=`TENDER:${row.id}:${x.type}`;
   const body={tender_watch_id:row.id,project_id:row.project_id||null,action_key:key,action_type:x.type,route:route.route,status:'draft_review',priority:priorityFor(row),due_date:dueFor(row),target_company:row.authority||null,target_email:null,subject_hint:x.subject,draft_brief:x.brief,payload:{engine_version:VERSION,recommendation:out?.analysis?.recommendation||null,dossier_complete:out?.dossier_complete!==false,protected_documents:out?.protected_documents||[],suggested_partners:out?.analysis?.suggested_partners||[],human_approval_required:true},updated_at:new Date().toISOString()};
   if(mode==='apply'){
     await rest(access,'pppp_opportunity_actions?on_conflict=action_key',{method:'POST',body:[body],prefer:'resolution=merge-duplicates,return=minimal'});
@@ -123,6 +127,35 @@ async function upsertAction(access,row,out,route,{amendment=false,mode='apply'}=
     await rest(access,'tasks?on_conflict=source,source_ref',{method:'POST',body:[task],prefer:'resolution=merge-duplicates,return=minimal'});
   }
   return{x,key};
+}
+
+async function activeDirectActionMap(access,rows,mode){
+  const map=new Map();
+  if(mode!=='apply'||!rows.length)return map;
+  const ids=unique(rows.map(r=>r.id));
+  if(!ids.length)return map;
+  const active=await rest(access,`pppp_opportunity_actions?tender_watch_id=in.(${ids.join(',')})&status=not.in.(background,resolved,closed,done,superseded)&select=id,tender_watch_id,action_key,action_type,status`);
+  for(const row of array(active)){
+    const id=String(row?.tender_watch_id||'');if(!id)continue;
+    if(!DIRECT_MANAGED_ACTION_TYPES.has(String(row?.action_type||'')))continue;
+    const list=map.get(id)||[];list.push(row);map.set(id,list);
+  }
+  return map;
+}
+async function supersedeStaleDirectActions(access,rows,mode){
+  if(mode!=='apply'||!rows.length)return 0;
+  const byId=new Map();
+  for(const row of rows)if(row?.id)byId.set(String(row.id),row);
+  const stale=[...byId.values()];
+  if(!stale.length)return 0;
+  const now=new Date().toISOString(),ids=stale.map(x=>String(x.id));
+  await rest(access,`pppp_opportunity_actions?id=in.(${ids.join(',')})`,{method:'PATCH',body:{status:'superseded',updated_at:now},prefer:'return=minimal'});
+  const refs=unique(stale.map(x=>String(x.action_key||'').replace(/^TENDER:/,'OPPORTUNITY:')).filter(Boolean));
+  if(refs.length){
+    const list=refs.map(x=>encodeURIComponent(x)).join(',');
+    await rest(access,`tasks?source=eq.opportunity_engine_v2&source_ref=in.(${list})&status=not.in.(mbyllur,kryer,arkivuar)`,{method:'PATCH',body:{status:'mbyllur',done_at:now},prefer:'return=minimal'});
+  }
+  return stale.length;
 }
 
 async function recordVersion(access,row,out,fingerprint,mode){
@@ -150,7 +183,7 @@ async function processDirect(access,rows,{mode,maxDossiers}){
 
   const eligible=assessed.filter(r=>['KRPP','APP_AL'].includes(source(r))&&phase(r)==='opportunity'&&r.status!=='ignored'&&Number(r.relevance_score||0)>=35&&(!r.deadline||r.deadline>=today()));
   eligible.sort((a,b)=>Number(!!b.project_id)-Number(!!a.project_id)||Number(b.status==='review')-Number(a.status==='review')||Number(b.relevance_score||0)-Number(a.relevance_score||0)||daysUntil(a.deadline)-daysUntil(b.deadline));
-  const selected=eligible.slice(0,Math.max(0,maxDossiers)),results=[];
+  const selected=eligible.slice(0,Math.max(0,maxDossiers)),results=[],activeByTender=await activeDirectActionMap(access,selected,mode),staleActionRows=[];
 
   for(const row0 of selected){
     try{
@@ -160,9 +193,14 @@ async function processDirect(access,rows,{mode,maxDossiers}){
       let nextStatus=fresh.status;
       if(['qualified','review_required','blocked_dossier','no_go'].includes(route.gate)&&fresh.status==='new')nextStatus='review';
       if(mode==='apply')await rest(access,`kek_tender_watch?id=eq.${encodeURIComponent(row0.id)}`,{method:'PATCH',body:{payload:p,status:nextStatus,updated_at:new Date().toISOString()},prefer:'return=minimal'});
-      const row={...fresh,payload:p,status:nextStatus};
-      await upsertAction(access,row,out,route,{mode});
-      if(version.amendment)await upsertAction(access,row,out,route,{amendment:true,mode});
+      const row={...fresh,payload:p,status:nextStatus},primaryAction=actionFor(row,out,route,false),amendmentAction=version.amendment?actionFor(row,out,route,true):null;
+      const desiredKeys=new Set([`TENDER:${row.id}:${primaryAction.type}`,...(amendmentAction?[`TENDER:${row.id}:${amendmentAction.type}`]:[])]);
+      for(const current of (activeByTender.get(String(row.id))||[])){
+        if(current.action_type==='dossier_amendment_review')continue;
+        if(!desiredKeys.has(String(current.action_key||'')))staleActionRows.push(current);
+      }
+      await upsertAction(access,row,out,route,{mode,action:primaryAction});
+      if(amendmentAction)await upsertAction(access,row,out,route,{amendment:true,mode,action:amendmentAction});
       results.push({id:row.id,source:source(row),title:row.title,score:row.relevance_score,route:route.route,gate:route.gate,recommendation:out?.analysis?.recommendation||null,dossier_complete:out?.dossier_complete!==false,documents:array(out?.documents).length,amendment:version.amendment,cached:!!out?.cached});
     }catch(error){
       const msg=text(error?.message||error,1000);results.push({id:row0.id,source:source(row0),title:row0.title,error:msg});
@@ -171,10 +209,11 @@ async function processDirect(access,rows,{mode,maxDossiers}){
       }
     }
   }
-  return{assessed:assessed.length,precision_ignored:ignored.length,eligible:eligible.length,selected:selected.length,results};
+  const superseded_actions=await supersedeStaleDirectActions(access,staleActionRows,mode);
+  return{assessed:assessed.length,precision_ignored:ignored.length,eligible:eligible.length,selected:selected.length,superseded_actions,results};
 }
 
-async function runPromotion(access,mode){if(mode!=='apply')return null;const out=await rest(access,'rpc/pppp_tender_project_promotion_reconcile_v2',{method:'POST',body:{p_apply:true,p_limit:100}});return out;}
+async function runPromotion(access,mode){if(mode!=='apply')return null;const out=await rest(access,'rpc/pppp_tender_project_promotion_reconcile_v2',{method:'POST',body:{p_apply:false,p_limit:100}});return out;}
 async function writeSummary(s){await mkdir('tmp',{recursive:true});await writeFile('tmp/opportunity-engine-v2.json',JSON.stringify(s,null,2));}
 
 export async function runOpportunityEngineV2({mode=process.env.SYNC_MODE||'preview',maxDossiers=Number(process.env.PPPP_OPPORTUNITY_DOSSIER_MAX||8),supabaseUrl=process.env.SUPABASE_URL||''}={}){
