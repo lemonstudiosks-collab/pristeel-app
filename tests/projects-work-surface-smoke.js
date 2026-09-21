@@ -45,6 +45,8 @@ function assert(ok,message){if(!ok)throw new Error(message);}
 
   const states=[...window.document.querySelectorAll('.ppd-row')].map(x=>x.getAttribute('data-state'));
   assert(states.join(',')==='action,work,execution,waiting','Default order must be action -> work -> execution -> waiting');
+  assert(window.document.querySelector('[data-ppd-open="p1"] .ppd-next').textContent.includes('Mbyll koston / çmimin'),'Action pricing project must expose a deterministic TANI action');
+  assert(window.document.querySelector('[data-ppd-open="p3"] .ppd-next').textContent.includes('Prit klientin'),'wait_for_client must expose the automatic waiting action');
 
   const actionRow=window.document.querySelector('[data-ppd-open="p1"]');
   actionRow.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
@@ -64,7 +66,7 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(facts.length===1&&facts[0].fact_key==='supplier.price','Project context bridge must remain available for Project Detail');
 
   const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
-  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20260921-operator-desk2'),'Operator Desk must be cache-busted in runtime bootstrap');
+  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20260921-operator-desk3'),'Operator Desk must be cache-busted in runtime bootstrap');
   assert(bootstrap.includes('pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2'),'Classification compatibility layer must be cache-busted');
 
   const source=desk;
