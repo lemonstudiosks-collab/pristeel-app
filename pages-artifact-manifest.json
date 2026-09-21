@@ -197,6 +197,22 @@
     {
       "path": "pristeel-supplier-offer-currency-v1.js",
       "reason": "Loaded dynamically by the supplier-offer draft bridge to preserve supplier offer currency correctly."
+    },
+    {
+      "path": "assets/source-icons/ted-eu.svg",
+      "reason": "Local Opportunity Desk source identity asset used by pristeel-opportunities-filter-polish-v1.js in the production Pages artifact."
+    },
+    {
+      "path": "assets/source-icons/krpp-kosovo.svg",
+      "reason": "Local Opportunity Desk source identity asset used by pristeel-opportunities-filter-polish-v1.js in the production Pages artifact."
+    },
+    {
+      "path": "assets/source-icons/app-albania.svg",
+      "reason": "Local Opportunity Desk source identity asset used by pristeel-opportunities-filter-polish-v1.js in the production Pages artifact."
+    },
+    {
+      "path": "assets/source-icons/world-bank.svg",
+      "reason": "Local Opportunity Desk source identity asset used by pristeel-opportunities-filter-polish-v1.js in the production Pages artifact."
     }
   ],
   "compatibilityPublicAssets": [
@@ -309,6 +325,26 @@
       "source": "pristeel-redesign-finalizer-v1.js",
       "contains": "pristeel-tender-dossier-analysis-v1.js",
       "reason": "Final UX layer loads explicit official tender dossier analysis."
+    },
+    {
+      "source": "pristeel-opportunities-filter-polish-v1.js",
+      "contains": "assets/source-icons/ted-eu.svg",
+      "reason": "Opportunity Desk source icon dependency must remain present in the production artifact."
+    },
+    {
+      "source": "pristeel-opportunities-filter-polish-v1.js",
+      "contains": "assets/source-icons/krpp-kosovo.svg",
+      "reason": "Opportunity Desk source icon dependency must remain present in the production artifact."
+    },
+    {
+      "source": "pristeel-opportunities-filter-polish-v1.js",
+      "contains": "assets/source-icons/app-albania.svg",
+      "reason": "Opportunity Desk source icon dependency must remain present in the production artifact."
+    },
+    {
+      "source": "pristeel-opportunities-filter-polish-v1.js",
+      "contains": "assets/source-icons/world-bank.svg",
+      "reason": "Opportunity Desk source icon dependency must remain present in the production artifact."
     }
   ],
   "knownRepositoryOnlyClasses": [

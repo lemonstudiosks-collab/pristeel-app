@@ -9,7 +9,7 @@ const {JSDOM}=require('jsdom');
 
   assert(!/new\s+MutationObserver|setInterval\s*\(/.test(source),'Section theme must not observe or poll the page');
   assert(!/supaFetch\s*\(|fetch\s*\(|new\s+XMLHttpRequest/.test(source),'Section theme must not read or write business data');
-  assert(finalizer.includes("pristeel-section-theme-v1.js?v=20260822-2"),'UI finalizer does not load the current section theme');
+  assert(finalizer.includes("pristeel-section-theme-v1.js?v=20260921-opportunities-back1"),'UI finalizer does not load the current section theme');
   assert(finalizer.includes("pristeel-contact-category-cards-v1.js?v=20260822-1"),'UI finalizer does not load Contact Master category cards');
   assert(!/new\s+MutationObserver|setInterval\s*\(/.test(contactCards),'Contact category cards must stay bounded and observer-free');
   assert(!/method\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]|\.from\([^)]*\)\.(?:insert|update|delete|upsert)\s*\(/i.test(contactCards),'Contact category cards must remain read-only');
@@ -35,6 +35,8 @@ const {JSDOM}=require('jsdom');
   assert.notStrictEqual(financeAccent,homeAccent,'Finance must have a distinct section accent');
 
   const css=w.document.getElementById('pst-section-theme-v2-css');
+  assert(css&&css.textContent.includes('.pst-opp-desk-back,.pst-pcw-opportunities-back'),'Section theme must preserve the canonical Opportunities Back controls');
+  assert(css.textContent.includes('background:#3f9fc2!important')&&css.textContent.includes('color:#fff!important'),'Opportunities Back control must remain blue with white text after section theming');
   assert(css,'Current section theme stylesheet was not installed');
   const text=css.textContent;
   assert(text.includes('.content:before'),'Visible top section strip is missing');
