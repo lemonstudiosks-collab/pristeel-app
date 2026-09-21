@@ -4,7 +4,7 @@ import {pathToFileURL} from 'node:url';
 import {assessPristeelTender} from './pristeel-capability-profile.mjs';
 import {resolveSupabaseWorkflowAccess} from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const LEGACY_SUPABASE_REF='isymxqfqzkchbsrbhucf';
 const VERSION='opportunity-engine-v2.1';
 const text=(v,max=5000)=>String(v==null?'':v).replace(/\s+/g,' ').trim().slice(0,max);
 const norm=v=>text(v,20000).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -177,8 +177,10 @@ async function processDirect(access,rows,{mode,maxDossiers}){
 async function runPromotion(access,mode){if(mode!=='apply')return null;const out=await rest(access,'rpc/pppp_tender_project_promotion_reconcile_v2',{method:'POST',body:{p_apply:true,p_limit:100}});return out;}
 async function writeSummary(s){await mkdir('tmp',{recursive:true});await writeFile('tmp/opportunity-engine-v2.json',JSON.stringify(s,null,2));}
 
-export async function runOpportunityEngineV2({mode=process.env.SYNC_MODE||'preview',maxDossiers=Number(process.env.PPPP_OPPORTUNITY_DOSSIER_MAX||8),supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL}={}){
+export async function runOpportunityEngineV2({mode=process.env.SYNC_MODE||'preview',maxDossiers=Number(process.env.PPPP_OPPORTUNITY_DOSSIER_MAX||8),supabaseUrl=process.env.SUPABASE_URL||''}={}){
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
+  if(!String(supabaseUrl||'').trim())throw new Error('SUPABASE_URL is required; Opportunity Engine will not fall back to another project.');
+  if(String(supabaseUrl).includes(LEGACY_SUPABASE_REF))throw new Error('Legacy Supabase project is forbidden for Opportunity Engine.');
   const access=await resolveSupabaseWorkflowAccess({supabaseUrl});
   const rows=await rest(access,'kek_tender_watch?select=*&order=published_date.desc&limit=1000');
   const direct=(Array.isArray(rows)?rows:[]).filter(r=>['KRPP','APP_AL'].includes(source(r))&&phase(r)==='opportunity');
