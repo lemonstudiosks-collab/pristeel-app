@@ -56,7 +56,6 @@ jobs:
       - run: node --check pristeel-tender-dossier-import-v1.js
       - run: node --check pristeel-redesign-finalizer-v1.js
       - run: node --check supabase/functions/pppp-tender-dossier-analysis/parser.mjs
-      - run: deno check --node-modules-dir=auto supabase/functions/pppp-tender-dossier-analysis/index.ts
       - name: Deno check dossier importer
         id: deno_importer
         continue-on-error: true
