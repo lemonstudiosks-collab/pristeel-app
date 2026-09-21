@@ -129,6 +129,35 @@ async function upsertAction(access,row,out,route,{amendment=false,mode='apply'}=
   return{x,key};
 }
 
+async function activeDirectActionMap(access,rows,mode){
+  const map=new Map();
+  if(mode!=='apply'||!rows.length)return map;
+  const ids=unique(rows.map(r=>r.id));
+  if(!ids.length)return map;
+  const active=await rest(access,`pppp_opportunity_actions?tender_watch_id=in.(${ids.join(',')})&status=not.in.(background,resolved,closed,done,superseded)&select=id,tender_watch_id,action_key,action_type,status`);
+  for(const row of array(active)){
+    const id=String(row?.tender_watch_id||'');if(!id)continue;
+    if(!DIRECT_MANAGED_ACTION_TYPES.has(String(row?.action_type||'')))continue;
+    const list=map.get(id)||[];list.push(row);map.set(id,list);
+  }
+  return map;
+}
+async function supersedeStaleDirectActions(access,rows,mode){
+  if(mode!=='apply'||!rows.length)return 0;
+  const byId=new Map();
+  for(const row of rows)if(row?.id)byId.set(String(row.id),row);
+  const stale=[...byId.values()];
+  if(!stale.length)return 0;
+  const now=new Date().toISOString(),ids=stale.map(x=>String(x.id));
+  await rest(access,`pppp_opportunity_actions?id=in.(${ids.join(',')})`,{method:'PATCH',body:{status:'superseded',updated_at:now},prefer:'return=minimal'});
+  const refs=unique(stale.map(x=>String(x.action_key||'').replace(/^TENDER:/,'OPPORTUNITY:')).filter(Boolean));
+  if(refs.length){
+    const list=refs.map(x=>encodeURIComponent(x)).join(',');
+    await rest(access,`tasks?source=eq.opportunity_engine_v2&source_ref=in.(${list})&status=not.in.(mbyllur,kryer,arkivuar)`,{method:'PATCH',body:{status:'mbyllur',done_at:now},prefer:'return=minimal'});
+  }
+  return stale.length;
+}
+
 async function recordVersion(access,row,out,fingerprint,mode){
   const existing=await rest(access,`pppp_tender_dossier_versions?tender_watch_id=eq.${encodeURIComponent(row.id)}&select=fingerprint,analyzed_at&order=analyzed_at.desc&limit=1`);
   const previous=Array.isArray(existing)?existing[0]:null, amendment=!!previous&&previous.fingerprint!==fingerprint;
