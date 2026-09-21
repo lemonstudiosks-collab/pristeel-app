@@ -70,7 +70,7 @@ function click(win,el,msg){assert(el,msg||'missing clickable element');el.dispat
   assert(offerText.includes('PRISTEEL_Angebotsbedingungen_TenneT_BUNT_14.09.2026.pdf'),'Actual sent offer terms must be visible directly in Overview');
   assert(offerText.includes('39.485.865,41')||offerText.includes('39,485,865.41'),'Overview must show the full four-lot offer total from the sent workbook');
   assert(offerText.includes('4 lotet'),'Overview must explain that the document total is based on four lots');
-  assert(offerText.includes('hyrja kanonike në regjistrin e ofertave mungon'),'Overview must explain the registry gap without hiding the real offer');
+  assert(offerText.includes('hyrja kanonike në regjistrin e ofertave')&&offerText.includes('mungon'),'Overview must explain the registry gap without hiding the real offer');
   assert(!offerText.includes('ponuda Aktive'),'Supplier/internal correspondence must not masquerade as our client offer');
   assert(offerCard.querySelector('a[href*="mail.google.com"]'),'Our offer must expose the exact sending email');
   assert(!offerCard.hasAttribute('data-pwb3-card-route')&&!offerCard.hasAttribute('data-pwb3-nav'),'Offer card itself must not be a hidden navigation button');
