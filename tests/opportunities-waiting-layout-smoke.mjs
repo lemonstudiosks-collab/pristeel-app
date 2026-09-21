@@ -9,7 +9,7 @@ const workflow=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8')
 assert.doesNotThrow(()=>new Function(desk),'Opportunities Desk must be valid JavaScript');
 assert.doesNotThrow(()=>new Function(workflow),'Project-Centric workflow must remain valid JavaScript');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(desk,/VERSION='20260921-opportunity-desk3'/,'Opportunity Desk revision must be active');
+assert.match(desk,/VERSION='20260921-opportunity-desk4'/,'Opportunity Desk revision must be active');
 assert.match(desk,/data-pst-opp-mode/,'Desk must expose the direct-tender versus TED-award work routes');
 assert.match(desk,/data-pst-opp-source/,'source filters must remain functional');
 assert.match(desk,/data-pst-opp-field/,'field filters must remain functional');
@@ -17,6 +17,8 @@ assert.match(desk,/data-pst-opp-winner/,'TED winner-role filters must remain fun
 assert.match(desk,/data-pst-opp-lifecycle/,'status filters must remain functional');
 assert.match(desk,/Për ofertim/,'Direct Tender route must be operator-readable');
 assert.match(desk,/Fitues për kontaktim/,'TED award-sales route must be operator-readable');
+assert.doesNotMatch(desk,/pst-opp-mini-stats/,'passive summary cards must be removed from the Opportunity Desk');
+assert.match(desk,/\.pst-opp-desk-back\{[^}]*background:#3f9fc2[^}]*color:#fff!important/s,'Kthehu must use the blue primary treatment with white text');
 assert.doesNotMatch(desk,/data-pst-opp-source="UNDP_KOSOVO"/,'UNDP Kosovo must not be rendered as a source chip');
 assert.match(desk,/Number\(c\.src\[k\]\|\|0\)>0/,'zero-count sources must be omitted from the source filter surface');
 assert.match(workflow,/display_limit:40/,'results must use bounded progressive disclosure');
@@ -24,5 +26,5 @@ assert.doesNotMatch(workflow,/return rows\.slice\(0,80\)/,'canonical result set 
 assert.match(workflow,/function showMoreOpportunities\(/,'workflow must expose progressive load-more behavior');
 assert.match(workflow,/kind==='mode'/,'route mode must be a canonical filter');
 assert.doesNotMatch(workflow,/tenderState\.source='all';tenderState\.field='all';tenderState\.winner_group='all';\s*var life/,'status filtering must no longer wipe other filters');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260921-opportunity-desk3/,'runtime must cache-bust the new Opportunity Desk');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260921-opportunity-desk4/,'runtime must cache-bust the new Opportunity Desk');
 console.log('Opportunities Desk layout smoke: OK');
