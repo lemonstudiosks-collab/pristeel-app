@@ -78,7 +78,7 @@ window.pstTenderIntelligence=async()=>null;
 window.eval(src);
 
 const api=window.PSTProjectCentricWorkflowV1;
-assert(api&&api.version==='7','current project-centric runtime did not load');
+assert(api&&api.version==='8','current project-centric runtime did not load');
 assert.equal(api._state.field,'all','canonical field filter must initialize safely');
 assert.equal(api._state.winner_group,'all','canonical TED winner-role filter must initialize safely');
 assert.equal(typeof api.applyOpportunityFilter,'function','canonical Opportunities owner must expose one filter entry point');
