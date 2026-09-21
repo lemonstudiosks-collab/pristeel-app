@@ -44,9 +44,17 @@ window.eval(deskSrc);
 await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
-assert(desk&&desk.version==='20260921-opportunity-desk5','Opportunity Desk must own the visible presentation');
+const focus=window.document.getElementById('pst-opportunities-focus');
+assert(desk&&desk.version==='20260921-opportunity-desk6','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
+assert(focus.classList.contains('pst-opp-dashboard'),'initial Opportunities view must be dashboard-only');
+assert(!focus.classList.contains('pst-opp-result-page'),'initial view must not be a result page');
+assert.equal(window.getComputedStyle(window.document.getElementById('pst-opportunities-list')).display,'none','canonical result list must stay hidden on the initial dashboard');
+assert.equal(window.getComputedStyle(window.document.getElementById('pst-pcw-opportunity-tools')).display,'none','search tools must stay hidden until a category opens');
 assert.equal(window.document.querySelector('.pst-opp-mini-stats'),null,'passive mini-stat summary row must not render');
+assert.equal(window.document.querySelector('[data-pst-opp-filter-toggle]'),null,'dashboard must not expose a fake filter toggle');
+assert.equal(window.document.querySelector('.pst-opp-active'),null,'dashboard must not show active-filter clutter');
+
 assert(window.document.querySelector('[data-pst-opp-mode="all"]'),'all route must exist');
 assert(window.document.querySelector('[data-pst-opp-mode="local"]'),'direct tender route must exist');
 assert(window.document.querySelector('[data-pst-opp-mode="award"]'),'TED award sales route must exist');
@@ -54,83 +62,115 @@ assert(window.document.querySelector('[data-pst-opp-source="KRPP"]'),'active KRP
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'active TED source must be visible');
 assert.equal(window.document.querySelector('[data-pst-opp-source="TED"] .pst-opp-chip-icon img').getAttribute('src'),'assets/source-icons/ted-eu.svg','TED source must use the local EU/TED asset');
 assert.equal(window.document.querySelector('[data-pst-opp-source="KRPP"] .pst-opp-chip-icon img').getAttribute('src'),'assets/source-icons/krpp-kosovo.svg','KRPP source must use the local Kosovo procurement asset');
-assert(deskSrc.includes('grid-template-columns:repeat(auto-fit,minmax(145px,1fr))'),'filter options must distribute across the available card width');
-assert(deskSrc.includes('.pst-opp-chip-main'),'filter chips must use the richer icon + label layout');
+assert(deskSrc.includes('grid-template-columns:repeat(auto-fit,minmax(145px,1fr))'),'dashboard category options must distribute across the available width');
 assert.equal(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),null,'zero-count sources must not clutter the Desk');
 assert.equal(window.document.querySelector('[data-pst-opp-source="UNDP_KOSOVO"]'),null,'UNDP Kosovo must not occupy a source chip in the Desk');
 
-window.document.querySelector('[data-pst-opp-source="KRPP"]').click();
-await new Promise(r=>setTimeout(r,40));
-assert.equal(desk.state().sourcePage,'KRPP','clicking KRPP must open the dedicated KRPP source page');
-assert.equal(api._state.source,'KRPP','dedicated source page must keep the canonical source filter');
-assert(window.document.getElementById('pst-opportunities-focus').classList.contains('pst-opp-source-page'),'source result view must be a distinct page surface');
-assert.equal(window.document.querySelector('#pst-opp-desk'),null,'overview cards and filters must not stay above source results');
+async function backToDashboard(){
+ const back=window.document.querySelector('[data-pst-opp-back]');
+ assert(back,'result page must expose Back to Mundësitë');
+ back.click();
+ await new Promise(r=>setTimeout(r,35));
+ assert.equal(desk.state().resultPage,null,'Back from a category must clear result-page state');
+ assert(focus.classList.contains('pst-opp-dashboard'),'Back must restore dashboard-only view');
+ assert(window.document.querySelector('#pst-opp-desk'),'dashboard cards must be restored');
+ assert.equal(window.getComputedStyle(window.document.getElementById('pst-opportunities-list')).display,'none','list must be hidden again after returning to dashboard');
+}
+
+async function openCategory(selector,kind,value){
+ const button=window.document.querySelector(selector);
+ assert(button,`dashboard control missing: ${selector}`);
+ button.click();
+ await new Promise(r=>setTimeout(r,35));
+ const page=desk.state().resultPage;
+ assert(page,`dashboard control did not open a result page: ${selector}`);
+ assert.equal(page.kind,kind,`wrong result kind for ${selector}`);
+ assert.equal(String(page.value).toLowerCase(),String(value).toLowerCase(),`wrong result value for ${selector}`);
+ assert(focus.classList.contains('pst-opp-result-page'),`result-page class missing for ${selector}`);
+ assert.equal(window.document.querySelector('#pst-opp-desk'),null,`dashboard must disappear after ${selector}`);
+ assert.notEqual(window.getComputedStyle(window.document.getElementById('pst-opportunities-list')).display,'none',`result list must become visible after ${selector}`);
+ return page;
+}
+
+// Source drilldown keeps the source-only content and a dedicated source header.
+await openCategory('[data-pst-opp-source="KRPP"]','source','KRPP');
+assert.equal(desk.state().sourcePage,'KRPP','source compatibility state must identify KRPP');
+assert.equal(api._state.source,'KRPP','KRPP result page must keep the canonical source filter');
 assert.match(window.document.querySelector('#pst-opportunities-focus>header h2').textContent,/KRPP/,'source page header must identify KRPP');
-assert.equal(window.getComputedStyle(window.document.getElementById('pst-pcw-lifecycle-tabs')).display,'none','dedicated source page must hide the legacy lifecycle map');
-assert.equal(window.getComputedStyle(window.document.getElementById('pst-pcw-opportunity-tabs')).display,'none','dedicated source page must hide the legacy source tabs');
 assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,40,'KRPP page must show its bounded first result batch');
 assert(Array.from(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]')).every(el=>String(el.getAttribute('data-pcw-tender')).startsWith('krpp-')),'KRPP page must contain only KRPP results');
-window.document.querySelector('[data-pst-opp-back]').click();
-await new Promise(r=>setTimeout(r,40));
-assert.equal(desk.state().sourcePage,'','source-page Back must return to the Opportunities overview');
-assert.equal(api._state.source,'all','returning from a source page must clear only the source route');
-assert(window.document.querySelector('#pst-opp-desk'),'Opportunities overview must be restored after source-page Back');
+await backToDashboard();
 
+// All-results page owns progressive disclosure; the overview never shows it inline.
+await openCategory('[data-pst-opp-mode="all"]','mode','all');
 assert.equal(api._test.opportunityRows().length,49,'all canonical matching rows must remain available; no hard 80-row cap may exist');
-assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,40,'initial render must stay bounded for readability');
+assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,40,'all-results page must stay bounded for readability');
 const more=window.document.querySelector('[data-pcw-opportunity-more]');
-assert(more,'load-more control must appear instead of silently dropping results');
+assert(more,'load-more control must appear on the result page instead of the dashboard');
 more.click();
 await new Promise(r=>setTimeout(r,30));
 assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,49,'load more must reveal the remaining matches');
+const compact=window.document.querySelector('[data-pst-opp-density="compact"]');
+assert(compact,'density control must exist on result pages');
+compact.click();
+assert.equal(desk.state().density,'compact','compact density must remain functional on result pages');
+await backToDashboard();
 
-window.document.querySelector('[data-pst-opp-mode="award"]').click();
-await new Promise(r=>setTimeout(r,30));
-assert.equal(api._state.mode,'award');
-assert.equal(api._state.source,'TED');
-assert.equal(api._test.opportunityRows().length,3,'TED route must isolate award-sales opportunities');
+// Every dashboard category family must navigate to the content named by that control.
+await openCategory('[data-pst-opp-mode="local"]','mode','local');
+assert.equal(api._state.mode,'local','Direct Tender must open the direct-tender result lane');
+assert(api._test.opportunityRows().every(r=>String(r.payload?.source||'').toUpperCase()!=='TED'),'Direct Tender page must exclude TED awards');
+await backToDashboard();
 
-window.document.querySelector('[data-pst-opp-winner="gc_epc"]').click();
-await new Promise(r=>setTimeout(r,30));
-assert.equal(api._state.winner_group,'gc_epc');
-assert.equal(api._state.mode,'award','winner filter must preserve TED route');
-assert.equal(api._state.source,'TED','winner filter must stay inside TED');
+await openCategory('[data-pst-opp-mode="award"]','mode','award');
+assert.equal(api._state.mode,'award','TED Award Sales must open the award result lane');
+assert.equal(api._state.source,'TED','TED Award Sales must stay inside TED');
+assert.equal(api._test.opportunityRows().length,3,'TED Award Sales must isolate award opportunities');
+await backToDashboard();
+
+await openCategory('[data-pst-opp-lifecycle="new"]','lifecycle','new');
+assert.equal(api._state.lifecycle,'new','Të reja must open new opportunities');
+await backToDashboard();
+
+await openCategory('[data-pst-opp-lifecycle="waiting"]','lifecycle','waiting');
+assert.equal(api._state.lifecycle,'waiting','Në pritje must open waiting opportunities even when the result is empty');
+assert(window.document.querySelector('.pst-pcw-empty'),'zero-result category must render a safe empty state');
+await backToDashboard();
+
+await openCategory('[data-pst-opp-field="construction"]','field','construction');
+assert.equal(api._state.field,'construction','Ndërtim must open the construction result category');
+await backToDashboard();
+
+await openCategory('[data-pst-opp-winner="all"]','winner','all');
+assert.equal(api._state.mode,'award','Të gjithë fituesit must open the TED award lane');
+assert.equal(api._state.source,'TED','Të gjithë fituesit must be TED-scoped');
+await backToDashboard();
+
+await openCategory('[data-pst-opp-winner="gc_epc"]','winner','gc_epc');
+assert.equal(api._state.winner_group,'gc_epc','GC / EPC must open only GC/EPC winners');
 assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-gc']);
+await backToDashboard();
 
-window.document.querySelector('[data-pst-opp-field="construction"]').click();
-await new Promise(r=>setTimeout(r,30));
-assert.equal(api._state.field,'construction');
-assert.equal(api._state.winner_group,'gc_epc','field filter must combine with winner filter instead of clearing it');
-assert.equal(api._state.source,'TED','field filter must combine with source instead of clearing it');
-assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-gc']);
+// "All" chips are still real navigation, not inert filter decoration.
+await openCategory('[data-pst-opp-lifecycle="all"]','lifecycle','all');
+assert.equal(api._test.opportunityRows().length,49,'Të gjitha statuset must open all current opportunities');
+await backToDashboard();
+await openCategory('[data-pst-opp-source="all"]','source','ALL');
+assert.equal(api._test.opportunityRows().length,49,'Të gjitha burimet must open all current opportunities');
+await backToDashboard();
+await openCategory('[data-pst-opp-field="all"]','field','all');
+assert.equal(api._test.opportunityRows().length,49,'Të gjitha fushat must open all current opportunities');
+await backToDashboard();
 
-window.document.querySelector('[data-pst-opp-lifecycle="new"]').click();
-await new Promise(r=>setTimeout(r,30));
-assert.equal(api._state.lifecycle,'new');
-assert.equal(api._state.field,'construction','status must combine with field');
-assert.equal(api._state.winner_group,'gc_epc','status must combine with winner role');
-
-window.document.querySelector('[data-pst-opp-reset]').click();
-await new Promise(r=>setTimeout(r,30));
-assert.equal(api._state.mode,'all');
-assert.equal(api._state.source,'all');
-assert.equal(api._state.lifecycle,'all');
-assert.equal(api._state.field,'all');
-assert.equal(api._state.winner_group,'all');
-
-window.document.querySelector('[data-pst-opp-density="compact"]').click();
-assert.equal(desk.state().density,'compact','compact density must be available');
-assert(window.document.getElementById('pst-opportunities-focus').classList.contains('pst-opp-density-compact'));
-
-const back=window.document.querySelector('[data-pst-opp-back]');
-assert(back,'Desk must keep a local Kthehu control');
+const dashboardBack=window.document.querySelector('[data-pst-opp-back]');
+assert(dashboardBack,'dashboard must keep a local Kthehu control');
 window.eval(productionSurfaceSrc);
 window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
 await new Promise(r=>setTimeout(r,25));
-assert.notEqual(window.getComputedStyle(back).display,'none','late Production Surface Owner must not hide Kthehu');
-back.click();
-assert.equal(homeCalls,1,'Kthehu must route to Home exactly once');
+assert.notEqual(window.getComputedStyle(dashboardBack).display,'none','late Production Surface Owner must not hide Kthehu');
+dashboardBack.click();
+assert.equal(homeCalls,1,'dashboard Kthehu must route to Home exactly once');
 
 await new Promise(r=>setTimeout(r,100));
-assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'observer must settle without duplicating the Desk');
-console.log('Opportunities Desk interaction smoke: OK');
+assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'observer must settle without duplicating the dashboard');
+console.log('Opportunities dashboard drilldown interaction smoke: OK');
