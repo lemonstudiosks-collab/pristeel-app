@@ -25,25 +25,17 @@ assert(/function intercept\(e\)[\s\S]*data-pmm-back[\s\S]*stopImmediatePropagati
 assert(projectMindmapNav.includes("window.addEventListener('click',intercept,true);"),'Projects Kthehu bridge must register at window-capture level');
 assert(!/supaFetch\s*\(|fetch\s*\(|MutationObserver\s*\(|setInterval\s*\(/.test(projectMindmapNav),'Projects Kthehu bridge must stay navigation-only');
 
-assert(opportunitiesPolish.includes('#pst-opp-v4-map{display:grid'),'Final Opportunities owner must render the approved connected mindmap as a grid');
-assert(opportunitiesPolish.includes('#pst-opportunities-focus:has(#pst-opp-v4-map) #pst-pcw-lifecycle-tabs,#pst-opportunities-focus:has(#pst-opp-v4-map) #pst-pcw-opportunity-tabs{display:none!important}'),'Legacy controls must be hidden only after the replacement mindmap is present');
-assert(opportunitiesPolish.includes("data-pst-opp-source")&&opportunitiesPolish.includes("data-pst-opp-lifecycle")&&opportunitiesPolish.includes("data-pst-opp-field"),'Opportunities mindmap must expose functional source, lifecycle and field branches');
-assert(opportunitiesPolish.includes('pst-opp-v4-status-side')&&opportunitiesPolish.includes('Sipas statusit'),'Opportunities status controls must occupy the left side');
-assert(opportunitiesPolish.includes('pst-opp-v4-source-core')&&opportunitiesPolish.includes('Sipas burimit'),'Opportunities source controls must occupy the center');
-assert(opportunitiesPolish.includes('pst-opp-v4-source-map')&&opportunitiesPolish.includes('pst-opp-v4-source-lines'),'Center source controls must use a connected mindmap instead of a rectangular grid');
-assert(!opportunitiesPolish.includes('pst-opp-v4-source-grid'),'The retired center source card grid must not return');
-assert(opportunitiesPolish.includes('EU_OFFICE_KOSOVO:[6,50]'),'Every source, including EU Office, must remain on the outer radial ring');
-assert(opportunitiesPolish.includes("function drillSource(id)")&&opportunitiesPolish.includes("state.lifecycle='all'")&&opportunitiesPolish.includes("field='all'"),'Source branches must drill into source results without compounded status/field filters');
-assert(!/pst-opp-v4-source-node:hover[^\n]*translateY\(-2px\)/.test(opportunitiesPolish),'Source nodes must remain fixed when activated');
-assert(opportunitiesPolish.includes('function syncChrome('),'Opportunities mindmap must preserve its DOM across filter changes');
-assert(opportunitiesPolish.includes("typeof api.applyOpportunityFilter==='function'"),'Mindmap source/status branches must delegate to the canonical Project-Centric Workflow filter owner');
-assert(!opportunitiesPolish.includes('scrollIntoView'),'Mindmap source/status filtering must not move the viewport');
-assert(opportunitiesPolish.includes('pst-opp-v4-field-side')&&opportunitiesPolish.includes('Sipas fushës'),'Opportunities field controls must remain on the right');
-assert(opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','new','Të reja'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','waiting','Në pritje'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','replied','Me përgjigje'")&&opportunitiesPolish.includes("branch('data-pst-opp-lifecycle','all','Të gjitha'"),'Visible lifecycle branches must remain the approved four-state model');
+assert(opportunitiesPolish.includes('#pst-opp-desk{display:grid'),'Final Opportunities owner must render the Opportunity Desk');
+assert(opportunitiesPolish.includes('#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-lifecycle-tabs,#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-opportunity-tabs{display:none!important}'),'Legacy controls must be hidden only after the replacement Desk is present');
+assert(opportunitiesPolish.includes("data-pst-opp-mode")&&opportunitiesPolish.includes("data-pst-opp-source")&&opportunitiesPolish.includes("data-pst-opp-lifecycle")&&opportunitiesPolish.includes("data-pst-opp-field"),'Opportunity Desk must expose route, source, lifecycle and field filters');
+assert(opportunitiesPolish.includes('Për ofertim')&&opportunitiesPolish.includes('Fitues për kontaktim'),'Opportunity Desk must distinguish Direct Tender from TED Award Sales');
+assert(opportunitiesPolish.includes('Number(c.src[k]||0)>0'),'Opportunity Desk must hide zero-count sources instead of rendering empty source clutter');
+assert(!opportunitiesPolish.includes('data-pst-opp-source="UNDP_KOSOVO"'),'UNDP Kosovo must not occupy a visible source filter');
+assert(opportunitiesPolish.includes("typeof api.applyOpportunityFilter==='function'"),'Desk filters must delegate to the canonical Project-Centric Workflow filter owner');
+assert(!opportunitiesPolish.includes('scrollIntoView'),'Opportunity Desk filtering must not move the viewport');
 assert(opportunitiesPolish.includes('PSTPrimaryNavResilienceV10')&&opportunitiesPolish.includes("typeof N.openHome==='function'"),'Opportunities Kthehu must prefer the final primary navigation owner');
-assert(opportunitiesPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunities mindmap must retain the waiting lifecycle bridge');
-assert(!/supaFetch\s*\(|tenderAction\s*\(|openTender\s*\(/.test(opportunitiesPolish),'Opportunities mindmap may filter presentation state but must not own data writes, outbound actions or tender business actions');
-
+assert(opportunitiesPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunity Desk must retain the waiting lifecycle bridge');
+assert(!/supaFetch\s*\(|tenderAction\s*\(|openTender\s*\(/.test(opportunitiesPolish),'Opportunity Desk may filter presentation state but must not own data writes, outbound actions or tender business actions');
 assert(/function go\(key\)[\s\S]*return legacyGo\?legacyGo\.apply/.test(home),'Canonical Home must delegate non-Home routes');
 assert(/var base=current;routerBase=base;[\s\S]*function finalGo\(key\)[\s\S]*return base\.apply/.test(guard),'Final Home wrapper must delegate non-Home routes through its immutable captured base');
 assert(/pstOpenProjectWorkspace/.test(home),'Home project actions must enter the canonical project opener');
