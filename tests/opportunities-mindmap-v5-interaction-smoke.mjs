@@ -24,8 +24,9 @@ rows.push(
  {id:'ted-other',title:'Energy substation award',authority:'EU Authority',publication_no:'TED-O',relevance_score:97,status:'new',published_date:'2026-09-21',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Consortium',company_type:'unknown'}}},
  {id:'undp-1',title:'UNDP steel supply',authority:'UNDP Kosovo',relevance_score:80,status:'new',published_date:'2026-09-21',payload:{source:'UNDP_KOSOVO',notice_phase:'opportunity'}}
 );
+let tenderFetches=0;
 window.supaFetch=async path=>{
- if(String(path).startsWith('kek_tender_watch?'))return rows;
+ if(String(path).startsWith('kek_tender_watch?')){tenderFetches++;return rows;}
  if(String(path).startsWith('pppp_opportunity_outreach_registry_v1?'))return [];
  if(String(path).startsWith('partners?'))return [];
  return [];
@@ -38,6 +39,21 @@ window.eval(workflowSrc);
 const api=window.PSTProjectCentricWorkflowV1;
 assert(api&&api.version==='8','combined-filter workflow v8 must load');
 await api.loadOpportunities(true);
+assert.equal(tenderFetches,1,'initial forced load must fetch the tender dataset once');
+await api.openOpportunities({source:'TED',mode:'award'});
+assert.equal(tenderFetches,1,'normal Opportunities navigation must reuse the fresh cache');
+assert.equal(api._state.source,'TED');
+assert.equal(api._state.mode,'award','TED context must preserve award lane');
+await api.openOpportunities({source:'KRPP',mode:'local'});
+assert.equal(tenderFetches,1,'changing client-side context must not refetch a fresh dataset');
+assert.equal(api._state.source,'KRPP');
+assert.equal(api._state.mode,'local','KRPP context must preserve direct-tender lane');
+await api.openOpportunities({source:'all',mode:'all'},true);
+assert.equal(tenderFetches,2,'explicit force=true must remain available for a fresh reconciliation');
+assert.equal(api._state.source,'all');
+assert.equal(api._state.mode,'all');
+assert.match(workflowSrc,/Date\.now\(\)-tenderState\.last<120000/,'Opportunities navigation cache must remain bounded at two minutes');
+assert.match(workflowSrc,/project_emails\?gmail_thread_id=in\.\('\+threads\.join\(','\)\+'\)&select=gmail_thread_id,direction,sent_at/,'Lifecycle email evidence must fetch only fields it consumes');
 window.eval(waitingSrc);
 await new Promise(r=>setTimeout(r,15));
 window.eval(deskSrc);
@@ -95,6 +111,8 @@ assert.equal(api._state.source,'all');
 assert.equal(api._state.lifecycle,'all');
 assert.equal(api._state.field,'all');
 assert.equal(api._state.winner_group,'all');
+desk.apply();
+await new Promise(r=>setTimeout(r,10));
 
 window.document.querySelector('[data-pst-opp-density="compact"]').click();
 assert.equal(desk.state().density,'compact','compact density must be available');
