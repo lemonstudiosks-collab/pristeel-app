@@ -258,6 +258,7 @@ function applyOpportunityFilter(kind,value){
    tenderState.source=TENDER_SOURCE_ORDER.indexOf(src)>-1?src:'all';
    if(tenderState.source==='TED')tenderState.mode='award';
    else if(tenderState.source!=='all'){tenderState.mode='local';tenderState.winner_group='all';}
+   else{tenderState.mode='all';tenderState.winner_group='all';}
  }else if(kind==='lifecycle'){
    var life=S(value).toLowerCase();
    tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(life)>-1?life:'all';
