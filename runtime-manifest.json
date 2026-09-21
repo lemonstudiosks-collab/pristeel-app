@@ -69,11 +69,9 @@
     {
       "area": "projects-list",
       "finalOwners": [
-        "pristeel-projects-modern-v1.js",
-        "pristeel-project-lifecycle-tracking-v1.js",
-        "pristeel-project-classification-v1.js"
+        "pristeel-projects-modern-v1.js"
       ],
-      "note": "Project Classification is the final operational list-state and row-navigation presentation: the entire visible project row opens the canonical project workspace, the overflow menu remains separate, and the legacy Hap action stays hidden."
+      "note": "Projects Operator Desk v2 is the single visible Projects owner. It performs one bounded project read, groups automatically by canonical operational_state, makes the full row the project-open target, and exposes no direct status/write menu. Project Classification and Lifecycle Tracking remain compatibility/context layers and yield their list presentation when v2 is active."
     },
     {
       "area": "project-workspace",
