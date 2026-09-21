@@ -107,7 +107,7 @@ function deskHtml(c){
   +modeButton('all','Pamja e plotë','Të gjitha mundësitë','Shiko gjithë pipeline-in dhe ngushtoje me filtrat më poshtë.',c.total,'all')
   +modeButton('local','DIRECT TENDER','Për ofertim','KRPP, APP dhe burime të tjera ku PriSteel mund të vlerësojë pjesëmarrjen.',c.local,'local')
   +modeButton('award','TED AWARD SALES','Fitues për kontaktim','Tenderë të fituar ku fituesi mund të jetë klient, partner ose kapacitet B2B.',c.award,'award')
-  +'</div><div class="pst-opp-filter-panel" '+(filtersOpen?'':'hidden')+'>
+  +'</div><div class="pst-opp-filter-panel" '+(filtersOpen?'':'hidden')+'>'
   +'<div class="pst-opp-filter-row"><div class="pst-opp-filter-label">Statusi</div><div class="pst-opp-filter-options">'+statusRow(c)+'</div></div>'
   +'<div class="pst-opp-filter-row"><div class="pst-opp-filter-label">Burimi</div><div class="pst-opp-filter-options">'+sourceRow(c)+'</div></div>'
   +'<div class="pst-opp-filter-row"><div class="pst-opp-filter-label">Fusha</div><div class="pst-opp-filter-options">'+fieldRow(c)+'</div></div>'
