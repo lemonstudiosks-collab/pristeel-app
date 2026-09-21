@@ -74,6 +74,14 @@ function last(a){return a[a.length-1];}
   calls.length=0;click(window,nav('client'));assert(last(calls)&&last(calls)[1]==='communication','Client must route to canonical communication');
   calls.length=0;click(window,nav('finance'));assert(last(calls)&&last(calls)[1]==='finance','Finance must route to canonical finance');
 
+  window.__pstIntegrityLastData.project.status='mbyllur';
+  window.__pstIntegrityLastData.project.operational_state='closed';
+  window.PSTProjectWorkbenchV3.sync();
+  const closedContinue=doc.querySelector('.pwb3-now>button');
+  assert(closedContinue&&closedContinue.getAttribute('data-pwb3-view')==='docscomms','Closed-project Vazhdo must point to real project history, not self-navigate to Overview');
+  click(window,closedContinue);
+  assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-docscomms'),'Closed-project Vazhdo must open Documents & activity history');
+
   const stale=doc.createElement('div');stale.id='pst-project-map-v1';doc.getElementById('page-workspace-project').appendChild(stale);
   window.PSTProjectWorkbenchV3.sync();
   assert(!doc.getElementById('pst-project-map-v1'),'Workbench ownership must retire stale Project Detail mindmap');
