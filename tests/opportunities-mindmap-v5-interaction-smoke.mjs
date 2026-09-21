@@ -45,7 +45,7 @@ await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260921-opportunity-desk6','Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260921-opportunity-desk7','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 assert(focus.classList.contains('pst-opp-dashboard'),'initial Opportunities view must be dashboard-only');
 assert(!focus.classList.contains('pst-opp-result-page'),'initial view must not be a result page');
@@ -62,7 +62,9 @@ assert(window.document.querySelector('[data-pst-opp-source="KRPP"]'),'active KRP
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'active TED source must be visible');
 assert.equal(window.document.querySelector('[data-pst-opp-source="TED"] .pst-opp-chip-icon img').getAttribute('src'),'assets/source-icons/ted-eu.svg','TED source must use the local EU/TED asset');
 assert.equal(window.document.querySelector('[data-pst-opp-source="KRPP"] .pst-opp-chip-icon img').getAttribute('src'),'assets/source-icons/krpp-kosovo.svg','KRPP source must use the local Kosovo procurement asset');
-assert(deskSrc.includes('grid-template-columns:repeat(auto-fit,minmax(145px,1fr))'),'dashboard category options must distribute across the available width');
+assert(deskSrc.includes('grid-template-columns:310px minmax(0,1fr)'),'dashboard sections must give their category heading meaningful visual weight');
+assert(deskSrc.includes('grid-template-columns:repeat(3,minmax(0,1fr))'),'primary category groups must use a balanced multi-column grid');
+assert(window.document.querySelector('.pst-opp-guide'),'dashboard must include the concise usage guide from the approved visual');
 assert.equal(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),null,'zero-count sources must not clutter the Desk');
 assert.equal(window.document.querySelector('[data-pst-opp-source="UNDP_KOSOVO"]'),null,'UNDP Kosovo must not occupy a source chip in the Desk');
 
@@ -141,26 +143,16 @@ await openCategory('[data-pst-opp-field="construction"]','field','construction')
 assert.equal(api._state.field,'construction','Ndërtim must open the construction result category');
 await backToDashboard();
 
-await openCategory('[data-pst-opp-winner="all"]','winner','all');
-assert.equal(api._state.mode,'award','Të gjithë fituesit must open the TED award lane');
-assert.equal(api._state.source,'TED','Të gjithë fituesit must be TED-scoped');
-await backToDashboard();
-
 await openCategory('[data-pst-opp-winner="gc_epc"]','winner','gc_epc');
 assert.equal(api._state.winner_group,'gc_epc','GC / EPC must open only GC/EPC winners');
 assert.deepEqual(Array.from(api._test.opportunityRows(),x=>x.id),['ted-gc']);
 await backToDashboard();
 
-// "All" chips are still real navigation, not inert filter decoration.
-await openCategory('[data-pst-opp-lifecycle="all"]','lifecycle','all');
-assert.equal(api._test.opportunityRows().length,49,'Të gjitha statuset must open all current opportunities');
-await backToDashboard();
-await openCategory('[data-pst-opp-source="all"]','source','ALL');
-assert.equal(api._test.opportunityRows().length,49,'Të gjitha burimet must open all current opportunities');
-await backToDashboard();
-await openCategory('[data-pst-opp-field="all"]','field','all');
-assert.equal(api._test.opportunityRows().length,49,'Të gjitha fushat must open all current opportunities');
-await backToDashboard();
+// Repeated "all" controls are intentionally removed; the top "Të gjitha mundësitë" card owns global all-results navigation.
+assert.equal(window.document.querySelector('[data-pst-opp-lifecycle="all"]'),null,'Statusi must not repeat an unnecessary all button');
+assert.equal(window.document.querySelector('[data-pst-opp-source="all"]'),null,'Burimi must not repeat an unnecessary all button');
+assert.equal(window.document.querySelector('[data-pst-opp-field="all"]'),null,'Fusha must not repeat an unnecessary all button');
+assert.equal(window.document.querySelector('[data-pst-opp-winner="all"]'),null,'Fituesi TED must not repeat an unnecessary all button');
 
 const dashboardBack=window.document.querySelector('[data-pst-opp-back]');
 assert(dashboardBack,'dashboard must keep a local Kthehu control');
