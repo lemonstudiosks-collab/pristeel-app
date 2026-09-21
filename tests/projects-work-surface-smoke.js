@@ -78,7 +78,7 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(facts.length===1&&facts[0].fact_key==='supplier.price','Project context bridge must remain available for Project Detail');
 
   const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
-  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20260921-operator-desk4'),'Operator Desk must be cache-busted in runtime bootstrap');
+  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20260921-operator-desk5'),'Operator Desk must be cache-busted in runtime bootstrap');
   assert(bootstrap.includes('pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2'),'Classification compatibility layer must be cache-busted');
 
   const source=desk;
