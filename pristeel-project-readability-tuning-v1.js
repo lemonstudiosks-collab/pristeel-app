@@ -66,26 +66,14 @@ document.head.appendChild(s);
   document.head.appendChild(r);
 })();
 
-/* Projects Mindmap remains the owner of the central Projects presentation. */
+/* Legacy Projects mindmap is now a retirement shim; ProjectsModernV2 owns the central Projects presentation. */
 (function loadProjectMindmap(){
   if(window.__pstProjectMindmapV1||document.querySelector('script[data-pst-project-mindmap-v1]'))return;
   var r=document.createElement('script');
-  r.src='pristeel-project-mindmap-v1.js?v=20260919-brandbutton1';
+  r.src='pristeel-project-mindmap-v1.js?v=20260921-retired2';
   r.defer=true;
   r.setAttribute('data-pst-project-mindmap-v1','1');
   r.onerror=function(){console.error('Nuk u ngarkua mindmap-i i projekteve.');};
-  document.head.appendChild(r);
-})();
-
-/* The mindmap back button needs a navigation owner that runs before the older
- * document-level compatibility handler. Keep that logic in a dedicated bridge. */
-(function loadProjectMindmapNavigation(){
-  if(window.__pstProjectMindmapNavigationV1||document.querySelector('script[data-pst-project-mindmap-navigation-v1]'))return;
-  var r=document.createElement('script');
-  r.src='pristeel-project-mindmap-navigation-v1.js?v=20260916-final1';
-  r.defer=true;
-  r.setAttribute('data-pst-project-mindmap-navigation-v1','1');
-  r.onerror=function(){console.error('Nuk u ngarkua navigimi i mindmap-it të projekteve.');};
   document.head.appendChild(r);
 })();
 
@@ -96,7 +84,7 @@ document.head.appendChild(s);
   window.__pstProjectWorkbenchV3Intended=true;
   if(window.__pstProjectWorkbenchV2||document.querySelector('script[data-pst-project-workbench-v2]'))return;
   var r=document.createElement('script');
-  r.src='pristeel-project-workbench-v2.js?v=20260919-operatorfacts1';
+  r.src='pristeel-project-workbench-v2.js?v=20260921-operator-desk2';
   r.defer=true;
   r.setAttribute('data-pst-project-workbench-v2','1');
   r.onerror=function(){console.error('Nuk u ngarkua Project Workbench v3.');};
