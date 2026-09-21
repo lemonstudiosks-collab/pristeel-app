@@ -29,6 +29,8 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   let opened='';
   window.pstOpenProjectWorkspace=id=>{opened=String(id);return true;};
   window.pstWsCreate=()=>true;
+  let homeOpens=0;
+  window.PSTPrimaryNavResilienceV10={openHome(){homeOpens++;return true;}};
 
   const desk=fs.readFileSync('pristeel-projects-modern-v1.js','utf8');
   window.eval(desk);
@@ -51,6 +53,11 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   const actionRow=window.document.querySelector('[data-ppd-open="p1"]');
   actionRow.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
   assert(opened==='p1','Whole Projects row must open the canonical project workspace');
+
+  const back=window.document.querySelector('[data-ppd-back]');
+  assert(back,'Projects Operator Desk must expose Kthehu');
+  back.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
+  assert(homeOpens===1,'Kthehu must route through the final primary Home owner exactly once');
 
   window.document.querySelector('[data-ppd-focus="waiting"]').dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
   assert(window.document.querySelectorAll('.ppd-row').length===1,'Waiting focus must filter to waiting projects');
