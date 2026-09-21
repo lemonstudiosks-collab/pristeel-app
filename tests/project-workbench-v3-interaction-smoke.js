@@ -69,19 +69,23 @@ function last(a){return a[a.length-1];}
   function card(title){return [...doc.querySelectorAll('.pwb3-card')].find(x=>{const h=x.querySelector('header b');return h&&h.textContent.trim()===title;});}
   click(window,nav('overview'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-overview'),'Overview must render');
   const overviewActivity=card('Aktivitetet e fundit');
-  assert(overviewActivity&&overviewActivity.getAttribute('data-pwb3-card-route')==='docscomms','Overview activity card must navigate to Documents & activity');
+  assert(overviewActivity&&!overviewActivity.hasAttribute('data-pwb3-card-route')&&!overviewActivity.hasAttribute('data-pwb3-nav'),'Overview activity card must be informative; exact rows carry the actions');
+  ['finance','supplier-offer','our-offer','client-response','files','activity'].forEach(function(kind){
+    const el=doc.querySelector('[data-pwb3-kind="'+kind+'"]');
+    assert(el,'Missing overview card '+kind);
+    assert(!el.hasAttribute('data-pwb3-card-route')&&!el.hasAttribute('data-pwb3-nav'),'Overview card '+kind+' must not masquerade as an invisible navigation button');
+  });
 
-  calls.length=0;click(window,card('Përmbledhje financiare'));assert(last(calls)&&last(calls)[1]==='finance','Finance overview card must route to canonical finance');
+  calls.length=0;click(window,nav('finance'));assert(last(calls)&&last(calls)[1]==='finance','Finance tab must route to canonical finance');
   click(window,nav('overview'));
-  calls.length=0;click(window,card('Burimet & ofertat'));assert(last(calls)&&last(calls)[1]==='procurement','Supply overview card must route to canonical procurement');
+  calls.length=0;click(window,nav('supply'));assert(last(calls)&&last(calls)[1]==='procurement','Supply tab must route to canonical procurement');
   click(window,nav('overview'));
-  click(window,card('Oferta jonë'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-offer'),'Offer overview card must open the Offer view');
+  click(window,nav('offer'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-offer'),'Offer tab must open the Offer view');
   click(window,nav('overview'));
-  calls.length=0;click(window,card('Klienti'));assert(last(calls)&&last(calls)[1]==='communication','Client overview card must route to canonical communication');
+  calls.length=0;click(window,nav('client'));assert(last(calls)&&last(calls)[1]==='communication','Client tab must route to canonical communication');
   click(window,nav('overview'));
-  click(window,card('Skedarët kryesorë'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-docscomms'),'Files overview card must open Documents & activity');
+  click(window,nav('docscomms'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-docscomms'),'Documents tab must open Documents & activity');
   click(window,nav('overview'));
-  click(window,card('Aktivitetet e fundit'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-docscomms'),'Activity overview card must open Documents & activity');
   click(window,nav('docscomms'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-docscomms'),'Documents & activity view must render');
   const detailActivity=card('Aktivitetet e fundit');
   assert(detailActivity&&!detailActivity.hasAttribute('data-pwb3-card-route')&&!detailActivity.hasAttribute('data-pwb3-nav'),'Activity card must stop self-navigating once already inside Documents & activity');
