@@ -82,11 +82,14 @@ const protectedEdge=fs.readFileSync('supabase/functions/pppp-tender-protected-ar
 const parserSource=fs.readFileSync('supabase/functions/pppp-tender-dossier-analysis/parser.mjs','utf8');
 const finalizer=fs.readFileSync('pristeel-redesign-finalizer-v1.js','utf8');
 const pcw=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
+const opportunityEngine=fs.readFileSync('scripts/opportunity-engine-v2.mjs','utf8');
 assert(frontend.includes("slug=S(slug||'pppp-tender-dossier-analysis')")&&frontend.includes("base+'/functions/v1/'+slug"),'Frontend is not wired to the dossier edge function');
 assert(frontend.includes('[data-pcw-tender]'),'Whole tender-card interaction is not preserved');
 assert(!/MutationObserver|setInterval\s*\(/.test(frontend),'Tender dossier UI must remain bounded and polling-free');
 assert(edge.includes("type:'input_file'"),'Edge function does not pass official dossier files to OpenAI');
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
+assert(edge.includes("const found=resolved?.dossier?.found===true")&&edge.includes("complete:found&&docs.length>0"),'APP dossier completeness must require both the exact official record and at least one official dossier document');
+assert(edge.includes("if(!resolved.page)return{complete:false"),'Missing KRPP dossier page must never be reported as complete');
 assert(edge.includes('manualProtectedArchiveReady')&&edge.includes("pppp-tender-protected-archive-analysis")&&edge.includes("protected_archive_precedence:true"),'Generic KRPP analysis must delegate to the saved protected archive once a manual full ZIP is available.');
 assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
 assert(edge.includes("npm:fflate@0.8.2")&&edge.includes('zipSync')&&edge.includes('fetchOfficialBinary'),'Edge function must bundle official dossier documents server-side');
@@ -142,6 +145,9 @@ assert(protectedEdge.includes('localDeterministicSynthesis')&&protectedEdge.incl
 assert(protectedEdge.includes("extraction_source:manual?'manual':(local?'derived':'dossier_ai')"),'Local deterministic Price Intelligence must be persisted as derived evidence, never mislabeled as AI extraction.');
 assert(protectedEdge.includes("if(!OPENAI_API_KEY){complete=localDeterministicSynthesis"),'Missing OpenAI credentials must not make a saved dossier unusable.');
 assert(frontend.includes("['openai','local_deterministic']")&&frontend.includes('integrity.manual_full_zip_uploaded===true'),'Frontend must accept local canonical analysis and a successfully uploaded manual full ZIP as dossier-ready.');
+assert(!opportunityEngine.includes("DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co'"),'Opportunity Engine must not retain a legacy Supabase fallback URL');
+assert(opportunityEngine.includes("SUPABASE_URL is required; Opportunity Engine will not fall back to another project."),'Opportunity Engine must fail closed when SUPABASE_URL is missing');
+assert(opportunityEngine.includes("Legacy Supabase project is forbidden for Opportunity Engine."),'Opportunity Engine must explicitly reject the legacy Supabase project');
 
 assert(protectedEdge.includes("manualFullZip=tender?.payload?.dossier_integrity?.manual_full_zip_uploaded===true")&&protectedEdge.includes("if(missing.length&&!manualFullZip)"),'Protected analyzer must treat expected filenames as advisory after a user-selected complete ZIP while preserving normal completeness checks elsewhere.');
 assert(protectedEdge.includes("remaining_expected:[]")&&protectedEdge.includes("storage_files_available:true"),'Successful protected analysis must close advisory filename gaps and preserve the readable Storage truth.');
