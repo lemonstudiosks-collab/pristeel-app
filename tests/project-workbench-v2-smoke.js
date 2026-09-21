@@ -22,6 +22,10 @@ must(src.includes("if(id==='finance')return route({area:'finance'})"),'finance n
 must(src.includes('data-pwb3-area="execution"'),'won projects must route to execution');
 must(src.includes('email_evidence:true'),'sent offer email evidence must remain visible');
 must(src.includes('context_fact_evidence:true'),'registered PPPP commercial facts must remain visible');
+must(src.includes('pwb3-commercial-primary'),'our offer must be visually primary in Project Overview');
+must(src.includes('Reagimi i klientit'),'client reaction must be explicit in Project Overview');
+must(src.includes('automaticReply'),'automatic replies must not displace substantive client reactions');
+must(src.includes('data-pwb3-kind="supplier-offer"'),'supplier offer evidence must have an explicit Overview surface');
 must(src.includes('unit_price_eur_per_m'),'per-meter commercial evidence must remain unit-accurate');
 must(src.includes('nuk inferohet total, cash apo pagesë'),'finance summary must not infer cash/payment');
 must(src.includes("data-pst-project-surface-owner','workbench-v3"),'Workbench must claim explicit ownership');
