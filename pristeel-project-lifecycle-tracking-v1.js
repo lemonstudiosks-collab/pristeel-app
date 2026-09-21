@@ -12,6 +12,8 @@ window.__pstProjectLifecycleTrackingV1=true;
 
 var CACHE_MS=60000;
 var cache={at:0,latest:{}};
+function operatorDeskOwns(){return !!(window.PSTProjectsModernV2||window.__pstProjectsModernV2||document.querySelector('.ppd-page'));}
+function workbenchOwns(){var p=document.getElementById('page-workspace-project');return !!(window.__pstProjectWorkbenchV3Intended||(p&&p.getAttribute('data-pst-project-surface-owner')==='workbench-v3'));}
 
 function arr(v){return Array.isArray(v)?v:[];}
 function norm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
@@ -49,6 +51,7 @@ function openSummary(){
   ensureSummary().then(function(S){S.open(id);}).catch(function(e){alert(String(e&&e.message||e));});return true;
 }
 function decorateSummary(){
+  if(workbenchOwns())return false;
   ensureCss();
   var page=document.getElementById('page-workspace-project'),actions=page&&page.querySelector('.pst-pi-actions');if(!page||!actions)return false;
   var b=actions.querySelector('[data-pst-project-summary]');
@@ -76,7 +79,7 @@ function decorateRows(latest){
   var sort=document.getElementById('pst-pm-sort');if(sort&&sort.value==='activity')rows.sort(function(a,b){return Number(b.dataset.pstActivityAt||0)-Number(a.dataset.pstActivityAt||0);}).forEach(function(r){list.appendChild(r);});
   return true;
 }
-async function refreshProjectCards(force){var latest=await loadLatest(!!force);return decorateRows(latest);}
+async function refreshProjectCards(force){if(operatorDeskOwns())return false;var latest=await loadLatest(!!force);return decorateRows(latest);}
 
 function scheduleSummary(){[0,80,220,600].forEach(function(ms){setTimeout(decorateSummary,ms);});}
 function wrapWorkspace(){
@@ -88,17 +91,18 @@ function wrapProjectFirst(){
   var wrapped=function(){var out=base.apply(this,arguments);scheduleSummary();return out;};wrapped.__pstLifecycleTracking=true;wrapped.__base=base;P.render=wrapped;return true;
 }
 function wrapProjectsFunction(name){
+  if(operatorDeskOwns())return false;
   var base=window[name];if(typeof base!=='function'||base.__pstLifecycleTracking)return false;
   var wrapped=function(){var out=base.apply(this,arguments);return Promise.resolve(out).then(function(v){return refreshProjectCards(true).then(function(){return v;});});};wrapped.__pstLifecycleTracking=true;wrapped.__base=base;window[name]=wrapped;return true;
 }
-function install(){wrapWorkspace();wrapProjectFirst();wrapProjectsFunction('pstProjectsModernOpen');wrapProjectsFunction('pstProjectsModernRefresh');scheduleSummary();if(document.querySelector('.pst-pm-list'))refreshProjectCards(false);}
+function install(){wrapWorkspace();wrapProjectFirst();if(!operatorDeskOwns()){wrapProjectsFunction('pstProjectsModernOpen');wrapProjectsFunction('pstProjectsModernRefresh');}scheduleSummary();if(!operatorDeskOwns()&&document.querySelector('.pst-pm-list'))refreshProjectCards(false);}
 
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('[data-pf2-tab],.pst-pi-tab,[data-pm-filter],[data-pm-view]'):null;if(!t)return;setTimeout(function(){decorateSummary();decorateRows(cache.latest);},0);setTimeout(function(){decorateSummary();decorateRows(cache.latest);},140);
 },true);
 document.addEventListener('input',function(e){if(e.target&&e.target.id==='pst-pm-search')setTimeout(function(){decorateRows(cache.latest);},0);},true);
 document.addEventListener('change',function(e){if(e.target&&e.target.id==='pst-pm-sort')setTimeout(function(){decorateRows(cache.latest);},0);},true);
-document.addEventListener('pst:modules-ready',function(){install();refreshProjectCards(true);},{once:true});
+document.addEventListener('pst:modules-ready',function(){install();if(!operatorDeskOwns())refreshProjectCards(true);},{once:true});
 
 install();setTimeout(install,350);setTimeout(install,1100);
 window.PSTProjectLifecycleTrackingV1={openSummary:openSummary,decorateSummary:decorateSummary,refreshProjectCards:refreshProjectCards,decorateRows:decorateRows,loadLatest:loadLatest,_test:{activityText:activityText,terminal:terminal}};

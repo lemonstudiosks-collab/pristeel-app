@@ -8,6 +8,7 @@
 if(window.__pstProjectClassificationV1)return;
 window.__pstProjectClassificationV1=true;
 var state={work:'all'};
+function deskOwns(){return !!(window.PSTProjectsModernV2||window.__pstProjectsModernV2||document.querySelector('.ppd-page'));}
 var repair={attempts:0,pending:false};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -97,6 +98,7 @@ function simplifyHeader(p){
   var sub=p.querySelector('.pst-pm-sub');if(sub)sub.textContent='Projekt → gjendja reale → hapi tjetër → afati kritik.';
 }
 function repairBlankList(p,map){
+  if(deskOwns())return [];
   var rows=p.querySelectorAll('.pst-pm-row[data-project-id]');
   if(rows.length){repair.attempts=0;return rows;}
   var known=Object.keys(map).length;
@@ -108,6 +110,7 @@ function repairBlankList(p,map){
   return rows;
 }
 function decorate(){
+  if(deskOwns())return true;
   var p=document.getElementById('page-workspace-projects');if(!p||!p.classList.contains('active'))return false;
   if(!forceAllProjects(p))return false;
   if(!forceList(p))return false;
@@ -133,7 +136,7 @@ function css(){if(document.getElementById('pst-project-classification-css'))retu
 @media(max-width:720px){#page-workspace-projects .pst-pm-row{grid-template-columns:1fr}#page-workspace-projects .pst-pm-meta{grid-template-columns:1fr}.pst-pm-actions{justify-content:flex-start}}
 `;document.head.appendChild(s);}
 function schedule(){[0,80,220,600].forEach(function(ms){setTimeout(decorate,ms);});}
-function wrap(){['pstProjectsModernOpen','pstProjectsModernRefresh'].forEach(function(k){var fn=window[k];if(typeof fn!=='function'||fn.__pstClassificationWrapped)return;var w=function(){var out=fn.apply(this,arguments);Promise.resolve(out).finally(schedule);return out;};w.__pstClassificationWrapped=true;w.__base=fn;window[k]=w;});}
+function wrap(){if(deskOwns())return;['pstProjectsModernOpen','pstProjectsModernRefresh'].forEach(function(k){var fn=window[k];if(typeof fn!=='function'||fn.__pstClassificationWrapped)return;var w=function(){var out=fn.apply(this,arguments);Promise.resolve(out).finally(schedule);return out;};w.__pstClassificationWrapped=true;w.__base=fn;window[k]=w;});}
 var contextCache={};
 async function loadContext(projectId,force){
   projectId=S(projectId||window.__pstCurrentProjectId||window._curProjId).trim();if(!projectId||typeof window.supaFetch!=='function')return[];
