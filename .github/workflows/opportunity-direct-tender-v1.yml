@@ -25,6 +25,7 @@ on:
       - 'supabase/functions/pppp-tender-fetch-worker/**'
       - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
       - 'supabase/migrations/20260901214000_opportunity_promotion_security_and_failure_reconcile.sql'
+      - 'supabase/migrations/20260921080000_tender_promotion_service_acl.sql'
       - '.github/workflows/opportunity-direct-tender-v1.yml'
       - 'tests/opportunity-workflow-ownership-smoke.mjs'
       - 'tests/opportunity-direct-action-reconcile-smoke.mjs'
