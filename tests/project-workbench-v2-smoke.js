@@ -12,13 +12,13 @@ must(src.includes("label:'Realizimi & financat'"),'compact flow must expose exec
 must(!src.includes('pwb3-step'),'legacy 9-step button strip must be removed');
 must(!src.includes('pwb3-quick'),'duplicate quick-actions panel must be removed');
 must(src.includes("k==='trading'?'Furnizimi':k==='fabrication'?'Prodhimi':'Furnizimi / Prodhimi'"),'business type must adapt work terminology');
-must(src.includes('data-pwb3-area="procurement"'),'supply cards must route to canonical procurement');
+must(src.includes("if(id==='supply')return route({area:'procurement'})"),'supply navigation must route to canonical procurement');
 must(src.includes('data-pwb3-stage="comparison"'),'supplier rows must route to comparison');
 must(src.includes('data-pwb3-action="revision"'),'offer revisions must remain available');
 must(src.includes('PSTProjectOfferRevisionAssistantV2'),'revision action must delegate to existing assistant');
-must(src.includes('data-pwb3-area="communication"'),'client controls must route to communication');
+must(src.includes("if(id==='client')return route({area:'communication'})"),'client navigation must route to communication');
 must(src.includes('data-pwb3-area="files"'),'file controls must route to files');
-must(src.includes('data-pwb3-area="finance"'),'finance controls must route to finance');
+must(src.includes("if(id==='finance')return route({area:'finance'})"),'finance navigation must route to finance');
 must(src.includes('data-pwb3-area="execution"'),'won projects must route to execution');
 must(src.includes('email_evidence:true'),'sent offer email evidence must remain visible');
 must(src.includes('context_fact_evidence:true'),'registered PPPP commercial facts must remain visible');

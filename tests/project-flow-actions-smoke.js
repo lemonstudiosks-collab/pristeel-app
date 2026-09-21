@@ -7,8 +7,8 @@ const projectsModern = fs.readFileSync('pristeel-projects-modern-v1.js', 'utf8')
 const closureDirect = fs.readFileSync('pristeel-project-closure-direct-v1.js', 'utf8');
 assert(!/new\s+MutationObserver/.test(source), 'Flow actions must not use MutationObserver');
 assert(!/setInterval\s*\(/.test(source), 'Flow actions must not use setInterval');
-assert(projectsModern.includes("state.filter==='active'&&g==='won'"), 'Won projects must remain visible in the Active project filter');
-assert(projectsModern.includes("'active','waiting','postponed','won'"), 'Won projects must count in the active project badge');
+assert(projectsModern.includes("if(/fituar|won|production|transport|factory_audit/.test(st+' '+ps))return'execution'"), 'Won projects must remain operational as execution projects');
+assert(projectsModern.includes("if(k!=='closed')c.open++"), 'Won/execution projects must count in the open project badge');
 assert(closureDirect.includes("s==='closedwon'"), 'Closed-won must be handled explicitly before generic closed matching');
 assert(closureDirect.includes('/realizuar|humb|lost|cancel|refuz|mbyllur|closed/'), 'Realized/closed projects must stay terminal');
 
