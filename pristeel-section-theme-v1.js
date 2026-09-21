@@ -60,11 +60,11 @@ body[data-pst-section] #pst-ws-canonical-nav .pst-ws-navbtn.active{background:va
 body[data-pst-section] #pst-ws-canonical-nav .pst-ws-navbtn.active .pst-ws-badge{background:#fff!important;color:var(--pst-section-deep)!important}
 
 /* Normal page buttons use the section family. Semantic/destructive controls keep their own colors. */
-body[data-pst-section] .content button:not(.danger):not(.btn-danger):not([data-danger="1"]):not(#pst-loss-top):not(.pst-ws-action-dismiss):not(.pst-gli-dismiss){
+body[data-pst-section] .content button:not(.danger):not(.btn-danger):not([data-danger="1"]):not(#pst-loss-top):not(.pst-ws-action-dismiss):not(.pst-gli-dismiss):not(.pst-opp-desk-back):not(.pst-pcw-opportunities-back){
  border-color:var(--pst-section-line)!important;
  color:var(--pst-section-deep)!important;
 }
-body[data-pst-section] .content button:not(.danger):not(.btn-danger):not([data-danger="1"]):not(#pst-loss-top):not(.pst-ws-action-dismiss):not(.pst-gli-dismiss):hover{
+body[data-pst-section] .content button:not(.danger):not(.btn-danger):not([data-danger="1"]):not(#pst-loss-top):not(.pst-ws-action-dismiss):not(.pst-gli-dismiss):not(.pst-opp-desk-back):not(.pst-pcw-opportunities-back):hover{
  background:var(--pst-section-soft)!important;border-color:var(--pst-section-accent)!important;color:var(--pst-section-deep)!important;
 }
 body[data-pst-section] .content :is(button.primary,.btn-primary,.pst-ws-btn.primary,.pst-pm-btn.primary,.pst-pm-open,.pst-dc-new,.pst-gli-intake,.pst-kek-btn.primary):not(.danger):not(.btn-danger){
@@ -81,6 +81,8 @@ body[data-pst-section] .content :is(.pst-pm-chip.on,.pst-pm-toggle button.on,.ps
 /* Tenders. */
 body[data-pst-section="tenders"] .pst-kek-eye{color:var(--pst-section-deep)!important}
 body[data-pst-section="tenders"] .pst-kek-btn:not(.danger){border-color:var(--pst-section-line)!important;color:var(--pst-section-deep)!important}
+body[data-pst-section="tenders"] .content :is(.pst-opp-desk-back,.pst-pcw-opportunities-back){background:#3f9fc2!important;border-color:#2f86a6!important;color:#fff!important;box-shadow:0 4px 12px rgba(47,134,166,.16)!important}
+body[data-pst-section="tenders"] .content :is(.pst-opp-desk-back,.pst-pcw-opportunities-back):hover{background:#2f86a6!important;border-color:#2f86a6!important;color:#fff!important}
 
 /* Contacts. */
 body[data-pst-section="contacts"] :is(.pcm-head>div>span,.pcm-eyebrow){color:var(--pst-section-deep)!important}
