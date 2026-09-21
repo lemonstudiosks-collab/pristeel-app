@@ -89,6 +89,10 @@ assert(!/MutationObserver|setInterval\s*\(/.test(frontend),'Tender dossier UI mu
 assert(edge.includes("type:'input_file'"),'Edge function does not pass official dossier files to OpenAI');
 assert(edge.includes("source==='TED'"),'TED awards must not be routed through open-bid dossier analysis');
 assert(edge.includes("const found=resolved?.dossier?.found===true")&&edge.includes("complete:found&&docs.length>0"),'APP dossier completeness must require both the exact official record and at least one official dossier document');
+assert(edge.includes('enforceIncompleteDossier(ai,access,source)'),'Incomplete dossier handling must receive the actual source');
+assert(edge.includes('APP nuk ekspozoi dosjen e plotë të tenderit në burimin zyrtar.'),'APP incomplete dossier state must use APP-specific missing-information guidance');
+assert(edge.includes('Verifiko dokumentet zyrtare në APP dhe merre dosjen e plotë'),'APP incomplete dossier next-step must never redirect the operator to KRPP');
+assert(edge.includes("source==='KRPP'?")&&edge.includes('APP: dosja zyrtare nuk u gjet e plotë'),'Incomplete dossier warnings must remain source-specific');
 assert(edge.includes("if(!resolved.page)return{complete:false"),'Missing KRPP dossier page must never be reported as complete');
 assert(edge.includes('manualProtectedArchiveReady')&&edge.includes("pppp-tender-protected-archive-analysis")&&edge.includes("protected_archive_precedence:true"),'Generic KRPP analysis must delegate to the saved protected archive once a manual full ZIP is available.');
 assert(frontend.includes("mode:'bundle'")&&frontend.includes('Shkarko dosjen ZIP'),'Frontend must expose an explicit dossier ZIP download');
