@@ -13,6 +13,7 @@ const unique=a=>[...new Set(array(a).filter(Boolean).map(String))];
 const today=()=>new Date().toISOString().slice(0,10);
 const source=row=>{const s=String(row?.payload?.source||'KRPP').toUpperCase();return s==='APP'||s==='APP_AL'?'APP_AL':s==='TED'?'TED':'KRPP';};
 const phase=row=>String(row?.payload?.notice_phase||'opportunity').toLowerCase();
+const DIRECT_MANAGED_ACTION_TYPES=new Set(['supplier_rfq_plan','bid_execution_review','partner_outreach_plan','krpp_authenticated_fetch_required','dossier_fetch_required','no_go_review','opportunity_review','dossier_analysis_failure']);
 const daysUntil=d=>{if(!d)return 999;const t=new Date(`${d}T00:00:00Z`).getTime();return Number.isFinite(t)?Math.ceil((t-Date.now())/86400000):999;};
 
 async function rest(access,path,{method='GET',body,prefer}={}){
