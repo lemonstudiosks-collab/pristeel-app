@@ -5,14 +5,20 @@ on:
     paths:
       - 'supabase/migrations/20260919233500_guarded_outbound_dispatcher_v1.sql'
       - 'supabase/functions/pppp-outbound-dispatch/**'
+      - 'supabase/functions/pppp-outbound-sync/**'
+      - 'supabase/migrations/20260921170821_outbound_sync_server_canonical_v1.sql'
       - 'tests/outbound-dispatcher-guard-smoke.mjs'
+      - 'tests/outbound-sync-server-smoke.mjs'
       - '.github/workflows/outbound-dispatcher-guard-smoke.yml'
   push:
     branches: [main]
     paths:
       - 'supabase/migrations/20260919233500_guarded_outbound_dispatcher_v1.sql'
       - 'supabase/functions/pppp-outbound-dispatch/**'
+      - 'supabase/functions/pppp-outbound-sync/**'
+      - 'supabase/migrations/20260921170821_outbound_sync_server_canonical_v1.sql'
       - 'tests/outbound-dispatcher-guard-smoke.mjs'
+      - 'tests/outbound-sync-server-smoke.mjs'
 
 jobs:
   smoke:
@@ -23,3 +29,4 @@ jobs:
         with:
           node-version: 20
       - run: node tests/outbound-dispatcher-guard-smoke.mjs
+      - run: node tests/outbound-sync-server-smoke.mjs

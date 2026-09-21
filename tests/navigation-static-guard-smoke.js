@@ -30,7 +30,7 @@ assert(opportunitiesPolish.includes('Për ofertim')&&opportunitiesPolish.include
 assert(opportunitiesPolish.includes('Number(c.src[k]||0)>0'),'Opportunity Desk must hide zero-count sources instead of rendering empty source clutter');
 assert(!opportunitiesPolish.includes('data-pst-opp-source="UNDP_KOSOVO"'),'UNDP Kosovo must not occupy a visible source filter');
 assert(opportunitiesPolish.includes("typeof api.applyOpportunityFilter==='function'"),'Desk filters must delegate to the canonical Project-Centric Workflow filter owner');
-assert(!opportunitiesPolish.includes('scrollIntoView'),'Opportunity Desk filtering must not move the viewport');
+assert(/pst:opportunities-filter-applied[\s\S]*kind==='source'[\s\S]*sourcePage[\s\S]*scrollIntoView\(\{block:'start'\}\)/.test(opportunitiesPolish),'Opportunity source drilldown must move only to its dedicated result surface');
 assert(opportunitiesPolish.includes('PSTPrimaryNavResilienceV10')&&opportunitiesPolish.includes("typeof N.openHome==='function'"),'Opportunities Kthehu must prefer the final primary navigation owner');
 assert(opportunitiesPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunity Desk must retain the waiting lifecycle bridge');
 assert(!/supaFetch\s*\(|tenderAction\s*\(|openTender\s*\(/.test(opportunitiesPolish),'Opportunity Desk may filter presentation state but must not own data writes, outbound actions or tender business actions');

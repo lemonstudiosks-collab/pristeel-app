@@ -8,8 +8,7 @@ const SERVICE_KEY=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 
 const cors={
-  "Access-Control-Allow-Origin":"*",
-  "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-pppp-cron-secret",
+  "Access-Control-Allow-Headers":"content-type, x-pppp-cron-secret",
   "Access-Control-Allow-Methods":"GET, POST, OPTIONS",
   "Content-Type":"application/json"
 };
@@ -50,13 +49,9 @@ async function authorizationMode(req:Request){
   const provided=req.headers.get("x-pppp-cron-secret")||"";
   if(provided){
     const {data,error}=await db.rpc("gmail_tracker_cron_authorized",{provided});
-    if(!error&&data===true)return "cron";
+    if(!error&&data===true)return "internal_cron";
   }
-  const auth=req.headers.get("Authorization")||"";
-  const m=auth.match(/^Bearer\s+(.+)$/i);
-  if(!m)return "";
-  const {data,error}=await db.auth.getUser(m[1]);
-  return !error&&data?.user?"user":"";
+  return "";
 }
 async function gmail(path:string,init:RequestInit={}){
   const tk=await gmailToken();
