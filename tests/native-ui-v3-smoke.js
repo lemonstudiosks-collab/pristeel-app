@@ -68,8 +68,8 @@ must(entry.includes('max-width:1360px!important'),'Home content width is not bal
 must(core.includes('homeRouteContext'),'Home surfaces must resolve a destination context before navigation');
 must(core.includes("filter='due'")&&core.includes("filter='review'")&&core.includes("area='outreach'"),'Home opportunity and reminder routes must preserve exact work subsets');
 must(core.includes("p.openFinance(filter||'')")&&core.includes("p.openOpportunities(filter||'')"),'Home filters must be forwarded to terminal page owners');
-must(projectsModern.includes('operationalGroup')&&projectsModern.includes("state.operational=value"),'Project cards must open the requested operational subset');
-must(projectsModern.includes("state.search=value")&&projectsModern.includes("value=\"'+esc(state.search)+'\""),'Client cards must open Projects with the client search visibly retained');
+must(projectsModern.includes('PSTProjectsModernV2')&&projectsModern.includes("action_required:'action'")&&projectsModern.includes("wait_for_client:'waiting'"),'Project cards must open the requested canonical operational subset');
+must(projectsModern.includes("state.search=v")&&projectsModern.includes('data-ppd-search value=\"\'+E(state.search)+\'\"'),'Client cards must open Projects with the client search visibly retained');
 must(primaryNav.includes("window.pstProjectsModernOpen(filter||'')")&&primaryNav.includes('openFinance(filter)'),'Primary navigation must pass Home context to Projects and Finance');
 for(const src of [entry,core]){
   must(!/\bnew\s+MutationObserver\s*\(/.test(src),'MutationObserver instance is forbidden in presentation UI');
