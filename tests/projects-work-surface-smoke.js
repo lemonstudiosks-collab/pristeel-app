@@ -49,6 +49,8 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(states.join(',')==='action,work,execution,waiting','Default order must be action -> work -> execution -> waiting');
   assert(window.document.querySelector('[data-ppd-open="p1"] .ppd-next').textContent.includes('Mbyll koston / çmimin'),'Action pricing project must expose a deterministic TANI action');
   assert(window.document.querySelector('[data-ppd-open="p3"] .ppd-next').textContent.includes('Prit klientin'),'wait_for_client must expose the automatic waiting action');
+  assert(window.document.querySelector('[data-ppd-open="p1"] .ppd-type').textContent.includes('Fabrikim'),'Fabrication project must show Fabrikim');
+  assert(window.document.querySelector('[data-ppd-open="p2"] .ppd-type').textContent.includes('Furnizim'),'Trading project must show Furnizim');
 
   const actionRow=window.document.querySelector('[data-ppd-open="p1"]');
   actionRow.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
