@@ -6,8 +6,8 @@ const canonical=fs.readFileSync('pristeel-project-workflow-canonical-v1.js','utf
 const home=fs.readFileSync('pristeel-home-canonical-v1.js','utf8');
 const guard=fs.readFileSync('pristeel-home-runtime-owner-guard-v1.js','utf8');
 const release=fs.readFileSync('pristeel-workspace-release-fix-v3.js','utf8');
+const projectsModern=fs.readFileSync('pristeel-projects-modern-v1.js','utf8');
 const projectMindmap=fs.readFileSync('pristeel-project-mindmap-v1.js','utf8');
-const projectMindmapNav=fs.readFileSync('pristeel-project-mindmap-navigation-v1.js','utf8');
 const projectReadability=fs.readFileSync('pristeel-project-readability-tuning-v1.js','utf8');
 const opportunitiesPolish=fs.readFileSync('pristeel-opportunities-filter-polish-v1.js','utf8');
 
@@ -16,14 +16,12 @@ assert(!/body:has\(#page-workspace-project\.active\)/.test(capture),'Project CSS
 assert(/function insideWorkspace\(/.test(capture),'Project click interception must enforce workspace scope');
 assert(/data-pf2-offer-detail/.test(capture),'Inline supplier detail contract must remain protected');
 assert(/if\(key==='projects'\)return renderProjects\(\)/.test(release),'Release router must own deterministic Projects navigation');
-assert(/goBackProjects\(\)[\s\S]*pstWorkspaceGo\('home'\)/.test(projectMindmap),'Projects Kthehu must retain a bounded legacy Home fallback');
-assert(/data-pmm-back[\s\S]*e\.stopPropagation\(\);goBackProjects\(\)/.test(projectMindmap),'Projects mindmap fallback must consume its document-level click');
-assert(projectReadability.includes('pristeel-project-mindmap-navigation-v1.js?v=20260916-final1'),'Projects runtime must load the dedicated mindmap navigation bridge');
-assert(projectMindmapNav.includes('PSTPrimaryNavResilienceV10'),'Projects Kthehu bridge must prefer the current primary navigation owner');
-assert(projectMindmapNav.includes("typeof P.openHome==='function'"),'Projects Kthehu bridge must call the final Home owner');
-assert(/function intercept\(e\)[\s\S]*data-pmm-back[\s\S]*stopImmediatePropagation/.test(projectMindmapNav),'Projects Kthehu bridge must consume the back click before older handlers');
-assert(projectMindmapNav.includes("window.addEventListener('click',intercept,true);"),'Projects Kthehu bridge must register at window-capture level');
-assert(!/supaFetch\s*\(|fetch\s*\(|MutationObserver\s*\(|setInterval\s*\(/.test(projectMindmapNav),'Projects Kthehu bridge must stay navigation-only');
+assert(/function goBack\(\)[\s\S]*PSTPrimaryNavResilienceV10[\s\S]*openHome[\s\S]*baseGo\.call\(window,'home'\)[\s\S]*goHome/.test(projectsModern),'Projects Kthehu must prefer the current Home owner and retain bounded fallbacks');
+assert(/data-ppd-back[\s\S]*e\.preventDefault\(\);goBack\(\)/.test(projectsModern),'Projects Kthehu must consume its click and route through the Operator Desk owner');
+assert(projectMindmap.includes('compatibility retirement v2'),'Retired Project mindmap must remain a compatibility shim only');
+assert(projectReadability.includes('pristeel-project-mindmap-v1.js?v=20260921-retired2'),'Projects runtime must load only the retired mindmap compatibility shim');
+assert(!projectReadability.includes('pristeel-project-mindmap-navigation-v1.js'),'Retired mindmap navigation bridge must not remain a runtime dependency');
+assert(!/supaFetch\s*\(|fetch\s*\(|MutationObserver\s*\(|setInterval\s*\(/.test(projectMindmap),'Retired Project mindmap shim must stay data- and polling-free');
 
 assert(opportunitiesPolish.includes('#pst-opp-desk{display:grid'),'Final Opportunities owner must render the Opportunity Desk');
 assert(opportunitiesPolish.includes('#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-lifecycle-tabs,#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-opportunity-tabs{display:none!important}'),'Legacy controls must be hidden only after the replacement Desk is present');
