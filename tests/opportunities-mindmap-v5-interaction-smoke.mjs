@@ -66,6 +66,8 @@ assert.equal(api._state.source,'KRPP','dedicated source page must keep the canon
 assert(window.document.getElementById('pst-opportunities-focus').classList.contains('pst-opp-source-page'),'source result view must be a distinct page surface');
 assert.equal(window.document.querySelector('#pst-opp-desk'),null,'overview cards and filters must not stay above source results');
 assert.match(window.document.querySelector('#pst-opportunities-focus>header h2').textContent,/KRPP/,'source page header must identify KRPP');
+assert.equal(window.getComputedStyle(window.document.getElementById('pst-pcw-lifecycle-tabs')).display,'none','dedicated source page must hide the legacy lifecycle map');
+assert.equal(window.getComputedStyle(window.document.getElementById('pst-pcw-opportunity-tabs')).display,'none','dedicated source page must hide the legacy source tabs');
 assert.equal(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]').length,40,'KRPP page must show its bounded first result batch');
 assert(Array.from(window.document.querySelectorAll('#pst-opportunities-list [data-pcw-tender]')).every(el=>String(el.getAttribute('data-pcw-tender')).startsWith('krpp-')),'KRPP page must contain only KRPP results');
 window.document.querySelector('[data-pst-opp-back]').click();
