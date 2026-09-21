@@ -1,7 +1,9 @@
 name: PPPP Direct Tender Opportunity v1
 
 # Sole scheduled owner for Direct Tender protected archives, dossier routing,
-# and supplier RFQ preparation. TED automation lives in opportunity-engine-v2.yml.
+# and supplier RFQ preparation. Runs after the 2-hour KRPP/KEK ingest window
+# to avoid reprocessing the same unchanged dossier set every hour.
+# TED automation lives in opportunity-engine-v2.yml.
 
 on:
   workflow_dispatch:
@@ -44,7 +46,7 @@ on:
       - 'supabase/migrations/20260901214000_opportunity_promotion_security_and_failure_reconcile.sql'
       - '.github/workflows/opportunity-direct-tender-v1.yml'
   schedule:
-    - cron: '10 * * * *'
+    - cron: '35 */2 * * *'
 
 permissions:
   contents: read
