@@ -1,5 +1,8 @@
 name: PPPP Opportunity Engine v2
 
+# TED-owned scheduled pipeline. Direct Tender dossier/RFQ work is owned only by
+# opportunity-direct-tender-v1.yml to avoid duplicate Supabase/AI reads.
+
 on:
   workflow_dispatch:
     inputs:
@@ -12,30 +15,23 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'scripts/opportunity-engine-v2.mjs'
-      - 'scripts/opportunity-engine-v2-runner.mjs'
-      - 'scripts/opportunity-rfq-drafts-v1.mjs'
       - 'scripts/ted-gc-award-sync-v2.mjs'
       - 'scripts/ted-gc-award-precision-v3.mjs'
       - 'scripts/ted-gc-project-role-fallback-v1.mjs'
       - 'scripts/ted-company-role-actions-v2.mjs'
       - 'supabase/functions/pppp-opportunity-draft-generator/**'
-      - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
       - 'supabase/migrations/20260901200500_opportunity_gmail_drafts_v1.sql'
       - 'supabase/migrations/20260901212500_ted_background_research_queue_v1.sql'
       - '.github/workflows/opportunity-engine-v2.yml'
+      - 'tests/opportunity-workflow-ownership-smoke.mjs'
   push:
     branches: [main]
     paths:
-      - 'scripts/opportunity-engine-v2.mjs'
-      - 'scripts/opportunity-engine-v2-runner.mjs'
-      - 'scripts/opportunity-rfq-drafts-v1.mjs'
       - 'scripts/ted-gc-award-sync-v2.mjs'
       - 'scripts/ted-gc-award-precision-v3.mjs'
       - 'scripts/ted-gc-project-role-fallback-v1.mjs'
       - 'scripts/ted-company-role-actions-v2.mjs'
       - 'supabase/functions/pppp-opportunity-draft-generator/**'
-      - 'supabase/migrations/20260901195000_opportunity_engine_v2.sql'
       - 'supabase/migrations/20260901200500_opportunity_gmail_drafts_v1.sql'
       - 'supabase/migrations/20260901212500_ted_background_research_queue_v1.sql'
       - '.github/workflows/opportunity-engine-v2.yml'
@@ -60,9 +56,6 @@ jobs:
           node-version: '22'
       - name: Syntax checks
         run: |
-          node --check scripts/opportunity-engine-v2.mjs
-          node --check scripts/opportunity-engine-v2-runner.mjs
-          node --check scripts/opportunity-rfq-drafts-v1.mjs
           node --check scripts/ted-gc-award-sync-v2.mjs
           node --check scripts/ted-gc-award-precision-v3.mjs
           node --check scripts/ted-gc-project-role-fallback-v1.mjs
@@ -71,6 +64,7 @@ jobs:
           node --check scripts/ted-winner-contact-enrichment.mjs
           node --check scripts/ted-winner-company-classification.mjs
           node --check scripts/ted-winner-contact-ranking.mjs
+          node tests/opportunity-workflow-ownership-smoke.mjs
 
   run:
     if: github.event_name != 'pull_request'
@@ -95,7 +89,6 @@ jobs:
       TED_COMPANY_MAX_ROWS: '40'
       TED_HISTORY_REUSE_MAX_ROWS: '100'
       TED_ROLE_RETRY_MAX: '30'
-      PPPP_OPPORTUNITY_DOSSIER_MAX: '20'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -118,10 +111,6 @@ jobs:
         run: node scripts/ted-company-role-actions-v2.mjs
       - name: Route unresolved award-holders by verified GC project role
         run: node scripts/ted-gc-project-role-fallback-v1.mjs
-      - name: Analyze KRPP APP dossiers and route direct opportunities
-        run: node scripts/opportunity-engine-v2-runner.mjs
-      - name: Prepare supplier RFQ draft-review rows for qualified raw-material opportunities
-        run: node scripts/opportunity-rfq-drafts-v1.mjs
       - name: Upload sanitized Opportunity Engine summary
         if: always()
         uses: actions/upload-artifact@v4
@@ -136,7 +125,5 @@ jobs:
             tmp/ted-winner-contact-ranking.json
             tmp/ted-company-role-actions-v2.json
             tmp/ted-gc-project-role-fallback-v1.json
-            tmp/opportunity-engine-v2.json
-            tmp/opportunity-rfq-drafts-v1.json
           if-no-files-found: ignore
           retention-days: 14
