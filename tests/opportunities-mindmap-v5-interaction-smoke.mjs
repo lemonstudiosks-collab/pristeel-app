@@ -44,13 +44,17 @@ window.eval(deskSrc);
 await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
-assert(desk&&desk.version==='20260921-opportunity-desk1','Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260921-opportunity-desk2','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 assert(window.document.querySelector('[data-pst-opp-mode="all"]'),'all route must exist');
 assert(window.document.querySelector('[data-pst-opp-mode="local"]'),'direct tender route must exist');
 assert(window.document.querySelector('[data-pst-opp-mode="award"]'),'TED award sales route must exist');
 assert(window.document.querySelector('[data-pst-opp-source="KRPP"]'),'active KRPP source must be visible');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'active TED source must be visible');
+assert.equal(window.document.querySelector('[data-pst-opp-source="TED"] .pst-opp-chip-icon').textContent,'EU','TED source must have a distinct source mark');
+assert.equal(window.document.querySelector('[data-pst-opp-source="KRPP"] .pst-opp-chip-icon').textContent,'KS','KRPP source must have a distinct source mark');
+assert(deskSrc.includes('grid-template-columns:repeat(auto-fit,minmax(145px,1fr))'),'filter options must distribute across the available card width');
+assert(deskSrc.includes('.pst-opp-chip-main'),'filter chips must use the richer icon + label layout');
 assert.equal(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),null,'zero-count sources must not clutter the Desk');
 assert.equal(window.document.querySelector('[data-pst-opp-source="UNDP_KOSOVO"]'),null,'UNDP Kosovo must not occupy a source chip in the Desk');
 
