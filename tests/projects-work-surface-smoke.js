@@ -1,6 +1,5 @@
 'use strict';
 const fs=require('fs');
-const vm=require('vm');
 const {JSDOM}=require('jsdom');
 
 function assert(ok,message){if(!ok)throw new Error(message);}
@@ -31,14 +30,8 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   window.pstOpenProjectWorkspace=id=>{opened=String(id);return true;};
   window.pstWsCreate=()=>true;
 
-  const context=vm.createContext(window);
-  Object.assign(context,{
-    window,document:window.document,CustomEvent:window.CustomEvent,Event:window.Event,MouseEvent:window.MouseEvent,
-    setTimeout,clearTimeout,console,encodeURIComponent,Promise
-  });
-
   const desk=fs.readFileSync('pristeel-projects-modern-v1.js','utf8');
-  vm.runInContext(desk,context,{filename:'pristeel-projects-modern-v1.js'});
+  window.eval(desk);
   await window.pstProjectsModernOpen();
 
   assert(projectReads===1,'Projects Operator Desk must use one bounded Projects read per open');
@@ -62,7 +55,7 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(window.document.querySelector('.ppd-row').getAttribute('data-ppd-open')==='p3','Waiting focus selected the wrong project');
 
   const classification=fs.readFileSync('pristeel-project-classification-v1.js','utf8');
-  vm.runInContext(classification,context,{filename:'pristeel-project-classification-v1.js'});
+  window.eval(classification);
   assert(window.PSTProjectClassificationV1.decorate()===true,'Legacy classification layer must yield cleanly to Operator Desk');
   assert(window.document.querySelector('.ppd-page'),'Classification compatibility layer must not replace Operator Desk');
 
