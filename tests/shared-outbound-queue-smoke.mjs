@@ -4,6 +4,8 @@ import {readFile} from 'node:fs/promises';
 const sql=await readFile(new URL('../supabase/migrations/20260919213500_shared_outbound_queue_v1.sql',import.meta.url),'utf8');
 const live=await readFile(new URL('../supabase/migrations/20260919224500_outbound_live_draft_preflight_v1.sql',import.meta.url),'utf8');
 const truth=await readFile(new URL('../supabase/migrations/20260919231500_outbound_stale_truth_preflight_v1.sql',import.meta.url),'utf8');
+const canonical=(await readFile(new URL('../supabase/migrations/20260921170821_outbound_sync_server_canonical_v1.sql',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+const effective=sql+'\n'+canonical;
 
 for(const token of [
   'create table if not exists public.pppp_outbound_policy_v1',
@@ -36,8 +38,8 @@ assert.ok(sql.includes('partition by lower(coalesce(q.company_domain'),'daily pl
 assert.ok(sql.includes('at time zone v_policy.timezone'),'planned slots must use the shared timezone');
 assert.ok(sql.includes('make_interval(mins=>v_policy.planned_gap_minutes'),'planned sends must be spaced by the policy gap');
 assert.ok(sql.includes('not (h.source=q.source and h.source_record_id=q.source_record_id)'),'same GC campaign follow-up must not be blocked by its own first touch');
-assert.ok(sql.includes("update public.pppp_outbound_queue_v1 q\n     set status='candidate'"),'planner reset update must use a table alias');
-assert.ok(sql.includes("q.approved_for_send=false"),'planner reset must qualify approved_for_send to avoid PL/pgSQL output-column ambiguity');
+assert.ok(effective.includes("update public.pppp_outbound_queue_v1 q\n     set status='candidate'"),'planner reset update must use a table alias');
+assert.ok(effective.includes("q.approved_for_send=false"),'planner reset must qualify approved_for_send to avoid PL/pgSQL output-column ambiguity');
 
 for(const forbidden of [
   '/messages/send',

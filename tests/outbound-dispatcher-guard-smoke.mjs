@@ -38,5 +38,7 @@ assert.ok(edge.indexOf('pppp_outbound_claim_for_dispatch_v1') < edge.indexOf('/d
 assert.ok(edge.indexOf('live_draft_recipient_mismatch') < edge.indexOf('const sent=await gmail("/drafts/send"'),'live recipient check must happen before Gmail send');
 assert.ok(edge.indexOf('/drafts/send') < edge.indexOf('pppp_outbound_mark_sent_v1'),'canonical sent state must only be marked after Gmail send');
 assert.equal(edge.includes('for(const queue'),false,'dispatcher must not batch-send multiple queue rows per invocation');
+assert.equal(edge.includes('db.auth.getUser'),false,'dispatcher must not accept a general authenticated user as an execution trigger');
+assert.ok(edge.includes('return "internal_cron"'),'dispatcher must require the canonical internal cron secret');
 
 console.log('guarded outbound dispatcher smoke: ok');
