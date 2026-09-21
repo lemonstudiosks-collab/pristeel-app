@@ -9,7 +9,7 @@ function click(win,el,msg){assert(el,msg||'missing clickable element');el.dispat
 function last(a){return a[a.length-1];}
 
 (async function(){
-  const dom=new JSDOM('<!doctype html><html><head></head><body><section id="page-workspace-project" class="active"><div class="pst-pi-tabs"></div><div id="pst-pi-body"></div></section></body></html>',{
+  const dom=new JSDOM('<!doctype html><html><head></head><body><section id="page-workspace-project" class="active"><div class="pst-pi-head"><div class="pst-pi-top"><button id="legacy-projects-back">Projektet</button></div><div class="pst-pi-stats"><div class="pst-pi-stat">Emaila</div><div class="pst-pi-stat">RFQ</div></div></div><div class="pst-pi-tabs"></div><div id="pst-pi-body"></div></section></body></html>',{
     url:'https://example.test/pristeel-procurement.html',runScripts:'outside-only',pretendToBeVisual:true
   });
   const {window}=dom,doc=window.document;
@@ -37,6 +37,10 @@ function last(a){return a[a.length-1];}
   await nextTick();
   assert(window.PSTProjectWorkbenchV3,'Workbench v3 API missing');
   assert(window.PSTProjectWorkbenchV3.sync()===true,'Workbench did not mount');
+  const legacyHead=doc.querySelector('.pst-pi-head'),legacyStats=doc.querySelector('.pst-pi-stats');
+  assert(legacyHead&&window.getComputedStyle(legacyHead).display!=='none','Project title/back header must remain visible');
+  assert(doc.getElementById('legacy-projects-back'),'Project → Projects return control must remain in the header');
+  assert(legacyStats&&window.getComputedStyle(legacyStats).display==='none','Legacy clickable stat shortcuts must be retired under Workbench v3');
 
   assert(doc.querySelectorAll('.pwb3-phase').length===4,'Expected four compact workflow phases');
   assert(doc.querySelectorAll('.pwb3-phase button').length===0,'Workflow phases must be informative, not duplicate navigation buttons');
