@@ -12,7 +12,10 @@ function click(win,el,msg){assert(el,msg||'missing clickable element');el.dispat
     url:'https://example.test/pristeel-procurement.html',runScripts:'outside-only',pretendToBeVisual:true
   });
   const {window}=dom,doc=window.document;
-  const routes=[],opened=[];
+  const routes=[],opened=[],browserTabs=[];let gmailReads=0;
+  window.open=function(){const tab={location:{href:''},close:function(){this.closed=true;}};browserTabs.push(tab);return tab;};
+  window.URL.createObjectURL=function(){return'blob:test-offer';};
+  window.URL.revokeObjectURL=function(){};
   window.__pstCurrentProjectId='tennet';window._curProjId='tennet';
   window.__pstIntegrityLastData={
     project:{id:'tennet',name:'PROJEKT TENNET · SPIE',client:'Spie',ref:'PROJEKT TENNET',status:'pritje',pipeline_stage:'pricing',business_type:'hybrid'},
@@ -38,6 +41,14 @@ function click(win,el,msg){assert(el,msg||'missing clickable element');el.dispat
   };
   window.PSTCanonicalProjectWorkflowV1={render:function(area,stage){routes.push([area,stage]);return true;}};
   window.PSTOfferSourceDocumentOpenV1={openAttachment:function(row){opened.push(row);return true;}};
+  window.PSTEmail={
+    auth:async function(){return'token';},
+    gmail:async function(url){
+      gmailReads++;
+      if(url.includes('?format=full'))return{payload:{filename:'',parts:[{filename:'PRISTEEL_Angebotsbedingungen_TenneT_BUNT_14.09.2026.pdf',mimeType:'application/pdf',body:{data:'dGVzdA=='}}]}};
+      throw new Error('unexpected Gmail path '+url);
+    }
+  };
 
   const src=fs.readFileSync(path.join(__dirname,'..','pristeel-project-workbench-v2.js'),'utf8');
   window.eval(src);
@@ -66,6 +77,13 @@ function click(win,el,msg){assert(el,msg||'missing clickable element');el.dispat
   const keyFile=doc.querySelector('[data-pwb3-file-key]');
   click(window,keyFile,'Storage-backed project file must be directly clickable');
   assert(opened.length===1&&opened[0].attachment_name.includes('PRISTEEL_Angebot'),'Storage-backed file must delegate to the real attachment opener');
+
+  window.PSTOfferSourceDocumentOpenV1=null;
+  const storageButtons=[...doc.querySelectorAll('[data-pwb3-file-key]')];
+  click(window,storageButtons[1],'Second storage-backed file missing');
+  await wait();
+  assert(gmailReads>0,'Storage-backed file must have a Gmail attachment fallback when no separate opener module is present');
+  assert(browserTabs.some(x=>x.location.href==='blob:test-offer'),'Gmail fallback must open the actual attachment blob');
 
   click(window,offerCard);
   assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-offer'),'Offer card must open offer detail');
