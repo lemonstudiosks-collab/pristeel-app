@@ -28,7 +28,6 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   };
   let opened='';
   window.pstOpenProjectWorkspace=id=>{opened=String(id);return true;};
-  window.pstWsCreate=()=>true;
   let homeOpens=0;
   window.PSTPrimaryNavResilienceV10={openHome(){homeOpens++;return true;}};
 
@@ -44,6 +43,8 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(!window.document.querySelector('.pst-pm-more'),'Legacy overflow action menu must not exist');
   assert(!window.document.body.textContent.includes('Dublikatat'),'Duplicates button must not remain in daily Projects UI');
   assert(!window.document.body.textContent.includes('Rifresko'),'Manual refresh button must not remain in daily Projects UI');
+  assert(!window.document.querySelector('[data-ppd-new]'),'Projects must not duplicate the global + Krijo → Projekt i ri action');
+  assert(!window.document.body.textContent.includes('+ Projekt i ri'),'Duplicate page-level project create action must stay removed');
 
   const states=[...window.document.querySelectorAll('.ppd-row')].map(x=>x.getAttribute('data-state'));
   assert(states.join(',')==='action,work,execution,waiting','Default order must be action -> work -> execution -> waiting');
@@ -75,7 +76,7 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(facts.length===1&&facts[0].fact_key==='supplier.price','Project context bridge must remain available for Project Detail');
 
   const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
-  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20260921-operator-desk3'),'Operator Desk must be cache-busted in runtime bootstrap');
+  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20260921-operator-desk4'),'Operator Desk must be cache-busted in runtime bootstrap');
   assert(bootstrap.includes('pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2'),'Classification compatibility layer must be cache-busted');
 
   const source=desk;
