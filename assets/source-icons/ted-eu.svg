@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="EU source icon">
+  <rect width="64" height="64" rx="14" fill="#0b4ea2"/>
+  <g fill="#ffcc00">
+    <circle cx="32" cy="13" r="2.2"/><circle cx="41.5" cy="15.5" r="2.2"/><circle cx="48.5" cy="22.5" r="2.2"/>
+    <circle cx="51" cy="32" r="2.2"/><circle cx="48.5" cy="41.5" r="2.2"/><circle cx="41.5" cy="48.5" r="2.2"/>
+    <circle cx="32" cy="51" r="2.2"/><circle cx="22.5" cy="48.5" r="2.2"/><circle cx="15.5" cy="41.5" r="2.2"/>
+    <circle cx="13" cy="32" r="2.2"/><circle cx="15.5" cy="22.5" r="2.2"/><circle cx="22.5" cy="15.5" r="2.2"/>
+  </g>
+  <circle cx="32" cy="32" r="8.5" fill="#fff" fill-opacity=".14"/>
+  <path d="M27 28h10M27 32h10M27 36h7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+</svg>
