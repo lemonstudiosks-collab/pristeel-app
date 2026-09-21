@@ -183,7 +183,7 @@ async function processDirect(access,rows,{mode,maxDossiers}){
 
   const eligible=assessed.filter(r=>['KRPP','APP_AL'].includes(source(r))&&phase(r)==='opportunity'&&r.status!=='ignored'&&Number(r.relevance_score||0)>=35&&(!r.deadline||r.deadline>=today()));
   eligible.sort((a,b)=>Number(!!b.project_id)-Number(!!a.project_id)||Number(b.status==='review')-Number(a.status==='review')||Number(b.relevance_score||0)-Number(a.relevance_score||0)||daysUntil(a.deadline)-daysUntil(b.deadline));
-  const selected=eligible.slice(0,Math.max(0,maxDossiers)),results=[];
+  const selected=eligible.slice(0,Math.max(0,maxDossiers)),results=[],activeByTender=await activeDirectActionMap(access,selected,mode),staleActionRows=[];
 
   for(const row0 of selected){
     try{
@@ -193,9 +193,14 @@ async function processDirect(access,rows,{mode,maxDossiers}){
       let nextStatus=fresh.status;
       if(['qualified','review_required','blocked_dossier','no_go'].includes(route.gate)&&fresh.status==='new')nextStatus='review';
       if(mode==='apply')await rest(access,`kek_tender_watch?id=eq.${encodeURIComponent(row0.id)}`,{method:'PATCH',body:{payload:p,status:nextStatus,updated_at:new Date().toISOString()},prefer:'return=minimal'});
-      const row={...fresh,payload:p,status:nextStatus};
-      await upsertAction(access,row,out,route,{mode});
-      if(version.amendment)await upsertAction(access,row,out,route,{amendment:true,mode});
+      const row={...fresh,payload:p,status:nextStatus},primaryAction=actionFor(row,out,route,false),amendmentAction=version.amendment?actionFor(row,out,route,true):null;
+      const desiredKeys=new Set([`TENDER:${row.id}:${primaryAction.type}`,...(amendmentAction?[`TENDER:${row.id}:${amendmentAction.type}`]:[])]);
+      for(const current of (activeByTender.get(String(row.id))||[])){
+        if(current.action_type==='dossier_amendment_review')continue;
+        if(!desiredKeys.has(String(current.action_key||'')))staleActionRows.push(current);
+      }
+      await upsertAction(access,row,out,route,{mode,action:primaryAction});
+      if(amendmentAction)await upsertAction(access,row,out,route,{amendment:true,mode,action:amendmentAction});
       results.push({id:row.id,source:source(row),title:row.title,score:row.relevance_score,route:route.route,gate:route.gate,recommendation:out?.analysis?.recommendation||null,dossier_complete:out?.dossier_complete!==false,documents:array(out?.documents).length,amendment:version.amendment,cached:!!out?.cached});
     }catch(error){
       const msg=text(error?.message||error,1000);results.push({id:row0.id,source:source(row0),title:row0.title,error:msg});
@@ -204,10 +209,11 @@ async function processDirect(access,rows,{mode,maxDossiers}){
       }
     }
   }
-  return{assessed:assessed.length,precision_ignored:ignored.length,eligible:eligible.length,selected:selected.length,results};
+  const superseded_actions=await supersedeStaleDirectActions(access,staleActionRows,mode);
+  return{assessed:assessed.length,precision_ignored:ignored.length,eligible:eligible.length,selected:selected.length,superseded_actions,results};
 }
 
-async function runPromotion(access,mode){if(mode!=='apply')return null;const out=await rest(access,'rpc/pppp_tender_project_promotion_reconcile_v2',{method:'POST',body:{p_apply:true,p_limit:100}});return out;}
+async function runPromotion(access,mode){if(mode!=='apply')return null;const out=await rest(access,'rpc/pppp_tender_project_promotion_reconcile_v2',{method:'POST',body:{p_apply:false,p_limit:100}});return out;}
 async function writeSummary(s){await mkdir('tmp',{recursive:true});await writeFile('tmp/opportunity-engine-v2.json',JSON.stringify(s,null,2));}
 
 export async function runOpportunityEngineV2({mode=process.env.SYNC_MODE||'preview',maxDossiers=Number(process.env.PPPP_OPPORTUNITY_DOSSIER_MAX||8),supabaseUrl=process.env.SUPABASE_URL||''}={}){
