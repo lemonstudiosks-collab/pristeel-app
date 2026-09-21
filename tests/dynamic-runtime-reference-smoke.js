@@ -84,11 +84,11 @@ assert(opportunityPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v
 assert.doesNotThrow(()=>new Function(opportunityPolish),'Opportunity Desk must remain valid JavaScript');
 assert.doesNotThrow(()=>new Function(waitingBridge),'Opportunities waiting bridge must remain valid JavaScript');
 assert(opportunityPolish.includes('#pst-pcw-lifecycle-tabs')&&opportunityPolish.includes('#pst-pcw-opportunity-tabs'),'Opportunity Desk must retire the legacy status/source controls without removing their canonical owners');
-assert(opportunityPolish.includes('data-pst-opp-source')&&opportunityPolish.includes('WORLD_BANK')&&opportunityPolish.includes('KRPP')&&opportunityPolish.includes('TED'),'Opportunities mindmap must expose functional source branches');
-assert(opportunityPolish.includes('data-pst-opp-field')&&opportunityPolish.includes('classifyField'),'Opportunities mindmap must expose field branches over existing records');
-assert(opportunityPolish.includes('data-pst-opp-lifecycle')&&opportunityPolish.includes('renderOpportunities'),'Opportunities mindmap lifecycle controls must delegate to the canonical Project-Centric renderer');
-assert(!/setInterval\s*\(|supaFetch\s*\(/i.test(opportunityPolish),'Opportunities mindmap must not poll or access business data directly');
-assert(!/tenderAction\s*\(|openTender\s*\(/.test(opportunityPolish),'Opportunities mindmap must not take ownership of tender business actions');
+assert(opportunityPolish.includes('data-pst-opp-source')&&opportunityPolish.includes('WORLD_BANK')&&opportunityPolish.includes('KRPP')&&opportunityPolish.includes('TED'),'Opportunity Desk must expose functional source filters');
+assert(opportunityPolish.includes('data-pst-opp-field')&&opportunityPolish.includes('fieldOf'),'Opportunity Desk must expose field filters over existing records');
+assert(opportunityPolish.includes('data-pst-opp-lifecycle')&&opportunityPolish.includes('applyOpportunityFilter'),'Opportunity Desk lifecycle controls must delegate to the canonical Project-Centric filter owner');
+assert(!/setInterval\s*\(|supaFetch\s*\(/i.test(opportunityPolish),'Opportunity Desk must not poll or access business data directly');
+assert(!/tenderAction\s*\(|openTender\s*\(/.test(opportunityPolish),'Opportunity Desk must not take ownership of tender business actions');
 assert(!/addEventListener\s*\(\s*['\"]click/i.test(waitingBridge),'Waiting bridge must not own click behavior');
 
 console.log('Dynamic runtime reference closure: OK ('+seen.size+' local JS modules verified).');
