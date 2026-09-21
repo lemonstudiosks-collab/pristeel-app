@@ -45,8 +45,8 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(!window.document.body.textContent.includes('Rifresko'),'Manual refresh button must not remain in daily Projects UI');
   assert(!window.document.querySelector('[data-ppd-new]'),'Projects must not duplicate the global + Krijo → Projekt i ri action');
   assert(!window.document.body.textContent.includes('+ Projekt i ri'),'Duplicate page-level project create action must stay removed');
-  assert(!source.includes("ref,reference"),'Projects query must not request nonexistent projects.reference');
-  assert(source.includes("id,name,client,ref,deadline"),'Projects query must use canonical projects.ref');
+  assert(!desk.includes("ref,reference"),'Projects query must not request nonexistent projects.reference');
+  assert(desk.includes("id,name,client,ref,deadline"),'Projects query must use canonical projects.ref');
 
   const states=[...window.document.querySelectorAll('.ppd-row')].map(x=>x.getAttribute('data-state'));
   assert(states.join(',')==='action,work,execution,waiting','Default order must be action -> work -> execution -> waiting');
