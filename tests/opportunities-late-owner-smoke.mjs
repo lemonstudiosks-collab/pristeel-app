@@ -3,23 +3,20 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 
 const source=fs.readFileSync('pristeel-opportunities-filter-polish-v1.js','utf8');
-const dom=new JSDOM(`<!doctype html><html><head></head><body><section id="page-kek-tenders" class="page active"><div id="pst-opportunities-focus"><header></header><div id="pst-pcw-opportunity-tools"></div><div id="pst-pcw-lifecycle-tabs">Legacy map</div><div id="pst-opportunities-list"></div></div></section></body></html>`,{url:'https://example.test/',runScripts:'outside-only',pretendToBeVisual:true});
+const dom=new JSDOM(`<!doctype html><html><head></head><body><section id="page-kek-tenders" class="page active"><div id="pst-opportunities-focus"><header></header><div id="pst-pcw-opportunity-tools"><label><span>Kërko</span><input id="pst-pcw-opportunity-search"></label></div><div id="pst-pcw-lifecycle-tabs">Legacy map</div><div id="pst-pcw-opportunity-tabs"></div><div id="pst-opportunities-list"></div></div></section></body></html>`,{url:'https://example.test/',runScripts:'outside-only',pretendToBeVisual:true});
 const {window}=dom;
-const nativeTimer=window.setTimeout.bind(window);
-window.setTimeout=(callback,delay)=>nativeTimer(callback,Math.min(delay,1));
 window.eval(source);
+assert.equal(window.document.querySelector('#pst-opp-desk'),null,'Desk waits for the canonical workflow owner');
+
+window.PSTProjectCentricWorkflowV1={
+ _state:{rows:[],mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:''},
+ _test:{tenderVisible:()=>true,dedupeOpportunities:x=>x,opportunityRows:()=>[]},
+ applyOpportunityFilter(){return true;},
+ renderOpportunities(){}
+};
 window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
-const css=window.document.getElementById('pst-opportunities-filter-polish-v1-css')?.textContent||'';
-assert(css.includes('#pst-opportunities-focus:has(#pst-opp-v4-map) #pst-pcw-lifecycle-tabs'),'Legacy map stays visible until the replacement exists');
-assert.equal(window.document.querySelector('#pst-opp-v4-map'),null,'New map has not loaded before its owner');
-
-// Wait longer than the old compressed 120-attempt readiness window.
-await new Promise(resolve=>setTimeout(resolve,180));
-window.PSTProjectCentricWorkflowV1={_state:{rows:[],source:'all',lifecycle:'all'},_test:{},renderOpportunities(){}};
-await new Promise(resolve=>setTimeout(resolve,40));
-
-assert.equal(window.document.querySelectorAll('#pst-opp-v4-map').length,1,'Mindmap owner still activates after the old startup timeout');
+await new Promise(r=>setTimeout(r,650));
+assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk owner must still activate when canonical workflow arrives late');
 assert.equal(window.document.querySelectorAll('[data-pst-opp-back]').length,1,'Late activation restores one Kthehu control');
-assert.equal(window.document.querySelectorAll('#pst-opportunities-filter-polish-v1-css').length,1,'One stylesheet remains');
-window.close();
-console.log('Opportunities deterministic late-owner fallback smoke passed.');
+assert.equal(window.document.querySelectorAll('#pst-opportunities-filter-polish-v1-css').length,1,'One Desk stylesheet remains');
+console.log('Opportunities late-owner Desk smoke: OK');

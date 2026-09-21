@@ -11,7 +11,7 @@ window.__pstProjectCentricWorkflowV2=true;
 window.__pstProjectCentricWorkflowV3=true;
 window.__pstProjectCentricWorkflowV4=true;
 
-var tenderState={rows:[],mode:'all',source:'all',lifecycle:'new',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{}};
+var tenderState={rows:[],mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{}};
 var contactBusy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -171,8 +171,10 @@ function opportunityRows(){
  if(tenderState.focus==='review')rows=rows.filter(function(r){return /review|shqyr/.test(N(r.operating_lane||r.status));});
  if(q)rows=rows.filter(function(r){return N([r.title,r.authority,r.procurement_no,r.publication_no,tenderReason(r),winnerName(r),winnerRoleLabel(r)].join(' ')).indexOf(q)>-1;});
  rows.sort(function(a,b){var tedPriority=(tenderState.source==='TED'||tenderState.winner_group!=='all')?winnerPriority(a)-winnerPriority(b):0;return tedPriority||tenderScore(b)-tenderScore(a)||S(b.published_date).localeCompare(S(a.published_date));});
- return rows.slice(0,80);
+ return rows;
 }
+function opportunityVisibleRows(){var rows=opportunityRows(),limit=Math.max(20,Number(tenderState.display_limit)||40);return rows.slice(0,limit);}
+function showMoreOpportunities(){var total=opportunityRows().length,current=Math.max(20,Number(tenderState.display_limit)||40);if(current>=total)return false;tenderState.display_limit=Math.min(total,current+40);renderOpportunities();return true;}
 function opportunityCard(r){
  var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PËR OFERTIM',role=award?winnerRoleLabel(r):'',meta=lifecycleMeta(r),contact=lifecycleDateLabel(meta),value=tenderValueLabel(r);
  if(meta.recipients.length)contact+=(contact?' · ':'')+'Për: '+meta.recipients.slice(0,2).join(', ')+(meta.recipients.length>2?' +'+(meta.recipients.length-2):'');
@@ -205,14 +207,14 @@ function ensureOpportunitySurface(){
    if(!focus.querySelector('#pst-opportunities-list')){var list3=document.createElement('div');list3.id='pst-opportunities-list';focus.appendChild(list3);}
  }
  var input=focus.querySelector('#pst-pcw-opportunity-search');
- if(input&&input.dataset.bound!=='1'){input.dataset.bound='1';input.value=tenderState.query;input.addEventListener('input',function(){tenderState.query=input.value||'';renderOpportunities();});}
+ if(input&&input.dataset.bound!=='1'){input.dataset.bound='1';input.value=tenderState.query;input.addEventListener('input',function(){tenderState.query=input.value||'';tenderState.display_limit=40;renderOpportunities();});}
  return focus;
 }
 function renderOpportunities(){
  var p=activePage('page-kek-tenders');if(!p)return false;
  var focus=ensureOpportunitySurface();if(!focus)return false;
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return false;
- var all=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),rows=opportunityRows(),counts={new:0,draft:0,waiting:0,replied:0},sources={};TENDER_SOURCE_ORDER.forEach(function(src){sources[src]=0;});all.forEach(function(r){var src=tenderSource(r);if(Object.prototype.hasOwnProperty.call(sources,src))sources[src]++;counts[opportunityLifecycle(r)]++;});
+ var all=dedupeOpportunities(tenderState.rows.filter(tenderVisible)),matched=opportunityRows(),rows=opportunityVisibleRows(),counts={new:0,draft:0,waiting:0,replied:0},sources={};TENDER_SOURCE_ORDER.forEach(function(src){sources[src]=0;});all.forEach(function(r){var src=tenderSource(r);if(Object.prototype.hasOwnProperty.call(sources,src))sources[src]++;counts[opportunityLifecycle(r)]++;});
  var header=focus.querySelector('header');if(header)header.innerHTML='<div class="pst-pcw-opportunity-head-left"><button type="button" class="pst-opp-v4-back pst-pcw-opportunities-back" data-pcw-opportunities-back aria-label="Kthehu në Ballinë">← Kthehu</button><div><span>MUNDËSITË</span><h2>Tenderat që mund të bëhen projekte</h2><p>'+(tenderState.focus==='due'?'Po shfaqen vetëm tenderët me afat brenda shtatë ditësh.':tenderState.focus==='review'?'Po shfaqen vetëm tenderët që presin shqyrtim.':'Kliko një mundësi. PPPP merr dosjen, nxjerr kushtet dhe vetëm pastaj vendos ti nëse krijohet projekt.')+'</p></div></div>';
  var search=focus.querySelector('#pst-pcw-opportunity-search');if(search&&search.value!==tenderState.query)search.value=tenderState.query;
  var tabs=focus.querySelector('#pst-pcw-opportunity-tabs');
@@ -221,7 +223,7 @@ function renderOpportunities(){
  var lanes=[['new','Të reja',counts.new,'✧'],['draft','Draft gati',counts.draft,'✎'],['waiting','Në pritje',counts.waiting,'◷'],['replied','Me përgjigje',counts.replied,'↗'],['all','Të gjitha',all.length,'◇']];
  life.setAttribute('role','group');life.setAttribute('aria-label','Harta e gjendjes së mundësive');
  life.innerHTML='<div class="pst-pcw-map-center"><span>✦</span><strong>Mundësitë</strong><small>'+all.length+' gjithsej</small></div>'+lanes.map(function(lane){return '<button type="button" data-pcw-lifecycle="'+lane[0]+'" class="pst-pcw-map-node pst-pcw-map-'+lane[0]+' '+(tenderState.lifecycle===lane[0]?'on':'')+'" aria-pressed="'+(tenderState.lifecycle===lane[0])+'"><span class="pst-pcw-map-icon" aria-hidden="true">'+lane[3]+'</span><span class="pst-pcw-map-label">'+lane[1]+'<small>'+lane[2]+' mundësi</small></span><i>'+lane[2]+'</i></button>';}).join('');
- list.innerHTML=rows.length?rows.map(opportunityCard).join(''):'<div class="pst-pcw-empty">Nuk ka mundësi që përputhen me këtë filtër.</div>';
+ list.innerHTML=rows.length?rows.map(opportunityCard).join('')+(matched.length>rows.length?'<button type="button" class="pst-pcw-more" data-pcw-opportunity-more><b>Shfaq edhe '+Math.min(40,matched.length-rows.length)+'</b><span>'+rows.length+' nga '+matched.length+' të shfaqura</span></button>':''):'<div class="pst-pcw-empty">Nuk ka mundësi që përputhen me këta filtra.</div>';
  var legacy=p.querySelector('#pst-opportunities-all');if(legacy){legacy.classList.add('pst-pcw-backstage');legacy.hidden=true;legacy.style.display='none';}
  p.querySelectorAll('.pst-kek-filter,.pst-kek-card,#pst-tender-fit-summary').forEach(function(x){if(!focus.contains(x)){x.hidden=true;x.style.display='none';x.setAttribute('aria-hidden','true');}});
  p.setAttribute('data-pcw-opportunities-owner','2');
@@ -238,7 +240,7 @@ function setOpportunityContext(context){
  context=typeof context==='string'?{focus:context}:(context||{});var f=S(context.focus).toLowerCase(),src=normalizeTenderSource(context.source),mode=f==='award'||f==='local'?f:S(context.mode||'all').toLowerCase(),life=S(context.lifecycle).toLowerCase(),field=S(context.field||'all').toLowerCase(),winner=S(context.winner_group||context.winner||'all').toLowerCase();
  tenderState.focus=['due','review'].indexOf(f)>-1?f:'';
  tenderState.mode=['local','award'].indexOf(mode)>-1?mode:'all';
- tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(life)>-1?life:'new';
+ tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(life)>-1?life:'all';
  tenderState.field=['construction','infrastructure','energy','supply','services','other','all'].indexOf(field)>-1?field:'all';
  tenderState.winner_group=['gc_epc','producer','other','all'].indexOf(winner)>-1?winner:'all';
  tenderState.source=TENDER_SOURCE_ORDER.indexOf(src)>-1?src:(mode==='award'?'TED':'all');
@@ -250,28 +252,32 @@ function emitOpportunityFilter(kind,value){
  try{document.dispatchEvent(new CustomEvent('pst:opportunities-filter-applied',{detail:{kind:kind,value:value,source:tenderState.source,lifecycle:tenderState.lifecycle,field:tenderState.field,winner_group:tenderState.winner_group,visible_count:opportunityRows().length}}));}catch(e){}
 }
 function applyOpportunityFilter(kind,value){
- kind=S(kind).toLowerCase();value=S(value);
- tenderState.focus='';tenderState.mode='all';tenderState.query='';
- var input=document.getElementById('pst-pcw-opportunity-search');if(input)input.value='';
+ kind=S(kind).toLowerCase();value=S(value);tenderState.focus='';tenderState.display_limit=40;
  if(kind==='source'){
-   tenderState.lifecycle='all';tenderState.field='all';tenderState.winner_group='all';
    var src=normalizeTenderSource(value);
    tenderState.source=TENDER_SOURCE_ORDER.indexOf(src)>-1?src:'all';
+   if(tenderState.source==='TED')tenderState.mode='award';
+   else if(tenderState.source!=='all'){tenderState.mode='local';tenderState.winner_group='all';}
+   else{tenderState.mode='all';tenderState.winner_group='all';}
  }else if(kind==='lifecycle'){
-   tenderState.source='all';tenderState.field='all';tenderState.winner_group='all';
    var life=S(value).toLowerCase();
    tenderState.lifecycle=['new','draft','waiting','replied','all'].indexOf(life)>-1?life:'all';
  }else if(kind==='field'){
-   tenderState.source='all';tenderState.lifecycle='all';tenderState.winner_group='all';
    var field=S(value).toLowerCase();
    tenderState.field=['construction','infrastructure','energy','supply','services','other','all'].indexOf(field)>-1?field:'all';
  }else if(kind==='winner'||kind==='winner_group'){
-   tenderState.lifecycle='all';tenderState.field='all';
    var winner=S(value).toLowerCase();
    tenderState.winner_group=['gc_epc','producer','other','all'].indexOf(winner)>-1?winner:'all';
-   tenderState.source='TED';
+   if(tenderState.winner_group!=='all'){tenderState.source='TED';tenderState.mode='award';}
+ }else if(kind==='mode'){
+   var mode=S(value).toLowerCase();
+   tenderState.mode=['local','award','all'].indexOf(mode)>-1?mode:'all';
+   if(tenderState.mode==='award')tenderState.source='TED';
+   else if(tenderState.mode==='local'){if(tenderState.source==='TED')tenderState.source='all';tenderState.winner_group='all';}
+   else if(tenderState.mode==='all'){tenderState.source='all';tenderState.winner_group='all';}
  }else if(kind==='reset'){
-   tenderState.source='all';tenderState.lifecycle='all';tenderState.field='all';tenderState.winner_group='all';
+   tenderState.mode='all';tenderState.source='all';tenderState.lifecycle='all';tenderState.field='all';tenderState.winner_group='all';tenderState.query='';
+   var input=document.getElementById('pst-pcw-opportunity-search');if(input)input.value='';
  }else return false;
  renderOpportunities();emitOpportunityFilter(kind,value);return true;
 }
@@ -430,9 +436,10 @@ function click(e){
  var close=e.target&&e.target.closest?e.target.closest('[data-pcw-close-modal]'):null;if(close||e.target&&e.target.id==='pst-ti-backdrop'){e.preventDefault();e.stopPropagation();closeTenderModal();return;}
  var mapSource=e.target&&e.target.closest?e.target.closest('[data-pst-opp-source]'):null;if(mapSource){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();applyOpportunityFilter('source',mapSource.getAttribute('data-pst-opp-source')||'all');return;}
  var mapLifecycle=e.target&&e.target.closest?e.target.closest('[data-pst-opp-lifecycle]'):null;if(mapLifecycle){e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();applyOpportunityFilter('lifecycle',mapLifecycle.getAttribute('data-pst-opp-lifecycle')||'all');return;}
- var lifecycle=e.target&&e.target.closest?e.target.closest('[data-pcw-lifecycle]'):null;if(lifecycle){tenderState.lifecycle=lifecycle.getAttribute('data-pcw-lifecycle')||'new';renderOpportunities();return;}
- var source=e.target&&e.target.closest?e.target.closest('[data-pcw-source]'):null;if(source){tenderState.source=source.getAttribute('data-pcw-source')||'all';tenderState.mode='all';renderOpportunities();return;}
- var tab=e.target&&e.target.closest?e.target.closest('[data-pcw-mode]'):null;if(tab){tenderState.mode=tab.getAttribute('data-pcw-mode')||'all';tenderState.source='all';renderOpportunities();return;}
+ var more=e.target&&e.target.closest?e.target.closest('[data-pcw-opportunity-more]'):null;if(more){e.preventDefault();e.stopPropagation();showMoreOpportunities();return;}
+ var lifecycle=e.target&&e.target.closest?e.target.closest('[data-pcw-lifecycle]'):null;if(lifecycle){tenderState.lifecycle=lifecycle.getAttribute('data-pcw-lifecycle')||'all';tenderState.display_limit=40;renderOpportunities();return;}
+ var source=e.target&&e.target.closest?e.target.closest('[data-pcw-source]'):null;if(source){applyOpportunityFilter('source',source.getAttribute('data-pcw-source')||'all');return;}
+ var tab=e.target&&e.target.closest?e.target.closest('[data-pcw-mode]'):null;if(tab){applyOpportunityFilter('mode',tab.getAttribute('data-pcw-mode')||'all');return;}
  var ti=e.target&&e.target.closest?e.target.closest('[data-pcw-ti]'):null;if(ti){e.preventDefault();e.stopPropagation();tenderAction(ti.getAttribute('data-pcw-ti'),ti.getAttribute('data-id'),ti);return;}
  var tender=e.target&&e.target.closest?e.target.closest('[data-pcw-tender]'):null;if(tender){e.preventDefault();openTender(tender.getAttribute('data-pcw-tender'));return;}
  var cp=e.target&&e.target.closest?e.target.closest('[data-pcw-contact-project]'):null;if(cp){var id=cp.getAttribute('data-pcw-contact-project');if(id&&window.pstOpenProjectWorkspace)window.pstOpenProjectWorkspace(id);return;}
@@ -479,7 +486,7 @@ function css(){if(document.getElementById('pst-project-centric-workflow-css'))re
 #pst-pcw-lifecycle-tabs .pst-pcw-map-new{grid-area:new;justify-self:end;align-self:end}#pst-pcw-lifecycle-tabs .pst-pcw-map-draft{grid-area:draft;justify-self:start;align-self:end}#pst-pcw-lifecycle-tabs .pst-pcw-map-waiting{grid-area:waiting;justify-self:end;align-self:start}#pst-pcw-lifecycle-tabs .pst-pcw-map-replied{grid-area:replied;justify-self:start;align-self:start}#pst-pcw-lifecycle-tabs .pst-pcw-map-all{grid-area:all;justify-self:center;align-self:center;width:175px;min-height:48px}
 #pst-pcw-opportunity-tabs{padding:3px 0 11px;border-bottom:1px solid #E9EFF1}
 @media(max-width:1050px) and (min-width:721px){#pst-pcw-lifecycle-tabs{grid-template-columns:minmax(170px,1fr) 165px minmax(170px,1fr);gap:15px 26px;padding:26px 24px 20px}#pst-pcw-lifecycle-tabs .pst-pcw-map-node{width:100%}.pst-pcw-map-center{width:150px}}@media(max-width:720px){#pst-pcw-lifecycle-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"center center" "new draft" "waiting replied" "all all";grid-template-rows:auto;gap:9px;padding:15px;background:#F8FBFC;overflow:visible}#pst-pcw-lifecycle-tabs:before{display:none}.pst-pcw-map-center{position:relative;transform:none;grid-area:center;width:100%;min-height:75px;height:auto;border-radius:16px}.pst-pcw-map-center span{display:none}#pst-pcw-lifecycle-tabs .pst-pcw-map-node{position:relative;width:100%;min-height:60px;transform:none!important;justify-self:stretch;align-self:stretch}#pst-pcw-lifecycle-tabs .pst-pcw-map-all{grid-area:all;width:100%;min-height:50px}}
-#pst-opportunities-list{display:grid!important;gap:9px!important}
+#pst-opportunities-list{display:grid!important;gap:10px!important}.pst-pcw-more{min-height:58px;border:1px dashed #b9d3dc;border-radius:15px;background:#f8fbfc;color:#376f84;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}.pst-pcw-more:hover{background:#eef7fa;border-color:#76afc1}.pst-pcw-more b{font-size:12px}.pst-pcw-more span{font-size:10px;color:#819199}
 .pst-pcw-tender{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;padding:20px 21px;border:1px solid #DFE7EA;border-left:5px solid #6D9BAA;border-radius:16px;background:#fff;cursor:pointer;transition:.15s;box-shadow:0 3px 14px rgba(40,65,77,.035)}
 .pst-pcw-tender:hover,.pst-pcw-tender:focus-visible{border-color:#B9D0D8;border-left-color:#397F98;background:#F8FBFC;box-shadow:0 7px 20px rgba(43,75,86,.07);transform:translateY(-1px);outline:none}
 .pst-pcw-tender-meta{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;font-weight:850;color:#849197;letter-spacing:.05em}.pst-pcw-tender-meta span{padding:4px 7px;border-radius:999px;background:#F3F6F7}.pst-pcw-tender-meta .kind{color:#397F98;background:#EAF4F7}.pst-pcw-tender-meta .pst-pcw-life-badge.new{background:#EDF5F7;color:#397F98}.pst-pcw-tender-meta .pst-pcw-life-badge.draft{background:#F4F0E9;color:#806C4D}.pst-pcw-tender-meta .pst-pcw-life-badge.waiting{background:#EEF1F5;color:#596F88}.pst-pcw-tender-meta .pst-pcw-life-badge.replied{background:#EAF4ED;color:#477257}.pst-pcw-tender-meta .winner-role.gc_epc{background:#E9F5ED;color:#35734A}.pst-pcw-tender-meta .winner-role.producer{background:#FFF3E4;color:#8A6327}.pst-pcw-tender-meta .winner-role.trader_consortium{background:#F0ECF8;color:#6A5494}.pst-pcw-tender-meta .winner-role.unknown{background:#F4F4F4;color:#777}.pst-pcw-tender h3{margin:8px 0 0;font-size:17px;color:#2D434D;line-height:1.35}.pst-pcw-tender p{margin:7px 0 0;font-size:13px;color:#6F8087;line-height:1.5;max-width:900px}.pst-pcw-tender small{display:block;margin-top:9px;font-size:11.5px;color:#8A979C}.pst-pcw-contact-state{margin-top:8px;font-size:11px;font-weight:780;color:#66777E}.pst-pcw-life-draft{border-left-color:#A99674}.pst-pcw-life-waiting{border-left-color:#7389A0}.pst-pcw-life-replied{border-left-color:#62856E}.pst-pcw-tender-open{display:flex;align-items:center;gap:10px;color:#397F98;white-space:nowrap;padding:9px 12px;border-radius:10px;background:#F0F7F9}.pst-pcw-tender-open b{font-size:12px}.pst-pcw-tender-open span{font-size:19px}.pst-pcw-empty{padding:24px;color:#819096;text-align:center}
@@ -497,5 +504,5 @@ function schedule(force){[0,90,260,700].forEach(function(ms){setTimeout(function
 document.addEventListener('click',click,true);document.addEventListener('keydown',keydown,true);document.addEventListener('pst:modules-ready',function(){schedule(false);},{once:true});document.addEventListener('pst:project-operator-updated',function(){schedule(true);});window.addEventListener('pageshow',function(){schedule(false);},{once:true});
 document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[data-pm-open],[data-pwf-area],[data-pwf-stage],[data-pcm-id]'):null;if(n)schedule(false);},true);
 if(document.readyState!=='loading')schedule(false);else document.addEventListener('DOMContentLoaded',function(){schedule(false);},{once:true});
-window.PSTProjectCentricWorkflowV1={version:'7',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,applyOpportunityFilter:applyOpportunityFilter,renderOpportunities:renderOpportunities,openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{opportunityGoHome:opportunityGoHome,tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,tenderValueLabel:tenderValueLabel,opportunityRows:opportunityRows,opportunityField:opportunityField,winnerGroup:winnerGroup,winnerPriority:winnerPriority,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal,applyOpportunityFilter:applyOpportunityFilter}};
+window.PSTProjectCentricWorkflowV1={version:'8',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,applyOpportunityFilter:applyOpportunityFilter,showMoreOpportunities:showMoreOpportunities,renderOpportunities:renderOpportunities,openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{opportunityGoHome:opportunityGoHome,tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,tenderValueLabel:tenderValueLabel,opportunityRows:opportunityRows,opportunityVisibleRows:opportunityVisibleRows,opportunityField:opportunityField,winnerGroup:winnerGroup,winnerPriority:winnerPriority,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal,applyOpportunityFilter:applyOpportunityFilter}};
 })();
