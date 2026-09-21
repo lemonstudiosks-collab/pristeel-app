@@ -63,6 +63,11 @@ function last(a){return a[a.length-1];}
 
   function nav(id){return doc.querySelector('.pwb3-nav-btn[data-pwb3-nav="'+id+'"]');}
   click(window,nav('overview'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-overview'),'Overview must render');
+  const overviewActivity=[...doc.querySelectorAll('.pwb3-card')].find(x=>x.textContent.includes('Aktivitetet e fundit'));
+  assert(overviewActivity&&overviewActivity.getAttribute('data-pwb3-card-route')==='docscomms','Overview activity card must navigate to Documents & activity');
+  click(window,nav('docscomms'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-docscomms'),'Documents & activity view must render');
+  const detailActivity=[...doc.querySelectorAll('.pwb3-card')].find(x=>x.textContent.includes('Aktivitetet e fundit'));
+  assert(detailActivity&&!detailActivity.hasAttribute('data-pwb3-card-route')&&!detailActivity.hasAttribute('data-pwb3-nav'),'Activity card must stop self-navigating once already inside Documents & activity');
   click(window,nav('offer'));assert(doc.getElementById('pst-pi-body').classList.contains('pwb3-view-offer'),'Offer view must render');
   click(window,doc.querySelector('[data-pwb3-action="revision"]'),'Revision action missing');assert(revisions===1,'Revision must delegate to existing assistant');
   calls.length=0;click(window,nav('supply'));assert(last(calls)&&last(calls)[1]==='procurement','Supply must route to canonical procurement');
