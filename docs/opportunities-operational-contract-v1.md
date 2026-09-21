@@ -342,3 +342,49 @@ The page is correct when an operator can look at any card and understand:
 - whether the state is evidence-backed or requires review
 
 The UI must remain useful even when the action queue is incomplete or stale.
+
+
+## 17. Runtime read-path snapshot and safe egress optimization
+
+Audit snapshot on 2026-09-21:
+
+- active `kek_tender_watch` rows loaded by the current status filter: **715**
+- opportunity outreach registry rows: **173**
+- registry tender IDs represented: **72**
+- registry thread IDs represented: **173**
+- matching `project_emails` rows for those registry threads: **189**
+- matching email threads: **116**
+
+Conclusion:
+
+- the current read path is bounded enough that a new Supabase view/RPC is not justified only for UI performance
+- the highest-value savings are on reload frequency and selected columns, not schema changes
+
+Recommended low-risk optimizations:
+
+1. Keep all search/filter/sort/load-more behavior client-side.
+2. Extend the current 30-second full-data reload cache to a modest **2–5 minute** freshness window for passive navigation.
+3. Provide an explicit operator **Refresh** action when immediate freshness is needed.
+4. Preserve a forced refresh entry point for post-action reconciliation.
+5. In the email-evidence query, only fetch fields actually used for lifecycle/reply detection. Current lifecycle logic fundamentally needs:
+   - `gmail_thread_id`
+   - `direction`
+   - `sent_at`
+   Additional fields should only be fetched if a visible UI feature consumes them.
+6. Do not introduce per-card or per-thread reads.
+7. Do not trade a small egress saving for a complicated new database object unless measurements show the existing bounded path is a real bottleneck.
+
+## 18. Current runtime integration caution
+
+At the time of this audit, the canonical workflow's `setOpportunityContext(...)` can set a route mode and then reset `mode` to `all` when a concrete source is also selected.
+
+This is an integration risk for deep links or external navigation such as:
+
+- source = TED + mode = award
+- source = KRPP + mode = local
+
+The normal click-filter path is separate and works differently.
+
+Before finalizing the new UI, test deep/context navigation explicitly and ensure the resulting state preserves the intended lane rather than silently collapsing to `mode='all'`.
+
+This should be solved in runtime state handling, not by adding a presentation-layer workaround.
