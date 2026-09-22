@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "project_ref": "awqfpnzqwfjrjefoktgd",
+  "source_table": "supabase_migrations.schema_migrations",
+  "normalization": "CRLF converted to LF; repository terminal newline excluded from digest",
+  "migrations": [
+    {
+      "version": "20260921142231",
+      "name": "add_server_side_outbound_sync",
+      "file": "20260921142231_add_server_side_outbound_sync.sql",
+      "normalized_bytes": 1389,
+      "normalized_md5": "a13f2b8cc212b7fbaf0ab8d103d9f488"
+    },
+    {
+      "version": "20260921164127",
+      "name": "fix_outbound_live_draft_reconcile_safe_delete",
+      "file": "20260921164127_fix_outbound_live_draft_reconcile_safe_delete.sql",
+      "normalized_bytes": 7301,
+      "normalized_md5": "1157dc5571c2535c9bbe2972b9bf6873"
+    },
+    {
+      "version": "20260921164140",
+      "name": "restore_automation_http_reconcile_scheduler",
+      "file": "20260921164140_restore_automation_http_reconcile_scheduler.sql",
+      "normalized_bytes": 140,
+      "normalized_md5": "8512ed329ba69cdab77d7ae6066fd384"
+    },
+    {
+      "version": "20260921164336",
+      "name": "invoke_outbound_sync_acceptance_20260921",
+      "file": "20260921164336_invoke_outbound_sync_acceptance_20260921.sql",
+      "normalized_bytes": 180,
+      "normalized_md5": "5c0685a03d0bbb329b226b129540c1d5"
+    },
+    {
+      "version": "20260922061308",
+      "name": "add_background_safe_morning_brief_v1",
+      "file": "20260922061308_add_background_safe_morning_brief_v1.sql",
+      "normalized_bytes": 1346,
+      "normalized_md5": "2f4659aec3024167416269393bdfde4e"
+    },
+    {
+      "version": "20260922094826",
+      "name": "ted_outbound_manual_readiness_gate_v1",
+      "file": "20260922094826_ted_outbound_manual_readiness_gate_v1.sql",
+      "normalized_bytes": 12420,
+      "normalized_md5": "026aa5f3e2d13c69cbd627f2c7cbbec7"
+    },
+    {
+      "version": "20260922095558",
+      "name": "ted_outbound_readiness_acl_v1",
+      "file": "20260922095558_ted_outbound_readiness_acl_v1.sql",
+      "normalized_bytes": 371,
+      "normalized_md5": "6f9a9b5f68b376ff7fbe246444b51b01"
+    },
+    {
+      "version": "20260922095649",
+      "name": "ted_outbound_scope_evidence_gate_v1",
+      "file": "20260922095649_ted_outbound_scope_evidence_gate_v1.sql",
+      "normalized_bytes": 6202,
+      "normalized_md5": "69120f8ea846819de17b442eb124058b"
+    },
+    {
+      "version": "20260922101902",
+      "name": "ted_outbound_history_guard_v1",
+      "file": "20260922101902_ted_outbound_history_guard_v1.sql",
+      "normalized_bytes": 8068,
+      "normalized_md5": "444d91734e9161ae056602bd6ce40f1c"
+    },
+    {
+      "version": "20260922104355",
+      "name": "add_dach_steel_target_engine_v1",
+      "file": "20260922104355_add_dach_steel_target_engine_v1.sql",
+      "normalized_bytes": 6703,
+      "normalized_md5": "f854db108a8fdabe495e7d705cbe91a4"
+    },
+    {
+      "version": "20260922110424",
+      "name": "chatgpt_dach_steel_target_bridge_v21",
+      "file": "20260922110424_chatgpt_dach_steel_target_bridge_v21.sql",
+      "normalized_bytes": 13936,
+      "normalized_md5": "c5277f3b6f391fc9f4f1e62600bcea83"
+    },
+    {
+      "version": "20260922110529",
+      "name": "lock_dach_steel_bridge_manifest_v20",
+      "file": "20260922110529_lock_dach_steel_bridge_manifest_v20.sql",
+      "normalized_bytes": 185,
+      "normalized_md5": "1f037f6878863192db769ce727d91019"
+    },
+    {
+      "version": "20260922111337",
+      "name": "dach_steel_hot_target_freshness_v1",
+      "file": "20260922111337_dach_steel_hot_target_freshness_v1.sql",
+      "normalized_bytes": 2187,
+      "normalized_md5": "6abd53992bb2ec55e76f7d26533fe68e"
+    },
+    {
+      "version": "20260922112601",
+      "name": "add_dach_steel_outreach_draft_bridge_v22",
+      "file": "20260922112601_add_dach_steel_outreach_draft_bridge_v22.sql",
+      "normalized_bytes": 19325,
+      "normalized_md5": "c7131d2c0c6d6e355e7313e3fc013e17"
+    },
+    {
+      "version": "20260922112754",
+      "name": "allow_dach_steel_source_in_shared_outbound_v1",
+      "file": "20260922112754_allow_dach_steel_source_in_shared_outbound_v1.sql",
+      "normalized_bytes": 257,
+      "normalized_md5": "5905f14d4a138489a932b20975adfe7e"
+    }
+  ]
+}

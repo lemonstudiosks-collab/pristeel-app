@@ -61,8 +61,10 @@ Classification C — keep/compatibility:
 
 - Live migration history is intact and was not rewritten: 437 applied entries after cleanup; the repository contains 197 SQL migration files after this work.
 - The live schema contains migrations from 2026-09-21/22 that are not represented by source SQL on current `origin/main`, including morning brief, TED outbound gates, DACH target/bridge changes, and several outbound repair migrations.
-- Four deployed Edge Functions also lack source directories in the repository: `pppp-storage-path-repair`, `pppp-gmail-fast-ingest-v2`, `pppp-whatsapp-import-v1`, and `pppp-ted-price-enrichment-v1`.
-- This is repository provenance drift, not evidence that the live objects are obsolete. Reconstructing source from deployed artifacts should be a separate controlled backfill; invented migration SQL must not be committed.
+- The four previously missing deployed Edge Functions were exported from their authoritative live deployments into `supabase/functions`: `pppp-storage-path-repair`, `pppp-gmail-fast-ingest-v2`, `pppp-whatsapp-import-v1`, and `pppp-ted-price-enrichment-v1`.
+- Fifteen missing production migration statements from 2026-09-21/22 were exported exactly from `supabase_migrations.schema_migrations` into `supabase/live-migration-history`. They are intentionally outside the replayable migration directory because live server-assigned versions and historical local filenames are not consistently aligned.
+- `supabase/functions/PRODUCTION_DEPLOYMENT_SNAPSHOT_2026-09-22.json` records all 38 deployed versions, JWT settings and deployment hashes.
+- Source provenance for the identified gap is now preserved. A future full-baseline task is still required before `supabase db push` can safely become the deployment mechanism.
 - Historical migrations still contain the inactive project URL by design. Live functions and active cron commands contain zero dependency on it after cleanup.
 
 ## 7. Frontend cleanup
@@ -82,11 +84,12 @@ Classification C — keep/compatibility:
 
 ## 9. Edge Functions
 
-- 38 functions are active; 34 have source directories in the repository.
+- 38 functions are active and all 38 now have source directories in the repository.
 - Most use platform JWT verification.
 - Four use `verify_jwt=false`: `chatgpt-command-bridge`, `pppp-gc-outreach`, `pppp-outbound-dispatch`, and `pppp-outbound-sync`. Source inspection confirms custom `x-pppp-cron-secret` validation through a database authorization helper before protected work.
 - The guarded dispatcher additionally validates queue claim/preflight state and live Gmail draft recipient before sending. No function was invoked to send mail during cleanup.
-- No Edge Function was removed because none was proven caller-free across cron, database and integration paths.
+- `pppp-storage-path-repair` is a hard-coded, destructive, one-off repair function with no discovered repository, cron or database caller. Its exact source is now preserved; live retirement remains an explicit manual decision because deletion changes an externally reachable endpoint.
+- No Edge Function was removed during the source-backfill package.
 
 ## 10. Automation
 
@@ -144,7 +147,7 @@ Advisor references: [security-definer views](https://supabase.com/docs/guides/da
 
 ## 16. Remaining technical debt
 
-- Repository/live provenance drift for recent migrations and four Edge Functions.
+- Live migration version IDs and historical local migration filenames remain non-aligned; the missing statements are preserved as non-replayable production history, but a full migration baseline is still required.
 - 93 exposed `SECURITY DEFINER` RPCs need a maintained caller/auth classification.
 - The runtime has many compatibility layers. The manifest and tests make it stable, but safe physical deletion requires per-module reachability evidence beyond production-artifact exclusion.
 - Two cron job names no longer describe their six-hour cadence.
@@ -153,12 +156,13 @@ Advisor references: [security-definer views](https://supabase.com/docs/guides/da
 
 ## 17. Manual decisions required
 
-1. Decide whether to backfill the missing live migration and Edge Function source into the repository from authoritative deployment artifacts. Do not synthesize it from names alone.
+1. Decide whether to retire `pppp-storage-path-repair`. It is an uncited one-off destructive repair endpoint with hard-coded object counts and no repository, cron or database caller; source is now recoverable, but live deletion should be explicit.
 2. Approve a staged contract review of the remaining 93 exposed `SECURITY DEFINER` RPCs. Start with internal-request and maintenance helpers; preserve intentional browser/bridge endpoints.
 3. Confirm whether `pppp_tender_project_promotions` and the other 12 no-policy tables are intentionally service-only. Add policies only if authenticated client access is required.
 4. Enable leaked-password protection in Supabase Auth if compatible with the organization’s login policy.
 5. Rename the two misleading `hourly` cron jobs only during a controlled scheduler maintenance window; do not change their cadence implicitly.
 6. Retain or delete unused indexes only after a representative observation window and query-plan evidence.
+7. Create a controlled full migration baseline before enabling CLI-driven `supabase db push`; do not move the live-history snapshots into the active directory.
 
 ## 18. Verification
 
@@ -186,7 +190,7 @@ Not fully clean:
 - Build health: **PASS with tooling note** — syntax/runtime/artifact checks pass; wrapper assumes npm.
 - Frontend health: **PASS** — production dependency closure and ownership checks pass; no redesign performed.
 - Database health: **PASS** — no detected integrity failures, invalid indexes or duplicate indexes; safe DDL cleanup verified.
-- Migration consistency: **PARTIAL** — live schema is healthy, but recent source provenance is incomplete in the repository.
+- Migration consistency: **IMPROVED / PARTIAL** — the identified source gap is preserved, but version history still needs a controlled baseline before automated replay.
 - RPC/function consistency: **IMPROVED / PARTIAL** — six orphans removed and 32 trigger RPC exposures closed; 93 functions remain for staged review.
 - Automation health: **PASS** — 11 active jobs, no duplicate command, no 24-hour failures.
 - Security: **IMPROVED / PARTIAL** — view findings fixed and trigger RPCs locked; remaining RPC grants and Auth password setting require controlled follow-up.
