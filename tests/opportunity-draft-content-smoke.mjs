@@ -54,7 +54,7 @@ const en=buildTedDraftContent(
     scope_evidence:'The awarded lot includes fabricated structural steel assemblies.',
     pristeel_scope:'fabricated structural steel assemblies',
     concrete_question:'Is this fabrication package already fully placed, or is any defined external package still open?'}}},
- {...tender,title:'United Kingdom – Structural steelworks – Project Alpha',winner:{name:'Example Ltd',country:'GBR'}},
+ {...tender,title:'United Kingdom – Structural steelworks – Project Alpha',place_of_performance:['GBR'],winner:{name:'Example Ltd',country:'GBR'}},
  {email:'buyer@example.co.uk',name:'Jane Doe',purpose:'procurement'}
 );
 assert(en.body.startsWith('Dear Jane Doe,'));
