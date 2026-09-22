@@ -60,7 +60,7 @@ begin
   limit 1;
   if v_secret is null or v_secret='' then raise exception 'Internal cron secret is unavailable'; end if;
   select net.http_get(
-    url := 'https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/project-document-intake?action='||v_action||'&limit='||v_limit,
+    url := 'https://awqfpnzqwfjrjefoktgd.supabase.co/functions/v1/project-document-intake?action='||v_action||'&limit='||v_limit,
     headers := jsonb_build_object('x-pppp-cron-secret',v_secret),
     timeout_milliseconds := 120000
   ) into v_request_id;
@@ -87,7 +87,7 @@ begin
   limit 1;
   if v_secret is null or v_secret='' then raise exception 'Internal cron secret is unavailable'; end if;
   select net.http_get(
-    url := 'https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/project-document-intake?action=process_id&id='||p_link_id,
+    url := 'https://awqfpnzqwfjrjefoktgd.supabase.co/functions/v1/project-document-intake?action=process_id&id='||p_link_id,
     headers := jsonb_build_object('x-pppp-cron-secret',v_secret),
     timeout_milliseconds := 120000
   ) into v_request_id;

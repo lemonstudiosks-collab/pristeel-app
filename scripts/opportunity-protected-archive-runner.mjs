@@ -2,7 +2,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {resolveSupabaseWorkflowAccess} from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const VERSION='opportunity-protected-archive-runner-v1';
 const text=(v,max=1000)=>String(v==null?'':v).trim().slice(0,max);
 

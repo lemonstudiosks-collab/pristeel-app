@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const TED_API='https://api.ted.europa.eu/v3/notices/search';
 const OPPORTUNITY_TYPES=['cn-standard','cn-social','pin-cfc-standard','pin-cfc-social','qu-sy','subco'];
 const AWARD_TYPES=['can-standard','can-social','can-desg','can-tran'];

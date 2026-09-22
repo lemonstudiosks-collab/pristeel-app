@@ -11,7 +11,7 @@ PPPP remains the source of truth. OpenAI is a reasoning/extraction layer, not a 
 
 ## Live backend
 
-Supabase project: `isymxqfqzkchbsrbhucf`
+Supabase project: `awqfpnzqwfjrjefoktgd`
 
 ### Durable context Edge Function
 

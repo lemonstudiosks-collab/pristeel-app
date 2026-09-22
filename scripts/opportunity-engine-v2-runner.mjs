@@ -1,7 +1,7 @@
 import {pathToFileURL} from 'node:url';
 import {resolveSupabaseWorkflowAccess} from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const DOSSIER_PATH='/functions/v1/pppp-tender-dossier-analysis';
 
 function requestUrl(input){

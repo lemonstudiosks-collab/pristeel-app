@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL = 'https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL = 'https://awqfpnzqwfjrjefoktgd.supabase.co';
 const RECEIVABLE_SOURCE = 'invoice_receivable';
 const PAYABLE_SOURCE = 'invoice_payable';
 const DUE_DATE_SOURCE = 'invoice_due_date_missing';

@@ -5,7 +5,7 @@ import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 import { parseNoticeIndexHtml, parseDetailHtml } from './krpp-public-steel-sync.mjs';
 import { assessPristeelTender, attachCapabilityPayload, capabilityCandidateHint, PRISTEEL_CAPABILITY_PROFILE_VERSION } from './pristeel-capability-profile.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const KRPP_ORIGIN='https://e-prokurimi.rks-gov.net';
 const DEFAULT_INDEX_URL=`${KRPP_ORIGIN}/SPIN_PROD/application/ipn/DocumentManagement/NewPreglediDokumenataFrm.aspx`;
 const ACTIONABLE_NOTICE_TYPES=new Set(['B05','B54']);

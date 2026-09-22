@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 import { parseCsv, normalizeAppRecord } from './app-albania-steel-sync.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const APP_ORIGIN='https://app.gov.al';
 const APP_EXPORT_PAGE=`${APP_ORIGIN}/eksportimi-i-procedurave-te-publikuara/`;
 const PROFILE_CODES=['ipe','ipn','hea','heb','hem','upe','upn','unp'];
