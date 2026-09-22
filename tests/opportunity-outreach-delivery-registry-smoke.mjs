@@ -20,6 +20,7 @@ for(const forbidden of ['/messages/send','/drafts/send','gmail.send','gmail.comp
 
 for(const token of ['deliveryFailure(meta,row)','failedRecipient(row)','touchBounce(tid,failed,row)','updateTenderBounce(tid,failed,row)','candidateTenders(row,external,meta,direction)','kind:"bounce_linked"','kind:"unmatched_bounce"','ted-registry-recipient-v6']) assert.ok(reconciler.includes(token),`TED Gmail reconciler missing ${token}`);
 assert.ok(reconciler.includes('version:6'),'TED Gmail reconciler must expose bounce-aware v6');
+assert.ok(reconciler.includes('status:"bounced",bounced:true,replied:false,follow_up_date:null'),'bounce reconciliation must clear obsolete follow-up state');
 
 for(const token of ['create table if not exists public.pppp_opportunity_outreach_registry_v1','gmail_draft_id text','recipient_email text','action_id uuid','status text','draft_created','sent','human_send_required boolean not null default true','gmail_auto_send boolean not null default false','unique (action_id, recipient_email)','opportunity-outreach-sent-sync-15m'])assert.ok(migration.includes(token),`migration missing ${token}`);
 
