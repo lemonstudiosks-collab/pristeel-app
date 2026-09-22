@@ -27,7 +27,7 @@ function num(v){var n=Number(v);return isFinite(n)?n:0}
 function tonnes(v){var n=num(v);if(!n)return'—';return n.toLocaleString('en-US',{maximumFractionDigits:n<10?2:0})+' t'}
 function J(v,fallback){if(v&&typeof v==='object')return v;try{return JSON.parse(S(v))}catch(e){return fallback}}
 function arrText(v){return A(v).filter(Boolean).map(S)}
-function truth(v){return v===true||v==='true'||v===1||v==='1'}
+function truth(v){return v===true||v==='true'||v===1||v==='1'}\nfunction U(v){try{var u=new URL(S(v),window.location.href);return (u.protocol==='http:'||u.protocol==='https:')?u.href:''}catch(e){return''}}
 
 function qrLabel(v){
  return v==='M3'?'M3 · QUOTE READY':
@@ -178,7 +178,7 @@ function materialLines(r){
 function detail(r){
  var ev=A(J(r.evidence,[])),scope=J(r.material_scope,{});
  var conf=r.material_confidence!=null?Math.round(num(r.material_confidence)*100)+'%':'—';
- var source=r.source_url?'<a class="pst-dss-source" href="'+E(r.source_url)+'" target="_blank" rel="noopener">Hap burimin ↗</a>':'';
+ var safeSource=U(r.source_url),source=safeSource?'<a class="pst-dss-source" href="'+E(safeSource)+'" target="_blank" rel="noopener">Hap burimin ↗</a>':'';
  var evidence=ev.length?'<div class="pst-dss-evidence">'+ev.slice(0,10).map(function(x){var label=typeof x==='string'?x:(x.label||x.title||x.source||x.url||'Evidence');return '<span>'+E(label)+'</span>'}).join('')+'</div>':'';
  return '<div class="pst-dss-detail"><div class="pst-dss-detail-grid"><section class="pst-dss-detail-card"><h3>Project & qualification</h3><div class="pst-dss-meta"><span>Company</span><span>'+E(r.company_name)+'</span><span>Country</span><span>'+E(r.country||'—')+'</span><span>Buyer type</span><span>'+E(r.buyer_type||'—')+'</span><span>Project</span><span>'+E(r.project_title||'—')+'</span><span>Reference</span><span>'+E(r.project_reference||'—')+'</span><span>Award date</span><span>'+E(D(r.award_date))+'</span><span>Procurement</span><span>'+E(r.procurement_timing||'—')+'</span><span>Material revision</span><span>'+E(r.material_revision||scope.revision||'—')+'</span><span>Confidence</span><span>'+E(conf)+'</span><span>Last verified</span><span>'+E(D(r.last_verified_at))+'</span></div>'+source+evidence+'</section><section class="pst-dss-detail-card"><h3>Material Intelligence · '+E(qrLabel(r.quote_readiness))+'</h3><div style="font-size:9px;color:#718187;margin:-3px 0 9px">'+E(r.steel_scope||qrHelp(r.quote_readiness))+'</div>'+materialLines(r)+'</section></div></div>';
 }
