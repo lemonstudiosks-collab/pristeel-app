@@ -169,10 +169,10 @@
     {
       "slug": "pppp-storage-path-repair",
       "status": "ACTIVE",
-      "version": 3,
+      "version": 4,
       "verify_jwt": true,
-      "ezbr_sha256": "d29e64156e2b5586d36dbcfd1c346da8192fd14d385896a0bfb19199c68e2616",
-      "source_export_sha256": "53ec841ae0c5d345f0df0867a059a86fcb979d9f1aa649e8b0eff12674e1ae76"
+      "ezbr_sha256": "f6a0929e8e2aa12187e1c6bb2f1df2b5ddbdde61eccb9a50172fd8a07e32db74",
+      "source_export_sha256": "3998752a316c5cb15a1ae44e3c3b31c8077cc5d9a5e38ee0043bfcf18baba698"
     },
     {
       "slug": "pppp-ted-price-enrichment-v1",

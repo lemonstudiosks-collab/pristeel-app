@@ -23,6 +23,22 @@ for (const name of functions) {
   assert.doesNotMatch(source, /eyJ[a-zA-Z0-9_-]{20,}/, `${name} must not contain a JWT literal`);
 }
 
+const retiredRepair = fs.readFileSync(
+  path.join(root, 'supabase/retired-functions/pppp-storage-path-repair/index.ts'),
+);
+assert.equal(
+  crypto.createHash('sha256').update(retiredRepair).digest('hex'),
+  '53ec841ae0c5d345f0df0867a059a86fcb979d9f1aa649e8b0eff12674e1ae76',
+  'the exact destructive repair implementation must remain archived for audit',
+);
+const repairTombstone = fs.readFileSync(
+  path.join(root, 'supabase/functions/pppp-storage-path-repair/index.ts'),
+  'utf8',
+);
+assert.match(repairTombstone, /function_retired/);
+assert.match(repairTombstone, /status:\s*410/);
+assert.doesNotMatch(repairTombstone, /SUPABASE_SERVICE_ROLE_KEY/);
+
 const deployment = JSON.parse(fs.readFileSync(
   path.join(root, 'supabase/functions/PRODUCTION_DEPLOYMENT_SNAPSHOT_2026-09-22.json'),
   'utf8',
