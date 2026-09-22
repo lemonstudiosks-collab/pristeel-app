@@ -27,7 +27,8 @@ function num(v){var n=Number(v);return isFinite(n)?n:0}
 function tonnes(v){var n=num(v);if(!n)return'—';return n.toLocaleString('en-US',{maximumFractionDigits:n<10?2:0})+' t'}
 function J(v,fallback){if(v&&typeof v==='object')return v;try{return JSON.parse(S(v))}catch(e){return fallback}}
 function arrText(v){return A(v).filter(Boolean).map(S)}
-function truth(v){return v===true||v==='true'||v===1||v==='1'}\nfunction U(v){try{var u=new URL(S(v),window.location.href);return (u.protocol==='http:'||u.protocol==='https:')?u.href:''}catch(e){return''}}
+function truth(v){return v===true||v==='true'||v===1||v==='1'}
+function U(v){try{var u=new URL(S(v),window.location.href);return (u.protocol==='http:'||u.protocol==='https:')?u.href:''}catch(e){return''}}
 
 function qrLabel(v){
  return v==='M3'?'M3 · QUOTE READY':
