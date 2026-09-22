@@ -45,7 +45,7 @@ await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260921-opportunity-desk7','Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260922-stable-scroll1','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 assert(focus.classList.contains('pst-opp-dashboard'),'initial Opportunities view must be dashboard-only');
 assert(!focus.classList.contains('pst-opp-result-page'),'initial view must not be a result page');

@@ -11,7 +11,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260921-opportunity-desk7';
+var VERSION='20260922-stable-scroll1';
 var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,observer=null,observerRoot=null,scheduled=false,decorating=false;
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
