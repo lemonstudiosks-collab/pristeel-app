@@ -1,6 +1,21 @@
 <!DOCTYPE html>
-<html lang="sq">
+<html lang="sq" class="pst-first-paint">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRISTEEL — Procurement Platform</title>
+<!--
+  Critical first-paint guard. This must stay before every external script: some
+  browser/CDN requests can pause HTML parsing long enough to expose the legacy
+  Home before the canonical runtime owner is installed.
+-->
+<style id="pst-first-paint-guard">
+html{scrollbar-gutter:stable}
+html.pst-first-paint,html.pst-first-paint body{min-height:100%;overflow:hidden!important;background:#F7F6F3!important}
+html.pst-first-paint body{visibility:hidden!important}
+html.pst-first-paint::before{content:'PRISTEEL\A Duke përgatitur platformën…';white-space:pre;position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;text-align:center;font:700 20px/1.9 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.4px;color:#2F3437;background:radial-gradient(circle at 72% 18%,rgba(103,168,192,.12),transparent 33%),#F7F6F3;visibility:visible!important}
+html.pst-first-paint::after{content:'';position:fixed;z-index:2147483647;left:calc(50% - 63px);top:calc(50% + 41px);width:126px;height:3px;border-radius:999px;background:linear-gradient(90deg,#E1E8EA 0 31%,#4F97AF 31% 69%,#E1E8EA 69%);visibility:visible!important}
+</style>
 <!-- html2pdf: ngarkohet ne head qe te jete gati kur klikohet PDF. Nese CDN-ja e pare deshton, provohet e dyta. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
@@ -8,9 +23,6 @@ if(typeof html2pdf!=='function'){
   document.write('<scr'+'ipt src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"><\/scr'+'ipt>');
 }
 </script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PRISTEEL — Procurement Platform</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Bebas+Neue&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -9645,7 +9657,7 @@ function qDirSearch(){
 </script>
 
 <script src="pristeel-kpi.js"></script>
-<script src="pristeel-search.js"></script>
+<script src="pristeel-search.js?v=20260922-firstpaint1"></script>
 <script src="pristeel-drive.js"></script>
 <script src="pristeel-roles.js"></script>
 <script src="pristeel-export.js"></script>
