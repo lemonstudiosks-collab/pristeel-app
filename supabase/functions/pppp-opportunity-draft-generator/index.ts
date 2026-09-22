@@ -11,10 +11,10 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v10-preflight-safe';
+const GENERATOR='pppp-opportunity-draft-generator-v13-high-confidence-readiness';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
-const MAX_CONTACTS_PER_ACTION=20;
-const MAX_DRAFT_WRITES_PER_RUN=60;
+const MAX_CONTACTS_PER_ACTION=1;
+const MAX_DRAFT_WRITES_PER_RUN=10;
 const GMAIL_SCOPE='https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly';
 const META_HEADERS=['Message-ID','X-PPPP-Outreach-ID','X-PPPP-Action-ID','To','Date'];
 
@@ -81,7 +81,7 @@ async function findSent(row:any){
 function sentAt(meta:any){const ms=Number(meta?.internalDate||0);return Number.isFinite(ms)&&ms>0?new Date(ms).toISOString():new Date().toISOString();}
 
 async function registryRow(actionId:string,email:string){const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',actionId).eq('recipient_email',normalizeEmail(email)).maybeSingle();if(error)throw error;return data;}
-async function ensureRegistry(a:any,recipient:any){const email=normalizeEmail(recipient?.email);let row=await registryRow(a.id,email);if(row)return row;const outreachId=crypto.randomUUID(),now=new Date().toISOString(),candidate={outreach_id:outreachId,action_id:a.id,action_key:a.action_key,tender_watch_id:a.tender_watch_id||null,recipient_email:email,recipient_name:recipient?.name||null,gmail_user:GMAIL_USER.toLowerCase(),rfc_message_id:rfcMessageId(outreachId),status:'draft_pending',generator:GENERATOR,human_send_required:true,gmail_auto_send:false,draft_created_at:null,sent_at:null,last_checked_at:now,last_error:null,payload:{route:a.route,target_company:a.target_company||null,recipient_purpose:recipient?.purpose||null,recipient_source_type:recipient?.source_type||null,recipient_source_url:recipient?.source_url||null,company_attribution:recipient?.company_attribution||null}};const ins=await db.from(REGISTRY).upsert(candidate,{onConflict:'action_id,recipient_email',ignoreDuplicates:true}).select('*');if(ins.error)throw ins.error;row=ins.data?.[0]||await registryRow(a.id,email);if(!row)throw new Error('registry_reservation_failed');return row;}
+async function ensureRegistry(a:any,recipient:any){const email=normalizeEmail(recipient?.email);let row=await registryRow(a.id,email);if(row)return row;const outreachId=crypto.randomUUID(),now=new Date().toISOString(),candidate={outreach_id:outreachId,action_id:a.id,action_key:a.action_key,tender_watch_id:a.tender_watch_id||null,recipient_email:email,recipient_name:recipient?.name||null,gmail_user:GMAIL_USER.toLowerCase(),rfc_message_id:rfcMessageId(outreachId),status:'draft_pending',generator:GENERATOR,human_send_required:true,gmail_auto_send:false,draft_created_at:null,sent_at:null,last_checked_at:now,last_error:null,payload:{route:a.route,target_company:a.target_company||null,recipient_purpose:recipient?.purpose||null,recipient_source_type:recipient?.source_type||null,recipient_source_url:recipient?.source_url||null,company_attribution:recipient?.company_attribution||null,recipient_company_name:recipient?.recipient_company_name||null,recipient_company_domain:recipient?.recipient_company_domain||null,outreach_readiness_v1:a?.payload?.outreach_readiness_v1||null}};const ins=await db.from(REGISTRY).upsert(candidate,{onConflict:'action_id,recipient_email',ignoreDuplicates:true}).select('*');if(ins.error)throw ins.error;row=ins.data?.[0]||await registryRow(a.id,email);if(!row)throw new Error('registry_reservation_failed');return row;}
 async function seedLegacyTenderDraft(a:any,tender:any,recipients:any[]){
   const legacy=tender?.outreach_draft&&typeof tender.outreach_draft==='object'?tender.outreach_draft:null;
   if(!legacy||!['created','scheduled'].includes(text(legacy.status,40).toLowerCase())||!text(legacy.gmail_draft_id,200))return false;
@@ -107,6 +107,40 @@ function expectedTedRoute(tender:any){
   if(t==='unknown'||!t)return'';
   return'';
 }
+function truthy(v:any){return v===true||String(v??'').toLowerCase()==='true';}
+function readinessEvidence(a:any,tender:any){
+  const ap=a?.payload&&typeof a.payload==='object'?a.payload:{};
+  const tp=tender&&typeof tender==='object'?tender:{};
+  const r=ap?.outreach_readiness_v1||tp?.outreach_readiness_v1||null;
+  return r&&typeof r==='object'&&!Array.isArray(r)?r:null;
+}
+function tedReadiness(a:any,tender:any){
+  const winner=tender?.winner&&typeof tender.winner==='object'?tender.winner:{};
+  const winnerType=text(winner.company_type||winner?.company_classification?.company_type||'',80).toLowerCase();
+  const angle=text(tender?.cooperation_angle||'',120).toLowerCase();
+  if(!winnerType||winnerType==='unknown')return{ok:false,reason:'winner_role_unverified'};
+  if(['verify_company_role','verify_supply_or_fabrication_role'].includes(angle))return{ok:false,reason:'winner_role_requires_verification'};
+  const r=readinessEvidence(a,tender);
+  if(!r)return{ok:false,reason:'outreach_readiness_missing'};
+  const required=[
+    ['winner_role_verified',truthy(r.winner_role_verified)],
+    ['exact_lot_match',truthy(r.exact_lot_match)],
+    ['pristeel_scope_fit',truthy(r.pristeel_scope_fit)],
+    ['contact_identity_verified',truthy(r.contact_identity_verified)],
+    ['timing_fit',truthy(r.timing_fit)],
+    ['previous_contact_guard',truthy(r.previous_contact_guard)],
+    ['bounce_suppression_guard',truthy(r.bounce_suppression_guard)]
+  ];
+  for(const [name,ok] of required)if(!ok)return{ok:false,reason:String(name)+'_required'};
+  for(const name of ['pristeel_scope','scope_evidence','buyer_function','verified_company_domain','concrete_question']){
+    if(!text(r?.[name],1200))return{ok:false,reason:name+'_required'};
+  }
+  const selfRisk=text(r.self_perform_risk,80).toLowerCase();
+  if(selfRisk==='high'&&!truthy(r.outsourcing_evidence))return{ok:false,reason:'self_perform_risk_high'};
+  if(truthy(r.qualification_required)&&!truthy(r.qualification_fit))return{ok:false,reason:'qualification_not_verified'};
+  return{ok:true,reason:'manual_high_confidence_ready',evidence:r,winner_type:winnerType,cooperation_angle:angle};
+}
+
 async function retireObsoleteDrafts(a:any,keepEmails:Set<string>,reason:string,budget:{writes:number}){
   const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',a.id);
   if(error)throw error;
@@ -134,11 +168,17 @@ async function retireObsoleteDrafts(a:any,keepEmails:Set<string>,reason:string,b
   return retired;
 }
 
-async function persistActionState(a:any,p:any,recipients:any[]){const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',a.id).order('created_at',{ascending:true});if(error)throw error;const rows=data||[],drafts=rows.map((r:any)=>({email:r.recipient_email,name:r.recipient_name||null,draft_id:r.gmail_draft_id||null,message_id:r.gmail_message_id||r.gmail_draft_message_id||null,thread_id:r.gmail_thread_id||null,created_at:r.draft_created_at||r.created_at,updated_at:r.updated_at,generator:r.generator||GENERATOR,language:r.language||null,subject:r.subject||null,mime_type:r.mime_type||null,html:r.html===true,status:r.status,outreach_id:r.outreach_id,rfc_message_id:r.rfc_message_id,sent_at:r.sent_at||null}));const byEmail=new Map(rows.map((r:any)=>[r.recipient_email,r])),allCovered=recipients.every((r:any)=>['draft_created','sent'].includes(byEmail.get(normalizeEmail(r.email))?.status)),firstDraft=rows.find((r:any)=>r.status==='draft_created'),firstAny=rows[0]||null,next={...p,gmail_drafts:drafts,gmail_draft_count:rows.filter((r:any)=>r.status==='draft_created').length,gmail_sent_count:rows.filter((r:any)=>r.status==='sent').length,gmail_recipient_count:recipients.length,gmail_recipients:recipients.map((r:any)=>({email:r.email,name:r.name||null,job_title:r.job_title||null,purpose:r.purpose||null,confidence:r.confidence||null,source_type:r.source_type||null,source_url:r.source_url||null,company_attribution:r.company_attribution||null})),gmail_outreach_registry_version:'v1',gmail_draft_generator_target:GENERATOR,gmail_draft_generator_complete:allCovered,gmail_draft_generator:GENERATOR,gmail_draft_write_policy:'registry_state_machine_v1',gmail_draft_html:true,gmail_auto_send:false,human_send_required:true,gmail_draft_id:firstDraft?.gmail_draft_id||null,gmail_message_id:firstAny?.gmail_message_id||firstAny?.gmail_draft_message_id||null,gmail_thread_id:firstAny?.gmail_thread_id||null,gmail_draft_created_at:firstDraft?.draft_created_at||null};const u=await db.from('pppp_opportunity_actions').update({payload:next,updated_at:new Date().toISOString()}).eq('id',a.id);if(u.error)throw u.error;return next;}
+async function persistActionState(a:any,p:any,recipients:any[]){const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',a.id).order('created_at',{ascending:true});if(error)throw error;const rows=data||[],drafts=rows.map((r:any)=>({email:r.recipient_email,name:r.recipient_name||null,draft_id:r.gmail_draft_id||null,message_id:r.gmail_message_id||r.gmail_draft_message_id||null,thread_id:r.gmail_thread_id||null,created_at:r.draft_created_at||r.created_at,updated_at:r.updated_at,generator:r.generator||GENERATOR,language:r.language||null,subject:r.subject||null,mime_type:r.mime_type||null,html:r.html===true,status:r.status,outreach_id:r.outreach_id,rfc_message_id:r.rfc_message_id,sent_at:r.sent_at||null}));const byEmail=new Map(rows.map((r:any)=>[r.recipient_email,r])),allCovered=recipients.every((r:any)=>['draft_created','sent'].includes(byEmail.get(normalizeEmail(r.email))?.status)),firstDraft=rows.find((r:any)=>r.status==='draft_created'),firstAny=rows[0]||null,next={...p,gmail_drafts:drafts,gmail_draft_count:rows.filter((r:any)=>r.status==='draft_created').length,gmail_sent_count:rows.filter((r:any)=>r.status==='sent').length,gmail_recipient_count:recipients.length,gmail_recipients:recipients.map((r:any)=>({email:r.email,name:r.name||null,job_title:r.job_title||null,purpose:r.purpose||null,confidence:r.confidence||null,source_type:r.source_type||null,source_url:r.source_url||null,company_attribution:r.company_attribution||null,recipient_company_name:r.recipient_company_name||null,recipient_company_domain:r.recipient_company_domain||null})),gmail_outreach_registry_version:'v1',gmail_draft_generator_target:GENERATOR,gmail_draft_generator_complete:allCovered,gmail_draft_generator:GENERATOR,gmail_draft_write_policy:'registry_state_machine_v1',gmail_draft_html:true,gmail_auto_send:false,human_send_required:true,gmail_draft_id:firstDraft?.gmail_draft_id||null,gmail_message_id:firstAny?.gmail_message_id||firstAny?.gmail_draft_message_id||null,gmail_thread_id:firstAny?.gmail_thread_id||null,gmail_draft_created_at:firstDraft?.draft_created_at||null};const u=await db.from('pppp_opportunity_actions').update({payload:next,updated_at:new Date().toISOString()}).eq('id',a.id);if(u.error)throw u.error;return next;}
 
 async function processAction(a:any,budget:{writes:number},refreshExisting=false){
   let p=a.payload&&typeof a.payload==='object'?a.payload:{},tender=await tenderContext(a.tender_watch_id);
   const route=text(a.route,80).toUpperCase(),expected=/^TED_/i.test(route)?expectedTedRoute(tender):route;
+  if(/^TED_/i.test(route)){
+    const readiness=tedReadiness(a,tender);
+    if(!readiness.ok){
+      return{action_key:a.action_key,company:a.target_company,event:'readiness_blocked',reason:readiness.reason,route,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired:0,remaining:0};
+    }
+  }
   if(/^TED_/i.test(route)&&expected&&route!==expected){
     const retired=refreshExisting?await retireObsoleteDrafts(a,new Set(),`route_mismatch:${route}->${expected}`,budget):0;
     return{action_key:a.action_key,company:a.target_company,event:'route_mismatch',route,expected_route:expected,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired,remaining:0};
@@ -179,20 +219,20 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false)
   return{action_key:a.action_key,company:a.target_company,event:covered>=recipients.length?'outreach_ready':'outreach_partial',recipients:recipients.length,created,refreshed,preserved,sent,retired,covered,remaining:Math.max(0,recipients.length-covered),failures};
 }
 
-async function run(limit=500,actionId='',refreshExisting=false){
+async function run(limit=20,actionId='',refreshExisting=false){
   let q=db.from('pppp_opportunity_action_queue_v2').select('*').eq('status','draft_review').in('action_type',['gc_project_outreach_draft','producer_capacity_outreach_draft','consortium_project_outreach_draft','general_project_outreach_draft']).order('updated_at',{ascending:true});
   if(text(actionId,80))q=q.eq('id',text(actionId,80));
   const {data,error}=await q.limit(Math.min(1000,Math.max(1,limit)));if(error)throw error;
   const budget={writes:0},results:any[]=[],errors:any[]=[];
-  let ready=0,partial=0,noRecipients=0,routeMismatch=0,created=0,refreshed=0,preserved=0,sent=0,retired=0;
+  let ready=0,partial=0,noRecipients=0,routeMismatch=0,readinessBlocked=0,created=0,refreshed=0,preserved=0,sent=0,retired=0;
   for(const a of data||[]){
     try{
       const r=await processAction(a,budget,refreshExisting);results.push(r);
       created+=Number(r.created||0);refreshed+=Number(r.refreshed||0);preserved+=Number(r.preserved||0);sent+=Number(r.sent||0);retired+=Number(r.retired||0);
-      if(r.event==='outreach_ready')ready++;else if(r.event==='outreach_partial')partial++;else if(r.event==='no_recipients')noRecipients++;else if(r.event==='route_mismatch')routeMismatch++;
+      if(r.event==='outreach_ready')ready++;else if(r.event==='outreach_partial')partial++;else if(r.event==='no_recipients')noRecipients++;else if(r.event==='route_mismatch')routeMismatch++;else if(r.event==='readiness_blocked')readinessBlocked++;
       if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)break;
     }catch(e){errors.push({action_key:a.action_key,error:text((e as any)?.message||e,500)});}
   }
-  return{candidates:(data||[]).length,actions_ready:ready,actions_partial:partial,no_recipients:noRecipients,route_mismatch:routeMismatch,drafts_created:created,drafts_refreshed:refreshed,drafts_retired:retired,drafts_updated:0,drafts_preserved:preserved,sent_already:sent,draft_writes:budget.writes,failed:errors.length,errors:errors.slice(0,10),results:results.slice(0,50),generator:GENERATOR,registry:REGISTRY,write_policy:'registry_state_machine_v1',sent_match_policy:'thread_id_plus_pppp_headers',stable_headers:['X-PPPP-Outreach-ID','X-PPPP-Action-ID'],html:true,separate_draft_per_recipient:true,human_send_required:true,auto_send:false,refresh_existing:refreshExisting,max_contacts_per_action:MAX_CONTACTS_PER_ACTION,draft_write_budget_per_run:MAX_DRAFT_WRITES_PER_RUN};
+  return{candidates:(data||[]).length,actions_ready:ready,actions_partial:partial,no_recipients:noRecipients,route_mismatch:routeMismatch,readiness_blocked:readinessBlocked,drafts_created:created,drafts_refreshed:refreshed,drafts_retired:retired,drafts_updated:0,drafts_preserved:preserved,sent_already:sent,draft_writes:budget.writes,failed:errors.length,errors:errors.slice(0,10),results:results.slice(0,50),generator:GENERATOR,registry:REGISTRY,write_policy:'registry_state_machine_v1',sent_match_policy:'thread_id_plus_pppp_headers',stable_headers:['X-PPPP-Outreach-ID','X-PPPP-Action-ID'],html:true,separate_draft_per_recipient:true,human_send_required:true,auto_send:false,refresh_existing:refreshExisting,max_contacts_per_action:MAX_CONTACTS_PER_ACTION,draft_write_budget_per_run:MAX_DRAFT_WRITES_PER_RUN};
 }
-Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});const mode=await authorizationMode(req);if(!mode)return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:cors});try{const u=new URL(req.url);let body:any={};if(req.method==='POST'){try{body=await req.json();}catch{}}const limit=Number(body?.limit||u.searchParams.get('limit')||500),actionId=text(body?.action_id||u.searchParams.get('action_id')||'',80),refreshExisting=String(body?.refresh_existing??u.searchParams.get('refresh_existing')??'false').toLowerCase()==='true';if(mode==='user'&&!actionId)return new Response(JSON.stringify({ok:false,error:'action_id_required_for_user_request',auto_send:false,human_send_required:true}),{status:400,headers:cors});const out=await run(limit,actionId,refreshExisting);return new Response(JSON.stringify({ok:true,...out,authorization_mode:mode}),{headers:cors});}catch(e){return new Response(JSON.stringify({ok:false,error:text((e as any)?.message||e,1000),auto_send:false,human_send_required:true}),{status:500,headers:cors});}});
+Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});const mode=await authorizationMode(req);if(!mode)return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:cors});try{const u=new URL(req.url);let body:any={};if(req.method==='POST'){try{body=await req.json();}catch{}}const limit=Number(body?.limit||u.searchParams.get('limit')||20),actionId=text(body?.action_id||u.searchParams.get('action_id')||'',80),refreshExisting=String(body?.refresh_existing??u.searchParams.get('refresh_existing')??'false').toLowerCase()==='true';if(mode==='user'&&!actionId)return new Response(JSON.stringify({ok:false,error:'action_id_required_for_user_request',auto_send:false,human_send_required:true}),{status:400,headers:cors});const out=await run(limit,actionId,refreshExisting);return new Response(JSON.stringify({ok:true,...out,authorization_mode:mode}),{headers:cors});}catch(e){return new Response(JSON.stringify({ok:false,error:text((e as any)?.message||e,1000),auto_send:false,human_send_required:true}),{status:500,headers:cors});}});

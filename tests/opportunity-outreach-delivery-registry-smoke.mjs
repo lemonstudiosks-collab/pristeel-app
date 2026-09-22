@@ -4,6 +4,7 @@ import {buildTedDraftContent,PRISTEEL_LOGO_URL} from '../supabase/functions/pppp
 
 const generator=await readFile(new URL('../supabase/functions/pppp-opportunity-draft-generator/index.ts',import.meta.url),'utf8');
 const sync=await readFile(new URL('../supabase/functions/pppp-opportunity-outreach-sent-sync/index.ts',import.meta.url),'utf8');
+const reconciler=await readFile(new URL('../supabase/functions/gmail-ted-sales-reconciler/index.ts',import.meta.url),'utf8');
 const migration=await readFile(new URL('../supabase/migrations/20260907143500_opportunity_outreach_delivery_registry_v1.sql',import.meta.url),'utf8');
 
 for(const token of ['Message-ID: ${headerSafe(rfcId)}','X-PPPP-Outreach-ID','X-PPPP-Action-ID','pppp_opportunity_outreach_registry_v1','status:\'draft_created\'','human_send_required:true','gmail_auto_send:false'])assert.ok(generator.includes(token),`generator missing ${token}`);
@@ -16,6 +17,9 @@ assert.equal(generator.includes('FUTURE_DRAFT_CUTOFF'),false,'historical cutoff 
 for(const token of ['rfc822msgid:','X-PPPP-Outreach-ID','X-PPPP-Action-ID','/threads/','thread_id_plus_pppp_headers','status:\'sent\'','gmail_message_id','gmail_thread_id','sent_at','gmail.readonly'])assert.ok(sync.includes(token),`sent sync missing ${token}`);
 assert.ok(sync.includes('to:${row.recipient_email}')&&sync.includes('isSentMatch'),'sent sync recipient fallback must still verify stable PPPP headers/thread metadata');
 for(const forbidden of ['/messages/send','/drafts/send','gmail.send','gmail.compose'])assert.equal(sync.includes(forbidden),false,`sent sync must remain read-only: ${forbidden}`);
+
+for(const token of ['deliveryFailure(meta,row)','failedRecipient(row)','touchBounce(tid,failed,row)','updateTenderBounce(tid,failed,row)','candidateTenders(row,external,meta,direction)','kind:"bounce_linked"','kind:"unmatched_bounce"','ted-registry-recipient-v6']) assert.ok(reconciler.includes(token),`TED Gmail reconciler missing ${token}`);
+assert.ok(reconciler.includes('version:6'),'TED Gmail reconciler must expose bounce-aware v6');
 
 for(const token of ['create table if not exists public.pppp_opportunity_outreach_registry_v1','gmail_draft_id text','recipient_email text','action_id uuid','status text','draft_created','sent','human_send_required boolean not null default true','gmail_auto_send boolean not null default false','unique (action_id, recipient_email)','opportunity-outreach-sent-sync-15m'])assert.ok(migration.includes(token),`migration missing ${token}`);
 
