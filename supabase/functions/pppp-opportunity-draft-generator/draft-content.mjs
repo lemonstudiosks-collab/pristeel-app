@@ -49,9 +49,9 @@ export function tedReference(tender={}){
 export function tedUrl(tender={}){return first(tender?.source_url,tender?.detail_url,tender?.payload?.source_url,tender?.payload?.detail_url);}
 function greeting(language,company,recipient){
   const kind=recipientKind(recipient),name=kind==='general'?'':txt(recipient?.name,180).replace(/\s+/g,' '),co=txt(company,300);
-  if(language==='de')return name?'Guten Tag '+name+',':'Sehr geehrte Damen und Herren,';
+  if(language==='de')return name?'Guten Tag '+name+',':'Guten Tag,';
   if(language==='bcs')return name?'Poštovani '+name+',':'Poštovani,';
-  return name?'Dear '+name+',':'Dear Sir or Madam,';
+  return name?'Dear '+name+',':'Hello,';
 }
 function closing(language){return language==='de'?'Mit freundlichen Grüßen':language==='bcs'?'S poštovanjem':'Kind regards';}
 const GENERAL_LOCAL_PARTS=new Set(['info','office','contact','kontakt','mail','hello','post','admin','sekretariat','service']);
@@ -63,64 +63,40 @@ export function recipientKind(recipient={}){
 function roleFor(route){const r=txt(route,80).toUpperCase();if(r==='TED_PRODUCER')return'producer';if(r==='TED_CONSORTIUM')return'consortium';if(r==='TED_GC')return'gc';return'general';}
 function shortProject(v){const s=txt(v,220).replace(/\s+/g,' ');if(s.length<=68)return s;const ref=(s.match(/\b(?:MDH\/\d+\/\d+|V\d{3,4}|NSW[_-][A-Z0-9_-]+|[A-Z]{1,5}[-_]\d{2,}[A-Z0-9_-]*)\b/i)||[])[0];if(ref)return ref;const marker=(s.match(/\b(?:zona\s+(?:Est|Vest|Nord|Sud)|East|West|North|South)\b/i)||[])[0],head=s.slice(0,38).replace(/\s+\S*$/,'').trim();if(marker)return head+'…'+marker;const tail=s.slice(-25).replace(/^\S*\s+/,'').trim();return head+'…'+tail;}
 function subjectFor(language,role,title){
-  const suffix=title?' – '+shortProject(title):'';
-  if(language==='de')return (role==='producer'?'Fertigungskapazität':role==='consortium'?'Stahlbau & Fertigung':'Stahlbau & Fertigung')+suffix+' | PRISTEEL';
-  if(language==='bcs')return (role==='producer'?'Dodatni kapacitet':role==='consortium'?'Čelik & proizvodnja':'Čelične konstrukcije')+suffix+' | PRISTEEL';
-  return (role==='producer'?'Fabrication capacity':role==='consortium'?'Steel supply & fabrication':'Steel fabrication')+suffix+' | PRISTEEL';
+  const p=shortProject(title);
+  if(language==='de')return 'Projekt '+p+' – Stahlpaket | PRISTEEL';
+  if(language==='bcs')return 'Projekt '+p+' – čelični paket | PRISTEEL';
+  return 'Project '+p+' – steel package | PRISTEEL';
 }
-function roleParagraphs(language,role,title){
+function readinessData(action,tender){
+  const a=action?.payload?.outreach_readiness_v1;
+  if(a&&typeof a==='object'&&!Array.isArray(a))return a;
+  const t=tender?.outreach_readiness_v1;
+  if(t&&typeof t==='object'&&!Array.isArray(t))return t;
+  return {};
+}
+function roleParagraphs(language,role,title,action,tender){
+  const r=readinessData(action,tender);
+  const fact=first(r.scope_evidence,r.project_fact,r.pristeel_scope);
+  const question=first(r.concrete_question);
+  const scope=first(r.pristeel_scope);
+  const qualification=(r.qualification_required===true&&r.qualification_fit===true)?first(r.qualification_evidence):'';
   if(language==='de'){
-    if(role==='producer')return[
-      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich PRISTEEL als mögliche zusätzliche Fertigungskapazität vorstellen.',
-      'Wir unterstützen mit Build-to-Print-Stahlbau, Materialbeschaffung, Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung. Falls Sie Fertigung auslagern möchten, senden Sie uns gerne Zeichnungen, Stücklisten oder Spezifikationen. Sollte ein anderer Kollege zuständig sein, freue ich mich über eine Weiterleitung.'
-    ];
-    if(role==='consortium')return[
-      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich PRISTEEL als möglichen Partner für Stahlmaterialien und gefertigte Stahlkomponenten vorstellen.',
-      'Wir koordinieren Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung. Wenn dies zu Ihrem Leistungsumfang gehört, prüfen wir gerne Zeichnungen oder Stücklisten und erstellen ein Angebot. Andernfalls freue ich mich über eine Weiterleitung an die zuständige Person.'
-    ];
-    if(role==='gc')return[
-      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich PRISTEEL als möglichen Fertigungs- und Lieferpartner für projektspezifische Stahlbaupakete vorstellen.',
-      'Wir unterstützen mit Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung. Falls Stahlbau oder gefertigte Komponenten zu Ihrem Umfang gehören, prüfen wir gerne Zeichnungen oder Stücklisten und erstellen ein Angebot. Andernfalls freue ich mich über eine Weiterleitung an Einkauf oder Projektteam.'
-    ];
-    return[
-      'im Zusammenhang mit dem Projekt „'+title+'“ möchte ich PRISTEEL als möglichen Partner für Stahlbau und gefertigte Stahlkomponenten vorstellen.',
-      'Wir unterstützen mit Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung. Falls dies zu Ihrem Umfang gehört, prüfen wir gerne Zeichnungen oder Stücklisten und erstellen ein Angebot. Andernfalls freue ich mich über eine Weiterleitung an die zuständige Person.'
-    ];
+    const intro=fact||('Für das Projekt „'+title+'“ wurde ein konkreter Stahlumfang identifiziert.');
+    const ask=question||'Ist dieser Fertigungsumfang bereits vollständig vergeben oder bestehen noch klar abgegrenzte Pakete für externe Fertigung?';
+    const capability='PRISTEEL kann für diesen Umfang '+(scope||'projektbezogene Stahlbauteile')+' einschließlich Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung koordinieren.';
+    return[intro,ask,capability,qualification].filter(Boolean);
   }
   if(language==='bcs'){
-    if(role==='producer')return[
-      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogući dodatni kapacitet za proizvodnju čeličnih konstrukcija i komponenti.',
-      'Možemo podržati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete i isporuku. Ako dio proizvodnje želite povjeriti vanjskom partneru, rado ćemo pregledati nacrte ili BOM i pripremiti ponudu. Ako je zadužen drugi kolega, molimo proslijedite poruku.'
-    ];
-    if(role==='consortium')return[
-      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za čelične materijale i gotove komponente.',
-      'Možemo koordinirati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete i isporuku. Ako je to dio vašeg opsega, rado ćemo pregledati nacrte ili BOM i pripremiti ponudu. Ako je zadužen drugi član tima, molimo proslijedite poruku.'
-    ];
-    if(role==='gc')return[
-      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za proizvodnju i isporuku projektnih čeličnih paketa.',
-      'Možemo podržati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete i isporuku. Ako čelične konstrukcije ili komponente ulaze u vaš opseg, rado ćemo pregledati nacrte ili BOQ/BOM i pripremiti ponudu.'
-    ];
-    return[
-      'u vezi s projektom „'+title+'“, želimo predstaviti PRISTEEL kao mogućeg partnera za čelične konstrukcije i komponente.',
-      'Možemo podržati nabavku materijala, build-to-print proizvodnju, površinsku zaštitu, dokumentaciju kvalitete i isporuku. Ako je to dio vašeg opsega, rado ćemo pregledati nacrte ili BOQ/BOM i pripremiti ponudu.'
-    ];
+    const intro=fact||('Za projekt „'+title+'“ identificiran je konkretan opseg čeličnih radova.');
+    const ask=question||'Da li je ovaj proizvodni opseg već u potpunosti ugovoren ili postoje jasno odvojeni paketi za vanjsku proizvodnju?';
+    const capability='PRISTEEL za ovaj opseg može koordinirati '+(scope||'projektne čelične komponente')+', uključujući nabavku materijala, proizvodnju prema nacrtima, površinsku zaštitu, dokumentaciju kvaliteta i isporuku.';
+    return[intro,ask,capability,qualification].filter(Boolean);
   }
-  if(role==='producer')return[
-    'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential source of additional steel fabrication capacity.',
-    'We can support material procurement, build-to-print fabrication, surface protection, quality documentation and delivery. If you are outsourcing part of the fabrication scope, we would be pleased to review drawings, BOMs or specifications and provide a quotation. If another colleague handles this area, I would appreciate a referral.'
-  ];
-  if(role==='consortium')return[
-    'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential partner for steel supply and fabricated components.',
-    'We can coordinate material procurement, build-to-print fabrication, surface protection, quality documentation and delivery. If this falls within your awarded scope, we would be pleased to review drawings or BOQs/BOMs and provide a quotation. If another consortium member handles it, I would appreciate a referral.'
-  ];
-  if(role==='gc')return[
-    'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential fabrication and supply partner for project-specific steel packages.',
-    'We can support material procurement, build-to-print fabrication, surface protection, quality documentation and delivery. If steelwork or fabricated components form part of your scope, we would be pleased to review drawings or BOQs/BOMs and provide a quotation. If another colleague handles this package, I would appreciate a referral.'
-  ];
-  return[
-    'With reference to the project “'+title+'”, I would like to introduce PRISTEEL as a potential partner for steel fabrication and supply.',
-    'We can support material procurement, build-to-print fabrication, surface protection, quality documentation and delivery. If steelwork or fabricated components form part of your scope, we would be pleased to review drawings or BOQs/BOMs and provide a quotation. If another colleague handles this area, I would appreciate a referral.'
-  ];
+  const intro=fact||('A specific steel scope has been identified for “'+title+'”.');
+  const ask=question||'Is this fabrication scope already fully covered, or are clearly defined packages still open for external fabrication?';
+  const capability='PRISTEEL can coordinate '+(scope||'project-specific steel components')+' for this scope, including material procurement, build-to-print fabrication, surface protection, quality documentation and delivery.';
+  return[intro,ask,capability,qualification].filter(Boolean);
 }
 function cleanProjectTitle(v,ref=''){
   let s=decodeEntities(v);
@@ -131,11 +107,11 @@ function cleanProjectTitle(v,ref=''){
   else if(parts.length>=2&&COUNTRY_PREFIXES.has(norm(parts[0])))s=parts.slice(1).join(' – ');
   return s.trim();
 }
-function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v)}</p>`:'';}
+function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v).replace(/\\n/g,'<br>')}</p>`:'';}
 
 export function buildTedDraftContent(action={},tender={},recipient={}){
   const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),subject=subjectFor(language,role,title);
-  const greet=greeting(language,company,recipient),paras=roleParagraphs(language,role,title),close=closing(language);
+  const greet=greeting(language,company,recipient),paras=roleParagraphs(language,role,title,action,tender),close=closing(language);
   const body=[greet,...paras,close,SIGNATURE].filter(Boolean).join('\n\n');
   const htmlBody='<div dir="ltr" style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#202124">'+htmlParagraph(greet)+paras.map(htmlParagraph).join('')+'<p style="margin:0">'+esc(close)+'</p>'+SIGNATURE_HTML+'</div>';
   return{language,subject,body,html_body:htmlBody,recipient_kind:kind,tender_reference:ref||null,tender_url:url||null,signature:SIGNATURE,signature_html:SIGNATURE_HTML};
