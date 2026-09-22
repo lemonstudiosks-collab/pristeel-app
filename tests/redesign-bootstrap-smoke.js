@@ -48,7 +48,8 @@ assert(projectCentric.includes('dedupeOpportunities')&&projectCentric.includes('
 assert(projectCentric.includes('setOpportunityContext')&&projectCentric.includes("tenderState.focus==='due'")&&projectCentric.includes("tenderState.focus==='review'"), 'Opportunity routes must preserve Home deadline/review context');
 assert(projectCentric.includes('pppp-project-operator-update'), 'Project operator update must use the authenticated safe Edge Function');
 assert(projectCentric.includes('pppp_contact_master_v1?contact_id=eq.') && projectCentric.includes('project_emails?'), 'Contact popup must refresh canonical live relationships and recent project email data');
-assert(projectCentric.includes('PSTOpenAIAssistantV1') && projectCentric.includes('candidate_partners'), 'Tender analysis must use server AI plus registered PPPP partners');
+assert(projectCentric.includes('GJENDJA E AUTOMATIZIMIT') && projectCentric.includes('awardAutomationHtml'), 'TED award detail must use a deterministic tender-bound automation path');
+assert(!projectCentric.includes("AI.ask(q,{scope:'global'"), 'TED award detail must never call the global project assistant and leak unrelated project context');
 assert(projectCentric.includes("if(src==='APP_AL')") && projectCentric.includes('nuk ka lidhje të drejtpërdrejtë të sigurt'), 'APP active workflow must refuse the unsafe generic external page and keep dossier retrieval inside PPPP');
 assert(projectCentric.includes('pst-pcw-source-link') && projectCentric.includes('safeUrl(r&&r.detail_url)||safeUrl(r&&r.source_url)'), 'KRPP/TED official source must be a direct row-specific link before any helper cache');
 assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(projectCentric), 'Project-centric layer must remain bounded and observer-free');
@@ -61,6 +62,7 @@ assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includ
 new Function(tenderActions);
 assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
 assert(projectCentric.includes('Përgatit draftet'), 'TED winner popup must expose the human-gated verified multi-contact draft action');
+assert(projectCentric.includes('Hap draftet në Gmail') && projectCentric.includes('Shiko komunikimin'), 'TED lifecycle must expose the correct next action after draft and send');
 assert(tenderActions.includes("role!=='gc_epc'&&role!=='producer'"), 'Unknown TED winner role must be blocked until PPPP verifies GC/EPC vs producer classification');
 
 // Tender dossier intake owns the new Price Intelligence presentation without creating another store.
@@ -70,6 +72,7 @@ assert(tenderImporter.includes("edgeNamed('pppp-ted-price-enrichment-v1'"), 'TED
 assert(tenderImporter.includes("btn.textContent='Ngarko dosjen'"), 'KRPP/APP primary dossier action must be manual upload');
 assert(tenderImporter.includes('pickArchiveAndUpload(S(id),b)'), 'The legacy dossier download action must be redirected to the verified manual upload importer');
 assert(tenderImporter.includes('needs_dossier_upload') && tenderImporter.includes('needs_ted_enrichment') && tenderImporter.includes('price_model_eligible'), 'Price Intelligence UI must expose canonical readiness gates');
+assert(tenderImporter.includes('award>0') && tenderImporter.includes('Nuk u publikua'), 'A zero TED value must be presented as unavailable, never as a real zero-value contract');
 assert(!/MutationObserver\s*\(|setInterval\s*\(/.test(tenderImporter), 'Tender Price Intelligence must remain bounded and observer-free');
 assert(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(tenderImporter), 'Tender Price Intelligence must never send external mail');
 assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(tenderImporter), 'Tender Price Intelligence must preserve commitment gates');

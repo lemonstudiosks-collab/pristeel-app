@@ -31,6 +31,19 @@ vm.runInContext(source,sandbox);
 const T=sandbox.window.PSTTenderPriorityActionsV1;
 assert.ok(T,'Tender email API must load');
 
+const attributed=T.enrichedContacts({
+  payload:{source:'TED',notice_phase:'award',winner:{
+    name:'B + H Bau GmbH',
+    contact_enrichment:{organizations:[{
+      name:'B + H Bau GmbH',verified:false,contacts:[
+        {type:'email',value:'bieterportal-alt@deutschebahn.com',purpose:'person',confidence:'high',score:88,source_type:'TED'},
+        {type:'email',value:'info@b-h-bau.de',purpose:'general',confidence:'high',score:88,source_type:'TED'}
+      ]
+    }]}
+  }}
+});
+assert.deepStrictEqual(Array.from(attributed,x=>x.email),['info@b-h-bau.de'],'Buyer portal addresses must not be misattributed to the published winner');
+
 function award(country,companyType='unknown'){
   return{
     id:'t1',
