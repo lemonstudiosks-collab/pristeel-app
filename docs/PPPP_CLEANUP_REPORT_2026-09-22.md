@@ -54,12 +54,13 @@ Classification C — keep/compatibility:
   - `pppp_tender_price_work_queue_v1` already used `security_invoker=true`.
   - Removed INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER privileges for `anon` and `authenticated` from all three read-only views; authenticated SELECT remains.
 - Applied `lock_trigger_functions_from_api_v1`: removed direct `anon`/`authenticated` execution from 32 `SECURITY DEFINER` trigger functions. Their 35 trigger bindings and service-role execution remain intact.
+- Applied `lock_service_only_tables_v8`: removed all direct `anon`/`authenticated` table privileges from 13 worker queues, control tables and internal-state tables. `service_role`/`postgres` access and the audited `supabase_read_only_user` SELECT bridge remain intact.
 - No invalid index and no exact duplicate index group was found.
 - No table/column cleanup was performed because no business-data object was proven obsolete and dependency-free.
 
 ## 6. Migration findings
 
-- Live migration history is intact and was not rewritten: 439 applied entries after cleanup; the repository contains 198 SQL migration files after this work.
+- Live migration history is intact and was not rewritten: 446 applied entries after cleanup; the repository contains 205 SQL migration files after this work.
 - The live schema contains migrations from 2026-09-21/22 that are not represented by source SQL on current `origin/main`, including morning brief, TED outbound gates, DACH target/bridge changes, and several outbound repair migrations.
 - The four previously missing deployed Edge Functions were exported from their authoritative live deployments into `supabase/functions`: `pppp-storage-path-repair`, `pppp-gmail-fast-ingest-v2`, `pppp-whatsapp-import-v1`, and `pppp-ted-price-enrichment-v1`.
 - Fifteen missing production migration statements from 2026-09-21/22 were exported exactly from `supabase_migrations.schema_migrations` into `supabase/live-migration-history`. They are intentionally outside the replayable migration directory because live server-assigned versions and historical local filenames are not consistently aligned.
@@ -81,7 +82,11 @@ Classification C — keep/compatibility:
 - Orphaned: the six private legacy-project wrappers were removed after dependency checks.
 - Security-only cleanup: 32 trigger-only functions are no longer callable as RPCs by `anon` or `authenticated`.
 - A caller-contract review identified 24 scheduler/worker RPCs whose active callers are `postgres`, pg_cron or service-role Edge Functions. Browser-role execution was revoked while `service_role`/`postgres` execution was preserved.
-- Remaining review set: 69 public `SECURITY DEFINER` functions are executable by `anon` and `authenticated`. They mix intentional client bridges, secret-check helpers and maintenance operations, so bulk revocation remains unsafe. Each requires caller/auth-contract classification before changes.
+- A second contract-restoration pass closed 22 additional helpers already declared internal by their canonical migrations: 19 retain service-role/postgres execution and three historical-intelligence implementation helpers are postgres-only.
+- Six legacy internal helpers explicitly covered by the August production hardening contract were also restored to service/postgres-only execution.
+- The final contract passes restored six maintenance RPCs, four authenticated UI/admin RPCs, 27 ChatGPT bridge RPCs, and four otherwise unguarded maintenance RPCs to their intended roles.
+- Final public exposure: zero public `SECURITY DEFINER` functions are executable by `anon`. Four remain executable by `authenticated` intentionally: automation control health, expense receipt confirm/ignore, and manual supplier-offer creation.
+- The ChatGPT bridge remains fully usable through `supabase_read_only_user` for its 24 read functions and through `service_role` for its three controlled write functions; browser roles cannot invoke either surface.
 
 ## 9. Edge Functions
 
@@ -114,13 +119,17 @@ Fixed:
 - Removed nonsensical write grants from three read-only views.
 - Closed direct public/authenticated RPC access to 32 trigger-only `SECURITY DEFINER` functions while preserving trigger execution.
 - Closed direct public/authenticated RPC access to 24 internal scheduler/worker `SECURITY DEFINER` functions while preserving all 24 service-role/postgres grants.
+- Restored canonical ACLs for 22 additional internal helpers: 19 service/postgres-only and three postgres-only historical-intelligence helpers.
+- Restored service/postgres-only ACLs for six legacy internal helpers already covered by the August production hardening migrations.
+- Formalized all 13 no-policy tables as service-only at the table-privilege layer, while preserving the dedicated audited read-only bridge.
 - Confirmed all public tables have RLS enabled.
 - Confirmed the three Storage buckets are private; they currently have no client Storage policies and therefore remain service-controlled.
 
 Remaining:
 
-- 69 `SECURITY DEFINER` functions remain executable by `anon`/`authenticated` and need contract-by-contract review.
-- 13 RLS-enabled tables have no policies. Most are clearly service/internal queues or control tables, which is secure deny-by-default; `pppp_tender_project_promotions` should be explicitly confirmed as service-only.
+- Zero `SECURITY DEFINER` functions remain executable by `anon`.
+- Four authenticated-only `SECURITY DEFINER` functions remain by explicit product contract; all four are active UI/admin endpoints and are not anonymous APIs.
+- 13 RLS-enabled tables intentionally have no client policies. Repository caller inspection and live ACL verification classify all 13 as service/internal surfaces: browser roles have zero direct privileges, while `service_role` retains access. The advisor still reports this deny-by-default pattern as informational.
 - Supabase Auth leaked-password protection is reported disabled by the security advisor.
 
 Advisor references: [security-definer views](https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view), [anon SECURITY DEFINER RPCs](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable), [authenticated SECURITY DEFINER RPCs](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), and [password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
@@ -150,7 +159,7 @@ Advisor references: [security-definer views](https://supabase.com/docs/guides/da
 ## 16. Remaining technical debt
 
 - Live migration version IDs and historical local migration filenames remain non-aligned; the missing statements are preserved as non-replayable production history, but a full migration baseline is still required.
-- 69 exposed `SECURITY DEFINER` RPCs need a maintained caller/auth classification.
+- The four intentional authenticated-only RPCs should remain covered by their UI/admin contract tests when changed.
 - The runtime has many compatibility layers. The manifest and tests make it stable, but safe physical deletion requires per-module reachability evidence beyond production-artifact exclusion.
 - Two cron job names no longer describe their six-hour cadence.
 - The package test script shells out to `npm`; environments that provide only pnpm need a portable script invocation.
@@ -158,27 +167,25 @@ Advisor references: [security-definer views](https://supabase.com/docs/guides/da
 
 ## 17. Manual decisions required
 
-1. Continue a staged contract review of the remaining 69 exposed `SECURITY DEFINER` RPCs; preserve intentional browser/ChatGPT bridge endpoints.
-2. Confirm whether `pppp_tender_project_promotions` and the other 12 no-policy tables are intentionally service-only. Add policies only if authenticated client access is required.
-3. Enable leaked-password protection in Supabase Auth if compatible with the organization’s login policy.
-4. Rename the two misleading `hourly` cron jobs only during a controlled scheduler maintenance window; do not change their cadence implicitly.
-5. Retain or delete unused indexes only after a representative observation window and query-plan evidence.
-6. Create a controlled full migration baseline before enabling CLI-driven `supabase db push`; do not move the live-history snapshots into the active directory.
+1. Enable leaked-password protection in Supabase Auth if compatible with the organization’s login policy.
+2. Rename the two misleading `hourly` cron jobs only during a controlled scheduler maintenance window; do not change their cadence implicitly.
+3. Retain or delete unused indexes only after a representative observation window and query-plan evidence.
+4. Create a controlled full migration baseline before enabling CLI-driven `supabase db push`; do not move the live-history snapshots into the active directory.
 
 ## 18. Verification
 
 Passed:
 
 - Mandatory live bridge manifest read before changes.
-- Five cleanup smoke tests: legacy project cleanup, read-only view hardening, trigger-function API lock, production source backfill/retirement, and internal worker RPC lock.
+- Twelve cleanup smoke tests cover legacy-project removal, view/trigger hardening, source backfill/retirement, worker/internal/maintenance ACL restoration, authenticated UI contracts, the ChatGPT bridge role split, the final maintenance lock, and service-only table contracts.
 - Full existing Node smoke chain from `package.json` executed directly (the wrapper's nested `npm` command is unavailable in this environment).
 - Runtime ownership suite: 9/9 passed.
 - GitHub Pages artifact audit passed: 152 bootstrap modules, 23 recursive dynamic dependencies, 257 public artifact files, correct `_site`-only upload policy.
 - Syntax checks for every changed JS/MJS file passed.
 - `git diff --check` passed.
-- Post-DDL live checks: removed functions absent; legacy URL absent from live functions; three views are security invokers; authenticated SELECT preserved; write grants removed; 32 trigger functions locked; 35 trigger bindings preserved; all 24 internal worker RPCs deny browser roles and retain service execution.
+- Post-DDL live checks: removed functions absent; legacy URL absent from live functions; three views are security invokers; authenticated SELECT preserved; write grants removed; 32 trigger functions locked; 35 trigger bindings preserved; all internal RPCs deny browser roles and retain their intended service/postgres execution; three intelligence helpers are postgres-only; ChatGPT reads retain the dedicated read-only role; all 13 service-only tables deny browser roles while retaining service and read-only bridge access.
 - Production Edge verification: `pppp-storage-path-repair` version 4 is active with JWT verification, exact tombstone source/hash, HTTP 410 behavior and no service-role credential use.
-- Post-DDL Supabase security advisor rerun: security-definer view findings reduced from 2 to 0; exposed security-definer functions reduced from 125 to 69.
+- Post-DDL Supabase security advisor rerun: security-definer view findings reduced from 2 to 0; anonymous security-definer functions reduced from 125 to 0. The remaining four authenticated findings are the intentional UI/admin endpoints listed above.
 - Cron final check: 11 active, zero duplicate commands, zero failures in 24 hours.
 - Data integrity checks: 21/21 returned zero issues.
 
@@ -193,9 +200,9 @@ Not fully clean:
 - Frontend health: **PASS** — production dependency closure and ownership checks pass; no redesign performed.
 - Database health: **PASS** — no detected integrity failures, invalid indexes or duplicate indexes; safe DDL cleanup verified.
 - Migration consistency: **IMPROVED / PARTIAL** — the identified source gap is preserved, but version history still needs a controlled baseline before automated replay.
-- RPC/function consistency: **IMPROVED / PARTIAL** — six orphans removed and 56 unintended RPC exposures closed; 69 functions remain for staged review.
+- RPC/function consistency: **PASS** — six orphans removed, all 125 anonymous security-definer exposures closed, four intentional authenticated UI/admin contracts retained, and the ChatGPT role split verified.
 - Automation health: **PASS** — 11 active jobs, no duplicate command, no 24-hour failures.
-- Security: **IMPROVED / PARTIAL** — view findings fixed, trigger/internal-worker RPCs locked and the destructive repair endpoint neutralized; remaining RPC grants and Auth password setting require controlled follow-up.
+- Security: **IMPROVED / PARTIAL** — view findings fixed, anonymous privileged RPC exposure eliminated, trigger/internal-worker RPCs locked and the destructive repair endpoint neutralized; only the Auth leaked-password setting requires an organization-policy decision.
 - Deployment health: **PASS** — GitHub Pages artifact policy verified; Vercel is not the deployment owner for this repository.
 - Supabase efficiency: **HEALTHY / OBSERVE** — no speculative index deletion/addition; small missing-FK-index tables and unused-index statistics should be monitored.
 
