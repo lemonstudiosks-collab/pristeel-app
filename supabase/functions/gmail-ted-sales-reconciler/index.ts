@@ -143,7 +143,7 @@ async function updateTenderBounce(tenderId:string,email:string,row:any){
   const q=await db.from("kek_tender_watch").select("id,status,payload").eq("id",tenderId).single();
   if(q.error)throw q.error;
   const p=q.data.payload||{},old=p.outreach||{},d=day(row.sent_at);
-  p.outreach={...old,status:"bounced",bounced:true,replied:false,last_bounce_at:row.sent_at,
+  p.outreach={...old,status:"bounced",bounced:true,replied:false,follow_up_date:null,last_bounce_at:row.sent_at,
     bounce_gmail_message_id:row.gmail_message_id,gmail_thread_id:row.gmail_thread_id,
     contact_email:email,source:"gmail-ted-sales-reconciler-v6-canonical"};
   p.human_action_required=true;p.next_check_on=d;
