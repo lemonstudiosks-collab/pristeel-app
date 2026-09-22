@@ -193,7 +193,7 @@ function boot(){
  (function ready(){current();if(api&&state&&document.getElementById('pst-opportunities-focus')){decorate();observe();return;}setTimeout(ready,500);})();
  document.addEventListener('click',click,true);
  document.addEventListener('input',function(e){if(e.target&&e.target.id==='pst-pcw-opportunity-search')schedule();},true);
- document.addEventListener('pst:opportunities-filter-applied',function(e){var d=e&&e.detail||{},kind=S(d.kind).toLowerCase();if(!resultPage&&(kind==='source'||kind==='lifecycle'))resultPage=categoryMeta(kind,d.value);if(resultPage)setTimeout(function(){var f=document.getElementById('pst-opportunities-focus');if(f&&typeof f.scrollIntoView==='function')try{f.scrollIntoView({block:'start'});}catch(x){}},0);schedule();});
+ document.addEventListener('pst:opportunities-filter-applied',function(e){var d=e&&e.detail||{},kind=S(d.kind).toLowerCase();if(!resultPage&&(kind==='source'||kind==='lifecycle'))resultPage=categoryMeta(kind,d.value);schedule();});
  document.addEventListener('pst:modules-ready',schedule,{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();

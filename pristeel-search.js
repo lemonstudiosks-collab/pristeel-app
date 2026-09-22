@@ -91,11 +91,13 @@ html.pst-stable-booting #pst-startup-shell{display:none!important}
     document.head.appendChild(s);
   }
   function ensureShell(){
-    if(document.getElementById('pst-stable-startup-shell'))return;
+    if(document.getElementById('pst-stable-startup-shell')){root.classList.remove('pst-first-paint');return;}
     var host=document.body||document.documentElement;if(!host)return;
     var shell=document.createElement('div');shell.id='pst-stable-startup-shell';
     shell.innerHTML='<div class="pst-startup-card"><div class="pst-startup-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8c.7 5.45 4.75 9.5 10.2 10.2-5.45.7-9.5 4.75-10.2 10.2C11.3 16.75 7.25 12.7 1.8 12 7.25 11.3 11.3 7.25 12 1.8Z"/></svg></div><div class="pst-startup-name">PRISTEEL</div><div class="pst-startup-copy" id="pst-stable-startup-copy">Duke përgatitur platformën…</div><div class="pst-startup-line"><i></i></div></div>';
     host.appendChild(shell);
+    /* Hand off atomically from the parser-level guard to this final owner. */
+    root.classList.remove('pst-first-paint');
   }
   function setCopy(text){var e=document.getElementById('pst-stable-startup-copy');if(e&&e.textContent!==text)e.textContent=text;}
   function progressSignature(){
@@ -132,6 +134,7 @@ html.pst-stable-booting #pst-startup-shell{display:none!important}
     var compatibilityShell=document.getElementById('pst-startup-shell');
     if(compatibilityShell)compatibilityShell.remove();
     root.classList.remove('pst-stable-booting');
+    root.classList.remove('pst-first-paint');
     /* If a compatibility startup guard still owns pst-booting, the final stable
      * coordinator is now authoritative and may release that class as well. */
     if(reason!=='auth')root.classList.remove('pst-booting');
