@@ -40,7 +40,7 @@ window.pstKekOpenSource=()=>{};window.pstKekOpenProject=()=>{};
 window.pstWsKekTenders=()=>{monitorOpens++;};
 const promotionSql=fs.readFileSync('supabase/migrations/20260923183000_harden_ted_award_promotion_contacts_v2.sql','utf8');
 assert.ok(promotionSql.includes("contact_enrichment,organizations")&&promotionSql.includes("draft_eligible")&&promotionSql.includes("company_attribution"),'TED Project promotion must materialize contacts from verified enrichment evidence');
-assert.ok(promotionSql.includes("gmail_message_id")&&promotionSql.includes("status, '') in ('sent', 'replied', 'meeting')"),'TED Project promotion may reuse outreach contacts only when real communication evidence exists');
+assert.ok(promotionSql.includes("gmail_message_id")&&promotionSql.includes("lower(coalesce(oc.status, '')) in ('sent', 'replied', 'meeting')"),'TED Project promotion may reuse outreach contacts only when real communication evidence exists');
 assert.ok(!/union all\s+select\s+v_winner_email/i.test(promotionSql),'TED Project promotion must never trust winner.email by syntax alone');
 assert.ok(promotionSql.includes("not like 'yourdomain.%'")&&promotionSql.includes("example.com"),'TED Project promotion must reject placeholder domains');
 
