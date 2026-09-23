@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { classifyTedNotice, normalizeTedNotice, reconcileTedOpportunityLifecycle, reconcileTenderDeadlineTaskLifecycle, tenderDeadlineTaskRows, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
+import { classifyTedNotice, mergeTedRefreshRows, normalizeTedNotice, reconcileTedOpportunityLifecycle, reconcileTenderDeadlineTaskLifecycle, tenderDeadlineTaskRows, runTedTenderSync } from '../scripts/ted-tender-sync.mjs';
 
 const steel=classifyTedNotice({title:'Stahlbauarbeiten mit technischer Plattform',cpv:['45223210']});
 assert.equal(steel.category,'steel_structure');
@@ -30,7 +30,14 @@ const fixture={
       'buyer-name':{eng:'Test Buyer Germany'},
       'classification-cpv':['44212000','45223210'],
       'deadline-receipt-tender-date-lot':['2026-09-15'],
-      'place-of-performance':['DEU']
+      'place-of-performance':['DEU'],
+      'title-proc':{eng:'School steel renovation'},
+      'title-lot':[{eng:'Structural steel package'}],
+      'description-proc':{eng:'Renovation works including structural steel.'},
+      'description-lot':[{eng:'Fabrication and installation of the structural steel package.'}],
+      'result-value-notice':'785000.50',
+      'result-value-cur-notice':'EUR',
+      'winner-decision-date':'2026-08-12'
     },
     {
       'publication-number':'600001-2026',
@@ -41,7 +48,13 @@ const fixture={
       'classification-cpv':['44334000'],
       'deadline-receipt-tender-date-lot':['2026-09-30','2026-10-15'],
       'deadline-receipt-request-date-lot':['2026-09-25'],
-      'place-of-performance':['DEU']
+      'place-of-performance':['DEU'],
+      'title-proc':{eng:'Structural steel supply programme'},
+      'title-lot':[{eng:'Steel profile delivery'}],
+      'description-proc':{eng:'Supply programme for structural steel profiles.'},
+      'description-lot':[{eng:'Supply and delivery of structural steel profiles to the project site.'}],
+      'estimated-value-proc':'1250000',
+      'estimated-value-cur-proc':'EUR'
     }
   ]
 };
@@ -52,8 +65,27 @@ assert.equal(row.fpp,'44334000');
 assert.equal(row.deadline,'2026-09-25','collector must use the nearest valid lot-level tender/participation deadline');
 assert.equal(row.payload.source,'TED');
 assert.equal(row.payload.notice_phase,'opportunity');
+assert.equal(row.payload.description,'Supply and delivery of structural steel profiles to the project site.','collector must retain the TED lot description');
+assert.equal(row.payload.ted_details.procedure_description,'Supply programme for structural steel profiles.');
+assert.deepEqual(row.payload.ted_details.lot_titles,['Steel profile delivery']);
+assert.equal(row.estimated_value,1250000);
+assert.equal(row.currency,'EUR');
 const awardRow=normalizeTedNotice(fixture.notices[0],'award','2026-08-14T06:00:00.000Z');
 assert.equal(awardRow.deadline,null,'award records must not present a bidding deadline');
+assert.equal(awardRow.payload.description,'Fabrication and installation of the structural steel package.');
+assert.equal(awardRow.payload.ted_details.award_date,'2026-08-12');
+assert.equal(awardRow.payload.ted_details.value_kind,'award');
+assert.equal(awardRow.estimated_value,785000.5);
+assert.equal(awardRow.currency,'EUR');
+
+const refreshed=normalizeTedNotice({...fixture.notices[1],'estimated-value-proc':null,'estimated-value-cur-proc':null},'opportunity','2026-08-15T06:00:00.000Z');
+mergeTedRefreshRows([refreshed],[{source_key:refreshed.source_key,estimated_value:990000,currency:'CHF',payload:{winner:{name:'Preserved Winner',contact_enrichment:{status:'found'}},operator_note:'keep-me'}}]);
+assert.equal(refreshed.estimated_value,990000,'public TED refresh must not erase a previously enriched scalar when the fresh notice omits it');
+assert.equal(refreshed.currency,'CHF');
+assert.equal(refreshed.payload.winner.name,'Preserved Winner','TED refresh must preserve winner intelligence added by later pipeline stages');
+assert.equal(refreshed.payload.winner.contact_enrichment.status,'found');
+assert.equal(refreshed.payload.operator_note,'keep-me','TED refresh must preserve unrelated canonical payload state');
+assert.equal(refreshed.payload.description,'Supply and delivery of structural steel profiles to the project site.','fresh TED facts must still override/update their own canonical fields');
 
 const calls=[];
 async function fakeFetch(url,opts){
@@ -70,6 +102,8 @@ assert.ok(!calls[0].body.query.includes('classification-cpv = 4421*'),'broad gen
 assert.ok(calls[0].body.query.includes('publication-date = ('),'opportunities should use a bounded publication window');
 assert.ok(calls[0].body.fields.includes('deadline-receipt-tender-date-lot'),'collector must request the official lot tender deadline field');
 assert.ok(calls[0].body.fields.includes('deadline-receipt-request-date-lot'),'collector must request the participation-request deadline for multi-stage procedures');
+assert.ok(calls[0].body.fields.includes('description-lot')&&calls[0].body.fields.includes('description-proc'),'collector must request the official TED scope descriptions');
+assert.ok(calls[0].body.fields.includes('estimated-value-proc')&&calls[0].body.fields.includes('result-value-notice'),'collector must request estimated and awarded contract values');
 assert.equal(calls[0].body.scope,'ACTIVE');
 assert.equal(calls[0].body.checkQuerySyntax,false);
 assert.equal(calls[0].body.paginationMode,'PAGE_NUMBER');
