@@ -21,10 +21,14 @@ assert.match(sql,/cross_source_domain_cooldown/);
 assert.match(dach,/pppp_global_communication_guard_v1/);
 assert.match(ted,/pppp_global_communication_guard_v1/);
 assert.match(ted,/recentSentToExact/);
+assert.match(ted,/gmail_domain_cooldown_active/);
 assert.match(manual,/pppp_global_communication_guard_v1/);
 assert.match(manual,/recentSentTo/);
+assert.match(manual,/gmail_domain_cooldown_active/);
 assert.match(gc,/pppp_global_communication_guard_v1/);
 assert.match(dispatch,/global_gmail_recipient_cooldown_active/);
+assert.match(dispatch,/global_gmail_domain_cooldown_active/);
+assert.match(dach,/gmail_domain_cooldown_active/);
 
 assert.match(ui,/pppp_opportunity_communication_state_v1/);
 assert.match(ui,/communication_state/);
