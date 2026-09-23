@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v4-global-guard";
+const V="pppp-dach-steel-draft-generator-v5-global-live-domain-guard";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -69,6 +69,16 @@ async function recentSentTo(recipient:any,days:number){
  if(!rows.length)return null;
  const m=rows[0],meta=await gmail("/messages/"+encodeURIComponent(m.id)+"?format=metadata&metadataHeaders=To&metadataHeaders=From&metadataHeaders=Subject&fields=id,threadId,internalDate,labelIds,payload(headers)");
  return{id:t(meta?.id,500),thread_id:t(meta?.threadId||m?.threadId,500),at:when(meta),subject:hv(meta?.payload?.headers,"Subject"),to:mb(hv(meta?.payload?.headers,"To")),from:mb(hv(meta?.payload?.headers,"From"))};
+}
+async function recentSentToDomain(domain:any,days:number){
+ const d=nm(domain),n=Math.max(1,Math.min(60,Math.floor(days||14)));if(!d)return null;
+ const q=encodeURIComponent("in:sent newer_than:"+n+"d "+d),x=await gmail("/messages?maxResults=20&q="+q+"&fields=messages(id,threadId),resultSizeEstimate");
+ for(const m of Array.isArray(x?.messages)?x.messages:[]){
+  const meta=await gmail("/messages/"+encodeURIComponent(m.id)+"?format=metadata&metadataHeaders=To&metadataHeaders=Cc&metadataHeaders=Bcc&metadataHeaders=Subject&fields=id,threadId,internalDate,labelIds,payload(headers)");
+  const rec=[hv(meta?.payload?.headers,"To"),hv(meta?.payload?.headers,"Cc"),hv(meta?.payload?.headers,"Bcc")].join(" ").toLowerCase();
+  if(rec.includes("@"+d))return{id:t(meta?.id,500),thread_id:t(meta?.threadId||m?.threadId,500),at:when(meta),subject:hv(meta?.payload?.headers,"Subject")};
+ }
+ return null;
 }
 async function applyLifecycle(tg:any,q:any,life:any){
  const sent=life?.sent,reply=life?.reply;if(!sent)return null;
@@ -138,6 +148,8 @@ async function guards(tg:any,q:any,e:string){
   }
   throw new Error("gmail_recipient_cooldown_active");
  }
+ const ghd=await recentSentToDomain(d,dd);
+ if(ghd)throw new Error("gmail_domain_cooldown_active");
 
  let a=db.from("pppp_outbound_queue_v1").select("id").eq("recipient_email",e).not("sent_at","is",null).gte("sent_at",rc).limit(1);if(q?.id)a=a.neq("id",q.id);const ar=await a;if(ar.error)throw ar.error;if((ar.data||[]).length)throw new Error("recipient_cooldown_active");
  let b=db.from("pppp_outbound_queue_v1").select("id").not("sent_at","is",null).gte("sent_at",dc).or("company_domain.eq."+d+",recipient_email.ilike.%@"+d).limit(1);if(q?.id)b=b.neq("id",q.id);const br=await b;if(br.error)throw br.error;if((br.data||[]).length)throw new Error("domain_cooldown_active");
