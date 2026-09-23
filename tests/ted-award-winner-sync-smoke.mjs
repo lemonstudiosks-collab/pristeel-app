@@ -9,6 +9,12 @@ const sample={
   'buyer-name':{eng:'Rail Infrastructure GmbH'},
   'classification-cpv':['45223210'],
   'place-of-performance':['DE'],
+  'title-proc':{eng:'Station steel modernization'},
+  'title-lot':[{eng:'Structural steel stairs'}],
+  'description-proc':{eng:'Modernization of the station including structural steel works.'},
+  'description-lot':[{eng:'Fabrication and installation of structural steel stairs and platforms.'}],
+  'result-value-notice':'812500.25',
+  'result-value-cur-notice':'EUR',
   'winner-name':['Steel Winner GmbH'],
   'winner-email':['tenders@steelwinner.example'],
   'winner-internet-address':['https://steelwinner.example'],
@@ -28,6 +34,11 @@ assert.equal(row.payload.winner.name,'Steel Winner GmbH');
 assert.equal(row.payload.winner.email,'tenders@steelwinner.example');
 assert.equal(row.payload.winner.website,'https://steelwinner.example');
 assert.equal(row.payload.winner.decision_date,'2026-08-12');
+assert.equal(row.payload.description,'Fabrication and installation of structural steel stairs and platforms.');
+assert.deepEqual(row.payload.ted_details.lot_titles,['Structural steel stairs']);
+assert.equal(row.payload.ted_details.award_date,'2026-08-12');
+assert.equal(row.estimated_value,812500.25);
+assert.equal(row.currency,'EUR');
 assert.equal(row.deadline,null,'TED awards are not application opportunities');
 assert.ok(row.relevance_score>=75,'steel award should pass operational relevance');
 
@@ -124,6 +135,8 @@ const fetchImpl=async (_url,opts)=>{
   assert.ok(!/cn-standard/.test(body.query),'award workflow must never query open contract notices');
   assert.ok(body.fields.includes('winner-name'));
   assert.ok(body.fields.includes('winner-email'));
+  assert.ok(body.fields.includes('description-lot')&&body.fields.includes('description-proc'));
+  assert.ok(body.fields.includes('result-value-notice')&&body.fields.includes('result-value-cur-notice'));
   return {ok:true,status:200,text:async()=>JSON.stringify({notices:[sample]})};
 };
 const summary=await runTedAwardWinnerSync({mode:'preview',minScore:75,days:30,fetchImpl});
