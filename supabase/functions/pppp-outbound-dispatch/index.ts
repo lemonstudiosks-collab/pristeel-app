@@ -6,6 +6,7 @@ const GMAIL_USER=Deno.env.get("GMAIL_USER")||"arianit.vllahiu@prissteel.com";
 const SUPABASE_URL=Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
+const ENGINE="pppp-outbound-dispatch-v4-global-communication-guard";
 
 const cors={
   "Access-Control-Allow-Headers":"content-type, x-pppp-cron-secret",
@@ -70,6 +71,14 @@ function header(m:any,name:string){
 function emails(v:any){
   return (text(v,5000).match(emailRe)||[]).map((x:string)=>x.toLowerCase());
 }
+async function recentSentToExact(recipient:string){
+  const {data:policy,error:policyError}=await db.from("pppp_outbound_policy_v1").select("recipient_cooldown_days").eq("id","global").maybeSingle();
+  if(policyError)throw policyError;
+  const days=Math.max(1,Number(policy?.recipient_cooldown_days||30));
+  const qs=new URLSearchParams({q:"in:sent to:"+recipient+" newer_than:"+days+"d",maxResults:"5"});
+  const x=await gmail("/messages?"+qs.toString());
+  return (x?.messages||[])[0]||null;
+}
 async function markFailed(queueId:string,claimToken:string,error:any){
   try{
     await db.rpc("pppp_outbound_mark_dispatch_failed_v1",{
@@ -115,6 +124,13 @@ Deno.serve(async(req:Request)=>{
       const draft=await gmail(`/drafts/${encodeURIComponent(draftId)}?${qs.toString()}`);
       const liveRecipients=emails(header(draft?.message,"To"));
       if(!liveRecipients.includes(recipient))throw new Error(`live_draft_recipient_mismatch:${recipient}`);
+
+      const {data:qrow,error:qrowError}=await db.from("pppp_outbound_queue_v1").select("source,source_record_id,touch_no").eq("id",queueId).single();
+      if(qrowError)throw qrowError;
+      if(Number(qrow?.touch_no||1)===1){
+        const recent=await recentSentToExact(recipient);
+        if(recent)throw new Error("global_gmail_recipient_cooldown_active:"+recipient);
+      }
 
       const sent=await gmail("/drafts/send",{method:"POST",body:JSON.stringify({id:draftId})});
       if(!sent?.id)throw new Error("gmail_send_missing_message_id");
