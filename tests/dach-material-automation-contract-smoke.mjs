@@ -33,10 +33,10 @@ assert.ok(supplierStart>=0&&dedupe>supplierStart&&create>dedupe,'supplier dedupe
 assert.match(edge,/human_send_required:true,external_email_sent:false/,'DACH Edge responses must preserve the human-send gate');
 assert.doesNotMatch(edge,/\/drafts\/send|\/messages\/send/,'DACH Edge must not contain a Gmail send endpoint');
 
-assert.match(targetBridge,/dach_steel_target_never_creates_project', 'target registration must remain pre-project');
-assert.match(targetBridge,/dach_steel_target_never_creates_partner_or_contact', 'target registration must not create CRM entities');
-assert.match(targetBridge,/dach_steel_target_never_creates_outbound_or_sends_email', 'target registration must not create outbound or send');
-assert.match(outreachBridge,/dach_steel_outreach_draft_uses_shared_outbound/, 'buyer drafts must use the shared outbound queue');
-assert.match(outreachBridge,/dach_steel_outreach_draft_requires_human_send_approval/, 'buyer drafts must remain human gated');
+assert.match(targetBridge,/dach_steel_target_never_creates_project/,'target registration must remain pre-project');
+assert.match(targetBridge,/dach_steel_target_never_creates_partner_or_contact/,'target registration must not create CRM entities');
+assert.match(targetBridge,/dach_steel_target_never_creates_outbound_or_sends_email/,'target registration must not create outbound or send');
+assert.match(outreachBridge,/dach_steel_outreach_draft_uses_shared_outbound/,'buyer drafts must use the shared outbound queue');
+assert.match(outreachBridge,/dach_steel_outreach_draft_requires_human_send_approval/,'buyer drafts must remain human gated');
 
 console.log('DACH material automation contract smoke: PASS');
