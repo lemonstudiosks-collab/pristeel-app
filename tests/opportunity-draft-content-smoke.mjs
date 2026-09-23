@@ -3,6 +3,12 @@ import { buildTedDraftContent, PRISTEEL_SIGNATURE_HTML } from '../supabase/funct
 
 assert.equal(/linkedin/i.test(PRISTEEL_SIGNATURE_HTML),false,'signature must not contain LinkedIn');
 assert.equal((PRISTEEL_SIGNATURE_HTML.match(/<img\b/gi)||[]).length,1,'signature must contain only the PriSteel logo image');
+assert.match(PRISTEEL_SIGNATURE_HTML,/ci3\.googleusercontent\.com\/mail-sig\//,'signature must reuse the established Gmail-hosted PriSteel logo, not embed a new image payload');
+assert.match(PRISTEEL_SIGNATURE_HTML,/href="tel:\+38344244699"/,'signature phone must stay a normal tel link');
+assert.match(PRISTEEL_SIGNATURE_HTML,/href="mailto:arianit\.vllahiu@prissteel\.com"/,'signature email must stay a normal mailto link');
+assert.match(PRISTEEL_SIGNATURE_HTML,/href="https:\/\/www\.prissteel\.com"/,'signature website must use the canonical HTTPS company link');
+assert.equal(/data:image|base64,/i.test(PRISTEEL_SIGNATURE_HTML),false,'signature must not embed base64/data-URI images');
+assert.equal(/pixel|tracking|utm_/i.test(PRISTEEL_SIGNATURE_HTML),false,'signature must not add tracking pixels or campaign parameters');
 
 const readiness={
   winner_role_verified:true,exact_lot_match:true,pristeel_scope_fit:true,
