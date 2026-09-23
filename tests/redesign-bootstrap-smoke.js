@@ -61,7 +61,8 @@ assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includ
 new Function(tenderActions);
 assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
 assert(projectCentric.includes('Përgatit draftet'), 'TED winner popup must expose the human-gated verified multi-contact draft action');
-assert(tenderActions.includes("role!=='gc_epc'&&role!=='producer'"), 'Unknown TED winner role must be blocked until PPPP verifies GC/EPC vs producer classification');
+assert(tenderActions.includes('consortium_project_outreach_draft') && tenderActions.includes('general_project_outreach_draft'), 'TED draft routing must support consortium/general canonical actions instead of blocking them in the UI');
+assert(tenderActions.includes("event==='readiness_blocked'") && tenderActions.includes("event==='route_mismatch'") && tenderActions.includes("event==='communication_history_blocked'"), 'TED draft routing must surface canonical recipient/route/history safety blocks');
 
 // Tender dossier intake owns the new Price Intelligence presentation without creating another store.
 new Function(tenderImporter);
