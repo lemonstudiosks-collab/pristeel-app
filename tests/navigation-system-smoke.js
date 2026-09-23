@@ -77,6 +77,7 @@ const {JSDOM}=require('jsdom');
 
   /* Canonical Home wraps top-level routing but must delegate every non-Home route. */
   w.pstWorkspaceGo('home');
+  await w.PSTHomeCanonicalV1.render();
   assert(w.document.getElementById('page-workspace-home').classList.contains('active'));
   w.pstWorkspaceGo('projects');
   assert(w.document.getElementById('page-workspace-projects').classList.contains('active'),'Projektet must leave Home and activate Projects');

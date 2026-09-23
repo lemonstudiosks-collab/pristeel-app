@@ -162,8 +162,6 @@ Advisor references: [security-definer views](https://supabase.com/docs/guides/da
 - The four intentional authenticated-only RPCs should remain covered by their UI/admin contract tests when changed.
 - The runtime has many compatibility layers. The manifest and tests make it stable, but safe physical deletion requires per-module reachability evidence beyond production-artifact exclusion.
 - Two cron job names no longer describe their six-hour cadence.
-- The package test script shells out to `npm`; environments that provide only pnpm need a portable script invocation.
-- The test suite logs one caught canonical-Home DOM error inside `navigation-system-smoke.js` while still passing. It should be made assertion-clean in a separate repair task.
 
 ## 17. Manual decisions required
 
@@ -189,14 +187,11 @@ Passed:
 - Cron final check: 11 active, zero duplicate commands, zero failures in 24 hours.
 - Data integrity checks: 21/21 returned zero issues.
 
-Not fully clean:
-
-- `pnpm test` wrapper reports failure because it invokes missing `npm`; its underlying Node test chain passed when run directly.
-- One test emits a caught DOM error to stderr but exits successfully; recorded as technical debt rather than silently called clean.
+The full wrapper is assertion-clean: it exits successfully without the previous missing-`npm` failure or post-pass canonical-Home DOM error.
 
 ## 19. Final status
 
-- Build health: **PASS with tooling note** — syntax/runtime/artifact checks pass; wrapper assumes npm.
+- Build health: **PASS** — syntax/runtime/artifact checks and the complete pnpm test wrapper pass.
 - Frontend health: **PASS** — production dependency closure and ownership checks pass; no redesign performed.
 - Database health: **PASS** — no detected integrity failures, invalid indexes or duplicate indexes; safe DDL cleanup verified.
 - Migration consistency: **IMPROVED / PARTIAL** — the identified source gap is preserved, but version history still needs a controlled baseline before automated replay.
