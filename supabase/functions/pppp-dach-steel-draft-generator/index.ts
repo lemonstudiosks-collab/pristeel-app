@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v3";
+const V="pppp-dach-steel-draft-generator-v4-global-guard";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -119,6 +119,9 @@ async function guards(tg:any,q:any,e:string){
  if(q?.bounced_at)throw new Error("buyer_recipient_bounced");
  if(q?.approved_for_send)throw new Error("existing_outreach_already_approved");
  const sp=t(q?.suppression_reason,120);if(sp&&!recover.has(sp))throw new Error("outbound_suppressed:"+sp);
+ const gg=await db.rpc("pppp_global_communication_guard_v1",{p_recipient_email:e,p_company_domain:tg?.company_domain||dom(e),p_exclude_source:SRC,p_exclude_source_record_id:tg?.id||null,p_exclude_queue_id:q?.id||null});
+ if(gg.error)throw gg.error;
+ if(!gg.data?.ok)throw new Error("global_communication_guard:"+t(gg.data?.reason||"blocked",160));
  const p=await db.from("pppp_outbound_policy_v1").select("recipient_cooldown_days,domain_cooldown_days").eq("id","global").maybeSingle();if(p.error)throw p.error;
  const rd=Math.max(1,Number(p.data?.recipient_cooldown_days||30)),dd=Math.max(1,Number(p.data?.domain_cooldown_days||14)),rc=new Date(Date.now()-rd*86400000).toISOString(),dc=new Date(Date.now()-dd*86400000).toISOString(),d=dom(e);
 

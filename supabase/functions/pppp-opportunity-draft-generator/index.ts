@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v13-high-confidence-readiness';
+const GENERATOR='pppp-opportunity-draft-generator-v14-global-communication-guard';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=1;
 const MAX_DRAFT_WRITES_PER_RUN=10;
@@ -79,6 +79,59 @@ async function findSent(row:any){
   return null;
 }
 function sentAt(meta:any){const ms=Number(meta?.internalDate||0);return Number.isFinite(ms)&&ms>0?new Date(ms).toISOString():new Date().toISOString();}
+
+let cachedRecipientCooldownDays:number|null=null;
+async function recipientCooldownDays(){
+  if(cachedRecipientCooldownDays!=null)return cachedRecipientCooldownDays;
+  const {data,error}=await db.from('pppp_outbound_policy_v1').select('recipient_cooldown_days').eq('id','global').maybeSingle();
+  if(error)throw error;
+  cachedRecipientCooldownDays=Math.max(1,Number(data?.recipient_cooldown_days||30));
+  return cachedRecipientCooldownDays;
+}
+async function recentSentToExact(email:string){
+  const days=await recipientCooldownDays(),normalized=normalizeEmail(email);
+  if(!normalized)return null;
+  const data=await gmailSearch('in:sent to:'+normalized+' newer_than:'+days+'d',10);
+  for(const item of data.messages||[]){
+    const m=await gmailMessage(item.id);
+    if((m?.labelIds||[]).includes('SENT'))return m;
+  }
+  return null;
+}
+async function globalCommunicationGuard(a:any,row:any,recipient:any){
+  const email=normalizeEmail(recipient?.email);
+  const domain=text(recipient?.recipient_company_domain||recipient?.company_domain||'',300)||null;
+  const {data,error}=await db.rpc('pppp_global_communication_guard_v1',{
+    p_recipient_email:email,
+    p_company_domain:domain,
+    p_exclude_source:'TED',
+    p_exclude_source_record_id:row?.id||null,
+    p_exclude_queue_id:null
+  });
+  if(error)throw error;
+  return data||{ok:false,reason:'global_guard_empty'};
+}
+async function retireBlockedRegistryRow(row:any,reason:string,guard:any,budget:{writes:number}){
+  const now=new Date().toISOString();
+  if(row?.gmail_draft_id){
+    const live=await gmailDraft(row.gmail_draft_id);
+    if(live){
+      await deleteDraftForRefresh(row.gmail_draft_id);
+      budget.writes++;
+    }
+  }
+  const {data,error}=await db.from(REGISTRY).update({
+    status:'draft_missing',
+    gmail_draft_id:null,
+    gmail_draft_message_id:null,
+    last_checked_at:now,
+    last_error:reason,
+    updated_at:now,
+    payload:{...(row?.payload||{}),global_communication_guard:guard||null,global_guard_blocked_at:now,global_guard_blocked_by:GENERATOR}
+  }).eq('id',row.id).select('*').single();
+  if(error)throw error;
+  return data;
+}
 
 async function registryRow(actionId:string,email:string){const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',actionId).eq('recipient_email',normalizeEmail(email)).maybeSingle();if(error)throw error;return data;}
 async function ensureRegistry(a:any,recipient:any){const email=normalizeEmail(recipient?.email);let row=await registryRow(a.id,email);if(row)return row;const outreachId=crypto.randomUUID(),now=new Date().toISOString(),candidate={outreach_id:outreachId,action_id:a.id,action_key:a.action_key,tender_watch_id:a.tender_watch_id||null,recipient_email:email,recipient_name:recipient?.name||null,gmail_user:GMAIL_USER.toLowerCase(),rfc_message_id:rfcMessageId(outreachId),status:'draft_pending',generator:GENERATOR,human_send_required:true,gmail_auto_send:false,draft_created_at:null,sent_at:null,last_checked_at:now,last_error:null,payload:{route:a.route,target_company:a.target_company||null,recipient_purpose:recipient?.purpose||null,recipient_source_type:recipient?.source_type||null,recipient_source_url:recipient?.source_url||null,company_attribution:recipient?.company_attribution||null,recipient_company_name:recipient?.recipient_company_name||null,recipient_company_domain:recipient?.recipient_company_domain||null,outreach_readiness_v1:a?.payload?.outreach_readiness_v1||null}};const ins=await db.from(REGISTRY).upsert(candidate,{onConflict:'action_id,recipient_email',ignoreDuplicates:true}).select('*');if(ins.error)throw ins.error;row=ins.data?.[0]||await registryRow(a.id,email);if(!row)throw new Error('registry_reservation_failed');return row;}
@@ -196,6 +249,26 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false)
     let row=await ensureRegistry(a,recipient);
     try{
       if(row.status==='sent'){sent++;continue;}
+
+      const ownSent=await findSent(row);
+      if(ownSent){row=await markSent(row,ownSent);sent++;continue;}
+
+      const gg=await globalCommunicationGuard(a,row,recipient);
+      if(!gg?.ok){
+        row=await retireBlockedRegistryRow(row,'global_communication_guard:'+text(gg?.reason||'blocked',180),gg,budget);
+        failures.push({email:normalizeEmail(recipient.email),blocked:true,reason:text(gg?.reason||'global_guard_blocked',180)});
+        continue;
+      }
+
+      const recent=await recentSentToExact(recipient.email);
+      if(recent){
+        if(isSentMatch(row,recent)){row=await markSent(row,recent);sent++;continue;}
+        const liveGuard={ok:false,reason:'gmail_recipient_cooldown_active',gmail_message_id:recent.id,gmail_thread_id:recent.threadId||null,sent_at:sentAt(recent)};
+        row=await retireBlockedRegistryRow(row,'gmail_recipient_cooldown_active',liveGuard,budget);
+        failures.push({email:normalizeEmail(recipient.email),blocked:true,reason:'gmail_recipient_cooldown_active'});
+        continue;
+      }
+
       if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)continue;
       let wasRefresh=false;
       if(row.status==='draft_created'&&row.gmail_draft_id){

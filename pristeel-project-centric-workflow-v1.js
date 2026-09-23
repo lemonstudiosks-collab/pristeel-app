@@ -11,7 +11,7 @@ window.__pstProjectCentricWorkflowV2=true;
 window.__pstProjectCentricWorkflowV3=true;
 window.__pstProjectCentricWorkflowV4=true;
 
-var tenderState={rows:[],mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{}};
+var tenderState={rows:[],mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{},communicationRows:[],communicationByTender:{}};
 var contactBusy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -128,7 +128,19 @@ function latestDate(rows,key){var out='';A(rows).forEach(function(x){var v=S(x&&
 function outgoingFor(r){var latest=null,after=Date.parse(r.draft_created_at||r.updated_at||0)-300000;A(tenderState.emailByThread[S(r.gmail_thread_id)]).forEach(function(m){var at=Date.parse(m.sent_at||0);if(N(m.direction)==='outgoing'&&at>=after&&(!latest||at>Date.parse(latest.sent_at||0)))latest=m;});return latest;}
 function deliveredRows(rows){return A(rows).map(function(r){var mail=outgoingFor(r),sent=S(r.sent_at||mail&&mail.sent_at);return sent?Object.assign({},r,{sent_at:sent,status:'sent'}):null;}).filter(Boolean);}
 function replyFor(rows){var latest=null;A(rows).forEach(function(r){var sent=Date.parse(r.sent_at||0),messages=A(tenderState.emailByThread[S(r.gmail_thread_id)]);messages.forEach(function(m){var at=Date.parse(m.sent_at||0);if(N(m.direction)==='incoming'&&at>sent&&(!latest||at>Date.parse(latest.sent_at||0)))latest=m;});});return latest;}
+function communicationRowsFor(r){return A(tenderState.communicationByTender[S(r&&r.id)]);}
+function communicationFor(r){
+ var rows=communicationRowsFor(r);if(!rows.length)return null;
+ var rank={replied:0,waiting:1,contacted_history:2,new:3};
+ rows.sort(function(a,b){var ar=rank[S(a.communication_state)]==null?9:rank[S(a.communication_state)],br=rank[S(b.communication_state)]==null?9:rank[S(b.communication_state)];return ar-br||S(b.communication_at).localeCompare(S(a.communication_at));});
+ return rows[0]||null;
+}
+function communicationActive(r){var x=communicationFor(r),s=S(x&&x.communication_state);return s==='waiting'||s==='replied'?x:null;}
+
 function opportunityLifecycle(r){
+ var comm=communicationActive(r),cs=S(comm&&comm.communication_state);
+ if(cs==='replied')return'replied';
+ if(cs==='waiting')return'waiting';
  var rows=outreachRows(r),sent=deliveredRows(rows);
  if(replyFor(sent))return'replied';
  if(sent.length)return'waiting';
@@ -139,21 +151,25 @@ function opportunityLifecycle(r){
  return'new';
 }
 function lifecycleMeta(r){
- var lane=opportunityLifecycle(r),rows=outreachRows(r),sent=deliveredRows(rows),reply=replyFor(sent),p=tenderPayload(r),d=p.outreach_draft||p.gmail_draft||{},when='',recipients=[];
+ var lane=opportunityLifecycle(r),rows=outreachRows(r),sent=deliveredRows(rows),reply=replyFor(sent),p=tenderPayload(r),d=p.outreach_draft||p.gmail_draft||{},comm=communicationActive(r),when='',recipients=[];
  rows.forEach(function(x){var e=S(x.recipient_email).trim();if(e&&recipients.indexOf(e)<0)recipients.push(e);});
- if(lane==='replied')when=S(reply&&reply.sent_at);
+ if(comm&&S(comm.target_email).trim()&&recipients.indexOf(S(comm.target_email).trim())<0)recipients.push(S(comm.target_email).trim());
+ if(comm&&(lane==='replied'||lane==='waiting'))when=S(comm.communication_at);
+ else if(lane==='replied')when=S(reply&&reply.sent_at);
  else if(lane==='waiting')when=latestDate(sent,'sent_at')||S(p.ted_contacted_at);
  else if(lane==='draft')when=latestDate(rows,'draft_created_at')||S(d.created_at||d.scheduled_at);
- return{lane:lane,when:when,recipients:recipients,reply:reply};
+ return{lane:lane,when:when,recipients:recipients,reply:reply,communication:comm};
 }
 function lifecycleLabel(meta){if(meta.lane==='draft')return'Draft i përgatitur';if(meta.lane==='waiting')return'Në pritje';if(meta.lane==='replied')return'Përgjigje e pranuar';return'E re';}
 function lifecycleWhen(meta){if(!meta.when)return'';try{var d=new Date(meta.when);return isNaN(d.getTime())?'':d.toLocaleString('sq-AL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
 function lifecycleDateLabel(meta){var when=lifecycleWhen(meta);if(!when)return'';if(meta.lane==='draft')return'Drafti: '+when;if(meta.lane==='waiting')return'Dërguar: '+when;if(meta.lane==='replied')return'Përgjigjja: '+when;return'';}
 async function loadOpportunityOutreach(){
- tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.emailByThread={};
+ tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.emailByThread={};tenderState.communicationRows=[];tenderState.communicationByTender={};
  try{
    var rows=A(await db('pppp_opportunity_outreach_registry_v1?select=tender_watch_id,recipient_email,status,draft_created_at,sent_at,gmail_thread_id,gmail_message_id,updated_at&order=updated_at.desc&limit=2000'));
    tenderState.outreachRows=rows;rows.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.outreachByTender[id]||(tenderState.outreachByTender[id]=[])).push(r);});
+   var comm=A(await db('pppp_opportunity_communication_state_v1?select=action_id,tender_watch_id,target_email,communication_state,communication_at,communication_gmail_url,communication_thread_id,last_outgoing_subject,outgoing_match_type&communication_state=in.(waiting,replied,contacted_history)&order=communication_at.desc.nullslast&limit=2000'));
+   tenderState.communicationRows=comm;comm.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.communicationByTender[id]||(tenderState.communicationByTender[id]=[])).push(r);});
    var threads=[];rows.forEach(function(r){if(/^[a-zA-Z0-9_-]+$/.test(S(r.gmail_thread_id))&&threads.indexOf(S(r.gmail_thread_id))<0)threads.push(S(r.gmail_thread_id));});
    if(threads.length){var mails=A(await db('project_emails?gmail_thread_id=in.('+threads.join(',')+')&select=gmail_thread_id,gmail_message_id,direction,from_email,to_emails,subject,sent_at&order=sent_at.asc&limit=2000'));mails.forEach(function(m){var t=S(m.gmail_thread_id);if(t)(tenderState.emailByThread[t]||(tenderState.emailByThread[t]=[])).push(m);});}
  }catch(e){console.warn('PPPP opportunity outreach state:',e);}
@@ -311,8 +327,12 @@ function officialSourceAction(r,label){
  return'<button data-pcw-ti="source" data-id="'+E(r.id)+'">'+E(label||'Burimi zyrtar')+'</button>';
 }
 function modalActionBar(r){
- var id=E(r.id),award=tenderMode(r)==='award';
+ var id=E(r.id),award=tenderMode(r)==='award',comm=communicationActive(r);
  if(award){
+   if(comm){
+     var replied=S(comm.communication_state)==='replied',label=replied?'Përgjigje e marrë · Hap Gmail':'Kontaktuar · Hap Gmail';
+     return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="communication" data-id="'+id+'">'+label+'</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+   }
    return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="draft" data-id="'+id+'">Përgatit draftet</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
  }
  return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary download" data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen</button><button class="dossier" data-pcw-ti="dossier" data-id="'+id+'">Analizo kushtet</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ketë analizuar dosjen.">Krijo projekt</button>'+officialSourceAction(r,'Burimi zyrtar')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
@@ -365,6 +385,11 @@ async function tenderAction(kind,id,btn){
  if(btn)btn.disabled=true;
  try{
    if(kind==='source')return await exactSource(r);
+   if(kind==='communication'){
+     var comm=communicationActive(r),url=S(comm&&comm.communication_gmail_url).trim();
+     if(url&&/^https:\/\/mail\.google\.com\//i.test(url)){window.open(url,'_blank','noopener');return true;}
+     throw new Error('Komunikimi ekziston, por lidhja e Gmail nuk është e disponueshme.');
+   }
    if(kind==='contacts'){if(P&&typeof P.contacts==='function')return P.contacts(id);return false;}
    if(kind==='download'){
      var DL=window.PSTTenderDossierAnalysisV1;if(!DL||typeof DL.download!=='function')throw new Error('Shkarkimi i dosjes nuk është gati. Rifresko platformën dhe provo përsëri.');

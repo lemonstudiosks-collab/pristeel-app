@@ -6,6 +6,7 @@ const GMAIL_USER=Deno.env.get('GMAIL_USER')||'arianit.vllahiu@prissteel.com';
 const SUPABASE_URL=Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
+const ENGINE='pppp-gc-outreach-v8-global-communication-guard';
 const cors={
   'Access-Control-Allow-Origin':'*',
   'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret',
@@ -198,6 +199,17 @@ async function processOne(row:any){
 
   // Before Draft #1, use both the DB hard guard and actual Gmail Sent history.
   if(!p.first_sent_at&&p.status==='contact_ready'){
+    const gg=await rpc('pppp_global_communication_guard_v1',{
+      p_recipient_email:p.contact_email,
+      p_company_domain:p.company_domain||contactDomain(p),
+      p_exclude_source:'GC',
+      p_exclude_source_record_id:p.id,
+      p_exclude_queue_id:null
+    });
+    if(!gg?.ok){
+      await rpc('pppp_gc_mark_gmail_history_duplicate_v1',{p_prospect_id:p.id,p_reason:'Global communication guard: '+text(gg?.reason||'blocked',180)});
+      return {id:p.id,company:p.company_name,event:'blocked_global_communication_guard',reason:gg?.reason||'blocked',guard:gg,engine:ENGINE};
+    }
     const hist=await rpc('pppp_gc_historical_outreach_v1',{p_company:p.company_name,p_domain:p.company_domain,p_email:p.contact_email});
     if(hist?.contacted){await rpc('pppp_gc_mark_gmail_history_duplicate_v1',{p_prospect_id:p.id,p_reason:'Historical PPPP outreach already exists'});return {id:p.id,company:p.company_name,event:'blocked_db_history'};}
     if(await historySentToDomain(p)){await rpc('pppp_gc_mark_gmail_history_duplicate_v1',{p_prospect_id:p.id,p_reason:'Historical Gmail Sent message exists for this company domain'});return {id:p.id,company:p.company_name,event:'blocked_gmail_history'};}
