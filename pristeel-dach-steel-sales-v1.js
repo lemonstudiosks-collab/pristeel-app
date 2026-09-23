@@ -1,4 +1,4 @@
-/* PRISTEEL DACH Steel Buyers v4
+/* PRISTEEL DACH Steel Buyers v4.1
  * Buyer Target + Material Intelligence Desk for direct steel supply in DE/AT/CH.
  * Operational buyer-to-supply workflow over qualified targets in pppp_dach_steel_targets_v1.
  * Home reads only the 1-row pppp_dach_steel_home_summary_v1 view.
@@ -196,8 +196,9 @@ async function loadSupplierCandidates(r){
  var box=state.supplierByTarget[id];if(box&&box.loaded)return box.data;
  state.supplierByTarget[id]={loading:true,loaded:false,error:'',data:null};renderPage();
  try{
-  var raw=await window.supaFetch('rpc/pppp_chatgpt_supplier_intelligence_v1','POST',{p_requirement:requirementFor(r),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});
-  state.supplierByTarget[id]={loading:false,loaded:true,error:'',data:raw||{}};
+  var raw=await edgeDraft({mode:'suppliers',target_id:id});
+  var data=raw&&raw.supplier_intelligence?raw.supplier_intelligence:{};
+  state.supplierByTarget[id]={loading:false,loaded:true,error:'',data:data};
  }catch(e){
   state.supplierByTarget[id]={loading:false,loaded:true,error:S(e&&e.message||e),data:null};
  }
