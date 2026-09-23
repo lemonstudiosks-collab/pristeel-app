@@ -124,7 +124,7 @@ function buildDossier(raw){
   var historical=lc!=='PRE_AWARD'&&lc!=='WAITING';
   var dossier={
     schema_version:1,
-    project:{id:S(project.id),ref:first(project.business_ref,project.ref),name:first(project.name,project.project_name),client:first(project.client,project.client_name,project.company,project.customer),status:first(project.status),operational_state:first(project.operational_state),pipeline_stage:first(project.pipeline_stage,project.pipeline),source_refs:[source('projects',project)]},
+    project:{id:S(project.id),ref:first(project.business_ref,project.ref),business_ref:first(project.business_ref),name:first(project.name,project.project_name),client:first(project.client,project.client_name,project.company,project.customer),status:first(project.status),operational_state:first(project.operational_state),operational_state_source:first(project.operational_state_source),pipeline_stage:first(project.pipeline_stage,project.pipeline),workflow_type:first(project.workflow_type),origin_type:first(project.origin_type),business_type:first(project.business_type),work_model:first(project.work_model),deal_type:first(project.deal_type),location:first(project.location),deadline:first(project.deadline,project.due_date),due_date:first(project.due_date,project.deadline),notes:first(project.notes),updated_at:first(project.updated_at),last_activity_at:first(project.last_activity_at),last_email_at:first(project.last_email_at),source_refs:[source('projects',project)]},
     lifecycle:{code:lc,pre_award_editable:lc==='PRE_AWARD'||lc==='WAITING',historical_pre_award:historical,source_refs:[source('projects',project,'status')]},
     current_state:{title:first(project.operational_state,project.pipeline_stage,project.status,lc),reason:'Derived from explicit project lifecycle fields and confirmed evidence.',source_refs:[source('projects',project,'operational_state')]},
     next_action:null,
@@ -144,7 +144,7 @@ function buildDossier(raw){
     documents:unique(A(raw.files).concat(A(raw.docs),A(raw.projectDocs),A(raw.attachmentLinks)),function(x){return first(x.id,x.drive_file_id,x.file_name,x.filename);}),
     communications:A(raw.emails),execution:{state:first(project.operational_state,project.pipeline_stage),requirements:A(raw.projectRequirements),historical_pre_award:historical},
     milestones:A(raw.milestones),tasks:A(raw.tasks),blockers:bs,recent_changes:changes(raw),
-    evidence:{contacts:A(raw.contacts),bom:A(raw.bom),rfqs:A(raw.rfqs),offers:A(raw.offers),ourOffers:A(raw.ourOffers),supplierOffers:A(raw.supplierOffers),contextFacts:A(raw.contextFacts),docs:A(raw.docs),projectDocs:A(raw.projectDocs),attachmentLinks:A(raw.attachmentLinks),inboxDocs:A(raw.inboxDocs),files:A(raw.files),emails:A(raw.emails),emailLinks:A(raw.emailLinks),linkedOnly:A(raw.linkedOnly),emailConflicts:A(raw.emailConflicts),mailAttachments:A(raw.mailAttachments),invoicesOut:A(raw.invoicesOut),invoicesIn:A(raw.invoicesIn),adjustments:A(raw.adjustments),guarantees:A(raw.guarantees),drive:raw.drive||{rows:[]},integration:raw.integration||{}},
+    evidence:{contacts:A(raw.contacts),bom:A(raw.bom),rfqs:A(raw.rfqs),offers:A(raw.offers),ourOffers:A(raw.ourOffers),supplierOffers:A(raw.supplierOffers),contextFacts:A(raw.contextFacts),sourceTenders:A(raw.sourceTenders),docs:A(raw.docs),projectDocs:A(raw.projectDocs),attachmentLinks:A(raw.attachmentLinks),inboxDocs:A(raw.inboxDocs),files:A(raw.files),emails:A(raw.emails),emailLinks:A(raw.emailLinks),linkedOnly:A(raw.linkedOnly),emailConflicts:A(raw.emailConflicts),mailAttachments:A(raw.mailAttachments),invoicesOut:A(raw.invoicesOut),invoicesIn:A(raw.invoicesIn),adjustments:A(raw.adjustments),guarantees:A(raw.guarantees),drive:raw.drive||{rows:[]},integration:raw.integration||{}},
     data_quality:{complete:true,issues:[],ambiguous:[]},
     event_contract:{accepted_types:EVENT_TYPES.slice(),new_project_policy:'candidate_requires_human_confirmation'}
   };
@@ -165,10 +165,12 @@ async function loadProjectDossier(projectId){
   var id=S(projectId),base=root.PSTProjectDataIntegrity;
   if(!/^[a-f0-9]{8}-[a-f0-9-]{27,}$/i.test(id))throw new Error('Project dossier requires an exact project UUID.');
   if(!base||typeof base.load!=='function')throw new Error('Canonical project data loader is unavailable.');
-  var parts=await Promise.all([base.load(id),q('tasks',id),q('project_supplier_decisions',id),q('supplier_offer_candidates',id),q('invoice_candidates',id),q('project_requirements',id),q('project_analyses',id),q('contracts',id)]);
-  var raw=parts[0];
+  var basePromise=base.load(id),extrasPromise=Promise.all([q('tasks',id),q('project_supplier_decisions',id),q('supplier_offer_candidates',id),q('invoice_candidates',id),q('project_requirements',id),q('project_analyses',id),q('contracts',id)]);
+  var pair=await Promise.all([basePromise,extrasPromise]),raw=pair[0],parts=pair[1];
   if(!raw||!raw.project||S(raw.project.id)!==id)throw new Error('Loaded project does not match the requested UUID.');
-  raw.tasks=parts[1];raw.supplierDecisions=parts[2];raw.candidates=parts[3].map(function(x){x.__table='supplier_offer_candidates';return x;}).concat(parts[4].map(function(x){x.__table='invoice_candidates';return x;}));raw.projectRequirements=parts[5];raw.projectAnalyses=parts[6];raw.contracts=parts[7];
+  raw.tasks=parts[0];raw.supplierDecisions=parts[1];raw.candidates=parts[2].map(function(x){x.__table='supplier_offer_candidates';return x;}).concat(parts[3].map(function(x){x.__table='invoice_candidates';return x;}));raw.projectRequirements=parts[4];raw.projectAnalyses=parts[5];raw.contracts=parts[6];
+  var p=raw.project||{},isTedAward=norm(p.workflow_type)==='eu award sales'||norm(p.origin_type)==='tender award'||/^ted[: -]/i.test(first(p.business_ref,p.ref,''));
+  raw.sourceTenders=isTedAward?await safe('kek_tender_watch?project_id=eq.'+encodeURIComponent(id)+'&select=id,publication_no,procurement_no,published_date,authority,title,status,relevance_score,payload,detail_url,source_url,project_id&order=published_date.desc.nullslast&limit=20'):[];
   return buildDossier(raw);
 }
 
