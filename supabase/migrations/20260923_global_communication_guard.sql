@@ -99,23 +99,6 @@ events as (
     )
 
   union all
-  select 'QUEUE:'||upper(coalesce(q.source,'')),q.id::text,
-         lower(coalesce(q.recipient_email,'')),
-         lower(coalesce(public.pppp_outbound_domain_v1(q.recipient_email,q.company_domain),'')),
-         'suppressed',q.updated_at
-  from public.pppp_outbound_queue_v1 q, ctx c
-  where q.sent_at is null
-    and q.suppression_reason is not null
-    and q.suppression_reason not in ('gmail_draft_missing','gmail_draft_stale','draft_missing','draft_stale')
-    and not (
-      q.id is not distinct from c.exclude_queue_id
-      or (
-        upper(coalesce(q.source,''))=c.exclude_source
-        and q.source_record_id is not distinct from c.exclude_source_record_id
-      )
-    )
-
-  union all
   select 'GMAIL',pe.gmail_message_id,
          lower(x.email),
          lower(coalesce(public.pppp_outbound_domain_v1(x.email,null),'')),
@@ -193,6 +176,15 @@ events as (
     and coalesce(g.first_draft_id,g.second_draft_id) is not null
     and g.status in ('draft_ready','draft_2_ready','followup_due')
     and not (c.exclude_source='GC' and g.id is not distinct from c.exclude_source_record_id)
+
+  union all
+  select 'GC',g.id::text,
+         lower(coalesce(g.contact_email,'')),
+         lower(coalesce(public.pppp_outbound_domain_v1(g.contact_email,g.company_domain),'')),
+         'suppressed',g.updated_at
+  from public.pppp_gc_prospects_v1 g, ctx c
+  where (coalesce(g.do_not_contact,false) or g.status='do_not_contact')
+    and not (c.exclude_source='GC' and g.id is not distinct from c.exclude_source_record_id)
 ),
 relevant as (
   select e.*,
@@ -234,9 +226,9 @@ select jsonb_build_object(
       when c.domain='prissteel.com' then 'internal_pristeel_recipient'
       when f.bounced then 'cross_source_recipient_bounced'
       when f.replied then 'cross_source_reply_history'
-      when f.suppressed then 'cross_source_recipient_suppressed'
       when f.recipient_sent then 'cross_source_recipient_cooldown'
       when f.domain_sent then 'cross_source_domain_cooldown'
+      when f.suppressed then 'cross_source_recipient_suppressed'
       when f.recipient_active then 'cross_source_active_recipient_outreach'
       when f.domain_active then 'cross_source_active_domain_outreach'
       else 'clear'
