@@ -28,11 +28,17 @@ const {JSDOM}=require('jsdom');
   assert(w.document.getElementById('page-workspace-project').textContent.includes('STACON'),'Final DOM must contain the latest project data');
   assert(!w.document.getElementById('page-workspace-project').textContent.includes('STALE'),'Stale data must never replace the latest project');
   assert(typeof w.pstPiBack==='function'&&typeof w.pstPiProjects==='function','Project header navigation helpers must be installed');
+  const projectPage=w.document.getElementById('page-workspace-project');
+  assert(projectPage.querySelector('[data-pst-project-back]'),'Project header must expose one delegated Back control');
+  assert(projectPage.querySelector('[data-pst-projects]'),'Project header must expose the Projects control');
+  assert.strictEqual(projectPage.querySelectorAll('[data-pst-project-back]').length,1,'Project header must expose only one canonical Back control');
   w.pstPiBack();
   assert(Array.isArray(navCalls[0])&&navCalls[0][0]==='opportunities'&&navCalls[0][1].source==='TED','TED award Back must return to TED Opportunities');
   w.pstPiProjects();
   assert(navCalls[1]==='projects','Projektet must use the resilient Projects owner');
   assert(!new URL(w.location.href).searchParams.has('project_id'),'Leaving a project must clear the project_id URL lock');
+  assert.strictEqual(w.localStorage.getItem('pst_exact_project_id_v1'),null,'Leaving a project must clear the exact-project localStorage lock');
+  assert.strictEqual(w.sessionStorage.getItem('pst_exact_project_id_v1'),null,'Leaving a project must clear the exact-project session lock');
 
   const failed=w.pstOpenProjectWorkspace(A);
   requests[A].reject(new Error('network unavailable'));
