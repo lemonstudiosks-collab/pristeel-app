@@ -99,7 +99,7 @@ export function normalizeTedAward(row,seenAt=new Date().toISOString()){
     source_key:`TED:${publication}`,procurement_no:`TED-${publication}`,publication_no:publication,
     authority:buyer,title,document_type:type||null,fpp:cpv.find(c=>RAW_CPVS.has(c)||STRUCT_CPVS.has(c))||cpv[0]||null,
     fpp_description:cpv.length?`CPV ${cpv.join(', ')}`:null,contract_type:null,contract_value_band:null,
-    procedure:null,estimated_value:null,currency:'EUR',deadline:null,published_date:isoDate(field(row,'publication-date')),
+    procedure:null,estimated_value:null,currency:null,deadline:null,published_date:isoDate(field(row,'publication-date')),
     is_retender:false,category:cls.category,relevance_score:cls.relevance_score,match_reasons:cls.match_reasons,
     source_url:`https://ted.europa.eu/en/notice/${encodeURIComponent(publication)}/html`,
     detail_url:`https://ted.europa.eu/en/notice/-/detail/${encodeURIComponent(publication)}`,
@@ -135,7 +135,14 @@ export function preserveWinnerIntelligence(rows,existingRows){
   const byKey=new Map((Array.isArray(existingRows)?existingRows:[]).map(r=>[String(r?.source_key||''),r]));
   for(const row of Array.isArray(rows)?rows:[]){
     const old=byKey.get(String(row?.source_key||''));
-    const current=row?.payload?.winner,oldWinner=old?.payload?.winner;
+    if(!old)continue;
+    const freshPayload=row?.payload&&typeof row.payload==='object'?row.payload:{};
+    const oldPayload=old?.payload&&typeof old.payload==='object'?old.payload:{};
+    row.payload={...oldPayload,...freshPayload};
+    for(const key of ['estimated_value','currency','procedure','contract_type','contract_value_band']){
+      if((row[key]==null||row[key]==='')&&old[key]!=null&&old[key]!=='')row[key]=old[key];
+    }
+    const current=row?.payload?.winner,oldWinner=oldPayload?.winner;
     if(!current||!oldWinner)continue;
     const staleIdentity=hasLanguageDuplicateArtifacts(oldWinner);
     if(!staleIdentity)mergeWinnerArrays(current,oldWinner);
@@ -160,7 +167,7 @@ export function existingWinnerIntelligencePaths(rows,chunkSize=40){
   const size=Math.max(1,Number(chunkSize)||40),paths=[];
   for(let i=0;i<keys.length;i+=size){
     const chunk=keys.slice(i,i+size).map(encodeURIComponent).join(',');
-    paths.push(`kek_tender_watch?select=source_key,payload&source_key=in.(${chunk})&limit=${Math.min(size,keys.length-i)}`);
+    paths.push(`kek_tender_watch?select=source_key,payload,estimated_value,currency,procedure,contract_type,contract_value_band&source_key=in.(${chunk})&limit=${Math.min(size,keys.length-i)}`);
   }
   return paths;
 }
