@@ -7,8 +7,10 @@ const {JSDOM}=require('jsdom');
   const w=dom.window,requests={};
   const A='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',B='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
   w.PSTProjectDataIntegrity={enc:encodeURIComponent};
+  const navCalls=[];
+  w.PSTPrimaryNavResilienceV10={openProjects:function(){navCalls.push('projects');return true;},openOpportunities:function(ctx){navCalls.push(['opportunities',ctx]);return true;}};
   function dossier(id,name){return{
-    project:{id,name,client:name+' Client',ref:id,status:id===B?'Fituar':'Aktiv',pipeline_stage:id===B?'production_control':'rfq_in'},
+    project:{id,name,client:name+' Client',ref:id,business_ref:id===B?'TED:645196-2026':id,status:id===B?'pritje':'Aktiv',pipeline_stage:id===B?'rfq_in':'rfq_in',workflow_type:id===B?'eu_award_sales':'',origin_type:id===B?'tender_award':''},
     client:{name:name+' Client'},supplier_offers:[],guarantees:[],
     evidence:{contacts:[],bom:[],rfqs:[],offers:[],supplierOffers:[],ourOffers:[],docs:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],files:[],emails:[],emailLinks:[],linkedOnly:[],emailConflicts:[],mailAttachments:[],invoicesOut:[],invoicesIn:[],adjustments:[],guarantees:[],drive:{state:'none',rows:[]},integration:{}}
   };}
@@ -25,6 +27,12 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(new URL(w.location.href).searchParams.get('project_id'),B,'Latest UUID must remain reloadable in the URL');
   assert(w.document.getElementById('page-workspace-project').textContent.includes('STACON'),'Final DOM must contain the latest project data');
   assert(!w.document.getElementById('page-workspace-project').textContent.includes('STALE'),'Stale data must never replace the latest project');
+  assert(typeof w.pstPiBack==='function'&&typeof w.pstPiProjects==='function','Project header navigation helpers must be installed');
+  w.pstPiBack();
+  assert(Array.isArray(navCalls[0])&&navCalls[0][0]==='opportunities'&&navCalls[0][1].source==='TED','TED award Back must return to TED Opportunities');
+  w.pstPiProjects();
+  assert(navCalls[1]==='projects','Projektet must use the resilient Projects owner');
+  assert(!new URL(w.location.href).searchParams.has('project_id'),'Leaving a project must clear the project_id URL lock');
 
   const failed=w.pstOpenProjectWorkspace(A);
   requests[A].reject(new Error('network unavailable'));
