@@ -74,4 +74,13 @@ assert(form&&form.value.includes('/kontakt'),'official contact form must be reco
 assert.equal(form.draft_eligible,false,'contact forms are channels, not Gmail recipients');
 
 
+const guardedWinner={name:'Guarded GmbH',names:['Guarded GmbH']};
+const guardedEnrichment={organizations:[{name:'Guarded GmbH',official_website:'https://guarded.de',contacts:[
+ {type:'email',value:'info@yourdomain.com',purpose:'procurement',confidence:'low',score:999,company_attribution:'external_domain',draft_eligible:false},
+ {type:'email',value:'sales@guarded.de',purpose:'sales',confidence:'high',score:90,company_attribution:'official_domain_match',draft_eligible:true}
+]}]};
+const guardedMerged=mergeWinnerWithEnrichment(guardedWinner,guardedEnrichment);
+assert.equal(guardedMerged.email,'sales@guarded.de','merge must skip unsafe email even when it appears first');
+
+
 console.log('TED winner contact enrichment smoke: OK');
