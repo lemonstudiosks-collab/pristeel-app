@@ -33,7 +33,7 @@ function cpvCodes(row){return listScalars(field(row,'classification-cpv')).map(v
 function tedTitle(row){const value=field(row,'notice-title');if(typeof value==='object'&&!Array.isArray(value)){for(const key of ['eng','en','deu','de','fra','fr'])if(value[key])return decodeTedText(firstScalar(value[key]));}return decodeTedText(firstScalar(value));}
 function buyer(row){return firstScalar(field(row,'buyer-name'))||'TED buyer';}
 function country(row){const values=listScalars(field(row,'place-of-performance'));return values[0]||'';}
-function decodeTedText(v){return text(v).replace(/&amp;quot;/gi,'"').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');}
+export function decodeTedText(v){return text(v).replace(/&amp;quot;/gi,'"').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');}
 function preferredScalars(value){
   const out=[];
   const walk=v=>{
@@ -77,7 +77,7 @@ function tenderValue(row,phase){
   for(const [valueField,currencyField] of candidates){const x=pairedValue(row,valueField,currencyField);if(x&&x.amount!=null)return{...x,kind:valueField.startsWith('result-')?'award':'estimated'};}
   return{amount:null,currency:null,source:null,values:[],kind:null};
 }
-function tedDetails(row,phase){
+export function tedDetails(row,phase){
   const procedureDescription=decodeTedText(firstScalar(field(row,'description-proc')));
   const lotDescriptions=preferredScalars(field(row,'description-lot')).slice(0,12);
   const description=lotDescriptions[0]||procedureDescription||'';
