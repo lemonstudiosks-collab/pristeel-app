@@ -74,6 +74,32 @@ async function candidateTenders(row:any,external:string,meta:any,direction:strin
     if(hist.length>1)return{ids:[],primary:null,method:"ambiguous-ted-history-thread-v2",confidence:0};
   }
 
+  // A real conversation may have started outside PPPP, so it can legitimately
+  // lack our registry headers. In that case, match the concrete tender named in
+  // the subject before considering the much weaker contact-email history.
+  const subject=T(row.subject||hdr(meta,"Subject"),1000);
+  const snippet=T(row.snippet,4000);
+  if(subject||snippet){
+    const q=await db.from("kek_tender_watch")
+      .select("id,title,authority,publication_no,published_date")
+      .ilike("source_key","TED:%")
+      .in("status",["new","review","watch"])
+      .order("published_date",{ascending:false,nullsFirst:false})
+      .limit(1000);
+    if(q.error)throw q.error;
+    const ranked=(q.data||[])
+      .map((k:any)=>({id:T(k.id,80),score:scoreTender(k,subject,snippet)}))
+      .filter((x:any)=>x.id&&x.score>=2)
+      .sort((a:any,b:any)=>b.score-a.score);
+    if(ranked.length){
+      const best=ranked[0],runnerUp=ranked[1];
+      if(!runnerUp||best.score-runnerUp.score>=1){
+        return{ids:[best.id],primary:best.id,method:"ted-subject-title-v7",confidence:best.score>=100?100:90};
+      }
+      return{ids:[],primary:null,method:"ambiguous-ted-subject-title-v7",confidence:70};
+    }
+  }
+
   if(external){
     const re=await db.from("pppp_opportunity_outreach_registry_v1")
       .select("tender_watch_id,recipient_email,status")
@@ -145,7 +171,7 @@ async function updateTenderBounce(tenderId:string,email:string,row:any){
   const p=q.data.payload||{},old=p.outreach||{},d=day(row.sent_at);
   p.outreach={...old,status:"bounced",bounced:true,replied:false,last_bounce_at:row.sent_at,
     bounce_gmail_message_id:row.gmail_message_id,gmail_thread_id:row.gmail_thread_id,
-    contact_email:email,source:"gmail-ted-sales-reconciler-v6-canonical"};
+    contact_email:email,source:"gmail-ted-sales-reconciler-v7-canonical"};
   p.human_action_required=true;p.next_check_on=d;
   const patch:any={payload:p,updated_at:new Date().toISOString()};
   if(q.data.status!=="ignored")patch.status="review";
@@ -153,7 +179,7 @@ async function updateTenderBounce(tenderId:string,email:string,row:any){
   if(u.error)throw u.error;
 }
 
-async function updateTender(tenderId:string,email:string,row:any,direction:string){const q=await db.from("kek_tender_watch").select("id,status,payload").eq("id",tenderId).single();if(q.error)throw q.error;const p=q.data.payload||{},old=p.outreach||{},d=day(row.sent_at);if(direction==="incoming"){p.outreach={...old,status:"replied",replied:true,last_reply_at:row.sent_at,reply_gmail_message_id:row.gmail_message_id,gmail_thread_id:row.gmail_thread_id,contact_email:email,source:"gmail-ted-sales-reconciler-v6-canonical"};p.human_action_required=true;p.next_check_on=d}else{p.outreach={...old,status:"sent",replied:old.replied===true,last_sent_at:row.sent_at,gmail_message_id:row.gmail_message_id,gmail_thread_id:row.gmail_thread_id,contact_email:email,follow_up_date:plusDays(d,7),source:"gmail-ted-sales-reconciler-v6-canonical"};p.human_action_required=false;p.next_check_on=plusDays(d,7)}const patch:any={payload:p,updated_at:new Date().toISOString()};if(q.data.status!=="ignored")patch.status="review";const u=await db.from("kek_tender_watch").update(patch).eq("id",tenderId);if(u.error)throw u.error}
+async function updateTender(tenderId:string,email:string,row:any,direction:string){const q=await db.from("kek_tender_watch").select("id,status,payload").eq("id",tenderId).single();if(q.error)throw q.error;const p=q.data.payload||{},old=p.outreach||{},d=day(row.sent_at);if(direction==="incoming"){p.outreach={...old,status:"replied",replied:true,last_reply_at:row.sent_at,reply_gmail_message_id:row.gmail_message_id,gmail_thread_id:row.gmail_thread_id,contact_email:email,source:"gmail-ted-sales-reconciler-v7-canonical"};p.human_action_required=true;p.next_check_on=d}else{p.outreach={...old,status:"sent",replied:old.replied===true,last_sent_at:row.sent_at,gmail_message_id:row.gmail_message_id,gmail_thread_id:row.gmail_thread_id,contact_email:email,follow_up_date:plusDays(d,7),source:"gmail-ted-sales-reconciler-v7-canonical"};p.human_action_required=false;p.next_check_on=plusDays(d,7)}const patch:any={payload:p,updated_at:new Date().toISOString()};if(q.data.status!=="ignored")patch.status="review";const u=await db.from("kek_tender_watch").update(patch).eq("id",tenderId);if(u.error)throw u.error}
 
 async function removeInvalid(row:any,kind:string){const del=await db.from("project_emails").delete().eq("id",row.id).is("project_id",null);if(del.error)throw del.error;return{kind,id:row.gmail_message_id}}
 async function markEmailReview(row:any,reason:string,method:string){
@@ -236,6 +262,6 @@ async function linkRow(row:any,meta:any){
   return{kind:direction==="incoming"?"reply_linked":"sent_linked",id:row.gmail_message_id,tenders:c.ids,primary:c.primary,method:c.method};
 }
 
-async function run(days=3,limit=300){const safeDays=Math.max(1,Math.min(14,Number(days)||3)),safeLimit=Math.max(20,Math.min(1000,Number(limit)||300)),since=new Date(Date.now()-safeDays*86400000).toISOString();const q=await db.from("project_emails").select("id,gmail_message_id,gmail_thread_id,project_id,tender_watch_id,direction,from_email,to_emails,cc_emails,subject,snippet,sent_at,match_method").is("project_id",null).is("tender_watch_id",null).gte("sent_at",since).order("sent_at",{ascending:false}).limit(safeLimit);if(q.error)throw q.error;const summary:any={checked:(q.data||[]).length,drafts_removed:0,unsent_internal_removed:0,sent_linked:0,replies_linked:0,bounces_linked:0,unmatched_bounces:0,ambiguous:0,unmatched:0,skipped:0,errors:0,items:[]};for(const row of q.data||[]){try{const meta=await gmailMessage(row.gmail_message_id);if(!meta){summary.skipped++;continue}const r=await linkRow(row,meta);if(r.kind==="draft_removed")summary.drafts_removed++;else if(r.kind==="unsent_internal_removed")summary.unsent_internal_removed++;else if(r.kind==="sent_linked")summary.sent_linked++;else if(r.kind==="reply_linked")summary.replies_linked++;else if(r.kind==="bounce_linked")summary.bounces_linked++;else if(r.kind==="unmatched_bounce")summary.unmatched_bounces++;else if(r.kind==="ambiguous")summary.ambiguous++;else if(r.kind==="unmatched")summary.unmatched++;else summary.skipped++;summary.items.push(r)}catch(e){summary.errors++;summary.items.push({id:row.gmail_message_id,error:T((e as any)?.message||e,500)})}}return summary}
+async function run(days=3,limit=300){const safeDays=Math.max(1,Math.min(14,Number(days)||3)),safeLimit=Math.max(20,Math.min(1000,Number(limit)||300)),since=new Date(Date.now()-safeDays*86400000).toISOString();const q=await db.from("project_emails").select("id,gmail_message_id,gmail_thread_id,project_id,tender_watch_id,direction,from_email,to_emails,cc_emails,subject,snippet,sent_at,match_method").is("project_id",null).is("tender_watch_id",null).gte("sent_at",since).order("sent_at",{ascending:true}).limit(safeLimit);if(q.error)throw q.error;const summary:any={checked:(q.data||[]).length,drafts_removed:0,unsent_internal_removed:0,sent_linked:0,replies_linked:0,bounces_linked:0,unmatched_bounces:0,ambiguous:0,unmatched:0,skipped:0,errors:0,items:[]};for(const row of q.data||[]){try{const meta=await gmailMessage(row.gmail_message_id);if(!meta){summary.skipped++;continue}const r=await linkRow(row,meta);if(r.kind==="draft_removed")summary.drafts_removed++;else if(r.kind==="unsent_internal_removed")summary.unsent_internal_removed++;else if(r.kind==="sent_linked")summary.sent_linked++;else if(r.kind==="reply_linked")summary.replies_linked++;else if(r.kind==="bounce_linked")summary.bounces_linked++;else if(r.kind==="unmatched_bounce")summary.unmatched_bounces++;else if(r.kind==="ambiguous")summary.ambiguous++;else if(r.kind==="unmatched")summary.unmatched++;else summary.skipped++;summary.items.push(r)}catch(e){summary.errors++;summary.items.push({id:row.gmail_message_id,error:T((e as any)?.message||e,500)})}}return summary}
 
-Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:H});if(!(await auth(req)))return new Response(JSON.stringify({ok:false,error:"unauthorized"}),{status:401,headers:H});try{const u=new URL(req.url);const out=await run(Number(u.searchParams.get("days")||3),Number(u.searchParams.get("limit")||300));return new Response(JSON.stringify({ok:true,version:6,...out}),{headers:H})}catch(e){return new Response(JSON.stringify({ok:false,error:T((e as any)?.message||e,1000)}),{status:500,headers:H})}});
+Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:H});if(!(await auth(req)))return new Response(JSON.stringify({ok:false,error:"unauthorized"}),{status:401,headers:H});try{const u=new URL(req.url);const out=await run(Number(u.searchParams.get("days")||3),Number(u.searchParams.get("limit")||300));return new Response(JSON.stringify({ok:true,version:7,...out}),{headers:H})}catch(e){return new Response(JSON.stringify({ok:false,error:T((e as any)?.message||e,1000)}),{status:500,headers:H})}});

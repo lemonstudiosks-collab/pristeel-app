@@ -97,12 +97,12 @@ function labels() {
 
 setData('steel_trading');
 let steps = labels();
-assert.deepEqual(steps.map((step) => step.label), ['Client RFQ', 'Furnitorët', 'Krahasimi', 'Oferta', 'Negociata', 'Won / Lost', 'Ekzekutimi']);
+assert.deepEqual(steps.map((step) => step.label), ['Client RFQ', 'Furnitorët', 'Krahasimi', 'Oferta', 'Negociata', 'Won / Lost', 'Customer PO', 'Supplier PO', 'Procurement', 'Transport', 'Delivery', 'Invoice', 'Payment', 'Closed']);
 assert.equal(steps[0].state, 'current');
 
 setData('self_tender', { rfqs: [{ id: 'rfq-1' }] });
 steps = labels();
-assert.deepEqual(steps.map((step) => step.label), ['Tenderi', 'Kërkesat', 'Furnitorët', 'Çmimi & dosja', 'Aplikimi', 'Won / Lost']);
+assert.deepEqual(steps.map((step) => step.label), ['Tenderi', 'Kërkesat', 'Furnitorët', 'Çmimi & dosja', 'Aplikimi', 'Won / Lost', 'Customer PO', 'Supplier PO', 'Procurement', 'Transport', 'Delivery', 'Invoice', 'Payment', 'Closed']);
 assert.equal(steps[2].state, 'current');
 
 setData('eu_award_sales');
@@ -154,8 +154,7 @@ assert.equal(negotiation.area, 'communication');
 
 setData('steel_trading', { project: { status: 'Fituar', pipeline_stage: 'production_control' } });
 steps = labels();
-assert.equal(steps.at(-1).label, 'Ekzekutimi');
-assert.equal(steps.at(-1).state, 'current');
+assert.equal(steps.find((step) => step.label === 'Procurement')?.state, 'current');
 
 setData('', { project: { business_type: 'hybrid' } });
 steps = labels();

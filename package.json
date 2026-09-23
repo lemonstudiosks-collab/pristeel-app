@@ -5,7 +5,7 @@
   "scripts": {
     "check:runtime-ownership": "node tests/runtime-ownership-multi-cycle-smoke.mjs && node tests/production-surface-owner-smoke.mjs && node tests/opportunities-mindmap-v5-interaction-smoke.mjs && node tests/opportunities-late-owner-smoke.mjs && node tests/project-utility-nav-rerender-smoke.mjs && node tests/operator-flow-idle-observer-smoke.mjs && node tests/project-observer-idle-smoke.mjs && node tests/automation-truth-idle-home-smoke.js && node tests/global-fullwidth-shell-smoke.mjs",
     "check:creative-ui": "node --check pristeel-creative-ui-v1.js && node tests/creative-ui-v1-smoke.js",
-    "check:v2": "node tests/pppp-v2-workflow-smoke.mjs",
+    "check:v2": "node tests/pppp-v2-workflow-smoke.mjs && node tests/pppp-v2-canonical-project-workflow-smoke.mjs && node tests/ted-communication-specificity-smoke.mjs",
     "check:cleanup": "node tests/legacy-project-cleanup-smoke.mjs && node tests/read-only-view-hardening-smoke.mjs && node tests/trigger-function-api-lock-smoke.mjs && node tests/production-source-backfill-smoke.mjs && node tests/internal-worker-rpc-lock-smoke.mjs && node tests/internal-rpc-contract-restoration-smoke.mjs && node tests/legacy-internal-rpc-contract-smoke.mjs && node tests/maintenance-rpc-contract-smoke.mjs && node tests/authenticated-rpc-contract-smoke.mjs && node tests/supplier-decision-rpc-contract-smoke.mjs && node tests/chatgpt-bridge-rpc-contract-smoke.mjs && node tests/remaining-maintenance-rpc-lock-smoke.mjs && node tests/service-only-table-contract-smoke.mjs",
     "dev": "node preview-server.mjs",
     "start": "node preview-server.mjs",

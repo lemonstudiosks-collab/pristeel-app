@@ -18,8 +18,8 @@ for(const token of ['rfc822msgid:','X-PPPP-Outreach-ID','X-PPPP-Action-ID','/thr
 assert.ok(sync.includes('to:${row.recipient_email}')&&sync.includes('isSentMatch'),'sent sync recipient fallback must still verify stable PPPP headers/thread metadata');
 for(const forbidden of ['/messages/send','/drafts/send','gmail.send','gmail.compose'])assert.equal(sync.includes(forbidden),false,`sent sync must remain read-only: ${forbidden}`);
 
-for(const token of ['deliveryFailure(meta,row)','failedRecipient(row)','touchBounce(tid,failed,row)','updateTenderBounce(tid,failed,row)','candidateTenders(row,external,meta,direction)','kind:"bounce_linked"','kind:"unmatched_bounce"','ted-registry-recipient-v6']) assert.ok(reconciler.includes(token),`TED Gmail reconciler missing ${token}`);
-assert.ok(reconciler.includes('version:6'),'TED Gmail reconciler must expose bounce-aware v6');
+for(const token of ['deliveryFailure(meta,row)','failedRecipient(row)','touchBounce(tid,failed,row)','updateTenderBounce(tid,failed,row)','candidateTenders(row,external,meta,direction)','kind:"bounce_linked"','kind:"unmatched_bounce"','ted-registry-recipient-v6','ted-subject-title-v7']) assert.ok(reconciler.includes(token),`TED Gmail reconciler missing ${token}`);
+assert.ok(reconciler.includes('version:7'),'TED Gmail reconciler must expose title-specific v7');
 
 for(const token of ['create table if not exists public.pppp_opportunity_outreach_registry_v1','gmail_draft_id text','recipient_email text','action_id uuid','status text','draft_created','sent','human_send_required boolean not null default true','gmail_auto_send boolean not null default false','unique (action_id, recipient_email)','opportunity-outreach-sent-sync-15m'])assert.ok(migration.includes(token),`migration missing ${token}`);
 
