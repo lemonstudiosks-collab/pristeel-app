@@ -2,8 +2,10 @@ import fs from 'node:fs';
 import assert from 'node:assert/strict';
 
 const surface=fs.readFileSync('pristeel-ted-sales-surface-v1.js','utf8');
+const workflow=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8');
 const register=fs.readFileSync('supabase/functions/pppp-opportunity-draft-register/index.ts','utf8');
 new Function(surface);
+new Function(workflow);
 
 assert.match(surface,/data-pcw-lifecycle=\"all\"/,'presentation bridge must target the duplicate lifecycle Të gjitha control');
 assert.match(surface,/if\(all\)all\.remove\(\)/,'duplicate lifecycle Të gjitha must be removed while source Të gjitha stays owned by the canonical workflow');
@@ -16,6 +18,11 @@ assert.match(surface,/pppp-opportunity-draft-register/,'manual Gmail drafts must
 assert.match(surface,/loadOpportunities\(true\)/,'after draft registration the existing Opportunities owner must refresh immediately');
 assert.match(surface,/PSTProjectCentricWorkflowV1/,'the bridge must refresh the existing Opportunities owner instead of creating a parallel workflow');
 assert.doesNotMatch(surface,/gmail-send|sendMessage|messages\/send|users\/messages\/send/,'presentation bridge must never send external email');
+
+assert.match(workflow,/p\.outreach&&typeof p\.outreach==='object'/,'canonical Gmail reconciler payload.outreach must drive sent state');
+assert.match(workflow,/outStatus==='sent'/,'sent TED outreach must leave the new/to-contact lane');
+assert.match(workflow,/ted-award:/,'TED award duplicates across publication numbers must share one semantic opportunity key');
+assert.match(workflow,/opportunityLifecycleRank/,'dedupe must prefer replied/sent state over a duplicate new row');
 
 assert.match(register,/pppp_opportunity_outreach_registry_v1/,'manual drafts must use the existing outreach registry');
 assert.match(register,/tender_watch_id:tenderId/,'draft lifecycle registration must be keyed to the tender, independent of TED\/KRPP\/APP source');
