@@ -41,6 +41,17 @@ eq(pre.lifecycle.code,'PRE_AWARD','pre-award lifecycle');
 eq(pre.lifecycle.pre_award_editable,true,'pre-award remains editable');
 eq(pre.next_action.title,'Send approved RFQ','pre-award next action');
 
+var tedAward=E.buildDossier({
+  project:{id:'44444444-4444-4444-8444-444444444444',name:'HT2R · TED award',client:'HT2R',ref:'645196-2026',business_ref:'TED:645196-2026',status:'pritje',operational_state:'active_work',pipeline_stage:'rfq_in',workflow_type:'eu_award_sales',origin_type:'tender_award',deal_type:'full',location:'FRA'},
+  sourceTenders:[{id:'ted-1',publication_no:'645196-2026',authority:'SEDRE',payload:{source:'TED',notice_phase:'award',winner:{name:'HT2R',organization_count:12}}}]
+});
+eq(tedAward.project.workflow_type,'eu_award_sales','TED award workflow type must survive dossier assembly');
+eq(tedAward.project.origin_type,'tender_award','TED award origin must survive dossier assembly');
+eq(tedAward.project.business_ref,'TED:645196-2026','TED business reference must survive dossier assembly');
+eq(tedAward.project.location,'FRA','project location must survive dossier assembly');
+eq(tedAward.evidence.sourceTenders.length,1,'linked TED source must survive canonical dossier assembly');
+eq(tedAward.evidence.sourceTenders[0].authority,'SEDRE','TED source evidence must stay available to Project Workbench');
+
 var waiting=E.buildDossier({project:project('22222222-2222-4222-8222-222222222222','Në pritje','waiting','client_decision','Waiting'),ourOffers:[{id:'o',total_eur:100,status:'sent'}],emails:[{gmail_message_id:'m',subject:'Offer sent',sent_at:'2026-08-01'}]});
 eq(waiting.lifecycle.code,'WAITING','waiting lifecycle');
 eq(waiting.next_action.title,'Needs confirmation','waiting must not invent follow-up');
