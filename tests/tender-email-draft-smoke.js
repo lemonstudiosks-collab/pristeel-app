@@ -71,6 +71,8 @@ assert.ok(german.body.startsWith('Sehr geehrte Damen und Herren,'));
 assert.ok(german.body.endsWith('Mit freundlichen Grüßen'));
 
 assert.ok(projectCentric.includes('data-pcw-ti="draft"')&&projectCentric.includes('Përgatit draftet'),'Action Console must expose verified multi-contact draft preparation for TED winners');
+assert.ok(projectCentric.includes('PËRMBLEDHJA E TENDERIT')&&projectCentric.includes('pst-pcw-tender-facts'),'TED award modal must show factual tender scope/details before outreach analysis');
+assert.ok(projectCentric.includes('ted_details')&&projectCentric.includes('value_kind'),'TED award facts must render canonical structured detail payload rather than inventing UI-only data');
 assert.ok(projectCentric.includes('project_id=not.is.null')&&projectCentric.includes('rebuildProjectOpportunityKeys'),'Opportunities must load Project-owned tender identities so stale duplicate notices cannot remain in the contact queue');
 assert.ok((projectCentric.match(/filter\(function\(r\)\{return !ownedByProject\(r\);\}\)/g)||[]).length>=2,'Project-owned awards must be excluded from both Opportunity cards and Opportunity/source lifecycle counts');
 assert.ok(projectCentric.includes('pst:tender-gmail-drafts-ready')&&projectCentric.includes('loadOpportunities(true)'),'Successful draft creation must invalidate and refresh the visible Opportunities queue');

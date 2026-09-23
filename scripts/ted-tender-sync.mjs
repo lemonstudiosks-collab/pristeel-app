@@ -7,7 +7,14 @@ const TED_API='https://api.ted.europa.eu/v3/notices/search';
 const OPPORTUNITY_TYPES=['cn-standard','cn-social','pin-cfc-standard','pin-cfc-social','qu-sy','subco'];
 const AWARD_TYPES=['can-standard','can-social','can-desg','can-tran'];
 const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 44171000 OR classification-cpv = 44172000 OR classification-cpv = 44212220 OR classification-cpv = 44212240 OR classification-cpv = 44212313 OR classification-cpv = 44212410 OR classification-cpv = 44212500 OR classification-cpv = 44330000 OR classification-cpv = 44334000 OR classification-cpv = 45223100 OR classification-cpv = 45223110 OR classification-cpv = 45223210 OR FT IN (Stahlbau Stahlkonstruktion Stahltragwerk Stahlhalle steelwork staalbouw staalconstructie))';
-const FIELDS=['publication-number','notice-title','notice-type','publication-date','buyer-name','classification-cpv','deadline','deadline-receipt-tender-date-lot','deadline-receipt-request-date-lot','deadline-date-lot','place-of-performance'];
+const FIELDS=[
+  'publication-number','notice-title','notice-type','publication-date','buyer-name','classification-cpv',
+  'deadline','deadline-receipt-tender-date-lot','deadline-receipt-request-date-lot','deadline-date-lot','place-of-performance',
+  'title-proc','title-lot','description-proc','description-lot',
+  'estimated-value-proc','estimated-value-cur-proc','estimated-value-lot','estimated-value-cur-lot',
+  'result-value-notice','result-value-cur-notice','result-value-lot','result-value-cur-lot',
+  'winner-decision-date'
+];
 const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 function ymd(date){return date.toISOString().slice(0,10).replace(/-/g,'');}
@@ -23,9 +30,77 @@ function isoDate(value){const s=firstScalar(value);const m=s.match(/\b(20\d{2})[
 function deadlineDate(row){const candidates=['deadline-receipt-tender-date-lot','deadline-receipt-request-date-lot','deadline-date-lot','deadline'].flatMap(name=>listScalars(field(row,name))).map(isoDate).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).sort();if(!candidates.length)return null;const today=isoToday();return candidates.find(v=>v>=today)||candidates[candidates.length-1]||null;}
 function noticeItems(json){for(const key of ['notices','results','content','items'])if(Array.isArray(json?.[key]))return json[key];if(Array.isArray(json))return json;return [];}
 function cpvCodes(row){return listScalars(field(row,'classification-cpv')).map(v=>(v.match(/\b\d{8}\b/)||[])[0]).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);}
-function tedTitle(row){const value=field(row,'notice-title');if(typeof value==='object'&&!Array.isArray(value)){for(const key of ['eng','en','deu','de','fra','fr'])if(value[key])return firstScalar(value[key]);}return firstScalar(value);}
+function tedTitle(row){const value=field(row,'notice-title');if(typeof value==='object'&&!Array.isArray(value)){for(const key of ['eng','en','deu','de','fra','fr'])if(value[key])return decodeTedText(firstScalar(value[key]));}return decodeTedText(firstScalar(value));}
 function buyer(row){return firstScalar(field(row,'buyer-name'))||'TED buyer';}
 function country(row){const values=listScalars(field(row,'place-of-performance'));return values[0]||'';}
+function decodeTedText(v){return text(v).replace(/&amp;quot;/gi,'"').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>');}
+function preferredScalars(value){
+  const out=[];
+  const walk=v=>{
+    if(v==null)return;
+    if(Array.isArray(v)){v.forEach(walk);return;}
+    if(typeof v==='object'){
+      if('value' in v){walk(v.value);return;}
+      const languageKeys=['eng','en','deu','de','fra','fr','ita','it','nld','nl'];
+      const preferred=languageKeys.find(k=>v[k]!=null);
+      if(preferred){walk(v[preferred]);return;}
+      Object.values(v).forEach(walk);return;
+    }
+    const s=decodeTedText(v);if(s&&!out.includes(s))out.push(s);
+  };
+  walk(value);return out;
+}
+function numberScalars(value){
+  const out=[];
+  const walk=v=>{
+    if(v==null)return;
+    if(Array.isArray(v)){v.forEach(walk);return;}
+    if(typeof v==='object'){if('value' in v){walk(v.value);return;}Object.values(v).forEach(walk);return;}
+    if(typeof v==='number'&&Number.isFinite(v)){out.push(v);return;}
+    const s=text(v).replace(/\s/g,'');
+    if(/^\d+(?:\.\d+)?$/.test(s)){const n=Number(s);if(Number.isFinite(n))out.push(n);}
+    else if(/^\d+(?:,\d+)?$/.test(s)){const n=Number(s.replace(',','.'));if(Number.isFinite(n))out.push(n);}
+  };
+  walk(value);return out;
+}
+function pairedValue(row,valueField,currencyField){
+  const values=numberScalars(field(row,valueField)),currencies=preferredScalars(field(row,currencyField));
+  if(!values.length)return null;
+  if(values.length===1)return{amount:values[0],currency:currencies[0]||null,source:valueField,values};
+  const uniqueCurrencies=[...new Set(currencies.filter(Boolean))];
+  return{amount:uniqueCurrencies.length<=1?values.reduce((a,b)=>a+b,0):null,currency:uniqueCurrencies.length===1?uniqueCurrencies[0]:null,source:valueField,values};
+}
+function tenderValue(row,phase){
+  const candidates=phase==='award'
+    ?[['result-value-notice','result-value-cur-notice'],['result-value-lot','result-value-cur-lot'],['estimated-value-proc','estimated-value-cur-proc'],['estimated-value-lot','estimated-value-cur-lot']]
+    :[['estimated-value-proc','estimated-value-cur-proc'],['estimated-value-lot','estimated-value-cur-lot']];
+  for(const [valueField,currencyField] of candidates){const x=pairedValue(row,valueField,currencyField);if(x&&x.amount!=null)return{...x,kind:valueField.startsWith('result-')?'award':'estimated'};}
+  return{amount:null,currency:null,source:null,values:[],kind:null};
+}
+function tedDetails(row,phase){
+  const procedureDescription=decodeTedText(firstScalar(field(row,'description-proc')));
+  const lotDescriptions=preferredScalars(field(row,'description-lot')).slice(0,12);
+  const description=lotDescriptions[0]||procedureDescription||'';
+  const lotTitles=preferredScalars(field(row,'title-lot')).slice(0,12);
+  const procedureTitle=decodeTedText(firstScalar(field(row,'title-proc')));
+  const places=preferredScalars(field(row,'place-of-performance')).slice(0,12);
+  const value=tenderValue(row,phase);
+  return{
+    version:'ted-details-v1',
+    description:description||null,
+    procedure_description:procedureDescription||null,
+    procedure_title:procedureTitle||null,
+    lot_titles:lotTitles,
+    lot_descriptions:lotDescriptions,
+    place_of_performance:places,
+    award_date:phase==='award'?isoDate(field(row,'winner-decision-date')):null,
+    value_kind:value.kind,
+    value_source:value.source,
+    value_components:value.values,
+    value_amount:value.amount,
+    value_currency:value.currency
+  };
+}
 const RAW_CPVS=new Set(['14622000','44171000','44172000','44330000','44334000']);
 const STRUCT_CPVS=new Set(['44212220','44212240','44212313','44212410','44212500','45223100','45223110','45223210']);
 const STRUCT_TITLE_RE=/stahlbau|stahlkonstruk|stahltragwerk|stahlhalle|steelwork|structural steel|steel structure|steel girder|staalbouw|staalconstruct|charpente metall|construction metall|ossature metall|konstrukcj[a-ząćęłńóśźż ]*stal|ocelov[a-zá-ž ]*konstruk|celicn[a-zčćžšđ ]*konstruk/i;
@@ -44,10 +119,48 @@ export function classifyTedNotice({title='',cpv=[]}={}){
   if(/^71/.test(primary)&&!rawPrimary&&!structPrimary){raw=Math.min(raw,40);structure=Math.min(structure,40);reasons.push('shërbim projektimi/mbikëqyrjeje, jo prodhim');}
   const score=Math.min(100,Math.max(raw,structure));return{category:structure>=raw&&structure?'steel_structure':raw?'raw_material':'possible',relevance_score:score,match_reasons:[...new Set(reasons)]};
 }
-export function normalizeTedNotice(row,phase='opportunity',seenAt=new Date().toISOString()){const publication=firstScalar(field(row,'publication-number'));if(!publication)return null;const title=tedTitle(row)||`TED ${publication}`;const cpv=cpvCodes(row);const cls=classifyTedNotice({title,cpv});const type=firstScalar(field(row,'notice-type'));return{source_key:`TED:${publication}`,procurement_no:`TED-${publication}`,publication_no:publication,authority:buyer(row),title,document_type:type||null,fpp:cpv.find(c=>RAW_CPVS.has(c)||STRUCT_CPVS.has(c))||cpv[0]||null,fpp_description:cpv.length?`CPV ${cpv.join(', ')}`:null,contract_type:null,contract_value_band:null,procedure:null,estimated_value:null,currency:'EUR',deadline:phase==='opportunity'?deadlineDate(row):null,published_date:isoDate(field(row,'publication-date')),is_retender:false,category:cls.category,relevance_score:cls.relevance_score,match_reasons:cls.match_reasons,source_url:`https://ted.europa.eu/en/notice/${encodeURIComponent(publication)}/html`,detail_url:`https://ted.europa.eu/en/notice/-/detail/${encodeURIComponent(publication)}`,payload:{source:'TED',notice_phase:phase,country:country(row)||null,cpv,notice_type:type||null},last_seen_at:seenAt,updated_at:seenAt};}
+export function normalizeTedNotice(row,phase='opportunity',seenAt=new Date().toISOString()){
+  const publication=firstScalar(field(row,'publication-number'));if(!publication)return null;
+  const title=tedTitle(row)||`TED ${publication}`,cpv=cpvCodes(row),cls=classifyTedNotice({title,cpv}),type=firstScalar(field(row,'notice-type')),details=tedDetails(row,phase);
+  const description=details.description||details.procedure_description||'';
+  return{
+    source_key:`TED:${publication}`,procurement_no:`TED-${publication}`,publication_no:publication,authority:decodeTedText(buyer(row)),title,
+    document_type:type||null,fpp:cpv.find(c=>RAW_CPVS.has(c)||STRUCT_CPVS.has(c))||cpv[0]||null,fpp_description:cpv.length?`CPV ${cpv.join(', ')}`:null,
+    contract_type:null,contract_value_band:null,procedure:null,estimated_value:details.value_amount,currency:details.value_currency,
+    deadline:phase==='opportunity'?deadlineDate(row):null,published_date:isoDate(field(row,'publication-date')),is_retender:false,
+    category:cls.category,relevance_score:cls.relevance_score,match_reasons:cls.match_reasons,
+    source_url:`https://ted.europa.eu/en/notice/${encodeURIComponent(publication)}/html`,
+    detail_url:`https://ted.europa.eu/en/notice/-/detail/${encodeURIComponent(publication)}`,
+    payload:{source:'TED',notice_phase:phase,country:country(row)||null,cpv,notice_type:type||null,description:description||null,short_description:description?description.slice(0,700):null,ted_details:details},
+    last_seen_at:seenAt,updated_at:seenAt
+  };
+}
 function queryFor(types,{days=null}={}){const typeExpr=`notice-type IN (${types.join(' ')})`;const dateExpr=days?` AND publication-date = (${ymd(daysAgo(days))} <> ${ymd(new Date())})`:'';return `${typeExpr} AND ${STEEL_QUERY}${dateExpr} SORT BY publication-number DESC`;}
 async function tedSearch({query,scope='ACTIVE',fetchImpl=fetch,maxPages=4,limit=250}){const all=[];for(let page=1;page<=maxPages;page++){const response=await fetchImpl(TED_API,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({query,fields:FIELDS,page,limit,scope,checkQuerySyntax:false,paginationMode:'PAGE_NUMBER',onlyLatestVersions:true})});const raw=await response.text();if(!response.ok)throw new Error(`TED search HTTP ${response.status}: ${raw.slice(0,1200)}`);let json;try{json=JSON.parse(raw);}catch{throw new Error(`TED search returned non-JSON: ${raw.slice(0,500)}`);}const items=noticeItems(json);all.push(...items);if(items.length<limit)break;}return all;}
 async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',body,prefer}){const response=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});const raw=await response.text();if(!response.ok)throw new Error(`${method} ${path} failed: HTTP ${response.status} ${raw.slice(0,700)}`);return raw?JSON.parse(raw):[];}
+export function mergeTedRefreshRows(rows,existingRows){
+  const byKey=new Map((Array.isArray(existingRows)?existingRows:[]).map(r=>[String(r?.source_key||''),r]));
+  for(const row of Array.isArray(rows)?rows:[]){
+    const old=byKey.get(String(row?.source_key||''));if(!old)continue;
+    const oldPayload=old?.payload&&typeof old.payload==='object'?old.payload:{};
+    const freshPayload=row?.payload&&typeof row.payload==='object'?row.payload:{};
+    row.payload={...oldPayload,...freshPayload};
+    for(const key of ['estimated_value','currency','procedure','contract_type','contract_value_band']){
+      if((row[key]==null||row[key]==='')&&old[key]!=null&&old[key]!=='')row[key]=old[key];
+    }
+  }
+  return rows;
+}
+async function preserveExistingTedState(access,rows){
+  if(!rows.length)return rows;
+  const keys=[...new Set(rows.map(r=>String(r?.source_key||'')).filter(Boolean))],existing=[],chunkSize=100;
+  for(let i=0;i<keys.length;i+=chunkSize){
+    const chunk=keys.slice(i,i+chunkSize).map(encodeURIComponent).join(',');
+    const part=await rest({...access,path:`kek_tender_watch?select=source_key,payload,estimated_value,currency,procedure,contract_type,contract_value_band&source_key=in.(${chunk})&limit=${Math.min(chunkSize,keys.length-i)}`});
+    if(Array.isArray(part))existing.push(...part);
+  }
+  return mergeTedRefreshRows(rows,existing);
+}
 async function upsertRows(access,rows){if(!rows.length)return;await rest({...access,path:'kek_tender_watch?on_conflict=source_key',method:'POST',body:rows,prefer:'resolution=merge-duplicates,return=minimal'});}
 async function deleteRow(access,id){await rest({...access,path:`kek_tender_watch?id=eq.${encodeURIComponent(id)}`,method:'DELETE',prefer:'return=minimal'});}
 export async function reconcileTedOpportunityLifecycle(access,{evaluatedKeys=new Set(),relevantKeys=new Set(),today=isoToday()}={}){
@@ -94,7 +207,7 @@ export async function reconcileTenderDeadlineTaskLifecycle(access,{doneAt=new Da
   return closed;
 }
 async function writeSummary(summary){await mkdir('tmp',{recursive:true});await writeFile('tmp/ted-tender-sync.json',JSON.stringify(summary,null,2));}
-export async function runTedTenderSync({mode=process.env.SYNC_MODE||'preview',minScore=Number(process.env.TED_TENDER_MIN_SCORE||75),opportunityDays=Number(process.env.TED_OPPORTUNITY_DAYS||45),awardDays=Number(process.env.TED_OPEN_AWARD_DAYS||14),taskMinScore=Number(process.env.TED_TASK_MIN_SCORE||88),taskWithinDays=Number(process.env.TED_TASK_WITHIN_DAYS||7),fetchImpl=fetch,supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL,apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||'',bearerToken=''}={}){
+export async function runTedTenderSync({mode=process.env.SYNC_MODE||'preview',minScore=Number(process.env.TED_TENDER_MIN_SCORE||75),opportunityDays=Number(process.env.TED_OPPORTUNITY_DAYS||45),awardDays=Number(process.env.TED_OPEN_AWARD_DAYS||process.env.TED_AWARD_DAYS||30),taskMinScore=Number(process.env.TED_TASK_MIN_SCORE||88),taskWithinDays=Number(process.env.TED_TASK_WITHIN_DAYS||7),fetchImpl=fetch,supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL,apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||'',bearerToken=''}={}){
   if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
   const seenAt=new Date().toISOString(),today=isoToday();
   const opportunityRaw=await tedSearch({query:queryFor(OPPORTUNITY_TYPES,{days:opportunityDays}),scope:'ACTIVE',fetchImpl});
@@ -106,7 +219,7 @@ export async function runTedTenderSync({mode=process.env.SYNC_MODE||'preview',mi
   let authMode='not_needed',lifecycle={rejected:0,expired:0},tasksSynced=0,tasksClosed=0;
   if(mode==='apply'){
     const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
-    authMode=access.authMode;await upsertRows(access,rows);lifecycle=await reconcileTedOpportunityLifecycle(access,{evaluatedKeys,relevantKeys:relevantOpportunityKeys,today});tasksSynced=await syncTenderDeadlineTasks(access,deadlineTasks);tasksClosed=await reconcileTenderDeadlineTaskLifecycle(access);
+    authMode=access.authMode;await preserveExistingTedState(access,rows);await upsertRows(access,rows);lifecycle=await reconcileTedOpportunityLifecycle(access,{evaluatedKeys,relevantKeys:relevantOpportunityKeys,today});tasksSynced=await syncTenderDeadlineTasks(access,deadlineTasks);tasksClosed=await reconcileTenderDeadlineTaskLifecycle(access);
   }
   const summary={mode,auth_mode:authMode,api:TED_API,opportunity_raw:opportunityRaw.length,award_raw:awardRaw.length,relevant_rows:rows.length,opportunities:rows.filter(r=>r.payload.notice_phase==='opportunity').length,opportunities_with_deadline:rows.filter(r=>r.payload.notice_phase==='opportunity'&&r.deadline).length,awards:rows.filter(r=>r.payload.notice_phase==='award').length,minimum_score:minScore,opportunity_lookback_days:opportunityDays,award_lookback_days:awardDays,lifecycle_pruned:lifecycle,deadline_tasks:{eligible:deadlineTasks.length,synced:tasksSynced,closed:tasksClosed,minimum_score:taskMinScore,within_days:taskWithinDays},queries:{opportunities:queryFor(OPPORTUNITY_TYPES,{days:opportunityDays}),awards:queryFor(AWARD_TYPES,{days:awardDays})},tenders:rows.map(r=>({publication_no:r.publication_no,title:r.title,authority:r.authority,category:r.category,relevance_score:r.relevance_score,phase:r.payload.notice_phase,cpv:r.payload.cpv,published_date:r.published_date,deadline:r.deadline}))};
   await writeSummary(summary);console.log(`TED tender sync ${mode}: opportunityRaw=${summary.opportunity_raw}, awardRaw=${summary.award_raw}, relevant=${summary.relevant_rows}, opportunities=${summary.opportunities}, withDeadline=${summary.opportunities_with_deadline}, awards=${summary.awards}, prunedRejected=${lifecycle.rejected}, prunedExpired=${lifecycle.expired}, deadlineTasks=${deadlineTasks.length}, tasksClosed=${tasksClosed}.`);return summary;
