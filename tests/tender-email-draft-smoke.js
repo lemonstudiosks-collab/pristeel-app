@@ -72,6 +72,8 @@ assert.ok(german.body.endsWith('Mit freundlichen Grüßen'));
 
 assert.ok(projectCentric.includes('data-pcw-ti="draft"')&&projectCentric.includes('Përgatit draftet'),'Action Console must expose verified multi-contact draft preparation for TED winners');
 assert.ok(source.includes('pppp-opportunity-draft-generator')&&source.includes('action_id'),'Action Console must route the selected tender through the action-scoped canonical multi-draft engine');
+assert.ok(source.includes('status=in.(new,review,watch,promoted)'),'Canonical tender draft engine must still resolve TED awards after Project promotion');
+assert.ok(draftStateSource.includes('status=in.(new,review,watch,promoted)'),'Draft-state duplicate guard must retain promoted TED records');
 assert.ok(source.includes('pst:tender-gmail-drafts-ready'),'Successful multi-draft completion must emit the plural canonical event');
 assert.ok(source.includes('__pstMultiContact=true'),'Canonical tender draft workflow must identify itself to legacy compatibility layers');
 assert.ok(multiDraftGenerator.includes('separate_draft_per_recipient:true'),'Generator must keep one separate Gmail draft per verified recipient');
