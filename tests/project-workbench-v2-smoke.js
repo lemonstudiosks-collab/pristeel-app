@@ -11,6 +11,9 @@ must(src.includes("label:'Oferta & klienti'"),'compact flow must expose commerci
 must(src.includes("eu_award_sales:['Opportunity','Kontaktimi','Client RFQ'"),'TED award projects must use the dedicated sales workflow');
 must(src.includes('function tedAwardCard'),'TED award projects must expose source/winner/contact context in Project Overview');
 must(src.includes('data-pwb3-action="ted_contacts"'),'TED award project must expose an actionable winner/contact review control');
+must(src.includes('data-pwb3-action="ted_draft"'),'TED award project must expose the canonical create-draft action');
+must(src.includes('Krijo draft · duhet kontakt'),'Create draft must remain visible but blocked when no verified recipient exists');
+must(src.includes('PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1'),'Project draft action must reuse the existing canonical tender draft engine');
 must(src.includes('0 kontakte të verifikuara.'),'TED award project must explicitly show when contact research has no verified recipient');
 must(src.includes("label:'Realizimi & financat'"),'compact flow must expose execution/finance stage');
 must(!src.includes('pwb3-step'),'legacy 9-step button strip must be removed');
