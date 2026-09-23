@@ -57,6 +57,13 @@ const {JSDOM}=require('jsdom');
   w.eval(source);
   await w.pstOpenProjectWorkspace('p1');
 
+  const rfqState=w.PSTProjectFirstV2._test.rfqStatus;
+  assert.strictEqual(rfqState({supplierOffers:[]},{supplier_name:'Aktiva',status:'sent'}),'RFQ Sent');
+  assert.strictEqual(rfqState({supplierOffers:[]},{supplier_name:'Aktiva',status:'waiting'}),'Waiting for Quote');
+  assert.strictEqual(rfqState({supplierOffers:[]},{supplier_name:'Aktiva',status:'clarification_needed'}),'Clarification Needed');
+  assert.strictEqual(rfqState({supplierOffers:[]},{supplier_name:'Aktiva',status:'no_response'}),'No Response');
+  assert.strictEqual(rfqState({supplierOffers:[{supplier:'Aktiva'}]},{supplier_name:'Aktiva',status:'waiting'}),'Quote Received','Canonical supplier offer evidence must override a stale waiting status');
+
   const tabs=[...w.document.querySelectorAll('[data-pf2-tab]')];
   assert.strictEqual(tabs.length,9,'Project-first workspace must expose exactly 9 workflow tabs');
   assert.deepStrictEqual(tabs.map(x=>x.getAttribute('data-pf2-tab')),
