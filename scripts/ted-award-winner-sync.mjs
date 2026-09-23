@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
-import { classifyTedNotice } from './ted-tender-sync.mjs';
+import { classifyTedNotice, decodeTedText, tedDetails } from './ted-tender-sync.mjs';
 
 const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const TED_API='https://api.ted.europa.eu/v3/notices/search';
@@ -10,6 +10,9 @@ const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 441710
 const FIELDS=[
   'publication-number','notice-title','notice-type','publication-date','buyer-name',
   'classification-cpv','place-of-performance',
+  'title-proc','title-lot','description-proc','description-lot',
+  'estimated-value-proc','estimated-value-cur-proc','estimated-value-lot','estimated-value-cur-lot',
+  'result-value-notice','result-value-cur-notice','result-value-lot','result-value-cur-lot',
   'winner-name','winner-email','winner-internet-address','winner-country','winner-city',
   'winner-identifier','winner-decision-date','winner-contact-point'
 ];
@@ -88,22 +91,24 @@ function winnerData(row){
 }
 export function normalizeTedAward(row,seenAt=new Date().toISOString()){
   const publication=firstScalar(field(row,'publication-number'));if(!publication)return null;
-  const title=tedTitle(row)||`TED ${publication}`;
+  const title=decodeTedText(tedTitle(row))||`TED ${publication}`;
   const cpv=cpvCodes(row);
   const cls=classifyTedNotice({title,cpv});
   const type=firstScalar(field(row,'notice-type'));
   const winner=winnerData(row);
-  const buyer=firstScalar(field(row,'buyer-name'))||'TED buyer';
+  const buyer=decodeTedText(firstScalar(field(row,'buyer-name')))||'TED buyer';
   const place=listScalars(field(row,'place-of-performance'));
+  const details=tedDetails(row,'award');
+  const description=details.description||details.procedure_description||'';
   return {
     source_key:`TED:${publication}`,procurement_no:`TED-${publication}`,publication_no:publication,
     authority:buyer,title,document_type:type||null,fpp:cpv.find(c=>RAW_CPVS.has(c)||STRUCT_CPVS.has(c))||cpv[0]||null,
     fpp_description:cpv.length?`CPV ${cpv.join(', ')}`:null,contract_type:null,contract_value_band:null,
-    procedure:null,estimated_value:null,currency:null,deadline:null,published_date:isoDate(field(row,'publication-date')),
+    procedure:null,estimated_value:details.value_amount,currency:details.value_currency,deadline:null,published_date:isoDate(field(row,'publication-date')),
     is_retender:false,category:cls.category,relevance_score:cls.relevance_score,match_reasons:cls.match_reasons,
     source_url:`https://ted.europa.eu/en/notice/${encodeURIComponent(publication)}/html`,
     detail_url:`https://ted.europa.eu/en/notice/-/detail/${encodeURIComponent(publication)}`,
-    payload:{source:'TED',notice_phase:'award',workflow:'winner_outreach',cpv,notice_type:type||null,place_of_performance:place,winner},
+    payload:{source:'TED',notice_phase:'award',workflow:'winner_outreach',cpv,notice_type:type||null,place_of_performance:place,description:description||null,short_description:description?description.slice(0,700):null,ted_details:details,winner},
     last_seen_at:seenAt,updated_at:seenAt
   };
 }
