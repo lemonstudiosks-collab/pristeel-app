@@ -1,4 +1,4 @@
-/* PRISTEEL DACH Steel Buyers v3
+/* PRISTEEL DACH Steel Buyers v4
  * Buyer Target + Material Intelligence Desk for direct steel supply in DE/AT/CH.
  * Operational buyer-to-supply workflow over qualified targets in pppp_dach_steel_targets_v1.
  * Home reads only the 1-row pppp_dach_steel_home_summary_v1 view.
@@ -14,6 +14,7 @@ window.__pstDachSteelSalesV1=true;
 var SOURCE='DACH_STEEL_BUYER';
 var state={
  summary:null,targets:[],outboundByTarget:{},supplierByTarget:{},
+ draftBusy:{},draftResult:{},supplierDrafts:{},
  summaryLoaded:false,targetsLoaded:false,outboundLoaded:false,
  summaryLoading:false,targetsLoading:false,outboundLoading:false,
  error:'',filter:'all',expanded:null,actionView:null,lastLoadedAt:0
@@ -80,13 +81,13 @@ function css(){
 '.pst-dss-score{width:38px;height:28px;display:grid;place-items:center;border-radius:8px;font-size:10px;font-weight:900}.pst-dss-score.a1{background:#e9f2e8;color:#3f6f43}.pst-dss-score.a2{background:#eef3e7;color:#65713c}.pst-dss-score.b1{background:#edf3f5;color:#4f7180}.pst-dss-score.b2{background:#f3f0e9;color:#75664a}.pst-dss-score.c{background:#f3f1f1;color:#777}',
 '.pst-dss-qr{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:8.5px;font-weight:850}.pst-dss-qr.m3{background:#e4f2e7;color:#2f7043}.pst-dss-qr.m2{background:#e7f0f4;color:#3d7083}.pst-dss-qr.m1{background:#f4f0e6;color:#7a6740}.pst-dss-qr.m0{background:#f2f1f0;color:#777}.pst-dss-products{margin-top:4px;font-size:9px;color:#77858a}.pst-dss-ton{margin-top:3px;font-size:10px;font-weight:820;color:#415d67}.pst-dss-why{font-size:10.5px;line-height:1.42;color:#4e6067;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
 '.pst-dss-nextbtn{border:1px solid #93c3d1;border-radius:8px;background:#f4fbfd;color:#2e748b;padding:7px 9px;font-size:9px;font-weight:850;cursor:pointer;white-space:nowrap}.pst-dss-nextbtn:hover{background:#e8f5f8}',
-'.pst-dss-detail{border-bottom:1px solid #e4ebe8;background:#f8fbfa;padding:14px 15px}.pst-dss-summary{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-bottom:12px}.pst-dss-summary-card{border:1px solid #e1e8e6;border-radius:11px;background:#fff;padding:13px 14px}.pst-dss-summary-card h3{margin:0 0 8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#728287}.pst-dss-summary-title{font-size:15px;font-weight:800;color:#30474f}.pst-dss-summary-sub{margin-top:4px;font-size:10.5px;line-height:1.45;color:#64777e}.pst-dss-keyfacts{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.pst-dss-keyfacts span{padding:5px 7px;border-radius:7px;background:#f1f5f4;font-size:9px;color:#61747b}',
-'.pst-dss-action-center{border:1px solid #cfe0e4;border-radius:12px;background:#fff;padding:13px;margin-bottom:12px}.pst-dss-action-center>header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.pst-dss-action-center>header b{font-size:12px;color:#315d6c}.pst-dss-action-center>header span{font-size:9px;color:#819096}.pst-dss-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pst-dss-action-card{border:1px solid #e3e9e7;border-radius:10px;background:#fbfcfb;padding:12px}.pst-dss-action-card h4{margin:0 0 4px;font-size:11px;color:#344b53}.pst-dss-action-card p{margin:0 0 8px;font-size:9.5px;line-height:1.45;color:#728187}.pst-dss-action-status{font-size:9px;color:#596f78;margin:7px 0}.pst-dss-action-buttons{display:flex;gap:6px;flex-wrap:wrap}.pst-dss-btn{border:1px solid #c9dfe5;border-radius:8px;background:#fff;color:#35768c;padding:7px 9px;font-size:9px;font-weight:820;cursor:pointer}.pst-dss-btn.primary{background:#4b93aa;border-color:#4b93aa;color:#fff}.pst-dss-btn:disabled{opacity:.48;cursor:not-allowed}.pst-dss-guard{margin-top:7px;font-size:8.5px;color:#8a9599}',
-'.pst-dss-previewbox{margin-top:9px;border:1px solid #dfe7e5;border-radius:9px;background:#fff;padding:10px}.pst-dss-previewbox b{display:block;font-size:9px;color:#4b636c;margin-bottom:5px}.pst-dss-previewbox pre{white-space:pre-wrap;margin:0;max-height:310px;overflow:auto;font:10px/1.5 Inter,Arial,sans-serif;color:#455a62}',
-'.pst-dss-candidates{margin-top:9px;display:grid;gap:6px}.pst-dss-candidate{display:grid;grid-template-columns:minmax(160px,1fr) auto auto;gap:8px;align-items:center;border:1px solid #e5eae8;border-radius:8px;background:#fff;padding:8px 9px}.pst-dss-candidate b{font-size:10px}.pst-dss-candidate small{display:block;margin-top:2px;font-size:8.5px;color:#879298}.pst-dss-fit{padding:4px 6px;border-radius:999px;background:#eef5ef;color:#527454;font-size:8px;font-weight:800}.pst-dss-fit.review{background:#f5f1e7;color:#80683d}',
-'.pst-dss-details{border:1px solid #e3e9e7;border-radius:10px;background:#fff;overflow:hidden}.pst-dss-details summary{cursor:pointer;padding:10px 12px;font-size:10px;font-weight:800;color:#566c74;background:#fafbf9}.pst-dss-detail-grid{display:grid;grid-template-columns:minmax(250px,.8fr) minmax(0,1.7fr);gap:12px;padding:12px}.pst-dss-detail-card{border:1px solid #e2e8e6;border-radius:10px;background:#fff;padding:12px}.pst-dss-detail-card h3{margin:0 0 9px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#728287}.pst-dss-meta{display:grid;grid-template-columns:120px 1fr;gap:6px 10px;font-size:10px}.pst-dss-meta span:nth-child(odd){color:#8a9599}.pst-dss-meta span:nth-child(even){color:#42575e;font-weight:650}.pst-dss-source{display:inline-flex;margin-top:10px;color:#39788d;font-size:9px;font-weight:800;text-decoration:none}',
-'.pst-dss-material-table{display:grid;border:1px solid #e5e9e7;border-radius:9px;overflow:hidden}.pst-dss-material-line{display:grid;grid-template-columns:minmax(150px,1fr) minmax(105px,.7fr) minmax(110px,.75fr) 85px 85px;gap:8px;padding:9px 10px;border-bottom:1px solid #eef0ee;font-size:9.5px}.pst-dss-material-line:last-child{border-bottom:0}.pst-dss-material-line.head{background:#f7f9f8;font-size:8px;font-weight:850;text-transform:uppercase;color:#889398}.pst-dss-material-line b{font-size:10px;color:#43575e}.pst-dss-evidence{margin-top:9px;display:flex;gap:5px;flex-wrap:wrap}.pst-dss-evidence span{padding:4px 6px;border-radius:7px;background:#f0f3f2;color:#718085;font-size:8px}',
-'.pst-dss-empty{padding:38px 22px;text-align:center;color:#7e888c}.pst-dss-empty b{display:block;font-size:14px;color:#3a4c52}.pst-dss-empty span{display:block;margin:6px auto 0;max-width:650px;font-size:10px;line-height:1.55}',
+'.pst-dss-detail{border-bottom:1px solid #e4ebe8;background:#f8fbfa;padding:16px 16px;font-size:12px}.pst-dss-summary{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-bottom:13px}.pst-dss-summary-card{border:1px solid #e1e8e6;border-radius:11px;background:#fff;padding:15px 16px}.pst-dss-summary-card h3{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#728287}.pst-dss-summary-title{font-size:17px;font-weight:800;color:#30474f}.pst-dss-summary-sub{margin-top:5px;font-size:12.5px;line-height:1.5;color:#64777e}.pst-dss-keyfacts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.pst-dss-keyfacts span{padding:6px 8px;border-radius:7px;background:#f1f5f4;font-size:10.5px;color:#61747b}',
+'.pst-dss-action-center{border:1px solid #cfe0e4;border-radius:12px;background:#fff;padding:15px;margin-bottom:13px}.pst-dss-action-center>header{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}.pst-dss-action-center>header b{font-size:14px;color:#315d6c}.pst-dss-action-center>header span{font-size:10.5px;color:#819096}.pst-dss-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.pst-dss-action-card{border:1px solid #e3e9e7;border-radius:10px;background:#fbfcfb;padding:14px}.pst-dss-action-card h4{margin:0 0 6px;font-size:13px;color:#344b53}.pst-dss-action-card p{margin:0 0 9px;font-size:12px;line-height:1.5;color:#65777e}.pst-dss-action-status{font-size:11.5px;color:#526a74;margin:8px 0}.pst-dss-action-buttons{display:flex;gap:7px;flex-wrap:wrap}.pst-dss-btn{border:1px solid #c9dfe5;border-radius:8px;background:#fff;color:#35768c;padding:8px 11px;font-size:10.5px;font-weight:820;cursor:pointer}.pst-dss-btn.primary{background:#4b93aa;border-color:#4b93aa;color:#fff}.pst-dss-btn.success{background:#eef7ef;border-color:#b9d8bd;color:#3b7143}.pst-dss-btn:disabled{opacity:.48;cursor:not-allowed}.pst-dss-guard{margin-top:8px;font-size:10.5px;line-height:1.45;color:#829095}.pst-dss-inline-status{margin-top:8px;padding:7px 9px;border-radius:8px;background:#eef6f2;color:#426b52;font-size:10.5px;font-weight:700}',
+'.pst-dss-previewbox{margin-top:10px;border:1px solid #dfe7e5;border-radius:9px;background:#fff;padding:12px}.pst-dss-previewbox b{display:block;font-size:11px;color:#4b636c;margin-bottom:7px}.pst-dss-previewbox pre{white-space:pre-wrap;margin:0;max-height:340px;overflow:auto;font:12px/1.55 Inter,Arial,sans-serif;color:#455a62}',
+'.pst-dss-candidates{margin-top:10px;display:grid;gap:7px}.pst-dss-candidate{display:grid;grid-template-columns:minmax(180px,1fr) auto auto;gap:9px;align-items:center;border:1px solid #e5eae8;border-radius:8px;background:#fff;padding:10px 11px}.pst-dss-candidate b{font-size:12px}.pst-dss-candidate small{display:block;margin-top:3px;font-size:10.5px;line-height:1.35;color:#879298}.pst-dss-fit{padding:5px 7px;border-radius:999px;background:#eef5ef;color:#527454;font-size:9.5px;font-weight:800}.pst-dss-fit.review{background:#f5f1e7;color:#80683d}',
+'.pst-dss-details{border:1px solid #e3e9e7;border-radius:10px;background:#fff;overflow:hidden}.pst-dss-details summary{cursor:pointer;padding:11px 13px;font-size:11.5px;font-weight:800;color:#566c74;background:#fafbf9}.pst-dss-detail-grid{display:grid;grid-template-columns:minmax(250px,.8fr) minmax(0,1.7fr);gap:12px;padding:13px}.pst-dss-detail-card{border:1px solid #e2e8e6;border-radius:10px;background:#fff;padding:13px}.pst-dss-detail-card h3{margin:0 0 9px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#728287}.pst-dss-meta{display:grid;grid-template-columns:125px 1fr;gap:7px 10px;font-size:11.5px}.pst-dss-meta span:nth-child(odd){color:#8a9599}.pst-dss-meta span:nth-child(even){color:#42575e;font-weight:650}.pst-dss-source{display:inline-flex;margin-top:10px;color:#39788d;font-size:10.5px;font-weight:800;text-decoration:none}',
+'.pst-dss-material-table{display:grid;border:1px solid #e5e9e7;border-radius:9px;overflow:hidden}.pst-dss-material-line{display:grid;grid-template-columns:minmax(150px,1fr) minmax(105px,.7fr) minmax(110px,.75fr) 85px 85px;gap:8px;padding:10px 11px;border-bottom:1px solid #eef0ee;font-size:10.5px}.pst-dss-material-line:last-child{border-bottom:0}.pst-dss-material-line.head{background:#f7f9f8;font-size:9px;font-weight:850;text-transform:uppercase;color:#889398}.pst-dss-material-line b{font-size:11px;color:#43575e}.pst-dss-evidence{margin-top:9px;display:flex;gap:5px;flex-wrap:wrap}.pst-dss-evidence span{padding:5px 7px;border-radius:7px;background:#f0f3f2;color:#718085;font-size:9.5px}',
+'.pst-dss-empty{padding:38px 22px;text-align:center;color:#7e888c}.pst-dss-empty b{display:block;font-size:14px;color:#3a4c52}.pst-dss-empty span{display:block;margin:6px auto 0;max-width:650px;font-size:11px;line-height:1.55}',
 '@media(max-width:1180px){.pst-dss-home{grid-template-columns:1fr}.pst-dss-stats{max-width:820px}.pst-dss-headrow,.pst-dss-row{grid-template-columns:52px 1.1fr 1.2fr 1fr 135px}.pst-dss-col-action{display:none}.pst-dss-summary,.pst-dss-action-grid{grid-template-columns:1fr}}',
 '@media(max-width:760px){.pst-dss-home{padding:17px}.pst-dss-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pst-dss-page{padding:5px 0 32px}.pst-dss-head{flex-direction:column}.pst-dss-kpi-strip{display:grid;grid-template-columns:repeat(2,1fr)}.pst-dss-kpi{border-bottom:1px solid #edf0ee}.pst-dss-headrow{display:none}.pst-dss-row{grid-template-columns:46px 1fr 118px}.pst-dss-col-why,.pst-dss-col-timing,.pst-dss-col-action{display:none}.pst-dss-detail-grid{grid-template-columns:1fr}.pst-dss-material-line{grid-template-columns:1fr 70px 70px}.pst-dss-material-line>*:nth-child(2),.pst-dss-material-line>*:nth-child(3){display:none}.pst-dss-candidate{grid-template-columns:1fr auto}}'
  ].join('');
@@ -97,7 +98,7 @@ function chrome(on){
  try{document.body.classList.toggle('pst-dss-active',!!on);}catch(e){}
  var page=document.getElementById('page-dach-steel-sales');
  if(on){
-  document.querySelectorAll('button,a').forEach(function(el){
+  document.querySelectorAll('button,a,[role="button"],[onclick]').forEach(function(el){
    if(page&&page.contains(el))return;
    var txt=S(el.textContent).replace(/\s+/g,' ').trim();
    if(/^(?:←\s*)?Kthehu$/i.test(txt)){
@@ -138,6 +139,7 @@ function gmailCompose(to,subject,body){
 }
 function gmailThread(q){
  if(!q||!q.gmail_thread_id)return'';
+ if(q.gmail_draft_id)return'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(q.gmail_thread_id);
  if(window.PSTEmail&&typeof window.PSTEmail.gmailUrl==='function')return window.PSTEmail.gmailUrl(q.gmail_thread_id);
  return'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(q.gmail_thread_id);
 }
@@ -162,6 +164,34 @@ function supplierCandidates(r){
  var box=state.supplierByTarget[S(r.id)]||{},d=box.data||{},req=A(d.requirements)[0]||{};
  return A(req.candidates);
 }
+function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null}catch(e){return null}}
+async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow()}catch(e){return sessionNow()}}
+async function edgeDraft(payload){
+ var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
+ var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
+ async function run(t){return fetch(base+'/functions/v1/pppp-dach-steel-draft-generator',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(payload||{})})}
+ var r=await run(token);if(r.status===401){s=await refreshSession();if(s&&s.access_token)r=await run(s.access_token)}
+ var raw=await r.text(),data=null;try{data=raw?JSON.parse(raw):null}catch(e){}
+ if(!r.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+r.status)).slice(0,900));
+ return data;
+}
+function draftKey(kind,id,email){return kind+':'+S(id)+(email?':'+N(email):'')}
+async function createBuyerDraft(r){
+ var id=S(r&&r.id),k=draftKey('buyer',id);if(!id||state.draftBusy[k])return;
+ state.draftBusy[k]=true;state.draftResult[k]=null;renderPage();
+ try{
+  var data=await edgeDraft({mode:'buyer',target_id:id});state.draftResult[k]=data||{};
+  if(data&&data.queue)state.outboundByTarget[id]=data.queue;
+  else{state.outboundLoaded=false;await loadOutbound(true)}
+ }catch(e){state.draftResult[k]={error:S(e&&e.message||e)}}finally{state.draftBusy[k]=false;renderPage()}
+}
+async function createSupplierDraft(r,email){
+ var id=S(r&&r.id),e=S(email).toLowerCase(),k=draftKey('supplier',id,e);if(!id||!e||state.draftBusy[k])return;
+ state.draftBusy[k]=true;state.supplierDrafts[k]=null;renderPage();
+ try{state.supplierDrafts[k]=await edgeDraft({mode:'supplier',target_id:id,supplier_email:e})}
+ catch(err){state.supplierDrafts[k]={error:S(err&&err.message||err)}}finally{state.draftBusy[k]=false;renderPage()}
+}
+
 async function loadSupplierCandidates(r){
  var id=S(r&&r.id);if(!id)return;
  var box=state.supplierByTarget[id];if(box&&box.loaded)return box.data;
@@ -195,7 +225,7 @@ async function loadOutbound(force){
  if(!ids.length){state.outboundByTarget={};state.outboundLoaded=true;return{}}
  state.outboundLoading=true;
  try{
-  var path='pppp_outbound_queue_v1?source=eq.'+encodeURIComponent(SOURCE)+'&source_record_id=in.('+ids.join(',')+')&select=source_record_id,recipient_email,recipient_name,contact_role,gmail_draft_id,gmail_draft_message_id,gmail_thread_id,status,suppression_reason,approved_for_send,human_send_required,sent_at,replied_at,bounced_at,payload,updated_at&order=updated_at.desc&limit=250';
+  var path='pppp_outbound_queue_v1?source=eq.'+encodeURIComponent(SOURCE)+'&source_record_id=in.('+ids.join(',')+')&select=id,source_record_id,recipient_email,recipient_name,contact_role,gmail_draft_id,gmail_draft_message_id,gmail_thread_id,status,suppression_reason,approved_for_send,human_send_required,sent_at,replied_at,bounced_at,payload,updated_at&order=updated_at.desc&limit=250';
   var rows=A(await window.supaFetch(path)),map={};
   rows.forEach(function(q){var k=S(q.source_record_id);if(k&&!map[k])map[k]=q;});
   state.outboundByTarget=map;state.outboundLoaded=true;
@@ -243,7 +273,7 @@ function ensurePage(){
  var host=document.querySelector('.content')||document.body;page=document.createElement('div');page.id='page-dach-steel-sales';page.className='page';page.style.display='none';
  page.innerHTML='<div class="pst-dss-page"><header class="pst-dss-head"><div><small>PRISTEEL · DACH STEEL BUYER ENGINE</small><h1>Steel Buyers DACH</h1><p>Nga sinjali i projektit te veprimi: kërko RFQ/BOQ nga blerësi dhe, paralelisht, përgatit sourcing/RFQ për furnitorët pa humbur human approval.</p></div><div class="pst-dss-actions"><button data-dss-refresh>Rifresko</button><button data-dss-back>← Ballina</button></div></header><div class="pst-dss-engine-note"><b>Rregulli:</b> A1 = company + current project + steel scope + relevant timing. M2 është kalkulim/ekstraktim indikativ; M3 ka bazë zyrtare BOQ/material list. Asnjë email nuk dërgohet automatikisht.</div><div class="pst-dss-kpi-strip" data-dss-kpis></div><div class="pst-dss-tabs"><button class="pst-dss-tab on" data-dss-filter="all">Të gjitha</button><button class="pst-dss-tab" data-dss-filter="a1">A1</button><button class="pst-dss-tab" data-dss-filter="m3">M3 · Quote Ready</button><button class="pst-dss-tab" data-dss-filter="material">Need Material</button><button class="pst-dss-tab" data-dss-filter="contact">Need Contact</button><button class="pst-dss-tab" data-dss-filter="outreach">Ready Outreach</button></div><section class="pst-dss-panel"><div class="pst-dss-panel-head"><b>Buyer + Material Intelligence Desk</b><span data-dss-updated></span></div><div class="pst-dss-headrow"><span>Priority</span><span>Buyer / project</span><span>Why now?</span><span>Material</span><span class="pst-dss-col-timing">Timing</span><span class="pst-dss-col-action">Next step</span></div><div data-dss-list></div></section></div>';
  host.appendChild(page);
- page.onclick=function(e){
+ page.onclick=async function(e){
   var f=e.target.closest('[data-dss-filter]');if(f){state.filter=f.getAttribute('data-dss-filter');state.expanded=null;state.actionView=null;renderPage();return}
   if(e.target.closest('[data-dss-refresh]')){state.summaryLoaded=false;state.targetsLoaded=false;state.outboundLoaded=false;loadSummary(true);loadTargets(true);return}
   if(e.target.closest('[data-dss-back]')){back();return}
@@ -252,19 +282,15 @@ function ensurePage(){
    e.preventDefault();e.stopPropagation();
    var id=btn.getAttribute('data-dss-tid'),r=findTarget(id),q=outboundFor(r),act=btn.getAttribute('data-dss-action');if(!r)return;
    if(act==='buyer-preview'){state.actionView={id:id,type:'buyer'};renderPage();return}
-   if(act==='buyer-compose'){
-    var to=q&&q.recipient_email||'',url=gmailCompose(to,buyerSubject(r,q),buyerBody(r));window.open(url,'_blank','noopener');return;
-   }
+   if(act==='buyer-create-draft'){await createBuyerDraft(r);return}
    if(act==='buyer-thread'){
-    var gu=gmailThread(q);if(gu)window.open(gu,'_blank','noopener');else alert('Nuk ka Gmail thread/draft të regjistruar për këtë target.');return;
+    var gu=gmailThread(q);if(gu)window.open(gu,'_blank','noopener');else alert('Nuk ka Gmail draft të regjistruar për këtë target.');return;
    }
    if(act==='buyer-copy'){navigator.clipboard&&navigator.clipboard.writeText(buyerBody(r));return}
-   if(act==='supplier-preview'){state.actionView={id:id,type:'supplier'};renderPage();return}
+   if(act==='supplier-preview'){state.actionView={id:id,type:'supplier'};if(!(state.supplierByTarget[id]||{}).loaded)loadSupplierCandidates(r);else renderPage();return}
    if(act==='find-suppliers'){state.actionView={id:id,type:'supplier'};loadSupplierCandidates(r);return}
-   if(act==='supplier-compose'){
-    var email=btn.getAttribute('data-email')||'',cand=supplierCandidates(r).filter(function(x){return S(x.email)===S(email)})[0]||{email:email};
-    window.open(gmailCompose(email,supplierSubject(r,r.quote_readiness!=='M3'),supplierBody(r,cand)),'_blank','noopener');return;
-   }
+   if(act==='supplier-create-draft'){await createSupplierDraft(r,btn.getAttribute('data-email')||'');return}
+   if(act==='supplier-open-draft'){var sk=draftKey('supplier',id,btn.getAttribute('data-email')||''),sd=state.supplierDrafts[sk];if(sd&&sd.gmail_url)window.open(sd.gmail_url,'_blank','noopener');return}
    if(act==='supplier-copy'){navigator.clipboard&&navigator.clipboard.writeText(supplierBody(r,{}));return}
   }
   if(e.target.closest('a,button'))return;
@@ -294,36 +320,36 @@ function materialLines(r){
 }
 
 function buyerAction(r){
- var q=outboundFor(r),to=q&&q.recipient_email||'',status=q?S(q.status||'registered'):'not registered',st=N(status),supp=q&&S(q.suppression_reason).trim(),blocked=!!supp||st==='suppressed',stale=st==='stale',human=!q||q.human_send_required!==false;
- var preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='buyer';
- var validThread=q&&q.gmail_thread_id&&!stale&&!blocked,primary='',compose='';
+ var q=outboundFor(r),to=q&&q.recipient_email||'',status=q?S(q.status||'registered'):'not registered',st=N(status),supp=q&&S(q.suppression_reason).trim(),recoverable=['gmail_draft_missing','gmail_draft_stale','draft_missing','draft_stale'].indexOf(supp)>-1,blocked=(!!supp&&!recoverable)||st==='suppressed',stale=st==='stale'||recoverable,human=!q||q.human_send_required!==false;
+ var preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='buyer',k=draftKey('buyer',r.id),busy=!!state.draftBusy[k],result=state.draftResult[k]||null;
+ var validDraft=q&&q.gmail_draft_id&&q.gmail_thread_id&&!stale&&!blocked,primary='';
  if(blocked)primary='<button class="pst-dss-btn" disabled>Outbound i bllokuar</button>';
- else if(validThread)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail / verifiko</button>';
- else if(to)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-compose" data-dss-tid="'+E(r.id)+'">'+(stale?'Përgatit draft zëvendësues':'Përgatit emailin')+'</button>';
+ else if(validDraft)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>';
+ else if(to)primary='<button class="pst-dss-btn primary" '+(busy?'disabled':'')+' data-dss-action="buyer-create-draft" data-dss-tid="'+E(r.id)+'">'+(busy?'Duke krijuar draftin…':(stale?'Rigjenero Gmail draft':'Krijo Gmail draft'))+'</button>';
  else primary='<button class="pst-dss-btn" disabled>Duhet kontakt</button>';
- if(!q&&to)compose='<button class="pst-dss-btn" data-dss-action="buyer-compose" data-dss-tid="'+E(r.id)+'">Hap Gmail</button>';
- var guard=blocked?('Preflight: '+S(supp||'suppressed')+'. Mos krijo/dërgo outreach derisa guard-i të pastrohet.'):(stale?'Drafti i regjistruar është stale; mos u mbështet te thread-i i vjetër. Dërgimi i draftit zëvendësues mbetet human-approved.':(human?'Dërgimi mbetet human-approved.':'Asnjë dërgim automatik nga kjo faqe.'));
- return '<div class="pst-dss-action-card"><h4>📩 Blerësi · kërko RFQ / BOQ</h4><p>Kërko material listën aktuale, drawings/specs dhe konfirmo nëse procurement-i është ende i hapur.</p><div class="pst-dss-action-status">'+(to?'<b>'+E(to)+'</b> · ':'')+E(q?'PPPP outbound: '+status:contactLabel(r.contact_status))+'</div><div class="pst-dss-action-buttons">'+primary+compose+'<button class="pst-dss-btn" data-dss-action="buyer-preview" data-dss-tid="'+E(r.id)+'">Shiko tekstin</button></div><div class="pst-dss-guard">'+E(guard)+'</div>'+(preview?'<div class="pst-dss-previewbox"><b>'+E(buyerSubject(r,q))+'</b><pre>'+E(buyerBody(r))+'</pre><div class="pst-dss-action-buttons" style="margin-top:8px"><button class="pst-dss-btn" data-dss-action="buyer-copy" data-dss-tid="'+E(r.id)+'">Kopjo tekstin</button></div></div>':'')+'</div>';
+ var guard=blocked?('Preflight: '+S(supp||'suppressed')+'. Ky guard duhet zgjidhur para outreach.'):(stale?'Drafti i vjetër mungon/stale. PPPP tani mund të krijojë një draft të ri real në Gmail dhe ta rilidhë me shared outbound.':(human?'Drafti krijohet në Gmail; dërgimi mbetet human-approved.':'Asnjë dërgim automatik nga kjo faqe.'));
+ var resultHtml=result&&result.error?'<div class="pst-dss-inline-status" style="background:#fff1ef;color:#8b4a41">Drafti nuk u krijua: '+E(result.error)+'</div>':(result&&result.created?'<div class="pst-dss-inline-status">✓ Gmail draft u krijua dhe u lidh me PPPP.</div>':'');
+ return '<div class="pst-dss-action-card"><h4>📩 Blerësi · kërko RFQ / BOQ</h4><p>Kërko material listën aktuale, drawings/specs dhe konfirmo nëse procurement-i është ende i hapur.</p><div class="pst-dss-action-status">'+(to?'<b>'+E(to)+'</b> · ':'')+E(q?'PPPP outbound: '+status:contactLabel(r.contact_status))+'</div><div class="pst-dss-action-buttons">'+primary+'<button class="pst-dss-btn" data-dss-action="buyer-preview" data-dss-tid="'+E(r.id)+'">Shiko tekstin</button></div><div class="pst-dss-guard">'+E(guard)+'</div>'+resultHtml+(preview?'<div class="pst-dss-previewbox"><b>'+E(buyerSubject(r,q))+'</b><pre>'+E(buyerBody(r))+'</pre><div class="pst-dss-action-buttons" style="margin-top:9px"><button class="pst-dss-btn" data-dss-action="buyer-copy" data-dss-tid="'+E(r.id)+'">Kopjo tekstin</button></div></div>':'')+'</div>';
 }
-
 function supplierAction(r){
  var indicative=r.quote_readiness!=='M3',box=state.supplierByTarget[S(r.id)]||{},preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='supplier';
- var label=r.quote_readiness==='M3'?'RFQ finale':'RFQ indikative';
- var candidates=supplierCandidates(r),candHtml='';
+ var label=r.quote_readiness==='M3'?'RFQ finale':'RFQ indikative',candidates=supplierCandidates(r),candHtml='';
  if(box.loading)candHtml='<div class="pst-dss-previewbox"><b>Duke kontrolluar Supplier Intelligence…</b></div>';
  else if(box.error)candHtml='<div class="pst-dss-previewbox"><b>Supplier Intelligence nuk u lexua</b><pre>'+E(box.error)+'</pre></div>';
  else if(box.loaded){
   candHtml='<div class="pst-dss-candidates">'+(candidates.length?candidates.map(function(c){
-   var fit=c.strict_fit?'Strict fit':'Review fit',cl=c.strict_fit?'pst-dss-fit':'pst-dss-fit review';
-   return '<div class="pst-dss-candidate"><div><b>'+E(c.name||'Supplier')+'</b><small>'+E([c.country,c.email,'score '+S(c.match_score||0)].filter(Boolean).join(' · '))+'</small></div><span class="'+cl+'">'+E(fit)+'</span>'+(c.email?'<button class="pst-dss-btn" data-dss-action="supplier-compose" data-dss-tid="'+E(r.id)+'" data-email="'+E(c.email)+'">Hap Gmail</button>':'<span></span>')+'</div>';
+   var fit=c.strict_fit?'Strict fit':'Review fit',cl=c.strict_fit?'pst-dss-fit':'pst-dss-fit review',email=S(c.email||''),dk=draftKey('supplier',r.id,email),busy=!!state.draftBusy[dk],dr=state.supplierDrafts[dk]||null,action='';
+   if(dr&&dr.gmail_url)action='<button class="pst-dss-btn success" data-dss-action="supplier-open-draft" data-dss-tid="'+E(r.id)+'" data-email="'+E(email)+'">✓ Hap Gmail draft</button>';
+   else if(email)action='<button class="pst-dss-btn" '+(busy?'disabled':'')+' data-dss-action="supplier-create-draft" data-dss-tid="'+E(r.id)+'" data-email="'+E(email)+'">'+(busy?'Duke krijuar…':'Krijo RFQ draft')+'</button>';
+   else action='<span></span>';
+   return '<div class="pst-dss-candidate"><div><b>'+E(c.name||'Supplier')+'</b><small>'+E([c.country,email,'score '+S(c.match_score||0)].filter(Boolean).join(' · '))+(dr&&dr.error?'<br><span style="color:#9a4d43">Draft error: '+E(dr.error)+'</span>':'')+'</small></div><span class="'+cl+'">'+E(fit)+'</span>'+action+'</div>';
   }).join(''):'<div class="pst-dss-empty" style="padding:14px"><b>Nuk u gjet kandidat i gatshëm</b><span>Nevojitet supplier discovery ose më shumë specifika.</span></div>')+'</div>';
  }
- return '<div class="pst-dss-action-card"><h4>🏭 Furnizimi · '+E(label)+'</h4><p>'+(indicative?'M2/M1: përdore si sourcing request; quantities/specs duhet të konfirmohen para ofertës finale.':'M3: baza është BOQ/material list dhe mund të përgatitet RFQ e plotë.')+'</p><div class="pst-dss-action-status"><b>'+E(tonnes(r.estimated_tonnes))+'</b> · '+E(qrLabel(r.quote_readiness))+'</div><div class="pst-dss-action-buttons"><button class="pst-dss-btn primary" data-dss-action="supplier-preview" data-dss-tid="'+E(r.id)+'">Përgatit '+E(label)+'</button><button class="pst-dss-btn" data-dss-action="find-suppliers" data-dss-tid="'+E(r.id)+'">Gjej furnitorë</button></div><div class="pst-dss-guard">Supplier ranking është vetëm analizë; asnjë furnitor nuk zgjidhet ose kontaktohet automatikisht.</div>'+(preview?'<div class="pst-dss-previewbox"><b>'+E(supplierSubject(r,indicative))+'</b><pre>'+E(supplierBody(r,{}))+'</pre><div class="pst-dss-action-buttons" style="margin-top:8px"><button class="pst-dss-btn" data-dss-action="supplier-copy" data-dss-tid="'+E(r.id)+'">Kopjo RFQ</button></div></div>':'')+candHtml+'</div>';
+ return '<div class="pst-dss-action-card"><h4>🏭 Furnizimi · '+E(label)+'</h4><p>'+(indicative?'M2/M1: sourcing request indikativ. Sasitë dhe specifikat duhet të konfirmohen para ofertës finale.':'M3: kemi bazë BOQ/material list dhe mund të përgatitet RFQ e plotë.')+'</p><div class="pst-dss-action-status"><b>'+E(tonnes(r.estimated_tonnes))+'</b> · '+E(qrLabel(r.quote_readiness))+'</div><div class="pst-dss-action-buttons"><button class="pst-dss-btn primary" data-dss-action="find-suppliers" data-dss-tid="'+E(r.id)+'">'+(box.loaded?'Rifresko furnitorët':'Gjej furnitorë')+'</button><button class="pst-dss-btn" data-dss-action="supplier-preview" data-dss-tid="'+E(r.id)+'">Shiko RFQ</button></div><div class="pst-dss-guard">PPPP propozon kandidatë; ti zgjedh furnitorin. Vetëm pasi klikon “Krijo RFQ draft”, krijohet draft real në Gmail. Asgjë nuk dërgohet automatikisht.</div>'+(preview?'<div class="pst-dss-previewbox"><b>'+E(supplierSubject(r,indicative))+'</b><pre>'+E(supplierBody(r,{}))+'</pre></div>':'')+candHtml+'</div>';
 }
-
 function detail(r){
  var ev=A(J(r.evidence,[])),scope=J(r.material_scope,{}),conf=r.material_confidence!=null?Math.round(num(r.material_confidence)*100)+'%':'—',safeSource=U(r.source_url),source=safeSource?'<a class="pst-dss-source" href="'+E(safeSource)+'" target="_blank" rel="noopener">Hap burimin ↗</a>':'',evidence=ev.length?'<div class="pst-dss-evidence">'+ev.slice(0,10).map(function(x){var label=typeof x==='string'?x:(x.label||x.title||x.source||x.url||'Evidence');return '<span>'+E(label)+'</span>'}).join('')+'</div>':'';
- return '<div class="pst-dss-detail"><div class="pst-dss-summary"><section class="pst-dss-summary-card"><h3>Opportunity</h3><div class="pst-dss-summary-title">'+E(r.company_name||'Buyer')+'</div><div class="pst-dss-summary-sub">'+E(r.project_title||'')+'</div><div class="pst-dss-keyfacts"><span>'+E(r.score_band||'—')+'</span><span>'+E(r.country||'—')+'</span><span>'+E(r.procurement_timing||'Timing unknown')+'</span><span>Award '+E(D(r.award_date))+'</span></div></section><section class="pst-dss-summary-card"><h3>Material we can target</h3><div class="pst-dss-summary-title">'+E(tonnes(r.estimated_tonnes))+' · '+E(qrLabel(r.quote_readiness))+'</div><div class="pst-dss-summary-sub">'+E(r.steel_scope||qrHelp(r.quote_readiness))+'</div></section></div><section class="pst-dss-action-center"><header><b>Çfarë bëjmë tani?</b><span>Buyer side + supply side</span></header><div class="pst-dss-action-grid">'+buyerAction(r)+supplierAction(r)+'</div></section><details class="pst-dss-details"><summary>Evidence & technical details</summary><div class="pst-dss-detail-grid"><section class="pst-dss-detail-card"><h3>Project & qualification</h3><div class="pst-dss-meta"><span>Company</span><span>'+E(r.company_name)+'</span><span>Country</span><span>'+E(r.country||'—')+'</span><span>Buyer type</span><span>'+E(r.buyer_type||'—')+'</span><span>Reference</span><span>'+E(r.project_reference||'—')+'</span><span>Material revision</span><span>'+E(r.material_revision||scope.revision||'—')+'</span><span>Confidence</span><span>'+E(conf)+'</span><span>Last verified</span><span>'+E(D(r.last_verified_at))+'</span></div>'+source+evidence+'</section><section class="pst-dss-detail-card"><h3>Material Intelligence</h3>'+materialLines(r)+'</section></div></details></div>';
+ return '<div class="pst-dss-detail"><div class="pst-dss-summary"><section class="pst-dss-summary-card"><h3>Opportunity</h3><div class="pst-dss-summary-title">'+E(r.company_name||'Buyer')+'</div><div class="pst-dss-summary-sub">'+E(r.project_title||'')+'</div><div class="pst-dss-keyfacts"><span>'+E(r.score_band||'—')+'</span><span>'+E(r.country||'—')+'</span><span>'+E(r.procurement_timing||'Timing unknown')+'</span><span>Award '+E(D(r.award_date))+'</span></div></section><section class="pst-dss-summary-card"><h3>Material we can target</h3><div class="pst-dss-summary-title">'+E(tonnes(r.estimated_tonnes))+' · '+E(qrLabel(r.quote_readiness))+'</div><div class="pst-dss-summary-sub">'+E(r.steel_scope||qrHelp(r.quote_readiness))+'</div></section></div><section class="pst-dss-action-center"><header><b>Çfarë bëjmë tani?</b><span>Blerësi + furnizimi</span></header><div class="pst-dss-action-grid">'+buyerAction(r)+supplierAction(r)+'</div></section><details class="pst-dss-details"><summary>Evidence & technical details</summary><div class="pst-dss-detail-grid"><section class="pst-dss-detail-card"><h3>Project & qualification</h3><div class="pst-dss-meta"><span>Company</span><span>'+E(r.company_name)+'</span><span>Country</span><span>'+E(r.country||'—')+'</span><span>Buyer type</span><span>'+E(r.buyer_type||'—')+'</span><span>Reference</span><span>'+E(r.project_reference||'—')+'</span><span>Material revision</span><span>'+E(r.material_revision||scope.revision||'—')+'</span><span>Confidence</span><span>'+E(conf)+'</span><span>Last verified</span><span>'+E(D(r.last_verified_at))+'</span></div>'+source+evidence+'</section><section class="pst-dss-detail-card"><h3>Material Intelligence</h3>'+materialLines(r)+'</section></div></details></div>';
 }
 
 function renderPage(){
