@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
 const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
-const VERSION='winner-contact-rank-v1';
+const VERSION='winner-contact-rank-v2';
 const LOW_VALUE_LOCAL=/^(hr|humanresources|human\.resources|jobs?|careers?|karriere|bewerbung|recruiting|recruitment|privacy|datenschutz|dpo|rechnung|invoice|buchhaltung|accounting|support|it|webmaster)([._+-]|$)/i;
 const PURPOSE_WEIGHT={procurement:500,tender:450,sales:400,general:300,person:200,contact_point:180};
 const text=v=>String(v==null?'':v).trim();
@@ -12,8 +12,18 @@ function payload(r){return r&&r.payload&&typeof r.payload==='object'?r.payload:{
 function winner(r){const w=payload(r).winner;return w&&typeof w==='object'?w:{};}
 function winnerNames(w){return unique([...(Array.isArray(w.names)?w.names:[]),w.name].map(text));}
 function localPart(email){return text(email).split('@')[0]||'';}
+function emailDomain(email){const m=text(email).toLowerCase().match(/@([^\s>]+)$/);return m?m[1].replace(/[>,.;]+$/,''):'';}
+function placeholderEmail(email){const d=emailDomain(email);return !d||/(^|\.)(example\.(com|org|net)|yourdomain\.[a-z]{2,}|yourcompany\.[a-z]{2,}|company\.com)$/i.test(d);}
+function safeDraftContact(c){
+ if(!c||c.type!=='email'||!c.value)return false;
+ if(c.draft_eligible===false)return false;
+ if(String(c.company_attribution||'').toLowerCase()==='external_domain')return false;
+ if(String(c.confidence||'').toLowerCase()==='low')return false;
+ if(placeholderEmail(c.value))return false;
+ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text(c.value));
+}
 function contactRank(c){
- if(!c||c.type!=='email'||!c.value)return-1;
+ if(!safeDraftContact(c))return-1;
  const local=localPart(c.value);if(LOW_VALUE_LOCAL.test(local))return 40;
  let score=PURPOSE_WEIGHT[c.purpose]??170;
  if(c.source_type==='TED')score+=25;
@@ -25,7 +35,7 @@ function contactRank(c){
 export function chooseBestWinnerEmail(row){
  const w=winner(row),names=winnerNames(w);if(names.length!==1)return null;
  const e=w.contact_enrichment;if(!e||!Array.isArray(e.organizations)||!e.organizations.length)return null;
- const org=e.organizations[0],emails=(Array.isArray(org&&org.contacts)?org.contacts:[]).filter(c=>c&&c.type==='email'&&c.value);
+ const org=e.organizations[0],emails=(Array.isArray(org&&org.contacts)?org.contacts:[]).filter(safeDraftContact);
  if(!emails.length)return null;
  return emails.map(c=>({contact:c,rank:contactRank(c)})).sort((a,b)=>b.rank-a.rank)[0]||null;
 }
