@@ -97,6 +97,25 @@ function last(a){return a[a.length-1];}
   calls.length=0;click(window,nav('client'));assert(last(calls)&&last(calls)[1]==='communication','Client must route to canonical communication');
   calls.length=0;click(window,nav('finance'));assert(last(calls)&&last(calls)[1]==='finance','Finance must route to canonical finance');
 
+  let tedContactOpens=0;
+  window.PSTTenderWinnerContactsV1={renderModal:function(t){tedContactOpens++;assert(t&&t.id==='ted-source-1','TED contact action must use the linked canonical source tender');return true;}};
+  window.__pstIntegrityLastData={
+    project:{id:'p1',name:'HT2R · France – Construction &amp;quot;KARTIE&amp;quot;',client:'HT2R',ref:'645196-2026',business_ref:'TED:645196-2026',status:'pritje',pipeline_stage:'rfq_in',operational_state:'active_work',workflow_type:'eu_award_sales',origin_type:'tender_award',location:'FRA'},
+    rfqs:[],supplierOffers:[],ourOffers:[],emails:[],projectDocs:[],invoicesOut:[],
+    sourceTenders:[{id:'ted-source-1',publication_no:'645196-2026',authority:'SEDRE',detail_url:'https://ted.europa.eu/en/notice/-/detail/645196-2026',payload:{source:'TED',notice_phase:'award',winner:{name:'HT2R',organization_count:12,names:['HT2R','BTB','ADEQUAT OCEAN INDIEN'],contact_enrichment:{status:'not_found',contact_count:0,organizations:[{name:'HT2R',country:'FRA',contacts:[]},{name:'BTB',country:'FRA',contacts:[]},{name:'ADEQUAT OCEAN INDIEN',country:'FRA',contacts:[]}]}}}}]
+  };
+  window.PSTProjectWorkbenchV3.sync();
+  const tedContinue=doc.querySelector('.pwb3-now>button');
+  assert(tedContinue&&tedContinue.getAttribute('data-pwb3-action')==='ted_contacts','TED award Vazhdo must open winner/contact review before supplier RFQ');
+  assert(doc.querySelectorAll('.pwb3-path-v2 .pwb3-phase').length===7,'TED award project must render its dedicated seven-step sales workflow');
+  const tedCard=doc.querySelector('[data-pwb3-kind="ted-award"]');
+  assert(tedCard,'TED award source card missing');
+  assert(tedCard.textContent.includes('0 kontakte të verifikuara')||tedCard.textContent.includes('0 kontakte'),'TED award source card must expose missing verified contacts');
+  assert(tedCard.textContent.includes('12')||tedCard.textContent.includes('3'),'TED award source card must expose winner/member context');
+  click(window,tedContinue);assert(tedContactOpens===1,'TED award Vazhdo must delegate to winner/contact review');
+  click(window,doc.querySelector('[data-pwb3-action="ted_contacts"]'));assert(tedContactOpens===2,'TED source card contact action must work');
+  assert(!doc.getElementById('page-workspace-project').textContent.includes('&amp;quot;'),'TED HTML entities must not leak into the visible project workspace');
+
   window.__pstIntegrityLastData.project.status='mbyllur';
   window.__pstIntegrityLastData.project.operational_state='closed';
   window.PSTProjectWorkbenchV3.sync();
