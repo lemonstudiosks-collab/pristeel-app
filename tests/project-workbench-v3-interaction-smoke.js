@@ -116,9 +116,24 @@ function last(a){return a[a.length-1];}
   const tedClientCard=doc.querySelector('[data-pwb3-kind="client-response"]');
   assert(tedClientCard&&tedClientCard.textContent.includes('Asnjë email nuk është dërguar'),'TED overview must state the real no-email condition');
   assert(tedCard.textContent.includes('0 kontakte të verifikuara')||tedCard.textContent.includes('0 kontakte'),'TED award source card must expose missing verified contacts');
+  const blockedDraft=tedCard.querySelector('button.primary');
+  assert(blockedDraft&&blockedDraft.disabled&&blockedDraft.textContent.includes('Krijo draft'),'TED award must keep create-draft visible but disabled until a verified recipient exists');
   assert(tedCard.textContent.includes('12')||tedCard.textContent.includes('3'),'TED award source card must expose winner/member context');
   click(window,tedContinue);assert(tedContactOpens===1,'TED award Vazhdo must delegate to winner/contact review');
   click(window,doc.querySelector('[data-pwb3-action="ted_contacts"]'));assert(tedContactOpens===2,'TED source card contact action must work');
+
+  let tedDraftOpens=0;
+  window.PSTTenderPriorityActionsV2={prepareDraft:function(id){tedDraftOpens++;assert(id==='ted-source-1','Project draft action must use the linked canonical TED source');return Promise.resolve({ok:true});}};
+  const enrich=window.__pstIntegrityLastData.sourceTenders[0].payload.winner.contact_enrichment;
+  enrich.contact_count=1;
+  enrich.status='found';
+  enrich.organizations[0].contacts=[{type:'email',value:'sales@ht2r.example',confidence:'high',draft_eligible:true}];
+  window.PSTProjectWorkbenchV3.sync();
+  const liveDraft=doc.querySelector('[data-pwb3-action="ted_draft"]');
+  assert(liveDraft&&!liveDraft.disabled&&liveDraft.textContent.includes('Krijo draft'),'Verified TED contact must activate create-draft in Project');
+  click(window,liveDraft);await nextTick();
+  assert(tedDraftOpens===1,'Create draft in Project must delegate to the canonical TED draft engine');
+
   assert(!doc.getElementById('page-workspace-project').textContent.includes('&amp;quot;'),'TED HTML entities must not leak into the visible project workspace');
 
   window.__pstIntegrityLastData.project.status='mbyllur';

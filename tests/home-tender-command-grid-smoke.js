@@ -38,7 +38,7 @@ assert.ok(T.openOutreach(award));
 assert.strictEqual(T.workModel(open),'supply');
 assert.strictEqual(T.workModel(award),'production');
 const tenderSrc=fs.readFileSync('pristeel-tender-priority-actions-v1.js','utf8');
-assert.ok(tenderSrc.includes("status=in.(new,review,watch)"),'watch-state TED awards must remain loadable by the action layer');
+assert.ok(tenderSrc.includes("status=in.(new,review,watch,promoted)"),'watch-state and promoted TED awards must remain loadable by the action layer');
 assert.ok(tenderSrc.includes('/users/me/drafts'),'outreach must create Gmail drafts, not send directly');
 assert.ok(!tenderSrc.match(/messages\/send|GmailApp\.send|sendEmail\s*\(/),'runtime must never auto-send email');
 assert.strictEqual(T._test.languageFor(award),'en','Denmark must use English');

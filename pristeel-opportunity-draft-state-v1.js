@@ -36,7 +36,7 @@ function ensureCss(){
 async function refresh(force){
   if(!force&&cache.loadedAt&&Date.now()-cache.loadedAt<20000)return cache.rows;
   if(cache.loading)return cache.loading;
-  cache.loading=db('kek_tender_watch?select=id,payload,status&status=in.(new,review,watch)&limit=2000').then(function(rows){var m={};A(rows).forEach(function(r){m[S(r.id)]=r;});cache.rows=m;cache.loadedAt=Date.now();return m;}).catch(function(){return cache.rows;}).finally(function(){cache.loading=null;});
+  cache.loading=db('kek_tender_watch?select=id,payload,status&status=in.(new,review,watch,promoted)&limit=2000').then(function(rows){var m={};A(rows).forEach(function(r){m[S(r.id)]=r;});cache.rows=m;cache.loadedAt=Date.now();return m;}).catch(function(){return cache.rows;}).finally(function(){cache.loading=null;});
   return cache.loading;
 }
 function formatWhen(v){try{var d=new Date(v);if(isNaN(d.getTime()))return'';return d.toLocaleString('sq-AL',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
