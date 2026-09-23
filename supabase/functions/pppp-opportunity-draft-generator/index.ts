@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v15-global-live-domain-guard';
+const GENERATOR='pppp-opportunity-draft-generator-v16-communication-state-skip';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=1;
 const MAX_DRAFT_WRITES_PER_RUN=10;
@@ -246,6 +246,11 @@ async function persistActionState(a:any,p:any,recipients:any[]){const {data,erro
 
 async function processAction(a:any,budget:{writes:number},refreshExisting=false){
   let p=a.payload&&typeof a.payload==='object'?a.payload:{},tender=await tenderContext(a.tender_watch_id);
+  const cs=await db.from('pppp_opportunity_communication_state_v1').select('communication_state,communication_at,communication_thread_id').eq('action_id',a.id).maybeSingle();
+  if(cs.error)throw cs.error;
+  if(['waiting','replied','contacted_history'].includes(text(cs.data?.communication_state,40).toLowerCase())){
+    return{action_key:a.action_key,company:a.target_company,event:'communication_history_blocked',reason:cs.data.communication_state,communication_at:cs.data.communication_at||null,gmail_thread_id:cs.data.communication_thread_id||null,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired:0,remaining:0};
+  }
   const route=text(a.route,80).toUpperCase(),expected=/^TED_/i.test(route)?expectedTedRoute(tender):route;
   if(/^TED_/i.test(route)){
     const readiness=tedReadiness(a,tender);

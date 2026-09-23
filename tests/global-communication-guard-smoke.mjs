@@ -22,6 +22,8 @@ assert.match(dach,/pppp_global_communication_guard_v1/);
 assert.match(ted,/pppp_global_communication_guard_v1/);
 assert.match(ted,/recentSentToExact/);
 assert.match(ted,/gmail_domain_cooldown_active/);
+assert.match(ted,/pppp_opportunity_communication_state_v1/);
+assert.match(ted,/communication_history_blocked/);
 assert.match(manual,/pppp_global_communication_guard_v1/);
 assert.match(manual,/recentSentTo/);
 assert.match(manual,/gmail_domain_cooldown_active/);
