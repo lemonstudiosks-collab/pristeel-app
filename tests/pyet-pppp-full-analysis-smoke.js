@@ -71,5 +71,16 @@ const assert=require('assert');
   assert.match(canonical,/function evidenceReadIntent\(q\)/,'canonical Home must recognize evidence and bare-entity reads');
   assert.match(canonical,/!explicitWriteIntent\(q\).*evidenceReadIntent\(q\)/s,'canonical Home must keep explicit writes out of the read path');
 
+  const edge=fs.readFileSync('supabase/functions/pppp-openai-assistant/index.ts','utf8');
+  assert.match(edge,/SUPABASE_SERVICE_ROLE_KEY/,'server assistant must have a server-only credential for privileged PPPP reads');
+  assert.match(edge,/const userHeaders=dbH\(auth,anon\),trustedHeaders=dbH\('Bearer '\+service,service\)/,'server assistant must keep user-scoped and trusted read headers separate');
+  assert.match(edge,/pppp_assistant_identity_resolver_v1',userHeaders/,'identity resolution must remain user-scoped');
+  assert.match(edge,/pppp_assistant_project_resolver_v2',userHeaders/,'project resolution must remain user-scoped');
+  assert.match(edge,/pppp_assistant_project_context_v1',trustedHeaders/,'project context must use the trusted server read path after bridge hardening');
+  assert.match(edge,/expandProjectEvidence\(base,trustedHeaders,compact\)/,'supplemental ChatGPT evidence must use the trusted server read path');
+  assert.match(edge,/pppp_command_center_v1',userHeaders/,'legacy command center read must remain user-scoped');
+  assert.match(edge,/pppp_chatgpt_entity_intelligence_v3',trustedHeaders/,'restricted entity intelligence must use the trusted server read path');
+  assert.match(edge,/pppp_chatgpt_control_tower_v2',trustedHeaders/,'restricted control tower must use the trusted server read path');
+
   console.log('pyet-pppp-full-analysis smoke: PASS');
 })().catch(err=>{console.error(err);process.exit(1);});
