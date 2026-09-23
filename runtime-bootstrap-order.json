@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 153,
-  "sequenceSha256": "3d7d18e6a3345616128606972a3bc9c0807d32382405f693404e7952d9df6a77",
+  "sequenceSha256": "350327275448fa6e0ad48d4b7a0868f6c5d9fbabe74a3a494bae0ad737ab61e6",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260812-readable1",
@@ -36,7 +36,7 @@
     "pristeel-project-discovery.js?v=20260801-1",
     "pristeel-project-discovery-create-fix.js?v=20260801-1",
     "pristeel-supplier-project-guard.js?v=20260802-2",
-    "pristeel-project-schema-compat.js?v=20260801-2",
+    "pristeel-project-schema-compat.js?v=20260923-v2workflow1",
     "pristeel-historical-project-audit.js?v=20260801-1",
     "pristeel-groq-rate-limit.js?v=20260814-ai2",
     "pristeel-gemini-test-ui-v1.js?v=20260814-1",
