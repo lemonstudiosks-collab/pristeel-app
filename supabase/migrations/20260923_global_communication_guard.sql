@@ -116,6 +116,27 @@ events as (
     )
 
   union all
+  select 'GMAIL',pe.gmail_message_id,
+         lower(x.email),
+         lower(coalesce(public.pppp_outbound_domain_v1(x.email,null),'')),
+         'sent',pe.sent_at
+  from public.project_emails pe
+  cross join lateral unnest(coalesce(pe.to_emails,'{}'::text[])) as x(email)
+  where lower(coalesce(pe.direction,''))='outgoing'
+    and pe.sent_at is not null
+    and lower(coalesce(pe.from_email,'')) like '%@prissteel.com'
+
+  union all
+  select 'GMAIL',pe.gmail_message_id,
+         lower(coalesce(pe.from_email,'')),
+         lower(coalesce(public.pppp_outbound_domain_v1(pe.from_email,null),'')),
+         'replied',pe.sent_at
+  from public.project_emails pe
+  where lower(coalesce(pe.direction,''))='incoming'
+    and pe.sent_at is not null
+    and lower(coalesce(pe.from_email,'')) not like '%@prissteel.com'
+
+  union all
   select 'TED',r.id::text,
          lower(coalesce(r.recipient_email,'')),
          lower(coalesce(public.pppp_outbound_domain_v1(r.recipient_email,null),'')),
