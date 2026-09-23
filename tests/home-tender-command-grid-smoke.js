@@ -23,7 +23,7 @@ w.PSTHomeCanonicalV1={snapshot:()=>({actions:[
   {key:'a1',title:'Shqyrto përgjigjen e klientit',why:'Ka ardhur përgjigje e re që kërkon vendim.',tag:'VEPRIM',project_name:'SSP - EWAS'}
 ],waiting:[{project_id:'p2',name:'Dukley',text:'Po pritet klienti'}],projects:[{id:'p1',name:'Active'}]})};
 
-const award={id:'t1',title:'Denmark – Structural steelworks – FMV2 - Smedeentreprise - Bassin Folemarksvej',authority:'HOFOR',relevance_score:96,category:'steel_structure',status:'new',payload:{source:'TED',notice_phase:'award',workflow:'winner_outreach',capability_fit:'strong',winner:{name:'Holmskov Rustfri A/S',country:'DNK',email:'th@holmskov.dk'}}};
+const award={id:'t1',title:'Denmark – Structural steelworks – FMV2 - Smedeentreprise - Bassin Folemarksvej',authority:'HOFOR',relevance_score:96,category:'steel_structure',status:'watch',payload:{source:'TED',notice_phase:'award',workflow:'winner_outreach',capability_fit:'strong',winner:{name:'Holmskov Rustfri A/S',country:'DNK',email:'th@holmskov.dk'}}};
 const open={id:'t2',title:'Steel supply',authority:'Authority',deadline:null,relevance_score:100,category:'raw_material',status:'new',payload:{source:'KRPP',notice_phase:'opportunity',capability_fit:'strong'}};
 const otherOpen={id:'t3',title:'Another steel opportunity',authority:'Authority',deadline:null,relevance_score:99,category:'steel_structure',status:'new',payload:{source:'TED',notice_phase:'opportunity',capability_fit:'strong'}};
 w.supaFetch=async(path)=>path.startsWith('kek_tender_watch?')?[award,open,otherOpen]:[];
@@ -35,6 +35,7 @@ assert.strictEqual(priority.length,3);
 assert.strictEqual(priority[0].id,'t2','strongest direct bid must remain the main tender decision');
 assert.strictEqual(priority[1].id,'t1','unfinished award outreach must remain a tender priority');
 assert.ok(T.openOutreach(award));
+assert.ok(tenderSrc.includes("status=in.(new,review,watch)"),'watch-state TED awards must remain loadable by the action layer');
 assert.strictEqual(T.workModel(open),'supply');
 assert.strictEqual(T.workModel(award),'production');
 const tenderSrc=fs.readFileSync('pristeel-tender-priority-actions-v1.js','utf8');
