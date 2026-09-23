@@ -178,7 +178,13 @@ begin
         and lower(coalesce(c.contact->>'confidence', '')) in ('high', 'medium')
         and lower(coalesce(c.contact->>'company_attribution', '')) <> 'external_domain'
     ) x
-    where x.email ~* '^[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}(
+    where x.email ~* '^[A-Z0-9._%+\\-]+@[A-Z0-9.\\-]+\\.[A-Z]{2,}$'
+      and lower(split_part(x.email, '@', 2)) not in ('example.com','example.org','example.net','company.com')
+      and lower(split_part(x.email, '@', 2)) not like 'yourdomain.%'
+      and lower(split_part(x.email, '@', 2)) not like 'yourcompany.%'
+    order by lower(x.email), x.message_id desc nulls last
+  loop
+    insert into public.project_contacts(
       project_id, email, name, company, role, source, source_message_ids,
       first_seen, last_seen, email_count, direct_count, cc_count,
       is_primary, status, created_at, updated_at
