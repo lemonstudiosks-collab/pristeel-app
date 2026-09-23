@@ -1,4 +1,4 @@
-/* PRISTEEL DACH Steel Buyers v5
+/* PRISTEEL DACH Steel Buyers v6
  * Buyer Target + Material Intelligence Desk for direct steel supply in DE/AT/CH.
  * Operational buyer-to-supply workflow over qualified targets in pppp_dach_steel_targets_v1.
  * Home reads only the 1-row pppp_dach_steel_home_summary_v1 view.
@@ -13,8 +13,8 @@ window.__pstDachSteelSalesV1=true;
 
 var SOURCE='DACH_STEEL_BUYER';
 var state={
- summary:null,targets:[],outboundByTarget:{},supplierByTarget:{},
- draftBusy:{},draftResult:{},supplierDrafts:{},
+ summary:null,targets:[],outboundByTarget:{},supplierByTarget:{},contactByTarget:{},
+ draftBusy:{},draftResult:{},supplierDrafts:{},contactBusy:{},
  summaryLoaded:false,targetsLoaded:false,outboundLoaded:false,
  summaryLoading:false,targetsLoading:false,outboundLoading:false,
  error:'',filter:'action',expanded:null,actionView:null,lastLoadedAt:0,lifecycleSyncing:false,lifecycleSyncedAt:0,lifecycleResult:null
@@ -48,6 +48,39 @@ function qrClass(v){return v==='M3'?'m3':v==='M2'?'m2':v==='M1'?'m1':'m0'}
 function contactLabel(v){return v==='verified'?'Contact verified':v==='found'?'Contact found':v==='searching'?'Finding contact':'Contact missing'}
 function outreachLabel(v){return v==='ready'?'Ready for outreach':v==='queued'?'Queued':v==='sent'?'Sent':v==='replied'?'Replied':v==='suppressed'?'Suppressed':'Not ready'}
 
+function evidenceContact(r){
+ var ev=A(J(r&&r.evidence,[])),re=/([A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})/i,best=null;
+ ev.forEach(function(x){
+  var label=typeof x==='string'?x:S((x||{}).label||''),m=label.match(re);if(!m)return;
+  var email=N(m[1]),local=email.split('@')[0]||'',score=60,quality='general';
+  if(/einkauf|procurement|purchas|material|kalk/i.test(local+' '+label)){score=105;quality='procurement'}
+  else if(['info','kontakt','office','mail','zentrale'].indexOf(local)<0){score=84;quality='direct_public'}
+  if(/winner contact/i.test(label))score+=4;
+  var item={email:email,person:'',role:/winner contact/i.test(label)?'Public winner contact':'Public company contact',source:'target_evidence',quality:quality,score:score};
+  if(!best||item.score>best.score)best=item;
+ });
+ return best||{email:'',person:'',role:'',source:'',quality:'',score:0};
+}
+function contactFor(r){
+ var q=outboundFor(r);if(q&&q.recipient_email)return{email:S(q.recipient_email).toLowerCase(),person:S(q.recipient_name||''),role:S(q.contact_role||''),source:'shared_outbound',quality:'registered',score:999};
+ var live=state.contactByTarget[S(r&&r.id)];if(live&&live.email)return live;
+ return evidenceContact(r);
+}
+function hasContact(r){return !!S(contactFor(r).email)}
+function contactText(r){var x=contactFor(r);if(!x.email)return'';return [x.person,x.role,x.email].filter(Boolean).join(' · ')}
+async function loadBuyerContact(r,force){
+ var id=S(r&&r.id);if(!id||state.contactBusy[id])return;
+ if(state.contactByTarget[id]&&!force)return state.contactByTarget[id];
+ state.contactBusy[id]=true;renderPage();
+ try{
+  var data=await edgeDraft({mode:'contact',target_id:id});
+  state.contactByTarget[id]=data&&data.contact?data.contact:evidenceContact(r);
+ }catch(e){
+  var fallback=evidenceContact(r);fallback.error=S(e&&e.message||e);state.contactByTarget[id]=fallback;
+ }finally{state.contactBusy[id]=false;renderPage()}
+ return state.contactByTarget[id];
+}
+
 function localSummary(){
  var rows=A(state.targets).filter(function(r){return r.target_status!=='closed'&&r.target_status!=='rejected'});
  return {
@@ -55,8 +88,8 @@ function localSummary(){
   a1_targets:rows.filter(function(r){return r.score_band==='A1'}).length,
   quote_ready:rows.filter(function(r){return r.quote_readiness==='M3'}).length,
   calculated:rows.filter(function(r){return r.quote_readiness==='M2'}).length,
-  needs_contact:rows.filter(function(r){return r.contact_status==='missing'||r.contact_status==='searching'}).length,
-  ready_for_outreach:rows.filter(function(r){return r.outreach_status==='ready'}).length,
+  needs_contact:rows.filter(function(r){return !hasContact(r)}).length,
+  ready_for_outreach:rows.filter(function(r){return lifecycle(r)==='action'&&hasContact(r)}).length,
   identified_tonnes:rows.reduce(function(a,r){return a+num(r.estimated_tonnes)},0)
  };
 }
@@ -73,7 +106,7 @@ function css(){
 'body.pst-dss-active .topbar,body:has(#page-dach-steel-sales.active) .topbar{display:none!important}body.pst-dss-active .content{padding-top:8px!important}',
 '#page-dach-steel-sales{background:#f7f6f3!important;min-height:calc(100vh - 20px);color:#293a40}.pst-dss-page{max-width:1540px;margin:0 auto;padding:8px 10px 42px}',
 '.pst-dss-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin:0 0 10px}.pst-dss-head small{font-size:9px;font-weight:900;letter-spacing:.13em;color:#738b93}.pst-dss-head h1{margin:3px 0 0;font-size:27px;letter-spacing:-.5px}.pst-dss-head p{margin:4px 0 0;max-width:900px;color:#748086;font-size:11px;line-height:1.45}.pst-dss-actions{display:flex;gap:7px}.pst-dss-actions button{height:34px;padding:0 11px;border:1px solid #cfe0e4;border-radius:9px;background:#fff;color:#3d7184;font-size:10px;font-weight:800;cursor:pointer}',
-'.pst-dss-engine-note{margin-bottom:9px;padding:8px 11px;border:1px solid #dbe7e8;border-radius:10px;background:#f1f7f7;color:#687b82;font-size:9.5px;line-height:1.45}.pst-dss-engine-note b{color:#356f82}',
+'.pst-dss-engine-note{margin-bottom:9px;padding:8px 11px;border:1px solid #dbe7e8;border-radius:10px;background:#f1f7f7;color:#687b82;font-size:10.5px;line-height:1.5}.pst-dss-engine-note b{color:#356f82}.pst-dss-pipeline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 9px;padding:9px 11px;border:1px solid #e0e6e4;border-radius:10px;background:#fff;font-size:10.5px;color:#61747b}.pst-dss-pipeline b{color:#355f6e}.pst-dss-pipeline i{font-style:normal;color:#9aa4a7}.pst-dss-contact{display:block!important;margin-top:4px!important;color:#477887!important;font-weight:720!important}.pst-dss-contact-missing{color:#9a6c52!important}',
 '.pst-dss-kpi-strip{display:flex;align-items:stretch;gap:0;margin-bottom:9px;border:1px solid #e0e6e4;border-radius:11px;background:#fff;overflow:hidden}.pst-dss-kpi{min-width:0;flex:1;padding:8px 12px;border-right:1px solid #edf0ee}.pst-dss-kpi:last-child{border-right:0}.pst-dss-kpi b{font-size:16px;color:#304a53}.pst-dss-kpi span{margin-left:6px;font-size:8px;font-weight:820;text-transform:uppercase;color:#8a9498}',
 '.pst-dss-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}.pst-dss-tab{border:1px solid #dce5e6;border-radius:999px;background:#fff;padding:6px 10px;font-size:9.5px;font-weight:780;color:#687a81;cursor:pointer}.pst-dss-tab.on{background:#3f8298;border-color:#3f8298;color:#fff}',
 '.pst-dss-panel{border:1px solid #e1e5e3;border-radius:13px;background:#fff;overflow:hidden}.pst-dss-panel-head{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;border-bottom:1px solid #eaeeec}.pst-dss-panel-head b{font-size:11px}.pst-dss-panel-head span{font-size:9px;color:#879297}',
@@ -206,6 +239,7 @@ async function syncLifecycleUi(force){
  return state.lifecycleResult;
 }
 function lifecycle(r){
+ if(r&&r.project_id)return'project';
  var q=outboundFor(r),st=N(q&&q.status||r&&r.outreach_status||'');
  if((q&&q.replied_at)||st==='replied'||N(r&&r.outreach_status)==='replied')return'replied';
  if((q&&q.sent_at)||st==='sent'||N(r&&r.outreach_status)==='sent')return'waiting';
@@ -325,11 +359,12 @@ function filteredRows(){
  if(state.filter==='action')return actionable;
  if(state.filter==='waiting')return rows.filter(function(r){return lifecycle(r)==='waiting'});
  if(state.filter==='replied')return rows.filter(function(r){return lifecycle(r)==='replied'});
+ if(state.filter==='project')return rows.filter(function(r){return lifecycle(r)==='project'});
  if(state.filter==='a1')return actionable.filter(function(r){return r.score_band==='A1'});
  if(state.filter==='m3')return actionable.filter(function(r){return r.quote_readiness==='M3'});
  if(state.filter==='material')return actionable.filter(function(r){return r.quote_readiness==='M0'||r.quote_readiness==='M1'});
- if(state.filter==='contact')return actionable.filter(function(r){return r.contact_status==='missing'||r.contact_status==='searching'});
- if(state.filter==='outreach')return actionable.filter(function(r){return r.outreach_status==='ready'||!!outboundFor(r)});
+ if(state.filter==='contact')return actionable.filter(function(r){return !hasContact(r)});
+ if(state.filter==='outreach')return actionable.filter(function(r){return hasContact(r)});
  return rows;
 }
 function materialLines(r){
