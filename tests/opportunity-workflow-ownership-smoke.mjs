@@ -8,7 +8,7 @@ assert.match(direct,/name:\s*PPPP Direct Tender Opportunity v1/,'Direct Tender w
 assert.match(direct,/run:\s*node scripts\/opportunity-protected-archive-runner\.mjs/,'Direct Tender must own protected archive analysis');
 assert.match(direct,/run:\s*node scripts\/opportunity-engine-v2-runner\.mjs/,'Direct Tender must own KRPP\/APP dossier routing');
 assert.match(direct,/run:\s*node scripts\/opportunity-rfq-drafts-v1\.mjs/,'Direct Tender must own supplier RFQ preparation');
-assert.match(direct,/cron:\s*'10 \* \* \* \*'/,'Direct Tender cadence must remain explicit');
+assert.match(direct,/cron:\\s*'35 \\*\\/2 \\* \\* \\*'/,'Direct Tender cadence must remain aligned after the two-hour source ingest');
 
 assert.match(ted,/name:\s*PPPP Opportunity Engine v2/,'TED workflow must remain explicit');
 assert.match(ted,/run:\s*node scripts\/ted-gc-award-sync-v2\.mjs/,'TED workflow must retain award discovery');
