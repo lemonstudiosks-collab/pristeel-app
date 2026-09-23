@@ -4,6 +4,7 @@ const RESERVED_DOMAINS=new Set(['example.com','example.org','example.net']);
 const BLOCKED_SOURCE_DOMAINS=new Set(['forbes.pl','aleo.com','linkedin.com','facebook.com','instagram.com','wikipedia.org','bloomberg.com','crunchbase.com','kompass.com','europages.com','lursoft.lv']);
 const BLOCKED_OUTREACH_LOCAL_PARTS=new Set(['invoice','billing','faktury','accounting','accounts','payable','recruiting','jobs','careers','career','hr','humanresources','privacy','gdpr','datenschutz','skundai','webmaster','support','press','presse','media','newsletter','noreply','no-reply','donotreply','legal','dpo','security','abuse','investorrelations','investor.relations','personalni','nabor','werken','imie.nazwisko','bieterportal-alt','20info']);
 const GENERIC_LOCAL_PARTS=new Set(['info','office','contact','kontakt','sales','verkauf','procurement','purchasing','einkauf','tender','tenders','ausschreibung','vergabe','post','mail','hello','service','support','faktury','invoice','billing','commercial','comercial','admin','webmaster','pr']);
+const GENERAL_FALLBACK_LOCAL_PARTS=new Set(['info','office','contact','kontakt','post','mail','hello','service','support','sales','verkauf','admin','sekretariat','reception']);
 
 const txt=(v,max=500)=>String(v==null?'':v).trim().slice(0,max);
 export function normalizeEmail(v){return txt(v,320).toLowerCase().replace(/^mailto:/,'').replace(/[\s,;]+$/,'');}
@@ -41,7 +42,7 @@ function sourceDomainMatches(email,meta,domains){const sd=websiteDomain(meta?.so
 
 function candidate(email,meta={}){
   const e=normalizeEmail(email),d=domainFromEmail(e);if(!validEmail(e)||isReservedEmail(e)||(!meta?.allow_free_domain&&FREE_DOMAINS.has(d))||isBlockedOutreachEmail(e))return null;
-  return {email:e,name:contactName(meta,e),job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0,company_attribution:txt(meta?.company_attribution,80)||null,draft_eligible:meta?.draft_eligible!==false};
+  return {email:e,name:contactName(meta,e),job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0,company_attribution:txt(meta?.company_attribution,80)||null,recipient_company_name:txt(meta?.recipient_company_name,300)||null,recipient_company_domain:normalizeDomain(meta?.recipient_company_domain)||null,draft_eligible:meta?.draft_eligible!==false};
 }
 function mergeCandidate(a,b){
   if(!a)return b;if(!b)return a;
@@ -52,13 +53,31 @@ function mergeCandidate(a,b){
     purpose:a.purpose||b.purpose||null,
     confidence:confidenceRank(b.confidence)>confidenceRank(a.confidence)?b.confidence:a.confidence,
     score:Math.max(a.score||0,b.score||0),priority:Math.max(a.priority||0,b.priority||0),
-    source_type:a.source_type||b.source_type||null,source_url:a.source_url||b.source_url||null};
+    source_type:a.source_type||b.source_type||null,source_url:a.source_url||b.source_url||null,recipient_company_name:a.recipient_company_name||b.recipient_company_name||null,recipient_company_domain:a.recipient_company_domain||b.recipient_company_domain||null};
 }
 
-export function resolveTedRecipients(action,tenderPayload,max=20){
+export function resolveTedRecipients(action,tenderPayload,max=1){
   const winner=tenderPayload?.winner||{},domains=companyDomains(action,winner),rows=[];
-  const push=(email,meta={},trust='domain')=>{meta={...meta,allow_free_domain:trust==='ted'};const c=candidate(email,meta);if(!c||c.draft_eligible===false)return;let ok=false,attribution='';if(trust==='domain'){ok=belongsToCompany(c.email,domains);attribution='company_domain';}else if(trust==='official'){ok=sourceDomainMatches(c.email,meta,domains);attribution='official_source';}else if(trust==='ted'){ok=domains.size?belongsToCompany(c.email,domains):true;attribution='ted_declared';}if(!ok)return;rows.push({...c,company_attribution:c.company_attribution||attribution});};
-  push(action?.target_email,{priority:1000,source_type:'opportunity_action',confidence:'high'},'domain');
+  const readiness=(action?.payload?.outreach_readiness_v1&&typeof action.payload.outreach_readiness_v1==='object')
+    ?action.payload.outreach_readiness_v1
+    :(tenderPayload?.outreach_readiness_v1&&typeof tenderPayload.outreach_readiness_v1==='object'?tenderPayload.outreach_readiness_v1:{});
+  const verifiedDomain=normalizeDomain(readiness?.verified_company_domain);
+  const contactIdentityVerified=readiness?.contact_identity_verified===true||String(readiness?.contact_identity_verified||'').toLowerCase()==='true';
+  const allowGenericFallback=String(readiness?.contact_quality||'').toLowerCase()==='generic_fallback_reviewed';
+  const push=(email,meta={},trust='domain')=>{
+    meta={...meta,allow_free_domain:false};
+    const c=candidate(email,meta);if(!c||c.draft_eligible===false)return;
+    const local=(c.email.split('@')[0]||'').replace(/\+.*/,'');
+    if(GENERAL_FALLBACK_LOCAL_PARTS.has(local)&&!allowGenericFallback)return;
+    if(!contactIdentityVerified||!verifiedDomain||!sameCompanyDomain(c.email,verifiedDomain))return;
+    let ok=false,attribution='';
+    if(trust==='domain'){ok=belongsToCompany(c.email,domains)||sameCompanyDomain(c.email,verifiedDomain);attribution='verified_company_domain';}
+    else if(trust==='official'){ok=sourceDomainMatches(c.email,meta,domains)||sameCompanyDomain(c.email,verifiedDomain);attribution='official_source';}
+    else if(trust==='ted'){ok=sameCompanyDomain(c.email,verifiedDomain);attribution='ted_declared+manual_domain_verified';}
+    if(!ok)return;
+    rows.push({...c,company_attribution:c.company_attribution||attribution,recipient_company_domain:verifiedDomain});
+  };
+  push(action?.target_email,{priority:1000,source_type:'opportunity_action',confidence:'high',recipient_company_name:action?.target_company||null,recipient_company_domain:verifiedDomain},'domain');
   for(const r of Array.isArray(tenderPayload?.winner_contacts)?tenderPayload.winner_contacts:[]){
     const verified=/verified|high/i.test(txt(r?.verification_status||r?.confidence,40));
     const ted=/ted/i.test(txt(r?.source_type||r?.source,80));
@@ -74,16 +93,15 @@ export function resolveTedRecipients(action,tenderPayload,max=20){
     for(const r of Array.isArray(org?.contacts)?org.contacts:[]){
       if(txt(r?.type,30).toLowerCase()!=='email')continue;
       const email=r?.email||r?.value;if(!validEmail(email)||isReservedEmail(email)||isBlockedOutreachEmail(email))continue;
-      if(od&&!sameCompanyDomain(email,od))continue;
-      if(!od&&!belongsToCompany(email,domains))continue;
+      if(od&&!sameCompanyDomain(email,od)&&!sameCompanyDomain(email,verifiedDomain))continue;
       const cr=confidenceRank(r?.confidence),score=Number(r?.score||0);if(cr<2&&score<80)continue;
-      push(email,{...r,priority:700+Math.min(99,score)},'domain');
+      push(email,{...r,priority:700+Math.min(99,score),recipient_company_name:org?.name||null,recipient_company_domain:verifiedDomain},'domain');
     }
   }
-  for(const e of Array.isArray(winner?.emails)?winner.emails:[])push(e,{priority:650,source_type:'TED',confidence:'high'},'ted');
-  push(winner?.email,{priority:640,source_type:'TED',confidence:'high'},'ted');
+  for(const [idx,e] of (Array.isArray(winner?.emails)?winner.emails:[]).entries())push(e,{priority:650,source_type:'TED',confidence:'high',recipient_company_name:(Array.isArray(winner?.names)?winner.names[idx]:null)||winner?.name||null,recipient_company_domain:verifiedDomain},'ted');
+  push(winner?.email,{priority:640,source_type:'TED',confidence:'high',recipient_company_name:winner?.name||null,recipient_company_domain:verifiedDomain},'ted');
   const map=new Map();for(const r of rows)map.set(r.email,mergeCandidate(map.get(r.email),r));
-  return [...map.values()].sort((a,b)=>(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,Math.max(1,Math.min(50,Number(max)||20)));
+  return [...map.values()].sort((a,b)=>(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,Math.max(1,Math.min(1,Number(max)||1)));
 }
 
 export function recipientGreeting(company,recipient){const e=normalizeEmail(recipient?.email),local=(e.split('@')[0]||'').replace(/\+.*/,''),purpose=txt(recipient?.purpose,80).toLowerCase(),general=purpose==='general'||GENERIC_LOCAL_PARTS.has(local);const n=general?'':explicitName(recipient?.name);return n?`Dear ${n},`:'Dear Sir or Madam,';}
