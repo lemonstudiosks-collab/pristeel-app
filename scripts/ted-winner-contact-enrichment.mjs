@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
 const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
-const VERSION='winner-contact-v2';
+const VERSION='winner-contact-v3';
 const FREE_EMAIL_DOMAINS=new Set([
   'gmail.com','googlemail.com','yahoo.com','yahoo.de','outlook.com','hotmail.com','hotmail.de','live.com','icloud.com',
   'gmx.de','gmx.net','web.de','freenet.de','t-online.de','aol.com','proton.me','protonmail.com','poczta.onet.pl'
@@ -28,7 +28,11 @@ const DIRECTORY_DOMAINS=/(^|\.)(linkedin\.com|facebook\.com|instagram\.com|money
 function safeUrl(v){try{const u=new URL(text(v));return /^https?:$/.test(u.protocol)?u:null;}catch{return null;}}
 function domainOfUrl(v){const u=safeUrl(v);return u?u.hostname.toLowerCase().replace(/^www\./,''):'';}
 function emailDomain(v){const m=text(v).toLowerCase().match(/@([^\s>]+)$/);return m?m[1].replace(/[>,.;]+$/,''):'';}
-function corporateEmail(v){const d=emailDomain(v);return !!d&&!FREE_EMAIL_DOMAINS.has(d);}
+function placeholderEmail(v){const d=emailDomain(v);return !d||/(^|\.)(example\.(com|org|net)|yourdomain\.[a-z]{2,}|yourcompany\.[a-z]{2,}|company\.com)$/i.test(d);}
+function safeDraftEmailContact(c){
+ return !!(c&&c.type==='email'&&c.value&&c.draft_eligible!==false&&String(c.company_attribution||'').toLowerCase()!=='external_domain'&&String(c.confidence||'').toLowerCase()!=='low'&&!placeholderEmail(c.value));
+}
+function corporateEmail(v){const d=emailDomain(v);return !!d&&!FREE_EMAIL_DOMAINS.has(d)&&!placeholderEmail(v);}
 function companyTokens(name){return unique(norm(name).replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(x=>x.length>=4&&!LEGAL_WORDS.has(x)));}
 function domainMatchesCompany(domain,name){const d=norm(domain).replace(/[^a-z0-9]/g,'');return companyTokens(name).some(t=>t.length>=4&&d.includes(t.replace(/[^a-z0-9]/g,'')));}
 function pageMatchesCompany(html,url,name){const h=norm(String(html||'').replace(/<[^>]+>/g,' '));const d=domainOfUrl(url);const tokens=companyTokens(name);if(domainMatchesCompany(d,name))return true;return tokens.some(t=>t.length>=5&&h.includes(t));}
@@ -93,7 +97,7 @@ export async function enrichWinnerPayload(row,{fetchImpl=fetch,searchEnabled=tru
 }
 export function mergeWinnerWithEnrichment(w,enrichment){
  const source=w&&typeof w==='object'?w:{};const out={...source,contact_enrichment:enrichment};const names=winnerNames(source);const orgs=Array.isArray(enrichment?.organizations)?enrichment.organizations:[];
- if(names.length===1&&orgs.length){const org=orgs[0];const bestEmail=(org.contacts||[]).find(c=>c.type==='email');const bestPerson=(org.contacts||[]).find(c=>c.type==='person');if(bestEmail){out.email=bestEmail.value;out.emails=unique([...(Array.isArray(out.emails)?out.emails:[]),bestEmail.value]);}if(org.official_website){out.website=org.official_website;out.websites=unique([...(Array.isArray(out.websites)?out.websites:[]),org.official_website]);}if(bestPerson&&!out.contact_point)out.contact_point=bestPerson.value;}
+ if(names.length===1&&orgs.length){const org=orgs[0];const bestEmail=(org.contacts||[]).find(safeDraftEmailContact);const bestPerson=(org.contacts||[]).find(c=>c.type==='person');if(bestEmail){out.email=bestEmail.value;out.emails=unique([...(Array.isArray(out.emails)?out.emails:[]),bestEmail.value]);}if(org.official_website){out.website=org.official_website;out.websites=unique([...(Array.isArray(out.websites)?out.websites:[]),org.official_website]);}if(bestPerson&&!out.contact_point)out.contact_point=bestPerson.value;}
  else if(names.length>1){out.email=null;out.website=null;out.contact_point=null;}
  return out;
 }
