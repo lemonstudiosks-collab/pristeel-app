@@ -19,6 +19,18 @@ const noProc={id:'k2',payload:{source:'TED',notice_phase:'award',winner:{name:'K
 ]}]}}}};
 assert.equal(chooseBestWinnerEmail(noProc).contact.value,'info@kattner-stahlbau.de','general business contact must outrank HR when procurement/sales are unavailable');
 
+
+const unsafeFirst={id:'unsafe',payload:{source:'TED',notice_phase:'award',winner:{name:'Simon Metallverarbeitung GmbH',names:['Simon Metallverarbeitung GmbH'],email:'info@yourdomain.com',contact_enrichment:{status:'found',organizations:[{name:'Simon Metallverarbeitung GmbH',contacts:[
+ {type:'email',value:'info@yourdomain.com',purpose:'procurement',source_type:'official_website',confidence:'low',score:999,company_attribution:'external_domain',draft_eligible:false},
+ {type:'email',value:'office@simon-metall.de',purpose:'general',source_type:'TED',confidence:'high',score:88}
+]}]}}}};
+assert.equal(chooseBestWinnerEmail(unsafeFirst).contact.value,'office@simon-metall.de','unsafe/off-domain/placeholder email must never win even with a higher score');
+
+const onlyUnsafe={payload:{source:'TED',notice_phase:'award',winner:{name:'Unsafe GmbH',names:['Unsafe GmbH'],contact_enrichment:{status:'found',organizations:[{name:'Unsafe GmbH',contacts:[
+ {type:'email',value:'info@yourdomain.com',purpose:'procurement',source_type:'official_website',confidence:'low',score:999,company_attribution:'external_domain',draft_eligible:false}
+]}]}}}};
+assert.equal(chooseBestWinnerEmail(onlyUnsafe),null,'no draft candidate is better than an unverified recipient');
+
 const multi={payload:{source:'TED',notice_phase:'award',winner:{names:['A GmbH','B GmbH'],contact_enrichment:{status:'found',organizations:[{name:'A GmbH',contacts:[{type:'email',value:'info@a.de',purpose:'general'}]},{name:'B GmbH',contacts:[{type:'email',value:'info@b.de',purpose:'general'}]}]}}}};
 assert.equal(chooseBestWinnerEmail(multi),null,'multi-winner records must not choose one global email');
 assert.equal(rankWinnerPayload(multi).changed,false);
