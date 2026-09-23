@@ -73,11 +73,11 @@ assert.deepEqual(row.payload.winner.contact_ranking,savedRanking,'contact rankin
 assert.equal(row.payload.winner.email,'tenders@steelwinner.example','fresh direct TED email should remain primary for a single winner until ranking runs');
 assert(row.payload.winner.emails.includes('einkauf@steelwinner.example'),'known researched/historical emails must not be discarded');
 assert(row.payload.winner.websites.includes('https://verified.steelwinner.example'),'known researched websites must not be discarded');
-assert.equal(row.payload.description,'Existing TED scope must survive winner refresh','winner sync must preserve TED description/detail payload created by the tender collector');
+assert.equal(row.payload.description,'Fabrication and installation of structural steel stairs and platforms.','fresh official TED scope must replace an older cached TED scope');
 assert.equal(row.payload.ted_details.version,'ted-details-v1');
 assert.equal(row.payload.operator_note,'keep-me','winner sync must preserve unrelated canonical payload state');
-assert.equal(row.estimated_value,456000,'winner sync must not wipe a contract value collected by the TED detail pipeline');
-assert.equal(row.currency,'CHF');
+assert.equal(row.estimated_value,812500.25,'fresh official TED award value must replace an older cached value');
+assert.equal(row.currency,'EUR');
 
 const currentMissing=normalizeTedAward({...sample,'publication-number':'563866-2026','winner-email':[],'winner-internet-address':[],'winner-contact-point':[]},'2026-08-14T10:00:00.000Z');
 const oldMissing={source_key:currentMissing.source_key,payload:{winner:{name:'Steel Winner GmbH',names:['Steel Winner GmbH'],email:'einkauf@steelwinner.example',emails:['einkauf@steelwinner.example'],website:'https://steelwinner.example',websites:['https://steelwinner.example'],contact_point:'Procurement Team',contacts:['Procurement Team'],contact_enrichment:savedResearch}}};
