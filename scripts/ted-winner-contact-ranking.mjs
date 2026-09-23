@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
 const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
-const VERSION='winner-contact-rank-v2';
+const VERSION='winner-contact-rank-v3';
 const LOW_VALUE_LOCAL=/^(hr|humanresources|human\.resources|jobs?|careers?|karriere|bewerbung|recruiting|recruitment|privacy|datenschutz|dpo|rechnung|invoice|buchhaltung|accounting|support|it|webmaster)([._+-]|$)/i;
 const PURPOSE_WEIGHT={procurement:500,tender:450,sales:400,general:300,person:200,contact_point:180};
 const text=v=>String(v==null?'':v).trim();
@@ -40,11 +40,22 @@ export function chooseBestWinnerEmail(row){
  return emails.map(c=>({contact:c,rank:contactRank(c)})).sort((a,b)=>b.rank-a.rank)[0]||null;
 }
 export function rankWinnerPayload(row,rankedAt=new Date().toISOString()){
- const best=chooseBestWinnerEmail(row);if(!best)return{changed:false,row,best:null};
- const p={...payload(row)},w={...winner(row)},selected=text(best.contact.value);if(!selected)return{changed:false,row,best:null};
- const prior=text(w.email);w.email=selected;w.emails=unique([...(Array.isArray(w.emails)?w.emails:[]),selected]);
+ const p={...payload(row)},w={...winner(row)},e=w.contact_enrichment,orgs=Array.isArray(e?.organizations)?e.organizations:[];
+ const unsafe=new Set();for(const org of orgs)for(const c of Array.isArray(org?.contacts)?org.contacts:[])if(c?.type==='email'&&c?.value&&!safeDraftContact(c))unsafe.add(text(c.value).toLowerCase());
+ const prior=text(w.email),beforeEmails=Array.isArray(w.emails)?w.emails.slice():[];
+ if(prior&&unsafe.has(prior.toLowerCase()))w.email=null;
+ w.emails=unique(beforeEmails.filter(x=>!unsafe.has(text(x).toLowerCase())));
+ const sanitized=prior!==text(w.email)||w.emails.length!==beforeEmails.length;
+ const best=chooseBestWinnerEmail({...row,payload:{...p,winner:w}});
+ if(!best){
+   if(!sanitized)return{changed:false,row,best:null};
+   w.contact_ranking={version:VERSION,ranked_at:rankedAt,selected_email:null,reason:'no_safe_recipient'};
+   p.winner=w;return{changed:true,row:{...row,payload:p},best:null};
+ }
+ const selected=text(best.contact.value);if(!selected)return{changed:sanitized,row:sanitized?{...row,payload:{...p,winner:w}}:row,best:null};
+ w.email=selected;w.emails=unique([...w.emails,selected]);
  w.contact_ranking={version:VERSION,ranked_at:rankedAt,selected_email:selected,purpose:best.contact.purpose||null,source_type:best.contact.source_type||null,confidence:best.contact.confidence||null,rank:best.rank};
- p.winner=w;return{changed:prior.toLowerCase()!==selected.toLowerCase()||!winner(row).contact_ranking,row:{...row,payload:p},best};
+ p.winner=w;return{changed:sanitized||prior.toLowerCase()!==selected.toLowerCase()||!winner(row).contact_ranking,row:{...row,payload:p},best};
 }
 async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',body,prefer}){const response=await fetch(`${supabaseUrl}/rest/v1/${path}`,{method,headers:{apikey:apiKey,Authorization:`Bearer ${bearerToken}`,'Content-Type':'application/json',...(prefer?{Prefer:prefer}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});const raw=await response.text();if(!response.ok)throw new Error(`${method} ${path} failed: HTTP ${response.status} ${raw.slice(0,700)}`);return raw?JSON.parse(raw):[];}
 async function patchRow(access,row){await rest({...access,path:`kek_tender_watch?id=eq.${encodeURIComponent(row.id)}`,method:'PATCH',body:{payload:row.payload,updated_at:new Date().toISOString()},prefer:'return=minimal'});}
@@ -55,7 +66,7 @@ export async function runTedWinnerContactRanking({mode=process.env.SYNC_MODE||'p
  const rows=await rest({...access,path:`kek_tender_watch?select=id,procurement_no,relevance_score,status,payload&relevance_score=gte.${encodeURIComponent(minScore)}&order=published_date.desc&limit=500`});
  const targets=(Array.isArray(rows)?rows:[]).filter(r=>{const p=payload(r);return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&r.status!=='ignored'&&winner(r).contact_enrichment;});
  const results=[];
- for(const row of targets){const ranked=rankWinnerPayload(row);if(!ranked.changed)continue;if(mode==='apply')await patchRow(access,ranked.row);results.push({id:row.id,procurement_no:row.procurement_no,selected_email:ranked.best.contact.value,purpose:ranked.best.contact.purpose||null,source_type:ranked.best.contact.source_type||null,rank:ranked.best.rank});}
+ for(const row of targets){const ranked=rankWinnerPayload(row);if(!ranked.changed)continue;if(mode==='apply')await patchRow(access,ranked.row);results.push({id:row.id,procurement_no:row.procurement_no,selected_email:ranked.best?.contact?.value||null,purpose:ranked.best?.contact?.purpose||null,source_type:ranked.best?.contact?.source_type||null,rank:ranked.best?.rank??null});}
  const summary={mode,version:VERSION,auth_mode:access.authMode||'service_key',rows_scanned:targets.length,rows_changed:results.length,results};await writeSummary(summary);console.log(`TED winner contact ranking ${mode}: scanned=${summary.rows_scanned}, changed=${summary.rows_changed}.`);return summary;
 }
 const direct=process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href;
