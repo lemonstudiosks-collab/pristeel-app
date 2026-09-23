@@ -36,6 +36,9 @@ must(src.includes('data-pwb3-kind="supplier-offer"'),'supplier offer evidence mu
 must(src.includes('unit_price_eur_per_m'),'per-meter commercial evidence must remain unit-accurate');
 must(src.includes('nuk inferohet total, cash apo pagesë'),'finance summary must not infer cash/payment');
 must(src.includes("data-pst-project-surface-owner','workbench-v3"),'Workbench must claim explicit ownership');
+must(src.includes('cleanupDuplicateProjectBack'),'Workbench must retire duplicate Kthehu controls that reappear from stale layers');
+must(src.includes('min-height:44px'),'Project workflow phases must remain compact enough to preserve working space');
+must(src.includes('min-height:35px'),'Project navigation tabs must remain compact enough to preserve working space');
 must(src.includes("'pst-project-map-v1'"),'Workbench must retire stale Project Detail mindmap');
 must(!/supaFetch\s*\(/.test(src),'Workbench presentation must not query Supabase directly');
 must(!/\b(fetch|XMLHttpRequest)\s*\(/.test(src),'Workbench must not make network calls');
