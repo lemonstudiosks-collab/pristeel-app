@@ -54,7 +54,7 @@ assert.equal(birchmeier.payload.winner.organization_count,1,'one legal identifie
 const savedResearch={version:'winner-contact-v1',status:'found',researched_at:'2026-08-17T10:00:00Z',contact_count:2,organizations:[{name:'Steel Winner GmbH',contacts:[{type:'email',value:'einkauf@steelwinner.example',purpose:'procurement'}]}]};
 const savedSeed={version:'ted-history-contact-v1',emails:['info@steelwinner.example']};
 const savedRanking={version:'winner-contact-rank-v1',selected_email:'einkauf@steelwinner.example',purpose:'procurement'};
-const oldSingle={source_key:row.source_key,payload:{winner:{name:'Steel Winner GmbH',names:['Steel Winner GmbH'],email:'einkauf@steelwinner.example',emails:['einkauf@steelwinner.example','info@steelwinner.example'],website:'https://verified.steelwinner.example',websites:['https://verified.steelwinner.example'],contact_enrichment:savedResearch,history_contact_seed:savedSeed,contact_ranking:savedRanking}}};
+const oldSingle={source_key:row.source_key,estimated_value:456000,currency:'CHF',payload:{description:'Existing TED scope must survive winner refresh',ted_details:{version:'ted-details-v1',description:'Existing TED scope must survive winner refresh'},operator_note:'keep-me',winner:{name:'Steel Winner GmbH',names:['Steel Winner GmbH'],email:'einkauf@steelwinner.example',emails:['einkauf@steelwinner.example','info@steelwinner.example'],website:'https://verified.steelwinner.example',websites:['https://verified.steelwinner.example'],contact_enrichment:savedResearch,history_contact_seed:savedSeed,contact_ranking:savedRanking}}};
 preserveWinnerIntelligence([row],[oldSingle]);
 assert.deepEqual(row.payload.winner.contact_enrichment,savedResearch,'normal TED upsert must preserve winner contact research');
 assert.deepEqual(row.payload.winner.history_contact_seed,savedSeed,'history seed must survive normal award sync');
@@ -62,6 +62,11 @@ assert.deepEqual(row.payload.winner.contact_ranking,savedRanking,'contact rankin
 assert.equal(row.payload.winner.email,'tenders@steelwinner.example','fresh direct TED email should remain primary for a single winner until ranking runs');
 assert(row.payload.winner.emails.includes('einkauf@steelwinner.example'),'known researched/historical emails must not be discarded');
 assert(row.payload.winner.websites.includes('https://verified.steelwinner.example'),'known researched websites must not be discarded');
+assert.equal(row.payload.description,'Existing TED scope must survive winner refresh','winner sync must preserve TED description/detail payload created by the tender collector');
+assert.equal(row.payload.ted_details.version,'ted-details-v1');
+assert.equal(row.payload.operator_note,'keep-me','winner sync must preserve unrelated canonical payload state');
+assert.equal(row.estimated_value,456000,'winner sync must not wipe a contract value collected by the TED detail pipeline');
+assert.equal(row.currency,'CHF');
 
 const currentMissing=normalizeTedAward({...sample,'publication-number':'563866-2026','winner-email':[],'winner-internet-address':[],'winner-contact-point':[]},'2026-08-14T10:00:00.000Z');
 const oldMissing={source_key:currentMissing.source_key,payload:{winner:{name:'Steel Winner GmbH',names:['Steel Winner GmbH'],email:'einkauf@steelwinner.example',emails:['einkauf@steelwinner.example'],website:'https://steelwinner.example',websites:['https://steelwinner.example'],contact_point:'Procurement Team',contacts:['Procurement Team'],contact_enrichment:savedResearch}}};
@@ -109,6 +114,7 @@ assert.equal(exactPaths.length,2,'exact source-key lookup should chunk rather th
 assert(exactPaths[0].includes('source_key=in.(TED%3A563865-2026)'));
 assert(exactPaths[1].includes('source_key=in.(TED%3A550551-2026)'));
 assert(exactPaths.every(p=>!p.includes('limit=2000')),'winner preservation must never depend on an arbitrary broad table slice');
+assert(exactPaths.every(p=>p.includes('estimated_value')&&p.includes('currency')),'winner preservation must read enriched scalar fields it is required to protect');
 
 let calls=0;
 const fetchImpl=async (_url,opts)=>{
