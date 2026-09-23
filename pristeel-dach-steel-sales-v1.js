@@ -423,8 +423,13 @@ function detail(r){
 
 function renderPage(){
  var page=document.getElementById('page-dach-steel-sales');if(!page)return;
- var sx=summary()||{},lx=localSummary(),all=A(state.targets),waiting=all.filter(function(r){return lifecycle(r)==='waiting'}).length,replied=all.filter(function(r){return lifecycle(r)==='replied'}).length,action=all.filter(function(r){return lifecycle(r)==='action'}).length,k=page.querySelector('[data-dss-kpis]'),list=page.querySelector('[data-dss-list]'),u=page.querySelector('[data-dss-updated]');
- if(k)k.innerHTML=[[action,'Për veprim'],[waiting,'Në ndjekje'],[replied,'Përgjigje'],[lx.needs_contact,'Need Contact'],[lx.quote_ready,'M3 Quote Ready'],[sx.sent||waiting,'Sent']].map(function(v){return '<div class="pst-dss-kpi"><b>'+E(v[0])+'</b><span>'+E(v[1])+'</span></div>'}).join('');
+ var sx=summary()||{},lx=localSummary(),all=A(state.targets),
+     waiting=all.filter(function(r){return lifecycle(r)==='waiting'}).length,
+     replied=all.filter(function(r){return lifecycle(r)==='replied'}).length,
+     projects=all.filter(function(r){return lifecycle(r)==='project'}).length,
+     action=all.filter(function(r){return lifecycle(r)==='action'}).length,
+     k=page.querySelector('[data-dss-kpis]'),list=page.querySelector('[data-dss-list]'),u=page.querySelector('[data-dss-updated]');
+ if(k)k.innerHTML=[[action,'Për veprim'],[waiting,'Në ndjekje'],[replied,'Përgjigje / RFQ'],[projects,'Projekt aktiv'],[lx.needs_contact,'Need Contact'],[lx.quote_ready,'M3 Quote Ready']].map(function(v){return '<div class="pst-dss-kpi"><b>'+E(v[0])+'</b><span>'+E(v[1])+'</span></div>'}).join('');
  page.querySelectorAll('[data-dss-filter]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-dss-filter')===state.filter)});
  if(u)u.textContent=state.lifecycleSyncing?'Duke sinkronizuar Gmail…':(state.lastLoadedAt?'Përditësuar '+new Date(state.lastLoadedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'}):'');
  if(!list)return;
@@ -432,16 +437,30 @@ function renderPage(){
  if(state.error&&state.targetsLoaded){list.innerHTML='<div class="pst-dss-empty"><b>Steel Buyer Desk nuk u lexua</b><span>'+E(state.error)+'</span></div>';return}
  var rows=filteredRows();
  if(!rows.length){
-  var title=state.filter==='action'?'Nuk ka targete që kërkojnë veprim tani.':state.filter==='waiting'?'Nuk ka targete në pritje përgjigjeje.':state.filter==='replied'?'Nuk ka përgjigje/RFQ të reja.':state.filter==='all'?'Ende nuk ka qualified Steel Buyer targets.':'Nuk ka targete në këtë filtër.';
-  list.innerHTML='<div class="pst-dss-empty"><b>'+E(title)+'</b><span>Pipeline: signal → buyer outreach → në ndjekje → reply/RFQ → quotation/order.</span></div>';return;
+  var title=state.filter==='action'?'Nuk ka targete që kërkojnë veprim tani.':
+            state.filter==='waiting'?'Nuk ka targete në pritje përgjigjeje.':
+            state.filter==='replied'?'Nuk ka përgjigje/RFQ të reja.':
+            state.filter==='project'?'Nuk ka targete të promovuara në Projektet.':
+            state.filter==='contact'?'Të gjitha targetet e këtij filtri kanë një kontakt të përdorshëm.':
+            state.filter==='all'?'Ende nuk ka qualified Steel Buyer targets.':'Nuk ka targete në këtë filtër.';
+  list.innerHTML='<div class="pst-dss-empty"><b>'+E(title)+'</b><span>Pipeline: signal → kontakt → buyer outreach → në ndjekje → reply/RFQ → Project.</span></div>';return;
  }
  list.innerHTML=rows.map(function(r){
-  var prods=arrText(r.products).slice(0,4).join(' · ')||r.steel_scope||'Material scope pending',q=outboundFor(r),life=lifecycle(r);
-  var next=life==='replied'?'Përgjigje / RFQ':life==='waiting'?'Në ndjekje':(q&&q.recipient_email?'Kërko RFQ':'Gjej kontakt');
-  var row='<div class="pst-dss-row" data-dss-target-id="'+E(r.id)+'"><span class="pst-dss-score '+scoreClass(r.score_band)+'">'+E(r.score_band||'—')+'</span><div><b>'+E(r.company_name||'Buyer')+'</b><small>'+E([r.country,r.project_title].filter(Boolean).join(' · ')||r.buyer_type||'Steel buyer')+'</small></div><div class="pst-dss-col-why"><div class="pst-dss-why">'+E(r.why_now||'Why-now evidence pending')+'</div></div><div><span class="pst-dss-qr '+qrClass(r.quote_readiness)+'">'+E(qrLabel(r.quote_readiness))+'</span><div class="pst-dss-products">'+E(prods)+'</div><div class="pst-dss-ton">'+E(tonnes(r.estimated_tonnes))+'</div></div><div class="pst-dss-col-timing"><b>'+E(life==='waiting'?'WAITING FOR BUYER':life==='replied'?'BUYER REPLIED':r.procurement_timing||'Unknown')+'</b><small>'+E(life==='waiting'&&q&&q.sent_at?'Sent '+D(q.sent_at):life==='replied'&&q&&q.replied_at?'Reply '+D(q.replied_at):r.award_date?'Award '+D(r.award_date):'Timing evidence needed')+'</small></div><div class="pst-dss-col-action"><button class="pst-dss-nextbtn" type="button" data-dss-tid="'+E(r.id)+'" data-dss-open-actions="1">'+E(next)+' →</button></div></div>';
+  var prods=arrText(r.products).slice(0,4).join(' · ')||r.steel_scope||'Material scope pending',
+      q=outboundFor(r),life=lifecycle(r),ct=contactFor(r);
+  var next=life==='project'?'Projekt aktiv':life==='replied'?'Përgjigje / RFQ':life==='waiting'?'Në ndjekje':(ct.email?'Kërko RFQ':'Gjej kontakt');
+  var contactHtml=ct.email?'<small class="pst-dss-contact">📩 '+E(contactText(r))+'</small>':'<small class="pst-dss-contact pst-dss-contact-missing">Kontakt duke u kërkuar</small>';
+  var timing=life==='project'?'PROJECT ACTIVE':life==='waiting'?'WAITING FOR BUYER':life==='replied'?'BUYER REPLIED':r.procurement_timing||'Unknown';
+  var timingSub=life==='project'?'Linked to canonical PPPP Project':life==='waiting'&&q&&q.sent_at?'Sent '+D(q.sent_at):life==='replied'&&q&&q.replied_at?'Reply '+D(q.replied_at):r.award_date?'Award '+D(r.award_date):'Timing evidence needed';
+  var row='<div class="pst-dss-row" data-dss-target-id="'+E(r.id)+'"><span class="pst-dss-score '+scoreClass(r.score_band)+'">'+E(r.score_band||'—')+'</span><div><b>'+E(r.company_name||'Buyer')+'</b><small>'+E([r.country,r.project_title].filter(Boolean).join(' · ')||r.buyer_type||'Steel buyer')+'</small>'+contactHtml+'</div><div class="pst-dss-col-why"><div class="pst-dss-why">'+E(r.why_now||'Why-now evidence pending')+'</div></div><div><span class="pst-dss-qr '+qrClass(r.quote_readiness)+'">'+E(qrLabel(r.quote_readiness))+'</span><div class="pst-dss-products">'+E(prods)+'</div><div class="pst-dss-ton">'+E(tonnes(r.estimated_tonnes))+'</div></div><div class="pst-dss-col-timing"><b>'+E(timing)+'</b><small>'+E(timingSub)+'</small></div><div class="pst-dss-col-action"><button class="pst-dss-nextbtn" type="button" data-dss-tid="'+E(r.id)+'" data-dss-open-actions="1">'+E(next)+' →</button></div></div>';
   return row+(state.expanded===S(r.id)?detail(r):'');
  }).join('');
- list.querySelectorAll('[data-dss-open-actions]').forEach(function(b){b.onclick=function(e){e.preventDefault();e.stopPropagation();var id=b.getAttribute('data-dss-tid');state.expanded=id;state.actionView=null;renderPage();setTimeout(function(){var d=document.querySelector('.pst-dss-detail');if(d)try{d.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(err){}},0);};});
+ list.querySelectorAll('[data-dss-open-actions]').forEach(function(b){b.onclick=function(e){
+  e.preventDefault();e.stopPropagation();
+  var id=b.getAttribute('data-dss-tid'),rr=findTarget(id);state.expanded=id;state.actionView=null;renderPage();
+  if(rr)loadBuyerContact(rr,false);
+  setTimeout(function(){var d=document.querySelector('.pst-dss-detail');if(d)try{d.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(err){}},0);
+ }});
 }
 function back(){
  chrome(false);
