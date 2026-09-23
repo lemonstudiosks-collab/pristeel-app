@@ -71,6 +71,8 @@ assert.ok(german.body.startsWith('Sehr geehrte Damen und Herren,'));
 assert.ok(german.body.endsWith('Mit freundlichen Grüßen'));
 
 assert.ok(projectCentric.includes('data-pcw-ti="draft"')&&projectCentric.includes('Përgatit draftet'),'Action Console must expose verified multi-contact draft preparation for TED winners');
+assert.ok(projectCentric.includes('project_id=not.is.null')&&projectCentric.includes('rebuildProjectOpportunityKeys'),'Opportunities must load Project-owned tender identities so stale duplicate notices cannot remain in the contact queue');
+assert.ok(projectCentric.includes('pst:tender-gmail-drafts-ready')&&projectCentric.includes('loadOpportunities(true)'),'Successful draft creation must invalidate and refresh the visible Opportunities queue');
 assert.ok(source.includes('pppp-opportunity-draft-generator')&&source.includes('action_id'),'Action Console must route the selected tender through the action-scoped canonical multi-draft engine');
 assert.ok(source.includes('status=in.(new,review,watch,promoted)'),'Canonical tender draft engine must still resolve TED awards after Project promotion');
 assert.ok(draftStateSource.includes('status=in.(new,review,watch,promoted)'),'Draft-state duplicate guard must retain promoted TED records');
@@ -98,6 +100,13 @@ const uniqueReview={id:'unique',title:'Another award',authority:'Other',publicat
 const deduped=W._test.dedupeOpportunities([duplicatePlain,duplicateDraft,uniqueReview]);
 assert.strictEqual(deduped.length,2,'Exact award duplicates must collapse to one Opportunity');
 assert.strictEqual(deduped.find(x=>x.publication_no==='TED-123').id,'drafted','Deduplication must retain the row carrying the Gmail draft state');
+const promotedProject=Object.assign({},duplicateBase,{id:'promoted-project-source',status:'promoted',project_id:'44444444-4444-4444-8444-444444444444',publication_no:'TED-456'});
+W._test.rebuildProjectOpportunityKeys([promotedProject]);
+W._state.rows=[duplicatePlain,duplicateDraft,uniqueReview];
+W.setOpportunityContext({lifecycle:'all'});
+assert.deepStrictEqual(Array.from(W._test.opportunityRows(),x=>x.id),['unique'],'Once the same TED award is owned by a Project, all active duplicate notices for that award must leave Opportunities');
+assert.strictEqual(W._test.ownedByProject(duplicatePlain),true,'Project ownership suppression must use semantic award identity, not only one publication number');
+W._test.rebuildProjectOpportunityKeys([]);
 W._state.rows=[duplicatePlain,duplicateDraft,uniqueReview];W.setOpportunityContext({focus:'review'});
 assert.strictEqual(W._test.opportunityRows().map(x=>x.id).join(','),'unique','Home review context must show only Opportunities waiting for review');
 
