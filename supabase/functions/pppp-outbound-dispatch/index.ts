@@ -6,7 +6,7 @@ const GMAIL_USER=Deno.env.get("GMAIL_USER")||"arianit.vllahiu@prissteel.com";
 const SUPABASE_URL=Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
-const ENGINE="pppp-outbound-dispatch-v4-global-communication-guard";
+const ENGINE="pppp-outbound-dispatch-v5-global-live-domain-guard";
 
 const cors={
   "Access-Control-Allow-Headers":"content-type, x-pppp-cron-secret",
@@ -71,13 +71,37 @@ function header(m:any,name:string){
 function emails(v:any){
   return (text(v,5000).match(emailRe)||[]).map((x:string)=>x.toLowerCase());
 }
-async function recentSentToExact(recipient:string){
-  const {data:policy,error:policyError}=await db.from("pppp_outbound_policy_v1").select("recipient_cooldown_days").eq("id","global").maybeSingle();
-  if(policyError)throw policyError;
-  const days=Math.max(1,Number(policy?.recipient_cooldown_days||30));
-  const qs=new URLSearchParams({q:"in:sent to:"+recipient+" newer_than:"+days+"d",maxResults:"5"});
+function emailDomain(v:string){
+  const e=lower(v),i=e.lastIndexOf("@");return i>0?e.slice(i+1).replace(/^www\./,""):"";
+}
+async function gmailMessageMeta(id:string){
+  const qs=new URLSearchParams({format:"metadata"});
+  qs.append("metadataHeaders","To");
+  qs.append("metadataHeaders","Cc");
+  qs.append("metadataHeaders","Bcc");
+  qs.append("metadataHeaders","Subject");
+  return gmail("/messages/"+encodeURIComponent(id)+"?"+qs.toString());
+}
+async function cooldownPolicy(){
+  const {data,error}=await db.from("pppp_outbound_policy_v1").select("recipient_cooldown_days,domain_cooldown_days").eq("id","global").maybeSingle();
+  if(error)throw error;
+  return {recipientDays:Math.max(1,Number(data?.recipient_cooldown_days||30)),domainDays:Math.max(1,Number(data?.domain_cooldown_days||14))};
+}
+async function recentSentToExact(recipient:string,days:number){
+  const qs=new URLSearchParams({q:"in:sent to:"+recipient+" newer_than:"+days+"d",maxResults:"10"});
   const x=await gmail("/messages?"+qs.toString());
   return (x?.messages||[])[0]||null;
+}
+async function recentSentToDomain(domain:string,days:number){
+  const d=lower(domain);if(!d)return null;
+  const qs=new URLSearchParams({q:"in:sent newer_than:"+days+"d "+d,maxResults:"20"});
+  const x=await gmail("/messages?"+qs.toString());
+  for(const ref of x?.messages||[]){
+    const m=await gmailMessageMeta(ref.id);
+    const recipients=[...emails(header(m,"To")),...emails(header(m,"Cc")),...emails(header(m,"Bcc"))];
+    if(recipients.some((e:string)=>emailDomain(e)===d))return ref;
+  }
+  return null;
 }
 async function markFailed(queueId:string,claimToken:string,error:any){
   try{
@@ -125,11 +149,15 @@ Deno.serve(async(req:Request)=>{
       const liveRecipients=emails(header(draft?.message,"To"));
       if(!liveRecipients.includes(recipient))throw new Error(`live_draft_recipient_mismatch:${recipient}`);
 
-      const {data:qrow,error:qrowError}=await db.from("pppp_outbound_queue_v1").select("source,source_record_id,touch_no").eq("id",queueId).single();
+      const {data:qrow,error:qrowError}=await db.from("pppp_outbound_queue_v1").select("source,source_record_id,touch_no,company_domain").eq("id",queueId).single();
       if(qrowError)throw qrowError;
       if(Number(qrow?.touch_no||1)===1){
-        const recent=await recentSentToExact(recipient);
+        const policy=await cooldownPolicy();
+        const recent=await recentSentToExact(recipient,policy.recipientDays);
         if(recent)throw new Error("global_gmail_recipient_cooldown_active:"+recipient);
+        const domain=lower(qrow?.company_domain||emailDomain(recipient));
+        const domainRecent=await recentSentToDomain(domain,policy.domainDays);
+        if(domainRecent)throw new Error("global_gmail_domain_cooldown_active:"+domain);
       }
 
       const sent=await gmail("/drafts/send",{method:"POST",body:JSON.stringify({id:draftId})});
