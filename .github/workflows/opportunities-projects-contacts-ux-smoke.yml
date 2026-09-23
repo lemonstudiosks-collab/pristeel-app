@@ -33,6 +33,8 @@ jobs:
         run: node tests/opportunities-projects-contacts-ux-smoke.mjs
       - name: Verify sent-email lifecycle presentation
         run: node tests/opportunities-lifecycle-sent-smoke.mjs
+      - name: Verify global cross-source communication guard
+        run: node tests/global-communication-guard-smoke.mjs
       - name: Verify waiting lifecycle and Opportunities mindmap layout
         run: node tests/opportunities-waiting-layout-smoke.mjs
       - name: Verify safe outreach registry read migration
