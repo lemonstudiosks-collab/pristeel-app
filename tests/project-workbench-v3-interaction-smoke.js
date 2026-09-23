@@ -111,6 +111,10 @@ function last(a){return a[a.length-1];}
   assert(doc.querySelectorAll('.pwb3-path-v2 .pwb3-phase').length===7,'TED award project must render its dedicated seven-step sales workflow');
   const tedCard=doc.querySelector('[data-pwb3-kind="ted-award"]');
   assert(tedCard,'TED award source card missing');
+  assert(nav('client').textContent.includes('Klienti / kontakti'),'TED award navigation must put client/contact work before suppliers');
+  assert(!doc.querySelector('[data-pwb3-kind="supplier-offer"]')&&!doc.querySelector('[data-pwb3-kind="our-offer"]'),'Pre-contact TED overview must not lead with empty supplier/offer cards');
+  const tedClientCard=doc.querySelector('[data-pwb3-kind="client-response"]');
+  assert(tedClientCard&&tedClientCard.textContent.includes('Asnjë email nuk është dërguar'),'TED overview must state the real no-email condition');
   assert(tedCard.textContent.includes('0 kontakte të verifikuara')||tedCard.textContent.includes('0 kontakte'),'TED award source card must expose missing verified contacts');
   assert(tedCard.textContent.includes('12')||tedCard.textContent.includes('3'),'TED award source card must expose winner/member context');
   click(window,tedContinue);assert(tedContactOpens===1,'TED award Vazhdo must delegate to winner/contact review');
