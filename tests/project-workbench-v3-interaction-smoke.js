@@ -99,8 +99,9 @@ function last(a){return a[a.length-1];}
 
   let tedContactOpens=0;
   window.PSTTenderWinnerContactsV1={renderModal:function(t){tedContactOpens++;assert(t&&t.id==='ted-source-1','TED contact action must use the linked canonical source tender');return true;}};
+  window.__pstCurrentProjectId='p2';window._curProjId='p2';
   window.__pstIntegrityLastData={
-    project:{id:'p1',name:'HT2R · France – Construction &amp;quot;KARTIE&amp;quot;',client:'HT2R',ref:'645196-2026',business_ref:'TED:645196-2026',status:'pritje',pipeline_stage:'rfq_in',operational_state:'active_work',workflow_type:'eu_award_sales',origin_type:'tender_award',location:'FRA'},
+    project:{id:'p2',name:'HT2R · France – Construction &amp;quot;KARTIE&amp;quot;',client:'HT2R',ref:'645196-2026',business_ref:'TED:645196-2026',status:'pritje',pipeline_stage:'rfq_in',operational_state:'active_work',workflow_type:'eu_award_sales',origin_type:'tender_award',location:'FRA'},
     rfqs:[],supplierOffers:[],ourOffers:[],emails:[],projectDocs:[],invoicesOut:[],
     sourceTenders:[{id:'ted-source-1',publication_no:'645196-2026',authority:'SEDRE',detail_url:'https://ted.europa.eu/en/notice/-/detail/645196-2026',payload:{source:'TED',notice_phase:'award',winner:{name:'HT2R',organization_count:12,names:['HT2R','BTB','ADEQUAT OCEAN INDIEN'],contact_enrichment:{status:'not_found',contact_count:0,organizations:[{name:'HT2R',country:'FRA',contacts:[]},{name:'BTB',country:'FRA',contacts:[]},{name:'ADEQUAT OCEAN INDIEN',country:'FRA',contacts:[]}]}}}}]
   };
