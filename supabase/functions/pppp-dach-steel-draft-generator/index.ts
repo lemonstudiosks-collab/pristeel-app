@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v9-supplier-rfq-dedupe";
+const V="pppp-dach-steel-draft-generator-v10-project-link-supplier-dedupe";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -119,7 +119,40 @@ async function applyLifecycle(tg:any,q:any,life:any){
  if(tu.error)throw tu.error;
  return qu.data;
 }
+function tedPublication(tg:any){
+ const m=(t(tg?.project_reference,700)+" "+t(tg?.source_key,700)).match(/\b(\d{5,7}-20\d{2})\b/);
+ return m?.[1]||"";
+}
+function companyKey(v:any){
+ return nm(v).replace(/\b(gmbh|mbh|ag|kg|co|und|stahlbau|metallbau|fahrzeug|technik|metalltechnik)\b/g,"").replace(/[^a-z0-9]+/g,"");
+}
+function sameCompany(a:any,b:any){
+ const x=companyKey(a),y=companyKey(b);
+ return !!(x&&y&&(x===y||x.includes(y)||y.includes(x)));
+}
+async function syncProjectLinks(){
+ const tr=await db.from("pppp_dach_steel_targets_v1").select("id,source_key,company_name,project_reference,project_id,target_status").is("project_id",null).in("target_status",["watch","qualified","active","contact_ready","outreach_pending","contacted","replied","rfq","project_promoted"]).limit(100);
+ if(tr.error)throw tr.error;
+ const targets=(tr.data||[]).map((x:any)=>({...x,publication_no:tedPublication(x)})).filter((x:any)=>x.publication_no);
+ const refs=[...new Set(targets.map((x:any)=>x.publication_no))];
+ if(!refs.length)return{checked:targets.length,linked:0};
+ const kr=await db.from("kek_tender_watch").select("id,publication_no,project_id,payload").in("publication_no",refs).not("project_id","is",null).limit(100);
+ if(kr.error)throw kr.error;
+ const byRef=new Map<string,any[]>();
+ for(const row of kr.data||[]){const k=t(row?.publication_no,80);if(!k)continue;if(!byRef.has(k))byRef.set(k,[]);byRef.get(k)!.push(row);}
+ let linked=0;
+ for(const tg of targets){
+  const matches=(byRef.get(tg.publication_no)||[]).filter((row:any)=>sameCompany(tg.company_name,row?.payload?.winner?.name));
+  const projectIds=[...new Set(matches.map((row:any)=>t(row?.project_id,80)).filter((id:string)=>uuid(id)))];
+  if(projectIds.length!==1)continue;
+  const up=await db.from("pppp_dach_steel_targets_v1").update({project_id:projectIds[0],updated_at:new Date().toISOString()}).eq("id",tg.id).is("project_id",null).select("id").maybeSingle();
+  if(up.error)throw up.error;
+  if(up.data)linked++;
+ }
+ return{checked:targets.length,linked};
+}
 async function syncLifecycle(){
+ const projectLinks=await syncProjectLinks();
  const qr=await db.from("pppp_outbound_queue_v1").select("*").eq("source",SRC).not("gmail_thread_id","is",null).in("status",["candidate","planned","stale","sent","replied"]).order("updated_at",{ascending:false}).limit(60);
  if(qr.error)throw qr.error;
  let checked=0,sent=0,replied=0,errors=0;
@@ -133,7 +166,7 @@ async function syncLifecycle(){
    }
   }catch(e){errors++;console.error(V,"sync row",q?.id,e);}
  }
- return{checked,sent,replied,errors};
+ return{checked,sent,replied,errors,project_links:projectLinks};
 }
 async function user(auth:string){if(!A)throw new Error("supabase_anon_key_missing");const c=createClient(U,A,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false}}),q=await c.auth.getUser();if(q.error||!q.data?.user)throw new Error("unauthorized");return q.data.user;}
 async function draft(to:string,subject:string,body:string,h:Record<string,string>,htmlBody=""){
