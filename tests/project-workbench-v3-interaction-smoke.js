@@ -109,7 +109,7 @@ function last(a){return a[a.length-1];}
   window.PSTProjectWorkbenchV3.sync();
   const tedContinue=doc.querySelector('.pwb3-now>button');
   assert(tedContinue&&tedContinue.getAttribute('data-pwb3-action')==='ted_contacts','TED award Vazhdo must open winner/contact review before supplier RFQ');
-  assert(doc.querySelectorAll('.pwb3-path-v2 .pwb3-phase').length===7,'TED award project must render its dedicated seven-step sales workflow');
+  assert(doc.querySelectorAll('.pwb3-path-v2 .pwb3-phase').length===14,'TED award project must render its complete sales-to-closure workflow');
   const tedCard=doc.querySelector('[data-pwb3-kind="ted-award"]');
   assert(tedCard,'TED award source card missing');
   assert(nav('client').textContent.includes('Klienti / kontakti'),'TED award navigation must put client/contact work before suppliers');

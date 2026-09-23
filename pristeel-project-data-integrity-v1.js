@@ -184,13 +184,14 @@ async function load(id){
     byProject('pppp_project_context_facts',id,p,'order=updated_at.desc&limit=500'),
     safe('crm_deals?select=dealname,amount,dealstage,closedate,description,hs_object_id&limit=1500'),
     drive(p),
-    safe('project_supplier_decisions?project_id=eq.'+enc(id)+'&select=*&order=decided_at.desc&limit=100')
+    safe('project_supplier_decisions?project_id=eq.'+enc(id)+'&select=*&order=decided_at.desc&limit=100'),
+    safe('pppp_project_workflow_state_v1?project_id=eq.'+enc(id)+'&select=*&limit=1')
   ]);
   var offers=out[3],docs=out[4],projectDocs=out[8],attachmentLinks=out[9],inboxDocs=out[10];
   var ours=docs.filter(ourOffer).concat(offers.filter(ourOffer));
   var supplierPool=offers.concat(inboxDocs,projectDocs,attachmentLinks,docs).filter(supplierOffer);
   var suppliers=uniq(supplierPool,function(x){return rowKey(x);});
-  var data={project:p,emails:em.rows,emailLinks:em.links,linkedOnly:em.linkedOnly,emailConflicts:em.conflicts,contacts:out[0],bom:out[1],rfqs:out[2],offers:offers,ourOffers:uniq(ours,function(x){return rowKey(x);}),supplierOffers:suppliers,supplierDecisions:out[15],docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],projectDocs:projectDocs,attachmentLinks:attachmentLinks,inboxDocs:inboxDocs,guarantees:out[11],contextFacts:out[12],deals:out[13],drive:out[14]};
+  var data={project:p,emails:em.rows,emailLinks:em.links,linkedOnly:em.linkedOnly,emailConflicts:em.conflicts,contacts:out[0],bom:out[1],rfqs:out[2],offers:offers,ourOffers:uniq(ours,function(x){return rowKey(x);}),supplierOffers:suppliers,supplierDecisions:out[15],workflowState:out[16]&&out[16][0]||null,docs:docs,invoicesOut:out[5],invoicesIn:out[6],adjustments:out[7],projectDocs:projectDocs,attachmentLinks:attachmentLinks,inboxDocs:inboxDocs,guarantees:out[11],contextFacts:out[12],deals:out[13],drive:out[14]};
   data.deal=matchDeal(p,data.deals);
   data.mailAttachments=data.emails.filter(function(x){return x.has_attachments||arr(x.attachments).length;});
   data.files=uniq(data.docs.concat(data.projectDocs,data.attachmentLinks,data.inboxDocs,data.drive.rows,data.mailAttachments),rowKey);

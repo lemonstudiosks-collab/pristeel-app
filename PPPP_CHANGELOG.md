@@ -2,6 +2,16 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-09-23
+
+### PPPP V2 project flow is canonical from entry through closure
+
+- Added the read-only, RLS-respecting `public.pppp_project_workflow_state_v1` model over existing Project, RFQ, supplier decision, supplier offer, client offer and invoice evidence.
+- Project Data Integrity now loads that state inside the isolated Project payload; Workbench V3 uses it as the primary stage/next-action source and safely falls back to the established heuristics if the optional view is unavailable.
+- The three explicit entry workflows now converge on one visible supplier/commercial flow and one shared post-award sequence: `Customer PO → Supplier PO → Procurement → Transport → Delivery → Invoice → Payment → Closed`.
+- Human gates remain visible for supplier approval, pricing/dossier, client offer/application, negotiation and outcome decisions. No new database writer, automatic email, financial commitment or supplier commitment was introduced.
+- Added smoke coverage for the read-only migration contract, all three lanes, canonical next-action routing and the complete post-award path.
+
 ## 2026-09-05
 
 ### System presentation recognizes the canonical apps route

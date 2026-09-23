@@ -150,15 +150,23 @@ Core data/tool owners remain:
 
 - `pristeel-project-workflow-canonical-v1.js`
 
-**Final presentation/navigation grouping:**
+**Final Project workspace presentation owner:**
 
-- `pristeel-operating-experience-v1.js`
+- `pristeel-project-workbench-v2.js` (compatibility filename; exports Workbench V3)
 
 **Legacy ribbon compatibility bridge:**
 
 - `pristeel-project-workflow-legacy-capture-v1.js`
 
-The user-facing project flow is now grouped into five business phases:
+The user-facing project flow now uses the explicit PPPP V2 lane stored in `projects.workflow_type` and the read-only `public.pppp_project_workflow_state_v1` evidence model. Three entry lanes converge on one shared supplier/commercial/post-award flow:
+
+- `eu_award_sales`: Opportunity → Kontaktimi → Client RFQ
+- `self_tender`: Tenderi → Kërkesat
+- `steel_trading`: Client RFQ
+- shared: Furnitorët → Krahasimi → Çmimi / dosja → Oferta / aplikimi → Won / Lost
+- post-award: Customer PO → Supplier PO → Procurement → Transport → Delivery → Invoice → Payment → Closed
+
+Projects without a V2 classification retain the established compact five-phase fallback:
 
 `Përgatitja → Prokurimi → Komerciale → Ekzekutimi → Financa`
 
@@ -179,7 +187,8 @@ Important behavior:
 - Existing normalized supplier comparison, BOM, RFQ, calculator and client-offer engines are reused, not duplicated.
 - The old horizontal workflow ribbon remains captured back into the canonical project flow.
 - Final offer, sell price, supplier commitment and outbound communication remain human-gated.
-- Neither Canonical Workflow nor Operating Experience performs business-data writes.
+- The V2 workflow state is read-only and derives its stage from existing project, RFQ, supplier-decision, offer and invoice evidence. It does not introduce a second business-data writer.
+- Neither Canonical Workflow, Workbench V3 nor Operating Experience performs business-data writes.
 
 The classic project overview remains intentionally reachable as a fallback. Do not delete its providers until the fallback/merge behavior has an equivalent replacement.
 
