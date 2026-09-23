@@ -77,6 +77,7 @@ function setData(workflowType, overrides = {}) {
     },
     rfqs: overrides.rfqs || [],
     supplierOffers: overrides.supplierOffers || [],
+    supplierDecisions: overrides.supplierDecisions || [],
     ourOffers: overrides.ourOffers || [],
     emails: overrides.emails || [],
     projectDocs: [],
@@ -120,6 +121,16 @@ steps = labels();
 assert.equal(steps[2].label, 'Client RFQ');
 assert.equal(steps[2].state, 'current');
 assert.match(window.PSTProjectWorkbenchV3.currentNext(window.__pstIntegrityLastData).title, /Client RFQ/i);
+
+for (const lane of ['eu_award_sales', 'self_tender', 'steel_trading']) {
+  setData(lane, { supplierOffers: [{ id: 'supplier-offer-1', supplier: 'Supplier A', total_eur: 1000, currency: 'EUR' }] });
+  assert.match(window.PSTProjectWorkbenchV3.currentNext(window.__pstIntegrityLastData).title, /aprovo furnitorin/i, `${lane} must stop at the shared human supplier gate`);
+  setData(lane, {
+    supplierOffers: [{ id: 'supplier-offer-1', supplier: 'Supplier A', total_eur: 1000, currency: 'EUR' }],
+    supplierDecisions: [{ id: 'decision-1', status: 'active', decision_type: 'selected_producer', supplier_offer_id: 'supplier-offer-1', supplier_name: 'Supplier A' }],
+  });
+  assert.match(window.PSTProjectWorkbenchV3.currentNext(window.__pstIntegrityLastData).title, /Përgatit çmimin/i, `${lane} may advance only after the shared human supplier gate`);
+}
 
 setData('steel_trading', { project: { status: 'Fituar', pipeline_stage: 'production_control' } });
 steps = labels();
