@@ -82,5 +82,13 @@ const guardedEnrichment={organizations:[{name:'Guarded GmbH',official_website:'h
 const guardedMerged=mergeWinnerWithEnrichment(guardedWinner,guardedEnrichment);
 assert.equal(guardedMerged.email,'sales@guarded.de','merge must skip unsafe email even when it appears first');
 
+const unsafeLegacyWinner={name:'MEB Technical Sp. z o.o.',names:['MEB Technical Sp. z o.o.'],email:'energy@meb-group.eu',emails:['energy@meb-group.eu']};
+const unsafeLegacyEnrichment={organizations:[{name:'MEB Technical Sp. z o.o.',contacts:[
+ {type:'email',value:'energy@meb-group.eu',purpose:'general',confidence:'low',score:60,company_attribution:'external_domain',draft_eligible:false}
+]}]};
+const unsafeLegacyMerged=mergeWinnerWithEnrichment(unsafeLegacyWinner,unsafeLegacyEnrichment);
+assert.equal(unsafeLegacyMerged.email,null,'enrichment must clear a legacy primary when evidence proves it is not attributable to the company');
+assert.deepEqual(unsafeLegacyMerged.emails,[]);
+
 
 console.log('TED winner contact enrichment smoke: OK');

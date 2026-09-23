@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
 const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
-const VERSION='winner-contact-v3';
+const VERSION='winner-contact-v4';
 const FREE_EMAIL_DOMAINS=new Set([
   'gmail.com','googlemail.com','yahoo.com','yahoo.de','outlook.com','hotmail.com','hotmail.de','live.com','icloud.com',
   'gmx.de','gmx.net','web.de','freenet.de','t-online.de','aol.com','proton.me','protonmail.com','poczta.onet.pl'
@@ -97,7 +97,7 @@ export async function enrichWinnerPayload(row,{fetchImpl=fetch,searchEnabled=tru
 }
 export function mergeWinnerWithEnrichment(w,enrichment){
  const source=w&&typeof w==='object'?w:{};const out={...source,contact_enrichment:enrichment};const names=winnerNames(source);const orgs=Array.isArray(enrichment?.organizations)?enrichment.organizations:[];
- if(names.length===1&&orgs.length){const org=orgs[0];const bestEmail=(org.contacts||[]).find(safeDraftEmailContact);const bestPerson=(org.contacts||[]).find(c=>c.type==='person');if(bestEmail){out.email=bestEmail.value;out.emails=unique([...(Array.isArray(out.emails)?out.emails:[]),bestEmail.value]);}if(org.official_website){out.website=org.official_website;out.websites=unique([...(Array.isArray(out.websites)?out.websites:[]),org.official_website]);}if(bestPerson&&!out.contact_point)out.contact_point=bestPerson.value;}
+ if(names.length===1&&orgs.length){const org=orgs[0],contacts=Array.isArray(org.contacts)?org.contacts:[],unsafe=new Set(contacts.filter(c=>c&&c.type==='email'&&c.value&&!safeDraftEmailContact(c)).map(c=>text(c.value).toLowerCase()));if(out.email&&unsafe.has(text(out.email).toLowerCase()))out.email=null;out.emails=unique((Array.isArray(out.emails)?out.emails:[]).filter(x=>!unsafe.has(text(x).toLowerCase())));const bestEmail=contacts.find(safeDraftEmailContact);const bestPerson=contacts.find(c=>c.type==='person');if(bestEmail){out.email=bestEmail.value;out.emails=unique([...(Array.isArray(out.emails)?out.emails:[]),bestEmail.value]);}if(org.official_website){out.website=org.official_website;out.websites=unique([...(Array.isArray(out.websites)?out.websites:[]),org.official_website]);}if(bestPerson&&!out.contact_point)out.contact_point=bestPerson.value;}
  else if(names.length>1){out.email=null;out.website=null;out.contact_point=null;}
  return out;
 }

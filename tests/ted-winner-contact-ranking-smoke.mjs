@@ -31,6 +31,15 @@ const onlyUnsafe={payload:{source:'TED',notice_phase:'award',winner:{name:'Unsaf
 ]}]}}}};
 assert.equal(chooseBestWinnerEmail(onlyUnsafe),null,'no draft candidate is better than an unverified recipient');
 
+const inheritedUnsafe={id:'unsafe-legacy',payload:{source:'TED',notice_phase:'award',winner:{name:'MEB Technical Sp. z o.o.',names:['MEB Technical Sp. z o.o.'],email:'energy@meb-group.eu',emails:['energy@meb-group.eu'],contact_enrichment:{status:'found',organizations:[{name:'MEB Technical Sp. z o.o.',contacts:[
+ {type:'email',value:'energy@meb-group.eu',purpose:'general',source_type:'official_website',confidence:'low',score:60,company_attribution:'external_domain',draft_eligible:false}
+]}]}}}};
+const sanitized=rankWinnerPayload(inheritedUnsafe,'2026-09-23T18:00:00Z');
+assert.equal(sanitized.changed,true,'an inherited primary that enrichment proves unsafe must be actively cleared');
+assert.equal(sanitized.row.payload.winner.email,null);
+assert.deepEqual(sanitized.row.payload.winner.emails,[]);
+assert.equal(sanitized.row.payload.winner.contact_ranking.selected_email,null);
+
 const multi={payload:{source:'TED',notice_phase:'award',winner:{names:['A GmbH','B GmbH'],contact_enrichment:{status:'found',organizations:[{name:'A GmbH',contacts:[{type:'email',value:'info@a.de',purpose:'general'}]},{name:'B GmbH',contacts:[{type:'email',value:'info@b.de',purpose:'general'}]}]}}}};
 assert.equal(chooseBestWinnerEmail(multi),null,'multi-winner records must not choose one global email');
 assert.equal(rankWinnerPayload(multi).changed,false);
