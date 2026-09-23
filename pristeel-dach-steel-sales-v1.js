@@ -1,4 +1,4 @@
-/* PRISTEEL DACH Steel Buyers v4.1
+/* PRISTEEL DACH Steel Buyers v5
  * Buyer Target + Material Intelligence Desk for direct steel supply in DE/AT/CH.
  * Operational buyer-to-supply workflow over qualified targets in pppp_dach_steel_targets_v1.
  * Home reads only the 1-row pppp_dach_steel_home_summary_v1 view.
@@ -17,7 +17,7 @@ var state={
  draftBusy:{},draftResult:{},supplierDrafts:{},
  summaryLoaded:false,targetsLoaded:false,outboundLoaded:false,
  summaryLoading:false,targetsLoading:false,outboundLoading:false,
- error:'',filter:'all',expanded:null,actionView:null,lastLoadedAt:0
+ error:'',filter:'action',expanded:null,actionView:null,lastLoadedAt:0,lifecycleSyncing:false,lifecycleSyncedAt:0,lifecycleResult:null
 };
 
 function A(v){return Array.isArray(v)?v:[]}
@@ -138,7 +138,8 @@ function gmailCompose(to,subject,body){
 }
 function gmailThread(q){
  if(!q||!q.gmail_thread_id)return'';
- if(q.gmail_draft_id)return'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(q.gmail_thread_id);
+ var st=N(q.status),done=!!q.sent_at||!!q.replied_at||st==='sent'||st==='replied';
+ if(!done&&q.gmail_draft_id)return'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(q.gmail_thread_id);
  if(window.PSTEmail&&typeof window.PSTEmail.gmailUrl==='function')return window.PSTEmail.gmailUrl(q.gmail_thread_id);
  return'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(q.gmail_thread_id);
 }
@@ -189,6 +190,26 @@ async function createSupplierDraft(r,email){
  state.draftBusy[k]=true;state.supplierDrafts[k]=null;renderPage();
  try{state.supplierDrafts[k]=await edgeDraft({mode:'supplier',target_id:id,supplier_email:e})}
  catch(err){state.supplierDrafts[k]={error:S(err&&err.message||err)}}finally{state.draftBusy[k]=false;renderPage()}
+}
+
+async function syncLifecycleUi(force){
+ if(state.lifecycleSyncing)return state.lifecycleResult;
+ if(!force&&state.lifecycleSyncedAt&&Date.now()-state.lifecycleSyncedAt<300000)return state.lifecycleResult;
+ state.lifecycleSyncing=true;renderPage();
+ try{
+  state.lifecycleResult=await edgeDraft({mode:'sync'});
+  state.lifecycleSyncedAt=Date.now();
+  state.summaryLoaded=false;state.targetsLoaded=false;state.outboundLoaded=false;
+  await loadSummary(true);await loadTargets(true);
+ }catch(e){state.lifecycleResult={error:S(e&&e.message||e)}}
+ finally{state.lifecycleSyncing=false;renderPage()}
+ return state.lifecycleResult;
+}
+function lifecycle(r){
+ var q=outboundFor(r),st=N(q&&q.status||r&&r.outreach_status||'');
+ if((q&&q.replied_at)||st==='replied'||N(r&&r.outreach_status)==='replied')return'replied';
+ if((q&&q.sent_at)||st==='sent'||N(r&&r.outreach_status)==='sent')return'waiting';
+ return'action';
 }
 
 async function loadSupplierCandidates(r){
@@ -271,11 +292,11 @@ function renderHome(){
 function ensurePage(){
  css();var page=document.getElementById('page-dach-steel-sales');if(page)return page;
  var host=document.querySelector('.content')||document.body;page=document.createElement('div');page.id='page-dach-steel-sales';page.className='page';page.style.display='none';
- page.innerHTML='<div class="pst-dss-page"><header class="pst-dss-head"><div><small>PRISTEEL · DACH STEEL BUYER ENGINE</small><h1>Steel Buyers DACH</h1><p>Nga sinjali i projektit te veprimi: kërko RFQ/BOQ nga blerësi dhe, paralelisht, përgatit sourcing/RFQ për furnitorët pa humbur human approval.</p></div><div class="pst-dss-actions"><button data-dss-refresh>Rifresko</button><button data-dss-back>← Ballina</button></div></header><div class="pst-dss-engine-note"><b>Rregulli:</b> A1 = company + current project + steel scope + relevant timing. M2 është kalkulim/ekstraktim indikativ; M3 ka bazë zyrtare BOQ/material list. Asnjë email nuk dërgohet automatikisht.</div><div class="pst-dss-kpi-strip" data-dss-kpis></div><div class="pst-dss-tabs"><button class="pst-dss-tab on" data-dss-filter="all">Të gjitha</button><button class="pst-dss-tab" data-dss-filter="a1">A1</button><button class="pst-dss-tab" data-dss-filter="m3">M3 · Quote Ready</button><button class="pst-dss-tab" data-dss-filter="material">Need Material</button><button class="pst-dss-tab" data-dss-filter="contact">Need Contact</button><button class="pst-dss-tab" data-dss-filter="outreach">Ready Outreach</button></div><section class="pst-dss-panel"><div class="pst-dss-panel-head"><b>Buyer + Material Intelligence Desk</b><span data-dss-updated></span></div><div class="pst-dss-headrow"><span>Priority</span><span>Buyer / project</span><span>Why now?</span><span>Material</span><span class="pst-dss-col-timing">Timing</span><span class="pst-dss-col-action">Next step</span></div><div data-dss-list></div></section></div>';
+ page.innerHTML='<div class="pst-dss-page"><header class="pst-dss-head"><div><small>PRISTEEL · DACH STEEL BUYER ENGINE</small><h1>Steel Buyers DACH</h1><p>Nga sinjali i projektit te veprimi: kërko RFQ/BOQ nga blerësi dhe, paralelisht, përgatit sourcing/RFQ për furnitorët pa humbur human approval.</p></div><div class="pst-dss-actions"><button data-dss-refresh>Rifresko</button><button data-dss-back>← Ballina</button></div></header><div class="pst-dss-engine-note"><b>Rregulli:</b> sapo Gmail konfirmon dërgimin, targeti largohet nga “Për veprim” dhe kalon te “Në ndjekje”. Një reply e kalon te “Përgjigje / RFQ”. Para çdo drafti të ri kontrollohen Gmail Sent dhe cooldown-et.</div><div class="pst-dss-kpi-strip" data-dss-kpis></div><div class="pst-dss-tabs"><button class="pst-dss-tab on" data-dss-filter="action">Për veprim</button><button class="pst-dss-tab" data-dss-filter="waiting">Në ndjekje</button><button class="pst-dss-tab" data-dss-filter="replied">Përgjigje / RFQ</button><button class="pst-dss-tab" data-dss-filter="a1">A1</button><button class="pst-dss-tab" data-dss-filter="m3">M3 · Quote Ready</button><button class="pst-dss-tab" data-dss-filter="contact">Need Contact</button><button class="pst-dss-tab" data-dss-filter="all">Të gjitha</button></div><section class="pst-dss-panel"><div class="pst-dss-panel-head"><b>Buyer + Material Intelligence Desk</b><span data-dss-updated></span></div><div class="pst-dss-headrow"><span>Priority</span><span>Buyer / project</span><span>Why now?</span><span>Material</span><span class="pst-dss-col-timing">Timing</span><span class="pst-dss-col-action">Next step</span></div><div data-dss-list></div></section></div>'
  host.appendChild(page);
  page.onclick=async function(e){
   var f=e.target.closest('[data-dss-filter]');if(f){state.filter=f.getAttribute('data-dss-filter');state.expanded=null;state.actionView=null;renderPage();return}
-  if(e.target.closest('[data-dss-refresh]')){state.summaryLoaded=false;state.targetsLoaded=false;state.outboundLoaded=false;loadSummary(true);loadTargets(true);return}
+  if(e.target.closest('[data-dss-refresh]')){await syncLifecycleUi(true);return}
   if(e.target.closest('[data-dss-back]')){back();return}
   var btn=e.target.closest('[data-dss-action]');
   if(btn){
@@ -300,15 +321,17 @@ function ensurePage(){
 }
 
 function filteredRows(){
- var rows=A(state.targets);
- if(state.filter==='a1')return rows.filter(function(r){return r.score_band==='A1'});
- if(state.filter==='m3')return rows.filter(function(r){return r.quote_readiness==='M3'});
- if(state.filter==='material')return rows.filter(function(r){return r.quote_readiness==='M0'||r.quote_readiness==='M1'});
- if(state.filter==='contact')return rows.filter(function(r){return r.contact_status==='missing'||r.contact_status==='searching'});
- if(state.filter==='outreach')return rows.filter(function(r){return r.outreach_status==='ready'||!!outboundFor(r)});
+ var rows=A(state.targets),actionable=rows.filter(function(r){return lifecycle(r)==='action'});
+ if(state.filter==='action')return actionable;
+ if(state.filter==='waiting')return rows.filter(function(r){return lifecycle(r)==='waiting'});
+ if(state.filter==='replied')return rows.filter(function(r){return lifecycle(r)==='replied'});
+ if(state.filter==='a1')return actionable.filter(function(r){return r.score_band==='A1'});
+ if(state.filter==='m3')return actionable.filter(function(r){return r.quote_readiness==='M3'});
+ if(state.filter==='material')return actionable.filter(function(r){return r.quote_readiness==='M0'||r.quote_readiness==='M1'});
+ if(state.filter==='contact')return actionable.filter(function(r){return r.contact_status==='missing'||r.contact_status==='searching'});
+ if(state.filter==='outreach')return actionable.filter(function(r){return r.outreach_status==='ready'||!!outboundFor(r)});
  return rows;
 }
-
 function materialLines(r){
  var items=materialItems(r);
  if(!items.length)return '<div class="pst-dss-empty" style="padding:16px 10px"><b>No line-item BOM yet</b><span>'+E(qrHelp(r.quote_readiness))+'</span></div>';
@@ -320,16 +343,22 @@ function materialLines(r){
 }
 
 function buyerAction(r){
- var q=outboundFor(r),to=q&&q.recipient_email||'',status=q?S(q.status||'registered'):'not registered',st=N(status),supp=q&&S(q.suppression_reason).trim(),recoverable=['gmail_draft_missing','gmail_draft_stale','draft_missing','draft_stale'].indexOf(supp)>-1,blocked=(!!supp&&!recoverable)||st==='suppressed',stale=st==='stale'||recoverable,human=!q||q.human_send_required!==false;
- var preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='buyer',k=draftKey('buyer',r.id),busy=!!state.draftBusy[k],result=state.draftResult[k]||null;
- var validDraft=q&&q.gmail_draft_id&&q.gmail_thread_id&&!stale&&!blocked,primary='';
- if(blocked)primary='<button class="pst-dss-btn" disabled>Outbound i bllokuar</button>';
- else if(validDraft)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>';
- else if(to)primary='<button class="pst-dss-btn primary" '+(busy?'disabled':'')+' data-dss-action="buyer-create-draft" data-dss-tid="'+E(r.id)+'">'+(busy?'Duke krijuar draftin…':(stale?'Rigjenero Gmail draft':'Krijo Gmail draft'))+'</button>';
+ var q=outboundFor(r),to=q&&q.recipient_email||'',status=q?S(q.status||'registered'):'not registered',st=N(status),life=lifecycle(r),sentAt=q&&q.sent_at||'',replyAt=q&&q.replied_at||'',supp=q&&S(q.suppression_reason).trim(),recoverable=['gmail_draft_missing','gmail_draft_stale','draft_missing','draft_stale'].indexOf(supp)>-1,blocked=(!!supp&&!recoverable)||st==='suppressed',stale=st==='stale'||recoverable,human=!q||q.human_send_required!==false;
+ var preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='buyer',k=draftKey('buyer',r.id),busy=!!state.draftBusy[k],result=state.draftResult[k]||null,primary='',secondary='';
+ if(life==='replied')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap përgjigjen në Gmail</button>':'';
+ else if(life==='waiting')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap thread-in në Gmail</button>':'';
+ else if(blocked)primary='<button class="pst-dss-btn" disabled>Outbound i bllokuar</button>';
+ else if(q&&q.gmail_draft_id&&q.gmail_thread_id&&!stale)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>';
+ else if(to)primary='<button class="pst-dss-btn primary" '+(busy?'disabled':'')+' data-dss-action="buyer-create-draft" data-dss-tid="'+E(r.id)+'">'+(busy?'Duke kontrolluar Gmail…':(stale?'Rigjenero Gmail draft':'Krijo Gmail draft'))+'</button>';
  else primary='<button class="pst-dss-btn" disabled>Duhet kontakt</button>';
- var guard=blocked?('Preflight: '+S(supp||'suppressed')+'. Ky guard duhet zgjidhur para outreach.'):(stale?'Drafti i vjetër mungon/stale. PPPP tani mund të krijojë një draft të ri real në Gmail dhe ta rilidhë me shared outbound.':(human?'Drafti krijohet në Gmail; dërgimi mbetet human-approved.':'Asnjë dërgim automatik nga kjo faqe.'));
+ if(life==='action')secondary='<button class="pst-dss-btn" data-dss-action="buyer-preview" data-dss-tid="'+E(r.id)+'">Shiko tekstin</button>';
+ var guard=life==='replied'?('Përgjigje e marrë'+(replyAt?' më '+D(replyAt):'')+'. Mos dërgo cold outreach tjetër; rishiko thread-in dhe klasifiko RFQ/BOQ.'):
+   life==='waiting'?('Emaili është dërguar'+(sentAt?' më '+D(sentAt):'')+'. Targeti është në ndjekje dhe një outreach i ri bllokohet nga cooldown-i.'):
+   blocked?('Preflight: '+S(supp||'suppressed')+'. Ky guard duhet zgjidhur para outreach.'):
+   stale?'Drafti i vjetër mungon/stale. Para rigjenerimit PPPP kontrollon Gmail Sent për të parandaluar dublikatat.':
+   human?'Para krijimit të draftit PPPP kontrollon Gmail Sent + shared cooldown; dërgimi mbetet human-approved.':'Asnjë dërgim automatik nga kjo faqe.';
  var resultHtml=result&&result.error?'<div class="pst-dss-inline-status" style="background:#fff1ef;color:#8b4a41">Drafti nuk u krijua: '+E(result.error)+'</div>':(result&&result.created?'<div class="pst-dss-inline-status">✓ Gmail draft u krijua dhe u lidh me PPPP.</div>':'');
- return '<div class="pst-dss-action-card"><h4>📩 Blerësi · kërko RFQ / BOQ</h4><p>Kërko material listën aktuale, drawings/specs dhe konfirmo nëse procurement-i është ende i hapur.</p><div class="pst-dss-action-status">'+(to?'<b>'+E(to)+'</b> · ':'')+E(q?'PPPP outbound: '+status:contactLabel(r.contact_status))+'</div><div class="pst-dss-action-buttons">'+primary+'<button class="pst-dss-btn" data-dss-action="buyer-preview" data-dss-tid="'+E(r.id)+'">Shiko tekstin</button></div><div class="pst-dss-guard">'+E(guard)+'</div>'+resultHtml+(preview?'<div class="pst-dss-previewbox"><b>'+E(buyerSubject(r,q))+'</b><pre>'+E(buyerBody(r))+'</pre><div class="pst-dss-action-buttons" style="margin-top:9px"><button class="pst-dss-btn" data-dss-action="buyer-copy" data-dss-tid="'+E(r.id)+'">Kopjo tekstin</button></div></div>':'')+'</div>';
+ return '<div class="pst-dss-action-card"><h4>📩 Blerësi · '+(life==='replied'?'përgjigje e marrë':life==='waiting'?'në pritje të RFQ / BOQ':'kërko RFQ / BOQ')+'</h4><p>'+(life==='action'?'Kërko material listën aktuale, drawings/specs dhe konfirmo nëse procurement-i është ende i hapur.':life==='waiting'?'Emaili u dërgua. Tani monitorojmë reply/RFQ pa e kontaktuar sërish gjatë cooldown-it.':'Ka ardhur përgjigje. Hape thread-in dhe verifiko nëse kemi RFQ, BOQ, drawings ose kërkesë tjetër.')+'</p><div class="pst-dss-action-status">'+(to?'<b>'+E(to)+'</b> · ':'')+E(q?'PPPP outbound: '+status:contactLabel(r.contact_status))+'</div><div class="pst-dss-action-buttons">'+primary+secondary+'</div><div class="pst-dss-guard">'+E(guard)+'</div>'+resultHtml+(preview?'<div class="pst-dss-previewbox"><b>'+E(buyerSubject(r,q))+'</b><pre>'+E(buyerBody(r))+'</pre><div class="pst-dss-action-buttons" style="margin-top:9px"><button class="pst-dss-btn" data-dss-action="buyer-copy" data-dss-tid="'+E(r.id)+'">Kopjo tekstin</button></div></div>':'')+'</div>';
 }
 function supplierAction(r){
  var indicative=r.quote_readiness!=='M3',box=state.supplierByTarget[S(r.id)]||{},preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='supplier';
@@ -354,24 +383,26 @@ function detail(r){
 
 function renderPage(){
  var page=document.getElementById('page-dach-steel-sales');if(!page)return;
- var sx=summary()||{},lx=localSummary(),k=page.querySelector('[data-dss-kpis]'),list=page.querySelector('[data-dss-list]'),u=page.querySelector('[data-dss-updated]');
- if(k)k.innerHTML=[[sx.targets||lx.targets,'Targets'],[sx.a1_targets||lx.a1_targets,'A1'],[sx.needs_contact||lx.needs_contact,'Need Contact'],[sx.ready_for_outreach||lx.ready_for_outreach,'Ready Outreach'],[sx.sent||0,'Sent'],[sx.replies||0,'Replies']].map(function(v){return '<div class="pst-dss-kpi"><b>'+E(v[0])+'</b><span>'+E(v[1])+'</span></div>'}).join('');
+ var sx=summary()||{},lx=localSummary(),all=A(state.targets),waiting=all.filter(function(r){return lifecycle(r)==='waiting'}).length,replied=all.filter(function(r){return lifecycle(r)==='replied'}).length,action=all.filter(function(r){return lifecycle(r)==='action'}).length,k=page.querySelector('[data-dss-kpis]'),list=page.querySelector('[data-dss-list]'),u=page.querySelector('[data-dss-updated]');
+ if(k)k.innerHTML=[[action,'Për veprim'],[waiting,'Në ndjekje'],[replied,'Përgjigje'],[lx.needs_contact,'Need Contact'],[lx.quote_ready,'M3 Quote Ready'],[sx.sent||waiting,'Sent']].map(function(v){return '<div class="pst-dss-kpi"><b>'+E(v[0])+'</b><span>'+E(v[1])+'</span></div>'}).join('');
  page.querySelectorAll('[data-dss-filter]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-dss-filter')===state.filter)});
- if(u)u.textContent=state.lastLoadedAt?'Përditësuar '+new Date(state.lastLoadedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'}):'';
+ if(u)u.textContent=state.lifecycleSyncing?'Duke sinkronizuar Gmail…':(state.lastLoadedAt?'Përditësuar '+new Date(state.lastLoadedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'}):'');
  if(!list)return;
  if(state.targetsLoading){list.innerHTML='<div class="pst-dss-empty"><b>Duke lexuar qualified targets…</b><span>Një query e kufizuar; pa discovery noise.</span></div>';return}
  if(state.error&&state.targetsLoaded){list.innerHTML='<div class="pst-dss-empty"><b>Steel Buyer Desk nuk u lexua</b><span>'+E(state.error)+'</span></div>';return}
  var rows=filteredRows();
- if(!rows.length){list.innerHTML='<div class="pst-dss-empty"><b>'+E(state.filter==='all'?'Ende nuk ka qualified Steel Buyer targets.':'Nuk ka targete në këtë filtër.')+'</b><span>Pipeline: signal → qualification → buyer RFQ request + supplier sourcing → real RFQ.</span></div>';return}
+ if(!rows.length){
+  var title=state.filter==='action'?'Nuk ka targete që kërkojnë veprim tani.':state.filter==='waiting'?'Nuk ka targete në pritje përgjigjeje.':state.filter==='replied'?'Nuk ka përgjigje/RFQ të reja.':state.filter==='all'?'Ende nuk ka qualified Steel Buyer targets.':'Nuk ka targete në këtë filtër.';
+  list.innerHTML='<div class="pst-dss-empty"><b>'+E(title)+'</b><span>Pipeline: signal → buyer outreach → në ndjekje → reply/RFQ → quotation/order.</span></div>';return;
+ }
  list.innerHTML=rows.map(function(r){
-  var prods=arrText(r.products).slice(0,4).join(' · ')||r.steel_scope||'Material scope pending',q=outboundFor(r);
-  var next=q&&q.recipient_email?'Kërko RFQ':'Gjej kontakt';
-  var row='<div class="pst-dss-row" data-dss-target-id="'+E(r.id)+'"><span class="pst-dss-score '+scoreClass(r.score_band)+'">'+E(r.score_band||'—')+'</span><div><b>'+E(r.company_name||'Buyer')+'</b><small>'+E([r.country,r.project_title].filter(Boolean).join(' · ')||r.buyer_type||'Steel buyer')+'</small></div><div class="pst-dss-col-why"><div class="pst-dss-why">'+E(r.why_now||'Why-now evidence pending')+'</div></div><div><span class="pst-dss-qr '+qrClass(r.quote_readiness)+'">'+E(qrLabel(r.quote_readiness))+'</span><div class="pst-dss-products">'+E(prods)+'</div><div class="pst-dss-ton">'+E(tonnes(r.estimated_tonnes))+'</div></div><div class="pst-dss-col-timing"><b>'+E(r.procurement_timing||'Unknown')+'</b><small>'+E(r.award_date?'Award '+D(r.award_date):'Timing evidence needed')+'</small></div><div class="pst-dss-col-action"><button class="pst-dss-nextbtn" type="button" data-dss-tid="'+E(r.id)+'" data-dss-open-actions="1">'+E(next)+' →</button></div></div>';
+  var prods=arrText(r.products).slice(0,4).join(' · ')||r.steel_scope||'Material scope pending',q=outboundFor(r),life=lifecycle(r);
+  var next=life==='replied'?'Përgjigje / RFQ':life==='waiting'?'Në ndjekje':(q&&q.recipient_email?'Kërko RFQ':'Gjej kontakt');
+  var row='<div class="pst-dss-row" data-dss-target-id="'+E(r.id)+'"><span class="pst-dss-score '+scoreClass(r.score_band)+'">'+E(r.score_band||'—')+'</span><div><b>'+E(r.company_name||'Buyer')+'</b><small>'+E([r.country,r.project_title].filter(Boolean).join(' · ')||r.buyer_type||'Steel buyer')+'</small></div><div class="pst-dss-col-why"><div class="pst-dss-why">'+E(r.why_now||'Why-now evidence pending')+'</div></div><div><span class="pst-dss-qr '+qrClass(r.quote_readiness)+'">'+E(qrLabel(r.quote_readiness))+'</span><div class="pst-dss-products">'+E(prods)+'</div><div class="pst-dss-ton">'+E(tonnes(r.estimated_tonnes))+'</div></div><div class="pst-dss-col-timing"><b>'+E(life==='waiting'?'WAITING FOR BUYER':life==='replied'?'BUYER REPLIED':r.procurement_timing||'Unknown')+'</b><small>'+E(life==='waiting'&&q&&q.sent_at?'Sent '+D(q.sent_at):life==='replied'&&q&&q.replied_at?'Reply '+D(q.replied_at):r.award_date?'Award '+D(r.award_date):'Timing evidence needed')+'</small></div><div class="pst-dss-col-action"><button class="pst-dss-nextbtn" type="button" data-dss-tid="'+E(r.id)+'" data-dss-open-actions="1">'+E(next)+' →</button></div></div>';
   return row+(state.expanded===S(r.id)?detail(r):'');
  }).join('');
  list.querySelectorAll('[data-dss-open-actions]').forEach(function(b){b.onclick=function(e){e.preventDefault();e.stopPropagation();var id=b.getAttribute('data-dss-tid');state.expanded=id;state.actionView=null;renderPage();setTimeout(function(){var d=document.querySelector('.pst-dss-detail');if(d)try{d.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(err){}},0);};});
 }
-
 function back(){
  chrome(false);
  try{var n=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(n&&typeof n.openHome==='function'){n.openHome();return}}catch(e){}
@@ -379,7 +410,7 @@ function back(){
 }
 function open(){
  var page=ensurePage();chrome(true);document.querySelectorAll('.page').forEach(function(p){if(p!==page){p.classList.remove('active');p.style.display='none'}});
- page.style.display='block';page.classList.add('active');renderPage();loadSummary(false);loadTargets(false);try{window.scrollTo(0,0)}catch(e){}
+ page.style.display='block';page.classList.add('active');renderPage();syncLifecycleUi(false);try{window.scrollTo(0,0)}catch(e){}
 }
 function boot(){css();ensurePage();ensureHome()}
 
@@ -390,7 +421,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 window.PSTDachSteelSalesV1=window.PSTDachSteelSalesV2=window.PSTDachSteelSalesV3={
  source:SOURCE,open:open,
- refresh:function(){state.summaryLoaded=false;state.targetsLoaded=false;state.outboundLoaded=false;return Promise.all([loadSummary(true),loadTargets(true)])},
+ refresh:function(){return syncLifecycleUi(true)},
  snapshot:function(){return{source:SOURCE,summary:summary(),targets:A(state.targets).slice(),outboundByTarget:Object.assign({},state.outboundByTarget),filter:state.filter,error:state.error}}
 };
 })();
