@@ -44,7 +44,7 @@ assert(projectCentric.includes("tenderSource(r)==='TED'?'award':'local'"), 'TED 
 assert(projectCentric.includes("if(src==='TED')return phase==='award'"), 'Open TED opportunities must stay out of the daily Opportunities surface');
 ['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'].forEach(src=>assert(projectCentric.includes(`'${src}'`), `${src} must be registered as an Opportunities source`));
 ['TED','KRPP','APP','MCA Kosovo','KCF','RCF','EBRD','World Bank','UNGM','UNDP Kosovo','EU Office Kosovo'].forEach(tab=>assert(projectCentric.includes(`tab:'${tab}'`), `${tab} source tab must be exposed in Opportunities`));
-assert(projectCentric.includes('dedupeOpportunities')&&projectCentric.includes('hasDraft(old)'), 'Opportunity duplicates must collapse while preferring the row with a recorded Gmail draft');
+assert(projectCentric.includes('dedupeOpportunities')&&projectCentric.includes('opportunityLifecycleRank')&&projectCentric.includes("lane==='replied'?3"), 'Opportunity duplicates must collapse while preferring the strongest recorded outreach lifecycle');
 assert(projectCentric.includes('setOpportunityContext')&&projectCentric.includes("tenderState.focus==='due'")&&projectCentric.includes("tenderState.focus==='review'"), 'Opportunity routes must preserve Home deadline/review context');
 assert(projectCentric.includes('pppp-project-operator-update'), 'Project operator update must use the authenticated safe Edge Function');
 assert(projectCentric.includes('pppp_contact_master_v1?contact_id=eq.') && projectCentric.includes('project_emails?'), 'Contact popup must refresh canonical live relationships and recent project email data');
