@@ -115,11 +115,13 @@ function tenderValueLabel(r){
 function tenderReason(r){var P=tenderApi();return P&&typeof P.reason==='function'?P.reason(r):A(r&&r.match_reasons).slice(0,2).join(' · ');}
 function hasDraft(r){return opportunityLifecycle(r)!=='new';}
 function opportunityKey(r){
- var ref=N(r&&r.publication_no||r&&r.procurement_no),title=N(r&&r.title),winner=N(winnerName(r));
- return ref?'ref:'+ref+'|'+winner:'title:'+title+'|'+N(r&&r.authority)+'|'+winner;
+ var ref=N(r&&r.publication_no||r&&r.procurement_no),title=N(r&&r.title),winner=N(winnerName(r)),authority=N(r&&r.authority),w=winnerObj(r),winnerId=N(w&&w.identifier||A(w&&w.identifiers)[0]),year=S(r&&r.published_date).slice(0,4);
+ if(tenderSource(r)==='TED'&&tenderMode(r)==='award'&&title&&winner)return'ted-award:'+title+'|'+authority+'|'+(winnerId||winner)+'|'+year;
+ return ref?'ref:'+ref+'|'+winner:'title:'+title+'|'+authority+'|'+winner;
 }
+function opportunityLifecycleRank(r){var lane=opportunityLifecycle(r);return lane==='replied'?3:lane==='waiting'?2:lane==='draft'?1:0;}
 function dedupeOpportunities(rows){
- var byKey={};A(rows).forEach(function(r){var k=opportunityKey(r),old=byKey[k];if(!old||(!hasDraft(old)&&hasDraft(r))||(!hasDraft(old)===!hasDraft(r)&&tenderScore(r)>tenderScore(old)))byKey[k]=r;});
+ var byKey={};A(rows).forEach(function(r){var k=opportunityKey(r),old=byKey[k],rank=opportunityLifecycleRank(r),oldRank=old?opportunityLifecycleRank(old):-1;if(!old||rank>oldRank||(rank===oldRank&&tenderScore(r)>tenderScore(old)))byKey[k]=r;});
  return Object.keys(byKey).map(function(k){return byKey[k];});
 }
 function dueSoon(v){if(!v)return false;var d=new Date(S(v).slice(0,10)+'T23:59:59'),now=Date.now();return !isNaN(d.getTime())&&d.getTime()>=now&&d.getTime()<=now+7*86400000;}
@@ -144,19 +146,23 @@ function opportunityLifecycle(r){
  var rows=outreachRows(r),sent=deliveredRows(rows);
  if(replyFor(sent))return'replied';
  if(sent.length)return'waiting';
+ var p=tenderPayload(r),out=p.outreach&&typeof p.outreach==='object'?p.outreach:{},outStatus=N(out.status);
+ if(out.replied===true||outStatus==='replied')return'replied';
+ if(outStatus==='sent'||S(out.last_sent_at)||S(out.gmail_message_id))return'waiting';
  if(rows.some(function(x){return /^(draft_pending|draft_created)$/.test(S(x.status).toLowerCase());}))return'draft';
- var p=tenderPayload(r),d=p.outreach_draft||p.gmail_draft,s=S(d&&d.status).toLowerCase();
+ var d=p.outreach_draft||p.gmail_draft,s=S(d&&d.status).toLowerCase();
  if(d&&/^(created|scheduled)$/.test(s))return'draft';
  if(S(p.ted_contact_status).toLowerCase()==='contacted')return'waiting';
  return'new';
 }
 function lifecycleMeta(r){
- var lane=opportunityLifecycle(r),rows=outreachRows(r),sent=deliveredRows(rows),reply=replyFor(sent),p=tenderPayload(r),d=p.outreach_draft||p.gmail_draft||{},comm=communicationActive(r),when='',recipients=[];
+ var lane=opportunityLifecycle(r),rows=outreachRows(r),sent=deliveredRows(rows),reply=replyFor(sent),p=tenderPayload(r),out=p.outreach&&typeof p.outreach==='object'?p.outreach:{},d=p.outreach_draft||p.gmail_draft||{},comm=communicationActive(r),when='',recipients=[];
  rows.forEach(function(x){var e=S(x.recipient_email).trim();if(e&&recipients.indexOf(e)<0)recipients.push(e);});
  if(comm&&S(comm.target_email).trim()&&recipients.indexOf(S(comm.target_email).trim())<0)recipients.push(S(comm.target_email).trim());
+ if(S(out.contact_email).trim()&&recipients.indexOf(S(out.contact_email).trim())<0)recipients.push(S(out.contact_email).trim());
  if(comm&&(lane==='replied'||lane==='waiting'))when=S(comm.communication_at);
- else if(lane==='replied')when=S(reply&&reply.sent_at);
- else if(lane==='waiting')when=latestDate(sent,'sent_at')||S(p.ted_contacted_at);
+ else if(lane==='replied')when=S(reply&&reply.sent_at)||S(out.last_reply_at||out.replied_at||out.last_incoming_at||out.last_sent_at);
+ else if(lane==='waiting')when=latestDate(sent,'sent_at')||S(out.last_sent_at)||S(p.ted_contacted_at);
  else if(lane==='draft')when=latestDate(rows,'draft_created_at')||S(d.created_at||d.scheduled_at);
  return{lane:lane,when:when,recipients:recipients,reply:reply,communication:comm};
 }
