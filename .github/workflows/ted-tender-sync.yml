@@ -18,6 +18,10 @@ on:
       - 'tests/ted-tender-sync-smoke.mjs'
       - 'scripts/ted-award-winner-sync.mjs'
       - 'tests/ted-award-winner-sync-smoke.mjs'
+      - 'scripts/ted-award-detail-backfill.mjs'
+      - 'tests/ted-award-detail-backfill-smoke.mjs'
+      - 'scripts/ted-award-detail-backfill.mjs'
+      - 'tests/ted-award-detail-backfill-smoke.mjs'
       - 'scripts/ted-winner-contact-history-reuse.mjs'
       - 'tests/ted-winner-contact-history-reuse-smoke.mjs'
       - 'scripts/ted-winner-contact-enrichment.mjs'
@@ -77,6 +81,8 @@ jobs:
       PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
       TED_TENDER_MIN_SCORE: '75'
       TED_AWARD_DAYS: '30'
+      TED_DETAIL_BACKFILL_MAX_ROWS: '400'
+      TED_DETAIL_BATCH_SIZE: '25'
       TED_CONTACT_MIN_SCORE: '85'
       TED_CONTACT_MAX_ROWS: '12'
       TED_CONTACT_REFRESH_DAYS: '30'
@@ -102,6 +108,7 @@ jobs:
         run: |
           node --check scripts/ted-tender-sync.mjs
           node --check scripts/ted-award-winner-sync.mjs
+          node --check scripts/ted-award-detail-backfill.mjs
           node --check scripts/ted-winner-contact-history-reuse.mjs
           node --check scripts/ted-winner-contact-enrichment.mjs
           node --check scripts/ted-winner-company-classification.mjs
@@ -114,6 +121,9 @@ jobs:
 
       - name: Run TED award winner smoke
         run: node tests/ted-award-winner-sync-smoke.mjs
+
+      - name: Run TED award detail backfill smoke
+        run: node tests/ted-award-detail-backfill-smoke.mjs
 
       - name: Run TED winner contact history reuse smoke
         run: node tests/ted-winner-contact-history-reuse-smoke.mjs
@@ -139,6 +149,10 @@ jobs:
       - name: Enrich awarded TED steel contracts with winners
         run: node scripts/ted-award-winner-sync.mjs
 
+      - name: Backfill factual details for visible TED awards
+        if: github.event_name != 'pull_request'
+        run: node scripts/ted-award-detail-backfill.mjs
+
       - name: Reuse known TED winner contacts from history
         if: github.event_name != 'pull_request'
         run: node scripts/ted-winner-contact-history-reuse.mjs
@@ -163,6 +177,7 @@ jobs:
           path: |
             tmp/ted-tender-sync.json
             tmp/ted-award-winner-sync.json
+            tmp/ted-award-detail-backfill.json
             tmp/ted-winner-contact-history-reuse.json
             tmp/ted-winner-contact-enrichment.json
             tmp/ted-winner-company-classification.json
