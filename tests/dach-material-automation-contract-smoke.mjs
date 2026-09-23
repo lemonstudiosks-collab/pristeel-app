@@ -13,10 +13,15 @@ assert.match(ui,/Blerësit e çelikut DACH/,'DACH page title must be Albanian');
 assert.match(ui,/M3 · GATI PËR OFERTË/,'M3 presentation must be Albanian without changing M3 key semantics');
 assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260923-sqguard8/,'runtime must cache-bust the Albanian/guarded DACH module');
 
-assert.match(edge,/pppp-dach-steel-draft-generator-v9-supplier-rfq-dedupe/,'repo must carry the current guarded DACH Edge source');
+assert.match(edge,/pppp-dach-steel-draft-generator-v10-project-link-supplier-dedupe/,'repo must carry the current guarded DACH Edge source');
 assert.match(edge,/\["buyer","supplier","suppliers","contact","refresh"\]/,'live-supported interactive modes must stay present');
 assert.match(edge,/mode!=="refresh"&&mode!=="sync"/,'internal cron credential must remain restricted to refresh/sync');
 assert.match(edge,/pppp_global_communication_guard_v1/,'buyer outreach must use the shared global communication guard');
+assert.match(edge,/async function syncProjectLinks/,'DACH lifecycle must reconcile exact existing project links');
+assert.match(edge,/\.from\("kek_tender_watch"\)/,'project reconciliation must use canonical TED records');
+assert.match(edge,/sameCompany\(tg\.company_name,row\?\.payload\?\.winner\?\.name\)/,'project reconciliation must require winner/company identity');
+assert.match(edge,/projectIds\.length!==1/,'ambiguous TED-to-project matches must not be linked');
+assert.doesNotMatch(edge,/\.from\("projects"\)\.insert/,'DACH automation must never create Projects directly');
 assert.match(edge,/pppp_dach_steel_contact_resolution_v1/,'buyer contact resolution must remain canonical');
 assert.match(edge,/async function existingSupplierRfq/,'supplier RFQ dedupe guard must exist');
 assert.match(edge,/\.from\("rfq_log"\)/,'supplier RFQ dedupe must respect canonical project RFQ history when a project link exists');
