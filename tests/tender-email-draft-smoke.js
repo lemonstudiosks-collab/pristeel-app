@@ -99,8 +99,8 @@ assert.strictEqual(deduped.find(x=>x.publication_no==='TED-123').id,'drafted','D
 W._state.rows=[duplicatePlain,duplicateDraft,uniqueReview];W.setOpportunityContext({focus:'review'});
 assert.strictEqual(W._test.opportunityRows().map(x=>x.id).join(','),'unique','Home review context must show only Opportunities waiting for review');
 
-const waiting=Object.assign({},award('DEU'),{id:'waiting',publication_no:'TED-WAIT'});
-const replied=Object.assign({},award('AUT'),{id:'replied',publication_no:'TED-REPLY'});
+const waiting=Object.assign({},award('DEU'),{id:'waiting',publication_no:'TED-WAIT',title:'Waiting lifecycle award'});
+const replied=Object.assign({},award('AUT'),{id:'replied',publication_no:'TED-REPLY',title:'Replied lifecycle award'});
 W._state.rows=[duplicateDraft,waiting,replied,uniqueReview];
 W._state.outreachByTender={
   waiting:[{status:'draft_created',recipient_email:'wait@example.com',draft_created_at:'2026-09-10T07:00:00Z',gmail_thread_id:'thread-wait'}],
