@@ -294,11 +294,16 @@ function materialLines(r){
 }
 
 function buyerAction(r){
- var q=outboundFor(r),to=q&&q.recipient_email||'',status=q?S(q.status||'registered'):'not registered',human=q&&q.human_send_required!==false;
+ var q=outboundFor(r),to=q&&q.recipient_email||'',status=q?S(q.status||'registered'):'not registered',st=N(status),supp=q&&S(q.suppression_reason).trim(),blocked=!!supp||st==='suppressed',stale=st==='stale',human=!q||q.human_send_required!==false;
  var preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='buyer';
- var primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail / verifiko</button>':(to?'<button class="pst-dss-btn primary" data-dss-action="buyer-compose" data-dss-tid="'+E(r.id)+'">Përgatit emailin</button>':'<button class="pst-dss-btn" disabled>Duhet kontakt</button>');
- var compose=to?'<button class="pst-dss-btn" data-dss-action="buyer-compose" data-dss-tid="'+E(r.id)+'">Draft i ri</button>':'';
- return '<div class="pst-dss-action-card"><h4>📩 Blerësi · kërko RFQ / BOQ</h4><p>Kërko material listën aktuale, drawings/specs dhe konfirmo nëse procurement-i është ende i hapur.</p><div class="pst-dss-action-status">'+(to?'<b>'+E(to)+'</b> · ':'')+E(q?'PPPP outbound: '+status:contactLabel(r.contact_status))+'</div><div class="pst-dss-action-buttons">'+primary+compose+'<button class="pst-dss-btn" data-dss-action="buyer-preview" data-dss-tid="'+E(r.id)+'">Shiko tekstin</button></div><div class="pst-dss-guard">'+(human?'Dërgimi mbetet human-approved.':'Asnjë dërgim automatik nga kjo faqe.')+'</div>'+(preview?'<div class="pst-dss-previewbox"><b>'+E(buyerSubject(r,q))+'</b><pre>'+E(buyerBody(r))+'</pre><div class="pst-dss-action-buttons" style="margin-top:8px"><button class="pst-dss-btn" data-dss-action="buyer-copy" data-dss-tid="'+E(r.id)+'">Kopjo tekstin</button></div></div>':'')+'</div>';
+ var validThread=q&&q.gmail_thread_id&&!stale&&!blocked,primary='',compose='';
+ if(blocked)primary='<button class="pst-dss-btn" disabled>Outbound i bllokuar</button>';
+ else if(validThread)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail / verifiko</button>';
+ else if(to)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-compose" data-dss-tid="'+E(r.id)+'">'+(stale?'Përgatit draft zëvendësues':'Përgatit emailin')+'</button>';
+ else primary='<button class="pst-dss-btn" disabled>Duhet kontakt</button>';
+ if(!q&&to)compose='<button class="pst-dss-btn" data-dss-action="buyer-compose" data-dss-tid="'+E(r.id)+'">Hap Gmail</button>';
+ var guard=blocked?('Preflight: '+S(supp||'suppressed')+'. Mos krijo/dërgo outreach derisa guard-i të pastrohet.'):(stale?'Drafti i regjistruar është stale; mos u mbështet te thread-i i vjetër. Dërgimi i draftit zëvendësues mbetet human-approved.':(human?'Dërgimi mbetet human-approved.':'Asnjë dërgim automatik nga kjo faqe.'));
+ return '<div class="pst-dss-action-card"><h4>📩 Blerësi · kërko RFQ / BOQ</h4><p>Kërko material listën aktuale, drawings/specs dhe konfirmo nëse procurement-i është ende i hapur.</p><div class="pst-dss-action-status">'+(to?'<b>'+E(to)+'</b> · ':'')+E(q?'PPPP outbound: '+status:contactLabel(r.contact_status))+'</div><div class="pst-dss-action-buttons">'+primary+compose+'<button class="pst-dss-btn" data-dss-action="buyer-preview" data-dss-tid="'+E(r.id)+'">Shiko tekstin</button></div><div class="pst-dss-guard">'+E(guard)+'</div>'+(preview?'<div class="pst-dss-previewbox"><b>'+E(buyerSubject(r,q))+'</b><pre>'+E(buyerBody(r))+'</pre><div class="pst-dss-action-buttons" style="margin-top:8px"><button class="pst-dss-btn" data-dss-action="buyer-copy" data-dss-tid="'+E(r.id)+'">Kopjo tekstin</button></div></div>':'')+'</div>';
 }
 
 function supplierAction(r){
