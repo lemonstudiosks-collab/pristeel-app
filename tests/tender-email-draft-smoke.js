@@ -75,6 +75,9 @@ assert.ok(projectCentric.includes('project_id=not.is.null')&&projectCentric.incl
 assert.ok((projectCentric.match(/filter\(function\(r\)\{return !ownedByProject\(r\);\}\)/g)||[]).length>=2,'Project-owned awards must be excluded from both Opportunity cards and Opportunity/source lifecycle counts');
 assert.ok(projectCentric.includes('pst:tender-gmail-drafts-ready')&&projectCentric.includes('loadOpportunities(true)'),'Successful draft creation must invalidate and refresh the visible Opportunities queue');
 assert.ok(source.includes('pppp-opportunity-draft-generator')&&source.includes('action_id'),'Action Console must route the selected tender through the action-scoped canonical multi-draft engine');
+assert.ok(source.includes('consortium_project_outreach_draft')&&source.includes('general_project_outreach_draft'),'Draft button must support every TED outreach action type accepted by the canonical generator');
+assert.ok(source.includes("event==='readiness_blocked'")&&source.includes("event==='route_mismatch'")&&source.includes("event==='communication_history_blocked'"),'Draft button must surface canonical block reasons instead of silently doing nothing');
+
 assert.ok(source.includes('status=in.(new,review,watch,promoted)'),'Canonical tender draft engine must still resolve TED awards after Project promotion');
 assert.ok(draftStateSource.includes('status=in.(new,review,watch,promoted)'),'Draft-state duplicate guard must retain promoted TED records');
 assert.ok(source.includes('pst:tender-gmail-drafts-ready'),'Successful multi-draft completion must emit the plural canonical event');

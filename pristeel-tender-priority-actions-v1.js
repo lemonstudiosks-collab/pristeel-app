@@ -110,12 +110,16 @@ async function draftEdge(payload){
 async function prepareDraft(id){
  var rows=await refresh(false),r=rows.find(function(x){return S(x.id)===S(id);});if(!r||phase(r)!=='award')throw new Error('Draft outreach vlen vetëm për tender të përfunduar me fitues.');
  if(!r.project_id)throw new Error('Së pari aprovoje Opportunity-n dhe krijo Project-in PPPP V2. Drafti pastaj ruhet në kontekstin e Project-it.');
- var role=winnerRole(r);if(role!=='gc_epc'&&role!=='producer')throw new Error('Së pari duhet verifikuar nëse fituesi është GC/EPC apo prodhues çeliku.');
  var contacts=enrichedContacts(r);if(!contacts.length)throw new Error('Nuk ka ende email të verifikuar që i atribuohet kësaj kompanie. Kontrollo Kontaktet e fituesit.');
- var qs='pppp_opportunity_action_queue_v2?tender_watch_id=eq.'+encodeURIComponent(id)+'&status=eq.draft_review&action_type=in.(gc_project_outreach_draft,producer_capacity_outreach_draft)&select=id,action_type,route,target_company,target_email,updated_at&order=updated_at.desc&limit=4',actions=A(await db(qs)),wanted=role==='producer'?'producer_capacity_outreach_draft':'gc_project_outreach_draft',a=actions.find(function(x){return S(x.action_type)===wanted;})||actions[0];
- if(!a)throw new Error('PPPP e ka kontaktin, por action queue ende nuk është rifreskuar për rolin e kompanisë. Mos krijo draft manual me një kontakt të vetëm; provo pas rifreskimit të Opportunity Engine.');
- var out=await draftEdge({action_id:S(a.id),limit:1}),result=A(out.results)[0]||{},recipientCount=Number(result.recipients||0),covered=Number(result.covered||0),created=Number(result.created||0),preserved=Number(result.preserved||0),sent=Number(result.sent||0);
- if(!recipientCount)throw new Error('Asnjë recipient nuk kaloi verifikimin e kompanisë. Hap Kontaktet e fituesit dhe kontrollo evidencën.');
+ var role=winnerRole(r),types='gc_project_outreach_draft,producer_capacity_outreach_draft,consortium_project_outreach_draft,general_project_outreach_draft';
+ var qs='pppp_opportunity_action_queue_v2?tender_watch_id=eq.'+encodeURIComponent(id)+'&status=eq.draft_review&action_type=in.('+types+')&select=id,action_type,route,target_company,target_email,updated_at&order=updated_at.desc&limit=8',actions=A(await db(qs)),wanted=role==='producer'?'producer_capacity_outreach_draft':role==='gc_epc'?'gc_project_outreach_draft':role==='trader_consortium'?'consortium_project_outreach_draft':'';
+ var a=(wanted&&actions.find(function(x){return S(x.action_type)===wanted;}))||actions.find(function(x){return S(x.action_type)==='general_project_outreach_draft';})||actions[0];
+ if(!a)throw new Error('Nuk ka action aktiv për draft për këtë Opportunity. PPPP duhet ta rifreskojë action queue para krijimit të draftit.');
+ var out=await draftEdge({action_id:S(a.id),limit:1}),result=A(out.results)[0]||{},event=S(result.event),reason=S(result.reason),recipientCount=Number(result.recipients||0),covered=Number(result.covered||0),created=Number(result.created||0),preserved=Number(result.preserved||0),sent=Number(result.sent||0);
+ if(event==='communication_history_blocked')throw new Error('Ky kontaktim është regjistruar tashmë në komunikime. Nuk do të krijohet draft i dytë.');
+ if(event==='readiness_blocked')throw new Error('Drafti u bllokua nga verifikimi i recipient-it'+(reason?': '+reason:'')+'.');
+ if(event==='route_mismatch')throw new Error('Roli/rruga e kompanisë ka ndryshuar. Rifresko Opportunity-n dhe provo përsëri.');
+ if(event==='no_recipients'||!recipientCount)throw new Error('Asnjë recipient i verifikuar nuk kaloi kontrollin e kompanisë. Drafti nuk u krijua.');
  if(typeof window.pstToast==='function')window.pstToast('PPPP përgatiti/përditësoi '+recipientCount+' draft(e) të verifikuara · të reja '+created+' · ekzistuese '+preserved+' · të dërguara '+sent+'.','ok');
  window.open('https://mail.google.com/mail/u/0/#drafts','_blank','noopener');
  try{document.dispatchEvent(new CustomEvent('pst:tender-gmail-drafts-ready',{detail:{tender_id:S(id),action_id:S(a.id),recipient_count:recipientCount,covered:covered,created:created,human_send_required:true}}));}catch(e){}
