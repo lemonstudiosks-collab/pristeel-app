@@ -84,7 +84,7 @@ document.head.appendChild(s);
   window.__pstProjectWorkbenchV3Intended=true;
   if(window.__pstProjectWorkbenchV2||document.querySelector('script[data-pst-project-workbench-v2]'))return;
   var r=document.createElement('script');
-  r.src='pristeel-project-workbench-v2.js?v=20260923-v2workflow1';
+  r.src='pristeel-project-workbench-v2.js?v=20260923-postaward1';
   r.defer=true;
   r.setAttribute('data-pst-project-workbench-v2','1');
   r.onerror=function(){console.error('Nuk u ngarkua Project Workbench v3.');};

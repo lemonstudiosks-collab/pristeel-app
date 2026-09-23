@@ -132,6 +132,26 @@ for (const lane of ['eu_award_sales', 'self_tender', 'steel_trading']) {
   assert.match(window.PSTProjectWorkbenchV3.currentNext(window.__pstIntegrityLastData).title, /Përgatit çmimin/i, `${lane} may advance only after the shared human supplier gate`);
 }
 
+setData('self_tender', {
+  supplierOffers: [{ id: 'supplier-offer-1', supplier: 'Supplier A' }],
+  supplierDecisions: [{ status: 'active', decision_type: 'selected_producer', supplier_offer_id: 'supplier-offer-1' }],
+  ourOffers: [{ id: 'tender-draft', followup_status: 'draft', created_at: '2026-09-23T08:00:00Z' }],
+});
+assert.match(window.PSTProjectWorkbenchV3.currentNext(window.__pstIntegrityLastData).title, /dosjen e tenderit/i, 'Self-tender draft must be described as price + dossier, not as a normal client offer');
+
+setData('self_tender', {
+  ourOffers: [{ id: 'tender-submission', followup_status: 'sent', sent_at: '2026-09-23T08:00:00Z' }],
+});
+assert.match(window.PSTProjectWorkbenchV3.currentNext(window.__pstIntegrityLastData).title, /Aplikimi është dorëzuar/i, 'Self-tender submission must wait for clarification/result');
+
+setData('steel_trading', {
+  ourOffers: [{ id: 'client-offer', followup_status: 'sent', sent_at: '2026-09-23T08:00:00Z' }],
+  emails: [{ id: 'client-reply', direction: 'incoming', sent_at: '2026-09-23T09:00:00Z', subject: 'Please revise the offer' }],
+});
+const negotiation = window.PSTProjectWorkbenchV3.currentNext(window.__pstIntegrityLastData);
+assert.match(negotiation.title, /negociatën/i, 'Client reply after an offer must enter the negotiation/revision decision');
+assert.equal(negotiation.area, 'communication');
+
 setData('steel_trading', { project: { status: 'Fituar', pipeline_stage: 'production_control' } });
 steps = labels();
 assert.equal(steps.at(-1).label, 'Ekzekutimi');
