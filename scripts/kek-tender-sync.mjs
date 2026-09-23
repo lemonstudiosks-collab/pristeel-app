@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL = 'https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL = 'https://awqfpnzqwfjrjefoktgd.supabase.co';
 const KRPP_ORIGIN = 'https://e-prokurimi.rks-gov.net';
 const DEFAULT_KRPP_URL = `${KRPP_ORIGIN}/SPIN_PROD/application/ipn/DocumentManagement/NewPreglediDokumenataFrm.aspx`;
 const REDUCED_PROVIDER = 'ReducedObjavljeniDokumenti_Idom3.RPN.BL.ReducedObjavljeniDokumentiSearch__sq-AL';

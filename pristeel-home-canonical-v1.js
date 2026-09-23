@@ -178,7 +178,7 @@ function deriveProjects(data,contexts,actions,waiting){
 async function loadData(){
  if(typeof window.supaFetch!=='function')return{projects:[],tasks:[],projectEmails:[],analyses:[],rfqs:[],supplierOffers:[],ourOffers:[],attachments:[],states:{}};
  var rows=await Promise.all([
-  q('projects?select=id,created_at,updated_at,name,client,ref,location,deadline,notes,status,pipeline_stage,deal_type,business_ref,business_type,last_activity_at,last_email_at,operational_state,operational_state_at,operational_state_source&limit=3000'),
+  q('projects?select=id,created_at,updated_at,name,client,ref,location,deadline,notes,status,pipeline_stage,deal_type,business_ref,business_type,workflow_type,last_activity_at,last_email_at,operational_state,operational_state_at,operational_state_source&limit=3000'),
   q('tasks?status=eq.hapur&select=id,created_at,project_id,title,detail,due_date,priority,status,source,contact_email,category,source_ref&order=created_at.desc&limit=5000'),
   q('project_emails?select=id,project_id,subject,snippet,sent_at,direction,gmail_url,from_email,from_name,to_emails,has_attachments&order=sent_at.desc&limit=6000'),
   q('project_analyses?status=eq.complete&select=id,project_id,analysis,created_at&order=created_at.desc&limit=3000'),

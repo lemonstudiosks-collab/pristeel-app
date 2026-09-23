@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const HUBSPOT_BASE = 'https://api.hubapi.com';
-const DEFAULT_SUPABASE_URL = 'https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL = 'https://awqfpnzqwfjrjefoktgd.supabase.co';
 
 const CONTACT_PROPERTIES = [
   'firstname', 'lastname', 'email', 'phone', 'mobilephone',

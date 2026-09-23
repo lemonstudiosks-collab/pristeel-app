@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 import { SOURCE_REGISTRY, clean, htmlToText, isoDate, phase, docType, dateAfter, parseHeadingRecords, parseUngm, parseEaas, normalizeRecord, filterActionable, dedupe } from './multilateral-procurement-core.mjs';
 
-const SUPABASE='https://isymxqfqzkchbsrbhucf.supabase.co';
+const SUPABASE='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const UA='PriSteel-PPPP-Procurement-Monitor/1.0 (+https://prissteel.com)';
 const UNGM_PUBLIC_SEARCH='https://www.ungm.org/Public/Notice/Search';
 const UNGM_KOSOVO_COUNTRY_ID=2525;

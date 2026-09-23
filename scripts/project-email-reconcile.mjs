@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const GUARD_FILE='pristeel-gmail-project-identity-guard-v1.js';
 const INTERNAL_DOMAIN='prissteel.com';
 

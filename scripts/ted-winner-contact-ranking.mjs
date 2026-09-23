@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const VERSION='winner-contact-rank-v1';
 const LOW_VALUE_LOCAL=/^(hr|humanresources|human\.resources|jobs?|careers?|karriere|bewerbung|recruiting|recruitment|privacy|datenschutz|dpo|rechnung|invoice|buchhaltung|accounting|support|it|webmaster)([._+-]|$)/i;
 const PURPOSE_WEIGHT={procurement:500,tender:450,sales:400,general:300,person:200,contact_point:180};

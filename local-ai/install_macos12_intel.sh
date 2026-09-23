@@ -57,7 +57,7 @@ cat > "$WORKER_PLIST" <<EOF
 <key>ProgramArguments</key><array><string>$(command -v python3)</string><string>$WORKER</string></array>
 <key>EnvironmentVariables</key><dict>
 <key>PPPP_SEMANTIC_WORKER_KEY</key><string>$KEY</string>
-<key>PPPP_SEMANTIC_QUEUE_URL</key><string>https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/semantic-local-queue</string>
+<key>PPPP_SEMANTIC_QUEUE_URL</key><string>https://awqfpnzqwfjrjefoktgd.supabase.co/functions/v1/semantic-local-queue</string>
 <key>PPPP_LLAMA_URL</key><string>http://127.0.0.1:8080/v1/chat/completions</string>
 <key>PPPP_LOCAL_MODEL</key><string>Qwen3-1.7B-Q4_K_M</string>
 <key>PPPP_SEMANTIC_POLL_SECONDS</key><string>4</string>

@@ -3,7 +3,7 @@ import {pathToFileURL} from 'node:url';
 import {normalizeTedAward,preserveWinnerIntelligence,existingWinnerIntelligencePaths} from './ted-award-winner-sync.mjs';
 import {resolveSupabaseWorkflowAccess} from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const TED_API='https://api.ted.europa.eu/v3/notices/search';
 const VERSION='ted-gc-awards-v2.1';
 const AWARD_TYPES=['can-standard','can-social','can-desg','can-tran'];

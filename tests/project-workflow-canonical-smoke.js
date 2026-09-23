@@ -29,6 +29,7 @@ const {JSDOM}=require('jsdom');
     bom:[],
     rfqs:[],
     supplierOffers:[],
+    supplierDecisions:[],
     ourOffers:[{doc_nr:'PST-QUO-2026-027',total_eur:68009.98,created_at:'2026-08-22T09:00:00Z',followup_status:'draft',offer_state:{revision_status:'draft_review'}}],
     invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[]}
   };
@@ -101,6 +102,12 @@ const {JSDOM}=require('jsdom');
   }};
   w.PSTCanonicalProjectWorkflowV1.render('procurement','comparison');
   assert(w.document.querySelector('[data-pf2-compare]'),'Comparison stage must reuse the existing normalized comparison engine');
+  assert.strictEqual(w.PSTCanonicalProjectWorkflowV1._test.nextStage(integrity),'comparison','Supplier offers must not bypass the human supplier decision');
+  assert.match(w.PSTCanonicalProjectWorkflowV1._test.stageState('pricing',integrity).label,/Pa vendim furnitori/,'Pricing must remain blocked before supplier approval');
+
+  integrity.supplierDecisions=[{status:'active',decision_type:'selected_producer',supplier_offer_id:'o1',supplier_name:'Eurosteel'}];
+  assert.strictEqual(w.PSTCanonicalProjectWorkflowV1._test.nextStage(integrity),'client_offer','An approved supplier cost basis may advance the existing priced draft');
+  assert.strictEqual(w.PSTCanonicalProjectWorkflowV1._test.stageState('comparison',integrity).tone,'done','Human supplier approval must complete comparison');
 
   w.PSTCanonicalProjectWorkflowV1.render('procurement','pricing');
   assert(w.document.getElementById('pst-pi-body').textContent.includes('ÇMIMI AKTUAL I SHITJES'),'Pricing stage must be a real nonblank project stage');

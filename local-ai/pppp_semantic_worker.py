@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import json, os, subprocess, tempfile, time, urllib.request, urllib.error
 
-QUEUE=os.environ.get('PPPP_SEMANTIC_QUEUE_URL','https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/semantic-local-queue')
+QUEUE=os.environ.get('PPPP_SEMANTIC_QUEUE_URL','https://awqfpnzqwfjrjefoktgd.supabase.co/functions/v1/semantic-local-queue')
 KEY=os.environ.get('PPPP_SEMANTIC_WORKER_KEY','').strip()
 LLAMA=os.environ.get('PPPP_LLAMA_URL','http://127.0.0.1:8080/v1/chat/completions')
 MODEL=os.environ.get('PPPP_LOCAL_MODEL','Qwen3-1.7B-Q4_K_M')

@@ -57,6 +57,13 @@ const {JSDOM}=require('jsdom');
   w.eval(source);
   await w.pstOpenProjectWorkspace('p1');
 
+  const rfqState=w.PSTProjectFirstV2._test.rfqStatus;
+  assert.strictEqual(rfqState({supplierOffers:[]},{supplier_name:'Aktiva',status:'sent'}),'RFQ Sent');
+  assert.strictEqual(rfqState({supplierOffers:[]},{supplier_name:'Aktiva',status:'waiting'}),'Waiting for Quote');
+  assert.strictEqual(rfqState({supplierOffers:[]},{supplier_name:'Aktiva',status:'clarification_needed'}),'Clarification Needed');
+  assert.strictEqual(rfqState({supplierOffers:[]},{supplier_name:'Aktiva',status:'no_response'}),'No Response');
+  assert.strictEqual(rfqState({supplierOffers:[{supplier:'Aktiva'}]},{supplier_name:'Aktiva',status:'waiting'}),'Quote Received','Canonical supplier offer evidence must override a stale waiting status');
+
   const tabs=[...w.document.querySelectorAll('[data-pf2-tab]')];
   assert.strictEqual(tabs.length,9,'Project-first workspace must expose exactly 9 workflow tabs');
   assert.deepStrictEqual(tabs.map(x=>x.getAttribute('data-pf2-tab')),
@@ -120,6 +127,20 @@ const {JSDOM}=require('jsdom');
   assert.strictEqual(fileRow.getAttribute('target'),'_blank','Clickable file row must keep files opening in a new tab');
   assert(fileRow.textContent.includes('drawing.pdf'),'Clickable file row must keep the file name visible');
   assert(fileRow.textContent.includes('Hap'),'Clickable file row should keep a small open affordance');
+  const executionData={...integrity,project:{...integrity.project,status:'fituar',pipeline_stage:'rfq_in'},projectDocs:[],invoicesOut:[]};
+  assert.strictEqual(w.PSTProjectFirstV2._test.executionEvidence(executionData).won,true,'Fituar must activate the post-win execution chain');
+  let executionSteps=w.PSTProjectFirstV2._test.executionSteps(executionData);
+  assert.deepStrictEqual(Array.from(executionSteps,x=>String(x.label)),['Customer PO','Supplier PO','Procurement','Transport','Delivery','Invoice','Payment','Closed'],'Won execution must expose the complete V2 chain');
+  assert.strictEqual(executionSteps[0].state,'current','A won project without PO evidence must stop at Customer PO');
+  executionData.projectDocs=[{name:'Customer PO 2026-44.pdf'}];
+  executionSteps=w.PSTProjectFirstV2._test.executionSteps(executionData);
+  assert.strictEqual(executionSteps[0].state,'done','Customer PO may complete only from registered project evidence');
+  assert.strictEqual(executionSteps[1].state,'current','Supplier PO becomes the next step after Customer PO evidence');
+  w.__pstIntegrityLastData=executionData;
+  w.PSTProjectFirstV2.render('execution');
+  assert(w.document.getElementById('pst-pi-body').textContent.includes('Rrjedha pas fitimit'),'Execution view must render the evidence-based post-win flow');
+  assert(w.document.getElementById('pst-pi-body').textContent.includes('nuk krijon PO'),'Execution view must state that PPPP does not advance operational facts automatically');
+  w.__pstIntegrityLastData=integrity;
   const readability=w.document.getElementById('pf2-readability-css');
   assert(readability,'Project workspace readability stylesheet must be loaded');
   assert(readability.textContent.includes('.pst-pi-tab{font-size:12.5px'),'Workspace tabs must use a readable desktop font size');

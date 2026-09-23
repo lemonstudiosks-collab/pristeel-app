@@ -164,7 +164,7 @@ function render(){
 }
 async function fetchProjects(){
   if(typeof window.supaFetch!=='function')return A(window.projects||window._projects||window._allProjectsCache||window.PST_PROJECTS);
-  var fields='id,name,client,ref,deadline,status,pipeline_stage,operational_state,business_type,last_activity_at,last_email_at,updated_at,created_at';
+  var fields='id,name,client,ref,deadline,status,pipeline_stage,operational_state,business_type,workflow_type,last_activity_at,last_email_at,updated_at,created_at';
   return A(await window.supaFetch('projects?select='+fields+'&order=last_activity_at.desc.nullslast&limit=500'));
 }
 async function load(){

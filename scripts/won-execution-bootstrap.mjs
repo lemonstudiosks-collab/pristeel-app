@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const SOURCE='execution_won';
 const STAGE_ORDER=['rfq_in','technical_review','supplier_selection','pricing','client_offer','commercial','production_control','factory_audit','transport'];
 const text=v=>String(v==null?'':v).trim();

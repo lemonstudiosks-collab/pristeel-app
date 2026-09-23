@@ -1,6 +1,6 @@
 import { makeSourceRow, safeUpsertSourceRows } from './contact-provenance-common.mjs';
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://isymxqfqzkchbsrbhucf.supabase.co';
+const supabaseUrl = process.env.SUPABASE_URL || 'https://awqfpnzqwfjrjefoktgd.supabase.co';
 const supabaseKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 if (!supabaseKey) {

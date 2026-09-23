@@ -35,7 +35,9 @@ TED award notices are already awarded. PriSteel is not bidding into the closed a
 
 Expected flow:
 
-`award -> winner verification -> winner classification -> contact research -> draft -> send under shared outbound governance -> reply/follow-up`
+`award -> winner verification -> winner classification -> contact research -> human Approve/Reject -> canonical EU Award Sales Project -> draft -> send under shared outbound governance -> reply/follow-up`
+
+Approval creates or links exactly one canonical Project with `workflow_type=eu_award_sales`. It also carries verified contacts and TED email evidence into that Project. Approval itself never sends email.
 
 Winner categories:
 
@@ -121,13 +123,14 @@ Apply in this order:
 1. **Reply evidence exists** -> `Shiko përgjigjen`
 2. **Sent evidence exists and no reply** -> `Në pritje`
 3. **Draft exists** -> `Shiko draftin`
-4. **Draft is missing/failed but a usable contact exists** -> `Rikrijo draftin`
-5. **Winner type is unknown** -> `Verifiko fituesin`
-6. **Winner type is trader_consortium** and human action is required -> `Verifiko anëtarët e konsorciumit`
-7. **Winner type is gc_epc or producer and no usable email exists** -> `Gjej kontaktet`
-8. **Winner type is gc_epc or producer and a usable email exists but no draft exists** -> `Përgatit draftin`
-9. **human_action_required=false** -> `Monitoro`
-10. fallback -> `Shqyrto mundësinë`
+4. **Approved Project exists** -> `Hap Project-in` (draft/contact actions remain available inside the approved context)
+5. **Winner and usable contact are verified but no Project exists** -> `Aprovo · krijo Project`
+6. **Draft is missing/failed after Project approval** -> `Rikrijo draftin`
+7. **Winner type is unknown** -> `Verifiko fituesin`
+8. **Winner type is trader_consortium** and human action is required -> `Verifiko anëtarët e konsorciumit`
+9. **Winner type is gc_epc or producer and no usable email exists** -> `Gjej kontaktet`
+10. **human_action_required=false** -> `Monitoro`
+11. fallback -> `Shqyrto mundësinë`
 
 A stale action-queue route must not override a stronger current state. Example: a current `producer` row with an old `TED_GC` action should not be presented as a GC opportunity without review.
 

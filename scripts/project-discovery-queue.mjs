@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import vm from 'node:vm';
 import { loadIdentityTools, autoEligibleHit } from './project-email-reconcile.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const DISCOVERY_FILE='pristeel-project-discovery.js';
 const TERMINAL_STATUSES=new Set(['created','linked','ignored']);
 

@@ -3,7 +3,7 @@ import {readFile,stat} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {extractKrppDossier,extractKrppIntermediateDownloadUrl,officialUrl,stripTags} from '../supabase/functions/pppp-tender-dossier-analysis/parser.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const WORKER_SERVICE='/functions/v1/pppp-tender-fetch-worker';
 const MAX_FILE_BYTES=30*1024*1024;
 const MAX_ACTIONS=14;

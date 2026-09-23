@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const APP_ORIGIN='https://app.gov.al';
 const APP_EXPORT_PAGE=`${APP_ORIGIN}/eksportimi-i-procedurave-te-publikuara/`;
 const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();

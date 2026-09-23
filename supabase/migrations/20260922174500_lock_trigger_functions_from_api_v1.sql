@@ -1,0 +1,37 @@
+-- Trigger functions execute through their bound triggers and are not RPC surfaces.
+-- Keep owner/service execution intact while removing direct API execution.
+revoke execute on function
+  public.handle_new_user(),
+  public.local_ocr_apply_completed_trigger(),
+  public.local_ocr_auto_queue_trigger(),
+  public.local_ocr_failed_job_trigger(),
+  public.local_ocr_no_text_job_trigger(),
+  public.local_ocr_propagate_identical_content_trigger(),
+  public.pppp_automation_success_closes_failure_alerts_v1(),
+  public.pppp_canonical_task_detail_guard(),
+  public.pppp_contact_party_guard_v1(),
+  public.pppp_context_fact_project_truth_reconcile_v1(),
+  public.pppp_context_no_action_reconcile_v1(),
+  public.pppp_document_bom_review_admin_guard_v1(),
+  public.pppp_email_event_canonical_state_guard_v1(),
+  public.pppp_enforce_procurement_program_watch_v1(),
+  public.pppp_extract_requirements_from_attachment_v1(),
+  public.pppp_guard_generic_system_mail_link_insert_v1(),
+  public.pppp_guard_generic_system_mail_project_link_v1(),
+  public.pppp_new_project_handoff_v1(),
+  public.pppp_project_contact_party_guard_v1(),
+  public.pppp_project_contact_system_mail_guard_v1(),
+  public.pppp_project_contact_unique_autolink_v1(),
+  public.pppp_project_email_current_state_v1(),
+  public.pppp_project_email_event_engine_v1(),
+  public.pppp_refresh_project_decision_trigger(),
+  public.pppp_rfq_single_current_review_v1(),
+  public.pppp_supplier_email_rate_reactivity(),
+  public.pppp_supplier_history_autolink(),
+  public.pppp_supplier_task_role_guard(),
+  public.pppp_sync_contact_from_project_email_v1(),
+  public.pppp_sync_project_email_link(),
+  public.pppp_task_lifecycle_project_trigger_v1(),
+  public.pppp_task_lifecycle_task_trigger_v1()
+from public, anon, authenticated;
+

@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const VERSION='ted-history-contact-v1';
 const LEGAL_WORDS=new Set(['gmbh','mbh','co','kg','ag','se','srl','sro','sp','zoo','sa','sas','sasu','ltd','limited','inc','llc','bv','nv','oy','ab','aps','as','doo','d.o.o','gesellschaft','gesellschaftmbh','gruppe','group','company','unternehmen']);
 const FREE_EMAIL_DOMAINS=new Set(['gmail.com','googlemail.com','yahoo.com','yahoo.de','outlook.com','hotmail.com','hotmail.de','live.com','icloud.com','gmx.de','gmx.net','web.de','freenet.de','t-online.de','aol.com','proton.me','protonmail.com']);

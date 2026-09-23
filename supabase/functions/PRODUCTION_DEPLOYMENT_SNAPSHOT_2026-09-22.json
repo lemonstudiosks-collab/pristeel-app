@@ -1,0 +1,278 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-22",
+  "project_ref": "awqfpnzqwfjrjefoktgd",
+  "note": "Read-only production deployment metadata snapshot. Source files are authoritative only for the version captured.",
+  "functions": [
+    {
+      "slug": "chatgpt-command-bridge",
+      "status": "ACTIVE",
+      "version": 7,
+      "verify_jwt": false,
+      "ezbr_sha256": "27ccaf9f542a3d99d4ccff83dbf043244dd7ca714cc6c80607a9e7a3e272410d"
+    },
+    {
+      "slug": "commercial-intake-orchestrator",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "887eb56430a056e79f73027e02ce3fb75ba9ebe0e31f541427b52c2b1c7eb8aa"
+    },
+    {
+      "slug": "gmail-attachment-reconciler",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "09678051b3bedaa5407d93b464da223599df1f50ed9bb90ac1cc21a2dc66ad3f"
+    },
+    {
+      "slug": "gmail-project-intake",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "dd23da949fde0b45d45e3dc03a803ee55b875f26c726814c0f2282be80565bb2"
+    },
+    {
+      "slug": "gmail-ted-sales-reconciler",
+      "status": "ACTIVE",
+      "version": 5,
+      "verify_jwt": true,
+      "ezbr_sha256": "7c16ca3fb51c50b2575bb81390c84481216a16dc14b2783cbe731176eb8b8949"
+    },
+    {
+      "slug": "gmail-tracker",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "937825bc63f96fd7db1879f3b3c76a8200020227398003feb88798f83b9df5c5"
+    },
+    {
+      "slug": "local-ocr-worker",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "a3bf7444f50288c80ff03e89afc4e79c5e61eb41c9e980894f89262e8205479a"
+    },
+    {
+      "slug": "pppp-client-offer-draft-generator",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "c5600b79963d6e3c53a1d257395d5ad24f882ef4a6682cd0b4bc4420efe6f276"
+    },
+    {
+      "slug": "pppp-expense-drive-ingest",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "e7674fee4c0041098a21129376f7818b04d145fafa8bdd19320b2a7fd659e114"
+    },
+    {
+      "slug": "pppp-expense-receipt-upload",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "f7a43b86b4dd13d7875d1ce6cf1df0cd9d7715bd4f6cca597dbb15a265b12e5f"
+    },
+    {
+      "slug": "pppp-expense-receipt-vision",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "9c3c8444ff63b646bf31f574c0ba6addda4aa409e1e9a57c4688e60f070ad80b"
+    },
+    {
+      "slug": "pppp-followup-draft-generator",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "349b6453672fa6eaac5d469246f977c05d0bdd7133365c62ceb4f519daf0d8bd"
+    },
+    {
+      "slug": "pppp-gc-discovery",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "263db27f9fafed2081be2e8a4ee5e11c5cd0ade804b5cd022bed79e1e3859282"
+    },
+    {
+      "slug": "pppp-gc-outreach",
+      "status": "ACTIVE",
+      "version": 7,
+      "verify_jwt": false,
+      "ezbr_sha256": "c279d0270916e7056568bf6e7258d7f31a71e5f34db438e9c6d29212f5e1ca52"
+    },
+    {
+      "slug": "pppp-gmail-fast-ingest-v2",
+      "status": "ACTIVE",
+      "version": 2,
+      "verify_jwt": true,
+      "ezbr_sha256": "ee0937713eec8ee05fd5a2df076744ea65786402c5a84b055967fdb1f3efed4b",
+      "source_export_sha256": "12bda75eb693748e8d10251c2cb4d467994bfc1a3be9ad861ecf9d248e222762"
+    },
+    {
+      "slug": "pppp-openai-assistant",
+      "status": "ACTIVE",
+      "version": 8,
+      "verify_jwt": true,
+      "ezbr_sha256": "45fb7695845b30c07432ffde0929f9fe340935b6e313f6562c368e46097a8cee"
+    },
+    {
+      "slug": "pppp-opportunity-draft-generator",
+      "status": "ACTIVE",
+      "version": 13,
+      "verify_jwt": true,
+      "ezbr_sha256": "892ad1f807a9c9addc20e01269fac49d6afb537a42c043ac683a7c3e06dafc16"
+    },
+    {
+      "slug": "pppp-opportunity-draft-register",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "af3849ad33c56d433f54ba0bf1d0d62ee649449d7388c1faef8a627fe719a4e6"
+    },
+    {
+      "slug": "pppp-opportunity-outreach-sent-sync",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "d19e5d81284b3236cc2a0b0f0634befff95b0671bc9e4cf31bb358ca325894f5"
+    },
+    {
+      "slug": "pppp-outbound-dispatch",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": false,
+      "ezbr_sha256": "391d929fd185d7dad4550af412db22418cea6fcc989775dd5c25108aeaf3bcc6"
+    },
+    {
+      "slug": "pppp-outbound-sync",
+      "status": "ACTIVE",
+      "version": 2,
+      "verify_jwt": false,
+      "ezbr_sha256": "4414a7a7c972f16b74df233724888d1a6fa2e19767b4c66891e7988e9faac283"
+    },
+    {
+      "slug": "pppp-project-event-intelligence",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "e9c8322812276134af310fd2557be7ef29d0c84bfd521a566ff989e2825deb34"
+    },
+    {
+      "slug": "pppp-project-memory-synthesis",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "47af2014effb0e6e5b269b2c6b93891b214f81d174f730b8068381bf525f9e90"
+    },
+    {
+      "slug": "pppp-storage-path-repair",
+      "status": "ACTIVE",
+      "version": 4,
+      "verify_jwt": true,
+      "ezbr_sha256": "f6a0929e8e2aa12187e1c6bb2f1df2b5ddbdde61eccb9a50172fd8a07e32db74",
+      "source_export_sha256": "3998752a316c5cb15a1ae44e3c3b31c8077cc5d9a5e38ee0043bfcf18baba698"
+    },
+    {
+      "slug": "pppp-ted-price-enrichment-v1",
+      "status": "ACTIVE",
+      "version": 2,
+      "verify_jwt": true,
+      "ezbr_sha256": "8d581676e839e7ef16514173072b756a7675550746f3db660f28c8fc948b454c",
+      "source_export_sha256": "d62f84246433802211801fc96595368041f90a66fd049e4e1b425a86cab6614d"
+    },
+    {
+      "slug": "pppp-tender-dossier-analysis",
+      "status": "ACTIVE",
+      "version": 6,
+      "verify_jwt": true,
+      "ezbr_sha256": "ed9a234d0f075d11bd5e719d0e2f38f3456cd701d092215ef7bb347da430d75a"
+    },
+    {
+      "slug": "pppp-tender-dossier-import",
+      "status": "ACTIVE",
+      "version": 10,
+      "verify_jwt": true,
+      "ezbr_sha256": "c0d32909c8cf87d1412f7bccd3f615fa3d889d3ec964f8d11cb4a2160e51dc5c"
+    },
+    {
+      "slug": "pppp-tender-fetch-worker",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "639dae5b58f49b95ae84a8a611aa92c88065277b2ae1b971de2143fe073e56c5"
+    },
+    {
+      "slug": "pppp-tender-protected-archive-analysis",
+      "status": "ACTIVE",
+      "version": 9,
+      "verify_jwt": true,
+      "ezbr_sha256": "a0790c060d057ef6aac31a2c2f3dfd5f1d4054c6edd2ac399411aa5e6a398c1a"
+    },
+    {
+      "slug": "pppp-tender-supplier-sourcing-v1",
+      "status": "ACTIVE",
+      "version": 5,
+      "verify_jwt": true,
+      "ezbr_sha256": "3522c5635e9a7a406ba16465b9f7a00af2933d65a310e771e5ec4c0305740df8"
+    },
+    {
+      "slug": "pppp-whatsapp-import-v1",
+      "status": "ACTIVE",
+      "version": 1,
+      "verify_jwt": true,
+      "ezbr_sha256": "39a27e5177685f769a52d043f48394dee8502392498b804eacc2e9aebbc44754",
+      "source_export_sha256": "abc7c2115f873f30963f482f5986f85d739ba4203134c7a1f1783183f86b9646"
+    },
+    {
+      "slug": "project-action-engine",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "a780e27e0d33efafbcf087750a4be10abb724f2b9b0f507ccc3788b145ef69ab"
+    },
+    {
+      "slug": "project-document-intake",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "65cf7f48395175008d07db9b179d875e74a97063e2f01ed1bec56065a0426ecb"
+    },
+    {
+      "slug": "project-drive-reconciler",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "b633341c82e94decb732ed903ee176d7619f41bdd00820921237151cb4d8214c"
+    },
+    {
+      "slug": "project-dynamic-plan-intake",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "46a003edb877311699cd220251d5f169b1471dcd4447c6b3238201c747fdaefd"
+    },
+    {
+      "slug": "project-semantic-brain",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "9b3e0f788f5fc76fcb6abd2f25bdb9d27eff8b351176d675f48a4d27b56adf34"
+    },
+    {
+      "slug": "semantic-local-orchestrator",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "e79de4dcd061d5c4835e2329293794243f1716863ec9acc7ce27435d7e7687ef"
+    },
+    {
+      "slug": "semantic-local-queue",
+      "status": "ACTIVE",
+      "version": 3,
+      "verify_jwt": true,
+      "ezbr_sha256": "501833544409e4a7f9203759c888a86efd9301a8b9de87d5c055a9464978f5db"
+    }
+  ]
+}

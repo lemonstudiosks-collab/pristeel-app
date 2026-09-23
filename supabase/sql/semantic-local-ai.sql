@@ -158,7 +158,7 @@ begin
   limit 1;
 
   select net.http_get(
-    url := 'https://isymxqfqzkchbsrbhucf.supabase.co/functions/v1/semantic-local-orchestrator?limit=' || greatest(1,least(coalesce(p_limit,10),30))::text,
+    url := 'https://awqfpnzqwfjrjefoktgd.supabase.co/functions/v1/semantic-local-orchestrator?limit=' || greatest(1,least(coalesce(p_limit,10),30))::text,
     headers := jsonb_build_object('x-pppp-cron-secret',v_secret),
     timeout_milliseconds := 120000
   ) into v_id;

@@ -21,7 +21,7 @@ const {JSDOM}=require('jsdom');
     </div>
   </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
   const w=dom.window;
-  const sector={id:'o1',supplier:'Sector Construction',price_kg:1.85,total_amount:1000,total_eur:1000,currency:'EUR',created_at:'2026-08-09T08:00:00Z',transport_eur:100,positions:[
+  const sector={id:'11111111-1111-4111-8111-111111111111',supplier:'Sector Construction',price_kg:1.85,total_amount:1000,total_eur:1000,currency:'EUR',created_at:'2026-08-09T08:00:00Z',transport_eur:100,positions:[
     {key:'base',qty:100,unit:'kg',price_neg:1.85,total_neg:185},
     {key:'zinc',qty:100,unit:'kg',price_neg:0.42,total_neg:42},
     {key:'coat',qty:50,unit:'kg',price_neg:0.56,total_neg:28},
@@ -33,13 +33,17 @@ const {JSDOM}=require('jsdom');
     emails:[],contacts:[],bom:[],rfqs:[],
     supplierOffers:[
       sector,
-      {id:'o2',supplier:'USD pa FX',price_kg:1.10,total_amount:1200,total_eur:null,currency:'USD',created_at:'2026-08-09T09:00:00Z',notes:''},
-      {id:'o3',supplier:'USD me FX',price_kg:2.00,total_amount:2000,total_eur:1600,currency:'USD',exchange_rate_to_eur:0.80,created_at:'2026-08-09T10:00:00Z',notes:''}
+      {id:'22222222-2222-4222-8222-222222222222',supplier:'USD pa FX',price_kg:1.10,total_amount:1200,total_eur:null,currency:'USD',created_at:'2026-08-09T09:00:00Z',notes:''},
+      {id:'33333333-3333-4333-8333-333333333333',supplier:'USD me FX',price_kg:2.00,total_amount:2000,total_eur:1600,currency:'USD',exchange_rate_to_eur:0.80,created_at:'2026-08-09T10:00:00Z',notes:''}
     ],
-    currentOurOffer:our,ourOffers:[our],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[]}
+    supplierDecisions:[],currentOurOffer:our,ourOffers:[our],invoicesOut:[],invoicesIn:[],adjustments:[],projectDocs:[],attachmentLinks:[],inboxDocs:[],docs:[],mailAttachments:[],drive:{rows:[]}
   };
+  integrity.offers=integrity.supplierOffers.slice();
+  const calls=[];
+  w.confirm=()=>true;
   w.PSTProjectDataIntegrity={load:async()=>integrity};
-  w.supaFetch=async()=>[];
+  w.supaFetch=async(path,method,body)=>{calls.push({path,method,body});if(path==='rpc/pppp_record_supplier_decision_v1'){integrity.supplierDecisions=[{status:'active',decision_type:'selected_producer',supplier_offer_id:body.p_supplier_offer_id,supplier_name:'Sector Construction'}];return{ok:true,supplier_offer_id:body.p_supplier_offer_id};}return[];};
+  w.PSTCanonicalProjectWorkflowV1={refresh:async()=>true};
   w.pstOpenProjectWorkspace=async id=>{w.__pstCurrentProjectId=id;w._curProjId=id;w.__pstIntegrityLastData=integrity;return true;};
 
   w.eval(pf2);
@@ -99,6 +103,18 @@ const {JSDOM}=require('jsdom');
   const withFx=rows.find(r=>r.textContent.includes('USD me FX'));
   assert(noFx && !noFx.classList.contains('best'),'Foreign offer without FX must never win raw-number ranking');
   assert(withFx && withFx.classList.contains('best'),'Lowest normalized EUR offer should be marked best');
+
+  const select=table.querySelector('[data-pf2-select-supplier="11111111-1111-4111-8111-111111111111"]');
+  assert(select,'Every canonical supplier offer must expose a human approval action');
+  select.click();
+  await new Promise(r=>setTimeout(r,20));
+  const decisionCall=calls.find(x=>x.path==='rpc/pppp_record_supplier_decision_v1');
+  assert(decisionCall,'Explicit supplier approval must use the guarded decision RPC');
+  assert.strictEqual(decisionCall.body.p_project_id,'p1');
+  assert.strictEqual(decisionCall.body.p_supplier_offer_id,'11111111-1111-4111-8111-111111111111');
+  assert.strictEqual(decisionCall.body.p_decision_type,'selected_producer');
+  assert.strictEqual(decisionCall.body.p_evidence.human_action,true);
+  assert.match(w.PSTProjectFirstCommercialV1._test.selectionHtml(integrity,sector),/I aprovuar/,'Saved human decision must be reflected in the comparison');
 
   dom.window.close();
   console.log('Project-first commercial comparison and margin smoke test passed.');

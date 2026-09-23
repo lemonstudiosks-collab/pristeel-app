@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 
 export function readPublicSupabaseConfig(file='pristeel-procurement.html'){
   const html=fs.readFileSync(file,'utf8');

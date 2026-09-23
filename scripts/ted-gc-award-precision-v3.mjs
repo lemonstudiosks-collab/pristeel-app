@@ -2,7 +2,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {resolveSupabaseWorkflowAccess} from './supabase-workflow-auth.mjs';
 
-const DEFAULT_SUPABASE_URL='https://isymxqfqzkchbsrbhucf.supabase.co';
+const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 export const VERSION='ted-gc-award-precision-v3.1';
 const text=(v,max=10000)=>String(v==null?'':v).replace(/\s+/g,' ').trim().slice(0,max);
 const norm=v=>text(v,30000).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
