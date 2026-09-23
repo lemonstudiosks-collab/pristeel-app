@@ -7,6 +7,8 @@ window.__pstProjectSchemaCompatLoaded=true;
 var tries=0;
 var BUSINESS_TYPES=['trading','fabrication','hybrid'];
 var BUSINESS_TYPE_FIELD_ID='i-business-type';
+var WORKFLOW_TYPES=['eu_award_sales','self_tender','steel_trading'];
+var WORKFLOW_TYPE_FIELD_ID='i-workflow-type';
 
 function tableOf(endpoint){
   return String(endpoint||'').split('?')[0].replace(/^\/+/, '');
@@ -27,6 +29,13 @@ function isProjectFormSave(body){
 function businessTypeField(){
   return document.getElementById(BUSINESS_TYPE_FIELD_ID);
 }
+function workflowTypeField(){return document.getElementById(WORKFLOW_TYPE_FIELD_ID);}
+function workflowTypeValue(){
+  var field=workflowTypeField();
+  if(!field)return undefined;
+  var value=String(field.value||'').trim();
+  return WORKFLOW_TYPES.indexOf(value)>-1?value:null;
+}
 function businessTypeValue(){
   var field=businessTypeField();
   if(!field)return undefined;
@@ -43,7 +52,7 @@ function ensureBusinessTypeField(){
   var row=document.createElement('div');
   row.id='pst-project-business-type-row';
   row.className='field-group fg-3';
-  row.innerHTML='<div><label class="lbl" for="'+BUSINESS_TYPE_FIELD_ID+'">Lloji i biznesit</label><select id="'+BUSINESS_TYPE_FIELD_ID+'"><option value="">— Pa përcaktuar —</option><option value="trading">Trading</option><option value="fabrication">Fabrication</option><option value="hybrid">Hybrid</option></select></div>';
+  row.innerHTML='<div><label class="lbl" for="'+BUSINESS_TYPE_FIELD_ID+'">Lloji i biznesit</label><select id="'+BUSINESS_TYPE_FIELD_ID+'"><option value="">— Pa përcaktuar —</option><option value="trading">Trading</option><option value="fabrication">Fabrication</option><option value="hybrid">Hybrid</option></select></div><div><label class="lbl" for="'+WORKFLOW_TYPE_FIELD_ID+'">Workflow PPPP V2</label><select id="'+WORKFLOW_TYPE_FIELD_ID+'"><option value="">— Workflow standard —</option><option value="eu_award_sales">Tender BE · fituesi si klient</option><option value="self_tender">Tender Kosovë / Shqipëri</option><option value="steel_trading">Steel Trading / klient normal</option></select></div>';
   group.parentNode.insertBefore(row,group.nextSibling);
   return businessTypeField();
 }
@@ -52,6 +61,8 @@ function syncBusinessType(project){
   if(!field)return;
   var value=String(project&&project.business_type||'').trim();
   field.value=BUSINESS_TYPES.indexOf(value)>-1?value:'';
+  var workflow=workflowTypeField(),workflowValue=String(project&&project.workflow_type||'').trim();
+  if(workflow)workflow.value=WORKFLOW_TYPES.indexOf(workflowValue)>-1?workflowValue:'';
 }
 function isProjectByIdGet(endpoint,verb){
   return verb==='GET'&&tableOf(endpoint)==='projects'&&/(?:\?|&)id=eq\.[^&]+/.test(String(endpoint||''));
@@ -72,6 +83,8 @@ function cleanBody(endpoint,method,body){
   if(isProjectFormSave(cleaned)){
     var businessType=businessTypeValue();
     if(businessType!==undefined)cleaned.business_type=businessType;
+    var workflowType=workflowTypeValue();
+    if(workflowType!==undefined)cleaned.workflow_type=workflowType;
   }
   return cleaned;
 }
@@ -88,6 +101,8 @@ function wrapResetWorkspace(){
     var result=current.apply(this,arguments);
     var field=ensureBusinessTypeField();
     if(field)field.value='';
+    var workflow=workflowTypeField();
+    if(workflow)workflow.value='';
     return result;
   }
   wrapped.__pstBusinessTypeReset=true;
