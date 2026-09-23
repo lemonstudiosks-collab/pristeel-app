@@ -116,6 +116,7 @@ function currentNext(d){
   if(closed)return{title:'Shiko historikun e projektit',copy:'Projekti është i mbyllur; kontrollo dokumentet dhe aktivitetin e regjistruar.',view:'docscomms',hint:'Hap historikun'};
   if(won){var p=N([d.project&&d.project.pipeline_stage,d.project&&d.project.operational_state].join(' '));if(/invoice|fatur|finance|payment|ark/.test(p))return{title:'Vazhdo me faturimin / financat',copy:'Projekti është pas fitimit dhe kërkon veprim financiar.',area:'finance',hint:'Hap financat'};return{title:'Vazhdo ekzekutimin',copy:'Projekti është fituar. Fokusi kalon te realizimi, dokumentet dhe dorëzimi.',area:'execution',hint:'Hap ekzekutimin'};}
   var op=latestOperatorAction(d);if(op)return op;
+  if(workflowType(d)==='eu_award_sales'&&!q&&!so.length&&!r.length){var initialOut=latestEmailOf(d,'outgoing'),initialIn=latestEmailOf(d,'incoming');if(initialIn)return{title:'Shqyrto përgjigjen / Client RFQ',copy:pick(initialIn.subject,initialIn.snippet,'Ka përgjigje nga klienti potencial. Verifiko interesin dhe regjistro kërkesën para furnitorëve.'),area:'communication',hint:'Hap komunikimin'};if(initialOut)return{title:'Kontrollo follow-up-in e klientit',copy:'Kontakti fillestar është dërguar. Kontrollo përgjigjen dhe përgatit follow-up-in vetëm kur është koha.',area:'communication',hint:'Hap komunikimin'};return{title:'Kontrollo kontaktet dhe përgatit emailin',copy:'Opportunity është aprovuar si Project. Emaili fillestar mbetet draft derisa ta kontrollosh dhe ta dërgosh vetë.',area:'communication',hint:'Hap klientin'};}
   if(q&&effectiveOfferSent(q)&&reply)return{title:'Shqyrto reagimin e klientit',copy:pick(reply.subject,reply.snippet,'Ka komunikim të ri pas ofertës së dërguar.'),area:'communication',hint:'Hap komunikimin e klientit'};
   if(q&&effectiveOfferSent(q))return{title:'Oferta është te klienti',copy:'Kontrollo përgjigjen ose follow-up-in. Çdo revizion i ri mbetet human-gated.',area:'communication',hint:'Hap komunikimin'};
   if(q)return{title:'Finalizo ofertën tonë',copy:'Drafti ekziston. Çmimi final dhe dërgimi mbeten human-gated.',view:'offer',hint:'Hap ofertën'};
@@ -131,8 +132,9 @@ function workflowPath(d){
       eu_award_sales:['Opportunity','Kontaktimi','Client RFQ','Furnitorët','Krahasimi & oferta','Won / Lost','Ekzekutimi'],
       self_tender:['Tenderi','Kërkesat','Furnitorët','Çmimi & dosja','Aplikimi','Won / Lost'],
       steel_trading:['Client RFQ','Furnitorët','Krahasimi','Oferta','Negociata','Won / Lost','Ekzekutimi']
-    },labels=defs[lane],current=lane==='self_tender'?1:0,complete=false;
+    },labels=defs[lane],current=lane==='self_tender'||lane==='eu_award_sales'?1:0,complete=false;
     if(lane==='eu_award_sales'&&emailsv.some(outgoing))current=1;
+    if(lane==='eu_award_sales'&&emailsv.some(function(m){return incoming(m)&&!automaticReply(m);}))current=2;
     if(rv.length)current=lane==='eu_award_sales'?3:lane==='self_tender'?2:1;
     if(sov.length)current=lane==='eu_award_sales'?4:lane==='self_tender'?3:2;
     if(qv)current=lane==='self_tender'?3:lane==='steel_trading'?3:4;

@@ -313,7 +313,8 @@ function officialSourceAction(r,label){
 function modalActionBar(r){
  var id=E(r.id),award=tenderMode(r)==='award';
  if(award){
-   return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="draft" data-id="'+id+'">Përgatit draftet</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+   if(r.project_id)return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap Project-in</button><button data-pcw-ti="draft" data-id="'+id+'">Përgatit draftet</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'</div>';
+   return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="promote_award" data-id="'+id+'">Aprovo · krijo Project</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Refuzo</button></div>';
  }
  return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary download" data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen</button><button class="dossier" data-pcw-ti="dossier" data-id="'+id+'">Analizo kushtet</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ketë analizuar dosjen.">Krijo projekt</button>'+officialSourceAction(r,'Burimi zyrtar')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
 }
@@ -365,6 +366,13 @@ async function tenderAction(kind,id,btn){
  if(btn)btn.disabled=true;
  try{
    if(kind==='source')return await exactSource(r);
+   if(kind==='open_project'){
+     if(!r.project_id)throw new Error('Opportunity ende nuk është lidhur me Project.');
+     closeTenderModal();
+     if(typeof window.pstReleaseOpenProject==='function')return window.pstReleaseOpenProject(r.project_id);
+     if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(r.project_id);
+     throw new Error('Hapja e Project-it nuk është gati.');
+   }
    if(kind==='contacts'){if(P&&typeof P.contacts==='function')return P.contacts(id);return false;}
    if(kind==='download'){
      var DL=window.PSTTenderDossierAnalysisV1;if(!DL||typeof DL.download!=='function')throw new Error('Shkarkimi i dosjes nuk është gati. Rifresko platformën dhe provo përsëri.');
@@ -379,11 +387,17 @@ async function tenderAction(kind,id,btn){
    if(kind==='go'){
      if(tenderMode(r)==='local'&&!dossierReady(id))throw new Error('Së pari merre dhe analizo dosjen e tenderit.');
      await P.go(id);
+   }else if(kind==='promote_award'){
+     if(typeof P.promoteAward!=='function')throw new Error('Aprovimi PPPP V2 nuk është gati. Rifresko platformën.');
+     var promoted=await P.promoteAward(id);if(!promoted)return false;
+     closeTenderModal();
+     if(typeof window.pstReleaseOpenProject==='function')window.pstReleaseOpenProject(promoted.project_id);
+     else if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(promoted.project_id);
    }else if(kind==='review')await P.review(id);
    else if(kind==='draft')await P.prepareDraft(id);
    else if(kind==='nogo')await P.noGo(id);
    else return false;
-   tenderState.last=0;await loadOpportunities(true);if((kind==='nogo'||kind==='go')&&window.pstTenderIntelligenceClose)window.pstTenderIntelligenceClose();return true;
+   tenderState.last=0;await loadOpportunities(true);if((kind==='nogo'||kind==='go'||kind==='promote_award')&&window.pstTenderIntelligenceClose)window.pstTenderIntelligenceClose();return true;
  }catch(e){alert(e&&e.message||e);return false;}finally{if(btn&&kind!=='go')btn.disabled=false;}
 }
 
