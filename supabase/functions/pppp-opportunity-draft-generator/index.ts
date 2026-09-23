@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v14-global-communication-guard';
+const GENERATOR='pppp-opportunity-draft-generator-v15-global-live-domain-guard';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=1;
 const MAX_DRAFT_WRITES_PER_RUN=10;
@@ -95,6 +95,27 @@ async function recentSentToExact(email:string){
   for(const item of data.messages||[]){
     const m=await gmailMessage(item.id);
     if((m?.labelIds||[]).includes('SENT'))return m;
+  }
+  return null;
+}
+let cachedDomainCooldownDays:number|null=null;
+function emailDomain(v:any){const e=normalizeEmail(v);const i=e.lastIndexOf('@');return i>0?e.slice(i+1).replace(/^www\./,''):'';}
+async function domainCooldownDays(){
+  if(cachedDomainCooldownDays!=null)return cachedDomainCooldownDays;
+  const {data,error}=await db.from('pppp_outbound_policy_v1').select('domain_cooldown_days').eq('id','global').maybeSingle();
+  if(error)throw error;
+  cachedDomainCooldownDays=Math.max(1,Number(data?.domain_cooldown_days||14));
+  return cachedDomainCooldownDays;
+}
+async function recentSentToDomain(domain:any){
+  const d=text(domain,300).toLowerCase().replace(/^www\./,'');if(!d)return null;
+  const days=await domainCooldownDays(),data=await gmailSearch('in:sent newer_than:'+days+'d '+d,20);
+  for(const item of data.messages||[]){
+    const m=await gmailMessage(item.id);
+    if(!(m?.labelIds||[]).includes('SENT'))continue;
+    const all=[hdr(m,'To'),hdr(m,'Cc'),hdr(m,'Bcc')].join(' ');
+    const emails=(all.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[]).map((x:string)=>x.toLowerCase());
+    if(emails.some((e:string)=>emailDomain(e)===d))return m;
   }
   return null;
 }
@@ -266,6 +287,14 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false)
         const liveGuard={ok:false,reason:'gmail_recipient_cooldown_active',gmail_message_id:recent.id,gmail_thread_id:recent.threadId||null,sent_at:sentAt(recent)};
         row=await retireBlockedRegistryRow(row,'gmail_recipient_cooldown_active',liveGuard,budget);
         failures.push({email:normalizeEmail(recipient.email),blocked:true,reason:'gmail_recipient_cooldown_active'});
+        continue;
+      }
+      const domain=text(recipient?.recipient_company_domain||recipient?.company_domain||emailDomain(recipient.email),300).toLowerCase();
+      const domainRecent=await recentSentToDomain(domain);
+      if(domainRecent){
+        const liveGuard={ok:false,reason:'gmail_domain_cooldown_active',gmail_message_id:domainRecent.id,gmail_thread_id:domainRecent.threadId||null,sent_at:sentAt(domainRecent),domain};
+        row=await retireBlockedRegistryRow(row,'gmail_domain_cooldown_active',liveGuard,budget);
+        failures.push({email:normalizeEmail(recipient.email),blocked:true,reason:'gmail_domain_cooldown_active'});
         continue;
       }
 
