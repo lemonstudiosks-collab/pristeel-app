@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { resolveTedRecipients, resolveTedDraftRecipients, normalizeEmail } from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
+
+const generatorSrc=fs.readFileSync('supabase/functions/pppp-opportunity-draft-generator/index.ts','utf8');
+assert.match(generatorSrc,/MAX_CONTACTS_PER_ACTION=20/,'manual TED draft generation must allow all verified UI contacts, not only one');
+assert.match(generatorSrc,/separate_draft_per_recipient:true/,'each verified recipient must receive a separate Gmail draft');
+assert.match(generatorSrc,/MAX_DRAFT_WRITES_PER_RUN=25/,'one manual action must have enough write budget for all verified recipients');
 
 const readiness={
   winner_role_verified:true,
