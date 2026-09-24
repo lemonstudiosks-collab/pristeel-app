@@ -42,8 +42,11 @@ export function chooseBestWinnerEmail(row){
 export function winnerNeedsRanking(row,minScore=85){
  const p=payload(row),w=winner(row),legacy=[w.email,...(Array.isArray(w.emails)?w.emails:[])].map(text).filter(Boolean);
  const hasLegacyPlaceholder=legacy.some(placeholderEmail);
- return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&row.status!=='ignored'
-   &&(hasLegacyPlaceholder||(Number(row.relevance_score)>=Number(minScore)&&!!w.contact_enrichment));
+ const isTedAward=String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award';
+ if(!isTedAward)return false;
+ if(hasLegacyPlaceholder)return true;
+ if(row.status==='ignored')return false;
+ return Number(row.relevance_score)>=Number(minScore)&&!!w.contact_enrichment;
 }
 export function rankWinnerPayload(row,rankedAt=new Date().toISOString()){
  const p={...payload(row)},w={...winner(row)},e=w.contact_enrichment,orgs=Array.isArray(e?.organizations)?e.organizations:[];
