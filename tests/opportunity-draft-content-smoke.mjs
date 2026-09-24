@@ -33,11 +33,11 @@ const d=buildTedDraftContent(action,tender,{email:'ausschreibung@bug-se.de',purp
 assert.equal(d.language,'de');
 assert.match(d.subject,/^Projekt B62 TB Rinsenau, Herstellung DB Schutzgerüst – Stahlpaket \| PRISTEEL$/);
 assert(!/Germany|TED|623898-2026/i.test(d.subject),'subject must use a normal project name, not database/source prefixes');
-assert(d.body.startsWith('Guten Tag,'),'verified function mailbox should use a neutral human greeting, not bulk salutation');
+assert(d.body.startsWith('Sehr geehrte Damen und Herren,'),'verified function mailbox must use the formal German company salutation');
 assert(d.body.includes(readiness.scope_evidence),'email must lead with the concrete scope fact');
 assert(d.body.includes(readiness.concrete_question),'email must contain the one concrete project question');
 assert(d.body.includes(readiness.pristeel_scope),'PriSteel capability sentence must be specific to this award');
-assert(!/wir haben gesehen|möchte ich Ihnen PRISTEEL als möglichen|Sehr geehrte Damen und Herren/i.test(d.body),'old bulk-style opening must not return');
+assert(!/wir haben gesehen|möchte ich Ihnen PRISTEEL als möglichen/i.test(d.body),'old generic sales copy must not return');
 assert(!/EN 1090|ISO 3834|HPQ/i.test(d.body),'qualification claims must not be inserted unless explicitly evidenced');
 assert(d.body.includes('Mit freundlichen Grüßen'));
 assert(!/linkedin/i.test(d.html_body));
@@ -49,10 +49,24 @@ const named=buildTedDraftContent(
     pristeel_scope:'Stahlüberbauten und klar abgegrenzte Fertigungspakete',
     concrete_question:'Sind die Stahlüberbauten bereits vollständig intern bzw. extern vergeben, oder ist noch ein Fertigungspaket offen?'}}},
  {...tender,title:'Germany – Railway bridge construction work – Ern. EÜ Grünstraße Gengenbach',winner:{name:'B + H Bau GmbH',country:'DEU'}},
- {email:'julian.bieker@b-h-bau.de',name:'Julian Bieker',purpose:'procurement'}
+ {email:'julian.bieker@b-h-bau.de',name:'Julian Bieker',salutation:'Herr',purpose:'procurement'}
 );
-assert(named.body.startsWith('Guten Tag Julian Bieker,'));
+assert(named.body.startsWith('Sehr geehrter Herr Bieker,'));
 assert(!/Germany – Railway bridge construction work/i.test(named.subject));
+
+const namedFemale=buildTedDraftContent(
+ {...action,target_email:'anna.mueller@b-h-bau.de',target_company:'B + H Bau GmbH'},
+ {...tender,winner:{name:'B + H Bau GmbH',country:'DEU'}},
+ {email:'anna.mueller@b-h-bau.de',name:'Anna Müller',salutation:'Frau',purpose:'procurement'}
+);
+assert(namedFemale.body.startsWith('Sehr geehrte Frau Müller,'));
+
+const namedUnknown=buildTedDraftContent(
+ {...action,target_email:'kontakt.person@b-h-bau.de',target_company:'B + H Bau GmbH'},
+ {...tender,winner:{name:'B + H Bau GmbH',country:'DEU'}},
+ {email:'kontakt.person@b-h-bau.de',name:'Alex Beispiel',purpose:'procurement'}
+);
+assert(namedUnknown.body.startsWith('Sehr geehrte Damen und Herren,'),'PPPP must not guess Herr/Frau when the source has no explicit salutation');
 
 const en=buildTedDraftContent(
  {...action,target_email:'buyer@example.co.uk',tender_title:'United Kingdom – Structural steelworks – Project Alpha',
