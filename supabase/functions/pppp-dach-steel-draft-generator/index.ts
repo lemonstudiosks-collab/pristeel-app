@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v12-eu-material-trade";
+const V="pppp-dach-steel-draft-generator-v13-language-project-promotion";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -158,34 +158,47 @@ const htmlEsc=(v:any)=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"
 const canonicalSignatureHtml='<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;border-collapse:collapse;margin-top:12px"><tr><td style="vertical-align:middle;padding-right:22px"><img src="cid:prissteel-signature-logo" alt="PRISTEEL" width="227" height="75" style="display:block;border:0;width:227px;height:75px"></td><td style="vertical-align:top;border-left:2px solid #2f80c9;padding-left:22px"><div style="font-size:18px;line-height:1.25;font-weight:700;color:#1f2937">Arianit Vllahiu</div><div style="font-size:16px;line-height:1.35;color:#1f2937">Head of Business Development</div><div style="height:8px;line-height:8px">&nbsp;</div><div style="font-size:15px;line-height:1.55"><a href="tel:+38344244699" style="color:#145fd7;text-decoration:underline">+383 (0) 44 244 699</a><br><a href="mailto:arianit.vllahiu@prissteel.com" style="color:#145fd7;text-decoration:underline">arianit.vllahiu@prissteel.com</a><br><a href="https://www.prissteel.com" style="color:#145fd7;text-decoration:underline">www.prissteel.com</a></div></td></tr></table>'
 
 function mat(tg:any){const m=tg?.material_scope&&typeof tg.material_scope==="object"?tg.material_scope:{},a=Array.isArray(m.line_items)?m.line_items:[];if(a.length)return a.slice(0,30).map((x:any)=>{const n=[t(x?.family,100),t(x?.designation,180)].filter(Boolean).join(" · ")||"Steel material",sp=[t(x?.grade,80),t(x?.standard,120),t(x?.dimension||x?.dimensions,160)].filter(Boolean).join(" / "),q=x?.qty!=null?String(x.qty)+(x?.unit?" "+x.unit:""):(x?.tonnes!=null?String(x.tonnes)+" t":"");return "- "+n+(sp?" | "+sp:"")+(q?" | "+q:"");});return t(tg?.steel_scope,4000).split(/;\s*/).filter(Boolean).map((x:string)=>"- "+x);}
-function buyerLang(tg:any){return ["DE","AT","CH"].includes(t(tg?.country,3).toUpperCase())?"de":"en";}
+function buyerLang(tg:any){
+ const c=t(tg?.country,3).toUpperCase();
+ return ["DE","AT","CH"].includes(c)?"de":["HR","ME","RS"].includes(c)?"bcs":"en";
+}
 function buyerText(tg:any,signatureHtml=""){
- const project=t(tg?.project_title,500),m=mat(tg),isM3=tg?.quote_readiness==="M3",de=buyerLang(tg)==="de",sig=signatureHtml||canonicalSignatureHtml;
+ const project=t(tg?.project_title,500),m=mat(tg),isM3=tg?.quote_readiness==="M3",lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",sig=signatureHtml||canonicalSignatureHtml;
  if(project&&isM3){
-  const subject=project+(de?" – Stahl-Lieferangebot | PRISTEEL":" – Steel material supply offer | PRISTEEL");
+  const subject=de?project+" – Stahl-Lieferangebot | PRISTEEL":bcs?project+" – Ponuda čeličnog materijala | PRISTEEL":project+" – Steel material supply offer | PRISTEEL";
   const body=de
    ?["Guten Tag,","",'im Zusammenhang mit dem Projekt „'+project+'“ möchten wir Ihnen auf Basis der verfügbaren Projektunterlagen ein konkretes Stahl-Lieferangebot unterbreiten.',"",...m,"","Gerne stimmen wir die finale Materialliste, Liefertermine und Lieferadresse mit Ihnen ab.","","Mit freundlichen Grüßen","",signature].join("\n")
-   :["Dear Sir or Madam,","",'regarding the project “'+project+'”, we would like to offer the steel material scope based on the available project information.',"",...m,"","We can coordinate the final material list, delivery dates and DAP delivery address with you.","","Kind regards,","",signature].join("\n");
-  return{subject,body,html_body:"",approach_mode:"direct_offer"};
+   :bcs
+    ?["Poštovani,","",'u vezi sa projektom „'+project+'“ želimo Vam, na osnovu raspoložive projektne dokumentacije, ponuditi isporuku čeličnog materijala.',"",...m,"","Rado ćemo usaglasiti konačnu listu materijala, rokove i adresu isporuke na DAP osnovi.","","Srdačan pozdrav,","",signature].join("\n")
+    :["Dear Sir or Madam,","",'regarding the project “'+project+'”, we would like to offer the steel material scope based on the available project information.',"",...m,"","We can coordinate the final material list, delivery dates and DAP delivery address with you.","","Kind regards,","",signature].join("\n");
+  return{subject,body,html_body:"",approach_mode:"direct_offer",language:lang};
  }
  if(project){
-  const subject=project+(de?" – Anfrage Materialliste / RFQ | PRISTEEL":" – Steel material RFQ | PRISTEEL");
+  const subject=de?project+" – Anfrage Materialliste / RFQ | PRISTEEL":bcs?project+" – Upit za listu materijala / RFQ | PRISTEEL":project+" – Steel material RFQ | PRISTEEL";
   const body=de
    ?["Guten Tag,","",'im Zusammenhang mit dem Projekt „'+project+'“ möchten wir gerne anfragen, ob die Materialbeschaffung für den Stahlbauumfang noch offen ist.',"","PRISTEEL liefert Baustahl, Profile, Bleche, Rohre/Hohlprofile und weitere Stahlprodukte projektbezogen aus unserem Lieferantennetzwerk. Den Transport organisieren wir bis zu Ihrer gewünschten Lieferadresse auf Basis DAP (Incoterms® 2020).","","Sofern die Materialbeschaffung noch ganz oder teilweise offen ist, senden Sie uns bitte Ihre aktuelle RFQ bzw. Materialliste mit Güten, Abmessungen, Mengen und gewünschten Lieferterminen.","","Mit freundlichen Grüßen","",signature].join("\n")
-   :["Dear Sir or Madam,","",'regarding the project “'+project+'”, we would like to ask whether the steel material procurement is still open.',"","PRISTEEL supplies structural steel material, sections, plates, tubes/hollow sections and related steel products through our qualified supply network, including transport to your requested delivery address on a DAP basis.","","If procurement is still open in full or in part, please send us your current RFQ or material list including grades, dimensions, quantities and requested delivery dates.","","Kind regards,","",signature].join("\n");
+   :bcs
+    ?["Poštovani,","",'u vezi sa projektom „'+project+'“ želimo provjeriti da li je nabavka čeličnog materijala još uvijek otvorena.',"","PRISTEEL isporučuje konstrukcijski čelik, profile, limove, cijevi/šuplje profile i druge čelične proizvode putem kvalifikovane mreže dobavljača. Organizujemo i transport do željene adrese isporuke na DAP osnovi (Incoterms® 2020).","","Ako je nabavka još uvijek otvorena u cijelosti ili djelimično, molimo pošaljite nam Vaš RFQ odnosno listu materijala sa kvalitetima, dimenzijama, količinama i željenim rokovima isporuke.","","Srdačan pozdrav,","",signature].join("\n")
+    :["Dear Sir or Madam,","",'regarding the project “'+project+'”, we would like to ask whether the steel material procurement is still open.',"","PRISTEEL supplies structural steel material, sections, plates, tubes/hollow sections and related steel products through our qualified supply network, including transport to your requested delivery address on a DAP basis.","","If procurement is still open in full or in part, please send us your current RFQ or material list including grades, dimensions, quantities and requested delivery dates.","","Kind regards,","",signature].join("\n");
   const html=de
    ?'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Guten Tag,</p><p>im Zusammenhang mit dem Projekt „'+htmlEsc(project)+'“ möchten wir gerne anfragen, ob die Materialbeschaffung für den Stahlbauumfang noch offen ist.</p><p>PRISTEEL liefert Baustahl, Profile, Bleche, Rohre/Hohlprofile und weitere Stahlprodukte projektbezogen aus unserem Lieferantennetzwerk. Den Transport organisieren wir bis zu Ihrer gewünschten Lieferadresse auf Basis <strong>DAP (Incoterms® 2020)</strong>.</p><p>Sofern die Materialbeschaffung noch ganz oder teilweise offen ist, senden Sie uns bitte Ihre aktuelle <strong>RFQ bzw. Materialliste</strong> mit Güten, Abmessungen, Mengen und gewünschten Lieferterminen.</p><p>Mit freundlichen Grüßen</p>'+sig+'</div>'
-   :'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Dear Sir or Madam,</p><p>Regarding the project “'+htmlEsc(project)+'”, we would like to ask whether the steel material procurement is still open.</p><p>PRISTEEL supplies structural steel material, sections, plates, tubes/hollow sections and related steel products through our qualified supply network, including transport to your requested delivery address on a <strong>DAP</strong> basis.</p><p>If procurement is still open in full or in part, please send us your current <strong>RFQ or material list</strong> including grades, dimensions, quantities and requested delivery dates.</p><p>Kind regards,</p>'+sig+'</div>';
-  return{subject,body,html_body:html,approach_mode:"rfq_request"};
+   :bcs
+    ?'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Poštovani,</p><p>U vezi sa projektom „'+htmlEsc(project)+'“ želimo provjeriti da li je nabavka čeličnog materijala još uvijek otvorena.</p><p>PRISTEEL isporučuje konstrukcijski čelik, profile, limove, cijevi/šuplje profile i druge čelične proizvode putem kvalifikovane mreže dobavljača. Organizujemo i transport do željene adrese isporuke na osnovi <strong>DAP (Incoterms® 2020)</strong>.</p><p>Ako je nabavka još uvijek otvorena u cijelosti ili djelimično, molimo pošaljite nam Vaš <strong>RFQ odnosno listu materijala</strong> sa kvalitetima, dimenzijama, količinama i željenim rokovima isporuke.</p><p>Srdačan pozdrav,</p>'+sig+'</div>'
+    :'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Dear Sir or Madam,</p><p>Regarding the project “'+htmlEsc(project)+'”, we would like to ask whether the steel material procurement is still open.</p><p>PRISTEEL supplies structural steel material, sections, plates, tubes/hollow sections and related steel products through our qualified supply network, including transport to your requested delivery address on a <strong>DAP</strong> basis.</p><p>If procurement is still open in full or in part, please send us your current <strong>RFQ or material list</strong> including grades, dimensions, quantities and requested delivery dates.</p><p>Kind regards,</p>'+sig+'</div>';
+  return{subject,body,html_body:html,approach_mode:"rfq_request",language:lang};
  }
- const subject=de?"Zusätzliche Beschaffungsquelle für Stahlmaterial | PRISTEEL":"Additional steel material supply source | PRISTEEL";
+ const subject=de?"Zusätzliche Beschaffungsquelle für Stahlmaterial | PRISTEEL":bcs?"Dodatni izvor nabavke čeličnog materijala | PRISTEEL":"Additional steel material supply source | PRISTEEL";
  const body=de
   ?["Guten Tag,","","wir möchten uns als zusätzliche Beschaffungsquelle für Stahlmaterial vorstellen. PRISTEEL liefert projektbezogen Baustahl, Profile, Bleche, Rohre/Hohlprofile und weitere Stahlprodukte aus einem qualifizierten Lieferantennetzwerk. Den Transport organisieren wir bis zu Ihrer gewünschten Lieferadresse auf Basis DAP (Incoterms® 2020).","","Wenn Sie aktuell oder regelmäßig Stahlmaterial zukaufen, senden Sie uns gerne Ihre RFQ bzw. Materialliste mit Güten, Abmessungen, Mengen und gewünschten Lieferterminen. Wir prüfen die Anfrage kurzfristig und unterbreiten Ihnen ein konkretes Lieferangebot.","","Falls der Einkauf von einer anderen Person betreut wird, wäre ich Ihnen für eine Weiterleitung dankbar.","","Mit freundlichen Grüßen","",signature].join("\n")
-  :["Dear Sir or Madam,","","we would like to introduce PRISTEEL as an additional procurement source for steel material. We supply structural steel, sections, plates, tubes/hollow sections and related steel products through a qualified supply network, including transport to your requested delivery address on a DAP basis.","","If your company currently or regularly purchases steel material, please send us your RFQ or material list with grades, dimensions, quantities and requested delivery dates. We will review it promptly and provide a concrete supply quotation.","","If purchasing is handled by another colleague, I would appreciate it if you could forward this message.","","Kind regards,","",signature].join("\n");
+  :bcs
+   ?["Poštovani,","","želimo predstaviti PRISTEEL kao dodatni izvor nabavke čeličnog materijala. Isporučujemo konstrukcijski čelik, profile, limove, cijevi/šuplje profile i druge čelične proizvode putem kvalifikovane mreže dobavljača. Organizujemo i transport do željene adrese isporuke na DAP osnovi (Incoterms® 2020).","","Ako trenutno ili redovno nabavljate čelični materijal, molimo pošaljite nam Vaš RFQ odnosno listu materijala sa kvalitetima, dimenzijama, količinama i željenim rokovima isporuke. Zahtjev ćemo brzo pregledati i dostaviti konkretnu ponudu za isporuku.","","Ako je za nabavku zadužena druga osoba, bili bismo zahvalni ako biste joj proslijedili ovu poruku.","","Srdačan pozdrav,","",signature].join("\n")
+   :["Dear Sir or Madam,","","we would like to introduce PRISTEEL as an additional procurement source for steel material. We supply structural steel, sections, plates, tubes/hollow sections and related steel products through a qualified supply network, including transport to your requested delivery address on a DAP basis.","","If your company currently or regularly purchases steel material, please send us your RFQ or material list with grades, dimensions, quantities and requested delivery dates. We will review it promptly and provide a concrete supply quotation.","","If purchasing is handled by another colleague, I would appreciate it if you could forward this message.","","Kind regards,","",signature].join("\n");
  const html=de
   ?'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Guten Tag,</p><p>wir möchten uns als zusätzliche Beschaffungsquelle für Stahlmaterial vorstellen. PRISTEEL liefert projektbezogen Baustahl, Profile, Bleche, Rohre/Hohlprofile und weitere Stahlprodukte aus einem qualifizierten Lieferantennetzwerk.</p><p>Den Transport organisieren wir bis zu Ihrer gewünschten Lieferadresse auf Basis <strong>DAP (Incoterms® 2020)</strong>.</p><p>Wenn Sie aktuell oder regelmäßig Stahlmaterial zukaufen, senden Sie uns gerne Ihre <strong>RFQ bzw. Materialliste</strong> mit Güten, Abmessungen, Mengen und gewünschten Lieferterminen.</p><p>Falls der Einkauf von einer anderen Person betreut wird, wäre ich Ihnen für eine Weiterleitung dankbar.</p><p>Mit freundlichen Grüßen</p>'+sig+'</div>'
-  :'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Dear Sir or Madam,</p><p>We would like to introduce PRISTEEL as an additional procurement source for steel material. We supply structural steel, sections, plates, tubes/hollow sections and related steel products through a qualified supply network.</p><p>We also organize transport to your requested delivery address on a <strong>DAP</strong> basis.</p><p>If your company currently or regularly purchases steel material, please send us your <strong>RFQ or material list</strong> with grades, dimensions, quantities and requested delivery dates.</p><p>If purchasing is handled by another colleague, I would appreciate it if you could forward this message.</p><p>Kind regards,</p>'+sig+'</div>';
- return{subject,body,html_body:html,approach_mode:"rfq_request"};
+  :bcs
+   ?'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Poštovani,</p><p>želimo predstaviti PRISTEEL kao dodatni izvor nabavke čeličnog materijala. Isporučujemo konstrukcijski čelik, profile, limove, cijevi/šuplje profile i druge čelične proizvode putem kvalifikovane mreže dobavljača.</p><p>Organizujemo i transport do željene adrese isporuke na osnovi <strong>DAP (Incoterms® 2020)</strong>.</p><p>Ako trenutno ili redovno nabavljate čelični materijal, molimo pošaljite nam Vaš <strong>RFQ odnosno listu materijala</strong> sa kvalitetima, dimenzijama, količinama i željenim rokovima isporuke.</p><p>Ako je za nabavku zadužena druga osoba, bili bismo zahvalni ako biste joj proslijedili ovu poruku.</p><p>Srdačan pozdrav,</p>'+sig+'</div>'
+   :'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Dear Sir or Madam,</p><p>We would like to introduce PRISTEEL as an additional procurement source for steel material. We supply structural steel, sections, plates, tubes/hollow sections and related steel products through a qualified supply network.</p><p>We also organize transport to your requested delivery address on a <strong>DAP</strong> basis.</p><p>If your company currently or regularly purchases steel material, please send us your <strong>RFQ or material list</strong> with grades, dimensions, quantities and requested delivery dates.</p><p>If purchasing is handled by another colleague, I would appreciate it if you could forward this message.</p><p>Kind regards,</p>'+sig+'</div>';
+ return{subject,body,html_body:html,approach_mode:"rfq_request",language:lang};
 }
 function supplierText(tg:any,c:any){const p=t(tg?.project_title||tg?.company_name,500),m=mat(tg),ind=tg?.quote_readiness!=="M3",de=nm(c?.contact_language).startsWith("de");if(de){const subject=(ind?"Indikative RFQ":"RFQ")+" | "+p,body=["Guten Tag,","",'wir prüfen derzeit die Stahlmaterialbeschaffung für das Projekt „'+p+'“.',"",ind?"Die nachstehenden Mengen basieren derzeit auf veröffentlichten Projektinformationen und sind bis zum Erhalt der finalen BOQ / Materialliste als indikativ zu behandeln:":"Die nachstehenden Positionen basieren auf der verfügbaren Materialliste:","",...m,"","Bitte teilen Sie uns – soweit mit den verfügbaren Angaben möglich – Preis / Einheitspreise, Verfügbarkeit, Lieferzeit, Materialzeugnis EN 10204 3.1, Ursprungsland, Incoterm, Angebotsgültigkeit und Zahlungsbedingungen mit.","",ind?"Die finale Anfrage mit bestätigten Güten, Abmessungen und Mengen folgt nach Erhalt der aktuellen BOQ.":"Bitte kennzeichnen Sie technische Abweichungen eindeutig.","","Mit freundlichen Grüßen",signature].join("\n");return{subject,body};}const subject=(ind?"Indicative RFQ":"RFQ")+" | "+p,body=["Dear Sir or Madam,","",'we are currently reviewing the steel material procurement for the project “'+p+'”.',"",ind?"The quantities below are based on published project information and must be treated as indicative until the final BOQ / material list is received:":"The positions below are based on the available material list:","",...m,"","Please provide, where possible with the currently available information, your price / unit prices, availability, lead time, EN 10204 3.1 certification, country of origin, Incoterm, quotation validity and payment terms.","",ind?"A final RFQ with confirmed grades, dimensions and quantities will follow after receipt of the current BOQ.":"Please identify any technical deviations clearly.","","Kind regards,",signature].join("\n");return{subject,body};}
 function requirement(tg:any){const m=tg?.material_scope&&typeof tg.material_scope==="object"?tg.material_scope:{},a=Array.isArray(m.line_items)?m.line_items:[],f:string[]=[],g:string[]=[],s:string[]=[];for(const x of a){const z=[[x?.family,f],[x?.grade,g],[x?.standard,s]] as any;for(const y of z){const v=t(y[0],140);if(v&&!y[1].includes(v))y[1].push(v);}}return{family:f[0]||"structural steel",product_type:f[0]||"structural steel",description:t(tg?.steel_scope,5000),grades:g,standards:s};}
@@ -336,6 +349,68 @@ async function supplierDraft(tg:any,b:any,u:any){
  return{created:true,draft:d,recipient:e,supplier_name:c.name||b?.supplier_name||null,subject:ct.subject,quote_readiness:tg.quote_readiness,rfq_mode:tg.quote_readiness==="M3"?"final":"indicative",gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(d.thread_id||d.message_id),created_by:u.id};
 }
 
+async function promoteProject(tg:any,b:any,u:any){
+ if(b?.confirm_project_create!==true)throw new Error("project_promotion_confirmation_required");
+ if(tg?.project_id){
+  const existing=await db.from("projects").select("id,name,client,business_ref,status,pipeline_stage,business_type").eq("id",tg.project_id).maybeSingle();
+  if(existing.error)throw existing.error;
+  return{created:false,project_id:tg.project_id,project:existing.data||null,already_promoted:true};
+ }
+ const oq=await db.from("pppp_outbound_queue_v1").select("*").eq("source",SRC).eq("source_record_id",tg.id).order("updated_at",{ascending:false}).limit(1).maybeSingle();
+ if(oq.error)throw oq.error;
+ const q=oq.data||null,hasReply=!!(q&&(q.replied_at||nm(q.status)==="replied"));
+ if(!hasReply||!q?.gmail_thread_id)throw new Error("buyer_reply_required_before_project_promotion");
+ const name=t(b?.project_name||tg?.project_title||((tg?.company_name||"Buyer")+" – Material RFQ"),500);
+ if(!name)throw new Error("project_name_required");
+ const reference=t(b?.project_reference||tg?.project_reference||"",250)||null;
+ const commandId="material-trade-promote:"+t(tg.id,80);
+ const notes=t(
+  "Created from Material Trade after confirmed buyer reply/RFQ. "+
+  "Target source key: "+t(tg.source_key,500)+". "+
+  "Gmail thread: "+t(q.gmail_thread_id,160)+". "+
+  (tg.steel_scope?"Steel scope: "+t(tg.steel_scope,2600):""),
+  5000
+ );
+ const cr=await db.rpc("pppp_chatgpt_create_project_v1",{
+  p_command_id:commandId,
+  p_name:name,
+  p_client:t(tg.company_name,500)||null,
+  p_reference:reference,
+  p_location:t(tg.country,20)||null,
+  p_deadline:null,
+  p_notes:notes||null,
+  p_deal_type:"trading",
+  p_business_type:"trading",
+  p_source:"pppp_ui",
+  p_metadata:{
+   origin:"material_trade",
+   target_id:tg.id,
+   target_source_key:tg.source_key,
+   outbound_queue_id:q.id,
+   gmail_thread_id:q.gmail_thread_id,
+   gmail_reply_at:q.replied_at||null,
+   created_by_user:u?.id||null
+  }
+ });
+ if(cr.error)throw cr.error;
+ const projectId=t(cr.data?.project_id,80);
+ if(!uuid(projectId))throw new Error("project_create_verification_failed");
+ const now=new Date().toISOString();
+ const tu=await db.from("pppp_dach_steel_targets_v1").update({
+  project_id:projectId,
+  target_status:"project_promoted",
+  next_action:"Project created from confirmed buyer RFQ/reply. Continue in Projects.",
+  updated_at:now
+ }).eq("id",tg.id).select("id,project_id,target_status").single();
+ if(tu.error)throw tu.error;
+ const payload={...(q.payload&&typeof q.payload==="object"?q.payload:{}),promoted_project_id:projectId,promoted_at:now,promotion_command_id:commandId};
+ const qu=await db.from("pppp_outbound_queue_v1").update({payload,updated_at:now}).eq("id",q.id);
+ if(qu.error)throw qu.error;
+ const pv=await db.from("projects").select("id,name,client,business_ref,status,pipeline_stage,business_type").eq("id",projectId).single();
+ if(pv.error)throw pv.error;
+ return{created:cr.data?.created===true,project_id:projectId,project:pv.data,target_status:"project_promoted",human_confirmation:true};
+}
+
 Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:C});if(req.method!=="POST")return res({ok:false,error:"method_not_allowed"},405);try{
  const cron=t(req.headers.get("x-pppp-cron-secret")||"",500);
  let internalOk=false;
@@ -344,4 +419,4 @@ Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("o
  let u:any={id:"internal-draft-refresh"};
  if(!internalOk){if(!au.toLowerCase().startsWith("bearer "))return res({ok:false,error:"unauthorized"},401);u=await user(au);}
  let b:any={};try{b=await req.json();}catch{}const id=t(b?.target_id,80),mode=nm(b?.mode);
- if(internalOk&&mode!=="refresh"&&mode!=="sync")return res({ok:false,error:"internal_mode_not_allowed"},403);if(mode!=="sync"&&!uuid(id))return res({ok:false,error:"valid_target_id_required"},400);if(mode==="sync"){const x=await syncLifecycle();return res({ok:true,version:V,mode,...x,human_send_required:true,external_email_sent:false});}if(!["buyer","supplier","suppliers","contact","refresh"].includes(mode))return res({ok:false,error:"mode_must_be_buyer_supplier_suppliers_contact_refresh_or_sync"},400);const q=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",id).maybeSingle();if(q.error)throw q.error;if(!q.data)return res({ok:false,error:"dach_target_not_found"},404);if(["closed","rejected"].includes(t(q.data.target_status,40)))return res({ok:false,error:"dach_target_not_active"},409);if(mode==="contact"){const cr=await buyerContact(q.data);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,contact:cr,human_send_required:true,external_email_sent:false});}if(mode==="suppliers"){const si=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(q.data),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});if(si.error)throw si.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,supplier_intelligence:si.data||{},human_send_required:true,external_email_sent:false});}const r=(mode==="buyer"||mode==="refresh")?await buyerDraft(q.data,u):await supplierDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...r});}catch(e){const m=t((e as any)?.message||e,1000),s=m==="unauthorized"?401:/required|invalid|not_allowed/.test(m)?400:/cooldown|conflict|suppressed|already|bounced|not_active/.test(m)?409:500;console.error(V,e);return res({ok:false,error:m,human_send_required:true,external_email_sent:false,version:V},s);}});
+ if(internalOk&&mode!=="refresh"&&mode!=="sync")return res({ok:false,error:"internal_mode_not_allowed"},403);if(mode!=="sync"&&!uuid(id))return res({ok:false,error:"valid_target_id_required"},400);if(mode==="sync"){const x=await syncLifecycle();return res({ok:true,version:V,mode,...x,human_send_required:true,external_email_sent:false});}if(!["buyer","supplier","suppliers","contact","refresh","promote"].includes(mode))return res({ok:false,error:"mode_must_be_buyer_supplier_suppliers_contact_refresh_promote_or_sync"},400);const q=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",id).maybeSingle();if(q.error)throw q.error;if(!q.data)return res({ok:false,error:"dach_target_not_found"},404);if(["closed","rejected"].includes(t(q.data.target_status,40)))return res({ok:false,error:"dach_target_not_active"},409);if(mode==="contact"){const cr=await buyerContact(q.data);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,contact:cr,human_send_required:true,external_email_sent:false});}if(mode==="promote"){const pr=await promoteProject(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...pr});}if(mode==="suppliers"){const si=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(q.data),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});if(si.error)throw si.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,supplier_intelligence:si.data||{},human_send_required:true,external_email_sent:false});}const r=(mode==="buyer"||mode==="refresh")?await buyerDraft(q.data,u):await supplierDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...r});}catch(e){const m=t((e as any)?.message||e,1000),s=m==="unauthorized"?401:/required|invalid|not_allowed/.test(m)?400:/cooldown|conflict|suppressed|already|bounced|not_active/.test(m)?409:500;console.error(V,e);return res({ok:false,error:m,human_send_required:true,external_email_sent:false,version:V},s);}});
