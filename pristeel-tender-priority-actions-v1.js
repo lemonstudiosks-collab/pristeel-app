@@ -57,14 +57,17 @@ function sourceLabel(r){return source(r)==='TED'?'TED':source(r)==='APP_AL'?'APP
 function workModel(r){return r&&r.category==='raw_material'?'supply':r&&r.category==='steel_structure'?'production':null;}
 function workLabel(v){return v==='supply'?'FURNIZIM':v==='production'?'PRODHIM':v==='production_installation'?'PRODHIM + MONTAZH':'PA KLASIFIKIM';}
 
-function enrichedContacts(r){var w=winner(r),e=w.contact_enrichment&&typeof w.contact_enrichment==='object'?w.contact_enrichment:{},all=[],domains=[];
+function enrichedContacts(r){var w=winner(r),e=w.contact_enrichment&&typeof w.contact_enrichment==='object'?w.contact_enrichment:{},all=[],domains=[],orgs=A(e.organizations),target=N(w.name);
  function dsite(v){try{return new URL(/^https?:\/\//i.test(S(v))?S(v):'https://'+S(v)).hostname.toLowerCase().replace(/^www\./,'');}catch(x){return'';}}
  function demail(v){var a=N(v).split('@');return a.length===2?a[1].replace(/^www\./,''):'';}
  function same(a,b){return!!a&&!!b&&(a===b||a.endsWith('.'+b)||b.endsWith('.'+a));}
+ function ckey(v){return N(v).replace(/[^a-z0-9]+/g,' ').replace(/\b(?:gmbh|mbh|co|kg|ag|se|srl|sro|sp|zoo|sa|sas|sasu|ltd|limited|inc|llc|bv|nv|oy|ab|aps|as|doo|gesellschaft|gruppe|group|company)\b/g,' ').replace(/\s+/g,' ').trim();}
+ var tk=ckey(target),scoped=tk?orgs.filter(function(o){return ckey(o&&o.name)===tk;}):[];if(!scoped.length&&orgs.length===1)scoped=orgs.slice();
  function addDomain(v){var d=dsite(v);if(d&&domains.indexOf(d)<0)domains.push(d);}
- addDomain(w.website);A(w.websites).forEach(addDomain);A(e.organizations).forEach(function(o){var od=N(o&&o.domain)||dsite(o&&o.official_website);if(od&&domains.indexOf(od)<0)domains.push(od);});
- function attributed(email,od){var ed=demail(email);if(!ed)return false;if(od)return same(ed,od);if(!domains.length)return true;return domains.some(function(d){return same(ed,d);});}
- A(e.organizations).forEach(function(o){var od=N(o&&o.domain)||dsite(o&&o.official_website);A(o&&o.contacts).forEach(function(x){if(S(x&&x.type)!=='email'||!S(x.value).trim()||x.draft_eligible===false||!attributed(x.value,od))return;var conf=N(x.confidence),score=Number(x.score||0);if(conf!=='high'&&conf!=='medium'&&score<80)return;all.push({email:S(x.value).trim(),purpose:N(x.purpose),confidence:conf,name:S(x&&x.name||x&&x.full_name||x&&x.person_name||''),source_type:S(x&&x.source_type),source_url:S(x&&x.source_url),draft_eligible:true});});});
+ scoped.forEach(function(o){var od=N(o&&o.domain)||dsite(o&&o.official_website);if(od&&domains.indexOf(od)<0)domains.push(od);});
+ if(orgs.length<=1){addDomain(w.website);A(w.websites).forEach(addDomain);}
+ function attributed(email,od){var ed=demail(email);if(!ed)return false;if(od)return same(ed,od);if(!domains.length)return false;return domains.some(function(d){return same(ed,d);});}
+ scoped.forEach(function(o){var od=N(o&&o.domain)||dsite(o&&o.official_website);A(o&&o.contacts).forEach(function(x){if(S(x&&x.type)!=='email'||!S(x.value).trim()||x.draft_eligible===false||!attributed(x.value,od))return;var conf=N(x.confidence),score=Number(x.score||0);if(conf!=='high'&&conf!=='medium'&&score<80)return;all.push({email:S(x.value).trim(),purpose:N(x.purpose),confidence:conf,name:S(x&&x.name||x&&x.full_name||x&&x.person_name||''),source_type:S(x&&x.source_type),source_url:S(x&&x.source_url),draft_eligible:true});});});
  /* Legacy winner.email(s) are display/history fields, not verified draft evidence. */
  var seen={};all=all.filter(function(x){var k=N(x.email);if(!k||seen[k])return false;seen[k]=1;return true;});var pr={procurement:0,tender:1,sales:2,person:3,general:4};all.sort(function(a,b){return(pr[a.purpose]??8)-(pr[b.purpose]??8)+(a.confidence==='high'?-1:0)-(b.confidence==='high'?-1:0);});return all.slice(0,20);}
 function bestContact(r){return enrichedContacts(r)[0]||null;}
