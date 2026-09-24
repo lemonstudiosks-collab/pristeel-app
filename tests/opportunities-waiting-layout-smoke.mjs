@@ -42,5 +42,5 @@ assert.doesNotMatch(workflow,/return rows\.slice\(0,80\)/,'canonical result set 
 assert.match(workflow,/function showMoreOpportunities\(/,'workflow must expose progressive load-more behavior');
 assert.match(workflow,/kind==='mode'/,'route mode must be a canonical filter');
 assert.doesNotMatch(workflow,/tenderState\.source='all';tenderState\.field='all';tenderState\.winner_group='all';\s*var life/,'status filtering must no longer wipe other filters');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\\.js\\?v=20260924-contacted-workdesk1/,'runtime must cache-bust the new Opportunity Desk');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260924-contacted-workdesk1/,'runtime must cache-bust the new Opportunity Desk');
 console.log('Opportunities Desk layout smoke: OK');
