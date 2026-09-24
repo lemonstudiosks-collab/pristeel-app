@@ -126,7 +126,7 @@ export function normalizeTedNotice(row,phase='opportunity',seenAt=new Date().toI
   return{
     source_key:`TED:${publication}`,procurement_no:`TED-${publication}`,publication_no:publication,authority:decodeTedText(buyer(row)),title,
     document_type:type||null,fpp:cpv.find(c=>RAW_CPVS.has(c)||STRUCT_CPVS.has(c))||cpv[0]||null,fpp_description:cpv.length?`CPV ${cpv.join(', ')}`:null,
-    contract_type:null,contract_value_band:null,procedure:null,estimated_value:details.value_amount,currency:details.value_currency,
+    contract_type:null,contract_value_band:null,procedure:null,estimated_value:details.value_amount,currency:details.value_currency||'EUR',
     deadline:phase==='opportunity'?deadlineDate(row):null,published_date:isoDate(field(row,'publication-date')),is_retender:false,
     category:cls.category,relevance_score:cls.relevance_score,match_reasons:cls.match_reasons,
     source_url:`https://ted.europa.eu/en/notice/${encodeURIComponent(publication)}/html`,
