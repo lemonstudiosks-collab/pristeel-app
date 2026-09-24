@@ -51,7 +51,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260924-contacted-stack2','stacked contacted-company Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260924-contacted-stack3','stacked contacted-company Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 assert(focus.classList.contains('pst-opp-dashboard'),'Opportunities stays on one working surface');
 assert(!focus.classList.contains('pst-opp-result-page'),'filters must not navigate to separate result pages');
@@ -97,6 +97,9 @@ producerRow.click();
 await new Promise(r=>setTimeout(r,25));
 assert.match(window.document.querySelector('.pst-opp-detail').textContent,/Example Steel AG/,'clicking a company must hydrate its right-side details');
 assert(window.document.querySelector('[data-pst-opp-draft="ted-producer"]'),'uncontacted TED company with verified email must expose Krijo draft emaili');
+assert(window.document.querySelector('[data-pst-opp-open="ted-producer"]'),'uncontacted TED company must expose the tender-analysis action before outreach');
+assert.match(window.document.querySelector('[data-pst-opp-open="ted-producer"]').textContent,/Analizo tenderin/,'TED analysis action must be explicit');
+assert(window.document.querySelector('[data-pst-opp-remove="ted-producer"]'),'uncontacted TED company must expose Hiqe without opening the legacy console first');
 
 const tedFilter=window.document.querySelector('[data-pst-opp-source="TED"]');
 tedFilter.click();

@@ -9,13 +9,17 @@ const workflow=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8')
 assert.doesNotThrow(()=>new Function(desk),'Opportunities Desk must be valid JavaScript');
 assert.doesNotThrow(()=>new Function(workflow),'Project-Centric workflow must remain valid JavaScript');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(desk,/VERSION='20260924-contacted-stack2'/,'stacked contacted-company Opportunity Desk revision must be active');
+assert.match(desk,/VERSION='20260924-contacted-stack3'/,'stacked contacted-company Opportunity Desk revision must be active');
 assert.match(desk,/function activeRows\(/,'Desk must explicitly own the active/uncontacted list');
 assert.match(desk,/function contactedRows\(/,'Desk must explicitly own the contacted-company parking list');
 assert.match(desk,/globalContactedKeys/,'active list must globally suppress identities already drafted/contacted');
 assert.match(desk,/Kompanitë e kontaktuara/,'contacted companies must have a dedicated visible list');
 assert.match(desk,/Kalojnë te Projektet vetëm pas RFQ/,'contacted list must state the RFQ-only Project rule');
 assert.match(desk,/Krijo draft emaili/,'selected TED company must expose the Gmail draft action');
+assert.match(desk,/Analizo tenderin/,'active TED company must expose the tender-analysis decision action');
+assert.match(desk,/data-pst-opp-remove/,'active opportunity must expose the quick remove action');
+assert.match(desk,/function removeOpportunity\(id,button\)/,'Desk must delegate quick removal through the existing action engine');
+assert.match(desk,/await P\.noGo\(id\)/,'quick remove must reuse canonical NO-GO behavior instead of inventing a second status path');
 assert.match(desk,/data-pst-opp-source/,'source filters must remain functional');
 assert.match(desk,/data-pst-opp-field/,'field filters must remain functional');
 assert.match(desk,/data-pst-opp-winner/,'TED winner-role filters must remain functional');
@@ -28,5 +32,5 @@ assert.match(desk,/api\.loadOpportunities\(true\)/,'draft completion must reload
 assert.match(desk,/effectiveLane\(r\)!=='new'/,'contacted state must come from canonical lifecycle evidence');
 assert.match(desk,/function deskHtml\(c\)\{[\s\S]*activeRows\(\)[\s\S]*contactedRows\(\)[\s\S]*sideFilters\(c\)/,'final workdesk must render filters, active opportunities and contacted companies instead of the old lifecycle dashboard');
 assert.match(workflow,/display_limit:40/,'canonical result engine remains bounded');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260924-contacted-stack2/,'runtime must cache-bust the stacked contacted-company Opportunity Desk');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260924-contacted-stack3/,'runtime must cache-bust the stacked contacted-company Opportunity Desk');
 console.log('Opportunities contacted-company layout smoke: OK');
