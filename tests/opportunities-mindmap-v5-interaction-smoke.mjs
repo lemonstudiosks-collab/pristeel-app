@@ -51,7 +51,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260924-contacted-workdesk1','contacted-company Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260924-contacted-stack2','stacked contacted-company Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 assert(focus.classList.contains('pst-opp-dashboard'),'Opportunities stays on one working surface');
 assert(!focus.classList.contains('pst-opp-result-page'),'filters must not navigate to separate result pages');

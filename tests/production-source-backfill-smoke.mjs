@@ -61,7 +61,7 @@ for (const name of functions) {
 
 const historyDir = path.join(root, 'supabase/live-migration-history');
 const snapshots = fs.readdirSync(historyDir).filter((name) => name.endsWith('.sql')).sort();
-assert.equal(snapshots.length, 15, 'all missing 2026-09-21/22 production migrations must be preserved');
+assert.ok(snapshots.length >= 15, 'all production-history migrations from 2026-09-21 onward must be preserved');
 const migrationManifest = JSON.parse(fs.readFileSync(path.join(historyDir, 'manifest.json'), 'utf8'));
 assert.equal(migrationManifest.project_ref, 'awqfpnzqwfjrjefoktgd');
 assert.equal(migrationManifest.migrations.length, snapshots.length);

@@ -108,6 +108,41 @@
       "file": "20260922112754_allow_dach_steel_source_in_shared_outbound_v1.sql",
       "normalized_bytes": 257,
       "normalized_md5": "5905f14d4a138489a932b20975adfe7e"
+    },
+    {
+      "version": "20260924060157",
+      "name": "expand_material_trade_buyers_to_eu_v1",
+      "file": "20260924060157_expand_material_trade_buyers_to_eu_v1.sql",
+      "normalized_bytes": 5857,
+      "normalized_md5": "6d1b51574fe3dc9fbab431f32ac5da92"
+    },
+    {
+      "version": "20260924062701",
+      "name": "material_trade_summary_exclude_legacy_ted_v1",
+      "file": "20260924062701_material_trade_summary_exclude_legacy_ted_v1.sql",
+      "normalized_bytes": 2529,
+      "normalized_md5": "9e09823eddfc8a07dd8fb79ade1c9dc9"
+    },
+    {
+      "version": "20260924064541",
+      "name": "material_trade_language_project_promotion_v1",
+      "file": "20260924064541_material_trade_language_project_promotion_v1.sql",
+      "normalized_bytes": 10394,
+      "normalized_md5": "1bc26fb8657464b6d73ec2c02c6052eb"
+    },
+    {
+      "version": "20260924065454",
+      "name": "material_trade_project_email_continuity_v1",
+      "file": "20260924065454_material_trade_project_email_continuity_v1.sql",
+      "normalized_bytes": 2114,
+      "normalized_md5": "bc66da226d553fb8087a0aab554846cf"
+    },
+    {
+      "version": "20260924072000",
+      "name": "fix_material_trade_contact_resolution_claims_v1",
+      "file": "20260924072000_fix_material_trade_contact_resolution_claims_v1.sql",
+      "normalized_bytes": 5882,
+      "normalized_md5": "b4ada0257dcac931838315987335c2d8"
     }
   ]
 }

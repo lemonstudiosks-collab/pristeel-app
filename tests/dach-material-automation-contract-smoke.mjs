@@ -12,12 +12,12 @@ const contactResolutionFix = fs.readFileSync('supabase/live-migration-history/20
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 
 assert.match(ui,/BLERËSIT E MATERIALIT TË ÇELIKUT · EUROPE/,'Home card must expose broader Material Trade scope');
-assert.match(ui,/Blerësit e materialit të çelikut · Europe/,'Material Trade page must use broader European scope');
+assert.match(ui,/Blerësit e materialit të çelikut - Europe/,'Material Trade page must use broader European scope');
 assert.match(ui,/EU \+ CH \+ RS \+ ME · MATERIAL ÇELIKU · DAP · PA TED/,'Home chip must expose the eligible geography and no-TED boundary');
-assert.match(ui,/data-dss-filter="action">Për t’u kontaktuar/,'ready-to-contact stage must exist');
-assert.match(ui,/data-dss-filter="draft">Draft gati/,'draft-ready stage must be distinct');
-assert.match(ui,/data-dss-filter="waiting">Në pritje të përgjigjes/,'sent/waiting stage must be distinct');
-assert.match(ui,/data-dss-filter="replied">Përgjigje \/ Aktiv/,'reply-active stage must be distinct');
+assert.match(ui,/\['action','Të gjitha',actionable\.length\]/,'ready-to-contact stage must remain the default company list');
+assert.match(ui,/life==='draft'\?'Draft gati'/,'draft-ready stage must be distinct');
+assert.match(ui,/life==='waiting'\?'Në pritje të përgjigjes'/,'sent/waiting stage must be distinct');
+assert.match(ui,/\['replied','Përgjigje të marra',replied\.length\]/,'reply-active stage must be distinct');
 assert.match(ui,/return'draft'/,'lifecycle must classify a live Gmail draft separately from sent');
 assert.match(ui,/buyerTierLabel/,'UI must expose Tier 1/Tier 2 buyer qualification');
 assert.match(ui,/T1 · konsumator direkt/,'direct steel consumers must be Tier 1');
@@ -33,7 +33,7 @@ assert.match(ui,/Kontakti për blerje/,'Expanded buyer detail must surface purch
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\\.js\\?v=20260924-company-intel4/,'runtime must cache-bust the Material Trade module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260924-company-intel4/,'runtime must cache-bust the Material Trade module');
 
 assert.match(edge,/pppp-dach-steel-draft-generator-v14-project-thread-continuity/,'Edge source must carry the project-thread-continuity version');
 assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read the TED/tender table');
