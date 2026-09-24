@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "fd0e0abb489da940b31c77683c04af78be2f251f"
+    "bootstrapGitBlobSha": "0dc95e87e300b3836a688a5c9c06a58be868f2c6"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -122,6 +122,13 @@
         "pristeel-document-currency-v1.js",
         "pristeel-invoice-original-document-v1.js"
       ]
+    },
+    {
+      "area": "material-trade",
+      "finalOwners": [
+        "pristeel-dach-steel-sales-v1.js"
+      ],
+      "note": "Legacy dach-steel filename is retained for compatibility. The visible owner is EU Material Trade: Tier 1 direct steel consumers/fabricators/manufacturers, Tier 2 construction/GC-GU only with steel-procurement evidence. Its lifecycle is ready-to-contact → Gmail draft → sent/waiting → replied/active, and its discovery/runtime is explicitly separate from TED/Mundësitë."
     },
     {
       "area": "tenders",
@@ -307,6 +314,12 @@
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded additively for tender Action Console sourcing. Reads canonical BOM / Supplier Intelligence and performs bounded external discovery only when the user clicks Gjej furnitorë; no Supplier Master, RFQ-log or email mutation."
+    },
+    {
+      "module": "pristeel-dach-steel-sales-v1.js",
+      "loader": "pristeel-project-emails.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded by the ordered bootstrap with the reviewed 20260924-eu-material1 cache path. Owns the EU Material Trade buyer page while retaining legacy dach_steel_* backend identifiers for compatibility."
     }
   ],
   "loadOrderConstraints": [
