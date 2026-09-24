@@ -1,6 +1,6 @@
 /* PRISTEEL DACH Steel Buyers v5
- * Buyer Target + Material Intelligence Desk for direct steel supply in DE/AT/CH.
- * Operational buyer-to-supply workflow over qualified targets in pppp_dach_steel_targets_v1.
+ * EU Buyer Target + Material Intelligence Desk for direct steel supply across the EU, with Switzerland retained for backward compatibility.
+ * Operational buyer-to-supply workflow over qualified Material Trade targets in the backward-compatible pppp_dach_steel_targets_v1 table.
  * Home reads only the 1-row pppp_dach_steel_home_summary_v1 view.
  * Supplier matching is read-only; buyer/supplier email actions only prepare/open drafts. Nothing sends automatically.
  */
@@ -46,7 +46,14 @@ function qrHelp(v){
 function scoreClass(v){return v==='A1'?'a1':v==='A2'?'a2':v==='B1'?'b1':v==='B2'?'b2':'c'}
 function qrClass(v){return v==='M3'?'m3':v==='M2'?'m2':v==='M1'?'m1':'m0'}
 function contactLabel(v){return v==='verified'?'Kontakt i verifikuar':v==='found'?'Kontakt i gjetur':v==='searching'?'Duke kërkuar kontaktin':'Kontakti mungon'}
-function outreachLabel(v){return v==='ready'?'Gati për kontaktim':v==='queued'?'Queued':v==='sent'?'Sent':v==='replied'?'Replied':v==='suppressed'?'Suppressed':'Not ready'}
+function outreachLabel(v){return v==='ready'?'Gati për kontaktim':v==='queued'?'Draft gati':v==='sent'?'Në pritje':v==='replied'?'Përgjigje / Aktiv':v==='suppressed'?'Bllokuar':'Jo gati'}
+function buyerTier(r){
+ var s=N([r&&r.buyer_type,r&&r.steel_scope].filter(Boolean).join(' '));
+ if(/stahlbau|metallbau|hallenbau|anlagenbau|maschinenbau|fahrzeugbau|trailer|behalter|behaelter|fordertechnik|foerdertechnik|fabricat|manufacturer|producer|metal processing|steel processing|steel service|industrial fabrication|heavy fabrication/.test(s))return'T1';
+ if(/general contractor|\bgc\b|\bgu\b|bauunternehmen|construction|hochbau|tiefbau|industriebau|infrastructure|contractor/.test(s))return'T2';
+ return'T3';
+}
+function buyerTierLabel(r){var x=buyerTier(r);return x==='T1'?'T1 · konsumator direkt':x==='T2'?'T2 · ndërtim / GC-GU':'T3 · për rishikim'}
 
 function localSummary(){
  var rows=A(state.targets).filter(function(r){return r.target_status!=='closed'&&r.target_status!=='rejected'});
@@ -152,17 +159,26 @@ function materialText(r){
   return '- '+name+(grade?' | '+grade:'')+(qty?' | '+qty:'');
  }).join('\n');
 }
+function buyerLanguage(r){return ['DE','AT','CH'].indexOf(S(r&&r.country).toUpperCase())>-1?'de':'en'}
 function buyerSubject(r,q){
  var p=queuePayload(q),s=S(p.subject).trim();if(s)return s;
- return S(r.project_title||r.company_name||'Steel supply')+' – Anfrage Materialliste / RFQ | PRISTEEL';
+ var project=S(r.project_title||'').trim();
+ if(project)return project+(buyerLanguage(r)==='de'?' – Anfrage Materialliste / RFQ | PRISTEEL':' – Steel material RFQ | PRISTEEL');
+ return buyerLanguage(r)==='de'?'Zusätzliche Beschaffungsquelle für Stahlmaterial | PRISTEEL':'Additional steel material supply source | PRISTEEL';
 }
 function buyerBody(r){
- var project=S(r.project_title||'');
- if(r.quote_readiness==='M3'){
+ var project=S(r.project_title||'').trim(),de=buyerLanguage(r)==='de';
+ if(project&&r.quote_readiness==='M3'){
   var mat=materialText(r);
-  return 'Guten Tag,\n\nim Zusammenhang mit dem Projekt „'+project+'“ möchten wir Ihnen auf Basis der verfügbaren Projektunterlagen ein konkretes Stahl-Lieferangebot unterbreiten.\n\n'+mat+'\n\nGerne stimmen wir die finale Materialliste, Liefertermine und Lieferadresse mit Ihnen ab.\n\nMit freundlichen Grüßen\nArianit Vllahiu\nHead of Business Development\n+383 (0) 44 244 699\narianit.vllahiu@prissteel.com\nwww.prissteel.com';
+  if(de)return 'Guten Tag,\n\nim Zusammenhang mit dem Projekt „'+project+'“ möchten wir Ihnen auf Basis der verfügbaren Projektunterlagen ein konkretes Stahl-Lieferangebot unterbreiten.\n\n'+mat+'\n\nGerne stimmen wir die finale Materialliste, Liefertermine und Lieferadresse mit Ihnen ab.\n\nMit freundlichen Grüßen\n\n[Canonical Gmail signature]';
+  return 'Dear Sir or Madam,\n\nregarding the project “'+project+'”, we would like to offer the steel material scope based on the available project information.\n\n'+mat+'\n\nWe can coordinate the final material list, delivery dates and DAP delivery address with you.\n\nKind regards,\n\n[Canonical Gmail signature]';
  }
- return 'Guten Tag,\n\nim Zusammenhang mit dem Projekt „'+project+'“ möchten wir gerne anfragen, ob die Materialbeschaffung für den Stahlbauumfang noch offen ist.\n\nPRISTEEL liefert Baustahl, Profile, Bleche und weitere Stahlprodukte projektbezogen aus unserem Lieferantennetzwerk. Den Transport organisieren wir ebenfalls bis zu Ihrer gewünschten Lieferadresse auf Basis DAP (Incoterms® 2020).\n\nSofern die Materialbeschaffung für dieses Projekt noch ganz oder teilweise offen ist, senden Sie uns bitte Ihre aktuelle RFQ bzw. Materialliste mit den benötigten Güten, Abmessungen, Mengen und gewünschten Lieferterminen. Gerne prüfen wir Ihre Anfrage kurzfristig und unterbreiten Ihnen ein konkretes Lieferangebot.\n\nFalls die Materialbeschaffung von einer anderen Person im Einkauf oder in der Projektleitung betreut wird, wäre ich Ihnen für eine Weiterleitung meiner Anfrage dankbar.\n\nMit freundlichen Grüßen\n\n[Canonical Gmail signature]';
+ if(project){
+  if(de)return 'Guten Tag,\n\nim Zusammenhang mit dem Projekt „'+project+'“ möchten wir gerne anfragen, ob die Materialbeschaffung für den Stahlbauumfang noch offen ist.\n\nPRISTEEL liefert Baustahl, Profile, Bleche und weitere Stahlprodukte projektbezogen aus unserem Lieferantennetzwerk. Den Transport organisieren wir ebenfalls bis zu Ihrer gewünschten Lieferadresse auf Basis DAP (Incoterms® 2020).\n\nSofern die Materialbeschaffung noch ganz oder teilweise offen ist, senden Sie uns bitte Ihre aktuelle RFQ bzw. Materialliste mit Güten, Abmessungen, Mengen und gewünschten Lieferterminen.\n\nMit freundlichen Grüßen\n\n[Canonical Gmail signature]';
+  return 'Dear Sir or Madam,\n\nregarding the project “'+project+'”, we would like to ask whether the steel material procurement is still open.\n\nPRISTEEL supplies structural steel material, sections, plates, tubes and related steel products through our qualified supply network, including transport to your requested delivery address on a DAP basis.\n\nIf procurement is still open in full or in part, please send us your current RFQ or material list including grades, dimensions, quantities and requested delivery dates.\n\nKind regards,\n\n[Canonical Gmail signature]';
+ }
+ if(de)return 'Guten Tag,\n\nwir möchten uns als zusätzliche Beschaffungsquelle für Stahlmaterial vorstellen. PRISTEEL liefert projektbezogen Baustahl, Profile, Bleche, Rohre/Hohlprofile und weitere Stahlprodukte aus einem qualifizierten Lieferantennetzwerk. Den Transport organisieren wir bis zu Ihrer gewünschten Lieferadresse auf Basis DAP (Incoterms® 2020).\n\nWenn Sie aktuell oder regelmäßig Stahlmaterial zukaufen, senden Sie uns gerne Ihre RFQ bzw. Materialliste mit Güten, Abmessungen, Mengen und gewünschten Lieferterminen. Wir prüfen die Anfrage kurzfristig und unterbreiten Ihnen ein konkretes Lieferangebot.\n\nFalls der Einkauf von einer anderen Person betreut wird, wäre ich Ihnen für eine Weiterleitung dankbar.\n\nMit freundlichen Grüßen\n\n[Canonical Gmail signature]';
+ return 'Dear Sir or Madam,\n\nwe would like to introduce PRISTEEL as an additional procurement source for steel material. We supply structural steel, sections, plates, tubes/hollow sections and related steel products through a qualified supply network, including transport to your requested delivery address on a DAP basis.\n\nIf your company currently or regularly purchases steel material, please send us your RFQ or material list with grades, dimensions, quantities and requested delivery dates. We will review it promptly and provide a concrete supply quotation.\n\nIf purchasing is handled by another colleague, I would appreciate it if you could forward this message.\n\nKind regards,\n\n[Canonical Gmail signature]';
 }
 function gmailCompose(to,subject,body){
  return 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(S(to))+'&su='+encodeURIComponent(S(subject))+'&body='+encodeURIComponent(S(body));
@@ -237,9 +253,11 @@ async function syncLifecycleUi(force){
  return state.lifecycleResult;
 }
 function lifecycle(r){
- var q=outboundFor(r),st=N(q&&q.status||r&&r.outreach_status||'');
+ var q=outboundFor(r),st=N(q&&q.status||r&&r.outreach_status||''),supp=N(q&&q.suppression_reason||'');
  if((q&&q.replied_at)||st==='replied'||N(r&&r.outreach_status)==='replied')return'replied';
  if((q&&q.sent_at)||st==='sent'||N(r&&r.outreach_status)==='sent')return'waiting';
+ var stale=st==='stale'||['gmail_draft_missing','gmail_draft_stale','draft_missing','draft_stale'].indexOf(supp)>-1;
+ if(q&&q.gmail_draft_id&&q.gmail_thread_id&&!stale&&st!=='suppressed')return'draft';
  return'action';
 }
 
@@ -304,7 +322,7 @@ function ensureHome(){
  var card=document.getElementById('pst-dach-steel-sales-card-v1');
  if(!card){
   card=document.createElement('section');card.id='pst-dach-steel-sales-card-v1';
-  card.innerHTML='<button class="pst-dss-home" type="button"><div><div class="pst-dss-eye">BLERËSIT E ÇELIKUT DACH</div><div class="pst-dss-title">Projekt → Material → Ofertë proaktive</div><div class="pst-dss-sub">Gjej blerësin kur nevoja për çelik bëhet konkrete. Përcakto materialin dhe kalo te kontakti me blerësin dhe kërkimi i furnitorëve.</div><span class="pst-dss-chip">DE · AT · CH · FURNIZIM DIREKT ME ÇELIK</span></div><div class="pst-dss-stats" data-dss-stats></div><span class="pst-dss-cta">Hap blerësit DACH →</span></button><div class="pst-dss-current" data-dss-current></div>';
+  card.innerHTML='<button class="pst-dss-home" type="button"><div><div class="pst-dss-eye">BLERËSIT E MATERIALIT TË ÇELIKUT · EU</div><div class="pst-dss-title">Projekt → Material → Ofertë proaktive</div><div class="pst-dss-sub">Gjej konsumatorë direkt të çelikut në gjithë EU-në; kompanitë e ndërtimit / GC-GU hyjnë si zgjedhje e dytë kur ka evidencë për procurement të çelikut.</div><span class="pst-dss-chip">EU · MATERIAL ÇELIKU · DAP · PA TED</span></div><div class="pst-dss-stats" data-dss-stats></div><span class="pst-dss-cta">Hap Material Trade EU →</span></button><div class="pst-dss-current" data-dss-current></div>';
   grid.parentNode.insertBefore(card,grid);card.querySelector('button').onclick=open;
  }
  renderHome();loadSummary(false);return true;
@@ -323,7 +341,7 @@ function renderHome(){
 function ensurePage(){
  css();var page=document.getElementById('page-dach-steel-sales');if(page)return page;
  var host=document.querySelector('.content')||document.body;page=document.createElement('div');page.id='page-dach-steel-sales';page.className='page';page.style.display='none';
- page.innerHTML='<div class="pst-dss-page"><header class="pst-dss-head"><div><small>PRISTEEL · MOTORI I BLERËSVE TË ÇELIKUT DACH</small><h1>Blerësit e çelikut DACH</h1><p>Nga sinjali i projektit te veprimi: kërko RFQ/BOQ nga blerësi dhe, paralelisht, përgatit kërkimin dhe RFQ-në për furnitorët, duke ruajtur miratimin njerëzor.</p></div><div class="pst-dss-actions"><button data-dss-refresh>Rifresko</button><button data-dss-back>← Ballina</button></div></header><div class="pst-dss-engine-note"><b>Rregulli:</b> sapo Gmail konfirmon dërgimin, targeti largohet nga “Për veprim” dhe kalon te “Në ndjekje”. Një reply e kalon te “Përgjigje / RFQ”. Para çdo drafti të ri kontrollohen Gmail Sent dhe cooldown-et.</div><div class="pst-dss-kpi-strip" data-dss-kpis></div><div class="pst-dss-tabs"><button class="pst-dss-tab on" data-dss-filter="action">Për veprim</button><button class="pst-dss-tab" data-dss-filter="waiting">Në ndjekje</button><button class="pst-dss-tab" data-dss-filter="replied">Përgjigje / RFQ</button><button class="pst-dss-tab" data-dss-filter="a1">A1</button><button class="pst-dss-tab" data-dss-filter="m3">M3 · Gati për ofertë</button><button class="pst-dss-tab" data-dss-filter="contact">Kërkon kontakt</button><button class="pst-dss-tab" data-dss-filter="all">Të gjitha</button></div><section class="pst-dss-panel"><div class="pst-dss-panel-head"><b>Qendra e blerësit dhe materialit</b><span data-dss-updated></span></div><div class="pst-dss-headrow"><span>Prioriteti</span><span>Blerësi / projekti</span><span>Pse tani?</span><span>Materiali</span><span>Kontakti</span><span class="pst-dss-col-timing">Koha</span><span class="pst-dss-col-action">Hapi i radhës</span></div><div data-dss-list></div></section></div>'
+ page.innerHTML='<div class="pst-dss-page"><header class="pst-dss-head"><div><small>PRISTEEL · MATERIAL TRADE · EU</small><h1>Blerësit e materialit të çelikut · EU</h1><p>Shitje materiali çeliku në EU: Tier 1 janë konsumatorët direkt; Tier 2 kompanitë e ndërtimit / GC-GU me relevancë reale për procurement. Ky kanal nuk përdor TED/Mundësitë.</p></div><div class="pst-dss-actions"><button data-dss-refresh>Rifresko</button><button data-dss-back>← Ballina</button></div></header><div class="pst-dss-engine-note"><b>Rregulli:</b> targeti nis te “Për t’u kontaktuar”. Sapo krijohet Gmail draft kalon te “Draft gati”; vetëm Gmail Sent e kalon te “Në pritje të përgjigjes”, ndërsa reply te “Përgjigje / Aktiv”. Drafti nuk konsiderohet dërgim. TED/Mundësitë mbeten të ndara.</div><div class="pst-dss-kpi-strip" data-dss-kpis></div><div class="pst-dss-tabs"><button class="pst-dss-tab on" data-dss-filter="action">Për t’u kontaktuar</button><button class="pst-dss-tab" data-dss-filter="draft">Draft gati</button><button class="pst-dss-tab" data-dss-filter="waiting">Në pritje të përgjigjes</button><button class="pst-dss-tab" data-dss-filter="replied">Përgjigje / Aktiv</button><button class="pst-dss-tab" data-dss-filter="a1">A1</button><button class="pst-dss-tab" data-dss-filter="m3">M3 · Gati për ofertë</button><button class="pst-dss-tab" data-dss-filter="contact">Kërkon kontakt</button><button class="pst-dss-tab" data-dss-filter="all">Të gjitha</button></div><section class="pst-dss-panel"><div class="pst-dss-panel-head"><b>Qendra e blerësit dhe materialit</b><span data-dss-updated></span></div><div class="pst-dss-headrow"><span>Prioriteti</span><span>Blerësi / projekti</span><span>Pse tani?</span><span>Materiali</span><span>Kontakti</span><span class="pst-dss-col-timing">Koha</span><span class="pst-dss-col-action">Hapi i radhës</span></div><div data-dss-list></div></section></div>'
  host.appendChild(page);
  page.onclick=async function(e){
   var f=e.target.closest('[data-dss-filter]');if(f){state.filter=f.getAttribute('data-dss-filter');state.expanded=null;state.actionView=null;renderPage();return}
@@ -355,6 +373,7 @@ function ensurePage(){
 function filteredRows(){
  var rows=A(state.targets),actionable=rows.filter(function(r){return lifecycle(r)==='action'});
  if(state.filter==='action')return actionable;
+ if(state.filter==='draft')return rows.filter(function(r){return lifecycle(r)==='draft'});
  if(state.filter==='waiting')return rows.filter(function(r){return lifecycle(r)==='waiting'});
  if(state.filter==='replied')return rows.filter(function(r){return lifecycle(r)==='replied'});
  if(state.filter==='a1')return actionable.filter(function(r){return r.score_band==='A1'});
@@ -379,18 +398,20 @@ function buyerAction(r){
  var preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='buyer',k=draftKey('buyer',r.id),busy=!!state.draftBusy[k],result=state.draftResult[k]||null,primary='',secondary='';
  if(life==='replied')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap përgjigjen në Gmail</button>':'';
  else if(life==='waiting')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap thread-in në Gmail</button>':'';
+ else if(life==='draft')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>':'';
  else if(blocked)primary='<button class="pst-dss-btn" disabled>Outbound i bllokuar</button>';
  else if(q&&q.gmail_draft_id&&q.gmail_thread_id&&!stale)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>';
  else if(to)primary='<button class="pst-dss-btn primary" '+(busy?'disabled':'')+' data-dss-action="buyer-create-draft" data-dss-tid="'+E(r.id)+'">'+(busy?'Duke kontrolluar Gmail…':(stale?'Rigjenero Gmail draft':'Krijo Gmail draft'))+'</button>';
  else primary='<button class="pst-dss-btn" disabled>Duhet kontakt</button>';
  if(life==='action')secondary='<button class="pst-dss-btn" data-dss-action="buyer-preview" data-dss-tid="'+E(r.id)+'">Shiko tekstin</button>'+(to?'<button class="pst-dss-btn" data-dss-action="contact-resolve" data-dss-tid="'+E(r.id)+'">Verifiko kontaktin</button>':'');
  var guard=life==='replied'?('Përgjigje e marrë'+(replyAt?' më '+D(replyAt):'')+'. Mos dërgo cold outreach tjetër; rishiko thread-in dhe klasifiko RFQ/BOQ.'):
-   life==='waiting'?('Emaili është dërguar'+(sentAt?' më '+D(sentAt):'')+'. Targeti është në ndjekje dhe një outreach i ri bllokohet nga cooldown-i.'):
+   life==='waiting'?('Emaili është dërguar'+(sentAt?' më '+D(sentAt):'')+'. Targeti është në pritje dhe një outreach i ri bllokohet nga cooldown-i.'):
+   life==='draft'?'Gmail draft ekziston, por emaili nuk konsiderohet i dërguar derisa Gmail Sent ta konfirmojë.':
    blocked?('Preflight: '+S(supp||'suppressed')+'. Ky guard duhet zgjidhur para outreach.'):
    stale?'Drafti i vjetër mungon/stale. Para rigjenerimit PPPP kontrollon Gmail Sent për të parandaluar dublikatat.':
    human?'Para krijimit të draftit PPPP kontrollon Gmail Sent + shared cooldown; dërgimi mbetet human-approved.':'Asnjë dërgim automatik nga kjo faqe.';
  var resultHtml=result&&result.error?'<div class="pst-dss-inline-status" style="background:#fff1ef;color:#8b4a41">Drafti nuk u krijua: '+E(result.error)+'</div>':(result&&result.created?'<div class="pst-dss-inline-status">✓ Gmail draft u krijua dhe u lidh me PPPP.</div>':'');
- return '<div class="pst-dss-action-card"><h4>📩 Blerësi · '+(life==='replied'?'përgjigje e marrë':life==='waiting'?'në pritje të RFQ / BOQ':'kërko RFQ / BOQ')+'</h4><p>'+(life==='action'?'Kërko material listën aktuale, drawings/specs dhe konfirmo nëse procurement-i është ende i hapur.':life==='waiting'?'Emaili u dërgua. Tani monitorojmë reply/RFQ pa e kontaktuar sërish gjatë cooldown-it.':'Ka ardhur përgjigje. Hape thread-in dhe verifiko nëse kemi RFQ, BOQ, drawings ose kërkesë tjetër.')+'</p><div class="pst-dss-action-status">'+(to?'<b>'+E(to)+'</b> · ':'')+E(q?'PPPP outbound: '+status:(ct.role||ct.person||ct.quality||contactLabel(r.contact_status)))+'</div><div class="pst-dss-action-buttons">'+primary+secondary+'</div><div class="pst-dss-guard">'+E(guard)+'</div>'+resultHtml+(preview?'<div class="pst-dss-previewbox"><b>'+E(buyerSubject(r,q))+'</b><pre>'+E(buyerBody(r))+'</pre><div class="pst-dss-action-buttons" style="margin-top:9px"><button class="pst-dss-btn" data-dss-action="buyer-copy" data-dss-tid="'+E(r.id)+'">Kopjo tekstin</button></div></div>':'')+'</div>';
+ return '<div class="pst-dss-action-card"><h4>📩 Blerësi · '+(life==='replied'?'përgjigje e marrë':life==='waiting'?'në pritje të RFQ / BOQ':life==='draft'?'draft gati':'kërko RFQ / BOQ')+'</h4><p>'+(life==='action'?'Kërko RFQ/material listën aktuale dhe konfirmo nevojën për furnizim materiali.':life==='draft'?'Drafti është gati në Gmail dhe pret rishikimin/dërgimin nga përdoruesi.':life==='waiting'?'Emaili u dërgua. Tani monitorojmë reply/RFQ pa e kontaktuar sërish gjatë cooldown-it.':'Ka ardhur përgjigje. Hape thread-in dhe verifiko nëse kemi RFQ, BOQ, drawings ose kërkesë tjetër.')+'</p><div class="pst-dss-action-status">'+(to?'<b>'+E(to)+'</b> · ':'')+E(q?'PPPP outbound: '+status:(ct.role||ct.person||ct.quality||contactLabel(r.contact_status)))+'</div><div class="pst-dss-action-buttons">'+primary+secondary+'</div><div class="pst-dss-guard">'+E(guard)+'</div>'+resultHtml+(preview?'<div class="pst-dss-previewbox"><b>'+E(buyerSubject(r,q))+'</b><pre>'+E(buyerBody(r))+'</pre><div class="pst-dss-action-buttons" style="margin-top:9px"><button class="pst-dss-btn" data-dss-action="buyer-copy" data-dss-tid="'+E(r.id)+'">Kopjo tekstin</button></div></div>':'')+'</div>';
 }
 function supplierAction(r){
  var indicative=r.quote_readiness!=='M3',box=state.supplierByTarget[S(r.id)]||{},preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='supplier';
@@ -415,8 +436,8 @@ function detail(r){
 
 function renderPage(){
  var page=document.getElementById('page-dach-steel-sales');if(!page)return;
- var sx=summary()||{},lx=localSummary(),all=A(state.targets),waiting=all.filter(function(r){return lifecycle(r)==='waiting'}).length,replied=all.filter(function(r){return lifecycle(r)==='replied'}).length,action=all.filter(function(r){return lifecycle(r)==='action'}).length,k=page.querySelector('[data-dss-kpis]'),list=page.querySelector('[data-dss-list]'),u=page.querySelector('[data-dss-updated]');
- if(k)k.innerHTML=[[action,'Për veprim'],[waiting,'Në ndjekje'],[replied,'Përgjigje'],[sx.needs_contact!=null?sx.needs_contact:lx.needs_contact,'Kërkon kontakt'],[lx.quote_ready,'M3 · Gati për ofertë'],[sx.sent||waiting,'Sent']].map(function(v){return '<div class="pst-dss-kpi"><b>'+E(v[0])+'</b><span>'+E(v[1])+'</span></div>'}).join('');
+ var sx=summary()||{},lx=localSummary(),all=A(state.targets),draft=all.filter(function(r){return lifecycle(r)==='draft'}).length,waiting=all.filter(function(r){return lifecycle(r)==='waiting'}).length,replied=all.filter(function(r){return lifecycle(r)==='replied'}).length,action=all.filter(function(r){return lifecycle(r)==='action'}).length,k=page.querySelector('[data-dss-kpis]'),list=page.querySelector('[data-dss-list]'),u=page.querySelector('[data-dss-updated]');
+ if(k)k.innerHTML=[[action,'Për t’u kontaktuar'],[draft,'Draft gati'],[waiting,'Në pritje'],[replied,'Përgjigje / Aktiv'],[sx.needs_contact!=null?sx.needs_contact:lx.needs_contact,'Kërkon kontakt'],[lx.quote_ready,'M3 · Gati për ofertë']].map(function(v){return '<div class="pst-dss-kpi"><b>'+E(v[0])+'</b><span>'+E(v[1])+'</span></div>'}).join('');
  page.querySelectorAll('[data-dss-filter]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-dss-filter')===state.filter)});
  if(u)u.textContent=state.lifecycleSyncing?'Duke sinkronizuar Gmail…':(state.lastLoadedAt?'Përditësuar '+new Date(state.lastLoadedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'}):'');
  if(!list)return;
@@ -424,14 +445,14 @@ function renderPage(){
  if(state.error&&state.targetsLoaded){list.innerHTML='<div class="pst-dss-empty"><b>Qendra e blerësve të çelikut nuk u lexua</b><span>'+E(state.error)+'</span></div>';return}
  var rows=filteredRows();
  if(!rows.length){
-  var title=state.filter==='action'?'Nuk ka targete që kërkojnë veprim tani.':state.filter==='waiting'?'Nuk ka targete në pritje përgjigjeje.':state.filter==='replied'?'Nuk ka përgjigje/RFQ të reja.':state.filter==='all'?'Ende nuk ka objektiva të kualifikuara për blerës çeliku.':'Nuk ka targete në këtë filtër.';
-  list.innerHTML='<div class="pst-dss-empty"><b>'+E(title)+'</b><span>Rrjedha: sinjal → kontakt me blerësin → ndjekje → përgjigje/RFQ → ofertë/porosi.</span></div>';return;
+  var title=state.filter==='action'?'Nuk ka targete të reja për kontaktim.':state.filter==='draft'?'Nuk ka Gmail draft-e gati.':state.filter==='waiting'?'Nuk ka targete në pritje përgjigjeje.':state.filter==='replied'?'Nuk ka përgjigje aktive.':state.filter==='all'?'Ende nuk ka objektiva të kualifikuara për Material Trade.':'Nuk ka targete në këtë filtër.';
+  list.innerHTML='<div class="pst-dss-empty"><b>'+E(title)+'</b><span>Rrjedha: zbulim → për t’u kontaktuar → draft gati → sent → në pritje → përgjigje/aktiv.</span></div>';return;
  }
  list.innerHTML=rows.map(function(r){
   var prods=arrText(r.products).slice(0,4).join(' · ')||r.steel_scope||'Fusha e materialit në pritje',q=outboundFor(r),life=lifecycle(r),ct=contactFor(r),email=S(ct.email||'');
-  var next=life==='replied'?'Përgjigje / RFQ':life==='waiting'?'Në ndjekje':(email?'Kërko RFQ':'Gjej kontakt');
+  var next=life==='replied'?'Përgjigje / Aktiv':life==='waiting'?'Në pritje':life==='draft'?'Hap draftin':(email?'Kërko RFQ':'Gjej kontakt');
   var contactHtml=email?'<div class="pst-dss-contact"><b><a href="mailto:'+E(email)+'">'+E(email)+'</a></b><small>'+E([ct.person,ct.role].filter(Boolean).join(' · ')||ct.quality||'Kontakt i gjetur')+'</small></div>':'<span class="pst-dss-contact-missing">Kontakt i pagjetur</span>';
-  var row='<div class="pst-dss-row" data-dss-target-id="'+E(r.id)+'"><span class="pst-dss-score '+scoreClass(r.score_band)+'">'+E(r.score_band||'—')+'</span><div><b>'+E(r.company_name||'Blerës')+'</b><small>'+E([r.country,r.project_title].filter(Boolean).join(' · ')||r.buyer_type||'Blerës çeliku')+'</small></div><div class="pst-dss-col-why"><div class="pst-dss-why">'+E(r.why_now||'Evidenca për arsyen e kontaktimit është në pritje')+'</div></div><div><span class="pst-dss-qr '+qrClass(r.quote_readiness)+'">'+E(qrLabel(r.quote_readiness))+'</span><div class="pst-dss-products">'+E(prods)+'</div><div class="pst-dss-ton">'+E(tonnes(r.estimated_tonnes))+'</div></div><div>'+contactHtml+'</div><div class="pst-dss-col-timing"><b>'+E(life==='waiting'?'NË PRITJE TË BLERËSIT':life==='replied'?'BLERËSI U PËRGJIGJ':r.procurement_timing||'E panjohur')+'</b><small>'+E(life==='waiting'&&q&&q.sent_at?'Sent '+D(q.sent_at):life==='replied'&&q&&q.replied_at?'Reply '+D(q.replied_at):r.award_date?'Award '+D(r.award_date):'Timing evidence needed')+'</small></div><div class="pst-dss-col-action"><button class="pst-dss-nextbtn" type="button" data-dss-tid="'+E(r.id)+'" data-dss-open-actions="1">'+E(next)+' →</button></div></div>';
+  var row='<div class="pst-dss-row" data-dss-target-id="'+E(r.id)+'"><span class="pst-dss-score '+scoreClass(r.score_band)+'">'+E(r.score_band||'—')+'</span><div><b>'+E(r.company_name||'Blerës')+'</b><small>'+E([r.country,buyerTierLabel(r),r.project_title||r.buyer_type].filter(Boolean).join(' · '))+'</small></div><div class="pst-dss-col-why"><div class="pst-dss-why">'+E(r.why_now||'Evidenca për arsyen e kontaktimit është në pritje')+'</div></div><div><span class="pst-dss-qr '+qrClass(r.quote_readiness)+'">'+E(qrLabel(r.quote_readiness))+'</span><div class="pst-dss-products">'+E(prods)+'</div><div class="pst-dss-ton">'+E(tonnes(r.estimated_tonnes))+'</div></div><div>'+contactHtml+'</div><div class="pst-dss-col-timing"><b>'+E(life==='draft'?'DRAFT GATI':life==='waiting'?'NË PRITJE TË BLERËSIT':life==='replied'?'BLERËSI U PËRGJIGJ':r.procurement_timing||'E panjohur')+'</b><small>'+E(life==='draft'&&q&&q.updated_at?'Draft '+D(q.updated_at):life==='waiting'&&q&&q.sent_at?'Sent '+D(q.sent_at):life==='replied'&&q&&q.replied_at?'Reply '+D(q.replied_at):r.award_date?'Award '+D(r.award_date):'Timing evidence needed')+'</small></div><div class="pst-dss-col-action"><button class="pst-dss-nextbtn" type="button" data-dss-tid="'+E(r.id)+'" data-dss-open-actions="1">'+E(next)+' →</button></div></div>';
   return row+(state.expanded===S(r.id)?detail(r):'');
  }).join('');
  list.querySelectorAll('[data-dss-open-actions]').forEach(function(b){b.onclick=function(e){e.preventDefault();e.stopPropagation();var id=b.getAttribute('data-dss-tid');state.expanded=id;state.actionView=null;renderPage();setTimeout(function(){var d=document.querySelector('.pst-dss-detail');if(d)try{d.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(err){}},0);};});
