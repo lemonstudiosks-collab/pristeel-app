@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "bf9b4a55a003fe0aaa79d99b8f51d01ade1bcd4d"
+    "bootstrapGitBlobSha": "7719298d3984bda8f838ef3782e834adf31725d6"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -128,7 +128,7 @@
       "finalOwners": [
         "pristeel-dach-steel-sales-v1.js"
       ],
-      "note": "Legacy dach-steel filename is retained for compatibility. The visible owner is EU Material Trade: Tier 1 direct steel consumers/fabricators/manufacturers, Tier 2 construction/GC-GU only with steel-procurement evidence. Its lifecycle is ready-to-contact → Gmail draft → sent/waiting → replied/active, and its discovery/runtime is explicitly separate from TED/Mundësitë."
+      "note": "Legacy dach-steel filename is retained for compatibility. The visible owner is Material Trade across EU + CH + ME + RS: Tier 1 direct steel consumers/fabricators/manufacturers, Tier 2 construction/GC-GU only with steel-procurement evidence. Buyer rows surface company intelligence, steel scope, public contact evidence and source links; a named project is optional and never invented. Lifecycle is ready-to-contact → Gmail draft → sent/waiting → replied/active → human-confirmed trading Project, while discovery/runtime remains explicitly separate from TED/Mundësitë."
     },
     {
       "area": "tenders",
@@ -319,7 +319,7 @@
       "module": "pristeel-dach-steel-sales-v1.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded by the ordered bootstrap with the reviewed 20260924-lang-project3 cache path. Owns the Material Trade buyer page for EU + CH + ME + RS, including regional outreach-language routing and human-confirmed RFQ-to-Project promotion, while retaining legacy dach_steel_* backend identifiers for compatibility."
+      "condition": "Loaded by the ordered bootstrap with the reviewed 20260924-company-intel4 cache path. Owns the Material Trade buyer page for EU + CH + ME + RS, including visible company/contact intelligence, regional outreach-language routing and human-confirmed RFQ-to-Project promotion, while retaining legacy dach_steel_* backend identifiers for compatibility."
     }
   ],
   "loadOrderConstraints": [
