@@ -33,7 +33,7 @@ assert.match(ui,/Kontakti për blerje/,'Expanded buyer detail must surface purch
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260924-company-intel4/,'runtime must cache-bust the Material Trade module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260924-sent-lifecycle1/,'runtime must cache-bust the Material Trade module');
 
 assert.match(edge,/pppp-dach-steel-draft-generator-v14-project-thread-continuity/,'Edge source must carry the project-thread-continuity version');
 assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read the TED/tender table');
@@ -59,6 +59,9 @@ assert.match(edge,/\.from\("rfq_log"\)/,'supplier RFQ dedupe must respect canoni
 assert.match(edge,/\{in:sent in:drafts\} to:/,'supplier RFQ dedupe must inspect Gmail sent/draft history');
 assert.match(edge,/human_send_required:true,external_email_sent:false/,'Edge responses must preserve the human-send gate');
 assert.doesNotMatch(edge,/\/drafts\/send|\/messages\/send/,'Edge must not contain a Gmail send endpoint');
+assert.match(edge,/const sent=msgs\.filter\(\(m:any\)=>m\.labels\.includes\("SENT"\)\|\|m\.from===GU\)/,'Material Trade sent detection must require Gmail Sent/from-user evidence');
+assert.match(edge,/threadLifecycle\(q\.gmail_thread_id\)/,'Material Trade lifecycle sync must inspect the exact Gmail thread');
+assert.match(edge,/status,sent_at:q\.sent_at\|\|sent\.at\|\|now/,'canonical outbound must store sent status and the Gmail timestamp');
 
 for (const code of ['DE','AT','FR','IT','NL','PL','SE','ES','RO','CH']) {
   assert.match(euScope,new RegExp("'"+code+"'"),'EU scope migration must allow '+code);
