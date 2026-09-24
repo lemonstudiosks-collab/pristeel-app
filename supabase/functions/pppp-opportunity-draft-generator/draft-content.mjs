@@ -50,14 +50,14 @@ export function tedUrl(tender={}){return first(tender?.source_url,tender?.detail
 function explicitGermanGender(recipient,name){
   const raw=norm(first(recipient?.salutation,recipient?.honorific,recipient?.address_title,recipient?.title_prefix,recipient?.gender));
   const fromName=norm(name);
-  if(/^(herr|mr|mister|male|mann|m|masculine)(\\b|$)/.test(raw)||/^(herr|mr\\.?|mister)\\s+/.test(fromName))return'male';
-  if(/^(frau|mrs|ms|miss|female|weiblich|w|f|feminine)(\\b|$)/.test(raw)||/^(frau|mrs\\.?|ms\\.?|miss)\\s+/.test(fromName))return'female';
+  if(/^(herr|mr|mister|male|mann|m|masculine)(\b|$)/.test(raw)||/^(herr|mr\.?|mister)\s+/.test(fromName))return'male';
+  if(/^(frau|mrs|ms|miss|female|weiblich|w|f|feminine)(\b|$)/.test(raw)||/^(frau|mrs\.?|ms\.?|miss)\s+/.test(fromName))return'female';
   return'';
 }
 function germanSurname(name){
   let s=txt(name,180).replace(/\s+/g,' ').trim();
-  s=s.replace(/^(?:(?:herr|frau|mr\\.?|mrs\\.?|ms\\.?|miss)\\s+)+/i,'').trim();
-  s=s.replace(/^(?:(?:prof\\.?|dr\\.?|prof\\.?\\s*dr\\.?)\\s+)+/i,'').trim();
+  s=s.replace(/^(?:(?:herr|frau|mr\.?|mrs\.?|ms\.?|miss)\s+)+/i,'').trim();
+  s=s.replace(/^(?:(?:prof\.?|dr\.?|prof\.?\s*dr\.?)\s+)+/i,'').trim();
   const parts=s.split(' ').filter(Boolean);
   return parts.length?parts[parts.length-1]:'';
 }
