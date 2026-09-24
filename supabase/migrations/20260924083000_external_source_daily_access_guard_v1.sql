@@ -27,7 +27,7 @@ create or replace function public.pppp_claim_external_source_daily_access_v1(
   p_timezone text default 'Europe/Budapest'
 ) returns jsonb
 language plpgsql
-security definer
+security invoker
 set search_path = public, pg_temp
 as $$
 declare
@@ -88,4 +88,3 @@ grant execute on function public.pppp_claim_external_source_daily_access_v1(text
 
 comment on table public.pppp_external_source_daily_access_v1 is
   'Fail-closed daily access ledger for external procurement sources. One attempt per source per Europe/Budapest business day.';
-

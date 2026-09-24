@@ -37,6 +37,8 @@ const migration = await readFile('supabase/migrations/20260924083000_external_so
 assert.match(migration, /primary key \(source_key, access_day\)/i, 'daily claim must be unique per source and day');
 assert.match(migration, /on conflict \(source_key, access_day\) do nothing/i, 'daily claim must be atomic');
 assert.match(migration, /at time zone v_timezone/i, 'business day must use the configured timezone');
+assert.match(migration, /security invoker/i, 'service-only claim RPC must use caller privileges');
+assert.doesNotMatch(migration, /security definer/i, 'daily gate must not bypass caller privileges');
 assert.match(migration, /revoke all on function[\s\S]*from public, anon, authenticated/i, 'claim RPC must not be public');
 assert.match(migration, /grant execute on function[\s\S]*to service_role/i, 'claim RPC must remain service-only');
 
