@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "0dc95e87e300b3836a688a5c9c06a58be868f2c6"
+    "bootstrapGitBlobSha": "71def0d6d77efb3ce1ea73d8b4517140fd126167"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -319,7 +319,7 @@
       "module": "pristeel-dach-steel-sales-v1.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded by the ordered bootstrap with the reviewed 20260924-eu-material1 cache path. Owns the EU Material Trade buyer page while retaining legacy dach_steel_* backend identifiers for compatibility."
+      "condition": "Loaded by the ordered bootstrap with the reviewed 20260924-eu-material2 cache path. Owns the EU Material Trade buyer page while retaining legacy dach_steel_* backend identifiers for compatibility."
     }
   ],
   "loadOrderConstraints": [

@@ -310,7 +310,7 @@ async function loadTargets(force){
  state.targetsLoading=true;state.error='';
  try{
   var path='pppp_dach_steel_targets_v1?select=id,source_key,source_name,source_url,partner_id,project_id,company_name,company_domain,company_website,country,buyer_type,score_band,target_status,why_now,project_title,project_reference,award_date,procurement_timing,quote_readiness,steel_scope,products,estimated_tonnes,material_revision,material_confidence,material_scope,evidence,contact_status,outreach_status,outbound_source_key,next_action,next_action_due,last_verified_at,created_at,updated_at&target_status=not.in.(closed,rejected)&order=updated_at.desc&limit=250';
-  state.targets=A(await window.supaFetch(path));state.targetsLoaded=true;state.lastLoadedAt=Date.now();state.outboundLoaded=false;
+  state.targets=A(await window.supaFetch(path)).filter(function(r){return S(r&&r.source_key).indexOf('eu:')===0;});state.targetsLoaded=true;state.lastLoadedAt=Date.now();state.outboundLoaded=false;
  }catch(e){state.targets=[];state.error=S(e&&e.message||e);state.targetsLoaded=true}
  state.targetsLoading=false;renderPage();
  if(state.targets.length)loadOutbound(force);
