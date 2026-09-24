@@ -104,8 +104,8 @@ await new Promise(r=>setTimeout(r,30));
 assert.equal(api._state.source,'TED','left-side source filter must update the canonical filter state');
 assert(window.document.querySelector('#pst-opp-desk'),'filtering must remain on the same workdesk');
 
-const dashboardBack=window.document.querySelector('[data-pst-opp-back]');
-assert(dashboardBack,'workdesk must keep Kthehu');
+const dashboardBack=window.document.querySelector('[data-pst-opp-back],[data-pcw-opportunities-back]');
+assert(dashboardBack,'workdesk must keep a functional Kthehu control even during canonical rerenders');
 window.eval(productionSurfaceSrc);
 window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
 await new Promise(r=>setTimeout(r,25));
