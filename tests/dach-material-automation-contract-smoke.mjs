@@ -33,7 +33,7 @@ assert.match(ui,/Kontakti për blerje/,'Expanded buyer detail must surface purch
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260924-sent-lifecycle1/,'runtime must cache-bust the Material Trade module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260924-gmail-button-white1/,'runtime must cache-bust the Material Trade module');
 
 assert.match(edge,/pppp-dach-steel-draft-generator-v14-project-thread-continuity/,'Edge source must carry the project-thread-continuity version');
 assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read the TED/tender table');
