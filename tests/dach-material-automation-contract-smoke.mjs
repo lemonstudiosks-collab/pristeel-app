@@ -19,8 +19,9 @@ assert.match(ui,/return'draft'/,'lifecycle must classify a live Gmail draft sepa
 assert.match(ui,/buyerTierLabel/,'UI must expose Tier 1/Tier 2 buyer qualification');
 assert.match(ui,/T1 · konsumator direkt/,'direct steel consumers must be Tier 1');
 assert.match(ui,/T2 · ndërtim \/ GC-GU/,'construction buyers must be Tier 2');
+assert.match(ui,/source_key\)\.indexOf\('eu:'\)===0/,'Material Trade UI must hide legacy non-EU-prefixed TED seeds');
 assert.match(ui,/Additional steel material supply source/,'non-project EU buyer copy must not invent a project');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260924-eu-material1/,'runtime must cache-bust the EU Material Trade module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\\.js\\?v=20260924-eu-material2/,'runtime must cache-bust the EU Material Trade module');
 
 assert.match(edge,/pppp-dach-steel-draft-generator-v12-eu-material-trade/,'Edge source must carry the EU Material Trade version');
 assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read the TED/tender table');
