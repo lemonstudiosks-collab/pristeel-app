@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { resolveTedRecipients, normalizeEmail } from "./recipient-policy.mjs";
+import { resolveTedRecipients, resolveTedDraftRecipients, normalizeEmail } from "./recipient-policy.mjs";
 import { encodeRfc2047Header } from "./mime-headers.mjs";
 import { buildTedDraftContent } from "./draft-content.mjs";
 
@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v16-communication-state-skip';
+const GENERATOR='pppp-opportunity-draft-generator-v17-draft-safety-split';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=1;
 const MAX_DRAFT_WRITES_PER_RUN=10;
@@ -182,6 +182,20 @@ function expectedTedRoute(tender:any){
   return'';
 }
 function truthy(v:any){return v===true||String(v??'').toLowerCase()==='true';}
+function tedDraftReadiness(a:any,tender:any){
+  const winner=tender?.winner&&typeof tender.winner==='object'?tender.winner:{};
+  const winnerType=text(winner.company_type||winner?.company_classification?.company_type||'',80).toLowerCase();
+  const route=text(a?.route,80).toUpperCase();
+  if(!text(winner?.name,300))return{ok:false,reason:'winner_identity_missing'};
+  if(!text(tender?.title,500))return{ok:false,reason:'tender_identity_missing'};
+  if(winnerType&&winnerType!=='unknown'){
+    const expected=expectedTedRoute(tender);
+    if(expected&&route!==expected)return{ok:false,reason:'route_mismatch',expected_route:expected};
+  }else if(route!=='TED_GENERAL'){
+    return{ok:false,reason:'winner_role_unverified_requires_general_route'};
+  }
+  return{ok:true,reason:'draft_identity_ready',winner_type:winnerType||'unknown'};
+}
 function readinessEvidence(a:any,tender:any){
   const ap=a?.payload&&typeof a.payload==='object'?a.payload:{};
   const tp=tender&&typeof tender==='object'?tender:{};
@@ -253,16 +267,16 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false)
   }
   const route=text(a.route,80).toUpperCase(),expected=/^TED_/i.test(route)?expectedTedRoute(tender):route;
   if(/^TED_/i.test(route)){
-    const readiness=tedReadiness(a,tender);
+    const readiness=tedDraftReadiness(a,tender);
     if(!readiness.ok){
+      if(readiness.reason==='route_mismatch'){
+        const retired=refreshExisting?await retireObsoleteDrafts(a,new Set(),`route_mismatch:${route}->${readiness.expected_route}`,budget):0;
+        return{action_key:a.action_key,company:a.target_company,event:'route_mismatch',route,expected_route:readiness.expected_route,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired,remaining:0};
+      }
       return{action_key:a.action_key,company:a.target_company,event:'readiness_blocked',reason:readiness.reason,route,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired:0,remaining:0};
     }
   }
-  if(/^TED_/i.test(route)&&expected&&route!==expected){
-    const retired=refreshExisting?await retireObsoleteDrafts(a,new Set(),`route_mismatch:${route}->${expected}`,budget):0;
-    return{action_key:a.action_key,company:a.target_company,event:'route_mismatch',route,expected_route:expected,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired,remaining:0};
-  }
-  const recipients=/^TED_/i.test(route)?resolveTedRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1);
+  const recipients=/^TED_/i.test(route)?resolveTedDraftRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1);
   const keepEmails=new Set(recipients.map((r:any)=>normalizeEmail(r.email)));
   const retired=refreshExisting?await retireObsoleteDrafts(a,keepEmails,'recipient_no_longer_preflight_eligible',budget):0;
   if(!recipients.length){
