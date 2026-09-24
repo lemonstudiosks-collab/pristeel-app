@@ -397,13 +397,16 @@ function buyerAction(r){
  var q=outboundFor(r),ct=contactFor(r),to=q&&q.recipient_email||ct.email||'',status=q?S(q.status||'registered'):'not registered',st=N(status),life=lifecycle(r),sentAt=q&&q.sent_at||'',replyAt=q&&q.replied_at||'',supp=q&&S(q.suppression_reason).trim(),recoverable=['gmail_draft_missing','gmail_draft_stale','draft_missing','draft_stale'].indexOf(supp)>-1,blocked=(!!supp&&!recoverable)||st==='suppressed',stale=st==='stale'||recoverable,human=!q||q.human_send_required!==false;
  var preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='buyer',k=draftKey('buyer',r.id),busy=!!state.draftBusy[k],result=state.draftResult[k]||null,primary='',secondary='';
  if(life==='replied')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap përgjigjen në Gmail</button>':'';
- else if(life==='waiting')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap thread-in në Gmail</button>':'';\n else if(life==='draft')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>':'';
+ else if(life==='waiting')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap thread-in në Gmail</button>:'';
+ else if(life==='draft')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>':'';
  else if(blocked)primary='<button class="pst-dss-btn" disabled>Outbound i bllokuar</button>';
  else if(q&&q.gmail_draft_id&&q.gmail_thread_id&&!stale)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>';
  else if(to)primary='<button class="pst-dss-btn primary" '+(busy?'disabled':'')+' data-dss-action="buyer-create-draft" data-dss-tid="'+E(r.id)+'">'+(busy?'Duke kontrolluar Gmail…':(stale?'Rigjenero Gmail draft':'Krijo Gmail draft'))+'</button>';
  else primary='<button class="pst-dss-btn" disabled>Duhet kontakt</button>';
  if(life==='action')secondary='<button class="pst-dss-btn" data-dss-action="buyer-preview" data-dss-tid="'+E(r.id)+'">Shiko tekstin</button>'+(to?'<button class="pst-dss-btn" data-dss-action="contact-resolve" data-dss-tid="'+E(r.id)+'">Verifiko kontaktin</button>':'');
- var guard=life==='replied'?('Përgjigje e marrë'+(replyAt?' më '+D(replyAt):'')+'. Mos dërgo cold outreach tjetër; rishiko thread-in dhe klasifiko RFQ/BOQ.'):\n   life==='waiting'?('Emaili është dërguar'+(sentAt?' më '+D(sentAt):'')+'. Targeti është në pritje dhe një outreach i ri bllokohet nga cooldown-i.'):\n   life==='draft'?'Gmail draft ekziston, por emaili nuk konsiderohet i dërguar derisa Gmail Sent ta konfirmojë.':
+ var guard=life==='replied'?('Përgjigje e marrë'+(replyAt?' më '+D(replyAt):'')+'. Mos dërgo cold outreach tjetër; rishiko thread-in dhe klasifiko RFQ/BOQ.'):
+   life==='waiting'?('Emaili është dërguar'+(sentAt?' më '+D(sentAt):'')+'. Targeti është në pritje dhe një outreach i ri bllokohet nga cooldown-i.'):
+   life==='draft'?'Gmail draft ekziston, por emaili nuk konsiderohet i dërguar derisa Gmail Sent ta konfirmojë.':
    blocked?('Preflight: '+S(supp||'suppressed')+'. Ky guard duhet zgjidhur para outreach.'):
    stale?'Drafti i vjetër mungon/stale. Para rigjenerimit PPPP kontrollon Gmail Sent për të parandaluar dublikatat.':
    human?'Para krijimit të draftit PPPP kontrollon Gmail Sent + shared cooldown; dërgimi mbetet human-approved.':'Asnjë dërgim automatik nga kjo faqe.';
