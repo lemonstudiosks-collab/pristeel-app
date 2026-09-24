@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { resolveTedRecipients, normalizeEmail } from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
+import { resolveTedRecipients, resolveTedDraftRecipients, normalizeEmail } from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
 
 const readiness={
   winner_role_verified:true,
@@ -47,5 +47,15 @@ assert.equal(resolveTedRecipients(genericAction,genericPayload,20)[0]?.email,'in
 const wrongDomain={...action,payload:{outreach_readiness_v1:{...readiness,verified_company_domain:'other-company.de'}}};
 assert.equal(resolveTedRecipients(wrongDomain,payload,20).length,0,'verified company domain must control contact identity');
 assert.equal(normalizeEmail(' Alice@Example.COM '),'alice@example.com');
+
+const draftOnlyAction={route:'TED_GENERAL',target_company:'RB Impra GmbH',target_email:'info@rb-impra.de',payload:{}};
+const draftOnlyPayload={winner:{name:'RB Impra GmbH',website:'https://rb-impra.de/',company_type:'unknown',contact_enrichment:{organizations:[{name:'RB Impra GmbH',domain:'rb-impra.de',contacts:[
+  {type:'email',value:'info@rb-impra.de',score:88,confidence:'high',purpose:'general',source_type:'TED'},
+  {type:'email',value:'bad@unrelated.example.org',score:99,confidence:'high',purpose:'person',source_type:'official_website',draft_eligible:false}
+]}]}}};
+const draftRecipients=resolveTedDraftRecipients(draftOnlyAction,draftOnlyPayload,1);
+assert.equal(draftRecipients.length,1,'manual draft policy should accept one verified same-company recipient without send readiness');
+assert.equal(draftRecipients[0].email,'info@rb-impra.de','verified same-company generic address may be drafted for human review');
+assert.equal(resolveTedRecipients(draftOnlyAction,draftOnlyPayload,1).length,0,'strict send-grade recipient policy must remain blocked without outreach readiness');
 
 console.log('opportunity TED high-confidence recipient policy smoke: ok');
