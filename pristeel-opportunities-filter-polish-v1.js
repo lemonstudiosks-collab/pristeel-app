@@ -1,6 +1,7 @@
 /* PRISTEEL Opportunities Desk v1
- * Presentation/filter owner for the canonical Project-Centric Opportunities workflow.
- * Keeps one read path, performs no database writes and never sends outbound communication.
+ * Final presentation owner for the canonical Project-Centric Opportunities workflow.
+ * Gmail-draft creation delegates to the canonical draft engine and never sends automatically.
+ * Drafted/contacted companies are parked outside the active list; Projects remain RFQ-driven.
  */
 (function(){
 'use strict';
@@ -40,7 +41,7 @@ function srcOf(r){var x=current(),fn=x&&x._test&&x._test.tenderSource;return fn?
 function fieldOf(r){var x=current(),fn=x&&x._test&&x._test.opportunityField;if(typeof fn==='function')return fn(r);var t=rowText(r);for(var i=0;i<FIELDS.length-1;i++)if(FIELDS[i].re.test(t))return FIELDS[i].id;return'other';}
 function winnerOf(r){var x=current(),fn=x&&x._test&&x._test.winnerGroup;if(typeof fn==='function')return fn(r);if(srcOf(r)!=='TED')return'local';var p=r&&r.payload&&typeof r.payload==='object'?r.payload:{},w=p.winner&&typeof p.winner==='object'?p.winner:{},role=S(w.company_type||(w.company_classification&&w.company_classification.company_type)||'unknown').toLowerCase();return role==='gc_epc'?'gc_epc':role==='producer'?'producer':'other';}
 function lifeOf(r){var x=current(),fn=x&&x._test&&x._test.opportunityLifecycle,l=fn?fn(r):'new';return l==='draft'?'waiting':l;}
-function baseRows(){var x=current();if(!x||!state)return[];var rows=A(state.rows),t=x._test||{};if(typeof t.tenderVisible==='function')rows=rows.filter(t.tenderVisible);if(typeof t.dedupeOpportunities==='function')rows=t.dedupeOpportunities(rows);return rows;}
+function baseRows(){var x=current();if(!x||!state)return[];var rows=A(state.rows),t=x._test||{};if(typeof t.tenderVisible==='function')rows=rows.filter(t.tenderVisible);if(typeof t.dedupeOpportunities==='function')rows=t.dedupeOpportunities(rows);if(typeof t.ownedByProject==='function')rows=rows.filter(function(r){return !t.ownedByProject(r);});return rows;}
 function filteredRows(){var x=current(),fn=x&&x._test&&x._test.opportunityRows;return typeof fn==='function'?A(fn()):baseRows();}
 function counts(){
  var rows=baseRows(),c={total:rows.length,local:0,award:0,life:{new:0,waiting:0,replied:0},src:{},field:{},winner:{gc_epc:0,other:0,producer:0}};
