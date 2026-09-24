@@ -140,7 +140,7 @@ function resultTitle(meta){if(meta&&meta.source)return sourceMark(meta.source)+E
 function header(focus){
  var h=focus.querySelector(':scope>header');if(!h)return;
  var html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><h2>Mundësitë</h2></div></div>';
- if(h.dataset.pstOppHeaderHtml!==html){h.innerHTML=html;h.dataset.pstOppHeaderHtml=html;}
+ if(h.dataset.pstOppHeaderHtml!==html||!h.querySelector('[data-pst-opp-back]')){h.innerHTML=html;h.dataset.pstOppHeaderHtml=html;}
 }
 function tools(focus){
  var t=focus.querySelector('#pst-pcw-opportunity-tools');if(!t)return;
