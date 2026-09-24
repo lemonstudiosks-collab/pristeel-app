@@ -33,18 +33,28 @@ async function fetchPage(url){const r=await fetch(url,{redirect:'follow',headers
 async function classifySingle(row,crmByName){const w=winner(row),legal=names(w).join(' '),legalResult=classifyCompanyText(`awarded company ${legal}`,{organizationCount:1});if(legalResult.company_type!=='unknown'&&['medium','high'].includes(legalResult.confidence))return{...legalResult,classification_method:'legal_name',source_urls:[]};let corpus=`awarded company ${legal}`,sources=[];for(const seed of siteSeeds(w,crmByName)){try{const home=await fetchPage(seed);corpus+=' '+stripHtml(home.html);sources.push(home.url);for(const u of pageLinks(home.html,home.url).slice(0,3)){try{const p=await fetchPage(u);corpus+=' '+stripHtml(p.html);sources.push(p.url);}catch{}}if(corpus.length>50000)break;}catch{}}const c=classifyCompanyText(corpus,{organizationCount:1});return{...c,classification_method:sources.length?'public_web_retry':'legal_name_unresolved',source_urls:unique(sources).slice(0,8)};}
 function memberRecord(name,identifier,crmByName){const c=crmByName.get(norm(name));const result=classifyCompanyText(`awarded company ${name} ${c?.name||''}`,{organizationCount:1});return{name,identifier:identifier||null,company_type:result.company_type,confidence:result.confidence,crm_domain:c?.domain||null,evidence:result.evidence||[]};}
 async function patchRole(access,row,result,mode){const p={...payload(row)},w={...winner(row)},now=new Date().toISOString();w.company_type=result.company_type;w.company_classification={version:VERSION,company_type:result.company_type,confidence:result.confidence,scores:result.scores||{},evidence:result.evidence||[],source_urls:result.source_urls||[],classification_method:result.classification_method||'rules',classified_at:now};if(result.consortium_members)w.consortium_members=result.consortium_members;p.winner=w;p.cooperation_angle=angle(result.company_type);p.company_verification_required=result.company_type==='unknown';p.company_role_retry={version:VERSION,attempted_at:now,next_retry_at:result.company_type==='unknown'?new Date(Date.now()+5*86400000).toISOString():null};if(mode==='apply')await rest(access,`kek_tender_watch?id=eq.${encodeURIComponent(row.id)}`,{method:'PATCH',body:{payload:p,updated_at:now},prefer:'return=minimal'});return{...row,payload:p};}
+function companyKey(v){return norm(v).replace(/[^a-z0-9]+/g,' ').replace(/\b(?:gmbh|mbh|co|kg|ag|se|srl|sro|sp|zoo|sa|sas|sasu|ltd|limited|inc|llc|bv|nv|oy|ab|aps|as|doo|gesellschaft|gruppe|group|company)\b/g,' ').replace(/\s+/g,' ').trim();}
+function scopedWinnerOrganizations(w){
+  const orgs=array(w?.contact_enrichment?.organizations),target=companyKey(w?.name||names(w)[0]||'');
+  if(!orgs.length)return[];
+  if(!target)return orgs.length===1?orgs:[];
+  const exact=orgs.filter(o=>companyKey(o?.name||'')===target);
+  if(exact.length)return exact;
+  return orgs.length===1?orgs:[];
+}
 function verifiedWinnerEmail(w,outreach){
-  const domains=new Set();
+  const allOrgs=array(w?.contact_enrichment?.organizations),orgs=scopedWinnerOrganizations(w),domains=new Set();
   const addDomain=v=>{const d=websiteDomain(v);if(d)domains.add(d);};
-  addDomain(w?.website);for(const x of array(w?.websites))addDomain(x);
-  for(const o of array(w?.contact_enrichment?.organizations)){const d=String(o?.domain||websiteDomain(o?.official_website)||'').toLowerCase().replace(/^www\./,'');if(d)domains.add(d);}
-  const matches=e=>{const d=emailDomain(e);if(!d)return false;if(!domains.size)return true;for(const x of domains)if(sameDomain(d,x))return true;return false;};
+  for(const o of orgs){const d=String(o?.domain||websiteDomain(o?.official_website)||'').toLowerCase().replace(/^www\./,'');if(d)domains.add(d);}
+  if(allOrgs.length<=1){addDomain(w?.website);for(const x of array(w?.websites))addDomain(x);}
+  const matches=e=>{const d=emailDomain(e);if(!d||!domains.size)return false;for(const x of domains)if(sameDomain(d,x))return true;return false;};
   const enriched=[];
-  for(const o of array(w?.contact_enrichment?.organizations))for(const x of array(o?.contacts)){
+  for(const o of orgs)for(const x of array(o?.contacts)){
     if(String(x?.type||'').toLowerCase()!=='email'||x?.draft_eligible===false)continue;
     const e=text(x?.value||x?.email,400);if(e&&matches(e))enriched.push({email:e,score:Number(x?.score||0)});
   }
   enriched.sort((a,b)=>b.score-a.score);if(enriched[0])return enriched[0].email;
+  if(allOrgs.length>1)return'';
   const candidates=[text(outreach?.contact_email,400),text(w?.email,400),...array(w?.emails).map(x=>text(x,400))].filter(Boolean);
   return candidates.find(matches)||'';
 }

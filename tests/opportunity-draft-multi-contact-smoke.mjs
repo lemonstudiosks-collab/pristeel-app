@@ -55,16 +55,24 @@ assert.equal(resolveTedRecipients(wrongDomain,payload,20).length,0,'verified com
 assert.equal(normalizeEmail(' Alice@Example.COM '),'alice@example.com');
 
 const draftOnlyAction={route:'TED_GENERAL',target_company:'RB Impra GmbH',target_email:'info@rb-impra.de',payload:{}};
-const draftOnlyPayload={winner:{name:'RB Impra GmbH',website:'https://rb-impra.de/',company_type:'unknown',contact_enrichment:{organizations:[{name:'RB Impra GmbH',domain:'rb-impra.de',contacts:[
+const draftOnlyPayload={winner:{name:'RB Impra GmbH',website:'https://rb-impra.de/',company_type:'unknown',contact_enrichment:{organizations:[
+{name:'RB Impra GmbH',domain:'rb-impra.de',contacts:[
   {type:'email',value:'info@rb-impra.de',score:88,confidence:'high',purpose:'general',source_type:'TED'},
   {type:'email',value:'anna.beispiel@rb-impra.de',name:'Anna Beispiel',salutation:'Frau',score:96,confidence:'high',purpose:'person',source_type:'official_website'},
+  {type:'email',value:'max.mustermann@rb-impra.de',score:95,confidence:'high',purpose:'person',source_type:'official_website'},
   {type:'email',value:'procurement@rb-impra.de',score:91,confidence:'high',purpose:'procurement',source_type:'official_website'},
   {type:'email',value:'bad@unrelated.example.org',score:99,confidence:'high',purpose:'person',source_type:'official_website',draft_eligible:false}
-]}]}}};
+]},
+{name:'Other Consortium GmbH',domain:'other-consortium.de',contacts:[
+  {type:'email',value:'procurement@other-consortium.de',score:100,confidence:'high',purpose:'procurement',source_type:'official_website'}
+]}
+]}}};
 const draftRecipients=resolveTedDraftRecipients(draftOnlyAction,draftOnlyPayload,20);
-assert.equal(draftRecipients.length,3,'manual draft policy must return every verified same-company email address, not only the top-ranked one');
-assert.deepEqual(new Set(draftRecipients.map(r=>r.email)),new Set(['info@rb-impra.de','anna.beispiel@rb-impra.de','procurement@rb-impra.de']));
+assert.equal(draftRecipients.length,4,'manual draft policy must return every verified email for the selected company, not only the top-ranked one');
+assert.deepEqual(new Set(draftRecipients.map(r=>r.email)),new Set(['info@rb-impra.de','anna.beispiel@rb-impra.de','max.mustermann@rb-impra.de','procurement@rb-impra.de']));
+assert(!draftRecipients.some(r=>r.email==='procurement@other-consortium.de'),'contacts from another award/consortium company must never leak into the selected company draft set');
 assert.equal(draftRecipients.find(r=>r.email==='anna.beispiel@rb-impra.de')?.salutation,'Frau','explicit contact salutation must survive recipient resolution for personalized drafts');
+assert.equal(draftRecipients.find(r=>r.email==='max.mustermann@rb-impra.de')?.name,'Max Mustermann','person-like email local parts may supply a safe name when no explicit name field exists');
 assert.equal(resolveTedRecipients(draftOnlyAction,draftOnlyPayload,1).length,0,'strict send-grade recipient policy must remain blocked without outreach readiness');
 
 console.log('opportunity TED high-confidence recipient policy smoke: ok');
