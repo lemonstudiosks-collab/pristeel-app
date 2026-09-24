@@ -8,6 +8,7 @@ const outreachBridge = fs.readFileSync('supabase/live-migration-history/20260922
 const euScope = fs.readFileSync('supabase/live-migration-history/20260924060157_expand_material_trade_buyers_to_eu_v1.sql','utf8');
 const languagePromotion = fs.readFileSync('supabase/live-migration-history/20260924064541_material_trade_language_project_promotion_v1.sql','utf8');
 const projectEmailContinuity = fs.readFileSync('supabase/live-migration-history/20260924065454_material_trade_project_email_continuity_v1.sql','utf8');
+const contactResolutionFix = fs.readFileSync('supabase/live-migration-history/20260924072000_fix_material_trade_contact_resolution_claims_v1.sql','utf8');
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 
 assert.match(ui,/BLERËSIT E MATERIALIT TË ÇELIKUT · EUROPE/,'Home card must expose broader Material Trade scope');
@@ -27,7 +28,12 @@ assert.match(ui,/Dodatni izvor nabavke čeličnog materijala/,'UI must include B
 assert.match(ui,/data-dss-action="promote-project"/,'Reply/RFQ stage must expose project promotion');
 assert.match(ui,/confirm_project_create:true/,'Project promotion must require explicit UI confirmation');
 assert.match(ui,/Additional steel material supply source/,'non-project EU buyer copy must not invent a project');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\\.js\\?v=20260924-lang-project3/,'runtime must cache-bust the Material Trade module');
+assert.match(ui,/obj\.claim/,'Material Trade UI must parse contact emails stored in evidence.claim');
+assert.match(ui,/Kontakti për blerje/,'Expanded buyer detail must surface purchasing contact prominently');
+assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
+assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
+assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\\.js\\?v=20260924-company-intel4/,'runtime must cache-bust the Material Trade module');
 
 assert.match(edge,/pppp-dach-steel-draft-generator-v14-project-thread-continuity/,'Edge source must carry the project-thread-continuity version');
 assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read the TED/tender table');
@@ -80,5 +86,7 @@ assert.match(languagePromotion,/project_promoted/,'summary/protocol must remove 
 assert.match(projectEmailContinuity,/material_trade_project_email_continuity/,'manifest must document Gmail-thread continuity');
 assert.match(projectEmailContinuity,/gmail_thread_id/,'Gmail thread must be the project-promotion identity key');
 assert.match(projectEmailContinuity,/Never overwrite a project_emails row already linked to a different project/,'manifest must preserve project identity conflicts');
+assert.match(contactResolutionFix,/e\.item->>'claim'/,'contact resolver must inspect evidence.claim');
+assert.match(contactResolutionFix,/Purchasing \/ Procurement/,'contact resolver must classify procurement contacts');
 
 console.log('Material Trade automation contract smoke: PASS');
