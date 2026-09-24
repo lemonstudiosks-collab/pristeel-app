@@ -8,7 +8,6 @@ const WORKER_SERVICE='/functions/v1/pppp-tender-fetch-worker';
 const MAX_FILE_BYTES=30*1024*1024;
 const MAX_ACTIONS=14;
 const text=(v,max=2000)=>String(v==null?'':v).trim().slice(0,max);
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const norm=v=>text(v,500).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\.[a-z0-9]{1,6}$/,'').replace(/[^a-z0-9]+/g,' ').trim();
 const safeName=(v,fallback='document.bin')=>(text(v,240).replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').replace(/\s+/g,' ').trim()||fallback).slice(0,180);
 
@@ -43,6 +42,6 @@ async function fetchJobDocuments(job,cookie){const page=await getHtml(job.detail
  const m=matchExpected(job.expected_documents||[],files);if(m.missing.length)throw new Error(`Protected documents not found with current KRPP session: ${m.missing.join(', ')}`);return m.matched;}
 
 export async function runOnce(){const base=(process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL).replace(/\/$/,''),workerId=process.env.PPPP_WORKER_ID||'mac-mini-01',token=process.env.PPPP_WORKER_TOKEN;if(!token)throw new Error('PPPP_WORKER_TOKEN is required locally');const cookie=await loadCookie();await workerCall(base,workerId,token,'ping');const claimed=await workerCall(base,workerId,token,'claim');const job=claimed.job;if(!job){console.log('KRPP protected fetch: queue empty.');return{ok:true,job:null};}console.log(`KRPP protected fetch: ${job.procurement_no||job.tender_watch_id} · ${job.expected_documents.length} document(s).`);try{const files=await fetchJobDocuments(job,cookie);for(const f of files){await submitFile(base,workerId,token,job.tender_watch_id,f);console.log(`Archived: ${f.name} (${f.bytes.byteLength} bytes)`);}const done=await workerCall(base,workerId,token,'complete',{tender_watch_id:job.tender_watch_id});console.log(`KRPP protected fetch complete: ${job.tender_watch_id}.`);return{ok:true,job:job.tender_watch_id,archived:files.length,status:done.status};}catch(e){const message=text(e?.message||e,1200);try{await workerCall(base,workerId,token,'fail',{tender_watch_id:job.tender_watch_id,error:message});}catch{}throw e;}}
-export async function runLoop(){const interval=Math.max(60,Number(process.env.KRPP_FETCH_POLL_SECONDS||180));for(;;){try{await runOnce();}catch(e){console.error('KRPP protected fetch:',text(e?.message||e,1200));}await sleep(interval*1000);}}
-
-const direct=process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href;if(direct){const once=process.argv.includes('--once')||process.env.KRPP_FETCH_ONCE==='1';(once?runOnce():runLoop()).catch(e=>{console.error(e);process.exit(1);});}
+// This worker is intentionally one-shot. Scheduling belongs to launchd and is
+// limited to one morning attempt; failures must never become a polling loop.
+const direct=process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href;if(direct){runOnce().catch(e=>{console.error(e);process.exit(1);});}

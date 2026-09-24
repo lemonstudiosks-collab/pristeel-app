@@ -34,7 +34,7 @@ on:
       - 'supabase/migrations/**'
       - '.github/workflows/ted-tender-sync.yml'
   schedule:
-    - cron: '47 */2 * * *'
+    - cron: '30 5 * * *'
   push:
     branches: [main]
     paths:
@@ -85,6 +85,8 @@ jobs:
       TED_COMPANY_MAX_ROWS: '20'
       TED_HISTORY_REUSE_MAX_ROWS: '50'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
+      PPPP_SOURCE_ACCESS_RUN_TOKEN: ${{ github.run_id }}-${{ github.run_attempt }}
+      PPPP_SOURCE_ACCESS_TRIGGER: ${{ github.event_name }}
 
     steps:
       - name: Checkout
@@ -133,26 +135,33 @@ jobs:
       - name: Run TED winner contacts UI smoke
         run: node tests/tender-winner-contacts-smoke.js
 
+      - name: Claim TED daily source access
+        id: source_gate
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: node scripts/external-source-daily-gate.mjs TED
+
       - name: Collect open TED steel opportunities
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-tender-sync.mjs
 
       - name: Enrich awarded TED steel contracts with winners
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-award-winner-sync.mjs
 
       - name: Reuse known TED winner contacts from history
-        if: github.event_name != 'pull_request'
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-winner-contact-history-reuse.mjs
 
       - name: Research winner public business contacts
-        if: github.event_name != 'pull_request'
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-winner-contact-enrichment.mjs
 
       - name: Classify winner business role and cooperation angle
-        if: github.event_name != 'pull_request'
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-winner-company-classification.mjs
 
       - name: Rank winner contacts for procurement outreach
-        if: github.event_name != 'pull_request'
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-winner-contact-ranking.mjs
 
       - name: Upload sanitized summaries
