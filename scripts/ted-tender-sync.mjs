@@ -141,13 +141,16 @@ async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',bod
 export function mergeTedRefreshRows(rows,existingRows){
   const byKey=new Map((Array.isArray(existingRows)?existingRows:[]).map(r=>[String(r?.source_key||''),r]));
   for(const row of Array.isArray(rows)?rows:[]){
-    const old=byKey.get(String(row?.source_key||''));if(!old)continue;
-    const oldPayload=old?.payload&&typeof old.payload==='object'?old.payload:{};
-    const freshPayload=row?.payload&&typeof row.payload==='object'?row.payload:{};
-    row.payload={...oldPayload,...freshPayload};
-    for(const key of ['estimated_value','currency','procedure','contract_type','contract_value_band']){
-      if((row[key]==null||row[key]==='')&&old[key]!=null&&old[key]!=='')row[key]=old[key];
+    const old=byKey.get(String(row?.source_key||''));
+    if(old){
+      const oldPayload=old?.payload&&typeof old.payload==='object'?old.payload:{};
+      const freshPayload=row?.payload&&typeof row.payload==='object'?row.payload:{};
+      row.payload={...oldPayload,...freshPayload};
+      for(const key of ['estimated_value','currency','procedure','contract_type','contract_value_band']){
+        if((row[key]==null||row[key]==='')&&old[key]!=null&&old[key]!=='')row[key]=old[key];
+      }
     }
+    if(row.currency==null||row.currency==='')row.currency='EUR';
   }
   return rows;
 }

@@ -77,6 +77,10 @@ assert.equal(awardRow.payload.ted_details.award_date,'2026-08-12');
 assert.equal(awardRow.payload.ted_details.value_kind,'award');
 assert.equal(awardRow.estimated_value,785000.5);
 assert.equal(awardRow.currency,'EUR');
+const noCurrencyRow=normalizeTedNotice({...fixture.notices[1],'estimated-value-cur-proc':null},'opportunity','2026-08-14T06:00:00.000Z');
+assert.equal(noCurrencyRow.currency,null,'normalization should preserve missing TED currency until existing state has a chance to win');
+mergeTedRefreshRows([noCurrencyRow],[]);
+assert.equal(noCurrencyRow.currency,'EUR','apply preparation must never emit null into the canonical non-null currency column');
 
 const refreshed=normalizeTedNotice({...fixture.notices[1],'estimated-value-proc':null,'estimated-value-cur-proc':null},'opportunity','2026-08-15T06:00:00.000Z');
 mergeTedRefreshRows([refreshed],[{source_key:refreshed.source_key,estimated_value:990000,currency:'CHF',payload:{winner:{name:'Preserved Winner',contact_enrichment:{status:'found'}},operator_note:'keep-me'}}]);
