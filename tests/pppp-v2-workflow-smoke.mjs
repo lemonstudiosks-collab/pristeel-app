@@ -45,10 +45,11 @@ assert(euAwardMigration.includes('from public, anon'), 'Promotion RPC must not b
 assert(euAwardMigration.includes('human_send_required'), 'Promotion must preserve the outbound human gate');
 assert(euAwardCorrection.includes("'pppp_v2_eu_award_sales', 'klient'"), 'Correction must be safe when replayed after the already-correct base migration');
 assert(euAwardCorrection.includes('else\n    execute v_fixed;'), 'Correction migration must be idempotent for fresh database replays');
-assert(opportunities.includes('data-pcw-ti="promote_award"'), 'TED award console must expose explicit approval');
-assert(opportunities.includes('Aprovo · krijo Project'), 'TED award approval label must explain the state change');
-assert(tenderActions.includes("db('rpc/pppp_promote_ted_award_to_sales_project_v1'"), 'Frontend must use the bounded promotion RPC');
-assert(tenderActions.includes('Së pari aprovoje Opportunity-n'), 'Draft preparation must wait for the Project approval gate');
+assert(opportunities.includes('data-pcw-ti="draft"'), 'TED award console must expose the outreach draft action before Project creation');
+assert(opportunities.includes('Krijo draft emaili'), 'TED award outreach label must make the Gmail-draft action explicit');
+assert(!opportunities.includes('Aprovo · krijo Project'), 'Contacting a TED winner must not create a Project before RFQ evidence');
+assert(tenderActions.includes("db('rpc/pppp_promote_ted_award_to_sales_project_v1'"), 'Bounded promotion RPC must remain available for the later RFQ-confirmed Project step');
+assert(!tenderActions.includes('Së pari aprovoje Opportunity-n'), 'Draft preparation must not require Project creation');
 assert.doesNotThrow(() => new Function(schemaCompat));
 assert.doesNotThrow(() => new Function(workbench));
 assert.doesNotThrow(() => new Function(tenderActions));

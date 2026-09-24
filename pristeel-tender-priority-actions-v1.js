@@ -2,7 +2,7 @@
  * Decision-first layer over existing KRPP/APP/TED engines.
  * Open award outreach stays actionable on Home even when a stronger direct tender arrives.
  * Outreach drafts are created in Gmail with the account's real default signature.
- * Human gates remain mandatory. Never sends email automatically and never creates a project before GO.
+ * Human gates remain mandatory. Never sends email automatically. TED outreach drafts do not create Projects; Project promotion happens only after real RFQ/interest evidence.
  */
 (function(){
 'use strict';
@@ -109,7 +109,6 @@ async function draftEdge(payload){
 }
 async function prepareDraft(id){
  var rows=await refresh(false),r=rows.find(function(x){return S(x.id)===S(id);});if(!r||phase(r)!=='award')throw new Error('Draft outreach vlen vetëm për tender të përfunduar me fitues.');
- if(!r.project_id)throw new Error('Së pari aprovoje Opportunity-n dhe krijo Project-in PPPP V2. Drafti pastaj ruhet në kontekstin e Project-it.');
  var contacts=enrichedContacts(r);if(!contacts.length)throw new Error('Nuk ka ende email të verifikuar që i atribuohet kësaj kompanie. Kontrollo Kontaktet e fituesit.');
  var role=winnerRole(r),types='gc_project_outreach_draft,producer_capacity_outreach_draft,consortium_project_outreach_draft,general_project_outreach_draft';
  var qs='pppp_opportunity_action_queue_v2?tender_watch_id=eq.'+encodeURIComponent(id)+'&status=eq.draft_review&action_type=in.('+types+')&select=id,action_type,route,target_company,target_email,updated_at&order=updated_at.desc&limit=8',actions=A(await db(qs)),wanted=role==='producer'?'producer_capacity_outreach_draft':role==='gc_epc'?'gc_project_outreach_draft':role==='trader_consortium'?'consortium_project_outreach_draft':'general_project_outreach_draft';
