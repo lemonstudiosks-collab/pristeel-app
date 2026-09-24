@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 
 const REGISTRY_PATH = 'runtime-bootstrap-order.json';
 const CHECK_ONLY = process.argv.includes('--check');
+const normalizeEol = (value) => value.replace(/\r\n/g, '\n');
 
 function fail(message) {
   console.error(`BOOTSTRAP GENERATOR ERROR: ${message}`);
@@ -101,7 +102,7 @@ const artifactPath = registry.runtimeArtifact;
 if (CHECK_ONLY) {
   if (!fs.existsSync(artifactPath)) fail(`Missing generated runtime artifact: ${artifactPath}`);
   const current = fs.readFileSync(artifactPath, 'utf8');
-  if (current !== generated) {
+  if (normalizeEol(current) !== normalizeEol(generated)) {
     fail(
       `${artifactPath} is not the deterministic output of ${REGISTRY_PATH}. ` +
       'Run `node scripts/generate-bootstrap.mjs` and review the resulting runtime change deliberately.'
