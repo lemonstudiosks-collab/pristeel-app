@@ -11,8 +11,8 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260924-compactdesk1';
-var density='comfortable',filtersOpen=false,resultPage=null,api=null,state=null,observer=null,observerRoot=null,scheduled=false,decorating=false;
+var VERSION='20260924-contacted-workdesk1';
+var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,observer=null,observerRoot=null,scheduled=false,decorating=false,selectedId='',contactedExpanded=false,sortDirection='desc';
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
 var SOURCE_ICON={TED:'EU',KRPP:'KS',APP_AL:'AL',MCA_KOSOVO:'MCA',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EB',WORLD_BANK:'WB',UNGM:'UN',EU_OFFICE_KOSOVO:'EU'};
@@ -100,6 +100,19 @@ body:has(#page-kek-tenders.active) #page-kek-tenders .pst-kek-layout{max-width:n
 .pst-opp-filter-panel .pst-opp-chip .count{height:24px!important;min-width:27px!important;font-size:9px!important}.pst-opp-filter-panel .pst-opp-chip-arrow{display:none!important}
 .pst-opp-guide{display:none!important}
 @media(max-width:760px){.pst-opp-route-grid{grid-template-columns:1fr!important}.pst-opp-status-strip{grid-template-columns:1fr 1fr!important}.pst-opp-filter-row{grid-template-columns:1fr!important}.pst-opp-filter-row.source .pst-opp-filter-options,.pst-opp-filter-row.field .pst-opp-filter-options,.pst-opp-filter-row.winner .pst-opp-filter-options{grid-template-columns:1fr!important}}
+
+/* Contacted-company workdesk */
+#pst-opportunities-focus.pst-opp-dashboard #pst-pcw-opportunity-tools,#pst-opportunities-focus.pst-opp-dashboard #pst-opportunities-list,#pst-opportunities-focus.pst-opp-dashboard .pst-opp-results-head{display:none!important}
+#pst-opp-desk.pst-opp-workdesk{display:grid!important;grid-template-columns:270px minmax(560px,1fr) minmax(360px,420px)!important;gap:14px!important;margin:0!important}
+.pst-opp-side,.pst-opp-work-list,.pst-opp-detail,.pst-opp-contacted{border:1px solid #dfe7e9;border-radius:16px;background:#fff;box-shadow:0 2px 10px rgba(37,66,77,.025);overflow:hidden}
+.pst-opp-side{padding:14px;position:sticky;top:14px}.pst-opp-side-head{display:flex;justify-content:space-between;align-items:center;padding:0 4px 11px;border-bottom:1px solid #edf1f2}.pst-opp-side-head b{font-size:14px;color:#2d4854}.pst-opp-side-head button{border:0;background:transparent;color:#4b8da5;font-size:9.5px;font-weight:800;cursor:pointer}.pst-opp-side section{padding:11px 0;border-bottom:1px solid #edf1f2}.pst-opp-side section:last-child{border-bottom:0}.pst-opp-side h4{margin:0 4px 6px;font-size:11.5px;color:#38505a}
+.pst-opp-side-item{width:100%;min-height:37px;display:grid;grid-template-columns:17px 28px minmax(0,1fr) auto;gap:7px;align-items:center;border:0;border-radius:9px;background:transparent;padding:4px 5px;text-align:left;color:#617680;cursor:pointer}.pst-opp-side-item:hover{background:#f8fafb}.pst-opp-side-item.on{background:#f3f7f8;color:#315f71}.pst-opp-side-item .check{width:15px;height:15px;border:1px solid #d0dbe0;border-radius:4px;display:grid;place-items:center;font-size:9px;color:#fff}.pst-opp-side-item.on .check{background:#83adbd;border-color:#83adbd}.pst-opp-side-item .icon{width:27px;height:27px;border-radius:8px;background:#f2f5f6;display:grid;place-items:center;font-size:10px;color:#6c858f;overflow:hidden}.pst-opp-side-item .icon img{width:21px;height:21px;filter:saturate(.55)}.pst-opp-side-item .text{font-size:10.5px;font-weight:720;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-opp-side-item .num{min-width:27px;height:23px;padding:0 5px;border-radius:999px;background:#f0f4f5;display:grid;place-items:center;font-size:9px;font-weight:800;color:#72868e}
+.pst-opp-work-head{min-height:78px;padding:14px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #e9eef0}.pst-opp-work-head h3{margin:0;font-size:17px;color:#2a4551}.pst-opp-work-head small{display:block;margin-top:2px;font-size:9px;color:#8a999e}.pst-opp-work-tools{display:flex;gap:7px}.pst-opp-work-tools label{height:38px;min-width:250px;border:1px solid #dce5e8;border-radius:10px;display:flex;align-items:center;gap:7px;padding:0 10px;color:#78909a;font-size:13px}.pst-opp-work-tools input{width:100%;border:0;outline:0;font-size:9.5px;color:#4d626c}.pst-opp-work-tools button{height:38px;border:1px solid #dce5e8;border-radius:10px;background:#fff;padding:0 10px;font-size:9px;color:#617781;font-weight:780;cursor:pointer;white-space:nowrap}
+.pst-opp-work-cols,.pst-opp-work-row{display:grid;grid-template-columns:minmax(220px,1.55fr) minmax(90px,.7fr) minmax(90px,.65fr) 82px 70px 22px;gap:9px;align-items:center}.pst-opp-work-cols{height:36px;padding:0 12px;background:#fafcfc;border-bottom:1px solid #e9eef0;color:#8b999f;font-size:7.5px;font-weight:850}.pst-opp-work-row{width:100%;min-height:59px;padding:7px 12px;border:0;border-bottom:1px solid #edf1f2;background:#fff;text-align:left;color:#5d737d;cursor:pointer}.pst-opp-work-row:hover{background:#fafcfd}.pst-opp-work-row.selected{background:#f6f9fa;box-shadow:inset 3px 0 0 #8ab0bf}.pst-opp-work-row .main{min-width:0}.pst-opp-work-row .main b{display:block;font-size:10.8px;color:#314d58;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-opp-work-row .main small{display:block;margin-top:2px;font-size:7.8px;color:#95a0a5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-opp-work-row .source{display:flex;align-items:center;gap:5px;font-size:8.8px}.pst-opp-work-row .source i{width:25px;height:25px;border-radius:8px;background:#f2f5f6;display:grid;place-items:center;overflow:hidden}.pst-opp-work-row .source img{width:19px;height:19px;filter:saturate(.55)}.pst-opp-work-row .field,.pst-opp-work-row .date{font-size:8.7px}.pst-opp-work-row .status{padding:4px 5px;border-radius:999px;background:#eef3f1;color:#61756d;text-align:center;font-size:8px}.pst-opp-work-row .go{font-size:17px;color:#7d969f}.pst-opp-work-empty{padding:25px 15px;text-align:center;color:#8a999f;font-size:9px}
+.pst-opp-work-right{display:grid;gap:14px}.pst-opp-box-title{height:47px;display:flex;align-items:center;padding:0 13px;border-bottom:1px solid #e9eef0;font-size:12.5px;font-weight:850;color:#314c57}.pst-opp-detail-head{display:flex;justify-content:space-between;gap:10px;padding:13px}.pst-opp-detail-head h3{margin:0;font-size:13.5px;color:#2f4a55}.pst-opp-detail-head small{display:block;margin-top:3px;font-size:8.3px;color:#8c9aa0;line-height:1.3}.pst-opp-detail-head>span{font-size:8px;padding:5px 7px;border-radius:8px;background:#f3f5f6;color:#71838b;white-space:nowrap}.pst-opp-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 11px;padding:0 13px 11px}.pst-opp-detail-grid small,.pst-opp-detail-desc small{display:block;font-size:7.7px;color:#909da2}.pst-opp-detail-grid b{display:block;margin-top:2px;font-size:9.2px;color:#5a7079;line-height:1.35;overflow-wrap:anywhere}.pst-opp-detail-desc{margin:0 13px 11px;padding-top:9px;border-top:1px solid #edf1f2}.pst-opp-detail-desc p{margin:4px 0 0;font-size:8.8px;line-height:1.45;color:#6a7d85}.pst-opp-detail-actions{display:flex;gap:7px;padding:11px 13px;border-top:1px solid #edf1f2}.pst-opp-draft-btn,.pst-opp-secondary-btn,.pst-opp-detail-actions a{min-height:40px;box-sizing:border-box;border-radius:9px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;font-size:9px;font-weight:820;cursor:pointer}.pst-opp-draft-btn{flex:1;border:1px solid #5795ac;background:#5795ac;color:#fff}.pst-opp-draft-btn:disabled{opacity:.45;cursor:not-allowed}.pst-opp-draft-btn span{font-size:15px}.pst-opp-secondary-btn,.pst-opp-detail-actions a{border:1px solid #dce5e8;background:#fff;color:#637983}.pst-opp-detail-empty{padding:24px 13px;color:#8d9a9f;font-size:9px}
+.pst-opp-contacted-head{min-height:49px;padding:0 13px;display:flex;justify-content:space-between;align-items:center;gap:9px;border-bottom:1px solid #e9eef0}.pst-opp-contacted-head b{font-size:12px;color:#314c57}.pst-opp-contacted-head small{max-width:120px;text-align:right;font-size:7.5px;line-height:1.3;color:#81949c}.pst-opp-contact-cols,.pst-opp-contact-row{display:grid;grid-template-columns:minmax(110px,1.2fr) 82px minmax(95px,1fr) 68px 18px;gap:6px;align-items:center}.pst-opp-contact-cols{height:29px;padding:0 10px;background:#fafcfc;color:#8e9ca1;font-size:6.8px;font-weight:850}.pst-opp-contact-row{width:100%;min-height:48px;padding:6px 10px;border:0;border-bottom:1px solid #edf1f2;background:#fff;text-align:left;color:#657a83;cursor:pointer}.pst-opp-contact-row:hover{background:#fafcfd}.pst-opp-contact-row b{display:block;font-size:8.8px;color:#3a535d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-opp-contact-row small{display:block;margin-top:2px;font-size:6.8px;color:#9aa4a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-opp-contact-row>span:not(:first-child){font-size:7.4px;line-height:1.25}.pst-opp-contact-row>span.draft,.pst-opp-contact-row>span.waiting,.pst-opp-contact-row>span.replied{padding:4px;border-radius:999px;text-align:center;background:#f1f3f3}.pst-opp-contact-row>span.draft{color:#766f62}.pst-opp-contact-row>span.waiting{color:#6c7477}.pst-opp-contact-row>span.replied{background:#eef3ef;color:#61746a}.pst-opp-contact-row i{font-size:14px;color:#80969f}.pst-opp-contact-empty{padding:18px 10px;text-align:center;color:#8d9a9f;font-size:8px}.pst-opp-contact-more{width:100%;height:35px;border:0;border-top:1px solid #edf1f2;background:#fff;color:#4e8ba2;font-size:8.5px;font-weight:800;cursor:pointer}
+@media(max-width:1250px){#pst-opp-desk.pst-opp-workdesk{grid-template-columns:250px minmax(560px,1fr)!important}.pst-opp-work-right{grid-column:1/-1;grid-template-columns:1fr 1fr}.pst-opp-side{position:static}}
+@media(max-width:850px){#pst-opp-desk.pst-opp-workdesk{grid-template-columns:1fr!important}.pst-opp-work-right{grid-column:auto;grid-template-columns:1fr}.pst-opp-work-head{align-items:flex-start;flex-direction:column}.pst-opp-work-tools{width:100%}.pst-opp-work-tools label{min-width:0;flex:1}.pst-opp-work-cols{display:none}.pst-opp-work-row{grid-template-columns:minmax(0,1fr) auto}.pst-opp-work-row .source,.pst-opp-work-row .field,.pst-opp-work-row .date,.pst-opp-work-row .status{display:none}.pst-opp-contact-cols{display:none}.pst-opp-contact-row{grid-template-columns:minmax(0,1fr) auto}.pst-opp-contact-row>span:nth-child(2),.pst-opp-contact-row>span:nth-child(3),.pst-opp-contact-row>span:nth-child(4){display:none}}
 `;document.head.appendChild(s);
 }
 function sourceMark(id){var asset=SOURCE_ASSET[id]||'',icon=SOURCE_ICON[id]||'•';return'<span class="pst-opp-source-mark" aria-hidden="true">'+(asset?'<img src="'+E(asset)+'" alt="" loading="eager" decoding="async">':'<b>'+E(icon)+'</b>')+'</span>';}
@@ -115,15 +128,8 @@ function categoryMeta(kind,value){
 function resultTitle(meta){if(meta&&meta.source)return sourceMark(meta.source)+E(meta.title);return E(meta&&meta.title||'Mundësitë');}
 function header(focus){
  var h=focus.querySelector(':scope>header');if(!h)return;
- var html='';
- if(resultPage){
-   var n=filteredRows().length,densityHtml='<div class="pst-opp-density"><button type="button" data-pst-opp-density="comfortable" class="'+(density==='comfortable'?'on':'')+'">Komode</button><button type="button" data-pst-opp-density="compact" class="'+(density==='compact'?'on':'')+'">Kompakte</button></div>';
-   html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back aria-label="Kthehu te Mundësitë">← Mundësitë</button><div class="pst-opp-desk-title"><h2 class="'+(resultPage.source?'pst-opp-source-title':'')+'">'+resultTitle(resultPage)+'</h2></div></div>'+densityHtml;
- }else{
-   html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><h2>Mundësitë</h2></div></div>';
- }
- var owned=!!h.querySelector('.pst-opp-desk-head-left')&&((!!resultPage)===!!h.querySelector('.pst-opp-density'));
- if(h.dataset.pstOppHeaderHtml!==html||!owned){h.innerHTML=html;h.dataset.pstOppHeaderHtml=html;}
+ var html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><h2>Mundësitë</h2></div></div>';
+ if(h.dataset.pstOppHeaderHtml!==html){h.innerHTML=html;h.dataset.pstOppHeaderHtml=html;}
 }
 function tools(focus){
  var t=focus.querySelector('#pst-pcw-opportunity-tools');if(!t)return;
@@ -148,18 +154,74 @@ function activeFilters(){
  if(S(state&&state.query).trim())out.push('Kërkim: '+S(state.query).trim().slice(0,32));
  return out;
 }
+
+function O(r){return r&&r.payload&&typeof r.payload==='object'?r.payload:{};}
+function W(r){var p=O(r),w=p.winner&&typeof p.winner==='object'?p.winner:{};if(!w.name&&p.winner_name)w=Object.assign({},w,{name:p.winner_name});return w;}
+function winnerName(r){return S(W(r).name||'').trim();}
+function winnerContacts(r){var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(P&&typeof P.enrichedContacts==='function')return A(P.enrichedContacts(r));var w=W(r),out=[];A(w.emails).forEach(function(x){if(x)out.push({email:S(x)});});if(w.email)out.push({email:S(w.email)});return out;}
+function rawOutreachStatus(x){return S(x&&x.__pstOpportunityOriginalStatus||x&&x.status).toLowerCase();}
+function outreachFor(r){return A(state&&state.outreachByTender&&state.outreachByTender[S(r&&r.id)]);}
+function effectiveLane(r){
+ var lane=lifeOf(r),out=outreachFor(r),sent=out.some(function(x){return S(x&&x.status).toLowerCase()==='sent';}),draft=out.some(function(x){return /^(draft_pending|draft_created)$/.test(rawOutreachStatus(x));});
+ if(lane==='replied')return'replied';
+ if(sent)return'waiting';
+ if(draft)return'draft';
+ var p=O(r),d=p.outreach_draft||p.gmail_draft,ds=S(d&&d.status).toLowerCase();
+ if(d&&/^(created|scheduled)$/.test(ds))return'draft';
+ return lane==='waiting'?'waiting':lane==='draft'?'draft':'new';
+}
+function norm(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
+function companyKey(r){
+ if(srcOf(r)!=='TED')return'tender:'+S(r&&r.id);
+ var cs=winnerContacts(r),mail=S(cs[0]&&cs[0].email).toLowerCase(),at=mail.lastIndexOf('@');
+ if(at>0)return'domain:'+mail.slice(at+1).replace(/^www\./,'');
+ var n=norm(winnerName(r)).replace(/[^a-z0-9]+/g,'');return n?'name:'+n:'tender:'+S(r&&r.id);
+}
+function companyLabel(r){return srcOf(r)==='TED'&&winnerName(r)?winnerName(r):S(r&&r.title||r&&r.authority||'Mundësi');}
+function globalContactedKeys(){var out={};baseRows().forEach(function(r){if(effectiveLane(r)!=='new')out[companyKey(r)]=true;});return out;}
+function rowTime(r){var m=api&&api._test&&api._test.lifecycleMeta&&api._test.lifecycleMeta(r),v=m&&m.when||r&&r.published_date||r&&r.updated_at||'';var n=Date.parse(v);return isFinite(n)?n:0;}
+function activeRows(){var contacted=globalContactedKeys();return filteredRows().filter(function(r){return effectiveLane(r)==='new'&&!contacted[companyKey(r)];}).sort(function(a,b){return sortDirection==='asc'?rowTime(a)-rowTime(b):rowTime(b)-rowTime(a);});}
+function contactedRows(){
+ var by={};baseRows().forEach(function(r){var lane=effectiveLane(r);if(lane==='new')return;var k=companyKey(r),old=by[k],rank=lane==='replied'?3:lane==='waiting'?2:1,oldLane=old&&effectiveLane(old),oldRank=oldLane==='replied'?3:oldLane==='waiting'?2:1;if(!old||rank>oldRank||(rank===oldRank&&rowTime(r)>rowTime(old)))by[k]=r;});
+ return Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return rowTime(b)-rowTime(a);});
+}
+function fd(v){if(!v)return'—';try{var d=new Date(v);return isNaN(d.getTime())?S(v):d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return S(v);}}
+function fdt(v){if(!v)return'—';try{var d=new Date(v);return isNaN(d.getTime())?S(v):d.toLocaleString('sq-AL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return S(v);}}
+function valueLabel(r){var fn=api&&api._test&&api._test.tenderValueLabel;return typeof fn==='function'?(fn(r)||'—'):'—';}
+function fieldLabel(r){var id=fieldOf(r),f=FIELDS.find(function(x){return x.id===id;});return f?f.label:'Të tjera';}
+function officialUrl(r){var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1,u='';try{if(P&&typeof P.officialUrl==='function')u=P.officialUrl(r)||'';}catch(e){}if(!u)u=S(r&&r.detail_url||r&&r.source_url);try{var x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:'';}catch(e){return'';}}
+function filterButton(attr,id,label,count,on,icon,asset){var visual=asset?'<img src="'+E(asset)+'" alt="">':E(icon||'•');return'<button type="button" class="pst-opp-side-item '+(on?'on':'')+'" '+attr+'="'+E(id)+'"><span class="check">'+(on?'✓':'')+'</span><span class="icon">'+visual+'</span><span class="text">'+E(label)+'</span><span class="num">'+Number(count||0)+'</span></button>';}
+function sideFilters(c){
+ var source=S(state&&state.source||'all'),field=S(state&&state.field||'all'),winner=S(state&&state.winner_group||'all');
+ var srcs=SOURCES.filter(function(k){return Number(c.src[k]||0)>0;}).map(function(k){return filterButton('data-pst-opp-source',k,LABEL[k]||k,c.src[k],source===k,SOURCE_ICON[k],SOURCE_ASSET[k]);}).join('');
+ var fs=FIELDS.filter(function(f){return Number(c.field[f.id]||0)>0;}).map(function(f){return filterButton('data-pst-opp-field',f.id,f.label,c.field[f.id],field===f.id,f.icon);}).join('');
+ var ws=WINNERS.map(function(w){return filterButton('data-pst-opp-winner',w.id,w.label,c.winner[w.id],winner===w.id,w.icon);}).join('');
+ return'<aside class="pst-opp-side"><div class="pst-opp-side-head"><b>Filtra</b><button type="button" data-pst-opp-reset>Pastro të gjitha</button></div>'
+  +'<section><h4>Burimi</h4>'+filterButton('data-pst-opp-source','all','Të gjitha',c.total,source==='all','◉')+srcs+'</section>'
+  +'<section><h4>Fusha</h4>'+filterButton('data-pst-opp-field','all','Të gjitha',c.total,field==='all','▦')+fs+'</section>'
+  +'<section><h4>Fituesi TED</h4>'+filterButton('data-pst-opp-winner','all','Të gjithë',c.award,winner==='all','♜')+ws+'</section></aside>';
+}
+function activeRow(r){var src=srcOf(r),award=src==='TED',title=award?companyLabel(r):S(r.title||r.authority),sub=award?S(r.title||''):S(r.publication_no||r.procurement_no||r.authority||''),asset=SOURCE_ASSET[src]||'',visual=asset?'<img src="'+E(asset)+'" alt="">':E(SOURCE_ICON[src]||'•');return'<button type="button" class="pst-opp-work-row '+(S(r.id)===S(selectedId)?'selected':'')+'" data-pst-opp-select="'+E(r.id)+'"><span class="main"><b>'+E(title)+'</b><small>'+E(sub)+'</small></span><span class="source"><i>'+visual+'</i>'+E(LABEL[src]||src)+'</span><span class="field">'+E(fieldLabel(r))+'</span><span class="date">'+E(fd(r.published_date||r.updated_at))+'</span><span class="status">E re</span><span class="go">›</span></button>';}
+function activePanel(rows){
+ var shown=rows.slice(0,60);return'<section class="pst-opp-work-list"><div class="pst-opp-work-head"><div><h3>Mundësi aktive</h3><small>'+rows.length+' mundësi që nuk janë kontaktuar ende.</small></div><div class="pst-opp-work-tools"><label>⌕ <input data-pst-opp-search value="'+E(state&&state.query||'')+'" placeholder="Kërko kompani, tender ose referencë..."></label><button type="button" data-pst-opp-sort>↕ Rendit sipas datës</button></div></div><div class="pst-opp-work-cols"><span>KOMPANIA / MUNDËSIA</span><span>BURIMI</span><span>FUSHA</span><span>DATA</span><span>STATUSI</span><span></span></div><div class="pst-opp-work-rows">'+(shown.length?shown.map(activeRow).join(''):'<div class="pst-opp-work-empty">Nuk ka mundësi aktive që përputhen me filtrat.</div>')+'</div></section>';
+}
+function selectedRow(){var all=baseRows(),r=all.find(function(x){return S(x.id)===S(selectedId);});if(r)return r;var a=activeRows();return a[0]||contactedRows()[0]||null;}
+function detailPanel(r){
+ if(!r)return'<section class="pst-opp-detail"><div class="pst-opp-box-title">Detajet e kompanisë</div><div class="pst-opp-detail-empty">Zgjidh një mundësi nga lista.</div></section>';
+ selectedId=S(r.id);var award=srcOf(r)==='TED',contacts=winnerContacts(r),lane=effectiveLane(r),title=award?companyLabel(r):S(r.title||r.authority),sub=award?S(r.title||''):S(r.authority||''),p=O(r),desc=S(r.description||p.description||p.scope||'').slice(0,420),url=officialUrl(r),action='';
+ if(award&&lane==='new')action='<button type="button" class="pst-opp-draft-btn" data-pst-opp-draft="'+E(r.id)+'" '+(contacts.length?'':'disabled')+'><span>✉</span>'+(contacts.length?'Krijo draft emaili':'Mungon emaili i verifikuar')+'</button>';
+ else if(lane==='draft')action='<button type="button" class="pst-opp-draft-btn" data-pst-opp-gmail="drafts"><span>✉</span>Hap draftet në Gmail</button>';
+ else if(lane==='waiting'||lane==='replied')action='<button type="button" class="pst-opp-draft-btn" data-pst-opp-gmail="inbox"><span>✉</span>Hap Gmail</button>';
+ else action='<button type="button" class="pst-opp-secondary-btn" data-pst-opp-open="'+E(r.id)+'">Hap mundësinë</button>';
+ return'<section class="pst-opp-detail"><div class="pst-opp-box-title">Detajet e kompanisë</div><div class="pst-opp-detail-head"><div><h3>'+E(title)+'</h3><small>'+E(sub)+'</small></div><span>'+E(LABEL[srcOf(r)]||srcOf(r))+'</span></div><div class="pst-opp-detail-grid"><div><small>Fusha</small><b>'+E(fieldLabel(r))+'</b></div><div><small>'+(award?'Kompania fituese':'Autoriteti')+'</small><b>'+E(award?companyLabel(r):S(r.authority||'—'))+'</b></div><div><small>Vlera</small><b>'+E(valueLabel(r))+'</b></div><div><small>Data e publikimit</small><b>'+E(fd(r.published_date||r.updated_at))+'</b></div>'+(award?'<div><small>Kontaktet e verifikuara</small><b>'+contacts.length+'</b></div>':'')+'</div>'+(desc?'<div class="pst-opp-detail-desc"><small>Përshkrimi i shkurtër</small><p>'+E(desc)+'</p></div>':'')+'<div class="pst-opp-detail-actions">'+action+(url?'<a href="'+E(url)+'" target="_blank" rel="noopener">Burimi zyrtar ↗</a>':'')+'</div></section>';
+}
+function contactedRow(r){var m=api&&api._test&&api._test.lifecycleMeta&&api._test.lifecycleMeta(r)||{},lane=effectiveLane(r),status=lane==='replied'?'Me përgjigje':lane==='waiting'?'Në pritje':'Draft gati',next=lane==='draft'?'Rishiko dhe dërgo draftin':lane==='waiting'?'Pritet përgjigjja':'Shqyrto përgjigjen';return'<button type="button" class="pst-opp-contact-row" data-pst-opp-select="'+E(r.id)+'"><span><b>'+E(companyLabel(r))+'</b><small>'+E(S(r.title||''))+'</small></span><span>'+E(fdt(m.when||r.updated_at||r.published_date))+'</span><span>'+E(next)+'</span><span class="'+lane+'">'+E(status)+'</span><i>›</i></button>';}
+function contactedPanel(rows){var visible=contactedExpanded?rows:rows.slice(0,5);return'<section class="pst-opp-contacted"><div class="pst-opp-contacted-head"><b>Kompanitë e kontaktuara</b><small>Kalojnë te Projektet vetëm pas RFQ.</small></div><div class="pst-opp-contact-cols"><span>KOMPANIA</span><span>DATA</span><span>HAPI TJETËR</span><span>STATUSI</span><span></span></div><div>'+ (visible.length?visible.map(contactedRow).join(''):'<div class="pst-opp-contact-empty">Ende nuk ka kompani të kontaktuara.</div>') +'</div>'+(rows.length>5?'<button type="button" class="pst-opp-contact-more" data-pst-opp-contacted-toggle>'+(contactedExpanded?'Shfaq më pak':'Shiko të gjitha '+rows.length+' kompanitë')+' ›</button>':'')+'</section>';}
+
 function sectionLabel(icon,title,copy){return'<div class="pst-opp-filter-label"><b>'+E(title)+'</b></div>';}
 function deskHtml(c){
- return'<section id="pst-opp-desk"><div class="pst-opp-route-grid">'
-  +modeButton('local','','Për ofertim','',c.local,'local')
-  +modeButton('award','','Fitues për kontaktim','',c.award,'award')
-  +modeButton('all','','Të gjitha','',c.total,'all')
-  +'</div><div class="pst-opp-status-strip">'+statusRow(c)+'<button type="button" class="pst-opp-filter-toggle '+(filtersOpen?'on':'')+'" data-pst-opp-filter-toggle>Filtra</button></div>'
-  +'<div class="pst-opp-filter-panel '+(filtersOpen?'is-open':'')+'">'
-  +'<div class="pst-opp-filter-row source">'+sectionLabel('▤','Burimi','')+'<div class="pst-opp-filter-options">'+sourceRow(c)+'</div></div>'
-  +'<div class="pst-opp-filter-row field">'+sectionLabel('▦','Fusha','')+'<div class="pst-opp-filter-options">'+fieldRow(c)+'</div></div>'
-  +'<div class="pst-opp-filter-row winner">'+sectionLabel('♜','Fituesi TED','')+'<div class="pst-opp-filter-options">'+winnerRow(c)+'</div></div>'
-  +'</div></section>';
+ var active=activeRows(),contacted=contactedRows(),sel=selectedRow();
+ return'<section id="pst-opp-desk" class="pst-opp-workdesk">'+sideFilters(c)+'<main>'+activePanel(active)+'</main><aside class="pst-opp-work-right">'+detailPanel(sel)+contactedPanel(contacted)+'</aside></section>';
 }
 function resultHead(focus){
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return;
@@ -172,12 +234,10 @@ function decorate(){
  scheduled=false;var x=current(),page=document.getElementById('page-kek-tenders'),focus=page&&page.querySelector('#pst-opportunities-focus');if(!x||!state||!focus)return false;
  if(observer)observer.disconnect();decorating=true;
  try{
-   css();header(focus);tools(focus);var c=counts(),desk=focus.querySelector('#pst-opp-desk');
-   focus.classList.toggle('pst-opp-dashboard',!resultPage);
-   focus.classList.toggle('pst-opp-result-page',!!resultPage);
-   if(resultPage){if(desk)desk.remove();}
-   else{var html=deskHtml(c);if(!desk){var anchor=focus.querySelector('#pst-pcw-lifecycle-tabs')||focus.querySelector('#pst-opportunities-list');var wrap=document.createElement('div');wrap.innerHTML=html;desk=wrap.firstChild;desk.dataset.pstOppDeskHtml=html;focus.insertBefore(desk,anchor);}else if(desk.dataset.pstOppDeskHtml!==html){var wrap2=document.createElement('div');wrap2.innerHTML=html;var next=wrap2.firstChild;next.dataset.pstOppDeskHtml=html;desk.replaceWith(next);}}
-   focus.classList.toggle('pst-opp-density-compact',density==='compact');resultHead(focus);page.dataset.pstOpportunitiesDesk='1';return true;
+   state.lifecycle='all';resultPage=null;css();header(focus);tools(focus);var c=counts(),desk=focus.querySelector('#pst-opp-desk'),html=deskHtml(c);
+   focus.classList.add('pst-opp-dashboard');focus.classList.remove('pst-opp-result-page');
+   if(!desk){var anchor=focus.querySelector('#pst-pcw-lifecycle-tabs')||focus.querySelector('#pst-opportunities-list');var wrap=document.createElement('div');wrap.innerHTML=html;desk=wrap.firstChild;desk.dataset.pstOppDeskHtml=html;focus.insertBefore(desk,anchor);}else if(desk.dataset.pstOppDeskHtml!==html){var wrap2=document.createElement('div');wrap2.innerHTML=html;var next=wrap2.firstChild;next.dataset.pstOppDeskHtml=html;desk.replaceWith(next);}
+   var rh=focus.querySelector('.pst-opp-results-head');if(rh)rh.remove();page.dataset.pstOpportunitiesDesk='contacted-workdesk1';return true;
  }finally{decorating=false;reconnectObserver();}
 }
 function schedule(){if(decorating||scheduled)return;scheduled=true;setTimeout(function(){if(!document.getElementById('pst-opportunities-focus')){scheduled=false;return;}decorate();},0);}
@@ -211,24 +271,32 @@ function openResultPage(kind,value){
 function closeResultPage(){if(!resultPage)return false;resultPage=null;current();if(api&&typeof api.applyOpportunityFilter==='function')api.applyOpportunityFilter('reset','all');decorate();stableTop();return true;}
 function back(){if(resultPage)return closeResultPage();try{var N=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(N&&typeof N.openHome==='function')return N.openHome();}catch(e){}try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.activateHome==='function')return H.activateHome();}catch(e){}try{if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('home');}catch(e){}return false;}
 function consume(e){if(!e)return;var control=e.target&&e.target.closest?e.target.closest('button,a'):null;if(control&&typeof control.blur==='function')control.blur();e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();}
+async function createDraft(id,button){
+ var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.prepareDraft!=='function')throw new Error('Draft workflow nuk është gati.');
+ if(button){button.disabled=true;button.textContent='Duke krijuar draftin…';}
+ try{await P.prepareDraft(id);selectedId=S(id);if(api&&typeof api.loadOpportunities==='function')await api.loadOpportunities(true);schedule();}finally{if(button)button.disabled=false;}
+}
 function click(e){
  var t=e.target&&e.target.closest?e.target:null,b;if(!t)return;current();
  if((b=t.closest('[data-pst-opp-back]'))){consume(e);back();return;}
- if((b=t.closest('[data-pst-opp-density]'))){consume(e);density=b.dataset.pstOppDensity==='compact'?'compact':'comfortable';decorate();return;}
- if((b=t.closest('[data-pst-opp-filter-toggle]'))){consume(e);filtersOpen=!filtersOpen;decorate();return;}
  if((b=t.closest('[data-pst-opp-reset]'))){consume(e);reset();return;}
- if((b=t.closest('[data-pst-opp-mode]'))){consume(e);openResultPage('mode',b.dataset.pstOppMode||'all');return;}
- if((b=t.closest('[data-pst-opp-lifecycle]'))){consume(e);openResultPage('lifecycle',b.dataset.pstOppLifecycle||'all');return;}
- if((b=t.closest('[data-pst-opp-source]'))){consume(e);openResultPage('source',b.dataset.pstOppSource||'all');return;}
- if((b=t.closest('[data-pst-opp-winner]'))){consume(e);openResultPage('winner',b.dataset.pstOppWinner||'all');return;}
- if((b=t.closest('[data-pst-opp-field]'))){consume(e);openResultPage('field',b.dataset.pstOppField||'all');return;}
+ if((b=t.closest('[data-pst-opp-source]'))){consume(e);state.lifecycle='all';apply('source',b.dataset.pstOppSource||'all');return;}
+ if((b=t.closest('[data-pst-opp-winner]'))){consume(e);state.lifecycle='all';apply('winner',b.dataset.pstOppWinner||'all');return;}
+ if((b=t.closest('[data-pst-opp-field]'))){consume(e);state.lifecycle='all';apply('field',b.dataset.pstOppField||'all');return;}
+ if((b=t.closest('[data-pst-opp-sort]'))){consume(e);sortDirection=sortDirection==='desc'?'asc':'desc';decorate();return;}
+ if((b=t.closest('[data-pst-opp-select]'))){consume(e);selectedId=S(b.dataset.pstOppSelect);decorate();return;}
+ if((b=t.closest('[data-pst-opp-contacted-toggle]'))){consume(e);contactedExpanded=!contactedExpanded;decorate();return;}
+ if((b=t.closest('[data-pst-opp-draft]'))){consume(e);createDraft(S(b.dataset.pstOppDraft),b).catch(function(err){if(typeof window.pstToast==='function')window.pstToast(S(err&&err.message||err),'error');else alert(S(err&&err.message||err));decorate();});return;}
+ if((b=t.closest('[data-pst-opp-gmail]'))){consume(e);window.open(b.dataset.pstOppGmail==='drafts'?'https://mail.google.com/mail/u/0/#drafts':'https://mail.google.com/mail/u/0/#inbox','_blank','noopener');return;}
+ if((b=t.closest('[data-pst-opp-open]'))){consume(e);if(api&&typeof api.openTender==='function')api.openTender(S(b.dataset.pstOppOpen));return;}
 }
 function boot(){
  css();loadBridge();
  (function ready(){current();if(api&&state&&document.getElementById('pst-opportunities-focus')){decorate();observe();return;}setTimeout(ready,500);})();
  document.addEventListener('click',click,true);
- document.addEventListener('input',function(e){if(e.target&&e.target.id==='pst-pcw-opportunity-search')schedule();},true);
- document.addEventListener('pst:opportunities-filter-applied',function(e){var d=e&&e.detail||{},kind=S(d.kind).toLowerCase(),routeChange=kind==='source'||kind==='lifecycle'||kind==='mode'||kind==='field'||kind==='winner';if(!resultPage&&(kind==='source'||kind==='lifecycle'))resultPage=categoryMeta(kind,d.value);if(routeChange)stableTop();schedule();});
+ document.addEventListener('input',function(e){var el=e.target;if(el&&el.matches&&el.matches('[data-pst-opp-search]')){var pos=el.selectionStart||0;state.query=el.value||'';state.display_limit=40;if(api&&typeof api.renderOpportunities==='function')api.renderOpportunities();setTimeout(function(){var n=document.querySelector('[data-pst-opp-search]');if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(x){}}},0);}else if(el&&el.id==='pst-pcw-opportunity-search')schedule();},true);
+ document.addEventListener('pst:opportunities-filter-applied',function(){state.lifecycle='all';schedule();});
+ ['pst:tender-gmail-drafts-ready','pst:tender-gmail-draft-created','pst:opportunity-draft-state-changed'].forEach(function(name){document.addEventListener(name,function(e){var id=S(e&&e.detail&&e.detail.tender_id);if(id)selectedId=id;setTimeout(function(){if(api&&typeof api.loadOpportunities==='function')Promise.resolve(api.loadOpportunities(true)).finally(schedule);else schedule();},90);});});
  document.addEventListener('pst:modules-ready',schedule,{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
