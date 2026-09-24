@@ -112,9 +112,9 @@ async function prepareDraft(id){
  if(!r.project_id)throw new Error('Së pari aprovoje Opportunity-n dhe krijo Project-in PPPP V2. Drafti pastaj ruhet në kontekstin e Project-it.');
  var contacts=enrichedContacts(r);if(!contacts.length)throw new Error('Nuk ka ende email të verifikuar që i atribuohet kësaj kompanie. Kontrollo Kontaktet e fituesit.');
  var role=winnerRole(r),types='gc_project_outreach_draft,producer_capacity_outreach_draft,consortium_project_outreach_draft,general_project_outreach_draft';
- var qs='pppp_opportunity_action_queue_v2?tender_watch_id=eq.'+encodeURIComponent(id)+'&status=eq.draft_review&action_type=in.('+types+')&select=id,action_type,route,target_company,target_email,updated_at&order=updated_at.desc&limit=8',actions=A(await db(qs)),wanted=role==='producer'?'producer_capacity_outreach_draft':role==='gc_epc'?'gc_project_outreach_draft':role==='trader_consortium'?'consortium_project_outreach_draft':'';
- var a=(wanted&&actions.find(function(x){return S(x.action_type)===wanted;}))||actions.find(function(x){return S(x.action_type)==='general_project_outreach_draft';})||actions[0];
- if(!a)throw new Error('Nuk ka action aktiv për draft për këtë Opportunity. PPPP duhet ta rifreskojë action queue para krijimit të draftit.');
+ var qs='pppp_opportunity_action_queue_v2?tender_watch_id=eq.'+encodeURIComponent(id)+'&status=eq.draft_review&action_type=in.('+types+')&select=id,action_type,route,target_company,target_email,updated_at&order=updated_at.desc&limit=8',actions=A(await db(qs)),wanted=role==='producer'?'producer_capacity_outreach_draft':role==='gc_epc'?'gc_project_outreach_draft':role==='trader_consortium'?'consortium_project_outreach_draft':'general_project_outreach_draft';
+ var a=actions.find(function(x){return S(x.action_type)===wanted;});
+ if(!a)throw new Error('Drafti nuk është ende gati për këtë Opportunity. PPPP po pret që roli aktual i kompanisë dhe action queue të përputhen.');
  var out=await draftEdge({action_id:S(a.id),limit:1}),result=A(out.results)[0]||{},event=S(result.event),reason=S(result.reason),recipientCount=Number(result.recipients||0),covered=Number(result.covered||0),created=Number(result.created||0),preserved=Number(result.preserved||0),sent=Number(result.sent||0);
  if(event==='communication_history_blocked')throw new Error('Ky kontaktim është regjistruar tashmë në komunikime. Nuk do të krijohet draft i dytë.');
  if(event==='readiness_blocked')throw new Error('Drafti u bllokua nga verifikimi i recipient-it'+(reason?': '+reason:'')+'.');
