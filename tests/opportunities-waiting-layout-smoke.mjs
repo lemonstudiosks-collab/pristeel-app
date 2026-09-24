@@ -32,5 +32,5 @@ assert.match(desk,/api\.loadOpportunities\(true\)/,'draft completion must reload
 assert.match(desk,/effectiveLane\(r\)!=='new'/,'contacted state must come from canonical lifecycle evidence');
 assert.match(desk,/function deskHtml\(c\)\{[\s\S]*activeRows\(\)[\s\S]*contactedRows\(\)[\s\S]*sideFilters\(c\)/,'final workdesk must render filters, active opportunities and contacted companies instead of the old lifecycle dashboard');
 assert.match(workflow,/display_limit:40/,'canonical result engine remains bounded');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260924-contacted-stack2/,'runtime must cache-bust the stacked contacted-company Opportunity Desk');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260924-contacted-stack3/,'runtime must cache-bust the stacked contacted-company Opportunity Desk');
 console.log('Opportunities contacted-company layout smoke: OK');
