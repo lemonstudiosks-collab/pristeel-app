@@ -42,13 +42,15 @@ function sourceDomainMatches(email,meta,domains){const sd=websiteDomain(meta?.so
 
 function candidate(email,meta={}){
   const e=normalizeEmail(email),d=domainFromEmail(e);if(!validEmail(e)||isReservedEmail(e)||(!meta?.allow_free_domain&&FREE_DOMAINS.has(d))||isBlockedOutreachEmail(e))return null;
-  return {email:e,name:contactName(meta,e),job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0,company_attribution:txt(meta?.company_attribution,80)||null,recipient_company_name:txt(meta?.recipient_company_name,300)||null,recipient_company_domain:normalizeDomain(meta?.recipient_company_domain)||null,draft_eligible:meta?.draft_eligible!==false};
+  return {email:e,name:contactName(meta,e),salutation:txt(meta?.salutation||meta?.honorific||meta?.address_title||meta?.title_prefix,80)||null,gender:txt(meta?.gender,40)||null,job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0,company_attribution:txt(meta?.company_attribution,80)||null,recipient_company_name:txt(meta?.recipient_company_name,300)||null,recipient_company_domain:normalizeDomain(meta?.recipient_company_domain)||null,draft_eligible:meta?.draft_eligible!==false};
 }
 function mergeCandidate(a,b){
   if(!a)return b;if(!b)return a;
   const names=new Set([a.name,b.name].filter(Boolean));
   return {...a,
     name:names.size===1?[...names][0]:(a.name&&b.name&&a.name!==b.name?null:(a.name||b.name||null)),
+    salutation:a.salutation||b.salutation||null,
+    gender:a.gender||b.gender||null,
     job_title:a.job_title||b.job_title||null,
     purpose:a.purpose||b.purpose||null,
     confidence:confidenceRank(b.confidence)>confidenceRank(a.confidence)?b.confidence:a.confidence,
@@ -56,7 +58,7 @@ function mergeCandidate(a,b){
     source_type:a.source_type||b.source_type||null,source_url:a.source_url||b.source_url||null,recipient_company_name:a.recipient_company_name||b.recipient_company_name||null,recipient_company_domain:a.recipient_company_domain||b.recipient_company_domain||null};
 }
 
-export function resolveTedDraftRecipients(action,tenderPayload,max=1){
+export function resolveTedDraftRecipients(action,tenderPayload,max=20){
   const winner=tenderPayload?.winner||{},domains=companyDomains(action,winner),rows=[];
   if(!domains.size)return [];
   const push=(email,meta={})=>{
@@ -79,7 +81,7 @@ export function resolveTedDraftRecipients(action,tenderPayload,max=1){
   }
   const map=new Map();for(const r of rows)map.set(r.email,mergeCandidate(map.get(r.email),r));
   const purposeRank={procurement:0,tender:1,sales:2,person:3,general:4};
-  return [...map.values()].sort((a,b)=>(purposeRank[a.purpose]??8)-(purposeRank[b.purpose]??8)||(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,Math.max(1,Math.min(1,Number(max)||1)));
+  return [...map.values()].sort((a,b)=>(purposeRank[a.purpose]??8)-(purposeRank[b.purpose]??8)||(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,Math.max(1,Math.min(20,Number(max)||20)));
 }
 
 export function resolveTedRecipients(action,tenderPayload,max=1){

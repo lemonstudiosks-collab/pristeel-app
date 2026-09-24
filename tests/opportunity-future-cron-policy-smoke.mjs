@@ -30,8 +30,8 @@ assert(content.includes("return 'Projekt '+p+' – Stahlpaket | PRISTEEL'"),'Ger
 assert(content.includes('recipientKind'),'recipient type must remain available for safe greeting/metadata handling');
 assert(content.includes('scope_evidence')&&content.includes('concrete_question'),'TED drafts must be led by exact scope evidence and one concrete question');
 assert(generator.includes("event:'readiness_blocked'"),'generator must hard-stop TED actions without readiness evidence');
-assert(generator.includes('MAX_CONTACTS_PER_ACTION=1'),'pilot must create at most one recipient draft per opportunity');
-assert(generator.includes('MAX_DRAFT_WRITES_PER_RUN=10'),'pilot generator must cap draft creation to ten writes per run');
+assert(generator.includes('MAX_CONTACTS_PER_ACTION=20'),'manual draft generation must cover every verified UI contact while staying bounded');
+assert(generator.includes('MAX_DRAFT_WRITES_PER_RUN=25'),'generator must retain a bounded write budget large enough for one full verified-contact set');
 assert(!content.includes('TED-Referenz:'),'customer body template must not contain TED reference block');
 assert(!content.includes('Auftraggeber:'),'customer body template must not contain contracting-authority block');
 

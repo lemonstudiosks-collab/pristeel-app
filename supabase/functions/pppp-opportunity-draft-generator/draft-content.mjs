@@ -47,9 +47,28 @@ export function tedReference(tender={}){
   return r;
 }
 export function tedUrl(tender={}){return first(tender?.source_url,tender?.detail_url,tender?.payload?.source_url,tender?.payload?.detail_url);}
+function explicitGermanGender(recipient,name){
+  const raw=norm(first(recipient?.salutation,recipient?.honorific,recipient?.address_title,recipient?.title_prefix,recipient?.gender));
+  const fromName=norm(name);
+  if(/^(herr|mr|mister|male|mann|m|masculine)(\b|$)/.test(raw)||/^(herr|mr\.?|mister)\s+/.test(fromName))return'male';
+  if(/^(frau|mrs|ms|miss|female|weiblich|w|f|feminine)(\b|$)/.test(raw)||/^(frau|mrs\.?|ms\.?|miss)\s+/.test(fromName))return'female';
+  return'';
+}
+function germanSurname(name){
+  let s=txt(name,180).replace(/\s+/g,' ').trim();
+  s=s.replace(/^(?:(?:herr|frau|mr\.?|mrs\.?|ms\.?|miss)\s+)+/i,'').trim();
+  s=s.replace(/^(?:(?:prof\.?|dr\.?|prof\.?\s*dr\.?)\s+)+/i,'').trim();
+  const parts=s.split(' ').filter(Boolean);
+  return parts.length?parts[parts.length-1]:'';
+}
 function greeting(language,company,recipient){
-  const kind=recipientKind(recipient),name=kind==='general'?'':txt(recipient?.name,180).replace(/\s+/g,' '),co=txt(company,300);
-  if(language==='de')return name?'Guten Tag '+name+',':'Guten Tag,';
+  const kind=recipientKind(recipient),name=kind==='general'?'':txt(recipient?.name,180).replace(/\s+/g,' ');
+  if(language==='de'){
+    const gender=explicitGermanGender(recipient,name),surname=germanSurname(name);
+    if(gender==='male'&&surname)return'Sehr geehrter Herr '+surname+',';
+    if(gender==='female'&&surname)return'Sehr geehrte Frau '+surname+',';
+    return'Sehr geehrte Damen und Herren,';
+  }
   if(language==='bcs')return name?'Poštovani '+name+',':'Poštovani,';
   return name?'Dear '+name+',':'Hello,';
 }

@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { resolveTedRecipients, resolveTedDraftRecipients, normalizeEmail } from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
+
+const generatorSrc=fs.readFileSync('supabase/functions/pppp-opportunity-draft-generator/index.ts','utf8');
+assert.match(generatorSrc,/MAX_CONTACTS_PER_ACTION=20/,'manual TED draft generation must allow all verified UI contacts, not only one');
+assert.match(generatorSrc,/separate_draft_per_recipient:true/,'each verified recipient must receive a separate Gmail draft');
+assert.match(generatorSrc,/MAX_DRAFT_WRITES_PER_RUN=25/,'one manual action must have enough write budget for all verified recipients');
 
 const readiness={
   winner_role_verified:true,
@@ -51,11 +57,14 @@ assert.equal(normalizeEmail(' Alice@Example.COM '),'alice@example.com');
 const draftOnlyAction={route:'TED_GENERAL',target_company:'RB Impra GmbH',target_email:'info@rb-impra.de',payload:{}};
 const draftOnlyPayload={winner:{name:'RB Impra GmbH',website:'https://rb-impra.de/',company_type:'unknown',contact_enrichment:{organizations:[{name:'RB Impra GmbH',domain:'rb-impra.de',contacts:[
   {type:'email',value:'info@rb-impra.de',score:88,confidence:'high',purpose:'general',source_type:'TED'},
+  {type:'email',value:'anna.beispiel@rb-impra.de',name:'Anna Beispiel',salutation:'Frau',score:96,confidence:'high',purpose:'person',source_type:'official_website'},
+  {type:'email',value:'procurement@rb-impra.de',score:91,confidence:'high',purpose:'procurement',source_type:'official_website'},
   {type:'email',value:'bad@unrelated.example.org',score:99,confidence:'high',purpose:'person',source_type:'official_website',draft_eligible:false}
 ]}]}}};
-const draftRecipients=resolveTedDraftRecipients(draftOnlyAction,draftOnlyPayload,1);
-assert.equal(draftRecipients.length,1,'manual draft policy should accept one verified same-company recipient without send readiness');
-assert.equal(draftRecipients[0].email,'info@rb-impra.de','verified same-company generic address may be drafted for human review');
+const draftRecipients=resolveTedDraftRecipients(draftOnlyAction,draftOnlyPayload,20);
+assert.equal(draftRecipients.length,3,'manual draft policy must return every verified same-company email address, not only the top-ranked one');
+assert.deepEqual(new Set(draftRecipients.map(r=>r.email)),new Set(['info@rb-impra.de','anna.beispiel@rb-impra.de','procurement@rb-impra.de']));
+assert.equal(draftRecipients.find(r=>r.email==='anna.beispiel@rb-impra.de')?.salutation,'Frau','explicit contact salutation must survive recipient resolution for personalized drafts');
 assert.equal(resolveTedRecipients(draftOnlyAction,draftOnlyPayload,1).length,0,'strict send-grade recipient policy must remain blocked without outreach readiness');
 
 console.log('opportunity TED high-confidence recipient policy smoke: ok');
