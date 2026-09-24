@@ -47,6 +47,7 @@ const detachedClean=rankWinnerPayload(detachedPlaceholder,'2026-09-24T04:30:00Z'
 assert.equal(detachedClean.changed,true,'legacy placeholder must be cleared even when it is no longer present in enrichment evidence');
 assert.equal(detachedClean.row.payload.winner.email,'info@legacy-gmbh.de');
 assert.equal(winnerNeedsRanking({status:'watch',relevance_score:10,payload:{source:'TED',notice_phase:'award',winner:{email:'nao.disponivel@example.com'}}},85),true,'legacy placeholders must be sanitized even below outreach relevance threshold');
+assert.equal(winnerNeedsRanking({status:'ignored',relevance_score:10,payload:{source:'TED',notice_phase:'award',winner:{email:'nao.disponivel@example.com'}}},85),true,'ignored records still require canonical placeholder cleanup even though they are not outreach targets');
 assert.equal(winnerNeedsRanking({status:'watch',relevance_score:10,payload:{source:'TED',notice_phase:'award',winner:{email:'info@real.example',contact_enrichment:{organizations:[]}}}},85),false,'low-relevance records must not become outreach ranking targets merely because enrichment exists');
 assert.deepEqual(detachedClean.row.payload.winner.emails,['info@legacy-gmbh.de']);
 
