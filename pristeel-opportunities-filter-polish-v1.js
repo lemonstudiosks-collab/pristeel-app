@@ -11,8 +11,8 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260924-layout-stability5';
-var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,observer=null,observerRoot=null,scheduled=false,decorating=false;
+var VERSION='20260924-compactdesk1';
+var density='comfortable',filtersOpen=false,resultPage=null,api=null,state=null,observer=null,observerRoot=null,scheduled=false,decorating=false;
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
 var SOURCE_ICON={TED:'EU',KRPP:'KS',APP_AL:'AL',MCA_KOSOVO:'MCA',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EB',WORLD_BANK:'WB',UNGM:'UN',EU_OFFICE_KOSOVO:'EU'};
@@ -77,6 +77,29 @@ body:has(#page-kek-tenders.active) #page-kek-tenders .pst-kek-layout{max-width:n
 .pst-opp-density-compact .pst-pcw-tender{padding:12px 15px!important;grid-template-columns:minmax(0,1fr) auto!important}.pst-opp-density-compact .pst-pcw-tender p{display:none}.pst-opp-density-compact .pst-pcw-tender h3{font-size:14px!important}.pst-opp-density-compact .pst-pcw-contact-state{margin-top:4px!important;font-size:9px!important}
 @media(max-width:1100px){.pst-opp-filter-row{grid-template-columns:250px minmax(0,1fr)}.pst-opp-filter-row.field .pst-opp-filter-options{grid-template-columns:repeat(2,minmax(0,1fr))}.pst-opp-header-note{display:none}}@media(max-width:980px){.pst-opp-route-grid{grid-template-columns:1fr}.pst-opp-route{min-height:100px}.pst-opp-filter-row{grid-template-columns:1fr;gap:14px}.pst-opp-filter-row.status .pst-opp-filter-options,.pst-opp-filter-row.winner .pst-opp-filter-options,.pst-opp-filter-row.field .pst-opp-filter-options,.pst-opp-filter-row.source .pst-opp-filter-options{grid-template-columns:repeat(2,minmax(0,1fr))}.pst-opp-desk-title p{display:none}.pst-opp-guide{grid-template-columns:auto minmax(0,1fr)}.pst-opp-guide strong{grid-column:2;padding-left:0;border-left:0}}
 @media(max-width:650px){body:has(#page-kek-tenders.active) .content{padding:12px 13px 34px!important}#pst-opportunities-focus>header{align-items:flex-start!important}.pst-opp-desk-head-left{gap:10px}.pst-opp-desk-back{height:42px;padding:0 13px}.pst-opp-desk-title h2{font-size:23px!important}.pst-opp-density{display:none}#pst-pcw-opportunity-tools{align-items:stretch!important}.pst-opp-route{grid-template-columns:46px minmax(0,1fr) auto;padding:14px;gap:12px}.pst-opp-route-icon{width:46px;height:46px;border-radius:13px;font-size:20px}.pst-opp-route .route-copy>small{display:none}.pst-opp-route .route-count{min-width:42px;height:42px;font-size:15px}.pst-opp-route-arrow{display:none}.pst-opp-filter-row{padding:15px}.pst-opp-section-icon{width:44px;height:44px;flex-basis:44px}.pst-opp-filter-label b{font-size:16px}.pst-opp-filter-row.status .pst-opp-filter-options,.pst-opp-filter-row.winner .pst-opp-filter-options,.pst-opp-filter-row.field .pst-opp-filter-options,.pst-opp-filter-row.source .pst-opp-filter-options{grid-template-columns:1fr}.pst-opp-chip{min-height:56px}.pst-opp-guide{grid-template-columns:auto minmax(0,1fr);padding:13px}.pst-pcw-tender{grid-template-columns:1fr!important}.pst-pcw-tender-open{justify-content:flex-end}}
+
+/* Compact Opportunity Desk: keep the work surface calm and reveal secondary filters only on demand. */
+#pst-opportunities-focus>header{margin:0 0 10px!important;padding:0 2px!important;min-height:48px}
+.pst-opp-desk-head-left{gap:12px}.pst-opp-desk-back{height:42px!important;padding:0 14px!important;border-radius:12px!important}
+.pst-opp-desk-title h2{margin:0!important;font-size:27px!important}.pst-opp-desk-title>span,.pst-opp-desk-title p,.pst-opp-header-note{display:none!important}
+#pst-opp-desk{gap:10px!important;margin-bottom:10px!important}.pst-opp-route-grid{gap:8px!important}
+.pst-opp-route{min-height:58px!important;grid-template-columns:36px minmax(0,1fr) auto!important;gap:10px!important;padding:10px 12px!important;border-radius:14px!important;box-shadow:none!important;background:#fff!important}
+.pst-opp-route:hover{transform:none!important;box-shadow:0 5px 14px rgba(42,68,78,.06)!important}.pst-opp-route-icon{width:36px!important;height:36px!important;border-radius:10px!important;font-size:16px!important}
+.pst-opp-route .route-copy>span,.pst-opp-route .route-copy>small,.pst-opp-route-arrow{display:none!important}.pst-opp-route .route-copy>b{margin:0!important;font-size:13px!important;line-height:1.2!important}
+.pst-opp-route .route-count{min-width:34px!important;height:30px!important;padding:0 8px!important;border-radius:999px!important;font-size:11px!important}
+.pst-opp-status-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:8px;align-items:center}
+.pst-opp-status-strip .pst-opp-chip{min-height:42px!important;padding:5px 8px!important;border-radius:12px!important;background:#fff!important;box-shadow:none!important}
+.pst-opp-status-strip .pst-opp-chip-icon{width:30px!important;height:30px!important;flex-basis:30px!important;border-radius:9px!important;font-size:11px!important}
+.pst-opp-status-strip .pst-opp-chip .count{height:25px!important;min-width:28px!important;font-size:9.5px!important}.pst-opp-status-strip .pst-opp-chip-arrow{display:none!important}
+.pst-opp-filter-toggle{height:42px!important;min-width:82px!important;border-radius:12px!important}
+.pst-opp-filter-panel{display:none!important;gap:8px!important}.pst-opp-filter-panel.is-open{display:grid!important}
+.pst-opp-filter-row{grid-template-columns:110px minmax(0,1fr)!important;gap:12px!important;padding:10px 12px!important;border-radius:14px!important;box-shadow:none!important}
+.pst-opp-filter-label{gap:0!important}.pst-opp-filter-label b{font-size:11px!important}.pst-opp-filter-label small,.pst-opp-section-icon{display:none!important}
+.pst-opp-filter-options{gap:7px!important}.pst-opp-filter-row.source .pst-opp-filter-options{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))!important}.pst-opp-filter-row.field .pst-opp-filter-options,.pst-opp-filter-row.winner .pst-opp-filter-options{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.pst-opp-filter-panel .pst-opp-chip{min-height:44px!important;padding:5px 7px!important;border-radius:11px!important;box-shadow:none!important}.pst-opp-filter-panel .pst-opp-chip-icon{width:30px!important;height:30px!important;flex-basis:30px!important;border-radius:9px!important}.pst-opp-filter-panel .pst-opp-chip-icon img{width:26px!important;height:26px!important}
+.pst-opp-filter-panel .pst-opp-chip .count{height:24px!important;min-width:27px!important;font-size:9px!important}.pst-opp-filter-panel .pst-opp-chip-arrow{display:none!important}
+.pst-opp-guide{display:none!important}
+@media(max-width:760px){.pst-opp-route-grid{grid-template-columns:1fr!important}.pst-opp-status-strip{grid-template-columns:1fr 1fr!important}.pst-opp-filter-row{grid-template-columns:1fr!important}.pst-opp-filter-row.source .pst-opp-filter-options,.pst-opp-filter-row.field .pst-opp-filter-options,.pst-opp-filter-row.winner .pst-opp-filter-options{grid-template-columns:1fr!important}}
 `;document.head.appendChild(s);
 }
 function sourceMark(id){var asset=SOURCE_ASSET[id]||'',icon=SOURCE_ICON[id]||'•';return'<span class="pst-opp-source-mark" aria-hidden="true">'+(asset?'<img src="'+E(asset)+'" alt="" loading="eager" decoding="async">':'<b>'+E(icon)+'</b>')+'</span>';}
@@ -95,9 +118,9 @@ function header(focus){
  var html='';
  if(resultPage){
    var n=filteredRows().length,densityHtml='<div class="pst-opp-density"><button type="button" data-pst-opp-density="comfortable" class="'+(density==='comfortable'?'on':'')+'">Komode</button><button type="button" data-pst-opp-density="compact" class="'+(density==='compact'?'on':'')+'">Kompakte</button></div>';
-   html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back aria-label="Kthehu te dashboard-i i Mundësive">← Mundësitë</button><div class="pst-opp-desk-title"><span>PPPP · '+E(resultPage.eyebrow)+'</span><h2 class="'+(resultPage.source?'pst-opp-source-title':'')+'">'+resultTitle(resultPage)+'</h2><p>'+n+' mundësi përputhen me këtë kategori.</p></div></div>'+densityHtml;
+   html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back aria-label="Kthehu te Mundësitë">← Mundësitë</button><div class="pst-opp-desk-title"><h2 class="'+(resultPage.source?'pst-opp-source-title':'')+'">'+resultTitle(resultPage)+'</h2></div></div>'+densityHtml;
  }else{
-   html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><span>PPPP · OPPORTUNITY DESK</span><h2>Mundësitë</h2><p>Zgjidh një kategori për të hapur listën përkatëse të mundësive.</p></div></div><div class="pst-opp-header-note">Çeliku lidh mundësitë me një të ardhme më të fortë.</div>';
+   html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><h2>Mundësitë</h2></div></div>';
  }
  var owned=!!h.querySelector('.pst-opp-desk-head-left')&&((!!resultPage)===!!h.querySelector('.pst-opp-density'));
  if(h.dataset.pstOppHeaderHtml!==html||!owned){h.innerHTML=html;h.dataset.pstOppHeaderHtml=html;}
@@ -108,7 +131,7 @@ function tools(focus){
 }
 function routeIcon(id){return id==='local'?'▤':id==='award'?'♟':'▱';}
 function modeButton(id,eyebrow,title,copy,n,cls){
- return'<button type="button" class="pst-opp-route '+cls+'" data-pst-opp-mode="'+id+'"><span class="pst-opp-route-icon" aria-hidden="true">'+routeIcon(id)+'</span><span class="route-copy"><span>'+eyebrow+'</span><b>'+title+'</b><small>'+copy+'</small></span><span class="pst-opp-route-tail"><span class="route-count">'+Number(n||0)+'</span><span class="pst-opp-route-arrow" aria-hidden="true">›</span></span></button>';
+ return'<button type="button" class="pst-opp-route '+cls+'" data-pst-opp-mode="'+id+'"><span class="pst-opp-route-icon" aria-hidden="true">'+routeIcon(id)+'</span><span class="route-copy"><b>'+title+'</b></span><span class="pst-opp-route-tail"><span class="route-count">'+Number(n||0)+'</span></span></button>';
 }
 function chip(attr,id,label,count,on,icon,asset){var visual=asset?'<img src="'+E(asset)+'" alt="" loading="lazy" decoding="async">':E(icon||'•');return'<button type="button" class="pst-opp-chip '+(on?'on':'')+'" '+attr+'="'+E(id)+'"><span class="pst-opp-chip-main"><span class="pst-opp-chip-icon" aria-hidden="true">'+visual+'</span><span class="pst-opp-chip-label">'+E(label)+'</span></span><span class="pst-opp-chip-tail">'+(count==null?'':'<span class="count">'+Number(count||0)+'</span>')+'<span class="pst-opp-chip-arrow" aria-hidden="true">›</span></span></button>';}
 function statusRow(c){return chip('data-pst-opp-lifecycle','new','Të reja',c.life.new,false,'✦')+chip('data-pst-opp-lifecycle','waiting','Në pritje',c.life.waiting,false,'◷')+chip('data-pst-opp-lifecycle','replied','Me përgjigje',c.life.replied,false,'✉');}
@@ -125,18 +148,18 @@ function activeFilters(){
  if(S(state&&state.query).trim())out.push('Kërkim: '+S(state.query).trim().slice(0,32));
  return out;
 }
-function sectionLabel(icon,title,copy){return'<div class="pst-opp-filter-label"><span class="pst-opp-section-icon" aria-hidden="true">'+E(icon)+'</span><span><b>'+E(title)+'</b><small>'+E(copy)+'</small></span></div>';}
+function sectionLabel(icon,title,copy){return'<div class="pst-opp-filter-label"><b>'+E(title)+'</b></div>';}
 function deskHtml(c){
  return'<section id="pst-opp-desk"><div class="pst-opp-route-grid">'
-  +modeButton('all','PAMJA E PLOTË','Të gjitha mundësitë','Hap gjithë pipeline-in e Mundësive.',c.total,'all')
-  +modeButton('local','DIRECT TENDER','Për ofertim','KRPP, APP dhe burime të tjera ku PriSteel mund të vlerësojë pjesëmarrjen.',c.local,'local')
-  +modeButton('award','TED AWARD SALES','Fitues për kontaktim','Tenderë të fituar ku fituesi mund të jetë klient, partner ose kapacitet B2B.',c.award,'award')
-  +'</div><div class="pst-opp-filter-panel">'
-  +'<div class="pst-opp-filter-row status">'+sectionLabel('◷','Statusi','Zgjidh sipas statusit aktual të mundësive.')+'<div class="pst-opp-filter-options">'+statusRow(c)+'</div></div>'
-  +'<div class="pst-opp-filter-row source">'+sectionLabel('▤','Burimi','Zgjidh burimin e mundësive.')+'<div class="pst-opp-filter-options">'+sourceRow(c)+'</div></div>'
-  +'<div class="pst-opp-filter-row field">'+sectionLabel('▦','Fusha','Zgjidh fushën e projektit.')+'<div class="pst-opp-filter-options">'+fieldRow(c)+'</div></div>'
-  +'<div class="pst-opp-filter-row winner">'+sectionLabel('♜','Fituesi TED','Zgjidh sipas llojit të fituesit.')+'<div class="pst-opp-filter-options">'+winnerRow(c)+'</div></div>'
-  +'</div><div class="pst-opp-guide"><span class="pst-opp-guide-icon" aria-hidden="true">i</span><span><b>Si funksionon?</b><small>Kliko në një kategori për të hapur vetëm listën përkatëse. Kthehu te Mundësitë për të zgjedhur një kategori tjetër.</small></span><strong>Më pak klikime.<br>Më shumë mundësi.</strong></div></section>';
+  +modeButton('local','','Për ofertim','',c.local,'local')
+  +modeButton('award','','Fitues për kontaktim','',c.award,'award')
+  +modeButton('all','','Të gjitha','',c.total,'all')
+  +'</div><div class="pst-opp-status-strip">'+statusRow(c)+'<button type="button" class="pst-opp-filter-toggle '+(filtersOpen?'on':'')+'" data-pst-opp-filter-toggle>Filtra</button></div>'
+  +'<div class="pst-opp-filter-panel '+(filtersOpen?'is-open':'')+'">'
+  +'<div class="pst-opp-filter-row source">'+sectionLabel('▤','Burimi','')+'<div class="pst-opp-filter-options">'+sourceRow(c)+'</div></div>'
+  +'<div class="pst-opp-filter-row field">'+sectionLabel('▦','Fusha','')+'<div class="pst-opp-filter-options">'+fieldRow(c)+'</div></div>'
+  +'<div class="pst-opp-filter-row winner">'+sectionLabel('♜','Fituesi TED','')+'<div class="pst-opp-filter-options">'+winnerRow(c)+'</div></div>'
+  +'</div></section>';
 }
 function resultHead(focus){
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return;
@@ -192,7 +215,7 @@ function click(e){
  var t=e.target&&e.target.closest?e.target:null,b;if(!t)return;current();
  if((b=t.closest('[data-pst-opp-back]'))){consume(e);back();return;}
  if((b=t.closest('[data-pst-opp-density]'))){consume(e);density=b.dataset.pstOppDensity==='compact'?'compact':'comfortable';decorate();return;}
- if((b=t.closest('[data-pst-opp-filter-toggle]'))){consume(e);return;}
+ if((b=t.closest('[data-pst-opp-filter-toggle]'))){consume(e);filtersOpen=!filtersOpen;decorate();return;}
  if((b=t.closest('[data-pst-opp-reset]'))){consume(e);reset();return;}
  if((b=t.closest('[data-pst-opp-mode]'))){consume(e);openResultPage('mode',b.dataset.pstOppMode||'all');return;}
  if((b=t.closest('[data-pst-opp-lifecycle]'))){consume(e);openResultPage('lifecycle',b.dataset.pstOppLifecycle||'all');return;}
