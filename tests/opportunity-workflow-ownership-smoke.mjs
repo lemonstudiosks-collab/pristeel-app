@@ -32,6 +32,6 @@ assert.match(tedActions,/award_role/,'primary TED action owner must recognize ve
 assert.match(tedFallback,/status:'superseded'/,'GC fallback must supersede competing active draft routes');
 assert.match(tenderUi,/award_role/,'draft UI must route from verified award role when corporate type is unresolved');
 assert.match(draftGenerator,/function effectiveTedRole\(tender:any\)/,'draft generator must use the same effective TED role');
-assert.match(draftGenerator,/v18-effective-award-role/,'draft generator version must identify effective-role routing');
+assert.match(draftGenerator,/v19-multi-recipient-formal-salutation/,'draft generator version must identify multi-recipient formal-salutation routing');
 
 console.log('Opportunity workflow single-owner smoke passed.');
