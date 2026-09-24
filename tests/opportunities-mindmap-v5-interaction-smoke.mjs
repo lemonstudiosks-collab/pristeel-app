@@ -46,7 +46,7 @@ await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260924-layout-stability5','Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260924-compactdesk1','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 const initialDesk=window.document.querySelector('#pst-opp-desk');
 desk.apply();
@@ -57,7 +57,16 @@ assert(!focus.classList.contains('pst-opp-result-page'),'initial view must not b
 assert.equal(window.getComputedStyle(window.document.getElementById('pst-opportunities-list')).display,'none','canonical result list must stay hidden on the initial dashboard');
 assert.equal(window.getComputedStyle(window.document.getElementById('pst-pcw-opportunity-tools')).display,'none','search tools must stay hidden until a category opens');
 assert.equal(window.document.querySelector('.pst-opp-mini-stats'),null,'passive mini-stat summary row must not render');
-assert.equal(window.document.querySelector('[data-pst-opp-filter-toggle]'),null,'dashboard must not expose a fake filter toggle');
+const filterToggle=window.document.querySelector('[data-pst-opp-filter-toggle]');
+assert(filterToggle,'dashboard must expose one compact filter toggle');
+assert.equal(desk.state().filtersOpen,false,'secondary filters must start collapsed');
+assert(!window.document.querySelector('.pst-opp-filter-panel').classList.contains('is-open'),'secondary filter panel must be hidden initially');
+filterToggle.click();
+await new Promise(r=>setTimeout(r,20));
+assert.equal(desk.state().filtersOpen,true,'filter toggle must reveal secondary filters');
+assert(window.document.querySelector('.pst-opp-filter-panel').classList.contains('is-open'),'secondary filter panel must render open after the toggle');
+filterToggle.click();
+await new Promise(r=>setTimeout(r,20));
 assert.equal(window.document.querySelector('.pst-opp-active'),null,'dashboard must not show active-filter clutter');
 
 assert(window.document.querySelector('[data-pst-opp-mode="all"]'),'all route must exist');
@@ -67,9 +76,9 @@ assert(window.document.querySelector('[data-pst-opp-source="KRPP"]'),'active KRP
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'active TED source must be visible');
 assert.equal(window.document.querySelector('[data-pst-opp-source="TED"] .pst-opp-chip-icon img').getAttribute('src'),'assets/source-icons/ted-eu.svg','TED source must use the local EU/TED asset');
 assert.equal(window.document.querySelector('[data-pst-opp-source="KRPP"] .pst-opp-chip-icon img').getAttribute('src'),'assets/source-icons/krpp-kosovo.svg','KRPP source must use the local Kosovo procurement asset');
-assert(deskSrc.includes('grid-template-columns:310px minmax(0,1fr)'),'dashboard sections must give their category heading meaningful visual weight');
-assert(deskSrc.includes('grid-template-columns:repeat(3,minmax(0,1fr))'),'primary category groups must use a balanced multi-column grid');
-assert(window.document.querySelector('.pst-opp-guide'),'dashboard must include the concise usage guide from the approved visual');
+assert(deskSrc.includes('filtersOpen=false'),'secondary filters must default to collapsed');
+assert(deskSrc.includes('pst-opp-status-strip'),'status controls must stay visible in a compact strip');
+assert.equal(window.document.querySelector('.pst-opp-guide'),null,'instructional guide clutter must not render on the dashboard');
 assert.equal(window.document.querySelector('[data-pst-opp-source="APP_AL"]'),null,'zero-count sources must not clutter the Desk');
 assert.equal(window.document.querySelector('[data-pst-opp-source="UNDP_KOSOVO"]'),null,'UNDP Kosovo must not occupy a source chip in the Desk');
 
