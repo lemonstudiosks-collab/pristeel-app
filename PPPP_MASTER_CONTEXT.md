@@ -283,6 +283,8 @@ Keep connected and treat as systems of record/capabilities:
 - KRPP: Kosovo tender source
 - APP Albania: Albania tender source
 
+External procurement discovery is rate-limited by policy to one morning attempt per source per Europe/Budapest business day. Scheduled, manual and duplicate cloud runs must claim `pppp_external_source_daily_access_v1` before contacting TED, KRPP, APP Albania or the multilateral/WB group. A failed attempt remains claimed for that day so errors cannot become retry storms. The authenticated KRPP worker is one-shot and calendar-scheduled; it must never return to a polling/`KeepAlive` loop.
+
 Integration policy is also recorded in `public.pppp_platform_integrations`.
 
 ## 15. Current regression projects

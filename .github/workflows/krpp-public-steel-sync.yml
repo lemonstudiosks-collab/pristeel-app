@@ -21,7 +21,7 @@ on:
       - 'tests/pristeel-capability-profile-smoke.mjs'
       - '.github/workflows/krpp-public-steel-sync.yml'
   schedule:
-    - cron: '27 */2 * * *'
+    - cron: '20 5 * * *'
   push:
     branches: [main]
     paths:
@@ -53,6 +53,8 @@ jobs:
       KRPP_PUBLIC_UPSERT_BATCH_SIZE: '25'
       KRPP_PUBLIC_UPSERT_RETRIES: '2'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
+      PPPP_SOURCE_ACCESS_RUN_TOKEN: ${{ github.run_id }}-${{ github.run_attempt }}
+      PPPP_SOURCE_ACCESS_TRIGGER: ${{ github.event_name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +72,12 @@ jobs:
           node tests/krpp-public-steel-sync-smoke.mjs
           node tests/public-steel-boundary-regression.mjs
           node tests/pristeel-capability-profile-smoke.mjs
+      - name: Claim KRPP daily source access
+        id: source_gate
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: node scripts/external-source-daily-gate.mjs KRPP
       - name: Collect public KRPP PRISTEEL opportunities
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/krpp-public-capability-runner.mjs
       - name: Upload sanitized summary
         if: always()

@@ -22,7 +22,7 @@ on:
       - 'tests/multilateral-procurement-sync-smoke.mjs'
       - '.github/workflows/multilateral-procurement-sync.yml'
   schedule:
-    - cron: '23 * * * *'
+    - cron: '40 5 * * *'
   push:
     branches: [main]
     paths:
@@ -52,6 +52,8 @@ jobs:
       MULTILATERAL_RECENT_DAYS: '120'
       MULTILATERAL_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source || '' }}
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
+      PPPP_SOURCE_ACCESS_RUN_TOKEN: ${{ github.run_id }}-${{ github.run_attempt }}
+      PPPP_SOURCE_ACCESS_TRIGGER: ${{ github.event_name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +64,12 @@ jobs:
         run: node --check scripts/multilateral-procurement-core.mjs && node --check scripts/multilateral-procurement-sync.mjs
       - name: Run parser, classifier and dedupe smoke tests
         run: node tests/multilateral-procurement-sync-smoke.mjs
+      - name: Claim multilateral daily source access
+        id: source_gate
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: node scripts/external-source-daily-gate.mjs MULTILATERAL
       - name: Collect procurement opportunities
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/multilateral-procurement-sync.mjs
       - name: Upload sanitized summary
         if: always()

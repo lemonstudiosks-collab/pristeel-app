@@ -2,6 +2,17 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-09-24
+
+### External procurement access limited to one morning attempt per source
+
+- TED, KRPP, APP Albania and multilateral procurement discovery schedules now run once each morning instead of hourly/every-two-hours/every-six-hours.
+- A service-only Supabase daily access ledger atomically claims each source before collection. A second scheduled, manual or duplicate workflow run on the same Europe/Budapest business day stops before contacting the external portal; failed attempts remain claimed to prevent retry storms.
+- Pull-request and push validation no longer performs preview access against the live procurement portals.
+- The older KEK/KRPP and secondary TED schedules were removed so they cannot create duplicate source sessions.
+- The authenticated KRPP Mac worker is now one-shot at 06:00 local time. Its former three-minute polling loop, `KeepAlive` restart behavior and install-time immediate kick were removed.
+- Tender classification, stored opportunities, dossier processing and human approval boundaries are unchanged.
+
 ## 2026-09-23
 
 ### PPPP V2 project flow is canonical from entry through closure

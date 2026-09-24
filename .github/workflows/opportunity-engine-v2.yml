@@ -36,9 +36,6 @@ on:
       - 'supabase/migrations/20260901212500_ted_background_research_queue_v1.sql'
       - '.github/workflows/opportunity-engine-v2.yml'
       - 'tests/opportunity-workflow-ownership-smoke.mjs'
-  schedule:
-    - cron: '20 1-23/2 * * *'
-
 permissions:
   contents: read
 
@@ -68,7 +65,7 @@ jobs:
           node tests/opportunity-workflow-ownership-smoke.mjs
 
   run:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'workflow_dispatch'
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -90,27 +87,40 @@ jobs:
       TED_COMPANY_MAX_ROWS: '40'
       TED_HISTORY_REUSE_MAX_ROWS: '100'
       TED_ROLE_RETRY_MAX: '30'
+      PPPP_SOURCE_ACCESS_RUN_TOKEN: ${{ github.run_id }}-${{ github.run_attempt }}
+      PPPP_SOURCE_ACCESS_TRIGGER: ${{ github.event_name }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Claim TED daily source access
+        id: source_gate
+        run: node scripts/external-source-daily-gate.mjs TED
       - name: Discover broader TED GC project awards
+        if: steps.source_gate.outputs.allowed == 'true'
         continue-on-error: true
         run: node scripts/ted-gc-award-sync-v2.mjs
       - name: Apply TED GC precision gate
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-gc-award-precision-v3.mjs
       - name: Reuse known winner contacts
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-winner-contact-history-reuse.mjs
       - name: Enrich winner public contacts
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-winner-contact-enrichment.mjs
       - name: Run baseline winner company classification
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-winner-company-classification.mjs
       - name: Rank winner procurement contacts
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-winner-contact-ranking.mjs
       - name: Retry unresolved company roles and create route-specific draft actions
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-company-role-actions-v2.mjs
       - name: Route unresolved award-holders by verified GC project role
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/ted-gc-project-role-fallback-v1.mjs
       - name: Upload sanitized Opportunity Engine summary
         if: always()

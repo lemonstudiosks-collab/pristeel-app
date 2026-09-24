@@ -120,6 +120,8 @@ Underlying owners remain:
 
 The first filename is legacy. Current behavior covers KRPP Kosovo, APP Albania, TED direct opportunities and TED award-winner outreach.
 
+External procurement discovery has one scheduled morning session per source. Cloud collectors must pass the service-only `pppp_claim_external_source_daily_access_v1` gate before contacting TED, KRPP, APP Albania or the multilateral/WB source group. Duplicate/manual runs after the first claim skip external access. The authenticated KRPP Mac worker runs once at 06:00 local time and exits; continuous polling and `KeepAlive` are forbidden.
+
 Operating Experience adds the final decision vocabulary:
 
 - **GO · Krijo projekt**

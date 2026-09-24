@@ -18,7 +18,7 @@ on:
       - 'tests/public-steel-boundary-regression.mjs'
       - '.github/workflows/app-albania-steel-sync.yml'
   schedule:
-    - cron: '57 */6 * * *'
+    - cron: '10 5 * * *'
   push:
     branches: [main]
     paths:
@@ -46,6 +46,8 @@ jobs:
       APP_AL_MIN_SCORE: '55'
       APP_AL_RECENT_DAYS: '60'
       SYNC_MODE: ${{ github.event_name == 'pull_request' && 'preview' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'apply') }}
+      PPPP_SOURCE_ACCESS_RUN_TOKEN: ${{ github.run_id }}-${{ github.run_attempt }}
+      PPPP_SOURCE_ACCESS_TRIGGER: ${{ github.event_name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -60,7 +62,12 @@ jobs:
         run: |
           node tests/app-albania-steel-sync-smoke.mjs
           node tests/public-steel-boundary-regression.mjs
+      - name: Claim APP daily source access
+        id: source_gate
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: node scripts/external-source-daily-gate.mjs APP_AL
       - name: Collect Albania steel tenders
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/app-albania-steel-runner.mjs
       - name: Upload sanitized summary
         if: always()

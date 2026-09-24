@@ -39,11 +39,14 @@ cat > "$PLIST" <<EOF
   <array>
     <string>/bin/zsh</string>
     <string>-lc</string>
-    <string>set -a; source '$ENV_FILE'; set +a; cd '$ROOT'; exec '$NODE' scripts/krpp-authenticated-fetch-worker.mjs</string>
+    <string>set -a; source '$ENV_FILE'; set +a; cd '$ROOT'; exec '$NODE' scripts/krpp-authenticated-fetch-worker.mjs --once</string>
   </array>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>6</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+  <key>KeepAlive</key><false/>
   <key>StandardOutPath</key><string>$LOG_DIR/krpp-fetch-worker.log</string>
   <key>StandardErrorPath</key><string>$LOG_DIR/krpp-fetch-worker.error.log</string>
 </dict>
@@ -52,5 +55,4 @@ EOF
 
 launchctl bootout "gui/$UID" "$PLIST" >/dev/null 2>&1 || true
 launchctl bootstrap "gui/$UID" "$PLIST"
-launchctl kickstart -k "gui/$UID/$LABEL"
-echo "Installed $LABEL. Logs: $LOG_DIR/krpp-fetch-worker.log"
+echo "Installed $LABEL for one attempt daily at 06:00 local time. Logs: $LOG_DIR/krpp-fetch-worker.log"

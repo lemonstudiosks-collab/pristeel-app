@@ -11,8 +11,6 @@ on:
         options:
           - preview
           - apply
-  schedule:
-    - cron: '17 */2 * * *'
   push:
     branches: [main]
     paths:
@@ -40,6 +38,8 @@ jobs:
       KRPP_SEARCH_URL: ${{ vars.KRPP_SEARCH_URL }}
       KEK_TENDER_MIN_SCORE: '35'
       SYNC_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'apply' }}
+      PPPP_SOURCE_ACCESS_RUN_TOKEN: ${{ github.run_id }}-${{ github.run_attempt }}
+      PPPP_SOURCE_ACCESS_TRIGGER: ${{ github.event_name }}
 
     steps:
       - name: Checkout
@@ -50,11 +50,17 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Claim KRPP daily source access
+        id: source_gate
+        if: github.event_name == 'workflow_dispatch'
+        run: node scripts/external-source-daily-gate.mjs KRPP
+
       - name: Collect KEK steel tenders
+        if: steps.source_gate.outputs.allowed == 'true'
         run: node scripts/kek-tender-sync.mjs
 
       - name: Keep only actionable precise opportunities
-        if: ${{ env.SYNC_MODE == 'apply' }}
+        if: steps.source_gate.outputs.allowed == 'true' && env.SYNC_MODE == 'apply'
         run: node scripts/kek-tender-postprocess.mjs
 
       - name: Upload sanitized summary
