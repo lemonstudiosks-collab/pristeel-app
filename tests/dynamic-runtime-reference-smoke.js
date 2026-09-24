@@ -75,7 +75,7 @@ assert(nativeEntry.includes('pristeel-home-ask-functional-owner-v1.js?v=20260904
 const homeInteraction=fs.readFileSync(path.join(ROOT,'pristeel-home-canonical-interaction-v1.js'),'utf8');
 const opportunityPolish=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-filter-polish-v1.js'),'utf8');
 const waitingBridge=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-waiting-bridge-v1.js'),'utf8');
-assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260924-layout-stability5'),'Fresh presentation bridge must load the current Opportunity Desk');
+assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260924-contacted-workdesk1'),'Fresh presentation bridge must load the current Opportunity Desk');
 assert(homeInteraction.includes("loadScript('__pstGlobalFullwidthShellV2'"),'Fresh Home bridge must load Global Shell generation v2 even when v1 is already present');
 assert(homeInteraction.includes('pristeel-global-fullwidth-shell-v1.js?v=20260919-visible-page-back2'),'Fresh Home bridge must cache-bust the visible-page Global Shell fix');
 assert(homeInteraction.includes("loadScript('__pstProductionSurfaceOwnerV2'"),'Fresh Home bridge must load Production Surface Owner generation v2 even when v1 is already present');
@@ -86,9 +86,9 @@ assert.doesNotThrow(()=>new Function(waitingBridge),'Opportunities waiting bridg
 assert(opportunityPolish.includes('#pst-pcw-lifecycle-tabs')&&opportunityPolish.includes('#pst-pcw-opportunity-tabs'),'Opportunity Desk must retire the legacy status/source controls without removing their canonical owners');
 assert(opportunityPolish.includes('data-pst-opp-source')&&opportunityPolish.includes('WORLD_BANK')&&opportunityPolish.includes('KRPP')&&opportunityPolish.includes('TED'),'Opportunity Desk must expose functional source filters');
 assert(opportunityPolish.includes('data-pst-opp-field')&&opportunityPolish.includes('fieldOf'),'Opportunity Desk must expose field filters over existing records');
-assert(opportunityPolish.includes('data-pst-opp-lifecycle')&&opportunityPolish.includes('applyOpportunityFilter'),'Opportunity Desk lifecycle controls must delegate to the canonical Project-Centric filter owner');
+assert(opportunityPolish.includes('function activeRows(')&&opportunityPolish.includes('function contactedRows(')&&opportunityPolish.includes('globalContactedKeys'),'Opportunity Desk must separate active opportunities from drafted/contacted companies without creating Projects');
 assert(!/setInterval\s*\(|supaFetch\s*\(/i.test(opportunityPolish),'Opportunity Desk must not poll or access business data directly');
-assert(!/tenderAction\s*\(|openTender\s*\(/.test(opportunityPolish),'Opportunity Desk must not take ownership of tender business actions');
+assert(!/tenderAction\s*\(/.test(opportunityPolish)&&opportunityPolish.includes("P.prepareDraft(id)"),'Opportunity Desk may delegate approved detail/draft actions but must not reimplement tender business actions');
 assert(!/addEventListener\s*\(\s*['\"]click/i.test(waitingBridge),'Waiting bridge must not own click behavior');
 
 console.log('Dynamic runtime reference closure: OK ('+seen.size+' local JS modules verified).');

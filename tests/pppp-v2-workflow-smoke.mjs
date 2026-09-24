@@ -197,7 +197,7 @@ aw.supaFetch = async (requestPath, method, body) => {
   return [];
 };
 aw.eval(tenderActions);
-await assert.rejects(() => aw.PSTTenderPriorityActionsV2.prepareDraft(tenderId), /Së pari aprovoje Opportunity-n/);
+await assert.rejects(() => aw.PSTTenderPriorityActionsV2.prepareDraft(tenderId), /Nuk ka ende email të verifikuar/);
 const promotion = await aw.PSTTenderPriorityActionsV2.promoteAward(tenderId);
 assert.equal(promotion.project_id, projectId);
 assert.equal(rpcCalls.length, 1, 'One human approval must make exactly one bounded promotion call');

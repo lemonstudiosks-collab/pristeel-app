@@ -23,18 +23,19 @@ assert(projectReadability.includes('pristeel-project-mindmap-v1.js?v=20260921-re
 assert(!projectReadability.includes('pristeel-project-mindmap-navigation-v1.js'),'Retired mindmap navigation bridge must not remain a runtime dependency');
 assert(!/supaFetch\s*\(|fetch\s*\(|MutationObserver\s*\(|setInterval\s*\(/.test(projectMindmap),'Retired Project mindmap shim must stay data- and polling-free');
 
-assert(opportunitiesPolish.includes('#pst-opp-desk{display:grid'),'Final Opportunities owner must render the Opportunity Desk');
-assert(opportunitiesPolish.includes('#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-lifecycle-tabs,#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-opportunity-tabs{display:none!important}'),'Legacy controls must be hidden only after the replacement Desk is present');
-assert(opportunitiesPolish.includes("data-pst-opp-mode")&&opportunitiesPolish.includes("data-pst-opp-source")&&opportunitiesPolish.includes("data-pst-opp-lifecycle")&&opportunitiesPolish.includes("data-pst-opp-field"),'Opportunity Desk must expose route, source, lifecycle and field filters');
-assert(opportunitiesPolish.includes('Për ofertim')&&opportunitiesPolish.includes('Fitues për kontaktim'),'Opportunity Desk must distinguish Direct Tender from TED Award Sales');
+assert(opportunitiesPolish.includes('#pst-opp-desk.pst-opp-workdesk'),'Final Opportunities owner must render the one-surface workdesk');
+assert(opportunitiesPolish.includes('#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-lifecycle-tabs,#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-opportunity-tabs{display:none!important}'),'Legacy canonical controls must stay backstage after the replacement Desk is present');
+assert(opportunitiesPolish.includes('data-pst-opp-source')&&opportunitiesPolish.includes('data-pst-opp-field')&&opportunitiesPolish.includes('data-pst-opp-winner'),'Opportunity workdesk must expose source, field and TED-winner filters on the left');
+assert(opportunitiesPolish.includes('function activeRows(')&&opportunitiesPolish.includes('function contactedRows(')&&opportunitiesPolish.includes('Kompanitë e kontaktuara'),'Opportunity workdesk must separate active opportunities from contacted companies');
+assert(opportunitiesPolish.includes('globalContactedKeys'),'Once a company is drafted/contacted, duplicate opportunities for that company must be suppressed from the active list');
 assert(opportunitiesPolish.includes('Number(c.src[k]||0)>0'),'Opportunity Desk must hide zero-count sources instead of rendering empty source clutter');
 assert(!opportunitiesPolish.includes('data-pst-opp-source="UNDP_KOSOVO"'),'UNDP Kosovo must not occupy a visible source filter');
 assert(opportunitiesPolish.includes("typeof api.applyOpportunityFilter==='function'"),'Desk filters must delegate to the canonical Project-Centric Workflow filter owner');
-assert(/pst:opportunities-filter-applied[\s\S]*kind==='source'[\s\S]*schedule\(\)/.test(opportunitiesPolish),'Opportunity source drilldown must refresh its dedicated result surface');
+assert(opportunitiesPolish.includes("document.addEventListener('pst:opportunities-filter-applied',schedule)"),'Canonical filter changes must refresh the same Opportunity workdesk');
 assert(!/pst:opportunities-filter-applied[\s\S]{0,500}scrollIntoView/.test(opportunitiesPolish),'Opportunity filtering must not force the whole document to jump');
 assert(opportunitiesPolish.includes('PSTPrimaryNavResilienceV10')&&opportunitiesPolish.includes("typeof N.openHome==='function'"),'Opportunities Kthehu must prefer the final primary navigation owner');
 assert(opportunitiesPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunity Desk must retain the waiting lifecycle bridge');
-assert(!/supaFetch\s*\(|tenderAction\s*\(|openTender\s*\(/.test(opportunitiesPolish),'Opportunity Desk may filter presentation state but must not own data writes, outbound actions or tender business actions');
+assert(!/supaFetch\s*\(|tenderAction\s*\(/.test(opportunitiesPolish)&&opportunitiesPolish.includes('P.prepareDraft(id)'),'Opportunity Desk may delegate approved draft/detail actions but must not own data writes or reimplement tender business actions');
 assert(/function go\(key\)[\s\S]*return legacyGo\?legacyGo\.apply/.test(home),'Canonical Home must delegate non-Home routes');
 assert(/var base=current;routerBase=base;[\s\S]*function finalGo\(key\)[\s\S]*return base\.apply/.test(guard),'Final Home wrapper must delegate non-Home routes through its immutable captured base');
 assert(/pstOpenProjectWorkspace/.test(home),'Home project actions must enter the canonical project opener');
