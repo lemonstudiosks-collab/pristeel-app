@@ -100,6 +100,26 @@ function css(){
 '@media(max-width:760px){.pst-dss-home{padding:17px}.pst-dss-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pst-dss-page{padding:5px 0 32px}.pst-dss-head{flex-direction:column}.pst-dss-kpi-strip{display:grid;grid-template-columns:repeat(2,1fr)}.pst-dss-kpi{border-bottom:1px solid #edf0ee}.pst-dss-headrow{display:none}.pst-dss-row{grid-template-columns:46px 1fr 118px}.pst-dss-col-why,.pst-dss-col-timing,.pst-dss-col-action{display:none}.pst-dss-detail-grid{grid-template-columns:1fr}.pst-dss-material-line{grid-template-columns:1fr 70px 70px}.pst-dss-material-line>*:nth-child(2),.pst-dss-material-line>*:nth-child(3){display:none}.pst-dss-candidate{grid-template-columns:1fr auto}}'
  ].join('');
  document.head.appendChild(s);
+
+ var v=document.createElement('style');v.id='pst-dach-steel-sales-v4-css';
+ v.textContent=[
+'.pst-dss-page{max-width:1760px!important;padding:14px 18px 42px!important}',
+'.pst-dss-head{margin:0 0 16px!important;align-items:center!important}.pst-dss-head small,.pst-dss-head p{display:none!important}.pst-dss-head h1{font-size:31px!important;letter-spacing:-.75px!important;color:#13233b!important}.pst-dss-actions button{height:38px!important;padding:0 15px!important;border-color:#d4e2ea!important;border-radius:12px!important;color:#2f6681!important;background:#fff!important;font-size:11px!important}',
+'.pst-dss-shell{display:grid;grid-template-columns:238px minmax(560px,1fr) 360px;gap:16px;align-items:start}',
+'.pst-dss-sidebar,.pst-dss-maincard,.pst-dss-sidecard{border:1px solid #e0e8ee;border-radius:14px;background:#fff;box-shadow:0 4px 16px rgba(35,64,90,.035)}',
+'.pst-dss-sidebar{padding:10px;position:sticky;top:12px}.pst-dss-nav{display:grid;gap:5px}.pst-dss-navbtn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;border-radius:10px;background:transparent;color:#38516b;padding:10px 11px;font-size:12px;font-weight:730;cursor:pointer;text-align:left}.pst-dss-navbtn:hover{background:#f4f8fb}.pst-dss-navbtn.on{background:#e9f4fb;color:#176a9d}.pst-dss-navbtn b{font-size:11px;color:#72859a}.pst-dss-navbtn.on b{color:#176a9d}',
+'.pst-dss-help-wrap{margin-top:10px;padding-top:10px;border-top:1px solid #edf1f4}.pst-dss-helpbtn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;border-radius:10px;background:transparent;color:#243d58;padding:10px 11px;font-size:12px;font-weight:800;cursor:pointer;text-align:left}.pst-dss-helpbtn:hover{background:#f4f8fb}.pst-dss-helpbtn span:first-child{display:flex;align-items:center;gap:8px}.pst-dss-gear{font-size:15px;color:#1676b3}.pst-dss-help-panel{margin:5px 4px 2px;padding:10px 11px;border-radius:10px;background:#f6f9fb;color:#61758a;font-size:10.5px;line-height:1.5}.pst-dss-help-panel b{color:#2d526e}.pst-dss-help-step{display:flex;gap:7px;margin-top:7px}.pst-dss-help-step:first-child{margin-top:0}.pst-dss-help-num{flex:0 0 19px;height:19px;display:grid;place-items:center;border-radius:50%;background:#dfeef8;color:#1f75aa;font-size:9px;font-weight:900}',
+'.pst-dss-maincard{overflow:hidden;min-height:520px}.pst-dss-mainhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid #edf1f4}.pst-dss-mainhead b{font-size:13px;color:#20364f}.pst-dss-mainhead span{font-size:9.5px;color:#8190a0}',
+'.pst-dss-table-head,.pst-dss-company-row{display:grid;grid-template-columns:minmax(190px,1.25fr) 90px minmax(150px,.9fr) minmax(180px,1fr) 90px minmax(155px,.9fr);gap:10px;align-items:center;padding:11px 14px}.pst-dss-table-head{background:#f9fbfc;border-bottom:1px solid #e9eff3;color:#8493a2;font-size:8.5px;font-weight:850;text-transform:uppercase;letter-spacing:.045em}.pst-dss-company-row{border-bottom:1px solid #eef2f5;cursor:pointer;color:#3d5268}.pst-dss-company-row:last-child{border-bottom:0}.pst-dss-company-row:hover{background:#fafcfd}.pst-dss-company-row.on{background:#f0f7fc;box-shadow:inset 3px 0 0 #2f87bd}.pst-dss-company-row b{font-size:12px;color:#18324d}.pst-dss-company-row small{display:block;margin-top:3px;color:#8998a6;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-dss-company-row .pst-dss-cell{min-width:0;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-dss-company-row .pst-dss-material{white-space:normal;line-height:1.35}.pst-dss-company-row .pst-dss-qty{font-weight:800;color:#425e76}.pst-dss-contact-ok{color:#1e6e92;font-weight:720}.pst-dss-contact-no{color:#9b7955;font-weight:720}',
+'.pst-dss-right{display:grid;gap:14px;position:sticky;top:12px}.pst-dss-sidecard{padding:16px}.pst-dss-company-title{font-size:20px;font-weight:850;color:#172c44;letter-spacing:-.25px}.pst-dss-country{margin-top:4px;color:#64798e;font-size:11px}.pst-dss-side-meta{margin-top:14px;border-top:1px solid #edf1f4}.pst-dss-meta-row{display:grid;grid-template-columns:108px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid #edf1f4;font-size:10.5px}.pst-dss-meta-row span:first-child{color:#8493a1}.pst-dss-meta-row span:last-child{color:#314d67;font-weight:650;min-width:0;overflow-wrap:anywhere}.pst-dss-meta-row a{color:#176da2;text-decoration:none}.pst-dss-meta-row a:hover{text-decoration:underline}',
+'.pst-dss-primary-wide{width:100%;margin-top:14px;border:0;border-radius:10px;background:#176fa8;color:#fff;padding:11px 12px;font-size:11px;font-weight:850;cursor:pointer}.pst-dss-primary-wide:hover{background:#125f92}.pst-dss-primary-wide:disabled{opacity:.48;cursor:not-allowed}.pst-dss-secondary-wide{width:100%;margin-top:8px;border:1px solid #cfe0ea;border-radius:10px;background:#fff;color:#2d6f93;padding:9px 11px;font-size:10.5px;font-weight:800;cursor:pointer}',
+'.pst-dss-contacted-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}.pst-dss-contacted-title b{font-size:14px;color:#1d344d}.pst-dss-countpill{min-width:24px;height:24px;padding:0 7px;display:grid;place-items:center;border-radius:999px;background:#eaf3f9;color:#2c6f96;font-size:10px;font-weight:900}.pst-dss-contacted-sub{font-size:9.5px;color:#82909e;margin-bottom:9px}.pst-dss-contacted-list{display:grid;gap:0;border:1px solid #e7edf1;border-radius:10px;overflow:hidden}.pst-dss-contacted-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;padding:10px 11px;border-bottom:1px solid #edf1f4;cursor:pointer}.pst-dss-contacted-row:last-child{border-bottom:0}.pst-dss-contacted-row:hover{background:#fafcfd}.pst-dss-contacted-row b{font-size:10.5px;color:#233b55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pst-dss-contacted-row small{display:block;margin-top:3px;color:#8997a4;font-size:8.8px}.pst-dss-status{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:8.6px;font-weight:850;white-space:nowrap}.pst-dss-status.draft{background:#e8f3fb;color:#2875a1}.pst-dss-status.waiting{background:#fff2d9;color:#9a6c19}.pst-dss-status.replied{background:#e6f5ea;color:#347c4b}',
+'.pst-dss-right-empty{padding:30px 12px;text-align:center;color:#83919e;font-size:10.5px;line-height:1.5}.pst-dss-right-empty b{display:block;color:#405a72;font-size:13px;margin-bottom:5px}',
+'@media(max-width:1320px){.pst-dss-shell{grid-template-columns:210px minmax(520px,1fr) 320px}.pst-dss-table-head,.pst-dss-company-row{grid-template-columns:minmax(180px,1.2fr) 80px minmax(135px,.85fr) minmax(160px,1fr) 80px}.pst-dss-table-head>*:last-child,.pst-dss-company-row>*:last-child{display:none}}',
+'@media(max-width:1030px){.pst-dss-shell{grid-template-columns:205px 1fr}.pst-dss-right{grid-column:1/-1;position:static;grid-template-columns:1fr 1fr}.pst-dss-sidebar{position:static}.pst-dss-table-head,.pst-dss-company-row{grid-template-columns:minmax(180px,1.2fr) 85px minmax(140px,.9fr) minmax(160px,1fr) 82px}.pst-dss-table-head>*:last-child,.pst-dss-company-row>*:last-child{display:none}}',
+'@media(max-width:760px){.pst-dss-page{padding:8px 0 28px!important}.pst-dss-head{padding:0 10px}.pst-dss-head h1{font-size:23px!important}.pst-dss-shell{grid-template-columns:1fr}.pst-dss-sidebar,.pst-dss-maincard,.pst-dss-sidecard{border-radius:0;border-left:0;border-right:0}.pst-dss-sidebar{position:static}.pst-dss-nav{grid-template-columns:1fr 1fr}.pst-dss-right{grid-column:auto;grid-template-columns:1fr}.pst-dss-table-head{display:none}.pst-dss-company-row{grid-template-columns:1fr 92px;padding:12px 13px}.pst-dss-company-row>*:nth-child(n+3){display:none}.pst-dss-actions{display:flex;gap:5px}.pst-dss-actions button{padding:0 10px!important}}'
+ ].join('');
+ document.head.appendChild(v);
 }
 
 function chrome(on){
@@ -373,10 +393,18 @@ function renderHome(){
 function ensurePage(){
  css();var page=document.getElementById('page-dach-steel-sales');if(page)return page;
  var host=document.querySelector('.content')||document.body;page=document.createElement('div');page.id='page-dach-steel-sales';page.className='page';page.style.display='none';
- page.innerHTML='<div class="pst-dss-page"><header class="pst-dss-head"><div><small>PRISTEEL · MATERIAL TRADE · EUROPE</small><h1>Blerësit e materialit të çelikut · Europe</h1><p>Shitje materiali çeliku në EU + CH + RS + ME: Tier 1 janë konsumatorët direkt; Tier 2 kompanitë e ndërtimit / GC-GU me relevancë reale për procurement. Ky kanal nuk përdor TED/Mundësitë.</p></div><div class="pst-dss-actions"><button data-dss-refresh>Rifresko</button><button data-dss-back>← Ballina</button></div></header><div class="pst-dss-engine-note"><b>Rregulli:</b> targeti nis te “Për t’u kontaktuar”. Sapo krijohet Gmail draft kalon te “Draft gati”; vetëm Gmail Sent e kalon te “Në pritje të përgjigjes”, ndërsa reply te “Përgjigje / Aktiv”. Drafti nuk konsiderohet dërgim. TED/Mundësitë mbeten të ndara.</div><div class="pst-dss-kpi-strip" data-dss-kpis></div><div class="pst-dss-tabs"><button class="pst-dss-tab on" data-dss-filter="action">Për t’u kontaktuar</button><button class="pst-dss-tab" data-dss-filter="draft">Draft gati</button><button class="pst-dss-tab" data-dss-filter="waiting">Në pritje të përgjigjes</button><button class="pst-dss-tab" data-dss-filter="replied">Përgjigje / Aktiv</button><button class="pst-dss-tab" data-dss-filter="a1">A1</button><button class="pst-dss-tab" data-dss-filter="m3">M3 · Gati për ofertë</button><button class="pst-dss-tab" data-dss-filter="contact">Kërkon kontakt</button><button class="pst-dss-tab" data-dss-filter="all">Të gjitha</button></div><section class="pst-dss-panel"><div class="pst-dss-panel-head"><b>Qendra e blerësit dhe materialit</b><span data-dss-updated></span></div><div class="pst-dss-headrow"><span>Prioriteti</span><span>Blerësi / projekti</span><span>Pse tani?</span><span>Materiali</span><span>Kontakti</span><span class="pst-dss-col-timing">Koha</span><span class="pst-dss-col-action">Hapi i radhës</span></div><div data-dss-list></div></section></div>'
+ page.innerHTML='<div class="pst-dss-page">'
+  +'<header class="pst-dss-head"><div><h1>Blerësit e materialit të çelikut - Europe</h1></div><div class="pst-dss-actions"><button data-dss-refresh>Rifresko</button><button data-dss-back>← Ballina</button></div></header>'
+  +'<div class="pst-dss-shell">'
+   +'<aside class="pst-dss-sidebar"><nav class="pst-dss-nav" data-dss-sidebar></nav><div class="pst-dss-help-wrap"><button class="pst-dss-helpbtn" type="button" data-dss-help-toggle><span><span class="pst-dss-gear">⚙</span>Si funksionon?</span><span data-dss-help-arrow>›</span></button><div data-dss-help></div></div></aside>'
+   +'<main class="pst-dss-maincard"><div class="pst-dss-mainhead"><b data-dss-list-title>Kompanitë për kontaktim</b><span data-dss-updated></span></div><div class="pst-dss-table-head"><span>Kompania</span><span>Vendi</span><span>Sektori</span><span>Materiali</span><span>Sasia</span><span>Kontakti</span></div><div data-dss-list></div></main>'
+   +'<aside class="pst-dss-right"><section class="pst-dss-sidecard" data-dss-detail-pane></section><section class="pst-dss-sidecard"><div data-dss-contacted></div></section></aside>'
+  +'</div>'
+ +'</div>';
  host.appendChild(page);
  page.onclick=async function(e){
-  var f=e.target.closest('[data-dss-filter]');if(f){state.filter=f.getAttribute('data-dss-filter');state.expanded=null;state.actionView=null;renderPage();return}
+  var f=e.target.closest('[data-dss-filter]');if(f){state.filter=f.getAttribute('data-dss-filter');state.actionView=null;renderPage();return}
+  if(e.target.closest('[data-dss-help-toggle]')){state.helpOpen=!state.helpOpen;renderPage();return}
   if(e.target.closest('[data-dss-refresh]')){await syncLifecycleUi(true);return}
   if(e.target.closest('[data-dss-back]')){back();return}
   var btn=e.target.closest('[data-dss-action]');
@@ -386,9 +414,7 @@ function ensurePage(){
    if(act==='buyer-preview'){state.actionView={id:id,type:'buyer'};renderPage();return}
    if(act==='contact-resolve'){await resolveContact(r);return}
    if(act==='buyer-create-draft'){await createBuyerDraft(r);return}
-   if(act==='buyer-thread'){
-    var gu=gmailThread(q);if(gu)window.open(gu,'_blank','noopener');else alert('Nuk ka Gmail draft/thread të regjistruar për këtë target.');return;
-   }
+   if(act==='buyer-thread'){var gu=gmailThread(q);if(gu)window.open(gu,'_blank','noopener');else alert('Nuk ka Gmail draft/thread të regjistruar për këtë target.');return}
    if(act==='promote-project'){await promoteTargetToProject(r);return}
    if(act==='open-project'){if(r.project_id&&typeof window.pstOpenProjectDirect==='function')await Promise.resolve(window.pstOpenProjectDirect(r.project_id));return}
    if(act==='buyer-copy'){navigator.clipboard&&navigator.clipboard.writeText(buyerBody(r));return}
@@ -399,23 +425,23 @@ function ensurePage(){
    if(act==='supplier-copy'){navigator.clipboard&&navigator.clipboard.writeText(supplierBody(r,{}));return}
   }
   if(e.target.closest('a,button'))return;
-  var row=e.target.closest('[data-dss-target-id]');if(row){var rid=row.getAttribute('data-dss-target-id');state.expanded=state.expanded===rid?null:rid;state.actionView=null;renderPage()}
+  var row=e.target.closest('[data-dss-target-id]');if(row){state.expanded=row.getAttribute('data-dss-target-id');state.actionView=null;renderPage();return}
  };
  return page;
 }
 
 function filteredRows(){
- var rows=A(state.targets),actionable=rows.filter(function(r){return lifecycle(r)==='action'});
- if(state.filter==='action')return actionable;
+ var rows=A(state.targets),actionable=rows.filter(function(r){return lifecycle(r)==='action'}),contacted=rows.filter(function(r){return lifecycle(r)!=='action'});
+ if(state.filter==='action'||state.filter==='all')return actionable;
+ if(state.filter==='industrial')return actionable.filter(function(r){return buyerTier(r)==='T1'});
+ if(state.filter==='construction')return actionable.filter(function(r){return buyerTier(r)==='T2'});
+ if(state.filter==='m3')return actionable.filter(function(r){return r.quote_readiness==='M3'});
+ if(state.filter==='contact')return actionable.filter(function(r){return !hasContact(r)});
+ if(state.filter==='contacted')return contacted;
  if(state.filter==='draft')return rows.filter(function(r){return lifecycle(r)==='draft'});
  if(state.filter==='waiting')return rows.filter(function(r){return lifecycle(r)==='waiting'});
  if(state.filter==='replied')return rows.filter(function(r){return lifecycle(r)==='replied'});
- if(state.filter==='a1')return actionable.filter(function(r){return r.score_band==='A1'});
- if(state.filter==='m3')return actionable.filter(function(r){return r.quote_readiness==='M3'});
- if(state.filter==='material')return actionable.filter(function(r){return r.quote_readiness==='M0'||r.quote_readiness==='M1'});
- if(state.filter==='contact')return actionable.filter(function(r){return !hasContact(r)});
- if(state.filter==='outreach')return actionable.filter(function(r){return r.outreach_status==='ready'||!!outboundFor(r)});
- return rows;
+ return actionable;
 }
 function materialLines(r){
  var items=materialItems(r);
@@ -492,27 +518,76 @@ function detail(r){
 
 function renderPage(){
  var page=document.getElementById('page-dach-steel-sales');if(!page)return;
- var sx=summary()||{},lx=localSummary(),all=A(state.targets),draft=all.filter(function(r){return lifecycle(r)==='draft'}).length,waiting=all.filter(function(r){return lifecycle(r)==='waiting'}).length,replied=all.filter(function(r){return lifecycle(r)==='replied'}).length,action=all.filter(function(r){return lifecycle(r)==='action'}).length,k=page.querySelector('[data-dss-kpis]'),list=page.querySelector('[data-dss-list]'),u=page.querySelector('[data-dss-updated]');
- if(k)k.innerHTML=[[action,'Për t’u kontaktuar'],[draft,'Draft gati'],[waiting,'Në pritje'],[replied,'Përgjigje / Aktiv'],[sx.needs_contact!=null?sx.needs_contact:lx.needs_contact,'Kërkon kontakt'],[lx.quote_ready,'M3 · Gati për ofertë']].map(function(v){return '<div class="pst-dss-kpi"><b>'+E(v[0])+'</b><span>'+E(v[1])+'</span></div>'}).join('');
- page.querySelectorAll('[data-dss-filter]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-dss-filter')===state.filter)});
- if(u)u.textContent=state.lifecycleSyncing?'Duke sinkronizuar Gmail…':(state.lastLoadedAt?'Përditësuar '+new Date(state.lastLoadedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'}):'');
- if(!list)return;
- if(state.targetsLoading){list.innerHTML='<div class="pst-dss-empty"><b>Duke lexuar objektivat e kualifikuara…</b><span>Një lexim i kufizuar; pa zhurmë nga zbulimi.</span></div>';return}
- if(state.error&&state.targetsLoaded){list.innerHTML='<div class="pst-dss-empty"><b>Qendra e blerësve të çelikut nuk u lexua</b><span>'+E(state.error)+'</span></div>';return}
- var rows=filteredRows();
- if(!rows.length){
-  var title=state.filter==='action'?'Nuk ka targete të reja për kontaktim.':state.filter==='draft'?'Nuk ka Gmail draft-e gati.':state.filter==='waiting'?'Nuk ka targete në pritje përgjigjeje.':state.filter==='replied'?'Nuk ka përgjigje aktive.':state.filter==='all'?'Ende nuk ka objektiva të kualifikuara për Material Trade.':'Nuk ka targete në këtë filtër.';
-  list.innerHTML='<div class="pst-dss-empty"><b>'+E(title)+'</b><span>Rrjedha: zbulim → për t’u kontaktuar → draft gati → sent → në pritje → përgjigje/aktiv.</span></div>';return;
+ var all=A(state.targets),actionable=all.filter(function(r){return lifecycle(r)==='action'}),contacted=all.filter(function(r){return lifecycle(r)!=='action'}),replied=all.filter(function(r){return lifecycle(r)==='replied'});
+ var industrial=actionable.filter(function(r){return buyerTier(r)==='T1'}),construction=actionable.filter(function(r){return buyerTier(r)==='T2'}),m3=actionable.filter(function(r){return r.quote_readiness==='M3'});
+ var side=page.querySelector('[data-dss-sidebar]'),list=page.querySelector('[data-dss-list]'),detailPane=page.querySelector('[data-dss-detail-pane]'),contactedPane=page.querySelector('[data-dss-contacted]'),u=page.querySelector('[data-dss-updated]'),help=page.querySelector('[data-dss-help]'),helpArrow=page.querySelector('[data-dss-help-arrow]'),title=page.querySelector('[data-dss-list-title]');
+ if(side){
+  var items=[
+   ['action','Të gjitha',actionable.length],
+   ['industrial','Blerës industrialë',industrial.length],
+   ['construction','Kompani ndërtimi (GC)',construction.length],
+   ['m3','Gati për ofertë',m3.length],
+   ['contacted','Të kontaktuara',contacted.length],
+   ['replied','Përgjigje të marra',replied.length]
+  ];
+  side.innerHTML=items.map(function(x){return '<button class="pst-dss-navbtn '+(state.filter===x[0]?'on':'')+'" type="button" data-dss-filter="'+E(x[0])+'"><span>'+E(x[1])+'</span><b>'+E(x[2])+'</b></button>';}).join('');
  }
- list.innerHTML=rows.map(function(r){
-  var prods=arrText(r.products).slice(0,4).join(' · ')||r.steel_scope||'Fusha e materialit në pritje',q=outboundFor(r),life=lifecycle(r),ct=contactFor(r),email=S(ct.email||'');
-  var next=life==='replied'?'Përgjigje / Aktiv':life==='waiting'?'Në pritje':life==='draft'?'Hap draftin':(email?'Kërko RFQ':'Gjej kontakt');
-  var contactHtml=email?'<div class="pst-dss-contact"><b><a href="mailto:'+E(email)+'">'+E(email)+'</a></b><small>'+E([ct.person,ct.role].filter(Boolean).join(' · ')||ct.quality||'Kontakt i gjetur')+'</small></div>':'<span class="pst-dss-contact-missing">Kontakt i pagjetur</span>';
-  var row='<div class="pst-dss-row" data-dss-target-id="'+E(r.id)+'"><span class="pst-dss-score '+scoreClass(r.score_band)+'">'+E(r.score_band||'—')+'</span><div><b>'+E(r.company_name||'Blerës')+'</b><small>'+E([r.country,buyerTierLabel(r),r.project_title||r.buyer_type].filter(Boolean).join(' · '))+'</small></div><div class="pst-dss-col-why"><div class="pst-dss-why">'+E(r.why_now||'Evidenca për arsyen e kontaktimit është në pritje')+'</div></div><div><span class="pst-dss-qr '+qrClass(r.quote_readiness)+'">'+E(qrLabel(r.quote_readiness))+'</span><div class="pst-dss-products">'+E(prods)+'</div><div class="pst-dss-ton">'+E(tonnes(r.estimated_tonnes))+'</div></div><div>'+contactHtml+'</div><div class="pst-dss-col-timing"><b>'+E(life==='draft'?'DRAFT GATI':life==='waiting'?'NË PRITJE TË BLERËSIT':life==='replied'?'BLERËSI U PËRGJIGJ':r.procurement_timing||'E panjohur')+'</b><small>'+E(life==='draft'&&q&&q.updated_at?'Draft '+D(q.updated_at):life==='waiting'&&q&&q.sent_at?'Sent '+D(q.sent_at):life==='replied'&&q&&q.replied_at?'Reply '+D(q.replied_at):r.award_date?'Award '+D(r.award_date):'Timing evidence needed')+'</small></div><div class="pst-dss-col-action"><button class="pst-dss-nextbtn" type="button" data-dss-tid="'+E(r.id)+'" data-dss-open-actions="1">'+E(next)+' →</button></div></div>';
-  return row+(state.expanded===S(r.id)?detail(r):'');
+ if(help){
+  help.innerHTML=state.helpOpen?'<div class="pst-dss-help-panel"><div class="pst-dss-help-step"><span class="pst-dss-help-num">1</span><span>Zgjidh kompaninë dhe kontrollo kontaktin.</span></div><div class="pst-dss-help-step"><span class="pst-dss-help-num">2</span><span>Kliko <b>Përgatit draft email</b>; asgjë nuk dërgohet automatikisht.</span></div><div class="pst-dss-help-step"><span class="pst-dss-help-num">3</span><span>Sapo drafti krijohet, kompania largohet nga lista kryesore dhe kalon te <b>Kompanitë e kontaktuara</b>.</span></div></div>':'';
+ }
+ if(helpArrow)helpArrow.textContent=state.helpOpen?'⌄':'›';
+ if(u)u.textContent=state.lifecycleSyncing?'Duke sinkronizuar Gmail…':(state.lastLoadedAt?'Përditësuar '+new Date(state.lastLoadedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'}):'');
+ var titles={action:'Kompanitë për kontaktim',all:'Kompanitë për kontaktim',industrial:'Blerësit industrialë',construction:'Kompanitë e ndërtimit (GC)',m3:'Gati për ofertë',contacted:'Kompanitë e kontaktuara',replied:'Përgjigjet e marra'};
+ if(title)title.textContent=titles[state.filter]||'Kompanitë për kontaktim';
+ if(!list||!detailPane||!contactedPane)return;
+ if(state.targetsLoading){list.innerHTML='<div class="pst-dss-empty"><b>Duke lexuar kompanitë…</b></div>';return}
+ if(state.error&&state.targetsLoaded){list.innerHTML='<div class="pst-dss-empty"><b>Nuk u lexuan të dhënat</b><span>'+E(state.error)+'</span></div>';return}
+ var rows=filteredRows();
+ if(!state.expanded&&rows.length)state.expanded=S(rows[0].id);
+ var selected=findTarget(state.expanded);
+ if(!selected&&rows.length){state.expanded=S(rows[0].id);selected=rows[0];}
+ if(!rows.length)list.innerHTML='<div class="pst-dss-empty"><b>Nuk ka kompani në këtë kategori.</b><span>Lista përditësohet nga gjendja live e PPPP.</span></div>';
+ else list.innerHTML=rows.map(function(r){
+  var ct=contactFor(r),email=S(ct.email||''),mat=arrText(r.products).slice(0,2).join(' · ')||S(r.steel_scope||'—'),sector=S(r.buyer_type||buyerTierLabel(r)||'—');
+  return '<div class="pst-dss-company-row '+(S(r.id)===S(state.expanded)?'on':'')+'" data-dss-target-id="'+E(r.id)+'">'
+   +'<div><b>'+E(r.company_name||'Blerës')+'</b><small>'+E(r.company_domain||r.project_title||buyerTierLabel(r))+'</small></div>'
+   +'<div class="pst-dss-cell">'+E(r.country||'—')+'</div>'
+   +'<div class="pst-dss-cell">'+E(sector)+'</div>'
+   +'<div class="pst-dss-cell pst-dss-material">'+E(mat)+'</div>'
+   +'<div class="pst-dss-cell pst-dss-qty">'+E(tonnes(r.estimated_tonnes))+'</div>'
+   +'<div class="pst-dss-cell '+(email?'pst-dss-contact-ok':'pst-dss-contact-no')+'">'+E(email||'Mungon')+'</div>'
+  +'</div>';
  }).join('');
- list.querySelectorAll('[data-dss-open-actions]').forEach(function(b){b.onclick=function(e){e.preventDefault();e.stopPropagation();var id=b.getAttribute('data-dss-tid');state.expanded=id;state.actionView=null;renderPage();setTimeout(function(){var d=document.querySelector('.pst-dss-detail');if(d)try{d.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(err){}},0);};});
+ if(selected){
+  var q=outboundFor(selected),ct=contactFor(selected),email=S(q&&q.recipient_email||ct.email||''),life=lifecycle(selected),site=U(selected.company_website||selected.source_url),busy=!!state.draftBusy[draftKey('buyer',selected.id)],actionHtml='';
+  if(life==='action'){
+   actionHtml=email
+    ?'<button class="pst-dss-primary-wide" '+(busy?'disabled':'')+' data-dss-action="buyer-create-draft" data-dss-tid="'+E(selected.id)+'">'+(busy?'Duke përgatitur…':'Përgatit draft email')+'</button>'
+    :'<button class="pst-dss-primary-wide" '+(state.contactBusy[S(selected.id)]?'disabled':'')+' data-dss-action="contact-resolve" data-dss-tid="'+E(selected.id)+'">'+(state.contactBusy[S(selected.id)]?'Duke kërkuar…':'Gjej kontaktin')+'</button>';
+  }else{
+   var lbl=life==='draft'?'Hap Gmail draft':life==='waiting'?'Hap thread-in në Gmail':'Hap përgjigjen në Gmail';
+   actionHtml='<button class="pst-dss-primary-wide" data-dss-action="buyer-thread" data-dss-tid="'+E(selected.id)+'">'+E(lbl)+'</button>';
+   if(life==='replied')actionHtml+='<button class="pst-dss-secondary-wide" '+(state.projectBusy['project:'+S(selected.id)]?'disabled':'')+' data-dss-action="promote-project" data-dss-tid="'+E(selected.id)+'">'+(state.projectBusy['project:'+S(selected.id)]?'Duke krijuar projektin…':'Krijo projekt nga RFQ')+'</button>';
+  }
+  detailPane.innerHTML='<div class="pst-dss-company-title">'+E(selected.company_name||'Kompania')+'</div>'
+   +'<div class="pst-dss-country">'+E([selected.country,buyerTierLabel(selected)].filter(Boolean).join(' · '))+'</div>'
+   +'<div class="pst-dss-side-meta">'
+    +'<div class="pst-dss-meta-row"><span>Sektori</span><span>'+E(selected.buyer_type||'—')+'</span></div>'
+    +'<div class="pst-dss-meta-row"><span>Materiali</span><span>'+E(arrText(selected.products).join(' · ')||selected.steel_scope||'—')+'</span></div>'
+    +'<div class="pst-dss-meta-row"><span>Sasia</span><span>'+E(tonnes(selected.estimated_tonnes))+'</span></div>'
+    +'<div class="pst-dss-meta-row"><span>Website</span><span>'+(site?'<a href="'+E(site)+'" target="_blank" rel="noopener">'+E(selected.company_domain||selected.company_website||'Hap website')+'</a>':'—')+'</span></div>'
+    +'<div class="pst-dss-meta-row"><span>Email</span><span>'+E(email||'Nuk kemi kontakt të verifikuar')+'</span></div>'
+    +'<div class="pst-dss-meta-row"><span>Statusi</span><span>'+E(life==='action'?'Për t’u kontaktuar':life==='draft'?'Draft gati':life==='waiting'?'Në pritje të përgjigjes':'Përgjigje / Aktiv')+'</span></div>'
+   +'</div>'+actionHtml;
+ }else detailPane.innerHTML='<div class="pst-dss-right-empty"><b>Zgjidh një kompani</b><span>Kliko një rresht në listë për të parë të dhënat dhe veprimin kryesor.</span></div>';
+ var contactedSorted=contacted.slice().sort(function(a,b){var qa=outboundFor(a),qb=outboundFor(b);return T((qb&&qb.replied_at)||(qb&&qb.sent_at)||(qb&&qb.updated_at))-T((qa&&qa.replied_at)||(qa&&qa.sent_at)||(qa&&qa.updated_at))});
+ contactedPane.innerHTML='<div class="pst-dss-contacted-title"><b>Kompanitë e kontaktuara</b><span class="pst-dss-countpill">'+E(contacted.length)+'</span></div><div class="pst-dss-contacted-sub">Sapo krijohet drafti, kompania shfaqet këtu.</div>'
+  +(contactedSorted.length?'<div class="pst-dss-contacted-list">'+contactedSorted.slice(0,12).map(function(r){
+    var q=outboundFor(r),life=lifecycle(r),cls=life==='draft'?'draft':life==='waiting'?'waiting':'replied',lbl=life==='draft'?'Draft gati':life==='waiting'?'Në pritje':'Përgjigje / Aktiv',dt=life==='replied'?(q&&q.replied_at):life==='waiting'?(q&&q.sent_at):(q&&q.updated_at);
+    return '<div class="pst-dss-contacted-row" data-dss-target-id="'+E(r.id)+'"><div><b>'+E(r.company_name||'Kompania')+'</b><small>'+E(dt?D(dt):r.country||'—')+'</small></div><span class="pst-dss-status '+cls+'">'+E(lbl)+'</span></div>';
+   }).join('')+'</div>':'<div class="pst-dss-right-empty" style="padding:18px 8px"><span>Ende nuk ka kompani të kontaktuara.</span></div>');
 }
+
 function back(){
  chrome(false);
  try{var n=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(n&&typeof n.openHome==='function'){n.openHome();return}}catch(e){}
