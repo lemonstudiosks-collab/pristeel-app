@@ -152,7 +152,7 @@ var files=[
   'pristeel-tender-priority-actions-v1.js?v=20260923-euaward1',
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
   'pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2',
-  'pristeel-primary-nav-resilience-v1.js?v=20260918-singleowner1',
+  'pristeel-primary-nav-resilience-v1.js?v=20260923-layout-stability1',
   'pristeel-project-execution-guard-v1.js?v=20260829-postaward1',
   'pristeel-creative-ui-v1.js?v=20260911-fullredesign4'
 ];

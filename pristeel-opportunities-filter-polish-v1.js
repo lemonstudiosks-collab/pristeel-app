@@ -11,7 +11,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260922-stable-scroll1';
+var VERSION='20260923-layout-stability1';
 var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,observer=null,observerRoot=null,scheduled=false,decorating=false;
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
@@ -50,7 +50,7 @@ function counts(){
 }
 function loadBridge(){if(window.__pstOpportunitiesWaitingBridgeV1||document.querySelector('script[data-pst-opportunities-waiting-bridge]'))return;var b=document.createElement('script');b.src='pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1';b.defer=true;b.dataset.pstOpportunitiesWaitingBridge='1';document.head.appendChild(b);}
 function css(){
- var old=document.getElementById('pst-opportunities-filter-polish-v1-css');if(old)old.remove();
+ var old=document.getElementById('pst-opportunities-filter-polish-v1-css');if(old)return;
  var s=document.createElement('style');s.id='pst-opportunities-filter-polish-v1-css';s.textContent=`
 body:has(#page-kek-tenders.active) .app-shell>.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important}
 body:has(#page-kek-tenders.active) .app-shell>.main{width:100%!important;max-width:none!important;min-width:0!important}
@@ -92,12 +92,15 @@ function categoryMeta(kind,value){
 function resultTitle(meta){if(meta&&meta.source)return sourceMark(meta.source)+E(meta.title);return E(meta&&meta.title||'Mundësitë');}
 function header(focus){
  var h=focus.querySelector(':scope>header');if(!h)return;
+ var html='';
  if(resultPage){
    var n=filteredRows().length,densityHtml='<div class="pst-opp-density"><button type="button" data-pst-opp-density="comfortable" class="'+(density==='comfortable'?'on':'')+'">Komode</button><button type="button" data-pst-opp-density="compact" class="'+(density==='compact'?'on':'')+'">Kompakte</button></div>';
-   h.innerHTML='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back aria-label="Kthehu te dashboard-i i Mundësive">← Mundësitë</button><div class="pst-opp-desk-title"><span>PPPP · '+E(resultPage.eyebrow)+'</span><h2 class="'+(resultPage.source?'pst-opp-source-title':'')+'">'+resultTitle(resultPage)+'</h2><p>'+n+' mundësi përputhen me këtë kategori.</p></div></div>'+densityHtml;
-   return;
+   html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back aria-label="Kthehu te dashboard-i i Mundësive">← Mundësitë</button><div class="pst-opp-desk-title"><span>PPPP · '+E(resultPage.eyebrow)+'</span><h2 class="'+(resultPage.source?'pst-opp-source-title':'')+'">'+resultTitle(resultPage)+'</h2><p>'+n+' mundësi përputhen me këtë kategori.</p></div></div>'+densityHtml;
+ }else{
+   html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><span>PPPP · OPPORTUNITY DESK</span><h2>Mundësitë</h2><p>Zgjidh një kategori për të hapur listën përkatëse të mundësive.</p></div></div><div class="pst-opp-header-note">Çeliku lidh mundësitë me një të ardhme më të fortë.</div>';
  }
- h.innerHTML='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><span>PPPP · OPPORTUNITY DESK</span><h2>Mundësitë</h2><p>Zgjidh një kategori për të hapur listën përkatëse të mundësive.</p></div></div><div class="pst-opp-header-note">Çeliku lidh mundësitë me një të ardhme më të fortë.</div>';
+ var owned=!!h.querySelector('.pst-opp-desk-head-left')&&((!!resultPage)===!!h.querySelector('.pst-opp-density'));
+ if(h.dataset.pstOppHeaderHtml!==html||!owned){h.innerHTML=html;h.dataset.pstOppHeaderHtml=html;}
 }
 function tools(focus){
  var t=focus.querySelector('#pst-pcw-opportunity-tools');if(!t)return;
@@ -139,7 +142,8 @@ function resultHead(focus){
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return;
  var rows=filteredRows(),visible=list.querySelectorAll('[data-pcw-tender]').length,h=focus.querySelector('.pst-opp-results-head'),label=resultPage&&resultPage.title||'';
  if(!h){h=document.createElement('div');h.className='pst-opp-results-head';list.parentNode.insertBefore(h,list);}
- h.innerHTML='<div><h3>'+(resultPage?'Rezultatet · '+E(label):'Rezultatet')+'</h3><p>'+rows.length+' mundësi përputhen · '+visible+' të shfaqura'+(rows.length>visible?' · përdor “Shfaq edhe” poshtë':'')+'</p></div>';
+ var html='<div><h3>'+(resultPage?'Rezultatet · '+E(label):'Rezultatet')+'</h3><p>'+rows.length+' mundësi përputhen · '+visible+' të shfaqura'+(rows.length>visible?' · përdor “Shfaq edhe” poshtë':'')+'</p></div>';
+ if(h.dataset.pstOppResultsHtml!==html){h.innerHTML=html;h.dataset.pstOppResultsHtml=html;}
 }
 function decorate(){
  scheduled=false;var x=current(),page=document.getElementById('page-kek-tenders'),focus=page&&page.querySelector('#pst-opportunities-focus');if(!x||!state||!focus)return false;
@@ -149,13 +153,13 @@ function decorate(){
    focus.classList.toggle('pst-opp-dashboard',!resultPage);
    focus.classList.toggle('pst-opp-result-page',!!resultPage);
    if(resultPage){if(desk)desk.remove();}
-   else if(!desk){var anchor=focus.querySelector('#pst-pcw-lifecycle-tabs')||focus.querySelector('#pst-opportunities-list');var wrap=document.createElement('div');wrap.innerHTML=deskHtml(c);desk=wrap.firstChild;focus.insertBefore(desk,anchor);}
-   else{var wrap2=document.createElement('div');wrap2.innerHTML=deskHtml(c);desk.replaceWith(wrap2.firstChild);}
+   else{var html=deskHtml(c);if(!desk){var anchor=focus.querySelector('#pst-pcw-lifecycle-tabs')||focus.querySelector('#pst-opportunities-list');var wrap=document.createElement('div');wrap.innerHTML=html;desk=wrap.firstChild;desk.dataset.pstOppDeskHtml=html;focus.insertBefore(desk,anchor);}else if(desk.dataset.pstOppDeskHtml!==html){var wrap2=document.createElement('div');wrap2.innerHTML=html;var next=wrap2.firstChild;next.dataset.pstOppDeskHtml=html;desk.replaceWith(next);}}
    focus.classList.toggle('pst-opp-density-compact',density==='compact');resultHead(focus);page.dataset.pstOpportunitiesDesk='1';return true;
  }finally{decorating=false;reconnectObserver();}
 }
 function schedule(){if(decorating||scheduled)return;scheduled=true;setTimeout(function(){if(!document.getElementById('pst-opportunities-focus')){scheduled=false;return;}decorate();},0);}
 function reconnectObserver(){if(!observer||!observerRoot||!observerRoot.isConnected)return;observer.observe(observerRoot,{childList:true,subtree:true});}
+function stableTop(){try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){try{window.scrollTo(0,0);}catch(x){}}var raf=window.requestAnimationFrame||function(fn){return setTimeout(fn,16);};raf(function(){try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){}});}
 function observe(){var root=document.getElementById('pst-opportunities-focus');if(!root||typeof MutationObserver!=='function')return;if(observer)observer.disconnect();observerRoot=root;if(!observer)observer=new MutationObserver(function(){if(!decorating)schedule();});reconnectObserver();}
 function reset(){resultPage=null;current();if(api&&typeof api.applyOpportunityFilter==='function')api.applyOpportunityFilter('reset','all');schedule();}
 function apply(kind,value){current();if(api&&typeof api.applyOpportunityFilter==='function'){api.applyOpportunityFilter(kind,value);schedule();return true;}return false;}
@@ -171,9 +175,9 @@ function openResultPage(kind,value){
    if(resultPage.value==='all')api.applyOpportunityFilter('mode','award');
    else api.applyOpportunityFilter('winner',resultPage.value);
  }
- schedule();return true;
+ schedule();stableTop();return true;
 }
-function closeResultPage(){if(!resultPage)return false;resultPage=null;current();if(api&&typeof api.applyOpportunityFilter==='function')api.applyOpportunityFilter('reset','all');else schedule();return true;}
+function closeResultPage(){if(!resultPage)return false;resultPage=null;current();if(api&&typeof api.applyOpportunityFilter==='function')api.applyOpportunityFilter('reset','all');else schedule();stableTop();return true;}
 function back(){if(resultPage)return closeResultPage();try{var N=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(N&&typeof N.openHome==='function')return N.openHome();}catch(e){}try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.activateHome==='function')return H.activateHome();}catch(e){}try{if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('home');}catch(e){}return false;}
 function consume(e){if(!e)return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();}
 function click(e){

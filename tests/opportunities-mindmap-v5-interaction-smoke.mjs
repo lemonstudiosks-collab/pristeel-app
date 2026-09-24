@@ -16,6 +16,7 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2">
 
 const {window}=dom;
 window.console=console;
+window.scrollTo=()=>{};
 const rows=[];
 for(let i=1;i<=45;i++)rows.push({id:'krpp-'+i,title:'Konstruksion metalik '+i,authority:'KRPP',relevance_score:90-i%5,status:'new',published_date:'2026-09-20',payload:{source:'KRPP',notice_phase:'opportunity'}});
 rows.push(
@@ -45,8 +46,12 @@ await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260922-stable-scroll1','Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260923-layout-stability1','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
+const initialDesk=window.document.querySelector('#pst-opp-desk');
+desk.apply();
+assert.equal(window.document.querySelector('#pst-opp-desk'),initialDesk,'unchanged dashboard data must not replace the visible Desk DOM');
+assert(deskSrc.includes("window.scrollTo({top:0,left:0,behavior:'auto'})"),'Opportunity drilldown must reset the viewport to a stable top position');
 assert(focus.classList.contains('pst-opp-dashboard'),'initial Opportunities view must be dashboard-only');
 assert(!focus.classList.contains('pst-opp-result-page'),'initial view must not be a result page');
 assert.equal(window.getComputedStyle(window.document.getElementById('pst-opportunities-list')).display,'none','canonical result list must stay hidden on the initial dashboard');

@@ -32,6 +32,11 @@ w.PSTOperationalTruthV1={setProjectFilter(f){semanticFilter=f;return true;},deco
 
 w.eval(navSrc);
 assert.ok(w.PSTPrimaryNavResilienceV1,'Primary navigation API missing');
+const stabilityCss=w.document.getElementById('pst-navigation-viewport-stability-css');
+assert.ok(stabilityCss,'Primary navigation must install the viewport stability contract');
+assert.ok(stabilityCss.textContent.includes('scrollbar-gutter:stable'),'Stable scrollbar space must prevent horizontal page shifts');
+assert.ok(stabilityCss.textContent.includes('overflow-anchor:none'),'Async renders must not move the viewport through browser scroll anchoring');
+assert.ok(navSrc.includes("window.scrollTo({top:0,left:0,behavior:'auto'})"),'Primary navigation must reset every route to a stable top position');
 w.PSTPrimaryNavResilienceV1.ensureAssistant=()=>{staleEnsureCalls++;return true;};
 w.eval(happySrc);
 assert.ok(w.__pstNavigationInteractionStabilityV1,'Live navigation stability guard missing');
