@@ -7,6 +7,7 @@ const targetBridge = fs.readFileSync('supabase/live-migration-history/2026092211
 const outreachBridge = fs.readFileSync('supabase/live-migration-history/20260922112601_add_dach_steel_outreach_draft_bridge_v22.sql','utf8');
 const euScope = fs.readFileSync('supabase/live-migration-history/20260924060157_expand_material_trade_buyers_to_eu_v1.sql','utf8');
 const languagePromotion = fs.readFileSync('supabase/live-migration-history/20260924064541_material_trade_language_project_promotion_v1.sql','utf8');
+const projectEmailContinuity = fs.readFileSync('supabase/live-migration-history/20260924065454_material_trade_project_email_continuity_v1.sql','utf8');
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 
 assert.match(ui,/BLERËSIT E MATERIALIT TË ÇELIKUT · EUROPE/,'Home card must expose broader Material Trade scope');
@@ -28,7 +29,7 @@ assert.match(ui,/confirm_project_create:true/,'Project promotion must require ex
 assert.match(ui,/Additional steel material supply source/,'non-project EU buyer copy must not invent a project');
 assert.match(bootstrap,/pristeel-dach-steel-sales-v1\\.js\\?v=20260924-lang-project3/,'runtime must cache-bust the Material Trade module');
 
-assert.match(edge,/pppp-dach-steel-draft-generator-v13-language-project-promotion/,'Edge source must carry the language/project-promotion version');
+assert.match(edge,/pppp-dach-steel-draft-generator-v14-project-thread-continuity/,'Edge source must carry the project-thread-continuity version');
 assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read the TED/tender table');
 assert.doesNotMatch(edge,/syncProjectLinks/,'Material Trade lifecycle must not auto-link targets through TED projects');
 assert.doesNotMatch(edge,/tedPublication/,'Material Trade lifecycle must not parse TED publication identities');
@@ -41,6 +42,10 @@ assert.match(edge,/async function promoteProject/,'Edge must implement project p
 assert.match(edge,/buyer_reply_required_before_project_promotion/,'Project promotion must require canonical buyer reply evidence');
 assert.match(edge,/p_business_type:"trading"/,'Promoted Material Trade projects must be trading projects');
 assert.match(edge,/target_status:"project_promoted"/,'Successful promotion must mark the target project_promoted');
+assert.match(edge,/\.from\("project_emails"\)\.select\("id,project_id,gmail_message_id,direction"\)\.eq\("gmail_thread_id",q\.gmail_thread_id\)/,'Promotion must inspect exact Gmail-thread project identity before creating a project');
+assert.match(edge,/gmail_thread_already_linked_to_project/,'Promotion must block an already-linked Gmail thread instead of overwriting it');
+assert.match(edge,/match_method:"material_trade_promotion"/,'Promotion must link the buyer thread into project_emails');
+assert.match(edge,/match_confidence:100/,'Promoted Gmail thread links must be exact/high-confidence');
 assert.match(edge,/pppp_global_communication_guard_v1/,'buyer outreach must use the shared global communication guard');
 assert.match(edge,/pppp_dach_steel_contact_resolution_v1/,'buyer contact resolution must remain canonical');
 assert.match(edge,/async function existingSupplierRfq/,'supplier RFQ dedupe guard must exist');
@@ -72,5 +77,8 @@ assert.match(languagePromotion,/material_trade_project_promotion/,'manifest must
 assert.match(languagePromotion,/reply_evidence_required',true/,'manifest must require reply evidence before promotion');
 assert.match(languagePromotion,/human_confirmation_required',true/,'manifest must preserve human confirmation for promotion');
 assert.match(languagePromotion,/project_promoted/,'summary/protocol must remove promoted targets from Material Trade queue');
+assert.match(projectEmailContinuity,/material_trade_project_email_continuity/,'manifest must document Gmail-thread continuity');
+assert.match(projectEmailContinuity,/gmail_thread_id/,'Gmail thread must be the project-promotion identity key');
+assert.match(projectEmailContinuity,/Never overwrite a project_emails row already linked to a different project/,'manifest must preserve project identity conflicts');
 
 console.log('Material Trade automation contract smoke: PASS');
