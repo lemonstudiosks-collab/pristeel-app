@@ -39,6 +39,12 @@ export function chooseBestWinnerEmail(row){
  if(!emails.length)return null;
  return emails.map(c=>({contact:c,rank:contactRank(c)})).sort((a,b)=>b.rank-a.rank)[0]||null;
 }
+export function winnerNeedsRanking(row,minScore=85){
+ const p=payload(row),w=winner(row),legacy=[w.email,...(Array.isArray(w.emails)?w.emails:[])].map(text).filter(Boolean);
+ const hasLegacyPlaceholder=legacy.some(placeholderEmail);
+ return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&row.status!=='ignored'
+   &&(hasLegacyPlaceholder||(Number(row.relevance_score)>=Number(minScore)&&!!w.contact_enrichment));
+}
 export function rankWinnerPayload(row,rankedAt=new Date().toISOString()){
  const p={...payload(row)},w={...winner(row)},e=w.contact_enrichment,orgs=Array.isArray(e?.organizations)?e.organizations:[];
  const unsafe=new Set();for(const org of orgs)for(const c of Array.isArray(org?.contacts)?org.contacts:[])if(c?.type==='email'&&c?.value&&!safeDraftContact(c))unsafe.add(text(c.value).toLowerCase());
@@ -64,8 +70,8 @@ async function writeSummary(summary){await mkdir('tmp',{recursive:true});await w
 export async function runTedWinnerContactRanking({mode=process.env.SYNC_MODE||'preview',minScore=Number(process.env.TED_CONTACT_MIN_SCORE||85),supabaseUrl=process.env.SUPABASE_URL||DEFAULT_SUPABASE_URL,apiKey=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_KEY||'',bearerToken=''}={}){
  if(!['preview','apply'].includes(mode))throw new Error(`Unsupported SYNC_MODE: ${mode}`);
  const access=apiKey?{supabaseUrl,apiKey,bearerToken:bearerToken||apiKey,authMode:'service_key'}:await resolveSupabaseWorkflowAccess({supabaseUrl});
- const rows=await rest({...access,path:`kek_tender_watch?select=id,procurement_no,relevance_score,status,payload&relevance_score=gte.${encodeURIComponent(minScore)}&order=published_date.desc&limit=500`});
- const targets=(Array.isArray(rows)?rows:[]).filter(r=>{const p=payload(r);return String(p.source||'').toUpperCase()==='TED'&&p.notice_phase==='award'&&r.status!=='ignored'&&winner(r).contact_enrichment;});
+ const rows=await rest({...access,path:'kek_tender_watch?select=id,procurement_no,relevance_score,status,payload&order=published_date.desc&limit=2000'});
+ const targets=(Array.isArray(rows)?rows:[]).filter(r=>winnerNeedsRanking(r,minScore));
  const results=[];
  for(const row of targets){const ranked=rankWinnerPayload(row);if(!ranked.changed)continue;if(mode==='apply')await patchRow(access,ranked.row);results.push({id:row.id,procurement_no:row.procurement_no,selected_email:ranked.best?.contact?.value||null,purpose:ranked.best?.contact?.purpose||null,source_type:ranked.best?.contact?.source_type||null,rank:ranked.best?.rank??null});}
  const summary={mode,version:VERSION,auth_mode:access.authMode||'service_key',rows_scanned:targets.length,rows_changed:results.length,results};await writeSummary(summary);console.log(`TED winner contact ranking ${mode}: scanned=${summary.rows_scanned}, changed=${summary.rows_changed}.`);return summary;
