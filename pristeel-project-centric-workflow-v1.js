@@ -254,6 +254,7 @@ function renderOpportunities(){
  var legacy=p.querySelector('#pst-opportunities-all');if(legacy){legacy.classList.add('pst-pcw-backstage');legacy.hidden=true;legacy.style.display='none';}
  p.querySelectorAll('.pst-kek-filter,.pst-kek-card,#pst-tender-fit-summary').forEach(function(x){if(!focus.contains(x)){x.hidden=true;x.style.display='none';x.setAttribute('aria-hidden','true');}});
  p.setAttribute('data-pcw-opportunities-owner','2');
+ try{var desk=window.PSTOpportunitiesDeskV1;if(desk&&typeof desk.apply==='function')desk.apply();}catch(e){}
  return true;
 }
 async function loadOpportunities(force){
