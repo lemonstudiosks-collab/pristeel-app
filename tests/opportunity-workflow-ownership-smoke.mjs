@@ -5,6 +5,8 @@ const direct=fs.readFileSync('.github/workflows/opportunity-direct-tender-v1.yml
 const ted=fs.readFileSync('.github/workflows/opportunity-engine-v2.yml','utf8');
 const tedActions=fs.readFileSync('scripts/ted-company-role-actions-v2.mjs','utf8');
 const tenderUi=fs.readFileSync('pristeel-tender-priority-actions-v1.js','utf8');
+const tedFallback=fs.readFileSync('scripts/ted-gc-project-role-fallback-v1.mjs','utf8');
+const draftGenerator=fs.readFileSync('supabase/functions/pppp-opportunity-draft-generator/index.ts','utf8');
 
 assert.match(direct,/name:\s*PPPP Direct Tender Opportunity v1/,'Direct Tender workflow must remain explicit');
 assert.match(direct,/run:\s*node scripts\/opportunity-protected-archive-runner\.mjs/,'Direct Tender must own protected archive analysis');
@@ -24,5 +26,12 @@ assert.match(tedActions,/staleDraftIds/,'TED action owner must reconcile stale d
 assert.match(tedActions,/status:'superseded'/,'stale TED draft actions must leave the active queue');
 assert.match(tenderUi,/general_project_outreach_draft/,'UI must support neutral general TED drafts');
 assert.doesNotMatch(tenderUi,/\|\|actions\[0\]/,'UI must never silently fall back to a stale route action');
+
+assert.match(tedActions,/function effectiveRole\(row\)/,'primary TED action owner must use effective award role');
+assert.match(tedActions,/award_role/,'primary TED action owner must recognize verified award-role evidence');
+assert.match(tedFallback,/status:'superseded'/,'GC fallback must supersede competing active draft routes');
+assert.match(tenderUi,/award_role/,'draft UI must route from verified award role when corporate type is unresolved');
+assert.match(draftGenerator,/function effectiveTedRole\(tender:any\)/,'draft generator must use the same effective TED role');
+assert.match(draftGenerator,/v18-effective-award-role/,'draft generator version must identify effective-role routing');
 
 console.log('Opportunity workflow single-owner smoke passed.');
