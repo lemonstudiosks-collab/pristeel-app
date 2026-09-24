@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chooseBestWinnerEmail, rankWinnerPayload } from '../scripts/ted-winner-contact-ranking.mjs';
+import { chooseBestWinnerEmail, rankWinnerPayload, winnerNeedsRanking } from '../scripts/ted-winner-contact-ranking.mjs';
 
 const kattner={id:'k1',payload:{source:'TED',notice_phase:'award',winner:{name:'Kattner Stahlbau GmbH',names:['Kattner Stahlbau GmbH'],email:'hr@kattner-stahlbau.de',emails:['info@kattner-stahlbau.de','hr@kattner-stahlbau.de'],contact_enrichment:{status:'found',contact_count:3,organizations:[{name:'Kattner Stahlbau GmbH',contacts:[
  {type:'email',value:'hr@kattner-stahlbau.de',purpose:'person',source_type:'official_website',confidence:'high',score:96},
@@ -46,6 +46,8 @@ const detachedPlaceholder={id:'unsafe-detached',payload:{source:'TED',notice_pha
 const detachedClean=rankWinnerPayload(detachedPlaceholder,'2026-09-24T04:30:00Z');
 assert.equal(detachedClean.changed,true,'legacy placeholder must be cleared even when it is no longer present in enrichment evidence');
 assert.equal(detachedClean.row.payload.winner.email,'info@legacy-gmbh.de');
+assert.equal(winnerNeedsRanking({status:'watch',relevance_score:10,payload:{source:'TED',notice_phase:'award',winner:{email:'nao.disponivel@example.com'}}},85),true,'legacy placeholders must be sanitized even below outreach relevance threshold');
+assert.equal(winnerNeedsRanking({status:'watch',relevance_score:10,payload:{source:'TED',notice_phase:'award',winner:{email:'info@real.example',contact_enrichment:{organizations:[]}}}},85),false,'low-relevance records must not become outreach ranking targets merely because enrichment exists');
 assert.deepEqual(detachedClean.row.payload.winner.emails,['info@legacy-gmbh.de']);
 
 const multi={payload:{source:'TED',notice_phase:'award',winner:{names:['A GmbH','B GmbH'],contact_enrichment:{status:'found',organizations:[{name:'A GmbH',contacts:[{type:'email',value:'info@a.de',purpose:'general'}]},{name:'B GmbH',contacts:[{type:'email',value:'info@b.de',purpose:'general'}]}]}}}};
