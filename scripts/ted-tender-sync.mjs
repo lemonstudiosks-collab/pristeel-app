@@ -126,7 +126,7 @@ export function normalizeTedNotice(row,phase='opportunity',seenAt=new Date().toI
   return{
     source_key:`TED:${publication}`,procurement_no:`TED-${publication}`,publication_no:publication,authority:decodeTedText(buyer(row)),title,
     document_type:type||null,fpp:cpv.find(c=>RAW_CPVS.has(c)||STRUCT_CPVS.has(c))||cpv[0]||null,fpp_description:cpv.length?`CPV ${cpv.join(', ')}`:null,
-    contract_type:null,contract_value_band:null,procedure:null,estimated_value:details.value_amount,currency:details.value_currency||'EUR',
+    contract_type:null,contract_value_band:null,procedure:null,estimated_value:details.value_amount,currency:details.value_currency,
     deadline:phase==='opportunity'?deadlineDate(row):null,published_date:isoDate(field(row,'publication-date')),is_retender:false,
     category:cls.category,relevance_score:cls.relevance_score,match_reasons:cls.match_reasons,
     source_url:`https://ted.europa.eu/en/notice/${encodeURIComponent(publication)}/html`,
@@ -141,13 +141,16 @@ async function rest({supabaseUrl,apiKey,bearerToken=apiKey,path,method='GET',bod
 export function mergeTedRefreshRows(rows,existingRows){
   const byKey=new Map((Array.isArray(existingRows)?existingRows:[]).map(r=>[String(r?.source_key||''),r]));
   for(const row of Array.isArray(rows)?rows:[]){
-    const old=byKey.get(String(row?.source_key||''));if(!old)continue;
-    const oldPayload=old?.payload&&typeof old.payload==='object'?old.payload:{};
-    const freshPayload=row?.payload&&typeof row.payload==='object'?row.payload:{};
-    row.payload={...oldPayload,...freshPayload};
-    for(const key of ['estimated_value','currency','procedure','contract_type','contract_value_band']){
-      if((row[key]==null||row[key]==='')&&old[key]!=null&&old[key]!=='')row[key]=old[key];
+    const old=byKey.get(String(row?.source_key||''));
+    if(old){
+      const oldPayload=old?.payload&&typeof old.payload==='object'?old.payload:{};
+      const freshPayload=row?.payload&&typeof row.payload==='object'?row.payload:{};
+      row.payload={...oldPayload,...freshPayload};
+      for(const key of ['estimated_value','currency','procedure','contract_type','contract_value_band']){
+        if((row[key]==null||row[key]==='')&&old[key]!=null&&old[key]!=='')row[key]=old[key];
+      }
     }
+    if(row.currency==null||row.currency==='')row.currency='EUR';
   }
   return rows;
 }
