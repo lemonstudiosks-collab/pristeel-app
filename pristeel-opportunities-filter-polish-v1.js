@@ -34,6 +34,7 @@ var WINNERS=[
 
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
+function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function current(){api=window.PSTProjectCentricWorkflowV1||api;state=api&&api._state||state;return api;}
 function rowText(r){var p=r&&r.payload&&typeof r.payload==='object'?r.payload:{};return[r&&r.title,r&&r.description,r&&r.authority,r&&r.procurement_no,r&&r.publication_no,r&&r.cpv,r&&r.cpv_code,A(r&&r.match_reasons).join(' '),p.title,p.description,p.cpv,p.cpv_code,p.cpv_description,p.scope,p.category].map(S).join(' ');}
@@ -42,7 +43,16 @@ function fieldOf(r){var x=current(),fn=x&&x._test&&x._test.opportunityField;if(t
 function winnerOf(r){var x=current(),fn=x&&x._test&&x._test.winnerGroup;if(typeof fn==='function')return fn(r);if(srcOf(r)!=='TED')return'local';var p=r&&r.payload&&typeof r.payload==='object'?r.payload:{},w=p.winner&&typeof p.winner==='object'?p.winner:{},role=S(w.company_type||(w.company_classification&&w.company_classification.company_type)||'unknown').toLowerCase();return role==='gc_epc'?'gc_epc':role==='producer'?'producer':'other';}
 function lifeOf(r){var x=current(),fn=x&&x._test&&x._test.opportunityLifecycle,l=fn?fn(r):'new';return l==='draft'?'waiting':l;}
 function baseRows(){var x=current();if(!x||!state)return[];var rows=A(state.rows),t=x._test||{};if(typeof t.tenderVisible==='function')rows=rows.filter(t.tenderVisible);if(typeof t.dedupeOpportunities==='function')rows=t.dedupeOpportunities(rows);if(typeof t.ownedByProject==='function')rows=rows.filter(function(r){return !t.ownedByProject(r);});return rows;}
-function filteredRows(){var x=current(),fn=x&&x._test&&x._test.opportunityRows;return typeof fn==='function'?A(fn()):baseRows();}
+function filteredRows(){
+ var rows=baseRows(),source=S(state&&state.source||'all'),field=S(state&&state.field||'all'),winner=S(state&&state.winner_group||'all'),mode=S(state&&state.mode||'all'),q=N(state&&state.query||'');
+ if(source!=='all')rows=rows.filter(function(r){return srcOf(r)===source;});
+ else if(mode==='award')rows=rows.filter(function(r){return srcOf(r)==='TED';});
+ else if(mode==='local')rows=rows.filter(function(r){return srcOf(r)!=='TED';});
+ if(field!=='all')rows=rows.filter(function(r){return fieldOf(r)===field;});
+ if(winner!=='all')rows=rows.filter(function(r){return winnerOf(r)===winner;});
+ if(q)rows=rows.filter(function(r){return N(rowText(r)).indexOf(q)>-1;});
+ return rows;
+}
 function counts(){
  var rows=baseRows(),c={total:rows.length,local:0,award:0,life:{new:0,waiting:0,replied:0},src:{},field:{},winner:{gc_epc:0,other:0,producer:0}};
  SOURCES.forEach(function(k){c.src[k]=0;});FIELDS.forEach(function(f){c.field[f.id]=0;});
