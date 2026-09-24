@@ -46,7 +46,7 @@ await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260924-layout-stability3','Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260924-layout-stability4','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 const initialDesk=window.document.querySelector('#pst-opp-desk');
 desk.apply();

@@ -36,6 +36,8 @@ const stabilityCss=w.document.getElementById('pst-navigation-viewport-stability-
 assert.ok(stabilityCss,'Primary navigation must install the viewport stability contract');
 assert.ok(stabilityCss.textContent.includes('scrollbar-gutter:stable'),'Stable scrollbar space must prevent horizontal page shifts');
 assert.ok(stabilityCss.textContent.includes('overflow-anchor:none'),'Async renders must not move the viewport through browser scroll anchoring');
+assert.ok(stabilityCss.textContent.includes('html,body,.app-shell>.main'),'Scroll anchoring must also be disabled on the root scrolling element');
+assert.ok(navSrc.includes('document.documentElement.scrollTop=0'),'Route changes must reset the root scroller directly');
 assert.ok(navSrc.includes("window.scrollTo({top:0,left:0,behavior:'auto'})"),'Primary navigation must reset every route to a stable top position');
 w.PSTPrimaryNavResilienceV1.ensureAssistant=()=>{staleEnsureCalls++;return true;};
 w.eval(happySrc);

@@ -48,12 +48,12 @@ function svg(key){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[k
 function visible(el){return !!(el&&el.classList.contains('active')&&el.style.display!=='none');}
 function installViewportStability(){
  if(document.getElementById('pst-navigation-viewport-stability-css'))return;
- var s=document.createElement('style');s.id='pst-navigation-viewport-stability-css';s.textContent='html{scrollbar-gutter:stable}html,body{scroll-behavior:auto!important}body,.app-shell>.main,.content,.page{overflow-anchor:none}.page.active{min-height:calc(100vh - 1px)}html.pst-route-switching .page.active,html.pst-route-switching .page.active *{scroll-behavior:auto!important;animation-delay:0s!important;animation-duration:0s!important;transition-duration:0s!important}';document.head.appendChild(s);
+ var s=document.createElement('style');s.id='pst-navigation-viewport-stability-css';s.textContent='html{scrollbar-gutter:stable}html,body{scroll-behavior:auto!important}html,body,.app-shell>.main,.content,.page{overflow-anchor:none}.page.active{min-height:calc(100vh - 1px)}html.pst-route-switching .page.active,html.pst-route-switching .page.active *{scroll-behavior:auto!important;animation-delay:0s!important;animation-duration:0s!important;transition-duration:0s!important}';document.head.appendChild(s);
 }
 function stabilizeViewport(){
  installViewportStability();var token=++viewportToken,root=document.documentElement;
  root.classList.add('pst-route-switching');
- function top(){if(token!==viewportToken)return;try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){try{window.scrollTo(0,0);}catch(x){}}}
+ function top(){if(token!==viewportToken)return;try{document.documentElement.scrollTop=0;document.body.scrollTop=0;}catch(ignore){}try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){try{window.scrollTo(0,0);}catch(x){}}}
  top();var raf=window.requestAnimationFrame||function(fn){return setTimeout(fn,16);};
  raf(function(){top();raf(function(){if(token===viewportToken)root.classList.remove('pst-route-switching');});});
  return token;
