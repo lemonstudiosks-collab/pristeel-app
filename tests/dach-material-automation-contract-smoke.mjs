@@ -22,7 +22,10 @@ assert.match(ui,/return'draft'/,'lifecycle must classify a live Gmail draft sepa
 assert.match(ui,/buyerTierLabel/,'UI must expose Tier 1/Tier 2 buyer qualification');
 assert.match(ui,/T1 · konsumator direkt/,'direct steel consumers must be Tier 1');
 assert.match(ui,/T2 · ndërtim \/ GC-GU/,'construction buyers must be Tier 2');
-assert.match(ui,/sk\.indexOf\('eu:'\)===0\|\|sk\.indexOf\('mt:'\)===0/,'Material Trade UI must allow canonical eu:/mt: lanes only');
+assert.match(ui,/sk\.indexOf\('eu:'\)===0\|\|sk\.indexOf\('mt:'\)===0/,'Material Trade active/discovery UI must allow canonical eu:/mt: lanes only');
+assert.match(ui,/function hasOutboundHistory\(r\)/,'Contacted history must be derived from canonical outbound evidence');
+assert.match(ui,/contacted=all\.filter\(hasOutboundHistory\)/,'Contacted card must include canonical outbound history, including legacy target identities');
+assert.doesNotMatch(ui,/contactedSorted\.slice\(0,12\)/,'Contacted card must not silently truncate older contacted companies');
 assert.match(ui,/\['HR','ME','RS'\]/,'UI buyer language routing must use BCS for HR/ME/RS');
 assert.match(ui,/Dodatni izvor nabavke čeličnog materijala/,'UI must include BCS outreach copy');
 assert.match(ui,/data-dss-action="promote-project"/,'Reply/RFQ stage must expose project promotion');
@@ -33,7 +36,7 @@ assert.match(ui,/Kontakti për blerje/,'Expanded buyer detail must surface purch
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260924-gmail-button-white1/,'runtime must cache-bust the Material Trade module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260924-contact-history1/,'runtime must cache-bust the Material Trade module');
 
 assert.match(edge,/pppp-dach-steel-draft-generator-v14-project-thread-continuity/,'Edge source must carry the project-thread-continuity version');
 assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read the TED/tender table');
