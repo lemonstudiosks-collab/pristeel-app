@@ -37,12 +37,13 @@ assert.match(syncSource, /threadLifecycle\(q\.gmail_thread_id\)/, 'sent detectio
 assert.match(syncSource, /if\(life\.sent\)/, 'sent transition must require real Gmail Sent evidence');
 assert.doesNotMatch(syncSource, /\.insert\(/, 'I: repeated lifecycle sync must not create outbound rows');
 
-assert.match(ui, /\.pst-dss-primary-wide\{[^}]*background:#176fa8;[^}]*color:#fff/, 'J: enabled draft button text must be white');
-assert.match(ui, /\.pst-dss-primary-wide:disabled\{opacity:1;cursor:not-allowed;color:#fff!important\}/, 'J: disabled draft button must keep full opacity and white text');
-const buttonCss = ui.match(/'\.pst-dss-primary-wide\{[^']+'/)?.[0]?.slice(1, -1);
+assert.match(ui, /#page-dach-steel-sales \.pst-dss-primary-wide\{[^}]*background:#176fa8;[^}]*color:#fff!important;[^}]*-webkit-text-fill-color:#fff!important/, 'J: enabled Gmail button text must override global styles with true white');
+assert.match(ui, /#page-dach-steel-sales \.pst-dss-primary-wide:hover,[^{]+\{[^}]*color:#fff!important;[^}]*-webkit-text-fill-color:#fff!important\}/, 'J: interactive Gmail button states must keep white text');
+assert.match(ui, /#page-dach-steel-sales \.pst-dss-primary-wide:disabled\{opacity:1;cursor:not-allowed;color:#fff!important;-webkit-text-fill-color:#fff!important\}/, 'J: disabled draft button must keep full opacity and white text');
+const buttonCss = ui.match(/'#page-dach-steel-sales \.pst-dss-primary-wide\{[^']+'/)?.[0]?.slice(1, -1);
 assert.ok(buttonCss, 'J: draft button CSS rule must be extractable');
-const dom = new JSDOM('<style></style><button class="pst-dss-primary-wide">Enabled</button><button class="pst-dss-primary-wide" disabled>Disabled</button>');
-dom.window.document.querySelector('style').textContent = buttonCss;
+const dom = new JSDOM('<style></style><section id="page-dach-steel-sales"><button class="pst-dss-primary-wide">Enabled</button><button class="pst-dss-primary-wide" disabled>Disabled</button></section>');
+dom.window.document.querySelector('style').textContent = 'button{color:#425e76!important}' + buttonCss;
 const [enabledButton, disabledButton] = dom.window.document.querySelectorAll('button');
 const enabledStyle = dom.window.getComputedStyle(enabledButton);
 const disabledStyle = dom.window.getComputedStyle(disabledButton);
