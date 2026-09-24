@@ -11,10 +11,10 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v18-effective-award-role';
+const GENERATOR='pppp-opportunity-draft-generator-v19-multi-recipient-formal-salutation';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
-const MAX_CONTACTS_PER_ACTION=1;
-const MAX_DRAFT_WRITES_PER_RUN=10;
+const MAX_CONTACTS_PER_ACTION=20;
+const MAX_DRAFT_WRITES_PER_RUN=25;
 const GMAIL_SCOPE='https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly';
 const META_HEADERS=['Message-ID','X-PPPP-Outreach-ID','X-PPPP-Action-ID','To','Date'];
 
