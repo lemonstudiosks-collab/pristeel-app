@@ -23,7 +23,7 @@ function source(r){var s=S(payload(r).source||'KRPP').toUpperCase();return s==='
 function phase(r){return payload(r).notice_phase==='award'?'award':'opportunity';}
 function fit(r){var x=N(payload(r).capability_fit);if(['strong','possible','weak'].indexOf(x)>-1)return x;var s=Number(r&&r.relevance_score)||0;return s>=95?'strong':s>=85?'possible':'weak';}
 function winner(r){var w=payload(r).winner;return w&&typeof w==='object'?w:{};}
-function winnerRole(r){var w=winner(r),x=N(w.company_type||(w.company_classification&&w.company_classification.company_type)||'unknown');return ['producer','gc_epc','trader_consortium'].indexOf(x)>-1?x:'unknown';}
+function winnerRole(r){var w=winner(r),x=N(w.company_type||(w.company_classification&&w.company_classification.company_type)||'unknown');if(['producer','gc_epc','trader_consortium'].indexOf(x)>-1)return x;var ar=payload(r).award_role||{},at=N(ar.type),ac=N(ar.confidence);return at==='gc_epc'&&(ac==='medium'||ac==='high')?'gc_epc':'unknown';}
 function cooperationAngle(r){var p=payload(r),x=N(p.cooperation_angle);if(x)return x;var role=winnerRole(r);return role==='producer'?'additional_fabrication_capacity':role==='gc_epc'?'steel_fabrication_subcontractor':role==='trader_consortium'?'verify_supply_or_fabrication_role':'verify_company_role';}
 function safeUrl(v){v=S(v).trim();return /^https?:\/\//i.test(v)?v:'';}
 function officialUrl(r){return safeUrl(r&&r.detail_url)||safeUrl(r&&r.source_url)||'';}

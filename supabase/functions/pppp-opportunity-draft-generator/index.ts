@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v17-draft-safety-split';
+const GENERATOR='pppp-opportunity-draft-generator-v18-effective-award-role';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=1;
 const MAX_DRAFT_WRITES_PER_RUN=10;
@@ -172,19 +172,26 @@ async function markSent(row:any,meta:any){const now=new Date().toISOString(),at=
 async function markMissing(row:any){const now=new Date().toISOString();const {data,error}=await db.from(REGISTRY).update({status:'draft_missing',last_checked_at:now,last_error:null,updated_at:now}).eq('id',row.id).select('*').single();if(error)throw error;return data;}
 async function markError(row:any,e:any){try{await db.from(REGISTRY).update({status:'error',last_error:text(e?.message||e,1000),last_checked_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',row.id);}catch{}}
 
-function expectedTedRoute(tender:any){
+function effectiveTedRole(tender:any){
   const w=tender?.winner&&typeof tender.winner==='object'?tender.winner:{};
   const t=text(w.company_type||w?.company_classification?.company_type||'',80).toLowerCase();
+  if(t&&t!=='unknown')return t;
+  const ar=tender?.award_role&&typeof tender.award_role==='object'?tender.award_role:{};
+  const at=text(ar.type,80).toLowerCase(),ac=text(ar.confidence,40).toLowerCase();
+  if(at==='gc_epc'&&['medium','high'].includes(ac))return'gc_epc';
+  return'unknown';
+}
+function expectedTedRoute(tender:any){
+  const t=effectiveTedRole(tender);
   if(t==='producer')return'TED_PRODUCER';
   if(t==='trader_consortium'||t==='consortium_mixed')return'TED_CONSORTIUM';
   if(t==='gc_epc')return'TED_GC';
-  if(t==='unknown'||!t)return'';
   return'';
 }
 function truthy(v:any){return v===true||String(v??'').toLowerCase()==='true';}
 function tedDraftReadiness(a:any,tender:any){
   const winner=tender?.winner&&typeof tender.winner==='object'?tender.winner:{};
-  const winnerType=text(winner.company_type||winner?.company_classification?.company_type||'',80).toLowerCase();
+  const winnerType=effectiveTedRole(tender);
   const route=text(a?.route,80).toUpperCase();
   if(!text(winner?.name,300))return{ok:false,reason:'winner_identity_missing'};
   if(!text(tender?.title,500))return{ok:false,reason:'tender_identity_missing'};
