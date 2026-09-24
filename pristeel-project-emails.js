@@ -154,7 +154,8 @@ var files=[
   'pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2',
   'pristeel-primary-nav-resilience-v1.js?v=20260924-layout-stability2',
   'pristeel-project-execution-guard-v1.js?v=20260829-postaward1',
-  'pristeel-creative-ui-v1.js?v=20260911-fullredesign4'
+  'pristeel-creative-ui-v1.js?v=20260911-fullredesign4',
+  'pristeel-ui-runtime-stability-v1.js?v=20260924-global-stability1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
 var diag=window.__pstBootstrapDiagnostics=window.__pstBootstrapDiagnostics||{started_at:new Date().toISOString(),total:files.length,loaded:0,errors:[],timeouts:[],retries:[],completed:false};
