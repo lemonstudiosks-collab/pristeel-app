@@ -39,13 +39,25 @@ var ICONS={
  apps:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'
 };
 var ORDER=['home','tenders','projects','contacts','finance','apps'];
-var repairTimer=0,polishTimer=0,tenderRenderToken=0;
+var repairTimer=0,polishTimer=0,tenderRenderToken=0,viewportToken=0;
 function S(v){return String(v==null?'':v);}
 function esc(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function norm(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
 function canon(key){key=S(key).toLowerCase();if(key==='opportunities')return'tenders';if(key==='partners')return'contacts';if(key==='system')return'apps';return key;}
 function svg(key){return '<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[key]||'')+'</svg>';}
 function visible(el){return !!(el&&el.classList.contains('active')&&el.style.display!=='none');}
+function installViewportStability(){
+ if(document.getElementById('pst-navigation-viewport-stability-css'))return;
+ var s=document.createElement('style');s.id='pst-navigation-viewport-stability-css';s.textContent='html{scrollbar-gutter:stable}html,body{scroll-behavior:auto!important}body,.app-shell>.main,.content,.page{overflow-anchor:none}.page.active{min-height:calc(100vh - 1px)}html.pst-route-switching .page.active,html.pst-route-switching .page.active *{scroll-behavior:auto!important;animation-delay:0s!important;animation-duration:0s!important;transition-duration:0s!important}';document.head.appendChild(s);
+}
+function stabilizeViewport(){
+ installViewportStability();var token=++viewportToken,root=document.documentElement;
+ root.classList.add('pst-route-switching');
+ function top(){if(token!==viewportToken)return;try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){try{window.scrollTo(0,0);}catch(x){}}}
+ top();var raf=window.requestAnimationFrame||function(fn){return setTimeout(fn,16);};
+ raf(function(){top();raf(function(){if(token===viewportToken)root.classList.remove('pst-route-switching');});});
+ return token;
+}
 function currentKey(){
  if(visible(document.getElementById('page-workspace-home')))return'home';
  if(visible(document.getElementById('page-kek-tenders')))return'tenders';
@@ -82,7 +94,7 @@ function repairSidebar(){
 function scheduleRepair(){clearTimeout(repairTimer);repairTimer=setTimeout(repairSidebar,0);[120,420,1450].forEach(function(ms){setTimeout(repairSidebar,ms);});}
 function mark(key){key=canon(key);var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){b.classList.toggle('active',canon(b.dataset.key)===key);});}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
-function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);return p;}
+function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);stabilizeViewport();return p;}
 function legacyShow(name){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(name);return true;}}catch(e){}try{if(typeof window.showPage==='function'){window.showPage(name);return true;}}catch(e){}return false;}
 
 /* Compatibility hooks stay opt-in so legacy visual owners cannot race the final UI. */
@@ -109,6 +121,7 @@ function ensureOperatorFlow(){
  });
 }
 function openHome(){
+ stabilizeViewport();
  var H=window.PSTHomeCanonicalV1;
  try{if(H&&typeof H.activateHome==='function')H.activateHome();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('home');else activate('page-workspace-home','home');}catch(e){activate('page-workspace-home','home');}
  try{if(H&&typeof H.render==='function')Promise.resolve(H.render(true)).catch(function(){});}catch(e){}
@@ -127,17 +140,20 @@ function handoffOpportunities(force,context){
  return false;
 }
 function openOpportunities(filter){
+ stabilizeViewport();
  pendingOpportunityContext=typeof filter==='object'&&filter?filter:{focus:S(filter)};
  if(handoffOpportunities(true)){mark('tenders');scheduleRepair();schedulePolish();return true;}
  try{if(typeof window.pstTenderBizOpenMonitor==='function')window.pstTenderBizOpenMonitor();else if(typeof window.pstWsKekTenders==='function')window.pstWsKekTenders();else if(!legacyShow('kek-tenders'))activate('page-kek-tenders','tenders');}catch(e){activate('page-kek-tenders','tenders');}
  mark('tenders');scheduleRepair();schedulePolish();return true;
 }
 function openProjects(filter){
+ stabilizeViewport();
  try{if(typeof window.pstProjectsModernOpen==='function')window.pstProjectsModernOpen(filter||'');else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('projects');else activate('page-workspace-projects','projects');}catch(e){activate('page-workspace-projects','projects');}
  mark('projects');scheduleRepair();schedulePolish();
  return true;
 }
 function openPartners(){
+ stabilizeViewport();
  try{var C=window.PSTContactMasterV1;if(C&&typeof C.open==='function')C.open();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('contacts');else if(!legacyShow('contacts'))activate('page-contacts','contacts');}catch(e){activate('page-contacts','contacts');}
  mark('contacts');scheduleRepair();schedulePolish();return true;
 }
@@ -148,6 +164,7 @@ function hydrateFinance(){
  try{var O=window.PSTOperatingAssistantV2;if(O&&typeof O.apply==='function')O.apply(false);}catch(e){}
 }
 function openFinance(filter){
+ stabilizeViewport();
  /* Keep the daily Finance destination independent from the decorated global
   * router. The page and its renderer are the authoritative local surface. */
  var ok=!!activate('page-finance','finance');
@@ -157,11 +174,13 @@ function openFinance(filter){
  mark('finance');scheduleRepair();schedulePolish();return ok;
 }
 function openOutreach(filter){
+ stabilizeViewport();
  try{if(!legacyShow('outreach')&&typeof window.showPage==='function')window.showPage('outreach');}catch(e){}
  if(filter==='due')setTimeout(function(){var b=document.querySelector('#page-outreach [data-filter="__overdue"],#page-outreach [onclick*="__overdue"]');if(b)b.click();},120);
  mark('outreach');scheduleRepair();schedulePolish();return true;
 }
 function openSystem(){
+ stabilizeViewport();
  /* The terminal page is created before this late navigation owner loads, but it
   * may still be empty. Render its canonical base before presentation layers are
   * allowed to compact or decorate it. */
@@ -222,11 +241,12 @@ async function renderHomeTenderDecisions(){
 }
 function polish(){cleanupDailyControls();if(currentKey()==='home')renderHomeTenderDecisions();}
 function schedulePolish(){clearTimeout(polishTimer);polishTimer=setTimeout(polish,30);[260,900].forEach(function(ms){setTimeout(polish,ms);});}
-function apply(){repairSidebar();schedulePolish();}
+function apply(){installViewportStability();repairSidebar();schedulePolish();}
 document.addEventListener('pst:modules-ready',function(){scheduleRepair();schedulePolish();},{once:true});
 document.addEventListener('pst:home-canonical-rendered',function(){scheduleRepair();schedulePolish();});
 document.addEventListener('pst:project-opened',function(){scheduleRepair();schedulePolish();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){scheduleRepair();schedulePolish();},{once:true});else{scheduleRepair();schedulePolish();}
-var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openOutreach:openOutreach,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature,financeReady:financeReady}};
+installViewportStability();
+var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openOutreach:openOutreach,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature,financeReady:financeReady,stabilizeViewport:stabilizeViewport}};
 window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=window.PSTPrimaryNavResilienceV9=window.PSTPrimaryNavResilienceV10=API;
 })();
