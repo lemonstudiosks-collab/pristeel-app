@@ -40,6 +40,14 @@ assert.equal(sanitized.row.payload.winner.email,null);
 assert.deepEqual(sanitized.row.payload.winner.emails,[]);
 assert.equal(sanitized.row.payload.winner.contact_ranking.selected_email,null);
 
+const detachedPlaceholder={id:'unsafe-detached',payload:{source:'TED',notice_phase:'award',winner:{name:'Legacy GmbH',names:['Legacy GmbH'],email:'sales@yourcompany.com',emails:['sales@yourcompany.com'],contact_enrichment:{status:'found',organizations:[{name:'Legacy GmbH',contacts:[
+ {type:'email',value:'info@legacy-gmbh.de',purpose:'general',source_type:'TED',confidence:'high',score:88}
+]}]}}}};
+const detachedClean=rankWinnerPayload(detachedPlaceholder,'2026-09-24T04:30:00Z');
+assert.equal(detachedClean.changed,true,'legacy placeholder must be cleared even when it is no longer present in enrichment evidence');
+assert.equal(detachedClean.row.payload.winner.email,'info@legacy-gmbh.de');
+assert.deepEqual(detachedClean.row.payload.winner.emails,['info@legacy-gmbh.de']);
+
 const multi={payload:{source:'TED',notice_phase:'award',winner:{names:['A GmbH','B GmbH'],contact_enrichment:{status:'found',organizations:[{name:'A GmbH',contacts:[{type:'email',value:'info@a.de',purpose:'general'}]},{name:'B GmbH',contacts:[{type:'email',value:'info@b.de',purpose:'general'}]}]}}}};
 assert.equal(chooseBestWinnerEmail(multi),null,'multi-winner records must not choose one global email');
 assert.equal(rankWinnerPayload(multi).changed,false);

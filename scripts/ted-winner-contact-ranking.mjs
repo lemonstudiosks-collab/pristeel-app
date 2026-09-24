@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { resolveSupabaseWorkflowAccess } from './supabase-workflow-auth.mjs';
 
 const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
-const VERSION='winner-contact-rank-v3';
+const VERSION='winner-contact-rank-v4';
 const LOW_VALUE_LOCAL=/^(hr|humanresources|human\.resources|jobs?|careers?|karriere|bewerbung|recruiting|recruitment|privacy|datenschutz|dpo|rechnung|invoice|buchhaltung|accounting|support|it|webmaster)([._+-]|$)/i;
 const PURPOSE_WEIGHT={procurement:500,tender:450,sales:400,general:300,person:200,contact_point:180};
 const text=v=>String(v==null?'':v).trim();
@@ -43,8 +43,9 @@ export function rankWinnerPayload(row,rankedAt=new Date().toISOString()){
  const p={...payload(row)},w={...winner(row)},e=w.contact_enrichment,orgs=Array.isArray(e?.organizations)?e.organizations:[];
  const unsafe=new Set();for(const org of orgs)for(const c of Array.isArray(org?.contacts)?org.contacts:[])if(c?.type==='email'&&c?.value&&!safeDraftContact(c))unsafe.add(text(c.value).toLowerCase());
  const prior=text(w.email),beforeEmails=Array.isArray(w.emails)?w.emails.slice():[];
- if(prior&&unsafe.has(prior.toLowerCase()))w.email=null;
- w.emails=unique(beforeEmails.filter(x=>!unsafe.has(text(x).toLowerCase())));
+ function legacyUnsafe(email){const v=text(email);return !!v&&(placeholderEmail(v)||unsafe.has(v.toLowerCase()));}
+ if(legacyUnsafe(prior))w.email=null;
+ w.emails=unique(beforeEmails.filter(x=>!legacyUnsafe(x)));
  const sanitized=prior!==text(w.email)||w.emails.length!==beforeEmails.length;
  const best=chooseBestWinnerEmail({...row,payload:{...p,winner:w}});
  if(!best){
