@@ -46,7 +46,7 @@ await new Promise(r=>setTimeout(r,50));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260923-layout-stability1','Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260924-layout-stability2','Opportunity Desk must own the visible presentation');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 const initialDesk=window.document.querySelector('#pst-opp-desk');
 desk.apply();
@@ -75,7 +75,7 @@ assert.equal(window.document.querySelector('[data-pst-opp-source="UNDP_KOSOVO"]'
 
 async function backToDashboard(){
  const back=window.document.querySelector('[data-pst-opp-back]');
- assert(back,'result page must expose Back to Mundësitë');
+ assert(back,'result page must expose Back to Mundësitë; header='+(window.document.querySelector('#pst-opportunities-focus>header')?.innerHTML||'(missing)'));
  back.click();
  await new Promise(r=>setTimeout(r,35));
  assert.equal(desk.state().resultPage,null,'Back from a category must clear result-page state');
