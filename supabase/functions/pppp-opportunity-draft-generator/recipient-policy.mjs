@@ -56,6 +56,32 @@ function mergeCandidate(a,b){
     source_type:a.source_type||b.source_type||null,source_url:a.source_url||b.source_url||null,recipient_company_name:a.recipient_company_name||b.recipient_company_name||null,recipient_company_domain:a.recipient_company_domain||b.recipient_company_domain||null};
 }
 
+export function resolveTedDraftRecipients(action,tenderPayload,max=1){
+  const winner=tenderPayload?.winner||{},domains=companyDomains(action,winner),rows=[];
+  if(!domains.size)return [];
+  const push=(email,meta={})=>{
+    const c=candidate(email,{...meta,allow_free_domain:false});if(!c||c.draft_eligible===false)return;
+    if(!belongsToCompany(c.email,domains))return;
+    const cr=confidenceRank(c.confidence),score=Number(c.score||0);if(cr<2&&score<80)return;
+    rows.push({...c,company_attribution:c.company_attribution||'verified_company_domain',recipient_company_domain:domainFromEmail(c.email)});
+  };
+  for(const r of Array.isArray(tenderPayload?.winner_contacts)?tenderPayload.winner_contacts:[]){
+    if(!/verified|high|medium/i.test(txt(r?.verification_status||r?.confidence,40)))continue;
+    push(r?.email||r?.value,{...r,priority:900});
+  }
+  for(const org of winner?.contact_enrichment?.organizations||[]){
+    const od=normalizeDomain(org?.domain||websiteDomain(org?.official_website));if(!od)continue;
+    for(const r of Array.isArray(org?.contacts)?org.contacts:[]){
+      if(txt(r?.type,30).toLowerCase()!=='email')continue;
+      const email=r?.email||r?.value;if(!sameCompanyDomain(email,od))continue;
+      push(email,{...r,priority:800+Math.min(99,Number(r?.score||0)),recipient_company_name:org?.name||null,recipient_company_domain:od});
+    }
+  }
+  const map=new Map();for(const r of rows)map.set(r.email,mergeCandidate(map.get(r.email),r));
+  const purposeRank={procurement:0,tender:1,sales:2,person:3,general:4};
+  return [...map.values()].sort((a,b)=>(purposeRank[a.purpose]??8)-(purposeRank[b.purpose]??8)||(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,Math.max(1,Math.min(1,Number(max)||1)));
+}
+
 export function resolveTedRecipients(action,tenderPayload,max=1){
   const winner=tenderPayload?.winner||{},domains=companyDomains(action,winner),rows=[];
   const readiness=(action?.payload?.outreach_readiness_v1&&typeof action.payload.outreach_readiness_v1==='object')
