@@ -88,7 +88,7 @@ assert(opportunityPolish.includes('data-pst-opp-source')&&opportunityPolish.incl
 assert(opportunityPolish.includes('data-pst-opp-field')&&opportunityPolish.includes('fieldOf'),'Opportunity Desk must expose field filters over existing records');
 assert(opportunityPolish.includes('function activeRows(')&&opportunityPolish.includes('function contactedRows(')&&opportunityPolish.includes('globalContactedKeys'),'Opportunity Desk must separate active opportunities from drafted/contacted companies without creating Projects');
 assert(!/setInterval\s*\(|supaFetch\s*\(/i.test(opportunityPolish),'Opportunity Desk must not poll or access business data directly');
-assert(!/tenderAction\s*\(|openTender\s*\(/.test(opportunityPolish),'Opportunity Desk must not take ownership of tender business actions');
+assert(!/tenderAction\s*\(/.test(opportunityPolish)&&opportunityPolish.includes("P.prepareDraft(id)"),'Opportunity Desk may delegate approved detail/draft actions but must not reimplement tender business actions');
 assert(!/addEventListener\s*\(\s*['\"]click/i.test(waitingBridge),'Waiting bridge must not own click behavior');
 
 console.log('Dynamic runtime reference closure: OK ('+seen.size+' local JS modules verified).');
