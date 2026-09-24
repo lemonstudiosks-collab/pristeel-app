@@ -397,7 +397,7 @@ function buyerAction(r){
  var q=outboundFor(r),ct=contactFor(r),to=q&&q.recipient_email||ct.email||'',status=q?S(q.status||'registered'):'not registered',st=N(status),life=lifecycle(r),sentAt=q&&q.sent_at||'',replyAt=q&&q.replied_at||'',supp=q&&S(q.suppression_reason).trim(),recoverable=['gmail_draft_missing','gmail_draft_stale','draft_missing','draft_stale'].indexOf(supp)>-1,blocked=(!!supp&&!recoverable)||st==='suppressed',stale=st==='stale'||recoverable,human=!q||q.human_send_required!==false;
  var preview=state.actionView&&state.actionView.id===S(r.id)&&state.actionView.type==='buyer',k=draftKey('buyer',r.id),busy=!!state.draftBusy[k],result=state.draftResult[k]||null,primary='',secondary='';
  if(life==='replied')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap përgjigjen në Gmail</button>':'';
- else if(life==='waiting')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap thread-in në Gmail</button>:'';
+ else if(life==='waiting')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap thread-in në Gmail</button>':'';
  else if(life==='draft')primary=q&&q.gmail_thread_id?'<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>':'';
  else if(blocked)primary='<button class="pst-dss-btn" disabled>Outbound i bllokuar</button>';
  else if(q&&q.gmail_draft_id&&q.gmail_thread_id&&!stale)primary='<button class="pst-dss-btn primary" data-dss-action="buyer-thread" data-dss-tid="'+E(r.id)+'">Hap Gmail draft</button>';
