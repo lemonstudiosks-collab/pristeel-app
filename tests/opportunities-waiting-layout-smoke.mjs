@@ -9,7 +9,7 @@ const workflow=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8')
 assert.doesNotThrow(()=>new Function(desk),'Opportunities Desk must be valid JavaScript');
 assert.doesNotThrow(()=>new Function(workflow),'Project-Centric workflow must remain valid JavaScript');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(desk,/VERSION='20260924-layout-stability3'/,'Opportunity Desk revision must be active');
+assert.match(desk,/VERSION='20260924-layout-stability4'/,'Opportunity Desk revision must be active');
 assert.match(desk,/data-pst-opp-mode/,'Desk must expose the direct-tender versus TED-award work routes');
 assert.match(desk,/data-pst-opp-source/,'source filters must remain functional');
 assert.match(desk,/resultPage/,'category selection must have a dedicated result-page state');
@@ -17,6 +17,7 @@ assert.match(desk,/pst-opp-dashboard/,'initial Opportunities view must have an e
 assert.match(desk,/pst-opp-result-page/,'category selection must render as a dedicated result page instead of inline results');
 assert.match(desk,/openResultPage/,'all dashboard categories must route through one result-page navigation owner');
 assert.match(desk,/\[0,80,240\]\.forEach\(function\(ms\)\{setTimeout\(top,ms\);\}\)/,'viewport settling must outlast the captured click and late canonical render');
+assert.match(desk,/document\.documentElement\.scrollTop=0/,'category drilldown must reset the root scrolling element directly');
 assert.match(desk,/pst-opp-dashboard #pst-opportunities-list/,'the canonical result list must be hidden on the dashboard');
 assert.match(desk,/data-pst-opp-field/,'field filters must remain functional');
 assert.match(desk,/data-pst-opp-winner/,'TED winner-role filters must remain functional');
@@ -40,5 +41,5 @@ assert.doesNotMatch(workflow,/return rows\.slice\(0,80\)/,'canonical result set 
 assert.match(workflow,/function showMoreOpportunities\(/,'workflow must expose progressive load-more behavior');
 assert.match(workflow,/kind==='mode'/,'route mode must be a canonical filter');
 assert.doesNotMatch(workflow,/tenderState\.source='all';tenderState\.field='all';tenderState\.winner_group='all';\s*var life/,'status filtering must no longer wipe other filters');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260924-layout-stability3/,'runtime must cache-bust the new Opportunity Desk');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260924-layout-stability4/,'runtime must cache-bust the new Opportunity Desk');
 console.log('Opportunities Desk layout smoke: OK');

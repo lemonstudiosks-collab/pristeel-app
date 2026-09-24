@@ -11,7 +11,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260924-layout-stability3';
+var VERSION='20260924-layout-stability4';
 var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,observer=null,observerRoot=null,scheduled=false,decorating=false;
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
@@ -160,7 +160,7 @@ function decorate(){
 function schedule(){if(decorating||scheduled)return;scheduled=true;setTimeout(function(){if(!document.getElementById('pst-opportunities-focus')){scheduled=false;return;}decorate();},0);}
 function reconnectObserver(){if(!observer||!observerRoot||!observerRoot.isConnected)return;observer.observe(observerRoot,{childList:true,subtree:true});}
 function stableTop(){
- function top(){try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){try{window.scrollTo(0,0);}catch(x){}}}
+ function top(){try{document.documentElement.scrollTop=0;document.body.scrollTop=0;}catch(ignore){}try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){try{window.scrollTo(0,0);}catch(x){}}}
  top();
  var raf=window.requestAnimationFrame||function(fn){return setTimeout(fn,16);};
  raf(function(){top();raf(top);});
