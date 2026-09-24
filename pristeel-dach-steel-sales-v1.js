@@ -17,7 +17,7 @@ var state={
  draftBusy:{},draftResult:{},supplierDrafts:{},contactBusy:{},projectBusy:{},projectResult:{},
  summaryLoaded:false,targetsLoaded:false,outboundLoaded:false,
  summaryLoading:false,targetsLoading:false,outboundLoading:false,
- error:'',filter:'action',expanded:null,actionView:null,lastLoadedAt:0,lifecycleSyncing:false,lifecycleSyncedAt:0,lifecycleResult:null
+ error:'',filter:'action',expanded:null,actionView:null,lastLoadedAt:0,lifecycleSyncing:false,lifecycleSyncedAt:0,lifecycleResult:null,gmailOpenedAt:0
 };
 
 function A(v){return Array.isArray(v)?v:[]}
@@ -313,6 +313,14 @@ function lifecycle(r){
  return'action';
 }
 
+function syncAfterGmailReturn(){
+ if(!state.gmailOpenedAt||document.visibilityState==='hidden')return;
+ var page=document.getElementById('page-dach-steel-sales');
+ if(!page||!page.classList.contains('active'))return;
+ state.gmailOpenedAt=0;
+ syncLifecycleUi(true);
+}
+
 async function loadSupplierCandidates(r){
  var id=S(r&&r.id);if(!id)return;
  var box=state.supplierByTarget[id];if(box&&box.loaded)return box.data;
@@ -414,7 +422,7 @@ function ensurePage(){
    if(act==='buyer-preview'){state.actionView={id:id,type:'buyer'};renderPage();return}
    if(act==='contact-resolve'){await resolveContact(r);return}
    if(act==='buyer-create-draft'){await createBuyerDraft(r);return}
-   if(act==='buyer-thread'){var gu=gmailThread(q);if(gu)window.open(gu,'_blank','noopener');else alert('Nuk ka Gmail draft/thread të regjistruar për këtë target.');return}
+    if(act==='buyer-thread'){var gu=gmailThread(q);if(gu){state.gmailOpenedAt=Date.now();window.open(gu,'_blank','noopener')}else alert('Nuk ka Gmail draft/thread të regjistruar për këtë target.');return}
    if(act==='promote-project'){await promoteTargetToProject(r);return}
    if(act==='open-project'){if(r.project_id&&typeof window.pstOpenProjectDirect==='function')await Promise.resolve(window.pstOpenProjectDirect(r.project_id));return}
    if(act==='buyer-copy'){navigator.clipboard&&navigator.clipboard.writeText(buyerBody(r));return}
@@ -602,6 +610,8 @@ function boot(){css();ensurePage();ensureHome()}
 document.addEventListener('pst:native-home-ready',function(){chrome(false);setTimeout(ensureHome,0)});
 document.addEventListener('pst:home-canonical-rendered',function(){chrome(false);setTimeout(ensureHome,0)});
 document.addEventListener('pst:modules-ready',function(){setTimeout(boot,0)},{once:true});
+window.addEventListener('focus',syncAfterGmailReturn);
+document.addEventListener('visibilitychange',syncAfterGmailReturn);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
 
 window.PSTDachSteelSalesV1=window.PSTDachSteelSalesV2=window.PSTDachSteelSalesV3={
