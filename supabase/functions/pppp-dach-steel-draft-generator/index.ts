@@ -360,6 +360,10 @@ async function promoteProject(tg:any,b:any,u:any){
  if(oq.error)throw oq.error;
  const q=oq.data||null,hasReply=!!(q&&(q.replied_at||nm(q.status)==="replied"));
  if(!hasReply||!q?.gmail_thread_id)throw new Error("buyer_reply_required_before_project_promotion");
+ const threadRows=await db.from("project_emails").select("id,project_id,gmail_message_id,direction").eq("gmail_thread_id",q.gmail_thread_id).limit(100);
+ if(threadRows.error)throw threadRows.error;
+ const existingProjects=[...new Set((threadRows.data||[]).map((x:any)=>t(x?.project_id,80)).filter(Boolean))];
+ if(existingProjects.length)throw new Error("gmail_thread_already_linked_to_project:"+existingProjects[0]);
  const name=t(b?.project_name||tg?.project_title||((tg?.company_name||"Buyer")+" – Material RFQ"),500);
  if(!name)throw new Error("project_name_required");
  const reference=t(b?.project_reference||tg?.project_reference||"",250)||null;
@@ -396,6 +400,16 @@ async function promoteProject(tg:any,b:any,u:any){
  const projectId=t(cr.data?.project_id,80);
  if(!uuid(projectId))throw new Error("project_create_verification_failed");
  const now=new Date().toISOString();
+ const pe=await db.from("project_emails").update({
+  project_id:projectId,
+  suggested_project_id:null,
+  match_method:"material_trade_promotion",
+  match_confidence:100,
+  needs_review:false,
+  review_reason:null,
+  updated_at:now
+ }).eq("gmail_thread_id",q.gmail_thread_id).is("project_id",null).select("id,gmail_message_id,direction");
+ if(pe.error)throw pe.error;
  const tu=await db.from("pppp_dach_steel_targets_v1").update({
   project_id:projectId,
   target_status:"project_promoted",
@@ -403,12 +417,12 @@ async function promoteProject(tg:any,b:any,u:any){
   updated_at:now
  }).eq("id",tg.id).select("id,project_id,target_status").single();
  if(tu.error)throw tu.error;
- const payload={...(q.payload&&typeof q.payload==="object"?q.payload:{}),promoted_project_id:projectId,promoted_at:now,promotion_command_id:commandId};
+ const payload={...(q.payload&&typeof q.payload==="object"?q.payload:{}),promoted_project_id:projectId,promoted_at:now,promotion_command_id:commandId,project_email_links:(pe.data||[]).map((x:any)=>x.id)};
  const qu=await db.from("pppp_outbound_queue_v1").update({payload,updated_at:now}).eq("id",q.id);
  if(qu.error)throw qu.error;
  const pv=await db.from("projects").select("id,name,client,business_ref,status,pipeline_stage,business_type").eq("id",projectId).single();
  if(pv.error)throw pv.error;
- return{created:cr.data?.created===true,project_id:projectId,project:pv.data,target_status:"project_promoted",human_confirmation:true};
+ return{created:cr.data?.created===true,project_id:projectId,project:pv.data,target_status:"project_promoted",linked_project_emails:(pe.data||[]).length,gmail_thread_id:q.gmail_thread_id,human_confirmation:true};
 }
 
 Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:C});if(req.method!=="POST")return res({ok:false,error:"method_not_allowed"},405);try{
