@@ -1,0 +1,25 @@
+name: Mobile Responsive Smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - 'chatgpt/mobile-responsive-v1'
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check mobile runtime syntax
+        run: node --check pristeel-mobile-responsive-v1.js
+      - name: Verify mobile shell contract
+        run: node tests/mobile-responsive-shell-smoke.mjs
