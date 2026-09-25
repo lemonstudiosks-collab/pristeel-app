@@ -1,4 +1,4 @@
-/* PRISTEEL global UI runtime stability v1
+/* PRISTEEL global UI runtime stability v2
  * Keeps the current route visually frozen until the destination has completed
  * its first stable layout. Prevents empty intermediate pages, size jumps and
  * transform-based click/hover motion without changing business behavior.
@@ -30,19 +30,32 @@ function installCss(){
   s.id='pst-ui-runtime-stability-v1-css';
   s.textContent=`
 html{scrollbar-gutter:stable!important;scroll-behavior:auto!important}
-body{min-width:0;overflow-anchor:none}
+html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
+body{min-width:0;overflow-y:scroll;overflow-anchor:none}
 html.pst-ui-route-transitioning,html.pst-ui-route-transitioning body{scroll-behavior:auto!important;overflow-anchor:none!important}
 html.pst-ui-route-transitioning #app-shell-root{pointer-events:none!important}
-html.pst-runtime-ready #app-shell-root button,
-html.pst-runtime-ready #app-shell-root a,
-html.pst-runtime-ready #app-shell-root [role="button"]{transition-property:background-color,color,border-color,box-shadow,opacity!important;transition-duration:.08s!important;transition-timing-function:linear!important}
+html.pst-runtime-ready #app-shell-root,
+html.pst-runtime-ready #app-shell-root *,
+html.pst-runtime-ready #app-shell-root *::before,
+html.pst-runtime-ready #app-shell-root *::after{animation-duration:.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition:none!important;scroll-behavior:auto!important}
+html.pst-runtime-ready #app-shell-root .main,
+html.pst-runtime-ready #app-shell-root .content{min-height:100vh!important}
+html.pst-runtime-ready #app-shell-root .content>.page{min-height:calc(100vh - 76px)}
 html.pst-runtime-ready #app-shell-root button:hover,
 html.pst-runtime-ready #app-shell-root button:active,
 html.pst-runtime-ready #app-shell-root a:hover,
 html.pst-runtime-ready #app-shell-root a:active,
 html.pst-runtime-ready #app-shell-root [role="button"]:hover,
-html.pst-runtime-ready #app-shell-root [role="button"]:active{transform:none!important;scale:1!important}
-::view-transition-old(root),::view-transition-new(root){animation:none!important;mix-blend-mode:normal!important}
+html.pst-runtime-ready #app-shell-root [role="button"]:active,
+html.pst-runtime-ready #app-shell-root [onclick]:hover,
+html.pst-runtime-ready #app-shell-root [onclick]:active,
+html.pst-runtime-ready #app-shell-root .card:hover,
+html.pst-runtime-ready #app-shell-root [class*="card"]:hover,
+html.pst-runtime-ready #app-shell-root [class*="tile"]:hover,
+html.pst-runtime-ready #app-shell-root [class*="row"]:hover,
+html.pst-runtime-ready #app-shell-root .pst-panel:hover,
+html.pst-runtime-ready #app-shell-root .pst-kpi:hover,
+html.pst-runtime-ready #app-shell-root .pst-project:hover{transform:none!important;scale:1!important}
 .pst-ui-stability-clone{position:fixed!important;z-index:2147481800!important;margin:0!important;overflow:hidden!important;pointer-events:none!important;contain:paint!important;background:#F7F6F3!important}
 `;
   document.head.appendChild(s);
@@ -91,12 +104,28 @@ function makeFallbackClone(page){
   var rect=page.getBoundingClientRect(),clone=page.cloneNode(true);
   clone.classList.remove('page');
   clone.classList.add('pst-ui-stability-clone');
-  clone.style.setProperty('top',Math.max(0,rect.top)+'px','important');
-  clone.style.setProperty('left',Math.max(0,rect.left)+'px','important');
+  clone.style.setProperty('top',rect.top+'px','important');
+  clone.style.setProperty('left',rect.left+'px','important');
   clone.style.setProperty('width',Math.max(1,rect.width)+'px','important');
-  clone.style.setProperty('height',Math.max(window.innerHeight-Math.max(0,rect.top),Math.min(rect.height,window.innerHeight))+'px','important');
+  clone.style.setProperty('height',Math.max(1,rect.height)+'px','important');
+  try{
+    var cs=window.getComputedStyle(page);
+    clone.style.setProperty('font-family',cs.fontFamily,'important');
+    clone.style.setProperty('font-size',cs.fontSize,'important');
+    clone.style.setProperty('line-height',cs.lineHeight,'important');
+    clone.style.setProperty('color',cs.color,'important');
+    clone.style.setProperty('background-color',cs.backgroundColor,'important');
+  }catch(e){}
+  try{
+    clone.scrollTop=page.scrollTop;clone.scrollLeft=page.scrollLeft;
+    var sourceScrollers=page.querySelectorAll('*'),cloneScrollers=clone.querySelectorAll('*');
+    for(var i=0;i<sourceScrollers.length&&i<cloneScrollers.length;i++){
+      if(sourceScrollers[i].scrollTop)cloneScrollers[i].scrollTop=sourceScrollers[i].scrollTop;
+      if(sourceScrollers[i].scrollLeft)cloneScrollers[i].scrollLeft=sourceScrollers[i].scrollLeft;
+    }
+  }catch(e){}
   clone.setAttribute('aria-hidden','true');
-  (document.body||document.documentElement).appendChild(clone);
+  (document.getElementById('app-shell-root')||document.body||document.documentElement).appendChild(clone);
   return clone;
 }
 function replay(trigger){
@@ -112,14 +141,6 @@ function begin(trigger){
   installCss();
   var before=activePage(),beforeSignature=signature(before),token=++sequence;
   root.classList.add('pst-ui-route-transitioning');
-  if(typeof document.startViewTransition==='function'){
-    try{
-      var transition=document.startViewTransition(function(){replay(trigger);return waitForStable(before,beforeSignature,token);});
-      running=transition;
-      Promise.resolve(transition.finished).catch(function(){}).then(function(){finish(token,null);});
-      return true;
-    }catch(e){}
-  }
   var clone=makeFallbackClone(before);
   running={fallback:true};
   replay(trigger);
