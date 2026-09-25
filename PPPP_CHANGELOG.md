@@ -4,6 +4,14 @@ This file records material architecture/automation changes. It is not a substitu
 
 ## 2026-09-25
 
+### Home reorganized around decisions, active projects and compact secondary tools
+
+- Home now shows at most three priority rows and groups repeated actions into one honest summary that opens the canonical Projects area instead of presenting duplicate rows.
+- The main lower grid gives active projects the dominant column and keeps Opportunities, Material Trade and the compact PPPP assistant in one supporting column.
+- Project rows can fall back to the already-loaded workspace project cache when the canonical Home snapshot has not populated yet, avoiding a large empty card while the sidebar already reports active projects.
+- PRISTEEL Daily is mounted inside the Home header instead of floating over content. `Pyet PPPP` stays collapsed until requested and preserves the existing assistant shell when expanded.
+- The redesign reuses current in-memory snapshots and existing route owners. It adds no database reads, writes, outbound actions or approval changes.
+
 ### Navigation and Opportunities rendering stabilized without page snapshots
 
 - The global route-stability layer no longer clones the active page, duplicates its DOM ids, cancels the canonical click or replays a synthetic click. It now observes the normal route transaction and temporarily suppresses layout animation while the destination settles.
