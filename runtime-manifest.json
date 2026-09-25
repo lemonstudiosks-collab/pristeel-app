@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "689a2e0278f68fe7d6d08e529c6cdcf33aade85f"
+    "bootstrapGitBlobSha": "c6b79f756aeda0ee9f924ca755d47975e01434f5"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -65,7 +65,7 @@
         "pristeel-project-control-home-v1.js",
         "pristeel-home-morning-command-center-v1.js"
       ],
-      "note": "Native UI v3 owns the early Home shell. Morning Command Center is the final visible Home presentation: it keeps the canonical sidebar stable and composes existing in-memory action, project, Opportunities and Material Trade snapshots without adding database reads or writes. Legacy Home modules remain data/service compatibility layers."
+      "note": "Native UI v3 owns the early Home shell. Morning Command Center is the final visible Home presentation: it keeps the canonical sidebar stable, groups repetitive priorities, integrates Daily into the header and composes existing in-memory action, project, Opportunities and Material Trade snapshots without adding database reads or writes. Legacy Home modules remain data/service compatibility layers."
     },
     {
       "area": "projects-list",

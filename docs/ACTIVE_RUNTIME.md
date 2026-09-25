@@ -103,8 +103,11 @@ Home Canonical remains the sole business-state/data owner. Operating Experience 
 
 Current behavior:
 
-- The action section is presented as **Duhet veprimi yt**.
-- Home exposes at most five concrete actions.
+- `pristeel-home-morning-command-center-v1.js` owns the final visible Home composition while Canonical Home remains the business-state/data owner.
+- Home exposes at most three priority rows. Repeated equivalent actions are grouped and route to the canonical Projects area rather than opening only one hidden item.
+- The lower layout prioritizes active projects and uses Opportunities, Material Trade and the compact assistant as supporting modules.
+- If the canonical project snapshot is briefly empty, Home may reuse the already-loaded workspace project cache; it performs no extra database request.
+- PRISTEEL Daily is mounted in the Home header and `Pyet PPPP` expands only on request while preserving its existing runtime shell.
 - `Në pritje` separates projects waiting on another party.
 - Project events drive current state and next action.
 - Newer confirmed events reconcile obsolete automatic tasks.
