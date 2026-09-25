@@ -9,10 +9,15 @@ assert((html.match(/pristeel-mobile-responsive-v1\.js/g)||[]).length===1,'mobile
 assert(/rel="manifest"\s+href="pristeel\.webmanifest"/.test(html),'web manifest must be linked');
 assert(html.includes('viewport-fit=cover'),'viewport must support safe areas');
 assert(html.includes('apple-mobile-web-app-capable'),'iOS install metadata missing');
+assert(!html.includes('</title>\\n<meta'),'mobile metadata must use real line breaks');
+assert(!html.includes('</script>\\n<script src="pristeel-mobile-responsive'),'mobile runtime tag must use a real line break');
 assert(!/supaFetch\s*\(/.test(js),'mobile shell must not add Supabase calls');
 assert(!/setInterval\s*\(/.test(js),'mobile shell must not poll');
 assert(!/MutationObserver/.test(js),'mobile shell must not install a UI ownership observer');
 assert(!/serviceWorker\.register/.test(js),'responsive phase must not register a service worker');
+assert(js.includes('touch-action:manipulation'),'mobile shell must add touch-safe controls');
+assert(js.includes('100dvh'),'mobile dialogs must respect the phone viewport');
+assert(js.includes('.table-responsive'),'mobile shell must preserve horizontal table access');
 assert(!/body\s+\.sidebar\s*\{\s*display\s*:\s*none/i.test(js),'must not globally hide generic sidebars');
 for(const key of ['home','tenders','projects','contacts','finance','apps']){
   assert(js.includes("key:'"+key+"'"),'missing mobile route '+key);
