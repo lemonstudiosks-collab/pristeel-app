@@ -2,9 +2,20 @@ const EMAIL_RE=/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/i;
 const FREE_DOMAINS=new Set(['gmail.com','googlemail.com','hotmail.com','outlook.com','live.com','yahoo.com','yahoo.de','yahoo.fr','icloud.com','aol.com','gmx.com','gmx.de','web.de','proton.me','protonmail.com']);
 const RESERVED_DOMAINS=new Set(['example.com','example.org','example.net']);
 const BLOCKED_SOURCE_DOMAINS=new Set(['forbes.pl','aleo.com','linkedin.com','facebook.com','instagram.com','wikipedia.org','bloomberg.com','crunchbase.com','kompass.com','europages.com','lursoft.lv']);
-const BLOCKED_OUTREACH_LOCAL_PARTS=new Set(['invoice','billing','faktury','accounting','accounts','payable','recruiting','jobs','careers','career','hr','humanresources','privacy','gdpr','datenschutz','skundai','webmaster','support','press','presse','media','newsletter','noreply','no-reply','donotreply','legal','dpo','security','abuse','investorrelations','investor.relations','personalni','nabor','werken','imie.nazwisko','bieterportal-alt','20info']);
+const BLOCKED_OUTREACH_LOCAL_PARTS=new Set(['invoice','billing','faktury','accounting','accounts','payable','recruiting','jobs','careers','career','hr','humanresources','privacy','gdpr','datenschutz','skundai','webmaster','support','press','presse','media','marketing','newsletter','noreply','no-reply','donotreply','legal','dpo','security','abuse','investorrelations','investor.relations','personalni','nabor','werken','imie.nazwisko','bieterportal-alt','20info']);
 const GENERIC_LOCAL_PARTS=new Set(['info','office','contact','kontakt','sales','verkauf','procurement','purchasing','einkauf','tender','tenders','ausschreibung','vergabe','post','mail','hello','service','support','faktury','invoice','billing','commercial','comercial','admin','webmaster','pr']);
 const GENERAL_FALLBACK_LOCAL_PARTS=new Set(['info','office','contact','kontakt','post','mail','hello','service','support','sales','verkauf','admin','sekretariat','reception']);
+
+export function contactTier(email,meta={}){
+  const e=normalizeEmail(email),local=(e.split('@')[0]||'').replace(/\+.*/,''),role=txt(meta?.job_title||meta?.role||meta?.title,180).toLowerCase(),name=explicitName(meta?.full_name||meta?.contact_name||meta?.person_name||meta?.name||'');
+  if(!validEmail(e)||isBlockedOutreachEmail(e)||/(marketing|press|presse|media|career|karriere|recruit|human resources|personalwesen|\bhr\b)/.test(role))return'F';
+  if(/(einkauf|procurement|purchas|sourcing|beschaffung|ausschreibung|tender|vergabe)/.test(local))return'C';
+  if(GENERAL_FALLBACK_LOCAL_PARTS.has(local))return'E';
+  if(name&&/(einkauf|procurement|purchas|sourcing|beschaffung|material|supply|buyer)/.test(role))return'A';
+  if(name&&/(project|projekt|technical|technik|commercial|kaufm|construction|bauleit|geschäfts|manag|director|leiter)/.test(role))return'B';
+  return name||/^[a-z]+[._-][a-z]+$/.test(local)?'D':'E';
+}
+export function contactQualityScore(email,meta={}){const x=contactTier(email,meta);return x==='A'?95:x==='B'?82:x==='C'?70:x==='D'?55:x==='E'?25:0;}
 
 const txt=(v,max=500)=>String(v==null?'':v).trim().slice(0,max);
 export function normalizeEmail(v){return txt(v,320).toLowerCase().replace(/^mailto:/,'').replace(/[\s,;]+$/,'');}
@@ -77,7 +88,8 @@ export function resolveTedDraftRecipients(action,tenderPayload,max=20){
     const c=candidate(email,{...meta,allow_free_domain:false});if(!c||c.draft_eligible===false)return;
     if(!belongsToCompany(c.email,domains))return;
     const cr=confidenceRank(c.confidence),score=Number(c.score||0);if(cr<2&&score<80)return;
-    rows.push({...c,company_attribution:c.company_attribution||'verified_company_domain',recipient_company_domain:domainFromEmail(c.email)});
+    const tier=contactTier(c.email,c),contact_quality_score=contactQualityScore(c.email,c);if(contact_quality_score<50)return;
+    rows.push({...c,contact_tier:tier,contact_quality_score,company_attribution:c.company_attribution||'verified_company_domain',recipient_company_domain:domainFromEmail(c.email)});
   };
   for(const r of Array.isArray(tenderPayload?.winner_contacts)?tenderPayload.winner_contacts:[]){
     if(!/verified|high|medium/i.test(txt(r?.verification_status||r?.confidence,40)))continue;
@@ -93,7 +105,7 @@ export function resolveTedDraftRecipients(action,tenderPayload,max=20){
   }
   const map=new Map();for(const r of rows)map.set(r.email,mergeCandidate(map.get(r.email),r));
   const purposeRank={procurement:0,tender:1,sales:2,person:3,general:4};
-  return [...map.values()].sort((a,b)=>(purposeRank[a.purpose]??8)-(purposeRank[b.purpose]??8)||(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,Math.max(1,Math.min(20,Number(max)||20)));
+  return [...map.values()].sort((a,b)=>(b.contact_quality_score-a.contact_quality_score)||(purposeRank[a.purpose]??8)-(purposeRank[b.purpose]??8)||(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,1);
 }
 
 export function resolveTedRecipients(action,tenderPayload,max=1){
@@ -145,3 +157,4 @@ export function resolveTedRecipients(action,tenderPayload,max=1){
 }
 
 export function recipientGreeting(company,recipient){const e=normalizeEmail(recipient?.email),local=(e.split('@')[0]||'').replace(/\+.*/,''),purpose=txt(recipient?.purpose,80).toLowerCase(),general=purpose==='general'||GENERIC_LOCAL_PARTS.has(local);const n=general?'':explicitName(recipient?.name);return n?`Dear ${n},`:'Dear Sir or Madam,';}
+
