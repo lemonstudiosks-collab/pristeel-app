@@ -10,7 +10,7 @@
   "theme_color": "#A65F2E",
   "icons": [
     {
-      "src": "gmail-addon/pristeel-addon-icon.svg",
+      "src": "assets/pristeel-app-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

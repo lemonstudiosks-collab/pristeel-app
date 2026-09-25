@@ -213,6 +213,10 @@
     {
       "path": "assets/source-icons/world-bank.svg",
       "reason": "Local Opportunity Desk source identity asset used by pristeel-opportunities-filter-polish-v1.js in the production Pages artifact."
+    },
+    {
+      "path": "assets/pristeel-app-icon.svg",
+      "reason": "Canonical PRISTEEL app/PWA icon used by the primary application and web manifest."
     }
   ],
   "compatibilityPublicAssets": [
@@ -222,7 +226,7 @@
     },
     {
       "path": "pristeel.webmanifest",
-      "reason": "Small legacy PWA artifact retained pending a deliberate PWA review rather than being removed by inference."
+      "reason": "Canonical PWA manifest retained in the production Pages artifact for installed desktop/mobile app identity."
     }
   ],
   "referenceChecks": [
