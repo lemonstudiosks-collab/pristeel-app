@@ -1,3 +1,12 @@
+## 2026-09-25 — Compact mobile Home redesign
+
+- Added `pristeel-mobile-home-v1.js` as the <=900px final Home presentation, matching the approved clean mobile mockup while leaving desktop Home unchanged.
+- Removed the desktop-style sidebar/column ownership from mobile Home and replaced it with a full-width mobile dashboard: compact PRISTEEL header, greeting, `Pyet PPPP`, three small counters, one concise `Çfarë të shohësh sot` card and `Veprime të shpejta`.
+- Kept the approved quick actions: `Krijo projekt`, `Krijo draft`, `Shto partner`, `Shiko tenderët`. They delegate to existing PPPP routes/create controls; no parallel business workflow was introduced.
+- Mobile Home reads only existing in-memory Home/Opportunities snapshots and adds zero Supabase reads/writes, zero fetches and zero polling.
+- Decorative steel/building imagery is intentionally absent.
+- Added dedicated smoke coverage and mobile CI checks for the approved layout and zero-backend-cost contract.
+
 ## 2026-09-25 — Mobile role and viewport correction
 
 - Fixed RBAC startup lookup so the current authenticated user's role is resolved by `user_id` (email fallback only when user id is unavailable) instead of reading an arbitrary first `user_roles` row.
