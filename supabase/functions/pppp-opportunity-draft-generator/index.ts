@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { resolveTedRecipients, resolveTedDraftRecipients, normalizeEmail } from "./recipient-policy.mjs";
+import { resolveTedRecipients, resolveTedDraftRecipients, normalizeEmail, contactTier, contactQualityScore } from "./recipient-policy.mjs";
 import { encodeRfc2047Header } from "./mime-headers.mjs";
 import { buildTedDraftContent } from "./draft-content.mjs";
 
@@ -11,9 +11,9 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v20-company-scoped-multi-recipient';
+const GENERATOR='pppp-opportunity-draft-generator-v21-outbound-sales-v2';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
-const MAX_CONTACTS_PER_ACTION=20;
+const MAX_CONTACTS_PER_ACTION=1;
 const MAX_DRAFT_WRITES_PER_RUN=25;
 const GMAIL_SCOPE='https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly';
 const META_HEADERS=['Message-ID','X-PPPP-Outreach-ID','X-PPPP-Action-ID','To','Date'];
@@ -266,12 +266,16 @@ async function retireObsoleteDrafts(a:any,keepEmails:Set<string>,reason:string,b
 async function persistActionState(a:any,p:any,recipients:any[]){const {data,error}=await db.from(REGISTRY).select('*').eq('action_id',a.id).order('created_at',{ascending:true});if(error)throw error;const rows=data||[],drafts=rows.map((r:any)=>({email:r.recipient_email,name:r.recipient_name||null,draft_id:r.gmail_draft_id||null,message_id:r.gmail_message_id||r.gmail_draft_message_id||null,thread_id:r.gmail_thread_id||null,created_at:r.draft_created_at||r.created_at,updated_at:r.updated_at,generator:r.generator||GENERATOR,language:r.language||null,subject:r.subject||null,mime_type:r.mime_type||null,html:r.html===true,status:r.status,outreach_id:r.outreach_id,rfc_message_id:r.rfc_message_id,sent_at:r.sent_at||null}));const byEmail=new Map(rows.map((r:any)=>[r.recipient_email,r])),allCovered=recipients.every((r:any)=>['draft_created','sent'].includes(byEmail.get(normalizeEmail(r.email))?.status)),firstDraft=rows.find((r:any)=>r.status==='draft_created'),firstAny=rows[0]||null,next={...p,gmail_drafts:drafts,gmail_draft_count:rows.filter((r:any)=>r.status==='draft_created').length,gmail_sent_count:rows.filter((r:any)=>r.status==='sent').length,gmail_recipient_count:recipients.length,gmail_recipients:recipients.map((r:any)=>({email:r.email,name:r.name||null,job_title:r.job_title||null,purpose:r.purpose||null,confidence:r.confidence||null,source_type:r.source_type||null,source_url:r.source_url||null,company_attribution:r.company_attribution||null,recipient_company_name:r.recipient_company_name||null,recipient_company_domain:r.recipient_company_domain||null})),gmail_outreach_registry_version:'v1',gmail_draft_generator_target:GENERATOR,gmail_draft_generator_complete:allCovered,gmail_draft_generator:GENERATOR,gmail_draft_write_policy:'registry_state_machine_v1',gmail_draft_html:true,gmail_auto_send:false,human_send_required:true,gmail_draft_id:firstDraft?.gmail_draft_id||null,gmail_message_id:firstAny?.gmail_message_id||firstAny?.gmail_draft_message_id||null,gmail_thread_id:firstAny?.gmail_thread_id||null,gmail_draft_created_at:firstDraft?.draft_created_at||null};const u=await db.from('pppp_opportunity_actions').update({payload:next,updated_at:new Date().toISOString()}).eq('id',a.id);if(u.error)throw u.error;return next;}
 
 async function processAction(a:any,budget:{writes:number},refreshExisting=false){
+  const canonical=await db.from('pppp_opportunity_actions').select('*').eq('id',a.id).maybeSingle();if(canonical.error)throw canonical.error;if(canonical.data)a={...a,...canonical.data};
   let p=a.payload&&typeof a.payload==='object'?a.payload:{},tender=await tenderContext(a.tender_watch_id);
   const cs=await db.from('pppp_opportunity_communication_state_v1').select('communication_state,communication_at,communication_thread_id').eq('action_id',a.id).maybeSingle();
   if(cs.error)throw cs.error;
   if(['waiting','replied','contacted_history'].includes(text(cs.data?.communication_state,40).toLowerCase())){
     return{action_key:a.action_key,company:a.target_company,event:'communication_history_blocked',reason:cs.data.communication_state,communication_at:cs.data.communication_at||null,gmail_thread_id:cs.data.communication_thread_id||null,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired:0,remaining:0};
   }
+  const facts=Array.isArray(a.personalization_facts)?a.personalization_facts.filter((x:any)=>text(x,1200)):[];
+  if(text(a.outreach_engine_version,20)!=='v2'||text(a.workflow_state,80)!=='ready_for_outreach')return{action_key:a.action_key,company:a.target_company,event:'readiness_blocked',reason:'outreach_v2_candidate_not_ready',recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired:0,remaining:0};
+  if(Number(a.company_fit_score||0)<65||Number(a.commercial_timing_score||0)<35||Number(a.message_evidence_score||0)<60||facts.length<2)return{action_key:a.action_key,company:a.target_company,event:'readiness_blocked',reason:'outreach_v2_score_or_evidence_gate',recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired:0,remaining:0};
   const route=text(a.route,80).toUpperCase(),expected=/^TED_/i.test(route)?expectedTedRoute(tender):route;
   if(/^TED_/i.test(route)){
     const readiness=tedDraftReadiness(a,tender);
@@ -283,7 +287,9 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false)
       return{action_key:a.action_key,company:a.target_company,event:'readiness_blocked',reason:readiness.reason,route,recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired:0,remaining:0};
     }
   }
-  const recipients=/^TED_/i.test(route)?resolveTedDraftRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1);
+  const recipients=(/^TED_/i.test(route)?resolveTedDraftRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1)).slice(0,1);
+  if(recipients[0]){recipients[0].job_title=recipients[0].job_title||a.target_role||null;recipients[0].name=recipients[0].name||a.target_name||null;recipients[0].contact_tier=contactTier(recipients[0].email,recipients[0]);recipients[0].contact_quality_score=contactQualityScore(recipients[0].email,recipients[0]);}
+  if(recipients[0]&&Number(recipients[0].contact_quality_score||0)<50)recipients.splice(0,recipients.length);
   const keepEmails=new Set(recipients.map((r:any)=>normalizeEmail(r.email)));
   const retired=refreshExisting?await retireObsoleteDrafts(a,keepEmails,'recipient_no_longer_preflight_eligible',budget):0;
   if(!recipients.length){
@@ -337,13 +343,14 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false)
       }
       if(row.status!=='draft_created'){const sentMessage=await findSent(row);if(sentMessage){row=await markSent(row,sentMessage);sent++;continue;}}
       if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)continue;
-      const d=await writeDraft(a,tender,recipient,row),at=new Date().toISOString(),patch={status:'draft_created',recipient_name:recipient.name||null,gmail_draft_id:d.data.id||null,gmail_draft_message_id:d.data.message?.id||null,gmail_thread_id:d.data.message?.threadId||null,draft_created_at:at,last_checked_at:at,last_error:null,generator:GENERATOR,language:d.content.language,subject:d.content.subject,mime_type:'multipart/alternative',html:true,updated_at:at,payload:{...(row.payload||{}),tender_reference:d.content.tender_reference||null,tender_url:d.content.tender_url||null,refreshed_from_generator:wasRefresh?text(row.generator,200)||'unknown':null}};
+      const d=await writeDraft(a,tender,recipient,row),at=new Date().toISOString(),patch={status:'draft_created',outreach_engine_version:'v2',outreach_motion:a.outreach_motion,contact_tier:recipient.contact_tier,outreach_readiness_score:a.outreach_readiness_score,personalization_facts:facts.slice(0,4),recipient_name:recipient.name||null,gmail_draft_id:d.data.id||null,gmail_draft_message_id:d.data.message?.id||null,gmail_thread_id:d.data.message?.threadId||null,draft_created_at:at,last_checked_at:at,last_error:null,generator:GENERATOR,language:d.content.language,subject:d.content.subject,mime_type:'multipart/alternative',html:true,updated_at:at,payload:{...(row.payload||{}),outreach_engine_version:'v2',outreach_motion:a.outreach_motion,contact_quality_score:recipient.contact_quality_score,tender_reference:d.content.tender_reference||null,tender_url:d.content.tender_url||null,refreshed_from_generator:wasRefresh?text(row.generator,200)||'unknown':null}};
       const u=await db.from(REGISTRY).update(patch).eq('id',row.id).select('*').single();if(u.error){await deleteDraft(d.data.id||'');throw u.error;}row=u.data;created++;if(wasRefresh)refreshed++;budget.writes++;
     }catch(e){failures.push({email:normalizeEmail(recipient.email),error:text((e as any)?.message||e,500)});await markError(row,e);}
   }
   p=await persistActionState(a,p,recipients);
   const {data:rows,error}=await db.from(REGISTRY).select('recipient_email,status').eq('action_id',a.id);if(error)throw error;
   const current=rows||[],covered=recipients.filter((r:any)=>['draft_created','sent'].includes(current.find((x:any)=>x.recipient_email===normalizeEmail(r.email))?.status)).length;
+  const nextState=covered>=recipients.length?'draft_created':'ready_for_outreach';await db.from('pppp_opportunity_actions').update({workflow_state:nextState,contact_tier:recipients[0]?.contact_tier||a.contact_tier,contact_quality_score:recipients[0]?.contact_quality_score||a.contact_quality_score,target_email:recipients[0]?.email||a.target_email,target_name:recipients[0]?.name||a.target_name,target_role:recipients[0]?.job_title||a.target_role,updated_at:new Date().toISOString()}).eq('id',a.id);
   return{action_key:a.action_key,company:a.target_company,event:covered>=recipients.length?'outreach_ready':'outreach_partial',recipients:recipients.length,created,refreshed,preserved,sent,retired,covered,remaining:Math.max(0,recipients.length-covered),failures};
 }
 
@@ -361,6 +368,7 @@ async function run(limit=20,actionId='',refreshExisting=false){
       if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)break;
     }catch(e){errors.push({action_key:a.action_key,error:text((e as any)?.message||e,500)});}
   }
-  return{candidates:(data||[]).length,actions_ready:ready,actions_partial:partial,no_recipients:noRecipients,route_mismatch:routeMismatch,readiness_blocked:readinessBlocked,drafts_created:created,drafts_refreshed:refreshed,drafts_retired:retired,drafts_updated:0,drafts_preserved:preserved,sent_already:sent,draft_writes:budget.writes,failed:errors.length,errors:errors.slice(0,10),results:results.slice(0,50),generator:GENERATOR,registry:REGISTRY,write_policy:'registry_state_machine_v1',sent_match_policy:'thread_id_plus_pppp_headers',stable_headers:['X-PPPP-Outreach-ID','X-PPPP-Action-ID'],html:true,separate_draft_per_recipient:true,human_send_required:true,auto_send:false,refresh_existing:refreshExisting,max_contacts_per_action:MAX_CONTACTS_PER_ACTION,draft_write_budget_per_run:MAX_DRAFT_WRITES_PER_RUN};
+  return{candidates:(data||[]).length,actions_ready:ready,actions_partial:partial,no_recipients:noRecipients,route_mismatch:routeMismatch,readiness_blocked:readinessBlocked,drafts_created:created,drafts_refreshed:refreshed,drafts_retired:retired,drafts_updated:0,drafts_preserved:preserved,sent_already:sent,draft_writes:budget.writes,failed:errors.length,errors:errors.slice(0,10),results:results.slice(0,50),generator:GENERATOR,registry:REGISTRY,write_policy:'registry_state_machine_v1',sent_match_policy:'thread_id_plus_pppp_headers',stable_headers:['X-PPPP-Outreach-ID','X-PPPP-Action-ID'],html:true,separate_draft_per_recipient:true,human_send_required:true,auto_send:false,refresh_existing:refreshExisting,max_contacts_per_action:MAX_CONTACTS_PER_ACTION,draft_write_budget_per_run:MAX_DRAFT_WRITES_PER_RUN,outreach_engine_version:'v2'};
 }
 Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});const mode=await authorizationMode(req);if(!mode)return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:cors});try{const u=new URL(req.url);let body:any={};if(req.method==='POST'){try{body=await req.json();}catch{}}const limit=Number(body?.limit||u.searchParams.get('limit')||20),actionId=text(body?.action_id||u.searchParams.get('action_id')||'',80),refreshExisting=String(body?.refresh_existing??u.searchParams.get('refresh_existing')??'false').toLowerCase()==='true';if(mode==='user'&&!actionId)return new Response(JSON.stringify({ok:false,error:'action_id_required_for_user_request',auto_send:false,human_send_required:true}),{status:400,headers:cors});const out=await run(limit,actionId,refreshExisting);return new Response(JSON.stringify({ok:true,...out,authorization_mode:mode}),{headers:cors});}catch(e){return new Response(JSON.stringify({ok:false,error:text((e as any)?.message||e,1000),auto_send:false,human_send_required:true}),{status:500,headers:cors});}});
+
