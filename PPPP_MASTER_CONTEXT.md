@@ -61,7 +61,7 @@ Do not infer authority from filenames alone. Later layers may intentionally wrap
 
 ## 3.1 Mobile and tablet shell
 
-PPPP uses the same application, routes, backend and business owners across desktop, tablet and phone. `pristeel-mobile-responsive-v1.js` is a presentation/navigation-only responsive shell: it does not create a second mobile application, does not add Supabase reads/writes, does not poll, and does not own business state. On narrow screens it provides the mobile navigation and safe-area/layout adaptation while reusing the canonical six daily zones. Installable-app metadata is supplied through the existing `pristeel.webmanifest`; offline/service-worker caching remains deliberately deferred until responsive behavior is verified, to avoid stale-runtime risk.
+PPPP uses the same application, routes, backend and business owners across desktop, tablet and phone. `pristeel-mobile-responsive-v1.js` is a presentation/navigation-only responsive shell: it does not create a second mobile application, does not add Supabase reads/writes, does not poll, and does not own business state. Through 900px viewport width it provides the shared phone/tablet bottom navigation and safe-area/layout adaptation while reusing the canonical six daily zones. Installable-app metadata is supplied through the existing `pristeel.webmanifest`; offline/service-worker caching remains deliberately deferred until responsive behavior is verified, to avoid stale-runtime risk.
 
 ## 4. Daily operating model
 
