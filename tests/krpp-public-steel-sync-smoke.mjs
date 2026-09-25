@@ -65,4 +65,9 @@ assert.ok(genericMetal.relevance_score<35,'broad metal FPP alone must not create
 const relevant=prepareRelevantRows([trepca],'2026-08-14T07:00:00.000Z',35);
 assert.equal(relevant.length,1);
 assert.equal(relevant[0].payload.source,'KRPP');
+const gcKrpp=classifyKrppSteel({title:'Ndërtimi i objektit të ri të depos',fpp:'45000000-7',contract_type:'Punë'});
+assert.ok(gcKrpp.relevance_score>=35,'general construction KRPP tender must be retained for steel-package review');
+assert.equal(gcKrpp.category,'possible');
+const gcCandidate={detail_id:'7300',title:'Ndërtimi i objektit të ri të shkollës',notice_type:'B05',published_date:'2026-09-01'};
+assert.deepEqual(selectCandidates([gcCandidate],{recentDateCount:30,fullScanDateCount:0,maxCandidates:50}).map(x=>x.detail_id),['7300'],'general construction titles must be detail-checked outside the full-scan window');
 console.log('KRPP public steel sync smoke: OK');
