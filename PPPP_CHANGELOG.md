@@ -1,3 +1,10 @@
+## 2026-09-25 — Mobile/tablet shell v2
+
+- Extended the presentation-only bottom navigation and full-width shell from phone-only widths through 900px so tablets do not lose usable workspace to the desktop sidebar.
+- The tablet shell continues to delegate to the same canonical six PPPP routes and adds no Supabase reads/writes, polling, business-state ownership or outbound behavior.
+- Kept PWA installation metadata and the existing 192px/512px icons; no service-worker caching was added.
+- Updated smoke tests and runtime documentation so the <=900px phone/tablet contract is regression-protected.
+
 ## 2026-09-25 — PWA install icon hardening
 
 - Added 192×192 and 512×512 raster fallbacks derived from the approved PRISTEEL app icon for Chromium/PWA installation compatibility.
