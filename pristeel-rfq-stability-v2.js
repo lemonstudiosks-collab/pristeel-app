@@ -15,19 +15,11 @@ function safeRead(path){
 }
 function projectName(){var e=document.getElementById('i-projname');return String(e&&e.value||'');}
 function projectId(){return String(window._curProjId||window.__pstCurrentProjectId||'');}
-function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null}catch(e){return null}}
-async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow()}catch(e){return sessionNow()}}
 async function supplierGate(pid,supplier,email){
-  var base=String(window._SB_URL||'').replace(/\/$/,''),key=String(window._SB_KEY||'');if(!base||!key)throw new Error('Supabase runtime nuk eshte gati.');
-  var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
-  var p={p_project_id:pid||null,p_tender_watch_id:null,p_supplier_name:supplier||'',p_supplier_email:email||'',p_rfq_mode:'firm'};
-  async function run(t){return fetch(base+'/rest/v1/rpc/pppp_supplier_rfq_gate_v2',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(p)})}
-  var r=await run(token);if(r.status===401){s=await refreshSession();if(s&&s.access_token)r=await run(s.access_token)}
-  var raw=await r.text(),x=null;try{x=raw?JSON.parse(raw):null}catch(e){}
-  if(!r.ok)throw new Error('Supplier Gate HTTP '+r.status+': '+raw.slice(0,400));
-  return x||{allowed:false,reason:'empty_supplier_gate'};
+  if(typeof window.supaFetch!=='function')throw new Error('Supabase nuk eshte gati.');
+  var rows=await window.supaFetch('rpc/pppp_supplier_rfq_gate_v2','POST',{p_project_id:pid||null,p_tender_watch_id:null,p_supplier_name:supplier||'',p_supplier_email:email||'',p_rfq_mode:'firm'});
+  return rows&&Array.isArray(rows)?rows[0]||{}:rows||{};
 }
-
 function decode(v){try{return decodeURIComponent(v||'');}catch(e){return String(v||'');}}
 function bodyDecode(v){try{return decodeURIComponent(escape(atob(v||'')));}catch(e){return'';}}
 function recentEnough(v){var t=v?new Date(v).getTime():0;return !!t&&(Date.now()-t)<120000;}
