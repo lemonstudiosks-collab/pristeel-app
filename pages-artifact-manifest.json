@@ -217,6 +217,14 @@
     {
       "path": "assets/pristeel-app-icon.svg",
       "reason": "Canonical PRISTEEL app/PWA icon used by the primary application and web manifest."
+    },
+    {
+      "path": "assets/pristeel-app-icon-192.png",
+      "reason": "192×192 raster fallback for Chromium/PWA installation and Apple home-screen icon rendering."
+    },
+    {
+      "path": "assets/pristeel-app-icon-512.png",
+      "reason": "512×512 raster fallback for Chromium/PWA installation and launcher/splash rendering."
     }
   ],
   "compatibilityPublicAssets": [

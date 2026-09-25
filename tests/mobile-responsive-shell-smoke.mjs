@@ -4,6 +4,8 @@ function assert(cond,msg){if(!cond)throw new Error(msg);}
 const html=fs.readFileSync('pristeel-procurement.html','utf8');
 const js=fs.readFileSync('pristeel-mobile-responsive-v1.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('pristeel.webmanifest','utf8'));
+assert(fs.existsSync('assets/pristeel-app-icon-192.png'),'192px raster icon file missing');
+assert(fs.existsSync('assets/pristeel-app-icon-512.png'),'512px raster icon file missing');
 
 assert((html.match(/pristeel-mobile-responsive-v1\.js/g)||[]).length===1,'mobile runtime must be loaded exactly once');
 assert(/rel="manifest"\s+href="pristeel\.webmanifest"/.test(html),'web manifest must be linked');
@@ -24,5 +26,9 @@ for(const key of ['home','tenders','projects','contacts','finance','apps']){
 }
 assert(js.includes('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'), 'mobile navigation must delegate to canonical nav');
 assert(manifest.display==='standalone','manifest must use standalone display');
+assert(manifest.prefer_related_applications===false,'manifest must keep web-app installation primary');
+assert(manifest.icons.some(i=>i.src==='assets/pristeel-app-icon-192.png'&&i.sizes==='192x192'),'manifest needs 192px raster icon');
+assert(manifest.icons.some(i=>i.src==='assets/pristeel-app-icon-512.png'&&i.sizes==='512x512'),'manifest needs 512px raster icon');
+assert(html.includes('rel="apple-touch-icon"'),'iOS touch icon metadata missing');
 assert(typeof manifest.start_url==='string'&&manifest.start_url.includes('pristeel-procurement.html'),'manifest start_url must open PPPP');
 console.log('mobile-responsive-shell-smoke: ok');
