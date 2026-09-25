@@ -57,6 +57,11 @@ assert.match(edge,/match_method:"material_trade_promotion"/,'Promotion must link
 assert.match(edge,/match_confidence:100/,'Promoted Gmail thread links must be exact/high-confidence');
 assert.match(edge,/pppp_global_communication_guard_v1/,'buyer outreach must use the shared global communication guard');
 assert.match(edge,/pppp_dach_steel_contact_resolution_v1/,'buyer contact resolution must remain canonical');
+assert.match(ui,/rfqUnlocked=!!S\(r\.project_id\)&&lifecycle\(r\)==='replied'/,'Material Trade must unlock supplier RFQ only after buyer reply and Project promotion');
+assert.match(ui,/RFQ pas reply → Project/,'cold Material Trade targets must show supplier RFQ as locked');
+assert.match(ui,/vetëm discovery\/read-only i furnitorëve/,'Material Trade supplier discovery must remain read-only before client signal');
+assert.match(edge,/supplier_rfq_gate_blocked:client_signal_or_project_required/,'Material Trade Edge must block supplier RFQ without a real project');
+assert.match(edge,/pppp_supplier_rfq_gate_v1/,'Material Trade Edge must enforce the canonical Supplier RFQ Gate');
 assert.match(edge,/async function existingSupplierRfq/,'supplier RFQ dedupe guard must exist');
 assert.match(edge,/\.from\("rfq_log"\)/,'supplier RFQ dedupe must respect canonical project RFQ history where relevant');
 assert.match(edge,/\{in:sent in:drafts\} to:/,'supplier RFQ dedupe must inspect Gmail sent/draft history');
