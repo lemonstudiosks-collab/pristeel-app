@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v15-outbound-sales-v2";
+const V="pppp-dach-steel-draft-generator-v16-commercial-engine-v3";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -227,12 +227,12 @@ function buyerTextV2(tg:any,signatureHtml=""){
  const subject=future?(de?company+" – Lieferantenqualifizierung Stahl | PRISTEEL":bcs?company+" – kvalifikacija dobavljača čelika | PRISTEEL":company+" – future steel supplier qualification | PRISTEEL"):(de?anchor+" – Stahlmaterial-Beschaffung | PRISTEEL":bcs?anchor+" – nabavka čeličnog materijala | PRISTEEL":anchor+" – steel material procurement | PRISTEEL");
  const hello=de?"Guten Tag,":bcs?"Poštovani,":"Hello,";
  const intro=future?(de?"wir verstehen, dass der aktuelle Beschaffungsumfang möglicherweise bereits abgedeckt ist. Für künftige Stahlbau- und Materialpakete möchten wir prüfen, ob PRISTEEL in Ihren Lieferantenprozess passt.":bcs?"razumijemo da je trenutni paket možda već pokriven. Za buduće pakete čeličnih konstrukcija i materijala želimo provjeriti da li PRISTEEL odgovara Vašem procesu kvalifikacije dobavljača.":"We understand the current package may already be covered. For future structural-steel and material packages, we would like to check whether PRISTEEL fits your supplier-qualification process."):(de?"wir melden uns mit Bezug auf zwei konkrete, öffentlich verifizierte Punkte:":bcs?"javljamo Vam se na osnovu dvije konkretne, javno provjerene činjenice:":"We are reaching out based on two specific, publicly verified facts:");
- const capability=de?"PRISTEEL koordiniert projektbezogene Stahlmaterial-Lieferungen und DAP-Logistik über ein qualifiziertes Lieferantennetzwerk.":bcs?"PRISTEEL koordinira projektne isporuke čeličnog materijala i DAP logistiku putem kvalifikovane mreže dobavljača.":"PRISTEEL coordinates project-specific steel-material supply and DAP logistics through a qualified supplier network.";
- const cta=future?(de?"Wäre es hilfreich, wenn ich Ihnen eine einseitige Leistungsübersicht zur internen Prüfung sende?":bcs?"Da li bi bilo korisno da Vam pošaljem pregled naših kapaciteta na jednoj stranici za internu provjeru?":"Would it be useful if I sent a one-page capability summary for internal review?"):(de?"Ist die Materialbeschaffung noch offen, sodass ein kurzer Abgleich sinnvoll wäre?":bcs?"Da li je nabavka materijala još otvorena, tako da bi kratak razgovor bio koristan?":"Is the material procurement still open, so that a short fit check would be useful?");
+ const capability=de?"PRISTEEL ist die technische und kaufmännische Schnittstelle für projektbezogene Stahlbeschaffung – von Materialanforderung und Dokumentation bis zu optionaler Bearbeitung und koordinierter DAP-Lieferung.":bcs?"PRISTEEL je tehničko-komercijalna veza za projektnu nabavku čelika – od zahtjeva za materijalom i dokumentacije do opcionalne obrade i koordinirane DAP isporuke.":"PRISTEEL acts as the technical and commercial interface for project-specific steel procurement, coordinating material requirements, documentation, optional processing and DAP delivery.";
+ const cta=future?(de?"Wer ist bei Ihnen für die Qualifizierung künftiger Lieferanten für Stahlmaterial zuständig?":bcs?"Ko je kod Vas zadužen za kvalifikaciju budućih dobavljača čeličnog materijala?":"Who handles qualification of future steel-material suppliers in your organization?"):(de?"Wird diese Materialkategorie von Ihnen betreut, und wäre ein Vergleichspreis für eine aktuelle Position hilfreich?":bcs?"Da li Vi vodite nabavku ove kategorije materijala i da li bi Vam koristila uporedna cijena za jednu aktuelnu poziciju?":"Is this material category handled by you, and would a benchmark quotation for one current position be useful?");
  const close=de?"Mit freundlichen Grüßen":bcs?"Srdačan pozdrav,":"Kind regards,";
  const body=[hello,"",intro,"","• "+facts[0],"• "+facts[1],"",capability,"",cta,"",close,"",signature].join("\n");
  const html='<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>'+htmlEsc(hello)+'</p><p>'+htmlEsc(intro)+'</p><ul><li>'+htmlEsc(facts[0])+'</li><li>'+htmlEsc(facts[1])+'</li></ul><p>'+htmlEsc(capability)+'</p><p><strong>'+htmlEsc(cta)+'</strong></p><p>'+htmlEsc(close)+'</p>'+sig+'</div>';
- return{subject,body,html_body:html,approach_mode:future?"future_supplier_qualification":"material_buyer",language:lang,personalization_facts:facts.slice(0,2)};
+ return{subject,body,html_body:html,approach_mode:future?"future_supplier_qualification":"material_buyer",offer_model:future?"future_supplier_qualification":"material_supply",language:lang,personalization_facts:facts.slice(0,2)};
 }
 function supplierText(tg:any,c:any){const p=t(tg?.project_title||tg?.company_name,500),m=mat(tg),ind=tg?.quote_readiness!=="M3",de=nm(c?.contact_language).startsWith("de");if(de){const subject=(ind?"Indikative RFQ":"RFQ")+" | "+p,body=["Guten Tag,","",'wir prüfen derzeit die Stahlmaterialbeschaffung für das Projekt „'+p+'“.',"",ind?"Die nachstehenden Mengen basieren derzeit auf veröffentlichten Projektinformationen und sind bis zum Erhalt der finalen BOQ / Materialliste als indikativ zu behandeln:":"Die nachstehenden Positionen basieren auf der verfügbaren Materialliste:","",...m,"","Bitte teilen Sie uns – soweit mit den verfügbaren Angaben möglich – Preis / Einheitspreise, Verfügbarkeit, Lieferzeit, Materialzeugnis EN 10204 3.1, Ursprungsland, Incoterm, Angebotsgültigkeit und Zahlungsbedingungen mit.","",ind?"Die finale Anfrage mit bestätigten Güten, Abmessungen und Mengen folgt nach Erhalt der aktuellen BOQ.":"Bitte kennzeichnen Sie technische Abweichungen eindeutig.","","Mit freundlichen Grüßen",signature].join("\n");return{subject,body};}const subject=(ind?"Indicative RFQ":"RFQ")+" | "+p,body=["Dear Sir or Madam,","",'we are currently reviewing the steel material procurement for the project “'+p+'”.',"",ind?"The quantities below are based on published project information and must be treated as indicative until the final BOQ / material list is received:":"The positions below are based on the available material list:","",...m,"","Please provide, where possible with the currently available information, your price / unit prices, availability, lead time, EN 10204 3.1 certification, country of origin, Incoterm, quotation validity and payment terms.","",ind?"A final RFQ with confirmed grades, dimensions and quantities will follow after receipt of the current BOQ.":"Please identify any technical deviations clearly.","","Kind regards,",signature].join("\n");return{subject,body};}
 function requirement(tg:any){const m=tg?.material_scope&&typeof tg.material_scope==="object"?tg.material_scope:{},a=Array.isArray(m.line_items)?m.line_items:[],f:string[]=[],g:string[]=[],s:string[]=[];for(const x of a){const z=[[x?.family,f],[x?.grade,g],[x?.standard,s]] as any;for(const y of z){const v=t(y[0],140);if(v&&!y[1].includes(v))y[1].push(v);}}return{family:f[0]||"structural steel",product_type:f[0]||"structural steel",description:t(tg?.steel_scope,5000),grades:g,standards:s};}
@@ -256,7 +256,7 @@ function relevance(tg:any,contact:any){
  const base=tg?.score_band==="A1"?95:tg?.score_band==="A2"?85:tg?.score_band==="B1"?72:tg?.score_band==="B2"?62:45;
  return Math.max(0,Math.min(100,base+Math.min(5,Math.floor(Number(contact?.score||0)/30))));
 }
-async function supplierCandidate(tg:any,e:string){const q=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(tg),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:20});if(q.error)throw q.error;const rr=Array.isArray(q.data?.requirements)?q.data.requirements[0]:null,a=Array.isArray(rr?.candidates)?rr.candidates:[],c=a.find((x:any)=>em(x?.email)===e);if(!c)throw new Error("supplier_not_in_current_intelligence_candidates");if(!c.strict_fit&&!c.review_fit)throw new Error("supplier_candidate_not_fit_for_draft");return c;}
+async function supplierCandidate(tg:any,e:string){const q=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(tg),p_project_id:uuid(tg?.project_id)?tg.project_id:null,p_min_qualified:3,p_threshold:70,p_limit:20});if(q.error)throw q.error;const rr=Array.isArray(q.data?.requirements)?q.data.requirements[0]:null,a=Array.isArray(rr?.candidates)?rr.candidates:[],c=a.find((x:any)=>em(x?.email)===e);if(!c)throw new Error("supplier_not_in_current_intelligence_candidates");if(!c.strict_fit&&!c.review_fit)throw new Error("supplier_candidate_not_fit_for_draft");return c;}
 async function guards(tg:any,q:any,e:string){
  if(tg?.company_domain&&nm(tg.company_domain)!==nm(dom(e)))throw new Error("recipient_domain_mismatch");
  if(q?.sent_at)throw new Error("buyer_outreach_already_sent");
@@ -318,7 +318,7 @@ async function buyerDraft(tg:any,u:any){
    approach_mode:ct.approach_mode,target_source_key:tg.source_key,subject:ct.subject,
    quote_readiness:tg.quote_readiness,why_now:tg.why_now,steel_scope:tg.steel_scope,country:tg.country,
    contact_resolution:{email:e,person:contact.person||null,role:contact.role||null,source:contact.source||null,quality:contact.quality||null,score:contact.score||0},
-   outreach_engine_version:"v2",outreach_motion:ct.approach_mode,personalization_facts:ct.personalization_facts,
+   outreach_engine_version:"v2",outreach_motion:ct.approach_mode,pristeel_offer_model:ct.offer_model,personalization_facts:ct.personalization_facts,
    draft_generated_by:V,draft_generated_by_user:u.id,draft_generated_at:now
   };
   let row:any;
@@ -360,7 +360,7 @@ async function buyerDraft(tg:any,u:any){
    company_domain:tg.company_domain||contact.company_domain||dom(e),
    canonical_contact_email:e,canonical_contact_name:contact.person||null,canonical_contact_role:contact.role||null,
    contact_tier:tier,contact_quality_score:contactScore,outreach_engine_version:"v2",workflow_state:"draft_created",
-   outreach_motion:ct.approach_mode,personalization_facts:ct.personalization_facts,
+   outreach_motion:ct.approach_mode,pristeel_offer_model:ct.offer_model,personalization_facts:ct.personalization_facts,
    contact_status:"found",outreach_status:"queued",outbound_source_key:key,
    next_action:"Review Gmail draft and shared outbound preflight; sending remains human-approved.",updated_at:now
   }).eq("id",tg.id);
@@ -394,12 +394,17 @@ async function existingSupplierRfq(tg:any,recipient:any){
  return null;
 }
 async function supplierDraft(tg:any,b:any,u:any){
- const e=safe(b?.supplier_email),c=await supplierCandidate(tg,e),existing=await existingSupplierRfq(tg,e);
+ const e=safe(b?.supplier_email),c=await supplierCandidate(tg,e),supplierName=t(c?.name||b?.supplier_name,300);
+ if(!uuid(tg?.project_id))throw new Error("supplier_rfq_gate_blocked:client_signal_or_project_required");
+ const rfqMode=nm(b?.rfq_mode)==="requote"?"requote":(tg.quote_readiness==="M3"?"firm":"budgetary");
+ const gate=await db.rpc("pppp_supplier_rfq_gate_v1",{p_project_id:tg.project_id,p_supplier_name:supplierName,p_supplier_email:e,p_rfq_mode:rfqMode});
+ if(gate.error)throw gate.error;
+ if(!gate.data?.allowed)throw new Error("supplier_rfq_gate_blocked:"+t(gate.data?.reason||"not_allowed",180));
+ const existing=await existingSupplierRfq(tg,e);
  if(existing?.kind==="sent")throw new Error("supplier_rfq_already_sent_for_target");
  if(existing?.kind==="registered")throw new Error("supplier_rfq_already_registered_for_project");
- if(existing?.kind==="draft")return{created:false,reused:true,recipient:e,supplier_name:c.name||b?.supplier_name||null,subject:existing.subject||null,quote_readiness:tg.quote_readiness,rfq_mode:tg.quote_readiness==="M3"?"final":"indicative",gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(existing.thread_id||existing.id),created_by:u.id};
- const ct=supplierText(tg,c),d=await draft(e,ct.subject,ct.body,{"X-PPPP-DACH-Target-ID":t(tg.id,80),"X-PPPP-DACH-Source-Key":t(tg.source_key,500),"X-PPPP-DACH-Supplier-RFQ":tg.quote_readiness==="M3"?"final":"indicative"});
- return{created:true,draft:d,recipient:e,supplier_name:c.name||b?.supplier_name||null,subject:ct.subject,quote_readiness:tg.quote_readiness,rfq_mode:tg.quote_readiness==="M3"?"final":"indicative",gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(d.thread_id||d.message_id),created_by:u.id};
+ if(existing?.kind==="draft")return{created:false,reused:true,delegated_to_project_workflow:true,project_id:tg.project_id,recipient:e,supplier_name:supplierName,subject:existing.subject||null,rfq_mode:rfqMode,gate,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(existing.thread_id||existing.id),created_by:u.id};
+ return{created:false,delegated_to_project_workflow:true,project_id:tg.project_id,recipient:e,supplier_name:supplierName,rfq_mode:rfqMode,gate,message:"Supplier fit is confirmed. Create/review the supplier RFQ from the canonical Project workflow so it is logged, reconciled and protected by the Supplier RFQ Gate.",created_by:u.id};
 }
 
 async function promoteProject(tg:any,b:any,u:any){
