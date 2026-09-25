@@ -3,7 +3,7 @@
 'use strict';
 var files=[
   'pristeel-auth-persistence.js?v=20260916-project-cutover1',
-  'pristeel-login-brand-v1.js?v=20260812-readable1',
+  'pristeel-login-brand-v1.js?v=20260925-single-login1',
   'pristeel-login-transition-v2.js?v=20260809-identity1',
   'pristeel-project-identity-lock-v1.js?v=20260809-1',
   'pristeel-project-reference-v1.js?v=20260812-3',
@@ -155,7 +155,7 @@ var files=[
   'pristeel-primary-nav-resilience-v1.js?v=20260924-layout-stability2',
   'pristeel-project-execution-guard-v1.js?v=20260829-postaward1',
   'pristeel-creative-ui-v1.js?v=20260911-fullredesign4',
-  'pristeel-home-morning-command-center-v1.js?v=20260925-morning-command-center1',
+  'pristeel-home-morning-command-center-v1.js?v=20260925-morning-command-center2',
   'pristeel-ui-runtime-stability-v1.js?v=20260925-foundation-stability1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
