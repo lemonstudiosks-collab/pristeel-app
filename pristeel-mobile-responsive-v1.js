@@ -30,10 +30,10 @@ function installCss(){
   body #app-sidebar,
   body #pst-v2-sidebar,
   body #pst-ws-sidebar,
-  body .sidebar{display:none!important}
+  body #app-shell-root>.sidebar,
+  body .app-shell>.sidebar{display:none!important}
   body #app-shell-root>.main,
-  body .app-shell>.main,
-  body .main{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important}
+  body .app-shell>.main{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important}
   body .content{max-width:100%!important;min-width:0!important;padding-left:12px!important;padding-right:12px!important;padding-bottom:calc(88px + env(safe-area-inset-bottom))!important}
   body .topbar{max-width:100%!important;min-width:0!important;padding-left:12px!important;padding-right:12px!important;gap:8px!important;flex-wrap:wrap!important}
   body .page{max-width:100%!important;min-width:0!important}
