@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 155,
-  "sequenceSha256": "3b06566f780678a43564448eb8c86dee3e6e4f4a34dc533bec124325def5a6e0",
+  "sequenceSha256": "53feb01c4fc2e90ec55e14eebafe7bfc50a4eb042c1bf8f86f6f5005c2871149",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260925-single-login1",
@@ -159,6 +159,6 @@
     "pristeel-project-execution-guard-v1.js?v=20260829-postaward1",
     "pristeel-creative-ui-v1.js?v=20260911-fullredesign4",
     "pristeel-home-morning-command-center-v1.js?v=20260925-morning-command-center2",
-    "pristeel-ui-runtime-stability-v1.js?v=20260925-foundation-stability1"
+    "pristeel-ui-runtime-stability-v1.js?v=20260925-no-page-clone1"
   ]
 }

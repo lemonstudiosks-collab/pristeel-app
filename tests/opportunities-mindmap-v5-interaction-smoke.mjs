@@ -51,7 +51,8 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260924-contacted-stack3','stacked contacted-company Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260925-bounded-render1','bounded contacted-company Opportunity Desk must own the visible presentation');
+assert.doesNotMatch(deskSrc,/new\s+MutationObserver|\.replaceWith\(next\)/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 assert(focus.classList.contains('pst-opp-dashboard'),'Opportunities stays on one working surface');
 assert(!focus.classList.contains('pst-opp-result-page'),'filters must not navigate to separate result pages');
@@ -93,8 +94,12 @@ assert.equal(rows.find(r=>r.id==='ted-gc').project_id,undefined,'creating a draf
 
 const producerRow=window.document.querySelector('[data-pst-opp-select="ted-producer"]');
 assert(producerRow,'another uncontacted TED company must remain available');
+const deskNodeBefore=window.document.getElementById('pst-opp-desk');
+const sideNodeBefore=window.document.querySelector('.pst-opp-side');
 producerRow.click();
 await new Promise(r=>setTimeout(r,25));
+assert.strictEqual(window.document.getElementById('pst-opp-desk'),deskNodeBefore,'selecting an Opportunity must preserve the visible desk node');
+assert.strictEqual(window.document.querySelector('.pst-opp-side'),sideNodeBefore,'selecting an Opportunity must preserve an unchanged filter column');
 assert.match(window.document.querySelector('.pst-opp-detail').textContent,/Example Steel AG/,'clicking a company must hydrate its right-side details');
 assert(window.document.querySelector('[data-pst-opp-draft="ted-producer"]'),'uncontacted TED company with verified email must expose Krijo draft emaili');
 assert(window.document.querySelector('[data-pst-opp-open="ted-producer"]'),'uncontacted TED company must expose the tender-analysis action before outreach');

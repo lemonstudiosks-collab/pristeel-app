@@ -1,7 +1,7 @@
-/* PRISTEEL global UI runtime stability v2
- * Keeps the current route visually frozen until the destination has completed
- * its first stable layout. Prevents empty intermediate pages, size jumps and
- * transform-based click/hover motion without changing business behavior.
+/* PRISTEEL global UI runtime stability v3
+ * Observes normal route clicks and suppresses layout animation while the
+ * destination settles. It never clones the current page, duplicates DOM ids,
+ * cancels the original event or replays a synthetic click.
  */
 (function(){
 'use strict';
@@ -9,7 +9,6 @@ if(window.__pstUiRuntimeStabilityV1)return;
 window.__pstUiRuntimeStabilityV1=true;
 
 var root=document.documentElement;
-var replaying=false;
 var running=null;
 var sequence=0;
 var ROUTE_SELECTOR=[
@@ -33,7 +32,7 @@ html{scrollbar-gutter:stable!important;scroll-behavior:auto!important}
 html,body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
 body{min-width:0;overflow-y:scroll;overflow-anchor:none}
 html.pst-ui-route-transitioning,html.pst-ui-route-transitioning body{scroll-behavior:auto!important;overflow-anchor:none!important}
-html.pst-ui-route-transitioning #app-shell-root{pointer-events:none!important}
+html.pst-ui-route-transitioning #app-shell-root{cursor:progress}
 html.pst-runtime-ready #app-shell-root,
 html.pst-runtime-ready #app-shell-root *,
 html.pst-runtime-ready #app-shell-root *::before,
@@ -56,7 +55,6 @@ html.pst-runtime-ready #app-shell-root [class*="row"]:hover,
 html.pst-runtime-ready #app-shell-root .pst-panel:hover,
 html.pst-runtime-ready #app-shell-root .pst-kpi:hover,
 html.pst-runtime-ready #app-shell-root .pst-project:hover{transform:none!important;scale:1!important}
-.pst-ui-stability-clone{position:fixed!important;z-index:2147481800!important;margin:0!important;overflow:hidden!important;pointer-events:none!important;contain:paint!important;background:#F7F6F3!important}
 `;
   document.head.appendChild(s);
 }
@@ -73,9 +71,7 @@ function activePage(){
 function signature(page){
   if(!page)return 'none';
   var text=String(page.textContent||'').replace(/\s+/g,' ').trim();
-  var rect={height:0,width:0};
-  try{rect=page.getBoundingClientRect();}catch(e){}
-  return [page.id||'',text.length,Math.round(rect.width),Math.round(rect.height),page.children.length].join('|');
+  return [page.id||'',text.length,page.children.length].join('|');
 }
 function loading(page){
   var text=String(page&&page.textContent||'').replace(/\s+/g,' ').trim();
@@ -93,58 +89,21 @@ function waitForStable(before,beforeSignature,token){
       var page=activePage(),sig=signature(page),changed=page!==before||sig!==beforeSignature;
       if(changed&&!loading(page)&&sig===last)stableFrames++;else stableFrames=0;
       last=sig;
-      if(stableFrames>=2||Date.now()-started>1200){twoFrames(function(){resolve(true);});return;}
+      if(stableFrames>=2||Date.now()-started>900){twoFrames(function(){resolve(true);});return;}
       (window.requestAnimationFrame||function(cb){return setTimeout(cb,16);})(check);
     }
     (window.requestAnimationFrame||function(cb){return setTimeout(cb,16);})(check);
   });
 }
-function makeFallbackClone(page){
-  if(!page||!page.cloneNode)return null;
-  var rect=page.getBoundingClientRect(),clone=page.cloneNode(true);
-  clone.classList.remove('page');
-  clone.classList.add('pst-ui-stability-clone');
-  clone.style.setProperty('top',rect.top+'px','important');
-  clone.style.setProperty('left',rect.left+'px','important');
-  clone.style.setProperty('width',Math.max(1,rect.width)+'px','important');
-  clone.style.setProperty('height',Math.max(1,rect.height)+'px','important');
-  try{
-    var cs=window.getComputedStyle(page);
-    clone.style.setProperty('font-family',cs.fontFamily,'important');
-    clone.style.setProperty('font-size',cs.fontSize,'important');
-    clone.style.setProperty('line-height',cs.lineHeight,'important');
-    clone.style.setProperty('color',cs.color,'important');
-    clone.style.setProperty('background-color',cs.backgroundColor,'important');
-  }catch(e){}
-  try{
-    clone.scrollTop=page.scrollTop;clone.scrollLeft=page.scrollLeft;
-    var sourceScrollers=page.querySelectorAll('*'),cloneScrollers=clone.querySelectorAll('*');
-    for(var i=0;i<sourceScrollers.length&&i<cloneScrollers.length;i++){
-      if(sourceScrollers[i].scrollTop)cloneScrollers[i].scrollTop=sourceScrollers[i].scrollTop;
-      if(sourceScrollers[i].scrollLeft)cloneScrollers[i].scrollLeft=sourceScrollers[i].scrollLeft;
-    }
-  }catch(e){}
-  clone.setAttribute('aria-hidden','true');
-  (document.getElementById('app-shell-root')||document.body||document.documentElement).appendChild(clone);
-  return clone;
-}
-function replay(trigger){
-  replaying=true;
-  try{trigger.click();}finally{replaying=false;}
-}
-function finish(token,clone){
-  if(clone&&clone.parentNode)clone.remove();
+function finish(token){
   if(token===sequence){running=null;root.classList.remove('pst-ui-route-transitioning');}
 }
-function begin(trigger){
-  if(running)return false;
+function begin(){
   installCss();
   var before=activePage(),beforeSignature=signature(before),token=++sequence;
   root.classList.add('pst-ui-route-transitioning');
-  var clone=makeFallbackClone(before);
-  running={fallback:true};
-  replay(trigger);
-  waitForStable(before,beforeSignature,token).then(function(){finish(token,clone);},function(){finish(token,clone);});
+  running={token:token};
+  waitForStable(before,beforeSignature,token).then(function(){finish(token);},function(){finish(token);});
   return true;
 }
 function routeTrigger(target){
@@ -152,10 +111,9 @@ function routeTrigger(target){
   return target.closest(ROUTE_SELECTOR);
 }
 function capture(e){
-  if(replaying||e.defaultPrevented||(typeof e.button==='number'&&e.button!==0)||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+  if(e.defaultPrevented||(typeof e.button==='number'&&e.button!==0)||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
   var trigger=routeTrigger(e.target);if(!trigger||trigger.disabled)return;
-  e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
-  begin(trigger);
+  begin();
 }
 
 installCss();

@@ -68,12 +68,15 @@ Shell/current reconciler layers:
 - `pristeel-ui-corrections-v2.js`
 - `pristeel-task-source-actions-v1.js`
 - `pristeel-redesign-finalizer-v1.js`
+- `pristeel-ui-runtime-stability-v1.js` (bounded route-settling observer; never a page snapshot or router owner)
 
 **Final cross-area presentation/navigation layer:**
 
 - `pristeel-operating-experience-v1.js`
 
 `pristeel-task-source-actions-v1.js` remains the safe shell/source-shortcut reconciler. `pristeel-operating-experience-v1.js` is loaded dynamically by the redesign finalizer and applies only bounded presentation/navigation changes. It performs no Supabase reads/writes and no outbound actions.
+
+`pristeel-ui-runtime-stability-v1.js` does not intercept or replay navigation. It observes protected route clicks, disables layout animation during the short settling window, and releases automatically when the destination has stable content. It must not clone a page, duplicate ids, or install another route owner.
 
 Primary daily business zones are now:
 

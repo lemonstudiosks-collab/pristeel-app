@@ -2,6 +2,16 @@
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
+## 2026-09-25
+
+### Navigation and Opportunities rendering stabilized without page snapshots
+
+- The global route-stability layer no longer clones the active page, duplicates its DOM ids, cancels the canonical click or replays a synthetic click. It now observes the normal route transaction and temporarily suppresses layout animation while the destination settles.
+- Route readiness signatures no longer call `getBoundingClientRect()` on every animation frame, removing a forced-layout loop from every protected navigation click.
+- The Opportunities Desk no longer uses a subtree `MutationObserver`, no longer replaces the complete visible desk, and no longer performs delayed 80/240 ms scroll corrections. Canonical workflow events trigger bounded column-level reconciliation instead.
+- Passive startup and `pageshow` handling no longer load Project Command data unless Project Workspace is active and has an explicit project id.
+- No Supabase schema/data, business workflow, Gmail behavior, external action or human approval boundary changed.
+
 ## 2026-09-24
 
 ### External procurement access limited to one morning attempt per source
