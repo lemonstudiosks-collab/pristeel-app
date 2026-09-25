@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "63645140832028bbafdab3905c65828721d29b91"
+    "bootstrapGitBlobSha": "689a2e0278f68fe7d6d08e529c6cdcf33aade85f"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -54,7 +54,7 @@
         "pristeel-operating-experience-v1.js",
         "pristeel-primary-nav-resilience-v1.js"
       ],
-      "note": "Workspace Architecture provides the shell. Native UI v3 is the early presentation owner loaded before the ordered runtime so approved colors and Home become visible without waiting for the full bootstrap. Existing navigation and business engines remain authoritative."
+      "note": "Workspace Architecture provides the shell. Native UI v3 is the early presentation owner loaded before the ordered runtime so approved colors and Home become visible without waiting for the full bootstrap. UI Runtime Stability observes route settling without cloning pages, duplicating ids, intercepting clicks or owning routing. Existing navigation and business engines remain authoritative."
     },
     {
       "area": "home",

@@ -12,8 +12,8 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260924-contacted-stack3';
-var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,observer=null,observerRoot=null,scheduled=false,decorating=false,selectedId='',contactedExpanded=false,sortDirection='desc';
+var VERSION='20260925-bounded-render1';
+var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,scheduled=false,decorating=false,selectedId='',contactedExpanded=false,sortDirection='desc';
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
 var SOURCE_ICON={TED:'EU',KRPP:'KS',APP_AL:'AL',MCA_KOSOVO:'MCA',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EB',WORLD_BANK:'WB',UNGM:'UN',EU_OFFICE_KOSOVO:'EU'};
@@ -240,6 +240,20 @@ function deskHtml(c){
  var active=activeRows(),contacted=contactedRows(),sel=selectedRow();
  return'<section id="pst-opp-desk" class="pst-opp-workdesk">'+sideFilters(c)+'<main>'+activePanel(active)+'</main><aside class="pst-opp-work-right">'+detailPanel(sel)+contactedPanel(contacted)+'</aside></section>';
 }
+function deskNode(html){var wrap=document.createElement('div');wrap.innerHTML=html;return wrap.firstElementChild;}
+function patchDesk(focus,c){
+ var html=deskHtml(c),desk=focus.querySelector('#pst-opp-desk'),next=deskNode(html);
+ if(!next)return null;
+ if(!desk){var anchor=focus.querySelector('#pst-pcw-lifecycle-tabs')||focus.querySelector('#pst-opportunities-list');focus.insertBefore(next,anchor);return next;}
+ var currentChildren=Array.prototype.slice.call(desk.children),nextChildren=Array.prototype.slice.call(next.children);
+ for(var i=0;i<nextChildren.length;i++){
+   var currentChild=currentChildren[i],nextChild=nextChildren[i];
+   if(!currentChild){desk.appendChild(nextChild);continue;}
+   if(currentChild.outerHTML!==nextChild.outerHTML)currentChild.replaceWith(nextChild);
+ }
+ while(desk.children.length>nextChildren.length)desk.lastElementChild.remove();
+ return desk;
+}
 function resultHead(focus){
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return;
  var rows=filteredRows(),visible=list.querySelectorAll('[data-pcw-tender]').length,h=focus.querySelector('.pst-opp-results-head'),label=resultPage&&resultPage.title||'';
@@ -249,26 +263,21 @@ function resultHead(focus){
 }
 function decorate(){
  scheduled=false;var x=current(),page=document.getElementById('page-kek-tenders'),focus=page&&page.querySelector('#pst-opportunities-focus');if(!x||!state||!focus)return false;
- if(observer)observer.disconnect();decorating=true;
+ decorating=true;
  try{
-   resultPage=null;css();header(focus);tools(focus);var c=counts(),desk=focus.querySelector('#pst-opp-desk'),html=deskHtml(c);
+   resultPage=null;css();header(focus);tools(focus);var c=counts();
    focus.classList.add('pst-opp-dashboard');focus.classList.remove('pst-opp-result-page');
-   if(!desk){var anchor=focus.querySelector('#pst-pcw-lifecycle-tabs')||focus.querySelector('#pst-opportunities-list');var wrap=document.createElement('div');wrap.innerHTML=html;desk=wrap.firstChild;desk.dataset.pstOppDeskHtml=html;focus.insertBefore(desk,anchor);}else if(desk.dataset.pstOppDeskHtml!==html){var wrap2=document.createElement('div');wrap2.innerHTML=html;var next=wrap2.firstChild;next.dataset.pstOppDeskHtml=html;desk.replaceWith(next);}
+   patchDesk(focus,c);
    var rh=focus.querySelector('.pst-opp-results-head');if(rh)rh.remove();page.dataset.pstOpportunitiesDesk='contacted-workdesk1';return true;
- }finally{decorating=false;reconnectObserver();}
+ }finally{decorating=false;}
 }
 function schedule(){if(decorating||scheduled)return;scheduled=true;setTimeout(function(){if(!document.getElementById('pst-opportunities-focus')){scheduled=false;return;}decorate();},0);}
-function reconnectObserver(){if(!observer||!observerRoot||!observerRoot.isConnected)return;observer.observe(observerRoot,{childList:true,subtree:true});}
 function stableTop(){
  function top(){try{document.documentElement.scrollTop=0;document.body.scrollTop=0;}catch(ignore){}try{window.scrollTo({top:0,left:0,behavior:'auto'});}catch(e){try{window.scrollTo(0,0);}catch(x){}}}
  top();
  var raf=window.requestAnimationFrame||function(fn){return setTimeout(fn,16);};
- raf(function(){top();raf(top);});
- /* Canonical Opportunity rendering can finish after the captured click. Re-settle
-    after that hand-off so the removed category card cannot leave an 80px offset. */
- [0,80,240].forEach(function(ms){setTimeout(top,ms);});
+ raf(top);
 }
-function observe(){var root=document.getElementById('pst-opportunities-focus');if(!root||typeof MutationObserver!=='function')return;if(observer)observer.disconnect();observerRoot=root;if(!observer)observer=new MutationObserver(function(){if(!decorating)schedule();});reconnectObserver();}
 function reset(){resultPage=null;current();if(api&&typeof api.applyOpportunityFilter==='function')api.applyOpportunityFilter('reset','all');schedule();}
 function apply(kind,value){current();if(api&&typeof api.applyOpportunityFilter==='function'){api.applyOpportunityFilter(kind,value);schedule();return true;}return false;}
 function openResultPage(kind,value){
@@ -321,7 +330,7 @@ function click(e){
 }
 function boot(){
  css();loadBridge();
- (function ready(){current();if(api&&state&&document.getElementById('pst-opportunities-focus')){decorate();observe();return;}setTimeout(ready,500);})();
+  (function ready(){current();if(api&&state&&document.getElementById('pst-opportunities-focus')){decorate();return;}setTimeout(ready,500);})();
  document.addEventListener('click',click,true);
  document.addEventListener('input',function(e){var el=e.target;if(el&&el.matches&&el.matches('[data-pst-opp-search]')){var pos=el.selectionStart||0;state.query=el.value||'';state.display_limit=40;if(api&&typeof api.renderOpportunities==='function')api.renderOpportunities();setTimeout(function(){var n=document.querySelector('[data-pst-opp-search]');if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(x){}}},0);}else if(el&&el.id==='pst-pcw-opportunity-search')schedule();},true);
  document.addEventListener('pst:opportunities-filter-applied',schedule);

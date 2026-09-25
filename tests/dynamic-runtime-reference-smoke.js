@@ -75,7 +75,7 @@ assert(nativeEntry.includes('pristeel-home-ask-functional-owner-v1.js?v=20260904
 const homeInteraction=fs.readFileSync(path.join(ROOT,'pristeel-home-canonical-interaction-v1.js'),'utf8');
 const opportunityPolish=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-filter-polish-v1.js'),'utf8');
 const waitingBridge=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-waiting-bridge-v1.js'),'utf8');
-assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260925-stable-rows1'),'Fresh presentation bridge must load the current stable Opportunity Desk');
+assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260925-bounded-render1'),'Fresh presentation bridge must load the current bounded Opportunity Desk');
 assert(homeInteraction.includes("loadScript('__pstGlobalFullwidthShellV2'"),'Fresh Home bridge must load Global Shell generation v2 even when v1 is already present');
 assert(homeInteraction.includes('pristeel-global-fullwidth-shell-v1.js?v=20260925-home-sidebar1'),'Fresh Home bridge must cache-bust the Home-sidebar Global Shell contract');
 assert(homeInteraction.includes("loadScript('__pstProductionSurfaceOwnerV2'"),'Fresh Home bridge must load Production Surface Owner generation v2 even when v1 is already present');
