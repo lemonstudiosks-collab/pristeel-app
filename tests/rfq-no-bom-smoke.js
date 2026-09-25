@@ -5,6 +5,10 @@ const {JSDOM}=require('jsdom');
 (()=>{
  const source=fs.readFileSync('pristeel-rfq-no-bom-v1.js','utf8');
  assert(!/MutationObserver|setInterval\s*\(/.test(source),'No-BOM RFQ module must not observe or poll');
+ assert(source.includes('data-rfq-nobom-open="1"'),'No-BOM RFQ must expose a gated Gmail-open action');
+ assert(source.includes('await window.logRfqSent'),'No-BOM RFQ must await canonical Supplier Gate before opening Gmail');
+ assert(source.includes('if(ok!==true)return'),'No-BOM RFQ must stop when Supplier Gate blocks the request');
+ assert(!source.includes('data-rfq-nobom-log="1"'),'Legacy fire-and-forget RFQ logging link must be removed');
  const dom=new JSDOM(`<!doctype html><html><body>
    <input id="i-projname" value="Dukley Seafront"><input id="i-client" value="ITALIAN STYLE"><input id="i-ref" value="DUK-01"><input id="i-location" value="Budva"><input id="i-deadline" value="2026-10-15"><div id="rfq-output"></div>
  </body></html>`,{runScripts:'outside-only',url:'https://example.test/'});
