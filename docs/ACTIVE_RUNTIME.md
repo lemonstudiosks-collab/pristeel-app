@@ -95,6 +95,8 @@ Each zone has a distinct color identity so the user can orient by both text and 
 - It is presentation/navigation only: no Supabase reads/writes, no polling, no outbound actions and no second business engine.
 - At <=900px it replaces the desktop sidebar with a fixed bottom navigation that delegates to the existing canonical PPPP routes: Ballina, Mundësitë, Projektet, Partnerët, Financat and Sistemi.
 - Existing page owners keep their own responsive rules; the mobile shell only normalizes the global shell, safe-area spacing, touch navigation and constrained modal/table behavior.
+- `pristeel-mobile-home-v1.js` is the phone/tablet-only final Home presentation. It hides the desktop Home composition only while Home is active on <=900px devices, reuses the already-loaded Canonical/Morning snapshots, and adds no Supabase/network reads or writes.
+- Mobile Home is deliberately concise: PRISTEEL header, greeting, `Pyet PPPP`, three compact counters, one `Çfarë të shohësh sot` card and four quick actions. The actions delegate to existing routes/create controls; they do not create a parallel workflow.
 - The linked `pristeel.webmanifest` prepares installable-app metadata. Service-worker caching is intentionally not introduced in this phase so mobile cannot pin stale PPPP runtime code.
 
 ### Home
@@ -111,7 +113,8 @@ Home Canonical remains the sole business-state/data owner. Operating Experience 
 
 Current behavior:
 
-- `pristeel-home-morning-command-center-v1.js` owns the final visible Home composition while Canonical Home remains the business-state/data owner.
+- `pristeel-home-morning-command-center-v1.js` owns the final desktop Home composition while Canonical Home remains the business-state/data owner.
+- `pristeel-mobile-home-v1.js` owns only the <=900px Home presentation and consumes the same in-memory Home and Opportunities snapshots; desktop Home is unchanged.
 - Home exposes at most three priority rows. Repeated equivalent actions are grouped and route to the canonical Projects area rather than opening only one hidden item.
 - The lower layout prioritizes active projects and uses Opportunities, Material Trade and the compact assistant as supporting modules.
 - If the canonical project snapshot is briefly empty, Home may reuse the already-loaded workspace project cache; it performs no extra database request.
