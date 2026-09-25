@@ -56,7 +56,7 @@ if(!window.__pstRuntimeRevealFallback){
   },12000);
 }
 
-var myRole = null, myEmail = null, allUsers = [];
+var myRole = null, myEmail = null, myUserId = null, allUsers = [];
 var roleLoadPromise = null;
 
 function jwtPayload(tok){
@@ -73,9 +73,18 @@ function loadRole(){
   if(!s || !s.access_token) return Promise.resolve(false);
   var jp = jwtPayload(s.access_token);
   myEmail = (jp && jp.email) || s.email || '';
+  myUserId = (jp && jp.sub) || (s.user && s.user.id) || s.user_id || '';
   roleLoadPromise = (async function(){
     try{
-      var r = await supaFetch('user_roles?select=role,full_name,email&limit=1');
+      var identityFilter = myUserId
+        ? 'user_id=eq.'+encodeURIComponent(myUserId)
+        : (myEmail ? 'email=eq.'+encodeURIComponent(myEmail) : '');
+      if(!identityFilter){
+        myRole = 'viewer';
+        applyRole();
+        return true;
+      }
+      var r = await supaFetch('user_roles?'+identityFilter+'&select=role,full_name,email,user_id&limit=1');
       myRole = (r && r[0] && r[0].role) || 'viewer';
       applyRole();
       return true;
