@@ -9,7 +9,7 @@ const workflow=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8')
 assert.doesNotThrow(()=>new Function(desk),'Opportunities Desk must be valid JavaScript');
 assert.doesNotThrow(()=>new Function(workflow),'Project-Centric workflow must remain valid JavaScript');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(desk,/VERSION='20260925-bounded-render1'/,'bounded contacted-company Opportunity Desk revision must be active');
+assert.match(desk,/VERSION='20260925-in-place-render2'/,'in-place contacted-company Opportunity Desk revision must be active');
 assert.match(desk,/function activeRows\(/,'Desk must explicitly own the active/uncontacted list');
 assert.match(desk,/function contactedRows\(/,'Desk must explicitly own the contacted-company parking list');
 assert.match(desk,/globalContactedKeys/,'active list must globally suppress identities already drafted/contacted');
@@ -32,5 +32,5 @@ assert.match(desk,/api\.loadOpportunities\(true\)/,'draft completion must reload
 assert.match(desk,/effectiveLane\(r\)!=='new'/,'contacted state must come from canonical lifecycle evidence');
 assert.match(desk,/function deskHtml\(c\)\{[\s\S]*activeRows\(\)[\s\S]*contactedRows\(\)[\s\S]*sideFilters\(c\)/,'final workdesk must render filters, active opportunities and contacted companies instead of the old lifecycle dashboard');
 assert.match(workflow,/display_limit:40/,'canonical result engine remains bounded');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260925-bounded-render1/,'runtime must cache-bust the bounded contacted-company Opportunity Desk');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260925-in-place-render2/,'runtime must cache-bust the in-place contacted-company Opportunity Desk');
 console.log('Opportunities contacted-company layout smoke: OK');
