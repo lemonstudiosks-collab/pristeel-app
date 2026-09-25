@@ -6,7 +6,7 @@ const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const TED_API='https://api.ted.europa.eu/v3/notices/search';
 const OPPORTUNITY_TYPES=['cn-standard','cn-social','pin-cfc-standard','pin-cfc-social','qu-sy','subco'];
 const AWARD_TYPES=['can-standard','can-social','can-desg','can-tran'];
-const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 44171000 OR classification-cpv = 44172000 OR classification-cpv = 44212220 OR classification-cpv = 44212240 OR classification-cpv = 44212313 OR classification-cpv = 44212410 OR classification-cpv = 44212500 OR classification-cpv = 44330000 OR classification-cpv = 44334000 OR classification-cpv = 45223100 OR classification-cpv = 45223110 OR classification-cpv = 45223210 OR FT IN (Stahlbau Stahlkonstruktion Stahltragwerk Stahlhalle steelwork staalbouw staalconstructie))';
+const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 44171000 OR classification-cpv = 44172000 OR classification-cpv = 44212220 OR classification-cpv = 44212240 OR classification-cpv = 44212313 OR classification-cpv = 44212410 OR classification-cpv = 44212500 OR classification-cpv = 44330000 OR classification-cpv = 44334000 OR classification-cpv = 45223100 OR classification-cpv = 45223110 OR classification-cpv = 45223210 OR classification-cpv = 45262400 OR classification-cpv = 45262410 OR classification-cpv = 45262420 OR classification-cpv = 45262670 OR FT IN (Stahlbau Stahlkonstruktion Stahltragwerk Stahlhalle Schlosserarbeiten Metallbau Stahltreppe Stahlgelaender steelwork metalwork staalbouw staalconstructie))';
 const FIELDS=[
   'publication-number','notice-title','notice-type','publication-date','buyer-name','classification-cpv',
   'deadline','deadline-receipt-tender-date-lot','deadline-receipt-request-date-lot','deadline-date-lot','place-of-performance',
@@ -102,27 +102,27 @@ export function tedDetails(row,phase){
   };
 }
 const RAW_CPVS=new Set(['14622000','44171000','44172000','44330000','44334000']);
-const STRUCT_CPVS=new Set(['44212220','44212240','44212313','44212410','44212500','45223100','45223110','45223210']);
-const STRUCT_TITLE_RE=/stahlbau|stahlkonstruk|stahltragwerk|stahlhalle|steelwork|structural steel|steel structure|steel girder|staalbouw|staalconstruct|charpente metall|construction metall|ossature metall|konstrukcj[a-ząćęłńóśźż ]*stal|ocelov[a-zá-ž ]*konstruk|celicn[a-zčćžšđ ]*konstruk/i;
+const STRUCT_CPVS=new Set(['44212220','44212240','44212313','44212410','44212500','45223100','45223110','45223210','45262400','45262410','45262420','45262670']);
+const STRUCT_TITLE_RE=/stahlbau|stahlkonstruk|stahltragwerk|stahlhalle|schlosserarbeit|metallbau|stahltrep|stahlgelander|stahlbalkon|stahlpodest|steelwork|structural steel|steel structure|steel girder|metalwork|staalbouw|staalconstruct|charpente metall|construction metall|ossature metall|konstrukcj[a-ząćęłńóśźż ]*stal|ocelov[a-zá-ž ]*konstruk|celicn[a-zčćžšđ ]*konstruk/i;
 const RAW_TITLE_RE=/steel plate|steel sheet|stahlblech|blech aus stahl|steel profile|stahlprofil|structural profile|steel bar|steel rod|steel wire|armierungsstahl|bewehrungsstahl|blach[a-ząćęłńóśźż ]*stal|stali specjal|table din otel|armatura.*stal/i;
 const CLEAR_NON_STEEL_TITLE_RE=/\baluminium\b|\baluminum\b|\balu(?:\b|[-/ ])/i;
-export function classifyTedNotice({title='',cpv=[]}={}){
-  const codes=Array.isArray(cpv)?cpv:[];const n=norm(title);const reasons=[];let raw=0,structure=0;
+export function classifyTedNotice({title='',description='',cpv=[]}={}){
+  const codes=Array.isArray(cpv)?cpv:[];const n=norm(`${title} ${description}`);const reasons=[];let raw=0,structure=0;
   const primary=codes[0]||'';const rawPrimary=RAW_CPVS.has(primary);const structPrimary=STRUCT_CPVS.has(primary);
   const rawSecondary=codes.slice(1).find(c=>RAW_CPVS.has(c));const structSecondary=codes.slice(1).find(c=>STRUCT_CPVS.has(c));
   const titleStructure=STRUCT_TITLE_RE.test(n);const titleRaw=RAW_TITLE_RE.test(n);const clearNonSteel=CLEAR_NON_STEEL_TITLE_RE.test(n)&&!titleStructure&&!titleRaw;
   if(rawPrimary){raw=95;reasons.push(`CPV kryesor lëndë çeliku: ${primary}`);}else if(rawSecondary){raw=50;reasons.push(`CPV dytësor lëndë çeliku: ${rawSecondary}`);}
   if(structPrimary){structure=96;reasons.push(`CPV kryesor strukturë çeliku: ${primary}`);}else if(structSecondary){structure=52;reasons.push(`CPV dytësor strukturë çeliku: ${structSecondary}`);}
-  if(titleStructure){structure=Math.max(structure,88);reasons.push('titull i qartë për strukturë çeliku');}
-  if(titleRaw){raw=Math.max(raw,86);reasons.push('titull i qartë për lëndë çeliku');}
+  if(titleStructure){structure=Math.max(structure,88);reasons.push('titull/scope i qartë për strukturë ose punime çeliku');}
+  if(titleRaw){raw=Math.max(raw,86);reasons.push('titull/scope i qartë për lëndë çeliku');}
   if(clearNonSteel){raw=Math.min(raw,30);structure=Math.min(structure,30);reasons.push('titulli tregon qartë material jo-çelik (aluminium/alu)');}
   if(/^71/.test(primary)&&!rawPrimary&&!structPrimary){raw=Math.min(raw,40);structure=Math.min(structure,40);reasons.push('shërbim projektimi/mbikëqyrjeje, jo prodhim');}
   const score=Math.min(100,Math.max(raw,structure));return{category:structure>=raw&&structure?'steel_structure':raw?'raw_material':'possible',relevance_score:score,match_reasons:[...new Set(reasons)]};
 }
 export function normalizeTedNotice(row,phase='opportunity',seenAt=new Date().toISOString()){
   const publication=firstScalar(field(row,'publication-number'));if(!publication)return null;
-  const title=tedTitle(row)||`TED ${publication}`,cpv=cpvCodes(row),cls=classifyTedNotice({title,cpv}),type=firstScalar(field(row,'notice-type')),details=tedDetails(row,phase);
-  const description=details.description||details.procedure_description||'';
+  const title=tedTitle(row)||`TED ${publication}`,cpv=cpvCodes(row),type=firstScalar(field(row,'notice-type')),details=tedDetails(row,phase);
+  const description=details.description||details.procedure_description||'',cls=classifyTedNotice({title,description,cpv});
   return{
     source_key:`TED:${publication}`,procurement_no:`TED-${publication}`,publication_no:publication,authority:decodeTedText(buyer(row)),title,
     document_type:type||null,fpp:cpv.find(c=>RAW_CPVS.has(c)||STRUCT_CPVS.has(c))||cpv[0]||null,fpp_description:cpv.length?`CPV ${cpv.join(', ')}`:null,
