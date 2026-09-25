@@ -105,7 +105,8 @@ export function resolveTedDraftRecipients(action,tenderPayload,max=20){
   }
   const map=new Map();for(const r of rows)map.set(r.email,mergeCandidate(map.get(r.email),r));
   const purposeRank={procurement:0,tender:1,sales:2,person:3,general:4};
-  return [...map.values()].sort((a,b)=>(b.contact_quality_score-a.contact_quality_score)||(purposeRank[a.purpose]??8)-(purposeRank[b.purpose]??8)||(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,1);
+  const limit=Math.max(1,Math.min(20,Number(max)||20));
+  return [...map.values()].sort((a,b)=>(b.contact_quality_score-a.contact_quality_score)||(purposeRank[a.purpose]??8)-(purposeRank[b.purpose]??8)||(b.priority-a.priority)||(b.score-a.score)||a.email.localeCompare(b.email)).slice(0,limit);
 }
 
 export function resolveTedRecipients(action,tenderPayload,max=1){
