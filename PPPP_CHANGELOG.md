@@ -1,3 +1,9 @@
+## 2026-09-25 — PWA install icon hardening
+
+- Added 192×192 and 512×512 raster fallbacks derived from the approved PRISTEEL app icon for Chromium/PWA installation compatibility.
+- Kept the canonical SVG icon and added Apple home-screen icon metadata.
+- No service worker, offline cache, Supabase read/write, polling or business-runtime change was introduced.
+
 ## 2026-09-25 — Mobile responsive shell v1 (branch)
 
 - Added `pristeel-mobile-responsive-v1.js` as a presentation/navigation-only mobile shell.
