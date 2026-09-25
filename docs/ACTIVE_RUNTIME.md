@@ -89,6 +89,14 @@ Primary daily business zones are now:
 
 Each zone has a distinct color identity so the user can orient by both text and visual context. Technical/back-office surfaces such as Gmail, Commercial intake and automation health are kept under **System** instead of competing with the daily business path.
 
+### Mobile / tablet presentation
+
+- `pristeel-mobile-responsive-v1.js` is the bounded mobile shell for narrow screens.
+- It is presentation/navigation only: no Supabase reads/writes, no polling, no outbound actions and no second business engine.
+- At <=640px it replaces the desktop sidebar with a fixed bottom navigation that delegates to the existing canonical PPPP routes: Ballina, Mundësitë, Projektet, Partnerët, Financat and Sistemi.
+- Existing page owners keep their own responsive rules; the mobile shell only normalizes the global shell, safe-area spacing, touch navigation and constrained modal/table behavior.
+- The linked `pristeel.webmanifest` prepares installable-app metadata. Service-worker caching is intentionally not introduced in this phase so mobile cannot pin stale PPPP runtime code.
+
 ### Home
 
 **Final data owner:**
