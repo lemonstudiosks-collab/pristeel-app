@@ -1,6 +1,6 @@
 /* PRISTEEL Tender Supplier Sourcing v1
  * Additive Action Console surface over pppp-tender-supplier-sourcing-v1.
- * Read-only except opening a human-controlled Gmail compose window.
+ * Read-only supplier discovery; human-controlled RFQ compose is allowed only after Supplier Gate approval and planned-RFQ registration.
  * No supplier selection, Supplier Master mutation, RFQ send or project decision.
  */
 (function(){
@@ -24,6 +24,20 @@ async function edge(payload){
  var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}
  if(!res.ok||!data||data.ok===false)throw new Error(S(data&&data.message||data&&data.error||'Supplier sourcing nuk u përfundua.').slice(0,500));
  return data;
+}
+async function supplierGate(tenderId,name,email,mode){
+ var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
+ var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
+ var payload={p_project_id:null,p_tender_watch_id:tenderId,p_supplier_name:name||'',p_supplier_email:email||'',p_rfq_mode:mode||'firm'};
+ async function run(t){return fetch(base+'/rest/v1/rpc/pppp_supplier_rfq_gate_v2',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(payload)});}
+ var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}
+ var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}
+ if(!res.ok)throw new Error('Supplier Gate HTTP '+res.status+': '+raw.slice(0,450));
+ return data||{allowed:false,reason:'empty_supplier_gate'};
+}
+async function registerTenderRfq(tid,email,name,subject,body,gate){
+ if(typeof window.supaFetch!=='function')throw new Error('Databaza nuk është gati.');
+ return window.supaFetch('rfq_log','POST',{tender_watch_id:tid,project_id:null,project_name:gate&&gate.tender_title||null,supplier_name:name||email,supplier_email:email,lang:'en',subject:subject,body:body,status:'planned',rfq_mode:gate&&gate.rfq_mode||'firm',supplier_relationship_state:gate&&gate.relationship_state||null,supplier_gate_snapshot:gate||{},human_send_required:true});
 }
 function host(){
  var body=document.getElementById('pst-ti-body');if(!body)return null;
@@ -140,15 +154,22 @@ function draftBody(data,req,name){
  lines.push('','Please confirm:','- unit / total price and Incoterm','- availability and lead time','- exact dimensional capability','- material certificate / test report compliance','- manufacturer ISO certification','- country of origin','- payment terms','', 'Please quote only if the requested technical requirements can be met.','', 'Kind regards,','PriSteel');
  return lines.join('\n');
 }
-function gmailDraft(email,name,reqId){
+async function gmailDraft(email,name,reqId){
  var panel=document.getElementById('pst-tender-supplier-sourcing'),tid=S(panel&&panel.getAttribute('data-tender-id')),data=state.byTender[tid],req=reqById(tid,reqId);if(!data||!req||!email)return false;
- var subject='RFQ – '+S(req.label||'Steel material')+' | PriSteel',body=draftBody(data,req,name),url='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(email)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
- window.open(url,'_blank','noopener');return true;
+ var subject='RFQ – '+S(req.label||'Steel material')+' | PriSteel',body=draftBody(data,req,name),mode='firm';
+ try{
+   var gate=await supplierGate(tid,name||email,email,mode);
+   if(!gate||gate.allowed!==true){alert('RFQ u bllokua nga Supplier Gate: '+S(gate&&gate.reason||'nuk lejohet')+'\n\n'+S(gate&&gate.relationship_guidance||''));return false;}
+   if(gate.warning&&!window.confirm('Supplier Gate paralajmëron: '+S(gate.warning)+'\n\n'+S(gate.relationship_guidance||'')+'\n\nTë vazhdojmë me këtë RFQ?'))return false;
+   await registerTenderRfq(tid,email,name,subject,body,gate);
+   var url='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(email)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+   window.open(url,'_blank','noopener');return true;
+ }catch(err){alert('Supplier Gate / RFQ registration dështoi: '+S(err&&err.message||err));return false;}
 }
 function click(e){
  var d=e.target&&e.target.closest?e.target.closest('[data-tss-discover]'):null;if(d){e.preventDefault();var panel=document.getElementById('pst-tender-supplier-sourcing'),tid=S(panel&&panel.getAttribute('data-tender-id'));load(tid,true,d.getAttribute('data-tss-discover'));return;}
  var retry=e.target&&e.target.closest?e.target.closest('[data-tss-retry]'):null;if(retry){e.preventDefault();load(retry.getAttribute('data-tss-retry'),false,'');return;}
- var draft=e.target&&e.target.closest?e.target.closest('[data-tss-draft]'):null;if(draft){e.preventDefault();gmailDraft(draft.getAttribute('data-email'),draft.getAttribute('data-name'),draft.getAttribute('data-req'));return;}
+ var draft=e.target&&e.target.closest?e.target.closest('[data-tss-draft]'):null;if(draft){e.preventDefault();draft.disabled=true;Promise.resolve(gmailDraft(draft.getAttribute('data-email'),draft.getAttribute('data-name'),draft.getAttribute('data-req'))).finally(function(){draft.disabled=false;});return;}
  var tender=e.target&&e.target.closest?e.target.closest('[data-pcw-tender]'):null;if(tender){var id=tender.getAttribute('data-pcw-tender');setTimeout(function(){maybeMount(id);},140);}
 }
 function css(){
