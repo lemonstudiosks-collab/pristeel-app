@@ -21,12 +21,12 @@ assert.equal(lifecycle(target), 'draft', 'B/C: a successful live Gmail draft mus
 
 queue = { ...queue, status: 'sent', sent_at: '2026-09-24T12:00:00Z' };
 assert.equal(lifecycle(target), 'waiting', 'D: Gmail Sent evidence must become waiting');
-assert.match(ui, /actionable=all\.filter\(function\(r\)\{return lifecycle\(r\)==='action'\}\)/, 'E: sent targets must not return to the actionable list');
+assert.match(ui, /actionable=all\.filter\(function\(r\)\{return operatingTarget\(r\)&&!hasOutboundHistory\(r\)\}\)/, 'E: targets with outbound history must not return to the actionable list');
 assert.match(ui, /life==='waiting'\?'Në pritje'/, 'F: contacted card must render Në pritje after sent evidence');
 
 queue = { ...queue, status: 'replied', replied_at: '2026-09-24T13:00:00Z' };
 assert.equal(lifecycle(target), 'replied', 'G: reply evidence must become replied/active');
-assert.match(ui, /lbl=life==='draft'\?'Draft gati':life==='waiting'\?'Në pritje':'Përgjigje \/ Aktiv'/, 'G: contacted card must render Përgjigje / Aktiv');
+assert.match(ui, /lbl=life==='draft'\?'Draft gati':life==='stale'\?'Draft i mëparshëm':life==='waiting'\?'Në pritje':life==='replied'\?'Përgjigje \/ Aktiv':'Historik'/, 'G: contacted card must render Përgjigje / Aktiv');
 
 queue = { status: 'stale', suppression_reason: 'gmail_draft_missing', gmail_draft_id: 'draft-1', gmail_thread_id: 'thread-1' };
 assert.equal(lifecycle(target), 'action', 'H: missing/stale draft without Sent evidence must never become waiting');
