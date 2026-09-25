@@ -23,7 +23,7 @@ function installCss(){
   s.id='pst-mobile-responsive-v1-css';
   s.textContent=`
 #pst-mobile-nav-v1{display:none}
-@media(max-width:640px){
+@media(max-width:900px){
   html,body{max-width:100%;overflow-x:hidden}
   body #app-shell-root,
   body .app-shell{display:block!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:100%!important}
@@ -72,11 +72,6 @@ function installCss(){
   body #page-workspace-project .pst-operating-phase-nav,
   body #page-workspace-project .pwb3-path{scrollbar-width:thin;-webkit-overflow-scrolling:touch}
   body #page-workspace-project .pst-business-phases{min-width:max-content}
-}
-@media(min-width:641px) and (max-width:900px){
-  body #app-shell-root>.main,
-  body .app-shell>.main{min-width:0!important}
-  body .content{padding-left:16px!important;padding-right:16px!important}
 }
 `;
   document.head.appendChild(s);
