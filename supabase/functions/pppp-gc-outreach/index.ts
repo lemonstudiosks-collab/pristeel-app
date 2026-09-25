@@ -6,11 +6,11 @@ const GMAIL_USER=Deno.env.get('GMAIL_USER')||'arianit.vllahiu@prissteel.com';
 const SUPABASE_URL=Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
-const ENGINE='pppp-gc-outreach-v8-global-communication-guard';
+const ENGINE='pppp-gc-outreach-v9-commercial-engine-v3';
 const cors={
   'Access-Control-Allow-Origin':'*',
   'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret',
-  'Access-Control-Allow-Methods':'GET, OPTIONS',
+  'Access-Control-Allow-Methods':'GET, POST, OPTIONS',
   'Content-Type':'application/json'
 };
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
@@ -61,9 +61,13 @@ async function gmailToken(){
   const data=await r.json();if(!r.ok)throw new Error(`Google token ${r.status}: ${JSON.stringify(data).slice(0,500)}`);
   cachedToken={token:data.access_token,exp:now+(data.expires_in||3600)};return cachedToken.token;
 }
-async function authorized(req:Request){
-  const provided=req.headers.get('x-pppp-cron-secret')||'';if(!provided)return false;
-  const {data,error}=await db.rpc('gmail_tracker_cron_authorized',{provided});return !error&&data===true;
+async function authorizationMode(req:Request){
+  const provided=req.headers.get('x-pppp-cron-secret')||'';
+  if(provided){const {data,error}=await db.rpc('gmail_tracker_cron_authorized',{provided});if(!error&&data===true)return'cron';}
+  const auth=req.headers.get('Authorization')||'',m=auth.match(/^Bearer\s+(.+)$/i);
+  if(!m)return'';
+  const {data,error}=await db.auth.getUser(m[1]);
+  return !error&&data?.user?'user':'';
 }
 async function gmail(path:string,init:RequestInit={}){
   const tk=await gmailToken();
@@ -91,22 +95,45 @@ function projectName(p:any){
   const a=Array.isArray(p.current_projects)?p.current_projects:[];return text(a?.[0]?.name,500)||text(p.company_name,300)||'relevant projects';
 }
 function shortProject(p:any){const s=projectName(p).replace(/^.*?\s[–-]\s/,'').trim();return s.length>82?s.slice(0,79)+'…':s;}
-function greeting(p:any){const n=safePersonName(p.contact_name);if(p.language==='de')return n?`Guten Tag ${n},`:'Sehr geehrte Damen und Herren,';if(p.language==='sr')return n?`Poštovani ${n},`:'Poštovani,';return n?`Dear ${n},`:'Dear Sir or Madam,';}
-function subject1(p:any){const proj=shortProject(p);if(p.language==='de')return `Zusätzliche Stahlbau-Fertigungskapazität – ${proj} | PRISTEEL`;if(p.language==='sr')return `Dodatni kapaciteti za čelične konstrukcije – ${proj} | PRISTEEL`;return `Additional steel fabrication capacity – ${proj} | PRISTEEL`;}
+function factsFor(p:any){
+  const a=Array.isArray(p?.personalization_facts)?p.personalization_facts.map((x:any)=>text(x,900)).filter(Boolean):[];
+  const proj=projectName(p);
+  if(!a.length&&proj)a.push('Project: '+proj);
+  const ev=Array.isArray(p?.evidence)?p.evidence:[];
+  for(const x of ev){
+    const v=text(x?.reason||x?.title||x?.source,900);
+    if(v&&!a.includes(v))a.push(v);
+    if(a.length>=2)break;
+  }
+  return a.slice(0,2);
+}
+function greeting(p:any){
+  const n=safePersonName(p.contact_name);
+  if(p.language==='de')return n?`Guten Tag ${n},`:'Sehr geehrte Damen und Herren,';
+  if(p.language==='sr')return n?`Poštovani ${n},`:'Poštovani,';
+  return n?`Dear ${n},`:'Dear Sir or Madam,';
+}
+function subject1(p:any){
+  const proj=shortProject(p);
+  if(p.language==='de')return `Projekt ${proj} – Stahlpaket noch offen? | PRISTEEL`;
+  if(p.language==='sr')return `Projekt ${proj} – čelični paket još otvoren? | PRISTEEL`;
+  return `Project ${proj} – steel package still open? | PRISTEEL`;
+}
 function signaturePlain(lang:string){const close=lang==='de'?'Mit freundlichen Grüßen':lang==='sr'?'Srdačan pozdrav':'Kind regards';return `${close},\n\nArianit Vllahiu\nHead of Business Development\n+383 (0) 44 244 699\narianit.vllahiu@prissteel.com\nwww.prissteel.com`;}
 function signatureHtml(lang:string){const close=lang==='de'?'Mit freundlichen Grüßen':lang==='sr'?'Srdačan pozdrav':'Kind regards';return `${esc(close)},<br><br><strong>Arianit Vllahiu</strong><br>Head of Business Development<br><a href="tel:+38344244699">+383 (0) 44 244 699</a><br><a href="mailto:arianit.vllahiu@prissteel.com">arianit.vllahiu@prissteel.com</a><br><a href="https://www.prissteel.com">www.prissteel.com</a>`;}
 function body1(p:any){
-  const g=greeting(p),company=text(p.company_name,300),proj=projectName(p);
-  if(p.language==='de')return `${g}\n\nwir haben den aktuellen Projektzuschlag bzw. das Projekt „${proj}“ von ${company} gesehen. Ich möchte Ihnen PRISTEEL als zusätzliche Fertigungskapazität für Stahlbau und ähnliche Projektpakete vorstellen.\n\nPRISTEEL arbeitet mit etablierten Fertigungspartnern und koordiniert die technische Ausführung, die Fertigungsnachverfolgung sowie die DAP-Lieferung. Damit haben Sie für das gesamte Paket einen kaufmännischen und technischen Ansprechpartner.\n\nJe nach Paket koordinieren wir auch die erforderliche Qualitäts- und Fertigungsdokumentation sowie Oberflächenbehandlung, Verpackung und Lieferung.\n\nFalls Sie aktuelle oder kommende Stahlbaupakete haben, bei denen zusätzliche Kapazität hilfreich wäre, prüfen wir gerne Zeichnungen oder Leistungsverzeichnisse und können kurzfristig einschätzen, was wir unterstützen können.\n\n${signaturePlain('de')}`;
-  if(p.language==='sr')return `${g}\n\nprimijetili smo aktuelni projekat odnosno nedavno dodijeljeni ugovor „${proj}“ kompanije ${company}. Želio bih predstaviti PRISTEEL kao dodatni kapacitet za izradu čeličnih konstrukcija za ovaj i slične projekte.\n\nPRISTEEL radi sa provjerenim proizvodnim partnerima i koordinira tehničku realizaciju, praćenje proizvodnje i DAP isporuku, tako da imate jednu komercijalnu i tehničku kontakt tačku za kompletan paket.\n\nU zavisnosti od paketa, koordiniramo i potrebnu dokumentaciju kvaliteta i proizvodnje, površinsku zaštitu, pakovanje i isporuku.\n\nAko imate aktuelne ili predstojeće pakete čeličnih konstrukcija gdje bi dodatni kapacitet bio koristan, rado ćemo pregledati nacrte ili BOQ i brzo potvrditi šta možemo podržati.\n\n${signaturePlain('sr')}`;
-  return `${g}\n\nWe noted ${company}'s current or recently awarded project “${proj}”. I would like to introduce PRISTEEL as a source of additional structural steel fabrication capacity for this and similar projects.\n\nPRISTEEL works through established manufacturing partners and coordinates the technical execution, fabrication follow-up and DAP delivery, giving you one commercial and technical contact for the complete package.\n\nDepending on the package, we also coordinate the required quality and fabrication documentation, surface protection, packing and delivery.\n\nIf you have current or upcoming steel packages where additional capacity could be useful, we would be glad to review the drawings or BOQ and quickly indicate what we can support.\n\n${signaturePlain('en')}`;
+  const g=greeting(p),facts=factsFor(p),proj=projectName(p);
+  if(facts.length<2)throw new Error('outreach_v2_requires_two_specific_facts');
+  if(p.language==='de')return `${g}\n\nwir melden uns konkret zum Projekt „${proj}“. Zwei Punkte, auf die wir uns beziehen:\n• ${facts[0]}\n• ${facts[1]}\n\nPRISTEEL übernimmt die technische und kaufmännische Koordination klar abgegrenzter Stahlbaupakete – von Materialbeschaffung und Build-to-Print-Fertigung über Oberflächenschutz und Qualitätsdokumentation bis zur koordinierten DAP-Lieferung.\n\nIst das relevante Stahlbaupaket bereits vollständig vergeben oder ist ein klar abgegrenzter externer Umfang noch offen?\n\n${signaturePlain('de')}`;
+  if(p.language==='sr')return `${g}\n\njavljamo Vam se konkretno u vezi sa projektom „${proj}“. Pozivamo se na dvije provjerene informacije:\n• ${facts[0]}\n• ${facts[1]}\n\nPRISTEEL vodi tehničku i komercijalnu koordinaciju jasno definisanih paketa čeličnih konstrukcija – od nabavke materijala i proizvodnje prema nacrtima, preko površinske zaštite i dokumentacije kvaliteta, do koordinirane DAP isporuke.\n\nDa li je relevantni paket čeličnih radova već u potpunosti ugovoren ili je jasno definisan vanjski opseg još otvoren?\n\n${signaturePlain('sr')}`;
+  return `${g}\n\nI am contacting you specifically regarding “${proj}”. We are referring to two verified points:\n• ${facts[0]}\n• ${facts[1]}\n\nPRISTEEL provides the technical and commercial coordination for clearly defined structural-steel packages – from material procurement and build-to-print fabrication through surface treatment and quality documentation to coordinated DAP delivery.\n\nIs the relevant steel package already fully awarded, or is a clearly defined external scope still open?\n\n${signaturePlain('en')}`;
 }
 function body1Html(p:any){return body1(p).split('\n\n').slice(0,-1).map((x:string)=>esc(x).replace(/\n/g,'<br>')).join('<br><br>')+'<br><br>'+signatureHtml(p.language);}
 function body2(p:any){
   const g=greeting(p),proj=projectName(p);
-  if(p.language==='de')return `${g}\n\nkurze Rückfrage zu meiner untenstehenden Nachricht bezüglich möglicher Stahlbau-Fertigungskapazität für „${proj}“.\n\nFalls Sie aktuell oder in den kommenden Monaten Stahlbaupakete haben, bei denen zusätzliche Kapazität hilfreich wäre, prüfen wir die Unterlagen gerne kurzfristig.\n\n${signaturePlain('de')}`;
-  if(p.language==='sr')return `${g}\n\nkratak follow-up na moju prethodnu poruku u vezi sa mogućom podrškom u izradi čeličnih konstrukcija za „${proj}“.\n\nAko imate aktuelne ili predstojeće pakete gdje bi dodatni proizvodni kapacitet bio koristan, rado ćemo brzo pregledati dokumentaciju.\n\n${signaturePlain('sr')}`;
-  return `${g}\n\nJust a short follow-up on my email below regarding possible steel fabrication support for “${proj}”.\n\nIf you have current or upcoming steel packages where additional capacity could be useful, we would be glad to review the documentation and quickly indicate what we can support.\n\n${signaturePlain('en')}`;
+  if(p.language==='de')return `${g}\n\nfalls das Stahlbaupaket für „${proj}“ bereits vergeben ist, müssen Sie dafür nichts weiter prüfen. In diesem Fall genügt mir eine kurze Rückmeldung, ob PRISTEEL für künftige klar abgegrenzte Stahlbaupakete in Ihren Lieferantenprozess aufgenommen werden kann – und wer dafür zuständig ist.\n\n${signaturePlain('de')}`;
+  if(p.language==='sr')return `${g}\n\nako je paket čeličnih radova za „${proj}“ već ugovoren, nije potrebno da za ovaj projekat išta dodatno provjeravate. U tom slučaju bi nam bila dovoljna kratka informacija da li PRISTEEL može biti uključen u Vaš proces kvalifikacije za buduće jasno definisane čelične pakete – i ko je za to nadležan.\n\n${signaturePlain('sr')}`;
+  return `${g}\n\nIf the steel package for “${proj}” is already covered, there is nothing further to review for this project. In that case, a short indication of whether PRISTEEL can be considered in your supplier process for future clearly defined steel packages – and who handles that qualification – would be enough.\n\n${signaturePlain('en')}`;
 }
 function body2Html(p:any){return body2(p).split('\n\n').slice(0,-1).map((x:string)=>esc(x).replace(/\n/g,'<br>')).join('<br><br>')+'<br><br>'+signatureHtml(p.language);}
 function mime(to:string,subject:string,plain:string,html:string,replyMessageId:string|null=null){
@@ -163,10 +190,21 @@ async function stopDoNotContact(p:any){
   if(p.outreach_contact_id)await db.from('outreach_contacts').update({status:'Do not contact',follow_up_date:null,updated_at:nowIso()}).eq('id',p.outreach_contact_id);
 }
 
-async function processOne(row:any){
+async function processOne(row:any,createRequested=false){
   let p=row;
   if(p.do_not_contact||p.status==='do_not_contact'){await stopDoNotContact(p);return {id:p.id,company:p.company_name,event:'do_not_contact'};}
   if(!p.contact_email)return {id:p.id,company:p.company_name,event:'no_contact_email'};
+  if(!p.first_sent_at&&text(p.outreach_engine_version,20)==='v2'){
+    const facts=factsFor(p);
+    if(text(p.workflow_state,80)!=='ready_for_outreach'&&text(p.workflow_state,80)!=='draft_created')return {id:p.id,company:p.company_name,event:'readiness_blocked',reason:p.workflow_state||'not_ready'};
+    if(Number(p.company_fit_score||0)<65||Number(p.commercial_timing_score||0)<35||Number(p.contact_quality_score||0)<50||Number(p.message_evidence_score||0)<60||facts.length<2)return {id:p.id,company:p.company_name,event:'readiness_blocked',reason:'score_or_evidence_gate'};
+  }
+  if(!p.first_sent_at&&p.status==='draft_ready'&&text(p.outreach_engine_version,20)==='v2'&&text(p.workflow_state,80)==='ready_for_outreach'){
+    if(!createRequested)return {id:p.id,company:p.company_name,event:'legacy_draft_requires_manual_refresh',draft_id:p.first_draft_id||null};
+    await deleteDraft(p.first_draft_id);
+    await db.from('pppp_gc_prospects_v1').update({first_draft_id:null,first_gmail_message_id:null,first_gmail_thread_id:null,first_draft_created_at:null,status:'contact_ready',updated_at:nowIso(),last_error:'Legacy draft retired for Sales Engine V2 refresh'}).eq('id',p.id);
+    p=await loadProspect(p.id);
+  }
 
   // Detect first manual send from the draft's Gmail thread.
   if(!p.first_sent_at&&p.first_gmail_thread_id&&p.first_draft_created_at){
@@ -199,6 +237,7 @@ async function processOne(row:any){
 
   // Before Draft #1, use both the DB hard guard and actual Gmail Sent history.
   if(!p.first_sent_at&&p.status==='contact_ready'){
+    if(!createRequested)return {id:p.id,company:p.company_name,event:'ready_for_manual_draft',offer_model:p.pristeel_offer_model||'fabricated_steel_package',human_send_required:true};
     const gg=await rpc('pppp_global_communication_guard_v1',{
       p_recipient_email:p.contact_email,
       p_company_domain:p.company_domain||contactDomain(p),
@@ -214,7 +253,7 @@ async function processOne(row:any){
     if(hist?.contacted){await rpc('pppp_gc_mark_gmail_history_duplicate_v1',{p_prospect_id:p.id,p_reason:'Historical PPPP outreach already exists'});return {id:p.id,company:p.company_name,event:'blocked_db_history'};}
     if(await historySentToDomain(p)){await rpc('pppp_gc_mark_gmail_history_duplicate_v1',{p_prospect_id:p.id,p_reason:'Historical Gmail Sent message exists for this company domain'});return {id:p.id,company:p.company_name,event:'blocked_gmail_history'};}
     const subj=subject1(p),existing=await existingDraftFor(p,subj),d=existing||await createDraft(p,false);
-    await db.from('pppp_gc_prospects_v1').update({first_draft_id:d.id,first_gmail_message_id:d.message?.id||null,first_gmail_thread_id:d.message?.threadId||null,first_draft_created_at:nowIso(),status:'draft_ready',human_send_required:true,updated_at:nowIso(),last_error:null}).eq('id',p.id).eq('status','contact_ready');
+    await db.from('pppp_gc_prospects_v1').update({first_draft_id:d.id,first_gmail_message_id:d.message?.id||null,first_gmail_thread_id:d.message?.threadId||null,first_draft_created_at:nowIso(),status:'draft_ready',workflow_state:'draft_created',outreach_engine_version:'v2',outreach_motion:p.outreach_motion||'awarded_project_gc',pristeel_offer_model:p.pristeel_offer_model||'fabricated_steel_package',human_send_required:true,updated_at:nowIso(),last_error:null}).eq('id',p.id).eq('status','contact_ready');
     return {id:p.id,company:p.company_name,event:existing?'adopted_draft_1':'created_draft_1',draft_id:d.id,human_send_required:true};
   }
 
@@ -231,7 +270,7 @@ async function processOne(row:any){
   const firstAt=new Date(p.first_sent_at),companyDomain=contactDomain(p);
   let t:any=null;try{if(p.first_gmail_thread_id)t=await thread(p.first_gmail_thread_id);}catch{}
   const threadReply=replyInThread(t,companyDomain,firstAt),externalReply=threadReply?null:await domainReply(p,firstAt);
-  if(threadReply||externalReply){const m=threadReply||externalReply;await deleteDraft(p.second_draft_id);await rpc('pppp_gc_mark_replied_v1',{p_prospect_id:p.id,p_replied_at:msgAt(m)?.toISOString()||nowIso(),p_reason:threadReply?'gmail_thread_reply':'gmail_company_domain_reply'});return {id:p.id,company:p.company_name,event:'reply_detected'};}
+  if(threadReply||externalReply){const m=threadReply||externalReply,cls=await rpc('pppp_outreach_reply_classification_v2',{p_subject:header(m,'Subject'),p_snippet:text(m?.snippet,500)});await deleteDraft(p.second_draft_id);await rpc('pppp_gc_mark_replied_v1',{p_prospect_id:p.id,p_replied_at:msgAt(m)?.toISOString()||nowIso(),p_reason:threadReply?'gmail_thread_reply':'gmail_company_domain_reply'});await db.from('pppp_gc_prospects_v1').update({reply_classification:cls?.category||'needs_human_review',reply_evidence:cls?.evidence||{},workflow_state:'reply_received',updated_at:nowIso()}).eq('id',p.id);return {id:p.id,company:p.company_name,event:'reply_detected',reply_classification:cls?.category||'needs_human_review'};}
   const bounce=await bounceAfter(p,firstAt);
   if(bounce){await deleteDraft(p.second_draft_id);await rpc('pppp_gc_mark_bounced_v1',{p_prospect_id:p.id,p_bounced_at:msgAt(bounce)?.toISOString()||nowIso(),p_reason:'gmail_delivery_bounce'});return {id:p.id,company:p.company_name,event:'bounce_detected'};}
 
@@ -242,6 +281,7 @@ async function processOne(row:any){
 
   const due=p.followup_due_date?new Date(`${p.followup_due_date}T00:00:00Z`):null;
   if(!due||due.getTime()>Date.now())return {id:p.id,company:p.company_name,event:'followup_not_due',due:p.followup_due_date};
+  if(!createRequested)return {id:p.id,company:p.company_name,event:'followup_due_manual',due:p.followup_due_date,new_value:'future_supplier_qualification_question'};
 
   if(p.second_draft_id&&p.status==='draft_2_ready'){
     let firstMsg:any=null;try{if(p.first_gmail_message_id)firstMsg=await message(p.first_gmail_message_id);}catch{}
@@ -266,13 +306,16 @@ async function processOne(row:any){
   return {id:p.id,company:p.company_name,event:'awaiting_manual_send_2'};
 }
 
-async function run(limit=25){
-  const {data,error}=await db.from('pppp_gc_prospects_v1').select('*').in('status',['contact_ready','draft_ready','contacted_1','followup_due','draft_2_ready','contacted_2','no_response_2']).order('relevance_score',{ascending:false}).order('updated_at',{ascending:true}).limit(Math.min(50,Math.max(1,limit)));
+async function run(limit=25,prospectId='',createRequested=false){
+  let q=db.from('pppp_gc_prospects_v1').select('*');
+  if(prospectId)q=q.eq('id',prospectId);
+  else q=q.in('status',['draft_ready','contacted_1','followup_due','draft_2_ready','contacted_2','no_response_2']);
+  const {data,error}=await q.order('relevance_score',{ascending:false}).order('updated_at',{ascending:true}).limit(prospectId?1:Math.min(50,Math.max(1,limit)));
   if(error)throw error;
   const results:any[]=[];let drafts1=0,drafts2=0,replies=0,bounces=0,duplicates=0,failed=0;
   for(const row of data||[]){
     try{
-      const r=await processOne(row);results.push(r);
+      const r=await processOne(row,createRequested);results.push(r);
       if(r.event==='created_draft_1'||r.event==='adopted_draft_1')drafts1++;
       if(r.event==='created_draft_2'||r.event==='adopted_draft_2')drafts2++;
       if(r.event==='reply_detected')replies++;
@@ -280,13 +323,18 @@ async function run(limit=25){
       if(r.event==='blocked_db_history'||r.event==='blocked_gmail_history')duplicates++;
     }catch(e){failed++;const msg=String(e instanceof Error?e.message:e).slice(0,800);results.push({id:row.id,company:row.company_name,event:'failed',error:msg});await db.from('pppp_gc_prospects_v1').update({last_error:msg,updated_at:nowIso()}).eq('id',row.id);}
   }
-  return {checked:(data||[]).length,drafts_1_ready:drafts1,drafts_2_ready:drafts2,replies,bounces,duplicates_blocked:duplicates,failed,results:results.slice(0,50),sequence:'email_1 -> 7 days -> email_2 -> stop',human_send_required:true,auto_send:false,no_paid_api:true};
+  return {checked:(data||[]).length,drafts_1_ready:drafts1,drafts_2_ready:drafts2,replies,bounces,duplicates_blocked:duplicates,failed,results:results.slice(0,50),sequence:'manual email_1 -> 7 days -> contextual manual email_2 -> stop',human_send_required:true,auto_send:false,auto_cold_draft:false,no_paid_api:true,engine:ENGINE};
 }
 
 Deno.serve(async(req:Request)=>{
   if(req.method==='OPTIONS')return new Response('ok',{headers:cors});
-  if(req.method!=='GET')return new Response(JSON.stringify({ok:false,error:'GET required'}),{status:405,headers:cors});
-  if(!(await authorized(req)))return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:cors});
-  try{const u=new URL(req.url),limit=Number(u.searchParams.get('limit')||25),out=await run(limit);return new Response(JSON.stringify({ok:true,...out}),{headers:cors});}
-  catch(e){return new Response(JSON.stringify({ok:false,error:String(e instanceof Error?e.message:e),auto_send:false,no_paid_api:true}),{status:500,headers:cors});}
+  if(!['GET','POST'].includes(req.method))return new Response(JSON.stringify({ok:false,error:'GET_or_POST_required'}),{status:405,headers:cors});
+  const mode=await authorizationMode(req);if(!mode)return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:cors});
+  try{
+    const u=new URL(req.url);let body:any={};if(req.method==='POST'){try{body=await req.json();}catch{}}
+    const limit=Number(body?.limit||u.searchParams.get('limit')||25),prospectId=text(body?.prospect_id||u.searchParams.get('prospect_id')||'',80);
+    if(mode==='user'&&!prospectId)return new Response(JSON.stringify({ok:false,error:'prospect_id_required_for_user_request',auto_send:false,human_send_required:true}),{status:400,headers:cors});
+    const out=await run(limit,prospectId,mode==='user');
+    return new Response(JSON.stringify({ok:true,...out,authorization_mode:mode}),{headers:cors});
+  }catch(e){return new Response(JSON.stringify({ok:false,error:String(e instanceof Error?e.message:e),auto_send:false,no_paid_api:true,human_send_required:true}),{status:500,headers:cors});}
 });
