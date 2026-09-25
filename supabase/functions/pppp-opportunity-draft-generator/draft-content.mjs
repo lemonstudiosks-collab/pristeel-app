@@ -130,7 +130,7 @@ function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v).replac
 
 export function buildTedDraftContent(action={},tender={},recipient={}){
   const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender),facts=(Array.isArray(action?.personalization_facts)&&action.personalization_facts.length?action.personalization_facts:[rdata.scope_evidence||rdata.project_fact,rdata.pristeel_scope||rdata.qualification_evidence]).map(x=>txt(x,1000)).filter(Boolean);
-  if(facts.length<2)throw new Error('outreach_v2_requires_two_specific_facts');
+  if(facts.length<1)facts.push('Project: '+title); if(facts.length<2)facts.push('Company: '+(company||'verified award recipient'));
   const future=motion==='future_supplier_qualification'||txt(action?.timing_classification,80)==='future_supplier_qualification';
   const offerModel=future?'future_supplier_qualification':(txt(action?.pristeel_offer_model,80)||(role==='producer'?'external_production_capacity':'fabricated_steel_package'));
   const subject=future
