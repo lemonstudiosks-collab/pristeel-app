@@ -88,7 +88,7 @@ export function resolveTedDraftRecipients(action,tenderPayload,max=20){
     const c=candidate(email,{...meta,allow_free_domain:false});if(!c||c.draft_eligible===false)return;
     if(!belongsToCompany(c.email,domains))return;
     const cr=confidenceRank(c.confidence),score=Number(c.score||0);if(cr<2&&score<80)return;
-    const tier=contactTier(c.email,c),contact_quality_score=contactQualityScore(c.email,c);if(contact_quality_score<50)return;
+    const tier=contactTier(c.email,c),contact_quality_score=contactQualityScore(c.email,c);if(contact_quality_score<25)return;
     rows.push({...c,contact_tier:tier,contact_quality_score,company_attribution:c.company_attribution||'verified_company_domain',recipient_company_domain:domainFromEmail(c.email)});
   };
   for(const r of Array.isArray(tenderPayload?.winner_contacts)?tenderPayload.winner_contacts:[]){
