@@ -6803,34 +6803,19 @@ async function supaFetch(path,method,body){
   var txt=await r.text();
   return txt?JSON.parse(txt):[];
 }
-// Rikthen punen e paruajtur pas ri-kycjes (nese ka)
+// Njofton pa bllokuar kur ka pune te paruajtur. Rikthimi real behet vetem
+// nga kontrolli brenda Sistemit, ne menyre qe hyrja dhe Home te mbeten stabile.
 function recoverUnsavedWork(){
   var keys=[];
   for(var i=0;i<localStorage.length;i++){
     var k=localStorage.key(i);
     if(k&&k.indexOf('pristeel_unsaved_')===0) keys.push(k);
   }
-  if(!keys.length) return;
-  if(!confirm('U gjet punë e paruajtur nga sesioni i mëparshëm ('+keys.length+' veprim(e)). Ta provojmë ruajtjen tani?')){
-    if(confirm('Ta fshijmë përfundimisht?')) keys.forEach(function(k){localStorage.removeItem(k);});
-    return;
-  }
-  var done=0, failed=0;
-  var chain=Promise.resolve();
-  keys.forEach(function(k){
-    chain=chain.then(function(){
-      var rec=null;
-      try{ rec=JSON.parse(localStorage.getItem(k)); }catch(e){ localStorage.removeItem(k); return; }
-      if(!rec||!rec.path) { localStorage.removeItem(k); return; }
-      return supaFetch(rec.path, rec.method, rec.body)
-        .then(function(){ done++; localStorage.removeItem(k); })
-        .catch(function(){ failed++; });
-    });
-  });
-  chain.then(function(){
-    if(done||failed) alert('Rikthimi përfundoi: '+done+' u ruajtën'+(failed?', '+failed+' dështuan (mbeten të ruajtura lokalisht)':'')+'.');
-    if(typeof loadProjectList==='function') loadProjectList();
-  });
+  if(!keys.length) return Promise.resolve({pending:0,deferred:false});
+  window.__pstPendingRecoveryNotice=keys.length;
+  try{document.dispatchEvent(new CustomEvent('pst:unsaved-recovery-detected',{detail:{count:keys.length}}));}catch(e){}
+  try{var A=window.PSTOperatingAssistantV2;if(A&&typeof A.renderRecovery==='function')A.renderRecovery();}catch(e){}
+  return Promise.resolve({pending:keys.length,deferred:true});
 }
 // _curProjId deklarohet lart (shih resetWorkspace)
 // ── AFATI: sinkronizim date <-> jave ──────────────────────

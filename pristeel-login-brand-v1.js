@@ -44,7 +44,8 @@ function css(){
 #auth-gate.pst-auth-branded{background:radial-gradient(circle at 72% 14%,rgba(103,168,192,.14),transparent 34%),linear-gradient(145deg,#F8FBFC,#EEF6F8)!important;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important}
 /* Legacy branding existed both with and without a class in the original auth markup. */
 #auth-gate.pst-auth-branded .auth-logo,#auth-gate.pst-auth-branded .pst-auth-legacy-brand{display:none!important}
-#auth-gate.pst-auth-branded #auth-form{background:#fff!important;border:1px solid #DCE8EC!important;border-radius:18px!important;box-shadow:0 22px 60px rgba(45,82,97,.12)!important;padding:32px 34px!important;max-width:420px!important;width:calc(100% - 32px)!important}
+#auth-gate.pst-auth-branded>.pst-auth-card,#auth-gate.pst-auth-branded>div{width:min(420px,calc(100vw - 32px))!important;background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}
+#auth-gate.pst-auth-branded #auth-form{box-sizing:border-box!important;background:#fff!important;border:1px solid #DCE8EC!important;border-radius:18px!important;box-shadow:0 22px 60px rgba(45,82,97,.12)!important;padding:32px 34px!important;max-width:420px!important;width:100%!important}
 #auth-gate.pst-auth-branded .pst-auth-brand{text-align:center;margin-bottom:25px;color:#253239}
 #auth-gate.pst-auth-branded .pst-auth-mark{width:54px;height:54px;margin:0 auto 12px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#67A8C0,#3F7F98);box-shadow:0 13px 30px rgba(63,127,152,.2);color:#fff}
 #auth-gate.pst-auth-branded .pst-auth-mark svg{width:28px;height:28px;fill:currentColor}

@@ -11,14 +11,14 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2 ps
 <section class="page active" id="page-workspace-home" style="display:block"><div id="pst-native-home-v4"><section class="pst-live-command-shell"><form class="pst-live-command"><textarea class="pst-live-input"></textarea><button class="pst-live-send">↑</button></form></section></div></section>
 </div></main></div></body></html>`,{url:'https://example.test/',runScripts:'outside-only',pretendToBeVisual:true});
 const {window}=dom;
-let actionCalls=0,projectCalls=0,opportunityCalls=0,materialCalls=0;
+let actionCalls=0,projectCalls=0,projectAreaCalls=0,opportunityCalls=0,materialCalls=0;
 window.PSTHomeCanonicalV1={snapshot:()=>({
  actions:[{key:'a1',project_name:'Airbus H24X',title:'Kontrollo ofertën',why:'Verifiko marzhën',priority:'high',due_date:new Date().toISOString()}],
  projects:[{id:'p1',name:'Dukley Seafront',pipeline_stage:'client_offer',next_action:'Përgjigju klientit'}],waiting:[]
 })};
 window.PSTHomeOperatingGridV1={_test:{proxyAction:key=>{if(key==='a1')actionCalls++;return true;}}};
 window.pstOpenProjectWorkspace=id=>{if(id==='p1')projectCalls++;};
-window.PSTPrimaryNavResilienceV10={openOpportunities:()=>{opportunityCalls++;},openProjects:()=>true};
+window.PSTPrimaryNavResilienceV10={openOpportunities:()=>{opportunityCalls++;},openProjects:()=>{projectAreaCalls++;return true;}};
 window.PSTProjectCentricWorkflowV1={_state:{rows:[{id:'o1',status:'new',relevance_score:92}]},_test:{opportunityRows(){return thisRows;},opportunityLifecycle(){return'new';}}};
 const thisRows=window.PSTProjectCentricWorkflowV1._state.rows;
 window.PSTDachSteelSalesV3={snapshot:()=>({summary:{ready_for_outreach:11,draft_ready:2,replied:1},targets:Array.from({length:11})}),open:()=>{materialCalls++;}};
@@ -36,12 +36,15 @@ assert(home.querySelector('.pst-live-command-shell'),'Existing Pyet PPPP shell m
 
 home.querySelector('[data-morning-action]').click();
 home.querySelector('[data-morning-project]').click();
-home.querySelector('[data-morning-area="opportunities"]').click();
-home.querySelector('[data-morning-area="material"]').click();
+home.querySelector('[data-morning-card][data-morning-area="projects"] .pst-morning-panel-head h2').click();
+home.querySelector('[data-morning-card][data-morning-area="opportunities"] .pst-morning-metrics').click();
+home.querySelector('[data-morning-card][data-morning-area="material"] .pst-morning-panel-head h2').click();
 assert.equal(actionCalls,1,'Morning action must delegate to the canonical action owner');
 assert.equal(projectCalls,1,'Morning project must open through the canonical project route');
+assert.equal(projectAreaCalls,1,'The full Projects card must open Projects');
 assert.equal(opportunityCalls,1,'Morning Opportunities must use canonical navigation');
 assert.equal(materialCalls,1,'Morning Material Trade must use its existing owner');
+assert.equal(home.querySelectorAll('[data-morning-card]').length,3,'All three Home work cards must expose full-card click targets');
 
 dom.window.close();
 console.log('Morning Command Center smoke: PASS');
