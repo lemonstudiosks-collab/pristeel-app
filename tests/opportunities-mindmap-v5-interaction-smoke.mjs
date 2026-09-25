@@ -107,11 +107,13 @@ await new Promise(r=>setTimeout(r,30));
 assert.equal(api._state.source,'TED','left-side source filter must update the canonical filter state');
 assert(window.document.querySelector('#pst-opp-desk'),'filtering must remain on the same workdesk');
 
-const dashboardBack=window.document.querySelector('[data-pst-opp-back],[data-pcw-opportunities-back]');
+let dashboardBack=window.document.querySelector('[data-pst-opp-back],[data-pcw-opportunities-back]');
 assert(dashboardBack,'workdesk must keep a functional Kthehu control even during canonical rerenders');
 window.eval(productionSurfaceSrc);
 window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
 await new Promise(r=>setTimeout(r,25));
+dashboardBack=window.document.querySelector('[data-pst-opp-back],[data-pcw-opportunities-back]');
+assert(dashboardBack,'late Production Surface Owner must preserve a live Kthehu control');
 assert.notEqual(window.getComputedStyle(dashboardBack).display,'none','late Production Surface Owner must not hide Kthehu');
 dashboardBack.click();
 assert.equal(homeCalls,1,'Kthehu must route Home exactly once');
