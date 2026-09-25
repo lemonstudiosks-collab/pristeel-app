@@ -13,3 +13,4 @@ export function encodeRfc2047Header(v){
   if(current)chunks.push(current);
   return chunks.map(chunk=>`=?UTF-8?B?${base64Utf8(chunk)}?=`).join(' ');
 }
+
