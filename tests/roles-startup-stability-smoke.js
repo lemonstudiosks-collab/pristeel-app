@@ -8,6 +8,8 @@ assert(!/setInterval\s*\(/.test(s),'Roles startup must not poll with setInterval
 assert(/waits=\[0,400,1200,2500,5000,9000\]/.test(s),'Bounded role readiness schedule missing');
 assert(/pristeel-project-emails\.js\?v='\+String\(Date\.now\(\)\)/.test(s),'Bootstrap must remain cache-busted');
 assert(/authGetSession/.test(s),'Role loading must remain session-aware');
+assert(/user_id=eq\.'\+encodeURIComponent\(myUserId\)/.test(s),'Role lookup must filter by authenticated user_id');
+assert(!s.includes("user_roles?select=role,full_name,email&limit=1"),'Role lookup must never use an unfiltered first row');
 assert(!s.includes('pristeel-startup-guard-v2.js'),'Roles must not add a second startup-visibility owner');
 assert(!s.includes("bootRoot.classList.add('pst-booting')"),'Roles must not hide the whole app shell during boot');
 assert(transition.includes('settleExistingSession'),'Authenticated reloads must settle without a blocking overlay');

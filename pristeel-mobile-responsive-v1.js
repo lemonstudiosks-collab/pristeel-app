@@ -23,7 +23,7 @@ function installCss(){
   s.id='pst-mobile-responsive-v1-css';
   s.textContent=`
 #pst-mobile-nav-v1{display:none}
-@media(max-width:900px){
+@media(max-width:900px), (max-device-width:900px){
   html,body{max-width:100%;overflow-x:hidden}
   body #app-shell-root,
   body .app-shell{display:block!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:100%!important}

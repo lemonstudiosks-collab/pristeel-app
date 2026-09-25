@@ -1,3 +1,10 @@
+## 2026-09-25 — Mobile role and viewport correction
+
+- Fixed RBAC startup lookup so the current authenticated user's role is resolved by `user_id` (email fallback only when user id is unavailable) instead of reading an arbitrary first `user_roles` row.
+- The role fix replaces the existing single lookup and does not add extra Supabase polling or background reads.
+- Extended the mobile shell media condition to honor physical device width as well as CSS viewport width, preventing phone browsers using a desktop-style viewport from rendering the full desktop sidebar.
+- No business workflow, project, Gmail, finance or tender logic changed.
+
 ## 2026-09-25 — Mobile/tablet shell v2
 
 - Extended the presentation-only bottom navigation and full-width shell from phone-only widths through 900px so tablets do not lose usable workspace to the desktop sidebar.
