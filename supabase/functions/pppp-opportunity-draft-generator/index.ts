@@ -288,7 +288,7 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false)
     }
   }
   let recipients=(/^TED_/i.test(route)?resolveTedDraftRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1));
-  recipients=recipients.map((r:any)=>({...r,job_title:r.job_title||a.target_role||null,name:r.name||a.target_name||null,contact_tier:contactTier(r.email,r),contact_quality_score:contactQualityScore(r.email,r)})).filter((r:any)=>Number(r.contact_quality_score||0)>=50).slice(0,MAX_CONTACTS_PER_ACTION);
+  recipients=recipients.map((r:any)=>({...r,job_title:r.job_title||a.target_role||null,name:r.name||a.target_name||null,contact_tier:contactTier(r.email,r),contact_quality_score:contactQualityScore(r.email,r)})).filter((r:any)=>Number(r.contact_quality_score||0)>=25).slice(0,MAX_CONTACTS_PER_ACTION);
   const keepEmails=new Set(recipients.map((r:any)=>normalizeEmail(r.email)));
   const retired=refreshExisting?await retireObsoleteDrafts(a,keepEmails,'recipient_no_longer_preflight_eligible',budget):0;
   if(!recipients.length){
