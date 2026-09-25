@@ -20,7 +20,8 @@
     "pristeel-offer-editor.js",
     "pristeel-finance.js",
     "pristeel-contracts.js",
-    "pristeel-outreach.js"
+    "pristeel-outreach.js",
+    "pristeel-mobile-responsive-v1.js"
   ],
   "principles": {
     "currentMeansHeadOfMain": true,
@@ -52,9 +53,10 @@
         "pristeel-redesign-finalizer-v1.js",
         "pristeel-task-source-actions-v1.js",
         "pristeel-operating-experience-v1.js",
-        "pristeel-primary-nav-resilience-v1.js"
+        "pristeel-primary-nav-resilience-v1.js",
+        "pristeel-mobile-responsive-v1.js"
       ],
-      "note": "Workspace Architecture provides the shell. Native UI v3 is the early presentation owner loaded before the ordered runtime so approved colors and Home become visible without waiting for the full bootstrap. UI Runtime Stability observes route settling without cloning pages, duplicating ids, intercepting clicks or owning routing. Existing navigation and business engines remain authoritative."
+      "note": "Workspace Architecture provides the shell. Native UI v3 is the early presentation owner. Operating Experience remains the cross-area desktop presentation/navigation owner. Mobile Responsive v1 is a <=640px presentation/navigation-only shell that reuses canonical routes, adds no Supabase reads/writes or polling, and leaves business/data ownership unchanged. UI Runtime Stability observes route settling without cloning pages, duplicating ids, intercepting clicks or owning routing."
     },
     {
       "area": "home",
