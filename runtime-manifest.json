@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "f36e03bea5f71a0dcb0c2575eec5de496620d982",
+  "auditedAtCommit": "f3b1347596c175137d05f5a6f31e72b7cd45da1b",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
@@ -56,7 +56,7 @@
         "pristeel-primary-nav-resilience-v1.js",
         "pristeel-mobile-responsive-v1.js"
       ],
-      "note": "Workspace Architecture provides the shell. Native UI v3 is the early presentation owner. Operating Experience remains the cross-area desktop presentation/navigation owner. Mobile Responsive v1 is a <=640px presentation/navigation-only shell that reuses canonical routes, adds no Supabase reads/writes or polling, and leaves business/data ownership unchanged. UI Runtime Stability observes route settling without cloning pages, duplicating ids, intercepting clicks or owning routing."
+      "note": "Workspace Architecture provides the shell. Native UI v3 is the early presentation owner. Operating Experience remains the cross-area desktop presentation/navigation owner. Mobile Responsive v1 is a <=900px presentation/navigation-only shell that reuses canonical routes, adds no Supabase reads/writes or polling, and leaves business/data ownership unchanged. UI Runtime Stability observes route settling without cloning pages, duplicating ids, intercepting clicks or owning routing."
     },
     {
       "area": "home",
@@ -128,13 +128,6 @@
       ]
     },
     {
-      "area": "sales-engine",
-      "finalOwners": [
-        "pristeel-sales-engine-v3.js"
-      ],
-      "note": "Unified low-egress commercial workbench over Material Trade, TED awarded-project routes and GC Direct. It loads aggregate funnel plus the 25-row pilot first; broader queues and Supplier Health are on demand. Draft creation is human-selected and remains subject to V2 readiness/evidence gates; no automatic send, pricing decision, supplier commitment or project outcome mutation."
-    },
-    {
       "area": "material-trade",
       "finalOwners": [
         "pristeel-dach-steel-sales-v1.js"
@@ -153,7 +146,7 @@
         "pristeel-tender-dossier-analysis-v1.js",
         "pristeel-tender-supplier-sourcing-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow remains the visible Opportunities owner. The dossier analyzer owns public/partial dossier reading; protected KRPP documents are imported through the purpose-limited pristeel-tender-dossier-import-v1.js companion into the existing protected_archive. Tender Supplier Sourcing remains read-only during discovery; opening a supplier RFQ is allowed only for an eligible direct-bid tender after Supplier Gate approval, then a planned RFQ is registered before the human-controlled Gmail compose opens. Nothing is sent automatically and no supplier is selected or committed."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow remains the visible Opportunities owner. The dossier analyzer owns public/partial dossier reading; protected KRPP documents are imported through the purpose-limited pristeel-tender-dossier-import-v1.js companion into the existing protected_archive, then finalized only by pppp-tender-protected-archive-analysis. Tender Supplier Sourcing is an additive read-only Action Console module: canonical BOM first when uniquely resolved, strict Supplier Intelligence evidence, and on-demand external discovery only. No tender becomes a project, no supplier is selected, and no RFQ/email is sent without a human decision."
     },
     {
       "area": "ai",
@@ -324,19 +317,13 @@
       "module": "pristeel-tender-supplier-sourcing-v1.js",
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded additively for tender Action Console sourcing. Supplier discovery remains read-only. Human-controlled RFQ compose requires the direct-tender Supplier Gate and registers only a planned RFQ; no automatic send, supplier selection or commitment."
+      "condition": "Loaded additively for tender Action Console sourcing. Reads canonical BOM / Supplier Intelligence and performs bounded external discovery only when the user clicks Gjej furnitorë; no Supplier Master, RFQ-log or email mutation."
     },
     {
       "module": "pristeel-dach-steel-sales-v1.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded by the ordered bootstrap with the reviewed 20260924-company-intel4 cache path. Owns the Material Trade buyer page for EU + CH + ME + RS, including visible company/contact intelligence, regional outreach-language routing and human-confirmed RFQ-to-Project promotion, while retaining legacy dach_steel_* backend identifiers for compatibility."
-    },
-    {
-      "module": "pristeel-sales-engine-v3.js",
-      "loader": "pristeel-project-emails.js",
-      "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded by the ordered bootstrap after Material Trade. Owns the unified PriSteel Sales Engine workbench and reads aggregate/pilot data first; extended queues are user-triggered."
     }
   ],
   "loadOrderConstraints": [
@@ -419,11 +406,6 @@
       "before": "pristeel-primary-nav-resilience-v1.js",
       "after": "pristeel-project-execution-guard-v1.js",
       "reason": "The post-award lifecycle guard deliberately loads last."
-    },
-    {
-      "before": "pristeel-dach-steel-sales-v1.js",
-      "after": "pristeel-sales-engine-v3.js",
-      "reason": "The Sales Engine uses Material Trade as a drill-down and loads after its compatibility owner."
     }
   ],
   "deprecatedForbidden": [
