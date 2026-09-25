@@ -10,6 +10,8 @@ const text=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const keyNorm=v=>norm(v).replace(/[^a-z0-9]+/g,' ');
 function hasAny(v,terms){const h=norm(v);return terms.find(t=>h.includes(norm(t)))||'';}
+const GC_TERMS=['ndertim','ndërtim','rikonstruksion','rikonstruksioni','rehabilitim','objekt i ri','godine','godinë','shkolle','shkollë','spital','depo','magazine','magazinë','terminal','ure','urë','impjant','impiant','fabrike','fabrikë','qender logjistike','qendër logjistike','pallat sporti','hangar'];
+const GC_SPECIALIST=['lyerje','bojatisje','hidraulike','sanitare','elektrike','kondicionim','ventilim','ashensor','çati','cati','pllaka','pastrim','gjelberim','gjelbërim','mobilim','projektim','supervizim','mbikeqyrje','mbikëqyrje'];
 function parseAmount(v){let s=text(v).replace(/[^0-9,.-]/g,'');if(!s)return null;const c=s.lastIndexOf(','),d=s.lastIndexOf('.');if(c>=0&&d>=0){const dec=c>d?',':'.',th=dec===','?'.':',';s=s.split(th).join('').replace(dec,'.');}else if(c>=0){const decimals=s.length-c-1;s=decimals===2?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');}const n=Number(s);return Number.isFinite(n)?n:null;}
 function isoDate(v){const s=text(v);let m=s.match(/\b(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})\b/);if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;m=s.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\b/);return m?`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`:'';}
 function cpvCodes(v){return [...new Set((text(v).match(/\b\d{8}-\d\b/g)||[]))];}
@@ -25,7 +27,11 @@ export function classifyAlbaniaSteel(row){
  const process=hasAny(n,['fabrikim','saldim','galvaniz','montim metal','punime metalike']);if(process){structure+=32;reasons.push(`punim struktural: ${process}`);}
  const cpvs=row?.cpvs||cpvCodes(row?.cpv_text||row?.fpp||'');
  for(const c of cpvs){const d=c.replace(/\D/g,'');if(/^14622000/.test(d)){raw+=88;reasons.push(`CPV çelik: ${c}`);}else if(/^(44171000|44172000|44330000|44334000)/.test(d)){raw+=64;reasons.push(`CPV produkt çeliku: ${c}`);}else if(/^(4421|452231|452232)/.test(d)){structure+=78;reasons.push(`CPV strukturë çeliku: ${c}`);}else if(/^45000000/.test(d)&&structStrong){structure+=24;reasons.push(`CPV ndërtim + sinjal metalik: ${c}`);}}
- const best=Math.min(100,Math.max(raw,structure));let category='possible';if(best>=65)category=structure>=raw?'steel_structure':'raw_material';return{category,relevance_score:best,match_reasons:[...new Set(reasons)]};
+ let best=Math.min(100,Math.max(raw,structure));let category='possible';
+ const gcTerm=hasAny(n,GC_TERMS),specialist=hasAny(n,GC_SPECIALIST),worksCpv=cpvs.some(c=>/^45/.test(c.replace(/\D/g,'')));
+ if(best<55&&gcTerm&&worksCpv&&!specialist){best=58;reasons.push(`GC/ndërtim i përgjithshëm me potencial për paketë çeliku: ${gcTerm}`);}
+ if(best>=65)category=structure>=raw?'steel_structure':'raw_material';
+ return{category,relevance_score:best,match_reasons:[...new Set(reasons)]};
 }
 
 function countDelimiter(line,ch){let q=false,n=0;for(let i=0;i<line.length;i++){if(line[i]==='"'){if(q&&line[i+1]==='"')i++;else q=!q;}else if(!q&&line[i]===ch)n++;}return n;}
