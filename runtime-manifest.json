@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "name": "PPPP Active Runtime Manifest",
   "authoritativeBranch": "main",
-  "auditedAtCommit": "72f26d36edcb8d2867cf5dbc3d72e8e72ed044fc",
+  "auditedAtCommit": "e3b8930a9e67adda90f9640fdc5499be9eaa3d16",
   "entrypoints": {
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "c9172a7677d99d5c50fdee66fcddeff5da4aaa8a"
+    "bootstrapGitBlobSha": "8a144ebc6bde2b5dabdfbf7d9219c1e842a7c077"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -410,5 +410,8 @@
     "pristeel-document-adjustments.js",
     "pristeel-dashboard-focus.js",
     "pristeel-dashboard-operations.js"
+  ],
+  "notes": [
+    "2026-09-25: Sales Engine V3 adds a unified low-egress commercial workbench; cold draft generation remains human-selected and Supplier RFQs require Supplier Gate."
   ]
 }
