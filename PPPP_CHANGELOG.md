@@ -1,3 +1,12 @@
+## 2026-09-25 — Mobile responsive shell v1 (branch)
+
+- Added `pristeel-mobile-responsive-v1.js` as a presentation/navigation-only mobile shell.
+- Reuses the canonical six PPPP routes; no new business engine or Supabase data path.
+- Added safe-area-aware narrow-screen layout and bottom navigation for phone use while preserving existing page owners.
+- Linked the existing `pristeel.webmanifest` and install metadata in the application HTML.
+- Deliberately did **not** add service-worker caching in this phase to avoid stale-runtime risk during responsive rollout.
+- Added an isolated smoke test and CI workflow that guard against Supabase calls, polling, MutationObserver ownership and duplicate mobile runtime loading.
+
 # PPPP CHANGELOG
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
