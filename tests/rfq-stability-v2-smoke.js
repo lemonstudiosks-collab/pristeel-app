@@ -8,6 +8,7 @@ const {JSDOM}=require('jsdom');
  const w=dom.window;w._curProjId='p1';w.atob=s=>Buffer.from(s,'base64').toString('binary');
  let rfqPosts=0,offerPosts=0;const now=new Date().toISOString();
  w.supaFetch=async(path,method,body)=>{
+   if(method==='POST'&&path==='rpc/pppp_supplier_rfq_gate_v2')return {allowed:true,relationship_state:'healthy'};
    if(method==='POST'&&path==='rfq_log'){rfqPosts++;return[{id:'r1'}];}
    if(method==='POST'&&path==='offers'){offerPosts++;return[{id:'o1'}];}
    if(path.startsWith('rfq_log?'))return rfqPosts?[{id:'r1',project_id:'p1',sent_at:now}]:[];
@@ -19,6 +20,6 @@ const {JSDOM}=require('jsdom');
  await w.logRfqSent(encodeURIComponent('Supplier'),encodeURIComponent('a@supplier.com'),'en',encodeURIComponent('RFQ A'),b64);
  await w.logRfqSent(encodeURIComponent('Supplier'),encodeURIComponent('a@supplier.com'),'en',encodeURIComponent('RFQ A'),b64);
  assert.strictEqual(rfqPosts,1,'Repeated click created duplicate RFQ log');
- assert.strictEqual(offerPosts,1,'Repeated click created duplicate placeholder offer');
+ assert.strictEqual(offerPosts,0,'Planning an RFQ must not create a placeholder supplier offer before real send or quote evidence');
  dom.window.close();console.log('RFQ stability v2 smoke test passed.');
 })().catch(e=>{console.error(e);process.exit(1);});
