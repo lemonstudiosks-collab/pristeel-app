@@ -27,6 +27,8 @@ function absoluteUrl(base, href) { try { return new URL(decodeEntities(text(href
 function isoDate(v) { const m=text(v).match(/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})\b/); return m ? `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}` : ''; }
 function parseAmount(v) { let s=text(v).replace(/[^0-9,.-]/g,''); if(!s) return null; const c=s.lastIndexOf(','), d=s.lastIndexOf('.'); if(c>=0&&d>=0){const dec=c>d?',':'.', thou=dec===','?'.':','; s=s.split(thou).join('').replace(dec,'.');} else if(c>=0){s=s.replace(/,/g,'.');} const n=Number(s); return Number.isFinite(n)?n:null; }
 function hasAny(v, terms) { const h=norm(v); return terms.find(t=>h.includes(norm(t)))||''; }
+const GC_TERMS=['ndertim','ndërtim','rikonstruksion','rehabilitim','objekt i ri','shkolle','shkollë','spital','depo','magazine','magazinë','terminal','ure','urë','impiant','fabrike','fabrikë','qender logjistike','qendër logjistike','pallat sporti','hangar'];
+const GC_SPECIALIST=['lyerje','bojatisje','hidraulike','sanitare','elektrike','kondicionim','ventilim','ashensor','çati','cati','pllaka','pastrim','gjelberim','gjelbërim','mobilim','projektim','supervizim','mbikeqyrje','mbikëqyrje'];
 
 export function authorityPriority(authority) {
   const a=norm(authority);
@@ -73,7 +75,9 @@ export function classifyKrppSteel(row) {
 
   if(/\bfurnizim\b/.test(n)&&raw>0) raw+=6;
   if(/\b(pune|punime|montim|vendosja|ndertim)\b/.test(n)&&structure>0) structure+=6;
-  const best=Math.min(100,Math.max(raw,structure));
+  let best=Math.min(100,Math.max(raw,structure));
+  const gcTerm=hasAny(n,GC_TERMS),specialist=hasAny(n,GC_SPECIALIST);
+  if(best<35&&gcTerm&&/^45/.test(fpp)&&!specialist){best=45;reasons.push(`GC/ndërtim i përgjithshëm me potencial për paketë çeliku: ${gcTerm}`);}
   let category='possible';
   if(best>=65) category=structure>=raw?'steel_structure':'raw_material';
   return {category,relevance_score:best,match_reasons:reasons};
@@ -125,7 +129,7 @@ export function parseDetailHtml(html, detailUrl='', fallback={}){
   };
 }
 
-const HINTS=['celik','çelik','hekur','metal','llamar','profile','shufr','trar','gyp','tub','konstruksion','strukture','strukturë','platform','shkalle','shkallë','skele','skel','scaffold','rretho','fence','fencing','railing','guardrail','grating','shtyll','fabrikim','saldim','galvan','bravari','armature','b500','ipe','hea','heb'];
+const HINTS=[...GC_TERMS,'celik','çelik','hekur','metal','llamar','profile','shufr','trar','gyp','tub','konstruksion','strukture','strukturë','platform','shkalle','shkallë','skele','skel','scaffold','rretho','fence','fencing','railing','guardrail','grating','shtyll','fabrikim','saldim','galvan','bravari','armature','b500','ipe','hea','heb'];
 export function selectCandidates(notices,{recentDateCount=30,fullScanDateCount=2,maxCandidates=180}={}){
   const dates=[...new Set((notices||[]).map(x=>x.published_date).filter(Boolean))].sort((a,b)=>b.localeCompare(a)).slice(0,recentDateCount);
   const allowed=new Set(dates), full=new Set(dates.slice(0,fullScanDateCount)), out=[];
