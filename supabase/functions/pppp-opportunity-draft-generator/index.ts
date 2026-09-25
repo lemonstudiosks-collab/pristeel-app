@@ -13,7 +13,7 @@ const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'au
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
 const GENERATOR='pppp-opportunity-draft-generator-v23-commercial-engine-v3';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
-const MAX_CONTACTS_PER_ACTION=1;
+const MAX_CONTACTS_PER_ACTION=20;
 const MAX_DRAFT_WRITES_PER_RUN=25;
 const GMAIL_SCOPE='https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly';
 const META_HEADERS=['Message-ID','X-PPPP-Outreach-ID','X-PPPP-Action-ID','To','Date'];
