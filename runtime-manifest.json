@@ -21,7 +21,8 @@
     "pristeel-finance.js",
     "pristeel-contracts.js",
     "pristeel-outreach.js",
-    "pristeel-mobile-responsive-v1.js"
+    "pristeel-mobile-responsive-v1.js",
+    "pristeel-mobile-home-v1.js"
   ],
   "principles": {
     "currentMeansHeadOfMain": true,
@@ -65,9 +66,10 @@
         "pristeel-home-canonical-v1.js",
         "pristeel-home-operating-grid-v1.js",
         "pristeel-project-control-home-v1.js",
-        "pristeel-home-morning-command-center-v1.js"
+        "pristeel-home-morning-command-center-v1.js",
+        "pristeel-mobile-home-v1.js"
       ],
-      "note": "Native UI v3 owns the early Home shell. Morning Command Center is the final visible Home presentation: it keeps the canonical sidebar stable, groups repetitive priorities, integrates Daily into the header and composes existing in-memory action, project, Opportunities and Material Trade snapshots without adding database reads or writes. Legacy Home modules remain data/service compatibility layers."
+      "note": "Native UI v3 owns the early Home shell. Morning Command Center remains the desktop Home presentation and composes existing in-memory action, project, Opportunities and Material Trade snapshots without adding database reads or writes. Mobile Home v1 is the <=900px final Home presentation: compact greeting, Pyet PPPP launcher, three summary counters, one concise today card and four quick actions, all delegated to existing snapshots/routes with zero new Supabase reads or writes."
     },
     {
       "area": "projects-list",
