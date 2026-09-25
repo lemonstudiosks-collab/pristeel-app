@@ -59,6 +59,16 @@ function installCss(){
   #pst-mobile-nav-v1 button:focus-visible{outline:2px solid var(--pst-section-accent,#4F97AF);outline-offset:-2px}
   body #mini-calc{max-width:calc(100vw - 24px)!important;right:12px!important}
   body #cmdk-bg{padding-left:12px!important;padding-right:12px!important}
+  body .pst-ws-table,
+  body .table-wrap,
+  body .table-responsive{max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+  body .ov-modal,
+  body .pst-modal,
+  body [role="dialog"]{max-width:calc(100vw - 16px)!important;max-height:calc(100dvh - 20px)!important}
+  body button,body [role="button"],body .btn{touch-action:manipulation}
+  body #page-workspace-project .pst-operating-phase-nav,
+  body #page-workspace-project .pwb3-path{scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+  body #page-workspace-project .pst-business-phases{min-width:max-content}
 }
 @media(min-width:641px) and (max-width:900px){
   body #app-shell-root>.main,
