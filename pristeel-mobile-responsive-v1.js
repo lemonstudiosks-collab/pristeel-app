@@ -39,7 +39,7 @@ function installCss(){
   body .page{max-width:100%!important;min-width:0!important}
   body input,body select,body textarea{max-width:100%}
   #pst-mobile-nav-v1{
-    position:fixed;left:0;right:0;bottom:0;z-index:2147483000;
+    position:fixed;left:0;right:0;bottom:0;z-index:450;
     display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
     padding:6px 6px calc(6px + env(safe-area-inset-bottom));
     background:rgba(255,255,255,.96);border-top:1px solid rgba(28,39,49,.12);
@@ -57,6 +57,9 @@ function installCss(){
   #pst-mobile-nav-v1 button span{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #pst-mobile-nav-v1 button.active{color:var(--pst-section-deep,#34758B);background:var(--pst-section-soft,#EEF5F7)}
   #pst-mobile-nav-v1 button:focus-visible{outline:2px solid var(--pst-section-accent,#4F97AF);outline-offset:-2px}
+  body #util-fab{bottom:calc(78px + env(safe-area-inset-bottom))!important;right:10px!important}
+  body div[onclick="openCmdK()"][title^="Kërko"]{bottom:calc(78px + env(safe-area-inset-bottom))!important;left:10px!important;padding:7px 10px!important}
+  body div[onclick="openCmdK()"][title^="Kërko"]>span:last-child{display:none!important}
   body #mini-calc{max-width:calc(100vw - 24px)!important;right:12px!important}
   body #cmdk-bg{padding-left:12px!important;padding-right:12px!important}
   body .pst-ws-table,
