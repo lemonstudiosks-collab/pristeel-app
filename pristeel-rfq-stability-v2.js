@@ -15,6 +15,11 @@ function safeRead(path){
 }
 function projectName(){var e=document.getElementById('i-projname');return String(e&&e.value||'');}
 function projectId(){return String(window._curProjId||window.__pstCurrentProjectId||'');}
+async function supplierGate(pid,supplier,email){
+  if(typeof window.supaFetch!=='function')throw new Error('Supabase nuk eshte gati.');
+  var rows=await window.supaFetch('rpc/pppp_supplier_rfq_gate_v2','POST',{p_project_id:pid||null,p_tender_watch_id:null,p_supplier_name:supplier||'',p_supplier_email:email||'',p_rfq_mode:'firm'});
+  return rows&&Array.isArray(rows)?rows[0]||{}:rows||{};
+}
 function decode(v){try{return decodeURIComponent(v||'');}catch(e){return String(v||'');}}
 function bodyDecode(v){try{return decodeURIComponent(escape(atob(v||'')));}catch(e){return'';}}
 function recentEnough(v){var t=v?new Date(v).getTime():0;return !!t&&(Date.now()-t)<120000;}
@@ -31,18 +36,24 @@ window.logRfqSent=async function(nameEnc,emailEnc,lang,subjEnc,bodyEnc){
   if(typeof window.supaFetch!=='function')return;
   var supplier=decode(nameEnc),email=decode(emailEnc),subject=decode(subjEnc),body=bodyDecode(bodyEnc),pid=projectId(),proj=projectName();
   try{
-    var recent=await safeRead('rfq_log?supplier_email=eq.'+enc(email)+'&subject=eq.'+enc(subject)+'&select=id,sent_at,project_id,supplier_email,subject&order=sent_at.desc&limit=5');
-    var duplicate=recent.some(function(r){return String(r.project_id||'')===String(pid||'')&&recentEnough(r.sent_at);});
-    if(!duplicate){
-      await window.supaFetch('rfq_log','POST',{project_id:pid||null,project_name:proj,supplier_name:supplier,supplier_email:email,lang:lang||'en',subject:subject,body:body,sent_at:new Date().toISOString(),status:'sent'});
+    var gate=await supplierGate(pid,supplier,email);
+    if(!gate||gate.allowed!==true){
+      if(typeof window.toast==='function')window.toast('Supplier Gate bllokoi RFQ: '+String(gate&&gate.reason||'nuk lejohet'),true);
+      else alert('Supplier Gate bllokoi RFQ: '+String(gate&&gate.reason||'nuk lejohet'));
+      return false;
     }
-    await ensurePlaceholder(pid,supplier);
+    var recent=await safeRead('rfq_log?project_id=eq.'+enc(pid)+'&supplier_email=eq.'+enc(email)+'&subject=eq.'+enc(subject)+'&status=in.(planned,draft,draft_review,sent)&select=id,status,created_at,sent_at&order=created_at.desc&limit=5');
+    if(!recent.length){
+      await window.supaFetch('rfq_log','POST',{project_id:pid||null,project_name:proj,supplier_name:supplier,supplier_email:email,lang:lang||'en',subject:subject,body:body,status:'planned',rfq_mode:'firm',supplier_relationship_state:gate.relationship_state||null,supplier_gate_snapshot:gate,human_send_required:true});
+    }
     if(typeof window.loadCockpit==='function')window.loadCockpit();
+    return true;
   }catch(error){
-    if(window.console&&console.error)console.error('PRISTEEL RFQ registration:',error);
-    if(typeof window.toast==='function')window.toast('RFQ u hap në Gmail, por regjistrimi në platformë dështoi.',true);
+    if(window.console&&console.error)console.error('PRISTEEL RFQ planning:',error);
+    if(typeof window.toast==='function')window.toast('RFQ drafti nuk u regjistrua: '+String(error&&error.message||error),true);
+    return false;
   }
 };
 
-window.PSTRfqStabilityV2={recentEnough:recentEnough,ensurePlaceholder:ensurePlaceholder};
+window.PSTRfqStabilityV2={version:'20260925-commercial-engine-v3',recentEnough:recentEnough,ensurePlaceholder:ensurePlaceholder,supplierGate:supplierGate};
 })();

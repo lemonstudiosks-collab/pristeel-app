@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v14-project-thread-continuity";
+const V="pppp-dach-steel-draft-generator-v16-commercial-engine-v3";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -17,7 +17,7 @@ const res=(b:any,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{...C,
 const uuid=(v:any)=>/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(t(v,80));
 const dom=(v:any)=>{const e=em(v),i=e.lastIndexOf("@");return i>0?e.slice(i+1):"";};
 const local=(v:any)=>(em(v).split("@")[0]||"").replace(/\+.*/,"");
-const badLocal=new Set(["jobs","careers","career","hr","privacy","gdpr","webmaster","press","presse","media","newsletter","noreply","no-reply","donotreply","dpo","security","abuse"]);
+const badLocal=new Set(["jobs","careers","career","hr","humanresources","recruiting","privacy","gdpr","webmaster","press","presse","media","marketing","newsletter","noreply","no-reply","donotreply","dpo","security","abuse"]);
 const badDom=new Set(["gmail.com","googlemail.com","hotmail.com","outlook.com","live.com","yahoo.com","icloud.com","aol.com","example.com","example.org","example.net"]);
 const recover=new Set(["gmail_draft_missing","gmail_draft_stale","draft_missing","draft_stale"]);
 const SIG_LOGO_B64="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";
@@ -107,15 +107,19 @@ async function recentSentToDomain(domain:any,days:number){
 async function applyLifecycle(tg:any,q:any,life:any){
  const sent=life?.sent,reply=life?.reply;if(!sent)return null;
  const now=new Date().toISOString(),status=reply?"replied":"sent";
+ let replyClass:any=null;
+ if(reply){const rc=await db.rpc("pppp_outreach_reply_classification_v2",{p_subject:reply.subject||"",p_snippet:""});if(!rc.error)replyClass=rc.data;}
  const payload={...(q?.payload&&typeof q.payload==="object"?q.payload:{}),gmail_reconciled_at:now,gmail_sent_message_id:sent.id,gmail_sent_thread_id:sent.thread_id||q.gmail_thread_id};
- if(reply){payload.gmail_reply_message_id=reply.id;payload.gmail_reply_at=reply.at;}
+ if(reply){payload.gmail_reply_message_id=reply.id;payload.gmail_reply_at=reply.at;payload.reply_classification=replyClass;}
  const qu=await db.from("pppp_outbound_queue_v1").update({
   status,sent_at:q.sent_at||sent.at||now,replied_at:reply?.at||q.replied_at||null,gmail_thread_id:sent.thread_id||q.gmail_thread_id,
+  workflow_state:status,delivered_at:q.delivered_at||sent.at||now,
+  reply_classification:replyClass?.category||q.reply_classification||null,reply_evidence:replyClass?.evidence||q.reply_evidence||{},
   suppression_reason:null,approved_for_send:false,payload,updated_at:now
  }).eq("id",q.id).select("*").single();
  if(qu.error)throw qu.error;
  const next=reply?"Buyer replied — review the Gmail thread and classify whether an RFQ/BOQ was received.":"Waiting for buyer reply / RFQ. Do not send another cold outreach while cooldown is active.";
- const tu=await db.from("pppp_dach_steel_targets_v1").update({outreach_status:status,next_action:next,updated_at:now}).eq("id",tg.id);
+ const tu=await db.from("pppp_dach_steel_targets_v1").update({outreach_status:status,workflow_state:status,reply_classification:replyClass?.category||tg.reply_classification||null,reply_evidence:replyClass?.evidence||tg.reply_evidence||{},next_action:next,updated_at:now}).eq("id",tg.id);
  if(tu.error)throw tu.error;
  return qu.data;
 }
@@ -200,6 +204,36 @@ function buyerText(tg:any,signatureHtml=""){
    :'<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>Dear Sir or Madam,</p><p>We would like to introduce PRISTEEL as an additional procurement source for steel material. We supply structural steel, sections, plates, tubes/hollow sections and related steel products through a qualified supply network.</p><p>We also organize transport to your requested delivery address on a <strong>DAP</strong> basis.</p><p>If your company currently or regularly purchases steel material, please send us your <strong>RFQ or material list</strong> with grades, dimensions, quantities and requested delivery dates.</p><p>If purchasing is handled by another colleague, I would appreciate it if you could forward this message.</p><p>Kind regards,</p>'+sig+'</div>';
  return{subject,body,html_body:html,approach_mode:"rfq_request",language:lang};
 }
+
+function contactTier(email:any,name:any,role:any){
+ const lp=local(email),r=nm(role),person=t(name,200);
+ if(!em(email)||badLocal.has(lp)||/(marketing|press|presse|media|career|karriere|recruit|human resources|personalwesen|\bhr\b)/.test(r))return"F";
+ if(/(einkauf|procurement|purchas|sourcing|beschaffung|ausschreibung|tender|vergabe)/.test(lp))return"C";
+ if(/^(info|office|contact|kontakt|hello|mail|admin|sekretariat|zentrale|general)$/.test(lp))return"E";
+ if(person&&/(einkauf|procurement|purchas|sourcing|beschaffung|material|supply|buyer)/.test(r))return"A";
+ if(person&&/(project|projekt|technical|technik|commercial|kaufm|construction|bauleit|geschäfts|manag|director|leiter)/.test(r))return"B";
+ return person||/^[a-z]+[._-][a-z]+$/.test(lp)?"D":"E";
+}
+function tierScore(v:string){return v==="A"?95:v==="B"?82:v==="C"?70:v==="D"?55:v==="E"?25:0;}
+function specificFacts(tg:any){
+ const a=Array.isArray(tg?.personalization_facts)?tg.personalization_facts.filter((x:any)=>t(x,1000)):[];
+ if(a.length>=2)return a.slice(0,4).map((x:any)=>t(x,1000));
+ return [tg?.project_title,tg?.why_now].filter((x:any)=>t(x,1000)).map((x:any)=>t(x,1000));
+}
+function buyerTextV2(tg:any,signatureHtml=""){
+ const lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",facts=specificFacts(tg),motion=t(tg?.outreach_motion||"material_buyer",80),project=t(tg?.project_title,500),company=t(tg?.company_name,500),anchor=project||facts[0]||company,sig=signatureHtml||canonicalSignatureHtml;
+ if(facts.length<2)throw new Error("outreach_v2_requires_two_specific_facts");
+ const future=motion==="future_supplier_qualification"||t(tg?.timing_classification,80)==="future_supplier_qualification";
+ const subject=future?(de?company+" – Lieferantenqualifizierung Stahl | PRISTEEL":bcs?company+" – kvalifikacija dobavljača čelika | PRISTEEL":company+" – future steel supplier qualification | PRISTEEL"):(de?anchor+" – Stahlmaterial-Beschaffung | PRISTEEL":bcs?anchor+" – nabavka čeličnog materijala | PRISTEEL":anchor+" – steel material procurement | PRISTEEL");
+ const hello=de?"Guten Tag,":bcs?"Poštovani,":"Hello,";
+ const intro=future?(de?"wir verstehen, dass der aktuelle Beschaffungsumfang möglicherweise bereits abgedeckt ist. Für künftige Stahlbau- und Materialpakete möchten wir prüfen, ob PRISTEEL in Ihren Lieferantenprozess passt.":bcs?"razumijemo da je trenutni paket možda već pokriven. Za buduće pakete čeličnih konstrukcija i materijala želimo provjeriti da li PRISTEEL odgovara Vašem procesu kvalifikacije dobavljača.":"We understand the current package may already be covered. For future structural-steel and material packages, we would like to check whether PRISTEEL fits your supplier-qualification process."):(de?"wir melden uns mit Bezug auf zwei konkrete, öffentlich verifizierte Punkte:":bcs?"javljamo Vam se na osnovu dvije konkretne, javno provjerene činjenice:":"We are reaching out based on two specific, publicly verified facts:");
+ const capability=de?"PRISTEEL ist die technische und kaufmännische Schnittstelle für projektbezogene Stahlbeschaffung – von Materialanforderung und Dokumentation bis zu optionaler Bearbeitung und koordinierter DAP-Lieferung.":bcs?"PRISTEEL je tehničko-komercijalna veza za projektnu nabavku čelika – od zahtjeva za materijalom i dokumentacije do opcionalne obrade i koordinirane DAP isporuke.":"PRISTEEL acts as the technical and commercial interface for project-specific steel procurement, coordinating material requirements, documentation, optional processing and DAP delivery.";
+ const cta=future?(de?"Wer ist bei Ihnen für die Qualifizierung künftiger Lieferanten für Stahlmaterial zuständig?":bcs?"Ko je kod Vas zadužen za kvalifikaciju budućih dobavljača čeličnog materijala?":"Who handles qualification of future steel-material suppliers in your organization?"):(de?"Wird diese Materialkategorie von Ihnen betreut, und wäre ein Vergleichspreis für eine aktuelle Position hilfreich?":bcs?"Da li Vi vodite nabavku ove kategorije materijala i da li bi Vam koristila uporedna cijena za jednu aktuelnu poziciju?":"Is this material category handled by you, and would a benchmark quotation for one current position be useful?");
+ const close=de?"Mit freundlichen Grüßen":bcs?"Srdačan pozdrav,":"Kind regards,";
+ const body=[hello,"",intro,"","• "+facts[0],"• "+facts[1],"",capability,"",cta,"",close,"",signature].join("\n");
+ const html='<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>'+htmlEsc(hello)+'</p><p>'+htmlEsc(intro)+'</p><ul><li>'+htmlEsc(facts[0])+'</li><li>'+htmlEsc(facts[1])+'</li></ul><p>'+htmlEsc(capability)+'</p><p><strong>'+htmlEsc(cta)+'</strong></p><p>'+htmlEsc(close)+'</p>'+sig+'</div>';
+ return{subject,body,html_body:html,approach_mode:future?"future_supplier_qualification":"material_buyer",offer_model:future?"future_supplier_qualification":"material_supply",language:lang,personalization_facts:facts.slice(0,2)};
+}
 function supplierText(tg:any,c:any){const p=t(tg?.project_title||tg?.company_name,500),m=mat(tg),ind=tg?.quote_readiness!=="M3",de=nm(c?.contact_language).startsWith("de");if(de){const subject=(ind?"Indikative RFQ":"RFQ")+" | "+p,body=["Guten Tag,","",'wir prüfen derzeit die Stahlmaterialbeschaffung für das Projekt „'+p+'“.',"",ind?"Die nachstehenden Mengen basieren derzeit auf veröffentlichten Projektinformationen und sind bis zum Erhalt der finalen BOQ / Materialliste als indikativ zu behandeln:":"Die nachstehenden Positionen basieren auf der verfügbaren Materialliste:","",...m,"","Bitte teilen Sie uns – soweit mit den verfügbaren Angaben möglich – Preis / Einheitspreise, Verfügbarkeit, Lieferzeit, Materialzeugnis EN 10204 3.1, Ursprungsland, Incoterm, Angebotsgültigkeit und Zahlungsbedingungen mit.","",ind?"Die finale Anfrage mit bestätigten Güten, Abmessungen und Mengen folgt nach Erhalt der aktuellen BOQ.":"Bitte kennzeichnen Sie technische Abweichungen eindeutig.","","Mit freundlichen Grüßen",signature].join("\n");return{subject,body};}const subject=(ind?"Indicative RFQ":"RFQ")+" | "+p,body=["Dear Sir or Madam,","",'we are currently reviewing the steel material procurement for the project “'+p+'”.',"",ind?"The quantities below are based on published project information and must be treated as indicative until the final BOQ / material list is received:":"The positions below are based on the available material list:","",...m,"","Please provide, where possible with the currently available information, your price / unit prices, availability, lead time, EN 10204 3.1 certification, country of origin, Incoterm, quotation validity and payment terms.","",ind?"A final RFQ with confirmed grades, dimensions and quantities will follow after receipt of the current BOQ.":"Please identify any technical deviations clearly.","","Kind regards,",signature].join("\n");return{subject,body};}
 function requirement(tg:any){const m=tg?.material_scope&&typeof tg.material_scope==="object"?tg.material_scope:{},a=Array.isArray(m.line_items)?m.line_items:[],f:string[]=[],g:string[]=[],s:string[]=[];for(const x of a){const z=[[x?.family,f],[x?.grade,g],[x?.standard,s]] as any;for(const y of z){const v=t(y[0],140);if(v&&!y[1].includes(v))y[1].push(v);}}return{family:f[0]||"structural steel",product_type:f[0]||"structural steel",description:t(tg?.steel_scope,5000),grades:g,standards:s};}
 
@@ -222,7 +256,7 @@ function relevance(tg:any,contact:any){
  const base=tg?.score_band==="A1"?95:tg?.score_band==="A2"?85:tg?.score_band==="B1"?72:tg?.score_band==="B2"?62:45;
  return Math.max(0,Math.min(100,base+Math.min(5,Math.floor(Number(contact?.score||0)/30))));
 }
-async function supplierCandidate(tg:any,e:string){const q=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(tg),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:20});if(q.error)throw q.error;const rr=Array.isArray(q.data?.requirements)?q.data.requirements[0]:null,a=Array.isArray(rr?.candidates)?rr.candidates:[],c=a.find((x:any)=>em(x?.email)===e);if(!c)throw new Error("supplier_not_in_current_intelligence_candidates");if(!c.strict_fit&&!c.review_fit)throw new Error("supplier_candidate_not_fit_for_draft");return c;}
+async function supplierCandidate(tg:any,e:string){const q=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(tg),p_project_id:uuid(tg?.project_id)?tg.project_id:null,p_min_qualified:3,p_threshold:70,p_limit:20});if(q.error)throw q.error;const rr=Array.isArray(q.data?.requirements)?q.data.requirements[0]:null,a=Array.isArray(rr?.candidates)?rr.candidates:[],c=a.find((x:any)=>em(x?.email)===e);if(!c)throw new Error("supplier_not_in_current_intelligence_candidates");if(!c.strict_fit&&!c.review_fit)throw new Error("supplier_candidate_not_fit_for_draft");return c;}
 async function guards(tg:any,q:any,e:string){
  if(tg?.company_domain&&nm(tg.company_domain)!==nm(dom(e)))throw new Error("recipient_domain_mismatch");
  if(q?.sent_at)throw new Error("buyer_outreach_already_sent");
@@ -264,8 +298,15 @@ async function buyerDraft(tg:any,u:any){
  const recipient=em(q?.recipient_email||contact.email);
  if(!recipient)throw new Error("buyer_contact_required");
  const e=safe(recipient);
+ const tier=contactTier(e,q?.recipient_name||contact.person,q?.contact_role||contact.role),contactScore=tierScore(tier),facts=specificFacts(tg);
+ if(t(tg?.outreach_engine_version,20)!=="v2")throw new Error("outreach_v2_candidate_required");
+ if(t(tg?.workflow_state,80)!=="ready_for_outreach")throw new Error("outreach_v2_readiness_blocked:"+t(tg?.workflow_state||"missing_state",80));
+ if(Number(tg?.company_fit_score||0)<65)throw new Error("outreach_v2_company_fit_below_65");
+ if(Number(tg?.commercial_timing_score||0)<35)throw new Error("outreach_v2_timing_below_35");
+ if(contactScore<50)throw new Error("outreach_v2_contact_quality_below_50:"+tier);
+ if(Number(tg?.message_evidence_score||0)<60||facts.length<2)throw new Error("outreach_v2_requires_two_specific_facts");
  await guards(tg,q,e);
- const sig=canonicalSignatureHtml,ct=buyerText(tg,sig),d=await draft(e,ct.subject,ct.body,{
+ const sig=canonicalSignatureHtml,ct=buyerTextV2(tg,sig),d=await draft(e,ct.subject,ct.body,{
   "X-PPPP-DACH-Target-ID":t(tg.id,80),
   "X-PPPP-DACH-Source-Key":t(tg.source_key,500),
   "X-PPPP-DACH-Mode":ct.approach_mode
@@ -277,6 +318,7 @@ async function buyerDraft(tg:any,u:any){
    approach_mode:ct.approach_mode,target_source_key:tg.source_key,subject:ct.subject,
    quote_readiness:tg.quote_readiness,why_now:tg.why_now,steel_scope:tg.steel_scope,country:tg.country,
    contact_resolution:{email:e,person:contact.person||null,role:contact.role||null,source:contact.source||null,quality:contact.quality||null,score:contact.score||0},
+   outreach_engine_version:"v2",outreach_motion:ct.approach_mode,pristeel_offer_model:ct.offer_model,personalization_facts:ct.personalization_facts,
    draft_generated_by:V,draft_generated_by_user:u.id,draft_generated_at:now
   };
   let row:any;
@@ -288,7 +330,11 @@ async function buyerDraft(tg:any,u:any){
     contact_role:q.contact_role||contact.role||"Einkauf / Projektleitung",
     relevance_score:Math.max(Number(q.relevance_score||0),score),priority_score:Math.max(Number(q.priority_score||0),score),
     gmail_draft_id:d.draft_id,gmail_draft_message_id:d.message_id,gmail_thread_id:d.thread_id,
-    status:"candidate",suppression_reason:null,planned_date:null,planned_at:null,planned_rank:null,
+    status:"candidate",workflow_state:"draft_created",outreach_engine_version:"v2",outreach_motion:ct.approach_mode,
+    company_fit_score:tg.company_fit_score,commercial_timing_score:tg.commercial_timing_score,contact_quality_score:contactScore,
+    message_evidence_score:tg.message_evidence_score,outreach_readiness_score:tg.outreach_readiness_score,contact_tier:tier,
+    timing_classification:tg.timing_classification,personalization_facts:ct.personalization_facts,readiness_reasons:[],
+    suppression_reason:null,planned_date:null,planned_at:null,planned_rank:null,
     approved_for_send:false,human_send_required:true,source_updated_at:tg.updated_at,payload,updated_at:now
    }).eq("id",q.id).select("*").single();
    if(up.error)throw up.error;row=up.data;
@@ -301,13 +347,20 @@ async function buyerDraft(tg:any,u:any){
     contact_role:contact.role||"Einkauf / Projektleitung",
     relevance_score:score,priority_score:score,
     gmail_draft_id:d.draft_id,gmail_draft_message_id:d.message_id,gmail_thread_id:d.thread_id,
-    status:"candidate",suppression_reason:null,approved_for_send:false,human_send_required:true,
+    status:"candidate",workflow_state:"draft_created",outreach_engine_version:"v2",outreach_motion:ct.approach_mode,
+    company_fit_score:tg.company_fit_score,commercial_timing_score:tg.commercial_timing_score,contact_quality_score:contactScore,
+    message_evidence_score:tg.message_evidence_score,outreach_readiness_score:tg.outreach_readiness_score,contact_tier:tier,
+    timing_classification:tg.timing_classification,personalization_facts:ct.personalization_facts,readiness_reasons:[],
+    suppression_reason:null,approved_for_send:false,human_send_required:true,
     source_updated_at:tg.updated_at,payload,updated_at:now
    }).select("*").single();
    if(ins.error)throw ins.error;row=ins.data;
   }
   const tu=await db.from("pppp_dach_steel_targets_v1").update({
    company_domain:tg.company_domain||contact.company_domain||dom(e),
+   canonical_contact_email:e,canonical_contact_name:contact.person||null,canonical_contact_role:contact.role||null,
+   contact_tier:tier,contact_quality_score:contactScore,outreach_engine_version:"v2",workflow_state:"draft_created",
+   outreach_motion:ct.approach_mode,pristeel_offer_model:ct.offer_model,personalization_facts:ct.personalization_facts,
    contact_status:"found",outreach_status:"queued",outbound_source_key:key,
    next_action:"Review Gmail draft and shared outbound preflight; sending remains human-approved.",updated_at:now
   }).eq("id",tg.id);
@@ -341,12 +394,17 @@ async function existingSupplierRfq(tg:any,recipient:any){
  return null;
 }
 async function supplierDraft(tg:any,b:any,u:any){
- const e=safe(b?.supplier_email),c=await supplierCandidate(tg,e),existing=await existingSupplierRfq(tg,e);
+ const e=safe(b?.supplier_email),c=await supplierCandidate(tg,e),supplierName=t(c?.name||b?.supplier_name,300);
+ if(!uuid(tg?.project_id))throw new Error("supplier_rfq_gate_blocked:client_signal_or_project_required");
+ const rfqMode=nm(b?.rfq_mode)==="requote"?"requote":(tg.quote_readiness==="M3"?"firm":"budgetary");
+ const gate=await db.rpc("pppp_supplier_rfq_gate_v1",{p_project_id:tg.project_id,p_supplier_name:supplierName,p_supplier_email:e,p_rfq_mode:rfqMode});
+ if(gate.error)throw gate.error;
+ if(!gate.data?.allowed)throw new Error("supplier_rfq_gate_blocked:"+t(gate.data?.reason||"not_allowed",180));
+ const existing=await existingSupplierRfq(tg,e);
  if(existing?.kind==="sent")throw new Error("supplier_rfq_already_sent_for_target");
  if(existing?.kind==="registered")throw new Error("supplier_rfq_already_registered_for_project");
- if(existing?.kind==="draft")return{created:false,reused:true,recipient:e,supplier_name:c.name||b?.supplier_name||null,subject:existing.subject||null,quote_readiness:tg.quote_readiness,rfq_mode:tg.quote_readiness==="M3"?"final":"indicative",gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(existing.thread_id||existing.id),created_by:u.id};
- const ct=supplierText(tg,c),d=await draft(e,ct.subject,ct.body,{"X-PPPP-DACH-Target-ID":t(tg.id,80),"X-PPPP-DACH-Source-Key":t(tg.source_key,500),"X-PPPP-DACH-Supplier-RFQ":tg.quote_readiness==="M3"?"final":"indicative"});
- return{created:true,draft:d,recipient:e,supplier_name:c.name||b?.supplier_name||null,subject:ct.subject,quote_readiness:tg.quote_readiness,rfq_mode:tg.quote_readiness==="M3"?"final":"indicative",gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(d.thread_id||d.message_id),created_by:u.id};
+ if(existing?.kind==="draft")return{created:false,reused:true,delegated_to_project_workflow:true,project_id:tg.project_id,recipient:e,supplier_name:supplierName,subject:existing.subject||null,rfq_mode:rfqMode,gate,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(existing.thread_id||existing.id),created_by:u.id};
+ return{created:false,delegated_to_project_workflow:true,project_id:tg.project_id,recipient:e,supplier_name:supplierName,rfq_mode:rfqMode,gate,message:"Supplier fit is confirmed. Create/review the supplier RFQ from the canonical Project workflow so it is logged, reconciled and protected by the Supplier RFQ Gate.",created_by:u.id};
 }
 
 async function promoteProject(tg:any,b:any,u:any){
@@ -433,4 +491,5 @@ Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("o
  let u:any={id:"internal-draft-refresh"};
  if(!internalOk){if(!au.toLowerCase().startsWith("bearer "))return res({ok:false,error:"unauthorized"},401);u=await user(au);}
  let b:any={};try{b=await req.json();}catch{}const id=t(b?.target_id,80),mode=nm(b?.mode);
- if(internalOk&&mode!=="refresh"&&mode!=="sync")return res({ok:false,error:"internal_mode_not_allowed"},403);if(mode!=="sync"&&!uuid(id))return res({ok:false,error:"valid_target_id_required"},400);if(mode==="sync"){const x=await syncLifecycle();return res({ok:true,version:V,mode,...x,human_send_required:true,external_email_sent:false});}if(!["buyer","supplier","suppliers","contact","refresh","promote"].includes(mode))return res({ok:false,error:"mode_must_be_buyer_supplier_suppliers_contact_refresh_promote_or_sync"},400);const q=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",id).maybeSingle();if(q.error)throw q.error;if(!q.data)return res({ok:false,error:"dach_target_not_found"},404);if(["closed","rejected"].includes(t(q.data.target_status,40)))return res({ok:false,error:"dach_target_not_active"},409);if(mode==="contact"){const cr=await buyerContact(q.data);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,contact:cr,human_send_required:true,external_email_sent:false});}if(mode==="promote"){const pr=await promoteProject(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...pr});}if(mode==="suppliers"){const si=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(q.data),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});if(si.error)throw si.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,supplier_intelligence:si.data||{},human_send_required:true,external_email_sent:false});}const r=(mode==="buyer"||mode==="refresh")?await buyerDraft(q.data,u):await supplierDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...r});}catch(e){const m=t((e as any)?.message||e,1000),s=m==="unauthorized"?401:/required|invalid|not_allowed/.test(m)?400:/cooldown|conflict|suppressed|already|bounced|not_active/.test(m)?409:500;console.error(V,e);return res({ok:false,error:m,human_send_required:true,external_email_sent:false,version:V},s);}});
+ if(internalOk&&mode!=="refresh"&&mode!=="sync")return res({ok:false,error:"internal_mode_not_allowed"},403);if(mode!=="sync"&&!uuid(id))return res({ok:false,error:"valid_target_id_required"},400);if(mode==="sync"){const x=await syncLifecycle();return res({ok:true,version:V,mode,...x,human_send_required:true,external_email_sent:false});}if(!["buyer","supplier","suppliers","contact","refresh","promote"].includes(mode))return res({ok:false,error:"mode_must_be_buyer_supplier_suppliers_contact_refresh_promote_or_sync"},400);const q=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",id).maybeSingle();if(q.error)throw q.error;if(!q.data)return res({ok:false,error:"dach_target_not_found"},404);if(["closed","rejected"].includes(t(q.data.target_status,40)))return res({ok:false,error:"dach_target_not_active"},409);if(mode==="contact"){const cr=await buyerContact(q.data),tier=contactTier(cr.email,cr.person,cr.role),score=tierScore(tier),facts=specificFacts(q.data),ready=Number(q.data.company_fit_score||0)>=65&&Number(q.data.commercial_timing_score||0)>=35&&score>=50&&Number(q.data.message_evidence_score||0)>=60&&facts.length>=2;const up=await db.from("pppp_dach_steel_targets_v1").update({canonical_contact_email:cr.email||null,canonical_contact_name:cr.person||null,canonical_contact_role:cr.role||null,contact_tier:tier,contact_quality_score:score,workflow_state:ready?"ready_for_outreach":Number(q.data.company_fit_score||0)>=65&&score<50?"strong_company_contact_gap":"research_required",outreach_engine_version:"v2",updated_at:new Date().toISOString()}).eq("id",q.data.id);if(up.error)throw up.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,contact:{...cr,tier,score},workflow_state:ready?"ready_for_outreach":"research_required",human_send_required:true,external_email_sent:false});}if(mode==="promote"){const pr=await promoteProject(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...pr});}if(mode==="suppliers"){const si=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(q.data),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});if(si.error)throw si.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,supplier_intelligence:si.data||{},human_send_required:true,external_email_sent:false});}const r=(mode==="buyer"||mode==="refresh")?await buyerDraft(q.data,u):await supplierDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...r});}catch(e){const m=t((e as any)?.message||e,1000),s=m==="unauthorized"?401:/required|invalid|not_allowed/.test(m)?400:/cooldown|conflict|suppressed|already|bounced|not_active/.test(m)?409:500;console.error(V,e);return res({ok:false,error:m,human_send_required:true,external_email_sent:false,version:V},s);}});
+

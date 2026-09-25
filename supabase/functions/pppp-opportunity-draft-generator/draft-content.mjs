@@ -129,11 +129,32 @@ function cleanProjectTitle(v,ref=''){
 function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v).replace(/\\n/g,'<br>')}</p>`:'';}
 
 export function buildTedDraftContent(action={},tender={},recipient={}){
-  const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),subject=subjectFor(language,role,title);
-  const greet=greeting(language,company,recipient),paras=roleParagraphs(language,role,title,action,tender),close=closing(language);
+  const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender),facts=(Array.isArray(action?.personalization_facts)&&action.personalization_facts.length?action.personalization_facts:[rdata.scope_evidence||rdata.project_fact,rdata.pristeel_scope||rdata.qualification_evidence]).map(x=>txt(x,1000)).filter(Boolean);
+  if(facts.length<1)facts.push('Project: '+title); if(facts.length<2)facts.push('Company: '+(company||'verified award recipient'));
+  const future=motion==='future_supplier_qualification'||txt(action?.timing_classification,80)==='future_supplier_qualification';
+  const offerModel=future?'future_supplier_qualification':(txt(action?.pristeel_offer_model,80)||(role==='producer'?'external_production_capacity':'fabricated_steel_package'));
+  const subject=future
+    ?(language==='de'?company+' – Lieferantenqualifizierung Stahl | PRISTEEL':language==='bcs'?company+' – kvalifikacija dobavljača čelika | PRISTEEL':company+' – future steel supplier qualification | PRISTEEL')
+    :offerModel==='external_production_capacity'
+      ?(language==='de'?'Projekt '+shortProject(title)+' – externe Fertigungskapazität | PRISTEEL':language==='bcs'?'Projekt '+shortProject(title)+' – vanjski proizvodni kapacitet | PRISTEEL':'Project '+shortProject(title)+' – external fabrication capacity | PRISTEEL')
+      :subjectFor(language,role,title);
+  const greet=greeting(language,company,recipient),scope=txt(rdata.pristeel_scope,1000);
+  const capability=offerModel==='external_production_capacity'
+    ?(language==='de'?'PRISTEEL stellt zusätzliche, projektbezogene Fertigungskapazität für klar definierte Stahlbaupakete bereit und koordiniert technische Klärung, Fertigung, Qualitätsdokumentation und DAP-Lieferung.':language==='bcs'?'PRISTEEL obezbjeđuje dodatni proizvodni kapacitet za jasno definisane pakete čeličnih konstrukcija i koordinira tehničko usaglašavanje, proizvodnju, dokumentaciju kvaliteta i DAP isporuku.':'PRISTEEL provides managed additional fabrication capacity for clearly defined steel packages, coordinating technical clarification, fabrication, quality documentation and DAP delivery.')
+    :offerModel==='future_supplier_qualification'
+      ?(language==='de'?'Für künftige Pakete kann PRISTEEL als technische und kaufmännische Schnittstelle für klar definierte Stahlbauleistungen eingebunden werden.':language==='bcs'?'Za buduće pakete PRISTEEL može djelovati kao tehničko-komercijalna veza za jasno definisane čelične radove.':'For future packages, PRISTEEL can act as the technical and commercial interface for clearly defined steel scopes.')
+      :(language==='de'?'PRISTEEL übernimmt die technische und kaufmännische Koordination von '+(scope||'klar abgegrenzten Stahlbaupaketen')+' – von Materialbeschaffung und Build-to-Print-Fertigung über Oberflächenschutz und Qualitätsdokumentation bis zur koordinierten DAP-Lieferung.':language==='bcs'?'PRISTEEL vodi tehničku i komercijalnu koordinaciju za '+(scope||'jasno odvojene pakete čeličnih konstrukcija')+' – od nabavke materijala i proizvodnje prema nacrtima, preko površinske zaštite i dokumentacije kvaliteta, do koordinirane DAP isporuke.':'PRISTEEL provides the technical and commercial coordination for '+(scope||'clearly defined structural-steel packages')+' – from material procurement and build-to-print fabrication through surface treatment and quality documentation to coordinated DAP delivery.');
+  const fallbackCta=offerModel==='external_production_capacity'
+    ?(language==='de'?'Vergeben Sie bei Kapazitätsengpässen klar abgegrenzte Fertigungspakete extern?':language==='bcs'?'Da li kod ograničenog internog kapaciteta izdvajate jasno definisane proizvodne pakete vanjskim partnerima?':'Do you outsource clearly defined fabrication packages when internal capacity is constrained?')
+    :offerModel==='future_supplier_qualification'
+      ?(language==='de'?'Wer ist bei Ihnen für die Qualifizierung künftiger Partner für Stahlbaupakete zuständig?':language==='bcs'?'Ko je kod Vas zadužen za kvalifikaciju budućih partnera za čelične pakete?':'Who handles qualification of future partners for steel packages?')
+      :(language==='de'?'Ist das relevante Stahlbaupaket bereits vollständig vergeben oder ist ein klar abgegrenzter externer Umfang noch offen?':language==='bcs'?'Da li je relevantni paket čeličnih radova već u potpunosti ugovoren ili je jasno definisan vanjski opseg još otvoren?':'Is the relevant steel package already fully awarded, or is a clearly defined external scope still open?');
+  const cta=txt(rdata.concrete_question,1000)||fallbackCta;
+  const paras=[facts[0],facts[1],capability,cta],close=closing(language);
   const body=[greet,...paras,close,SIGNATURE].filter(Boolean).join('\n\n');
   const htmlBody='<div dir="ltr" style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#202124">'+htmlParagraph(greet)+paras.map(htmlParagraph).join('')+'<p style="margin:0">'+esc(close)+'</p>'+SIGNATURE_HTML+'</div>';
-  return{language,subject,body,html_body:htmlBody,recipient_kind:kind,tender_reference:ref||null,tender_url:url||null,signature:SIGNATURE,signature_html:SIGNATURE_HTML};
+  return{language,subject,body,html_body:htmlBody,recipient_kind:kind,tender_reference:ref||null,tender_url:url||null,offer_model:offerModel,signature:SIGNATURE,signature_html:SIGNATURE_HTML};
 }
 export const PRISTEEL_SIGNATURE=SIGNATURE;
 export const PRISTEEL_SIGNATURE_HTML=SIGNATURE_HTML;
+

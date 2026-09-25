@@ -32,7 +32,9 @@ assert.match(tedActions,/award_role/,'primary TED action owner must recognize ve
 assert.match(tedFallback,/status:'superseded'/,'GC fallback must supersede competing active draft routes');
 assert.match(tenderUi,/award_role/,'draft UI must route from verified award role when corporate type is unresolved');
 assert.match(draftGenerator,/function effectiveTedRole\(tender:any\)/,'draft generator must use the same effective TED role');
-assert.match(draftGenerator,/v20-company-scoped-multi-recipient/,'draft generator version must identify company-scoped multi-recipient routing');
+assert.match(draftGenerator,/v23-commercial-engine-v3/,'draft generator version must identify Commercial Engine V3');
+assert.match(draftGenerator,/cold_draft_generation_requires_explicit_action_id/,'TED cold draft generation must require one explicit human-selected action');
+assert.match(draftGenerator,/resolveTedDraftRecipients/,'draft generator must retain company-scoped recipient resolution');
 assert.match(tedActions,/function scopedWinnerOrganizations\(w\)/,'action owner must scope verified contacts to the selected winner company');
 assert.match(tenderUi,/var tk=ckey\(target\),scoped=/,'Opportunity UI must scope the visible verified contacts to the selected company');
 

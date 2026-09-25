@@ -21,6 +21,20 @@ function enc(v){return encodeURIComponent(String(v==null?'':v));}
 function data(){return window.__pstIntegrityLastData||null;}
 function pid(){var d=data();return String(window.__pstCurrentProjectId||window._curProjId||(d&&d.project&&d.project.id)||'');}
 function db(q,method,body){if(typeof window.supaFetch!=='function')return Promise.resolve([]);return window.supaFetch(q,method,body);}
+function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null}catch(e){return null}}
+async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow()}catch(e){return sessionNow()}}
+async function supplierGate(s,mode){
+  var base=String(window._SB_URL||'').replace(/\/$/,''),key=String(window._SB_KEY||'');if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
+  var sess=sessionNow();if(sess&&sess.refresh_token&&sess.expires_at&&Date.now()>=Number(sess.expires_at))sess=await refreshSession();
+  var token=sess&&sess.access_token?sess.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
+  var payload={p_project_id:pid()||null,p_tender_watch_id:null,p_supplier_name:String(s&&s.company||''),p_supplier_email:String(s&&s.email||''),p_rfq_mode:mode||'firm'};
+  async function run(t){return fetch(base+'/rest/v1/rpc/pppp_supplier_rfq_gate_v2',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(payload)})}
+  var r=await run(token);if(r.status===401){sess=await refreshSession();if(sess&&sess.access_token)r=await run(sess.access_token)}
+  var raw=await r.text(),x=null;try{x=raw?JSON.parse(raw):null}catch(e){}
+  if(!r.ok)throw new Error('Supplier Gate HTTP '+r.status+': '+raw.slice(0,500));
+  return x||{allowed:false,reason:'empty_supplier_gate'};
+}
+
 function email(v){var m=String(v||'').toLowerCase().match(/[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}/);return m?m[0]:'';}
 function normalize(v){return String(v||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/p\s*>/gi,'\n').replace(/<[^>]+>/g,' ').replace(/\r/g,'').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n');}
 function when(m){var t=new Date((m&&m.sent_at)||(m&&m.created_at)||0).getTime();return isFinite(t)?t:0;}
@@ -126,12 +140,12 @@ function selectedCount(){var box=document.getElementById('pst-pf2-rfq-draft');if
 function updateCount(){var box=document.getElementById('pst-pf2-rfq-draft');if(!box)return;var x=box.querySelector('[data-prfq-count]');if(x)x.textContent=selectedCount()+' / '+state.suppliers.length+' prodhues te zgjedhur';box.querySelectorAll('.prfq-row').forEach(function(r){var c=r.querySelector('[data-prfq-check]');r.classList.toggle('off',!!c&&!c.checked);});}
 function rerenderDraftText(box){
   var doc=box.querySelector('[data-prfq-doc-link]');state.docLink=String(doc&&doc.value||'').trim();
-  state.suppliers.forEach(function(s,i){var row=box.querySelector('[data-prfq-row="'+i+'"]');if(!row)return;var p=row.querySelector('.prfq-preview'),a=row.querySelector('[data-prfq-gmail]'),sub=row.querySelector('.prfq-subject'),body=bodyFor(s),subject=subjectFor(lang(s.lang));if(p)p.textContent=body;if(a)a.href=gmailUrl(s);if(sub)sub.textContent=subject;});
+  state.suppliers.forEach(function(s,i){var row=box.querySelector('[data-prfq-row="'+i+'"]');if(!row)return;var p=row.querySelector('.prfq-preview'),a=row.querySelector('[data-prfq-gmail]'),sub=row.querySelector('.prfq-subject'),body=bodyFor(s),subject=subjectFor(lang(s.lang));if(p)p.textContent=body;if(a){a.removeAttribute('href');a.setAttribute('data-prfq-url',gmailUrl(s));}if(sub)sub.textContent=subject;});
 }
 function render(){
   var host=document.getElementById('pst-pi-body');if(!host||!state.loaded)return false;css();var old=document.getElementById('pst-pf2-rfq-draft');if(old)old.remove();
   var box=document.createElement('section');box.id='pst-pf2-rfq-draft';
-  var rows=state.suppliers.map(function(s,i){var sub=subjectFor(lang(s.lang)),body=bodyFor(s);return'<div class="prfq-row" data-prfq-row="'+i+'"><input type="checkbox" data-prfq-check="'+i+'" checked><div class="prfq-co"><b>'+E(s.company)+'</b><span>'+E(s.country||'')+'</span></div><div class="prfq-contact"><b>'+E(s.contactName||'Kontakt')+'</b><span>'+E(s.email)+'</span></div><div><span class="prfq-lang">'+E(lang(s.lang).toUpperCase())+'</span></div><div class="prfq-subject">'+E(sub)+'</div><div class="prfq-row-actions"><button type="button" data-prfq-preview="'+i+'">Preview</button><a target="_blank" rel="noopener" data-prfq-gmail="'+i+'" href="'+E(gmailUrl(s))+'">Hap Gmail</a></div><pre class="prfq-preview">'+E(body)+'</pre></div>';}).join('');
+  var rows=state.suppliers.map(function(s,i){var sub=subjectFor(lang(s.lang)),body=bodyFor(s);return'<div class="prfq-row" data-prfq-row="'+i+'"><input type="checkbox" data-prfq-check="'+i+'" checked><div class="prfq-co"><b>'+E(s.company)+'</b><span>'+E(s.country||'')+'</span></div><div class="prfq-contact"><b>'+E(s.contactName||'Kontakt')+'</b><span>'+E(s.email)+'</span></div><div><span class="prfq-lang">'+E(lang(s.lang).toUpperCase())+'</span></div><div class="prfq-subject">'+E(sub)+'</div><div class="prfq-row-actions"><button type="button" data-prfq-preview="'+i+'">Preview</button><button type="button" data-prfq-gmail="'+i+'" data-prfq-url="'+E(gmailUrl(s))+'">Kontrollo & hap Gmail</button></div><pre class="prfq-preview">'+E(body)+'</pre></div>';}).join('');
   box.innerHTML='<div class="prfq-head"><div><b>RFQ draft per prodhuesit</b><span>Dokumentacioni i projektit eshte baza per sasite · emaila sipas gjuhes se kontaktit</span></div><div class="prfq-actions"><button type="button" class="prfq-btn" data-prfq-all>Zgjidh te gjithe</button><button type="button" class="prfq-btn" data-prfq-none>Hiq te gjithe</button><button type="button" class="prfq-btn p" data-prfq-refresh>Rifresko draftet</button></div></div><div class="prfq-context"><label>Kerkesa e bleresit · vetem per reference te brendshme</label><textarea data-prfq-context>'+E(state.buyerContext)+'</textarea><div class="prfq-note">Ky tekst nuk perfshihet ne emailin RFQ per prodhuesin. Emaili bazohet vetem ne projekt dhe dokumentacionin qe ndahet me te.</div></div><div class="prfq-docs"><label>Dokumentacioni i projektit · link per shkarkim</label><div class="prfq-docrow"><input type="url" data-prfq-doc-link placeholder="Ngjit linkun e PDF / ZIP / dosjes se projektit" value="'+E(state.docLink)+'"><a data-prfq-doc-open target="_blank" rel="noopener" href="'+E(state.docLink||'#')+'">Hap linkun</a></div><div class="prfq-note"><b>Dokumentacioni eshte burimi teknik:</b> kontrollo qe furnitori ka qasje para dergimit.</div></div><div class="prfq-list">'+(rows||'<div style="padding:18px;font-size:9px;color:#87949a">Nuk u gjet asnje prodhues me email. Kontrollo Partneret / kontaktet e furnitoreve.</div>')+'</div><div class="prfq-foot"><span>Asgje nuk dergohet automatikisht. “Hap Gmail” vetem hap draftin.</span><b data-prfq-count></b></div>';
   host.insertBefore(box,host.firstChild);wire(box);updateCount();return true;
 }
@@ -142,7 +156,24 @@ function wire(box){
   box.querySelector('[data-prfq-all]').onclick=function(){box.querySelectorAll('[data-prfq-check]').forEach(function(x){x.checked=true;});updateCount();};
   box.querySelector('[data-prfq-none]').onclick=function(){box.querySelectorAll('[data-prfq-check]').forEach(function(x){x.checked=false;});updateCount();};
   box.querySelector('[data-prfq-refresh]').onclick=function(){rerenderDraftText(box);};
-  box.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-prfq-preview]');if(b){var r=box.querySelector('[data-prfq-row="'+b.getAttribute('data-prfq-preview')+'"]');if(r)r.classList.toggle('open');return;}var a=e.target.closest&&e.target.closest('[data-prfq-gmail]');if(a&&(!state.docLink||badUrl(state.docLink)||!documentLike(state.docLink,''))){e.preventDefault();e.stopPropagation();alert('Shto nje link valid te dokumentacionit te projektit para se te hapesh draftin ne Gmail.');}},true);
+  box.addEventListener('click',async function(e){
+    var b=e.target.closest&&e.target.closest('[data-prfq-preview]');
+    if(b){var r=box.querySelector('[data-prfq-row="'+b.getAttribute('data-prfq-preview')+'"]');if(r)r.classList.toggle('open');return;}
+    var g=e.target.closest&&e.target.closest('[data-prfq-gmail]');
+    if(!g)return;
+    e.preventDefault();e.stopPropagation();
+    if(!state.docLink||badUrl(state.docLink)||!documentLike(state.docLink,'')){alert('Shto nje link valid te dokumentacionit te projektit para se te hapesh draftin ne Gmail.');return;}
+    var idx=Number(g.getAttribute('data-prfq-gmail')),supplier=state.suppliers[idx];if(!supplier)return;
+    var old=g.textContent;g.disabled=true;g.textContent='Duke kontrolluar…';
+    try{
+      var gate=await supplierGate(supplier,'firm');
+      if(!gate||gate.allowed!==true){alert('RFQ u bllokua nga Supplier Gate: '+String(gate&&gate.reason||'nuk lejohet')+'.\n\n'+String(gate&&gate.relationship_guidance||''));return;}
+      if(gate.warning&&!window.confirm('Supplier Gate paralajmëron: '+gate.warning+'\n\n'+String(gate.relationship_guidance||'')+'\n\nTë hapet drafti gjithsesi?'))return;
+      var url=g.getAttribute('data-prfq-url')||gmailUrl(supplier);
+      window.open(url,'_blank','noopener');
+    }catch(err){alert('Supplier Gate dështoi: '+String(err&&err.message||err));}
+    finally{g.disabled=false;g.textContent=old;}
+  },true);
 }
 async function load(id){
   id=String(id||pid());if(!id)return false;state.projectId=id;
