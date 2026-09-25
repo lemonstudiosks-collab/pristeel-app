@@ -53,10 +53,10 @@ function loadOpportunitiesFilterPolish(){
   loadScript('__pstOpportunitiesMindmapV5','script[data-pst-opportunities-filter-polish]','pristeel-opportunities-filter-polish-v1.js?v=20260924-contacted-stack3','data-pst-opportunities-filter-polish','Nuk u ngarkua mindmap-i i Mundësive.');
 }
 function loadGlobalShell(){
-  loadScript('__pstGlobalFullwidthShellV2','script[data-pst-global-fullwidth-shell-v2]','pristeel-global-fullwidth-shell-v1.js?v=20260919-visible-page-back2','data-pst-global-fullwidth-shell-v2','Nuk u ngarkua full-width shell i PPPP.');
+  loadScript('__pstGlobalFullwidthShellV2','script[data-pst-global-fullwidth-shell-v2]','pristeel-global-fullwidth-shell-v1.js?v=20260925-home-sidebar1','data-pst-global-fullwidth-shell-v2','Nuk u ngarkua full-width shell i PPPP.');
 }
 function loadProductionSurfaceOwner(){
-  loadScript('__pstProductionSurfaceOwnerV2','script[data-pst-production-surface-owner-v2]','pristeel-production-surface-owner-v1.js?v=20260919-opportunities-back-visible2','data-pst-production-surface-owner-v2','Nuk u ngarkua pronari final i sipërfaqes së PPPP.');
+  loadScript('__pstProductionSurfaceOwnerV2','script[data-pst-production-surface-owner-v2]','pristeel-production-surface-owner-v1.js?v=20260925-home-sidebar1','data-pst-production-surface-owner-v2','Nuk u ngarkua pronari final i sipërfaqes së PPPP.');
 }
 function boot(){installStyle();decorate(document);loadOpportunitiesFilterPolish();loadGlobalShell();loadProductionSurfaceOwner();}
 document.addEventListener('pst:home-canonical-rendered',function(){decorate(document);});

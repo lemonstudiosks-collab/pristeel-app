@@ -77,9 +77,9 @@ const opportunityPolish=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-f
 const waitingBridge=fs.readFileSync(path.join(ROOT,'pristeel-opportunities-waiting-bridge-v1.js'),'utf8');
 assert(homeInteraction.includes('pristeel-opportunities-filter-polish-v1.js?v=20260924-contacted-stack3'),'Fresh presentation bridge must load the current Opportunity Desk');
 assert(homeInteraction.includes("loadScript('__pstGlobalFullwidthShellV2'"),'Fresh Home bridge must load Global Shell generation v2 even when v1 is already present');
-assert(homeInteraction.includes('pristeel-global-fullwidth-shell-v1.js?v=20260919-visible-page-back2'),'Fresh Home bridge must cache-bust the visible-page Global Shell fix');
+assert(homeInteraction.includes('pristeel-global-fullwidth-shell-v1.js?v=20260925-home-sidebar1'),'Fresh Home bridge must cache-bust the Home-sidebar Global Shell contract');
 assert(homeInteraction.includes("loadScript('__pstProductionSurfaceOwnerV2'"),'Fresh Home bridge must load Production Surface Owner generation v2 even when v1 is already present');
-assert(homeInteraction.includes('pristeel-production-surface-owner-v1.js?v=20260919-opportunities-back-visible2'),'Fresh Home bridge must cache-bust the Production Surface Owner that previously hid Opportunities Back');
+assert(homeInteraction.includes('pristeel-production-surface-owner-v1.js?v=20260925-home-sidebar1'),'Fresh Home bridge must cache-bust the Production Surface Owner that preserves the Home sidebar');
 assert(opportunityPolish.includes('pristeel-opportunities-waiting-bridge-v1.js?v=20260913-waiting1'),'Opportunity Desk must load the waiting lifecycle bridge');
 assert.doesNotThrow(()=>new Function(opportunityPolish),'Opportunity Desk must remain valid JavaScript');
 assert.doesNotThrow(()=>new Function(waitingBridge),'Opportunities waiting bridge must remain valid JavaScript');
