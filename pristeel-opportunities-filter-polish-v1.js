@@ -12,7 +12,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260925-bounded-render1';
+var VERSION='20260925-in-place-render2';
 var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,scheduled=false,decorating=false,selectedId='',contactedExpanded=false,sortDirection='desc';
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
@@ -241,18 +241,37 @@ function deskHtml(c){
  return'<section id="pst-opp-desk" class="pst-opp-workdesk">'+sideFilters(c)+'<main>'+activePanel(active)+'</main><aside class="pst-opp-work-right">'+detailPanel(sel)+contactedPanel(contacted)+'</aside></section>';
 }
 function deskNode(html){var wrap=document.createElement('div');wrap.innerHTML=html;return wrap.firstElementChild;}
+function direct(parent,selector){
+ if(!parent)return null;
+ for(var i=0;i<parent.children.length;i++)if(parent.children[i].matches(selector))return parent.children[i];
+ return null;
+}
+function patchSection(parent,nextParent,selector){
+ var current=direct(parent,selector),next=direct(nextParent,selector);
+ if(!next){if(current)current.remove();return null;}
+ if(!current){parent.appendChild(next);return next;}
+ if(current.outerHTML!==next.outerHTML)current.replaceWith(next);else next=current;
+ return next;
+}
 function patchDesk(focus,c){
  var html=deskHtml(c),desk=focus.querySelector('#pst-opp-desk'),next=deskNode(html);
  if(!next)return null;
  if(!desk){var anchor=focus.querySelector('#pst-pcw-lifecycle-tabs')||focus.querySelector('#pst-opportunities-list');focus.insertBefore(next,anchor);return next;}
- var currentChildren=Array.prototype.slice.call(desk.children),nextChildren=Array.prototype.slice.call(next.children);
- for(var i=0;i<nextChildren.length;i++){
-   var currentChild=currentChildren[i],nextChild=nextChildren[i];
-   if(!currentChild){desk.appendChild(nextChild);continue;}
-   if(currentChild.outerHTML!==nextChild.outerHTML)currentChild.replaceWith(nextChild);
- }
- while(desk.children.length>nextChildren.length)desk.lastElementChild.remove();
+ patchSection(desk,next,'.pst-opp-side');
+ patchSection(desk,next,'main');
+ var right=direct(desk,'.pst-opp-work-right'),nextRight=direct(next,'.pst-opp-work-right');
+ if(!right&&nextRight){desk.appendChild(nextRight);right=nextRight;}
+ else if(right&&nextRight){patchSection(right,nextRight,'.pst-opp-detail');patchSection(right,nextRight,'.pst-opp-contacted');}
+ else if(right&&!nextRight)right.remove();
  return desk;
+}
+function selectInPlace(id){
+ selectedId=S(id);var desk=document.getElementById('pst-opp-desk');if(!desk)return false;
+ Array.prototype.forEach.call(desk.querySelectorAll('.pst-opp-work-row.selected'),function(row){row.classList.remove('selected');});
+ var row=null;Array.prototype.some.call(desk.querySelectorAll('.pst-opp-work-row[data-pst-opp-select]'),function(candidate){if(S(candidate.dataset.pstOppSelect)!==selectedId)return false;row=candidate;return true;});if(row)row.classList.add('selected');
+ var right=direct(desk,'.pst-opp-work-right'),selected=selectedRow();if(!right)return false;
+ var next=deskNode('<aside class="pst-opp-work-right">'+detailPanel(selected)+'</aside>');
+ patchSection(right,next,'.pst-opp-detail');return true;
 }
 function resultHead(focus){
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return;
@@ -321,7 +340,7 @@ function click(e){
  if((b=t.closest('[data-pst-opp-winner]'))){consume(e);apply('winner',b.dataset.pstOppWinner||'all');return;}
  if((b=t.closest('[data-pst-opp-field]'))){consume(e);apply('field',b.dataset.pstOppField||'all');return;}
  if((b=t.closest('[data-pst-opp-sort]'))){consume(e);sortDirection=sortDirection==='desc'?'asc':'desc';decorate();return;}
- if((b=t.closest('[data-pst-opp-select]'))){consume(e);selectedId=S(b.dataset.pstOppSelect);decorate();return;}
+ if((b=t.closest('[data-pst-opp-select]'))){consume(e);if(!selectInPlace(b.dataset.pstOppSelect))decorate();return;}
  if((b=t.closest('[data-pst-opp-contacted-toggle]'))){consume(e);contactedExpanded=!contactedExpanded;decorate();return;}
  if((b=t.closest('[data-pst-opp-draft]'))){consume(e);createDraft(S(b.dataset.pstOppDraft),b).catch(function(err){if(typeof window.pstToast==='function')window.pstToast(S(err&&err.message||err),'error');else alert(S(err&&err.message||err));decorate();});return;}
  if((b=t.closest('[data-pst-opp-remove]'))){consume(e);removeOpportunity(S(b.dataset.pstOppRemove),b).catch(function(err){if(typeof window.pstToast==='function')window.pstToast(S(err&&err.message||err),'error');else alert(S(err&&err.message||err));decorate();});return;}

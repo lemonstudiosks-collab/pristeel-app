@@ -123,6 +123,8 @@ Underlying owners remain:
 
 The first filename is legacy. Current behavior covers KRPP Kosovo, APP Albania, TED direct opportunities and TED award-winner outreach.
 
+The visible Opportunity Desk is owned by `pristeel-opportunities-filter-polish-v1.js`. Selecting a company is an in-place interaction: it must preserve the existing Desk, filter column, 60-row center column, project-row nodes, right-column container and contacted-company list while updating only selection state and the detail card. `pristeel-project-centric-workflow-v1.js` coalesces route repairs into one animation-frame update; delayed multi-render bursts are not part of the active contract.
+
 External procurement discovery has one scheduled morning session per source. Cloud collectors must pass the service-only `pppp_claim_external_source_daily_access_v1` gate before contacting TED, KRPP, APP Albania or the multilateral/WB source group. Duplicate/manual runs after the first claim skip external access. The authenticated KRPP Mac worker runs once at 06:00 local time and exits; continuous polling and `KeepAlive` are forbidden.
 
 Operating Experience adds the final decision vocabulary:

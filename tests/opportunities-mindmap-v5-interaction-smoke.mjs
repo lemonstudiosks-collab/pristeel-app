@@ -42,7 +42,7 @@ window.PSTPrimaryNavResilienceV10={openHome:()=>{homeCalls++;return true;}};
 
 window.eval(workflowSrc);
 const api=window.PSTProjectCentricWorkflowV1;
-assert(api&&api.version==='8','combined-filter workflow v8 must load');
+assert(api&&api.version==='9','coalesced-render workflow v9 must load');
 await api.loadOpportunities(true);
 window.eval(waitingSrc);
 await new Promise(r=>setTimeout(r,15));
@@ -51,8 +51,9 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260925-bounded-render1','bounded contacted-company Opportunity Desk must own the visible presentation');
-assert.doesNotMatch(deskSrc,/new\s+MutationObserver|\.replaceWith\(next\)/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
+assert(desk&&desk.version==='20260925-in-place-render2','in-place contacted-company Opportunity Desk must own the visible presentation');
+assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
+assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
 assert(focus.classList.contains('pst-opp-dashboard'),'Opportunities stays on one working surface');
 assert(!focus.classList.contains('pst-opp-result-page'),'filters must not navigate to separate result pages');
@@ -96,10 +97,17 @@ const producerRow=window.document.querySelector('[data-pst-opp-select="ted-produ
 assert(producerRow,'another uncontacted TED company must remain available');
 const deskNodeBefore=window.document.getElementById('pst-opp-desk');
 const sideNodeBefore=window.document.querySelector('.pst-opp-side');
+const mainNodeBefore=window.document.querySelector('#pst-opp-desk>main');
+const rightNodeBefore=window.document.querySelector('.pst-opp-work-right');
+const contactedNodeBefore=window.document.querySelector('.pst-opp-contacted');
 producerRow.click();
 await new Promise(r=>setTimeout(r,25));
 assert.strictEqual(window.document.getElementById('pst-opp-desk'),deskNodeBefore,'selecting an Opportunity must preserve the visible desk node');
 assert.strictEqual(window.document.querySelector('.pst-opp-side'),sideNodeBefore,'selecting an Opportunity must preserve an unchanged filter column');
+assert.strictEqual(window.document.querySelector('#pst-opp-desk>main'),mainNodeBefore,'selecting an Opportunity must preserve the entire 60-row center column');
+assert.strictEqual(window.document.querySelector('[data-pst-opp-select="ted-producer"]'),producerRow,'selecting an Opportunity must preserve the clicked row node');
+assert.strictEqual(window.document.querySelector('.pst-opp-work-right'),rightNodeBefore,'selecting an Opportunity must preserve the right-column container');
+assert.strictEqual(window.document.querySelector('.pst-opp-contacted'),contactedNodeBefore,'selecting an Opportunity must preserve the contacted-company list');
 assert.match(window.document.querySelector('.pst-opp-detail').textContent,/Example Steel AG/,'clicking a company must hydrate its right-side details');
 assert(window.document.querySelector('[data-pst-opp-draft="ted-producer"]'),'uncontacted TED company with verified email must expose Krijo draft emaili');
 assert(window.document.querySelector('[data-pst-opp-open="ted-producer"]'),'uncontacted TED company must expose the tender-analysis action before outreach');
