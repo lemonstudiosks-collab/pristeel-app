@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "89004100373e636774baf6a71a46047cfcf31081",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "8a144ebc6bde2b5dabdfbf7d9219c1e842a7c077"
+    "bootstrapGitBlobSha": "e98284bd1d6960a4742acbecbdb4bf87af1fb09a"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -414,6 +414,7 @@
     "pristeel-dashboard-operations.js"
   ],
   "notes": [
-    "2026-09-25: Sales Engine V3 adds a unified low-egress commercial workbench; cold draft generation remains human-selected and Supplier RFQs require Supplier Gate."
+    "2026-09-25: Sales Engine V3 adds a unified low-egress commercial workbench; cold draft generation remains human-selected and Supplier RFQs require Supplier Gate.",
+    "2026-09-25: Final Commercial Engine V3 hardening closes the no-BOM Supplier Gate bypass, keeps Material Trade supplier sourcing read-only until client signal, and hardens Opportunity DB access."
   ]
 }
