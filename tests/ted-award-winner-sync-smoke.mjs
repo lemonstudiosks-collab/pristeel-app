@@ -25,6 +25,15 @@ const sample={
   'winner-contact-point':['Procurement Team']
 };
 
+const scopeOnly=normalizeTedAward({
+  ...sample,
+  'publication-number':'563864-2026',
+  'notice-title':{eng:'General building construction'},
+  'classification-cpv':['45000000'],
+  'description-lot':[{eng:'Fabrication and installation of Stahlbau and steel stairs.'}]
+},'2026-08-14T10:00:00.000Z');
+assert.ok(scopeOnly.relevance_score>=75,'award scope description must promote steel work even when the award title is generic');
+
 const row=normalizeTedAward(sample,'2026-08-14T10:00:00.000Z');
 assert.equal(row.source_key,'TED:563865-2026');
 assert.equal(row.payload.source,'TED');
@@ -133,6 +142,8 @@ const fetchImpl=async (_url,opts)=>{
   const body=JSON.parse(opts.body);
   assert.match(body.query,/notice-type IN \(can-standard can-social can-desg can-tran\)/);
   assert.ok(!/cn-standard/.test(body.query),'award workflow must never query open contract notices');
+  assert.ok(body.query.includes('classification-cpv = 45262400'),'award query must include structural steel erection CPV');
+  assert.ok(body.query.includes('Schlosserarbeiten'),'award query must include German steel/metalwork terminology');
   assert.ok(body.fields.includes('winner-name'));
   assert.ok(body.fields.includes('winner-email'));
   assert.ok(body.fields.includes('description-lot')&&body.fields.includes('description-proc'));

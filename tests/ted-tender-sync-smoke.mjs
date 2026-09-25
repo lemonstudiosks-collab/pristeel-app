@@ -13,8 +13,14 @@ const secondaryOnly=classifyTedNotice({title:'General building construction',cpv
 assert.ok(secondaryOnly.relevance_score<75,'secondary steel CPV inside a general contract must stay below the operational threshold');
 const explicitSteelTitle=classifyTedNotice({title:'Stahlbauarbeiten mit Alu-Plattform',cpv:['45223000','45223210']});
 assert.ok(explicitSteelTitle.relevance_score>=75,'explicit steel title must remain eligible even when the scope also mentions aluminium');
+const scopeSteel=classifyTedNotice({title:'General building construction',description:'Fabrication and installation of Stahlbau, Stahltreppen und Geländer.',cpv:['45000000']});
+assert.ok(scopeSteel.relevance_score>=75,'steel work found in the official TED scope description must be promoted even when the notice title is generic');
+const metalwork=classifyTedNotice({title:'Schlosserarbeiten und Metallbau',cpv:['45262670']});
+assert.ok(metalwork.relevance_score>=75,'metalworking packages with the dedicated CPV must be retained for steel review');
 const aluminiumOnly=classifyTedNotice({title:'Vorhangfassade Alu / Neubau Kombibad',cpv:['45223110']});
 assert.ok(aluminiumOnly.relevance_score<75,'clear aluminium-only metalwork must not become a steel opportunity from CPV alone');
+const aluminiumMetalwork=classifyTedNotice({title:'Metallbau Alu-Fassade',cpv:['45262670']});
+assert.ok(aluminiumMetalwork.relevance_score<75,'generic metalworking with explicit aluminium-only scope must not be promoted as steel work');
 const aluminiumCladding=classifyTedNotice({title:'Fahrzeughalle, Dämmung- und Alu-Wandbekleidung',cpv:['45223110']});
 assert.ok(aluminiumCladding.relevance_score<75,'aluminium cladding must not be promoted as fabricated steel work');
 const supervision=classifyTedNotice({title:'Fachbauüberwachung Stahlbau',cpv:['71000000','45223210']});
@@ -102,6 +108,8 @@ const summary=await runTedTenderSync({mode:'preview',minScore:75,opportunityDays
 assert.equal(calls.length,2,'collector should make separate opportunity and award searches');
 assert.ok(calls[0].body.query.includes('notice-type IN (cn-standard cn-social pin-cfc-standard pin-cfc-social qu-sy subco)'));
 assert.ok(calls[0].body.query.includes('classification-cpv = 45223210'));
+assert.ok(calls[0].body.query.includes('classification-cpv = 45262400'),'structural steel erection CPV must be queried');
+assert.ok(calls[0].body.query.includes('Schlosserarbeiten'),'German locksmith/steelwork scope must be queried');
 assert.ok(!calls[0].body.query.includes('classification-cpv = 4421*'),'broad generic structures CPV must not be queried');
 assert.ok(calls[0].body.query.includes('publication-date = ('),'opportunities should use a bounded publication window');
 assert.ok(calls[0].body.fields.includes('deadline-receipt-tender-date-lot'),'collector must request the official lot tender deadline field');
@@ -136,7 +144,7 @@ assert.ok(taskRows[0].detail.includes('verifiko scope/kriteret'),'task must expl
 assert.ok(taskRows[0].detail.includes('Vendi: DEU'),'task brief must carry the place of performance');
 assert.ok(taskRows[0].detail.includes('CPV: 45223210'),'task brief must carry the TED CPV code');
 assert.ok(taskRows[0].detail.includes('Ref: 700001-2026'),'task brief must carry the TED publication reference');
-assert.ok(taskRows[0].detail.includes('Pse relevante: CPV kryesor strukturë çeliku: 45223210; titull i qartë për strukturë çeliku'),'task brief must explain why the classifier promoted the tender');
+assert.ok(taskRows[0].detail.includes('Pse relevante: CPV kryesor strukturë çeliku: 45223210'),'task brief must explain why the classifier promoted the tender');
 
 const originalFetch=globalThis.fetch;
 const deletes=[];

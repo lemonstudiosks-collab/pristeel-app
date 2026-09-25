@@ -6,7 +6,7 @@ import { classifyTedNotice, decodeTedText, tedDetails } from './ted-tender-sync.
 const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const TED_API='https://api.ted.europa.eu/v3/notices/search';
 const AWARD_TYPES=['can-standard','can-social','can-desg','can-tran'];
-const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 44171000 OR classification-cpv = 44172000 OR classification-cpv = 44212220 OR classification-cpv = 44212240 OR classification-cpv = 44212313 OR classification-cpv = 44212410 OR classification-cpv = 44212500 OR classification-cpv = 44330000 OR classification-cpv = 44334000 OR classification-cpv = 45223100 OR classification-cpv = 45223110 OR classification-cpv = 45223210 OR FT IN (Stahlbau Stahlkonstruktion Stahltragwerk Stahlhalle steelwork staalbouw staalconstructie))';
+const STEEL_QUERY='(classification-cpv = 14622000 OR classification-cpv = 44171000 OR classification-cpv = 44172000 OR classification-cpv = 44212220 OR classification-cpv = 44212240 OR classification-cpv = 44212313 OR classification-cpv = 44212410 OR classification-cpv = 44212500 OR classification-cpv = 44330000 OR classification-cpv = 44334000 OR classification-cpv = 45223100 OR classification-cpv = 45223110 OR classification-cpv = 45223210 OR classification-cpv = 45262400 OR classification-cpv = 45262410 OR classification-cpv = 45262420 OR classification-cpv = 45262670 OR FT IN (Stahlbau Stahlkonstruktion Stahltragwerk Stahlhalle Schlosserarbeiten Metallbau Stahltreppe Stahlgelaender steelwork metalwork staalbouw staalconstructie))';
 const FIELDS=[
   'publication-number','notice-title','notice-type','publication-date','buyer-name',
   'classification-cpv','place-of-performance',
@@ -93,13 +93,13 @@ export function normalizeTedAward(row,seenAt=new Date().toISOString()){
   const publication=firstScalar(field(row,'publication-number'));if(!publication)return null;
   const title=decodeTedText(tedTitle(row))||`TED ${publication}`;
   const cpv=cpvCodes(row);
-  const cls=classifyTedNotice({title,cpv});
   const type=firstScalar(field(row,'notice-type'));
   const winner=winnerData(row);
   const buyer=decodeTedText(firstScalar(field(row,'buyer-name')))||'TED buyer';
   const place=listScalars(field(row,'place-of-performance'));
   const details=tedDetails(row,'award');
   const description=details.description||details.procedure_description||'';
+  const cls=classifyTedNotice({title,description,cpv});
   return {
     source_key:`TED:${publication}`,procurement_no:`TED-${publication}`,publication_no:publication,
     authority:buyer,title,document_type:type||null,fpp:cpv.find(c=>RAW_CPVS.has(c)||STRUCT_CPVS.has(c))||cpv[0]||null,
