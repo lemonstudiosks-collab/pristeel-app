@@ -102,15 +102,16 @@ export function tedDetails(row,phase){
   };
 }
 const RAW_CPVS=new Set(['14622000','44171000','44172000','44330000','44334000']);
-const STRUCT_CPVS=new Set(['44212220','44212240','44212313','44212410','44212500','45223100','45223110','45223210','45262400','45262410','45262420','45262670']);
-const STRUCT_TITLE_RE=/stahlbau|stahlkonstruk|stahltragwerk|stahlhalle|schlosserarbeit|metallbau|stahltrep|stahlgelander|stahlbalkon|stahlpodest|steelwork|structural steel|steel structure|steel girder|metalwork|staalbouw|staalconstruct|charpente metall|construction metall|ossature metall|konstrukcj[a-ząćęłńóśźż ]*stal|ocelov[a-zá-ž ]*konstruk|celicn[a-zčćžšđ ]*konstruk/i;
+const STRUCT_CPVS=new Set(['44212220','44212240','44212313','44212410','44212500','45223100','45223110','45223210','45262400','45262410','45262420']);
+const STRUCT_TITLE_RE=/stahlbau|stahlkonstruk|stahltragwerk|stahlhalle|schlosserarbeit|metallbau|stahltrep|stahlgelander|stahlbalkon|stahlpodest|steelwork|structural steel|steel structure|steel girder|staalbouw|staalconstruct|charpente metall|construction metall|ossature metall|konstrukcj[a-ząćęłńóśźż ]*stal|ocelov[a-zá-ž ]*konstruk|celicn[a-zčćžšđ ]*konstruk/i;
+const EXPLICIT_STEEL_TEXT_RE=/stahl|\bsteel\b|staal|acier|acciaio|stalow|ocelov|celicn/i;
 const RAW_TITLE_RE=/steel plate|steel sheet|stahlblech|blech aus stahl|steel profile|stahlprofil|structural profile|steel bar|steel rod|steel wire|armierungsstahl|bewehrungsstahl|blach[a-ząćęłńóśźż ]*stal|stali specjal|table din otel|armatura.*stal/i;
 const CLEAR_NON_STEEL_TITLE_RE=/\baluminium\b|\baluminum\b|\balu(?:\b|[-/ ])/i;
 export function classifyTedNotice({title='',description='',cpv=[]}={}){
   const codes=Array.isArray(cpv)?cpv:[];const n=norm(`${title} ${description}`);const reasons=[];let raw=0,structure=0;
   const primary=codes[0]||'';const rawPrimary=RAW_CPVS.has(primary);const structPrimary=STRUCT_CPVS.has(primary);
   const rawSecondary=codes.slice(1).find(c=>RAW_CPVS.has(c));const structSecondary=codes.slice(1).find(c=>STRUCT_CPVS.has(c));
-  const titleStructure=STRUCT_TITLE_RE.test(n);const titleRaw=RAW_TITLE_RE.test(n);const clearNonSteel=CLEAR_NON_STEEL_TITLE_RE.test(n)&&!titleStructure&&!titleRaw;
+  const titleStructure=STRUCT_TITLE_RE.test(n);const titleRaw=RAW_TITLE_RE.test(n);const explicitSteel=EXPLICIT_STEEL_TEXT_RE.test(n);const clearNonSteel=CLEAR_NON_STEEL_TITLE_RE.test(n)&&!explicitSteel&&!titleRaw;
   if(rawPrimary){raw=95;reasons.push(`CPV kryesor lëndë çeliku: ${primary}`);}else if(rawSecondary){raw=50;reasons.push(`CPV dytësor lëndë çeliku: ${rawSecondary}`);}
   if(structPrimary){structure=96;reasons.push(`CPV kryesor strukturë çeliku: ${primary}`);}else if(structSecondary){structure=52;reasons.push(`CPV dytësor strukturë çeliku: ${structSecondary}`);}
   if(titleStructure){structure=Math.max(structure,88);reasons.push('titull/scope i qartë për strukturë ose punime çeliku');}
