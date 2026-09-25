@@ -15,6 +15,8 @@ assert(!/supaFetch\s*\(/.test(js),'mobile shell must not add Supabase calls');
 assert(!/setInterval\s*\(/.test(js),'mobile shell must not poll');
 assert(!/MutationObserver/.test(js),'mobile shell must not install a UI ownership observer');
 assert(!/serviceWorker\.register/.test(js),'responsive phase must not register a service worker');
+assert(js.includes('@media(max-width:900px)'),'phone/tablet shell must stay active through 900px');
+assert(!js.includes('@media(max-width:640px)'),'phone-only shell breakpoint must not remain');
 assert(js.includes('touch-action:manipulation'),'mobile shell must add touch-safe controls');
 assert(js.includes('100dvh'),'mobile dialogs must respect the phone viewport');
 assert(js.includes('.table-responsive'),'mobile shell must preserve horizontal table access');
