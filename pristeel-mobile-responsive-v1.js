@@ -53,7 +53,8 @@ function installCss(){
     font:650 9px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
     cursor:pointer;-webkit-tap-highlight-color:transparent
   }
-  #pst-mobile-nav-v1 button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  #pst-mobile-nav-v1 button svg{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  #pst-mobile-nav-v1 button span{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #pst-mobile-nav-v1 button.active{color:var(--pst-section-deep,#34758B);background:var(--pst-section-soft,#EEF5F7)}
   #pst-mobile-nav-v1 button:focus-visible{outline:2px solid var(--pst-section-accent,#4F97AF);outline-offset:-2px}
   body #mini-calc{max-width:calc(100vw - 24px)!important;right:12px!important}
