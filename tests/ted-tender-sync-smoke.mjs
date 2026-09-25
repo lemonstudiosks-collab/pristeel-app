@@ -19,6 +19,8 @@ const metalwork=classifyTedNotice({title:'Schlosserarbeiten und Metallbau',cpv:[
 assert.ok(metalwork.relevance_score>=75,'metalworking packages with the dedicated CPV must be retained for steel review');
 const aluminiumOnly=classifyTedNotice({title:'Vorhangfassade Alu / Neubau Kombibad',cpv:['45223110']});
 assert.ok(aluminiumOnly.relevance_score<75,'clear aluminium-only metalwork must not become a steel opportunity from CPV alone');
+const aluminiumMetalwork=classifyTedNotice({title:'Metallbau Alu-Fassade',cpv:['45262670']});
+assert.ok(aluminiumMetalwork.relevance_score<75,'generic metalworking with explicit aluminium-only scope must not be promoted as steel work');
 const aluminiumCladding=classifyTedNotice({title:'Fahrzeughalle, Dämmung- und Alu-Wandbekleidung',cpv:['45223110']});
 assert.ok(aluminiumCladding.relevance_score<75,'aluminium cladding must not be promoted as fabricated steel work');
 const supervision=classifyTedNotice({title:'Fachbauüberwachung Stahlbau',cpv:['71000000','45223210']});
