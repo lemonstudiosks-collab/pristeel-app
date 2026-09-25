@@ -16,7 +16,7 @@ assert.match(ui,/Blerësit e materialit të çelikut - Europe/,'Material Trade p
 assert.match(ui,/EU \+ CH \+ RS \+ ME · MATERIAL ÇELIKU · DAP · PA TED/,'Home chip must expose the eligible geography and no-TED boundary');
 assert.match(ui,/\['action','Të gjitha',actionable\.length\]/,'ready-to-contact stage must remain the default company list');
 assert.match(ui,/life==='draft'\?'Draft gati'/,'draft-ready stage must be distinct');
-assert.match(ui,/life==='waiting'\?'Në pritje të përgjigjes'/,'sent/waiting stage must be distinct');
+assert.match(ui,/historyLife==='waiting'\?'Në pritje të përgjigjes'/,'sent/waiting stage must be distinct');
 assert.match(ui,/\['replied','Përgjigje të marra',replied\.length\]/,'reply-active stage must be distinct');
 assert.match(ui,/return'draft'/,'lifecycle must classify a live Gmail draft separately from sent');
 assert.match(ui,/buyerTierLabel/,'UI must expose Tier 1/Tier 2 buyer qualification');
