@@ -4,6 +4,8 @@ function assert(cond,msg){if(!cond)throw new Error(msg);}
 const html=fs.readFileSync('pristeel-procurement.html','utf8');
 const js=fs.readFileSync('pristeel-mobile-responsive-v1.js','utf8');
 const manifest=JSON.parse(fs.readFileSync('pristeel.webmanifest','utf8'));
+assert(fs.existsSync('assets/pristeel-app-icon-192.png'),'192px raster icon file missing');
+assert(fs.existsSync('assets/pristeel-app-icon-512.png'),'512px raster icon file missing');
 
 assert((html.match(/pristeel-mobile-responsive-v1\.js/g)||[]).length===1,'mobile runtime must be loaded exactly once');
 assert(/rel="manifest"\s+href="pristeel\.webmanifest"/.test(html),'web manifest must be linked');
