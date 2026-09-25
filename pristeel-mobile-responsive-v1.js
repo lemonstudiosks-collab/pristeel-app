@@ -50,8 +50,8 @@ function installCss(){
     appearance:none;border:0;background:transparent;color:#6D7880;
     min-width:0;min-height:48px;padding:4px 2px;border-radius:10px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-    font:650 9px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-    cursor:pointer;-webkit-tap-highlight-color:transparent
+    font:650 8.5px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    cursor:pointer;-webkit-tap-highlight-color:transparent;overflow:hidden
   }
   #pst-mobile-nav-v1 button svg{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #pst-mobile-nav-v1 button span{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
