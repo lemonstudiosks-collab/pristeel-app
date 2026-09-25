@@ -20,6 +20,6 @@ jobs:
         with:
           node-version: '20'
       - name: Check mobile runtime syntax
-        run: node --check pristeel-mobile-responsive-v1.js
+        run: |\n          node --check pristeel-mobile-responsive-v1.js\n          node --check pristeel-mobile-home-v1.js
       - name: Verify mobile shell contract
-        run: node tests/mobile-responsive-shell-smoke.mjs
+        run: |\n          node tests/mobile-responsive-shell-smoke.mjs\n          node tests/mobile-home-smoke.mjs
