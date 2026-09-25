@@ -113,12 +113,15 @@ function cpvCodesFromUk(r:any){
 function relevantConstruction(title:string,cpvs:string[],base=0,category='works'){
   const t=title.toLowerCase();
   const negative=/(telephone|data transmission|radio broadcast|microscope|furniture|software|consultancy|inspection service|design service only|architectural service|satellite transmission)/i.test(t);
+  const specialist=/(painting work|plumbing|sanitary|floor laying|flooring|joinery|carpentry|ventilation|air-conditioning|heating installation|lift installation|elevator|roofing|tiling|glazing|landscaping|cleaning|archaeological)/i.test(t);
   const works=category==='works'||cpvs.some(c=>/^(45|44)/.test(c));
   const strongCpv=cpvs.some(c=>/^(45213|45221|45223|452238|45231|452314|452322|45234|45262|44212)/.test(c));
-  const strongText=/(bridge|brücke|brucke|viaduct|railway|rail line|stahlbau|structural steel|steelwork|substation|transformer station|power line|overhead line|industrial|warehouse|factory|logistics|data cent|airport|terminal|general contractor|generalunternehmer|gu-leistung|design and build|design-build)/i.test(t);
-  if(!works||negative&&!strongCpv)return 0;
-  if(!strongCpv&&!strongText)return 0;
-  return Math.min(100,Math.max(base||0,strongCpv?86:78,strongText?88:0));
+  const strongText=/(bridge|brücke|brucke|viaduct|railway|rail line|stahlbau|stahlkonstruk|schlosserarbeit|metallbau|structural steel|steelwork|substation|transformer station|power line|overhead line|industrial|warehouse|factory|logistics|data cent|airport|terminal|general contractor|generalunternehmer|totalunternehmer|gu-leistung|turnkey|design and build|design-build)/i.test(t);
+  const generalProject=/(construction work|construction works|building construction|civil engineering|works for complete or part construction|structural shell work|road construction|bridge construction|railway construction|new build|new construction|neubau|extension|erweiterung|construction of|errichtung|reconstruction|rehabilitation|sanierung)/i.test(t);
+  if(!works||negative&&!strongCpv&&!strongText)return 0;
+  if(specialist&&!strongCpv&&!strongText)return 0;
+  if(!strongCpv&&!strongText&&!generalProject)return 0;
+  return Math.min(100,Math.max(base||0,strongCpv?86:0,strongText?88:0,generalProject?84:0));
 }
 function tedSource(row:any){return safeUrl(row.detail_url)||safeUrl(row.source_url)||null;}
 function projectItem(name:string,date:string|null,url:string|null,location:string|null,reason:string){
