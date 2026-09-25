@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "bcfec3dfc34d7da9506f84f48cf6b69b138250ef",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "066131154dd33c89939324398462f07dfbbf9925"
+    "bootstrapGitBlobSha": "c9172a7677d99d5c50fdee66fcddeff5da4aaa8a"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -81,6 +81,7 @@
         "pristeel-project-first-v2.js",
         "pristeel-project-first-actions-v1.js",
         "pristeel-project-first-commercial-v1.js",
+        "pristeel-german-commercial-gate-v1.js",
         "pristeel-project-commercial-simplified-v1.js",
         "pristeel-project-first-execution-v1.js",
         "pristeel-project-summary-command-v1.js",
