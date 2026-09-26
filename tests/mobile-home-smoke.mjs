@@ -15,10 +15,13 @@ assert(!/supaFetch\s*\(/.test(js),'mobile Home must not add Supabase calls');
 assert(!/setInterval\s*\(/.test(js),'mobile Home must not poll');
 assert(!/MutationObserver/.test(js),'mobile Home must not add a DOM ownership observer');
 assert(!/serviceWorker\.register/.test(js),'mobile Home must not add service-worker caching');
-assert((js.match(/\bfetch\s*\(/g)||[]).length===1,'mobile Home may make only one bounded public weather fetch');
-assert(js.includes('api.open-meteo.com'),'the only mobile Home network read must be the public Open-Meteo weather source');
+assert((js.match(/\bfetch\s*\(/g)||[]).length===2,'mobile Home may use only bounded public weather and ECB FX fetches');
+assert(js.includes('api.open-meteo.com'),'mobile Home weather must use the public Open-Meteo source');
+assert(js.includes('www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'),'currency converter must use the official ECB daily reference-rate feed');
 assert(js.includes('WEATHER_TTL=30*60*1000'),'weather data must be cached for 30 minutes');
+assert(js.includes('FX_TTL=12*60*60*1000'),'ECB FX data must be cached for 12 hours');
 assert(js.includes("pst_mobile_weather_cache_v1"),'weather cache key missing');
+assert(js.includes("pst_mobile_ecb_fx_cache_v1"),'FX cache key missing');
 
 assert(js.includes("Math.min(iw,sw)<=900"),'mobile Home must use physical or viewport width for phone/tablet detection');
 assert(js.includes("document.body&&document.body.classList.add('pst-mobile-home-active')"),'mobile Home activation class missing');
@@ -30,7 +33,7 @@ assert(js.includes("#page-workspace-home>*:not(#pst-mobile-home-v1){display:none
 for(const label of [
   'Pyet PPPP…','Prishtinë','Tregu i Çelikut','Mjete të dobishme',
   'Kalkulator peshe','Konvertues mm ↔ inch','Incoterms','Shënim i shpejtë',
-  'Burime të tregut','SteelBenchmarker','Lajmet e industrisë','Moti','Transporti'
+  'Burime të tregut','SteelBenchmarker','Lajmet e industrisë','Moti','Konvertues valutor'
 ]){
   assert(js.includes(label),'approved mobile Home label missing: '+label);
 }
@@ -43,7 +46,11 @@ for(const oldLabel of [
 assert(js.includes("data-pmh-tool=\"weight\""),'weight calculator entry missing');
 assert(js.includes("data-pmh-tool=\"convert\""),'unit converter entry missing');
 assert(js.includes("data-pmh-source=\"steelbenchmarker\""),'SteelBenchmarker resource missing');
-assert(js.includes('Mostra publike e fundit'),'steel-market values must be explicitly presented as dated public samples');
+assert(!js.includes('Mostra publike e fundit'),'stale public sample steel prices must not be shown on Home');
+assert(js.includes('Hap çmimin aktual'),'steel rows must open the current external market source instead of showing stale numbers');
+assert(!js.includes("value:'$504.5/t'"),'stale HRC sample price must be removed');
+assert(!js.includes("value:'$592.5/t'"),'stale rebar sample price must be removed');
+assert(js.includes("data-pmh-tool=\"currency\""),'currency converter entry missing');
 assert(js.includes('Ky shënim është lokal dhe nuk regjistrohet në PPPP.'),'quick note must not pretend to write into PPPP');
 assert(!/<img\b/i.test(js),'approved mobile Home must not include decorative/structure photos');
 
