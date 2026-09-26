@@ -194,6 +194,8 @@ export async function run({mode=process.env.SYNC_MODE||'preview',minScore=Number
   }
   const summary={mode,auth_mode,minimum_score:minScore,recent_days:recentDays,sources:status,rows:rows.length,by_source:rows.reduce((a,r)=>(a[r.payload.source]=(a[r.payload.source]||0)+1,a),{}),by_sector:rows.reduce((a,r)=>(a[r.payload.sector]=(a[r.payload.sector]||0)+1,a),{}),tenders:rows.map(r=>({source:r.payload.source,reference:r.procurement_no,authority:r.authority,title:r.title,deadline:r.deadline,sector:r.payload.sector,fit:r.payload.pristeel_fit,competition_mode:r.payload.competition_mode,score:r.relevance_score,recommended_lane:r.payload.recommended_lane}))};
   await save(summary);
+  const failed=status.filter(s=>s.status==='error');
+  if(failed.length)console.warn(`Daily source health: ${failed.length}/${status.length} source(s) failed: ${failed.map(s=>s.source).join(', ')}`);
   if(status.every(s=>s.status==='error'))throw new Error(`All procurement sources failed: ${status.map(s=>`${s.source}: ${s.error}`).join('; ')}`);
   return summary;
 }
