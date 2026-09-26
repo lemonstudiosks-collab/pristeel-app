@@ -4,7 +4,7 @@ const src=await readFile(new URL('../supabase/functions/pppp-gc-outreach/index.t
 for(const token of [
  "function safePersonName",
  "Dear Sir or Madam,",
- "Recovered missing Gmail draft #1",
+ "stale_copy_requires_manual_refresh",
  "Recovered missing Gmail draft #2",
  "live_draft_1_verified",
  "live_draft_2_verified",
