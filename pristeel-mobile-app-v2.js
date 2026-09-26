@@ -11,6 +11,7 @@ var VERSION='20260926-mobile-app4';
 var ROOT='pst-mobile-app-v2';
 var NAV='pst-mobile-app-v2-nav';
 var UTIL='pst-mobile-app-v2-util';
+var BACK='pst-mobile-app-v2-back';
 var CSS='pst-mobile-app-v2-css';
 var TAB_ORDER=['home','projects','discover','inbox'];
 var state={
@@ -92,14 +93,21 @@ function projectBucket(r){
 function bucketLabel(k){return({action:'Kërkon veprim',waiting:'Në pritje',execution:'Në realizim',work:'Në punë',closed:'Mbyllur'})[k]||'Projekt';}
 function legacyAction(selector){var old=document.getElementById('pst-mobile-home-v1'),b=old&&old.querySelector(selector);if(b&&typeof b.click==='function'){b.click();return true;}return false;}
 function temp(){var old=document.getElementById('pst-mobile-home-v1'),t=old&&old.querySelector('.pmh-weather-temp');return t?short(t.textContent,6).replace('C','°'):'Moti';}
+function ensureLegacyBack(){
+  var b=document.getElementById(BACK);
+  if(!b){b=document.createElement('button');b.id=BACK;b.setAttribute('type','button');b.setAttribute('data-pma-return-app','1');b.innerHTML=icon('back')+'<span>Kthehu në app</span>';document.body.appendChild(b);}
+  b.style.display='flex';return b;
+}
+function hideLegacyBack(){var b=document.getElementById(BACK);if(b)b.style.display='none';}
 function enterDetail(fn){
   state.detail=true;document.body&&document.body.classList.remove('pst-mobile-v2-active');
   var r=document.getElementById(ROOT);if(r)r.style.display='none';
+  ensureLegacyBack();
   try{if(typeof fn==='function')fn();}catch(e){try{console.warn(e);}catch(x){}}
   syncNav();
 }
 function showShell(tab){
-  state.detail=false;state.tab=TAB_ORDER.indexOf(tab)>=0?tab:(state.tab||'home');document.body&&document.body.classList.add('pst-mobile-v2-active');
+  state.detail=false;hideLegacyBack();state.tab=TAB_ORDER.indexOf(tab)>=0?tab:(state.tab||'home');document.body&&document.body.classList.add('pst-mobile-v2-active');
   render();
   requestAnimationFrame(function(){syncPager(true);});
 }
@@ -294,7 +302,7 @@ function render(){
   var r=document.getElementById(ROOT);
   if(!r){r=document.createElement('main');r.id=ROOT;r.setAttribute('aria-label','PriSteel Mobile');document.body.appendChild(r);}
   if(!state.detail){
-    document.body&&document.body.classList.add('pst-mobile-v2-active');r.style.display='block';r.innerHTML=rootMarkup();
+    hideLegacyBack();document.body&&document.body.classList.add('pst-mobile-v2-active');r.style.display='block';r.innerHTML=rootMarkup();
   }else r.style.display='none';
   var old=document.querySelectorAll('.pma-sheetback');old.forEach(function(x){x.remove();});
   if(state.plusOpen)document.body.insertAdjacentHTML('beforeend',plusSheet());
@@ -448,7 +456,7 @@ function createAction(kind){
 function installCss(){
   if(document.getElementById(CSS))return;
   var s=document.createElement('style');s.id=CSS;s.textContent=`
-#${ROOT},#${NAV},#${UTIL}{display:none}
+#${ROOT},#${NAV},#${UTIL},#${BACK}{display:none}
 @media(max-width:900px),(max-device-width:900px){
   #pst-mobile-nav-v1,#pst-mobile-utility-dock-v1{display:none!important}
   body.pst-mobile-v2-active #pst-mobile-control-tower-v1,body.pst-mobile-v2-active #pst-mobile-home-v1{display:none!important}
@@ -456,6 +464,7 @@ function installCss(){
   body.pst-mobile-v2-active #app-shell-root{visibility:hidden!important;pointer-events:none!important}
   body.pst-mobile-v2-active .topbar,body.pst-mobile-v2-active #pst-global-page-backbar,body.pst-mobile-v2-active #util-fab,body.pst-mobile-v2-active div[onclick="openCmdK()"][title^="Kërko"]{display:none!important}
   #${ROOT}{display:block;position:fixed;inset:0;z-index:2147483000;width:100%;height:100dvh;background:#F4F6F7;color:#182A31;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;overflow:hidden}
+  #${BACK}{position:fixed;left:12px;top:calc(10px + env(safe-area-inset-top));z-index:2147483900;min-height:40px;border:1px solid #D9E5E8;border-radius:13px;background:rgba(255,255,255,.96);color:#347F96;padding:0 11px 0 8px;align-items:center;gap:5px;font-size:9px;font-weight:800;box-shadow:0 7px 20px rgba(26,49,58,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}#${BACK} svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}
   .pma-shell{width:min(100%,600px);height:100%;margin:0 auto;overflow:hidden;position:relative;touch-action:pan-y}
   .pma-page-track{display:flex;width:400%;height:100%;will-change:transform}
   .pma-page{flex:0 0 25%;width:25%;height:100%;overflow:hidden;position:relative;min-width:0}
