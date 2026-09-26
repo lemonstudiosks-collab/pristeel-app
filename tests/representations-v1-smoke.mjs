@@ -12,7 +12,7 @@ const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 new vm.Script(ui);
 
 assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20260926-representations3/);
-assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260926-opportunities1/);
+assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260926-opportunities2-back/);
 assert.match(migration,/create table public\.pppp_representation_targets_v1/i);
 assert.match(migration,/enable row level security/i);
 assert.match(migration,/pppp_representation_targets_authenticated_update/i);
