@@ -28,4 +28,8 @@ assert(js.includes("clearSessionForFullLogin"),'full-login fallback must clear r
 assert(js.includes("guardedLogout"),'explicit logout must clear device PIN state');
 assert(js.includes("Math.min(iw,sw)<=900"),'PIN quick unlock must remain phone/tablet only');
 assert(js.includes("z-index:2147483647"),'PIN gate must cover global mobile navigation while locked');
+assert(js.includes("pst_mobile_pin_session_unlocked_v1"),'PIN unlock must persist for the current app session');
+assert(js.includes("sessionUnlocked(s)"),'repeated startApp calls must honor the current-session unlock');
+assert(js.includes("already=g.classList.contains('on')&&mode===which"),'repeated startApp calls must not reset an active PIN gate');
+assert(js.includes("pst:mobile-pin-unlocked"),'PIN success must signal dependent startup owners');
 console.log('mobile-pin-unlock-smoke: ok');

@@ -7,7 +7,7 @@
     "pagesEntry": "index.html",
     "applicationHtml": "pristeel-procurement.html",
     "bootstrapLoader": "pristeel-roles.js",
-    "bootstrapLoaderGitBlobSha": "89004100373e636774baf6a71a46047cfcf31081",
+    "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
     "bootstrapGitBlobSha": "e98284bd1d6960a4742acbecbdb4bf87af1fb09a"
   },
@@ -59,7 +59,7 @@
         "pristeel-mobile-responsive-v1.js",
         "pristeel-mobile-pin-unlock-v1.js"
       ],
-      "note": "Workspace Architecture provides the shell. Native UI v3 is the early presentation owner. Operating Experience remains the cross-area desktop presentation/navigation owner. Mobile Responsive v1 is a <=900px presentation/navigation-only shell that reuses canonical routes, adds no Supabase reads/writes or polling, and leaves business/data ownership unchanged. UI Runtime Stability observes route settling without cloning pages, duplicating ids, intercepting clicks or owning routing. Mobile PIN Unlock v1 is a device-local <=900px quick-unlock layer over an already valid remembered Supabase session. It stores no plaintext PIN or password, adds no Supabase/network reads, and falls back to full login when the session is unavailable or after repeated failures."
+      "note": "Workspace Architecture provides the shell. Native UI v3 is the early presentation owner. Operating Experience remains the cross-area desktop presentation/navigation owner. Mobile Responsive v1 is a <=900px presentation/navigation-only shell that reuses canonical routes, adds no Supabase reads/writes or polling, and leaves business/data ownership unchanged. UI Runtime Stability observes route settling without cloning pages, duplicating ids, intercepting clicks or owning routing. Mobile PIN Unlock v1 is a device-local <=900px quick-unlock layer over an already valid remembered Supabase session. It stores no plaintext PIN or password, adds no Supabase/network reads, and falls back to full login when the session is unavailable or after repeated failures. RBAC startup now keeps role resolution bound to the authenticated identity in standalone PWA mode and never converts a transient startup delay into Viewer; exact-email fallback is allowed only after an authenticated user_id row miss."
     },
     {
       "area": "home",

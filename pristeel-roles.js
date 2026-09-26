@@ -76,15 +76,16 @@ function loadRole(){
   myUserId = (jp && jp.sub) || (s.user && s.user.id) || s.user_id || '';
   roleLoadPromise = (async function(){
     try{
-      var identityFilter = myUserId
-        ? 'user_id=eq.'+encodeURIComponent(myUserId)
-        : (myEmail ? 'email=eq.'+encodeURIComponent(myEmail) : '');
-      if(!identityFilter){
-        myRole = 'viewer';
-        applyRole();
-        return true;
+      if(!myUserId && !myEmail)return false;
+      var r=[];
+      if(myUserId){
+        r = await supaFetch('user_roles?user_id=eq.'+encodeURIComponent(myUserId)+'&select=role,full_name,email,user_id&limit=1');
       }
-      var r = await supaFetch('user_roles?'+identityFilter+'&select=role,full_name,email,user_id&limit=1');
+      /* A migrated/restored auth identity can briefly have no user_id-linked role row
+       * in a standalone PWA. Only then fall back to the exact authenticated email. */
+      if((!r || !r.length) && myEmail){
+        r = await supaFetch('user_roles?email=eq.'+encodeURIComponent(String(myEmail).trim().toLowerCase())+'&select=role,full_name,email,user_id&limit=1');
+      }
       myRole = (r && r[0] && r[0].role) || 'viewer';
       applyRole();
       return true;
@@ -103,20 +104,25 @@ function isAdmin(){ return myRole === 'admin'; }
 
 function applyRole(){
   var tb = document.querySelector('.topbar .flex.gap-8');
-  if(tb && !document.getElementById('rl-badge')){
-    var b = document.createElement('span');
+  var b = document.getElementById('rl-badge');
+  if(tb && !b){
+    b = document.createElement('span');
     b.id = 'rl-badge';
+    tb.insertBefore(b, tb.firstChild);
+  }
+  if(b){
     b.className = 'rl-badge ' + (myRole||'viewer');
     b.textContent = ROLE_LBL[myRole] || myRole || '—';
     b.title = ROLE_DESC[myRole] || '';
-    tb.insertBefore(b, tb.firstChild);
   }
   var ft = document.querySelector('.sidebar-footer');
-  if(ft && myEmail && ft.innerHTML.indexOf('rl-role-ft') === -1){
-    ft.innerHTML += '<br><span id="rl-role-ft" style="font-size:9.5px;letter-spacing:.4px">'
-      + (ROLE_LBL[myRole]||'') + '</span>';
+  var roleFt = document.getElementById('rl-role-ft');
+  if(ft && myEmail && !roleFt){
+    ft.insertAdjacentHTML('beforeend','<br><span id="rl-role-ft" style="font-size:9.5px;letter-spacing:.4px"></span>');
+    roleFt = document.getElementById('rl-role-ft');
   }
-  if(!canWrite()) lockUI();
+  if(roleFt)roleFt.textContent = ROLE_LBL[myRole]||'';
+  if(canWrite()) unlockUI(); else lockUI();
 }
 
 function lockUI(){
@@ -145,6 +151,14 @@ function lockUI(){
       +'<span>Llogari <b>vetëm për shikim</b> — mund të shohësh çdo të dhënë, por jo ta ndryshosh.</span>';
     c.insertBefore(bar, c.firstChild);
   }
+}
+
+function unlockUI(){
+  document.querySelectorAll('.rl-lock').forEach(function(el){
+    el.classList.remove('rl-lock');
+    if(el.title === 'Vetëm shikim — nuk ke të drejtë ndryshimi')el.removeAttribute('title');
+  });
+  var bar=document.getElementById('rl-bar');if(bar)bar.remove();
 }
 
 function watchPages(){
@@ -222,18 +236,21 @@ function tryReady(){
 }
 function init(){
   var waits=[0,400,1200,2500,5000,9000];
-  waits.forEach(function(ms, idx){
+  waits.forEach(function(ms){
     setTimeout(function(){
       if(myRole) return;
-      Promise.resolve(tryReady()).then(function(){
-        if(idx === waits.length - 1 && !myRole){
-          myRole = 'viewer';
-          applyRole();
-        }
-      });
+      Promise.resolve(tryReady()).catch(function(){});
     },ms);
   });
 }
+function retryUnresolvedRole(){
+  if(myRole)return;
+  Promise.resolve(tryReady()).catch(function(){});
+}
+document.addEventListener('pst:mobile-pin-unlocked',retryUnresolvedRole);
+window.addEventListener('pageshow',retryUnresolvedRole);
+window.addEventListener('online',retryUnresolvedRole);
+window.addEventListener('focus',retryUnresolvedRole);
 
 if(document.readyState === 'loading'){
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 900); });
