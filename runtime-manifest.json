@@ -75,7 +75,7 @@
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Canonical Home remains the sole Home data/state owner. Existing Mobile Home and Mobile Control Tower stay loaded as compatibility/utility providers. Mobile App v2 is the final <=900px presentation shell: it owns the four-tab Home/Projects/Discover/Inbox mobile experience, real swipe presentation, compact fixed Weather/FX/Steel utilities and the central + sheet while delegating all business data/actions to existing PPPP owners. It adds no independent business-state engine."
+      "note": "Canonical Home remains the sole Home data/state owner. Existing mobile Home remains the bounded utility/public-source provider. Mobile App v2 is the final <=900px presentation shell: it hides legacy mobile/desktop Home surfaces while active, consumes canonical Home snapshots and existing project/opportunity/inbox/material/representation owners, adds four primary tabs plus a central quick-create action and real touch swipe on opportunity cards, and performs no independent business-state engine or automatic protected action."
     },
     {
       "area": "projects-list",
