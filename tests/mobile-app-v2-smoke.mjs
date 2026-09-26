@@ -3,6 +3,8 @@ import fs from 'node:fs';
 function assert(cond,msg){if(!cond)throw new Error(msg);}
 const html=fs.readFileSync('pristeel-procurement.html','utf8');
 const js=fs.readFileSync('pristeel-mobile-app-v2.js','utf8');
+const gmail=fs.readFileSync('pristeel-gmail-live-inbox-v2.js','utf8');
+const material=fs.readFileSync('pristeel-dach-steel-sales-v1.js','utf8');
 const runtime=JSON.parse(fs.readFileSync('runtime-manifest.json','utf8'));
 
 assert((html.match(/pristeel-mobile-app-v2\.js/g)||[]).length===1,'mobile app v2 must load exactly once');
@@ -22,6 +24,9 @@ assert(js.includes('PSTProjectsModernV2'),'Projects must reuse Projects owner/ca
 assert(js.includes('PSTGmailLiveInboxV2'),'Inbox must reuse Gmail owner');
 assert(js.includes('PSTDachSteelSalesV3'),'Material Trade must reuse existing owner');
 assert(js.includes('PSTRepresentationsV1'),'Representations must reuse existing owner');
+assert(gmail.includes('loadCanonical')&&gmail.includes('project_emails?select='),'Gmail owner must expose canonical synced-email fallback');
+assert(gmail.includes('connected:function(){return !!token()}'),'Gmail owner must expose connection state to mobile');
+assert(material.includes('loadTargets:function(force){return loadTargets(!!force)}'),'Material owner must expose bounded target loader without lifecycle sync');
 
 for(const label of ['Home','Projects','Discover','Inbox','Pyet PPPP…','Swipe ndërron faqen','Mundësi të reja për PriSteel','Përgatit kontakt','GO · Krijo projekt','Material','Përfaqësime']){
   assert(js.includes(label),'approved mobile v2 label/flow missing: '+label);
@@ -44,6 +49,12 @@ assert(js.includes('#pst-mobile-nav-v1,#pst-mobile-utility-dock-v1{display:none!
 assert(js.includes('body.pst-mobile-v2-active #pst-mobile-control-tower-v1'),'old Control Tower must be hidden under mobile v2');
 assert(js.includes('body.pst-mobile-v2-active #pst-mobile-home-v1'),'old information dashboard must be hidden under mobile v2');
 assert(js.includes('data-pma-util="weather"')&&js.includes('data-pma-util="fx"')&&js.includes('data-pma-util="market"'),'fixed utility icons missing');
+assert(js.includes('pma-ask-copy'),'Ask PPPP mobile copy must stay in one stable grid cell');
+assert(js.includes('pma-work-feed')&&js.includes('pma-work-card'),'Projects must use card-feed presentation');
+assert(js.includes('pma-discover-feed')&&js.includes("rows.map(function(r,idx)"),'Discover tenders must render a vertical multi-opportunity feed');
+assert(js.includes('targete Material Trade')&&js.includes('targete Përfaqësime'),'Discover secondary feeds must expose real target counts');
+assert(js.includes('PPPP email sync')&&js.includes('canonicalRows'),'Inbox must fall back to canonical Gmail-synced project_emails');
+assert(!js.includes('[0,80,220,600,1200].forEach'),'mobile startup must not repaint the full shell five times');
 assert(js.includes('data-pma-more'),'secondary Partner/Finance/System access missing');
 assert(js.includes('nativeProjectId')&&js.includes('projectDetailView'),'native mobile project detail state/view missing');
 assert(js.includes('nativeCompanyMode')&&js.includes('companyListView')&&js.includes('companyDetailView'),'native company browser/detail missing');
@@ -60,4 +71,4 @@ assert(js.includes('Kthehu në app')&&js.includes('data-pma-return-app'),'legacy
 assert(js.includes("u.style.display=(state.nativeProjectId||state.nativeCompanyMode)?'none':'grid'"),'utility dock must yield on native project/company detail');
 assert(js.includes("if(kind==='nogo'){if(!confirm("),'No-Go must remain an explicit human action');
 
-console.log('mobile-app-v5-company-detail-smoke: ok');
+console.log('mobile-app-v6-data-stability-smoke: ok');
