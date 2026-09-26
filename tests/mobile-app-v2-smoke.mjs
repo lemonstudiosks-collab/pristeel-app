@@ -31,6 +31,8 @@ assert(js.includes('data-pma-page-track')&&js.includes('bindPageSwipe'),'full-pa
 assert(js.includes('touchstart')&&js.includes('touchmove')&&js.includes('touchend'),'full-page pager must support real touch swipe');
 assert(js.includes("document.body.appendChild(r)"),'mobile root must mount outside the legacy app shell');
 assert(js.includes('body.pst-mobile-v2-active #app-shell-root{visibility:hidden!important'),'legacy app shell must be fully hidden under the mobile shell');
+assert(js.includes("app&&!visible(app)&&!shellActive"),'mobile auth guard must ignore the intentionally hidden legacy app shell while v3 is active');
+assert(js.includes("blockedRoot.style.display='none'"),'real auth/PIN blocking must hide the mobile shell');
 assert(js.includes('.pma-page-track{display:flex;width:400%;height:100%'),'four full-screen pages must share one horizontal track');
 assert(!js.includes('scroll-snap-type:x mandatory'),'nested Home carousel must not compete with full-page swipe');
 assert(js.includes('grid-template-columns:1fr 1fr 58px 1fr 1fr'),'bottom nav must have four primary tabs plus central +');
