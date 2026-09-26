@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "ec6e135d78f4846072f31895a821707914b9b791"
+    "bootstrapGitBlobSha": "7c0dc5436e167aaf55cd5d3039830b1dcf173ab1"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -333,7 +333,7 @@
       "module": "pristeel-representations-v1.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded after Material Trade. Owns the separate manufacturer-representation pipeline, its Home/System launchers and responsive detail/editor UI over public.pppp_representation_targets_v1. It never creates Projects, Partners, Suppliers, Contacts, contracts or email sends."
+      "condition": "Loaded after Material Trade. Owns the separate manufacturer-representation pipeline, its compact expandable controls, responsive detail/editor UI and Home launcher directly below Opportunities over public.pppp_representation_targets_v1. It is intentionally not exposed in System and never creates Projects, Partners, Suppliers, Contacts, contracts or email sends."
     }
   ],
   "loadOrderConstraints": [

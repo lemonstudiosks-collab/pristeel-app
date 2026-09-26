@@ -5,8 +5,11 @@ import {JSDOM} from 'jsdom';
 const source=fs.readFileSync('pristeel-home-morning-command-center-v1.js','utf8');
 assert(!/supaFetch|\/rest\/v1\/|\.insert\(|\.update\(|\.delete\(/.test(source),'Morning Home must reuse snapshots without database reads or writes');
 assert(source.includes('Veprimet prioritare')&&source.includes('Projektet aktive')&&source.includes('Material → Ofertë'),'Morning Home must expose the redesigned three work zones');
-assert(source.includes('home-project-empty4'),'Morning Home must expose the compact project-empty cache version');
+assert(source.includes('home-dashboard-redesign5'),'Morning Home must expose the merged redesigned cache version');
+assert(source.includes('pst-morning-project-empty'),'Morning Home must expose the compact project-empty state');
 assert(source.includes('groupActions(allActions)'),'Morning Home must group repetitive priority actions');
+assert(source.includes('pst-morning-project-grid'),'Active projects must use the compact project strip');
+assert(source.includes('#pst-representations-home-v1{grid-column:1}'),'Home must reserve the lane directly below Opportunities for Representations');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2 pst-global-fullwidth-shell">
 <div class="app-shell" id="app-shell-root"><aside class="sidebar" id="app-sidebar" style="display:none!important;width:0!important;visibility:hidden!important"><div id="pst-v2-sidebar" style="display:none!important"><div id="pst-ws-sidebar" style="display:none!important"></div></div></aside><main class="main" style="width:100%!important"><div class="content">

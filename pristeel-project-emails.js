@@ -159,7 +159,7 @@ var files=[
   'pristeel-primary-nav-resilience-v1.js?v=20260926-representations-nav1',
   'pristeel-project-execution-guard-v1.js?v=20260829-postaward1',
   'pristeel-creative-ui-v1.js?v=20260911-fullredesign4',
-  'pristeel-home-morning-command-center-v1.js?v=20260926-home-project-empty4',
+  'pristeel-home-morning-command-center-v1.js?v=20260926-home-dashboard-redesign5',
   'pristeel-ui-runtime-stability-v1.js?v=20260925-no-page-clone1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;

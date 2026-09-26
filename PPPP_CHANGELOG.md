@@ -1,3 +1,27 @@
+## 2026-09-26 — Mobile Home live interaction hardening
+
+- `Pyet PPPP` on mobile now opens a dedicated mobile sheet and delegates directly to the existing read-only `PSTOpenAIAssistantV1` / PPPP context bridge instead of opening generic workspace search.
+- Steel-market rows no longer say “current price” when the public source may expose delayed/sample values; they now say `Hap burimin`.
+- The SteelBenchmarker shortcut opens the latest public benchmark-history PDF directly.
+- No new Supabase path, polling or business write was added; the assistant reuses the existing authenticated PPPP AI owner.
+
+## 2026-09-26 — Trusted mobile PIN page cleanup
+
+- On a phone/tablet that already has a configured PPPP PIN, the legacy email/password form and its error area are removed from the page before the PIN gate is shown.
+- The PIN screen no longer mentions email/password controls; it presents only the four-digit PIN flow.
+- First-time/untrusted-device authentication remains available only when no device PIN exists, while explicit logout still clears the trusted-device state.
+- No Supabase business reads/writes, polling, schema or workflow behavior changed.
+
+## 2026-09-26 — Mobile Home live-source dashboard + PIN-only re-entry
+
+- Finalized the approved information-first mobile Home while leaving the fixed six-button bottom navigation unchanged.
+- Home keeps the PRISTEEL header/greeting, prominent `Pyet PPPP`, live Prishtina weather plus local date/time, steel-market source shortcuts, `Mjete të dobishme` and `Burime të tregut`.
+- Removed the dated SteelOrbis sample numbers from Home after verification showed that the public values displayed there are lagged/sample data rather than guaranteed current transaction prices. Steel rows now open the current product source instead of presenting stale numbers as live.
+- Replaced the Transport shortcut with an on-demand currency converter using the European Central Bank daily reference-rate feed. FX data is cached locally for 12 hours and labeled as reference data.
+- Weather remains a bounded Open-Meteo request cached for 30 minutes. Mobile Home adds no Supabase reads/writes, polling or service-worker caching.
+- After initial account authentication and PIN setup, normal mobile re-entry is PIN-only even when the access session expires: PIN verification restores the remembered refresh-token session and delegates renewal to the existing auth refresh path.
+- The normal PIN gate no longer exposes an email/password fallback. Five wrong PIN attempts trigger a temporary one-minute lock instead of switching to password login. Explicit logout still clears the trusted-device PIN/session state.
+
 ## 2026-09-26 — PWA RBAC + PIN session hotfix
 
 - Fixed a standalone-iPhone startup race that could incorrectly label a valid writable/admin account as “Vetëm shikim”.

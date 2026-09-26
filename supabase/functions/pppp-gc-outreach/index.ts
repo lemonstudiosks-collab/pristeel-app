@@ -6,7 +6,7 @@ const GMAIL_USER=Deno.env.get('GMAIL_USER')||'arianit.vllahiu@prissteel.com';
 const SUPABASE_URL=Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
-const ENGINE='pppp-gc-outreach-v9-commercial-engine-v3';
+const ENGINE='pppp-gc-outreach-v10-commercial-engine-v3-routed-copy';
 const cors={
   'Access-Control-Allow-Origin':'*',
   'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret',
@@ -115,18 +115,24 @@ function greeting(p:any){
 }
 function subject1(p:any){
   const proj=shortProject(p);
-  if(p.language==='de')return `Projekt ${proj} – Stahlpaket noch offen? | PRISTEEL`;
-  if(p.language==='sr')return `Projekt ${proj} – čelični paket još otvoren? | PRISTEEL`;
-  return `Project ${proj} – steel package still open? | PRISTEEL`;
+  if(p.language==='de')return `Projekt ${proj} – ein Partner für das Stahlpaket | PRISTEEL`;
+  if(p.language==='sr')return `Projekt ${proj} – jedan partner za čelični paket | PRISTEEL`;
+  return `Project ${proj} – one partner for the steel package | PRISTEEL`;
 }
 function signaturePlain(lang:string){const close=lang==='de'?'Mit freundlichen Grüßen':lang==='sr'?'Srdačan pozdrav':'Kind regards';return `${close},\n\nArianit Vllahiu\nHead of Business Development\n+383 (0) 44 244 699\narianit.vllahiu@prissteel.com\nwww.prissteel.com`;}
 function signatureHtml(lang:string){const close=lang==='de'?'Mit freundlichen Grüßen':lang==='sr'?'Srdačan pozdrav':'Kind regards';return `${esc(close)},<br><br><strong>Arianit Vllahiu</strong><br>Head of Business Development<br><a href="tel:+38344244699">+383 (0) 44 244 699</a><br><a href="mailto:arianit.vllahiu@prissteel.com">arianit.vllahiu@prissteel.com</a><br><a href="https://www.prissteel.com">www.prissteel.com</a>`;}
+function outboundFact(v:any){
+  const raw=text(v,1000);if(!raw)return'';
+  const s=lower(raw);
+  return /(pergatit draft|draft vetem|mos e dergo|do not send|prepare (?:a )?draft|draft only|internal instruction|human approval|outreach (?:draft|copy|message|instruction))/.test(s)?'':raw;
+}
 function body1(p:any){
   const g=greeting(p),facts=factsFor(p),proj=projectName(p);
   if(facts.length<2)throw new Error('outreach_v2_requires_two_specific_facts');
-  if(p.language==='de')return `${g}\n\nwir melden uns konkret zum Projekt „${proj}“. Zwei Punkte, auf die wir uns beziehen:\n• ${facts[0]}\n• ${facts[1]}\n\nPRISTEEL übernimmt die technische und kaufmännische Koordination klar abgegrenzter Stahlbaupakete – von Materialbeschaffung und Build-to-Print-Fertigung über Oberflächenschutz und Qualitätsdokumentation bis zur koordinierten DAP-Lieferung.\n\nIst das relevante Stahlbaupaket bereits vollständig vergeben oder ist ein klar abgegrenzter externer Umfang noch offen?\n\n${signaturePlain('de')}`;
-  if(p.language==='sr')return `${g}\n\njavljamo Vam se konkretno u vezi sa projektom „${proj}“. Pozivamo se na dvije provjerene informacije:\n• ${facts[0]}\n• ${facts[1]}\n\nPRISTEEL vodi tehničku i komercijalnu koordinaciju jasno definisanih paketa čeličnih konstrukcija – od nabavke materijala i proizvodnje prema nacrtima, preko površinske zaštite i dokumentacije kvaliteta, do koordinirane DAP isporuke.\n\nDa li je relevantni paket čeličnih radova već u potpunosti ugovoren ili je jasno definisan vanjski opseg još otvoren?\n\n${signaturePlain('sr')}`;
-  return `${g}\n\nI am contacting you specifically regarding “${proj}”. We are referring to two verified points:\n• ${facts[0]}\n• ${facts[1]}\n\nPRISTEEL provides the technical and commercial coordination for clearly defined structural-steel packages – from material procurement and build-to-print fabrication through surface treatment, quality and fabrication documentation, to coordinated DAP delivery.\n\nIs the relevant steel package already fully awarded, or is a clearly defined external scope still open?\n\n${signaturePlain('en')}`;
+  const fact=facts.map(outboundFact).find(Boolean)||'';
+  if(p.language==='de')return `${g}\n\nich melde mich bezüglich des Projekts „${proj}“.${fact?' '+fact:''}\n\nPRISTEEL kann die vollständige Verantwortung für ein klar definiertes Stahlpaket übernehmen – von Materialbeschaffung und Build-to-Print-Fertigung über Oberflächenschutz sowie Qualitäts- und Fertigungsdokumentation bis zur koordinierten DAP-Lieferung – mit einem technischen und kaufmännischen Ansprechpartner.\n\nSie behalten die Kontrolle über das Projekt. Wir übernehmen das Stahlpaket von Zeichnungen oder Stückliste bis zur Lieferung.\n\nPRISTEEL verbindet erfahrenes Stahlindustrie-Management mit einem etablierten Fertigungsnetzwerk in Südosteuropa. Wo erforderlich, kann die Vertragserfüllung durch Bankgarantien der ProCredit Bank abgesichert werden.\n\nWenn Sie ein konstruktives oder gefertigtes Stahlpaket lieber an einen externen Partner vergeben möchten, senden Sie uns die Zeichnungen oder Stückliste – wir übernehmen die weitere Abwicklung.\n\n${signaturePlain('de')}`;
+  if(p.language==='sr')return `${g}\n\njavljam Vam se u vezi sa projektom „${proj}“.${fact?' '+fact:''}\n\nPRISTEEL može preuzeti punu odgovornost za jasno definisan čelični paket – od nabavke materijala i proizvodnje prema nacrtima do površinske zaštite, dokumentacije kvaliteta i proizvodnje i koordinirane DAP isporuke – preko jedne tehničke i komercijalne kontakt tačke.\n\nVi zadržavate punu kontrolu nad projektom. Mi preuzimamo čelični paket od nacrta ili liste materijala do isporuke.\n\nPRISTEEL kombinuje iskusno upravljanje u industriji čelika sa etabliranom mrežom proizvodnih partnera u Jugoistočnoj Evropi. Kada je potrebno, ugovorno izvršenje može biti podržano bankarskim garancijama preko ProCredit Bank.\n\nAko postoji konstrukcijski ili proizvodni čelični paket koji želite povjeriti jednom vanjskom partneru, pošaljite nam nacrte ili listu materijala i mi preuzimamo dalje.\n\n${signaturePlain('sr')}`;
+  return `${g}\n\nI am contacting you regarding “${proj}”.${fact?' '+fact:''}\n\nPRISTEEL can take full responsibility for a clearly defined steel package — from material sourcing and build-to-print fabrication to surface treatment, quality and fabrication documentation, and coordinated DAP delivery — with one technical and commercial point of contact.\n\nYou remain in control of the project. We take ownership of the steel package from drawings or BOM through to delivery.\n\nPRISTEEL combines experienced steel-industry management with an established fabrication network in Southeast Europe. Where required, contractual performance can be supported by bank guarantees through ProCredit Bank.\n\nIf there is a structural or fabricated steel package you would prefer to place with one external partner, send us the drawings or BOM and we will take it from there.\n\n${signaturePlain('en')}`;
 }
 function body1Html(p:any){return body1(p).split('\n\n').slice(0,-1).map((x:string)=>esc(x).replace(/\n/g,'<br>')).join('<br><br>')+'<br><br>'+signatureHtml(p.language);}
 function body2(p:any){
@@ -228,9 +234,11 @@ async function processOne(row:any,createRequested=false){
       }
       return {id:p.id,company:p.company_name,event:'live_draft_1_verified',draft_id:existing.id,human_send_required:true};
     }
+    if(!createRequested)return {id:p.id,company:p.company_name,event:'stale_copy_requires_manual_refresh',draft_id:p.first_draft_id||null,human_send_required:true};
+    if(p.first_draft_id)await deleteDraft(p.first_draft_id);
     await db.from('pppp_gc_prospects_v1').update({
       first_draft_id:null,first_gmail_message_id:null,first_gmail_thread_id:null,first_draft_created_at:null,
-      status:'contact_ready',updated_at:nowIso(),last_error:'Recovered missing Gmail draft #1'
+      status:'contact_ready',workflow_state:'ready_for_outreach',updated_at:nowIso(),last_error:'Stale draft retired for explicit Sales Engine V2 copy refresh'
     }).eq('id',p.id).eq('status','draft_ready');
     p=await loadProspect(p.id);
   }
