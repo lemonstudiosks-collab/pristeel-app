@@ -318,9 +318,39 @@ async function oppAction(kind,id){
 }
 function createAction(kind){
   state.plusOpen=false;render();
+  if(kind==='project'){
+    return enterDetail(function(){
+      if(typeof window.newProject==='function')return window.newProject();
+      if(typeof window.showPage==='function')return window.showPage('newproject');
+      if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('projects');
+    });
+  }
   if(kind==='company')return mobileRoute('contacts');
-  if(kind==='project')return mobileRoute('projects');
-  if(kind==='rfq'||kind==='offer'||kind==='task'||kind==='scan')return mobileRoute('projects');
+  if(kind==='rfq'){
+    return enterDetail(function(){
+      if(typeof window.showPage==='function')return window.showPage('rfq');
+      if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('projects');
+    });
+  }
+  if(kind==='offer'){
+    return enterDetail(function(){
+      if(typeof window.goToClientOffer==='function')return window.goToClientOffer();
+      if(typeof window.showPage==='function')return window.showPage('oferta');
+    });
+  }
+  if(kind==='task'){
+    if(typeof window.addTask==='function')return window.addTask();
+    return mobileRoute('home');
+  }
+  if(kind==='scan'){
+    return enterDetail(function(){
+      if(typeof window.showPage==='function')window.showPage('newproject');
+      setTimeout(function(){
+        var input=document.getElementById('f-input');
+        if(input&&typeof input.click==='function')input.click();
+      },220);
+    });
+  }
 }
 function installCss(){
   if(document.getElementById(CSS))return;
