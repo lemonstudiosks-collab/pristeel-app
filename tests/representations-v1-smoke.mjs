@@ -10,7 +10,7 @@ const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 
 new vm.Script(ui);
 
-assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20260926-representations1/);
+assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20260926-representations2/);
 assert.match(migration,/create table public\.pppp_representation_targets_v1/i);
 assert.match(migration,/enable row level security/i);
 assert.match(migration,/pppp_representation_targets_authenticated_update/i);
@@ -26,15 +26,19 @@ assert.match(worker,/'representation_target'/);
 assert.match(worker,/processRepresentationTarget/);
 assert.match(worker,/pppp_chatgpt_register_representation_target_v1/);
 assert.match(ui,/#perfaqesime/);
+assert.match(ui,/data-rep-toggle="pipeline"/);
+assert.match(ui,/data-rep-toggle="filters"/);
 assert.match(ui,/data-rep-search/);
 assert.match(ui,/data-rep-country/);
 assert.match(ui,/data-rep-sector/);
 assert.match(ui,/data-rep-capital/);
+assert.match(ui,/body:has\(#page-representations\.active\) \.topbar/);
+assert.doesNotMatch(ui,/function injectSystemCard/);
 assert.match(ui,/priority_score\.desc/);
 assert.match(ui,/Archive \/ Mbylle/);
 assert.doesNotMatch(ui,/sendEmail|gmail\.send|external_email_send/i);
 
-const dom = new JSDOM('<!doctype html><html><head></head><body><div class="content"></div><div id="pst-home-launchpad-v1"><div class="pst-launch-grid"></div></div></body></html>',{
+const dom = new JSDOM('<!doctype html><html><head></head><body><div class="topbar"></div><div class="content"></div><div id="pst-home-launchpad-v1"><div class="pst-morning-lanes"><section class="pst-morning-lane opportunities"></section><section class="pst-morning-lane material"></section></div></div><div id="page-workspace-apps"><div class="pst-ws-appgrid"></div></div></body></html>',{
   url:'https://pppp.test/',
   runScripts:'dangerously',
   pretendToBeVisual:true,
@@ -50,6 +54,17 @@ const page = dom.window.document.getElementById('page-representations');
 assert.ok(page?.classList.contains('active'),'route did not open');
 assert.equal(dom.window.location.hash,'#perfaqesime');
 assert.equal(page.querySelectorAll('[data-rep-kpis] .pst-rep-kpi').length,4);
+const pipelineToggle=page.querySelector('[data-rep-toggle="pipeline"]');
+const pipelineMenu=page.querySelector('[data-rep-menu="pipeline"]');
+assert.ok(pipelineMenu.hidden,'pipeline menu must start collapsed');
+pipelineToggle.click();
+assert.equal(pipelineMenu.hidden,false,'pipeline menu must expand vertically on demand');
+const filterToggle=page.querySelector('[data-rep-toggle="filters"]');
+const filterMenu=page.querySelector('[data-rep-menu="filters"]');
+filterToggle.click();
+assert.equal(filterMenu.hidden,false,'filter menu must expand on demand');
+assert.ok(dom.window.document.querySelector('.pst-morning-lane.opportunities').nextElementSibling?.id==='pst-representations-home-v1','Representations must sit directly under Opportunities on Home');
+assert.equal(dom.window.document.getElementById('pst-representations-system-card'),null,'Representations must not be injected into System');
 page.querySelector('[data-rep-new]').click();
 assert.ok(dom.window.document.getElementById('pst-rep-modal'),'manual create editor did not open');
 assert.ok(dom.window.document.getElementById('rep-company-name'));
