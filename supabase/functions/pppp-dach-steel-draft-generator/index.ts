@@ -220,7 +220,7 @@ function specificFacts(tg:any){
  if(a.length>=2)return a.slice(0,4).map((x:any)=>t(x,1000));
  return [tg?.project_title,tg?.why_now].filter((x:any)=>t(x,1000)).map((x:any)=>t(x,1000));
 }
-function buyerTextV2(tg:any,signatureHtml=""){
+function buyerTextV2(tg:any,signatureHtml="",contact:any={}){
  const lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",facts=specificFacts(tg),motion=t(tg?.outreach_motion||"material_buyer",80),project=t(tg?.project_title,500),company=t(tg?.company_name,500),anchor=project||company||facts[0],sig=signatureHtml||canonicalSignatureHtml;
  if(facts.length<2)throw new Error("outreach_v2_requires_two_specific_facts");
  const future=motion==="future_supplier_qualification"||t(tg?.timing_classification,80)==="future_supplier_qualification";
@@ -230,7 +230,7 @@ function buyerTextV2(tg:any,signatureHtml=""){
    :capacity
      ?(de?(project||company)+" – externe Fertigungskapazität | PRISTEEL":bcs?(project||company)+" – vanjski proizvodni kapacitet | PRISTEEL":(project||company)+" – external fabrication capacity | PRISTEEL")
      :(de?anchor+" – Stahlmaterialpaket | PRISTEEL":bcs?anchor+" – paket čeličnog materijala | PRISTEEL":anchor+" – steel material package | PRISTEEL");
- const hello=de?"Guten Tag,":bcs?"Poštovani,":"Hello,";
+ const person=t(contact?.person,240); const hello=de?(person?"Guten Tag "+person+",":"Guten Tag,"):bcs?(person?"Poštovani "+person+",":"Poštovani,"):(person?"Dear "+person+",":"Hello,");
  const context=project
    ?(de?'ich melde mich bezüglich des Projekts „'+project+'“.':bcs?'javljam Vam se u vezi sa projektom „'+project+'“.':'I am contacting you regarding “'+project+'”.')
    :(de?"ich melde mich bezüglich Ihrer Beschaffung von Stahlmaterial.":bcs?"javljam Vam se u vezi sa nabavkom čeličnog materijala.":"I am contacting you regarding your steel-material procurement.");
@@ -333,7 +333,7 @@ async function buyerDraft(tg:any,u:any){
  if(contactScore<50)throw new Error("outreach_v2_contact_quality_below_50:"+tier);
  if(Number(tg?.message_evidence_score||0)<60||facts.length<2)throw new Error("outreach_v2_requires_two_specific_facts");
  await guards(tg,q,e);
- const sig=canonicalSignatureHtml,ct=buyerTextV2(tg,sig),d=await draft(e,ct.subject,ct.body,{
+ const sig=canonicalSignatureHtml,ct=buyerTextV2(tg,sig,contact),d=await draft(e,ct.subject,ct.body,{
   "X-PPPP-DACH-Target-ID":t(tg.id,80),
   "X-PPPP-DACH-Source-Key":t(tg.source_key,500),
   "X-PPPP-DACH-Mode":ct.approach_mode
