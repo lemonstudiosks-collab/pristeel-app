@@ -32,6 +32,11 @@ assert(js.includes("nav.parentNode!==document.body"),'mobile navigation must rem
 assert(js.includes('z-index:2147483000!important'),'mobile navigation must stay above page overlays');
 assert(js.includes('pointer-events:auto!important'),'mobile navigation must remain clickable above page owners');
 assert(js.includes("document.addEventListener('pst:page-opened',schedule)"),'mobile navigation must reassert itself after every route change');
+assert(js.includes("function markMobileRoute(key)"),'mobile navigation must synchronously mark the destination before routing');
+assert(js.includes("document.body.classList.remove('pst-mobile-home-active')"),'non-Home mobile routes must release the persistent Home owner before opening their page');
+assert(js.includes("document.body.dataset.pstBusinessZone=zoneFor(key)"),'mobile route must keep the business-zone marker in sync');
+assert(js.includes("R._test.currentKey"),'mobile nav active-state sync must prefer the canonical visible route over stale body state');
+assert(js.includes("nav.querySelectorAll('button[data-key]').forEach"),'tapped bottom-nav button must become active immediately');
 assert(js.includes('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'), 'mobile navigation may keep canonical sidebar click only as fallback');
 assert(manifest.display==='standalone','manifest must use standalone display');
 assert(manifest.prefer_related_applications===false,'manifest must keep web-app installation primary');
