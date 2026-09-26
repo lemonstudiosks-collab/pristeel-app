@@ -1,11 +1,12 @@
-## 2026-09-26 — Mobile Home market dashboard
+## 2026-09-26 — Mobile Home live-source dashboard + PIN-only re-entry
 
-- Replaced the duplicated mobile business-workflow Home content with the approved information-first layout while leaving the fixed six-button bottom navigation unchanged.
-- Mobile Home now contains the PRISTEEL header/greeting, prominent `Pyet PPPP`, Prishtina weather plus local date/time, a clearly dated public steel-market sample, `Mjete të dobishme` and `Burime të tregut`.
-- Removed mobile Home counters, PRISTEEL Daily, priority/project/waiting cards and quick project/tender actions because those business areas are already accessible from the bottom navigation or through `Pyet PPPP`.
-- Added local-only weight and mm↔inch tools, an ICC Incoterms link and a local quick note. The note explicitly does not write into PPPP.
-- The only direct public data read added by Mobile Home is Open-Meteo weather for Prishtina, cached locally for 30 minutes. No Supabase reads/writes, polling or service-worker caching were added.
-- Steel values are labeled as dated public samples and link to their source rather than being represented as live canonical PPPP prices.
+- Finalized the approved information-first mobile Home while keeping the fixed six-button bottom navigation unchanged and removing duplicated project/opportunity workflow content.
+- Home keeps the PRISTEEL header/greeting, prominent `Pyet PPPP`, live Prishtina weather plus local date/time, steel-market source shortcuts, `Mjete të dobishme` and `Burime të tregut`.
+- Removed the dated SteelOrbis sample numbers from Home after verification showed that the public numbers exposed on those pages are sample/lagged values rather than guaranteed current transaction prices. Steel rows now open the current product source instead of displaying stale figures as live data.
+- Replaced the Transport button with an on-demand currency converter using the European Central Bank daily reference-rate feed; FX data is cached locally for 12 hours and clearly labeled as reference data.
+- Weather remains an on-demand public Open-Meteo read cached for 30 minutes. No Supabase reads/writes, polling or service-worker caching were added by Mobile Home.
+- Mobile PIN re-entry now remains the normal gate even when the access session expires: after PIN verification the device restores the remembered refresh-token session and silently refreshes it. The normal PIN gate no longer exposes an email/password fallback.
+- Five wrong PIN attempts cause a temporary one-minute PIN lock instead of forcing email/password login. Explicit logout still clears the trusted-device PIN/session state.
 
 ## 2026-09-26 — PWA RBAC + PIN session hotfix
 
