@@ -17,23 +17,26 @@ if(window.__pstMobileHomeV2)return;
 window.__pstMobileHomeV2=true;
 window.__pstMobileHomeV1=true;
 
-var VERSION='20260926-market-home1';
+var VERSION='20260926-market-home2';
 var weatherPromise=null;
+var fxPromise=null;
 var WEATHER_CACHE='pst_mobile_weather_cache_v1';
 var WEATHER_TTL=30*60*1000;
+var FX_CACHE='pst_mobile_ecb_fx_cache_v1';
+var FX_TTL=12*60*60*1000;
 
 var MARKET=[
-  {label:'Hot Rolled Coil (HRC)',value:'$504.5/t',delta:'+0.40%',tone:'up',date:'25.08.2026',url:'https://www.steelorbis.com/steel-market/hot-rolled-coil.htm'},
-  {label:'Rebar',value:'$592.5/t',delta:'+1.72%',tone:'up',date:'26.08.2026',url:'https://www.steelorbis.com/steel-market/rebar.htm'},
-  {label:'Scrap (HMS I/II)',value:'$372/t',delta:'0.00%',tone:'flat',date:'25.08.2026',url:'https://www.steelorbis.com/steel-market/scrap.htm'},
-  {label:'EU Steel',value:'€730/t',delta:'0.00%',tone:'flat',date:'25.08.2026',url:'https://www.steelorbis.com/steel-market/eu.htm'}
+  {label:'Hot Rolled Coil (HRC)',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/hot-rolled-coil.htm'},
+  {label:'Rebar',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/rebar.htm'},
+  {label:'Scrap (HMS I/II)',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/scrap.htm'},
+  {label:'Plate',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/steel-plate.htm'}
 ];
 
 var SOURCES={
   steelbenchmarker:'https://steelbenchmarker.com/',
   news:'https://www.steelorbis.com/steel-news/latest-news/',
   weather:'https://www.meteoblue.com/en/weather/week/pristina_kosovo_786714',
-  transport:'https://fbx.freightos.com/'
+  calendar:'https://calendar.google.com/calendar/u/0/r'
 };
 
 function S(v){return String(v==null?'':v);}
@@ -103,7 +106,7 @@ body.pst-mobile-home-active #pst-mobile-home-v1{display:block!important;width:10
 .pmh-search{width:100%;margin:9px 0;border:1px solid #CFE3E9;border-radius:15px;background:#fff;min-height:56px;padding:0 9px 0 15px;display:flex;align-items:center;gap:12px;color:#667980;box-shadow:0 8px 18px rgba(37,69,80,.05);cursor:pointer;text-align:left}.pmh-search>svg{width:22px;height:22px;fill:none;stroke:#4D6670;stroke-width:1.8;flex:0 0 auto}.pmh-search>span{flex:1;font-size:16px;color:#7C888E}.pmh-search i{width:40px;height:40px;border-radius:12px;background:#E7F5F9;color:#218CAA;display:grid;place-items:center;font-style:normal}.pmh-search i svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7}
 .pmh-info-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,.82fr);gap:8px;margin-bottom:8px}.pmh-info{min-width:0;border:1px solid #E1E9EB;border-radius:16px;background:#fff;padding:12px;box-shadow:0 5px 15px rgba(42,73,84,.025)}.pmh-info-title{display:flex;align-items:center;gap:7px;color:#23363E;font-size:11px;font-weight:750}.pmh-info-title span:first-child{width:28px;height:28px;border-radius:9px;background:#E7F5FA;color:#218FB0;display:grid;place-items:center}.pmh-info-title svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-weather{cursor:pointer;text-align:left}.pmh-weather-main{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px}.pmh-weather-temp{font-size:31px;font-weight:780;line-height:1;color:#17303A;letter-spacing:-.8px}.pmh-weather-icon{font-size:39px;line-height:1}.pmh-weather-desc{margin-top:6px;color:#596E77;font-size:11px}.pmh-weather-range{margin-top:7px;color:#89959A;font-size:10px}.pmh-date-day{margin-top:7px;font-size:13px;font-weight:750;color:#21353D}.pmh-date-full{margin-top:3px;color:#7E8B90;font-size:10px}.pmh-time-pill{display:flex;align-items:center;gap:6px;margin-top:9px;background:#EAF6FA;color:#277E99;border-radius:10px;padding:7px 9px;font-size:13px;font-weight:760}.pmh-time-pill svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-dayline{margin-top:9px;color:#5F737B;font-size:10px;line-height:1.35}
 .pmh-card{border:1px solid #E0E8EA;border-radius:16px;background:#fff;overflow:hidden;margin-bottom:8px;box-shadow:0 5px 16px rgba(42,73,84,.03)}.pmh-card-head{display:flex;align-items:center;gap:8px;padding:10px 11px 8px}.pmh-card-head-icon{width:30px;height:30px;border-radius:9px;background:#E7F5FA;color:#238DB0;display:grid;place-items:center;flex:0 0 auto}.pmh-card-head-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.pmh-card-head b{font-size:13px;color:#1F343C}.pmh-card-link{margin-left:auto;border:0;background:transparent;color:#2385A1;font-size:10px;font-weight:760;cursor:pointer;padding:3px}
-.pmh-market-list{padding:0 11px 7px}.pmh-market-row{width:100%;border:0;border-top:1px solid #EDF1F2;background:#fff;min-height:39px;padding:5px 0;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;text-align:left;cursor:pointer}.pmh-market-row:first-child{border-top:0}.pmh-market-name{font-size:10.5px;color:#283D45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-market-value{font-size:11px;font-weight:760;color:#243841}.pmh-market-delta{min-width:54px;text-align:right;font-size:10px;font-weight:750}.pmh-market-delta.up{color:#159860}.pmh-market-delta.down{color:#D95757}.pmh-market-delta.flat{color:#819096}.pmh-market-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #EDF1F2;padding:7px 11px 9px;color:#8A969B;font-size:8.7px}.pmh-market-foot b{color:#607982;font-weight:650}
+.pmh-market-list{padding:0 11px 7px}.pmh-market-row{width:100%;border:0;border-top:1px solid #EDF1F2;background:#fff;min-height:42px;padding:6px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;cursor:pointer}.pmh-market-row:first-child{border-top:0}.pmh-market-name{font-size:10.5px;color:#283D45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-market-live{font-size:9.5px;font-weight:750;color:#2385A1;white-space:nowrap}.pmh-market-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #EDF1F2;padding:7px 11px 9px;color:#8A969B;font-size:8.7px}.pmh-market-foot b{color:#607982;font-weight:650}
 .pmh-lower-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pmh-mini{border:1px solid #E0E8EA;border-radius:16px;background:#fff;overflow:hidden;box-shadow:0 5px 16px rgba(42,73,84,.025)}.pmh-mini-head{display:flex;align-items:center;gap:7px;padding:10px 10px 7px;border-bottom:1px solid #EDF1F2}.pmh-mini-icon{width:29px;height:29px;border-radius:9px;background:#EAF5FF;color:#237EBD;display:grid;place-items:center}.pmh-mini-icon.blue2{background:#E9F4FF;color:#2A78B6}.pmh-mini-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.pmh-mini-head b{min-width:0;font-size:11px;color:#233840;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-mini-head .pmh-chevron{margin-left:auto;color:#2583A0}.pmh-mini-head .pmh-chevron svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9}.pmh-mini-list{padding:0 9px 6px}.pmh-mini-row{width:100%;min-height:35px;border:0;border-top:1px solid #EEF2F3;background:#fff;padding:4px 0;display:grid;grid-template-columns:23px minmax(0,1fr);gap:7px;align-items:center;text-align:left;color:#2A3E46;cursor:pointer}.pmh-mini-row:first-child{border-top:0}.pmh-mini-row:active{background:#F6FAFB}.pmh-mini-row span:first-child{color:#2681A0;display:grid;place-items:center}.pmh-mini-row svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-mini-row em{font-style:normal;font-size:9.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pmh-sheet-backdrop{position:fixed;inset:0;z-index:99999;background:rgba(17,34,41,.35);display:flex;align-items:flex-end;justify-content:center;padding:12px}.pmh-sheet{width:min(520px,100%);background:#fff;border-radius:20px 20px 16px 16px;box-shadow:0 20px 50px rgba(20,45,55,.22);padding:14px}.pmh-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.pmh-sheet-head b{font-size:16px;color:#1E333B}.pmh-sheet-close{width:34px;height:34px;border:0;border-radius:10px;background:#F0F5F6;color:#50666F;display:grid;place-items:center}.pmh-sheet-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}.pmh-form{display:grid;gap:10px;margin-top:12px}.pmh-form label{display:grid;gap:5px;color:#6A7C83;font-size:10px}.pmh-form input,.pmh-form textarea{width:100%;border:1px solid #DCE7EA;border-radius:11px;background:#FBFCFC;padding:10px 11px;color:#20343C;font:inherit;font-size:13px;outline:none}.pmh-form textarea{min-height:120px;resize:vertical}.pmh-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pmh-result{border-radius:12px;background:#EEF7FA;padding:12px;color:#256E86;font-size:13px;font-weight:750}.pmh-primary{height:42px;border:0;border-radius:11px;background:#2E8EAA;color:#fff;font-size:12px;font-weight:760}.pmh-note{margin-top:7px;color:#8A969B;font-size:9px;line-height:1.4}
 @media(max-width:390px){body.pst-mobile-home-active #pst-mobile-home-v1{padding-left:9px!important;padding-right:9px!important}.pmh-welcome h1{font-size:23px}.pmh-weather-temp{font-size:28px}.pmh-info{padding:10px}.pmh-mini-head b{font-size:10.5px}.pmh-mini-row em{font-size:9px}.pmh-market-name{font-size:10px}}
@@ -127,7 +130,7 @@ function clearShellFix(){
 
 function marketRows(){
   return MARKET.map(function(x,i){
-    return '<button type="button" class="pmh-market-row" data-pmh-market="'+i+'"><span class="pmh-market-name">'+E(x.label)+'</span><span class="pmh-market-value">'+E(x.value)+'</span><span class="pmh-market-delta '+E(x.tone)+'">'+(x.tone==='up'?'▲ ':x.tone==='down'?'▼ ':'')+E(x.delta)+'</span></button>';
+    return '<button type="button" class="pmh-market-row" data-pmh-market="'+i+'"><span class="pmh-market-name">'+E(x.label)+'</span><span class="pmh-market-live">Hap çmimin aktual ↗</span></button>';
   }).join('');
 }
 function markup(){
@@ -137,9 +140,9 @@ function markup(){
   +'<button type="button" class="pmh-search" data-pmh-search>'+svg('search')+'<span>Pyet PPPP…</span><i>'+svg('sparkle')+'</i></button>'
   +'<div class="pmh-info-grid">'
     +'<button type="button" class="pmh-info pmh-weather" data-pmh-weather><div class="pmh-info-title"><span>'+svg('pin')+'</span><b>Prishtinë</b></div><div class="pmh-weather-main"><span class="pmh-weather-temp" data-pmh-weather-temp>--°C</span><span class="pmh-weather-icon" data-pmh-weather-icon>🌤️</span></div><div class="pmh-weather-desc" data-pmh-weather-desc>Duke marrë motin…</div><div class="pmh-weather-range" data-pmh-weather-range>H: --° · L: --°</div></button>'
-    +'<section class="pmh-info"><div class="pmh-info-title"><span>'+svg('calendar')+'</span><b data-pmh-weekday>Sot</b></div><div class="pmh-date-full" data-pmh-date></div><div class="pmh-time-pill">'+svg('clock')+'<span data-pmh-time>--:--</span></div><div class="pmh-dayline">Një ditë e mbarë<br>për punë të mëdha.</div></section>'
+    +'<button type="button" class="pmh-info pmh-weather" data-pmh-calendar><div class="pmh-info-title"><span>'+svg('calendar')+'</span><b data-pmh-weekday>Sot</b></div><div class="pmh-date-full" data-pmh-date></div><div class="pmh-time-pill">'+svg('clock')+'<span data-pmh-time>--:--</span></div><div class="pmh-dayline">Një ditë e mbarë<br>për punë të mëdha.</div></button>'
   +'</div>'
-  +'<section class="pmh-card"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('chart')+'</span><b>Tregu i Çelikut</b><button type="button" class="pmh-card-link" data-pmh-market-all>Shiko më shumë →</button></div><div class="pmh-market-list">'+marketRows()+'</div><div class="pmh-market-foot"><span>Mostra publike e fundit</span><b>SteelOrbis · 25–26.08.2026</b></div></section>'
+  +'<section class="pmh-card"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('chart')+'</span><b>Tregu i Çelikut</b><button type="button" class="pmh-card-link" data-pmh-market-all>Shiko më shumë →</button></div><div class="pmh-market-list">'+marketRows()+'</div><div class="pmh-market-foot"><span>Pa çmime sample në Ballinë</span><b>Burimi hapet live</b></div></section>'
   +'<div class="pmh-lower-grid">'
     +'<section class="pmh-mini"><div class="pmh-mini-head"><span class="pmh-mini-icon">'+svg('tool')+'</span><b>Mjete të dobishme</b><span class="pmh-chevron">'+svg('arrow')+'</span></div><div class="pmh-mini-list">'
       +'<button type="button" class="pmh-mini-row" data-pmh-tool="weight"><span>'+svg('scale')+'</span><em>Kalkulator peshe</em></button>'
@@ -151,7 +154,7 @@ function markup(){
       +'<button type="button" class="pmh-mini-row" data-pmh-source="steelbenchmarker"><span>'+svg('chart')+'</span><em>SteelBenchmarker</em></button>'
       +'<button type="button" class="pmh-mini-row" data-pmh-source="news"><span>'+svg('doc')+'</span><em>Lajmet e industrisë</em></button>'
       +'<button type="button" class="pmh-mini-row" data-pmh-source="weather"><span>'+svg('cloud')+'</span><em>Moti</em></button>'
-      +'<button type="button" class="pmh-mini-row" data-pmh-source="transport"><span>'+svg('truck')+'</span><em>Transporti</em></button>'
+      +'<button type="button" class="pmh-mini-row" data-pmh-tool="currency"><span>'+svg('chart')+'</span><em>Konvertues valutor</em></button>'
     +'</div></section>'
   +'</div>';
 }
@@ -226,11 +229,45 @@ function noteTool(){
   var back=openSheet('Shënim i shpejtë','<div class="pmh-form"><label>Shënimi<textarea data-pmh-note>'+E(saved)+'</textarea></label><button type="button" class="pmh-primary" data-pmh-note-save>Ruaje në këtë pajisje</button><div class="pmh-note" data-pmh-note-status>Ky shënim është lokal dhe nuk regjistrohet në PPPP.</div></div>');
   back.querySelector('[data-pmh-note-save]').addEventListener('click',function(){var v=back.querySelector('[data-pmh-note]').value;try{localStorage.setItem('pst_quick_note_v1',v);back.querySelector('[data-pmh-note-status]').textContent='U ruajt në këtë pajisje.';}catch(e){back.querySelector('[data-pmh-note-status]').textContent='Nuk u ruajt në pajisje.';}});
 }
+function cachedFx(){
+  try{var x=JSON.parse(localStorage.getItem(FX_CACHE)||'null');if(x&&x.at&&x.data&&Date.now()-Number(x.at)<FX_TTL)return x.data;}catch(e){}
+  return null;
+}
+function saveFx(data){try{localStorage.setItem(FX_CACHE,JSON.stringify({at:Date.now(),data:data}));}catch(e){}}
+function loadFx(){
+  var c=cachedFx();if(c)return Promise.resolve(c);
+  if(fxPromise)return fxPromise;
+  fxPromise=fetch('https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('fx '+r.status);return r.text();}).then(function(xml){
+    var doc=new DOMParser().parseFromString(xml,'application/xml'),rates={EUR:1},date='';
+    var cubes=doc.querySelectorAll('Cube[currency][rate]');
+    cubes.forEach(function(x){rates[S(x.getAttribute('currency')).toUpperCase()]=Number(x.getAttribute('rate'));});
+    var day=doc.querySelector('Cube[time]');if(day)date=S(day.getAttribute('time'));
+    var data={rates:rates,date:date};saveFx(data);return data;
+  }).finally(function(){fxPromise=null;});
+  return fxPromise;
+}
+function currencyTool(){
+  var opts=['EUR','USD','GBP','CHF','NOK','SEK','DKK','PLN','CZK','RON','HUF','TRY','CAD','AUD','CNY','JPY'].map(function(x){return '<option value="'+x+'">'+x+'</option>';}).join('');
+  var back=openSheet('Konvertues valutor','<div class="pmh-form"><div class="pmh-form-grid"><label>Shuma<input type="number" inputmode="decimal" min="0" step="any" value="1" data-fx-amount></label><label>Nga<select data-fx-from style="width:100%;border:1px solid #DCE7EA;border-radius:11px;background:#FBFCFC;padding:10px 11px;color:#20343C;font:inherit;font-size:13px">'+opts+'</select></label><label>Në<select data-fx-to style="width:100%;border:1px solid #DCE7EA;border-radius:11px;background:#FBFCFC;padding:10px 11px;color:#20343C;font:inherit;font-size:13px">'+opts+'</select></label></div><div class="pmh-result" data-fx-result>Duke marrë kursin aktual të ECB…</div><div class="pmh-note" data-fx-note>Burimi: European Central Bank. Kurs referencë informues, jo kurs transaksioni bankar.</div></div>');
+  var amount=back.querySelector('[data-fx-amount]'),from=back.querySelector('[data-fx-from]'),to=back.querySelector('[data-fx-to]'),out=back.querySelector('[data-fx-result]'),note=back.querySelector('[data-fx-note]'),data=null;
+  from.value='EUR';to.value='USD';
+  function calc(){
+    if(!data||!data.rates)return;
+    var a=Number(amount.value),fr=Number(data.rates[from.value]),tr=Number(data.rates[to.value]);
+    if(!Number.isFinite(a)||!fr||!tr){out.textContent='Nuk ka kurs për këtë zgjedhje.';return;}
+    var result=a/fr*tr;
+    out.textContent=a.toLocaleString('sq-AL',{maximumFractionDigits:4})+' '+from.value+' = '+result.toLocaleString('sq-AL',{maximumFractionDigits:4})+' '+to.value;
+    if(note)note.textContent='ECB · përditësuar '+(data.date||'në ditën e fundit të punës')+'. Kurs referencë informues.';
+  }
+  [amount,from,to].forEach(function(x){x.addEventListener('input',calc);x.addEventListener('change',calc);});
+  loadFx().then(function(x){data=x;calc();}).catch(function(){out.textContent='Kursi aktual nuk u ngarkua. Provo përsëri.';});
+}
 function tool(kind){
   if(kind==='weight')return weightTool();
   if(kind==='convert')return converterTool();
   if(kind==='incoterms')return openExternal('https://iccwbo.org/business-solutions/incoterms-rules/');
   if(kind==='note')return noteTool();
+  if(kind==='currency')return currencyTool();
   return false;
 }
 function bind(root){
@@ -238,6 +275,7 @@ function bind(root){
   root.addEventListener('click',function(e){
     var x=e.target.closest('[data-pmh-search]');if(x){openSearch();return;}
     x=e.target.closest('[data-pmh-weather]');if(x){openExternal(SOURCES.weather);return;}
+    x=e.target.closest('[data-pmh-calendar]');if(x){openExternal(SOURCES.calendar);return;}
     x=e.target.closest('[data-pmh-market-all]');if(x){openExternal('https://www.steelorbis.com/steel-prices/daily-prices/');return;}
     x=e.target.closest('[data-pmh-market]');if(x){var m=MARKET[Number(x.getAttribute('data-pmh-market'))];if(m)openExternal(m.url);return;}
     x=e.target.closest('[data-pmh-tool]');if(x){tool(x.getAttribute('data-pmh-tool'));return;}
