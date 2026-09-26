@@ -23,6 +23,7 @@ assert.match(materialBuyer,/You remain in control of purchasing\. We manage the 
 assert.match(materialBuyer,/Southeast Europe/,'Material Trade credibility must identify the Southeast European network');
 assert.match(materialBuyer,/ProCredit Bank/,'Material Trade credibility must include bank-guarantee support');
 assert.doesNotMatch(materialBuyer,/<strong>/i,'Material Trade body copy must not bold CTAs or sales claims');
+assert.match(material,/function externalFact\(/,'Material Trade must sanitize internal instructions before any evidence reaches outward copy');
 
 const gcStart=gc.indexOf('function body1');
 const gcEnd=gc.indexOf('function body1Html',gcStart);
@@ -33,5 +34,6 @@ assert.match(gcBody,/take full responsibility for a clearly defined steel packag
 assert.match(gcBody,/Southeast Europe/,'GC copy must identify the Southeast European fabrication network');
 assert.match(gcBody,/ProCredit Bank/,'GC copy must include bounded financial-security evidence');
 assert.doesNotMatch(gcBody,/coordination burden|problem managing|cannot manage/i,'copy must never imply the client is unable to manage its own project');
+assert.match(gc,/function outboundFact\(/,'GC first-touch copy must sanitize internal instructions before emitting evidence');
 
 console.log('Commercial outreach routed-copy smoke passed.');
