@@ -220,6 +220,11 @@ function specificFacts(tg:any){
  if(a.length>=2)return a.slice(0,4).map((x:any)=>t(x,1000));
  return [tg?.project_title,tg?.why_now].filter((x:any)=>t(x,1000)).map((x:any)=>t(x,1000));
 }
+function externalFact(v:any){
+ const raw=t(v,1000);if(!raw)return"";
+ const s=nm(raw);
+ return /(pergatit draft|draft vetem|mos e dergo|do not send|prepare (?:a )?draft|draft only|internal instruction|human approval|outreach (?:draft|copy|message|instruction))/.test(s)?"":raw;
+}
 function buyerTextV2(tg:any,signatureHtml="",contact:any={}){
  const lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",facts=specificFacts(tg),motion=t(tg?.outreach_motion||"material_buyer",80),project=t(tg?.project_title,500),company=t(tg?.company_name,500),anchor=project||company||facts[0],sig=signatureHtml||canonicalSignatureHtml;
  if(facts.length<2)throw new Error("outreach_v2_requires_two_specific_facts");
@@ -234,7 +239,7 @@ function buyerTextV2(tg:any,signatureHtml="",contact:any={}){
  const context=project
    ?(de?'ich melde mich bezüglich des Projekts „'+project+'“.':bcs?'javljam Vam se u vezi sa projektom „'+project+'“.':'I am contacting you regarding “'+project+'”.')
    :(de?"ich melde mich bezüglich Ihrer Beschaffung von Stahlmaterial.":bcs?"javljam Vam se u vezi sa nabavkom čeličnog materijala.":"I am contacting you regarding your steel-material procurement.");
- const evidence=facts.find((x:string)=>project?nm(x)!==nm(project):true)||"";
+ const evidence=facts.map((x:string)=>externalFact(x)).find((x:string)=>x&&(project?nm(x)!==nm(project):true))||"";
  const capability=future
    ?(de?"Für künftige Stahlmaterialpakete kann PRISTEEL als ein technischer und kaufmännischer Ansprechpartner für klar definierte Beschaffungsumfänge eingebunden werden.":bcs?"Za buduće pakete čeličnog materijala PRISTEEL može biti jedna tehnička i komercijalna kontakt tačka za jasno definisane nabavne opsege.":"For future steel-material packages, PRISTEEL can act as one technical and commercial point of responsibility for clearly defined procurement scopes.")
    :capacity
