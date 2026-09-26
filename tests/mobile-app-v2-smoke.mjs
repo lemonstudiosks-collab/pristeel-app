@@ -75,4 +75,13 @@ assert(js.includes('Kthehu në app')&&js.includes('data-pma-return-app'),'legacy
 assert(js.includes("u.style.display=(state.nativeProjectId||state.nativeCompanyMode)?'none':'grid'"),'utility dock must yield on native project/company detail');
 assert(js.includes("if(kind==='nogo'){if(!confirm("),'No-Go must remain an explicit human action');
 
+const inboxStart=js.indexOf('async function loadInbox(force,interactive)');
+const inboxEnd=js.indexOf('async function loadMaterial()',inboxStart);
+assert(inboxStart>-1&&inboxEnd>inboxStart,'mobile Inbox loader missing');
+const inboxBlock=js.slice(inboxStart,inboxEnd);
+assert(inboxBlock.indexOf('I.authorize()')>-1,'mobile Inbox Gmail authorization missing');
+assert(inboxBlock.indexOf('I.authorize()')<inboxBlock.indexOf('I.loadCanonical'),'Gmail OAuth must start before awaited canonical fetch so iPhone/PWA preserves the user gesture');
+assert(inboxBlock.includes('connected&&!authorizedNow'),'mobile Inbox must avoid a duplicate Gmail load after authorize()');
+assert(js.includes("if(state.tab==='inbox')setTimeout(function(){loadInbox(false,false);},120)"),'mobile Inbox must retry once when the ordered Gmail bootstrap becomes ready');
+
 console.log('mobile-app-v6-data-stability-smoke: ok');

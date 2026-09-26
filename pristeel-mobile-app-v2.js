@@ -7,7 +7,7 @@
 if(window.__pstMobileAppV2)return;
 window.__pstMobileAppV2=true;
 
-var VERSION='20260926-mobile-app6';
+var VERSION='20260926-mobile-app8-gmail1';
 var ROOT='pst-mobile-app-v2';
 var NAV='pst-mobile-app-v2-nav';
 var UTIL='pst-mobile-app-v2-util';
@@ -458,13 +458,26 @@ async function loadOpportunities(force){
   finally{state.oppLoading=false;if(state.tab==='discover')render();}
 }
 async function loadInbox(force,interactive){
-  var I=window.PSTGmailLiveInboxV2;if(!I)return;
+  var I=window.PSTGmailLiveInboxV2;
+  if(!I){
+    // The mobile shell can become usable before the ordered email bootstrap finishes.
+    // Do not poll or touch other pages; pst:modules-ready retries Inbox once the Gmail owner exists.
+    return;
+  }
   state.inboxLoading=true;if(state.tab==='inbox')render();
   try{
+    var connected=typeof I.connected==='function'?I.connected():false,authorizedNow=false;
+    // IMPORTANT for iPhone/PWA: start Google OAuth directly from the user's tap.
+    // Any awaited Supabase fetch before this point can lose the browser user-gesture
+    // and cause the Google authorization popup to be blocked.
+    if(interactive&&!connected&&typeof I.authorize==='function'){
+      authorizedNow=true;
+      await I.authorize();
+      connected=typeof I.connected==='function'?I.connected():false;
+    }
     if(typeof I.loadCanonical==='function')await I.loadCanonical(!!force);
-    var connected=typeof I.connected==='function'?I.connected():false;
-    if(interactive&&!connected&&typeof I.authorize==='function'){await I.authorize();connected=typeof I.connected==='function'?I.connected():false;}
-    if(connected&&typeof I.load==='function')await I.load(!!force);
+    // authorize() already loads Gmail once after a successful token grant.
+    if(connected&&!authorizedNow&&typeof I.load==='function')await I.load(!!force);
   }catch(e){try{console.warn('Mobile inbox',e);}catch(x){}}
   finally{state.inboxLoading=false;if(state.tab==='inbox')render();}
 }
@@ -668,7 +681,7 @@ function boot(){
   installCss();document.addEventListener('click',click,true);document.addEventListener('input',input,true);
   schedule();
 }
-document.addEventListener('pst:modules-ready',schedule);
+document.addEventListener('pst:modules-ready',function(){schedule();if(state.tab==='inbox')setTimeout(function(){loadInbox(false,false);},120);});
 document.addEventListener('pst:home-canonical-rendered',function(){if(state.detail||state.tab!=='home')return;clearTimeout(homeRenderTimer);homeRenderTimer=setTimeout(render,140);});
 document.addEventListener('pst:mobile-pin-unlocked',schedule);
 window.addEventListener('pageshow',schedule);window.addEventListener('focus',function(){ensureChrome();if(!state.detail)render();});window.addEventListener('resize',schedule);window.addEventListener('orientationchange',schedule);
