@@ -81,11 +81,21 @@ export function recipientKind(recipient={}){
 }
 function roleFor(route){const r=txt(route,80).toUpperCase();if(r==='TED_PRODUCER')return'producer';if(r==='TED_CONSORTIUM')return'consortium';if(r==='TED_GC')return'gc';return'general';}
 function shortProject(v){const s=txt(v,220).replace(/\s+/g,' ');if(s.length<=68)return s;const ref=(s.match(/\b(?:MDH\/\d+\/\d+|V\d{3,4}|NSW[_-][A-Z0-9_-]+|[A-Z]{1,5}[-_]\d{2,}[A-Z0-9_-]*)\b/i)||[])[0];if(ref)return ref;const marker=(s.match(/\b(?:zona\s+(?:Est|Vest|Nord|Sud)|East|West|North|South)\b/i)||[])[0],head=s.slice(0,38).replace(/\s+\S*$/,'').trim();if(marker)return head+'…'+marker;const tail=s.slice(-25).replace(/^\S*\s+/,'').trim();return head+'…'+tail;}
-function subjectFor(language,role,title){
+function subjectFor(language,role,title,offerModel='fabricated_steel_package'){
   const p=shortProject(title);
-  if(language==='de')return 'Projekt '+p+' – Stahlpaket | PRISTEEL';
-  if(language==='bcs')return 'Projekt '+p+' – čelični paket | PRISTEEL';
-  return 'Project '+p+' – steel package | PRISTEEL';
+  if(offerModel==='material_supply'){
+    if(language==='de')return 'Projekt '+p+' – Stahlmaterial | PRISTEEL';
+    if(language==='bcs')return 'Projekt '+p+' – čelični materijal | PRISTEEL';
+    return 'Project '+p+' – steel material | PRISTEEL';
+  }
+  if(offerModel==='external_production_capacity'){
+    if(language==='de')return 'Projekt '+p+' – externe Fertigungskapazität | PRISTEEL';
+    if(language==='bcs')return 'Projekt '+p+' – vanjski proizvodni kapacitet | PRISTEEL';
+    return 'Project '+p+' – external fabrication capacity | PRISTEEL';
+  }
+  if(language==='de')return 'Projekt '+p+' – ein Partner für das Stahlpaket | PRISTEEL';
+  if(language==='bcs')return 'Projekt '+p+' – jedan partner za čelični paket | PRISTEEL';
+  return 'Project '+p+' – one partner for the steel package | PRISTEEL';
 }
 function readinessData(action,tender){
   const a=action?.payload?.outreach_readiness_v1;
@@ -93,29 +103,6 @@ function readinessData(action,tender){
   const t=tender?.outreach_readiness_v1;
   if(t&&typeof t==='object'&&!Array.isArray(t))return t;
   return {};
-}
-function roleParagraphs(language,role,title,action,tender){
-  const r=readinessData(action,tender);
-  const fact=first(r.scope_evidence,r.project_fact,r.pristeel_scope);
-  const question=first(r.concrete_question);
-  const scope=first(r.pristeel_scope);
-  const qualification=(r.qualification_required===true&&r.qualification_fit===true)?first(r.qualification_evidence):'';
-  if(language==='de'){
-    const intro=fact||('Für das Projekt „'+title+'“ wurde ein konkreter Stahlumfang identifiziert.');
-    const ask=question||'Ist dieser Fertigungsumfang bereits vollständig vergeben oder bestehen noch klar abgegrenzte Pakete für externe Fertigung?';
-    const capability='PRISTEEL kann für diesen Umfang '+(scope||'projektbezogene Stahlbauteile')+' einschließlich Materialbeschaffung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und Lieferung koordinieren.';
-    return[intro,ask,capability,qualification].filter(Boolean);
-  }
-  if(language==='bcs'){
-    const intro=fact||('Za projekt „'+title+'“ identificiran je konkretan opseg čeličnih radova.');
-    const ask=question||'Da li je ovaj proizvodni opseg već u potpunosti ugovoren ili postoje jasno odvojeni paketi za vanjsku proizvodnju?';
-    const capability='PRISTEEL za ovaj opseg može koordinirati '+(scope||'projektne čelične komponente')+', uključujući nabavku materijala, proizvodnju prema nacrtima, površinsku zaštitu, dokumentaciju kvaliteta i isporuku.';
-    return[intro,ask,capability,qualification].filter(Boolean);
-  }
-  const intro=fact||('A specific steel scope has been identified for “'+title+'”.');
-  const ask=question||'Is this fabrication scope already fully covered, or are clearly defined packages still open for external fabrication?';
-  const capability='PRISTEEL can coordinate '+(scope||'project-specific steel components')+' for this scope, including material procurement, build-to-print fabrication, surface protection, quality documentation and delivery.';
-  return[intro,ask,capability,qualification].filter(Boolean);
 }
 function cleanProjectTitle(v,ref=''){
   let s=decodeEntities(v);
@@ -126,7 +113,7 @@ function cleanProjectTitle(v,ref=''){
   else if(parts.length>=2&&COUNTRY_PREFIXES.has(norm(parts[0])))s=parts.slice(1).join(' – ');
   return s.trim();
 }
-function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v).replace(/\\n/g,'<br>')}</p>`:'';}
+function htmlParagraph(v){return v?'<p style="margin:0 0 14px 0">'+esc(v).replace(/\n/g,'<br>')+'</p>':'';}
 
 function outwardText(v,max=1000){
   const raw=txt(v,max);if(!raw)return'';
@@ -134,129 +121,80 @@ function outwardText(v,max=1000){
   const internal=/(pergatit\s+draft|draft\s+vetem|mos\s+e\s+dergo|mos\s+i\s+trajto|verifiko\s+rolin|qasja\s+nuk\s+duhet|do\s+not\s+send|prepare\s+(?:an?\s+)?draft|draft\s+only|internal\s+instruction|human\s+approval|outreach\s+(?:draft|copy|message|instruction))/i;
   return internal.test(s)?'':raw;
 }
-function publicAwardFacts(language,role,title,company,tender){
-  const awardCompany=company||txt(tender?.winner?.name,300)||'the awarded company';
-  const authority=txt(tender?.authority,300);
-  if(language==='de'){
-    const project='Die veröffentlichten Vergabeinformationen betreffen das Projekt „'+title+'“.',companyFact=role==='gc'
-      ?awardCompany+' ist in den Vergabeinformationen als Auftragnehmer für diesen Auftrag aufgeführt.'
-      :role==='producer'
-        ?awardCompany+' ist in den Vergabeinformationen als ausführendes Unternehmen für diesen Auftrag aufgeführt.'
-        :awardCompany+' ist in den Vergabeinformationen als beteiligtes Unternehmen für diesen Auftrag aufgeführt.';
-    return[project,companyFact||(authority?'Auftraggeber ist '+authority+'.':'')].filter(Boolean);
-  }
-  if(language==='bcs'){
-    const project='Objavljeni podaci o dodjeli odnose se na projekat „'+title+'“.',companyFact=role==='gc'
-      ?awardCompany+' je u podacima o dodjeli naveden kao izvođač za ovaj ugovor.'
-      :role==='producer'
-        ?awardCompany+' je u podacima o dodjeli naveden kao izvođač/proizvođač za ovaj ugovor.'
-        :awardCompany+' je u podacima o dodjeli naveden kao učesnik u ovom ugovoru.';
-    return[project,companyFact||(authority?'Naručilac je '+authority+'.':'')].filter(Boolean);
-  }
-  const project='The published award information relates to “'+title+'”.',companyFact=role==='gc'
-    ?awardCompany+' is identified in the award information as a contractor for this contract.'
-    :role==='producer'
-      ?awardCompany+' is identified in the award information as an executing/fabricating company for this contract.'
-      :awardCompany+' is identified in the award information as a participant in this contract.';
-  return[project,companyFact||(authority?'The contracting authority is '+authority+'.':'')].filter(Boolean);
+function projectIntro(language,title){
+  if(language==='de')return 'Ich melde mich bezüglich des Projekts „'+title+'“.';
+  if(language==='bcs')return 'Javljam Vam se u vezi sa projektom „'+title+'“.';
+  return 'I am contacting you regarding “'+title+'”.';
 }
-function outboundFacts(language,role,title,company,action,tender,rdata){
-  const verified=[rdata?.scope_evidence,rdata?.project_fact].map(x=>outwardText(x,1000)).filter(Boolean),fallback=publicAwardFacts(language,role,title,company,tender),out=[];
-  for(const fact of [...verified,...fallback])if(fact&&!out.includes(fact))out.push(fact);
-  return out.slice(0,2);
-}
-
 function credibilityLine(language,offerModel){
-  const network=offerModel==='material_supply'?'steel supply and fabrication network':'fabrication network';
-  if(language==='de')return offerModel==='material_supply'
-    ?'PRISTEEL verbindet erfahrenes Stahlindustrie-Management mit einem etablierten Beschaffungs- und Fertigungsnetzwerk in Südosteuropa. Wo erforderlich, kann die Vertragserfüllung durch Bankgarantien der ProCredit Bank abgesichert werden.'
-    :'PRISTEEL verbindet erfahrenes Stahlindustrie-Management mit einem etablierten Fertigungsnetzwerk in Südosteuropa. Wo erforderlich, kann die Vertragserfüllung durch Bankgarantien der ProCredit Bank abgesichert werden.';
-  if(language==='bcs')return offerModel==='material_supply'
-    ?'PRISTEEL kombinuje iskusno upravljanje u industriji čelika sa etabliranom mrežom dobavljača i proizvodnih partnera u Jugoistočnoj Evropi. Kada je potrebno, ugovorno izvršenje može biti podržano bankarskim garancijama preko ProCredit Bank.'
-    :'PRISTEEL kombinuje iskusno upravljanje u industriji čelika sa etabliranom mrežom proizvodnih partnera u Jugoistočnoj Evropi. Kada je potrebno, ugovorno izvršenje može biti podržano bankarskim garancijama preko ProCredit Bank.';
-  return 'PRISTEEL combines experienced steel-industry management with an established '+network+' in Southeast Europe. Where required, contractual performance can be supported by bank guarantees through ProCredit Bank.';
+  const network=offerModel==='material_supply'
+    ?(language==='de'?'einem etablierten Beschaffungs- und Fertigungsnetzwerk in Südosteuropa':language==='bcs'?'uspostavljenom mrežom dobavljača i proizvođača u Jugoistočnoj Evropi':'an established supply and fabrication network in Southeast Europe')
+    :(language==='de'?'einem etablierten Fertigungsnetzwerk in Südosteuropa':language==='bcs'?'uspostavljenom proizvodnom mrežom u Jugoistočnoj Evropi':'an established fabrication network in Southeast Europe');
+  if(language==='de')return 'PRISTEEL verbindet erfahrenes Stahlindustrie-Management mit '+network+'. Wo vertraglich erforderlich, kann die Vertragserfüllung durch Bankgarantien der ProCredit Bank abgesichert werden.';
+  if(language==='bcs')return 'PRISTEEL kombinuje iskusno upravljanje u industriji čelika sa '+network+'. Kada je ugovorno potrebno, izvršenje obaveza može biti podržano bankarskim garancijama ProCredit Bank.';
+  return 'PRISTEEL combines experienced steel-industry management with '+network+'. Where required, contractual performance can be supported by bank guarantees through ProCredit Bank.';
 }
-function projectIntro(language,title,rdata){
-  const specific=[rdata?.scope_evidence,rdata?.project_fact].map(x=>outwardText(x,1000)).filter(Boolean)[0]||'';
-  if(language==='de')return specific?'Ich melde mich bezüglich des Projekts „'+title+'“. '+specific:'Ich melde mich bezüglich des Projekts „'+title+'“.';
-  if(language==='bcs')return specific?'Javljam Vam se u vezi sa projektom „'+title+'“. '+specific:'Javljam Vam se u vezi sa projektom „'+title+'“.';
-  return specific?'I am contacting you regarding “'+title+'”. '+specific:'I am contacting you regarding “'+title+'”.';
-}
-function routedOfferCopy(language,offerModel,title,rdata){
-  const p=shortProject(title),intro=projectIntro(language,title,rdata),cred=credibilityLine(language,offerModel);
+function routedOfferCopy(language,offerModel,title,scope=''){
   if(offerModel==='external_production_capacity'){
-    if(language==='de')return{
-      subject:'Projekt '+p+' – externe Fertigungskapazität | PRISTEEL',
-      paras:[intro,'Für klar definierte Fertigungspakete kann PRISTEEL als gesteuerte externe Produktionskapazität eingesetzt werden und technische Klärung, Fertigung, Oberflächenschutz, Qualitätsdokumentation und koordinierte DAP-Lieferung über einen Ansprechpartner übernehmen.','Ihr Team behält die Kontrolle über Projekt und Produktionsprioritäten. Wir übernehmen die Verantwortung für das ausgelagerte Paket bis zur Lieferung.',cred,'Wenn Sie ein klar abgegrenztes Fertigungspaket extern vergeben möchten, senden Sie uns die Zeichnungen oder Stückliste – wir übernehmen die weitere Abwicklung.']
-    };
-    if(language==='bcs')return{
-      subject:'Projekt '+p+' – vanjski proizvodni kapacitet | PRISTEEL',
-      paras:[intro,'Za jasno definisane proizvodne pakete PRISTEEL može djelovati kao upravljani vanjski proizvodni kapacitet i koordinirati tehničko usaglašavanje, proizvodnju, površinsku zaštitu, dokumentaciju kvaliteta i DAP isporuku preko jedne kontakt tačke.','Vaš tim zadržava kontrolu nad projektom i proizvodnim prioritetima. Mi preuzimamo odgovornost za izdvojeni paket do isporuke.',cred,'Ako postoji jasno definisan proizvodni paket koji želite povjeriti vanjskom partneru, pošaljite nam nacrte ili listu materijala i mi preuzimamo dalje.']
-    };
-    return{
-      subject:'Project '+p+' – external fabrication capacity | PRISTEEL',
-      paras:[intro,'For clearly defined fabrication packages, PRISTEEL can act as managed external production capacity, coordinating technical clarification, fabrication, surface treatment, quality documentation and DAP delivery through one point of contact.','Your team keeps control of the project and production priorities. We take ownership of the outsourced package through to delivery.',cred,'If there is a clearly defined fabrication package you would prefer to place externally, send us the drawings or BOM and we will take it from there.']
-    };
+    const capability=language==='de'
+      ?'Wenn zusätzliche Kapazität benötigt wird, kann PRISTEEL klar definierte Fertigungspakete übernehmen und technische Klärung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und koordinierte DAP-Lieferung steuern.'
+      :language==='bcs'
+        ?'Kada je potreban dodatni kapacitet, PRISTEEL može preuzeti jasno definisane proizvodne pakete i voditi tehničko usaglašavanje, proizvodnju prema nacrtima, površinsku zaštitu, dokumentaciju kvaliteta i koordiniranu DAP isporuku.'
+        :'When additional capacity is needed, PRISTEEL can take on clearly defined fabrication packages and manage technical clarification, build-to-print fabrication, surface treatment, quality documentation and coordinated DAP delivery.';
+    const control=language==='de'?'Sie behalten die Kontrolle über das Projekt; wir übernehmen die Verantwortung für das ausgelagerte Fertigungspaket.':language==='bcs'?'Vi zadržavate kontrolu nad projektom; mi preuzimamo odgovornost za izdvojeni proizvodni paket.':'You retain control of the project; we take responsibility for the outsourced fabrication package.';
+    const cta=language==='de'?'Wenn Sie für dieses Projekt ein klar abgegrenztes Paket extern vergeben möchten, senden Sie uns Zeichnungen oder BOM – wir übernehmen ab dort.':language==='bcs'?'Ako za ovaj projekat želite izdvojiti jasno definisan paket vanjskom partneru, pošaljite nam nacrte ili BOM i mi ćemo preuzeti dalje.':'If there is a clearly defined package you would prefer to place externally, send us the drawings or BOM and we will take it from there.';
+    return{capability,control,cta};
   }
   if(offerModel==='material_supply'){
-    if(language==='de')return{
-      subject:'Projekt '+p+' – Stahlmaterialpaket | PRISTEEL',
-      paras:[intro,'PRISTEEL kann die Verantwortung für ein klar definiertes Stahlmaterialpaket übernehmen – von Beschaffung und technischer/kaufmännischer Koordination über Dokumentation und optionale Bearbeitung bis zur koordinierten DAP-Lieferung – mit einem Ansprechpartner.','Sie behalten die Kontrolle über den Einkauf. Wir steuern das Paket von RFQ bzw. Materialliste bis zur Lieferung.',cred,'Senden Sie uns die RFQ, Materialliste oder Stückliste und den Lieferort – wir übernehmen die weitere Abwicklung.']
-    };
-    if(language==='bcs')return{
-      subject:'Projekt '+p+' – paket čeličnog materijala | PRISTEEL',
-      paras:[intro,'PRISTEEL može preuzeti odgovornost za jasno definisan paket čeličnog materijala – od nabavke i tehničko-komercijalne koordinacije, preko dokumentacije i opcionalne obrade, do koordinirane DAP isporuke – preko jedne kontakt tačke.','Vi zadržavate kontrolu nad nabavkom. Mi vodimo paket od RFQ-a ili liste materijala do isporuke.',cred,'Pošaljite nam RFQ, listu materijala ili BOM i mjesto isporuke – mi preuzimamo dalje.']
-    };
-    return{
-      subject:'Project '+p+' – steel material package | PRISTEEL',
-      paras:[intro,'PRISTEEL can take responsibility for a clearly defined steel-material package — from sourcing and technical/commercial coordination to documentation, optional processing and coordinated DAP delivery — through one point of contact.','You remain in control of purchasing. We manage the package from RFQ or material list through to delivery.',cred,'Send us the RFQ, material list or BOM and delivery point, and we will take it from there.']
-    };
+    const capability=language==='de'
+      ?'PRISTEEL kann die Verantwortung für ein klar definiertes Stahlmaterial-Paket übernehmen – von Beschaffung und Dokumentation über optionale Bearbeitung bis zur koordinierten DAP-Lieferung.'
+      :language==='bcs'
+        ?'PRISTEEL može preuzeti odgovornost za jasno definisan paket čeličnog materijala – od nabavke i dokumentacije, preko opcionalne obrade, do koordinirane DAP isporuke.'
+        :'PRISTEEL can take responsibility for a clearly defined steel-material package — from material sourcing and documentation through optional processing and coordinated DAP delivery.';
+    const control=language==='de'?'Sie behalten die Kontrolle über den Einkauf. Wir steuern das Paket von RFQ oder Materialliste bis zur Lieferung.':language==='bcs'?'Vi zadržavate kontrolu nad nabavkom. Mi vodimo paket od RFQ-a ili liste materijala do isporuke.':'You remain in control of purchasing. We manage the package from RFQ or material list through to delivery.';
+    const cta=language==='de'?'Wenn noch Materialbedarf offen ist, senden Sie uns Ihre RFQ, BOM oder Materialliste – wir übernehmen ab dort.':language==='bcs'?'Ako još postoji otvorena potreba za materijalom, pošaljite nam RFQ, BOM ili listu materijala i mi ćemo preuzeti dalje.':'If there is still material scope to place, send us the RFQ, BOM or material list and we will take it from there.';
+    return{capability,control,cta};
   }
   if(offerModel==='future_supplier_qualification'){
-    if(language==='de')return{
-      subject:(txt(rdata?.company_name,300)||('Projekt '+p))+' – Lieferantenqualifizierung Stahl | PRISTEEL',
-      paras:[intro,'Für künftige Stahlpakete kann PRISTEEL als technischer und kaufmännischer Ansprechpartner für klar definierte Umfänge eingebunden werden.',cred,'Wer ist bei Ihnen für die Qualifizierung künftiger Partner für Stahlpakete zuständig?']
-    };
-    if(language==='bcs')return{
-      subject:(txt(rdata?.company_name,300)||('Projekt '+p))+' – kvalifikacija dobavljača čelika | PRISTEEL',
-      paras:[intro,'Za buduće čelične pakete PRISTEEL može biti jedna tehnička i komercijalna kontakt tačka za jasno definisane opsege.',cred,'Ko je kod Vas zadužen za kvalifikaciju budućih partnera za čelične pakete?']
-    };
-    return{
-      subject:'Project '+p+' – future steel partner qualification | PRISTEEL',
-      paras:[intro,'For future steel packages, PRISTEEL can act as one technical and commercial point of responsibility for clearly defined scopes.',cred,'Who handles qualification of future partners for steel packages?']
-    };
+    const capability=language==='de'
+      ?'Für künftige Pakete kann PRISTEEL als ein technischer und kaufmännischer Ansprechpartner für klar definierte Stahlumfänge eingebunden werden.'
+      :language==='bcs'
+        ?'Za buduće pakete PRISTEEL može biti jedna tehnička i komercijalna kontaktna tačka za jasno definisane čelične opsege.'
+        :'For future packages, PRISTEEL can act as one technical and commercial point of responsibility for clearly defined steel scopes.';
+    const control=language==='de'?'Unser Ziel ist eine klare Schnittstelle: Ihr Team behält die Projektkontrolle, PRISTEEL koordiniert den vereinbarten Stahlumfang.':language==='bcs'?'Cilj je jasna odgovornost: Vaš tim zadržava kontrolu nad projektom, a PRISTEEL koordinira dogovoreni čelični opseg.':'The aim is a clear interface: your team retains project control while PRISTEEL coordinates the agreed steel scope.';
+    const cta=language==='de'?'Wer ist bei Ihnen für die Qualifizierung künftiger Partner für Stahlpakete zuständig?':language==='bcs'?'Ko je kod Vas zadužen za kvalifikaciju budućih partnera za čelične pakete?':'Who handles qualification of future partners for steel packages?';
+    return{capability,control,cta};
   }
-  if(language==='de')return{
-    subject:'Projekt '+p+' – ein Partner für das Stahlpaket | PRISTEEL',
-    paras:[intro,'PRISTEEL kann die vollständige Verantwortung für ein klar definiertes Stahlpaket übernehmen – von Materialbeschaffung und Build-to-Print-Fertigung über Oberflächenschutz und Qualitätsdokumentation bis zur koordinierten DAP-Lieferung – mit einem technischen und kaufmännischen Ansprechpartner.','Sie behalten die Kontrolle über das Projekt. Wir übernehmen das Stahlpaket von Zeichnungen oder Stückliste bis zur Lieferung.',cred,'Wenn Sie ein konstruktives oder gefertigtes Stahlpaket lieber an einen externen Partner vergeben möchten, senden Sie uns die Zeichnungen oder Stückliste – wir übernehmen die weitere Abwicklung.']
-  };
-  if(language==='bcs')return{
-    subject:'Projekt '+p+' – jedan partner za čelični paket | PRISTEEL',
-    paras:[intro,'PRISTEEL može preuzeti punu odgovornost za jasno definisan čelični paket – od nabavke materijala i proizvodnje prema nacrtima do površinske zaštite, dokumentacije kvaliteta i koordinirane DAP isporuke – preko jedne tehničke i komercijalne kontakt tačke.','Vi zadržavate punu kontrolu nad projektom. Mi preuzimamo čelični paket od nacrta ili liste materijala do isporuke.',cred,'Ako postoji konstrukcijski ili proizvodni čelični paket koji želite povjeriti jednom vanjskom partneru, pošaljite nam nacrte ili listu materijala i mi preuzimamo dalje.']
-  };
-  return{
-    subject:'Project '+p+' – one partner for the steel package | PRISTEEL',
-    paras:[intro,'PRISTEEL can take full responsibility for a clearly defined steel package — from material sourcing and build-to-print fabrication to surface treatment, quality documentation and coordinated DAP delivery — with one technical and commercial point of contact.','You remain in control of the project. We take ownership of the steel package from drawings or BOM through to delivery.',cred,'If there is a structural or fabricated steel package you would prefer to place with one external partner, send us the drawings or BOM and we will take it from there.']
-  };
-}
-
-function resolveOfferModel(action,role){
-  const motion=txt(action?.outreach_motion,80),route=txt(action?.route,80).toUpperCase(),stored=txt(action?.pristeel_offer_model,80),timing=txt(action?.timing_classification,80);
-  if(motion==='future_supplier_qualification'||timing==='future_supplier_qualification'||stored==='future_supplier_qualification')return'future_supplier_qualification';
-  if(route==='DIRECT_RAW_MATERIAL'||motion==='material_buyer'||stored==='material_supply')return'material_supply';
-  if(role==='producer'||route==='TED_PRODUCER'||motion==='external_production_capacity'||stored==='external_production_capacity')return'external_production_capacity';
-  if(stored==='fabricated_steel_package')return'fabricated_steel_package';
-  return'fabricated_steel_package';
+  const capability=language==='de'
+    ?'PRISTEEL kann die volle Verantwortung für ein klar definiertes Stahlpaket übernehmen – von Materialbeschaffung und Build-to-Print-Fertigung über Oberflächenschutz und Qualitätsdokumentation bis zur koordinierten DAP-Lieferung – mit einem technischen und kaufmännischen Ansprechpartner.'
+    :language==='bcs'
+      ?'PRISTEEL može preuzeti punu odgovornost za jasno definisan čelični paket – od nabavke materijala i proizvodnje prema nacrtima, preko površinske zaštite i dokumentacije kvaliteta, do koordinirane DAP isporuke – uz jednu tehničku i komercijalnu kontakt tačku.'
+      :'PRISTEEL can take full responsibility for a clearly defined steel package — from material sourcing and build-to-print fabrication to surface treatment, quality documentation and coordinated DAP delivery — with one technical and commercial point of contact.';
+  const control=language==='de'?'Sie behalten die Kontrolle über das Projekt. Wir übernehmen die Verantwortung für das Stahlpaket von Zeichnungen oder BOM bis zur Lieferung.':language==='bcs'?'Vi zadržavate kontrolu nad projektom. Mi preuzimamo odgovornost za čelični paket od nacrta ili BOM-a do isporuke.':'You remain in control of the project. We take ownership of the steel package from drawings or BOM through to delivery.';
+  const cta=language==='de'?'Wenn es ein Stahlpaket gibt, das Sie lieber bei einem externen Partner platzieren möchten, senden Sie uns Zeichnungen oder BOM – wir übernehmen ab dort.':language==='bcs'?'Ako postoji čelični paket koji biste radije povjerili jednom vanjskom partneru, pošaljite nam nacrte ili BOM i mi ćemo preuzeti dalje.':'If there is a structural or fabricated steel package you would prefer to place with one external partner, send us the drawings or BOM and we will take it from there.';
+  return{capability,control,cta};
 }
 
 export function buildTedDraftContent(action={},tender={},recipient={}){
   const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender);
-  const offerModel=resolveOfferModel(action,role);
-  const copy=routedOfferCopy(language,offerModel,title,{...rdata,company_name:company});
-  const greet=greeting(language,company,recipient),close=closing(language),paras=copy.paras.filter(Boolean);
+  const future=motion==='future_supplier_qualification'||txt(action?.timing_classification,80)==='future_supplier_qualification';
+  let offerModel=future?'future_supplier_qualification':txt(action?.pristeel_offer_model,80);
+  if(!offerModel){
+    if(route.toUpperCase()==='DIRECT_RAW_MATERIAL')offerModel='material_supply';
+    else if(role==='producer')offerModel='external_production_capacity';
+    else offerModel='fabricated_steel_package';
+  }
+  if(route.toUpperCase()==='DIRECT_RAW_MATERIAL'&&offerModel==='fabricated_steel_package')offerModel='material_supply';
+  const subject=future
+    ?(language==='de'?company+' – Lieferantenqualifizierung Stahl | PRISTEEL':language==='bcs'?company+' – kvalifikacija dobavljača čelika | PRISTEEL':company+' – future steel supplier qualification | PRISTEEL')
+    :subjectFor(language,role,title,offerModel);
+  const greet=greeting(language,company,recipient);
+  const copy=routedOfferCopy(language,offerModel,title,outwardText(rdata.pristeel_scope,1000));
+  const paras=[projectIntro(language,title),copy.capability,copy.control,credibilityLine(language,offerModel),outwardText(rdata.concrete_question,1000)||copy.cta];
+  const close=closing(language);
   const body=[greet,...paras,close,SIGNATURE].filter(Boolean).join('\n\n');
   const htmlBody='<div dir="ltr" style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#202124">'+htmlParagraph(greet)+paras.map(htmlParagraph).join('')+'<p style="margin:0">'+esc(close)+'</p>'+SIGNATURE_HTML+'</div>';
-  return{language,subject:copy.subject,body,html_body:htmlBody,recipient_kind:kind,tender_reference:ref||null,tender_url:url||null,offer_model:offerModel,signature:SIGNATURE,signature_html:SIGNATURE_HTML};
+  return{language,subject,body,html_body:htmlBody,recipient_kind:kind,tender_reference:ref||null,tender_url:url||null,offer_model:offerModel,signature:SIGNATURE,signature_html:SIGNATURE_HTML};
 }
 export const PRISTEEL_SIGNATURE=SIGNATURE;
 export const PRISTEEL_SIGNATURE_HTML=SIGNATURE_HTML;
