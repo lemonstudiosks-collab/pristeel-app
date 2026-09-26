@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { SOURCE_REGISTRY, isoDate, parseHeadingRecords, parseEbrd, parseUngm, parseEaas, normalizeRecord, classify, dedupe, filterActionable } from '../scripts/multilateral-procurement-core.mjs';
-import { ebrdKosovoLinks, eeasKosovoTenderLinks } from '../scripts/multilateral-procurement-sync.mjs';
+import { ebrdKosovoLinks, eeasKosovoTenderLinks, ungmSearchPayload, ungmVerificationToken, ungmCookieHeader } from '../scripts/multilateral-procurement-sync.mjs';
 
 assert.equal(SOURCE_REGISTRY.length,8);
 assert.deepEqual(SOURCE_REGISTRY.map(s=>s.key),['MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO']);
@@ -20,6 +20,9 @@ const consulting=classify({title:'Consulting services for construction supervisi
 const ebrd=parseEbrd(`<h1>Kosovo: Reconstruction</h1><div>Country: | Kosovo</div><div>Client Name: | Municipality of Pristina</div><div>ECEPP ID: | 36972883</div><div>Procurement Exercise Name: | Reconstruction of public buildings to improve energy efficiency</div><div>Type of Procurement: | Works</div><div>Procurement Method: | Open Tender Single Stage</div><div>Notice Type: | Invitation For Tenders Single</div><div>Publication Date: | 06/05/2026 11:15</div><div>Closing Date: | 06/07/2026 14:00</div>`,SOURCE_REGISTRY.find(s=>s.key==='EBRD_ECEPP'));assert.equal(ebrd.reference,'36972883');assert.equal(ebrd.authority,'Municipality of Pristina');assert.equal(ebrd.deadline,'2026-07-06');
 const ebrdLinks=ebrdKosovoLinks(`<table><tr><td><a href="viewNotice.html?displayNoticeId=46383619">Kosovo: Wastewater works</a></td><td>[Kosovo, Works]</td></tr><tr><td><a href="viewNotice.html?displayNoticeId=999">Serbia: Other</a></td></tr></table>`,'https://ecepp.ebrd.com/delta/noticeSearchResults.html?locale=en');assert.deepEqual(ebrdLinks,['https://ecepp.ebrd.com/delta/viewNotice.html?displayNoticeId=46383619']);
 const ungmSource=SOURCE_REGISTRY.find(s=>s.key==='UNGM');
+const ungmPayload=ungmSearchPayload(2);assert.equal(ungmPayload.PageIndex,2);assert.equal(ungmPayload.PageSize,15);assert.equal(ungmPayload.IsActive,true);assert.equal('NoticeTASStatus' in ungmPayload,false);
+assert.equal(ungmVerificationToken(`<input name="__RequestVerificationToken" type="hidden" value="fresh-token" />`),'fresh-token');
+assert.equal(ungmCookieHeader({getSetCookie:()=>['session=abc; path=/; HttpOnly','prefs=one; path=/']}),'session=abc; prefs=one');
 const ungm=parseUngm(`<h1>RFQ Supply and installation of solar equipment</h1><h3>UNDP</h3><div>Reference: UNDP-KOS-00599</div><div>Beneficiary countries or territories: Kosovo</div><div>Published on: 17-Aug-2026</div><div>Deadline on: 30-Sep-2026 11:30</div>`,ungmSource);assert.equal(ungm.reference,'UNDP-KOS-00599');assert.equal(ungm.authority,'UNDP');assert.equal(ungm.deadline,'2026-09-30');
 const ungmGlobal=parseUngm(`<h1>Excoll - Translation of ILO Knowledge Products - ILO Africa Skills Hub</h1><h3>ILO</h3><div>Reference: IMP-EXCOLLTRAN</div><div>Beneficiary countries or territories: Nepal</div><div>Published on: 10-Sep-2026</div><div>Deadline on: 18-Sep-2026</div><footer>See also UN operations in Kosovo</footer>`,ungmSource);assert.equal(ungmGlobal,null);
 const ungmOsce=parseUngm(`<h1>Long-Term Contract for Vehicle Body Parts Repair for OSCE Mission in Kosovo - Re-advertised</h1><h3>OSCE</h3><div>Reference: RFQ-KOS-2026-77</div><div>Beneficiary country or territory: Kosovo</div><div>Published on: 10-Sep-2026</div><div>Deadline on: 24-Sep-2026</div>`,ungmSource);assert.equal(ungmOsce.authority,'OSCE');
