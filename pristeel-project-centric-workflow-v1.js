@@ -11,7 +11,7 @@ window.__pstProjectCentricWorkflowV2=true;
 window.__pstProjectCentricWorkflowV3=true;
 window.__pstProjectCentricWorkflowV4=true;
 
-var tenderState={rows:[],projectRows:[],projectOpportunityKeys:{},mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{},communicationRows:[],communicationByTender:{}};
+var tenderState={rows:[],projectRows:[],projectOpportunityKeys:{},mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{},communicationRows:[],communicationByTender:{},legacyTedContactsByTender:{}};
 var contactBusy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -100,7 +100,7 @@ var OPPORTUNITY_FIELD_RULES=[
 function opportunityFieldText(r){var p=tenderPayload(r);return[r&&r.title,r&&r.description,r&&r.authority,r&&r.procurement_no,r&&r.publication_no,r&&r.cpv,r&&r.cpv_code,A(r&&r.match_reasons).join(' '),p.title,p.description,p.cpv,p.cpv_code,p.cpv_description,p.scope,p.category].map(S).join(' ');}
 function opportunityField(r){var t=opportunityFieldText(r);for(var i=0;i<OPPORTUNITY_FIELD_RULES.length;i++)if(OPPORTUNITY_FIELD_RULES[i][1].test(t))return OPPORTUNITY_FIELD_RULES[i][0];return'other';}
 function winnerConfidence(r){var w=winnerObj(r),x=N(w.company_classification&&w.company_classification.confidence);return x==='high'?'besueshmëri e lartë':x==='medium'?'besueshmëri mesatare':x==='low'?'besueshmëri e ulët':'rol i paverifikuar';}
-function winnerContacts(r){var P=tenderApi();if(P&&typeof P.enrichedContacts==='function')return A(P.enrichedContacts(r));var w=winnerObj(r),out=[];A(w.emails).forEach(function(x){if(x)out.push({email:S(x),purpose:'',confidence:''});});if(w.email)out.push({email:S(w.email),purpose:'',confidence:''});return out;}
+function winnerContacts(r){var P=tenderApi(),out=P&&typeof P.enrichedContacts==='function'?A(P.enrichedContacts(r)):[];A(tenderState.legacyTedContactsByTender[S(r&&r.id)]).forEach(function(x){if(x&&x.email&&!out.some(function(y){return N(y&&y.email)===N(x.email);})){out.push(x);}});if(out.length)return out;var w=winnerObj(r);out=[];A(w.emails).forEach(function(x){if(x)out.push({email:S(x),purpose:'',confidence:''});});if(w.email)out.push({email:S(w.email),purpose:'',confidence:''});return out;}
 function winnerWebsite(r){var w=winnerObj(r),u=safeUrl(w.website);if(u)return u;var e=w.contact_enrichment&&typeof w.contact_enrichment==='object'?w.contact_enrichment:{},org=A(e.organizations)[0];return safeUrl(org&&org.official_website);}
 function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient potencial: qasje direkte me PRISTEEL si nënkontraktor/prodhues i paketave të çelikut.';if(x==='producer')return'Konkurrent / prodhues: qasje si kapacitet shtesë, overflow fabrication, paketë e ndarë ose mbështetje në prodhim dhe dorëzim.';if(x==='trader_consortium')return'Qasje e kujdesshme për furnizim ose prodhim të nënkontraktuar, sipas paketës konkrete.';return'Roli ende nuk është verifikuar; emaili përgatitet me formulim neutral për kapacitet shtesë dhe kontrollohet nga ti para krijimit në Gmail.';}
 function sourceLabel(r){var src=tenderSource(r),m=TENDER_SOURCE_META[src];return m?m.label:src;}
@@ -175,10 +175,11 @@ function lifecycleLabel(meta){if(meta.lane==='draft')return'Draft i përgatitur'
 function lifecycleWhen(meta){if(!meta.when)return'';try{var d=new Date(meta.when);return isNaN(d.getTime())?'':d.toLocaleString('sq-AL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
 function lifecycleDateLabel(meta){var when=lifecycleWhen(meta);if(!when)return'';if(meta.lane==='draft')return'Drafti: '+when;if(meta.lane==='waiting')return'Dërguar: '+when;if(meta.lane==='replied')return'Përgjigjja: '+when;return'';}
 async function loadOpportunityOutreach(){
- tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.emailByThread={};tenderState.communicationRows=[];tenderState.communicationByTender={};
+ tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.emailByThread={};tenderState.communicationRows=[];tenderState.communicationByTender={};tenderState.legacyTedContactsByTender={};
  try{
    var rows=A(await db('pppp_opportunity_outreach_registry_v1?select=tender_watch_id,recipient_email,status,draft_created_at,sent_at,gmail_thread_id,gmail_message_id,updated_at&order=updated_at.desc&limit=2000'));
    tenderState.outreachRows=rows;rows.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.outreachByTender[id]||(tenderState.outreachByTender[id]=[])).push(r);});
+   var legacy=A(await db('pppp_ted_sales_outreach_v1?select=tender_watch_id,company_name,winner_name,contact_email,company_domain,outreach_status&contact_email=not.is.null&limit=2000'));legacy.forEach(function(x){var id=S(x.tender_watch_id),email=S(x.contact_email).trim();if(!id||!email)return;(tenderState.legacyTedContactsByTender[id]||(tenderState.legacyTedContactsByTender[id]=[])).push({email:email,name:'',purpose:'general',confidence:'legacy_verified',company_domain:S(x.company_domain),source_type:'pppp_ted_sales_outreach_v1',draft_eligible:true});});
    var comm=A(await db('pppp_opportunity_communication_state_v1?select=action_id,tender_watch_id,target_email,communication_state,communication_at,communication_gmail_url,communication_thread_id,last_outgoing_subject,outgoing_match_type&communication_state=in.(waiting,replied,contacted_history)&order=communication_at.desc.nullslast&limit=2000'));
    tenderState.communicationRows=comm;comm.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.communicationByTender[id]||(tenderState.communicationByTender[id]=[])).push(r);});
    var threads=[];rows.forEach(function(r){if(/^[a-zA-Z0-9_-]+$/.test(S(r.gmail_thread_id))&&threads.indexOf(S(r.gmail_thread_id))<0)threads.push(S(r.gmail_thread_id));});
