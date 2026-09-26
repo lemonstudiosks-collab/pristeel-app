@@ -636,6 +636,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 window.PSTDachSteelSalesV1=window.PSTDachSteelSalesV2=window.PSTDachSteelSalesV3={
  source:SOURCE,open:open,
  refresh:function(){return syncLifecycleUi(true)},
- snapshot:function(){return{source:SOURCE,summary:summary(),targets:A(state.targets).slice(),outboundByTarget:Object.assign({},state.outboundByTarget),contactByTarget:Object.assign({},state.contactByTarget),filter:state.filter,error:state.error}}
+ loadTargets:function(force){return loadTargets(!!force)},
+ snapshot:function(){return{source:SOURCE,summary:summary(),targets:A(state.targets).slice(),outboundByTarget:Object.assign({},state.outboundByTarget),contactByTarget:Object.assign({},state.contactByTarget),filter:state.filter,error:state.error,targetsLoaded:state.targetsLoaded,targetsLoading:state.targetsLoading}}
 };
 })();
