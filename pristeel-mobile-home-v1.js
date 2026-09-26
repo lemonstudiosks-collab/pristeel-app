@@ -44,6 +44,22 @@ function projectActive(p){
   var st=N(p&&(p.status||p.operational_state||p.pipeline_stage||p.stage_label));
   return !/(closed|mbyll|won|lost|archiv|realized|realizuar|no bid|no_bid)/.test(st);
 }
+function projectName(p){return S(p&&(p.name||p.project_name||p.title)||'Projekt');}
+function projectStage(p){return S(p&&(p.stage_label||p.pipeline_stage||p.status||p.operational_state)||'Aktiv');}
+function projectNext(p){return S(p&&(p.next_action||p.next_step||p.recommended_action||p.current_action)||'Hap projektin për hapin e ardhshëm');}
+function projectUpdated(p){var d=p&&(p.updated_at||p.last_activity_at||p.created_at),t=d?new Date(d).getTime():0;return isNaN(t)?0:t;}
+function visibleProjects(){
+  var s=snap(),rows=A(s.projects).filter(function(p){return projectId(p)&&projectActive(p);});
+  rows.sort(function(a,b){return projectUpdated(b)-projectUpdated(a);});
+  return rows.slice(0,2);
+}
+function waitingItems(){
+  var s=snap(),rows=A(s.waiting).filter(Boolean);
+  return rows.slice(0,2);
+}
+function waitingProject(w){return S(w&&(w.project_name||w.project_title||w.project||w.name));}
+function waitingTitle(w){return S(w&&(w.title||w.text||w.action||w.next_action||w.reason)||'Në pritje të përgjigjes');}
+function waitingProjectId(w){return S(w&&(w.project_id||w.id_project));}
 function counts(){
   var s=snap(),opp=opportunities(),actions=A(s.actions).filter(function(a){return S(a&&(a.key||a.title||a.action));});
   var projects=A(s.projects).filter(function(p){return projectId(p)&&projectActive(p);});
@@ -59,7 +75,10 @@ function svg(name){
     arrow:'<path d="m9 6 6 6-6 6"/>',
     alert:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 4h.01"/>',
     plus:'<path d="M12 5v14M5 12h14"/>',
-    person:'<circle cx="10" cy="8" r="3"/><path d="M4 19c.5-4 2.5-6 6-6s5.5 2 6 6M18 7v6M15 10h6"/>'
+    person:'<circle cx="10" cy="8" r="3"/><path d="M4 19c.5-4 2.5-6 6-6s5.5 2 6 6M18 7v6M15 10h6"/>',
+    daily:'<path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    briefcase:'<rect x="3" y="7" width="18" height="12" rx="2"/><path d="M8 7V5h8v2M3 11h18"/>'
   }[name]||'';
   return'<svg viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg>';
 }
@@ -83,9 +102,11 @@ body.pst-mobile-home-active #pst-mobile-home-v1{display:block!important;width:10
 .pmh-welcome{position:relative;overflow:hidden;border:1px solid #DFEAED;border-radius:18px;background:linear-gradient(135deg,#F7FBFC 0%,#EEF7FA 100%);padding:20px 18px 19px;box-shadow:0 8px 22px rgba(46,83,95,.045)}.pmh-welcome:after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-75px;top:-85px;background:rgba(92,171,196,.08)}.pmh-welcome h1{position:relative;z-index:1;margin:0;font-size:27px;line-height:1.08;letter-spacing:-.65px;color:#1D2C33}.pmh-welcome p{position:relative;z-index:1;margin:10px 0 0;color:#748289;font-size:13px}
 .pmh-search{width:100%;margin:10px 0 12px;border:1px solid #DDE6E8;border-radius:16px;background:#fff;min-height:58px;padding:0 9px 0 16px;display:flex;align-items:center;gap:12px;color:#68777E;box-shadow:0 8px 20px rgba(37,69,80,.05);cursor:pointer;text-align:left}.pmh-search>svg{width:22px;height:22px;fill:none;stroke:#52666F;stroke-width:1.8;flex:0 0 auto}.pmh-search>span{flex:1;font-size:16px;color:#7C888E}.pmh-search i{width:42px;height:42px;border-radius:13px;background:#EAF6FA;color:#2E91B0;display:grid;place-items:center;font-style:normal}.pmh-search i svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7}
 .pmh-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}.pmh-stat{min-width:0;border:1px solid #E2E8EA;border-radius:16px;padding:13px 10px;background:#fff;display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer}.pmh-stat.blue{background:#F1F8FB}.pmh-stat.green{background:#F2FAF6}.pmh-stat.purple{background:#F7F4FC}.pmh-stat-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:0 0 auto}.pmh-stat.blue .pmh-stat-icon{background:#DDF2FB;color:#238DB2}.pmh-stat.green .pmh-stat-icon{background:#E1F6EA;color:#27946D}.pmh-stat.purple .pmh-stat-icon{background:#ECE5FA;color:#6752C4}.pmh-stat-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-stat-copy{min-width:0}.pmh-stat-copy b{display:block;font-size:18px;line-height:1;color:#1F3037}.pmh-stat-copy span{display:block;margin-top:4px;color:#7D898E;font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pmh-daily{width:100%;min-height:74px;margin:0 0 12px;border:1px solid #CFE3E9;border-radius:18px;background:linear-gradient(135deg,#EAF7FA,#F7FBFC);padding:13px 14px;display:flex;align-items:center;gap:12px;color:#24434E;text-align:left;cursor:pointer;box-shadow:0 8px 20px rgba(45,103,122,.06)}.pmh-daily-icon{width:44px;height:44px;border-radius:14px;background:#2F91AF;color:#fff;display:grid;place-items:center;flex:0 0 auto}.pmh-daily-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-daily-copy{min-width:0;flex:1}.pmh-daily-copy b{display:block;font-size:14px}.pmh-daily-copy span{display:block;margin-top:4px;color:#6F8087;font-size:10.5px}.pmh-daily-arrow{color:#3C849A}.pmh-daily-arrow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9}
 .pmh-card{border:1px solid #E0E7E9;border-radius:18px;background:#fff;overflow:hidden;margin-bottom:12px;box-shadow:0 6px 18px rgba(42,73,84,.035)}.pmh-card-head{display:flex;align-items:flex-start;gap:11px;padding:15px 15px 12px}.pmh-card-head-icon{width:38px;height:38px;border-radius:12px;background:#EAF6FA;color:#238DB2;display:grid;place-items:center;flex:0 0 auto}.pmh-card-head-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-card-head b{display:block;font-size:15px;color:#22343C}.pmh-card-head span{display:block;margin-top:4px;color:#879297;font-size:10px;line-height:1.4}.pmh-today-row{width:100%;min-height:64px;border:0;border-top:1px solid #E9EEEF;background:#fff;padding:9px 13px;display:grid;grid-template-columns:38px minmax(0,1fr) 18px;gap:10px;align-items:center;text-align:left;color:#263940;cursor:pointer}.pmh-today-row:active{background:#F6FAFB}.pmh-row-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center}.pmh-row-icon.red{background:#FCEBEC;color:#D95D65}.pmh-row-icon.blue{background:#EAF6FA;color:#258FB1}.pmh-row-icon.purple{background:#F0EAFB;color:#6A55C3}.pmh-row-icon svg,.pmh-row-arrow svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-row-copy{min-width:0}.pmh-row-copy b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-row-copy span{display:block;margin-top:3px;color:#879297;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-row-arrow{color:#75868D}
-.pmh-quick{padding-bottom:13px}.pmh-quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 11px}.pmh-quick-btn{min-width:0;min-height:92px;border:1px solid #E2E8EA;border-radius:15px;background:#fff;padding:11px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:9px;text-align:left;color:#22343C;cursor:pointer}.pmh-quick-btn:active{background:#F6FAFB}.pmh-quick-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center}.pmh-quick-btn:nth-child(1) .pmh-quick-icon{background:#2D98B9;color:#fff}.pmh-quick-btn:nth-child(2) .pmh-quick-icon{background:#E1F3FA;color:#238FB3}.pmh-quick-btn:nth-child(3) .pmh-quick-icon{background:#E2F7ED;color:#15916A}.pmh-quick-btn:nth-child(4) .pmh-quick-icon{background:#EEE8FB;color:#6650C0}.pmh-quick-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9}.pmh-quick-btn b{font-size:11.5px;line-height:1.2}
-@media(max-width:390px){body.pst-mobile-home-active #pst-mobile-home-v1{padding-left:10px!important;padding-right:10px!important}.pmh-stat{padding:11px 7px;gap:6px}.pmh-stat-icon{width:30px;height:30px}.pmh-stat-copy b{font-size:16px}.pmh-quick-grid{gap:6px;padding:0 9px}.pmh-quick-btn{padding:9px 6px}.pmh-quick-btn b{font-size:10.5px}}
+.pmh-quick{padding-bottom:13px}.pmh-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:0 11px}.pmh-quick-btn{min-width:0;min-height:88px;border:1px solid #E2E8EA;border-radius:15px;background:#fff;padding:11px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:9px;text-align:left;color:#22343C;cursor:pointer}.pmh-quick-btn:active{background:#F6FAFB}.pmh-quick-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center}.pmh-quick-btn:nth-child(1) .pmh-quick-icon{background:#2D98B9;color:#fff}.pmh-quick-btn:nth-child(2) .pmh-quick-icon{background:#E1F3FA;color:#238FB3}.pmh-quick-btn:nth-child(3) .pmh-quick-icon{background:#E2F7ED;color:#15916A}.pmh-quick-btn:nth-child(4) .pmh-quick-icon{background:#EEE8FB;color:#6650C0}.pmh-quick-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9}.pmh-quick-btn b{font-size:12px;line-height:1.2}
+.pmh-project-list,.pmh-wait-list{border-top:1px solid #E9EEEF}.pmh-project-row,.pmh-wait-row{width:100%;border:0;border-bottom:1px solid #E9EEEF;background:#fff;padding:12px 14px;display:grid;grid-template-columns:38px minmax(0,1fr) 18px;gap:10px;align-items:center;text-align:left;color:#263940;cursor:pointer}.pmh-project-row:last-child,.pmh-wait-row:last-child{border-bottom:0}.pmh-project-row:active,.pmh-wait-row:active{background:#F6FAFB}.pmh-project-icon,.pmh-wait-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center}.pmh-project-icon{background:#EDF0FB;color:#6257B4}.pmh-wait-icon{background:#FFF3DF;color:#B87820}.pmh-project-icon svg,.pmh-wait-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-project-copy,.pmh-wait-copy{min-width:0}.pmh-project-copy b,.pmh-wait-copy b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-project-copy span,.pmh-wait-copy span{display:block;margin-top:3px;color:#879297;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-card-link{margin-left:auto;border:0;background:transparent;color:#36829A;font-size:10px;font-weight:750;cursor:pointer;padding:4px 0}.pmh-empty{padding:15px 14px;border-top:1px solid #E9EEEF;color:#879297;font-size:10.5px}
+@media(max-width:390px){body.pst-mobile-home-active #pst-mobile-home-v1{padding-left:10px!important;padding-right:10px!important}.pmh-stat{padding:11px 7px;gap:6px}.pmh-stat-icon{width:30px;height:30px}.pmh-stat-copy b{font-size:16px}.pmh-quick-grid{gap:7px;padding:0 9px}.pmh-quick-btn{padding:10px 8px}.pmh-quick-btn b{font-size:11.5px}}
 `;document.head.appendChild(s);
 }
 function shellFix(){
@@ -108,6 +129,16 @@ function openFirstAction(){
  if(key){var q='[data-morning-action="'+key.replace(/"/g,'\\\"')+'"]',b=document.querySelector(q);if(b){b.click();return true;}}
  return false;
 }
+function openProject(id){
+ id=S(id);if(!id)return route('projects');
+ try{if(typeof window.pstOpenProjectWorkspace==='function'){window.pstOpenProjectWorkspace(id);return true;}if(typeof window.pstWorkspaceGo==='function'){window.__pstCurrentProjectId=id;window.pstWorkspaceGo('projects');return true;}}catch(e){}
+ return route('projects');
+}
+function openDaily(){
+ var b=document.getElementById('pst-daily-launch');
+ if(b&&typeof b.click==='function'){b.click();return true;}
+ return false;
+}
 function quick(kind){
  if(kind==='project'){if(typeof window.pstWsCreate==='function')return window.pstWsCreate('project');return route('projects');}
  if(kind==='draft')return route('tenders');
@@ -125,8 +156,11 @@ function markup(){
  +'<section class="pmh-welcome"><h1>'+E(greeting())+name+' 👋</h1><p>Ja çfarë ka rëndësi sot.</p></section>'
  +'<button type="button" class="pmh-search" data-pmh-search>'+svg('search')+'<span>Pyet PPPP…</span><i>'+svg('sparkle')+'</i></button>'
  +'<div class="pmh-stats"><button type="button" class="pmh-stat blue" data-pmh-today="priority"><span class="pmh-stat-icon">'+svg('check')+'</span><span class="pmh-stat-copy"><b data-pmh-count="priorities">0</b><span>Prioritete</span></span></button><button type="button" class="pmh-stat green" data-pmh-today="tender"><span class="pmh-stat-icon">'+svg('tender')+'</span><span class="pmh-stat-copy"><b data-pmh-count="tenders">0</b><span>Tenderë</span></span></button><button type="button" class="pmh-stat purple" data-pmh-today="project"><span class="pmh-stat-icon">'+svg('project')+'</span><span class="pmh-stat-copy"><b data-pmh-count="projects">0</b><span>Projekte</span></span></button></div>'
+ +'<button type="button" class="pmh-daily" data-pmh-daily><span class="pmh-daily-icon">'+svg('daily')+'</span><span class="pmh-daily-copy"><b>PRISTEEL Daily</b><span>Përmbledhja e sotme — hape kur do pamjen e plotë.</span></span><span class="pmh-daily-arrow">'+svg('arrow')+'</span></button>'
  +'<section class="pmh-card"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('tender')+'</span><div><b>Çfarë të shohësh sot</b><span>Vetëm gjërat më të rëndësishme për të vazhduar punën.</span></div></div><button type="button" class="pmh-today-row" data-pmh-today="priority"><span class="pmh-row-icon red">'+svg('alert')+'</span><span class="pmh-row-copy"><b data-pmh-title="priority">Prioritetet e sotme</b><span data-pmh-sub="priority">Shiko veprimet që kërkojnë vëmendje.</span></span><span class="pmh-row-arrow">'+svg('arrow')+'</span></button><button type="button" class="pmh-today-row" data-pmh-today="tender"><span class="pmh-row-icon blue">'+svg('tender')+'</span><span class="pmh-row-copy"><b data-pmh-title="tender">Tenderët aktivë</b><span data-pmh-sub="tender">Hap Mundësitë për shqyrtim.</span></span><span class="pmh-row-arrow">'+svg('arrow')+'</span></button><button type="button" class="pmh-today-row" data-pmh-today="project"><span class="pmh-row-icon purple">'+svg('project')+'</span><span class="pmh-row-copy"><b data-pmh-title="project">Projektet aktive</b><span data-pmh-sub="project">Vazhdo punën aty ku ka mbetur.</span></span><span class="pmh-row-arrow">'+svg('arrow')+'</span></button></section>'
- +'<section class="pmh-card pmh-quick"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('sparkle')+'</span><div><b>Veprime të shpejta</b><span>Fillo menjëherë me veprimet më të shpeshta.</span></div></div><div class="pmh-quick-grid"><button type="button" class="pmh-quick-btn" data-pmh-quick="project"><span class="pmh-quick-icon">'+svg('plus')+'</span><b>Krijo projekt</b></button><button type="button" class="pmh-quick-btn" data-pmh-quick="draft"><span class="pmh-quick-icon">'+svg('tender')+'</span><b>Krijo draft</b></button><button type="button" class="pmh-quick-btn" data-pmh-quick="partner"><span class="pmh-quick-icon">'+svg('person')+'</span><b>Shto partner</b></button><button type="button" class="pmh-quick-btn" data-pmh-quick="tender"><span class="pmh-quick-icon">'+svg('search')+'</span><b>Shiko tenderët</b></button></div></section>';
+ +'<section class="pmh-card pmh-quick"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('sparkle')+'</span><div><b>Veprime të shpejta</b><span>Fillo menjëherë me veprimet më të shpeshta.</span></div></div><div class="pmh-quick-grid"><button type="button" class="pmh-quick-btn" data-pmh-quick="project"><span class="pmh-quick-icon">'+svg('plus')+'</span><b>Krijo projekt</b></button><button type="button" class="pmh-quick-btn" data-pmh-quick="draft"><span class="pmh-quick-icon">'+svg('tender')+'</span><b>Krijo draft</b></button><button type="button" class="pmh-quick-btn" data-pmh-quick="partner"><span class="pmh-quick-icon">'+svg('person')+'</span><b>Shto partner</b></button><button type="button" class="pmh-quick-btn" data-pmh-quick="tender"><span class="pmh-quick-icon">'+svg('search')+'</span><b>Shiko tenderët</b></button></div></section>'
+ +'<section class="pmh-card"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('briefcase')+'</span><div><b>Vazhdo punën</b><span>Dy projektet aktive ku ka më shumë kuptim të vazhdosh.</span></div><button type="button" class="pmh-card-link" data-pmh-all-projects>Të gjitha →</button></div><div class="pmh-project-list" data-pmh-project-list></div></section>'
+ +'<section class="pmh-card" data-pmh-wait-card><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('clock')+'</span><div><b>Në pritje</b><span>Përgjigje ose veprime nga palë të tjera.</span></div></div><div class="pmh-wait-list" data-pmh-wait-list></div></section>';
 }
 function update(root){
  var c=counts(),p=c.priorities,t=c.newTenders||c.tenders,projects=c.projects;
@@ -139,6 +173,18 @@ function update(root){
  set('[data-pmh-sub="tender"]',c.tenders?'Hap Mundësitë për shqyrtim.':'Nuk ka tenderë në snapshot-in aktual.');
  set('[data-pmh-title="project"]',projects?(projects+' '+(projects===1?'projekt aktiv':'projekte aktive')):'Asnjë projekt aktiv');
  set('[data-pmh-sub="project"]',projects?'Vazhdo punën aty ku ka mbetur.':'Projektet aktive do të shfaqen këtu.');
+ var pList=root.querySelector('[data-pmh-project-list]'),recent=visibleProjects();
+ if(pList){
+   pList.innerHTML=recent.length?recent.map(function(x){
+     return '<button type="button" class="pmh-project-row" data-pmh-project="'+E(projectId(x))+'"><span class="pmh-project-icon">'+svg('briefcase')+'</span><span class="pmh-project-copy"><b>'+E(projectName(x))+'</b><span>'+E(projectStage(x))+' · '+E(projectNext(x))+'</span></span><span class="pmh-row-arrow">'+svg('arrow')+'</span></button>';
+   }).join(''):'<div class="pmh-empty">Nuk ka projekt aktiv në snapshot-in aktual.</div>';
+ }
+ var wCard=root.querySelector('[data-pmh-wait-card]'),wList=root.querySelector('[data-pmh-wait-list]'),waiting=waitingItems();
+ if(wCard)wCard.style.display=waiting.length?'block':'none';
+ if(wList)wList.innerHTML=waiting.map(function(w){
+   var pid=waitingProjectId(w),proj=waitingProject(w),title=waitingTitle(w);
+   return '<button type="button" class="pmh-wait-row" data-pmh-wait-project="'+E(pid)+'"><span class="pmh-wait-icon">'+svg('clock')+'</span><span class="pmh-wait-copy"><b>'+E(proj||'Në pritje')+'</b><span>'+E(title)+'</span></span><span class="pmh-row-arrow">'+svg('arrow')+'</span></button>';
+ }).join('');
 }
 function ensure(){
  installCss();
@@ -147,7 +193,15 @@ function ensure(){
  document.body&&document.body.classList.add('pst-mobile-home-active');shellFix();
  var native=document.getElementById('pst-native-home-v4');if(!native)return false;
  var root=document.getElementById('pst-mobile-home-v1');
- if(!root){root=document.createElement('section');root.id='pst-mobile-home-v1';root.setAttribute('aria-label','Ballina mobile e PRISTEEL');root.innerHTML=markup();root.addEventListener('click',function(e){var search=e.target.closest('[data-pmh-search]');if(search){if(typeof window.pstWsSearch==='function')window.pstWsSearch();else if(typeof window.openCmdK==='function')window.openCmdK();return;}var q=e.target.closest('[data-pmh-quick]');if(q){quick(q.getAttribute('data-pmh-quick'));return;}var t=e.target.closest('[data-pmh-today]');if(t)today(t.getAttribute('data-pmh-today'));});native.appendChild(root);}
+ if(!root){root=document.createElement('section');root.id='pst-mobile-home-v1';root.setAttribute('aria-label','Ballina mobile e PRISTEEL');root.innerHTML=markup();root.addEventListener('click',function(e){
+  var search=e.target.closest('[data-pmh-search]');if(search){if(typeof window.pstWsSearch==='function')window.pstWsSearch();else if(typeof window.openCmdK==='function')window.openCmdK();return;}
+  var daily=e.target.closest('[data-pmh-daily]');if(daily){openDaily();return;}
+  var q=e.target.closest('[data-pmh-quick]');if(q){quick(q.getAttribute('data-pmh-quick'));return;}
+  var all=e.target.closest('[data-pmh-all-projects]');if(all){route('projects');return;}
+  var p=e.target.closest('[data-pmh-project]');if(p){openProject(p.getAttribute('data-pmh-project'));return;}
+  var w=e.target.closest('[data-pmh-wait-project]');if(w){openProject(w.getAttribute('data-pmh-wait-project'));return;}
+  var t=e.target.closest('[data-pmh-today]');if(t)today(t.getAttribute('data-pmh-today'));
+ });native.appendChild(root);}
  update(root);return true;
 }
 function schedule(){

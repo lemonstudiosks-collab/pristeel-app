@@ -1,3 +1,11 @@
+## 2026-09-26 — Mobile Home v2: richer working context
+
+- Kept the mobile Home top intentionally compact, but added useful working context below it so the page no longer feels empty.
+- Added a visible `PRISTEEL Daily` card, `Vazhdo punën` with up to two active projects, and an `Në pritje` card that appears only when the existing Home snapshot contains waiting-external items.
+- Enlarged the four approved quick actions into a 2×2 layout: `Krijo projekt`, `Krijo draft`, `Shto partner`, `Shiko tenderët`.
+- All new content is derived from already-loaded in-memory Home/Opportunities snapshots and existing route/create controls. No Supabase reads/writes, network fetches, polling or service-worker behavior were added.
+- Updated the mobile Home cache-bust token so phones receive this revision immediately after deployment.
+
 ## 2026-09-25 — Compact mobile Home redesign
 
 - Added `pristeel-mobile-home-v1.js` as the <=900px final Home presentation, matching the approved clean mobile mockup while leaving desktop Home unchanged.

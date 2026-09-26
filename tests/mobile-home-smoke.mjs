@@ -23,11 +23,14 @@ assert(js.includes("Math.min(iw,sw)<=900"),'mobile Home must use physical or vie
 assert(js.includes("document.body&&document.body.classList.add('pst-mobile-home-active')"),'mobile Home activation class missing');
 assert(js.includes("#pst-native-home-v4>*:not(#pst-mobile-home-v1){display:none!important}"),'legacy Home presentation must be hidden only while mobile Home is active');
 
-for(const label of ['Pyet PPPP…','Çfarë të shohësh sot','Veprime të shpejta','Krijo projekt','Krijo draft','Shto partner','Shiko tenderët']){
+for(const label of ['Pyet PPPP…','PRISTEEL Daily','Çfarë të shohësh sot','Veprime të shpejta','Vazhdo punën','Në pritje','Krijo projekt','Krijo draft','Shto partner','Shiko tenderët']){
   assert(js.includes(label),'approved mobile Home label missing: '+label);
 }
 for(const kind of ["kind==='project'","kind==='draft'","kind==='partner'","kind==='tender'"]){
   assert(js.includes(kind),'quick-action delegate missing: '+kind);
 }
+assert(js.includes('grid-template-columns:repeat(2,minmax(0,1fr))'),'quick actions should use a fuller 2x2 mobile layout');
+assert(js.includes('visibleProjects()'),'mobile Home must show existing in-memory active projects');
+assert(js.includes('waitingItems()'),'mobile Home must surface existing waiting items when present');
 assert(!/<img\b/i.test(js),'approved mobile Home must not include decorative/structure photos');
 console.log('mobile-home-smoke: ok');
