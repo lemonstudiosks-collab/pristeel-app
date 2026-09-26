@@ -1,3 +1,11 @@
+## 2026-09-26 — PPPP Mobile vertical scroll gesture fix
+
+- Fixed iPhone gesture contention between full-page horizontal swipe and per-page vertical scrolling.
+- Vertical movement now locks the gesture to native page scroll; horizontal page swipe activates only after a clearly horizontal gesture.
+- Home, Projects, Discover and Inbox each keep an independent vertical scroll layer with extra bottom clearance above fixed utilities/navigation.
+- Inbox may still have no visible scroll movement when its content is shorter than the viewport; that is expected until Gmail rows are loaded.
+- Primary navigation remains four pages: Home, Projects, Discover and Inbox. Detail/secondary surfaces continue as pushed pages through their existing owners.
+
 ## 2026-09-26 — PPPP Mobile full-page swipe v3
 
 - Changed mobile navigation from nested card swipes to one standard full-page horizontal pager.
