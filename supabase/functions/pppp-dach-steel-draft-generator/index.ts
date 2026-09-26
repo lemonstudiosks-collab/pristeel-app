@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v17-commercial-engine-v3-routed-copy";
+const V="pppp-dach-steel-draft-generator-v18-material-trade-draft-recovery";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -208,17 +208,49 @@ function buyerText(tg:any,signatureHtml=""){
 function contactTier(email:any,name:any,role:any){
  const lp=local(email),r=nm(role),person=t(name,200);
  if(!em(email)||badLocal.has(lp)||/(marketing|press|presse|media|career|karriere|recruit|human resources|personalwesen|\bhr\b)/.test(r))return"F";
- if(/(einkauf|procurement|purchas|sourcing|beschaffung|ausschreibung|tender|vergabe)/.test(lp))return"C";
+ if(/(einkauf|procurement|purchas|sourcing|beschaffung|ausschreibung|tender|vergabe|stahl|steel|material|supply|sales|verkauf|anfrage|rfq|quote|quotation)/.test(lp))return"C";
  if(/^(info|office|contact|kontakt|hello|mail|admin|sekretariat|zentrale|general)$/.test(lp))return"E";
  if(person&&/(einkauf|procurement|purchas|sourcing|beschaffung|material|supply|buyer)/.test(r))return"A";
+ if(/(einkauf|procurement|purchas|sourcing|beschaffung|material|supply|buyer)/.test(r))return"C";
  if(person&&/(project|projekt|technical|technik|commercial|kaufm|construction|bauleit|geschäfts|manag|director|leiter)/.test(r))return"B";
  return person||/^[a-z]+[._-][a-z]+$/.test(lp)?"D":"E";
 }
 function tierScore(v:string){return v==="A"?95:v==="B"?82:v==="C"?70:v==="D"?55:v==="E"?25:0;}
 function specificFacts(tg:any){
- const a=Array.isArray(tg?.personalization_facts)?tg.personalization_facts.filter((x:any)=>t(x,1000)):[];
- if(a.length>=2)return a.slice(0,4).map((x:any)=>t(x,1000));
- return [tg?.project_title,tg?.why_now].filter((x:any)=>t(x,1000)).map((x:any)=>t(x,1000));
+ const saved=Array.isArray(tg?.personalization_facts)?tg.personalization_facts:[],evidence=Array.isArray(tg?.evidence)?tg.evidence:[];
+ const candidates=[...saved,tg?.project_title,tg?.why_now,tg?.steel_scope,...evidence.map((x:any)=>x&&typeof x==="object"?(x.claim||x.title||x.label||""):x)];
+ const out:string[]=[];
+ for(const value of candidates){const fact=externalFact(value);if(!fact||/@[a-z0-9.-]+\.[a-z]{2,}/i.test(fact))continue;if(!out.some(x=>nm(x)===nm(fact)))out.push(t(fact,1000));if(out.length>=4)break;}
+ return out;
+}
+function targetQualification(tg:any,contact:any){
+ const facts=specificFacts(tg),band=t(tg?.score_band,20).toUpperCase();
+ const hasCompanyFit=tg?.company_fit_score!==null&&tg?.company_fit_score!==undefined&&t(tg.company_fit_score,20)!=="";
+ const companyFit=hasCompanyFit&&Number.isFinite(Number(tg.company_fit_score))?Number(tg.company_fit_score):(band==="A1"?92:band==="A2"?82:band==="B1"?72:58);
+ const timingText=nm(tg?.procurement_timing),award=t(tg?.award_date,40)?new Date(tg.award_date):null,recentAward=!!(award&&!Number.isNaN(award.getTime())&&award.getTime()>=Date.now()-120*86400000);
+ const hasTiming=tg?.commercial_timing_score!==null&&tg?.commercial_timing_score!==undefined&&t(tg.commercial_timing_score,20)!=="";
+ const timing=hasTiming&&Number.isFinite(Number(tg.commercial_timing_score))?Number(tg.commercial_timing_score):(/(now|current|immediate|active|0.?3)/.test(timingText)?85:recentAward?65:t(tg?.project_title,500)?50:35);
+ const timingClass=t(tg?.timing_classification,80)||(/(now|current|immediate|active|0.?3)/.test(timingText)?"active_procurement":recentAward?"post_award_window":t(tg?.project_title,500)?"future_supplier_qualification":"unknown");
+ const evidenceCount=Array.isArray(tg?.evidence)?tg.evidence.length:0;
+ const hasEvidence=tg?.message_evidence_score!==null&&tg?.message_evidence_score!==undefined&&t(tg.message_evidence_score,20)!=="";
+ const messageEvidence=hasEvidence&&Number.isFinite(Number(tg.message_evidence_score))?Number(tg.message_evidence_score):(facts.length>=2?78:evidenceCount>=2?70:35);
+ const tier=contactTier(contact?.email,contact?.person,contact?.role),contactQuality=tierScore(tier);
+ const reasons=[companyFit<65?"company_fit_below_65":"",contactQuality<50?"contact_quality_below_50":"",messageEvidence<60?"message_evidence_below_60":"",facts.length<2?"fewer_than_two_specific_facts":"",timing<35?"commercial_timing_below_35":""].filter(Boolean);
+ const readiness=Math.round(companyFit*.32+timing*.24+contactQuality*.28+messageEvidence*.16);
+ const workflow=companyFit>=65&&contactQuality<50?"strong_company_contact_gap":reasons.length===0?"ready_for_outreach":companyFit<65?"disqualified":"research_required";
+ return{facts,companyFit,timing,timingClass,messageEvidence,tier,contactQuality,reasons,readiness,workflow};
+}
+async function qualifyTarget(tg:any,contact:any){
+ const q=targetQualification(tg,contact),now=new Date().toISOString();
+ const up=await db.from("pppp_dach_steel_targets_v1").update({
+  canonical_contact_email:contact?.email||null,canonical_contact_name:contact?.person||null,canonical_contact_role:contact?.role||null,
+  contact_tier:q.tier,contact_quality_score:q.contactQuality,outreach_engine_version:"v2",outreach_motion:t(tg?.outreach_motion,80)||"material_buyer",
+  company_fit_score:q.companyFit,commercial_timing_score:q.timing,timing_classification:q.timingClass,
+  personalization_facts:q.facts.slice(0,4),message_evidence_score:q.messageEvidence,outreach_readiness_score:q.readiness,
+  workflow_state:q.workflow,readiness_reasons:q.reasons,updated_at:now
+ }).eq("id",tg.id).select("*").single();
+ if(up.error)throw up.error;
+ return up.data;
 }
 function externalFact(v:any){
  const raw=t(v,1000);if(!raw)return"";
@@ -330,9 +362,10 @@ async function buyerDraft(tg:any,u:any){
  const recipient=em(q?.recipient_email||contact.email);
  if(!recipient)throw new Error("buyer_contact_required");
  const e=safe(recipient);
+ tg=await qualifyTarget(tg,{...contact,email:e,person:q?.recipient_name||contact.person,role:q?.contact_role||contact.role});
  const tier=contactTier(e,q?.recipient_name||contact.person,q?.contact_role||contact.role),contactScore=tierScore(tier),facts=specificFacts(tg);
  if(t(tg?.outreach_engine_version,20)!=="v2")throw new Error("outreach_v2_candidate_required");
- if(t(tg?.workflow_state,80)!=="ready_for_outreach")throw new Error("outreach_v2_readiness_blocked:"+t(tg?.workflow_state||"missing_state",80));
+ if(t(tg?.workflow_state,80)!=="ready_for_outreach")throw new Error("outreach_v2_readiness_blocked:"+t(tg?.workflow_state||"missing_state",80)+":"+((Array.isArray(tg?.readiness_reasons)?tg.readiness_reasons:[]).join(",")||"qualification_incomplete"));
  if(Number(tg?.company_fit_score||0)<65)throw new Error("outreach_v2_company_fit_below_65");
  if(Number(tg?.commercial_timing_score||0)<35)throw new Error("outreach_v2_timing_below_35");
  if(contactScore<50)throw new Error("outreach_v2_contact_quality_below_50:"+tier);
@@ -523,5 +556,5 @@ Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("o
  let u:any={id:"internal-draft-refresh"};
  if(!internalOk){if(!au.toLowerCase().startsWith("bearer "))return res({ok:false,error:"unauthorized"},401);u=await user(au);}
  let b:any={};try{b=await req.json();}catch{}const id=t(b?.target_id,80),mode=nm(b?.mode);
- if(internalOk&&mode!=="refresh"&&mode!=="sync")return res({ok:false,error:"internal_mode_not_allowed"},403);if(mode!=="sync"&&!uuid(id))return res({ok:false,error:"valid_target_id_required"},400);if(mode==="sync"){const x=await syncLifecycle();return res({ok:true,version:V,mode,...x,human_send_required:true,external_email_sent:false});}if(!["buyer","supplier","suppliers","contact","refresh","promote"].includes(mode))return res({ok:false,error:"mode_must_be_buyer_supplier_suppliers_contact_refresh_promote_or_sync"},400);const q=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",id).maybeSingle();if(q.error)throw q.error;if(!q.data)return res({ok:false,error:"dach_target_not_found"},404);if(["closed","rejected"].includes(t(q.data.target_status,40)))return res({ok:false,error:"dach_target_not_active"},409);if(mode==="contact"){const cr=await buyerContact(q.data),tier=contactTier(cr.email,cr.person,cr.role),score=tierScore(tier),facts=specificFacts(q.data),ready=Number(q.data.company_fit_score||0)>=65&&Number(q.data.commercial_timing_score||0)>=35&&score>=50&&Number(q.data.message_evidence_score||0)>=60&&facts.length>=2;const up=await db.from("pppp_dach_steel_targets_v1").update({canonical_contact_email:cr.email||null,canonical_contact_name:cr.person||null,canonical_contact_role:cr.role||null,contact_tier:tier,contact_quality_score:score,workflow_state:ready?"ready_for_outreach":Number(q.data.company_fit_score||0)>=65&&score<50?"strong_company_contact_gap":"research_required",outreach_engine_version:"v2",updated_at:new Date().toISOString()}).eq("id",q.data.id);if(up.error)throw up.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,contact:{...cr,tier,score},workflow_state:ready?"ready_for_outreach":"research_required",human_send_required:true,external_email_sent:false});}if(mode==="promote"){const pr=await promoteProject(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...pr});}if(mode==="suppliers"){const si=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(q.data),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});if(si.error)throw si.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,supplier_intelligence:si.data||{},human_send_required:true,external_email_sent:false});}const r=(mode==="buyer"||mode==="refresh")?await buyerDraft(q.data,u):await supplierDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...r});}catch(e){const m=t((e as any)?.message||e,1000),s=m==="unauthorized"?401:/required|invalid|not_allowed/.test(m)?400:/cooldown|conflict|suppressed|already|bounced|not_active/.test(m)?409:500;console.error(V,e);return res({ok:false,error:m,human_send_required:true,external_email_sent:false,version:V},s);}});
+ if(internalOk&&mode!=="refresh"&&mode!=="sync")return res({ok:false,error:"internal_mode_not_allowed"},403);if(mode!=="sync"&&!uuid(id))return res({ok:false,error:"valid_target_id_required"},400);if(mode==="sync"){const x=await syncLifecycle();return res({ok:true,version:V,mode,...x,human_send_required:true,external_email_sent:false});}if(!["buyer","supplier","suppliers","contact","refresh","promote"].includes(mode))return res({ok:false,error:"mode_must_be_buyer_supplier_suppliers_contact_refresh_promote_or_sync"},400);const q=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",id).maybeSingle();if(q.error)throw q.error;if(!q.data)return res({ok:false,error:"dach_target_not_found"},404);if(["closed","rejected"].includes(t(q.data.target_status,40)))return res({ok:false,error:"dach_target_not_active"},409);if(mode==="contact"){const cr=await buyerContact(q.data),qualified=await qualifyTarget(q.data,cr);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,contact:{...cr,tier:qualified.contact_tier,score:qualified.contact_quality_score},workflow_state:qualified.workflow_state,readiness_reasons:qualified.readiness_reasons||[],human_send_required:true,external_email_sent:false});}if(mode==="promote"){const pr=await promoteProject(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...pr});}if(mode==="suppliers"){const si=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(q.data),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});if(si.error)throw si.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,supplier_intelligence:si.data||{},human_send_required:true,external_email_sent:false});}const r=(mode==="buyer"||mode==="refresh")?await buyerDraft(q.data,u):await supplierDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...r});}catch(e){const m=t((e as any)?.message||e,1000),s=m==="unauthorized"?401:/required|invalid|not_allowed/.test(m)?400:/cooldown|conflict|suppressed|already|bounced|not_active/.test(m)?409:500;console.error(V,e);return res({ok:false,error:m,human_send_required:true,external_email_sent:false,version:V},s);}});
 

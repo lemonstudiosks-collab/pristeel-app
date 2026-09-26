@@ -17,7 +17,7 @@ var state={
  draftBusy:{},draftResult:{},supplierDrafts:{},contactBusy:{},projectBusy:{},projectResult:{},
  summaryLoaded:false,targetsLoaded:false,outboundLoaded:false,
  summaryLoading:false,targetsLoading:false,outboundLoading:false,
- error:'',filter:'action',expanded:null,actionView:null,lastLoadedAt:0,lifecycleSyncing:false,lifecycleSyncedAt:0,lifecycleResult:null,gmailOpenedAt:0
+ error:'',notice:null,filter:'action',expanded:null,actionView:null,lastLoadedAt:0,lifecycleSyncing:false,lifecycleSyncedAt:0,lifecycleResult:null,gmailOpenedAt:0
 };
 
 function A(v){return Array.isArray(v)?v:[]}
@@ -171,6 +171,7 @@ function evidenceContact(r){
 function contactFor(r){
  var q=outboundFor(r);if(q&&q.recipient_email)return{email:S(q.recipient_email).toLowerCase(),person:S(q.recipient_name||''),role:S(q.contact_role||''),source:'shared_outbound',quality:'canonical'};
  var live=state.contactByTarget[S(r&&r.id)];if(live&&live.email)return live;
+ if(r&&r.canonical_contact_email)return{email:S(r.canonical_contact_email).toLowerCase(),person:S(r.canonical_contact_name||''),role:S(r.canonical_contact_role||''),source:'canonical_target',quality:S(r.contact_tier||'canonical')};
  return evidenceContact(r);
 }
 function hasContact(r){return !!S(contactFor(r).email)}
@@ -179,8 +180,9 @@ async function resolveContact(r){
  state.contactBusy[id]=true;renderPage();
  try{
   var raw=await edgeDraft({mode:'contact',target_id:id}),ct=raw&&raw.contact&&typeof raw.contact==='object'?raw.contact:{};
-  state.contactByTarget[id]=ct;
- }catch(e){state.contactByTarget[id]={error:S(e&&e.message||e)}}
+  state.contactByTarget[id]=ct;state.targetsLoaded=false;await loadTargets(true);
+  state.notice=ct.email?{type:'success',text:'Kontakti u verifikua dhe u ruajt në target.'}:{type:'error',text:'Nuk u gjet kontakt i sigurt për këtë kompani.'};
+ }catch(e){var message=draftError(e&&e.message||e);state.contactByTarget[id]={error:message};state.notice={type:'error',text:message}}
  state.contactBusy[id]=false;renderPage();return state.contactByTarget[id];
 }
 function queuePayload(q){return J(q&&q.payload,{})||{}}
@@ -269,14 +271,26 @@ async function edgeDraft(payload){
  return data;
 }
 function draftKey(kind,id,email){return kind+':'+S(id)+(email?':'+N(email):'')}
+function draftError(v){
+ var x=S(v),stateCode=(x.split(':')[1]||'').replace(/_/g,' ');
+ if(x.indexOf('outreach_v2_readiness_blocked:')===0)return'Targeti nuk e kaloi kualifikimin për outreach'+(stateCode?' ('+stateCode+')':'')+'. Kontrollo evidencën dhe kontaktin.';
+ if(x.indexOf('outreach_v2_requires_two_specific_facts')===0)return'Duhen së paku dy fakte të verifikuara për kompaninë/projektin para draftit.';
+ if(x.indexOf('outreach_v2_contact_quality_below_50')===0||x.indexOf('buyer_contact_required')===0)return'Kontakti i blerjes nuk është verifikuar mjaftueshëm. Përdor “Gjej kontaktin” dhe kontrollo adresën.';
+ if(x.indexOf('cooldown')>-1||x.indexOf('already_sent')>-1||x.indexOf('sent_history')>-1)return'PPPP gjeti kontaktim të mëparshëm ose cooldown aktiv; drafti i dyfishtë u bllokua.';
+ if(x.indexOf('gmail_')===0)return'Gmail nuk e përfundoi krijimin e draftit. Provo përsëri ose kontrollo lidhjen e Gmail.';
+ return x||'Drafti nuk u krijua.';
+}
 async function createBuyerDraft(r){
  var id=S(r&&r.id),k=draftKey('buyer',id);if(!id||state.draftBusy[k])return;
- state.draftBusy[k]=true;state.draftResult[k]=null;renderPage();
+ state.draftBusy[k]=true;state.draftResult[k]=null;state.notice={type:'progress',text:'Po verifikohet kontakti dhe kualifikimi; pastaj krijohet Gmail draft…'};renderPage();
  try{
   var data=await edgeDraft({mode:'buyer',target_id:id});state.draftResult[k]=data||{};
   if(data&&data.queue)state.outboundByTarget[id]=data.queue;
-  else{state.outboundLoaded=false;await loadOutbound(true)}
- }catch(e){state.draftResult[k]={error:S(e&&e.message||e)}}finally{state.draftBusy[k]=false;renderPage()}
+  state.outboundLoaded=false;state.targetsLoaded=false;await loadTargets(true);await loadOutbound(true);
+  state.notice={type:'success',text:'Gmail draft u krijua. Kompania kaloi te “Kompanitë e kontaktuara”; dërgimi mbetet manual.'};
+  if(state.filter!=='contacted'&&state.filter!=='draft')state.expanded=null;
+ }catch(e){var message=draftError(e&&e.message||e);state.draftResult[k]={error:message};state.notice={type:'error',text:message}}
+ finally{state.draftBusy[k]=false;renderPage()}
 }
 async function createSupplierDraft(r,email){
  var id=S(r&&r.id),e=S(email).toLowerCase(),k=draftKey('supplier',id,e);if(!id||!e||state.draftBusy[k])return;
@@ -384,7 +398,7 @@ async function loadTargets(force){
  if(typeof window.supaFetch!=='function'){state.error='Databaza nuk është gati.';state.targetsLoaded=true;renderPage();return[]}
  state.targetsLoading=true;state.error='';
  try{
-  var path='pppp_dach_steel_targets_v1?select=id,source_key,source_name,source_url,partner_id,project_id,company_name,company_domain,company_website,country,buyer_type,score_band,target_status,why_now,project_title,project_reference,award_date,procurement_timing,quote_readiness,steel_scope,products,estimated_tonnes,material_revision,material_confidence,material_scope,evidence,contact_status,outreach_status,outbound_source_key,next_action,next_action_due,last_verified_at,created_at,updated_at&target_status=not.in.(closed,rejected)&order=updated_at.desc&limit=250';
+  var path='pppp_dach_steel_targets_v1?select=id,source_key,source_name,source_url,partner_id,project_id,company_name,company_domain,company_website,country,buyer_type,score_band,target_status,why_now,project_title,project_reference,award_date,procurement_timing,quote_readiness,steel_scope,products,estimated_tonnes,material_revision,material_confidence,material_scope,evidence,contact_status,outreach_status,outbound_source_key,next_action,next_action_due,last_verified_at,created_at,updated_at,outreach_engine_version,workflow_state,outreach_motion,company_fit_score,commercial_timing_score,contact_quality_score,message_evidence_score,outreach_readiness_score,contact_tier,timing_classification,personalization_facts,readiness_reasons,canonical_contact_email,canonical_contact_name,canonical_contact_role&target_status=not.in.(closed,rejected)&order=updated_at.desc&limit=250';
   state.targets=A(await window.supaFetch(path));state.targetsLoaded=true;state.lastLoadedAt=Date.now();state.outboundLoaded=false;
  }catch(e){state.targets=[];state.error=S(e&&e.message||e);state.targetsLoaded=true}
  state.targetsLoading=false;renderPage();
@@ -596,7 +610,8 @@ function renderPage(){
    if(historyLife==='replied'&&!selected.project_id&&N(selected.target_status)!=='project_promoted')actionHtml+='<button class="pst-dss-secondary-wide" '+(state.projectBusy['project:'+S(selected.id)]?'disabled':'')+' data-dss-action="promote-project" data-dss-tid="'+E(selected.id)+'">'+(state.projectBusy['project:'+S(selected.id)]?'Duke krijuar projektin…':'Krijo projekt nga RFQ')+'</button>';
   }
   var statusLabel=!history?'Për t’u kontaktuar':historyLife==='draft'?'Draft gati':historyLife==='stale'?'Draft i mëparshëm · verifiko Gmail':historyLife==='waiting'?'Në pritje të përgjigjes':historyLife==='replied'?'Përgjigje / Aktiv':'Historik kontakti';
-  detailPane.innerHTML='<div class="pst-dss-company-title">'+E(selected.company_name||'Kompania')+'</div>'
+  var notice=state.notice?'<div class="pst-dss-inline-status" style="margin:0 0 12px;background:'+(state.notice.type==='error'?'#fff1ef':state.notice.type==='success'?'#eef7ef':'#eef5fb')+';color:'+(state.notice.type==='error'?'#8b4a41':state.notice.type==='success'?'#3b7143':'#315f7a')+'">'+E(state.notice.text)+'</div>':'';
+  detailPane.innerHTML=notice+'<div class="pst-dss-company-title">'+E(selected.company_name||'Kompania')+'</div>'
    +'<div class="pst-dss-country">'+E([selected.country,buyerTierLabel(selected)].filter(Boolean).join(' · '))+'</div>'
    +'<div class="pst-dss-side-meta">'
     +'<div class="pst-dss-meta-row"><span>Sektori</span><span>'+E(selected.buyer_type||'—')+'</span></div>'
