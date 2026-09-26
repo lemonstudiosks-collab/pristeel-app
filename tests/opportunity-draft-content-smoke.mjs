@@ -81,4 +81,31 @@ assert(en.body.startsWith('Dear Jane Doe,'));
 assert(en.body.includes('The awarded lot includes fabricated structural steel assemblies.'));
 assert(en.body.includes('Is this fabrication package already fully placed'));
 
+
+const internalInstructionLeak=buildTedDraftContent(
+  {
+    route:'TED_CONSORTIUM',
+    target_company:'CYTA',
+    target_email:'andreas.makris@cyta.com.cy',
+    tender_title:'Cyprus – Electrical machinery – Battery Storage Energy System at Athalassa Substation',
+    personalization_facts:[
+      'Cyprus – Electrical machinery – Battery Storage Energy System at Athalassa Substation',
+      'CYTA është fitues/anëtar i kontratës. Përgatit draft profesional dhe mos e dërgo automatikisht.'
+    ],
+    outreach_motion:'awarded_project_gc',
+    pristeel_offer_model:'fabricated_steel_package'
+  },
+  {
+    title:'Cyprus – Electrical machinery – Battery Storage Energy System at Athalassa Substation',
+    authority:'Electricity Authority of Cyprus',
+    winner:{name:'CYTA',country:'CYP',company_type:'trader_consortium'}
+  },
+  {email:'andreas.makris@cyta.com.cy',name:'Mr. Antreas Makris',purpose:'person'}
+);
+assert.equal(internalInstructionLeak.language,'en');
+assert.match(internalInstructionLeak.body,/published award information relates to/i,'fallback copy must use public award facts');
+assert.match(internalInstructionLeak.body,/CYTA is identified in the award information/i,'fallback copy must identify the selected awarded company neutrally');
+assert.doesNotMatch(internalInstructionLeak.body,/Përgatit draft|mos e dërgo|Draft vetëm|outreach/i,'internal PPPP instructions must never leak into external email copy');
+assert.doesNotMatch(internalInstructionLeak.html_body,/Përgatit draft|mos e dërgo|Draft vetëm|outreach/i,'internal PPPP instructions must never leak into HTML email copy');
+
 console.log('opportunity TED scope-first copy smoke: ok');

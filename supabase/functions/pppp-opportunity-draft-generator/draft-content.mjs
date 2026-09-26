@@ -128,9 +128,46 @@ function cleanProjectTitle(v,ref=''){
 }
 function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v).replace(/\\n/g,'<br>')}</p>`:'';}
 
+function outwardText(v,max=1000){
+  const raw=txt(v,max);if(!raw)return'';
+  const s=norm(raw);
+  const internal=/(pergatit\s+draft|draft\s+vetem|mos\s+e\s+dergo|mos\s+i\s+trajto|verifiko\s+rolin|qasja\s+nuk\s+duhet|do\s+not\s+send|prepare\s+(?:an?\s+)?draft|draft\s+only|internal\s+instruction|human\s+approval|outreach\s+(?:draft|copy|message|instruction))/i;
+  return internal.test(s)?'':raw;
+}
+function publicAwardFacts(language,role,title,company,tender){
+  const awardCompany=company||txt(tender?.winner?.name,300)||'the awarded company';
+  const authority=txt(tender?.authority,300);
+  if(language==='de'){
+    const project='Die veröffentlichten Vergabeinformationen betreffen das Projekt „'+title+'“.',companyFact=role==='gc'
+      ?awardCompany+' ist in den Vergabeinformationen als Auftragnehmer für diesen Auftrag aufgeführt.'
+      :role==='producer'
+        ?awardCompany+' ist in den Vergabeinformationen als ausführendes Unternehmen für diesen Auftrag aufgeführt.'
+        :awardCompany+' ist in den Vergabeinformationen als beteiligtes Unternehmen für diesen Auftrag aufgeführt.';
+    return[project,companyFact||(authority?'Auftraggeber ist '+authority+'.':'')].filter(Boolean);
+  }
+  if(language==='bcs'){
+    const project='Objavljeni podaci o dodjeli odnose se na projekat „'+title+'“.',companyFact=role==='gc'
+      ?awardCompany+' je u podacima o dodjeli naveden kao izvođač za ovaj ugovor.'
+      :role==='producer'
+        ?awardCompany+' je u podacima o dodjeli naveden kao izvođač/proizvođač za ovaj ugovor.'
+        :awardCompany+' je u podacima o dodjeli naveden kao učesnik u ovom ugovoru.';
+    return[project,companyFact||(authority?'Naručilac je '+authority+'.':'')].filter(Boolean);
+  }
+  const project='The published award information relates to “'+title+'”.',companyFact=role==='gc'
+    ?awardCompany+' is identified in the award information as a contractor for this contract.'
+    :role==='producer'
+      ?awardCompany+' is identified in the award information as an executing/fabricating company for this contract.'
+      :awardCompany+' is identified in the award information as a participant in this contract.';
+  return[project,companyFact||(authority?'The contracting authority is '+authority+'.':'')].filter(Boolean);
+}
+function outboundFacts(language,role,title,company,action,tender,rdata){
+  const verified=[rdata?.scope_evidence,rdata?.project_fact].map(x=>outwardText(x,1000)).filter(Boolean),fallback=publicAwardFacts(language,role,title,company,tender),out=[];
+  for(const fact of [...verified,...fallback])if(fact&&!out.includes(fact))out.push(fact);
+  return out.slice(0,2);
+}
+
 export function buildTedDraftContent(action={},tender={},recipient={}){
-  const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender),facts=(Array.isArray(action?.personalization_facts)&&action.personalization_facts.length?action.personalization_facts:[rdata.scope_evidence||rdata.project_fact,rdata.pristeel_scope||rdata.qualification_evidence]).map(x=>txt(x,1000)).filter(Boolean);
-  if(facts.length<1)facts.push('Project: '+title); if(facts.length<2)facts.push('Company: '+(company||'verified award recipient'));
+  const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender),facts=outboundFacts(language,role,title,company,action,tender,rdata);
   const future=motion==='future_supplier_qualification'||txt(action?.timing_classification,80)==='future_supplier_qualification';
   const offerModel=future?'future_supplier_qualification':(txt(action?.pristeel_offer_model,80)||(role==='producer'?'external_production_capacity':'fabricated_steel_package'));
   const subject=future
@@ -138,7 +175,7 @@ export function buildTedDraftContent(action={},tender={},recipient={}){
     :offerModel==='external_production_capacity'
       ?(language==='de'?'Projekt '+shortProject(title)+' – externe Fertigungskapazität | PRISTEEL':language==='bcs'?'Projekt '+shortProject(title)+' – vanjski proizvodni kapacitet | PRISTEEL':'Project '+shortProject(title)+' – external fabrication capacity | PRISTEEL')
       :subjectFor(language,role,title);
-  const greet=greeting(language,company,recipient),scope=txt(rdata.pristeel_scope,1000);
+  const greet=greeting(language,company,recipient),scope=outwardText(rdata.pristeel_scope,1000);
   const capability=offerModel==='external_production_capacity'
     ?(language==='de'?'PRISTEEL stellt zusätzliche, projektbezogene Fertigungskapazität für klar definierte Stahlbaupakete bereit und koordiniert technische Klärung, Fertigung, Qualitätsdokumentation und DAP-Lieferung.':language==='bcs'?'PRISTEEL obezbjeđuje dodatni proizvodni kapacitet za jasno definisane pakete čeličnih konstrukcija i koordinira tehničko usaglašavanje, proizvodnju, dokumentaciju kvaliteta i DAP isporuku.':'PRISTEEL provides managed additional fabrication capacity for clearly defined steel packages, coordinating technical clarification, fabrication, quality documentation and DAP delivery.')
     :offerModel==='future_supplier_qualification'
@@ -149,7 +186,7 @@ export function buildTedDraftContent(action={},tender={},recipient={}){
     :offerModel==='future_supplier_qualification'
       ?(language==='de'?'Wer ist bei Ihnen für die Qualifizierung künftiger Partner für Stahlbaupakete zuständig?':language==='bcs'?'Ko je kod Vas zadužen za kvalifikaciju budućih partnera za čelične pakete?':'Who handles qualification of future partners for steel packages?')
       :(language==='de'?'Ist das relevante Stahlbaupaket bereits vollständig vergeben oder ist ein klar abgegrenzter externer Umfang noch offen?':language==='bcs'?'Da li je relevantni paket čeličnih radova već u potpunosti ugovoren ili je jasno definisan vanjski opseg još otvoren?':'Is the relevant steel package already fully awarded, or is a clearly defined external scope still open?');
-  const cta=txt(rdata.concrete_question,1000)||fallbackCta;
+  const cta=outwardText(rdata.concrete_question,1000)||fallbackCta;
   const paras=[facts[0],facts[1],capability,cta],close=closing(language);
   const body=[greet,...paras,close,SIGNATURE].filter(Boolean).join('\n\n');
   const htmlBody='<div dir="ltr" style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#202124">'+htmlParagraph(greet)+paras.map(htmlParagraph).join('')+'<p style="margin:0">'+esc(close)+'</p>'+SIGNATURE_HTML+'</div>';
