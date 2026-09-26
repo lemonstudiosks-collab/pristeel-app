@@ -47,6 +47,12 @@ assert(js.includes('data-pma-util="weather"')&&js.includes('data-pma-util="fx"')
 assert(js.includes('data-pma-more'),'secondary Partner/Finance/System access missing');
 assert(js.includes('nativeProjectId')&&js.includes('projectDetailView'),'native mobile project detail state/view missing');
 assert(js.includes('nativeCompanyMode')&&js.includes('companyListView')&&js.includes('companyDetailView'),'native company browser/detail missing');
+assert(js.includes('nativeFinance')&&js.includes('financeView')&&js.includes('openFinance'),'native mobile Finance surface missing');
+assert(js.includes('PSTFinanceCanonicalV1')&&js.includes('financeOwner'),'Finance mobile surface must reuse Finance Canonical owner');
+assert(js.includes('finTotals')&&js.includes('finCurrency'),'Finance mobile surface must keep currency-aware totals');
+assert(js.includes('PPPP nuk po llogarit cash balance')||js.includes('cash balance'),'Finance mobile surface must not imply cash balance');
+assert(js.includes('data-pma-finance-tab')&&js.includes('data-pma-finance-legacy'),'Finance tabs/legacy register bridges missing');
+assert(js.includes("if(sk==='finance'){openFinance();return;}"),'Financat secondary route must open native Finance');
 assert(js.includes('PSTContactMasterV1')&&js.includes('contactMaster'),'company mobile surface must reuse Contact Master owner');
 assert(js.includes('companyGroups')&&js.includes('companyPeople')&&js.includes('companyCapabilities'),'company relationship grouping missing');
 assert(js.includes('data-pma-company-search')&&js.includes('data-pma-company-filter'),'company search/filter controls missing');
@@ -57,7 +63,7 @@ assert(js.includes('projectStageInfo')&&js.includes('Timeline i projektit'),'pro
 assert(js.includes('data-pma-project-back'),'native project back control missing');
 assert(js.includes('data-pma-project-legacy="files"')&&js.includes('data-pma-project-legacy="emails"')&&js.includes('data-pma-project-legacy="suppliers"'),'project detail bridge actions missing');
 assert(js.includes('Kthehu në app')&&js.includes('data-pma-return-app'),'legacy project tool return bridge missing');
-assert(js.includes("u.style.display=(state.nativeProjectId||state.nativeCompanyMode)?'none':'grid'"),'utility dock must yield on native project/company detail');
+assert(js.includes("u.style.display=(state.nativeProjectId||state.nativeCompanyMode||state.nativeFinance)?'none':'grid'"),'utility dock must yield on native project/company/finance detail');
 assert(js.includes("if(kind==='nogo'){if(!confirm("),'No-Go must remain an explicit human action');
 
-console.log('mobile-app-v5-company-detail-smoke: ok');
+console.log('mobile-app-v6-finance-smoke: ok');

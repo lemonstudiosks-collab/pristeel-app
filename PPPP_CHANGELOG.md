@@ -1,3 +1,13 @@
+## 2026-09-26 — PPPP Mobile Finance v6
+
+- Added a native read-only Finance secondary surface without adding another primary swipe page.
+- Financat now opens inside the mobile shell from the secondary menu and reuses `PSTFinanceCanonicalV1.snapshot()`.
+- The mobile Finance view separates receivables, supplier invoices, expenses, taxes and bank guarantees; currency totals remain separated and are never netted.
+- The view surfaces overdue items and guarantees approaching expiry, but does not infer cash balance or perform payments, invoice approvals, guarantee changes or other protected financial actions.
+- Detailed finance registers remain reachable through explicit user actions and the existing Finance owners, with the mobile return-to-app bridge preserved.
+- Weather / Convert / Steel utilities yield while Finance is open; Home / Projects / Discover / Inbox swipe navigation is unchanged.
+- No direct Supabase reads/writes, polling or duplicate Finance engine were added to the mobile layer.
+
 ## 2026-09-26 — PPPP Mobile Company / Partner Detail v5
 
 - Added a native mobile Partnerët / Kompanitë secondary surface without adding a fifth primary swipe page.
