@@ -281,6 +281,7 @@ function install(){
   installCss();
   if(typeof originalStart==='function'){window.startApp=guardedStart;try{startApp=guardedStart;}catch(e){}}
   if(typeof originalLogout==='function'){window.doLogout=guardedLogout;try{doLogout=guardedLogout;}catch(e){}}
+  if(mobile()&&pinConfiguredForDevice())coverWithPin();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(coverWithPin,0);},{once:true});
   else setTimeout(coverWithPin,0);
   window.addEventListener('load',function(){setTimeout(coverWithPin,0);});
