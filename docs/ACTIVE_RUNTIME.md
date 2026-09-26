@@ -95,8 +95,9 @@ Each zone has a distinct color identity so the user can orient by both text and 
 - It is presentation/navigation only: no Supabase reads/writes, no polling, no outbound actions and no second business engine.
 - At <=900px it replaces the desktop sidebar with a fixed bottom navigation that delegates to the existing canonical PPPP routes: Ballina, Mundësitë, Projektet, Partnerët, Financat and Sistemi.
 - Existing page owners keep their own responsive rules; the mobile shell only normalizes the global shell, safe-area spacing, touch navigation and constrained modal/table behavior.
-- `pristeel-mobile-home-v1.js` is the phone/tablet-only final Home presentation. It hides the desktop Home composition only while Home is active on <=900px devices, reuses the already-loaded Canonical/Morning snapshots, and adds no Supabase/network reads or writes.
-- Mobile Home is deliberately concise: PRISTEEL header, greeting, `Pyet PPPP`, three compact counters, one `Çfarë të shohësh sot` card and four quick actions. The actions delegate to existing routes/create controls; they do not create a parallel workflow.
+- `pristeel-mobile-home-v1.js` is the phone/tablet-only final Home presentation. It hides the desktop Home composition only while Home is active on <=900px devices and does not own or write PPPP business state.
+- Mobile Home is intentionally different from the desktop action surface: the fixed bottom navigation owns Opportunities, Projects, Partners, Finance and System, while Home stays an information dashboard with the PRISTEEL header, greeting, `Pyet PPPP`, Prishtina weather/date, a clearly dated public steel-market sample, useful local tools and external market resources. Project/opportunity counters, active-project cards and quick workflow buttons are deliberately absent.
+- Mobile Home adds no Supabase reads/writes and no polling. Its only direct public-data request is a 30-minute-cached Open-Meteo weather read; steel-market values are explicitly dated public samples and link to their source instead of being presented as live canonical PPPP data.
 - The linked `pristeel.webmanifest` prepares installable-app metadata. Service-worker caching is intentionally not introduced in this phase so mobile cannot pin stale PPPP runtime code.
 
 ### Home
