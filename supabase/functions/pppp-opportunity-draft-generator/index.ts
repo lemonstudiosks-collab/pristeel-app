@@ -354,7 +354,7 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
       if(row.status==='draft_created'&&row.gmail_draft_id){
         const live=await gmailDraft(row.gmail_draft_id);
         if(live){
-          if(!(refreshExisting&&text(row.generator,200)!==GENERATOR)){preserved++;continue;}
+          if(!((refreshExisting||explicitUser)&&text(row.generator,200)!==GENERATOR)){preserved++;continue;}
           await deleteDraftForRefresh(row.gmail_draft_id);wasRefresh=true;
         }else{
           const sentMessage=await findSent(row);if(sentMessage){row=await markSent(row,sentMessage);sent++;continue;}row=await markMissing(row);

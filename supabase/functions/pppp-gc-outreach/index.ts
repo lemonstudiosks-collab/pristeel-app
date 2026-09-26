@@ -234,9 +234,11 @@ async function processOne(row:any,createRequested=false){
       }
       return {id:p.id,company:p.company_name,event:'live_draft_1_verified',draft_id:existing.id,human_send_required:true};
     }
+    if(!createRequested)return {id:p.id,company:p.company_name,event:'stale_copy_requires_manual_refresh',draft_id:p.first_draft_id||null,human_send_required:true};
+    if(p.first_draft_id)await deleteDraft(p.first_draft_id);
     await db.from('pppp_gc_prospects_v1').update({
       first_draft_id:null,first_gmail_message_id:null,first_gmail_thread_id:null,first_draft_created_at:null,
-      status:'contact_ready',updated_at:nowIso(),last_error:'Recovered missing Gmail draft #1'
+      status:'contact_ready',workflow_state:'ready_for_outreach',updated_at:nowIso(),last_error:'Stale draft retired for explicit Sales Engine V2 copy refresh'
     }).eq('id',p.id).eq('status','draft_ready');
     p=await loadProspect(p.id);
   }
