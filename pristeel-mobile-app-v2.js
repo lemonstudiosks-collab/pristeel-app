@@ -7,7 +7,7 @@
 if(window.__pstMobileAppV2)return;
 window.__pstMobileAppV2=true;
 
-var VERSION='20260926-mobile-app5';
+var VERSION='20260926-mobile-app6';
 var ROOT='pst-mobile-app-v2';
 var NAV='pst-mobile-app-v2-nav';
 var UTIL='pst-mobile-app-v2-util';
@@ -20,7 +20,8 @@ var state={
   inboxLoading:false,materialLoading:false,repLoading:false,
   plusOpen:false,moreOpen:false,
   nativeProjectId:'',projectReturnTab:'projects',
-  nativeCompanyMode:'',nativeCompanyKey:'',companySearch:'',companyFilter:'all',companyBusy:false,companyReturnTab:'home'
+  nativeCompanyMode:'',nativeCompanyKey:'',companySearch:'',companyFilter:'all',companyBusy:false,companyReturnTab:'home',
+  nativeFinance:false,financeTab:'summary',financeData:null,financeBusy:false,financeError:'',financeReturnTab:'home'
 };
 
 function S(v){return String(v==null?'':v);}
@@ -198,6 +199,71 @@ function companyDetailView(key){
     '</div></div>';
 }
 
+function financeOwner(){return window.PSTFinanceCanonicalV1||null;}
+function finNum(v){var n=parseFloat(S(v).replace(',','.'));return isFinite(n)?n:0;}
+function finCurrency(r){return S(r&&r.currency||'EUR').toUpperCase();}
+function finAmount(kind,r){if(kind==='sales')return finNum(r&&r.gross_amount)||finNum(r&&r.net_amount);if(kind==='suppliers')return finNum(r&&r.amount)||finNum(r&&r.net_amount);if(kind==='guarantees')return finNum(r&&r.amount_guaranteed);return finNum(r&&r.amount);}
+function finOpen(r){return !(r&&r.paid);}
+function finOverdue(r){var due=S(r&&r.due_date);return finOpen(r)&&!!due&&due<new Date().toISOString().slice(0,10);}
+function finMoney(v,currency){var cur=S(currency||'EUR').toUpperCase(),n=finNum(v);try{return new Intl.NumberFormat('de-DE',{style:'currency',currency:cur,maximumFractionDigits:2}).format(n);}catch(e){return n.toLocaleString('de-DE',{maximumFractionDigits:2})+' '+cur;}}
+function finTotals(rows,kind,onlyOpen){
+  var map={};A(rows).forEach(function(r){if(onlyOpen&&!finOpen(r))return;var cur=finCurrency(r),amt=finAmount(kind,r);map[cur]=(map[cur]||0)+amt;});
+  return Object.keys(map).sort().map(function(cur){return finMoney(map[cur],cur);});
+}
+function finActiveGuarantees(rows){return A(rows).filter(function(r){return ['expired','closed','released','cancelled','skaduar','mbyllur','lëshuar'].indexOf(N(r&&r.status))<0;});}
+function finDays(v){if(!v)return null;var d=new Date(v),n=new Date();if(isNaN(d.getTime()))return null;return Math.ceil((d.getTime()-n.getTime())/86400000);}
+async function loadFinanceData(){
+  var F=financeOwner();if(!F||typeof F.snapshot!=='function'){state.financeError='Finance Canonical nuk është gati.';state.financeData=null;render();return;}
+  state.financeBusy=true;state.financeError='';render();
+  try{state.financeData=await F.snapshot();}catch(e){state.financeError=S(e&&e.message||e||'Gabim gjatë leximit të financave.');}
+  state.financeBusy=false;render();
+}
+function openFinance(){
+  state.financeReturnTab=state.tab||'home';state.nativeFinance=true;state.nativeProjectId='';state.nativeCompanyMode='';state.nativeCompanyKey='';state.plusOpen=false;state.moreOpen=false;state.detail=false;hideLegacyBack();render();
+  if(!state.financeData&&!state.financeBusy)loadFinanceData();
+}
+function finSectionData(name){var x=state.financeData&&state.financeData[name];return{x:x,rows:A(x&&x.rows),error:x&&x.error};}
+function finAttention(){
+  if(!state.financeData)return[];
+  var out=[];
+  [['sales','Arkëtim me afat të kaluar','inv'],['suppliers','Faturë furnitori me afat të kaluar','supp'],['expenses','Shpenzim me afat të kaluar','exp'],['taxes','Detyrim tatimor me afat të kaluar','atk']].forEach(function(cfg){
+    finSectionData(cfg[0]).rows.filter(finOverdue).forEach(function(r){out.push({rank:0,tone:'bad',title:cfg[1],detail:r.due_date?'Afati · '+projectDate(r.due_date):'',amount:finMoney(finAmount(cfg[0],r),finCurrency(r)),view:cfg[2]});});
+  });
+  finActiveGuarantees(finSectionData('guarantees').rows).forEach(function(r){var days=finDays(r.expiry_date);if(days!=null&&days<=45)out.push({rank:days<0?0:days<=14?1:2,tone:days<0?'bad':'warn',title:days<0?'Garanci me afat të kaluar':'Garancia skadon së shpejti',detail:r.expiry_date?'Skadimi · '+projectDate(r.expiry_date):'',amount:finMoney(finAmount('guarantees',r),'EUR'),view:'bg'});});
+  return out.sort(function(a,b){return a.rank-b.rank;}).slice(0,12);
+}
+function finMetric(title,rows,kind,view){
+  var open=A(rows).filter(finOpen),over=A(rows).filter(finOverdue),tot=finTotals(open,kind,true);
+  return '<button type="button" class="pma-fin-metric" data-pma-finance-legacy="'+E(view)+'"><span>'+E(title)+'</span><b>'+open.length+' të hapura</b><small>'+E(tot.join(' · ')||'Pa vlerë të hapur')+'</small>'+(over.length?'<em>'+over.length+' me vonesë</em>':'')+'</button>';
+}
+function financeSummaryView(){
+  var sales=finSectionData('sales'),sup=finSectionData('suppliers'),exp=finSectionData('expenses'),tax=finSectionData('taxes'),bg=finActiveGuarantees(finSectionData('guarantees').rows),att=finAttention();
+  var bgTotal=bg.reduce(function(s,r){return s+finAmount('guarantees',r);},0);
+  return '<div class="pma-fin-grid">'+finMetric('Arkëtime',sales.rows,'sales','inv')+finMetric('Furnitorë',sup.rows,'suppliers','supp')+finMetric('Shpenzime',exp.rows,'expenses','exp')+finMetric('Tatime',tax.rows,'taxes','atk')+'</div>'+
+    '<button type="button" class="pma-fin-guarantee-summary" data-pma-finance-tab="guarantees"><span>'+icon('warning')+'</span><div><b>'+bg.length+' garanci aktive</b><small>'+E(finMoney(bgTotal,'EUR'))+' vlerë e garantuar</small></div>'+icon('chevron')+'</button>'+
+    '<section class="pma-fin-section"><div class="pma-fin-title"><span>KËRKON VËMENDJE</span><h3>Çfarë duhet parë</h3></div><div class="pma-fin-att">'+(att.length?att.map(function(x){return'<button type="button" class="'+E(x.tone)+'" data-pma-finance-legacy="'+E(x.view)+'"><i>'+icon(x.tone==='bad'?'warning':'clock')+'</i><span><b>'+E(x.title)+'</b><small>'+E(x.detail)+'</small></span><em>'+E(x.amount)+'</em>'+icon('chevron')+'</button>';}).join(''):'<div class="pma-empty">Nuk ka artikuj financiarë urgjentë në snapshot-in aktual.</div>')+'</div></section>'+
+    '<div class="pma-fin-note">PPPP nuk po llogarit cash balance këtu dhe nuk po neton valuta të ndryshme.</div>';
+}
+function financeRowsView(kind,title,view){
+  var data=finSectionData(kind),rows=data.rows.filter(finOpen).sort(function(a,b){return S(a.due_date||'9999').localeCompare(S(b.due_date||'9999'));});
+  return '<section class="pma-fin-section"><div class="pma-fin-title"><span>'+E(title.toUpperCase())+'</span><h3>'+rows.length+' të hapura</h3></div><div class="pma-fin-list">'+(rows.length?rows.slice(0,80).map(function(r){var overdue=finOverdue(r);return'<button type="button" class="'+(overdue?'bad':'')+'" data-pma-finance-legacy="'+E(view)+'"><span><b>'+E(finMoney(finAmount(kind,r),finCurrency(r)))+'</b><small>'+E(r.due_date?'Afati · '+projectDate(r.due_date):'Pa afat të regjistruar')+'</small></span><em>'+E(overdue?'Me vonesë':'E hapur')+'</em>'+icon('chevron')+'</button>';}).join(''):'<div class="pma-empty">Nuk ka regjistrime të hapura.</div>')+'</div></section>';
+}
+function financeGuaranteesView(){
+  var rows=finActiveGuarantees(finSectionData('guarantees').rows).sort(function(a,b){return S(a.expiry_date||'9999').localeCompare(S(b.expiry_date||'9999'));});
+  return '<section class="pma-fin-section"><div class="pma-fin-title"><span>GARANCITË</span><h3>'+rows.length+' aktive</h3></div><div class="pma-fin-list">'+(rows.length?rows.map(function(r){var days=finDays(r.expiry_date),tone=days!=null&&days<=14?'bad':days!=null&&days<=45?'warn':'';return'<button type="button" class="'+tone+'" data-pma-finance-legacy="bg"><span><b>'+E(finMoney(finAmount('guarantees',r),'EUR'))+'</b><small>'+E(r.expiry_date?'Skadimi · '+projectDate(r.expiry_date):'Pa datë skadimi')+'</small></span><em>'+E(days==null?'Aktive':days<0?'Skaduar':days+' ditë')+'</em>'+icon('chevron')+'</button>';}).join(''):'<div class="pma-empty">Nuk ka garanci aktive.</div>')+'</div></section>';
+}
+function financeView(){
+  var body=state.financeBusy&&!state.financeData?'<div class="pma-empty large">Duke lexuar Financat…</div>':state.financeError?'<div class="pma-empty large"><b>Financat nuk u ngarkuan.</b><span>'+E(state.financeError)+'</span><button data-pma-finance-refresh>Provo përsëri</button></div>':state.financeTab==='receivables'?financeRowsView('sales','Arkëtimet','inv'):state.financeTab==='payables'?financeRowsView('suppliers','Faturat e furnitorëve','supp')+financeRowsView('expenses','Shpenzimet','exp')+financeRowsView('taxes','Tatimet','atk'):state.financeTab==='guarantees'?financeGuaranteesView():financeSummaryView();
+  return '<div class="pma-native-finance"><div class="pma-native-scroll"><div class="pma-fin-head"><button type="button" data-pma-finance-back>'+icon('back')+'</button><div><span>FINANCA</span><h1>Finance</h1><p>Vëmendja financiare — pa ekzekutuar pagesa.</p></div><button type="button" data-pma-finance-refresh>'+icon('refresh')+'</button></div>'+
+    '<div class="pma-fin-tabs">'+[['summary','Përmbledhje'],['receivables','Arkëtime'],['payables','Pagesa'],['guarantees','Garanci']].map(function(x){return'<button class="'+(state.financeTab===x[0]?'on':'')+'" data-pma-finance-tab="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>'+body+'</div></div>';
+}
+function openFinanceLegacy(view){
+  state.detail=true;document.body&&document.body.classList.remove('pst-mobile-v2-active');var r=document.getElementById(ROOT);if(r)r.style.display='none';ensureLegacyBack();
+  try{var M=window.PSTMobileResponsiveV1;if(M&&typeof M.route==='function')M.route('finance');else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('finance');}catch(e){}
+  if(view)setTimeout(function(){try{if(typeof window.finSwitchTab==='function')window.finSwitchTab(view);}catch(e){}},220);
+  syncNav();
+}
+
 function projectRecord(id){
   id=S(id);var rows=projectRows(),i;
   for(i=0;i<rows.length;i++)if(projectId(rows[i])===id)return rows[i];
@@ -349,6 +415,7 @@ function rootMarkup(){
   if(state.nativeProjectId)return '<div class="pma-shell pma-native-shell">'+projectDetailView(state.nativeProjectId)+'</div>';
   if(state.nativeCompanyMode==='detail')return '<div class="pma-shell pma-native-shell">'+companyDetailView(state.nativeCompanyKey)+'</div>';
   if(state.nativeCompanyMode==='list')return '<div class="pma-shell pma-native-shell">'+companyListView()+'</div>';
+  if(state.nativeFinance)return '<div class="pma-shell pma-native-shell">'+financeView()+'</div>';
   return '<div class="pma-shell" data-pma-pager><div class="pma-page-track" data-pma-page-track>'+
     TAB_ORDER.map(function(tab){return '<section class="pma-page" data-pma-page="'+tab+'"><div class="pma-page-scroll">'+pageView(tab)+'</div></section>';}).join('')+
   '</div></div>';
@@ -410,12 +477,12 @@ function ensureChrome(){
   if(!u){
     u=document.createElement('div');u.id=UTIL;u.innerHTML='<button data-pma-util="weather">'+icon('sun')+'<span data-pma-temp>Moti</span></button><button data-pma-util="fx">'+icon('fx')+'<span>€ ↔</span></button><button data-pma-util="market">'+icon('chart')+'<span>Steel</span></button>';document.body.appendChild(u);
   }
-  u.style.display=(state.nativeProjectId||state.nativeCompanyMode)?'none':'grid';
+  u.style.display=(state.nativeProjectId||state.nativeCompanyMode||state.nativeFinance)?'none':'grid';
   var t=u.querySelector('[data-pma-temp]');if(t)t.textContent=temp();
 }
 function syncNav(){
   var n=document.getElementById(NAV);if(!n)return;
-  var active=state.nativeProjectId?'projects':(state.nativeCompanyMode?'':state.tab);
+  var active=state.nativeProjectId?'projects':((state.nativeCompanyMode||state.nativeFinance)?'':state.tab);
   n.querySelectorAll('[data-pma-tab]').forEach(function(b){b.classList.toggle('on',!state.detail&&b.getAttribute('data-pma-tab')===active);});
 }
 async function loadOpportunities(force){
@@ -470,7 +537,7 @@ function bindPageSwipe(){
 }
 function click(e){
   var t=e.target&&e.target.closest?e.target:null;if(!t)return;
-  var b=t.closest('[data-pma-tab]');if(b){e.preventDefault();state.plusOpen=false;state.moreOpen=false;state.nativeProjectId='';state.nativeCompanyMode='';state.nativeCompanyKey='';state.tab=b.getAttribute('data-pma-tab');if(state.tab==='discover'&&!state.opportunities.length)loadOpportunities(false);if(state.tab==='inbox')loadInbox(false);render();requestAnimationFrame(function(){syncPager(true);});return;}
+  var b=t.closest('[data-pma-tab]');if(b){e.preventDefault();state.plusOpen=false;state.moreOpen=false;state.nativeProjectId='';state.nativeCompanyMode='';state.nativeCompanyKey='';state.nativeFinance=false;state.tab=b.getAttribute('data-pma-tab');if(state.tab==='discover'&&!state.opportunities.length)loadOpportunities(false);if(state.tab==='inbox')loadInbox(false);render();requestAnimationFrame(function(){syncPager(true);});return;}
   if(t.closest('[data-pma-plus]')){e.preventDefault();state.plusOpen=!state.plusOpen;state.moreOpen=false;render();return;}
   if(t.closest('[data-pma-more]')){e.preventDefault();state.moreOpen=!state.moreOpen;state.plusOpen=false;render();return;}
   if(t.closest('[data-pma-sheet-close]')){state.plusOpen=false;state.moreOpen=false;render();return;}
@@ -478,6 +545,10 @@ function click(e){
   if(t.closest('[data-pma-ask]')){legacyAction('[data-pmh-search]');return;}
   if(t.closest('[data-pma-project-back]')){state.nativeProjectId='';state.tab=state.projectReturnTab||'projects';render();requestAnimationFrame(function(){syncPager(false);});return;}
   if(t.closest('[data-pma-company-back]')){if(state.nativeCompanyMode==='detail'){state.nativeCompanyMode='list';state.nativeCompanyKey='';render();}else{state.nativeCompanyMode='';state.nativeCompanyKey='';state.tab=state.companyReturnTab||'home';render();requestAnimationFrame(function(){syncPager(false);});}return;}
+  if(t.closest('[data-pma-finance-back]')){state.nativeFinance=false;state.tab=state.financeReturnTab||'home';render();requestAnimationFrame(function(){syncPager(false);});return;}
+  if(t.closest('[data-pma-finance-refresh]')){loadFinanceData();return;}
+  var ft=t.closest('[data-pma-finance-tab]');if(ft){state.financeTab=ft.getAttribute('data-pma-finance-tab')||'summary';render();return;}
+  var fl=t.closest('[data-pma-finance-legacy]');if(fl){openFinanceLegacy(fl.getAttribute('data-pma-finance-legacy'));return;}
   var co=t.closest('[data-pma-company]');if(co){state.nativeCompanyMode='detail';state.nativeCompanyKey=co.getAttribute('data-pma-company');render();return;}
   var cf=t.closest('[data-pma-company-filter]');if(cf){state.companyFilter=cf.getAttribute('data-pma-company-filter')||'all';render();return;}
   if(t.closest('[data-pma-company-refresh]')){loadCompanyData(true);return;}
@@ -496,7 +567,7 @@ function click(e){
   if(t.closest('[data-pma-classic-inbox]')){mobileRoute('inbox');return;}
   b=t.closest('[data-pma-gmail]');if(b){var u=b.getAttribute('data-pma-gmail');if(u)window.open(u,'PRISTEEL_GMAIL');return;}
   b=t.closest('[data-pma-intake]');if(b){var I=window.PSTGmailLiveInboxV2;if(I&&I.intake)I.intake(b.getAttribute('data-pma-intake'),b.getAttribute('data-tid'));return;}
-  b=t.closest('[data-pma-secondary]');if(b){state.moreOpen=false;var sk=b.getAttribute('data-pma-secondary');if(sk==='contacts'){openCompanies('');return;}mobileRoute(sk);return;}
+  b=t.closest('[data-pma-secondary]');if(b){state.moreOpen=false;var sk=b.getAttribute('data-pma-secondary');if(sk==='contacts'){openCompanies('');return;}if(sk==='finance'){openFinance();return;}mobileRoute(sk);return;}
   b=t.closest('[data-pma-create]');if(b){createAction(b.getAttribute('data-pma-create'));return;}
   b=t.closest('[data-pma-util]');if(b){var k=b.getAttribute('data-pma-util');if(k==='weather')legacyAction('[data-pmh-weather]');else if(k==='fx')legacyAction('[data-pmh-tool="currency"]');else if(k==='market')legacyAction('[data-pmh-market-all]');return;}
 }
