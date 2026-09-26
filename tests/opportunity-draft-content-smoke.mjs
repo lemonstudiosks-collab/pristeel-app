@@ -112,4 +112,42 @@ assert.match(internalInstructionLeak.body,/We take ownership of the steel packag
 assert.doesNotMatch(internalInstructionLeak.body,/Përgatit draft|mos e dërgo|Draft vetëm|outreach/i,'internal PPPP instructions must never leak into external email copy');
 assert.doesNotMatch(internalInstructionLeak.html_body,/Përgatit draft|mos e dërgo|Draft vetëm|outreach/i,'internal PPPP instructions must never leak into HTML email copy');
 
+
+const producerRoute=buildTedDraftContent(
+  {route:'TED_PRODUCER',target_company:'Fabricator GmbH',target_email:'buyer@fabricator.example',
+   tender_title:'Germany – Structural steelworks – Producer Project',
+   pristeel_offer_model:'fabricated_steel_package',
+   outreach_motion:'awarded_project_gc',
+   payload:{outreach_readiness_v1:{scope_evidence:'The award includes a defined fabrication scope.'}}},
+  {title:'Germany – Structural steelworks – Producer Project',place_of_performance:['DEU'],winner:{name:'Fabricator GmbH',country:'DEU'}},
+  {email:'buyer@fabricator.example',purpose:'procurement'}
+);
+assert.equal(producerRoute.offer_model,'external_production_capacity','TED_PRODUCER route must override a stale fabricated-package label');
+assert.match(producerRoute.subject,/externe Fertigungskapazität/i);
+
+const materialRoute=buildTedDraftContent(
+  {route:'DIRECT_RAW_MATERIAL',target_company:'Material Buyer',target_email:'buyer@material.example',
+   tender_title:'United Kingdom – Steel material – Material Package',
+   pristeel_offer_model:'fabricated_steel_package',
+   outreach_motion:'awarded_project_gc',
+   payload:{outreach_readiness_v1:{scope_evidence:'The procurement includes a defined steel-material scope.'}}},
+  {title:'United Kingdom – Steel material – Material Package',place_of_performance:['GBR'],winner:{name:'Material Buyer',country:'GBR'}},
+  {email:'buyer@material.example',purpose:'procurement'}
+);
+assert.equal(materialRoute.offer_model,'material_supply','DIRECT_RAW_MATERIAL route must override a stale fabricated-package label');
+assert.match(materialRoute.subject,/steel material package/i);
+assert.match(materialRoute.body,/You remain in control of purchasing/i);
+
+const futureRoute=buildTedDraftContent(
+  {route:'TED_PRODUCER',target_company:'Future Fabricator',target_email:'buyer@future.example',
+   tender_title:'United Kingdom – Structural steelworks – Future Project',
+   pristeel_offer_model:'external_production_capacity',
+   outreach_motion:'future_supplier_qualification',
+   payload:{outreach_readiness_v1:{scope_evidence:'The current package is already covered.'}}},
+  {title:'United Kingdom – Structural steelworks – Future Project',place_of_performance:['GBR'],winner:{name:'Future Fabricator',country:'GBR'}},
+  {email:'buyer@future.example',purpose:'procurement'}
+);
+assert.equal(futureRoute.offer_model,'future_supplier_qualification','future timing must override project/capacity routing');
+assert.match(futureRoute.subject,/future steel partner qualification/i);
+
 console.log('opportunity TED scope-first copy smoke: ok');
