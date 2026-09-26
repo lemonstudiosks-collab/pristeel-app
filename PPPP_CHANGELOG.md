@@ -1,3 +1,11 @@
+## 2026-09-26 — Mobile bottom navigation fix + longer Home
+
+- Fixed the six-button mobile bottom navigation after the persistent-Home change. Tapping Mundësitë, Projektet, Partnerët, Financat or Sistemi now releases the mobile Home owner before canonical routing, updates the business-zone marker immediately, and lets the target page render.
+- Mobile active-state sync now prefers the canonical visible route over stale body state, so the bottom bar no longer snaps back to Ballina after a tap.
+- Extended the approved mobile Home with a new `Lajme & analiza` card linking directly to current SteelOrbis, EUROMETAL and SteelRadar source pages. No copied/stale headlines are embedded.
+- Existing market prices, Pyet PPPP, live weather, Calendar, weight calculator, Incoterms, quick note, LME metals and ECB currency converter remain unchanged.
+- No new Supabase reads/writes, polling, schema changes or paid APIs were added.
+
 ## 2026-09-26 — Persistent mobile Home host
 
 - Fixed the remaining iPhone Safari race where the approved mobile Home could render briefly and then disappear when canonical Home rewrote or switched the underlying Home page.
