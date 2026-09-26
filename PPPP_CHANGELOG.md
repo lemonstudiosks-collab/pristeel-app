@@ -1,3 +1,13 @@
+## 2026-09-26 — PPPP Mobile full-page swipe v3
+
+- Changed mobile navigation from nested card swipes to one standard full-page horizontal pager.
+- Home, Projects, Discover and Inbox now occupy four full-screen pages on one track; users can move between them with left/right swipe or the fixed bottom navigation.
+- Home keeps one dominant priority card instead of a horizontal card carousel, preventing gesture conflicts.
+- The mobile root now mounts outside the legacy app shell and fully covers/hides legacy dashboard surfaces while active, preventing the old weather/market Home from appearing above or below the new app.
+- Weather, currency conversion and steel-market shortcuts remain compact fixed utilities; detail/secondary flows continue through their existing canonical owners.
+- Cache version bumped so iPhone/Safari loads the new runtime instead of a previously cached mobile shell.
+- No new Supabase reads/writes, polling, independent network fetches or automatic protected actions were introduced.
+
 ## 2026-09-26 — PPPP Mobile App v2
 
 - Replaced the hybrid phone Home presentation with a dedicated <=900px mobile shell while keeping existing PPPP data/action owners authoritative.
