@@ -7,7 +7,7 @@
 if(window.__pstMobileAppV2)return;
 window.__pstMobileAppV2=true;
 
-var VERSION='20260926-mobile-app4';
+var VERSION='20260926-mobile-app5';
 var ROOT='pst-mobile-app-v2';
 var NAV='pst-mobile-app-v2-nav';
 var UTIL='pst-mobile-app-v2-util';
@@ -19,7 +19,8 @@ var state={
   opportunities:[],opportunityIndex:0,oppLoading:false,
   inboxLoading:false,materialLoading:false,repLoading:false,
   plusOpen:false,moreOpen:false,
-  nativeProjectId:'',projectReturnTab:'projects'
+  nativeProjectId:'',projectReturnTab:'projects',
+  nativeCompanyMode:'',nativeCompanyKey:'',companySearch:'',companyFilter:'all',companyBusy:false,companyReturnTab:'home'
 };
 
 function S(v){return String(v==null?'':v);}
@@ -115,6 +116,86 @@ function showShell(tab){
   render();
   requestAnimationFrame(function(){syncPager(true);});
 }
+function contactMaster(){return window.PSTContactMasterV4||window.PSTContactMasterV3||window.PSTContactMasterV2||window.PSTContactMasterV1||null;}
+function contactRows(){var M=contactMaster();if(!M)return[];try{if(typeof M.snapshot==='function')return A(M.snapshot());}catch(e){}return A(M.state&&M.state.rows);}
+function partnerForContact(r){
+  var M=contactMaster(),st=M&&M.state,name=N(r&&r.company);
+  if(!st||!name||!st.partnerByName||typeof st.partnerByName.get!=='function')return null;
+  return st.partnerByName.get(name)||null;
+}
+function companyKeyFor(r){
+  var p=partnerForContact(r);if(p&&p.id)return'partner:'+S(p.id);
+  var n=N(r&&r.company);return n?'company:'+n:'contact:'+S(r&&r.contact_id||r&&r.id||'');
+}
+function companyGroups(){
+  var rows=contactRows(),map={},out=[];
+  rows.forEach(function(r){
+    var key=companyKeyFor(r),p=partnerForContact(r),g=map[key];
+    if(!g){g={key:key,name:S(p&&p.name||r.company||r.person||r.email||'Pa kompani'),partner:p||null,rows:[],projects:[],relations:[]};map[key]=g;out.push(g);}
+    g.rows.push(r);
+    A(r.projects).forEach(function(x){var id=S(x&&x.project_id||x&&x.id);if(id&&!g.projects.some(function(y){return S(y&&y.project_id||y&&y.id)===id;}))g.projects.push(x);});
+    var k=N(r.kind);if(/client|klient/.test(k))g.relations.push('Klient');if(/supplier|furnitor/.test(k))g.relations.push('Furnitor');if(/partner/.test(k))g.relations.push('Partner');
+  });
+  var M=contactMaster(),st=M&&M.state;
+  out.forEach(function(g){
+    A(g.partner&&g.partner.relation).forEach(function(x){var n=N(x),label=n==='manufacturer'?'Prodhues':n==='supplier'?'Furnitor':n==='client'?'Klient':n==='partner'?'Partner':S(x);if(label)g.relations.push(label);});
+    if(st&&st.manufacturerNames&&typeof st.manufacturerNames.has==='function'&&st.manufacturerNames.has(N(g.name)))g.relations.push('Prodhues');
+    g.relations=Array.from(new Set(g.relations.filter(Boolean)));
+  });
+  return out.sort(function(a,b){return a.name.localeCompare(b.name,'sq');});
+}
+function companyGroup(key){return companyGroups().find(function(g){return g.key===key;})||null;}
+function companyPeople(g){
+  var seen={},out=[];A(g&&g.rows).forEach(function(r){var name=S(r.person||r.email||'Kontakt'),key=N(r.person||r.email||r.phone||r.contact_id||r.id);if(!key||seen[key])return;seen[key]=1;out.push({name:name,role:S(r.role),email:S(r.email),phone:S(r.phone),country:S(r.country),raw:r});});return out;
+}
+function companyCapabilities(g){
+  var M=contactMaster(),st=M&&M.state,p=g&&g.partner;if(!st||!p||!p.id||!st.capabilitiesByPartner||typeof st.capabilitiesByPartner.get!=='function')return[];
+  return A(st.capabilitiesByPartner.get(S(p.id)));
+}
+function companyLocation(g){var p=g&&g.partner,first=g&&g.rows&&g.rows[0];return [S(p&&p.city),S(p&&p.country||first&&first.country)].filter(Boolean).join(', ');}
+function companyMatchesFilter(g){
+  var f=state.companyFilter;if(f==='all')return true;var rel=A(g.relations).map(N);
+  if(f==='client')return rel.indexOf('klient')>-1;
+  if(f==='supplier')return rel.indexOf('furnitor')>-1;
+  if(f==='manufacturer')return rel.indexOf('prodhues')>-1;
+  return true;
+}
+async function loadCompanyData(force){
+  var M=contactMaster();if(!M)return;
+  state.companyBusy=true;render();
+  try{
+    if(typeof M.refresh==='function'&&(force||!contactRows().length||!(M.state&&M.state.profilesLoaded)))await M.refresh();
+    else if(typeof M.load==='function'&&!contactRows().length)await M.load(false);
+  }catch(e){try{console.warn('Mobile company data:',e);}catch(x){}}
+  state.companyBusy=false;render();
+}
+function openCompanies(key){
+  state.projectReturnTab=state.tab||'home';state.companyReturnTab=state.tab||'home';state.nativeCompanyMode=key?'detail':'list';state.nativeCompanyKey=key||'';state.nativeProjectId='';state.plusOpen=false;state.moreOpen=false;state.detail=false;hideLegacyBack();render();
+  var M=contactMaster();if(M&&(!contactRows().length||!(M.state&&M.state.profilesLoaded)))loadCompanyData(false);
+}
+function companyListView(){
+  var q=N(state.companySearch),groups=companyGroups().filter(companyMatchesFilter);
+  if(q)groups=groups.filter(function(g){return N([g.name,companyLocation(g),A(g.relations).join(' '),companyPeople(g).map(function(p){return[p.name,p.email,p.role].join(' ');}).join(' ')].join(' ')).indexOf(q)>-1;});
+  return '<div class="pma-native-company"><div class="pma-native-scroll"><div class="pma-co-head"><button type="button" data-pma-company-back>'+icon('back')+'</button><div><span>PARTNERËT</span><h1>Kompanitë</h1><p>Klientë, furnitorë, prodhues dhe partnerë.</p></div><button type="button" data-pma-company-refresh>'+icon('refresh')+'</button></div>'+
+    '<label class="pma-co-search">'+icon('search')+'<input data-pma-company-search value="'+E(state.companySearch)+'" placeholder="Kërko kompani, person ose email"></label>'+
+    '<div class="pma-co-filters">'+[['all','Të gjitha'],['client','Klientë'],['supplier','Furnitorë'],['manufacturer','Prodhues']].map(function(x){return'<button class="'+(state.companyFilter===x[0]?'on':'')+'" data-pma-company-filter="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>'+
+    '<div class="pma-co-count">'+(state.companyBusy?'Duke rifreskuar…':E(groups.length+' kompani'))+'</div>'+
+    '<div class="pma-co-list">'+(groups.length?groups.map(function(g){var people=companyPeople(g),loc=companyLocation(g),rel=A(g.relations).slice(0,3);return'<button type="button" class="pma-co-card" data-pma-company="'+E(g.key)+'"><span class="pma-co-logo">'+E((g.name||'P').charAt(0).toUpperCase())+'</span><span class="pma-co-copy"><b>'+E(g.name)+'</b><small>'+E([loc,g.partner&&g.partner.business_type].filter(Boolean).join(' · ')||'Partner PriSteel')+'</small><em>'+rel.map(function(x){return'<i>'+E(x)+'</i>';}).join('')+'</em></span><span class="pma-co-meta"><b>'+people.length+'</b><small>kontakte</small><b>'+g.projects.length+'</b><small>projekte</small></span>'+icon('chevron')+'</button>';}).join(''):'<div class="pma-empty large">'+(state.companyBusy?'Duke ngarkuar kompanitë…':'Nuk u gjet kompani me këto filtra.')+'</div>')+'</div></div></div>';
+}
+function companyDetailView(key){
+  var g=companyGroup(key);if(!g)return companyListView();
+  var p=g.partner||{},people=companyPeople(g),caps=companyCapabilities(g),loc=companyLocation(g),emails=g.rows.reduce(function(n,r){return n+(Number(r.project_email_count)||0);},0),last=g.rows.map(function(r){return r.last_seen_at||r.last_contact;}).filter(Boolean).sort().pop(),rel=A(g.relations),projects=A(g.projects);
+  var capBits=[];caps.forEach(function(x){if(x.family)capBits.push(x.family);if(x.product_type)capBits.push(x.product_type);A(x.product_tags).forEach(function(v){capBits.push(v);});});capBits=Array.from(new Set(capBits.filter(Boolean))).slice(0,8);
+  return '<div class="pma-native-company"><div class="pma-native-scroll"><div class="pma-co-head detail"><button type="button" data-pma-company-back>'+icon('back')+'</button><div><span>KOMPANI</span><h1>'+E(g.name)+'</h1><p>'+E([loc,p.business_type].filter(Boolean).join(' · ')||'Partner PriSteel')+'</p></div></div>'+
+    '<div class="pma-co-rel">'+rel.map(function(x){return'<span>'+E(x)+'</span>';}).join('')+(p.stage?'<span>'+E(p.stage)+'</span>':'')+'</div>'+
+    '<div class="pma-co-stats"><section><span>Kontaktet</span><b>'+people.length+'</b></section><section><span>Projektet</span><b>'+projects.length+'</b></section><section><span>Emaila projekti</span><b>'+emails+'</b></section><section><span>Kontakti i fundit</span><b>'+E(last?projectDate(last):'—')+'</b></section></div>'+
+    (p.industry_note||capBits.length?'<section class="pma-co-section"><span>PROFILI</span><h3>Çfarë bën / furnizon</h3>'+(p.industry_note?'<p>'+E(p.industry_note)+'</p>':'')+(capBits.length?'<div class="pma-co-tags">'+capBits.map(function(x){return'<i>'+E(S(x).replace(/_/g,' '))+'</i>';}).join('')+'</div>':'')+'</section>':'')+
+    '<section class="pma-co-section"><span>PERSONAT</span><h3>Kontaktet</h3><div class="pma-co-people">'+(people.length?people.map(function(x){return'<div class="pma-co-person"><i>'+E((x.name||'K').charAt(0).toUpperCase())+'</i><span><b>'+E(x.name)+'</b><small>'+E([x.role,x.email,x.phone].filter(Boolean).join(' · ')||'Kontakt')+'</small></span>'+(x.email?'<a href="mailto:'+E(x.email)+'">'+icon('mail')+'</a>':'')+'</div>';}).join(''):'<div class="pma-empty">Nuk ka persona kontakti.</div>')+'</div></section>'+
+    '<section class="pma-co-section"><span>PROJEKTET</span><h3>Projektet e lidhura</h3><div class="pma-co-projects">'+(projects.length?projects.map(function(x){var id=S(x.project_id||x.id);return'<button type="button" data-pma-company-project="'+E(id)+'"><span><b>'+E(x.name||'Projekt')+'</b><small>'+E([x.role,x.email_count?x.email_count+' emaila':''].filter(Boolean).join(' · ')||'Projekt i lidhur')+'</small></span>'+icon('chevron')+'</button>';}).join(''):'<div class="pma-empty">Nuk ka projekte të lidhura.</div>')+'</div></section>'+
+    (p.website?'<a class="pma-co-website" target="_blank" rel="noopener" href="'+E(p.website)+'">Hap website-in e kompanisë '+icon('arrow')+'</a>':'')+
+    '</div></div>';
+}
+
 function projectRecord(id){
   id=S(id);var rows=projectRows(),i;
   for(i=0;i<rows.length;i++)if(projectId(rows[i])===id)return rows[i];
@@ -264,6 +345,8 @@ function tabIndex(){var i=TAB_ORDER.indexOf(state.tab);return i<0?0:i;}
 function pageView(tab){return tab==='projects'?projectsView():tab==='discover'?discoverView():tab==='inbox'?inboxView():homeView();}
 function rootMarkup(){
   if(state.nativeProjectId)return '<div class="pma-shell pma-native-shell">'+projectDetailView(state.nativeProjectId)+'</div>';
+  if(state.nativeCompanyMode==='detail')return '<div class="pma-shell pma-native-shell">'+companyDetailView(state.nativeCompanyKey)+'</div>';
+  if(state.nativeCompanyMode==='list')return '<div class="pma-shell pma-native-shell">'+companyListView()+'</div>';
   return '<div class="pma-shell" data-pma-pager><div class="pma-page-track" data-pma-page-track>'+
     TAB_ORDER.map(function(tab){return '<section class="pma-page" data-pma-page="'+tab+'"><div class="pma-page-scroll">'+pageView(tab)+'</div></section>';}).join('')+
   '</div></div>';
@@ -325,12 +408,12 @@ function ensureChrome(){
   if(!u){
     u=document.createElement('div');u.id=UTIL;u.innerHTML='<button data-pma-util="weather">'+icon('sun')+'<span data-pma-temp>Moti</span></button><button data-pma-util="fx">'+icon('fx')+'<span>€ ↔</span></button><button data-pma-util="market">'+icon('chart')+'<span>Steel</span></button>';document.body.appendChild(u);
   }
-  u.style.display=state.nativeProjectId?'none':'grid';
+  u.style.display=(state.nativeProjectId||state.nativeCompanyMode)?'none':'grid';
   var t=u.querySelector('[data-pma-temp]');if(t)t.textContent=temp();
 }
 function syncNav(){
   var n=document.getElementById(NAV);if(!n)return;
-  var active=state.nativeProjectId?'projects':state.tab;
+  var active=state.nativeProjectId?'projects':(state.nativeCompanyMode?'':state.tab);
   n.querySelectorAll('[data-pma-tab]').forEach(function(b){b.classList.toggle('on',!state.detail&&b.getAttribute('data-pma-tab')===active);});
 }
 async function loadOpportunities(force){
@@ -385,13 +468,18 @@ function bindPageSwipe(){
 }
 function click(e){
   var t=e.target&&e.target.closest?e.target:null;if(!t)return;
-  var b=t.closest('[data-pma-tab]');if(b){e.preventDefault();state.plusOpen=false;state.moreOpen=false;state.nativeProjectId='';state.tab=b.getAttribute('data-pma-tab');if(state.tab==='discover'&&!state.opportunities.length)loadOpportunities(false);if(state.tab==='inbox')loadInbox(false);render();requestAnimationFrame(function(){syncPager(true);});return;}
+  var b=t.closest('[data-pma-tab]');if(b){e.preventDefault();state.plusOpen=false;state.moreOpen=false;state.nativeProjectId='';state.nativeCompanyMode='';state.nativeCompanyKey='';state.tab=b.getAttribute('data-pma-tab');if(state.tab==='discover'&&!state.opportunities.length)loadOpportunities(false);if(state.tab==='inbox')loadInbox(false);render();requestAnimationFrame(function(){syncPager(true);});return;}
   if(t.closest('[data-pma-plus]')){e.preventDefault();state.plusOpen=!state.plusOpen;state.moreOpen=false;render();return;}
   if(t.closest('[data-pma-more]')){e.preventDefault();state.moreOpen=!state.moreOpen;state.plusOpen=false;render();return;}
   if(t.closest('[data-pma-sheet-close]')){state.plusOpen=false;state.moreOpen=false;render();return;}
   if(t.closest('[data-pma-return-app]')){state.detail=false;hideLegacyBack();document.body&&document.body.classList.add('pst-mobile-v2-active');render();return;}
   if(t.closest('[data-pma-ask]')){legacyAction('[data-pmh-search]');return;}
   if(t.closest('[data-pma-project-back]')){state.nativeProjectId='';state.tab=state.projectReturnTab||'projects';render();requestAnimationFrame(function(){syncPager(false);});return;}
+  if(t.closest('[data-pma-company-back]')){if(state.nativeCompanyMode==='detail'){state.nativeCompanyMode='list';state.nativeCompanyKey='';render();}else{state.nativeCompanyMode='';state.nativeCompanyKey='';state.tab=state.companyReturnTab||'home';render();requestAnimationFrame(function(){syncPager(false);});}return;}
+  var co=t.closest('[data-pma-company]');if(co){state.nativeCompanyMode='detail';state.nativeCompanyKey=co.getAttribute('data-pma-company');render();return;}
+  var cf=t.closest('[data-pma-company-filter]');if(cf){state.companyFilter=cf.getAttribute('data-pma-company-filter')||'all';render();return;}
+  if(t.closest('[data-pma-company-refresh]')){loadCompanyData(true);return;}
+  var cp=t.closest('[data-pma-company-project]');if(cp){openProject(cp.getAttribute('data-pma-company-project'));return;}
   b=t.closest('[data-pma-project-legacy]');if(b){var pid=state.nativeProjectId;enterDetail(function(){if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(pid);if(typeof window.openOverview==='function')return window.openOverview(pid);var H=window.PSTHomeCanonicalV1;if(H&&typeof H.openBrief==='function')return H.openBrief(pid);});return;}
   b=t.closest('[data-pma-project]');if(b){openProject(b.getAttribute('data-pma-project'));return;}
   b=t.closest('[data-pma-home-refresh]');if(b){try{var H=window.PSTHomeCanonicalV1;if(H&&H.refresh)H.refresh();}catch(x){}setTimeout(render,400);return;}
@@ -406,11 +494,14 @@ function click(e){
   if(t.closest('[data-pma-classic-inbox]')){mobileRoute('inbox');return;}
   b=t.closest('[data-pma-gmail]');if(b){var u=b.getAttribute('data-pma-gmail');if(u)window.open(u,'PRISTEEL_GMAIL');return;}
   b=t.closest('[data-pma-intake]');if(b){var I=window.PSTGmailLiveInboxV2;if(I&&I.intake)I.intake(b.getAttribute('data-pma-intake'),b.getAttribute('data-tid'));return;}
-  b=t.closest('[data-pma-secondary]');if(b){state.moreOpen=false;mobileRoute(b.getAttribute('data-pma-secondary'));return;}
+  b=t.closest('[data-pma-secondary]');if(b){state.moreOpen=false;var sk=b.getAttribute('data-pma-secondary');if(sk==='contacts'){openCompanies('');return;}mobileRoute(sk);return;}
   b=t.closest('[data-pma-create]');if(b){createAction(b.getAttribute('data-pma-create'));return;}
   b=t.closest('[data-pma-util]');if(b){var k=b.getAttribute('data-pma-util');if(k==='weather')legacyAction('[data-pmh-weather]');else if(k==='fx')legacyAction('[data-pmh-tool="currency"]');else if(k==='market')legacyAction('[data-pmh-market-all]');return;}
 }
-function input(e){if(e.target&&e.target.hasAttribute('data-pma-project-search')){state.projectQuery=e.target.value;render();var x=document.querySelector('[data-pma-project-search]');if(x){x.focus();try{x.setSelectionRange(x.value.length,x.value.length);}catch(z){}}}}
+function input(e){
+  if(e.target&&e.target.hasAttribute('data-pma-project-search')){state.projectQuery=e.target.value;render();var x=document.querySelector('[data-pma-project-search]');if(x){x.focus();try{x.setSelectionRange(x.value.length,x.value.length);}catch(z){}}return;}
+  if(e.target&&e.target.hasAttribute('data-pma-company-search')){state.companySearch=e.target.value;render();var y=document.querySelector('[data-pma-company-search]');if(y){y.focus();try{y.setSelectionRange(y.value.length,y.value.length);}catch(z){}}}
+}
 async function oppAction(kind,id){
   var P=oppApi();if(!P)return;
   if(kind==='open'){openTender(id);return;}
@@ -431,7 +522,7 @@ function createAction(kind){
       if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('projects');
     });
   }
-  if(kind==='company')return mobileRoute('contacts');
+  if(kind==='company')return openCompanies('');
   if(kind==='rfq'){
     return enterDetail(function(){
       if(typeof window.showPage==='function')return window.showPage('rfq');
