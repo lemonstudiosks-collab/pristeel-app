@@ -6,6 +6,17 @@
 (function(){
 'use strict';
 
+/* Preload the existing remembered-session guard before RBAC/window-load auth startup.
+ * This performs no Supabase read/write itself; it only loads the existing guard early. */
+(function preloadRememberedAuth(){
+  if(window.__pstAuthPersistenceLoaded || document.querySelector('script[data-pst-auth-preload]')) return;
+  var s=document.createElement('script');
+  s.src='pristeel-auth-persistence.js?v=20260926-mobile-session2';
+  s.async=false;
+  s.setAttribute('data-pst-auth-preload','1');
+  document.head.appendChild(s);
+})();
+
 var ROOT_FOLDER_NAME = 'PRISTEEL — Projektet';
 var SCOPE = 'https://www.googleapis.com/auth/drive';
 
