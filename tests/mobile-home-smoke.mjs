@@ -43,7 +43,8 @@ assert(!/setInterval\s*\(/.test(js),'blank Home recovery must remain bounded and
 for(const label of [
   'Pyet PPPP…','Prishtinë','Tregu i Çelikut','Mjete të dobishme',
   'Kalkulator peshe','Kalendari','Incoterms','Shënim i shpejtë',
-  'Burime të tregut','Çmimet e metaleve','Lajmet e industrisë','Moti','Konvertues valutor'
+  'Burime të tregut','Çmimet e metaleve','Lajmet e industrisë','Moti','Konvertues valutor',
+  'Lajme & analiza','SteelOrbis — Latest News','EUROMETAL','SteelRadar'
 ]){
   assert(js.includes(label),'approved mobile Home label missing: '+label);
 }
@@ -70,6 +71,9 @@ assert(js.includes('PSTOpenAIAssistantV1'),'Pyet PPPP must call the existing PPP
 assert(js.includes("scope:'global'"),'mobile Pyet PPPP must query the global PPPP scope');
 assert(!js.includes("pstWsSearch==='function'"),'Pyet PPPP must not fall back to generic workspace search');
 assert(js.includes('https://www.lme.com/en/Metals'),'metal-prices shortcut must use the official LME metals page');
+assert(js.includes("eurometal:'https://eurometal.net/'"),'EUROMETAL current-source link missing');
+assert(js.includes("steelradar:'https://www.steelradar.com/en/'"),'SteelRadar current-source link missing');
+assert(js.includes('Klikimi hap gjithmonë burimin origjinal.'),'industry-news card must make source behavior explicit');
 assert(js.includes('.pst-morning-wrap'),'legacy morning command center must be hidden while mobile Home is active');
 assert(js.includes('div[onclick="openCmdK()"][title^="Kërko"]'),'legacy floating search button must be hidden on mobile Home');
 assert(js.includes('Ky shënim është lokal dhe nuk regjistrohet në PPPP.'),'quick note must not pretend to write into PPPP');
