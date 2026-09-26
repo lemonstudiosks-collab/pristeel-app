@@ -28,7 +28,8 @@ function compact(){var iw=Number(innerWidth||9999),sw=Number(screen&&screen.widt
 function visible(el){if(!el)return false;try{var s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden';}catch(e){return el.style.display!=='none';}}
 function authBlocking(){
   var pin=document.getElementById('pst-mobile-pin-gate'),auth=document.getElementById('auth-gate'),app=document.getElementById('app-shell-root');
-  return !!((pin&&pin.classList.contains('on'))||(auth&&visible(auth))||(app&&!visible(app)));
+  var shellActive=!!(document.body&&document.body.classList.contains('pst-mobile-v2-active'));
+  return !!((pin&&pin.classList.contains('on'))||(auth&&visible(auth))||(app&&!visible(app)&&!shellActive));
 }
 function host(){return document.querySelector('#app-shell-root .content,.app-shell .content,.content')||document.body;}
 function icon(name){
@@ -233,7 +234,13 @@ function moreSheet(){
     '</div></section></div>';
 }
 function render(){
-  if(!compact()||authBlocking())return false;
+  if(!compact()||authBlocking()){
+    if(document.body)document.body.classList.remove('pst-mobile-v2-active');
+    var blockedRoot=document.getElementById(ROOT);if(blockedRoot)blockedRoot.style.display='none';
+    var blockedNav=document.getElementById(NAV);if(blockedNav)blockedNav.style.display='none';
+    var blockedUtil=document.getElementById(UTIL);if(blockedUtil)blockedUtil.style.display='none';
+    return false;
+  }
   var r=document.getElementById(ROOT);
   if(!r){r=document.createElement('main');r.id=ROOT;r.setAttribute('aria-label','PriSteel Mobile');document.body.appendChild(r);}
   if(!state.detail){
