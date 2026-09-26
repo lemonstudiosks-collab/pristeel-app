@@ -7,17 +7,19 @@
 if(window.__pstMobileAppV2)return;
 window.__pstMobileAppV2=true;
 
-var VERSION='20260926-mobile-app3c';
+var VERSION='20260926-mobile-app4';
 var ROOT='pst-mobile-app-v2';
 var NAV='pst-mobile-app-v2-nav';
 var UTIL='pst-mobile-app-v2-util';
+var BACK='pst-mobile-app-v2-back';
 var CSS='pst-mobile-app-v2-css';
 var TAB_ORDER=['home','projects','discover','inbox'];
 var state={
   tab:'home',detail:false,projectQuery:'',discover:'tenders',
   opportunities:[],opportunityIndex:0,oppLoading:false,
   inboxLoading:false,materialLoading:false,repLoading:false,
-  plusOpen:false,moreOpen:false
+  plusOpen:false,moreOpen:false,
+  nativeProjectId:'',projectReturnTab:'projects'
 };
 
 function S(v){return String(v==null?'':v);}
@@ -52,7 +54,8 @@ function icon(name){
     finance:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M16 14h2"/>',
     system:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/>',
     doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 12h6M9 16h6"/>',
-    people:'<circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-4 2.5-6 5.5-6s5 2 5.5 6M16 8h4M18 6v4"/>'
+    people:'<circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-4 2.5-6 5.5-6s5 2 5.5 6M16 8h4M18 6v4"/>',
+    back:'<path d="m15 5-7 7 7 7"/>'
   }[name]||'';
   return '<svg viewBox="0 0 24 24" aria-hidden="true">'+p+'</svg>';
 }
@@ -67,6 +70,10 @@ function identity(){
 function greeting(){var h=new Date().getHours();return h<12?'Mirëmëngjes':h<18?'Mirëdita':'Mirëmbrëma';}
 function today(){return new Date().toLocaleDateString('sq-AL',{weekday:'long',day:'2-digit',month:'long'});}
 function short(v,n){v=S(v).replace(/\s+/g,' ').trim();return v.length>(n||100)?v.slice(0,(n||100)-1)+'…':v;}
+function projectDate(v){
+  if(!v)return'';var d=new Date(v);if(isNaN(d.getTime()))return S(v);
+  return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});
+}
 function homeSnapshot(){
   try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.snapshot==='function'){var x=H.snapshot()||{};return{actions:A(x.actions),waiting:A(x.waiting),projects:A(x.projects)};}}catch(e){}
   return{actions:[],waiting:[],projects:[]};
@@ -90,25 +97,79 @@ function projectBucket(r){
 function bucketLabel(k){return({action:'Kërkon veprim',waiting:'Në pritje',execution:'Në realizim',work:'Në punë',closed:'Mbyllur'})[k]||'Projekt';}
 function legacyAction(selector){var old=document.getElementById('pst-mobile-home-v1'),b=old&&old.querySelector(selector);if(b&&typeof b.click==='function'){b.click();return true;}return false;}
 function temp(){var old=document.getElementById('pst-mobile-home-v1'),t=old&&old.querySelector('.pmh-weather-temp');return t?short(t.textContent,6).replace('C','°'):'Moti';}
+function ensureLegacyBack(){
+  var b=document.getElementById(BACK);
+  if(!b){b=document.createElement('button');b.id=BACK;b.setAttribute('type','button');b.setAttribute('data-pma-return-app','1');b.innerHTML=icon('back')+'<span>Kthehu në app</span>';document.body.appendChild(b);}
+  b.style.display='flex';return b;
+}
+function hideLegacyBack(){var b=document.getElementById(BACK);if(b)b.style.display='none';}
 function enterDetail(fn){
   state.detail=true;document.body&&document.body.classList.remove('pst-mobile-v2-active');
   var r=document.getElementById(ROOT);if(r)r.style.display='none';
+  ensureLegacyBack();
   try{if(typeof fn==='function')fn();}catch(e){try{console.warn(e);}catch(x){}}
   syncNav();
 }
 function showShell(tab){
-  state.detail=false;state.tab=TAB_ORDER.indexOf(tab)>=0?tab:(state.tab||'home');document.body&&document.body.classList.add('pst-mobile-v2-active');
+  state.detail=false;hideLegacyBack();state.tab=TAB_ORDER.indexOf(tab)>=0?tab:(state.tab||'home');document.body&&document.body.classList.add('pst-mobile-v2-active');
   render();
   requestAnimationFrame(function(){syncPager(true);});
 }
+function projectRecord(id){
+  id=S(id);var rows=projectRows(),i;
+  for(i=0;i<rows.length;i++)if(projectId(rows[i])===id)return rows[i];
+  var h=homeSnapshot(),all=h.projects.concat(h.actions,h.waiting);
+  for(i=0;i<all.length;i++)if(projectId(all[i])===id)return all[i];
+  return{id:id,name:'Projekt'};
+}
+function projectAction(id,r){
+  var h=homeSnapshot(),i,x;
+  for(i=0;i<h.actions.length;i++){x=h.actions[i];if(projectId(x)===id)return{kind:'action',title:S(x.title||'Veprim i kërkuar'),text:S(x.why||x.meta||'')};}
+  for(i=0;i<h.waiting.length;i++){x=h.waiting[i];if(projectId(x)===id)return{kind:'waiting',title:'Në pritje',text:S(x.text||'Po presim përgjigje nga pala tjetër.')};}
+  return{kind:'project',title:'Veprimi i radhës',text:S(r&&r.next||r&&r.operational_state||'Hap dosjen e projektit për të vazhduar.')};
+}
+function projectStageInfo(r){
+  var full=[
+    ['rfq_in','RFQ e klientit'],
+    ['technical_review','Analiza teknike'],
+    ['supplier_selection','Ofertat e furnitorëve'],
+    ['pricing','Përcaktimi i çmimit'],
+    ['client_offer','Oferta PriSteel'],
+    ['commercial','Komerciale / kontrata'],
+    ['production_control','Prodhimi'],
+    ['factory_audit','Auditimi'],
+    ['transport','Transporti / dorëzimi']
+  ];
+  var trading=[
+    ['rfq_in','RFQ e klientit'],
+    ['supplier_selection','Zgjedhja e furnitorit'],
+    ['pricing','Përcaktimi i çmimit'],
+    ['client_offer','Oferta PriSteel'],
+    ['commercial','Komerciale / kontrata'],
+    ['transport','Transporti / dorëzimi']
+  ];
+  var steps=/trading/.test(N(S(r&&r.deal_type||r&&r.business_type||r&&r.project_type)))?trading:full;
+  var stage=S(r&&r.pipeline_stage||'rfq_in'),idx=0;
+  for(var i=0;i<steps.length;i++)if(steps[i][0]===stage){idx=i;break;}
+  return{steps:steps,index:idx,stage:stage};
+}
+function projectDetailView(id){
+  var r=projectRecord(id),a=projectAction(id,r),st=projectStageInfo(r),bucket=projectBucket(r);
+  var ref=S(r.ref||r.reference),deadline=projectDate(r.deadline),cl=projectClient(r),stageName=st.steps[st.index]&&st.steps[st.index][1]||'Projekt aktiv';
+  var timeline=st.steps.map(function(step,i){var cls=i<st.index?'done':i===st.index?'current':'future';return '<div class="pma-pd-step '+cls+'"><i>'+(i<st.index?'✓':i===st.index?'•':'')+'</i><span><b>'+E(step[1])+'</b><small>'+E(i<st.index?'Përfunduar':i===st.index?'Aktuale':'Në vijim')+'</small></span></div>';}).join('');
+  return '<div class="pma-native-project"><div class="pma-native-scroll"><div class="pma-pd-head"><button type="button" data-pma-project-back>'+icon('back')+'</button><div><span>PROJEKT</span><h1>'+E(projectName(r))+'</h1><p>'+E([cl,ref].filter(Boolean).join(' · ')||'PriSteel')+'</p></div></div>'+
+    '<div class="pma-pd-status"><span class="'+E(bucket)+'">'+E(bucketLabel(bucket))+'</span><b>'+E(stageName)+'</b>'+(deadline?'<small>Afati · '+E(deadline)+'</small>':'')+'</div>'+
+    '<div class="pma-pd-tabs"><button class="on">Overview</button><button data-pma-project-legacy="files">Files</button><button data-pma-project-legacy="emails">Emails</button><button data-pma-project-legacy="suppliers">Suppliers</button></div>'+
+    '<section class="pma-pd-next '+E(a.kind)+'"><span>NEXT ACTION</span><h2>'+E(a.title)+'</h2><p>'+E(short(a.text,180))+'</p><button type="button" data-pma-project-legacy="full">Hap dosjen e plotë '+icon('arrow')+'</button></section>'+
+    '<section class="pma-pd-timeline"><div class="pma-pd-section-title"><span>RRJEDHA</span><h3>Timeline i projektit</h3></div>'+timeline+'</section>'+
+    '<section class="pma-pd-actions"><button type="button" data-pma-project-legacy="files">'+icon('folder')+'<span><b>Files</b><small>Drive & dokumente</small></span></button><button type="button" data-pma-project-legacy="emails">'+icon('mail')+'<span><b>Emails</b><small>Komunikimet</small></span></button><button type="button" data-pma-project-legacy="suppliers">'+icon('people')+'<span><b>Suppliers</b><small>Oferta & burime</small></span></button></section>'+
+    '</div></div>';
+}
 function openProject(id){
   id=S(id);if(!id)return;
-  enterDetail(function(){
-    window.__pstCurrentProjectId=id;window._curProjId=id;try{localStorage.setItem('pristeel_cur_proj',id);}catch(e){}
-    if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(id);
-    var H=window.PSTHomeCanonicalV1;if(H&&typeof H.openBrief==='function')return H.openBrief(id);
-    if(typeof window.loadProject==='function')return window.loadProject(id);
-  });
+  state.projectReturnTab=state.tab||'projects';state.nativeProjectId=id;state.tab='projects';state.plusOpen=false;state.moreOpen=false;
+  window.__pstCurrentProjectId=id;window._curProjId=id;try{localStorage.setItem('pristeel_cur_proj',id);}catch(e){}
+  render();
 }
 function mobileRoute(key){enterDetail(function(){var M=window.PSTMobileResponsiveV1;if(M&&typeof M.route==='function')return M.route(key);if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo(key);});}
 function openTender(id){enterDetail(function(){var X=window.PSTProjectCentricWorkflowV1;if(X&&typeof X.openTender==='function')return X.openTender(id);if(typeof window.pstTenderIntelligence==='function')return window.pstTenderIntelligence(id);});}
@@ -202,6 +263,7 @@ function inboxView(){
 function tabIndex(){var i=TAB_ORDER.indexOf(state.tab);return i<0?0:i;}
 function pageView(tab){return tab==='projects'?projectsView():tab==='discover'?discoverView():tab==='inbox'?inboxView():homeView();}
 function rootMarkup(){
+  if(state.nativeProjectId)return '<div class="pma-shell pma-native-shell">'+projectDetailView(state.nativeProjectId)+'</div>';
   return '<div class="pma-shell" data-pma-pager><div class="pma-page-track" data-pma-page-track>'+
     TAB_ORDER.map(function(tab){return '<section class="pma-page" data-pma-page="'+tab+'"><div class="pma-page-scroll">'+pageView(tab)+'</div></section>';}).join('')+
   '</div></div>';
@@ -244,7 +306,7 @@ function render(){
   var r=document.getElementById(ROOT);
   if(!r){r=document.createElement('main');r.id=ROOT;r.setAttribute('aria-label','PriSteel Mobile');document.body.appendChild(r);}
   if(!state.detail){
-    document.body&&document.body.classList.add('pst-mobile-v2-active');r.style.display='block';r.innerHTML=rootMarkup();
+    hideLegacyBack();document.body&&document.body.classList.add('pst-mobile-v2-active');r.style.display='block';r.innerHTML=rootMarkup();
   }else r.style.display='none';
   var old=document.querySelectorAll('.pma-sheetback');old.forEach(function(x){x.remove();});
   if(state.plusOpen)document.body.insertAdjacentHTML('beforeend',plusSheet());
@@ -263,11 +325,13 @@ function ensureChrome(){
   if(!u){
     u=document.createElement('div');u.id=UTIL;u.innerHTML='<button data-pma-util="weather">'+icon('sun')+'<span data-pma-temp>Moti</span></button><button data-pma-util="fx">'+icon('fx')+'<span>€ ↔</span></button><button data-pma-util="market">'+icon('chart')+'<span>Steel</span></button>';document.body.appendChild(u);
   }
+  u.style.display=state.nativeProjectId?'none':'grid';
   var t=u.querySelector('[data-pma-temp]');if(t)t.textContent=temp();
 }
 function syncNav(){
   var n=document.getElementById(NAV);if(!n)return;
-  n.querySelectorAll('[data-pma-tab]').forEach(function(b){b.classList.toggle('on',!state.detail&&b.getAttribute('data-pma-tab')===state.tab);});
+  var active=state.nativeProjectId?'projects':state.tab;
+  n.querySelectorAll('[data-pma-tab]').forEach(function(b){b.classList.toggle('on',!state.detail&&b.getAttribute('data-pma-tab')===active);});
 }
 async function loadOpportunities(force){
   var P=oppApi();if(!P||typeof P.refresh!=='function')return;
@@ -321,11 +385,14 @@ function bindPageSwipe(){
 }
 function click(e){
   var t=e.target&&e.target.closest?e.target:null;if(!t)return;
-  var b=t.closest('[data-pma-tab]');if(b){e.preventDefault();state.plusOpen=false;state.moreOpen=false;state.tab=b.getAttribute('data-pma-tab');if(state.tab==='discover'&&!state.opportunities.length)loadOpportunities(false);if(state.tab==='inbox')loadInbox(false);render();requestAnimationFrame(function(){syncPager(true);});return;}
+  var b=t.closest('[data-pma-tab]');if(b){e.preventDefault();state.plusOpen=false;state.moreOpen=false;state.nativeProjectId='';state.tab=b.getAttribute('data-pma-tab');if(state.tab==='discover'&&!state.opportunities.length)loadOpportunities(false);if(state.tab==='inbox')loadInbox(false);render();requestAnimationFrame(function(){syncPager(true);});return;}
   if(t.closest('[data-pma-plus]')){e.preventDefault();state.plusOpen=!state.plusOpen;state.moreOpen=false;render();return;}
   if(t.closest('[data-pma-more]')){e.preventDefault();state.moreOpen=!state.moreOpen;state.plusOpen=false;render();return;}
   if(t.closest('[data-pma-sheet-close]')){state.plusOpen=false;state.moreOpen=false;render();return;}
+  if(t.closest('[data-pma-return-app]')){state.detail=false;hideLegacyBack();document.body&&document.body.classList.add('pst-mobile-v2-active');render();return;}
   if(t.closest('[data-pma-ask]')){legacyAction('[data-pmh-search]');return;}
+  if(t.closest('[data-pma-project-back]')){state.nativeProjectId='';state.tab=state.projectReturnTab||'projects';render();requestAnimationFrame(function(){syncPager(false);});return;}
+  b=t.closest('[data-pma-project-legacy]');if(b){var pid=state.nativeProjectId;enterDetail(function(){if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(pid);if(typeof window.openOverview==='function')return window.openOverview(pid);var H=window.PSTHomeCanonicalV1;if(H&&typeof H.openBrief==='function')return H.openBrief(pid);});return;}
   b=t.closest('[data-pma-project]');if(b){openProject(b.getAttribute('data-pma-project'));return;}
   b=t.closest('[data-pma-home-refresh]');if(b){try{var H=window.PSTHomeCanonicalV1;if(H&&H.refresh)H.refresh();}catch(x){}setTimeout(render,400);return;}
   b=t.closest('[data-pma-discover]');if(b){state.discover=b.getAttribute('data-pma-discover');render();if(state.discover==='tenders'&&!state.opportunities.length)loadOpportunities(false);if(state.discover==='material')loadMaterial();if(state.discover==='represent')loadRep();return;}
@@ -394,7 +461,7 @@ function createAction(kind){
 function installCss(){
   if(document.getElementById(CSS))return;
   var s=document.createElement('style');s.id=CSS;s.textContent=`
-#${ROOT},#${NAV},#${UTIL}{display:none}
+#${ROOT},#${NAV},#${UTIL},#${BACK}{display:none}
 @media(max-width:900px),(max-device-width:900px){
   #pst-mobile-nav-v1,#pst-mobile-utility-dock-v1{display:none!important}
   body.pst-mobile-v2-active #pst-mobile-control-tower-v1,body.pst-mobile-v2-active #pst-mobile-home-v1{display:none!important}
@@ -402,6 +469,7 @@ function installCss(){
   body.pst-mobile-v2-active #app-shell-root{visibility:hidden!important;pointer-events:none!important}
   body.pst-mobile-v2-active .topbar,body.pst-mobile-v2-active #pst-global-page-backbar,body.pst-mobile-v2-active #util-fab,body.pst-mobile-v2-active div[onclick="openCmdK()"][title^="Kërko"]{display:none!important}
   #${ROOT}{display:block;position:fixed;inset:0;z-index:2147483000;width:100%;height:100dvh;background:#F4F6F7;color:#182A31;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;overflow:hidden}
+  #${BACK}{position:fixed;left:12px;top:calc(10px + env(safe-area-inset-top));z-index:2147483900;min-height:40px;border:1px solid #D9E5E8;border-radius:13px;background:rgba(255,255,255,.96);color:#347F96;padding:0 11px 0 8px;align-items:center;gap:5px;font-size:9px;font-weight:800;box-shadow:0 7px 20px rgba(26,49,58,.14);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}#${BACK} svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}
   .pma-shell{width:min(100%,600px);height:100%;margin:0 auto;overflow:hidden;position:relative;touch-action:pan-y}
   .pma-page-track{display:flex;width:400%;height:100%;will-change:transform}
   .pma-page{flex:0 0 25%;width:25%;height:100%;overflow:hidden;position:relative;min-width:0}
@@ -417,6 +485,13 @@ function installCss(){
   .pma-card{margin-top:10px;border:1px solid #DFE7E9;border-radius:18px;background:#fff;overflow:hidden;box-shadow:0 7px 20px rgba(30,50,59,.035)}.pma-card-head{display:flex;justify-content:space-between;align-items:end;padding:13px 14px 10px;border-bottom:1px solid #EDF1F2}.pma-card-head span{font-size:8px;font-weight:850;letter-spacing:.13em;color:#8A969B}.pma-card-head h3{margin:3px 0 0;font-size:16px}.pma-card-head button{border:0;background:transparent;color:#2F829B;font-size:10px;font-weight:800}.pma-activity-row{width:100%;min-height:60px;border:0;border-top:1px solid #EEF2F3;background:#fff;display:grid;grid-template-columns:35px minmax(0,1fr) 12px;gap:10px;align-items:center;padding:8px 12px;text-align:left}.pma-activity-row:first-child{border-top:0}.pma-activity-row>i{width:35px;height:35px;border-radius:11px;display:grid;place-items:center;background:#EAF4F7;color:#38829A}.pma-activity-row>i.action{background:#FFF0F0;color:#C65050}.pma-activity-row>i.waiting{background:#FFF5E1;color:#B27D26}.pma-activity-row svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}.pma-activity-row span b{display:block;font-size:11px}.pma-activity-row span small{display:block;margin-top:3px;font-size:9px;color:#879399;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pma-activity-row em{font-style:normal;color:#8DA0A7}
   .pma-search{height:47px;border:1px solid #DCE6E9;border-radius:14px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 12px;margin-bottom:9px}.pma-search svg{width:17px;height:17px;fill:none;stroke:#68808A;stroke-width:1.8}.pma-search input{border:0;outline:0;background:transparent;min-width:0;flex:1;font-size:11px;color:#294049}
   .pma-project-summary{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin-bottom:9px}.pma-project-summary span{white-space:nowrap;padding:7px 10px;border-radius:999px;background:#fff;border:1px solid #E0E8EA;font-size:9px;color:#7A898F}.pma-project-summary b{color:#31596A}.pma-project-list{display:grid;gap:7px}.pma-project-card{width:100%;min-height:72px;border:1px solid #DFE7E9;border-radius:16px;background:#fff;display:grid;grid-template-columns:8px minmax(0,1fr) auto 12px;gap:9px;align-items:center;padding:10px 11px;text-align:left}.pma-project-dot{width:7px;height:7px;border-radius:50%;background:#5B98AE}.pma-project-dot.action{background:#C37743}.pma-project-dot.waiting{background:#C39A52}.pma-project-dot.execution{background:#5E9470}.pma-project-copy{min-width:0}.pma-project-copy>b{font-size:11.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pma-project-copy small{display:block;margin-top:3px;font-size:8.8px;color:#88949A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pma-project-copy em{display:block;margin-top:4px;font-style:normal;font-size:8.7px;color:#4B7281}.pma-project-state{font-size:8px;font-weight:800;padding:5px 7px;border-radius:999px;background:#EDF4F6;color:#557784;white-space:nowrap}.pma-project-state.action{background:#FFF0E8;color:#A66234}.pma-project-state.waiting{background:#FFF5E3;color:#9C732B}.pma-project-state.execution{background:#ECF6EF;color:#4F7D5E}
+  .pma-native-shell{overflow:hidden}.pma-native-project{height:100%;background:#F4F7F8}.pma-native-scroll{height:100%;overflow-y:scroll;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto;touch-action:pan-y;padding:calc(12px + env(safe-area-inset-top)) 14px calc(112px + env(safe-area-inset-bottom))}
+  .pma-pd-head{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:start}.pma-pd-head>button{width:40px;height:40px;border:1px solid #D9E5E8;border-radius:13px;background:#fff;color:#355A68;display:grid;place-items:center}.pma-pd-head>button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.pma-pd-head span{font-size:8px;font-weight:900;letter-spacing:1.15px;color:#87959B}.pma-pd-head h1{margin:3px 0 0;font-size:26px;line-height:1.08;letter-spacing:-.65px;color:#172D36}.pma-pd-head p{margin:5px 0 0;font-size:10px;color:#819096}
+  .pma-pd-status{margin-top:13px;border:1px solid #DCE6E9;border-radius:18px;background:#fff;padding:13px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:center}.pma-pd-status>span{font-size:9px;font-weight:850;padding:6px 8px;border-radius:999px;background:#EDF5F6;color:#52747F}.pma-pd-status>span.action{background:#FFF0E7;color:#A75D2E}.pma-pd-status>span.waiting{background:#FFF6E5;color:#9B722C}.pma-pd-status>span.execution{background:#ECF6EF;color:#527B60}.pma-pd-status>b{font-size:12px;color:#324E59}.pma-pd-status>small{grid-column:2;font-size:9px;color:#8A969B}
+  .pma-pd-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}.pma-pd-tabs button{height:38px;border:1px solid #DDE6E8;border-radius:11px;background:#fff;color:#718188;font-size:9px;font-weight:800}.pma-pd-tabs button.on{background:#17343F;border-color:#17343F;color:#fff}
+  .pma-pd-next{margin-top:10px;border:1px solid #DFE7E9;border-radius:20px;background:#fff;padding:16px;box-shadow:0 8px 22px rgba(27,51,61,.04)}.pma-pd-next.action{background:linear-gradient(145deg,#FFFDFD,#FFF6F6);border-color:#EFD1D1}.pma-pd-next.waiting{background:linear-gradient(145deg,#FFFEFB,#FFF8EC);border-color:#E9DCC2}.pma-pd-next>span{font-size:8.5px;font-weight:900;letter-spacing:1.15px;color:#849198}.pma-pd-next h2{margin:7px 0 0;font-size:19px;line-height:1.18;color:#1D3540}.pma-pd-next p{margin:7px 0 0;font-size:10.5px;line-height:1.5;color:#75868D}.pma-pd-next button{margin-top:12px;min-height:41px;border:0;border-radius:12px;background:#17343F;color:#fff;padding:0 13px;display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:800}.pma-pd-next button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+  .pma-pd-timeline{margin-top:10px;border:1px solid #DFE7E9;border-radius:20px;background:#fff;padding:15px}.pma-pd-section-title span{font-size:8px;font-weight:900;letter-spacing:1px;color:#8A979C}.pma-pd-section-title h3{margin:3px 0 10px;font-size:15px;color:#29414B}.pma-pd-step{position:relative;display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;min-height:50px}.pma-pd-step:after{content:"";position:absolute;left:13px;top:28px;bottom:-2px;width:1.5px;background:#E2E9EB}.pma-pd-step:last-child:after{display:none}.pma-pd-step>i{width:28px;height:28px;border-radius:50%;background:#F0F4F5;color:#9AA5A9;display:grid;place-items:center;font-size:11px;font-style:normal;z-index:1}.pma-pd-step.done>i{background:#E8F5EC;color:#4D8A61}.pma-pd-step.current>i{background:#17343F;color:#fff}.pma-pd-step span b{display:block;font-size:10.5px;color:#344E58}.pma-pd-step.current span b{color:#17343F}.pma-pd-step span small{display:block;margin-top:3px;font-size:8.5px;color:#939FA3}
+  .pma-pd-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}.pma-pd-actions button{min-height:78px;border:1px solid #DFE7E9;border-radius:16px;background:#fff;color:#3B5A65;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:10px;text-align:left}.pma-pd-actions button>svg{width:19px;height:19px;fill:none;stroke:#3A8398;stroke-width:1.8}.pma-pd-actions b{display:block;margin-top:6px;font-size:10px}.pma-pd-actions small{display:block;margin-top:2px;font-size:8px;color:#8B989D}
   .pma-discover-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:11px}.pma-discover-tabs button{height:38px;border:1px solid #DDE6E8;border-radius:11px;background:#fff;color:#6C7D84;font-size:9.5px;font-weight:800}.pma-discover-tabs button.on{background:#183540;border-color:#183540;color:#fff}
   .pma-deck-counter{display:flex;justify-content:space-between;align-items:center;margin:2px 2px 8px}.pma-deck-counter span{font-size:9px;font-weight:800;color:#59717A}.pma-deck-counter small{font-size:8.5px;color:#98A2A6}.pma-deck{transform-origin:center bottom;will-change:transform}.pma-opp-card{min-height:465px;border:1px solid #E0E7E9;border-radius:23px;background:#fff;padding:17px;box-shadow:0 15px 34px rgba(25,47,57,.075);display:flex;flex-direction:column}.pma-opp-card.strong{border-top:4px solid #5D9470}.pma-opp-card.possible{border-top:4px solid #C39A54}.pma-opp-top{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.pma-opp-top span{font-size:7.5px;font-weight:850;letter-spacing:.08em;color:#7D8C92;padding:5px 7px;background:#F2F6F7;border-radius:999px}.pma-opp-top b{margin-left:auto;font-size:11px;color:#2A7188}.pma-opp-card h2{margin:17px 0 0;font-size:24px;line-height:1.08;letter-spacing:-.6px}.pma-opp-card>p{margin:12px 0 0;font-size:11.5px;line-height:1.55;color:#6F8087}.pma-opp-facts{display:grid;gap:7px;margin-top:16px}.pma-opp-facts span{display:grid;grid-template-columns:90px 1fr;gap:9px;font-size:9px;color:#8A969A}.pma-opp-facts b{font-size:10px;color:#3B535D}.pma-opp-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:auto;padding-top:18px}.pma-opp-actions button{min-height:42px;border:1px solid #DCE5E8;border-radius:11px;background:#fff;color:#53666E;font-size:9.5px;font-weight:820}.pma-opp-actions .danger{color:#A35252;border-color:#ECD6D6}.pma-opp-actions .primary{background:#173743;border-color:#173743;color:#fff}.pma-swipe-hint{display:flex;justify-content:space-between;margin-top:12px;font-size:8px;color:#9BA5A8}
   .pma-stack{display:grid;gap:8px}.pma-discovery-row{min-height:69px;border:1px solid #DDE6E8;border-radius:15px;background:#fff;display:grid;grid-template-columns:minmax(0,1fr) auto 12px;gap:9px;align-items:center;padding:10px 12px;text-align:left}.pma-discovery-row span b{display:block;font-size:11.5px}.pma-discovery-row span small{display:block;margin-top:3px;font-size:9px;color:#89969B}.pma-discovery-row em{font-style:normal;font-size:9px;font-weight:850;color:#3B8095}.pma-discovery-row.rep em{color:#557C68}

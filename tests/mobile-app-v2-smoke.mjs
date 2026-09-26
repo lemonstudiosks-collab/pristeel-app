@@ -45,6 +45,12 @@ assert(js.includes('body.pst-mobile-v2-active #pst-mobile-control-tower-v1'),'ol
 assert(js.includes('body.pst-mobile-v2-active #pst-mobile-home-v1'),'old information dashboard must be hidden under mobile v2');
 assert(js.includes('data-pma-util="weather"')&&js.includes('data-pma-util="fx"')&&js.includes('data-pma-util="market"'),'fixed utility icons missing');
 assert(js.includes('data-pma-more'),'secondary Partner/Finance/System access missing');
+assert(js.includes('nativeProjectId')&&js.includes('projectDetailView'),'native mobile project detail state/view missing');
+assert(js.includes('projectStageInfo')&&js.includes('Timeline i projektit'),'project pipeline timeline missing');
+assert(js.includes('data-pma-project-back'),'native project back control missing');
+assert(js.includes('data-pma-project-legacy="files"')&&js.includes('data-pma-project-legacy="emails"')&&js.includes('data-pma-project-legacy="suppliers"'),'project detail bridge actions missing');
+assert(js.includes('Kthehu në app')&&js.includes('data-pma-return-app'),'legacy project tool return bridge missing');
+assert(js.includes("u.style.display=state.nativeProjectId?'none':'grid'"),'utility dock must yield on native project detail');
 assert(js.includes("if(kind==='nogo'){if(!confirm("),'No-Go must remain an explicit human action');
 
-console.log('mobile-app-v3-fullpage-swipe-smoke: ok');
+console.log('mobile-app-v4-project-detail-smoke: ok');
