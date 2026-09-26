@@ -78,29 +78,47 @@ function installCss(){
   document.head.appendChild(s);
 }
 
+function zoneFor(key){
+  return key==='tenders'?'opportunities':key==='contacts'?'partners':key==='apps'?'system':key;
+}
+function markMobileRoute(key){
+  try{
+    if(document.body&&document.body.dataset)document.body.dataset.pstBusinessZone=zoneFor(key);
+    if(key!=='home'&&document.body)document.body.classList.remove('pst-mobile-home-active');
+  }catch(e){}
+}
 function route(key){
+  key=String(key||'').toLowerCase();
+  markMobileRoute(key);
   try{
     var R=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV9||window.PSTPrimaryNavResilienceV1;
-    if(R&&typeof R.route==='function'&&R.route(key)!==false)return true;
+    if(R&&typeof R.route==='function'&&R.route(key)!==false){markMobileRoute(key);return true;}
   }catch(e){}
   var canonical=document.querySelector('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'+key+'"]');
-  if(canonical&&typeof canonical.click==='function'){canonical.click();return true;}
+  if(canonical&&typeof canonical.click==='function'){canonical.click();markMobileRoute(key);return true;}
   if(typeof window.pstWorkspaceGo==='function'){
     if(key==='tenders'){
-      try{if(typeof window.pstTenderBizOpenMonitor==='function'){window.pstTenderBizOpenMonitor();return true;}}catch(e){}
-      try{if(typeof window.pstWsKekTenders==='function'){window.pstWsKekTenders();return true;}}catch(e){}
+      try{if(typeof window.pstTenderBizOpenMonitor==='function'){window.pstTenderBizOpenMonitor();markMobileRoute(key);return true;}}catch(e){}
+      try{if(typeof window.pstWsKekTenders==='function'){window.pstWsKekTenders();markMobileRoute(key);return true;}}catch(e){}
       return false;
     }
-    window.pstWorkspaceGo(key);return true;
+    window.pstWorkspaceGo(key);markMobileRoute(key);return true;
   }
   return false;
 }
 function activeKey(){
+  try{
+    var R=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV9||window.PSTPrimaryNavResilienceV1;
+    if(R&&R._test&&typeof R._test.currentKey==='function'){
+      var k=R._test.currentKey();
+      if(k)return k;
+    }
+  }catch(e){}
+  var active=document.querySelector('#pst-ws-canonical-nav .pst-business-primary.active[data-key],#pst-ws-canonical-nav .pst-ws-navbtn.active[data-key]');
+  if(active)return active.getAttribute('data-key');
   var zone=document.body&&document.body.dataset?document.body.dataset.pstBusinessZone:'';
   var byZone={home:'home',opportunities:'tenders',projects:'projects',partners:'contacts',finance:'finance',system:'apps'};
-  if(byZone[zone])return byZone[zone];
-  var active=document.querySelector('#pst-ws-canonical-nav .pst-business-primary.active[data-key],#pst-ws-canonical-nav .pst-ws-navbtn.active[data-key]');
-  return active?active.getAttribute('data-key'):'home';
+  return byZone[zone]||'home';
 }
 function sync(){
   var nav=document.getElementById('pst-mobile-nav-v1');if(!nav)return;
@@ -129,10 +147,15 @@ function ensureNav(){
     if(!b)return;
     e.preventDefault();e.stopPropagation();
     if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
-    route(b.getAttribute('data-key'));
+    var key=b.getAttribute('data-key');
+    nav.querySelectorAll('button[data-key]').forEach(function(x){x.classList.toggle('active',x===b);});
+    markMobileRoute(key);
+    route(key);
     setTimeout(function(){ensureNav();sync();},0);
-    setTimeout(function(){ensureNav();sync();},120);
+    setTimeout(function(){ensureNav();sync();},80);
+    setTimeout(function(){ensureNav();sync();},180);
     setTimeout(function(){ensureNav();sync();},420);
+    setTimeout(function(){ensureNav();sync();},900);
   });
   document.body.appendChild(nav);sync();return nav;
 }
@@ -155,5 +178,5 @@ function install(){
   window.addEventListener('focus',schedule);
 }
 install();
-window.PSTMobileResponsiveV1={schedule:schedule,sync:sync,route:route};
+window.PSTMobileResponsiveV1={schedule:schedule,sync:sync,route:route,_test:{activeKey:activeKey,zoneFor:zoneFor,markMobileRoute:markMobileRoute}};
 })();
