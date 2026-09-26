@@ -1,3 +1,13 @@
+## 2026-09-26 — Mobile 4-digit PIN quick unlock
+
+- Added a device-local 4-digit PIN quick-unlock layer for phone/tablet use after one successful normal PPPP login.
+- The PIN does not replace Supabase Auth and is never sent to the server. It unlocks only when an existing remembered PPPP session is still usable.
+- PIN storage uses a random local salt plus PBKDF2/SHA-256 derivation; plaintext PIN and user password are never stored.
+- Five failed PIN attempts force a return to the full email/password login. Explicit logout clears the local PIN configuration.
+- A visible `Hyr me email dhe fjalëkalim` fallback prevents lockout.
+- The feature adds zero Supabase reads/writes, zero network fetches and zero polling.
+- Desktop authentication behavior is unchanged.
+
 ## 2026-09-26 — Global mobile bottom-navigation hotfix
 
 - Restored the six mobile bottom-navigation buttons as a global phone/tablet control independent from Home rendering.
