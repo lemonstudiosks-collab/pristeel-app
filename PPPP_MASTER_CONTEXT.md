@@ -63,6 +63,8 @@ Do not infer authority from filenames alone. Later layers may intentionally wrap
 
 PPPP uses the same application, routes, backend and business owners across desktop, tablet and phone. `pristeel-mobile-responsive-v1.js` is a presentation/navigation-only responsive shell: it does not create a second mobile application, does not add Supabase reads/writes, does not poll, and does not own business state. Through 900px viewport width it provides the shared phone/tablet bottom navigation and safe-area/layout adaptation while reusing the canonical six daily zones. Installable-app metadata is supplied through the existing `pristeel.webmanifest`; offline/service-worker caching remains deliberately deferred until responsive behavior is verified, to avoid stale-runtime risk.
 
+`pristeel-mobile-home-v1.js` is the final <=900px Home presentation. The fixed bottom navigation remains the primary route to Mundësitë, Projektet, Partnerët, Financat and Sistemi, so mobile Home intentionally does not duplicate project/opportunity priorities or quick workflow actions. Its role is a lightweight information dashboard centered on `Pyet PPPP`, Prishtina weather/date, dated public steel-market references, local utility tools and external market-resource links. It adds no Supabase reads/writes or polling; its only direct public data request is a 30-minute-cached Open-Meteo weather read.
+
 ## 4. Daily operating model
 
 Primary daily business zones are:

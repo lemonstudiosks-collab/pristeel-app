@@ -1,3 +1,12 @@
+## 2026-09-26 — Mobile Home market dashboard
+
+- Replaced the duplicated mobile business-workflow Home content with the approved information-first layout while leaving the fixed six-button bottom navigation unchanged.
+- Mobile Home now contains the PRISTEEL header/greeting, prominent `Pyet PPPP`, Prishtina weather plus local date/time, a clearly dated public steel-market sample, `Mjete të dobishme` and `Burime të tregut`.
+- Removed mobile Home counters, PRISTEEL Daily, priority/project/waiting cards and quick project/tender actions because those business areas are already accessible from the bottom navigation or through `Pyet PPPP`.
+- Added local-only weight and mm↔inch tools, an ICC Incoterms link and a local quick note. The note explicitly does not write into PPPP.
+- The only direct public data read added by Mobile Home is Open-Meteo weather for Prishtina, cached locally for 30 minutes. No Supabase reads/writes, polling or service-worker caching were added.
+- Steel values are labeled as dated public samples and link to their source rather than being represented as live canonical PPPP prices.
+
 ## 2026-09-26 — PWA RBAC + PIN session hotfix
 
 - Fixed a standalone-iPhone startup race that could incorrectly label a valid writable/admin account as “Vetëm shikim”.

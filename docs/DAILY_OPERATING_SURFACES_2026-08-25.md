@@ -23,7 +23,9 @@ Purpose: **What requires my intervention now?**
 
 Canonical business-state owner remains `pristeel-home-canonical-v1.js`.
 
-The daily surface is capped to concrete human-needed work. Waiting projects are not treated as active priorities.
+The desktop daily surface is capped to concrete human-needed work. Waiting projects are not treated as active priorities.
+
+On phone/tablet (<=900px), `pristeel-mobile-home-v1.js` deliberately uses a different presentation because the fixed bottom navigation already exposes Opportunities, Projects, Partners, Finance and System. Mobile Home therefore avoids duplicating those areas and instead shows `Pyet PPPP`, Prishtina weather/date, dated public steel-market references, compact local tools and market-resource links. It performs no PPPP business writes and does not create a second workflow owner.
 
 ## Opportunities
 
