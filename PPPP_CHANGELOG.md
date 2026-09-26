@@ -1,3 +1,11 @@
+## 2026-09-26 — Persistent mobile Home host
+
+- Fixed the remaining iPhone Safari race where the approved mobile Home could render briefly and then disappear when canonical Home rewrote or switched the underlying Home page.
+- The approved mobile Home now mounts directly on the stable `.content` host instead of living inside `#page-home` / `#page-workspace-home`.
+- Visibility follows the fixed bottom-navigation Home selection, so canonical/legacy Home owners can rerender underneath without removing the mobile dashboard.
+- When another business section is selected, the mobile Home owner releases the content area normally.
+- No polling, MutationObserver, Supabase business read/write path or paid API was added.
+
 ## 2026-09-26 — Safari blank mobile Home recovery
 
 - Fixed the iPhone Safari startup race visible as a white Home area while the six-button mobile navigation was already rendered.
