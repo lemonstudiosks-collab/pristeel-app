@@ -21,9 +21,9 @@
     "pristeel-finance.js",
     "pristeel-contracts.js",
     "pristeel-outreach.js",
+    "pristeel-mobile-pin-unlock-v1.js",
     "pristeel-mobile-responsive-v1.js",
-    "pristeel-mobile-home-v1.js",
-    "pristeel-mobile-pin-unlock-v1.js"
+    "pristeel-mobile-home-v1.js"
   ],
   "principles": {
     "currentMeansHeadOfMain": true,
