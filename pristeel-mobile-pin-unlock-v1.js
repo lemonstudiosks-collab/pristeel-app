@@ -114,16 +114,17 @@ async function seedPortableFromCurrent(){
   return false;
 }
 async function portableOpen(pin){
-  var p=portableBlob();if(!p||!p.salt||!p.iv||!p.ct)return null;
-  var candidate=await derive(pin,p.salt),key=await aesKeyFromHash(candidate,['decrypt']);
-  var plain=await window.crypto.subtle.decrypt({name:'AES-GCM',iv:fromB64(p.iv)},key,fromB64(p.ct));
-  var data=parse(new TextDecoder().decode(plain));
-  if(!data||!data.refresh_token||!data.email||data.project_ref!=='awqfpnzqwfjrjefoktgd')return null;
-  var s={access_token:'',refresh_token:data.refresh_token,expires_at:0,email:S(data.email).toLowerCase(),project_ref:data.project_ref};
-  try{localStorage.setItem('pristeel_session',JSON.stringify(s));localStorage.setItem(REMEMBERED_KEY,JSON.stringify({saved_at:Date.now(),session:s}));}catch(e){return null;}
-  if(!writeCfg({v:1,email:s.email,salt:p.salt,hash:candidate,created_at:new Date().toISOString(),imported_from:'ios_cookie'}))return null;
-  if(standalone())cookieClear(PORTABLE_COOKIE);
-  return s;
+  try{
+    var p=portableBlob();if(!p||!p.salt||!p.iv||!p.ct)return null;
+    var candidate=await derive(pin,p.salt),key=await aesKeyFromHash(candidate,['decrypt']);
+    var plain=await window.crypto.subtle.decrypt({name:'AES-GCM',iv:fromB64(p.iv)},key,fromB64(p.ct));
+    var data=parse(new TextDecoder().decode(plain));
+    if(!data||!data.refresh_token||!data.email||data.project_ref!=='awqfpnzqwfjrjefoktgd')return null;
+    var s={access_token:'',refresh_token:data.refresh_token,expires_at:0,email:S(data.email).toLowerCase(),project_ref:data.project_ref};
+    try{localStorage.setItem('pristeel_session',JSON.stringify(s));localStorage.setItem(REMEMBERED_KEY,JSON.stringify({at:Date.now(),session:s}));}catch(e){return null;}
+    if(!writeCfg({v:1,email:s.email,salt:p.salt,hash:candidate,created_at:new Date().toISOString(),imported_from:'ios_cookie'}))return null;
+    return s;
+  }catch(e){return null;}
 }
 function randomSalt(){
   var a=new Uint8Array(16);
@@ -265,6 +266,7 @@ async function submit(){
         resetAttempts();clearLock();
         var importedFresh=await resumeWithPin();
         if(!importedFresh)throw new Error('PORTABLE_REFRESH_FAILED');
+        if(standalone())cookieClear(PORTABLE_COOKIE);
         unlocked=true;markSessionUnlocked(importedFresh);hide();
         try{document.dispatchEvent(new CustomEvent('pst:mobile-pin-unlocked',{detail:{email:emailOf(importedFresh),mode:'portable'}}));}catch(e){}
         if(typeof originalStart==='function')originalStart();return;
