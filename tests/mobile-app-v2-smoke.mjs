@@ -23,11 +23,16 @@ assert(js.includes('PSTGmailLiveInboxV2'),'Inbox must reuse Gmail owner');
 assert(js.includes('PSTDachSteelSalesV3'),'Material Trade must reuse existing owner');
 assert(js.includes('PSTRepresentationsV1'),'Representations must reuse existing owner');
 
-for(const label of ['Home','Projects','Discover','Inbox','Pyet PPPP…','Rrëshqit majtas / djathtas','Mundësi të reja për PriSteel','Përgatit kontakt','GO · Krijo projekt','Material','Përfaqësime']){
+for(const label of ['Home','Projects','Discover','Inbox','Pyet PPPP…','Swipe ndërron faqen','Mundësi të reja për PriSteel','Përgatit kontakt','GO · Krijo projekt','Material','Përfaqësime']){
   assert(js.includes(label),'approved mobile v2 label/flow missing: '+label);
 }
-assert(js.includes('touchstart')&&js.includes('touchmove')&&js.includes('touchend'),'Discover deck must support real touch swipe');
-assert(js.includes('scroll-snap-type:x mandatory'),'Home priority cards must support native horizontal swipe');
+assert(js.includes('TAB_ORDER')&&js.includes("['home','projects','discover','inbox']"),'primary full-page pager order missing');
+assert(js.includes('data-pma-page-track')&&js.includes('bindPageSwipe'),'full-page pager contract missing');
+assert(js.includes('touchstart')&&js.includes('touchmove')&&js.includes('touchend'),'full-page pager must support real touch swipe');
+assert(js.includes("document.body.appendChild(r)"),'mobile root must mount outside the legacy app shell');
+assert(js.includes('body.pst-mobile-v2-active #app-shell-root{visibility:hidden!important'),'legacy app shell must be fully hidden under the mobile shell');
+assert(js.includes('.pma-page-track{display:flex;width:400%;height:100%'),'four full-screen pages must share one horizontal track');
+assert(!js.includes('scroll-snap-type:x mandatory'),'nested Home carousel must not compete with full-page swipe');
 assert(js.includes('grid-template-columns:1fr 1fr 58px 1fr 1fr'),'bottom nav must have four primary tabs plus central +');
 assert(js.includes('#pst-mobile-nav-v1,#pst-mobile-utility-dock-v1{display:none!important}'),'legacy six-tab nav and old utility dock must yield');
 assert(js.includes('body.pst-mobile-v2-active #pst-mobile-control-tower-v1'),'old Control Tower must be hidden under mobile v2');
@@ -36,4 +41,4 @@ assert(js.includes('data-pma-util="weather"')&&js.includes('data-pma-util="fx"')
 assert(js.includes('data-pma-more'),'secondary Partner/Finance/System access missing');
 assert(js.includes("if(kind==='nogo'){if(!confirm("),'No-Go must remain an explicit human action');
 
-console.log('mobile-app-v2-smoke: ok');
+console.log('mobile-app-v3-fullpage-swipe-smoke: ok');
