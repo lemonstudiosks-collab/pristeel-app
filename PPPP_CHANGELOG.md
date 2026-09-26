@@ -1,3 +1,12 @@
+## 2026-09-26 — Mobile Home canonical mount hotfix
+
+- Fixed the blank mobile Home seen on a real phone: the mobile presentation no longer depends on the optional `#pst-native-home-v4` container.
+- Mobile Home now mounts directly into canonical `#page-workspace-home`, so it renders even when intermediate Home owners initialize late or are replaced during startup.
+- While mobile Home is active, only sibling Home presentations inside the canonical Home page are hidden; the mobile root remains visible.
+- Bumped the mobile Home cache token so phones receive the corrected runtime immediately.
+- Added a regression guard that forbids reintroducing the optional native-container dependency.
+- No Supabase reads/writes, polling, business logic or desktop Home behavior changed.
+
 ## 2026-09-26 — Mobile Home v2: richer working context
 
 - Kept the mobile Home top intentionally compact, but added useful working context below it so the page no longer feels empty.

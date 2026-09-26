@@ -21,7 +21,10 @@ assert(js.includes('PSTHomeMorningCommandCenterV1'),'mobile Home must reuse the 
 assert(js.includes('opportunitySnapshot'),'mobile Home must reuse existing Opportunities snapshot data');
 assert(js.includes("Math.min(iw,sw)<=900"),'mobile Home must use physical or viewport width for phone/tablet detection');
 assert(js.includes("document.body&&document.body.classList.add('pst-mobile-home-active')"),'mobile Home activation class missing');
-assert(js.includes("#pst-native-home-v4>*:not(#pst-mobile-home-v1){display:none!important}"),'legacy Home presentation must be hidden only while mobile Home is active');
+assert(!js.includes("document.getElementById('pst-native-home-v4')"),'mobile Home must not depend on optional native Home container');
+assert(js.includes("var host=home();if(!host)return false;"),'mobile Home must mount on canonical Home page');
+assert(js.includes("host.insertBefore(root,host.firstChild||null)"),'mobile Home must insert itself directly into canonical Home');
+assert(js.includes("#page-workspace-home>*:not(#pst-mobile-home-v1){display:none!important}"),'legacy Home owners must be hidden inside canonical Home while mobile Home is active');
 
 for(const label of ['Pyet PPPP…','PRISTEEL Daily','Çfarë të shohësh sot','Veprime të shpejta','Vazhdo punën','Në pritje','Krijo projekt','Krijo draft','Shto partner','Shiko tenderët']){
   assert(js.includes(label),'approved mobile Home label missing: '+label);
