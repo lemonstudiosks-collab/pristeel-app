@@ -240,10 +240,18 @@ function routedOfferCopy(language,offerModel,title,rdata){
   };
 }
 
+function resolveOfferModel(action,role){
+  const motion=txt(action?.outreach_motion,80),route=txt(action?.route,80).toUpperCase(),stored=txt(action?.pristeel_offer_model,80),timing=txt(action?.timing_classification,80);
+  if(motion==='future_supplier_qualification'||timing==='future_supplier_qualification'||stored==='future_supplier_qualification')return'future_supplier_qualification';
+  if(route==='DIRECT_RAW_MATERIAL'||motion==='material_buyer'||stored==='material_supply')return'material_supply';
+  if(role==='producer'||route==='TED_PRODUCER'||motion==='external_production_capacity'||stored==='external_production_capacity')return'external_production_capacity';
+  if(stored==='fabricated_steel_package')return'fabricated_steel_package';
+  return'fabricated_steel_package';
+}
+
 export function buildTedDraftContent(action={},tender={},recipient={}){
   const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender);
-  const future=motion==='future_supplier_qualification'||txt(action?.timing_classification,80)==='future_supplier_qualification';
-  const offerModel=future?'future_supplier_qualification':(txt(action?.pristeel_offer_model,80)||(role==='producer'?'external_production_capacity':'fabricated_steel_package'));
+  const offerModel=resolveOfferModel(action,role);
   const copy=routedOfferCopy(language,offerModel,title,{...rdata,company_name:company});
   const greet=greeting(language,company,recipient),close=closing(language),paras=copy.paras.filter(Boolean);
   const body=[greet,...paras,close,SIGNATURE].filter(Boolean).join('\n\n');
