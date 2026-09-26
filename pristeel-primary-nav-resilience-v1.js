@@ -28,17 +28,18 @@ window.__pstPrimaryNavResilienceV3=true;
 window.__pstPrimaryNavResilienceV2=true;
 window.__pstPrimaryNavResilienceV1=true;
 
-var KEYS={home:1,tenders:1,opportunities:1,projects:1,contacts:1,partners:1,finance:1,apps:1,system:1};
-var LABELS={home:'Home',tenders:'Mundësitë',projects:'Projektet',contacts:'Partnerët',finance:'Financat',apps:'Sistemi'};
+var KEYS={home:1,tenders:1,opportunities:1,representations:1,projects:1,contacts:1,partners:1,finance:1,apps:1,system:1};
+var LABELS={home:'Home',tenders:'Mundësitë',representations:'Përfaqësime',projects:'Projektet',contacts:'Partnerët',finance:'Financat',apps:'Sistemi'};
 var ICONS={
  home:'<path d="M3.5 11 12 4l8.5 7v8.5a1.5 1.5 0 0 1-1.5 1.5h-4.5v-6h-5v6H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
  tenders:'<path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
+ representations:'<circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2.8 20c.2-4.1 2-6.4 5.2-6.4 2.1 0 3.7 1 4.5 2.8M13.5 14.5c1-.8 2.1-1.2 3.5-1.2 2.7 0 4.2 2.1 4.4 5.7"/>',
  projects:'<rect x="3" y="6" width="18" height="14" rx="2.5"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/>',
  contacts:'<circle cx="9" cy="8" r="3"/><path d="M3.5 20c.2-4.3 2.2-6.7 5.5-6.7s5.3 2.4 5.5 6.7M16 8h5M18.5 5.5v5"/>',
  finance:'<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3.5 10h17M7 14h5"/>',
  apps:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'
 };
-var ORDER=['home','tenders','projects','contacts','finance','apps'];
+var ORDER=['home','tenders','representations','projects','contacts','finance','apps'];
 var repairTimer=0,polishTimer=0,tenderRenderToken=0,viewportToken=0;
 function S(v){return String(v==null?'':v);}
 function esc(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -61,6 +62,7 @@ function stabilizeViewport(){
 function currentKey(){
  if(visible(document.getElementById('page-workspace-home')))return'home';
  if(visible(document.getElementById('page-kek-tenders')))return'tenders';
+ if(visible(document.getElementById('page-representations')))return'representations';
  if(visible(document.getElementById('page-workspace-projects'))||visible(document.getElementById('page-workspace-project')))return'projects';
  if(visible(document.getElementById('page-workspace-contacts'))||visible(document.getElementById('page-contacts')))return'contacts';
  if(visible(document.getElementById('page-finance')))return'finance';
@@ -152,6 +154,11 @@ function openProjects(filter){
  mark('projects');scheduleRepair();schedulePolish();
  return true;
 }
+function openRepresentations(){
+ stabilizeViewport();
+ try{var R=window.PSTRepresentationsV1;if(R&&typeof R.open==='function')R.open();else{location.hash='#perfaqesime';return false;}}catch(e){return false;}
+ mark('representations');scheduleRepair();schedulePolish();return true;
+}
 function openPartners(){
  stabilizeViewport();
  try{var C=window.PSTContactMasterV1;if(C&&typeof C.open==='function')C.open();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('contacts');else if(!legacyShow('contacts'))activate('page-contacts','contacts');}catch(e){activate('page-contacts','contacts');}
@@ -195,7 +202,7 @@ function openSystem(){
 function route(key){
  key=S(key).toLowerCase();
  if(key==='tenders'||key==='opportunities')return openOpportunities();
- key=canon(key);if(key==='home')return openHome();if(key==='projects')return openProjects();if(key==='contacts')return openPartners();if(key==='finance')return openFinance();if(key==='apps')return openSystem();return false;
+ key=canon(key);if(key==='home')return openHome();if(key==='representations')return openRepresentations();if(key==='projects')return openProjects();if(key==='contacts')return openPartners();if(key==='finance')return openFinance();if(key==='apps')return openSystem();return false;
 }
 function intercept(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key]'):null;if(!b)return;var key=canon(b.dataset.key);if(!KEYS[key])return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();route(key);}
 function interceptSystemAtWindow(e){var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key]'):null;if(!b||canon(b.dataset.key)!=='apps')return;e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();openSystem();}
@@ -247,6 +254,6 @@ document.addEventListener('pst:home-canonical-rendered',function(){scheduleRepai
 document.addEventListener('pst:project-opened',function(){scheduleRepair();schedulePolish();});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){scheduleRepair();schedulePolish();},{once:true});else{scheduleRepair();schedulePolish();}
 installViewportStability();
-var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openOutreach:openOutreach,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature,financeReady:financeReady,stabilizeViewport:stabilizeViewport}};
+var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openRepresentations:openRepresentations,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openOutreach:openOutreach,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature,financeReady:financeReady,stabilizeViewport:stabilizeViewport}};
 window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=window.PSTPrimaryNavResilienceV9=window.PSTPrimaryNavResilienceV10=API;
 })();

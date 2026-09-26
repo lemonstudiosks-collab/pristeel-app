@@ -29,6 +29,7 @@ w.openModuleHub = () => calls.push('system');
 w.PSTWorkspaceArchitectureV1 = { renderApps(){ calls.push('system-render'); const p=w.document.getElementById('page-workspace-apps'); p.innerHTML='<div class="pst-ws-page"><div class="pst-ws-appgrid"><button>Automation Health</button></div></div>'; p.classList.add('active'); p.style.display='block'; } };
 w.PSTOperatingAssistantV2 = { apply(){ calls.push('assistant'); } };
 w.PSTOperatingExperienceV1 = { apply(){ calls.push('experience'); } };
+w.PSTRepresentationsV1 = { open(){ calls.push('representations'); const p=w.document.createElement('div'); p.id='page-representations'; p.className='page active'; w.document.body.appendChild(p); } };
 w.PSTRedesignFinalizerV1 = { apply(){} };
 
 let legacySystemIntercepts = 0;
@@ -68,6 +69,9 @@ assert.ok(w.document.querySelector('#page-workspace-apps .pst-ws-appgrid'), 'Sys
 
 R.route('tenders');
 assert.ok(calls.includes('tenders'), 'Opportunities route must remain functional');
+
+R.route('representations');
+assert.ok(calls.includes('representations'), 'Representations must be a permanent canonical route');
 
 R.route('contacts');
 assert.ok(calls.includes('contacts'), 'Partners route must remain functional');

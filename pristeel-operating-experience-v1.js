@@ -12,6 +12,7 @@ window.__pstOperatingExperienceV1=true;
 var PRIMARY=[
   {key:'home',label:'Ballina',zone:'home'},
   {key:'tenders',label:'Mundësitë',zone:'opportunities'},
+  {key:'representations',label:'Përfaqësime',zone:'representations'},
   {key:'projects',label:'Projektet',zone:'projects'},
   {key:'contacts',label:'Partnerët',zone:'partners'},
   {key:'finance',label:'Financat',zone:'finance'},
@@ -20,6 +21,7 @@ var PRIMARY=[
 var ZONE_COLORS={
   home:['#4F97AF','#34758B','#E8F3F6','#BDD9E2','#F6FAFB'],
   opportunities:['#C77868','#9C5B50','#FAEFEC','#E9D1CB','#FCF8F6'],
+  representations:['#4F8976','#376757','#EAF4F0','#C5DDD4','#F7FBF9'],
   projects:['#647FA6','#486482','#EDF1F7','#CBD6E4','#F7F9FB'],
   partners:['#4F9686','#397366','#EAF5F2','#C4DFD8','#F7FBFA'],
   finance:['#B18A4F','#856738','#F8F1E6','#E3D3B8','#FCFAF6'],
@@ -33,7 +35,7 @@ var PHASE_COLORS={
   finance:['#4F9686','#397366','#EAF5F2','#C4DFD8','#F7FBFA'],
   sources:['#648A95','#496A73','#EEF4F5','#CFDEE2','#F8FAFB']
 };
-var ZONE_THEME={home:'home',opportunities:'tenders',projects:'projects',partners:'contacts',finance:'finance',system:'apps'};
+var ZONE_THEME={home:'home',opportunities:'tenders',representations:'contacts',projects:'projects',partners:'contacts',finance:'finance',system:'apps'};
 
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -51,6 +53,7 @@ function palette(c){
 function currentZone(){
   if(active('page-workspace-home'))return'home';
   if(active('page-kek-tenders'))return'opportunities';
+  if(active('page-representations'))return'representations';
   if(active('page-workspace-projects')||active('page-workspace-project'))return'projects';
   if(active('page-workspace-contacts')||active('page-contacts'))return'partners';
   if(active('page-finance'))return'finance';
