@@ -1,3 +1,10 @@
+## 2026-09-26 — Trusted mobile PIN page cleanup
+
+- On a phone/tablet that already has a configured PPPP PIN, the legacy email/password form and its error area are removed from the page before the PIN gate is shown.
+- The PIN screen no longer mentions email/password controls; it presents only the four-digit PIN flow.
+- First-time/untrusted-device authentication remains available only when no device PIN exists, while explicit logout still clears the trusted-device state.
+- No Supabase business reads/writes, polling, schema or workflow behavior changed.
+
 ## 2026-09-26 — Mobile Home live-source dashboard + PIN-only re-entry
 
 - Finalized the approved information-first mobile Home while leaving the fixed six-button bottom navigation unchanged.
