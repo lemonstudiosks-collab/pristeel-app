@@ -10,6 +10,10 @@ assert(/pristeel-project-emails\.js\?v='\+String\(Date\.now\(\)\)/.test(s),'Boot
 assert(/authGetSession/.test(s),'Role loading must remain session-aware');
 assert(/user_id=eq\.'\+encodeURIComponent\(myUserId\)/.test(s),'Role lookup must filter by authenticated user_id');
 assert(!s.includes("user_roles?select=role,full_name,email&limit=1"),'Role lookup must never use an unfiltered first row');
+assert(/email=eq\.'\+encodeURIComponent\(String\(myEmail\)\.trim\(\)\.toLowerCase\(\)\)/.test(s),'Standalone PWA role lookup must fall back to exact authenticated email only after user_id miss');
+assert(!s.includes("idx === waits.length - 1 && !myRole"),'Transient startup delay must never be converted into viewer role');
+assert(s.includes('function unlockUI()'),'RBAC lock must be reversible when the authenticated role resolves writable');
+assert(s.includes("document.addEventListener('pst:mobile-pin-unlocked',retryUnresolvedRole)"),'RBAC must retry unresolved identity after mobile PIN unlock');
 assert(!s.includes('pristeel-startup-guard-v2.js'),'Roles must not add a second startup-visibility owner');
 assert(!s.includes("bootRoot.classList.add('pst-booting')"),'Roles must not hide the whole app shell during boot');
 assert(transition.includes('settleExistingSession'),'Authenticated reloads must settle without a blocking overlay');
