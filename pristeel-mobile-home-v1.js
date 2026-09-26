@@ -18,7 +18,7 @@ if(window.__pstMobileHomeV2)return;
 window.__pstMobileHomeV2=true;
 window.__pstMobileHomeV1=true;
 
-var VERSION='20260926-market-home5';
+var VERSION='20260926-market-home6';
 var weatherPromise=null;
 var fxPromise=null;
 var WEATHER_CACHE='pst_mobile_weather_cache_v1';
@@ -55,6 +55,16 @@ function home(){
   return ws||legacy;
 }
 function homeActive(){return activeHomeCandidate(home());}
+function navHomeSelected(){
+  var nav=document.getElementById('pst-mobile-nav-v1'),active=nav&&nav.querySelector('button.active[data-key]');
+  if(active)return S(active.getAttribute('data-key')).toLowerCase()==='home';
+  var zone=document.body&&document.body.dataset?S(document.body.dataset.pstBusinessZone).toLowerCase():'';
+  if(zone)return zone==='home';
+  return homeActive();
+}
+function persistentHost(){
+  return document.querySelector('#app-shell-root .content,.app-shell .content,.content')||document.querySelector('#app-shell-root>.main,.app-shell>.main')||document.body;
+}
 function authBlocking(){
   var pin=document.getElementById('pst-mobile-pin-gate'),auth=document.getElementById('auth-gate'),app=document.getElementById('app-shell-root');
   if(pin&&pin.classList.contains('on'))return true;
@@ -132,8 +142,8 @@ body.pst-mobile-home-active #pst-ws-sidebar{display:none!important;visibility:hi
 body.pst-mobile-home-active #app-shell-root>.main{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important}
 body.pst-mobile-home-active .content{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0 0 calc(78px + env(safe-area-inset-bottom))!important}
 body.pst-mobile-home-active .topbar{display:none!important}
-body.pst-mobile-home-active .pst-mobile-home-host{display:block!important;width:100%!important;max-width:none!important;min-height:100dvh!important;margin:0!important;padding:0!important;background:#F8FAFA!important}
-body.pst-mobile-home-active .pst-mobile-home-host>*:not(#pst-mobile-home-v1){display:none!important}
+body.pst-mobile-home-active .content>.page{display:none!important}
+body.pst-mobile-home-active .content>#pst-mobile-home-v1{display:block!important;width:100%!important;max-width:560px!important;min-height:100dvh!important;margin:0 auto!important;padding:12px 12px 16px!important;background:#F8FAFA!important;color:#172A34!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
 body.pst-mobile-home-active #pst-native-home-v4,
 body.pst-mobile-home-active #pst-home-launchpad-v1,
 body.pst-mobile-home-active .pst-morning-wrap,
@@ -142,7 +152,6 @@ body.pst-mobile-home-active #pst-openai-assistant-v1{display:none!important}
 body.pst-mobile-home-active div[onclick="openCmdK()"][title^="Kërko"],
 body.pst-mobile-home-active #pst-bcc-home-search,
 body.pst-mobile-home-active .pst-bcc-sidebar-search{display:none!important}
-body.pst-mobile-home-active #pst-mobile-home-v1{display:block!important;width:100%!important;max-width:560px!important;margin:0 auto!important;padding:12px 12px 16px!important;color:#172A34!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
 #pst-mobile-home-v1 *{box-sizing:border-box}
 .pmh-appbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 10px}.pmh-brand{display:flex;align-items:center;gap:10px;min-width:0}.pmh-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#50B0C7,#2586A4);color:#fff;display:grid;place-items:center;font-size:19px;font-weight:800;box-shadow:0 7px 18px rgba(43,132,161,.2)}.pmh-brand-copy b{display:block;font-size:18px;line-height:1;color:#1E323A;letter-spacing:.2px}.pmh-brand-copy span{display:block;margin-top:4px;color:#879399;font-size:11px}.pmh-avatar{width:38px;height:38px;border:1px solid #CEE4EA;border-radius:50%;background:#F1F9FB;color:#397F96;display:grid;place-items:center;font-size:11px;font-weight:800}
 .pmh-welcome{position:relative;overflow:hidden;border:1px solid #E0ECEF;border-radius:17px;background:linear-gradient(135deg,#F5FBFC 0%,#EAF7FA 100%);padding:17px 16px 16px}.pmh-welcome:after{content:"";position:absolute;width:150px;height:150px;border-radius:50%;right:-58px;top:-80px;background:rgba(80,176,199,.08)}.pmh-welcome h1{position:relative;z-index:1;margin:0;font-size:25px;line-height:1.08;letter-spacing:-.55px;color:#1B2D35}.pmh-welcome p{position:relative;z-index:1;margin:8px 0 0;color:#76858C;font-size:12.5px}
@@ -346,21 +355,35 @@ function bind(root){
 }
 function ensure(){
   installCss();
-  if(compact()&&!homeActive())recoverBlankHome();
-  var on=compact()&&homeActive();
-  if(!on){
+  if(!compact()){
     document.body&&document.body.classList.remove('pst-mobile-home-active');
-    document.querySelectorAll('.pst-mobile-home-host').forEach(function(x){x.classList.remove('pst-mobile-home-host');});
-    if(!compact())clearShellFix();
+    clearShellFix();
     return false;
   }
+  if(authBlocking()){
+    document.body&&document.body.classList.remove('pst-mobile-home-active');
+    return false;
+  }
+  if(!navHomeSelected()&&!homeActive()){
+    document.body&&document.body.classList.remove('pst-mobile-home-active');
+    return false;
+  }
+  if(!homeActive()&&!otherActivePageVisible())recoverBlankHome();
+  if(!navHomeSelected()&&otherActivePageVisible()){
+    document.body&&document.body.classList.remove('pst-mobile-home-active');
+    return false;
+  }
+  var host=persistentHost();if(!host)return false;
   document.body&&document.body.classList.add('pst-mobile-home-active');shellFix();
-  var host=home();if(!host)return false;
-  document.querySelectorAll('.pst-mobile-home-host').forEach(function(x){if(x!==host)x.classList.remove('pst-mobile-home-host');});
-  host.classList.add('pst-mobile-home-host');
   var root=document.getElementById('pst-mobile-home-v1');
-  if(!root){root=document.createElement('section');root.id='pst-mobile-home-v1';root.setAttribute('aria-label','Ballina mobile e PRISTEEL');host.insertBefore(root,host.firstChild||null);}
-  else if(root.parentNode!==host){host.insertBefore(root,host.firstChild||null);}
+  if(!root){
+    root=document.createElement('section');
+    root.id='pst-mobile-home-v1';
+    root.setAttribute('aria-label','Ballina mobile e PRISTEEL');
+    host.insertBefore(root,host.firstChild||null);
+  }else if(root.parentNode!==host){
+    host.insertBefore(root,host.firstChild||null);
+  }
   if(root.dataset.pmhVersion!==VERSION){root.innerHTML=markup();root.dataset.pmhVersion=VERSION;root.dataset.pmhBound='';}
   bind(root);updateClock(root);loadWeather(root);return true;
 }
@@ -373,12 +396,12 @@ document.addEventListener('pst:page-opened',schedule);
 document.addEventListener('pst:mobile-pin-unlocked',schedule);
 document.addEventListener('click',function(e){
   var b=e.target&&e.target.closest?e.target.closest('#pst-mobile-nav-v1 button[data-key]'):null;
-  if(b)setTimeout(ensure,100);
+  if(b)[0,80,180,420,900].forEach(function(ms){setTimeout(ensure,ms);});
 },true);
 window.addEventListener('pageshow',schedule);
 window.addEventListener('focus',schedule);
 window.addEventListener('resize',function(){setTimeout(ensure,80);});
 window.addEventListener('orientationchange',function(){setTimeout(ensure,120);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTMobileHomeV1={version:VERSION,render:ensure,refresh:function(){var r=document.getElementById('pst-mobile-home-v1');if(r){updateClock(r);loadWeather(r);}return !!r;},_test:{compact:compact,home:home,homeActive:homeActive,recoverBlankHome:recoverBlankHome,authBlocking:authBlocking,userIdentity:userIdentity,market:MARKET,weatherText:weatherText}};
+window.PSTMobileHomeV1={version:VERSION,render:ensure,refresh:function(){var r=document.getElementById('pst-mobile-home-v1');if(r){updateClock(r);loadWeather(r);}return !!r;},_test:{compact:compact,home:home,homeActive:homeActive,navHomeSelected:navHomeSelected,persistentHost:persistentHost,recoverBlankHome:recoverBlankHome,authBlocking:authBlocking,userIdentity:userIdentity,market:MARKET,weatherText:weatherText}};
 })();
