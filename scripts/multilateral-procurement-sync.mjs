@@ -5,6 +5,7 @@ import { SOURCE_REGISTRY, clean, htmlToText, isoDate, phase, docType, dateAfter,
 
 const SUPABASE='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const UA='PriSteel-PPPP-Procurement-Monitor/1.0 (+https://prissteel.com)';
+const UNGM_PUBLIC_PAGE='https://www.ungm.org/Public/Notice';
 const UNGM_PUBLIC_SEARCH='https://www.ungm.org/Public/Notice/Search';
 const UNGM_KOSOVO_COUNTRY_ID=2525;
 const EBRD_KOSOVO_SEARCH='https://ecepp.ebrd.com/delta/noticeSearchResults.html?form_fields%5Bkeyword%5D=Kosovo&form_fields%5BnoticeType%5D=&form_fields%5Bstatus%5D=&form_id=190d54e&locale=en&post_id=544&queried_id=10&referer_title=Welcome+to+the+EBRD+Client+e-Procurement+Portal+%28ECEPP%29+-+ECEPP';
@@ -50,8 +51,17 @@ function mcaLoose(html,s){
   return out;
 }
 
-function ungmSearchPayload(PageIndex){
-  return{PageIndex,PageSize:50,Title:'',Description:'',Reference:'',PublishedFrom:'',PublishedTo:'',DeadlineFrom:'',DeadlineTo:'',Countries:[UNGM_KOSOVO_COUNTRY_ID],Agencies:[],UNSPSCs:[],NoticeTypes:[],SortField:'DatePublished',SortAscending:false,isPicker:false,NoticeTASStatus:[],IsSustainable:false,NoticeDisplayType:null,NoticeSearchTotalLabelId:'noticeSearchTotal',TypeOfCompetitions:[]};
+export function ungmSearchPayload(PageIndex){
+  return{PageIndex,PageSize:15,Title:'',Description:'',Reference:'',PublishedFrom:'',PublishedTo:'',DeadlineFrom:'',DeadlineTo:'',Countries:[UNGM_KOSOVO_COUNTRY_ID],Agencies:[],UNSPSCs:[],NoticeTypes:[],SortField:'DatePublished',SortAscending:false,isPicker:false,IsSustainable:false,IsActive:true,NoticeDisplayType:null,NoticeSearchTotalLabelId:'noticeSearchTotal',TypeOfCompetitions:[]};
+}
+
+export function ungmVerificationToken(html){
+  return String(html??'').match(/name=["']__RequestVerificationToken["'][^>]*value=["']([^"']+)["']/i)?.[1]||'';
+}
+
+export function ungmCookieHeader(headers){
+  const values=typeof headers?.getSetCookie==='function'?headers.getSetCookie():[headers?.get?.('set-cookie')||''];
+  return values.filter(Boolean).map(v=>String(v).split(';',1)[0]).filter(Boolean).join('; ');
 }
 
 function ungmNoticeIds(html){return uniq([...String(html??'').matchAll(/data-noticeid\s*=\s*["']?(\d+)/gi)].map(m=>m[1]));}
@@ -117,9 +127,13 @@ async function fetchDetailRows(s,links){
 }
 
 async function collectUngm(s){
+  const session=await fetchOk(UNGM_PUBLIC_PAGE);
+  const landing=await session.text(),token=ungmVerificationToken(landing),cookie=ungmCookieHeader(session.headers);
+  if(!token)throw new Error('UNGM public search did not expose an anti-forgery token');
   const ids=[];
-  for(let page=0;page<3&&ids.length<(s.maxDetails||60);page++){
-    const r=await fetchOk(UNGM_PUBLIC_SEARCH,{method:'POST',accept:'text/html,*/*;q=0.8',headers:{'Content-Type':'application/json','Referer':'https://www.ungm.org/Public/Notice'},body:JSON.stringify(ungmSearchPayload(page))});
+  const maxDetails=s.maxDetails||60,maxPages=Math.ceil(maxDetails/15);
+  for(let page=0;page<maxPages&&ids.length<maxDetails;page++){
+    const r=await fetchOk(UNGM_PUBLIC_SEARCH,{method:'POST',accept:'text/html,*/*;q=0.8',headers:{'Content-Type':'application/json','Referer':UNGM_PUBLIC_PAGE,'RequestVerificationToken':token,...(cookie?{Cookie:cookie}:{})},body:JSON.stringify(ungmSearchPayload(page))});
     const html=await r.text(),pageIds=ungmNoticeIds(html);
     if(!pageIds.length)break;
     for(const id of pageIds)if(!ids.includes(id))ids.push(id);
@@ -197,8 +211,9 @@ export async function run({mode=process.env.SYNC_MODE||'preview',minScore=Number
   const failed=status.filter(s=>s.status==='error');
   if(failed.length)console.warn(`Daily source health: ${failed.length}/${status.length} source(s) failed: ${failed.map(s=>s.source).join(', ')}`);
   if(status.every(s=>s.status==='error'))throw new Error(`All procurement sources failed: ${status.map(s=>`${s.source}: ${s.error}`).join('; ')}`);
+  if(mode==='apply'&&failed.length){const e=new Error(`Procurement source health failed: ${failed.map(s=>`${s.source}: ${s.error}`).join('; ')}`);e.summary=summary;throw e;}
   return summary;
 }
 
 const direct=process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href;
-if(direct)run().catch(async e=>{try{await save({mode:process.env.SYNC_MODE||'preview',error:String(e?.message||e)});}catch{}console.error(e?.message||e);process.exit(1);});
+if(direct)run().catch(async e=>{try{await save({...e?.summary,mode:e?.summary?.mode||process.env.SYNC_MODE||'preview',error:String(e?.message||e)});}catch{}console.error(e?.message||e);process.exit(1);});

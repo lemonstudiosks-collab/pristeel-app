@@ -83,7 +83,6 @@ function mergeCandidate(a,b){
 
 export function resolveTedDraftRecipients(action,tenderPayload,max=20){
   const winner=tenderPayload?.winner||{},domains=companyDomains(action,winner),rows=[];
-  if(!domains.size)return [];
   const push=(email,meta={})=>{
     const c=candidate(email,{...meta,allow_free_domain:false});if(!c||c.draft_eligible===false)return;
     if(!belongsToCompany(c.email,domains))return;

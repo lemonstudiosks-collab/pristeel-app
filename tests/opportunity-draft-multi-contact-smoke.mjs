@@ -75,4 +75,25 @@ assert.equal(draftRecipients.find(r=>r.email==='anna.beispiel@rb-impra.de')?.sal
 assert.equal(draftRecipients.find(r=>r.email==='max.mustermann@rb-impra.de')?.name,'Max Mustermann','person-like email local parts may supply a safe name when no explicit name field exists');
 assert.equal(resolveTedRecipients(draftOnlyAction,draftOnlyPayload,1).length,0,'strict send-grade recipient policy must remain blocked without outreach readiness');
 
+const msAction={route:'TED_GENERAL',target_company:'M+S Gruppe GmbH',target_email:'stahl@msgruppe24.de',payload:{}};
+const msPayload={winner:{
+  name:'M+S Gruppe GmbH',email:'stahl@msgruppe24.de',emails:['stahl@msgruppe24.de'],
+  identifier:'DE 276783737',identity_version:'ted-winner-canonical-v2',website:null,websites:[]
+}};
+const msRecipients=resolveTedDraftRecipients(msAction,msPayload,20);
+assert.equal(msRecipients.length,1,'canonical TED winner organization email must remain eligible when TED has no company website/domain');
+assert.equal(msRecipients[0].email,'stahl@msgruppe24.de');
+assert.equal(msRecipients[0].source_type,'ted_winner_organization');
+assert.equal(msRecipients[0].company_attribution,'ted_winner_organization');
+assert.equal(msRecipients[0].recipient_company_domain,'msgruppe24.de');
+
+const canonicalMulti={winner:{
+  name:'Multi Contact Stahl GmbH',identifier:'DE 123456789',identity_version:'ted-winner-canonical-v2',
+  emails:['procurement@multi-stahl.de','max.mustermann@multi-stahl.de','sales@multi-stahl.de'],website:null,websites:[]
+}};
+assert.equal(resolveTedDraftRecipients({route:'TED_GENERAL',target_company:'Multi Contact Stahl GmbH'},canonicalMulti,20).length,3,'each independently declared canonical TED winner email must survive the multi-recipient path');
+assert.equal(resolveTedDraftRecipients({route:'TED_GENERAL',target_company:'Unverified GmbH'},{winner:{name:'Unverified GmbH',email:'office@unverified.de'}},20).length,0,'an unversioned winner email must not become eligible merely because it is displayed');
+
+assert.match(generatorSrc,/allCovered=recipients\.length>0&&recipients\.every/,'zero recipients must never be persisted as a completed generator run');
+
 console.log('opportunity TED high-confidence recipient policy smoke: ok');
