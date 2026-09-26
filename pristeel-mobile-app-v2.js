@@ -7,13 +7,14 @@
 if(window.__pstMobileAppV2)return;
 window.__pstMobileAppV2=true;
 
-var VERSION='20260926-mobile-app5';
+var VERSION='20260926-mobile-app6';
 var ROOT='pst-mobile-app-v2';
 var NAV='pst-mobile-app-v2-nav';
 var UTIL='pst-mobile-app-v2-util';
 var BACK='pst-mobile-app-v2-back';
 var CSS='pst-mobile-app-v2-css';
 var TAB_ORDER=['home','projects','discover','inbox'];
+var scheduleTimer=0,homeRenderTimer=0;
 var state={
   tab:'home',detail:false,projectQuery:'',discover:'tenders',
   opportunities:[],opportunityIndex:0,oppLoading:false,
@@ -275,15 +276,21 @@ function homeView(){
   h.actions.slice(0,3).forEach(function(a){activities.push({k:'action',i:'warning',t:a.title||'Veprim',s:projectName(a),id:projectId(a)});});
   h.waiting.slice(0,2).forEach(function(a){activities.push({k:'waiting',i:'clock',t:a.name||'Në pritje',s:a.text||a.client||'',id:projectId(a)});});
   h.projects.slice(0,3).forEach(function(a){activities.push({k:'project',i:'folder',t:projectName(a),s:a.next||projectClient(a)||'',id:projectId(a)});});
+  var p=prior[0]||null,oppCount=state.opportunities.length||'—';
   return '<div class="pma-screen pma-home">'+
     header('PriSteel',today())+
     '<section class="pma-hello"><span>'+E(greeting()+(me.first?', '+me.first:''))+'</span><h1>'+E(attention?attention+' çështje kërkojnë vëmendjen tënde sot.':'Gjendja e PriSteel është e qetë tani.')+'</h1></section>'+
-    '<button type="button" class="pma-ask" data-pma-ask><span>'+icon('search')+'</span><b>Pyet PPPP…</b><small>Projekt, email, supplier, tender, financë</small><i>'+icon('spark')+'</i></button>'+
+    '<button type="button" class="pma-ask" data-pma-ask><span class="pma-ask-ic">'+icon('search')+'</span><span class="pma-ask-copy"><b>Pyet PPPP…</b><small>Projekt, email, supplier, tender, financë</small></span><i>'+icon('spark')+'</i></button>'+
     '<div class="pma-section-label"><span>PRIORITETI KRYESOR</span><small>Swipe ndërron faqen</small></div>'+
     '<div class="pma-priority-strip" data-pma-priority-strip>'+
-      (prior.length?prior.slice(0,1).map(function(p,idx){return '<article class="pma-priority '+E(p.kind)+'" data-pma-project="'+E(p.id)+'"><div class="pma-priority-top"><span>'+E(p.tag)+'</span><i>'+E('1 / '+prior.length)+'</i></div><h2>'+E(p.title)+'</h2>'+(p.sub?'<b>'+E(p.sub)+'</b>':'')+'<p>'+E(short(p.text,170))+'</p>'+(p.id?'<button type="button">Hap projektin '+icon('arrow')+'</button>':'')+'</article>';}).join(''):'<article class="pma-priority calm"><div class="pma-priority-top"><span>GJENDJA</span><i>Live</i></div><h2>Nuk ka prioritet urgjent</h2><p>PPPP nuk po raporton veprime të hapura tani.</p></article>')+
+      (p?'<article class="pma-priority '+E(p.kind)+'" data-pma-project="'+E(p.id)+'"><div class="pma-priority-top"><span>'+E(p.tag)+'</span><i>'+E('1 / '+prior.length)+'</i></div><h2>'+E(p.title)+'</h2>'+(p.sub?'<b>'+E(p.sub)+'</b>':'')+'<p>'+E(short(p.text,170))+'</p>'+(p.id?'<button type="button">Hap projektin '+icon('arrow')+'</button>':'')+'</article>':'<article class="pma-priority calm"><div class="pma-priority-top"><span>GJENDJA</span><i>Live</i></div><h2>Nuk ka prioritet urgjent</h2><p>PPPP nuk po raporton veprime të hapura tani.</p></article>')+
     '</div>'+
-    '<div class="pma-today"><button data-pma-tab="projects"><strong>'+h.projects.length+'</strong><span>Në punë</span></button><button data-pma-tab="home"><strong>'+h.waiting.length+'</strong><span>Në pritje</span></button><button data-pma-tab="discover"><strong>→</strong><span>Mundësi</span></button><button data-pma-tab="inbox"><strong>✉</strong><span>Inbox</span></button></div>'+
+    '<div class="pma-today">'+
+      '<button data-pma-tab="projects"><i>'+icon('folder')+'</i><strong>'+h.projects.length+'</strong><span>Në punë</span></button>'+
+      '<button data-pma-tab="home"><i>'+icon('clock')+'</i><strong>'+h.waiting.length+'</strong><span>Në pritje</span></button>'+
+      '<button data-pma-tab="discover"><i>'+icon('discover')+'</i><strong>'+E(oppCount)+'</strong><span>Mundësi</span></button>'+
+      '<button data-pma-tab="inbox"><i>'+icon('inbox')+'</i><strong>✉</strong><span>Inbox</span></button>'+
+    '</div>'+
     '<section class="pma-card pma-activity"><div class="pma-card-head"><div><span>AKTIVITETI</span><h3>Çfarë po ndodh</h3></div><button type="button" data-pma-home-refresh>Rifresko</button></div>'+
       '<div>'+activities.slice(0,6).map(function(r){return '<button type="button" class="pma-activity-row" '+(r.id?'data-pma-project="'+E(r.id)+'"':'')+'><i class="'+E(r.k)+'">'+icon(r.i)+'</i><span><b>'+E(r.t)+'</b><small>'+E(short(r.s,100))+'</small></span><em>›</em></button>';}).join('')+'</div>'+
     '</section>'+
@@ -297,38 +304,37 @@ function projectsView(){
   return '<div class="pma-screen">'+header('Projektet','Puna aktive e PriSteel')+
     '<label class="pma-search">'+icon('search')+'<input data-pma-project-search value="'+E(state.projectQuery)+'" placeholder="Kërko projekt, klient ose referencë"></label>'+
     '<div class="pma-project-summary"><span><b>'+open.length+'</b> aktive</span><span><b>'+rows.filter(function(x){return projectBucket(x)==='action';}).length+'</b> kërkojnë veprim</span><span><b>'+rows.filter(function(x){return projectBucket(x)==='waiting';}).length+'</b> në pritje</span></div>'+
-    '<div class="pma-project-list">'+(rows.length?rows.slice(0,80).map(function(r){var k=projectBucket(r);return '<button type="button" class="pma-project-card" data-pma-project="'+E(projectId(r))+'"><span class="pma-project-dot '+E(k)+'"></span><span class="pma-project-copy"><b>'+E(projectName(r))+'</b><small>'+E([projectClient(r),r.ref||r.reference].filter(Boolean).join(' · ')||'Projekt')+'</small><em>'+E(r.next||r.pipeline_stage||'Hap projektin')+'</em></span><span class="pma-project-state '+E(k)+'">'+E(bucketLabel(k))+'</span><i>›</i></button>';}).join(''):'<div class="pma-empty">Nuk ka projekte për këtë kërkim.</div>')+'</div>'+
+    '<div class="pma-work-feed">'+(rows.length?rows.slice(0,80).map(function(r){
+      var k=projectBucket(r),ref=S(r.ref||r.reference||''),next=S(r.next||r.pipeline_stage||'Hap projektin');
+      return '<button type="button" class="pma-work-card '+E(k)+'" data-pma-project="'+E(projectId(r))+'"><div class="pma-work-top"><span class="pma-project-state '+E(k)+'">'+E(bucketLabel(k))+'</span>'+(ref?'<small>'+E(ref)+'</small>':'')+'</div><h3>'+E(projectName(r))+'</h3><p>'+E(projectClient(r)||'Projekt PriSteel')+'</p><div class="pma-work-next"><span>TANI</span><b>'+E(short(next,90))+'</b><i>'+icon('chevron')+'</i></div></button>';
+    }).join(''):'<div class="pma-empty">Nuk ka projekte për këtë kërkim.</div>')+'</div>'+
   '</div>';
 }
 function oppApi(){return window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1||null;}
 function discoverTenders(){
-  var P=oppApi(),rows=state.opportunities,idx=Math.max(0,Math.min(state.opportunityIndex,Math.max(0,rows.length-1))),r=rows[idx];
-  if(state.oppLoading)return '<div class="pma-empty large">Duke lexuar mundësitë…</div>';
-  if(!r)return '<div class="pma-empty large">Nuk ka mundësi prioritare tani.<button type="button" data-pma-opp-refresh>Rifresko</button></div>';
-  var phase=P&&P.phase?P.phase(r):'opportunity',fit=P&&P.fit?P.fit(r):'possible',source=P&&P.sourceLabel?P.sourceLabel(r):'Tender',why=P&&P.reason?P.reason(r):'Kërkon shqyrtim.',score=Math.round(Number(r.relevance_score)||0),winner=P&&P.winner?P.winner(r):{};
-  return '<div class="pma-deck-wrap"><div class="pma-deck-counter"><span>'+E((idx+1)+' nga '+rows.length)+'</span><small>Mundësia prioritare</small></div>'+
-    '<div class="pma-deck" data-pma-deck data-id="'+E(r.id)+'">'+
-      '<article class="pma-opp-card '+E(fit)+'"><div class="pma-opp-top"><span>'+E(phase==='award'?'FITUES I PUBLIKUAR':'TENDER AKTIV')+'</span><span>'+E(source)+'</span><b>'+E(score?score+'%':'REVIEW')+'</b></div>'+
-      '<h2>'+E(r.title||'Mundësi pa titull')+'</h2>'+
-      '<p>'+E(why)+'</p>'+
-      '<div class="pma-opp-facts">'+(r.authority?'<span>Autoriteti<b>'+E(r.authority)+'</b></span>':'')+(r.deadline?'<span>Afati<b>'+E(P&&P.dateText?P.dateText(r.deadline):r.deadline)+'</b></span>':'')+(phase==='award'&&winner&&winner.name?'<span>Fituesi<b>'+E(winner.name)+'</b></span>':'')+'</div>'+
-      '<div class="pma-opp-actions">'+
-        '<button type="button" data-pma-opp-action="review" data-id="'+E(r.id)+'">Ruaj</button>'+
-        '<button type="button" data-pma-opp-action="open" data-id="'+E(r.id)+'">Hulumto</button>'+
-        '<button type="button" class="danger" data-pma-opp-action="nogo" data-id="'+E(r.id)+'">Jo relevante</button>'+
-        '<button type="button" class="primary" data-pma-opp-action="'+E(phase==='award'?'draft':'go')+'" data-id="'+E(r.id)+'">'+E(phase==='award'?'Përgatit kontakt':'GO · Krijo projekt')+'</button>'+
-      '</div>'+
-      '<div class="pma-swipe-hint"><span>Swipe = faqja tjetër</span><span>Butonat = veprim</span></div>'+
-      '</article>'+
-    '</div></div>';
+  var P=oppApi(),rows=state.opportunities;
+  if(state.oppLoading&&!rows.length)return '<div class="pma-empty large">Duke lexuar mundësitë…</div>';
+  if(!rows.length)return '<div class="pma-empty large">Nuk ka mundësi prioritare tani.<button type="button" data-pma-opp-refresh>Rifresko</button></div>';
+  return '<div class="pma-discover-summary"><b>'+E(rows.length)+'</b><span>mundësi prioritare</span></div><div class="pma-discover-feed">'+rows.map(function(r,idx){
+    var phase=P&&P.phase?P.phase(r):'opportunity',fit=P&&P.fit?P.fit(r):'possible',source=P&&P.sourceLabel?P.sourceLabel(r):'Tender',why=P&&P.reason?P.reason(r):'Kërkon shqyrtim.',score=Math.round(Number(r.relevance_score)||0),winner=P&&P.winner?P.winner(r):{};
+    return '<article class="pma-opportunity-card '+E(fit)+'"><div class="pma-opp-top"><span>'+E(phase==='award'?'FITUES I PUBLIKUAR':'TENDER AKTIV')+'</span><span>'+E(source)+'</span><b>'+E(score?score+'%':'REVIEW')+'</b></div><h2>'+E(r.title||'Mundësi pa titull')+'</h2><p>'+E(short(why,180))+'</p><div class="pma-opp-facts">'+(r.authority?'<span>Autoriteti<b>'+E(r.authority)+'</b></span>':'')+(r.deadline?'<span>Afati<b>'+E(P&&P.dateText?P.dateText(r.deadline):r.deadline)+'</b></span>':'')+(phase==='award'&&winner&&winner.name?'<span>Fituesi<b>'+E(winner.name)+'</b></span>':'')+'</div><div class="pma-opp-actions"><button type="button" data-pma-opp-action="review" data-id="'+E(r.id)+'">Ruaj</button><button type="button" data-pma-opp-action="open" data-id="'+E(r.id)+'">Hulumto</button><button type="button" class="danger" data-pma-opp-action="nogo" data-id="'+E(r.id)+'">Jo relevante</button><button type="button" class="primary" data-pma-opp-action="'+E(phase==='award'?'draft':'go')+'" data-id="'+E(r.id)+'">'+E(phase==='award'?'Përgatit kontakt':'GO · Krijo projekt')+'</button></div><div class="pma-card-index">'+E((idx+1)+' / '+rows.length)+'</div></article>';
+  }).join('')+'</div>';
 }
 function discoverMaterial(){
-  var D=window.PSTDachSteelSalesV3||window.PSTDachSteelSalesV2||window.PSTDachSteelSalesV1,s=D&&typeof D.snapshot==='function'?D.snapshot():{},rows=A(s.targets).filter(function(r){return !r.archived_at;}).slice(0,30);
-  return '<div class="pma-stack">'+(rows.length?rows.map(function(r){return '<button type="button" class="pma-discovery-row" data-pma-open-material><span><b>'+E(r.company_name||'Kompani')+'</b><small>'+E([r.country,r.buyer_type].filter(Boolean).join(' · '))+'</small></span><em>'+E(r.score_band||'')+'</em><i>›</i></button>';}).join(''):'<div class="pma-empty large">Material Trade po ngarkohet.<button type="button" data-pma-material-refresh>Ngarko</button></div>')+'</div>';
+  var D=window.PSTDachSteelSalesV3||window.PSTDachSteelSalesV2||window.PSTDachSteelSalesV1,s=D&&typeof D.snapshot==='function'?D.snapshot():{},rows=A(s.targets).filter(function(r){return !r.archived_at;}).slice(0,40);
+  if(state.materialLoading&&!rows.length)return '<div class="pma-empty large">Duke lexuar Material Trade…</div>';
+  return '<div class="pma-discover-summary"><b>'+E(rows.length)+'</b><span>targete Material Trade</span></div><div class="pma-target-feed">'+(rows.length?rows.map(function(r){
+    var meta=[r.country,r.buyer_type,r.score_band].filter(Boolean).join(' · '),why=r.why_now||r.next_action||r.steel_scope||'Target i kualifikuar për material çeliku.';
+    return '<button type="button" class="pma-target-card material" data-pma-open-material><div class="pma-target-top"><span>MATERIAL</span><em>'+E(r.score_band||'')+'</em></div><h3>'+E(r.company_name||'Kompani')+'</h3><small>'+E(meta)+'</small><p>'+E(short(why,150))+'</p><div><b>'+E(r.quote_readiness||'')+'</b><i>'+icon('chevron')+'</i></div></button>';
+  }).join(''):'<div class="pma-empty large">Nuk ka targete aktive Material Trade.<button type="button" data-pma-material-refresh>Rifresko</button></div>')+'</div>';
 }
 function discoverRep(){
-  var R=window.PSTRepresentationsV1,s=R&&typeof R.snapshot==='function'?R.snapshot():{},rows=A(s.rows).filter(function(r){return !r.archived_at;}).slice(0,30);
-  return '<div class="pma-stack">'+(rows.length?rows.map(function(r){return '<button type="button" class="pma-discovery-row rep" data-pma-open-rep><span><b>'+E(r.company_name||'Kompani')+'</b><small>'+E([r.country,r.sector].filter(Boolean).join(' · '))+'</small></span><em>'+E(r.priority_score!=null?r.priority_score:'')+'</em><i>›</i></button>';}).join(''):'<div class="pma-empty large">Përfaqësimet po ngarkohen.<button type="button" data-pma-rep-refresh>Ngarko</button></div>')+'</div>';
+  var R=window.PSTRepresentationsV1,s=R&&typeof R.snapshot==='function'?R.snapshot():{},rows=A(s.rows).filter(function(r){return !r.archived_at;}).slice(0,40);
+  if(state.repLoading&&!rows.length)return '<div class="pma-empty large">Duke lexuar Përfaqësimet…</div>';
+  return '<div class="pma-discover-summary"><b>'+E(rows.length)+'</b><span>targete Përfaqësime</span></div><div class="pma-target-feed">'+(rows.length?rows.map(function(r){
+    var why=r.priority_reason||r.why_kosovo||r.next_action||'Target për zhvillim përfaqësimi.';
+    return '<button type="button" class="pma-target-card rep" data-pma-open-rep><div class="pma-target-top"><span>PËRFAQËSIM</span><em>'+E(r.priority_score!=null?r.priority_score:'')+'</em></div><h3>'+E(r.company_name||'Kompani')+'</h3><small>'+E([r.country,r.sector,r.product_category].filter(Boolean).join(' · '))+'</small><p>'+E(short(why,150))+'</p><div><b>'+E(r.stage||'found')+'</b><i>'+icon('chevron')+'</i></div></button>';
+  }).join(''):'<div class="pma-empty large"><b>0 targete aktive</b><span>Përfaqësimet nuk kanë ende targete canonical të regjistruara.</span><button type="button" data-pma-open-rep>Hap modulin Përfaqësime</button></div>')+'</div>';
 }
 function discoverView(){
   return '<div class="pma-screen">'+header('Discover','Mundësi të reja për PriSteel')+
@@ -337,10 +343,12 @@ function discoverView(){
   '</div>';
 }
 function inboxView(){
-  var I=window.PSTGmailLiveInboxV2,rows=A(I&&I._state&&I._state.rows);
+  var I=window.PSTGmailLiveInboxV2,s=I&&typeof I.snapshot==='function'?I.snapshot():{},live=A(s.liveRows),canonical=A(s.canonicalRows),rows=live.length?live:canonical,connected=!!s.connected,source=live.length?'Gmail live':'PPPP email sync';
   return '<div class="pma-screen">'+header('Inbox','Email & komunikim')+
-    '<div class="pma-inbox-tools"><button type="button" data-pma-inbox-refresh>'+icon('mail')+'<span><b>'+E(state.inboxLoading?'Duke ngarkuar…':'Rifresko Gmail')+'</b><small>Thread-et e fundit</small></span></button><button type="button" data-pma-classic-inbox>Hap Inbox-in e plotë</button></div>'+
-    '<div class="pma-inbox-list">'+(rows.length?rows.map(function(r){return '<article class="pma-inbox-row"><span class="pma-inbox-ic">'+icon('mail')+'</span><span class="pma-inbox-copy"><b>'+E(r.subject||'(pa subjekt)')+'</b><small>'+E(r.from_name||r.from_email||'')+'</small><em>'+E(short(r.snippet,120))+'</em></span><span class="pma-inbox-actions">'+(r.gmail_url?'<button type="button" data-pma-gmail="'+E(r.gmail_url)+'">Gmail</button>':'')+(r.gmail_message_id?'<button type="button" class="primary" data-pma-intake="'+E(r.gmail_message_id)+'" data-tid="'+E(r.gmail_thread_id||'')+'">Lidhe</button>':'')+'</span></article>';}).join(''):'<div class="pma-empty large">'+E(state.inboxLoading?'Duke lexuar Gmail…':'Nuk ka thread-e të ngarkuara.')+'<button type="button" data-pma-inbox-refresh>Ngarko Gmail</button></div>')+'</div>'+
+    '<div class="pma-inbox-status"><span class="'+(connected?'on':'')+'">'+(connected?'● Gmail i lidhur':'○ Gmail jo i lidhur')+'</span><small>'+E(source)+(rows.length?' · '+rows.length+' thread-e':'')+'</small></div>'+
+    '<div class="pma-inbox-tools"><button type="button" data-pma-inbox-refresh>'+icon('mail')+'<span><b>'+E(state.inboxLoading?'Duke ngarkuar…':connected?'Rifresko Gmail':'Lidhu me Gmail')+'</b><small>'+E(connected?'Thread-et live + PPPP':'Email-et e sinkronizuara janë poshtë')+'</small></span></button><button type="button" data-pma-classic-inbox>Hap Inbox-in e plotë</button></div>'+
+    (s.error?'<div class="pma-inline-error">'+E(s.error)+'</div>':'')+
+    '<div class="pma-inbox-list">'+(rows.length?rows.slice(0,30).map(function(r){return '<article class="pma-inbox-row"><span class="pma-inbox-ic">'+icon('mail')+'</span><span class="pma-inbox-copy"><b>'+E(r.subject||'(pa subjekt)')+'</b><small>'+E([r.from_name||r.from_email,r.sent_at?new Date(r.sent_at).toLocaleDateString('sq-AL',{day:'2-digit',month:'short'}):''].filter(Boolean).join(' · '))+'</small><em>'+E(short(r.snippet,145))+'</em></span><span class="pma-inbox-actions">'+(r.gmail_url?'<button type="button" data-pma-gmail="'+E(r.gmail_url)+'">Gmail</button>':'')+(r.gmail_message_id?'<button type="button" class="primary" data-pma-intake="'+E(r.gmail_message_id)+'" data-tid="'+E(r.gmail_thread_id||'')+'">'+E(r.project_id?'Projekt':'Lidhe')+'</button>':'')+'</span></article>';}).join(''):'<div class="pma-empty large">'+E(state.inboxLoading?'Duke lexuar email-et…':'Nuk ka thread-e të disponueshme.')+'<button type="button" data-pma-inbox-refresh>'+E(connected?'Rifresko':'Lidhu me Gmail')+'</button></div>')+'</div>'+
   '</div>';
 }
 function tabIndex(){var i=TAB_ORDER.indexOf(state.tab);return i<0?0:i;}
@@ -420,26 +428,36 @@ function syncNav(){
 }
 async function loadOpportunities(force){
   var P=oppApi();if(!P||typeof P.refresh!=='function')return;
-  state.oppLoading=true;render();
+  state.oppLoading=true;if(state.tab==='discover')render();
   try{
     var all=A(await P.refresh(!!force)),primary=typeof P.priorityRows==='function'?A(P.priorityRows(all)):[],seen={},rest=all.filter(function(r){return ['new','review','watch'].indexOf(S(r.status))>-1&&(P.fit(r)!=='weak'||Number(r.relevance_score)>=92);}).sort(function(a,b){return Number(P.score(b))-Number(P.score(a));}),out=[];
-    primary.concat(rest).forEach(function(r){var id=S(r&&r.id);if(id&&!seen[id]&&out.length<12){seen[id]=1;out.push(r);}});
-    state.opportunities=out;if(state.opportunityIndex>=out.length)state.opportunityIndex=0;
+    primary.concat(rest).forEach(function(r){var id=S(r&&r.id);if(id&&!seen[id]&&out.length<18){seen[id]=1;out.push(r);}});
+    state.opportunities=out;state.opportunityIndex=0;
   }catch(e){try{console.warn('Mobile opportunities',e);}catch(x){}}
-  finally{state.oppLoading=false;render();}
+  finally{state.oppLoading=false;if(state.tab==='discover')render();}
 }
-async function loadInbox(force){
-  var I=window.PSTGmailLiveInboxV2;if(!I||typeof I.load!=='function')return;
-  state.inboxLoading=true;render();
-  try{await I.load(!!force);}catch(e){}finally{state.inboxLoading=false;render();}
+async function loadInbox(force,interactive){
+  var I=window.PSTGmailLiveInboxV2;if(!I)return;
+  state.inboxLoading=true;if(state.tab==='inbox')render();
+  try{
+    if(typeof I.loadCanonical==='function')await I.loadCanonical(!!force);
+    var connected=typeof I.connected==='function'?I.connected():false;
+    if(interactive&&!connected&&typeof I.authorize==='function'){await I.authorize();connected=typeof I.connected==='function'?I.connected():false;}
+    if(connected&&typeof I.load==='function')await I.load(!!force);
+  }catch(e){try{console.warn('Mobile inbox',e);}catch(x){}}
+  finally{state.inboxLoading=false;if(state.tab==='inbox')render();}
 }
 async function loadMaterial(){
-  var D=window.PSTDachSteelSalesV3||window.PSTDachSteelSalesV2||window.PSTDachSteelSalesV1;if(!D||typeof D.refresh!=='function')return;
-  state.materialLoading=true;render();try{await D.refresh();}catch(e){}finally{state.materialLoading=false;render();}
+  var D=window.PSTDachSteelSalesV3||window.PSTDachSteelSalesV2||window.PSTDachSteelSalesV1;if(!D)return;
+  state.materialLoading=true;if(state.tab==='discover')render();
+  try{if(typeof D.loadTargets==='function')await D.loadTargets(true);else if(typeof D.refresh==='function')await D.refresh();}catch(e){try{console.warn('Mobile Material Trade',e);}catch(x){}}
+  finally{state.materialLoading=false;if(state.tab==='discover')render();}
 }
 async function loadRep(){
-  var R=window.PSTRepresentationsV1;if(!R||typeof R.refresh!=='function')return;
-  state.repLoading=true;render();try{await R.refresh();}catch(e){}finally{state.repLoading=false;render();}
+  var R=window.PSTRepresentationsV1;if(!R)return;
+  state.repLoading=true;if(state.tab==='discover')render();
+  try{if(typeof R.refresh==='function')await R.refresh();}catch(e){try{console.warn('Mobile Representations',e);}catch(x){}}
+  finally{state.repLoading=false;if(state.tab==='discover')render();}
 }
 function bindPageSwipe(){
   var root=document.getElementById(ROOT),pager=root&&root.querySelector('[data-pma-pager]');
@@ -470,7 +488,7 @@ function bindPageSwipe(){
 }
 function click(e){
   var t=e.target&&e.target.closest?e.target:null;if(!t)return;
-  var b=t.closest('[data-pma-tab]');if(b){e.preventDefault();state.plusOpen=false;state.moreOpen=false;state.nativeProjectId='';state.nativeCompanyMode='';state.nativeCompanyKey='';state.tab=b.getAttribute('data-pma-tab');if(state.tab==='discover'&&!state.opportunities.length)loadOpportunities(false);if(state.tab==='inbox')loadInbox(false);render();requestAnimationFrame(function(){syncPager(true);});return;}
+  var b=t.closest('[data-pma-tab]');if(b){e.preventDefault();state.plusOpen=false;state.moreOpen=false;state.nativeProjectId='';state.nativeCompanyMode='';state.nativeCompanyKey='';state.tab=b.getAttribute('data-pma-tab');if(state.tab==='discover'&&!state.opportunities.length)loadOpportunities(false);if(state.tab==='inbox')loadInbox(false,false);render();requestAnimationFrame(function(){syncPager(true);});return;}
   if(t.closest('[data-pma-plus]')){e.preventDefault();state.plusOpen=!state.plusOpen;state.moreOpen=false;render();return;}
   if(t.closest('[data-pma-more]')){e.preventDefault();state.moreOpen=!state.moreOpen;state.plusOpen=false;render();return;}
   if(t.closest('[data-pma-sheet-close]')){state.plusOpen=false;state.moreOpen=false;render();return;}
@@ -492,7 +510,7 @@ function click(e){
   if(t.closest('[data-pma-rep-refresh]')){loadRep();return;}
   if(t.closest('[data-pma-open-material]')){state.moreOpen=false;openMaterial();return;}
   if(t.closest('[data-pma-open-rep]')){state.moreOpen=false;openRepresentations();return;}
-  b=t.closest('[data-pma-inbox-refresh]');if(b){loadInbox(true);return;}
+  b=t.closest('[data-pma-inbox-refresh]');if(b){loadInbox(true,true);return;}
   if(t.closest('[data-pma-classic-inbox]')){mobileRoute('inbox');return;}
   b=t.closest('[data-pma-gmail]');if(b){var u=b.getAttribute('data-pma-gmail');if(u)window.open(u,'PRISTEEL_GMAIL');return;}
   b=t.closest('[data-pma-intake]');if(b){var I=window.PSTGmailLiveInboxV2;if(I&&I.intake)I.intake(b.getAttribute('data-pma-intake'),b.getAttribute('data-tid'));return;}
@@ -602,16 +620,28 @@ function installCss(){
   #${NAV}>button{min-height:50px;border:0;border-radius:14px;background:transparent;color:#6D7A80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:8px;font-weight:760}#${NAV}>button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#${NAV}>button.on{background:#EAF5F8;color:#2B7F99}#${NAV}>button.pma-plus{width:54px;height:54px;min-height:54px;border-radius:50%;background:#173743;color:#fff;transform:translateY(-12px);box-shadow:0 9px 20px rgba(23,55,67,.24)}#${NAV}>button.pma-plus svg{width:24px;height:24px}
   #${UTIL}{position:fixed;right:14px;bottom:calc(75px + env(safe-area-inset-bottom));z-index:2147483550;display:flex!important;gap:5px;padding:4px;border:1px solid rgba(31,53,62,.11);border-radius:16px;background:rgba(255,255,255,.95);box-shadow:0 8px 22px rgba(23,42,50,.11);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}#${UTIL} button{height:37px;min-width:42px;border:0;border-radius:11px;background:transparent;color:#5E727A;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 8px;font-size:8.5px;font-weight:800}#${UTIL} button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}
   .pma-sheetback{position:fixed;inset:0;z-index:2147483700;background:rgba(22,41,49,.34);display:flex;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom));backdrop-filter:blur(3px)}.pma-sheet{width:min(540px,100%);border-radius:22px;background:#fff;padding:8px 14px 18px;box-shadow:0 26px 60px rgba(20,38,46,.25)}.pma-sheetbar{width:42px;height:4px;border-radius:2px;background:#D7DEDF;margin:1px auto 12px}.pma-sheet h2{margin:0 0 12px;font-size:18px}.pma-create-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.pma-create-grid button{min-height:88px;border:1px solid #DFE7E9;border-radius:15px;background:#F9FBFB;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#35545F;font-size:10px;font-weight:800}.pma-create-grid svg{width:24px;height:24px;fill:none;stroke:#2F829B;stroke-width:1.8}.pma-more-list{display:grid;gap:5px}.pma-more-list button{min-height:58px;border:0;border-top:1px solid #EDF1F2;background:#fff;display:grid;grid-template-columns:34px minmax(0,1fr) 12px;gap:9px;align-items:center;text-align:left;color:#35515B}.pma-more-list button:first-child{border-top:0}.pma-more-list svg{width:20px;height:20px;fill:none;stroke:#3A8399;stroke-width:1.8}.pma-more-list b{display:block;font-size:11px}.pma-more-list small{display:block;margin-top:2px;font-size:8.8px;color:#89969B}.pma-more-list i{font-style:normal;color:#8C9DA3}
+  .pma-ask{grid-template-columns:34px minmax(0,1fr) 34px!important}
+  .pma-ask>.pma-ask-ic{width:34px;height:34px;border-radius:11px;background:#EEF5F7;color:#52717B;display:grid;place-items:center}
+  .pma-ask>.pma-ask-copy{min-width:0;width:auto;height:auto;background:transparent;color:inherit;display:block}
+  .pma-ask>.pma-ask-copy b{display:block;font-size:14px;color:#22343C}.pma-ask>.pma-ask-copy small{display:block;margin-top:3px;font-size:9.5px;color:#8A969B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pma-today button{position:relative;padding:9px 9px 8px}.pma-today button>i{position:absolute;right:8px;top:8px;width:24px;height:24px;border-radius:8px;background:#EEF6F8;color:#3B8298;display:grid;place-items:center}.pma-today button>i svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}.pma-today strong{padding-top:3px}
+  .pma-work-feed{display:grid;gap:10px;margin-top:10px}.pma-work-card{width:100%;border:1px solid #DDE7E9;border-radius:20px;background:#fff;padding:15px;text-align:left;box-shadow:0 7px 20px rgba(28,51,60,.035)}.pma-work-card.action{border-top:3px solid #C97B43}.pma-work-card.waiting{border-top:3px solid #C79A48}.pma-work-card.execution{border-top:3px solid #5A9470}.pma-work-top{display:flex;justify-content:space-between;align-items:center;gap:8px}.pma-work-top small{font-size:8.5px;color:#95A0A4}.pma-work-card h3{margin:10px 0 0;font-size:16px;line-height:1.2;color:#203A45}.pma-work-card>p{margin:5px 0 0;font-size:10px;color:#869399}.pma-work-next{margin-top:12px;padding-top:10px;border-top:1px solid #EDF2F3;display:grid;grid-template-columns:auto minmax(0,1fr) 18px;gap:8px;align-items:center}.pma-work-next span{font-size:7.5px;font-weight:900;letter-spacing:.08em;color:#93A0A5}.pma-work-next b{font-size:10px;line-height:1.35;color:#46636E}.pma-work-next i{color:#3F879C}.pma-work-next svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2}
+  .pma-discover-summary{display:flex;align-items:baseline;gap:6px;margin:9px 2px}.pma-discover-summary b{font-size:16px;color:#2E6678}.pma-discover-summary span{font-size:9px;color:#8A969B}
+  .pma-discover-feed,.pma-target-feed{display:grid;gap:11px}.pma-opportunity-card{position:relative;border:1px solid #DDE7E9;border-radius:21px;background:#fff;padding:16px;box-shadow:0 8px 22px rgba(29,51,60,.04)}.pma-opportunity-card.strong{border-top:4px solid #5D9470}.pma-opportunity-card.possible{border-top:4px solid #C39A54}.pma-opportunity-card h2{margin:12px 0 0;font-size:18px;line-height:1.15;letter-spacing:-.25px;color:#1F3741}.pma-opportunity-card>p{margin:8px 0 0;font-size:10.5px;line-height:1.45;color:#74858C}.pma-opportunity-card .pma-opp-facts{margin-top:11px}.pma-opportunity-card .pma-opp-actions{margin-top:13px;padding-top:0}.pma-card-index{margin-top:9px;text-align:right;font-size:8px;color:#A0A9AC}
+  .pma-target-card{width:100%;border:1px solid #DDE7E9;border-radius:19px;background:#fff;padding:15px;text-align:left;box-shadow:0 7px 20px rgba(29,51,60,.035)}.pma-target-card.material{border-top:3px solid #4F9173}.pma-target-card.rep{border-top:3px solid #A88B52}.pma-target-top{display:flex;align-items:center;justify-content:space-between}.pma-target-top span{font-size:8px;font-weight:900;letter-spacing:.09em;color:#7E8D93}.pma-target-top em{font-style:normal;font-size:9px;font-weight:850;color:#397E93}.pma-target-card h3{margin:9px 0 0;font-size:16px;color:#243E48}.pma-target-card>small{display:block;margin-top:4px;font-size:9px;color:#87949A}.pma-target-card>p{margin:8px 0 0;font-size:10px;line-height:1.45;color:#74858C}.pma-target-card>div:last-child{margin-top:11px;display:flex;align-items:center;justify-content:space-between}.pma-target-card>div:last-child b{font-size:9px;color:#496873}.pma-target-card>div:last-child i{color:#3C8499}.pma-target-card svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2}
+  .pma-inbox-status{display:flex;align-items:center;justify-content:space-between;margin:-2px 1px 9px;padding:8px 10px;border-radius:12px;background:#EEF4F6}.pma-inbox-status span{font-size:9px;font-weight:800;color:#7C898F}.pma-inbox-status span.on{color:#3D7C5C}.pma-inbox-status small{font-size:8.5px;color:#8D999D}.pma-inline-error{margin:0 0 9px;padding:9px 11px;border:1px solid #EBD2D2;border-radius:12px;background:#FFF7F7;color:#9B5555;font-size:9px}
+  .pma-inbox-row{align-items:start;padding:13px}.pma-inbox-copy b{font-size:11.5px}.pma-inbox-copy em{font-size:9px;-webkit-line-clamp:3}
+
 }
 `;document.head.appendChild(s);
 }
-function schedule(){[0,80,220,600,1200].forEach(function(ms){setTimeout(function(){if(!compact()||authBlocking())return;installCss();ensureChrome();if(!state.detail)showShell(state.tab);},ms);});}
+function schedule(){clearTimeout(scheduleTimer);scheduleTimer=setTimeout(function(){if(!compact()||authBlocking())return;installCss();ensureChrome();if(!state.detail)showShell(state.tab);},90);}
 function boot(){
   installCss();document.addEventListener('click',click,true);document.addEventListener('input',input,true);
   schedule();
 }
 document.addEventListener('pst:modules-ready',schedule);
-document.addEventListener('pst:home-canonical-rendered',function(){if(!state.detail&&state.tab==='home')render();});
+document.addEventListener('pst:home-canonical-rendered',function(){if(state.detail||state.tab!=='home')return;clearTimeout(homeRenderTimer);homeRenderTimer=setTimeout(render,140);});
 document.addEventListener('pst:mobile-pin-unlocked',schedule);
 window.addEventListener('pageshow',schedule);window.addEventListener('focus',function(){ensureChrome();if(!state.detail)render();});window.addEventListener('resize',schedule);window.addEventListener('orientationchange',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
