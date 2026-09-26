@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 159,
-  "sequenceSha256": "6c7eeaac65d80b9a22b94e0014b67dd2bb6e10aad404f98aa31325fcfd0f81d4",
+  "sequenceSha256": "73c31cc126eacb5691504cb6bc9c369c8b194b9d15dcc434a55c4f09a9362dfe",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260925-single-login1",
