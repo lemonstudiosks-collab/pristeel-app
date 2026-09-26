@@ -75,7 +75,7 @@
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Canonical Home remains the sole Home data/state owner. Existing mobile Home remains the bounded utility/public-source provider. Mobile App v2 is the final <=900px presentation shell: it hides legacy mobile/desktop Home surfaces while active, consumes canonical Home snapshots and existing project/opportunity/inbox/material/representation owners, adds four primary tabs plus a central quick-create action and real touch swipe on opportunity cards, and performs no independent business-state engine or automatic protected action."
+      "note": "Canonical Home remains the sole Home data/state owner. Existing mobile Home remains the bounded utility/public-source provider. pristeel-mobile-app-v2.js is the final <=900px presentation shell (runtime v3): it mounts outside the legacy app shell, fully covers/hides the legacy desktop/mobile surfaces while active, and presents Home, Projects, Discover and Inbox as one four-page horizontal pager with direct bottom-tab shortcuts plus full-page touch swipe. Secondary/detail flows continue through their existing canonical owners. It adds no independent business-state engine, no direct Supabase reads/writes, no polling and no automatic protected action."
     },
     {
       "area": "projects-list",
