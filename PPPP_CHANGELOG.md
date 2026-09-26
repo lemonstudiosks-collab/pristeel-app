@@ -1,3 +1,10 @@
+## 2026-09-26 — PPPP Mobile native vertical scroll fix
+
+- Removed the pager touchmove interception entirely on iPhone.
+- Vertical scrolling is now left fully to Safari/native page scrolling; PPPP only decides whether a horizontal page swipe happened after the finger is released.
+- A page change now requires a clearly horizontal gesture (minimum 72 px and materially larger than vertical movement).
+- This preserves Home / Projects / Discover / Inbox full-page swipe without competing with vertical scrolling.
+
 ## 2026-09-26 — PPPP Mobile vertical scroll gesture fix
 
 - Fixed iPhone gesture contention between full-page horizontal swipe and per-page vertical scrolling.

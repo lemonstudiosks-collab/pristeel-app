@@ -28,8 +28,8 @@ for(const label of ['Home','Projects','Discover','Inbox','Pyet PPPP…','Swipe n
 }
 assert(js.includes('TAB_ORDER')&&js.includes("['home','projects','discover','inbox']"),'primary full-page pager order missing');
 assert(js.includes('data-pma-page-track')&&js.includes('bindPageSwipe'),'full-page pager contract missing');
-assert(js.includes('touchstart')&&js.includes('touchmove')&&js.includes('touchend'),'full-page pager must support real touch swipe');
-assert(js.includes("axis='vertical'")&&js.includes("if(axis==='vertical')return"),'vertical scroll must lock out horizontal pager handling');
+assert(js.includes('touchstart')&&js.includes('touchend'),'full-page pager must detect touch swipe without intercepting vertical movement');
+assert(!js.includes("pager.addEventListener('touchmove'"),'pager must not own touchmove; native iPhone vertical scrolling keeps full control');
 assert(js.includes('touch-action:pan-y'),'mobile pages must explicitly preserve native vertical pan');
 assert(js.includes('overflow-y:scroll'),'each primary page must own a dedicated vertical scroll container');
 assert(js.includes('touchcancel'),'pager must recover cleanly from cancelled iOS gestures');
