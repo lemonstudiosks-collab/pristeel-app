@@ -47,10 +47,14 @@ assert(js.includes("data-pmh-tool=\"weight\""),'weight calculator entry missing'
 assert(js.includes("data-pmh-tool=\"convert\""),'unit converter entry missing');
 assert(js.includes("data-pmh-source=\"steelbenchmarker\""),'SteelBenchmarker resource missing');
 assert(!js.includes('Mostra publike e fundit'),'stale public sample steel prices must not be shown on Home');
-assert(js.includes('Hap çmimin aktual'),'steel rows must open the current external market source instead of showing stale numbers');
+assert(js.includes('Hap burimin'),'steel rows must open the market source without falsely claiming that a public sample price is live');
 assert(!js.includes("value:'$504.5/t'"),'stale HRC sample price must be removed');
 assert(!js.includes("value:'$592.5/t'"),'stale rebar sample price must be removed');
 assert(js.includes("data-pmh-tool=\"currency\""),'currency converter entry missing');
+assert(js.includes('PSTOpenAIAssistantV1'),'Pyet PPPP must call the existing PPPP AI owner');
+assert(js.includes("scope:'global'"),'mobile Pyet PPPP must query the global PPPP scope');
+assert(!js.includes("pstWsSearch==='function'"),'Pyet PPPP must not fall back to generic workspace search');
+assert(js.includes('steelbenchmarker.com/history.pdf'),'SteelBenchmarker shortcut must open the latest public benchmark report');
 assert(js.includes('Ky shënim është lokal dhe nuk regjistrohet në PPPP.'),'quick note must not pretend to write into PPPP');
 assert(!/<img\b/i.test(js),'approved mobile Home must not include decorative/structure photos');
 

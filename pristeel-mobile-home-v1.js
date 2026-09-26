@@ -8,8 +8,9 @@
  * - no Supabase reads/writes
  * - no PPPP business-state ownership
  * - no polling, DOM ownership observer or service worker
- * - one cached public weather request (Open-Meteo) only
- * - steel prices shown are clearly dated public sample values; source opens on tap
+ * - bounded cached public reads: Open-Meteo weather + on-demand ECB FX
+ * - no stale/sample steel numbers on Home; market rows open their public sources
+ * - Pyet PPPP delegates to the existing read-only PPPP AI owner
  */
 (function(){
 'use strict';
@@ -17,7 +18,7 @@ if(window.__pstMobileHomeV2)return;
 window.__pstMobileHomeV2=true;
 window.__pstMobileHomeV1=true;
 
-var VERSION='20260926-market-home2';
+var VERSION='20260926-market-home3';
 var weatherPromise=null;
 var fxPromise=null;
 var WEATHER_CACHE='pst_mobile_weather_cache_v1';
@@ -33,7 +34,7 @@ var MARKET=[
 ];
 
 var SOURCES={
-  steelbenchmarker:'https://steelbenchmarker.com/',
+  steelbenchmarker:'https://steelbenchmarker.com/history.pdf',
   news:'https://www.steelorbis.com/steel-news/latest-news/',
   weather:'https://www.meteoblue.com/en/weather/week/pristina_kosovo_786714',
   calendar:'https://calendar.google.com/calendar/u/0/r'
@@ -130,7 +131,7 @@ function clearShellFix(){
 
 function marketRows(){
   return MARKET.map(function(x,i){
-    return '<button type="button" class="pmh-market-row" data-pmh-market="'+i+'"><span class="pmh-market-name">'+E(x.label)+'</span><span class="pmh-market-live">Hap çmimin aktual ↗</span></button>';
+    return '<button type="button" class="pmh-market-row" data-pmh-market="'+i+'"><span class="pmh-market-name">'+E(x.label)+'</span><span class="pmh-market-live">Hap burimin ↗</span></button>';
   }).join('');
 }
 function markup(){
@@ -142,7 +143,7 @@ function markup(){
     +'<button type="button" class="pmh-info pmh-weather" data-pmh-weather><div class="pmh-info-title"><span>'+svg('pin')+'</span><b>Prishtinë</b></div><div class="pmh-weather-main"><span class="pmh-weather-temp" data-pmh-weather-temp>--°C</span><span class="pmh-weather-icon" data-pmh-weather-icon>🌤️</span></div><div class="pmh-weather-desc" data-pmh-weather-desc>Duke marrë motin…</div><div class="pmh-weather-range" data-pmh-weather-range>H: --° · L: --°</div></button>'
     +'<button type="button" class="pmh-info pmh-weather" data-pmh-calendar><div class="pmh-info-title"><span>'+svg('calendar')+'</span><b data-pmh-weekday>Sot</b></div><div class="pmh-date-full" data-pmh-date></div><div class="pmh-time-pill">'+svg('clock')+'<span data-pmh-time>--:--</span></div><div class="pmh-dayline">Një ditë e mbarë<br>për punë të mëdha.</div></button>'
   +'</div>'
-  +'<section class="pmh-card"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('chart')+'</span><b>Tregu i Çelikut</b><button type="button" class="pmh-card-link" data-pmh-market-all>Shiko më shumë →</button></div><div class="pmh-market-list">'+marketRows()+'</div><div class="pmh-market-foot"><span>Pa çmime sample në Ballinë</span><b>Burimi hapet live</b></div></section>'
+  +'<section class="pmh-card"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('chart')+'</span><b>Tregu i Çelikut</b><button type="button" class="pmh-card-link" data-pmh-market-all>Shiko më shumë →</button></div><div class="pmh-market-list">'+marketRows()+'</div><div class="pmh-market-foot"><span>Pa çmime sample në Ballinë</span><b>Hap burimin më të fundit</b></div></section>'
   +'<div class="pmh-lower-grid">'
     +'<section class="pmh-mini"><div class="pmh-mini-head"><span class="pmh-mini-icon">'+svg('tool')+'</span><b>Mjete të dobishme</b><span class="pmh-chevron">'+svg('arrow')+'</span></div><div class="pmh-mini-list">'
       +'<button type="button" class="pmh-mini-row" data-pmh-tool="weight"><span>'+svg('scale')+'</span><em>Kalkulator peshe</em></button>'
@@ -203,7 +204,6 @@ function loadWeather(root){
   return weatherPromise;
 }
 function openExternal(url){if(!url)return false;try{window.open(url,'_blank','noopener');return true;}catch(e){window.location.href=url;return true;}}
-function openSearch(){try{if(typeof window.pstWsSearch==='function')return window.pstWsSearch();if(typeof window.openCmdK==='function')return window.openCmdK();}catch(e){}return false;}
 
 function closeSheet(node){if(node&&node.parentNode)node.parentNode.removeChild(node);}
 function openSheet(title,body){
@@ -213,6 +213,33 @@ function openSheet(title,body){
   back.addEventListener('click',function(e){if(e.target===back||e.target.closest('[data-pmh-sheet-close]'))closeSheet(back);});
   document.body.appendChild(back);return back;
 }
+function askPppp(){
+  var back=openSheet('Pyet PPPP','<div class="pmh-form"><label>Pyetja<textarea data-pmh-ask-input placeholder="P.sh. Çfarë kemi nga SPIE? Cili projekt kërkon veprim?"></textarea></label><button type="button" class="pmh-primary" data-pmh-ask-send>Pyet PPPP</button><div class="pmh-note" data-pmh-ask-state>PPPP do të lexojë gjendjen live dhe do të përgjigjet këtu.</div><div class="pmh-result" data-pmh-ask-result hidden></div></div>');
+  var input=back.querySelector('[data-pmh-ask-input]'),btn=back.querySelector('[data-pmh-ask-send]'),state=back.querySelector('[data-pmh-ask-state]'),out=back.querySelector('[data-pmh-ask-result]'),last=null;
+  async function submit(){
+    var q=S(input&&input.value).trim();if(!q||btn.disabled)return;
+    var api=window.PSTOpenAIAssistantV1,bridge=window.PSTProjectContextBridge,ask=api&&typeof api.ask==='function'?api.ask:(bridge&&typeof bridge.ask==='function'?bridge.ask:null);
+    if(!ask){state.textContent='PPPP AI po ngarkohet. Provo përsëri pas pak.';return;}
+    btn.disabled=true;btn.textContent='Duke pyetur…';input.disabled=true;state.textContent='Po lexoj gjendjen live të PPPP…';out.hidden=true;out.innerHTML='';
+    try{
+      last=await ask(q,{scope:'global'});
+      var html='<div>'+E(last&&last.answer||'Nuk mora përgjigje.').replace(/\n/g,'<br>')+'</div>';
+      if(last&&last.suggested_next_step)html+='<div class="pmh-note" style="margin-top:10px"><b>Hapi i radhës:</b> '+E(last.suggested_next_step)+'</div>';
+      if(last&&last.uncertainty)html+='<div class="pmh-note" style="margin-top:6px">'+E(last.uncertainty)+'</div>';
+      if(last&&last.navigation&&last.navigation.project_id)html+='<button type="button" class="pmh-primary" style="margin-top:10px;width:100%" data-pmh-ask-open>Hap '+E(last.navigation.project_name||'projektin')+' →</button>';
+      out.innerHTML=html;out.hidden=false;state.textContent='';
+      var open=out.querySelector('[data-pmh-ask-open]');
+      if(open)open.addEventListener('click',function(){try{if(api&&typeof api.navigate==='function')api.navigate(last);else if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(last.navigation.project_id);}catch(e){}closeSheet(back);});
+    }catch(err){
+      out.textContent='Nuk arrita ta marr përgjigjen nga PPPP. '+S(err&&err.message||'Provo përsëri.');out.hidden=false;state.textContent='';
+    }finally{btn.disabled=false;btn.textContent='Pyet PPPP';input.disabled=false;input.focus();}
+  }
+  btn.addEventListener('click',submit);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit();}});
+  setTimeout(function(){try{input.focus();}catch(e){}},60);
+  return back;
+}
+function openSearch(){return askPppp();}
 function weightTool(){
   var back=openSheet('Kalkulator peshe','<div class="pmh-form"><div class="pmh-form-grid"><label>Gjatësia (mm)<input type="number" inputmode="decimal" data-w-l placeholder="6000"></label><label>Gjerësia (mm)<input type="number" inputmode="decimal" data-w-w placeholder="2000"></label><label>Trashësia (mm)<input type="number" inputmode="decimal" data-w-t placeholder="10"></label><label>Sasia<input type="number" inputmode="numeric" min="1" value="1" data-w-q></label></div><div class="pmh-result" data-w-result>Fut dimensionet për të llogaritur peshën.</div><div class="pmh-note">Llogaritje për pllakë çeliku me dendësi 7,850 kg/m³.</div></div>');
   function calc(){var l=Number(back.querySelector('[data-w-l]').value),w=Number(back.querySelector('[data-w-w]').value),t=Number(back.querySelector('[data-w-t]').value),q=Number(back.querySelector('[data-w-q]').value||1),out=back.querySelector('[data-w-result]');if(!(l>0&&w>0&&t>0&&q>0)){out.textContent='Fut dimensionet për të llogaritur peshën.';return;}var kg=l*w*t*0.00000785*q;out.textContent='Pesha: '+kg.toLocaleString('sq-AL',{maximumFractionDigits:2})+' kg';}
