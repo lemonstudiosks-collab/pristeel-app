@@ -29,7 +29,7 @@ var MARKET=[
   {label:'Hot Rolled Coil (HRC)',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/hot-rolled-coil.htm'},
   {label:'Rebar',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/rebar.htm'},
   {label:'Scrap (HMS I/II)',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/scrap.htm'},
-  {label:'Plate',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/steel-plate.htm'}
+  {label:'Plate',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-prices/steel-price-analysis/'}
 ];
 
 var SOURCES={
