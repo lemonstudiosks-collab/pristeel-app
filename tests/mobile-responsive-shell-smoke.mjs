@@ -26,7 +26,13 @@ assert(!/body\s+\.sidebar\s*\{\s*display\s*:\s*none/i.test(js),'must not globall
 for(const key of ['home','tenders','projects','contacts','finance','apps']){
   assert(js.includes("key:'"+key+"'"),'missing mobile route '+key);
 }
-assert(js.includes('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'), 'mobile navigation must delegate to canonical nav');
+assert(js.includes('PSTPrimaryNavResilienceV10'),'mobile navigation must call the canonical six-zone router directly');
+assert(js.includes("R&&typeof R.route==='function'"),'mobile navigation must use canonical router when available');
+assert(js.includes("nav.parentNode!==document.body"),'mobile navigation must remain mounted directly under body');
+assert(js.includes('z-index:2147483000!important'),'mobile navigation must stay above page overlays');
+assert(js.includes('pointer-events:auto!important'),'mobile navigation must remain clickable above page owners');
+assert(js.includes("document.addEventListener('pst:page-opened',schedule)"),'mobile navigation must reassert itself after every route change');
+assert(js.includes('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'), 'mobile navigation may keep canonical sidebar click only as fallback');
 assert(manifest.display==='standalone','manifest must use standalone display');
 assert(manifest.prefer_related_applications===false,'manifest must keep web-app installation primary');
 assert(manifest.icons.some(i=>i.src==='assets/pristeel-app-icon-192.png'&&i.sizes==='192x192'),'manifest needs 192px raster icon');
