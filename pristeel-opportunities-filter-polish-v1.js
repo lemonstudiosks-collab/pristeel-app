@@ -319,7 +319,7 @@ function consume(e){if(!e)return;var control=e.target&&e.target.closest?e.target
 async function createDraft(id,button){
  var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.prepareDraft!=='function')throw new Error('Draft workflow nuk është gati.');
  if(button){button.disabled=true;button.textContent='Duke krijuar draftin…';}
- try{await P.prepareDraft(id);selectedId=S(id);if(api&&typeof api.loadOpportunities==='function')await api.loadOpportunities(true);schedule();}finally{if(button)button.disabled=false;}
+ try{var out=await P.prepareDraft(id);var results=A(out&&out.results),ok=results.some(function(x){var ev=S(x&&x.event);return ev==='draft_created'||ev==='draft_preserved'||ev==='already_covered'||Number(x&&x.created)>0||Number(x&&x.preserved)>0||Number(x&&x.sent)>0;});if(!ok)throw new Error('PPPP e pranoi komandën, por nuk regjistroi asnjë draft. Opportunity mbetet në listë derisa drafti të konfirmohet.');selectedId=S(id);if(api&&typeof api.loadOpportunities==='function')await api.loadOpportunities(true);schedule();}finally{if(button)button.disabled=false;}
 }
 async function removeOpportunity(id,button){
  var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.noGo!=='function')throw new Error('Heqja e mundësisë nuk është gati.');

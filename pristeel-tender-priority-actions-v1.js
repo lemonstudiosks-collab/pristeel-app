@@ -122,6 +122,7 @@ async function prepareDraft(id){
  if(event==='readiness_blocked')throw new Error('Drafti u bllokua nga verifikimi i recipient-it'+(reason?': '+reason:'')+'.');
  if(event==='route_mismatch')throw new Error('Roli/rruga e kompanisë ka ndryshuar. Rifresko Opportunity-n dhe provo përsëri.');
  if(event==='no_recipients'||!recipientCount)throw new Error('Asnjë recipient i verifikuar nuk kaloi kontrollin e kompanisë. Drafti nuk u krijua.');
+ if(created+preserved+sent<=0)throw new Error('PPPP e pranoi komandën, por generatori nuk konfirmoi krijimin ose ruajtjen e asnjë drafti. Kontakti nuk do të shënohet si i kontaktuar.');
  if(typeof window.pstToast==='function')window.pstToast('PPPP përgatiti/përditësoi '+recipientCount+' draft(e) të verifikuara · të reja '+created+' · ekzistuese '+preserved+' · të dërguara '+sent+'.','ok');
  window.open('https://mail.google.com/mail/u/0/#drafts','_blank','noopener');
  try{document.dispatchEvent(new CustomEvent('pst:tender-gmail-drafts-ready',{detail:{tender_id:S(id),action_id:S(a.id),recipient_count:recipientCount,covered:covered,created:created,human_send_required:true}}));}catch(e){}
