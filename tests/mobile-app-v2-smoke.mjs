@@ -56,7 +56,7 @@ assert(js.includes('data-pma-util="weather"')&&js.includes('data-pma-util="fx"')
 assert(js.includes('pma-ask-copy'),'Ask PPPP mobile copy must stay in one stable grid cell');
 assert(js.includes('pma-work-feed')&&js.includes('pma-work-card'),'Projects must use card-feed presentation');
 assert(js.includes('pma-discover-feed')&&js.includes("rows.map(function(r,idx)"),'Discover tenders must render a vertical multi-opportunity feed');
-assert(js.includes('targete Material Trade')&&js.includes('targete Përfaqësime'),'Discover secondary feeds must expose real target counts');
+assert(js.includes('targete Material Trade')&&js.includes('targete të aprovuara')&&js.includes('mundësi për screening'),'Discover secondary feeds must expose real Material counts plus Representation target/screening counts');
 assert(js.includes('PPPP email sync')&&js.includes('canonicalRows'),'Inbox must fall back to canonical Gmail-synced project_emails');
 assert(!js.includes('[0,80,220,600,1200].forEach'),'mobile startup must not repaint the full shell five times');
 assert(js.includes('data-pma-more'),'secondary Partner/Finance/System access missing');
