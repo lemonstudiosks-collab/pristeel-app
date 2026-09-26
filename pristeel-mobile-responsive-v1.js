@@ -39,8 +39,9 @@ function installCss(){
   body .page{max-width:100%!important;min-width:0!important}
   body input,body select,body textarea{max-width:100%}
   #pst-mobile-nav-v1{
-    position:fixed;left:0;right:0;bottom:0;z-index:450;
-    display:grid;grid-template-columns:repeat(6,minmax(0,1fr));
+    position:fixed!important;left:0!important;right:0!important;bottom:0!important;z-index:2147483000!important;
+    display:grid!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;
+    grid-template-columns:repeat(6,minmax(0,1fr));
     padding:6px 6px calc(6px + env(safe-area-inset-bottom));
     background:rgba(255,255,255,.96);border-top:1px solid rgba(28,39,49,.12);
     box-shadow:0 -6px 22px rgba(24,34,44,.08);
@@ -51,7 +52,7 @@ function installCss(){
     min-width:0;min-height:48px;padding:4px 2px;border-radius:10px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
     font:650 8.5px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-    cursor:pointer;-webkit-tap-highlight-color:transparent;overflow:hidden
+    cursor:pointer;-webkit-tap-highlight-color:transparent;overflow:hidden;pointer-events:auto!important;touch-action:manipulation
   }
   #pst-mobile-nav-v1 button svg{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #pst-mobile-nav-v1 button span{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -78,9 +79,20 @@ function installCss(){
 }
 
 function route(key){
+  try{
+    var R=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV9||window.PSTPrimaryNavResilienceV1;
+    if(R&&typeof R.route==='function'&&R.route(key)!==false)return true;
+  }catch(e){}
   var canonical=document.querySelector('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'+key+'"]');
   if(canonical&&typeof canonical.click==='function'){canonical.click();return true;}
-  if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo(key);return true;}
+  if(typeof window.pstWorkspaceGo==='function'){
+    if(key==='tenders'){
+      try{if(typeof window.pstTenderBizOpenMonitor==='function'){window.pstTenderBizOpenMonitor();return true;}}catch(e){}
+      try{if(typeof window.pstWsKekTenders==='function'){window.pstWsKekTenders();return true;}}catch(e){}
+      return false;
+    }
+    window.pstWorkspaceGo(key);return true;
+  }
   return false;
 }
 function activeKey(){
@@ -101,7 +113,11 @@ function sync(){
 }
 function ensureNav(){
   var nav=document.getElementById('pst-mobile-nav-v1');
-  if(nav){sync();return nav;}
+  if(nav){
+    if(document.body&&nav.parentNode!==document.body)document.body.appendChild(nav);
+    nav.style.removeProperty('display');nav.style.removeProperty('visibility');nav.style.removeProperty('pointer-events');
+    sync();return nav;
+  }
   nav=document.createElement('nav');
   nav.id='pst-mobile-nav-v1';
   nav.setAttribute('aria-label','Navigimi kryesor në telefon');
@@ -111,9 +127,12 @@ function ensureNav(){
   nav.addEventListener('click',function(e){
     var b=e.target&&e.target.closest?e.target.closest('button[data-key]'):null;
     if(!b)return;
-    e.preventDefault();
+    e.preventDefault();e.stopPropagation();
+    if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
     route(b.getAttribute('data-key'));
-    setTimeout(sync,0);setTimeout(sync,120);setTimeout(sync,420);
+    setTimeout(function(){ensureNav();sync();},0);
+    setTimeout(function(){ensureNav();sync();},120);
+    setTimeout(function(){ensureNav();sync();},420);
   });
   document.body.appendChild(nav);sync();return nav;
 }
@@ -124,14 +143,16 @@ function install(){
   installCss();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
   document.addEventListener('pst:modules-ready',schedule);
-  document.addEventListener('pst:home-canonical-rendered',sync);
-  document.addEventListener('pst:project-opened',sync);
+  document.addEventListener('pst:home-canonical-rendered',schedule);
+  document.addEventListener('pst:project-opened',schedule);
+  document.addEventListener('pst:page-opened',schedule);
   document.addEventListener('click',function(e){
     var t=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav [data-key],[onclick*="pstWorkspaceGo"]'):null;
     if(t)setTimeout(sync,80);
   },true);
-  window.addEventListener('pageshow',sync);
-  window.addEventListener('hashchange',sync);
+  window.addEventListener('pageshow',schedule);
+  window.addEventListener('hashchange',schedule);
+  window.addEventListener('focus',schedule);
 }
 install();
 window.PSTMobileResponsiveV1={schedule:schedule,sync:sync,route:route};

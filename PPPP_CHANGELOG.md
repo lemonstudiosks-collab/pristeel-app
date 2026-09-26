@@ -1,3 +1,12 @@
+## 2026-09-26 — Global mobile bottom-navigation hotfix
+
+- Restored the six mobile bottom-navigation buttons as a global phone/tablet control independent from Home rendering.
+- Mobile navigation now calls the canonical `PSTPrimaryNavResilienceV10.route(...)` router first instead of depending on clicks against the hidden desktop sidebar.
+- The nav is reattached directly under `document.body`, kept above page overlays, and explicitly retains pointer/touch interaction on every mobile route including Ballina.
+- Added route-change/focus reassertion and regression guards so Home or another page owner cannot silently hide or disable the bottom nav.
+- Bumped the mobile shell cache token so phones receive the corrected navigation immediately.
+- No Supabase reads/writes, polling or business workflow logic changed.
+
 ## 2026-09-26 — Mobile Home canonical mount hotfix
 
 - Fixed the blank mobile Home seen on a real phone: the mobile presentation no longer depends on the optional `#pst-native-home-v4` container.
