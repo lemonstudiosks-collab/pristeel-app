@@ -29,6 +29,10 @@ for(const label of ['Home','Projects','Discover','Inbox','Pyet PPPP…','Swipe n
 assert(js.includes('TAB_ORDER')&&js.includes("['home','projects','discover','inbox']"),'primary full-page pager order missing');
 assert(js.includes('data-pma-page-track')&&js.includes('bindPageSwipe'),'full-page pager contract missing');
 assert(js.includes('touchstart')&&js.includes('touchmove')&&js.includes('touchend'),'full-page pager must support real touch swipe');
+assert(js.includes("axis='vertical'")&&js.includes("if(axis==='vertical')return"),'vertical scroll must lock out horizontal pager handling');
+assert(js.includes('touch-action:pan-y'),'mobile pages must explicitly preserve native vertical pan');
+assert(js.includes('overflow-y:scroll'),'each primary page must own a dedicated vertical scroll container');
+assert(js.includes('touchcancel'),'pager must recover cleanly from cancelled iOS gestures');
 assert(js.includes("document.body.appendChild(r)"),'mobile root must mount outside the legacy app shell');
 assert(js.includes('body.pst-mobile-v2-active #app-shell-root{visibility:hidden!important'),'legacy app shell must be fully hidden under the mobile shell');
 assert(js.includes("app&&!visible(app)&&!shellActive"),'mobile auth guard must ignore the intentionally hidden legacy app shell while v3 is active');
