@@ -19,6 +19,7 @@ var state={
   tab:'home',detail:false,projectQuery:'',discover:'tenders',
   opportunities:[],opportunityIndex:0,oppLoading:false,
   inboxLoading:false,materialLoading:false,repLoading:false,
+  homeCache:null,homeCacheAt:0,scrollByTab:{home:0,projects:0,discover:0,inbox:0},
   plusOpen:false,moreOpen:false,
   nativeProjectId:'',projectReturnTab:'projects',
   nativeCompanyMode:'',nativeCompanyKey:'',companySearch:'',companyFilter:'all',companyBusy:false,companyReturnTab:'home'
@@ -79,7 +80,16 @@ function projectDate(v){
   return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});
 }
 function homeSnapshot(){
-  try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.snapshot==='function'){var x=H.snapshot()||{};return{actions:A(x.actions),waiting:A(x.waiting),projects:A(x.projects)};}}catch(e){}
+  try{
+    var H=window.PSTHomeCanonicalV1;
+    if(H&&typeof H.snapshot==='function'){
+      var x=H.snapshot()||{},snap={actions:A(x.actions),waiting:A(x.waiting),projects:A(x.projects)};
+      if(snap.actions.length||snap.waiting.length||snap.projects.length){state.homeCache=snap;state.homeCacheAt=Date.now();return snap;}
+      if(state.homeCache&&Date.now()-state.homeCacheAt<30000)return state.homeCache;
+      return snap;
+    }
+  }catch(e){}
+  if(state.homeCache&&Date.now()-state.homeCacheAt<30000)return state.homeCache;
   return{actions:[],waiting:[],projects:[]};
 }
 function projectId(r){return S(r&&r.project_id||(r&&r.row&&r.row.id)||(r&&r.context&&r.context.project&&r.context.project.id)||r&&r.id);}
@@ -329,12 +339,19 @@ function discoverMaterial(){
   }).join(''):'<div class="pma-empty large">Nuk ka targete aktive Material Trade.<button type="button" data-pma-material-refresh>Rifresko</button></div>')+'</div>';
 }
 function discoverRep(){
-  var R=window.PSTRepresentationsV1,s=R&&typeof R.snapshot==='function'?R.snapshot():{},rows=A(s.rows).filter(function(r){return !r.archived_at;}).slice(0,40);
-  if(state.repLoading&&!rows.length)return '<div class="pma-empty large">Duke lexuar Përfaqësimet…</div>';
-  return '<div class="pma-discover-summary"><b>'+E(rows.length)+'</b><span>targete Përfaqësime</span></div><div class="pma-target-feed">'+(rows.length?rows.map(function(r){
+  var R=window.PSTRepresentationsV1,s=R&&typeof R.snapshot==='function'?R.snapshot():{},targets=A(s.rows).filter(function(r){return !r.archived_at;}).slice(0,30),opps=A(s.opportunities);
+  var open=opps.filter(function(r){return S(r.status)==='tender_open';}),review=opps.filter(function(r){return S(r.status)!=='tender_open';}),feed=open.concat(review).slice(0,30);
+  if(state.repLoading&&!targets.length&&!feed.length)return '<div class="pma-empty large">Duke lexuar Përfaqësimet…</div>';
+  var targetHtml=targets.length?'<div class="pma-target-feed">'+targets.map(function(r){
     var why=r.priority_reason||r.why_kosovo||r.next_action||'Target për zhvillim përfaqësimi.';
-    return '<button type="button" class="pma-target-card rep" data-pma-open-rep><div class="pma-target-top"><span>PËRFAQËSIM</span><em>'+E(r.priority_score!=null?r.priority_score:'')+'</em></div><h3>'+E(r.company_name||'Kompani')+'</h3><small>'+E([r.country,r.sector,r.product_category].filter(Boolean).join(' · '))+'</small><p>'+E(short(why,150))+'</p><div><b>'+E(r.stage||'found')+'</b><i>'+icon('chevron')+'</i></div></button>';
-  }).join(''):'<div class="pma-empty large"><b>0 targete aktive</b><span>Përfaqësimet nuk kanë ende targete canonical të regjistruara.</span><button type="button" data-pma-open-rep>Hap modulin Përfaqësime</button></div>')+'</div>';
+    return '<button type="button" class="pma-target-card rep" data-pma-open-rep><div class="pma-target-top"><span>TARGET</span><em>'+E(r.priority_score!=null?r.priority_score:'')+'</em></div><h3>'+E(r.company_name||'Kompani')+'</h3><small>'+E([r.country,r.sector,r.product_category].filter(Boolean).join(' · '))+'</small><p>'+E(short(why,150))+'</p><div><b>'+E(r.stage||'found')+'</b><i>'+icon('chevron')+'</i></div></button>';
+  }).join('')+'</div>':'';
+  var oppHtml=feed.length?'<div class="pma-rep-review-head"><b>'+E(open.length)+'</b><span>të hapura · '+E(feed.length)+' për screening</span></div><div class="pma-target-feed">'+feed.map(function(r){
+    var live=S(r.status)==='tender_open',meta=[r.funding_institution,r.tender_reference,r.procurement_stage].filter(Boolean).join(' · ');
+    return '<button type="button" class="pma-target-card rep '+(live?'live':'review')+'" data-pma-open-rep><div class="pma-target-top"><span>'+(live?'TENDER I HAPUR':'SCREENING')+'</span><em>'+E(r.verification_status||'review')+'</em></div><h3>'+E(r.project_name||'Mundësi partneriteti')+'</h3><small>'+E(meta)+'</small><p>'+E(short(r.scope||'Kandidat për JV / partner lokal / përfaqësim.',150))+'</p><div><b>'+E(live?'Shqyrto tani':'Për review')+'</b><i>'+icon('chevron')+'</i></div></button>';
+  }).join('')+'</div>':'';
+  return '<div class="pma-discover-summary"><b>'+E(targets.length)+'</b><span>targete të aprovuara · '+E(opps.length)+' mundësi për screening</span></div>'+targetHtml+oppHtml+
+    ((!targets.length&&!feed.length)?'<div class="pma-empty large"><b>Nuk ka të dhëna Përfaqësime.</b><button type="button" data-pma-open-rep>Hap modulin Përfaqësime</button></div>':'');
 }
 function discoverView(){
   return '<div class="pma-screen">'+header('Discover','Mundësi të reja për PriSteel')+
@@ -399,12 +416,16 @@ function render(){
   var r=document.getElementById(ROOT);
   if(!r){r=document.createElement('main');r.id=ROOT;r.setAttribute('aria-label','PriSteel Mobile');document.body.appendChild(r);}
   if(!state.detail){
+    r.querySelectorAll('[data-pma-page]').forEach(function(p){var k=p.getAttribute('data-pma-page'),sc=p.querySelector('.pma-page-scroll');if(k&&sc)state.scrollByTab[k]=sc.scrollTop||0;});
     hideLegacyBack();document.body&&document.body.classList.add('pst-mobile-v2-active');r.style.display='block';r.innerHTML=rootMarkup();
   }else r.style.display='none';
   var old=document.querySelectorAll('.pma-sheetback');old.forEach(function(x){x.remove();});
   if(state.plusOpen)document.body.insertAdjacentHTML('beforeend',plusSheet());
   if(state.moreOpen)document.body.insertAdjacentHTML('beforeend',moreSheet());
-  ensureChrome();syncNav();bindPageSwipe();requestAnimationFrame(function(){syncPager(false);});return true;
+  ensureChrome();syncNav();bindPageSwipe();requestAnimationFrame(function(){
+    syncPager(false);
+    r.querySelectorAll('[data-pma-page]').forEach(function(p){var k=p.getAttribute('data-pma-page'),sc=p.querySelector('.pma-page-scroll');if(k&&sc&&state.scrollByTab[k]!=null)sc.scrollTop=state.scrollByTab[k];});
+  });return true;
 }
 function ensureChrome(){
   if(!compact())return;
@@ -456,7 +477,12 @@ async function loadMaterial(){
 async function loadRep(){
   var R=window.PSTRepresentationsV1;if(!R)return;
   state.repLoading=true;if(state.tab==='discover')render();
-  try{if(typeof R.refresh==='function')await R.refresh();}catch(e){try{console.warn('Mobile Representations',e);}catch(x){}}
+  try{
+    var jobs=[];
+    if(typeof R.refresh==='function')jobs.push(Promise.resolve(R.refresh()));
+    if(typeof R.loadOpportunities==='function')jobs.push(Promise.resolve(R.loadOpportunities(true)));
+    if(jobs.length)await Promise.all(jobs);
+  }catch(e){try{console.warn('Mobile Representations',e);}catch(x){}}
   finally{state.repLoading=false;if(state.tab==='discover')render();}
 }
 function bindPageSwipe(){
@@ -631,6 +657,7 @@ function installCss(){
   .pma-target-card{width:100%;border:1px solid #DDE7E9;border-radius:19px;background:#fff;padding:15px;text-align:left;box-shadow:0 7px 20px rgba(29,51,60,.035)}.pma-target-card.material{border-top:3px solid #4F9173}.pma-target-card.rep{border-top:3px solid #A88B52}.pma-target-top{display:flex;align-items:center;justify-content:space-between}.pma-target-top span{font-size:8px;font-weight:900;letter-spacing:.09em;color:#7E8D93}.pma-target-top em{font-style:normal;font-size:9px;font-weight:850;color:#397E93}.pma-target-card h3{margin:9px 0 0;font-size:16px;color:#243E48}.pma-target-card>small{display:block;margin-top:4px;font-size:9px;color:#87949A}.pma-target-card>p{margin:8px 0 0;font-size:10px;line-height:1.45;color:#74858C}.pma-target-card>div:last-child{margin-top:11px;display:flex;align-items:center;justify-content:space-between}.pma-target-card>div:last-child b{font-size:9px;color:#496873}.pma-target-card>div:last-child i{color:#3C8499}.pma-target-card svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2}
   .pma-inbox-status{display:flex;align-items:center;justify-content:space-between;margin:-2px 1px 9px;padding:8px 10px;border-radius:12px;background:#EEF4F6}.pma-inbox-status span{font-size:9px;font-weight:800;color:#7C898F}.pma-inbox-status span.on{color:#3D7C5C}.pma-inbox-status small{font-size:8.5px;color:#8D999D}.pma-inline-error{margin:0 0 9px;padding:9px 11px;border:1px solid #EBD2D2;border-radius:12px;background:#FFF7F7;color:#9B5555;font-size:9px}
   .pma-inbox-row{align-items:start;padding:13px}.pma-inbox-copy b{font-size:11.5px}.pma-inbox-copy em{font-size:9px;-webkit-line-clamp:3}
+  .pma-rep-review-head{display:flex;align-items:baseline;gap:6px;margin:14px 2px 8px}.pma-rep-review-head b{font-size:15px;color:#7D6840}.pma-rep-review-head span{font-size:9px;color:#8D979A}.pma-target-card.rep.live{border-top-color:#5D9470}.pma-target-card.rep.review{border-top-color:#B9A06A}
 
 }
 `;document.head.appendChild(s);
