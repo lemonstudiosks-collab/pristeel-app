@@ -6,6 +6,7 @@ import { JSDOM } from 'jsdom';
 const ui = fs.readFileSync('pristeel-representations-v1.js','utf8');
 const migration = fs.readFileSync('supabase/migrations/20260926062633_representations_module_v1.sql','utf8');
 const worker = fs.readFileSync('supabase/functions/chatgpt-command-bridge/worker.ts','utf8');
+const relationshipMigration = fs.readFileSync('supabase/migrations/20260926143300_representation_relationships_v1.sql','utf8');
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 
 new vm.Script(ui);
@@ -26,6 +27,11 @@ assert.doesNotMatch(migration,/insert\s+into\s+public\.(projects|partners|contac
 assert.match(worker,/'representation_target'/);
 assert.match(worker,/processRepresentationTarget/);
 assert.match(worker,/pppp_chatgpt_register_representation_target_v1/);
+assert.match(worker,/representation_relationship/);
+assert.match(relationshipMigration,/create table if not exists public\.pppp_representation_relationships_v1/i);
+assert.match(relationshipMigration,/pppp_chatgpt_register_representation_relationship_v1/i);
+assert.match(ui,/JV \/ Partnerë lokalë & rajonalë/);
+assert.match(ui,/data-rep-act=\"add-relationship\"/);
 assert.match(ui,/#perfaqesime/);
 assert.match(ui,/data-rep-toggle="pipeline"/);
 assert.match(ui,/data-rep-toggle="filters"/);
