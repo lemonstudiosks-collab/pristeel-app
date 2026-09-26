@@ -153,7 +153,6 @@ var files=[
   'pristeel-project-workflow-canonical-v1.js?v=20260822-flow2',
   'pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2',
   'pristeel-tender-priority-actions-v1.js?v=20260926-contactflow1',
-  'pristeel-project-centric-workflow-v1.js?v=20260926-contactflow1',
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
   'pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2',
   'pristeel-primary-nav-resilience-v1.js?v=20260924-layout-stability2',
