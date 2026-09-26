@@ -348,7 +348,7 @@ function discoverRep(){
   }).join('')+'</div>':'';
   var oppHtml=feed.length?'<div class="pma-rep-review-head"><b>'+E(open.length)+'</b><span>të hapura · '+E(feed.length)+' për screening</span></div><div class="pma-target-feed">'+feed.map(function(r){
     var live=S(r.status)==='tender_open',meta=[r.funding_institution,r.tender_reference,r.procurement_stage].filter(Boolean).join(' · ');
-    return '<button type="button" class="pma-target-card rep '+(live?'live':'review')+'" data-pma-open-rep><div class="pma-target-top"><span>'+(live?'TENDER I HAPUR':'SCREENING')+'</span><em>'+E(r.verification_status||'review')+'</em></div><h3>'+E(r.project_name||'Mundësi partneriteti')+'</h3><small>'+E(meta)+'</small><p>'+E(short(r.scope||'Kandidat për JV / partner lokal / përfaqësim.',150))+'</p><div><b>'+E(live?'Shqyrto tani':'Për review')+'</b><i>'+icon('chevron')+'</i></div></button>';
+    return '<button type="button" class="pma-target-card rep '+(live?'live':'review')+'" '+(r.official_source?'data-pma-rep-opportunity-url="'+E(r.official_source)+'"':'data-pma-open-rep')+'><div class="pma-target-top"><span>'+(live?'TENDER I HAPUR':'SCREENING')+'</span><em>'+E(r.verification_status||'review')+'</em></div><h3>'+E(r.project_name||'Mundësi partneriteti')+'</h3><small>'+E(meta)+'</small><p>'+E(short(r.scope||'Kandidat për JV / partner lokal / përfaqësim.',150))+'</p><div><b>'+E(live?'Shqyrto tani':'Për review')+'</b><i>'+icon('chevron')+'</i></div></button>';
   }).join('')+'</div>':'';
   return '<div class="pma-discover-summary"><b>'+E(targets.length)+'</b><span>targete të aprovuara · '+E(opps.length)+' mundësi për screening</span></div>'+targetHtml+oppHtml+
     ((!targets.length&&!feed.length)?'<div class="pma-empty large"><b>Nuk ka të dhëna Përfaqësime.</b><button type="button" data-pma-open-rep>Hap modulin Përfaqësime</button></div>':'');
@@ -535,6 +535,7 @@ function click(e){
   if(t.closest('[data-pma-material-refresh]')){loadMaterial();return;}
   if(t.closest('[data-pma-rep-refresh]')){loadRep();return;}
   if(t.closest('[data-pma-open-material]')){state.moreOpen=false;openMaterial();return;}
+  b=t.closest('[data-pma-rep-opportunity-url]');if(b){var ru=b.getAttribute('data-pma-rep-opportunity-url');if(ru)window.open(ru,'PRISTEEL_REP_OPPORTUNITY');return;}
   if(t.closest('[data-pma-open-rep]')){state.moreOpen=false;openRepresentations();return;}
   b=t.closest('[data-pma-inbox-refresh]');if(b){loadInbox(true,true);return;}
   if(t.closest('[data-pma-classic-inbox]')){mobileRoute('inbox');return;}
