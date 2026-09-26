@@ -1,3 +1,11 @@
+## 2026-09-26 — Safari blank mobile Home recovery
+
+- Fixed the iPhone Safari startup race visible as a white Home area while the six-button mobile navigation was already rendered.
+- The mobile Home can now mount temporarily into the legacy `#page-home` host when the canonical `#page-workspace-home` shell is not active yet, then moves to the canonical host when it becomes available.
+- If authentication is already unlocked and no other business page is active, a bounded startup recovery activates the available Home host instead of leaving the content area blank.
+- Recovery never runs over the email/password gate or PIN gate, never hijacks another active page, and adds no Supabase read/write path or polling.
+- Added bounded 3s/6s Safari recovery attempts and an immediate rerender signal after successful mobile PIN unlock.
+
 ## 2026-09-26 — iOS Home Screen app PIN bootstrap
 
 - Fixed the iPhone Home Screen web-app case where Safari opened PPPP with PIN but a newly installed standalone app asked again for email/password.

@@ -26,9 +26,16 @@ assert(js.includes("pst_mobile_ecb_fx_cache_v1"),'FX cache key missing');
 assert(js.includes("Math.min(iw,sw)<=900"),'mobile Home must use physical or viewport width for phone/tablet detection');
 assert(js.includes("document.body&&document.body.classList.add('pst-mobile-home-active')"),'mobile Home activation class missing');
 assert(!js.includes("document.getElementById('pst-native-home-v4')"),'mobile Home must not depend on optional native Home container');
-assert(js.includes("var host=home();if(!host)return false;"),'mobile Home must mount on canonical Home page');
-assert(js.includes("host.insertBefore(root,host.firstChild||null)"),'mobile Home must insert itself directly into canonical Home');
-assert(js.includes("#page-workspace-home>*:not(#pst-mobile-home-v1){display:none!important}"),'legacy Home owners must be hidden inside canonical Home while mobile Home is active');
+assert(js.includes("document.getElementById('page-workspace-home'),legacy=document.getElementById('page-home')"),'mobile Home must support both canonical and legacy startup Home hosts');
+assert(js.includes("var host=home();if(!host)return false;"),'mobile Home must resolve an active Home host before mounting');
+assert(js.includes("host.insertBefore(root,host.firstChild||null)"),'mobile Home must insert itself directly into the active Home host');
+assert(js.includes(".pst-mobile-home-host>*:not(#pst-mobile-home-v1){display:none!important}"),'other Home owners must be hidden inside the active mobile Home host');
+assert(js.includes("recoverBlankHome"),'mobile Home must recover the blank Safari startup state');
+assert(js.includes("otherActivePageVisible"),'blank Home recovery must not hijack another active business page');
+assert(js.includes("authBlocking"),'blank Home recovery must not bypass PIN or login gates');
+assert(js.includes("pst:mobile-pin-unlocked"),'mobile Home must render immediately after PIN unlock');
+assert(js.includes("1500,3000,6000"),'mobile Home startup must include bounded delayed recovery attempts for slow Safari loads');
+assert(!/setInterval\s*\(/.test(js),'blank Home recovery must remain bounded and must not poll');
 
 for(const label of [
   'Pyet PPPP…','Prishtinë','Tregu i Çelikut','Mjete të dobishme',

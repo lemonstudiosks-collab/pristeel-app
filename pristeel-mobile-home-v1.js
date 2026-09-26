@@ -18,7 +18,7 @@ if(window.__pstMobileHomeV2)return;
 window.__pstMobileHomeV2=true;
 window.__pstMobileHomeV1=true;
 
-var VERSION='20260926-market-home4';
+var VERSION='20260926-market-home5';
 var weatherPromise=null;
 var fxPromise=null;
 var WEATHER_CACHE='pst_mobile_weather_cache_v1';
@@ -43,8 +43,42 @@ var SOURCES={
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function compact(){var iw=Number(window.innerWidth||9999),sw=Number(window.screen&&window.screen.width||9999);return Math.min(iw,sw)<=900;}
-function home(){return document.getElementById('page-workspace-home');}
-function homeActive(){var p=home();return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
+function visible(el){
+  if(!el)return false;
+  try{var st=window.getComputedStyle?window.getComputedStyle(el):null;return (!st||st.display!=='none')&&(!st||st.visibility!=='hidden');}catch(e){return el.style.display!=='none';}
+}
+function activeHomeCandidate(el){return !!(el&&el.classList.contains('active')&&visible(el));}
+function home(){
+  var ws=document.getElementById('page-workspace-home'),legacy=document.getElementById('page-home');
+  if(activeHomeCandidate(ws))return ws;
+  if(activeHomeCandidate(legacy))return legacy;
+  return ws||legacy;
+}
+function homeActive(){return activeHomeCandidate(home());}
+function authBlocking(){
+  var pin=document.getElementById('pst-mobile-pin-gate'),auth=document.getElementById('auth-gate'),app=document.getElementById('app-shell-root');
+  if(pin&&pin.classList.contains('on'))return true;
+  if(auth&&visible(auth))return true;
+  if(app&&!visible(app))return true;
+  return false;
+}
+function otherActivePageVisible(){
+  var ws=document.getElementById('page-workspace-home'),legacy=document.getElementById('page-home'),found=false;
+  document.querySelectorAll('.page.active').forEach(function(p){if(p!==ws&&p!==legacy&&visible(p))found=true;});
+  return found;
+}
+function recoverBlankHome(){
+  if(!compact()||authBlocking()||homeActive()||otherActivePageVisible())return false;
+  var target=document.getElementById('page-workspace-home')||document.getElementById('page-home');
+  if(!target)return false;
+  document.querySelectorAll('.page').forEach(function(p){
+    if(p!==target){p.classList.remove('active');p.style.display='none';}
+  });
+  target.classList.add('active');target.style.display='block';target.style.visibility='visible';target.style.opacity='1';
+  try{if(document.body&&document.body.dataset)document.body.dataset.pstBusinessZone='home';}catch(e){}
+  try{if(window.PSTMobileResponsiveV1&&typeof window.PSTMobileResponsiveV1.sync==='function')window.PSTMobileResponsiveV1.sync();}catch(e){}
+  return true;
+}
 function greeting(){var h=new Date().getHours();return h<12?'Mirëmëngjes':h<18?'Mirëdita':'Mirëmbrëma';}
 function session(){
   try{if(typeof window.authGetSession==='function'){var s=window.authGetSession();if(s)return s;}}catch(e){}
@@ -91,15 +125,15 @@ function installCss(){
   if(document.getElementById('pst-mobile-home-v2-css'))return;
   var s=document.createElement('style');s.id='pst-mobile-home-v2-css';s.textContent=`
 #pst-mobile-home-v1{display:none}
-body.pst-mobile-home-active:has(#page-workspace-home.active) #app-shell-root{display:block!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:100%!important}
-body.pst-mobile-home-active:has(#page-workspace-home.active) #app-sidebar,
-body.pst-mobile-home-active:has(#page-workspace-home.active) #pst-v2-sidebar,
-body.pst-mobile-home-active:has(#page-workspace-home.active) #pst-ws-sidebar{display:none!important;visibility:hidden!important;width:0!important;min-width:0!important;max-width:0!important;flex:0 0 0!important}
-body.pst-mobile-home-active:has(#page-workspace-home.active) #app-shell-root>.main{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important}
-body.pst-mobile-home-active:has(#page-workspace-home.active) .content{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0 0 calc(78px + env(safe-area-inset-bottom))!important}
-body.pst-mobile-home-active:has(#page-workspace-home.active) .topbar{display:none!important}
-body.pst-mobile-home-active #page-workspace-home{display:block!important;width:100%!important;max-width:none!important;min-height:100dvh!important;margin:0!important;padding:0!important;background:#F8FAFA!important}
-body.pst-mobile-home-active #page-workspace-home>*:not(#pst-mobile-home-v1){display:none!important}
+body.pst-mobile-home-active #app-shell-root{display:block!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:100%!important}
+body.pst-mobile-home-active #app-sidebar,
+body.pst-mobile-home-active #pst-v2-sidebar,
+body.pst-mobile-home-active #pst-ws-sidebar{display:none!important;visibility:hidden!important;width:0!important;min-width:0!important;max-width:0!important;flex:0 0 0!important}
+body.pst-mobile-home-active #app-shell-root>.main{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important}
+body.pst-mobile-home-active .content{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0 0 calc(78px + env(safe-area-inset-bottom))!important}
+body.pst-mobile-home-active .topbar{display:none!important}
+body.pst-mobile-home-active .pst-mobile-home-host{display:block!important;width:100%!important;max-width:none!important;min-height:100dvh!important;margin:0!important;padding:0!important;background:#F8FAFA!important}
+body.pst-mobile-home-active .pst-mobile-home-host>*:not(#pst-mobile-home-v1){display:none!important}
 body.pst-mobile-home-active #pst-native-home-v4,
 body.pst-mobile-home-active #pst-home-launchpad-v1,
 body.pst-mobile-home-active .pst-morning-wrap,
@@ -312,26 +346,39 @@ function bind(root){
 }
 function ensure(){
   installCss();
+  if(compact()&&!homeActive())recoverBlankHome();
   var on=compact()&&homeActive();
-  if(!on){document.body&&document.body.classList.remove('pst-mobile-home-active');if(!compact())clearShellFix();return false;}
+  if(!on){
+    document.body&&document.body.classList.remove('pst-mobile-home-active');
+    document.querySelectorAll('.pst-mobile-home-host').forEach(function(x){x.classList.remove('pst-mobile-home-host');});
+    if(!compact())clearShellFix();
+    return false;
+  }
   document.body&&document.body.classList.add('pst-mobile-home-active');shellFix();
   var host=home();if(!host)return false;
+  document.querySelectorAll('.pst-mobile-home-host').forEach(function(x){if(x!==host)x.classList.remove('pst-mobile-home-host');});
+  host.classList.add('pst-mobile-home-host');
   var root=document.getElementById('pst-mobile-home-v1');
   if(!root){root=document.createElement('section');root.id='pst-mobile-home-v1';root.setAttribute('aria-label','Ballina mobile e PRISTEEL');host.insertBefore(root,host.firstChild||null);}
   else if(root.parentNode!==host){host.insertBefore(root,host.firstChild||null);}
   if(root.dataset.pmhVersion!==VERSION){root.innerHTML=markup();root.dataset.pmhVersion=VERSION;root.dataset.pmhBound='';}
   bind(root);updateClock(root);loadWeather(root);return true;
 }
-function schedule(){[0,90,260,720,1500].forEach(function(ms){setTimeout(ensure,ms);});}
+function schedule(){[0,90,260,720,1500,3000,6000].forEach(function(ms){setTimeout(ensure,ms);});}
 function boot(){installCss();schedule();}
 document.addEventListener('pst:modules-ready',schedule);
 document.addEventListener('pst:home-canonical-rendered',schedule);
 document.addEventListener('pst:native-home-ready',schedule);
 document.addEventListener('pst:page-opened',schedule);
+document.addEventListener('pst:mobile-pin-unlocked',schedule);
+document.addEventListener('click',function(e){
+  var b=e.target&&e.target.closest?e.target.closest('#pst-mobile-nav-v1 button[data-key]'):null;
+  if(b)setTimeout(ensure,100);
+},true);
 window.addEventListener('pageshow',schedule);
 window.addEventListener('focus',schedule);
 window.addEventListener('resize',function(){setTimeout(ensure,80);});
 window.addEventListener('orientationchange',function(){setTimeout(ensure,120);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.PSTMobileHomeV1={version:VERSION,render:ensure,refresh:function(){var r=document.getElementById('pst-mobile-home-v1');if(r){updateClock(r);loadWeather(r);}return !!r;},_test:{compact:compact,homeActive:homeActive,userIdentity:userIdentity,market:MARKET,weatherText:weatherText}};
+window.PSTMobileHomeV1={version:VERSION,render:ensure,refresh:function(){var r=document.getElementById('pst-mobile-home-v1');if(r){updateClock(r);loadWeather(r);}return !!r;},_test:{compact:compact,home:home,homeActive:homeActive,recoverBlankHome:recoverBlankHome,authBlocking:authBlocking,userIdentity:userIdentity,market:MARKET,weatherText:weatherText}};
 })();
