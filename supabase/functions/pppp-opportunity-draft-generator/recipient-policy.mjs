@@ -91,6 +91,17 @@ export function resolveTedDraftRecipients(action,tenderPayload,max=20){
     const tier=contactTier(c.email,c),contact_quality_score=contactQualityScore(c.email,c);if(contact_quality_score<25)return;
     rows.push({...c,contact_tier:tier,contact_quality_score,company_attribution:c.company_attribution||'verified_company_domain',recipient_company_domain:domainFromEmail(c.email)});
   };
+  const tedWinnerCanonical=String(winner?.identity_version||'').toLowerCase()==='ted-winner-canonical-v2'&&txt(winner?.identifier,120)&&txt(winner?.name,300);
+  if(tedWinnerCanonical){
+    const declared=[...(Array.isArray(winner?.emails)?winner.emails:[]),winner?.email].filter(Boolean);
+    for(const email of declared){
+      const e=normalizeEmail(email),ed=domainFromEmail(e);if(!e||!ed)continue;
+      const c=candidate(e,{confidence:'verified',score:100,priority:950,source_type:'ted_winner_organization',company_attribution:'ted_winner_organization',recipient_company_name:winner?.name,recipient_company_domain:ed,draft_eligible:true});
+      if(!c||c.draft_eligible===false)continue;
+      const tier=contactTier(c.email,c),contact_quality_score=contactQualityScore(c.email,c);if(contact_quality_score<25)continue;
+      rows.push({...c,contact_tier:tier,contact_quality_score,company_attribution:'ted_winner_organization',recipient_company_domain:ed});
+    }
+  }
   for(const r of Array.isArray(tenderPayload?.winner_contacts)?tenderPayload.winner_contacts:[]){
     if(!/verified|high|medium/i.test(txt(r?.verification_status||r?.confidence,40)))continue;
     push(r?.email||r?.value,{...r,priority:900});
