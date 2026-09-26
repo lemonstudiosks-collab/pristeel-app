@@ -9,7 +9,7 @@
  * - no PPPP business-state ownership
  * - no polling, DOM ownership observer or service worker
  * - bounded cached public reads: Open-Meteo weather + on-demand ECB FX
- * - no stale/sample steel numbers on Home; market rows open their public sources
+ * - latest public market references are shown with explicit basis/date and source links
  * - Pyet PPPP delegates to the existing read-only PPPP AI owner
  */
 (function(){
@@ -18,7 +18,7 @@ if(window.__pstMobileHomeV2)return;
 window.__pstMobileHomeV2=true;
 window.__pstMobileHomeV1=true;
 
-var VERSION='20260926-market-home3';
+var VERSION='20260926-market-home4';
 var weatherPromise=null;
 var fxPromise=null;
 var WEATHER_CACHE='pst_mobile_weather_cache_v1';
@@ -27,14 +27,14 @@ var FX_CACHE='pst_mobile_ecb_fx_cache_v1';
 var FX_TTL=12*60*60*1000;
 
 var MARKET=[
-  {label:'Hot Rolled Coil (HRC)',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/hot-rolled-coil.htm'},
-  {label:'Rebar',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/rebar.htm'},
-  {label:'Scrap (HMS I/II)',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-market/scrap.htm'},
-  {label:'Plate',source:'SteelOrbis',url:'https://www.steelorbis.com/steel-prices/steel-price-analysis/'}
+  {label:'Hot Rolled Coil (HRC)',price:'€740–760/t',basis:'N. Europe EXW · 25.09.2026',source:'SMM',url:'https://news.metal.com/newscontent/104134584-smm-steel-european-hrc-supply-tightness-fails-to-lift-prices'},
+  {label:'Rebar',price:'€610–615/t',basis:'Romania ex-warehouse · 25.09.2026',source:'EUROMETAL / SteelOrbis',url:'https://eurometal.net/2026/09/25/'},
+  {label:'Scrap HMS I/II (1M)',price:'$393.50/t',basis:'LME Turkey CFR future · 24.09.2026',source:'SteelRadar / LME',url:'https://www.steelradar.com/en/bolge/global/8/'},
+  {label:'Iron Ore 61% Fe',price:'$95/t',basis:'Global ref. · 25.09.2026',source:'SteelRadar',url:'https://www.steelradar.com/en/'}
 ];
 
 var SOURCES={
-  steelbenchmarker:'https://steelbenchmarker.com/history.pdf',
+  metals:'https://www.lme.com/en/Metals',
   news:'https://www.steelorbis.com/steel-news/latest-news/',
   weather:'https://www.meteoblue.com/en/weather/week/pristina_kosovo_786714',
   calendar:'https://calendar.google.com/calendar/u/0/r'
@@ -100,6 +100,14 @@ body.pst-mobile-home-active:has(#page-workspace-home.active) .content{width:100%
 body.pst-mobile-home-active:has(#page-workspace-home.active) .topbar{display:none!important}
 body.pst-mobile-home-active #page-workspace-home{display:block!important;width:100%!important;max-width:none!important;min-height:100dvh!important;margin:0!important;padding:0!important;background:#F8FAFA!important}
 body.pst-mobile-home-active #page-workspace-home>*:not(#pst-mobile-home-v1){display:none!important}
+body.pst-mobile-home-active #pst-native-home-v4,
+body.pst-mobile-home-active #pst-home-launchpad-v1,
+body.pst-mobile-home-active .pst-morning-wrap,
+body.pst-mobile-home-active #pst-operating-home-v2,
+body.pst-mobile-home-active #pst-openai-assistant-v1{display:none!important}
+body.pst-mobile-home-active div[onclick="openCmdK()"][title^="Kërko"],
+body.pst-mobile-home-active #pst-bcc-home-search,
+body.pst-mobile-home-active .pst-bcc-sidebar-search{display:none!important}
 body.pst-mobile-home-active #pst-mobile-home-v1{display:block!important;width:100%!important;max-width:560px!important;margin:0 auto!important;padding:12px 12px 16px!important;color:#172A34!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
 #pst-mobile-home-v1 *{box-sizing:border-box}
 .pmh-appbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 2px 10px}.pmh-brand{display:flex;align-items:center;gap:10px;min-width:0}.pmh-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#50B0C7,#2586A4);color:#fff;display:grid;place-items:center;font-size:19px;font-weight:800;box-shadow:0 7px 18px rgba(43,132,161,.2)}.pmh-brand-copy b{display:block;font-size:18px;line-height:1;color:#1E323A;letter-spacing:.2px}.pmh-brand-copy span{display:block;margin-top:4px;color:#879399;font-size:11px}.pmh-avatar{width:38px;height:38px;border:1px solid #CEE4EA;border-radius:50%;background:#F1F9FB;color:#397F96;display:grid;place-items:center;font-size:11px;font-weight:800}
@@ -107,7 +115,7 @@ body.pst-mobile-home-active #pst-mobile-home-v1{display:block!important;width:10
 .pmh-search{width:100%;margin:9px 0;border:1px solid #CFE3E9;border-radius:15px;background:#fff;min-height:56px;padding:0 9px 0 15px;display:flex;align-items:center;gap:12px;color:#667980;box-shadow:0 8px 18px rgba(37,69,80,.05);cursor:pointer;text-align:left}.pmh-search>svg{width:22px;height:22px;fill:none;stroke:#4D6670;stroke-width:1.8;flex:0 0 auto}.pmh-search>span{flex:1;font-size:16px;color:#7C888E}.pmh-search i{width:40px;height:40px;border-radius:12px;background:#E7F5F9;color:#218CAA;display:grid;place-items:center;font-style:normal}.pmh-search i svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7}
 .pmh-info-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,.82fr);gap:8px;margin-bottom:8px}.pmh-info{min-width:0;border:1px solid #E1E9EB;border-radius:16px;background:#fff;padding:12px;box-shadow:0 5px 15px rgba(42,73,84,.025)}.pmh-info-title{display:flex;align-items:center;gap:7px;color:#23363E;font-size:11px;font-weight:750}.pmh-info-title span:first-child{width:28px;height:28px;border-radius:9px;background:#E7F5FA;color:#218FB0;display:grid;place-items:center}.pmh-info-title svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-weather{cursor:pointer;text-align:left}.pmh-weather-main{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px}.pmh-weather-temp{font-size:31px;font-weight:780;line-height:1;color:#17303A;letter-spacing:-.8px}.pmh-weather-icon{font-size:39px;line-height:1}.pmh-weather-desc{margin-top:6px;color:#596E77;font-size:11px}.pmh-weather-range{margin-top:7px;color:#89959A;font-size:10px}.pmh-date-day{margin-top:7px;font-size:13px;font-weight:750;color:#21353D}.pmh-date-full{margin-top:3px;color:#7E8B90;font-size:10px}.pmh-time-pill{display:flex;align-items:center;gap:6px;margin-top:9px;background:#EAF6FA;color:#277E99;border-radius:10px;padding:7px 9px;font-size:13px;font-weight:760}.pmh-time-pill svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-dayline{margin-top:9px;color:#5F737B;font-size:10px;line-height:1.35}
 .pmh-card{border:1px solid #E0E8EA;border-radius:16px;background:#fff;overflow:hidden;margin-bottom:8px;box-shadow:0 5px 16px rgba(42,73,84,.03)}.pmh-card-head{display:flex;align-items:center;gap:8px;padding:10px 11px 8px}.pmh-card-head-icon{width:30px;height:30px;border-radius:9px;background:#E7F5FA;color:#238DB0;display:grid;place-items:center;flex:0 0 auto}.pmh-card-head-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.pmh-card-head b{font-size:13px;color:#1F343C}.pmh-card-link{margin-left:auto;border:0;background:transparent;color:#2385A1;font-size:10px;font-weight:760;cursor:pointer;padding:3px}
-.pmh-market-list{padding:0 11px 7px}.pmh-market-row{width:100%;border:0;border-top:1px solid #EDF1F2;background:#fff;min-height:42px;padding:6px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;cursor:pointer}.pmh-market-row:first-child{border-top:0}.pmh-market-name{font-size:10.5px;color:#283D45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-market-live{font-size:9.5px;font-weight:750;color:#2385A1;white-space:nowrap}.pmh-market-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #EDF1F2;padding:7px 11px 9px;color:#8A969B;font-size:8.7px}.pmh-market-foot b{color:#607982;font-weight:650}
+.pmh-market-list{padding:0 11px 7px}.pmh-market-row{width:100%;border:0;border-top:1px solid #EDF1F2;background:#fff;min-height:46px;padding:7px 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;text-align:left;cursor:pointer}.pmh-market-row:first-child{border-top:0}.pmh-market-copy{min-width:0}.pmh-market-name{display:block;font-size:10.5px;color:#283D45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-market-basis{display:block;margin-top:2px;font-size:7.9px;color:#89969B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-market-side{display:flex;align-items:center;gap:7px;white-space:nowrap}.pmh-market-value{font-size:11.5px;font-weight:800;color:#243841}.pmh-market-live{font-size:11px;font-weight:800;color:#2385A1}.pmh-market-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #EDF1F2;padding:7px 11px 9px;color:#8A969B;font-size:8.7px}.pmh-market-foot b{color:#607982;font-weight:650}
 .pmh-lower-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pmh-mini{border:1px solid #E0E8EA;border-radius:16px;background:#fff;overflow:hidden;box-shadow:0 5px 16px rgba(42,73,84,.025)}.pmh-mini-head{display:flex;align-items:center;gap:7px;padding:10px 10px 7px;border-bottom:1px solid #EDF1F2}.pmh-mini-icon{width:29px;height:29px;border-radius:9px;background:#EAF5FF;color:#237EBD;display:grid;place-items:center}.pmh-mini-icon.blue2{background:#E9F4FF;color:#2A78B6}.pmh-mini-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}.pmh-mini-head b{min-width:0;font-size:11px;color:#233840;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pmh-mini-head .pmh-chevron{margin-left:auto;color:#2583A0}.pmh-mini-head .pmh-chevron svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9}.pmh-mini-list{padding:0 9px 6px}.pmh-mini-row{width:100%;min-height:35px;border:0;border-top:1px solid #EEF2F3;background:#fff;padding:4px 0;display:grid;grid-template-columns:23px minmax(0,1fr);gap:7px;align-items:center;text-align:left;color:#2A3E46;cursor:pointer}.pmh-mini-row:first-child{border-top:0}.pmh-mini-row:active{background:#F6FAFB}.pmh-mini-row span:first-child{color:#2681A0;display:grid;place-items:center}.pmh-mini-row svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8}.pmh-mini-row em{font-style:normal;font-size:9.5px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pmh-sheet-backdrop{position:fixed;inset:0;z-index:99999;background:rgba(17,34,41,.35);display:flex;align-items:flex-end;justify-content:center;padding:12px}.pmh-sheet{width:min(520px,100%);background:#fff;border-radius:20px 20px 16px 16px;box-shadow:0 20px 50px rgba(20,45,55,.22);padding:14px}.pmh-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.pmh-sheet-head b{font-size:16px;color:#1E333B}.pmh-sheet-close{width:34px;height:34px;border:0;border-radius:10px;background:#F0F5F6;color:#50666F;display:grid;place-items:center}.pmh-sheet-close svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}.pmh-form{display:grid;gap:10px;margin-top:12px}.pmh-form label{display:grid;gap:5px;color:#6A7C83;font-size:10px}.pmh-form input,.pmh-form textarea{width:100%;border:1px solid #DCE7EA;border-radius:11px;background:#FBFCFC;padding:10px 11px;color:#20343C;font:inherit;font-size:13px;outline:none}.pmh-form textarea{min-height:120px;resize:vertical}.pmh-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pmh-result{border-radius:12px;background:#EEF7FA;padding:12px;color:#256E86;font-size:13px;font-weight:750}.pmh-primary{height:42px;border:0;border-radius:11px;background:#2E8EAA;color:#fff;font-size:12px;font-weight:760}.pmh-note{margin-top:7px;color:#8A969B;font-size:9px;line-height:1.4}
 @media(max-width:390px){body.pst-mobile-home-active #pst-mobile-home-v1{padding-left:9px!important;padding-right:9px!important}.pmh-welcome h1{font-size:23px}.pmh-weather-temp{font-size:28px}.pmh-info{padding:10px}.pmh-mini-head b{font-size:10.5px}.pmh-mini-row em{font-size:9px}.pmh-market-name{font-size:10px}}
@@ -131,7 +139,7 @@ function clearShellFix(){
 
 function marketRows(){
   return MARKET.map(function(x,i){
-    return '<button type="button" class="pmh-market-row" data-pmh-market="'+i+'"><span class="pmh-market-name">'+E(x.label)+'</span><span class="pmh-market-live">Hap burimin ↗</span></button>';
+    return '<button type="button" class="pmh-market-row" data-pmh-market="'+i+'" aria-label="'+E(x.label)+' '+E(x.price)+' · hap burimin"><span class="pmh-market-copy"><span class="pmh-market-name">'+E(x.label)+'</span><span class="pmh-market-basis">'+E(x.basis)+'</span></span><span class="pmh-market-side"><strong class="pmh-market-value">'+E(x.price)+'</strong><span class="pmh-market-live">↗</span></span></button>';
   }).join('');
 }
 function markup(){
@@ -143,16 +151,16 @@ function markup(){
     +'<button type="button" class="pmh-info pmh-weather" data-pmh-weather><div class="pmh-info-title"><span>'+svg('pin')+'</span><b>Prishtinë</b></div><div class="pmh-weather-main"><span class="pmh-weather-temp" data-pmh-weather-temp>--°C</span><span class="pmh-weather-icon" data-pmh-weather-icon>🌤️</span></div><div class="pmh-weather-desc" data-pmh-weather-desc>Duke marrë motin…</div><div class="pmh-weather-range" data-pmh-weather-range>H: --° · L: --°</div></button>'
     +'<button type="button" class="pmh-info pmh-weather" data-pmh-calendar><div class="pmh-info-title"><span>'+svg('calendar')+'</span><b data-pmh-weekday>Sot</b></div><div class="pmh-date-full" data-pmh-date></div><div class="pmh-time-pill">'+svg('clock')+'<span data-pmh-time>--:--</span></div><div class="pmh-dayline">Një ditë e mbarë<br>për punë të mëdha.</div></button>'
   +'</div>'
-  +'<section class="pmh-card"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('chart')+'</span><b>Tregu i Çelikut</b><button type="button" class="pmh-card-link" data-pmh-market-all>Shiko më shumë →</button></div><div class="pmh-market-list">'+marketRows()+'</div><div class="pmh-market-foot"><span>Pa çmime sample në Ballinë</span><b>Hap burimin më të fundit</b></div></section>'
+  +'<section class="pmh-card"><div class="pmh-card-head"><span class="pmh-card-head-icon">'+svg('chart')+'</span><b>Tregu i Çelikut</b><button type="button" class="pmh-card-link" data-pmh-market-all>Shiko më shumë →</button></div><div class="pmh-market-list">'+marketRows()+'</div><div class="pmh-market-foot"><span>Referenca publike</span><b>Përditësuar 24–25.09.2026</b></div></section>'
   +'<div class="pmh-lower-grid">'
     +'<section class="pmh-mini"><div class="pmh-mini-head"><span class="pmh-mini-icon">'+svg('tool')+'</span><b>Mjete të dobishme</b><span class="pmh-chevron">'+svg('arrow')+'</span></div><div class="pmh-mini-list">'
       +'<button type="button" class="pmh-mini-row" data-pmh-tool="weight"><span>'+svg('scale')+'</span><em>Kalkulator peshe</em></button>'
-      +'<button type="button" class="pmh-mini-row" data-pmh-tool="convert"><span>'+svg('ruler')+'</span><em>Konvertues mm ↔ inch</em></button>'
+      +'<button type="button" class="pmh-mini-row" data-pmh-source="calendar"><span>'+svg('calendar')+'</span><em>Kalendari</em></button>'
       +'<button type="button" class="pmh-mini-row" data-pmh-tool="incoterms"><span>'+svg('doc')+'</span><em>Incoterms</em></button>'
       +'<button type="button" class="pmh-mini-row" data-pmh-tool="note"><span>'+svg('edit')+'</span><em>Shënim i shpejtë</em></button>'
     +'</div></section>'
     +'<section class="pmh-mini"><div class="pmh-mini-head"><span class="pmh-mini-icon blue2">'+svg('doc')+'</span><b>Burime të tregut</b><span class="pmh-chevron">'+svg('arrow')+'</span></div><div class="pmh-mini-list">'
-      +'<button type="button" class="pmh-mini-row" data-pmh-source="steelbenchmarker"><span>'+svg('chart')+'</span><em>SteelBenchmarker</em></button>'
+      +'<button type="button" class="pmh-mini-row" data-pmh-source="metals"><span>'+svg('chart')+'</span><em>Çmimet e metaleve</em></button>'
       +'<button type="button" class="pmh-mini-row" data-pmh-source="news"><span>'+svg('doc')+'</span><em>Lajmet e industrisë</em></button>'
       +'<button type="button" class="pmh-mini-row" data-pmh-source="weather"><span>'+svg('cloud')+'</span><em>Moti</em></button>'
       +'<button type="button" class="pmh-mini-row" data-pmh-tool="currency"><span>'+svg('chart')+'</span><em>Konvertues valutor</em></button>'
@@ -245,12 +253,6 @@ function weightTool(){
   function calc(){var l=Number(back.querySelector('[data-w-l]').value),w=Number(back.querySelector('[data-w-w]').value),t=Number(back.querySelector('[data-w-t]').value),q=Number(back.querySelector('[data-w-q]').value||1),out=back.querySelector('[data-w-result]');if(!(l>0&&w>0&&t>0&&q>0)){out.textContent='Fut dimensionet për të llogaritur peshën.';return;}var kg=l*w*t*0.00000785*q;out.textContent='Pesha: '+kg.toLocaleString('sq-AL',{maximumFractionDigits:2})+' kg';}
   back.querySelectorAll('input').forEach(function(x){x.addEventListener('input',calc);});
 }
-function converterTool(){
-  var back=openSheet('Konvertues mm ↔ inch','<div class="pmh-form"><label>Milimetra<input type="number" inputmode="decimal" data-c-mm placeholder="25.4"></label><label>Inch<input type="number" inputmode="decimal" data-c-in placeholder="1"></label><div class="pmh-note">1 inch = 25.4 mm</div></div>');
-  var mm=back.querySelector('[data-c-mm]'),inch=back.querySelector('[data-c-in]'),busy=false;
-  mm.addEventListener('input',function(){if(busy)return;busy=true;var v=Number(mm.value);inch.value=Number.isFinite(v)?String(Math.round((v/25.4)*10000)/10000):'';busy=false;});
-  inch.addEventListener('input',function(){if(busy)return;busy=true;var v=Number(inch.value);mm.value=Number.isFinite(v)?String(Math.round((v*25.4)*10000)/10000):'';busy=false;});
-}
 function noteTool(){
   var saved='';try{saved=localStorage.getItem('pst_quick_note_v1')||'';}catch(e){}
   var back=openSheet('Shënim i shpejtë','<div class="pmh-form"><label>Shënimi<textarea data-pmh-note>'+E(saved)+'</textarea></label><button type="button" class="pmh-primary" data-pmh-note-save>Ruaje në këtë pajisje</button><div class="pmh-note" data-pmh-note-status>Ky shënim është lokal dhe nuk regjistrohet në PPPP.</div></div>');
@@ -291,7 +293,6 @@ function currencyTool(){
 }
 function tool(kind){
   if(kind==='weight')return weightTool();
-  if(kind==='convert')return converterTool();
   if(kind==='incoterms')return openExternal('https://iccwbo.org/business-solutions/incoterms-rules/');
   if(kind==='note')return noteTool();
   if(kind==='currency')return currencyTool();
