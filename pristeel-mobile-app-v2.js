@@ -70,6 +70,10 @@ function identity(){
 function greeting(){var h=new Date().getHours();return h<12?'Mirëmëngjes':h<18?'Mirëdita':'Mirëmbrëma';}
 function today(){return new Date().toLocaleDateString('sq-AL',{weekday:'long',day:'2-digit',month:'long'});}
 function short(v,n){v=S(v).replace(/\s+/g,' ').trim();return v.length>(n||100)?v.slice(0,(n||100)-1)+'…':v;}
+function projectDate(v){
+  if(!v)return'';var d=new Date(v);if(isNaN(d.getTime()))return S(v);
+  return d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});
+}
 function homeSnapshot(){
   try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.snapshot==='function'){var x=H.snapshot()||{};return{actions:A(x.actions),waiting:A(x.waiting),projects:A(x.projects)};}}catch(e){}
   return{actions:[],waiting:[],projects:[]};
@@ -151,7 +155,7 @@ function projectStageInfo(r){
 }
 function projectDetailView(id){
   var r=projectRecord(id),a=projectAction(id,r),st=projectStageInfo(r),bucket=projectBucket(r);
-  var ref=S(r.ref||r.reference),deadline=fmtDate(r.deadline),cl=projectClient(r),stageName=st.steps[st.index]&&st.steps[st.index][1]||'Projekt aktiv';
+  var ref=S(r.ref||r.reference),deadline=projectDate(r.deadline),cl=projectClient(r),stageName=st.steps[st.index]&&st.steps[st.index][1]||'Projekt aktiv';
   var timeline=st.steps.map(function(step,i){var cls=i<st.index?'done':i===st.index?'current':'future';return '<div class="pma-pd-step '+cls+'"><i>'+(i<st.index?'✓':i===st.index?'•':'')+'</i><span><b>'+E(step[1])+'</b><small>'+E(i<st.index?'Përfunduar':i===st.index?'Aktuale':'Në vijim')+'</small></span></div>';}).join('');
   return '<div class="pma-native-project"><div class="pma-native-scroll"><div class="pma-pd-head"><button type="button" data-pma-project-back>'+icon('back')+'</button><div><span>PROJEKT</span><h1>'+E(projectName(r))+'</h1><p>'+E([cl,ref].filter(Boolean).join(' · ')||'PriSteel')+'</p></div></div>'+
     '<div class="pma-pd-status"><span class="'+E(bucket)+'">'+E(bucketLabel(bucket))+'</span><b>'+E(stageName)+'</b>'+(deadline?'<small>Afati · '+E(deadline)+'</small>':'')+'</div>'+
@@ -385,6 +389,7 @@ function click(e){
   if(t.closest('[data-pma-plus]')){e.preventDefault();state.plusOpen=!state.plusOpen;state.moreOpen=false;render();return;}
   if(t.closest('[data-pma-more]')){e.preventDefault();state.moreOpen=!state.moreOpen;state.plusOpen=false;render();return;}
   if(t.closest('[data-pma-sheet-close]')){state.plusOpen=false;state.moreOpen=false;render();return;}
+  if(t.closest('[data-pma-return-app]')){state.detail=false;hideLegacyBack();document.body&&document.body.classList.add('pst-mobile-v2-active');render();return;}
   if(t.closest('[data-pma-ask]')){legacyAction('[data-pmh-search]');return;}
   if(t.closest('[data-pma-project-back]')){state.nativeProjectId='';state.tab=state.projectReturnTab||'projects';render();requestAnimationFrame(function(){syncPager(false);});return;}
   b=t.closest('[data-pma-project-legacy]');if(b){var pid=state.nativeProjectId;enterDetail(function(){if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(pid);if(typeof window.openOverview==='function')return window.openOverview(pid);var H=window.PSTHomeCanonicalV1;if(H&&typeof H.openBrief==='function')return H.openBrief(pid);});return;}
