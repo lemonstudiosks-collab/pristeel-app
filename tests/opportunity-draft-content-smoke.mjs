@@ -31,12 +31,13 @@ const tender={
 };
 const d=buildTedDraftContent(action,tender,{email:'ausschreibung@bug-se.de',purpose:'tender'});
 assert.equal(d.language,'de');
-assert.match(d.subject,/^Projekt B62 TB Rinsenau, Herstellung DB Schutzgerüst – Stahlpaket \| PRISTEEL$/);
+assert.match(d.subject,/^Projekt B62 TB Rinsenau, Herstellung DB Schutzgerüst – ein Partner für das Stahlpaket \| PRISTEEL$/);
 assert(!/Germany|TED|623898-2026/i.test(d.subject),'subject must use a normal project name, not database/source prefixes');
 assert(d.body.startsWith('Sehr geehrte Damen und Herren,'),'verified function mailbox must use the formal German company salutation');
 assert(d.body.includes(readiness.scope_evidence),'email must lead with the concrete scope fact');
-assert(d.body.includes(readiness.concrete_question),'email must contain the one concrete project question');
-assert(d.body.includes(readiness.pristeel_scope),'PriSteel capability sentence must be specific to this award');
+assert.match(d.body,/vollständige Verantwortung für ein klar definiertes Stahlpaket/i,'GC copy must position PriSteel as accountable for the defined steel package');
+assert.match(d.body,/Südosteuropa/i,'GC copy must identify the Southeast European fabrication network');
+assert.match(d.body,/ProCredit Bank/i,'GC copy must include the bounded bank-guarantee credibility line');
 assert(!/wir haben gesehen|möchte ich Ihnen PRISTEEL als möglichen/i.test(d.body),'old generic sales copy must not return');
 assert(!/EN 1090|ISO 3834|HPQ/i.test(d.body),'qualification claims must not be inserted unless explicitly evidenced');
 assert(d.body.includes('Mit freundlichen Grüßen'));
@@ -79,7 +80,9 @@ const en=buildTedDraftContent(
 );
 assert(en.body.startsWith('Dear Jane Doe,'));
 assert(en.body.includes('The awarded lot includes fabricated structural steel assemblies.'));
-assert(en.body.includes('Is this fabrication package already fully placed'));
+assert(en.body.includes('We take ownership of the steel package from drawings or BOM through to delivery.'));
+assert(en.body.includes('Southeast Europe'));
+assert(en.body.includes('ProCredit Bank'));
 
 
 const internalInstructionLeak=buildTedDraftContent(
@@ -103,8 +106,9 @@ const internalInstructionLeak=buildTedDraftContent(
   {email:'andreas.makris@cyta.com.cy',name:'Mr. Antreas Makris',purpose:'person'}
 );
 assert.equal(internalInstructionLeak.language,'en');
-assert.match(internalInstructionLeak.body,/published award information relates to/i,'fallback copy must use public award facts');
-assert.match(internalInstructionLeak.body,/CYTA is identified in the award information/i,'fallback copy must identify the selected awarded company neutrally');
+assert.match(internalInstructionLeak.body,/I am contacting you regarding/i,'fallback copy must open naturally with the project instead of internal or database language');
+assert.doesNotMatch(internalInstructionLeak.body,/published award information|identified in the award information/i,'database-style award narration must not appear in external copy');
+assert.match(internalInstructionLeak.body,/We take ownership of the steel package from drawings or BOM through to delivery\./i,'fabricated-package positioning must be ownership-led');
 assert.doesNotMatch(internalInstructionLeak.body,/Përgatit draft|mos e dërgo|Draft vetëm|outreach/i,'internal PPPP instructions must never leak into external email copy');
 assert.doesNotMatch(internalInstructionLeak.html_body,/Përgatit draft|mos e dërgo|Draft vetëm|outreach/i,'internal PPPP instructions must never leak into HTML email copy');
 
