@@ -1,3 +1,11 @@
+## 2026-09-26 — PPPP Mobile native Project Detail v4
+
+- Project taps from Home and Projects now open a mobile-native project detail inside the new shell instead of jumping immediately into the legacy desktop/modal surface.
+- The detail shows the project identity, client/reference, current operating bucket, current pipeline stage, deadline when available, next action and a compact pipeline timeline.
+- Files, Emails and Suppliers remain delegated to the existing project owners for now, but open through an explicit bridge with a fixed “Kthehu në app” control.
+- Bottom navigation remains visible with Projects active; the floating Weather/Convert/Steel utility dock yields while the project detail is open.
+- No new Supabase reads/writes, polling, automatic protected actions or duplicate business logic were introduced.
+
 ## 2026-09-26 — PPPP Mobile native vertical scroll fix
 
 - Removed the pager touchmove interception entirely on iPhone.
