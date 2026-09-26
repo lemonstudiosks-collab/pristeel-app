@@ -214,11 +214,11 @@ function routedOfferCopy(language,offerModel,title,rdata){
   }
   if(offerModel==='future_supplier_qualification'){
     if(language==='de')return{
-      subject:txt(rdata?.company_name,300)||('Projekt '+p+' – Lieferantenqualifizierung Stahl | PRISTEEL'),
+      subject:(txt(rdata?.company_name,300)||('Projekt '+p))+' – Lieferantenqualifizierung Stahl | PRISTEEL',
       paras:[intro,'Für künftige Stahlpakete kann PRISTEEL als technischer und kaufmännischer Ansprechpartner für klar definierte Umfänge eingebunden werden.',cred,'Wer ist bei Ihnen für die Qualifizierung künftiger Partner für Stahlpakete zuständig?']
     };
     if(language==='bcs')return{
-      subject:txt(rdata?.company_name,300)||('Projekt '+p+' – kvalifikacija dobavljača čelika | PRISTEEL'),
+      subject:(txt(rdata?.company_name,300)||('Projekt '+p))+' – kvalifikacija dobavljača čelika | PRISTEEL',
       paras:[intro,'Za buduće čelične pakete PRISTEEL može biti jedna tehnička i komercijalna kontakt tačka za jasno definisane opsege.',cred,'Ko je kod Vas zadužen za kvalifikaciju budućih partnera za čelične pakete?']
     };
     return{
