@@ -12,13 +12,14 @@ const home=(runtime.areas||[]).find(x=>x.area==='home');
 assert(home&&home.finalOwners.includes('pristeel-mobile-home-v1.js'),'mobile Home must be registered as a Home presentation owner');
 
 assert(!/supaFetch\s*\(/.test(js),'mobile Home must not add Supabase calls');
-assert(!/\bfetch\s*\(/.test(js),'mobile Home must not add network fetches');
 assert(!/setInterval\s*\(/.test(js),'mobile Home must not poll');
 assert(!/MutationObserver/.test(js),'mobile Home must not add a DOM ownership observer');
 assert(!/serviceWorker\.register/.test(js),'mobile Home must not add service-worker caching');
+assert((js.match(/\bfetch\s*\(/g)||[]).length===1,'mobile Home may make only one bounded public weather fetch');
+assert(js.includes('api.open-meteo.com'),'the only mobile Home network read must be the public Open-Meteo weather source');
+assert(js.includes('WEATHER_TTL=30*60*1000'),'weather data must be cached for 30 minutes');
+assert(js.includes("pst_mobile_weather_cache_v1"),'weather cache key missing');
 
-assert(js.includes('PSTHomeMorningCommandCenterV1'),'mobile Home must reuse the existing Home in-memory provider');
-assert(js.includes('opportunitySnapshot'),'mobile Home must reuse existing Opportunities snapshot data');
 assert(js.includes("Math.min(iw,sw)<=900"),'mobile Home must use physical or viewport width for phone/tablet detection');
 assert(js.includes("document.body&&document.body.classList.add('pst-mobile-home-active')"),'mobile Home activation class missing');
 assert(!js.includes("document.getElementById('pst-native-home-v4')"),'mobile Home must not depend on optional native Home container');
@@ -26,14 +27,24 @@ assert(js.includes("var host=home();if(!host)return false;"),'mobile Home must m
 assert(js.includes("host.insertBefore(root,host.firstChild||null)"),'mobile Home must insert itself directly into canonical Home');
 assert(js.includes("#page-workspace-home>*:not(#pst-mobile-home-v1){display:none!important}"),'legacy Home owners must be hidden inside canonical Home while mobile Home is active');
 
-for(const label of ['Pyet PPPP…','PRISTEEL Daily','Çfarë të shohësh sot','Veprime të shpejta','Vazhdo punën','Në pritje','Krijo projekt','Krijo draft','Shto partner','Shiko tenderët']){
+for(const label of [
+  'Pyet PPPP…','Prishtinë','Tregu i Çelikut','Mjete të dobishme',
+  'Kalkulator peshe','Konvertues mm ↔ inch','Incoterms','Shënim i shpejtë',
+  'Burime të tregut','SteelBenchmarker','Lajmet e industrisë','Moti','Transporti'
+]){
   assert(js.includes(label),'approved mobile Home label missing: '+label);
 }
-for(const kind of ["kind==='project'","kind==='draft'","kind==='partner'","kind==='tender'"]){
-  assert(js.includes(kind),'quick-action delegate missing: '+kind);
+for(const oldLabel of [
+  'PRISTEEL Daily','Çfarë të shohësh sot','Veprime të shpejta','Vazhdo punën',
+  'Në pritje','Krijo projekt','Krijo draft','Shto partner','Shiko tenderët'
+]){
+  assert(!js.includes(oldLabel),'old business-workflow Home clutter must stay removed: '+oldLabel);
 }
-assert(js.includes('grid-template-columns:repeat(2,minmax(0,1fr))'),'quick actions should use a fuller 2x2 mobile layout');
-assert(js.includes('visibleProjects()'),'mobile Home must show existing in-memory active projects');
-assert(js.includes('waitingItems()'),'mobile Home must surface existing waiting items when present');
+assert(js.includes("data-pmh-tool=\"weight\""),'weight calculator entry missing');
+assert(js.includes("data-pmh-tool=\"convert\""),'unit converter entry missing');
+assert(js.includes("data-pmh-source=\"steelbenchmarker\""),'SteelBenchmarker resource missing');
+assert(js.includes('Mostra publike e fundit'),'steel-market values must be explicitly presented as dated public samples');
+assert(js.includes('Ky shënim është lokal dhe nuk regjistrohet në PPPP.'),'quick note must not pretend to write into PPPP');
 assert(!/<img\b/i.test(js),'approved mobile Home must not include decorative/structure photos');
+
 console.log('mobile-home-smoke: ok');
