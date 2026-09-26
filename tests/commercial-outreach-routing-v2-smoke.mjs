@@ -36,4 +36,11 @@ assert.match(gcBody,/ProCredit Bank/,'GC copy must include bounded financial-sec
 assert.doesNotMatch(gcBody,/coordination burden|problem managing|cannot manage/i,'copy must never imply the client is unable to manage its own project');
 assert.match(gc,/function outboundFact\(/,'GC first-touch copy must sanitize internal instructions before emitting evidence');
 
+
+const opportunityIndex=fs.readFileSync('supabase/functions/pppp-opportunity-draft-generator/index.ts','utf8');
+assert.match(opportunityIndex,/\(refreshExisting\|\|explicitUser\).*row\.generator.*GENERATOR/s,'stale Opportunity copy must refresh on explicit human action without mass background rewrites');
+
+assert.match(gc,/stale_copy_requires_manual_refresh/,'GC background sync must preserve stale drafts until the user explicitly requests refresh');
+assert.match(gc,/if\(!createRequested\)return \{id:p\.id,company:p\.company_name,event:'stale_copy_requires_manual_refresh'/,'GC stale draft refresh must stay human-triggered');
+
 console.log('Commercial outreach routed-copy smoke passed.');
