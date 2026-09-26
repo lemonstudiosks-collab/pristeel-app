@@ -94,8 +94,8 @@ body.pst-mobile-home-active:has(#page-workspace-home.active) #app-shell-root>.ma
 body.pst-mobile-home-active:has(#page-workspace-home.active) .content{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0 0 calc(82px + env(safe-area-inset-bottom))!important}
 body.pst-mobile-home-active:has(#page-workspace-home.active) .topbar{display:none!important}
 body.pst-mobile-home-active #page-workspace-home{background:#F7F9FA!important;min-height:100dvh!important;padding:0!important;margin:0!important}
-body.pst-mobile-home-active #page-workspace-home #pst-native-home-v4{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#F7F9FA!important}
-body.pst-mobile-home-active #page-workspace-home #pst-native-home-v4>*:not(#pst-mobile-home-v1){display:none!important}
+body.pst-mobile-home-active #page-workspace-home{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#F7F9FA!important}
+body.pst-mobile-home-active #page-workspace-home>*:not(#pst-mobile-home-v1){display:none!important}
 body.pst-mobile-home-active #pst-mobile-home-v1{display:block!important;width:100%!important;max-width:560px!important;margin:0 auto!important;padding:14px 14px 26px!important;color:#1F3138!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important}
 #pst-mobile-home-v1 *{box-sizing:border-box}
 .pmh-appbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 2px 14px}.pmh-brand{display:flex;align-items:center;gap:10px;min-width:0}.pmh-logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#5BA8C0,#2E7F9A);color:#fff;display:grid;place-items:center;font-size:19px;font-weight:800;box-shadow:0 8px 18px rgba(50,126,153,.18)}.pmh-brand-copy b{display:block;font-size:18px;line-height:1;color:#20323A;letter-spacing:.2px}.pmh-brand-copy span{display:block;margin-top:4px;color:#879399;font-size:11px}.pmh-avatar{width:38px;height:38px;border:1px solid #D8E5E8;border-radius:50%;background:#EEF6F8;color:#397E94;display:grid;place-items:center;font-size:11px;font-weight:800}
@@ -191,7 +191,7 @@ function ensure(){
  var on=compact()&&homeActive();
  if(!on){document.body&&document.body.classList.remove('pst-mobile-home-active');if(!compact())clearShellFix();return false;}
  document.body&&document.body.classList.add('pst-mobile-home-active');shellFix();
- var native=document.getElementById('pst-native-home-v4');if(!native)return false;
+ var host=home();if(!host)return false;
  var root=document.getElementById('pst-mobile-home-v1');
  if(!root){root=document.createElement('section');root.id='pst-mobile-home-v1';root.setAttribute('aria-label','Ballina mobile e PRISTEEL');root.innerHTML=markup();root.addEventListener('click',function(e){
   var search=e.target.closest('[data-pmh-search]');if(search){if(typeof window.pstWsSearch==='function')window.pstWsSearch();else if(typeof window.openCmdK==='function')window.openCmdK();return;}
@@ -201,7 +201,8 @@ function ensure(){
   var p=e.target.closest('[data-pmh-project]');if(p){openProject(p.getAttribute('data-pmh-project'));return;}
   var w=e.target.closest('[data-pmh-wait-project]');if(w){openProject(w.getAttribute('data-pmh-wait-project'));return;}
   var t=e.target.closest('[data-pmh-today]');if(t)today(t.getAttribute('data-pmh-today'));
- });native.appendChild(root);}
+ });host.insertBefore(root,host.firstChild||null);}
+ else if(root.parentNode!==host){host.insertBefore(root,host.firstChild||null);}
  update(root);return true;
 }
 function schedule(){
