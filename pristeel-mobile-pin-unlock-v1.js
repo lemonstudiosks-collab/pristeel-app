@@ -11,6 +11,7 @@ window.__pstMobilePinUnlockV1=true;
 var CFG_KEY='pst_mobile_pin_v1';
 var ATTEMPTS_KEY='pst_mobile_pin_attempts_v1';
 var BYPASS_KEY='pst_mobile_pin_bypass_once_v1';
+var SESSION_UNLOCK_KEY='pst_mobile_pin_session_unlocked_v1';
 var MAX_ATTEMPTS=5;
 var PBKDF2_ITERATIONS=150000;
 var originalStart=window.startApp;
@@ -43,6 +44,13 @@ function consumeBypass(){
   return false;
 }
 function setBypass(){try{sessionStorage.setItem(BYPASS_KEY,'1');}catch(e){}}
+function markSessionUnlocked(s){
+  try{sessionStorage.setItem(SESSION_UNLOCK_KEY,emailOf(s));}catch(e){}
+}
+function sessionUnlocked(s){
+  try{return !!(emailOf(s)&&sessionStorage.getItem(SESSION_UNLOCK_KEY)===emailOf(s));}catch(e){return false;}
+}
+function clearSessionUnlocked(){try{sessionStorage.removeItem(SESSION_UNLOCK_KEY);}catch(e){}}
 function b64(bytes){
   var s='';for(var i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);
   return btoa(s);
@@ -103,7 +111,11 @@ function gate(){
   });
   input.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();submit();}});
   g.querySelector('[data-pst-pin-submit]').addEventListener('click',submit);
-  g.querySelector('[data-pst-pin-skip]').addEventListener('click',function(){hide();unlocked=true;if(typeof originalStart==='function')originalStart();});
+  g.querySelector('[data-pst-pin-skip]').addEventListener('click',function(){
+    var s=session();hide();unlocked=true;markSessionUnlocked(s);
+    try{document.dispatchEvent(new CustomEvent('pst:mobile-pin-unlocked',{detail:{email:emailOf(s),mode:'skip'}}));}catch(e){}
+    if(typeof originalStart==='function')originalStart();
+  });
   g.querySelector('[data-pst-pin-email]').addEventListener('click',fullLogin);
   return g;
 }
@@ -112,7 +124,9 @@ function setText(title,sub,error){
   if(t)t.textContent=title||'';if(s)s.textContent=sub||'';if(e)e.textContent=error||'';
 }
 function show(which){
-  mode=which;installCss();var g=gate(),input=g.querySelector('[data-pst-pin-input]'),skip=g.querySelector('[data-pst-pin-skip]'),btn=g.querySelector('[data-pst-pin-submit]');
+  installCss();var g=gate(),already=g.classList.contains('on')&&mode===which,input=g.querySelector('[data-pst-pin-input]'),skip=g.querySelector('[data-pst-pin-skip]'),btn=g.querySelector('[data-pst-pin-submit]');
+  mode=which;
+  if(already){setTimeout(function(){try{input&&input.focus();}catch(e){}},30);return;}
   g.classList.add('on');if(input){input.value='';input.disabled=false;}
   setupFirstPin='';
   if(which==='setup'){setText('Krijo PIN-in','Vendos 4 shifra që do t’i përdorësh në këtë telefon.','');if(skip)skip.style.display='block';if(btn)btn.textContent='Vazhdo';}
@@ -138,11 +152,15 @@ async function submit(){
       }
       var s=session(),salt=randomSalt(),hash=await derive(pin,salt);
       if(!writeCfg({v:1,email:emailOf(s),salt:salt,hash:hash,created_at:new Date().toISOString()}))throw new Error('STORE_FAILED');
-      resetAttempts();unlocked=true;hide();if(typeof originalStart==='function')originalStart();return;
+      resetAttempts();unlocked=true;markSessionUnlocked(s);hide();
+      try{document.dispatchEvent(new CustomEvent('pst:mobile-pin-unlocked',{detail:{email:emailOf(s),mode:'setup'}}));}catch(e){}
+      if(typeof originalStart==='function')originalStart();return;
     }
     var cfg=readCfg(),candidate=cfg&&cfg.salt?await derive(pin,cfg.salt):'';
     if(cfg&&sameHash(candidate,cfg.hash)){
-      resetAttempts();unlocked=true;hide();if(typeof originalStart==='function')originalStart();return;
+      var s2=session();resetAttempts();unlocked=true;markSessionUnlocked(s2);hide();
+      try{document.dispatchEvent(new CustomEvent('pst:mobile-pin-unlocked',{detail:{email:emailOf(s2),mode:'unlock'}}));}catch(e){}
+      if(typeof originalStart==='function')originalStart();return;
     }
     var n=attempts()+1;setAttempts(n);
     if(n>=MAX_ATTEMPTS){fullLogin();return;}
@@ -159,7 +177,7 @@ function clearSessionForFullLogin(){
   try{sessionStorage.removeItem('pst_auth_restore_attempt_v3');}catch(e){}
 }
 function fullLogin(){
-  setBypass();clearSessionForFullLogin();hide();
+  setBypass();clearSessionUnlocked();clearSessionForFullLogin();hide();
   var gateEl=document.getElementById('auth-gate'),app=document.getElementById('app-shell-root');
   if(gateEl)gateEl.style.display='flex';if(app)app.style.display='none';
   setTimeout(function(){try{var e=document.getElementById('auth-email');if(e)e.focus();}catch(x){}},80);
@@ -168,15 +186,15 @@ function guardedStart(){
   if(typeof originalStart!=='function')return;
   if(!mobile()){unlocked=true;return originalStart();}
   var s=session();if(!usableSession(s)){return originalStart();}
-  if(consumeBypass()){resetAttempts();unlocked=true;return originalStart();}
-  if(unlocked)return originalStart();
+  if(consumeBypass()){resetAttempts();unlocked=true;markSessionUnlocked(s);return originalStart();}
+  if(unlocked||sessionUnlocked(s)){unlocked=true;return originalStart();}
   var cfg=readCfg();
   if(cfg&&emailOf(s)!==S(cfg.email).toLowerCase()){clearCfg();cfg=null;}
   if(!cfg){show('setup');return;}
   show('unlock');
 }
 function guardedLogout(){
-  clearCfg();clearSessionForFullLogin();unlocked=false;hide();
+  clearCfg();clearSessionUnlocked();clearSessionForFullLogin();unlocked=false;hide();
   if(typeof originalLogout==='function')return originalLogout();
   location.reload();
 }
@@ -189,7 +207,7 @@ install();
 window.PSTMobilePinUnlockV1={
   enabled:function(){return !!readCfg();},
   clear:clearCfg,
-  lock:function(){if(mobile()&&readCfg()){unlocked=false;show('unlock');return true;}return false;},
-  _test:{mobile:mobile,readCfg:readCfg,attempts:attempts,validPin:validPin,emailOf:emailOf,usableSession:usableSession}
+  lock:function(){if(mobile()&&readCfg()){clearSessionUnlocked();unlocked=false;show('unlock');return true;}return false;},
+  _test:{mobile:mobile,readCfg:readCfg,attempts:attempts,validPin:validPin,emailOf:emailOf,usableSession:usableSession,sessionUnlocked:sessionUnlocked}
 };
 })();
