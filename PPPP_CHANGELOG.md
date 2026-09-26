@@ -1,3 +1,12 @@
+## 2026-09-26 — Mobile Home final market dashboard
+
+- Restored visible steel/raw-material market references on mobile Home using dated public benchmarks with explicit market basis; every row remains clickable to its source.
+- Current references used for the 26 Sep Home are HRC Northern Europe €740–760/t EXW (25 Sep), Romania rebar €610–615/t ex-warehouse (25 Sep), LME Turkey 1-month steel scrap $393.50/t CFR (24 Sep), and iron ore 61% Fe $95/t (25 Sep).
+- Replaced the mm↔inch converter with a Google Calendar shortcut under `Mjete të dobishme`.
+- Replaced SteelBenchmarker with `Çmimet e metaleve`, linked to the official LME metals page.
+- Explicitly hides the legacy `Ballina e punës` / morning command-center surface and the floating `Kërko` button whenever the approved mobile Home owns the active Home page.
+- The fixed bottom navigation, `Pyet PPPP`, live weather, ECB currency converter, Incoterms, quick note and weight calculator remain intact.
+
 ## 2026-09-26 — Mobile Home live interaction hardening
 
 - `Pyet PPPP` on mobile now opens a dedicated mobile sheet and delegates directly to the existing read-only `PSTOpenAIAssistantV1` / PPPP context bridge instead of opening generic workspace search.
