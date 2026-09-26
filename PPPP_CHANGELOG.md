@@ -1,3 +1,10 @@
+## 2026-09-26 — Mobile Home live interaction hardening
+
+- `Pyet PPPP` on mobile now opens a dedicated mobile sheet and delegates directly to the existing read-only `PSTOpenAIAssistantV1` / PPPP context bridge instead of opening generic workspace search.
+- Steel-market rows no longer say “current price” when the public source may expose delayed/sample values; they now say `Hap burimin`.
+- The SteelBenchmarker shortcut opens the latest public benchmark-history PDF directly.
+- No new Supabase path, polling or business write was added; the assistant reuses the existing authenticated PPPP AI owner.
+
 ## 2026-09-26 — Trusted mobile PIN page cleanup
 
 - On a phone/tablet that already has a configured PPPP PIN, the legacy email/password form and its error area are removed from the page before the PIN gate is shown.
