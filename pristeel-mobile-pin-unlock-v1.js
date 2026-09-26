@@ -141,7 +141,7 @@ function installCss(){
 function gate(){
   var g=document.getElementById('pst-mobile-pin-gate');if(g)return g;
   g=document.createElement('div');g.id='pst-mobile-pin-gate';
-  g.innerHTML='<div class="pst-pin-card"><div class="pst-pin-logo">P</div><h2 data-pst-pin-title>Shkruaj PIN-in</h2><p data-pst-pin-sub>4 shifrat e tua për të hapur PPPP.</p><input class="pst-pin-input" data-pst-pin-input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="PIN me 4 shifra"><div class="pst-pin-error" data-pst-pin-error></div><div class="pst-pin-actions"><button type="button" class="pst-pin-primary" data-pst-pin-submit>Hap PPPP</button><button type="button" class="pst-pin-secondary" data-pst-pin-skip style="display:none">Jo tani</button></div><div class="pst-pin-note">Pas aktivizimit të parë, rikthimi në këtë telefon bëhet vetëm me PIN. Emaili dhe fjalëkalimi nuk kërkohen për skadimin normal të sesionit.</div></div>';
+  g.innerHTML='<div class="pst-pin-card"><div class="pst-pin-logo">P</div><h2 data-pst-pin-title>Shkruaj PIN-in</h2><p data-pst-pin-sub>4 shifrat e tua për të hapur PPPP.</p><input class="pst-pin-input" data-pst-pin-input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="PIN me 4 shifra"><div class="pst-pin-error" data-pst-pin-error></div><div class="pst-pin-actions"><button type="button" class="pst-pin-primary" data-pst-pin-submit>Hap PPPP</button><button type="button" class="pst-pin-secondary" data-pst-pin-skip style="display:none">Jo tani</button></div><div class="pst-pin-note">Rikthimi në këtë telefon bëhet me PIN.</div></div>';
   document.body.appendChild(g);
   var input=g.querySelector('[data-pst-pin-input]');
   input.addEventListener('input',function(){
@@ -243,8 +243,16 @@ function pinConfiguredForDevice(){
   if(s&&emailOf(s)&&cfg.email&&emailOf(s)!==S(cfg.email).toLowerCase())return false;
   return true;
 }
+function stripLegacyAuthForTrustedDevice(){
+  if(!mobile()||!pinConfiguredForDevice())return false;
+  var form=document.getElementById('auth-form'),err=document.getElementById('auth-err');
+  if(form&&form.parentNode)form.parentNode.removeChild(form);
+  if(err&&err.parentNode)err.parentNode.removeChild(err);
+  return true;
+}
 function coverWithPin(){
   if(!mobile()||!pinConfiguredForDevice())return false;
+  stripLegacyAuthForTrustedDevice();
   var gateEl=document.getElementById('auth-gate'),app=document.getElementById('app-shell-root');
   if(gateEl)gateEl.style.display='none';if(app)app.style.display='none';
   show('unlock');return true;
@@ -255,6 +263,7 @@ function guardedStart(){
   var s=identitySession(),cfg=readCfg();
   if(cfg&&s&&emailOf(s)&&emailOf(s)!==S(cfg.email).toLowerCase()){clearCfg();cfg=null;}
   if(cfg){
+    stripLegacyAuthForTrustedDevice();
     if(unlocked||sessionUnlocked(s)){unlocked=true;return originalStart();}
     show('unlock');return;
   }
@@ -282,6 +291,6 @@ window.PSTMobilePinUnlockV1={
   enabled:function(){return !!readCfg();},
   clear:clearCfg,
   lock:function(){if(mobile()&&readCfg()){clearSessionUnlocked();unlocked=false;show('unlock');return true;}return false;},
-  _test:{mobile:mobile,readCfg:readCfg,attempts:attempts,validPin:validPin,emailOf:emailOf,usableSession:usableSession,rememberedSession:rememberedSession,restoreRememberedSession:restoreRememberedSession,pinConfiguredForDevice:pinConfiguredForDevice,sessionUnlocked:sessionUnlocked,locked:locked}
+  _test:{mobile:mobile,readCfg:readCfg,attempts:attempts,validPin:validPin,emailOf:emailOf,usableSession:usableSession,rememberedSession:rememberedSession,restoreRememberedSession:restoreRememberedSession,pinConfiguredForDevice:pinConfiguredForDevice,stripLegacyAuthForTrustedDevice:stripLegacyAuthForTrustedDevice,sessionUnlocked:sessionUnlocked,locked:locked}
 };
 })();
