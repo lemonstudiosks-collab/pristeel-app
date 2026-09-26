@@ -1,3 +1,12 @@
+## 2026-09-26 — iOS Home Screen app PIN bootstrap
+
+- Fixed the iPhone Home Screen web-app case where Safari opened PPPP with PIN but a newly installed standalone app asked again for email/password.
+- Cause: iOS copies login cookies into a newly added Home Screen web app, but does not copy Safari localStorage. PPPP previously kept both the remembered Supabase session and PIN configuration only in localStorage.
+- Safari now creates a short-lived, app-path-scoped, Secure/SameSite=Strict bootstrap cookie containing only an AES-GCM encrypted refresh-session payload. The encryption key is derived from the existing four-digit PIN hash; plaintext PIN/password are never placed in the cookie.
+- On first launch of a newly installed standalone app, the PIN gate appears before the legacy login form. A correct PIN decrypts the bootstrap, restores the normal local remembered session, refreshes Supabase Auth through the existing refresh path, creates the app-local PIN configuration, and deletes the copied bootstrap cookie inside the standalone app.
+- Existing installed web apps remain storage-isolated from Safari, so a one-time remove/re-add is required to receive the new bootstrap cookie. After that, routine app re-entry remains PIN-only.
+- No PPPP business reads/writes, schema change, polling, paid API or password storage was added.
+
 ## 2026-09-26 — Mobile Home final market dashboard
 
 - Restored visible steel/raw-material market references on mobile Home using dated public benchmarks with explicit market basis; every row remains clickable to its source.

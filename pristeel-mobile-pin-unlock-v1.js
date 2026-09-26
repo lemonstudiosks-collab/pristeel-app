@@ -14,6 +14,8 @@ var LOCK_KEY='pst_mobile_pin_lock_until_v1';
 var BYPASS_KEY='pst_mobile_pin_bypass_once_v1';
 var SESSION_UNLOCK_KEY='pst_mobile_pin_session_unlocked_v1';
 var REMEMBERED_KEY='pst_auth_remembered_session_v3';
+var PORTABLE_COOKIE='pst_pin_portable_v1';
+var PORTABLE_MAX_AGE=24*60*60;
 var MAX_ATTEMPTS=5;
 var LOCK_MS=60*1000;
 var PBKDF2_ITERATIONS=150000;
@@ -24,6 +26,9 @@ var setupFirstPin='';
 var mode='unlock';
 
 function S(v){return String(v==null?'':v);}
+function standalone(){
+  try{return window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches||window.navigator&&window.navigator.standalone===true;}catch(e){return false;}
+}
 function mobile(){
   var iw=Number(window.innerWidth||9999),sw=Number(window.screen&&window.screen.width||9999);
   return Math.min(iw,sw)<=900;
@@ -66,6 +71,60 @@ function fromB64(s){
   var raw=atob(S(s)),out=new Uint8Array(raw.length);
   for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
   return out;
+}
+function cookieRead(name){
+  var prefix=name+'=',parts=S(document.cookie).split(';');
+  for(var i=0;i<parts.length;i++){
+    var p=parts[i].trim();
+    if(p.indexOf(prefix)===0){try{return decodeURIComponent(p.slice(prefix.length));}catch(e){return p.slice(prefix.length);}}
+  }
+  return '';
+}
+function cookieWrite(name,value,maxAge){
+  try{
+    document.cookie=name+'='+encodeURIComponent(value)+'; Max-Age='+String(maxAge)+'; Path=/pristeel-app/; Secure; SameSite=Strict';
+    return cookieRead(name)===value;
+  }catch(e){return false;}
+}
+function cookieClear(name){
+  try{document.cookie=name+'=; Max-Age=0; Path=/pristeel-app/; Secure; SameSite=Strict';}catch(e){}
+}
+function portableBlob(){return parse(cookieRead(PORTABLE_COOKIE));}
+function portableAvailable(){
+  var p=portableBlob();
+  return !!(p&&p.v===1&&p.salt&&p.iv&&p.ct&&p.project_ref==='awqfpnzqwfjrjefoktgd');
+}
+async function aesKeyFromHash(hash,usages){
+  if(!window.crypto||!window.crypto.subtle)throw new Error('WEBCRYPTO_UNAVAILABLE');
+  return window.crypto.subtle.importKey('raw',fromB64(hash),{name:'AES-GCM'},false,usages);
+}
+async function portableSeal(cfg,s){
+  if(!cfg||!cfg.hash||!cfg.salt||!usableSession(s)||standalone())return false;
+  var key=await aesKeyFromHash(cfg.hash,['encrypt']),iv=new Uint8Array(12);
+  window.crypto.getRandomValues(iv);
+  var payload=JSON.stringify({refresh_token:s.refresh_token,email:emailOf(s),project_ref:'awqfpnzqwfjrjefoktgd'});
+  var ct=await window.crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,new TextEncoder().encode(payload));
+  return cookieWrite(PORTABLE_COOKIE,JSON.stringify({v:1,salt:cfg.salt,iv:b64(iv),ct:b64(new Uint8Array(ct)),project_ref:'awqfpnzqwfjrjefoktgd',created_at:new Date().toISOString()}),PORTABLE_MAX_AGE);
+}
+async function seedPortableFromCurrent(){
+  try{
+    var cfg=readCfg(),s=identitySession();
+    if(cfg&&usableSession(s)&&!standalone())return await portableSeal(cfg,s);
+  }catch(e){}
+  return false;
+}
+async function portableOpen(pin){
+  try{
+    var p=portableBlob();if(!p||!p.salt||!p.iv||!p.ct)return null;
+    var candidate=await derive(pin,p.salt),key=await aesKeyFromHash(candidate,['decrypt']);
+    var plain=await window.crypto.subtle.decrypt({name:'AES-GCM',iv:fromB64(p.iv)},key,fromB64(p.ct));
+    var data=parse(new TextDecoder().decode(plain));
+    if(!data||!data.refresh_token||!data.email||data.project_ref!=='awqfpnzqwfjrjefoktgd')return null;
+    var s={access_token:'',refresh_token:data.refresh_token,expires_at:0,email:S(data.email).toLowerCase(),project_ref:data.project_ref};
+    try{localStorage.setItem('pristeel_session',JSON.stringify(s));localStorage.setItem(REMEMBERED_KEY,JSON.stringify({at:Date.now(),session:s}));}catch(e){return null;}
+    if(!writeCfg({v:1,email:s.email,salt:p.salt,hash:candidate,created_at:new Date().toISOString(),imported_from:'ios_cookie'}))return null;
+    return s;
+  }catch(e){return null;}
 }
 function randomSalt(){
   var a=new Uint8Array(16);
@@ -196,9 +255,22 @@ async function submit(){
       }
       var s=session(),salt=randomSalt(),hash=await derive(pin,salt);
       if(!writeCfg({v:1,email:emailOf(s),salt:salt,hash:hash,created_at:new Date().toISOString()}))throw new Error('STORE_FAILED');
+      await portableSeal(readCfg(),s);
       resetAttempts();unlocked=true;markSessionUnlocked(s);hide();
       try{document.dispatchEvent(new CustomEvent('pst:mobile-pin-unlocked',{detail:{email:emailOf(s),mode:'setup'}}));}catch(e){}
       if(typeof originalStart==='function')originalStart();return;
+    }
+    if(mode==='portable'){
+      var imported=await portableOpen(pin);
+      if(imported){
+        resetAttempts();clearLock();
+        var importedFresh=await resumeWithPin();
+        if(!importedFresh)throw new Error('PORTABLE_REFRESH_FAILED');
+        if(standalone())cookieClear(PORTABLE_COOKIE);
+        unlocked=true;markSessionUnlocked(importedFresh);hide();
+        try{document.dispatchEvent(new CustomEvent('pst:mobile-pin-unlocked',{detail:{email:emailOf(importedFresh),mode:'portable'}}));}catch(e){}
+        if(typeof originalStart==='function')originalStart();return;
+      }
     }
     var cfg=readCfg(),candidate=cfg&&cfg.salt?await derive(pin,cfg.salt):'';
     if(cfg&&sameHash(candidate,cfg.hash)){
@@ -209,6 +281,7 @@ async function submit(){
         setText('Shkruaj PIN-in','Nuk arrita ta rifreskoj sesionin e këtij telefoni. Provo përsëri pas pak.','Sesioni i pajisjes nuk u rifreskua.');
         if(input)input.focus();return;
       }
+      await portableSeal(cfg,s2);
       unlocked=true;markSessionUnlocked(s2);hide();
       try{document.dispatchEvent(new CustomEvent('pst:mobile-pin-unlocked',{detail:{email:emailOf(s2),mode:'unlock'}}));}catch(e){}
       if(typeof originalStart==='function')originalStart();return;
@@ -244,18 +317,20 @@ function pinConfiguredForDevice(){
   return true;
 }
 function stripLegacyAuthForTrustedDevice(){
-  if(!mobile()||!pinConfiguredForDevice())return false;
+  if(!mobile()||(!pinConfiguredForDevice()&&!portableAvailable()))return false;
   var form=document.getElementById('auth-form'),err=document.getElementById('auth-err');
   if(form&&form.parentNode)form.parentNode.removeChild(form);
   if(err&&err.parentNode)err.parentNode.removeChild(err);
   return true;
 }
 function coverWithPin(){
-  if(!mobile()||!pinConfiguredForDevice())return false;
+  if(!mobile())return false;
+  var cfg=pinConfiguredForDevice(),portable=!cfg&&portableAvailable();
+  if(!cfg&&!portable)return false;
   stripLegacyAuthForTrustedDevice();
   var gateEl=document.getElementById('auth-gate'),app=document.getElementById('app-shell-root');
   if(gateEl)gateEl.style.display='none';if(app)app.style.display='none';
-  show('unlock');return true;
+  show(portable?'portable':'unlock');return true;
 }
 function guardedStart(){
   if(typeof originalStart!=='function')return;
@@ -267,13 +342,14 @@ function guardedStart(){
     if(unlocked||sessionUnlocked(s)){unlocked=true;return originalStart();}
     show('unlock');return;
   }
+  if(!cfg&&portableAvailable()){stripLegacyAuthForTrustedDevice();show('portable');return;}
   s=session();
   if(!usableSession(s))return originalStart();
   if(consumeBypass()){resetAttempts();unlocked=true;markSessionUnlocked(s);return originalStart();}
   show('setup');
 }
 function guardedLogout(){
-  clearCfg();clearSessionUnlocked();clearSessionForFullLogin();unlocked=false;hide();
+  clearCfg();cookieClear(PORTABLE_COOKIE);clearSessionUnlocked();clearSessionForFullLogin();unlocked=false;hide();
   if(typeof originalLogout==='function')return originalLogout();
   location.reload();
 }
@@ -281,17 +357,18 @@ function install(){
   installCss();
   if(typeof originalStart==='function'){window.startApp=guardedStart;try{startApp=guardedStart;}catch(e){}}
   if(typeof originalLogout==='function'){window.doLogout=guardedLogout;try{doLogout=guardedLogout;}catch(e){}}
-  if(mobile()&&pinConfiguredForDevice())coverWithPin();
+  if(mobile()&&(pinConfiguredForDevice()||portableAvailable()))coverWithPin();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(coverWithPin,0);},{once:true});
   else setTimeout(coverWithPin,0);
-  window.addEventListener('load',function(){setTimeout(coverWithPin,0);});
-  window.addEventListener('pageshow',function(){if(!unlocked&&!sessionUnlocked(identitySession()))setTimeout(coverWithPin,0);});
+  window.addEventListener('load',function(){setTimeout(coverWithPin,0);setTimeout(seedPortableFromCurrent,500);setTimeout(seedPortableFromCurrent,1500);});
+  window.addEventListener('pageshow',function(){if(!unlocked&&!sessionUnlocked(identitySession()))setTimeout(coverWithPin,0);else setTimeout(seedPortableFromCurrent,120);});
+  window.addEventListener('focus',function(){setTimeout(seedPortableFromCurrent,120);});
 }
 install();
 window.PSTMobilePinUnlockV1={
   enabled:function(){return !!readCfg();},
   clear:clearCfg,
   lock:function(){if(mobile()&&readCfg()){clearSessionUnlocked();unlocked=false;show('unlock');return true;}return false;},
-  _test:{mobile:mobile,readCfg:readCfg,attempts:attempts,validPin:validPin,emailOf:emailOf,usableSession:usableSession,rememberedSession:rememberedSession,restoreRememberedSession:restoreRememberedSession,pinConfiguredForDevice:pinConfiguredForDevice,stripLegacyAuthForTrustedDevice:stripLegacyAuthForTrustedDevice,sessionUnlocked:sessionUnlocked,locked:locked}
+  _test:{mobile:mobile,standalone:standalone,readCfg:readCfg,attempts:attempts,validPin:validPin,emailOf:emailOf,usableSession:usableSession,rememberedSession:rememberedSession,restoreRememberedSession:restoreRememberedSession,pinConfiguredForDevice:pinConfiguredForDevice,portableAvailable:portableAvailable,portableOpen:portableOpen,seedPortableFromCurrent:seedPortableFromCurrent,stripLegacyAuthForTrustedDevice:stripLegacyAuthForTrustedDevice,sessionUnlocked:sessionUnlocked,locked:locked}
 };
 })();
