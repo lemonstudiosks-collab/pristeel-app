@@ -25,9 +25,11 @@ jobs:
         run: |
           node --check pristeel-mobile-responsive-v1.js
           node --check pristeel-mobile-home-v1.js
+          node --check pristeel-mobile-control-tower-v1.js
           node --check pristeel-mobile-pin-unlock-v1.js
       - name: Verify mobile shell contract
         run: |
           node tests/mobile-responsive-shell-smoke.mjs
           node tests/mobile-home-smoke.mjs
+          node tests/mobile-control-tower-v1-smoke.mjs
           node tests/mobile-pin-unlock-smoke.mjs

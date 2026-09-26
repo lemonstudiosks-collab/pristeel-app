@@ -23,7 +23,8 @@
     "pristeel-outreach.js",
     "pristeel-mobile-pin-unlock-v1.js",
     "pristeel-mobile-responsive-v1.js",
-    "pristeel-mobile-home-v1.js"
+    "pristeel-mobile-home-v1.js",
+    "pristeel-mobile-control-tower-v1.js"
   ],
   "principles": {
     "currentMeansHeadOfMain": true,
@@ -69,9 +70,10 @@
         "pristeel-home-operating-grid-v1.js",
         "pristeel-project-control-home-v1.js",
         "pristeel-home-morning-command-center-v1.js",
-        "pristeel-mobile-home-v1.js"
+        "pristeel-mobile-home-v1.js",
+        "pristeel-mobile-control-tower-v1.js"
       ],
-      "note": "Native UI v3 owns the early Home shell. Morning Command Center remains the desktop Home presentation and composes existing in-memory action, project, Opportunities and Material Trade snapshots without adding database reads or writes. Mobile Home v1 is the <=900px final Home presentation: compact top, Pyet PPPP, three summary counters, PRISTEEL Daily, one concise today card, four quick actions, two active-project continuation rows and waiting-external rows when present, all delegated to existing snapshots/routes with zero new Supabase reads or writes."
+      "note": "Canonical Home remains the sole Home data/state owner. Existing Mobile Home remains loaded as the <=900px utility/public-source provider. Mobile Control Tower v1 is the later <=900px Home presentation owner: it consumes PSTHomeCanonicalV1.snapshot(), presents current actions/waiting/active projects, delegates Ask PPPP/weather/FX/market utilities to the existing mobile provider, adds no Supabase reads/writes or polling, and preserves canonical navigation and human approval gates."
     },
     {
       "area": "projects-list",
