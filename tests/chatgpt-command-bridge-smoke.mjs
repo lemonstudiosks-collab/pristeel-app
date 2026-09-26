@@ -13,7 +13,12 @@ const dispositionMig=fs.readFileSync('supabase/migrations/20260912154500_add_cha
 
 assert.match(entry,/import\s+["']\.\/worker\.ts["']/,'v3 worker entrypoint missing');
 assert.match(fn,/COMMAND_SHEET_ID\s*=\s*'1ZoU1-aqHaN0CLI_1bcAUDXtGKdm97ixvopkusB96hZ8'/,'canonical command sheet missing');
-assert.match(fn,/new Set\(\['context_fact',\s*'task',\s*'create_project',\s*'supplier_offer',\s*'project_disposition'\]\)/,'safe action allowlist missing controlled actions');
+for (const action of [
+  'context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition',
+  'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target',
+]) {
+  assert.match(fn,new RegExp(`ALLOWED_ACTIONS[\\s\\S]*['\"]${action}['\"]`),`safe action allowlist missing ${action}`);
+}
 assert.match(fn,/approval\s*!==\s*'approved'/,'explicit approval gate missing');
 assert.match(fn,/pppp_ingest_context_fact_v1/,'context ingestion RPC missing');
 assert.match(fn,/source:\s*'chatgpt_bridge'/,'ChatGPT task source missing');

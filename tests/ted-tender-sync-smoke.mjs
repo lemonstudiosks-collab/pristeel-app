@@ -35,7 +35,7 @@ const fixture={
       'publication-date':'2026-08-13',
       'buyer-name':{eng:'Test Buyer Germany'},
       'classification-cpv':['44212000','45223210'],
-      'deadline-receipt-tender-date-lot':['2026-09-15'],
+      'deadline-receipt-tender-date-lot':['2099-09-15'],
       'place-of-performance':['DEU'],
       'title-proc':{eng:'School steel renovation'},
       'title-lot':[{eng:'Structural steel package'}],
@@ -52,8 +52,8 @@ const fixture={
       'publication-date':'2026-08-14',
       'buyer-name':{eng:'Infrastructure Buyer'},
       'classification-cpv':['44334000'],
-      'deadline-receipt-tender-date-lot':['2026-09-30','2026-10-15'],
-      'deadline-receipt-request-date-lot':['2026-09-25'],
+      'deadline-receipt-tender-date-lot':['2099-09-30','2099-10-15'],
+      'deadline-receipt-request-date-lot':['2099-09-25'],
       'place-of-performance':['DEU'],
       'title-proc':{eng:'Structural steel supply programme'},
       'title-lot':[{eng:'Steel profile delivery'}],
@@ -68,7 +68,7 @@ const row=normalizeTedNotice(fixture.notices[1],'opportunity','2026-08-14T06:00:
 assert.equal(row.source_key,'TED:600001-2026');
 assert.equal(row.procurement_no,'TED-600001-2026');
 assert.equal(row.fpp,'44334000');
-assert.equal(row.deadline,'2026-09-25','collector must use the nearest valid lot-level tender/participation deadline');
+assert.equal(row.deadline,'2099-09-25','collector must use the nearest valid lot-level tender/participation deadline');
 assert.equal(row.payload.source,'TED');
 assert.equal(row.payload.notice_phase,'opportunity');
 assert.equal(row.payload.description,'Supply and delivery of structural steel profiles to the project site.','collector must retain the TED lot description');
@@ -124,7 +124,7 @@ assert.equal(summary.opportunities,1);
 assert.equal(summary.opportunities_with_deadline,1);
 assert.equal(summary.awards,1);
 assert.equal(summary.relevant_rows,2);
-assert.ok(summary.tenders.some(x=>x.publication_no==='600001-2026'&&x.phase==='opportunity'&&x.deadline==='2026-09-25'));
+assert.ok(summary.tenders.some(x=>x.publication_no==='600001-2026'&&x.phase==='opportunity'&&x.deadline==='2099-09-25'));
 
 const taskRows=tenderDeadlineTaskRows([
   {source_key:'TED:URGENT',publication_no:'700001-2026',title:'Urgent steel structure',authority:'Buyer A',category:'steel_structure',relevance_score:96,match_reasons:['CPV kryesor strukturë çeliku: 45223210','titull i qartë për strukturë çeliku'],deadline:'2026-08-17',source_url:'https://ted.example/urgent',payload:{notice_phase:'opportunity',country:'DEU',cpv:['45223210']}},
