@@ -128,9 +128,40 @@ function cleanProjectTitle(v,ref=''){
 }
 function htmlParagraph(v){return v?`<p style="margin:0 0 14px 0">${esc(v).replace(/\\n/g,'<br>')}</p>`:'';}
 
+function publicAwardFacts(language,role,title,company,tender){
+  const awardCompany=company||txt(tender?.winner?.name,300)||'the awarded company';
+  const authority=txt(tender?.authority,300);
+  if(language==='de'){
+    const project='Die veröffentlichten Vergabeinformationen betreffen das Projekt „'+title+'“.',companyFact=role==='gc'
+      ?awardCompany+' ist in den Vergabeinformationen als Auftragnehmer für diesen Auftrag aufgeführt.'
+      :role==='producer'
+        ?awardCompany+' ist in den Vergabeinformationen als ausführendes Unternehmen für diesen Auftrag aufgeführt.'
+        :awardCompany+' ist in den Vergabeinformationen als beteiligtes Unternehmen für diesen Auftrag aufgeführt.';
+    return[project,companyFact||(authority?'Auftraggeber ist '+authority+'.':'')].filter(Boolean);
+  }
+  if(language==='bcs'){
+    const project='Objavljeni podaci o dodjeli odnose se na projekat „'+title+'“.',companyFact=role==='gc'
+      ?awardCompany+' je u podacima o dodjeli naveden kao izvođač za ovaj ugovor.'
+      :role==='producer'
+        ?awardCompany+' je u podacima o dodjeli naveden kao izvođač/proizvođač za ovaj ugovor.'
+        :awardCompany+' je u podacima o dodjeli naveden kao učesnik u ovom ugovoru.';
+    return[project,companyFact||(authority?'Naručilac je '+authority+'.':'')].filter(Boolean);
+  }
+  const project='The published award information relates to “'+title+'”.',companyFact=role==='gc'
+    ?awardCompany+' is identified in the award information as a contractor for this contract.'
+    :role==='producer'
+      ?awardCompany+' is identified in the award information as an executing/fabricating company for this contract.'
+      :awardCompany+' is identified in the award information as a participant in this contract.';
+  return[project,companyFact||(authority?'The contracting authority is '+authority+'.':'')].filter(Boolean);
+}
+function outboundFacts(language,role,title,company,action,tender,rdata){
+  const verified=[rdata?.scope_evidence,rdata?.project_fact].map(x=>txt(x,1000)).filter(Boolean),fallback=publicAwardFacts(language,role,title,company,tender),out=[];
+  for(const fact of [...verified,...fallback])if(fact&&!out.includes(fact))out.push(fact);
+  return out.slice(0,2);
+}
+
 export function buildTedDraftContent(action={},tender={},recipient={}){
-  const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender),facts=(Array.isArray(action?.personalization_facts)&&action.personalization_facts.length?action.personalization_facts:[rdata.scope_evidence||rdata.project_fact,rdata.pristeel_scope||rdata.qualification_evidence]).map(x=>txt(x,1000)).filter(Boolean);
-  if(facts.length<1)facts.push('Project: '+title); if(facts.length<2)facts.push('Company: '+(company||'verified award recipient'));
+  const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender),facts=outboundFacts(language,role,title,company,action,tender,rdata);
   const future=motion==='future_supplier_qualification'||txt(action?.timing_classification,80)==='future_supplier_qualification';
   const offerModel=future?'future_supplier_qualification':(txt(action?.pristeel_offer_model,80)||(role==='producer'?'external_production_capacity':'fabricated_steel_package'));
   const subject=future
