@@ -91,16 +91,15 @@ Each zone has a distinct color identity so the user can orient by both text and 
 
 ### Mobile / tablet presentation
 
-- `pristeel-mobile-responsive-v1.js` is the bounded mobile shell for narrow screens.
-- It is presentation/navigation only: no Supabase reads/writes, no polling, no outbound actions and no second business engine.
-- At <=900px it replaces the desktop sidebar with a fixed bottom navigation that delegates to the existing canonical PPPP routes: Ballina, Mundësitë, Projektet, Partnerët, Financat and Sistemi.
-- Existing page owners keep their own responsive rules; the mobile shell only normalizes the global shell, safe-area spacing, touch navigation and constrained modal/table behavior.
-- `pristeel-mobile-home-v1.js` remains loaded on phone/tablet as the bounded utility/public-source provider for `Pyet PPPP`, weather, ECB FX and steel-market source actions. It does not own or write PPPP business state.
-- `pristeel-mobile-control-tower-v1.js` is the later <=900px Home presentation owner. It consumes `PSTHomeCanonicalV1.snapshot()` and surfaces the current canonical actions, waiting items and active projects as a compact PriSteel Control Tower without adding Supabase reads/writes, polling or a second business engine.
-- The fixed bottom navigation still owns Opportunities, Projects, Partners, Finance and System. A compact persistent utility dock keeps Weather, Convert and Market visible on mobile while delegating those actions to the existing mobile utility provider.
-- Mobile public reads remain bounded inside `pristeel-mobile-home-v1.js`: 30-minute-cached Open-Meteo weather and on-demand 12-hour-cached ECB daily reference FX. The Control Tower itself performs no network fetches.
-- `pristeel-mobile-pin-unlock-v1.js` owns trusted-device mobile re-entry. After first-time normal authentication and PIN setup, routine re-entry — including access-token expiry — is PIN-only: PIN verification restores the remembered refresh-token session and lets the existing auth refresh path renew it. The normal PIN gate does not expose email/password fallback; explicit logout still clears the trusted-device PIN/session state.
-- The linked `pristeel.webmanifest` prepares installable-app metadata. Service-worker caching is intentionally not introduced in this phase so mobile cannot pin stale PPPP runtime code.
+- `pristeel-mobile-responsive-v1.js`, `pristeel-mobile-home-v1.js` and `pristeel-mobile-control-tower-v1.js` remain loaded as compatibility/navigation/utility providers for narrow screens.
+- `pristeel-mobile-app-v2.js` is the final <=900px mobile presentation owner. It suppresses the old six-tab bar and legacy mobile dashboards while active and presents a dedicated four-tab app shell: Home, Projects, Discover and Inbox with a raised central + action.
+- Home consumes `PSTHomeCanonicalV1.snapshot()`; Projects reuses existing project caches/owners; Discover delegates to Tender Priority Actions, Material Trade and Representations; Inbox delegates to Gmail Live Inbox. Mobile App v2 does not create a second business-state engine.
+- Home priority cards use native horizontal swipe and Discover opportunities use a real touch swipe deck. Any status-changing opportunity action remains an explicit user gesture/button; protected commercial actions remain human gated.
+- Weather, ECB FX conversion and steel-market access remain fixed as compact utility icons and delegate to the existing mobile utility provider. No duplicate public/API fetch path is introduced by Mobile App v2.
+- Partnerët, Financat, Material Trade, Përfaqësime and Sistemi remain reachable from the profile/more sheet and open their existing canonical owners.
+- Mobile App v2 adds no direct Supabase reads/writes, no polling and no independent network fetches. Existing page/detail owners continue to render when the user opens a project, opportunity or secondary module.
+- `pristeel-mobile-pin-unlock-v1.js` owns trusted-device mobile re-entry. After first-time normal authentication and PIN setup, routine re-entry — including access-token expiry — is PIN-only: PIN verification restores the remembered refresh-token session and lets the existing auth refresh path renew it. Explicit logout still clears the trusted-device PIN/session state.
+- The linked `pristeel.webmanifest` prepares installable-app metadata. Service-worker caching remains deliberately deferred to avoid stale-runtime risk.
 
 ### Home
 
