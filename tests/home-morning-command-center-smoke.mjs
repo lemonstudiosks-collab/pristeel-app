@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 const source=fs.readFileSync('pristeel-home-morning-command-center-v1.js','utf8');
 assert(!/supaFetch|\/rest\/v1\/|\.insert\(|\.update\(|\.delete\(/.test(source),'Morning Home must reuse snapshots without database reads or writes');
 assert(source.includes('Veprimet prioritare')&&source.includes('Projektet aktive')&&source.includes('Material → Ofertë'),'Morning Home must expose the redesigned three work zones');
-assert(source.includes('home-dashboard-redesign3'),'Morning Home must expose the redesigned cache version');
+assert(source.includes('home-project-empty4'),'Morning Home must expose the compact project-empty cache version');
 assert(source.includes('groupActions(allActions)'),'Morning Home must group repetitive priority actions');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2 pst-global-fullwidth-shell">

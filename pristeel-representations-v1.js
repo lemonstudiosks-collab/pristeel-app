@@ -25,6 +25,7 @@ var MODELS=[
  ['project_based_representation','Përfaqësim sipas projektit']
 ];
 var CAPITAL=[['unknown','E panjohur'],['good','E mirë'],['review','Për review'],['poor','E dobët']];
+var TARGET_TYPES=[['lead_epc_candidate','Lead Consortium / EPC Candidate'],['oem_specialist_partner','OEM / Specialist Partner'],['representation','Representation']];
 var state={rows:[],loaded:false,loading:false,error:'',selected:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null};
 
 function S(v){return String(v==null?'':v)}
@@ -76,7 +77,7 @@ function css(){
 function ensurePage(){
  css();var p=document.getElementById('page-representations');if(p)return p;
  var host=document.querySelector('.content')||document.body;p=document.createElement('div');p.id='page-representations';p.className='page';p.style.display='none';
- p.innerHTML='<div class="pst-rep-page"><header class="pst-rep-head"><div><div class="pst-rep-eye">Zhvillim tregu · Prodhues ndërkombëtarë</div><h1>Përfaqësime</h1><p>Pipeline i ndarë për marrëdhënie komerciale capital-light. Asnjë email nuk dërgohet automatikisht.</p></div><div class="pst-rep-actions"><button class="pst-rep-btn" data-rep-refresh>Rifresko</button><button class="pst-rep-btn primary" data-rep-new>+ Target i ri</button><button class="pst-rep-btn" data-rep-back>← Ballina</button></div></header><div class="pst-rep-kpis" data-rep-kpis></div><div class="pst-rep-pipeline" data-rep-pipeline></div><div class="pst-rep-toolbar"><input data-rep-search type="search" placeholder="Kërko kompani ose domain…"><select data-rep-stage></select><select data-rep-country></select><select data-rep-sector></select><select data-rep-capital></select><select data-rep-sort><option value="priority">Prioriteti më i lartë</option><option value="updated">Përditësuar së fundi</option><option value="due">Next action më afër</option><option value="company">Kompania A–Z</option></select></div><div class="pst-rep-shell"><main class="pst-rep-card"><div class="pst-rep-table-head"><span>Kompania</span><span>Vendi</span><span>Produkt / Sektor</span><span>Stage</span><span>Prioritet</span><span>Next action</span><span>Capital fit</span></div><div data-rep-list></div></main><aside class="pst-rep-card pst-rep-detail" data-rep-detail></aside></div></div>';
+ p.innerHTML='<div class="pst-rep-page"><header class="pst-rep-head"><div><div class="pst-rep-eye">EPC · OEM · PARTNERË SPECIALISTË · PËRFAQËSIME</div><h1>Përfaqësime</h1><p>Pipeline për partnerë ndërkombëtarë dhe mundësi projekti. Asnjë email nuk krijohet ose dërgohet automatikisht.</p></div><div class="pst-rep-actions"><button class="pst-rep-btn" data-rep-refresh>Rifresko</button><button class="pst-rep-btn primary" data-rep-new>+ Target i ri</button><button class="pst-rep-btn" data-rep-back>← Ballina</button></div></header><div class="pst-rep-kpis" data-rep-kpis></div><div class="pst-rep-pipeline" data-rep-pipeline></div><div class="pst-rep-toolbar"><input data-rep-search type="search" placeholder="Kërko kompani ose domain…"><select data-rep-stage></select><select data-rep-country></select><select data-rep-sector></select><select data-rep-capital></select><select data-rep-sort><option value="priority">Prioriteti më i lartë</option><option value="updated">Përditësuar së fundi</option><option value="due">Next action më afër</option><option value="company">Kompania A–Z</option></select></div><div class="pst-rep-shell"><main class="pst-rep-card"><div class="pst-rep-table-head"><span>Kompania</span><span>Vendi</span><span>Produkt / Sektor</span><span>Stage</span><span>Prioritet</span><span>Next action</span><span>Capital fit</span></div><div data-rep-list></div></main><aside class="pst-rep-card pst-rep-detail" data-rep-detail></aside></div></div>';
  host.appendChild(p);
  p.querySelector('[data-rep-refresh]').onclick=function(){load(true)};
  p.querySelector('[data-rep-new]').onclick=function(){openEditor(null)};
@@ -146,7 +147,7 @@ function renderDetail(){
  h.innerHTML='<div class="pst-rep-detail-head"><h2>'+E(r.company_name)+'</h2><p>'+E([r.country,r.headquarters,r.company_domain_normalized].filter(Boolean).join(' · ')||r.source_key)+'</p><div class="pst-rep-detail-actions"><button class="pst-rep-btn primary" data-rep-act="edit">Edito targetin</button><button class="pst-rep-btn" data-rep-act="archive">Archive / Mbylle</button></div></div>'
  +(warn.length?'<div class="pst-rep-warn"><b>⚠ Kërkon vëmendje:</b> '+E(warn.join(' · '))+'</div>':'')
  +'<section class="pst-rep-section"><h3>Pipeline & veprimi</h3><div class="pst-rep-quick"><label>Stage<select data-rep-quick="stage">'+opts(STAGES,r.stage)+'</select></label><label>Due date<input data-rep-quick="next_action_due" type="date" value="'+E(r.next_action_due||'')+'"></label><label style="grid-column:1/-1">Next action<input data-rep-quick="next_action" value="'+E(r.next_action||'')+'" placeholder="Veprimi i radhës"></label></div></section>'
- +'<section class="pst-rep-section"><h3>Fit komercial</h3>'+facts([['Prioriteti',r.priority_score==null?'—':r.priority_score+'/100'],['Arsyeja',r.priority_reason],['Modeli',r.target_model],['Territori',r.target_territory],['Capital fit',capitalLabel(r.capital_fit)],['Prani në Kosovë',r.kosovo_presence]])+'</section>'
+ +'<section class="pst-rep-section"><h3>Fit komercial</h3>'+facts([['Lloji i targetit',(TARGET_TYPES.find(function(x){return x[0]===(r.target_type||'representation')})||[])[1]],['Prioriteti',r.priority_score==null?'—':r.priority_score+'/100'],['Arsyeja',r.priority_reason],['Modeli',r.target_model],['Territori',r.target_territory],['Capital fit',capitalLabel(r.capital_fit)],['Prani në Kosovë',r.kosovo_presence]])+'</section>'
  +'<section class="pst-rep-section"><h3>Produktet & tregu</h3><div class="pst-rep-text">'+E(r.product_summary||A(r.products).join(' · ')||r.manufacturer_description||'—')+'</div></section>'
  +'<section class="pst-rep-section"><h3>Pse Kosovë / PriSteel</h3><div class="pst-rep-text">'+E(r.why_kosovo||r.market_evidence||r.strategic_fit_notes||'—')+'</div></section>'
  +'<section class="pst-rep-section"><h3>Kontakti</h3>'+facts([['Emri',r.contact_name],['Roli',r.contact_role],['Email',r.contact_email],['Telefoni',r.contact_phone],['Burimi',r.contact_source]])+'</section>'
@@ -195,6 +196,7 @@ function openEditor(r){
  m.innerHTML='<div class="pst-rep-dialog"><div class="pst-rep-dialog-head"><h2>'+(r.id?'Edito targetin':'Target i ri')+'</h2><button class="pst-rep-btn" data-rep-close>Mbyll</button></div><form class="pst-rep-form" data-rep-form>'
  +'<section class="pst-rep-form-section"><h3>Identiteti</h3><div class="pst-rep-grid">'
  +field('rep-company-name','Company name *','text',r.company_name,'two')+field('rep-country','Country','text',r.country)
+ +field('rep-target-type','Lloji i targetit','select',null,'',opts(TARGET_TYPES,r.target_type||'representation'))
  +field('rep-company-domain','Official domain','text',r.company_domain)+field('rep-company-website','Website','url',r.company_website)+field('rep-headquarters','Headquarters','text',r.headquarters)
  +field('rep-source-key','Source key *','text',r.source_key,'two',null,'rep:de:example.com')+field('rep-source-name','Source name','text',r.source_name)
  +field('rep-source-url','Source URL','url',r.source_url,'full')+'</div></section>'
@@ -237,7 +239,7 @@ function openEditor(r){
 }
 function formPayload(existing){
  var payload={
-  company_name:val('rep-company-name'),country:nullable(val('rep-country')),company_domain:nullable(val('rep-company-domain')),
+  company_name:val('rep-company-name'),target_type:val('rep-target-type')||'representation',country:nullable(val('rep-country')),company_domain:nullable(val('rep-company-domain')),
   company_website:nullable(val('rep-company-website')),headquarters:nullable(val('rep-headquarters')),
   source_key:val('rep-source-key'),source_name:nullable(val('rep-source-name')),source_url:nullable(val('rep-source-url')),
   sector:nullable(val('rep-sector')),product_category:nullable(val('rep-product-category')),
