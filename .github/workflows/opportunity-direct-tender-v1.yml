@@ -44,7 +44,10 @@ on:
       - 'supabase/migrations/20260901214000_opportunity_promotion_security_and_failure_reconcile.sql'
       - '.github/workflows/opportunity-direct-tender-v1.yml'
   schedule:
-    - cron: '10 * * * *'
+    # Run once daily after APP (05:10 UTC) and KRPP (05:20 UTC) collectors.
+    # Do not increase this cadence: the workflow may touch authenticated KRPP archives
+    # and performs Supabase-backed opportunity/dossier processing.
+    - cron: '40 5 * * *'
 
 permissions:
   contents: read
