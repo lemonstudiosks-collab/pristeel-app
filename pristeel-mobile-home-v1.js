@@ -8,8 +8,9 @@
  * - no Supabase reads/writes
  * - no PPPP business-state ownership
  * - no polling, DOM ownership observer or service worker
- * - one cached public weather request (Open-Meteo) only
- * - steel prices shown are clearly dated public sample values; source opens on tap
+ * - bounded cached public reads: Open-Meteo weather + on-demand ECB FX
+ * - no stale/sample steel numbers on Home; market rows open their public sources
+ * - Pyet PPPP delegates to the existing read-only PPPP AI owner
  */
 (function(){
 'use strict';
