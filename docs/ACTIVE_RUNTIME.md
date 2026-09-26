@@ -116,7 +116,7 @@ Home Canonical remains the sole business-state/data owner. Operating Experience 
 Current behavior:
 
 - `pristeel-home-morning-command-center-v1.js` owns the final desktop Home composition while Canonical Home remains the business-state/data owner.
-- `pristeel-mobile-home-v1.js` owns only the <=900px Home presentation and consumes the same in-memory Home and Opportunities snapshots; desktop Home is unchanged.
+- `pristeel-mobile-app-v2.js` owns the final <=900px Home presentation. `pristeel-mobile-home-v1.js` remains loaded only as the bounded utility/public-source provider; desktop Home is unchanged.
 - Home exposes at most three priority rows. Repeated equivalent actions are grouped and route to the canonical Projects area rather than opening only one hidden item.
 - The lower layout prioritizes active projects and uses Opportunities, Material Trade and the compact assistant as supporting modules.
 - If the canonical project snapshot is briefly empty, Home may reuse the already-loaded workspace project cache; it performs no extra database request.
