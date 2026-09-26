@@ -92,9 +92,9 @@ Each zone has a distinct color identity so the user can orient by both text and 
 ### Mobile / tablet presentation
 
 - `pristeel-mobile-responsive-v1.js`, `pristeel-mobile-home-v1.js` and `pristeel-mobile-control-tower-v1.js` remain loaded as compatibility/navigation/utility providers for narrow screens.
-- `pristeel-mobile-app-v2.js` is the final <=900px mobile presentation owner. It suppresses the old six-tab bar and legacy mobile dashboards while active and presents a dedicated four-tab app shell: Home, Projects, Discover and Inbox with a raised central + action.
+- `pristeel-mobile-app-v2.js` is the final <=900px mobile presentation owner (runtime v3). It mounts outside the legacy app container, fully covers/hides legacy dashboard surfaces while active, and presents a dedicated four-page shell: Home, Projects, Discover and Inbox with a raised central + action.
 - Home consumes `PSTHomeCanonicalV1.snapshot()`; Projects reuses existing project caches/owners; Discover delegates to Tender Priority Actions, Material Trade and Representations; Inbox delegates to Gmail Live Inbox. Mobile App v2 does not create a second business-state engine.
-- Home priority cards use native horizontal swipe and Discover opportunities use a real touch swipe deck. Any status-changing opportunity action remains an explicit user gesture/button; protected commercial actions remain human gated.
+- Home, Projects, Discover and Inbox share one full-screen horizontal pager. The bottom bar is the direct shortcut, while left/right touch swipe changes the entire primary page. Nested Home/Discover card swipes are not used, so there is one unambiguous horizontal gesture owner. Any status-changing opportunity action remains an explicit user gesture/button; protected commercial actions remain human gated.
 - Weather, ECB FX conversion and steel-market access remain fixed as compact utility icons and delegate to the existing mobile utility provider. No duplicate public/API fetch path is introduced by Mobile App v2.
 - Partnerët, Financat, Material Trade, Përfaqësime and Sistemi remain reachable from the profile/more sheet and open their existing canonical owners.
 - Mobile App v2 adds no direct Supabase reads/writes, no polling and no independent network fetches. Existing page/detail owners continue to render when the user opens a project, opportunity or secondary module.
