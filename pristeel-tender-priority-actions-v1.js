@@ -68,7 +68,10 @@ function enrichedContacts(r){var w=winner(r),e=w.contact_enrichment&&typeof w.co
  if(orgs.length<=1){addDomain(w.website);A(w.websites).forEach(addDomain);}
  function attributed(email,od){var ed=demail(email);if(!ed)return false;if(od)return same(ed,od);if(!domains.length)return false;return domains.some(function(d){return same(ed,d);});}
  scoped.forEach(function(o){var od=N(o&&o.domain)||dsite(o&&o.official_website);A(o&&o.contacts).forEach(function(x){if(S(x&&x.type)!=='email'||!S(x.value).trim()||x.draft_eligible===false||!attributed(x.value,od))return;var conf=N(x.confidence),score=Number(x.score||0);if(conf!=='high'&&conf!=='medium'&&score<80)return;all.push({email:S(x.value).trim(),purpose:N(x.purpose),confidence:conf,name:S(x&&x.name||x&&x.full_name||x&&x.person_name||''),source_type:S(x&&x.source_type),source_url:S(x&&x.source_url),draft_eligible:true});});});
- /* Legacy winner.email(s) are display/history fields, not verified draft evidence. */
+ /* TED award organization emails are eligible only when the notice canonically identifies the winner organization. */
+ if(source(r)==='TED'&&phase(r)==='award'&&N(w.identity_version)==='ted-winner-canonical-v2'&&S(w.identifier).trim()&&S(w.name).trim()){
+   A(w.emails).concat(S(w.email).trim()?[w.email]:[]).forEach(function(email){email=S(email).trim();if(!email||!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/i.test(email))return;all.push({email:email,purpose:'general',confidence:'verified',name:'',source_type:'ted_winner_organization',source_url:officialUrl(r),company_attribution:'ted_winner_organization',recipient_company_name:S(w.name),recipient_company_domain:demail(email),draft_eligible:true});});
+ }
  var seen={};all=all.filter(function(x){var k=N(x.email);if(!k||seen[k])return false;seen[k]=1;return true;});var pr={procurement:0,tender:1,sales:2,person:3,general:4};all.sort(function(a,b){return(pr[a.purpose]??8)-(pr[b.purpose]??8)+(a.confidence==='high'?-1:0)-(b.confidence==='high'?-1:0);});return all.slice(0,20);}
 function bestContact(r){return enrichedContacts(r)[0]||null;}
 function countryIn(v,list){v=N(v);return list.indexOf(v)>-1;}
