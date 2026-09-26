@@ -1,3 +1,15 @@
+## 2026-09-26 — PPPP Mobile v7 data completeness and stability
+
+- Home now keeps the last valid canonical snapshot for a short bounded window so cards and counts do not disappear while canonical owners rehydrate.
+- Full-page rerenders preserve the vertical scroll position of Home, Projects, Discover and Inbox.
+- The Home “Pyet PPPP” card now has a stable icon/copy/spark layout and the four quick cards keep their icons visible.
+- Projects uses the same card/feed visual language as Discover while retaining the existing project owner and native project detail.
+- Discover Tenderë now renders the full bounded priority feed rather than a single card.
+- Material Trade mobile reads the existing Material Trade owner through its exposed bounded target loader.
+- Përfaqësime mobile distinguishes approved targets from canonical representation opportunities awaiting screening; official-source opportunity cards open the source for review.
+- Inbox uses Gmail live when connected and otherwise falls back to the existing canonical Gmail-synced `project_emails` data.
+- No schema changes, polling, automatic outbound, automatic target creation or protected commercial actions were introduced.
+
 ## 2026-09-26 — PPPP Mobile v6 data stability
 
 - Stabilized Home startup by replacing the five-pass repaint schedule with one debounced render and a debounced canonical Home refresh.
