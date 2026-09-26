@@ -7,7 +7,7 @@
  * Safety:
  * - no Supabase reads/writes
  * - no PPPP business-state ownership
- * - no polling / MutationObserver / service worker
+ * - no polling, DOM ownership observer or service worker
  * - one cached public weather request (Open-Meteo) only
  * - steel prices shown are clearly dated public sample values; source opens on tap
  */
