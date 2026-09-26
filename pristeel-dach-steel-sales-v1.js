@@ -426,6 +426,8 @@ function ensurePage(){
  +'</div>';
  host.appendChild(page);
  page.onclick=async function(e){
+  /* Material Trade actions are valid only while its own page is active. */
+  if(!page.classList.contains('active'))return;
   var f=e.target.closest('[data-dss-filter]');if(f){state.filter=f.getAttribute('data-dss-filter');state.actionView=null;renderPage();return}
   if(e.target.closest('[data-dss-help-toggle]')){state.helpOpen=!state.helpOpen;renderPage();return}
   if(e.target.closest('[data-dss-refresh]')){await syncLifecycleUi(true);return}

@@ -334,6 +334,8 @@ async function removeOpportunity(id,button){
 }
 function click(e){
  var t=e.target&&e.target.closest?e.target:null,b;if(!t)return;current();
+ /* Strict surface isolation: this delegated handler may only act inside the Opportunities page. */
+ var oppPage=t.closest('#page-kek-tenders');if(!oppPage||!oppPage.classList.contains('active'))return;
  if((b=t.closest('[data-pst-opp-back]'))){consume(e);back();return;}
  if((b=t.closest('[data-pst-opp-reset]'))){consume(e);reset();return;}
  if((b=t.closest('[data-pst-opp-source]'))){consume(e);apply('source',b.dataset.pstOppSource||'all');return;}
