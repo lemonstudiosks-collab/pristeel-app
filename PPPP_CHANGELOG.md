@@ -1,3 +1,13 @@
+## 2026-09-26 — PPPP Mobile Company / Partner Detail v5
+
+- Added a native mobile Partnerët / Kompanitë secondary surface without adding a fifth primary swipe page.
+- Partnerët opens from the secondary menu and Kompani from the central + flow; both now stay inside the new mobile shell instead of jumping directly to the legacy Contacts page.
+- The company browser reuses `PSTContactMasterV1/V4` snapshot/state, with search and client/supplier/manufacturer filters.
+- Company detail shows relationship tags, location/business type, contacts, project counts, project-email counts, last contact, supplier/manufacturer capability tags when already available, and linked projects.
+- Linked projects open the existing native Project Detail and return naturally to the company context.
+- Weather / Convert / Steel utilities yield while a company secondary screen is open; primary Home / Projects / Discover / Inbox swipe navigation is unchanged.
+- No direct Supabase reads/writes, polling, duplicate contact engine or automatic protected actions were introduced in the mobile layer.
+
 ## 2026-09-26 — PPPP Mobile native Project Detail v4
 
 - Project taps from Home and Projects now open a mobile-native project detail inside the new shell instead of jumping immediately into the legacy desktop/modal surface.

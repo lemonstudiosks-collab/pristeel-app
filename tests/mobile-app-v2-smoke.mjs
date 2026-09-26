@@ -46,11 +46,18 @@ assert(js.includes('body.pst-mobile-v2-active #pst-mobile-home-v1'),'old informa
 assert(js.includes('data-pma-util="weather"')&&js.includes('data-pma-util="fx"')&&js.includes('data-pma-util="market"'),'fixed utility icons missing');
 assert(js.includes('data-pma-more'),'secondary Partner/Finance/System access missing');
 assert(js.includes('nativeProjectId')&&js.includes('projectDetailView'),'native mobile project detail state/view missing');
+assert(js.includes('nativeCompanyMode')&&js.includes('companyListView')&&js.includes('companyDetailView'),'native company browser/detail missing');
+assert(js.includes('PSTContactMasterV1')&&js.includes('contactMaster'),'company mobile surface must reuse Contact Master owner');
+assert(js.includes('companyGroups')&&js.includes('companyPeople')&&js.includes('companyCapabilities'),'company relationship grouping missing');
+assert(js.includes('data-pma-company-search')&&js.includes('data-pma-company-filter'),'company search/filter controls missing');
+assert(js.includes('data-pma-company-project'),'company-to-project native navigation missing');
+assert(js.includes("if(sk==='contacts'){openCompanies('');return;}"),'Partnerët secondary route must open native company browser');
+assert(js.includes("if(kind==='company')return openCompanies('');"),'Company quick action must open native company browser');
 assert(js.includes('projectStageInfo')&&js.includes('Timeline i projektit'),'project pipeline timeline missing');
 assert(js.includes('data-pma-project-back'),'native project back control missing');
 assert(js.includes('data-pma-project-legacy="files"')&&js.includes('data-pma-project-legacy="emails"')&&js.includes('data-pma-project-legacy="suppliers"'),'project detail bridge actions missing');
 assert(js.includes('Kthehu në app')&&js.includes('data-pma-return-app'),'legacy project tool return bridge missing');
-assert(js.includes("u.style.display=state.nativeProjectId?'none':'grid'"),'utility dock must yield on native project detail');
+assert(js.includes("u.style.display=(state.nativeProjectId||state.nativeCompanyMode)?'none':'grid'"),'utility dock must yield on native project/company detail');
 assert(js.includes("if(kind==='nogo'){if(!confirm("),'No-Go must remain an explicit human action');
 
-console.log('mobile-app-v4-project-detail-smoke: ok');
+console.log('mobile-app-v5-company-detail-smoke: ok');
