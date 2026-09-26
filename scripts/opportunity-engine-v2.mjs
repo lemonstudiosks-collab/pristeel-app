@@ -13,7 +13,7 @@ const unique=a=>[...new Set(array(a).filter(Boolean).map(String))];
 const today=()=>new Date().toISOString().slice(0,10);
 const source=row=>{const s=String(row?.payload?.source||'KRPP').toUpperCase();return s==='APP'||s==='APP_AL'?'APP_AL':s==='TED'?'TED':'KRPP';};
 const phase=row=>String(row?.payload?.notice_phase||'opportunity').toLowerCase();
-const DIRECT_MANAGED_ACTION_TYPES=new Set(['supplier_rfq_plan','bid_execution_review','partner_outreach_plan','krpp_authenticated_fetch_required','dossier_fetch_required','no_go_review','opportunity_review','dossier_analysis_failure']);
+const DIRECT_MANAGED_ACTION_TYPES=new Set(['supplier_rfq_plan','bid_execution_review','partner_outreach_plan','gc_steel_package_review','krpp_authenticated_fetch_required','dossier_fetch_required','no_go_review','opportunity_review','dossier_analysis_failure']);
 const daysUntil=d=>{if(!d)return 999;const t=new Date(`${d}T00:00:00Z`).getTime();return Number.isFinite(t)?Math.ceil((t-Date.now())/86400000):999;};
 
 async function rest(access,path,{method='GET',body,prefer}={}){
@@ -29,6 +29,10 @@ async function rest(access,path,{method='GET',body,prefer}={}){
 
 function precisionAssessment(row){
   const a=assessPristeelTender(row);
+  const collectorGc=(row?.match_reasons||[]).some(r=>/GC\/ndërtim i përgjithshëm me potencial për paketë çeliku/i.test(String(r)));
+  if(collectorGc&&Number(a.relevance_score||0)<35){
+    return{...a,category:'possible',relevance_score:Math.max(35,Number(row?.relevance_score||0)),capability_fit:'possible',capability_matches:[...(a.capability_matches||[])],capability_review_required:true,capability_direct_evidence:false,exclusion_reason:null,match_reasons:[...(row?.match_reasons||[])]};
+  }
   const title=text(row?.title,4000), corpus=norm([row?.title,row?.fpp_description,row?.document_type,row?.contract_type,row?.procedure].filter(Boolean).join(' '));
   const software=/(?:\baplikacion(?:i|e|et)?\b|\bmobile app\b|\bweb portal\b|\bportal web\b|\bwebsite\b|\bfaqe interneti\b|\bsoftware\b|\bsistem informatik\b|\bplatforme digjitale\b|\bdigital platform\b)/i.test(corpus);
   const realMetal=/(?:konstruks|struktur|llamarin|profil|shufr|trar|tub|gyp|material metal|metalike|armatur|rebar|b500|steel\s+(?:plate|beam|pipe|structure)|fabrik|sald|weld|galvan|nenstacion|substation|transmission line|linje transmetimi|gantry|portal beam|portal frame|steel portal)/i.test(corpus);
@@ -86,6 +90,8 @@ function routeFrom(row,out){
   const a=out?.analysis||{}, cap=String(a?.capability_fit?.rating||'unknown').toLowerCase(), euro=String(a?.eurosteel_fit?.rating||'unknown').toLowerCase(), rec=String(a?.recommendation||'REVIEW').toUpperCase(), complete=out?.dossier_complete!==false, partners=array(a?.suggested_partners);
   if(!complete)return{route:'DOSSIER_REQUIRED',gate:'blocked_dossier',reason:'Dosja kryesore nuk është e plotë ose ka dokumente të mbrojtura.'};
   if(rec==='NO_GO')return{route:'NO_GO_REVIEW',gate:'no_go',reason:'Analiza e dosjes rekomandon NO_GO; vendimi final mbetet njerëzor.'};
+  const gcCandidate=(row?.match_reasons||[]).some(r=>/GC\/ndërtim i përgjithshëm me potencial për paketë çeliku/i.test(String(r)));
+  if(gcCandidate)return{route:'GC_CONSTRUCTION_WATCH',gate:'review_required',reason:'Tender i përgjithshëm ndërtimor/GC; ruhet për verifikim të paketës së çelikut dhe rolit të kontraktorit, jo si ofertë direkte PriSteel.'};
   if(String(row.category)==='raw_material'){
     const qualified=rec==='GO'&&cap==='strong'&&Number(row.relevance_score||0)>=65&&daysUntil(row.deadline)>=2;
     return{route:'DIRECT_RAW_MATERIAL',gate:qualified?'qualified':'review_required',reason:'Tender për furnizim me lëndë/material; PriSteel mund të ofertojë direkt pas sourcing dhe kontrollit komercial.'};
@@ -109,6 +115,7 @@ function actionFor(row,out,route,amendment=false){
   if(amendment)return{type:'dossier_amendment_review',subject:'Ndryshim në dosjen e tenderit',brief:`PPPP zbuloi ndryshim në dosjen zyrtare për “${text(row.title,300)}”. Rilexo ndryshimet para çdo ofertimi. Afati: ${row.deadline||'—'}.`};
   if(route.route==='DIRECT_RAW_MATERIAL')return{type:'supplier_rfq_plan',subject:`Sourcing plan · ${text(row.title,180)}`,brief:`Tender direkt për lëndë/material. Përmbledhje: ${text(a.summary,900)}. Material/sasi: ${[...steel,...qty].join(' | ')||'duhet verifikuar'}. Kushtet/rreziqet: ${risks.join(' | ')||'—'}. Përgatit RFQ-të për furnitorët; asgjë nuk dërgohet pa miratim.`};
   if(route.route==='DIRECT_FABRICATION')return{type:'bid_execution_review',subject:`Bid plan · ${text(row.title,180)}`,brief:`Tender me përshtatje të fortë për PriSteel. Scope: ${steel.join(' | ')||text(a.scope,900)}. Sasi/specifika: ${qty.join(' | ')||'duhet verifikuar'}. Hapi: ${text(a.next_step,900)}. Vendimi final për ofertim/çmim mbetet njerëzor.`};
+  if(route.route==='GC_CONSTRUCTION_WATCH')return{type:'gc_steel_package_review',subject:`GC / paketë çeliku · ${text(row.title,180)}`,brief:`Tender i përgjithshëm ndërtimor me potencial për çelik. Verifiko dosjen për konstruksion metalik, armaturë, profile, llamarinë, tuba ose paketa të tjera çeliku; ndiq edhe kontraktorin fitues kur publikohet rezultati. Ky nuk është automatikisht tender direkt PriSteel.`};
   if(route.route==='PARTNER_REQUIRED')return{type:'partner_outreach_plan',subject:`Partner plan · ${text(row.title,180)}`,brief:`Tender relevant ku nevojitet partner/prodhues. Kandidatë nga PPPP: ${partners.map(p=>`${p.name}: ${p.reason}`).join(' | ')||'ende pa kandidat të fortë'}. Scope: ${steel.join(' | ')||text(a.scope,700)}. Përgatit kontaktet/draftet; mos dërgo automatikisht.`};
   if(route.route==='DOSSIER_REQUIRED'){
     if(source(row)==='KRPP')return{type:'krpp_authenticated_fetch_required',subject:`Dosja e plotë kërkohet · ${text(row.title,160)}`,brief:`PPPP nuk e ka dosjen e plotë. Dokumente të mbrojtura: ${unique(out?.protected_documents).join(', ')||'dokumentacioni kryesor'}. Queue për authenticated fetch është krijuar. Mos krijo ofertë finale pa dosjen e plotë.`};
