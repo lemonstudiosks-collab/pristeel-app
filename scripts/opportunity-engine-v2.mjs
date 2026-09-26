@@ -220,7 +220,6 @@ async function processDirect(access,rows,{mode,maxDossiers}){
   return{assessed:assessed.length,precision_ignored:ignored.length,eligible:eligible.length,selected:selected.length,superseded_actions,results};
 }
 
-async function runPromotion(access,mode){if(mode!=='apply')return null;const out=await rest(access,'rpc/pppp_tender_project_promotion_reconcile_v2',{method:'POST',body:{p_apply:false,p_limit:100}});return out;}
 async function writeSummary(s){await mkdir('tmp',{recursive:true});await writeFile('tmp/opportunity-engine-v2.json',JSON.stringify(s,null,2));}
 
 export async function runOpportunityEngineV2({mode=process.env.SYNC_MODE||'preview',maxDossiers=Number(process.env.PPPP_OPPORTUNITY_DOSSIER_MAX||8),supabaseUrl=process.env.SUPABASE_URL||''}={}){
@@ -231,8 +230,7 @@ export async function runOpportunityEngineV2({mode=process.env.SYNC_MODE||'previ
   const rows=await rest(access,'kek_tender_watch?select=*&order=published_date.desc&limit=1000');
   const direct=(Array.isArray(rows)?rows:[]).filter(r=>['KRPP','APP_AL'].includes(source(r))&&phase(r)==='opportunity');
   const processed=await processDirect(access,direct,{mode,maxDossiers});
-  const promotion=await runPromotion(access,mode);
-  const summary={mode,version:VERSION,auth_mode:access.authMode,direct_rows:direct.length,...processed,promotion,generated_at:new Date().toISOString()};
+  const summary={mode,version:VERSION,auth_mode:access.authMode,direct_rows:direct.length,...processed,project_promotion:'explicit_human_bridge_only',generated_at:new Date().toISOString()};
   await writeSummary(summary);console.log(`Opportunity Engine v2 ${mode}: direct=${direct.length}, eligible=${processed.eligible}, dossiers=${processed.selected}, ignored=${processed.precision_ignored}.`);return summary;
 }
 
