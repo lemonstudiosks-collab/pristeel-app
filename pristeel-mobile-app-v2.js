@@ -359,6 +359,7 @@ function installCss(){
 @media(max-width:900px),(max-device-width:900px){
   #pst-mobile-nav-v1,#pst-mobile-utility-dock-v1{display:none!important}
   body.pst-mobile-v2-active #pst-mobile-control-tower-v1,body.pst-mobile-v2-active #pst-mobile-home-v1{display:none!important}
+  body.pst-mobile-v2-active .topbar,body.pst-mobile-v2-active #pst-global-page-backbar,body.pst-mobile-v2-active #util-fab,body.pst-mobile-v2-active div[onclick="openCmdK()"][title^="Kërko"]{display:none!important}
   body.pst-mobile-v2-active .content>.page{display:none!important}
   body.pst-mobile-v2-active .content{padding:0 0 calc(132px + env(safe-area-inset-bottom))!important;background:#F4F6F7!important}
   #${ROOT}{display:block;width:100%;max-width:600px;margin:0 auto;min-height:100dvh;background:#F4F6F7;color:#182A31;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif}
