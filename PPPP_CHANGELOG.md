@@ -1,3 +1,15 @@
+## 2026-09-26 — PPPP Mobile v6 data stability
+
+- Stabilized Home startup by replacing the five-pass repaint schedule with one debounced render and a debounced canonical Home refresh.
+- Fixed the `Pyet PPPP` layout so icon, title, helper text and AI action stay in their intended grid cells instead of splitting across rows.
+- Home summary cards now keep their icons and structure consistently.
+- Projects now uses a richer vertical card feed aligned with the Discover visual model while preserving the same project data/actions.
+- Discover tender view now renders multiple ranked opportunities vertically instead of only one card, so the page has real content to scroll.
+- Material Trade mobile reads the existing Material Trade owner through a new bounded `loadTargets()` export, avoiding the heavier lifecycle/discovery sync path; current canonical data contains active targets.
+- Representations now shows the true canonical count and an explicit empty state when no targets exist, instead of pretending to be stuck loading.
+- Gmail/Inbox now uses live Gmail when authorized and falls back to canonical Gmail-synced `project_emails` through the Gmail owner, so the mobile Inbox is useful even when the live Google token is not present.
+- No schema changes, no polling, no direct mobile Supabase reads, and no automatic protected actions were added.
+
 ## 2026-09-26 — PPPP Mobile Company / Partner Detail v5
 
 - Added a native mobile Partnerët / Kompanitë secondary surface without adding a fifth primary swipe page.
