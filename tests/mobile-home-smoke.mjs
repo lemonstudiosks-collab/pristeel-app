@@ -32,5 +32,5 @@ for(const kind of ["kind==='project'","kind==='draft'","kind==='partner'","kind=
 assert(js.includes('grid-template-columns:repeat(2,minmax(0,1fr))'),'quick actions should use a fuller 2x2 mobile layout');
 assert(js.includes('visibleProjects()'),'mobile Home must show existing in-memory active projects');
 assert(js.includes('waitingItems()'),'mobile Home must surface existing waiting items when present');
-assert(!/<img\\b/i.test(js),'approved mobile Home must not include decorative/structure photos');
+assert(!/<img\b/i.test(js),'approved mobile Home must not include decorative/structure photos');
 console.log('mobile-home-smoke: ok');
