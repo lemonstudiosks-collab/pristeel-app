@@ -21,7 +21,7 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition']);
+const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target']);
 const ALLOWED_EVIDENCE = new Set(['unverified', 'observed', 'verbal', 'documented', 'confirmed']);
 const ALLOWED_FACT_STATUS = new Set(['observed', 'suggested']);
 const ALLOWED_BUSINESS_TYPES = new Set(['trading', 'fabrication', 'hybrid']);
@@ -32,6 +32,32 @@ const SUPPLIER_OFFER_FIELDS = new Set([
 ]);
 const PROJECT_DISPOSITION_FIELDS = new Set([
   'disposition', 'reason', 'notes', 'operator_note', 'approved_by', 'approved_on', 'tender_ref', 'subject',
+]);
+const PROJECT_RECONCILE_FIELDS = new Set([
+  'operation', 'operational_state', 'pipeline_stage', 'reason', 'notes', 'subject', 'archive_category',
+]);
+const DACH_STEEL_TARGET_FIELDS = new Set([
+  'source_key','source_name','source_url','company_name','company_domain','company_website','country','buyer_type',
+  'score_band','target_status','why_now','project_title','project_reference','award_date','procurement_timing',
+  'quote_readiness','steel_scope','products','estimated_tonnes','material_revision','material_confidence',
+  'material_scope','evidence','contact_status','outreach_status','outbound_source_key','next_action','next_action_due',
+  'last_verified_at',
+]);
+const DACH_STEEL_OUTREACH_FIELDS = new Set([
+  'target_source_key','recipient_email','recipient_name','contact_role',
+  'gmail_draft_id','gmail_draft_message_id','gmail_thread_id','subject','approach_mode',
+]);
+const REPRESENTATION_TARGET_FIELDS = new Set([
+  'source_key','source_name','source_url','company_name','company_domain','company_website',
+  'country','headquarters','sector','product_category','products','product_summary',
+  'manufacturer_description','size_band','why_kosovo','market_evidence',
+  'relevant_tenders_or_projects','potential_customer_types','strategic_fit_notes',
+  'kosovo_presence','existing_partner_name','existing_partner_notes','balkans_presence_notes',
+  'target_model','target_territory','stock_required','minimum_purchase_required',
+  'local_financing_required','credit_risk_required','estimated_capital_requirement',
+  'capital_notes','capital_fit','contact_name','contact_role','contact_email','contact_phone',
+  'linkedin_url','contact_source','priority_score','priority_reason','next_action',
+  'next_action_due','notes','last_verified_at',
 ]);
 
 function text(v: unknown, max = 4000) {
@@ -366,6 +392,177 @@ async function processProjectDisposition(command: Record<string, string>) {
   return data as Record<string, unknown>;
 }
 
+async function processProjectReconcile(command: Record<string, string>) {
+  const projectId = validUuid(command.project_id);
+  if (!projectId) throw new Error('valid project_id is required');
+
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 12000) || '{}'); }
+  catch { throw new Error('project_reconcile value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('project_reconcile value_json must be a JSON object');
+
+  for (const key of Object.keys(value)) {
+    if (!PROJECT_RECONCILE_FIELDS.has(key)) throw new Error(`project_reconcile field not allowed: ${text(key, 120)}`);
+  }
+
+  const operation = text(value?.operation, 80).toLowerCase();
+  if (!['reclassify', 'archive_non_project'].includes(operation)) throw new Error('unsupported project_reconcile operation');
+  if (!text(value?.reason, 1000)) throw new Error('project_reconcile reason is required');
+
+  const approval = text(command.approval, 40).toLowerCase();
+  if (approval !== 'approved') throw new Error('explicit human approval is required');
+
+  const commandId = text(command.command_id, 160);
+  const metadata = {
+    transport: 'command_sheet',
+    sheet_row: Number(command._row || 0) || null,
+    requested_by: text(command.requested_by, 240) || null,
+    source_ref: text(command.source_ref, 500) || `chatgpt-command:${commandId}`,
+  };
+
+  const { data, error } = await db.rpc('pppp_chatgpt_project_reconcile_v1', {
+    p_command_id: commandId,
+    p_project_id: projectId,
+    p_payload: value,
+    p_approval: approval,
+    p_source: 'chatgpt',
+    p_metadata: metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.project_id)) {
+    throw new Error('project_reconcile did not return a valid project_id');
+  }
+  if (data.human_won_lost_gate_preserved !== true || data.external_email_gate_preserved !== true || data.supplier_selection_gate_preserved !== true) {
+    throw new Error('project_reconcile response did not preserve protected gates');
+  }
+  if (operation === 'archive_non_project' && (data.after?.status !== 'arkivuar' || data.after?.operational_state !== 'closed')) {
+    throw new Error('archive_non_project did not produce archived/closed state');
+  }
+  return data as Record<string, unknown>;
+}
+
+async function processDachSteelTarget(command: Record<string, string>) {
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 12000) || '{}'); }
+  catch { throw new Error('dach_steel_target value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('dach_steel_target value_json must be a JSON object');
+
+  for (const key of Object.keys(value)) {
+    if (!DACH_STEEL_TARGET_FIELDS.has(key)) throw new Error(`dach_steel_target field not allowed: ${text(key, 120)}`);
+  }
+  if (!text(value?.source_key, 500)) throw new Error('source_key is required');
+  if (!text(value?.company_name, 500)) throw new Error('company_name is required');
+
+  const commandId = text(command.command_id, 160);
+  const payload: Record<string, unknown> = {};
+  for (const key of DACH_STEEL_TARGET_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(value, key)) payload[key] = value[key];
+  }
+  const metadata = {
+    transport: 'command_sheet',
+    sheet_row: Number(command._row || 0) || null,
+    requested_by: text(command.requested_by, 240) || null,
+    source_ref: text(command.source_ref, 500) || `chatgpt-command:${commandId}`,
+  };
+  const { data, error } = await db.rpc('pppp_chatgpt_upsert_dach_steel_target_v1', {
+    p_command_id: commandId,
+    p_payload: payload,
+    p_source: 'chatgpt',
+    p_metadata: metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.target_id)) throw new Error('dach_steel_target did not return a valid target_id');
+  if (data.project_created !== false || data.partner_created !== false || data.contact_created !== false ||
+      data.outbound_created !== false || data.external_email_sent !== false || data.human_email_approval_required !== true) {
+    throw new Error('dach_steel_target response did not preserve protected boundaries');
+  }
+  return data as Record<string, unknown>;
+}
+
+async function processDachSteelOutreachDraft(command: Record<string, string>) {
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 12000) || '{}'); }
+  catch { throw new Error('dach_steel_outreach_draft value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') throw new Error('dach_steel_outreach_draft value_json must be a JSON object');
+
+  for (const key of Object.keys(value)) {
+    if (!DACH_STEEL_OUTREACH_FIELDS.has(key)) throw new Error(`dach_steel_outreach_draft field not allowed: ${text(key,120)}`);
+  }
+  if (!text(value?.target_source_key,500)) throw new Error('target_source_key is required');
+  if (!text(value?.recipient_email,320)) throw new Error('recipient_email is required');
+  if (!text(value?.gmail_draft_id,240)) throw new Error('gmail_draft_id is required');
+  if (!text(value?.subject,500)) throw new Error('subject is required');
+  if (!['rfq_request','direct_offer'].includes(text(value?.approach_mode,40).toLowerCase())) throw new Error('approach_mode must be rfq_request or direct_offer');
+
+  const commandId = text(command.command_id,160);
+  const payload: Record<string,unknown> = {};
+  for (const key of DACH_STEEL_OUTREACH_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(value,key)) payload[key]=value[key];
+  }
+  const metadata = {
+    transport:'command_sheet',
+    sheet_row:Number(command._row || 0) || null,
+    requested_by:text(command.requested_by,240) || null,
+    source_ref:text(command.source_ref,500) || `chatgpt-command:${commandId}`,
+  };
+  const { data,error } = await db.rpc('pppp_chatgpt_register_dach_steel_outreach_draft_v1',{
+    p_command_id:commandId,
+    p_payload:payload,
+    p_source:'chatgpt',
+    p_metadata:metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.queue_id)) throw new Error('dach_steel_outreach_draft did not return a valid queue_id');
+  if (data.approved_for_send !== false || data.human_send_required !== true || data.external_email_sent !== false || data.project_created !== false) {
+    throw new Error('dach_steel_outreach_draft response did not preserve protected boundaries');
+  }
+  return data as Record<string,unknown>;
+}
+
+async function processRepresentationTarget(command: Record<string, string>) {
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 20000) || '{}'); }
+  catch { throw new Error('representation_target value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') {
+    throw new Error('representation_target value_json must be a JSON object');
+  }
+  for (const key of Object.keys(value)) {
+    if (!REPRESENTATION_TARGET_FIELDS.has(key)) {
+      throw new Error(`representation_target field not allowed: ${text(key,120)}`);
+    }
+  }
+  if (!text(value?.source_key,500)) throw new Error('source_key is required');
+  if (!text(value?.company_name,500)) throw new Error('company_name is required');
+
+  const commandId = text(command.command_id,160);
+  const payload: Record<string,unknown> = {};
+  for (const key of REPRESENTATION_TARGET_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(value,key)) payload[key]=value[key];
+  }
+  const metadata = {
+    transport:'command_sheet',
+    sheet_row:Number(command._row || 0) || null,
+    requested_by:text(command.requested_by,240) || null,
+    source_ref:text(command.source_ref,500) || `chatgpt-command:${commandId}`,
+  };
+  const { data,error } = await db.rpc('pppp_chatgpt_register_representation_target_v1',{
+    p_command_id:commandId,
+    p_payload:payload,
+    p_source:'chatgpt',
+    p_metadata:metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.target_id)) {
+    throw new Error('representation_target did not return a valid target_id');
+  }
+  if (data.project_created !== false || data.partner_created !== false || data.contact_created !== false ||
+      data.supplier_created !== false || data.outbound_created !== false || data.contract_created !== false ||
+      data.external_email_sent !== false || data.represented_automatically !== false || data.stage !== 'found') {
+    throw new Error('representation_target response did not preserve protected boundaries');
+  }
+  return data as Record<string,unknown>;
+}
+
 async function reconcile(limit = 50) {
   const max = Math.max(1, Math.min(200, Number(limit) || 50));
   const csv = await exportCommandsCsv();
@@ -397,6 +594,10 @@ async function reconcile(limit = 50) {
       else if (actionType === 'task') result = await processTask(command);
       else if (actionType === 'supplier_offer') result = await processSupplierOffer(command);
       else if (actionType === 'project_disposition') result = await processProjectDisposition(command);
+      else if (actionType === 'project_reconcile') result = await processProjectReconcile(command);
+      else if (actionType === 'dach_steel_target') result = await processDachSteelTarget(command);
+      else if (actionType === 'dach_steel_outreach_draft') result = await processDachSteelOutreachDraft(command);
+      else if (actionType === 'representation_target') result = await processRepresentationTarget(command);
       else result = await processCreateProject(command);
       resultProjectId = validUuid(result?.project_id) || resultProjectId;
       await markReceipt(command, 'succeeded', result, attempts, resultProjectId);
@@ -419,7 +620,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'POST') try { body = await req.json(); } catch {}
     const limit = Number(u.searchParams.get('limit') || body.limit || 50);
     const result = await reconcile(limit);
-    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v5', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
+    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v8', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: text((e as any)?.message || e, 1200) }), { status: 500, headers: cors });
   }

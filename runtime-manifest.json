@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "e98284bd1d6960a4742acbecbdb4bf87af1fb09a"
+    "bootstrapGitBlobSha": "899c2b8968c74690fe07933196e83e1ff2a8c0d7"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -328,6 +328,12 @@
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded by the ordered bootstrap with the reviewed 20260924-company-intel4 cache path. Owns the Material Trade buyer page for EU + CH + ME + RS, including visible company/contact intelligence, regional outreach-language routing and human-confirmed RFQ-to-Project promotion, while retaining legacy dach_steel_* backend identifiers for compatibility."
+    },
+    {
+      "module": "pristeel-representations-v1.js",
+      "loader": "pristeel-project-emails.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded after Material Trade. Owns the separate manufacturer-representation pipeline, its Home/System launchers and responsive detail/editor UI over public.pppp_representation_targets_v1. It never creates Projects, Partners, Suppliers, Contacts, contracts or email sends."
     }
   ],
   "loadOrderConstraints": [
