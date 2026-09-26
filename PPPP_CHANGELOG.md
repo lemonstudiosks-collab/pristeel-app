@@ -1,3 +1,13 @@
+## 2026-09-26 — PPPP Mobile App v2
+
+- Replaced the hybrid phone Home presentation with a dedicated <=900px mobile shell while keeping existing PPPP data/action owners authoritative.
+- Primary mobile navigation is now Home, Projects, Discover and Inbox with a raised central + action. Partnerët, Financat, Material Trade, Përfaqësime and Sistemi remain reachable from the profile sheet.
+- Home priority cards use native horizontal swipe. Discover tender opportunities use a real touch swipe deck plus explicit Ruaj / Hulumto / Jo relevante / GO or Përgatit kontakt actions.
+- Projects and Inbox now have dedicated mobile presentation surfaces over existing canonical caches/owners instead of exposing the desktop/table UI.
+- Weather, currency conversion and steel-market access remain fixed as compact utility icons above the bottom navigation.
+- The legacy six-tab mobile bar, old mobile dashboard and interim Control Tower presentation are suppressed while Mobile App v2 is active.
+- Mobile App v2 adds no direct Supabase reads/writes, no polling and no independent network fetches; existing human approval gates remain unchanged.
+
 ## 2026-09-26 — Mobile Control Tower Home v1
 
 - Added a new <=900px PriSteel Control Tower presentation that answers the operational question “what needs my attention now?” using the existing canonical Home snapshot.
