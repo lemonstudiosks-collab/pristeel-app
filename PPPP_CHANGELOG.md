@@ -1,3 +1,12 @@
+## 2026-09-26 — PWA RBAC + PIN session hotfix
+
+- Fixed a standalone-iPhone startup race that could incorrectly label a valid writable/admin account as “Vetëm shikim”.
+- RBAC now resolves the authenticated `user_id` first and uses exact authenticated email only when that user-id lookup returns no row.
+- A transient startup delay no longer becomes a permanent viewer role, and an earlier viewer lock is reversible once the real writable role resolves.
+- Mobile PIN unlock now persists for the current app session and repeated internal `startApp()` calls cannot reopen/reset the PIN gate.
+- PIN success emits a bounded startup event so unresolved RBAC can resolve immediately without polling.
+- No new background polling, cron, or recurring Supabase reads were added.
+
 ## 2026-09-26 — Mobile 4-digit PIN quick unlock
 
 - Added a device-local 4-digit PIN quick-unlock layer for phone/tablet use after one successful normal PPPP login.
