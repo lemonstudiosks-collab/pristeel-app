@@ -21,7 +21,7 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target']);
+const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_relationship']);
 const ALLOWED_EVIDENCE = new Set(['unverified', 'observed', 'verbal', 'documented', 'confirmed']);
 const ALLOWED_FACT_STATUS = new Set(['observed', 'suggested']);
 const ALLOWED_BUSINESS_TYPES = new Set(['trading', 'fabrication', 'hybrid']);
@@ -58,6 +58,12 @@ const REPRESENTATION_TARGET_FIELDS = new Set([
   'capital_notes','capital_fit','contact_name','contact_role','contact_email','contact_phone',
   'linkedin_url','contact_source','priority_score','priority_reason','next_action',
   'next_action_due','notes','last_verified_at',
+]);
+const REPRESENTATION_RELATIONSHIP_FIELDS = new Set([
+  'target_id','opportunity_id','source_key','related_company_name','related_company_domain',
+  'related_company_country','relationship_type','relationship_status','project_or_tender',
+  'project_reference','relationship_scope','verification_status','evidence','source_name',
+  'source_url','last_verified_at','notes',
 ]);
 
 function text(v: unknown, max = 4000) {
@@ -563,6 +569,57 @@ async function processRepresentationTarget(command: Record<string, string>) {
   return data as Record<string,unknown>;
 }
 
+async function processRepresentationRelationship(command: Record<string, string>) {
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 20000) || '{}'); }
+  catch { throw new Error('representation_relationship value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') {
+    throw new Error('representation_relationship value_json must be a JSON object');
+  }
+  for (const key of Object.keys(value)) {
+    if (!REPRESENTATION_RELATIONSHIP_FIELDS.has(key)) {
+      throw new Error(`representation_relationship field not allowed: ${text(key,120)}`);
+    }
+  }
+  if (!validUuid(value?.target_id)) throw new Error('valid target_id is required');
+  if (!text(value?.source_key,500)) throw new Error('source_key is required');
+  if (!text(value?.related_company_name,500)) throw new Error('related_company_name is required');
+
+  const relationshipType=text(value?.relationship_type || 'unknown',80).toLowerCase();
+  if (!['joint_venture','consortium','subcontractor','supplier','representative','distributor','implementation_partner','local_partner','other','unknown'].includes(relationshipType)) {
+    throw new Error('invalid relationship_type');
+  }
+  const relationshipStatus=text(value?.relationship_status || 'unknown',40).toLowerCase();
+  if (!['current','historical','unknown'].includes(relationshipStatus)) throw new Error('invalid relationship_status');
+  const verificationStatus=text(value?.verification_status || 'unknown',40).toLowerCase();
+  if (!['unknown','review','verified'].includes(verificationStatus)) throw new Error('invalid verification_status');
+
+  const commandId=text(command.command_id,160);
+  const payload: Record<string,unknown> = {};
+  for (const key of REPRESENTATION_RELATIONSHIP_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(value,key)) payload[key]=value[key];
+  }
+  const metadata={
+    transport:'command_sheet',
+    sheet_row:Number(command._row || 0) || null,
+    requested_by:text(command.requested_by,240) || null,
+    source_ref:text(command.source_ref,500) || `chatgpt-command:${commandId}`,
+  };
+  const { data,error }=await db.rpc('pppp_chatgpt_register_representation_relationship_v1',{
+    p_command_id:commandId,p_payload:payload,p_source:'chatgpt',p_metadata:metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.relationship_id) || !validUuid(data.target_id)) {
+    throw new Error('representation_relationship did not return valid relationship_id and target_id');
+  }
+  if (data.partner_created !== false || data.contact_created !== false ||
+      data.outbound_created !== false || data.external_email_sent !== false ||
+      data.relationship_confirmed_automatically !== false) {
+    throw new Error('representation_relationship response did not preserve protected boundaries');
+  }
+  return data as Record<string,unknown>;
+}
+
 async function reconcile(limit = 50) {
   const max = Math.max(1, Math.min(200, Number(limit) || 50));
   const csv = await exportCommandsCsv();
@@ -598,6 +655,7 @@ async function reconcile(limit = 50) {
       else if (actionType === 'dach_steel_target') result = await processDachSteelTarget(command);
       else if (actionType === 'dach_steel_outreach_draft') result = await processDachSteelOutreachDraft(command);
       else if (actionType === 'representation_target') result = await processRepresentationTarget(command);
+      else if (actionType === 'representation_relationship') result = await processRepresentationRelationship(command);
       else result = await processCreateProject(command);
       resultProjectId = validUuid(result?.project_id) || resultProjectId;
       await markReceipt(command, 'succeeded', result, attempts, resultProjectId);
