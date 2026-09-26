@@ -30,7 +30,7 @@ var TARGET_TYPES=[['lead_epc_candidate','Lead Consortium / EPC Candidate'],['oem
 var REL_TYPES=[['joint_venture','JV'],['consortium','Konsorcium'],['subcontractor','Nënkontraktor'],['supplier','Furnitor'],['representative','Përfaqësues'],['distributor','Distributor'],['implementation_partner','Partner implementimi'],['local_partner','Partner lokal'],['other','Tjetër'],['unknown','E panjohur']];
 var REL_STATUS=[['current','Aktuale'],['historical','Historike'],['unknown','E panjohur']];
 var REL_VERIFY=[['unknown','E panjohur'],['review','Për verifikim'],['verified','E verifikuar']];
-var state={rows:[],relationships:[],loaded:false,loading:false,error:'',selected:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null};
+var state={rows:[],relationships:[],opportunities:[],loaded:false,loading:false,opportunitiesLoaded:false,opportunitiesLoading:false,error:'',selected:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null};
 
 function S(v){return String(v==null?'':v)}
 function A(v){return Array.isArray(v)?v:[]}
@@ -162,6 +162,18 @@ function renderDetail(){
  +'<section class="pst-rep-section"><h3>Risku financiar</h3>'+facts([['Stock',boolLabel(r.stock_required)],['Minimum purchase',boolLabel(r.minimum_purchase_required)],['Financim lokal',boolLabel(r.local_financing_required)],['Risk kreditor',boolLabel(r.credit_risk_required)],['Kërkesa kapitale',r.estimated_capital_requirement]])+'</section>'
  +'<section class="pst-rep-section"><h3>Commercial terms</h3>'+facts([['Komision i propozuar',r.proposed_commission_pct==null?'—':r.proposed_commission_pct+'%'],['Komision i dakorduar',r.agreed_commission_pct==null?'—':r.agreed_commission_pct+'%'],['Retainer',r.proposed_retainer],['Ekskluziviteti',r.exclusivity_status],['Marrëveshja',r.agreement_status],['Territori i dakorduar',r.territory_agreed]])+'</section>'
  +'<section class="pst-rep-section"><h3>Audit</h3>'+facts([['Burimi',r.source_name],['Source key',r.source_key],['Verifikuar',D(r.last_verified_at)],['Krijuar',D(r.created_at)],['Përditësuar',D(r.updated_at)]])+'</section>';
+}
+async function loadOpportunities(force){
+ if(state.opportunitiesLoading)return state.opportunities;
+ if(state.opportunitiesLoaded&&!force)return state.opportunities;
+ if(typeof window.supaFetch!=='function')return state.opportunities;
+ state.opportunitiesLoading=true;
+ try{
+  var path='pppp_representation_opportunities_v1?select=id,source_key,project_name,funding_institution,tender_reference,official_source,total_project_value,currency,status,procurement_stage,tender_deadline,scope,verification_status,last_verified_at,updated_at&archived_at=is.null&order=updated_at.desc&limit=80';
+  state.opportunities=A(await window.supaFetch(path));
+  state.opportunitiesLoaded=true;
+ }catch(e){state.error=S(e&&e.message||e)}
+ state.opportunitiesLoading=false;return state.opportunities;
 }
 async function load(force){
  if(state.loading)return;if(state.loaded&&!force){render();return}
@@ -369,7 +381,7 @@ document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(en
 document.addEventListener('pst:modules-ready',function(){setTimeout(boot,0)},{once:true});
 window.addEventListener('popstate',function(){if(location.hash==='#perfaqesime')open()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
-window.PSTRepresentationsV1={open:open,refresh:function(){return load(true)},snapshot:function(){return{rows:state.rows.slice(),selected:state.selected,error:state.error}}};
+window.PSTRepresentationsV1={open:open,refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),opportunities:state.opportunities.slice(),selected:state.selected,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
 })();
 
 
