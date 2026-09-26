@@ -1,3 +1,12 @@
+## 2026-09-26 — Mobile Control Tower Home v1
+
+- Added a new <=900px PriSteel Control Tower presentation that answers the operational question “what needs my attention now?” using the existing canonical Home snapshot.
+- The first screen now composes canonical user actions, waiting-external items and active projects into one dominant priority, three compact counters and a concise activity feed.
+- `Pyet PPPP`, weather, ECB currency conversion and steel-market actions remain owned by the existing mobile Home utility provider; the new presentation delegates to it instead of duplicating network/data logic.
+- Added a persistent three-button mobile utility dock for Weather, Convert and Market above the existing bottom navigation.
+- The Control Tower adds no direct Supabase reads/writes, no polling, no network fetches, no schema changes and no outbound actions. Canonical project brief/navigation and human approval gates remain unchanged.
+- Added runtime-manifest registration and a dedicated mobile Control Tower smoke test.
+
 ## 2026-09-26 — Mobile bottom navigation fix + longer Home
 
 - Fixed the six-button mobile bottom navigation after the persistent-Home change. Tapping Mundësitë, Projektet, Partnerët, Financat or Sistemi now releases the mobile Home owner before canonical routing, updates the business-zone marker immediately, and lets the target page render.
