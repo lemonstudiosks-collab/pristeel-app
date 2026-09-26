@@ -24,6 +24,10 @@ assert(js.includes('PSTProjectsModernV2'),'Projects must reuse Projects owner/ca
 assert(js.includes('PSTGmailLiveInboxV2'),'Inbox must reuse Gmail owner');
 assert(js.includes('PSTDachSteelSalesV3'),'Material Trade must reuse existing owner');
 assert(js.includes('PSTRepresentationsV1'),'Representations must reuse existing owner');
+assert(js.includes('loadOpportunities')&&js.includes('opportunities'), 'Representations mobile feed must include opportunity screening data');
+assert(js.includes('homeCache')&&js.includes('scrollByTab'), 'Home must preserve stable data and per-page scroll across rerenders');
+assert(js.includes('pma-work-card')&&js.includes('pma-work-feed'), 'Projects must use the Discover-style card feed');
+assert(js.includes('pma-ask-copy')&&js.includes('pma-ask-ic'), 'Home search card must keep its icon/copy layout intact');
 assert(gmail.includes('loadCanonical')&&gmail.includes('project_emails?select='),'Gmail owner must expose canonical synced-email fallback');
 assert(gmail.includes('connected:function(){return !!token()}'),'Gmail owner must expose connection state to mobile');
 assert(material.includes('loadTargets:function(force){return loadTargets(!!force)}'),'Material owner must expose bounded target loader without lifecycle sync');
