@@ -215,55 +215,61 @@ function contactTier(email:any,name:any,role:any){
  return person||/^[a-z]+[._-][a-z]+$/.test(lp)?"D":"E";
 }
 function tierScore(v:string){return v==="A"?95:v==="B"?82:v==="C"?70:v==="D"?55:v==="E"?25:0;}
-function specificFacts(tg:any){
- const a=Array.isArray(tg?.personalization_facts)?tg.personalization_facts.filter((x:any)=>t(x,1000)):[];
- if(a.length>=2)return a.slice(0,4).map((x:any)=>t(x,1000));
- return [tg?.project_title,tg?.why_now].filter((x:any)=>t(x,1000)).map((x:any)=>t(x,1000));
-}
 function externalFact(v:any){
  const raw=t(v,1000);if(!raw)return"";
- const s=nm(raw);
- return /(pergatit draft|draft vetem|mos e dergo|do not send|prepare (?:a )?draft|draft only|internal instruction|human approval|outreach (?:draft|copy|message|instruction))/.test(s)?"":raw;
+ const x=nm(raw);
+ return /(pergatit\s+draft|draft\s+vetem|mos\s+e\s+dergo|verifiko\s+rolin|do\s+not\s+send|prepare\s+(?:an?\s+)?draft|draft\s+only|internal\s+instruction|human\s+approval|outreach\s+(?:draft|copy|message|instruction))/i.test(x)?"":raw;
+}
+function specificFacts(tg:any){
+ const a=Array.isArray(tg?.personalization_facts)?tg.personalization_facts.map((x:any)=>externalFact(x)).filter(Boolean):[];
+ if(a.length>=2)return a.slice(0,4);
+ return [tg?.project_title,tg?.why_now].map((x:any)=>externalFact(x)).filter(Boolean);
+}
+function buyerGreeting(lang:string,c:any){
+ const person=t(c?.person||c?.name||c?.recipient_name,180).replace(/\s+/g," ").trim();
+ if(lang==="de")return person?"Guten Tag "+person+",":"Guten Tag,";
+ if(lang==="bcs")return person?"Poštovani "+person+",":"Poštovani,";
+ return person?"Dear "+person+",":"Hello,";
 }
 function buyerTextV2(tg:any,signatureHtml="",contact:any={}){
- const lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",facts=specificFacts(tg),motion=t(tg?.outreach_motion||"material_buyer",80),project=t(tg?.project_title,500),company=t(tg?.company_name,500),anchor=project||company||facts[0],sig=signatureHtml||canonicalSignatureHtml;
+ const lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",facts=specificFacts(tg),motion=t(tg?.outreach_motion||"material_buyer",80),project=t(tg?.project_title,500),company=t(tg?.company_name,500),anchor=project||facts[0]||company,sig=signatureHtml||canonicalSignatureHtml;
  if(facts.length<2)throw new Error("outreach_v2_requires_two_specific_facts");
  const future=motion==="future_supplier_qualification"||t(tg?.timing_classification,80)==="future_supplier_qualification";
  const capacity=motion==="external_production_capacity";
  const subject=future
    ?(de?company+" – Lieferantenqualifizierung Stahl | PRISTEEL":bcs?company+" – kvalifikacija dobavljača čelika | PRISTEEL":company+" – future steel supplier qualification | PRISTEEL")
    :capacity
-     ?(de?(project||company)+" – externe Fertigungskapazität | PRISTEEL":bcs?(project||company)+" – vanjski proizvodni kapacitet | PRISTEEL":(project||company)+" – external fabrication capacity | PRISTEEL")
-     :(de?anchor+" – Stahlmaterialpaket | PRISTEEL":bcs?anchor+" – paket čeličnog materijala | PRISTEEL":anchor+" – steel material package | PRISTEEL");
- const person=t(contact?.person,240); const hello=de?(person?"Guten Tag "+person+",":"Guten Tag,"):bcs?(person?"Poštovani "+person+",":"Poštovani,"):(person?"Dear "+person+",":"Hello,");
- const context=project
+     ?(de?anchor+" – externe Fertigungskapazität | PRISTEEL":bcs?anchor+" – vanjski proizvodni kapacitet | PRISTEEL":anchor+" – external fabrication capacity | PRISTEEL")
+     :(de?anchor+" – Stahlmaterial-Beschaffung | PRISTEEL":bcs?anchor+" – nabavka čeličnog materijala | PRISTEEL":anchor+" – steel material procurement | PRISTEEL");
+ const hello=buyerGreeting(lang,contact);
+ const intro=project
    ?(de?'ich melde mich bezüglich des Projekts „'+project+'“.':bcs?'javljam Vam se u vezi sa projektom „'+project+'“.':'I am contacting you regarding “'+project+'”.')
-   :(de?"ich melde mich bezüglich Ihrer Beschaffung von Stahlmaterial.":bcs?"javljam Vam se u vezi sa nabavkom čeličnog materijala.":"I am contacting you regarding your steel-material procurement.");
- const evidence=facts.map((x:string)=>externalFact(x)).find((x:string)=>x&&(project?nm(x)!==nm(project):true))||"";
- const capability=future
-   ?(de?"Für künftige Stahlmaterialpakete kann PRISTEEL als ein technischer und kaufmännischer Ansprechpartner für klar definierte Beschaffungsumfänge eingebunden werden.":bcs?"Za buduće pakete čeličnog materijala PRISTEEL može biti jedna tehnička i komercijalna kontakt tačka za jasno definisane nabavne opsege.":"For future steel-material packages, PRISTEEL can act as one technical and commercial point of responsibility for clearly defined procurement scopes.")
-   :capacity
-     ?(de?"Für klar definierte Fertigungspakete kann PRISTEEL als gesteuerte externe Produktionskapazität eingesetzt werden und technische Klärung, Fertigung, Oberflächenschutz, Qualitätsdokumentation und koordinierte DAP-Lieferung über einen Ansprechpartner übernehmen.":bcs?"Za jasno definisane proizvodne pakete PRISTEEL može djelovati kao upravljani vanjski proizvodni kapacitet i koordinirati tehničko usaglašavanje, proizvodnju, površinsku zaštitu, dokumentaciju kvaliteta i DAP isporuku preko jedne kontakt tačke.":"For clearly defined fabrication packages, PRISTEEL can act as managed external production capacity, coordinating technical clarification, fabrication, surface treatment, quality documentation and DAP delivery through one point of contact.")
-     :(de?"PRISTEEL kann die Verantwortung für ein klar definiertes Stahlmaterialpaket übernehmen – von Beschaffung und technischer/kaufmännischer Koordination über Dokumentation und optionale Bearbeitung bis zur koordinierten DAP-Lieferung – mit einem Ansprechpartner.":bcs?"PRISTEEL može preuzeti odgovornost za jasno definisan paket čeličnog materijala – od nabavke i tehničko-komercijalne koordinacije, preko dokumentacije i opcionalne obrade, do koordinirane DAP isporuke – preko jedne kontakt tačke.":"PRISTEEL can take responsibility for a clearly defined steel-material package — from sourcing and technical/commercial coordination to documentation, optional cutting or processing and coordinated DAP delivery — through one point of contact.");
- const ownership=future?"":capacity
-   ?(de?"Ihr Team behält die Kontrolle über Projekt und Produktionsprioritäten. Wir übernehmen die Verantwortung für das ausgelagerte Paket bis zur Lieferung.":bcs?"Vaš tim zadržava kontrolu nad projektom i proizvodnim prioritetima. Mi preuzimamo odgovornost za izdvojeni paket do isporuke.":"Your team keeps control of the project and production priorities. We take ownership of the outsourced package through to delivery.")
-   :(de?"Sie behalten die Kontrolle über den Einkauf. Wir steuern das Paket von RFQ bzw. Materialliste bis zur Lieferung.":bcs?"Vi zadržavate kontrolu nad nabavkom. Mi vodimo paket od RFQ-a ili liste materijala do isporuke.":"You remain in control of purchasing. We manage the package from RFQ or material list through to delivery.");
+   :(future
+      ?(de?"für künftige Stahlpakete möchten wir prüfen, ob PRISTEEL in Ihren Lieferantenprozess passt.":bcs?"za buduće čelične pakete želimo provjeriti da li PRISTEEL odgovara Vašem procesu kvalifikacije dobavljača.":"For future steel packages, we would like to check whether PRISTEEL fits your supplier-qualification process.")
+      :(de?"ich möchte PRISTEEL als zusätzlichen Ansprechpartner für Ihren Stahlmaterialbedarf vorstellen.":bcs?"želim predstaviti PRISTEEL kao dodatnu kontakt tačku za Vaše potrebe za čeličnim materijalom.":"I would like to introduce PRISTEEL as an additional point of contact for your steel-material requirements."));
+ const capability=capacity
+   ?(de?"Wenn zusätzliche Kapazität benötigt wird, kann PRISTEEL klar definierte Fertigungspakete übernehmen und technische Klärung, Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und koordinierte DAP-Lieferung steuern.":bcs?"Kada je potreban dodatni kapacitet, PRISTEEL može preuzeti jasno definisane proizvodne pakete i voditi tehničko usaglašavanje, proizvodnju prema nacrtima, površinsku zaštitu, dokumentaciju kvaliteta i koordiniranu DAP isporuku.":"When additional capacity is needed, PRISTEEL can take on clearly defined fabrication packages and manage technical clarification, build-to-print fabrication, surface treatment, quality documentation and coordinated DAP delivery.")
+   :future
+     ?(de?"Für künftige Pakete kann PRISTEEL als technische und kaufmännische Schnittstelle für klar definierte Stahlumfänge eingebunden werden.":bcs?"Za buduće pakete PRISTEEL može djelovati kao tehničko-komercijalna veza za jasno definisane čelične opsege.":"For future packages, PRISTEEL can act as the technical and commercial interface for clearly defined steel scopes.")
+     :(de?"PRISTEEL kann die Verantwortung für ein klar definiertes Stahlmaterial-Paket übernehmen – von Beschaffung und Dokumentation über optionale Bearbeitung bis zur koordinierten DAP-Lieferung.":bcs?"PRISTEEL može preuzeti odgovornost za jasno definisan paket čeličnog materijala – od nabavke i dokumentacije, preko opcionalne obrade, do koordinirane DAP isporuke.":"PRISTEEL can take responsibility for a clearly defined steel-material package — from sourcing and documentation through optional processing and coordinated DAP delivery.");
+ const control=capacity
+   ?(de?"Sie behalten die Kontrolle über das Projekt; wir übernehmen die Verantwortung für das ausgelagerte Fertigungspaket.":bcs?"Vi zadržavate kontrolu nad projektom; mi preuzimamo odgovornost za izdvojeni proizvodni paket.":"You retain control of the project; we take responsibility for the outsourced fabrication package.")
+   :future
+     ?(de?"Ihr Team behält die Projekt- und Einkaufsentscheidung; PRISTEEL koordiniert den vereinbarten Stahlumfang.":bcs?"Vaš tim zadržava odluke o projektu i nabavci; PRISTEEL koordinira dogovoreni čelični opseg.":"Your team retains the project and purchasing decisions; PRISTEEL coordinates the agreed steel scope.")
+     :(de?"Sie behalten die Kontrolle über den Einkauf. Wir steuern das Paket von RFQ oder Materialliste bis zur Lieferung.":bcs?"Vi zadržavate kontrolu nad nabavkom. Mi vodimo paket od RFQ-a ili liste materijala do isporuke.":"You remain in control of purchasing. We manage the package from RFQ or material list through to delivery.");
  const credibility=de
-   ?"PRISTEEL verbindet erfahrenes Stahlindustrie-Management mit einem etablierten Beschaffungs- und Fertigungsnetzwerk in Südosteuropa. Wo erforderlich, kann die Vertragserfüllung durch Bankgarantien der ProCredit Bank abgesichert werden."
+   ?"PRISTEEL verbindet erfahrenes Stahlindustrie-Management mit einem etablierten Beschaffungs- und Fertigungsnetzwerk in Südosteuropa. Wo vertraglich erforderlich, kann die Vertragserfüllung durch Bankgarantien der ProCredit Bank abgesichert werden."
    :bcs
-     ?"PRISTEEL kombinuje iskusno upravljanje u industriji čelika sa etabliranom mrežom dobavljača i proizvodnih partnera u Jugoistočnoj Evropi. Kada je potrebno, ugovorno izvršenje može biti podržano bankarskim garancijama preko ProCredit Bank."
-     :"PRISTEEL combines experienced steel-industry management with an established steel supply and fabrication network in Southeast Europe. Where required, contractual performance can be supported by bank guarantees through ProCredit Bank.";
+     ?"PRISTEEL kombinuje iskusno upravljanje u industriji čelika sa uspostavljenom mrežom dobavljača i proizvođača u Jugoistočnoj Evropi. Kada je ugovorno potrebno, izvršenje obaveza može biti podržano bankarskim garancijama ProCredit Bank."
+     :"PRISTEEL combines experienced steel-industry management with an established supply and fabrication network in Southeast Europe. Where required, contractual performance can be supported by bank guarantees through ProCredit Bank.";
  const cta=future
    ?(de?"Wer ist bei Ihnen für die Qualifizierung künftiger Lieferanten für Stahlmaterial zuständig?":bcs?"Ko je kod Vas zadužen za kvalifikaciju budućih dobavljača čeličnog materijala?":"Who handles qualification of future steel-material suppliers in your organization?")
    :capacity
-     ?(de?"Wenn Sie ein klar abgegrenztes Fertigungspaket extern vergeben möchten, senden Sie uns die Zeichnungen oder Stückliste – wir übernehmen die weitere Abwicklung.":bcs?"Ako postoji jasno definisan proizvodni paket koji želite povjeriti vanjskom partneru, pošaljite nam nacrte ili listu materijala i mi preuzimamo dalje.":"If there is a clearly defined fabrication package you would prefer to place externally, send us the drawings or BOM and we will take it from there.")
-     :project
-       ?(de?"Wenn Sie ein Stahlmaterialpaket lieber an einen externen Partner vergeben möchten, senden Sie uns die RFQ oder Materialliste und den Lieferort – wir übernehmen die weitere Abwicklung.":bcs?"Ako postoji paket čeličnog materijala koji želite povjeriti jednom vanjskom partneru, pošaljite nam RFQ ili listu materijala i mjesto isporuke – mi preuzimamo dalje.":"If there is a steel-material package you would prefer to place with one external partner, send us the RFQ or material list and delivery point, and we will take it from there.")
-       :(de?"Wenn Sie aktuell oder regelmäßig Stahlmaterial zukaufen, senden Sie uns eine RFQ oder Materialliste und den Lieferort – wir übernehmen die weitere Abwicklung.":bcs?"Ako trenutno ili redovno nabavljate čelični materijal, pošaljite nam RFQ ili listu materijala i mjesto isporuke – mi preuzimamo dalje.":"If you currently or regularly purchase steel material, send us an RFQ or material list and delivery point, and we will take it from there.");
+     ?(de?"Wenn Sie ein klar abgegrenztes Fertigungspaket extern vergeben möchten, senden Sie uns Zeichnungen oder BOM – wir übernehmen ab dort.":bcs?"Ako želite jasno definisan proizvodni paket povjeriti vanjskom partneru, pošaljite nam nacrte ili BOM i mi ćemo preuzeti dalje.":"If there is a clearly defined fabrication package you would prefer to place externally, send us the drawings or BOM and we will take it from there.")
+     :(de?"Wenn aktuell Materialbedarf offen ist, senden Sie uns Ihre RFQ, BOM oder Materialliste – wir übernehmen ab dort.":bcs?"Ako trenutno postoji otvorena potreba za materijalom, pošaljite nam RFQ, BOM ili listu materijala i mi ćemo preuzeti dalje.":"If there is a current steel-material requirement, send us the RFQ, BOM or material list and we will take it from there.");
  const close=de?"Mit freundlichen Grüßen":bcs?"Srdačan pozdrav,":"Kind regards,";
- const paras=[hello,context,evidence,capability,ownership,credibility,cta,close].filter(Boolean);
- const body=[...paras,"",signature].join("\n\n");
- const html='<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55">'+paras.map((x:string)=>'<p>'+htmlEsc(x)+'</p>').join('')+sig+'</div>';
+ const body=[hello,"",intro,"",capability,"",control,"",credibility,"",cta,"",close,"",signature].join("\n");
+ const html='<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55"><p>'+htmlEsc(hello)+'</p><p>'+htmlEsc(intro)+'</p><p>'+htmlEsc(capability)+'</p><p>'+htmlEsc(control)+'</p><p>'+htmlEsc(credibility)+'</p><p>'+htmlEsc(cta)+'</p><p>'+htmlEsc(close)+'</p>'+sig+'</div>';
  return{subject,body,html_body:html,approach_mode:future?"future_supplier_qualification":capacity?"external_production_capacity":"material_buyer",offer_model:future?"future_supplier_qualification":capacity?"external_production_capacity":"material_supply",language:lang,personalization_facts:facts.slice(0,2)};
 }
 function supplierText(tg:any,c:any){const p=t(tg?.project_title||tg?.company_name,500),m=mat(tg),ind=tg?.quote_readiness!=="M3",de=nm(c?.contact_language).startsWith("de");if(de){const subject=(ind?"Indikative RFQ":"RFQ")+" | "+p,body=["Guten Tag,","",'wir prüfen derzeit die Stahlmaterialbeschaffung für das Projekt „'+p+'“.',"",ind?"Die nachstehenden Mengen basieren derzeit auf veröffentlichten Projektinformationen und sind bis zum Erhalt der finalen BOQ / Materialliste als indikativ zu behandeln:":"Die nachstehenden Positionen basieren auf der verfügbaren Materialliste:","",...m,"","Bitte teilen Sie uns – soweit mit den verfügbaren Angaben möglich – Preis / Einheitspreise, Verfügbarkeit, Lieferzeit, Materialzeugnis EN 10204 3.1, Ursprungsland, Incoterm, Angebotsgültigkeit und Zahlungsbedingungen mit.","",ind?"Die finale Anfrage mit bestätigten Güten, Abmessungen und Mengen folgt nach Erhalt der aktuellen BOQ.":"Bitte kennzeichnen Sie technische Abweichungen eindeutig.","","Mit freundlichen Grüßen",signature].join("\n");return{subject,body};}const subject=(ind?"Indicative RFQ":"RFQ")+" | "+p,body=["Dear Sir or Madam,","",'we are currently reviewing the steel material procurement for the project “'+p+'”.',"",ind?"The quantities below are based on published project information and must be treated as indicative until the final BOQ / material list is received:":"The positions below are based on the available material list:","",...m,"","Please provide, where possible with the currently available information, your price / unit prices, availability, lead time, EN 10204 3.1 certification, country of origin, Incoterm, quotation validity and payment terms.","",ind?"A final RFQ with confirmed grades, dimensions and quantities will follow after receipt of the current BOQ.":"Please identify any technical deviations clearly.","","Kind regards,",signature].join("\n");return{subject,body};}
