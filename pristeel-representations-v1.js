@@ -8,6 +8,7 @@ if(window.__pstRepresentationsV1)return;
 window.__pstRepresentationsV1=true;
 
 var TABLE='pppp_representation_targets_v1';
+var REL_TABLE='pppp_representation_relationships_v1';
 var STAGES=[
  ['found','Gjetur'],['verified','Verifikuar'],['contact_ready','Kontakt gati'],
  ['draft_ready','Draft gati'],['contacted','Kontaktuar'],['replied','Përgjigjur'],
@@ -26,7 +27,10 @@ var MODELS=[
 ];
 var CAPITAL=[['unknown','E panjohur'],['good','E mirë'],['review','Për review'],['poor','E dobët']];
 var TARGET_TYPES=[['lead_epc_candidate','Lead Consortium / EPC Candidate'],['oem_specialist_partner','OEM / Specialist Partner'],['representation','Representation']];
-var state={rows:[],loaded:false,loading:false,error:'',selected:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null};
+var REL_TYPES=[['joint_venture','JV'],['consortium','Konsorcium'],['subcontractor','Nënkontraktor'],['supplier','Furnitor'],['representative','Përfaqësues'],['distributor','Distributor'],['implementation_partner','Partner implementimi'],['local_partner','Partner lokal'],['other','Tjetër'],['unknown','E panjohur']];
+var REL_STATUS=[['current','Aktuale'],['historical','Historike'],['unknown','E panjohur']];
+var REL_VERIFY=[['unknown','E panjohur'],['review','Për verifikim'],['verified','E verifikuar']];
+var state={rows:[],relationships:[],loaded:false,loading:false,error:'',selected:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null};
 
 function S(v){return String(v==null?'':v)}
 function A(v){return Array.isArray(v)?v:[]}
@@ -41,6 +45,8 @@ function opts(items,value,blank){
 }
 function uniq(key){return Array.from(new Set(state.rows.map(function(r){return S(r[key]).trim()}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,'sq')})}
 function selected(){return state.rows.find(function(r){return S(r.id)===S(state.selected)})||null}
+function relationshipsFor(targetId){return state.relationships.filter(function(x){return !x.archived_at&&S(x.target_id)===S(targetId)})}
+function relLabel(items,v){var x=items.find(function(i){return i[0]===v});return x?x[1]:S(v||'—')}
 function boolLabel(v){return v===true?'Po':v===false?'Jo':'E panjohur'}
 function parseBool(v){return v==='true'?true:v==='false'?false:null}
 function val(id){var e=document.getElementById(id);return e?S(e.value).trim():''}
@@ -66,7 +72,7 @@ body:has(#page-representations.active) .topbar,body:has(#page-representations.ac
 .pst-rep-controls{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px;position:relative}.pst-rep-control{position:relative}.pst-rep-control-toggle{min-width:145px;display:flex;align-items:center;justify-content:space-between;gap:12px}.pst-rep-control-toggle span{font-size:9px;font-weight:650;color:#758780}.pst-rep-control-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:45;min-width:250px;max-height:68vh;overflow:auto;background:#fff;border:1px solid var(--rep-line);border-radius:12px;padding:8px;box-shadow:0 14px 38px rgba(36,59,53,.14)}.pst-rep-control-menu[hidden]{display:none!important}.pst-rep-control-menu.filters{min-width:330px}.pst-rep-pipeline{display:grid;gap:5px}.pst-rep-pipe{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--rep-line);background:#fff;border-radius:9px;padding:8px 10px;font-size:9.5px;color:#61746e;cursor:pointer;text-align:left}.pst-rep-pipe.on{background:var(--rep-soft);border-color:#acc6bb;color:var(--rep-dark);font-weight:850}.pst-rep-pipe b{margin-left:5px}.pst-rep-toolbar{display:grid;grid-template-columns:1fr;gap:7px}.pst-rep-toolbar input,.pst-rep-toolbar select{height:38px;border:1px solid var(--rep-line);border-radius:10px;background:#fff;padding:0 11px;font-size:10.5px;color:#425952}
 .pst-rep-shell{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}.pst-rep-card{border:1px solid var(--rep-line);background:#fff;border-radius:14px;overflow:hidden}.pst-rep-table-head,.pst-rep-row{display:grid;grid-template-columns:minmax(190px,1.25fr) 90px minmax(125px,.85fr) 120px 64px minmax(150px,1fr) 92px;gap:10px;align-items:center;padding:11px 13px}.pst-rep-table-head{background:#f8faf9;color:#87968f;font-size:8px;text-transform:uppercase;font-weight:850;letter-spacing:.05em}.pst-rep-row{border-top:1px solid #edf1ef;cursor:pointer;font-size:10.5px;color:#50645e}.pst-rep-row:hover,.pst-rep-row.on{background:#f3f8f5}.pst-rep-row.on{box-shadow:inset 3px 0 0 var(--rep)}.pst-rep-company b{display:block;color:#243e36;font-size:12px}.pst-rep-company small{display:block;color:#8a9994;font-size:9px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pst-rep-stage,.pst-rep-fit{display:inline-flex;border-radius:999px;padding:4px 7px;background:#edf4f1;font-size:8.8px;font-weight:800;color:#45685d}.pst-rep-fit.poor,.pst-rep-fit.review{background:#fff1df;color:#8a6327}.pst-rep-priority{font-size:16px;font-weight:850;color:#365c50}.pst-rep-next{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pst-rep-empty{padding:38px 20px;text-align:center;color:#7c8c87;font-size:11px}.pst-rep-empty b{display:block;font-size:14px;color:#425a52;margin-bottom:5px}
-.pst-rep-detail{position:sticky;top:12px}.pst-rep-detail-head{padding:16px 16px 13px;border-bottom:1px solid var(--rep-line)}.pst-rep-detail-head h2{margin:0;font-size:19px}.pst-rep-detail-head p{margin:4px 0 0;color:#7b8b86;font-size:10px}.pst-rep-detail-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.pst-rep-warn{margin:12px 14px 0;padding:10px 11px;border:1px solid #edcda4;background:#fff7eb;border-radius:10px;color:#7e5c2e;font-size:10px;line-height:1.45}.pst-rep-section{padding:13px 16px;border-top:1px solid #edf1ef}.pst-rep-section h3{margin:0 0 9px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#87968f}.pst-rep-facts{display:grid;grid-template-columns:115px 1fr;gap:7px 9px;font-size:10.5px}.pst-rep-facts span:nth-child(odd){color:#87958f}.pst-rep-facts span:nth-child(even){color:#354d45;font-weight:650;overflow-wrap:anywhere}.pst-rep-text{font-size:11px;line-height:1.5;color:#536861;white-space:pre-wrap}.pst-rep-quick{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pst-rep-quick label{font-size:8.5px;text-transform:uppercase;color:#84938e}.pst-rep-quick select,.pst-rep-quick input{width:100%;margin-top:4px;border:1px solid var(--rep-line);border-radius:8px;padding:7px 8px;font-size:10px}
+.pst-rep-detail{position:sticky;top:12px}.pst-rep-detail-head{padding:16px 16px 13px;border-bottom:1px solid var(--rep-line)}.pst-rep-detail-head h2{margin:0;font-size:19px}.pst-rep-detail-head p{margin:4px 0 0;color:#7b8b86;font-size:10px}.pst-rep-detail-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.pst-rep-warn{margin:12px 14px 0;padding:10px 11px;border:1px solid #edcda4;background:#fff7eb;border-radius:10px;color:#7e5c2e;font-size:10px;line-height:1.45}.pst-rep-section{padding:13px 16px;border-top:1px solid #edf1ef}.pst-rep-section h3{margin:0 0 9px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#87968f}.pst-rep-facts{display:grid;grid-template-columns:115px 1fr;gap:7px 9px;font-size:10.5px}.pst-rep-facts span:nth-child(odd){color:#87958f}.pst-rep-facts span:nth-child(even){color:#354d45;font-weight:650;overflow-wrap:anywhere}.pst-rep-text{font-size:11px;line-height:1.5;color:#536861;white-space:pre-wrap}.pst-rep-rel-list{display:grid;gap:7px;margin-bottom:9px}.pst-rep-rel{border:1px solid var(--rep-line);border-radius:10px;padding:9px 10px;background:#fbfcfc}.pst-rep-rel b{display:block;font-size:10.5px;color:#304a42}.pst-rep-rel small{display:block;margin-top:3px;color:#798b84;font-size:9px;line-height:1.4}.pst-rep-rel .verified{color:#2f725b;font-weight:800}.pst-rep-rel .review{color:#9a6d22;font-weight:800}.pst-rep-quick{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pst-rep-quick label{font-size:8.5px;text-transform:uppercase;color:#84938e}.pst-rep-quick select,.pst-rep-quick input{width:100%;margin-top:4px;border:1px solid var(--rep-line);border-radius:8px;padding:7px 8px;font-size:10px}
 .pst-rep-modal{position:fixed;inset:0;z-index:9200;background:rgba(20,35,31,.34);display:grid;place-items:center;padding:18px}.pst-rep-dialog{width:min(1040px,100%);max-height:94vh;overflow:auto;background:#f8faf9;border-radius:16px;box-shadow:0 24px 80px rgba(15,31,26,.24)}.pst-rep-dialog-head{position:sticky;top:0;z-index:2;background:#fff;border-bottom:1px solid var(--rep-line);padding:14px 17px;display:flex;justify-content:space-between;align-items:center}.pst-rep-dialog-head h2{margin:0;font-size:18px}.pst-rep-form{padding:15px}.pst-rep-form-section{background:#fff;border:1px solid var(--rep-line);border-radius:12px;padding:13px;margin-bottom:10px}.pst-rep-form-section h3{margin:0 0 10px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6e827a}.pst-rep-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.pst-rep-field.full{grid-column:1/-1}.pst-rep-field.two{grid-column:span 2}.pst-rep-field label{display:block;margin-bottom:4px;font-size:8.5px;text-transform:uppercase;color:#81918b;font-weight:750}.pst-rep-field input,.pst-rep-field select,.pst-rep-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--rep-line);border-radius:8px;background:#fff;padding:8px 9px;color:#334a42;font:11px/1.4 Inter,Arial,sans-serif}.pst-rep-field textarea{min-height:72px;resize:vertical}.pst-rep-form-foot{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:8px;background:#f8faf9;padding:10px 0 0}
 #pst-rep-toast{position:fixed;left:50%;bottom:26px;z-index:9500;transform:translateX(-50%);border-radius:10px;padding:11px 15px;color:#fff;font-size:11px;font-weight:750;box-shadow:0 10px 35px rgba(20,30,26,.22)}#pst-rep-toast.ok{background:#355f50}#pst-rep-toast.bad{background:#9b423b}
 #pst-representations-home-v1{margin:0;min-width:0}.pst-rep-home{width:100%;height:100%;border:1px solid #DDE5E6;background:#F3F8F5;border-radius:15px;padding:0;text-align:left;display:block;cursor:pointer;overflow:hidden;color:#33474F}.pst-rep-home:hover,.pst-rep-home:focus-visible{border-color:#AFCED8;box-shadow:0 8px 22px rgba(48,91,107,.09);outline:0}.pst-rep-home-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 12px}.pst-rep-home-eye{font-size:8px;letter-spacing:.11em;text-transform:uppercase;font-weight:850;color:#668177}.pst-rep-home-title{font-size:14px;font-weight:750;color:#2C4149;margin-top:4px}.pst-rep-home-sub{font-size:10px;color:#748780;line-height:1.4;margin-top:3px}.pst-rep-home-open{color:#367A91;font-size:9.5px;font-weight:750;white-space:nowrap}.pst-rep-home-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid #DDE5E6}.pst-rep-home-stat{padding:11px 8px;text-align:center;border-right:1px solid #DDE5E6}.pst-rep-home-stat:last-child{border-right:0}.pst-rep-home-stat b{display:block;font-size:17px;color:#345e50}.pst-rep-home-stat span{display:block;margin-top:3px;font-size:7.8px;color:#83928d;text-transform:uppercase;font-weight:700}
@@ -109,12 +115,14 @@ function filtered(){
  return rows;
 }
 function warnings(r){
- var out=[];
+ var out=[],rels=relationshipsFor(r.id);
  if(r.stock_required===true)out.push('Kërkon stock');
  if(r.minimum_purchase_required===true)out.push('Kërkon minimum purchase');
  if(r.local_financing_required===true)out.push('Kërkon financim lokal');
  if(r.credit_risk_required===true)out.push('Kërkon risk kreditor');
  if(['distributor','representative','own_office'].indexOf(r.kosovo_presence)>-1)out.push('Ka prani/partner në Kosovë');
+ if(rels.some(function(x){return N(x.related_company_country)==='kosovo'&&x.relationship_status==='current'}))out.push('Ka lidhje lokale aktuale të regjistruar');
+ else if(rels.some(function(x){return N(x.related_company_country)==='kosovo'&&x.verification_status==='verified'}))out.push('Ka histori të verifikuar partneriteti në Kosovë');
  if(r.capital_fit==='poor')out.push('Capital fit i dobët');
  return out;
 }
@@ -142,13 +150,14 @@ function facts(pairs){return'<div class="pst-rep-facts">'+pairs.map(function(x){
 function renderDetail(){
  var h=ensurePage().querySelector('[data-rep-detail]'),r=selected();
  if(!r){h.innerHTML='<div class="pst-rep-empty"><b>Zgjidh një kompani</b><span>Detajet dhe veprimet shfaqen këtu.</span></div>';return}
- var warn=warnings(r);
+ var warn=warnings(r),rels=relationshipsFor(r.id);
  h.innerHTML='<div class="pst-rep-detail-head"><h2>'+E(r.company_name)+'</h2><p>'+E([r.country,r.headquarters,r.company_domain_normalized].filter(Boolean).join(' · ')||r.source_key)+'</p><div class="pst-rep-detail-actions"><button class="pst-rep-btn primary" data-rep-act="edit">Edito targetin</button><button class="pst-rep-btn" data-rep-act="archive">Archive / Mbylle</button></div></div>'
  +(warn.length?'<div class="pst-rep-warn"><b>⚠ Kërkon vëmendje:</b> '+E(warn.join(' · '))+'</div>':'')
  +'<section class="pst-rep-section"><h3>Pipeline & veprimi</h3><div class="pst-rep-quick"><label>Stage<select data-rep-quick="stage">'+opts(STAGES,r.stage)+'</select></label><label>Due date<input data-rep-quick="next_action_due" type="date" value="'+E(r.next_action_due||'')+'"></label><label style="grid-column:1/-1">Next action<input data-rep-quick="next_action" value="'+E(r.next_action||'')+'" placeholder="Veprimi i radhës"></label></div></section>'
  +'<section class="pst-rep-section"><h3>Fit komercial</h3>'+facts([['Lloji i targetit',(TARGET_TYPES.find(function(x){return x[0]===(r.target_type||'representation')})||[])[1]],['Prioriteti',r.priority_score==null?'—':r.priority_score+'/100'],['Arsyeja',r.priority_reason],['Modeli',r.target_model],['Territori',r.target_territory],['Capital fit',capitalLabel(r.capital_fit)],['Prani në Kosovë',r.kosovo_presence]])+'</section>'
  +'<section class="pst-rep-section"><h3>Produktet & tregu</h3><div class="pst-rep-text">'+E(r.product_summary||A(r.products).join(' · ')||r.manufacturer_description||'—')+'</div></section>'
  +'<section class="pst-rep-section"><h3>Pse Kosovë / PriSteel</h3><div class="pst-rep-text">'+E(r.why_kosovo||r.market_evidence||r.strategic_fit_notes||'—')+'</div></section>'
+ +'<section class="pst-rep-section"><h3>JV / Partnerë lokalë & rajonalë</h3><div class="pst-rep-rel-list">'+(rels.length?rels.map(function(x){var cls=x.verification_status==='verified'?'verified':x.verification_status==='review'?'review':'';return '<div class="pst-rep-rel"><b>'+E(x.related_company_name)+' · '+E(relLabel(REL_TYPES,x.relationship_type))+'</b><small>'+E([x.related_company_country,relLabel(REL_STATUS,x.relationship_status),x.project_or_tender||x.project_reference].filter(Boolean).join(' · '))+'</small><small class="'+cls+'">'+E(relLabel(REL_VERIFY,x.verification_status))+(x.source_url?' · burim i ruajtur':'')+'</small></div>'}).join(''):'<div class="pst-rep-text">Nuk ka ende lidhje lokale/rajonale të regjistruara.</div>')+'</div><button class="pst-rep-btn" data-rep-act="add-relationship">+ Shto JV / partner lokal</button></section>'
  +'<section class="pst-rep-section"><h3>Kontakti</h3>'+facts([['Emri',r.contact_name],['Roli',r.contact_role],['Email',r.contact_email],['Telefoni',r.contact_phone],['Burimi',r.contact_source]])+'</section>'
  +'<section class="pst-rep-section"><h3>Risku financiar</h3>'+facts([['Stock',boolLabel(r.stock_required)],['Minimum purchase',boolLabel(r.minimum_purchase_required)],['Financim lokal',boolLabel(r.local_financing_required)],['Risk kreditor',boolLabel(r.credit_risk_required)],['Kërkesa kapitale',r.estimated_capital_requirement]])+'</section>'
  +'<section class="pst-rep-section"><h3>Commercial terms</h3>'+facts([['Komision i propozuar',r.proposed_commission_pct==null?'—':r.proposed_commission_pct+'%'],['Komision i dakorduar',r.agreed_commission_pct==null?'—':r.agreed_commission_pct+'%'],['Retainer',r.proposed_retainer],['Ekskluziviteti',r.exclusivity_status],['Marrëveshja',r.agreement_status],['Territori i dakorduar',r.territory_agreed]])+'</section>'
@@ -158,7 +167,11 @@ async function load(force){
  if(state.loading)return;if(state.loaded&&!force){render();return}
  state.loading=true;state.error='';render();
  try{
-  state.rows=A(await window.supaFetch(TABLE+'?select=*&order=priority_score.desc.nullslast,updated_at.desc&limit=500'));
+  var loaded=await Promise.all([
+   window.supaFetch(TABLE+'?select=*&order=priority_score.desc.nullslast,updated_at.desc&limit=500'),
+   window.supaFetch(REL_TABLE+'?select=*&archived_at=is.null&order=updated_at.desc&limit=2000')
+  ]);
+  state.rows=A(loaded[0]);state.relationships=A(loaded[1]);
   state.loaded=true;if(state.selected&&!state.rows.some(function(r){return S(r.id)===S(state.selected)}))state.selected='';
  }catch(e){state.error=S(e&&e.message||e)}
  state.loading=false;render();
@@ -171,6 +184,7 @@ function detailClick(e){
  var a=e.target.closest('[data-rep-act]');if(!a)return;var r=selected();if(!r)return;
  if(a.dataset.repAct==='edit')openEditor(r);
  if(a.dataset.repAct==='archive')archive(r);
+ if(a.dataset.repAct==='add-relationship')openRelationshipEditor(r);
 }
 function detailChange(e){
  var k=e.target&&e.target.dataset&&e.target.dataset.repQuick,r=selected();if(!k||!r)return;
@@ -181,6 +195,53 @@ function detailChange(e){
 async function archive(r){
  var reason=window.prompt('Arsyeja për mbyllje/arkivim:','');if(!S(reason).trim())return;
  await patchRow(r.id,{stage:'closed',archive_reason:S(reason).trim(),archived_at:new Date().toISOString()},'Targeti u mbyll dhe u arkivua');
+}
+function openRelationshipEditor(target){
+ var m=document.createElement('div');m.className='pst-rep-modal';m.id='pst-rep-rel-modal';
+ m.innerHTML='<div class="pst-rep-dialog" style="width:min(760px,100%)"><div class="pst-rep-dialog-head"><h2>Shto JV / partner lokal</h2><button class="pst-rep-btn" data-rel-close>Mbyll</button></div><form class="pst-rep-form" data-rel-form><section class="pst-rep-form-section"><h3>Lidhja e kompanisë</h3><div class="pst-rep-grid">'
+ +field('rep-rel-company','Kompania lokale / rajonale *','text','','two')
+ +field('rep-rel-country','Shteti','text','Kosovo')
+ +field('rep-rel-type','Lloji i lidhjes','select',null,'',opts(REL_TYPES,'unknown'))
+ +field('rep-rel-status','Statusi','select',null,'',opts(REL_STATUS,'unknown'))
+ +field('rep-rel-verify','Verifikimi','select',null,'',opts(REL_VERIFY,'review'))
+ +field('rep-rel-project','Projekti / tenderi','text','')
+ +field('rep-rel-reference','Referenca','text','')
+ +field('rep-rel-domain','Domain i kompanisë lokale','text','')
+ +field('rep-rel-scope','Roli / scope','textarea','','full')
+ +field('rep-rel-source-name','Burimi','text','')
+ +field('rep-rel-source-url','Source URL','url','','two')
+ +field('rep-rel-notes','Shënime','textarea','','full')
+ +'</div></section><div class="pst-rep-form-foot"><button type="button" class="pst-rep-btn" data-rel-close>Anulo</button><button type="submit" class="pst-rep-btn primary">Ruaj lidhjen</button></div></form></div>';
+ document.body.appendChild(m);
+ m.querySelectorAll('[data-rel-close]').forEach(function(b){b.onclick=function(){m.remove()}});
+ m.addEventListener('click',function(e){if(e.target===m)m.remove()});
+ m.querySelector('[data-rel-form]').onsubmit=function(e){e.preventDefault();saveRelationship(target,m)};
+}
+async function saveRelationship(target,m){
+ var company=val('rep-rel-company'),country=val('rep-rel-country')||'Kosovo',type=val('rep-rel-type')||'unknown',
+     status=val('rep-rel-status')||'unknown',verify=val('rep-rel-verify')||'review',project=val('rep-rel-project'),
+     sourceUrl=val('rep-rel-source-url');
+ if(!company){toast('Emri i kompanisë është i detyrueshëm',true);return}
+ if(verify==='verified'&&!sourceUrl){toast('Për statusin E verifikuar duhet Source URL',true);return}
+ var sourceKey='reprrel:'+S(target.id)+':'+(slug(country)||'xx')+':'+(slug(company)||'company')+':'+(slug(project||type)||'relationship');
+ var payload={
+  target_id:target.id,opportunity_id:null,source_key:sourceKey,related_company_name:company,
+  related_company_domain:nullable(val('rep-rel-domain')),related_company_country:country,
+  relationship_type:type,relationship_status:status,project_or_tender:nullable(project),
+  project_reference:nullable(val('rep-rel-reference')),relationship_scope:nullable(val('rep-rel-scope')),
+  verification_status:verify,evidence:{source_name:nullable(val('rep-rel-source-name')),source_url:nullable(sourceUrl)},
+  source_name:nullable(val('rep-rel-source-name')),source_url:nullable(sourceUrl),
+  last_verified_at:verify==='verified'?new Date().toISOString():null,notes:nullable(val('rep-rel-notes')),
+  created_source:'manual'
+ };
+ var submit=m.querySelector('[type="submit"]');if(submit)submit.disabled=true;
+ try{
+  await window.supaFetch(REL_TABLE,'POST',payload);
+  m.remove();toast('Lidhja u regjistrua');await load(true);
+ }catch(e){
+  var msg=S(e&&e.message||e);if(/duplicate|unique|23505/i.test(msg))msg='Kjo lidhje duket se ekziston dhe nuk u krijua dublikatë.';
+  toast(msg,true);if(submit)submit.disabled=false;
+ }
 }
 function field(id,label,type,value,cls,options,placeholder){
  var input;
