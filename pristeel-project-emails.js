@@ -132,6 +132,7 @@ var files=[
   'pristeel-home-visual-cleanup-v1.js?v=20260817-1',
   'pristeel-dach-steel-sales-v1.js?v=20260925-suppliergate2',
   'pristeel-sales-engine-v3.js?v=20260925-commercial-engine1',
+  'pristeel-representations-v1.js?v=20260926-representations1',
   'pristeel-commercial-navigation-fix-v1.js?v=20260808-4',
   'pristeel-commercial-document-builder-v1.js?v=20260808-2',
   'pristeel-project-commercial-prefill-rescue-v1.js?v=20260820-bridge3',
