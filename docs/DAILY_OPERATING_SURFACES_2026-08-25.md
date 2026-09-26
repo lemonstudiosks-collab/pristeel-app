@@ -25,7 +25,9 @@ Canonical business-state owner remains `pristeel-home-canonical-v1.js`.
 
 The desktop daily surface is capped to concrete human-needed work. Waiting projects are not treated as active priorities.
 
-On phone/tablet (<=900px), `pristeel-mobile-home-v1.js` deliberately uses a different presentation because the fixed bottom navigation already exposes Opportunities, Projects, Partners, Finance and System. Mobile Home therefore avoids duplicating those areas and instead shows `Pyet PPPP`, Prishtina weather/date, dated public steel-market references, compact local tools and market-resource links. It performs no PPPP business writes and does not create a second workflow owner.
+On phone/tablet (<=900px), `pristeel-mobile-home-v1.js` deliberately uses a different presentation because the fixed bottom navigation already exposes Opportunities, Projects, Partners, Finance and System. Mobile Home therefore avoids duplicating those areas and instead shows `Pyet PPPP`, live Prishtina weather/date, current-source steel-market links, compact local tools and market resources. Stale/sample steel prices are not displayed as current. The currency tool uses the ECB daily reference-rate feed on demand. It performs no PPPP business writes and does not create a second workflow owner.
+
+After first-time account authentication and PIN setup, trusted-device mobile re-entry is PIN-only across normal access-session expiry. The existing refresh-token path remains the server authentication mechanism; the local four-digit PIN only unlocks the remembered device session. Explicit logout clears that trusted-device state.
 
 ## Opportunities
 
