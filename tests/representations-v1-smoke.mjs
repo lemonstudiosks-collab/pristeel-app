@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import { JSDOM } from 'jsdom';
 
 const ui = fs.readFileSync('pristeel-representations-v1.js','utf8');
+const opportunityUi = fs.readFileSync('pristeel-representation-opportunities-v2.js','utf8');
 const migration = fs.readFileSync('supabase/migrations/20260926062633_representations_module_v1.sql','utf8');
 const worker = fs.readFileSync('supabase/functions/chatgpt-command-bridge/worker.ts','utf8');
 const relationshipMigration = fs.readFileSync('supabase/migrations/20260926143300_representation_relationships_v1.sql','utf8');
@@ -12,8 +13,8 @@ const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 
 new vm.Script(ui);
 
-assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20260927-representations6-clean-sq/);
-assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260927-opportunities3-sq/);
+assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20260927-representations7-compact-back/);
+assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260927-opportunities4-compact-controls/);
 assert.match(migration,/create table public\.pppp_representation_targets_v1/i);
 assert.match(migration,/enable row level security/i);
 assert.match(migration,/pppp_representation_targets_authenticated_update/i);
@@ -54,6 +55,8 @@ assert.match(ui,/Rreziqe & sinjale historike/);
 assert.match(ui,/Mesazhi i jashtëm/);
 assert.match(ui,/data-rep-profile-view/);
 assert.match(ui,/pst-rep-back-primary/);
+assert.match(ui,/previousPageId/);
+assert.match(opportunityUi,/controls\.insertBefore\(sw,controls\.firstChild\)/);
 assert.doesNotMatch(ui,/data-rep-new/);
 assert.doesNotMatch(ui,/Kompanitë candidate/);
 assert.doesNotMatch(ui,/data-rep-act=\"close-profile\"/);
@@ -65,7 +68,7 @@ assert.match(representationDraftWorker,/\/drafts/);
 assert.doesNotMatch(representationDraftWorker,/\/messages\/send|gmail\.send/i);
 assert.doesNotMatch(ui,/sendEmail|gmail\.send|external_email_send/i);
 
-const dom = new JSDOM('<!doctype html><html><head></head><body><div class="topbar"></div><div class="content"></div><div id="pst-home-launchpad-v1"><div class="pst-morning-lanes"><section class="pst-morning-lane opportunities"></section><section class="pst-morning-lane material"></section></div></div><div id="page-workspace-apps"><div class="pst-ws-appgrid"></div></div></body></html>',{
+const dom = new JSDOM('<!doctype html><html><head></head><body><div class="topbar"></div><div id="page-origin" class="page active" style="display:block"></div><div class="content"></div><div id="pst-home-launchpad-v1"><div class="pst-morning-lanes"><section class="pst-morning-lane opportunities"></section><section class="pst-morning-lane material"></section></div></div><div id="page-workspace-apps"><div class="pst-ws-appgrid"></div></div></body></html>',{
   url:'https://pppp.test/',
   runScripts:'dangerously',
   pretendToBeVisual:true,
@@ -104,6 +107,7 @@ await new Promise(resolve => setTimeout(resolve,20));
 const page = dom.window.document.getElementById('page-representations');
 assert.ok(page?.classList.contains('active'),'route did not open');
 assert.equal(dom.window.location.hash,'#perfaqesime');
+assert.equal(dom.window.document.getElementById('page-origin').style.display,'none','opening Representations must hide the previous page');
 assert.ok(page.querySelector('[data-rep-back]'),'candidate view must expose a persistent back button');
 assert.ok(page.querySelector('[data-rep-list-view]'),'candidate list view missing');
 assert.ok(page.querySelector('[data-rep-profile-view]'),'full-width company dossier view missing');
@@ -141,6 +145,12 @@ assert.ok(dom.window.document.getElementById('rep-stage'));
 assert.ok(dom.window.document.getElementById('rep-next-action'));
 assert.ok(dom.window.document.getElementById('rep-capital-fit'));
 assert.match(dom.window.document.getElementById('pst-rep-modal').textContent,/Edito kompaninë/);
+dom.window.document.getElementById('pst-rep-modal').remove();
+page.querySelector('[data-rep-back]').click();
+await new Promise(resolve => setTimeout(resolve,0));
+assert.equal(page.classList.contains('active'),false,'Kthehu from company list must leave Representations');
+assert.equal(dom.window.document.getElementById('page-origin').classList.contains('active'),true,'Kthehu must restore the immediately previous page');
+assert.equal(dom.window.document.getElementById('page-origin').style.display,'block','Kthehu must show the immediately previous page');
 
 console.log('Representations v1 smoke passed');
 
