@@ -9,6 +9,15 @@ For project continuity also read:
 - `PPPP_CONTINUITY_PROTOCOL.md`
 - `PPPP_CHANGELOG.md`
 
+## Kompanitë EU — zhvillim direkt në Evropë
+
+- Owner i dukshëm: `pristeel-eu-companies-v1.js`.
+- Të dhënat canonical të reja ruhen në `public.pppp_eu_direct_targets_v1`; pamja operative `public.pppp_eu_direct_operational_v1` integron edhe batch-in historik direct-web pa futur fituesit TED.
+- Routing është i prerë: tenderët/projektet dhe fituesit e tyre mbeten te **Mundësitë**; blerësit e lëndës së parë te **Material – Ofertë**; hyrja në treg/JV/përfaqësimi te **Përfaqësime**.
+- Para regjistrimit kontrollohen domeni zyrtar dhe përplasjet ndërmjet moduleve. Para kontaktimit lexohet historiku i përbashkët i outbound-it/kontakteve.
+- Moduli nuk krijon projekt, partner, kontakt, draft ose dërgim emaili automatik. Dërgimi i jashtëm mbetet human gate.
+- Fronti është qëllimisht minimal: Kthehu, Kërko, Rifresko, listë dhe profil.
+
 ## The rule that matters most
 
 **Current PPPP means the current HEAD of `main` plus the live Supabase state.**
