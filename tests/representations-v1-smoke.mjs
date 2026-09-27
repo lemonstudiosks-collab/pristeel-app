@@ -66,7 +66,31 @@ const dom = new JSDOM('<!doctype html><html><head></head><body><div class="topba
   runScripts:'dangerously',
   pretendToBeVisual:true,
 });
-dom.window.supaFetch = async () => [];
+dom.window.supaFetch = async (path) => {
+  const p=String(path||'');
+  if(p.startsWith('pppp_representation_targets_v1?'))return [{
+    id:'11111111-1111-4111-8111-111111111111',company_name:'KEC International Limited',company_domain:'kecrpg.com',company_domain_normalized:'kecrpg.com',
+    company_website:'https://www.kecrpg.com/',country:'IN',headquarters:'Mumbai, India',sector:'Power Transmission & Distribution EPC',
+    product_category:'Transmission lines, substations and EHV cabling',product_summary:'Global T&D EPC contractor.',manufacturer_description:'Global infrastructure EPC company.',
+    products:['turnkey transmission lines','AIS substations'],stage:'contact_ready',kosovo_presence:'none_found',target_type:'lead_epc_candidate',
+    target_model:'project_based_representation',target_territory:'Kosovo / Western Balkans',contact_email:'kecindia@kecrpg.com',contact_role:'Corporate contact',
+    source_key:'rep:in:kecrpg.com',source_name:'KEC official website',source_url:'https://www.kecrpg.com/',priority_reason:'Operator-selected candidate',
+    strategic_fit_notes:'Kosovo interface and execution support.',why_kosovo:'Project-specific fit for KOSTT 55387.',market_evidence:'EBRD-backed grid project.',
+    created_at:'2026-09-27T00:00:00Z',updated_at:'2026-09-27T00:00:00Z',last_verified_at:'2026-09-27T00:00:00Z'
+  }];
+  if(p.startsWith('pppp_representation_relationships_v1?'))return [];
+  if(p.startsWith('pppp_representation_opportunity_targets_v1?'))return [{
+    target_id:'11111111-1111-4111-8111-111111111111',opportunity_id:'22222222-2222-4222-8222-222222222222',candidate_role:'lead_epc_candidate',company_fit_status:'review',
+    fit_evidence:{technical_fit:'Strong T&D fit.',approach_thesis:'PriSteel provides the Kosovo execution layer.',pristeel_value:['local sourcing','logistics'],risks:['Package structure not public'],regional_position:'Global EPC',external_pitch:'Potential project-specific cooperation.'}
+  }];
+  if(p.startsWith('pppp_representation_opportunities_v1?'))return [{
+    id:'22222222-2222-4222-8222-222222222222',project_name:'KOSTT Transmission Grid Strengthening',tender_reference:'EBRD Project ID 55387',
+    funding_institution:'EBRD / KOSTT',total_project_value:42800000,currency:'EUR',status:'approved',procurement_stage:'pre-procurement',
+    scope:'110 kV substations and underground cable',financing:'EBRD financing',fact_evidence:{approval_date:'2026-09-23',ebrd_finance:{value:25000000},danish_grant:{value:5250000}},
+    procurement_packages:[],verification_status:'verified'
+  }];
+  return [];
+};
 dom.window.scrollTo = () => {};
 dom.window.eval(ui);
 await new Promise(resolve => setTimeout(resolve,20));
@@ -80,6 +104,17 @@ assert.equal(page.querySelectorAll('[data-rep-kpis] .pst-rep-kpi').length,4);
 assert.ok(page.querySelector('[data-rep-back]'),'candidate view must expose a persistent back button');
 assert.ok(page.querySelector('[data-rep-list-view]'),'candidate list view missing');
 assert.ok(page.querySelector('[data-rep-profile-view]'),'full-width company dossier view missing');
+const companyRow=page.querySelector('[data-rep-id="11111111-1111-4111-8111-111111111111"]');
+assert.ok(companyRow,'candidate company row missing');
+companyRow.click();
+await new Promise(resolve => setTimeout(resolve,0));
+assert.equal(page.querySelector('[data-rep-list-view]').hidden,true,'company click must hide list view');
+assert.equal(page.querySelector('[data-rep-profile-view]').hidden,false,'company click must open full dossier view');
+assert.match(page.querySelector('[data-rep-detail]').textContent,/KEC International Limited/);
+assert.match(page.querySelector('[data-rep-detail]').textContent,/Fit teknik për KOSTT/);
+page.querySelector('[data-rep-act="close-profile"]').click();
+await new Promise(resolve => setTimeout(resolve,0));
+assert.equal(page.querySelector('[data-rep-list-view]').hidden,false,'company dossier back must restore list view');
 const pipelineToggle=page.querySelector('[data-rep-toggle="pipeline"]');
 const pipelineMenu=page.querySelector('[data-rep-menu="pipeline"]');
 assert.ok(pipelineMenu.hidden,'pipeline menu must start collapsed');
