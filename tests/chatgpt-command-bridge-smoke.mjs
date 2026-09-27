@@ -15,7 +15,7 @@ assert.match(entry,/import\s+["']\.\/worker\.ts["']/,'v3 worker entrypoint missi
 assert.match(fn,/COMMAND_SHEET_ID\s*=\s*'1ZoU1-aqHaN0CLI_1bcAUDXtGKdm97ixvopkusB96hZ8'/,'canonical command sheet missing');
 for (const action of [
   'context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition',
-  'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_relationship',
+  'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_relationship', 'eu_direct_target',
 ]) {
   assert.match(fn,new RegExp(`ALLOWED_ACTIONS[\\s\\S]*['\"]${action}['\"]`),`safe action allowlist missing ${action}`);
 }
@@ -33,6 +33,10 @@ assert.match(fn,/pppp_chatgpt_project_disposition_v1/,'canonical project disposi
 assert.match(fn,/processRepresentationRelationship/,'representation relationship processor missing');
 assert.match(fn,/pppp_chatgpt_register_representation_relationship_v1/,'representation relationship RPC missing');
 assert.match(fn,/RELATIONSHIP_FIELDS|REPRESENTATION_RELATIONSHIP_FIELDS/,'representation relationship field allowlist missing');
+assert.match(fn,/processEuDirectTarget/,'EU Direct target processor missing');
+assert.match(fn,/pppp_chatgpt_register_eu_direct_target_v1/,'EU Direct registration RPC missing');
+assert.match(fn,/EU_DIRECT_TARGET_FIELDS/,'EU Direct safe field allowlist missing');
+assert.match(fn,/human_email_approval_required\s*!==\s*true/,'EU Direct external-email human gate verification missing');
 assert.match(fn,/PROJECT_DISPOSITION_FIELDS/,'project disposition safe field allowlist missing');
 assert.match(fn,/disposition.*no_bid/s,'No Bid disposition validation missing');
 assert.match(fn,/project_status\s*!==\s*'mbyllur'/,'project close status verification missing');

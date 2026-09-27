@@ -10,6 +10,15 @@
 - Inbox uses Gmail live when connected and otherwise falls back to the existing canonical Gmail-synced `project_emails` data.
 - No schema changes, polling, automatic outbound, automatic target creation or protected commercial actions were introduced.
 
+## 2026-09-27 — Moduli “Kompanitë EU”
+
+- U shtua pipeline i veçantë për klientë të drejtpërdrejtë në Evropë: GC/GU, EPC/industrial contractors, developers, manufacturers dhe kompani të tjera që mund të blejnë paketa çeliku të fabrikuar, kapacitet prodhues ose nënkontraktim.
+- Routing guard e mban këtë pipeline jashtë **Mundësive**, **Material – Ofertë** dhe **Përfaqësimeve**. Fituesit TED nuk importohen në këtë modul vetëm pse janë GC; ata mbeten në rrjedhën e Mundësive.
+- Operational view integron vetëm batch-in historik direct-web nga GC registry dhe ruan evidencën reale të draftit/dërgimit.
+- Outreach guard kontrollon historikun global dhe jep përparësi kontaktit real të fundit ndaj një drafti të vjetër. Asnjë email nuk dërgohet automatikisht.
+- Ballina dhe mobile marrin hyrjen **Kompanitë EU** me UI minimal dhe tekst shqip. Nuk u shtuan butona për veprime të mbrojtura.
+- ChatGPT bridge u zgjerua me `eu_direct_target` si write i kontrolluar, idempotent dhe vetëm me miratim; regjistrimi nuk krijon Project, Partner, Contact ose outbound row.
+
 ## 2026-09-26 — PPPP Mobile v6 data stability
 
 - Stabilized Home startup by replacing the five-pass repaint schedule with one debounced render and a debounced canonical Home refresh.
