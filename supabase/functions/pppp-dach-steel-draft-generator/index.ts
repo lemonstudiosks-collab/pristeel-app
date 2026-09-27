@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v22-canonical-material-copy-v4";
+const V="pppp-dach-steel-draft-generator-v23-canonical-material-copy-v4";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -226,7 +226,7 @@ function materialCategory(tg:any){
  const raw=[...p,...lines.map((x:any)=>x?.family||x?.product||x?.name),tg?.steel_scope].map(externalFact).find(Boolean)||"structural steel material";
  return t(raw,90);
 }
-function shortAnchor(v:any,fallback:any){const s=t(v,500).replace(/[\r\n\t]+/g," ").replace(/\s+/g," ").trim();return t(s.length<=68?s:(s.match(/\b(?:VOB\s*)?\d{1,3}-[0-9O]{2,4}\b|\b[A-Z]{1,6}[_-]\d{2,}(?:[\/_-]\d+)*\b/i)?.[0]||fallback),72);}
+function shortAnchor(v:any,fallback:any){const s=t(v,500).replace(/[\r\n\t]+/g," ").replace(/\s+/g," ").trim();if(!s)return t(fallback,72);return t(s.length<=68?s:(s.match(/\b(?:VOB\s*)?\d{1,3}-[0-9O]{2,4}\b|\b[A-Z]{1,6}[_-]\d{2,}(?:[\/_-]\d+)*\b/i)?.[0]||fallback),72);}
 function buyerTextV2(tg:any,signatureHtml="",contact:any={}){
  const lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",facts=specificFacts(tg).map(externalFact).filter(Boolean).slice(0,2),motion=t(tg?.outreach_motion||"material_buyer",80),project=externalFact(tg?.project_title),company=t(tg?.company_name,180),category=materialCategory(tg),anchor=shortAnchor(project,company||category),sig=signatureHtml||canonicalSignatureHtml;
  const future=motion==="future_supplier_qualification"||t(tg?.timing_classification,80)==="future_supplier_qualification",capacity=motion==="external_production_capacity",offerModel=future?"future_supplier_qualification":capacity?"external_production_capacity":"material_supply";
