@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {buildTedDraftContent,PRISTEEL_SIGNATURE_HTML,COPY_POLICY_VERSION} from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
 
-assert.equal(COPY_POLICY_VERSION,'pppp-commercial-copy-policy-v4');
+assert.equal(COPY_POLICY_VERSION,'pppp-commercial-copy-policy-v5');
 assert.equal(/linkedin|data:image|base64,|pixel|tracking|utm_/i.test(PRISTEEL_SIGNATURE_HTML),false);
 assert.equal((PRISTEEL_SIGNATURE_HTML.match(/<img\b/gi)||[]).length,1);
 assert.match(PRISTEEL_SIGNATURE_HTML,/ci3\.googleusercontent\.com\/mail-sig\//);
@@ -18,23 +18,38 @@ const msDescription='Im Zug der Errichtung des Neubaus für den Fachbereich Sozi
 const msAction={route:'TED_GENERAL',target_company:'M+S Gruppe GmbH',target_email:'stahl@msgruppe24.de',tender_title:'Germany – Welding – VOB 17-25O Errichtung eines Berufsschulcampus BA 1; VE 4-3060 Haus IV Stahlbau/Schlosserarbeiten',pristeel_offer_model:'fabricated_steel_package',personalization_facts:[msDescription,'M+S Gruppe GmbH · unknown','Prepare a draft only; do not send'],payload:{company_type:'unknown',outreach_readiness_v1:{scope_evidence:msDescription,company_fact:'M+S Gruppe GmbH · unknown'}}};
 const msTender={title:msAction.tender_title,payload:{description:msDescription},winner:{name:'M+S Gruppe GmbH',country:'DEU',company_type:'unknown'}};
 const ms=buildTedDraftContent(msAction,msTender,{email:'stahl@msgruppe24.de'});
-assert.equal(ms.subject,'VOB 17-250 – Stahlpaket | PRISTEEL');
+assert.equal(ms.subject,'VOB 17-250 · VE 4-3060 – Haus IV – Stahlbau-/Schlosserarbeiten | PRISTEEL');
 assert.equal(ms.offer_model,'fabricated_steel_package');
 assert.equal(ms.company_role,'unknown');
 assert.equal(ms.recipient_role,'functional_procurement');
-assert.deepEqual(ms.selected_public_facts,['Projekt VOB 17-250 in Stralsund · Stahlbau-/Schlosserumfang']);
-assert.match(ms.plain_body,/VOB 17-250 in Stralsund/);
-assert.match(ms.plain_body,/technische und kaufmännische Abwicklung aus einer Hand/);
+assert.match(ms.selected_public_facts.join(' '),/VE 4-3060/);
+assert.match(ms.plain_body,/VOB 17-250 · VE 4-3060 · Haus IV · Stahlbau-\/Schlosserarbeiten/);
+assert.match(ms.plain_body,/Geländer, Handläufe, Unterkonstruktionen der Lernbalkone/);
+assert.match(ms.plain_body,/freigegebenen Zeichnungen/);
 assert.match(ms.plain_body,/Südosteuropa/);
 assert.match(ms.plain_body,/ProCredit Bank/);
-assert.doesNotMatch(ms.plain_body,/Zu Ihrem Unternehmensprofil|unknown|Baustelleneinrichtung|Werkplanung und Statik|Unterkonstruktion Lernbalkone|Bitte leiten Sie|Prepare a draft|do not send/i);
+assert.doesNotMatch(ms.plain_body,/Zu Ihrem Unternehmensprofil|unknown|Baustelleneinrichtung|Werkplanung und Statik|Bitte leiten Sie|Prepare a draft|do not send/i);
 assert(copyWords(ms)>=90&&copyWords(ms)<=160,`M+S copy should be 90–160 words, got ${copyWords(ms)}`);
 noBodyBold(ms);
+
+// Same umbrella project, different winner and package must produce materially different copy.
+const schDescription='Im Zuge der Modernisierungsarbeiten am Haus II auf dem Berufsschulcampus Stralsund sind Innentüren Metall auszuführen: - BE, Werk- und Montageplanung, sonstiges - Abbrucharbeiten Stahlblechtüren Bestand - Innentüren - Sonstiges';
+const schAction={route:'TED_GENERAL',target_company:'Stahl- und Metallbau Schröder GmbH',target_email:'info@stahl-metallbau-schroeder.de',tender_title:'Germany – Installation of doors and windows and related components – VOB 17-25O Errichtung eines Berufsschulcampus BA 1; VE 2-3080 Haus II Innentüren Metall',pristeel_offer_model:'fabricated_steel_package',personalization_facts:[schDescription,'221187 EUR'],payload:{company_type:'unknown',outreach_readiness_v1:{scope_evidence:schDescription}}};
+const sch=buildTedDraftContent(schAction,{title:schAction.tender_title,payload:{description:schDescription},winner:{name:schAction.target_company,country:'DEU',company_type:'unknown'}},{email:schAction.target_email});
+assert.equal(sch.subject,'VOB 17-250 · VE 2-3080 – Haus II – Metall-Innentüren | PRISTEEL');
+assert.notEqual(sch.subject,ms.subject);
+assert.notEqual(sch.plain_body,ms.plain_body);
+assert.match(sch.plain_body,/VE 2-3080 · Haus II · Metall-Innentüren/);
+assert.match(sch.plain_body,/Rückbau bestehender Stahlblechtüren/);
+assert.doesNotMatch(sch.plain_body,/Geländer|Handläufe|Lernbalkone|VE 4-3060/);
+assert.equal(sch.company_role,'unknown');
+assert.match(sch.offer_reason,/not yet verified/i);
+assert.ok(sch.missing_facts.length>=2);
 
 // 2. CYTA project group: no database-style award narration.
 const cyta=buildTedDraftContent({route:'TED_CONSORTIUM',target_company:'CYTA',target_email:'andreas.makris@cyta.com.cy',tender_title:'Cyprus – Electrical machinery – Athalassa, Anatoliko and FIZ battery storage projects',pristeel_offer_model:'fabricated_steel_package',personalization_facts:['CYTA is identified in the award information.']},{title:'Cyprus – Electrical machinery – Athalassa, Anatoliko and FIZ battery storage projects',winner:{name:'CYTA',country:'CYP',company_type:'trader_consortium'}},{email:'andreas.makris@cyta.com.cy',name:'Mr. Antreas Makris'});
 assert.equal(cyta.offer_model,'fabricated_steel_package');
-assert.match(cyta.subject,/Athalassa \/ Anatoliko \/ FIZ – steel package/);
+assert.match(cyta.subject,/Athalassa \/ Anatoliko \/ FIZ – battery-storage steel scope/);
 assert.match(cyta.plain_body,/Athalassa, Anatoliko, FIZ battery storage projects/);
 assert.match(cyta.plain_body,/take full responsibility for a clearly defined steel package/);
 assert.match(cyta.plain_body,/You remain in control of the project/);
@@ -69,7 +84,7 @@ const long=buildTedDraftContent({...msAction,personalization_facts:[longDescript
 assert(copyWords(long)<=160,`long-input copy should remain short, got ${copyWords(long)} words`);
 assert.doesNotMatch(long.plain_body,/Legal procurement boilerplate|Item A|Baustelleneinrichtung/);
 
-for(const d of [ms,cyta,fabricator,material,future,long]){
+for(const d of [ms,sch,cyta,fabricator,material,future,long]){
  assert.equal(d.body,d.plain_body);
  assert.equal(d.copy_policy_version,COPY_POLICY_VERSION);
  assert.ok(d.subject&&d.plain_body&&d.html_body&&d.offer_model&&d.company_role&&d.recipient_role);
