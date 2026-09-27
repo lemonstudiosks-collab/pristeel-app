@@ -21,7 +21,7 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_relationship']);
+const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_relationship', 'eu_direct_target']);
 const ALLOWED_EVIDENCE = new Set(['unverified', 'observed', 'verbal', 'documented', 'confirmed']);
 const ALLOWED_FACT_STATUS = new Set(['observed', 'suggested']);
 const ALLOWED_BUSINESS_TYPES = new Set(['trading', 'fabrication', 'hybrid']);
@@ -64,6 +64,12 @@ const REPRESENTATION_RELATIONSHIP_FIELDS = new Set([
   'related_company_country','relationship_type','relationship_status','project_or_tender',
   'project_reference','relationship_scope','verification_status','evidence','source_name',
   'source_url','last_verified_at','notes',
+]);
+const EU_DIRECT_TARGET_FIELDS = new Set([
+  'source_key','company_name','company_domain','company_website','country','country_code','company_type',
+  'business_scope','why_relevant','evidence','source_name','source_url','discovery_source','priority_score',
+  'contact_name','contact_role','contact_email','contact_source_url','do_not_contact','next_action',
+  'next_action_due','notes','last_verified_at',
 ]);
 
 function text(v: unknown, max = 4000) {
@@ -569,6 +575,51 @@ async function processRepresentationTarget(command: Record<string, string>) {
   return data as Record<string,unknown>;
 }
 
+async function processEuDirectTarget(command: Record<string, string>) {
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 20000) || '{}'); }
+  catch { throw new Error('eu_direct_target value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') {
+    throw new Error('eu_direct_target value_json must be a JSON object');
+  }
+  for (const key of Object.keys(value)) {
+    if (!EU_DIRECT_TARGET_FIELDS.has(key)) {
+      throw new Error(`eu_direct_target field not allowed: ${text(key,120)}`);
+    }
+  }
+  if (!text(value?.company_name,500)) throw new Error('company_name is required');
+  if (!text(value?.company_domain,500) && !text(value?.company_website,500)) throw new Error('company_domain or company_website is required');
+  if (!/^[A-Za-z]{2}$/.test(text(value?.country_code,10))) throw new Error('country_code ISO2 is required');
+
+  const commandId = text(command.command_id,160);
+  const payload: Record<string,unknown> = {};
+  for (const key of EU_DIRECT_TARGET_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(value,key)) payload[key]=value[key];
+  }
+  const metadata = {
+    transport:'command_sheet',
+    sheet_row:Number(command._row || 0) || null,
+    requested_by:text(command.requested_by,240) || null,
+    source_ref:text(command.source_ref,500) || `chatgpt-command:${commandId}`,
+  };
+  const { data,error } = await db.rpc('pppp_chatgpt_register_eu_direct_target_v1',{
+    p_command_id:commandId,
+    p_payload:payload,
+    p_source:'chatgpt',
+    p_metadata:metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.target_id)) {
+    throw new Error('eu_direct_target did not return a valid target_id');
+  }
+  if (data.project_created !== false || data.partner_created !== false || data.contact_created !== false ||
+      data.outbound_created !== false || data.external_email_sent !== false ||
+      data.human_email_approval_required !== true) {
+    throw new Error('eu_direct_target response did not preserve protected boundaries');
+  }
+  return data as Record<string,unknown>;
+}
+
 async function processRepresentationRelationship(command: Record<string, string>) {
   let value: any = {};
   try { value = JSON.parse(text(command.value_json, 20000) || '{}'); }
@@ -656,6 +707,7 @@ async function reconcile(limit = 50) {
       else if (actionType === 'dach_steel_outreach_draft') result = await processDachSteelOutreachDraft(command);
       else if (actionType === 'representation_target') result = await processRepresentationTarget(command);
       else if (actionType === 'representation_relationship') result = await processRepresentationRelationship(command);
+      else if (actionType === 'eu_direct_target') result = await processEuDirectTarget(command);
       else result = await processCreateProject(command);
       resultProjectId = validUuid(result?.project_id) || resultProjectId;
       await markReceipt(command, 'succeeded', result, attempts, resultProjectId);
@@ -678,7 +730,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'POST') try { body = await req.json(); } catch {}
     const limit = Number(u.searchParams.get('limit') || body.limit || 50);
     const result = await reconcile(limit);
-    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v8', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
+    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v9', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: text((e as any)?.message || e, 1200) }), { status: 500, headers: cors });
   }
