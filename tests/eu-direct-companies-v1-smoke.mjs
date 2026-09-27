@@ -13,6 +13,16 @@ assert.match(ui,/Kompanitë EU/,'Albanian EU Companies title missing');
 assert.match(ui,/Kthehu/,'minimal back control missing');
 assert.match(ui,/Kërko kompani/,'minimal search control missing');
 assert.match(ui,/Rifresko/,'minimal refresh control missing');
+assert.match(ui,/pst-eu-companies-nav-v1/,'EU Direct must be present in the desktop sidebar');
+assert.match(ui,/pst-morning-lane eu-direct/,'EU Direct home card must be a first-class morning-lane module');
+assert.match(ui,/data-eu-stage/,'EU Direct stage pipeline missing');
+assert.match(ui,/Për veprim/,'EU Direct action queue missing');
+assert.match(ui,/Hap draftin/,'existing Gmail draft action missing');
+assert.match(ui,/Hap bisedën/,'existing Gmail thread action missing');
+assert.match(ui,/Readiness/,'company intelligence readiness surface missing');
+assert.match(ui,/Kontrollo duplikimin/,'new-company identity preflight missing');
+assert.match(ui,/Përgatit kërkesën për PPPP/,'controlled new-target handoff missing');
+assert.match(ui,/v2-operational-workbench/,'EU Direct workbench version marker missing');
 assert.doesNotMatch(ui,/sendMail|messages\/send|dërgo email|create_project|insert\s+into/i,'EU Companies UI must not send email or create business records');
 
 const loads=(bootstrap.match(/pristeel-eu-companies-v1\.js/g)||[]).length;
