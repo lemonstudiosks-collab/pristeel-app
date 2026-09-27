@@ -12,6 +12,8 @@ const contactResolutionFix = fs.readFileSync('supabase/live-migration-history/20
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 const draftRecovery = fs.readFileSync('supabase/migrations/20260926193000_material_trade_draft_recovery_v1.sql','utf8');
 const completeFlow = fs.readFileSync('supabase/migrations/20260927153000_steel_buyers_multicontact_followup_v1.sql','utf8');
+const intelligence = fs.readFileSync('supabase/live-migration-history/20260927163000_material_trade_intelligence_unification_v1.sql','utf8');
+const defaultsUnification = fs.readFileSync('supabase/live-migration-history/20260927164000_material_trade_defaults_contact_unification_v1.sql','utf8');
 
 assert.match(ui,/BLERËSIT E ÇELIKUT · EUROPE/,'Home card must expose the Steel Buyers scope');
 assert.match(ui,/<h1>Blerësit e çelikut<\/h1>/,'Steel Buyers page must use the final Albanian name');
@@ -43,12 +45,12 @@ assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo proj
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
 assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260927-steel-buyers-flow1/,'runtime must cache-bust the Steel Buyers module');
 
-assert.match(edge,/pppp-dach-steel-draft-generator-v19-steel-buyers-complete-flow/,'Edge source must carry the complete Steel Buyers flow version');
+assert.match(edge,/pppp-dach-steel-draft-generator-v20-intelligence-unified/,'Edge source must carry the unified Material Trade intelligence version');
 assert.match(edge,/async function buyerPreview/,'visible preview must come from the canonical Edge copy engine');
 assert.match(edge,/async function followupDraft/,'Steel Buyers must support a human-created follow-up draft');
 assert.match(edge,/function contactCandidates/,'Steel Buyers must expose verified contacts separately');
 assert.match(edge,/tg=await qualifyTarget\(tg,/,'buyer draft must qualify legacy bridge targets during the same click');
-assert.match(edge,/canonical_contact_email:contact\?\.email\|\|null/,'qualification must persist the canonical buyer contact before drafting');
+assert.match(edge,/pppp_dach_steel_refresh_intelligence_v1/,'buyer qualification must persist the canonical intelligence state before drafting');
 assert.match(ui,/outreach_engine_version,workflow_state,outreach_motion,company_fit_score/,'UI must load V2 readiness fields instead of presenting legacy targets as ready blindly');
 assert.match(ui,/Kompanitë e kontaktuara”; dërgimi mbetet manual/,'successful draft creation must give visible lifecycle feedback');
 assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read the TED/tender table');
@@ -68,7 +70,7 @@ assert.match(edge,/gmail_thread_already_linked_to_project/,'Promotion must block
 assert.match(edge,/match_method:"material_trade_promotion"/,'Promotion must link the buyer thread into project_emails');
 assert.match(edge,/match_confidence:100/,'Promoted Gmail thread links must be exact/high-confidence');
 assert.match(edge,/pppp_global_communication_guard_v1/,'buyer outreach must use the shared global communication guard');
-assert.match(edge,/pppp_dach_steel_contact_resolution_v1/,'buyer contact resolution must remain canonical');
+assert.match(edge,/pppp_dach_steel_contact_intelligence_v1/,'buyer contact resolution must use the unified Material Trade intelligence wrapper');
 assert.match(ui,/rfqUnlocked=!!S\(r\.project_id\)&&lifecycle\(r\)==='replied'/,'Material Trade must unlock supplier RFQ only after buyer reply and Project promotion');
 assert.match(ui,/RFQ pas reply → Project/,'cold Material Trade targets must show supplier RFQ as locked');
 assert.match(ui,/vetëm discovery\/read-only i furnitorëve/,'Material Trade supplier discovery must remain read-only before client signal');
@@ -118,5 +120,14 @@ assert.match(completeFlow,/source_touch_recipient_uq/,'multi-contact outbound id
 assert.match(completeFlow,/touch_no=2/,'follow-up source guard must validate touch two');
 assert.match(completeFlow,/interval '7 days'/,'follow-up must not become due before seven days');
 assert.match(completeFlow,/security_invoker = true/,'follow-up view must preserve caller RLS');
+assert.match(intelligence,/pppp_dach_steel_contact_grade_v1/,'Material Trade must have one canonical contact grader');
+assert.match(intelligence,/official_company_fallback/,'verified same-domain corporate mailboxes must remain valid fallbacks');
+assert.match(intelligence,/pppp_dach_steel_target_intelligence_v1/,'Material Trade must calculate one canonical target intelligence profile');
+assert.match(intelligence,/intelligence_gaps/,'Material Trade intelligence must expose targeted enrichment gaps');
+assert.match(intelligence,/pppp_dach_steel_refresh_intelligence_trg/,'new or enriched targets must refresh intelligence incrementally');
+assert.match(intelligence,/workflow_state='ready_for_outreach'/,'home summary must use the same real outreach gate as the draft engine');
+assert.match(defaultsUnification,/pppp_dach_steel_contact_grade_v1/,'target defaults trigger must use the same canonical contact grader');
+assert.match(ui,/intelligence_profile,intelligence_refreshed_at/,'Steel Buyers UI must load the canonical intelligence profile');
+assert.match(ui,/Inteligjenca PPPP/,'Steel Buyers UI must surface intelligence to the operator');
 
 console.log('Material Trade automation contract smoke: PASS');
