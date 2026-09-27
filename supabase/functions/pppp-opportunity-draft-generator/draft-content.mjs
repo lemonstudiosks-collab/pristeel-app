@@ -182,6 +182,30 @@ function projectIntro(language,title,rdata){
   if(language==='bcs')return specific?'Javljam Vam se u vezi sa projektom „'+title+'“. '+specific:'Javljam Vam se u vezi sa projektom „'+title+'“.';
   return specific?'I am contacting you regarding “'+title+'”. '+specific:'I am contacting you regarding “'+title+'”.';
 }
+function recipientRole(recipient={}){
+  const s=norm(first(recipient?.job_title,recipient?.role,recipient?.purpose));
+  if(/procurement|purchas|einkauf|sourcing|beschaffung|tender|vergabe/.test(s))return'procurement';
+  if(/project|projekt|construction|bauleit/.test(s))return'project';
+  if(/technical|technik|engineer|engineering|konstruk/.test(s))return'technical';
+  if(/production|produktion|operation|manufactur|fertigung/.test(s))return'production';
+  if(/commercial|sales|verkauf|business development|kaufm/.test(s))return'commercial';
+  if(/director|managing|geschafts|chief|ceo|owner/.test(s))return'management';
+  return'general';
+}
+function roleSpecificLine(language,recipient){
+  const role=recipientRole(recipient),all={
+    de:{procurement:'Für Ihre Einkaufsfunktion können wir RFQ, Materialliste oder Stückliste als ein koordiniertes Paket bearbeiten.',project:'Für die Projektleitung bieten wir einen klar abgegrenzten Verantwortungsbereich mit einem Ansprechpartner bis zur Lieferung.',technical:'Für die technische Abstimmung arbeiten wir direkt auf Basis von Zeichnungen, Spezifikationen, Normen und Qualitätsdokumentation.',production:'Für die Produktionsplanung können wir zusätzliche Build-to-Print-Kapazität für klar definierte Pakete bereitstellen.',commercial:'Für die kaufmännische Abstimmung bündeln wir Preis, Leistungsumfang, Dokumentation und DAP-Lieferung in einem Angebot.',management:'Auf Managementebene bieten wir einen verantwortlichen Partner für klar definierte Stahlpakete.',general:'Bitte leiten Sie diese Nachricht an die für Stahlpakete, Einkauf oder Projektabwicklung zuständige Person weiter.'},
+    bcs:{procurement:'Za Vašu funkciju nabavke možemo obraditi RFQ, listu materijala ili BOM kao jedan koordiniran paket.',project:'Za upravljanje projektom nudimo jasno definisan opseg odgovornosti i jednu kontakt tačku do isporuke.',technical:'Za tehničko usaglašavanje radimo prema nacrtima, specifikacijama, standardima i dokumentaciji kvaliteta.',production:'Za planiranje proizvodnje možemo obezbijediti dodatni build-to-print kapacitet za jasno definisane pakete.',commercial:'Za komercijalno usaglašavanje objedinjujemo cijenu, opseg, dokumentaciju i DAP isporuku u jednoj ponudi.',management:'Na nivou uprave nudimo jednog odgovornog partnera za jasno definisane čelične pakete.',general:'Molimo Vas da ovu poruku proslijedite osobi zaduženoj za čelične pakete, nabavku ili realizaciju projekta.'},
+    en:{procurement:'For your procurement function, we can process an RFQ, material list or BOM as one coordinated package.',project:'For project management, we offer a clearly defined scope of responsibility with one point of contact through delivery.',technical:'For technical coordination, we work from drawings, specifications, standards and the required quality documentation.',production:'For production planning, we can provide additional build-to-print capacity for clearly defined packages.',commercial:'For commercial coordination, we consolidate price, scope, documentation and DAP delivery in one offer.',management:'At management level, we provide one accountable partner for clearly defined steel packages.',general:'Please forward this message to the person responsible for steel packages, procurement or project delivery.'}
+  };
+  return(all[language]||all.en)[role];
+}
+function companySpecificLine(language,rdata){
+  const fact=outwardText(rdata?.company_fact,800);if(!fact)return'';
+  if(language==='de')return'Zu Ihrem Unternehmensprofil: '+fact;
+  if(language==='bcs')return'U vezi sa profilom Vaše kompanije: '+fact;
+  return'Regarding your company profile: '+fact;
+}
 function routedOfferCopy(language,offerModel,title,rdata){
   const p=shortProject(title),intro=projectIntro(language,title,rdata),cred=credibilityLine(language,offerModel);
   if(offerModel==='external_production_capacity'){
@@ -226,6 +250,11 @@ function routedOfferCopy(language,offerModel,title,rdata){
       paras:[intro,'For future steel packages, PRISTEEL can act as one technical and commercial point of responsibility for clearly defined scopes.',cred,'Who handles qualification of future partners for steel packages?']
     };
   }
+  if(offerModel==='consortium_local_partner'){
+    if(language==='de')return{subject:'Projekt '+p+' – lokaler Stahlpartner | PRISTEEL',paras:[intro,'PRISTEEL kann als lokaler Umsetzungs- und Fertigungspartner für klar abgegrenzte Stahlpakete innerhalb des Projekt- oder Konsortiumsumfangs agieren.',cred,'Falls ein lokaler Partner für Fertigung, Dokumentation oder koordinierte Lieferung benötigt wird, stimmen wir den konkreten Paketumfang gerne mit Ihnen ab.']};
+    if(language==='bcs')return{subject:'Projekt '+p+' – lokalni partner za čelik | PRISTEEL',paras:[intro,'PRISTEEL može djelovati kao lokalni partner za realizaciju i proizvodnju jasno definisanih čeličnih paketa unutar projekta ili konzorcija.',cred,'Ako je potreban lokalni partner za proizvodnju, dokumentaciju ili koordiniranu isporuku, rado ćemo usaglasiti konkretan opseg paketa.']};
+    return{subject:'Project '+p+' – local steel partner | PRISTEEL',paras:[intro,'PRISTEEL can act as a local delivery and fabrication partner for clearly defined steel packages within the project or consortium scope.',cred,'If a local partner is required for fabrication, documentation or coordinated delivery, we would be glad to align on the specific package scope.']};
+  }
   if(language==='de')return{
     subject:'Projekt '+p+' – ein Partner für das Stahlpaket | PRISTEEL',
     paras:[intro,'PRISTEEL kann die vollständige Verantwortung für ein klar definiertes Stahlpaket übernehmen – von Materialbeschaffung und Build-to-Print-Fertigung über Oberflächenschutz und Qualitätsdokumentation bis zur koordinierten DAP-Lieferung – mit einem technischen und kaufmännischen Ansprechpartner.','Sie behalten die Kontrolle über das Projekt. Wir übernehmen das Stahlpaket von Zeichnungen oder Stückliste bis zur Lieferung.',cred,'Wenn Sie ein konstruktives oder gefertigtes Stahlpaket lieber an einen externen Partner vergeben möchten, senden Sie uns die Zeichnungen oder Stückliste – wir übernehmen die weitere Abwicklung.']
@@ -244,6 +273,7 @@ function resolveOfferModel(action,role){
   const motion=txt(action?.outreach_motion,80),route=txt(action?.route,80).toUpperCase(),stored=txt(action?.pristeel_offer_model,80),timing=txt(action?.timing_classification,80);
   if(motion==='future_supplier_qualification'||timing==='future_supplier_qualification'||stored==='future_supplier_qualification')return'future_supplier_qualification';
   if(route==='DIRECT_RAW_MATERIAL'||motion==='material_buyer'||stored==='material_supply')return'material_supply';
+  if(route==='TED_CONSORTIUM'||stored==='consortium_local_partner')return'consortium_local_partner';
   if(role==='producer'||route==='TED_PRODUCER'||motion==='external_production_capacity'||stored==='external_production_capacity')return'external_production_capacity';
   if(stored==='fabricated_steel_package')return'fabricated_steel_package';
   return'fabricated_steel_package';
@@ -251,8 +281,12 @@ function resolveOfferModel(action,role){
 
 export function buildTedDraftContent(action={},tender={},recipient={}){
   const language=resolveDraftLanguage(action,tender,recipient),route=txt(action?.route,80),role=roleFor(route),company=txt(action?.target_company,300),ref=tedReference(tender),url=tedUrl(tender),title=cleanProjectTitle(first(action?.tender_title,tender?.title,action?.payload?.project_title),ref)||'the referenced project',kind=recipientKind(recipient),motion=txt(action?.outreach_motion||'awarded_project_gc',80),rdata=readinessData(action,tender);
+  const facts=Array.isArray(action?.personalization_facts)?action.personalization_facts.map(x=>outwardText(x,1000)).filter(Boolean):[];
+  const enriched={...rdata,project_fact:rdata?.project_fact||facts[0]||'',scope_evidence:rdata?.scope_evidence||facts[1]||'',company_fact:rdata?.company_fact||facts[2]||'',company_name:company};
   const offerModel=resolveOfferModel(action,role);
-  const copy=routedOfferCopy(language,offerModel,title,{...rdata,company_name:company});
+  let copy=routedOfferCopy(language,offerModel,title,enriched);
+  const roleLine=roleSpecificLine(language,recipient),companyLine=companySpecificLine(language,enriched);
+  copy={...copy,paras:[copy.paras[0],companyLine,roleLine,...copy.paras.slice(1)].filter(Boolean)};
   const greet=greeting(language,company,recipient),close=closing(language),paras=copy.paras.filter(Boolean);
   const body=[greet,...paras,close,SIGNATURE].filter(Boolean).join('\n\n');
   const htmlBody='<div dir="ltr" style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#202124">'+htmlParagraph(greet)+paras.map(htmlParagraph).join('')+'<p style="margin:0">'+esc(close)+'</p>'+SIGNATURE_HTML+'</div>';

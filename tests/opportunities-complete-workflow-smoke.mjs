@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read=p=>fs.readFileSync(p,'utf8');
+const ui=read('pristeel-tender-priority-actions-v1.js');
+const desk=read('pristeel-opportunities-filter-polish-v1.js');
+const intel=read('pristeel-opportunity-intelligence-v1.js');
+const generator=read('supabase/functions/pppp-opportunity-draft-generator/index.ts');
+const followup=read('supabase/functions/pppp-opportunity-followup-v1/index.ts');
+const sync=read('supabase/functions/pppp-opportunity-outreach-sent-sync/index.ts');
+const sql=read('supabase/migrations/20260927090000_opportunities_complete_workflow_v1.sql');
+
+assert.match(ui,/preview_ready/);
+assert.match(ui,/human_approved:true/);
+assert.ok(ui.indexOf('reviewDraftPreviews')<ui.indexOf('human_approved:true'),'approval must follow preview review');
+assert.match(desk,/data-pst-opportunity-intelligence/);
+assert.match(intel,/pppp_opportunity_company_workspace_v1/);
+assert.match(intel,/300000/,'workspace reads are cached');
+assert.match(generator,/previewOnly/);
+assert.match(generator,/company_fact/);
+assert.match(generator,/personalization_facts/);
+assert.match(followup,/followup_suppressed_after_recheck/);
+assert.match(followup,/human_approved/);
+assert.doesNotMatch(followup,/messages\/send/,'follow-up function must never send email');
+assert.match(sync,/inboundKind/);
+assert.match(sync,/replied_at/);
+assert.match(sync,/out_of_office_until/);
+for(const table of ['pppp_opportunity_company_profiles_v1','pppp_opportunity_company_assessments_v1','pppp_opportunity_contacts_v1','pppp_opportunity_followups_v1'])assert.match(sql,new RegExp(`create table if not exists public\\.${table}`));
+assert.match(sql,/gmail_auto_send boolean not null default false check\(gmail_auto_send=false\)/);
+assert.match(sql,/gmail_drafts_created',0,'emails_sent',0/);
+console.log('opportunities complete workflow smoke: ok');

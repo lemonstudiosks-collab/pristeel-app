@@ -108,7 +108,7 @@ const internalInstructionLeak=buildTedDraftContent(
 assert.equal(internalInstructionLeak.language,'en');
 assert.match(internalInstructionLeak.body,/I am contacting you regarding/i,'fallback copy must open naturally with the project instead of internal or database language');
 assert.doesNotMatch(internalInstructionLeak.body,/published award information|identified in the award information/i,'database-style award narration must not appear in external copy');
-assert.match(internalInstructionLeak.body,/We take ownership of the steel package from drawings or BOM through to delivery\./i,'fabricated-package positioning must be ownership-led');
+assert.match(internalInstructionLeak.body,/local delivery and fabrication partner for clearly defined steel packages/i,'consortium route must use the local-partner positioning');
 assert.doesNotMatch(internalInstructionLeak.body,/Përgatit draft|mos e dërgo|Draft vetëm|outreach/i,'internal PPPP instructions must never leak into external email copy');
 assert.doesNotMatch(internalInstructionLeak.html_body,/Përgatit draft|mos e dërgo|Draft vetëm|outreach/i,'internal PPPP instructions must never leak into HTML email copy');
 

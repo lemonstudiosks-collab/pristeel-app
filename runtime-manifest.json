@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "c420c3b6a064d0ec499eaf91f741b3213ff7ceab"
+    "bootstrapGitBlobSha": "2025e68ab5c966ac66185841d528ea67e15c695e"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -150,6 +150,7 @@
         "pristeel-tender-winner-contacts-v1.js",
         "pristeel-operating-experience-v1.js",
         "pristeel-tender-priority-actions-v1.js",
+        "pristeel-opportunity-intelligence-v1.js",
         "pristeel-project-centric-workflow-v1.js",
         "pristeel-tender-dossier-analysis-v1.js",
         "pristeel-tender-supplier-sourcing-v1.js"
@@ -403,8 +404,13 @@
     },
     {
       "before": "pristeel-tender-priority-actions-v1.js",
+      "after": "pristeel-opportunity-intelligence-v1.js",
+      "reason": "The company/tender workspace consumes the canonical tender priority and draft adapter."
+    },
+    {
+      "before": "pristeel-opportunity-intelligence-v1.js",
       "after": "pristeel-home-operating-grid-v1.js",
-      "reason": "Home priority rendering consumes the tender priority adapter."
+      "reason": "Home priority rendering installs after the opportunity intelligence workspace."
     },
     {
       "before": "pristeel-home-operating-grid-v1.js",
