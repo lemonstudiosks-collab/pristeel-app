@@ -9,9 +9,14 @@ const generator=read('supabase/functions/pppp-opportunity-draft-generator/index.
 const followup=read('supabase/functions/pppp-opportunity-followup-v1/index.ts');
 const sync=read('supabase/functions/pppp-opportunity-outreach-sent-sync/index.ts');
 const sql=read('supabase/migrations/20260927090000_opportunities_complete_workflow_v1.sql');
+const contactFix=read('supabase/migrations/20260927135433_opportunity_ted_contact_action_core_v1.sql');
+const contactBackfill=read('supabase/migrations/20260927135500_opportunity_ted_contact_backfill_v1.sql');
 
 assert.match(ui,/preview_ready/);
 assert.match(ui,/human_approved:true/);
+assert.match(ui,/rpc\/pppp_ted_contact_candidates_v1/,'TED contact lookup must use the canonical read RPC');
+assert.match(ui,/rpc\/pppp_ensure_ted_opportunity_action_v1/,'missing TED action must be created by the controlled server RPC');
+assert.doesNotMatch(ui,/pppp_opportunity_actions\?on_conflict=action_key','POST'/,'browser must not insert directly into pppp_opportunity_actions');
 assert.ok(ui.indexOf('reviewDraftPreviews')<ui.indexOf('human_approved:true'),'approval must follow preview review');
 assert.match(desk,/data-pst-opportunity-intelligence/);
 assert.match(intel,/pppp_opportunity_company_workspace_v1/);
@@ -28,4 +33,10 @@ assert.match(sync,/out_of_office_until/);
 for(const table of ['pppp_opportunity_company_profiles_v1','pppp_opportunity_company_assessments_v1','pppp_opportunity_contacts_v1','pppp_opportunity_followups_v1'])assert.match(sql,new RegExp(`create table if not exists public\\.${table}`));
 assert.match(sql,/gmail_auto_send boolean not null default false check\(gmail_auto_send=false\)/);
 assert.match(sql,/gmail_drafts_created',0,'emails_sent',0/);
+assert.match(contactFix,/create or replace function public\.pppp_ted_contact_candidates_v1/);
+assert.match(contactFix,/create or replace function public\.pppp_ensure_ted_opportunity_action_v1/);
+assert.match(contactFix,/trg_pppp_sync_ted_contacts_after_assessment_v1/);
+assert.match(contactFix,/gmail_drafts_created',0,'emails_sent',0/,'ensure RPC must never create or send mail');
+assert.match(contactFix,/revoke all on function public\.pppp_ensure_ted_opportunity_action_v1\(uuid\) from public,anon/);
+assert.match(contactBackfill,/distinct on \(s\.company_profile_id,c\.email\)/,'backfill must deduplicate company/email before upsert');
 console.log('opportunities complete workflow smoke: ok');
