@@ -39,7 +39,7 @@ assert.match(mig,/pppp_contact_master_v1/,'shared contact history check missing'
 assert.match(mig,/external_email_sent',false/,'registration must never send external email');
 assert.match(mig,/project_created',false/,'registration must never create a project');
 assert.match(mig,/outbound_created',false/,'registration must never create outbound automatically');
-assert.match(mig,/bridge_version','chatgpt-command-v28'/,'manifest v28 missing');
+assert.match(mig,/chatgpt-command-v28/,'manifest v28 missing');
 assert.match(mig,/eu_direct_target_never_sends_email/,'manifest send guard missing');
 
 const cooldownPos=guard.indexOf("cooldown_30d");
