@@ -31,10 +31,10 @@ assert.match(ui,/function hasOutboundHistory\(r\)/,'Contacted history must be de
 assert.match(ui,/contacted=all\.filter\(hasOutboundHistory\)/,'Contacted card must include canonical outbound history, including legacy target identities');
 assert.doesNotMatch(ui,/contactedSorted\.slice\(0,12\)/,'Contacted card must not silently truncate older contacted companies');
 assert.match(ui,/\['HR','ME','RS'\]/,'UI buyer language routing must use BCS for HR/ME/RS');
-assert.match(ui,/Dodatni izvor nabavke čeličnog materijala/,'UI must include BCS outreach copy');
+assert.doesNotMatch(ui,/Dodatni izvor nabavke čeličnog materijala/,'UI must not carry an independent legacy BCS copy generator');
 assert.match(ui,/data-dss-action="promote-project"/,'Reply/RFQ stage must expose project promotion');
 assert.match(ui,/confirm_project_create:true/,'Project promotion must require explicit UI confirmation');
-assert.match(ui,/Additional steel material supply source/,'non-project EU buyer copy must not invent a project');
+assert.doesNotMatch(ui,/Additional steel material supply source/,'UI must not carry an independent legacy English copy generator');
 assert.match(ui,/obj\.claim/,'Material Trade UI must parse contact emails stored in evidence.claim');
 assert.match(ui,/r&&r\.canonical_contact_email/,'Material Trade UI must reuse the canonical resolved contact after reload');
 assert.match(ui,/Kontakti për blerje/,'Expanded buyer detail must surface purchasing contact prominently');
@@ -43,9 +43,9 @@ assert.match(ui,/outboundRowsByTarget/,'UI must preserve separate outbound histo
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260927-steel-buyers-intelligence1/,'runtime must cache-bust the unified Steel Buyers intelligence module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260927-material-copy-v4/,'runtime must cache-bust the canonical Material copy module');
 
-assert.match(edge,/pppp-dach-steel-draft-generator-v20-intelligence-unified/,'Edge source must carry the unified Material Trade intelligence version');
+assert.match(edge,/pppp-dach-steel-draft-generator-v21-canonical-material-copy-v4/,'Edge source must carry the canonical Material copy version');
 assert.match(edge,/async function buyerPreview/,'visible preview must come from the canonical Edge copy engine');
 assert.match(edge,/async function followupDraft/,'Steel Buyers must support a human-created follow-up draft');
 assert.match(edge,/function contactCandidates/,'Steel Buyers must expose verified contacts separately');
@@ -57,10 +57,10 @@ assert.doesNotMatch(edge,/kek_tender_watch/,'Material Trade Edge must never read
 assert.doesNotMatch(edge,/syncProjectLinks/,'Material Trade lifecycle must not auto-link targets through TED projects');
 assert.doesNotMatch(edge,/tedPublication/,'Material Trade lifecycle must not parse TED publication identities');
 assert.match(edge,/ted_opportunities_touched:false/,'sync result must explicitly preserve the TED boundary');
-assert.match(edge,/Additional steel material supply source/,'EU general material buyer draft copy must exist');
-assert.match(edge,/Zusätzliche Beschaffungsquelle für Stahlmaterial/,'DACH-language material buyer draft copy must exist');
+assert.match(edge,/qualified sources in Southeast Europe/,'EU material-buyer copy must be specific to sourcing and delivery');
+assert.match(edge,/qualifizierten Bezugsquellen in Südosteuropa/,'DACH material-buyer copy must be specific to sourcing and delivery');
 assert.match(edge,/\["HR","ME","RS"\]/,'Edge buyer language routing must use BCS for HR/ME/RS');
-assert.match(edge,/Dodatni izvor nabavke čeličnog materijala/,'Edge must include BCS buyer draft copy');
+assert.match(edge,/kvalifikovanih izvora u Jugoistočnoj Evropi/,'Edge must include canonical BCS material-buyer copy');
 assert.match(edge,/async function promoteProject/,'Edge must implement project promotion');
 assert.match(edge,/buyer_reply_required_before_project_promotion/,'Project promotion must require canonical buyer reply evidence');
 assert.match(edge,/p_business_type:"trading"/,'Promoted Material Trade projects must be trading projects');
