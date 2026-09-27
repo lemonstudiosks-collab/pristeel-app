@@ -7,7 +7,7 @@
 if(window.__pstMobileAppV2)return;
 window.__pstMobileAppV2=true;
 
-var VERSION='20260926-mobile-app9-inbox-links1';
+var VERSION='20260927-mobile-app10-eu-direct1';
 var ROOT='pst-mobile-app-v2';
 var NAV='pst-mobile-app-v2-nav';
 var UTIL='pst-mobile-app-v2-util';
@@ -18,7 +18,7 @@ var scheduleTimer=0,homeRenderTimer=0;
 var state={
   tab:'home',detail:false,projectQuery:'',discover:'tenders',
   opportunities:[],opportunityIndex:0,oppLoading:false,
-  inboxLoading:false,materialLoading:false,repLoading:false,
+  inboxLoading:false,materialLoading:false,repLoading:false,euLoading:false,
   homeCache:null,homeCacheAt:0,scrollByTab:{home:0,projects:0,discover:0,inbox:0},
   plusOpen:false,moreOpen:false,
   nativeProjectId:'',projectReturnTab:'projects',
@@ -269,6 +269,7 @@ function mobileRoute(key){enterDetail(function(){var M=window.PSTMobileResponsiv
 function openTender(id){enterDetail(function(){var X=window.PSTProjectCentricWorkflowV1;if(X&&typeof X.openTender==='function')return X.openTender(id);if(typeof window.pstTenderIntelligence==='function')return window.pstTenderIntelligence(id);});}
 function openMaterial(){enterDetail(function(){var D=window.PSTDachSteelSalesV3||window.PSTDachSteelSalesV2||window.PSTDachSteelSalesV1;if(D&&typeof D.open==='function')D.open();});}
 function openRepresentations(){enterDetail(function(){var R=window.PSTRepresentationsV1;if(R&&typeof R.open==='function')R.open();});}
+function openEUCompanies(){enterDetail(function(){var X=window.PSTEUCompaniesV1;if(X&&typeof X.open==='function')X.open();});}
 function priorityItems(){
   var h=homeSnapshot(),out=[];
   h.actions.forEach(function(a){out.push({kind:'action',tag:a.tag||'VEPRO TANI',title:a.title||'Veprim i kërkuar',sub:projectName(a),text:a.why||a.meta||'',id:projectId(a)});});
@@ -353,10 +354,20 @@ function discoverRep(){
   return '<div class="pma-discover-summary"><b>'+E(targets.length)+'</b><span>targete të aprovuara · '+E(opps.length)+' mundësi për screening</span></div>'+targetHtml+oppHtml+
     ((!targets.length&&!feed.length)?'<div class="pma-empty large"><b>Nuk ka të dhëna Përfaqësime.</b><button type="button" data-pma-open-rep>Hap modulin Përfaqësime</button></div>':'');
 }
+function euTypeLabel(v){return({gc_gu:'Kontraktor i përgjithshëm',epc_industrial:'Kontraktor EPC / industrial',industrial_contractor:'Kontraktor industrial',developer:'Zhvillues',manufacturer:'Prodhues',steel_contractor:'Kontraktor çeliku',other_direct_client:'Klient i drejtpërdrejtë'})[S(v)]||'Kompani';}
+function euGuardLabel(v){return({clear:'Pa pengesë',blocked:'Mos kontakto',existing_draft:'Ka draft',cooldown_30d:'Kontaktuar së fundi',routing_review:'Kontrollo modulin tjetër',contacted_before:'Kontaktuar më parë'})[S(v)]||'Për shqyrtim';}
+function discoverEU(){
+  var X=window.PSTEUCompaniesV1,s=X&&typeof X.snapshot==='function'?X.snapshot():{},rows=A(s.rows).filter(function(r){return !r.archived_at;}).slice(0,40);
+  if(state.euLoading&&!rows.length)return '<div class="pma-empty large">Duke lexuar Kompanitë EU…</div>';
+  return '<div class="pma-discover-summary"><b>'+E(rows.length)+'</b><span>kompani për zhvillim direkt në Evropë</span></div><div class="pma-target-feed">'+(rows.length?rows.map(function(r){
+    var meta=[r.country,euTypeLabel(r.company_type)].filter(Boolean).join(' · '),why=r.why_relevant||'Paketa çeliku të fabrikuar, kapacitet prodhues ose nënkontraktim.';
+    return '<button type="button" class="pma-target-card" data-pma-open-eu><div class="pma-target-top"><span>KOMPANI EU</span><em>'+E(euGuardLabel(r.outreach_guard))+'</em></div><h3>'+E(r.company_name||'Kompani')+'</h3><small>'+E(meta)+'</small><p>'+E(short(why,150))+'</p><div><b>'+E(r.contact_email||r.contact_name||'Kontakt për verifikim')+'</b><i>'+icon('chevron')+'</i></div></button>';
+  }).join(''):'<div class="pma-empty large">Nuk ka kompani aktive në këtë modul.</div>')+'</div>';
+}
 function discoverView(){
-  return '<div class="pma-screen">'+header('Discover','Mundësi të reja për PriSteel')+
-    '<div class="pma-discover-tabs"><button data-pma-discover="tenders" class="'+(state.discover==='tenders'?'on':'')+'">Tenderë</button><button data-pma-discover="material" class="'+(state.discover==='material'?'on':'')+'">Material</button><button data-pma-discover="represent" class="'+(state.discover==='represent'?'on':'')+'">Përfaqësime</button></div>'+
-    '<div class="pma-discover-body">'+(state.discover==='material'?discoverMaterial():state.discover==='represent'?discoverRep():discoverTenders())+'</div>'+
+  return '<div class="pma-screen">'+header('Zbulo','Mundësi të reja për PriSteel')+
+    '<div class="pma-discover-tabs"><button data-pma-discover="tenders" class="'+(state.discover==='tenders'?'on':'')+'">Tenderë</button><button data-pma-discover="material" class="'+(state.discover==='material'?'on':'')+'">Material – Ofertë</button><button data-pma-discover="represent" class="'+(state.discover==='represent'?'on':'')+'">Përfaqësime</button><button data-pma-discover="eu" class="'+(state.discover==='eu'?'on':'')+'">Kompanitë EU</button></div>'+
+    '<div class="pma-discover-body">'+(state.discover==='material'?discoverMaterial():state.discover==='represent'?discoverRep():state.discover==='eu'?discoverEU():discoverTenders())+'</div>'+
   '</div>';
 }
 function inboxView(){
@@ -371,7 +382,7 @@ function inboxView(){
     x.gmail_url=r.gmail_url||c.gmail_url||'';
     return x;
   }):canonical,connected=!!s.connected,source=live.length?'Gmail live':'PPPP email sync';
-  return '<div class="pma-screen">'+header('Inbox','Email & komunikim')+
+  return '<div class="pma-screen">'+header('Posta','Email & komunikim')+
     '<div class="pma-inbox-status"><span class="'+(connected?'on':'')+'">'+(connected?'● Gmail i lidhur':'○ Gmail jo i lidhur')+'</span><small>'+E(source)+(rows.length?' · '+rows.length+' thread-e':'')+'</small></div>'+
     '<div class="pma-inbox-tools"><button type="button" data-pma-inbox-refresh>'+icon('mail')+'<span><b>'+E(state.inboxLoading?'Duke ngarkuar…':connected?'Rifresko Gmail':'Lidhu me Gmail')+'</b><small>'+E(connected?'Thread-et live + PPPP':'Email-et e sinkronizuara janë poshtë')+'</small></span></button><button type="button" data-pma-classic-inbox>Hap Inbox-in e plotë</button></div>'+
     (s.error?'<div class="pma-inline-error">'+E(s.error)+'</div>':'')+
@@ -416,6 +427,7 @@ function moreSheet(){
     '<button data-pma-secondary="finance">'+icon('finance')+'<span><b>Financat</b><small>Fatura, garanci, arkëtim</small></span><i>›</i></button>'+
     '<button data-pma-open-material>'+icon('chart')+'<span><b>Material Trade</b><small>Blerësit e materialit</small></span><i>›</i></button>'+
     '<button data-pma-open-rep>'+icon('building')+'<span><b>Përfaqësime</b><small>Prodhuesit & marrëdhëniet</small></span><i>›</i></button>'+
+    '<button data-pma-open-eu>'+icon('building')+'<span><b>Kompanitë EU</b><small>Klientë të drejtpërdrejtë në Evropë</small></span><i>›</i></button>'+
     '<button data-pma-secondary="apps">'+icon('system')+'<span><b>Sistemi</b><small>Integrime & mjete teknike</small></span><i>›</i></button>'+
     '</div></section></div>';
 }
@@ -446,7 +458,7 @@ function ensureChrome(){
   var nav=document.getElementById(NAV);
   if(!nav){
     nav=document.createElement('nav');nav.id=NAV;nav.setAttribute('aria-label','Navigimi PPPP Mobile');
-    nav.innerHTML='<button data-pma-tab="home">'+icon('home')+'<span>Home</span></button><button data-pma-tab="projects">'+icon('folder')+'<span>Projects</span></button><button class="pma-plus" data-pma-plus aria-label="Krijo">'+icon('plus')+'</button><button data-pma-tab="discover">'+icon('discover')+'<span>Discover</span></button><button data-pma-tab="inbox">'+icon('inbox')+'<span>Inbox</span></button>';
+    nav.innerHTML='<button data-pma-tab="home">'+icon('home')+'<span>Ballina</span></button><button data-pma-tab="projects">'+icon('folder')+'<span>Projektet</span></button><button class="pma-plus" data-pma-plus aria-label="Krijo">'+icon('plus')+'</button><button data-pma-tab="discover">'+icon('discover')+'<span>Zbulo</span></button><button data-pma-tab="inbox">'+icon('inbox')+'<span>Posta</span></button>';
     document.body.appendChild(nav);
   }
   var u=document.getElementById(UTIL);
@@ -512,6 +524,12 @@ async function loadRep(){
   }catch(e){try{console.warn('Mobile Representations',e);}catch(x){}}
   finally{state.repLoading=false;if(state.tab==='discover')render();}
 }
+async function loadEU(){
+  var X=window.PSTEUCompaniesV1;if(!X)return;
+  state.euLoading=true;if(state.tab==='discover')render();
+  try{if(typeof X.refresh==='function')await X.refresh();}catch(e){try{console.warn('Mobile Kompanitë EU',e);}catch(x){}}
+  finally{state.euLoading=false;if(state.tab==='discover')render();}
+}
 function bindPageSwipe(){
   var root=document.getElementById(ROOT),pager=root&&root.querySelector('[data-pma-pager]');
   if(!pager||pager.dataset.swipeBound==='1')return;
@@ -556,7 +574,7 @@ function click(e){
   b=t.closest('[data-pma-project-legacy]');if(b){var pid=state.nativeProjectId;enterDetail(function(){if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(pid);if(typeof window.openOverview==='function')return window.openOverview(pid);var H=window.PSTHomeCanonicalV1;if(H&&typeof H.openBrief==='function')return H.openBrief(pid);});return;}
   b=t.closest('[data-pma-project]');if(b){openProject(b.getAttribute('data-pma-project'));return;}
   b=t.closest('[data-pma-home-refresh]');if(b){try{var H=window.PSTHomeCanonicalV1;if(H&&H.refresh)H.refresh();}catch(x){}setTimeout(render,400);return;}
-  b=t.closest('[data-pma-discover]');if(b){state.discover=b.getAttribute('data-pma-discover');render();if(state.discover==='tenders'&&!state.opportunities.length)loadOpportunities(false);if(state.discover==='material')loadMaterial();if(state.discover==='represent')loadRep();return;}
+  b=t.closest('[data-pma-discover]');if(b){state.discover=b.getAttribute('data-pma-discover');render();if(state.discover==='tenders'&&!state.opportunities.length)loadOpportunities(false);if(state.discover==='material')loadMaterial();if(state.discover==='represent')loadRep();if(state.discover==='eu')loadEU();return;}
   b=t.closest('[data-pma-opp-refresh]');if(b){loadOpportunities(true);return;}
   b=t.closest('[data-pma-opp-action]');if(b){oppAction(b.getAttribute('data-pma-opp-action'),b.getAttribute('data-id'));return;}
   if(t.closest('[data-pma-material-refresh]')){loadMaterial();return;}
@@ -564,6 +582,7 @@ function click(e){
   if(t.closest('[data-pma-open-material]')){state.moreOpen=false;openMaterial();return;}
   b=t.closest('[data-pma-rep-opportunity-url]');if(b){var ru=b.getAttribute('data-pma-rep-opportunity-url');if(ru)window.open(ru,'PRISTEEL_REP_OPPORTUNITY');return;}
   if(t.closest('[data-pma-open-rep]')){state.moreOpen=false;openRepresentations();return;}
+  if(t.closest('[data-pma-open-eu]')){state.moreOpen=false;openEUCompanies();return;}
   b=t.closest('[data-pma-inbox-refresh]');if(b){loadInbox(true,true);return;}
   if(t.closest('[data-pma-classic-inbox]')){mobileRoute('inbox');return;}
   b=t.closest('[data-pma-gmail]');if(b){var u=b.getAttribute('data-pma-gmail');if(u)window.open(u,'PRISTEEL_GMAIL');return;}
