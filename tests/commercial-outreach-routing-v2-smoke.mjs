@@ -5,11 +5,11 @@ const opportunity=fs.readFileSync('supabase/functions/pppp-opportunity-draft-gen
 const material=fs.readFileSync('supabase/functions/pppp-dach-steel-draft-generator/index.ts','utf8');
 const gc=fs.readFileSync('supabase/functions/pppp-gc-outreach/index.ts','utf8');
 
-assert.match(opportunity,/function routedOfferCopy\(/,'Opportunity copy must use an explicit offer-model router');
-assert.match(opportunity,/offerModel==='external_production_capacity'/,'Opportunity router must support external production capacity');
-assert.match(opportunity,/offerModel==='material_supply'/,'Opportunity router must support material supply');
-assert.match(opportunity,/offerModel==='future_supplier_qualification'/,'Opportunity router must support future qualification');
-assert.match(opportunity,/We take ownership of the steel package from drawings or BOM through to delivery\./,'fabricated-package copy must express ownership without questioning client competence');
+assert.match(opportunity,/function offerCopy\(/,'Opportunity copy must use an explicit offer-model router');
+assert.match(opportunity,/model==='external_production_capacity'/,'Opportunity router must support external production capacity');
+assert.match(opportunity,/model==='material_supply'/,'Opportunity router must support material supply');
+assert.match(opportunity,/model==='future_supplier_qualification'/,'Opportunity router must support future qualification');
+assert.match(opportunity,/We take ownership of the steel package from drawings or BOM through delivery\./,'fabricated-package copy must express ownership without questioning client competence');
 assert.match(opportunity,/Southeast Europe/,'Opportunity credibility must identify the Southeast European network');
 assert.match(opportunity,/bank guarantees through ProCredit Bank/,'Opportunity credibility must include bounded bank-guarantee support');
 
@@ -18,8 +18,8 @@ const materialEnd=material.indexOf('function supplierText',materialStart);
 assert(materialStart>=0&&materialEnd>materialStart,'Material Trade V2 buyer copy block must exist');
 const materialBuyer=material.slice(materialStart,materialEnd);
 assert.match(materialBuyer,/motion==="external_production_capacity"/,'Material Trade must be able to route an explicit capacity motion separately');
-assert.match(materialBuyer,/steel-material package/,'Material buyer copy must remain material-specific');
-assert.match(materialBuyer,/You remain in control of purchasing\. We manage the package from RFQ or material list through to delivery\./,'Material buyer copy must use the ownership model without implying client incapability');
+assert.match(materialBuyer,/EN 10204 3\.1/,'Material buyer copy must remain material-specific');
+assert.match(materialBuyer,/optional cutting\/basic processing/,'Material buyer copy must offer bounded processing rather than GC copy');
 assert.match(materialBuyer,/Southeast Europe/,'Material Trade credibility must identify the Southeast European network');
 assert.match(materialBuyer,/ProCredit Bank/,'Material Trade credibility must include bank-guarantee support');
 assert.doesNotMatch(materialBuyer,/<strong>/i,'Material Trade body copy must not bold CTAs or sales claims');

@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v26-commercial-engine-v3-opportunity-intelligence';
+const GENERATOR='pppp-opportunity-draft-generator-v27-canonical-copy-policy-v4';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=20;
 const MAX_DRAFT_WRITES_PER_RUN=25;
@@ -72,7 +72,7 @@ function rawFor(a:any,tender:any,recipient:any,outreachId:string,rfcId:string){
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: 8bit',
     '',
-    content.body,
+    content.plain_body,
     `--${boundary}`,
     'Content-Type: text/html; charset=UTF-8',
     'Content-Transfer-Encoding: 8bit',
@@ -332,7 +332,7 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
     return{action_key:a.action_key,event:'no_recipients',recipients:0,created:0,refreshed:0,preserved:0,sent:0,retired,remaining:0};
   }
   if(previewOnly){
-    const previews=recipients.map((recipient:any)=>{const content=buildTedDraftContent(a,tender,recipient);return{email:recipient.email,name:recipient.name||null,job_title:recipient.job_title||null,functional_role:recipient.functional_role||recipient.purpose||'general',contact_tier:recipient.contact_tier,language:content.language,offer_model:content.offer_model,subject:content.subject,body:content.body,html_body:content.html_body};});
+    const previews=recipients.map((recipient:any)=>{const content=buildTedDraftContent(a,tender,recipient);return{email:recipient.email,name:recipient.name||null,job_title:recipient.job_title||null,functional_role:recipient.functional_role||recipient.purpose||'general',contact_tier:recipient.contact_tier,...content,body:content.plain_body};});
     return{action_key:a.action_key,company:a.target_company,event:'preview_ready',recipients:previews.length,created:0,preserved:0,sent:0,retired:0,remaining:previews.length,previews,human_approval_required:true};
   }
   await seedLegacyTenderDraft(a,tender,recipients);
@@ -382,7 +382,7 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
       }
       if(row.status!=='draft_created'){const sentMessage=await findSent(row);if(sentMessage){row=await markSent(row,sentMessage);sent++;continue;}}
       if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)continue;
-      const d=await writeDraft(a,tender,recipient,row),at=new Date().toISOString(),patch={status:'draft_created',outreach_engine_version:'v2',outreach_motion:a.outreach_motion,pristeel_offer_model:d.content.offer_model||a.pristeel_offer_model||null,contact_tier:recipient.contact_tier,outreach_readiness_score:a.outreach_readiness_score,personalization_facts:facts.slice(0,4),recipient_name:recipient.name||null,gmail_draft_id:d.data.id||null,gmail_draft_message_id:d.data.message?.id||null,gmail_thread_id:d.data.message?.threadId||null,draft_created_at:at,last_checked_at:at,last_error:null,generator:GENERATOR,language:d.content.language,subject:d.content.subject,mime_type:'multipart/alternative',html:true,updated_at:at,payload:{...(row.payload||{}),outreach_engine_version:'v2',outreach_motion:a.outreach_motion,pristeel_offer_model:d.content.offer_model||a.pristeel_offer_model||null,contact_quality_score:recipient.contact_quality_score,tender_reference:d.content.tender_reference||null,tender_url:d.content.tender_url||null,refreshed_from_generator:wasRefresh?text(row.generator,200)||'unknown':null}};
+      const d=await writeDraft(a,tender,recipient,row),at=new Date().toISOString(),patch={status:'draft_created',outreach_engine_version:'v2',outreach_motion:a.outreach_motion,pristeel_offer_model:d.content.offer_model||a.pristeel_offer_model||null,contact_tier:recipient.contact_tier,outreach_readiness_score:a.outreach_readiness_score,personalization_facts:d.content.selected_public_facts||[],recipient_name:recipient.name||null,gmail_draft_id:d.data.id||null,gmail_draft_message_id:d.data.message?.id||null,gmail_thread_id:d.data.message?.threadId||null,draft_created_at:at,last_checked_at:at,last_error:null,generator:GENERATOR,language:d.content.language,subject:d.content.subject,mime_type:'multipart/alternative',html:true,updated_at:at,payload:{...(row.payload||{}),outreach_engine_version:'v2',outreach_motion:a.outreach_motion,pristeel_offer_model:d.content.offer_model||a.pristeel_offer_model||null,copy_policy_version:d.content.copy_policy_version,company_role:d.content.company_role,recipient_role:d.content.recipient_role,selected_public_facts:d.content.selected_public_facts,contact_quality_score:recipient.contact_quality_score,tender_reference:d.content.tender_reference||null,tender_url:d.content.tender_url||null,refreshed_from_generator:wasRefresh?text(row.generator,200)||'unknown':null}};
       const u=await db.from(REGISTRY).update(patch).eq('id',row.id).select('*').single();if(u.error){await deleteDraft(d.data.id||'');throw u.error;}row=u.data;created++;if(wasRefresh)refreshed++;budget.writes++;
     }catch(e){failures.push({email:normalizeEmail(recipient.email),error:text((e as any)?.message||e,500)});await markError(row,e);}
   }
