@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "cfa4102f2b535111ea25f5829fe4e0ed669466d3"
+    "bootstrapGitBlobSha": "b24d0031af24d27b13187f38a6b712375d237331"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -147,7 +147,7 @@
       "finalOwners": [
         "pristeel-eu-companies-v1.js"
       ],
-      "note": "Kompanitë EU është pipeline-i i veçantë për klientë të drejtpërdrejtë në Evropë për paketa çeliku të fabrikuar, kapacitet prodhues dhe nënkontraktim. Përjashton Mundësitë/tenderët, blerësit e lëndës së parë te Material – Ofertë dhe targetet e Përfaqësimeve. Lexon kontrollet globale të identitetit dhe historikut të kontaktimit, por nuk dërgon email dhe nuk krijon projekt automatikisht."
+      "note": "Kompanitë EU është pipeline-i i veçantë për klientë të drejtpërdrejtë në Evropë për paketa çeliku të fabrikuar, kapacitet prodhues dhe nënkontraktim. Përjashton Mundësitë/tenderët, blerësit e lëndës së parë te Blerësit e çelikut dhe targetet e Përfaqësimeve. Lexon kontrollet globale të identitetit dhe historikut të kontaktimit, por nuk dërgon email dhe nuk krijon projekt automatikisht."
     },
     {
       "area": "tenders",

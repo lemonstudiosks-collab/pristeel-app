@@ -19,7 +19,7 @@ const loads=(bootstrap.match(/pristeel-eu-companies-v1\.js/g)||[]).length;
 assert.equal(loads,1,'EU Companies runtime must load exactly once');
 
 assert.match(mobile,/data-pma-discover="eu"/,'mobile EU Companies tab missing');
-assert.match(mobile,/Material – Ofertë/,'mobile Material label must use the Albanian module name');
+assert.match(mobile,/Blerësit e çelikut/,'mobile Steel Buyers label must use the final Albanian module name');
 assert.match(mobile,/>Kompanitë EU</,'mobile EU Companies label missing');
 assert.match(mobile,/>Ballina</,'mobile navigation must be Albanian');
 assert.match(mobile,/>Projektet</,'mobile navigation must be Albanian');
@@ -31,7 +31,7 @@ assert.match(mig,/security_invoker=true/,'operational view must respect caller s
 assert.match(mig,/manual_web_verified_2026-09-22/,'historical direct-web batch integration missing');
 assert.doesNotMatch(mig,/discovery_source\s*=\s*'ted_public_award'/,'TED winners must not be imported into EU Direct');
 assert.match(mig,/cross_module_identity_review_required/,'cross-module identity guard missing');
-assert.match(mig,/pppp_dach_steel_targets_v1/,'Material – Ofertë collision check missing');
+assert.match(mig,/pppp_dach_steel_targets_v1/,'Steel Buyers collision check missing');
 assert.match(mig,/pppp_representation_targets_v1/,'Representation collision check missing');
 assert.match(mig,/pppp_opportunity_company_profiles_v1/,'Mundësitë collision check missing');
 assert.match(mig,/pppp_outbound_queue_v1/,'shared outbound history check missing');

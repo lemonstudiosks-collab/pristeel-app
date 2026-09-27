@@ -334,7 +334,7 @@ function discoverTenders(){
 function discoverMaterial(){
   var D=window.PSTDachSteelSalesV3||window.PSTDachSteelSalesV2||window.PSTDachSteelSalesV1,s=D&&typeof D.snapshot==='function'?D.snapshot():{},rows=A(s.targets).filter(function(r){return !r.archived_at;}).slice(0,40);
   if(state.materialLoading&&!rows.length)return '<div class="pma-empty large">Duke lexuar Material Trade…</div>';
-  return '<div class="pma-discover-summary"><b>'+E(rows.length)+'</b><span>kompani Material – Ofertë</span></div><div class="pma-target-feed">'+(rows.length?rows.map(function(r){
+  return '<div class="pma-discover-summary"><b>'+E(rows.length)+'</b><span>blerës potencialë të çelikut</span></div><div class="pma-target-feed">'+(rows.length?rows.map(function(r){
     var meta=[r.country,r.buyer_type,r.score_band].filter(Boolean).join(' · '),why=r.why_now||r.next_action||r.steel_scope||'Target i kualifikuar për material çeliku.';
     return '<button type="button" class="pma-target-card material" data-pma-open-material><div class="pma-target-top"><span>MATERIAL</span><em>'+E(r.score_band||'')+'</em></div><h3>'+E(r.company_name||'Kompani')+'</h3><small>'+E(meta)+'</small><p>'+E(short(why,150))+'</p><div><b>'+E(r.quote_readiness||'')+'</b><i>'+icon('chevron')+'</i></div></button>';
   }).join(''):'<div class="pma-empty large">Nuk ka targete aktive Material Trade.<button type="button" data-pma-material-refresh>Rifresko</button></div>')+'</div>';
@@ -366,7 +366,7 @@ function discoverEU(){
 }
 function discoverView(){
   return '<div class="pma-screen">'+header('Zbulo','Mundësi të reja për PriSteel')+
-    '<div class="pma-discover-tabs"><button data-pma-discover="tenders" class="'+(state.discover==='tenders'?'on':'')+'">Tenderë</button><button data-pma-discover="material" class="'+(state.discover==='material'?'on':'')+'">Material – Ofertë</button><button data-pma-discover="represent" class="'+(state.discover==='represent'?'on':'')+'">Përfaqësime</button><button data-pma-discover="eu" class="'+(state.discover==='eu'?'on':'')+'">Kompanitë EU</button></div>'+
+    '<div class="pma-discover-tabs"><button data-pma-discover="tenders" class="'+(state.discover==='tenders'?'on':'')+'">Tenderë</button><button data-pma-discover="material" class="'+(state.discover==='material'?'on':'')+'">Blerësit e çelikut</button><button data-pma-discover="represent" class="'+(state.discover==='represent'?'on':'')+'">Përfaqësime</button><button data-pma-discover="eu" class="'+(state.discover==='eu'?'on':'')+'">Kompanitë EU</button></div>'+
     '<div class="pma-discover-body">'+(state.discover==='material'?discoverMaterial():state.discover==='represent'?discoverRep():state.discover==='eu'?discoverEU():discoverTenders())+'</div>'+
   '</div>';
 }
@@ -425,7 +425,7 @@ function moreSheet(){
   return '<div class="pma-sheetback" data-pma-sheet-close><section class="pma-sheet" onclick="event.stopPropagation()"><div class="pma-sheetbar"></div><h2>Më shumë</h2><div class="pma-more-list">'+
     '<button data-pma-secondary="contacts">'+icon('people')+'<span><b>Partnerët</b><small>Kompanitë dhe kontaktet</small></span><i>›</i></button>'+
     '<button data-pma-secondary="finance">'+icon('finance')+'<span><b>Financat</b><small>Fatura, garanci, arkëtim</small></span><i>›</i></button>'+
-    '<button data-pma-open-material>'+icon('chart')+'<span><b>Material – Ofertë</b><small>Blerësit e lëndës së parë</small></span><i>›</i></button>'+
+    '<button data-pma-open-material>'+icon('chart')+'<span><b>Blerësit e çelikut</b><small>Klientë potencialë · RFQ</small></span><i>›</i></button>'+
     '<button data-pma-open-rep>'+icon('building')+'<span><b>Përfaqësime</b><small>Prodhuesit & marrëdhëniet</small></span><i>›</i></button>'+
     '<button data-pma-open-eu>'+icon('building')+'<span><b>Kompanitë EU</b><small>Klientë të drejtpërdrejtë në Evropë</small></span><i>›</i></button>'+
     '<button data-pma-secondary="apps">'+icon('system')+'<span><b>Sistemi</b><small>Integrime & mjete teknike</small></span><i>›</i></button>'+
