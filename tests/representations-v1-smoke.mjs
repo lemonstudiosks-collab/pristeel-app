@@ -7,12 +7,13 @@ const ui = fs.readFileSync('pristeel-representations-v1.js','utf8');
 const migration = fs.readFileSync('supabase/migrations/20260926062633_representations_module_v1.sql','utf8');
 const worker = fs.readFileSync('supabase/functions/chatgpt-command-bridge/worker.ts','utf8');
 const relationshipMigration = fs.readFileSync('supabase/migrations/20260926143300_representation_relationships_v1.sql','utf8');
+const representationDraftWorker = fs.readFileSync('supabase/functions/pppp-representation-draft-generator/index.ts','utf8');
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 
 new vm.Script(ui);
 
-assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20260926-representations3/);
-assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260926-opportunities1/);
+assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20260927-representations4-drafts/);
+assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260926-opportunities2-back/);
 assert.match(migration,/create table public\.pppp_representation_targets_v1/i);
 assert.match(migration,/enable row level security/i);
 assert.match(migration,/pppp_representation_targets_authenticated_update/i);
@@ -43,6 +44,15 @@ assert.match(ui,/body:has\(#page-representations\.active\) \.topbar/);
 assert.doesNotMatch(ui,/function injectSystemCard/);
 assert.match(ui,/priority_score\.desc/);
 assert.match(ui,/Archive \/ Mbylle/);
+assert.match(ui,/data-rep-back/);
+assert.match(ui,/Krijo Gmail draft/);
+assert.match(ui,/Hap Gmail draft/);
+assert.match(ui,/pppp-representation-draft-generator/);
+assert.match(ui,/Kontakti & Gmail/);
+assert.match(representationDraftWorker,/external_pitch/);
+assert.match(representationDraftWorker,/gmail\.googleapis\.com\/gmail\/v1\/users/);
+assert.match(representationDraftWorker,/\/drafts/);
+assert.doesNotMatch(representationDraftWorker,/\/messages\/send|gmail\.send/i);
 assert.doesNotMatch(ui,/sendEmail|gmail\.send|external_email_send/i);
 
 const dom = new JSDOM('<!doctype html><html><head></head><body><div class="topbar"></div><div class="content"></div><div id="pst-home-launchpad-v1"><div class="pst-morning-lanes"><section class="pst-morning-lane opportunities"></section><section class="pst-morning-lane material"></section></div></div><div id="page-workspace-apps"><div class="pst-ws-appgrid"></div></div></body></html>',{
@@ -61,6 +71,7 @@ const page = dom.window.document.getElementById('page-representations');
 assert.ok(page?.classList.contains('active'),'route did not open');
 assert.equal(dom.window.location.hash,'#perfaqesime');
 assert.equal(page.querySelectorAll('[data-rep-kpis] .pst-rep-kpi').length,4);
+assert.ok(page.querySelector('[data-rep-back]'),'candidate view must expose a persistent back button');
 const pipelineToggle=page.querySelector('[data-rep-toggle="pipeline"]');
 const pipelineMenu=page.querySelector('[data-rep-menu="pipeline"]');
 assert.ok(pipelineMenu.hidden,'pipeline menu must start collapsed');

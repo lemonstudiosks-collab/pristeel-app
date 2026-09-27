@@ -30,7 +30,7 @@ var TARGET_TYPES=[['lead_epc_candidate','Lead Consortium / EPC Candidate'],['oem
 var REL_TYPES=[['joint_venture','JV'],['consortium','Konsorcium'],['subcontractor','Nënkontraktor'],['supplier','Furnitor'],['representative','Përfaqësues'],['distributor','Distributor'],['implementation_partner','Partner implementimi'],['local_partner','Partner lokal'],['other','Tjetër'],['unknown','E panjohur']];
 var REL_STATUS=[['current','Aktuale'],['historical','Historike'],['unknown','E panjohur']];
 var REL_VERIFY=[['unknown','E panjohur'],['review','Për verifikim'],['verified','E verifikuar']];
-var state={rows:[],relationships:[],opportunities:[],loaded:false,loading:false,opportunitiesLoaded:false,opportunitiesLoading:false,error:'',selected:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null};
+var state={rows:[],relationships:[],opportunities:[],loaded:false,loading:false,opportunitiesLoaded:false,opportunitiesLoading:false,error:'',selected:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null,draftBusy:{},draftResult:{}};
 
 function S(v){return String(v==null?'':v)}
 function A(v){return Array.isArray(v)?v:[]}
@@ -83,8 +83,9 @@ body:has(#page-representations.active) .topbar,body:has(#page-representations.ac
 function ensurePage(){
  css();var p=document.getElementById('page-representations');if(p)return p;
  var host=document.querySelector('.content')||document.body;p=document.createElement('div');p.id='page-representations';p.className='page';p.style.display='none';
- p.innerHTML='<div class="pst-rep-page"><header class="pst-rep-head"><div><div class="pst-rep-eye">EPC · OEM · PARTNERË SPECIALISTË · PËRFAQËSIME</div><h1>Përfaqësime</h1><p>Pipeline për partnerë ndërkombëtarë dhe mundësi projekti. Asnjë email nuk krijohet ose dërgohet automatikisht.</p></div><div class="pst-rep-actions"><button class="pst-rep-btn primary" data-rep-new>+ Target i ri</button></div></header><div class="pst-rep-kpis" data-rep-kpis></div><div class="pst-rep-controls"><div class="pst-rep-control"><button class="pst-rep-btn pst-rep-control-toggle" type="button" data-rep-toggle="pipeline" aria-expanded="false">Fazat <span data-rep-pipeline-summary>Të gjitha</span></button><div class="pst-rep-control-menu" data-rep-menu="pipeline" hidden><div class="pst-rep-pipeline" data-rep-pipeline></div></div></div><div class="pst-rep-control"><button class="pst-rep-btn pst-rep-control-toggle" type="button" data-rep-toggle="filters" aria-expanded="false">Filtra <span data-rep-filter-summary>Kërkim & renditje</span></button><div class="pst-rep-control-menu filters" data-rep-menu="filters" hidden><div class="pst-rep-toolbar"><input data-rep-search type="search" placeholder="Kërko kompani ose domain…"><select data-rep-country></select><select data-rep-sector></select><select data-rep-capital></select><select data-rep-sort><option value="priority">Prioriteti më i lartë</option><option value="updated">Përditësuar së fundi</option><option value="due">Next action më afër</option><option value="company">Kompania A–Z</option></select></div></div></div></div><div class="pst-rep-shell"><main class="pst-rep-card"><div class="pst-rep-table-head"><span>Kompania</span><span>Vendi</span><span>Produkt / Sektor</span><span>Stage</span><span>Prioritet</span><span>Next action</span><span>Capital fit</span></div><div data-rep-list></div></main><aside class="pst-rep-card pst-rep-detail" data-rep-detail></aside></div></div>';
+ p.innerHTML='<div class="pst-rep-page"><header class="pst-rep-head"><div><div class="pst-rep-eye">EPC · OEM · PARTNERË SPECIALISTË · PËRFAQËSIME</div><h1>Përfaqësime</h1><p>Pipeline për partnerë ndërkombëtarë dhe mundësi projekti. Asnjë email nuk krijohet ose dërgohet automatikisht.</p></div><div class="pst-rep-actions"><button class="pst-rep-btn" data-rep-back>← Kthehu</button><button class="pst-rep-btn primary" data-rep-new>+ Target i ri</button></div></header><div class="pst-rep-kpis" data-rep-kpis></div><div class="pst-rep-controls"><div class="pst-rep-control"><button class="pst-rep-btn pst-rep-control-toggle" type="button" data-rep-toggle="pipeline" aria-expanded="false">Fazat <span data-rep-pipeline-summary>Të gjitha</span></button><div class="pst-rep-control-menu" data-rep-menu="pipeline" hidden><div class="pst-rep-pipeline" data-rep-pipeline></div></div></div><div class="pst-rep-control"><button class="pst-rep-btn pst-rep-control-toggle" type="button" data-rep-toggle="filters" aria-expanded="false">Filtra <span data-rep-filter-summary>Kërkim & renditje</span></button><div class="pst-rep-control-menu filters" data-rep-menu="filters" hidden><div class="pst-rep-toolbar"><input data-rep-search type="search" placeholder="Kërko kompani ose domain…"><select data-rep-country></select><select data-rep-sector></select><select data-rep-capital></select><select data-rep-sort><option value="priority">Prioriteti më i lartë</option><option value="updated">Përditësuar së fundi</option><option value="due">Next action më afër</option><option value="company">Kompania A–Z</option></select></div></div></div></div><div class="pst-rep-shell"><main class="pst-rep-card"><div class="pst-rep-table-head"><span>Kompania</span><span>Vendi</span><span>Produkt / Sektor</span><span>Stage</span><span>Prioritet</span><span>Next action</span><span>Capital fit</span></div><div data-rep-list></div></main><aside class="pst-rep-card pst-rep-detail" data-rep-detail></aside></div></div>';
  host.appendChild(p);
+ p.querySelector('[data-rep-back]').onclick=back;
  p.querySelector('[data-rep-new]').onclick=function(){openEditor(null)};
  p.querySelectorAll('[data-rep-toggle]').forEach(function(btn){btn.onclick=function(){var name=btn.getAttribute('data-rep-toggle'),menu=p.querySelector('[data-rep-menu="'+name+'"]'),opening=menu&&menu.hidden;p.querySelectorAll('[data-rep-menu]').forEach(function(x){x.hidden=true});p.querySelectorAll('[data-rep-toggle]').forEach(function(x){x.setAttribute('aria-expanded','false')});if(menu&&opening){menu.hidden=false;btn.setAttribute('aria-expanded','true')}}});
  p.querySelector('[data-rep-search]').oninput=function(){state.query=this.value;render()};
@@ -147,18 +148,52 @@ function render(){
  renderHome();
 }
 function facts(pairs){return'<div class="pst-rep-facts">'+pairs.map(function(x){return'<span>'+E(x[0])+'</span><span>'+E(x[1]==null||x[1]===''?'—':x[1])+'</span>'}).join('')+'</div>'}
+function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null}catch(e){return null}}
+async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow()}catch(e){return sessionNow()}}
+function gmailDraftUrl(r){return r&&r.gmail_thread_id?'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(r.gmail_thread_id):''}
+function draftButton(r){
+ var busy=!!state.draftBusy[S(r&&r.id)];
+ if(r&&r.gmail_draft_id&&r.gmail_thread_id)return '<button class="pst-rep-btn primary" data-rep-act="open-draft">Hap Gmail draft</button>';
+ if(r&&r.contact_email)return '<button class="pst-rep-btn primary" data-rep-act="create-draft"'+(busy?' disabled':'')+'>'+(busy?'Duke krijuar draft…':'Krijo Gmail draft')+'</button>';
+ return '<button class="pst-rep-btn" disabled>Kontakti mungon</button>';
+}
+async function callRepresentationDraft(r){
+ var id=S(r&&r.id);if(!id||state.draftBusy[id])return;
+ state.draftBusy[id]=true;state.draftResult[id]=null;renderDetail();
+ try{
+  var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
+  var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();
+  var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
+  async function run(tk){return fetch(base+'/functions/v1/pppp-representation-draft-generator',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({target_id:id})})}
+  var resp=await run(token);if(resp.status===401){s=await refreshSession();if(s&&s.access_token)resp=await run(s.access_token)}
+  var raw=await resp.text(),data=null;try{data=raw?JSON.parse(raw):null}catch(e){}
+  if(!resp.ok||!data||data.ok===false){
+   var reason=S(data&&(data.message||data.error)||('HTTP '+resp.status));
+   if(reason.indexOf('recipient_cooldown_30d')>-1)reason='PPPP gjeti email të dërguar te ky recipient gjatë 30 ditëve të fundit. Drafti i dyfishtë u bllokua.';
+   throw new Error(reason);
+  }
+  state.draftResult[id]=data;
+  toast(data.existing?'Drafti ekzistues u gjet në Gmail':'Gmail draft u krijua. Dërgimi mbetet manual.');
+  await load(true);
+ }catch(e){state.draftResult[id]={error:S(e&&e.message||e)};toast(S(e&&e.message||e),true)}
+ finally{state.draftBusy[id]=false;renderDetail()}
+}
+function openRepresentationDraft(r){
+ var u=gmailDraftUrl(r);if(!u){toast('Nuk ka Gmail draft të regjistruar për këtë kompani.',true);return}
+ window.open(u,'_blank','noopener');
+}
 function renderDetail(){
  var h=ensurePage().querySelector('[data-rep-detail]'),r=selected();
  if(!r){h.innerHTML='<div class="pst-rep-empty"><b>Zgjidh një kompani</b><span>Detajet dhe veprimet shfaqen këtu.</span></div>';return}
  var warn=warnings(r),rels=relationshipsFor(r.id);
- h.innerHTML='<div class="pst-rep-detail-head"><h2>'+E(r.company_name)+'</h2><p>'+E([r.country,r.headquarters,r.company_domain_normalized].filter(Boolean).join(' · ')||r.source_key)+'</p><div class="pst-rep-detail-actions"><button class="pst-rep-btn primary" data-rep-act="edit">Edito targetin</button><button class="pst-rep-btn" data-rep-act="archive">Archive / Mbylle</button></div></div>'
+ h.innerHTML='<div class="pst-rep-detail-head"><h2>'+E(r.company_name)+'</h2><p>'+E([r.country,r.headquarters,r.company_domain_normalized].filter(Boolean).join(' · ')||r.source_key)+'</p><div class="pst-rep-detail-actions"><button class="pst-rep-btn" data-rep-act="edit">Edito targetin</button>'+draftButton(r)+'<button class="pst-rep-btn" data-rep-act="archive">Archive / Mbylle</button></div></div>'
  +(warn.length?'<div class="pst-rep-warn"><b>⚠ Kërkon vëmendje:</b> '+E(warn.join(' · '))+'</div>':'')
  +'<section class="pst-rep-section"><h3>Pipeline & veprimi</h3><div class="pst-rep-quick"><label>Stage<select data-rep-quick="stage">'+opts(STAGES,r.stage)+'</select></label><label>Due date<input data-rep-quick="next_action_due" type="date" value="'+E(r.next_action_due||'')+'"></label><label style="grid-column:1/-1">Next action<input data-rep-quick="next_action" value="'+E(r.next_action||'')+'" placeholder="Veprimi i radhës"></label></div></section>'
+ +'<section class="pst-rep-section"><h3>Kontakti & Gmail</h3>'+facts([['Emri',r.contact_name],['Roli',r.contact_role],['Email',r.contact_email],['Telefoni',r.contact_phone],['Burimi',r.contact_source]])+(state.draftResult[S(r.id)]&&state.draftResult[S(r.id)].error?'<div class="pst-rep-warn"><b>Drafti nuk u krijua:</b> '+E(state.draftResult[S(r.id)].error)+'</div>':'')+'</section>'
  +'<section class="pst-rep-section"><h3>Fit komercial</h3>'+facts([['Lloji i targetit',(TARGET_TYPES.find(function(x){return x[0]===(r.target_type||'representation')})||[])[1]],['Prioriteti',r.priority_score==null?'—':r.priority_score+'/100'],['Arsyeja',r.priority_reason],['Modeli',r.target_model],['Territori',r.target_territory],['Capital fit',capitalLabel(r.capital_fit)],['Prani në Kosovë',r.kosovo_presence]])+'</section>'
  +'<section class="pst-rep-section"><h3>Produktet & tregu</h3><div class="pst-rep-text">'+E(r.product_summary||A(r.products).join(' · ')||r.manufacturer_description||'—')+'</div></section>'
  +'<section class="pst-rep-section"><h3>Pse Kosovë / PriSteel</h3><div class="pst-rep-text">'+E(r.why_kosovo||r.market_evidence||r.strategic_fit_notes||'—')+'</div></section>'
  +'<section class="pst-rep-section"><h3>JV / Partnerë lokalë & rajonalë</h3><div class="pst-rep-rel-list">'+(rels.length?rels.map(function(x){var cls=x.verification_status==='verified'?'verified':x.verification_status==='review'?'review':'';return '<div class="pst-rep-rel"><b>'+E(x.related_company_name)+' · '+E(relLabel(REL_TYPES,x.relationship_type))+'</b><small>'+E([x.related_company_country,relLabel(REL_STATUS,x.relationship_status),x.project_or_tender||x.project_reference].filter(Boolean).join(' · '))+'</small><small class="'+cls+'">'+E(relLabel(REL_VERIFY,x.verification_status))+(x.source_url?' · burim i ruajtur':'')+'</small></div>'}).join(''):'<div class="pst-rep-text">Nuk ka ende lidhje lokale/rajonale të regjistruara.</div>')+'</div><button class="pst-rep-btn" data-rep-act="add-relationship">+ Shto JV / partner lokal</button></section>'
- +'<section class="pst-rep-section"><h3>Kontakti</h3>'+facts([['Emri',r.contact_name],['Roli',r.contact_role],['Email',r.contact_email],['Telefoni',r.contact_phone],['Burimi',r.contact_source]])+'</section>'
  +'<section class="pst-rep-section"><h3>Risku financiar</h3>'+facts([['Stock',boolLabel(r.stock_required)],['Minimum purchase',boolLabel(r.minimum_purchase_required)],['Financim lokal',boolLabel(r.local_financing_required)],['Risk kreditor',boolLabel(r.credit_risk_required)],['Kërkesa kapitale',r.estimated_capital_requirement]])+'</section>'
  +'<section class="pst-rep-section"><h3>Commercial terms</h3>'+facts([['Komision i propozuar',r.proposed_commission_pct==null?'—':r.proposed_commission_pct+'%'],['Komision i dakorduar',r.agreed_commission_pct==null?'—':r.agreed_commission_pct+'%'],['Retainer',r.proposed_retainer],['Ekskluziviteti',r.exclusivity_status],['Marrëveshja',r.agreement_status],['Territori i dakorduar',r.territory_agreed]])+'</section>'
  +'<section class="pst-rep-section"><h3>Audit</h3>'+facts([['Burimi',r.source_name],['Source key',r.source_key],['Verifikuar',D(r.last_verified_at)],['Krijuar',D(r.created_at)],['Përditësuar',D(r.updated_at)]])+'</section>';
@@ -197,6 +232,8 @@ function detailClick(e){
  if(a.dataset.repAct==='edit')openEditor(r);
  if(a.dataset.repAct==='archive')archive(r);
  if(a.dataset.repAct==='add-relationship')openRelationshipEditor(r);
+ if(a.dataset.repAct==='create-draft')callRepresentationDraft(r);
+ if(a.dataset.repAct==='open-draft')openRepresentationDraft(r);
 }
 function detailChange(e){
  var k=e.target&&e.target.dataset&&e.target.dataset.repQuick,r=selected();if(!k||!r)return;

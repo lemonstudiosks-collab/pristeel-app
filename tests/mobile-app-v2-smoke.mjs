@@ -84,4 +84,9 @@ assert(inboxBlock.indexOf('I.authorize()')<inboxBlock.indexOf('I.loadCanonical')
 assert(inboxBlock.includes('connected&&!authorizedNow'),'mobile Inbox must avoid a duplicate Gmail load after authorize()');
 assert(js.includes("if(state.tab==='inbox')setTimeout(function(){loadInbox(false,false);},120)"),'mobile Inbox must retry once when the ordered Gmail bootstrap becomes ready');
 
+assert(js.includes('byThread[S(r.gmail_thread_id)]||byMessage[S(r.gmail_message_id)]'),'mobile Inbox must reconcile live Gmail rows with canonical PPPP email state');
+assert(js.includes('target="_blank" rel="noopener" aria-label="Hap emailin në Gmail"'),'mobile Inbox email body must be a direct Gmail link for iPhone/PWA');
+assert(js.includes('>Hap Gmail</a>'),'mobile Inbox must expose a direct Gmail anchor instead of a popup-only button');
+assert(js.includes('>Hap projektin</button>')&&js.includes('>Lidhe me projekt</button>'),'mobile Inbox must distinguish already-linked threads from unlinked threads');
+
 console.log('mobile-app-v6-data-stability-smoke: ok');
