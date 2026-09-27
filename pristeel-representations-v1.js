@@ -259,7 +259,6 @@ function render(){
  renderHome();
 }
 
-function facts(
 function facts(pairs){return'<div class="pst-rep-facts">'+pairs.map(function(x){return'<span>'+E(x[0])+'</span><span>'+E(x[1]==null||x[1]===''?'—':x[1])+'</span>'}).join('')+'</div>'}
 function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null}catch(e){return null}}
 async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow()}catch(e){return sessionNow()}}
@@ -326,7 +325,6 @@ function renderDetail(){
   +'</div></div>';
 }
 
-async function loadOpportunities
 async function loadOpportunities(force){
  if(state.opportunitiesLoading)return state.opportunities;
  if(state.opportunitiesLoaded&&!force)return state.opportunities;
