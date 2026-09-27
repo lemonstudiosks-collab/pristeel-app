@@ -32,7 +32,7 @@ assert(gmail.includes('loadCanonical')&&gmail.includes('project_emails?select=')
 assert(gmail.includes('connected:function(){return !!token()}'),'Gmail owner must expose connection state to mobile');
 assert(material.includes('loadTargets:function(force){return loadTargets(!!force)}'),'Material owner must expose bounded target loader without lifecycle sync');
 
-for(const label of ['Home','Projects','Discover','Inbox','Pyet PPPP…','Swipe ndërron faqen','Mundësi të reja për PriSteel','Përgatit kontakt','GO · Krijo projekt','Material','Përfaqësime']){
+for(const label of ['Ballina','Projektet','Zbulo','Posta','Pyet PPPP…','Swipe ndërron faqen','Mundësi të reja për PriSteel','Përgatit kontakt','GO · Krijo projekt','Material – Ofertë','Përfaqësime','Kompanitë EU']){
   assert(js.includes(label),'approved mobile v2 label/flow missing: '+label);
 }
 assert(js.includes('TAB_ORDER')&&js.includes("['home','projects','discover','inbox']"),'primary full-page pager order missing');
@@ -56,7 +56,7 @@ assert(js.includes('data-pma-util="weather"')&&js.includes('data-pma-util="fx"')
 assert(js.includes('pma-ask-copy'),'Ask PPPP mobile copy must stay in one stable grid cell');
 assert(js.includes('pma-work-feed')&&js.includes('pma-work-card'),'Projects must use card-feed presentation');
 assert(js.includes('pma-discover-feed')&&js.includes("rows.map(function(r,idx)"),'Discover tenders must render a vertical multi-opportunity feed');
-assert(js.includes('targete Material Trade')&&js.includes('targete të aprovuara')&&js.includes('mundësi për screening'),'Discover secondary feeds must expose real Material counts plus Representation target/screening counts');
+assert(js.includes('kompani Material – Ofertë')&&js.includes('targete të aprovuara')&&js.includes('mundësi për screening'),'Zbulo secondary feeds must expose real Material counts plus Representation target/screening counts');
 assert(js.includes('PPPP email sync')&&js.includes('canonicalRows'),'Inbox must fall back to canonical Gmail-synced project_emails');
 assert(!js.includes('[0,80,220,600,1200].forEach'),'mobile startup must not repaint the full shell five times');
 assert(js.includes('data-pma-more'),'secondary Partner/Finance/System access missing');
