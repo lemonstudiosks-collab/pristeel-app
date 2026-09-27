@@ -297,7 +297,7 @@ var SQ_TEXT={
  'Corporate contact — route to International T&D':'Kontakt qendror — për t’u drejtuar te T&D Ndërkombëtare',
  'Elnos Group HQ — route to Transmission & Substations':'Selia e Elnos Group — për t’u drejtuar te Transmetimi & Nënstacionet',
  'Central office — route to International HV Projects':'Zyra qendrore — për t’u drejtuar te Projektet Ndërkombëtare HV',
- 'Profili i biznesit Enquiries — route to T&D International / BD International':'Kërkesa biznesi — për t’u drejtuar te T&D / Zhvillimi i Biznesit Ndërkombëtar',
+ 'Business Enquiries — route to T&D International / BD International':'Kërkesa biznesi — për t’u drejtuar te T&D / Zhvillimi i Biznesit Ndërkombëtar',
  'Operator-selected active candidate for KOSTT / EBRD 55387.':'Kandidat aktiv për KOSTT / EBRD 55387, i përzgjedhur nga ne.',
  'No email is authorized or sent by this registration.':'Asnjë email nuk autorizohet ose dërgohet nga ky regjistrim.',
  'No public evidence found of a Kosovo office or established local partner in the screening performed so far; absence of public evidence is not proof of no relationship.':'Nuk u gjet evidencë publike për zyrë në Kosovë ose partner lokal të vendosur në kontrollin e deritanishëm; mungesa e evidencës publike nuk provon se nuk ka marrëdhënie.',
@@ -416,7 +416,7 @@ function renderDetail(){
      sourceLink=r.source_url||r.company_website||'',contactLink=r.contact_source||'',
      extraStatus=[['Roli i kompanisë',targetTypeLabel(l.candidate_role||r.target_type||'representation')],['Përshtatja',fitLabel(l.company_fit_status||'unknown')],['Klasifikimi',classLabel(fit.classification||'')],['Përzgjedhur nga ne',fit.operator_selected===true?'Po':fit.operator_selected===false?'Jo':'—'],['Data e përzgjedhjes',fit.selection_date||'—'],['Statusi i kontaktimit',outreachLabel(fit.outreach_status||'')],['Territori',r.target_territory||'—'],['Modeli',modelLabel(r.target_model||'')]];
  h.innerHTML='<div class="pst-dossier">'
-  +'<header class="pst-dossier-hero"><div><div class="pst-dossier-eye">PROFIL I KOMPANISË · '+E(targetTypeLabel(r.target_type||'representation'))+'</div><h2>'+E(r.company_name)+'</h2><div class="pst-dossier-meta">'+E([r.headquarters,r.country].filter(Boolean).join(' · '))+(r.company_website?' · <a href="'+E(r.company_website)+'" target="_blank" rel="noopener">'+E(r.company_domain_normalized||r.company_domain||'Faqja e internetit')+'</a>':'')+'</div><div class="pst-dossier-badges"><span class="pst-rep-chip">'+E(stageLabel(r.stage))+'</span><span class="pst-rep-chip neutral">'+E(kosovoLabel(r.kosovo_presence))+'</span>'+(o.project_name?'<span class="pst-rep-chip">KOSTT 55387</span>':'')+(l.company_fit_status?'<span class="pst-rep-chip neutral">Fit: '+E(fitLabel(l.company_fit_status))+'</span>':'')+'</div></div><div class="pst-dossier-actions">'+draftButton(r)+'<button class="pst-rep-btn" data-rep-act="edit">Edito kompaninë</button><button class="pst-rep-btn" data-rep-act="archive">Arkivo / Mbylle</button></div></header>'
+  +'<header class="pst-dossier-hero"><div><div class="pst-dossier-eye">PROFIL I KOMPANISË · '+E(targetTypeLabel(r.target_type||'representation'))+'</div><h2>'+E(r.company_name)+'</h2><div class="pst-dossier-meta">'+E([r.headquarters,r.country].filter(Boolean).join(' · '))+(r.company_website?' · <a href="'+E(r.company_website)+'" target="_blank" rel="noopener">'+E(r.company_domain_normalized||r.company_domain||'Faqja e internetit')+'</a>':'')+'</div><div class="pst-dossier-badges"><span class="pst-rep-chip">'+E(stageLabel(r.stage))+'</span><span class="pst-rep-chip neutral">'+E(kosovoLabel(r.kosovo_presence))+'</span>'+(o.project_name?'<span class="pst-rep-chip">KOSTT 55387</span>':'')+(l.company_fit_status?'<span class="pst-rep-chip neutral">Përshtatja: '+E(fitLabel(l.company_fit_status))+'</span>':'')+'</div></div><div class="pst-dossier-actions">'+draftButton(r)+'<button class="pst-rep-btn" data-rep-act="edit">Edito kompaninë</button><button class="pst-rep-btn" data-rep-act="archive">Arkivo / Mbylle</button></div></header>'
   +(warn.length?'<div class="pst-rep-warn"><b>Kërkon vëmendje:</b> '+E(warn.join(' · '))+'</div>':'')
   +'<div class="pst-dossier-grid">'
    +'<section class="pst-dossier-card span-8"><h3>Kush është kompania</h3><p class="pst-dossier-highlight">'+E(sqText(r.manufacturer_description||r.product_summary||'—'))+'</p>'+(r.product_summary&&r.product_summary!==r.manufacturer_description?'<p>'+E(sqText(r.product_summary))+'</p>':'')+'<div class="pst-dossier-tags">'+products.map(function(x){return'<span class="pst-dossier-tag">'+E(sqText(x))+'</span>'}).join('')+'</div>'+compactRows([['Sektori',sqText(r.sector)],['Kategoria',sqText(r.product_category)],['Konsumatorët tipikë',sqText(r.potential_customer_types)]])+(sourceLink?'<a class="pst-dossier-source" href="'+E(sourceLink)+'" target="_blank" rel="noopener">Hap burimin e kompanisë →</a>':'')+'</section>'
@@ -478,11 +478,11 @@ function detailChange(e){
  var k=e.target&&e.target.dataset&&e.target.dataset.repQuick,r=selected();if(!k||!r)return;
  var payload={};payload[k]=nullable(e.target.value);
  if(k==='stage'&&payload.stage==='represented'&&!window.confirm('Konfirmon vendimin njerëzor që PriSteel e përfaqëson këtë kompani?')){e.target.value=r.stage;return}
- patchRow(r.id,payload,'Pipeline-i u përditësua');
+ patchRow(r.id,payload,'Procesi u përditësua');
 }
 async function archive(r){
  var reason=window.prompt('Arsyeja për mbyllje/arkivim:','');if(!S(reason).trim())return;
- await patchRow(r.id,{stage:'closed',archive_reason:S(reason).trim(),archived_at:new Date().toISOString()},'Targeti u mbyll dhe u arkivua');
+ await patchRow(r.id,{stage:'closed',archive_reason:S(reason).trim(),archived_at:new Date().toISOString()},'Kompania u mbyll dhe u arkivua');
 }
 function openRelationshipEditor(target){
  var m=document.createElement('div');m.className='pst-rep-modal';m.id='pst-rep-rel-modal';
@@ -620,15 +620,15 @@ function formPayload(existing){
 }
 async function saveEditor(existing){
  var payload=formPayload(!!existing.id);
- if(!payload.company_name){toast('Company name është i detyrueshëm',true);return}
+ if(!payload.company_name){toast('Emri i kompanisë është i detyrueshëm',true);return}
  if(payload.stage==='represented'&&(!existing.id||existing.stage!=='represented')&&!window.confirm('Konfirmon vendimin njerëzor që PriSteel e përfaqëson këtë kompani?'))return;
  var submit=document.querySelector('#pst-rep-modal [type="submit"]');if(submit)submit.disabled=true;
  try{
   if(existing.id)await window.supaFetch(TABLE+'?id=eq.'+encodeURIComponent(existing.id),'PATCH',payload);
   else await window.supaFetch(TABLE,'POST',payload);
-  document.getElementById('pst-rep-modal').remove();toast(existing.id?'Targeti u përditësua':'Targeti u krijua');await load(true);
+  document.getElementById('pst-rep-modal').remove();toast(existing.id?'Kompania u përditësua':'Kompania u krijua');await load(true);
  }catch(e){
-  var msg=S(e&&e.message||e);if(/duplicate|unique|23505/i.test(msg))msg='Kjo kompani/domain duket se ekziston. Nuk u krijua rekord i dytë; kërkohet review i targetit ekzistues.';
+  var msg=S(e&&e.message||e);if(/duplicate|unique|23505/i.test(msg))msg='Kjo kompani/domen duket se ekziston. Nuk u krijua rekord i dytë; kërkohet shqyrtimi i kompanisë ekzistuese.';
   toast(msg,true);if(submit)submit.disabled=false;
  }
 }
@@ -641,7 +641,7 @@ function ensureHome(){
 function renderHome(){
  var card=document.getElementById('pst-representations-home-v1');if(!card)return;
  var act=activeRows(),contacted=act.filter(function(r){return ['contacted','replied','meeting','negotiation','pilot','represented'].indexOf(r.stage)>-1}),meet=act.filter(function(r){return ['meeting','negotiation'].indexOf(r.stage)>-1}),represented=act.filter(function(r){return r.stage==='represented'});
- card.innerHTML='<button class="pst-rep-home" type="button"><div class="pst-rep-home-head"><div><div class="pst-rep-home-eye">PËRFAQËSIME</div><div class="pst-rep-home-title">Prodhues ndërkombëtarë</div><div class="pst-rep-home-sub">Market development, kontakte dhe negocim.</div></div><span class="pst-rep-home-open">Hap →</span></div><div class="pst-rep-home-stats">'+[[act.length,'Targete'],[contacted.length,'Kontaktuar'],[meet.length,'Takime'],[represented.length,'Aktive']].map(function(x){return'<span class="pst-rep-home-stat"><b>'+x[0]+'</b><span>'+x[1]+'</span></span>'}).join('')+'</div></button>';
+ card.innerHTML='<button class="pst-rep-home" type="button"><div class="pst-rep-home-head"><div><div class="pst-rep-home-eye">PËRFAQËSIME</div><div class="pst-rep-home-title">Prodhues ndërkombëtarë</div><div class="pst-rep-home-sub">Zhvillim tregu, kontakte dhe negocim.</div></div><span class="pst-rep-home-open">Hap →</span></div><div class="pst-rep-home-stats">'+[[act.length,'Kompani'],[contacted.length,'Kontaktuar'],[meet.length,'Takime'],[represented.length,'Aktive']].map(function(x){return'<span class="pst-rep-home-stat"><b>'+x[0]+'</b><span>'+x[1]+'</span></span>'}).join('')+'</div></button>';
 }
 function removeSystemCard(){var x=document.getElementById('pst-representations-system-card');if(x)x.remove()}
 function open(){
