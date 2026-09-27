@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v18-material-trade-draft-recovery";
+const V="pppp-dach-steel-draft-generator-v19-steel-buyers-complete-flow";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -316,6 +316,34 @@ async function buyerContact(tg:any){
   candidates:Array.isArray(r.candidates)?r.candidates:[]
  };
 }
+function contactCandidates(tg:any,contact:any){
+ const rows=[contact,...(Array.isArray(contact?.candidates)?contact.candidates:[])],out:any[]=[];
+ for(const raw of rows){
+  const email=em(raw?.email||raw?.recipient_email||"");if(!email||out.some(x=>x.email===email))continue;
+  if(tg?.company_domain&&nm(tg.company_domain)!==nm(dom(email)))continue;
+  const person=t(raw?.person||raw?.name||raw?.recipient_name||"",240),role=t(raw?.role||raw?.contact_role||"",240),tier=contactTier(email,person,role),score=tierScore(tier);
+  if(score<50)continue;
+  out.push({email,person,role,source:t(raw?.source||contact?.source||"public",120),quality:t(raw?.quality||tier,80),tier,score});
+ }
+ return out.sort((a,b)=>b.score-a.score);
+}
+function selectedContact(tg:any,contact:any,b:any){
+ const rows=contactCandidates(tg,contact),requested=em(b?.recipient_email||"");
+ if(!requested)return rows[0]||null;
+ const chosen=rows.find(x=>x.email===requested);if(!chosen)throw new Error("selected_contact_not_verified_for_target");
+ return {...chosen,person:t(b?.recipient_name||chosen.person,240),role:t(b?.contact_role||chosen.role,240)};
+}
+async function routingConflicts(tg:any){
+ const domain=nm(tg?.company_domain||dom(tg?.canonical_contact_email||""));if(!domain)return[];
+ const conflicts:string[]=[];
+ const eu=await db.from("pppp_eu_direct_targets_v1").select("id").eq("company_domain_normalized",domain).is("archived_at",null).limit(1);
+ if(!eu.error&&(eu.data||[]).length)conflicts.push("Kompanitë EU");
+ const rep=await db.from("pppp_representation_targets_v1").select("id").eq("company_domain_normalized",domain).is("archived_at",null).limit(1);
+ if(!rep.error&&(rep.data||[]).length)conflicts.push("Përfaqësime");
+ const opp=await db.from("pppp_opportunity_company_profiles_v1").select("id,domain").eq("domain",domain).limit(1);
+ if(!opp.error&&(opp.data||[]).length)conflicts.push("Mundësitë");
+ return conflicts;
+}
 function relevance(tg:any,contact:any){
  const base=tg?.score_band==="A1"?95:tg?.score_band==="A2"?85:tg?.score_band==="B1"?72:tg?.score_band==="B2"?62:45;
  return Math.max(0,Math.min(100,base+Math.min(5,Math.floor(Number(contact?.score||0)/30))));
@@ -354,12 +382,18 @@ async function guards(tg:any,q:any,e:string){
  let b=db.from("pppp_outbound_queue_v1").select("id").not("sent_at","is",null).gte("sent_at",dc).or("company_domain.eq."+d+",recipient_email.ilike.%@"+d).limit(1);if(q?.id)b=b.neq("id",q.id);const br=await b;if(br.error)throw br.error;if((br.data||[]).length)throw new Error("domain_cooldown_active");
  let x=db.from("pppp_outbound_queue_v1").select("id").is("sent_at",null).in("status",["candidate","planned"]).or("recipient_email.eq."+e+",company_domain.eq."+d).limit(1);if(q?.id)x=x.neq("id",q.id);const xr=await x;if(xr.error)throw xr.error;if((xr.data||[]).length)throw new Error("cross_source_active_outreach_conflict");
 }
-async function buyerDraft(tg:any,u:any){
- const z=await db.from("pppp_outbound_queue_v1").select("*").eq("source",SRC).eq("source_record_id",tg.id).eq("touch_no",1).maybeSingle();
- if(z.error)throw z.error;
- let q=z.data||null;
- const contact=await buyerContact(tg);
- const recipient=em(q?.recipient_email||contact.email);
+async function buyerPreview(tg:any,b:any){
+ const resolved=await buyerContact(tg),contact=selectedContact(tg,resolved,b);if(!contact)throw new Error("buyer_contact_required");
+ const q=targetQualification(tg,contact),copy=buyerTextV2({...tg,...q,personalization_facts:q.facts},canonicalSignatureHtml,contact);
+ return{contact,contacts:contactCandidates(tg,resolved),routing_conflicts:await routingConflicts(tg),workflow_state:q.workflow,readiness_reasons:q.reasons,readiness_score:q.readiness,subject:copy.subject,body:copy.body,html_body:copy.html_body,approach_mode:copy.approach_mode,offer_model:copy.offer_model,language:copy.language,personalization_facts:copy.personalization_facts};
+}
+async function buyerDraft(tg:any,u:any,b:any){
+  const resolved=await buyerContact(tg),chosen=selectedContact(tg,resolved,b);if(!chosen)throw new Error("buyer_contact_required");
+  const recipient=em(chosen.email);
+  const z=await db.from("pppp_outbound_queue_v1").select("*").eq("source",SRC).eq("source_record_id",tg.id).eq("touch_no",1).eq("recipient_email",recipient).maybeSingle();
+  if(z.error)throw z.error;
+  let q=z.data||null;
+  const contact={...resolved,...chosen,email:recipient};
  if(!recipient)throw new Error("buyer_contact_required");
  const e=safe(recipient);
  tg=await qualifyTarget(tg,{...contact,email:e,person:q?.recipient_name||contact.person,role:q?.contact_role||contact.role});
@@ -377,7 +411,7 @@ async function buyerDraft(tg:any,u:any){
   "X-PPPP-DACH-Mode":ct.approach_mode
  },ct.html_body||"");
  try{
-  const now=new Date().toISOString(),key=SRC+":"+tg.id+":1",score=relevance(tg,contact),
+   const now=new Date().toISOString(),key=SRC+":"+tg.id+":1:"+e,score=relevance(tg,contact),
   payload={
    ...(q?.payload&&typeof q.payload==="object"?q.payload:{}),
    approach_mode:ct.approach_mode,target_source_key:tg.source_key,subject:ct.subject,
@@ -436,6 +470,27 @@ async function buyerDraft(tg:any,u:any){
    contact_role:contact.role||null,contact_source:contact.source||null,contact_quality:contact.quality||null,
    subject:ct.subject,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(d.thread_id||d.message_id)
   };
+ }catch(err){await del(d.draft_id);throw err;}
+}
+function followupText(tg:any,contact:any){
+ const lang=buyerLang(tg),person=t(contact?.person,240),hello=lang==="de"?(person?"Guten Tag "+person+",":"Guten Tag,"):lang==="bcs"?(person?"Poštovani "+person+",":"Poštovani,"):(person?"Dear "+person+",":"Hello,");
+ const subject=(lang==="de"?"Kurze Nachfrage: ":lang==="bcs"?"Kratki podsjetnik: ":"Quick follow-up: ")+t(tg?.project_title||tg?.company_name,500);
+ const body=lang==="de"?[hello,"","ich wollte kurz nachfragen, ob meine Nachricht zu Ihrer Beschaffung von Stahlmaterial die richtige Ansprechperson erreicht hat.","","Falls aktuell ein RFQ oder eine Materialliste offen ist, prüfen wir diese gerne. Falls eine andere Person zuständig ist, wäre ich für eine Weiterleitung dankbar.","","Mit freundlichen Grüßen","",signature].join("\n"):
+  lang==="bcs"?[hello,"","želio bih samo kratko provjeriti da li je moja poruka o nabavci čeličnog materijala stigla do odgovorne osobe.","","Ako trenutno postoji otvoren RFQ ili lista materijala, rado ćemo je pregledati. Ako je zadužena druga osoba, bili bismo zahvalni za prosljeđivanje.","","Srdačan pozdrav,","",signature].join("\n"):
+  [hello,"","I wanted to briefly follow up and check whether my message about your steel-material procurement reached the right person.","","If you currently have an open RFQ or material list, we would be glad to review it. If another colleague is responsible, I would appreciate a referral.","","Kind regards,","",signature].join("\n");
+ return{subject,body,html_body:""};
+}
+async function followupDraft(tg:any,b:any,u:any){
+ const resolved=await buyerContact(tg),contact=selectedContact(tg,resolved,b);if(!contact)throw new Error("buyer_contact_required");
+ const e=safe(contact.email),firstQ=await db.from("pppp_outbound_queue_v1").select("*").eq("source",SRC).eq("source_record_id",tg.id).eq("touch_no",1).eq("recipient_email",e).maybeSingle();
+ if(firstQ.error)throw firstQ.error;const first=firstQ.data;if(!first?.sent_at)throw new Error("followup_requires_confirmed_first_send");if(first.replied_at||nm(first.status)==="replied")throw new Error("followup_blocked_reply_exists");
+ const life=first.gmail_thread_id?await threadLifecycle(first.gmail_thread_id):null;if(life?.reply){await applyLifecycle(tg,first,life);throw new Error("followup_blocked_reply_exists");}
+ if(Date.now()-new Date(first.sent_at).getTime()<7*86400000)throw new Error("followup_not_due_before_7_days");
+ const prior=await db.from("pppp_outbound_queue_v1").select("*").eq("source",SRC).eq("source_record_id",tg.id).eq("touch_no",2).eq("recipient_email",e).maybeSingle();if(prior.error)throw prior.error;if(prior.data?.gmail_draft_id)return{created:false,reused:true,queue:prior.data,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(prior.data.gmail_thread_id||prior.data.gmail_draft_message_id)};
+ const copy=followupText(tg,contact),d=await draft(e,copy.subject,copy.body,{"X-PPPP-DACH-Target-ID":t(tg.id,80),"X-PPPP-DACH-Mode":"human_reviewed_followup"});
+ try{
+  const now=new Date().toISOString(),key=SRC+":"+tg.id+":2:"+e,ins=await db.from("pppp_outbound_queue_v1").insert({source:SRC,source_record_id:tg.id,source_key:key,touch_no:2,project_key:tg.source_key,project_title:tg.project_title,company_name:tg.company_name,company_domain:tg.company_domain||dom(e),recipient_email:e,recipient_name:contact.person||tg.company_name,contact_role:contact.role||"Purchasing / Procurement",relevance_score:relevance(tg,contact),priority_score:relevance(tg,contact),gmail_draft_id:d.draft_id,gmail_draft_message_id:d.message_id,gmail_thread_id:d.thread_id,status:"candidate",workflow_state:"followup_draft_created",outreach_engine_version:"v2",outreach_motion:"human_reviewed_followup",suppression_reason:null,approved_for_send:false,human_send_required:true,payload:{first_queue_id:first.id,first_sent_at:first.sent_at,followup_due_after_days:7,draft_generated_by:V,draft_generated_by_user:u.id,draft_generated_at:now},updated_at:now}).select("*").single();
+  if(ins.error)throw ins.error;return{created:true,queue:ins.data,draft:d,subject:copy.subject,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(d.thread_id||d.message_id)};
  }catch(err){await del(d.draft_id);throw err;}
 }
 async function existingSupplierRfq(tg:any,recipient:any){
@@ -556,5 +611,5 @@ Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("o
  let u:any={id:"internal-draft-refresh"};
  if(!internalOk){if(!au.toLowerCase().startsWith("bearer "))return res({ok:false,error:"unauthorized"},401);u=await user(au);}
  let b:any={};try{b=await req.json();}catch{}const id=t(b?.target_id,80),mode=nm(b?.mode);
- if(internalOk&&mode!=="refresh"&&mode!=="sync")return res({ok:false,error:"internal_mode_not_allowed"},403);if(mode!=="sync"&&!uuid(id))return res({ok:false,error:"valid_target_id_required"},400);if(mode==="sync"){const x=await syncLifecycle();return res({ok:true,version:V,mode,...x,human_send_required:true,external_email_sent:false});}if(!["buyer","supplier","suppliers","contact","refresh","promote"].includes(mode))return res({ok:false,error:"mode_must_be_buyer_supplier_suppliers_contact_refresh_promote_or_sync"},400);const q=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",id).maybeSingle();if(q.error)throw q.error;if(!q.data)return res({ok:false,error:"dach_target_not_found"},404);if(["closed","rejected"].includes(t(q.data.target_status,40)))return res({ok:false,error:"dach_target_not_active"},409);if(mode==="contact"){const cr=await buyerContact(q.data),qualified=await qualifyTarget(q.data,cr);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,contact:{...cr,tier:qualified.contact_tier,score:qualified.contact_quality_score},workflow_state:qualified.workflow_state,readiness_reasons:qualified.readiness_reasons||[],human_send_required:true,external_email_sent:false});}if(mode==="promote"){const pr=await promoteProject(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...pr});}if(mode==="suppliers"){const si=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(q.data),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});if(si.error)throw si.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,supplier_intelligence:si.data||{},human_send_required:true,external_email_sent:false});}const r=(mode==="buyer"||mode==="refresh")?await buyerDraft(q.data,u):await supplierDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...r});}catch(e){const m=t((e as any)?.message||e,1000),s=m==="unauthorized"?401:/required|invalid|not_allowed/.test(m)?400:/cooldown|conflict|suppressed|already|bounced|not_active/.test(m)?409:500;console.error(V,e);return res({ok:false,error:m,human_send_required:true,external_email_sent:false,version:V},s);}});
+  if(internalOk&&mode!=="refresh"&&mode!=="sync")return res({ok:false,error:"internal_mode_not_allowed"},403);if(mode!=="sync"&&!uuid(id))return res({ok:false,error:"valid_target_id_required"},400);if(mode==="sync"){const x=await syncLifecycle();return res({ok:true,version:V,mode,...x,human_send_required:true,external_email_sent:false});}if(!["buyer","preview","followup","supplier","suppliers","contact","contacts","refresh","promote"].includes(mode))return res({ok:false,error:"unsupported_mode"},400);const q=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",id).maybeSingle();if(q.error)throw q.error;if(!q.data)return res({ok:false,error:"dach_target_not_found"},404);if(["closed","rejected"].includes(t(q.data.target_status,40)))return res({ok:false,error:"dach_target_not_active"},409);if(mode==="contact"){const cr=await buyerContact(q.data),qualified=await qualifyTarget(q.data,cr);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,contact:{...cr,tier:qualified.contact_tier,score:qualified.contact_quality_score},contacts:contactCandidates(q.data,cr),routing_conflicts:await routingConflicts(q.data),workflow_state:qualified.workflow_state,readiness_reasons:qualified.readiness_reasons||[],human_send_required:true,external_email_sent:false});}if(mode==="contacts"){const cr=await buyerContact(q.data);return res({ok:true,version:V,mode,target_id:q.data.id,contacts:contactCandidates(q.data,cr),routing_conflicts:await routingConflicts(q.data),human_send_required:true,external_email_sent:false});}if(mode==="preview"){const pv=await buyerPreview(q.data,b);return res({ok:true,version:V,mode,target_id:q.data.id,...pv,human_send_required:true,external_email_sent:false});}if(mode==="followup"){const fu=await followupDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,...fu,human_send_required:true,external_email_sent:false});}if(mode==="promote"){const pr=await promoteProject(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...pr});}if(mode==="suppliers"){const si=await db.rpc("pppp_chatgpt_supplier_intelligence_v1",{p_requirement:requirement(q.data),p_project_id:null,p_min_qualified:3,p_threshold:70,p_limit:8});if(si.error)throw si.error;return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,supplier_intelligence:si.data||{},human_send_required:true,external_email_sent:false});}const r=(mode==="buyer"||mode==="refresh")?await buyerDraft(q.data,u,b):await supplierDraft(q.data,b,u);return res({ok:true,version:V,mode,target_id:q.data.id,target_source_key:q.data.source_key,human_send_required:true,external_email_sent:false,...r});}catch(e){const m=t((e as any)?.message||e,1000),s=m==="unauthorized"?401:/required|invalid|not_allowed/.test(m)?400:/cooldown|conflict|suppressed|already|bounced|not_active|not_due|reply_exists/.test(m)?409:500;console.error(V,e);return res({ok:false,error:m,human_send_required:true,external_email_sent:false,version:V},s);}});
 

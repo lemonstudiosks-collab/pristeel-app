@@ -37,7 +37,7 @@ function guardLabel(v){
 }
 function guardClass(v){return v==='clear'?'ok':v==='blocked'?'bad':'warn'}
 function routeLabel(v){
- var m={material_trade:'Material – Ofertë',representations:'Përfaqësime',opportunities:'Mundësitë'};
+ var m={material_trade:'Blerësit e çelikut',representations:'Përfaqësime',opportunities:'Mundësitë'};
  return m[S(v)]||S(v);
 }
 
@@ -116,7 +116,7 @@ function renderDetail(r){
  '<div class="pst-eu-detail-grid">'+
  '<section class="pst-eu-section"><h3>Pse na intereson</h3><p>'+E(r.why_relevant||fitText(r))+'</p>'+(scopes.length?'<div class="pst-eu-tags" style="margin-top:9px">'+scopes.map(function(x){return'<span>'+E(x)+'</span>'}).join('')+'</div>':'')+'</section>'+
  '<section class="pst-eu-section"><h3>Kontakti</h3><div class="pst-eu-kv"><span>Personi</span><span>'+E(r.contact_name||'—')+'</span><span>Roli</span><span>'+E(r.contact_role||'—')+'</span><span>Emaili</span><span>'+E(r.contact_email||'—')+'</span><span>Gjendja</span><span>'+E(stageLabel(r.stage))+'</span></div></section>'+
- '<section class="pst-eu-section"><h3>Kontrolli kundër duplikimit</h3><p>'+(conflicts.length?'Kjo kompani gjendet edhe te: <b>'+E(conflicts.map(routeLabel).join(' · '))+'</b>. Mos përgatit kontaktim tjetër pa shqyrtim.':'Nuk u gjet përplasje me Mundësitë, Material – Ofertë ose Përfaqësime.')+'</p></section>'+
+ '<section class="pst-eu-section"><h3>Kontrolli kundër duplikimit</h3><p>'+(conflicts.length?'Kjo kompani gjendet edhe te: <b>'+E(conflicts.map(routeLabel).join(' · '))+'</b>. Mos përgatit kontaktim tjetër pa shqyrtim.':'Nuk u gjet përplasje me Mundësitë, Blerësit e çelikut ose Përfaqësime.')+'</p></section>'+
  '<section class="pst-eu-section"><h3>Historiku i kontaktimit</h3><div class="pst-eu-kv"><span>Mbrojtja</span><span>'+E(guardLabel(r.outreach_guard))+'</span><span>Kontakti i fundit</span><span>'+E(D(r.last_outbound_at||r.contact_master_last_contact||r.last_contact_at))+'</span><span>Draft aktiv</span><span>'+(r.has_active_draft?'Po':'Jo')+'</span><span>Në regjistrin e kontakteve</span><span>'+(r.known_in_contact_master?'Po':'Jo')+'</span></div></section>'+
  '<section class="pst-eu-section full"><h3>Burimi dhe verifikimi</h3><div class="pst-eu-kv"><span>Burimi</span><span>'+E(r.source_name||r.discovery_source||'—')+'</span><span>Verifikuar</span><span>'+E(D(r.last_verified_at))+'</span><span>Çelësi</span><span>'+E(r.source_key||'—')+'</span><span>Origjina</span><span>'+E(r.record_origin==='historike_gc'?'Punë e mëparshme e integruar':'Regjistri canonical i modulit')+'</span></div></section>'+
  '</div></div>';

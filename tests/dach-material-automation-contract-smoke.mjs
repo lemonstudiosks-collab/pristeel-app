@@ -11,9 +11,10 @@ const projectEmailContinuity = fs.readFileSync('supabase/live-migration-history/
 const contactResolutionFix = fs.readFileSync('supabase/live-migration-history/20260924072000_fix_material_trade_contact_resolution_claims_v1.sql','utf8');
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 const draftRecovery = fs.readFileSync('supabase/migrations/20260926193000_material_trade_draft_recovery_v1.sql','utf8');
+const completeFlow = fs.readFileSync('supabase/migrations/20260927153000_steel_buyers_multicontact_followup_v1.sql','utf8');
 
-assert.match(ui,/BLERËSIT E MATERIALIT TË ÇELIKUT · EUROPE/,'Home card must expose broader Material Trade scope');
-assert.match(ui,/Blerësit e materialit të çelikut - Europe/,'Material Trade page must use broader European scope');
+assert.match(ui,/BLERËSIT E ÇELIKUT · EUROPE/,'Home card must expose the Steel Buyers scope');
+assert.match(ui,/<h1>Blerësit e çelikut<\/h1>/,'Steel Buyers page must use the final Albanian name');
 assert.match(ui,/EU \+ CH \+ RS \+ ME · MATERIAL ÇELIKU · DAP · PA TED/,'Home chip must expose the eligible geography and no-TED boundary');
 assert.match(ui,/\['action','Të gjitha',actionable\.length\]/,'ready-to-contact stage must remain the default company list');
 assert.match(ui,/life==='draft'\?'Draft gati'/,'draft-ready stage must be distinct');
@@ -35,12 +36,17 @@ assert.match(ui,/Additional steel material supply source/,'non-project EU buyer 
 assert.match(ui,/obj\.claim/,'Material Trade UI must parse contact emails stored in evidence.claim');
 assert.match(ui,/r&&r\.canonical_contact_email/,'Material Trade UI must reuse the canonical resolved contact after reload');
 assert.match(ui,/Kontakti për blerje/,'Expanded buyer detail must surface purchasing contact prominently');
+assert.match(ui,/selectedVisible=selected&&rows\.some/,'Changing filters must never leave a hidden company selected in the detail pane');
+assert.match(ui,/outboundRowsByTarget/,'UI must preserve separate outbound history for multiple contacts');
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260926-draft-recovery1/,'runtime must cache-bust the Material Trade module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260927-steel-buyers-flow1/,'runtime must cache-bust the Steel Buyers module');
 
-assert.match(edge,/pppp-dach-steel-draft-generator-v18-material-trade-draft-recovery/,'Edge source must carry the current draft-recovery commercial engine version');
+assert.match(edge,/pppp-dach-steel-draft-generator-v19-steel-buyers-complete-flow/,'Edge source must carry the complete Steel Buyers flow version');
+assert.match(edge,/async function buyerPreview/,'visible preview must come from the canonical Edge copy engine');
+assert.match(edge,/async function followupDraft/,'Steel Buyers must support a human-created follow-up draft');
+assert.match(edge,/function contactCandidates/,'Steel Buyers must expose verified contacts separately');
 assert.match(edge,/tg=await qualifyTarget\(tg,/,'buyer draft must qualify legacy bridge targets during the same click');
 assert.match(edge,/canonical_contact_email:contact\?\.email\|\|null/,'qualification must persist the canonical buyer contact before drafting');
 assert.match(ui,/outreach_engine_version,workflow_state,outreach_motion,company_fit_score/,'UI must load V2 readiness fields instead of presenting legacy targets as ready blindly');
@@ -108,5 +114,9 @@ assert.match(contactResolutionFix,/Purchasing \/ Procurement/,'contact resolver 
 assert.match(draftRecovery,/before insert or update of score_band/,'new Material Trade targets must be assigned V2 defaults at ingestion time');
 assert.match(draftRecovery,/outreach_engine_version = 'legacy'/,'migration must repair uncontacted legacy bridge rows');
 assert.match(draftRecovery,/not in \('queued','draft_created','sent','replied'\)/,'migration must leave contacted history untouched');
+assert.match(completeFlow,/source_touch_recipient_uq/,'multi-contact outbound identity must include the recipient');
+assert.match(completeFlow,/touch_no=2/,'follow-up source guard must validate touch two');
+assert.match(completeFlow,/interval '7 days'/,'follow-up must not become due before seven days');
+assert.match(completeFlow,/security_invoker = true/,'follow-up view must preserve caller RLS');
 
 console.log('Material Trade automation contract smoke: PASS');

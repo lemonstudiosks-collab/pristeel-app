@@ -13,7 +13,9 @@ For project continuity also read:
 
 - Owner i dukshëm: `pristeel-eu-companies-v1.js`.
 - Të dhënat canonical të reja ruhen në `public.pppp_eu_direct_targets_v1`; pamja operative `public.pppp_eu_direct_operational_v1` integron edhe batch-in historik direct-web pa futur fituesit TED.
-- Routing është i prerë: tenderët/projektet dhe fituesit e tyre mbeten te **Mundësitë**; blerësit e lëndës së parë te **Material – Ofertë**; hyrja në treg/JV/përfaqësimi te **Përfaqësime**.
+- Routing është i prerë: tenderët/projektet dhe fituesit e tyre mbeten te **Mundësitë**; blerësit e lëndës së parë te **Blerësit e çelikut**; hyrja në treg/JV/përfaqësimi te **Përfaqësime**.
+- **Blerësit e çelikut** mban disa kontakte për kompani në shared outbound, një draft të veçantë për recipient dhe një follow-up të kontrolluar pas shtatë ditësh pa reply. Preview-i dhe drafti krijohen nga i njëjti Edge copy engine; asnjë email nuk dërgohet automatikisht.
+- Pas reply/RFQ dhe konfirmimit njerëzor, targeti bëhet Project `trading`; furnitorët, RFQ-të dhe oferta vazhdojnë vetëm në rrjedhën canonical të Project-it.
 - Para regjistrimit kontrollohen domeni zyrtar dhe përplasjet ndërmjet moduleve. Para kontaktimit lexohet historiku i përbashkët i outbound-it/kontakteve.
 - Moduli nuk krijon projekt, partner, kontakt, draft ose dërgim emaili automatik. Dërgimi i jashtëm mbetet human gate.
 - Fronti është qëllimisht minimal: Kthehu, Kërko, Rifresko, listë dhe profil.

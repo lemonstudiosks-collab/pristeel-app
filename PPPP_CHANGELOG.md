@@ -13,7 +13,7 @@
 ## 2026-09-27 — Moduli “Kompanitë EU”
 
 - U shtua pipeline i veçantë për klientë të drejtpërdrejtë në Evropë: GC/GU, EPC/industrial contractors, developers, manufacturers dhe kompani të tjera që mund të blejnë paketa çeliku të fabrikuar, kapacitet prodhues ose nënkontraktim.
-- Routing guard e mban këtë pipeline jashtë **Mundësive**, **Material – Ofertë** dhe **Përfaqësimeve**. Fituesit TED nuk importohen në këtë modul vetëm pse janë GC; ata mbeten në rrjedhën e Mundësive.
+- Routing guard e mban këtë pipeline jashtë **Mundësive**, **Blerësit e çelikut** dhe **Përfaqësimeve**. Fituesit TED nuk importohen në këtë modul vetëm pse janë GC; ata mbeten në rrjedhën e Mundësive.
 - Operational view integron vetëm batch-in historik direct-web nga GC registry dhe ruan evidencën reale të draftit/dërgimit.
 - Outreach guard kontrollon historikun global dhe jep përparësi kontaktit real të fundit ndaj një drafti të vjetër. Asnjë email nuk dërgohet automatikisht.
 - Ballina dhe mobile marrin hyrjen **Kompanitë EU** me UI minimal dhe tekst shqip. Nuk u shtuan butona për veprime të mbrojtura.
@@ -540,3 +540,12 @@ Automation may read, classify, reconcile, calculate, compare and prepare drafts.
 - Production verification after #389 showed that the earlier Finance stability capture listener still consumed `Partnerët → Financat` before the refreshed primary navigation owner could run.
 - The early capture now hands Finance directly to `PSTPrimaryNavResilienceV1.openFinance()` when available and retains only a bounded local recovery fallback during bootstrap.
 - Cache identities for both the early Finance capture and the terminal primary navigation owner were advanced together so returning browsers cannot retain the stale routing behavior.
+## 2026-09-27 — Blerësit e çelikut: rrjedha e plotë
+
+- Moduli i mëparshëm **Material – Ofertë** quhet tani **Blerësit e çelikut** në desktop, Ballinë, telefon/tablet dhe kontrollet ndërmjet moduleve.
+- Ndërrimi i filtrit rivendos kompaninë e zgjedhur, kështu paneli anësor nuk mund të mbetet te një kompani jashtë listës aktive.
+- Preview-i dhe Gmail draft përdorin të njëjtin motor V2 dhe të njëjtat fakte të personalizimit.
+- Një kompani mund të ketë disa kontakte të verifikuara; çdo recipient ka draft dhe histori të veçantë.
+- Follow-up-i bëhet i mundshëm pas shtatë ditësh pa reply, por krijohet vetëm me veprim njerëzor dhe nuk dërgohet automatikisht.
+- Reply/RFQ promovohet në Project; supplier RFQ dhe oferta komerciale vazhdojnë në rrjedhën canonical të Project-it.
+- Kontrollet e domain-it sinjalizojnë përplasje me Mundësitë, Përfaqësimet dhe Kompanitë EU para outreach-it.
