@@ -43,7 +43,7 @@ assert.match(ui,/outboundRowsByTarget/,'UI must preserve separate outbound histo
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260927-steel-buyers-flow1/,'runtime must cache-bust the Steel Buyers module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260927-steel-buyers-intelligence1/,'runtime must cache-bust the unified Steel Buyers intelligence module');
 
 assert.match(edge,/pppp-dach-steel-draft-generator-v20-intelligence-unified/,'Edge source must carry the unified Material Trade intelligence version');
 assert.match(edge,/async function buyerPreview/,'visible preview must come from the canonical Edge copy engine');
