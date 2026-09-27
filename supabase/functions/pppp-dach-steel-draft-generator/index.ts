@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v19-steel-buyers-complete-flow";
+const V="pppp-dach-steel-draft-generator-v20-intelligence-unified";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -241,14 +241,16 @@ function targetQualification(tg:any,contact:any){
  return{facts,companyFit,timing,timingClass,messageEvidence,tier,contactQuality,reasons,readiness,workflow};
 }
 async function qualifyTarget(tg:any,contact:any){
- const q=targetQualification(tg,contact),now=new Date().toISOString();
- const up=await db.from("pppp_dach_steel_targets_v1").update({
-  canonical_contact_email:contact?.email||null,canonical_contact_name:contact?.person||null,canonical_contact_role:contact?.role||null,
-  contact_tier:q.tier,contact_quality_score:q.contactQuality,outreach_engine_version:"v2",outreach_motion:t(tg?.outreach_motion,80)||"material_buyer",
-  company_fit_score:q.companyFit,commercial_timing_score:q.timing,timing_classification:q.timingClass,
-  personalization_facts:q.facts.slice(0,4),message_evidence_score:q.messageEvidence,outreach_readiness_score:q.readiness,
-  workflow_state:q.workflow,readiness_reasons:q.reasons,updated_at:now
- }).eq("id",tg.id).select("*").single();
+ const payload={
+  email:em(contact?.email||""),
+  person:t(contact?.person||"",240),
+  role:t(contact?.role||"",240),
+  source:t(contact?.source||"",120),
+  quality:t(contact?.quality||"",80)
+ };
+ const q=await db.rpc("pppp_dach_steel_refresh_intelligence_v1",{p_target_id:tg.id,p_contact:payload});
+ if(q.error)throw q.error;
+ const up=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",tg.id).single();
  if(up.error)throw up.error;
  return up.data;
 }
@@ -302,16 +304,20 @@ function supplierText(tg:any,c:any){const p=t(tg?.project_title||tg?.company_nam
 function requirement(tg:any){const m=tg?.material_scope&&typeof tg.material_scope==="object"?tg.material_scope:{},a=Array.isArray(m.line_items)?m.line_items:[],f:string[]=[],g:string[]=[],s:string[]=[];for(const x of a){const z=[[x?.family,f],[x?.grade,g],[x?.standard,s]] as any;for(const y of z){const v=t(y[0],140);if(v&&!y[1].includes(v))y[1].push(v);}}return{family:f[0]||"structural steel",product_type:f[0]||"structural steel",description:t(tg?.steel_scope,5000),grades:g,standards:s};}
 
 async function buyerContact(tg:any){
- const q=await db.rpc("pppp_dach_steel_contact_resolution_v1",{p_target_id:tg.id});
+ const q=await db.rpc("pppp_dach_steel_contact_intelligence_v1",{p_target_id:tg.id});
  if(q.error)throw q.error;
  const r=q.data&&typeof q.data==="object"?q.data:{};
+ const sel=r.selected&&typeof r.selected==="object"?r.selected:{};
  return {
-  email:em(r.email||""),
-  person:t(r.person||"",240),
-  role:t(r.role||"",240),
-  source:t(r.source||"",120),
-  quality:t(r.quality||"",80),
-  score:Number(r.score||0),
+  email:em(sel.email||""),
+  person:t(sel.person||"",240),
+  role:t(sel.role||"",240),
+  source:t(sel.source||"",120),
+  quality:t(sel.quality||sel.contact_kind||"",80),
+  tier:t(sel.tier||"",20),
+  score:Number(sel.contact_quality_score||0),
+  contact_quality_score:Number(sel.contact_quality_score||0),
+  outreach_allowed:sel.outreach_allowed===true,
   company_domain:t(r.company_domain||tg?.company_domain||"",240),
   candidates:Array.isArray(r.candidates)?r.candidates:[]
  };
@@ -321,9 +327,12 @@ function contactCandidates(tg:any,contact:any){
  for(const raw of rows){
   const email=em(raw?.email||raw?.recipient_email||"");if(!email||out.some(x=>x.email===email))continue;
   if(tg?.company_domain&&nm(tg.company_domain)!==nm(dom(email)))continue;
-  const person=t(raw?.person||raw?.name||raw?.recipient_name||"",240),role=t(raw?.role||raw?.contact_role||"",240),tier=contactTier(email,person,role),score=tierScore(tier);
+  if(raw?.outreach_allowed===false)continue;
+  const person=t(raw?.person||raw?.name||raw?.recipient_name||"",240),role=t(raw?.role||raw?.contact_role||"",240);
+  const score=Number(raw?.contact_quality_score??raw?.score??0);
+  const tier=t(raw?.tier||"",20)||(score>=90?"A":score>=80?"B":score>=70?"C":score>=50?"D":"F");
   if(score<50)continue;
-  out.push({email,person,role,source:t(raw?.source||contact?.source||"public",120),quality:t(raw?.quality||tier,80),tier,score});
+  out.push({email,person,role,source:t(raw?.source||contact?.source||"public",120),quality:t(raw?.quality||raw?.contact_kind||tier,80),contact_kind:t(raw?.contact_kind||"",80),tier,score,contact_quality_score:score,outreach_allowed:true,source_url:t(raw?.source_url||"",1000)});
  }
  return out.sort((a,b)=>b.score-a.score);
 }
@@ -384,8 +393,12 @@ async function guards(tg:any,q:any,e:string){
 }
 async function buyerPreview(tg:any,b:any){
  const resolved=await buyerContact(tg),contact=selectedContact(tg,resolved,b);if(!contact)throw new Error("buyer_contact_required");
- const q=targetQualification(tg,contact),copy=buyerTextV2({...tg,...q,personalization_facts:q.facts},canonicalSignatureHtml,contact);
- return{contact,contacts:contactCandidates(tg,resolved),routing_conflicts:await routingConflicts(tg),workflow_state:q.workflow,readiness_reasons:q.reasons,readiness_score:q.readiness,subject:copy.subject,body:copy.body,html_body:copy.html_body,approach_mode:copy.approach_mode,offer_model:copy.offer_model,language:copy.language,personalization_facts:copy.personalization_facts};
+ const qi=await db.rpc("pppp_dach_steel_target_intelligence_v1",{p_target_id:tg.id,p_contact:{email:contact.email,person:contact.person||null,role:contact.role||null,source:contact.source||null,quality:contact.quality||null}});
+ if(qi.error)throw qi.error;
+ const q=qi.data&&typeof qi.data==="object"?qi.data:{};
+ const enriched={...tg,company_fit_score:q.company_fit_score,commercial_timing_score:q.commercial_timing_score,timing_classification:q.timing_classification,message_evidence_score:q.message_evidence_score,contact_quality_score:q.contact_quality_score,contact_tier:q.contact_tier,outreach_readiness_score:q.outreach_readiness_score,workflow_state:q.workflow_state,readiness_reasons:Array.isArray(q.readiness_reasons)?q.readiness_reasons:[],personalization_facts:Array.isArray(q.personalization_facts)?q.personalization_facts:[]};
+ const copy=buyerTextV2(enriched,canonicalSignatureHtml,contact);
+ return{contact,contacts:contactCandidates(tg,resolved),routing_conflicts:await routingConflicts(tg),workflow_state:q.workflow_state,readiness_reasons:Array.isArray(q.readiness_reasons)?q.readiness_reasons:[],readiness_score:Number(q.outreach_readiness_score||0),intelligence_gaps:Array.isArray(q.intelligence_gaps)?q.intelligence_gaps:[],subject:copy.subject,body:copy.body,html_body:copy.html_body,approach_mode:copy.approach_mode,offer_model:copy.offer_model,language:copy.language,personalization_facts:copy.personalization_facts};
 }
 async function buyerDraft(tg:any,u:any,b:any){
   const resolved=await buyerContact(tg),chosen=selectedContact(tg,resolved,b);if(!chosen)throw new Error("buyer_contact_required");
@@ -397,7 +410,7 @@ async function buyerDraft(tg:any,u:any,b:any){
  if(!recipient)throw new Error("buyer_contact_required");
  const e=safe(recipient);
  tg=await qualifyTarget(tg,{...contact,email:e,person:q?.recipient_name||contact.person,role:q?.contact_role||contact.role});
- const tier=contactTier(e,q?.recipient_name||contact.person,q?.contact_role||contact.role),contactScore=tierScore(tier),facts=specificFacts(tg);
+ const tier=t(tg?.contact_tier,20)||"F",contactScore=Number(tg?.contact_quality_score||0),facts=specificFacts(tg);
  if(t(tg?.outreach_engine_version,20)!=="v2")throw new Error("outreach_v2_candidate_required");
  if(t(tg?.workflow_state,80)!=="ready_for_outreach")throw new Error("outreach_v2_readiness_blocked:"+t(tg?.workflow_state||"missing_state",80)+":"+((Array.isArray(tg?.readiness_reasons)?tg.readiness_reasons:[]).join(",")||"qualification_incomplete"));
  if(Number(tg?.company_fit_score||0)<65)throw new Error("outreach_v2_company_fit_below_65");
