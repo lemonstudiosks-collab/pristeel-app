@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "b24d0031af24d27b13187f38a6b712375d237331"
+    "bootstrapGitBlobSha": "2545fbb783f584b101cf9bf3f9ff623e7887e422"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",

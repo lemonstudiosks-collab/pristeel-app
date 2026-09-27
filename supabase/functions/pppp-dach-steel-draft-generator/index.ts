@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v19-steel-buyers-complete-flow";
+const V="pppp-dach-steel-draft-generator-v20-intelligence-unified";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -20,7 +20,7 @@ const local=(v:any)=>(em(v).split("@")[0]||"").replace(/\+.*/,"");
 const badLocal=new Set(["jobs","careers","career","hr","humanresources","recruiting","privacy","gdpr","webmaster","press","presse","media","marketing","newsletter","noreply","no-reply","donotreply","dpo","security","abuse"]);
 const badDom=new Set(["gmail.com","googlemail.com","hotmail.com","outlook.com","live.com","yahoo.com","icloud.com","aol.com","example.com","example.org","example.net"]);
 const recover=new Set(["gmail_draft_missing","gmail_draft_stale","draft_missing","draft_stale"]);
-const SIG_LOGO_B64="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";
+const SIG_LOGO_B64="";
 
 function safe(v:any){const e=em(v),d=dom(e);if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))throw new Error("valid_recipient_email_required");if(d==="prissteel.com")throw new Error("internal_recipient_not_allowed");if(badLocal.has(local(e)))throw new Error("unsafe_recipient_localpart");if(badDom.has(d))throw new Error("personal_or_test_recipient_domain_not_allowed");return e;}
 function b64u(input:Uint8Array|string){const bytes=typeof input==="string"?new TextEncoder().encode(input):input;let b="";for(const x of bytes)b+=String.fromCharCode(x);return btoa(b).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
@@ -145,7 +145,7 @@ async function draft(to:string,subject:string,body:string,h:Record<string,string
  let raw="";
  if(htmlBody){
   const alt="alt_"+crypto.randomUUID().replace(/-/g,"");
-  if(htmlBody.includes("cid:prissteel-signature-logo")){
+  if(SIG_LOGO_B64&&htmlBody.includes("cid:prissteel-signature-logo")){
    const rel="rel_"+crypto.randomUUID().replace(/-/g,""),logo=SIG_LOGO_B64.replace(/(.{76})/g,"$1\r\n");
    raw=[...head,'Content-Type: multipart/related; boundary="'+rel+'"',"","--"+rel,'Content-Type: multipart/alternative; boundary="'+alt+'"',"","--"+alt,"Content-Type: text/plain; charset=UTF-8","Content-Transfer-Encoding: 8bit","",body,"","--"+alt,"Content-Type: text/html; charset=UTF-8","Content-Transfer-Encoding: 8bit","",htmlBody,"","--"+alt+"--","--"+rel,'Content-Type: image/png; name="prissteel-signature-logo.png"',"Content-Transfer-Encoding: base64",'Content-ID: <prissteel-signature-logo>','Content-Disposition: inline; filename="prissteel-signature-logo.png"',"",logo,"--"+rel+"--",""].join("\r\n");
   }else{
@@ -159,7 +159,7 @@ async function draft(to:string,subject:string,body:string,h:Record<string,string
 async function del(id:string){if(!id)return;try{const tk=await token();await fetch("https://gmail.googleapis.com/gmail/v1/users/"+encodeURIComponent(GU)+"/drafts/"+encodeURIComponent(id),{method:"DELETE",headers:{Authorization:"Bearer "+tk}});}catch{}}
 const signature=["Arianit Vllahiu","Head of Business Development","+383 (0) 44 244 699","arianit.vllahiu@prissteel.com","www.prissteel.com"].join("\n");
 const htmlEsc=(v:any)=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-const canonicalSignatureHtml='<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;border-collapse:collapse;margin-top:12px"><tr><td style="vertical-align:middle;padding-right:22px"><img src="cid:prissteel-signature-logo" alt="PRISTEEL" width="227" height="75" style="display:block;border:0;width:227px;height:75px"></td><td style="vertical-align:top;border-left:2px solid #2f80c9;padding-left:22px"><div style="font-size:18px;line-height:1.25;font-weight:700;color:#1f2937">Arianit Vllahiu</div><div style="font-size:16px;line-height:1.35;color:#1f2937">Head of Business Development</div><div style="height:8px;line-height:8px">&nbsp;</div><div style="font-size:15px;line-height:1.55"><a href="tel:+38344244699" style="color:#145fd7;text-decoration:underline">+383 (0) 44 244 699</a><br><a href="mailto:arianit.vllahiu@prissteel.com" style="color:#145fd7;text-decoration:underline">arianit.vllahiu@prissteel.com</a><br><a href="https://www.prissteel.com" style="color:#145fd7;text-decoration:underline">www.prissteel.com</a></div></td></tr></table>'
+const canonicalSignatureHtml='<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;margin-top:12px"><div style="font-size:18px;line-height:1.25;font-weight:700">Arianit Vllahiu</div><div style="font-size:16px;line-height:1.35">Head of Business Development</div><div style="height:8px"></div><div style="font-size:15px;line-height:1.55"><a href="tel:+38344244699">+383 (0) 44 244 699</a><br><a href="mailto:arianit.vllahiu@prissteel.com">arianit.vllahiu@prissteel.com</a><br><a href="https://www.prissteel.com">www.prissteel.com</a></div></div>'
 
 function mat(tg:any){const m=tg?.material_scope&&typeof tg.material_scope==="object"?tg.material_scope:{},a=Array.isArray(m.line_items)?m.line_items:[];if(a.length)return a.slice(0,30).map((x:any)=>{const n=[t(x?.family,100),t(x?.designation,180)].filter(Boolean).join(" · ")||"Steel material",sp=[t(x?.grade,80),t(x?.standard,120),t(x?.dimension||x?.dimensions,160)].filter(Boolean).join(" / "),q=x?.qty!=null?String(x.qty)+(x?.unit?" "+x.unit:""):(x?.tonnes!=null?String(x.tonnes)+" t":"");return "- "+n+(sp?" | "+sp:"")+(q?" | "+q:"");});return t(tg?.steel_scope,4000).split(/;\s*/).filter(Boolean).map((x:string)=>"- "+x);}
 function buyerLang(tg:any){
@@ -241,14 +241,16 @@ function targetQualification(tg:any,contact:any){
  return{facts,companyFit,timing,timingClass,messageEvidence,tier,contactQuality,reasons,readiness,workflow};
 }
 async function qualifyTarget(tg:any,contact:any){
- const q=targetQualification(tg,contact),now=new Date().toISOString();
- const up=await db.from("pppp_dach_steel_targets_v1").update({
-  canonical_contact_email:contact?.email||null,canonical_contact_name:contact?.person||null,canonical_contact_role:contact?.role||null,
-  contact_tier:q.tier,contact_quality_score:q.contactQuality,outreach_engine_version:"v2",outreach_motion:t(tg?.outreach_motion,80)||"material_buyer",
-  company_fit_score:q.companyFit,commercial_timing_score:q.timing,timing_classification:q.timingClass,
-  personalization_facts:q.facts.slice(0,4),message_evidence_score:q.messageEvidence,outreach_readiness_score:q.readiness,
-  workflow_state:q.workflow,readiness_reasons:q.reasons,updated_at:now
- }).eq("id",tg.id).select("*").single();
+ const payload={
+  email:em(contact?.email||""),
+  person:t(contact?.person||"",240),
+  role:t(contact?.role||"",240),
+  source:t(contact?.source||"",120),
+  quality:t(contact?.quality||"",80)
+ };
+ const q=await db.rpc("pppp_dach_steel_refresh_intelligence_v1",{p_target_id:tg.id,p_contact:payload});
+ if(q.error)throw q.error;
+ const up=await db.from("pppp_dach_steel_targets_v1").select("*").eq("id",tg.id).single();
  if(up.error)throw up.error;
  return up.data;
 }
@@ -302,16 +304,20 @@ function supplierText(tg:any,c:any){const p=t(tg?.project_title||tg?.company_nam
 function requirement(tg:any){const m=tg?.material_scope&&typeof tg.material_scope==="object"?tg.material_scope:{},a=Array.isArray(m.line_items)?m.line_items:[],f:string[]=[],g:string[]=[],s:string[]=[];for(const x of a){const z=[[x?.family,f],[x?.grade,g],[x?.standard,s]] as any;for(const y of z){const v=t(y[0],140);if(v&&!y[1].includes(v))y[1].push(v);}}return{family:f[0]||"structural steel",product_type:f[0]||"structural steel",description:t(tg?.steel_scope,5000),grades:g,standards:s};}
 
 async function buyerContact(tg:any){
- const q=await db.rpc("pppp_dach_steel_contact_resolution_v1",{p_target_id:tg.id});
+ const q=await db.rpc("pppp_dach_steel_contact_intelligence_v1",{p_target_id:tg.id});
  if(q.error)throw q.error;
  const r=q.data&&typeof q.data==="object"?q.data:{};
+ const sel=r.selected&&typeof r.selected==="object"?r.selected:{};
  return {
-  email:em(r.email||""),
-  person:t(r.person||"",240),
-  role:t(r.role||"",240),
-  source:t(r.source||"",120),
-  quality:t(r.quality||"",80),
-  score:Number(r.score||0),
+  email:em(sel.email||""),
+  person:t(sel.person||"",240),
+  role:t(sel.role||"",240),
+  source:t(sel.source||"",120),
+  quality:t(sel.quality||sel.contact_kind||"",80),
+  tier:t(sel.tier||"",20),
+  score:Number(sel.contact_quality_score||0),
+  contact_quality_score:Number(sel.contact_quality_score||0),
+  outreach_allowed:sel.outreach_allowed===true,
   company_domain:t(r.company_domain||tg?.company_domain||"",240),
   candidates:Array.isArray(r.candidates)?r.candidates:[]
  };
@@ -321,9 +327,12 @@ function contactCandidates(tg:any,contact:any){
  for(const raw of rows){
   const email=em(raw?.email||raw?.recipient_email||"");if(!email||out.some(x=>x.email===email))continue;
   if(tg?.company_domain&&nm(tg.company_domain)!==nm(dom(email)))continue;
-  const person=t(raw?.person||raw?.name||raw?.recipient_name||"",240),role=t(raw?.role||raw?.contact_role||"",240),tier=contactTier(email,person,role),score=tierScore(tier);
+  if(raw?.outreach_allowed===false)continue;
+  const person=t(raw?.person||raw?.name||raw?.recipient_name||"",240),role=t(raw?.role||raw?.contact_role||"",240);
+  const score=Number(raw?.contact_quality_score??raw?.score??0);
+  const tier=t(raw?.tier||"",20)||(score>=90?"A":score>=80?"B":score>=70?"C":score>=50?"D":"F");
   if(score<50)continue;
-  out.push({email,person,role,source:t(raw?.source||contact?.source||"public",120),quality:t(raw?.quality||tier,80),tier,score});
+  out.push({email,person,role,source:t(raw?.source||contact?.source||"public",120),quality:t(raw?.quality||raw?.contact_kind||tier,80),contact_kind:t(raw?.contact_kind||"",80),tier,score,contact_quality_score:score,outreach_allowed:true,source_url:t(raw?.source_url||"",1000)});
  }
  return out.sort((a,b)=>b.score-a.score);
 }
@@ -384,8 +393,12 @@ async function guards(tg:any,q:any,e:string){
 }
 async function buyerPreview(tg:any,b:any){
  const resolved=await buyerContact(tg),contact=selectedContact(tg,resolved,b);if(!contact)throw new Error("buyer_contact_required");
- const q=targetQualification(tg,contact),copy=buyerTextV2({...tg,...q,personalization_facts:q.facts},canonicalSignatureHtml,contact);
- return{contact,contacts:contactCandidates(tg,resolved),routing_conflicts:await routingConflicts(tg),workflow_state:q.workflow,readiness_reasons:q.reasons,readiness_score:q.readiness,subject:copy.subject,body:copy.body,html_body:copy.html_body,approach_mode:copy.approach_mode,offer_model:copy.offer_model,language:copy.language,personalization_facts:copy.personalization_facts};
+ const qi=await db.rpc("pppp_dach_steel_target_intelligence_v1",{p_target_id:tg.id,p_contact:{email:contact.email,person:contact.person||null,role:contact.role||null,source:contact.source||null,quality:contact.quality||null}});
+ if(qi.error)throw qi.error;
+ const q=qi.data&&typeof qi.data==="object"?qi.data:{};
+ const enriched={...tg,company_fit_score:q.company_fit_score,commercial_timing_score:q.commercial_timing_score,timing_classification:q.timing_classification,message_evidence_score:q.message_evidence_score,contact_quality_score:q.contact_quality_score,contact_tier:q.contact_tier,outreach_readiness_score:q.outreach_readiness_score,workflow_state:q.workflow_state,readiness_reasons:Array.isArray(q.readiness_reasons)?q.readiness_reasons:[],personalization_facts:Array.isArray(q.personalization_facts)?q.personalization_facts:[]};
+ const copy=buyerTextV2(enriched,canonicalSignatureHtml,contact);
+ return{contact,contacts:contactCandidates(tg,resolved),routing_conflicts:await routingConflicts(tg),workflow_state:q.workflow_state,readiness_reasons:Array.isArray(q.readiness_reasons)?q.readiness_reasons:[],readiness_score:Number(q.outreach_readiness_score||0),intelligence_gaps:Array.isArray(q.intelligence_gaps)?q.intelligence_gaps:[],subject:copy.subject,body:copy.body,html_body:copy.html_body,approach_mode:copy.approach_mode,offer_model:copy.offer_model,language:copy.language,personalization_facts:copy.personalization_facts};
 }
 async function buyerDraft(tg:any,u:any,b:any){
   const resolved=await buyerContact(tg),chosen=selectedContact(tg,resolved,b);if(!chosen)throw new Error("buyer_contact_required");
@@ -397,7 +410,7 @@ async function buyerDraft(tg:any,u:any,b:any){
  if(!recipient)throw new Error("buyer_contact_required");
  const e=safe(recipient);
  tg=await qualifyTarget(tg,{...contact,email:e,person:q?.recipient_name||contact.person,role:q?.contact_role||contact.role});
- const tier=contactTier(e,q?.recipient_name||contact.person,q?.contact_role||contact.role),contactScore=tierScore(tier),facts=specificFacts(tg);
+ const tier=t(tg?.contact_tier,20)||"F",contactScore=Number(tg?.contact_quality_score||0),facts=specificFacts(tg);
  if(t(tg?.outreach_engine_version,20)!=="v2")throw new Error("outreach_v2_candidate_required");
  if(t(tg?.workflow_state,80)!=="ready_for_outreach")throw new Error("outreach_v2_readiness_blocked:"+t(tg?.workflow_state||"missing_state",80)+":"+((Array.isArray(tg?.readiness_reasons)?tg.readiness_reasons:[]).join(",")||"qualification_incomplete"));
  if(Number(tg?.company_fit_score||0)<65)throw new Error("outreach_v2_company_fit_below_65");
