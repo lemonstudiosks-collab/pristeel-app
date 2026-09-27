@@ -376,7 +376,7 @@ async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='
 function gmailDraftUrl(r){return r&&r.gmail_thread_id?'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(r.gmail_thread_id):''}
 function draftButton(r){
  var busy=!!state.draftBusy[S(r&&r.id)];
- if(r&&r.gmail_draft_id&&r.gmail_thread_id)return '<button class="pst-rep-btn primary" data-rep-act="open-draft">Hap Gmail draft</button>';
+ if(r&&r.gmail_draft_id&&r.gmail_thread_id)return '<button class="pst-rep-btn primary" data-rep-act="open-draft">Hap draftin në Gmail</button>';
  if(r&&r.contact_email)return '<button class="pst-rep-btn primary" data-rep-act="create-draft"'+(busy?' disabled':'')+'>'+(busy?'Duke krijuar draft…':'Krijo draft në Gmail')+'</button>';
  return '<button class="pst-rep-btn" disabled>Kontakti mungon</button>';
 }
@@ -384,7 +384,7 @@ async function callRepresentationDraft(r){
  var id=S(r&&r.id);if(!id||state.draftBusy[id])return;
  state.draftBusy[id]=true;state.draftResult[id]=null;renderDetail();
  try{
-  var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
+  var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Lidhja me sistemin nuk është gati.');
   var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();
   var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
   async function run(tk){return fetch(base+'/functions/v1/pppp-representation-draft-generator',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({target_id:id})})}
