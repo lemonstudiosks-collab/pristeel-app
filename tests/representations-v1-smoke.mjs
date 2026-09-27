@@ -148,9 +148,13 @@ assert.match(dom.window.document.getElementById('pst-rep-modal').textContent,/Ed
 dom.window.document.getElementById('pst-rep-modal').remove();
 page.querySelector('[data-rep-back]').click();
 await new Promise(resolve => setTimeout(resolve,0));
-assert.equal(page.classList.contains('active'),false,'Kthehu from company list must leave Representations');
-assert.equal(dom.window.document.getElementById('page-origin').classList.contains('active'),true,'Kthehu must restore the immediately previous page');
-assert.equal(dom.window.document.getElementById('page-origin').style.display,'block','Kthehu must show the immediately previous page');
+assert.equal(page.querySelector('[data-rep-list-view]').hidden,false,'first Kthehu from dossier must return to the company list');
+assert.equal(page.classList.contains('active'),true,'first Kthehu must stay inside Representations');
+page.querySelector('[data-rep-back]').click();
+await new Promise(resolve => setTimeout(resolve,0));
+assert.equal(page.classList.contains('active'),false,'second Kthehu from company list must leave Representations');
+assert.equal(dom.window.document.getElementById('page-origin').classList.contains('active'),true,'second Kthehu must restore the immediately previous page');
+assert.equal(dom.window.document.getElementById('page-origin').style.display,'block','second Kthehu must show the immediately previous page');
 
 console.log('Representations v1 smoke passed');
 
