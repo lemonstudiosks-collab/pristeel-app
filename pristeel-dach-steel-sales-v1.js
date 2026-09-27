@@ -1,4 +1,4 @@
-/* PRISTEEL Steel Buyers v6
+/* PRISTEEL Steel Buyers v7
  * Steel Buyers + Material Intelligence Desk for direct steel supply across the EU, Switzerland, Serbia and Montenegro.
  * Operational buyer-to-supply workflow over qualified Material Trade targets in the backward-compatible pppp_dach_steel_targets_v1 table.
  * Home reads only the 1-row pppp_dach_steel_home_summary_v1 view.
@@ -55,6 +55,25 @@ function buyerTier(r){
 }
 function buyerTierLabel(r){var x=buyerTier(r);return x==='T1'?'T1 · konsumator direkt':x==='T2'?'T2 · ndërtim / GC-GU':'T3 · për rishikim'}
 
+function intelligenceProfile(r){return J(r&&r.intelligence_profile,{})||{}}
+function intelligenceHtml(r){
+ var x=intelligenceProfile(r),gaps=A(x.intelligence_gaps),wf=N(x.workflow_state||r.workflow_state),status=wf==='ready_for_outreach'?'Gati për outreach':wf==='strong_company_contact_gap'?'Kërkon kontakt më të mirë':wf==='research_required'?'Kërkon pasurim':wf==='disqualified'?'Për rishikim':'Duke u vlerësuar';
+ var contactScore=num(x.contact_quality_score!=null?x.contact_quality_score:r.contact_quality_score),fit=num(x.company_fit_score!=null?x.company_fit_score:r.company_fit_score),ready=num(x.outreach_readiness_score!=null?x.outreach_readiness_score:r.outreach_readiness_score),timing=num(x.commercial_timing_score!=null?x.commercial_timing_score:r.commercial_timing_score),evidence=num(x.message_evidence_score!=null?x.message_evidence_score:r.message_evidence_score),fresh=x.evidence_freshness_days;
+ var gapLabels={capacity_or_tonnage:'kapacitet/tonazh',procurement_timing:'timing i blerjes',named_contact:'kontakt me emër',procurement_contact:'kontakt procurement',supplier_or_sourcing_evidence:'burimi aktual i furnizimit',verification_date:'datë verifikimi',stale_verification:'verifikim i vjetër'};
+ return '<div style="margin:12px 0;padding:11px 12px;border:1px solid #dfe8ed;border-radius:10px;background:#f8fbfd">'
+  +'<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px"><b style="font-size:11px;color:#274e68">Inteligjenca PPPP</b><span style="font-size:10px;font-weight:800;color:#4f7083">'+E(status)+'</span></div>'
+  +'<div class="pst-dss-side-meta">'
+   +'<div class="pst-dss-meta-row"><span>Company fit</span><span>'+E(fit||'—')+'</span></div>'
+   +'<div class="pst-dss-meta-row"><span>Contact quality</span><span>'+E((r.contact_tier||x.contact_tier||'—')+(contactScore?' · '+contactScore:''))+'</span></div>'
+   +'<div class="pst-dss-meta-row"><span>Readiness</span><span>'+E(ready||'—')+'</span></div>'
+   +'<div class="pst-dss-meta-row"><span>Timing</span><span>'+E(timing||'—')+'</span></div>'
+   +'<div class="pst-dss-meta-row"><span>Evidence</span><span>'+E(evidence||'—')+'</span></div>'
+   +'<div class="pst-dss-meta-row"><span>Freshness</span><span>'+E(fresh==null?'—':fresh+' ditë')+'</span></div>'
+  +'</div>'
+  +(gaps.length?'<div style="margin-top:8px;font-size:9.5px;line-height:1.45;color:#738392"><b>Mungon:</b> '+E(gaps.map(function(g){return gapLabels[g]||g}).join(' · '))+'</div>':'<div style="margin-top:8px;font-size:9.5px;color:#4e7758">Profili i inteligjencës është i plotë për outreach.</div>')
+ +'</div>';
+}
+
 function localSummary(){
  var rows=A(state.targets).filter(operatingTarget);
  return {
@@ -63,7 +82,7 @@ function localSummary(){
   quote_ready:rows.filter(function(r){return r.quote_readiness==='M3'}).length,
   calculated:rows.filter(function(r){return r.quote_readiness==='M2'}).length,
   needs_contact:rows.filter(function(r){return !hasContact(r)}).length,
-  ready_for_outreach:rows.filter(function(r){return lifecycle(r)==='action'&&hasContact(r)}).length,
+  ready_for_outreach:rows.filter(function(r){return lifecycle(r)==='action'&&hasContact(r)&&N(r.workflow_state)==='ready_for_outreach'}).length,
   identified_tonnes:rows.reduce(function(a,r){return a+num(r.estimated_tonnes)},0)
  };
 }
@@ -420,7 +439,7 @@ async function loadTargets(force){
  if(typeof window.supaFetch!=='function'){state.error='Databaza nuk është gati.';state.targetsLoaded=true;renderPage();return[]}
  state.targetsLoading=true;state.error='';
  try{
-  var path='pppp_dach_steel_targets_v1?select=id,source_key,source_name,source_url,partner_id,project_id,company_name,company_domain,company_website,country,buyer_type,score_band,target_status,why_now,project_title,project_reference,award_date,procurement_timing,quote_readiness,steel_scope,products,estimated_tonnes,material_revision,material_confidence,material_scope,evidence,contact_status,outreach_status,outbound_source_key,next_action,next_action_due,last_verified_at,created_at,updated_at,outreach_engine_version,workflow_state,outreach_motion,company_fit_score,commercial_timing_score,contact_quality_score,message_evidence_score,outreach_readiness_score,contact_tier,timing_classification,personalization_facts,readiness_reasons,canonical_contact_email,canonical_contact_name,canonical_contact_role&target_status=not.in.(closed,rejected)&order=updated_at.desc&limit=250';
+  var path='pppp_dach_steel_targets_v1?select=id,source_key,source_name,source_url,partner_id,project_id,company_name,company_domain,company_website,country,buyer_type,score_band,target_status,why_now,project_title,project_reference,award_date,procurement_timing,quote_readiness,steel_scope,products,estimated_tonnes,material_revision,material_confidence,material_scope,evidence,contact_status,outreach_status,outbound_source_key,next_action,next_action_due,last_verified_at,created_at,updated_at,outreach_engine_version,workflow_state,outreach_motion,company_fit_score,commercial_timing_score,contact_quality_score,message_evidence_score,outreach_readiness_score,contact_tier,timing_classification,personalization_facts,readiness_reasons,canonical_contact_email,canonical_contact_name,canonical_contact_role,intelligence_profile,intelligence_refreshed_at&target_status=not.in.(closed,rejected)&order=updated_at.desc&limit=250';
   state.targets=A(await window.supaFetch(path));state.targetsLoaded=true;state.lastLoadedAt=Date.now();state.outboundLoaded=false;
  }catch(e){state.targets=[];state.error=S(e&&e.message||e);state.targetsLoaded=true}
  state.targetsLoading=false;renderPage();
@@ -649,7 +668,7 @@ function renderPage(){
     +'<div class="pst-dss-meta-row"><span>Website</span><span>'+(site?'<a href="'+E(site)+'" target="_blank" rel="noopener">'+E(selected.company_domain||selected.company_website||'Hap website')+'</a>':'—')+'</span></div>'
     +'<div class="pst-dss-meta-row"><span>Email</span><span>'+E(email||'Nuk kemi kontakt të verifikuar')+'</span></div>'
     +'<div class="pst-dss-meta-row"><span>Statusi</span><span>'+E(statusLabel)+'</span></div>'
-    +'</div>'+actionHtml+contactsHtml+conflictHtml;
+    +'</div>'+intelligenceHtml(selected)+actionHtml+contactsHtml+conflictHtml;
  }else detailPane.innerHTML='<div class="pst-dss-right-empty"><b>Zgjidh një kompani</b><span>Kliko një rresht në listë për të parë të dhënat dhe veprimin kryesor.</span></div>';
  var contactedSorted=contacted.slice().sort(function(a,b){var qa=outboundFor(a),qb=outboundFor(b);return T((qb&&qb.replied_at)||(qb&&qb.sent_at)||(qb&&qb.updated_at))-T((qa&&qa.replied_at)||(qa&&qa.sent_at)||(qa&&qa.updated_at))});
  contactedPane.innerHTML='<div class="pst-dss-contacted-title"><b>Kompanitë e kontaktuara</b><span class="pst-dss-countpill">'+E(contacted.length)+'</span></div><div class="pst-dss-contacted-sub">Këtu ruhet i gjithë historiku canonical i draft-eve, email-eve të dërguara dhe përgjigjeve.</div>'
