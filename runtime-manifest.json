@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "050b5a7983802fdd047082da7e353a8d335ab54b"
+    "bootstrapGitBlobSha": "fabcb744285a0a3d1f5aaf152fbb5f9d002b6f0e"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -75,7 +75,7 @@
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Canonical Home remains the sole Home data/state owner. Existing mobile Home remains the bounded utility/public-source provider. pristeel-mobile-app-v2.js is the final <=900px presentation shell (runtime v6): Home, Projects, Discover and Inbox remain the four primary full-screen swipe pages. Home uses a stable Ask PPPP layout, fixed summary cards and debounced canonical refreshes. Projects uses the richer card-feed presentation. Discover renders a vertical multi-opportunity tender feed and reads Material Trade/Representation data only through their existing owners; Material Trade uses the owner’s bounded target loader without triggering lifecycle/discovery sync. Inbox reads live Gmail when authorized and falls back to canonical Gmail-synced project_emails through PSTGmailLiveInboxV2. Project and Company details remain native secondary mobile surfaces. No direct mobile Supabase query, independent business-state engine, polling or automatic protected action is introduced."
+      "note": "Canonical Home remains the sole Home data/state owner. Existing mobile Home remains the bounded utility/public-source provider. pristeel-mobile-app-v2.js is the final <=900px presentation shell (runtime v6): Home, Projects, Discover and Inbox remain the four primary full-screen swipe pages. Home uses a stable Ask PPPP layout, fixed summary cards and debounced canonical refreshes. Projects uses the richer card-feed presentation. Discover renders a vertical multi-opportunity tender feed and reads Material Trade/Representation data only through their existing owners; Material Trade uses the owner’s bounded target loader without triggering lifecycle/discovery sync. Inbox reads live Gmail when authorized and falls back to canonical Gmail-synced project_emails through PSTGmailLiveInboxV2. Project and Company details remain native secondary mobile surfaces. No direct mobile Supabase query, independent business-state engine, polling or automatic protected action is introduced. Kompanitë EU shtohet në Ballinë vetëm si hyrje e lehtë drejt pipeline-it të ri; nuk merr pronësi mbi state-in e Ballinës."
     },
     {
       "area": "projects-list",
@@ -141,6 +141,13 @@
         "pristeel-dach-steel-sales-v1.js"
       ],
       "note": "Legacy dach-steel filename is retained for compatibility. The visible owner is Material Trade across EU + CH + ME + RS: Tier 1 direct steel consumers/fabricators/manufacturers, Tier 2 construction/GC-GU only with steel-procurement evidence. Buyer rows surface company intelligence, steel scope, public contact evidence and source links; a named project is optional and never invented. Lifecycle is ready-to-contact → Gmail draft → sent/waiting → replied/active → human-confirmed trading Project, while discovery/runtime remains explicitly separate from TED/Mundësitë."
+    },
+    {
+      "area": "eu-direct-companies",
+      "finalOwners": [
+        "pristeel-eu-companies-v1.js"
+      ],
+      "note": "Kompanitë EU është pipeline-i i veçantë për klientë të drejtpërdrejtë në Evropë për paketa çeliku të fabrikuar, kapacitet prodhues dhe nënkontraktim. Përjashton Mundësitë/tenderët, blerësit e lëndës së parë te Material – Ofertë dhe targetet e Përfaqësimeve. Lexon kontrollet globale të identitetit dhe historikut të kontaktimit, por nuk dërgon email dhe nuk krijon projekt automatikisht."
     },
     {
       "area": "tenders",
