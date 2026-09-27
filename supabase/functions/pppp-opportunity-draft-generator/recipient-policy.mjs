@@ -53,6 +53,7 @@ function companyDomains(action,winner){
   const out=new Set(),orgs=scopedOrganizations(action,winner),allOrgs=Array.isArray(winner?.contact_enrichment?.organizations)?winner.contact_enrichment.organizations:[];
   const add=d=>{d=normalizeDomain(d);if(d&&!FREE_DOMAINS.has(d)&&!RESERVED_DOMAINS.has(d)&&!blockedSourceDomain(d))out.add(d);};
   add(action?.company_domain);
+  add(action?.payload?.outreach_readiness_v1?.verified_company_domain);
   for(const org of orgs)add(org?.domain||websiteDomain(org?.official_website));
   if(allOrgs.length<=1){
     add(websiteDomain(winner?.website));
@@ -65,7 +66,7 @@ function sourceDomainMatches(email,meta,domains){const sd=websiteDomain(meta?.so
 
 function candidate(email,meta={}){
   const e=normalizeEmail(email),d=domainFromEmail(e);if(!validEmail(e)||isReservedEmail(e)||(!meta?.allow_free_domain&&FREE_DOMAINS.has(d))||isBlockedOutreachEmail(e))return null;
-  return {email:e,name:contactName(meta,e),salutation:txt(meta?.salutation||meta?.honorific||meta?.address_title||meta?.title_prefix,80)||null,gender:txt(meta?.gender,40)||null,job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0,company_attribution:txt(meta?.company_attribution,80)||null,recipient_company_name:txt(meta?.recipient_company_name,300)||null,recipient_company_domain:normalizeDomain(meta?.recipient_company_domain)||null,draft_eligible:meta?.draft_eligible!==false};
+  return {email:e,name:contactName(meta,e),salutation:txt(meta?.salutation||meta?.honorific||meta?.address_title||meta?.title_prefix,80)||null,gender:txt(meta?.gender,40)||null,job_title:txt(meta?.job_title||meta?.role||meta?.title,180)||null,purpose:txt(meta?.purpose,80)||null,functional_role:txt(meta?.functional_role,80)||null,contact_id:txt(meta?.contact_id,80)||null,country:txt(meta?.country,80)||null,country_code:txt(meta?.country_code,20)||null,confidence:txt(meta?.confidence||meta?.verification_status,40)||null,score:Number(meta?.score||0)||0,source_type:txt(meta?.source_type,80)||null,source_url:txt(meta?.source_url,1000)||null,priority:Number(meta?.priority||0)||0,company_attribution:txt(meta?.company_attribution,80)||null,recipient_company_name:txt(meta?.recipient_company_name,300)||null,recipient_company_domain:normalizeDomain(meta?.recipient_company_domain)||null,draft_eligible:meta?.draft_eligible!==false};
 }
 function mergeCandidate(a,b){
   if(!a)return b;if(!b)return a;
