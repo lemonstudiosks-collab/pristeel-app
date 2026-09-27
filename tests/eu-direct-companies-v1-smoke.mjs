@@ -6,6 +6,7 @@ const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
 const mobile=fs.readFileSync('pristeel-mobile-app-v2.js','utf8');
 const mig=fs.readFileSync('supabase/migrations/20260927065907_eu_direct_companies_v1.sql','utf8');
 const guard=fs.readFileSync('supabase/migrations/20260927065952_eu_direct_outreach_guard_fix_v1.sql','utf8');
+const security=fs.readFileSync('supabase/migrations/20260927071418_eu_direct_security_hardening_v1.sql','utf8');
 
 assert.match(ui,/pppp_eu_direct_operational_v1/,'UI must read the canonical operational view');
 assert.match(ui,/Kompanitë EU/,'Albanian EU Companies title missing');
@@ -44,5 +45,8 @@ assert.match(mig,/eu_direct_target_never_sends_email/,'manifest send guard missi
 const cooldownPos=guard.indexOf("cooldown_30d");
 const draftPos=guard.indexOf("existing_draft");
 assert.ok(cooldownPos>=0&&draftPos>cooldownPos,'recent real contact must take precedence over a stale draft');
+
+assert.match(security,/security invoker/i,'EU Direct read RPC must run with caller privileges');
+assert.match(security,/revoke execute .*pppp_chatgpt_bridge_manifest_v28\(\).* authenticated/i,'direct authenticated execution of manifest v28 must stay revoked');
 
 console.log('EU Direct Companies v1 smoke: OK');
