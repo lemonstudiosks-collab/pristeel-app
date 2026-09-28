@@ -12,7 +12,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260928-company-popup-v1';
+var VERSION='20260928-stable-opportunities-v1';
 var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,scheduled=false,decorating=false,selectedId='',contactedExpanded=false,sortDirection='desc',canonicalContactsByTender={};
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
@@ -66,10 +66,13 @@ function css(){
 body:has(#page-kek-tenders.active) .app-shell>.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important}
 body:has(#page-kek-tenders.active) .app-shell>.main{width:100%!important;max-width:none!important;min-width:0!important}
 body:has(#page-kek-tenders.active) .main>.topbar{display:none!important}
+html:has(#page-kek-tenders.active){scrollbar-gutter:stable}
 body.pst-ui-v2:has(#page-kek-tenders.active) .content,body:has(#page-kek-tenders.active) .content{max-width:none!important;width:100%!important;margin:0!important;padding:18px 28px 46px!important;background:#f6f8f9!important}
 body:has(#page-kek-tenders.active) #page-kek-tenders .pst-kek-layout{max-width:none!important;width:100%!important;margin:0!important}
 #page-kek-tenders .pst-kek-head{display:none!important}
 #page-kek-tenders #pst-opportunities-focus{max-width:1580px!important;width:100%!important;margin:0 auto!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#page-kek-tenders #pst-opportunities-focus,#page-kek-tenders #pst-opportunities-focus button,#page-kek-tenders #pst-opportunities-focus input,.pst-opp-modal-bg,.pst-opp-modal-bg button,.pst-opp-modal-bg a{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;font-variant-numeric:tabular-nums;font-synthesis:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+#pst-opp-desk,.pst-opp-modal-bg{overflow-anchor:none}.pst-opp-work-row,.pst-opp-side-item,.pst-opp-work-tools button,.pst-opp-contact-row,.pst-opp-modal-close,.pst-opp-detail-actions>*{transform:none!important}.pst-opp-work-row:active,.pst-opp-side-item:active,.pst-opp-work-tools button:active,.pst-opp-contact-row:active,.pst-opp-modal-close:active,.pst-opp-detail-actions>*:active{transform:none!important}
 #pst-opportunities-focus>header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;margin:0 0 16px!important;padding:4px 2px!important}
 .pst-opp-desk-head-left{display:flex;align-items:center;gap:18px;min-width:0}.pst-opp-desk-back{display:inline-flex!important;align-items:center;justify-content:center;height:48px;padding:0 18px;border:1px solid #2f86a6;border-radius:14px;background:#3f9fc2;color:#fff!important;font-size:12px;font-weight:850;cursor:pointer;box-shadow:0 6px 16px rgba(47,134,166,.18)}.pst-opp-desk-back:hover,.pst-opp-desk-back:focus-visible{background:#2f86a6;border-color:#2f86a6;color:#fff!important;box-shadow:0 8px 20px rgba(47,134,166,.22);outline:none}.pst-opp-desk-title>span{display:block;font-size:9.5px;font-weight:900;letter-spacing:.14em;color:#4387a0}.pst-opp-desk-title h2{margin:4px 0 0!important;font-size:30px!important;letter-spacing:-.04em!important;color:#1f3945!important}.pst-opp-desk-title p{margin:5px 0 0!important;font-size:12px!important;color:#718690!important}.pst-opp-header-note{max-width:310px;padding:6px 4px 6px 0;color:#68808d;font-size:11px;line-height:1.5}.pst-opp-header-note:after{content:'';display:block;width:42px;height:2px;margin-top:9px;border-radius:999px;background:#3f9fc2}
 .pst-opp-density{display:flex;padding:3px;border:1px solid #dbe6e9;border-radius:11px;background:#fff}.pst-opp-density button{height:32px;padding:0 11px;border:0;border-radius:8px;background:transparent;color:#71828a;font-size:10px;font-weight:800;cursor:pointer}.pst-opp-density button.on{background:#edf5f7;color:#39798f}
@@ -115,7 +118,7 @@ body:has(#page-kek-tenders.active) #page-kek-tenders .pst-kek-layout{max-width:n
 /* Contacted-company workdesk */
 #pst-opportunities-focus.pst-opp-dashboard #pst-pcw-opportunity-tools,#pst-opportunities-focus.pst-opp-dashboard #pst-opportunities-list,#pst-opportunities-focus.pst-opp-dashboard .pst-opp-results-head{display:none!important}
 #pst-opp-desk.pst-opp-workdesk{display:grid!important;grid-template-columns:270px minmax(560px,1fr)!important;gap:14px!important;margin:0!important;align-items:start!important;align-content:start!important;grid-auto-rows:max-content!important}
-#pst-opp-desk.pst-opp-workdesk>main{display:block!important;align-self:start!important;min-height:0!important;height:auto!important}
+#pst-opp-desk.pst-opp-workdesk>main{display:block!important;align-self:start!important;min-height:calc(100vh - 120px)!important;height:auto!important}
 .pst-opp-side,.pst-opp-work-list,.pst-opp-detail,.pst-opp-contacted{border:1px solid #dfe7e9;border-radius:16px;background:#fff;box-shadow:0 2px 10px rgba(37,66,77,.025);overflow:hidden}
 .pst-opp-work-list{display:block!important;align-self:start!important;min-height:0!important;height:auto!important}.pst-opp-work-rows{display:block!important;align-content:start!important;min-height:0!important;height:auto!important}
 .pst-opp-side{padding:14px;position:sticky;top:14px}.pst-opp-side-head{display:flex;justify-content:space-between;align-items:center;padding:0 4px 11px;border-bottom:1px solid #edf1f2}.pst-opp-side-head b{font-size:14px;color:#2d4854}.pst-opp-side-head button{border:0;background:transparent;color:#4b8da5;font-size:9.5px;font-weight:800;cursor:pointer}.pst-opp-side section{padding:11px 0;border-bottom:1px solid #edf1f2}.pst-opp-side section:last-child{border-bottom:0}.pst-opp-side h4{margin:0 4px 6px;font-size:11.5px;color:#38505a}
@@ -260,11 +263,14 @@ function patchSection(parent,nextParent,selector){
  return next;
 }
 function patchDesk(focus,c){
+ var viewport={x:window.pageXOffset||document.documentElement.scrollLeft||0,y:window.pageYOffset||document.documentElement.scrollTop||0};
  var html=deskHtml(c),desk=focus.querySelector('#pst-opp-desk'),next=deskNode(html);
  if(!next)return null;
  if(!desk){var anchor=focus.querySelector('#pst-pcw-lifecycle-tabs')||focus.querySelector('#pst-opportunities-list');focus.insertBefore(next,anchor);return next;}
  patchSection(desk,next,'.pst-opp-side');
  patchSection(desk,next,'main');
+ try{window.scrollTo(viewport.x,viewport.y);}catch(ignore){}
+ (window.requestAnimationFrame||function(fn){return setTimeout(fn,16);})(function(){try{window.scrollTo(viewport.x,viewport.y);}catch(ignore){}});
  return desk;
 }
 function closeDetail(){var modal=document.getElementById('pst-opp-modal-bg');if(modal)modal.remove();}
