@@ -53,7 +53,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260928-canonical-emails-v1','canonical-email Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260928-company-popup-v1','popup Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
@@ -63,8 +63,9 @@ assert.equal(window.getComputedStyle(window.document.getElementById('pst-opportu
 
 assert(window.document.querySelector('.pst-opp-side'),'left filter column must remain visible');
 assert(window.document.querySelector('.pst-opp-work-list'),'active opportunities list must be the main work area');
-assert(window.document.querySelector('.pst-opp-detail'),'selected company/tender details must render on the right');
-assert(window.document.querySelector('.pst-opp-contacted'),'contacted companies must have their own dedicated list');
+assert.equal(window.document.querySelector('.pst-opp-detail'),null,'company details must stay closed until a row is clicked');
+assert.equal(window.document.querySelector('.pst-opp-contacted'),null,'contacted companies must not occupy a permanent side list');
+assert(window.document.querySelector('[data-pst-opp-contacted-toggle]'),'contacted companies must remain reachable from a compact control');
 assert.equal(window.document.querySelector('[data-pst-opp-mode]'),null,'old top route cards must be removed');
 assert.equal(window.document.querySelector('[data-pst-opp-lifecycle]'),null,'old top lifecycle row must be removed');
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED must remain available as a left-side filter');
@@ -73,7 +74,7 @@ assert(window.document.querySelector('[data-pst-opp-winner="gc_epc"]'),'winner-t
 
 let activeIds=Array.from(window.document.querySelectorAll('.pst-opp-work-row'),x=>x.getAttribute('data-pst-opp-select'));
 assert(activeIds.includes('ted-gc')&&activeIds.includes('ted-gc-duplicate'),'same company can be visible before first outreach is prepared');
-assert.equal(window.document.querySelectorAll('.pst-opp-contact-row').length,0,'contacted list starts empty without draft/send evidence');
+assert.equal(window.document.querySelectorAll('.pst-opp-contact-row').length,0,'contacted view starts closed');
 
 registry=[{
  tender_watch_id:'ted-gc',
@@ -89,28 +90,30 @@ await new Promise(r=>setTimeout(r,220));
 activeIds=Array.from(window.document.querySelectorAll('.pst-opp-work-row'),x=>x.getAttribute('data-pst-opp-select'));
 assert(!activeIds.includes('ted-gc'),'drafted opportunity must leave the active list immediately');
 assert(!activeIds.includes('ted-gc-duplicate'),'all duplicate opportunities for the same contacted company must be suppressed');
+window.document.querySelector('[data-pst-opp-contacted-toggle]').click();
+await new Promise(r=>setTimeout(r,25));
 const contacted=window.document.querySelectorAll('.pst-opp-contact-row');
 assert.equal(contacted.length,1,'contacted company must appear once in the dedicated contacted list');
 assert.match(contacted[0].textContent,/Example GC GmbH/,'contacted list must identify the contacted company');
 assert.match(contacted[0].textContent,/Draft gati/,'draft creation must be visible as the parking state before send');
 assert.equal(rows.find(r=>r.id==='ted-gc').project_id,undefined,'creating a draft must not create a Project');
+window.document.querySelector('[data-pst-opp-contacted-toggle]').click();
+await new Promise(r=>setTimeout(r,25));
 
 const producerRow=window.document.querySelector('[data-pst-opp-select="ted-producer"]');
 assert(producerRow,'another uncontacted TED company must remain available');
 const deskNodeBefore=window.document.getElementById('pst-opp-desk');
 const sideNodeBefore=window.document.querySelector('.pst-opp-side');
 const mainNodeBefore=window.document.querySelector('#pst-opp-desk>main');
-const rightNodeBefore=window.document.querySelector('.pst-opp-work-right');
-const contactedNodeBefore=window.document.querySelector('.pst-opp-contacted');
 producerRow.click();
 await new Promise(r=>setTimeout(r,25));
 assert.strictEqual(window.document.getElementById('pst-opp-desk'),deskNodeBefore,'selecting an Opportunity must preserve the visible desk node');
 assert.strictEqual(window.document.querySelector('.pst-opp-side'),sideNodeBefore,'selecting an Opportunity must preserve an unchanged filter column');
 assert.strictEqual(window.document.querySelector('#pst-opp-desk>main'),mainNodeBefore,'selecting an Opportunity must preserve the entire 60-row center column');
 assert.strictEqual(window.document.querySelector('[data-pst-opp-select="ted-producer"]'),producerRow,'selecting an Opportunity must preserve the clicked row node');
-assert.strictEqual(window.document.querySelector('.pst-opp-work-right'),rightNodeBefore,'selecting an Opportunity must preserve the right-column container');
-assert.strictEqual(window.document.querySelector('.pst-opp-contacted'),contactedNodeBefore,'selecting an Opportunity must preserve the contacted-company list');
-assert.match(window.document.querySelector('.pst-opp-detail').textContent,/Example Steel AG/,'clicking a company must hydrate its right-side details');
+assert(window.document.querySelector('#pst-opp-modal-bg'),'clicking a company must open a modal overlay');
+assert.match(window.document.querySelector('.pst-opp-detail').textContent,/Example Steel AG/,'clicking a company must hydrate its popup details');
+assert(window.document.querySelector('[data-pst-opp-close]'),'popup must expose a clear close action');
 assert(window.document.querySelector('[data-pst-opp-draft="ted-producer"]'),'uncontacted TED company with verified email must expose Krijo draft emaili');
 assert(window.document.querySelector('[data-pst-opp-open="ted-producer"]'),'uncontacted TED company must expose the tender-analysis action before outreach');
 assert.match(window.document.querySelector('[data-pst-opp-open="ted-producer"]').textContent,/Analizo tenderin/,'TED analysis action must be explicit');
