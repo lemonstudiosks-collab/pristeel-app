@@ -130,7 +130,7 @@ var files=[
   'pristeel-home-stability-v2.js?v=20260817-1',
   'pristeel-home-project-recovery-v3.js?v=20260817-1',
   'pristeel-home-visual-cleanup-v1.js?v=20260817-1',
-  'pristeel-dach-steel-sales-v1.js?v=20260928-canonical-company-v1',
+  'pristeel-dach-steel-sales-v1.js?v=20260928-home-summary-sync1',
   'pristeel-sales-engine-v3.js?v=20260925-commercial-engine1',
   'pristeel-representations-v1.js?v=20260927-representations7-compact-back',
   'pristeel-representation-opportunities-v2.js?v=20260927-opportunities4-compact-controls',
@@ -161,7 +161,7 @@ var files=[
   'pristeel-primary-nav-resilience-v1.js?v=20260926-representations-nav1',
   'pristeel-project-execution-guard-v1.js?v=20260829-postaward1',
   'pristeel-creative-ui-v1.js?v=20260911-fullredesign4',
-  'pristeel-home-morning-command-center-v1.js?v=20260928-home-layout1',
+  'pristeel-home-morning-command-center-v1.js?v=20260928-home-layout2',
   'pristeel-ui-runtime-stability-v1.js?v=20260925-no-page-clone1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;

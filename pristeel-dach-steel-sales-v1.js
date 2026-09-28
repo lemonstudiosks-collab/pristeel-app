@@ -399,7 +399,9 @@ async function loadSummary(force){
   var rows=A(await window.supaFetch('pppp_dach_steel_home_summary_v1?select=*&limit=1'));
   state.summary=rows[0]||null;state.summaryLoaded=true;state.lastLoadedAt=Date.now();
  }catch(e){state.summary=null;state.error=S(e&&e.message||e);state.summaryLoaded=true}
- state.summaryLoading=false;renderHome();renderPage();return state.summary;
+ state.summaryLoading=false;renderHome();renderPage();
+ try{document.dispatchEvent(new CustomEvent('pst:dach-steel-summary-ready',{detail:{summary:state.summary}}))}catch(e){}
+ return state.summary;
 }
 
 async function loadOutbound(force){
@@ -705,6 +707,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 window.PSTDachSteelSalesV1=window.PSTDachSteelSalesV2=window.PSTDachSteelSalesV3={
  source:SOURCE,open:open,
  refresh:function(){return syncLifecycleUi(true)},
+ loadSummary:function(force){return loadSummary(!!force)},
  loadTargets:function(force){return loadTargets(!!force)},
  snapshot:function(){return{source:SOURCE,summary:summary(),targets:A(state.targets).slice(),outboundByTarget:Object.assign({},state.outboundByTarget),contactByTarget:Object.assign({},state.contactByTarget),filter:state.filter,error:state.error,targetsLoaded:state.targetsLoaded,targetsLoading:state.targetsLoading}}
 };

@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "62d19a373285ff0d3ed3a8d9eabb49ab71470697"
+    "bootstrapGitBlobSha": "76f127f205327e954e944520f458c178bb777fa7"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -339,7 +339,7 @@
       "module": "pristeel-dach-steel-sales-v1.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded by the ordered bootstrap with the reviewed 20260924-company-intel4 cache path. Owns the Material Trade buyer page for EU + CH + ME + RS, including visible company/contact intelligence, regional outreach-language routing and human-confirmed RFQ-to-Project promotion, while retaining legacy dach_steel_* backend identifiers for compatibility."
+      "condition": "Loaded by the ordered bootstrap with the reviewed 20260928-home-summary-sync1 cache path. Owns the Material Trade buyer page for EU + CH + ME + RS, including visible company/contact intelligence, regional outreach-language routing and human-confirmed RFQ-to-Project promotion, while retaining legacy dach_steel_* backend identifiers for compatibility."
     },
     {
       "module": "pristeel-representations-v1.js",

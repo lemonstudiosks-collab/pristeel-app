@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 161,
-  "sequenceSha256": "1e07cb092d8b7e74fc0d472cce53544bbc26a48d32796093aedee74b51015383",
+  "sequenceSha256": "b042514e45dc8dca30fe6f2b7c301927494708577d82f4bb447d8a08403dc016",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260925-single-login1",
@@ -133,7 +133,7 @@
     "pristeel-home-stability-v2.js?v=20260817-1",
     "pristeel-home-project-recovery-v3.js?v=20260817-1",
     "pristeel-home-visual-cleanup-v1.js?v=20260817-1",
-    "pristeel-dach-steel-sales-v1.js?v=20260928-canonical-company-v1",
+    "pristeel-dach-steel-sales-v1.js?v=20260928-home-summary-sync1",
     "pristeel-sales-engine-v3.js?v=20260925-commercial-engine1",
     "pristeel-representations-v1.js?v=20260927-representations7-compact-back",
     "pristeel-representation-opportunities-v2.js?v=20260927-opportunities4-compact-controls",
@@ -164,7 +164,7 @@
     "pristeel-primary-nav-resilience-v1.js?v=20260926-representations-nav1",
     "pristeel-project-execution-guard-v1.js?v=20260829-postaward1",
     "pristeel-creative-ui-v1.js?v=20260911-fullredesign4",
-    "pristeel-home-morning-command-center-v1.js?v=20260928-home-layout1",
+    "pristeel-home-morning-command-center-v1.js?v=20260928-home-layout2",
     "pristeel-ui-runtime-stability-v1.js?v=20260925-no-page-clone1"
   ]
 }
