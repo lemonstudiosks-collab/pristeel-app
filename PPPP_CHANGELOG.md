@@ -1,3 +1,11 @@
+## 2026-09-28 — Blerësit e çelikut: canonical identity, intelligence dhe discovery
+
+- Një Company Master canonical lidh domenin/identitetin dhe rolet ndërmjet Blerësve të çelikut, Mundësive, Kompanive EU dhe Përfaqësimeve; targetet aktive me të njëjtin domen nuk dyfishohen.
+- Profili i blerësit ruan madhësinë, aktivitetin, potencialin e konsumit, kapacitetin/prokurimin, faktet e verifikuara dhe boshllëqet pa i paraqitur supozimet si fakte.
+- Discovery publik kryhet një herë në ditë dhe i vendos kompanitë në radhë shqyrtimi. Vetëm veprimi njerëzor “Prano” krijon target; nuk krijohet outbound, Gmail draft ose dërgesë.
+- Preview/draft përdor faktet e kompanisë dhe arsyen e modelit; kur faktet mungojnë përdoret tekst i përgjithshëm pa shpikje. Follow-up lejohet vetëm pas dërgesës së konfirmuar, pas afatit dhe pa reply/opt-out.
+- ChatGPT command bridge u ul nga çdo 30 minuta në tri herë në ditë; sinkronizimi Gmail/outbound mbeti i pandryshuar.
+
 ## 2026-09-26 — PPPP Mobile v7 data completeness and stability
 
 - Home now keeps the last valid canonical snapshot for a short bounded window so cards and counts do not disappear while canonical owners rehydrate.
