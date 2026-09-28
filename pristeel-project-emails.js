@@ -134,6 +134,7 @@ var files=[
   'pristeel-sales-engine-v3.js?v=20260925-commercial-engine1',
   'pristeel-representations-v1.js?v=20260927-representations7-compact-back',
   'pristeel-representation-opportunities-v2.js?v=20260927-opportunities4-compact-controls',
+  'pristeel-representation-discovery-v1.js?v=20260928-isolated-discovery1',
   'pristeel-eu-companies-v1.js?v=20260927-eu-direct-workbench2',
   'pristeel-commercial-navigation-fix-v1.js?v=20260808-4',
   'pristeel-commercial-document-builder-v1.js?v=20260808-2',

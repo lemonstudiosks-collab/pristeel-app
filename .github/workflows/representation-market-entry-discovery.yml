@@ -1,0 +1,60 @@
+name: Representation market-entry discovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Discovery mode
+        required: true
+        default: preview
+        type: choice
+        options: [preview, apply]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/representation-market-entry-discovery.mjs'
+      - 'pristeel-representation-discovery-v1.js'
+      - 'supabase/migrations/20260928141037_representation_discovery_automation_v1.sql'
+      - 'tests/representation-discovery-automation-smoke.mjs'
+      - '.github/workflows/representation-market-entry-discovery.yml'
+  schedule:
+    - cron: '20 6 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: representation-market-entry-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY }}
+      PPPP_SYNC_EMAIL: ${{ secrets.PPPP_SYNC_EMAIL }}
+      PPPP_SYNC_PASSWORD: ${{ secrets.PPPP_SYNC_PASSWORD }}
+      DISCOVERY_MODE: ${{ github.event_name == 'schedule' && 'apply' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'preview') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test dependency
+        run: npm install --ignore-scripts --no-package-lock
+      - name: Verify isolated discovery contract
+        run: node --check scripts/representation-market-entry-discovery.mjs && node tests/representation-discovery-automation-smoke.mjs
+      - name: Discover public market-entry signals
+        if: github.event_name != 'pull_request'
+        run: node scripts/representation-market-entry-discovery.mjs
+      - name: Upload sanitized summary
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: representation-market-entry-discovery
+          path: tmp/representation-market-entry-discovery.json
+          if-no-files-found: ignore
+          retention-days: 14

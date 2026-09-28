@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "76f127f205327e954e944520f458c178bb777fa7"
+    "bootstrapGitBlobSha": "61d60d8aa7b927e1db06f9d5445f1711bcb6dd12"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -346,6 +346,12 @@
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded after Material Trade. Owns the separate manufacturer-representation pipeline, its compact expandable controls, responsive detail/editor UI and Home launcher directly below Opportunities over public.pppp_representation_targets_v1. It is intentionally not exposed in System and never creates Projects, Partners, Suppliers, Contacts, contracts or email sends."
+    },
+    {
+      "module": "pristeel-representation-discovery-v1.js",
+      "loader": "pristeel-project-emails.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded after the Representation targets and opportunities owners. Provides only the isolated human-review discovery inbox; acceptance can create the matching Representation record but never a Project, Partner, Contact, Supplier, draft or email."
     }
   ],
   "loadOrderConstraints": [
