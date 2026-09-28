@@ -9,6 +9,14 @@ For project continuity also read:
 - `PPPP_CONTINUITY_PROTOCOL.md`
 - `PPPP_CHANGELOG.md`
 
+## Blerësit e çelikut — runtime canonical
+
+- Owner UI: `pristeel-dach-steel-sales-v1.js`; data operative: `public.pppp_dach_steel_targets_v1`.
+- `public.pppp_company_identity_v1` dhe `public.pppp_company_module_roles_v1` japin identitetin e vetëm të kompanisë dhe routing ndërmjet moduleve.
+- Discovery Edge `pppp-steel-buyer-discovery` ekzekutohet një herë në ditë në 20:15 UTC. Kandidatët mbeten në review queue deri te “Prano”; ky cikël nuk krijon email/draft/outbound.
+- `pppp-dach-steel-draft-generator` mban preview, draft dhe follow-up me human gate. Preview nuk prek Gmail; drafti krijohet vetëm me klikim të përdoruesit dhe asnjë funksion nuk dërgon email automatikisht.
+- `pppp-chatgpt-command-bridge` punon në 06:15, 12:15 dhe 18:15 UTC; Gmail/outbound reconciliation ruan frekuencën ekzistuese.
+
 ## Kompanitë EU — zhvillim direkt në Evropë
 
 - Owner i dukshëm: `pristeel-eu-companies-v1.js`.

@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-dach-steel-draft-generator-v23-canonical-material-copy-v4";
+const V="pppp-dach-steel-draft-generator-v24-canonical-company-intelligence";
 const SRC="DACH_STEEL_BUYER";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
@@ -178,8 +178,8 @@ function contactTier(email:any,name:any,role:any){
 }
 function tierScore(v:string){return v==="A"?95:v==="B"?82:v==="C"?70:v==="D"?55:v==="E"?25:0;}
 function specificFacts(tg:any){
- const saved=Array.isArray(tg?.personalization_facts)?tg.personalization_facts:[],evidence=Array.isArray(tg?.evidence)?tg.evidence:[];
- const candidates=[...saved,tg?.project_title,tg?.why_now,tg?.steel_scope,...evidence.map((x:any)=>x&&typeof x==="object"?(x.claim||x.title||x.label||""):x)];
+ const saved=Array.isArray(tg?.personalization_facts)?tg.personalization_facts:[],verified=Array.isArray(tg?.verified_company_facts)?tg.verified_company_facts:[],evidence=Array.isArray(tg?.evidence)?tg.evidence:[];
+ const candidates=[...verified,...saved,tg?.project_title,tg?.why_now,tg?.steel_scope,...evidence.map((x:any)=>x&&typeof x==="object"?(x.claim||x.title||x.label||""):x)];
  const out:string[]=[];
  for(const value of candidates){const fact=externalFact(value);if(!fact||/@[a-z0-9.-]+\.[a-z]{2,}/i.test(fact))continue;if(!out.some(x=>nm(x)===nm(fact)))out.push(t(fact,1000));if(out.length>=4)break;}
  return out;
@@ -196,7 +196,7 @@ function targetQualification(tg:any,contact:any){
  const hasEvidence=tg?.message_evidence_score!==null&&tg?.message_evidence_score!==undefined&&t(tg.message_evidence_score,20)!=="";
  const messageEvidence=hasEvidence&&Number.isFinite(Number(tg.message_evidence_score))?Number(tg.message_evidence_score):(facts.length>=2?78:evidenceCount>=2?70:35);
  const tier=contactTier(contact?.email,contact?.person,contact?.role),contactQuality=tierScore(tier);
- const reasons=[companyFit<65?"company_fit_below_65":"",contactQuality<50?"contact_quality_below_50":"",messageEvidence<60?"message_evidence_below_60":"",facts.length<2?"fewer_than_two_specific_facts":"",timing<35?"commercial_timing_below_35":""].filter(Boolean);
+ const reasons=[companyFit<65?"company_fit_below_65":"",contactQuality<50?"contact_quality_below_50":"",timing<35?"commercial_timing_below_35":""].filter(Boolean);
  const readiness=Math.round(companyFit*.32+timing*.24+contactQuality*.28+messageEvidence*.16);
  const workflow=companyFit>=65&&contactQuality<50?"strong_company_contact_gap":reasons.length===0?"ready_for_outreach":companyFit<65?"disqualified":"research_required";
  return{facts,companyFit,timing,timingClass,messageEvidence,tier,contactQuality,reasons,readiness,workflow};
@@ -228,16 +228,18 @@ function materialCategory(tg:any){
 }
 function shortAnchor(v:any,fallback:any){const s=t(v,500).replace(/[\r\n\t]+/g," ").replace(/\s+/g," ").trim();if(!s)return t(fallback,72);return t(s.length<=68?s:(s.match(/\b(?:VOB\s*)?\d{1,3}-[0-9O]{2,4}\b|\b[A-Z]{1,6}[_-]\d{2,}(?:[\/_-]\d+)*\b/i)?.[0]||fallback),72);}
 function buyerTextV2(tg:any,signatureHtml="",contact:any={}){
- const lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",facts=specificFacts(tg).map(externalFact).filter(Boolean).slice(0,2),motion=t(tg?.outreach_motion||"material_buyer",80),project=externalFact(tg?.project_title),company=t(tg?.company_name,180),category=materialCategory(tg),anchor=shortAnchor(project,company||category),sig=signatureHtml||canonicalSignatureHtml;
+ const lang=buyerLang(tg),de=lang==="de",bcs=lang==="bcs",facts=specificFacts(tg).map(externalFact).filter(Boolean).slice(0,3),missing=Array.isArray(tg?.missing_company_facts)?tg.missing_company_facts:[],motion=t(tg?.outreach_motion||"material_buyer",80),project=externalFact(tg?.project_title),company=t(tg?.company_name,180),category=materialCategory(tg),anchor=shortAnchor(project,company||category),sig=signatureHtml||canonicalSignatureHtml,specific=facts.length>=2;
  const future=motion==="future_supplier_qualification"||t(tg?.timing_classification,80)==="future_supplier_qualification",capacity=motion==="external_production_capacity",offerModel=future?"future_supplier_qualification":capacity?"external_production_capacity":"material_supply";
  const subject=future?(de?company+" – Lieferantenqualifizierung Stahl | PRISTEEL":bcs?company+" – kvalifikacija dobavljača čelika | PRISTEEL":company+" – future steel supplier qualification | PRISTEEL"):capacity?(de?anchor+" – externe Fertigungskapazität | PRISTEEL":bcs?anchor+" – vanjski proizvodni kapacitet | PRISTEEL":anchor+" – external fabrication capacity | PRISTEEL"):(de?anchor+" – Stahlmaterial | PRISTEEL":bcs?anchor+" – čelični materijal | PRISTEEL":anchor+" – steel material | PRISTEEL");
  const person=t(contact?.person,120),hello=de?(person?"Guten Tag "+person+",":"Guten Tag,"):bcs?(person?"Poštovani "+person+",":"Poštovani,"):(person?"Dear "+person+",":"Hello,");
- const context=project?(de?"ich melde mich bezüglich "+project+".":bcs?"javljam Vam se u vezi sa "+project+".":"I am reaching out regarding "+project+"."):(de?"ich melde mich, weil "+company+" mit "+category+" arbeitet.":bcs?"javljam Vam se jer "+company+" radi sa kategorijom "+category+".":"I am reaching out because "+company+" works with "+category+".");
+ const context=project?(de?"ich melde mich bezüglich "+project+".":bcs?"javljam Vam se u vezi sa "+project+".":"I am reaching out regarding "+project+"."):(specific?(de?"ich melde mich, weil "+company+" mit "+category+" arbeitet.":bcs?"javljam Vam se jer "+company+" radi sa kategorijom "+category+".":"I am reaching out because "+company+" works with "+category+"."):(de?"ich melde mich bei Ihrem Einkaufsteam zum Thema Stahlmaterialbeschaffung.":bcs?"javljam se Vašem timu za nabavku u vezi sa nabavkom čeličnog materijala.":"I am reaching out to your procurement team regarding steel-material sourcing."));
+ const factLine=specific?(de?"Als öffentlichen Bezugspunkt haben wir verifiziert: "+facts[0]+".":bcs?"Kao javno provjerenu polaznu tačku imamo: "+facts[0]+".":"As a verified public reference point, we found: "+facts[0]+"."):"";
  const capability=future?(de?"Für künftige Stahlmaterialpakete kann PRISTEEL als technischer und kaufmännischer Ansprechpartner für klar definierte Beschaffungsumfänge eingebunden werden.":bcs?"Za buduće pakete čeličnog materijala PRISTEEL može biti jedna tehnička i komercijalna kontakt tačka.":"For future steel-material packages, PRISTEEL can act as one technical and commercial sourcing point for clearly defined scopes."):capacity?(de?"Wenn Sie externe Fertigung für klar definierte Pakete nutzen, kann PRISTEEL Build-to-Print-Fertigung, Oberflächenschutz, Qualitätsdokumentation und DAP-Lieferung koordinieren.":bcs?"Ako koristite vanjsku proizvodnju za jasno definisane pakete, PRISTEEL može koordinirati build-to-print proizvodnju, zaštitu, dokumentaciju i DAP isporuku.":"If you use external fabrication for defined packages, PRISTEEL can coordinate build-to-print fabrication, surface treatment, quality documentation and DAP delivery."):(de?"PRISTEEL koordiniert "+category+" aus qualifizierten Bezugsquellen in Südosteuropa, einschließlich EN 10204 3.1-Dokumentation, optionalem Zuschnitt bzw. Grundbearbeitung und DAP-Lieferung über einen Ansprechpartner.":bcs?"PRISTEEL koordinira "+category+" iz kvalifikovanih izvora u Jugoistočnoj Evropi, uključujući EN 10204 3.1 dokumentaciju, opciono rezanje/osnovnu obradu i DAP isporuku.":"PRISTEEL coordinates "+category+" from qualified sources in Southeast Europe, including EN 10204 3.1 documentation, optional cutting/basic processing and DAP delivery through one commercial contact.");
  const credibility=de?"Wo vertraglich erforderlich, kann die Leistung über Bankgarantien der ProCredit Bank abgesichert werden.":bcs?"Kada je potrebno, ugovorno izvršenje može biti podržano bankarskim garancijama preko ProCredit Bank.":"Where required, contractual performance can be supported by bank guarantees through ProCredit Bank.";
  const cta=future?(de?"Wer ist bei Ihnen für die Qualifizierung künftiger Lieferanten für Stahlmaterial zuständig?":bcs?"Ko je kod Vas zadužen za kvalifikaciju budućih dobavljača čeličnog materijala?":"Who handles qualification of future steel-material suppliers in your organization?"):capacity?(de?"Nutzen Sie bei Kapazitätsspitzen externe Fertigung für klar abgegrenzte Pakete?":bcs?"Koristite li vanjsku proizvodnju za jasno odvojene pakete?":"Do you use external fabrication for clearly defined packages when internal capacity is constrained?"):(de?"Wenn Sie diese Materialkategorie einkaufen, senden Sie uns gerne eine aktuelle RFQ oder Materialliste mit Lieferort.":bcs?"Ako nabavljate ovu kategoriju materijala, pošaljite nam aktuelni RFQ ili listu materijala i mjesto isporuke.":"If you purchase this material category, send us one current RFQ or material list and the delivery point.");
- const close=de?"Mit freundlichen Grüßen":bcs?"Srdačan pozdrav,":"Kind regards",paras=[hello,context,capability,credibility,cta,close],plainBody=[...paras,"",signature].join("\n\n"),htmlBody='<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55">'+paras.map((x:string)=>'<p>'+htmlEsc(x)+'</p>').join('')+sig+'</div>',recipientRole=person?(/(einkauf|procurement|purchas|sourcing|beschaffung|material|buyer)/.test(nm(contact?.role))?"named_procurement":"named_general"):(/^(info|office|contact|kontakt|hello|mail|admin)$/.test(local(contact?.email))?"generic_inbox":"functional_procurement");
- return{subject,plain_body:plainBody,body:plainBody,html_body:htmlBody,offer_model:offerModel,company_role:"material_buyer",recipient_role:recipientRole,selected_public_facts:facts,copy_policy_version:"pppp-material-copy-policy-v4",approach_mode:future?"future_supplier_qualification":capacity?"external_production_capacity":"material_buyer",language:lang,personalization_facts:facts};
+ const close=de?"Mit freundlichen Grüßen":bcs?"Srdačan pozdrav,":"Kind regards",paras=[hello,context,factLine,capability,credibility,cta,close].filter(Boolean),plainBody=[...paras,"",signature].join("\n\n"),htmlBody='<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.55">'+paras.map((x:string)=>'<p>'+htmlEsc(x)+'</p>').join('')+sig+'</div>',recipientRole=person?(/(einkauf|procurement|purchas|sourcing|beschaffung|material|buyer)/.test(nm(contact?.role))?"named_procurement":"named_general"):(/^(info|office|contact|kontakt|hello|mail|admin)$/.test(local(contact?.email))?"generic_inbox":"functional_procurement");
+ const selectionReason=future?"Future supplier qualification selected because no active material package is confirmed.":capacity?"External production capacity selected from the stored commercial motion.":specific?"Material supply selected from verified company/material evidence.":"General material-supply outreach selected because company fit is sufficient but package details remain incomplete.";
+ return{subject,plain_body:plainBody,body:plainBody,html_body:htmlBody,offer_model:offerModel,company_role:"material_buyer",recipient_role:recipientRole,selected_public_facts:facts,missing_facts:missing,copy_mode:specific?"evidence_specific":"general_safe",offer_selection_reason:selectionReason,copy_policy_version:"pppp-material-copy-policy-v5",approach_mode:future?"future_supplier_qualification":capacity?"external_production_capacity":"material_buyer",language:lang,personalization_facts:facts};
 }
 function supplierText(tg:any,c:any){const p=t(tg?.project_title||tg?.company_name,500),m=mat(tg),ind=tg?.quote_readiness!=="M3",de=nm(c?.contact_language).startsWith("de");if(de){const subject=(ind?"Indikative RFQ":"RFQ")+" | "+p,body=["Guten Tag,","",'wir prüfen derzeit die Stahlmaterialbeschaffung für das Projekt „'+p+'“.',"",ind?"Die nachstehenden Mengen basieren derzeit auf veröffentlichten Projektinformationen und sind bis zum Erhalt der finalen BOQ / Materialliste als indikativ zu behandeln:":"Die nachstehenden Positionen basieren auf der verfügbaren Materialliste:","",...m,"","Bitte teilen Sie uns – soweit mit den verfügbaren Angaben möglich – Preis / Einheitspreise, Verfügbarkeit, Lieferzeit, Materialzeugnis EN 10204 3.1, Ursprungsland, Incoterm, Angebotsgültigkeit und Zahlungsbedingungen mit.","",ind?"Die finale Anfrage mit bestätigten Güten, Abmessungen und Mengen folgt nach Erhalt der aktuellen BOQ.":"Bitte kennzeichnen Sie technische Abweichungen eindeutig.","","Mit freundlichen Grüßen",signature].join("\n");return{subject,body};}const subject=(ind?"Indicative RFQ":"RFQ")+" | "+p,body=["Dear Sir or Madam,","",'we are currently reviewing the steel material procurement for the project “'+p+'”.',"",ind?"The quantities below are based on published project information and must be treated as indicative until the final BOQ / material list is received:":"The positions below are based on the available material list:","",...m,"","Please provide, where possible with the currently available information, your price / unit prices, availability, lead time, EN 10204 3.1 certification, country of origin, Incoterm, quotation validity and payment terms.","",ind?"A final RFQ with confirmed grades, dimensions and quantities will follow after receipt of the current BOQ.":"Please identify any technical deviations clearly.","","Kind regards,",signature].join("\n");return{subject,body};}
 function requirement(tg:any){const m=tg?.material_scope&&typeof tg.material_scope==="object"?tg.material_scope:{},a=Array.isArray(m.line_items)?m.line_items:[],f:string[]=[],g:string[]=[],s:string[]=[];for(const x of a){const z=[[x?.family,f],[x?.grade,g],[x?.standard,s]] as any;for(const y of z){const v=t(y[0],140);if(v&&!y[1].includes(v))y[1].push(v);}}return{family:f[0]||"structural steel",product_type:f[0]||"structural steel",description:t(tg?.steel_scope,5000),grades:g,standards:s};}
@@ -307,6 +309,8 @@ async function guards(tg:any,q:any,e:string){
  const gg=await db.rpc("pppp_global_communication_guard_v1",{p_recipient_email:e,p_company_domain:tg?.company_domain||dom(e),p_exclude_source:SRC,p_exclude_source_record_id:tg?.id||null,p_exclude_queue_id:q?.id||null});
  if(gg.error)throw gg.error;
  if(!gg.data?.ok)throw new Error("global_communication_guard:"+t(gg.data?.reason||"blocked",160));
+ const conflicts=await routingConflicts(tg);
+ if(conflicts.length)throw new Error("cross_module_identity_review_required:"+conflicts.join(","));
  const p=await db.from("pppp_outbound_policy_v1").select("recipient_cooldown_days,domain_cooldown_days").eq("id","global").maybeSingle();if(p.error)throw p.error;
  const rd=Math.max(1,Number(p.data?.recipient_cooldown_days||30)),dd=Math.max(1,Number(p.data?.domain_cooldown_days||14)),rc=new Date(Date.now()-rd*86400000).toISOString(),dc=new Date(Date.now()-dd*86400000).toISOString(),d=dom(e);
 
@@ -355,7 +359,8 @@ async function buyerDraft(tg:any,u:any,b:any){
  if(Number(tg?.company_fit_score||0)<65)throw new Error("outreach_v2_company_fit_below_65");
  if(Number(tg?.commercial_timing_score||0)<35)throw new Error("outreach_v2_timing_below_35");
  if(contactScore<50)throw new Error("outreach_v2_contact_quality_below_50:"+tier);
- if(Number(tg?.message_evidence_score||0)<60||facts.length<2)throw new Error("outreach_v2_requires_two_specific_facts");
+ // Missing package/company detail selects the general-safe copy. It is not a
+ // reason to discard a qualified buyer or invent material specifications.
  await guards(tg,q,e);
  const sig=canonicalSignatureHtml,ct=buyerTextV2(tg,sig,contact),d=await draft(e,ct.subject,ct.body,{
   "X-PPPP-DACH-Target-ID":t(tg.id,80),
@@ -436,6 +441,7 @@ async function followupDraft(tg:any,b:any,u:any){
  const resolved=await buyerContact(tg),contact=selectedContact(tg,resolved,b);if(!contact)throw new Error("buyer_contact_required");
  const e=safe(contact.email),firstQ=await db.from("pppp_outbound_queue_v1").select("*").eq("source",SRC).eq("source_record_id",tg.id).eq("touch_no",1).eq("recipient_email",e).maybeSingle();
  if(firstQ.error)throw firstQ.error;const first=firstQ.data;if(!first?.sent_at)throw new Error("followup_requires_confirmed_first_send");if(first.replied_at||nm(first.status)==="replied")throw new Error("followup_blocked_reply_exists");
+ if(["opt_out","not_interested","project_already_covered"].includes(nm(first.reply_classification)))throw new Error("followup_blocked_reply_classification:"+nm(first.reply_classification));
  const life=first.gmail_thread_id?await threadLifecycle(first.gmail_thread_id):null;if(life?.reply){await applyLifecycle(tg,first,life);throw new Error("followup_blocked_reply_exists");}
  if(Date.now()-new Date(first.sent_at).getTime()<7*86400000)throw new Error("followup_not_due_before_7_days");
  const prior=await db.from("pppp_outbound_queue_v1").select("*").eq("source",SRC).eq("source_record_id",tg.id).eq("touch_no",2).eq("recipient_email",e).maybeSingle();if(prior.error)throw prior.error;if(prior.data?.gmail_draft_id)return{created:false,reused:true,queue:prior.data,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(prior.data.gmail_thread_id||prior.data.gmail_draft_message_id)};
@@ -481,6 +487,7 @@ async function supplierDraft(tg:any,b:any,u:any){
 
 async function promoteProject(tg:any,b:any,u:any){
  if(b?.confirm_project_create!==true)throw new Error("project_promotion_confirmation_required");
+ if(b?.confirm_positive_buyer_signal!==true)throw new Error("positive_buyer_signal_confirmation_required");
  if(tg?.project_id){
   const existing=await db.from("projects").select("id,name,client,business_ref,status,pipeline_stage,business_type").eq("id",tg.project_id).maybeSingle();
   if(existing.error)throw existing.error;
@@ -490,6 +497,7 @@ async function promoteProject(tg:any,b:any,u:any){
  if(oq.error)throw oq.error;
  const q=oq.data||null,hasReply=!!(q&&(q.replied_at||nm(q.status)==="replied"));
  if(!hasReply||!q?.gmail_thread_id)throw new Error("buyer_reply_required_before_project_promotion");
+ if(["opt_out","not_interested","project_already_covered"].includes(nm(q.reply_classification)))throw new Error("buyer_reply_not_positive_for_project_promotion");
  const threadRows=await db.from("project_emails").select("id,project_id,gmail_message_id,direction").eq("gmail_thread_id",q.gmail_thread_id).limit(100);
  if(threadRows.error)throw threadRows.error;
  const existingProjects=[...new Set((threadRows.data||[]).map((x:any)=>t(x?.project_id,80)).filter(Boolean))];

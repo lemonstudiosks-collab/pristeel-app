@@ -43,9 +43,9 @@ assert.match(ui,/outboundRowsByTarget/,'UI must preserve separate outbound histo
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260927-material-copy-v4/,'runtime must cache-bust the canonical Material copy module');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20260928-canonical-company-v1/,'runtime must cache-bust the canonical Steel Buyer company-intelligence module');
 
-assert.match(edge,/pppp-dach-steel-draft-generator-v23-canonical-material-copy-v4/,'Edge source must carry the canonical Material copy version');
+assert.match(edge,/pppp-dach-steel-draft-generator-v24-canonical-company-intelligence/,'Edge source must carry the canonical company-intelligence copy version');
 assert.match(edge,/\^\[-–—\]\+\$/, 'Placeholder dashes must never become the commercial subject anchor');
 assert.match(edge,/if\(!s\)return t\(fallback,72\)/, 'An empty project anchor must fall back to company or material category');
 assert.match(edge,/async function buyerPreview/,'visible preview must come from the canonical Edge copy engine');
