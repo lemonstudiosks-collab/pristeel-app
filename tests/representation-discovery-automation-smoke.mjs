@@ -39,7 +39,8 @@ vm.runInContext(ui,vm.createContext(dom.window));
 await new Promise(r=>setTimeout(r,20));
 dom.window.PSTRepresentationDiscoveryV1.open();await new Promise(r=>setTimeout(r,20));
 assert.ok(dom.window.document.querySelector('[data-rep-mode="discovery"]'));
-assert.match(dom.window.document.querySelector('[data-rep-discovery-view]').textContent,/Kompani për përfaqësim/);
+assert.match(dom.window.document.querySelector('[data-rep-discovery-view]').textContent,/Kompani për përfaqësi/);
+assert.match(dom.window.document.querySelector('[data-rep-discovery-view]').textContent,/Partnerë për tenderë \/ JV/);
 assert.equal(calls.filter(x=>x.path.startsWith('pppp_representation_discovery_candidates_v1?')).length,1);
 
 console.log('Representation discovery automation smoke: PASS');
