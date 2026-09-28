@@ -44,7 +44,7 @@ jobs:
         with:
           node-version: '22'
       - name: Install test dependency
-        run: npm ci --ignore-scripts
+        run: npm install --ignore-scripts --no-package-lock
       - name: Verify isolated discovery contract
         run: node --check scripts/representation-market-entry-discovery.mjs && node tests/representation-discovery-automation-smoke.mjs
       - name: Discover public market-entry signals
