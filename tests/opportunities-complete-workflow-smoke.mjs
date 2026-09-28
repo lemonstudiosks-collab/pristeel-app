@@ -19,7 +19,9 @@ assert.match(ui,/rpc\/pppp_ensure_ted_opportunity_action_v1/,'missing TED action
 assert.doesNotMatch(ui,/pppp_opportunity_actions\?on_conflict=action_key','POST'/,'browser must not insert directly into pppp_opportunity_actions');
 assert.ok(ui.indexOf('reviewDraftPreviews')<ui.indexOf('human_approved:true'),'approval must follow preview review');
 assert.match(desk,/data-pst-opportunity-intelligence/);
+assert.match(desk,/pst:opportunity-canonical-contacts/,'Opportunity Desk must consume canonical contact results');
 assert.match(intel,/pppp_opportunity_company_workspace_v1/);
+assert.match(intel,/pst:opportunity-canonical-contacts/,'canonical workspace loader must publish contacts to the visible Opportunity detail');
 assert.match(intel,/300000/,'workspace reads are cached');
 assert.match(generator,/previewOnly/);
 assert.match(generator,/company_fact/);

@@ -21,7 +21,9 @@ const rows=[
  {id:'krpp-1',title:'Konstruksion metalik',authority:'KRPP',relevance_score:90,status:'new',published_date:'2026-09-20',payload:{source:'KRPP',notice_phase:'opportunity'}},
  {id:'ted-gc',title:'Structural steel building award',authority:'EU Authority',publication_no:'TED-GC',relevance_score:99,status:'new',published_date:'2026-09-21',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',email:'sales@example-gc.de',company_type:'gc_epc'}}},
  {id:'ted-gc-duplicate',title:'Second award by same company',authority:'EU Authority',publication_no:'TED-GC-2',relevance_score:96,status:'new',published_date:'2026-09-19',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',email:'procurement@example-gc.de',company_type:'gc_epc'}}},
- {id:'ted-producer',title:'Bridge fabrication award',authority:'EU Authority',publication_no:'TED-P',relevance_score:98,status:'new',published_date:'2026-09-21',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Steel AG',email:'office@example-steel.de',company_type:'producer'}}}
+ {id:'ted-producer',title:'Bridge fabrication award',authority:'EU Authority',publication_no:'TED-P',relevance_score:98,status:'new',published_date:'2026-09-21',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Steel AG',email:'office@example-steel.de',company_type:'producer'}}},
+ {id:'ted-canonical',title:'Canonical contact award',authority:'EU Authority',publication_no:'TED-C',relevance_score:97,status:'new',published_date:'2026-09-18',payload:{source:'TED',notice_phase:'award',winner:{name:'Canonical Contact GmbH',company_type:'gc_epc'}}},
+ {id:'ted-ambiguous',title:'Multi-winner award',authority:'EU Authority',publication_no:'TED-A',relevance_score:95,status:'new',published_date:'2026-09-17',payload:{source:'TED',notice_phase:'award',winner:{name:'Selected Winner GmbH',names:['Selected Winner GmbH','Other Winner AB'],emails:['office@selected.example','sales@other.example'],identity_version:'ted-winner-canonical-v2',identifier:'winner-1',company_type:'gc_epc'}}}
 ];
 let registry=[];
 window.supaFetch=async path=>{
@@ -51,7 +53,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260925-in-place-render2','in-place contacted-company Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260928-canonical-emails-v1','canonical-email Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
@@ -113,6 +115,27 @@ assert(window.document.querySelector('[data-pst-opp-draft="ted-producer"]'),'unc
 assert(window.document.querySelector('[data-pst-opp-open="ted-producer"]'),'uncontacted TED company must expose the tender-analysis action before outreach');
 assert.match(window.document.querySelector('[data-pst-opp-open="ted-producer"]').textContent,/Analizo tenderin/,'TED analysis action must be explicit');
 assert(window.document.querySelector('[data-pst-opp-remove="ted-producer"]'),'uncontacted TED company must expose Hiqe without opening the legacy console first');
+
+const canonicalRow=window.document.querySelector('[data-pst-opp-select="ted-canonical"]');
+assert(canonicalRow,'TED company backed only by canonical contacts must remain selectable');
+canonicalRow.click();
+await new Promise(r=>setTimeout(r,25));
+assert(window.document.querySelector('[data-pst-opp-draft="ted-canonical"]').disabled,'draft stays disabled before canonical contacts arrive');
+window.document.dispatchEvent(new window.CustomEvent('pst:opportunity-canonical-contacts',{detail:{tender_id:'ted-canonical',company:{legal_name:'Canonical Contact GmbH',domain:'canonical.example'},contacts:[{email:'procurement@canonical.example',verification_status:'verified',draft_eligible:true,do_not_contact:false,functional_role:'procurement'}]}}));
+await new Promise(r=>setTimeout(r,25));
+assert.match(window.document.querySelector('.pst-opp-detail').textContent,/procurement@canonical\.example/,'canonical email must appear in the visible company detail');
+assert.equal(window.document.querySelector('[data-pst-opp-draft="ted-canonical"]').disabled,false,'verified canonical email must enable draft review');
+window.document.dispatchEvent(new window.CustomEvent('pst:opportunity-canonical-contacts',{detail:{tender_id:'ted-canonical',company:{legal_name:'Canonical Contact GmbH',domain:'canonical.example'},contacts:[{email:'blocked@canonical.example',verification_status:'verified',draft_eligible:true,do_not_contact:true}]}}));
+await new Promise(r=>setTimeout(r,25));
+assert.doesNotMatch(window.document.querySelector('.pst-opp-detail').textContent,/blocked@canonical\.example/,'do-not-contact email must not be shown as draft-eligible');
+assert(window.document.querySelector('[data-pst-opp-draft="ted-canonical"]').disabled,'do-not-contact email must not enable draft review');
+
+const ambiguousRow=window.document.querySelector('[data-pst-opp-select="ted-ambiguous"]');
+assert(ambiguousRow,'multi-winner TED award must remain selectable');
+ambiguousRow.click();
+await new Promise(r=>setTimeout(r,25));
+assert.doesNotMatch(window.document.querySelector('.pst-opp-detail').textContent,/@(?:selected|other)\.example/,'unattributed multi-winner emails must not leak into the selected company detail');
+assert(window.document.querySelector('[data-pst-opp-draft="ted-ambiguous"]').disabled,'unattributed multi-winner emails must not enable draft review');
 
 const tedFilter=window.document.querySelector('[data-pst-opp-source="TED"]');
 tedFilter.click();
