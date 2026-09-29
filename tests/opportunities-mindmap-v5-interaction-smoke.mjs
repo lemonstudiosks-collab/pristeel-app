@@ -53,7 +53,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260929-contact-badge-v1','contact-aware Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260929-modal-stability-v1','stable contact-aware Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
@@ -126,8 +126,13 @@ assert(canonicalRow,'TED company backed only by canonical contacts must remain s
 canonicalRow.click();
 await new Promise(r=>setTimeout(r,25));
 assert(window.document.querySelector('[data-pst-opp-draft="ted-canonical"]').disabled,'draft stays disabled before canonical contacts arrive');
+const canonicalModalBefore=window.document.getElementById('pst-opp-modal-bg');
+const canonicalBodyBefore=canonicalModalBefore.querySelector('.pst-opp-modal-body');
+canonicalBodyBefore.scrollTop=120;
 window.document.dispatchEvent(new window.CustomEvent('pst:opportunity-canonical-contacts',{detail:{tender_id:'ted-canonical',company:{legal_name:'Canonical Contact GmbH',domain:'canonical.example'},contacts:[{email:'procurement@canonical.example',verification_status:'verified',draft_eligible:true,do_not_contact:false,functional_role:'procurement'}]}}));
 await new Promise(r=>setTimeout(r,25));
+assert.strictEqual(window.document.getElementById('pst-opp-modal-bg'),canonicalModalBefore,'canonical contacts must patch the open modal instead of recreating it');
+assert.strictEqual(window.document.querySelector('.pst-opp-modal-body'),canonicalBodyBefore,'contact hydration must preserve the scrolling element');
 assert.match(window.document.querySelector('.pst-opp-detail').textContent,/procurement@canonical\.example/,'canonical email must appear in the visible company detail');
 assert.equal(window.document.querySelector('[data-pst-opp-draft="ted-canonical"]').disabled,false,'verified canonical email must enable draft review');
 window.document.dispatchEvent(new window.CustomEvent('pst:opportunity-canonical-contacts',{detail:{tender_id:'ted-canonical',company:{legal_name:'Canonical Contact GmbH',domain:'canonical.example'},contacts:[{email:'blocked@canonical.example',verification_status:'verified',draft_eligible:true,do_not_contact:true}]}}));
