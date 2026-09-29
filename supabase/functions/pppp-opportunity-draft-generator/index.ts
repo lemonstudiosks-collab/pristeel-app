@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v28-package-aware-copy-v5';
+const GENERATOR='pppp-opportunity-draft-generator-v29-multicontact-batch';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=20;
 const MAX_DRAFT_WRITES_PER_RUN=25;
@@ -142,12 +142,11 @@ async function recentSentToDomain(domain:any){
 async function globalCommunicationGuard(a:any,row:any,recipient:any){
   const email=normalizeEmail(recipient?.email);
   const domain=text(recipient?.recipient_company_domain||recipient?.company_domain||'',300)||null;
-  const {data,error}=await db.rpc('pppp_global_communication_guard_v1',{
+  const {data,error}=await db.rpc('pppp_ted_action_communication_guard_v1',{
+    p_action_id:a.id,
     p_recipient_email:email,
     p_company_domain:domain,
-    p_exclude_source:'TED',
-    p_exclude_source_record_id:row?.id||null,
-    p_exclude_queue_id:null
+    p_exclude_registry_id:row?.id||null
   });
   if(error)throw error;
   return data||{ok:false,reason:'global_guard_empty'};
@@ -337,22 +336,36 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
   }
   await seedLegacyTenderDraft(a,tender,recipients);
   let created=0,refreshed=0,preserved=0,sent=0,failures:any[]=[];
-  for(const recipient of recipients){
-    let row=await ensureRegistry(a,recipient);
+  const prepared=await Promise.all(recipients.map(async(recipient:any)=>({recipient,row:await ensureRegistry(a,recipient)})));
+  const domainChecks=new Map<string,Promise<any>>();
+  for(const x of prepared){const domain=text(x.recipient?.recipient_company_domain||x.recipient?.company_domain||emailDomain(x.recipient.email),300).toLowerCase();if(domain&&!domainChecks.has(domain))domainChecks.set(domain,recentSentToDomain(domain));}
+  const preflight=await Promise.all(prepared.map(async(x:any)=>{
+    const {recipient,row}=x,domain=text(recipient?.recipient_company_domain||recipient?.company_domain||emailDomain(recipient.email),300).toLowerCase();
+    if(row.status==='sent')return{...x,alreadySent:true,ownSent:null,guard:null,recent:null,domainRecent:null};
+    const needsOwnSentCheck=!!(row.gmail_thread_id||row.gmail_draft_id||row.status==='draft_created');
+    const [ownSent,guard,recent,domainRecent]=await Promise.all([
+      needsOwnSentCheck?findSent(row):Promise.resolve(null),
+      globalCommunicationGuard(a,row,recipient),
+      recentSentToExact(recipient.email),
+      domainChecks.get(domain)||Promise.resolve(null)
+    ]);
+    return{...x,alreadySent:false,ownSent,guard,recent,domainRecent};
+  }));
+  for(const check of preflight){
+    const recipient=check.recipient;let row=check.row;
     try{
-      if(row.status==='sent'){sent++;continue;}
+      if(check.alreadySent){sent++;continue;}
 
-      const ownSent=await findSent(row);
-      if(ownSent){row=await markSent(row,ownSent);sent++;continue;}
+      if(check.ownSent){row=await markSent(row,check.ownSent);sent++;continue;}
 
-      const gg=await globalCommunicationGuard(a,row,recipient);
+      const gg=check.guard;
       if(!gg?.ok){
         row=await retireBlockedRegistryRow(row,'global_communication_guard:'+text(gg?.reason||'blocked',180),gg,budget);
         failures.push({email:normalizeEmail(recipient.email),blocked:true,reason:text(gg?.reason||'global_guard_blocked',180)});
         continue;
       }
 
-      const recent=await recentSentToExact(recipient.email);
+      const recent=check.recent;
       if(recent){
         if(isSentMatch(row,recent)){row=await markSent(row,recent);sent++;continue;}
         const liveGuard={ok:false,reason:'gmail_recipient_cooldown_active',gmail_message_id:recent.id,gmail_thread_id:recent.threadId||null,sent_at:sentAt(recent)};
@@ -361,7 +374,7 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
         continue;
       }
       const domain=text(recipient?.recipient_company_domain||recipient?.company_domain||emailDomain(recipient.email),300).toLowerCase();
-      const domainRecent=await recentSentToDomain(domain);
+      const domainRecent=check.domainRecent;
       if(domainRecent){
         const liveGuard={ok:false,reason:'gmail_domain_cooldown_active',gmail_message_id:domainRecent.id,gmail_thread_id:domainRecent.threadId||null,sent_at:sentAt(domainRecent),domain};
         row=await retireBlockedRegistryRow(row,'gmail_domain_cooldown_active',liveGuard,budget);
@@ -380,7 +393,6 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
           const sentMessage=await findSent(row);if(sentMessage){row=await markSent(row,sentMessage);sent++;continue;}row=await markMissing(row);
         }
       }
-      if(row.status!=='draft_created'){const sentMessage=await findSent(row);if(sentMessage){row=await markSent(row,sentMessage);sent++;continue;}}
       if(budget.writes>=MAX_DRAFT_WRITES_PER_RUN)continue;
       const d=await writeDraft(a,tender,recipient,row),at=new Date().toISOString(),patch={status:'draft_created',outreach_engine_version:'v2',outreach_motion:a.outreach_motion,pristeel_offer_model:d.content.offer_model||a.pristeel_offer_model||null,contact_tier:recipient.contact_tier,outreach_readiness_score:a.outreach_readiness_score,personalization_facts:d.content.selected_public_facts||[],recipient_name:recipient.name||null,gmail_draft_id:d.data.id||null,gmail_draft_message_id:d.data.message?.id||null,gmail_thread_id:d.data.message?.threadId||null,draft_created_at:at,last_checked_at:at,last_error:null,generator:GENERATOR,language:d.content.language,subject:d.content.subject,mime_type:'multipart/alternative',html:true,updated_at:at,payload:{...(row.payload||{}),outreach_engine_version:'v2',outreach_motion:a.outreach_motion,pristeel_offer_model:d.content.offer_model||a.pristeel_offer_model||null,copy_policy_version:d.content.copy_policy_version,company_role:d.content.company_role,recipient_role:d.content.recipient_role,selected_public_facts:d.content.selected_public_facts,contact_quality_score:recipient.contact_quality_score,tender_reference:d.content.tender_reference||null,tender_url:d.content.tender_url||null,refreshed_from_generator:wasRefresh?text(row.generator,200)||'unknown':null}};
       const u=await db.from(REGISTRY).update(patch).eq('id',row.id).select('*').single();if(u.error){await deleteDraft(d.data.id||'');throw u.error;}row=u.data;created++;if(wasRefresh)refreshed++;budget.writes++;
