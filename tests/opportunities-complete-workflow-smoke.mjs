@@ -14,6 +14,8 @@ const contactBackfill=read('supabase/migrations/20260927135500_opportunity_ted_c
 
 assert.match(ui,/preview_ready/);
 assert.match(ui,/human_approved:true/);
+assert.match(ui,/z-index:2147483500/,'draft preview must render above the Opportunity dossier modal');
+assert.match(ui,/data-td-approve\]'\)\.focus/,'visible draft approval must receive focus');
 assert.match(ui,/rpc\/pppp_ted_contact_candidates_v1/,'TED contact lookup must use the canonical read RPC');
 assert.match(ui,/rpc\/pppp_ensure_ted_opportunity_action_v1/,'missing TED action must be created by the controlled server RPC');
 assert.doesNotMatch(ui,/pppp_opportunity_actions\?on_conflict=action_key','POST'/,'browser must not insert directly into pppp_opportunity_actions');
