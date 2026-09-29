@@ -25,6 +25,9 @@ assert.match(desk,/pst:opportunity-canonical-contacts/,'Opportunity Desk must co
 assert.match(intel,/pppp_opportunity_company_workspace_v1/);
 assert.match(intel,/pst:opportunity-canonical-contacts/,'canonical workspace loader must publish contacts to the visible Opportunity detail');
 assert.match(intel,/300000/,'workspace reads are cached');
+assert.match(intel,/dataset\.pstOpportunityAction/,'known action ids must skip the redundant modal lookup');
+assert.doesNotMatch(intel,/new MutationObserver\(scan\)/,'unrelated DOM mutations must not rescan the whole page');
+assert.match(desk,/data-pst-opportunity-action/,'Opportunity detail should pass its preloaded action id to intelligence');
 assert.match(generator,/previewOnly/);
 assert.match(generator,/company_fact/);
 assert.match(generator,/personalization_facts/);

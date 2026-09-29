@@ -11,7 +11,7 @@ window.__pstProjectCentricWorkflowV2=true;
 window.__pstProjectCentricWorkflowV3=true;
 window.__pstProjectCentricWorkflowV4=true;
 
-var tenderState={rows:[],projectRows:[],projectOpportunityKeys:{},mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},emailByThread:{},communicationRows:[],communicationByTender:{},legacyTedContactsByTender:{}};
+var tenderState={rows:[],projectRows:[],projectOpportunityKeys:{},mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},actionByTender:{},emailByThread:{},communicationRows:[],communicationByTender:{},legacyTedContactsByTender:{}};
 var contactBusy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -175,13 +175,18 @@ function lifecycleLabel(meta){if(meta.lane==='draft')return'Draft i përgatitur'
 function lifecycleWhen(meta){if(!meta.when)return'';try{var d=new Date(meta.when);return isNaN(d.getTime())?'':d.toLocaleString('sq-AL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
 function lifecycleDateLabel(meta){var when=lifecycleWhen(meta);if(!when)return'';if(meta.lane==='draft')return'Drafti: '+when;if(meta.lane==='waiting')return'Dërguar: '+when;if(meta.lane==='replied')return'Përgjigjja: '+when;return'';}
 async function loadOpportunityOutreach(){
- tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.emailByThread={};tenderState.communicationRows=[];tenderState.communicationByTender={};tenderState.legacyTedContactsByTender={};
+ tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.actionByTender={};tenderState.emailByThread={};tenderState.communicationRows=[];tenderState.communicationByTender={};tenderState.legacyTedContactsByTender={};
  try{
-   var rows=A(await db('pppp_opportunity_outreach_registry_v1?select=tender_watch_id,recipient_email,status,draft_created_at,sent_at,gmail_thread_id,gmail_message_id,updated_at&order=updated_at.desc&limit=2000'));
+   var batch=await Promise.all([
+     db('pppp_opportunity_outreach_registry_v1?select=action_id,tender_watch_id,recipient_email,status,draft_created_at,sent_at,gmail_thread_id,gmail_message_id,updated_at&order=updated_at.desc&limit=2000'),
+     db('pppp_ted_sales_outreach_v1?select=tender_watch_id,company_name,winner_name,contact_email,company_domain,outreach_status&contact_email=not.is.null&limit=2000'),
+     db('pppp_opportunity_communication_state_v1?select=action_id,tender_watch_id,target_email,communication_state,communication_at,communication_gmail_url,communication_thread_id,last_outgoing_subject,outgoing_match_type&communication_state=in.(waiting,replied,contacted_history)&order=communication_at.desc.nullslast&limit=2000'),
+     db('pppp_opportunity_action_queue_v2?select=id,tender_watch_id,updated_at&status=eq.draft_review&order=updated_at.desc&limit=2000')
+   ]),rows=A(batch[0]),legacy=A(batch[1]),comm=A(batch[2]),actions=A(batch[3]);
    tenderState.outreachRows=rows;rows.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.outreachByTender[id]||(tenderState.outreachByTender[id]=[])).push(r);});
-   var legacy=A(await db('pppp_ted_sales_outreach_v1?select=tender_watch_id,company_name,winner_name,contact_email,company_domain,outreach_status&contact_email=not.is.null&limit=2000'));legacy.forEach(function(x){var id=S(x.tender_watch_id),email=S(x.contact_email).trim();if(!id||!email)return;(tenderState.legacyTedContactsByTender[id]||(tenderState.legacyTedContactsByTender[id]=[])).push({email:email,name:'',purpose:'general',confidence:'legacy_verified',company_domain:S(x.company_domain),source_type:'pppp_ted_sales_outreach_v1',draft_eligible:true});});
-   var comm=A(await db('pppp_opportunity_communication_state_v1?select=action_id,tender_watch_id,target_email,communication_state,communication_at,communication_gmail_url,communication_thread_id,last_outgoing_subject,outgoing_match_type&communication_state=in.(waiting,replied,contacted_history)&order=communication_at.desc.nullslast&limit=2000'));
+   legacy.forEach(function(x){var id=S(x.tender_watch_id),email=S(x.contact_email).trim();if(!id||!email)return;(tenderState.legacyTedContactsByTender[id]||(tenderState.legacyTedContactsByTender[id]=[])).push({email:email,name:'',purpose:'general',confidence:'legacy_verified',company_domain:S(x.company_domain),source_type:'pppp_ted_sales_outreach_v1',draft_eligible:true});});
    tenderState.communicationRows=comm;comm.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.communicationByTender[id]||(tenderState.communicationByTender[id]=[])).push(r);});
+   actions.forEach(function(r){var id=S(r.tender_watch_id);if(id&&!tenderState.actionByTender[id])tenderState.actionByTender[id]=r;});
    var threads=[];rows.forEach(function(r){if(/^[a-zA-Z0-9_-]+$/.test(S(r.gmail_thread_id))&&threads.indexOf(S(r.gmail_thread_id))<0)threads.push(S(r.gmail_thread_id));});
    if(threads.length){var mails=A(await db('project_emails?gmail_thread_id=in.('+threads.join(',')+')&select=gmail_thread_id,gmail_message_id,direction,from_email,to_emails,subject,sent_at&order=sent_at.asc&limit=2000'));mails.forEach(function(m){var t=S(m.gmail_thread_id);if(t)(tenderState.emailByThread[t]||(tenderState.emailByThread[t]=[])).push(m);});}
  }catch(e){console.warn('PPPP opportunity outreach state:',e);}
