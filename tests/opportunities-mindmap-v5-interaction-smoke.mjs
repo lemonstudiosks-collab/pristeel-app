@@ -53,7 +53,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260928-stable-opportunities-v1','stable Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260929-contact-badge-v1','contact-aware Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
@@ -71,6 +71,8 @@ assert.equal(window.document.querySelector('[data-pst-opp-lifecycle]'),null,'old
 assert(window.document.querySelector('[data-pst-opp-source="TED"]'),'TED must remain available as a left-side filter');
 assert(window.document.querySelector('[data-pst-opp-field="construction"]'),'field filters must remain available');
 assert(window.document.querySelector('[data-pst-opp-winner="gc_epc"]'),'winner-type filters must remain available');
+assert.match(window.document.querySelector('[data-pst-opp-select="ted-ambiguous"]').textContent,/Pa kontakt/,'a company without a safe contact must be visibly marked');
+assert(window.document.querySelector('[data-pst-opp-select="ted-ambiguous"] .status.no-contact'),'the missing-contact marker must use a distinct status badge');
 
 let activeIds=Array.from(window.document.querySelectorAll('.pst-opp-work-row'),x=>x.getAttribute('data-pst-opp-select'));
 assert(activeIds.includes('ted-gc')&&activeIds.includes('ted-gc-duplicate'),'same company can be visible before first outreach is prepared');
