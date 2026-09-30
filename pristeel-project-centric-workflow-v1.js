@@ -331,14 +331,14 @@ async function partnerContext(){
 function tenderById(id){return tenderState.rows.find(function(r){return S(r.id)===S(id);})||null;}
 async function serverTenderAnalysis(r){
  var AI=window.PSTOpenAIAssistantV1;if(!AI||typeof AI.ask!=='function')return null;
- var partners=await partnerContext(),role=winnerRole(r),q='';
+ var role=winnerRole(r),q='';
  if(tenderMode(r)==='award'){
    if(role==='gc_epc')q='Ky është një tender TED i fituar nga një GC/EPC. Analizo sa relevant është projekti për PRISTEEL dhe çfarë pakete konkrete steel fabrication/subcontracting mund t’i ofrojmë fituesit. Mos sugjero ofertim në tenderin e mbyllur.';
    else if(role==='producer')q='Ky është një tender TED i fituar nga një prodhues/metalpërpunues që mund të jetë konkurrent. Analizo vetëm mundësinë për overflow fabrication, kapacitet shtesë, ndarje pakete, furnizim ose mbështetje tjetër B2B. Mos e trajto si GC dhe mos sugjero ofertim në tenderin e mbyllur.';
    else if(role==='trader_consortium')q='Ky është një tender TED i fituar nga trader/konsorcium. Analizo rolin e mundshëm të fituesit dhe nëse PRISTEEL mund të ofrojë furnizim ose prodhim të nënkontraktuar. Trego qartë çfarë duhet verifikuar.';
    else q='Ky është një tender TED i fituar, por roli i fituesit nuk është verifikuar. Vlerëso relevancën për PRISTEEL dhe thuaj çfarë duhet verifikuar para outreach. Mos përgatit ose rekomando email derisa roli të jetë i qartë.';
  }else q='Analizo këtë tender për PRISTEEL. Vlerëso scope-in e mundshëm, çfarë duhet verifikuar në dosje dhe cilët partnerë/prodhues të regjistruar në PPPP mund të jenë relevantë për realizim. Nëse Eurosteel është realisht i përshtatshëm sipas të dhënave, thuaje; mos e favorizo pa bazë.';
- try{return await AI.ask(q,{scope:'global',context:{tender:r,winner_role:role,candidate_partners:partners}});}catch(e){return null;}
+ try{return await AI.ask(q,{scope:'tender',context:{tender:r,winner_role:role}});}catch(e){return null;}
 }
 function tenderFactsHtml(r){
  var p=tenderPayload(r),d=p.ted_details&&typeof p.ted_details==='object'?p.ted_details:{},desc=S(p.description||d.description||d.procedure_description).trim();
