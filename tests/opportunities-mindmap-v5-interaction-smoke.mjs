@@ -53,7 +53,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260930-draft-complete-v1','completed-draft Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260930-detail-cleanup-v1','cleaned Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
@@ -117,8 +117,8 @@ assert(window.document.querySelector('#pst-opp-modal-bg'),'clicking a company mu
 assert.match(window.document.querySelector('.pst-opp-detail').textContent,/Example Steel AG/,'clicking a company must hydrate its popup details');
 assert(window.document.querySelector('[data-pst-opp-close]'),'popup must expose a clear close action');
 assert(window.document.querySelector('[data-pst-opp-draft="ted-producer"]'),'uncontacted TED company with verified email must expose Krijo draft emaili');
-assert(window.document.querySelector('[data-pst-opp-open="ted-producer"]'),'uncontacted TED company must expose the tender-analysis action before outreach');
-assert.match(window.document.querySelector('[data-pst-opp-open="ted-producer"]').textContent,/Analizo tenderin/,'TED analysis action must be explicit');
+assert.equal(window.document.querySelector('[data-pst-opp-open="ted-producer"]'),null,'TED award detail must not expose the non-functional analysis action');
+assert.doesNotMatch(window.document.querySelector('.pst-opp-detail-grid').textContent,/Referenca|CPV/,'Opportunity detail must omit reference and CPV cards');
 assert(window.document.querySelector('[data-pst-opp-remove="ted-producer"]'),'uncontacted TED company must expose Hiqe without opening the legacy console first');
 
 const canonicalRow=window.document.querySelector('[data-pst-opp-select="ted-canonical"]');

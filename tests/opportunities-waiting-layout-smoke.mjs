@@ -9,14 +9,14 @@ const workflow=fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8')
 assert.doesNotThrow(()=>new Function(desk),'Opportunities Desk must be valid JavaScript');
 assert.doesNotThrow(()=>new Function(workflow),'Project-Centric workflow must remain valid JavaScript');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(desk,/VERSION='20260930-draft-complete-v1'/,'completed-draft Opportunity Desk revision must be active');
+assert.match(desk,/VERSION='20260930-detail-cleanup-v1'/,'cleaned Opportunity Desk revision must be active');
 assert.match(desk,/function activeRows\(/,'Desk must explicitly own the active/uncontacted list');
 assert.match(desk,/function contactedRows\(/,'Desk must explicitly own the contacted-company parking list');
 assert.match(desk,/globalContactedKeys/,'active list must globally suppress identities already drafted/contacted');
 assert.match(desk,/Kompanitë e kontaktuara/,'contacted companies must remain available in a dedicated view');
 assert.match(desk,/kalojnë te Projektet vetëm pas RFQ/i,'contacted view must state the RFQ-only Project rule');
 assert.match(desk,/Krijo draft emaili/,'selected TED company must expose the Gmail draft action');
-assert.match(desk,/Analizo tenderin/,'active TED company must expose the tender-analysis decision action');
+assert.doesNotMatch(desk,/Analizo tenderin/,'TED award detail must not expose the non-functional analysis action');
 assert.match(desk,/data-pst-opp-remove/,'active opportunity must expose the quick remove action');
 assert.match(desk,/function removeOpportunity\(id,button\)/,'Desk must delegate quick removal through the existing action engine');
 assert.match(desk,/await P\.noGo\(id\)/,'quick remove must reuse canonical NO-GO behavior instead of inventing a second status path');
@@ -32,7 +32,7 @@ assert.match(desk,/api\.loadOpportunities\(true\)/,'draft completion must reload
 assert.match(desk,/effectiveLane\(r\)!=='new'/,'contacted state must come from canonical lifecycle evidence');
 assert.match(desk,/function deskHtml\(c\)\{[\s\S]*activeRows\(\)[\s\S]*contactedRows\(\)[\s\S]*sideFilters\(c\)/,'final workdesk must preserve filters plus separate active and contacted views');
 assert.match(workflow,/display_limit:40/,'canonical result engine remains bounded');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260930-draft-complete-v1/,'runtime must cache-bust the completed-draft Opportunity Desk');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20260930-detail-cleanup-v1/,'runtime must cache-bust the cleaned Opportunity detail');
 assert.match(desk,/scrollbar-gutter:stable/,'Opportunity page must reserve scrollbar space');
 assert.match(desk,/font-variant-numeric:tabular-nums/,'Opportunity counts must keep stable numeral widths');
 assert.match(desk,/window\.scrollTo\(viewport\.x,viewport\.y\)/,'Opportunity rerenders must preserve the viewport');
