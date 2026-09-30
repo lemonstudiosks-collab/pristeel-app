@@ -40,6 +40,8 @@ window.PSTTenderPriorityActionsV1={
 };
 window.PSTTenderPriorityActionsV2=window.PSTTenderPriorityActionsV1;
 let homeCalls=0;
+const toasts=[];
+window.pstToast=(message,type)=>toasts.push({message,type});
 window.PSTPrimaryNavResilienceV10={openHome:()=>{homeCalls++;return true;}};
 
 window.eval(workflowSrc);
@@ -167,7 +169,9 @@ await new Promise(r=>setTimeout(r,20));
 window.document.querySelector('[data-pst-opp-draft="ted-producer"]').click();
 await new Promise(r=>setTimeout(r,30));
 assert.equal(window.document.getElementById('pst-opp-modal-bg'),null,'successful draft completion must close the Opportunity modal immediately');
-assert.equal(homeCalls,1,'successful draft completion must return to Home exactly once');
+assert.equal(homeCalls,0,'successful draft completion must remain in Opportunities instead of returning to Home');
+assert(window.document.getElementById('page-kek-tenders').classList.contains('active'),'successful draft completion must preserve the current Opportunities context');
+assert(toasts.some(x=>x.type==='ok'&&/Draftet u krijuan në Gmail/.test(x.message)),'successful draft completion must show a clear confirmation without implying the emails were sent');
 
 let dashboardBack=window.document.querySelector('[data-pst-opp-back],[data-pcw-opportunities-back]');
 assert(dashboardBack,'workdesk must keep a functional Kthehu control even during canonical rerenders');
@@ -178,6 +182,6 @@ dashboardBack=window.document.querySelector('[data-pst-opp-back],[data-pcw-oppor
 assert(dashboardBack,'late Production Surface Owner must preserve a live Kthehu control');
 assert.notEqual(window.getComputedStyle(dashboardBack).display,'none','late Production Surface Owner must not hide Kthehu');
 dashboardBack.click();
-assert.equal(homeCalls,2,'Kthehu must route Home exactly once after the completed-draft navigation');
+assert.equal(homeCalls,1,'Kthehu must remain the only explicit route from Opportunities to Home');
 
 console.log('Opportunities contacted-company workdesk smoke: OK');
