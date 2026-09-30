@@ -43,6 +43,12 @@ It does not discover or rank tenders independently. It reuses `PSTTenderPriority
 
 The full KRPP / APP / TED feed and filters remain intact under the collapsed full-list section.
 
+For Mundësitë, Arianiti explicitly shortlists RFQ-ready suppliers from Supplier Intelligence and hands the Project to Oltian. This creates one internal assigned task only; it never sends an RFQ or commits a supplier.
+
+## RFQ & Sourcing
+
+Oltian sees an assigned **RFQ & Sourcing** queue above the existing Projects desk. Each row opens the canonical Project flow: upload dossier, run AI requirement extraction, prepare RFQ drafts, upload supplier quotations, compare them and assemble an internal multi-supplier sourcing plan. Technical documentation remains manual. All external sends, final supplier choices, prices/margins and purchase orders still require human approval.
+
 No project is created before the existing human GO gate. No outreach email is sent automatically.
 
 ## Projects

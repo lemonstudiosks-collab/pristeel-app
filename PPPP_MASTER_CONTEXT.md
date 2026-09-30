@@ -16,6 +16,14 @@ For any claim about the current PPPP, use this order:
 
 A file existing in an old commit/branch does not make it current.
 
+### Mundësitë RFQ & Sourcing ownership
+
+- Arianiti owns tender shortlist and the explicit internal handoff.
+- Oltian owns the assigned RFQ & Sourcing work queue and continues inside the existing Project workspace.
+- Dossier upload and AI requirement extraction, RFQ drafts, supplier quotation intake and comparison reuse the canonical modules; do not duplicate them.
+- Multi-supplier sourcing is stored as human-confirmed component decisions and rendered as an internal offer-cost plan only.
+- Technical documentation remains manual. External communication, supplier commitment, price/margin, final offer and PO/contract gates remain human decisions.
+
 ## 2. Platform purpose
 
 PPPP is not intended to be a collection of manual modules. It is PRISTEEL's operational procurement/project system.

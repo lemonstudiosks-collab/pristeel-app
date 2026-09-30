@@ -1,3 +1,11 @@
+## 2026-09-30 — Mundësitë: Arianit → Oltian RFQ & Sourcing
+
+- Arianiti shortlists only RFQ-ready suppliers from the existing Supplier Intelligence evidence and explicitly hands the tender Project to Oltian.
+- The handoff reuses one canonical `tasks` row with assignee/workstream metadata; it does not create a parallel workflow system.
+- Oltian gets an **RFQ & Sourcing** queue that opens the existing Project dossier upload, AI requirement extraction, RFQ draft, supplier quotation and normalized comparison surfaces.
+- The commercial comparison now supports a human-approved multi-supplier package plan for fabrication, zinc, coating, installation and transport. It is an internal cost composition, not a supplier commitment or PO.
+- Technical documentation remains manual. External sends, supplier selection/commitment, sale price/margin, final offer and PO/contract actions remain human-gated.
+
 ## 2026-09-28 — Blerësit e çelikut: canonical identity, intelligence dhe discovery
 
 - Një Company Master canonical lidh domenin/identitetin dhe rolet ndërmjet Blerësve të çelikut, Mundësive, Kompanive EU dhe Përfaqësimeve; targetet aktive me të njëjtin domen nuk dyfishohen.

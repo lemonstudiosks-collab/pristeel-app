@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "61d60d8aa7b927e1db06f9d5445f1711bcb6dd12"
+    "bootstrapGitBlobSha": "bdfbecd6f4321fdbe3792883a193a7c626ab79b1"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -80,9 +80,10 @@
     {
       "area": "projects-list",
       "finalOwners": [
-        "pristeel-projects-modern-v1.js"
+        "pristeel-projects-modern-v1.js",
+        "pristeel-rfq-sourcing-workflow-v1.js"
       ],
-      "note": "Projects Operator Desk v2 is the single visible Projects owner. It performs one bounded project read, groups automatically by canonical operational_state, makes the full row the project-open target, and exposes no direct status/write menu. Project Classification and Lifecycle Tracking remain compatibility/context layers and yield their list presentation when v2 is active."
+      "note": "Projects Operator Desk v2 remains the main Projects owner. The RFQ & Sourcing companion adds only Oltian's assigned open-task queue and routes each row into the existing Project workspace; it does not create another project lifecycle or status engine."
     },
     {
       "area": "project-workspace",
@@ -91,6 +92,7 @@
         "pristeel-project-first-v2.js",
         "pristeel-project-first-actions-v1.js",
         "pristeel-project-first-commercial-v1.js",
+        "pristeel-rfq-sourcing-workflow-v1.js",
         "pristeel-german-commercial-gate-v1.js",
         "pristeel-project-commercial-simplified-v1.js",
         "pristeel-project-first-execution-v1.js",
@@ -102,7 +104,7 @@
         "pristeel-project-workbench-v2.js",
         "pristeel-project-execution-guard-v1.js"
       ],
-      "note": "Project Integrity UI owns the bounded base project load. Canonical Project Workflow remains the navigation/business-route owner. Project Workbench v3 (compatibility file pristeel-project-workbench-v2.js) is the exclusive visible Project Detail presentation owner. It consumes bounded registered commercial context facts and the read-only pppp_project_workflow_state_v1 evidence model through Project Data Integrity. The three PPPP V2 entry lanes converge on the existing supplier/commercial engines and continue through Customer PO, Supplier PO, Procurement, Transport, Delivery, Invoice, Payment and Closed. Operator Flow, Unified Project Flow, Operating Experience, Daily Zones and the post-award presentation simplifier must yield whenever Workbench v3 is intended or active. Workbench also listens to the canonical pst:project-workspace-rendered lifecycle event so a project opened after bootstrap immediately receives the Workbench surface; the Execution Guard remains the lifecycle safety owner. No ownership layer performs automatic outbound communication or business-data writes."
+      "note": "Project Integrity UI owns the bounded base project load. Canonical Project Workflow remains the navigation/business-route owner. Project Workbench v3 is the exclusive visible Project Detail presentation owner. RFQ & Sourcing reuses its dossier, requirement extraction, RFQ draft, supplier quotation and comparison surfaces; the multi-supplier package plan is an internal, explicitly human-approved cost composition only. Technical documentation stays manual. No companion performs automatic outbound communication, supplier commitment, pricing approval or PO creation."
     },
     {
       "area": "gmail-inbox",
@@ -160,9 +162,10 @@
         "pristeel-opportunity-intelligence-v1.js",
         "pristeel-project-centric-workflow-v1.js",
         "pristeel-tender-dossier-analysis-v1.js",
-        "pristeel-tender-supplier-sourcing-v1.js"
+        "pristeel-tender-supplier-sourcing-v1.js",
+        "pristeel-rfq-sourcing-workflow-v1.js"
       ],
-      "note": "Tender discovery engines remain backstage. Project-Centric Workflow remains the visible Opportunities owner. The dossier analyzer owns public/partial dossier reading; protected KRPP documents are imported through the purpose-limited pristeel-tender-dossier-import-v1.js companion into the existing protected_archive, then finalized only by pppp-tender-protected-archive-analysis. Tender Supplier Sourcing is an additive read-only Action Console module: canonical BOM first when uniquely resolved, strict Supplier Intelligence evidence, and on-demand external discovery only. No tender becomes a project, no supplier is selected, and no RFQ/email is sent without a human decision."
+      "note": "Tender discovery engines remain backstage. Project-Centric Workflow remains the visible Opportunities owner. The dossier analyzer owns public/partial dossier reading; protected KRPP documents are imported through the existing protected_archive. Tender Supplier Sourcing provides evidence-ranked candidates; Arianit explicitly shortlists RFQ-ready suppliers and hands one canonical task to Oltian only after the tender is a Project. No tender becomes a project, no supplier is committed, and no RFQ/email is sent without a human decision."
     },
     {
       "area": "ai",

@@ -9,6 +9,14 @@ For project continuity also read:
 - `PPPP_CONTINUITY_PROTOCOL.md`
 - `PPPP_CHANGELOG.md`
 
+## Mundësitë — RFQ & Sourcing handoff
+
+- `pristeel-tender-supplier-sourcing-v1.js` remains the Supplier Intelligence evidence/ranking surface. Arianiti makes the shortlist; ranking never becomes selection.
+- `pristeel-rfq-sourcing-workflow-v1.js` persists that explicit handoff in the existing `tasks` lifecycle and adds the assigned Oltian queue without replacing Projects or Workbench ownership.
+- Project dossier upload, AI requirement extraction, RFQ draft preparation, quotation intake and normalized comparison remain owned by their existing Project modules.
+- `pristeel-project-first-commercial-v1.js` may record one human-confirmed supplier per sourcing package and display the resulting internal cost plan. It cannot send, commit, approve price/margin or create a PO.
+- Technical documentation is manual by design.
+
 ## Blerësit e çelikut — runtime canonical
 
 - Owner UI: `pristeel-dach-steel-sales-v1.js`; data operative: `public.pppp_dach_steel_targets_v1`.
