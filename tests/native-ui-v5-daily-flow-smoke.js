@@ -16,6 +16,10 @@ assert(core.includes("e.target.closest('[data-pn-area]')"), 'Portfolio and heade
 assert(core.includes("return window.pstOpenProjectWorkspace(filter)"), 'Project routes must call the canonical project opener');
 assert(core.includes("return p.openOpportunities(filter||'')"), 'Opportunity routes must preserve their exact filter');
 assert(core.includes("if(p.openFinance)p.openFinance(filter||'')"), 'Finance routes must preserve their exact filter');
+assert(core.includes('invoices_out?select=id,invoice_nr,client,date,due_date,total_price,gross_amount,net_amount,vat_amount,paid,paid_date,project,project_id'), 'Home must select the canonical outgoing-invoice amount columns');
+assert(core.includes('invoices_in?select=id,supplier_invoice_nr,supplier,date,due_date,amount,net_amount,vat_amount,paid,paid_date,project,project_id'), 'Home must select the canonical incoming-invoice amount columns');
+assert(!core.includes('invoices_out?select=id,invoice_nr,client,date,due_date,gross_amount,total_price,amount,'), 'Home must not request the missing invoices_out.amount column');
+assert(!core.includes('invoices_in?select=id,supplier_invoice_nr,supplier,date,due_date,amount,gross_amount,'), 'Home must not request the missing invoices_in.gross_amount column');
 assert(entry.includes('pristeel-native-ui-v4-core.js?v=20260911-fullredesign1'), 'Entry must cache-bust the full Daily Flow redesign owner');
 assert(operating.includes("{key:'home',label:'Ballina'"), 'Primary navigation must be localized');
 assert(!/new\s+MutationObserver|setInterval\s*\(/.test(core), 'Daily Flow presentation must remain bounded and event-driven');
