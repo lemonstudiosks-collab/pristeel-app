@@ -244,33 +244,33 @@ begin
     return new;
   end if;
 
-  update public.kek_tender_watch old
+  update public.kek_tender_watch prior
      set status = 'ignored',
-         payload = coalesce(old.payload, '{}'::jsonb) || jsonb_build_object(
+         payload = coalesce(prior.payload, '{}'::jsonb) || jsonb_build_object(
            'krpp_superseded_by', new.id,
            'krpp_superseded_at', now()
          ),
-         updated_at = greatest(old.updated_at, now())
-   where old.id <> new.id
-     and upper(coalesce(old.payload->>'source', 'KRPP')) = 'KRPP'
-     and old.procurement_no = new.procurement_no
-     and old.project_id is null
-     and coalesce(old.status, 'new') <> 'promoted'
+         updated_at = greatest(prior.updated_at, now())
+   where prior.id <> new.id
+     and upper(coalesce(prior.payload->>'source', 'KRPP')) = 'KRPP'
+     and prior.procurement_no = new.procurement_no
+     and prior.project_id is null
+     and coalesce(prior.status, 'new') <> 'promoted'
      and (
-       coalesce(old.published_date, date '0001-01-01') < coalesce(new.published_date, date '0001-01-01')
+       coalesce(prior.published_date, date '0001-01-01') < coalesce(new.published_date, date '0001-01-01')
        or (
-         coalesce(old.published_date, date '0001-01-01') = coalesce(new.published_date, date '0001-01-01')
-         and coalesce(old.first_seen_at, old.created_at) < coalesce(new.first_seen_at, new.created_at)
+         coalesce(prior.published_date, date '0001-01-01') = coalesce(new.published_date, date '0001-01-01')
+         and coalesce(prior.first_seen_at, prior.created_at) < coalesce(new.first_seen_at, new.created_at)
        )
        or (
-         coalesce(old.published_date, date '0001-01-01') = coalesce(new.published_date, date '0001-01-01')
-         and coalesce(old.first_seen_at, old.created_at) = coalesce(new.first_seen_at, new.created_at)
-         and old.created_at < new.created_at
+         coalesce(prior.published_date, date '0001-01-01') = coalesce(new.published_date, date '0001-01-01')
+         and coalesce(prior.first_seen_at, prior.created_at) = coalesce(new.first_seen_at, new.created_at)
+         and prior.created_at < new.created_at
        )
      )
      and (
-       old.status is distinct from 'ignored'
-       or coalesce(old.payload->>'krpp_superseded_by', '') <> new.id::text
+       prior.status is distinct from 'ignored'
+       or coalesce(prior.payload->>'krpp_superseded_by', '') <> new.id::text
      );
   return new;
 end
