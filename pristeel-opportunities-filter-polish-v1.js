@@ -12,7 +12,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260930-detail-cleanup-v1';
+var VERSION='20260930-analysis-navigation-v1';
 var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,scheduled=false,decorating=false,selectedId='',contactedExpanded=false,sortDirection='desc',canonicalContactsByTender={};
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
@@ -232,7 +232,7 @@ function detailPanel(r){
  if(!r)return'';
  selectedId=S(r.id);var award=srcOf(r)==='TED',contacts=winnerContacts(r),lane=effectiveLane(r),title=award?companyLabel(r):S(r.title||r.authority),sub=award?S(r.title||''):S(r.authority||''),p=O(r),desc=S(r.description||p.description||p.scope||''),url=officialUrl(r),action='',inspect='',remove='',deadline=S(r.deadline||r.submission_deadline||p.deadline||p.submission_deadline||''),knownAction=state&&state.actionByTender&&state.actionByTender[S(r.id)],knownOutreach=outreachFor(r)[0],actionId=S(knownAction&&knownAction.id||knownOutreach&&knownOutreach.action_id);
  if(lane==='new'){
-   if(!award)inspect='<button type="button" class="pst-opp-secondary-btn" data-pst-opp-open="'+E(r.id)+'">Merr / analizo dosjen</button>';
+   inspect='<button type="button" class="pst-opp-secondary-btn" data-pst-opp-open="'+E(r.id)+'">'+(award?'Analizo tenderin':'Merr / analizo dosjen')+'</button>';
    remove='<button type="button" class="pst-opp-remove-btn" data-pst-opp-remove="'+E(r.id)+'">Hiqe</button>';
  }
  if(award&&lane==='new')action='<button type="button" class="pst-opp-draft-btn" data-pst-opp-draft="'+E(r.id)+'" '+(contacts.length?'':'disabled')+'><span>✉</span>'+(contacts.length?'Krijo draft emaili':'Mungon emaili i verifikuar')+'</button>';
@@ -362,7 +362,7 @@ function click(e){
  if((b=t.closest('[data-pst-opp-draft]'))){consume(e);createDraft(S(b.dataset.pstOppDraft),b).catch(function(err){if(typeof window.pstToast==='function')window.pstToast(S(err&&err.message||err),'error');else alert(S(err&&err.message||err));decorate();});return;}
  if((b=t.closest('[data-pst-opp-remove]'))){consume(e);removeOpportunity(S(b.dataset.pstOppRemove),b).catch(function(err){if(typeof window.pstToast==='function')window.pstToast(S(err&&err.message||err),'error');else alert(S(err&&err.message||err));decorate();});return;}
  if((b=t.closest('[data-pst-opp-gmail]'))){consume(e);window.open(b.dataset.pstOppGmail==='drafts'?'https://mail.google.com/mail/u/0/#drafts':'https://mail.google.com/mail/u/0/#inbox','_blank','noopener');return;}
- if((b=t.closest('[data-pst-opp-open]'))){consume(e);if(api&&typeof api.openTender==='function')api.openTender(S(b.dataset.pstOppOpen));return;}
+ if((b=t.closest('[data-pst-opp-open]'))){consume(e);var openId=S(b.dataset.pstOppOpen);closeDetail();if(api&&typeof api.openTender==='function')api.openTender(openId);return;}
 }
 function boot(){
  css();loadBridge();

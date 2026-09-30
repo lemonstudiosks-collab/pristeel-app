@@ -38,7 +38,7 @@ async function edgeRequest(payload){
 async function ask(question,options){
   question=S(question).trim();if(!question)throw new Error('Shkruaj pyetjen.');
   options=options||{};
-  var payload={question:question,scope:options.scope==='project'?'project':'global'};
+  var payload={question:question,scope:options.scope==='project'?'project':options.scope==='tender'?'tender':'global'};
   if(options.project_id)payload.project_id=options.project_id;
   if(options.project_name)payload.project_name=options.project_name;
   if(options.project_ref)payload.project_ref=options.project_ref;
