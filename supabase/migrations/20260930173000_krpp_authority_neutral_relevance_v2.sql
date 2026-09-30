@@ -394,8 +394,8 @@ update public.kek_tender_watch
 set payload = coalesce(payload, '{}'::jsonb)
 where upper(coalesce(payload->>'source', '')) = 'KRPP';
 
-insert into public.pppp_platform_changelog(kind, summary, details, migration_name, actor, verification)
-values (
+insert into public.pppp_platform_changelog(id, kind, summary, details, migration_name, actor, verification)
+select coalesce(max(id), 0) + 1,
   'procurement_relevance',
   'KRPP authority-neutral relevance v2: broad discovery, contextual main/review/excluded layers and canonical notice handling.',
   jsonb_build_object(
@@ -408,4 +408,4 @@ values (
   '20260930173000_krpp_authority_neutral_relevance_v2',
   'ChatGPT Codex',
   jsonb_build_object('status','migration_applied; live verification pending')
-);
+from public.pppp_platform_changelog;
