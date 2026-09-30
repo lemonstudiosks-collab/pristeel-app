@@ -5,11 +5,12 @@ import {JSDOM} from 'jsdom';
 const source=fs.readFileSync('pristeel-home-morning-command-center-v1.js','utf8');
 assert(!/supaFetch|\/rest\/v1\/|\.insert\(|\.update\(|\.delete\(/.test(source),'Morning Home must reuse snapshots without database reads or writes');
 assert(!source.includes('<h2>Veprimet prioritare</h2>')&&source.includes('Projektet aktive')&&source.includes('Blerësit e çelikut'),'Morning Home must omit the stale priority panel and preserve the live work zones');
-assert(source.includes('home-zones3'),'Morning Home must expose the centered work-zones cache version');
+assert(source.includes('home-resume4'),'Morning Home must expose the approved resume-and-zones cache version');
 assert(source.includes('pst-morning-project-empty'),'Morning Home must expose the compact project-empty state');
 assert(source.includes('groupActions(allActions)'),'Morning Home must group repetitive priority actions');
 assert(source.includes('pst-morning-project-grid'),'Active projects must use the compact project strip');
 assert(source.includes('pst-morning-zones'),'Home must make the four business zones its primary centered surface');
+assert(source.includes('pst-morning-command-layout')&&source.includes('data-morning-resume'),'Home must pair the resumable project workspace with the four work zones');
 assert(source.includes("data-morning-area=\"representations\"")&&source.includes("data-morning-area=\"eu\""),'Representations and EU Direct must expose functional Home routes');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2 pst-global-fullwidth-shell">
@@ -17,7 +18,7 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body class="pst-ui-v2 ps
 <section class="page active" id="page-workspace-home" style="display:block"><div id="pst-native-home-v4"><section class="pst-live-command-shell"><form class="pst-live-command"><textarea class="pst-live-input"></textarea><button class="pst-live-send">↑</button></form></section></div></section><button id="pst-daily-launch">The PriSteel Daily</button>
 </div></main></div></body></html>`,{url:'https://example.test/',runScripts:'outside-only',pretendToBeVisual:true});
 const {window}=dom;
-let actionCalls=0,projectCalls=0,projectAreaCalls=0,opportunityCalls=0,materialCalls=0,representationCalls=0,euCalls=0,materialSummaryReads=0;
+let actionCalls=0,projectCalls=0,projectAreaCalls=0,opportunityCalls=0,materialCalls=0,representationCalls=0,euCalls=0,materialSummaryReads=0,workflowAreas=[];
 window.PSTHomeCanonicalV1={snapshot:()=>({
  actions:[{key:'a1',project_name:'Airbus H24X',title:'Kontrollo ofertën',why:'Verifiko marzhën',priority:'high',due_date:new Date().toISOString()},{key:'a2',project_name:'Dukley Seafront',title:'Kontrollo ofertën',why:'Verifiko marzhën',priority:'high',due_date:new Date().toISOString()}],
  projects:[{id:'p1',name:'Dukley Seafront',pipeline_stage:'client_offer',next_action:'Përgjigju klientit'}],waiting:[]
@@ -31,6 +32,7 @@ let steelSummary={};
 window.PSTDachSteelSalesV3={snapshot:()=>({summary:steelSummary,targets:[]}),loadSummary:()=>{materialSummaryReads++;steelSummary={ready_for_outreach:11,draft_ready:2,replied:1};return Promise.resolve(steelSummary);},open:()=>{materialCalls++;}};
 window.PSTRepresentationsV1={open:()=>{representationCalls++;}};
 window.PSTEUCompaniesV1={open:()=>{euCalls++;}};
+window.PSTCanonicalProjectWorkflowV1={render:area=>{workflowAreas.push(area);}};
 window.eval(source);
 window.PSTHomeMorningCommandCenterV1.render();
 await new Promise(resolve=>setTimeout(resolve,0));
@@ -40,6 +42,7 @@ assert(home&&home.classList.contains('pst-morning-home'),'Morning Command Center
 assert.equal(window.document.getElementById('app-sidebar').style.getPropertyValue('display'),'','Home must clear the late inline sidebar hide');
 assert.equal(home.querySelectorAll('[data-morning-action]').length,0,'Stale priority actions must not consume Home space');
 assert.equal(home.querySelectorAll('[data-morning-project]').length,1,'Concrete project snapshot must render once');
+assert.equal(home.querySelector('[data-morning-resume] .pst-resume-name').textContent,'Dukley Seafront','Approved Home must resume the first concrete project');
 assert.equal(home.querySelector('[data-morning-metric="opp-new"]').textContent,'1','Existing Opportunities state must populate Home');
 assert.equal(home.querySelector('[data-morning-metric="mat-ready"]').textContent,'11','Existing Material Trade state must populate Home');
 assert.equal(materialSummaryReads,1,'Morning Home must request the cached steel summary only once');
@@ -50,6 +53,9 @@ assert(home.querySelector('[data-morning-daily-slot] #pst-daily-launch'),'Daily 
 home.querySelector('[data-morning-ask-toggle]').click();
 assert.equal(home.querySelector('[data-morning-ask-body]').hidden,false,'Pyet PPPP must expand on demand');
 
+home.querySelector('[data-resume-project]').click();
+home.querySelector('[data-resume-area="communication"]').click();
+home.querySelector('[data-resume-area="files"]').click();
 home.querySelector('[data-morning-project]').click();
 home.querySelector('[data-morning-card][data-morning-area="projects"] .pst-morning-panel-head h2').click();
 home.querySelector('[data-morning-card][data-morning-area="opportunities"] .pst-morning-metrics').click();
@@ -57,7 +63,9 @@ home.querySelector('[data-morning-card][data-morning-area="representations"] .ps
 home.querySelector('[data-morning-card][data-morning-area="eu"] .pst-eu-home').click();
 home.querySelector('[data-morning-card][data-morning-area="material"] .pst-morning-panel-head h2').click();
 assert.equal(actionCalls,0,'A grouped Morning action must not open only the first underlying action');
-assert.equal(projectCalls,1,'Morning project must open through the canonical project route');
+await new Promise(resolve=>setTimeout(resolve,100));
+assert.equal(projectCalls,4,'Resume actions and Morning project must use the canonical project route');
+assert.deepEqual(workflowAreas.sort(),['communication','files'],'Resume communication and documents must open their canonical project areas');
 assert.equal(projectAreaCalls,1,'The full Projects card must open the canonical Projects area');
 assert.equal(opportunityCalls,1,'Morning Opportunities must use canonical navigation');
 assert.equal(representationCalls,1,'Morning Representations must use its existing owner');
@@ -67,3 +75,4 @@ assert.equal(home.querySelectorAll('.pst-morning-zones [data-morning-card]').len
 
 dom.window.close();
 console.log('Morning Command Center smoke: PASS');
+
