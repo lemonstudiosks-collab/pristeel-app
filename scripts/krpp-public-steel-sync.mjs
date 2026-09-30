@@ -120,12 +120,16 @@ export function parseDetailHtml(html, detailUrl='', fallback={}){
   const estimated=fieldFromDetail(html,['Vlera e parashikuar']);
   const deadline=fieldFromDetail(html,['Afati për dorëzimin e ofertave/kërkesës për pjesëmarrje','Afati per dorezimin e ofertave/kerkeses per pjesemarrje','Data e Mbylljes']);
   const published=fieldFromDetail(html,['Data e njoftimit','Data e publikimit']);
+  const shortDescription=fieldFromDetail(html,['Përshkrimi i shkurtër','Pershkrimi i shkurter','Përshkrimi i kontratës','Pershkrimi i kontrates']);
+  const fullDescription=fieldFromDetail(html,['Përshkrimi','Pershkrimi','Objekti i kontratës','Objekti i kontrates']);
+  const lots=fieldFromDetail(html,['Lotet','Lotet e kontratës','Lotet e kontrates','Ndarja në lote','Ndarja ne lote']);
+  const technicalDescription=fieldFromDetail(html,['Përshkrimi teknik','Pershkrimi teknik','Specifikimet teknike','Kërkesat teknike','Kerkesat teknike']);
   return {
     procurement_no:procurementFromPublication(publicationNo,html)||null, publication_no:text(publicationNo)||null, authority:text(authority), title:text(title),
     document_type:text(documentType)||null, fpp:fm?fm[1]:null, fpp_description:fm&&fm[2]?text(fm[2]):null, contract_type:text(contractType)||null,
     contract_value_band:null, procedure:text(procedure)||null, estimated_value:parseAmount(estimated), currency:'EUR', deadline:isoDate(deadline)||null,
     published_date:isoDate(published)||fallback.published_date||null, is_retender:/ri[- ]?tender|ritender/i.test(norm(title)), source_url:fallback.source_url||DEFAULT_INDEX_URL,
-    detail_url:detailUrl||fallback.detail_url||null, payload:{source:'KRPP',country:'XK',authority_priority:authorityPriority(authority),detail_id:fallback.detail_id||null,index_notice_type:fallback.notice_type||null,source_kind:'krpp_public_monitor'}
+    detail_url:detailUrl||fallback.detail_url||null, payload:{source:'KRPP',country:'XK',authority_priority:authorityPriority(authority),detail_id:fallback.detail_id||null,index_notice_type:fallback.notice_type||null,source_kind:'krpp_public_monitor',short_description:shortDescription||null,full_description:fullDescription||null,lots:lots||null,technical_description:technicalDescription||null}
   };
 }
 

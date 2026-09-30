@@ -1,3 +1,10 @@
+## 2026-09-30 — KRPP authority-neutral relevance v2
+
+- KRPP discovery now detail-scans the bounded actionable B05/B54 window without using title keywords as an ingestion gate.
+- The shared PRISTEEL capability model now uses title, FPP, descriptions, lots and available dossier-derived context, and classifies KRPP records into `main`, `review` or `excluded` independently of contracting authority.
+- Direct steel/material/fabrication scope enters the main decision list; plausible industrial/construction scope stays review-first; contextual false positives such as `Rruga Celik`, digital platforms, metal-cutting machines, bearings and technical gases are excluded.
+- KRPP status routing, latest-notice supersession and Home canonicalization now keep amendments/retenders current without flooding the main list. Human NO-GO and all protected commercial workflows remain unchanged.
+
 ## 2026-09-30 — Mundësitë: Arianit → Oltian RFQ & Sourcing
 
 - Arianiti shortlists only RFQ-ready suppliers from the existing Supplier Intelligence evidence and explicitly hands the tender Project to Oltian.

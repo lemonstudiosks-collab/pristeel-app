@@ -170,6 +170,8 @@ The visible Opportunity Desk is owned by `pristeel-opportunities-filter-polish-v
 
 External procurement discovery has one scheduled morning session per source. Cloud collectors must pass the service-only `pppp_claim_external_source_daily_access_v1` gate before contacting TED, KRPP, APP Albania or the multilateral/WB source group. Duplicate/manual runs after the first claim skip external access. The authenticated KRPP Mac worker runs once at 06:00 local time and exits; continuous polling and `KeepAlive` are forbidden.
 
+The active KRPP cloud collector detail-scans the bounded B05/B54 feed without a title-keyword gate. Its authority-neutral capability model consumes title, FPP, short/full/technical descriptions, lots and available dossier-derived scope. `main` records are direct PRISTEEL opportunities, `review` records are plausible packages requiring scope verification, and `excluded` records do not enter the working list. The final daily decision surface accepts only KRPP `main`; `review` remains available through the existing review layer.
+
 Operating Experience adds the final decision vocabulary:
 
 - **GO · Krijo projekt**
