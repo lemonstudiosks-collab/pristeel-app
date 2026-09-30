@@ -28,6 +28,8 @@ assert.match(ted,/Promise\.all\(prepared\.map/,'recipient safety checks should r
 assert.match(ted,/domainChecks/,'one Gmail domain-history lookup should be reused for sibling recipients');
 assert.match(ted,/recentSentToExact/);
 assert.match(ted,/gmail_domain_cooldown_active/);
+assert.match(ted,/cooldownOverride/,'cooldown may only be bypassed through the explicit manual override path');
+assert.match(ted,/mode==='user'&&humanApproved&&body\?\.cooldown_override===true/,'only an authenticated, human-approved request may override cooldown for draft creation');
 assert.match(ted,/pppp_opportunity_communication_state_v1/);
 assert.match(ted,/communication_history_blocked/);
 assert.match(manual,/pppp_global_communication_guard_v1/);

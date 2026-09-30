@@ -14,6 +14,8 @@ const contactBackfill=read('supabase/migrations/20260927135500_opportunity_ted_c
 
 assert.match(ui,/preview_ready/);
 assert.match(ui,/human_approved:true/);
+assert.match(ui,/cooldown_override:true/,'manual cooldown override must require an explicit second request');
+assert.match(ui,/window\.confirm\(confirmText\)/,'recent company contact must be disclosed before manual draft override');
 assert.match(ui,/z-index:2147483500/,'draft preview must render above the Opportunity dossier modal');
 assert.match(ui,/data-td-approve\]'\)\.focus/,'visible draft approval must receive focus');
 assert.match(ui,/rpc\/pppp_ted_contact_candidates_v1/,'TED contact lookup must use the canonical read RPC');
