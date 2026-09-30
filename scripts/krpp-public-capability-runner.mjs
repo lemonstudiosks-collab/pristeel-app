@@ -27,13 +27,12 @@ export function selectCandidates(notices,{recentDateCount=30,fullScanDateCount=2
     if(type&&!ACTIONABLE_NOTICE_TYPES.has(type))continue;
     const direct=classifyKrppOpportunity({title:x.title});
     const hint=capabilityCandidateHint(x.title);
-    // Every notice on the newest publication dates is detail-scanned. This is what lets us discover hidden PRISTEEL packages
-    // whose title says e.g. substation rehabilitation or conveyor repair rather than steel.
+    // Scan the complete actionable B05/B54 window. Classification happens only after the detail page is read;
+    // title keywords are prioritization signals, never an ingestion gate.
     const scan=!!x.published_date&&full.has(x.published_date);
-    if(!scan&&direct.relevance_score<20&&!hint)continue;
     out.push({...x,candidate_score:Math.max(direct.relevance_score,hint?25:0,scan?15:0),candidate_full_scan:scan,candidate_hint:hint||null});
   }
-  return out.sort((a,b)=>Number(b.candidate_full_scan)-Number(a.candidate_full_scan)||b.candidate_score-a.candidate_score).slice(0,maxCandidates);
+  return out.sort((a,b)=>String(b.published_date||'').localeCompare(String(a.published_date||''))||Number(b.candidate_full_scan)-Number(a.candidate_full_scan)||b.candidate_score-a.candidate_score).slice(0,maxCandidates);
 }
 
 function sourceKey(r){return text(r.publication_no)||`KRPP:${text(r.procurement_no)}:${createHash('sha1').update(norm(r.title)).digest('hex').slice(0,14)}`;}
@@ -144,7 +143,7 @@ export async function run({
   const reviewCount=relevant.filter(r=>r.payload?.capability_review_required).length;
   const strongCount=relevant.filter(r=>r.payload?.capability_fit==='strong').length;
   const summary={
-    mode,auth_mode:authMode,classifier:'pristeel-capability-fit-v1',capability_profile_version:PRISTEEL_CAPABILITY_PROFILE_VERSION,source:'KRPP',
+    mode,auth_mode:authMode,classifier:'pristeel-authority-neutral-v2',candidate_scan:'full_actionable_b05_b54_window',capability_profile_version:PRISTEEL_CAPABILITY_PROFILE_VERSION,source:'KRPP',
     notice_links:notices.length,index_candidates:candidates.length,detail_failures:failures.length,capability_scored_rows:assessed.length,
     expired_filtered:assessed.length-relevant.length,relevant_rows:relevant.length,strong_matches:strongCount,review_matches:reviewCount,minimum_score:minScore,
     upsert_batches:upsertBatches,upsert_batch_size:Math.max(1,Math.floor(Number(upsertBatchSize)||25)),

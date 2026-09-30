@@ -35,12 +35,13 @@ function db(path,method,body){if(typeof window.supaFetch!=='function')return Pro
 async function refresh(force){if(!force&&cache.rows.length&&Date.now()-cache.loadedAt<45000)return cache.rows;if(cache.loading)return cache.loading;cache.loading=db('kek_tender_watch?select=*&status=in.(new,review,watch,promoted)&order=published_date.desc,relevance_score.desc&limit=1600').then(function(rows){cache.rows=A(rows);cache.loadedAt=Date.now();return cache.rows;}).finally(function(){cache.loading=null;});return cache.loading;}
 function operational(r){if(['new','review','watch'].indexOf(S(r&&r.status))<0)return false;if(phase(r)==='award')return source(r)==='TED'&&!!S(winner(r).name).trim();return true;}
 function openOutreach(r){var p=payload(r);return operational(r)&&phase(r)==='award'&&N(p.workflow||p.workflow_type||'winner_outreach')==='winner_outreach';}
+function mainLayer(r){return !(source(r)==='KRPP'&&phase(r)==='opportunity')||N(payload(r).krpp_relevance_layer||fit(r))==='main'||fit(r)==='strong';}
 function score(r){var s=Number(r&&r.relevance_score)||0,f=fit(r),p=phase(r),src=source(r);if(f==='strong')s+=24;else if(f==='possible')s+=7;else s-=35;if(p==='award'&&winner(r).name)s+=8;if(p==='opportunity'&&(src==='KRPP'||src==='APP_AL'))s+=7;if(r&&r.deadline){var d=new Date(r.deadline+'T00:00:00');if(!isNaN(d)){var days=Math.ceil((d-Date.now())/86400000);if(days>=0&&days<=14)s+=6;if(days<0)s-=60;}}return s;}
 function byPriority(a,b){return score(b)-score(a)||S(a&&a.title).localeCompare(S(b&&b.title));}
 function outreachDisplay(r){var x=Object.assign({},r),t=S(r&&r.title).replace(/^KONTAKT I HAPUR\s*·\s*/i,'');x.title='KONTAKT I HAPUR · '+t;x.__pst_outreach_open=true;return x;}
 function priorityRows(rows){
  var eligible=A(rows).filter(operational).filter(function(r){return fit(r)!=='weak'||Number(r.relevance_score)>=92;});
- var direct=eligible.filter(function(r){return phase(r)==='opportunity';}).sort(byPriority);
+ var direct=eligible.filter(function(r){return phase(r)==='opportunity'&&mainLayer(r);}).sort(byPriority);
  var outreach=eligible.filter(openOutreach).sort(byPriority);
  var otherAwards=eligible.filter(function(r){return phase(r)==='award'&&!openOutreach(r);}).sort(byPriority);
  var out=[],seen={};

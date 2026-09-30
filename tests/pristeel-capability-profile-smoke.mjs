@@ -44,6 +44,28 @@ for(const title of [
   assert.ok(score(title).relevance_score<35,`false positive must stay below review threshold: ${title}`);
 }
 
+for(const title of [
+  'Asfaltimi i Rrugës Celik',
+  'Restaurimi i Kullës Çelik-Gjilan',
+  'Furnizim me makinë për prerjen e metalit',
+  'Platforma për tregtimin e energjisë',
+  'Furnizim me kushineta për reduktorin',
+  'Furnizimi dhe mbushja e bombolave me gazra teknikë për Metalurgji',
+  'Renovimi i korridoreve, shkallëve dhe dyerve në spital'
+]) assert.ok(score(title).relevance_score<35,`contextual false positive must be excluded: ${title}`);
+
+for(const title of [
+  'Furnizim dhe montim i dyerve metalike',
+  'Ndërtimi i mbulojës me konstruksion metalik për parking',
+  'Fabrikim i rezervuarit metalik dhe tubacioneve',
+  'Ndërtimi i rezervuarit të mazutit në termocentral',
+  'Furnizim me material metalik'
+]){
+  const r=score(title);
+  assert.equal(r.relevance_layer,'main',`direct PRISTEEL scope must enter main: ${title}`);
+  assert.ok(r.relevance_score>=75);
+}
+
 assert.ok(score('Ndërtimi i sheshit prej Urës se Zallit deri te Ura e Hajdaragëve ne Komunën e Pejës',{fpp:'45000000-7',contract_type:'Punë'}).relevance_score<35,'bridge name used only as location must not create a PRISTEEL review');
 assert.ok(score('Furnizim me pajisje zyre',{fpp:'27000000-5'}).relevance_score<35);
 
@@ -63,6 +85,11 @@ const candidates=selectCandidates([
 assert.ok(candidates.some(x=>x.detail_id==='1'),'newest date must be detail-scanned even with no keyword');
 assert.ok(candidates.some(x=>x.detail_id==='2'),'capability-context title must be included');
 assert.ok(candidates.some(x=>x.detail_id==='3'),'direct steel title must be included beyond full-scan dates');
+
+const broad=selectCandidates([
+  {detail_id:'4',title:'Paketë pa fjalë kyçe në titull',notice_type:'B05',published_date:'2026-08-14'}
+],{recentDateCount:30,fullScanDateCount:0,maxCandidates:50});
+assert.deepEqual(broad.map(x=>x.detail_id),['4'],'all actionable notices in the bounded window must be detail-scanned');
 
 const base={title:'Rehabilitimi i nënstacionit dhe portaleve',authority:'KOSTT',deadline:'2026-09-10',published_date:'2026-08-17',payload:{source:'KRPP',authority_priority:'A'}};
 const assessed=assessPristeelTender(base);

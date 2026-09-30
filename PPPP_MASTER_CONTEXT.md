@@ -157,6 +157,8 @@ This vocabulary is presentation only. Existing tender review/status/project-prom
 
 Raw discovery/candidate queues are not promoted into daily UI merely because they exist. Technical candidate queues stay under the hood until they become an actionable business decision.
 
+KRPP discovery is authority-neutral. The scheduled collector scans the bounded actionable B05/B54 notice window broadly, reads each selected detail page, and then applies one contextual PRISTEEL capability model. Direct supply/fabrication/steel scope is `main`; plausible industrial, construction or EPC scope without direct evidence is `review`; low-fit and contextual false positives are `excluded`. Authority priority may inform operations but never gates eligibility. The newest notice for one procurement identity is canonical, while older amendments/notices are retained only for audit.
+
 ## 7. Project Workspace
 
 Project-First remains the data/tool workspace and `pristeel-project-workflow-canonical-v1.js` remains the canonical workflow reconciler.

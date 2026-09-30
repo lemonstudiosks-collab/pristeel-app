@@ -26,6 +26,7 @@ w.PSTHomeCanonicalV1={snapshot:()=>({actions:[
 const award={id:'t1',title:'Denmark – Structural steelworks – FMV2 - Smedeentreprise - Bassin Folemarksvej',authority:'HOFOR',relevance_score:96,category:'steel_structure',status:'watch',payload:{source:'TED',notice_phase:'award',workflow:'winner_outreach',capability_fit:'strong',winner:{name:'Holmskov Rustfri A/S',country:'DNK',email:'th@holmskov.dk'}}};
 const open={id:'t2',title:'Steel supply',authority:'Authority',deadline:null,relevance_score:100,category:'raw_material',status:'new',payload:{source:'KRPP',notice_phase:'opportunity',capability_fit:'strong'}};
 const otherOpen={id:'t3',title:'Another steel opportunity',authority:'Authority',deadline:null,relevance_score:99,category:'steel_structure',status:'new',payload:{source:'TED',notice_phase:'opportunity',capability_fit:'strong'}};
+const reviewOnly={id:'t4',title:'Possible industrial package',authority:'Authority',deadline:null,relevance_score:58,category:'possible',status:'review',payload:{source:'KRPP',notice_phase:'opportunity',capability_fit:'possible',krpp_relevance_layer:'review'}};
 w.supaFetch=async(path)=>path.startsWith('kek_tender_watch?')?[award,open,otherOpen]:[];
 w.eval(fs.readFileSync('pristeel-tender-priority-actions-v1.js','utf8'));
 const T=w.PSTTenderPriorityActionsV1;
@@ -34,6 +35,7 @@ const priority=T.priorityRows([otherOpen,award,open]);
 assert.strictEqual(priority.length,3);
 assert.strictEqual(priority[0].id,'t2','strongest direct bid must remain the main tender decision');
 assert.strictEqual(priority[1].id,'t1','unfinished award outreach must remain a tender priority');
+assert.ok(!T.priorityRows([reviewOnly]).some(r=>r.id==='t4'),'KRPP review layer must not enter the main decision list');
 assert.ok(T.openOutreach(award));
 assert.strictEqual(T.workModel(open),'supply');
 assert.strictEqual(T.workModel(award),'production');
