@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const src=fs.readFileSync(new URL('../pristeel-rfq-sourcing-workflow-v1.js',import.meta.url),'utf8');
+const migration=fs.readFileSync(new URL('../supabase/migrations/20260930120000_rfq_sourcing_handoff_v1.sql',import.meta.url),'utf8');
+assert.match(migration,/alter table public\.tasks[\s\S]*assigned_to_email[\s\S]*workstream[\s\S]*metadata/);
+assert.match(migration,/pppp_record_supplier_package_decision_v1/);
+assert.match(migration,/supplier_commitment_created',false/);
+const calls=[],listeners={};
+const payload={email:'arianit.vllahiu@prissteel.com'},token='x.'+Buffer.from(JSON.stringify(payload)).toString('base64url')+'.y';
+const document={readyState:'loading',addEventListener:(n,f)=>{listeners[n]=f;},querySelectorAll:()=>[],getElementById:()=>null};
+const w={authGetSession:()=>({access_token:token,email:payload.email}),supaFetch:async(p,m,b)=>{calls.push({p,m,b});if(p.startsWith('tasks?source='))return[];if(p.startsWith('tasks?assigned_to_email='))return[];return[];}};
+const context=vm.createContext({window:w,document,console,setTimeout,clearTimeout,alert(){},atob:s=>Buffer.from(s,'base64').toString('binary'),decodeURIComponent,escape,encodeURIComponent});vm.runInContext(src,context);
+const api=w.PSTRfqSourcingWorkflowV1;assert.ok(api);assert.equal(api._test.currentEmail(),payload.email);assert.equal(api._test.sourceRef('p1'),'project:p1');
+await api.upsertHandoff({project_id:'p1',tender_id:'t1',requirement_source:'dossier_analysis',requirements:[{id:'steel',label:'Steel'}]},[{name:'Eurosteel',email:'sales@eurosteel.test',requirement_id:'steel'}]);
+const write=calls.find(x=>x.p==='tasks'&&x.m==='POST');assert.ok(write);assert.equal(write.b.assigned_to_email,'oltian.vllahiu@prissteel.com');assert.equal(write.b.workstream,'rfq_sourcing');assert.equal(write.b.metadata.assigned_by_email,payload.email);assert.equal(write.b.metadata.technical_documentation_mode,'manual');assert.equal(write.b.metadata.shortlisted_suppliers.length,1);
+assert.doesNotMatch(src,/messages\/send|sendEmail\s*\(|supplier_orders/);
+console.log('rfq sourcing workflow smoke: ok');

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="sq">
+<head>
+  <meta charset="utf-8">
+  <title>PriSteel RFQ &amp; Sourcing browser check</title>
+  <style>
+    body{margin:0;background:#edf2f4;color:#26373e;font-family:Inter,Arial,sans-serif}.shell{max-width:1240px;margin:auto;padding:24px}.hero{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.hero h1{margin:0;font-size:24px}.hero span{font-size:12px;color:#5d747d}.card{background:#fff;border:1px solid #dbe5e8;border-radius:15px;margin:14px 0;padding:18px;box-shadow:0 8px 24px rgba(35,58,66,.05)}.card h2{margin:0 0 12px;font-size:15px}.pst-tss-c-actions{display:flex;gap:8px;align-items:center}.pst-tss-c-actions button{padding:7px 10px;border:1px solid #ccdce2;border-radius:8px}.ppd-focusbar{height:1px}.pf2-grid{display:grid;grid-template-columns:1fr}.pf2-card{border:1px solid #dfe8eb;border-radius:12px;overflow:hidden}.pf2-card>header{padding:12px}.prfq-row{padding:8px}.prfq-row.off{opacity:.45}
+  </style>
+  <script>
+    let activeEmail='arianit.vllahiu@prissteel.com';
+    window.authGetSession=()=>{const token='x.'+btoa(JSON.stringify({email:activeEmail})).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_')+'.y';return{access_token:token,email:activeEmail};};
+    window.__pstCurrentProjectId='11111111-1111-1111-1111-111111111111';
+    const handoff={id:'task-1',project_id:window.__pstCurrentProjectId,title:'Përgatit RFQ dhe sourcing',detail:'Shortlist manual',priority:'e larte',status:'hapur',created_at:new Date().toISOString(),metadata:{technical_documentation_mode:'manual',requirements:[{id:'steel',label:'S355 structural steel'},{id:'zinc',label:'EN ISO 1461 zinc'}],shortlisted_suppliers:[{name:'Eurosteel',email:'sales@eurosteel.test'},{name:'Zinc Partner',email:'quotes@zinc.test'}]}};
+    window.supaFetch=async path=>path.startsWith('tasks?')?[handoff]:[];
+    window.__pstIntegrityLastData={project:{id:window.__pstCurrentProjectId},supplierOffers:[{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',supplier:'Eurosteel',price_kg:1.55,currency:'EUR',qty_kg:10000,total_amount:19300,delivery_weeks:4,incoterms:'DAP',certification:'EN 10204 3.1',origin:'EU',positions:[{key:'base',total_neg:15500},{key:'zinc',total_neg:3800}]},{id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',supplier:'Zinc Partner',price_kg:1.63,currency:'EUR',qty_kg:10000,total_amount:19850,delivery_weeks:3,incoterms:'EXW',certification:'EN 10204 3.1',origin:'EU',positions:[{key:'base',total_neg:16300},{key:'zinc',total_neg:2900},{key:'transport',total_neg:650}]}],supplierDecisions:[{supplier_offer_id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',supplier_name:'Eurosteel',decision_type:'selected_component_base',status:'active'},{supplier_offer_id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',supplier_name:'Zinc Partner',decision_type:'selected_component_zinc',status:'active'}]};
+    window.__pstIntegrityLastData.offers=window.__pstIntegrityLastData.supplierOffers;
+  </script>
+</head>
+<body>
+  <main class="shell">
+    <div class="hero"><div><h1>Mundësitë → RFQ &amp; Sourcing</h1><span>Browser verification fixture · no sends, commitments or POs</span></div></div>
+    <section class="card"><h2>1. Arianit · shortlist &amp; handoff</h2><div id="pst-tender-supplier-sourcing" data-tender-id="tender-1"><div class="pst-tss-c-actions"><button data-tss-shortlist="1" data-name="Eurosteel" data-email="sales@eurosteel.test" data-req="steel">Shortlist</button><button data-tss-shortlist="1" data-name="Zinc Partner" data-email="quotes@zinc.test" data-req="zinc">Shortlist</button></div></div></section>
+    <section class="card"><h2>2. Oltian · assigned queue</h2><div id="page-workspace-projects"><div class="ppd-focusbar"></div></div></section>
+    <section class="card"><h2>3. Project · RFQ workbench</h2><div id="rfq-box"><div class="prfq-row"><input type="checkbox" data-prfq-check="0"> Eurosteel</div><div class="prfq-row"><input type="checkbox" data-prfq-check="1"> Zinc Partner</div></div></section>
+    <section class="card"><h2>4. Internal multi-supplier offer</h2><div id="page-workspace-project" class="pf2-on"><div id="pst-pi-body"><div class="pf2-grid"></div></div></div></section>
+  </main>
+  <script src="../pristeel-rfq-sourcing-workflow-v1.js"></script>
+  <script src="../pristeel-project-first-commercial-v1.js"></script>
+  <script>
+    addEventListener('load',async()=>{
+      const data={project_id:window.__pstCurrentProjectId,tender_id:'tender-1',requirements:handoff.metadata.requirements};
+      PSTRfqSourcingWorkflowV1.decorateTender(data);
+      document.querySelectorAll('[data-rsq-shortlist]').forEach(b=>{b.classList.add('on');b.textContent='✓ Shortlist';});
+      activeEmail='oltian.vllahiu@prissteel.com';
+      await PSTRfqSourcingWorkflowV1.injectQueue();
+      await PSTRfqSourcingWorkflowV1.afterRfqRender(document.getElementById('rfq-box'),{projectId:window.__pstCurrentProjectId,suppliers:[{email:'sales@eurosteel.test'},{email:'quotes@zinc.test'}]});
+      PSTProjectFirstCommercialV1.inject();
+      document.body.dataset.ready='true';
+    });
+  </script>
+</body>
+</html>

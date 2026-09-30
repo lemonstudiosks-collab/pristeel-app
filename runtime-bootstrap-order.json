@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
-  "moduleCount": 162,
-  "sequenceSha256": "8eb843165bd4403af4ef133d8eb8dfe2b2c5a3b5243407e61bd71dd057221f0a",
+  "moduleCount": 163,
+  "sequenceSha256": "b9f06d5f377a320ed70273a4fc3ab9d941f1d4cd56478f86ead9c24235dada1f",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260925-single-login1",
@@ -126,6 +126,7 @@
     "pristeel-project-first-bom-preview-v1.js?v=20260810-1",
     "pristeel-project-first-rfq-draft-v1.js?v=20260925-suppliergate1",
     "pristeel-bom-rfq-autoflow-v1.js?v=20260925-suppliergate1",
+    "pristeel-rfq-sourcing-workflow-v1.js?v=20260930-sourcing1",
     "pristeel-home-command-center-v2.js?v=20260807-12",
     "pristeel-tender-dossier-import-v1.js?v=20260918-direct1",
     "pristeel-redesign-finalizer-v1.js?v=20260926-representations-nav1",
@@ -165,7 +166,7 @@
     "pristeel-primary-nav-resilience-v1.js?v=20260926-representations-nav1",
     "pristeel-project-execution-guard-v1.js?v=20260829-postaward1",
     "pristeel-creative-ui-v1.js?v=20260911-fullredesign4",
-    "pristeel-home-morning-command-center-v1.js?v=20260928-home-layout2",
+    "pristeel-home-morning-command-center-v1.js?v=20260930-home-resume4",
     "pristeel-ui-runtime-stability-v1.js?v=20260925-no-page-clone1"
   ]
 }

@@ -123,6 +123,7 @@ var files=[
   'pristeel-project-first-bom-preview-v1.js?v=20260810-1',
   'pristeel-project-first-rfq-draft-v1.js?v=20260925-suppliergate1',
   'pristeel-bom-rfq-autoflow-v1.js?v=20260925-suppliergate1',
+  'pristeel-rfq-sourcing-workflow-v1.js?v=20260930-sourcing1',
   'pristeel-home-command-center-v2.js?v=20260807-12',
   'pristeel-tender-dossier-import-v1.js?v=20260918-direct1',
   'pristeel-redesign-finalizer-v1.js?v=20260926-representations-nav1',
@@ -194,4 +195,3 @@ function load(i,attempt){
 }
 load(0,1);
 })();
-
