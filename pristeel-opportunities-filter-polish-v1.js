@@ -12,7 +12,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20260929-modal-stability-v1';
+var VERSION='20260930-draft-complete-v1';
 var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,scheduled=false,decorating=false,selectedId='',contactedExpanded=false,sortDirection='desc',canonicalContactsByTender={};
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
@@ -331,8 +331,8 @@ function back(){if(resultPage)return closeResultPage();try{var N=window.PSTPrima
 function consume(e){if(!e)return;var control=e.target&&e.target.closest?e.target.closest('button,a'):null;if(control&&typeof control.blur==='function')control.blur();e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();}
 async function createDraft(id,button){
  var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.prepareDraft!=='function')throw new Error('Draft workflow nuk është gati.');
- if(button){button.disabled=true;button.textContent='Duke krijuar draftin…';}
- try{var out=await P.prepareDraft(id);var results=A(out&&out.results),cancelled=results.some(function(x){return S(x&&x.event)==='preview_cancelled';});if(cancelled)return;var ok=results.some(function(x){var ev=S(x&&x.event);return ev==='draft_created'||ev==='draft_preserved'||ev==='already_covered'||ev==='outreach_ready'||ev==='outreach_partial'||Number(x&&x.created)>0||Number(x&&x.preserved)>0||Number(x&&x.sent)>0;});if(!ok)throw new Error('PPPP e pranoi komandën, por nuk regjistroi asnjë draft. Opportunity mbetet në listë derisa drafti të konfirmohet.');selectedId=S(id);if(api&&typeof api.loadOpportunities==='function')await api.loadOpportunities(true);schedule();}finally{if(button)button.disabled=false;}
+ var originalHtml=button&&button.innerHTML||'',originalDisabled=!!(button&&button.disabled);if(button){button.disabled=true;button.textContent='Duke krijuar draftin…';}
+ try{var out=await P.prepareDraft(id);var results=A(out&&out.results),cancelled=results.some(function(x){return S(x&&x.event)==='preview_cancelled';});if(cancelled)return;var ok=results.some(function(x){var ev=S(x&&x.event);return ev==='draft_created'||ev==='draft_preserved'||ev==='already_covered'||ev==='outreach_ready'||ev==='outreach_partial'||Number(x&&x.created)>0||Number(x&&x.preserved)>0||Number(x&&x.sent)>0;});if(!ok)throw new Error('PPPP e pranoi komandën, por nuk regjistroi asnjë draft. Opportunity mbetet në listë derisa drafti të konfirmohet.');closeDetail();if(S(selectedId)===S(id))selectedId='';back();setTimeout(function(){if(api&&typeof api.loadOpportunities==='function')Promise.resolve(api.loadOpportunities(true)).catch(function(err){console.warn('PPPP Opportunity background refresh:',err);}).finally(schedule);else schedule();},0);return out;}finally{if(button&&button.isConnected){button.innerHTML=originalHtml;button.disabled=originalDisabled;}}
 }
 async function removeOpportunity(id,button){
  var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.noGo!=='function')throw new Error('Heqja e mundësisë nuk është gati.');

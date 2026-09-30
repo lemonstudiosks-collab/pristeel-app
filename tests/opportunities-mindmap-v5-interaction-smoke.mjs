@@ -53,7 +53,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260929-modal-stability-v1','stable contact-aware Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20260930-draft-complete-v1','completed-draft Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
@@ -153,6 +153,14 @@ await new Promise(r=>setTimeout(r,30));
 assert.equal(api._state.source,'TED','left-side source filter must update the canonical filter state');
 assert(window.document.querySelector('#pst-opp-desk'),'filtering must remain on the same workdesk');
 
+window.PSTTenderPriorityActionsV1.prepareDraft=window.PSTTenderPriorityActionsV2.prepareDraft=async()=>({results:[{event:'outreach_ready',recipients:3,created:3}]});
+window.document.querySelector('[data-pst-opp-select="ted-producer"]').click();
+await new Promise(r=>setTimeout(r,20));
+window.document.querySelector('[data-pst-opp-draft="ted-producer"]').click();
+await new Promise(r=>setTimeout(r,30));
+assert.equal(window.document.getElementById('pst-opp-modal-bg'),null,'successful draft completion must close the Opportunity modal immediately');
+assert.equal(homeCalls,1,'successful draft completion must return to Home exactly once');
+
 let dashboardBack=window.document.querySelector('[data-pst-opp-back],[data-pcw-opportunities-back]');
 assert(dashboardBack,'workdesk must keep a functional Kthehu control even during canonical rerenders');
 window.eval(productionSurfaceSrc);
@@ -162,6 +170,6 @@ dashboardBack=window.document.querySelector('[data-pst-opp-back],[data-pcw-oppor
 assert(dashboardBack,'late Production Surface Owner must preserve a live Kthehu control');
 assert.notEqual(window.getComputedStyle(dashboardBack).display,'none','late Production Surface Owner must not hide Kthehu');
 dashboardBack.click();
-assert.equal(homeCalls,1,'Kthehu must route Home exactly once');
+assert.equal(homeCalls,2,'Kthehu must route Home exactly once after the completed-draft navigation');
 
 console.log('Opportunities contacted-company workdesk smoke: OK');
