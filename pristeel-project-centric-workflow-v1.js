@@ -349,7 +349,7 @@ async function serverTenderAnalysis(r){
    else if(role==='specialist_contractor')q='Ky është specialist contractor. Analizo vetëm komponentët/paketat e çelikut që lidhen realisht me scope-in specialist dhe mund të ndahen për fabrikim ose furnizim.';
    else q='Ky është një tender TED i fituar, por roli i kompanisë nuk është verifikuar. Vlerëso çfarë duhet verifikuar para outreach. Mos rekomando draft të targetuar derisa roli të jetë i qartë.';
  }else q='Analizo këtë tender për PRISTEEL. Vlerëso scope-in e mundshëm, çfarë duhet verifikuar në dosje dhe cilët partnerë/prodhues të regjistruar në PPPP mund të jenë relevantë për realizim. Nëse Eurosteel është realisht i përshtatshëm sipas të dhënave, thuaje; mos e favorizo pa bazë.';
- try{return await AI.ask(q,{scope:'tender',context:{tender:r,winner_role:role}});}catch(e){return null;}
+ try{var partners=await partnerContext();return await AI.ask(q,{scope:'tender',context:{tender:r,winner_role:role,candidate_partners:partners}});}catch(e){return null;}
 }
 function tenderFactsHtml(r){
  var p=tenderPayload(r),d=p.ted_details&&typeof p.ted_details==='object'?p.ted_details:{},desc=S(p.description||d.description||d.procedure_description).trim();
