@@ -48,11 +48,11 @@ assert.ok(sch.missing_facts.length>=2);
 
 // 2. CYTA project group: no database-style award narration.
 const cyta=buildTedDraftContent({route:'TED_CONSORTIUM',target_company:'CYTA',target_email:'andreas.makris@cyta.com.cy',tender_title:'Cyprus – Electrical machinery – Athalassa, Anatoliko and FIZ battery storage projects',pristeel_offer_model:'fabricated_steel_package',personalization_facts:['CYTA is identified in the award information.']},{title:'Cyprus – Electrical machinery – Athalassa, Anatoliko and FIZ battery storage projects',winner:{name:'CYTA',country:'CYP',company_type:'trader_consortium'}},{email:'andreas.makris@cyta.com.cy',name:'Mr. Antreas Makris'});
-assert.equal(cyta.offer_model,'fabricated_steel_package');
+assert.equal(cyta.offer_model,'consortium_scope_support');
 assert.match(cyta.subject,/Athalassa \/ Anatoliko \/ FIZ – battery-storage steel scope/);
 assert.match(cyta.plain_body,/Athalassa, Anatoliko, FIZ battery storage projects/);
-assert.match(cyta.plain_body,/take full responsibility for a clearly defined steel package/);
-assert.match(cyta.plain_body,/You remain in control of the project/);
+assert.match(cyta.plain_body,/do not want to assume that all members have the same role/);
+assert.match(cyta.plain_body,/consortium member responsible for structural steel/i);
 assert.doesNotMatch(cyta.plain_body,/published award information|identified in the award information/i);
 
 // 3. Fabricator gets capacity copy, never GC ownership copy.
@@ -75,16 +75,32 @@ assert.match(future.plain_body,/future steel packages/i);
 assert.match(future.plain_body,/Who handles qualification/);
 assert.doesNotMatch(future.plain_body,/send us the drawings|send us one current RFQ|currently open/i);
 
-// 6. Internal contamination never reaches either MIME alternative.
+// 6. TED Company Role V2 drives category-specific outreach.
+const trader=buildTedDraftContent({route:'TED_GENERAL',target_company:'Steel Trade GmbH',tender_title:'Germany – Steel package – Trade Project'},{title:'Germany – Steel package – Trade Project',winner:{name:'Steel Trade GmbH',country:'DEU'},winner_role_v2:{category:'trader_distributor',confidence:'high'}},{email:'einkauf@steeltrade.example',purpose:'procurement'});
+assert.equal(trader.offer_model,'trader_fabrication_support');
+assert.match(trader.plain_body,/ergänzen wir Ihre Material- bzw\. Handelsleistung/i);
+assert.doesNotMatch(trader.plain_body,/Kapazitätsspitzen externe Fertigung/i);
+
+const mill=buildTedDraftContent({route:'TED_GENERAL',target_company:'Steel Mill AG',tender_title:'Germany – Steel project – Mill Project'},{title:'Germany – Steel project – Mill Project',winner:{name:'Steel Mill AG',country:'DEU'},winner_role_v2:{category:'steel_mill_producer',confidence:'high'}},{email:'sales@steelmill.example'});
+assert.equal(mill.offer_model,'mill_downstream_fabrication');
+assert.match(mill.plain_body,/keine Standard-Stahlversorgung/i);
+
+const specialist=buildTedDraftContent({route:'TED_GENERAL',target_company:'Facade Specialist GmbH',tender_title:'Germany – Facade – Specialist Project'},{title:'Germany – Facade – Specialist Project',winner:{name:'Facade Specialist GmbH',country:'DEU'},winner_role_v2:{category:'specialist_contractor',confidence:'high'}},{email:'info@facade.example'});
+assert.equal(specialist.offer_model,'specialist_scope_support');
+assert.match(specialist.plain_body,/nur den tatsächlich relevanten Fertigungsanteil/i);
+
+assert.throws(()=>buildTedDraftContent({route:'TED_GENERAL',target_company:'Unknown GmbH',tender_title:'Germany – Project'},{title:'Germany – Project',winner:{name:'Unknown GmbH',country:'DEU'},winner_role_v2:{category:'other_unclear',confidence:'low'}},{email:'info@unknown.example'}),/company_role_verification_required/);
+
+// 7. Internal contamination never reaches either MIME alternative.
 for(const leak of ['unknown','company profile','outreach readiness','draft only','human approval','internal workflow','personalization score']){assert.doesNotMatch(ms.plain_body,new RegExp(leak,'i'));assert.doesNotMatch(ms.html_body,new RegExp(leak,'i'));}
 
-// 7. A >2,000-character tender dump must not expand the email.
+// 8. A >2,000-character tender dump must not expand the email.
 const longDescription=('Legal procurement boilerplate. - Item A - Item B - Item C '+msDescription+' ').repeat(45);
 const long=buildTedDraftContent({...msAction,personalization_facts:[longDescription]},{...msTender,payload:{description:longDescription}},{email:'stahl@msgruppe24.de'});
 assert(copyWords(long)<=160,`long-input copy should remain short, got ${copyWords(long)} words`);
 assert.doesNotMatch(long.plain_body,/Legal procurement boilerplate|Item A|Baustelleneinrichtung/);
 
-for(const d of [ms,sch,cyta,fabricator,material,future,long]){
+for(const d of [ms,sch,cyta,fabricator,material,future,trader,mill,specialist,long]){
  assert.equal(d.body,d.plain_body);
  assert.equal(d.copy_policy_version,COPY_POLICY_VERSION);
  assert.ok(d.subject&&d.plain_body&&d.html_body&&d.offer_model&&d.company_role&&d.recipient_role);
