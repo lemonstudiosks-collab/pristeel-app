@@ -27,7 +27,7 @@ const rows=[
 ];
 let registry=[];
 window.supaFetch=async path=>{
- if(String(path).startsWith('kek_tender_watch?'))return rows;
+ if(String(path).startsWith('kek_tender_watch?')||String(path).startsWith('pppp_tender_watch_company_role_v2?'))return rows;
  if(String(path).startsWith('pppp_opportunity_outreach_registry_v1?'))return registry;
  if(String(path).startsWith('pppp_opportunity_communication_state_v1?'))return [];
  if(String(path).startsWith('project_emails?'))return [];
