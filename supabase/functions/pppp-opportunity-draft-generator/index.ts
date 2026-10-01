@@ -52,7 +52,7 @@ async function tenderContext(tenderWatchId:any){
     if(!org.contacts.some((x:any)=>normalizeEmail(x?.email||x?.value)===email))org.contacts.push({type:'email',value:email,email,confidence:'high',score:95,source_type:'outreach_contacts',draft_eligible:true});
   }
   if(orgs.length)winner.contact_enrichment={...(winner.contact_enrichment||{}),organizations:orgs};
-  const {data:roleV2,error:roleError}=await db.rpc('pppp_ted_company_role_v2',{p_winner:winner});
+  const {data:roleV2,error:roleError}=await db.rpc('pppp_ted_company_role_context_v2',{p_winner:winner,p_award_role:p?.award_role||{}});
   if(roleError)throw roleError;
   return{...p,winner,winner_role_v2:roleV2||null,winner_contacts:existingContacts,publication_no:data?.publication_no||p.publication_no||null,procurement_no:data?.procurement_no||p.procurement_no||null,source_url:data?.source_url||p.source_url||null,detail_url:data?.detail_url||p.detail_url||null,title:data?.title||p.title||null,authority:data?.authority||p.authority||null};
 }
