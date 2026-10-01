@@ -25,10 +25,11 @@ assert(!generator.includes('/drafts/send'),'Gmail draft-send endpoint must not e
 assert(!generator.includes('gmail.send'),'gmail.send scope must not exist');
 
 assert(content.includes('PRISTEEL_LOGO_URL'),'HTML signature must include canonical PRISTEEL logo');
-assert(content.includes('Stahlpaket | PRISTEEL'),'German subject must use the scope-first project package policy');
-assert(content.includes("return 'Projekt '+p+' – Stahlpaket | PRISTEEL'"),'German TED subject must use the cleaned project name');
-assert(content.includes('recipientKind'),'recipient type must remain available for safe greeting/metadata handling');
-assert(content.includes('scope_evidence')&&content.includes('concrete_question'),'TED drafts must be led by exact scope evidence and one concrete question');
+assert(content.includes("COPY_POLICY_VERSION='pppp-commercial-copy-policy-v5'"),'draft copy must retain the current commercial copy policy');
+assert(content.includes('subject_anchor'),'subject must remain derived from the cleaned project/package anchor');
+assert(content.includes('recipientRole'),'recipient type must remain available for safe greeting/metadata handling');
+assert(content.includes('scope_evidence')&&content.includes('selected_public_facts'),'TED drafts must remain grounded in exact scope evidence and selected public facts');
+assert(content.includes('company_role_verification_required'),'unverified TED company roles must be blocked before targeted draft creation');
 assert(generator.includes("event:'readiness_blocked'"),'generator must hard-stop TED actions without readiness evidence');
 assert(generator.includes('MAX_CONTACTS_PER_ACTION=20'),'manual draft generation must cover every verified UI contact while staying bounded');
 assert(generator.includes('MAX_DRAFT_WRITES_PER_RUN=25'),'generator must retain a bounded write budget large enough for one full verified-contact set');
