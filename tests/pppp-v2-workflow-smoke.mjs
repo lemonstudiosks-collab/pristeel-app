@@ -187,7 +187,7 @@ const award = {
 };
 const rpcCalls = [];
 aw.supaFetch = async (requestPath, method, body) => {
-  if (String(requestPath).startsWith('kek_tender_watch?')) return [{ ...award }];
+  if (String(requestPath).startsWith('kek_tender_watch?') || String(requestPath).startsWith('pppp_tender_watch_company_role_v2?')) return [{ ...award, winner_role_v2: { version: 'ted-company-role-v2', category: 'gc_epc', subcategory: 'general_contractor_or_epc', confidence: 'high', requires_role_verification: false } }];
   if (requestPath === 'rpc/pppp_promote_ted_award_to_sales_project_v1') {
     rpcCalls.push({ method, body });
     award.project_id = projectId;
