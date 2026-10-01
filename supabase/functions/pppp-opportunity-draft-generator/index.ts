@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v30-manual-cooldown-override';
+const GENERATOR='pppp-opportunity-draft-generator-v31-commercial-engine-v3-ted-role-v2';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=20;
 const MAX_DRAFT_WRITES_PER_RUN=25;
@@ -203,6 +203,12 @@ async function markMissing(row:any){const now=new Date().toISOString();const {da
 async function markError(row:any,e:any){try{await db.from(REGISTRY).update({status:'error',last_error:text(e?.message||e,1000),last_checked_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',row.id);}catch{}}
 
 function effectiveTedRole(tender:any){
+  const v2=text(tender?.winner_role_v2?.category||'',80).toLowerCase();
+  if(v2==='steel_fabricator')return'producer';
+  if(v2==='gc_epc')return'gc_epc';
+  if(v2==='consortium_jv')return'trader_consortium';
+  if(['trader_distributor','steel_mill_producer','specialist_contractor'].includes(v2))return v2;
+  if(v2==='other_unclear')return'unknown';
   const w=tender?.winner&&typeof tender.winner==='object'?tender.winner:{};
   const t=text(w.company_type||w?.company_classification?.company_type||'',80).toLowerCase();
   if(t&&t!=='unknown')return t;
@@ -426,5 +432,4 @@ async function run(limit=20,actionId='',refreshExisting=false,explicitUser=false
   return{candidates:(data||[]).length,actions_ready:ready,actions_partial:partial,no_recipients:noRecipients,route_mismatch:routeMismatch,readiness_blocked:readinessBlocked,drafts_created:created,drafts_refreshed:refreshed,drafts_retired:retired,drafts_updated:0,drafts_preserved:preserved,sent_already:sent,draft_writes:budget.writes,failed:errors.length,errors:errors.slice(0,10),results:results.slice(0,50),generator:GENERATOR,registry:REGISTRY,write_policy:'registry_state_machine_v1',sent_match_policy:'thread_id_plus_pppp_headers',stable_headers:['X-PPPP-Outreach-ID','X-PPPP-Action-ID'],html:true,separate_draft_per_recipient:true,human_send_required:true,auto_send:false,refresh_existing:refreshExisting,max_contacts_per_action:MAX_CONTACTS_PER_ACTION,draft_write_budget_per_run:MAX_DRAFT_WRITES_PER_RUN,outreach_engine_version:'v2'};
 }
 Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});const mode=await authorizationMode(req);if(!mode)return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:cors});try{const u=new URL(req.url);let body:any={};if(req.method==='POST'){try{body=await req.json();}catch{}}const limit=Number(body?.limit||u.searchParams.get('limit')||20),actionId=text(body?.action_id||u.searchParams.get('action_id')||'',80),refreshExisting=String(body?.refresh_existing??u.searchParams.get('refresh_existing')??'false').toLowerCase()==='true',humanApproved=body?.human_approved===true,cooldownOverride=mode==='user'&&humanApproved&&body?.cooldown_override===true;if(mode==='cron'||!actionId){return new Response(JSON.stringify({ok:true,event:'manual_draft_only',reason:mode==='cron'?'scheduled_cold_draft_generation_disabled':'cold_draft_generation_requires_explicit_action_id',authorization_mode:mode,auto_send:false,human_send_required:true,drafts_created:0}),{headers:cors});}const out=await run(Math.min(1,limit),actionId,refreshExisting,mode==='user'&&!!actionId,!humanApproved,cooldownOverride);return new Response(JSON.stringify({ok:true,...out,authorization_mode:mode,preview_only:!humanApproved,cooldown_override:cooldownOverride}),{headers:cors});}catch(e){return new Response(JSON.stringify({ok:false,error:text((e as any)?.message||e,1000),auto_send:false,human_send_required:true}),{status:500,headers:cors});}});
-
 
