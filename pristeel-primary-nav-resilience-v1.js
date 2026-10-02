@@ -110,7 +110,8 @@ function scheduleRepair(){clearTimeout(repairTimer);repairTimer=setTimeout(repai
 function syncSidebar(key){
  key=canon(key);var home=key==='home';
  var shell=document.getElementById('app-shell-root')||document.querySelector('.app-shell');
- var outer=document.getElementById('pst-v2-sidebar')||document.querySelector('.app-shell>.sidebar, .app-shell>aside.sidebar');
+ var outer=document.getElementById('app-sidebar')||document.querySelector('.app-shell>.sidebar, .app-shell>aside.sidebar');
+ var v2=document.getElementById('pst-v2-sidebar');
  var inner=document.getElementById('pst-ws-sidebar');
  var main=shell&&shell.querySelector? shell.querySelector(':scope > .main, :scope > main.main'):null;
  try{
@@ -125,6 +126,10 @@ function syncSidebar(key){
    outer.style.setProperty('min-width',home?'0':'232px','important');
    outer.style.setProperty('max-width',home?'0':'232px','important');
    outer.style.setProperty('padding-top',home?'0':'10px','important');
+  }
+  if(v2){
+   v2.style.setProperty('display',home?'none':'flex','important');
+   v2.style.setProperty('visibility',home?'hidden':'visible','important');
   }
   if(inner){
    inner.style.setProperty('display',home?'none':'flex','important');
