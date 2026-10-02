@@ -7,7 +7,7 @@
 if(window.__pstHomeLauncherV5)return;
 window.__pstHomeLauncherV5=true;
 window.__pstHomeLauncherV4=true;
-var V='20261002-launcher6-compact1',clockTimer=0,weatherBusy=false;
+var V='20261002-launcher7-sidebarfix1',clockTimer=0,weatherBusy=false;
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -46,6 +46,7 @@ function icon(k,top){return '<span class="'+(top?'phl-top-icon':'phl-card-icon')
 function route(k){
  try{document.body.classList.remove('pst-home-launcher-active')}catch(e){}
  var n=nav();
+ try{if(n&&typeof n.syncSidebar==='function')n.syncSidebar(k)}catch(e){}
  try{
   if(k==='opportunities'&&n&&n.openOpportunities)return n.openOpportunities();
   if(k==='representations'){if(n&&n.openRepresentations)return n.openRepresentations();if(window.PSTRepresentationsV1&&window.PSTRepresentationsV1.open)return window.PSTRepresentationsV1.open()}
@@ -200,6 +201,7 @@ function mount(){
  if(!active()){try{document.body.classList.remove('pst-home-launcher-active')}catch(e){}return false}
  var page=document.getElementById('page-workspace-home');if(!page)return false;
  try{document.body.classList.add('pst-home-launcher-active')}catch(e){}
+ try{var n=nav();if(n&&typeof n.syncSidebar==='function')n.syncSidebar('home')}catch(e){}
  var r=document.getElementById('pst-home-launcher-v4');
  if(!r){r=document.createElement('section');r.id='pst-home-launcher-v4';page.insertBefore(r,page.firstChild||null)}
  else if(r.parentNode!==page)page.insertBefore(r,page.firstChild||null);
