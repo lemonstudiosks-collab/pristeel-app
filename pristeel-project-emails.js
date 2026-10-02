@@ -160,12 +160,12 @@ var files=[
   'pristeel-opportunity-intelligence-v1.js?v=20260929-performance-v1',
   'pristeel-home-operating-grid-v1.js?v=20260823-homegrid2',
   'pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2',
-  'pristeel-primary-nav-resilience-v1.js?v=20260926-representations-nav1',
+  'pristeel-primary-nav-resilience-v1.js?v=20261002-sidebarfix1',
   'pristeel-project-execution-guard-v1.js?v=20260829-postaward1',
   'pristeel-creative-ui-v1.js?v=20260911-fullredesign4',
   'pristeel-home-morning-command-center-v1.js?v=20260930-home-resume4',
   'pristeel-home-operator-dashboard-v1.js?v=20261002-home-ops2',
-  'pristeel-home-launcher-v4.js?v=20261002-launcher6-compact1',
+  'pristeel-home-launcher-v4.js?v=20261002-launcher7-sidebarfix1',
   'pristeel-ui-runtime-stability-v1.js?v=20260925-no-page-clone1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
