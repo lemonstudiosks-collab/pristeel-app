@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "bdfbecd6f4321fdbe3792883a193a7c626ab79b1"
+    "bootstrapGitBlobSha": "01dc42df73afbbce0c6370ddfc1e2a7511e90e67"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -71,11 +71,12 @@
         "pristeel-home-operating-grid-v1.js",
         "pristeel-project-control-home-v1.js",
         "pristeel-home-morning-command-center-v1.js",
+        "pristeel-home-operator-dashboard-v1.js",
         "pristeel-mobile-home-v1.js",
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Canonical Home remains the sole Home data/state owner. Existing mobile Home remains the bounded utility/public-source provider. pristeel-mobile-app-v2.js is the final <=900px presentation shell (runtime v6): Home, Projects, Discover and Inbox remain the four primary full-screen swipe pages. Home uses a stable Ask PPPP layout, fixed summary cards and debounced canonical refreshes. Projects uses the richer card-feed presentation. Discover renders a vertical multi-opportunity tender feed and reads Material Trade/Representation data only through their existing owners; Material Trade uses the owner’s bounded target loader without triggering lifecycle/discovery sync. Inbox reads live Gmail when authorized and falls back to canonical Gmail-synced project_emails through PSTGmailLiveInboxV2. Project and Company details remain native secondary mobile surfaces. No direct mobile Supabase query, independent business-state engine, polling or automatic protected action is introduced. Kompanitë EU shtohet në Ballinë vetëm si hyrje e lehtë drejt pipeline-it të ri; nuk merr pronësi mbi state-in e Ballinës."
+      "note": "Canonical Home remains the sole Home data/state owner. pristeel-home-operator-dashboard-v1.js is the final desktop Home presentation: it consumes the Canonical Home snapshot only, exposes Ask PPPP, attention, recent activity, real deadlines, waiting-external, finance-attention and new-opportunity surfaces, and routes every interactive row/card to an existing canonical owner. It adds no direct Supabase reads/writes, polling or protected action. pristeel-home-morning-command-center-v1.js remains loaded as compatibility immediately before it. Existing mobile Home remains the bounded utility/public-source provider, while pristeel-mobile-app-v2.js stays the final <=900px presentation shell."
     },
     {
       "area": "projects-list",
@@ -442,6 +443,16 @@
       "before": "pristeel-primary-nav-resilience-v1.js",
       "after": "pristeel-project-execution-guard-v1.js",
       "reason": "The post-award lifecycle guard deliberately loads last."
+    },
+    {
+      "before": "pristeel-home-morning-command-center-v1.js",
+      "after": "pristeel-home-operator-dashboard-v1.js",
+      "reason": "The operator dashboard is the final desktop Home presentation and must mount after the Morning compatibility layer."
+    },
+    {
+      "before": "pristeel-home-operator-dashboard-v1.js",
+      "after": "pristeel-ui-runtime-stability-v1.js",
+      "reason": "Home presentation must settle before the bounded route-stability observer."
     }
   ],
   "deprecatedForbidden": [
