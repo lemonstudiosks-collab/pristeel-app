@@ -183,11 +183,11 @@ function ensureDailySidebarNav(){
   var b=host.querySelector('.pst-ws-navbtn[data-key="daily"]');
   if(!b){
     b=document.createElement('button');b.type='button';b.className='pst-ws-navbtn';b.dataset.key='daily';
-    b.innerHTML='<span class="pst-nav-icon" aria-hidden="true">◫</span><span class="pst-nav-label">Morning Brief</span>';
+    b.innerHTML='<span class="pst-nav-icon pst-daily-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12.5A2.5 2.5 0 0 1 19 8v10.5H6.5A2.5 2.5 0 0 1 4 16V5.5Z"/><path d="M19 8h1a1 1 0 0 1 1 1v8a1.5 1.5 0 0 1-1.5 1.5H19"/><path d="M7 9h7M7 12h7M7 15h4"/></svg></span><span class="pst-nav-label">Morning Brief</span>';
     var finance=host.querySelector('.pst-ws-navbtn[data-key="finance"]');
     if(finance)host.insertBefore(b,finance);else host.appendChild(b);
   }
-  var label=b.querySelector('.pst-nav-label')||b.querySelector('span:last-child');if(label)label.textContent='Morning Brief';
+  var label=b.querySelector('.pst-nav-label')||b.querySelector('span:last-child');if(label)label.textContent='Morning Brief';var icon=b.querySelector('.pst-nav-icon');if(icon&&!icon.querySelector('svg'))icon.innerHTML='<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12.5A2.5 2.5 0 0 1 19 8v10.5H6.5A2.5 2.5 0 0 1 4 16V5.5Z"/><path d="M19 8h1a1 1 0 0 1 1 1v8a1.5 1.5 0 0 1-1.5 1.5H19"/><path d="M7 9h7M7 12h7M7 15h4"/></svg>';
   return true;
 }
 function installDailySidebarOwner(){
