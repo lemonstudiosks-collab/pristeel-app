@@ -80,11 +80,29 @@ function modal(title,sub,body){
  m.innerHTML='<section class="phl-modal"><header><div><h2>'+E(title)+'</h2>'+(sub?'<p>'+E(sub)+'</p>':'')+'</div><button type="button" data-close>'+I.close+'</button></header><div class="phl-modal-body">'+body+'</div></section>';
  document.body.appendChild(m);m.onclick=function(e){if(e.target===m||e.target.closest('[data-close]'))m.remove()};return m;
 }
+function calcValue(input){
+ var s=S(input).replace(/\s+/g,''),nums=[],ops=[],i=0,expectNum=true;
+ function prec(o){return o==='+'||o==='-'?1:o==='*'||o==='/'?2:0}
+ function apply(){var o=ops.pop(),b=nums.pop(),a=nums.pop();if(a==null||b==null)throw 0;nums.push(o==='+'?a+b:o==='-'?a-b:o==='*'?a*b:a/b)}
+ while(i<s.length){
+  var ch=s[i];
+  if((ch>='0'&&ch<='9')||ch==='.'||(ch==='-'&&expectNum)){
+   var j=i+1;while(j<s.length&&((s[j]>='0'&&s[j]<='9')||s[j]==='.'))j++;
+   var n=Number(s.slice(i,j));if(!isFinite(n))throw 0;nums.push(n);i=j;expectNum=false;continue;
+  }
+  if(ch==='('){ops.push(ch);i++;expectNum=true;continue}
+  if(ch===')'){while(ops.length&&ops[ops.length-1]!=='(')apply();if(ops.pop()!=='(')throw 0;i++;expectNum=false;continue}
+  if('+-*/'.indexOf(ch)>-1){while(ops.length&&ops[ops.length-1]!=='('&&prec(ops[ops.length-1])>=prec(ch))apply();ops.push(ch);i++;expectNum=true;continue}
+  throw 0;
+ }
+ while(ops.length){if(ops[ops.length-1]==='(')throw 0;apply()}
+ if(nums.length!==1||!isFinite(nums[0]))throw 0;return nums[0];
+}
 function calculator(){
  var keys=['C','±','%','÷','7','8','9','×','4','5','6','−','1','2','3','+','0','.','⌫','='];
  var m=modal('Kalkulatori','Llogaritje të shpejta pa dalë nga PRISTEEL.','<div class="phl-calc"><input data-display value="0" readonly><div>'+keys.map(function(k){return'<button type="button" data-key="'+E(k)+'">'+E(k)+'</button>'}).join('')+'</div></div>'),expr='',display=m.querySelector('[data-display]');
  function show(){display.value=expr||'0'}
- m.addEventListener('click',function(e){var b=e.target.closest('[data-key]');if(!b)return;var k=b.dataset.key;if(k==='C'){expr='';return show()}if(k==='⌫'){expr=expr.slice(0,-1);return show()}if(k==='±'){if(expr)expr=expr[0]==='-'?expr.slice(1):'-'+expr;return show()}if(k==='%'){if(expr)expr='('+expr+')/100';return show()}if(k==='='){try{var x=expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');if(!/^[0-9+\-*/().\s]+$/.test(x))throw 0;var v=Function('"use strict";return ('+x+')')();expr=isFinite(v)?String(Math.round(v*100000000)/100000000):''}catch(_){expr=''}return show()}expr+=k;show()});
+ m.addEventListener('click',function(e){var b=e.target.closest('[data-key]');if(!b)return;var k=b.dataset.key;if(k==='C'){expr='';return show()}if(k==='⌫'){expr=expr.slice(0,-1);return show()}if(k==='±'){if(expr)expr=expr[0]==='-'?expr.slice(1):'-'+expr;return show()}if(k==='%'){if(expr)expr='('+expr+')/100';return show()}if(k==='='){try{var x=expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');var v=calcValue(x);expr=String(Math.round(v*100000000)/100000000)}catch(_){expr=''}return show()}expr+=k;show()});
 }
 function currency(){
  var m=modal('Kursi i valutave','Kurs aktual me bazë EUR. Burimi: Frankfurter / ECB.','<div class="phl-state">Duke marrë kursin aktual…</div>');
