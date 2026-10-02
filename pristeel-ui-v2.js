@@ -38,6 +38,10 @@ style.id='pst-ui-v2-style';
 style.textContent=`
 body.pst-ui-v2{--pst-shell:#F6F7F8;--pst-card:#FFFFFF;--pst-line:#E6E8EA;--pst-muted:#7A8086;--pst-soft:#F0F2F3;background:var(--pst-shell)}
 body.pst-ui-v2 .app-shell{background:var(--pst-shell);align-items:stretch}
+body.pst-ui-v2:has(#page-workspace-home.active) .app-shell{display:block!important;grid-template-columns:minmax(0,1fr)!important}
+body.pst-ui-v2:has(#page-workspace-home.active) .sidebar{display:none!important;visibility:hidden!important;width:0!important;min-width:0!important;max-width:0!important;border-right:0!important;overflow:hidden!important}
+body.pst-ui-v2:has(#page-workspace-home.active) .main{width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important;flex:1 1 auto!important}
+body.pst-ui-v2:not(:has(#page-workspace-home.active)) .sidebar{display:flex!important;visibility:visible!important}
 body.pst-ui-v2 .sidebar{width:224px!important;min-width:224px!important;height:100vh;position:sticky;top:0;background:#fff;border-right:1px solid var(--pst-line);overflow:hidden!important;transition:none!important;box-shadow:none!important}
 body.pst-ui-v2 .sidebar.open{width:224px!important}
 body.pst-ui-v2 .sidebar>*:not(#pst-v2-sidebar){display:none!important}

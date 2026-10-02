@@ -3,6 +3,7 @@ const assert = require('assert');
 const { JSDOM } = require('jsdom');
 
 const dom = new JSDOM(`<!doctype html><html><head></head><body>
+<div class="app-shell" id="app-shell-root"><aside class="sidebar" id="app-sidebar"><div id="pst-v2-sidebar"><div id="pst-ws-sidebar"></div></div></aside><main class="main"></main></div>
 <div id="pst-ws-canonical-nav">
   <button class="pst-ws-navbtn" data-key="home">Home</button>
   <button class="pst-ws-navbtn" data-key="tenders">Opportunities</button>
@@ -43,6 +44,14 @@ w.document.addEventListener('click', (event) => {
 w.eval(fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8'));
 const R=w.PSTPrimaryNavResilienceV1;
 assert.ok(R, 'Primary navigation resilience API missing');
+
+
+R.syncSidebar('home');
+assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('display'),'none','Home must hide the actual outer app sidebar');
+assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('width'),'0px','Home must release the outer sidebar width so no blank strip remains');
+R.syncSidebar('projects');
+assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('display'),'block','Work modules must restore the actual outer app sidebar');
+assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('width'),'232px','Work modules must restore sidebar width');
 
 R.route('projects');
 assert.ok(calls.includes('projects'), 'Projects must use the direct modern project opener');
