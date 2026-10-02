@@ -165,7 +165,7 @@ var files=[
   'pristeel-creative-ui-v1.js?v=20260911-fullredesign4',
   'pristeel-home-morning-command-center-v1.js?v=20260930-home-resume4',
   'pristeel-home-operator-dashboard-v1.js?v=20261002-home-ops2',
-  'pristeel-home-launcher-v4.js?v=20261002-launcher4',
+  'pristeel-home-launcher-v4.js?v=20261002-launcher5-hotfix1',
   'pristeel-ui-runtime-stability-v1.js?v=20260925-no-page-clone1'
 ];
 var completed=false,timeoutMs=8000,maxAttempts=2;
