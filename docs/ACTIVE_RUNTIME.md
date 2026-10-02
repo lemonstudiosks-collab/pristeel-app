@@ -142,12 +142,13 @@ Home Canonical remains the sole business-state/data owner. Operating Experience 
 
 Current behavior:
 
-- `pristeel-home-morning-command-center-v1.js` owns the final desktop Home composition while Canonical Home remains the business-state/data owner.
-- `pristeel-mobile-app-v2.js` owns the final <=900px Home presentation. `pristeel-mobile-home-v1.js` remains loaded only as the bounded utility/public-source provider; desktop Home is unchanged.
-- Home exposes at most three priority rows. Repeated equivalent actions are grouped and route to the canonical Projects area rather than opening only one hidden item.
-- The lower layout prioritizes active projects and uses Opportunities, Material Trade and the compact assistant as supporting modules.
-- If the canonical project snapshot is briefly empty, Home may reuse the already-loaded workspace project cache; it performs no extra database request.
-- PRISTEEL Daily is mounted in the Home header and `Pyet PPPP` expands only on request while preserving its existing runtime shell.
+- `pristeel-home-operator-dashboard-v1.js` owns the final desktop Home composition while Canonical Home remains the sole business-state/data owner; the earlier Morning Command Center stays loaded only as compatibility immediately underneath it.
+- Desktop Home is an operator dashboard: `Pyet PPPP` is always visible, followed by live summary cards, current actions, recent synchronized activity, real deadlines, waiting-external cases, finance attention and new opportunities.
+- The broken `Vazhdo aty ku e le` presentation and the generic `Projektet aktive` strip are not part of the final desktop Home.
+- Every visible interactive card/row delegates to an existing canonical owner: Home actions, Projects/Project Workflow, Inbox, Finance or Opportunities. Presentation never sends email, approves finance, selects suppliers or commits commercial state.
+- The dashboard consumes `PSTHomeCanonicalV1.snapshot()` only. Canonical Home now exposes the already-loaded project/task/email/RFQ/offer/document snapshot so the final desktop layer adds no duplicate Supabase read and no polling.
+- PRISTEEL Daily remains mounted in the Home header. `Pyet PPPP` preserves and reuses its existing runtime shell rather than rebuilding a second assistant.
+- `pristeel-mobile-app-v2.js` continues to own the final <=900px Home presentation. `pristeel-mobile-home-v1.js` remains loaded only as the bounded utility/public-source provider.
 - `Në pritje` separates projects waiting on another party.
 - Project events drive current state and next action.
 - Newer confirmed events reconcile obsolete automatic tasks.
