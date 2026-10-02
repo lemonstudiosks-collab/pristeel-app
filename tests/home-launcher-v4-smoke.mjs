@@ -22,7 +22,10 @@ assert(source.includes('api.open-meteo.com'),'Weather must use free public sourc
 assert(source.includes('api.frankfurter.app'),'Currency must use free public source');
 assert(source.includes('price_history'),'Steel-price tool must use existing internal PPPP reference history');
 assert(source.includes('jo kuotime bursiere live'),'Steel-price utility must not misrepresent internal references as live market quotes');
-assert(source.includes('translateY(-3px)')&&source.includes('box-shadow'),'Main modules must retain modern hover feedback');
+assert((source.includes('translateY(-2px)')||source.includes('translateY(-3px)'))&&source.includes('box-shadow'),'Main modules must retain modern hover feedback');
+assert(source.includes('min-height:158px'),'Primary Home modules must stay compact on desktop');
+assert(source.includes('min-height:88px'),'Secondary Home utilities must stay compact on desktop');
+assert(source.includes('body:not(.pst-home-launcher-active) .app-shell>.sidebar')&&source.includes('padding-top:12px!important'),'Work-module sidebar must sit slightly lower than before');
 
 new Function(source);
 console.log('Home launcher v4 static smoke: PASS');
