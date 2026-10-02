@@ -1,3 +1,10 @@
+## 2026-10-02 — Sidebar direction fix
+
+- Ballina tani e fsheh në mënyrë eksplicite kolonën e majtë.
+- Çdo modul pune e rikthen në mënyrë eksplicite kolonën e majtë, edhe kur një shtresë e vjetër lë klasën `active` në Home.
+- Gjendja e sidebar-it lidhet me navigimin real, jo me klasat e vjetra/stale të faqeve.
+- Në modulet e punës kolona nis pak më poshtë për një renditje më të qetë vizuale.
+
 ## 2026-10-02 — Ballina kthehet në launcher të qetë PRISTEEL
 
 - Ballina nuk është më dashboard operativ. Sidebar-i fshihet vetëm në Home dhe rikthehet automatikisht sapo hapet një modul pune.
