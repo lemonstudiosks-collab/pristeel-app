@@ -1,3 +1,12 @@
+## 2026-10-02 — Ballina kthehet në launcher të qetë PRISTEEL
+
+- Ballina nuk është më dashboard operativ. Sidebar-i fshihet vetëm në Home dhe rikthehet automatikisht sapo hapet një modul pune.
+- Shiriti i sipërm: PRISTEEL, Gmail, Gazeta PPPP, Kalkulatori, ora/data kompakte dhe moti për Prishtinë; ikonat kanë të njëjtën madhësi vizuale.
+- Në qendër: kërkimi universal dhe 4 hyrjet kryesore — Mundësitë, Përfaqësime, Klientë të drejtpërdrejtë, Blerësit e çelikut.
+- Poshtë: Projektet, Partnerët, Financa, Kursi dhe Çmimet e çelikut.
+- Weather përdor Open-Meteo; Kursi përdor Frankfurter/ECB. Çmimet e çelikut hapin referencat e brendshme PPPP dhe nuk paraqiten si kuotime bursiere live.
+- Pa foto, pa ilustrime dekorative dhe pa task/KPI feed në Home. Të gjitha hyrjet delegojnë te owner-at ekzistues dhe nuk shtojnë protected actions.
+
 ## 2026-10-02 — Home morning-only refresh policy
 
 - Ballina nuk rifreskohet më automatikisht çdo 15 minuta gjatë ditës.
