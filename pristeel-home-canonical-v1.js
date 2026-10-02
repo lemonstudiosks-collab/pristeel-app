@@ -231,9 +231,24 @@ window.pstWsSnooze=async function(key,days){var item=cache.actions.filter(functi
 function go(key){key=String(key||'home').toLowerCase();if(key==='home'){activateHome();render(true);return true;}return legacyGo?legacyGo.apply(window,arguments):false;}
 window.pstWorkspaceGo=go;window.pstWsRefreshHome=function(e){if(e&&e.preventDefault)e.preventDefault();return render(true);};
 function classifyProject(ctx,actions,waiting){var p=ctx&&ctx.project||{};var id=String(p.id||'');if(explicitWaiting(p)||arr(waiting).some(function(w){return String(w.project_id)===id;}))return'waiting';if(arr(actions).some(function(a){return String(a.project_id)===id;}))return'action';return'work';}
-window.PSTHomeCanonicalV1={version:'20260821-6',render:render,refresh:function(){return render(true);},activateHome:activateHome,openBrief:openProjectBriefByProject,_test:{inactiveProject:inactiveProject,relDays:relDays,actionStateKey:actionStateKey,taskScore:taskScore,deriveProjects:deriveProjects,buildActions:buildActions,buildWaiting:buildWaiting,recommendation:recommendation,supplierQuoteReady:supplierQuoteReady,clientReplyAfterOffer:clientReplyAfterOffer,taskIsSuperseded:taskIsSuperseded,operationalState:operationalState,explicitWaiting:explicitWaiting,explicitExecution:explicitExecution,explicitWork:explicitWork,blocksHomeAction:blocksHomeAction,classifyProject:classifyProject},snapshot:function(){var d=cache.lastData||{};return{actions:cache.actions.slice(),waiting:cache.waiting.slice(),projects:cache.projects.slice(),renderedAt:cache.lastRenderAt||0,data:{projects:arr(d.projects).slice(),tasks:arr(d.tasks).slice(),projectEmails:arr(d.projectEmails).slice(),analyses:arr(d.analyses).slice(),rfqs:arr(d.rfqs).slice(),supplierOffers:arr(d.supplierOffers).slice(),ourOffers:arr(d.ourOffers).slice(),attachments:arr(d.attachments).slice()}};}};
+window.PSTHomeCanonicalV1={version:'20261002-7',render:render,refresh:function(){return render(true);},activateHome:activateHome,openBrief:openProjectBriefByProject,_test:{inactiveProject:inactiveProject,relDays:relDays,actionStateKey:actionStateKey,taskScore:taskScore,deriveProjects:deriveProjects,buildActions:buildActions,buildWaiting:buildWaiting,recommendation:recommendation,supplierQuoteReady:supplierQuoteReady,clientReplyAfterOffer:clientReplyAfterOffer,taskIsSuperseded:taskIsSuperseded,operationalState:operationalState,explicitWaiting:explicitWaiting,explicitExecution:explicitExecution,explicitWork:explicitWork,blocksHomeAction:blocksHomeAction,classifyProject:classifyProject},snapshot:function(){var d=cache.lastData||{};return{actions:cache.actions.slice(),waiting:cache.waiting.slice(),projects:cache.projects.slice(),renderedAt:cache.lastRenderAt||0,data:{projects:arr(d.projects).slice(),tasks:arr(d.tasks).slice(),projectEmails:arr(d.projectEmails).slice(),analyses:arr(d.analyses).slice(),rfqs:arr(d.rfqs).slice(),supplierOffers:arr(d.supplierOffers).slice(),ourOffers:arr(d.ourOffers).slice(),attachments:arr(d.attachments).slice()}};}};
+function homeVisible(){var p=document.getElementById('page-workspace-home');return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
+function refreshIfStale(maxAgeMs){if(!homeVisible())return false;var age=Date.now()-(cache.lastRenderAt||0);if(!cache.lastRenderAt||age>=Math.max(60000,Number(maxAgeMs)||900000)){render(true);return true;}return false;}
+var morningRefreshTimer=null;
+function scheduleMorningRefresh(){
+ if(morningRefreshTimer){clearTimeout(morningRefreshTimer);morningRefreshTimer=null;}
+ var now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate(),6,35,0,0);
+ if(next.getTime()<=now.getTime())next.setDate(next.getDate()+1);
+ var delay=Math.max(1000,next.getTime()-now.getTime());
+ morningRefreshTimer=setTimeout(function(){
+   if(homeVisible())render(true);
+   scheduleMorningRefresh();
+ },delay);
+}
 installCss();installBrief();
-document.addEventListener('pst:modules-ready',function(){render(true);},{once:true});
-window.addEventListener('pageshow',function(){var p=document.getElementById('page-workspace-home');if(p&&p.classList.contains('active'))render(true);});
-document.addEventListener('visibilitychange',function(){var p=document.getElementById('page-workspace-home');if(document.visibilityState==='visible'&&p&&p.classList.contains('active')&&p.style.display!=='none')render(true);});
+document.addEventListener('pst:modules-ready',function(){render(true);scheduleMorningRefresh();},{once:true});
+window.addEventListener('pageshow',function(){if(homeVisible())render(true);});
+window.addEventListener('focus',function(){refreshIfStale(15*60*1000);});
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')refreshIfStale(15*60*1000);});
+scheduleMorningRefresh();
 })();

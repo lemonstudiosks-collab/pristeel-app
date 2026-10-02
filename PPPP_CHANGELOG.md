@@ -1,3 +1,11 @@
+## 2026-10-02 — Home freshness + morning sync alignment
+
+- Home tani rifreskon snapshot-in canonical kur përdoruesi rikthehet në aplikacion dhe të dhënat janë më të vjetra se 15 minuta.
+- Nëse PPPP mbetet i hapur gjatë natës, Home bën një refresh automatik ditor në 06:35 sipas orës lokale.
+- Morning Edition u zhvendos në 06:30 lokale, pas ciklit ekzistues Gmail ingest → project intake → event intelligence → project memory synthesis.
+- Cron-i i Morning Edition është DST-safe: ekzekutohet në të dy kandidatët UTC, ndërsa funksioni gjeneron vetëm gjatë orës lokale 06 dhe vetëm një herë për datë.
+- Nuk u shtua polling agresiv dhe nuk u shtuan query periodike kur Home qëndron i hapur, për të mbajtur nën kontroll përdorimin e Supabase.
+
 ## 2026-10-02 — Ballina readability + Pyet PPPP surface fix
 
 - `Pyet PPPP` në desktop Home tani paraqitet si një sipërfaqe e vetme, pa card/shell të dyfishtë të mbivendosur.
