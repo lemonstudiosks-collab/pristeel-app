@@ -142,20 +142,15 @@ Home Canonical remains the sole business-state/data owner. Operating Experience 
 
 Current behavior:
 
-- `pristeel-home-operator-dashboard-v1.js` owns the final desktop Home composition while Canonical Home remains the sole business-state/data owner; the earlier Morning Command Center stays loaded only as compatibility immediately underneath it.
-- Desktop Home is an operator dashboard: `Pyet PPPP` is always visible, followed by live summary cards, current actions, recent synchronized activity, real deadlines, waiting-external cases, finance attention and new opportunities.
-- The broken `Vazhdo aty ku e le` presentation and the generic `Projektet aktive` strip are not part of the final desktop Home.
-- Every visible interactive card/row delegates to an existing canonical owner: Home actions, Projects/Project Workflow, Inbox, Finance or Opportunities. Presentation never sends email, approves finance, selects suppliers or commits commercial state.
-- The dashboard consumes `PSTHomeCanonicalV1.snapshot()` only. Canonical Home now exposes the already-loaded project/task/email/RFQ/offer/document snapshot so the final desktop layer adds no duplicate Supabase read and no polling.
-- PRISTEEL Daily remains mounted in the Home header. `Pyet PPPP` preserves and reuses its existing runtime shell rather than rebuilding a second assistant.
-- `pristeel-mobile-app-v2.js` continues to own the final <=900px Home presentation. `pristeel-mobile-home-v1.js` remains loaded only as the bounded utility/public-source provider.
-- `Në pritje` separates projects waiting on another party.
-- Project events drive current state and next action.
-- Newer confirmed events reconcile obsolete automatic tasks.
-- Priority cards explain `Pse tani?` and can open Project Brief.
-- Where a safe existing target is known, **Vepro** routes directly to the decision surface, e.g. Communication, RFQ, supplier comparison, client offer, Execution or Commercial intake review.
-- Direct routing changes navigation only. It does not approve, save, send or commit on behalf of the user.
-- Snooze/dismiss state remains persisted by Canonical Home.
+- `pristeel-home-launcher-v4.js` owns the final desktop Home presentation. `pristeel-home-operator-dashboard-v1.js` and the earlier Home layers remain loaded only for compatibility/data continuity underneath it.
+- Desktop Home is intentionally a calm launcher, not an operational dashboard. It does not show task backlogs, priority cards, recent-email feeds or duplicate module KPIs.
+- The left sidebar is hidden only while Home is active. As soon as a work module opens, the existing canonical sidebar returns automatically.
+- The top strip contains PRISTEEL, Gmail, Gazeta PPPP, calculator, compact local time/date and Prishtina weather. All top-strip icons use the same visual footprint.
+- Universal Search opens the existing stable PRISTEEL search owner. The four primary Home destinations are Mundësitë, Përfaqësime, Klientë të drejtpërdrejtë and Blerësit e çelikut.
+- The lower utility row exposes Projektet, Partnerët, Financa, Kursi and Çmimet e çelikut. Projects/Partners/Finance delegate to their existing canonical owners.
+- Weather uses Open-Meteo and currency uses Frankfurter/ECB as free, read-only public sources. The steel-price utility shows existing internal PPPP price-history references and states explicitly that they are not live exchange/commodity quotes.
+- Home itself performs no protected business action. External email sending, supplier selection/commitment, pricing/margin, contracts/POs and project won/lost decisions remain human-gated.
+- `pristeel-mobile-app-v2.js` continues to own the final <=900px mobile Home presentation.
 
 ### Opportunities
 
