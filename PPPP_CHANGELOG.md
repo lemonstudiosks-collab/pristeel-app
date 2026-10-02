@@ -1,3 +1,11 @@
+## 2026-10-02 — Home morning-only refresh policy
+
+- Ballina nuk rifreskohet më automatikisht çdo 15 minuta gjatë ditës.
+- Home rifreskohet në nisje të aplikacionit dhe pastaj vetëm kur kalon në një ditë të re; nëse aplikacioni mbetet hapur, refresh-i i planifikuar bëhet në 06:35 lokale.
+- Rikthimi në tab/fokus gjatë së njëjtës ditë nuk shkakton më re-query të Home.
+- Refresh-i manual mbetet i disponueshëm.
+- Backend-i vazhdon të mbledhë të dhënat gjatë ditës që gjendja e mëngjesit të nesërm të jetë e plotë.
+
 ## 2026-10-02 — Home freshness + morning sync alignment
 
 - Home tani rifreskon snapshot-in canonical kur përdoruesi rikthehet në aplikacion dhe të dhënat janë më të vjetra se 15 minuta.
