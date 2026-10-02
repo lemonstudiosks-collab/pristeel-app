@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "c13f622e7832b152670220ce83fc53b366e8db51"
+    "bootstrapGitBlobSha": "a70c21ef1928b237e5181ed64af26ce843c173a2"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -74,7 +74,7 @@
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Desktop Home has one presentation owner: pristeel-home-launcher-v4.js. The launcher loads immediately after the workspace shell, explicitly retires later legacy Home presentation layers before they register render cycles, and covers the full desktop viewport while Home is active so no sidebar width/strip can remain visible. Canonical Home/data bridge stays active; work-module sidebar behavior remains owned by primary navigation. Mobile Home remains owned by mobile layers."
+      "note": "Desktop Home remains single-owner via pristeel-home-launcher-v4.js. Shell lock v10 fixes the remaining mixed state by: (1) ignoring stale hidden attributes when canonical Home navigation is active, (2) applying inline important shell/sidebar ownership while Home is active, (3) observing sidebar/shell attribute churn and immediately reasserting Home ownership, (4) hiding the duplicate floating PriSteel Daily launcher because Gazeta PPPP already exists in the Home top strip, and (5) hiding the Home launcher whenever Home is not active so work modules cannot show a mixed Home/sidebar state."
     },
     {
       "area": "projects-list",
