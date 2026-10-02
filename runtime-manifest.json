@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "8097dcbaaae0032989e372a84ff0e4dc575115e2"
+    "bootstrapGitBlobSha": "baca638f2ed901de0fc84e3d1faad3e04c490a10"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -77,7 +77,7 @@
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Canonical Home and existing compatibility layers remain loaded, but pristeel-home-launcher-v4.js is the final desktop Home presentation. Home is intentionally a calm launcher rather than an operational dashboard: sidebar is hidden only while Home is active; the top strip contains PRISTEEL, Gmail, Gazeta PPPP, calculator, compact local time/date and Prishtina weather; the center contains universal search and four main modules (Mundësitë, Përfaqësime, Klientë të drejtpërdrejtë, Blerësit e çelikut); the lower strip contains Projektet, Partnerët, Financa, Kursi and Çmimet e çelikut. Module clicks delegate to existing canonical owners. Currency/weather use free public read-only sources; steel-price utility shows internal PPPP references and explicitly does not claim live exchange/commodity execution. Existing mobile Home remains owned by the mobile layers. Blank-screen hotfix: the launcher now mounts directly as the first child of page-workspace-home, does not depend on pst-native-home-v4 existing first, and owns a body class that hides the generic sidebar only while Home is actually visible. Compact pass: primary launcher cards and lower utility cards are reduced in height/spacing; module sidebar is shifted down subtly for calmer alignment. Sidebar route fix: Home explicitly hides the canonical left sidebar, while every work module explicitly restores it; the rule follows actual navigation state rather than stale active classes. Sidebar strip/flicker fix: the actual outer app sidebar is now the element hidden on Home, and an early UI-v2 CSS guard suppresses the sidebar before late Home owners run, removing the 224px reserved blank strip and startup flashing."
+      "note": "Canonical Home data/compatibility layers remain available, but pristeel-home-launcher-v4.js is the sole intended desktop Home presentation. To avoid version flicker, the launcher now mounts immediately after the workspace shell is created and maintains its node if later legacy Home layers rerender page-workspace-home. Those later layers remain compatibility/data providers only and must not visually replace the launcher. Sidebar is hidden only on Home and restored in work modules. Existing mobile Home remains owned by the mobile layers."
     },
     {
       "area": "projects-list",
@@ -456,14 +456,29 @@
       "reason": "Home presentation must settle before the bounded route-stability observer."
     },
     {
-      "before": "pristeel-home-operator-dashboard-v1.js",
-      "after": "pristeel-home-launcher-v4.js",
-      "reason": "The final desktop launcher must mount after the previous dashboard compatibility layer."
-    },
-    {
       "before": "pristeel-home-launcher-v4.js",
       "after": "pristeel-ui-runtime-stability-v1.js",
       "reason": "The final Home launcher must settle before the runtime stability observer."
+    },
+    {
+      "before": "pristeel-workspace-architecture-v1.js",
+      "after": "pristeel-home-launcher-v4.js",
+      "reason": "The final desktop Home launcher mounts immediately after the workspace shell exists so no legacy Home can become the visible first paint."
+    },
+    {
+      "before": "pristeel-home-launcher-v4.js",
+      "after": "pristeel-home-operating-grid-v1.js",
+      "reason": "Legacy Home operating layers may provide compatibility/data later, but the launcher must already own desktop Home presentation."
+    },
+    {
+      "before": "pristeel-home-launcher-v4.js",
+      "after": "pristeel-home-morning-command-center-v1.js",
+      "reason": "The final launcher is mounted before the older Morning Home compatibility layer to prevent visible version switching."
+    },
+    {
+      "before": "pristeel-home-launcher-v4.js",
+      "after": "pristeel-home-operator-dashboard-v1.js",
+      "reason": "The launcher is the intended desktop presentation; the older operator dashboard remains compatibility-only and loads later."
     }
   ],
   "deprecatedForbidden": [

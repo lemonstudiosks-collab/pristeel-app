@@ -16,6 +16,9 @@ assert(source.includes('PSTDachSteelSalesV3'),'Steel buyers must delegate to Mat
 assert(source.includes('PSTRepresentationsV1'),'Representations must delegate to Representation owner');
 assert(source.includes("pst-home-launcher-active")&&source.includes('.app-shell>.sidebar'),'Home must own generic sidebar hiding through the launcher-active body class');
 assert(source.includes("page.insertBefore(r,page.firstChild||null)"),'Launcher must mount directly into page-workspace-home before legacy/native Home owners');
+assert(source.includes('new MutationObserver'),'Launcher must repair itself if a later compatibility Home rerenders the Home page');
+assert(!source.includes("window.addEventListener('focus',schedule)"),'Home must not remount on every window focus');
+assert(!source.includes("visibilitychange"),'Home must not remount on visibility changes');
 assert(!source.includes("if(!native)return false"),'Launcher must not depend on pst-native-home-v4 before it can render');
 assert(!/background-image\s*:|url\([^)]*\.(png|jpg|jpeg|webp)/i.test(source),'Home launcher must not use photos or illustration backgrounds');
 assert(source.includes('api.open-meteo.com'),'Weather must use free public source');
