@@ -7,7 +7,7 @@
 if(window.__pstHomeLauncherV5)return;
 window.__pstHomeLauncherV5=true;
 window.__pstHomeLauncherV4=true;
-var V='20261002-launcher7-sidebarfix1',clockTimer=0,weatherBusy=false;
+var V='20261002-launcher8-stable1',clockTimer=0,weatherBusy=false,homeObserver=null,repairQueued=false;
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -196,10 +196,25 @@ function bind(r){
  });
  var f=r.querySelector('[data-search-form]');if(f)f.onsubmit=function(e){e.preventDefault();var i=r.querySelector('[data-search]');search(i&&i.value||'')};
 }
+function watchHome(page){
+ if(homeObserver||!window.MutationObserver||!page)return;
+ homeObserver=new MutationObserver(function(){
+  if(!active())return;
+  var r=document.getElementById('pst-home-launcher-v4');
+  if(r&&r.parentNode===page){
+   if(page.firstChild!==r)page.insertBefore(r,page.firstChild||null);
+   return;
+  }
+  if(repairQueued)return;repairQueued=true;
+  (window.requestAnimationFrame||function(fn){return setTimeout(fn,0)})(function(){repairQueued=false;mount()});
+ });
+ homeObserver.observe(page,{childList:true});
+}
 function mount(){
  css();
  if(!active()){try{document.body.classList.remove('pst-home-launcher-active')}catch(e){}return false}
  var page=document.getElementById('page-workspace-home');if(!page)return false;
+ watchHome(page);
  try{document.body.classList.add('pst-home-launcher-active')}catch(e){}
  try{var n=nav();if(n&&typeof n.syncSidebar==='function')n.syncSidebar('home')}catch(e){}
  var r=document.getElementById('pst-home-launcher-v4');
@@ -214,8 +229,6 @@ document.addEventListener('pst:native-home-ready',schedule);
 document.addEventListener('pst:page-opened',schedule);
 document.addEventListener('pst:modules-ready',function(){schedule();setTimeout(schedule,100);setTimeout(schedule,350);setTimeout(schedule,900)},{once:true});
 window.addEventListener('pageshow',schedule);
-window.addEventListener('focus',schedule);
-document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')schedule()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.PSTHomeLauncherV5=window.PSTHomeLauncherV4={version:V,render:mount,openModule:route,openSearch:search};
 })();
