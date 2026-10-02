@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "dc5ff3b44b7a8a05c647fbf1ef61c8b3317633e5"
+    "bootstrapGitBlobSha": "e40601e2069b8767f2876be8379f756411f08606"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -77,7 +77,7 @@
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Canonical Home and existing compatibility layers remain loaded, but pristeel-home-launcher-v4.js is the final desktop Home presentation. Home is intentionally a calm launcher rather than an operational dashboard: sidebar is hidden only while Home is active; the top strip contains PRISTEEL, Gmail, Gazeta PPPP, calculator, compact local time/date and Prishtina weather; the center contains universal search and four main modules (Mundësitë, Përfaqësime, Klientë të drejtpërdrejtë, Blerësit e çelikut); the lower strip contains Projektet, Partnerët, Financa, Kursi and Çmimet e çelikut. Module clicks delegate to existing canonical owners. Currency/weather use free public read-only sources; steel-price utility shows internal PPPP references and explicitly does not claim live exchange/commodity execution. Existing mobile Home remains owned by the mobile layers."
+      "note": "Canonical Home and existing compatibility layers remain loaded, but pristeel-home-launcher-v4.js is the final desktop Home presentation. Home is intentionally a calm launcher rather than an operational dashboard: sidebar is hidden only while Home is active; the top strip contains PRISTEEL, Gmail, Gazeta PPPP, calculator, compact local time/date and Prishtina weather; the center contains universal search and four main modules (Mundësitë, Përfaqësime, Klientë të drejtpërdrejtë, Blerësit e çelikut); the lower strip contains Projektet, Partnerët, Financa, Kursi and Çmimet e çelikut. Module clicks delegate to existing canonical owners. Currency/weather use free public read-only sources; steel-price utility shows internal PPPP references and explicitly does not claim live exchange/commodity execution. Existing mobile Home remains owned by the mobile layers. Blank-screen hotfix: the launcher now mounts directly as the first child of page-workspace-home, does not depend on pst-native-home-v4 existing first, and owns a body class that hides the generic sidebar only while Home is actually visible."
     },
     {
       "area": "projects-list",
