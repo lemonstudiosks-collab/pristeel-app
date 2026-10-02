@@ -11,7 +11,7 @@ function A(v){return Array.isArray(v)?v:[]}
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim()}
-function D(v){var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d:null}
+function D(v){if(/^\d{4}-\d{2}-\d{2}$/.test(S(v))){var p=S(v).split('-').map(Number),ld=new Date(p[0],p[1]-1,p[2]);return isNaN(ld.getTime())?null:ld}var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d:null}
 function M(v){var d=D(v);return d?d.getTime():0}
 function active(){var p=document.getElementById('page-workspace-home');return !!(p&&p.classList.contains('active')&&p.style.display!=='none')}
 function snap(){try{var h=window.PSTHomeCanonicalV1,s=h&&h.snapshot?h.snapshot():{};s=s||{};s.actions=A(s.actions);s.waiting=A(s.waiting);s.projects=A(s.projects);s.data=s.data||{};['projects','tasks','projectEmails','rfqs','supplierOffers','ourOffers','attachments'].forEach(function(k){s.data[k]=A(s.data[k])});return s}catch(e){return{actions:[],waiting:[],projects:[],data:{projects:[],tasks:[],projectEmails:[],rfqs:[],supplierOffers:[],ourOffers:[],attachments:[]}}}}
