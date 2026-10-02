@@ -178,6 +178,30 @@ function installAskModalChrome(){
   }
   return true;
 }
+function ensureDailySidebarNav(){
+  var host=document.getElementById('pst-ws-canonical-nav');if(!host)return false;
+  var b=host.querySelector('.pst-ws-navbtn[data-key="daily"]');
+  if(!b){
+    b=document.createElement('button');b.type='button';b.className='pst-ws-navbtn';b.dataset.key='daily';
+    b.innerHTML='<span class="pst-nav-icon" aria-hidden="true">◫</span><span class="pst-nav-label">Morning Brief</span>';
+    var finance=host.querySelector('.pst-ws-navbtn[data-key="finance"]');
+    if(finance)host.insertBefore(b,finance);else host.appendChild(b);
+  }
+  var label=b.querySelector('.pst-nav-label')||b.querySelector('span:last-child');if(label)label.textContent='Morning Brief';
+  return true;
+}
+function installDailySidebarOwner(){
+  if(window.__pstDailySidebarOwnerV1)return true;window.__pstDailySidebarOwnerV1=true;
+  window.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="daily"]'):null;if(!b)return;
+    e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+    if(window.PSTDailySafeV2&&typeof window.PSTDailySafeV2.open==='function'){window.PSTDailySafeV2.open();return;}
+    var s=document.querySelector('script[data-pst-daily-safe-v2]');
+    if(!s){s=document.createElement('script');s.src='pristeel-daily-safe-v2.js?v=20261002-sidebar1';s.defer=true;s.setAttribute('data-pst-daily-safe-v2','1');document.head.appendChild(s);}
+    var tries=0,t=setInterval(function(){tries++;if(window.PSTDailySafeV2&&typeof window.PSTDailySafeV2.open==='function'){clearInterval(t);window.PSTDailySafeV2.open();}else if(tries>20)clearInterval(t);},100);
+  },true);
+  return true;
+}
 function markFinanceNav(){
   var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;
   host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){b.classList.toggle('active',String(b.dataset.key||'').toLowerCase()==='finance');});
@@ -237,8 +261,8 @@ function installProjectOpenGuard(){
   window.pstOpenProjectWorkspace=wrapped;
   return true;
 }
-function applyHomePresentation(){dismissRecoveryNoticeOnHome();installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installAskModalChrome();installFinanceWindowOwner();installProjectOpenGuard();}
-function apply(){installEntryCss();installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installNativeUiApplyGuard();var X=window.PSTNativeUiV5||window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
+function applyHomePresentation(){dismissRecoveryNoticeOnHome();installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installAskModalChrome();ensureDailySidebarNav();installDailySidebarOwner();installFinanceWindowOwner();installProjectOpenGuard();}
+function apply(){installEntryCss();installRecoveryGate();ensureDailySidebarNav();installDailySidebarOwner();installFinanceWindowOwner();installProjectOpenGuard();installNativeUiApplyGuard();var X=window.PSTNativeUiV5||window.PSTNativeUiV4||window.PSTNativeUiV3;if(X&&typeof X.apply==='function'){X.apply();applyHomePresentation();[120,360,900,1800].forEach(function(ms){setTimeout(applyHomePresentation,ms);});}return true;}
 function loadAskFunctionalOwner(){
   if(window.PSTHomeAskFunctionalOwnerV1||document.querySelector('script[data-pst-home-ask-functional-owner]'))return;
   var s=document.createElement('script');s.src='pristeel-home-ask-functional-owner-v1.js?v=20260904-ask3';s.defer=true;s.setAttribute('data-pst-home-ask-functional-owner','1');document.head.appendChild(s);
@@ -250,12 +274,12 @@ function loadCore(){
   var s=document.createElement('script');s.src='pristeel-native-ui-v4-core.js?v=20260911-fullredesign1';s.defer=true;s.setAttribute('data-pst-native-ui-v4-core','1');
   s.onload=apply;s.onerror=function(){console.error('Nuk u ngarkua Native UI v4 core.');};document.head.appendChild(s);
 }
-installEntryCss();installStablePresentationCss();installRecoveryGate();installFinanceWindowOwner();loadAskFunctionalOwner();[0,80,220,700,1600].forEach(function(ms){setTimeout(function(){installRecoveryGate();installFinanceWindowOwner();installProjectOpenGuard();installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installNativeUiApplyGuard();},ms);});
+installEntryCss();installStablePresentationCss();installRecoveryGate();ensureDailySidebarNav();installDailySidebarOwner();installFinanceWindowOwner();loadAskFunctionalOwner();[0,80,220,700,1600].forEach(function(ms){setTimeout(function(){installRecoveryGate();ensureDailySidebarNav();installDailySidebarOwner();installFinanceWindowOwner();installProjectOpenGuard();installStablePresentationCss();lockHomeTypography();normalizeHomeCopy();installNativeUiApplyGuard();},ms);});
 document.addEventListener('pst:modules-ready',apply,{once:true});
 document.addEventListener('pst:native-home-ready',function(){applyHomePresentation();setTimeout(applyHomePresentation,240);});
 document.addEventListener('pst:project-control-home-rendered',function(){loadAskFunctionalOwner();setTimeout(function(){try{if(window.PSTHomeAskFunctionalOwnerV1)window.PSTHomeAskFunctionalOwnerV1.apply();}catch(e){}},0);});
 window.addEventListener('pageshow',apply,{once:true});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installRecoveryGate();installFinanceWindowOwner();loadCore();},{once:true});else loadCore();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installRecoveryGate();ensureDailySidebarNav();installDailySidebarOwner();installFinanceWindowOwner();loadCore();},{once:true});else loadCore();
 window.PSTUiOwnershipCleanupV1={apply:apply,installRecoveryGate:installRecoveryGate,installAskModalChrome:installAskModalChrome,installAskOwnerQueryBridge:installAskOwnerQueryBridge,dismissAskModal:dismissAskModal,recoverFinance:recoverFinanceHard,installProjectOpenGuard:installProjectOpenGuard,lockHomeTypography:lockHomeTypography,normalizeHomeCopy:normalizeHomeCopy};
 })();
 
