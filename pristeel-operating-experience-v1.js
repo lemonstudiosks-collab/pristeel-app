@@ -15,6 +15,7 @@ var PRIMARY=[
   {key:'representations',label:'Përfaqësime',zone:'representations'},
   {key:'projects',label:'Projektet',zone:'projects'},
   {key:'contacts',label:'Partnerët',zone:'partners'},
+  {key:'daily',label:'Morning Brief',zone:'daily'},
   {key:'finance',label:'Financat',zone:'finance'},
   {key:'apps',label:'Sistemi',zone:'system'}
 ];
@@ -24,6 +25,7 @@ var ZONE_COLORS={
   representations:['#4F8976','#376757','#EAF4F0','#C5DDD4','#F7FBF9'],
   projects:['#647FA6','#486482','#EDF1F7','#CBD6E4','#F7F9FB'],
   partners:['#4F9686','#397366','#EAF5F2','#C4DFD8','#F7FBFA'],
+  daily:['#536B7A','#3D5260','#EDF2F4','#CBD8DE','#F8FAFB'],
   finance:['#B18A4F','#856738','#F8F1E6','#E3D3B8','#FCFAF6'],
   system:['#648A95','#496A73','#EEF4F5','#CFDEE2','#F8FAFB']
 };
