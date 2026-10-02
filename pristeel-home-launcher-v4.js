@@ -7,7 +7,16 @@
 if(window.__pstHomeLauncherV5)return;
 window.__pstHomeLauncherV5=true;
 window.__pstHomeLauncherV4=true;
-var V='20261002-launcher8-stable1',clockTimer=0,weatherBusy=false,homeObserver=null,repairQueued=false;
+/* Final desktop Home is single-owner. Retire later legacy presentation layers
+ * before they register render/listener cycles. Canonical Home/data bridge stays active. */
+window.__pstHomeCommandCenterV2=true;
+window.__pstHomeVisualCleanupV3=true;
+window.__pstHomeVisualCleanupV2=true;
+window.__pstHomeVisualCleanupV1=true;
+window.__pstHomeOperatingGridV1=true;
+window.__pstHomeMorningCommandCenterV1=true;
+window.__pstHomeOperatorDashboardV1=true;
+var V='20261002-launcher9-singleowner1',clockTimer=0,weatherBusy=false,homeObserver=null,repairQueued=false;
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -17,7 +26,7 @@ function active(){
  if(p.style&&p.style.display==='none')return false;
  try{var cs=window.getComputedStyle?window.getComputedStyle(p):null;if(cs&&(cs.display==='none'||cs.visibility==='hidden'))return false}catch(e){}
  if(p.classList.contains('active'))return true;
- var homeNav=document.querySelector('#pst-ws-canonical-nav [data-key="home"].active,#side-nav .active,[data-page="home"].active');
+ var homeNav=document.querySelector('#pst-ws-canonical-nav [data-key="home"].active,#side-nav [data-key="home"].active,#side-nav [data-page="home"].active,[data-page="home"].active');
  return !!homeNav;
 }
 function nav(){return window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1||null}
@@ -166,6 +175,7 @@ function css(){
 'body.pst-home-launcher-active #page-workspace-home{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}',
 'body.pst-home-launcher-active #page-workspace-home>#pst-native-home-v4,body.pst-home-launcher-active #page-workspace-home>.pst-ws-home,body.pst-home-launcher-active #page-workspace-home>#pst-home-launchpad-v1{display:none!important}',
 'body.pst-home-launcher-active #page-workspace-home>#pst-home-launcher-v4{display:block!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:20!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}',
+'@media(min-width:901px){body.pst-home-launcher-active #page-workspace-home>#pst-home-launcher-v4{position:fixed!important;inset:0!important;z-index:1000!important;overflow:auto!important;width:100vw!important;max-width:none!important;height:100vh!important;margin:0!important;padding:0!important}}',
 'body:not(.pst-home-launcher-active) .app-shell>.sidebar,body:not(.pst-home-launcher-active) .app-shell>aside.sidebar{padding-top:12px!important;box-sizing:border-box!important}',
 '#pst-home-launcher-v4{min-height:100vh;background:#f7f6f2;color:#172436;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}',
 '#pst-home-launcher-v4 *{box-sizing:border-box}',

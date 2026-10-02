@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "baca638f2ed901de0fc84e3d1faad3e04c490a10"
+    "bootstrapGitBlobSha": "c13f622e7832b152670220ce83fc53b366e8db51"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -68,16 +68,13 @@
       "finalOwners": [
         "pristeel-native-ui-v3.js",
         "pristeel-home-canonical-v1.js",
-        "pristeel-home-operating-grid-v1.js",
         "pristeel-project-control-home-v1.js",
-        "pristeel-home-morning-command-center-v1.js",
-        "pristeel-home-operator-dashboard-v1.js",
         "pristeel-home-launcher-v4.js",
         "pristeel-mobile-home-v1.js",
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Canonical Home data/compatibility layers remain available, but pristeel-home-launcher-v4.js is the sole intended desktop Home presentation. To avoid version flicker, the launcher now mounts immediately after the workspace shell is created and maintains its node if later legacy Home layers rerender page-workspace-home. Those later layers remain compatibility/data providers only and must not visually replace the launcher. Sidebar is hidden only on Home and restored in work modules. Existing mobile Home remains owned by the mobile layers."
+      "note": "Desktop Home has one presentation owner: pristeel-home-launcher-v4.js. The launcher loads immediately after the workspace shell, explicitly retires later legacy Home presentation layers before they register render cycles, and covers the full desktop viewport while Home is active so no sidebar width/strip can remain visible. Canonical Home/data bridge stays active; work-module sidebar behavior remains owned by primary navigation. Mobile Home remains owned by mobile layers."
     },
     {
       "area": "projects-list",

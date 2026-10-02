@@ -29,6 +29,13 @@ assert((source.includes('translateY(-2px)')||source.includes('translateY(-3px)')
 assert(source.includes('min-height:158px'),'Primary Home modules must stay compact on desktop');
 assert(source.includes('min-height:88px'),'Secondary Home utilities must stay compact on desktop');
 assert(source.includes('body:not(.pst-home-launcher-active) .app-shell>.sidebar')&&source.includes('padding-top:12px!important'),'Work-module sidebar must sit slightly lower than before');
+assert(source.includes('__pstHomeCommandCenterV2=true'),'Final Home must retire legacy command-center presentation');
+assert(source.includes('__pstHomeVisualCleanupV3=true'),'Final Home must retire legacy visual-cleanup presentation');
+assert(source.includes('__pstHomeOperatingGridV1=true'),'Final Home must retire legacy operating-grid presentation');
+assert(source.includes('__pstHomeMorningCommandCenterV1=true'),'Final Home must retire legacy morning presentation');
+assert(source.includes('__pstHomeOperatorDashboardV1=true'),'Final Home must retire legacy operator-dashboard presentation');
+assert(!source.includes('#side-nav .active,[data-page="home"].active'),'Arbitrary sidebar active state must not be treated as Home');
+assert(source.includes('position:fixed!important;inset:0!important;z-index:1000!important'),'Desktop Home must cover the full viewport');
 
 new Function(source);
 console.log('Home launcher v4 static smoke: PASS');
