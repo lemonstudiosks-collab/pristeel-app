@@ -1,3 +1,12 @@
+## 2026-10-02 — Ballina bëhet operator dashboard live
+
+- Desktop Home nuk përdor më `Vazhdo aty ku e le` ose strip-in generik `Projektet aktive`.
+- `pristeel-home-operator-dashboard-v1.js` është prezantimi final desktop mbi `PSTHomeCanonicalV1`: Pyet PPPP, veprimet që kërkojnë vëmendje, aktivitetet e fundit, afatet, pritjet nga palët tjera, financat që kërkojnë vëmendje dhe mundësitë e reja.
+- Canonical Home ekspozon në snapshot vetëm të dhënat që tashmë i ka ngarkuar; dashboard-i i ri nuk shton query Supabase, polling ose business-state writer.
+- Kartat, rreshtat dhe CTA-të delegojnë te owner-at ekzistues të Projects, Project Workflow, Inbox, Finance dhe Opportunities.
+- Pamja desktop përdor sfond të ngrohtë, sipërfaqe neutrale me vijëzim të hollë dhe PriSteel blue vetëm si accent; hover/focus ngre lehtë elementin dhe shton hije subtile.
+- Protected actions mbeten të pandryshuara dhe human-gated.
+
 ## 2026-09-30 — KRPP authority-neutral relevance v2
 
 - KRPP discovery now detail-scans the bounded actionable B05/B54 window without using title keywords as an ingestion gate.
