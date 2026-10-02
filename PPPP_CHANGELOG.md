@@ -1,3 +1,9 @@
+## 2026-10-02 — Ballina readability + Pyet PPPP surface fix
+
+- `Pyet PPPP` në desktop Home tani paraqitet si një sipërfaqe e vetme, pa card/shell të dyfishtë të mbivendosur.
+- Tipografia e Ballinës u rrit në KPI, header, tabela, feed, afate, pritje dhe financa që informacioni të lexohet normalisht në desktop.
+- Ndryshimi është vetëm presentation/cache-version; nuk shton query, polling, write apo protected action.
+
 ## 2026-10-02 — Ballina bëhet operator dashboard live
 
 - Desktop Home nuk përdor më `Vazhdo aty ku e le` ose strip-in generik `Projektet aktive`.
