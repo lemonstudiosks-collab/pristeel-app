@@ -165,6 +165,7 @@ function css(){
 'body.pst-home-launcher-active #page-workspace-home{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}',
 'body.pst-home-launcher-active #page-workspace-home>#pst-native-home-v4,body.pst-home-launcher-active #page-workspace-home>.pst-ws-home,body.pst-home-launcher-active #page-workspace-home>#pst-home-launchpad-v1{display:none!important}',
 'body.pst-home-launcher-active #page-workspace-home>#pst-home-launcher-v4{display:block!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:20!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}',
+'body:not(.pst-home-launcher-active) .app-shell>.sidebar,body:not(.pst-home-launcher-active) .app-shell>aside.sidebar{padding-top:12px!important;box-sizing:border-box!important}',
 '#pst-home-launcher-v4{min-height:100vh;background:#f7f6f2;color:#172436;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}',
 '#pst-home-launcher-v4 *{box-sizing:border-box}',
 '.phl-top{min-height:92px;display:flex;align-items:center;justify-content:space-between;gap:26px;padding:14px clamp(28px,4vw,66px);background:#fff;border-bottom:1px solid #dedfdc}',
