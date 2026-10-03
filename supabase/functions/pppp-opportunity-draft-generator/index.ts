@@ -11,7 +11,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v30-manual-cooldown-override';
+const GENERATOR='pppp-opportunity-draft-generator-v31-commercial-engine-v3-ted-role-v2';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=20;
 const MAX_DRAFT_WRITES_PER_RUN=25;
@@ -52,7 +52,9 @@ async function tenderContext(tenderWatchId:any){
     if(!org.contacts.some((x:any)=>normalizeEmail(x?.email||x?.value)===email))org.contacts.push({type:'email',value:email,email,confidence:'high',score:95,source_type:'outreach_contacts',draft_eligible:true});
   }
   if(orgs.length)winner.contact_enrichment={...(winner.contact_enrichment||{}),organizations:orgs};
-  return{...p,winner,winner_contacts:existingContacts,publication_no:data?.publication_no||p.publication_no||null,procurement_no:data?.procurement_no||p.procurement_no||null,source_url:data?.source_url||p.source_url||null,detail_url:data?.detail_url||p.detail_url||null,title:data?.title||p.title||null,authority:data?.authority||p.authority||null};
+  const {data:roleV2,error:roleError}=await db.rpc('pppp_ted_company_role_context_v2',{p_winner:winner,p_award_role:p?.award_role||{}});
+  if(roleError)throw roleError;
+  return{...p,winner,winner_role_v2:roleV2||null,winner_contacts:existingContacts,publication_no:data?.publication_no||p.publication_no||null,procurement_no:data?.procurement_no||p.procurement_no||null,source_url:data?.source_url||p.source_url||null,detail_url:data?.detail_url||p.detail_url||null,title:data?.title||p.title||null,authority:data?.authority||p.authority||null};
 }
 
 function rawFor(a:any,tender:any,recipient:any,outreachId:string,rfcId:string){
@@ -201,6 +203,12 @@ async function markMissing(row:any){const now=new Date().toISOString();const {da
 async function markError(row:any,e:any){try{await db.from(REGISTRY).update({status:'error',last_error:text(e?.message||e,1000),last_checked_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',row.id);}catch{}}
 
 function effectiveTedRole(tender:any){
+  const v2=text(tender?.winner_role_v2?.category||'',80).toLowerCase();
+  if(v2==='steel_fabricator')return'producer';
+  if(v2==='gc_epc')return'gc_epc';
+  if(v2==='consortium_jv')return'trader_consortium';
+  if(['trader_distributor','steel_mill_producer','specialist_contractor'].includes(v2))return v2;
+  if(v2==='other_unclear')return'unknown';
   const w=tender?.winner&&typeof tender.winner==='object'?tender.winner:{};
   const t=text(w.company_type||w?.company_classification?.company_type||'',80).toLowerCase();
   if(t&&t!=='unknown')return t;

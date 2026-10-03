@@ -80,7 +80,10 @@ assert.match(dossier,/pst-tda-core-grid/,'technical and commercial conditions mu
 assert.match(dossier,/font-size:12\.5px/,'dossier requirement text must be readable');
 assert.doesNotMatch(dossier,/\.pst-tda-list li\{font-size:9\.5px/,'dossier must not keep micro-font requirement lists');
 
-assert.match(pcw,/PRODHUES \/ KONKURRENT/,'TED winner role must identify producer competitors');
+assert.match(pcw,/STEEL FABRICATOR/,'TED winner role must identify steel fabricators');
+assert.match(pcw,/TRADER \/ DISTRIBUTOR/,'TED winner role must identify traders and distributors');
+assert.match(pcw,/CONSORTIUM \/ JV/,'TED winner role must keep consortium/JV separate');
+assert.match(pcw,/PËR VERIFIKIM/,'TED winner role must expose unresolved companies without guessing');
 assert.match(pcw,/GC \/ EPC/,'TED winner role must identify GC/EPC clients');
 assert.match(pcw,/Shiko kontaktet/,'TED action console must expose researched winner contacts');
 assert.match(pcw,/Shkarko dosjen/,'KRPP/APP action console must expose dossier download');

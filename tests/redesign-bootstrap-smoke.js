@@ -57,9 +57,9 @@ assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Pro
 
 console.log('Redesign bootstrap + OpenAI + project-centric workflow contract smoke test passed.');
 assert(projectCentric.includes('Shkarko dosjen') && projectCentric.includes('Analizo kushtet') && projectCentric.includes('dossierReady(id)'), 'KRPP/APP action console must separate dossier download, condition analysis and project creation gate');
-assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includes('GC / EPC') && projectCentric.includes('Shiko kontaktet'), 'TED popup must expose winner role and contacts');
+assert(projectCentric.includes('STEEL FABRICATOR') && projectCentric.includes('GC / EPC') && projectCentric.includes('TRADER / DISTRIBUTOR') && projectCentric.includes('CONSORTIUM / JV') && projectCentric.includes('Shiko kontaktet'), 'TED popup must expose segmented winner roles and contacts');
 new Function(tenderActions);
-assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
+assert(tenderActions.includes("role==='steel_fabricator'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('external_fabrication_capacity') && tenderActions.includes('fabrication_and_processing_partner'), 'TED outreach must branch by the V2 company role instead of merging fabricators, GC/EPC and traders');
 assert(projectCentric.includes('Përgatit draftet'), 'TED winner popup must expose the human-gated verified multi-contact draft action');
 assert(tenderActions.includes('consortium_project_outreach_draft') && tenderActions.includes('general_project_outreach_draft'), 'TED draft routing must support consortium/general canonical actions instead of blocking them in the UI');
 assert(tenderActions.includes("event==='readiness_blocked'") && tenderActions.includes("event==='route_mismatch'") && tenderActions.includes("event==='communication_history_blocked'"), 'TED draft routing must surface canonical recipient/route/history safety blocks');

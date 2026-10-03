@@ -28,7 +28,7 @@ const dom=new JSDOM(`<!doctype html><html><head></head><body>
 const {window}=dom;
 window.console=console;
 window.supaFetch=async path=>{
-  if(String(path).startsWith('kek_tender_watch?')) return [
+  if(String(path).startsWith('kek_tender_watch?')||String(path).startsWith('pppp_tender_watch_company_role_v2?')) return [
     {
       id:'t-1',
       title:'Blerje rampa metalike',
@@ -51,7 +51,8 @@ window.supaFetch=async path=>{
       status:'new',
       published_date:'2026-08-24',
       match_reasons:['structural steelworks'],
-      payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',company_type:'gc_epc'}}
+      payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',company_type:'gc_epc'}},
+      winner_role_v2:{version:'ted-company-role-v2',category:'gc_epc',subcategory:'general_contractor_or_epc',confidence:'high',requires_role_verification:false}
     },
     {
       id:'t-4',
