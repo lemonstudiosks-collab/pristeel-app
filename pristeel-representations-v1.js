@@ -155,7 +155,7 @@ function dossierCss(){
 #page-representations .pst-dossier-compact span:nth-child(odd){color:#83938d}#page-representations .pst-dossier-compact span:nth-child(even){color:#354f46;font-weight:650;line-height:1.45;overflow-wrap:anywhere}
 #page-representations .pst-dossier-source{display:inline-block;margin-top:8px;color:#2d6f5a;font-size:9.5px;font-weight:750;text-decoration:none}
 #page-representations .pst-dossier-empty{color:#81918b;font-size:10.5px;line-height:1.5}
-#page-representations .pst-dossier .pst-rep-quick{grid-template-columns:180px 180px minmax(300px,1fr);align-items:end}
+#page-representations .pst-dossier .pst-rep-quick{grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;min-width:0;width:100%;max-width:100%}
 #page-representations .pst-dossier .pst-rep-quick label:last-child{grid-column:auto!important}
 #page-representations .pst-dossier-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 #page-representations .pst-dossier-summary-item{border:1px solid #e7eeeb;border-radius:11px;background:#fbfcfb;padding:11px 12px;min-width:0}
@@ -171,10 +171,87 @@ function dossierCss(){
 #page-representations .pst-dossier-details-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px}
 #page-representations .pst-dossier-details-grid>div{min-width:0}
 
+
+/* Përfaqësime profile containment: keep every dossier element inside the viewport. */
+body.pst-global-fullwidth-shell:has(#page-representations.active){overflow-x:hidden}
+body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell,
+body.pst-global-fullwidth-shell:has(#page-representations.active) .main,
+body.pst-global-fullwidth-shell:has(#page-representations.active) .content,
+#page-representations{width:100%;max-width:100%;min-width:0;overflow-x:hidden;box-sizing:border-box}
+#page-representations *,
+#page-representations *::before,
+#page-representations *::after{box-sizing:border-box}
+
+#page-representations .pst-rep-page,
+#page-representations .pst-rep-profile-view,
+#page-representations [data-rep-detail],
+#page-representations .pst-dossier,
+#page-representations .pst-dossier-grid,
+#page-representations .pst-dossier-grid>*,
+#page-representations .pst-dossier-card,
+#page-representations .pst-dossier-summary-item,
+#page-representations .pst-dossier-contact-grid>*,
+#page-representations .pst-dossier-details-grid>*,
+#page-representations .pst-dossier .pst-rep-quick>*,
+#page-representations .pst-dossier-hero>*,
+#page-representations .pst-dossier-actions,
+#page-representations .pst-dossier-badges{min-width:0;max-width:100%}
+
+#page-representations .pst-dossier-grid,
+#page-representations .pst-dossier-summary,
+#page-representations .pst-dossier-contact-grid,
+#page-representations .pst-dossier-details-grid,
+#page-representations .pst-dossier .pst-rep-quick{width:100%;max-width:100%}
+
+#page-representations .pst-dossier-split,
+#page-representations .pst-dossier-details-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+#page-representations .pst-dossier-contact{grid-template-columns:115px minmax(0,1fr)}
+#page-representations .pst-dossier-compact{grid-template-columns:180px minmax(0,1fr)}
+
+#page-representations .pst-dossier-highlight,
+#page-representations .pst-dossier-pitch,
+#page-representations .pst-dossier-contact,
+#page-representations .pst-dossier-subbox,
+#page-representations .pst-dossier-metric,
+#page-representations .pst-dossier-summary-item,
+#page-representations .pst-dossier-card p,
+#page-representations .pst-dossier-card li,
+#page-representations .pst-dossier-card a,
+#page-representations .pst-dossier-card b,
+#page-representations .pst-dossier-card strong,
+#page-representations .pst-dossier-rel>*,
+#page-representations .pst-dossier-compact>*,
+#page-representations .pst-rep-cell-title,
+#page-representations .pst-rep-cell-sub,
+#page-representations .pst-rep-next{overflow-wrap:anywhere;word-break:break-word;white-space:normal}
+
+#page-representations .pst-dossier-hero,
+#page-representations .pst-dossier-badges,
+#page-representations .pst-dossier-actions{flex-wrap:wrap}
+#page-representations .pst-dossier-actions .pst-rep-btn,
+#page-representations .pst-dossier-actions button,
+#page-representations .pst-dossier-actions a{max-width:100%;white-space:normal}
+
+#page-representations input,
+#page-representations select,
+#page-representations textarea{width:100%;max-width:100%;min-width:0}
+
+@media(max-width:1200px){
+ #page-representations .pst-dossier-grid{grid-template-columns:minmax(0,1fr)}
+ #page-representations .pst-dossier-card,
+ #page-representations .pst-dossier-card.span-6,
+ #page-representations .pst-dossier-card.span-8,
+ #page-representations .pst-dossier-card.span-12{grid-column:1/-1}
+ #page-representations .pst-dossier-summary,
+ #page-representations .pst-dossier-contact-grid,
+ #page-representations .pst-dossier-details-grid,
+ #page-representations .pst-dossier .pst-rep-quick{grid-template-columns:minmax(0,1fr)}
+ #page-representations .pst-dossier .pst-rep-quick label:last-child{grid-column:1!important}
+}
+
 @media(max-width:1180px){
  #page-representations .pst-rep-table-head,#page-representations .pst-rep-row{grid-template-columns:minmax(190px,1.2fr) 65px minmax(180px,1fr) minmax(180px,1fr) minmax(200px,1.2fr) 150px}
  #page-representations .pst-rep-table-head>*:last-child,#page-representations .pst-rep-row>*:last-child{display:none}
- #page-representations .pst-dossier-card{grid-column:span 6}#page-representations .pst-dossier-card.span-8{grid-column:span 12}
 }
 @media(max-width:760px){
  #page-representations .pst-rep-head{align-items:flex-start}
@@ -188,7 +265,7 @@ function dossierCss(){
  #page-representations .pst-dossier-summary,#page-representations .pst-dossier-contact-grid,#page-representations .pst-dossier-details-grid{grid-template-columns:1fr}
  #page-representations .pst-dossier .pst-rep-quick{grid-template-columns:1fr}#page-representations .pst-dossier .pst-rep-quick label:last-child{grid-column:1!important}
  #page-representations .pst-dossier-rel{grid-template-columns:1fr;gap:3px}
- #page-representations .pst-dossier-compact{grid-template-columns:115px 1fr}
+ #page-representations .pst-dossier-compact{grid-template-columns:115px minmax(0,1fr)}
 }
 `;document.head.appendChild(s);
 }
