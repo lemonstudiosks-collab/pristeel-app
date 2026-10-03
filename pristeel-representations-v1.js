@@ -65,6 +65,10 @@ function css(){
  if(document.getElementById('pst-representations-v1-css'))return;
  var s=document.createElement('style');s.id='pst-representations-v1-css';s.textContent=`
 #page-representations{--rep:#496f62;--rep-dark:#274c40;--rep-soft:#edf5f1;--rep-line:#dce7e2;--rep-text:#243b35}
+html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell{display:block!important;grid-template-columns:minmax(0,1fr)!important}
+html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell>.sidebar,html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell>aside.sidebar{display:none!important;visibility:hidden!important;flex:0 0 0!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;overflow:hidden!important}
+html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell>.main,html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell>main.main{display:block!important;flex:1 1 100%!important;width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
+html body.pst-global-fullwidth-shell:has(#page-representations.active) .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
 body:has(#page-representations.active) .topbar,body:has(#page-representations.active) #pst-global-page-backbar{display:none!important}
 .pst-rep-page{max-width:1540px;margin:0 auto;padding:10px 22px 50px;color:var(--rep-text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 .pst-rep-page button,.pst-rep-page input,.pst-rep-page select,.pst-rep-page textarea{font-family:inherit}
