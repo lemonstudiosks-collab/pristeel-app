@@ -252,7 +252,6 @@ body.pst-global-fullwidth-shell:has(#page-representations.active) .content,
 @media(max-width:1180px){
  #page-representations .pst-rep-table-head,#page-representations .pst-rep-row{grid-template-columns:minmax(190px,1.2fr) 65px minmax(180px,1fr) minmax(180px,1fr) minmax(200px,1.2fr) 150px}
  #page-representations .pst-rep-table-head>*:last-child,#page-representations .pst-rep-row>*:last-child{display:none}
- #page-representations .pst-dossier-card{grid-column:span 6}#page-representations .pst-dossier-card.span-8{grid-column:span 12}
 }
 @media(max-width:760px){
  #page-representations .pst-rep-head{align-items:flex-start}
@@ -266,7 +265,7 @@ body.pst-global-fullwidth-shell:has(#page-representations.active) .content,
  #page-representations .pst-dossier-summary,#page-representations .pst-dossier-contact-grid,#page-representations .pst-dossier-details-grid{grid-template-columns:1fr}
  #page-representations .pst-dossier .pst-rep-quick{grid-template-columns:1fr}#page-representations .pst-dossier .pst-rep-quick label:last-child{grid-column:1!important}
  #page-representations .pst-dossier-rel{grid-template-columns:1fr;gap:3px}
- #page-representations .pst-dossier-compact{grid-template-columns:115px 1fr}
+ #page-representations .pst-dossier-compact{grid-template-columns:115px minmax(0,1fr)}
 }
 `;document.head.appendChild(s);
 }
