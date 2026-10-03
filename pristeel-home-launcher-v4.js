@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261002-launcher10-shelllock1',clockTimer=0,weatherBusy=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false;
+var V='20261003-launcher11-actions1',clockTimer=0,weatherBusy=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false;
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -84,21 +84,62 @@ var I={
 function gmail(){return '<svg class="phl-gmail" viewBox="0 0 32 24"><path fill="#4285F4" d="M2 5.3 6 8.2V22H2z"/><path fill="#34A853" d="M26 8.2 30 5.3V22h-4z"/><path fill="#EA4335" d="M2 5.3 5.2 2.8 16 10.8 26.8 2.8 30 5.3 16 15.7z"/><path fill="#C5221F" d="M26.8 2.8 30 5.3 16 15.7 13.8 14.1z"/></svg>'}
 function icon(k,top){return '<span class="'+(top?'phl-top-icon':'phl-card-icon')+'">'+(k==='gmail'?gmail():(I[k]||''))+'</span>'}
 
-function route(k){
+function clearHomeRouteState(){
+ var p=document.getElementById('page-workspace-home');
+ if(p){p.classList.remove('active');p.style.display='none'}
+ document.querySelectorAll('#pst-ws-canonical-nav [data-key="home"],#pst-ws-sidebar [data-key="home"],#side-nav [data-key="home"],[data-page="home"]').forEach(function(x){x.classList.remove('active');x.classList.remove('on')});
  homeShell(false);
- var n=nav();
+}
+function keepWorkShell(){
+ (window.requestAnimationFrame||function(fn){return setTimeout(fn,0)})(function(){if(!active())homeShell(false)});
+}
+function openDaily(){
+ homeShell(true);
+ try{if(window.PSTDailySafeV2&&typeof window.PSTDailySafeV2.open==='function')return window.PSTDailySafeV2.open()}catch(e){}
+ var old=document.querySelector('script[data-pst-home-daily]');
+ if(!old){var s=document.createElement('script');s.src='pristeel-daily-safe-v2.js?v=20261003-home-launcher1';s.defer=true;s.setAttribute('data-pst-home-daily','1');document.head.appendChild(s)}
+ var tries=0,t=setInterval(function(){tries++;try{if(window.PSTDailySafeV2&&typeof window.PSTDailySafeV2.open==='function'){clearInterval(t);window.PSTDailySafeV2.open();return}}catch(e){}if(tries>30)clearInterval(t)},100);
+ return true;
+}
+function route(k){
+ k=S(k).toLowerCase();
+ if(k==='daily')return openDaily();
+ clearHomeRouteState();
+ var n=nav(),ok=false;
  try{if(n&&typeof n.syncSidebar==='function')n.syncSidebar(k)}catch(e){}
  try{
-  if(k==='opportunities'&&n&&n.openOpportunities)return n.openOpportunities();
-  if(k==='representations'){if(n&&n.openRepresentations)return n.openRepresentations();if(window.PSTRepresentationsV1&&window.PSTRepresentationsV1.open)return window.PSTRepresentationsV1.open()}
-  if(k==='direct'&&window.PSTEUCompaniesV1&&window.PSTEUCompaniesV1.open)return window.PSTEUCompaniesV1.open();
-  if(k==='buyers'&&window.PSTDachSteelSalesV3&&window.PSTDachSteelSalesV3.open)return window.PSTDachSteelSalesV3.open();
-  if(k==='projects'&&n&&n.openProjects)return n.openProjects();
-  if(k==='partners'&&n&&n.openPartners)return n.openPartners();
-  if(k==='finance'&&n&&n.openFinance)return n.openFinance();
-  if(k==='daily'&&n&&n.route)return n.route('daily');
- }catch(e){console.warn('PRISTEEL Home route',k,e)}
- return false;
+  if(k==='opportunities'){
+   if(n&&typeof n.openOpportunities==='function')ok=n.openOpportunities();
+   else if(typeof window.pstTenderBizOpenMonitor==='function'){window.pstTenderBizOpenMonitor();ok=true}
+   else if(typeof window.pstWsKekTenders==='function'){window.pstWsKekTenders();ok=true}
+  }else if(k==='representations'){
+   if(n&&typeof n.openRepresentations==='function')ok=n.openRepresentations();
+   else if(window.PSTRepresentationsV1&&typeof window.PSTRepresentationsV1.open==='function')ok=window.PSTRepresentationsV1.open();
+   else{location.hash='#perfaqesime';ok=true}
+  }else if(k==='direct'){
+   if(window.PSTEUCompaniesV1&&typeof window.PSTEUCompaniesV1.open==='function')ok=window.PSTEUCompaniesV1.open();
+   else{location.hash='#kompanite-eu';ok=true}
+  }else if(k==='buyers'){
+   if(window.PSTDachSteelSalesV3&&typeof window.PSTDachSteelSalesV3.open==='function')ok=window.PSTDachSteelSalesV3.open();
+  }else if(k==='projects'){
+   if(n&&typeof n.openProjects==='function')ok=n.openProjects();
+   else if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('projects');ok=true}
+  }else if(k==='partners'){
+   if(n&&typeof n.openPartners==='function')ok=n.openPartners();
+   else if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('contacts');ok=true}
+  }else if(k==='finance'){
+   if(n&&typeof n.openFinance==='function')ok=n.openFinance();
+   else if(typeof window.finShowHub==='function'){window.finShowHub();ok=true}
+  }
+ }catch(e){console.warn('PRISTEEL Home route',k,e);ok=false}
+ keepWorkShell();
+ if(ok===false){
+  setTimeout(function(){
+   var work=[].slice.call(document.querySelectorAll('.page.active')).some(function(p){return p.id!=='page-workspace-home'&&p.style.display!=='none'});
+   if(!work){try{var H=nav();if(H&&typeof H.openHome==='function')H.openHome();else{var p=document.getElementById('page-workspace-home');if(p){p.style.display='block';p.classList.add('active')}mount()}}catch(e){mount()}}
+  },160);
+ }
+ return ok!==false;
 }
 function search(q){
  q=S(q).trim();
