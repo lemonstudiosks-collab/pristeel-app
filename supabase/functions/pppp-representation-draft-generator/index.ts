@@ -7,7 +7,7 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-representation-draft-generator-v2";
+const V="pppp-representation-draft-generator-v3";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
 const em=(v:any)=>t(v,320).toLowerCase();
@@ -46,7 +46,7 @@ async function token(scope="https://www.googleapis.com/auth/gmail.compose https:
   const jwt=u+"."+b64u(sg);
   const r=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer",assertion:jwt})});
   const d=await r.json();if(!r.ok)throw new Error("gmail_token_"+r.status);
-  const cached={token:d.access_token,exp:now+(d.expires_in||3600)};tokenCache.set(scope,cached);return cached.token;
+  const fresh={token:d.access_token,exp:now+(d.expires_in||3600)};tokenCache.set(scope,fresh);return fresh.token;
 }
 async function user(auth:string){
   if(!A)throw new Error("supabase_anon_key_missing");
