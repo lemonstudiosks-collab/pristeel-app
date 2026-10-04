@@ -119,6 +119,10 @@ assert(window.document.querySelector('#pst-opp-modal-bg'),'clicking a company mu
 assert.match(window.document.querySelector('.pst-opp-detail').textContent,/Example Steel AG/,'clicking a company must hydrate its popup details');
 assert(window.document.querySelector('[data-pst-opp-close]'),'popup must expose a clear close action');
 assert(window.document.querySelector('[data-pst-opp-draft="ted-producer"]'),'uncontacted TED company with verified email must expose Krijo draft emaili');
+const gmailDraftButton=window.document.querySelector('[data-pst-opp-draft="ted-producer"]');
+assert(gmailDraftButton.classList.contains('pst-gmail-create-btn'),'visible Opportunities draft action must use the Gmail-branded button style');
+assert(gmailDraftButton.querySelector('svg.pst-gmail-draft-icon'),'visible Opportunities draft action must render a resolution-independent Gmail SVG');
+assert.match(gmailDraftButton.textContent,/Krijo draft në Gmail/,'visible Opportunities draft action must use the canonical Gmail label');
 const analyzeTender=window.document.querySelector('[data-pst-opp-open="ted-producer"]');
 assert(analyzeTender,'TED award detail must expose Analizo tenderin');
 assert.match(analyzeTender.textContent,/Analizo tenderin/,'TED analysis action must be clearly labelled');
