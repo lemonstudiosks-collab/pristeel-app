@@ -99,10 +99,39 @@ assert(forumCard,'Current Forum card must be clickable');
 forumCard.click();
 await new Promise(r=>setTimeout(r,0));
 assert(eventsPage.textContent.includes('Përmbledhje'),'Forum click must open the dedicated event detail workspace');
+assert(eventsPage.textContent.includes('Tani — çfarë duhet të bëjmë'),'Forum overview must show actionable next work');
+assert(eventsPage.textContent.includes('Targete strategjike'),'Forum overview must show operational KPI context');
+assert(eventsPage.textContent.includes('Agjenda jonë'),'Forum overview must show selected sessions');
 assert(eventsPage.textContent.includes('Aktiviteti i fundit'),'Event detail must include the activity stream');
 await new Promise(r=>setTimeout(r,0));
 assert(eventsPage.textContent.includes('Jochen Schlag declined your meeting request.'),'Event detail must load linked Forum activity');
 assert(!eventsPage.textContent.includes('Furnizimi / Prodhimi'),'Event detail must not expose Project commercial controls');
+
+const companiesTab=eventsPage.querySelector('[data-event-tab="companies"]');
+assert(companiesTab,'Forum must expose Kompanitë & Takimet');
+companiesTab.click();
+const spieRow=eventsPage.querySelector('[data-event-company="spie"]');
+assert(spieRow,'SPIE strategic target row missing');
+assert(spieRow.textContent.includes('Për t’u verifikuar'),'SPIE must not be shown as confirmed participant');
+spieRow.click();
+assert(eventsPage.querySelector('[data-company-detail]').textContent.includes('TenneT BUNT'),'SPIE detail must show the known relationship/context');
+assert(eventsPage.querySelector('[data-company-detail]').textContent.includes('Çfarë kemi vendosur'),'Company detail must show decisions');
+assert(eventsPage.querySelector('[data-company-detail]').textContent.includes('Çfarë planifikojmë'),'Company detail must show plan');
+
+const companySearch=eventsPage.querySelector('[data-company-search]');
+companySearch.value='Bilfinger';
+companySearch.dispatchEvent(new window.Event('input',{bubbles:true}));
+assert(eventsPage.querySelector('[data-company-list]').textContent.includes('Bilfinger'),'Company search must filter to Bilfinger');
+assert(!eventsPage.querySelector('[data-company-list]').textContent.includes('SteelcoBelimed'),'Company search must remove unrelated companies');
+companySearch.value='';
+companySearch.dispatchEvent(new window.Event('input',{bubbles:true}));
+assert(eventsPage.querySelector('[data-event-company="steelcobelimed"]').textContent.includes('Refuzuar'),'Known declined meeting must be visible in company table');
+
+const docsTab=eventsPage.querySelector('[data-event-tab="docs"]');
+docsTab.click();
+assert(eventsPage.textContent.includes('PRISTEEL_GK_Economic_Forum_2026_Short_Deck_EN.pdf'),'Documents tab must show the prepared Forum deck');
+assert(eventsPage.textContent.includes('Managed Steel Production Network & External Manufacturing Capacity'),'Documents tab must show PriSteel Forum opportunities');
+
 const detailBack=eventsPage.querySelector('[data-event-detail-back]');
 assert(detailBack,'Event detail must expose Kthehu to the Events list');
 detailBack.click();

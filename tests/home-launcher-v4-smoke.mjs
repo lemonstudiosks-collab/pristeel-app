@@ -19,6 +19,13 @@ assert(source.includes('German-Kosovar Economic Forum 2026'),'The Events module 
 assert(source.includes('data-event-open')&&source.includes('function eventDetail'),'Event cards must open a dedicated event workspace');
 assert(source.includes('project_emails?select='),'Event detail must load the event activity stream from linked PPPP communications');
 assert(source.includes('data-event-detail-back'),'Event detail must expose its own back navigation to the Events list');
+assert(source.includes('EVENT_COMPANIES')&&source.includes('SPIE')&&source.includes('Bilfinger')&&source.includes('GOLDBECK')&&source.includes('SteelcoBelimed'),'Forum workspace must include the evidence-backed company/target registry');
+assert(source.includes("participation:'Për t’u verifikuar'")&&source.includes("participation:'I verifikuar në B2Match'"),'Forum workspace must distinguish unverified targets from verified participants');
+assert(source.includes("['companies','Kompanitë & Takimet']")&&source.includes("['docs','Dokumentet']")&&source.includes("['after','Pas Forumit']"),'Forum workspace must expose the functional tabs');
+assert(source.includes('data-company-search')&&source.includes('data-company-participation')&&source.includes('data-company-meeting'),'Companies workspace must support search and practical filters');
+assert(source.includes('Çfarë kemi biseduar')&&source.includes('Çfarë kemi vendosur')&&source.includes('Çfarë planifikojmë'),'Company detail must retain discussion, decision and plan context');
+assert(source.includes('EVENT_SESSIONS')&&source.includes('EVENT_OPPORTUNITIES'),'Forum workspace must include selected agenda sessions and PriSteel opportunities');
+assert(source.includes('EVENT_ACTIVITY_CACHE'),'Forum activity must be cached client-side to avoid repeated Supabase reads in one session');
 assert(source.includes("pst-home-launcher-active")&&source.includes('.app-shell>.sidebar'),'Home must own generic sidebar hiding through the launcher-active body class');
 assert(source.includes("page.insertBefore(r,page.firstChild||null)"),'Launcher must mount directly into page-workspace-home before legacy/native Home owners');
 assert(source.includes('new MutationObserver'),'Launcher must repair itself if a later compatibility Home rerenders the Home page');
