@@ -71,7 +71,7 @@ function hydrateCompanyWorkspace(){
  var host=document.querySelector('#page-representations [data-opp-company-workspace]'),o=selected();if(!host)return;
  var id=st.selectedTarget;if(!o||!id){host.innerHTML='<div class="pst-opp-company-workspace-empty"><b>Zgjidh një kompani</b><span>Dosja operative do të shfaqet këtu.</span></div>';return}
  var api=window.PSTRepresentationsV1;if(api&&typeof api.renderTargetInto==='function'){
-  var ok=api.renderTargetInto(id,host);if(ok)return;
+  var ok=api.renderTargetInto(id,host,o.id);if(ok)return;
  }
  host.innerHTML='<div class="pst-opp-company-workspace-empty"><b>Dosja e kompanisë nuk u ngarkua</b><span>Rifresko faqen dhe provo përsëri.</span></div>';
 }
