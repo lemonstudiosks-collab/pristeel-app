@@ -5,7 +5,9 @@ import {JSDOM} from 'jsdom';
 const shell=fs.readFileSync('pristeel-global-fullwidth-shell-v1.js','utf8');
 const surface=fs.readFileSync('pristeel-production-surface-owner-v1.js','utf8');
 const loader=fs.readFileSync('pristeel-home-canonical-interaction-v1.js','utf8');
+const primaryNav=fs.readFileSync('pristeel-primary-nav-resilience-v1.js','utf8');
 assert(!loader.includes('loadFinanceMindmap()'),'The obsolete four-branch Finance map must not load beside the ten-branch owner');
+assert(!primaryNav.includes("232px minmax(0,1fr)")&&!primaryNav.includes("outer.style.setProperty('width'"),'Primary navigation must not compete with the shell owner for sidebar geometry');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body><div id="app-shell-root" class="app-shell"><aside id="app-sidebar" class="sidebar"></aside><main class="main"><div class="content">
 <section id="page-workspace-home" class="page active" style="display:block">Home</section>

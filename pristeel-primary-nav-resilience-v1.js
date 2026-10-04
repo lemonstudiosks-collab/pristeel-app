@@ -108,40 +108,13 @@ function installSidebarPersistenceGuard(){
 }
 function scheduleRepair(){clearTimeout(repairTimer);repairTimer=setTimeout(repairSidebar,0);[120,420,1450].forEach(function(ms){setTimeout(repairSidebar,ms);});}
 function syncSidebar(key){
- key=canon(key);var home=key==='home';
- var shell=document.getElementById('app-shell-root')||document.querySelector('.app-shell');
- var outer=document.getElementById('app-sidebar')||document.querySelector('.app-shell>.sidebar, .app-shell>aside.sidebar');
- var v2=document.getElementById('pst-v2-sidebar');
- var inner=document.getElementById('pst-ws-sidebar');
- var main=shell&&shell.querySelector? shell.querySelector(':scope > .main, :scope > main.main'):null;
+ key=canon(key);
+ /* Layout ownership belongs exclusively to Global Full-width Shell /
+  * Production Surface Owner. Primary navigation must never resize or reveal
+  * the sidebar, otherwise its bounded repair timers fight the shell owner and
+  * create repeated visible layout shifts during route changes. */
  try{
-  if(shell){
-   shell.style.setProperty('display',home?'block':'flex','important');
-   shell.style.setProperty('grid-template-columns',home?'minmax(0,1fr)':'232px minmax(0,1fr)','important');
-  }
-  if(outer){
-   outer.style.setProperty('display',home?'none':'block','important');
-   outer.style.setProperty('visibility',home?'hidden':'visible','important');
-   outer.style.setProperty('width',home?'0':'232px','important');
-   outer.style.setProperty('min-width',home?'0':'232px','important');
-   outer.style.setProperty('max-width',home?'0':'232px','important');
-   outer.style.setProperty('padding-top',home?'0':'10px','important');
-  }
-  if(v2){
-   v2.style.setProperty('display',home?'none':'flex','important');
-   v2.style.setProperty('visibility',home?'hidden':'visible','important');
-  }
-  if(inner){
-   inner.style.setProperty('display',home?'none':'flex','important');
-   inner.style.setProperty('visibility',home?'hidden':'visible','important');
-   if(!home)inner.style.setProperty('padding-top','24px','important');
-  }
-  if(main){
-   main.style.setProperty('width','100%','important');
-   main.style.setProperty('min-width','0','important');
-   if(!home)main.style.setProperty('flex','1 1 auto','important');
-  }
-  document.body.classList.toggle('pst-sidebar-home-hidden',home);
+   if(document.body)document.body.setAttribute('data-pst-primary-zone',key);
  }catch(e){}
  return true;
 }

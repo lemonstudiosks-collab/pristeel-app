@@ -47,11 +47,13 @@ assert.ok(R, 'Primary navigation resilience API missing');
 
 
 R.syncSidebar('home');
-assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('display'),'none','Home must hide the actual outer app sidebar');
-assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('width'),'0px','Home must release the outer sidebar width so no blank strip remains');
+assert.strictEqual(w.document.body.getAttribute('data-pst-primary-zone'),'home','Primary navigation must expose the current zone without owning shell geometry');
+assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('display'),'','Primary navigation must not write sidebar display');
+assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('width'),'','Primary navigation must not write sidebar width');
 R.syncSidebar('projects');
-assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('display'),'block','Work modules must restore the actual outer app sidebar');
-assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('width'),'232px','Work modules must restore sidebar width');
+assert.strictEqual(w.document.body.getAttribute('data-pst-primary-zone'),'projects','Primary navigation must update the zone marker');
+assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('display'),'','Work routes must leave sidebar visibility to the shell owner');
+assert.strictEqual(w.document.getElementById('app-sidebar').style.getPropertyValue('width'),'','Work routes must leave sidebar width to the shell owner');
 
 R.route('projects');
 assert.ok(calls.includes('projects'), 'Projects must use the direct modern project opener');
