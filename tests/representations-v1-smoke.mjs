@@ -12,6 +12,7 @@ const representationDraftWorker = fs.readFileSync('supabase/functions/pppp-repre
 const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 
 new vm.Script(ui);
+new vm.Script(opportunityUi);
 
 assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20261003-representations9-compact-draft/);
 assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260927-opportunities4-compact-controls/);
@@ -56,8 +57,12 @@ assert.match(ui,/target_type\)==='representation'/);
 assert.match(ui,/Modeli \/ territori/);
 assert.match(opportunityUi,/PROJECT_ROLES/);
 assert.match(opportunityUi,/options\(PROJECT_ROLES,'oem_specialist_partner'\)/);
-assert.match(opportunityUi,/data-opp-open-target/);
+assert.match(opportunityUi,/data-opp-select-target/);
+assert.match(opportunityUi,/data-opp-company-workspace/);
+assert.match(opportunityUi,/pst-opp-cards/);
+assert.match(opportunityUi,/pst-opp-top/);
 assert.match(ui,/openTarget:function/);
+assert.match(ui,/renderTargetInto:function/);
 assert.match(ui,/data-rep-act="open-thread"/);
 assert.match(ui,/Modeli & kushtet e përfaqësimit/);
 assert.match(ui,/Qasja e kontaktimit/);
@@ -129,7 +134,8 @@ dom.window.supaFetch = async (path) => {
 };
 dom.window.scrollTo = () => {};
 dom.window.eval(ui);
-await new Promise(resolve => setTimeout(resolve,20));
+dom.window.eval(opportunityUi);
+await new Promise(resolve => setTimeout(resolve,30));
 assert.ok(dom.window.PSTRepresentationsV1,'public module API missing');
 dom.window.PSTRepresentationsV1.open();
 await new Promise(resolve => setTimeout(resolve,20));
@@ -172,6 +178,25 @@ assert.ok(page.querySelector('details[data-rep-module="project"]'),'JV target mu
 page.querySelector('[data-rep-back]').click();
 await new Promise(resolve => setTimeout(resolve,0));
 assert.equal(page.querySelector('[data-rep-list-view]').hidden,false,'back from JV dossier must restore an operational view');
+assert.ok(dom.window.PSTRepresentationOpportunitiesV2,'Dega 2 public API missing');
+dom.window.PSTRepresentationOpportunitiesV2.open();
+await new Promise(resolve => setTimeout(resolve,30));
+const oppView=page.querySelector('[data-rep-opportunity-view]');
+assert.equal(oppView.hidden,false,'Dega 2 must be visible');
+assert.ok(oppView.querySelector('.pst-opp-top'),'project area must be full-width top workspace');
+assert.ok(oppView.querySelector('.pst-opp-cards'),'companies must render in the main page body');
+assert.equal(oppView.querySelector('.pst-opp-detail'),null,'old tall right sidebar must not exist');
+assert.ok(oppView.querySelector('[data-opp-company-search]'),'company search missing');
+const jvCard=oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]');
+assert.ok(jvCard,'JV company card must be visible and clickable');
+const inlineWorkspace=oppView.querySelector('[data-opp-company-workspace]');
+assert.ok(inlineWorkspace,'inline company workspace missing');
+assert.match(inlineWorkspace.textContent,/KEC International Limited/);
+assert.match(inlineWorkspace.textContent,/Gmail & Kontaktimi/);
+assert.match(inlineWorkspace.textContent,/Detajet e tenderit \/ projektit/);
+assert.ok(inlineWorkspace.querySelector('[data-rep-act="create-draft"]'),'inline dossier must keep Gmail draft action');
+assert.ok(inlineWorkspace.querySelector('[data-rep-act="edit"]'),'inline dossier must keep edit action');
+assert.ok(inlineWorkspace.querySelector('[data-rep-act="archive"]'),'inline dossier must keep archive action');
 const pipelineToggle=page.querySelector('[data-rep-toggle="pipeline"]');
 const pipelineMenu=page.querySelector('[data-rep-menu="pipeline"]');
 assert.ok(pipelineMenu.hidden,'pipeline menu must start collapsed');
