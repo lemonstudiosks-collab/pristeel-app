@@ -55,7 +55,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20261004-gmail-button-v1','current Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20261004-action-buttons-v1','current Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
