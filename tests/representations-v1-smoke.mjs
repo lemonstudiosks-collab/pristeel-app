@@ -43,6 +43,9 @@ assert.match(ui,/data-rep-country/);
 assert.match(ui,/data-rep-sector/);
 assert.match(ui,/data-rep-capital/);
 assert.match(ui,/body:has\(#page-representations\.active\) \.topbar/);
+assert.match(ui,/body:has\(#page-representations\.active\) \.app-shell>\.sidebar/);
+assert.match(ui,/body:has\(#page-representations\.active\) \.content\{width:100%!important;max-width:none!important/);
+assert.match(ui,/\.pst-rep-page\{width:100%;max-width:none;margin:0/);
 assert.doesNotMatch(ui,/function injectSystemCard/);
 assert.match(ui,/priority_score\.desc/);
 assert.match(ui,/Arkivo \/ Mbylle/);
@@ -142,6 +145,7 @@ await new Promise(resolve => setTimeout(resolve,20));
 const page = dom.window.document.getElementById('page-representations');
 assert.ok(page?.classList.contains('active'),'route did not open');
 assert.equal(dom.window.location.hash,'#perfaqesime');
+assert.equal(dom.window.document.body.classList.contains('pst-global-fullwidth-shell'),true,'Representations must activate the full-width shell');
 assert.equal(dom.window.document.getElementById('page-origin').style.display,'none','opening Representations must hide the previous page');
 assert.ok(page.querySelector('[data-rep-back]'),'candidate view must expose a persistent back button');
 assert.ok(page.querySelector('[data-rep-list-view]'),'candidate list view missing');
@@ -229,6 +233,7 @@ await new Promise(resolve => setTimeout(resolve,0));
 assert.equal(page.classList.contains('active'),false,'second Kthehu from company list must leave Representations');
 assert.equal(dom.window.document.getElementById('page-origin').classList.contains('active'),true,'second Kthehu must restore the immediately previous page');
 assert.equal(dom.window.document.getElementById('page-origin').style.display,'block','second Kthehu must show the immediately previous page');
+assert.equal(dom.window.document.body.classList.contains('pst-global-fullwidth-shell'),false,'leaving Representations must release the full-width shell');
 
 console.log('Representations v1 smoke passed');
 
