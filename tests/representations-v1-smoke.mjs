@@ -14,7 +14,7 @@ const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 new vm.Script(ui);
 new vm.Script(opportunityUi);
 
-assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20261003-representations9-compact-draft/);
+assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20261004-representations10-back-home/);
 assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260927-opportunities4-compact-controls/);
 assert.match(migration,/create table public\.pppp_representation_targets_v1/i);
 assert.match(migration,/enable row level security/i);
@@ -86,6 +86,8 @@ assert.match(representationDraftWorker,/findExistingDraft/);
 assert.match(ui,/data-rep-profile-view/);
 assert.match(ui,/pst-rep-back-primary/);
 assert.match(ui,/previousPageId/);
+assert.match(ui,/typeof window\.pstWorkspaceGo==='function'/);
+assert.match(ui,/window\.pstWorkspaceGo\('home'\)/);
 assert.match(opportunityUi,/root\.insertBefore\(sw,target\)/);
 assert.match(opportunityUi,/Përfaqësi në Kosovë/);
 assert.match(opportunityUi,/Tenderë · JV · Konsorcium/);

@@ -883,6 +883,20 @@ function open(){
  if(prev&&prev!==p){state.previousPageId=prev.id||'';try{state.previousScrollY=Number(window.scrollY||0)}catch(e){state.previousScrollY=0}}
  hideOthers(p);p.style.display='block';p.classList.add('active');setRoute(true);try{window.scrollTo(0,0)}catch(e){}load(true);return true;
 }
+function goHome(){
+ var p=document.getElementById('page-representations');
+ document.body.classList.remove('pst-global-fullwidth-shell');
+ if(p){p.classList.remove('active');p.style.display='none'}
+ setRoute(false);
+ try{if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('home');return true}}catch(e){}
+ try{if(typeof window.goHome==='function'){window.goHome();return true}}catch(e){}
+ var home=document.getElementById('page-workspace-home');
+ if(home){
+  document.querySelectorAll('.page').forEach(function(x){if(x!==home){x.classList.remove('active');x.style.display='none'}});
+  home.style.display='block';home.classList.add('active');return true
+ }
+ return false
+}
 function back(){
  if(state.view==='profile'){
   var ret=state.returnTo;state.returnTo='';state.view='list';render();
@@ -898,7 +912,7 @@ function back(){
   try{window.scrollTo(0,state.previousScrollY||0)}catch(e){}
   return;
  }
- document.body.classList.remove('pst-global-fullwidth-shell');
+ if(goHome())return;
  try{if(window.history&&window.history.length>1){window.history.back();return}}catch(e){}
 }
 function boot(){ensurePage();removeSystemCard();ensureHome();if(location.hash==='#perfaqesime')open();else load(false)}
