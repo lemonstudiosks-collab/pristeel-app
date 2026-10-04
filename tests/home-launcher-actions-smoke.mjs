@@ -36,6 +36,10 @@ window.fetch=async url=>{
 window.supaFetch=async path=>{
   calls.supa++;
   if(String(path).startsWith('price_history'))return[{work_type:'Plate',our_price_kg:.61,project_name:'Test',country:'DE',quoted_at:'2026-10-03'}];
+  if(String(path).startsWith('project_emails?'))return[
+    {id:1,sent_at:'2026-10-02T12:38:00Z',subject:'Your opportunity is validated',direction:'incoming',snippet:'Managed Steel Production Network opportunity validated',gmail_url:'https://mail.google.com/a'},
+    {id:2,sent_at:'2026-10-01T10:08:29Z',subject:'Jochen Schlag declined your meeting request.',direction:'incoming',snippet:'Meeting declined',gmail_url:'https://mail.google.com/b'}
+  ];
   return[];
 };
 
@@ -89,7 +93,20 @@ await new Promise(r=>setTimeout(r,0));
 const eventsPage=document.getElementById('page-workspace-events-forums');
 assert(eventsPage&&eventsPage.classList.contains('active'),'Evente dhe Forume must open its own workspace');
 assert(eventsPage.textContent.includes('German-Kosovar Economic Forum 2026'),'Current Forum must live inside the Events workspace');
-assert(!eventsPage.textContent.includes('RFQ'),'Events workspace must not expose RFQ controls');
+assert(!eventsPage.textContent.includes('RFQ'),'Events list must not expose RFQ controls');
+const forumCard=eventsPage.querySelector('[data-event-open="d7c23392-f7e2-4f87-8205-e7ff637ac3aa"]');
+assert(forumCard,'Current Forum card must be clickable');
+forumCard.click();
+await new Promise(r=>setTimeout(r,0));
+assert(eventsPage.textContent.includes('Përmbledhje'),'Forum click must open the dedicated event detail workspace');
+assert(eventsPage.textContent.includes('Aktiviteti i fundit'),'Event detail must include the activity stream');
+await new Promise(r=>setTimeout(r,0));
+assert(eventsPage.textContent.includes('Jochen Schlag declined your meeting request.'),'Event detail must load linked Forum activity');
+assert(!eventsPage.textContent.includes('Furnizimi / Prodhimi'),'Event detail must not expose Project commercial controls');
+const detailBack=eventsPage.querySelector('[data-event-detail-back]');
+assert(detailBack,'Event detail must expose Kthehu to the Events list');
+detailBack.click();
+assert(eventsPage.querySelector('[data-event-open]'),'Event detail Kthehu must return to the Events list');
 const eventsBack=eventsPage.querySelector('[data-events-back]');
 assert(eventsBack,'Events workspace must expose a functional Kthehu button');
 eventsBack.click();
