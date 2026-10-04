@@ -20,6 +20,10 @@ assert.match(desk,/kalojnë te Projektet vetëm pas RFQ/i,'contacted view must s
 assert.match(desk,/Krijo draft në Gmail/,'selected TED company must expose the Gmail draft action');
 assert.match(desk,/Analizo tenderin/,'TED award detail must retain its analysis action');
 assert.match(desk,/data-pst-opp-remove/,'active opportunity must expose the quick remove action');
+assert.match(desk,/pst-opp-action-analyze/,'analysis action must use the illustrated blue treatment');
+assert.match(desk,/pst-opp-action-gmail/,'Gmail action must use the vivid primary treatment');
+assert.match(desk,/pst-opp-action-source/,'official source action must use the illustrated neutral treatment');
+assert.match(desk,/pst-opp-action-remove/,'remove action must use the illustrated danger treatment');
 assert.match(desk,/function removeOpportunity\(id,button\)/,'Desk must delegate quick removal through the existing action engine');
 assert.match(desk,/await P\.noGo\(id\)/,'quick remove must reuse canonical NO-GO behavior instead of inventing a second status path');
 assert.match(desk,/data-pst-opp-source/,'source filters must remain functional');
