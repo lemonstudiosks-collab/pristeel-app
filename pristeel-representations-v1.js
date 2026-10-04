@@ -30,7 +30,7 @@ var TARGET_TYPES=[['lead_epc_candidate','Kandidat për EPC / konsorcium drejtues
 var REL_TYPES=[['joint_venture','JV'],['consortium','Konsorcium'],['subcontractor','Nënkontraktor'],['supplier','Furnitor'],['representative','Përfaqësues'],['distributor','Distributor'],['implementation_partner','Partner implementimi'],['local_partner','Partner lokal'],['other','Tjetër'],['unknown','E panjohur']];
 var REL_STATUS=[['current','Aktuale'],['historical','Historike'],['unknown','E panjohur']];
 var REL_VERIFY=[['unknown','E panjohur'],['review','Për verifikim'],['verified','E verifikuar']];
-var state={rows:[],relationships:[],opportunities:[],opportunityLinks:[],loaded:false,loading:false,opportunitiesLoaded:false,opportunitiesLoading:false,error:'',selected:'',view:'list',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null,draftBusy:{},draftResult:{},previousPageId:'',previousScrollY:0};
+var state={rows:[],relationships:[],opportunities:[],opportunityLinks:[],loaded:false,loading:false,opportunitiesLoaded:false,opportunitiesLoading:false,error:'',selected:'',view:'list',returnTo:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null,draftBusy:{},draftResult:{},previousPageId:'',previousScrollY:0};
 
 function S(v){return String(v==null?'':v)}
 function A(v){return Array.isArray(v)?v:[]}
@@ -45,7 +45,7 @@ function opts(items,value,blank){
 }
 function representationRows(){return state.rows.filter(function(r){return !r.archived_at&&S(r.target_type)==='representation'})}
 function uniq(key){return Array.from(new Set(representationRows().map(function(r){return S(r[key]).trim()}).filter(Boolean))).sort(function(a,b){return a.localeCompare(b,'sq')})}
-function selected(){return representationRows().find(function(r){return S(r.id)===S(state.selected)})||null}
+function selected(){return state.rows.find(function(r){return !r.archived_at&&S(r.id)===S(state.selected)})||null}
 function relationshipsFor(targetId){return state.relationships.filter(function(x){return !x.archived_at&&S(x.target_id)===S(targetId)})}
 function relLabel(items,v){var x=items.find(function(i){return i[0]===v});return x?x[1]:S(v||'—')}
 function boolLabel(v){return v===true?'Po':v===false?'Jo':'E panjohur'}
@@ -547,6 +547,7 @@ function facts(pairs){return'<div class="pst-rep-facts">'+pairs.map(function(x){
 function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null}catch(e){return null}}
 async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow()}catch(e){return sessionNow()}}
 function gmailDraftUrl(r){return r&&r.gmail_thread_id?'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(r.gmail_thread_id):''}
+function gmailThreadUrl(r){return r&&r.gmail_thread_id?'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(r.gmail_thread_id):''}
 function draftButton(r,variant){
  var busy=!!state.draftBusy[S(r&&r.id)],inline=variant==='inline',cls='pst-rep-btn '+(inline?'gmail-inline':'primary gmail-action');
  if(r&&r.gmail_draft_id&&r.gmail_thread_id)return '<button class="'+cls+'" data-rep-act="open-draft">Hap draftin në Gmail</button>';
@@ -579,10 +580,14 @@ function openRepresentationDraft(r){
  var u=gmailDraftUrl(r);if(!u){toast('Nuk ka Gmail draft të regjistruar për këtë kompani.',true);return}
  window.open(u,'_blank','noopener');
 }
+function openRepresentationThread(r){
+ var u=gmailThreadUrl(r);if(!u){toast('Nuk ka bisedë Gmail të regjistruar për këtë kompani.',true);return}
+ window.open(u,'_blank','noopener');
+}
 function moduleHead(kind,icon,title,desc){
  return '<summary><span class="pst-dossier-module-icon '+kind+'" aria-hidden="true">'+icon+'</span><span class="pst-dossier-module-title">'+E(title)+'</span><span class="pst-dossier-module-desc">'+E(desc)+'</span><span class="pst-dossier-chevron" aria-hidden="true">⌄</span></summary>';
 }
-function renderDetail(){
+function renderRepresentationDetail(){
  var h=ensurePage().querySelector('[data-rep-detail]'),r=selected();if(!h)return;
  if(!r){h.innerHTML='<div class="pst-rep-empty"><b>Zgjidh një kompani për përfaqësim</b></div>';return}
  var rels=relationshipsFor(r.id),warn=warnings(r),products=A(r.products),sourceLink=r.source_url||r.company_website||'',contactLink=r.contact_source||'',
@@ -613,6 +618,50 @@ function renderDetail(){
   +'</div>'
  +'</div>';
 }
+function renderJvDetail(){
+ var h=ensurePage().querySelector('[data-rep-detail]'),r=selected();if(!h)return;
+ if(!r){h.innerHTML='<div class="pst-rep-empty"><b>Zgjidh një kompani JV / EPC</b></div>';return}
+ var l=targetLink(r.id)||{},fit=targetFit(r.id),o=targetOpportunity(r.id)||{},factsObj=O(o.fact_evidence),rels=relationshipsFor(r.id),warn=warnings(r),
+     risks=A(fit.risks),values=A(fit.pristeel_value),products=A(r.products),projectLabel=o.project_name||fit.project||'Projekt / tender i lidhur',
+     role=targetTypeLabel(l.candidate_role||r.target_type||'lead_epc_candidate'),
+     approval=factsObj.approval_date||'',grant=O(factsObj.danish_grant).value,ebrd=O(factsObj.ebrd_finance).value,
+     unknowns=[['Paketat e prokurimit',o.procurement_packages&&A(o.procurement_packages).length?A(o.procurement_packages).join(' · '):'Ende të papublikuara'],['Kriteret e kualifikimit',o.qualification_criteria||'Ende të papublikuara'],['Rregullat për JV / konsorcium',o.jv_consortium_rules||'Ende të papublikuara'],['Afati i tenderit',o.tender_deadline?D(o.tender_deadline):'Ende i papublikuar'],['Garancia e ofertës',o.bid_guarantee||'Ende e papublikuar'],['Garancia e ekzekutimit',o.performance_guarantee||'Ende e papublikuar'],['Vizita e detyrueshme në terren',o.mandatory_site_visit===true?'Po':o.mandatory_site_visit===false?'Jo':'Ende e papublikuar']],
+     sourceLink=r.source_url||r.company_website||'',contactLink=r.contact_source||'',
+     outreach=outreachLabel(fit.outreach_status||''),projectRef=o.tender_reference||'—',
+     gmailError=state.draftResult[S(r.id)]&&state.draftResult[S(r.id)].error?state.draftResult[S(r.id)].error:'',
+     threadAction=r.gmail_thread_id?'<button class="pst-rep-btn" data-rep-act="open-thread">Hap bisedën në Gmail</button>':'';
+
+ h.innerHTML='<div class="pst-dossier">'
+  +'<header class="pst-dossier-hero"><div><div class="pst-dossier-eye">TENDERË · JV · KONSORCIUM · PROFIL I KOMPANISË</div><h2>'+E(r.company_name)+'</h2><div class="pst-dossier-meta">'+E([r.headquarters,r.country,role].filter(Boolean).join(' · '))+(r.company_website?' · <a href="'+E(r.company_website)+'" target="_blank" rel="noopener">'+E(r.company_domain_normalized||r.company_domain||'Faqja e internetit')+' ↗</a>':'')+'</div><div class="pst-dossier-badges"><span class="pst-rep-chip">'+E(stageLabel(r.stage))+'</span>'+(o.project_name?'<span class="pst-rep-chip">'+E(projectRef)+'</span>':'')+(l.company_fit_status?'<span class="pst-rep-chip warn">Përshtatja: '+E(fitLabel(l.company_fit_status))+'</span>':'')+(r.kosovo_presence?'<span class="pst-rep-chip neutral">'+E(kosovoLabel(r.kosovo_presence))+'</span>':'')+'</div></div><div class="pst-dossier-actions">'+draftButton(r)+threadAction+'<button class="pst-rep-btn" data-rep-act="edit">✎ Edito kompaninë</button><button class="pst-rep-btn danger" data-rep-act="archive">▢ Arkivo / Mbylle</button></div></header>'
+  +(warn.length?'<div class="pst-rep-warn"><b>Kërkon vëmendje:</b> '+E(warn.join(' · '))+'</div>':'')
+  +'<div class="pst-dossier-overview">'
+   +'<section class="pst-dossier-main-card pst-dossier-company-card"><div class="pst-dossier-main-title"><span class="pst-dossier-main-icon" aria-hidden="true">▦</span><div><h3>Kush është kompania</h3></div></div><p class="pst-dossier-highlight">'+E(sqText(r.manufacturer_description||r.product_summary||'—'))+'</p>'+(r.product_summary&&r.product_summary!==r.manufacturer_description?'<p>'+E(sqText(r.product_summary))+'</p>':'')+'<div class="pst-dossier-tags">'+products.map(function(x){return'<span class="pst-dossier-tag">'+E(sqText(x))+'</span>'}).join('')+'</div>'+compactRows([['Sektori',sqText(r.sector)],['Kategoria',sqText(r.product_category)],['Konsumatorët tipikë',sqText(r.potential_customer_types)]])+(sourceLink?'<a class="pst-dossier-source" href="'+E(sourceLink)+'" target="_blank" rel="noopener">Hap burimin e kompanisë →</a>':'')+'</section>'
+   +'<div class="pst-dossier-side">'
+    +'<section class="pst-dossier-main-card pst-dossier-stage-card"><div class="pst-dossier-main-title"><span class="pst-dossier-main-icon" aria-hidden="true">◎</span><div><h3>Faza dhe veprimi</h3></div></div><div class="pst-rep-quick"><label>Faza<select data-rep-quick="stage">'+opts(STAGES,r.stage)+'</select></label><label>Afati<input data-rep-quick="next_action_due" type="date" value="'+E(r.next_action_due||'')+'"></label><label>Veprimi i radhës<input data-rep-quick="next_action" value="'+E(r.next_action||'')+'" placeholder="Veprimi i radhës"></label></div></section>'
+    +'<section class="pst-dossier-main-card pst-dossier-project-card"><div class="pst-dossier-project-head"><div class="pst-dossier-project-title"><span class="pst-dossier-main-icon" aria-hidden="true">▤</span><h3>Projekti i lidhur · '+E(projectLabel)+'</h3></div><button class="pst-dossier-link-btn" data-rep-act="open-module" data-rep-module="project">Shiko detajet →</button></div><div class="pst-dossier-metrics">'
+      +'<div class="pst-dossier-metric"><div class="pst-dossier-metric-row"><span class="pst-dossier-metric-icon">€</span><div><span>Vlera totale</span><b>'+E(money(o.total_project_value,o.currency))+'</b></div></div></div>'
+      +'<div class="pst-dossier-metric"><div class="pst-dossier-metric-row"><span class="pst-dossier-metric-icon">E</span><div><span>Financimi EBRD</span><b>'+E(ebrd?money(ebrd,'EUR'):'—')+'</b></div></div></div>'
+      +'<div class="pst-dossier-metric"><div class="pst-dossier-metric-row"><span class="pst-dossier-metric-icon">✦</span><div><span>Granti</span><b>'+E(grant?money(grant,'EUR'):'—')+'</b></div></div></div>'
+      +'<div class="pst-dossier-metric"><div class="pst-dossier-metric-row"><span class="pst-dossier-metric-icon">□</span><div><span>Miratuar</span><b>'+E(approval||'—')+'</b></div></div></div>'
+    +'</div></section>'
+   +'</div>'
+  +'</div>'
+  +'<div class="pst-dossier-modules">'
+   +'<details class="pst-dossier-module gmail" data-rep-module="gmail" open>'+moduleHead('gmail','✉','Gmail & Kontaktimi','Drafti, komunikimi, thread-i dhe statusi i kontaktimit')+'<div class="pst-dossier-module-body"><div class="pst-dossier-gmail-layout"><div><h4 class="pst-dossier-section-title">Kontaktet kryesore</h4><div class="pst-dossier-contact"><span>Emri</span><span>'+E(r.contact_name||'—')+'</span><span>Roli</span><span>'+E(sqText(r.contact_role||'—'))+'</span><span>Email</span><span>'+(r.contact_email?'<a href="mailto:'+E(r.contact_email)+'">'+E(r.contact_email)+'</a>':'—')+'</span><span>Telefoni</span><span>'+E(r.contact_phone||'—')+'</span><span>Burimi</span><span>'+(contactLink?'<a href="'+E(contactLink)+'" target="_blank" rel="noopener">Kontakt zyrtar</a>':'—')+'</span><span>Kontakti i fundit</span><span>'+E(r.last_contact_at?D(r.last_contact_at):'Asnjë kontakt i regjistruar')+'</span></div></div><div class="pst-dossier-gmail-side"><div><h4 class="pst-dossier-section-title">Statusi i komunikimit</h4><div class="pst-dossier-pitch">'+E(sqText(fit.external_pitch||'Ende nuk ka mesazh të jashtëm të strukturuar.'))+'</div><div style="margin-top:12px">'+compactRows([['Statusi i kontaktimit',outreach||stageLabel(r.stage)],['Faza e kompanisë',stageLabel(r.stage)],['Veprimi i radhës',sqText(l.next_action||r.next_action)],['Drafti në Gmail',r.gmail_draft_id?'I regjistruar':'Nuk është krijuar'],['Thread në Gmail',r.gmail_thread_id?'I regjistruar':'—']])+'</div></div><div class="pst-dossier-gmail-action">'+draftButton(r,'inline')+(r.gmail_thread_id?'<button class="pst-rep-btn" data-rep-act="open-thread">Hap bisedën</button>':'')+'</div></div></div>'+(gmailError?'<div class="pst-rep-warn"><b>Drafti nuk u krijua:</b> '+E(gmailError)+'</div>':'')+'</div></details>'
+   +'<details class="pst-dossier-module" data-rep-module="strategy">'+moduleHead('strategy','◎','Përshtatja & Strategjia','Përshtatja teknike, roli në JV dhe qasja jonë ndaj kompanisë')+'<div class="pst-dossier-module-body"><div class="pst-dossier-summary"><div class="pst-dossier-summary-item"><b>Përshtatja teknike</b><p>'+E(sqText(fit.technical_fit||r.why_kosovo||'Ende pa vlerësim të plotë.'))+'</p></div><div class="pst-dossier-summary-item"><b>Çfarë sjell PriSteel</b>'+listHtml(sqList(values),'Vlera e PriSteel nuk është strukturuar ende.')+'</div><div class="pst-dossier-summary-item"><b>Qasja ndaj kompanisë</b><p>'+E(sqText(fit.approach_thesis||r.strategic_fit_notes||'Ende pa qasje të përcaktuar.'))+'</p></div></div><div class="pst-dossier-module-grid" style="margin-top:14px"><div><h4 class="pst-dossier-section-title">Prani & historik rajonal</h4><div class="pst-dossier-split"><div class="pst-dossier-subbox"><b>Kosovë</b><span>'+E(sqText(fit.kosovo_presence||r.balkans_presence_notes||kosovoLabel(r.kosovo_presence)))+'</span></div><div class="pst-dossier-subbox"><b>Rajoni</b><span>'+E(sqText(fit.regional_position||r.balkans_presence_notes||'Nuk ka të dhëna të tjera të regjistruara.'))+'</span></div></div>'+(fit.consortium_intelligence?'<div class="pst-dossier-subbox" style="margin-top:10px"><b>JV / konsorcium / precedent</b><span>'+E(sqText(fit.consortium_intelligence))+'</span></div>':'')+'</div><div><h4 class="pst-dossier-section-title">Rreziqe & sinjale historike</h4>'+listHtml(sqList(risks),'Nuk ka rreziqe specifike të regjistruara.')+(fit.historical_price_signal?'<div class="pst-dossier-subbox" style="margin-top:10px"><b>Sinjal historik çmimi / tenderi</b><span>'+E(sqText(fit.historical_price_signal))+'</span></div>':'')+(fit.manufacturing_note?'<div class="pst-dossier-subbox" style="margin-top:10px"><b>Kapacitet prodhues</b><span>'+E(sqText(fit.manufacturing_note))+'</span></div>':'')+'</div></div></div></details>'
+   +'<details class="pst-dossier-module" data-rep-module="project">'+moduleHead('project','▤','Detajet e tenderit / projektit','Përshkrimi, kriteret, financimi, dokumentet dhe afatet')+'<div class="pst-dossier-module-body"><div class="pst-dossier-module-grid"><div><h4>Fusha e projektit</h4><p>'+E(sqText(o.scope||'—'))+'</p></div><div><h4>Financimi / statusi</h4><p>'+E(sqText(o.financing||'—'))+'</p><p>'+E(sqText(o.procurement_stage||'—'))+'</p><p style="margin-top:8px"><b>'+E(projectRef)+'</b></p></div></div><div class="pst-dossier-unknowns">'+unknowns.map(function(x){return'<div class="pst-dossier-unknown"><b>'+E(x[0])+'</b><span>'+E(x[1])+'</span></div>'}).join('')+'</div>'+(o.official_source?'<a class="pst-dossier-source" href="'+E(o.official_source)+'" target="_blank" rel="noopener">Hap burimin zyrtar →</a>':'')+'</div></details>'
+   +'<details class="pst-dossier-module" data-rep-module="jv">'+moduleHead('jv','●●','JV / partnerë lokalë & rajonalë','Partnerët, konsorciumet dhe lidhjet e regjistruara')+'<div class="pst-dossier-module-body">'+(rels.length?'<div>'+rels.map(function(x){return'<div class="pst-dossier-rel"><b>'+E(x.related_company_name)+'</b><span>'+E(relLabel(REL_TYPES,x.relationship_type))+'</span><span>'+E(relLabel(REL_STATUS,x.relationship_status))+'</span><span>'+E([x.related_company_country,x.project_or_tender||x.project_reference,x.relationship_scope,relLabel(REL_VERIFY,x.verification_status)].filter(Boolean).join(' · '))+'</span></div>'}).join('')+'</div>':'<div class="pst-dossier-empty">Nuk ka ende lidhje të regjistruara.</div>')+'<div style="margin-top:10px"><button class="pst-rep-btn" data-rep-act="add-relationship">+ Shto JV / partner lokal</button></div></div></details>'
+   +'<details class="pst-dossier-module" data-rep-module="commercial">'+moduleHead('commercial','▥','Statusi, historiku & burimet','Roli në projekt, verifikimi, prioriteti dhe evidenca')+'<div class="pst-dossier-module-body"><div class="pst-dossier-details-grid"><div><h4 class="pst-dossier-section-title">Statusi i kompanisë</h4>'+compactRows([['Roli në projekt',role],['Përshtatja',fitLabel(l.company_fit_status||'unknown')],['Klasifikimi',classLabel(fit.classification||'')],['Përzgjedhur nga ne',fit.operator_selected===true?'Po':fit.operator_selected===false?'Jo':'—'],['Data e përzgjedhjes',fit.selection_date||'—'],['Statusi i kontaktimit',outreach||'—'],['Prioriteti',r.priority_score==null?'—':r.priority_score+'/100'],['Arsyeja',r.priority_reason]])+'</div><div><h4 class="pst-dossier-section-title">Historiku & burimet</h4>'+compactRows([['Pse Kosova',sqText(r.why_kosovo)],['Evidenca e tregut',sqText(r.market_evidence)],['Tenderë / projekte relevante',sqText(r.relevant_tenders_or_projects)],['Shënime për Ballkanin',sqText(r.balkans_presence_notes)],['Burimi kryesor',r.source_name],['Çelësi i burimit',r.source_key],['Verifikuar',r.last_verified_at?D(r.last_verified_at):'—'],['Përditësuar',r.updated_at?D(r.updated_at):'—']])+'</div></div></div></details>'
+   +'<details class="pst-dossier-module" data-rep-module="notes">'+moduleHead('notes','✎','Shënime & next actions','Shënime të brendshme dhe veprimet e radhës')+'<div class="pst-dossier-module-body"><div class="pst-dossier-module-grid"><div><h4 class="pst-dossier-section-title">Veprimi i radhës</h4>'+compactRows([['Veprimi',sqText(l.next_action||r.next_action)],['Afati',r.next_action_due?D(r.next_action_due):'—'],['Statusi',stageLabel(r.stage)],['Përshtatja',fitLabel(l.company_fit_status||'unknown')]])+'</div><div><h4 class="pst-dossier-section-title">Shënime të brendshme</h4><div class="pst-dossier-subbox"><span>'+E(sqText(r.notes||'Nuk ka shënime të regjistruara.'))+'</span></div></div></div></div></details>'
+  +'</div>'
+ +'</div>';
+}
+function renderDetail(){
+ var r=selected();
+ if(r&&S(r.target_type)!=='representation')return renderJvDetail();
+ return renderRepresentationDetail();
+}
+
 async function loadOpportunities(force){
  if(state.opportunitiesLoading)return state.opportunities;
  if(state.opportunitiesLoaded&&!force)return state.opportunities;
@@ -636,7 +685,7 @@ async function load(force){
    window.supaFetch('pppp_representation_opportunities_v1?select=*&archived_at=is.null&order=updated_at.desc&limit=500')
   ]);
   state.rows=A(loaded[0]);state.relationships=A(loaded[1]);state.opportunityLinks=A(loaded[2]);state.opportunities=A(loaded[3]);state.opportunitiesLoaded=true;
-  state.loaded=true;if(state.selected&&!representationRows().some(function(r){return S(r.id)===S(state.selected)})){state.selected='';state.view='list'}
+  state.loaded=true;if(state.selected&&!state.rows.some(function(r){return !r.archived_at&&S(r.id)===S(state.selected)})){state.selected='';state.view='list';state.returnTo=''}
  }catch(e){state.error=S(e&&e.message||e)}
  state.loading=false;render();
 }
@@ -651,6 +700,7 @@ function detailClick(e){
  if(a.dataset.repAct==='add-relationship')openRelationshipEditor(r);
  if(a.dataset.repAct==='create-draft')callRepresentationDraft(r);
  if(a.dataset.repAct==='open-draft')openRepresentationDraft(r);
+ if(a.dataset.repAct==='open-thread')openRepresentationThread(r);
  if(a.dataset.repAct==='open-module'){
   var key=a.dataset.repModule||'',d=ensurePage().querySelector('[data-rep-detail] details[data-rep-module="'+key+'"]');
   if(d){d.open=true;try{d.scrollIntoView({behavior:'smooth',block:'start'})}catch(_){try{d.scrollIntoView()}catch(__){}}}
@@ -832,7 +882,11 @@ function open(){
  hideOthers(p);p.style.display='block';p.classList.add('active');setRoute(true);try{window.scrollTo(0,0)}catch(e){}load(true);return true;
 }
 function back(){
- if(state.view==='profile'){state.view='list';render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return}
+ if(state.view==='profile'){
+  var ret=state.returnTo;state.returnTo='';state.view='list';render();
+  if(ret==='opportunities'&&window.PSTRepresentationOpportunitiesV2&&typeof window.PSTRepresentationOpportunitiesV2.open==='function'){setTimeout(function(){window.PSTRepresentationOpportunitiesV2.open()},0)}
+  try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return
+ }
  var p=document.getElementById('page-representations'),prev=state.previousPageId?document.getElementById(state.previousPageId):null;
  if(prev&&prev!==p){
   if(p){p.classList.remove('active');p.style.display='none'}
@@ -849,7 +903,7 @@ document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(en
 document.addEventListener('pst:modules-ready',function(){setTimeout(boot,0)},{once:true});
 window.addEventListener('popstate',function(){if(location.hash==='#perfaqesime')open()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
-window.PSTRepresentationsV1={open:open,refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),opportunities:state.opportunities.slice(),opportunityLinks:state.opportunityLinks.slice(),selected:state.selected,view:state.view,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
+window.PSTRepresentationsV1={open:open,openTarget:function(id,returnTo){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r){toast('Kompania nuk u gjet në Përfaqësime.',true);return false}state.selected=S(id);state.returnTo=S(returnTo||'');state.view='profile';render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return true},refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),relationships:state.relationships.slice(),opportunities:state.opportunities.slice(),opportunityLinks:state.opportunityLinks.slice(),selected:state.selected,view:state.view,returnTo:state.returnTo,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
 })();
 
 
