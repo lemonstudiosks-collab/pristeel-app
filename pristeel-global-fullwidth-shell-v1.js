@@ -9,22 +9,22 @@ if(window.__pstGlobalFullwidthShellV2)return;
 window.__pstGlobalFullwidthShellV2=true;
 window.__pstGlobalFullwidthShellV1=true;
 
-var VERSION='20261002-launcher-sidebar1';
+var VERSION='20261004-route-stable-shell1';
 var scheduled=false;
 
 function installStyle(){
   var s=document.getElementById('pst-global-fullwidth-shell-v1-css'),fresh=false;
   if(!s){s=document.createElement('style');s.id='pst-global-fullwidth-shell-v1-css';fresh=true;}
   s.textContent=`
-body:has(#page-workspace-home.active) .app-shell{display:block!important;grid-template-columns:minmax(0,1fr)!important}
-body:has(#page-workspace-home.active) .app-shell>.sidebar,body:has(#page-workspace-home.active) .app-shell>aside.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;overflow:hidden!important}
-body:has(#page-workspace-home.active) .app-shell>.main,body:has(#page-workspace-home.active) .app-shell>main.main{width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
-body:not(:has(#page-workspace-home.active)) .app-shell{display:flex!important;grid-template-columns:204px minmax(0,1fr)!important}
-body:not(:has(#page-workspace-home.active)) .app-shell>.sidebar,body:not(:has(#page-workspace-home.active)) .app-shell>aside.sidebar{display:flex!important;visibility:visible!important;flex:0 0 204px!important;width:204px!important;min-width:204px!important;max-width:204px!important;border-right:1px solid #e4e8e9!important;overflow:hidden!important}
-body:not(:has(#page-workspace-home.active)) .app-shell>.main,body:not(:has(#page-workspace-home.active)) .app-shell>main.main{flex:1 1 auto!important;width:auto!important;max-width:none!important;min-width:0!important;margin-left:0!important}
+body:has(#page-workspace-home.active) .app-shell{display:flex!important;grid-template-columns:204px minmax(0,1fr)!important}
+body:has(#page-workspace-home.active) .app-shell>.sidebar,body:has(#page-workspace-home.active) .app-shell>aside.sidebar{display:flex!important;visibility:visible!important;flex:0 0 204px!important;width:204px!important;min-width:204px!important;max-width:204px!important;border-right:1px solid #e4e8e9!important;overflow:hidden!important}
+body:has(#page-workspace-home.active) .app-shell>.main,body:has(#page-workspace-home.active) .app-shell>main.main{flex:1 1 auto!important;width:auto!important;max-width:none!important;min-width:0!important;margin-left:0!important}
+body:not(:has(#page-workspace-home.active)) .app-shell{display:flex!important;grid-template-columns:minmax(0,1fr)!important}
+body:not(:has(#page-workspace-home.active)) .app-shell>.sidebar,body:not(:has(#page-workspace-home.active)) .app-shell>aside.sidebar{display:none!important;visibility:hidden!important;flex:0 0 0!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;padding:0!important;margin:0!important;overflow:hidden!important}
+body:not(:has(#page-workspace-home.active)) .app-shell>.main,body:not(:has(#page-workspace-home.active)) .app-shell>main.main{flex:1 1 auto!important;width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
 body.pst-global-fullwidth-shell .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
 #pst-global-page-backbar{display:none!important}
-@media(max-width:760px){body:not(:has(#page-workspace-home.active)) .app-shell{grid-template-columns:72px minmax(0,1fr)!important}body:not(:has(#page-workspace-home.active)) .app-shell>.sidebar,body:not(:has(#page-workspace-home.active)) .app-shell>aside.sidebar{flex-basis:72px!important;width:72px!important;min-width:72px!important;max-width:72px!important}}
+@media(max-width:760px){body:has(#page-workspace-home.active) .app-shell{grid-template-columns:72px minmax(0,1fr)!important}body:has(#page-workspace-home.active) .app-shell>.sidebar,body:has(#page-workspace-home.active) .app-shell>aside.sidebar{flex-basis:72px!important;width:72px!important;min-width:72px!important;max-width:72px!important}}
 `;
   if(fresh)document.head.appendChild(s);
   document.body&&document.body.classList.add('pst-global-fullwidth-shell');
