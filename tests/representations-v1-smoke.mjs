@@ -32,7 +32,7 @@ assert.match(worker,/pppp_chatgpt_register_representation_target_v1/);
 assert.match(worker,/representation_relationship/);
 assert.match(relationshipMigration,/create table if not exists public\.pppp_representation_relationships_v1/i);
 assert.match(relationshipMigration,/pppp_chatgpt_register_representation_relationship_v1/i);
-assert.match(ui,/JV \/ Partnerë lokalë & rajonalë/);
+assert.match(ui,/JV \/ partnerë lokalë & rajonalë/);
 assert.match(ui,/data-rep-act=\"add-relationship\"/);
 assert.match(ui,/#perfaqesime/);
 assert.match(ui,/data-rep-toggle="pipeline"/);
