@@ -77,7 +77,7 @@ assert.equal(resolveTedRecipients(draftOnlyAction,draftOnlyPayload,1).length,0,'
 
 const msAction={route:'TED_GENERAL',target_company:'M+S Gruppe GmbH',target_email:'stahl@msgruppe24.de',payload:{}};
 const msPayload={winner:{
-  name:'M+S Gruppe GmbH',email:'stahl@msgruppe24.de',emails:['stahl@msgruppe24.de'],
+  name:'M+S Gruppe GmbH',email:'stahl@msgruppe24.de',emails:['stahl@msgruppe24.de'],ted_declared_emails:['stahl@msgruppe24.de'],
   identifier:'DE 276783737',identity_version:'ted-winner-canonical-v2',website:null,websites:[]
 }};
 const msRecipients=resolveTedDraftRecipients(msAction,msPayload,20);
@@ -89,10 +89,22 @@ assert.equal(msRecipients[0].recipient_company_domain,'msgruppe24.de');
 
 const canonicalMulti={winner:{
   name:'Multi Contact Stahl GmbH',identifier:'DE 123456789',identity_version:'ted-winner-canonical-v2',
-  emails:['procurement@multi-stahl.de','max.mustermann@multi-stahl.de','sales@multi-stahl.de'],website:null,websites:[]
+  emails:['procurement@multi-stahl.de','max.mustermann@multi-stahl.de','sales@multi-stahl.de'],ted_declared_emails:['procurement@multi-stahl.de','max.mustermann@multi-stahl.de','sales@multi-stahl.de'],website:null,websites:[]
 }};
 assert.equal(resolveTedDraftRecipients({route:'TED_GENERAL',target_company:'Multi Contact Stahl GmbH'},canonicalMulti,20).length,3,'each independently declared canonical TED winner email must survive the multi-recipient path');
 assert.equal(resolveTedDraftRecipients({route:'TED_GENERAL',target_company:'Unverified GmbH'},{winner:{name:'Unverified GmbH',email:'office@unverified.de'}},20).length,0,'an unversioned winner email must not become eligible merely because it is displayed');
+
+const knapePayload={winner:{
+  name:'Kunst- und Stahlbauschlosserei Olaf Knape',identifier:'UStID. DE232533337',identity_version:'ted-winner-canonical-v2',
+  email:'info@khs-landkreis-wittenberg.de',emails:['info@khs-landkreis-wittenberg.de'],
+  website:'https://www.khs-landkreis-wittenberg.de/innungen/metall-innung.html',websites:['https://www.khs-landkreis-wittenberg.de/innungen/metall-innung.html'],
+  contact_enrichment:{organizations:[{name:'Kunst- und Stahlbauschlosserei Olaf Knape',domain:null,official_website:null,contacts:[
+    {type:'email',value:'schlosserei.knape@t-online.de',score:86,confidence:'medium',purpose:'person',source_type:'third_party_listing',source_url:'https://www.khs-landkreis-wittenberg.de/innungen/metall-innung.html',company_attribution:'third_party_listing_name_match',draft_eligible:true},
+    {type:'email',value:'info@khs-landkreis-wittenberg.de',score:93,confidence:'high',purpose:'general',source_type:'official_website',source_url:'https://www.khs-landkreis-wittenberg.de/kontakt.html',company_attribution:'official_domain_match',draft_eligible:true}
+  ]}]}
+}};
+const knapeRecipients=resolveTedDraftRecipients({route:'TED_GENERAL',target_company:'Kunst- und Stahlbauschlosserei Olaf Knape'},knapePayload,20);
+assert.deepEqual(knapeRecipients.map(r=>r.email),['schlosserei.knape@t-online.de'],'association-domain mailboxes must be blocked while a company-attributed member-listing email remains eligible');
 
 assert.match(generatorSrc,/allCovered=recipients\.length>0&&recipients\.every/,'zero recipients must never be persisted as a completed generator run');
 
