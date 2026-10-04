@@ -13,9 +13,10 @@ const {window}=dom;
 const {document}=window;
 window.scrollTo=()=>{};
 
-const calls={sync:[],opportunities:0,representations:0,direct:0,buyers:0,projects:0,partners:0,finance:0,daily:0,search:0,gmail:0,fetch:0,supa:0};
+const calls={sync:[],home:0,opportunities:0,representations:0,direct:0,buyers:0,projects:0,partners:0,finance:0,daily:0,search:0,gmail:0,fetch:0,supa:0};
 window.PSTPrimaryNavResilienceV10={
   syncSidebar:k=>calls.sync.push(k),
+  openHome:()=>{calls.home++;return true},
   openOpportunities:()=>{calls.opportunities++;return true},
   openRepresentations:()=>{calls.representations++;return true},
   openProjects:()=>{calls.projects++;return true},
@@ -80,7 +81,20 @@ assert(document.getElementById('phl-modal'),'Steel-price button must open modal'
 assert(document.getElementById('phl-modal').textContent.includes('Plate'),'Steel-price modal must populate PPPP reference data');
 document.getElementById('phl-modal').remove();
 
-assert.equal(root.querySelector('[data-open="forum"]'),null,'Forum must not render on Home');
+assert.equal(root.querySelector('[data-open="forum"]'),null,'Forum must not render as a dedicated Home card');
+const eventsCard=root.querySelector('[data-open="events"]');
+assert(eventsCard,'Evente dhe Forume must render in the compact utility row');
+eventsCard.click();
+await new Promise(r=>setTimeout(r,0));
+const eventsPage=document.getElementById('page-workspace-events-forums');
+assert(eventsPage&&eventsPage.classList.contains('active'),'Evente dhe Forume must open its own workspace');
+assert(eventsPage.textContent.includes('German-Kosovar Economic Forum 2026'),'Current Forum must live inside the Events workspace');
+assert(!eventsPage.textContent.includes('RFQ'),'Events workspace must not expose RFQ controls');
+const eventsBack=eventsPage.querySelector('[data-events-back]');
+assert(eventsBack,'Events workspace must expose a functional Kthehu button');
+eventsBack.click();
+assert.equal(calls.home,1,'Events Kthehu must delegate to the canonical Home owner');
+
 
 for(const [key,field] of [
   ['opportunities','opportunities'],
