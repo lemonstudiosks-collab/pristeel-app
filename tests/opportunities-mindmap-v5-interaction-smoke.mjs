@@ -21,7 +21,7 @@ const rows=[
  {id:'krpp-1',title:'Konstruksion metalik',authority:'KRPP',relevance_score:90,status:'new',published_date:'2026-09-20',payload:{source:'KRPP',notice_phase:'opportunity'}},
  {id:'ted-gc',title:'Structural steel building award',authority:'EU Authority',publication_no:'TED-GC',relevance_score:99,status:'new',published_date:'2026-09-21',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',email:'sales@example-gc.de',company_type:'gc_epc'}}},
  {id:'ted-gc-duplicate',title:'Second award by same company',authority:'EU Authority',publication_no:'TED-GC-2',relevance_score:96,status:'new',published_date:'2026-09-19',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',email:'procurement@example-gc.de',company_type:'gc_epc'}}},
- {id:'ted-producer',title:'Bridge fabrication award',authority:'EU Authority',publication_no:'TED-P',relevance_score:98,status:'new',published_date:'2026-09-21',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Steel AG',email:'office@example-steel.de',company_type:'producer'}}},
+ {id:'ted-producer',title:'Bridge fabrication award',authority:'EU Authority',publication_no:'TED-P',source_url:'https://ted.europa.eu/en/notice/TED-P/html',relevance_score:98,status:'new',published_date:'2026-09-21',payload:{source:'TED',notice_phase:'award',winner:{name:'Example Steel AG',email:'office@example-steel.de',company_type:'producer'}}},
  {id:'ted-canonical',title:'Canonical contact award',authority:'EU Authority',publication_no:'TED-C',relevance_score:97,status:'new',published_date:'2026-09-18',payload:{source:'TED',notice_phase:'award',winner:{name:'Canonical Contact GmbH',company_type:'gc_epc'}}},
  {id:'ted-ambiguous',title:'Multi-winner award',authority:'EU Authority',publication_no:'TED-A',relevance_score:95,status:'new',published_date:'2026-09-17',payload:{source:'TED',notice_phase:'award',winner:{name:'Selected Winner GmbH',names:['Selected Winner GmbH','Other Winner AB'],emails:['office@selected.example','sales@other.example'],identity_version:'ted-winner-canonical-v2',identifier:'winner-1',company_type:'gc_epc'}}}
 ];
@@ -55,7 +55,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20261004-gmail-button-v1','current Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20261004-action-buttons-v1','current Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
@@ -123,6 +123,12 @@ const gmailDraftButton=window.document.querySelector('[data-pst-opp-draft="ted-p
 assert(gmailDraftButton.classList.contains('pst-gmail-create-btn'),'visible Opportunities draft action must use the Gmail-branded button style');
 assert(gmailDraftButton.querySelector('svg.pst-gmail-draft-icon'),'visible Opportunities draft action must render a resolution-independent Gmail SVG');
 assert.match(gmailDraftButton.textContent,/Krijo draft në Gmail/,'visible Opportunities draft action must use the canonical Gmail label');
+assert(gmailDraftButton.classList.contains('pst-opp-action-gmail'),'Gmail draft action must use the vivid primary-button treatment');
+assert(gmailDraftButton.querySelector('.pst-opp-action-icon-gmail'),'Gmail draft action must keep its icon inside a dedicated chip');
+const sourceButton=window.document.querySelector('.pst-opp-action-source');
+assert(sourceButton&&sourceButton.querySelector('svg.pst-opp-action-svg'),'official source must use the illustrated external-link action');
+const removeButton=window.document.querySelector('[data-pst-opp-remove="ted-producer"]');
+assert(removeButton.classList.contains('pst-opp-action-remove')&&removeButton.querySelector('svg.pst-opp-action-svg'),'remove action must use the illustrated danger treatment');
 const analyzeTender=window.document.querySelector('[data-pst-opp-open="ted-producer"]');
 assert(analyzeTender,'TED award detail must expose Analizo tenderin');
 assert.match(analyzeTender.textContent,/Analizo tenderin/,'TED analysis action must be clearly labelled');

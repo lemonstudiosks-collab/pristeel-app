@@ -11,7 +11,7 @@ const assistantEdge=fs.readFileSync('supabase/functions/pppp-openai-assistant/in
 assert.doesNotThrow(()=>new Function(desk),'Opportunities Desk must be valid JavaScript');
 assert.doesNotThrow(()=>new Function(workflow),'Project-Centric workflow must remain valid JavaScript');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(desk,/VERSION='20261004-gmail-button-v1'/,'scoped-analysis Opportunity Desk revision must be active');
+assert.match(desk,/VERSION='20261004-action-buttons-v1'/,'scoped-analysis Opportunity Desk revision must be active');
 assert.match(desk,/function activeRows\(/,'Desk must explicitly own the active/uncontacted list');
 assert.match(desk,/function contactedRows\(/,'Desk must explicitly own the contacted-company parking list');
 assert.match(desk,/globalContactedKeys/,'active list must globally suppress identities already drafted/contacted');
@@ -20,6 +20,10 @@ assert.match(desk,/kalojnë te Projektet vetëm pas RFQ/i,'contacted view must s
 assert.match(desk,/Krijo draft në Gmail/,'selected TED company must expose the Gmail draft action');
 assert.match(desk,/Analizo tenderin/,'TED award detail must retain its analysis action');
 assert.match(desk,/data-pst-opp-remove/,'active opportunity must expose the quick remove action');
+assert.match(desk,/pst-opp-action-analyze/,'analysis action must use the illustrated blue treatment');
+assert.match(desk,/pst-opp-action-gmail/,'Gmail action must use the vivid primary treatment');
+assert.match(desk,/pst-opp-action-source/,'official source action must use the illustrated neutral treatment');
+assert.match(desk,/pst-opp-action-remove/,'remove action must use the illustrated danger treatment');
 assert.match(desk,/function removeOpportunity\(id,button\)/,'Desk must delegate quick removal through the existing action engine');
 assert.match(desk,/await P\.noGo\(id\)/,'quick remove must reuse canonical NO-GO behavior instead of inventing a second status path');
 assert.match(desk,/data-pst-opp-source/,'source filters must remain functional');
@@ -34,7 +38,7 @@ assert.match(desk,/api\.loadOpportunities\(true\)/,'draft completion must reload
 assert.match(desk,/effectiveLane\(r\)!=='new'/,'contacted state must come from canonical lifecycle evidence');
 assert.match(desk,/function deskHtml\(c\)\{[\s\S]*activeRows\(\)[\s\S]*contactedRows\(\)[\s\S]*sideFilters\(c\)/,'final workdesk must preserve filters plus separate active and contacted views');
 assert.match(workflow,/display_limit:40/,'canonical result engine remains bounded');
-assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20261004-gmail-button-v1/,'runtime must cache-bust the scoped analysis navigation');
+assert.match(interaction,/pristeel-opportunities-filter-polish-v1\.js\?v=20261004-action-buttons-v1/,'runtime must cache-bust the scoped analysis navigation');
 assert.match(workflow,/scope:'tender'/,'tender analysis must never use the global project scope');
 assert.match(assistant,/options\.scope==='tender'\?'tender'/,'assistant transport must preserve the bounded tender scope');
 assert.match(assistantEdge,/if\(body\?\.scope==='tender'\)/,'server must branch on tender scope before project resolution');
