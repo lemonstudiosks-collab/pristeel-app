@@ -40,7 +40,11 @@ function websiteDomain(v){return normalizeDomain(v);}
 
 function blockedSourceDomain(d){d=normalizeDomain(d);if(!d)return false;for(const b of BLOCKED_SOURCE_DOMAINS)if(d===b||d.endsWith('.'+b))return true;return false;}
 const COMPANY_LEGAL_WORDS=new Set(['gmbh','mbh','co','kg','ag','se','srl','sro','sp','zoo','sa','sas','sasu','ltd','limited','inc','llc','bv','nv','oy','ab','aps','as','doo','d','o','gesellschaft','gruppe','group','company']);
+const GENERIC_COMPANY_WORDS=new Set(['stahl','stahlbau','stahlbauschlosserei','metall','metallbau','schlosserei','bau','construction','engineering','service','services','technik','technical','industrie','industrial','werk','werke','kunst']);
 function companyNameKey(v){return txt(v,300).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/&/g,' and ').replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(x=>x&&!COMPANY_LEGAL_WORDS.has(x)).join(' ').trim();}
+function companyTokens(v){return companyNameKey(v).split(/\s+/).filter(x=>x.length>=4&&!GENERIC_COMPANY_WORDS.has(x));}
+function domainPlausibleForCompany(name,domain){const d=normalizeDomain(domain).replace(/[^a-z0-9]/g,'');if(!d)return false;return companyTokens(name).some(t=>{const k=t.replace(/[^a-z0-9]/g,'');return k.length>=4&&(d.includes(k)||k.includes(d));});}
+function listingContactTrusted(contact,org){return !!(contact&&contact.draft_eligible!==false&&txt(contact.company_attribution,80)==='third_party_listing_name_match'&&txt(contact.source_type,80)==='third_party_listing'&&companyNameKey(contact.recipient_company_name||org?.name)===companyNameKey(org?.name));}
 function scopedOrganizations(action,winner){
   const orgs=Array.isArray(winner?.contact_enrichment?.organizations)?winner.contact_enrichment.organizations:[],target=companyNameKey(action?.target_company||winner?.name);
   if(!orgs.length)return[];
@@ -50,14 +54,14 @@ function scopedOrganizations(action,winner){
   return orgs.length===1?orgs:[];
 }
 function companyDomains(action,winner){
-  const out=new Set(),orgs=scopedOrganizations(action,winner),allOrgs=Array.isArray(winner?.contact_enrichment?.organizations)?winner.contact_enrichment.organizations:[];
-  const add=d=>{d=normalizeDomain(d);if(d&&!FREE_DOMAINS.has(d)&&!RESERVED_DOMAINS.has(d)&&!blockedSourceDomain(d))out.add(d);};
-  add(action?.company_domain);
-  add(action?.payload?.outreach_readiness_v1?.verified_company_domain);
-  for(const org of orgs)add(org?.domain||websiteDomain(org?.official_website));
+  const out=new Set(),orgs=scopedOrganizations(action,winner),allOrgs=Array.isArray(winner?.contact_enrichment?.organizations)?winner.contact_enrichment.organizations:[],winnerName=action?.target_company||winner?.name;
+  const add=(d,trust=false)=>{d=normalizeDomain(d);if(d&&!FREE_DOMAINS.has(d)&&!RESERVED_DOMAINS.has(d)&&!blockedSourceDomain(d)&&(trust||domainPlausibleForCompany(winnerName,d)))out.add(d);};
+  add(action?.company_domain,true);
+  add(action?.payload?.outreach_readiness_v1?.verified_company_domain,true);
+  for(const org of orgs)add(org?.domain||websiteDomain(org?.official_website),false);
   if(allOrgs.length<=1){
-    add(websiteDomain(winner?.website));
-    for(const u of Array.isArray(winner?.websites)?winner.websites:[])add(websiteDomain(u));
+    add(websiteDomain(winner?.website),false);
+    for(const u of Array.isArray(winner?.websites)?winner.websites:[])add(websiteDomain(u),false);
   }
   return out;
 }
@@ -84,19 +88,22 @@ function mergeCandidate(a,b){
 
 export function resolveTedDraftRecipients(action,tenderPayload,max=20){
   const winner=tenderPayload?.winner||{},domains=companyDomains(action,winner),rows=[];
-  const push=(email,meta={})=>{
-    const c=candidate(email,{...meta,allow_free_domain:false});if(!c||c.draft_eligible===false)return;
-    if(!belongsToCompany(c.email,domains))return;
+  const push=(email,meta={},trust='domain')=>{
+    const listing=trust==='listing';
+    const c=candidate(email,{...meta,allow_free_domain:listing});if(!c||c.draft_eligible===false)return;
+    if(listing){if(!listingContactTrusted(c,meta?.organization||null))return;}else if(!belongsToCompany(c.email,domains))return;
     const cr=confidenceRank(c.confidence),score=Number(c.score||0);if(cr<2&&score<80)return;
     const tier=contactTier(c.email,c),contact_quality_score=contactQualityScore(c.email,c);if(contact_quality_score<25)return;
-    rows.push({...c,contact_tier:tier,contact_quality_score,company_attribution:c.company_attribution||'verified_company_domain',recipient_company_domain:domainFromEmail(c.email)});
+    rows.push({...c,contact_tier:tier,contact_quality_score,company_attribution:c.company_attribution||(listing?'third_party_listing_name_match':'verified_company_domain'),recipient_company_domain:listing?null:domainFromEmail(c.email)});
   };
   const tedWinnerCanonical=String(winner?.identity_version||'').toLowerCase()==='ted-winner-canonical-v2'&&txt(winner?.identifier,120)&&txt(winner?.name,300);
   if(tedWinnerCanonical){
+    const provenance=new Set((Array.isArray(winner?.ted_declared_emails)?winner.ted_declared_emails:[]).map(normalizeEmail));
     const declared=[...(Array.isArray(winner?.emails)?winner.emails:[]),winner?.email].filter(Boolean);
     for(const email of declared){
       const e=normalizeEmail(email),ed=domainFromEmail(e);if(!e||!ed)continue;
-      const c=candidate(e,{confidence:'verified',score:100,priority:950,source_type:'ted_winner_organization',company_attribution:'ted_winner_organization',recipient_company_name:winner?.name,recipient_company_domain:ed,draft_eligible:true});
+      if(!provenance.has(e)&&!domainPlausibleForCompany(winner?.name,ed))continue;
+      const c=candidate(e,{confidence:'verified',score:100,priority:950,source_type:'ted_winner_organization',company_attribution:'ted_winner_organization',recipient_company_name:winner?.name,recipient_company_domain:ed,draft_eligible:true,allow_free_domain:provenance.has(e)});
       if(!c||c.draft_eligible===false)continue;
       const tier=contactTier(c.email,c),contact_quality_score=contactQualityScore(c.email,c);if(contact_quality_score<25)continue;
       rows.push({...c,contact_tier:tier,contact_quality_score,company_attribution:'ted_winner_organization',recipient_company_domain:ed});
@@ -107,10 +114,12 @@ export function resolveTedDraftRecipients(action,tenderPayload,max=20){
     push(r?.email||r?.value,{...r,priority:900});
   }
   for(const org of scopedOrganizations(action,winner)){
-    const od=normalizeDomain(org?.domain||websiteDomain(org?.official_website));if(!od)continue;
+    const od=normalizeDomain(org?.domain||websiteDomain(org?.official_website)),officialOk=!!od&&domainPlausibleForCompany(org?.name||winner?.name,od);
     for(const r of Array.isArray(org?.contacts)?org.contacts:[]){
       if(txt(r?.type,30).toLowerCase()!=='email')continue;
-      const email=r?.email||r?.value;if(!sameCompanyDomain(email,od))continue;
+      const email=r?.email||r?.value;
+      if(listingContactTrusted({...r,recipient_company_name:org?.name},org)){push(email,{...r,organization:org,priority:820+Math.min(99,Number(r?.score||0)),recipient_company_name:org?.name||null,recipient_company_domain:null},'listing');continue;}
+      if(!officialOk||!sameCompanyDomain(email,od))continue;
       push(email,{...r,priority:800+Math.min(99,Number(r?.score||0)),recipient_company_name:org?.name||null,recipient_company_domain:od});
     }
   }
