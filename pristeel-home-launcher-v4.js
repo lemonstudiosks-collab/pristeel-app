@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261004-launcher15-eventdetail1',clockTimer=0,weatherBusy=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false;
+var V='20261004-launcher16-forumcommand1',clockTimer=0,weatherBusy=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false;
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -159,7 +159,25 @@ var EVENT_REGISTRY=[{
  location:'Prishtinë, Kosovë',
  status:'Në përgatitje'
 }];
+var EVENT_COMPANIES=[
+ {id:'spie',name:'SPIE',contact:'Laura Ihl',contact_role:'Kontakt projekti / Procurement',participation:'Për t’u verifikuar',participation_code:'verify',meeting:'Pa kërkesë',meeting_code:'none',priority:'A',strategic:true,relation:'Marrëdhënie aktive PriSteel / TenneT BUNT',why:'SPIE është kontakt real dhe klient/projekt aktiv për PriSteel. Forumi mund të përdoret për ta zgjeruar bashkëpunimin për fabrication dhe external manufacturing capacity.',objective:'Verifiko pjesëmarrjen në Forum. Nëse merr pjesë, kërko takim të fokusuar te bashkëpunimi afatgjatë dhe projektet e ardhshme.',discussed:'PriSteel ka avancuar në sourcing shortlist të SPIE dhe më 2 tetor janë kërkuar dy mostra. Paralelisht vazhdon puna për TenneT BUNT.',decision:'Mos e shfaq SPIE si pjesëmarrës të konfirmuar pa verifikim në B2Match. Mbaje si target strategjik A.',plan:'Verifiko pjesëmarrjen; nëse po, kërko takim dhe përgatit briefing të shkurtër për kapacitetin e prodhimit dhe projektet e reja.',next:'Verifiko pjesëmarrjen'},
+ {id:'bilfinger',name:'Bilfinger',contact:'Ata Safak / Armin Gabriel',contact_role:'Group Procurement / Category Management',participation:'Për t’u verifikuar',participation_code:'verify',meeting:'Pa kërkesë',meeting_code:'none',priority:'A',strategic:true,relation:'Target strategjik me proces aktiv supplier qualification',why:'Bilfinger është target i rëndësishëm industrial për PriSteel dhe ekziston tashmë histori reale e supplier qualification.',objective:'Nëse Bilfinger është pjesëmarrës, përdore Forumin për takim të drejtpërdrejtë dhe për ta hapur rrugën e bashkëpunimit.',discussed:'Supplier qualification / LSA është punuar dhe ka mbetur çështja e komenteve dhe modelit ISO 9001.',decision:'Mbaje si target strategjik A; pjesëmarrja në Forum nuk konsiderohet e konfirmuar pa provë.',plan:'Verifiko listën e pjesëmarrësve; nëse Bilfinger figuron, kërko takim dhe përgatit statusin e qualification si briefing.',next:'Verifiko pjesëmarrjen'},
+ {id:'goldbeck',name:'GOLDBECK',contact:'—',contact_role:'Kontakt relevant për t’u identifikuar',participation:'Për t’u verifikuar',participation_code:'verify',meeting:'Pa kërkesë',meeting_code:'none',priority:'A',strategic:true,relation:'Target strategjik për industrial cooperation / market entry',why:'GOLDBECK është target i madh potencial për kapacitet prodhues, subcontracting dhe bashkëpunim industrial.',objective:'Të identifikohet personi relevant dhe të verifikohet pjesëmarrja përpara kërkesës për takim.',discussed:'Është përmendur si target strategjik i Forumit; nuk kemi evidencë të konfirmuar të pjesëmarrjes ose takim të kërkuar.',decision:'Mos e përziej me pjesëmarrësit e konfirmuar. Mbaje në targetet A deri në verifikim.',plan:'Kontrollo B2Match, identifiko kontaktin relevant dhe kërko takim vetëm nëse pjesëmarrja konfirmohet.',next:'Verifiko dhe gjej kontaktin'},
+ {id:'steelcobelimed',name:'SteelcoBelimed',contact:'Jochen Schlag',contact_role:'Kontakt i Forumit',participation:'I verifikuar në B2Match',participation_code:'confirmed',meeting:'Refuzuar',meeting_code:'declined',priority:'C',strategic:false,relation:'Kontakt i Forumit; portfolio mismatch i identifikuar',why:'Takimi u kërkua për të testuar përshtatshmërinë komerciale.',objective:'Nuk ka objektiv aktiv pas refuzimit dhe sqarimit të nevojës teknike.',discussed:'Jochen Schlag refuzoi kërkesën për takim më 1 tetor 2026. SteelcoBelimed kërkon tuba/fletë inox shumë të lustruara dhe rezistente, me certifikata 3.1 për makina farmaceutike; u identifikua mospërputhje me portofolin.',decision:'Mos harxho kohë me follow-up për këtë Forum, përveç nëse del një scope i ri relevant.',plan:'Mbaje vetëm si evidencë të Forumit dhe mësim për qualification të targeteve.',next:'Asnjë veprim'}
+];
+var EVENT_SESSIONS=[
+ {when:'28 tetor · 12:15',title:'Manufacturing supply chains'},
+ {when:'28 tetor · 12:30',title:'German–Kosovar industrial partnerships'},
+ {when:'28 tetor · 14:30',title:'Industrial 1:1'},
+ {when:'29 tetor · 10:30–13:20',title:'B2B meetings'}
+];
+var EVENT_OPPORTUNITIES=[
+ 'Managed Steel Production Network & External Manufacturing Capacity',
+ 'German–Kosovar Industrial Partnerships, Representation & Market Entry'
+];
+var EVENT_ACTIVITY_CACHE={};
 function eventById(id){id=S(id);for(var i=0;i<EVENT_REGISTRY.length;i++)if(S(EVENT_REGISTRY[i].id)===id)return EVENT_REGISTRY[i];return null}
+function eventCompanyById(id){id=S(id);for(var i=0;i<EVENT_COMPANIES.length;i++)if(S(EVENT_COMPANIES[i].id)===id)return EVENT_COMPANIES[i];return null}
 function eventsSurface(){
  var p=document.getElementById('page-workspace-events-forums');
  if(!p){var host=document.querySelector('.content');if(!host)return null;p=document.createElement('section');p.id='page-workspace-events-forums';p.className='page';host.appendChild(p)}
@@ -176,33 +194,160 @@ function eventActivityKind(subject){
  return'Aktivitet';
 }
 function eventActivityDate(v){try{return new Date(v).toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'})}catch(e){return''}}
-function renderEventActivity(p,rows){
- var box=p&&p.querySelector('[data-event-activity]');if(!box)return;
+function cleanEventActivity(rows){
  rows=A(rows);var seen={},clean=[];
  rows.forEach(function(r){
-  var key=(S(r.subject)+'|'+S(r.snippet).slice(0,180)).toLowerCase().replace(/\s+/g,' ').trim();if(!key||seen[key])return;seen[key]=true;clean.push(r);
+  var day=S(r.sent_at).slice(0,10),key=(S(r.subject)+'|'+day).toLowerCase().replace(/\s+/g,' ').trim();if(!key||seen[key])return;seen[key]=true;clean.push(r);
  });
- if(!clean.length){box.innerHTML='<div class="pef-empty">Ende nuk ka aktivitet të lidhur me këtë event.</div>';return}
- box.innerHTML=clean.slice(0,12).map(function(r){
-  return'<div class="pef-activity-row"><span class="pef-activity-dot"></span><span class="pef-activity-copy"><small>'+E(eventActivityKind(r.subject))+'</small><b>'+E(r.subject||'Aktivitet i Forumit')+'</b><em>'+E(eventActivityDate(r.sent_at))+'</em></span></div>';
+ return clean;
+}
+function activityRowsHtml(rows,limit){
+ rows=cleanEventActivity(rows);if(limit)rows=rows.slice(0,limit);
+ if(!rows.length)return'<div class="pef-empty">Ende nuk ka aktivitet të lidhur me këtë event.</div>';
+ return rows.map(function(r){
+  var open=r.gmail_url?' data-event-mail="'+E(r.gmail_url)+'" tabindex="0" role="button"':'';
+  return'<div class="pef-activity-row"'+open+'><span class="pef-activity-dot"></span><span class="pef-activity-copy"><small>'+E(eventActivityKind(r.subject))+'</small><b>'+E(r.subject||'Aktivitet i Forumit')+'</b><em>'+E(eventActivityDate(r.sent_at))+'</em></span></div>';
  }).join('');
 }
+function renderEventActivity(p,rows){
+ if(!p)return;EVENT_ACTIVITY_CACHE['d7c23392-f7e2-4f87-8205-e7ff637ac3aa']=A(rows);
+ p.querySelectorAll('[data-event-activity]').forEach(function(box){box.innerHTML=activityRowsHtml(rows,0)});
+ p.querySelectorAll('[data-event-activity-mini]').forEach(function(box){box.innerHTML=activityRowsHtml(rows,4)});
+ bindEventMailLinks(p);
+}
+function bindEventMailLinks(p){
+ p.querySelectorAll('[data-event-mail]').forEach(function(x){x.onclick=function(){try{window.open(x.getAttribute('data-event-mail'),'_blank','noopener')}catch(e){}}});
+}
 function loadEventActivity(ev,p){
- var box=p&&p.querySelector('[data-event-activity]');if(box)box.innerHTML='<div class="pef-empty">Duke ngarkuar aktivitetin…</div>';
- if(typeof window.supaFetch!=='function'){if(box)box.innerHTML='<div class="pef-empty">Aktiviteti nuk mund të ngarkohet tani.</div>';return}
+ var cached=EVENT_ACTIVITY_CACHE[ev.id];if(cached){renderEventActivity(p,cached);return}
+ var boxes=p?p.querySelectorAll('[data-event-activity],[data-event-activity-mini]'):[];
+ boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Duke ngarkuar aktivitetin…</div>'});
+ if(typeof window.supaFetch!=='function'){boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Aktiviteti nuk mund të ngarkohet tani.</div>'});return}
  var path='project_emails?select=id,sent_at,subject,direction,snippet,gmail_url&project_id=eq.'+encodeURIComponent(ev.id)+'&order=sent_at.desc&limit=20';
- window.supaFetch(path).then(function(rows){renderEventActivity(p,rows)}).catch(function(){if(box)box.innerHTML='<div class="pef-empty">Aktiviteti nuk mund të ngarkohet tani.</div>'});
+ window.supaFetch(path).then(function(rows){renderEventActivity(p,rows)}).catch(function(){boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Aktiviteti nuk mund të ngarkohet tani.</div>'})});
+}
+function eventStats(){
+ return{
+  participants:EVENT_COMPANIES.filter(function(x){return x.participation_code==='confirmed'}).length,
+  strategic:EVENT_COMPANIES.filter(function(x){return x.strategic}).length,
+  requested:EVENT_COMPANIES.filter(function(x){return x.meeting_code!=='none'}).length,
+  confirmed:EVENT_COMPANIES.filter(function(x){return x.meeting_code==='accepted'}).length,
+  declined:EVENT_COMPANIES.filter(function(x){return x.meeting_code==='declined'}).length
+ };
+}
+function badgeClass(code){return code==='confirmed'||code==='accepted'?'is-good':code==='declined'?'is-bad':code==='verify'||code==='pending'?'is-warn':'is-neutral'}
+function eventTabsHtml(active){
+ var tabs=[['overview','Përmbledhje'],['companies','Kompanitë & Takimet'],['docs','Dokumentet'],['activity','Aktiviteti'],['after','Pas Forumit']];
+ return'<nav class="pef-tabs">'+tabs.map(function(t){return'<button type="button" data-event-tab="'+t[0]+'" class="'+(active===t[0]?'active':'')+'">'+t[1]+'</button>'}).join('')+'</nav>';
+}
+function eventOverviewHtml(ev){
+ var s=eventStats();
+ var actions=[
+  ['Kontrollo listën e pjesëmarrësve të rinj','B2Match · mos i përziej me targetet e paverifikuara'],
+  ['Verifiko SPIE, Bilfinger dhe GOLDBECK','3 targete strategjike A presin verifikim të pjesëmarrjes'],
+  ['Kërko takim vetëm pas verifikimit','Nëse targeti figuron në B2Match, atëherë dërgo kërkesën'],
+  ['Përgatit briefing për targetet A','SPIE · Bilfinger · GOLDBECK']
+ ];
+ return'<section data-event-panel="overview" class="pef-panel active">'
+  +'<div class="pef-kpis">'
+   +'<div class="pef-kpi is-blue"><small>Pjesëmarrës të verifikuar</small><b>'+s.participants+'</b><em>evidencë B2Match</em></div>'
+   +'<div class="pef-kpi is-green"><small>Targete strategjike</small><b>'+s.strategic+'</b><em>prioritet A</em></div>'
+   +'<div class="pef-kpi is-purple"><small>Kërkesa takimi</small><b>'+s.requested+'</b><em>të njohura</em></div>'
+   +'<div class="pef-kpi is-amber"><small>Takime të konfirmuara</small><b>'+s.confirmed+'</b><em>deri tani</em></div>'
+   +'<div class="pef-kpi is-red"><small>Takime të refuzuara</small><b>'+s.declined+'</b><em>deri tani</em></div>'
+  +'</div>'
+  +'<div class="pef-overview-grid">'
+   +'<section class="pef-box"><h2>Tani — çfarë duhet të bëjmë</h2><div class="pef-action-list">'+actions.map(function(a,i){return'<div class="pef-action"><span class="pef-check">'+(i===0?'!':'')+'</span><span><b>'+E(a[0])+'</b><small>'+E(a[1])+'</small></span></div>'}).join('')+'</div></section>'
+   +'<section class="pef-box"><h2>Agjenda jonë</h2><div class="pef-session-list">'+EVENT_SESSIONS.map(function(x){return'<div><small>'+E(x.when)+'</small><b>'+E(x.title)+'</b></div>'}).join('')+'</div></section>'
+  +'</div>'
+  +'<div class="pef-overview-grid pef-overview-lower">'
+   +'<section class="pef-box"><h2>Opportunity-t tona</h2><div class="pef-opps">'+EVENT_OPPORTUNITIES.map(function(x){return'<div>'+E(x)+'</div>'}).join('')+'</div></section>'
+   +'<section class="pef-box"><h2>Aktiviteti i fundit</h2><div data-event-activity-mini></div></section>'
+  +'</div>'
+ +'</section>';
+}
+function companyRowHtml(x){
+ return'<button type="button" class="pef-company-row" data-event-company="'+E(x.id)+'">'
+  +'<span><b>'+E(x.name)+'</b><small>'+E(x.contact)+'</small></span>'
+  +'<span class="pef-badge '+badgeClass(x.participation_code)+'">'+E(x.participation)+'</span>'
+  +'<span class="pef-badge '+badgeClass(x.meeting_code)+'">'+E(x.meeting)+'</span>'
+  +'<span class="pef-priority '+(x.priority==='A'?'is-a':x.priority==='B'?'is-b':'is-c')+'">'+E(x.priority)+'</span>'
+  +'<span>'+E(x.next)+'</span>'
+  +'<i>›</i>'
+ +'</button>';
+}
+function companyDetailHtml(x){
+ if(!x)return'<div class="pef-company-empty">Zgjidh një kompani.</div>';
+ return'<div class="pef-company-detail-head"><small>DETAJET E KOMPANISË</small><h3>'+E(x.name)+'</h3><div><span class="pef-badge '+badgeClass(x.participation_code)+'">'+E(x.participation)+'</span>'+(x.strategic?'<span class="pef-badge is-purple">Target strategjik</span>':'')+'</div></div>'
+  +'<dl class="pef-company-dl">'
+   +'<dt>Personi kryesor</dt><dd><b>'+E(x.contact)+'</b><small>'+E(x.contact_role)+'</small></dd>'
+   +'<dt>Statusi i takimit</dt><dd><span class="pef-badge '+badgeClass(x.meeting_code)+'">'+E(x.meeting)+'</span></dd>'
+   +'<dt>Prioriteti</dt><dd><span class="pef-priority '+(x.priority==='A'?'is-a':x.priority==='B'?'is-b':'is-c')+'">'+E(x.priority)+'</span></dd>'
+   +'<dt>Marrëdhënia</dt><dd>'+E(x.relation)+'</dd>'
+   +'<dt>Pse na intereson</dt><dd>'+E(x.why)+'</dd>'
+   +'<dt>Objektivi në Forum</dt><dd>'+E(x.objective)+'</dd>'
+  +'</dl>'
+  +'<div class="pef-company-notes"><div><small>Çfarë kemi biseduar</small><p>'+E(x.discussed)+'</p></div><div><small>Çfarë kemi vendosur</small><p>'+E(x.decision)+'</p></div><div><small>Çfarë planifikojmë</small><p>'+E(x.plan)+'</p></div><div class="is-next"><small>Hapi i radhës</small><p>'+E(x.next)+'</p></div></div>';
+}
+function filterEventCompanies(p){
+ var q=S(p.querySelector('[data-company-search]')&&p.querySelector('[data-company-search]').value).toLowerCase().trim();
+ var part=S(p.querySelector('[data-company-participation]')&&p.querySelector('[data-company-participation]').value);
+ var meet=S(p.querySelector('[data-company-meeting]')&&p.querySelector('[data-company-meeting]').value);
+ return EVENT_COMPANIES.filter(function(x){
+  if(q&&[x.name,x.contact,x.relation,x.why].join(' ').toLowerCase().indexOf(q)<0)return false;
+  if(part&&x.participation_code!==part)return false;
+  if(meet&&x.meeting_code!==meet)return false;
+  return true;
+ });
+}
+function renderEventCompanies(p){
+ var list=p.querySelector('[data-company-list]');if(!list)return;
+ var rows=filterEventCompanies(p);
+ list.innerHTML=rows.length?rows.map(companyRowHtml).join(''):'<div class="pef-empty">Nuk ka kompani me këta filtra.</div>';
+ list.querySelectorAll('[data-event-company]').forEach(function(x){x.onclick=function(){p.dataset.eventCompany=x.getAttribute('data-event-company');renderEventCompanyDetail(p)}});
+}
+function renderEventCompanyDetail(p){
+ var box=p.querySelector('[data-company-detail]');if(!box)return;
+ var id=p.dataset.eventCompany||'spie',x=eventCompanyById(id);box.innerHTML=companyDetailHtml(x);
+}
+function eventCompaniesHtml(){
+ return'<section data-event-panel="companies" class="pef-panel">'
+  +'<div class="pef-company-toolbar"><input type="search" data-company-search placeholder="Kërko kompani ose person…"><select data-company-participation><option value="">Pjesëmarrja: të gjitha</option><option value="confirmed">Të verifikuar</option><option value="verify">Për t’u verifikuar</option></select><select data-company-meeting><option value="">Takimet: të gjitha</option><option value="none">Pa kërkesë</option><option value="accepted">Konfirmuar</option><option value="declined">Refuzuar</option></select></div>'
+  +'<div class="pef-company-grid"><div class="pef-company-table"><div class="pef-company-head"><span>Kompania / personi</span><span>Pjesëmarrja</span><span>Takimi</span><span>Prioriteti</span><span>Hapi tjetër</span><span></span></div><div data-company-list></div></div><aside class="pef-company-side" data-company-detail></aside></div>'
+ +'</section>';
+}
+function eventDocsHtml(){
+ return'<section data-event-panel="docs" class="pef-panel"><div class="pef-doc-grid">'
+  +'<section class="pef-box"><h2>Dokumentet & linket</h2><a class="pef-doc-link" href="https://www.b2match.com/e/german-kosovar-economic-forum" target="_blank" rel="noopener"><b>Faqja e eventit (B2Match)</b><small>Hap faqen zyrtare të Forumit</small></a><div class="pef-doc-link is-static"><b>PRISTEEL_GK_Economic_Forum_2026_Short_Deck_EN.pdf</b><small>Short deck i përgatitur për Forum</small></div><div class="pef-doc-link is-static"><b>Profili PriSteel</b><small>Aktivizuar dhe i dukshëm për pjesëmarrësit</small></div></section>'
+  +'<section class="pef-box"><h2>Agjenda e zgjedhur</h2><div class="pef-session-list">'+EVENT_SESSIONS.map(function(x){return'<div><small>'+E(x.when)+'</small><b>'+E(x.title)+'</b></div>'}).join('')+'</div></section>'
+  +'<section class="pef-box pef-doc-wide"><h2>Opportunity-t tona në Forum</h2><div class="pef-opps">'+EVENT_OPPORTUNITIES.map(function(x){return'<div>'+E(x)+'</div>'}).join('')+'</div></section>'
+ +'</div></section>';
+}
+function eventActivityHtml(){return'<section data-event-panel="activity" class="pef-panel"><section class="pef-box"><h2>Aktiviteti i Forumit</h2><p class="pef-box-intro">Komunikimet e lidhura me Forumin. Kliko një rresht kur ka link Gmail.</p><div data-event-activity></div></section></section>'}
+function eventAfterHtml(){
+ return'<section data-event-panel="after" class="pef-panel"><div class="pef-after-grid"><div class="pef-box"><h2>Pas Forumit</h2><p class="pef-box-intro">Kjo pjesë përdoret pas 29 tetorit për follow-up, lead-et e reja dhe opportunity-t që dalin nga takimet.</p><div class="pef-after-items"><div><b>Follow-up me kompanitë</b><small>Do të mblidhen këtu sipas takimeve të zhvilluara.</small></div><div><b>Opportunity të reja</b><small>Vetëm ato që kanë evidencë reale nga takimet.</small></div><div><b>Vendime dhe next steps</b><small>Për secilën kompani veçmas.</small></div></div></div></div></section>';
+}
+function activateEventTab(p,key){
+ p.dataset.eventTab=key;
+ p.querySelectorAll('[data-event-tab]').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-event-tab')===key)});
+ p.querySelectorAll('[data-event-panel]').forEach(function(x){x.classList.toggle('active',x.getAttribute('data-event-panel')===key)});
+}
+function bindEventWorkspace(p,ev){
+ p.querySelectorAll('[data-event-tab]').forEach(function(x){x.onclick=function(){activateEventTab(p,x.getAttribute('data-event-tab'))}});
+ var q=p.querySelector('[data-company-search]'),a=p.querySelector('[data-company-participation]'),m=p.querySelector('[data-company-meeting]');
+ if(q)q.oninput=function(){renderEventCompanies(p)};if(a)a.onchange=function(){renderEventCompanies(p)};if(m)m.onchange=function(){renderEventCompanies(p)};
+ renderEventCompanies(p);renderEventCompanyDetail(p);
+ loadEventActivity(ev,p);
 }
 function eventDetail(id){
  var ev=eventById(id),p=eventsSurface();if(!ev||!p)return false;
- p.innerHTML='<div class="pef-page"><header class="pef-head"><button type="button" class="pef-back" data-event-detail-back>← Kthehu</button><div><span>EVENTE DHE FORUME</span><h1>'+E(ev.title)+'</h1><p>'+E(ev.dates)+' · '+E(ev.location)+'</p></div></header>'
-  +'<section class="pef-detail">'
-   +'<div class="pef-detail-summary"><div><small>Statusi</small><b>'+E(ev.status)+'</b></div><div><small>Data</small><b>'+E(ev.dates)+'</b></div><div><small>Vendi</small><b>'+E(ev.location)+'</b></div></div>'
-   +'<section class="pef-focus"><h2>Përmbledhje</h2><p>Ky workspace mban vetëm aktivitetin e eventit: komunikimet, takimet, opportunity-t dhe follow-up-et. Nuk përdor workflow të RFQ-së apo të Projektit.</p></section>'
-   +'<section class="pef-activity"><h2>Aktiviteti i fundit</h2><div data-event-activity></div></section>'
-  +'</section></div>';
+ var s=eventStats();
+ p.dataset.eventCompany='spie';
+ p.innerHTML='<div class="pef-page pef-command"><header class="pef-head pef-command-head"><button type="button" class="pef-back" data-event-detail-back>← Kthehu</button><div><span>EVENTE DHE FORUME</span><h1>'+E(ev.title)+'</h1><p>'+E(ev.dates)+' · '+E(ev.location)+'</p></div><span class="pef-status-pill">'+E(ev.status)+'</span></header>'
+  +eventTabsHtml('overview')
+  +'<main class="pef-detail">'+eventOverviewHtml(ev)+eventCompaniesHtml()+eventDocsHtml()+eventActivityHtml()+eventAfterHtml()+'</main></div>';
  var back=p.querySelector('[data-event-detail-back]');if(back)back.onclick=function(){return eventsPage()};
- loadEventActivity(ev,p);window.scrollTo({top:0,behavior:'auto'});return true;
+ bindEventWorkspace(p,ev);window.scrollTo({top:0,behavior:'auto'});return true;
 }
 function eventsPage(){
  var p=eventsSurface();if(!p)return false;
@@ -325,12 +470,12 @@ function css(){
 '.phl-main-grid{width:min(1180px,100%);margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.phl-main-card{min-height:158px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr;gap:14px;padding:20px;border:1px solid #d9dcda;border-radius:18px;background:#fff;color:#1e3140;text-align:left;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.phl-main-card:hover,.phl-main-card:focus-visible{transform:translateY(-2px);border-color:#a9c7d1;box-shadow:0 10px 24px rgba(35,54,65,.065);outline:0}',
 '.phl-card-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid #e1e4e2;border-radius:13px;background:#f8f9f7;color:#367991}.phl-card-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}.phl-main-copy{align-self:end}.phl-main-copy b{display:block;font-size:19px;line-height:1.18;letter-spacing:-.35px}.phl-main-copy small{display:block;margin-top:6px;color:#6f7d82;font-size:11.5px;line-height:1.4}.phl-main-card>i{align-self:start;width:32px;height:32px;display:grid;place-items:center;border:1px solid #e0e3e1;border-radius:50%;color:#315e72}.phl-main-card>i svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}',
 '.phl-secondary{width:min(1180px,100%);margin:24px auto 0;padding-top:15px;border-top:1px solid #d9dcda}.phl-secondary h2{margin:0 0 9px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#7d898e}.phl-secondary>div{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.phl-small-card{min-height:64px;display:grid;grid-template-columns:34px minmax(0,1fr) 14px;align-items:center;gap:8px;padding:9px 10px;border:1px solid #dfe1df;border-radius:13px;background:#fff;color:#263a48;text-align:left;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}.phl-small-card:hover,.phl-small-card:focus-visible{transform:translateY(-2px);border-color:#aec8d0;box-shadow:0 9px 19px rgba(35,54,65,.065);outline:0}.phl-small-card .phl-card-icon{width:34px;height:34px;border-radius:10px}.phl-small-card .phl-card-icon svg{width:18px;height:18px}.phl-small-card b{display:block;font-size:12px;line-height:1.18}.phl-small-card small{display:none}.phl-small-card>i{color:#6f858e}.phl-small-card>i svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2}.phl-small-card[data-open="projects"] .phl-card-icon{background:#edf4fa;border-color:#d2e1eb;color:#477a9a}.phl-small-card[data-open="partners"] .phl-card-icon{background:#eef7f4;border-color:#d4e6df;color:#4f8277}.phl-small-card[data-open="finance"] .phl-card-icon{background:#f1f7ee;border-color:#dbe8d6;color:#66835d}.phl-small-card[data-open="currency"] .phl-card-icon{background:#fbf6e9;border-color:#ece0bc;color:#987a3c}.phl-small-card[data-open="steel"] .phl-card-icon{background:#f0f3f6;border-color:#dbe0e6;color:#697b8d}.phl-small-card[data-open="events"] .phl-card-icon{background:#f4f0f7;border-color:#e1d7e8;color:#78678b}',
-'.pef-page{min-height:100vh;background:#f5f7f7;padding:22px 26px 44px;color:#2a383e}.pef-head{max-width:1180px;margin:0 auto 18px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}.pef-back{height:38px;border:1px solid #4f97af;border-radius:10px;background:#4f97af;color:#fff;padding:0 14px;font-weight:750;cursor:pointer}.pef-head>div>span{font-size:9px;letter-spacing:.12em;color:#85949a;font-weight:800}.pef-head h1{margin:3px 0 0;font-size:26px;color:#26363d}.pef-head p{margin:5px 0 0;color:#7d898e;font-size:11.5px}.pef-list,.pef-detail{max-width:1180px;margin:0 auto}.pef-list h2,.pef-focus h2,.pef-activity h2{margin:0 0 10px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7d898e}.pef-event-card{width:min(560px,100%);min-height:96px;display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center;padding:15px 16px;border:1px solid #d9e1e4;border-radius:14px;background:#fff;color:#2a383e;text-align:left;cursor:pointer;box-shadow:0 7px 18px rgba(39,60,71,.04);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}.pef-event-card:hover,.pef-event-card:focus-visible{transform:translateY(-2px);border-color:#9fbfc9;box-shadow:0 10px 24px rgba(39,60,71,.08);outline:0}.pef-event-card .phl-card-icon{width:42px;height:42px;border-radius:11px;background:#f4f0f7;border-color:#e1d7e8;color:#78678b}.pef-event-copy small{display:block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#6f8d78}.pef-event-copy b{display:block;margin-top:5px;font-size:15px;color:#31536a}.pef-event-copy em{display:block;margin-top:5px;font-style:normal;font-size:10.5px;color:#7b8a90}.pef-event-open{font-size:10px;font-weight:800;color:#4f879d;white-space:nowrap}.pef-detail-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}.pef-detail-summary>div,.pef-focus,.pef-activity{border:1px solid #dce3e5;border-radius:14px;background:#fff}.pef-detail-summary>div{padding:14px 16px}.pef-detail-summary small{display:block;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#829096}.pef-detail-summary b{display:block;margin-top:5px;font-size:14px;color:#31536a}.pef-focus{padding:16px;margin-bottom:12px}.pef-focus p{margin:0;color:#66777f;font-size:11.5px;line-height:1.55}.pef-activity{padding:16px}.pef-activity-row{display:grid;grid-template-columns:10px minmax(0,1fr);gap:10px;padding:11px 0;border-bottom:1px solid #edf0f1}.pef-activity-row:last-child{border-bottom:0}.pef-activity-dot{width:8px;height:8px;margin-top:5px;border-radius:50%;background:#5ca0b7}.pef-activity-copy small{display:block;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#7b9099}.pef-activity-copy b{display:block;margin-top:3px;font-size:12px;color:#314c58}.pef-activity-copy em{display:block;margin-top:3px;font-style:normal;font-size:9.5px;color:#8a969a}.pef-empty{padding:18px 4px;color:#819096;font-size:11px}',
+'.pef-page{min-height:100vh;background:#f5f7f7;padding:20px 24px 44px;color:#2a383e}.pef-head{max-width:1380px;margin:0 auto 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center}.pef-command-head{grid-template-columns:auto minmax(0,1fr) auto}.pef-back{height:38px;border:1px solid #4f97af;border-radius:10px;background:#4f97af;color:#fff;padding:0 14px;font-weight:750;cursor:pointer}.pef-head>div>span{font-size:9px;letter-spacing:.12em;color:#85949a;font-weight:800}.pef-head h1{margin:3px 0 0;font-size:27px;color:#26363d;letter-spacing:-.3px}.pef-head p{margin:5px 0 0;color:#7d898e;font-size:11.5px}.pef-status-pill{padding:7px 11px;border-radius:999px;background:#f1ecfa;color:#735f8d;font-size:10px;font-weight:800;white-space:nowrap}.pef-list,.pef-detail,.pef-tabs{max-width:1380px;margin-left:auto;margin-right:auto}.pef-list h2,.pef-box h2{margin:0 0 10px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#617680}.pef-event-card{width:min(560px,100%);min-height:96px;display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center;padding:15px 16px;border:1px solid #d9e1e4;border-radius:14px;background:#fff;color:#2a383e;text-align:left;cursor:pointer;box-shadow:0 7px 18px rgba(39,60,71,.04);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}.pef-event-card:hover,.pef-event-card:focus-visible{transform:translateY(-2px);border-color:#9fbfc9;box-shadow:0 10px 24px rgba(39,60,71,.08);outline:0}.pef-event-card .phl-card-icon{width:42px;height:42px;border-radius:11px;background:#f4f0f7;border-color:#e1d7e8;color:#78678b}.pef-event-copy small{display:block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#6f8d78}.pef-event-copy b{display:block;margin-top:5px;font-size:15px;color:#31536a}.pef-event-copy em{display:block;margin-top:5px;font-style:normal;font-size:10.5px;color:#7b8a90}.pef-event-open{font-size:10px;font-weight:800;color:#4f879d;white-space:nowrap}.pef-tabs{display:flex;gap:7px;margin-bottom:14px;overflow:auto;padding-bottom:2px}.pef-tabs button{height:38px;padding:0 14px;border:1px solid #d9e1e4;border-radius:10px;background:#fff;color:#385364;font-size:10.5px;font-weight:750;white-space:nowrap;cursor:pointer}.pef-tabs button.active{border-color:#8cc4d6;background:#eaf7fb;color:#217493}.pef-panel{display:none}.pef-panel.active{display:block}.pef-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}.pef-kpi{min-height:88px;border:1px solid #dce4e7;border-radius:14px;background:#fff;padding:14px 15px;box-shadow:0 5px 14px rgba(39,60,71,.035)}.pef-kpi small{display:block;font-size:9px;font-weight:800;color:#536c78}.pef-kpi b{display:block;margin-top:7px;font-size:25px;line-height:1;color:#243b49}.pef-kpi em{display:block;margin-top:6px;font-style:normal;font-size:9.5px;color:#84939a}.pef-kpi.is-blue{background:#f4f9fc}.pef-kpi.is-green{background:#f3faf6}.pef-kpi.is-purple{background:#f8f5fb}.pef-kpi.is-amber{background:#fcf8ef}.pef-kpi.is-red{background:#fcf5f5}.pef-overview-grid{display:grid;grid-template-columns:1.08fr .92fr;gap:12px}.pef-overview-lower{margin-top:12px}.pef-box{border:1px solid #dce4e7;border-radius:14px;background:#fff;padding:16px;box-shadow:0 5px 14px rgba(39,60,71,.025)}.pef-box-intro{margin:-2px 0 10px;color:#7b8c93;font-size:10.5px;line-height:1.45}.pef-action-list{display:grid}.pef-action{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid #edf0f1}.pef-action:last-child{border-bottom:0}.pef-check{width:18px;height:18px;border:1px solid #cddadd;border-radius:5px;display:grid;place-items:center;color:#c18328;font-size:10px;font-weight:900;background:#fafcfc}.pef-action b{display:block;font-size:11.5px;color:#294453}.pef-action small{display:block;margin-top:3px;font-size:9.5px;color:#819096}.pef-session-list>div{display:grid;grid-template-columns:126px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:1px solid #edf0f1}.pef-session-list>div:last-child{border-bottom:0}.pef-session-list small{font-size:9.5px;color:#78909b}.pef-session-list b{font-size:10.5px;color:#304d5d}.pef-opps{display:grid;gap:8px}.pef-opps>div{padding:10px 12px;border-radius:10px;background:#f7fafb;border:1px solid #e2e8ea;font-size:10.5px;font-weight:700;color:#355667}.pef-company-toolbar{display:grid;grid-template-columns:minmax(240px,1fr) 190px 180px;gap:8px;margin-bottom:10px}.pef-company-toolbar input,.pef-company-toolbar select{height:38px;border:1px solid #d9e2e5;border-radius:10px;background:#fff;color:#385363;padding:0 11px;font-size:10.5px;outline:none}.pef-company-toolbar input:focus,.pef-company-toolbar select:focus{border-color:#78aec0;box-shadow:0 0 0 2px rgba(79,151,175,.08)}.pef-company-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;align-items:start}.pef-company-table,.pef-company-side{border:1px solid #dce4e7;border-radius:14px;background:#fff;overflow:hidden}.pef-company-head,.pef-company-row{display:grid;grid-template-columns:minmax(180px,1.25fr) minmax(130px,.85fr) minmax(110px,.7fr) 70px minmax(150px,1fr) 20px;gap:8px;align-items:center}.pef-company-head{padding:10px 12px;background:#f7f9fa;border-bottom:1px solid #e5eaec;color:#7b8e97;font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}.pef-company-row{width:100%;padding:11px 12px;border:0;border-bottom:1px solid #edf0f1;background:#fff;color:#334e5d;text-align:left;cursor:pointer}.pef-company-row:last-child{border-bottom:0}.pef-company-row:hover,.pef-company-row:focus-visible{background:#f8fbfc;outline:0}.pef-company-row>span:first-child b{display:block;font-size:11px;color:#2b4655}.pef-company-row>span:first-child small{display:block;margin-top:2px;font-size:9px;color:#87959a}.pef-company-row>span:nth-child(5){font-size:9.5px}.pef-company-row i{font-style:normal;font-size:18px;color:#70a1b2}.pef-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:5px 7px;border-radius:999px;font-size:8.5px;font-weight:800;line-height:1.1}.pef-badge.is-good{background:#e9f7ee;color:#3f7e58}.pef-badge.is-bad{background:#fceaea;color:#ad4a4a}.pef-badge.is-warn{background:#fbf3df;color:#9a7328}.pef-badge.is-purple{background:#f0ebf8;color:#735f8e}.pef-badge.is-neutral{background:#eef2f4;color:#74858c}.pef-priority{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-size:9px;font-weight:900}.pef-priority.is-a{background:#fde7e7;color:#c84d4d}.pef-priority.is-b{background:#fcf1dc;color:#a77425}.pef-priority.is-c{background:#eef2f4;color:#71838c}.pef-company-side{position:sticky;top:12px;padding:15px}.pef-company-detail-head>small{font-size:8.5px;letter-spacing:.08em;color:#7e9098;font-weight:800}.pef-company-detail-head h3{margin:5px 0 8px;font-size:18px;color:#294756}.pef-company-detail-head>div{display:flex;gap:5px;flex-wrap:wrap}.pef-company-dl{display:grid;grid-template-columns:105px minmax(0,1fr);gap:8px 10px;margin:15px 0 0;padding-top:14px;border-top:1px solid #edf0f1}.pef-company-dl dt{font-size:8.5px;font-weight:800;color:#6f828b}.pef-company-dl dd{margin:0;font-size:9.5px;line-height:1.42;color:#3c5663}.pef-company-dl dd b{display:block}.pef-company-dl dd small{display:block;margin-top:2px;color:#86949a}.pef-company-notes{margin-top:14px;display:grid;gap:8px}.pef-company-notes>div{padding:10px 11px;border-radius:10px;background:#f7f9fa}.pef-company-notes>div.is-next{background:#edf7fa;border:1px solid #d5e7ed}.pef-company-notes small{font-size:8px;font-weight:850;letter-spacing:.06em;text-transform:uppercase;color:#71858e}.pef-company-notes p{margin:4px 0 0;font-size:9.5px;line-height:1.48;color:#3d5967}.pef-doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.pef-doc-wide{grid-column:1/-1}.pef-doc-link{display:block;padding:11px 0;border-bottom:1px solid #edf0f1;text-decoration:none;color:#335364}.pef-doc-link:last-child{border-bottom:0}.pef-doc-link b{display:block;font-size:11px}.pef-doc-link small{display:block;margin-top:3px;font-size:9.5px;color:#86949a}.pef-doc-link:not(.is-static):hover b{text-decoration:underline}.pef-activity-row{display:grid;grid-template-columns:10px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid #edf0f1}.pef-activity-row:last-child{border-bottom:0}.pef-activity-row[role=button]{cursor:pointer}.pef-activity-row[role=button]:hover{background:#f8fbfc}.pef-activity-dot{width:8px;height:8px;margin-top:5px;border-radius:50%;background:#5ca0b7}.pef-activity-copy small{display:block;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:#7b9099}.pef-activity-copy b{display:block;margin-top:3px;font-size:10.5px;color:#314c58}.pef-activity-copy em{display:block;margin-top:3px;font-style:normal;font-size:9px;color:#8a969a}.pef-empty{padding:18px 4px;color:#819096;font-size:10.5px}.pef-after-grid{display:grid;grid-template-columns:minmax(0,780px);gap:12px}.pef-after-items{display:grid;gap:8px}.pef-after-items>div{padding:11px 12px;border:1px solid #e3e8ea;border-radius:10px;background:#f8fafb}.pef-after-items b{display:block;font-size:10.5px;color:#344f5e}.pef-after-items small{display:block;margin-top:3px;font-size:9.5px;color:#819096}',
 '.phl-modal-bg{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:24px;background:rgba(18,29,36,.24);backdrop-filter:blur(8px)}.phl-modal{width:min(640px,96vw);max-height:86vh;overflow:auto;border:1px solid #d9dcda;border-radius:22px;background:#fff;box-shadow:0 28px 80px rgba(22,37,47,.2)}.phl-modal>header{display:flex;justify-content:space-between;gap:20px;padding:22px 24px;border-bottom:1px solid #e5e6e4}.phl-modal h2{margin:0;font-size:23px}.phl-modal p{margin:5px 0 0;color:#79858a;font-size:11px;line-height:1.45}.phl-modal header button{width:36px;height:36px;border:1px solid #e1e3e1;border-radius:50%;background:#fff;color:#53676f;cursor:pointer}.phl-modal header button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}.phl-modal-body{padding:22px 24px}.phl-state{padding:26px;text-align:center;color:#7b878b;font-size:12px}',
 '.phl-calc{max-width:360px;margin:auto}.phl-calc input{width:100%;height:64px;border:1px solid #dde0de;border-radius:14px;padding:0 16px;text-align:right;font-size:28px;background:#fafaf8}.phl-calc>div{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.phl-calc button{height:50px;border:1px solid #e0e2df;border-radius:12px;background:#fff;font-size:16px;color:#2d4552;cursor:pointer}.phl-calc button:hover{background:#f4f6f5}',
 '.phl-rate-top{display:flex;justify-content:space-between;margin-bottom:12px}.phl-rate-top b{font-size:18px}.phl-rate-top span{font-size:10px;color:#859095}.phl-rates{display:grid;grid-template-columns:repeat(2,1fr);border:1px solid #e0e3e1;border-radius:14px;overflow:hidden}.phl-rates>div{padding:16px;border-right:1px solid #e7e8e6;border-bottom:1px solid #e7e8e6}.phl-rates>div:nth-child(2n){border-right:0}.phl-rates>div:nth-last-child(-n+2){border-bottom:0}.phl-rates span{font-size:10px;color:#7f8b90}.phl-rates b{display:block;margin-top:4px;font-size:20px}.phl-prices{border:1px solid #e1e3e1;border-radius:14px;overflow:hidden}.phl-prices>div{display:grid;grid-template-columns:minmax(0,1fr) auto 88px;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #e8e9e7}.phl-prices>div:last-child{border-bottom:0}.phl-prices b{font-size:12px}.phl-prices small{display:block;margin-top:3px;color:#849095;font-size:9.5px}.phl-prices strong{font-size:13px;color:#2f667b}.phl-prices em{font-style:normal;font-size:9.5px;color:#8a9498;text-align:right}',
 '@media(max-width:1260px){.phl-top{align-items:flex-start}.phl-top nav{flex-wrap:wrap;justify-content:flex-end}.phl-top nav>button,.phl-meta{min-height:52px;padding:0 12px}.phl-main-grid{grid-template-columns:repeat(2,1fr)}}',
-'@media(max-width:760px){.phl-top{display:block;padding:14px 16px}.phl-top nav{margin-top:12px;display:grid;grid-template-columns:repeat(2,1fr)}.phl-top nav>*{border-left:0!important;border-top:1px solid #e4e5e3!important}.phl-shell main{width:calc(100% - 24px);padding:30px 0 90px}.phl-intro h1{font-size:32px}.phl-search{height:58px;grid-template-columns:24px 1fr 40px}.phl-search kbd{display:none}.phl-main-grid,.phl-secondary>div{grid-template-columns:1fr}.phl-main-card{min-height:142px}.phl-small-card{min-height:82px}.pef-page{padding:18px 14px 36px}.pef-head{grid-template-columns:1fr}.pef-back{width:max-content}.pef-detail-summary{grid-template-columns:1fr}.pef-event-card{grid-template-columns:40px minmax(0,1fr)}.pef-event-open{grid-column:2}}'
+'@media(max-width:760px){.phl-top{display:block;padding:14px 16px}.phl-top nav{margin-top:12px;display:grid;grid-template-columns:repeat(2,1fr)}.phl-top nav>*{border-left:0!important;border-top:1px solid #e4e5e3!important}.phl-shell main{width:calc(100% - 24px);padding:30px 0 90px}.phl-intro h1{font-size:32px}.phl-search{height:58px;grid-template-columns:24px 1fr 40px}.phl-search kbd{display:none}.phl-main-grid,.phl-secondary>div{grid-template-columns:1fr}.phl-main-card{min-height:142px}.phl-small-card{min-height:82px}.pef-page{padding:18px 14px 36px}.pef-head,.pef-command-head{grid-template-columns:1fr}.pef-back{width:max-content}.pef-status-pill{width:max-content}.pef-event-card{grid-template-columns:40px minmax(0,1fr)}.pef-event-open{grid-column:2}.pef-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.pef-overview-grid,.pef-company-grid,.pef-doc-grid{grid-template-columns:1fr}.pef-company-toolbar{grid-template-columns:1fr}.pef-company-head{display:none}.pef-company-row{grid-template-columns:1fr auto}.pef-company-row>span:nth-child(3),.pef-company-row>span:nth-child(4),.pef-company-row>span:nth-child(5){display:none}.pef-company-side{position:static}.pef-session-list>div{grid-template-columns:1fr}.pef-doc-wide{grid-column:auto}}'
  ].join('');
  document.head.appendChild(s);
 }
