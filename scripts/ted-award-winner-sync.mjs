@@ -83,6 +83,7 @@ function winnerData(row){
   const decisionDates=winnerValues(row,'winner-decision-date').map(isoDate).filter(Boolean);
   return {
     identity_version:'ted-winner-canonical-v2',raw_names:rawNames,names,emails,websites,countries,cities,identifiers,contacts,decision_dates:decisionDates,
+    ted_declared_emails:emails,ted_declared_websites:websites,ted_declared_contact_points:contacts,
     organization_count:Math.max(1,unique(identifiers).length,names.length),
     name:names[0]||null,email:emails[0]||null,website:websites[0]||null,country:countries[0]||null,
     city:cities[0]||null,identifier:identifiers[0]||null,contact_point:contacts[0]||null,
