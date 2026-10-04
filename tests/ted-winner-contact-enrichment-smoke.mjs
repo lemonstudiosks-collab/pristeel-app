@@ -14,7 +14,9 @@ const pages=new Map([
   ['https://urbas.at/kontakt','<html><body><a href="mailto:urbas@urbas.at">E-Mail</a><a href="tel:+4342322521">Telefon</a></body></html>'],
   ['https://html.duckduckgo.com/html/?q=%22Birchmeier%20Bau%20AG%22%20D%C3%B6ttingen%20CHE%20official%20contact','<a class="result__a" href="https://birchmeier-bau.ch/">Birchmeier Bau AG official</a><a class="result__a" href="https://www.local.ch/birchmeier">directory</a>'],
   ['https://birchmeier-bau.ch/','<html><body>Birchmeier Bau AG <a href="/kontakt">Kontakt</a></body></html>'],
-  ['https://birchmeier-bau.ch/kontakt','<html><body>Birchmeier Bau AG <a href="mailto:info@birchmeier-bau.ch">E-Mail</a><span>wrong.external@gmail.com</span><form><label>Nachricht</label><input type="email" name="email"><textarea name="message"></textarea></form></body></html>']
+  ['https://birchmeier-bau.ch/kontakt','<html><body>Birchmeier Bau AG <a href="mailto:info@birchmeier-bau.ch">E-Mail</a><span>wrong.external@gmail.com</span><form><label>Nachricht</label><input type="email" name="email"><textarea name="message"></textarea></form></body></html>'],
+  ['https://html.duckduckgo.com/html/?q=%22Kunst-%20und%20Stahlbauschlosserei%20Olaf%20Knape%22%20Lutherstadt%20Wittenberg%20DEU%20official%20contact','<a class="result__a" href="https://www.khs-landkreis-wittenberg.de/innungen/metall-innung.html">Metall-Innung Wittenberg</a>'],
+  ['https://www.khs-landkreis-wittenberg.de/innungen/metall-innung.html','<html><body><h1>Metall-Innung</h1><div>Kunst- und Stahlbauschlosserei Olaf Knape <a href="mailto:schlosserei.knape@t-online.de">E-Mail</a></div><footer><a href="mailto:info@khs-landkreis-wittenberg.de">Info</a><a href="mailto:kontakt@khs-landkreis-wittenberg.de">Kontakt</a></footer></body></html>']
 ]);
 async function fetchImpl(url){const key=String(url);if(pages.has(key))return response(key,pages.get(key));throw new Error(`unexpected ${key}`);}
 
@@ -90,5 +92,24 @@ const unsafeLegacyMerged=mergeWinnerWithEnrichment(unsafeLegacyWinner,unsafeLega
 assert.equal(unsafeLegacyMerged.email,null,'enrichment must clear a legacy primary when evidence proves it is not attributable to the company');
 assert.deepEqual(unsafeLegacyMerged.emails,[]);
 
+const knapeWinner={
+  name:'Kunst- und Stahlbauschlosserei Olaf Knape',names:['Kunst- und Stahlbauschlosserei Olaf Knape'],city:'Lutherstadt Wittenberg',country:'DEU',identifier:'UStID. DE232533337',identity_version:'ted-winner-canonical-v2',
+  email:'info@khs-landkreis-wittenberg.de',emails:['info@khs-landkreis-wittenberg.de'],website:'https://www.khs-landkreis-wittenberg.de/innungen/metall-innung.html',websites:['https://www.khs-landkreis-wittenberg.de/innungen/metall-innung.html'],
+  contact_enrichment:{version:'winner-contact-v4',researched_at:'2026-10-02T11:16:50.497Z',organizations:[{name:'Kunst- und Stahlbauschlosserei Olaf Knape',domain:'khs-landkreis-wittenberg.de',official_website:'https://www.khs-landkreis-wittenberg.de/innungen/metall-innung.html',contacts:[
+    {type:'email',value:'info@khs-landkreis-wittenberg.de',source_type:'official_website',confidence:'high',company_attribution:'official_domain_match',draft_eligible:true},
+    {type:'email',value:'schlosserei.knape@t-online.de',source_type:'official_website',confidence:'low',company_attribution:'external_domain',draft_eligible:false}
+  ]}]}
+};
+const knape=await enrichWinnerPayload({payload:{winner:knapeWinner}},{fetchImpl,searchEnabled:true});
+assert.equal(knape.organizations[0].official_website,null,'an Innung/member listing must never become the winner official website');
+assert.equal(knape.organizations[0].domain,null,'a third-party association domain must never become the winner company domain');
+const knapeEmail=knape.organizations[0].contacts.find(c=>c.value==='schlosserei.knape@t-online.de');
+assert(knapeEmail&&knapeEmail.draft_eligible===true,'a company-specific email on the member listing may be attributed to the listed company');
+assert.equal(knapeEmail.company_attribution,'third_party_listing_name_match');
+assert(!knape.organizations[0].contacts.some(c=>c.value==='info@khs-landkreis-wittenberg.de'&&c.draft_eligible===true),'association mailbox must not be attributed to the member company');
+const knapeMerged=mergeWinnerWithEnrichment(knapeWinner,knape);
+assert.equal(knapeMerged.email,'schlosserei.knape@t-online.de','repair must replace the misattributed association mailbox');
+assert.deepEqual(knapeMerged.emails,['schlosserei.knape@t-online.de']);
+assert.equal(knapeMerged.website,null,'repair must clear the association listing from winner.website');
 
 console.log('TED winner contact enrichment smoke: OK');
