@@ -167,7 +167,7 @@ function eventsSurface(){
  p.classList.add('active');p.style.display='block';return p;
 }
 function eventActivityKind(subject){
- var s=N(subject);
+ var s=S(subject).toLowerCase();
  if(/declined.*meeting|meeting.*declined|refuz/.test(s))return'Takim i refuzuar';
  if(/accepted.*meeting|meeting.*accepted|pranuar/.test(s))return'Takim i pranuar';
  if(/unread conversation|new message|message/.test(s))return'Mesazh';
@@ -180,7 +180,7 @@ function renderEventActivity(p,rows){
  var box=p&&p.querySelector('[data-event-activity]');if(!box)return;
  rows=A(rows);var seen={},clean=[];
  rows.forEach(function(r){
-  var key=N(S(r.subject)+'|'+S(r.snippet).slice(0,180));if(!key||seen[key])return;seen[key]=true;clean.push(r);
+  var key=(S(r.subject)+'|'+S(r.snippet).slice(0,180)).toLowerCase().replace(/\s+/g,' ').trim();if(!key||seen[key])return;seen[key]=true;clean.push(r);
  });
  if(!clean.length){box.innerHTML='<div class="pef-empty">Ende nuk ka aktivitet të lidhur me këtë event.</div>';return}
  box.innerHTML=clean.slice(0,12).map(function(r){
