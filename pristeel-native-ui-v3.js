@@ -198,7 +198,7 @@ function installDailySidebarOwner(){
     if(window.PSTDailySafeV2&&typeof window.PSTDailySafeV2.open==='function'){window.PSTDailySafeV2.open();return;}
     var s=document.querySelector('script[data-pst-daily-safe-v2]');
     if(!s){s=document.createElement('script');s.src='pristeel-daily-safe-v2.js?v=20261002-sidebar1';s.defer=true;s.setAttribute('data-pst-daily-safe-v2','1');document.head.appendChild(s);}
-    var tries=0,t=setInterval(function(){tries++;if(window.PSTDailySafeV2&&typeof window.PSTDailySafeV2.open==='function'){clearInterval(t);window.PSTDailySafeV2.open();}else if(tries>20)clearInterval(t);},100);
+    var tries=0;function waitForDaily(){tries++;if(window.PSTDailySafeV2&&typeof window.PSTDailySafeV2.open==='function'){window.PSTDailySafeV2.open();return;}if(tries<=20)setTimeout(waitForDaily,100);}setTimeout(waitForDaily,100);
   },true);
   return true;
 }
