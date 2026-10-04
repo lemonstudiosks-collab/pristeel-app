@@ -1,3 +1,11 @@
+## 2026-10-04 — Canonical Gmail draft button
+
+- Veprimet që krijojnë Gmail draft paraqiten në mënyrë të unifikuar si buton i bardhë me ikonë Gmail vektoriale dhe tekst të qartë `Krijo draft në Gmail`.
+- Ikona është inline SVG, prandaj mbetet e mprehtë në Retina/4K dhe nuk varet nga screenshot-e ose imazhe me rezolucion të ulët.
+- RFQ draft ruan kontekstin si `Krijo RFQ draft në Gmail`; rigjenerimi paraqitet si `Rigjenero draft në Gmail`.
+- Ndryshimi është vetëm presentation-layer në Operating Experience; handler-at, Gmail draft engine, human send gate dhe logjika ekzistuese nuk ndryshojnë.
+- Dekorimi është event-driven dhe pa `MutationObserver`, polling, Supabase query ose write të ri.
+
 ## 2026-10-02 — Sidebar direction fix
 
 - Ballina tani e fsheh në mënyrë eksplicite kolonën e majtë.
