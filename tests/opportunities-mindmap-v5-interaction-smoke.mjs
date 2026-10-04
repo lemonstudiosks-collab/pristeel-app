@@ -55,7 +55,7 @@ await new Promise(r=>setTimeout(r,60));
 
 const desk=window.PSTOpportunitiesDeskV1;
 const focus=window.document.getElementById('pst-opportunities-focus');
-assert(desk&&desk.version==='20260930-analysis-navigation-v1','scoped-analysis Opportunity Desk must own the visible presentation');
+assert(desk&&desk.version==='20261004-gmail-button-v1','current Opportunity Desk must own the visible presentation');
 assert.doesNotMatch(deskSrc,/new\s+MutationObserver|desk\.replaceWith/,'Opportunity Desk must not use a persistent observer or replace the whole visible desk');
 assert.match(deskSrc,/function selectInPlace\(id\)/,'Opportunity selection must have an in-place update path');
 assert.equal(window.document.querySelectorAll('#pst-opp-desk').length,1,'Desk must render once');
@@ -119,6 +119,10 @@ assert(window.document.querySelector('#pst-opp-modal-bg'),'clicking a company mu
 assert.match(window.document.querySelector('.pst-opp-detail').textContent,/Example Steel AG/,'clicking a company must hydrate its popup details');
 assert(window.document.querySelector('[data-pst-opp-close]'),'popup must expose a clear close action');
 assert(window.document.querySelector('[data-pst-opp-draft="ted-producer"]'),'uncontacted TED company with verified email must expose Krijo draft emaili');
+const gmailDraftButton=window.document.querySelector('[data-pst-opp-draft="ted-producer"]');
+assert(gmailDraftButton.classList.contains('pst-gmail-create-btn'),'visible Opportunities draft action must use the Gmail-branded button style');
+assert(gmailDraftButton.querySelector('svg.pst-gmail-draft-icon'),'visible Opportunities draft action must render a resolution-independent Gmail SVG');
+assert.match(gmailDraftButton.textContent,/Krijo draft në Gmail/,'visible Opportunities draft action must use the canonical Gmail label');
 const analyzeTender=window.document.querySelector('[data-pst-opp-open="ted-producer"]');
 assert(analyzeTender,'TED award detail must expose Analizo tenderin');
 assert.match(analyzeTender.textContent,/Analizo tenderin/,'TED analysis action must be clearly labelled');

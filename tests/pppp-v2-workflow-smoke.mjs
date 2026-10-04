@@ -46,7 +46,7 @@ assert(euAwardMigration.includes('human_send_required'), 'Promotion must preserv
 assert(euAwardCorrection.includes("'pppp_v2_eu_award_sales', 'klient'"), 'Correction must be safe when replayed after the already-correct base migration');
 assert(euAwardCorrection.includes('else\n    execute v_fixed;'), 'Correction migration must be idempotent for fresh database replays');
 assert(opportunities.includes('data-pcw-ti="draft"'), 'TED award console must expose the outreach draft action before Project creation');
-assert(opportunities.includes('Krijo draft emaili'), 'TED award outreach label must make the Gmail-draft action explicit');
+assert(opportunities.includes('Krijo draft në Gmail')&&opportunities.includes('pst-gmail-draft-icon'), 'TED award outreach action must expose the Gmail-branded draft control explicitly');
 assert(!opportunities.includes('Aprovo · krijo Project'), 'Contacting a TED winner must not create a Project before RFQ evidence');
 assert(tenderActions.includes("db('rpc/pppp_promote_ted_award_to_sales_project_v1'"), 'Bounded promotion RPC must remain available for the later RFQ-confirmed Project step');
 assert(!tenderActions.includes('Së pari aprovoje Opportunity-n'), 'Draft preparation must not require Project creation');
