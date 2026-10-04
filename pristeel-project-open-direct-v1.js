@@ -13,6 +13,27 @@ window.__pstProjectRowOpenOwner='direct-v2';
 var busy=false;
 
 function S(v){return String(v==null?'':v);}
+function clearHomeForced(el,props){
+  if(!el||el.getAttribute('data-pst-home-shell-forced')!=='1')return;
+  props.forEach(function(k){el.style.removeProperty(k);});
+  el.removeAttribute('data-pst-home-shell-forced');
+}
+function releaseHomeState(){
+  var home=document.getElementById('page-workspace-home');
+  if(home){home.classList.remove('active');home.style.display='none';}
+  document.querySelectorAll('#pst-ws-canonical-nav [data-key="home"],#pst-ws-sidebar [data-key="home"],#side-nav [data-key="home"],[data-page="home"]').forEach(function(x){x.classList.remove('active');x.classList.remove('on');});
+  document.body.classList.remove('pst-home-launcher-active');
+  var shell=document.getElementById('app-shell-root')||document.querySelector('.app-shell');
+  var main=shell&&shell.querySelector? shell.querySelector(':scope > .main, :scope > main.main'):document.querySelector('.app-shell>.main');
+  var sides=[document.getElementById('app-sidebar'),document.getElementById('pst-v2-sidebar'),document.getElementById('pst-ws-sidebar')];
+  document.querySelectorAll('.app-shell>.sidebar,.app-shell>aside.sidebar').forEach(function(x){if(sides.indexOf(x)<0)sides.push(x);});
+  clearHomeForced(shell,['display','grid-template-columns']);
+  sides.forEach(function(x){clearHomeForced(x,['display','visibility','width','min-width','max-width','flex-basis','border-right-width','overflow']);});
+  clearHomeForced(main,['width','max-width','min-width','margin-left','padding-left','flex']);
+  var daily=document.getElementById('pst-daily-launch');
+  if(daily&&daily.getAttribute('data-pst-home-daily-duplicate')==='1'){daily.style.removeProperty('display');daily.removeAttribute('data-pst-home-daily-duplicate');}
+  try{var nav=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(nav&&typeof nav.syncSidebar==='function')nav.syncSidebar('projects');}catch(e){}
+}
 function ensureUi(){
   if(document.getElementById('pst-project-open-direct-css'))return;
   var style=document.createElement('style');
@@ -140,7 +161,7 @@ function ensureGmailButton(id){
 async function open(id){
   id=S(id).trim();
   if(!id||busy)return false;
-  busy=true;setContext(id);
+  busy=true;releaseHomeState();setContext(id);
   var firstError=null;
   try{
     try{ensureProjectPage();}catch(e){firstError=e;}

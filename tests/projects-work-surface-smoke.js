@@ -18,7 +18,8 @@ function assert(ok,message){if(!ok)throw new Error(message);}
     {id:'p2',name:'Working Project',client:'Client B',ref:'B-1',status:'aktiv',pipeline_stage:'pricing',operational_state:'active_work',business_type:'trading',deadline:null,last_activity_at:'2026-09-20T06:00:00Z'},
     {id:'p3',name:'Waiting Project',client:'Client C',ref:'C-1',status:'pritje',pipeline_stage:'client_offer',operational_state:'wait_for_client',deadline:null,last_activity_at:'2026-09-19T06:00:00Z'},
     {id:'p4',name:'Execution Project',client:'Client D',ref:'D-1',status:'fituar',pipeline_stage:'production_control',operational_state:'execution',deadline:null,last_activity_at:'2026-09-18T06:00:00Z'},
-    {id:'p5',name:'Closed Project',client:'Client E',ref:'E-1',status:'mbyllur',pipeline_stage:'transport',operational_state:'closed',deadline:null,last_activity_at:'2026-09-17T06:00:00Z'}
+    {id:'p5',name:'Closed Project',client:'Client E',ref:'E-1',status:'mbyllur',pipeline_stage:'transport',operational_state:'closed',deadline:null,last_activity_at:'2026-09-17T06:00:00Z'},
+    {id:'d7c23392-f7e2-4f87-8205-e7ff637ac3aa',name:'German-Kosovar Economic Forum 2026',client:'PriSteel / Business Development',ref:'German-Kosovar Economic Forum 2026',status:'pritje',pipeline_stage:null,operational_state:'active_work',business_type:'hybrid',deadline:'2026-10-29',last_activity_at:'2026-10-04T06:40:00Z'}
   ];
   let projectReads=0;
   window.supaFetch=async(path)=>{
@@ -27,7 +28,9 @@ function assert(ok,message){if(!ok)throw new Error(message);}
     return[];
   };
   let opened='';
-  window.pstOpenProjectWorkspace=id=>{opened=String(id);return true;};
+  let workspaceFallback=0;
+  window.pstOpenProjectDirect=id=>{opened=String(id);return true;};
+  window.pstOpenProjectWorkspace=id=>{workspaceFallback++;opened=String(id);return true;};
   let homeOpens=0;
   window.PSTPrimaryNavResilienceV10={openHome(){homeOpens++;return true;}};
 
@@ -38,7 +41,12 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(projectReads===1,'Projects Operator Desk must use one bounded Projects read per open');
   assert(window.document.querySelector('.ppd-page'),'Projects Operator Desk v2 did not render');
   assert(window.document.querySelectorAll('.ppd-focus').length===5,'Operator Desk must expose five operational focus groups');
-  assert(window.document.querySelectorAll('.ppd-row').length===4,'Default Projects view must show four non-closed projects');
+  assert(window.document.querySelectorAll('.ppd-row').length===4,'Default Projects view must show four non-closed operational projects');
+  const forumCard=window.document.querySelector('[data-ppd-event="d7c23392-f7e2-4f87-8205-e7ff637ac3aa"]');
+  assert(forumCard,'Forum must render as a dedicated card inside Projects');
+  assert(forumCard.textContent.includes('German-Kosovar Economic Forum 2026'),'Forum card title missing');
+  assert(forumCard.textContent.includes('28–29 tetor 2026'),'Forum event dates missing');
+  assert(window.document.querySelector('.ppd-open-count b').textContent==='4','Forum event must stay outside operational project counts');
   assert(!window.document.querySelector('.pst-pm-toggle'),'Board/List toggle must not exist');
   assert(!window.document.querySelector('.pst-pm-more'),'Legacy overflow action menu must not exist');
   assert(!window.document.body.textContent.includes('Dublikatat'),'Duplicates button must not remain in daily Projects UI');
@@ -54,6 +62,10 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(window.document.querySelector('[data-ppd-open="p3"] .ppd-next').textContent.includes('Prit klientin'),'wait_for_client must expose the automatic waiting action');
   assert(window.document.querySelector('[data-ppd-open="p1"] .ppd-type').textContent.includes('Fabrikim'),'Fabrication project must show Fabrikim');
   assert(window.document.querySelector('[data-ppd-open="p2"] .ppd-type').textContent.includes('Furnizim'),'Trading project must show Furnizim');
+
+  forumCard.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
+  assert(opened==='d7c23392-f7e2-4f87-8205-e7ff637ac3aa','Forum card must open the canonical Forum project');
+  assert(workspaceFallback===0,'Projects must prefer the canonical direct project opener');
 
   const actionRow=window.document.querySelector('[data-ppd-open="p1"]');
   actionRow.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
@@ -78,10 +90,15 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(facts.length===1&&facts[0].fact_key==='supplier.price','Project context bridge must remain available for Project Detail');
 
   const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
-  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20260921-operator-desk5'),'Operator Desk must be cache-busted in runtime bootstrap');
+  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20261004-forumcard1'),'Operator Desk must be cache-busted in runtime bootstrap');
   assert(bootstrap.includes('pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2'),'Classification compatibility layer must be cache-busted');
 
   const source=desk;
+  const searchSource=fs.readFileSync('pristeel-search-stable-v2.js','utf8');
+  const directOpenSource=fs.readFileSync('pristeel-project-open-direct-v1.js','utf8');
+  assert(searchSource.includes('pstOpenProjectDirect'),'Global Search must prefer the canonical direct project opener');
+  assert(directOpenSource.includes('releaseHomeState();setContext(id)'),'Direct project opener must release stale Home state before opening');
+  assert(directOpenSource.includes('pst-home-launcher-active'),'Direct project opener must clear the Home shell class');
   assert(!/\b(PATCH|POST|DELETE)\b/.test(source),'Projects UI must not contain direct business write paths');
   assert(!source.includes('select=*'),'Projects UI must not fetch all columns');
   assert(source.includes('limit=500'),'Projects read must remain bounded');

@@ -18,7 +18,9 @@ const { JSDOM } = require('jsdom');
     tokenGroups(q){ return q.toLowerCase().split(/\s+/).filter(Boolean).map(x => [x]); }
   };
   w.PSTBusinessCommandCenterDeepGmail = { decorate(){} };
-  w.pstOpenProjectWorkspace = () => {};
+  let directOpened='';
+  w.pstOpenProjectDirect = id => { directOpened=String(id); };
+  w.pstOpenProjectWorkspace = () => { throw new Error('Search should prefer pstOpenProjectDirect'); };
   w.open = () => ({ focus(){} });
   w.supaFetch = async path => {
     calls++;
@@ -44,7 +46,13 @@ const { JSDOM } = require('jsdom');
   await new Promise(r => setTimeout(r, 450));
   assert(calls > 0, 'Typing a real query must start lazy source loading');
   assert(w.document.body.textContent.includes('Geiger Stahlbau') || w.document.body.textContent.includes('Geiger RFQ'), 'Search did not render matching data');
+  const projectOpen=w.document.querySelector('.pst-bcc-result-open');
+  assert(projectOpen,'Search project result open button missing');
+  projectOpen.click();
+  assert.strictEqual(directOpened,'p1','Search must open projects through pstOpenProjectDirect');
+  assert(!w.document.getElementById('pst-bcc'),'Opening a project must close Search first');
 
+  w.openCmdK();
   const before = calls;
   w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   assert(!w.document.getElementById('pst-bcc'), 'Escape must always close the search modal');
