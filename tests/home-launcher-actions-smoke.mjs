@@ -13,7 +13,7 @@ const {window}=dom;
 const {document}=window;
 window.scrollTo=()=>{};
 
-const calls={sync:[],opportunities:0,representations:0,direct:0,buyers:0,projects:0,partners:0,finance:0,forum:0,forumId:'',forumPath:'',daily:0,search:0,gmail:0,fetch:0,supa:0};
+const calls={sync:[],opportunities:0,representations:0,direct:0,buyers:0,projects:0,partners:0,finance:0,daily:0,search:0,gmail:0,fetch:0,supa:0};
 window.PSTPrimaryNavResilienceV10={
   syncSidebar:k=>calls.sync.push(k),
   openOpportunities:()=>{calls.opportunities++;return true},
@@ -26,7 +26,6 @@ window.PSTEUCompaniesV1={open:()=>{calls.direct++;return true}};
 window.PSTDachSteelSalesV3={open:()=>{calls.buyers++;return true}};
 window.PSTDailySafeV2={open:()=>{calls.daily++;return true}};
 window.PSTSearchStableV2={open:q=>{calls.search++;calls.searchValue=q;return true}};
-window.pstOpenProjectWorkspace=id=>{calls.forum++;calls.forumId=id;return true};
 window.open=(url)=>{calls.gmail++;calls.gmailUrl=url;return {}};
 window.fetch=async url=>{
   calls.fetch++;
@@ -36,7 +35,6 @@ window.fetch=async url=>{
 window.supaFetch=async path=>{
   calls.supa++;
   if(String(path).startsWith('price_history'))return[{work_type:'Plate',our_price_kg:.61,project_name:'Test',country:'DE',quoted_at:'2026-10-03'}];
-  if(String(path).startsWith('projects?')){calls.forumPath=String(path);return[{id:'forum-project-2026',name:'German-Kosovar Economic Forum 2026'}]}
   return[];
 };
 
@@ -82,13 +80,7 @@ assert(document.getElementById('phl-modal'),'Steel-price button must open modal'
 assert(document.getElementById('phl-modal').textContent.includes('Plate'),'Steel-price modal must populate PPPP reference data');
 document.getElementById('phl-modal').remove();
 
-const forumCard=root.querySelector('[data-open="forum"]');
-assert(forumCard,'Forum must be a standalone Home card');
-forumCard.click();
-await new Promise(r=>setTimeout(r,0));
-assert.equal(calls.forum,1,'Forum card must open the canonical Project workspace');
-assert.equal(calls.forumId,'forum-project-2026');
-assert(calls.forumPath.includes('name=eq.German-Kosovar%20Economic%20Forum%202026'),'Forum lookup must use the exact project name');
+assert.equal(root.querySelector('[data-open="forum"]'),null,'Forum must not render on Home');
 
 for(const [key,field] of [
   ['opportunities','opportunities'],

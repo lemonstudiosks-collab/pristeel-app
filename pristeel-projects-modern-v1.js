@@ -10,6 +10,7 @@ window.__pstProjectsModernV2=true;
 window.__pstProjectsModernV1=true;
 
 var state={rows:[],search:'',focus:'open',loading:false};
+var FORUM_PROJECT_ID='d7c23392-f7e2-4f87-8205-e7ff637ac3aa';
 var baseGo=window.pstWorkspaceGo;
 
 function A(v){return Array.isArray(v)?v:[];}
@@ -28,6 +29,8 @@ function ensurePage(){
   document.querySelectorAll('.page').forEach(function(x){if(x!==p){x.classList.remove('active');x.style.display='none';}});
   p.classList.add('active');p.style.display='block';setNav();window.scrollTo({top:0,behavior:'auto'});return p;
 }
+function featuredEvent(r){return S(r&&r.id)===FORUM_PROJECT_ID;}
+function forumProject(){for(var i=0;i<state.rows.length;i++)if(featuredEvent(state.rows[i]))return state.rows[i];return null;}
 function closed(r){var s=N([r&&r.operational_state,r&&r.status].join(' '));return /closed|mbyllur|humbur|lost|realizuar|arkiv|archiv|cancel|refuz/.test(s);}
 function bucket(r){
   if(closed(r))return'closed';
@@ -90,13 +93,14 @@ function nextLabel(r){
 function typeLabel(r){var x=N(r&&r.business_type);if(/trading|trade|furniz/.test(x))return'Furnizim';if(/fabric|prodh|manufact/.test(x))return'Fabrikim';if(/hybrid|hibrid/.test(x))return'Hybrid';return'';}
 function counts(){
   var c={open:0,action:0,work:0,execution:0,waiting:0,closed:0};
-  state.rows.forEach(function(r){var k=bucket(r);c[k]++;if(k!=='closed')c.open++;});
+  state.rows.forEach(function(r){if(featuredEvent(r))return;var k=bucket(r);c[k]++;if(k!=='closed')c.open++;});
   return c;
 }
 function priority(r){return bucketInfo(bucket(r)).rank*1e16-ts(r.last_activity_at||r.last_email_at||r.updated_at||r.created_at);}
 function visible(){
   var q=N(state.search);
   return state.rows.filter(function(r){
+    if(featuredEvent(r))return false;
     var k=bucket(r);
     if(state.focus==='open'&&k==='closed')return false;
     if(state.focus!=='open'&&state.focus!==k)return false;
@@ -118,6 +122,7 @@ function openProject(id){
   id=S(id).trim();if(!id)return false;
   window.__pstCurrentProjectId=id;window._curProjId=id;
   try{localStorage.setItem('pristeel_cur_proj',id);}catch(e){}
+  if(typeof window.pstOpenProjectDirect==='function')return window.pstOpenProjectDirect(id);
   if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(id);
   if(typeof window.loadProject==='function')return window.loadProject(id);
   return false;
@@ -136,6 +141,10 @@ function card(r){
     '<span class="ppd-time"><small>'+E(deadline)+'</small><b>'+E(activityText(r))+'</b></span>'+
     '<i>›</i></button>';
 }
+function eventCard(r){
+  if(!r)return'';
+  return '<section class="ppd-events" aria-label="Aktivitete Business Development"><button type="button" class="ppd-event-card" data-ppd-open="'+E(r.id)+'" data-ppd-event="'+E(r.id)+'"><span class="ppd-event-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M8 3v4M16 3v4M4 9h16"></path></svg></span><span class="ppd-event-copy"><small>BUSINESS DEVELOPMENT · EVENT</small><b>German-Kosovar Economic Forum 2026</b><em>28–29 tetor 2026 · Prishtinë</em></span><span class="ppd-event-open">Hap projektin <i>›</i></span></button></section>';
+}
 function section(k,rows){
   if(!rows.length)return'';
   var bi=bucketInfo(k);
@@ -143,9 +152,10 @@ function section(k,rows){
 }
 function render(){
   var p=ensurePage();if(!p)return;
-  var c=counts(),rows=visible(),g=groupRows(rows);
+  var c=counts(),rows=visible(),g=groupRows(rows),forum=forumProject();
   p.innerHTML='<div class="ppd-page">'+
     '<header class="ppd-head"><button type="button" class="ppd-back" data-ppd-back>← Kthehu</button><div><span>PPPP</span><h1>Projektet</h1><p>Puna renditet automatikisht sipas gjendjes reale të projektit. Hape projektin për “TANI” dhe hapin e radhës.</p></div></header>'+
+    eventCard(forum)+
     '<div class="ppd-toolbar"><label><span>⌕</span><input data-ppd-search value="'+E(state.search)+'" placeholder="Kërko projekt, klient ose referencë"></label><div class="ppd-open-count"><b>'+c.open+'</b><span>projekte aktive</span></div></div>'+
     '<div class="ppd-focusbar">'+
       focusButton('action','Kërkon veprim',c.action,'PriSteel')+
@@ -203,6 +213,7 @@ function css(){
   var s=document.createElement('style');s.id='ppd-projects-v2-css';s.textContent=`
 #page-workspace-projects{background:#f5f7f7!important}.ppd-page{max-width:1480px;margin:0 auto;padding:20px 24px 44px;color:#2a383e}
 .ppd-head{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:center;margin-bottom:16px}.ppd-head>div>span{font-size:9px;letter-spacing:.12em;color:#85949a;font-weight:800}.ppd-head h1{font-size:26px;line-height:1.05;margin:3px 0;color:#26363d;font-weight:680}.ppd-head p{font-size:11.5px;color:#7d898e;margin:5px 0 0;max-width:820px}.ppd-back{height:38px;border-radius:10px;padding:0 13px;font-weight:720;cursor:pointer;border:1px solid #4F97AF;background:#4F97AF;color:#fff}
+.ppd-events{margin:0 0 14px}.ppd-event-card{width:min(410px,100%);min-height:142px;border:1px solid #b9d4de;border-radius:15px;background:#fff;display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:13px;align-items:start;padding:17px 16px;text-align:left;color:#304b57;cursor:pointer;box-shadow:0 8px 22px rgba(45,79,92,.045);transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}.ppd-event-card:hover,.ppd-event-card:focus-visible{transform:translateY(-2px);border-color:#79aabd;box-shadow:0 12px 28px rgba(45,79,92,.09);outline:0}.ppd-event-icon{width:48px;height:48px;border:1px solid #cfe1e7;border-radius:13px;background:#eef7f9;display:grid;place-items:center;color:#3e86a1}.ppd-event-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8}.ppd-event-copy{min-width:0}.ppd-event-copy small{display:block;font-size:8px;letter-spacing:.1em;color:#7a929d;font-weight:800}.ppd-event-copy b{display:block;margin-top:8px;font-size:16px;line-height:1.25;color:#31536a}.ppd-event-copy em{display:block;margin-top:7px;font-style:normal;font-size:10px;color:#71858e}.ppd-event-open{align-self:end;white-space:nowrap;font-size:9.5px;font-weight:760;color:#43819a}.ppd-event-open i{font-style:normal;font-size:17px;margin-left:5px}
 .ppd-toolbar{display:flex;gap:10px;align-items:center}.ppd-toolbar label{height:44px;display:flex;align-items:center;gap:8px;flex:1;border:1px solid #dfe8eb;border-radius:12px;background:#fff;padding:0 13px}.ppd-toolbar label span{color:#7e959f;font-size:18px}.ppd-toolbar input{width:100%;border:0;outline:0;background:transparent;font-size:12px;color:#34464e}.ppd-open-count{height:44px;min-width:135px;border:1px solid #dfe8eb;border-radius:12px;background:#fff;display:flex;align-items:baseline;justify-content:center;gap:6px}.ppd-open-count b{font-size:18px}.ppd-open-count span{font-size:9.5px;color:#849198}
 .ppd-focusbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:10px 0 0}.ppd-focus{min-height:70px;border:1px solid #dfe8eb;border-radius:12px;background:#fff;padding:10px 12px;text-align:left;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto}.ppd-focus:hover,.ppd-focus.on{border-color:#a9cbd7;background:#f8fbfc}.ppd-focus>span{font-size:11px;font-weight:720;color:#41545c}.ppd-focus>b{font-size:20px;color:#344b56}.ppd-focus>small{grid-column:1/-1;font-size:9px;color:#8b969b;margin-top:4px}.ppd-focus.on>span,.ppd-focus.on>b{color:#3d839e}
 .ppd-reset{min-height:34px;display:flex;gap:7px;align-items:center}.ppd-reset button{border:1px solid #e1e8eb;background:#fff;border-radius:999px;padding:5px 9px;color:#61727a;font-size:9.5px;cursor:pointer}
