@@ -123,6 +123,12 @@ const gmailDraftButton=window.document.querySelector('[data-pst-opp-draft="ted-p
 assert(gmailDraftButton.classList.contains('pst-gmail-create-btn'),'visible Opportunities draft action must use the Gmail-branded button style');
 assert(gmailDraftButton.querySelector('svg.pst-gmail-draft-icon'),'visible Opportunities draft action must render a resolution-independent Gmail SVG');
 assert.match(gmailDraftButton.textContent,/Krijo draft në Gmail/,'visible Opportunities draft action must use the canonical Gmail label');
+assert(gmailDraftButton.classList.contains('pst-opp-action-gmail'),'Gmail draft action must use the vivid primary-button treatment');
+assert(gmailDraftButton.querySelector('.pst-opp-action-icon-gmail'),'Gmail draft action must keep its icon inside a dedicated chip');
+const sourceButton=window.document.querySelector('.pst-opp-action-source');
+assert(sourceButton&&sourceButton.querySelector('svg.pst-opp-action-svg'),'official source must use the illustrated external-link action');
+const removeButton=window.document.querySelector('[data-pst-opp-remove="ted-producer"]');
+assert(removeButton.classList.contains('pst-opp-action-remove')&&removeButton.querySelector('svg.pst-opp-action-svg'),'remove action must use the illustrated danger treatment');
 const analyzeTender=window.document.querySelector('[data-pst-opp-open="ted-producer"]');
 assert(analyzeTender,'TED award detail must expose Analizo tenderin');
 assert.match(analyzeTender.textContent,/Analizo tenderin/,'TED analysis action must be clearly labelled');
