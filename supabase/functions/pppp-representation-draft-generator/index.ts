@@ -7,7 +7,8 @@ const A=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SA=Deno.env.get("GOOGLE_SA_JSON")||"";
 const GU=(Deno.env.get("GMAIL_USER")||"").toLowerCase();
 const db=createClient(U,S,{auth:{persistSession:false,autoRefreshToken:false}});
-const V="pppp-representation-draft-generator-v3";
+const V="pppp-representation-draft-generator-v4";
+const OUTREACH_SUBJECT="Kosovo / KOSTT – EBRD Project 55387 | Potential T&D cooperation";
 const C={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const t=(v:any,n=12000)=>String(v==null?"":v).replace(/\r/g,"").trim().slice(0,n);
 const em=(v:any)=>t(v,320).toLowerCase();
@@ -62,6 +63,15 @@ async function draftExists(id:any){
   const x=t(id,500);if(!x)return false;
   try{await gmailGet("/drafts/"+encodeURIComponent(x)+"?format=minimal");return true;}catch{return false;}
 }
+async function findExistingDraft(recipient:any,subject:string){
+  const e=safeEmail(recipient),clean=t(subject,300).replace(/"/g,""),q=encodeURIComponent('to:'+e+' subject:"'+clean+'" newer_than:7d');
+  try{
+    const x=await gmailGet("/drafts?maxResults=10&q="+q+"&fields=drafts(id,message(id,threadId)),resultSizeEstimate");
+    const hit=Array.isArray(x?.drafts)&&x.drafts.length?x.drafts[0]:null;if(!hit?.id)return null;
+    const full=await gmailGet("/drafts/"+encodeURIComponent(hit.id)+"?format=minimal");
+    return{draft_id:t(full?.id||hit.id,500),message_id:t(full?.message?.id||hit?.message?.id,500),thread_id:t(full?.message?.threadId||hit?.message?.threadId,500)};
+  }catch{return null;}
+}
 async function recentSentTo(recipient:any,days=30){
   const e=safeEmail(recipient),q=encodeURIComponent("in:sent to:"+e+" newer_than:"+Math.max(1,Math.min(60,days))+"d");
   const x=await gmailGet("/messages?maxResults=5&q="+q+"&fields=messages(id,threadId),resultSizeEstimate");
@@ -98,7 +108,7 @@ function message(tg:any,op:any,link:any,sig:string){
   const pitch=t(fit?.external_pitch,1600);
   const pv=arr(fit?.pristeel_value).map((x:any)=>t(x,180)).filter(Boolean);
   const valueText=pv.length?pv.join(", "):"Kosovo project intelligence, local sourcing, logistics, site support and local execution coordination";
-  const subject="Kosovo / KOSTT – EBRD Project 55387 | Potential T&D cooperation";
+  const subject=OUTREACH_SUBJECT;
   const paragraphs=[
     "Dear Sir or Madam,",
     "We are contacting you regarding "+project+" ("+ref+") in Kosovo.",
@@ -126,7 +136,17 @@ Deno.serve(async(req:Request)=>{
     if(tr.error||!tr.data)return res({ok:false,error:"representation_target_not_found"},404);
     const tg=tr.data,recipient=safeEmail(tg.contact_email);
     if(tg.gmail_draft_id&&await draftExists(tg.gmail_draft_id)){
-      return res({ok:true,existing:true,draft_id:tg.gmail_draft_id,message_id:tg.gmail_draft_message_id,thread_id:tg.gmail_thread_id,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(tg.gmail_thread_id||"")});
+      return res({ok:true,existing:true,draft_id:tg.gmail_draft_id,message_id:tg.gmail_last_message_id,thread_id:tg.gmail_thread_id,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(tg.gmail_thread_id||"")});
+    }
+    const recovered=await findExistingDraft(recipient,OUTREACH_SUBJECT);
+    if(recovered){
+      const now=new Date().toISOString();
+      const up=await db.from("pppp_representation_targets_v1").update({
+        gmail_draft_id:recovered.draft_id,gmail_last_message_id:recovered.message_id,gmail_thread_id:recovered.thread_id,
+        stage:"draft_ready",next_action:"Review the Gmail draft and send manually if approved.",updated_at:now
+      }).eq("id",targetId).select("id,stage,gmail_draft_id,gmail_last_message_id,gmail_thread_id").single();
+      if(up.error)throw up.error;
+      return res({ok:true,existing:true,recovered:true,target_id:targetId,draft_id:recovered.draft_id,message_id:recovered.message_id,thread_id:recovered.thread_id,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(recovered.thread_id||"")});
     }
     const sent=await recentSentTo(recipient,30);
     if(sent)return res({ok:false,error:"recipient_cooldown_30d",message:"A sent Gmail message to this recipient exists within the last 30 days."},409);
@@ -146,9 +166,9 @@ Deno.serve(async(req:Request)=>{
     });
     const now=new Date().toISOString();
     const up=await db.from("pppp_representation_targets_v1").update({
-      gmail_draft_id:d.draft_id,gmail_draft_message_id:d.message_id,gmail_thread_id:d.thread_id,
+      gmail_draft_id:d.draft_id,gmail_last_message_id:d.message_id,gmail_thread_id:d.thread_id,
       stage:"draft_ready",next_action:"Review the Gmail draft and send manually if approved.",updated_at:now
-    }).eq("id",targetId).select("id,stage,gmail_draft_id,gmail_draft_message_id,gmail_thread_id").single();
+    }).eq("id",targetId).select("id,stage,gmail_draft_id,gmail_last_message_id,gmail_thread_id").single();
     if(up.error)throw up.error;
     return res({ok:true,existing:false,target_id:targetId,opportunity_id:op.id,recipient,subject:msg.subject,...d,gmail_url:"https://mail.google.com/mail/u/0/#drafts/"+encodeURIComponent(d.thread_id||"")});
   }catch(e){console.error(V,e);return res({ok:false,error:t((e as any)?.message||e,900)},400);}
