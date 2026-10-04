@@ -1,3 +1,10 @@
+## 2026-10-04 — Gmail draft button in Opportunities modals
+
+- `Dosja e plotë` në Mundësitë tani e renderon drejtpërdrejt ikonën Gmail si SVG vektoriale dhe tekstin `Krijo draft në Gmail`; nuk mbështetet më te dekorimi i vonshëm i presentation layer.
+- Butoni ruan handler-in ekzistues `data-pst-opp-draft`, draft engine dhe human send gate; u ndryshua vetëm prezantimi.
+- TED Action Console përdor të njëjtin Gmail-branded draft action për krijimin/përgatitjen e drafteve.
+- U shtua regression coverage për modalin real të Mundësive dhe Action Console.
+
 ## 2026-10-04 — Canonical Gmail draft button
 
 - Veprimet që krijojnë Gmail draft paraqiten në mënyrë të unifikuar si buton i bardhë me ikonë Gmail vektoriale dhe tekst të qartë `Krijo draft në Gmail`.
