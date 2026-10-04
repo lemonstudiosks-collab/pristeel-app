@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "175b25a58f7a307f7f8a1924cb58135d339db15a"
+    "bootstrapGitBlobSha": "aac8199ae00666accbf5cdf781e6e85e69c50af2"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -348,6 +348,12 @@
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
       "condition": "Loaded after Material Trade. Owns the separate manufacturer-representation pipeline, its compact expandable controls, responsive detail/editor UI and Home launcher directly below Opportunities over public.pppp_representation_targets_v1. It is intentionally not exposed in System and never creates Projects, Partners, Suppliers, Contacts, contracts or email sends."
+    },
+    {
+      "module": "pristeel-representations-fullwidth-v2.js",
+      "loader": "pristeel-project-emails.js",
+      "status": "DYNAMIC_CURRENT",
+      "condition": "Loaded immediately after the Representation opportunity workspace as a presentation-only fallback. It removes the left sidebar and expands the active Përfaqësime page to the full application width; it performs no Supabase reads or writes and has no effect outside the active Representations route."
     },
     {
       "module": "pristeel-representation-discovery-v1.js",
