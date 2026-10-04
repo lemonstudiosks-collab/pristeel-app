@@ -32,7 +32,7 @@ assert.match(worker,/pppp_chatgpt_register_representation_target_v1/);
 assert.match(worker,/representation_relationship/);
 assert.match(relationshipMigration,/create table if not exists public\.pppp_representation_relationships_v1/i);
 assert.match(relationshipMigration,/pppp_chatgpt_register_representation_relationship_v1/i);
-assert.match(ui,/JV \/ partnerë lokalë & rajonalë/);
+assert.match(ui,/Prania & marrëdhëniet lokale \/ rajonale/);
 assert.match(ui,/data-rep-act=\"add-relationship\"/);
 assert.match(ui,/#perfaqesime/);
 assert.match(ui,/data-rep-toggle="pipeline"/);
@@ -50,16 +50,21 @@ assert.match(ui,/Krijo draft në Gmail/);
 assert.match(ui,/Hap draftin në Gmail/);
 assert.match(ui,/pppp-representation-draft-generator/);
 assert.match(ui,/Gmail & Kontaktimi/);
-assert.match(ui,/Përshtatja teknike për KOSTT/);
-assert.match(ui,/Rreziqe & sinjale historike/);
-assert.match(ui,/Mesazhi i jashtëm/);
+assert.match(ui,/Pse Kosova/);
+assert.match(ui,/function representationRows\(\)/);
+assert.match(ui,/target_type\)==='representation'/);
+assert.match(ui,/Modeli \/ territori/);
+assert.match(opportunityUi,/PROJECT_ROLES/);
+assert.match(opportunityUi,/options\(PROJECT_ROLES,'oem_specialist_partner'\)/);
+assert.match(ui,/Modeli & kushtet e përfaqësimit/);
+assert.match(ui,/Qasja e kontaktimit/);
 assert.match(ui,/data-rep-module="gmail"/);
 assert.match(ui,/data-rep-module="strategy"/);
-assert.match(ui,/data-rep-module="project"/);
+assert.match(ui,/data-rep-module="sources"/);
 assert.match(ui,/data-rep-module="jv"/);
 assert.match(ui,/data-rep-module="commercial"/);
 assert.match(ui,/data-rep-module="notes"/);
-assert.match(ui,/Shiko detajet/);
+assert.match(ui,/Mundësia e përfaqësimit/);
 assert.match(representationDraftWorker,/gmail_last_message_id/);
 assert.doesNotMatch(representationDraftWorker,/gmail_draft_message_id/);
 assert.match(representationDraftWorker,/findExistingDraft/);
@@ -96,6 +101,15 @@ dom.window.supaFetch = async (path) => {
     source_key:'rep:in:kecrpg.com',source_name:'KEC official website',source_url:'https://www.kecrpg.com/',priority_reason:'Operator-selected candidate',
     strategic_fit_notes:'Kosovo interface and execution support.',why_kosovo:'Project-specific fit for KOSTT 55387.',market_evidence:'EBRD-backed grid project.',
     created_at:'2026-09-27T00:00:00Z',updated_at:'2026-09-27T00:00:00Z',last_verified_at:'2026-09-27T00:00:00Z'
+  },{
+    id:'33333333-3333-4333-8333-333333333333',company_name:'Dripmate A/S',company_domain:'dripmate.example',company_domain_normalized:'dripmate.example',
+    company_website:'https://dripmate.example/',country:'DK',headquarters:'Denmark',sector:'Industrial equipment',
+    product_category:'Irrigation equipment',product_summary:'Manufacturer seeking distribution partners.',manufacturer_description:'Danish manufacturer focused on irrigation equipment.',
+    products:['irrigation systems','industrial equipment'],stage:'verified',kosovo_presence:'none_found',target_type:'representation',
+    target_model:'commercial_agent',target_territory:'Kosovo',contact_email:'sales@dripmate.example',contact_role:'International sales',
+    source_key:'rep:dk:dripmate.example',source_name:'Official market-entry notice',source_url:'https://dripmate.example/',priority_reason:'Public Kosovo distributor signal',
+    strategic_fit_notes:'Assess PriSteel as Kosovo commercial representative.',why_kosovo:'Public signal indicates distributor interest in Kosovo.',market_evidence:'Kosovo listed as a target market.',
+    capital_fit:'review',created_at:'2026-10-01T00:00:00Z',updated_at:'2026-10-01T00:00:00Z',last_verified_at:'2026-10-01T00:00:00Z'
   }];
   if(p.startsWith('pppp_representation_relationships_v1?'))return [];
   if(p.startsWith('pppp_representation_opportunity_targets_v1?'))return [{
@@ -123,14 +137,17 @@ assert.equal(dom.window.document.getElementById('page-origin').style.display,'no
 assert.ok(page.querySelector('[data-rep-back]'),'candidate view must expose a persistent back button');
 assert.ok(page.querySelector('[data-rep-list-view]'),'candidate list view missing');
 assert.ok(page.querySelector('[data-rep-profile-view]'),'full-width company dossier view missing');
-const companyRow=page.querySelector('[data-rep-id="11111111-1111-4111-8111-111111111111"]');
-assert.ok(companyRow,'candidate company row missing');
+assert.equal(page.querySelector('[data-rep-id="11111111-1111-4111-8111-111111111111"]'),null,'JV/EPC candidate must not appear in Dega 1');
+const companyRow=page.querySelector('[data-rep-id="33333333-3333-4333-8333-333333333333"]');
+assert.ok(companyRow,'representation company row missing');
 companyRow.click();
 await new Promise(resolve => setTimeout(resolve,0));
 assert.equal(page.querySelector('[data-rep-list-view]').hidden,true,'company click must hide list view');
 assert.equal(page.querySelector('[data-rep-profile-view]').hidden,false,'company click must open full dossier view');
-assert.match(page.querySelector('[data-rep-detail]').textContent,/KEC International Limited/);
-assert.match(page.querySelector('[data-rep-detail]').textContent,/Përshtatja teknike për KOSTT/);
+assert.match(page.querySelector('[data-rep-detail]').textContent,/Dripmate A\/S/);
+assert.match(page.querySelector('[data-rep-detail]').textContent,/Mundësia e përfaqësimit/);
+assert.match(page.querySelector('[data-rep-detail]').textContent,/Pse Kosova/);
+assert.doesNotMatch(page.querySelector('[data-rep-detail]').textContent,/KOSTT Transmission Grid Strengthening/);
 assert.match(page.querySelector('[data-rep-detail]').textContent,/Edito kompaninë/);
 assert.ok(page.querySelector('details[data-rep-module="gmail"][open]'),'Gmail module must be expanded by default');
 assert.ok(page.querySelector('details[data-rep-module="strategy"]'),'strategy accordion missing');
@@ -153,8 +170,8 @@ filterToggle.click();
 assert.equal(filterMenu.hidden,false,'filter menu must expand on demand');
 assert.ok(dom.window.document.querySelector('.pst-morning-lane.opportunities').nextElementSibling?.id==='pst-representations-home-v1','Representations must sit directly under Opportunities on Home');
 assert.equal(dom.window.document.getElementById('pst-representations-system-card'),null,'Representations must not be injected into System');
-const companyRowAgain=page.querySelector('[data-rep-id="11111111-1111-4111-8111-111111111111"]');
-assert.ok(companyRowAgain,'candidate company row missing after return');
+const companyRowAgain=page.querySelector('[data-rep-id="33333333-3333-4333-8333-333333333333"]');
+assert.ok(companyRowAgain,'representation company row missing after return');
 companyRowAgain.click();
 await new Promise(resolve => setTimeout(resolve,0));
 page.querySelector('[data-rep-act="edit"]').click();
