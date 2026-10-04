@@ -550,6 +550,7 @@ function gmailDraftUrl(r){return r&&r.gmail_thread_id?'https://mail.google.com/m
 function draftButton(r,variant){
  var busy=!!state.draftBusy[S(r&&r.id)],inline=variant==='inline',cls='pst-rep-btn '+(inline?'gmail-inline':'primary gmail-action');
  if(r&&r.gmail_draft_id&&r.gmail_thread_id)return '<button class="'+cls+'" data-rep-act="open-draft">Hap draftin në Gmail</button>';
+ if(r&&r.target_type==='representation')return '<button class="pst-rep-btn" disabled title="Teksti i outreach për përfaqësi duhet aprovuar para krijimit të draftit">Draft për përfaqësi — tekst për aprovim</button>';
  if(r&&r.contact_email)return '<button class="'+cls+'" data-rep-act="create-draft"'+(busy?' disabled':'')+'>'+(busy?'Duke krijuar draft…':'Krijo draft në Gmail')+'</button>';
  return '<button class="pst-rep-btn" disabled>Kontakti mungon</button>';
 }
