@@ -1,3 +1,9 @@
+## 2026-10-04 — Stable first paint for non-Home routes
+
+- Fixed the shell ownership mismatch that briefly reserved the legacy sidebar width when opening Mundësitë and other non-Home pages.
+- `Global Full-width Shell` now matches the final Production Surface Owner contract from the first CSS paint: Home may keep the canonical sidebar, while non-Home routes use the full width immediately.
+- No business logic, data flow, or route handlers changed.
+
 ## 2026-10-04 — Vivid Opportunities modal actions\n\n- `Dosja e plotë` now uses illustrated, high-contrast action buttons: light-blue analysis with search icon, blue Gmail primary action with the Gmail mark in a white chip, neutral official-source action with external-link icon, and a soft-red remove action with trash icon.\n- Existing action handlers and workflow gates are unchanged; this is a presentation-layer refresh only.\n- The footer remains responsive: two-column on tablets and full-width actions on narrow mobile layouts.\n\n## 2026-10-04 — Gmail draft button in Opportunities modals
 
 - `Dosja e plotë` në Mundësitë tani e renderon drejtpërdrejt ikonën Gmail si SVG vektoriale dhe tekstin `Krijo draft në Gmail`; nuk mbështetet më te dekorimi i vonshëm i presentation layer.
