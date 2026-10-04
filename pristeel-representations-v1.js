@@ -30,7 +30,7 @@ var TARGET_TYPES=[['lead_epc_candidate','Kandidat për EPC / konsorcium drejtues
 var REL_TYPES=[['joint_venture','JV'],['consortium','Konsorcium'],['subcontractor','Nënkontraktor'],['supplier','Furnitor'],['representative','Përfaqësues'],['distributor','Distributor'],['implementation_partner','Partner implementimi'],['local_partner','Partner lokal'],['other','Tjetër'],['unknown','E panjohur']];
 var REL_STATUS=[['current','Aktuale'],['historical','Historike'],['unknown','E panjohur']];
 var REL_VERIFY=[['unknown','E panjohur'],['review','Për verifikim'],['verified','E verifikuar']];
-var state={rows:[],relationships:[],opportunities:[],opportunityLinks:[],loaded:false,loading:false,opportunitiesLoaded:false,opportunitiesLoading:false,error:'',selected:'',view:'list',returnTo:'',inlineHost:null,query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null,draftBusy:{},draftResult:{},previousPageId:'',previousScrollY:0};
+var state={rows:[],relationships:[],opportunities:[],opportunityLinks:[],loaded:false,loading:false,opportunitiesLoaded:false,opportunitiesLoading:false,error:'',selected:'',view:'list',returnTo:'',inlineHost:null,inlineOpportunityId:'',query:'',stage:'',country:'',sector:'',capital:'',sort:'priority',editor:null,draftBusy:{},draftResult:{},previousPageId:'',previousScrollY:0};
 
 function S(v){return String(v==null?'':v)}
 function A(v){return Array.isArray(v)?v:[]}
@@ -393,9 +393,9 @@ function warnings(r){
  return out;
 }
 function O(v){if(v&&typeof v==='object'&&!Array.isArray(v))return v;try{var x=JSON.parse(S(v));return x&&typeof x==='object'&&!Array.isArray(x)?x:{}}catch(e){return{}}}
-function targetLink(targetId){return state.opportunityLinks.find(function(x){return !x.archived_at&&S(x.target_id)===S(targetId)})||null}
-function targetOpportunity(targetId){var l=targetLink(targetId);return l?state.opportunities.find(function(o){return S(o.id)===S(l.opportunity_id)})||null:null}
-function targetFit(targetId){var l=targetLink(targetId);return O(l&&l.fit_evidence)}
+function targetLink(targetId,opportunityId){var oid=S(opportunityId||state.inlineOpportunityId);return state.opportunityLinks.find(function(x){return !x.archived_at&&S(x.target_id)===S(targetId)&&(!oid||S(x.opportunity_id)===oid)})||null}
+function targetOpportunity(targetId,opportunityId){var l=targetLink(targetId,opportunityId);return l?state.opportunities.find(function(o){return S(o.id)===S(l.opportunity_id)})||null:null}
+function targetFit(targetId,opportunityId){var l=targetLink(targetId,opportunityId);return O(l&&l.fit_evidence)}
 function short(v,n){var s=S(v).replace(/\s+/g,' ').trim();return s.length>(n||120)?s.slice(0,(n||120)-1)+'…':s}
 function yesNoUnknown(v){return v===true?'Po':v===false?'Jo':'E panjohur'}
 function listHtml(items,empty){items=A(items).filter(function(x){return S(x).trim()});if(!items.length)return '<div class="pst-dossier-empty">'+E(empty||'Nuk ka të dhëna të regjistruara.')+'</div>';return '<ul class="pst-dossier-list">'+items.map(function(x){return'<li>'+E(x)+'</li>'}).join('')+'</ul>'}
@@ -907,7 +907,7 @@ document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(en
 document.addEventListener('pst:modules-ready',function(){setTimeout(boot,0)},{once:true});
 window.addEventListener('popstate',function(){if(location.hash==='#perfaqesime')open();else document.body.classList.remove('pst-global-fullwidth-shell')});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
-window.PSTRepresentationsV1={open:open,openTarget:function(id,returnTo){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r){toast('Kompania nuk u gjet në Përfaqësime.',true);return false}state.inlineHost=null;state.selected=S(id);state.returnTo=S(returnTo||'');state.view='profile';render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return true},renderTargetInto:function(id,host){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r||!host)return false;state.selected=S(id);state.inlineHost=host;renderDetail(host);host.onclick=detailClick;host.onchange=detailChange;return true},clearInlineHost:function(){state.inlineHost=null},refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),relationships:state.relationships.slice(),opportunities:state.opportunities.slice(),opportunityLinks:state.opportunityLinks.slice(),selected:state.selected,view:state.view,returnTo:state.returnTo,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
+window.PSTRepresentationsV1={open:open,openTarget:function(id,returnTo){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r){toast('Kompania nuk u gjet në Përfaqësime.',true);return false}state.inlineHost=null;state.inlineOpportunityId='';state.selected=S(id);state.returnTo=S(returnTo||'');state.view='profile';render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return true},renderTargetInto:function(id,host,opportunityId){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r||!host)return false;state.selected=S(id);state.inlineHost=host;state.inlineOpportunityId=S(opportunityId||'');renderDetail(host);host.onclick=detailClick;host.onchange=detailChange;return true},clearInlineHost:function(){state.inlineHost=null;state.inlineOpportunityId=''},refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),relationships:state.relationships.slice(),opportunities:state.opportunities.slice(),opportunityLinks:state.opportunityLinks.slice(),selected:state.selected,view:state.view,returnTo:state.returnTo,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
 })();
 
 

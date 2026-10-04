@@ -63,9 +63,13 @@ assert.match(opportunityUi,/options\(PROJECT_ROLES,'oem_specialist_partner'\)/);
 assert.match(opportunityUi,/data-opp-select-target/);
 assert.match(opportunityUi,/data-opp-company-workspace/);
 assert.match(opportunityUi,/pst-opp-cards/);
-assert.match(opportunityUi,/pst-opp-top/);
+assert.match(opportunityUi,/Projektet \/ Tenderët që synojmë/);
+assert.match(opportunityUi,/data-opp-open-project/);
+assert.match(opportunityUi,/pst-opp-project-toolbar/);
+assert.match(opportunityUi,/Konkurrentët & inteligjenca e tregut/);
 assert.match(ui,/openTarget:function/);
-assert.match(ui,/renderTargetInto:function/);
+assert.match(ui,/renderTargetInto:function\(id,host,opportunityId\)/);
+assert.match(ui,/inlineOpportunityId/);
 assert.match(ui,/data-rep-act="open-thread"/);
 assert.match(ui,/Modeli & kushtet e përfaqësimit/);
 assert.match(ui,/Qasja e kontaktimit/);
@@ -113,6 +117,15 @@ dom.window.supaFetch = async (path) => {
     strategic_fit_notes:'Kosovo interface and execution support.',why_kosovo:'Project-specific fit for KOSTT 55387.',market_evidence:'EBRD-backed grid project.',
     created_at:'2026-09-27T00:00:00Z',updated_at:'2026-09-27T00:00:00Z',last_verified_at:'2026-09-27T00:00:00Z'
   },{
+    id:'44444444-4444-4444-8444-444444444444',company_name:'Electromontaj S.A.',company_domain:'electromontaj.example',company_domain_normalized:'electromontaj.example',
+    company_website:'https://electromontaj.example/',country:'RO',headquarters:'Bucharest, Romania',sector:'Power infrastructure EPC',
+    product_category:'Substations and grid infrastructure',product_summary:'Regional EPC contractor.',manufacturer_description:'Power-infrastructure EPC company.',
+    products:['substations','grid infrastructure'],stage:'verified',kosovo_presence:'none_found',target_type:'lead_epc_candidate',
+    target_model:'project_based_representation',target_territory:'Kosovo',contact_email:'office@electromontaj.example',contact_role:'Business development',
+    source_key:'rep:ro:electromontaj.example',source_name:'Company website',source_url:'https://electromontaj.example/',priority_reason:'KEK JV candidate',
+    strategic_fit_notes:'Potential KEK project partner.',why_kosovo:'Relevant EPC capability.',market_evidence:'Regional project experience.',
+    created_at:'2026-10-01T00:00:00Z',updated_at:'2026-10-01T00:00:00Z',last_verified_at:'2026-10-01T00:00:00Z'
+  },{
     id:'33333333-3333-4333-8333-333333333333',company_name:'Dripmate A/S',company_domain:'dripmate.example',company_domain_normalized:'dripmate.example',
     company_website:'https://dripmate.example/',country:'DK',headquarters:'Denmark',sector:'Industrial equipment',
     product_category:'Irrigation equipment',product_summary:'Manufacturer seeking distribution partners.',manufacturer_description:'Danish manufacturer focused on irrigation equipment.',
@@ -126,12 +139,22 @@ dom.window.supaFetch = async (path) => {
   if(p.startsWith('pppp_representation_opportunity_targets_v1?'))return [{
     target_id:'11111111-1111-4111-8111-111111111111',opportunity_id:'22222222-2222-4222-8222-222222222222',candidate_role:'lead_epc_candidate',company_fit_status:'review',
     fit_evidence:{technical_fit:'Strong T&D fit.',approach_thesis:'PriSteel provides the Kosovo execution layer.',pristeel_value:['local sourcing','logistics'],risks:['Package structure not public'],regional_position:'Global EPC',external_pitch:'Potential project-specific cooperation.'}
+  },{
+    target_id:'44444444-4444-4444-8444-444444444444',opportunity_id:'55555555-5555-4555-8555-555555555555',candidate_role:'lead_epc_candidate',company_fit_status:'review',
+    fit_evidence:{technical_fit:'Relevant EPC fit for KEK.',approach_thesis:'Assess JV route.',pristeel_value:['local coordination'],risks:['Tender details incomplete'],regional_position:'Regional EPC',external_pitch:'Potential KEK project cooperation.'}
+  },{
+    target_id:'11111111-1111-4111-8111-111111111111',opportunity_id:'55555555-5555-4555-8555-555555555555',candidate_role:'oem_specialist_partner',company_fit_status:'review',
+    fit_evidence:{technical_fit:'KEC also fits the KEK package as a specialist partner.',approach_thesis:'Assess KEK-specific role separately from KOSTT.',pristeel_value:['local coordination'],risks:['Role not confirmed'],regional_position:'Global EPC',external_pitch:'Potential KEK-specific cooperation.'}
   }];
   if(p.startsWith('pppp_representation_opportunities_v1?'))return [{
     id:'22222222-2222-4222-8222-222222222222',project_name:'KOSTT Transmission Grid Strengthening',tender_reference:'EBRD Project ID 55387',
     funding_institution:'EBRD / KOSTT',total_project_value:42800000,currency:'EUR',status:'approved',procurement_stage:'pre-procurement',
     scope:'110 kV substations and underground cable',financing:'EBRD financing',fact_evidence:{approval_date:'2026-09-23',ebrd_finance:{value:25000000},danish_grant:{value:5250000}},
-    procurement_packages:[],verification_status:'verified'
+    procurement_packages:[],verification_status:'verified',notes:'Track likely EPC competition once procurement package is published.'
+  },{
+    id:'55555555-5555-4555-8555-555555555555',project_name:'KEK Industrial Upgrade JV',tender_reference:'KEK-JV-2026-01',
+    funding_institution:'KEK',total_project_value:12000000,currency:'EUR',status:'pipeline',procurement_stage:'market preparation',
+    scope:'Industrial upgrade package requiring JV partner.',financing:'Buyer funded',fact_evidence:{},procurement_packages:[],verification_status:'review'
   }];
   return [];
 };
@@ -187,20 +210,44 @@ dom.window.PSTRepresentationOpportunitiesV2.open();
 await new Promise(resolve => setTimeout(resolve,30));
 const oppView=page.querySelector('[data-rep-opportunity-view]');
 assert.equal(oppView.hidden,false,'Dega 2 must be visible');
-assert.ok(oppView.querySelector('.pst-opp-top'),'project area must be full-width top workspace');
-assert.ok(oppView.querySelector('.pst-opp-cards'),'companies must render in the main page body');
-assert.equal(oppView.querySelector('.pst-opp-detail'),null,'old tall right sidebar must not exist');
-assert.ok(oppView.querySelector('[data-opp-company-search]'),'company search missing');
-const jvCard=oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]');
-assert.ok(jvCard,'JV company card must be visible and clickable');
-const inlineWorkspace=oppView.querySelector('[data-opp-company-workspace]');
-assert.ok(inlineWorkspace,'inline company workspace missing');
+assert.match(oppView.textContent,/Projektet \/ Tenderët që synojmë/);
+assert.ok(oppView.querySelector('[data-opp-id="22222222-2222-4222-8222-222222222222"]'),'KOSTT project missing from project index');
+assert.ok(oppView.querySelector('[data-opp-id="55555555-5555-4555-8555-555555555555"]'),'KEK project missing from project index');
+assert.equal(oppView.querySelector('.pst-opp-cards'),null,'company cards must not leak into the main project index');
+assert.equal(oppView.querySelector('[data-opp-company-workspace]'),null,'company dossier must not appear before a project is opened');
+oppView.querySelector('[data-opp-open-project="22222222-2222-4222-8222-222222222222"]').click();
+await new Promise(resolve => setTimeout(resolve,20));
+assert.ok(oppView.querySelector('.pst-opp-project-toolbar'),'project workspace must open after clicking the project');
+assert.match(oppView.textContent,/KOSTT Transmission Grid Strengthening/);
+assert.match(oppView.textContent,/Konkurrentët & inteligjenca e tregut/);
+assert.ok(oppView.querySelector('[data-opp-company-search]'),'project-scoped company search missing');
+assert.ok(oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]'),'KOSTT-linked KEC card missing');
+assert.equal(oppView.querySelector('[data-opp-select-target="44444444-4444-4444-8444-444444444444"]'),null,'KEK-only company must not leak into KOSTT');
+let inlineWorkspace=oppView.querySelector('[data-opp-company-workspace]');
+assert.ok(inlineWorkspace,'project company workspace missing');
+assert.match(inlineWorkspace.textContent,/Zgjidh një kompani/);
+oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]').click();
+await new Promise(resolve => setTimeout(resolve,20));
+inlineWorkspace=oppView.querySelector('[data-opp-company-workspace]');
 assert.match(inlineWorkspace.textContent,/KEC International Limited/);
 assert.match(inlineWorkspace.textContent,/Gmail & Kontaktimi/);
 assert.match(inlineWorkspace.textContent,/Detajet e tenderit \/ projektit/);
 assert.ok(inlineWorkspace.querySelector('[data-rep-act="create-draft"]'),'inline dossier must keep Gmail draft action');
 assert.ok(inlineWorkspace.querySelector('[data-rep-act="edit"]'),'inline dossier must keep edit action');
 assert.ok(inlineWorkspace.querySelector('[data-rep-act="archive"]'),'inline dossier must keep archive action');
+oppView.querySelector('[data-opp-projects-back]').click();
+await new Promise(resolve => setTimeout(resolve,10));
+assert.match(oppView.textContent,/Projektet \/ Tenderët që synojmë/);
+oppView.querySelector('[data-opp-open-project="55555555-5555-4555-8555-555555555555"]').click();
+await new Promise(resolve => setTimeout(resolve,20));
+assert.ok(oppView.querySelector('[data-opp-select-target="44444444-4444-4444-8444-444444444444"]'),'KEK-linked Electromontaj card missing');
+assert.ok(oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]'),'same KEC identity may also be linked to KEK when explicitly associated');
+oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]').click();
+await new Promise(resolve => setTimeout(resolve,20));
+inlineWorkspace=oppView.querySelector('[data-opp-company-workspace]');
+assert.match(inlineWorkspace.textContent,/KEC International Limited/);
+assert.match(inlineWorkspace.textContent,/KEK Industrial Upgrade JV/,'same company must render in the selected KEK project context');
+assert.doesNotMatch(inlineWorkspace.textContent,/KOSTT Transmission Grid Strengthening/,'KEK-context dossier must not fall back to the first KOSTT link');
 const pipelineToggle=page.querySelector('[data-rep-toggle="pipeline"]');
 const pipelineMenu=page.querySelector('[data-rep-menu="pipeline"]');
 assert.ok(pipelineMenu.hidden,'pipeline menu must start collapsed');
