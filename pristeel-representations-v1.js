@@ -66,12 +66,12 @@ function css(){
  if(document.getElementById('pst-representations-v1-css'))return;
  var s=document.createElement('style');s.id='pst-representations-v1-css';s.textContent=`
 #page-representations{--rep:#496f62;--rep-dark:#274c40;--rep-soft:#edf5f1;--rep-line:#dce7e2;--rep-text:#243b35}
-html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell{display:block!important;grid-template-columns:minmax(0,1fr)!important}
-html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell>.sidebar,html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell>aside.sidebar{display:none!important;visibility:hidden!important;flex:0 0 0!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;overflow:hidden!important}
-html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell>.main,html body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell>main.main{display:block!important;flex:1 1 100%!important;width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
-html body.pst-global-fullwidth-shell:has(#page-representations.active) .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
+body:has(#page-representations.active) .app-shell{display:block!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:none!important}
+body:has(#page-representations.active) .app-shell>.sidebar,body:has(#page-representations.active) .app-shell>aside.sidebar{display:none!important;visibility:hidden!important;flex:0 0 0!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;overflow:hidden!important}
+body:has(#page-representations.active) .app-shell>.main,body:has(#page-representations.active) .app-shell>main.main{display:block!important;flex:1 1 100%!important;width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
+body:has(#page-representations.active) .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important;padding-left:18px!important;padding-right:18px!important}
 body:has(#page-representations.active) .topbar,body:has(#page-representations.active) #pst-global-page-backbar{display:none!important}
-.pst-rep-page{max-width:1540px;margin:0 auto;padding:10px 22px 50px;color:var(--rep-text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.pst-rep-page{width:100%;max-width:none;margin:0;padding:10px 0 50px;color:var(--rep-text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
 .pst-rep-page button,.pst-rep-page input,.pst-rep-page select,.pst-rep-page textarea{font-family:inherit}
 .pst-rep-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:7px}.pst-rep-eye{font-size:7.8px;font-weight:850;letter-spacing:.12em;text-transform:uppercase;color:#6f857e}.pst-rep-head h1{margin:1px 0 2px;font-size:24px;letter-spacing:-.45px}.pst-rep-head p{margin:0;color:#70817c;font-size:10px;line-height:1.3}.pst-rep-actions{display:flex;gap:8px;flex-wrap:wrap}.pst-rep-btn{border:1px solid var(--rep-line);background:#fff;color:var(--rep-dark);border-radius:10px;padding:9px 12px;font-size:10.5px;font-weight:800;cursor:pointer}.pst-rep-btn.primary{background:var(--rep);border-color:var(--rep);color:#fff}.pst-rep-btn.danger{color:#9b423b;border-color:#e7c9c5}.pst-rep-btn:disabled{opacity:.5;cursor:not-allowed}
 .pst-rep-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.pst-rep-kpi{background:#fff;border:1px solid var(--rep-line);border-radius:13px;padding:13px 15px}.pst-rep-kpi b{display:block;font-size:23px;color:var(--rep-dark)}.pst-rep-kpi span{font-size:9.5px;color:#7b8b86}
@@ -89,7 +89,7 @@ body:has(#page-representations.active) .topbar,body:has(#page-representations.ac
 function dossierCss(){
  if(document.getElementById('pst-representations-dossier-v2-css'))return;
  var s=document.createElement('style');s.id='pst-representations-dossier-v2-css';s.textContent=`
-#page-representations .pst-rep-page{max-width:1660px;padding-bottom:64px}
+#page-representations .pst-rep-page{width:100%;max-width:none;margin:0;padding-bottom:64px}
 #page-representations .pst-rep-topline{display:flex;align-items:center;justify-content:flex-start;margin-bottom:4px}
 #page-representations .pst-rep-back-primary{background:#4b9fbd;border-color:#4b9fbd;color:#fff;box-shadow:0 5px 12px rgba(56,132,160,.14);padding:6px 10px;min-height:30px;border-radius:9px}
 #page-representations .pst-rep-back-primary:hover{background:#3f8eaa;border-color:#3f8eaa}
@@ -249,10 +249,10 @@ function dossierCss(){
 
 
 /* Përfaqësime profile containment: keep every dossier element inside the viewport. */
-body.pst-global-fullwidth-shell:has(#page-representations.active){overflow-x:hidden}
-body.pst-global-fullwidth-shell:has(#page-representations.active) .app-shell,
-body.pst-global-fullwidth-shell:has(#page-representations.active) .main,
-body.pst-global-fullwidth-shell:has(#page-representations.active) .content,
+body:has(#page-representations.active){overflow-x:hidden}
+body:has(#page-representations.active) .app-shell,
+body:has(#page-representations.active) .main,
+body:has(#page-representations.active) .content,
 #page-representations{width:100%;max-width:100%;min-width:0;overflow-x:hidden;box-sizing:border-box}
 #page-representations *,
 #page-representations *::before,
@@ -879,6 +879,7 @@ function renderHome(){
 function removeSystemCard(){var x=document.getElementById('pst-representations-system-card');if(x)x.remove()}
 function open(){
  var p=ensurePage(),prev=document.querySelector('.page.active');
+ document.body.classList.add('pst-global-fullwidth-shell');
  if(prev&&prev!==p){state.previousPageId=prev.id||'';try{state.previousScrollY=Number(window.scrollY||0)}catch(e){state.previousScrollY=0}}
  hideOthers(p);p.style.display='block';p.classList.add('active');setRoute(true);try{window.scrollTo(0,0)}catch(e){}load(true);return true;
 }
@@ -890,19 +891,21 @@ function back(){
  }
  var p=document.getElementById('page-representations'),prev=state.previousPageId?document.getElementById(state.previousPageId):null;
  if(prev&&prev!==p){
+  document.body.classList.remove('pst-global-fullwidth-shell');
   if(p){p.classList.remove('active');p.style.display='none'}
   prev.style.display='block';prev.classList.add('active');
   try{if(window.history&&window.history.length>1)window.history.back();else setRoute(false)}catch(e){setRoute(false)}
   try{window.scrollTo(0,state.previousScrollY||0)}catch(e){}
   return;
  }
+ document.body.classList.remove('pst-global-fullwidth-shell');
  try{if(window.history&&window.history.length>1){window.history.back();return}}catch(e){}
 }
 function boot(){ensurePage();removeSystemCard();ensureHome();if(location.hash==='#perfaqesime')open();else load(false)}
 document.addEventListener('pst:native-home-ready',function(){setTimeout(ensureHome,0)});
 document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(ensureHome,0)});
 document.addEventListener('pst:modules-ready',function(){setTimeout(boot,0)},{once:true});
-window.addEventListener('popstate',function(){if(location.hash==='#perfaqesime')open()});
+window.addEventListener('popstate',function(){if(location.hash==='#perfaqesime')open();else document.body.classList.remove('pst-global-fullwidth-shell')});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
 window.PSTRepresentationsV1={open:open,openTarget:function(id,returnTo){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r){toast('Kompania nuk u gjet në Përfaqësime.',true);return false}state.inlineHost=null;state.selected=S(id);state.returnTo=S(returnTo||'');state.view='profile';render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return true},renderTargetInto:function(id,host){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r||!host)return false;state.selected=S(id);state.inlineHost=host;renderDetail(host);host.onclick=detailClick;host.onchange=detailChange;return true},clearInlineHost:function(){state.inlineHost=null},refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),relationships:state.relationships.slice(),opportunities:state.opportunities.slice(),opportunityLinks:state.opportunityLinks.slice(),selected:state.selected,view:state.view,returnTo:state.returnTo,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
 })();
