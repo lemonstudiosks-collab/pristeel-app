@@ -42,11 +42,9 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(window.document.querySelector('.ppd-page'),'Projects Operator Desk v2 did not render');
   assert(window.document.querySelectorAll('.ppd-focus').length===5,'Operator Desk must expose five operational focus groups');
   assert(window.document.querySelectorAll('.ppd-row').length===4,'Default Projects view must show four non-closed operational projects');
-  const forumCard=window.document.querySelector('[data-ppd-event="d7c23392-f7e2-4f87-8205-e7ff637ac3aa"]');
-  assert(forumCard,'Forum must render as a dedicated card inside Projects');
-  assert(forumCard.textContent.includes('German-Kosovar Economic Forum 2026'),'Forum card title missing');
-  assert(forumCard.textContent.includes('28–29 tetor 2026'),'Forum event dates missing');
-  assert(window.document.querySelector('.ppd-open-count b').textContent==='4','Forum event must stay outside operational project counts');
+  assert(!window.document.querySelector('[data-ppd-event]'),'Event records must not render inside Projects');
+  assert(!window.document.body.textContent.includes('German-Kosovar Economic Forum 2026'),'Forum must stay out of the standard Projects surface');
+  assert(window.document.querySelector('.ppd-open-count b').textContent==='4','Event records must stay outside operational project counts');
   assert(!window.document.querySelector('.pst-pm-toggle'),'Board/List toggle must not exist');
   assert(!window.document.querySelector('.pst-pm-more'),'Legacy overflow action menu must not exist');
   assert(!window.document.body.textContent.includes('Dublikatat'),'Duplicates button must not remain in daily Projects UI');
@@ -62,10 +60,6 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(window.document.querySelector('[data-ppd-open="p3"] .ppd-next').textContent.includes('Prit klientin'),'wait_for_client must expose the automatic waiting action');
   assert(window.document.querySelector('[data-ppd-open="p1"] .ppd-type').textContent.includes('Fabrikim'),'Fabrication project must show Fabrikim');
   assert(window.document.querySelector('[data-ppd-open="p2"] .ppd-type').textContent.includes('Furnizim'),'Trading project must show Furnizim');
-
-  forumCard.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
-  assert(opened==='d7c23392-f7e2-4f87-8205-e7ff637ac3aa','Forum card must open the canonical Forum project');
-  assert(workspaceFallback===0,'Projects must prefer the canonical direct project opener');
 
   const actionRow=window.document.querySelector('[data-ppd-open="p1"]');
   actionRow.dispatchEvent(new window.MouseEvent('click',{bubbles:true,cancelable:true}));
@@ -90,7 +84,7 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(facts.length===1&&facts[0].fact_key==='supplier.price','Project context bridge must remain available for Project Detail');
 
   const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
-  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20261004-forumcard1'),'Operator Desk must be cache-busted in runtime bootstrap');
+  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20261004-events-excluded1'),'Operator Desk must be cache-busted in runtime bootstrap');
   assert(bootstrap.includes('pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2'),'Classification compatibility layer must be cache-busted');
 
   const source=desk;
