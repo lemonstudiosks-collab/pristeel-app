@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 166,
-  "sequenceSha256": "8edb57bd967bdfae6215e69b3d800a0c3812e75612f354186421aa85ef46cacb",
+  "sequenceSha256": "8ba44d127bdffd5c54edd8587685dfff73d0d4fc65fc44dfe85ee034a5d52967",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260925-single-login1",
@@ -59,7 +59,7 @@
     "pristeel-document-adjustments-v3.js?v=20260803-1",
     "pristeel-dashboard-calm.js?v=20260803-1",
     "pristeel-workspace-architecture-v1.js?v=20260910-system-contract2",
-    "pristeel-home-launcher-v4.js?v=20261004-launcher14-eventsrow1",
+    "pristeel-home-launcher-v4.js?v=20261004-launcher15-eventdetail1",
     "pristeel-outreach-followup-v1.js?v=20260813-1",
     "pristeel-workspace-release-fix-v3.js?v=20260804-2",
     "pristeel-email-relation-safety-v2.js?v=20260804-1",
