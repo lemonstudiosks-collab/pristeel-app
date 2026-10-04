@@ -16,6 +16,9 @@ assert(source.includes('PSTDachSteelSalesV3'),'Steel buyers must delegate to Mat
 assert(source.includes('PSTRepresentationsV1'),'Representations must delegate to Representation owner');
 assert(source.includes("smallCard('events','Evente dhe Forume'"),'Home must expose the general Evente dhe Forume utility module');
 assert(source.includes('German-Kosovar Economic Forum 2026'),'The Events module must contain the current Forum inside its own registry, not as a Home card');
+assert(source.includes('data-event-open')&&source.includes('function eventDetail'),'Event cards must open a dedicated event workspace');
+assert(source.includes('project_emails?select='),'Event detail must load the event activity stream from linked PPPP communications');
+assert(source.includes('data-event-detail-back'),'Event detail must expose its own back navigation to the Events list');
 assert(source.includes("pst-home-launcher-active")&&source.includes('.app-shell>.sidebar'),'Home must own generic sidebar hiding through the launcher-active body class');
 assert(source.includes("page.insertBefore(r,page.firstChild||null)"),'Launcher must mount directly into page-workspace-home before legacy/native Home owners');
 assert(source.includes('new MutationObserver'),'Launcher must repair itself if a later compatibility Home rerenders the Home page');
