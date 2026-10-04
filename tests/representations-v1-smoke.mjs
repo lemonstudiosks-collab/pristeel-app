@@ -68,7 +68,8 @@ assert.match(opportunityUi,/data-opp-open-project/);
 assert.match(opportunityUi,/pst-opp-project-toolbar/);
 assert.match(opportunityUi,/Konkurrentët & inteligjenca e tregut/);
 assert.match(ui,/openTarget:function/);
-assert.match(ui,/renderTargetInto:function/);
+assert.match(ui,/renderTargetInto:function\(id,host,opportunityId\)/);
+assert.match(ui,/inlineOpportunityId/);
 assert.match(ui,/data-rep-act="open-thread"/);
 assert.match(ui,/Modeli & kushtet e përfaqësimit/);
 assert.match(ui,/Qasja e kontaktimit/);
@@ -141,6 +142,9 @@ dom.window.supaFetch = async (path) => {
   },{
     target_id:'44444444-4444-4444-8444-444444444444',opportunity_id:'55555555-5555-4555-8555-555555555555',candidate_role:'lead_epc_candidate',company_fit_status:'review',
     fit_evidence:{technical_fit:'Relevant EPC fit for KEK.',approach_thesis:'Assess JV route.',pristeel_value:['local coordination'],risks:['Tender details incomplete'],regional_position:'Regional EPC',external_pitch:'Potential KEK project cooperation.'}
+  },{
+    target_id:'11111111-1111-4111-8111-111111111111',opportunity_id:'55555555-5555-4555-8555-555555555555',candidate_role:'oem_specialist_partner',company_fit_status:'review',
+    fit_evidence:{technical_fit:'KEC also fits the KEK package as a specialist partner.',approach_thesis:'Assess KEK-specific role separately from KOSTT.',pristeel_value:['local coordination'],risks:['Role not confirmed'],regional_position:'Global EPC',external_pitch:'Potential KEK-specific cooperation.'}
   }];
   if(p.startsWith('pppp_representation_opportunities_v1?'))return [{
     id:'22222222-2222-4222-8222-222222222222',project_name:'KOSTT Transmission Grid Strengthening',tender_reference:'EBRD Project ID 55387',
@@ -237,7 +241,13 @@ assert.match(oppView.textContent,/Projektet \/ Tenderët që synojmë/);
 oppView.querySelector('[data-opp-open-project="55555555-5555-4555-8555-555555555555"]').click();
 await new Promise(resolve => setTimeout(resolve,20));
 assert.ok(oppView.querySelector('[data-opp-select-target="44444444-4444-4444-8444-444444444444"]'),'KEK-linked Electromontaj card missing');
-assert.equal(oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]'),null,'KOSTT-only KEC must not leak into KEK project');
+assert.ok(oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]'),'same KEC identity may also be linked to KEK when explicitly associated');
+oppView.querySelector('[data-opp-select-target="11111111-1111-4111-8111-111111111111"]').click();
+await new Promise(resolve => setTimeout(resolve,20));
+inlineWorkspace=oppView.querySelector('[data-opp-company-workspace]');
+assert.match(inlineWorkspace.textContent,/KEC International Limited/);
+assert.match(inlineWorkspace.textContent,/KEK Industrial Upgrade JV/,'same company must render in the selected KEK project context');
+assert.doesNotMatch(inlineWorkspace.textContent,/KOSTT Transmission Grid Strengthening/,'KEK-context dossier must not fall back to the first KOSTT link');
 const pipelineToggle=page.querySelector('[data-rep-toggle="pipeline"]');
 const pipelineMenu=page.querySelector('[data-rep-menu="pipeline"]');
 assert.ok(pipelineMenu.hidden,'pipeline menu must start collapsed');
