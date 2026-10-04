@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261003-launcher11-actions1',clockTimer=0,weatherBusy=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false;
+var V='20261004-launcher12-forum1',clockTimer=0,weatherBusy=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false;
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -73,6 +73,7 @@ var I={
  representations:svg('<circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2.8 20c.2-4.1 2-6.4 5.2-6.4 2.1 0 3.7 1 4.5 2.8M13.5 14.5c1-.8 2.1-1.2 3.5-1.2 2.7 0 4.2 2.1 4.4 5.7"/>'),
  direct:svg('<path d="M5 21V5h9v16M14 9h5v12"/><path d="M8 8h3M8 12h3M8 16h3M16 12h1M16 16h1"/>'),
  buyers:svg('<path d="M4 21V9l5 3V8l5 3V4h6v17z"/><path d="M8 17h2m4 0h2"/>'),
+ forum:svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 9h16"/><path d="M8 13h3m2 0h3M8 17h3m2 0h3"/>'),
  projects:svg('<rect x="3" y="6" width="18" height="14" rx="2.5"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/>'),
  partners:svg('<circle cx="9" cy="8" r="3"/><path d="M3.5 20c.2-4.3 2.2-6.7 5.5-6.7s5.3 2.4 5.5 6.7M16 8h5M18.5 5.5v5"/>'),
  finance:svg('<rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3.5 10h17M7 14h5"/>'),
@@ -104,6 +105,7 @@ function openDaily(){
 function route(k){
  k=S(k).toLowerCase();
  if(k==='daily')return openDaily();
+ if(k==='forum')return openForum();
  clearHomeRouteState();
  var n=nav(),ok=false;
  try{if(n&&typeof n.syncSidebar==='function')n.syncSidebar(k)}catch(e){}
@@ -149,6 +151,24 @@ function search(q){
  return false;
 }
 function openGmail(){try{window.open('https://mail.google.com/mail/u/0/#inbox','PRISTEEL_GMAIL','noopener');return true}catch(e){return false}}
+var FORUM_PROJECT_NAME='German-Kosovar Economic Forum 2026';
+function openForum(){
+ var path='projects?select=id,name,reference,status,deadline&name=eq.'+encodeURIComponent(FORUM_PROJECT_NAME)+'&limit=1';
+ if(typeof window.supaFetch!=='function'){search(FORUM_PROJECT_NAME);return true}
+ window.supaFetch(path).then(function(rows){
+  rows=A(rows);var p=rows[0];
+  if(p&&p.id){
+   clearHomeRouteState();
+   if(typeof window.pstOpenProjectWorkspace==='function'){
+    Promise.resolve(window.pstOpenProjectWorkspace(p.id)).then(keepWorkShell,keepWorkShell);
+    return;
+   }
+   route('projects');return;
+  }
+  modal('German-Kosovar Economic Forum 2026','28–29 tetor 2026 · Prishtinë','<div class="phl-state">Aktiviteti është duke u sinkronizuar me regjistrin kanonik të PPPP-së. Karta do ta hapë projektin sapo regjistrimi të jetë përfunduar.</div>');
+ }).catch(function(){search(FORUM_PROJECT_NAME)});
+ return true;
+}
 
 function dateText(d){try{return d.toLocaleDateString('sq-AL',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}catch(e){return''}}
 function clock(){
@@ -213,6 +233,7 @@ function steel(){
 }
 function mainCard(k,t,s){return'<button type="button" class="phl-main-card" data-open="'+k+'">'+icon(k,false)+'<span class="phl-main-copy"><b>'+E(t)+'</b><small>'+E(s)+'</small></span><i>'+I.arrow+'</i></button>'}
 function smallCard(k,t,s){return'<button type="button" class="phl-small-card" data-open="'+k+'">'+icon(k,false)+'<span><b>'+E(t)+'</b><small>'+E(s)+'</small></span><i>'+I.arrow+'</i></button>'}
+function forumCard(){return'<button type="button" class="phl-main-card phl-event-card" data-open="forum">'+icon('forum',false)+'<span class="phl-main-copy"><b>German-Kosovar Economic Forum 2026</b><small>28–29 tetor 2026 · Prishtinë · Business Development</small></span><i>'+I.arrow+'</i></button>'}
 function html(){
  return'<div class="phl-shell"><header class="phl-top">'
   +'<div class="phl-brand"><span class="phl-mark">P</span><span><b>PRISTEEL</b><small>PPPP</small></span></div>'
@@ -231,6 +252,7 @@ function html(){
    +mainCard('direct','Klientë të drejtpërdrejtë','Fabrication, kapacitet prodhues dhe nënkontraktim.')
    +mainCard('buyers','Blerësit e çelikut','Blerës materiali, RFQ dhe furnizim çeliku.')
   +'</section>'
+  +'<section class="phl-event-row" aria-label="Aktivitete të veçanta">'+forumCard()+'</section>'
   +'<section class="phl-secondary"><h2>Module dhe mjete tjera</h2><div>'
    +smallCard('projects','Projektet','Projektet dhe gjendja e tyre.')
    +smallCard('partners','Partnerët','Partnerë, furnitorë dhe kontakte.')
@@ -261,6 +283,7 @@ function css(){
 '.phl-search{width:min(960px,100%);height:64px;margin:0 auto 38px;display:grid;grid-template-columns:28px minmax(0,1fr) auto 44px;align-items:center;gap:12px;padding:0 10px 0 20px;border:1px solid #d9dcda;border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(37,51,61,.035)}.phl-search>svg{width:24px;height:24px;fill:none;stroke:#376f86;stroke-width:1.8}.phl-search input{height:100%;min-width:0;border:0;outline:0;background:transparent;font-size:16px;color:#213541}.phl-search input::placeholder{color:#9ba3a6}.phl-search kbd{border:1px solid #e1e3e1;border-radius:8px;background:#f6f7f5;padding:5px 7px;font:11px/1 sans-serif;color:#7b858a}.phl-search button{width:40px;height:40px;border:0;border-radius:12px;background:#f0f3f3;color:#315f75;display:grid;place-items:center;cursor:pointer}.phl-search button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2}',
 '.phl-main-grid{width:min(1180px,100%);margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.phl-main-card{min-height:158px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr;gap:14px;padding:20px;border:1px solid #d9dcda;border-radius:18px;background:#fff;color:#1e3140;text-align:left;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.phl-main-card:hover,.phl-main-card:focus-visible{transform:translateY(-2px);border-color:#a9c7d1;box-shadow:0 10px 24px rgba(35,54,65,.065);outline:0}',
 '.phl-card-icon{width:46px;height:46px;display:grid;place-items:center;border:1px solid #e1e4e2;border-radius:13px;background:#f8f9f7;color:#367991}.phl-card-icon svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}.phl-main-copy{align-self:end}.phl-main-copy b{display:block;font-size:19px;line-height:1.18;letter-spacing:-.35px}.phl-main-copy small{display:block;margin-top:6px;color:#6f7d82;font-size:11.5px;line-height:1.4}.phl-main-card>i{align-self:start;width:32px;height:32px;display:grid;place-items:center;border:1px solid #e0e3e1;border-radius:50%;color:#315e72}.phl-main-card>i svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}',
+'.phl-event-row{width:min(1180px,100%);margin:14px auto 0;display:flex;align-items:stretch}.phl-event-card{width:min(300px,100%);min-height:158px;border-color:#b8d0d9;background:#fbfdfd}.phl-event-card .phl-card-icon{background:#eef6f8;border-color:#cfe0e5}.phl-event-card:hover,.phl-event-card:focus-visible{border-color:#78a8b9;box-shadow:0 11px 26px rgba(35,80,98,.09)}',
 '.phl-secondary{width:min(1180px,100%);margin:28px auto 0;padding-top:17px;border-top:1px solid #d9dcda}.phl-secondary h2{margin:0 0 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#7d898e}.phl-secondary>div{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.phl-small-card{min-height:88px;display:grid;grid-template-columns:38px minmax(0,1fr) 16px;align-items:center;gap:10px;padding:13px 14px;border:1px solid #dfe1df;border-radius:14px;background:#fff;color:#263a48;text-align:left;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}.phl-small-card:hover,.phl-small-card:focus-visible{transform:translateY(-1px);border-color:#aec8d0;box-shadow:0 8px 18px rgba(35,54,65,.055);outline:0}.phl-small-card .phl-card-icon{width:38px;height:38px;border-radius:11px}.phl-small-card .phl-card-icon svg{width:19px;height:19px}.phl-small-card b{display:block;font-size:13px}.phl-small-card small{display:block;margin-top:3px;color:#79858a;font-size:9.5px;line-height:1.35}.phl-small-card>i{color:#47798c}.phl-small-card>i svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2}',
 '.phl-modal-bg{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:24px;background:rgba(18,29,36,.24);backdrop-filter:blur(8px)}.phl-modal{width:min(640px,96vw);max-height:86vh;overflow:auto;border:1px solid #d9dcda;border-radius:22px;background:#fff;box-shadow:0 28px 80px rgba(22,37,47,.2)}.phl-modal>header{display:flex;justify-content:space-between;gap:20px;padding:22px 24px;border-bottom:1px solid #e5e6e4}.phl-modal h2{margin:0;font-size:23px}.phl-modal p{margin:5px 0 0;color:#79858a;font-size:11px;line-height:1.45}.phl-modal header button{width:36px;height:36px;border:1px solid #e1e3e1;border-radius:50%;background:#fff;color:#53676f;cursor:pointer}.phl-modal header button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8}.phl-modal-body{padding:22px 24px}.phl-state{padding:26px;text-align:center;color:#7b878b;font-size:12px}',
 '.phl-calc{max-width:360px;margin:auto}.phl-calc input{width:100%;height:64px;border:1px solid #dde0de;border-radius:14px;padding:0 16px;text-align:right;font-size:28px;background:#fafaf8}.phl-calc>div{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.phl-calc button{height:50px;border:1px solid #e0e2df;border-radius:12px;background:#fff;font-size:16px;color:#2d4552;cursor:pointer}.phl-calc button:hover{background:#f4f6f5}',

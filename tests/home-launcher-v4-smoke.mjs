@@ -5,7 +5,7 @@ const source=fs.readFileSync('pristeel-home-launcher-v4.js','utf8');
 
 assert(source.includes('Mirësevini në PRISTEEL'),'Home title must use PRISTEEL');
 assert(!source.includes('Mirësevini në PPPP'),'Home title must not welcome into PPPP');
-['Gmail','Gazeta PPPP','Kalkulatori','Mundësitë','Përfaqësime','Klientë të drejtpërdrejtë','Blerësit e çelikut','Projektet','Partnerët','Financa','Kursi','Çmimet e çelikut'].forEach(label=>{
+['Gmail','Gazeta PPPP','Kalkulatori','Mundësitë','Përfaqësime','Klientë të drejtpërdrejtë','Blerësit e çelikut','German-Kosovar Economic Forum 2026','Projektet','Partnerët','Financa','Kursi','Çmimet e çelikut'].forEach(label=>{
   assert(source.includes(label),'Missing launcher surface: '+label);
 });
 assert(source.includes('data-time')&&source.includes('data-date'),'Compact time/date must be present');
@@ -14,6 +14,10 @@ assert(source.includes('pstOpenSearch')||source.includes('PSTSearchStableV2'),'G
 assert(source.includes('PSTEUCompaniesV1'),'Direct clients must delegate to EU Direct owner');
 assert(source.includes('PSTDachSteelSalesV3'),'Steel buyers must delegate to Material Trade owner');
 assert(source.includes('PSTRepresentationsV1'),'Representations must delegate to Representation owner');
+assert(source.includes('data-open="forum"')&&source.includes('28–29 tetor 2026'),'Forum must render as a distinct Home card');
+assert(source.includes("if(k==='forum')return openForum()"),'Forum card must have an isolated route');
+assert(source.includes('pstOpenProjectWorkspace'),'Forum must delegate to the canonical Project workspace');
+assert(source.includes("projects?select=id,name,reference,status,deadline&name=eq."),'Forum project lookup must use exact canonical project identity');
 assert(source.includes("pst-home-launcher-active")&&source.includes('.app-shell>.sidebar'),'Home must own generic sidebar hiding through the launcher-active body class');
 assert(source.includes("page.insertBefore(r,page.firstChild||null)"),'Launcher must mount directly into page-workspace-home before legacy/native Home owners');
 assert(source.includes('new MutationObserver'),'Launcher must repair itself if a later compatibility Home rerenders the Home page');
