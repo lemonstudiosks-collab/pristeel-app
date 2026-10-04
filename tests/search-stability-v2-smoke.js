@@ -24,7 +24,7 @@ const { JSDOM } = require('jsdom');
   w.open = () => ({ focus(){} });
   w.supaFetch = async path => {
     calls++;
-    if(path.startsWith('projects?')) return [{id:'p1',name:'Geiger Stahlbau',client:'Geiger',ref:'GEI-001'}];
+    if(path.startsWith('projects?')) return [{id:'p1',name:'Geiger Stahlbau',client:'Geiger',ref:'GEI-001'},{id:'d7c23392-f7e2-4f87-8205-e7ff637ac3aa',name:'German-Kosovar Economic Forum 2026',client:'PriSteel / Business Development',ref:'German-Kosovar Economic Forum 2026'}];
     if(path.startsWith('project_emails?')) return [{id:'e1',project_id:'p1',subject:'Geiger RFQ',snippet:'request for steel',gmail_thread_id:'t1'}];
     return [];
   };
@@ -53,6 +53,11 @@ const { JSDOM } = require('jsdom');
   assert(!w.document.getElementById('pst-bcc'),'Opening a project must close Search first');
 
   w.openCmdK();
+  const forumInput=w.document.getElementById('pst-bcc-input');
+  forumInput.value='German-Kosovar';
+  forumInput.dispatchEvent(new w.Event('input',{bubbles:true}));
+  await new Promise(r=>setTimeout(r,450));
+  assert(!w.document.body.textContent.includes('German-Kosovar Economic Forum 2026'),'Event records must not appear as standard Project search results');
   const before = calls;
   w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   assert(!w.document.getElementById('pst-bcc'), 'Escape must always close the search modal');
