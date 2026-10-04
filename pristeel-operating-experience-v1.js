@@ -255,6 +255,27 @@ function decorateOpportunities(){
   });
   return true;
 }
+var GMAIL_DRAFT_ICON='<svg class="pst-gmail-draft-icon" viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M1.4 3.3v12.9c0 .8.6 1.4 1.4 1.4h2.7V7.2L1.4 4.1v-.8z"/><path fill="#34A853" d="M18.5 7.2v10.4h2.7c.8 0 1.4-.6 1.4-1.4V3.3l-4.1.8v3.1z"/><path fill="#EA4335" d="M1.9 2.1c.5-.4 1.2-.4 1.8 0L12 8.3l8.3-6.2c.6-.4 1.3-.4 1.8 0 .3.2.5.6.5 1v1L12 12 1.4 4.1v-1c0-.4.2-.8.5-1z"/><path fill="#FBBC04" d="M5.5 7.2 12 12 18.5 7.2v3.5L12 15.5l-6.5-4.8V7.2z"/></svg>';
+function gmailDraftLabelText(text){
+  var t=norm(text);
+  if(t==='krijo draft'||t==='krijo draft emaili'||t==='krijo gmail draft'||t==='krijo email draft'||t==='krijo draft ne gmail')return'Krijo draft në Gmail';
+  if(t==='krijo rfq draft'||t==='krijo rfq draft ne gmail')return'Krijo RFQ draft në Gmail';
+  if(t==='rigjenero gmail draft'||t==='rigjenero draft'||t==='rigjenero draft ne gmail')return'Rigjenero draft në Gmail';
+  return'';
+}
+function decorateGmailDraftButtons(root){
+  root=root||document;if(!root||!root.querySelectorAll)return 0;var changed=0;
+  root.querySelectorAll('button,a').forEach(function(b){
+    var label=gmailDraftLabelText(b.textContent);if(!label)return;
+    var existing=b.querySelector('.pst-gmail-draft-label');
+    b.classList.add('pst-gmail-draft-action');b.setAttribute('data-pst-gmail-draft-style','1');
+    if(existing&&S(existing.textContent).trim()===label&&b.querySelector('.pst-gmail-draft-icon'))return;
+    while(b.firstChild)b.removeChild(b.firstChild);
+    b.insertAdjacentHTML('afterbegin',GMAIL_DRAFT_ICON);
+    var span=document.createElement('span');span.className='pst-gmail-draft-label';span.textContent=label;b.appendChild(span);changed++;
+  });
+  return changed;
+}
 function systemHost(){
   var ids=['page-workspace-apps','module-hub','page-home'];for(var i=0;i<ids.length;i++){var e=document.getElementById(ids[i]);if(e&&e.classList.contains('active'))return e;}return null;
 }
@@ -325,12 +346,18 @@ body[data-pst-business-zone] .content>.page.active,body[data-pst-business-zone] 
 #pst-system-operating-tools{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 0 14px;padding:14px 16px;border:1px solid var(--pst-section-line);border-top:4px solid var(--pst-section-accent);border-radius:14px;background:#fff;box-shadow:0 5px 18px rgba(48,63,73,.07)}
 #pst-system-operating-tools>div>span{display:block;color:var(--pst-section-deep);font-size:8px;font-weight:900;letter-spacing:.12em}#pst-system-operating-tools>div>b{display:block;margin-top:3px;color:#31464f;font-size:13px}#pst-system-operating-tools>div>small{display:block;margin-top:3px;color:#77878e;font-size:8px}
 #pst-system-operating-tools nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}#pst-system-operating-tools button{height:34px;padding:0 11px;border:1px solid var(--pst-section-line);border-radius:9px;background:var(--pst-section-soft);color:var(--pst-section-deep);font-size:8px;font-weight:850;cursor:pointer}
+.pst-gmail-draft-action{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;min-height:38px!important;padding:0 14px!important;border:1px solid #CBD7E3!important;border-radius:12px!important;background:#fff!important;color:#2B6B9D!important;font-weight:800!important;line-height:1.15!important;white-space:nowrap!important;box-shadow:0 1px 2px rgba(35,62,82,.07)!important;text-decoration:none!important}
+.pst-gmail-draft-action:hover:not(:disabled){background:#F8FBFE!important;border-color:#AFC5D8!important;color:#245E8B!important;box-shadow:0 3px 10px rgba(35,62,82,.09)!important}
+.pst-gmail-draft-action:focus-visible{outline:0!important;box-shadow:0 0 0 3px rgba(66,133,244,.16)!important}
+.pst-gmail-draft-action:disabled{opacity:.58!important;cursor:not-allowed!important}
+.pst-gmail-draft-action .pst-gmail-draft-icon{display:block!important;width:22px!important;height:17px!important;flex:0 0 22px!important}
+.pst-gmail-draft-action .pst-gmail-draft-label{display:inline-block!important;min-width:0!important}
 @media(max-width:1050px){#page-workspace-project .pst-operating-phase-nav{overflow-x:auto!important}#page-workspace-project .pst-business-phases{grid-template-columns:repeat(5,112px)!important}#pst-system-operating-tools{align-items:flex-start;flex-direction:column}}
 `;
   document.head.appendChild(s);
 }
 function apply(){
-  css();normalizeNav();var zone=applyZone(currentZone());
+  css();normalizeNav();decorateGmailDraftButtons(document);var zone=applyZone(currentZone());
   if(zone==='home')stabilizeHome();
   if(zone==='opportunities')decorateOpportunities();
   if(zone==='projects'&&active('page-workspace-project')&&!workbenchOwnsProject()){decorateProjectNav();decorateProcurementFlow();rewriteNextAction();applyProjectPhase(document.getElementById('page-workspace-project'));}
@@ -347,9 +374,9 @@ function install(){
   document.addEventListener('click',function(e){
     var direct=e.target&&e.target.closest?e.target.closest('#pst-ws-home-actions .pst-canonical-action .pst-ws-action-open[data-pst-direct-action="1"]'):null;
     if(direct){var row=direct.closest('.pst-canonical-action[data-ws-action]'),a=row&&homeSnapshotAction(row.getAttribute('data-ws-action')),target=homeActionTarget(a);if(a&&target){e.preventDefault();e.stopImmediatePropagation();navigateHomeAction(a,target);return;}}
-    var t=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn,.pst-kek-btn,[data-pwf-area],[data-pwf-stage],[data-pwf-action],[onclick*="pstWorkspaceGo"],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,260,650].forEach(function(ms){setTimeout(apply,ms);});
+    var t=e.target&&e.target.closest?e.target.closest('#pst-ws-canonical-nav .pst-ws-navbtn,.pst-kek-btn,.pst-gmail-draft-action,[data-dss-action],[data-pst-opp-draft],[data-td-gmail],[data-pwf-area],[data-pwf-stage],[data-pwf-action],[onclick*="pstWorkspaceGo"],[onclick*="showPage"],[onclick*="openModuleHub"]'):null;if(t)[0,80,260,650].forEach(function(ms){setTimeout(apply,ms);});
   },true);
 }
 css();install();if(document.readyState!=='loading')schedule();
-window.PSTOperatingExperienceV1={apply:apply,schedule:schedule,normalizeNav:normalizeNav,currentZone:currentZone,applyZone:applyZone,decorateProjectNav:decorateProjectNav,rewriteNextAction:rewriteNextAction,decorateHomeRoutes:decorateHomeRoutes,decorateOpportunities:decorateOpportunities,_test:{phaseFromView:phaseFromView,procurementDefault:procurementDefault,commercialDefault:commercialDefault,offerSent:offerSent,homeActionTarget:homeActionTarget}};
+window.PSTOperatingExperienceV1={apply:apply,schedule:schedule,normalizeNav:normalizeNav,currentZone:currentZone,applyZone:applyZone,decorateProjectNav:decorateProjectNav,rewriteNextAction:rewriteNextAction,decorateHomeRoutes:decorateHomeRoutes,decorateOpportunities:decorateOpportunities,decorateGmailDraftButtons:decorateGmailDraftButtons,_test:{phaseFromView:phaseFromView,procurementDefault:procurementDefault,commercialDefault:commercialDefault,offerSent:offerSent,homeActionTarget:homeActionTarget,gmailDraftLabelText:gmailDraftLabelText}};
 })();

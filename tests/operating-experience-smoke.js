@@ -39,6 +39,10 @@ const dom = new JSDOM(`<!doctype html><html><head></head><body>
   </div>
   <div id="page-workspace-apps" class="page"></div>
   <div id="page-home" class="page"></div>
+  <button id="gmail-draft-generic">Krijo draft</button>
+  <button id="gmail-draft-email"><span>✉</span>Krijo draft emaili</button>
+  <button id="gmail-draft-rfq">Krijo RFQ draft</button>
+  <button id="draft-preview-only">Shiko draftin</button>
 </div>
 </body></html>`, {runScripts:'outside-only', url:'https://example.test'});
 const w = dom.window;
@@ -54,6 +58,17 @@ assert.strictEqual(w.document.querySelector('[data-key="inbox"]').style.display,
 assert.strictEqual(w.document.querySelector('[data-key="commercial"]').style.display, 'none', 'Commercial tools must not remain a primary navigation item');
 for(const key of ['opportunities','partners','system']) assert.strictEqual(w.document.querySelector(`[data-key="${key}"]`).style.display,'none',`Alias ${key} must not duplicate primary navigation`);
 assert.strictEqual(w.document.body.dataset.pstBusinessZone, 'projects');
+
+const gmailGeneric=w.document.getElementById('gmail-draft-generic');
+const gmailEmail=w.document.getElementById('gmail-draft-email');
+const gmailRfq=w.document.getElementById('gmail-draft-rfq');
+assert.strictEqual(gmailGeneric.classList.contains('pst-gmail-draft-action'),true,'generic Gmail draft creation must use the canonical Gmail action button');
+assert.strictEqual(gmailGeneric.querySelector('.pst-gmail-draft-label').textContent,'Krijo draft në Gmail');
+assert.ok(gmailGeneric.querySelector('svg.pst-gmail-draft-icon'),'Gmail draft action must use a resolution-independent vector icon');
+assert.strictEqual(gmailEmail.querySelector('.pst-gmail-draft-label').textContent,'Krijo draft në Gmail');
+assert.strictEqual(gmailRfq.querySelector('.pst-gmail-draft-label').textContent,'Krijo RFQ draft në Gmail');
+assert.strictEqual(w.document.getElementById('draft-preview-only').classList.contains('pst-gmail-draft-action'),false,'preview-only draft actions must not be restyled as Gmail creation');
+assert.strictEqual(w.PSTOperatingExperienceV1._test.gmailDraftLabelText('Rigjenero Gmail draft'),'Rigjenero draft në Gmail');
 
 const phaseLabels=[...w.document.querySelectorAll('.pst-phase-btn>b')].map(x=>x.textContent);
 assert.deepStrictEqual(phaseLabels,['Përgatitja','Prokurimi','Komerciale','Ekzekutimi','Financa']);
