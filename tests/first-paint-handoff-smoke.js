@@ -4,7 +4,8 @@ const assert=require('assert');
 const html=fs.readFileSync('pristeel-procurement.html','utf8');
 const search=fs.readFileSync('pristeel-search.js','utf8');
 
-const rootAt=html.indexOf('<html lang="sq" class="pst-first-paint">');
+// Keep the parser guard contract while allowing additional presentation attributes.
+const rootAt=html.search(/<html\b(?=[^>]*\blang="sq")(?=[^>]*\bclass="[^"]*\bpst-first-paint\b)[^>]*>/);
 const guardAt=html.indexOf('id="pst-first-paint-guard"');
 const firstExternalAt=html.indexOf('<script src="https://');
 assert(rootAt>=0,'The parser must engage the first-paint guard on the root element');

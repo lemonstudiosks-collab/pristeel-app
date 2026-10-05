@@ -52,7 +52,7 @@ html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navtitle { font-size:9px!imp
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { min-height:36px!important; height:auto!important; padding:8px 10px!important; margin:0 0 3px!important; border:0!important; border-radius:6px!important; background:transparent!important; color:var(--pst-muted)!important; font-family:Inter,Arial,sans-serif!important; font-size:12px!important; font-weight:400!important; box-shadow:none!important; white-space:normal!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:is(.active,.on,[aria-current=page]) { background:var(--pst-selected)!important; color:var(--pst-accent)!important; font-weight:600!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:hover { background:#e7edef!important; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn svg { width:16px!important; height:16px!important; min-width:16px!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn svg { width:16px!important; height:16px!important; min-width:16px!important; fill:none!important; stroke:currentColor!important; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-create-main { min-height:34px!important; border-radius:5px!important; background:#fff!important; color:var(--pst-accent)!important; border:1px solid #d9e4e2!important; font-size:12px!important; font-weight:500!important; }
 /* Home uses existing handlers, with quiet rows in place of a card dashboard. */
 html#pst-spie-platform body #pst-home-launcher-v4 { background:var(--pst-paper)!important; color:var(--pst-ink)!important; font-family:Inter,Arial,sans-serif!important; }
