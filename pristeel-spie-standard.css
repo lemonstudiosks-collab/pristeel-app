@@ -142,4 +142,22 @@ html#pst-spie-platform body #pst-mobile-app-v2 :is(.pma-card,.pma-project,.pma-h
  html#pst-spie-platform body #pst-home-launcher-v4 .phl-shell main { padding:24px 0!important; }
  html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary > div { grid-template-columns:minmax(0,1fr)!important; }
 }
+/* Opportunities keeps the same typography before and after any delegated click. */
+html#pst-spie-platform body #page-kek-tenders .pst-opp-side h4 { font-size:14px!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-side-item .text { font-size:12px!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-side-item .num { font-size:11px!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-side-item .check { font-size:9px!important; line-height:1!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-work-row .main b { font-size:13px!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-work-row .main small { font-size:11px!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-work-row :is(.source,.field,.date) { font-size:12px!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-work-row .status { font-size:10px!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-work-cols { font-size:10px!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-kek-tenders :is(.pst-opp-work-head small,.pst-opp-side-head button,.pst-opp-work-tools input,.pst-opp-work-tools button) { font-size:12px!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-work-head h3 { font-size:16px!important; }
+html#pst-spie-platform body :is(#pst-opp-modal-bg,#pst-tender-draft-modal) { font-family:Inter,Arial,sans-serif!important; }
+html#pst-spie-platform body #pst-opp-modal-bg .pst-opp-detail-head h3 { font-size:20px!important; line-height:1.4!important; }
+html#pst-spie-platform body #pst-opp-modal-bg :is(.pst-opp-detail-grid small,.pst-opp-detail-desc small) { font-size:11px!important; line-height:1.4!important; }
+html#pst-spie-platform body #pst-opp-modal-bg :is(.pst-opp-detail-grid b,.pst-opp-detail-desc p,.pst-opp-detail-head small) { font-size:13px!important; line-height:1.5!important; }
+html#pst-spie-platform body #pst-tender-draft-modal :is(label,small,footer button) { font-size:12px!important; line-height:1.4!important; }
+html#pst-spie-platform body #pst-tender-draft-modal :is(input,textarea) { font-size:13px!important; line-height:1.5!important; }
 @media print { html#pst-spie-platform body #app-sidebar { display:none!important; } html#pst-spie-platform body .app-shell#app-shell-root > .main { width:100%!important; } }

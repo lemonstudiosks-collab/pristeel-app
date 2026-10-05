@@ -1,5 +1,12 @@
 ## 2026-10-05 — SPIE navigation compatibility
 
+## 2026-10-05 — Mundësitë draft provenance and stable typography
+
+- Reproduced `verified_ted_winner_contact_missing` on Johann Anwander despite exact canonical TED winner email provenance. The bounded candidate RPC now accepts that evidence with the existing identity version, identifier and contact-tier gates; another winner's mailbox stays excluded.
+- Static SPIE Opportunities typography owns filter/list/detail/draft text. Legacy readability no longer adds delayed font classes in those surfaces after clicks.
+- Six read-only SQL fixtures passed (declared brand, multi-recipient, unproven, legacy, missing identity, wrong owner), plus the live candidate read-back. UI click-cycle, existing Desk, recipient and SPIE standard regressions passed. No Gmail send or business-state mutation is part of the repair.
+
+
 The legacy Operating Experience layer now defers sidebar pruning, reordering and active selection when the static SPIE standard is enabled. Existing themes and business controls remain intact; legacy navigation behavior remains available without the standard. Added a focused regression test. One module cache version changed; bootstrap order and count remain unchanged. No Supabase writes or migrations.
 
 ## 2026-10-05 - SPIE evidence and tender partner context

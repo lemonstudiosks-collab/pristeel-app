@@ -204,6 +204,8 @@ function hasReadableContent(el){
 }
 
 function mark(el){
+  // SPIE typography is static; do not resize Opportunities after click/rerender.
+  if(document.documentElement.classList.contains('pst-spie-standard')&&el&&el.closest&&el.closest('#page-kek-tenders,#pst-opp-modal-bg,#pst-ti-backdrop,#pst-tender-draft-modal'))return;
   if(skip(el)||!hasReadableContent(el))return;
   if(el.classList.contains('pst-rd-xxs')||el.classList.contains('pst-rd-xs')||el.classList.contains('pst-rd-sm')||el.classList.contains('pst-rd-control')||el.classList.contains('pst-rd-heading'))return;
   var px=parseFloat(window.getComputedStyle(el).fontSize)||0;
