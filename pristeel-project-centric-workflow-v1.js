@@ -325,7 +325,7 @@ function applyOpportunityFilter(kind,value){
 function openOpportunities(context,force){setOpportunityContext(context);return loadOpportunities(force!==false);}
 async function partnerContext(){
  if(tenderState.partners)return tenderState.partners;
- try{var rows=A(await db('partners?select=name,country,business_type,relation,categories,certifications,importance_reason,notes&limit=500'));tenderState.partners=rows.filter(function(r){var rel=A(r.relation).map(N),cat=A(r.categories).map(N);return rel.indexOf('manufacturer')>-1||rel.indexOf('subcontractor')>-1||rel.indexOf('supplier')>-1||cat.indexOf('fabrication')>-1;}).slice(0,80);}catch(e){tenderState.partners=[];}
+ try{var rows=A(await db('partners?select=name,country,business_type,relation,categories,certifications,importance_reason,notes&limit=80'));tenderState.partners=rows.filter(function(r){var rel=A(r.relation).map(N),cat=A(r.categories).map(N);return rel.indexOf('manufacturer')>-1||rel.indexOf('subcontractor')>-1||rel.indexOf('supplier')>-1||cat.indexOf('fabrication')>-1;}).slice(0,80);}catch(e){tenderState.partners=[];}
  return tenderState.partners;
 }
 function tenderById(id){return tenderState.rows.find(function(r){return S(r.id)===S(id);})||null;}
@@ -338,7 +338,8 @@ async function serverTenderAnalysis(r){
    else if(role==='trader_consortium')q='Ky është një tender TED i fituar nga trader/konsorcium. Analizo rolin e mundshëm të fituesit dhe nëse PRISTEEL mund të ofrojë furnizim ose prodhim të nënkontraktuar. Trego qartë çfarë duhet verifikuar.';
    else q='Ky është një tender TED i fituar, por roli i fituesit nuk është verifikuar. Vlerëso relevancën për PRISTEEL dhe thuaj çfarë duhet verifikuar para outreach. Mos përgatit ose rekomando email derisa roli të jetë i qartë.';
  }else q='Analizo këtë tender për PRISTEEL. Vlerëso scope-in e mundshëm, çfarë duhet verifikuar në dosje dhe cilët partnerë/prodhues të regjistruar në PPPP mund të jenë relevantë për realizim. Nëse Eurosteel është realisht i përshtatshëm sipas të dhënave, thuaje; mos e favorizo pa bazë.';
- try{return await AI.ask(q,{scope:'tender',context:{tender:r,winner_role:role}});}catch(e){return null;}
+ var candidate_partners=await partnerContext();
+ try{return await AI.ask(q,{scope:'tender',context:{tender:r,winner_role:role,candidate_partners:candidate_partners,partner_context_limit:80,partner_context_complete:false,partner_context_note:'Bounded review candidates only; absence is not proof of no partners. Supplier selection requires human approval.'}});}catch(e){return null;}
 }
 function tenderFactsHtml(r){
  var p=tenderPayload(r),d=p.ted_details&&typeof p.ted_details==='object'?p.ted_details:{},desc=S(p.description||d.description||d.procedure_description).trim();

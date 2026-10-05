@@ -1,5 +1,7 @@
 # PPPP MASTER CONTEXT
 
+SPIE follow-up (05 Oct 2026): `spie.workspace.evidence.v1` holds controlled canonical evidence for Samples and bounded Drive metadata. The pipeline API excludes samples; preserve its schema and pricing field. Merge exact Drive identities, keep unverified released revisions Unknown. Manual tender analysis passes up to 80 registered partner review candidates; this never selects a supplier.
+
 **Purpose:** canonical continuity document for the PRISTEEL Procurement Projects Platform (PPPP).
 
 This file exists so a new ChatGPT/Codex/engineering session can continue the same platform without reconstructing the project from chat history or accidentally replacing working architecture.

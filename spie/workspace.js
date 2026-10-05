@@ -1,4 +1,4 @@
-import * as D from './data.mjs?v=20261005-1';
+import * as D from './data.mjs?v=20261005-2';
 
 const view = document.getElementById('view');
 const readStatus = document.getElementById('read-status');
@@ -33,20 +33,24 @@ function ensureOverview() {
   if (!overviewPromise) overviewPromise = Promise.all([ensureSnapshot(), D.latestFiles().then(rows => ({ rows }), error => ({ rows: [], error: error.message }))]);
   return overviewPromise;
 }
-function phase(project) {
+function phase(data) {
+  const project = data.project;
   const mapping = { rfq:'RFQ', sourcing:'RFQ', offer:'Offer', pricing:'Offer', negotiation:'Negotiation', samples:'Samples', sample:'Samples', contract:'Contract', production:'Production', execution:'Production', delivery:'Delivery', payment:'Payment' };
   const canonical = mapping[str(project.pipeline_stage).toLowerCase()];
-  // Samples is the operator-declared phase for this workspace, not a DB update.
-  // A later explicit canonical phase always takes precedence.
-  return canonical && stages.indexOf(canonical) > 3 ? canonical : 'Samples';
+  if (canonical && stages.indexOf(canonical) > 3) return canonical;
+  const evidence = D.workspaceEvidence(data)?.value?.workspace_phase;
+  return evidence && stages.includes(evidence.status) && evidence.evidence && D.safeLink(evidence.source_url, 'gmail') ? evidence.status : 'Samples';
 }
-function phaseNote(project) {
+function phaseNote(data) {
+  const project = data.project;
+  const fact = D.workspaceEvidence(data), evidence = fact?.value?.workspace_phase;
+  if (evidence && phase(data) === evidence.status && evidence.evidence && D.safeLink(evidence.source_url, 'gmail')) return provenance('Project phase verified from SPIE communication; stored in canonical PPPP context', evidence.observed_at, D.safeLink(evidence.source_url, 'gmail'));
   if (str(project.pipeline_stage).toLowerCase() === 'samples') return '';
-  if (stages.indexOf(phase(project)) > 3) return '';
+  if (stages.indexOf(phase(data)) > 3) return '';
   return notice('Samples is the operator-declared workspace phase (05 Oct 2026). PPPP records "' + str(project.pipeline_stage || 'Unknown') + '". Review the canonical phase before updating it.');
 }
-function stageTrack(project) {
-  return '<ol class="stage-track" aria-label="Project stages">' + stages.map(name => '<li' + (name === phase(project) ? ' aria-current="step"' : '') + '>' + name + '</li>').join('') + '</ol><p class="provenance">Stage position only; earlier stages are not marked completed and no completion percentage is inferred.</p>';
+function stageTrack(data) {
+  return '<ol class="stage-track" aria-label="Project stages">' + stages.map(name => '<li' + (name === phase(data) ? ' aria-current="step"' : '') + '>' + name + '</li>').join('') + '</ol><p class="provenance">Stage position only; earlier stages are not marked completed and no completion percentage is inferred.</p>';
 }
 function facts(data) { return arr(data.context_facts); }
 function observedFacts(data) { return facts(data).filter(f => f.fact_status === 'observed' && f.evidence_status !== 'review'); }
@@ -67,7 +71,7 @@ function health(data) {
 function summary(data) {
   const latest = observedFacts(data).find(f => typeof f.value?.situation_summary === 'string' || typeof f.value?.executive_summary === 'string');
   if (latest) return text(latest.value.situation_summary || latest.value.executive_summary, 700) + provenance(latest.subject || 'Project context',latest.updated_at,factSource(latest));
-  return 'TenneT is in ' + escape(phase(data.project)) + '. ' + (data.recent_emails?.length ? 'Review the latest linked communication, technical requirements and open decisions below.' : 'Current communication and readiness still require verification.');
+  return 'TenneT is in ' + escape(phase(data)) + '. ' + (data.recent_emails?.length ? 'Review the latest linked communication, technical requirements and open decisions below.' : 'Current communication and readiness still require verification.');
 }
 function sampleEvidence(data) { return arr(data.recent_emails).find(m=>m.gmail_message_id === '1a0fb8a8d5040dc9' && !m.needs_review); }
 function currentActions(data) {
@@ -92,11 +96,11 @@ function fileRows(rows, compact = false) {
   if (!rows.length) return empty('No project document metadata was returned. Check the existing Drive folder for the complete dossier.');
   if (compact) return rows.slice(0,3).map(f => {
     const m=D.metadata(f);
-    return row(f.title || f.file_name || f.doc_nr || 'Document', m.category + ' · Revision: ' + (m.revision ?? 'Unknown'), provenance('PPPP document metadata', f.created_at, D.safeLink(f.drive_url, 'drive')));
+    return row(f.title || f.file_name || f.doc_nr || 'Document', m.category + ' · Revision: ' + (m.revision ?? 'Unknown'), provenance(f.source || 'PPPP document metadata', f.created_at, D.safeLink(f.drive_url, 'drive')));
   }).join('');
   return '<div class="table-wrap"><table><thead><tr><th style="width:40%">Document</th><th style="width:18%">Category</th><th style="width:20%">Revision</th><th style="width:22%">Source / date</th></tr></thead><tbody>' + rows.map(f => {
     const m=D.metadata(f), link=D.safeLink(f.drive_url,'drive');
-    return '<tr><td class="file-title">' + text(f.title || f.file_name || f.doc_nr || 'Document') + (m.documentKey ? '<div class="provenance">' + text(m.documentKey) + '</div>' : '') + '</td><td>' + escape(m.category) + '</td><td>' + text(m.revision ?? 'Unknown') + (m.latest ? '<div class="provenance">Verified latest revision</div>' : '<div class="provenance">Latest: Unknown</div>') + '</td><td>' + (sourceLink(link,'Drive') || '<span class="muted">Drive link unavailable</span>') + '<div class="provenance">' + date(f.doc_date || f.created_at) + '</div></td></tr>';
+    return '<tr><td class="file-title">' + text(f.title || f.file_name || f.doc_nr || 'Document') + (m.documentKey ? '<div class="provenance">' + text(m.documentKey) + '</div>' : '') + '</td><td>' + escape(m.category) + (m.categorySuggested ? '<div class="provenance">Suggested from title</div>' : '') + '</td><td>' + text(m.revision ?? 'Unknown') + (m.latest ? '<div class="provenance">Verified latest revision</div>' : '<div class="provenance">Latest: Unknown</div>') + '</td><td>' + (sourceLink(link,'Drive') || '<span class="muted">Drive link unavailable</span>') + '<div class="provenance">' + date(f.doc_date || f.created_at) + (f.source_observed_at ? ' · Metadata checked ' + date(f.source_observed_at) : '') + '</div></td></tr>';
   }).join('') + '</tbody></table></div>';
 }
 function communication(data) {
@@ -115,27 +119,28 @@ function milestones(data) {
 }
 function renderOverview(data, latest) {
   const p=data.project;
-  return '<div class="hero"><p class="eyebrow">SPIE WORKSPACE / EXECUTIVE OVERVIEW</p><h1>' + text(p.name) + '</h1><div class="hero-meta"><span>Current phase · <strong>' + escape(phase(p)) + '</strong></span>' + badge(p.operational_state === 'action_required' ? 'Attention' : 'Unknown') + '<span>PPPP state: ' + text(p.operational_state || p.status || 'Unknown') + '</span></div><div class="summary">' + summary(data) + '</div>' + stageTrack(p) + phaseNote(p) + '</div>'
+  return '<div class="hero"><p class="eyebrow">SPIE WORKSPACE / EXECUTIVE OVERVIEW</p><h1>' + text(p.name) + '</h1><div class="hero-meta"><span>Current phase · <strong>' + escape(phase(data)) + '</strong></span>' + badge(p.operational_state === 'action_required' ? 'Attention' : 'Unknown') + '<span>PPPP state: ' + text(p.operational_state || p.status || 'Unknown') + '</span></div><div class="summary">' + summary(data) + '</div>' + stageTrack(data) + phaseNote(data) + '</div>'
   + '<div class="columns"><div>' + section('Needs attention now',currentActions(data)) + section('Waiting for',waitingFor(data))
   + section('What changed', '<p class="muted small">Latest recorded evidence; no historical comparison is claimed.</p>' + (facts(data).length ? facts(data).slice(0,3).map(f=>row(f.subject || f.fact_key, f.fact_status === 'suggested' ? 'Suggested · requires review' : 'Recorded observation', provenance('PPPP context update',f.updated_at,factSource(f)))).join('') : empty('No recent context evidence returned.')))
-  + section('Latest files',latest.error ? notice(latest.error,true) : fileRows(latest.rows,true),'files')
+  + section('Latest files',latest.error ? notice(latest.error,true) : fileRows(D.evidenceFiles(data,latest.rows).sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at))),true),'files')
   + '</div><div>' + section('Finance & Contract',contractSnapshot(data),'finance') + section('Next milestones',milestones(data)) + section('Project health',health(data)) + section('Latest communication',communication(data),'emails') + '</div></div>' + footer();
 }
 function renderProjects(data) {
   const p=data.project;
   return pageHeader('Projects','One canonical TenneT project. No duplicate project or parallel project registry.')
-    + section(p.name, '<dl class="facts"><div><dt>Client</dt><dd>' + text(p.client) + '</dd></div><div><dt>Current workspace phase</dt><dd>' + phase(p) + '</dd></div><div><dt>Reference</dt><dd>' + text(p.business_ref || p.ref || 'Unknown') + '</dd></div><div><dt>Canonical operating state</dt><dd>' + text(p.operational_state || 'Unknown') + '</dd></div><div><dt>Canonical pipeline</dt><dd>' + text(p.pipeline_stage || 'Unknown') + '</dd></div><div><dt>Last linked email</dt><dd>' + date(p.last_email_at) + '</dd></div></dl>' + stageTrack(p) + phaseNote(p))
+    + section(p.name, '<dl class="facts"><div><dt>Client</dt><dd>' + text(p.client) + '</dd></div><div><dt>Current workspace phase</dt><dd>' + phase(data) + '</dd></div><div><dt>Reference</dt><dd>' + text(p.business_ref || p.ref || 'Unknown') + '</dd></div><div><dt>Canonical operating state</dt><dd>' + text(p.operational_state || 'Unknown') + '</dd></div><div><dt>Canonical pipeline</dt><dd>' + text(p.pipeline_stage || 'Unknown') + '</dd></div><div><dt>Last linked email</dt><dd>' + date(p.last_email_at) + '</dd></div></dl>' + stageTrack(data) + phaseNote(data))
     + section('Project evidence', '<p>' + sourceLink(D.safeLink(p.drive_folder_url,'drive'),'Existing Drive folder') + '</p><a class="btn" href="#overview">Executive overview →</a>') + footer();
 }
 async function renderFiles() {
-  const [data,rows] = await Promise.all([ensureSnapshot(),D.files()]);
+  const [data,records] = await Promise.all([ensureSnapshot(),D.files()]);
+  const rows=D.evidenceFiles(data,records);
   const folder=D.safeLink(data.project.drive_folder_url,'drive');
   return pageHeader('Files','Project metadata and links. Original documents remain in the existing Google Drive folder.')
   + '<p>' + sourceLink(folder,'Open project Drive folder') + '</p>'
   + '<div class="toolbar"><label>Category <select id="file-category"><option>All</option>' + ['Technical','Commercial','Contracts','Finance','Quality','Logistics','Unclassified'].map(c=>'<option>'+c+'</option>').join('') + '</select></label><label>Find document <input id="file-search" type="search" placeholder="Name, reference or revision"></label></div>'
-  + '<p class="muted small">Revisions use explicit document metadata. The latest drawing revision is Unknown unless explicitly verified. This is a bounded metadata list, not a complete Drive inventory.</p>'
+  + '<p class="muted small">Revisions use explicit document metadata. The latest drawing revision is Unknown unless explicitly verified. Includes canonical document records and the verified folder metadata snapshot. Categories marked suggested need review. Folder coverage and released revisions remain unverified.</p>'
   + '<div id="file-results">' + fileRows(rows) + '</div>'
-  + '<p class="view-footer">Up to ' + D.LIMITS.files + ' project records · ' + rows.length + ' returned' + (rows.length===D.LIMITS.files?' · Limit reached; the complete dossier remains in Drive.':'') + '</p>' + footer();
+  + '<p class="view-footer">Up to ' + D.LIMITS.files + ' canonical document rows plus bounded Drive metadata · ' + rows.length + ' shown' + (records.length===D.LIMITS.files?' · Canonical limit reached; the complete dossier remains in Drive.':'') + '</p>' + footer();
 }
 function context(mail) {
   const s=str(mail.subject).toLowerCase();
@@ -197,7 +202,7 @@ async function renderPartners() {
 }
 function installFilters(name) {
   if(name==='files') {
-    const apply=async()=>{ const rows=await D.files(); const category=document.getElementById('file-category'); const search=document.getElementById('file-search'); const results=document.getElementById('file-results'); if(!category||!search||!results)return; const q=search.value.toLowerCase();results.innerHTML=fileRows(rows.filter(r=> (category.value==='All'||D.metadata(r).category===category.value) && [r.title,r.file_name,r.doc_nr,D.metadata(r).revision].map(str).join(' ').toLowerCase().includes(q))); };
+    const apply=async()=>{ const [data,records]=await Promise.all([ensureSnapshot(),D.files()]); const rows=D.evidenceFiles(data,records); const category=document.getElementById('file-category'); const search=document.getElementById('file-search'); const results=document.getElementById('file-results'); if(!category||!search||!results)return; const q=search.value.toLowerCase();results.innerHTML=fileRows(rows.filter(r=> (category.value==='All'||D.metadata(r).category===category.value) && [r.title,r.file_name,r.doc_nr,D.metadata(r).revision].map(str).join(' ').toLowerCase().includes(q))); };
     document.getElementById('file-category')?.addEventListener('change',apply);
     document.getElementById('file-search')?.addEventListener('input',apply);
   }

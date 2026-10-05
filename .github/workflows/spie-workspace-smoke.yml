@@ -1,10 +1,10 @@
 name: SPIE Workspace Phase 1
 on:
   pull_request:
-    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'pages-artifact-manifest.json', 'index.html', 'pristeel-home-launcher-v4.js', '.github/workflows/spie-workspace-smoke.yml']
+    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'tests/tender-partner-context-smoke.mjs', 'pristeel-project-centric-workflow-v1.js', 'pages-artifact-manifest.json', 'index.html', 'pristeel-home-launcher-v4.js', '.github/workflows/spie-workspace-smoke.yml']
   push:
     branches: [main]
-    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'pages-artifact-manifest.json', 'index.html', 'pristeel-home-launcher-v4.js', '.github/workflows/spie-workspace-smoke.yml']
+    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'tests/tender-partner-context-smoke.mjs', 'pristeel-project-centric-workflow-v1.js', 'pages-artifact-manifest.json', 'index.html', 'pristeel-home-launcher-v4.js', '.github/workflows/spie-workspace-smoke.yml']
 permissions:
   contents: read
 jobs:
@@ -17,5 +17,5 @@ jobs:
           node-version: '20'
       - run: node --check spie/workspace.js
       - run: node --check spie/data.mjs
-      - run: node --test tests/spie-workspace-smoke.mjs
+      - run: node --test tests/spie-workspace-smoke.mjs tests/tender-partner-context-smoke.mjs
       - run: node scripts/pages-artifact-build.mjs

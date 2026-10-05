@@ -61,6 +61,32 @@ export async function snapshot() {
 const fileFields = 'id,project_id,title,file_name,doc_type,doc_nr,doc_date,party,status,drive_url,notes,created_at,amount_eur';
 export const latestFiles = () => projectRows('project_docs', fileFields, 3);
 export const files = () => projectRows('project_docs', fileFields, LIMITS.files);
+// Reuse controlled, source-backed project context. No additional API read.
+export function workspaceEvidence(data) {
+  if (data?.project?.id !== PROJECT_ID) return null;
+  const fact = data.context_facts?.find(f => f.fact_key === 'spie.workspace.evidence.v1' && f.fact_status === 'observed' && f.evidence_status === 'observed' && f.value?.project_id === PROJECT_ID);
+  return fact || null;
+}
+export function evidenceFiles(data, rows = []) {
+  const inventory = workspaceEvidence(data)?.value?.drive_inventory;
+  if (!inventory || inventory.folder_id !== data.project.drive_folder_id || !Array.isArray(inventory.files)) return rows;
+  const result = [...rows];
+  const identity = raw => {
+    const link = safeLink(raw, 'drive');
+    return link.match(/\/d\/([^/]+)/)?.[1] || link;
+  };
+  const seen = new Set(rows.map(r => identity(r.drive_url)).filter(Boolean));
+  for (const file of inventory.files.slice(0, LIMITS.files)) {
+    const link = safeLink(file.drive_url, 'drive'), key = identity(link);
+    if (!key || key !== file.drive_file_id || seen.has(key)) continue;
+    seen.add(key);
+    result.push({ project_id: PROJECT_ID, title: file.title, drive_url: link, created_at: file.modified_at,
+      source: 'Drive metadata snapshot', source_observed_at: inventory.observed_at,
+      notes: { category: file.category, category_verified: file.category_verified === true,
+        revision: file.revision ?? null, revision_verified: file.revision_verified === true, is_latest: file.is_latest === true } });
+  }
+  return result;
+}
 export const emails = () => projectRows('project_emails', 'id,project_id,gmail_message_id,gmail_thread_id,from_email,from_name,to_emails,cc_emails,subject,sent_at,direction,gmail_url,needs_review,review_reason', LIMITS.emails, 'sent_at.desc.nullslast,id.desc');
 export const contacts = () => projectRows('project_contacts', 'id,project_id,email,name,company,role,source,last_seen,status,is_primary', LIMITS.contacts, 'last_seen.desc.nullslast');
 export async function finance() {
@@ -96,7 +122,7 @@ export function metadata(row) {
   const revision = meta.revision ?? meta.drawing_revision ?? null;
   // Never infer a released/latest drawing revision from file timestamps or names.
   const latest = meta.is_latest === true && meta.revision_verified === true;
-  return { category, revision, documentKey: meta.document_key || row.doc_nr || '', latest, drawing: meta.document_kind === 'drawing' || type === 'drawing' };
+  return { category, categorySuggested: meta.category_verified === false, revision, documentKey: meta.document_key || row.doc_nr || '', latest, drawing: meta.document_kind === 'drawing' || type === 'drawing' };
 }
 export function currencyTotals(rows, amountField) {
   const totals = new Map();

@@ -1,3 +1,9 @@
+## 2026-10-05 - SPIE evidence and tender partner context
+
+- SPIE consumes controlled source-backed Samples evidence and the bounded Drive metadata snapshot, merging exact identities without document duplication or physical file copies.
+- Manual tender analysis now passes up to 80 registered partner review candidates to the server assistant. Partial data never proves that no partners exist; selection remains human-approved.
+- Focused workspace, tender and redesign bootstrap checks pass. No migration, Finance core changes or protected commitments.
+
 ## 2026-10-04 — Stable first paint for non-Home routes
 
 - Fixed the shell ownership mismatch that briefly reserved the legacy sidebar width when opening Mundësitë and other non-Home pages.
