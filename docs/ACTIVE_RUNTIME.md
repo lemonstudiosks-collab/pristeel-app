@@ -337,3 +337,11 @@ Cross-session state is available through:
 - `public.pppp_platform_integrations`
 
 The operating-experience layer does not replace Supabase automation. Cron/event engines, semantic jobs, OCR workers and human approval boundaries remain under the existing backend owners.
+
+## SPIE Workspace · Phase 1 (2026-10-05)
+
+`spie/index.html` is the same-origin dedicated entry at `/spie/` (under the deployment base path). `spie/workspace.js` owns only that document; `spie/data.mjs` reuses the canonical PPPP `pristeel_session` and project snapshot RPC. It does not load or wrap the global PPPP bootstrap. Home provides a SPIE Workspace shortcut and `index.html?view=spie` forwards to the dedicated entry. Public assets are included explicitly in `pages-artifact-manifest.json`.
+
+The workspace links canonical TenneT project `c937aea1-af5e-4807-ae1e-e36864e46794`, uses one bounded project snapshot plus three latest document metadata rows for Overview, and loads larger Files, Emails, Partners and Finance metadata only on navigation. Reads are cached and coalesced for five minutes in memory; there is no polling or realtime subscription. Expired or absent sessions return the user to existing PPPP authentication instead of adding another refresh/login owner. Samples is operator-declared and differences from the canonical pipeline remain visible. Health and latest drawing revisions require explicit evidence.
+
+No records, Gmail bodies, documents or business decisions are created or modified. Physical files remain in the permanent Drive folder and original communication remains in Gmail. See `docs/SPIE_WORKSPACE_PHASE1.md` for limitations and verification.

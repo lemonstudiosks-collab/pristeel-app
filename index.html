@@ -9,7 +9,7 @@
       var requested = params.get('v');
       var version = requested || String(Date.now());
       var view = params.get('view') || (window.location.hash === '#ted-sales' ? 'ted-sales' : '');
-      var target = view === 'ted-sales' ? 'ted-sales.html' : 'pristeel-procurement.html';
+      var target = view === 'spie' ? 'spie/' : (view === 'ted-sales' ? 'ted-sales.html' : 'pristeel-procurement.html');
       window.location.replace(target + '?v=' + encodeURIComponent(version));
     })();
   </script>

@@ -93,7 +93,7 @@ var I={
  close:svg('<path d="M6 6l12 12M18 6 6 18"/>')
 };
 function gmail(){return '<svg class="phl-gmail" viewBox="0 0 32 24"><path fill="#4285F4" d="M2 5.3 6 8.2V22H2z"/><path fill="#34A853" d="M26 8.2 30 5.3V22h-4z"/><path fill="#EA4335" d="M2 5.3 5.2 2.8 16 10.8 26.8 2.8 30 5.3 16 15.7z"/><path fill="#C5221F" d="M26.8 2.8 30 5.3 16 15.7 13.8 14.1z"/></svg>'}
-function icon(k,top){return '<span class="'+(top?'phl-top-icon':'phl-card-icon')+'">'+(k==='gmail'?gmail():(I[k]||''))+'</span>'}
+function icon(k,top){return '<span class="'+(top?'phl-top-icon':'phl-card-icon')+'">'+(k==='gmail'?gmail():(I[k]||(k==='spie'?I.projects:'')))+'</span>'}
 
 function clearHomeRouteState(){
  var p=document.getElementById('page-workspace-home');
@@ -114,6 +114,7 @@ function openDaily(){
 }
 function route(k){
  k=S(k).toLowerCase();
+ if(k==='spie'){location.assign(new URL('spie/',location.href).href);return true;}
  if(k==='daily')return openDaily();
  clearHomeRouteState();
  var n=nav(),ok=false;
@@ -449,6 +450,7 @@ function html(){
    +mainCard('buyers','Blerësit e çelikut','Blerës materiali, RFQ dhe furnizim çeliku.')
   +'</section>'
   +'<section class="phl-secondary"><h2>Module dhe mjete tjera</h2><div>'
+   +smallCard('spie','SPIE Workspace','TenneT, dokumente dhe komunikimi.')
    +smallCard('projects','Projektet','Projektet dhe gjendja e tyre.')
    +smallCard('partners','Partnerët','Partnerë, furnitorë dhe kontakte.')
    +smallCard('finance','Financa','Fatura, pagesa dhe raportim.')
