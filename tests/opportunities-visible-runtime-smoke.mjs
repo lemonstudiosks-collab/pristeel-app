@@ -8,7 +8,7 @@ const bootstrapSrc=fs.readFileSync('pristeel-project-emails.js','utf8');
 assert(src.includes('pst-pcw-gmail-create')&&src.includes('pst-gmail-draft-icon')&&src.includes('Krijo draft në Gmail'),'canonical TED Action Console must render the Gmail-branded draft action directly');
 
 assert(finalizerSrc.includes("pristeel-project-centric-workflow-v1.js?v='+Date.now()"),'project-centric owner must be cache-busted by the finalizer');
-assert(bootstrapSrc.includes('pristeel-redesign-finalizer-v1.js?v=20261005-home-final-audit1'),'bootstrap must request the current navigation finalizer revision');
+assert(bootstrapSrc.includes('pristeel-redesign-finalizer-v1.js?v=20261005-spie-nav1'),'bootstrap must request the current navigation finalizer revision');
 
 const dom=new JSDOM(`<!doctype html><html><head></head><body>
 <section id="page-kek-tenders" style="display:block">

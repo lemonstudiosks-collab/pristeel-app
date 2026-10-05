@@ -36,6 +36,17 @@ test('new navigation delegates to existing owners and requires explicit gesture'
  assert.deepEqual(calls,['direct','buyers','spie','events','documents','inbox']);
  c.window.PSTHomeLauncherV4.openModule=()=>false;assert.equal(c.route('direct'),false);
 });
+test('legacy operating presentation defers navigation visibility and selection',()=>{
+ const source=read('pristeel-operating-experience-v1.js');
+ const code=source.slice(source.indexOf('function applyZone(zone){'),source.indexOf('function projectData()'));
+ let standard=true,reads=0,selections=0;
+ const button={dataset:{key:'home'},classList:{toggle(){selections++;}}};
+ const c={document:{documentElement:{classList:{contains:()=>standard}},body:{dataset:{}},getElementById(){reads++;return {querySelectorAll:()=>[button]};}},window:{},ZONE_COLORS:{home:[]},ZONE_THEME:{},palette:()=>{},navKeyForZone:()=> 'home'};
+ vm.createContext(c);vm.runInContext(code,c);
+ assert.equal(c.normalizeNav(),false);assert.equal(reads,0);
+ c.applyZone('home');assert.equal(selections,0,'legacy theme cannot override selected SPIE module');
+ standard=false;c.applyZone('home');assert.equal(selections,1,'legacy selection remains available');
+});
 test('presentation does not add network, hide business controls or mutate records',()=>{
  assert(!/@import|url\(/.test(css),'No new external font or asset request');
  assert(!/fetch\(|supaFetch|setInterval|MutationObserver/.test(css));

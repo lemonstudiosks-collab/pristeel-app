@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 166,
-  "sequenceSha256": "c4a06004c286860cf35609066ea72acced7182100427e386bb097d5ed0cbfb3d",
+  "sequenceSha256": "ad9e7ecab82ba206766d8c4358a732fc248ac2d580607c7788668611d4e5928f",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260925-single-login1",
@@ -130,7 +130,7 @@
     "pristeel-rfq-sourcing-workflow-v1.js?v=20260930-sourcing1",
     "pristeel-home-command-center-v2.js?v=20260807-12",
     "pristeel-tender-dossier-import-v1.js?v=20260918-direct1",
-    "pristeel-redesign-finalizer-v1.js?v=20261005-home-final-audit1",
+    "pristeel-redesign-finalizer-v1.js?v=20261005-spie-nav1",
     "pristeel-home-live-fix-v1.js?v=20260817-1",
     "pristeel-home-stability-v2.js?v=20260817-1",
     "pristeel-home-project-recovery-v3.js?v=20260817-1",
