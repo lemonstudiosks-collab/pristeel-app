@@ -17,7 +17,7 @@ assert(src.includes('childList:true'),'Global shell must notice when the Opportu
 assert(!src.includes('#page-kek-tenders .pst-opp-v4-back{display:none!important}'),'Global shell must never hide the Opportunities-local Back control');
 
 
-const dom=new JSDOM(`<!doctype html><html><head></head><body><div class="app-shell"><aside class="sidebar">NAV</aside><main class="main"><div class="content"><div class="page active" id="page-dashboard" style="display:block">HOME</div><div class="page" id="page-finance" style="display:none">FINANCE</div><div class="page" id="page-workspace-projects" style="display:none"><button data-pmm-back>Kthehu</button></div><div class="page" id="page-kek-tenders" style="display:none"><button class="pst-opp-v4-back" data-pst-opp-back>← Kthehu</button></div></div></main></div></body></html>`,{url:'https://example.test/',runScripts:'outside-only'});
+const dom=new JSDOM(`<!doctype html><html><head></head><body><div class="app-shell"><aside class="sidebar">NAV</aside><main class="main"><div class="content"><div class="page active" id="page-dashboard" style="display:block">HOME</div><div class="page" id="page-finance" style="display:none">FINANCE</div><div class="page" id="page-workspace-projects" style="display:none"><button data-ppd-back>Kthehu</button></div><div class="page" id="page-kek-tenders" style="display:none"><button class="pst-opp-v4-back" data-pst-opp-back>← Kthehu</button></div></div></main></div></body></html>`,{url:'https://example.test/',runScripts:'outside-only'});
 const {window}=dom;
 window.requestAnimationFrame=(fn)=>{fn();return 1;};
 let homeCalls=0;
@@ -47,12 +47,22 @@ assert.equal(window.document.getElementById('pst-global-page-backbar').parentNod
 window.document.getElementById('pst-global-back-home').click();
 assert.equal(homeCalls,1,'Kthehu must call canonical Home navigation exactly once');
 
+const finance=window.document.getElementById('page-finance');
+finance.insertAdjacentHTML('beforeend','<div id="pst-oa-finance-home">Compact Finance</div><div style="display:none"><button data-pst-fin-home>Hidden local Back</button></div>');
+finance.setAttribute('data-pst-oa-compact','finance');
+const compactStyle=window.document.createElement('style');
+compactStyle.textContent='#page-finance[data-pst-oa-compact="finance"]:has(>#pst-oa-finance-home)>*:not(#pst-oa-finance-home){display:none!important}';
+window.document.head.insertBefore(compactStyle,canonicalShellStyle);
+window.PSTGlobalFullwidthShellV2.refresh();
+assert.equal(window.document.querySelectorAll('#pst-global-page-backbar').length,1,'A Back inside a hidden ancestor must not suppress the Finance fallback');
+assert.equal(window.getComputedStyle(window.document.getElementById('pst-global-page-backbar')).display,'flex','Compact Finance must retain its visible Home return control');
+
 window.document.getElementById('page-finance').style.display='none';
 window.document.getElementById('page-workspace-projects').classList.add('active');
 window.document.getElementById('page-workspace-projects').style.display='block';
 await new Promise(resolve=>setTimeout(resolve,0));
 assert.equal(window.document.querySelectorAll('#pst-global-page-backbar').length,0,'A visible Projects-local Back must suppress the duplicate global control');
-assert(window.document.querySelector('#page-workspace-projects [data-pmm-back]'),'Projects must retain its own local Kthehu');
+assert(window.document.querySelector('#page-workspace-projects [data-ppd-back]'),'Projects must retain its own local Kthehu');
 
 window.document.getElementById('page-workspace-projects').style.display='none';
 window.document.getElementById('page-kek-tenders').classList.add('active');
