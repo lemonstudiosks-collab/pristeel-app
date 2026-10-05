@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261005-home-final-audit1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false,mountQueued=false;
+var V='20261005-home-final-audit3',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false;
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -68,7 +68,7 @@ function watchShell(page){
   for(var i=0;i<records.length;i++){var t=records[i].target;if(t===page||t===document.body||t.id==='app-shell-root'||t.id==='app-sidebar'||t.id==='pst-v2-sidebar'||t.id==='pst-ws-sidebar'||(t.classList&&t.classList.contains('sidebar'))){relevant=true;break}}
   if(!relevant)return;
   if(shellQueued)return;shellQueued=true;
-  (window.requestAnimationFrame||function(fn){return setTimeout(fn,0)})(function(){shellQueued=false;if(active())homeShell(true);else homeShell(false)});
+  (window.requestAnimationFrame||function(fn){return setTimeout(fn,0)})(function(){shellQueued=false;if(active()){if(!document.getElementById('pst-home-launcher-v4'))mount();else homeShell(true)}else homeShell(false)});
  });
  shellObserver.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
 }
@@ -516,7 +516,15 @@ function watchHome(page){
 }
 function mount(){
  css();
- var page=document.getElementById('page-workspace-home');if(!page)return false;
+ var page=document.getElementById('page-workspace-home');
+ if(!page){
+  if(!discoveryObserver&&window.MutationObserver&&document.body){
+   discoveryObserver=new MutationObserver(function(){if(document.getElementById('page-workspace-home'))mount()});
+   discoveryObserver.observe(document.body,{subtree:true,childList:true});
+  }
+  return false;
+ }
+ if(discoveryObserver){discoveryObserver.disconnect();discoveryObserver=null;}
  watchHome(page);watchShell(page);
  if(!active()){homeShell(false);return false}
  homeShell(true);

@@ -5,7 +5,7 @@ import {JSDOM} from 'jsdom';
 const routes=['page-kek-tenders','page-representations','page-eu-companies','page-dach-steel-sales'];
 const dom=new JSDOM(`<!doctype html><html><head></head><body><div id="app-shell-root" class="app-shell">
 <aside id="app-sidebar" class="sidebar"><div id="pst-v2-sidebar"><div id="pst-ws-sidebar"><nav id="pst-ws-canonical-nav"><button data-key="home" class="active on">Home</button></nav></div></div></aside>
-<main class="main"><div class="content"><section id="page-workspace-home" class="page active" style="display:block"></section>
+<main class="main"><div class="content">
 ${routes.map(id=>`<section id="${id}" class="page" style="display:none">MODULE</section>`).join('')}</div></main></div></body></html>`,{url:'https://example.test/',runScripts:'outside-only',pretendToBeVisual:true});
 const {window}=dom,{document}=window;
 let weatherReads=0,mutations=0;
@@ -15,6 +15,12 @@ window.scrollTo=()=>{};
 for(const path of ['pristeel-home-launcher-v4.js','pristeel-global-fullwidth-shell-v1.js','pristeel-production-surface-owner-v1.js','pristeel-representations-fullwidth-v2.js'])window.eval(fs.readFileSync(path,'utf8'));
 document.dispatchEvent(new window.Event('DOMContentLoaded'));
 const settle=()=>new Promise(r=>setTimeout(r,80));
+await settle();
+assert(!document.getElementById('pst-home-launcher-v4'),'Bootstrap may load the launcher before the Home host exists');
+document.querySelector('.content').insertAdjacentHTML('afterbegin','<section id="page-workspace-home" class="page" style="display:none"><div id="late-legacy-home">Old Home</div></section>');
+await settle();
+document.getElementById('page-workspace-home').classList.add('active');
+document.getElementById('page-workspace-home').style.display='block';
 await settle();
 const home=document.getElementById('page-workspace-home'),sidebar=document.getElementById('app-sidebar'),launcher=document.getElementById('pst-home-launcher-v4');
 assert(launcher);
