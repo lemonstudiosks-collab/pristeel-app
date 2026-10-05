@@ -59,3 +59,16 @@ test('unsafe links and unverified latest revisions cannot appear as verified sou
   assert.equal(D.metadata({notes:'{"revision":"C","is_latest":true}'}).latest,false);
   assert.equal(D.metadata({notes:'{"revision":"C","is_latest":true,"revision_verified":true}'}).latest,true);
 });
+
+test('controlled folder metadata merges by exact Drive identity without inferring revisions', () => {
+  const data={project:{id:D.PROJECT_ID,drive_folder_id:'folder'},context_facts:[{fact_key:'spie.workspace.evidence.v1',fact_status:'observed',evidence_status:'observed',value:{project_id:D.PROJECT_ID,drive_inventory:{folder_id:'folder',observed_at:'2026-10-05',files:[
+    {drive_file_id:'abc',title:'Drawing',drive_url:'https://drive.google.com/file/d/abc/view',category:'Technical',category_verified:false},
+    {drive_file_id:'bad',title:'Unsafe',drive_url:'https://evil.test/file/d/bad/view'},
+    {drive_file_id:'wrong',title:'Wrong identity',drive_url:'https://drive.google.com/file/d/other/view'}
+  ]}}}]};
+  assert.equal(D.evidenceFiles(data).length,1);
+  const item=D.evidenceFiles(data)[0];assert.equal(D.metadata(item).latest,false);assert.equal(D.metadata(item).categorySuggested,true);
+  assert.equal(D.evidenceFiles(data,[{title:'Canonical',drive_url:'https://drive.google.com/file/d/abc/view?usp=drivesdk'}]).length,1);
+  data.project.drive_folder_id='other';assert.equal(D.evidenceFiles(data).length,0);
+  data.project.drive_folder_id='folder';data.context_facts[0].fact_status='suggested';assert.equal(D.evidenceFiles(data).length,0);
+});

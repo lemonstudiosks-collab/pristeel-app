@@ -18,13 +18,13 @@ Dedicated document, sidebar (Overview, Projects, Finance, Partners, Files, Email
 
 ## Evidence rules and limits
 
-Samples is the operator-declared phase as of 05 Oct 2026; canonical pricing remains unchanged and visible as a discrepancy. Later explicit canonical stages take precedence. Stage position does not imply previous stages completed.
+Samples is recorded through the controlled context-fact bridge with evidence from the 02 Oct SPIE request. The workspace reads this canonical evidence rather than relying only on its initial operator declaration. The controlled pipeline reconciliation API permits only rfq_in, technical_review, pricing, client_offer and commercial; its pricing field is preserved. Later explicit canonical execution stages take precedence. Stage position does not imply previous stages completed.
 
 Sample production/delivery review is a proposal derived from the exact linked 02 Oct SPIE request. The requested date is not a commitment. Official order receipt remains unverified. No sent draft, supplier choice, contract, payment or won/lost outcome is assumed.
 
 Health is Unknown unless current observed context explicitly supplies project_health.<domain>.status and evidence/source_ref. Latest drawing revision is Unknown unless document metadata explicitly has is_latest:true and revision_verified:true. Filenames/timestamps alone never prove release status.
 
-Files stay in Drive. Categories derive from stored doc_type or explicit JSON notes.category. Optional existing JSON notes supports revision/drawing_revision, document_key, document_kind, is_latest and revision_verified. No metadata is written in Phase 1. Unclassified metadata remains visible. File metadata may be incomplete relative to the existing Drive dossier; the permanent folder link gives access to the whole dossier.
+Files stay in Drive. Categories derive from stored doc_type or explicit JSON notes.category. Optional existing JSON notes supports revision/drawing_revision, document_key, document_kind, is_latest and revision_verified. A controlled spie.workspace.evidence.v1 context fact holds a bounded folder metadata snapshot with 27 exact Drive identities and links, verified on 05 Oct 2026. This merges with project_docs by exact Drive file identity without creating duplicate document rows or copying physical files. Title-derived categories are suggestions; revision/latest remains Unknown. Snapshot scope is direct folder children and is not a complete or continuously updated Drive inventory. The existing folder link remains authoritative.
 
 Email context labels are clearly suggestions based on subjects. Only strict project links are read; needs_review links remain visibly unverified.
 
@@ -42,4 +42,4 @@ Run `node --test tests/spie-workspace-smoke.mjs` and syntax checks for spie/work
 
 Confirm and register the canonical Samples phase through the approved write bridge, normalize sample commitments and project health, enrich verified revision/category metadata and importer identity, improve contract/retention/importer cost evidence, exact partial-payment balances, richer Drive inventory/Google account linking and email context, and real historical change comparison. Preserve all human approval gates.
 
-No migration or Supabase business write was required.
+No migration was required. The follow-up correction registers one approved context fact through the existing command-sheet bridge; no direct SQL writes, pipeline schema changes, duplicate project/document rows or file storage are introduced. The workspace remains read-only.
