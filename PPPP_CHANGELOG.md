@@ -1,3 +1,7 @@
+## 2026-10-05 - Functional control audit
+
+Fix populated direct-company rows (missing fit/contact/follow-up formatters), keep buyer chrome from hiding other modules’ Back controls, preserve contact row keyboard focus after search, prevent legacy absolute positioning from overlapping the finance grid, and stop the project view marker from consuming unrelated control clicks. Add an isolated Chromium functional audit with synthetic data, blocked external requests, and simulated backend actions. Refresh three module cache versions and the shared stylesheet; the 166-module bootstrap order is unchanged. No migrations, live database writes or email sends.
+
 ## 2026-10-05 — SPIE navigation compatibility
 
 The legacy Operating Experience layer now defers sidebar pruning, reordering and active selection when the static SPIE standard is enabled. Existing themes and business controls remain intact; legacy navigation behavior remains available without the standard. Added a focused regression test. One module cache version changed; bootstrap order and count remain unchanged. No Supabase writes or migrations.

@@ -1,0 +1,26 @@
+name: Platform functional browser audit
+on:
+  pull_request:
+    paths: ['pristeel-*.js', 'pristeel-procurement.html', 'pristeel-spie-standard.css', 'spie/**', 'tests/platform-functional-browser-audit.cjs', '.github/workflows/platform-functional-audit.yml']
+  push:
+    branches: [main]
+    paths: ['pristeel-*.js', 'pristeel-procurement.html', 'pristeel-spie-standard.css', 'spie/**', 'tests/platform-functional-browser-audit.cjs', '.github/workflows/platform-functional-audit.yml']
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --ignore-scripts --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - run: node tests/platform-functional-browser-audit.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: platform-functional-audit
+          path: functional-audit-artifacts/
