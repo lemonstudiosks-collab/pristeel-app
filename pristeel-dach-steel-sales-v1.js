@@ -149,6 +149,8 @@ function css(){
 
 function chrome(on){
  try{document.body.classList.toggle('pst-dss-active',!!on);}catch(e){}
+ // The shared shell owns cross-module controls. Never hide another page's Back button.
+ if(on&&document.documentElement.classList.contains('pst-spie-standard'))return;
  var page=document.getElementById('page-dach-steel-sales');
  if(on){
   document.querySelectorAll('button,a,[role="button"],[onclick]').forEach(function(el){

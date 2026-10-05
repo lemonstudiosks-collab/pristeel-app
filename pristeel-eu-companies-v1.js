@@ -100,6 +100,9 @@ function nextActionText(r){if(r.next_action)return r.next_action;if(r.routing_st
 function readiness(r){var n=0;if(r.company_domain_normalized)n+=20;if(A(r.evidence).length)n+=20;if(r.contact_email)n+=20;if(r.contact_status==='verified')n+=20;if(r.routing_state==='clear'&&!A(r.routing_conflicts).length)n+=10;if(['clear','existing_draft','cooldown_30d'].indexOf(r.outreach_guard)>-1)n+=10;return Math.min(100,n)}
 function gmailThread(id){return id?'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(id):''}
 function gmailDraft(id){return id?'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(id):''}
+function fitText(r){var scopes=A(r&&r.business_scope).map(scopeLabel);return scopes.length?scopes.join(' · '):S(r&&r.why_relevant)||'Përshtatja ende e paverifikuar.'}
+function contactText(r){return S(r&&r.contact_name)||S(r&&r.contact_email)||'Pa kontakt'}
+function followLabel(r){if(r&&r.next_action_due)return'Veprimi i radhës: '+D(r.next_action_due);var last=r&&(r.last_outbound_at||r.contact_master_last_contact||r.last_contact_at);return last?'Kontakti i fundit: '+D(last):stageLabel(r&&r.stage)}
 function filtered(){
  var q=N(state.query),rows=state.rows.filter(function(r){return !r.archived_at});
  if(state.filter==='action')rows=rows.filter(needsAction);
