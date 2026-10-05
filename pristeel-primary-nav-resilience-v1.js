@@ -29,7 +29,7 @@ window.__pstPrimaryNavResilienceV2=true;
 window.__pstPrimaryNavResilienceV1=true;
 
 var KEYS={home:1,tenders:1,opportunities:1,representations:1,projects:1,contacts:1,partners:1,daily:1,finance:1,apps:1,system:1};
-var LABELS={home:'Home',tenders:'Mund�sit�',representations:'P�rfaq�sime',projects:'Projektet',contacts:'Partner�t',daily:'Morning Brief',finance:'Financat',apps:'Sistemi'};
+var LABELS={home:'Home',tenders:'Mundësitë',representations:'Përfaqësime',projects:'Projektet',contacts:'Partnerët',daily:'Morning Brief',finance:'Financat',apps:'Sistemi'};
 var ICONS={
  home:'<path d="M3.5 11 12 4l8.5 7v8.5a1.5 1.5 0 0 1-1.5 1.5h-4.5v-6h-5v6H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
  tenders:'<path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
@@ -45,7 +45,7 @@ var ORDER=['home','tenders','representations','projects','contacts','daily','fin
 var SPIE_STANDARD=document.documentElement.classList.contains('pst-spie-standard');
 if(SPIE_STANDARD){
  Object.assign(KEYS,{direct:1,buyers:1,files:1,emails:1,spie:1,events:1});
- Object.assign(LABELS,{home:'Ballina',direct:'Klient� direkt',buyers:'Bler�sit e �elikut',files:'Dokumentet',emails:'Emailat',spie:'SPIE Workspace',events:'Evente dhe Forume'});
+ Object.assign(LABELS,{home:'Ballina',direct:'Klientë direkt',buyers:'Blerësit e çelikut',files:'Dokumentet',emails:'Emailat',spie:'SPIE Workspace',events:'Evente dhe Forume'});
  Object.assign(ICONS,{direct:ICONS.contacts,buyers:ICONS.tenders,files:ICONS.tenders,emails:ICONS.daily,spie:ICONS.projects,events:ICONS.daily});
  ORDER=['home','tenders','representations','direct','buyers','projects','finance','contacts','files','emails','spie','events','daily','apps'];
 }
@@ -293,7 +293,7 @@ function installTenderStyle(){
  var s=document.createElement('style');s.id='pst-home-tender-style';s.textContent='#pst-home-tender-decisions{margin-top:14px}#pst-home-tender-decisions .pst-tender-decision-list{display:grid;gap:8px}#pst-home-tender-decisions .pst-tender-decision{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;border:1px solid #E3EAED;border-radius:12px;padding:12px 13px;background:#fff}#pst-home-tender-decisions .pst-tender-decision b{display:block;font-size:12px;line-height:1.35;color:#30454F}#pst-home-tender-decisions .pst-tender-decision small{display:block;margin-top:4px;font-size:9.5px;line-height:1.45;color:#73858D}#pst-home-tender-decisions .pst-tender-decision button{min-height:34px;padding:0 12px;border:1px solid #CFE0E6;border-radius:9px;background:#F3F9FA;color:#39768D;font-size:10px;font-weight:800;cursor:pointer}#pst-home-tender-decisions .pst-tender-decision button:hover{background:#E7F3F6}@media(max-width:680px){#pst-home-tender-decisions .pst-tender-decision{grid-template-columns:1fr}#pst-home-tender-decisions .pst-tender-decision button{width:100%}}';document.head.appendChild(s);
 }
 function sourceLabel(row){var k=S(row&&row.source_key);if(k.indexOf('TED:')===0)return'TED';if(k.indexOf('APP_AL:')===0)return'APP';return'KRPP';}
-function tenderMeta(row){var a=[sourceLabel(row),row.authority||'',row.procurement_no||''];if(row.deadline)a.push('Afati '+S(row.deadline));if(Number(row.relevance_score)>0)a.push('Relevanca '+Number(row.relevance_score)+'%');return a.filter(Boolean).join(' � ');}
+function tenderMeta(row){var a=[sourceLabel(row),row.authority||'',row.procurement_no||''];if(row.deadline)a.push('Afati '+S(row.deadline));if(Number(row.relevance_score)>0)a.push('Relevanca '+Number(row.relevance_score)+'%');return a.filter(Boolean).join(' · ');}
 async function renderHomeTenderDecisions(){
  var token=++tenderRenderToken,page=document.getElementById('page-workspace-home');if(!visible(page)||typeof window.supaFetch!=='function')return false;
  var rows=[];try{rows=await window.supaFetch('pppp_tender_operating_lanes_v1?human_action_required=eq.true&operating_lane=in.(discovery,scored_review)&relevance_score=gte.75&project_id=is.null&select=id,source_key,procurement_no,authority,title,estimated_value,currency,deadline,relevance_score,operating_lane,status,project_id,detail_url,source_url&order=relevance_score.desc,deadline.asc&limit=5')||[];}catch(e){return false;}
@@ -303,7 +303,7 @@ async function renderHomeTenderDecisions(){
  var actions=document.getElementById('pst-ws-home-actions'),anchor=document.getElementById('pst-home-waiting');if(!anchor&&actions)anchor=actions.closest('.pst-ws-card')||actions.parentElement;if(!anchor)return false;
  installTenderStyle();
  var card=document.createElement('section');card.id='pst-home-tender-decisions';card.className='pst-ws-card';
- card.innerHTML='<div class="pst-ws-card-head"><div><div class="pst-ws-card-kicker">MUNDESI</div><div class="pst-ws-card-title">Tender� q� k�rkojn� vendim</div><div class="pst-ws-card-sub">Vet�m tender�t relevant� pa projekt aktiv, ku duhet vendosur GO / NO-GO.</div></div></div><div class="pst-tender-decision-list">'+rows.map(function(r){return'<div class="pst-tender-decision"><div><b>'+esc(r.title||r.procurement_no||'Tender relevant')+'</b><small>'+esc(tenderMeta(r))+'</small></div><button type="button" data-pst-open-opportunities="1">Shqyrto</button></div>';}).join('')+'</div>';
+ card.innerHTML='<div class="pst-ws-card-head"><div><div class="pst-ws-card-kicker">MUNDËSI</div><div class="pst-ws-card-title">Tenderë që kërkojnë vendim</div><div class="pst-ws-card-sub">Vetëm tenderët relevantë pa projekt aktiv, ku duhet vendosur GO / NO-GO.</div></div></div><div class="pst-tender-decision-list">'+rows.map(function(r){return'<div class="pst-tender-decision"><div><b>'+esc(r.title||r.procurement_no||'Tender relevant')+'</b><small>'+esc(tenderMeta(r))+'</small></div><button type="button" data-pst-open-opportunities="1">Shqyrto</button></div>';}).join('')+'</div>';
  anchor.insertAdjacentElement('afterend',card);
  Array.prototype.forEach.call(card.querySelectorAll('[data-pst-open-opportunities]'),function(b){b.addEventListener('click',function(){openOpportunities();});});
  return true;
