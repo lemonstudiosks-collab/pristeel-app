@@ -45,7 +45,7 @@ function icon(k){var p={
 
 function sourceUrl(v){var m=S(v).match(/https:\/\/[^\s<>"']+/i);if(!m)return'';try{var u=new URL(S(m[0]).replace(/[\]\)}>.,;]+$/g,''));return u.protocol==='https:'?u.href:'';}catch(e){return'';}}
 function metadata(row){var original=S(row&&row.dataset&&row.dataset.pstOriginalMeta).trim();if(original)return original;var m=row&&row.querySelector('.pst-ws-action-meta');return m?S(m.getAttribute('title')||m.textContent).trim():'';}
-function enhanceRow(row){if(!row)return false;var c=row.querySelector('.pst-ws-action-controls');if(!c||c.querySelector('.pst-task-source-open'))return false;var url=sourceUrl(metadata(row));if(!url)return false;var b=document.createElement('button');b.type='button';b.className='pst-task-source-open';b.textContent='Burimi';b.title='Hap burimin zyrtar në tab të ri';b.onclick=function(e){e.preventDefault();e.stopPropagation();window.open(url,'_blank','noopener,noreferrer');};var menu=c.querySelector('.pst-dash-task-menu');if(menu)c.insertBefore(b,menu);else c.appendChild(b);return true;}
+function enhanceRow(row){if(!row)return false;var c=row.querySelector('.pst-ws-action-controls');if(!c||c.querySelector('.pst-task-source-open'))return false;var url=sourceUrl(metadata(row));if(!url)return false;var b=document.createElement('button');b.type='button';b.className='pst-task-source-open';b.textContent='Burimi';b.title='Hap burimin zyrtar n� tab t� ri';b.onclick=function(e){e.preventDefault();e.stopPropagation();window.open(url,'_blank','noopener,noreferrer');};var menu=c.querySelector('.pst-dash-task-menu');if(menu)c.insertBefore(b,menu);else c.appendChild(b);return true;}
 
 function openTenders(e){if(e){e.preventDefault();e.stopPropagation();}if(typeof window.pstTenderBizOpenMonitor==='function')return window.pstTenderBizOpenMonitor();if(typeof window.pstWsKekTenders==='function')return window.pstWsKekTenders();if(typeof window.showPage==='function')return window.showPage('kek-tenders');}
 function ensureContacts(onReady){
@@ -97,6 +97,8 @@ function stabilizeLabels(host){
  PRIMARY.concat(SECONDARY).forEach(function(item){var b=host.querySelector('.pst-ws-navbtn[data-key="'+item.key+'"]'),l=b&&b.querySelector('.pst-nav-label');if(l)l.textContent=item.label;});
 }
 function sidebar(){
+ // The final navigation owner retains its complete module list and selection.
+ if(window.PSTPrimaryNavResilienceV10)return true;
  if(!workspace())return false;
  var ws=document.getElementById('pst-ws-sidebar');if(!ws)return false;
  var host=ws.querySelector('#pst-ws-canonical-nav');
@@ -110,10 +112,10 @@ function sidebar(){
  Array.prototype.forEach.call(ws.children,function(ch){hidden(ch,!(ch===host||ch.classList.contains('pst-ws-brand')||ch.classList.contains('pst-ws-create')||ch.classList.contains('pst-ws-spacer')||ch.classList.contains('pst-ws-search')));});
  stabilizeLabels(host);activeNav(host);return true;
 }
-function hideBottomSearch(){if(!workspace())return;var ws=document.getElementById('pst-ws-sidebar');document.querySelectorAll('button,div').forEach(function(el){if(!el||el===ws||(ws&&ws.contains(el)))return;var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(!/^(Kërko|Kerko)(\s*[⌘⌃]?\s*K)?$/i.test(txt))return;var r=el.getBoundingClientRect();if(r.left<285&&r.bottom>window.innerHeight-135&&r.width<220&&r.height<80)el.classList.add('pst-ws-legacy-floating-hide');});}
+function hideBottomSearch(){if(!workspace())return;var ws=document.getElementById('pst-ws-sidebar');document.querySelectorAll('button,div').forEach(function(el){if(!el||el===ws||(ws&&ws.contains(el)))return;var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(!/^(K�rko|Kerko)(\s*[?^]?\s*K)?$/i.test(txt))return;var r=el.getBoundingClientRect();if(r.left<285&&r.bottom>window.innerHeight-135&&r.width<220&&r.height<80)el.classList.add('pst-ws-legacy-floating-hide');});}
 function compactSort(){var s=document.getElementById('pst-pm-sort');if(!s)return false;s.setAttribute('aria-label','Rendit projektet sipas');s.title='Rendit projektet sipas aktivitetit, afatit ose klientit';var w=s.parentElement;if(w&&!w.querySelector('.pst-pm-sort-label')){var l=document.createElement('span');l.className='pst-pm-sort-label';l.textContent='Rendit sipas';w.insertBefore(l,s);}return true;}
-function hideCounters(p){var re=/^\s*\d+\s+(prioritete?\s+aktive|projekte?\s+n[eë]\s+pun[eë]|follow-?up\s+aktiv(?:e)?)\s*$/i;p.querySelectorAll('span,div,button').forEach(function(el){var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(txt.length<60&&re.test(txt))hidden(el,true);});}
-function stabilizeHome(){var p=home();if(!p)return false;var flow=document.getElementById('flow-bar');if(flow)hidden(flow,true);var a=document.getElementById('pst-ws-home-actions'),card=a&&a.closest('.pst-ws-card');if(card){var title=card.querySelector('.pst-ws-card-title'),sub=card.querySelector('.pst-ws-card-sub');if(title)title.textContent='Duhet veprimi yt';if(sub)sub.textContent='PPPP shfaq vetëm vendimet dhe veprimet që kërkojnë ndërhyrjen tënde.';}p.querySelectorAll('.pst-ws-action-tag').forEach(function(tag){var t=S(tag.textContent).trim().toUpperCase();if(t==='VEPRO TANI'||t==='VEPRIM')tag.textContent='KËRKON VEPRIM';});hideCounters(p);return true;}
+function hideCounters(p){var re=/^\s*\d+\s+(prioritete?\s+aktive|projekte?\s+n[e�]\s+pun[e�]|follow-?up\s+aktiv(?:e)?)\s*$/i;p.querySelectorAll('span,div,button').forEach(function(el){var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(txt.length<60&&re.test(txt))hidden(el,true);});}
+function stabilizeHome(){var p=home();if(!p)return false;var flow=document.getElementById('flow-bar');if(flow)hidden(flow,true);var a=document.getElementById('pst-ws-home-actions'),card=a&&a.closest('.pst-ws-card');if(card){var title=card.querySelector('.pst-ws-card-title'),sub=card.querySelector('.pst-ws-card-sub');if(title)title.textContent='Duhet veprimi yt';if(sub)sub.textContent='PPPP shfaq vet�m vendimet dhe veprimet q� k�rkojn� nd�rhyrjen t�nde.';}p.querySelectorAll('.pst-ws-action-tag').forEach(function(tag){var t=S(tag.textContent).trim().toUpperCase();if(t==='VEPRO TANI'||t==='VEPRIM')tag.textContent='KERKON VEPRIM';});hideCounters(p);return true;}
 function shell(){
  if(!workspace())return false;
  var app=document.getElementById('app-sidebar'),v2=document.getElementById('pst-v2-sidebar'),ws=document.getElementById('pst-ws-sidebar');

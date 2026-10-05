@@ -230,12 +230,12 @@ async function renderFinalHome(){
     var shell=await waitForHomeShell();
     if(!shell)throw new Error('Workspace Home shell mungon.');
     var api=await loadCanonical();
-    if(!api||typeof api.render!=='function')throw new Error('Canonical Home nuk është gati.');
+    if(!api||typeof api.render!=='function')throw new Error('Canonical Home nuk �sht� gati.');
     installFinalRouter();
     hideLegacyHome();
     if(typeof api.activateHome==='function')api.activateHome();
     var ok=await Promise.resolve(api.render(true));
-    if(ok===false)throw new Error('Canonical Home render dështoi.');
+    if(ok===false)throw new Error('Canonical Home render d�shtoi.');
     await loadInteraction();
     await loadFreshCommandCenter();
     await loadHappy();
@@ -282,16 +282,22 @@ function installCompatApi(){
 function finalizeHome(){
   runtimeReady=true;clearLegacyLoginBlocker();installCompatApi();normalizePrimaryLabels();
   if(finalizeTimer)clearTimeout(finalizeTimer);
-  finalizeTimer=setTimeout(function(){renderFinalHome();},120);
+  finalizeTimer=setTimeout(function(){
+    // Startup must not take the user back from a destination they just opened.
+    var away=Array.prototype.some.call(document.querySelectorAll('.page.active'),function(p){return p.id!=='page-workspace-home'&&p.style.display!=='none';});
+    if(away){installFinalRouter();signalVisualReady();return;}
+    renderFinalHome();
+  },120);
   if(recoveryTimer)clearTimeout(recoveryTimer);
   recoveryTimer=setTimeout(function(){if(!visualReady)revealBestAvailable('modules-ready-timeout');},7000);
 }
 
 /* ---------- Critical pre-bootstrap navigation lane ---------- */
 function normalizePrimaryLabels(){
+  if(window.PSTPrimaryNavResilienceV10)return true;
   var root=document.getElementById('pst-ws-sidebar');if(!root)return false;
-  var byKey={home:'Home',opportunities:'Mundësitë',tenders:'Mundësitë',projects:'Projektet',partners:'Partnerët',contacts:'Partnerët',finance:'Financat',apps:'Sistemi',system:'Sistemi'};
-  var byText={'Opportunities':'Mundësitë','Projects':'Projektet','Partners':'Partnerët','Contacts':'Partnerët','Finance':'Financat','System':'Sistemi','Apps':'Sistemi'};
+  var byKey={home:'Home',opportunities:'Mund�sit�',tenders:'Mund�sit�',projects:'Projektet',partners:'Partner�t',contacts:'Partner�t',finance:'Financat',apps:'Sistemi',system:'Sistemi'};
+  var byText={'Opportunities':'Mund�sit�','Projects':'Projektet','Partners':'Partner�t','Contacts':'Partner�t','Finance':'Financat','System':'Sistemi','Apps':'Sistemi'};
   root.querySelectorAll('.pst-ws-navbtn').forEach(function(b){
     var key=S(b.getAttribute('data-key')||b.getAttribute('data-pst-business-zone')).toLowerCase();
     var label=b.querySelector('.pst-nav-label')||b.querySelector('span');if(!label)return;
@@ -312,7 +318,7 @@ function ensureProjectPage(){
   var p=document.getElementById('page-workspace-project');if(p)return p;
   var list=document.getElementById('page-workspace-projects'),host=list&&list.parentNode;
   if(!host)host=document.querySelector('.content')||document.querySelector('.workspace-content')||document.querySelector('.pst-ws-content')||document.querySelector('main')||document.body;
-  if(!host)throw new Error('Nuk u gjet zona e projektit në faqe.');
+  if(!host)throw new Error('Nuk u gjet zona e projektit n� faqe.');
   p=document.createElement('div');p.id='page-workspace-project';p.className='page';p.style.display='none';host.appendChild(p);return p;
 }
 function activateProjectPage(){
@@ -325,7 +331,7 @@ function activateProjectPage(){
 }
 function showProjectLoading(id){
   var p=activateProjectPage();p.setAttribute('data-pst-critical-project',S(id));
-  p.innerHTML='<div class="pst-ws-page"><div style="margin:24px auto;max-width:820px;background:#fff;border:1px solid #DDE7EB;border-radius:14px;padding:18px 20px;color:#61747C;font:650 12px Inter,Arial,sans-serif">Duke hapur projektin…</div></div>';
+  p.innerHTML='<div class="pst-ws-page"><div style="margin:24px auto;max-width:820px;background:#fff;border:1px solid #DDE7EB;border-radius:14px;padding:18px 20px;color:#61747C;font:650 12px Inter,Arial,sans-serif">Duke hapur projektin.</div></div>';
   return p;
 }
 function showProjectFailure(error){
@@ -363,7 +369,7 @@ async function criticalOpenProject(id){
     var legacy=window.__pstWorkspaceLegacy||{};
     if(typeof legacy.openOverview==='function'){try{await Promise.resolve(legacy.openOverview(id));return true;}catch(e){if(!firstError)firstError=e;}}
     if(typeof window.openOverview==='function'){try{await Promise.resolve(window.openOverview(id));return true;}catch(e){if(!firstError)firstError=e;}}
-    throw firstError||new Error('Moduli i projektit nuk është gati.');
+    throw firstError||new Error('Moduli i projektit nuk �sht� gati.');
   }catch(error){showProjectFailure(error);return false;}finally{criticalProjectBusy=false;}
 }
 function criticalProjectClick(event){

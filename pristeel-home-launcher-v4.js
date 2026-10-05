@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261005-home-final-audit3',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false;
+var V='20261005-home-nav-stable1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -123,6 +123,10 @@ function route(k){
  k=S(k).toLowerCase();
  if(k==='spie'){location.assign(new URL('spie/',location.href).href);return true;}
  if(k==='daily')return openDaily();
+ // Early Home is usable while the ordered module owners are still loading.
+ // Keep the requested route and dispatch once; never hide Home into an empty page.
+ if(window.__pstBootstrapDiagnostics&&!window.__pstModulesReady){pendingRoute=k;return true;}
+ pendingRoute='';
  clearHomeRouteState();
  var n=nav(),ok=false;
  try{if(n&&typeof n.syncSidebar==='function')n.syncSidebar(k)}catch(e){}
@@ -173,25 +177,25 @@ function openGmail(){try{window.open('https://mail.google.com/mail/u/0/#inbox','
 var EVENT_REGISTRY=[{
  id:'d7c23392-f7e2-4f87-8205-e7ff637ac3aa',
  title:'German-Kosovar Economic Forum 2026',
- dates:'28–29 tetor 2026',
- location:'Prishtinë, Kosovë',
- status:'Në përgatitje'
+ dates:'28-29 tetor 2026',
+ location:'Prishtin�, Kosov�',
+ status:'N� p�rgatitje'
 }];
 var EVENT_COMPANIES=[
- {id:'spie',name:'SPIE',contact:'Laura Ihl',contact_role:'Kontakt projekti / Procurement',participation:'Për t’u verifikuar',participation_code:'verify',meeting:'Pa kërkesë',meeting_code:'none',priority:'A',strategic:true,relation:'Marrëdhënie aktive PriSteel / TenneT BUNT',why:'SPIE është kontakt real dhe klient/projekt aktiv për PriSteel. Forumi mund të përdoret për ta zgjeruar bashkëpunimin për fabrication dhe external manufacturing capacity.',objective:'Verifiko pjesëmarrjen në Forum. Nëse merr pjesë, kërko takim të fokusuar te bashkëpunimi afatgjatë dhe projektet e ardhshme.',discussed:'PriSteel ka avancuar në sourcing shortlist të SPIE dhe më 2 tetor janë kërkuar dy mostra. Paralelisht vazhdon puna për TenneT BUNT.',decision:'Mos e shfaq SPIE si pjesëmarrës të konfirmuar pa verifikim në B2Match. Mbaje si target strategjik A.',plan:'Verifiko pjesëmarrjen; nëse po, kërko takim dhe përgatit briefing të shkurtër për kapacitetin e prodhimit dhe projektet e reja.',next:'Verifiko pjesëmarrjen'},
- {id:'bilfinger',name:'Bilfinger',contact:'Ata Safak / Armin Gabriel',contact_role:'Group Procurement / Category Management',participation:'Për t’u verifikuar',participation_code:'verify',meeting:'Pa kërkesë',meeting_code:'none',priority:'A',strategic:true,relation:'Target strategjik me proces aktiv supplier qualification',why:'Bilfinger është target i rëndësishëm industrial për PriSteel dhe ekziston tashmë histori reale e supplier qualification.',objective:'Nëse Bilfinger është pjesëmarrës, përdore Forumin për takim të drejtpërdrejtë dhe për ta hapur rrugën e bashkëpunimit.',discussed:'Supplier qualification / LSA është punuar dhe ka mbetur çështja e komenteve dhe modelit ISO 9001.',decision:'Mbaje si target strategjik A; pjesëmarrja në Forum nuk konsiderohet e konfirmuar pa provë.',plan:'Verifiko listën e pjesëmarrësve; nëse Bilfinger figuron, kërko takim dhe përgatit statusin e qualification si briefing.',next:'Verifiko pjesëmarrjen'},
- {id:'goldbeck',name:'GOLDBECK',contact:'—',contact_role:'Kontakt relevant për t’u identifikuar',participation:'Për t’u verifikuar',participation_code:'verify',meeting:'Pa kërkesë',meeting_code:'none',priority:'A',strategic:true,relation:'Target strategjik për industrial cooperation / market entry',why:'GOLDBECK është target i madh potencial për kapacitet prodhues, subcontracting dhe bashkëpunim industrial.',objective:'Të identifikohet personi relevant dhe të verifikohet pjesëmarrja përpara kërkesës për takim.',discussed:'Është përmendur si target strategjik i Forumit; nuk kemi evidencë të konfirmuar të pjesëmarrjes ose takim të kërkuar.',decision:'Mos e përziej me pjesëmarrësit e konfirmuar. Mbaje në targetet A deri në verifikim.',plan:'Kontrollo B2Match, identifiko kontaktin relevant dhe kërko takim vetëm nëse pjesëmarrja konfirmohet.',next:'Verifiko dhe gjej kontaktin'},
- {id:'steelcobelimed',name:'SteelcoBelimed',contact:'Jochen Schlag',contact_role:'Kontakt i Forumit',participation:'I verifikuar në B2Match',participation_code:'confirmed',meeting:'Refuzuar',meeting_code:'declined',priority:'C',strategic:false,relation:'Kontakt i Forumit; portfolio mismatch i identifikuar',why:'Takimi u kërkua për të testuar përshtatshmërinë komerciale.',objective:'Nuk ka objektiv aktiv pas refuzimit dhe sqarimit të nevojës teknike.',discussed:'Jochen Schlag refuzoi kërkesën për takim më 1 tetor 2026. SteelcoBelimed kërkon tuba/fletë inox shumë të lustruara dhe rezistente, me certifikata 3.1 për makina farmaceutike; u identifikua mospërputhje me portofolin.',decision:'Mos harxho kohë me follow-up për këtë Forum, përveç nëse del një scope i ri relevant.',plan:'Mbaje vetëm si evidencë të Forumit dhe mësim për qualification të targeteve.',next:'Asnjë veprim'}
+ {id:'spie',name:'SPIE',contact:'Laura Ihl',contact_role:'Kontakt projekti / Procurement',participation:'P�r t'u verifikuar',participation_code:'verify',meeting:'Pa k�rkes�',meeting_code:'none',priority:'A',strategic:true,relation:'Marr�dh�nie aktive PriSteel / TenneT BUNT',why:'SPIE �sht� kontakt real dhe klient/projekt aktiv p�r PriSteel. Forumi mund t� p�rdoret p�r ta zgjeruar bashk�punimin p�r fabrication dhe external manufacturing capacity.',objective:'Verifiko pjes�marrjen n� Forum. N�se merr pjes�, k�rko takim t� fokusuar te bashk�punimi afatgjat� dhe projektet e ardhshme.',discussed:'PriSteel ka avancuar n� sourcing shortlist t� SPIE dhe m� 2 tetor jan� k�rkuar dy mostra. Paralelisht vazhdon puna p�r TenneT BUNT.',decision:'Mos e shfaq SPIE si pjes�marr�s t� konfirmuar pa verifikim n� B2Match. Mbaje si target strategjik A.',plan:'Verifiko pjes�marrjen; n�se po, k�rko takim dhe p�rgatit briefing t� shkurt�r p�r kapacitetin e prodhimit dhe projektet e reja.',next:'Verifiko pjes�marrjen'},
+ {id:'bilfinger',name:'Bilfinger',contact:'Ata Safak / Armin Gabriel',contact_role:'Group Procurement / Category Management',participation:'P�r t'u verifikuar',participation_code:'verify',meeting:'Pa k�rkes�',meeting_code:'none',priority:'A',strategic:true,relation:'Target strategjik me proces aktiv supplier qualification',why:'Bilfinger �sht� target i r�nd�sish�m industrial p�r PriSteel dhe ekziston tashm� histori reale e supplier qualification.',objective:'N�se Bilfinger �sht� pjes�marr�s, p�rdore Forumin p�r takim t� drejtp�rdrejt� dhe p�r ta hapur rrug�n e bashk�punimit.',discussed:'Supplier qualification / LSA �sht� punuar dhe ka mbetur ��shtja e komenteve dhe modelit ISO 9001.',decision:'Mbaje si target strategjik A; pjes�marrja n� Forum nuk konsiderohet e konfirmuar pa prov�.',plan:'Verifiko list�n e pjes�marr�sve; n�se Bilfinger figuron, k�rko takim dhe p�rgatit statusin e qualification si briefing.',next:'Verifiko pjes�marrjen'},
+ {id:'goldbeck',name:'GOLDBECK',contact:'-',contact_role:'Kontakt relevant p�r t'u identifikuar',participation:'P�r t'u verifikuar',participation_code:'verify',meeting:'Pa k�rkes�',meeting_code:'none',priority:'A',strategic:true,relation:'Target strategjik p�r industrial cooperation / market entry',why:'GOLDBECK �sht� target i madh potencial p�r kapacitet prodhues, subcontracting dhe bashk�punim industrial.',objective:'T� identifikohet personi relevant dhe t� verifikohet pjes�marrja p�rpara k�rkes�s p�r takim.',discussed:'Esht� p�rmendur si target strategjik i Forumit; nuk kemi evidenc� t� konfirmuar t� pjes�marrjes ose takim t� k�rkuar.',decision:'Mos e p�rziej me pjes�marr�sit e konfirmuar. Mbaje n� targetet A deri n� verifikim.',plan:'Kontrollo B2Match, identifiko kontaktin relevant dhe k�rko takim vet�m n�se pjes�marrja konfirmohet.',next:'Verifiko dhe gjej kontaktin'},
+ {id:'steelcobelimed',name:'SteelcoBelimed',contact:'Jochen Schlag',contact_role:'Kontakt i Forumit',participation:'I verifikuar n� B2Match',participation_code:'confirmed',meeting:'Refuzuar',meeting_code:'declined',priority:'C',strategic:false,relation:'Kontakt i Forumit; portfolio mismatch i identifikuar',why:'Takimi u k�rkua p�r t� testuar p�rshtatshm�rin� komerciale.',objective:'Nuk ka objektiv aktiv pas refuzimit dhe sqarimit t� nevoj�s teknike.',discussed:'Jochen Schlag refuzoi k�rkes�n p�r takim m� 1 tetor 2026. SteelcoBelimed k�rkon tuba/flet� inox shum� t� lustruara dhe rezistente, me certifikata 3.1 p�r makina farmaceutike; u identifikua mosp�rputhje me portofolin.',decision:'Mos harxho koh� me follow-up p�r k�t� Forum, p�rve� n�se del nj� scope i ri relevant.',plan:'Mbaje vet�m si evidenc� t� Forumit dhe m�sim p�r qualification t� targeteve.',next:'Asnj� veprim'}
 ];
 var EVENT_SESSIONS=[
- {when:'28 tetor · 12:15',title:'Manufacturing supply chains'},
- {when:'28 tetor · 12:30',title:'German–Kosovar industrial partnerships'},
- {when:'28 tetor · 14:30',title:'Industrial 1:1'},
- {when:'29 tetor · 10:30–13:20',title:'B2B meetings'}
+ {when:'28 tetor � 12:15',title:'Manufacturing supply chains'},
+ {when:'28 tetor � 12:30',title:'German-Kosovar industrial partnerships'},
+ {when:'28 tetor � 14:30',title:'Industrial 1:1'},
+ {when:'29 tetor � 10:30-13:20',title:'B2B meetings'}
 ];
 var EVENT_OPPORTUNITIES=[
  'Managed Steel Production Network & External Manufacturing Capacity',
- 'German–Kosovar Industrial Partnerships, Representation & Market Entry'
+ 'German-Kosovar Industrial Partnerships, Representation & Market Entry'
 ];
 var EVENT_ACTIVITY_CACHE={};
 function eventById(id){id=S(id);for(var i=0;i<EVENT_REGISTRY.length;i++)if(S(EVENT_REGISTRY[i].id)===id)return EVENT_REGISTRY[i];return null}
@@ -221,7 +225,7 @@ function cleanEventActivity(rows){
 }
 function activityRowsHtml(rows,limit){
  rows=cleanEventActivity(rows);if(limit)rows=rows.slice(0,limit);
- if(!rows.length)return'<div class="pef-empty">Ende nuk ka aktivitet të lidhur me këtë event.</div>';
+ if(!rows.length)return'<div class="pef-empty">Ende nuk ka aktivitet t� lidhur me k�t� event.</div>';
  return rows.map(function(r){
   var open=r.gmail_url?' data-event-mail="'+E(r.gmail_url)+'" tabindex="0" role="button"':'';
   return'<div class="pef-activity-row"'+open+'><span class="pef-activity-dot"></span><span class="pef-activity-copy"><small>'+E(eventActivityKind(r.subject))+'</small><b>'+E(r.subject||'Aktivitet i Forumit')+'</b><em>'+E(eventActivityDate(r.sent_at))+'</em></span></div>';
@@ -239,10 +243,10 @@ function bindEventMailLinks(p){
 function loadEventActivity(ev,p){
  var cached=EVENT_ACTIVITY_CACHE[ev.id];if(cached){renderEventActivity(p,cached);return}
  var boxes=p?p.querySelectorAll('[data-event-activity],[data-event-activity-mini]'):[];
- boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Duke ngarkuar aktivitetin…</div>'});
- if(typeof window.supaFetch!=='function'){boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Aktiviteti nuk mund të ngarkohet tani.</div>'});return}
+ boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Duke ngarkuar aktivitetin.</div>'});
+ if(typeof window.supaFetch!=='function'){boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Aktiviteti nuk mund t� ngarkohet tani.</div>'});return}
  var path='project_emails?select=id,sent_at,subject,direction,snippet,gmail_url&project_id=eq.'+encodeURIComponent(ev.id)+'&order=sent_at.desc&limit=20';
- window.supaFetch(path).then(function(rows){renderEventActivity(p,rows)}).catch(function(){boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Aktiviteti nuk mund të ngarkohet tani.</div>'})});
+ window.supaFetch(path).then(function(rows){renderEventActivity(p,rows)}).catch(function(){boxes.forEach(function(box){box.innerHTML='<div class="pef-empty">Aktiviteti nuk mund t� ngarkohet tani.</div>'})});
 }
 function eventStats(){
  return{
@@ -255,28 +259,28 @@ function eventStats(){
 }
 function badgeClass(code){return code==='confirmed'||code==='accepted'?'is-good':code==='declined'?'is-bad':code==='verify'||code==='pending'?'is-warn':'is-neutral'}
 function eventTabsHtml(active){
- var tabs=[['overview','Përmbledhje'],['companies','Kompanitë & Takimet'],['docs','Dokumentet'],['activity','Aktiviteti'],['after','Pas Forumit']];
+ var tabs=[['overview','P�rmbledhje'],['companies','Kompanit� & Takimet'],['docs','Dokumentet'],['activity','Aktiviteti'],['after','Pas Forumit']];
  return'<nav class="pef-tabs">'+tabs.map(function(t){return'<button type="button" data-event-tab="'+t[0]+'" class="'+(active===t[0]?'active':'')+'">'+t[1]+'</button>'}).join('')+'</nav>';
 }
 function eventOverviewHtml(ev){
  var s=eventStats();
  var actions=[
-  ['Kontrollo listën e pjesëmarrësve të rinj','B2Match · mos i përziej me targetet e paverifikuara'],
-  ['Verifiko SPIE, Bilfinger dhe GOLDBECK','3 targete strategjike A presin verifikim të pjesëmarrjes'],
-  ['Kërko takim vetëm pas verifikimit','Nëse targeti figuron në B2Match, atëherë dërgo kërkesën'],
-  ['Përgatit briefing për targetet A','SPIE · Bilfinger · GOLDBECK']
+  ['Kontrollo list�n e pjes�marr�sve t� rinj','B2Match � mos i p�rziej me targetet e paverifikuara'],
+  ['Verifiko SPIE, Bilfinger dhe GOLDBECK','3 targete strategjike A presin verifikim t� pjes�marrjes'],
+  ['K�rko takim vet�m pas verifikimit','N�se targeti figuron n� B2Match, at�her� d�rgo k�rkes�n'],
+  ['P�rgatit briefing p�r targetet A','SPIE � Bilfinger � GOLDBECK']
  ];
  return'<section data-event-panel="overview" class="pef-panel active">'
   +'<div class="pef-kpis">'
-   +'<div class="pef-kpi is-blue"><small>Pjesëmarrës të verifikuar</small><b>'+s.participants+'</b><em>evidencë B2Match</em></div>'
+   +'<div class="pef-kpi is-blue"><small>Pjes�marr�s t� verifikuar</small><b>'+s.participants+'</b><em>evidenc� B2Match</em></div>'
    +'<div class="pef-kpi is-green"><small>Targete strategjike</small><b>'+s.strategic+'</b><em>prioritet A</em></div>'
-   +'<div class="pef-kpi is-purple"><small>Kërkesa takimi</small><b>'+s.requested+'</b><em>të njohura</em></div>'
-   +'<div class="pef-kpi is-amber"><small>Takime të konfirmuara</small><b>'+s.confirmed+'</b><em>deri tani</em></div>'
-   +'<div class="pef-kpi is-red"><small>Takime të refuzuara</small><b>'+s.declined+'</b><em>deri tani</em></div>'
+   +'<div class="pef-kpi is-purple"><small>K�rkesa takimi</small><b>'+s.requested+'</b><em>t� njohura</em></div>'
+   +'<div class="pef-kpi is-amber"><small>Takime t� konfirmuara</small><b>'+s.confirmed+'</b><em>deri tani</em></div>'
+   +'<div class="pef-kpi is-red"><small>Takime t� refuzuara</small><b>'+s.declined+'</b><em>deri tani</em></div>'
   +'</div>'
   +'<div class="pef-overview-grid">'
-   +'<section class="pef-box"><h2>Tani — çfarë duhet të bëjmë</h2><div class="pef-action-list">'+actions.map(function(a,i){return'<div class="pef-action"><span class="pef-check">'+(i===0?'!':'')+'</span><span><b>'+E(a[0])+'</b><small>'+E(a[1])+'</small></span></div>'}).join('')+'</div></section>'
-   +'<section class="pef-box"><h2>Agjenda jonë</h2><div class="pef-session-list">'+EVENT_SESSIONS.map(function(x){return'<div><small>'+E(x.when)+'</small><b>'+E(x.title)+'</b></div>'}).join('')+'</div></section>'
+   +'<section class="pef-box"><h2>Tani - �far� duhet t� b�jm�</h2><div class="pef-action-list">'+actions.map(function(a,i){return'<div class="pef-action"><span class="pef-check">'+(i===0?'!':'')+'</span><span><b>'+E(a[0])+'</b><small>'+E(a[1])+'</small></span></div>'}).join('')+'</div></section>'
+   +'<section class="pef-box"><h2>Agjenda jon�</h2><div class="pef-session-list">'+EVENT_SESSIONS.map(function(x){return'<div><small>'+E(x.when)+'</small><b>'+E(x.title)+'</b></div>'}).join('')+'</div></section>'
   +'</div>'
   +'<div class="pef-overview-grid pef-overview-lower">'
    +'<section class="pef-box"><h2>Opportunity-t tona</h2><div class="pef-opps">'+EVENT_OPPORTUNITIES.map(function(x){return'<div>'+E(x)+'</div>'}).join('')+'</div></section>'
@@ -291,21 +295,21 @@ function companyRowHtml(x){
   +'<span class="pef-badge '+badgeClass(x.meeting_code)+'">'+E(x.meeting)+'</span>'
   +'<span class="pef-priority '+(x.priority==='A'?'is-a':x.priority==='B'?'is-b':'is-c')+'">'+E(x.priority)+'</span>'
   +'<span>'+E(x.next)+'</span>'
-  +'<i>›</i>'
+  +'<i>></i>'
  +'</button>';
 }
 function companyDetailHtml(x){
- if(!x)return'<div class="pef-company-empty">Zgjidh një kompani.</div>';
- return'<div class="pef-company-detail-head"><small>DETAJET E KOMPANISË</small><h3>'+E(x.name)+'</h3><div><span class="pef-badge '+badgeClass(x.participation_code)+'">'+E(x.participation)+'</span>'+(x.strategic?'<span class="pef-badge is-purple">Target strategjik</span>':'')+'</div></div>'
+ if(!x)return'<div class="pef-company-empty">Zgjidh nj� kompani.</div>';
+ return'<div class="pef-company-detail-head"><small>DETAJET E KOMPANISE</small><h3>'+E(x.name)+'</h3><div><span class="pef-badge '+badgeClass(x.participation_code)+'">'+E(x.participation)+'</span>'+(x.strategic?'<span class="pef-badge is-purple">Target strategjik</span>':'')+'</div></div>'
   +'<dl class="pef-company-dl">'
    +'<dt>Personi kryesor</dt><dd><b>'+E(x.contact)+'</b><small>'+E(x.contact_role)+'</small></dd>'
    +'<dt>Statusi i takimit</dt><dd><span class="pef-badge '+badgeClass(x.meeting_code)+'">'+E(x.meeting)+'</span></dd>'
    +'<dt>Prioriteti</dt><dd><span class="pef-priority '+(x.priority==='A'?'is-a':x.priority==='B'?'is-b':'is-c')+'">'+E(x.priority)+'</span></dd>'
-   +'<dt>Marrëdhënia</dt><dd>'+E(x.relation)+'</dd>'
+   +'<dt>Marr�dh�nia</dt><dd>'+E(x.relation)+'</dd>'
    +'<dt>Pse na intereson</dt><dd>'+E(x.why)+'</dd>'
-   +'<dt>Objektivi në Forum</dt><dd>'+E(x.objective)+'</dd>'
+   +'<dt>Objektivi n� Forum</dt><dd>'+E(x.objective)+'</dd>'
   +'</dl>'
-  +'<div class="pef-company-notes"><div><small>Çfarë kemi biseduar</small><p>'+E(x.discussed)+'</p></div><div><small>Çfarë kemi vendosur</small><p>'+E(x.decision)+'</p></div><div><small>Çfarë planifikojmë</small><p>'+E(x.plan)+'</p></div><div class="is-next"><small>Hapi i radhës</small><p>'+E(x.next)+'</p></div></div>';
+  +'<div class="pef-company-notes"><div><small>�far� kemi biseduar</small><p>'+E(x.discussed)+'</p></div><div><small>�far� kemi vendosur</small><p>'+E(x.decision)+'</p></div><div><small>�far� planifikojm�</small><p>'+E(x.plan)+'</p></div><div class="is-next"><small>Hapi i radh�s</small><p>'+E(x.next)+'</p></div></div>';
 }
 function filterEventCompanies(p){
  var q=S(p.querySelector('[data-company-search]')&&p.querySelector('[data-company-search]').value).toLowerCase().trim();
@@ -321,7 +325,7 @@ function filterEventCompanies(p){
 function renderEventCompanies(p){
  var list=p.querySelector('[data-company-list]');if(!list)return;
  var rows=filterEventCompanies(p);
- list.innerHTML=rows.length?rows.map(companyRowHtml).join(''):'<div class="pef-empty">Nuk ka kompani me këta filtra.</div>';
+ list.innerHTML=rows.length?rows.map(companyRowHtml).join(''):'<div class="pef-empty">Nuk ka kompani me k�ta filtra.</div>';
  list.querySelectorAll('[data-event-company]').forEach(function(x){x.onclick=function(){p.dataset.eventCompany=x.getAttribute('data-event-company');renderEventCompanyDetail(p)}});
 }
 function renderEventCompanyDetail(p){
@@ -330,20 +334,20 @@ function renderEventCompanyDetail(p){
 }
 function eventCompaniesHtml(){
  return'<section data-event-panel="companies" class="pef-panel">'
-  +'<div class="pef-company-toolbar"><input type="search" data-company-search placeholder="Kërko kompani ose person…"><select data-company-participation><option value="">Pjesëmarrja: të gjitha</option><option value="confirmed">Të verifikuar</option><option value="verify">Për t’u verifikuar</option></select><select data-company-meeting><option value="">Takimet: të gjitha</option><option value="none">Pa kërkesë</option><option value="accepted">Konfirmuar</option><option value="declined">Refuzuar</option></select></div>'
-  +'<div class="pef-company-grid"><div class="pef-company-table"><div class="pef-company-head"><span>Kompania / personi</span><span>Pjesëmarrja</span><span>Takimi</span><span>Prioriteti</span><span>Hapi tjetër</span><span></span></div><div data-company-list></div></div><aside class="pef-company-side" data-company-detail></aside></div>'
+  +'<div class="pef-company-toolbar"><input type="search" data-company-search placeholder="K�rko kompani ose person."><select data-company-participation><option value="">Pjes�marrja: t� gjitha</option><option value="confirmed">T� verifikuar</option><option value="verify">P�r t'u verifikuar</option></select><select data-company-meeting><option value="">Takimet: t� gjitha</option><option value="none">Pa k�rkes�</option><option value="accepted">Konfirmuar</option><option value="declined">Refuzuar</option></select></div>'
+  +'<div class="pef-company-grid"><div class="pef-company-table"><div class="pef-company-head"><span>Kompania / personi</span><span>Pjes�marrja</span><span>Takimi</span><span>Prioriteti</span><span>Hapi tjet�r</span><span></span></div><div data-company-list></div></div><aside class="pef-company-side" data-company-detail></aside></div>'
  +'</section>';
 }
 function eventDocsHtml(){
  return'<section data-event-panel="docs" class="pef-panel"><div class="pef-doc-grid">'
-  +'<section class="pef-box"><h2>Dokumentet & linket</h2><a class="pef-doc-link" href="https://www.b2match.com/e/german-kosovar-economic-forum" target="_blank" rel="noopener"><b>Faqja e eventit (B2Match)</b><small>Hap faqen zyrtare të Forumit</small></a><div class="pef-doc-link is-static"><b>PRISTEEL_GK_Economic_Forum_2026_Short_Deck_EN.pdf</b><small>Short deck i përgatitur për Forum</small></div><div class="pef-doc-link is-static"><b>Profili PriSteel</b><small>Aktivizuar dhe i dukshëm për pjesëmarrësit</small></div></section>'
+  +'<section class="pef-box"><h2>Dokumentet & linket</h2><a class="pef-doc-link" href="https://www.b2match.com/e/german-kosovar-economic-forum" target="_blank" rel="noopener"><b>Faqja e eventit (B2Match)</b><small>Hap faqen zyrtare t� Forumit</small></a><div class="pef-doc-link is-static"><b>PRISTEEL_GK_Economic_Forum_2026_Short_Deck_EN.pdf</b><small>Short deck i p�rgatitur p�r Forum</small></div><div class="pef-doc-link is-static"><b>Profili PriSteel</b><small>Aktivizuar dhe i duksh�m p�r pjes�marr�sit</small></div></section>'
   +'<section class="pef-box"><h2>Agjenda e zgjedhur</h2><div class="pef-session-list">'+EVENT_SESSIONS.map(function(x){return'<div><small>'+E(x.when)+'</small><b>'+E(x.title)+'</b></div>'}).join('')+'</div></section>'
-  +'<section class="pef-box pef-doc-wide"><h2>Opportunity-t tona në Forum</h2><div class="pef-opps">'+EVENT_OPPORTUNITIES.map(function(x){return'<div>'+E(x)+'</div>'}).join('')+'</div></section>'
+  +'<section class="pef-box pef-doc-wide"><h2>Opportunity-t tona n� Forum</h2><div class="pef-opps">'+EVENT_OPPORTUNITIES.map(function(x){return'<div>'+E(x)+'</div>'}).join('')+'</div></section>'
  +'</div></section>';
 }
-function eventActivityHtml(){return'<section data-event-panel="activity" class="pef-panel"><section class="pef-box"><h2>Aktiviteti i Forumit</h2><p class="pef-box-intro">Komunikimet e lidhura me Forumin. Kliko një rresht kur ka link Gmail.</p><div data-event-activity></div></section></section>'}
+function eventActivityHtml(){return'<section data-event-panel="activity" class="pef-panel"><section class="pef-box"><h2>Aktiviteti i Forumit</h2><p class="pef-box-intro">Komunikimet e lidhura me Forumin. Kliko nj� rresht kur ka link Gmail.</p><div data-event-activity></div></section></section>'}
 function eventAfterHtml(){
- return'<section data-event-panel="after" class="pef-panel"><div class="pef-after-grid"><div class="pef-box"><h2>Pas Forumit</h2><p class="pef-box-intro">Kjo pjesë përdoret pas 29 tetorit për follow-up, lead-et e reja dhe opportunity-t që dalin nga takimet.</p><div class="pef-after-items"><div><b>Follow-up me kompanitë</b><small>Do të mblidhen këtu sipas takimeve të zhvilluara.</small></div><div><b>Opportunity të reja</b><small>Vetëm ato që kanë evidencë reale nga takimet.</small></div><div><b>Vendime dhe next steps</b><small>Për secilën kompani veçmas.</small></div></div></div></div></section>';
+ return'<section data-event-panel="after" class="pef-panel"><div class="pef-after-grid"><div class="pef-box"><h2>Pas Forumit</h2><p class="pef-box-intro">Kjo pjes� p�rdoret pas 29 tetorit p�r follow-up, lead-et e reja dhe opportunity-t q� dalin nga takimet.</p><div class="pef-after-items"><div><b>Follow-up me kompanit�</b><small>Do t� mblidhen k�tu sipas takimeve t� zhvilluara.</small></div><div><b>Opportunity t� reja</b><small>Vet�m ato q� kan� evidenc� reale nga takimet.</small></div><div><b>Vendime dhe next steps</b><small>P�r secil�n kompani ve�mas.</small></div></div></div></div></section>';
 }
 function activateEventTab(p,key){
  p.dataset.eventTab=key;
@@ -361,7 +365,7 @@ function eventDetail(id){
  var ev=eventById(id),p=eventsSurface();if(!ev||!p)return false;
  var s=eventStats();
  p.dataset.eventCompany='spie';
- p.innerHTML='<div class="pef-page pef-command"><header class="pef-head pef-command-head"><button type="button" class="pef-back" data-event-detail-back>← Kthehu</button><div><span>EVENTE DHE FORUME</span><h1>'+E(ev.title)+'</h1><p>'+E(ev.dates)+' · '+E(ev.location)+'</p></div><span class="pef-status-pill">'+E(ev.status)+'</span></header>'
+ p.innerHTML='<div class="pef-page pef-command"><header class="pef-head pef-command-head"><button type="button" class="pef-back" data-event-detail-back> Kthehu</button><div><span>EVENTE DHE FORUME</span><h1>'+E(ev.title)+'</h1><p>'+E(ev.dates)+' � '+E(ev.location)+'</p></div><span class="pef-status-pill">'+E(ev.status)+'</span></header>'
   +eventTabsHtml('overview')
   +'<main class="pef-detail">'+eventOverviewHtml(ev)+eventCompaniesHtml()+eventDocsHtml()+eventActivityHtml()+eventAfterHtml()+'</main></div>';
  var back=p.querySelector('[data-event-detail-back]');if(back)back.onclick=function(){return eventsPage()};
@@ -369,8 +373,8 @@ function eventDetail(id){
 }
 function eventsPage(){
  var p=eventsSurface();if(!p)return false;
- var cards=EVENT_REGISTRY.map(function(ev){return '<button type="button" class="pef-event-card" data-event-open="'+E(ev.id)+'">'+icon('events',false)+'<span class="pef-event-copy"><small>'+E(ev.status)+'</small><b>'+E(ev.title)+'</b><em>'+E(ev.dates)+' · '+E(ev.location)+'</em></span><span class="pef-event-open">Hap eventin ›</span></button>'}).join('');
- p.innerHTML='<div class="pef-page"><header class="pef-head"><button type="button" class="pef-back" data-events-back>← Kthehu</button><div><span>PPPP</span><h1>Evente dhe Forume</h1><p>Eventet aktive dhe historiku i tyre në një vend.</p></div></header><section class="pef-list"><h2>Eventet aktive</h2>'+cards+'</section></div>';
+ var cards=EVENT_REGISTRY.map(function(ev){return '<button type="button" class="pef-event-card" data-event-open="'+E(ev.id)+'">'+icon('events',false)+'<span class="pef-event-copy"><small>'+E(ev.status)+'</small><b>'+E(ev.title)+'</b><em>'+E(ev.dates)+' � '+E(ev.location)+'</em></span><span class="pef-event-open">Hap eventin ></span></button>'}).join('');
+ p.innerHTML='<div class="pef-page"><header class="pef-head"><button type="button" class="pef-back" data-events-back> Kthehu</button><div><span>PPPP</span><h1>Evente dhe Forume</h1><p>Eventet aktive dhe historiku i tyre n� nj� vend.</p></div></header><section class="pef-list"><h2>Eventet aktive</h2>'+cards+'</section></div>';
  p.querySelectorAll('[data-event-open]').forEach(function(x){x.onclick=function(){return eventDetail(x.getAttribute('data-event-open'))}});
  var back=p.querySelector('[data-events-back]');if(back)back.onclick=function(){try{var n=nav();if(n&&typeof n.openHome==='function')return n.openHome()}catch(e){}var h=document.getElementById('page-workspace-home');if(h){h.style.display='block';h.classList.add('active')}mount();return true};
  window.scrollTo({top:0,behavior:'auto'});return true;
@@ -381,13 +385,13 @@ function clock(){
  if(r){var t=r.querySelector('[data-time]'),x=r.querySelector('[data-date]');if(t)t.textContent=d.toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit',hour12:false});if(x)x.textContent=dateText(d)}
  clearTimeout(clockTimer);clockTimer=setTimeout(clock,(60-d.getSeconds())*1000-d.getMilliseconds()+100);
 }
-function weatherLabel(c){c=Number(c);if(c===0)return'Diell';if(c<=3)return'Vranësira';if(c===45||c===48)return'Mjegull';if((c>=51&&c<=67)||(c>=80&&c<=82))return'Shi';if(c>=71&&c<=77)return'Borë';if(c>=95)return'Stuhí';return'Moti'}
+function weatherLabel(c){c=Number(c);if(c===0)return'Diell';if(c<=3)return'Vran�sira';if(c===45||c===48)return'Mjegull';if((c>=51&&c<=67)||(c>=80&&c<=82))return'Shi';if(c>=71&&c<=77)return'Bor�';if(c>=95)return'Stuh�';return'Moti'}
 function weather(force){
  if(weatherBusy||(!force&&weatherLoaded))return;weatherBusy=true;
  fetch('https://api.open-meteo.com/v1/forecast?latitude=42.6629&longitude=21.1655&current=temperature_2m,weather_code&timezone=Europe%2FBelgrade',{cache:force?'no-store':'default'})
  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
- .then(function(j){var r=document.getElementById('pst-home-launcher-v4'),c=j&&j.current||{};if(!r)return;weatherLoaded=true;var t=r.querySelector('[data-temp]'),d=r.querySelector('[data-weather]');if(t&&isFinite(Number(c.temperature_2m)))t.textContent=Math.round(Number(c.temperature_2m))+'°C';if(d)d.textContent=weatherLabel(c.weather_code)+' · Prishtinë'})
- .catch(function(){var r=document.getElementById('pst-home-launcher-v4'),d=r&&r.querySelector('[data-weather]');if(d)d.textContent='Prishtinë'})
+ .then(function(j){var r=document.getElementById('pst-home-launcher-v4'),c=j&&j.current||{};if(!r)return;weatherLoaded=true;var t=r.querySelector('[data-temp]'),d=r.querySelector('[data-weather]');if(t&&isFinite(Number(c.temperature_2m)))t.textContent=Math.round(Number(c.temperature_2m))+'�C';if(d)d.textContent=weatherLabel(c.weather_code)+' � Prishtin�'})
+ .catch(function(){var r=document.getElementById('pst-home-launcher-v4'),d=r&&r.querySelector('[data-weather]');if(d)d.textContent='Prishtin�'})
  .finally(function(){weatherBusy=false});
 }
 
@@ -416,25 +420,25 @@ function calcValue(input){
  if(nums.length!==1||!isFinite(nums[0]))throw 0;return nums[0];
 }
 function calculator(){
- var keys=['C','±','%','÷','7','8','9','×','4','5','6','−','1','2','3','+','0','.','⌫','='];
- var m=modal('Kalkulatori','Llogaritje të shpejta pa dalë nga PRISTEEL.','<div class="phl-calc"><input data-display value="0" readonly><div>'+keys.map(function(k){return'<button type="button" data-key="'+E(k)+'">'+E(k)+'</button>'}).join('')+'</div></div>'),expr='',display=m.querySelector('[data-display]');
+ var keys=['C','�','%','�','7','8','9','x','4','5','6','-','1','2','3','+','0','.','?','='];
+ var m=modal('Kalkulatori','Llogaritje t� shpejta pa dal� nga PRISTEEL.','<div class="phl-calc"><input data-display value="0" readonly><div>'+keys.map(function(k){return'<button type="button" data-key="'+E(k)+'">'+E(k)+'</button>'}).join('')+'</div></div>'),expr='',display=m.querySelector('[data-display]');
  function show(){display.value=expr||'0'}
- m.addEventListener('click',function(e){var b=e.target.closest('[data-key]');if(!b)return;var k=b.dataset.key;if(k==='C'){expr='';return show()}if(k==='⌫'){expr=expr.slice(0,-1);return show()}if(k==='±'){if(expr)expr=expr[0]==='-'?expr.slice(1):'-'+expr;return show()}if(k==='%'){if(expr)expr='('+expr+')/100';return show()}if(k==='='){try{var x=expr.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');var v=calcValue(x);expr=String(Math.round(v*100000000)/100000000)}catch(_){expr=''}return show()}expr+=k;show()});
+ m.addEventListener('click',function(e){var b=e.target.closest('[data-key]');if(!b)return;var k=b.dataset.key;if(k==='C'){expr='';return show()}if(k==='?'){expr=expr.slice(0,-1);return show()}if(k==='�'){if(expr)expr=expr[0]==='-'?expr.slice(1):'-'+expr;return show()}if(k==='%'){if(expr)expr='('+expr+')/100';return show()}if(k==='='){try{var x=expr.replace(/x/g,'*').replace(/�/g,'/').replace(/-/g,'-');var v=calcValue(x);expr=String(Math.round(v*100000000)/100000000)}catch(_){expr=''}return show()}expr+=k;show()});
 }
 function currency(){
- var m=modal('Kursi i valutave','Kurs aktual me bazë EUR. Burimi: Frankfurter / ECB.','<div class="phl-state">Duke marrë kursin aktual…</div>');
+ var m=modal('Kursi i valutave','Kurs aktual me baz� EUR. Burimi: Frankfurter / ECB.','<div class="phl-state">Duke marr� kursin aktual.</div>');
  fetch('https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CHF,TRY',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(j){
   var b=m.querySelector('.phl-modal-body'),rs=j&&j.rates||{},codes=['USD','GBP','CHF','TRY'];
-  b.innerHTML='<div class="phl-rate-top"><b>1 EUR</b><span>'+E(j.date||'')+'</span></div><div class="phl-rates">'+codes.map(function(c){return'<div><span>'+c+'</span><b>'+E(rs[c]==null?'—':Number(rs[c]).toFixed(4))+'</b></div>'}).join('')+'</div>';
- }).catch(function(){var b=m.querySelector('.phl-modal-body');if(b)b.innerHTML='<div class="phl-state">Kursi nuk mund të merret tani.</div>'});
+  b.innerHTML='<div class="phl-rate-top"><b>1 EUR</b><span>'+E(j.date||'')+'</span></div><div class="phl-rates">'+codes.map(function(c){return'<div><span>'+c+'</span><b>'+E(rs[c]==null?'-':Number(rs[c]).toFixed(4))+'</b></div>'}).join('')+'</div>';
+ }).catch(function(){var b=m.querySelector('.phl-modal-body');if(b)b.innerHTML='<div class="phl-state">Kursi nuk mund t� merret tani.</div>'});
 }
 function steel(){
- var m=modal('Çmimet e çelikut','Referenca të brendshme PPPP nga ofertat e fundit; jo kuotime bursiere live.','<div class="phl-state">Duke ngarkuar referencat…</div>');
- if(typeof window.supaFetch!=='function'){m.querySelector('.phl-modal-body').innerHTML='<div class="phl-state">PPPP nuk është ende gati.</div>';return}
+ var m=modal('�mimet e �elikut','Referenca t� brendshme PPPP nga ofertat e fundit; jo kuotime bursiere live.','<div class="phl-state">Duke ngarkuar referencat.</div>');
+ if(typeof window.supaFetch!=='function'){m.querySelector('.phl-modal-body').innerHTML='<div class="phl-state">PPPP nuk �sht� ende gati.</div>';return}
  window.supaFetch('price_history?select=work_type,our_price_kg,project_name,country,quoted_at&our_price_kg=not.is.null&order=quoted_at.desc&limit=10').then(function(rows){
-  rows=A(rows);var b=m.querySelector('.phl-modal-body');if(!rows.length){b.innerHTML='<div class="phl-state">Nuk ka referenca të regjistruara.</div>';return}
-  b.innerHTML='<div class="phl-prices">'+rows.map(function(r){return'<div><span><b>'+E(r.work_type||'Çelik')+'</b><small>'+E(r.project_name||'')+(r.country?' · '+E(r.country):'')+'</small></span><strong>'+E(Number(r.our_price_kg).toFixed(3))+' €/kg</strong><em>'+E(r.quoted_at||'')+'</em></div>'}).join('')+'</div>';
- }).catch(function(){var b=m.querySelector('.phl-modal-body');if(b)b.innerHTML='<div class="phl-state">Referencat nuk mund të ngarkohen tani.</div>'});
+  rows=A(rows);var b=m.querySelector('.phl-modal-body');if(!rows.length){b.innerHTML='<div class="phl-state">Nuk ka referenca t� regjistruara.</div>';return}
+  b.innerHTML='<div class="phl-prices">'+rows.map(function(r){return'<div><span><b>'+E(r.work_type||'�elik')+'</b><small>'+E(r.project_name||'')+(r.country?' � '+E(r.country):'')+'</small></span><strong>'+E(Number(r.our_price_kg).toFixed(3))+' ?/kg</strong><em>'+E(r.quoted_at||'')+'</em></div>'}).join('')+'</div>';
+ }).catch(function(){var b=m.querySelector('.phl-modal-body');if(b)b.innerHTML='<div class="phl-state">Referencat nuk mund t� ngarkohen tani.</div>'});
 }
 function mainCard(k,t,s){return'<button type="button" class="phl-main-card" data-open="'+k+'">'+icon(k,false)+'<span class="phl-main-copy"><b>'+E(t)+'</b><small>'+E(s)+'</small></span><i>'+I.arrow+'</i></button>'}
 function smallCard(k,t,s){return'<button type="button" class="phl-small-card" data-open="'+k+'">'+icon(k,false)+'<span><b>'+E(t)+'</b><small>'+E(s)+'</small></span><i>'+I.arrow+'</i></button>'}
@@ -445,24 +449,24 @@ function html(){
    +'<button type="button" data-gmail>'+icon('gmail',true)+'<b>Gmail</b></button>'
    +'<button type="button" data-open="daily">'+icon('news',true)+'<b>Gazeta PPPP</b></button>'
    +'<button type="button" data-tool="calc">'+icon('calc',true)+'<b>Kalkulatori</b></button>'
-   +'<div class="phl-meta">'+icon('clock',true)+'<span><b data-time>--:--</b><small data-date>—</small></span></div>'
-   +'<button type="button" class="phl-meta" data-weather-refresh>'+icon('weather',true)+'<span><b data-temp>—°C</b><small data-weather>Prishtinë</small></span></button>'
+   +'<div class="phl-meta">'+icon('clock',true)+'<span><b data-time>--:--</b><small data-date>-</small></span></div>'
+   +'<button type="button" class="phl-meta" data-weather-refresh>'+icon('weather',true)+'<span><b data-temp>-�C</b><small data-weather>Prishtin�</small></span></button>'
   +'</nav></header>'
-  +'<main><section class="phl-intro"><h1>Mirësevini në PRISTEEL</h1><p>Zgjidh modulin ose kërko në platformë.</p></section>'
-  +'<form class="phl-search" data-search-form>'+I.search+'<input data-search placeholder="Kërko projekt, kompani, tender, ofertë, furnitor…"><kbd>Ctrl K</kbd><button>'+I.arrow+'</button></form>'
+  +'<main><section class="phl-intro"><h1>Mir�sevini n� PRISTEEL</h1><p>Zgjidh modulin ose k�rko n� platform�.</p></section>'
+  +'<form class="phl-search" data-search-form>'+I.search+'<input data-search placeholder="K�rko projekt, kompani, tender, ofert�, furnitor."><kbd>Ctrl K</kbd><button>'+I.arrow+'</button></form>'
   +'<section class="phl-main-grid">'
-   +mainCard('opportunities','Mundësitë','Tenderë dhe lead-e për shqyrtim.')
-   +mainCard('representations','Përfaqësime','Zhvillim tregu, kontakte dhe përfaqësime.')
-   +mainCard('direct','Klientë të drejtpërdrejtë','Fabrication, kapacitet prodhues dhe nënkontraktim.')
-   +mainCard('buyers','Blerësit e çelikut','Blerës materiali, RFQ dhe furnizim çeliku.')
+   +mainCard('opportunities','Mund�sit�','Tender� dhe lead-e p�r shqyrtim.')
+   +mainCard('representations','P�rfaq�sime','Zhvillim tregu, kontakte dhe p�rfaq�sime.')
+   +mainCard('direct','Klient� t� drejtp�rdrejt�','Fabrication, kapacitet prodhues dhe n�nkontraktim.')
+   +mainCard('buyers','Bler�sit e �elikut','Bler�s materiali, RFQ dhe furnizim �eliku.')
   +'</section>'
   +'<section class="phl-secondary"><h2>Module dhe mjete tjera</h2><div>'
    +smallCard('spie','SPIE Workspace','TenneT, dokumente dhe komunikimi.')
    +smallCard('projects','Projektet','Projektet dhe gjendja e tyre.')
-   +smallCard('partners','Partnerët','Partnerë, furnitorë dhe kontakte.')
+   +smallCard('partners','Partner�t','Partner�, furnitor� dhe kontakte.')
    +smallCard('finance','Financa','Fatura, pagesa dhe raportim.')
    +smallCard('currency','Kursi','Kursi aktual i valutave.')
-   +smallCard('steel','Çmimet e çelikut','Referenca çmimesh PPPP.')
+   +smallCard('steel','�mimet e �elikut','Referenca �mimesh PPPP.')
    +smallCard('events','Evente dhe Forume','Evente, forume dhe takime biznesi.')
   +'</div></section></main></div>';
 }
@@ -555,6 +559,7 @@ document.addEventListener('pst:home-canonical-rendered',schedule);
 document.addEventListener('pst:native-home-ready',schedule);
 document.addEventListener('pst:page-opened',schedule);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
+document.addEventListener('pst:modules-ready',function(){if(pendingRoute){var k=pendingRoute;pendingRoute='';route(k);}}, {once:true});
 window.addEventListener('pageshow',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.PSTHomeLauncherV5=window.PSTHomeLauncherV4={version:V,render:mount,openModule:route,openSearch:search};
