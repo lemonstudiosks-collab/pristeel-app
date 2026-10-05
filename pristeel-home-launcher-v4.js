@@ -16,35 +16,44 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261004-launcher16-forumcommand1',clockTimer=0,weatherBusy=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false;
+var V='20261005-home-final-audit1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,repairQueued=false,shellQueued=false,mountQueued=false;
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function A(v){return Array.isArray(v)?v:[]}
 function active(){
  var p=document.getElementById('page-workspace-home');if(!p)return false;
- var homeNav=document.querySelector('#pst-ws-canonical-nav [data-key="home"].active,#pst-ws-canonical-nav [data-key="home"].on,#pst-ws-sidebar [data-key="home"].active,#pst-ws-sidebar [data-key="home"].on,#side-nav [data-key="home"].active,#side-nav [data-key="home"].on,[data-page="home"].active,[data-page="home"].on');
- if(homeNav)return true;
+ if(p.hidden)return false;
  if(p.style&&p.style.display==='none')return false;
  try{var cs=window.getComputedStyle?window.getComputedStyle(p):null;if(cs&&(cs.display==='none'||cs.visibility==='hidden'))return false}catch(e){}
  return p.classList.contains('active');
 }
 function nav(){return window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1||null}
 function imp(el,k,v){if(!el)return;if(el.style.getPropertyValue(k)!==v||el.style.getPropertyPriority(k)!=='important')el.style.setProperty(k,v,'important')}
+function bodyFlag(k,on){if(document.body.classList.contains(k)!==!!on)document.body.classList.toggle(k,!!on)}
 function clearForced(el,props){if(!el||el.getAttribute('data-pst-home-shell-forced')!=='1')return;props.forEach(function(k){el.style.removeProperty(k)});el.removeAttribute('data-pst-home-shell-forced')}
 function homeShell(on){
  var shell=document.getElementById('app-shell-root')||document.querySelector('.app-shell');
  var main=shell&&shell.querySelector? shell.querySelector(':scope > .main, :scope > main.main'):document.querySelector('.app-shell>.main');
  var sides=[document.getElementById('app-sidebar'),document.getElementById('pst-v2-sidebar'),document.getElementById('pst-ws-sidebar')];
  document.querySelectorAll('.app-shell>.sidebar,.app-shell>aside.sidebar').forEach(function(x){if(sides.indexOf(x)<0)sides.push(x)});
- if(on){
-  document.body.classList.add('pst-home-launcher-active');
+ var work=!on&&['page-kek-tenders','page-representations','page-eu-companies','page-dach-steel-sales'].some(function(id){var p=document.getElementById(id);return p&&!p.hidden&&p.classList.contains('active')&&p.style.display!=='none'});
+ bodyFlag('pst-home-shell-owned',on||work);
+ if(work){
+  bodyFlag('pst-home-launcher-active',false);
+  if(shell){shell.setAttribute('data-pst-home-shell-forced','1');imp(shell,'display','flex');imp(shell,'grid-template-columns','204px minmax(0,1fr)')}
+  sides.forEach(function(x){if(!x)return;var outer=x.id==='app-sidebar'||x.parentNode===shell;x.setAttribute('data-pst-home-shell-forced','1');imp(x,'display','flex');imp(x,'visibility','visible');imp(x,'width',outer?'204px':'100%');imp(x,'min-width',outer?'204px':'0px');imp(x,'max-width',outer?'204px':'none');imp(x,'flex-basis',outer?'204px':'auto');imp(x,'border-right-width',outer?'1px':'0px');imp(x,'overflow','hidden')});
+  if(main){main.setAttribute('data-pst-home-shell-forced','1');imp(main,'width','auto');imp(main,'max-width','none');imp(main,'min-width','0px');imp(main,'margin-left','0px');imp(main,'padding-left','0px');imp(main,'flex','1 1 auto')}
+  return;
+ }
+  if(on){
+  bodyFlag('pst-home-launcher-active',true);
   if(shell){shell.setAttribute('data-pst-home-shell-forced','1');imp(shell,'display','block');imp(shell,'grid-template-columns','minmax(0,1fr)')}
   sides.forEach(function(x){if(!x)return;x.setAttribute('data-pst-home-shell-forced','1');imp(x,'display','none');imp(x,'visibility','hidden');imp(x,'width','0px');imp(x,'min-width','0px');imp(x,'max-width','0px');imp(x,'flex-basis','0px');imp(x,'border-right-width','0px');imp(x,'overflow','hidden')});
   if(main){main.setAttribute('data-pst-home-shell-forced','1');imp(main,'width','100%');imp(main,'max-width','none');imp(main,'min-width','0px');imp(main,'margin-left','0px');imp(main,'padding-left','0px');imp(main,'flex','1 1 auto')}
   var daily=document.getElementById('pst-daily-launch');if(daily){daily.setAttribute('data-pst-home-daily-duplicate','1');imp(daily,'display','none')}
  }else{
-  document.body.classList.remove('pst-home-launcher-active');
+  bodyFlag('pst-home-launcher-active',false);
   clearForced(shell,['display','grid-template-columns']);
   sides.forEach(function(x){clearForced(x,['display','visibility','width','min-width','max-width','flex-basis','border-right-width','overflow'])});
   clearForced(main,['width','max-width','min-width','margin-left','padding-left','flex']);
@@ -54,6 +63,7 @@ function homeShell(on){
 function watchShell(page){
  if(shellObserver||!window.MutationObserver||!document.body)return;
  shellObserver=new MutationObserver(function(records){
+  if(!document||!document.body)return;
   var relevant=false;
   for(var i=0;i<records.length;i++){var t=records[i].target;if(t===page||t===document.body||t.id==='app-shell-root'||t.id==='app-sidebar'||t.id==='pst-v2-sidebar'||t.id==='pst-ws-sidebar'||(t.classList&&t.classList.contains('sidebar'))){relevant=true;break}}
   if(!relevant)return;
@@ -365,10 +375,10 @@ function clock(){
 }
 function weatherLabel(c){c=Number(c);if(c===0)return'Diell';if(c<=3)return'Vranësira';if(c===45||c===48)return'Mjegull';if((c>=51&&c<=67)||(c>=80&&c<=82))return'Shi';if(c>=71&&c<=77)return'Borë';if(c>=95)return'Stuhí';return'Moti'}
 function weather(force){
- if(weatherBusy)return;weatherBusy=true;
+ if(weatherBusy||(!force&&weatherLoaded))return;weatherBusy=true;
  fetch('https://api.open-meteo.com/v1/forecast?latitude=42.6629&longitude=21.1655&current=temperature_2m,weather_code&timezone=Europe%2FBelgrade',{cache:force?'no-store':'default'})
  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
- .then(function(j){var r=document.getElementById('pst-home-launcher-v4'),c=j&&j.current||{};if(!r)return;var t=r.querySelector('[data-temp]'),d=r.querySelector('[data-weather]');if(t&&isFinite(Number(c.temperature_2m)))t.textContent=Math.round(Number(c.temperature_2m))+'°C';if(d)d.textContent=weatherLabel(c.weather_code)+' · Prishtinë'})
+ .then(function(j){var r=document.getElementById('pst-home-launcher-v4'),c=j&&j.current||{};if(!r)return;weatherLoaded=true;var t=r.querySelector('[data-temp]'),d=r.querySelector('[data-weather]');if(t&&isFinite(Number(c.temperature_2m)))t.textContent=Math.round(Number(c.temperature_2m))+'°C';if(d)d.textContent=weatherLabel(c.weather_code)+' · Prishtinë'})
  .catch(function(){var r=document.getElementById('pst-home-launcher-v4'),d=r&&r.querySelector('[data-weather]');if(d)d.textContent='Prishtinë'})
  .finally(function(){weatherBusy=false});
 }
@@ -455,6 +465,7 @@ function css(){
 'body.pst-home-launcher-active #app-shell-root>.main,body.pst-home-launcher-active .app-shell>.main,body.pst-home-launcher-active .content{width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important}',
 'body.pst-home-launcher-active #page-workspace-home{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}',
 'body.pst-home-launcher-active #page-workspace-home>#pst-native-home-v4,body.pst-home-launcher-active #page-workspace-home>.pst-ws-home,body.pst-home-launcher-active #page-workspace-home>#pst-home-launchpad-v1{display:none!important}',
+'body.pst-home-launcher-active #page-workspace-home>:not(#pst-home-launcher-v4){display:none!important}',
 'body.pst-home-launcher-active #page-workspace-home>#pst-home-launcher-v4{display:block!important;visibility:visible!important;opacity:1!important;position:relative!important;z-index:20!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}',
 '@media(min-width:901px){body.pst-home-launcher-active #page-workspace-home>#pst-home-launcher-v4{position:fixed!important;inset:0!important;z-index:1000!important;overflow:auto!important;width:100vw!important;max-width:none!important;height:100vh!important;margin:0!important;padding:0!important}}',
 'body:not(.pst-home-launcher-active) .app-shell>.sidebar,body:not(.pst-home-launcher-active) .app-shell>aside.sidebar{padding-top:12px!important;box-sizing:border-box!important}',
@@ -515,13 +526,18 @@ function mount(){
  if(!r){r=document.createElement('section');r.id='pst-home-launcher-v4';page.insertBefore(r,page.firstChild||null)}
  else if(r.parentNode!==page)page.insertBefore(r,page.firstChild||null);
  if(r.dataset.v!==V){r.dataset.v=V;r.innerHTML=html()}
+ if(r.hidden)r.hidden=false;
+ if(r.hasAttribute('aria-hidden'))r.removeAttribute('aria-hidden');
+ if(r.hasAttribute('data-pst-retired-home-owner'))r.removeAttribute('data-pst-retired-home-owner');
+ if(r.style.display==='none')r.style.removeProperty('display');
+ page.dataset.pstHomeVisualOwner='launcher-v4';
  bind(r);clock();weather(false);return true;
 }
-function schedule(){(window.requestAnimationFrame||function(f){return setTimeout(f,0)})(mount)}
+function schedule(){if(mountQueued)return;mountQueued=true;(window.requestAnimationFrame||function(f){return setTimeout(f,0)})(function(){mountQueued=false;mount()})}
 document.addEventListener('pst:home-canonical-rendered',schedule);
 document.addEventListener('pst:native-home-ready',schedule);
 document.addEventListener('pst:page-opened',schedule);
-document.addEventListener('pst:modules-ready',function(){schedule();setTimeout(schedule,100);setTimeout(schedule,350);setTimeout(schedule,900)},{once:true});
+document.addEventListener('pst:modules-ready',schedule,{once:true});
 window.addEventListener('pageshow',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.PSTHomeLauncherV5=window.PSTHomeLauncherV4={version:V,render:mount,openModule:route,openSearch:search};

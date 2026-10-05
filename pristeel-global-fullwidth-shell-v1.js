@@ -9,22 +9,23 @@ if(window.__pstGlobalFullwidthShellV2)return;
 window.__pstGlobalFullwidthShellV2=true;
 window.__pstGlobalFullwidthShellV1=true;
 
-var VERSION='20261004-route-stable-shell1';
+var VERSION='20261005-home-final-audit1';
 var scheduled=false;
 
 function installStyle(){
   var s=document.getElementById('pst-global-fullwidth-shell-v1-css'),fresh=false;
   if(!s){s=document.createElement('style');s.id='pst-global-fullwidth-shell-v1-css';fresh=true;}
   s.textContent=`
-body:has(#page-workspace-home.active) .app-shell{display:flex!important;grid-template-columns:204px minmax(0,1fr)!important}
-body:has(#page-workspace-home.active) .app-shell>.sidebar,body:has(#page-workspace-home.active) .app-shell>aside.sidebar{display:flex!important;visibility:visible!important;flex:0 0 204px!important;width:204px!important;min-width:204px!important;max-width:204px!important;border-right:1px solid #e4e8e9!important;overflow:hidden!important}
-body:has(#page-workspace-home.active) .app-shell>.main,body:has(#page-workspace-home.active) .app-shell>main.main{flex:1 1 auto!important;width:auto!important;max-width:none!important;min-width:0!important;margin-left:0!important}
-body:not(:has(#page-workspace-home.active)) .app-shell{display:flex!important;grid-template-columns:minmax(0,1fr)!important}
-body:not(:has(#page-workspace-home.active)) .app-shell>.sidebar,body:not(:has(#page-workspace-home.active)) .app-shell>aside.sidebar{display:none!important;visibility:hidden!important;flex:0 0 0!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;padding:0!important;margin:0!important;overflow:hidden!important}
-body:not(:has(#page-workspace-home.active)) .app-shell>.main,body:not(:has(#page-workspace-home.active)) .app-shell>main.main{flex:1 1 auto!important;width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
-body.pst-global-fullwidth-shell .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
-#pst-global-page-backbar{display:none!important}
-@media(max-width:760px){body:has(#page-workspace-home.active) .app-shell{grid-template-columns:72px minmax(0,1fr)!important}body:has(#page-workspace-home.active) .app-shell>.sidebar,body:has(#page-workspace-home.active) .app-shell>aside.sidebar{flex-basis:72px!important;width:72px!important;min-width:72px!important;max-width:72px!important}}
+body:not(.pst-home-shell-owned):has(#page-workspace-home.active) .app-shell{display:flex!important;grid-template-columns:204px minmax(0,1fr)!important}
+body:not(.pst-home-shell-owned):has(#page-workspace-home.active) .app-shell>.sidebar,body:not(.pst-home-shell-owned):has(#page-workspace-home.active) .app-shell>aside.sidebar{display:flex!important;visibility:visible!important;flex:0 0 204px!important;width:204px!important;min-width:204px!important;max-width:204px!important;border-right:1px solid #e4e8e9!important;overflow:hidden!important}
+body:not(.pst-home-shell-owned):has(#page-workspace-home.active) .app-shell>.main,body:not(.pst-home-shell-owned):has(#page-workspace-home.active) .app-shell>main.main{flex:1 1 auto!important;width:auto!important;max-width:none!important;min-width:0!important;margin-left:0!important}
+body:not(.pst-home-shell-owned):not(:has(#page-workspace-home.active)) .app-shell{display:flex!important;grid-template-columns:minmax(0,1fr)!important}
+body:not(.pst-home-shell-owned):not(:has(#page-workspace-home.active)) .app-shell>.sidebar,body:not(.pst-home-shell-owned):not(:has(#page-workspace-home.active)) .app-shell>aside.sidebar{display:none!important;visibility:hidden!important;flex:0 0 0!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;padding:0!important;margin:0!important;overflow:hidden!important}
+body:not(.pst-home-shell-owned):not(:has(#page-workspace-home.active)) .app-shell>.main,body:not(.pst-home-shell-owned):not(:has(#page-workspace-home.active)) .app-shell>main.main{flex:1 1 auto!important;width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
+body:not(.pst-home-shell-owned).pst-global-fullwidth-shell .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
+#pst-global-page-backbar{display:flex;align-items:center;margin:0 0 12px}
+#pst-global-back-home{min-height:34px;padding:6px 12px;border:1px solid #4f97af;border-radius:9px;background:#4f97af;color:#fff;font:750 11px sans-serif;cursor:pointer}
+@media(max-width:760px){body:not(.pst-home-shell-owned):has(#page-workspace-home.active) .app-shell{grid-template-columns:72px minmax(0,1fr)!important}body:not(.pst-home-shell-owned):has(#page-workspace-home.active) .app-shell>.sidebar,body:not(.pst-home-shell-owned):has(#page-workspace-home.active) .app-shell>aside.sidebar{flex-basis:72px!important;width:72px!important;min-width:72px!important;max-width:72px!important}}
 `;
   if(fresh)document.head.appendChild(s);
   document.body&&document.body.classList.add('pst-global-fullwidth-shell');
@@ -69,7 +70,7 @@ function goHome(){
 function decorate(){
   scheduled=false;
   installStyle();
-  var page=activePage(),localBack=page&&page.id==='page-kek-tenders'?page.querySelector('[data-pst-opp-back]'):null,opportunitiesOwnsBack=!!(localBack&&isVisiblePage(localBack));
+  var page=activePage(),opportunitiesOwnsBack=!!(page&&Array.prototype.some.call(page.querySelectorAll('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],[data-pmm-back],[data-pst-fin-home]'),isVisiblePage));
   document.querySelectorAll('#pst-global-page-backbar').forEach(function(bar){
     if(opportunitiesOwnsBack||!page||isHome(page)||bar.parentNode!==page)bar.remove();
   });
@@ -98,7 +99,7 @@ function observe(){
       if(r.type==='attributes'&&t&&t.nodeType===1&&(t.classList.contains('page')||String(t.id||'').indexOf('page-')===0)){schedule();return;}
       if(r.type==='childList'){
         var nodes=[].slice.call(r.addedNodes||[]).concat([].slice.call(r.removedNodes||[]));
-        for(var j=0;j<nodes.length;j++){var n=nodes[j];if(n&&n.nodeType===1&&(n.matches&&n.matches('[data-pst-opp-back],#pst-global-page-backbar')||n.querySelector&&n.querySelector('[data-pst-opp-back],#pst-global-page-backbar'))){schedule();return;}}
+        for(var j=0;j<nodes.length;j++){var n=nodes[j];if(n&&n.nodeType===1&&(n.matches&&n.matches('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],#pst-global-page-backbar')||n.querySelector&&n.querySelector('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],#pst-global-page-backbar'))){schedule();return;}}
       }
     }
   });

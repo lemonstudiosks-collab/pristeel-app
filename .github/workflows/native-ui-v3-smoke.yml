@@ -37,7 +37,7 @@ jobs:
           test -f _site/pristeel-native-ui-v4-core.js
           test -f _site/pristeel-creative-ui-v1.js
           grep -Fq 'pristeel-native-ui-v3.js?v=20260911-fullredesign1' _site/pristeel-roles.js
-          grep -Fq 'pristeel-native-ui-v4-core.js?v=20260911-fullredesign1' _site/pristeel-native-ui-v3.js
+          grep -Fq 'pristeel-native-ui-v4-core.js?v=20261005-home-final-audit1' _site/pristeel-native-ui-v3.js
           grep -Fq '#4F97AF' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'Rrjedha e ditës' _site/pristeel-native-ui-v4-core.js
           grep -Fq 'PËR TY TANI' _site/pristeel-native-ui-v4-core.js

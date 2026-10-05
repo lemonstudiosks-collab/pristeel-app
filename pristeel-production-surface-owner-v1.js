@@ -29,20 +29,20 @@ function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 function installStyle(){
   if(document.getElementById('pst-production-surface-owner-v1-css'))return;
   var s=document.createElement('style');s.id='pst-production-surface-owner-v1-css';s.textContent=`
-html body.pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #app-shell-root>#app-sidebar,
-html body.pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #app-sidebar,
-html body.pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #pst-v2-sidebar,
-html body.pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #pst-ws-sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;padding:0!important;margin:0!important;overflow:hidden!important;visibility:hidden!important}
-html body.pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #app-shell-root{display:flex!important;grid-template-columns:minmax(0,1fr)!important}
-html body.pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #app-shell-root>.main,
-html body.pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) .app-shell>.main{flex:1 1 auto!important;width:100%!important;max-width:none!important;min-width:0!important;margin:0!important}
-html body.pst-global-fullwidth-shell:has(#page-workspace-home.active) #app-shell-root{display:flex!important;grid-template-columns:204px minmax(0,1fr)!important}
-html body.pst-global-fullwidth-shell:has(#page-workspace-home.active) #app-sidebar{display:flex!important;visibility:visible!important;flex:0 0 204px!important;width:204px!important;min-width:204px!important;max-width:204px!important;margin:0!important;overflow:hidden!important}
-html body.pst-global-fullwidth-shell:has(#page-workspace-home.active) #pst-v2-sidebar,
-html body.pst-global-fullwidth-shell:has(#page-workspace-home.active) #pst-ws-sidebar{display:flex!important;visibility:visible!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important}
-html body.pst-global-fullwidth-shell .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
-body.pst-global-fullwidth-shell #page-workspace-projects [data-pmm-back],
-body.pst-global-fullwidth-shell #page-finance [data-pst-fin-home]{display:none!important}
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #app-shell-root>#app-sidebar,
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #app-sidebar,
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #pst-v2-sidebar,
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #pst-ws-sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;padding:0!important;margin:0!important;overflow:hidden!important;visibility:hidden!important}
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #app-shell-root{display:flex!important;grid-template-columns:minmax(0,1fr)!important}
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) #app-shell-root>.main,
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:not(:has(#page-workspace-home.active)) .app-shell>.main{flex:1 1 auto!important;width:100%!important;max-width:none!important;min-width:0!important;margin:0!important}
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:has(#page-workspace-home.active) #app-shell-root{display:flex!important;grid-template-columns:204px minmax(0,1fr)!important}
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:has(#page-workspace-home.active) #app-sidebar{display:flex!important;visibility:visible!important;flex:0 0 204px!important;width:204px!important;min-width:204px!important;max-width:204px!important;margin:0!important;overflow:hidden!important}
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:has(#page-workspace-home.active) #pst-v2-sidebar,
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell:has(#page-workspace-home.active) #pst-ws-sidebar{display:flex!important;visibility:visible!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important}
+html body:not(.pst-home-shell-owned).pst-global-fullwidth-shell .content{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
+body:not(.pst-home-shell-owned).pst-global-fullwidth-shell #page-workspace-projects [data-pmm-back],
+body:not(.pst-home-shell-owned).pst-global-fullwidth-shell #page-finance [data-pst-fin-home]{display:none!important}
 #page-finance #pst-finance-tools,#page-finance #fin-hub-grid{display:none!important}
 #pst-finance-mindmap{position:relative;min-height:610px;margin:12px 0 22px;padding:66px 24px 26px;border:1px solid #dce9ed;border-radius:24px;background:radial-gradient(circle at center,rgba(79,151,175,.055) 0 86px,transparent 87px 165px,rgba(79,151,175,.045) 166px 167px,transparent 168px),linear-gradient(135deg,#fbfdfe,#f7fafb);overflow:hidden}
 #pst-finance-mindmap .pst-fin-title{position:absolute;left:26px;top:22px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#71858d}
@@ -64,6 +64,7 @@ body.pst-global-fullwidth-shell #page-finance [data-pst-fin-home]{display:none!i
 }
 function homeActive(){var p=document.getElementById('page-workspace-home');return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
 function hideSidebar(){
+  if(document.body&&document.body.classList.contains('pst-home-shell-owned'))return;
   document.body&&document.body.classList.add('pst-global-fullwidth-shell');
   if(homeActive()){
    ['app-sidebar','pst-v2-sidebar','pst-ws-sidebar'].forEach(function(id){var el=document.getElementById(id);if(!el)return;['display','width','min-width','max-width','padding','margin','border','visibility','overflow'].forEach(function(p){el.style.removeProperty(p);});});

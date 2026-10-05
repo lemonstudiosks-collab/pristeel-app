@@ -335,6 +335,15 @@
 
 # PPPP CHANGELOG
 
+## 2026-10-05 - Final Home launcher ownership audit
+
+- The launcher owns the desktop Home shell and releases it on navigation. The four primary launcher destinations restore the canonical module sidebar; other routes keep their existing shell behavior.
+- Legacy Native UI and Redesign Finalizer no longer retire the launcher's DOM or accessibility state. Legacy Home children remain hidden beneath the single launcher.
+- Global and Production shell owners defer while the launcher owns the boundary. Representation fallback CSS is restricted to the active Representation page; it no longer leaks into other routes.
+- The global Back fallback is visible when a page has no visible local Back. Local Back controls are not duplicated.
+- Successful weather data is reused across route/render events; explicit refresh still fetches. Mount events are coalesced and redundant post-bootstrap remount timers were removed.
+- Added combined-owner regression coverage for stale Home navigation state, late legacy retirement, three cycles across four destinations, and idle DOM stability. No business-state writes, paid APIs, or unrelated workflow changes.
+
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
 ## 2026-09-25

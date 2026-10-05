@@ -20,7 +20,7 @@ assert(core.includes('invoices_out?select=id,invoice_nr,client,date,due_date,tot
 assert(core.includes('invoices_in?select=id,supplier_invoice_nr,supplier,date,due_date,amount,net_amount,vat_amount,paid,paid_date,project,project_id'), 'Home must select the canonical incoming-invoice amount columns');
 assert(!core.includes('invoices_out?select=id,invoice_nr,client,date,due_date,gross_amount,total_price,amount,'), 'Home must not request the missing invoices_out.amount column');
 assert(!core.includes('invoices_in?select=id,supplier_invoice_nr,supplier,date,due_date,amount,gross_amount,'), 'Home must not request the missing invoices_in.gross_amount column');
-assert(entry.includes('pristeel-native-ui-v4-core.js?v=20260911-fullredesign1'), 'Entry must cache-bust the full Daily Flow redesign owner');
+assert(entry.includes('pristeel-native-ui-v4-core.js?v=20261005-home-final-audit1'), 'Entry must cache-bust the full Daily Flow redesign owner');
 assert(operating.includes("{key:'home',label:'Ballina'"), 'Primary navigation must be localized');
 assert(!/new\s+MutationObserver|setInterval\s*\(/.test(core), 'Daily Flow presentation must remain bounded and event-driven');
 assert(!/supaFetch\s*\([^)]*['\"](?:PATCH|PUT|DELETE)['\"]/.test(core), 'Daily Flow must not write business data');

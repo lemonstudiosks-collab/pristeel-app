@@ -21,7 +21,7 @@ for(const token of ['#4F97AF','#3F7F98','#F7F6F3','#E6E3DE']) must(core.includes
 for(const token of ['QENDRA E DREJTIMIT PPPP','Rrjedha e ditës','Pulsi i biznesit','Projekte aktive','Mundësi','Ballina','p.sh. Çfarë po ndodh me STACON?']) must(core.includes(token),`source-level Albanian UI token missing: ${token}`);
 must(core.includes("r.id='pst-native-home-v4'"),'native Home v4 single owner is missing');
 must(core.includes("document.documentElement.classList.add('pst-native-ui-ready','pst-native-ui-v4-ready')"),'early UI readiness marker missing');
-must(entry.includes('pristeel-native-ui-v4-core.js?v=20260911-fullredesign1'),'entry does not load the current Albanian native UI core');
+must(entry.includes('pristeel-native-ui-v4-core.js?v=20261005-home-final-audit1'),'entry does not load the current Albanian native UI core');
 must(entry.includes('installRecoveryGate'),'early recovery gate is missing');
 must(entry.includes('Never enter the shared workspace router'),'Finance capture is not isolated from decorated workspace routing');
 must(entry.includes('__pstOriginalRecoverUnsavedWork'),'recovery gate does not preserve original recovery action');
