@@ -1,0 +1,145 @@
+/* SPIE is the platform presentation standard. No business/data ownership. */
+:root {
+  --pst-paper:#fbfcfd; --pst-sidebar:#f2f5f6; --pst-ink:#182a36;
+  --pst-muted:#6a7b83; --pst-line:#e3e9eb; --pst-accent:#195c50;
+  --pst-selected:#e2ebe9; --pst-radius:6px; --pst-sidebar-width:200px;
+}
+html#pst-spie-platform { color-scheme:light; scrollbar-gutter:stable; }
+html#pst-spie-platform body { margin:0; background:var(--pst-paper)!important; color:var(--pst-ink)!important; font-family:Inter,Arial,sans-serif!important; font-size:14px; line-height:1.6; }
+html#pst-spie-platform :where(.content,.page,#pst-ws-sidebar,#pst-mobile-app-v2) { font-family:Inter,Arial,sans-serif!important; color:var(--pst-ink); }
+html#pst-spie-platform :where(.content,.page,#pst-ws-sidebar,#pst-mobile-app-v2) * { box-sizing:border-box; }
+html#pst-spie-platform :where(.page,.content) { min-width:0!important; max-width:100%!important; overflow-wrap:anywhere; }
+html#pst-spie-platform body .page { background:var(--pst-paper)!important; color:var(--pst-ink)!important; font-family:Inter,Arial,sans-serif!important; }
+html#pst-spie-platform body :is(.page.pst-dss-page,.page.pst-eu-page,.page.pst-rep-page) { padding:0!important; margin:0!important; }
+html#pst-spie-platform :where(.page) :is(h1,h2,h3,h4) { color:var(--pst-ink)!important; font-family:inherit!important; font-weight:600!important; line-height:1.4!important; }
+html#pst-spie-platform :where(.page) h1 { font-size:30px!important; letter-spacing:-.8px!important; }
+html#pst-spie-platform :where(.page) h2 { font-size:16px!important; letter-spacing:0!important; }
+html#pst-spie-platform :where(.page) h3 { font-size:14px!important; }
+html#pst-spie-platform :where(.page) :is(button,input,select,textarea) { font-family:inherit!important; font-size:12px!important; max-width:100%; }
+html#pst-spie-platform :where(.page) :is(input,select,textarea):not([type=checkbox]):not([type=radio]):not([type=range]) { border:1px solid var(--pst-line)!important; border-radius:4px!important; background:#fff!important; color:#435d68!important; box-shadow:none!important; min-width:0!important; }
+html#pst-spie-platform :where(.page) button { border-radius:var(--pst-radius)!important; box-shadow:none!important; transition:none!important; transform:none!important; }
+html#pst-spie-platform :where(.page,#pst-ws-sidebar) :focus-visible { outline:2px solid #147969!important; outline-offset:3px!important; }
+html#pst-spie-platform :where(.page) button:disabled { opacity:.5; cursor:not-allowed; }
+html#pst-spie-platform :where(.page) :is(.btn-primary,.pst-rep-btn.primary,.pst-eu-btn.primary,.pst-dss-btn.primary,.pwb3-nav-btn.primary) { background:var(--pst-accent)!important; border-color:var(--pst-accent)!important; color:white!important; }
+html#pst-spie-platform :where(.page) :is(.btn-secondary,.pst-rep-btn,.pst-eu-btn,.pst-dss-btn,.pwb3-nav-btn,.pst-pi-btn,.pst-opp-secondary-btn) { border:1px solid #d9e4e2; color:#33695e; }
+html#pst-spie-platform :where(.page) :is(.pst-rep-chip,.pst-eu-chip,.pst-dss-chip,.pwb3-flag,.ppd-chip) { border-radius:4px!important; box-shadow:none!important; font-size:10px!important; }
+html#pst-spie-platform :where(.page) :is(.table-wrap,.table-responsive,.pst-eu-table,.pst-dss-material-table) { max-width:100%!important; overflow-x:auto; }
+html#pst-spie-platform :where(.page) table { border-collapse:collapse!important; font-size:12px!important; width:100%; }
+html#pst-spie-platform :where(.page) th { background:transparent!important; color:var(--pst-muted)!important; font-size:11px!important; font-weight:500!important; border-bottom:1px solid var(--pst-line)!important; }
+html#pst-spie-platform :where(.page) td { border-bottom:1px solid #edf1f2!important; overflow-wrap:anywhere; }
+/* Shared shell is stable before any of the ordered modules have loaded. */
+@media(min-width:901px) {
+ html#pst-spie-platform body .app-shell#app-shell-root:not([style*="display:none"]):not([style*="display: none"]) { display:flex!important; min-height:100dvh; }
+ html#pst-spie-platform body .app-shell#app-shell-root > .sidebar#app-sidebar { display:flex!important; flex:0 0 var(--pst-sidebar-width)!important; width:var(--pst-sidebar-width)!important; min-width:var(--pst-sidebar-width)!important; max-width:var(--pst-sidebar-width)!important; visibility:visible!important; position:sticky!important; top:0!important; height:100dvh!important; padding:0!important; margin:0!important; border:0!important; border-right:1px solid var(--pst-line)!important; background:var(--pst-sidebar)!important; z-index:30!important; overflow-y:auto!important; }
+ html#pst-spie-platform body #app-sidebar #pst-v2-sidebar { display:flex!important; width:100%!important; min-width:0!important; max-width:100%!important; height:100%!important; padding:0!important; visibility:visible!important; background:var(--pst-sidebar)!important; }
+ html#pst-spie-platform body #app-sidebar #pst-ws-sidebar { display:flex!important; width:100%!important; min-width:0!important; max-width:100%!important; padding:30px 18px 20px!important; visibility:visible!important; background:var(--pst-sidebar)!important; overflow-y:auto!important; }
+ html#pst-spie-platform body .app-shell#app-shell-root > .main { width:calc(100% - var(--pst-sidebar-width))!important; max-width:none!important; min-width:0!important; flex:1 1 0!important; padding:0!important; margin:0!important; background:var(--pst-paper)!important; }
+ html#pst-spie-platform body .app-shell#app-shell-root > .main > .content { width:100%!important; max-width:1360px!important; margin:0 auto!important; padding:30px clamp(26px,4vw,58px) 70px!important; background:var(--pst-paper)!important; }
+ html#pst-spie-platform body .topbar { background:var(--pst-paper)!important; border-bottom:1px solid var(--pst-line)!important; box-shadow:none!important; }
+ html#pst-spie-platform body.pst-home-launcher-active #page-workspace-home > #pst-home-launcher-v4 { position:relative!important; inset:auto!important; width:100%!important; max-width:100%!important; height:auto!important; min-height:calc(100dvh - 70px)!important; padding:0!important; margin:0!important; overflow:visible!important; z-index:auto!important; }
+}
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand { padding:0 4px 24px!important; margin-bottom:8px; }
+html#pst-spie-platform body #pst-ws-sidebar { flex-direction:column!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand { display:flex!important; align-items:center!important; gap:10px!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-mark { display:grid!important; place-items:center!important; flex:none!important; color:#fff!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand :is(b,small) { display:block; }
+html#pst-spie-platform body #pst-ws-canonical-nav { width:100%!important; min-width:0!important; }
+html#pst-spie-platform body #pst-ws-canonical-nav .pst-canon-work { display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:3px!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { display:flex!important; align-items:center!important; gap:9px!important; text-align:left!important; width:100%!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand b { font-size:13px!important; letter-spacing:1.4px!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-mark { width:32px!important; height:36px!important; border-radius:7px!important; background:#193943!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navtitle { font-size:9px!important; font-weight:500!important; letter-spacing:1.5px!important; color:#829198!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { min-height:36px!important; height:auto!important; padding:8px 10px!important; margin:0 0 3px!important; border:0!important; border-radius:6px!important; background:transparent!important; color:var(--pst-muted)!important; font-family:Inter,Arial,sans-serif!important; font-size:12px!important; font-weight:400!important; box-shadow:none!important; white-space:normal!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:is(.active,.on,[aria-current=page]) { background:var(--pst-selected)!important; color:var(--pst-accent)!important; font-weight:600!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:hover { background:#e7edef!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn svg { width:16px!important; height:16px!important; min-width:16px!important; fill:none!important; stroke:currentColor!important; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-create-main { min-height:34px!important; border-radius:5px!important; background:#fff!important; color:var(--pst-accent)!important; border:1px solid #d9e4e2!important; font-size:12px!important; font-weight:500!important; }
+/* Home uses existing handlers, with quiet rows in place of a card dashboard. */
+html#pst-spie-platform body #pst-home-launcher-v4 { background:var(--pst-paper)!important; color:var(--pst-ink)!important; font-family:Inter,Arial,sans-serif!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top { min-height:46px!important; padding:0 0 20px!important; border-bottom:1px solid var(--pst-line)!important; background:transparent!important; gap:12px!important; flex-wrap:wrap; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-brand { display:none; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav { flex-wrap:wrap; gap:4px; width:100%; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav > * { min-height:32px!important; min-width:0!important; padding:4px 9px!important; border:0!important; gap:7px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav b { font-size:11px!important; font-weight:500!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-meta { margin-left:auto; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-meta:last-child { margin-left:0; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top-icon { width:22px!important; height:22px!important; min-width:22px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top-icon svg { width:18px!important; height:18px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-shell main { width:100%!important; max-width:100%!important; margin:0!important; padding:42px 0 0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-intro { text-align:left!important; margin:0 0 24px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-intro p { font-size:14px!important; color:var(--pst-muted)!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-search { width:100%!important; max-width:770px!important; height:46px!important; margin:0 0 32px!important; border-radius:5px!important; box-shadow:none!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-search input { font-size:13px!important; border:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-grid { width:100%!important; display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:0!important; margin:0!important; border-top:1px solid var(--pst-line); }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-card { display:grid!important; grid-template-columns:26px minmax(0,1fr) 20px!important; grid-template-rows:auto!important; align-items:center!important; gap:14px!important; min-height:84px!important; padding:18px 0!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; background:transparent!important; box-shadow:none!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-card:hover { background:#f2f6f5!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-card-icon { width:24px!important; height:28px!important; border:0!important; background:transparent!important; color:#46756c!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-card-icon svg { width:19px!important; height:19px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-copy { align-self:center!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-copy b { font-size:16px!important; font-weight:500!important; letter-spacing:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-copy small { font-size:12px!important; color:var(--pst-muted)!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-card > i { width:18px!important; height:20px!important; align-self:center!important; border:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary { width:100%!important; margin:28px 0 0!important; padding:0!important; border:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary > div { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; column-gap:35px!important; row-gap:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card { min-height:56px!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; background:transparent!important; padding:12px 0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card small { display:block!important; color:var(--pst-muted)!important; font-size:10px!important; }
+/* All canonical work surfaces share the same page/header/section vocabulary. */
+html#pst-spie-platform body .page :is(.pst-rep-page,.pst-eu-page,.pst-dss-page,.pst-ws-page,.ppd-page,.pcm-page,.pst-opp-workdesk) { width:100%!important; max-width:100%!important; padding:0!important; margin:0!important; background:transparent!important; color:var(--pst-ink)!important; }
+html#pst-spie-platform body .page :is(.pst-rep-head,.pst-eu-head,.pst-dss-head,.ppd-head,.pcm-head,.pst-pi-head,.pst-opp-desk-head) { background:transparent!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; padding:8px 0 24px!important; margin:0 0 24px!important; box-shadow:none!important; }
+html#pst-spie-platform body .page :is(.pst-rep-eye,.pst-eu-eye,.pst-dss-eye,.pst-pi-kicker,.ppd-eye,.pcm-eye) { font-size:10px!important; letter-spacing:1.6px!important; color:#6a8581!important; font-weight:500!important; }
+html#pst-spie-platform body .page :is(.pst-rep-card,.pst-eu-side,.pst-dss-maincard,.pst-dss-sidecard,.pst-dss-detail-card,.pst-dss-summary-card,.pst-dossier-main-card,.pst-dossier-company-card,.pst-dossier-stage-card,.pst-dossier-project-card,.pwb3-card,.pwb3-now,.pwb3-focus,.pwb3-evidence,.pst-ws-card,.pcm-card,.pst-opp-side,.pst-opp-detail,.pef-box) { border:0!important; border-top:1px solid var(--pst-line)!important; border-radius:0!important; box-shadow:none!important; background:transparent!important; padding:22px 0!important; }
+html#pst-spie-platform body .page :is(.pst-rep-row,.pst-eu-row,.pst-dss-company-row,.ppd-row,.pcm-company-row,.pst-opp-work-row,.pst-opp-contact-row,.pwb3-activity-row) { border-radius:0!important; box-shadow:none!important; border-bottom:1px solid #edf1f2!important; }
+html#pst-spie-platform body .page :is(.pst-rep-row,.pst-eu-row,.ppd-row,.pst-opp-work-row):hover { background:#f2f6f5!important; }
+html#pst-spie-platform body .page :is(.pst-rep-row,.pst-eu-row,.ppd-row,.pst-opp-work-row):is(.active,.selected,.on,[aria-selected=true]) { background:var(--pst-selected)!important; }
+html#pst-spie-platform body .page :is(.pst-rep-toolbar,.pst-eu-controls,.pst-dss-mainhead,.ppd-toolbar,.pcm-toolbar) { border-radius:0!important; background:transparent!important; box-shadow:none!important; flex-wrap:wrap; }
+html#pst-spie-platform body .page :is(.pst-eu-kpi,.pst-dss-stat,.ppd-focus,.pst-rep-pipe,.pst-eu-pipe,.pcm-business-card) { box-shadow:none!important; border-radius:4px!important; background:transparent!important; color:var(--pst-muted)!important; font-weight:500!important; }
+html#pst-spie-platform body .page :is(.pst-rep-pipe,.pst-eu-pipe,.ppd-focus,.pcm-business-card):is(.active,.on) { background:var(--pst-selected)!important; color:var(--pst-accent)!important; }
+html#pst-spie-platform body .page :is(.pst-rep-list-view,.pst-eu-shell,.pst-dss-shell,.pst-opp-workdesk,.pwb3-grid,.pwb3-overview-grid,.pst-dossier-overview) > * { min-width:0!important; }
+html#pst-spie-platform body .page .pst-opp-workdesk { grid-template-columns:180px minmax(0,1fr)!important; gap:28px!important; }
+html#pst-spie-platform body .page .pst-dss-shell { grid-template-columns:170px minmax(0,1fr) minmax(230px,.7fr)!important; gap:22px!important; }
+html#pst-spie-platform body .page .pst-eu-shell { grid-template-columns:minmax(0,1fr) minmax(250px,.65fr)!important; gap:32px!important; }
+html#pst-spie-platform body .page :is(.pst-dss-table-head,.pst-dss-company-row,.pst-eu-headrow,.pst-eu-row) { min-width:0!important; }
+html#pst-spie-platform body .page :is(.pst-dss-table-head,.pst-eu-headrow,.pst-opp-work-cols,.pst-rep-table-head) { background:transparent!important; font-size:10px!important; font-weight:500!important; color:var(--pst-muted)!important; border-bottom:1px solid var(--pst-line)!important; }
+html#pst-spie-platform body .page :is(.pst-dss-navbtn,.pst-opp-side-item,.pst-eu-tab) { border-radius:5px!important; background:transparent!important; color:var(--pst-muted)!important; font-weight:500!important; font-size:12px!important; box-shadow:none!important; }
+html#pst-spie-platform body .page :is(.pst-dss-navbtn,.pst-opp-side-item,.pst-eu-tab):is(.active,.on) { background:var(--pst-selected)!important; color:var(--pst-accent)!important; }
+@media(min-width:901px) and (max-width:1250px) {
+ html#pst-spie-platform body .page .pst-dss-shell { grid-template-columns:150px minmax(0,1fr)!important; }
+ html#pst-spie-platform body .page .pst-dss-right { grid-column:2!important; }
+ html#pst-spie-platform body .page .pst-eu-shell { grid-template-columns:minmax(0,1fr)!important; }
+}
+html#pst-spie-platform body .page :is(.pst-opp-side,.pst-dss-sidebar) { background:transparent!important; border-radius:0!important; border:0!important; border-right:1px solid var(--pst-line)!important; padding-right:16px!important; }
+/* Finance and Partners maps become lists; their original buttons/handlers survive. */
+html#pst-spie-platform body #pst-finance-mindmap { min-height:0!important; margin:20px 0!important; padding:0!important; border:0!important; border-radius:0!important; background:transparent!important; overflow:visible!important; }
+html#pst-spie-platform body #pst-finance-mindmap .pst-fin-title { position:static!important; display:block; margin-bottom:18px; font-weight:500!important; }
+html#pst-spie-platform body #pst-finance-mindmap .pst-fin-lines { display:none!important; }
+html#pst-spie-platform body #pst-finance-mindmap .pst-fin-grid { min-height:0!important; display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; grid-template-rows:auto!important; column-gap:36px!important; row-gap:0!important; }
+html#pst-spie-platform body #pst-finance-mindmap .pst-fin-center { grid-column:1/-1!important; grid-row:auto!important; width:100%!important; min-height:0!important; justify-content:flex-start!important; margin-bottom:18px; padding:0 0 18px!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; background:transparent!important; box-shadow:none!important; }
+html#pst-spie-platform body #pst-finance-mindmap .pst-fin-node { grid-column:auto!important; grid-row:auto!important; min-height:80px!important; padding:16px 0!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; background:transparent!important; box-shadow:none!important; transform:none!important; }
+html#pst-spie-platform body #pst-finance-mindmap .ico { background:transparent!important; color:var(--pst-accent)!important; width:24px!important; height:28px!important; font-size:15px!important; }
+html#pst-spie-platform body #page-workspace-contacts .pcm-relationship-map { padding:0!important; margin-bottom:26px!important; border:0!important; border-radius:0!important; background:transparent!important; box-shadow:none!important; }
+html#pst-spie-platform body #page-workspace-contacts .pcm-map-core { width:100%!important; min-width:0!important; padding:0 0 20px!important; margin:0!important; border-radius:0!important; background:transparent!important; color:var(--pst-ink)!important; text-align:left!important; box-shadow:none!important; }
+html#pst-spie-platform body #page-workspace-contacts :is(.pcm-map-line,.pcm-map-lines,.pcm-map-svg) { display:none!important; }
+html#pst-spie-platform body #page-workspace-contacts .pcm-business-card { border:0!important; border-bottom:1px solid var(--pst-line)!important; padding:14px 8px!important; }
+html#pst-spie-platform body #page-workspace-contacts .pcm-business-card:before { display:none!important; }
+html#pst-spie-platform body #page-workspace-contacts .pcm-business-cards { grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:0 30px!important; }
+html#pst-spie-platform body #page-workspace-contacts .pcm-map-core small { color:var(--pst-muted)!important; }
+html#pst-spie-platform body .page :is(.pst-dc-head,.pst-gli-head,.pef-head) { border-radius:0!important; background:transparent!important; border-bottom:1px solid var(--pst-line)!important; box-shadow:none!important; }
+html#pst-spie-platform body .page :is(.pst-dc-create,.pst-dc-list-card,.pst-gli-card,.pst-ws-appcard) { background:transparent!important; border-radius:0!important; border:0!important; border-top:1px solid var(--pst-line)!important; box-shadow:none!important; }
+html#pst-spie-platform body :is(.pst-eu-dialog,.pst-rep-dialog,.phl-modal,.modal-box) { font-family:Inter,Arial,sans-serif!important; border-radius:8px!important; background:var(--pst-paper)!important; color:var(--pst-ink)!important; }
+/* Mobile keeps the canonical gestures, navigation and detail owners. */
+html#pst-spie-platform body #pst-mobile-app-v2 { background:var(--pst-paper)!important; color:var(--pst-ink)!important; font-family:Inter,Arial,sans-serif!important; }
+html#pst-spie-platform body #pst-mobile-app-v2 :is(h1,h2,h3) { color:var(--pst-ink)!important; font-weight:600!important; }
+html#pst-spie-platform body #pst-mobile-app-v2 :is(.pma-card,.pma-project,.pma-home-card,.pma-opp-card,.pma-co-card) { background:transparent!important; box-shadow:none!important; border-radius:6px!important; border:1px solid var(--pst-line)!important; }
+@media(max-width:1100px) and (min-width:901px) { :root { --pst-sidebar-width:180px; } html#pst-spie-platform body #app-sidebar #pst-ws-sidebar { padding:24px 12px!important; } }
+@media(max-width:900px) {
+ html#pst-spie-platform body .app-shell#app-shell-root > .main > .content { width:100%!important; min-width:0!important; margin:0!important; padding:20px 18px 90px!important; }
+ html#pst-spie-platform body .page :is(.pst-rep-page,.pst-eu-page,.pst-dss-page,.pst-opp-workdesk) { padding:0!important; }
+ html#pst-spie-platform body .page :is(.pst-eu-shell,.pst-dss-shell,.pst-dossier-overview,.pwb3-overview-grid) { grid-template-columns:minmax(0,1fr)!important; }
+ html#pst-spie-platform body .page .pst-dss-right { grid-column:auto!important; }
+ html#pst-spie-platform body .page :is(.pst-opp-workdesk) { grid-template-columns:minmax(0,1fr)!important; }
+ html#pst-spie-platform body .page :is(.pst-opp-side,.pst-dss-sidebar) { border-right:0!important; border-bottom:1px solid var(--pst-line)!important; }
+ html#pst-spie-platform body #pst-finance-mindmap .pst-fin-grid { grid-template-columns:minmax(0,1fr)!important; }
+ html#pst-spie-platform body #pst-home-launcher-v4 .phl-shell main { padding:24px 0!important; }
+ html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary > div { grid-template-columns:minmax(0,1fr)!important; }
+}
+@media print { html#pst-spie-platform body #app-sidebar { display:none!important; } html#pst-spie-platform body .app-shell#app-shell-root > .main { width:100%!important; } }

@@ -33,6 +33,13 @@ function imp(el,k,v){if(!el)return;if(el.style.getPropertyValue(k)!==v||el.style
 function bodyFlag(k,on){if(document.body.classList.contains(k)!==!!on)document.body.classList.toggle(k,!!on)}
 function clearForced(el,props){if(!el||el.getAttribute('data-pst-home-shell-forced')!=='1')return;props.forEach(function(k){el.style.removeProperty(k)});el.removeAttribute('data-pst-home-shell-forced')}
 function homeShell(on){
+ // The static SPIE shell owns geometry from first paint; retain Home visibility only.
+ if(document.documentElement.classList.contains('pst-spie-standard')){
+  bodyFlag('pst-home-shell-owned',true);
+  bodyFlag('pst-home-launcher-active',on);
+  return;
+ }
+
  var shell=document.getElementById('app-shell-root')||document.querySelector('.app-shell');
  var main=shell&&shell.querySelector? shell.querySelector(':scope > .main, :scope > main.main'):document.querySelector('.app-shell>.main');
  var sides=[document.getElementById('app-sidebar'),document.getElementById('pst-v2-sidebar'),document.getElementById('pst-ws-sidebar')];

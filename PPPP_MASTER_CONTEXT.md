@@ -1,5 +1,9 @@
 # PPPP MASTER CONTEXT
 
+## 2026-10-05 — SPIE platform standard
+
+`pristeel-spie-standard.css` is the shared static presentation owner in `pristeel-procurement.html`. Its root flag owns stable desktop shell geometry from first paint. Home Launcher and Production Surface Owner defer imperative geometry in this mode; existing routes, canonical data, role/action gates and mobile gestures stay intact. The primary navigation exposes existing direct-client, steel-buyer, document, email, SPIE and event destinations. Home uses calm rows; Finance/Partner maps retain their original handlers in list presentation. No new Supabase reads, polling, writes, schema or migrations.
+
 SPIE follow-up (05 Oct 2026): `spie.workspace.evidence.v1` holds controlled canonical evidence for Samples and bounded Drive metadata. The pipeline API excludes samples; preserve its schema and pricing field. Merge exact Drive identities, keep unverified released revisions Unknown. Manual tender analysis passes up to 80 registered partner review candidates; this never selects a supplier.
 
 **Purpose:** canonical continuity document for the PRISTEEL Procurement Projects Platform (PPPP).

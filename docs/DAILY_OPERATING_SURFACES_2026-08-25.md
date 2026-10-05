@@ -1,5 +1,9 @@
 # PPPP Daily Operating Surfaces - 2026-08-25
 
+## 2026-10-05 — SPIE platform standard
+
+`pristeel-spie-standard.css` is the shared static presentation owner in `pristeel-procurement.html`. Its root flag owns stable desktop shell geometry from first paint. Home Launcher and Production Surface Owner defer imperative geometry in this mode; existing routes, canonical data, role/action gates and mobile gestures stay intact. The primary navigation exposes existing direct-client, steel-buyer, document, email, SPIE and event destinations. Home uses calm rows; Finance/Partner maps retain their original handlers in list presentation. No new Supabase reads, polling, writes, schema or migrations.
+
 This document records the final daily-use presentation after the August 25 simplification. It does not replace runtime ownership records or backend engines.
 
 ## Primary navigation

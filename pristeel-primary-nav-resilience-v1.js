@@ -41,6 +41,14 @@ var ICONS={
  apps:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'
 };
 var ORDER=['home','tenders','representations','projects','contacts','daily','finance','apps'];
+// Reuse the established route owners. No secondary router or data fetch path.
+var SPIE_STANDARD=document.documentElement.classList.contains('pst-spie-standard');
+if(SPIE_STANDARD){
+ Object.assign(KEYS,{direct:1,buyers:1,files:1,emails:1,spie:1,events:1});
+ Object.assign(LABELS,{home:'Ballina',direct:'Klientë direkt',buyers:'Blerësit e çelikut',files:'Dokumentet',emails:'Emailat',spie:'SPIE Workspace',events:'Evente dhe Forume'});
+ Object.assign(ICONS,{direct:ICONS.contacts,buyers:ICONS.tenders,files:ICONS.tenders,emails:ICONS.daily,spie:ICONS.projects,events:ICONS.daily});
+ ORDER=['home','tenders','representations','direct','buyers','projects','finance','contacts','files','emails','spie','events','daily','apps'];
+}
 var repairTimer=0,polishTimer=0,tenderRenderToken=0,viewportToken=0;
 function S(v){return String(v==null?'':v);}
 function esc(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -61,6 +69,11 @@ function stabilizeViewport(){
  return token;
 }
 function currentKey(){
+ if(SPIE_STANDARD){
+  var extra={'page-eu-companies':'direct','page-dach-steel-sales':'buyers','page-documents-center':'files','page-document-center':'files','page-workspace-inbox':'emails','page-workspace-events':'events'};
+  for(var id in extra)if(visible(document.getElementById(id)))return extra[id];
+ }
+
  if(visible(document.getElementById('page-workspace-home')))return'home';
  if(visible(document.getElementById('page-kek-tenders')))return'tenders';
  if(visible(document.getElementById('page-representations')))return'representations';
@@ -118,7 +131,7 @@ function syncSidebar(key){
  }catch(e){}
  return true;
 }
-function mark(key){key=canon(key);syncSidebar(key);var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){b.classList.toggle('active',canon(b.dataset.key)===key);});}
+function mark(key){key=canon(key);syncSidebar(key);var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){var on=canon(b.dataset.key)===key;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);stabilizeViewport();return p;}
 function legacyShow(name){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(name);return true;}}catch(e){}try{if(typeof window.showPage==='function'){window.showPage(name);return true;}}catch(e){}return false;}
@@ -234,6 +247,16 @@ function openDaily(){
 }
 function route(key){
  key=S(key).toLowerCase();
+ if(SPIE_STANDARD&&['direct','buyers','spie','events','files','emails'].indexOf(key)>-1){
+  var ok=false;
+  try{
+   if(key==='files'&&window.PSTDocumentCenterStableV2)ok=window.PSTDocumentCenterStableV2.open();
+   else if(key==='emails'&&typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('inbox');ok=true;}
+   else if(window.PSTHomeLauncherV4)ok=window.PSTHomeLauncherV4.openModule(key);
+  }catch(e){console.warn('PPPP workspace navigation',key,e);}
+  if(ok!==false){mark(key);stabilizeViewport();}return ok;
+ }
+
  if(key==='tenders'||key==='opportunities')return openOpportunities();
  key=canon(key);if(key==='home')return openHome();if(key==='representations')return openRepresentations();if(key==='daily')return openDaily();if(key==='projects')return openProjects();if(key==='contacts')return openPartners();if(key==='finance')return openFinance();if(key==='apps')return openSystem();return false;
 }
