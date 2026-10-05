@@ -2,6 +2,12 @@
 
 This document is the human-readable companion to `runtime-manifest.json`.
 
+### Desktop Home launcher contract (2026-10-05)
+
+`pristeel-home-launcher-v4.js` is the final visual owner of desktop Home. Native UI and Redesign Finalizer retain compatibility functions but cannot retire its DOM, set it hidden, or claim its visual ownership. Canonical Home remains the existing data provider.
+
+While Home or one of its four primary module destinations owns the shell boundary, `pst-home-shell-owned` makes Global Full-width Shell and Production Surface Owner defer sidebar visibility to the launcher. Home reserves no sidebar space; the primary module routes restore their canonical navigation sidebar. Other routes retain the existing full-width shell contract. The Representation fallback stylesheet is restricted to active Representations. Back navigation prefers visible local controls, with one visible global fallback where needed.
+
 For project continuity also read:
 
 - `PPPP_MASTER_CONTEXT.md`

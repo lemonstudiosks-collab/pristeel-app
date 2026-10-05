@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "9bae470975b4c8d6399fe47bc601d2c525a3b8a2"
+    "bootstrapGitBlobSha": "edab346ebdb89f0d2a920b24af09831bede5d53b"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -74,7 +74,7 @@
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Desktop Home remains single-owner via pristeel-home-launcher-v4.js. Shell lock v10 fixes the remaining mixed state by: (1) ignoring stale hidden attributes when canonical Home navigation is active, (2) applying inline important shell/sidebar ownership while Home is active, (3) observing sidebar/shell attribute churn and immediately reasserting Home ownership, (4) hiding the duplicate floating PriSteel Daily launcher because Gazeta PPPP already exists in the Home top strip, and (5) hiding the Home launcher whenever Home is not active so work modules cannot show a mixed Home/sidebar state. Action routing v11 clears stale Home state before work-module navigation and keeps Gazeta PPPP as an in-Home overlay."
+      "note": "Desktop Home has one visual owner: pristeel-home-launcher-v4.js. Native UI and Redesign Finalizer defer legacy child retirement when the launcher is present. The launcher clears inherited hidden/aria-hidden state, hides all legacy Home children, ignores stale Home nav markers, and owns the sidebar boundary via pst-home-shell-owned. Home has no sidebar or reserved width; its four primary module routes restore canonical navigation. Global/Production shell owners defer only within this boundary, while other routes retain their existing full-width behavior. Gazeta PPPP remains an in-Home overlay and the duplicate floating Daily launcher stays hidden. Route/render events are coalesced and reuse successful weather data until explicit refresh."
     },
     {
       "area": "projects-list",
