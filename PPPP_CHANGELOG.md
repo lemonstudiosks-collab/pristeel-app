@@ -650,3 +650,7 @@ Automation may read, classify, reconcile, calculate, compare and prepare drafts.
 - Follow-up-i bëhet i mundshëm pas shtatë ditësh pa reply, por krijohet vetëm me veprim njerëzor dhe nuk dërgohet automatikisht.
 - Reply/RFQ promovohet në Project; supplier RFQ dhe oferta komerciale vazhdojnë në rrjedhën canonical të Project-it.
 - Kontrollet e domain-it sinjalizojnë përplasje me Mundësitë, Përfaqësimet dhe Kompanitë EU para outreach-it.
+
+## 2026-10-05 · SPIE Workspace Phase 1
+
+Added the same-origin `spie/` read-only workspace for canonical TenneT project c937aea1-af5e-4807-ae1e-e36864e46794, with executive Overview, Projects, Files, Emails, Finance and Partners. Home includes the entry shortcut; the production artifact includes the dedicated assets. The workspace uses the authenticated bounded project snapshot and lazy project-filtered metadata without global bootstrap changes, new storage, migrations, polling or business writes. Samples is operator-declared and the canonical pricing discrepancy is visible. Unknown health/revisions/importer and unverified financial/contract state are preserved. Seven focused tests plus desktop/mobile browser acceptance passed with fixtures and zero real Supabase browser calls. Documentation: docs/SPIE_WORKSPACE_PHASE1.md.

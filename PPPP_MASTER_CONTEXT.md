@@ -379,3 +379,7 @@ The live table `public.pppp_platform_protected_rules` is authoritative for exact
 PR #233 introduced the current simplified operating experience and was merged to `main` as commit `48c264cab7116ee36f7c485231510e6529891ba6` after the full PRISTEEL test suite, runtime-manifest guard, Pages artifact audit, production Pages build and Local Semantic AI checks all passed.
 
 The rollout intentionally changed presentation/navigation, not backend ownership. Live Supabase automation, Gmail matching, Drive identity, supplier/commercial engines and human gates remain in place.
+
+## SPIE Workspace · Phase 1, 2026-10-05
+
+A dedicated same-origin document at `spie/` is now the read-only SPIE presentation over the existing canonical TenneT project c937aea1-af5e-4807-ae1e-e36864e46794. It shares the PPPP session and bounded project snapshot, lazy-loads existing metadata, and uses Drive/Gmail source links. It does not load or change global presentation owners or create another operational system. No schema, storage, business-record or protected-action changes were made. Samples is an explicit operator presentation with the canonical pricing discrepancy visible. See docs/SPIE_WORKSPACE_PHASE1.md and docs/ACTIVE_RUNTIME.md.

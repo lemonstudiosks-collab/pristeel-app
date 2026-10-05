@@ -492,5 +492,16 @@
   "notes": [
     "2026-09-25: Sales Engine V3 adds a unified low-egress commercial workbench; cold draft generation remains human-selected and Supplier RFQs require Supplier Gate.",
     "2026-09-25: Final Commercial Engine V3 hardening closes the no-BOM Supplier Gate bypass, keeps Material Trade supplier sourcing read-only until client signal, and hardens Opportunity DB access."
+  ],
+  "dedicatedWorkspaces": [
+    {
+      "route": "spie/",
+      "entry": "spie/index.html",
+      "owner": "spie/workspace.js",
+      "dataAdapter": "spie/data.mjs",
+      "readOnly": true,
+      "canonicalProjectId": "c937aea1-af5e-4807-ae1e-e36864e46794",
+      "note": "Same-origin PPPP session, one bounded snapshot, lazy project metadata. No global runtime bootstrap changes."
+    }
   ]
 }

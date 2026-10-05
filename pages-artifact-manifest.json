@@ -225,6 +225,22 @@
     {
       "path": "assets/pristeel-app-icon-512.png",
       "reason": "512×512 raster fallback for Chromium/PWA installation and launcher/splash rendering."
+    },
+    {
+      "path": "spie/index.html",
+      "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
+    },
+    {
+      "path": "spie/workspace.css",
+      "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
+    },
+    {
+      "path": "spie/workspace.js",
+      "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
+    },
+    {
+      "path": "spie/data.mjs",
+      "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
     }
   ],
   "compatibilityPublicAssets": [

@@ -1,0 +1,21 @@
+name: SPIE Workspace Phase 1
+on:
+  pull_request:
+    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'pages-artifact-manifest.json', 'index.html', 'pristeel-home-launcher-v4.js', '.github/workflows/spie-workspace-smoke.yml']
+  push:
+    branches: [main]
+    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'pages-artifact-manifest.json', 'index.html', 'pristeel-home-launcher-v4.js', '.github/workflows/spie-workspace-smoke.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --check spie/workspace.js
+      - run: node --check spie/data.mjs
+      - run: node --test tests/spie-workspace-smoke.mjs
+      - run: node scripts/pages-artifact-build.mjs
