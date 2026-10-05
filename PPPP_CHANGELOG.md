@@ -1,3 +1,7 @@
+## 2026-10-05 — SPIE navigation compatibility
+
+The legacy Operating Experience layer now defers sidebar pruning, reordering and active selection when the static SPIE standard is enabled. Existing themes and business controls remain intact; legacy navigation behavior remains available without the standard. Added a focused regression test. One module cache version changed; bootstrap order and count remain unchanged. No Supabase writes or migrations.
+
 ## 2026-10-05 - SPIE evidence and tender partner context
 
 ## 2026-10-05 — SPIE platform standard

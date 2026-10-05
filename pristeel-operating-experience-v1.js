@@ -71,10 +71,12 @@ function applyZone(zone){
   try{var T=window.PSTSectionThemeV1;if(T&&typeof T.setSection==='function')T.setSection(ZONE_THEME[zone]||'home');}catch(e){}
   palette(ZONE_COLORS[zone]);
   var host=document.getElementById('pst-ws-canonical-nav'),key=navKeyForZone(zone);
-  if(host)host.querySelectorAll('.pst-business-primary').forEach(function(b){b.classList.toggle('active',b.dataset.key===key);});
+  if(host&&!document.documentElement.classList.contains('pst-spie-standard'))host.querySelectorAll('.pst-business-primary').forEach(function(b){b.classList.toggle('active',b.dataset.key===key);});
   return zone;
 }
 function normalizeNav(){
+  // The platform navigation owner keeps the complete SPIE module list and selection.
+  if(document.documentElement.classList.contains('pst-spie-standard'))return false;
   var host=document.getElementById('pst-ws-canonical-nav');
   if(!host)return false;
   var work=host.querySelector('.pst-canon-work'),tools=host.querySelector('.pst-canon-tools');
