@@ -343,6 +343,7 @@
 - The global Back fallback is visible when a page has no visible local Back. Local Back controls are not duplicated.
 - Successful weather data is reused across route/render events; explicit refresh still fetches. Mount events are coalesced and redundant post-bootstrap remount timers were removed.
 - Added combined-owner regression coverage for stale Home navigation state, late legacy retirement, three cycles across four destinations, and idle DOM stability. No business-state writes, paid APIs, or unrelated workflow changes.
+- Final live reload exposed a late-created Home host. The launcher now discovers that host once, disconnects discovery, and mounts when it becomes active. The regression reproduces a host created hidden after launcher bootstrap, then activated.
 
 This file records material architecture/automation changes. It is not a substitute for Git history. It exists to make project continuity readable across long ChatGPT/engineering sessions.
 
