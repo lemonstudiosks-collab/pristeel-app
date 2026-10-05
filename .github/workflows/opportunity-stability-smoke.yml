@@ -1,0 +1,22 @@
+name: Opportunity draft and typography regression
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false jsdom@26.1.0
+      - run: node tests/opportunities-static-typography-smoke.mjs
+      - run: node tests/opportunity-draft-approval-flow-smoke.mjs
+      - run: node tests/opportunities-mindmap-v5-interaction-smoke.mjs
+      - run: node tests/opportunity-draft-multi-contact-smoke.mjs
+      - run: node tests/spie-platform-standard-smoke.mjs
