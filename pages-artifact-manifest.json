@@ -241,6 +241,10 @@
     {
       "path": "spie/data.mjs",
       "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
+    },
+    {
+      "path": "pristeel-spie-standard.css",
+      "reason": "Shared static SPIE presentation standard for the primary PPPP document."
     }
   ],
   "compatibilityPublicAssets": [
@@ -373,6 +377,11 @@
       "source": "pristeel-opportunities-filter-polish-v1.js",
       "contains": "assets/source-icons/world-bank.svg",
       "reason": "Opportunity Desk source icon dependency must remain present in the production artifact."
+    },
+    {
+      "source": "pristeel-procurement.html",
+      "contains": "pristeel-spie-standard.css",
+      "reason": "The standard must ship and be present from first paint."
     }
   ],
   "knownRepositoryOnlyClasses": [

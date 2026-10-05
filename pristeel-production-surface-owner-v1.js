@@ -64,6 +64,8 @@ body:not(.pst-home-shell-owned).pst-global-fullwidth-shell #page-finance [data-p
 }
 function homeActive(){var p=document.getElementById('page-workspace-home');return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
 function hideSidebar(){
+  if(document.documentElement.classList.contains('pst-spie-standard'))return;
+
   if(document.body&&document.body.classList.contains('pst-home-shell-owned'))return;
   document.body&&document.body.classList.add('pst-global-fullwidth-shell');
   if(homeActive()){

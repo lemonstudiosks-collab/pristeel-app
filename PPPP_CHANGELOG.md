@@ -1,5 +1,9 @@
 ## 2026-10-05 - SPIE evidence and tender partner context
 
+## 2026-10-05 — SPIE platform standard
+
+`pristeel-spie-standard.css` is the shared static presentation owner in `pristeel-procurement.html`. Its root flag owns stable desktop shell geometry from first paint. Home Launcher and Production Surface Owner defer imperative geometry in this mode; existing routes, canonical data, role/action gates and mobile gestures stay intact. The primary navigation exposes existing direct-client, steel-buyer, document, email, SPIE and event destinations. Home uses calm rows; Finance/Partner maps retain their original handlers in list presentation. No new Supabase reads, polling, writes, schema or migrations.
+
 - SPIE consumes controlled source-backed Samples evidence and the bounded Drive metadata snapshot, merging exact identities without document duplication or physical file copies.
 - Manual tender analysis now passes up to 80 registered partner review candidates to the server assistant. Partial data never proves that no partners exist; selection remains human-approved.
 - Focused workspace, tender and redesign bootstrap checks pass. No migration, Finance core changes or protected commitments.
