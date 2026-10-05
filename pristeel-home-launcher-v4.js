@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261005-home-final-audit3',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false;
+var V='20261005-home-nav-stable1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -123,6 +123,10 @@ function route(k){
  k=S(k).toLowerCase();
  if(k==='spie'){location.assign(new URL('spie/',location.href).href);return true;}
  if(k==='daily')return openDaily();
+ // Early Home is usable while the ordered module owners are still loading.
+ // Keep the requested route and dispatch once; never hide Home into an empty page.
+ if(window.__pstBootstrapDiagnostics&&!window.__pstModulesReady){pendingRoute=k;return true;}
+ pendingRoute='';
  clearHomeRouteState();
  var n=nav(),ok=false;
  try{if(n&&typeof n.syncSidebar==='function')n.syncSidebar(k)}catch(e){}
@@ -555,6 +559,7 @@ document.addEventListener('pst:home-canonical-rendered',schedule);
 document.addEventListener('pst:native-home-ready',schedule);
 document.addEventListener('pst:page-opened',schedule);
 document.addEventListener('pst:modules-ready',schedule,{once:true});
+document.addEventListener('pst:modules-ready',function(){if(pendingRoute){var k=pendingRoute;pendingRoute='';route(k);}}, {once:true});
 window.addEventListener('pageshow',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 window.PSTHomeLauncherV5=window.PSTHomeLauncherV4={version:V,render:mount,openModule:route,openSearch:search};

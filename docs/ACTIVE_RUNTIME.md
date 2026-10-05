@@ -1,5 +1,11 @@
 # PPPP Active Runtime
 
+## 2026-10-05 — Home navigation stability
+
+Primary Navigation retains the existing sidebar DOM across repeated repairs. Task Source Actions and the Home startup label normalizer defer to that owner. Home queues the latest early module click until the ordered runtime is ready; startup completion preserves an already selected destination. EU Direct restores the missing scope/contact display helpers, without adding data reads or business writes. The bootstrap versions for the launcher, primary navigation and EU Direct are updated together.
+
+Validation: real Home-button interaction regression for four primary destinations, stable sidebar identity across late repair cycles, populated EU Direct list/detail rendering and startup destination preservation, plus existing Home/Primary Navigation/SPIE presentation smoke checks. Supabase use is limited to the initial read-only bridge manifest.
+
 ## 2026-10-05 — Opportunities draft/typography regression
 
 SPIE standard CSS owns stable Opportunities list/filter/detail/draft typography. Platform Readability retains translation and legacy fallback but skips delayed font classification in these surfaces under `pst-spie-standard`. Candidate RPC accepts an exact TED-declared email for the selected canonical winner even when its brand domain differs from its legal name. Existing identity, eligibility and manual draft/send gates remain.

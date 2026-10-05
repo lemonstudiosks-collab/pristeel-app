@@ -92,7 +92,13 @@ function repairSidebar(){
  var hosts=Array.prototype.slice.call(ws.querySelectorAll('#pst-ws-canonical-nav'));
  var host=hosts.shift();hosts.forEach(function(x){x.remove();});
  if(!host){host=document.createElement('div');host.id='pst-ws-canonical-nav';var create=ws.querySelector('.pst-ws-create');if(create)create.insertAdjacentElement('afterend',host);else ws.prepend(host);}
- host.innerHTML='<div class="pst-ws-navtitle">PPPP</div><div class="pst-ws-nav pst-canon-work"></div>';
+  var existing=Array.prototype.slice.call(host.querySelectorAll('.pst-ws-navbtn[data-key]'));
+  var intact=existing.length===ORDER.length&&existing.every(function(b,i){
+    var label=b.querySelector('.pst-nav-label');
+    return b.dataset.key===ORDER[i]&&b.parentNode.classList.contains('pst-canon-work')&&label&&label.textContent===LABELS[ORDER[i]];
+  });
+  if(intact){mark(currentKey());return true;}
+  host.innerHTML='<div class="pst-ws-navtitle">PPPP</div><div class="pst-ws-nav pst-canon-work"></div>';
  var work=host.querySelector('.pst-canon-work');
  ORDER.forEach(function(key){
    var b=document.createElement('button');b.type='button';b.className='pst-ws-navbtn pst-canonical-navbtn pst-business-primary';b.dataset.key=key;b.dataset.pstBusinessZone=key==='tenders'?'opportunities':key==='contacts'?'partners':key==='apps'?'system':key;
@@ -127,11 +133,11 @@ function syncSidebar(key){
   * the sidebar, otherwise its bounded repair timers fight the shell owner and
   * create repeated visible layout shifts during route changes. */
  try{
-   if(document.body)document.body.setAttribute('data-pst-primary-zone',key);
+    if(document.body&&document.body.getAttribute('data-pst-primary-zone')!==key)document.body.setAttribute('data-pst-primary-zone',key);
  }catch(e){}
  return true;
 }
-function mark(key){key=canon(key);syncSidebar(key);var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){var on=canon(b.dataset.key)===key;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}
+function mark(key){key=canon(key);syncSidebar(key);var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){var on=canon(b.dataset.key)===key;if(b.classList.contains('active')!==on)b.classList.toggle('active',on);if(on){if(b.getAttribute('aria-current')!=='page')b.setAttribute('aria-current','page');}else if(b.hasAttribute('aria-current'))b.removeAttribute('aria-current');});}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);stabilizeViewport();return p;}
 function legacyShow(name){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(name);return true;}}catch(e){}try{if(typeof window.showPage==='function'){window.showPage(name);return true;}}catch(e){}return false;}

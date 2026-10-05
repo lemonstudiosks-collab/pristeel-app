@@ -33,6 +33,8 @@ function scopeLabel(v){
  var m={fabricated_steel_package:'Paketa çeliku të fabrikuar',external_production_capacity:'Kapacitet prodhues shtesë',overflow_capacity:'Kapacitet për ngarkesë kulmore',fabrication_to_drawings:'Prodhim sipas vizatimeve',selected_subcontract_package:'Paketa të përzgjedhura nënkontraktimi',technical_coordination:'Koordinim teknik',material_procurement:'Prokurim materiali'};
  return m[S(v)]||S(v).replace(/_/g,' ');
 }
+function fitText(r){return A(r.business_scope).map(scopeLabel).join(' · ')||S(r.why_relevant)||'Për shqyrtim'}
+function contactText(r){return S(r.contact_name||r.contact_email)||'Pa kontakt të verifikuar'}
 function guardLabel(v){
  var m={clear:'Pa pengesë të njohur',blocked:'Mos kontakto',existing_draft:'Ka draft ekzistues',cooldown_30d:'Kontaktuar brenda 30 ditëve',routing_review:'Kontrollo modulin tjetër',contacted_before:'Kontaktuar më parë'};
  return m[S(v)]||'Për shqyrtim';

@@ -97,6 +97,8 @@ function stabilizeLabels(host){
  PRIMARY.concat(SECONDARY).forEach(function(item){var b=host.querySelector('.pst-ws-navbtn[data-key="'+item.key+'"]'),l=b&&b.querySelector('.pst-nav-label');if(l)l.textContent=item.label;});
 }
 function sidebar(){
+ // The final navigation owner retains its complete module list and selection.
+ if(window.PSTPrimaryNavResilienceV10)return true;
  if(!workspace())return false;
  var ws=document.getElementById('pst-ws-sidebar');if(!ws)return false;
  var host=ws.querySelector('#pst-ws-canonical-nav');

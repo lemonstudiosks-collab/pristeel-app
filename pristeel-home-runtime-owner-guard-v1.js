@@ -282,13 +282,19 @@ function installCompatApi(){
 function finalizeHome(){
   runtimeReady=true;clearLegacyLoginBlocker();installCompatApi();normalizePrimaryLabels();
   if(finalizeTimer)clearTimeout(finalizeTimer);
-  finalizeTimer=setTimeout(function(){renderFinalHome();},120);
+  finalizeTimer=setTimeout(function(){
+    // Startup must not take the user back from a destination they just opened.
+    var away=Array.prototype.some.call(document.querySelectorAll('.page.active'),function(p){return p.id!=='page-workspace-home'&&p.style.display!=='none';});
+    if(away){installFinalRouter();signalVisualReady();return;}
+    renderFinalHome();
+  },120);
   if(recoveryTimer)clearTimeout(recoveryTimer);
   recoveryTimer=setTimeout(function(){if(!visualReady)revealBestAvailable('modules-ready-timeout');},7000);
 }
 
 /* ---------- Critical pre-bootstrap navigation lane ---------- */
 function normalizePrimaryLabels(){
+  if(window.PSTPrimaryNavResilienceV10)return true;
   var root=document.getElementById('pst-ws-sidebar');if(!root)return false;
   var byKey={home:'Home',opportunities:'Mundësitë',tenders:'Mundësitë',projects:'Projektet',partners:'Partnerët',contacts:'Partnerët',finance:'Financat',apps:'Sistemi',system:'Sistemi'};
   var byText={'Opportunities':'Mundësitë','Projects':'Projektet','Partners':'Partnerët','Contacts':'Partnerët','Finance':'Financat','System':'Sistemi','Apps':'Sistemi'};

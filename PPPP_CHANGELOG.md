@@ -1,3 +1,10 @@
+# 2026-10-05 — Home sidebar and module navigation regression
+
+- Preserve canonical navigation buttons during repeat repairs; legacy task/source shell and startup labels defer to Primary Navigation.
+- Queue the latest Home destination while runtime owners load; late startup completion cannot take the user back from an already selected module.
+- Restore missing EU Direct scope/contact render helpers and update the affected runtime cache versions together.
+- Verified four primary Home buttons, queued startup clicks, stable sidebar node identities, populated EU Direct list/detail and existing Home/Primary Navigation/SPIE checks using fixtures. No business writes, new polling, schema changes or added Supabase reads.
+
 ## 2026-10-05 — SPIE navigation compatibility
 
 ## 2026-10-05 — Mundësitë draft provenance and stable typography
@@ -675,3 +682,4 @@ Automation may read, classify, reconcile, calculate, compare and prepare drafts.
 ## 2026-10-05 · SPIE Workspace Phase 1
 
 Added the same-origin `spie/` read-only workspace for canonical TenneT project c937aea1-af5e-4807-ae1e-e36864e46794, with executive Overview, Projects, Files, Emails, Finance and Partners. Home includes the entry shortcut; the production artifact includes the dedicated assets. The workspace uses the authenticated bounded project snapshot and lazy project-filtered metadata without global bootstrap changes, new storage, migrations, polling or business writes. Samples is operator-declared and the canonical pricing discrepancy is visible. Unknown health/revisions/importer and unverified financial/contract state are preserved. Seven focused tests plus desktop/mobile browser acceptance passed with fixtures and zero real Supabase browser calls. Documentation: docs/SPIE_WORKSPACE_PHASE1.md.
+
