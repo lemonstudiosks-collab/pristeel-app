@@ -28,6 +28,8 @@ for(const manual_draft_template of ['gc_epc','steel_fabricator']){
  assert.doesNotMatch(copy.body,/Bevor wir einen konkreten|S355|EN 1090|Sie selbst fertigen/);
 }
 assert.throws(()=>buildTedDraftContent({...action,payload:{manual_draft_template:'invented'}},tender,{email:'info@stako-hallenbau.de'}),/company_role_verification_required/);
+const legacyUnknown=buildTedDraftContent({...action,payload:{manual_draft_template:'steel_fabricator'}},{...tender,winner_role_v2:null},{email:'info@stako-hallenbau.de'});
+assert.equal(legacyUnknown.company_role,'unknown');assert.equal(legacyUnknown.approved_template,'steel_fabricator');assert.equal(legacyUnknown.offer_model,'external_production_capacity');
 assert.equal(resolveTedRecipients(action,tender,20).length,0,'send-grade recipient gate stays blocked');
 
 // Exercise the actual generator preview path; every potential write throws.

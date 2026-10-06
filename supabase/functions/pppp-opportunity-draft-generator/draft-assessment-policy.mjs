@@ -1,5 +1,5 @@
-// Only the explicit, reviewed Gmail-draft path may clarify an unknown company role.
-// This does not mark the assessment eligible or authorize targeted outreach/sending.
+// Only explicit, source-backed manual review may choose an approved template for an unknown role.
+// Template choice does not verify the company role, mark the assessment eligible or authorize sending.
 export function canReviewUnknownRoleDraft(assessment={},action={},tender={},explicitUser=false){
   const norm=v=>String(v??'').trim().toLowerCase().replace(/\s+/g,' ');
   const company=assessment.company||assessment.company_summary||{};
