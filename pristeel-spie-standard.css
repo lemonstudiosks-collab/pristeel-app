@@ -318,3 +318,5 @@ html#pst-spie-platform body #page-kek-tenders .pst-opp-side-item { display:flex!
 html#pst-spie-platform body #page-kek-tenders .pst-opp-side-item .text { flex:1; min-width:0; white-space:normal!important; overflow:visible!important; text-overflow:clip!important; }
 html#pst-spie-platform body #page-kek-tenders .pst-opp-side-item .num { flex:none; min-width:16px; padding:0; background:transparent!important; }
 html#pst-spie-platform body #page-kek-tenders :is(.pst-opp-work-row,.pst-opp-contact-row) { height:auto!important; min-height:72px!important; max-height:none!important; }
+
+html#pst-spie-platform body #page-kek-tenders .pst-opp-work-row > .main { display:block!important; min-height:0!important; height:auto!important; max-height:none!important; flex:none!important; width:auto!important; margin:0!important; padding:0!important; }
