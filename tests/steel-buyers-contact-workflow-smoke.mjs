@@ -5,6 +5,7 @@ import { prepareReadyDrafts } from '../supabase/functions/pppp-steel-buyer-disco
 const privateKey=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({format:'pem',type:'pkcs8'});
 const env=key=>key==='GOOGLE_SA_JSON'?JSON.stringify({private_key:privateKey,client_email:'fixture@service.test'}):key==='GMAIL_USER'?'fixture@buyer.test':key==='SUPABASE_URL'?'https://canonical.test':'fixture';
 const company={id:'target-1',company_name:'Buyer',company_domain:'buyer.test',country:'DE',source_key:'eu:original-key',contact_status:'missing',target_status:'watch',evidence:[]};
+company.material_scope={line_items:[{family:'beams',grade:'S355'}]};company.evidence=[{url:'https://buyer.test/verified',claim:'Existing verified scope'}];
 let recent=[],receipts=[],history=[],appends=0,readbacks=0,values=[];
 const db={from(table){const chain=new Proxy({}, {get(_,method){if(method==='then')return(resolve)=>resolve({data:table==='pppp_steel_buyer_discovery_runs_v1'?recent:table==='pppp_chatgpt_command_receipts'?receipts:table==='pppp_dach_steel_targets_v1'?[company]:table==='pppp_outbound_queue_v1'?history:[],error:null});return(...args)=>{if(['insert','upsert','update','delete'].includes(method))throw Error('Business write bypass detected');if(method==='in'&&table==='pppp_dach_steel_targets_v1'&&args[0]==='id')readbacks++;return chain;};}});return chain;}};
 const mockFetch=async(url,options={})=>{
@@ -19,6 +20,7 @@ const mockFetch=async(url,options={})=>{
 };
 const run=await runContactWorkflow(db,env,mockFetch,'2026-10-06');assert.equal(run.queued.length,1);assert.equal(appends,1);assert.equal(run.external_email_sent,false);
 const payload=JSON.parse(values[0][3]);assert.equal(values[0][1],'dach_steel_target');assert.equal(values[0][2],'approved');assert.equal(payload.source_key,'eu:original-key');assert.equal(payload.contact_status,'found');assert.equal(payload.evidence.filter(x=>x.email).length,2);assert.equal(payload.material_scope.contact_research.contacts[0].email,'procurement@buyer.test');assert.ok(payload.material_scope.contact_research.retry_after);
+assert.deepEqual(payload.material_scope.line_items,company.material_scope.line_items);assert.ok(payload.evidence.some(x=>x.claim==='Existing verified scope'));
 recent=[{payload:{contact_workflow:{attempts:run.attempts}}}];receipts=[{command_id:run.queued[0],status:'failed',result:{}}];
 const retry=await runContactWorkflow(db,env,mockFetch,'2026-10-07');assert.equal(retry.queued.length,0);assert.equal(appends,1);
 receipts=[{command_id:run.queued[0],status:'succeeded',result:{target_id:'target-1'}}];
