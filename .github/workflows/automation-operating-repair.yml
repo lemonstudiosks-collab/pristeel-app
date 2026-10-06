@@ -1,0 +1,44 @@
+name: PPPP automation operating repair
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/ted-award-winner-sync.mjs'
+      - 'tests/opportunity-workflow-ownership-smoke.mjs'
+      - 'supabase/functions/chatgpt-command-bridge/**'
+      - 'supabase/functions/gmail-project-intake/**'
+      - 'supabase/functions/pppp-project-memory-synthesis/**'
+      - 'pristeel-automation-health-v1.js'
+      - 'tests/automation-operating-repair-smoke.mjs'
+      - '.github/workflows/automation-operating-repair.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/ted-award-winner-sync.mjs'
+      - 'tests/opportunity-workflow-ownership-smoke.mjs'
+      - 'supabase/functions/chatgpt-command-bridge/**'
+      - 'supabase/functions/gmail-project-intake/**'
+      - 'supabase/functions/pppp-project-memory-synthesis/**'
+      - 'pristeel-automation-health-v1.js'
+      - 'tests/automation-operating-repair-smoke.mjs'
+      - '.github/workflows/automation-operating-repair.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify operating behavior without production calls
+        run: |
+          node --check pristeel-automation-health-v1.js
+          node tests/automation-operating-repair-smoke.mjs
+          node tests/ted-award-winner-sync-smoke.mjs
+          node tests/ted-gc-coverage-smoke.mjs
+          node tests/opportunity-workflow-ownership-smoke.mjs
+          node tests/opportunity-direct-action-reconcile-smoke.mjs
+          node tests/gmail-project-intake-execution-smoke.mjs

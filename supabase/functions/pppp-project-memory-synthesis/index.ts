@@ -97,6 +97,8 @@ async function processProject(project:any,baseline:any,existing:any){
 }
 
 async function run(req:Request){
+  // Do not scan projects/facts or spend tokens when the optional provider is absent.
+  if(!OPENAI)return{ok:true,version:VERSION,status:'blocked',configured:false,reason:'openai_not_configured',projects_checked:0,synthesized:0,rate_limited:false,items:[]};
   const u=new URL(req.url),limit=Math.max(1,Math.min(2,Number(u.searchParams.get('limit')||2))),pid=T(u.searchParams.get('project_id'),80);
   let q=db.from('projects').select('id,name,client,status,pipeline_stage,operational_state,operational_state_at,last_activity_at,last_email_at,updated_at').not('status','is',null).order('last_activity_at',{ascending:false,nullsFirst:false}).limit(pid?1:120);
   if(pid)q=q.eq('id',pid);
