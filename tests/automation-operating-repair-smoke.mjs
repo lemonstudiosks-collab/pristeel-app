@@ -110,7 +110,7 @@ assert.match(health,/Date\.now\(\)-last<300000/,'health loads must be cached for
 console.log('Automation health evidence rendering passed.');
 
 // A health panel created on Home must move into the current visible System page.
-const systemPage={classList:{contains:()=>true},style:{},appendChild(node){node.parentElement=this;}};
+const systemPage={querySelector:()=>null,classList:{contains:()=>true},style:{},appendChild(node){node.parentElement=this;}};
 const cachedPanel={parentElement:{id:'page-home'}};
 const relocation={window:{addEventListener(){}},document:{head:{appendChild(){}},addEventListener(){},getElementById(id){return id==='page-workspace-apps'?systemPage:id==='pst-auto-health'?cachedPanel:id==='pst-ah-css'?{}:null;}},setTimeout(){},Date,console};
 vm.runInNewContext(health.replace(/\}\)\(\);\s*$/,'last=Date.now();window.testLoad=load;})();'),relocation);
@@ -118,3 +118,8 @@ await relocation.window.testLoad(false);
 assert.equal(cachedPanel.parentElement,systemPage,'cached panel must remain visible after navigation');
 assert.match(health,/\[data-sys="automation"\]/,'System automation control must open health');
 console.log('Automation health navigation and cached-panel relocation passed.');
+
+const visibleSystemCard={appendChild(node){node.parentElement=this;}};
+systemPage.querySelector=()=>visibleSystemCard;
+await relocation.window.testLoad(false);
+assert.equal(cachedPanel.parentElement,visibleSystemCard,'compact System layout must mount inside its visible card');
