@@ -153,9 +153,11 @@ function categoryMeta(kind,value){
 }
 function resultTitle(meta){if(meta&&meta.source)return sourceMark(meta.source)+E(meta.title);return E(meta&&meta.title||'Mundësitë');}
 function header(focus){
- var h=focus.querySelector(':scope>header');if(!h)return;
- var html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><h2>Mundësitë</h2></div></div>';
- if(h.dataset.pstOppHeaderHtml!==html||!h.querySelector('[data-pst-opp-back]')){h.innerHTML=html;h.dataset.pstOppHeaderHtml=html;}
+ var h=focus.querySelector(':scope>header');if(h)h.hidden=true;
+ focus.setAttribute('data-pst-font-lock','1');
+}
+function deskHeader(){
+ return '<header class="pst-opp-desk-head"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><h2>Mundësitë</h2></div></header>';
 }
 function tools(focus){
  var t=focus.querySelector('#pst-pcw-opportunity-tools');if(!t)return;
@@ -284,7 +286,7 @@ function sideFilters(c){
  var srcs=SOURCES.filter(function(k){return Number(c.src[k]||0)>0;}).map(function(k){return filterButton('data-pst-opp-source',k,LABEL[k]||k,c.src[k],source===k,SOURCE_ICON[k],SOURCE_ASSET[k]);}).join('');
  var fs=FIELDS.filter(function(f){return Number(c.field[f.id]||0)>0;}).map(function(f){return filterButton('data-pst-opp-field',f.id,f.label,c.field[f.id],field===f.id,f.icon);}).join('');
  var ws=WINNERS.map(function(w){return filterButton('data-pst-opp-winner',w.id,w.label,c.winner[w.id],winner===w.id,w.icon);}).join('');
- return'<aside class="pst-opp-side"><div class="pst-opp-side-head"><b>Filtra</b><button type="button" data-pst-opp-reset>Pastro të gjitha</button></div>'
+ return'<aside class="pst-opp-side" aria-label="Organizimi i Mundësive"><div class="pst-opp-brand"><span>P</span><div><b>PRISTEEL</b><small>PPPP · Mundësitë</small></div></div><div class="pst-opp-side-head"><b>Filtra</b><button type="button" data-pst-opp-reset>Pastro të gjitha</button></div>'
   +'<section><h4>Burimi</h4>'+filterButton('data-pst-opp-source','all','Të gjitha',c.total,source==='all','◉')+srcs+'</section>'
   +'<section><h4>Fusha</h4>'+filterButton('data-pst-opp-field','all','Të gjitha',c.total,field==='all','▦')+fs+'</section>'
   +'<section><h4>Fituesi TED</h4>'+filterButton('data-pst-opp-winner','all','Të gjithë',c.award,winner==='all','♜')+ws+'</section><section><h4>Historiku i plotë</h4><button type="button" class="pst-opp-side-item '+(contactedExpanded?'on':'')+'" data-pst-opp-history-open><span class="text">Të kontaktuara / të përgatitura</span><span class="num">'+contactHistory().rows.length+'</span></button></section></aside>';
@@ -320,7 +322,7 @@ function historyDetail(r){
 function sectionLabel(icon,title,copy){return'<div class="pst-opp-filter-label"><b>'+E(title)+'</b></div>';}
 function deskHtml(c){
  var active=activeRows(),contacted=contactedRows(),allContacted=contactHistory().rows.length;
- return'<section id="pst-opp-desk" class="pst-opp-workdesk">'+sideFilters(c)+'<main>'+(contactedExpanded?contactedPanel(contacted):activePanel(active,allContacted))+'</main></section>';
+ return'<section id="pst-opp-desk" class="pst-opp-workdesk">'+sideFilters(c)+'<main>'+deskHeader()+(contactedExpanded?contactedPanel(contacted):activePanel(active,allContacted))+'</main></section>';
 }
 function deskNode(html){var wrap=document.createElement('div');wrap.innerHTML=html;return wrap.firstElementChild;}
 function direct(parent,selector){
@@ -348,7 +350,7 @@ function patchDesk(focus,c){
 }
 function closeDetail(){var modal=document.getElementById('pst-opp-modal-bg');if(modal)modal.remove();}
 function selectInPlace(id){
- selectedId=S(id);var selected=selectedRow();if(!selected)return false;closeDetail();var modal=document.createElement('div');modal.id='pst-opp-modal-bg';modal.className='pst-opp-modal-bg';modal.innerHTML=selected.__pstContactMeta?historyDetail(selected):detailPanel(selected);document.body.appendChild(modal);return true;
+ selectedId=S(id);var selected=selectedRow();if(!selected)return false;closeDetail();var modal=document.createElement('div');modal.id='pst-opp-modal-bg';modal.className='pst-opp-modal-bg';modal.setAttribute('data-pst-font-lock','1');modal.innerHTML=selected.__pstContactMeta?historyDetail(selected):detailPanel(selected);document.body.appendChild(modal);return true;
 }
 function patchSelectedContacts(id){
  if(S(selectedId)!==S(id))return false;var modal=document.getElementById('pst-opp-modal-bg'),r=selectedRow();if(!modal||!r)return false;

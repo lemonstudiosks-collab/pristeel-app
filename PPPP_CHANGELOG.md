@@ -1,3 +1,11 @@
+## 2026-10-06 — Mundësitë uses the Home / Përfaqësime presentation standard
+
+- Reuse the shared Inter font, 200px contextual sidebar, paper background, spacing and quiet list rows.
+- Move the existing functional Kthehu into the content header and render it as a simple white control.
+- Preserve source/field/winner filters, search, sorting, contacted history, dossiers and all draft/approval owners.
+- Static CSS and font locks prevent delayed legacy typography from changing the surface after clicks; refresh CSS and desk asset versions.
+- Verified with existing workdesk interaction, complete contact history, static typography and Representation navigation tests; browser preview checked without horizontal overflow.
+
 # 2026-10-05 — Home sidebar and module navigation regression
 
 - Preserve canonical navigation buttons during repeat repairs; legacy task/source shell and startup labels defer to Primary Navigation.
