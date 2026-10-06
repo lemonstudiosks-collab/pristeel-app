@@ -13,23 +13,24 @@ window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
 var VERSION='20261004-action-buttons-v1';
+var contactHistoryCache=null,contactHistoryQuery='',contactedPage=1,activePage=1;
 var density='comfortable',filtersOpen=true,resultPage=null,api=null,state=null,scheduled=false,decorating=false,selectedId='',contactedExpanded=false,sortDirection='desc',canonicalContactsByTender={};
 var SOURCES=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','EU_OFFICE_KOSOVO'];
 var LABEL={TED:'TED',KRPP:'KRPP',APP_AL:'APP',MCA_KOSOVO:'MCA Kosovo',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EBRD',WORLD_BANK:'World Bank',UNGM:'UNGM',EU_OFFICE_KOSOVO:'EU Office Kosovo'};
 var SOURCE_ICON={TED:'EU',KRPP:'KS',APP_AL:'AL',MCA_KOSOVO:'MCA',KCF:'KCF',RCF:'RCF',EBRD_ECEPP:'EB',WORLD_BANK:'WB',UNGM:'UN',EU_OFFICE_KOSOVO:'EU'};
 var SOURCE_ASSET={TED:'assets/source-icons/ted-eu.svg',KRPP:'assets/source-icons/krpp-kosovo.svg',APP_AL:'assets/source-icons/app-albania.svg',WORLD_BANK:'assets/source-icons/world-bank.svg'};
 var FIELDS=[
- {id:'construction',label:'Ndërtim',icon:'▦',re:/\b(construction|ndertim|ndërtim|building|buildings|bau|hochbau|steel|çelik|celik|metal|structur|konstrukt|hall|roof|çati|cati|facade|fasad|weld|fabricat|montag|renov|rehabilit)/i},
- {id:'infrastructure',label:'Infrastrukturë',icon:'╫',re:/\b(infrastruct|road|rrug|highway|motorway|rail|hekurudh|bridge|urë|ure|tunnel|airport|port|water|ujësjell|ujesjell|sewer|kanaliz|pipeline|transport network)/i},
- {id:'energy',label:'Energji',icon:'ϟ',re:/\b(energy|energji|electric|elektr|power|solar|photovoltaic|\bpv\b|wind|battery|bess|substation|transformer|grid|transmission|distribution)/i},
- {id:'supply',label:'Furnizim',icon:'◆',re:/\b(supply|furniz|procurement|purchase|blerje|material|equipment|pajis|delivery|dorëzim|dorezim|goods|product)/i},
- {id:'services',label:'Shërbime',icon:'♙',re:/\b(service|shërbim|sherbim|consult|design|projektim|engineering|inxhinier|supervision|mbikëqyr|mbikeqyr|study|audit|maintenance|mirëmbajt|mirembajt)/i},
- {id:'other',label:'Të tjera',icon:'•••',re:null}
+ {id:'construction',label:'Nd�rtim',icon:'?',re:/\b(construction|ndertim|nd�rtim|building|buildings|bau|hochbau|steel|�elik|celik|metal|structur|konstrukt|hall|roof|�ati|cati|facade|fasad|weld|fabricat|montag|renov|rehabilit)/i},
+ {id:'infrastructure',label:'Infrastruktur�',icon:'�',re:/\b(infrastruct|road|rrug|highway|motorway|rail|hekurudh|bridge|ur�|ure|tunnel|airport|port|water|uj�sjell|ujesjell|sewer|kanaliz|pipeline|transport network)/i},
+ {id:'energy',label:'Energji',icon:'?',re:/\b(energy|energji|electric|elektr|power|solar|photovoltaic|\bpv\b|wind|battery|bess|substation|transformer|grid|transmission|distribution)/i},
+ {id:'supply',label:'Furnizim',icon:'?',re:/\b(supply|furniz|procurement|purchase|blerje|material|equipment|pajis|delivery|dor�zim|dorezim|goods|product)/i},
+ {id:'services',label:'Sh�rbime',icon:'?',re:/\b(service|sh�rbim|sherbim|consult|design|projektim|engineering|inxhinier|supervision|mbik�qyr|mbikeqyr|study|audit|maintenance|mir�mbajt|mirembajt)/i},
+ {id:'other',label:'T� tjera',icon:'',re:null}
 ];
 var WINNERS=[
- {id:'gc_epc',label:'GC / EPC',hint:'klient potencial',icon:'▰'},
- {id:'other',label:'Për verifikim',hint:'rol i paqartë / konsorcium',icon:'?'},
- {id:'producer',label:'Prodhues çeliku',hint:'kapacitet / konkurrencë',icon:'⚙'}
+ {id:'gc_epc',label:'GC / EPC',hint:'klient potencial',icon:'?'},
+ {id:'other',label:'P�r verifikim',hint:'rol i paqart� / konsorcium',icon:'?'},
+ {id:'producer',label:'Prodhues �eliku',hint:'kapacitet / konkurrenc�',icon:'?'}
 ];
 
 function A(v){return Array.isArray(v)?v:[];}
@@ -42,7 +43,7 @@ var ACTION_SOURCE_ICON='<svg class="pst-opp-action-svg" viewBox="0 0 24 24" aria
 var ACTION_REMOVE_ICON='<svg class="pst-opp-action-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 7h15M9 4.5h6l.8 2.5H8.2L9 4.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7.2 9.2l.8 9.3c.1.9.7 1.5 1.6 1.5h4.8c.9 0 1.5-.6 1.6-1.5l.8-9.3M10.3 11.2v5.6M13.7 11.2v5.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 function actionIcon(kind){var icon=kind==='analyze'?ACTION_ANALYZE_ICON:kind==='source'?ACTION_SOURCE_ICON:ACTION_REMOVE_ICON;return'<span class="pst-opp-action-icon pst-opp-action-icon-'+kind+'">'+icon+'</span>';}
 function gmailActionContent(label){return'<span class="pst-opp-action-icon pst-opp-action-icon-gmail">'+GMAIL_DRAFT_ICON+'</span><span class="pst-gmail-draft-label">'+E(label)+'</span>';}
-function gmailCreateContent(enabled){return gmailActionContent(enabled?'Krijo draft në Gmail':'Mungon emaili i verifikuar');}
+function gmailCreateContent(enabled){return gmailActionContent(enabled?'Krijo draft n� Gmail':'Mungon emaili i verifikuar');}
 function current(){api=window.PSTProjectCentricWorkflowV1||api;state=api&&api._state||state;return api;}
 function rowText(r){var p=r&&r.payload&&typeof r.payload==='object'?r.payload:{};return[r&&r.title,r&&r.description,r&&r.authority,r&&r.procurement_no,r&&r.publication_no,r&&r.cpv,r&&r.cpv_code,A(r&&r.match_reasons).join(' '),p.title,p.description,p.cpv,p.cpv_code,p.cpv_description,p.scope,p.category].map(S).join(' ');}
 function srcOf(r){var x=current(),fn=x&&x._test&&x._test.tenderSource;return fn?fn(r):S(r&&r.source_key||r&&r.payload&&r.payload.source||'KRPP').toUpperCase();}
@@ -61,7 +62,7 @@ function filteredRows(){
  return rows;
 }
 function counts(){
- var rows=baseRows(),c={total:rows.length,local:0,award:0,life:{new:0,waiting:0,replied:0},src:{},field:{},winner:{gc_epc:0,other:0,producer:0}};
+ var contacted=globalContactedKeys(),rows=baseRows().filter(function(r){return effectiveLane(r)==='new'&&!contactAliases(r).some(function(k){return !!contacted[k];});}),c={total:rows.length,local:0,award:0,life:{new:0,waiting:0,replied:0},src:{},field:{},winner:{gc_epc:0,other:0,producer:0}};
  SOURCES.forEach(function(k){c.src[k]=0;});FIELDS.forEach(function(f){c.field[f.id]=0;});
  rows.forEach(function(r){var s=srcOf(r),l=lifeOf(r),f=fieldOf(r),w=winnerOf(r);if(s==='TED')c.award++;else c.local++;if(c.life[l]!=null)c.life[l]++;if(c.src[s]!=null)c.src[s]++;if(c.field[f]!=null)c.field[f]++;if(c.winner[w]!=null)c.winner[w]++;});
  return c;
@@ -70,6 +71,8 @@ function loadBridge(){if(window.__pstOpportunitiesWaitingBridgeV1||document.quer
 function css(){
  var old=document.getElementById('pst-opportunities-filter-polish-v1-css');if(old)return;
  var s=document.createElement('style');s.id='pst-opportunities-filter-polish-v1-css';s.textContent=`
+.pst-opp-history-pages{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px}.pst-opp-history-pages button{padding:8px 12px;border:1px solid #dbe5e8;border-radius:8px;background:#fff;color:#39798f;cursor:pointer}.pst-opp-history-pages button:disabled{opacity:.4;cursor:default}.pst-opp-history-error{color:#a33;padding:10px}
+
 body:has(#page-kek-tenders.active) .app-shell>.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important}
 body:has(#page-kek-tenders.active) .app-shell>.main{width:100%!important;max-width:none!important;min-width:0!important}
 body:has(#page-kek-tenders.active) .main>.topbar{display:none!important}
@@ -83,7 +86,7 @@ body:has(#page-kek-tenders.active) #page-kek-tenders .pst-kek-layout{max-width:n
 #pst-opportunities-focus>header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;margin:0 0 16px!important;padding:4px 2px!important}
 .pst-opp-desk-head-left{display:flex;align-items:center;gap:18px;min-width:0}.pst-opp-desk-back{display:inline-flex!important;align-items:center;justify-content:center;height:48px;padding:0 18px;border:1px solid #2f86a6;border-radius:14px;background:#3f9fc2;color:#fff!important;font-size:12px;font-weight:850;cursor:pointer;box-shadow:0 6px 16px rgba(47,134,166,.18)}.pst-opp-desk-back:hover,.pst-opp-desk-back:focus-visible{background:#2f86a6;border-color:#2f86a6;color:#fff!important;box-shadow:0 8px 20px rgba(47,134,166,.22);outline:none}.pst-opp-desk-title>span{display:block;font-size:9.5px;font-weight:900;letter-spacing:.14em;color:#4387a0}.pst-opp-desk-title h2{margin:4px 0 0!important;font-size:30px!important;letter-spacing:-.04em!important;color:#1f3945!important}.pst-opp-desk-title p{margin:5px 0 0!important;font-size:12px!important;color:#718690!important}.pst-opp-header-note{max-width:310px;padding:6px 4px 6px 0;color:#68808d;font-size:11px;line-height:1.5}.pst-opp-header-note:after{content:'';display:block;width:42px;height:2px;margin-top:9px;border-radius:999px;background:#3f9fc2}
 .pst-opp-density{display:flex;padding:3px;border:1px solid #dbe6e9;border-radius:11px;background:#fff}.pst-opp-density button{height:32px;padding:0 11px;border:0;border-radius:8px;background:transparent;color:#71828a;font-size:10px;font-weight:800;cursor:pointer}.pst-opp-density button.on{background:#edf5f7;color:#39798f}
-#pst-pcw-opportunity-tools{display:flex!important;align-items:center!important;gap:10px!important;margin:0 0 14px!important}#pst-pcw-opportunity-tools label{height:50px!important;flex:1!important;display:flex!important;align-items:center!important;gap:10px!important;padding:0 15px!important;border:1px solid #dbe5e8!important;border-radius:14px!important;background:#fff!important;box-shadow:0 2px 9px rgba(38,67,79,.025)!important}#pst-pcw-opportunity-tools label>span{font-size:0!important}#pst-pcw-opportunity-tools label>span:before{content:'⌕';font-size:20px;color:#62808b}#pst-pcw-opportunity-search{height:46px!important;flex:1!important;border:0!important;outline:0!important;background:transparent!important;font-size:13px!important;color:#2f4751!important}.pst-opp-filter-toggle{height:50px;padding:0 15px;border:1px solid #dbe5e8;border-radius:14px;background:#fff;color:#536d78;font-size:10px;font-weight:850;cursor:pointer}.pst-opp-filter-toggle.on{background:#eef6f8;border-color:#bad6df;color:#35758d}
+#pst-pcw-opportunity-tools{display:flex!important;align-items:center!important;gap:10px!important;margin:0 0 14px!important}#pst-pcw-opportunity-tools label{height:50px!important;flex:1!important;display:flex!important;align-items:center!important;gap:10px!important;padding:0 15px!important;border:1px solid #dbe5e8!important;border-radius:14px!important;background:#fff!important;box-shadow:0 2px 9px rgba(38,67,79,.025)!important}#pst-pcw-opportunity-tools label>span{font-size:0!important}#pst-pcw-opportunity-tools label>span:before{content:'?';font-size:20px;color:#62808b}#pst-pcw-opportunity-search{height:46px!important;flex:1!important;border:0!important;outline:0!important;background:transparent!important;font-size:13px!important;color:#2f4751!important}.pst-opp-filter-toggle{height:50px;padding:0 15px;border:1px solid #dbe5e8;border-radius:14px;background:#fff;color:#536d78;font-size:10px;font-weight:850;cursor:pointer}.pst-opp-filter-toggle.on{background:#eef6f8;border-color:#bad6df;color:#35758d}
 #pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-lifecycle-tabs,#pst-opportunities-focus:has(#pst-opp-desk) #pst-pcw-opportunity-tabs{display:none!important}
 #pst-opportunities-focus.pst-opp-dashboard #pst-pcw-opportunity-tools,#pst-opportunities-focus.pst-opp-dashboard #pst-opportunities-list,#pst-opportunities-focus.pst-opp-dashboard .pst-opp-results-head{display:none!important}
 #pst-opportunities-focus.pst-opp-result-page #pst-pcw-lifecycle-tabs,#pst-opportunities-focus.pst-opp-result-page #pst-pcw-opportunity-tabs{display:none!important}
@@ -138,43 +141,43 @@ body:has(#page-kek-tenders.active) #page-kek-tenders .pst-kek-layout{max-width:n
 @media(max-width:850px){#pst-opp-desk.pst-opp-workdesk{grid-template-columns:1fr!important}.pst-opp-work-head{align-items:flex-start;flex-direction:column}.pst-opp-work-tools{width:100%;flex-wrap:wrap}.pst-opp-work-tools label{min-width:0;flex:1}.pst-opp-work-cols{display:none}.pst-opp-work-row{grid-template-columns:minmax(0,1fr) auto}.pst-opp-work-row .source,.pst-opp-work-row .field,.pst-opp-work-row .date,.pst-opp-work-row .status{display:none}.pst-opp-contact-cols{display:none}.pst-opp-contact-row{grid-template-columns:minmax(0,1fr) auto}.pst-opp-contact-row>span:nth-child(2),.pst-opp-contact-row>span:nth-child(3),.pst-opp-contact-row>span:nth-child(4){display:none}.pst-opp-modal-bg{padding:8px}.pst-opp-modal-card{width:100%;max-height:96vh;border-radius:15px}.pst-opp-detail-grid{grid-template-columns:1fr 1fr}.pst-opp-detail-head h3{font-size:18px}.pst-opp-detail-actions>*{flex:1 1 calc(50% - 6px)!important}.pst-opp-remove-btn.pst-opp-action-remove{flex:1 1 calc(50% - 6px)!important}}@media(max-width:560px){.pst-opp-detail-actions{padding:12px!important}.pst-opp-detail-actions>*{flex:1 1 100%!important;min-width:100%!important}.pst-opp-action-icon{width:30px;height:30px;flex-basis:30px}}
 `;document.head.appendChild(s);
 }
-function sourceMark(id){var asset=SOURCE_ASSET[id]||'',icon=SOURCE_ICON[id]||'•';return'<span class="pst-opp-source-mark" aria-hidden="true">'+(asset?'<img src="'+E(asset)+'" alt="" loading="eager" decoding="async">':'<b>'+E(icon)+'</b>')+'</span>';}
+function sourceMark(id){var asset=SOURCE_ASSET[id]||'',icon=SOURCE_ICON[id]||'';return'<span class="pst-opp-source-mark" aria-hidden="true">'+(asset?'<img src="'+E(asset)+'" alt="" loading="eager" decoding="async">':'<b>'+E(icon)+'</b>')+'</span>';}
 function categoryMeta(kind,value){
  kind=S(kind).toLowerCase();value=S(value);
- if(kind==='source'){var src=value.toUpperCase();return{kind:kind,value:src,eyebrow:'BURIMI',title:src==='ALL'?'Të gjitha burimet':(LABEL[src]||src),source:src==='ALL'?'':src};}
- if(kind==='mode'){var m=value.toLowerCase();if(m==='local')return{kind:kind,value:m,eyebrow:'DIRECT TENDER',title:'Për ofertim'};if(m==='award')return{kind:kind,value:m,eyebrow:'TED AWARD SALES',title:'Fitues për kontaktim'};return{kind:kind,value:'all',eyebrow:'PAMJA E PLOTË',title:'Të gjitha mundësitë'};}
- if(kind==='lifecycle'){var life=value.toLowerCase(),lifeLabel={all:'Të gjitha statuset',new:'Të reja',draft:'Draft gati',waiting:'Në pritje',replied:'Me përgjigje'};return{kind:kind,value:life,eyebrow:'STATUSI',title:lifeLabel[life]||life};}
- if(kind==='field'){var field=value.toLowerCase(),f=FIELDS.find(function(x){return x.id===field;});return{kind:kind,value:field,eyebrow:'FUSHA',title:field==='all'?'Të gjitha fushat':(f?f.label:field)};}
- if(kind==='winner'||kind==='winner_group'){var winner=value.toLowerCase(),w=WINNERS.find(function(x){return x.id===winner;});return{kind:'winner',value:winner,eyebrow:'FITUESI TED',title:winner==='all'?'Të gjithë fituesit TED':(w?w.label:winner)};}
- return{kind:'mode',value:'all',eyebrow:'PAMJA E PLOTË',title:'Të gjitha mundësitë'};
+ if(kind==='source'){var src=value.toUpperCase();return{kind:kind,value:src,eyebrow:'BURIMI',title:src==='ALL'?'T� gjitha burimet':(LABEL[src]||src),source:src==='ALL'?'':src};}
+ if(kind==='mode'){var m=value.toLowerCase();if(m==='local')return{kind:kind,value:m,eyebrow:'DIRECT TENDER',title:'P�r ofertim'};if(m==='award')return{kind:kind,value:m,eyebrow:'TED AWARD SALES',title:'Fitues p�r kontaktim'};return{kind:kind,value:'all',eyebrow:'PAMJA E PLOTE',title:'T� gjitha mund�sit�'};}
+ if(kind==='lifecycle'){var life=value.toLowerCase(),lifeLabel={all:'T� gjitha statuset',new:'T� reja',draft:'Draft gati',waiting:'N� pritje',replied:'Me p�rgjigje'};return{kind:kind,value:life,eyebrow:'STATUSI',title:lifeLabel[life]||life};}
+ if(kind==='field'){var field=value.toLowerCase(),f=FIELDS.find(function(x){return x.id===field;});return{kind:kind,value:field,eyebrow:'FUSHA',title:field==='all'?'T� gjitha fushat':(f?f.label:field)};}
+ if(kind==='winner'||kind==='winner_group'){var winner=value.toLowerCase(),w=WINNERS.find(function(x){return x.id===winner;});return{kind:'winner',value:winner,eyebrow:'FITUESI TED',title:winner==='all'?'T� gjith� fituesit TED':(w?w.label:winner)};}
+ return{kind:'mode',value:'all',eyebrow:'PAMJA E PLOTE',title:'T� gjitha mund�sit�'};
 }
-function resultTitle(meta){if(meta&&meta.source)return sourceMark(meta.source)+E(meta.title);return E(meta&&meta.title||'Mundësitë');}
+function resultTitle(meta){if(meta&&meta.source)return sourceMark(meta.source)+E(meta.title);return E(meta&&meta.title||'Mund�sit�');}
 function header(focus){
  var h=focus.querySelector(':scope>header');if(!h)return;
- var html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back>← Kthehu</button><div class="pst-opp-desk-title"><h2>Mundësitë</h2></div></div>';
+ var html='<div class="pst-opp-desk-head-left"><button type="button" class="pst-opp-desk-back pst-opp-v4-back" data-pst-opp-back> Kthehu</button><div class="pst-opp-desk-title"><h2>Mund�sit�</h2></div></div>';
  if(h.dataset.pstOppHeaderHtml!==html||!h.querySelector('[data-pst-opp-back]')){h.innerHTML=html;h.dataset.pstOppHeaderHtml=html;}
 }
 function tools(focus){
  var t=focus.querySelector('#pst-pcw-opportunity-tools');if(!t)return;
  var b=t.querySelector('[data-pst-opp-filter-toggle]');if(b)b.remove();
 }
-function routeIcon(id){return id==='local'?'▤':id==='award'?'♟':'▱';}
+function routeIcon(id){return id==='local'?'?':id==='award'?'?':'?';}
 function modeButton(id,eyebrow,title,copy,n,cls){
  return'<button type="button" class="pst-opp-route '+cls+'" data-pst-opp-mode="'+id+'"><span class="pst-opp-route-icon" aria-hidden="true">'+routeIcon(id)+'</span><span class="route-copy"><b>'+title+'</b></span><span class="pst-opp-route-tail"><span class="route-count">'+Number(n||0)+'</span></span></button>';
 }
-function chip(attr,id,label,count,on,icon,asset){var visual=asset?'<img src="'+E(asset)+'" alt="" loading="lazy" decoding="async">':E(icon||'•');return'<button type="button" class="pst-opp-chip '+(on?'on':'')+'" '+attr+'="'+E(id)+'"><span class="pst-opp-chip-main"><span class="pst-opp-chip-icon" aria-hidden="true">'+visual+'</span><span class="pst-opp-chip-label">'+E(label)+'</span></span><span class="pst-opp-chip-tail">'+(count==null?'':'<span class="count">'+Number(count||0)+'</span>')+'<span class="pst-opp-chip-arrow" aria-hidden="true">›</span></span></button>';}
-function statusRow(c){return chip('data-pst-opp-lifecycle','new','Të reja',c.life.new,false,'✦')+chip('data-pst-opp-lifecycle','waiting','Në pritje',c.life.waiting,false,'◷')+chip('data-pst-opp-lifecycle','replied','Me përgjigje',c.life.replied,false,'✉');}
-function sourceRow(c){var active=SOURCES.filter(function(k){return Number(c.src[k]||0)>0;});return active.map(function(k){return chip('data-pst-opp-source',k,LABEL[k]||k,c.src[k],false,SOURCE_ICON[k]||'•',SOURCE_ASSET[k]||'');}).join('');}
-function fieldRow(c){return FIELDS.map(function(f){return chip('data-pst-opp-field',f.id,f.label,c.field[f.id],false,f.icon||'•');}).join('');}
-function winnerRow(c){return WINNERS.map(function(w){return chip('data-pst-opp-winner',w.id,w.label,c.winner[w.id],false,w.icon||'•');}).join('');}
+function chip(attr,id,label,count,on,icon,asset){var visual=asset?'<img src="'+E(asset)+'" alt="" loading="lazy" decoding="async">':E(icon||'');return'<button type="button" class="pst-opp-chip '+(on?'on':'')+'" '+attr+'="'+E(id)+'"><span class="pst-opp-chip-main"><span class="pst-opp-chip-icon" aria-hidden="true">'+visual+'</span><span class="pst-opp-chip-label">'+E(label)+'</span></span><span class="pst-opp-chip-tail">'+(count==null?'':'<span class="count">'+Number(count||0)+'</span>')+'<span class="pst-opp-chip-arrow" aria-hidden="true">></span></span></button>';}
+function statusRow(c){return chip('data-pst-opp-lifecycle','new','T� reja',c.life.new,false,'?')+chip('data-pst-opp-lifecycle','waiting','N� pritje',c.life.waiting,false,'?')+chip('data-pst-opp-lifecycle','replied','Me p�rgjigje',c.life.replied,false,'?');}
+function sourceRow(c){var active=SOURCES.filter(function(k){return Number(c.src[k]||0)>0;});return active.map(function(k){return chip('data-pst-opp-source',k,LABEL[k]||k,c.src[k],false,SOURCE_ICON[k]||'',SOURCE_ASSET[k]||'');}).join('');}
+function fieldRow(c){return FIELDS.map(function(f){return chip('data-pst-opp-field',f.id,f.label,c.field[f.id],false,f.icon||'');}).join('');}
+function winnerRow(c){return WINNERS.map(function(w){return chip('data-pst-opp-winner',w.id,w.label,c.winner[w.id],false,w.icon||'');}).join('');}
 function activeFilters(){
  var out=[],source=state&&state.source||'all',life=state&&state.lifecycle||'all',field=state&&state.field||'all',winner=state&&state.winner_group||'all',mode=state&&state.mode||'all';
- if(mode==='local')out.push('Për ofertim');else if(mode==='award')out.push('TED · fitues');
+ if(mode==='local')out.push('P�r ofertim');else if(mode==='award')out.push('TED � fitues');
  if(source!=='all')out.push(LABEL[source]||source);
- if(life!=='all')out.push(life==='new'?'Të reja':life==='waiting'?'Në pritje':life==='replied'?'Me përgjigje':'Draft');
+ if(life!=='all')out.push(life==='new'?'T� reja':life==='waiting'?'N� pritje':life==='replied'?'Me p�rgjigje':'Draft');
  if(field!=='all'){var f=FIELDS.find(function(x){return x.id===field;});if(f)out.push(f.label);}
  if(winner!=='all'){var w=WINNERS.find(function(x){return x.id===winner;});if(w)out.push(w.label);}
- if(S(state&&state.query).trim())out.push('Kërkim: '+S(state.query).trim().slice(0,32));
+ if(S(state&&state.query).trim())out.push('K�rkim: '+S(state.query).trim().slice(0,32));
  return out;
 }
 
@@ -206,35 +209,91 @@ function companyKey(r){
  if(at>0)return'domain:'+mail.slice(at+1).replace(/^www\./,'');
  var n=norm(winnerName(r)).replace(/[^a-z0-9]+/g,'');return n?'name:'+n:'tender:'+S(r&&r.id);
 }
-function companyLabel(r){return srcOf(r)==='TED'&&winnerName(r)?winnerName(r):S(r&&r.title||r&&r.authority||'Mundësi');}
-function globalContactedKeys(){var out={};baseRows().forEach(function(r){if(effectiveLane(r)!=='new')out[companyKey(r)]=true;});return out;}
-function rowTime(r){var m=api&&api._test&&api._test.lifecycleMeta&&api._test.lifecycleMeta(r),v=m&&m.when||r&&r.published_date||r&&r.updated_at||'';var n=Date.parse(v);return isFinite(n)?n:0;}
-function activeRows(){var contacted=globalContactedKeys();return filteredRows().filter(function(r){return effectiveLane(r)==='new'&&!contacted[companyKey(r)];}).sort(function(a,b){return sortDirection==='asc'?rowTime(a)-rowTime(b):rowTime(b)-rowTime(a);});}
-function contactedRows(){
- var by={};baseRows().forEach(function(r){var lane=effectiveLane(r);if(lane==='new')return;var k=companyKey(r),old=by[k],rank=lane==='replied'?3:lane==='waiting'?2:1,oldLane=old&&effectiveLane(old),oldRank=oldLane==='replied'?3:oldLane==='waiting'?2:1;if(!old||rank>oldRank||(rank===oldRank&&rowTime(r)>rowTime(old)))by[k]=r;});
- return Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return rowTime(b)-rowTime(a);});
+function companyLabel(r){if(r&&r.__pstContactMeta)return S(r.__pstContactMeta.company);return srcOf(r)==='TED'&&winnerName(r)?winnerName(r):S(r&&r.title||r&&r.authority||'Mund�si');}
+/* A company history is independent of active-tender filters and publication age. */
+function contactMeta(r){return r&&r.__pstContactMeta||{};}
+function contactRank(l){return l==='replied'?5:l==='meeting'?4:l==='bounced'?3:l==='waiting'||l==='history'?2:1;}
+function contactAliases(r){
+ var m=contactMeta(r),w=W(r),entry=canonicalContactsByTender[S(r&&r.id)]||{},company=entry.company||{},keys=[];
+ function add(prefix,v){v=N(v).trim();if(v&&keys.indexOf(prefix+v)<0)keys.push(prefix+v);}
+ function domain(v){v=siteDomain(v);if(v&&!/^(gmail\.com|googlemail\.com|outlook\.com|hotmail\.com|yahoo\.[a-z.]+|live\.com|icloud\.com|aol\.com|gmx\.[a-z.]+|web\.de|proton\.me|protonmail\.com)$/.test(v))add('domain:',v);}
+ add('profile:',m.profile||company.id);
+ if(m.company){add('name:',m.company.replace(/[^\p{L}\p{N}]+/gu,' '));domain(m.domain);add('email:',m.email);if(!r.__pstHistoryOnly&&N(w.name)===N(m.company)){add('legal-id:',w.identifier);domain(w.website);A(w.websites).forEach(domain);winnerContacts(r).forEach(function(x){add('email:',x.email);domain(emailDomain(x.email));});}return keys;}
+ add('legal-id:',w.identifier);A(w.identifiers).forEach(function(v){add('legal-id:',v);});
+ add('name:',winnerName(r).replace(/[^\p{L}\p{N}]+/gu,' '));
+ domain(company.domain);domain(w.website);A(w.websites).forEach(domain);
+ winnerContacts(r).forEach(function(x){add('email:',x.email);domain(emailDomain(x.email));});
+ return keys.length?keys:['tender:'+S(r&&r.id)];
 }
-function fd(v){if(!v)return'—';try{var d=new Date(v);return isNaN(d.getTime())?S(v):d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return S(v);}}
-function fdt(v){if(!v)return'—';try{var d=new Date(v);return isNaN(d.getTime())?S(v):d.toLocaleString('sq-AL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return S(v);}}
-function valueLabel(r){var fn=api&&api._test&&api._test.tenderValueLabel;return typeof fn==='function'?(fn(r)||'—'):'—';}
-function fieldLabel(r){var id=fieldOf(r),f=FIELDS.find(function(x){return x.id===id;});return f?f.label:'Të tjera';}
+function historicalRecord(x,registry,byTender){
+ var p=x&&x.payload||{},ready=p.outreach_readiness_v1||{},status=N(registry?rawOutreachStatus(x):x.outreach_status||x.status),sent=S(x.sent_at),reply=S(x.replied_at),bounce=S(x.bounced_at),draft=registry&&/^(draft_pending|draft_created)$/.test(status);
+ if(registry&&!sent&&status==='sent')sent=S(x.updated_at||x.draft_created_at);
+ var messages=A(state&&state.emailByThread&&state.emailByThread[S(x.gmail_thread_id)]),after=Date.parse(x.draft_created_at||x.updated_at||0)-300000;
+ if(registry)messages.forEach(function(mail){if(N(mail.direction)==='outgoing'&&Date.parse(mail.sent_at)>=after&&(!sent||Date.parse(mail.sent_at)>Date.parse(sent)))sent=S(mail.sent_at);});
+ if(sent)messages.forEach(function(mail){if(N(mail.direction)==='incoming'&&Date.parse(mail.sent_at)>Date.parse(sent)&&(!reply||Date.parse(mail.sent_at)>Date.parse(reply)))reply=S(mail.sent_at);});
+ var touch=S(x.touch_3||x.touch_2||x.touch_1),legacyConfirmed=!registry&&(!!touch||/^(sent(?: [123])?|replied|meeting|waiting|bounced|no response after [123] contacts)$/.test(status));
+ if(!draft&&!sent&&!reply&&!bounce&&!legacyConfirmed)return null;
+ var base=byTender[S(x.tender_watch_id)],w=base&&W(base)||{},company=S(registry?x.recipient_company_name||p.recipient_company_name||p.target_company:x.company_name);
+ if(!company&&x.notes){var match=S(x.notes).match(/(?:^|\n)Firma:\s*([^\n]+)/i);if(match)company=match[1].trim();}
+ var email=S(x.recipient_email||x.contact_email),domain=S(registry?x.recipient_company_domain||p.recipient_company_domain:x.company_domain)||emailDomain(email);
+ company=company||S(w.name)||domain||email;if(!company)return null;
+ var lane=reply||x.replied===true||status==='replied'?'replied':bounce||x.bounced===true||status==='bounced'?'bounced':x.meeting===true||status==='meeting'?'meeting':sent||/^(sent(?: [123])?|waiting)$/.test(status)?'waiting':draft?'draft':'history';
+ var gmailState=S(x.gmail_state||p.gmail_prepared_sync_v1&&p.gmail_prepared_sync_v1.gmail_state),meta={company:company,domain:domain,email:email,profile:S(x.company_profile_id||ready.company_profile_id),lane:lane,when:reply||bounce||sent||touch||S(x.draft_created_at||x.updated_at),scheduled:lane==='draft'&&gmailState==='scheduled',thread:S(x.gmail_thread_id),source:registry?'Regjistri Gmail':S(x.source)==='ted_award_sales'?'Historiku TED':'Historiku i kontaktimit'};
+ var sameBase=base&&N(w.name)===N(company),r=sameBase?Object.assign({},base):{id:'history:'+(registry?'draft:':'legacy:')+S(x.id||x.gmail_draft_id||email+':'+x.tender_watch_id),title:base&&base.title||'Kontaktim i m�parsh�m',status:'watch',payload:{source:'TED',notice_phase:'award',winner:{name:company}}};
+ r.__pstContactMeta=meta;r.__pstHistoryOnly=!sameBase;return r;
+}
+function contactHistory(){
+ var refs=[state&&state.rows,state&&state.projectRows,state&&state.outreachRows,state&&state.contactHistoryRows,state&&state.communicationRows,state&&state.emailByThread],signature=refs.map(function(x){return Array.isArray(x)?x.length:0;}).join('|');
+ if(contactHistoryCache&&contactHistoryCache.signature===signature&&refs.every(function(x,i){return x===contactHistoryCache.refs[i];}))return contactHistoryCache;
+ var byTender={},records=[],groups=[],byAlias={};
+ A(state&&state.rows).concat(A(state&&state.projectRows)).forEach(function(r){byTender[S(r.id)]=r;});
+ Object.keys(byTender).forEach(function(id){var r=byTender[id],lane=effectiveLane(r),comm=A(state&&state.communicationByTender&&state.communicationByTender[id]).find(function(x){return S(x.communication_state)==='contacted_history';});
+   if(lane==='new'&&comm)lane='history';if(lane==='new')return;
+   var m=api&&api._test&&api._test.lifecycleMeta&&api._test.lifecycleMeta(r)||{},copy=Object.assign({},r);
+   copy.__pstContactMeta={company:companyLabel(r),lane:lane,when:S(m.when||comm&&comm.communication_at||r.updated_at),email:S(A(m.recipients)[0]),source:'Mund�sia'};records.push(copy);
+ });
+ A(state&&state.outreachRows).forEach(function(x){var r=historicalRecord(x,true,byTender);if(r)records.push(r);});
+ A(state&&state.contactHistoryRows).forEach(function(x){var r=historicalRecord(x,false,byTender);if(r)records.push(r);});
+ records.forEach(function(r){
+   var keys=contactAliases(r),matches=[];keys.forEach(function(k){var g=byAlias[k];if(g&&matches.indexOf(g)<0)matches.push(g);});
+   var g=matches[0]||{rows:[],aliases:[]};if(!matches.length)groups.push(g);
+   matches.slice(1).forEach(function(other){g.rows=g.rows.concat(other.rows);other.aliases.forEach(function(k){byAlias[k]=g;if(g.aliases.indexOf(k)<0)g.aliases.push(k);});groups=groups.filter(function(v){return v!==other;});});
+   g.rows.push(r);keys.forEach(function(k){byAlias[k]=g;if(g.aliases.indexOf(k)<0)g.aliases.push(k);});
+ });
+ var rows=groups.map(function(g){
+   g.rows.sort(function(a,b){return contactRank(contactMeta(b).lane)-contactRank(contactMeta(a).lane)||rowTime(b)-rowTime(a);});
+   var r=Object.assign({},g.rows[0]),m=Object.assign({},contactMeta(r)),emails=[],latest='';
+   g.rows.forEach(function(x){var v=contactMeta(x);if(v.email&&emails.indexOf(v.email)<0)emails.push(v.email);if(v.when&&(!latest||Date.parse(v.when)>Date.parse(latest)))latest=v.when;});
+   m.emails=emails;m.when=latest||m.when;r.__pstContactMeta=m;r.__pstCompanyAliases=g.aliases;return r;
+ }).sort(function(a,b){return rowTime(b)-rowTime(a);});
+ return contactHistoryCache={refs:refs,signature:signature,rows:rows,aliases:byAlias};
+}
+function globalContactedKeys(){return contactHistory().aliases;}
+function rowTime(r){var m=r&&r.__pstContactMeta||api&&api._test&&api._test.lifecycleMeta&&api._test.lifecycleMeta(r),v=m&&m.when||r&&r.published_date||r&&r.updated_at||'';var n=Date.parse(v);return isFinite(n)?n:0;}
+function activeRows(){var contacted=globalContactedKeys();return filteredRows().filter(function(r){return effectiveLane(r)==='new'&&!contactAliases(r).some(function(k){return !!contacted[k];});}).sort(function(a,b){return sortDirection==='asc'?rowTime(a)-rowTime(b):rowTime(b)-rowTime(a);});}
+function contactedRows(){var q=N(contactHistoryQuery);return contactHistory().rows.filter(function(r){var m=contactMeta(r);return !q||N([companyLabel(r),m.domain,A(m.emails).join(' '),r.title].join(' ')).indexOf(q)>-1;});}
+function contactStatus(r){var m=contactMeta(r);return m.lane==='replied'?'Me p�rgjigje':m.lane==='bounced'?'I kthyer / bounce':m.lane==='meeting'?'Takim i regjistruar':m.lane==='history'?'Kontakt historik':m.lane==='waiting'?'D�rguar':m.scheduled?'Planifikuar n� Gmail':'Draft gati';}
+function fd(v){if(!v)return'-';try{var d=new Date(v);return isNaN(d.getTime())?S(v):d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return S(v);}}
+function fdt(v){if(!v)return'-';try{var d=new Date(v);return isNaN(d.getTime())?S(v):d.toLocaleString('sq-AL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return S(v);}}
+function valueLabel(r){var fn=api&&api._test&&api._test.tenderValueLabel;return typeof fn==='function'?(fn(r)||'-'):'-';}
+function fieldLabel(r){var id=fieldOf(r),f=FIELDS.find(function(x){return x.id===id;});return f?f.label:'T� tjera';}
 function officialUrl(r){var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1,u='';try{if(P&&typeof P.officialUrl==='function')u=P.officialUrl(r)||'';}catch(e){}if(!u)u=S(r&&r.detail_url||r&&r.source_url);try{var x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:'';}catch(e){return'';}}
-function filterButton(attr,id,label,count,on,icon,asset){var visual=asset?'<img src="'+E(asset)+'" alt="">':E(icon||'•');return'<button type="button" class="pst-opp-side-item '+(on?'on':'')+'" '+attr+'="'+E(id)+'"><span class="check">'+(on?'✓':'')+'</span><span class="icon">'+visual+'</span><span class="text">'+E(label)+'</span><span class="num">'+Number(count||0)+'</span></button>';}
+function filterButton(attr,id,label,count,on,icon,asset){var visual=asset?'<img src="'+E(asset)+'" alt="">':E(icon||'');return'<button type="button" class="pst-opp-side-item '+(on?'on':'')+'" '+attr+'="'+E(id)+'"><span class="check">'+(on?'�':'')+'</span><span class="icon">'+visual+'</span><span class="text">'+E(label)+'</span><span class="num">'+Number(count||0)+'</span></button>';}
 function sideFilters(c){
  var source=S(state&&state.source||'all'),field=S(state&&state.field||'all'),winner=S(state&&state.winner_group||'all');
  var srcs=SOURCES.filter(function(k){return Number(c.src[k]||0)>0;}).map(function(k){return filterButton('data-pst-opp-source',k,LABEL[k]||k,c.src[k],source===k,SOURCE_ICON[k],SOURCE_ASSET[k]);}).join('');
  var fs=FIELDS.filter(function(f){return Number(c.field[f.id]||0)>0;}).map(function(f){return filterButton('data-pst-opp-field',f.id,f.label,c.field[f.id],field===f.id,f.icon);}).join('');
  var ws=WINNERS.map(function(w){return filterButton('data-pst-opp-winner',w.id,w.label,c.winner[w.id],winner===w.id,w.icon);}).join('');
- return'<aside class="pst-opp-side"><div class="pst-opp-side-head"><b>Filtra</b><button type="button" data-pst-opp-reset>Pastro të gjitha</button></div>'
-  +'<section><h4>Burimi</h4>'+filterButton('data-pst-opp-source','all','Të gjitha',c.total,source==='all','◉')+srcs+'</section>'
-  +'<section><h4>Fusha</h4>'+filterButton('data-pst-opp-field','all','Të gjitha',c.total,field==='all','▦')+fs+'</section>'
-  +'<section><h4>Fituesi TED</h4>'+filterButton('data-pst-opp-winner','all','Të gjithë',c.award,winner==='all','♜')+ws+'</section></aside>';
+ return'<aside class="pst-opp-side"><div class="pst-opp-side-head"><b>Filtra</b><button type="button" data-pst-opp-reset>Pastro t� gjitha</button></div>'
+  +'<section><h4>Burimi</h4>'+filterButton('data-pst-opp-source','all','T� gjitha',c.total,source==='all','?')+srcs+'</section>'
+  +'<section><h4>Fusha</h4>'+filterButton('data-pst-opp-field','all','T� gjitha',c.total,field==='all','?')+fs+'</section>'
+  +'<section><h4>Fituesi TED</h4>'+filterButton('data-pst-opp-winner','all','T� gjith�',c.award,winner==='all','?')+ws+'</section><section><h4>Historiku i plot�</h4><button type="button" class="pst-opp-side-item '+(contactedExpanded?'on':'')+'" data-pst-opp-history-open><span class="text">T� kontaktuara / t� p�rgatitura</span><span class="num">'+contactHistory().rows.length+'</span></button></section></aside>';
 }
-function activeRow(r){var src=srcOf(r),award=src==='TED',hasContact=!award||winnerContacts(r).length>0,title=award?companyLabel(r):S(r.title||r.authority),sub=award?S(r.title||''):S(r.publication_no||r.procurement_no||r.authority||''),asset=SOURCE_ASSET[src]||'',visual=asset?'<img src="'+E(asset)+'" alt="">':E(SOURCE_ICON[src]||'•'),note=hasContact?'':'<span class="no-contact-note">Pa kontakt</span> · ';return'<button type="button" class="pst-opp-work-row '+(S(r.id)===S(selectedId)?'selected':'')+'" data-pst-opp-select="'+E(r.id)+'"><span class="main"><b>'+E(title)+'</b><small>'+note+E(sub)+'</small></span><span class="source"><i>'+visual+'</i>'+E(LABEL[src]||src)+'</span><span class="field">'+E(fieldLabel(r))+'</span><span class="date">'+E(fd(r.published_date||r.updated_at))+'</span><span class="status '+(hasContact?'':'no-contact')+'">'+(hasContact?'E re':'Pa kontakt')+'</span><span class="go">›</span></button>';}
+function activeRow(r){var src=srcOf(r),award=src==='TED',hasContact=!award||winnerContacts(r).length>0,title=award?companyLabel(r):S(r.title||r.authority),sub=award?S(r.title||''):S(r.publication_no||r.procurement_no||r.authority||''),asset=SOURCE_ASSET[src]||'',visual=asset?'<img src="'+E(asset)+'" alt="">':E(SOURCE_ICON[src]||''),note=hasContact?'':'<span class="no-contact-note">Pa kontakt</span> � ';return'<button type="button" class="pst-opp-work-row '+(S(r.id)===S(selectedId)?'selected':'')+'" data-pst-opp-select="'+E(r.id)+'"><span class="main"><b>'+E(title)+'</b><small>'+note+E(sub)+'</small></span><span class="source"><i>'+visual+'</i>'+E(LABEL[src]||src)+'</span><span class="field">'+E(fieldLabel(r))+'</span><span class="date">'+E(fd(r.published_date||r.updated_at))+'</span><span class="status '+(hasContact?'':'no-contact')+'">'+(hasContact?'E re':'Pa kontakt')+'</span><span class="go">></span></button>';}
 function activePanel(rows,contactedCount){
- var shown=rows.slice(0,60);return'<section class="pst-opp-work-list"><div class="pst-opp-work-head"><div><h3>Mundësi aktive</h3><small>'+rows.length+' mundësi që nuk janë kontaktuar ende.</small></div><div class="pst-opp-work-tools"><button type="button" data-pst-opp-contacted-toggle>Të kontaktuara · '+Number(contactedCount||0)+'</button><label>⌕ <input data-pst-opp-search value="'+E(state&&state.query||'')+'" placeholder="Kërko kompani, tender ose referencë..."></label><button type="button" data-pst-opp-sort>↕ Rendit sipas datës</button></div></div><div class="pst-opp-work-cols"><span>KOMPANIA / MUNDËSIA</span><span>BURIMI</span><span>FUSHA</span><span>DATA</span><span>STATUSI</span><span></span></div><div class="pst-opp-work-rows">'+(shown.length?shown.map(activeRow).join(''):'<div class="pst-opp-work-empty">Nuk ka mundësi aktive që përputhen me filtrat.</div>')+'</div></section>';
+ var pages=Math.max(1,Math.ceil(rows.length/60));activePage=Math.min(activePage,pages);var shown=rows.slice((activePage-1)*60,activePage*60);return'<section class="pst-opp-work-list"><div class="pst-opp-work-head"><div><h3>Mund�si aktive</h3><small>'+rows.length+' mund�si q� nuk jan� kontaktuar ende.</small></div><div class="pst-opp-work-tools"><button type="button" data-pst-opp-contacted-toggle>T� kontaktuara � '+Number(contactedCount||0)+'</button><label>? <input data-pst-opp-search value="'+E(state&&state.query||'')+'" placeholder="K�rko kompani, tender ose referenc�..."></label><button type="button" data-pst-opp-sort> Rendit sipas dat�s</button></div></div><div class="pst-opp-work-cols"><span>KOMPANIA / MUNDESIA</span><span>BURIMI</span><span>FUSHA</span><span>DATA</span><span>STATUSI</span><span></span></div><div class="pst-opp-work-rows">'+(shown.length?shown.map(activeRow).join(''):'<div class="pst-opp-work-empty">Nuk ka mund�si aktive q� p�rputhen me filtrat.</div>')+'</div>'+pageControls('active',activePage,pages)+'</section>';
 }
-function selectedRow(){return baseRows().find(function(x){return S(x.id)===S(selectedId);})||null;}
+function selectedRow(){return contactHistory().rows.find(function(x){return S(x.id)===S(selectedId);})||baseRows().find(function(x){return S(x.id)===S(selectedId);})||null;}
 function detailPanel(r){
  if(!r)return'';
  selectedId=S(r.id);var award=srcOf(r)==='TED',contacts=winnerContacts(r),lane=effectiveLane(r),title=award?companyLabel(r):S(r.title||r.authority),sub=award?S(r.title||''):S(r.authority||''),p=O(r),desc=S(r.description||p.description||p.scope||''),url=officialUrl(r),action='',inspect='',remove='',deadline=S(r.deadline||r.submission_deadline||p.deadline||p.submission_deadline||''),knownAction=state&&state.actionByTender&&state.actionByTender[S(r.id)],knownOutreach=outreachFor(r)[0],actionId=S(knownAction&&knownAction.id||knownOutreach&&knownOutreach.action_id);
@@ -243,18 +302,25 @@ function detailPanel(r){
    remove='<button type="button" class="pst-opp-remove-btn pst-opp-action-remove" data-pst-opp-remove="'+E(r.id)+'">'+actionIcon('remove')+'<span>Hiqe</span></button>';
  }
  if(award&&lane==='new')action='<button type="button" class="pst-opp-draft-btn pst-gmail-create-btn pst-gmail-draft-action pst-opp-action-gmail" data-pst-opp-draft="'+E(r.id)+'" '+(contacts.length?'':'disabled')+'>'+gmailCreateContent(contacts.length>0)+'</button>';
- else if(lane==='draft')action='<button type="button" class="pst-opp-draft-btn pst-gmail-draft-action pst-opp-action-gmail" data-pst-opp-gmail="drafts">'+gmailActionContent('Hap draftet në Gmail')+'</button>';
+ else if(lane==='draft')action='<button type="button" class="pst-opp-draft-btn pst-gmail-draft-action pst-opp-action-gmail" data-pst-opp-gmail="drafts">'+gmailActionContent('Hap draftet n� Gmail')+'</button>';
  else if(lane==='waiting'||lane==='replied')action='<button type="button" class="pst-opp-draft-btn pst-gmail-draft-action pst-opp-action-gmail" data-pst-opp-gmail="inbox">'+gmailActionContent('Hap Gmail')+'</button>';
- else if(lane!=='new')action='<button type="button" class="pst-opp-secondary-btn" data-pst-opp-open="'+E(r.id)+'">Hap mundësinë</button>';
- return'<section class="pst-opp-detail pst-opp-modal-card" role="dialog" aria-modal="true" aria-label="Dosja e mundësisë"><div class="pst-opp-box-title"><span>Dosja e plotë</span><button type="button" class="pst-opp-modal-close" data-pst-opp-close aria-label="Mbyll">×</button></div><div class="pst-opp-modal-body"><div class="pst-opp-detail-head"><div><h3>'+E(title)+'</h3><small>'+E(sub)+'</small></div><span>'+E(LABEL[srcOf(r)]||srcOf(r))+'</span></div><div class="pst-opp-detail-grid"><div><small>Fusha</small><b>'+E(fieldLabel(r))+'</b></div><div><small>'+(award?'Kompania fituese':'Autoriteti')+'</small><b>'+E(award?companyLabel(r):S(r.authority||'—'))+'</b></div><div><small>Vlera</small><b>'+E(valueLabel(r))+'</b></div><div><small>Statusi</small><b>'+E(lane==='new'?'E re':lane==='draft'?'Draft gati':lane==='waiting'?'Në pritje':'Me përgjigje')+'</b></div><div><small>Data e publikimit</small><b>'+E(fd(r.published_date||r.updated_at))+'</b></div><div><small>Afati</small><b>'+E(deadline?fd(deadline):'—')+'</b></div>'+(award?'<div><small>Kontaktet e verifikuara</small><b data-pst-opp-contact-count>'+contacts.length+'</b></div>':'')+'</div>'+(award&&contacts.length?'<div class="pst-opp-detail-desc" data-pst-opp-contact-summary><small>Kontaktet / email</small><p>'+contacts.slice(0,8).map(function(x){return E([x.name,x.email].filter(Boolean).join(' · '));}).join('\n')+'</p></div>':'')+(desc?'<div class="pst-opp-detail-desc"><small>Përshkrimi</small><p>'+E(desc)+'</p></div>':'')+'<div data-pst-opportunity-intelligence="'+E(r.id)+'"'+(actionId?' data-pst-opportunity-action="'+E(actionId)+'"':'')+'></div></div><div class="pst-opp-detail-actions">'+inspect+action+(url?'<a class="pst-opp-action-source" href="'+E(url)+'" target="_blank" rel="noopener">'+actionIcon('source')+'<span>Burimi zyrtar</span></a>':'')+remove+'</div></section>';
+ else if(lane!=='new')action='<button type="button" class="pst-opp-secondary-btn" data-pst-opp-open="'+E(r.id)+'">Hap mund�sin�</button>';
+ return'<section class="pst-opp-detail pst-opp-modal-card" role="dialog" aria-modal="true" aria-label="Dosja e mund�sis�"><div class="pst-opp-box-title"><span>Dosja e plot�</span><button type="button" class="pst-opp-modal-close" data-pst-opp-close aria-label="Mbyll">x</button></div><div class="pst-opp-modal-body"><div class="pst-opp-detail-head"><div><h3>'+E(title)+'</h3><small>'+E(sub)+'</small></div><span>'+E(LABEL[srcOf(r)]||srcOf(r))+'</span></div><div class="pst-opp-detail-grid"><div><small>Fusha</small><b>'+E(fieldLabel(r))+'</b></div><div><small>'+(award?'Kompania fituese':'Autoriteti')+'</small><b>'+E(award?companyLabel(r):S(r.authority||'-'))+'</b></div><div><small>Vlera</small><b>'+E(valueLabel(r))+'</b></div><div><small>Statusi</small><b>'+E(lane==='new'?'E re':lane==='draft'?'Draft gati':lane==='waiting'?'N� pritje':'Me p�rgjigje')+'</b></div><div><small>Data e publikimit</small><b>'+E(fd(r.published_date||r.updated_at))+'</b></div><div><small>Afati</small><b>'+E(deadline?fd(deadline):'-')+'</b></div>'+(award?'<div><small>Kontaktet e verifikuara</small><b data-pst-opp-contact-count>'+contacts.length+'</b></div>':'')+'</div>'+(award&&contacts.length?'<div class="pst-opp-detail-desc" data-pst-opp-contact-summary><small>Kontaktet / email</small><p>'+contacts.slice(0,8).map(function(x){return E([x.name,x.email].filter(Boolean).join(' � '));}).join('\n')+'</p></div>':'')+(desc?'<div class="pst-opp-detail-desc"><small>P�rshkrimi</small><p>'+E(desc)+'</p></div>':'')+'<div data-pst-opportunity-intelligence="'+E(r.id)+'"'+(actionId?' data-pst-opportunity-action="'+E(actionId)+'"':'')+'></div></div><div class="pst-opp-detail-actions">'+inspect+action+(url?'<a class="pst-opp-action-source" href="'+E(url)+'" target="_blank" rel="noopener">'+actionIcon('source')+'<span>Burimi zyrtar</span></a>':'')+remove+'</div></section>';
 }
-function contactedRow(r){var m=api&&api._test&&api._test.lifecycleMeta&&api._test.lifecycleMeta(r)||{},lane=effectiveLane(r),status=lane==='replied'?'Me përgjigje':lane==='waiting'?'Në pritje':'Draft gati',next=lane==='draft'?'Rishiko dhe dërgo draftin':lane==='waiting'?'Pritet përgjigjja':'Shqyrto përgjigjen';return'<button type="button" class="pst-opp-contact-row" data-pst-opp-select="'+E(r.id)+'"><span><b>'+E(companyLabel(r))+'</b><small>'+E(S(r.title||''))+'</small></span><span>'+E(fdt(m.when||r.updated_at||r.published_date))+'</span><span>'+E(next)+'</span><span class="'+lane+'">'+E(status)+'</span><i>›</i></button>';}
-function contactedPanel(rows){return'<section class="pst-opp-work-list pst-opp-contacted"><div class="pst-opp-work-head"><div><h3>Kompanitë e kontaktuara</h3><small>'+rows.length+' kompani · kalojnë te Projektet vetëm pas RFQ.</small></div><div class="pst-opp-work-tools"><button type="button" data-pst-opp-contacted-toggle>← Mundësi aktive</button></div></div><div class="pst-opp-contact-cols"><span>KOMPANIA</span><span>DATA</span><span>HAPI TJETËR</span><span>STATUSI</span><span></span></div><div>'+ (rows.length?rows.map(contactedRow).join(''):'<div class="pst-opp-contact-empty">Ende nuk ka kompani të kontaktuara.</div>') +'</div></section>';}
-
+function pageControls(kind,page,total){return total>1?'<div class="pst-opp-history-pages"><button type="button" data-pst-opp-page="'+kind+':'+(page-1)+'" '+(page<=1?'disabled':'')+'> Para</button><span>Faqja '+page+' / '+total+'</span><button type="button" data-pst-opp-page="'+kind+':'+(page+1)+'" '+(page>=total?'disabled':'')+'>Tjet�r </button></div>':'';}
+function contactedRow(r){var m=contactMeta(r),lane=m.lane,next=lane==='draft'?'Rishiko draftin n� Gmail':lane==='waiting'?'Pritet p�rgjigjja':lane==='replied'?'Shqyrto p�rgjigjen':lane==='bounced'?'Verifiko kontaktin':'Shqyrto historikun';return'<button type="button" class="pst-opp-contact-row" data-pst-opp-select="'+E(r.id)+'"><span><b>'+E(companyLabel(r))+'</b><small>'+E(A(m.emails).join(' � ')||r.title||'')+'</small></span><span>'+E(fdt(m.when))+'</span><span>'+E(next)+'</span><span class="'+E(lane)+'">'+E(contactStatus(r))+'</span><i>></i></button>';}
+function contactedPanel(rows){
+ var total=contactHistory().rows.length,pages=Math.max(1,Math.ceil(rows.length/60));contactedPage=Math.min(contactedPage,pages);
+ return'<section class="pst-opp-work-list pst-opp-contacted"><div class="pst-opp-work-head"><div><h3>Kompanit� e kontaktuara</h3><small>'+total+' kompani � p�rfshin historikun, draftet dhe t� planifikuarat.</small></div><div class="pst-opp-work-tools"><label>? <input data-pst-opp-history-search value="'+E(contactHistoryQuery)+'" placeholder="K�rko n� t� gjitha t� kontaktuarat..."></label><button type="button" data-pst-opp-contacted-toggle> Mund�si aktive</button></div></div>'+(state&&state.contactHistoryError?'<p class="pst-opp-history-error">Historiku nuk u ngarkua plot�sisht: '+E(state.contactHistoryError)+'</p>':'')+'<div class="pst-opp-contact-cols"><span>KOMPANIA</span><span>DATA E FUNDIT</span><span>HAPI TJETER</span><span>STATUSI</span><span></span></div><div>'+ (rows.length?rows.slice((contactedPage-1)*60,contactedPage*60).map(contactedRow).join(''):'<div class="pst-opp-contact-empty">Nuk ka kompani q� p�rputhen me k�rkimin.</div>') +'</div>'+pageControls('history',contactedPage,pages)+'</section>';
+}
+function historyDetail(r){
+ var m=contactMeta(r),url=m.thread?'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(m.thread):'https://mail.google.com/mail/u/0/#search/'+encodeURIComponent(A(m.emails).join(' OR ')||m.email||m.domain||m.company);
+ return '<section class="pst-opp-detail pst-opp-modal-card" role="dialog" aria-modal="true" aria-label="Historiku i kompanis�"><div class="pst-opp-box-title"><span>Historiku i kontaktimit</span><button type="button" class="pst-opp-modal-close" data-pst-opp-close aria-label="Mbyll">x</button></div><div class="pst-opp-modal-body"><h3>'+E(companyLabel(r))+'</h3><p>'+E(contactStatus(r))+' � '+E(fdt(m.when))+'</p><p>'+E(A(m.emails).join(' � ')||m.email)+'</p><p>'+E(m.source)+'</p></div><div class="pst-opp-detail-actions"><a href="'+E(url)+'" target="_blank" rel="noopener">Hap komunikimet n� Gmail</a>'+(!r.__pstHistoryOnly?'<button type="button" data-pst-opp-open="'+E(r.id)+'">Hap dosjen e tenderit</button>':'')+'</div></section>';
+}
 function sectionLabel(icon,title,copy){return'<div class="pst-opp-filter-label"><b>'+E(title)+'</b></div>';}
 function deskHtml(c){
- var active=activeRows(),contacted=contactedRows();
- return'<section id="pst-opp-desk" class="pst-opp-workdesk">'+sideFilters(c)+'<main>'+(contactedExpanded?contactedPanel(contacted):activePanel(active,contacted.length))+'</main></section>';
+ var active=activeRows(),contacted=contactedRows(),allContacted=contactHistory().rows.length;
+ return'<section id="pst-opp-desk" class="pst-opp-workdesk">'+sideFilters(c)+'<main>'+(contactedExpanded?contactedPanel(contacted):activePanel(active,allContacted))+'</main></section>';
 }
 function deskNode(html){var wrap=document.createElement('div');wrap.innerHTML=html;return wrap.firstElementChild;}
 function direct(parent,selector){
@@ -282,13 +348,13 @@ function patchDesk(focus,c){
 }
 function closeDetail(){var modal=document.getElementById('pst-opp-modal-bg');if(modal)modal.remove();}
 function selectInPlace(id){
- selectedId=S(id);var selected=selectedRow();if(!selected)return false;closeDetail();var modal=document.createElement('div');modal.id='pst-opp-modal-bg';modal.className='pst-opp-modal-bg';modal.innerHTML=detailPanel(selected);document.body.appendChild(modal);return true;
+ selectedId=S(id);var selected=selectedRow();if(!selected)return false;closeDetail();var modal=document.createElement('div');modal.id='pst-opp-modal-bg';modal.className='pst-opp-modal-bg';modal.innerHTML=selected.__pstContactMeta?historyDetail(selected):detailPanel(selected);document.body.appendChild(modal);return true;
 }
 function patchSelectedContacts(id){
  if(S(selectedId)!==S(id))return false;var modal=document.getElementById('pst-opp-modal-bg'),r=selectedRow();if(!modal||!r)return false;
  var body=modal.querySelector('.pst-opp-modal-body'),top=body?body.scrollTop:0,contacts=winnerContacts(r),count=modal.querySelector('[data-pst-opp-contact-count]'),summary=modal.querySelector('[data-pst-opp-contact-summary]'),host=modal.querySelector('[data-pst-opportunity-intelligence]'),button=modal.querySelector('[data-pst-opp-draft]');
  if(count)count.textContent=String(contacts.length);
- if(contacts.length){var rows=contacts.slice(0,8).map(function(x){return E([x.name,x.email].filter(Boolean).join(' · '));}).join('\n');if(!summary){summary=document.createElement('div');summary.className='pst-opp-detail-desc';summary.setAttribute('data-pst-opp-contact-summary','');summary.innerHTML='<small>Kontaktet / email</small><p></p>';if(host&&host.parentNode)host.parentNode.insertBefore(summary,host);}var p=summary&&summary.querySelector('p');if(p)p.innerHTML=rows;}else if(summary)summary.remove();
+ if(contacts.length){var rows=contacts.slice(0,8).map(function(x){return E([x.name,x.email].filter(Boolean).join(' � '));}).join('\n');if(!summary){summary=document.createElement('div');summary.className='pst-opp-detail-desc';summary.setAttribute('data-pst-opp-contact-summary','');summary.innerHTML='<small>Kontaktet / email</small><p></p>';if(host&&host.parentNode)host.parentNode.insertBefore(summary,host);}var p=summary&&summary.querySelector('p');if(p)p.innerHTML=rows;}else if(summary)summary.remove();
  if(button&&!/Duke krijuar/i.test(S(button.textContent))){button.disabled=!contacts.length;button.classList.add('pst-gmail-create-btn','pst-gmail-draft-action');button.innerHTML=gmailCreateContent(contacts.length>0);}
  if(body){body.scrollTop=top;(window.requestAnimationFrame||function(fn){return setTimeout(fn,16);})(function(){if(body.isConnected)body.scrollTop=top;});}
  return true;
@@ -297,7 +363,7 @@ function resultHead(focus){
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return;
  var rows=filteredRows(),visible=list.querySelectorAll('[data-pcw-tender]').length,h=focus.querySelector('.pst-opp-results-head'),label=resultPage&&resultPage.title||'';
  if(!h){h=document.createElement('div');h.className='pst-opp-results-head';list.parentNode.insertBefore(h,list);}
- var html='<div><h3>'+(resultPage?'Rezultatet · '+E(label):'Rezultatet')+'</h3><p>'+rows.length+' mundësi përputhen · '+visible+' të shfaqura'+(rows.length>visible?' · përdor “Shfaq edhe” poshtë':'')+'</p></div>';
+ var html='<div><h3>'+(resultPage?'Rezultatet � '+E(label):'Rezultatet')+'</h3><p>'+rows.length+' mund�si p�rputhen � '+visible+' t� shfaqura'+(rows.length>visible?' � p�rdor "Shfaq edhe" posht�':'')+'</p></div>';
  if(h.dataset.pstOppResultsHtml!==html){h.innerHTML=html;h.dataset.pstOppResultsHtml=html;}
 }
 function decorate(){
@@ -337,20 +403,20 @@ function closeResultPage(){if(!resultPage)return false;resultPage=null;current()
 function back(){if(resultPage)return closeResultPage();try{var N=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(N&&typeof N.openHome==='function')return N.openHome();}catch(e){}try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.activateHome==='function')return H.activateHome();}catch(e){}try{if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('home');}catch(e){}return false;}
 function consume(e){if(!e)return;var control=e.target&&e.target.closest?e.target.closest('button,a'):null;if(control&&typeof control.blur==='function')control.blur();e.preventDefault();e.stopPropagation();if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();}
 async function createDraft(id,button){
- var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.prepareDraft!=='function')throw new Error('Draft workflow nuk është gati.');
- var originalHtml=button&&button.innerHTML||'',originalDisabled=!!(button&&button.disabled);if(button){button.disabled=true;button.textContent='Duke krijuar draftin…';}
- try{var out=await P.prepareDraft(id);var results=A(out&&out.results),cancelled=results.some(function(x){return S(x&&x.event)==='preview_cancelled';});if(cancelled)return;var ok=results.some(function(x){var ev=S(x&&x.event);return ev==='draft_created'||ev==='draft_preserved'||ev==='already_covered'||ev==='outreach_ready'||ev==='outreach_partial'||Number(x&&x.created)>0||Number(x&&x.preserved)>0||Number(x&&x.sent)>0;});if(!ok)throw new Error('PPPP e pranoi komandën, por nuk regjistroi asnjë draft. Opportunity mbetet në listë derisa drafti të konfirmohet.');closeDetail();if(S(selectedId)===S(id))selectedId='';if(typeof window.pstToast==='function')window.pstToast('Draftet u krijuan në Gmail. Email-et nuk janë dërguar.','ok');setTimeout(function(){if(api&&typeof api.loadOpportunities==='function')Promise.resolve(api.loadOpportunities(true)).catch(function(err){console.warn('PPPP Opportunity background refresh:',err);}).finally(schedule);else schedule();},0);return out;}finally{if(button&&button.isConnected){button.innerHTML=originalHtml;button.disabled=originalDisabled;}}
+ var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.prepareDraft!=='function')throw new Error('Draft workflow nuk �sht� gati.');
+ var originalHtml=button&&button.innerHTML||'',originalDisabled=!!(button&&button.disabled);if(button){button.disabled=true;button.textContent='Duke krijuar draftin.';}
+ try{var out=await P.prepareDraft(id);var results=A(out&&out.results),cancelled=results.some(function(x){return S(x&&x.event)==='preview_cancelled';});if(cancelled)return;var ok=results.some(function(x){var ev=S(x&&x.event);return ev==='draft_created'||ev==='draft_preserved'||ev==='already_covered'||ev==='outreach_ready'||ev==='outreach_partial'||Number(x&&x.created)>0||Number(x&&x.preserved)>0||Number(x&&x.sent)>0;});if(!ok)throw new Error('PPPP e pranoi komand�n, por nuk regjistroi asnj� draft. Opportunity mbetet n� list� derisa drafti t� konfirmohet.');closeDetail();if(S(selectedId)===S(id))selectedId='';if(typeof window.pstToast==='function')window.pstToast('Draftet u krijuan n� Gmail. Email-et nuk jan� d�rguar.','ok');setTimeout(function(){if(api&&typeof api.loadOpportunities==='function')Promise.resolve(api.loadOpportunities(true)).catch(function(err){console.warn('PPPP Opportunity background refresh:',err);}).finally(schedule);else schedule();},0);return out;}finally{if(button&&button.isConnected){button.innerHTML=originalHtml;button.disabled=originalDisabled;}}
 }
 async function removeOpportunity(id,button){
- var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.noGo!=='function')throw new Error('Heqja e mundësisë nuk është gati.');
- if(button){button.disabled=true;button.textContent='Duke hequr…';}
+ var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1;if(!P||typeof P.noGo!=='function')throw new Error('Heqja e mund�sis� nuk �sht� gati.');
+ if(button){button.disabled=true;button.textContent='Duke hequr.';}
  try{
    await P.noGo(id);
    closeDetail();
    if(S(selectedId)===S(id))selectedId='';
    if(api&&typeof api.loadOpportunities==='function')await api.loadOpportunities(true);
    schedule();
-   if(typeof window.pstToast==='function')window.pstToast('Mundësia u hoq nga lista.','ok');
+   if(typeof window.pstToast==='function')window.pstToast('Mund�sia u hoq nga lista.','ok');
  }finally{if(button)button.disabled=false;}
 }
 function click(e){
@@ -363,8 +429,10 @@ function click(e){
  if((b=t.closest('[data-pst-opp-source]'))){consume(e);apply('source',b.dataset.pstOppSource||'all');return;}
  if((b=t.closest('[data-pst-opp-winner]'))){consume(e);apply('winner',b.dataset.pstOppWinner||'all');return;}
  if((b=t.closest('[data-pst-opp-field]'))){consume(e);apply('field',b.dataset.pstOppField||'all');return;}
+ if((b=t.closest('[data-pst-opp-page]'))){consume(e);var parts=S(b.dataset.pstOppPage).split(':');if(parts[0]==='history')contactedPage=Math.max(1,Number(parts[1])||1);else activePage=Math.max(1,Number(parts[1])||1);decorate();return;}
  if((b=t.closest('[data-pst-opp-sort]'))){consume(e);sortDirection=sortDirection==='desc'?'asc':'desc';decorate();return;}
  if((b=t.closest('[data-pst-opp-select]'))){consume(e);if(!selectInPlace(b.dataset.pstOppSelect))decorate();return;}
+ if((b=t.closest('[data-pst-opp-history-open]'))){consume(e);contactedExpanded=true;closeDetail();decorate();return;}
  if((b=t.closest('[data-pst-opp-contacted-toggle]'))){consume(e);contactedExpanded=!contactedExpanded;closeDetail();decorate();return;}
  if((b=t.closest('[data-pst-opp-draft]'))){consume(e);createDraft(S(b.dataset.pstOppDraft),b).catch(function(err){if(typeof window.pstToast==='function')window.pstToast(S(err&&err.message||err),'error');else alert(S(err&&err.message||err));decorate();});return;}
  if((b=t.closest('[data-pst-opp-remove]'))){consume(e);removeOpportunity(S(b.dataset.pstOppRemove),b).catch(function(err){if(typeof window.pstToast==='function')window.pstToast(S(err&&err.message||err),'error');else alert(S(err&&err.message||err));decorate();});return;}
@@ -376,13 +444,13 @@ function boot(){
   (function ready(){current();if(api&&state&&document.getElementById('pst-opportunities-focus')){decorate();return;}setTimeout(ready,500);})();
  document.addEventListener('click',click,true);
  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDetail();});
- document.addEventListener('input',function(e){var el=e.target;if(el&&el.matches&&el.matches('[data-pst-opp-search]')){var pos=el.selectionStart||0;state.query=el.value||'';state.display_limit=40;if(api&&typeof api.renderOpportunities==='function')api.renderOpportunities();setTimeout(function(){var n=document.querySelector('[data-pst-opp-search]');if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(x){}}},0);}else if(el&&el.id==='pst-pcw-opportunity-search')schedule();},true);
+ document.addEventListener('input',function(e){var el=e.target;if(el&&el.matches&&el.matches('[data-pst-opp-history-search]')){var historyPos=el.selectionStart||0;contactHistoryQuery=el.value||'';contactedPage=1;decorate();var historyInput=document.querySelector('[data-pst-opp-history-search]');if(historyInput){historyInput.focus();try{historyInput.setSelectionRange(historyPos,historyPos);}catch(ignore){}}return;}if(el&&el.matches&&el.matches('[data-pst-opp-search]')){var pos=el.selectionStart||0;state.query=el.value||'';state.display_limit=40;if(api&&typeof api.renderOpportunities==='function')api.renderOpportunities();setTimeout(function(){var n=document.querySelector('[data-pst-opp-search]');if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(x){}}},0);}else if(el&&el.id==='pst-pcw-opportunity-search')schedule();},true);
  document.addEventListener('pst:opportunities-filter-applied',schedule);
-  document.addEventListener('pst:opportunity-canonical-contacts',function(e){var detail=e&&e.detail||{},id=S(detail.tender_id),next={contacts:A(detail.contacts),company:detail.company&&typeof detail.company==='object'?detail.company:{}},old=canonicalContactsByTender[id]||{},signature=function(entry){return[N(entry.company&&entry.company.legal_name),siteDomain(entry.company&&entry.company.domain)].concat(A(entry.contacts).map(function(x){var p=x&&x.payload&&typeof x.payload==='object'?x.payload:{};return[N(x&&x.email),S(x&&x.verification_status),x&&x.draft_eligible!==false,x&&x.do_not_contact===true,N(x&&x.full_name),N(x&&x.functional_role),siteDomain(p.organization_domain),N(p.organization_name),N(p.recipient_company_name)].join('|');}).sort()).join(',');};if(!id||signature(old)===signature(next))return;canonicalContactsByTender[id]=next;if(S(selectedId)===id)patchSelectedContacts(id);});
+  document.addEventListener('pst:opportunity-canonical-contacts',function(e){var detail=e&&e.detail||{},id=S(detail.tender_id),next={contacts:A(detail.contacts),company:detail.company&&typeof detail.company==='object'?detail.company:{}},old=canonicalContactsByTender[id]||{},signature=function(entry){return[N(entry.company&&entry.company.legal_name),siteDomain(entry.company&&entry.company.domain)].concat(A(entry.contacts).map(function(x){var p=x&&x.payload&&typeof x.payload==='object'?x.payload:{};return[N(x&&x.email),S(x&&x.verification_status),x&&x.draft_eligible!==false,x&&x.do_not_contact===true,N(x&&x.full_name),N(x&&x.functional_role),siteDomain(p.organization_domain),N(p.organization_name),N(p.recipient_company_name)].join('|');}).sort()).join(',');};if(!id||signature(old)===signature(next))return;canonicalContactsByTender[id]=next;contactHistoryCache=null;if(S(selectedId)===id)patchSelectedContacts(id);});
  ['pst:tender-gmail-drafts-ready','pst:tender-gmail-draft-created','pst:opportunity-draft-state-changed'].forEach(function(name){document.addEventListener(name,function(e){var id=S(e&&e.detail&&e.detail.tender_id);if(id)selectedId=id;setTimeout(function(){if(api&&typeof api.loadOpportunities==='function')Promise.resolve(api.loadOpportunities(true)).finally(schedule);else schedule();},90);});});
  document.addEventListener('pst:modules-ready',schedule,{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-var exposed={version:VERSION,apply:decorate,reset:reset,state:function(){return{density:density,filtersOpen:filtersOpen,resultPage:resultPage,sourcePage:resultPage&&resultPage.source||''};},_test:{baseRows:baseRows,filteredRows:filteredRows,counts:counts,sourceOf:srcOf,fieldOf:fieldOf,winnerOf:winnerOf,lifecycleOf:lifeOf,decorate:decorate,schedule:schedule,categoryMeta:categoryMeta,openResultPage:openResultPage,closeResultPage:closeResultPage}};
+var exposed={version:VERSION,apply:decorate,reset:reset,state:function(){return{density:density,filtersOpen:filtersOpen,resultPage:resultPage,sourcePage:resultPage&&resultPage.source||''};},_test:{contactHistory:contactHistory,activeRows:activeRows,contactedRows:contactedRows,contactAliases:contactAliases,historicalRecord:historicalRecord,baseRows:baseRows,filteredRows:filteredRows,counts:counts,sourceOf:srcOf,fieldOf:fieldOf,winnerOf:winnerOf,lifecycleOf:lifeOf,decorate:decorate,schedule:schedule,categoryMeta:categoryMeta,openResultPage:openResultPage,closeResultPage:closeResultPage}};
 window.PSTOpportunitiesDeskV1=window.PSTOpportunitiesMindmapV6=window.PSTOpportunitiesMindmapV5=window.PSTOpportunitiesMindmapV4=exposed;
 })();

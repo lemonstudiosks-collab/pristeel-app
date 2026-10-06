@@ -11,7 +11,7 @@ window.__pstProjectCentricWorkflowV2=true;
 window.__pstProjectCentricWorkflowV3=true;
 window.__pstProjectCentricWorkflowV4=true;
 
-var tenderState={rows:[],projectRows:[],projectOpportunityKeys:{},mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},actionByTender:{},emailByThread:{},communicationRows:[],communicationByTender:{},legacyTedContactsByTender:{}};
+var tenderState={rows:[],projectRows:[],projectOpportunityKeys:{},mode:'all',source:'all',lifecycle:'all',field:'all',winner_group:'all',query:'',focus:'',busy:false,last:0,display_limit:40,partners:null,outreachRows:[],outreachByTender:{},actionByTender:{},emailByThread:{},communicationRows:[],communicationByTender:{},legacyTedContactsByTender:{},contactHistoryRows:[],contactHistoryError:''};
 var contactBusy={};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
@@ -30,7 +30,7 @@ function opportunityGoHome(){
  try{if(typeof window.pstWorkspaceGo==='function')return window.pstWorkspaceGo('home');}catch(e){}
  return false;
 }
-function db(path,method,body){if(typeof window.supaFetch!=='function')return Promise.reject(new Error('Databaza nuk është gati.'));return window.supaFetch(path,method,body);}
+function db(path,method,body){if(typeof window.supaFetch!=='function')return Promise.reject(new Error('Databaza nuk �sht� gati.'));return window.supaFetch(path,method,body);}
 
 /* ---------- Home: project-first, full-card action ---------- */
 function home(){
@@ -38,8 +38,8 @@ function home(){
  var h=document.getElementById('pst-home-operating-grid-v1');if(!h)return false;
  h.querySelectorAll('.pst-hao-go').forEach(function(b){b.remove();});
  h.querySelectorAll('.pst-hao-card').forEach(function(c){c.setAttribute('role','button');c.setAttribute('tabindex','0');c.title='Hap projektin / veprimin';});
- var title=h.querySelector('.pst-hao-head h1');if(title)title.textContent='Projektet që kërkojnë veprimin tënd';
- var copy=h.querySelector('.pst-hao-head p');if(copy)copy.textContent='PPPP vendos projektet përpara: çfarë po ndodh, pse kërkon vëmendje dhe cili është hapi i radhës.';
+ var title=h.querySelector('.pst-hao-head h1');if(title)title.textContent='Projektet q� k�rkojn� veprimin t�nd';
+ var copy=h.querySelector('.pst-hao-head p');if(copy)copy.textContent='PPPP vendos projektet p�rpara: �far� po ndodh, pse k�rkon v�mendje dhe cili �sht� hapi i radh�s.';
  return true;
 }
 
@@ -65,10 +65,10 @@ function tenderApi(){return window.PSTTenderPriorityActionsV2||window.PSTTenderP
 function tenderPayload(r){return r&&r.payload&&typeof r.payload==='object'?r.payload:{};}
 var TENDER_SOURCE_ORDER=['TED','KRPP','APP_AL','MCA_KOSOVO','KCF','RCF','EBRD_ECEPP','WORLD_BANK','UNGM','UNDP_KOSOVO','EU_OFFICE_KOSOVO'];
 var TENDER_SOURCE_META={
- TED:{label:'EU · TED',tab:'TED'},KRPP:{label:'Kosovë · KRPP',tab:'KRPP'},APP_AL:{label:'Shqipëri · APP',tab:'APP'},
- MCA_KOSOVO:{label:'Kosovë · MCA',tab:'MCA Kosovo'},KCF:{label:'Kosovë · KCF',tab:'KCF'},RCF:{label:'Kosovë · RCF',tab:'RCF'},
- EBRD_ECEPP:{label:'EBRD · ECEPP',tab:'EBRD'},WORLD_BANK:{label:'World Bank',tab:'World Bank'},UNGM:{label:'UNGM',tab:'UNGM'},
- UNDP_KOSOVO:{label:'Kosovë · UNDP',tab:'UNDP Kosovo'},EU_OFFICE_KOSOVO:{label:'Kosovë · EU Office',tab:'EU Office Kosovo'}
+ TED:{label:'EU � TED',tab:'TED'},KRPP:{label:'Kosov� � KRPP',tab:'KRPP'},APP_AL:{label:'Shqip�ri � APP',tab:'APP'},
+ MCA_KOSOVO:{label:'Kosov� � MCA',tab:'MCA Kosovo'},KCF:{label:'Kosov� � KCF',tab:'KCF'},RCF:{label:'Kosov� � RCF',tab:'RCF'},
+ EBRD_ECEPP:{label:'EBRD � ECEPP',tab:'EBRD'},WORLD_BANK:{label:'World Bank',tab:'World Bank'},UNGM:{label:'UNGM',tab:'UNGM'},
+ UNDP_KOSOVO:{label:'Kosov� � UNDP',tab:'UNDP Kosovo'},EU_OFFICE_KOSOVO:{label:'Kosov� � EU Office',tab:'EU Office Kosovo'}
 };
 function normalizeTenderSource(v){
  var x=S(v).trim().toUpperCase().replace(/[\s-]+/g,'_');
@@ -87,32 +87,32 @@ function tenderScore(r){var n=Number(r&&r.relevance_score);return isFinite(n)&&n
 function winnerObj(r){var w=tenderPayload(r).winner;return w&&typeof w==='object'?w:{};}
 function winnerName(r){return S(winnerObj(r).name);}
 function winnerRole(r){var w=winnerObj(r),x=N(w.company_type||(w.company_classification&&w.company_classification.company_type)||'unknown');return ['producer','gc_epc','trader_consortium'].indexOf(x)>-1?x:'unknown';}
-function winnerRoleLabel(r){var x=winnerRole(r);return x==='gc_epc'?'GC / EPC':x==='producer'?'PRODHUES / KONKURRENT':x==='trader_consortium'?'TRADER / KONSORCIUM':'ROL I PAQARTË';}
+function winnerRoleLabel(r){var x=winnerRole(r);return x==='gc_epc'?'GC / EPC':x==='producer'?'PRODHUES / KONKURRENT':x==='trader_consortium'?'TRADER / KONSORCIUM':'ROL I PAQARTE';}
 function winnerGroup(r){if(tenderSource(r)!=='TED')return'local';var x=winnerRole(r);return x==='gc_epc'?'gc_epc':x==='producer'?'producer':'other';}
 function winnerPriority(r){var g=winnerGroup(r);return g==='gc_epc'?0:g==='other'?1:g==='producer'?2:0;}
 var OPPORTUNITY_FIELD_RULES=[
- ['construction',/\b(construction|ndertim|ndërtim|building|buildings|bau|hochbau|steel|çelik|celik|metal|structur|konstrukt|hall|roof|çati|cati|facade|fasad|weld|fabricat|montag|renov|rehabilit)/i],
- ['infrastructure',/\b(infrastruct|road|rrug|highway|motorway|rail|hekurudh|bridge|urë|ure|tunnel|airport|port|water|ujësjell|ujesjell|sewer|kanaliz|pipeline|transport network)/i],
+ ['construction',/\b(construction|ndertim|nd�rtim|building|buildings|bau|hochbau|steel|�elik|celik|metal|structur|konstrukt|hall|roof|�ati|cati|facade|fasad|weld|fabricat|montag|renov|rehabilit)/i],
+ ['infrastructure',/\b(infrastruct|road|rrug|highway|motorway|rail|hekurudh|bridge|ur�|ure|tunnel|airport|port|water|uj�sjell|ujesjell|sewer|kanaliz|pipeline|transport network)/i],
  ['energy',/\b(energy|energji|electric|elektr|power|solar|photovoltaic|\bpv\b|wind|battery|bess|substation|transformer|grid|transmission|distribution)/i],
- ['supply',/\b(supply|furniz|procurement|purchase|blerje|material|equipment|pajis|delivery|dorëzim|dorezim|goods|product)/i],
- ['services',/\b(service|shërbim|sherbim|consult|design|projektim|engineering|inxhinier|supervision|mbikëqyr|mbikeqyr|study|audit|maintenance|mirëmbajt|mirembajt)/i]
+ ['supply',/\b(supply|furniz|procurement|purchase|blerje|material|equipment|pajis|delivery|dor�zim|dorezim|goods|product)/i],
+ ['services',/\b(service|sh�rbim|sherbim|consult|design|projektim|engineering|inxhinier|supervision|mbik�qyr|mbikeqyr|study|audit|maintenance|mir�mbajt|mirembajt)/i]
 ];
 function opportunityFieldText(r){var p=tenderPayload(r);return[r&&r.title,r&&r.description,r&&r.authority,r&&r.procurement_no,r&&r.publication_no,r&&r.cpv,r&&r.cpv_code,A(r&&r.match_reasons).join(' '),p.title,p.description,p.cpv,p.cpv_code,p.cpv_description,p.scope,p.category].map(S).join(' ');}
 function opportunityField(r){var t=opportunityFieldText(r);for(var i=0;i<OPPORTUNITY_FIELD_RULES.length;i++)if(OPPORTUNITY_FIELD_RULES[i][1].test(t))return OPPORTUNITY_FIELD_RULES[i][0];return'other';}
-function winnerConfidence(r){var w=winnerObj(r),x=N(w.company_classification&&w.company_classification.confidence);return x==='high'?'besueshmëri e lartë':x==='medium'?'besueshmëri mesatare':x==='low'?'besueshmëri e ulët':'rol i paverifikuar';}
+function winnerConfidence(r){var w=winnerObj(r),x=N(w.company_classification&&w.company_classification.confidence);return x==='high'?'besueshm�ri e lart�':x==='medium'?'besueshm�ri mesatare':x==='low'?'besueshm�ri e ul�t':'rol i paverifikuar';}
 function winnerContacts(r){var P=tenderApi(),out=P&&typeof P.enrichedContacts==='function'?A(P.enrichedContacts(r)):[];A(tenderState.legacyTedContactsByTender[S(r&&r.id)]).forEach(function(x){if(x&&x.email&&!out.some(function(y){return N(y&&y.email)===N(x.email);})){out.push(x);}});if(out.length)return out;var w=winnerObj(r);out=[];A(w.emails).forEach(function(x){if(x)out.push({email:S(x),purpose:'',confidence:''});});if(w.email)out.push({email:S(w.email),purpose:'',confidence:''});return out;}
 function winnerWebsite(r){var w=winnerObj(r),u=safeUrl(w.website);if(u)return u;var e=w.contact_enrichment&&typeof w.contact_enrichment==='object'?w.contact_enrichment:{},org=A(e.organizations)[0];return safeUrl(org&&org.official_website);}
-function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient potencial: qasje direkte me PRISTEEL si nënkontraktor/prodhues i paketave të çelikut.';if(x==='producer')return'Konkurrent / prodhues: qasje si kapacitet shtesë, overflow fabrication, paketë e ndarë ose mbështetje në prodhim dhe dorëzim.';if(x==='trader_consortium')return'Qasje e kujdesshme për furnizim ose prodhim të nënkontraktuar, sipas paketës konkrete.';return'Roli ende nuk është verifikuar; emaili përgatitet me formulim neutral për kapacitet shtesë dhe kontrollohet nga ti para krijimit në Gmail.';}
+function winnerApproach(r){var x=winnerRole(r);if(x==='gc_epc')return'Klient potencial: qasje direkte me PRISTEEL si n�nkontraktor/prodhues i paketave t� �elikut.';if(x==='producer')return'Konkurrent / prodhues: qasje si kapacitet shtes�, overflow fabrication, paket� e ndar� ose mb�shtetje n� prodhim dhe dor�zim.';if(x==='trader_consortium')return'Qasje e kujdesshme p�r furnizim ose prodhim t� n�nkontraktuar, sipas paket�s konkrete.';return'Roli ende nuk �sht� verifikuar; emaili p�rgatitet me formulim neutral p�r kapacitet shtes� dhe kontrollohet nga ti para krijimit n� Gmail.';}
 function sourceLabel(r){var src=tenderSource(r),m=TENDER_SOURCE_META[src];return m?m.label:src;}
-function tenderDate(v){var d=v?new Date(v+'T00:00:00'):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+function tenderDate(v){var d=v?new Date(v+'T00:00:00'):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'-';}
 function tenderValueLabel(r){
  var raw=r&&r.estimated_value,cur=S(r&&r.currency||tenderPayload(r).currency).trim().toUpperCase();
- if(raw==null||S(raw).trim()==='')return'—';
+ if(raw==null||S(raw).trim()==='')return'-';
  var n=Number(raw),amount='';
  try{amount=isFinite(n)?new Intl.NumberFormat('sq-AL',{minimumFractionDigits:0,maximumFractionDigits:2}).format(n):S(raw).trim();}catch(e){amount=isFinite(n)?String(n):S(raw).trim();}
  return amount+(cur?' '+cur:'');
 }
-function tenderReason(r){var P=tenderApi();return P&&typeof P.reason==='function'?P.reason(r):A(r&&r.match_reasons).slice(0,2).join(' · ');}
+function tenderReason(r){var P=tenderApi();return P&&typeof P.reason==='function'?P.reason(r):A(r&&r.match_reasons).slice(0,2).join(' � ');}
 function hasDraft(r){return opportunityLifecycle(r)!=='new';}
 function opportunityKey(r){
  var ref=N(r&&r.publication_no||r&&r.procurement_no),title=N(r&&r.title),winner=N(winnerName(r)),authority=N(r&&r.authority),w=winnerObj(r),winnerId=N(w&&w.identifier||A(w&&w.identifiers)[0]),year=S(r&&r.published_date).slice(0,4);
@@ -171,25 +171,34 @@ function lifecycleMeta(r){
  else if(lane==='draft')when=latestDate(rows,'draft_created_at')||S(d.created_at||d.scheduled_at);
  return{lane:lane,when:when,recipients:recipients,reply:reply,communication:comm};
 }
-function lifecycleLabel(meta){if(meta.lane==='draft')return'Draft i përgatitur';if(meta.lane==='waiting')return'Në pritje';if(meta.lane==='replied')return'Përgjigje e pranuar';return'E re';}
+function lifecycleLabel(meta){if(meta.lane==='draft')return'Draft i p�rgatitur';if(meta.lane==='waiting')return'N� pritje';if(meta.lane==='replied')return'P�rgjigje e pranuar';return'E re';}
 function lifecycleWhen(meta){if(!meta.when)return'';try{var d=new Date(meta.when);return isNaN(d.getTime())?'':d.toLocaleString('sq-AL',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}}
-function lifecycleDateLabel(meta){var when=lifecycleWhen(meta);if(!when)return'';if(meta.lane==='draft')return'Drafti: '+when;if(meta.lane==='waiting')return'Dërguar: '+when;if(meta.lane==='replied')return'Përgjigjja: '+when;return'';}
+function lifecycleDateLabel(meta){var when=lifecycleWhen(meta);if(!when)return'';if(meta.lane==='draft')return'Drafti: '+when;if(meta.lane==='waiting')return'D�rguar: '+when;if(meta.lane==='replied')return'P�rgjigjja: '+when;return'';}
+/* Complete, cached contact history; reads only and never reconciles business records. */
+async function readOpportunityPages(path){
+ var out=[],offset=0,size=1000;
+ while(true){
+   var part=A(await db(path+'&limit='+size+'&offset='+offset));
+   out=out.concat(part);if(part.length<size)return out;offset+=part.length;
+ }
+}
 async function loadOpportunityOutreach(){
- tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.actionByTender={};tenderState.emailByThread={};tenderState.communicationRows=[];tenderState.communicationByTender={};tenderState.legacyTedContactsByTender={};
+ tenderState.outreachRows=[];tenderState.outreachByTender={};tenderState.actionByTender={};tenderState.emailByThread={};tenderState.communicationRows=[];tenderState.communicationByTender={};tenderState.legacyTedContactsByTender={};tenderState.contactHistoryRows=[];tenderState.contactHistoryError='';
  try{
    var batch=await Promise.all([
-     db('pppp_opportunity_outreach_registry_v1?select=action_id,tender_watch_id,recipient_email,status,draft_created_at,sent_at,gmail_thread_id,gmail_message_id,updated_at&order=updated_at.desc&limit=2000'),
-     db('pppp_ted_sales_outreach_v1?select=tender_watch_id,company_name,winner_name,contact_email,company_domain,outreach_status&contact_email=not.is.null&limit=2000'),
+     readOpportunityPages('pppp_opportunity_outreach_registry_v1?select=id,action_id,tender_watch_id,recipient_email,recipient_name,status,draft_created_at,sent_at,replied_at,bounced_at,gmail_draft_id,gmail_thread_id,gmail_message_id,updated_at,recipient_company_name:payload->>recipient_company_name,recipient_company_domain:payload->>recipient_company_domain,company_profile_id:payload->outreach_readiness_v1->>company_profile_id,gmail_state:payload->gmail_prepared_sync_v1->>gmail_state&order=id.asc'),
+     readOpportunityPages('outreach_contacts?select=id,tender_watch_id,company_name,company_domain,contact_email,outreach_status:status,touch_1,touch_2,touch_3,replied,bounced,meeting,closed,gmail_thread_id,gmail_message_id,updated_at,notes,country,source,company_type&or=(source.in.(ted_award_sales,gc_gu_prospecting),source.is.null)&order=id.asc'),
      db('pppp_opportunity_communication_state_v1?select=action_id,tender_watch_id,target_email,communication_state,communication_at,communication_gmail_url,communication_thread_id,last_outgoing_subject,outgoing_match_type&communication_state=in.(waiting,replied,contacted_history)&order=communication_at.desc.nullslast&limit=2000'),
      db('pppp_opportunity_action_queue_v2?select=id,tender_watch_id,updated_at&status=eq.draft_review&order=updated_at.desc&limit=2000')
    ]),rows=A(batch[0]),legacy=A(batch[1]),comm=A(batch[2]),actions=A(batch[3]);
    tenderState.outreachRows=rows;rows.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.outreachByTender[id]||(tenderState.outreachByTender[id]=[])).push(r);});
+   tenderState.contactHistoryRows=legacy;
    legacy.forEach(function(x){var id=S(x.tender_watch_id),email=S(x.contact_email).trim();if(!id||!email)return;(tenderState.legacyTedContactsByTender[id]||(tenderState.legacyTedContactsByTender[id]=[])).push({email:email,name:'',purpose:'general',confidence:'legacy_verified',company_domain:S(x.company_domain),source_type:'pppp_ted_sales_outreach_v1',draft_eligible:true});});
    tenderState.communicationRows=comm;comm.forEach(function(r){var id=S(r.tender_watch_id);if(id)(tenderState.communicationByTender[id]||(tenderState.communicationByTender[id]=[])).push(r);});
    actions.forEach(function(r){var id=S(r.tender_watch_id);if(id&&!tenderState.actionByTender[id])tenderState.actionByTender[id]=r;});
    var threads=[];rows.forEach(function(r){if(/^[a-zA-Z0-9_-]+$/.test(S(r.gmail_thread_id))&&threads.indexOf(S(r.gmail_thread_id))<0)threads.push(S(r.gmail_thread_id));});
    if(threads.length){var mails=A(await db('project_emails?gmail_thread_id=in.('+threads.join(',')+')&select=gmail_thread_id,gmail_message_id,direction,from_email,to_emails,subject,sent_at&order=sent_at.asc&limit=2000'));mails.forEach(function(m){var t=S(m.gmail_thread_id);if(t)(tenderState.emailByThread[t]||(tenderState.emailByThread[t]=[])).push(m);});}
- }catch(e){console.warn('PPPP opportunity outreach state:',e);}
+ }catch(e){tenderState.contactHistoryError=S(e&&e.message||e);console.warn('PPPP opportunity outreach state:',e);}
  return tenderState.outreachRows;
 }
 function opportunityRows(){
@@ -209,28 +218,28 @@ function opportunityRows(){
 function opportunityVisibleRows(){var rows=opportunityRows(),limit=Math.max(20,Number(tenderState.display_limit)||40);return rows.slice(0,limit);}
 function showMoreOpportunities(){var total=opportunityRows().length,current=Math.max(20,Number(tenderState.display_limit)||40);if(current>=total)return false;tenderState.display_limit=Math.min(total,current+40);renderOpportunities();return true;}
 function opportunityCard(r){
- var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PËR OFERTIM',role=award?winnerRoleLabel(r):'',meta=lifecycleMeta(r),contact=lifecycleDateLabel(meta),value=tenderValueLabel(r);
- if(meta.recipients.length)contact+=(contact?' · ':'')+'Për: '+meta.recipients.slice(0,2).join(', ')+(meta.recipients.length>2?' +'+(meta.recipients.length-2):'');
+ var award=tenderMode(r)==='award',winner=winnerName(r),status=award?'FITUES I PUBLIKUAR':'PER OFERTIM',role=award?winnerRoleLabel(r):'',meta=lifecycleMeta(r),contact=lifecycleDateLabel(meta),value=tenderValueLabel(r);
+ if(meta.recipients.length)contact+=(contact?' � ':'')+'P�r: '+meta.recipients.slice(0,2).join(', ')+(meta.recipients.length>2?' +'+(meta.recipients.length-2):'');
  return '<article class="pst-pcw-tender pst-pcw-life-'+E(meta.lane)+'" role="button" tabindex="0" data-pcw-tender="'+E(r.id)+'">'
-   +'<div class="pst-pcw-tender-copy"><div class="pst-pcw-tender-meta"><span class="kind">'+status+'</span><span class="pst-pcw-life-badge '+E(meta.lane)+'">'+E(lifecycleLabel(meta))+'</span><span>'+E(sourceLabel(r))+'</span><span>Vlera: '+E(value)+'</span><span>'+tenderScore(r)+'% relevant për PRISTEEL</span>'+(award?'<span class="winner-role '+E(winnerRole(r))+'">'+E(role)+'</span>':'')+'</div>'
+   +'<div class="pst-pcw-tender-copy"><div class="pst-pcw-tender-meta"><span class="kind">'+status+'</span><span class="pst-pcw-life-badge '+E(meta.lane)+'">'+E(lifecycleLabel(meta))+'</span><span>'+E(sourceLabel(r))+'</span><span>Vlera: '+E(value)+'</span><span>'+tenderScore(r)+'% relevant p�r PRISTEEL</span>'+(award?'<span class="winner-role '+E(winnerRole(r))+'">'+E(role)+'</span>':'')+'</div>'
    +'<h3>'+E(r.title||'Tender')+'</h3>'
-   +'<p>'+E(tenderReason(r)||'Kliko për ta hapur mundësinë dhe për të vendosur hapin e radhës.')+'</p>'
-   +'<small>'+(award?(winner?'Fituesi: '+E(winner):'Fituesi duhet verifikuar'):'Afati: '+E(tenderDate(r.deadline)))+(r.authority?' · '+E(r.authority):'')+'</small><div class="pst-pcw-contact-state">'+E(contact)+'</div></div>'
-   +'<div class="pst-pcw-tender-open"><b>'+ (award?'Shqyrto fituesin':'Hap mundësinë') +'</b><span>→</span></div>'
+   +'<p>'+E(tenderReason(r)||'Kliko p�r ta hapur mund�sin� dhe p�r t� vendosur hapin e radh�s.')+'</p>'
+   +'<small>'+(award?(winner?'Fituesi: '+E(winner):'Fituesi duhet verifikuar'):'Afati: '+E(tenderDate(r.deadline)))+(r.authority?' � '+E(r.authority):'')+'</small><div class="pst-pcw-contact-state">'+E(contact)+'</div></div>'
+   +'<div class="pst-pcw-tender-open"><b>'+ (award?'Shqyrto fituesin':'Hap mund�sin�') +'</b><span></span></div>'
  +'</article>';
 }
 function ensureOpportunitySurface(){
  var p=activePage('page-kek-tenders');if(!p)return null;
  var focus=p.querySelector('#pst-opportunities-focus'),head=p.querySelector('.pst-kek-head');
  var eye=p.querySelector('.pst-kek-eye'),title=p.querySelector('.pst-kek-title'),sub=p.querySelector('.pst-kek-sub');
- if(eye)eye.textContent='MONITORI AUTOMATIK I MUNDËSIVE TË NDËRTIMIT & INDUSTRISË';if(title)title.textContent='Mundësitë';if(sub)sub.textContent='TED, KRPP, APP dhe burimet donor/IFI mblidhen në një radhë të vetme për shqyrtim, kualifikim dhe veprim.';
+ if(eye)eye.textContent='MONITORI AUTOMATIK I MUNDESIVE TE NDERTIMIT & INDUSTRISE';if(title)title.textContent='Mund�sit�';if(sub)sub.textContent='TED, KRPP, APP dhe burimet donor/IFI mblidhen n� nj� radh� t� vetme p�r shqyrtim, kualifikim dhe veprim.';
  if(!focus){
    focus=document.createElement('section');focus.id='pst-opportunities-focus';
-   focus.innerHTML='<header></header><div id="pst-pcw-opportunity-tools"><label><span>Kërko</span><input id="pst-pcw-opportunity-search" placeholder="Titull, institucion, referencë ose përshkrim"></label></div><div id="pst-pcw-lifecycle-tabs"></div><div id="pst-pcw-opportunity-tabs"></div><div id="pst-opportunities-list"></div>';
+   focus.innerHTML='<header></header><div id="pst-pcw-opportunity-tools"><label><span>K�rko</span><input id="pst-pcw-opportunity-search" placeholder="Titull, institucion, referenc� ose p�rshkrim"></label></div><div id="pst-pcw-lifecycle-tabs"></div><div id="pst-pcw-opportunity-tabs"></div><div id="pst-opportunities-list"></div>';
    if(head)head.insertAdjacentElement('afterend',focus);else p.prepend(focus);
  }else{
    if(!focus.querySelector('#pst-pcw-opportunity-tools')){
-     var tools=document.createElement('div');tools.id='pst-pcw-opportunity-tools';tools.innerHTML='<label><span>Kërko</span><input id="pst-pcw-opportunity-search" placeholder="Titull, institucion, referencë ose përshkrim"></label>';
+     var tools=document.createElement('div');tools.id='pst-pcw-opportunity-tools';tools.innerHTML='<label><span>K�rko</span><input id="pst-pcw-opportunity-search" placeholder="Titull, institucion, referenc� ose p�rshkrim"></label>';
      var list=focus.querySelector('#pst-opportunities-list');if(list)focus.insertBefore(tools,list);else focus.appendChild(tools);
    }
    if(!focus.querySelector('#pst-pcw-opportunity-tabs')){
@@ -248,15 +257,15 @@ function renderOpportunities(){
  var focus=ensureOpportunitySurface();if(!focus)return false;
  var list=focus.querySelector('#pst-opportunities-list');if(!list)return false;
  var all=dedupeOpportunities(tenderState.rows.filter(tenderVisible).filter(function(r){return !ownedByProject(r);})),matched=opportunityRows(),rows=opportunityVisibleRows(),counts={new:0,draft:0,waiting:0,replied:0},sources={};TENDER_SOURCE_ORDER.forEach(function(src){sources[src]=0;});all.forEach(function(r){var src=tenderSource(r);if(Object.prototype.hasOwnProperty.call(sources,src))sources[src]++;counts[opportunityLifecycle(r)]++;});
- var header=focus.querySelector('header');if(header)header.innerHTML='<div class="pst-pcw-opportunity-head-left"><button type="button" class="pst-opp-v4-back pst-pcw-opportunities-back" data-pcw-opportunities-back aria-label="Kthehu në Ballinë">← Kthehu</button><div><span>MUNDËSITË</span><h2>Tenderat që mund të bëhen projekte</h2><p>'+(tenderState.focus==='due'?'Po shfaqen vetëm tenderët me afat brenda shtatë ditësh.':tenderState.focus==='review'?'Po shfaqen vetëm tenderët që presin shqyrtim.':'Kliko një mundësi. PPPP merr dosjen, nxjerr kushtet dhe vetëm pastaj vendos ti nëse krijohet projekt.')+'</p></div></div>';
+ var header=focus.querySelector('header');if(header)header.innerHTML='<div class="pst-pcw-opportunity-head-left"><button type="button" class="pst-opp-v4-back pst-pcw-opportunities-back" data-pcw-opportunities-back aria-label="Kthehu n� Ballin�"> Kthehu</button><div><span>MUNDESITE</span><h2>Tenderat q� mund t� b�hen projekte</h2><p>'+(tenderState.focus==='due'?'Po shfaqen vet�m tender�t me afat brenda shtat� dit�sh.':tenderState.focus==='review'?'Po shfaqen vet�m tender�t q� presin shqyrtim.':'Kliko nj� mund�si. PPPP merr dosjen, nxjerr kushtet dhe vet�m pastaj vendos ti n�se krijohet projekt.')+'</p></div></div>';
  var search=focus.querySelector('#pst-pcw-opportunity-search');if(search&&search.value!==tenderState.query)search.value=tenderState.query;
  var tabs=focus.querySelector('#pst-pcw-opportunity-tabs');
- tabs.innerHTML='<button data-pcw-source="all" class="'+(tenderState.source==='all'?'on':'')+'"><span>Të gjitha</span><i>'+all.length+'</i></button>'+TENDER_SOURCE_ORDER.map(function(src){var m=TENDER_SOURCE_META[src]||{tab:src};return '<button data-pcw-source="'+E(src)+'" class="'+(tenderState.source===src?'on':'')+'"><span>'+E(m.tab)+'</span><i>'+Number(sources[src]||0)+'</i></button>';}).join('');
+ tabs.innerHTML='<button data-pcw-source="all" class="'+(tenderState.source==='all'?'on':'')+'"><span>T� gjitha</span><i>'+all.length+'</i></button>'+TENDER_SOURCE_ORDER.map(function(src){var m=TENDER_SOURCE_META[src]||{tab:src};return '<button data-pcw-source="'+E(src)+'" class="'+(tenderState.source===src?'on':'')+'"><span>'+E(m.tab)+'</span><i>'+Number(sources[src]||0)+'</i></button>';}).join('');
  var life=focus.querySelector('#pst-pcw-lifecycle-tabs');
- var lanes=[['new','Të reja',counts.new,'✧'],['draft','Draft gati',counts.draft,'✎'],['waiting','Në pritje',counts.waiting,'◷'],['replied','Me përgjigje',counts.replied,'↗'],['all','Të gjitha',all.length,'◇']];
- life.setAttribute('role','group');life.setAttribute('aria-label','Harta e gjendjes së mundësive');
- life.innerHTML='<div class="pst-pcw-map-center"><span>✦</span><strong>Mundësitë</strong><small>'+all.length+' gjithsej</small></div>'+lanes.map(function(lane){return '<button type="button" data-pcw-lifecycle="'+lane[0]+'" class="pst-pcw-map-node pst-pcw-map-'+lane[0]+' '+(tenderState.lifecycle===lane[0]?'on':'')+'" aria-pressed="'+(tenderState.lifecycle===lane[0])+'"><span class="pst-pcw-map-icon" aria-hidden="true">'+lane[3]+'</span><span class="pst-pcw-map-label">'+lane[1]+'<small>'+lane[2]+' mundësi</small></span><i>'+lane[2]+'</i></button>';}).join('');
- list.innerHTML=rows.length?rows.map(opportunityCard).join('')+(matched.length>rows.length?'<button type="button" class="pst-pcw-more" data-pcw-opportunity-more><b>Shfaq edhe '+Math.min(40,matched.length-rows.length)+'</b><span>'+rows.length+' nga '+matched.length+' të shfaqura</span></button>':''):'<div class="pst-pcw-empty">Nuk ka mundësi që përputhen me këta filtra.</div>';
+ var lanes=[['new','T� reja',counts.new,'?'],['draft','Draft gati',counts.draft,'?'],['waiting','N� pritje',counts.waiting,'?'],['replied','Me p�rgjigje',counts.replied,'?'],['all','T� gjitha',all.length,'?']];
+ life.setAttribute('role','group');life.setAttribute('aria-label','Harta e gjendjes s� mund�sive');
+ life.innerHTML='<div class="pst-pcw-map-center"><span>?</span><strong>Mund�sit�</strong><small>'+all.length+' gjithsej</small></div>'+lanes.map(function(lane){return '<button type="button" data-pcw-lifecycle="'+lane[0]+'" class="pst-pcw-map-node pst-pcw-map-'+lane[0]+' '+(tenderState.lifecycle===lane[0]?'on':'')+'" aria-pressed="'+(tenderState.lifecycle===lane[0])+'"><span class="pst-pcw-map-icon" aria-hidden="true">'+lane[3]+'</span><span class="pst-pcw-map-label">'+lane[1]+'<small>'+lane[2]+' mund�si</small></span><i>'+lane[2]+'</i></button>';}).join('');
+ list.innerHTML=rows.length?rows.map(opportunityCard).join('')+(matched.length>rows.length?'<button type="button" class="pst-pcw-more" data-pcw-opportunity-more><b>Shfaq edhe '+Math.min(40,matched.length-rows.length)+'</b><span>'+rows.length+' nga '+matched.length+' t� shfaqura</span></button>':''):'<div class="pst-pcw-empty">Nuk ka mund�si q� p�rputhen me k�ta filtra.</div>';
  var legacy=p.querySelector('#pst-opportunities-all');if(legacy){legacy.classList.add('pst-pcw-backstage');legacy.hidden=true;legacy.style.display='none';}
  p.querySelectorAll('.pst-kek-filter,.pst-kek-card,#pst-tender-fit-summary').forEach(function(x){if(!focus.contains(x)){x.hidden=true;x.style.display='none';x.setAttribute('aria-hidden','true');}});
  p.setAttribute('data-pcw-opportunities-owner','2');
@@ -333,54 +342,54 @@ async function serverTenderAnalysis(r){
  var AI=window.PSTOpenAIAssistantV1;if(!AI||typeof AI.ask!=='function')return null;
  var role=winnerRole(r),q='';
  if(tenderMode(r)==='award'){
-   if(role==='gc_epc')q='Ky është një tender TED i fituar nga një GC/EPC. Analizo sa relevant është projekti për PRISTEEL dhe çfarë pakete konkrete steel fabrication/subcontracting mund t’i ofrojmë fituesit. Mos sugjero ofertim në tenderin e mbyllur.';
-   else if(role==='producer')q='Ky është një tender TED i fituar nga një prodhues/metalpërpunues që mund të jetë konkurrent. Analizo vetëm mundësinë për overflow fabrication, kapacitet shtesë, ndarje pakete, furnizim ose mbështetje tjetër B2B. Mos e trajto si GC dhe mos sugjero ofertim në tenderin e mbyllur.';
-   else if(role==='trader_consortium')q='Ky është një tender TED i fituar nga trader/konsorcium. Analizo rolin e mundshëm të fituesit dhe nëse PRISTEEL mund të ofrojë furnizim ose prodhim të nënkontraktuar. Trego qartë çfarë duhet verifikuar.';
-   else q='Ky është një tender TED i fituar, por roli i fituesit nuk është verifikuar. Vlerëso relevancën për PRISTEEL dhe thuaj çfarë duhet verifikuar para outreach. Mos përgatit ose rekomando email derisa roli të jetë i qartë.';
- }else q='Analizo këtë tender për PRISTEEL. Vlerëso scope-in e mundshëm, çfarë duhet verifikuar në dosje dhe cilët partnerë/prodhues të regjistruar në PPPP mund të jenë relevantë për realizim. Nëse Eurosteel është realisht i përshtatshëm sipas të dhënave, thuaje; mos e favorizo pa bazë.';
+   if(role==='gc_epc')q='Ky �sht� nj� tender TED i fituar nga nj� GC/EPC. Analizo sa relevant �sht� projekti p�r PRISTEEL dhe �far� pakete konkrete steel fabrication/subcontracting mund t'i ofrojm� fituesit. Mos sugjero ofertim n� tenderin e mbyllur.';
+   else if(role==='producer')q='Ky �sht� nj� tender TED i fituar nga nj� prodhues/metalp�rpunues q� mund t� jet� konkurrent. Analizo vet�m mund�sin� p�r overflow fabrication, kapacitet shtes�, ndarje pakete, furnizim ose mb�shtetje tjet�r B2B. Mos e trajto si GC dhe mos sugjero ofertim n� tenderin e mbyllur.';
+   else if(role==='trader_consortium')q='Ky �sht� nj� tender TED i fituar nga trader/konsorcium. Analizo rolin e mundsh�m t� fituesit dhe n�se PRISTEEL mund t� ofroj� furnizim ose prodhim t� n�nkontraktuar. Trego qart� �far� duhet verifikuar.';
+   else q='Ky �sht� nj� tender TED i fituar, por roli i fituesit nuk �sht� verifikuar. Vler�so relevanc�n p�r PRISTEEL dhe thuaj �far� duhet verifikuar para outreach. Mos p�rgatit ose rekomando email derisa roli t� jet� i qart�.';
+ }else q='Analizo k�t� tender p�r PRISTEEL. Vler�so scope-in e mundsh�m, �far� duhet verifikuar n� dosje dhe cil�t partner�/prodhues t� regjistruar n� PPPP mund t� jen� relevant� p�r realizim. N�se Eurosteel �sht� realisht i p�rshtatsh�m sipas t� dh�nave, thuaje; mos e favorizo pa baz�.';
  var candidate_partners=await partnerContext();
  try{return await AI.ask(q,{scope:'tender',context:{tender:r,winner_role:role,candidate_partners:candidate_partners,partner_context_limit:80,partner_context_complete:false,partner_context_note:'Bounded review candidates only; absence is not proof of no partners. Supplier selection requires human approval.'}});}catch(e){return null;}
 }
 function tenderFactsHtml(r){
  var p=tenderPayload(r),d=p.ted_details&&typeof p.ted_details==='object'?p.ted_details:{},desc=S(p.description||d.description||d.procedure_description).trim();
  var places=A(d.place_of_performance).length?A(d.place_of_performance):A(p.place_of_performance),lotTitles=A(d.lot_titles).filter(Boolean).slice(0,4),cpv=A(p.cpv).filter(Boolean).slice(0,4);
- var value=tenderValueLabel(r),valueKind=S(d.value_kind)==='award'?'Vlera e kontratës':'Vlera',awardDate=S(d.award_date),ref=S(r.publication_no||r.procurement_no).replace(/^TED-/,'');
+ var value=tenderValueLabel(r),valueKind=S(d.value_kind)==='award'?'Vlera e kontrat�s':'Vlera',awardDate=S(d.award_date),ref=S(r.publication_no||r.procurement_no).replace(/^TED-/,'');
  var facts=[
-   ['Autoriteti',S(r.authority)||'—'],
-   [valueKind,value||'—'],
-   ['Vendi',places.join(' · ')||S(p.country)||'—'],
-   ['Data e dhënies',awardDate?tenderDate(awardDate):'—'],
-   ['CPV',cpv.join(', ')||S(r.fpp)||'—'],
-   ['TED ref.',ref||'—']
+   ['Autoriteti',S(r.authority)||'-'],
+   [valueKind,value||'-'],
+   ['Vendi',places.join(' � ')||S(p.country)||'-'],
+   ['Data e dh�nies',awardDate?tenderDate(awardDate):'-'],
+   ['CPV',cpv.join(', ')||S(r.fpp)||'-'],
+   ['TED ref.',ref||'-']
  ];
- var html='<div class="pst-pcw-tender-facts"><span>PËRMBLEDHJA E TENDERIT</span>';
+ var html='<div class="pst-pcw-tender-facts"><span>PERMBLEDHJA E TENDERIT</span>';
  if(desc)html+='<p>'+E(desc)+'</p>';
  html+='<div class="pst-pcw-fact-grid">'+facts.map(function(x){return'<div class="pst-pcw-fact"><small>'+E(x[0])+'</small><b>'+E(x[1])+'</b></div>';}).join('')+'</div>';
- if(lotTitles.length)html+='<div class="pst-pcw-lots"><small>Lot / paketa</small><div>'+lotTitles.map(E).join(' · ')+'</div></div>';
+ if(lotTitles.length)html+='<div class="pst-pcw-lots"><small>Lot / paketa</small><div>'+lotTitles.map(E).join(' � ')+'</div></div>';
  return html+'</div>';
 }
 function winnerBriefHtml(r){
  var w=winnerObj(r),contacts=winnerContacts(r).slice(0,20),site=winnerWebsite(r),confidence=winnerConfidence(r),role=winnerRole(r);
- var contactHtml=contacts.length?'<div class="pst-pcw-winner-contacts"><b>Kontaktet e verifikuara për draft · '+contacts.length+'</b><small>PPPP përgatit draft të veçantë për secilin email të verifikuar.</small>'+contacts.map(function(c){var email=S(c.email),meta=[c.purpose,c.confidence].filter(Boolean).join(' · ');return'<a href="mailto:'+E(email)+'"><span>'+E(email)+'</span>'+(meta?'<small>'+E(meta)+'</small>':'')+'</a>';}).join('')+'</div>':'<div class="pst-pcw-winner-none">PPPP nuk ka ende email të verifikueshëm për këtë fitues.</div>';
+ var contactHtml=contacts.length?'<div class="pst-pcw-winner-contacts"><b>Kontaktet e verifikuara p�r draft � '+contacts.length+'</b><small>PPPP p�rgatit draft t� ve�ant� p�r secilin email t� verifikuar.</small>'+contacts.map(function(c){var email=S(c.email),meta=[c.purpose,c.confidence].filter(Boolean).join(' � ');return'<a href="mailto:'+E(email)+'"><span>'+E(email)+'</span>'+(meta?'<small>'+E(meta)+'</small>':'')+'</a>';}).join('')+'</div>':'<div class="pst-pcw-winner-none">PPPP nuk ka ende email t� verifikuesh�m p�r k�t� fitues.</div>';
  return '<div class="pst-pcw-winner-brief"><div class="pst-pcw-winner-head"><div><span>FITUESI TED</span><h3>'+E(w.name||'Fitues i publikuar')+'</h3></div><b class="role '+E(role)+'">'+E(winnerRoleLabel(r))+'</b></div>'
-   +'<p>'+E(winnerApproach(r))+'</p><div class="pst-pcw-winner-facts"><span><b>'+tenderScore(r)+'%</b> relevant për PRISTEEL</span><span><b>'+E(confidence)+'</b> klasifikim</span>'+(site?'<a href="'+E(site)+'" target="_blank" rel="noopener">Website ↗</a>':'')+'</div>'+contactHtml+'</div>';
+   +'<p>'+E(winnerApproach(r))+'</p><div class="pst-pcw-winner-facts"><span><b>'+tenderScore(r)+'%</b> relevant p�r PRISTEEL</span><span><b>'+E(confidence)+'</b> klasifikim</span>'+(site?'<a href="'+E(site)+'" target="_blank" rel="noopener">Website ?</a>':'')+'</div>'+contactHtml+'</div>';
 }
 function officialSourceAction(r,label){
  var src=tenderSource(r),u=src==='APP_AL'?'':(safeUrl(r&&r.detail_url)||safeUrl(r&&r.source_url));
- if(u)return'<a class="pst-pcw-source-link" href="'+E(u)+'" target="_blank" rel="noopener">'+E(label||'Burimi zyrtar')+' ↗</a>';
+ if(u)return'<a class="pst-pcw-source-link" href="'+E(u)+'" target="_blank" rel="noopener">'+E(label||'Burimi zyrtar')+' ?</a>';
  return'<button data-pcw-ti="source" data-id="'+E(r.id)+'">'+E(label||'Burimi zyrtar')+'</button>';
 }
 var GMAIL_DRAFT_ACTION_ICON='<svg class="pst-gmail-draft-icon" viewBox="0 0 24 18" width="24" height="18" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M1.4 3.3v12.9c0 .8.6 1.4 1.4 1.4h2.7V7.2L1.4 4.1v-.8z"/><path fill="#34A853" d="M18.5 7.2v10.4h2.7c.8 0 1.4-.6 1.4-1.4V3.3l-4.1.8v3.1z"/><path fill="#EA4335" d="M1.9 2.1c.5-.4 1.2-.4 1.8 0L12 8.3l8.3-6.2c.6-.4 1.3-.4 1.8 0 .3.2.5.6.5 1v1L12 12 1.4 4.1v-1c0-.4.2-.8.5-1z"/><path fill="#FBBC04" d="M5.5 7.2 12 12 18.5 7.2v3.5L12 15.5l-6.5-4.8V7.2z"/></svg>';
-function gmailDraftAction(label){return GMAIL_DRAFT_ACTION_ICON+'<span class="pst-gmail-draft-label">'+E(label||'Krijo draft në Gmail')+'</span>';}
+function gmailDraftAction(label){return GMAIL_DRAFT_ACTION_ICON+'<span class="pst-gmail-draft-label">'+E(label||'Krijo draft n� Gmail')+'</span>';}
 function modalActionBar(r){
  var id=E(r.id),award=tenderMode(r)==='award',comm=communicationActive(r);
  if(award){
-   var replied=comm&&S(comm.communication_state)==='replied',communicationLabel=replied?'Përgjigje e marrë · Hap Gmail':'Kontaktuar · Hap Gmail';
-   if(r.project_id)return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap Project-in</button>'+(comm?'<button data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button>':'<button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Përgatit draftet në Gmail')+'</button>')+'<button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'</div>';
-   if(comm)return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
-   return '<div id="pst-pcw-ti-actions"><button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Krijo draft në Gmail')+'</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Refuzo</button></div>';
+   var replied=comm&&S(comm.communication_state)==='replied',communicationLabel=replied?'P�rgjigje e marr� � Hap Gmail':'Kontaktuar � Hap Gmail';
+   if(r.project_id)return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap Project-in</button>'+(comm?'<button data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button>':'<button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('P�rgatit draftet n� Gmail')+'</button>')+'<button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'</div>';
+   if(comm)return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">L�re p�r m� von�</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+   return '<div id="pst-pcw-ti-actions"><button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Krijo draft n� Gmail')+'</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">L�re p�r m� von�</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Refuzo</button></div>';
  }
- return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary download" data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen</button><button class="dossier" data-pcw-ti="dossier" data-id="'+id+'">Analizo kushtet</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ketë analizuar dosjen.">Krijo projekt</button>'+officialSourceAction(r,'Burimi zyrtar')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+ return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary download" data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen</button><button class="dossier" data-pcw-ti="dossier" data-id="'+id+'">Analizo kushtet</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ket� analizuar dosjen.">Krijo projekt</button>'+officialSourceAction(r,'Burimi zyrtar')+'<button data-pcw-ti="review" data-id="'+id+'">L�re p�r m� von�</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
 }
 function closeTenderModal(){
  var modal=document.getElementById('pst-ti-backdrop');if(!modal)return false;
@@ -390,12 +399,12 @@ function ensureTenderModal(r){
  var modal=document.getElementById('pst-ti-backdrop');
  if(!modal){modal=document.createElement('div');modal.id='pst-ti-backdrop';document.body.appendChild(modal);}
  if(!modal.classList.contains('pst-pcw-modal')){
-   modal.className='pst-pcw-modal';modal.removeAttribute('style');modal.innerHTML='<div id="pst-ti-card" role="dialog" aria-modal="true" aria-labelledby="pst-ti-title"><div class="pst-pcw-modal-head"><div><span>ACTION CONSOLE</span><h2 id="pst-ti-title"></h2><p id="pst-ti-meta"></p></div><button type="button" data-pcw-close-modal>Mbyll</button></div><div id="pst-ti-body"></div><div class="pst-pcw-modal-foot">PPPP nuk krijon projekt, nuk dërgon email dhe nuk merr angazhim pa veprimin tënd.</div></div>';
+   modal.className='pst-pcw-modal';modal.removeAttribute('style');modal.innerHTML='<div id="pst-ti-card" role="dialog" aria-modal="true" aria-labelledby="pst-ti-title"><div class="pst-pcw-modal-head"><div><span>ACTION CONSOLE</span><h2 id="pst-ti-title"></h2><p id="pst-ti-meta"></p></div><button type="button" data-pcw-close-modal>Mbyll</button></div><div id="pst-ti-body"></div><div class="pst-pcw-modal-foot">PPPP nuk krijon projekt, nuk d�rgon email dhe nuk merr angazhim pa veprimin t�nd.</div></div>';
  }
  var card=modal.querySelector('#pst-ti-card'),title=modal.querySelector('#pst-ti-title'),meta=modal.querySelector('#pst-ti-meta'),body=modal.querySelector('#pst-ti-body');
  if(!card||!title||!meta||!body)return null;
- title.textContent=S(r.title||'Mundësi');
- meta.textContent=sourceLabel(r)+' · Vlera: '+tenderValueLabel(r)+' · '+tenderScore(r)+'% relevant për PRISTEEL'+(winnerName(r)?' · '+winnerName(r):'');
+ title.textContent=S(r.title||'Mund�si');
+ meta.textContent=sourceLabel(r)+' � Vlera: '+tenderValueLabel(r)+' � '+tenderScore(r)+'% relevant p�r PRISTEEL'+(winnerName(r)?' � '+winnerName(r):'');
  body.innerHTML='';
  modal.hidden=false;modal.removeAttribute('aria-hidden');modal.style.display='flex';
  return body;
@@ -405,19 +414,19 @@ async function openTender(id){
  var b=ensureTenderModal(r);if(!b)return false;
  var sec=document.createElement('section');sec.id='pst-pcw-server-analysis';
  if(tenderMode(r)==='award'){
-   sec.innerHTML=tenderFactsHtml(r)+winnerBriefHtml(r)+'<div id="pst-pcw-award-ai" class="pst-pcw-ai-loading">PPPP po analizon mundësinë e bashkëpunimit…</div>';b.appendChild(sec);
+   sec.innerHTML=tenderFactsHtml(r)+winnerBriefHtml(r)+'<div id="pst-pcw-award-ai" class="pst-pcw-ai-loading">PPPP po analizon mund�sin� e bashk�punimit.</div>';b.appendChild(sec);
    b.insertAdjacentHTML('beforeend',modalActionBar(r));
    var out=await serverTenderAnalysis(r),aiBox=sec.querySelector('#pst-pcw-award-ai');
-   if(aiBox)aiBox.innerHTML=out?'<div class="pst-pcw-ai"><span>PPPP AI</span><p>'+E(out.answer||'').replace(/\n/g,'<br>')+'</p>'+(out.suggested_next_step?'<small><b>Hapi i radhës:</b> '+E(out.suggested_next_step)+'</small>':'')+'</div>':'Analiza shtesë e AI nuk u përgjigj. Klasifikimi dhe kontaktet e verifikuara më sipër mbeten të vlefshme.';
+   if(aiBox)aiBox.innerHTML=out?'<div class="pst-pcw-ai"><span>PPPP AI</span><p>'+E(out.answer||'').replace(/\n/g,'<br>')+'</p>'+(out.suggested_next_step?'<small><b>Hapi i radh�s:</b> '+E(out.suggested_next_step)+'</small>':'')+'</div>':'Analiza shtes� e AI nuk u p�rgjigj. Klasifikimi dhe kontaktet e verifikuara m� sip�r mbeten t� vlefshme.';
  }else{
-   sec.innerHTML='<div class="pst-pcw-decision-intro"><span>RRUGA E MUNDËSISË</span><b>1. Shkarko dosjen → 2. Analizo kushtet → 3. Ti vendos nëse bëhet projekt</b><small>Nuk krijohet projekt dhe nuk merret angazhim para analizës së dosjes.</small></div>';b.appendChild(sec);
+   sec.innerHTML='<div class="pst-pcw-decision-intro"><span>RRUGA E MUNDESISE</span><b>1. Shkarko dosjen  2. Analizo kushtet  3. Ti vendos n�se b�het projekt</b><small>Nuk krijohet projekt dhe nuk merret angazhim para analiz�s s� dosjes.</small></div>';b.appendChild(sec);
    b.insertAdjacentHTML('beforeend',modalActionBar(r));
  }
  return true;
 }
 async function exactSource(r){
  var P=tenderApi(),src=tenderSource(r),u=safeUrl(r&&r.detail_url)||safeUrl(r&&r.source_url);
- if(src==='APP_AL'){alert('Për tenderët APP, PPPP e merr dosjen në prapaskenë sipas referencës së saktë. Nuk po të dërgojmë te faqja e përgjithshme e APP-së sepse nuk ka lidhje të drejtpërdrejtë të sigurt për këtë rekord.');return false;}
+ if(src==='APP_AL'){alert('P�r tender�t APP, PPPP e merr dosjen n� prapasken� sipas referenc�s s� sakt�. Nuk po t� d�rgojm� te faqja e p�rgjithshme e APP-s� sepse nuk ka lidhje t� drejtp�rdrejt� t� sigurt p�r k�t� rekord.');return false;}
  if(u){window.open(u,'_blank','noopener');return true;}
  if(P&&typeof P.openSource==='function'){var out=P.openSource(r.id);return out!==false;}
  return false;
@@ -431,33 +440,33 @@ async function tenderAction(kind,id,btn){
  try{
    if(kind==='source')return await exactSource(r);
     if(kind==='open_project'){
-      if(!r.project_id)throw new Error('Opportunity ende nuk është lidhur me Project.');
+      if(!r.project_id)throw new Error('Opportunity ende nuk �sht� lidhur me Project.');
       closeTenderModal();
       if(typeof window.pstReleaseOpenProject==='function')return window.pstReleaseOpenProject(r.project_id);
       if(typeof window.pstOpenProjectWorkspace==='function')return window.pstOpenProjectWorkspace(r.project_id);
-      throw new Error('Hapja e Project-it nuk është gati.');
+      throw new Error('Hapja e Project-it nuk �sht� gati.');
     }
     if(kind==='communication'){
       var comm=communicationActive(r),url=S(comm&&comm.communication_gmail_url).trim();
       if(url&&/^https:\/\/mail\.google\.com\//i.test(url)){window.open(url,'_blank','noopener');return true;}
-      throw new Error('Komunikimi ekziston, por lidhja e Gmail nuk është e disponueshme.');
+      throw new Error('Komunikimi ekziston, por lidhja e Gmail nuk �sht� e disponueshme.');
     }
    if(kind==='contacts'){if(P&&typeof P.contacts==='function')return P.contacts(id);return false;}
    if(kind==='download'){
-     var DL=window.PSTTenderDossierAnalysisV1;if(!DL||typeof DL.download!=='function')throw new Error('Shkarkimi i dosjes nuk është gati. Rifresko platformën dhe provo përsëri.');
+     var DL=window.PSTTenderDossierAnalysisV1;if(!DL||typeof DL.download!=='function')throw new Error('Shkarkimi i dosjes nuk �sht� gati. Rifresko platform�n dhe provo p�rs�ri.');
      return await DL.download(id,btn);
    }
    if(kind==='dossier'){
-     var D=window.PSTTenderDossierAnalysisV1;if(!D||typeof D.analyze!=='function')throw new Error('Leximi i dosjes nuk është gati. Rifresko platformën dhe provo përsëri.');
-     var ok=await D.analyze(id,false);if(!ok)throw new Error('Dosja nuk u analizua. Shiko mesazhin në popup dhe provo përsëri.');
-     var ready=typeof D.isReady==='function'?D.isReady(id):dossierReady(id),create=document.querySelector('#pst-pcw-ti-actions [data-pcw-ti="go"][data-id="'+CSS.escape(S(id))+'"]');if(create){if(ready){create.disabled=false;create.removeAttribute('title');}else{create.disabled=true;create.title='Kërkohet Dosja e Tenderit / paramasa nga KRPP para krijimit të projektit.';}}
+     var D=window.PSTTenderDossierAnalysisV1;if(!D||typeof D.analyze!=='function')throw new Error('Leximi i dosjes nuk �sht� gati. Rifresko platform�n dhe provo p�rs�ri.');
+     var ok=await D.analyze(id,false);if(!ok)throw new Error('Dosja nuk u analizua. Shiko mesazhin n� popup dhe provo p�rs�ri.');
+     var ready=typeof D.isReady==='function'?D.isReady(id):dossierReady(id),create=document.querySelector('#pst-pcw-ti-actions [data-pcw-ti="go"][data-id="'+CSS.escape(S(id))+'"]');if(create){if(ready){create.disabled=false;create.removeAttribute('title');}else{create.disabled=true;create.title='K�rkohet Dosja e Tenderit / paramasa nga KRPP para krijimit t� projektit.';}}
      return true;
    }
    if(kind==='go'){
-     if(tenderMode(r)==='local'&&!dossierReady(id))throw new Error('Së pari merre dhe analizo dosjen e tenderit.');
+     if(tenderMode(r)==='local'&&!dossierReady(id))throw new Error('S� pari merre dhe analizo dosjen e tenderit.');
      await P.go(id);
    }else if(kind==='promote_award'){
-     if(typeof P.promoteAward!=='function')throw new Error('Aprovimi PPPP V2 nuk është gati. Rifresko platformën.');
+     if(typeof P.promoteAward!=='function')throw new Error('Aprovimi PPPP V2 nuk �sht� gati. Rifresko platform�n.');
      var promoted=await P.promoteAward(id);if(!promoted)return false;
      closeTenderModal();
      if(typeof window.pstReleaseOpenProject==='function')window.pstReleaseOpenProject(promoted.project_id);
@@ -487,8 +496,8 @@ async function hydrateContact(id){
    var projectNames={};A(row.projects).forEach(function(p){if(p&&p.project_id)projectNames[S(p.project_id)]=S(p.name||'Projekt');});
    function gmailLink(v){try{var u=new URL(S(v));return u.protocol==='https:'?u.href:'';}catch(e){return'';}}
    var sec=document.createElement('section');sec.id='pst-contact-live-context';sec.className='pcm-detail-section';
-   sec.innerHTML='<div class="pst-contact-live-head"><h3>Komunikimi i fundit</h3><span>'+recent.length+' emaila të fundit</span></div><div class="pst-contact-live-mails">'+recent.map(function(m){
-     var outgoing=N(m.direction)==='outgoing',url=gmailLink(m.gmail_url),project=projectNames[S(m.project_id)]||'',date=m.sent_at?new Date(m.sent_at).toLocaleDateString('sq-AL',{day:'2-digit',month:'short'}):'',body='<div class="pst-contact-mail-icon '+(outgoing?'out':'in')+'">'+(outgoing?'↑':'↓')+'</div><div class="pst-contact-mail-copy"><div class="pst-contact-mail-top"><b>'+E(m.subject||'Pa subjekt')+'</b><small>'+E(date)+'</small></div><p>'+E((m.snippet||'').slice(0,210))+'</p><span>'+E((outgoing?'Dërguar':'Marrë')+(project?' · '+project:''))+'</span></div>';
+   sec.innerHTML='<div class="pst-contact-live-head"><h3>Komunikimi i fundit</h3><span>'+recent.length+' emaila t� fundit</span></div><div class="pst-contact-live-mails">'+recent.map(function(m){
+     var outgoing=N(m.direction)==='outgoing',url=gmailLink(m.gmail_url),project=projectNames[S(m.project_id)]||'',date=m.sent_at?new Date(m.sent_at).toLocaleDateString('sq-AL',{day:'2-digit',month:'short'}):'',body='<div class="pst-contact-mail-icon '+(outgoing?'out':'in')+'">'+(outgoing?'':'')+'</div><div class="pst-contact-mail-copy"><div class="pst-contact-mail-top"><b>'+E(m.subject||'Pa subjekt')+'</b><small>'+E(date)+'</small></div><p>'+E((m.snippet||'').slice(0,210))+'</p><span>'+E((outgoing?'D�rguar':'Marr�')+(project?' � '+project:''))+'</span></div>';
      return url?'<a class="pst-contact-mail" href="'+E(url)+'" target="_blank" rel="noopener">'+body+'</a>':'<div class="pst-contact-mail">'+body+'</div>';
    }).join('')+'</div>';
    var sources=host.querySelector('.pcm-sources-section'),actions=host.querySelector('.pcm-detail-actions');if(sources)host.insertBefore(sec,sources);else if(actions)host.insertBefore(sec,actions);else host.appendChild(sec);
@@ -499,7 +508,7 @@ async function hydrateContact(id){
 function sessionNow(){try{return typeof window.authGetSession==='function'?window.authGetSession():null;}catch(e){return null;}}
 async function refreshSession(){try{return typeof window.authRefreshIfNeeded==='function'?await window.authRefreshIfNeeded():sessionNow();}catch(e){return sessionNow();}}
 async function edge(slug,payload){
- var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk është gati.');
+ var base=S(window._SB_URL).replace(/\/$/,''),key=S(window._SB_KEY);if(!base||!key)throw new Error('Supabase runtime nuk �sht� gati.');
  var s=sessionNow();if(s&&s.refresh_token&&s.expires_at&&Date.now()>=Number(s.expires_at))s=await refreshSession();var token=s&&s.access_token?s.access_token:'';if(!token)throw new Error('Sesioni ka skaduar.');
  async function run(t){return fetch(base+'/functions/v1/'+slug,{method:'POST',headers:{apikey:key,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify(payload)});}
  var res=await run(token);if(res.status===401){s=await refreshSession();if(s&&s.access_token)res=await run(s.access_token);}var raw=await res.text(),data=null;try{data=raw?JSON.parse(raw):null;}catch(e){}if(!res.ok||!data||data.ok===false)throw new Error(S(data&&(data.message||data.error)||('HTTP '+res.status)).slice(0,800));return data;
@@ -508,9 +517,9 @@ function currentProjectId(){var d=window.__pstIntegrityLastData,p=d&&d.project;r
 function ensureProjectUpdate(){
  var p=activePage('page-workspace-project');if(!p)return false;var pid=currentProjectId();if(!pid)return false;
  var box=document.getElementById('pst-project-operator-update');if(box){box.setAttribute('data-project-id',pid);return true;}
- box=document.createElement('section');box.id='pst-project-operator-update';box.setAttribute('data-project-id',pid);box.innerHTML='<div class="pst-pou-copy"><span>PËRDITËSIM I PROJEKTIT</span><b>Çfarë po ndodh me këtë projekt?</b><small>Shkruaj vendimin ose gjendjen reale. PPPP e ruan si kontekst dhe organizon vetëm veprimet e sigurta të brendshme.</small></div><form><textarea rows="2" placeholder="P.sh. Oferta është dërguar dhe tani presim përgjigjen e klientit. Bëj follow-up të premten."></textarea><button type="submit">Përditëso projektin</button></form><div class="pst-pou-result" hidden></div>';
+ box=document.createElement('section');box.id='pst-project-operator-update';box.setAttribute('data-project-id',pid);box.innerHTML='<div class="pst-pou-copy"><span>PERDITESIM I PROJEKTIT</span><b>�far� po ndodh me k�t� projekt?</b><small>Shkruaj vendimin ose gjendjen reale. PPPP e ruan si kontekst dhe organizon vet�m veprimet e sigurta t� brendshme.</small></div><form><textarea rows="2" placeholder="P.sh. Oferta �sht� d�rguar dhe tani presim p�rgjigjen e klientit. B�j follow-up t� premten."></textarea><button type="submit">P�rdit�so projektin</button></form><div class="pst-pou-result" hidden></div>';
  var anchor=p.querySelector('.pwf-project-context')||p.querySelector('.pf2-project-context')||p.firstElementChild;if(anchor&&anchor.parentNode)anchor.insertAdjacentElement('afterend',box);else p.prepend(box);
- var form=box.querySelector('form'),ta=box.querySelector('textarea'),result=box.querySelector('.pst-pou-result');form.onsubmit=async function(e){e.preventDefault();var update=S(ta.value).trim(),id=S(box.getAttribute('data-project-id'));if(!update||!id)return;var btn=form.querySelector('button');btn.disabled=true;btn.textContent='Duke përditësuar…';result.hidden=false;result.innerHTML='PPPP po e lexon vendimin dhe po rifreskon kontekstin…';try{var out=await edge('pppp-project-operator-update',{project_id:id,update:update});var acts=A(out.actions_applied),labels=acts.map(function(a){if(a.type==='task_created')return'Detyrë e re: '+S(a.task&&a.task.title);if(a.type==='project_update')return'Gjendja e projektit u përditësua';return a.type;});result.innerHTML='<b>'+E(out.summary||'Përditësimi u ruajt.')+'</b>'+(labels.length?'<span>'+E(labels.join(' · '))+'</span>':'<span>Konteksti u ruajt; nuk u bë ndryshim i panevojshëm në workflow.</span>');ta.value='';try{var B=window.PSTProjectContextBridge;if(B&&typeof B.clear==='function')B.clear(id);if(B&&typeof B.load==='function')B.load(id,true);}catch(x){}try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.refresh==='function')H.refresh();}catch(x){}try{var C=window.PSTProjectClassificationV1;if(C&&typeof C.schedule==='function')C.schedule();}catch(x){}try{document.dispatchEvent(new CustomEvent('pst:project-operator-updated',{detail:{project_id:id,result:out}}));}catch(x){}}catch(err){result.innerHTML='<b>Nuk u ruajt.</b><span>'+E(err&&err.message||err)+'</span>';}finally{btn.disabled=false;btn.textContent='Përditëso projektin';}};
+ var form=box.querySelector('form'),ta=box.querySelector('textarea'),result=box.querySelector('.pst-pou-result');form.onsubmit=async function(e){e.preventDefault();var update=S(ta.value).trim(),id=S(box.getAttribute('data-project-id'));if(!update||!id)return;var btn=form.querySelector('button');btn.disabled=true;btn.textContent='Duke p�rdit�suar.';result.hidden=false;result.innerHTML='PPPP po e lexon vendimin dhe po rifreskon kontekstin.';try{var out=await edge('pppp-project-operator-update',{project_id:id,update:update});var acts=A(out.actions_applied),labels=acts.map(function(a){if(a.type==='task_created')return'Detyr� e re: '+S(a.task&&a.task.title);if(a.type==='project_update')return'Gjendja e projektit u p�rdit�sua';return a.type;});result.innerHTML='<b>'+E(out.summary||'P�rdit�simi u ruajt.')+'</b>'+(labels.length?'<span>'+E(labels.join(' � '))+'</span>':'<span>Konteksti u ruajt; nuk u b� ndryshim i panevojsh�m n� workflow.</span>');ta.value='';try{var B=window.PSTProjectContextBridge;if(B&&typeof B.clear==='function')B.clear(id);if(B&&typeof B.load==='function')B.load(id,true);}catch(x){}try{var H=window.PSTHomeCanonicalV1;if(H&&typeof H.refresh==='function')H.refresh();}catch(x){}try{var C=window.PSTProjectClassificationV1;if(C&&typeof C.schedule==='function')C.schedule();}catch(x){}try{document.dispatchEvent(new CustomEvent('pst:project-operator-updated',{detail:{project_id:id,result:out}}));}catch(x){}}catch(err){result.innerHTML='<b>Nuk u ruajt.</b><span>'+E(err&&err.message||err)+'</span>';}finally{btn.disabled=false;btn.textContent='P�rdit�so projektin';}};
  return true;
 }
 
