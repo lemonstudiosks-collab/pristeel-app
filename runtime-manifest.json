@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "77045f29e45ce3e198b5181d163eb540bc4f6808"
+    "bootstrapGitBlobSha": "89c990617ab441dac357f1f6d36c9d20e9900720"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -492,7 +492,8 @@
   ],
   "notes": [
     "2026-09-25: Sales Engine V3 adds a unified low-egress commercial workbench; cold draft generation remains human-selected and Supplier RFQs require Supplier Gate.",
-    "2026-09-25: Final Commercial Engine V3 hardening closes the no-BOM Supplier Gate bypass, keeps Material Trade supplier sourcing read-only until client signal, and hardens Opportunity DB access."
+    "2026-09-25: Final Commercial Engine V3 hardening closes the no-BOM Supplier Gate bypass, keeps Material Trade supplier sourcing read-only until client signal, and hardens Opportunity DB access.",
+    "2026-10-06: Opportunities shows one stage-specific primary action and a native secondary-actions menu; RFQ handoff appears only for Arianit after project linkage and an explicit supplier shortlist. Existing dossier, draft, task and protected-action owners remain authoritative. Only RFQ Sourcing and Finalizer cache identities change in the 166-module bootstrap; order is preserved."
   ],
   "dedicatedWorkspaces": [
     {

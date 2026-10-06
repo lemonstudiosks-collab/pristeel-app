@@ -7,7 +7,7 @@
 'use strict';
 if(window.__pstTenderSupplierSourcingV1)return;
 window.__pstTenderSupplierSourcingV1=true;
-var state={byTender:{},busy:{}};
+var state={byTender:{},busy:{},loadedAt:{}};
 function A(v){return Array.isArray(v)?v:[];}
 function S(v){return String(v==null?'':v);}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -90,8 +90,9 @@ function personName(x){return S(x&&x.name||x&&x.company_name||'Furnitor');}
 function candidateHtml(x,kind,req,projectId){
  var mail=S(x&&x.email||x&&x.contact_email),site=S(x&&x.website||x&&x.website_url),bits=evidenceBits(x),why=S(x&&x.dimension_evidence&&x.dimension_evidence.reason||x&&x.duplicate_reason||'');
  var draft=kind==='ready'&&mail?'<button type="button" data-tss-draft="1" data-email="'+E(mail)+'" data-name="'+E(personName(x))+'" data-req="'+E(req.id)+'" data-project="'+E(projectId||'')+'">Përgatit RFQ</button>':'';
- var shortlist=kind==='ready'&&mail?'<button type="button" data-tss-shortlist="1" data-name="'+E(personName(x))+'" data-email="'+E(mail)+'" data-req="'+E(req.id)+'" data-project="'+E(projectId||'')+'">Shortlist</button>':'';
- return '<div class="pst-tss-candidate '+E(kind)+'"><div><b>'+E(personName(x))+'</b><small>'+E(sourceLabel(x))+(x&&x.country?' · '+E(x.country):'')+'</small></div><div class="pst-tss-evidence">'+(bits.length?bits.map(function(b){return'<span>'+E(b)+'</span>';}).join(''):'<span>kërkon verifikim</span>')+(why?'<em>'+E(why)+'</em>':'')+'</div><div class="pst-tss-c-actions">'+(site&&/^https:\/\//i.test(site)?'<a href="'+E(site)+'" target="_blank" rel="noopener">Website ↗</a>':'')+(mail?'<a href="mailto:'+E(mail)+'">'+E(mail)+'</a>':'')+shortlist+draft+'</div></div>';
+ var shortlist=kind==='ready'&&mail?'<label class="pst-tss-shortlist-choice"><input type="checkbox" data-tss-shortlist="1" data-name="'+E(personName(x))+'" data-email="'+E(mail)+'" data-req="'+E(req.id)+'" data-project="'+E(projectId||'')+'"><span>Përzgjidh për shortlist</span></label>':'';
+ var tools=(site&&/^https:\/\//i.test(site)?'<a href="'+E(site)+'" target="_blank" rel="noopener">Website ↗</a>':'')+(mail?'<a href="mailto:'+E(mail)+'">'+E(mail)+'</a>':'')+draft;
+ return '<div class="pst-tss-candidate '+E(kind)+'"><div><b>'+E(personName(x))+'</b><small>'+E(sourceLabel(x))+(x&&x.country?' · '+E(x.country):'')+'</small></div><div class="pst-tss-evidence">'+(bits.length?bits.map(function(b){return'<span>'+E(b)+'</span>';}).join(''):'<span>kërkon verifikim</span>')+(why?'<em>'+E(why)+'</em>':'')+'</div><div class="pst-tss-c-actions">'+shortlist+(tools?'<details class="pst-tss-tools"><summary aria-label="Veprime për furnitorin">⋯</summary><div>'+tools+'</div></details>':'')+'</div></div>';
 }
 function listBlock(title,cls,rows,req,projectId,empty){
  return '<details class="pst-tss-list '+cls+'" '+(cls==='ready'?'open':'')+'><summary><span>'+E(title)+'</span><b>'+rows.length+'</b></summary><div>'+(rows.length?rows.slice(0,8).map(function(x){return candidateHtml(x,cls,req,projectId);}).join(''):'<p>'+E(empty)+'</p>')+(rows.length>8?'<small class="pst-tss-more">+'+(rows.length-8)+' kandidatë të tjerë</small>':'')+'</div></details>';
@@ -113,6 +114,7 @@ function workflowHtml(w){
  w=w||{};return '<div class="pst-tss-workflow"><div><b>'+Number(w.rfq_prepared||0)+'</b><span>RFQ të përgatitura</span></div><div><b>'+Number(w.rfq_sent||0)+'</b><span>të dërguara</span></div><div><b>'+Number(w.replies||0)+'</b><span>përgjigje</span></div><div><b>'+Number(w.offers_received||0)+'</b><span>oferta të lidhura</span></div></div>';
 }
 function render(data){
+ var actions=document.getElementById('pst-pcw-ti-actions'),active=actions&&S(actions.getAttribute('data-tender-id'));if(active&&active!==S(data&&data.tender_id))return false;
  var p=host();if(!p)return false;state.byTender[S(data.tender_id)]=data;
  var req=A(data.requirements),source=data.requirement_source==='canonical_bom'?'BOM kanonik + kërkesat e tenderit':'Analiza e dosjes';
  p.setAttribute('data-tender-id',S(data.tender_id));
@@ -126,19 +128,19 @@ function mergeOne(oldData,newData,id){
  var req=A(oldData.requirements).map(function(r){return S(r.id)===S(id)?incoming:r;});
  return Object.assign({},oldData,newData,{requirements:req,summary:Object.assign({},oldData.summary,newData.summary,{requirements:req.length,external_search_executed:true})});
 }
-async function load(id,discover,only){
- id=S(id);if(!id||state.busy[id])return false;state.busy[id]=true;var p=host();if(p)p.classList.add('busy');
+async function load(id,discover,only,force){
+ id=S(id);if(!id||state.busy[id])return false;if(!discover&&!force&&state.byTender[id]&&Date.now()-Number(state.loadedAt[id]||0)<300000){render(state.byTender[id]);return state.byTender[id];}state.busy[id]=true;var p=host();if(p)p.classList.add('busy');
  try{
    var data=await edge({tender_id:id,discover:discover===true,requirement_id:only||undefined});
    if(only&&state.byTender[id])data=mergeOne(state.byTender[id],data,only);
-   render(data);return data;
+   state.loadedAt[id]=Date.now();render(data);return data;
  }catch(e){
    if(p)p.innerHTML='<div class="pst-tss-error"><b>Supplier Intelligence nuk u ngarkua.</b><span>'+E(e&&e.message||e)+'</span><button type="button" data-tss-retry="'+E(id)+'">Provo përsëri</button></div>';
    return false;
  }finally{state.busy[id]=false;if(p)p.classList.remove('busy');}
 }
 async function maybeMount(id){
- id=S(id);if(!id)return false;
+ id=S(id);if(!id)return false;if(state.byTender[id]&&Date.now()-Number(state.loadedAt[id]||0)<300000)return load(id,false,'');
  try{
    var rows=A(await db('kek_tender_watch?id=eq.'+encodeURIComponent(id)+'&select=id,payload&limit=1')),r=rows[0],p=r&&r.payload||{},d=p.dossier_analysis||{},ready=S(p.dossier_analysis_status)==='ready'||!!(d.analysis&&d.analysis.coverage&&d.analysis.coverage.complete===true)||d.dossier_complete===true;
    if(!ready)return false;
@@ -170,7 +172,7 @@ async function gmailDraft(email,name,reqId){
 }
 function click(e){
  var d=e.target&&e.target.closest?e.target.closest('[data-tss-discover]'):null;if(d){e.preventDefault();var panel=document.getElementById('pst-tender-supplier-sourcing'),tid=S(panel&&panel.getAttribute('data-tender-id'));load(tid,true,d.getAttribute('data-tss-discover'));return;}
- var retry=e.target&&e.target.closest?e.target.closest('[data-tss-retry]'):null;if(retry){e.preventDefault();load(retry.getAttribute('data-tss-retry'),false,'');return;}
+ var retry=e.target&&e.target.closest?e.target.closest('[data-tss-retry]'):null;if(retry){e.preventDefault();load(retry.getAttribute('data-tss-retry'),false,'',true);return;}
  var draft=e.target&&e.target.closest?e.target.closest('[data-tss-draft]'):null;if(draft){e.preventDefault();draft.disabled=true;Promise.resolve(gmailDraft(draft.getAttribute('data-email'),draft.getAttribute('data-name'),draft.getAttribute('data-req'))).finally(function(){draft.disabled=false;});return;}
  var tender=e.target&&e.target.closest?e.target.closest('[data-pcw-tender]'):null;if(tender){var id=tender.getAttribute('data-pcw-tender');setTimeout(function(){maybeMount(id);},140);}
 }
@@ -186,12 +188,12 @@ function css(){
 .pst-tss-coverage{min-width:70px;text-align:center;border:1px solid #dce5e8;border-radius:12px;padding:8px;background:#f9fbfb}.pst-tss-coverage b{display:block;font-size:17px}.pst-tss-coverage small{font-size:8px;color:#71858d}
 .pst-tss-badges{display:flex;gap:5px;flex-wrap:wrap;margin:9px 0}.pst-tss-statusline{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:10px;background:#f7fafb}.pst-tss-statusline span{font-size:9px;font-weight:800}.pst-tss-statusline .warn{color:#8b6424}.pst-tss-statusline .ok{color:#47765e}.pst-tss-statusline button,.pst-tss-c-actions button,.pst-tss-error button{border:1px solid #7ca8b7;background:#edf6f8;color:#356f82;border-radius:9px;padding:7px 9px;font-size:9px;font-weight:850;cursor:pointer}.pst-tss-statusline button:disabled{opacity:.6;cursor:wait}.pst-tss-discovery-note{display:block;margin:7px 2px;color:#71858d;font-size:9px}
 .pst-tss-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}.pst-tss-list{border:1px solid #e0e7ea;border-radius:10px;background:#fcfdfd;overflow:hidden}.pst-tss-list summary{display:flex;justify-content:space-between;gap:8px;padding:9px 10px;cursor:pointer;font-size:9px;font-weight:850}.pst-tss-list summary b{border-radius:999px;padding:2px 6px;background:#edf3f5}.pst-tss-list>div{padding:0 8px 8px}.pst-tss-list>div>p{padding:8px;margin:0;font-size:9px;color:#87969b}.pst-tss-list.ready summary{color:#47765e}.pst-tss-list.review summary{color:#8b6424}.pst-tss-list.conflict summary{color:#8a5555}
-.pst-tss-candidate{padding:8px 6px;border-top:1px solid #edf1f2;display:grid;gap:5px}.pst-tss-candidate:first-child{border-top:0}.pst-tss-candidate b{font-size:9px}.pst-tss-candidate small{display:block;font-size:8px;color:#758990;margin-top:2px}.pst-tss-evidence{display:flex;gap:4px;flex-wrap:wrap}.pst-tss-evidence span{font-size:7px;border-radius:999px;padding:3px 5px;background:#f0f4f5;color:#63777e}.pst-tss-evidence em{width:100%;font-size:7px;color:#8a6767;font-style:normal}.pst-tss-c-actions{display:flex;gap:5px;flex-wrap:wrap}.pst-tss-c-actions a,.pst-tss-c-actions button{font-size:7px;text-decoration:none}.pst-tss-c-actions a{color:#39788e;border-bottom:1px dotted #7ca8b7}.pst-tss-more{display:block;padding:6px;font-size:8px;color:#7b8c92}.pst-tss-foot{margin-top:11px;padding-top:9px;border-top:1px solid #e0e8ea;font-size:8px;color:#72858c;line-height:1.5}
+.pst-tss-candidate{padding:8px 6px;border-top:1px solid #edf1f2;display:grid;gap:5px}.pst-tss-candidate:first-child{border-top:0}.pst-tss-candidate b{font-size:9px}.pst-tss-candidate small{display:block;font-size:8px;color:#758990;margin-top:2px}.pst-tss-evidence{display:flex;gap:4px;flex-wrap:wrap}.pst-tss-evidence span{font-size:7px;border-radius:999px;padding:3px 5px;background:#f0f4f5;color:#63777e}.pst-tss-evidence em{width:100%;font-size:7px;color:#8a6767;font-style:normal}.pst-tss-c-actions{display:flex;gap:5px;flex-wrap:wrap}.pst-tss-c-actions a,.pst-tss-c-actions button{font-size:7px;text-decoration:none}.pst-tss-c-actions a{color:#39788e;border-bottom:1px dotted #7ca8b7}.pst-tss-shortlist-choice{display:flex;align-items:center;gap:8px;font-size:11px;cursor:pointer}.pst-tss-shortlist-choice input{width:16px;height:16px;accent-color:#397f98}.pst-tss-tools{position:relative;margin-left:auto}.pst-tss-tools>summary{list-style:none;cursor:pointer;padding:3px 8px;font-size:19px}.pst-tss-tools>summary::-webkit-details-marker{display:none}.pst-tss-tools>div{position:absolute;right:0;top:100%;z-index:4;min-width:180px;border:1px solid #d6e1e5;border-radius:10px;background:#fff;padding:7px;display:grid;gap:6px;box-shadow:0 5px 20px rgba(35,62,82,.1)}.pst-tss-more{display:block;padding:6px;font-size:8px;color:#7b8c92}.pst-tss-foot{margin-top:11px;padding-top:9px;border-top:1px solid #e0e8ea;font-size:8px;color:#72858c;line-height:1.5}
 #pst-tender-supplier-sourcing.busy{opacity:.72;pointer-events:none}
 @media(max-width:900px){.pst-tss-categories{grid-template-columns:1fr}.pst-tss-workflow{grid-template-columns:repeat(2,minmax(0,1fr))}}
 `;document.head.appendChild(s);
 }
-document.addEventListener('pst:tender-dossier-ready',function(e){var d=e&&e.detail||{};if(d.analysis_ready===true&&d.dossier_complete!==false&&d.tender_id)load(d.tender_id,false,'');});
+document.addEventListener('pst:tender-dossier-ready',function(e){var d=e&&e.detail||{};if(d.analysis_ready===true&&d.dossier_complete!==false&&d.tender_id){if(d.cached!==true)state.loadedAt[S(d.tender_id)]=0;load(d.tender_id,false,'');}});
 document.addEventListener('click',click);
 window.PSTTenderSupplierSourcingV1={load:load,maybeMount:maybeMount,render:render,_state:state};
 })();

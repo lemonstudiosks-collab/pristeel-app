@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {JSDOM} from 'jsdom';
+
+const dom=new JSDOM('<!doctype html><html><head></head><body><section id="page-kek-tenders" class="page active" style="display:block"><div class="pst-kek-layout"><div class="pst-kek-head"></div></div></section></body></html>',{url:'https://example.test',runScripts:'outside-only',pretendToBeVisual:true});
+const {window:w}=dom;w.scrollTo=()=>{};w.setTimeout=()=>0;w.CSS={escape:s=>String(s)};
+let email='arianit.vllahiu@prissteel.com',prepares=0,go=0,drafts=0,edgeCalls=0;
+const calls=[],alerts=[];
+const rows=[{id:'local',title:'Steel structure',status:'new',payload:{source:'KRPP',notice_phase:'opportunity'}},{id:'ted',title:'Awarded building',status:'new',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',email:'info@example.de'}}}];
+let data={ok:true,tender_id:'local',project_id:null,requirements:[{id:'steel',label:'Steel',minimum_rfq_ready:2,internal:{candidates:[{name:'Alpha',email:'sales@alpha.test',strict_fit:true},{name:'Beta',email:'sales@beta.test',strict_fit:true},{name:'Review only',email:'sales@review.test',review_fit:true}]}}]};
+w.authGetSession=()=>({email,access_token:'x.'+Buffer.from(JSON.stringify({email})).toString('base64url')+'.y'});
+w._SB_URL='https://fixture.supabase.co';w._SB_KEY='fixture';
+w.supaFetch=async(p,m,b)=>{calls.push({p,m,b});if(p.startsWith('kek_tender_watch?'))return rows;if(p.startsWith('tasks?'))return[];return[];};
+w.fetch=async(url,opts)=>{assert(url.endsWith('/functions/v1/pppp-tender-supplier-sourcing-v1'));const payload=JSON.parse(opts.body);assert.equal(payload.discover,false,'opening/reopening never launches external discovery');edgeCalls++;return{ok:true,text:async()=>JSON.stringify(data)};};
+w.alert=x=>alerts.push(x);w.open=()=>{throw Error('No external window expected');};
+w.PSTTenderPriorityActionsV1=w.PSTTenderPriorityActionsV2={go:async()=>{go++;rows[0].project_id='project-1';return 'project-1';},review:async()=>{},noGo:async()=>{},prepareDraft:async()=>{drafts++;return{results:[{event:'preview_cancelled'}]};}};
+for(const p of ['pristeel-project-centric-workflow-v1.js','pristeel-opportunities-filter-polish-v1.js','pristeel-rfq-sourcing-workflow-v1.js','pristeel-tender-supplier-sourcing-v1.js'])w.eval(fs.readFileSync(p,'utf8'));
+w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+const api=w.PSTProjectCentricWorkflowV1,desk=w.PSTOpportunitiesDeskV1,sourcing=w.PSTTenderSupplierSourcingV1,rfq=w.PSTRfqSourcingWorkflowV1;
+await api.loadOpportunities(true);desk.apply();
+w.document.querySelector('[data-pst-opp-select="ted"]').click();
+const gmail=w.document.querySelector('[data-pst-opp-draft]');
+assert(gmail.querySelector('.pst-gmail-draft-icon'),'Gmail logo is preserved');
+assert.equal(w.getComputedStyle(gmail).backgroundColor,'rgb(255, 255, 255)','first-page draft button is white');
+assert.equal(w.getComputedStyle(gmail).minHeight,'41px','draft action is compact');
+assert.equal(w.document.querySelectorAll('.pst-opp-detail-actions > button').length,2,'only primary draft and remove remain outside the menu');
+assert(w.document.querySelector('.pst-opp-more [data-pst-opp-open]'),'tender analysis remains reachable');
+gmail.click();await new Promise(setImmediate);assert.equal(drafts,1,'compact draft button keeps the canonical preview handler');
+w.document.querySelector('[data-pst-opp-close]').click();
+
+function dossier(complete){let p=w.document.getElementById('pst-tda-analysis');if(!p){p=w.document.createElement('section');p.id='pst-tda-analysis';w.document.getElementById('pst-ti-body').append(p);}p.setAttribute('data-tender-id','local');p.setAttribute('data-analysis-ready','1');p.setAttribute('data-dossier-complete',complete?'1':'0');w.document.dispatchEvent(new w.CustomEvent('pst:tender-dossier-ready',{detail:{tender_id:'local',analysis_ready:true,dossier_complete:complete,cached:false}}));}
+w.PSTTenderDossierAnalysisV1={analyze:async()=>{prepares++;dossier(false);return true;},isReady:()=>false};
+await api.openTender('local');
+let prepare=w.document.querySelector('[data-pcw-ti="dossier"]'),create=w.document.querySelector('[data-pcw-ti="go"]');
+assert.equal(prepare.textContent,'Përgatit për vlerësim');assert(create.hidden&&create.disabled);
+assert(w.document.querySelector('.pst-pcw-more [data-pcw-ti="download"]'),'ZIP download stays in the menu');
+prepare.click();await new Promise(setImmediate);assert.equal(prepares,1);assert.equal(go,0);assert(create.hidden&&create.disabled,'partial analysis cannot create a project');
+w.document.dispatchEvent(new w.CustomEvent('pst:tender-dossier-ready',{detail:{tender_id:'another',analysis_ready:true,dossier_complete:true}}));assert(create.hidden,'another tender cannot unlock this tender');
+dossier(true);await new Promise(setImmediate);assert(prepare.hidden);assert(!create.hidden&&!create.disabled);assert.equal(go,0,'ready analysis never creates a project automatically');
+let inputs=w.document.querySelectorAll('[data-rsq-shortlist]');assert.equal(inputs.length,2,'only RFQ-ready candidates are selectable');assert([...inputs].every(x=>x.type==='checkbox'));
+inputs[0].click();assert(w.document.querySelector('[data-rsq-handoff]').hidden,'handoff requires an existing project');
+
+create.click();await new Promise(setImmediate);await new Promise(setImmediate);assert.equal(go,1,'project creation requires the explicit stage action');
+data={...data,project_id:'project-1'};
+assert.equal(sourcing._state.byTender.local.project_id,'project-1','handoff receives the real project identity returned by the canonical GO owner');
+let open=w.document.querySelector('[data-pcw-ti="open_project"]'),handoff=w.document.querySelector('[data-rsq-handoff]');
+assert(!handoff.hidden,'previous human selection survives rerender');assert(open.hidden,'handoff replaces the console primary action');
+inputs=w.document.querySelectorAll('[data-rsq-shortlist]');inputs[0].click();assert(handoff.hidden&&!open.hidden,'deselecting restores the project action');
+inputs[0].click();inputs[1].click();assert.equal(handoff.textContent,'Dërgo te Oltiani');
+assert.equal(calls.filter(x=>x.m).length,0,'selection alone never writes a task');
+handoff.click();await new Promise(setImmediate);await new Promise(setImmediate);
+const write=calls.find(x=>x.p==='tasks'&&x.m==='POST');assert(write);assert.equal(write.b.assigned_to_email,'oltian.vllahiu@prissteel.com');assert.equal(write.b.metadata.shortlisted_suppliers.length,2);assert.equal(write.b.metadata.requirements.length,1);assert(handoff.hidden&&!open.hidden,'after handoff the project action returns');
+
+email='oltian.vllahiu@prissteel.com';sourcing.render(data);assert([...w.document.querySelectorAll('[data-rsq-shortlist]')].every(x=>x.disabled));assert(w.document.querySelector('[data-rsq-handoff]').hidden,'Oltian cannot hand off to himself');
+await assert.rejects(rfq.upsertHandoff(data,[{email:'sales@alpha.test'}]),/Vetëm Arianiti/);
+const before=edgeCalls,reads=calls.length;await sourcing.load('local',false,'');await sourcing.maybeMount('local');assert.equal(edgeCalls,before,'reopen reuses existing supplier evidence');assert.equal(calls.length,reads,'cached reopen does not reread Supabase');
+rows.push({id:'other-local',title:'Another structure',status:'new',payload:{source:'KRPP',notice_phase:'opportunity'}});
+let resolveOld;w.fetch=async()=>new Promise(resolve=>{resolveOld=()=>resolve({ok:true,text:async()=>JSON.stringify(data)});});
+const pending=sourcing.load('local',false,'',true);await api.openTender('other-local');resolveOld();await pending;
+assert(!w.document.querySelector('#pst-tender-supplier-sourcing'),'an older supplier response cannot repaint a different tender');
+assert.deepEqual(alerts,[]);dom.window.close();
+console.log('Opportunity stage actions: compact Gmail, readiness gates, shortlist/handoff roles, no implicit writes and cached reopen OK');

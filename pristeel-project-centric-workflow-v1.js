@@ -337,7 +337,7 @@ async function partnerContext(){
  try{var rows=A(await db('partners?select=name,country,business_type,relation,categories,certifications,importance_reason,notes&limit=80'));tenderState.partners=rows.filter(function(r){var rel=A(r.relation).map(N),cat=A(r.categories).map(N);return rel.indexOf('manufacturer')>-1||rel.indexOf('subcontractor')>-1||rel.indexOf('supplier')>-1||cat.indexOf('fabrication')>-1;}).slice(0,80);}catch(e){tenderState.partners=[];}
  return tenderState.partners;
 }
-function tenderById(id){return tenderState.rows.find(function(r){return S(r.id)===S(id);})||null;}
+function tenderById(id){return tenderState.rows.concat(tenderState.projectRows).find(function(r){return S(r.id)===S(id);})||null;}
 async function serverTenderAnalysis(r){
  var AI=window.PSTOpenAIAssistantV1;if(!AI||typeof AI.ask!=='function')return null;
  var role=winnerRole(r),q='';
@@ -381,15 +381,27 @@ function officialSourceAction(r,label){
 }
 var GMAIL_DRAFT_ACTION_ICON='<svg class="pst-gmail-draft-icon" viewBox="0 0 24 18" width="24" height="18" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M1.4 3.3v12.9c0 .8.6 1.4 1.4 1.4h2.7V7.2L1.4 4.1v-.8z"/><path fill="#34A853" d="M18.5 7.2v10.4h2.7c.8 0 1.4-.6 1.4-1.4V3.3l-4.1.8v3.1z"/><path fill="#EA4335" d="M1.9 2.1c.5-.4 1.2-.4 1.8 0L12 8.3l8.3-6.2c.6-.4 1.3-.4 1.8 0 .3.2.5.6.5 1v1L12 12 1.4 4.1v-1c0-.4.2-.8.5-1z"/><path fill="#FBBC04" d="M5.5 7.2 12 12 18.5 7.2v3.5L12 15.5l-6.5-4.8V7.2z"/></svg>';
 function gmailDraftAction(label){return GMAIL_DRAFT_ACTION_ICON+'<span class="pst-gmail-draft-label">'+E(label||'Krijo draft në Gmail')+'</span>';}
+function opportunityTools(html){return '<details class="pst-pcw-more"><summary aria-label="Veprime të tjera">⋯</summary><div>'+html+'</div></details>';}
 function modalActionBar(r){
- var id=E(r.id),award=tenderMode(r)==='award',comm=communicationActive(r);
+ var id=E(r.id),award=tenderMode(r)==='award',comm=communicationActive(r),primary='',remove='',tools='';
  if(award){
    var replied=comm&&S(comm.communication_state)==='replied',communicationLabel=replied?'Përgjigje e marrë · Hap Gmail':'Kontaktuar · Hap Gmail';
-   if(r.project_id)return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap Project-in</button>'+(comm?'<button data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button>':'<button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Përgatit draftet në Gmail')+'</button>')+'<button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'</div>';
-   if(comm)return '<div id="pst-pcw-ti-actions"><button class="primary" data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
-   return '<div id="pst-pcw-ti-actions"><button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Krijo draft në Gmail')+'</button><button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Refuzo</button></div>';
+   primary=r.project_id?'<button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap projektin</button>':comm?'<button class="primary" data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button>':'<button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Krijo draft në Gmail')+'</button>';
+   if(r.project_id)tools+=comm?'<button data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button>':'<button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Përgatit draftet në Gmail')+'</button>';
+   tools+='<button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED');
+ }else{
+   primary=r.project_id?'<button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap projektin</button>':'<button class="primary dossier" data-pcw-ti="dossier" data-id="'+id+'">Përgatit për vlerësim</button><button class="create" data-pcw-ti="go" data-id="'+id+'" hidden disabled title="Krijimi aktivizohet pas analizës së plotë të dosjes.">Krijo projekt</button>';
+   tools+='<button data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen ZIP</button><button data-tda-force="'+id+'">Rilexo dosjen zyrtare</button>'+officialSourceAction(r,'Burimi zyrtar');
  }
- return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'"><button class="primary download" data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen</button><button class="dossier" data-pcw-ti="dossier" data-id="'+id+'">Analizo kushtet</button><button class="create" data-pcw-ti="go" data-id="'+id+'" disabled title="Krijimi i projektit aktivizohet pasi PPPP ta ketë analizuar dosjen.">Krijo projekt</button>'+officialSourceAction(r,'Burimi zyrtar')+'<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button><button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe nga lista</button></div>';
+ if(!r.project_id){tools+='<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button>';remove='<button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe</button>';}
+ return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'">'+primary+remove+opportunityTools(tools)+'</div>';
+}
+function updateTenderStage(detail){
+ var actions=document.getElementById('pst-pcw-ti-actions');if(!actions||S(actions.getAttribute('data-tender-id'))!==S(detail&&detail.tender_id))return false;
+ var prepare=actions.querySelector('[data-pcw-ti="dossier"]'),create=actions.querySelector('[data-pcw-ti="go"]'),ready=detail.analysis_ready===true&&detail.dossier_complete===true;
+ if(prepare){prepare.hidden=ready;prepare.disabled=false;}
+ if(create){create.hidden=!ready;create.disabled=!ready;if(ready)create.removeAttribute('title');}
+ return true;
 }
 function closeTenderModal(){
  var modal=document.getElementById('pst-ti-backdrop');if(!modal)return false;
@@ -419,7 +431,7 @@ async function openTender(id){
    var out=await serverTenderAnalysis(r),aiBox=sec.querySelector('#pst-pcw-award-ai');
    if(aiBox)aiBox.innerHTML=out?'<div class="pst-pcw-ai"><span>PPPP AI</span><p>'+E(out.answer||'').replace(/\n/g,'<br>')+'</p>'+(out.suggested_next_step?'<small><b>Hapi i radhës:</b> '+E(out.suggested_next_step)+'</small>':'')+'</div>':'Analiza shtesë e AI nuk u përgjigj. Klasifikimi dhe kontaktet e verifikuara më sipër mbeten të vlefshme.';
  }else{
-   sec.innerHTML='<div class="pst-pcw-decision-intro"><span>RRUGA E MUNDËSISË</span><b>1. Shkarko dosjen → 2. Analizo kushtet → 3. Ti vendos nëse bëhet projekt</b><small>Nuk krijohet projekt dhe nuk merret angazhim para analizës së dosjes.</small></div>';b.appendChild(sec);
+   sec.innerHTML='<div class="pst-pcw-decision-intro"><span>RRUGA E MUNDËSISË</span><b>PPPP përgatit dosjen, kërkesat dhe kandidatët; ti vendos nëse bëhet projekt</b><small>Nuk krijohet projekt dhe nuk merret angazhim para analizës së dosjes.</small></div>';b.appendChild(sec);
    b.insertAdjacentHTML('beforeend',modalActionBar(r));
  }
  return true;
@@ -435,7 +447,7 @@ function dossierReady(id){
  var panel=document.getElementById('pst-tda-analysis');return !!(panel&&S(panel.getAttribute('data-tender-id'))===S(id)&&panel.getAttribute('data-analysis-ready')==='1'&&panel.getAttribute('data-dossier-complete')==='1');
 }
 async function tenderAction(kind,id,btn){
- var P=tenderApi(),r=tenderById(id);if(!P||!r)return false;
+ var P=tenderApi(),r=tenderById(id),keepHandoff=false;if(!P||!r)return false;
  if(btn)btn.disabled=true;
  try{
    if(kind==='source')return await exactSource(r);
@@ -464,7 +476,9 @@ async function tenderAction(kind,id,btn){
    }
    if(kind==='go'){
      if(tenderMode(r)==='local'&&!dossierReady(id))throw new Error('Së pari merre dhe analizo dosjen e tenderit.');
-     await P.go(id);
+     var projectId=await P.go(id);if(!projectId)return false;
+     var sourcing=window.PSTTenderSupplierSourcingV1,prepared=sourcing&&sourcing._state&&sourcing._state.byTender[S(id)];
+     if(typeof projectId==='string'&&prepared&&typeof sourcing.render==='function'){r.project_id=projectId;prepared=Object.assign({},prepared,{project_id:projectId});await openTender(id);sourcing.render(prepared);keepHandoff=true;}
    }else if(kind==='promote_award'){
      if(typeof P.promoteAward!=='function')throw new Error('Aprovimi PPPP V2 nuk është gati. Rifresko platformën.');
      var promoted=await P.promoteAward(id);if(!promoted)return false;
@@ -475,8 +489,8 @@ async function tenderAction(kind,id,btn){
    else if(kind==='draft')await P.prepareDraft(id);
    else if(kind==='nogo')await P.noGo(id);
    else return false;
-   tenderState.last=0;await loadOpportunities(true);if((kind==='nogo'||kind==='go'||kind==='promote_award')&&window.pstTenderIntelligenceClose)window.pstTenderIntelligenceClose();return true;
- }catch(e){alert(e&&e.message||e);return false;}finally{if(btn&&kind!=='go')btn.disabled=false;}
+   tenderState.last=0;await loadOpportunities(true);if((kind==='nogo'||kind==='go'&&!keepHandoff||kind==='promote_award')&&window.pstTenderIntelligenceClose)window.pstTenderIntelligenceClose();return true;
+ }catch(e){alert(e&&e.message||e);return false;}finally{if(btn&&btn.isConnected)btn.disabled=kind==='go'&&!dossierReady(id);}
 }
 
 /* ---------- Contact brief: hydrate live relations instead of empty shell ---------- */
@@ -537,6 +551,7 @@ function click(e){
  var cp=e.target&&e.target.closest?e.target.closest('[data-pcw-contact-project]'):null;if(cp){var id=cp.getAttribute('data-pcw-contact-project');if(id&&window.pstOpenProjectWorkspace)window.pstOpenProjectWorkspace(id);return;}
  var contact=e.target&&e.target.closest?e.target.closest('[data-pcm-id]'):null;if(contact)setTimeout(function(){hydrateContact(contact.getAttribute('data-pcm-id'));},40);
 }
+document.addEventListener('pst:tender-dossier-ready',function(e){updateTenderStage(e&&e.detail||{});});
 function keydown(e){var t=e.target&&e.target.closest?e.target.closest('[data-pcw-tender]'):null;if(t&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openTender(t.getAttribute('data-pcw-tender'));}}
 function css(){if(document.getElementById('pst-project-centric-workflow-css'))return;var s=document.createElement('style');s.id='pst-project-centric-workflow-css';s.textContent=`
 /* Home */
@@ -585,6 +600,15 @@ function css(){if(document.getElementById('pst-project-centric-workflow-css'))re
 .pst-pcw-modal{position:fixed;inset:0;z-index:10080;background:rgba(28,38,43,.48);display:none;align-items:center;justify-content:center;padding:18px}.pst-pcw-modal #pst-ti-card{width:min(820px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;border:1px solid #D8E2E5;box-shadow:0 24px 80px rgba(0,0,0,.2);padding:22px}.pst-pcw-modal-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.pst-pcw-modal-head span{font-size:9px;font-weight:900;letter-spacing:.12em;color:#397F98}.pst-pcw-modal-head h2{font-size:20px;line-height:1.35;color:#2C434D;margin:4px 0 0}.pst-pcw-modal-head p{font-size:11px;color:#7A8A91;margin:5px 0 0}.pst-pcw-modal-head button{border:1px solid #D6E0E4;background:#fff;border-radius:9px;padding:7px 10px;color:#536970;font-size:10px;font-weight:800;cursor:pointer}.pst-pcw-modal-foot{margin-top:16px;padding-top:11px;border-top:1px solid #E7ECEE;font-size:9px;color:#87949A}
 #pst-pcw-server-analysis{margin-top:16px;padding-top:14px;border-top:1px solid #E5ECEE}.pst-pcw-tender-facts{margin-bottom:12px;padding:15px 16px;border:1px solid #DCE7EA;border-radius:14px;background:#fff}.pst-pcw-tender-facts>span{display:block;font-size:9px;font-weight:900;letter-spacing:.1em;color:#397F98}.pst-pcw-tender-facts>p{margin:8px 0 0;font-size:12.5px;line-height:1.58;color:#465D67}.pst-pcw-fact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:11px}.pst-pcw-fact{padding:9px 10px;border-radius:10px;background:#F7FAFB;border:1px solid #E5ECEE;min-width:0}.pst-pcw-fact small{display:block;font-size:8px;font-weight:850;color:#829198;text-transform:uppercase;letter-spacing:.04em}.pst-pcw-fact b{display:block;margin-top:3px;font-size:10.5px;line-height:1.35;color:#344E58;overflow-wrap:anywhere}.pst-pcw-lots{margin-top:11px;padding-top:10px;border-top:1px solid #E8EDEF}.pst-pcw-lots>small{display:block;font-size:8px;font-weight:850;color:#829198;text-transform:uppercase}.pst-pcw-lots div{margin-top:5px;font-size:10.5px;line-height:1.45;color:#536A74}.pst-pcw-winner-brief{padding:15px 16px;border:1px solid #DCE7EA;border-radius:14px;background:#FAFCFD}.pst-pcw-winner-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.pst-pcw-winner-head span{font-size:9px;font-weight:900;letter-spacing:.1em;color:#397F98}.pst-pcw-winner-head h3{margin:4px 0 0;font-size:18px;color:#2E4650}.pst-pcw-winner-head .role{padding:7px 10px;border-radius:999px;font-size:10px}.pst-pcw-winner-head .role.gc_epc{background:#E9F5ED;color:#35734A}.pst-pcw-winner-head .role.producer{background:#FFF3E4;color:#8A6327}.pst-pcw-winner-head .role.trader_consortium{background:#F0ECF8;color:#6A5494}.pst-pcw-winner-head .role.unknown{background:#F1F2F3;color:#6E777B}.pst-pcw-winner-brief>p{font-size:12.5px;line-height:1.55;color:#596E77;margin:11px 0}.pst-pcw-winner-facts{display:flex;gap:8px;flex-wrap:wrap}.pst-pcw-winner-facts>*{padding:8px 10px;border-radius:9px;background:#fff;border:1px solid #E2E9EB;font-size:10.5px;color:#64777F;text-decoration:none}.pst-pcw-winner-facts b{color:#344E58}.pst-pcw-winner-contacts{margin-top:12px}.pst-pcw-winner-contacts>b{display:block;font-size:11px;color:#405761;margin-bottom:6px}.pst-pcw-winner-contacts a{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-top:1px solid #E8EDEF;color:#397F98;text-decoration:none;font-size:11px}.pst-pcw-winner-contacts a small{color:#859399}.pst-pcw-winner-none{margin-top:12px;font-size:11px;color:#8A969B}.pst-pcw-ai-loading{margin-top:12px}.pst-pcw-ai>span{font-size:8px;font-weight:900;letter-spacing:.12em;color:#397F98}.pst-pcw-ai p{font-size:11.5px;line-height:1.62;color:#354B54;margin:7px 0}.pst-pcw-ai small{display:block;color:#657A83}.pst-pcw-ai-loading{font-size:9.5px;color:#7F8E94}
 #pst-pcw-ti-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid #E5ECEE}#pst-pcw-ti-actions button,#pst-pcw-ti-actions .pst-pcw-source-link{min-height:41px;box-sizing:border-box;border:1px solid #D9E3E6;border-radius:10px;background:#fff;color:#536870;padding:0 13px;font-size:9px;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none}#pst-pcw-ti-actions button.primary{background:#397F98;border-color:#397F98;color:#fff}#pst-pcw-ti-actions button.pst-pcw-gmail-create{gap:8px!important;border:1px solid #CBD7E3!important;background:#fff!important;color:#2B6B9D!important;box-shadow:0 1px 2px rgba(35,62,82,.07)!important}#pst-pcw-ti-actions button.pst-pcw-gmail-create:hover{background:#F8FBFE!important;border-color:#AFC5D8!important;color:#245E8B!important;box-shadow:0 3px 10px rgba(35,62,82,.09)!important}#pst-pcw-ti-actions .pst-gmail-draft-icon{display:block!important;width:24px!important;height:18px!important;flex:0 0 24px!important}#pst-pcw-ti-actions .pst-gmail-draft-label{font-size:9px!important;font-weight:850!important}#pst-pcw-ti-actions button.create{background:#35734A;border-color:#35734A;color:#fff;margin-left:auto}#pst-pcw-ti-actions button.danger{color:#995151;border-color:#E6CCCC;background:#FFF9F9}#pst-pcw-ti-actions button:disabled{opacity:.42;cursor:not-allowed}.pst-pcw-decision-intro{padding:13px 14px;border:1px solid #DCE8EC;border-radius:12px;background:#F7FBFC}.pst-pcw-decision-intro span,.pst-pcw-decision-intro b,.pst-pcw-decision-intro small{display:block}.pst-pcw-decision-intro span{font-size:8px;font-weight:900;letter-spacing:.11em;color:#397F98}.pst-pcw-decision-intro b{font-size:11px;color:#314B55;margin-top:4px}.pst-pcw-decision-intro small{font-size:8.5px;color:#788A91;margin-top:4px}
+
+#pst-pcw-ti-actions [hidden]{display:none!important}
+#pst-pcw-ti-actions button.create{margin-left:0}
+.pst-pcw-more{position:relative;margin-left:auto}
+.pst-pcw-more>summary{list-style:none;cursor:pointer;min-width:41px;min-height:41px;border:1px solid #d9e3e6;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;color:#536870;font-size:22px}
+.pst-pcw-more>summary::-webkit-details-marker{display:none}
+.pst-pcw-more>div{position:absolute;right:0;bottom:calc(100% + 6px);z-index:5;min-width:220px;padding:7px;display:grid;gap:5px;border:1px solid #d9e3e6;border-radius:12px;background:#fff;box-shadow:0 8px 25px rgba(35,62,82,.12)}
+#pst-pcw-ti-actions .pst-pcw-more button,#pst-pcw-ti-actions .pst-pcw-more a{width:100%;justify-content:flex-start}
+.pst-pcw-modal #pst-ti-body:has(#pst-pcw-ti-actions) .pst-tda-footer-actions{display:none}
 /* Project operator update */
 #pst-project-operator-update{display:grid;grid-template-columns:minmax(260px,.75fr) minmax(360px,1.25fr);gap:18px;align-items:center;margin:12px 0 16px;padding:16px 17px;border:1px solid #DCE7EA;border-left:4px solid #397F98;border-radius:13px;background:#F9FBFC}.pst-pou-copy>span{font-size:8px;font-weight:900;letter-spacing:.12em;color:#397F98}.pst-pou-copy>b{display:block;margin-top:3px;font-size:14px;color:#30464F}.pst-pou-copy>small{display:block;margin-top:4px;font-size:9px;line-height:1.45;color:#76868D}#pst-project-operator-update form{display:flex;gap:8px;align-items:stretch}#pst-project-operator-update textarea{flex:1;min-height:66px;border:1px solid #CADADF;border-radius:10px;padding:9px 10px;font-size:11px;line-height:1.45;resize:vertical;background:#fff}#pst-project-operator-update form button{width:126px;border:0;border-radius:10px;background:#397F98;color:#fff;font-size:9px;font-weight:850;cursor:pointer;padding:0 10px}#pst-project-operator-update form button:disabled{opacity:.55}.pst-pou-result{grid-column:1/-1;padding:10px 12px;border-radius:9px;background:#EFF6F8;color:#4C626B;font-size:9.5px}.pst-pou-result b{display:block;color:#30464F}.pst-pou-result span{display:block;margin-top:3px}
 /* Contact hydration */
