@@ -26,7 +26,7 @@ assert.match(discovery,/wikidata_public_sparql/);
 assert.match(discovery,/outbound_created:false,gmail_draft_created:false,external_email_sent:false/);
 assert.doesNotMatch(discovery,/gmailapis\.google\.com/);
 assert.doesNotMatch(discovery,/pppp_outbound_queue_v1/);
-assert.match(draft,/copy_mode:specific\?"evidence_specific":"general_safe"/);
+assert.match(draft,/renderBuyerOutreach/);
 assert.match(draft,/Missing package\/company detail selects the general-safe copy/);
 assert.doesNotMatch(draft,/if\(Number\(tg\?\.message_evidence_score\|\|0\)<60\|\|facts\.length<2\)throw/);
 assert.match(draft,/cross_module_identity_review_required/);
@@ -34,9 +34,10 @@ assert.match(draft,/followup_blocked_reply_classification/);
 assert.match(draft,/positive_buyer_signal_confirmation_required/);
 assert.match(ui,/verified_company_facts,missing_company_facts/);
 assert.match(ui,/Fakte të verifikuara/);
-assert.match(ui,/offer_selection_reason/);
+assert.match(ui,/Kontakt ende i pagjetur/);
 assert.match(ui,/confirm_positive_buyer_signal:true/);
 assert.match(ui,/accept-discovery/);
-assert.match(ui,/nuk krijohet draft dhe nuk dërgohet email/i);
+assert.match(ui,/external_email_sent|Asnjë draft ose email nuk u krijua/i);
 
 console.log('Steel Buyers canonical identity, intelligence, daily discovery and safe outreach smoke: OK');
+

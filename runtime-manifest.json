@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "27e97a1fc902599ed1c2e428791f4bd9c8078cce"
+    "bootstrapGitBlobSha": "ad3884f6dc95a6de887e8fc8c55212af6940357c"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -342,7 +342,7 @@
       "module": "pristeel-dach-steel-sales-v1.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded by the ordered bootstrap with the reviewed 20260928-home-summary-sync1 cache path. Owns the Material Trade buyer page for EU + CH + ME + RS, including visible company/contact intelligence, regional outreach-language routing and human-confirmed RFQ-to-Project promotion, while retaining legacy dach_steel_* backend identifiers for compatibility."
+      "condition": "Ordered bootstrap version 20261006-buyer-workflow1. Steel Buyer owner uses Home/Representation static tokens, clickable company details including contact gaps, canonical EN/DE outreach and shared guarded Gmail drafts. Discovery and contact research run only in the existing daily worker; approved operational enrichment uses the command sheet."
     },
     {
       "module": "pristeel-representations-v1.js",
@@ -493,7 +493,8 @@
   "notes": [
     "2026-09-25: Sales Engine V3 adds a unified low-egress commercial workbench; cold draft generation remains human-selected and Supplier RFQs require Supplier Gate.",
     "2026-09-25: Final Commercial Engine V3 hardening closes the no-BOM Supplier Gate bypass, keeps Material Trade supplier sourcing read-only until client signal, and hardens Opportunity DB access.",
-    "2026-10-06: Opportunities shows one stage-specific primary action and a native secondary-actions menu; RFQ handoff appears only for Arianit after project linkage and an explicit supplier shortlist. Existing dossier, draft, task and protected-action owners remain authoritative. Only RFQ Sourcing and Finalizer cache identities change in the 166-module bootstrap; order is preserved."
+    "2026-10-06: Opportunities shows one stage-specific primary action and a native secondary-actions menu; RFQ handoff appears only for Arianit after project linkage and an explicit supplier shortlist. Existing dossier, draft, task and protected-action owners remain authoritative. Only RFQ Sourcing and Finalizer cache identities change in the 166-module bootstrap; order is preserved.",
+    "2026-10-06: Steel Buyers uses approved EN/DE templates, Gmail signature fallback and duplicate-draft reuse. Existing daily discovery runs bounded official-source contact research through the controlled command bridge and prepares at most two qualified guarded drafts; it never sends email."
   ],
   "dedicatedWorkspaces": [
     {
