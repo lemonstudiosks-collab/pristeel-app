@@ -1,10 +1,10 @@
 name: SPIE platform standard
 on:
   pull_request:
-    paths: ['pristeel-spie-standard.css', 'pristeel-procurement.html', 'pristeel-home-launcher-v4.js', 'pristeel-primary-nav-resilience-v1.js', 'pristeel-production-surface-owner-v1.js', 'tests/spie-platform-standard-smoke.mjs', 'tests/home-navigation-stable-regression.mjs', 'pristeel-task-source-actions-v1.js', 'pristeel-home-runtime-owner-guard-v1.js', 'pristeel-eu-companies-v1.js', '.github/workflows/spie-platform-standard.yml']
+    paths: ['pristeel-spie-standard.css', 'pristeel-procurement.html', 'pristeel-home-launcher-v4.js', 'pristeel-primary-nav-resilience-v1.js', 'pristeel-production-surface-owner-v1.js', 'tests/spie-platform-standard-smoke.mjs', 'tests/representations-home-standard-smoke.mjs', 'pristeel-representations-v1.js', 'pristeel-representation-opportunities-v2.js', 'pristeel-representation-discovery-v1.js', 'tests/home-navigation-stable-regression.mjs', 'pristeel-task-source-actions-v1.js', 'pristeel-home-runtime-owner-guard-v1.js', 'pristeel-eu-companies-v1.js', '.github/workflows/spie-platform-standard.yml']
   push:
     branches: [main]
-    paths: ['pristeel-spie-standard.css', 'pristeel-procurement.html', 'pristeel-home-launcher-v4.js', 'pristeel-primary-nav-resilience-v1.js', 'pristeel-production-surface-owner-v1.js', 'tests/spie-platform-standard-smoke.mjs', 'tests/home-navigation-stable-regression.mjs', 'pristeel-task-source-actions-v1.js', 'pristeel-home-runtime-owner-guard-v1.js', 'pristeel-eu-companies-v1.js', '.github/workflows/spie-platform-standard.yml']
+    paths: ['pristeel-spie-standard.css', 'pristeel-procurement.html', 'pristeel-home-launcher-v4.js', 'pristeel-primary-nav-resilience-v1.js', 'pristeel-production-surface-owner-v1.js', 'tests/spie-platform-standard-smoke.mjs', 'tests/representations-home-standard-smoke.mjs', 'pristeel-representations-v1.js', 'pristeel-representation-opportunities-v2.js', 'pristeel-representation-discovery-v1.js', 'tests/home-navigation-stable-regression.mjs', 'pristeel-task-source-actions-v1.js', 'pristeel-home-runtime-owner-guard-v1.js', 'pristeel-eu-companies-v1.js', '.github/workflows/spie-platform-standard.yml']
 permissions:
   contents: read
 jobs:
@@ -17,8 +17,10 @@ jobs:
           node-version: '20'
       - run: npm install --ignore-scripts
       - run: node --test tests/spie-platform-standard-smoke.mjs
+      - run: node tests/representations-home-standard-smoke.mjs
       - run: node tests/home-navigation-stable-regression.mjs
       - run: node tests/sidebar-typography-stability.mjs
       - run: node tests/home-launcher-shell-ownership-smoke.mjs && node tests/home-launcher-actions-smoke.mjs && node tests/production-surface-owner-smoke.mjs && node tests/global-fullwidth-shell-smoke.mjs
       - run: node scripts/pages-artifact-build.mjs
+
 

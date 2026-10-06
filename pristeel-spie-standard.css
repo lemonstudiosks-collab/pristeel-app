@@ -170,3 +170,86 @@ html#pst-spie-platform body #pst-opp-modal-bg :is(.pst-opp-detail-grid b,.pst-op
 html#pst-spie-platform body #pst-tender-draft-modal :is(label,small,footer button) { font-size:12px!important; line-height:1.4!important; }
 html#pst-spie-platform body #pst-tender-draft-modal :is(input,textarea) { font-size:13px!important; line-height:1.5!important; }
 @media print { html#pst-spie-platform body #app-sidebar { display:none!important; } html#pst-spie-platform body .app-shell#app-shell-root > .main { width:100%!important; } }
+
+
+/* Home is the shared typography reference, including nested legacy roots. */
+:root { --pst-font:Inter,Arial,sans-serif; }
+html#pst-spie-platform body :is(#pst-home-launcher-v4,#pst-ws-sidebar,.page,.pst-rep-page,.pst-eu-page,.pst-dss-page,.pst-opp-workdesk,.ppd-page,.pcm-page,.pwb3-page,.pst-ws-page) { font-family:var(--pst-font)!important; }
+html#pst-spie-platform body .page :is(.pst-rep-page,.pst-eu-page,.pst-dss-page,.pst-opp-workdesk,.ppd-page,.pcm-page,.pwb3-page,.pst-ws-page) :where(div,span,p,b,strong,small,label,button,input,select,textarea,summary,a) { font-family:inherit!important; }
+html#pst-spie-platform body .page :is(.pst-rep-head,.pst-eu-head,.pst-dss-head,.ppd-head,.pcm-head,.pst-opp-desk-head) p { font-size:14px!important; font-weight:400!important; color:var(--pst-muted)!important; line-height:1.6!important; }
+html#pst-spie-platform body .page :is(.pst-rep-btn,.pst-eu-btn,.pst-dss-btn,.pwb3-nav-btn,.pst-pi-btn,.pst-opp-secondary-btn) { font-weight:500!important; line-height:1.5!important; }
+
+/* One left column for Representation, using Home's geometry and visual tokens.
+   Static selectors win before dynamically loaded legacy shell styles. */
+@media(min-width:901px) {
+ html#pst-spie-platform body:has(#page-representations.active) .app-shell#app-shell-root > .sidebar#app-sidebar { display:none!important; visibility:hidden!important; flex:0 0 0!important; width:0!important; min-width:0!important; max-width:0!important; }
+ html#pst-spie-platform body:has(#page-representations.active) .app-shell#app-shell-root > .main { width:100%!important; }
+}
+html#pst-spie-platform body:has(#page-representations.active) .app-shell#app-shell-root > .main > .content { padding:0!important; max-width:none!important; margin:0!important; }
+html#pst-spie-platform body #page-representations { --rep:var(--pst-accent); --rep-dark:var(--pst-accent); --rep-soft:var(--pst-selected); --rep-line:var(--pst-line); --rep-text:var(--pst-ink); overflow:visible; }
+html#pst-spie-platform body #page-representations .pst-rep-page { display:grid!important; grid-template-columns:var(--pst-sidebar-width) minmax(0,1fr)!important; align-items:start; min-height:100dvh; padding:0!important; font:400 13px/1.6 var(--pst-font)!important; }
+html#pst-spie-platform body #page-representations [hidden] { display:none!important; }
+html#pst-spie-platform body #page-representations .pst-rep-sidebar { position:sticky; top:0; height:100dvh; overflow-y:auto; min-width:0; padding:30px 18px 20px; border-right:1px solid var(--pst-line); background:var(--pst-sidebar); font:400 12px/20px var(--pst-font)!important; }
+html#pst-spie-platform body #page-representations .pst-rep-brand { display:flex; align-items:center; gap:10px; margin:0 4px 24px; }
+html#pst-spie-platform body #page-representations .pst-rep-brand > span { display:grid; place-items:center; width:32px; height:36px; flex:none; border-radius:7px; background:#193943; color:#fff; font-weight:600; }
+html#pst-spie-platform body #page-representations .pst-rep-brand b { display:block; font-size:13px; font-weight:600; letter-spacing:1.4px; }
+html#pst-spie-platform body #page-representations .pst-rep-brand small { display:block; color:var(--pst-muted); font-size:10px; }
+html#pst-spie-platform body #page-representations .pst-rep-side-home { width:100%; min-height:36px; padding:8px 10px; border:0; text-align:left; background:transparent; color:var(--pst-muted); font-weight:400; cursor:pointer; }
+html#pst-spie-platform body #page-representations .pst-rep-side-home:hover { background:#e7edef; }
+html#pst-spie-platform body #page-representations .pst-rep-side-label { margin:22px 10px 8px; font-size:9px; font-weight:500; letter-spacing:1.5px; color:#829198; }
+html#pst-spie-platform body #page-representations .pst-rep-work-main { width:100%; max-width:1360px; min-width:0; margin:0 auto; padding:30px clamp(26px,4vw,58px) 70px; }
+html#pst-spie-platform body #page-representations .pst-rep-switch { display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:3px!important; margin:0 0 22px!important; padding:0!important; }
+html#pst-spie-platform body #page-representations .pst-rep-switch button { display:block!important; min-height:36px!important; padding:8px 10px!important; border:0!important; background:transparent!important; color:var(--pst-muted)!important; text-align:left; box-shadow:none!important; }
+html#pst-spie-platform body #page-representations .pst-rep-switch button.on { background:var(--pst-selected)!important; color:var(--pst-accent)!important; }
+html#pst-spie-platform body #page-representations .pst-rep-switch button:hover { background:#e7edef!important; }
+html#pst-spie-platform body #page-representations .pst-rep-branch-title { font-size:12px!important; font-weight:400!important; line-height:20px!important; letter-spacing:0!important; color:inherit!important; }
+html#pst-spie-platform body #page-representations :is(.pst-rep-branch-no,.pst-rep-branch-copy) { display:none!important; }
+html#pst-spie-platform body #page-representations .pst-rep-topline { margin:0 0 14px!important; }
+html#pst-spie-platform body #page-representations .pst-rep-back-primary { min-height:34px!important; padding:7px 10px!important; background:#fff!important; border:1px solid var(--pst-line)!important; color:var(--pst-accent)!important; font-weight:500!important; }
+html#pst-spie-platform body #page-representations .pst-rep-controls { display:grid; gap:8px; padding:0!important; margin:0!important; }
+html#pst-spie-platform body #page-representations .pst-rep-control { min-width:0; }
+html#pst-spie-platform body #page-representations .pst-rep-control-toggle { min-width:0!important; width:100%; padding:8px 10px!important; font-weight:400!important; background:transparent; }
+html#pst-spie-platform body #page-representations .pst-rep-control-toggle span { font-size:10px!important; font-weight:400!important; }
+html#pst-spie-platform body #page-representations .pst-rep-control-menu { position:static!important; min-width:0!important; width:100%; max-height:none!important; padding:8px 0; border:0!important; background:transparent!important; box-shadow:none!important; }
+html#pst-spie-platform body #page-representations :is(.pst-rep-toolbar,.pst-rep-pipeline) { display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:5px!important; }
+html#pst-spie-platform body #page-representations .pst-rep-toolbar > * { width:100%!important; min-width:0!important; }
+html#pst-spie-platform body #page-representations .pst-rep-pipe { display:flex; justify-content:space-between; gap:8px; padding:7px 10px; font-weight:400!important; }
+html#pst-spie-platform body #page-representations .pst-rep-pipe b { font-size:11px; font-weight:500; }
+html#pst-spie-platform body #page-representations .pst-rep-table-head,
+html#pst-spie-platform body #page-representations .pst-rep-row { grid-template-columns:minmax(0,1.5fr) minmax(0,.5fr) minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,1.2fr) minmax(0,1.3fr) minmax(0,.8fr)!important; gap:14px; padding:18px 0!important; min-width:0!important; width:100%!important; }
+html#pst-spie-platform body #page-representations .pst-rep-row > * { display:block!important; min-width:0; }
+html#pst-spie-platform body #page-representations .pst-rep-company b { font-size:16px!important; font-weight:500!important; line-height:1.4!important; color:var(--pst-ink); }
+html#pst-spie-platform body #page-representations .pst-rep-company small { font-size:12px!important; font-weight:400!important; color:var(--pst-muted); }
+html#pst-spie-platform body #page-representations .pst-rep-cell-title { font-size:13px!important; font-weight:400!important; line-height:1.5!important; color:var(--pst-ink); }
+html#pst-spie-platform body #page-representations .pst-rep-cell-sub { font-size:12px!important; font-weight:400!important; line-height:1.5!important; color:var(--pst-muted); }
+html#pst-spie-platform body #page-representations :is(.pst-dossier,.pst-opp-workspace,.pst-rd-shell) { font-size:13px; color:var(--pst-ink); }
+html#pst-spie-platform body #page-representations :is(.pst-dossier-module-title,.pst-dossier-card-title,.pst-opp-summary-fact b,.pst-opp-company-title b,.pst-opp-row b,.pst-rd-card h4) { font-size:16px!important; font-weight:500!important; line-height:1.4!important; }
+html#pst-spie-platform body #page-representations :is(.pst-dossier p,.pst-dossier li,.pst-dossier-summary-item b,.pst-dossier-contact b,.pst-dossier-metric b,.pst-dossier-stage-copy,.pst-opp-gate,.pst-opp-project-note,.pst-rd-reason) { font-size:13px!important; font-weight:400!important; line-height:1.6!important; }
+html#pst-spie-platform body #page-representations :is(.pst-dossier-sub,.pst-dossier-module-desc,.pst-dossier-summary-item span,.pst-dossier-contact span,.pst-dossier-metric span,.pst-opp-head small,.pst-opp-company-title small,.pst-opp-row small,.pst-opp-summary p,.pst-rd-head p,.pst-rd-lane-head p,.pst-rd-meta) { font-size:12px!important; font-weight:400!important; line-height:1.5!important; color:var(--pst-muted)!important; }
+html#pst-spie-platform body #page-representations :is(.pst-dossier-module,.pst-opp-panel,.pst-opp-project-section,.pst-rd-shell,.pst-rd-lane,.pst-opp-company-workspace-empty) { border:0!important; border-top:1px solid var(--pst-line)!important; border-radius:0!important; box-shadow:none!important; background:transparent!important; }
+html#pst-spie-platform body #page-representations :is(.pst-dossier-module > summary,.pst-opp-head,.pst-rd-head) { padding:18px 0!important; background:transparent!important; }
+html#pst-spie-platform body #page-representations :is(.pst-dossier-module-body,.pst-opp-project-section-body) { padding:18px 0!important; }
+html#pst-spie-platform body #page-representations .pst-opp-project-index .pst-opp-row { grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,.7fr) minmax(0,.8fr) auto!important; }
+html#pst-spie-platform body #page-representations .pst-opp-company-card { border:0; border-bottom:1px solid var(--pst-line); border-radius:0; padding:18px 0; background:transparent; box-shadow:none; }
+html#pst-spie-platform body #page-representations .pst-opp-company-card.on { background:#f2f6f5; box-shadow:none; }
+html#pst-spie-platform body #page-representations :is(.pst-opp-company-actions,.pst-dossier-actions) .pst-rep-btn { font-size:12px!important; font-weight:500!important; }
+html#pst-spie-platform body #page-representations .pst-rd-lanes { padding:0; background:transparent; }
+@media(max-width:1100px) {
+ html#pst-spie-platform body #page-representations .pst-rep-table-head { display:none!important; }
+ html#pst-spie-platform body #page-representations .pst-rep-row { grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:12px 22px; }
+ html#pst-spie-platform body #page-representations .pst-rep-company { grid-column:1/-1; }
+}
+@media(max-width:900px) {
+ html#pst-spie-platform body #page-representations .pst-rep-page { grid-template-columns:minmax(0,1fr)!important; }
+ html#pst-spie-platform body #page-representations .pst-rep-sidebar { position:relative; height:auto; padding:18px; border-right:0; border-bottom:1px solid var(--pst-line); }
+ html#pst-spie-platform body #page-representations .pst-rep-brand { display:none; }
+ html#pst-spie-platform body #page-representations .pst-rep-side-label { margin:12px 10px 6px; }
+ html#pst-spie-platform body #page-representations .pst-rep-switch { grid-template-columns:repeat(3,minmax(0,1fr))!important; margin-bottom:14px!important; }
+ html#pst-spie-platform body #page-representations .pst-rep-controls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ html#pst-spie-platform body #page-representations .pst-rep-work-main { padding:24px 18px 60px; }
+ html#pst-spie-platform body #page-representations .pst-opp-project-index .pst-opp-row { grid-template-columns:minmax(0,1fr) auto!important; }
+}
+@media(max-width:520px) {
+ html#pst-spie-platform body #page-representations .pst-rep-row { grid-template-columns:minmax(0,1fr)!important; }
+ html#pst-spie-platform body #page-representations .pst-rep-switch { grid-template-columns:minmax(0,1fr)!important; }
+}

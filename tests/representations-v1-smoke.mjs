@@ -14,8 +14,8 @@ const bootstrap = fs.readFileSync('pristeel-project-emails.js','utf8');
 new vm.Script(ui);
 new vm.Script(opportunityUi);
 
-assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20261004-representations10-back-home/);
-assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20260927-opportunities4-compact-controls/);
+assert.match(bootstrap,/pristeel-representations-v1\.js\?v=20261006-home-module-standard1/);
+assert.match(bootstrap,/pristeel-representation-opportunities-v2\.js\?v=20261006-home-module-standard1/);
 assert.match(migration,/create table public\.pppp_representation_targets_v1/i);
 assert.match(migration,/enable row level security/i);
 assert.match(migration,/pppp_representation_targets_authenticated_update/i);
