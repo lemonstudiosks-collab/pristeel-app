@@ -92,7 +92,8 @@ Deno.serve(async(req:Request)=>{
  if(up.error)return json({ok:false,error:up.error.message,version:VERSION},500);
  const run=up.data;
  try{
-  const rows=await wikidata(limit);
+  let rows:any[]=[],discovery_error:string|null=null;
+  try{rows=await wikidata(limit);}catch(e){discovery_error=text((e as any)?.message||e,1000);}
   let inserted=0,duplicates=0,routing=0,rejected=0,errors=0;
   const rejection_reasons={missing_name:0,missing_domain:0,blocked_domain:0,unrouted:0};
   const candidates:any[]=[];
@@ -127,7 +128,7 @@ Deno.serve(async(req:Request)=>{
   try{draft_workflow=await prepareReadyDrafts(db,(name:string)=>Deno.env.get(name),actor.kind==="cron"?req.headers.get("x-pppp-cron-secret"):null);}
   catch(e){draft_workflow={error:text((e as any)?.message||e,1000),external_email_sent:false};}
   const finished=new Date().toISOString(),result={discovered_count:rows.length,inserted_count:inserted,duplicate_count:duplicates,
-   routing_review_count:routing,rejected_count:rejected,error_count:errors,rejection_reasons};
+   routing_review_count:routing,rejected_count:rejected,error_count:errors+(discovery_error?1:0),rejection_reasons,discovery_error};
   const completed=await db.from("pppp_steel_buyer_discovery_runs_v1").update({status:"succeeded",
    discovered_count:result.discovered_count,inserted_count:inserted,duplicate_count:duplicates,routing_review_count:routing,finished_at:finished,
    payload:{...run.payload,...result,contact_workflow,draft_workflow,completed_at:finished,no_outbound_created:!(draft_workflow?.items||[]).some((x:any)=>x.verified),no_gmail_draft_created:!(draft_workflow?.items||[]).some((x:any)=>x.verified),no_external_email_sent:true}}).eq("id",run.id);
@@ -140,4 +141,3 @@ Deno.serve(async(req:Request)=>{
   return json({ok:false,error:message,version:VERSION,outbound_created:false,gmail_draft_created:false,external_email_sent:false},500);
  }
 });
-

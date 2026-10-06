@@ -26,4 +26,10 @@ const verified=await runContactWorkflow(db,env,mockFetch,'2026-10-07');assert.eq
 recent=[];receipts=[];history=[{company_domain:'buyer.test',source_record_id:'target-1',sent_at:'2026-10-05'}];
 const contacted=await runContactWorkflow(db,env,mockFetch,'2026-10-08');assert.equal(contacted.attempts[0].status,'existing_communication');assert.equal(appends,1);
 let draftCalls=0;const skip=await prepareReadyDrafts(db,env,'fixture',async()=>{draftCalls++;});assert.equal(draftCalls,0);assert.equal(skip.items[0].reason,'existing_outreach');
+const noCron=await prepareReadyDrafts(db,env,null);assert.equal(noCron.reason,'scheduled_cron_context_required');
+const safeQueue={id:'queue-1',gmail_draft_id:'draft-1',sent_at:null,approved_for_send:false,human_send_required:true};
+const draftDb={from(table){let readback=false;const chain=new Proxy({}, {get(_,method){if(method==='then')return resolve=>resolve({data:table==='pppp_dach_steel_targets_v1'?[{...company,canonical_contact_email:'procurement@buyer.test'}]:readback?safeQueue:[],error:null});return (...args)=>{if(['insert','upsert','update','delete'].includes(method))throw Error('Direct business write');if(method==='eq'&&args[0]==='id')readback=true;return chain;};}});return chain;}};
+const draftFetch=async(url,options)=>{assert.ok(url.endsWith('/pppp-dach-steel-draft-generator'));assert.equal(JSON.parse(options.body).recipient_email,'procurement@buyer.test');draftCalls++;return Response.json({ok:true,queue:{id:'queue-1'},external_email_sent:false,human_send_required:true});};
+const prepared=await prepareReadyDrafts(draftDb,env,'fixture',draftFetch);assert.equal(prepared.items[0].verified,true);assert.equal(draftCalls,1);assert.equal(prepared.external_email_sent,false);
+safeQueue.approved_for_send=true;const unsafe=await prepareReadyDrafts(draftDb,env,'fixture',draftFetch);assert.equal(unsafe.items[0].error,'buyer_draft_read_back_verification_failed');
 console.log('Steel Buyers contact workflow: PASS (bounded research, evidence, bridge-only append, stable identity, stale retry, failed-command suppression, read-back, history guard).');
