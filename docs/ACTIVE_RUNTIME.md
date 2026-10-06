@@ -1,5 +1,10 @@
 # PPPP Active Runtime
 
+## 2026-10-06 — Opportunities stage actions
+
+The existing Opportunity Desk and Action Console expose one primary action per stage plus **Hiqe** and a native **⋯** menu. Dossier preparation delegates to the existing fetch/analysis pipeline; complete analysis replaces preparation with the explicit project-creation action. Supplier Intelligence continues after dossier readiness and reuses its result for five minutes; external discovery remains on demand. Arianit selects RFQ-ready suppliers through checkboxes. Once an existing project and shortlist are present, **Dërgo te Oltiani** replaces the console primary action and calls the existing `tasks` handoff. Oltian continues through the canonical Project RFQ surface; secondary utilities remain in its menu. The first-page Gmail draft action matches the compact white Gmail-branded console button and preserves preview/approval behavior. No scheduler, worker, Edge Function, schema or protected business gate is changed. See `docs/OPPORTUNITIES_STAGE_ACTIONS_20261006.md`.
+
+
 ## 2026-10-05 — Home navigation stability
 
 Primary Navigation retains the existing sidebar DOM across repeated repairs. Task Source Actions and the Home startup label normalizer defer to that owner. Home queues the latest early module click until the ordered runtime is ready; startup completion preserves an already selected destination. EU Direct restores the missing scope/contact display helpers, without adding data reads or business writes. The bootstrap versions for the launcher, primary navigation and EU Direct are updated together.

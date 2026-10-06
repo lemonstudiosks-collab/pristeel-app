@@ -19,7 +19,7 @@ new Function(nav);
 
 assert.match(pcw,/data-pcw-tender/,'whole tender card must be the primary interaction');
 assert.match(pcw,/Shkarko dosjen/,'local opportunity must expose official dossier download');
-assert.match(pcw,/Analizo kushtet/,'local opportunity must expose dossier technical/commercial analysis');
+assert.match(pcw,/Përgatit për vlerësim/,'local opportunity must expose dossier technical/commercial analysis');
 assert.match(pcw,/data-pcw-ti="go"[^>]*disabled/,'project creation must start disabled before dossier analysis');
 assert.match(pcw,/if\(tenderMode\(r\)==='local'&&!dossierReady\(id\)\)throw new Error/,'project creation must enforce the dossier gate in code, not only in CSS');
 assert.match(pcw,/PSTTenderDossierAnalysisV1/,'opportunity popup must reuse the canonical dossier engine');
@@ -28,7 +28,7 @@ assert.doesNotMatch(pcw,/await window\.pstTenderIntelligence\(id\)/,'whole-card 
 assert.match(pcw,/data-pcw-close-modal/,'action console must include its own close control');
 assert.doesNotMatch(pcw,/window\.open\(['"]https:\/\/www\.app\.gov\.al/,'APP must not open the insecure generic website from the active workflow');
 assert.match(pcw,/data-pcw-ti="review"[^>]*>Lëre për më vonë/,'popup must offer a non-destructive later decision');
-assert.match(pcw,/data-pcw-ti="nogo"[^>]*>Hiqe nga lista/,'popup must offer explicit removal');
+assert.match(pcw,/data-pcw-ti="nogo"[^>]*>Hiqe/,'popup must offer explicit removal');
 assert.match(pcw,/function officialSourceAction\(r,label\)/,'Action Console must render official tender sources directly');
 assert.match(pcw,/pst-pcw-source-link[^\n]{0,220}E\(u\)/,'KRPP/TED official sources must be real anchors, not cache-dependent pseudo-buttons');
 assert.match(pcw,/var P=tenderApi\(\),src=tenderSource\(r\),u=safeUrl\(r&&r\.detail_url\)\|\|safeUrl\(r&&r\.source_url\)/,'fallback source action must prefer the row detail URL before any helper cache');
@@ -84,7 +84,7 @@ assert.match(pcw,/PRODHUES \/ KONKURRENT/,'TED winner role must identify produce
 assert.match(pcw,/GC \/ EPC/,'TED winner role must identify GC/EPC clients');
 assert.match(pcw,/Shiko kontaktet/,'TED action console must expose researched winner contacts');
 assert.match(pcw,/Shkarko dosjen/,'KRPP/APP action console must expose dossier download');
-assert.match(pcw,/Analizo kushtet/,'KRPP/APP action console must expose technical/commercial analysis');
+assert.match(pcw,/Përgatit për vlerësim/,'KRPP/APP action console must expose technical/commercial analysis');
 
 assert.match(kek,/handoffFinalOpportunities/,'legacy tender opener must hand off to the final whole-card owner');
 assert.match(kek,/if\(handoffFinalOpportunities\(true\)\)return true/,'legacy tender opener must not rebuild the old shell once final owner exists');

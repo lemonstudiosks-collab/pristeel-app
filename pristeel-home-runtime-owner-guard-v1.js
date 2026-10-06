@@ -130,7 +130,7 @@ function loadCanonical(){
 function loadInteraction(){
   if(window.PSTHomeCanonicalInteractionV1)return Promise.resolve(window.PSTHomeCanonicalInteractionV1);
   if(interactionPromise)return interactionPromise;
-  interactionPromise=loadScriptOnce('pristeel-home-canonical-interaction-v1.js?history=20261006-complete1','data-pst-home-canonical-interaction-v1','PSTHomeCanonicalInteractionV1')
+  interactionPromise=loadScriptOnce('pristeel-home-canonical-interaction-v1.js?history=20261006-complete1&actions=20261006-stage1','data-pst-home-canonical-interaction-v1','PSTHomeCanonicalInteractionV1')
     .catch(function(e){interactionPromise=null;console.error('PPPP Home interaction:',e);return null;});
   return interactionPromise;
 }
