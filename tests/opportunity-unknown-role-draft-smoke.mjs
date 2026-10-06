@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {stripTypeScriptTypes} from 'node:module';
 import {canReviewUnknownRoleDraft} from '../supabase/functions/pppp-opportunity-draft-generator/draft-assessment-policy.mjs';
 import {buildTedDraftContent} from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
 import {resolveTedDraftRecipients,resolveTedRecipients,normalizeEmail,contactTier,contactQualityScore} from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
@@ -62,3 +63,17 @@ assert.equal((await processAction(action,{writes:0},false,false,true)).event,'re
 communication='waiting';assert.equal((await processAction(action,{writes:0},false,true,true)).event,'communication_history_blocked');communication='new';
 currentAssessment={...assessment,decision_state:'no_outreach'};assert.equal((await processAction(action,{writes:0},false,true,true)).event,'readiness_blocked');
 console.log('Approved GC/producer template selection preview and protected gates: OK (no Gmail/business writes)');
+
+// Exercise the real run wrapper as well, so the request's template reaches processAction.
+const runSource=stripTypeScriptTypes(source.slice(source.indexOf('async function run('),source.indexOf('Deno.serve(')));
+const runDeps={db:{from(){const q={select(){return q},eq(){return q},in(){return q},order(){return q},async limit(){return{data:[action],error:null}}};return q}},text:deps.text,processAction,MAX_DRAFT_WRITES_PER_RUN:25,MAX_CONTACTS_PER_ACTION:20,GENERATOR:'fixture',REGISTRY:'fixture'};
+const run=new Function(...Object.keys(runDeps),runSource+';return run;')(...Object.values(runDeps));
+currentAssessment=assessment;
+for(const selected of ['','gc_epc','steel_fabricator']){
+ const result=await run(1,action.id,false,true,true,false,selected);
+ assert.equal(result.failed,0,JSON.stringify(result.errors));
+ assert.equal(result.results[0].event,selected?'preview_ready':'template_selection_required');
+ if(selected)assert.equal(result.results[0].previews[0].approved_template,selected);
+}
+assert.equal(writes,0);
+console.log('Actual run wrapper carries the approved template into preview: OK');
