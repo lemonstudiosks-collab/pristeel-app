@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {stripTypeScriptTypes} from 'node:module';
 import {canReviewUnknownRoleDraft} from '../supabase/functions/pppp-opportunity-draft-generator/draft-assessment-policy.mjs';
 import {buildTedDraftContent} from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
 import {resolveTedDraftRecipients,resolveTedRecipients,normalizeEmail,contactTier,contactQualityScore} from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
@@ -65,7 +64,7 @@ currentAssessment={...assessment,decision_state:'no_outreach'};assert.equal((awa
 console.log('Approved GC/producer template selection preview and protected gates: OK (no Gmail/business writes)');
 
 // Exercise the real run wrapper as well, so the request's template reaches processAction.
-const runSource=stripTypeScriptTypes(source.slice(source.indexOf('async function run('),source.indexOf('Deno.serve(')));
+const runSource=source.slice(source.indexOf('async function run('),source.indexOf('Deno.serve(')).replace(/:any\[\]/g,'').replace(/\s+as any\b/g,'');
 const runDeps={db:{from(){const q={select(){return q},eq(){return q},in(){return q},order(){return q},async limit(){return{data:[action],error:null}}};return q}},text:deps.text,processAction,MAX_DRAFT_WRITES_PER_RUN:25,MAX_CONTACTS_PER_ACTION:20,GENERATOR:'fixture',REGISTRY:'fixture'};
 const run=new Function(...Object.keys(runDeps),runSource+';return run;')(...Object.values(runDeps));
 currentAssessment=assessment;
