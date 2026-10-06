@@ -18,10 +18,16 @@ assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:assessment.tender_
 assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:assessment.tender_facts.map(f=>f.type==='scope'?{...f,value:'Vacuum pumps'}:f)},action,tender,true));
 assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:[{...assessment.tender_facts[0],status:'inferred'}]},action,tender,true));
 assert.throws(()=>buildTedDraftContent(action,tender,{email:'info@stako-hallenbau.de'}),/company_role_verification_required/,'unguarded targeted copy must remain blocked');
-const copy=buildTedDraftContent({...action,payload:{manual_role_clarification_draft:true}},tender,{email:'info@stako-hallenbau.de'});
-assert.equal(copy.offer_model,'role_verification_required');
-assert.match(copy.body,/Zuständigkeit|verantwort|zuständig/);
-assert(!/Werkstoffe|S355|EN 1090|Sie selbst fertigen/.test(copy.body));
+for(const manual_draft_template of ['gc_epc','steel_fabricator']){
+ const copy=buildTedDraftContent({...action,payload:{manual_draft_template}},tender,{email:'info@stako-hallenbau.de'});
+ assert.equal(copy.company_role,'other_unclear');
+ assert.equal(copy.approved_template,manual_draft_template);
+ assert.equal(copy.template_selected_manually,true);
+ assert.equal(copy.offer_model,manual_draft_template==='gc_epc'?'fabricated_steel_package':'external_production_capacity');
+ assert.match(copy.body,manual_draft_template==='gc_epc'?/vollständige Verantwortung für ein klar definiertes Stahlpaket/:/externe Fertigungskapazität einsetzen/);
+ assert.doesNotMatch(copy.body,/Bevor wir einen konkreten|S355|EN 1090|Sie selbst fertigen/);
+}
+assert.throws(()=>buildTedDraftContent({...action,payload:{manual_draft_template:'invented'}},tender,{email:'info@stako-hallenbau.de'}),/company_role_verification_required/);
 assert.equal(resolveTedRecipients(action,tender,20).length,0,'send-grade recipient gate stays blocked');
 
 // Exercise the actual generator preview path; every potential write throws.
@@ -39,9 +45,18 @@ const deps={
 };
 const processAction=new Function(...Object.keys(deps),previewSource+';return processAction;')(...Object.values(deps));
 const out=await processAction(action,{writes:0},false,true,true);
-assert.equal(out.event,'preview_ready');assert.equal(out.previews[0].offer_model,'role_verification_required');assert.equal(out.recipients,1);assert.equal(writes,0);
+assert.equal(out.event,'template_selection_required');assert.equal(out.recipients,1);assert.equal(writes,0);
+assert.deepEqual(out.templates.map(t=>t.id),['gc_epc','steel_fabricator']);
+for(const selected of ['gc_epc','steel_fabricator']){
+ const preview=await processAction(action,{writes:0},false,true,true,false,selected);
+ assert.equal(preview.event,'preview_ready');assert.equal(preview.previews[0].approved_template,selected);assert.equal(preview.previews[0].company_role,'other_unclear');assert.equal(writes,0);
+}
+assert.equal((await processAction(action,{writes:0},false,true,false,false,'invalid')).event,'template_selection_required','approval cannot bypass template selection');
+action.payload.manual_draft_template='gc_epc';
+assert.equal((await processAction(action,{writes:0},false,true,true)).event,'template_selection_required','stored overrides cannot be reused silently');
+delete action.payload.manual_draft_template;
 assert.equal(assessment.draft_eligible,false,'preview never upgrades the company assessment');
 assert.equal((await processAction(action,{writes:0},false,false,true)).event,'readiness_blocked');
 communication='waiting';assert.equal((await processAction(action,{writes:0},false,true,true)).event,'communication_history_blocked');communication='new';
 currentAssessment={...assessment,decision_state:'no_outreach'};assert.equal((await processAction(action,{writes:0},false,true,true)).event,'readiness_blocked');
-console.log('Unknown-role manual clarification preview and protected gates: OK (no Gmail/business writes)');
+console.log('Approved GC/producer template selection preview and protected gates: OK (no Gmail/business writes)');

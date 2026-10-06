@@ -1,3 +1,10 @@
+## 2026-10-06 — Mundësitë reuses approved GC and steel-fabricator email texts
+
+- Remove the newly introduced role-clarification email. GC drafts now reuse the exact approved full-responsibility commercial paragraphs from `pppp-gc-outreach` body1 in German, BCS and English; steel fabricators retain the existing external-production-capacity copy.
+- Where the company role is unverified but the existing manual review policy passes, require an explicit GC/EPC or steel-fabricator template choice before preview. This choice applies only to the draft and does not verify or overwrite the company role.
+- Carry the chosen template through preview, human approval and any controlled cooldown override. Cancel/preview paths remain read-only; recipient identity, communication history and send gates remain intact.
+- Verified approved GC wording against its canonical source, both template paths, invalid/stored choices, blocked assessments and mocked preview/cancel/approval. No live Gmail draft or email was created during verification.
+
 ## 2026-10-06 — Mundësitë uses the Home / Përfaqësime presentation standard
 
 - Reuse the shared Inter font, 200px contextual sidebar, paper background, spacing and quiet list rows.

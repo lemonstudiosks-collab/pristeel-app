@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {buildTedDraftContent,PRISTEEL_SIGNATURE_HTML,COPY_POLICY_VERSION} from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
 
 assert.equal(COPY_POLICY_VERSION,'pppp-commercial-copy-policy-v5');
@@ -92,3 +93,15 @@ for(const d of [ms,sch,cyta,fabricator,material,future,long]){
 }
 
 console.log('opportunity canonical copy policy acceptance: ok');
+
+// The confirmed GC template must reproduce the existing approved commercial wording verbatim.
+const gcSource=fs.readFileSync('supabase/functions/pppp-gc-outreach/index.ts','utf8');
+const body1=gcSource.slice(gcSource.indexOf('function body1('),gcSource.indexOf('function body2('));
+const approvedBodies=[...body1.matchAll(/return `([^`]+)`/g)].map(m=>m[1]);
+for(const [i,country] of ['DE','RS','GB'].entries()){
+ const gc=buildTedDraftContent({route:'TED_GC',tender_title:'Approved Project',target_company:'GC',pristeel_offer_model:'fabricated_steel_package'},{title:'Approved Project',winner:{name:'GC',country,company_type:'gc_epc'}},{email:'procurement@gc.example'});
+ assert.equal(gc.approved_template,'gc_epc');
+ assert.equal(gc.template_selected_manually,false);
+ for(const paragraph of approvedBodies[i].split('\\n\\n').slice(2,6))assert(gc.body.includes(paragraph),'GC commercial paragraph must match approved body1 exactly');
+ assert.doesNotMatch(gc.body,/externe Fertigungskapazität einsetzen|external fabrication capacity/);
+}
