@@ -16,12 +16,13 @@ assert.match(opportunity,/bank guarantees through ProCredit Bank/,'Opportunity c
 const materialStart=material.indexOf('function buyerTextV2');
 const materialEnd=material.indexOf('function supplierText',materialStart);
 assert(materialStart>=0&&materialEnd>materialStart,'Material Trade V2 buyer copy block must exist');
-const materialBuyer=material.slice(materialStart,materialEnd);
-assert.match(materialBuyer,/motion==="external_production_capacity"/,'Material Trade must be able to route an explicit capacity motion separately');
+const materialBuyer=fs.readFileSync('supabase/functions/pppp-dach-steel-draft-generator/buyer-outreach.mjs','utf8');
+assert.match(material.slice(materialStart,materialEnd),/renderBuyerOutreach/,'Generator must delegate to the canonical buyer source');
+assert.match(materialBuyer,/motion==='external_production_capacity'/,'Material Trade must be able to route an explicit capacity motion separately');
 assert.match(materialBuyer,/EN 10204 3\.1/,'Material buyer copy must remain material-specific');
-assert.match(materialBuyer,/optional cutting\/basic processing/,'Material buyer copy must offer bounded processing rather than GC copy');
-assert.match(materialBuyer,/Southeast Europe/,'Material Trade credibility must identify the Southeast European network');
-assert.match(materialBuyer,/ProCredit Bank/,'Material Trade credibility must include bank-guarantee support');
+assert.match(materialBuyer,/cutting\/basic processing/,'Material buyer copy must offer bounded processing rather than GC copy');
+assert.match(materialBuyer,/Southeast Europe/,'Explicit commercial variants must preserve their existing Southeast European network');
+assert.match(materialBuyer,/ProCredit Bank/,'Explicit commercial variants must preserve bounded bank-guarantee support');
 assert.doesNotMatch(materialBuyer,/<strong>/i,'Material Trade body copy must not bold CTAs or sales claims');
 assert.match(material,/function externalFact\(/,'Material Trade must sanitize internal instructions before any evidence reaches outward copy');
 
@@ -44,3 +45,4 @@ assert.match(gc,/stale_copy_requires_manual_refresh/,'GC background sync must pr
 assert.match(gc,/if\(!createRequested\)return \{id:p\.id,company:p\.company_name,event:'stale_copy_requires_manual_refresh'/,'GC stale draft refresh must stay human-triggered');
 
 console.log('Commercial outreach routed-copy smoke passed.');
+

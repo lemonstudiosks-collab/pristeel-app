@@ -4,6 +4,42 @@
   --pst-muted:#6a7b83; --pst-line:#e3e9eb; --pst-accent:#195c50;
   --pst-selected:#e2ebe9; --pst-radius:6px; --pst-sidebar-width:200px;
 }
+/* Steel Buyers shares the Home / Representation tokens before runtime loads. */
+@media(min-width:901px) {
+ html#pst-spie-platform body:has(#page-dach-steel-sales.active) .app-shell#app-shell-root > .sidebar#app-sidebar { display:none!important; width:0!important; min-width:0!important; }
+ html#pst-spie-platform body:has(#page-dach-steel-sales.active) .app-shell#app-shell-root > .main { width:100%!important; }
+}
+html#pst-spie-platform body:has(#page-dach-steel-sales.active) .app-shell#app-shell-root > .main > .content { padding:0!important; margin:0!important; }
+html#pst-spie-platform body #page-dach-steel-sales [hidden] { display:none!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-page { display:grid!important; grid-template-columns:var(--pst-sidebar-width) minmax(0,1fr) 340px; column-gap:26px; row-gap:0; min-height:100dvh; max-width:none!important; padding:0 26px 50px 0!important; font:400 13px/1.6 var(--pst-font)!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-shell { display:contents!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-head { grid-column:2/4; grid-row:1; margin:0 0 24px!important; padding:30px 0 24px; border-bottom:1px solid var(--pst-line); display:flex!important; flex-direction:column; align-items:start!important; gap:14px; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-head > div:first-child { order:2; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-head h1 { font-size:30px!important; font-weight:600!important; color:var(--pst-ink)!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-sidebar { grid-column:1; grid-row:1/3; position:sticky!important; top:0; height:100dvh; padding:30px 18px 20px!important; background:var(--pst-sidebar)!important; border:0!important; border-right:1px solid var(--pst-line)!important; border-radius:0!important; box-shadow:none!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-brand { display:flex; align-items:center; gap:10px; margin:0 4px 24px; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-brand > span { display:grid; place-items:center; width:32px; height:36px; border-radius:7px; background:#193943; color:white; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-brand b { display:block; font-size:13px; font-weight:600; letter-spacing:1.4px; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-brand small { display:block; font-size:10px; color:var(--pst-muted); }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-navbtn { min-height:36px; padding:8px 10px; border-radius:var(--pst-radius)!important; font:400 12px/20px var(--pst-font)!important; color:var(--pst-muted)!important; background:transparent!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-navbtn.on { color:var(--pst-accent)!important; background:var(--pst-selected)!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-maincard { grid-column:2; grid-row:2; min-height:520px; border:0!important; border-radius:0!important; background:transparent!important; box-shadow:none!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-right { grid-column:3; grid-row:2; position:static!important; display:block!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-sidecard { background:transparent!important; border:0!important; border-left:1px solid var(--pst-line)!important; border-radius:0!important; padding:0 0 0 22px; box-shadow:none!important; }
+html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-table-head,.pst-dss-company-row) { grid-template-columns:minmax(0,1.4fr) 40px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)!important; padding:18px 0!important; gap:12px; background:transparent!important; }
+html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-table-head,.pst-dss-company-row) > :last-child { display:none!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-company-row.on { background:#f2f6f5!important; box-shadow:none!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-company-row b { font:500 15px/1.5 var(--pst-font)!important; color:var(--pst-ink)!important; }
+html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-company-row small,.pst-dss-cell,.pst-dss-contact small) { font:400 12px/1.5 var(--pst-font)!important; white-space:normal; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-company-title { font:600 20px/1.4 var(--pst-font)!important; color:var(--pst-ink)!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-detail-section { padding:18px 0; border-bottom:1px solid var(--pst-line); }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-detail-section h3 { margin:0 0 8px; font-size:14px!important; font-weight:500!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-detail-section p { font-size:13px; margin:6px 0; }
+html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-primary-wide,.pst-dss-secondary-wide,.pst-dss-btn,.pst-dss-actions button) { display:inline-flex; align-items:center; justify-content:center; gap:8px; width:auto!important; min-height:34px!important; padding:7px 10px!important; background:#fff!important; color:var(--pst-accent)!important; -webkit-text-fill-color:var(--pst-accent)!important; border:1px solid var(--pst-line)!important; border-radius:var(--pst-radius)!important; font:500 12px/1.5 var(--pst-font)!important; box-shadow:none!important; }
+html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-primary-wide,.pst-dss-btn):disabled { opacity:.6!important; }
+html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-company-row,.pst-dss-navbtn,button):focus-visible { outline:2px solid var(--pst-accent); outline-offset:2px; }
+@media(max-width:1150px) { html#pst-spie-platform body #page-dach-steel-sales .pst-dss-page { grid-template-columns:var(--pst-sidebar-width) minmax(0,1fr); } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-head { grid-column:2; } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-right { grid-column:2!important; grid-row:3; } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-sidecard { border-left:0!important; padding:24px 0; } }
+@media(max-width:760px) { html#pst-spie-platform body #page-dach-steel-sales .pst-dss-page { display:block!important; padding:0 18px 40px!important; } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-sidebar { height:auto; position:static!important; padding:14px 0!important; border:0!important; } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-brand { display:none; } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-nav { grid-template-columns:repeat(2,minmax(0,1fr)); } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-company-row { grid-template-columns:minmax(0,1fr) 40px!important; } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-company-row > :nth-child(n+3) { display:none!important; } html#pst-spie-platform body #page-dach-steel-sales .pst-dss-table-head { display:none!important; } }
 html#pst-spie-platform { color-scheme:light; scrollbar-gutter:stable; }
 html#pst-spie-platform body { margin:0; background:var(--pst-paper)!important; color:var(--pst-ink)!important; font-family:Inter,Arial,sans-serif!important; font-size:14px; line-height:1.6; }
 html#pst-spie-platform :where(.content,.page,#pst-ws-sidebar,#pst-mobile-app-v2) { font-family:Inter,Arial,sans-serif!important; color:var(--pst-ink); }

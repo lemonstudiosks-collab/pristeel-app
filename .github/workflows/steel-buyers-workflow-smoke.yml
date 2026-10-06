@@ -1,0 +1,39 @@
+name: Steel Buyers workflow
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'pristeel-dach-steel-sales-v1.js'
+      - 'pristeel-spie-standard.css'
+      - 'supabase/functions/pppp-dach-steel-draft-generator/**'
+      - 'supabase/functions/pppp-steel-buyer-discovery/**'
+      - 'tests/steel-buyers-*.mjs'
+      - '.github/workflows/steel-buyers-workflow-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify UI, copy, signature, contact evidence and human send gates
+        run: |
+          node --check pristeel-dach-steel-sales-v1.js
+          node tests/steel-buyers-ui-workflow-smoke.mjs
+          node tests/steel-buyers-workflow-smoke.mjs
+          node tests/steel-buyers-contact-workflow-smoke.mjs
+          node tests/steel-buyers-canonical-intelligence-smoke.mjs
+      - name: Install the existing DOM test dependency
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Regression checks for Home and Representations
+        run: |
+          node tests/home-launcher-actions-smoke.mjs
+          node tests/representations-home-standard-smoke.mjs
+          node scripts/generate-bootstrap.mjs --check
+          node scripts/bootstrap-sequence-check.mjs

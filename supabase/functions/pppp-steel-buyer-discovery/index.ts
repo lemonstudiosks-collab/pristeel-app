@@ -1,11 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { prepareReadyDrafts } from "./draft-workflow.mjs";
+import { runContactWorkflow } from "./contact-workflow.mjs";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL=Deno.env.get("SUPABASE_URL")||"";
 const SERVICE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const db=createClient(SUPABASE_URL,SERVICE,{auth:{persistSession:false,autoRefreshToken:false}});
-const VERSION="pppp-steel-buyer-discovery-v2";
+const VERSION="pppp-steel-buyer-discovery-v3-contact-workflow";
 const H={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-pppp-cron-secret","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
 const text=(v:any,n=1000)=>String(v??"").replace(/\s+/g," ").trim().slice(0,n);
 const json=(body:any,status=200)=>new Response(JSON.stringify(body),{status,headers:{...H,"Cache-Control":"no-store"}});
@@ -90,7 +92,8 @@ Deno.serve(async(req:Request)=>{
  if(up.error)return json({ok:false,error:up.error.message,version:VERSION},500);
  const run=up.data;
  try{
-  const rows=await wikidata(limit);
+  let rows:any[]=[],discovery_error:string|null=null;
+  try{rows=await wikidata(limit);}catch(e){discovery_error=text((e as any)?.message||e,1000);}
   let inserted=0,duplicates=0,routing=0,rejected=0,errors=0;
   const rejection_reasons={missing_name:0,missing_domain:0,blocked_domain:0,unrouted:0};
   const candidates:any[]=[];
@@ -118,14 +121,20 @@ Deno.serve(async(req:Request)=>{
    const staged=Number(q.data?.staged_count||0);
    if(staged){rejected+=staged;rejection_reasons.unrouted+=staged;}
   }
+  let contact_workflow:any;
+  try{contact_workflow=await runContactWorkflow(db,(name:string)=>Deno.env.get(name),fetch,day);}
+  catch(e){contact_workflow={error:text((e as any)?.message||e,1000),queued:[],external_email_sent:false};}
+  let draft_workflow:any;
+  try{draft_workflow=await prepareReadyDrafts(db,(name:string)=>Deno.env.get(name),actor.kind==="cron"?req.headers.get("x-pppp-cron-secret"):null);}
+  catch(e){draft_workflow={error:text((e as any)?.message||e,1000),external_email_sent:false};}
   const finished=new Date().toISOString(),result={discovered_count:rows.length,inserted_count:inserted,duplicate_count:duplicates,
-   routing_review_count:routing,rejected_count:rejected,error_count:errors,rejection_reasons};
+   routing_review_count:routing,rejected_count:rejected,error_count:errors+(discovery_error?1:0),rejection_reasons,discovery_error};
   const completed=await db.from("pppp_steel_buyer_discovery_runs_v1").update({status:"succeeded",
    discovered_count:result.discovered_count,inserted_count:inserted,duplicate_count:duplicates,routing_review_count:routing,finished_at:finished,
-   payload:{...run.payload,...result,completed_at:finished,no_outbound_created:true,no_gmail_draft_created:true,no_external_email_sent:true}}).eq("id",run.id);
+   payload:{...run.payload,...result,contact_workflow,draft_workflow,completed_at:finished,no_outbound_created:!(draft_workflow?.items||[]).some((x:any)=>x.verified),no_gmail_draft_created:!(draft_workflow?.items||[]).some((x:any)=>x.verified),no_external_email_sent:true}}).eq("id",run.id);
   if(completed.error)throw completed.error;
-  return json({ok:true,version:VERSION,run_id:run.id,run_date:day,...result,human_review_required:true,
-   outbound_created:false,gmail_draft_created:false,external_email_sent:false});
+  return json({ok:true,version:VERSION,run_id:run.id,run_date:day,...result,contact_workflow,draft_workflow,human_review_required:true,
+   outbound_created:(draft_workflow?.items||[]).some((x:any)=>x.verified),gmail_draft_created:(draft_workflow?.items||[]).some((x:any)=>x.verified),external_email_sent:false});
  }catch(error){
   const message=text((error as any)?.message||error,1000);
   await db.from("pppp_steel_buyer_discovery_runs_v1").update({status:"failed",error_message:message,finished_at:new Date().toISOString()}).eq("id",run.id);
