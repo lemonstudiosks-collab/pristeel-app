@@ -1,0 +1,30 @@
+name: KRPP authenticated fetch repair
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/krpp-authenticated-fetch-worker.mjs'
+      - 'scripts/krpp-worker-transport.mjs'
+      - 'supabase/functions/pppp-tender-fetch-worker/**'
+      - 'tests/krpp-authenticated-fetch-worker-smoke.mjs'
+      - '.github/workflows/krpp-authenticated-fetch-repair.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/krpp-authenticated-fetch-worker.mjs'
+      - 'scripts/krpp-worker-transport.mjs'
+      - 'supabase/functions/pppp-tender-fetch-worker/**'
+      - 'tests/krpp-authenticated-fetch-worker-smoke.mjs'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check scripts/krpp-authenticated-fetch-worker.mjs
+      - run: node tests/krpp-authenticated-fetch-worker-smoke.mjs
