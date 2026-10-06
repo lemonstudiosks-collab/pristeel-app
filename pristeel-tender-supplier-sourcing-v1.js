@@ -114,6 +114,7 @@ function workflowHtml(w){
  w=w||{};return '<div class="pst-tss-workflow"><div><b>'+Number(w.rfq_prepared||0)+'</b><span>RFQ të përgatitura</span></div><div><b>'+Number(w.rfq_sent||0)+'</b><span>të dërguara</span></div><div><b>'+Number(w.replies||0)+'</b><span>përgjigje</span></div><div><b>'+Number(w.offers_received||0)+'</b><span>oferta të lidhura</span></div></div>';
 }
 function render(data){
+ var actions=document.getElementById('pst-pcw-ti-actions'),active=actions&&S(actions.getAttribute('data-tender-id'));if(active&&active!==S(data&&data.tender_id))return false;
  var p=host();if(!p)return false;state.byTender[S(data.tender_id)]=data;
  var req=A(data.requirements),source=data.requirement_source==='canonical_bom'?'BOM kanonik + kërkesat e tenderit':'Analiza e dosjes';
  p.setAttribute('data-tender-id',S(data.tender_id));

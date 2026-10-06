@@ -54,5 +54,9 @@ const write=calls.find(x=>x.p==='tasks'&&x.m==='POST');assert(write);assert.equa
 email='oltian.vllahiu@prissteel.com';sourcing.render(data);assert([...w.document.querySelectorAll('[data-rsq-shortlist]')].every(x=>x.disabled));assert(w.document.querySelector('[data-rsq-handoff]').hidden,'Oltian cannot hand off to himself');
 await assert.rejects(rfq.upsertHandoff(data,[{email:'sales@alpha.test'}]),/Vetëm Arianiti/);
 const before=edgeCalls,reads=calls.length;await sourcing.load('local',false,'');await sourcing.maybeMount('local');assert.equal(edgeCalls,before,'reopen reuses existing supplier evidence');assert.equal(calls.length,reads,'cached reopen does not reread Supabase');
+rows.push({id:'other-local',title:'Another structure',status:'new',payload:{source:'KRPP',notice_phase:'opportunity'}});
+let resolveOld;w.fetch=async()=>new Promise(resolve=>{resolveOld=()=>resolve({ok:true,text:async()=>JSON.stringify(data)});});
+const pending=sourcing.load('local',false,'',true);await api.openTender('other-local');resolveOld();await pending;
+assert(!w.document.querySelector('#pst-tender-supplier-sourcing'),'an older supplier response cannot repaint a different tender');
 assert.deepEqual(alerts,[]);dom.window.close();
 console.log('Opportunity stage actions: compact Gmail, readiness gates, shortlist/handoff roles, no implicit writes and cached reopen OK');
