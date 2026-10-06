@@ -80,7 +80,7 @@ let fromCalls=0,noiseFilter=false;
 const raceDb={from(table){
  fromCalls++;const builder={
   select(){return this;},order(){return this;},gte(){return this;},eq(){return this;},
-  is(){return this;},not(column,op,value){if(column==='subject'){assert.equal(op,'ilike');assert.match(value,/Report Domain/);noiseFilter=true;}return this;},
+  is(){return this;},or(filter){assert.equal(filter,'subject.is.null,subject.not.ilike.Report Domain:%Submitter:%Report-ID:%');noiseFilter=true;return this;},not(){return this;},
   update(){this.write=true;return this;},
   limit(){return this;},
   then(resolve){return Promise.resolve({data:table==='projects'?[p1]:[{id:'e1',gmail_message_id:'m1',gmail_thread_id:null,subject:'ALPHA-2026',snippet:'',direction:'incoming'}],error:null}).then(resolve);},

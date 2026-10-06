@@ -88,7 +88,7 @@ async function reconcile(days=2,limit=300){
   const since=new Date(Date.now()-Math.max(1,Math.min(14,days))*86400000).toISOString();
   const {data:projects,error:pe}=await db.from("projects").select("id,name,client,ref,business_ref,identity_aliases,status,pipeline_stage").order("created_at",{ascending:false}).limit(2000);if(pe)throw pe;
   const active=(projects||[]).filter((p:any)=>!TERMINAL.has(text(p.status).toLowerCase())),index=buildIndex(active);
-  const {data:rows,error:ee}=await db.from("project_emails").select("id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,from_email,from_name,subject,snippet,sent_at,direction,match_method,match_confidence,needs_review").is("project_id",null).not("subject","ilike","Report Domain:%Submitter:%Report-ID:%").gte("sent_at",since).order("sent_at",{ascending:false}).limit(Math.max(1,Math.min(1000,limit)));if(ee)throw ee;
+  const {data:rows,error:ee}=await db.from("project_emails").select("id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,from_email,from_name,subject,snippet,sent_at,direction,match_method,match_confidence,needs_review").is("project_id",null).or("subject.is.null,subject.not.ilike.Report Domain:%Submitter:%Report-ID:%").gte("sent_at",since).order("sent_at",{ascending:false}).limit(Math.max(1,Math.min(1000,limit)));if(ee)throw ee;
   const inheritedProjects=await threadProjectMap(rows||[],active);
   const summary:any={checked:(rows||[]).length,linked:0,review:0,tasks_created:0,tasks_updated:0,quotes_created:0,analyses_created:0,unmatched:0,identity_conflicts:0,concurrent_skipped:0,excluded_noise:'dmarc_aggregate_reports',items:[]};
   for(const row of rows||[]){
