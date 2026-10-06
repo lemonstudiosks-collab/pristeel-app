@@ -47,7 +47,8 @@ assert.match(fn,/https:\/\/www\.googleapis\.com\/auth\/drive/,'Drive-only DWD sc
 assert.match(fn,/mimeType=.*text%2Fcsv|encodeURIComponent\('text\/csv'\)/,'Drive CSV export missing');
 assert.doesNotMatch(fn,/gmail\.googleapis\.com|messages\/send|sendMail|supplier_decision|mark.*won|mark.*lost/i,'bridge must not perform protected commercial/external actions');
 
-const receiptLookup=fn.indexOf('const existing = await receipt(commandId)');
+assert.match(fn,/const receipts = await commandReceipts\(commands\)/,'receipt statuses must be read in bounded batches');
+const receiptLookup=fn.indexOf('const existing = receipts.get(commandId) || null');
 const terminalReceiptSkip=fn.indexOf("['succeeded', 'rejected'].includes(existing.status)",receiptLookup);
 const attemptsGuard=fn.indexOf('if (attempts > 3)',terminalReceiptSkip);
 const checkedIncrement=fn.indexOf('summary.checked++',attemptsGuard);
