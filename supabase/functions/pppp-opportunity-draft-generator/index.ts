@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { resolveTedRecipients, resolveTedDraftRecipients, normalizeEmail, contactTier, contactQualityScore } from "./recipient-policy.mjs";
 import { encodeRfc2047Header } from "./mime-headers.mjs";
 import { buildTedDraftContent } from "./draft-content.mjs";
-import { canReviewUnknownRoleDraft } from "./draft-assessment-policy.mjs";
+import { canReviewTedDraftAssessment } from "./draft-assessment-policy.mjs";
 
 const SA_JSON=Deno.env.get('GOOGLE_SA_JSON')!;
 const GMAIL_USER=Deno.env.get('GMAIL_USER')!;
@@ -304,12 +304,16 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
   let needsTemplateSelection=false;
   if(intel?.assessment){
     const x=intel.assessment;if(x.workflow_track!=='ted_award_outreach')return{action_key:a.action_key,event:'bid_opportunity_no_outreach',reason:'source_requires_bid_assessment',recipients:0,created:0,remaining:0};
-    if((!x.draft_eligible&&!canReviewUnknownRoleDraft(x,a,tender,explicitUser))||['research_required','no_outreach','closed'].includes(text(x.decision_state,40)))return{action_key:a.action_key,event:'readiness_blocked',reason:'company_assessment_not_draft_eligible',recipients:0,created:0,remaining:0};
-    if(!x.draft_eligible){needsTemplateSelection=true;if(explicitUser&&['gc_epc','steel_fabricator'].includes(draftTemplate))p={...p,manual_draft_template:draftTemplate};}
+    if((!x.draft_eligible&&!canReviewTedDraftAssessment(x,a,tender,explicitUser))||['research_required','no_outreach','closed'].includes(text(x.decision_state,40)))return{action_key:a.action_key,event:'readiness_blocked',reason:'company_assessment_not_draft_eligible',recipients:0,created:0,remaining:0};
     a={...a,company_role:x.company?.company_type||x.company_summary?.company_type||a.company_role,pristeel_scope:x.pristeel_scope||x.tender_summary?.scope||a.pristeel_scope,pristeel_offer_model:x.offer_model,timing_classification:x.timing_classification||a.timing_classification,personalization_facts:[...(Array.isArray(x.tender_facts)?x.tender_facts.map((f:any)=>f?.value).filter(Boolean):[]),...(Array.isArray(x.company_facts)?x.company_facts.map((f:any)=>f?.value).filter(Boolean):[])].slice(0,6),payload:{...p,outreach_readiness_v1:{...(p.outreach_readiness_v1||{}),project_fact:x.tender_summary?.title||null,scope_evidence:x.pristeel_scope||x.tender_summary?.scope||null,company_fact:x.company?.business_summary||x.company_summary?.business_summary||null,verified_company_domain:x.company?.domain||x.company_summary?.domain||null,assessment_id:x.id,company_profile_id:x.company_profile_id}}};p=a.payload;
     const canonical=(intel.contacts||[]).map((c:any)=>({email:c.email,name:c.full_name,job_title:c.job_title,purpose:c.functional_role,functional_role:c.functional_role,confidence:c.verification_status==='verified'?'verified':'medium',score:c.confidence_score,source_type:c.source_type||'opportunity_contacts_v1',source_url:c.source_url,recipient_company_name:intel.company?.legal_name,recipient_company_domain:intel.company?.domain,contact_id:c.id,draft_eligible:c.draft_eligible}));
     tender={...tender,winner_contacts:[...canonical,...(Array.isArray(tender.winner_contacts)?tender.winner_contacts:[])]};
   }
+  // Current role evidence owns template choice, even when a legacy assessment says eligible.
+  const roleV2=text(tender?.winner_role_v2?.category||tender?.winner?.role_v2?.category,80);
+  needsTemplateSelection=roleV2==='other_unclear'||(!roleV2&&effectiveTedRole(tender)==='unknown');
+  if(needsTemplateSelection&&explicitUser&&['gc_epc','steel_fabricator'].includes(draftTemplate))p={...p,manual_draft_template:draftTemplate};
+  a={...a,payload:p};
   const cs=await db.from('pppp_opportunity_communication_state_v1').select('communication_state,communication_at,communication_thread_id').eq('action_id',a.id).maybeSingle();
   if(cs.error)throw cs.error;
   if(['waiting','replied','contacted_history'].includes(text(cs.data?.communication_state,40).toLowerCase())){

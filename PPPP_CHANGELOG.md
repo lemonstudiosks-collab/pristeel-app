@@ -1,4 +1,11 @@
-## 2026-10-06 — Mundësitë reuses approved GC and steel-fabricator email texts
+## 2026-10-06 - Shared manual draft review across TED company assessments
+
+- Separate source-backed manual draft review from automatic assessment eligibility. Ready/contact-research cases may proceed to the existing recipient check without upgrading company identity, role or send eligibility.
+- Require approved GC/producer template selection whenever current role evidence is unresolved, including legacy assessments marked eligible. Preserve the approved email text.
+- Attribute consortium emails to the selected company; never inherit all notice recipients. Show generator failures directly instead of misreporting them as missing recipients.
+- Verify both preview choices against live read-only VACUSERV, CONCELEX and Amedick data, plus shared-policy, recipient, preview/cancel/approval and registry regressions. No live Gmail drafts or emails created.
+
+## 2026-10-06 - Mundësitë reuses approved GC and steel-fabricator email texts
 
 - Remove the newly introduced role-clarification email. GC drafts now reuse the exact approved full-responsibility commercial paragraphs from `pppp-gc-outreach` body1 in German, BCS and English; steel fabricators retain the existing external-production-capacity copy.
 - Where the company role is unverified but the existing manual review policy passes, require an explicit GC/EPC or steel-fabricator template choice before preview. This choice applies only to the draft and does not verify or overwrite the company role.
