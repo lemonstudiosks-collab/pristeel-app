@@ -14,7 +14,8 @@ The deployed worker (Edge version 11, bridge v29) consumes the same approved Com
 
 Migration: `20261006042651_material_trade_bridge_incremental_contract_repair.sql`.
 
-- `pppp_chatgpt_upsert_dach_steel_target_v1`: retain omitted existing target fields during enrichment; append and deduplicate evidence in original order; merge supplied material_scope top-level keys. Validate contact/outreach enums with clear errors. Existing approved processing receipt checks, advisory locks, service-only privileges, source-key conflict handling and succeeded-command replay guard remain intact.
+- `pppp_chatgpt_upsert_dach_steel_target_v1` (also migration `20261006043132_material_trade_existing_target_patch_identity_guard.sql`): retain omitted existing target fields during enrichment; append and deduplicate evidence in original order; merge supplied material_scope top-level keys. Validate contact/outreach enums with clear errors. Existing approved processing receipt checks, advisory locks, service-only privileges, source-key conflict handling and succeeded-command replay guard remain intact.
+- `pppp_dach_steel_refresh_intelligence_v1`: preserve existing workflow_state for queued/sent/replied/suppressed targets while recalculating intelligence.
 - `pppp_chatgpt_bridge_manifest_v29`: publish the existing contact/outreach enum values and incremental enrichment contract, including input evidence shape and calculated intelligence field paths. No transport or human gates changed.
 - `pppp_dach_steel_contact_resolution_v1` (migration `20261006042935_material_trade_generic_contact_evidence_guard.sql`): keep an explicitly general mailbox classified as general when the same source claim also mentions purchasing phone-only contacts; do not infer an individual purchasing email.
 - `pppp_chatgpt_dach_steel_target_v1`: grant only EXECUTE to the existing supabase_read_only_user. Function remains SECURITY INVOKER; no new table write privilege or RLS bypass introduced.
@@ -38,3 +39,5 @@ Existing target: `eu:nl:hollandstaal.nl`.
 Source: https://www.hollandstaal.nl/contact/
 
 Append only the published purchasing telephone routes for Rick Hoogeboom and Wim van Rijn. The company general email is not attributed to either person. Preserve sent state and all omitted business fields. Verify the normal scheduled worker result and the existing target's evidence/intelligence read-back. Do not submit a second sheet row to test replay; normal reprocessing skips the succeeded receipt.
+
+The first real probe failed before mutation with steel_buyer_official_domain_required: BEFORE INSERT identity validation ran ahead of ON CONFLICT. The second narrow migration supplies the existing locked identity to INSERT validation and preserves omitted patch fields. The same approved row/command ID was retried via the existing trusted worker request (limit 1); no duplicate row was submitted.
