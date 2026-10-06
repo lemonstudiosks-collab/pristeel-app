@@ -56,7 +56,7 @@ assert(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(projectCentric), 'Pr
 assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Project-centric layer must preserve commitment gates');
 
 console.log('Redesign bootstrap + OpenAI + project-centric workflow contract smoke test passed.');
-assert(projectCentric.includes('Shkarko dosjen') && projectCentric.includes('Analizo kushtet') && projectCentric.includes('dossierReady(id)'), 'KRPP/APP action console must separate dossier download, condition analysis and project creation gate');
+assert(projectCentric.includes('Shkarko dosjen') && projectCentric.includes('Përgatit për vlerësim') && projectCentric.includes('dossierReady(id)'), 'KRPP/APP action console must retain download access, unified preparation and the project creation gate');
 assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includes('GC / EPC') && projectCentric.includes('Shiko kontaktet'), 'TED popup must expose winner role and contacts');
 new Function(tenderActions);
 assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
