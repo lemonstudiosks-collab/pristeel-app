@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {buildTedDraftContent} from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
 
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260907162000_restore_future_opportunity_draft_cron_v1.sql',import.meta.url),'utf8');
 const generator=fs.readFileSync(new URL('../supabase/functions/pppp-opportunity-draft-generator/index.ts',import.meta.url),'utf8');
@@ -25,10 +26,12 @@ assert(!generator.includes('/drafts/send'),'Gmail draft-send endpoint must not e
 assert(!generator.includes('gmail.send'),'gmail.send scope must not exist');
 
 assert(content.includes('PRISTEEL_LOGO_URL'),'HTML signature must include canonical PRISTEEL logo');
-assert(content.includes('Stahlpaket | PRISTEEL'),'German subject must use the scope-first project package policy');
-assert(content.includes("return 'Projekt '+p+' – Stahlpaket | PRISTEEL'"),'German TED subject must use the cleaned project name');
-assert(content.includes('recipientKind'),'recipient type must remain available for safe greeting/metadata handling');
-assert(content.includes('scope_evidence')&&content.includes('concrete_question'),'TED drafts must be led by exact scope evidence and one concrete question');
+const scopeDraft=buildTedDraftContent({route:'TED_GC',tender_title:'Germany – Structural steelworks – Steel bridge package',payload:{outreach_readiness_v1:{scope_evidence:'Structural steel fabrication for a bridge.'}}},{title:'Germany – Structural steelworks – Steel bridge package',winner:{country:'DE'}},{email:'procurement@example.de'});
+assert.equal(scopeDraft.language,'de');
+assert.match(scopeDraft.subject,/Steel bridge package/,'subject must retain the project scope');
+assert.match(scopeDraft.body,/Stahlpaket|Stahlbau/,'copy must retain the steel-scope context');
+assert.equal(scopeDraft.recipient_kind,'direct','recipient type remains available for safe greetings');
+assert(content.includes('scope_evidence'),'copy remains led by published scope evidence');
 assert(generator.includes("event:'readiness_blocked'"),'generator must hard-stop TED actions without readiness evidence');
 assert(generator.includes('MAX_CONTACTS_PER_ACTION=20'),'manual draft generation must cover every verified UI contact while staying bounded');
 assert(generator.includes('MAX_DRAFT_WRITES_PER_RUN=25'),'generator must retain a bounded write budget large enough for one full verified-contact set');

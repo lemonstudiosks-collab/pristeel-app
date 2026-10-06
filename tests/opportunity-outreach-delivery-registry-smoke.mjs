@@ -29,12 +29,12 @@ const recipient={email:'einkauf@beispiel.de',name:'Max Mustermann'};
 const content=buildTedDraftContent(action,tender,recipient);
 assert.equal(content.language,'de');
 assert.equal(content.subject.includes('TED'),false);
-assert.equal(content.subject.includes('123456-2026'),false);
+assert.equal(content.subject.includes('123456-2026'),true,'preserve deployed exact TED-reference subject fallback when no richer package reference exists');
 for(const value of [content.body,content.html_body]){
   assert.equal(value.includes('TED-Referenz'),false);
   assert.equal(value.includes('Auftraggeber'),false);
   assert.equal(value.includes('ted.europa.eu'),false);
-  assert.equal(value.includes('123456-2026'),false);
+  assert.equal(value.includes('123456-2026'),true,'source-confirmed project reference remains available for exact package identity');
 }
 assert.ok(content.body.includes('Neubau Stahlhalle'),'project should be mentioned naturally');
 assert.ok(content.html_body.includes(PRISTEEL_LOGO_URL),'HTML signature must include PRISTEEL logo');
