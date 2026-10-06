@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { resolveTedRecipients, resolveTedDraftRecipients, normalizeEmail, contactTier, contactQualityScore } from "./recipient-policy.mjs";
 import { encodeRfc2047Header } from "./mime-headers.mjs";
 import { buildTedDraftContent } from "./draft-content.mjs";
+import { canReviewUnknownRoleDraft } from "./draft-assessment-policy.mjs";
 
 const SA_JSON=Deno.env.get('GOOGLE_SA_JSON')!;
 const GMAIL_USER=Deno.env.get('GMAIL_USER')!;
@@ -11,7 +12,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v30-manual-cooldown-override';
+const GENERATOR='pppp-opportunity-draft-generator-v34-manual-role-clarification';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=20;
 const MAX_DRAFT_WRITES_PER_RUN=25;
@@ -52,7 +53,9 @@ async function tenderContext(tenderWatchId:any){
     if(!org.contacts.some((x:any)=>normalizeEmail(x?.email||x?.value)===email))org.contacts.push({type:'email',value:email,email,confidence:'high',score:95,source_type:'outreach_contacts',draft_eligible:true});
   }
   if(orgs.length)winner.contact_enrichment={...(winner.contact_enrichment||{}),organizations:orgs};
-  return{...p,winner,winner_contacts:existingContacts,publication_no:data?.publication_no||p.publication_no||null,procurement_no:data?.procurement_no||p.procurement_no||null,source_url:data?.source_url||p.source_url||null,detail_url:data?.detail_url||p.detail_url||null,title:data?.title||p.title||null,authority:data?.authority||p.authority||null};
+  const {data:roleV2,error:roleError}=await db.rpc('pppp_ted_company_role_context_v2',{p_winner:winner,p_award_role:p?.award_role||{}});
+  if(roleError)throw roleError;
+  return{...p,winner,winner_role_v2:roleV2||null,winner_contacts:existingContacts,publication_no:data?.publication_no||p.publication_no||null,procurement_no:data?.procurement_no||p.procurement_no||null,source_url:data?.source_url||p.source_url||null,detail_url:data?.detail_url||p.detail_url||null,title:data?.title||p.title||null,authority:data?.authority||p.authority||null};
 }
 
 function rawFor(a:any,tender:any,recipient:any,outreachId:string,rfcId:string){
@@ -298,7 +301,8 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
   let p=a.payload&&typeof a.payload==='object'?a.payload:{},tender=await tenderContext(a.tender_watch_id),intel=await opportunityIntelligence(a.id);
   if(intel?.assessment){
     const x=intel.assessment;if(x.workflow_track!=='ted_award_outreach')return{action_key:a.action_key,event:'bid_opportunity_no_outreach',reason:'source_requires_bid_assessment',recipients:0,created:0,remaining:0};
-    if(!x.draft_eligible||['research_required','no_outreach','closed'].includes(text(x.decision_state,40)))return{action_key:a.action_key,event:'readiness_blocked',reason:'company_assessment_not_draft_eligible',recipients:0,created:0,remaining:0};
+    if((!x.draft_eligible&&!canReviewUnknownRoleDraft(x,a,tender,explicitUser))||['research_required','no_outreach','closed'].includes(text(x.decision_state,40)))return{action_key:a.action_key,event:'readiness_blocked',reason:'company_assessment_not_draft_eligible',recipients:0,created:0,remaining:0};
+    if(!x.draft_eligible)p={...p,manual_role_clarification_draft:true};
     a={...a,company_role:x.company?.company_type||x.company_summary?.company_type||a.company_role,pristeel_scope:x.pristeel_scope||x.tender_summary?.scope||a.pristeel_scope,pristeel_offer_model:x.offer_model,timing_classification:x.timing_classification||a.timing_classification,personalization_facts:[...(Array.isArray(x.tender_facts)?x.tender_facts.map((f:any)=>f?.value).filter(Boolean):[]),...(Array.isArray(x.company_facts)?x.company_facts.map((f:any)=>f?.value).filter(Boolean):[])].slice(0,6),payload:{...p,outreach_readiness_v1:{...(p.outreach_readiness_v1||{}),project_fact:x.tender_summary?.title||null,scope_evidence:x.pristeel_scope||x.tender_summary?.scope||null,company_fact:x.company?.business_summary||x.company_summary?.business_summary||null,verified_company_domain:x.company?.domain||x.company_summary?.domain||null,assessment_id:x.id,company_profile_id:x.company_profile_id}}};p=a.payload;
     const canonical=(intel.contacts||[]).map((c:any)=>({email:c.email,name:c.full_name,job_title:c.job_title,purpose:c.functional_role,functional_role:c.functional_role,confidence:c.verification_status==='verified'?'verified':'medium',score:c.confidence_score,source_type:c.source_type||'opportunity_contacts_v1',source_url:c.source_url,recipient_company_name:intel.company?.legal_name,recipient_company_domain:intel.company?.domain,contact_id:c.id,draft_eligible:c.draft_eligible}));
     tender={...tender,winner_contacts:[...canonical,...(Array.isArray(tender.winner_contacts)?tender.winner_contacts:[])]};
@@ -424,4 +428,5 @@ async function run(limit=20,actionId='',refreshExisting=false,explicitUser=false
   return{candidates:(data||[]).length,actions_ready:ready,actions_partial:partial,no_recipients:noRecipients,route_mismatch:routeMismatch,readiness_blocked:readinessBlocked,drafts_created:created,drafts_refreshed:refreshed,drafts_retired:retired,drafts_updated:0,drafts_preserved:preserved,sent_already:sent,draft_writes:budget.writes,failed:errors.length,errors:errors.slice(0,10),results:results.slice(0,50),generator:GENERATOR,registry:REGISTRY,write_policy:'registry_state_machine_v1',sent_match_policy:'thread_id_plus_pppp_headers',stable_headers:['X-PPPP-Outreach-ID','X-PPPP-Action-ID'],html:true,separate_draft_per_recipient:true,human_send_required:true,auto_send:false,refresh_existing:refreshExisting,max_contacts_per_action:MAX_CONTACTS_PER_ACTION,draft_write_budget_per_run:MAX_DRAFT_WRITES_PER_RUN,outreach_engine_version:'v2'};
 }
 Deno.serve(async(req:Request)=>{if(req.method==='OPTIONS')return new Response('ok',{headers:cors});const mode=await authorizationMode(req);if(!mode)return new Response(JSON.stringify({ok:false,error:'unauthorized'}),{status:401,headers:cors});try{const u=new URL(req.url);let body:any={};if(req.method==='POST'){try{body=await req.json();}catch{}}const limit=Number(body?.limit||u.searchParams.get('limit')||20),actionId=text(body?.action_id||u.searchParams.get('action_id')||'',80),refreshExisting=String(body?.refresh_existing??u.searchParams.get('refresh_existing')??'false').toLowerCase()==='true',humanApproved=body?.human_approved===true,cooldownOverride=mode==='user'&&humanApproved&&body?.cooldown_override===true;if(mode==='cron'||!actionId){return new Response(JSON.stringify({ok:true,event:'manual_draft_only',reason:mode==='cron'?'scheduled_cold_draft_generation_disabled':'cold_draft_generation_requires_explicit_action_id',authorization_mode:mode,auto_send:false,human_send_required:true,drafts_created:0}),{headers:cors});}const out=await run(Math.min(1,limit),actionId,refreshExisting,mode==='user'&&!!actionId,!humanApproved,cooldownOverride);return new Response(JSON.stringify({ok:true,...out,authorization_mode:mode,preview_only:!humanApproved,cooldown_override:cooldownOverride}),{headers:cors});}catch(e){return new Response(JSON.stringify({ok:false,error:text((e as any)?.message||e,1000),auto_send:false,human_send_required:true}),{status:500,headers:cors});}});
+
 

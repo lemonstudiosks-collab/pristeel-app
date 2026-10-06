@@ -48,11 +48,11 @@ assert.ok(sch.missing_facts.length>=2);
 
 // 2. CYTA project group: no database-style award narration.
 const cyta=buildTedDraftContent({route:'TED_CONSORTIUM',target_company:'CYTA',target_email:'andreas.makris@cyta.com.cy',tender_title:'Cyprus – Electrical machinery – Athalassa, Anatoliko and FIZ battery storage projects',pristeel_offer_model:'fabricated_steel_package',personalization_facts:['CYTA is identified in the award information.']},{title:'Cyprus – Electrical machinery – Athalassa, Anatoliko and FIZ battery storage projects',winner:{name:'CYTA',country:'CYP',company_type:'trader_consortium'}},{email:'andreas.makris@cyta.com.cy',name:'Mr. Antreas Makris'});
-assert.equal(cyta.offer_model,'fabricated_steel_package');
+assert.equal(cyta.offer_model,'consortium_scope_support');
 assert.match(cyta.subject,/Athalassa \/ Anatoliko \/ FIZ – battery-storage steel scope/);
 assert.match(cyta.plain_body,/Athalassa, Anatoliko, FIZ battery storage projects/);
-assert.match(cyta.plain_body,/take full responsibility for a clearly defined steel package/);
-assert.match(cyta.plain_body,/You remain in control of the project/);
+assert.match(cyta.plain_body,/member responsible for that scope/);
+assert.doesNotMatch(cyta.plain_body,/You remain in control of the project|take full responsibility/i);
 assert.doesNotMatch(cyta.plain_body,/published award information|identified in the award information/i);
 
 // 3. Fabricator gets capacity copy, never GC ownership copy.
