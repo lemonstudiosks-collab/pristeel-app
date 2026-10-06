@@ -5,7 +5,7 @@ const dom=new JSDOM('<!doctype html><html><head></head><body></body></html>',{ru
 const {window}=dom;
 window.setTimeout=()=>0;
 const row={id:'tender-fixture',status:'new',payload:{source:'TED',notice_phase:'award',winner:{name:'Johann Anwander',identifier:'DE128409720',identity_version:'ted-winner-canonical-v2',emails:['info@zaunbauspezialist.de'],ted_declared_emails:['info@zaunbauspezialist.de']}}};
-const requests=[];let ensures=0,unknownRole=false;
+const requests=[];let ensures=0,unknownRole=false,generatorError=false;
 window.supaFetch=async(path)=>{
  if(path.startsWith('kek_tender_watch?'))return[row];
  if(path.startsWith('pppp_opportunity_action_queue_v2?'))return[];
@@ -18,6 +18,7 @@ window.authGetSession=()=>({access_token:'fixture-user-session'});
 window.fetch=async(url,opts)=>{
  assert(url.endsWith('/functions/v1/pppp-opportunity-draft-generator'),'all writes delegate to the existing controlled draft generator');
  const payload=JSON.parse(opts.body);requests.push(payload);
+ if(generatorError)return{ok:true,text:async()=>JSON.stringify({ok:true,failed:1,errors:[{error:'company_role_verification_required'}],results:[]})};
  if(unknownRole&&payload.human_approved)assert.equal(payload.draft_template,'steel_fabricator');
  const result=unknownRole&&!payload.draft_template?{event:'template_selection_required',company:row.payload.winner.name,recipients:1,templates:[{id:'gc_epc',label:'GC / EPC'},{id:'steel_fabricator',label:'Prodhues çeliku'}]}:payload.human_approved?{event:'outreach_ready',recipients:1,created:1,covered:1}:{event:'preview_ready',company:row.payload.winner.name,recipients:1,previews:[{email:'info@zaunbauspezialist.de',subject:'Zus�tzliche Fertigungskapazit�t',body:'Sehr geehrte Damen und Herren,\n\nKontrollierter Vorschautext.'}]};
  return{ok:true,text:async()=>JSON.stringify({ok:true,results:[result]})};
@@ -48,5 +49,8 @@ await reviewReady();assert.equal(requests.length,6);assert.equal(requests[5].dra
 assert(window.document.querySelector('textarea'));assert.equal(window.document.querySelector('[data-td-approve]').textContent,'Mirato dhe krijo draftet në Gmail');
 window.document.querySelector('[data-td-approve]').click();
 assert.equal((await pending).results[0].created,1);assert.equal(requests.length,7);assert.equal(requests[6].draft_template,'steel_fabricator');assert.equal(requests[6].human_approved,true);assert.equal(opens,2);
+generatorError=true;
+await assert.rejects(api.prepareDraft(row.id),/draftit dështoi: company_role_verification_required/);
+assert.equal(opens,2,'generator errors must not open Gmail or masquerade as missing recipients');
 dom.window.close();
 console.log('Opportunity preview, cancel and explicit draft approval: OK (mock Gmail only)');

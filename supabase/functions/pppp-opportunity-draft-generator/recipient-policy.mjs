@@ -88,7 +88,11 @@ function mergeCandidate(a,b){
 
 export function resolveTedDraftRecipients(action,tenderPayload,max=20){
   const winner=tenderPayload?.winner||{},domains=companyDomains(action,winner),rows=[];
+  const target=companyNameKey(action?.target_company||winner.name);
+  if(!target||target!==companyNameKey(winner.name))return[];
   const push=(email,meta={},trust='domain')=>{
+    const attributed=meta.recipient_company_name||meta.company_name;
+    if(attributed&&companyNameKey(attributed)!==target)return;
     const listing=trust==='listing';
     const c=candidate(email,{...meta,allow_free_domain:listing});if(!c||c.draft_eligible===false)return;
     if(listing){if(!listingContactTrusted(c,meta?.organization||null))return;}else if(!belongsToCompany(c.email,domains))return;
@@ -99,10 +103,14 @@ export function resolveTedDraftRecipients(action,tenderPayload,max=20){
   const tedWinnerCanonical=String(winner?.identity_version||'').toLowerCase()==='ted-winner-canonical-v2'&&txt(winner?.identifier,120)&&txt(winner?.name,300);
   if(tedWinnerCanonical){
     const provenance=new Set((Array.isArray(winner?.ted_declared_emails)?winner.ted_declared_emails:[]).map(normalizeEmail));
+    const multiple=Number(winner.organization_count||0)>1||(Array.isArray(winner.names)&&winner.names.length>1);
+    const scopedEmails=new Set(scopedOrganizations(action,winner).flatMap(org=>(Array.isArray(org.contacts)?org.contacts:[]).filter(c=>c.draft_eligible!==false&&/ted/i.test(txt(c.source_type,80))).map(c=>normalizeEmail(c.email||c.value))));
     const declared=[...(Array.isArray(winner?.emails)?winner.emails:[]),winner?.email].filter(Boolean);
     for(const email of declared){
       const e=normalizeEmail(email),ed=domainFromEmail(e);if(!e||!ed)continue;
       if(!provenance.has(e)&&!domainPlausibleForCompany(winner?.name,ed))continue;
+      // The notice email list spans all consortium members; it is not one company's list.
+      if(multiple&&!scopedEmails.has(e)&&!domainPlausibleForCompany(winner.name,ed))continue;
       const c=candidate(e,{confidence:'verified',score:100,priority:950,source_type:'ted_winner_organization',company_attribution:'ted_winner_organization',recipient_company_name:winner?.name,recipient_company_domain:ed,draft_eligible:true,allow_free_domain:provenance.has(e)});
       if(!c||c.draft_eligible===false)continue;
       const tier=contactTier(c.email,c),contact_quality_score=contactQualityScore(c.email,c);if(contact_quality_score<25)continue;

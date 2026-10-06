@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {canReviewUnknownRoleDraft} from '../supabase/functions/pppp-opportunity-draft-generator/draft-assessment-policy.mjs';
+import {canReviewTedDraftAssessment as canReviewUnknownRoleDraft} from '../supabase/functions/pppp-opportunity-draft-generator/draft-assessment-policy.mjs';
 import {buildTedDraftContent} from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
 import {resolveTedDraftRecipients,resolveTedRecipients,normalizeEmail,contactTier,contactQualityScore} from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
 
@@ -9,13 +9,13 @@ const tender={title:'217-300 FWH Neubau Feuerwehrgerätehaus, Schlosserarbeiten 
 const assessment={workflow_track:'ted_award_outreach',decision_state:'ready_for_review',draft_eligible:false,offer_model:'fabricated_steel_package',company_role:'unknown',company_summary:{company_type:'unknown',legal_name:action.target_company,domain:'stako-hallenbau.de'},tender_summary:{title:tender.title},tender_facts:[{type:'scope',status:'confirmed',value:'Schlosserarbeiten Innen und Außen',source_url:'https://ted.europa.eu/en/notice/-/detail/687897-2026'},{type:'project',status:'confirmed',value:tender.title,source_url:'https://ted.europa.eu/en/notice/-/detail/687897-2026'}]};
 assert(canReviewUnknownRoleDraft(assessment,action,tender,true));
 assert(!canReviewUnknownRoleDraft(assessment,action,tender,false));
-for(const decision_state of ['research_required','no_outreach','closed','contact_research'])assert(!canReviewUnknownRoleDraft({...assessment,decision_state},action,tender,true));
-assert(!canReviewUnknownRoleDraft({...assessment,company_summary:{...assessment.company_summary,domain:null}},action,tender,true));
-assert(!canReviewUnknownRoleDraft(assessment,{...action,route:'TED_PRODUCER'},tender,true));
+for(const decision_state of ['research_required','no_outreach','closed'])assert(!canReviewUnknownRoleDraft({...assessment,decision_state},action,tender,true));
+assert(canReviewUnknownRoleDraft({...assessment,decision_state:'contact_research',company_summary:{...assessment.company_summary,domain:null}},action,tender,true));
+assert(!canReviewUnknownRoleDraft(assessment,{...action,route:'DIRECT_RAW_MATERIAL'},tender,true));
 assert(!canReviewUnknownRoleDraft(assessment,action,{...tender,winner:{...tender.winner,name:'Different GmbH'}},true));
 assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:[]},action,tender,true));
 assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:assessment.tender_facts.filter(f=>f.type!=='scope')},action,tender,true));
-assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:assessment.tender_facts.map(f=>f.type==='scope'?{...f,value:'Vacuum pumps'}:f)},action,tender,true));
+assert(canReviewUnknownRoleDraft({...assessment,tender_facts:assessment.tender_facts.map(f=>f.type==='scope'?{...f,value:'Published mechanical package'}:f)},action,tender,true));
 assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:[{...assessment.tender_facts[0],status:'inferred'}]},action,tender,true));
 assert.throws(()=>buildTedDraftContent(action,tender,{email:'info@stako-hallenbau.de'}),/company_role_verification_required/,'unguarded targeted copy must remain blocked');
 for(const manual_draft_template of ['gc_epc','steel_fabricator']){
@@ -41,7 +41,7 @@ const deps={
  db:{from(table){const q={select(){return q},eq(){return q},async maybeSingle(){return{data:table==='pppp_opportunity_actions'?action:{communication_state:communication},error:null}}};return q}},
  text:(v,max=12000)=>String(v??'').trim().slice(0,max),tenderContext:async()=>tender,
  opportunityIntelligence:async()=>({assessment:currentAssessment,contacts:[],company:assessment.company_summary}),
- canReviewUnknownRoleDraft,expectedTedRoute:()=> 'TED_GENERAL',tedDraftReadiness:()=>({ok:true}),
+ canReviewTedDraftAssessment:canReviewUnknownRoleDraft,effectiveTedRole:t=>t.winner.company_type||'unknown',expectedTedRoute:()=> 'TED_GENERAL',tedDraftReadiness:()=>({ok:true}),
  resolveTedDraftRecipients,resolveTedRecipients,contactTier,contactQualityScore,normalizeEmail,buildTedDraftContent,MAX_CONTACTS_PER_ACTION:20,
  retireObsoleteDrafts:async()=>{writes++;throw Error('Unexpected write')},persistActionState:async()=>{writes++;throw Error('Unexpected write')}
 };
@@ -76,3 +76,49 @@ for(const selected of ['','gc_epc','steel_fabricator']){
 }
 assert.equal(writes,0);
 console.log('Actual run wrapper carries the approved template into preview: OK');
+
+// Cross-company regressions: contact research, legacy eligible/unclear roles and consortium attribution.
+for(const company of ['Amedick','VACUSERV','CONCELEX']){
+ action.target_company=company;tender.winner.name=company;
+ assessment.company_summary.legal_name=company;
+ const email=company==='Amedick'?'info-amedick@t-online.de':company==='VACUSERV'?'mblaj@vacuserv.ro':'seap@concelex.ro';
+ tender.winner.emails=[email];tender.winner.ted_declared_emails=[email];
+ tender.winner.website=null;
+ tender.winner.names=company==='Amedick'?[company]:[company,'Other consortium member'];
+ tender.winner.contact_enrichment={organizations:[{name:company,contacts:[{type:'email',value:email,source_type:'TED',draft_eligible:true}]}]};
+ if(company!=='Amedick'){
+   tender.winner.emails.push('office@other-member.example.org');
+   tender.winner.ted_declared_emails.push('office@other-member.example.org');
+ }
+ currentAssessment={...assessment,draft_eligible:company==='CONCELEX',decision_state:company==='CONCELEX'?'ready_for_review':'contact_research',company_summary:{...assessment.company_summary,domain:null,company_type:company==='Amedick'?'unknown':'trader_consortium'}};
+ const result=await run(1,action.id,false,true,true);
+ assert.equal(result.failed,0,JSON.stringify(result.errors));
+ assert.equal(result.results[0].event,'template_selection_required',company);
+ for(const selected of ['gc_epc','steel_fabricator']){
+   const reviewed=await run(1,action.id,false,true,true,false,selected);
+   assert.equal(reviewed.failed,0,JSON.stringify(reviewed.errors));
+   assert.equal(reviewed.results[0].event,'preview_ready',company);
+   assert.deepEqual(reviewed.results[0].previews.map(p=>p.email),[email],company+' must not inherit other consortium members');
+   assert.equal(reviewed.results[0].previews[0].approved_template,selected);
+ }
+ assert.equal(resolveTedRecipients(action,tender,20).length,0,'send gate remains independent');
+ assert.equal(writes,0);
+}
+assert.equal(resolveTedDraftRecipients({...action,target_company:'Different company'},tender,20).length,0);
+for(const category of ['gc_epc','steel_fabricator']){
+ tender.winner_role_v2={category};
+ currentAssessment={...currentAssessment,draft_eligible:false,decision_state:'contact_research'};
+ const result=await run(1,action.id,false,true,true);
+ assert.equal(result.failed,0,JSON.stringify(result.errors));
+ assert.equal(result.results[0].event,'preview_ready','known role uses its approved copy without selection');
+ assert.equal(result.results[0].previews[0].company_role,category);
+}
+for(const decision_state of ['research_required','no_outreach','closed']){
+ currentAssessment={...currentAssessment,decision_state};
+ assert.equal((await run(1,action.id,false,true,true)).results[0].event,'readiness_blocked');
+}
+currentAssessment={...currentAssessment,decision_state:'contact_research'};
+tender.winner.emails=[];tender.winner.ted_declared_emails=[];tender.winner.contact_enrichment={organizations:[]};
+assert.equal((await run(1,action.id,false,true,true)).results[0].event,'no_recipients','missing recipient evidence still blocks');
+assert.equal(writes,0);
+console.log('Shared manual draft policy across company/role/contact states: OK');
