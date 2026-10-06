@@ -385,7 +385,7 @@ function opportunityTools(html){return '<details class="pst-pcw-more"><summary a
 function modalActionBar(r){
  var id=E(r.id),award=tenderMode(r)==='award',comm=communicationActive(r),primary='',remove='',tools='';
  if(award){
-   var replied=comm&&S(comm.communication_state)==='replied',communicationLabel=replied?'Shqyrto përgjigjen në Gmail':'Hap komunikimin në Gmail';
+   var replied=comm&&S(comm.communication_state)==='replied',communicationLabel=replied?'Përgjigje e marrë · Hap Gmail':'Kontaktuar · Hap Gmail';
    primary=r.project_id?'<button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap projektin</button>':comm?'<button class="primary" data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button>':'<button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Krijo draft në Gmail')+'</button>';
    if(r.project_id)tools+=comm?'<button data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button>':'<button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Përgatit draftet në Gmail')+'</button>';
    tools+='<button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED');
