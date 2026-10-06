@@ -113,7 +113,7 @@ function loadScriptOnce(path,attr,globalName){
       return;
     }
     var s=document.createElement('script');
-    s.src=path+'?pst_boot='+encodeURIComponent(bootVersion);
+    s.src=path+(path.indexOf('?')>-1?'&':'?')+'pst_boot='+encodeURIComponent(bootVersion);
     s.defer=true;s.setAttribute(attr,'1');
     s.onload=function(){resolve(globalName?window[globalName]:true);};
     s.onerror=function(){reject(new Error('Nuk u ngarkua '+path));};
@@ -130,7 +130,7 @@ function loadCanonical(){
 function loadInteraction(){
   if(window.PSTHomeCanonicalInteractionV1)return Promise.resolve(window.PSTHomeCanonicalInteractionV1);
   if(interactionPromise)return interactionPromise;
-  interactionPromise=loadScriptOnce('pristeel-home-canonical-interaction-v1.js','data-pst-home-canonical-interaction-v1','PSTHomeCanonicalInteractionV1')
+  interactionPromise=loadScriptOnce('pristeel-home-canonical-interaction-v1.js?history=20261006-complete1','data-pst-home-canonical-interaction-v1','PSTHomeCanonicalInteractionV1')
     .catch(function(e){interactionPromise=null;console.error('PPPP Home interaction:',e);return null;});
   return interactionPromise;
 }
