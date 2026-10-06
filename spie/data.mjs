@@ -24,7 +24,7 @@ export function invalidate() { cache.clear(); }
 
 export async function read(path) {
   const current = session();
-  if (!current) { cache.clear(); cacheSession = ''; throw new Error('SESSION_REQUIRED: Open PPPP to sign in or renew your session, then return to SPIE.'); }
+  if (!current) { cache.clear(); cacheSession = ''; throw new Error('SESSION_REQUIRED: Hapni PPPP për të hyrë ose rinovuar sesionin, pastaj kthehuni te SPIE.'); }
   if (cacheSession !== current.access_token) { cache.clear(); cacheSession = current.access_token; }
   const old = cache.get(path);
   if (old && Date.now() - old.at < 300000) return old.promise;
@@ -38,10 +38,10 @@ export async function read(path) {
       throw new Error('PPPP ' + response.status + ': ' + (detail.message || response.statusText));
     }
     // Discard responses if logout/account switch happened during the request.
-    if (session()?.access_token !== current.access_token) throw new Error('SESSION_CHANGED: Return to PPPP and reopen SPIE.');
+    if (session()?.access_token !== current.access_token) throw new Error('SESSION_CHANGED: Kthehuni te PPPP dhe rihapni SPIE.');
     return response.json();
   }).catch(error => {
-    if (error.name === 'AbortError') throw new Error('PPPP read timeout (12s). Data could not be verified.');
+    if (error.name === 'AbortError') throw new Error('Leximi nga PPPP tejkaloi afatin (12 sekonda). Të dhënat nuk mund të verifikoheshin.');
     throw error;
   }).finally(() => clearTimeout(timer));
   cache.set(path, { at: Date.now(), promise });
@@ -55,7 +55,7 @@ export function projectRows(table, fields, limit, order = 'created_at.desc') {
 export async function snapshot() {
   const query = new URLSearchParams({ p_project_id: PROJECT_ID, p_email_limit: '6', p_fact_limit: '8', p_task_limit: '6', p_document_limit: '3' });
   const data = await read('rpc/pppp_chatgpt_project_snapshot_v1?' + query);
-  if (data?.project?.id !== PROJECT_ID || data.read_only_snapshot !== true) throw new Error('Canonical project snapshot identity could not be verified.');
+  if (data?.project?.id !== PROJECT_ID || data.read_only_snapshot !== true) throw new Error('Identiteti i pasqyrës së projektit në PPPP nuk mund të verifikohej.');
   return data;
 }
 const fileFields = 'id,project_id,title,file_name,doc_type,doc_nr,doc_date,party,status,drive_url,notes,created_at,amount_eur';
