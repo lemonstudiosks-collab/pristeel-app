@@ -12,7 +12,7 @@ The deployed worker (Edge version 11, bridge v29) consumes the same approved Com
 
 ## Narrow changes
 
-Migration: `20261006042651_material_trade_bridge_incremental_contract_repair.sql`.
+Migrations: `20261006042651_material_trade_bridge_incremental_contract_repair.sql`, `20261006042935_material_trade_generic_contact_evidence_guard.sql`, `20261006043132_material_trade_existing_target_patch_identity_guard.sql`, `20261006043337_material_trade_refresh_readonly_write_gate.sql`.
 
 - `pppp_chatgpt_upsert_dach_steel_target_v1` (also migration `20261006043132_material_trade_existing_target_patch_identity_guard.sql`): retain omitted existing target fields during enrichment; append and deduplicate evidence in original order; merge supplied material_scope top-level keys. Validate contact/outreach enums with clear errors. Existing approved processing receipt checks, advisory locks, service-only privileges, source-key conflict handling and succeeded-command replay guard remain intact.
 - `pppp_dach_steel_refresh_intelligence_v1`: preserve existing workflow_state for queued/sent/replied/suppressed targets while recalculating intelligence.
@@ -41,3 +41,18 @@ Source: https://www.hollandstaal.nl/contact/
 Append only the published purchasing telephone routes for Rick Hoogeboom and Wim van Rijn. The company general email is not attributed to either person. Preserve sent state and all omitted business fields. Verify the normal scheduled worker result and the existing target's evidence/intelligence read-back. Do not submit a second sheet row to test replay; normal reprocessing skips the succeeded receipt.
 
 The first real probe failed before mutation with steel_buyer_official_domain_required: BEFORE INSERT identity validation ran ahead of ON CONFLICT. The second narrow migration supplies the existing locked identity to INSERT validation and preserves omitted patch fields. The same approved row/command ID was retried via the existing trusted worker request (limit 1); no duplicate row was submitted.
+
+## Verified outcome
+
+- Exact manifest call succeeded through the actual connected Supabase tool. Geography has all 33 country codes; existing human gates and command transport retained.
+- Real sheet append verified at Commands row 298; same existing target/source key.
+- Trusted worker request 2370 returned HTTP 200, processed 1, succeeded 1. Canonical receipt succeeded at 2026-10-06T04:31:54.978Z, attempt 2 on the original command ID.
+- Read-back shows four evidence entries (three retained, one appended), refreshed intelligence, created=false, unchanged source key, outreach_status=sent and workflow_state=sent. No individually owned email was invented.
+- Result flags project_created, partner_created, contact_created, outbound_created and external_email_sent all false. No Gmail tool/draft/send was used.
+- Replay request 2371 used the same normal worker without submitting another row: HTTP 200, checked=0, processed=0, skipped=296. Receipt attempts and target JSON remained identical.
+- Total target count remains 28. All other 27 target rows have the identical pre-test hash 32c7e51d2e2c78d56f25247f6eb8f335.
+- No duplicate command IDs in the bounded 296-ID sheet read; no duplicate normalized domains among active eu:/mt: targets. No target matches the 25 old failed source keys/domains; those rows remain failed and require source review, not blind replay.
+- Additional ACL repair removes PUBLIC/anon/read-only execution of the mutating intelligence-refresh RPC, while preserving the existing authenticated PPPP UI and trusted service/trigger path.
+- Old command counts remain 33 succeeded / 25 failed / 0 pending / 0 processing. The legitimate probe adds one succeeded command, so the new total is 34 succeeded / 25 failed.
+
+The interactive Work path is verified. The upstream safety rejection reported for background automation was not reproduced; this repair does not claim to disable, bypass or guarantee acceptance by OpenAI safety review.
