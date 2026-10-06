@@ -17,5 +17,6 @@ export function canReviewUnknownRoleDraft(assessment={},action={},tender={},expl
     && !!norm(company.legal_name)
     && norm(company.legal_name)===norm(tender.winner?.name)
     && norm(company.legal_name)===norm(action.target_company)
+    && (assessment.tender_facts||[]).some(f=>f?.type==='scope'&&f.status==='confirmed'&&/^https:\/\//.test(String(f.source_url||''))&&/steel|stahl|metall|metalwork|schlosser|çelik|čelik/i.test(String(f.value||'')))
     && (assessment.tender_facts||[]).some(f=>f?.type==='project'&&f.status==='confirmed'&&f.value===title&&/^https:\/\//.test(String(f.source_url||'')));
 }

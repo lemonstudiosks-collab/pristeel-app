@@ -6,7 +6,7 @@ import {resolveTedDraftRecipients,resolveTedRecipients,normalizeEmail,contactTie
 
 const action={id:'action',action_key:'fixture',route:'TED_GENERAL',target_company:'STAKO-Hallenbau GmbH',payload:{}};
 const tender={title:'217-300 FWH Neubau Feuerwehrgerätehaus, Schlosserarbeiten Innen und Außen',publication_no:'687897-2026',country:'DE',winner:{name:action.target_company,identifier:'18368 Münster',identity_version:'ted-winner-canonical-v2',emails:['info@stako-hallenbau.de'],ted_declared_emails:['info@stako-hallenbau.de'],website:'https://stako-hallenbau.de/',company_type:'unknown'},winner_role_v2:{category:'other_unclear'}};
-const assessment={workflow_track:'ted_award_outreach',decision_state:'ready_for_review',draft_eligible:false,offer_model:'fabricated_steel_package',company_role:'unknown',company_summary:{company_type:'unknown',legal_name:action.target_company,domain:'stako-hallenbau.de'},tender_summary:{title:tender.title},tender_facts:[{type:'project',status:'confirmed',value:tender.title,source_url:'https://ted.europa.eu/en/notice/-/detail/687897-2026'}]};
+const assessment={workflow_track:'ted_award_outreach',decision_state:'ready_for_review',draft_eligible:false,offer_model:'fabricated_steel_package',company_role:'unknown',company_summary:{company_type:'unknown',legal_name:action.target_company,domain:'stako-hallenbau.de'},tender_summary:{title:tender.title},tender_facts:[{type:'scope',status:'confirmed',value:'Schlosserarbeiten Innen und Außen',source_url:'https://ted.europa.eu/en/notice/-/detail/687897-2026'},{type:'project',status:'confirmed',value:tender.title,source_url:'https://ted.europa.eu/en/notice/-/detail/687897-2026'}]};
 assert(canReviewUnknownRoleDraft(assessment,action,tender,true));
 assert(!canReviewUnknownRoleDraft(assessment,action,tender,false));
 for(const decision_state of ['research_required','no_outreach','closed','contact_research'])assert(!canReviewUnknownRoleDraft({...assessment,decision_state},action,tender,true));
@@ -14,6 +14,8 @@ assert(!canReviewUnknownRoleDraft({...assessment,company_summary:{...assessment.
 assert(!canReviewUnknownRoleDraft(assessment,{...action,route:'TED_PRODUCER'},tender,true));
 assert(!canReviewUnknownRoleDraft(assessment,action,{...tender,winner:{...tender.winner,name:'Different GmbH'}},true));
 assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:[]},action,tender,true));
+assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:assessment.tender_facts.filter(f=>f.type!=='scope')},action,tender,true));
+assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:assessment.tender_facts.map(f=>f.type==='scope'?{...f,value:'Vacuum pumps'}:f)},action,tender,true));
 assert(!canReviewUnknownRoleDraft({...assessment,tender_facts:[{...assessment.tender_facts[0],status:'inferred'}]},action,tender,true));
 assert.throws(()=>buildTedDraftContent(action,tender,{email:'info@stako-hallenbau.de'}),/company_role_verification_required/,'unguarded targeted copy must remain blocked');
 const copy=buildTedDraftContent({...action,payload:{manual_role_clarification_draft:true}},tender,{email:'info@stako-hallenbau.de'});
