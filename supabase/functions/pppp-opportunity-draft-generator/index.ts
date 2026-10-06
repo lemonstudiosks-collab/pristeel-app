@@ -415,7 +415,7 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
   return{action_key:a.action_key,company:a.target_company,event:covered>=recipients.length?'outreach_ready':'outreach_partial',recipients:recipients.length,created,refreshed,preserved,sent,retired,covered,remaining:Math.max(0,recipients.length-covered),failures};
 }
 
-async function run(limit=20,actionId='',refreshExisting=false,explicitUser=false,previewOnly=true,cooldownOverride=false){
+async function run(limit=20,actionId='',refreshExisting=false,explicitUser=false,previewOnly=true,cooldownOverride=false,draftTemplate=''){
   let q=db.from('pppp_opportunity_action_queue_v2').select('*').eq('status','draft_review').in('action_type',['gc_project_outreach_draft','producer_capacity_outreach_draft','consortium_project_outreach_draft','general_project_outreach_draft']).order('updated_at',{ascending:true});
   if(text(actionId,80))q=q.eq('id',text(actionId,80));
   const {data,error}=await q.limit(Math.min(1000,Math.max(1,limit)));if(error)throw error;
