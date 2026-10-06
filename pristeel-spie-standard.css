@@ -50,7 +50,10 @@ html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand b { font-size:13px!imp
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-mark { width:32px!important; height:36px!important; border-radius:7px!important; background:#193943!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navtitle { font-size:9px!important; font-weight:500!important; letter-spacing:1.5px!important; color:#829198!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { min-height:36px!important; height:auto!important; padding:8px 10px!important; margin:0 0 3px!important; border:0!important; border-radius:6px!important; background:transparent!important; color:var(--pst-muted)!important; font-family:Inter,Arial,sans-serif!important; font-size:12px!important; font-weight:400!important; box-shadow:none!important; white-space:normal!important; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:is(.active,.on,[aria-current=page]) { background:var(--pst-selected)!important; color:var(--pst-accent)!important; font-weight:600!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:is(.active,.on,[aria-current=page]) { background:var(--pst-selected)!important; color:var(--pst-accent)!important; font-weight:400!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-nav-label { font-family:inherit!important; font-size:12px!important; font-weight:400!important; line-height:20px!important; letter-spacing:0!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-canon-work { gap:0!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { line-height:20px!important; transition:none!important; animation:none!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:hover { background:#e7edef!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn svg { width:16px!important; height:16px!important; min-width:16px!important; fill:none!important; stroke:currentColor!important; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-create-main { min-height:34px!important; border-radius:5px!important; background:#fff!important; color:var(--pst-accent)!important; border:1px solid #d9e4e2!important; font-size:12px!important; font-weight:500!important; }
@@ -81,8 +84,14 @@ html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-copy small { font-si
 html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-card > i { width:18px!important; height:20px!important; align-self:center!important; border:0!important; }
 html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary { width:100%!important; margin:28px 0 0!important; padding:0!important; border:0!important; }
 html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary > div { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; column-gap:35px!important; row-gap:0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card { min-height:56px!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; background:transparent!important; padding:12px 0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card small { display:block!important; color:var(--pst-muted)!important; font-size:10px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card { display:grid!important; grid-template-columns:26px minmax(0,1fr) 20px!important; align-items:center!important; gap:14px!important; min-height:84px!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; background:transparent!important; padding:18px 0!important; box-shadow:none!important; transform:none!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) { font-family:Inter,Arial,sans-serif!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) b { display:block!important; font-family:inherit!important; font-size:16px!important; font-weight:500!important; line-height:1.4!important; letter-spacing:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card b { color:#526f82!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) small { display:block!important; font-family:inherit!important; color:var(--pst-muted)!important; font-size:12px!important; font-weight:400!important; line-height:1.5!important; letter-spacing:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card .phl-card-icon { width:24px!important; height:28px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card > i { width:18px!important; height:20px!important; align-self:center!important; border:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) > i svg { width:12px!important; height:12px!important; }
 /* All canonical work surfaces share the same page/header/section vocabulary. */
 html#pst-spie-platform body .page :is(.pst-rep-page,.pst-eu-page,.pst-dss-page,.pst-ws-page,.ppd-page,.pcm-page,.pst-opp-workdesk) { width:100%!important; max-width:100%!important; padding:0!important; margin:0!important; background:transparent!important; color:var(--pst-ink)!important; }
 html#pst-spie-platform body .page :is(.pst-rep-head,.pst-eu-head,.pst-dss-head,.ppd-head,.pcm-head,.pst-pi-head,.pst-opp-desk-head) { background:transparent!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; padding:8px 0 24px!important; margin:0 0 24px!important; box-shadow:none!important; }

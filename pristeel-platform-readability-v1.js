@@ -192,6 +192,8 @@ html.pst-final-cosmetics-ready .pn-card>header,html.pst-final-cosmetics-ready .p
 
 function skip(el){
   if(!el||!el.closest)return true;
+  // These surfaces have static SPIE typography and a canonical navigation owner.
+  if(document.documentElement.classList.contains('pst-spie-standard')&&el.closest('#pst-ws-sidebar,#pst-home-launcher-v4'))return true;
   if(el.closest(SKIP))return true;
   if(el.getAttribute&&el.getAttribute('aria-hidden')==='true')return true;
   return false;
@@ -277,7 +279,7 @@ function translateScope(scope){
 function translateUi(){
   Array.prototype.forEach.call(document.querySelectorAll(UI_SCOPES),translateScope);
   var nav={home:'Ballina',tenders:'Mundësitë',projects:'Projektet',contacts:'Partnerët',finance:'Financat',apps:'Sistemi'};
-  Object.keys(nav).forEach(function(k){var b=document.querySelector('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'+k+'"]');if(!b)return;var l=b.querySelector('.pst-nav-label')||b.querySelector('span');if(l)l.textContent=nav[k];});
+  if(!document.documentElement.classList.contains('pst-spie-standard'))Object.keys(nav).forEach(function(k){var b=document.querySelector('#pst-ws-canonical-nav .pst-ws-navbtn[data-key="'+k+'"]');if(!b)return;var l=b.querySelector('.pst-nav-label')||b.querySelector('span');if(l&&l.textContent!==nav[k])l.textContent=nav[k];});
   var sub=document.querySelector('#pst-ws-sidebar .pst-ws-brand small');if(sub&&/^Workspace$/i.test(String(sub.textContent||'').trim()))sub.textContent='Platforma';
 }
 

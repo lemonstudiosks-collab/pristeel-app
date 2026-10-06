@@ -18,6 +18,7 @@ jobs:
       - run: npm install --ignore-scripts
       - run: node --test tests/spie-platform-standard-smoke.mjs
       - run: node tests/home-navigation-stable-regression.mjs
+      - run: node tests/sidebar-typography-stability.mjs
       - run: node tests/home-launcher-shell-ownership-smoke.mjs && node tests/home-launcher-actions-smoke.mjs && node tests/production-surface-owner-smoke.mjs && node tests/global-fullwidth-shell-smoke.mjs
       - run: node scripts/pages-artifact-build.mjs
 
