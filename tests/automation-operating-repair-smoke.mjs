@@ -108,3 +108,13 @@ assert.match(rendered,/19 në pritje/);
 assert.match(rendered,/3 për shqyrtim/);
 assert.match(health,/Date\.now\(\)-last<300000/,'health loads must be cached for five minutes');
 console.log('Automation health evidence rendering passed.');
+
+// A health panel created on Home must move into the current visible System page.
+const systemPage={classList:{contains:()=>true},style:{},appendChild(node){node.parentElement=this;}};
+const cachedPanel={parentElement:{id:'page-home'}};
+const relocation={window:{addEventListener(){}},document:{head:{appendChild(){}},addEventListener(){},getElementById(id){return id==='page-workspace-apps'?systemPage:id==='pst-auto-health'?cachedPanel:id==='pst-ah-css'?{}:null;}},setTimeout(){},Date,console};
+vm.runInNewContext(health.replace(/\}\)\(\);\s*$/,'last=Date.now();window.testLoad=load;})();'),relocation);
+await relocation.window.testLoad(false);
+assert.equal(cachedPanel.parentElement,systemPage,'cached panel must remain visible after navigation');
+assert.match(health,/\[data-sys="automation"\]/,'System automation control must open health');
+console.log('Automation health navigation and cached-panel relocation passed.');
