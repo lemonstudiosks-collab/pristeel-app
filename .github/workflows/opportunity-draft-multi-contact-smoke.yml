@@ -23,4 +23,5 @@ jobs:
       - name: Run multi-contact draft smoke
         run: |
           node tests/opportunity-draft-multi-contact-smoke.mjs
+          node tests/opportunity-unknown-role-draft-smoke.mjs
           node tests/opportunity-gmail-registry-preservation-smoke.mjs

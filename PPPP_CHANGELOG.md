@@ -370,6 +370,12 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Added an isolated smoke test and CI workflow that guard against Supabase calls, polling, MutationObserver ownership and duplicate mobile runtime loading.
 
 # PPPP CHANGELOG
+## 2026-10-06 — Manual unknown-role draft clarification
+
+STAKO-Hallenbau exposed a mismatch: the Opportunity Desk enabled Gmail draft review with a verified company email, while a company assessment with unknown role blocked it. The explicit TED_GENERAL path may now preview a neutral role/scope clarification when the exact winner, official domain and source-confirmed tender identity match a ready-for-review assessment. It never marks the role or assessment verified. Research/no-outreach/closed cases, recipient attribution, communication history, cooldown, preview approval and no-auto-send gates remain. The preview labels this clarification explicitly.
+
+The generator sources also preserve the already-deployed role-v2 resolver, role-specific copy and TED-reference subject fallback; these live changes were previously ahead of main. Regression expectations for consortium copy now retain member-responsibility clarification rather than assuming overall project ownership. Added the actual generator preview regression for STAKO, blocked states, cross-company identity and zero writes, plus existing recipient/content/registry and frontend approval checks. No SQL data updates, schema changes or email sends.
+
 
 ## 2026-10-05 - Final Home launcher ownership audit
 
