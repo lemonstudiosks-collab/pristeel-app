@@ -20,6 +20,12 @@ const en=renderBuyerOutreach({...target,company_name:"O'Neil & Partners",country
 assert.match(en.body,/shipbuilding/);assert.match(en.body,/heavy plate/);assert.doesNotMatch(en.body,/Guten Tag|Tier|Aktiviteti/);assert.match(en.html_body,/O&#39;Neil &amp; Partners/);assert.match(en.body,/PRISTEEL/);
 assert.match(renderBuyerOutreach({...target,last_verified_at:null},{}).body,/möglicherweise/);
 assert.match(renderBuyerOutreach(target,{}).body,/^Guten Tag,/);
+for(const country of ['DE','GB'])for(const outreach_motion of ['external_production_capacity','future_supplier_qualification']){
+ const routed=renderBuyerOutreach({...target,country,outreach_motion},{});assert.equal(routed.offer_model,outreach_motion);assert.equal(routed.approach_mode,outreach_motion);assert.doesNotMatch(routed.body,/Aktiviteti|Tier/);
+ assert.match(routed.body,country==='DE'?/ProCredit Bank|Südosteuropa/:/ProCredit Bank|Southeast Europe/);
+ if(outreach_motion==='external_production_capacity')assert.match(routed.body,country==='DE'?/externe Fertigung/:/external fabrication/);
+ else assert.match(routed.body,country==='DE'?/Qualifizierung/:/qualification/);
+}
 assert.equal(officialUrl('https://127.0.0.1/x','127.0.0.1'),'');assert.equal(officialUrl('https://evil.test/x','buyer.test'),'');assert.equal(officialUrl('http://buyer.test/x','buyer.test'),'');
 const html='<p>Purchasing: procurement@buyer.test</p><p>info@buyer.test</p><p>jobs@buyer.test</p><script type="application/ld+json">{"@type":"Person","name":"Jörg Müller","jobTitle":"Head of Procurement","email":"procurement@buyer.test"}</script>';
 const found=publishedContacts(html,'https://buyer.test/contact','buyer.test');assert.equal(found.length,2);assert.equal(found[0].person,'Jörg Müller');assert.equal(found[0].email,'procurement@buyer.test');
