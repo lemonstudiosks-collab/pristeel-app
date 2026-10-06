@@ -1,4 +1,4 @@
-import * as D from './data.mjs?v=20261006-sq1';
+import * as D from './data.mjs?v=20261006-sq2';
 
 const view = document.getElementById('view');
 const readStatus = document.getElementById('read-status');
@@ -99,7 +99,8 @@ const labels = Object.freeze({
   "retention": "E shumës së mbajtur"
 });
 const label = value => labels[str(value)] ?? str(value);
-const date = x => { if (!x) return 'E panjohur'; const d = new Date(x); return Number.isNaN(d.getTime()) ? 'E panjohur' : new Intl.DateTimeFormat('sq-AL', { day:'2-digit', month:'short', year:'numeric', timeZone:'Europe/Budapest' }).format(d); };
+const date = x => { if (!x) return 'E panjohur'; const d = new Date(x); if (Number.isNaN(d.getTime())) return 'E panjohur'; const parts = new Intl.DateTimeFormat('sq-AL', { day:'2-digit', month:'2-digit', year:'numeric', timeZone:'Europe/Budapest' }).formatToParts(d); const part = type => parts.find(p => p.type === type)?.value; return part('day') + '.' + part('month') + '.' + part('year'); };
+const time = x => { const parts = new Intl.DateTimeFormat('sq-AL', { hour:'2-digit', minute:'2-digit', hourCycle:'h23', timeZone:'Europe/Budapest' }).formatToParts(new Date(x)); return parts.find(p => p.type === 'hour')?.value + ':' + parts.find(p => p.type === 'minute')?.value; };
 const badge = (status = 'Unknown') => '<span class="pill ' + escape(status.toLowerCase().replace(/ /g,'-')) + '">' + escape(label(status)) + '</span>';
 const empty = msg => '<p class="empty">' + escape(msg || 'Nuk ka të dhëna të verifikuara.') + '</p>';
 const sourceLink = (href, label = 'Burimi') => href ? '<a class="evidence-link" href="' + escape(href) + '" target="_blank" rel="noopener noreferrer">' + escape(label) + ' ↗</a>' : '';
@@ -311,7 +312,7 @@ async function route() {
   try {
     if(!current) throw new Error('SESSION_REQUIRED: Hapni PPPP për të hyrë ose rinovuar sesionin, pastaj kthehuni te SPIE.');
     let html;
-    if(name==='overview') { const [data,latest]=await ensureOverview();html=renderOverview(data,latest);readStatus.textContent='Pasqyra · '+date(data.generated_at)+' '+new Intl.DateTimeFormat('sq-AL',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Budapest'}).format(new Date(data.generated_at)); }
+    if(name==='overview') { const [data,latest]=await ensureOverview();html=renderOverview(data,latest);readStatus.textContent='Pasqyra · '+date(data.generated_at)+' '+time(data.generated_at); }
     else if(name==='projects') html=renderProjects(await ensureSnapshot());
     else html=await ({files:renderFiles,emails:renderEmails,finance:renderFinance,partners:renderPartners}[name])();
     if(generation!==routeGeneration || D.session()?.access_token!==authenticatedToken)return;
