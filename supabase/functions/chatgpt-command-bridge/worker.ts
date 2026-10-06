@@ -21,7 +21,7 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_relationship', 'eu_direct_target']);
+const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_target_update', 'representation_relationship', 'eu_direct_target']);
 const ALLOWED_EVIDENCE = new Set(['unverified', 'observed', 'verbal', 'documented', 'confirmed']);
 const ALLOWED_FACT_STATUS = new Set(['observed', 'suggested']);
 const ALLOWED_BUSINESS_TYPES = new Set(['trading', 'fabrication', 'hybrid']);
@@ -58,6 +58,20 @@ const REPRESENTATION_TARGET_FIELDS = new Set([
   'capital_notes','capital_fit','contact_name','contact_role','contact_email','contact_phone',
   'linkedin_url','contact_source','priority_score','priority_reason','next_action',
   'next_action_due','notes','last_verified_at',
+]);
+const REPRESENTATION_TARGET_UPDATE_FIELDS = new Set([
+  'target_id','company_name','company_domain','company_website','country','headquarters',
+  'source_name','source_url','sector','product_category','products','product_summary',
+  'manufacturer_description','size_band','why_kosovo','market_evidence',
+  'relevant_tenders_or_projects','potential_customer_types','strategic_fit_notes',
+  'kosovo_presence','existing_partner_name','existing_partner_notes','balkans_presence_notes',
+  'target_model','target_territory','stock_required','minimum_purchase_required',
+  'local_financing_required','credit_risk_required','estimated_capital_requirement',
+  'capital_notes','capital_fit','contact_name','contact_role','contact_email','contact_phone',
+  'linkedin_url','contact_source','priority_score','priority_reason','next_action',
+  'next_action_due','notes','last_verified_at','stage','last_contact_at',
+  'gmail_thread_id','gmail_draft_id','gmail_last_message_id',
+  'identity_review_status','identity_review_notes',
 ]);
 const REPRESENTATION_RELATIONSHIP_FIELDS = new Set([
   'target_id','opportunity_id','source_key','related_company_name','related_company_domain',
@@ -193,11 +207,12 @@ async function markReceipt(
   result: Record<string, unknown>,
   attempts: number,
   projectIdOverride: string | null = null,
+  priorReceipt: { project_id: string | null } | null | undefined = undefined,
 ) {
   const commandId = text(command.command_id, 160);
   let projectId = validUuid(projectIdOverride) || validUuid(command.project_id);
   if (!projectId && commandId) {
-    const existing = await receipt(commandId);
+    const existing = priorReceipt === undefined ? await receipt(commandId) : priorReceipt;
     projectId = validUuid(existing?.project_id);
   }
   const payload = {
@@ -333,6 +348,7 @@ async function processSupplierOffer(command: Record<string, string>) {
   }
   if (!text(value?.supplier, 500)) throw new Error('supplier is required');
   if (value?.extra_positions != null && !Array.isArray(value.extra_positions)) throw new Error('extra_positions must be an array');
+  if (value.currency&&text(value.currency,20).toUpperCase()!=='EUR'&&!(Number(value.exchange_rate_to_eur)>0)) throw new Error('exchange_rate_to_eur_required');
 
   const commandId = text(command.command_id, 160);
   const payload: Record<string, unknown> = {};
@@ -464,6 +480,9 @@ async function processDachSteelTarget(command: Record<string, string>) {
   }
   if (!text(value?.source_key, 500)) throw new Error('source_key is required');
   if (!text(value?.company_name, 500)) throw new Error('company_name is required');
+  if (value.contact_status!=null&&!['missing','searching','found','verified'].includes(value.contact_status)) {
+    throw new Error('contact_status must be missing, searching, found, or verified; published contacts use found');
+  }
 
   const commandId = text(command.command_id, 160);
   const payload: Record<string, unknown> = {};
@@ -531,6 +550,12 @@ async function processDachSteelOutreachDraft(command: Record<string, string>) {
   return data as Record<string,unknown>;
 }
 
+function validateRepresentationModel(value:any){
+  if(value.target_model!=null&&!['commercial_agent','market_development_partner','distributor_no_stock','distributor_with_stock','project_based_representation','unknown'].includes(value.target_model)) {
+    throw new Error('target_model must be commercial_agent, market_development_partner, distributor_no_stock, distributor_with_stock, project_based_representation, or unknown');
+  }
+}
+
 async function processRepresentationTarget(command: Record<string, string>) {
   let value: any = {};
   try { value = JSON.parse(text(command.value_json, 20000) || '{}'); }
@@ -546,6 +571,7 @@ async function processRepresentationTarget(command: Record<string, string>) {
   if (!text(value?.source_key,500)) throw new Error('source_key is required');
   if (!text(value?.company_name,500)) throw new Error('company_name is required');
 
+  validateRepresentationModel(value);
   const commandId = text(command.command_id,160);
   const payload: Record<string,unknown> = {};
   for (const key of REPRESENTATION_TARGET_FIELDS) {
@@ -571,6 +597,52 @@ async function processRepresentationTarget(command: Record<string, string>) {
       data.supplier_created !== false || data.outbound_created !== false || data.contract_created !== false ||
       data.external_email_sent !== false || data.represented_automatically !== false || data.stage !== 'found') {
     throw new Error('representation_target response did not preserve protected boundaries');
+  }
+  return data as Record<string,unknown>;
+}
+
+async function processRepresentationTargetUpdate(command: Record<string, string>) {
+  let value: any = {};
+  try { value = JSON.parse(text(command.value_json, 24000) || '{}'); }
+  catch { throw new Error('representation_target_update value_json must be valid JSON'); }
+  if (!value || Array.isArray(value) || typeof value !== 'object') {
+    throw new Error('representation_target_update value_json must be a JSON object');
+  }
+  for (const key of Object.keys(value)) {
+    if (!REPRESENTATION_TARGET_UPDATE_FIELDS.has(key)) {
+      throw new Error(`representation_target_update field not allowed: ${text(key,120)}`);
+    }
+  }
+  const targetId = validUuid(value?.target_id);
+  if (!targetId) throw new Error('valid target_id is required');
+  validateRepresentationModel(value);
+  const commandId = text(command.command_id,160);
+  const payload: Record<string,unknown> = {};
+  for (const key of REPRESENTATION_TARGET_UPDATE_FIELDS) {
+    if (key !== 'target_id' && Object.prototype.hasOwnProperty.call(value,key)) payload[key]=value[key];
+  }
+  if (!Object.keys(payload).length) throw new Error('representation_target_update requires at least one update field');
+  const metadata = {
+    transport:'command_sheet',
+    sheet_row:Number(command._row || 0) || null,
+    requested_by:text(command.requested_by,240) || null,
+    source_ref:text(command.source_ref,500) || `chatgpt-command:${commandId}`,
+  };
+  const { data,error } = await db.rpc('pppp_chatgpt_update_representation_target_v1',{
+    p_command_id:commandId,
+    p_target_id:targetId,
+    p_payload:payload,
+    p_source:'chatgpt',
+    p_metadata:metadata,
+  });
+  if (error) throw error;
+  if (!data || data.ok !== true || !validUuid(data.target_id)) {
+    throw new Error('representation_target_update did not return a valid target_id');
+  }
+  if (data.project_created !== false || data.partner_created !== false || data.contact_created !== false ||
+      data.supplier_created !== false || data.outbound_created !== false || data.contract_created !== false ||
+      data.external_email_sent !== false || data.represented_automatically !== false) {
+    throw new Error('representation_target_update response did not preserve protected boundaries');
   }
   return data as Record<string,unknown>;
 }
@@ -671,10 +743,26 @@ async function processRepresentationRelationship(command: Record<string, string>
   return data as Record<string,unknown>;
 }
 
+async function commandReceipts(commands:Record<string,string>[]){
+  const ids=[...new Set(commands.filter(c=>text(c.approval,40).toLowerCase()==='approved').map(c=>text(c.command_id,160)).filter(Boolean))];
+  const out=new Map<string,any>();
+  for(let offset=0;offset<ids.length;offset+=200){
+    const {data,error}=await db.from('pppp_chatgpt_command_receipts').select('command_id,project_id,status,attempts').in('command_id',ids.slice(offset,offset+200));
+    if(error)throw error;
+    for(const row of data||[])out.set(row.command_id,row);
+  }
+  return out;
+}
+function permanentValidationError(error:any){
+  return ['23502','23514','22P02'].includes(String(error?.code||''))||
+    /(?:must be|field not allowed|is required|_required\b|valid .* is required|unsupported .* operation)/i.test(String(error?.message||error));
+}
+
 async function reconcile(limit = 50) {
   const max = Math.max(1, Math.min(200, Number(limit) || 50));
   const csv = await exportCommandsCsv();
   const commands = rowsAsObjects(parseCsv(csv));
+  const receipts = await commandReceipts(commands);
   const summary: any = { checked: 0, processed: 0, succeeded: 0, rejected: 0, failed: 0, skipped: 0, items: [] };
   for (const command of commands) {
     if (summary.checked >= max) break;
@@ -682,7 +770,7 @@ async function reconcile(limit = 50) {
     if (!commandId) continue;
     const approval = text(command.approval, 40).toLowerCase();
     if (approval !== 'approved') continue;
-    const existing = await receipt(commandId);
+    const existing = receipts.get(commandId) || null;
     if (existing && ['succeeded', 'rejected'].includes(existing.status)) { summary.skipped++; continue; }
     const attempts = Math.max(1, Number(existing?.attempts || 0) + 1);
     if (attempts > 3) { summary.skipped++; continue; }
@@ -690,13 +778,14 @@ async function reconcile(limit = 50) {
     const actionType = text(command.action_type, 80).toLowerCase();
     if (!ALLOWED_ACTIONS.has(actionType)) {
       const result = { reason: 'action_type_not_allowed', allowed: Array.from(ALLOWED_ACTIONS) };
-      await markReceipt(command, 'rejected', result, attempts);
+      await markReceipt(command, 'rejected', result, attempts, null, existing);
+      receipts.set(commandId,{status:'rejected',attempts,project_id:existing?.project_id||null});
       summary.rejected++; summary.processed++; summary.items.push({ command_id: commandId, status: 'rejected', ...result });
       continue;
     }
     let resultProjectId: string | null = validUuid(existing?.project_id);
     try {
-      await markReceipt(command, 'processing', { action_type: actionType }, attempts, resultProjectId);
+      await markReceipt(command, 'processing', { action_type: actionType }, attempts, resultProjectId, existing);
       let result: Record<string, unknown>;
       if (actionType === 'context_fact') result = await processContextFact(command);
       else if (actionType === 'task') result = await processTask(command);
@@ -706,15 +795,19 @@ async function reconcile(limit = 50) {
       else if (actionType === 'dach_steel_target') result = await processDachSteelTarget(command);
       else if (actionType === 'dach_steel_outreach_draft') result = await processDachSteelOutreachDraft(command);
       else if (actionType === 'representation_target') result = await processRepresentationTarget(command);
+      else if (actionType === 'representation_target_update') result = await processRepresentationTargetUpdate(command);
       else if (actionType === 'representation_relationship') result = await processRepresentationRelationship(command);
       else if (actionType === 'eu_direct_target') result = await processEuDirectTarget(command);
       else result = await processCreateProject(command);
       resultProjectId = validUuid(result?.project_id) || resultProjectId;
-      await markReceipt(command, 'succeeded', result, attempts, resultProjectId);
+      await markReceipt(command, 'succeeded', result, attempts, resultProjectId, existing);
+      receipts.set(commandId,{status:'succeeded',attempts,project_id:resultProjectId});
       summary.succeeded++; summary.processed++; summary.items.push({ command_id: commandId, status: 'succeeded', action_type: actionType, result });
     } catch (e) {
-      const result = { error: text((e as any)?.message || e, 1000), action_type: actionType };
-      await markReceipt(command, 'failed', result, attempts, resultProjectId);
+      const permanent=permanentValidationError(e),recordedAttempts=permanent?3:attempts;
+      const result = { error: text((e as any)?.message || e, 1000), action_type: actionType, validation_failed:permanent, human_review_required:permanent };
+      await markReceipt(command, 'failed', result, recordedAttempts, resultProjectId, existing);
+      receipts.set(commandId,{status:'failed',attempts:recordedAttempts,project_id:resultProjectId});
       summary.failed++; summary.processed++; summary.items.push({ command_id: commandId, status: 'failed', ...result });
     }
   }
@@ -730,7 +823,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'POST') try { body = await req.json(); } catch {}
     const limit = Number(u.searchParams.get('limit') || body.limit || 50);
     const result = await reconcile(limit);
-    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v9', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
+    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v29', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: text((e as any)?.message || e, 1200) }), { status: 500, headers: cors });
   }

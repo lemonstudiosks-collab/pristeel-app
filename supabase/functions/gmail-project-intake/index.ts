@@ -60,14 +60,45 @@ async function ensureEventAnalysis(row:any,project:any,r:any,quote:any,task:any)
   const {error:insertError}=await db.from("project_analyses").insert({project_id:project.id,status:"complete",engine:"server_event_rules",model:"deterministic-client-request-v1",analysis,source_manifest:manifest,source_counts:{event_email:1,tasks:1,quote_revision:quote?1:0},created_at:new Date().toISOString()});if(insertError)throw insertError;return true;
 }
 async function authorized(req:Request){const provided=req.headers.get("x-pppp-cron-secret")??"";if(!provided)return false;const {data,error}=await db.rpc("gmail_tracker_cron_authorized",{provided});return !error&&data===true;}
+async function threadProjectMap(rows:any[],projects:any[]){
+  const threadIds=uniq(rows.map((row:any)=>text(row.gmail_thread_id)).filter(Boolean));
+  if(!threadIds.length)return new Map<string,any>();
+  const projectById=new Map(projects.map((project:any)=>[text(project.id),project]));
+  const candidates=new Map<string,Set<string>>();
+  for(let offset=0;offset<threadIds.length;offset+=200){
+    const {data,error}=await db.from("project_emails").select("gmail_thread_id,project_id").in("gmail_thread_id",threadIds.slice(offset,offset+200)).not("project_id","is",null).limit(5000);
+    if(error)throw error;
+    for(const linked of data||[]){
+      const threadId=text(linked.gmail_thread_id),projectId=text(linked.project_id);
+      // Include inactive/unknown project IDs in conflict detection.
+      if(!threadId||!projectId)continue;
+      if(!candidates.has(threadId))candidates.set(threadId,new Set());
+      candidates.get(threadId)!.add(projectId);
+    }
+  }
+  const out=new Map<string,any>();
+  for(const [threadId,projectIds] of candidates){
+    if(projectIds.size!==1){out.set(threadId,null);continue;}
+    const project=projectById.get([...projectIds][0]);
+    out.set(threadId,project||null);
+  }
+  return out;
+}
 async function reconcile(days=2,limit=300){
   const since=new Date(Date.now()-Math.max(1,Math.min(14,days))*86400000).toISOString();
   const {data:projects,error:pe}=await db.from("projects").select("id,name,client,ref,business_ref,identity_aliases,status,pipeline_stage").order("created_at",{ascending:false}).limit(2000);if(pe)throw pe;
   const active=(projects||[]).filter((p:any)=>!TERMINAL.has(text(p.status).toLowerCase())),index=buildIndex(active);
-  const {data:rows,error:ee}=await db.from("project_emails").select("id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,from_email,from_name,subject,snippet,sent_at,direction,match_method,match_confidence,needs_review").is("project_id",null).gte("sent_at",since).order("sent_at",{ascending:false}).limit(Math.max(1,Math.min(1000,limit)));if(ee)throw ee;
-  const summary:any={checked:(rows||[]).length,linked:0,review:0,tasks_created:0,tasks_updated:0,quotes_created:0,analyses_created:0,unmatched:0,items:[]};
-  for(const row of rows||[]){const d=classify(row,index);if(d.kind==="auto"){
-      const method="server-identity-auto-link-v3",now=new Date().toISOString();const {error}=await db.from("project_emails").update({project_id:d.project.id,suggested_project_id:d.project.id,match_method:method,match_confidence:d.score,needs_review:false,review_reason:null,updated_at:now}).eq("id",row.id).is("project_id",null);if(error)throw error;await ensureLink(row,d.project.id,method,d.score);summary.linked++;
+  const {data:rows,error:ee}=await db.from("project_emails").select("id,gmail_message_id,gmail_thread_id,project_id,suggested_project_id,from_email,from_name,subject,snippet,sent_at,direction,match_method,match_confidence,needs_review").is("project_id",null).not("subject","ilike","Report Domain:%Submitter:%Report-ID:%").gte("sent_at",since).order("sent_at",{ascending:false}).limit(Math.max(1,Math.min(1000,limit)));if(ee)throw ee;
+  const inheritedProjects=await threadProjectMap(rows||[],active);
+  const summary:any={checked:(rows||[]).length,linked:0,review:0,tasks_created:0,tasks_updated:0,quotes_created:0,analyses_created:0,unmatched:0,identity_conflicts:0,concurrent_skipped:0,excluded_noise:'dmarc_aggregate_reports',items:[]};
+  for(const row of rows||[]){
+    const threadId=text(row.gmail_thread_id),inherited=inheritedProjects.get(threadId),identity=classify(row,index);
+    const conflict=(inheritedProjects.has(threadId)&&!inherited)||
+      (inherited&&identity.kind!=="none"&&text(identity.project?.id)!==text(inherited.id));
+    if(conflict){summary.identity_conflicts++;summary.items.push({gmail_message_id:row.gmail_message_id,state:"identity_conflict",reason:"thread-project-evidence-conflict"});continue;}
+    const d=inherited?{kind:"auto",project:inherited,score:99,reason:"unique-linked-gmail-thread"}:identity;
+    if(d.kind==="auto"){
+      const method=inherited?"server-thread-inherit-v4":"server-identity-auto-link-v3",now=new Date().toISOString();const {data:linked,error}=await db.from("project_emails").update({project_id:d.project.id,suggested_project_id:d.project.id,match_method:method,match_confidence:d.score,needs_review:false,review_reason:null,updated_at:now}).eq("id",row.id).is("project_id",null).select("id").maybeSingle();if(error)throw error;if(!linked){summary.concurrent_skipped++;continue;}await ensureLink(row,d.project.id,method,d.score);summary.linked++;
       const req=extractRequest(row);let quote:any=null,task:any=null,analysisCreated=false;if(req){quote=await ensureQuoteRevision(row,d.project,req);if(quote?.created)summary.quotes_created++;task=await ensureTask(row,d.project,req,quote);if(task.action==="created")summary.tasks_created++;if(task.action==="updated")summary.tasks_updated++;analysisCreated=await ensureEventAnalysis(row,d.project,req,quote,task);if(analysisCreated)summary.analyses_created++;}
       summary.items.push({gmail_message_id:row.gmail_message_id,project_id:d.project.id,project_name:d.project.name,score:d.score,reason:d.reason,task_action:task?.action||null,quote:quote?{doc_nr:quote.doc_nr,subtotal:quote.subtotal,installation_pending:quote.installation_pending,created:quote.created}:null,analysis_created:analysisCreated,request:req?{urgent:req.urgent,needs:req.needs,positions:req.positions,mass:req.mass}:null});
     }else if(d.kind==="review"){
@@ -78,3 +109,4 @@ async function reconcile(days=2,limit=300){
 }
 
 Deno.serve(async(req:Request)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:cors});if(!(await authorized(req)))return new Response(JSON.stringify({ok:false,error:"unauthorized"}),{status:401,headers:{...cors,"Content-Type":"application/json"}});try{const url=new URL(req.url);let payload:any={};if(req.method==="POST")try{payload=await req.json();}catch{}const days=Number(url.searchParams.get("days")??payload.days??2),limit=Number(url.searchParams.get("limit")??payload.limit??300);const res=await reconcile(days,limit);return new Response(JSON.stringify({ok:true,...res}),{headers:{...cors,"Content-Type":"application/json"}});}catch(e){return new Response(JSON.stringify({ok:false,error:String(e)}),{status:500,headers:{...cors,"Content-Type":"application/json"}});}});
+
