@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "63abcdf26b16b19cb8cf88e8648d707f79d79a05"
+    "bootstrapGitBlobSha": "77045f29e45ce3e198b5181d163eb540bc4f6808"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -142,14 +142,14 @@
       "finalOwners": [
         "pristeel-dach-steel-sales-v1.js"
       ],
-      "note": "Legacy dach-steel filename is retained for compatibility. The visible owner is Material Trade across EU + CH + ME + RS: Tier 1 direct steel consumers/fabricators/manufacturers, Tier 2 construction/GC-GU only with steel-procurement evidence. Buyer rows surface company intelligence, steel scope, public contact evidence and source links; a named project is optional and never invented. Lifecycle is ready-to-contact → Gmail draft → sent/waiting → replied/active → human-confirmed trading Project, while discovery/runtime remains explicitly separate from TED/Mundësitë."
+      "note": "Legacy dach-steel filename is retained for compatibility. The visible owner is Material Trade across EU + CH + ME + RS: Tier 1 direct steel consumers/fabricators/manufacturers, Tier 2 construction/GC-GU only with steel-procurement evidence. Buyer rows surface company intelligence, steel scope, public contact evidence and source links; a named project is optional and never invented. Lifecycle is ready-to-contact  Gmail draft  sent/waiting  replied/active  human-confirmed trading Project, while discovery/runtime remains explicitly separate from TED/Mund�sit�."
     },
     {
       "area": "eu-direct-companies",
       "finalOwners": [
         "pristeel-eu-companies-v1.js"
       ],
-      "note": "Kompanitë EU është pipeline-i i veçantë për klientë të drejtpërdrejtë në Evropë për paketa çeliku të fabrikuar, kapacitet prodhues dhe nënkontraktim. Përjashton Mundësitë/tenderët, blerësit e lëndës së parë te Blerësit e çelikut dhe targetet e Përfaqësimeve. Lexon kontrollet globale të identitetit dhe historikut të kontaktimit, por nuk dërgon email dhe nuk krijon projekt automatikisht."
+      "note": "Kompanit� EU �sht� pipeline-i i ve�ant� p�r klient� t� drejtp�rdrejt� n� Evrop� p�r paketa �eliku t� fabrikuar, kapacitet prodhues dhe n�nkontraktim. P�rjashton Mund�sit�/tender�t, bler�sit e l�nd�s s� par� te Bler�sit e �elikut dhe targetet e P�rfaq�simeve. Lexon kontrollet globale t� identitetit dhe historikut t� kontaktimit, por nuk d�rgon email dhe nuk krijon projekt automatikisht."
     },
     {
       "area": "tenders",
@@ -336,7 +336,7 @@
       "module": "pristeel-tender-supplier-sourcing-v1.js",
       "loader": "pristeel-redesign-finalizer-v1.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded additively for tender Action Console sourcing. Reads canonical BOM / Supplier Intelligence and performs bounded external discovery only when the user clicks Gjej furnitorë; no Supplier Master, RFQ-log or email mutation."
+      "condition": "Loaded additively for tender Action Console sourcing. Reads canonical BOM / Supplier Intelligence and performs bounded external discovery only when the user clicks Gjej furnitor�; no Supplier Master, RFQ-log or email mutation."
     },
     {
       "module": "pristeel-dach-steel-sales-v1.js",
@@ -354,7 +354,7 @@
       "module": "pristeel-representations-fullwidth-v2.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded immediately after the Representation opportunity workspace as a presentation-only fallback. It removes the left sidebar and expands the active Përfaqësime page to the full application width; it performs no Supabase reads or writes and has no effect outside the active Representations route."
+      "condition": "Loaded immediately after the Representation opportunity workspace as a presentation-only fallback. It removes the left sidebar and expands the active P�rfaq�sime page to the full application width; it performs no Supabase reads or writes and has no effect outside the active Representations route."
     },
     {
       "module": "pristeel-representation-discovery-v1.js",
