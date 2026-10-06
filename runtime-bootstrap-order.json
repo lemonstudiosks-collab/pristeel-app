@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 166,
-  "sequenceSha256": "136a394601333af7265ff381441c3166f3ba6e1466b77e0d7cd82b83f53e29f3",
+  "sequenceSha256": "ace94defde91513704bed7b8c964d2e06050353ac9532043e3fe637b2b767823",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260925-single-login1",
@@ -161,7 +161,7 @@
     "pristeel-project-intelligence-resilience-v1.js?v=20260815-1",
     "pristeel-project-workflow-canonical-v1.js?v=20260822-flow2",
     "pristeel-project-workflow-legacy-capture-v1.js?v=20260822-flow2",
-    "pristeel-tender-priority-actions-v1.js?v=20260930-cooldown-override1",
+    "pristeel-tender-priority-actions-v1.js?v=20261006-role-clarification-draft1",
     "pristeel-opportunity-intelligence-v1.js?v=20260929-performance-v1",
     "pristeel-home-operating-grid-v1.js?v=20260823-homegrid2",
     "pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2",
