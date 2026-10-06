@@ -1,0 +1,56 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {JSDOM} from 'jsdom';
+
+const fixturePath=process.argv[2];
+const fixture=fixturePath?JSON.parse(fs.readFileSync(fixturePath,'utf8')):null;
+const dom=new JSDOM('<!doctype html><html><head></head><body><section id="page-kek-tenders" class="page active" style="display:block"><div class="pst-kek-layout"><div class="pst-kek-head"></div></div></section></body></html>',{url:'https://example.test',runScripts:'outside-only',pretendToBeVisual:true});
+const {window:w}=dom;w.scrollTo=()=>{};
+const tender=(id,name,email,status='new')=>({id,title:'Steel building '+id,status,published_date:'2026-10-01',payload:{source:'TED',notice_phase:'award',winner:{name,email}}});
+const testRows=[tender('repeat','Repeat GmbH','sales@repeat.de'),tender('new','New GmbH','info@new.de'),tender('free-a','Alpha GmbH','alpha@gmail.com'),tender('free-b','Beta GmbH','beta@gmail.com'),tender('archived','Old GmbH','info@old.de','dismissed')];
+const legacy=fixture?.contacts||Array.from({length:1001},(_,i)=>({id:'old-'+i,company_name:i===0?'Repeat GmbH':'Old company '+i,company_domain:i===0?'repeat.de':'old-'+i+'.de',contact_email:i===0?'office@repeat.de':'office@old-'+i+'.de',outreach_status:i===2?'Bounced':i===3?'Dormant':'Sent',touch_1:'2026-07-01',source:null}));
+const registry=fixture?.registry||[{id:'draft-a',tender_watch_id:'free-a',status:'draft_created',recipient_email:'alpha@gmail.com',recipient_company_name:'Alpha GmbH',gmail_draft_id:'draft-a',draft_created_at:'2026-10-01'},{id:'error',tender_watch_id:'new',status:'error',recipient_email:'info@new.de',recipient_company_name:'New GmbH'}];
+const rows=fixture?.tenders||testRows;
+const calls=[];
+w.supaFetch=async path=>{
+ calls.push(path);const u=new URL('https://example.test/'+path),p=u.searchParams,offset=Number(p.get('offset')||0),limit=Number(p.get('limit')||1000);
+ if(path.startsWith('outreach_contacts?'))return legacy.slice(offset,offset+limit);
+ if(path.startsWith('pppp_opportunity_outreach_registry_v1?'))return registry.slice(offset,offset+limit);
+ if(path.startsWith('kek_tender_watch?'))return p.get('project_id')?rows.filter(x=>x.project_id):rows.filter(x=>['new','review','watch'].includes(x.status));
+ return [];
+};
+w.PSTTenderPriorityActionsV1=w.PSTTenderPriorityActionsV2={reason:()=>'',enrichedContacts:r=>r.payload?.winner?.email?[{email:r.payload.winner.email}]:[]};
+w.eval(fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8'));
+await w.PSTProjectCentricWorkflowV1.loadOpportunities(true);
+w.eval(fs.readFileSync('pristeel-opportunities-filter-polish-v1.js','utf8'));
+await new Promise(resolve=>setTimeout(resolve,30));
+const api=w.PSTProjectCentricWorkflowV1,desk=w.PSTOpportunitiesDeskV1,T=desk._test;
+const count=T.contactHistory().rows.length;
+assert.equal(api._state.contactHistoryRows.length,legacy.length,'all historical contacts must load beyond the API row limit');
+assert(calls.filter(x=>x.startsWith('outreach_contacts?')).length===Math.ceil((legacy.length+1)/1000));
+const before=calls.length;w.document.querySelector('[data-pst-opp-contacted-toggle]').click();
+assert(w.document.querySelector('.pst-opp-contacted'),'complete company history opens');
+assert(w.document.querySelector('[data-pst-opp-history-search]'),'history search is independent');
+assert(w.document.querySelector('[data-pst-opp-page="history:2"]'),'all rows remain reachable through pages');
+w.document.querySelector('[data-pst-opp-page="history:2"]').click();
+assert(w.document.querySelector('.pst-opp-history-pages').textContent.includes('Faqja 2'));
+const companyButton=w.document.querySelector('.pst-opp-contact-row');companyButton.click();
+assert(w.document.querySelector('.pst-opp-modal-card a[href^="https://mail.google.com/"]'),'every historical company opens its communication evidence');
+w.document.querySelector('[data-pst-opp-close]').click();
+api._state.source='KRPP';api._state.field='energy';api._state.query='no matches';desk.apply();
+assert.equal(T.contactHistory().rows.length,count,'active filters cannot hide contact history');
+assert.equal(calls.length,before,'history search, paging and detail perform no extra database reads');
+if(!fixture){
+ api._state.source=api._state.field='all';api._state.query='';
+ assert(!T.activeRows().some(x=>x.id==='repeat'),'a company contacted through another email leaves active list');
+ assert(!T.activeRows().some(x=>x.id==='free-a'),'prepared draft leaves active list');
+ assert(T.activeRows().some(x=>x.id==='free-b'),'shared public email domain never merges different companies');
+ assert(T.activeRows().some(x=>x.id==='new'),'error-only draft does not mark a company contacted');
+ assert(T.contactedRows().some(x=>x.__pstContactMeta.lane==='draft'),'draft is not inferred sent');
+ assert(T.contactedRows().some(x=>x.__pstContactMeta.lane==='history'),'Dormant dated contact remains historical');
+ assert(T.contactedRows().some(x=>x.__pstContactMeta.lane==='bounced'),'bounce remains visible');
+}
+api._state.source=api._state.field='all';api._state.query='';
+assert(T.activeRows().every(r=>!T.contactAliases(r).some(k=>T.contactHistory().aliases[k])),'contacted companies cannot overlap the active list');
+console.log(JSON.stringify({historyCompanies:count,historyContacts:legacy.length,registryRows:registry.length,activeUncontacted:T.activeRows().length,databaseCalls:calls.length,readOnly:true}));
+dom.window.close();
