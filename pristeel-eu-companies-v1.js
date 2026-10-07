@@ -1,5 +1,5 @@
 /* PRISTEEL — Kompanitë EU v1
- * Pipeline i veçantë për klientë të drejtpërdrejtë në Evropë.
+ * Proces i veçantë për klientë të drejtpërdrejtë në Evropë.
  * Nuk krijon projekt, kontakt, draft ose dërgim emaili.
  */
 (function(){
@@ -8,7 +8,7 @@ if(window.__pstEUCompaniesV1)return;
 window.__pstEUCompaniesV1=true;
 
 var VIEW='pppp_eu_direct_operational_v1';
-var state={rows:[],loading:false,loaded:false,error:'',query:'',selected:'',filter:'action',stage:'',country:'',preflight:null};
+var state={rows:[],loading:false,loaded:false,error:'',query:'',selected:'',filter:'action',stage:'',country:'',preflight:null,lastLoadedAt:0,gmailOpenedAt:0,loadPromise:null};
 var navObserver=null;
 var STAGES=[['found','Gjetur'],['verified','Verifikuar'],['contact_ready','Kontakt gati'],['draft_ready','Draft gati'],['contacted','Kontaktuar'],['replied','Përgjigjur'],['qualified','E kualifikuar']];
 
@@ -17,6 +17,21 @@ function A(v){return Array.isArray(v)?v:[]}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function N(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()}
 function D(v){if(!v)return'—';try{return new Date(v).toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'})}catch(e){return S(v)}}
+
+function stableHtml(el,html){if(el&&el.innerHTML!==html)el.innerHTML=html}
+function safeUrl(v){try{var u=new URL(S(v));return /^(https?:)$/.test(u.protocol)?u.href:''}catch(e){return''}}
+function hasReply(r){return r.stage==='replied'||r.stage==='qualified'||r.outreach_status==='replied'}
+function hasSent(r){return !!(r.last_outbound_at||r.last_contact_at)||['contacted','replied','qualified'].indexOf(r.stage)>-1||['contacted','sent','replied'].indexOf(r.outreach_status)>-1}
+function hasDraft(r){return !hasReply(r)&&(!!r.has_active_draft||(r.stage==='draft_ready'&&!!r.gmail_draft_id&&!hasSent(r)))}
+function numPriority(r){return Number(r.priority_score)||0}
+function actionRank(r){if(r.routing_state==='review')return 5;if(hasReply(r))return 4;if(hasDraft(r))return 3;var n=daysTo(r.next_action_due);return n!==null&&n<=0?2:needsAction(r)?1:0}
+function contactLabel(v){return({verified:'Kontakt i verifikuar',found:'Kontakt i gjetur',searching:'Në kërkim',missing:'Kontakti mungon',unknown:'Në verifikim',review:'Kërkon shqyrtim'})[S(v)]||'Në verifikim'}
+function outreachLabel(v){return({not_ready:'Komunikimi ende nuk është gati',ready:'Gati për kontaktim',draft:'Draft i regjistruar',draft_ready:'Draft i regjistruar',queued:'Draft në përgatitje',contacted:'Kontaktim i regjistruar',sent:'Dërgim i konfirmuar',replied:'Përgjigje e marrë',suppressed:'Kontaktim i bllokuar'})[S(v)]||'Në verifikim'}
+function uiText(v){return S(v).replace(/external[_ ]production[_ ]capacity/gi,'kapacitet prodhues shtesë').replace(/fabricated[_ ]steel[_ ]package/gi,'paketa çeliku të fabrikuar').replace(/subcontracting/gi,'nënkontraktim').replace(/fabrication/gi,'fabrikim').replace(/overflow/gi,'kapacitet shtesë').replace(/follow[- ]up/gi,'rikontaktim').replace(/outreach/gi,'kontaktim').replace(/routing/gi,'përkatësi të modulit')}
+function gmailIcon(){return '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path fill="#4285f4" d="M3 6h3v14H3z"/><path fill="#34a853" d="M18 6h3v14h-3z"/><path fill="#ea4335" d="M3 4l9 7 9-7v4l-9 7-9-7z"/></svg>'}
+function workNav(){var tabs=[['action','Për veprim'],['drafts','Draftet për rishikim'],['replies','Përgjigjet'],['contacted','Në pritje / kontaktuar'],['research','Për pasurim'],['all','Të gjitha']];return tabs.map(function(x){var rows=state.rows.filter(function(r){return !r.archived_at}),n=rows.filter(function(r){return x[0]==='action'?needsAction(r):x[0]==='drafts'?hasDraft(r):x[0]==='replies'?hasReply(r):x[0]==='contacted'?hasSent(r):x[0]==='research'?r.contact_status!=='verified'&&!hasDraft(r)&&!hasSent(r)&&!hasReply(r):true}).length;return'<button class="pst-eu-work-nav '+(state.filter===x[0]&&!state.stage?'on':'')+'" type="button" aria-current="'+(state.filter===x[0]&&!state.stage?'page':'false')+'" data-eu-filter="'+x[0]+'"><span>'+x[1]+'</span><b>'+n+'</b></button>'}).join('')}
+function syncOnReturn(){var p=document.getElementById('page-eu-companies');if(document.visibilityState==='hidden'||!p||!p.classList.contains('active'))return;var gmail=state.gmailOpenedAt;state.gmailOpenedAt=0;if(gmail||Date.now()-state.lastLoadedAt>=300000)load(true)}
+
 function selected(){return state.rows.find(function(r){return S(r.id)===S(state.selected)})||null}
 function hideOthers(page){document.querySelectorAll('.page').forEach(function(p){if(p===page)return;p.classList.remove('active');p.style.display='none'})}
 function setRoute(active){try{if(active){if(location.hash!=='#kompanite-eu')history.pushState({pst:'kompanite-eu'},'',location.pathname+location.search+'#kompanite-eu')}else if(location.hash==='#kompanite-eu')history.replaceState({},'',location.pathname+location.search)}catch(e){}}
@@ -27,13 +42,13 @@ function typeLabel(v){
 }
 function stageLabel(v){
  var m={found:'Gjetur',verified:'Verifikuar',contact_ready:'Kontakt gati',draft_ready:'Draft gati',contacted:'Kontaktuar',replied:'Përgjigjur',qualified:'E kualifikuar',closed:'Mbyllur'};
- return m[S(v)]||S(v||'—');
+ return m[S(v)]||'Në verifikim';
 }
 function scopeLabel(v){
  var m={fabricated_steel_package:'Paketa çeliku të fabrikuar',external_production_capacity:'Kapacitet prodhues shtesë',overflow_capacity:'Kapacitet për ngarkesë kulmore',fabrication_to_drawings:'Prodhim sipas vizatimeve',selected_subcontract_package:'Paketa të përzgjedhura nënkontraktimi',technical_coordination:'Koordinim teknik',material_procurement:'Prokurim materiali'};
- return m[S(v)]||S(v).replace(/_/g,' ');
+ return m[S(v)]||uiText(v).replace(/_/g,' ');
 }
-function fitText(r){return A(r.business_scope).map(scopeLabel).join(' · ')||S(r.why_relevant)||'Për shqyrtim'}
+function fitText(r){return A(r.business_scope).map(scopeLabel).join(' · ')||uiText(r.why_relevant)||'Për shqyrtim'}
 function contactText(r){return S(r.contact_name||r.contact_email)||'Pa kontakt të verifikuar'}
 function guardLabel(v){
  var m={clear:'Pa pengesë të njohur',blocked:'Mos kontakto',existing_draft:'Ka draft ekzistues',cooldown_30d:'Kontaktuar brenda 30 ditëve',routing_review:'Kontrollo modulin tjetër',contacted_before:'Kontaktuar më parë'};
@@ -80,79 +95,106 @@ function ensurePage(){
  var p=document.getElementById('page-eu-companies');if(p)return p;
  var host=document.querySelector('.content')||document.body;
  p=document.createElement('div');p.id='page-eu-companies';p.className='page';p.style.display='none';
- p.innerHTML='<div class="pst-eu-page"><header class="pst-eu-head"><div><div class="pst-eu-eye">ZHVILLIM DIREKT NË EVROPË</div><h1>Kompanitë EU</h1><p>Pipeline i veçantë për klientë të drejtpërdrejtë: paketa çeliku të fabrikuar, kapacitet prodhues, overflow dhe nënkontraktim. Tenderët, blerësit e materialit dhe përfaqësimet qëndrojnë në modulet e tyre.</p></div><div class="pst-eu-actions"><button class="pst-eu-btn primary" type="button" data-eu-new>+ Kompani e re</button><button class="pst-eu-btn" type="button" data-eu-refresh>Rifresko</button><button class="pst-eu-btn" type="button" data-eu-back>← Kthehu në Ballinë</button></div></header><div class="pst-eu-rule"><b>Rregulli:</b> kompania hyn këtu vetëm si klient direkt për fabrication/capacity/subcontracting, pasi kontrollohet identiteti kundër Mundësive, Blerësve të çelikut, Përfaqësimeve dhe historikut të kontaktimit. Asnjë komunikim nuk niset automatikisht nga kjo faqe.</div><div data-eu-error></div><div data-eu-body></div></div>';
+ p.innerHTML='<div class="pst-eu-page"><aside class="pst-eu-work-sidebar"><div class="pst-eu-brand"><span>P</span><div><b>PRISTEEL</b><small>Klientë të drejtpërdrejtë</small></div></div><button class="pst-eu-side-home" type="button" data-eu-back>← Kthehu në Ballinë</button><div class="pst-eu-side-label">PUNËT DHE VEPRIMET</div><nav aria-label="Punët e kompanive" data-eu-work-nav></nav><section class="pst-eu-work-copy"><h3>Çfarë bën PPPP</h3><p>Kontrollon identitetin, historikun e kontaktimit dhe draftet ekzistuese. Veçon përgjigjet, afatet dhe rastet që kërkojnë shqyrtim.</p><h3>Çfarë bën ti</h3><p>Rishikon draftet, përgjigjet dhe konfliktet. Vendos hapin tregtar të ardhshëm.</p><details><summary>Rrjedha e punës</summary><p>Zbulim → verifikim → kontakte → vlerësim → draft → kontaktim → përgjigje.</p><p>Zbulimi dhe kërkimi i kontakteve të reja nuk kanë ende automatizim të planifikuar të konfirmuar për këtë modul.</p></details></section><details class="pst-eu-extra-controls"><summary>Mjete shtesë</summary><button class="pst-eu-btn" type="button" data-eu-new>+ Kompani e re</button><button class="pst-eu-btn" type="button" data-eu-refresh>Rifresko</button><div data-eu-stage-tools></div></details></aside><main class="pst-eu-work-main"><header class="pst-eu-head"><div><div class="pst-eu-eye">KLIENTË TË DREJTPËRDREJTË NË EVROPË</div><h1>Kompanitë EU</h1><p>Paketa çeliku të fabrikuar, kapacitet prodhues dhe nënkontraktim.</p></div><div class="pst-eu-summary" data-eu-summary aria-live="polite"></div></header><div data-eu-error role="status"></div><div data-eu-controls></div><div data-eu-body></div></main></div>';
  host.appendChild(p);
  p.querySelector('[data-eu-back]').onclick=back;
  p.querySelector('[data-eu-new]').onclick=openIntake;
- p.addEventListener('input',function(e){if(e.target&&e.target.matches('[data-eu-search]')){state.query=e.target.value;render()}});
+ p.addEventListener('input',function(e){if(e.target&&e.target.matches('[data-eu-search]')){state.query=e.target.value;renderList()}});
  p.addEventListener('change',function(e){if(e.target&&e.target.matches('[data-eu-country]')){state.country=e.target.value;render()}});
  p.addEventListener('click',function(e){
   var row=e.target.closest&&e.target.closest('[data-eu-id]');if(row){state.selected=row.dataset.euId;render();return}
   var tab=e.target.closest&&e.target.closest('[data-eu-filter]');if(tab){state.filter=tab.dataset.euFilter;state.stage='';render();return}
   var st=e.target.closest&&e.target.closest('[data-eu-stage]');if(st){var v=st.dataset.euStage;state.stage=state.stage===v?'':v;state.filter='all';render();return}
   if(e.target.closest&&e.target.closest('[data-eu-refresh]')){load(true);return}
+  if(e.target.closest&&e.target.closest('[data-eu-gmail]'))state.gmailOpenedAt=Date.now();
  });
  return p;
 }
+
 function daysTo(v){if(!v)return null;var d=new Date(v),n=new Date();if(isNaN(d.getTime()))return null;d=new Date(d.getFullYear(),d.getMonth(),d.getDate());n=new Date(n.getFullYear(),n.getMonth(),n.getDate());return Math.round((d-n)/86400000)}
 function followLabel(r){var n=daysTo(r.next_action_due);if(n===null)return r.next_action||'Pa afat';if(n<0)return'Me vonesë '+Math.abs(n)+' ditë';if(n===0)return'Sot';if(n===1)return'Nesër';return'Pas '+n+' ditësh'}
-function needsAction(r){if(r.routing_state==='review'||r.outreach_guard==='blocked'||r.stage==='draft_ready'||r.stage==='replied')return true;var n=daysTo(r.next_action_due);return n!==null&&n<=7}
-function operational(r){if(r.routing_state==='review')return['Routing review','bad'];if(r.outreach_guard==='blocked')return['Bllokuar','bad'];if(r.stage==='replied'||r.stage==='qualified')return[stageLabel(r.stage),'ok'];if(r.outreach_guard==='existing_draft')return['Draft për rishikim','warn'];if(r.outreach_guard==='cooldown_30d')return['Në pritje / follow-up','warn'];if(r.contact_status==='verified'&&r.outreach_guard==='clear')return['Gati për outreach','ok'];return[stageLabel(r.stage),'neutral']}
-function nextActionText(r){if(r.next_action)return r.next_action;if(r.routing_state==='review')return'Kontrollo routing-un para çdo outreach-i.';if(r.outreach_guard==='existing_draft')return'Hap draftin, kontrollo tekstin dhe vendos manualisht për dërgim.';if(r.outreach_guard==='cooldown_30d')return r.next_action_due?'Rishiko thread-in dhe bëj follow-up në afatin e caktuar.':'Mos krijo kontaktim të dytë gjatë cooldown-it.';if(r.stage==='replied')return'Lexo përgjigjen dhe vendos nëse ka bazë për kualifikim ose projekt.';if(r.contact_status!=='verified')return'Verifiko kontaktin para outreach-it.';return'Rishiko evidencën dhe përcakto hapin e ardhshëm.'}
+function needsAction(r){
+ if(r.do_not_contact||r.outreach_guard==='blocked'||r.stage==='closed')return r.routing_state==='review';
+ if(r.routing_state==='review'||hasDraft(r)||hasReply(r))return true;
+ if(r.outreach_guard==='clear'&&r.contact_status==='verified'&&!hasSent(r))return true;
+ var n=daysTo(r.next_action_due);return n!==null&&n<=0;
+}
+
+function operational(r){if(r.routing_state==='review')return['Kërkon shqyrtim','bad'];if(r.do_not_contact||r.outreach_guard==='blocked')return['Mos kontakto','bad'];if(hasReply(r))return['Përgjigje e marrë','ok'];if(hasDraft(r))return['Draft për rishikim','warn'];if(hasSent(r))return[daysTo(r.next_action_due)!==null&&daysTo(r.next_action_due)<=0?'Afati për rikontaktim':'Në pritje të përgjigjes','neutral'];if(r.contact_status==='verified'&&r.outreach_guard==='clear')return['Gati për kontaktim','ok'];return[stageLabel(r.stage),'neutral']}
+
+function nextActionText(r){if(r.do_not_contact||r.outreach_guard==='blocked')return'Kontaktimi është i ndaluar.';if(r.routing_state==='review')return'Shqyrto përputhjen me modulin tjetër para kontaktimit.';if(r.next_action)return uiText(r.next_action);if(hasReply(r))return'Lexo përgjigjen dhe vendos hapin e ardhshëm.';if(hasDraft(r))return'Hap draftin, kontrollo tekstin dhe vendos manualisht për dërgim.';if(hasSent(r))return daysTo(r.next_action_due)!==null&&daysTo(r.next_action_due)<=0?'Rishiko bisedën dhe vendos nëse duhet rikontaktim.':'Në pritje të përgjigjes; historiku ruhet nga PPPP.';if(r.contact_status!=='verified')return'Kontakti kërkon verifikim përpara përgatitjes së komunikimit.';return'Rishiko kompaninë dhe përgatit hapin e kontaktimit.'}
+
 function readiness(r){var n=0;if(r.company_domain_normalized)n+=20;if(A(r.evidence).length)n+=20;if(r.contact_email)n+=20;if(r.contact_status==='verified')n+=20;if(r.routing_state==='clear'&&!A(r.routing_conflicts).length)n+=10;if(['clear','existing_draft','cooldown_30d'].indexOf(r.outreach_guard)>-1)n+=10;return Math.min(100,n)}
 function gmailThread(id){return id?'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(id):''}
 function gmailDraft(id){return id?'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(id):''}
 function filtered(){
  var q=N(state.query),rows=state.rows.filter(function(r){return !r.archived_at});
  if(state.filter==='action')rows=rows.filter(needsAction);
- if(state.filter==='drafts')rows=rows.filter(function(r){return r.stage==='draft_ready'||r.has_active_draft});
- if(state.filter==='contacted')rows=rows.filter(function(r){return ['contacted','replied','qualified'].indexOf(r.stage)>-1});
- if(state.filter==='replies')rows=rows.filter(function(r){return ['replied','qualified'].indexOf(r.stage)>-1});
+ if(state.filter==='drafts')rows=rows.filter(hasDraft);
+ if(state.filter==='contacted')rows=rows.filter(hasSent);
+ if(state.filter==='replies')rows=rows.filter(hasReply);
+ if(state.filter==='research')rows=rows.filter(function(r){return r.contact_status!=='verified'&&!hasDraft(r)&&!hasSent(r)&&!hasReply(r)});
  if(state.stage)rows=rows.filter(function(r){return r.stage===state.stage});
  if(state.country)rows=rows.filter(function(r){return S(r.country)===state.country});
  if(q)rows=rows.filter(function(r){return N([r.company_name,r.company_domain_normalized,r.country,r.contact_name,r.contact_email,r.contact_role,typeLabel(r.company_type),A(r.business_scope).map(scopeLabel).join(' '),r.why_relevant,r.next_action].join(' ')).indexOf(q)>-1});
- return rows;
+ return rows.sort(function(a,b){return actionRank(b)-actionRank(a)||numPriority(b)-numPriority(a)});
 }
-function statusCounts(){var rows=state.rows.filter(function(r){return !r.archived_at}),x={all:rows.length,action:0,contacted:0,drafts:0,replies:0};rows.forEach(function(r){if(needsAction(r))x.action++;if(['contacted','replied','qualified'].indexOf(r.stage)>-1)x.contacted++;if(r.stage==='draft_ready'||r.has_active_draft)x.drafts++;if(['replied','qualified'].indexOf(r.stage)>-1)x.replies++});return x}
+
+function statusCounts(){var rows=state.rows.filter(function(r){return !r.archived_at}),x={all:rows.length,action:0,contacted:0,drafts:0,replies:0};rows.forEach(function(r){if(needsAction(r))x.action++;if(hasSent(r))x.contacted++;if(hasDraft(r))x.drafts++;if(hasReply(r))x.replies++});return x}
+
 function stageCount(v){return state.rows.filter(function(r){return !r.archived_at&&r.stage===v}).length}
 function countryOptions(){var seen={};state.rows.forEach(function(r){if(r.country&&!r.archived_at)seen[r.country]=1});return Object.keys(seen).sort()}
 function summary(){var x=statusCounts();return '<b>'+x.all+'</b> kompani · '+x.action+' për veprim · '+x.contacted+' kontaktuar'}
-function kpis(){var x=statusCounts(),a=[['Kompani aktive',x.all],['Për veprim',x.action],['Kontaktuar',x.contacted],['Draft / thread',x.drafts],['Përgjigje',x.replies]];return'<div class="pst-eu-kpis">'+a.map(function(i){return'<div class="pst-eu-kpi"><b>'+i[1]+'</b><span>'+i[0]+'</span></div>'}).join('')+'</div>'}
+function kpis(){var x=statusCounts(),a=[['Kompani aktive',x.all],['Për veprim',x.action],['Kontaktuar',x.contacted],['Draft / bisedë',x.drafts],['Përgjigje',x.replies]];return'<div class="pst-eu-kpis">'+a.map(function(i){return'<div class="pst-eu-kpi"><b>'+i[1]+'</b><span>'+i[0]+'</span></div>'}).join('')+'</div>'}
 function pipeline(){return'<div class="pst-eu-pipeline">'+STAGES.map(function(s){return'<button type="button" class="pst-eu-pipe '+(state.stage===s[0]?'on':'')+'" data-eu-stage="'+E(s[0])+'"><b>'+stageCount(s[0])+'</b><span>'+E(s[1])+'</span></button>'}).join('')+'</div>'}
-function controls(){var tabs=[['action','Për veprim'],['drafts','Draftet'],['contacted','Kontaktuar'],['replies','Përgjigje'],['all','Të gjitha']];return'<div class="pst-eu-controls"><div class="pst-eu-tabs">'+tabs.map(function(x){return'<button class="pst-eu-tab '+(state.filter===x[0]&&!state.stage?'on':'')+'" type="button" data-eu-filter="'+x[0]+'">'+x[1]+'</button>'}).join('')+'</div><input class="pst-eu-search" data-eu-search type="search" value="'+E(state.query)+'" placeholder="Kërko kompani, vend, person ose email"><select class="pst-eu-select" data-eu-country><option value="">Të gjitha vendet</option>'+countryOptions().map(function(c){return'<option value="'+E(c)+'"'+(state.country===c?' selected':'')+'>'+E(c)+'</option>'}).join('')+'</select></div>'}
+function controls(){return'<div class="pst-eu-controls"><input class="pst-eu-search" data-eu-search type="search" value="'+E(state.query)+'" aria-label="Kërko kompani" placeholder="Kërko kompani, vend, person ose email"><select class="pst-eu-select" data-eu-country aria-label="Filtro sipas vendit"><option value="">Të gjitha vendet</option>'+countryOptions().map(function(c){return'<option value="'+E(c)+'"'+(state.country===c?' selected':'')+'>'+E(c)+'</option>'}).join('')+'</select></div>'}
+
 function renderList(){
- var p=ensurePage(),body=p.querySelector('[data-eu-body]'),rows=filtered(),x=statusCounts();
- p.querySelector('[data-eu-error]').innerHTML=state.error?'<div class="pst-eu-error">'+E(state.error)+'</div>':'';
- body.innerHTML=kpis()+pipeline()+controls()+'<div class="pst-eu-shell"><div class="pst-eu-table"><div class="pst-eu-headrow"><span>Kompania</span><span>Vendi</span><span>Mundësia PriSteel</span><span>Kontakti</span><span>Gjendja</span><span>Prioriteti</span></div>'+(rows.length?rows.map(function(r){var o=operational(r);return'<button type="button" class="pst-eu-row '+(S(r.id)===S(state.selected)?'on':'')+'" data-eu-id="'+E(r.id)+'"><span><b>'+E(r.company_name)+'</b><small>'+E(r.company_domain_normalized||'')+'</small></span><span><b>'+E(r.country||'—')+'</b><small>'+E(typeLabel(r.company_type))+'</small></span><span><b>'+E(fitText(r))+'</b><small>'+E(r.why_relevant||'')+'</small></span><span><b>'+E(contactText(r))+'</b><small>'+E(r.contact_role||r.contact_status||'')+'</small></span><span><i class="pst-eu-chip '+o[1]+'">'+E(o[0])+'</i><small>'+E(followLabel(r))+'</small></span><span><b>'+E(r.priority_score==null?'—':r.priority_score)+'</b><small>'+E(nextActionText(r))+'</small></span></button>'}).join(''):'<div class="pst-eu-empty">'+(state.loading?'Duke ngarkuar kompanitë…':'Nuk ka kompani në këtë pamje.')+'</div>')+'</div>'+renderDetail(selected())+'</div>';
+ var p=ensurePage(),body=p.querySelector('[data-eu-body]'),rows=filtered();
+ if(!rows.some(function(r){return S(r.id)===S(state.selected)}))state.selected=rows.length?S(rows[0].id):'';
+ stableHtml(p.querySelector('[data-eu-error]'),state.error?'<div class="pst-eu-error">Të dhënat nuk u rifreskuan: '+E(state.error)+'</div>':'');
+ stableHtml(p.querySelector('[data-eu-work-nav]'),workNav());
+ stableHtml(p.querySelector('[data-eu-stage-tools]'),pipeline());
+ stableHtml(p.querySelector('[data-eu-summary]'),state.loading?'Duke lexuar të dhënat…':summary());
+ var controlsHost=p.querySelector('[data-eu-controls]');if(!controlsHost.querySelector('[data-eu-search]'))controlsHost.innerHTML=controls();
+ var country=controlsHost.querySelector('[data-eu-country]');
+ if(country){var options='<option value="">Të gjitha vendet</option>'+countryOptions().map(function(c){return'<option value="'+E(c)+'">'+E(c)+'</option>'}).join('');stableHtml(country,options);country.value=state.country;}
+ stableHtml(body,'<div class="pst-eu-shell"><div class="pst-eu-table"><div class="pst-eu-headrow"><span>Kompania</span><span>Mundësia PriSteel</span><span>Gjendja dhe hapi i ardhshëm</span></div>'+(rows.length?rows.map(function(r){var o=operational(r);return'<button type="button" class="pst-eu-row '+(S(r.id)===S(state.selected)?'on':'')+'" aria-pressed="'+(S(r.id)===S(state.selected))+'" data-eu-id="'+E(r.id)+'"><span><b>'+E(r.company_name)+'</b><small>'+E(r.country||'—')+' · '+E(r.company_domain_normalized||'')+'</small></span><span><b>'+E(fitText(r))+'</b><small>'+E(contactText(r))+'</small></span><span><i class="pst-eu-chip '+o[1]+'">'+E(o[0])+'</i><small>'+E(nextActionText(r))+'</small></span></button>'}).join(''):'<div class="pst-eu-empty">'+(state.loading?'Duke ngarkuar kompanitë…':state.filter==='action'?'Nuk ka kompani që kërkojnë veprim tani. Zgjidh “Të gjitha” për historikun.':'Nuk ka kompani në këtë pamje.')+'</div>')+'</div>'+renderDetail(selected())+'</div>');
 }
-function evidenceHtml(r){var xs=A(r.evidence);if(!xs.length)return'<p>Nuk ka evidencë të strukturuar.</p>';return'<div class="pst-eu-evidence">'+xs.slice(0,8).map(function(x){var u=S(x.url);return'<a href="'+E(u)+'" target="_blank" rel="noopener"><b>'+E(x.type==='contact'?'Kontakt / rol':'Kompani / projekt')+'</b><span>'+E(x.source||'burim')+' · '+E(x.verified_on||'—')+'</span></a>'}).join('')+'</div>'}
+
+function evidenceHtml(r){var xs=A(r.evidence).filter(function(x){return !!safeUrl(x.url)});if(!xs.length)return'<p>Nuk ka burim të strukturuar me lidhje të vlefshme.</p>';return'<div class="pst-eu-evidence">'+xs.slice(0,8).map(function(x){return'<a href="'+E(safeUrl(x.url))+'" target="_blank" rel="noopener"><b>'+E(x.type==='contact'?'Kontakt / rol':'Kompani / projekt')+'</b><span>'+E(uiText(x.source)||'Burim')+' · '+E(x.verified_on||'—')+'</span></a>'}).join('')+'</div>'}
+
 function renderDetail(r){
- if(!r)return'<aside class="pst-eu-side"><div class="pst-eu-side-empty"><b>Zgjidh një kompani</b><br>Këtu shfaqen inteligjenca, kontakti, drafti/thread-i, follow-up-i, evidenca dhe kontrolli i routing-ut.</div></aside>';
- var conflicts=A(r.routing_conflicts),scopes=A(r.business_scope).map(scopeLabel),o=operational(r),acts=[],draft=gmailDraft(r.gmail_thread_id||r.gmail_draft_id),thread=gmailThread(r.gmail_thread_id);
- if(r.has_active_draft&&draft)acts.push('<a class="primary" href="'+E(draft)+'" target="_blank" rel="noopener">Hap draftin</a>');
- if(thread)acts.push('<a href="'+E(thread)+'" target="_blank" rel="noopener">Hap bisedën</a>');
- if(r.company_website)acts.push('<a href="'+E(r.company_website)+'" target="_blank" rel="noopener">Faqja</a>');
- return'<aside class="pst-eu-side"><div class="pst-eu-side-head"><div class="pst-eu-eye">'+E(typeLabel(r.company_type))+'</div><h2>'+E(r.company_name)+'</h2><div class="pst-eu-detail-meta">'+E(r.country||'')+(r.company_domain_normalized?' · '+E(r.company_domain_normalized):'')+'</div><div class="pst-eu-side-badges"><i class="pst-eu-chip '+o[1]+'">'+E(o[0])+'</i><i class="pst-eu-chip '+guardClass(r.outreach_guard)+'">'+E(guardLabel(r.outreach_guard))+'</i><i class="pst-eu-chip neutral">Readiness '+readiness(r)+'/100</i></div><div class="pst-eu-side-actions">'+acts.join('')+'</div></div>'+
- '<section class="pst-eu-section"><h3>Hapi i ardhshëm</h3><p><b>'+E(followLabel(r))+(r.next_action_due?' · '+E(D(r.next_action_due)):'')+'</b><br>'+E(nextActionText(r))+'</p></section>'+
- '<section class="pst-eu-section"><h3>Pozicionimi PriSteel</h3><p>'+E(r.why_relevant||fitText(r))+'</p><div class="pst-eu-tags">'+scopes.map(function(x){return'<span>'+E(x)+'</span>'}).join('')+'</div></section>'+
- '<section class="pst-eu-section"><h3>Kontakti</h3><div class="pst-eu-kv"><span>Personi</span><span>'+E(r.contact_name||'—')+'</span><span>Roli</span><span>'+E(r.contact_role||'—')+'</span><span>Emaili</span><span>'+E(r.contact_email||'—')+'</span><span>Verifikimi</span><span>'+E(r.contact_status||'—')+'</span></div></section>'+
- '<section class="pst-eu-section"><h3>Komunikimi & drafti</h3><div class="pst-eu-kv"><span>Stage</span><span>'+E(stageLabel(r.stage))+'</span><span>Outreach</span><span>'+E(r.outreach_status||'—')+'</span><span>Draft aktiv</span><span>'+(r.has_active_draft?'Po':'Jo')+'</span><span>Kontakti i fundit</span><span>'+E(D(r.last_outbound_at||r.contact_master_last_contact||r.last_contact_at))+'</span><span>Guard</span><span>'+E(guardLabel(r.outreach_guard))+'</span></div></section>'+
- '<section class="pst-eu-section"><h3>Kontrolli i routing-ut</h3><p>'+(conflicts.length?'Konflikt me: <b>'+E(conflicts.map(routeLabel).join(' · '))+'</b>. Kërkon shqyrtim para outreach-it.':'Nuk ka konflikt të regjistruar me Mundësitë, Blerësit e çelikut ose Përfaqësime. Routing: '+E(r.routing_state||'—')+'.')+'</p></section>'+
- '<section class="pst-eu-section"><h3>Evidenca</h3>'+evidenceHtml(r)+'</section>'+
- '<section class="pst-eu-section"><h3>Burimi & identiteti</h3><div class="pst-eu-kv"><span>Priority score</span><span>'+E(r.priority_score==null?'—':r.priority_score)+'</span><span>Verifikuar</span><span>'+E(D(r.last_verified_at))+'</span><span>Source key</span><span>'+E(r.source_key||'—')+'</span><span>Contact Master</span><span>'+(r.known_in_contact_master?'Po':'Jo')+'</span></div></section></aside>';
+ if(!r)return'<aside class="pst-eu-side"><div class="pst-eu-side-empty">Zgjidh një kompani për kontaktet, komunikimin dhe hapin e ardhshëm.</div></aside>';
+ var conflicts=A(r.routing_conflicts),scopes=A(r.business_scope).map(scopeLabel),o=operational(r),draft=gmailDraft(r.gmail_thread_id||r.gmail_draft_id),thread=gmailThread(r.gmail_thread_id),act='';
+ if(hasReply(r)&&thread)act='<a class="primary" data-eu-gmail href="'+E(thread)+'" target="_blank" rel="noopener">'+gmailIcon()+'Lexo përgjigjen</a>';
+ else if(hasDraft(r)&&draft)act='<a class="primary" data-eu-gmail href="'+E(draft)+'" target="_blank" rel="noopener">'+gmailIcon()+'Hap draftin</a>';
+ else if(thread)act='<a class="primary" data-eu-gmail href="'+E(thread)+'" target="_blank" rel="noopener">'+gmailIcon()+'Hap bisedën</a>';
+ var website=safeUrl(r.company_website),contactEmail=/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(S(r.contact_email))?r.contact_email:'';
+ return'<aside class="pst-eu-side"><div class="pst-eu-side-head"><div class="pst-eu-eye">'+E(typeLabel(r.company_type))+'</div><h2>'+E(r.company_name)+'</h2><div class="pst-eu-detail-meta">'+E(r.country||'')+' · '+E(r.company_domain_normalized||'')+'</div><div class="pst-eu-side-badges"><i class="pst-eu-chip '+o[1]+'">'+E(o[0])+'</i></div></div>'+
+ '<section class="pst-eu-section"><h3>Çfarë duhet bërë</h3><p>'+E(nextActionText(r))+'</p>'+(r.next_action_due?'<small>Afati: '+E(D(r.next_action_due))+' · '+E(followLabel(r))+'</small>':'')+'<div class="pst-eu-side-actions">'+act+'</div></section>'+
+ '<section class="pst-eu-section"><h3>Mundësia për PriSteel</h3><p>'+E(uiText(r.why_relevant)||fitText(r))+'</p><div class="pst-eu-tags">'+scopes.map(function(x){return'<span>'+E(x)+'</span>'}).join('')+'</div></section>'+
+ '<section class="pst-eu-section"><h3>Kontakti</h3><p>'+E(r.contact_name||'Personi përgjegjës nuk është konfirmuar')+(r.contact_role?'<br>'+E(uiText(r.contact_role)):'')+'</p>'+(contactEmail?'<a href="mailto:'+E(contactEmail)+'">'+E(contactEmail)+'</a>':'<p>Adresa e kontaktit mungon.</p>')+'<small>'+E(contactLabel(r.contact_status))+'</small></section>'+
+ '<section class="pst-eu-section"><h3>Komunikimi</h3><p>'+E(outreachLabel(r.outreach_status))+'</p>'+(r.last_outbound_at||r.contact_master_last_contact||r.last_contact_at?'<small>Kontakti i fundit: '+E(D(r.last_outbound_at||r.contact_master_last_contact||r.last_contact_at))+'</small>':'')+'<small>'+E(guardLabel(r.outreach_guard))+'</small></section>'+
+ (r.routing_state==='review'?'<section class="pst-eu-section"><h3>Kërkon shqyrtim</h3><p>Përputhje me '+E(conflicts.map(routeLabel).join(' · ')||'një modul tjetër')+'. Verifiko identitetin para kontaktimit.</p></section>':'')+
+ '<details class="pst-eu-section pst-eu-details"><summary>Burimet dhe të dhënat shtesë</summary>'+(website?'<p><a href="'+E(website)+'" target="_blank" rel="noopener">Faqja e kompanisë ↗</a></p>':'')+evidenceHtml(r)+'<div class="pst-eu-kv"><span>Faza</span><span>'+E(stageLabel(r.stage))+'</span><span>Gatishmëria</span><span>'+readiness(r)+'/100</span><span>Prioriteti</span><span>'+E(r.priority_score==null?'—':r.priority_score)+'</span><span>Verifikuar</span><span>'+E(D(r.last_verified_at))+'</span><span>Regjistri i kontakteve</span><span>'+(r.known_in_contact_master?'Po':'Jo')+'</span></div></details></aside>';
 }
+
 function render(){renderList();renderHome();renderSidebar()}
 async function load(force){
- if(state.loading)return;
+ if(state.loadPromise)return state.loadPromise;
  if(state.loaded&&!force){render();return}
  if(typeof window.supaFetch!=='function'){state.error='Lidhja me PPPP nuk është gati.';render();return}
  state.loading=true;state.error='';render();
- try{
-  state.rows=A(await window.supaFetch(VIEW+'?select=*&archived_at=is.null&order=priority_score.desc.nullslast,updated_at.desc&limit=500'));
-  state.loaded=true;
-  if(state.selected&&!state.rows.some(function(r){return S(r.id)===S(state.selected)}))state.selected='';
- }catch(e){state.error=S(e&&e.message||e)}
- state.loading=false;render();
+ state.loadPromise=Promise.resolve().then(async function(){
+  try{
+   state.rows=A(await window.supaFetch(VIEW+'?select=*&archived_at=is.null&order=priority_score.desc.nullslast,updated_at.desc&limit=500'));
+   state.loaded=true;state.lastLoadedAt=Date.now();
+   if(state.selected&&!state.rows.some(function(r){return S(r.id)===S(state.selected)}))state.selected='';
+  }catch(e){state.error=S(e&&e.message||e)}
+  finally{state.loading=false;state.loadPromise=null;render()}
+ });
+ return state.loadPromise;
 }
 
 function enhanceCss(){
@@ -168,22 +210,25 @@ function ensureHome(){
  var rep=document.getElementById('pst-representations-home-v1');if(card.parentNode!==lanes){if(rep&&rep.parentNode===lanes)lanes.insertBefore(card,rep.nextSibling);else lanes.insertBefore(card,opportunities.nextSibling)}
  renderHome();return true;
 }
-function renderHome(){var card=document.getElementById('pst-eu-companies-home-v1');if(!card)return;var x=statusCounts();card.innerHTML='<button class="pst-eu-home" type="button"><div class="pst-eu-home-head"><div><div class="pst-eu-home-eye">KOMPANITË EU</div><div class="pst-eu-home-title">Klientë të drejtpërdrejtë</div><div class="pst-eu-home-sub">Çelik i fabrikuar · kapacitet prodhues · nënkontraktim</div></div><div class="pst-eu-home-open">Hap →</div></div><div class="pst-eu-home-stats"><div class="pst-eu-home-stat"><b>'+x.all+'</b><span>Kompani</span></div><div class="pst-eu-home-stat"><b>'+x.action+'</b><span>Për veprim</span></div><div class="pst-eu-home-stat"><b>'+x.contacted+'</b><span>Kontaktuar</span></div><div class="pst-eu-home-stat"><b>'+x.drafts+'</b><span>Draft / thread</span></div></div></button>'}
+function renderHome(){var card=document.getElementById('pst-eu-companies-home-v1');if(!card)return;var x=statusCounts();card.innerHTML='<button class="pst-eu-home" type="button"><div class="pst-eu-home-head"><div><div class="pst-eu-home-eye">KOMPANITË EU</div><div class="pst-eu-home-title">Klientë të drejtpërdrejtë</div><div class="pst-eu-home-sub">Çelik i fabrikuar · kapacitet prodhues · nënkontraktim</div></div><div class="pst-eu-home-open">Hap →</div></div><div class="pst-eu-home-stats"><div class="pst-eu-home-stat"><b>'+x.all+'</b><span>Kompani</span></div><div class="pst-eu-home-stat"><b>'+x.action+'</b><span>Për veprim</span></div><div class="pst-eu-home-stat"><b>'+x.contacted+'</b><span>Kontaktuar</span></div><div class="pst-eu-home-stat"><b>'+x.drafts+'</b><span>Draft / bisedë</span></div></div></button>'}
 function ensureSidebar(){var host=document.getElementById('side-nav');if(!host)return false;var item=document.getElementById('pst-eu-companies-nav-v1');if(!item){item=document.createElement('div');item.id='pst-eu-companies-nav-v1';item.className='nav-item';item.title='Kompanitë EU — klientë të drejtpërdrejtë';item.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M7 5V3h10v2M8 10h2M14 10h2M8 14h2M14 14h2"/></svg><span class="sb-lbl">Kompanitë EU</span><span class="sb-lbl pst-eu-nav-count" data-eu-nav-count>0</span>';item.onclick=open}var children=Array.prototype.slice.call(host.children),anchor=children.find(function(x){return /përfaqësime|perfaqesime/i.test(S(x.textContent))})||children.find(function(x){return /mundësitë|mundesite/i.test(S(x.textContent))});if(item.parentNode!==host){if(anchor&&anchor.nextSibling)host.insertBefore(item,anchor.nextSibling);else host.appendChild(item)}renderSidebar();return true}
 function renderSidebar(){var item=document.getElementById('pst-eu-companies-nav-v1');if(!item)return;var c=item.querySelector('[data-eu-nav-count]'),x=statusCounts();if(c)c.textContent=x.action||x.all;var p=document.getElementById('page-eu-companies');item.classList.toggle('active',!!(p&&p.classList.contains('active')&&p.style.display!=='none'))}
 function watchSidebar(){var host=document.getElementById('side-nav');if(!host||navObserver)return;try{navObserver=new MutationObserver(function(){if(!document.getElementById('pst-eu-companies-nav-v1'))setTimeout(ensureSidebar,0)});navObserver.observe(host,{childList:true})}catch(e){}}
 function normalizeDomain(v){return S(v).trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split(/[\/#:?]/)[0]}
-function openIntake(){var old=document.getElementById('pst-eu-intake-modal');if(old)old.remove();state.preflight=null;var m=document.createElement('div');m.id='pst-eu-intake-modal';m.className='pst-eu-modal';m.innerHTML='<div class="pst-eu-dialog"><div class="pst-eu-dialog-head"><div><h2>Kompani e re · EU Direct</h2><p>Preflight dhe përgatitje e kërkesës. Browser-i nuk shkruan direkt në PPPP.</p></div><button class="pst-eu-btn" data-close>✕</button></div><div class="pst-eu-dialog-body"><div class="pst-eu-form"><div class="pst-eu-field"><label>Kompania *</label><input id="eu-i-name"></div><div class="pst-eu-field"><label>Domain zyrtar *</label><input id="eu-i-domain" placeholder="company.com"></div><div class="pst-eu-field"><label>Vendi *</label><input id="eu-i-country"></div><div class="pst-eu-field"><label>Kodi</label><input id="eu-i-code" maxlength="2"></div><div class="pst-eu-field"><label>Kontakti</label><input id="eu-i-contact"></div><div class="pst-eu-field"><label>Email</label><input id="eu-i-email" type="email"></div><div class="pst-eu-field full"><label>Pse relevante / scope</label><textarea id="eu-i-why"></textarea></div><div class="pst-eu-field full"><label>Burimi publik</label><input id="eu-i-source" placeholder="https://..."></div><div class="pst-eu-preflight" data-preflight>Ende nuk është bërë preflight.</div></div></div><div class="pst-eu-dialog-foot"><button class="pst-eu-btn" data-check>Kontrollo duplikimin</button><button class="pst-eu-btn primary" data-copy>Përgatit kërkesën për PPPP</button></div></div>';document.body.appendChild(m);m.onclick=function(e){if(e.target===m||e.target.closest('[data-close]'))m.remove()};m.querySelector('[data-check]').onclick=preflightIntake;m.querySelector('[data-copy]').onclick=copyIntake}
+function openIntake(){var old=document.getElementById('pst-eu-intake-modal');if(old)old.remove();state.preflight=null;var m=document.createElement('div');m.id='pst-eu-intake-modal';m.className='pst-eu-modal';m.innerHTML='<div class="pst-eu-dialog"><div class="pst-eu-dialog-head"><div><h2>Kompani e re · Klient direkt</h2><p>Kontrolli paraprak dhe përgatitje e kërkesës. Shfletuesi nuk shkruan direkt në PPPP.</p></div><button class="pst-eu-btn" data-close>✕</button></div><div class="pst-eu-dialog-body"><div class="pst-eu-form"><div class="pst-eu-field"><label>Kompania *</label><input id="eu-i-name"></div><div class="pst-eu-field"><label>Domeni zyrtar *</label><input id="eu-i-domain" placeholder="company.com"></div><div class="pst-eu-field"><label>Vendi *</label><input id="eu-i-country"></div><div class="pst-eu-field"><label>Kodi</label><input id="eu-i-code" maxlength="2"></div><div class="pst-eu-field"><label>Kontakti</label><input id="eu-i-contact"></div><div class="pst-eu-field"><label>Email</label><input id="eu-i-email" type="email"></div><div class="pst-eu-field full"><label>Pse është relevante</label><textarea id="eu-i-why"></textarea></div><div class="pst-eu-field full"><label>Burimi publik</label><input id="eu-i-source" placeholder="https://..."></div><div class="pst-eu-preflight" data-preflight>Ende nuk është bërë kontrolli paraprak.</div></div></div><div class="pst-eu-dialog-foot"><button class="pst-eu-btn" data-check>Kontrollo duplikimin</button><button class="pst-eu-btn primary" data-copy>Përgatit kërkesën për PPPP</button></div></div>';document.body.appendChild(m);m.onclick=function(e){if(e.target===m||e.target.closest('[data-close]'))m.remove()};m.querySelector('[data-check]').onclick=preflightIntake;m.querySelector('[data-copy]').onclick=copyIntake}
 function intake(){function v(id){var e=document.getElementById(id);return e?S(e.value).trim():''}return{company_name:v('eu-i-name'),company_domain:normalizeDomain(v('eu-i-domain')),country:v('eu-i-country'),country_code:v('eu-i-code').toUpperCase(),contact_name:v('eu-i-contact'),contact_email:v('eu-i-email').toLowerCase(),why_relevant:v('eu-i-why'),source_url:v('eu-i-source')}}
-async function preflightIntake(){var p=intake(),box=document.querySelector('[data-preflight]');if(!p.company_name||!p.company_domain||!p.country){state.preflight={ok:false};box.textContent='Plotëso kompaninë, domain-in dhe vendin.';return}box.textContent='Duke kontrolluar identitetin në Kompanitë EU…';try{var rows=A(await window.supaFetch(VIEW+'?select=id,company_name,company_domain_normalized,contact_email,country,stage&archived_at=is.null&limit=500')),d=p.company_domain,em=N(p.contact_email),nm=N(p.company_name),m=rows.filter(function(r){return normalizeDomain(r.company_domain_normalized)===d||(em&&N(r.contact_email)===em)||(N(r.company_name)===nm&&N(r.country)===N(p.country))});state.preflight={ok:!m.length};box.innerHTML=m.length?'<b>⚠ U gjet përputhje:</b> '+m.map(function(x){return E(x.company_name)+' · '+E(x.stage)}).join('<br>'):'<b>✓ Pa duplikat brenda Kompanive EU.</b><br>Bridge-i canonical kontrollon edhe Material Trade, Mundësitë, Përfaqësimet dhe historikun outbound para regjistrimit.'}catch(e){state.preflight={ok:false};box.textContent='Kontrolli dështoi: '+S(e&&e.message||e)}}
-async function copyIntake(){var p=intake();if(!state.preflight||!state.preflight.ok){await preflightIntake();if(!state.preflight||!state.preflight.ok)return}var txt='Regjistroje në PPPP si Kompani EU / klient direkt. Kontrollo identitetin canonical dhe routing-un kundër Mundësive, Blerësve të çelikut, Përfaqësimeve dhe historikut outbound. Mos e nis komunikimin dhe mos krijo projekt automatikisht.\n\nKompania: '+p.company_name+'\nDomain: '+p.company_domain+'\nVendi: '+p.country+' ('+(p.country_code||'—')+')\nPse relevante: '+(p.why_relevant||'—')+'\nKontakt: '+(p.contact_name||'—')+' | '+(p.contact_email||'—')+'\nBurimi: '+(p.source_url||'—');try{await navigator.clipboard.writeText(txt);window.alert('Kërkesa u kopjua. Ngjite në ChatGPT; regjistrimi kalon përmes bridge-it canonical të PPPP.')}catch(e){window.prompt('Kopjo kërkesën për PPPP:',txt)}}
-function open(){var p=ensurePage();hideOthers(p);p.style.display='block';p.classList.add('active');setRoute(true);ensureSidebar();renderSidebar();try{window.scrollTo(0,0)}catch(e){}load(true);return true}
+async function preflightIntake(){var p=intake(),box=document.querySelector('[data-preflight]');if(!p.company_name||!p.company_domain||!p.country){state.preflight={ok:false};box.textContent='Plotëso kompaninë, domenin dhe vendin.';return}box.textContent='Duke kontrolluar identitetin në Kompanitë EU…';try{var rows=A(await window.supaFetch(VIEW+'?select=id,company_name,company_domain_normalized,contact_email,country,stage&archived_at=is.null&limit=500')),d=p.company_domain,em=N(p.contact_email),nm=N(p.company_name),m=rows.filter(function(r){return normalizeDomain(r.company_domain_normalized)===d||(em&&N(r.contact_email)===em)||(N(r.company_name)===nm&&N(r.country)===N(p.country))});state.preflight={ok:!m.length};box.innerHTML=m.length?'<b>⚠ U gjet përputhje:</b> '+m.map(function(x){return E(x.company_name)+' · '+E(stageLabel(x.stage))}).join('<br>'):'<b>✓ Pa duplikat brenda Kompanive EU.</b><br>PPPP kontrollon edhe Blerësit e çelikut, Mundësitë, Përfaqësimet dhe historikun e kontaktimit para regjistrimit.'}catch(e){state.preflight={ok:false};box.textContent='Kontrolli dështoi: '+S(e&&e.message||e)}}
+async function copyIntake(){var p=intake();if(!state.preflight||!state.preflight.ok){await preflightIntake();if(!state.preflight||!state.preflight.ok)return}var txt='Regjistroje në PPPP si Kompani EU / klient direkt. Kontrollo identitetin kanonik dhe përkatësinë e modulit kundër Mundësive, Blerësve të çelikut, Përfaqësimeve dhe historikut të kontaktimit. Mos e nis komunikimin dhe mos krijo projekt automatikisht.\n\nKompania: '+p.company_name+'\nDomeni: '+p.company_domain+'\nVendi: '+p.country+' ('+(p.country_code||'—')+')\nPse relevante: '+(p.why_relevant||'—')+'\nKontakt: '+(p.contact_name||'—')+' | '+(p.contact_email||'—')+'\nBurimi: '+(p.source_url||'—');try{await navigator.clipboard.writeText(txt);window.alert('Kërkesa u kopjua. Ngjite në ChatGPT; regjistrimi kalon përmes rrugës së kontrolluar të PPPP.')}catch(e){window.prompt('Kopjo kërkesën për PPPP:',txt)}}
+function open(){var p=ensurePage();hideOthers(p);p.style.display='block';p.classList.add('active');setRoute(true);ensureSidebar();renderSidebar();try{window.scrollTo(0,0)}catch(e){}load(state.loaded&&Date.now()-state.lastLoadedAt>=300000);return true}
+
 function back(){setRoute(false);var p=document.getElementById('page-eu-companies');if(p){p.classList.remove('active');p.style.display='none'}renderSidebar();try{var n=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(n&&typeof n.openHome==='function'){n.openHome();return}}catch(e){}try{if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('home')}catch(e){}}
 function boot(){enhanceCss();ensurePage();ensureHome();ensureSidebar();watchSidebar();if(location.hash==='#kompanite-eu')open();else load(false)}
 document.addEventListener('pst:native-home-ready',function(){setTimeout(function(){ensureHome();ensureSidebar()},0)});
 document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(function(){ensureHome();ensureSidebar()},0)});
 document.addEventListener('pst:modules-ready',function(){setTimeout(boot,0)},{once:true});
+window.addEventListener('focus',syncOnReturn);
+document.addEventListener('visibilitychange',syncOnReturn);
 window.addEventListener('popstate',function(){if(location.hash==='#kompanite-eu')open();else renderSidebar()});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
-window.PSTEUCompaniesV1={version:'v2-operational-workbench',open:open,refresh:function(){return load(true)},newCompany:openIntake,snapshot:function(){return{rows:state.rows.slice(),selected:state.selected,error:state.error,loaded:state.loaded,filter:state.filter,stage:state.stage}}};
+window.PSTEUCompaniesV1={version:'v3-albanian-decision-workbench',open:open,refresh:function(){return load(true)},newCompany:openIntake,snapshot:function(){return{rows:state.rows.slice(),selected:state.selected,error:state.error,loaded:state.loaded,filter:state.filter,stage:state.stage}}};
 })();

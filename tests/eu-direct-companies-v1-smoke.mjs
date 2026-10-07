@@ -19,10 +19,10 @@ assert.match(ui,/data-eu-stage/,'EU Direct stage pipeline missing');
 assert.match(ui,/Për veprim/,'EU Direct action queue missing');
 assert.match(ui,/Hap draftin/,'existing Gmail draft action missing');
 assert.match(ui,/Hap bisedën/,'existing Gmail thread action missing');
-assert.match(ui,/Readiness/,'company intelligence readiness surface missing');
+assert.match(ui,/Gatishmëria/,'company intelligence readiness surface missing');
 assert.match(ui,/Kontrollo duplikimin/,'new-company identity preflight missing');
 assert.match(ui,/Përgatit kërkesën për PPPP/,'controlled new-target handoff missing');
-assert.match(ui,/v2-operational-workbench/,'EU Direct workbench version marker missing');
+assert.match(ui,/v3-albanian-decision-workbench/,'EU Direct workbench version marker missing');
 assert.doesNotMatch(ui,/sendMail|messages\/send|dërgo email|create_project|insert\s+into/i,'EU Companies UI must not send email or create business records');
 
 const loads=(bootstrap.match(/pristeel-eu-companies-v1\.js/g)||[]).length;
@@ -60,3 +60,5 @@ assert.match(security,/security invoker/i,'EU Direct read RPC must run with call
 assert.match(security,/revoke execute .*pppp_chatgpt_bridge_manifest_v28\(\).* authenticated/i,'direct authenticated execution of manifest v28 must stay revoked');
 
 console.log('EU Direct Companies v1 smoke: OK');
+
+await import('./eu-direct-decision-workbench-smoke.mjs');
