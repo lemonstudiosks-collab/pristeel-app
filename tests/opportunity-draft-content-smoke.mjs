@@ -123,3 +123,20 @@ for(const [i,country] of ['DE','RS','GB'].entries()){
   }
  }
  console.log('Formal English greeting for GC, producer and manually selected templates: OK');
+
+ // TED notice IDs remain source metadata/body context, never an automatically prefixed subject.
+ for(const country of ['DE','RS','GB'])for(const category of ['gc_epc','steel_fabricator']){
+  const action={route:category==='gc_epc'?'TED_GC':'TED_PRODUCER',target_company:'Fixture'};
+  const tender={title:'New community building',publication_no:'689076-2026',winner:{name:'Fixture',country},winner_role_v2:{category}};
+  const draft=buildTedDraftContent(action,tender,{email:'info@fixture.example'});
+  assert(draft.subject.startsWith('New community building'));
+  assert.doesNotMatch(draft.subject,/689076-2026/);
+  assert.equal(buildTedDraftContent(action,{...tender,publication_no:'687890-2026'},{email:'info@fixture.example'}).subject,draft.subject);
+  const longTitle='Renovation of the community building with new windows and complete facade insulation across the entire property and additional construction services';
+  const long=buildTedDraftContent(action,{...tender,title:longTitle},{email:'info@fixture.example'});
+  assert(long.subject.startsWith('Renovation of the community building'));
+  assert.doesNotMatch(long.subject,/689076-2026/);
+  const bare=buildTedDraftContent(action,{...tender,title:'',publication_no:'689076-2026'},{email:'info@fixture.example'});
+  assert.doesNotMatch(bare.subject,/689076-2026/);
+ }
+ console.log('Descriptive subjects without TED notice prefixes, including long-title fallback: OK');
