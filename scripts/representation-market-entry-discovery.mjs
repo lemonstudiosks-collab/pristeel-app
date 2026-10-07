@@ -6,16 +6,16 @@ import {resolveSupabaseWorkflowAccess} from './supabase-workflow-auth.mjs';
 const MODE=String(process.env.DISCOVERY_MODE||process.env.SYNC_MODE||'preview').toLowerCase();
 const LIMIT=Math.min(12,Math.max(1,Number(process.env.REPRESENTATION_DISCOVERY_LIMIT||10)));
 const NEWS_RSS='https://news.google.com/rss/search';
-const QUERY='(Kosovo OR "Western Balkans") ("US company" OR American) (expands OR investment OR distributor OR "local partner") when:7d';
+const QUERY='(Kosovo OR "Western Balkans") (manufacturer OR industrial OR equipment OR energy OR engineering) ("local partner" OR distributor OR representative OR "expands into" OR "market entry") when:7d';
 const clean=v=>String(v??'').replace(/\s+/g,' ').trim();
 const decode=v=>clean(String(v??'').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,'$1').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>'));
 
 export function extractCompanyName(title){
   var t=clean(title).replace(/\s+[|]\s+.*$/,'');
-  var m=t.match(/^(.{2,90}?)\s+(?:announces?|expands?|enters?|launches?|invests?|seeks?|partners?|targets?|plans?)\b/i);
-  if(!m)m=t.match(/^([^:–—-]{2,70})\s*[:–—-]\s*/);
+  var m=t.match(/^(.{2,90}?)\s+(?:announces?|expand(?:s|ing)?|enter(?:s|ing)?|launch(?:es|ing)?|invest(?:s|ing)?|seek(?:s|ing)?|partner(?:s|ing)?|target(?:s|ing)?|plan(?:s|ning)?|appoint(?:s|ing)?)\b/i);
+
   var name=clean(m&&m[1]);
-  if(!name||/^(kosovo|western balkans|business|company|market|report|news)$/i.test(name))return null;
+  if(!name||/(kosovo|western balkans|serbia|albania|troops|administration|minister|president|government|maliqi|report|news)/i.test(name))return null;
   return name.replace(/^(?:US|U\.S\.)\s+/i,'').slice(0,120)||null;
 }
 
@@ -28,6 +28,14 @@ export function parseNewsRss(xml){
   return rows;
 }
 
+export function isRepresentationBusinessSignal(title,company){
+  const text=clean(title).toLowerCase();
+  return !!company && !/troops|military withdrawal|election|president|administration|parliament|politic|geopolitic/.test(text)
+  && /kosov|western balkan/.test(text)
+  && /expand(s|ing)? into|enter(s|ing)?|seeks? (a |local |new )?(partner|distributor|representative)|seeking (a |local )?(partner|distributor)|distribution (agreement|partner)|appoints?.*(distributor|representative)|market entry|manufactur.*invest|invest.*manufactur/.test(text)
+  && (/manufactur|equipment|energy|steel|industrial|engineering|technology|electric|machiner|solar|battery|medical|logistic|gmbh|corporation|\binc\b|\bltd\b/.test(text)||/distributor|representative|distribution agreement/.test(text));
+}
+
 export function normalizeArticles(payload,limit=LIMIT){
   const rows=Array.isArray(payload)?payload:Array.isArray(payload?.articles)?payload.articles:[];
   const seen=new Set(),out=[];
@@ -36,12 +44,15 @@ export function normalizeArticles(payload,limit=LIMIT){
     if(!url||!title||seen.has(url))continue;
     seen.add(url);
     const company=extractCompanyName(title),text=title.toLowerCase();
+    if(!isRepresentationBusinessSignal(title,company))continue;
+    const published=article?.published?Date.parse(article.published):null;
+    if(article?.published&&(!Number.isFinite(published)||published<Date.now()-30*86400000))continue;
     let score=55;if(company)score+=10;if(/kosovo/.test(text))score+=12;if(/market entry|seeking distributor|local partner|expands into|investment/.test(text))score+=10;
     out.push({
       source_key:'news-rss:'+crypto.createHash('sha256').update(url).digest('hex').slice(0,32),
-      source_name:clean(article?.source)||'Public news RSS',source_url:url,title,company_name:company,company_domain:null,country_code:'US',score:Math.min(100,score),
-      reasons:['Sinjal publik për Kosovë/Ballkanin Perëndimor','Kërkim i fokusuar te kompani amerikane','Kërkon verifikim njerëzor të kompanisë dhe domenit'],
-      evidence:{query_focus:'US companies',published_at:clean(article?.published)||null,automatic_outreach:false}
+      source_name:clean(article?.source)||'Public news RSS',source_url:url,title,company_name:company,company_domain:null,country_code:/^[A-Z]{2}$/.test(clean(article?.company_country_code))?clean(article.company_country_code):null,score:Math.min(100,score),
+      reasons:['Sinjal publik për Kosovë/Ballkanin Perëndimor','Sinjal konkret për partner lokal / përfaqësim','Kërkon verifikim njerëzor të kompanisë dhe domenit'],
+      evidence:{query_focus:'Manufacturer / specialist market entry',market_entry_signal:true,company_identity_status:'requires_verification',published_at:clean(article?.published)||null,automatic_outreach:false}
     });
     if(out.length>=limit)break;
   }

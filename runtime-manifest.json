@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "504ecae75e5f5ab57ee9d1ac22a110aaaeacd210"
+    "bootstrapGitBlobSha": "7475b54e00cb3f23ab7dd12e42410e9aa3aa8200"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -360,7 +360,7 @@
       "module": "pristeel-representation-discovery-v1.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Loaded after the Representation targets and opportunities owners. Provides only the isolated human-review discovery inbox; acceptance can create the matching Representation record but never a Project, Partner, Contact, Supplier, draft or email."
+      "condition": "Loaded after the Representation targets and opportunities owners. One cached, bounded security-invoker inbox uses live technical JV relevance, current canonical notice/deadline, ignored/terminal exclusions and identity deduplication. News must establish a named company and concrete market-entry/distribution signal. Acceptance rechecks eligibility and remains human approved; no automatic Project, Partner, Contact or outbound."
     }
   ],
   "loadOrderConstraints": [
@@ -494,7 +494,8 @@
     "2026-09-25: Sales Engine V3 adds a unified low-egress commercial workbench; cold draft generation remains human-selected and Supplier RFQs require Supplier Gate.",
     "2026-09-25: Final Commercial Engine V3 hardening closes the no-BOM Supplier Gate bypass, keeps Material Trade supplier sourcing read-only until client signal, and hardens Opportunity DB access.",
     "2026-10-06: Opportunities shows one stage-specific primary action and a native secondary-actions menu; RFQ handoff appears only for Arianit after project linkage and an explicit supplier shortlist. Existing dossier, draft, task and protected-action owners remain authoritative. Only RFQ Sourcing and Finalizer cache identities change in the 166-module bootstrap; order is preserved.",
-    "2026-10-06: Steel Buyers uses approved EN/DE templates, Gmail signature fallback and duplicate-draft reuse. Existing daily discovery runs bounded official-source contact research through the controlled command bridge and prepares at most two qualified guarded drafts; it never sends email."
+    "2026-10-06: Steel Buyers uses approved EN/DE templates, Gmail signature fallback and duplicate-draft reuse. Existing daily discovery runs bounded official-source contact research through the controlled command bridge and prepares at most two qualified guarded drafts; it never sends email.",
+    "2026-10-07: Representation discovery removes political news, individual consultancy, routine supplies, ignored/terminal tenders, expired/unknown/under-seven-day deadlines and superseded notices from the review surface. Existing history and human decisions are preserved; the existing daily refresh and weekly free news worker apply the same relevance gates."
   ],
   "dedicatedWorkspaces": [
     {

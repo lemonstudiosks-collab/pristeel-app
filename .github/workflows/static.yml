@@ -53,6 +53,8 @@ jobs:
               sys.exit(1)
           print(f'Te {len(scripts)} blloqet inline OK')
           EOF
+      - name: Verify Representation discovery relevance
+        run: node tests/representation-discovery-relevance-v2-smoke.mjs
       - name: Kontrollo balancen e <div>
         run: |
           python3 - <<'EOF'

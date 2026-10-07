@@ -16,6 +16,8 @@ on:
       - 'pristeel-representation-discovery-v1.js'
       - 'supabase/migrations/20260928141037_representation_discovery_automation_v1.sql'
       - 'tests/representation-discovery-automation-smoke.mjs'
+      - 'tests/representation-discovery-relevance-v2-smoke.mjs'
+      - 'supabase/migrations/20261007063000_representation_discovery_relevance_v2.sql'
       - '.github/workflows/representation-market-entry-discovery.yml'
   schedule:
     - cron: '20 6 * * 1'
@@ -46,7 +48,7 @@ jobs:
       - name: Install test dependency
         run: npm install --ignore-scripts --no-package-lock
       - name: Verify isolated discovery contract
-        run: node --check scripts/representation-market-entry-discovery.mjs && node tests/representation-discovery-automation-smoke.mjs
+        run: node --check scripts/representation-market-entry-discovery.mjs && node tests/representation-discovery-automation-smoke.mjs && node tests/representation-discovery-relevance-v2-smoke.mjs
       - name: Discover public market-entry signals
         if: github.event_name != 'pull_request'
         run: node scripts/representation-market-entry-discovery.mjs

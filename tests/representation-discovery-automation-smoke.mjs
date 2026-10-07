@@ -16,7 +16,7 @@ assert.match(migration,/WORLD_BANK/);
 assert.match(migration,/MCA_KOSOVO/);
 assert.match(migration,/operator_acceptance_required_for_partner_research/);
 assert.doesNotMatch(migration,/insert\s+into\s+public\.(projects|partners|contacts|suppliers|outreach_contacts|email_drafts)/i);
-assert.match(ui,/status=in\.\(new,review\)/);
+assert.match(ui,/rpc\/pppp_representation_discovery_inbox_v2/);
 assert.match(ui,/rpc\/pppp_accept_representation_discovery_candidate_v1/);
 assert.match(ui,/rpc\/pppp_review_representation_discovery_candidate_v1/);
 assert.doesNotMatch(ui,/\.send\(|gmail|email_drafts/i);
@@ -33,14 +33,14 @@ assert.equal(rss[0].source,'Example News');
 assert.match(newsRssUrl(),/news\.google\.com\/rss\/search/);
 
 const dom=new JSDOM('<!doctype html><html><head></head><body><main id="page-representations"><div class="pst-rep-page"><div data-rep-target-view></div><div data-rep-switch><button data-rep-mode="opportunities">Projektet</button></div><div data-rep-opportunity-view></div></div></main></body></html>',{url:'https://example.test/'});
-const calls=[];dom.window.supaFetch=async(path,method,body)=>{calls.push({path,method,body});return path.startsWith('pppp_representation_discovery_candidates_v1?')?[{id:'c1',lane:'market_entry',candidate_kind:'company',title:'Acme',score:80,status:'new',routing_conflicts:[]}]:{ok:true}};
+const calls=[];dom.window.supaFetch=async(path,method,body)=>{calls.push({path,method,body});return path==='rpc/pppp_representation_discovery_inbox_v2'?{rows:[{id:'c1',lane:'market_entry',candidate_kind:'company',title:'Acme',score:80,status:'new',routing_conflicts:[]}]}:{ok:true}};
 dom.window.PSTRepresentationsV1={open(){},refresh(){}};dom.window.confirm=()=>false;
 vm.runInContext(ui,vm.createContext(dom.window));
 await new Promise(r=>setTimeout(r,20));
 dom.window.PSTRepresentationDiscoveryV1.open();await new Promise(r=>setTimeout(r,20));
 assert.ok(dom.window.document.querySelector('[data-rep-mode="discovery"]'));
 assert.match(dom.window.document.querySelector('[data-rep-discovery-view]').textContent,/Kompani për përfaqësi/);
-assert.match(dom.window.document.querySelector('[data-rep-discovery-view]').textContent,/Partnerë për tenderë \/ JV/);
-assert.equal(calls.filter(x=>x.path.startsWith('pppp_representation_discovery_candidates_v1?')).length,1);
+assert.match(dom.window.document.querySelector('[data-rep-discovery-view]').textContent,/Tenderë \/ projekte për JV/);
+assert.equal(calls.filter(x=>x.path==='rpc/pppp_representation_discovery_inbox_v2').length,1);
 
 console.log('Representation discovery automation smoke: PASS');
