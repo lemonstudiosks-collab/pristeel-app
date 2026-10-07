@@ -7,7 +7,7 @@ const w=dom.window,d=w.document,requests=[],writes=[];
 w.scrollTo=()=>{};
 w.pstWorkspaceGo=()=>{d.querySelectorAll('.page').forEach(p=>{p.classList.toggle('active',p.id==='page-workspace-home');p.style.display=p.id==='page-workspace-home'?'block':'none'});};
 w.supaFetch=async (p,method)=>{
- requests.push(p);if(method&&method!=='GET'){writes.push({p,method});throw Error('Unexpected write');}
+ requests.push(p);if(p==='rpc/pppp_representation_discovery_inbox_v2')return {rows:[]};if(method&&method!=='GET'){writes.push({p,method});throw Error('Unexpected write');}
  if(p.startsWith('pppp_representation_opportunity_targets_v1'))return [{opportunity_id:'opp1',target_id:'epc1',candidate_role:'lead_epc_candidate',company_fit_status:'verified'}];
  if(p.startsWith('pppp_representation_opportunities_v1'))return [{id:'opp1',source_key:'test:project',project_name:'Test JV',status:'pipeline',verification_status:'verified',procurement_stage:'Tender open'}];
  if(p.startsWith('pppp_representation_targets_v1'))return [{id:'rep1',target_type:'representation',source_key:'rep:test',company_name:'Test Manufacturer',country:'DE',stage:'found',sector:'Industry',capital_fit:'good',contact_email:'test@example.test'},{id:'epc1',target_type:'lead_epc_candidate',company_name:'Test EPC',country:'EU',stage:'found'}];
