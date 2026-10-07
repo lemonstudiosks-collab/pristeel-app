@@ -1,0 +1,17 @@
+name: Druseidt vertical smoke
+on:
+  pull_request:
+    paths: ['druseidt/**', 'supabase/functions/pppp-druseidt-commercial/**', 'supabase/migrations/*druseidt*', 'tests/druseidt-commercial-smoke.mjs', '.github/workflows/druseidt-vertical-smoke.yml']
+  push:
+    branches: [main]
+    paths: ['druseidt/**', 'supabase/functions/pppp-druseidt-commercial/**', 'supabase/migrations/*druseidt*', 'tests/druseidt-commercial-smoke.mjs', '.github/workflows/druseidt-vertical-smoke.yml']
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check druseidt/workspace.js
+      - run: node tests/druseidt-commercial-smoke.mjs

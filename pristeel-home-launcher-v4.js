@@ -121,6 +121,7 @@ function openDaily(){
 }
 function route(k){
  k=S(k).toLowerCase();
+ if(k==='druseidt'){location.assign(new URL('druseidt/',location.href).href);return true;}
  if(k==='spie'){location.assign(new URL('spie/',location.href).href);return true;}
  if(k==='daily')return openDaily();
  // Early Home is usable while the ordered module owners are still loading.
@@ -461,6 +462,7 @@ function html(){
    +mainCard('buyers','Blerësit e çelikut','Blerës materiali, RFQ dhe furnizim çeliku.')
   +'</section>'
   +'<section class="phl-secondary"><h2>Module dhe mjete tjera</h2><div>'
+   +smallCard('druseidt','Druseidt','Komponentë elektrikë, projekte, draft-e dhe RFQ.')
    +smallCard('spie','SPIE Workspace','TenneT, dokumente dhe komunikimi.')
    +smallCard('projects','Projektet','Projektet dhe gjendja e tyre.')
    +smallCard('partners','Partnerët','Partnerë, furnitorë dhe kontakte.')

@@ -608,7 +608,7 @@ function renderRepresentationDetail(host){
  var rels=relationshipsFor(r.id),warn=warnings(r),products=A(r.products),sourceLink=r.source_url||r.company_website||'',contactLink=r.contact_source||'',
      model=modelLabel(r.target_model||'unknown'),gmailError=state.draftResult[S(r.id)]&&state.draftResult[S(r.id)].error?state.draftResult[S(r.id)].error:'';
 
- h.innerHTML='<div class="pst-dossier">'
+ h.innerHTML=(S(r.company_domain_normalized||r.company_domain).toLowerCase()==='druseidt.de'?'<p><a class="pst-rep-btn primary" href="druseidt/">Hap modulin komercial Druseidt →</a></p>':'')+'<div class="pst-dossier">'
   +'<header class="pst-dossier-hero"><div><div class="pst-dossier-eye">PËRFAQËSI NË KOSOVË · PROFIL I KOMPANISË</div><h2>'+E(r.company_name)+'</h2><div class="pst-dossier-meta">'+E([r.headquarters,r.country,'Target për përfaqësim'].filter(Boolean).join(' · '))+(r.company_website?' · <a href="'+E(r.company_website)+'" target="_blank" rel="noopener">'+E(r.company_domain_normalized||r.company_domain||'Faqja e internetit')+' ↗</a>':'')+'</div><div class="pst-dossier-badges"><span class="pst-rep-chip">'+E(stageLabel(r.stage))+'</span><span class="pst-rep-chip">'+E(model)+'</span><span class="pst-rep-chip neutral">'+E(kosovoLabel(r.kosovo_presence))+'</span></div></div><div class="pst-dossier-actions">'+draftButton(r)+'<button class="pst-rep-btn" data-rep-act="edit">✎ Edito kompaninë</button><button class="pst-rep-btn danger" data-rep-act="archive">▢ Arkivo / Mbylle</button></div></header>'
   +(warn.length?'<div class="pst-rep-warn"><b>Kërkon vëmendje:</b> '+E(warn.join(' · '))+'</div>':'')
   +'<div class="pst-dossier-overview">'
@@ -937,6 +937,7 @@ window.addEventListener('popstate',function(){if(location.hash==='#perfaqesime')
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
 window.PSTRepresentationsV1={open:open,showList:showList,openTarget:function(id,returnTo){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r){toast('Kompania nuk u gjet në Përfaqësime.',true);return false}state.inlineHost=null;state.inlineOpportunityId='';state.selected=S(id);state.returnTo=S(returnTo||'');state.view='profile';render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return true},renderTargetInto:function(id,host,opportunityId){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r||!host)return false;state.selected=S(id);state.inlineHost=host;state.inlineOpportunityId=S(opportunityId||'');renderDetail(host);host.onclick=detailClick;host.onchange=detailChange;return true},clearInlineHost:function(){state.inlineHost=null;state.inlineOpportunityId=''},refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),relationships:state.relationships.slice(),opportunities:state.opportunities.slice(),opportunityLinks:state.opportunityLinks.slice(),selected:state.selected,view:state.view,returnTo:state.returnTo,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
 })();
+
 
 
 
