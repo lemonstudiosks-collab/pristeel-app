@@ -228,19 +228,19 @@
     },
     {
       "path": "spie/index.html",
-      "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
+      "reason": "SPIE operational workspace: existing PPPP session, canonical evidence projections, and human-approved command-sheet writes only."
     },
     {
       "path": "spie/workspace.css",
-      "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
+      "reason": "SPIE operational workspace: existing PPPP session, canonical evidence projections, and human-approved command-sheet writes only."
     },
     {
       "path": "spie/workspace.js",
-      "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
+      "reason": "SPIE operational workspace: existing PPPP session, canonical evidence projections, and human-approved command-sheet writes only."
     },
     {
       "path": "spie/data.mjs",
-      "reason": "Dedicated SPIE read-only workspace at /spie; shares canonical PPPP identity and existing session without loading global presentation owners."
+      "reason": "SPIE operational workspace: existing PPPP session, canonical evidence projections, and human-approved command-sheet writes only."
     },
     {
       "path": "pristeel-spie-standard.css",
@@ -265,6 +265,14 @@
     {
       "path": "druseidt/commercial.mjs",
       "reason": "Integrated Druseidt commercial vertical sharing PPPP session, procurement and Gmail approval gates."
+    },
+    {
+      "path": "spie/operations.mjs",
+      "reason": "SPIE operational workspace: existing PPPP session, canonical evidence projections, and human-approved command-sheet writes only."
+    },
+    {
+      "path": "spie/bridge.mjs",
+      "reason": "SPIE operational workspace: existing PPPP session, canonical evidence projections, and human-approved command-sheet writes only."
     }
   ],
   "compatibilityPublicAssets": [
