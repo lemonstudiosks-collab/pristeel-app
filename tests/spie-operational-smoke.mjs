@@ -28,8 +28,8 @@ test('all new reads are bounded, scoped, cached GET requests',async()=>{
  const token='x.'+Buffer.from(JSON.stringify({ref:D.PROJECT_REF,role:'authenticated',exp:Date.now()/1000+3600})).toString('base64url')+'.x';
  globalThis.localStorage={getItem:k=>k==='pristeel_session'?JSON.stringify({access_token:token,expires_at:Date.now()+3600000}):null};
  D.invalidate();const calls=[];globalThis.fetch=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>[]};};
- await D.operational();await D.operational();assert.equal(calls.length,5);
- for(const c of calls){const u=new URL(c.url);assert.equal(c.options.method,'GET');assert.equal(u.searchParams.get('project_id'),'eq.'+pid);assert(Number(u.searchParams.get('limit'))<=160);assert(!u.searchParams.get('select').includes('extracted_text'));}
+ await D.operational();await D.operational();assert.equal(calls.length,6);
+ for(const c of calls){const u=new URL(c.url);assert.equal(c.options.method,'GET');if(u.searchParams.get('project_id')==='is.null')assert.equal(u.searchParams.get('suggested_project_id'),'eq.'+pid);else assert.equal(u.searchParams.get('project_id'),'eq.'+pid);assert(Number(u.searchParams.get('limit'))<=160);assert(!u.searchParams.get('select').includes('extracted_text'));}
 });
 test('optional Gmail reads require an existing Google session and never request consent',()=>{globalThis.localStorage={getItem:()=>null};assert.equal(D.googleSession(),null);});
 test('DDP workbook without Angebot in its filename remains an offer, distinct from terms',()=>{
@@ -43,4 +43,8 @@ test('Google-only drafts are never treated as sent offers; SENT metadata supplie
  let sent=false;const calls=[];globalThis.fetch=async(url,options)=>{calls.push({url,method:options.method});const u=new URL(url);let body=[];if(u.hostname==='gmail.googleapis.com')body=u.pathname.endsWith('/messages')?{messages:[{id:'abcdef',threadId:'abcdef'}]}:{id:'abcdef',threadId:'abcdef',labelIds:sent?['SENT']:['DRAFT'],internalDate:String(Date.now()),snippet:'Our offer',payload:{headers:[{name:'From',value:'arianit@prissteel.com'},{name:'To',value:'laura@spie.com'},{name:'Subject',value:'PRISTEEL Angebot TenneT BUNT DDP'}],parts:[{filename:'PRISTEEL_TenneT_BUNT_DDP_FINAL.xlsx'}]}};return {ok:true,json:async()=>body};};
  D.invalidate();let b=await D.operational();assert.equal(D.operationalModel(data,b).offers.length,0);
  sent=true;D.invalidate();b=await D.operational();const offers=D.operationalModel(data,b).offers;assert.equal(offers.length,1);assert.equal(offers[0].sent,true);assert.equal(offers[0].source,'Gmail · jashtë regjistrit PPPP');assert(calls.every(c=>c.method==='GET'));
+});
+test('suggested quotations remain review-only and never become assigned offers or phase evidence',()=>{
+ const m=mail('aaa','arianit@prissteel.com','PRISTEEL Angebot TenneT BUNT DDP','2026-09-25',{project_id:null,suggested_project_id:pid,association_pending:true,has_attachments:true});
+ const result=D.operationalModel(data,bundle([m]));assert.equal(result.offers.length,0);assert.equal(result.reviewOffers.length,1);assert.equal(result.trusted.length,0);assert.equal(result.timeline.length,0);assert(result.reviewOffers[0].state.includes('shqyrtim'));
 });
