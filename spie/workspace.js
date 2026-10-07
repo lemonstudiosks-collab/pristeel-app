@@ -297,7 +297,7 @@ function renderOverview(data,model) {
     +section('Afati dhe pikat e hapura',currentDeadlines(model)+(model.sample?row('Ende kërkon provë','Porosia zyrtare, fillimi real i prodhimit, përfundimi i kontrollit dhe dërgimi i mostrave.'):''))
     +section('Dokumentet e projektit',fileRows(model.files.filter(f=>D.metadata(f).category==='Technical'||/3207|stückliste|werkstattzeichnung/i.test(f.title||'')).sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at))),true),'files')+'</div></div>'
     +section('Rrjedha e fundit e projektit',workflowRows(model,true),'projects')
-    +(stage==='Samples'&&!/^(sample|samples)$/i.test(p.pipeline_stage)?'<p class="metrics-note">Faza e punës mbështetet në komunikimin e mostrave. Faza e regjistruar në PPPP: '+escape(label(p.pipeline_stage))+'. Kërkon harmonizim të regjistrit; nuk është ndryshuar automatikisht.</p>':'')
+    +(stage==='Samples'&&!/^(sample|samples)$/i.test(p.pipeline_stage)?'<p class="metrics-note">Mostrat janë faza e punës e mbështetur nga komunikimi dhe konteksti i projektit. Faza komerciale e regjistruar në PPPP: '+escape(label(p.pipeline_stage))+'.</p>':'')
     +footer();
 }
 async function renderOffers() {
