@@ -105,3 +105,21 @@ for(const [i,country] of ['DE','RS','GB'].entries()){
  for(const paragraph of approvedBodies[i].split('\\n\\n').slice(2,6))assert(gc.body.includes(paragraph),'GC commercial paragraph must match approved body1 exactly');
  assert.doesNotMatch(gc.body,/externe Fertigungskapazität einsetzen|external fabrication capacity/);
 }
+
+ // Formal English greeting shared by both approved templates, including manual role selection.
+ for(const role of ['gc_epc','steel_fabricator','other_unclear']){
+  for(const selected of role==='other_unclear'?['gc_epc','steel_fabricator']:['']){
+   const action={route:'TED_GENERAL',target_company:'English Company',payload:{manual_draft_template:selected}};
+   const tender={title:'United Kingdom – Construction work – Published project',winner:{name:'English Company',country:'GB'},winner_role_v2:{category:role}};
+   for(const recipient of [{email:'info@company.example',name:'English Company'},{email:'procurement@company.example',purpose:'procurement'}]){
+    const draft=buildTedDraftContent(action,tender,recipient);
+    assert(draft.plain_body.startsWith('Dear Sir or Madam,'));
+    assert.match(draft.html_body,/Dear Sir or Madam,/);
+    assert.doesNotMatch(draft.plain_body,/^Hello/m);
+   }
+   const named=buildTedDraftContent(action,tender,{email:'alex.smith@company.example',name:'Alex Smith',job_title:'Project Manager'});
+   assert(named.plain_body.startsWith('Dear Alex Smith,'));
+   assert.match(named.html_body,/Dear Alex Smith,/);
+  }
+ }
+ console.log('Formal English greeting for GC, producer and manually selected templates: OK');

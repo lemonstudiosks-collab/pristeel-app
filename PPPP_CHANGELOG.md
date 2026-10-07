@@ -1,3 +1,9 @@
+## 2026-10-07 - Keep draft creation in PPPP and use the approved formal English greeting
+
+- Remove automatic Gmail-tab navigation after Opportunity draft creation. Keep the success confirmation and existing draft-ready event in PPPP.
+- Use the approved `Dear Sir or Madam,` for general English recipients; named contacts retain `Dear <name>,`. German/BCS greetings and the approved commercial text remain unchanged.
+- Verify mocked preview/cancel/approval creates no browser tabs, formal English plain/HTML copy for both approved templates and unresolved-role selections, shared recipient gates and bootstrap integrity. No real Gmail drafts or emails created during verification.
+
 ## 2026-10-06 - Shared manual draft review across TED company assessments
 
 - Separate source-backed manual draft review from automatic assessment eligibility. Ready/contact-research cases may proceed to the existing recipient check without upgrading company identity, role or send eligibility.
@@ -710,4 +716,3 @@ Automation may read, classify, reconcile, calculate, compare and prepare drafts.
 ## 2026-10-05 · SPIE Workspace Phase 1
 
 Added the same-origin `spie/` read-only workspace for canonical TenneT project c937aea1-af5e-4807-ae1e-e36864e46794, with executive Overview, Projects, Files, Emails, Finance and Partners. Home includes the entry shortcut; the production artifact includes the dedicated assets. The workspace uses the authenticated bounded project snapshot and lazy project-filtered metadata without global bootstrap changes, new storage, migrations, polling or business writes. Samples is operator-declared and the canonical pricing discrepancy is visible. Unknown health/revisions/importer and unverified financial/contract state are preserved. Seven focused tests plus desktop/mobile browser acceptance passed with fixtures and zero real Supabase browser calls. Documentation: docs/SPIE_WORKSPACE_PHASE1.md.
-
