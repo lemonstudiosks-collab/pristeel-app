@@ -135,7 +135,8 @@ Deno.serve(async(req:Request)=>{
   const history=await db.from("pppp_outbound_queue_v1").select("id,status,gmail_draft_id,gmail_thread_id,tender_watch_id,project_key").eq("recipient_email",recipient).in("status",["draft_ready","sent","replied","approved","planned"]).limit(20);
   if(history.error)throw history.error;
   if((history.data||[]).some((x:any)=>lead.tender_watch_id&&x.tender_watch_id===lead.tender_watch_id))return res({ok:false,error:"existing_shared_outbound_review_required",history:history.data},409);
-  const query=encodeURIComponent("(to:"+recipient+" OR from:"+recipient+") -in:trash");
+  const projectQuery=request?' subject:"'+t(lead.context.reference||lead.context.title,300).replace(/["\\]/g,"")+'"':"";
+  const query=encodeURIComponent("(to:"+recipient+" OR from:"+recipient+") -in:trash"+projectQuery);
   const mhistory=await gmailGet("/messages?maxResults=20&q="+query+"&fields=messages(id,threadId),resultSizeEstimate");
   let threadId=lead.communications?.[request?"supplier_thread_id":"thread_id"]||"",replyHeaders:any={};
   const seen=new Set<string>((mhistory.messages||[]).map((x:any)=>x.threadId));
