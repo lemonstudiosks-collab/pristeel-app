@@ -3,7 +3,7 @@
   "name": "PPPP Ordered Bootstrap Registry",
   "runtimeArtifact": "pristeel-project-emails.js",
   "moduleCount": 166,
-  "sequenceSha256": "4d5dacbddf3686686d028d380823ad9669b589ed03c97bb3b3b324e5da5b94ee",
+  "sequenceSha256": "87204d059000cc3191705dabdfbf63f014f88f0efa487cbda4a85c568fb414a7",
   "files": [
     "pristeel-auth-persistence.js?v=20260916-project-cutover1",
     "pristeel-login-brand-v1.js?v=20260925-single-login1",
@@ -135,7 +135,7 @@
     "pristeel-home-stability-v2.js?v=20260817-1",
     "pristeel-home-project-recovery-v3.js?v=20260817-1",
     "pristeel-home-visual-cleanup-v1.js?v=20260817-1",
-    "pristeel-dach-steel-sales-v1.js?v=20261006-buyer-workflow1",
+    "pristeel-dach-steel-sales-v1.js?v=20261007-contact-status-signature1",
     "pristeel-sales-engine-v3.js?v=20260925-commercial-engine1",
     "pristeel-representations-v1.js?v=20261007-druseidt1",
     "pristeel-representation-opportunities-v2.js?v=20261006-home-module-standard1",

@@ -40,10 +40,14 @@ const css=fs.readFileSync('pristeel-spie-standard.css','utf8');
 assert.match(css, /#page-dach-steel-sales :is\(\.pst-dss-primary-wide[^}]+background:#fff!important[^}]+var\(--pst-accent\)/,'Gmail button uses the shared calm design');
 
 assert.match(ui, /state\.gmailOpenedAt=Date\.now\(\);window\.open\(gu,'_blank','noopener'\)/, 'opening Gmail must arm one lifecycle refresh');
-assert.match(ui, /state\.gmailOpenedAt=0;\s*syncLifecycleUi\(true\)/, 'returning from Gmail must consume the refresh marker before syncing');
+assert.match(ui, /state\.gmailOpenedAt=0;syncLifecycleUi\(true\)/, 'returning from Gmail must consume the refresh marker before syncing');
+assert.match(ui, /syncLifecycleUi\(false\)/, 'foreground return also reconciles sends made outside the module, with a throttle');
+assert.match(css, /minmax\(56px,\.35fr\)/, 'country heading has enough space');
+assert.match(css, /pst-dss-table-head > span[^}]*white-space:nowrap/, 'header words never break onto another line');
 assert.match(ui, /window\.addEventListener\('focus',syncAfterGmailReturn\)/, 'window focus must trigger the bounded Gmail-return sync');
 assert.match(ui, /document\.addEventListener\('visibilitychange',syncAfterGmailReturn\)/, 'tab visibility return must trigger the bounded Gmail-return sync');
 assert.match(ui, /Date\.now\(\)-state\.lifecycleSyncedAt<300000/, 'ordinary automatic sync must retain the five-minute throttle');
 
 console.log('Material Trade lifecycle UI smoke: PASS');
+
 

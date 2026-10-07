@@ -48,6 +48,8 @@ edge=stripTypeScriptTypes(edge,{mode:'strip'});
 const ctx=vm.createContext({console,TextEncoder,TextDecoder,Uint8Array,URLSearchParams,Response,fetch:fetcher,crypto:globalThis.crypto,btoa,atob,renderBuyerOutreach,buyerLanguage,signatureText,createClient:()=>db,Deno:{env:{get:key=>({GMAIL_USER:'arianit.vllahiu@prissteel.com'})[key]||''},serve:()=>{}}});
 vm.runInContext(edge+'\ntc={token:"fixture",exp:9999999999};stc={token:"fixture",exp:9999999999};globalThis.testBuyerDraft=buyerDraft;globalThis.testGuards=guards;',ctx);
 const first=await ctx.testBuyerDraft(target,{id:'test-user'},{});assert.equal(first.created,true);assert.equal(created,1);assert.equal(sent,0);assert.match(mime,/charset=UTF-8/);assert.match(mime,/Müller &amp; Söhne/);assert.match(mime,/logo.png/);assert.match(mime,/Subject: =\?UTF-8\?B\?/);assert.equal(queue.approved_for_send,false);assert.equal(queue.human_send_required,true);
+assert.match(mime,/border-left:1px solid #193943/);assert.match(mime,/<table role="presentation"/);assert.equal((mime.match(/<img /g)||[]).length,1);
+const official=vm.runInContext('officialSignatureHtml("")',ctx);assert.match(official,/ci3\.googleusercontent\.com\/mail-sig/);assert.match(official,/border-left:1px solid #193943/);assert.ok(official.indexOf('<img')<official.indexOf('Arianit Vllahiu'),'Official logo stays left of contact details');
 const second=await ctx.testBuyerDraft(target,{id:'test-user'},{});assert.equal(second.reused,true);assert.equal(created,1);
 await assert.rejects(ctx.testGuards(target,{sent_at:'2026-10-06'},contact.email),/already_sent/);
 await assert.rejects(ctx.testGuards(target,{replied_at:'2026-10-06'},contact.email),/already_replied/);
@@ -56,3 +58,4 @@ assert.equal(sent,0);
 let networkCalls=0;
 const cronSkip=await prepareReadyDrafts(db,()=>'',null,async()=>{networkCalls++;});assert.equal(cronSkip.skipped,true);assert.equal(networkCalls,0);
 console.log('Steel Buyers workflow: PASS (EN/DE, evidence-only contacts, no contact, MIME/signature, live draft reuse, sent/reply guards, no send).');
+

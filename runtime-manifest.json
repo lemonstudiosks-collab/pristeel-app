@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "196f63a9463af1a086db4e06b10aa00779775e9b"
+    "bootstrapGitBlobSha": "2be264bac25e7461fd4b44204446fcce21ee9c58"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -342,7 +342,7 @@
       "module": "pristeel-dach-steel-sales-v1.js",
       "loader": "pristeel-project-emails.js",
       "status": "DYNAMIC_CURRENT",
-      "condition": "Ordered bootstrap version 20261006-buyer-workflow1. Steel Buyer owner uses Home/Representation static tokens, clickable company details including contact gaps, canonical EN/DE outreach and shared guarded Gmail drafts. Discovery and contact research run only in the existing daily worker; approved operational enrichment uses the command sheet."
+      "condition": "Ordered bootstrap version 20261007-contact-status-signature1. Steel Buyer owner opens the to-contact list separately from drafts, confirmed sent and replies. Existing Gmail lifecycle sync runs on module open/foreground return with a five-minute throttle. Official HTML signatures preserve logo-left/contact-right layout and a thin dark-green separator. Discovery and contact research remain in the existing daily worker; operational enrichment uses the command sheet."
     },
     {
       "module": "pristeel-representations-v1.js",
@@ -527,3 +527,4 @@
     }
   ]
 }
+
