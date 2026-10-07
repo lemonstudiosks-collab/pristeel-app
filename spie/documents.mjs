@@ -2,7 +2,9 @@
 import * as D from './data.mjs?v=20261007-dossier1';
 import * as B from './bridge.mjs?v=20261007-models1';
 import {esc} from './document-models.mjs?v=20261007-models1';
-let dialog=null,frame=null,context=null,saved=null,busy=false,draftIdentity=null,composeToken='';
+let dialog=null,frame=null,context=null,saved=null,busy=false,draftIdentity=null,composeToken='',editorOwner='',composeParentToken='';
+function sessionOwner(){try{const s=D.session();return s?JSON.parse(atob(s.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||'':'';}catch{return '';}}
+function checkOwner(){if(!editorOwner||sessionOwner()!==editorOwner)throw new Error('Sesioni ndryshoi. Mbyll editorin dhe rihap projektin.');}
 const title={offer:'Ofertë PriSteel',invoice:'Faturë PriSteel',credit_note:'Notë kreditore PriSteel'};
 function error(message){if(dialog)dialog.querySelector('[data-doc-status]').textContent=message;}
 function host(){return frame?.contentWindow?.PSTSpieDocumentHost;}
@@ -20,7 +22,7 @@ export async function open(kind,c){
  if(!title[kind])throw new Error('Lloji i dokumentit nuk mbështetet.');
  if(dialog){dialog.focus();return;}
  if(!(await D.ensureSession()))throw new Error('SESSION_REQUIRED');
- context=c;saved=null;draftIdentity=null;composeToken='';
+ context=c;saved=null;draftIdentity=null;composeToken='';composeParentToken='';editorOwner=sessionOwner();
  const session=D.session()?.access_token;
  dialog=document.createElement('dialog');dialog.className='commercial-document-editor';
  dialog.innerHTML=`<div class="document-editor-head"><h2>${title[kind]}</h2><button class="btn" data-doc-close>Mbyll</button></div><p data-doc-status role="status">Duke hapur editorin qendror për këtë projekt…</p><div class="document-editor-actions"><button class="btn" data-doc-pdf disabled>PDF</button><button class="btn" data-doc-email disabled>Krijo draft emaili</button></div><div class="document-compose" hidden></div><iframe title="${title[kind]} · SPIE" class="document-editor-frame"></iframe>`;
@@ -54,6 +56,7 @@ window.addEventListener('message',event=>{
  if(data.type==='pdf')downloadPdf().catch(e=>error(e.message));
 });
 async function pdf(){
+ checkOwner();
  if(!saved||!host())throw new Error('Mirato dhe ruaj dokumentin përpara PDF-së ose draftit.');
  const w=frame.contentWindow;host().render();
  const preview=host().getPreview();if(!preview?.querySelector('.pst-model'))throw new Error('Parapamja zyrtare nuk është gati.');
@@ -77,6 +80,7 @@ function showComposer(){
   if(B.pendingCommand()){form.querySelector('[data-compose-error]').textContent='Verifiko komandën në pritje te projekti përpara draftit të ri.';return;}
   busy=true;button.disabled=true;
   try{
+   checkOwner();
    const token=await authorizeDraft(),attachments=[{name:saved.nr+'.pdf',mime:'application/pdf',bytes:new Uint8Array(await (await pdf()).arrayBuffer())}];
    for(const i of values.getAll('attachment'))attachments.push(await projectAttachment(files[Number(i)],token));
    if(attachments.reduce((n,a)=>n+a.bytes.length,0)>18000000)throw new Error('Bashkëngjitjet tejkalojnë kufirin praktik të draftit (18 MB).');
@@ -110,11 +114,12 @@ function showComposer(){
 }
 function storedScopes(){return localStorage.getItem('pst_google_workspace_scopes_v2')||sessionStorage.getItem('pst_google_workspace_scopes_v2')||'';}
 async function authorizeDraft(){
- if(composeToken)return composeToken;
- const shared=D.googleSession();if(shared&&/gmail\.(compose|modify)|https:\/\/mail.google.com\//.test(storedScopes()))return shared.token;
+ checkOwner();const shared=D.googleSession();
+ if(shared&&/gmail\.(compose|modify)|https:\/\/mail.google.com\//.test(storedScopes()))return shared.token;
+ if(composeToken&&composeParentToken===(shared?.token||''))return composeToken;
  const w=frame.contentWindow,clientId=localStorage.getItem('pristeel_gclient');
  if(!clientId||!w.google?.accounts?.oauth2)throw new Error('Lidh Gmail te PPPP për krijimin e draftit.');
- composeToken=await new Promise((resolve,reject)=>{const client=w.google.accounts.oauth2.initTokenClient({client_id:clientId,scope:'https://www.googleapis.com/auth/gmail.compose',callback:r=>r.error?reject(new Error(r.error)):resolve(r.access_token),error_callback:()=>reject(new Error('Autorizimi Gmail nuk përfundoi.'))});client.requestAccessToken();});return composeToken;
+ composeToken=await new Promise((resolve,reject)=>{const client=w.google.accounts.oauth2.initTokenClient({client_id:clientId,scope:'https://www.googleapis.com/auth/gmail.compose',callback:r=>r.error?reject(new Error(r.error)):resolve(r.access_token),error_callback:()=>reject(new Error('Autorizimi Gmail nuk përfundoi.'))});client.requestAccessToken();});composeParentToken=shared?.token||'';checkOwner();return composeToken;
 }
 function base64(bytes){let result='';for(let i=0;i<bytes.length;i+=32768)result+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(result);}
 export function verifyDraftAttachments(message,expected){const found=[];function walk(p){if(p?.filename)found.push({name:p.filename,mime:p.mimeType,size:Number(p.body?.size)});for(const x of p?.parts||[])walk(x);}walk(message?.payload);const key=x=>JSON.stringify([x.name,x.mime,x.size??x.bytes?.length]);if(JSON.stringify(found.map(key).sort())!==JSON.stringify(expected.map(key).sort()))throw new Error('Bashkëngjitjet e draftit nuk u verifikuan; mos krijo draft të dytë.');}
