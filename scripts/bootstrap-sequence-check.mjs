@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 
 const BOOTSTRAP = 'pristeel-project-emails.js';
 const EXPECTED_COUNT = 166;
-const EXPECTED_DIGEST = "4d5dacbddf3686686d028d380823ad9669b589ed03c97bb3b3b324e5da5b94ee";
+const EXPECTED_DIGEST = "87204d059000cc3191705dabdfbf63f014f88f0efa487cbda4a85c568fb414a7";
 
 function fail(message) {
   console.error(`BOOTSTRAP SEQUENCE ERROR: ${message}`);
@@ -47,6 +47,7 @@ console.log(`Bootstrap: ${BOOTSTRAP}`);
 console.log(`Ordered versioned modules: ${entries.length}`);
 console.log(`Sequence SHA-256: ${digest}`);
 console.log('Bootstrap sequence OK.');
+
 
 
 

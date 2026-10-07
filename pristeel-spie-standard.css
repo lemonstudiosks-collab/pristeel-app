@@ -26,7 +26,9 @@ html#pst-spie-platform body #page-dach-steel-sales .pst-dss-navbtn.on { color:va
 html#pst-spie-platform body #page-dach-steel-sales .pst-dss-maincard { grid-column:2; grid-row:2; min-height:520px; border:0!important; border-radius:0!important; background:transparent!important; box-shadow:none!important; }
 html#pst-spie-platform body #page-dach-steel-sales .pst-dss-right { grid-column:3; grid-row:2; position:static!important; display:block!important; }
 html#pst-spie-platform body #page-dach-steel-sales .pst-dss-sidecard { background:transparent!important; border:0!important; border-left:1px solid var(--pst-line)!important; border-radius:0!important; padding:0 0 0 22px; box-shadow:none!important; }
-html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-table-head,.pst-dss-company-row) { grid-template-columns:minmax(0,1.4fr) 40px minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)!important; padding:18px 0!important; gap:12px; background:transparent!important; }
+html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-table-head,.pst-dss-company-row) { grid-template-columns:minmax(0,1.4fr) minmax(56px,.35fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)!important; padding:18px 0!important; gap:12px; background:transparent!important; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-table-head > span { min-width:0; white-space:nowrap!important; overflow:hidden; text-overflow:ellipsis; }
+html#pst-spie-platform body #page-dach-steel-sales .pst-dss-company-row > :nth-child(2) { white-space:nowrap!important; }
 html#pst-spie-platform body #page-dach-steel-sales :is(.pst-dss-table-head,.pst-dss-company-row) > :last-child { display:none!important; }
 html#pst-spie-platform body #page-dach-steel-sales .pst-dss-company-row.on { background:#f2f6f5!important; box-shadow:none!important; }
 html#pst-spie-platform body #page-dach-steel-sales .pst-dss-company-row b { font:500 15px/1.5 var(--pst-font)!important; color:var(--pst-ink)!important; }
@@ -414,3 +416,4 @@ html#pst-spie-platform body .pst-eu-dialog :is(h2,p,label,input,textarea,button)
  html#pst-spie-platform body #page-eu-companies .pst-eu-headrow { display:none; }
  html#pst-spie-platform body #page-eu-companies .pst-eu-row { grid-template-columns:minmax(0,1fr)!important; }
 }
+

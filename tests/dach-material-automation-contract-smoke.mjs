@@ -43,7 +43,7 @@ assert.match(ui,/outboundRowsByTarget/,'UI must preserve separate outbound histo
 assert.match(ui,/Çfarë prodhon \/ konsumon/,'Expanded buyer detail must surface company/material intelligence');
 assert.match(ui,/Target tregtar i kompanisë; nuk varet nga një tender apo projekt specifik\./,'Company-centric detail must explain when no specific project is required');
 assert.match(ui,/Evidenca publike për kompaninë/,'Company evidence must be visible in the expanded buyer detail');
-assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20261006-buyer-workflow1/,'Buyer runtime is versioned');
+assert.match(bootstrap,/pristeel-dach-steel-sales-v1\.js\?v=20261007-contact-status-signature1/,'Buyer runtime is versioned');
 
 assert.match(edge,/pppp-dach-steel-draft-generator-v25-buyer-outreach/,'Buyer engine version is current');
 assert.match(edge,/\^\[-–—\]\+\$/, 'Placeholder dashes must never become the commercial subject anchor');
