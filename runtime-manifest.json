@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "4eb107cb22ae75b3861bfb9ee49739d6c74fbb34"
+    "bootstrapGitBlobSha": "196f63a9463af1a086db4e06b10aa00779775e9b"
   },
   "applicationDirectRuntime": [
     "pristeel-kpi.js",
@@ -495,7 +495,8 @@
     "2026-09-25: Final Commercial Engine V3 hardening closes the no-BOM Supplier Gate bypass, keeps Material Trade supplier sourcing read-only until client signal, and hardens Opportunity DB access.",
     "2026-10-06: Opportunities shows one stage-specific primary action and a native secondary-actions menu; RFQ handoff appears only for Arianit after project linkage and an explicit supplier shortlist. Existing dossier, draft, task and protected-action owners remain authoritative. Only RFQ Sourcing and Finalizer cache identities change in the 166-module bootstrap; order is preserved.",
     "2026-10-06: Steel Buyers uses approved EN/DE templates, Gmail signature fallback and duplicate-draft reuse. Existing daily discovery runs bounded official-source contact research through the controlled command bridge and prepares at most two qualified guarded drafts; it never sends email.",
-    "2026-10-07: Representation discovery removes political news, individual consultancy, routine supplies, ignored/terminal tenders, expired/unknown/under-seven-day deadlines and superseded notices from the review surface. Existing history and human decisions are preserved; the existing daily refresh and weekly free news worker apply the same relevance gates."
+    "2026-10-07: Representation discovery removes political news, individual consultancy, routine supplies, ignored/terminal tenders, expired/unknown/under-seven-day deadlines and superseded notices from the review surface. Existing history and human decisions are preserved; the existing daily refresh and weekly free news worker apply the same relevance gates.",
+    "2026-10-07: EU Direct uses the shared Albanian work-column model, evidence-backed action ranking, cached reads and automatic foreground/Gmail-return synchronization. Only its existing bootstrap cache identity changes; module order and protected business gates are preserved."
   ],
   "dedicatedWorkspaces": [
     {
