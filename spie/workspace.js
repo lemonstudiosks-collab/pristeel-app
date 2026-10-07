@@ -1,4 +1,4 @@
-import * as D from './data.mjs?v=20261007-operational1';
+import * as D from './data.mjs?v=20261007-operational2';
 
 const view = document.getElementById('view');
 const readStatus = document.getElementById('read-status');
@@ -217,7 +217,7 @@ function operationPhase(data,model) {
   return stages.indexOf(canonical)>3 ? canonical : model.sample?'Samples':canonical;
 }
 function operationErrors(model) {
-  const names={files:'Dokumentet',emails:'Emailat',attachments:'Bashkëngjitjet',suppliers:'Ofertat e furnitorëve',clients:'Ofertat tona'};
+  const names={files:'Dokumentet',emails:'Emailat',attachments:'Bashkëngjitjet',suppliers:'Ofertat e furnitorëve',clients:'Ofertat tona',suggested:'Komunikimet për shqyrtim'};
   return model.errors.map(e=>notice((names[e.source]||e.source)+': '+e.error,true)).join('');
 }
 function offerRows(offers,compact=false) {
@@ -293,7 +293,7 @@ function renderOverview(data,model) {
     +'<div class="columns"><div>'+section('Çfarë duhet bërë tani',nextSteps(data,model))
     +section('Çfarë është bërë',verifiedProgress(model))
     +section('Oferta e Aktivës',offerRows(suppliers,true),'offers')+'</div><div>'
-    +section('Oferta jonë për SPIE',offerRows(clients,true),'offers')
+    +reviewOffers(model)+section('Oferta jonë për SPIE',offerRows(clients,true),'offers')
     +section('Afati dhe pikat e hapura',currentDeadlines(model)+(model.sample?row('Ende kërkon provë','Porosia zyrtare, fillimi real i prodhimit, përfundimi i kontrollit dhe dërgimi i mostrave.'):''))
     +section('Dokumentet e projektit',fileRows(model.files.filter(f=>D.metadata(f).category==='Technical'||/3207|stückliste|werkstattzeichnung/i.test(f.title||'')).sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at))),true),'files')+'</div></div>'
     +section('Rrjedha e fundit e projektit',workflowRows(model,true),'projects')
@@ -307,12 +307,15 @@ async function renderOffers() {
     +(!D.googleSession()?'<p class="muted small">Për ofertat më të reja që ende nuk janë lidhur në PPPP, <a class="evidence-link" href="../pristeel-procurement.html">lidhe Gmail në PPPP</a> dhe rihap SPIE. Ofertat e regjistruara shfaqen më poshtë.</p>':'')
     +'<div class="toolbar"><label>Pala <select id="offer-side"><option value="">Të gjitha</option><option value="supplier">Aktiva / furnitorët</option><option value="client">PriSteel → SPIE</option></select></label><label>Kërko ofertën <input id="offer-search" type="search" placeholder="DAP, DDP, data ose dokumenti"></label></div>'
     +(model.structuredMissing?'<p class="muted small">Ofertat ekzistojnë në komunikime dhe dokumente. Vlerat e krahasueshme ende nuk janë në regjistrat e strukturuar të ofertave; shumat dhe marzhi kërkojnë verifikim.</p>':'')
-    +'<div id="offer-results">'+offerSections(model.offers)+'</div>'
+    +reviewOffers(model)+'<div id="offer-results">'+offerSections(model.offers)+'</div>'
     +section('Krahasimi dhe lidhja mes ofertave','<p class="muted small">Kontrollo për secilin version sasinë dhe lotet, DAP/DDP, lyerjen, transportin/importin, CBAM, pagesën dhe vlefshmërinë. Shfaqja krah për krah nuk provon se dy oferta kanë të njëjtin objekt. Pa bazë të verifikuar nuk llogaritet marzh dhe nuk vendoset çmim final.</p>')
     +footer();
 }
 function offerSections(offers) {
   return '<div class="columns"><div>'+section('Aktiva / ofertat e furnitorëve',offerRows(offers.filter(o=>o.side==='supplier')) )+'</div><div>'+section('PriSteel / ofertat për SPIE',offerRows(offers.filter(o=>o.side==='client')) )+'</div></div>';
+}
+function reviewOffers(model) {
+  return model.reviewOffers?.length ? section('Oferta të sugjeruara · lidhja kërkon shqyrtim', '<p class="muted small">Këta emaila janë në PPPP me këtë projekt të sugjeruar. Lidhja nuk është verifikuar; nuk ndryshojnë gjendjen ose rrjedhën e konfirmuar të projektit.</p>'+offerRows(model.reviewOffers,true)) : '';
 }
 async function renderProjects() {
   const {data,model}=await ensureOperational();

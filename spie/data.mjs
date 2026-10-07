@@ -88,6 +88,7 @@ export function evidenceFiles(data, rows = []) {
   return result;
 }
 export const emails = () => projectRows('project_emails', 'id,project_id,gmail_message_id,gmail_thread_id,from_email,from_name,to_emails,cc_emails,subject,snippet,has_attachments,sent_at,direction,gmail_url,needs_review,review_reason', LIMITS.emails, 'sent_at.desc.nullslast,id.desc');
+export const suggestedEmails = () => read('project_emails?'+new URLSearchParams({project_id:'is.null',suggested_project_id:'eq.'+PROJECT_ID,select:'id,project_id,suggested_project_id,gmail_message_id,gmail_thread_id,from_email,from_name,to_emails,cc_emails,subject,snippet,has_attachments,sent_at,direction,gmail_url,needs_review,review_reason',limit:'12',order:'sent_at.desc.nullslast,id.desc'}));
 export const attachments = () => projectRows('project_attachment_links', 'id,project_id,attachment_name,gmail_message_id,gmail_thread_id,drive_file_id,attachment_mime_type,content_sha256,analysis_status,created_at', LIMITS.attachments, 'created_at.desc,id.desc');
 export const supplierOffers = () => projectRows('offers', 'id,project_id,supplier,offer_ref,created_at,currency,total_amount,total_eur,price_kg,qty_kg,delivery_weeks,incoterms,payment_terms,inclusions,exclusions,notes', 30);
 export const clientOffers = () => projectRows('documents_registry', 'id,project_id,series,doc_nr,created_at,currency,total_amount,total_eur,offer_state,payment_plan', LIMITS.documents);
@@ -160,7 +161,8 @@ export function offerKind(name) {
 }
 export function operationalModel(data, bundle) {
   const mails = newest(list(bundle.emails.rows).filter(m => string(m.project_id || PROJECT_ID) === PROJECT_ID));
-  const trusted = mails.filter(m => m.needs_review === false);
+  const trusted = mails.filter(m => m.needs_review === false && !m.association_pending);
+  const offerMails = mails.filter(m => m.needs_review === false);
   const byId = new Map(mails.map(m => [m.gmail_message_id,m]));
   const offerRows = [];
   for (const a of list(bundle.attachments.rows)) {
@@ -174,9 +176,9 @@ export function operationalModel(data, bundle) {
     const drive = /^[\w-]+$/.test(a.drive_file_id || '') ? 'https://drive.google.com/file/d/'+a.drive_file_id+'/view' : '';
     offerRows.push({ id:'attachment:'+a.id, side:supplier?'supplier':'client', kind:offerKind(a.attachment_name), title:a.attachment_name,
       sent_at:m.sent_at, mail:m, source:a.source || 'Bashkëngjitje në PPPP', source_url:gmailLink(m), drive_url:drive,
-      state:supplier?'Pranuar nga Aktiva':sent?'Dërguar te SPIE':'Kopje në komunikim me SPIE', sent, amount:null, currency:null,
+      state:(supplier?'Pranuar nga Aktiva':sent?'Dërguar te SPIE':'Kopje në komunikim me SPIE')+(m.association_pending?' · lidhja me projektin për shqyrtim':''), sent, amount:null, currency:null,
       terms: (a.attachment_name.replace(/_/g,' ').match(/\b(?:DAP|DDP)\b/gi)||[]).map(x=>x.toUpperCase()).filter((v,i,all)=>all.indexOf(v)===i).join(' / '),
-      content_key:a.content_sha256 || '', attachment_id:a.id });
+      content_key:a.content_sha256 || '', attachment_id:a.id,association_pending:m.association_pending===true });
   }
   // Exact filename/content identity, with direct sent evidence taking precedence over returned copies.
   const unique = new Map();
@@ -186,14 +188,14 @@ export function operationalModel(data, bundle) {
     if (!old || (o.sent && !old.sent)) unique.set(key,o);
   }
   const offers=[...unique.values()];
-  for (const m of trusted) {
+  for (const m of offerMails) {
     if (!m.has_attachments || !/angebot|offer|ponud/i.test(m.subject) || /anfrage|rfq|automatische|automatic/i.test(m.subject)) continue;
     const supplier=mailParty(m)==='supplier';
     const client=mailParty(m)==='pristeel' && recipients(m,'spie.com') && /^(outgoing|outbound|out)$/i.test(m.direction);
     if ((!supplier&&!client) || offerRows.some(o=>o.mail.gmail_message_id===m.gmail_message_id&&o.kind==='offer')) continue;
     offers.push({id:'mail:'+m.gmail_message_id,side:supplier?'supplier':'client',kind:'offer',title:m.subject,mail:m,
-      sent_at:m.sent_at,state:supplier?'Email nga Aktiva · kontrollo bashkëngjitjen':'Dërguar te SPIE · dokumentet në Gmail',sent:client,
-      source:'Email i lidhur në PPPP',source_url:gmailLink(m),amount:null,currency:null,terms:(m.subject.match(/\b(?:DAP|DDP)\b/gi)||[]).join(' / '),metadata_missing:true});
+      sent_at:m.sent_at,state:(supplier?'Email nga Aktiva · kontrollo bashkëngjitjen':'Dërguar te SPIE · dokumentet në Gmail')+(m.association_pending?' · lidhja me projektin për shqyrtim':''),sent:client,
+      source:m.association_pending?'PPPP · vetëm sugjerim për lidhjen me projektin':'Email i lidhur në PPPP',source_url:gmailLink(m),amount:null,currency:null,terms:(m.subject.match(/\b(?:DAP|DDP)\b/gi)||[]).join(' / '),metadata_missing:true,association_pending:m.association_pending===true});
   }
   for (const r of list(bundle.suppliers.rows)) offers.push({...r,id:'supplier:'+r.id,side:'supplier',kind:'offer',title:r.offer_ref||r.supplier||'Ofertë furnitori',sent_at:r.created_at,state:'Ofertë e regjistruar',source:'Regjistri i ofertave në PPPP',amount:r.total_amount ?? (r.currency==='EUR'?r.total_eur:null),terms:r.incoterms||'',source_url:''});
   for (const r of list(bundle.clients.rows).filter(r=>r.series==='QUO')) {
@@ -213,7 +215,7 @@ export function operationalModel(data, bundle) {
   const seenAttachments=new Set();
   for(const a of list(bundle.attachments.rows)) {
     if(string(a.project_id)!==PROJECT_ID || /^(image\d*|logo|icon)\.(png|jpe?g|gif)$/i.test(a.attachment_name||''))continue;
-    const m=byId.get(a.gmail_message_id);if(!m || m.needs_review!==false)continue;
+    const m=byId.get(a.gmail_message_id);if(!m || m.needs_review!==false || m.association_pending)continue;
     const contentKey=a.content_sha256 || string(a.attachment_name).normalize('NFC').toLowerCase();
     if(seenAttachments.has(contentKey))continue;
     seenAttachments.add(contentKey);
@@ -224,15 +226,21 @@ export function operationalModel(data, bundle) {
     const technical=/werkstatt|stückliste|zeichnung|drawing|\.x83$|\.dwg$|korrosionsschutz/i.test(a.attachment_name);
     files.push({project_id:PROJECT_ID,title:a.attachment_name,created_at:m.sent_at,drive_url:link,gmail_url:gmailLink(m),gmail_message_id:m.gmail_message_id,doc_type:offerKind(a.attachment_name)?'commercial':technical?'technical':'',notes:{category_verified:false},source:'Bashkëngjitje e emailit'});
   }
-  return {offers:newest(offers),mails,trusted,timeline,files,sample,approval,currentRequest,supplierSample,
+  return {offers:newest(offers.filter(o=>!o.association_pending)),reviewOffers:newest(offers.filter(o=>o.association_pending)),mails,trusted,timeline,files,sample,approval,currentRequest,supplierSample,
     errors:Object.entries(bundle).filter(([,v])=>v.error).map(([source,v])=>({source,error:v.error})),
     limits:{emails:mails.length===LIMITS.emails,attachments:bundle.attachments.rows.length===LIMITS.attachments},
     structuredMissing:!bundle.suppliers.error&&!bundle.clients.error&&!bundle.suppliers.rows.length&&!bundle.clients.rows.length};
 }
 export async function operational() {
-  const jobs=[['files',files],['emails',emails],['attachments',attachments],['suppliers',supplierOffers],['clients',clientOffers]];
+  const jobs=[['files',files],['emails',emails],['attachments',attachments],['suppliers',supplierOffers],['clients',clientOffers],['suggested',suggestedEmails]];
   const settled=await Promise.allSettled(jobs.map(([,fn])=>fn()));
   const bundle=Object.fromEntries(jobs.map(([key],i)=>[key,settled[i].status==='fulfilled'?{rows:list(settled[i].value),error:null}:{rows:[],error:settled[i].reason.message}]));
+  // A suggestion is visible review evidence, never an assigned project email.
+  for(const m of bundle.suggested.rows) {
+    if(m.project_id!==null || m.suggested_project_id!==PROJECT_ID || m.needs_review!==false || !/tennet.*bunt|spie.*tennet/i.test(m.subject))continue;
+    if(!bundle.emails.rows.some(e=>e.gmail_message_id===m.gmail_message_id))bundle.emails.rows.push({...m,association_pending:true});
+  }
+  bundle.emails.rows=newest(bundle.emails.rows);
   await enrichMissingOffers(bundle);
   return bundle;
 }
