@@ -1,0 +1,20 @@
+name: SPIE operational workspace
+on:
+  push:
+    branches: [main]
+    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'tests/spie-operational-smoke.mjs', '.github/workflows/spie-operational.yml']
+  pull_request:
+    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'tests/spie-operational-smoke.mjs', '.github/workflows/spie-operational.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --input-type=module --check < spie/workspace.js
+      - run: node --check spie/data.mjs
+      - run: node --test tests/spie-workspace-smoke.mjs tests/spie-operational-smoke.mjs

@@ -1,5 +1,16 @@
 # PPPP Active Runtime
 
+## 2026-10-07 — SPIE operational project overview
+
+The dedicated /spie workspace preserves its existing sidebar, font scale and layout. Overview now prioritizes the current project situation, evidence-backed completed work, review-only next steps, supplier/client offers and requested sample dates. The Offers route separates supplier quotations, sent PriSteel offer versions and accompanying terms; the existing Projects route becomes a chronological communication flow with filters. Files merges existing Drive metadata and exact project-linked attachments with working source links.
+
+The read adapter uses five bounded project-scoped data reads plus its existing project snapshot, coalesced for five minutes across routes. An existing PPPP Google session can additionally read six recent commercial message identities and eight recent communication identities, hydrate at most six missing exact-reference messages, and read at most six missing attachment metadata messages. The UI marks Google-only evidence as outside the PPPP register. It never requests automatic consent, persists source facts, ingests messages, sends email, changes a task or decides a commercial commitment. No schema, worker, scheduler or shared bootstrap changes.
+
+Keep the commercial pipeline field at pricing and read Samples from the source-backed workspace context and current SPIE communication; Samples is not added to the commercial pipeline schema. The sent DDP revision dated 25 September is present in Gmail but not in the project's canonical email/attachment registers. UI reads do not silently reconcile those records. Quotation values/margins remain unknown until verified structured evidence exists; document timestamps and filenames never prove acceptance, production or delivery.
+
+Validation: existing authentication/read-only/session/currency tests plus targeted offer identity/version, ambiguity, template exclusion, DDP workbook and sample-evidence regressions; browser interaction tests cover all seven routes, offer/workflow/file filters, source links, stable desktop typography/sidebar, mobile overflow, cache reuse, optional Google source absence, partial failure and logout. Browser provider responses are mocked from read-only source metadata; this does not claim authenticated production provider testing.
+
+
 ## 2026-10-06 — Opportunities stage actions
 
 The existing Opportunity Desk and Action Console expose one primary action per stage plus **Hiqe** and a native **⋯** menu. Dossier preparation delegates to the existing fetch/analysis pipeline; complete analysis replaces preparation with the explicit project-creation action. Supplier Intelligence continues after dossier readiness and reuses its result for five minutes; external discovery remains on demand. Arianit selects RFQ-ready suppliers through checkboxes. Once an existing project and shortlist are present, **Dërgo te Oltiani** replaces the console primary action and calls the existing `tasks` handoff. Oltian continues through the canonical Project RFQ surface; secondary utilities remain in its menu. The first-page Gmail draft action matches the compact white Gmail-branded console button and preserves preview/approval behavior. No scheduler, worker, Edge Function, schema or protected business gate is changed. See `docs/OPPORTUNITIES_STAGE_ACTIONS_20261006.md`.
@@ -364,3 +375,4 @@ The operating-experience layer does not replace Supabase automation. Cron/event 
 The workspace links canonical TenneT project `c937aea1-af5e-4807-ae1e-e36864e46794`, uses one bounded project snapshot plus three latest document metadata rows for Overview, and loads larger Files, Emails, Partners and Finance metadata only on navigation. Reads are cached and coalesced for five minutes in memory; there is no polling or realtime subscription. Expired or absent sessions return the user to existing PPPP authentication instead of adding another refresh/login owner. Samples is operator-declared and differences from the canonical pipeline remain visible. Health and latest drawing revisions require explicit evidence.
 
 No records, Gmail bodies, documents or business decisions are created or modified. Physical files remain in the permanent Drive folder and original communication remains in Gmail. See `docs/SPIE_WORKSPACE_PHASE1.md` for limitations and verification.
+
