@@ -217,21 +217,34 @@ function operationPhase(data,model) {
   return stages.indexOf(canonical)>3 ? canonical : model.sample?'Samples':canonical;
 }
 function operationErrors(model) {
-  const names={files:'Dokumentet',emails:'Emailat',attachments:'Bashkëngjitjet',suppliers:'Ofertat e furnitorëve',clients:'Ofertat tona',suggested:'Komunikimet për shqyrtim'};
+  const names={files:'Dokumentet',emails:'Emailat',attachments:'Bashkëngjitjet',evidence:'Përmbajtja e analizuar e ofertave',suppliers:'Ofertat e furnitorëve',clients:'Ofertat tona',suggested:'Komunikimet për shqyrtim'};
   return model.errors.map(e=>notice((names[e.source]||e.source)+': '+e.error,true)).join('');
+}
+function offerValue(value,fallback='Pa verifikim') { return value===null||value===undefined||value===''?fallback:String(value); }
+function lotsText(offer) { return arr(offer.lots).length?offer.lots.map(l=>label(l.name)+': '+amount(l.amount,l.currency)).join(' · '):'Nuk u gjet në dokument'; }
+function documentActions(o) {
+  const drive=D.safeLink(o.drive_url,'drive'),gmail=D.safeLink(o.source_url,'gmail');
+  const direct=D.googleSession()&&o.gmail_attachment_id&&o.mail?.gmail_message_id?'<button class="btn document-action" type="button" data-document-download data-message-id="'+escape(o.mail.gmail_message_id)+'" data-attachment-id="'+escape(o.gmail_attachment_id)+'" data-file-name="'+escape(o.title)+'" data-mime="'+escape(o.attachment_mime_type||'')+'">Hap dokumentin</button>':'';
+  return '<div class="document-actions">'+direct+(drive?sourceLink(drive,'Hap dokumentin në Drive'):'')+(gmail?sourceLink(gmail,direct||drive?'Hap burimin në Gmail':'Hap dokumentin në Gmail'):'')+'</div>';
 }
 function offerRows(offers,compact=false) {
   if(!offers.length)return empty('Nuk u kthye ofertë në burimet e lexuara. Kontrolloni komunikimin dhe dosjen e projektit.');
   return offers.slice(0,compact?2:100).map(o=>{
-    const price=o.amount===null || o.amount===undefined ? 'Vlera dhe kushtet: në dokumentin origjinal' : 'Vlera e regjistruar: '+amount(o.amount,o.currency);
-    const meta=date(o.sent_at)+' · '+o.state+(o.terms?' · '+o.terms:'');
-    const links=(sourceLink(D.safeLink(o.drive_url,'drive'),'Hap dokumentin')||'')+' '+sourceLink(o.source_url,'Gmail');
-    const body='<div class="muted small">'+escape(meta)+'</div><p class="muted small">'+price+'</p>'+provenance(o.source,null)+(links?'<p>'+links+'</p>':'')
-      +(o.metadata_missing?'<p class="provenance">Dërgimi dhe bashkëngjitjet janë regjistruar në email; emrat e skedarëve lexohen nga Gmail kur sesioni Google është aktiv.</p>':'')
-      +(!compact?'<dl class="facts"><div><dt>Lloji</dt><dd>'+escape(o.kind==='terms'?'Kushtet e ofertës':'Oferta')+'</dd></div><div><dt>Pagesa / dorëzimi</dt><dd>'+text(o.payment_terms||'Shiko dokumentin')+(o.delivery_weeks?' · '+text(o.delivery_weeks)+' javë':'')+'</dd></div></dl>'
+    const price=o.amount===null || o.amount===undefined ? 'Vlera: Pa verifikim' : (o.amount_basis||'Vlera e nxjerrë')+': '+amount(o.amount,o.currency);
+    const meta=date(o.offer_date||o.sent_at)+' · '+o.state+(o.terms?' · '+o.terms:'');
+    const body='<div class="muted small">'+escape(meta)+'</div><p class="offer-value">'+escape(price)+'</p>'+provenance(o.evidence_status||o.source,null)+documentActions(o)
+      +(o.metadata_missing?'<p class="provenance">Dërgimi është regjistruar në email; identiteti i dokumentit lexohet automatikisht nga Gmail kur sesioni Google është aktiv.</p>':'')
+      +(!compact?'<dl class="facts offer-facts"><div><dt>Lloji</dt><dd>'+escape(o.kind==='terms'?'Kushtet e ofertës':'Oferta')+'</dd></div><div><dt>Versioni</dt><dd>'+text(o.terms||'Pa verifikim')+'</dd></div><div><dt>Lotet</dt><dd>'+text(lotsText(o))+'</dd></div><div><dt>Pagesa</dt><dd>'+text(o.payment_terms||'Nuk u gjet në dokument')+(o.delivery_weeks?' · '+text(o.delivery_weeks)+' javë':'')+'</dd></div><div><dt>Transporti</dt><dd>'+text(offerValue(o.transport,'Nuk u gjet në dokument'))+'</dd></div><div><dt>Importi / dogana</dt><dd>'+text(offerValue(o.customs,'Nuk u gjet në dokument'))+'</dd></div><div><dt>CBAM</dt><dd>'+text(offerValue(o.cbam,'Nuk u gjet në dokument'))+'</dd></div><div><dt>Painting / coating</dt><dd>'+text(offerValue(o.painting,'Nuk u gjet në dokument'))+'</dd></div><div><dt>Vlefshmëria</dt><dd>'+text(o.validity||'Nuk u gjet në dokument')+'</dd></div></dl>'
       +(o.inclusions?row('Përfshirë',o.inclusions):'')+(o.exclusions?row('Përjashtuar',o.exclusions):''):'');
     return compact?'<div class="row"><div class="row-title">'+text(o.title)+'</div>'+body+'</div>':'<details class="offer-record" data-side="'+escape(o.side)+'"><summary>'+text(o.title)+'<div class="provenance">'+escape(meta)+'</div></summary>'+body+'</details>';
   }).join('');
+}
+function comparisonTable(offers) {
+  const supplier=offers.find(o=>o.side==='supplier'&&o.kind==='offer');
+  const client=offers.find(o=>o.side==='client'&&o.kind==='offer'&&o.sent)||offers.find(o=>o.side==='client'&&o.kind==='offer');
+  if(!supplier&&!client)return empty('Nuk ka dokumente të verifikuara për krahasim.');
+  const rows=[['Dokumenti',supplier?.title,client?.title],['Data',supplier&&date(supplier.offer_date||supplier.sent_at),client&&date(client.offer_date||client.sent_at)],['Versioni',supplier?.terms,client?.terms],['Lotet',supplier&&lotsText(supplier),client&&lotsText(client)],['Vlera',supplier?.amount!=null&&(amount(supplier.amount,supplier.currency)+(supplier.amount_basis?' · '+supplier.amount_basis:'')),client?.amount!=null&&(amount(client.amount,client.currency)+(client.amount_basis?' · '+client.amount_basis:''))],['Transporti',supplier?.transport,client?.transport],['Importi / dogana',supplier?.customs,client?.customs],['CBAM',supplier?.cbam,client?.cbam],['Painting / coating',supplier?.painting,client?.painting],['Pagesa',supplier?.payment_terms,client?.payment_terms],['Vlefshmëria',supplier?.validity,client?.validity]];
+  return '<div class="table-wrap offer-comparison"><table><thead><tr><th>Elementi</th><th>Aktiva</th><th>PriSteel → SPIE</th></tr></thead><tbody>'+rows.map(([name,left,right])=>'<tr><td>'+escape(name)+'</td><td>'+text(offerValue(left,left===undefined?'Pa verifikim':'Nuk u gjet në dokument'))+'</td><td>'+text(offerValue(right,right===undefined?'Pa verifikim':'Nuk u gjet në dokument'))+'</td></tr>').join('')+'</tbody></table></div><p class="metrics-note">Krahasimi vjen nga dokumentet dhe evidence e analizuar. “Pa verifikim” nuk plotësohet me hamendësim.</p>';
 }
 function nextSteps(data,model) {
   if(model.sample && operationPhase(data,model)==='Samples') {
@@ -293,7 +306,7 @@ function renderOverview(data,model) {
     +'<div class="columns"><div>'+section('Çfarë duhet bërë tani',nextSteps(data,model))
     +section('Çfarë është bërë',verifiedProgress(model))
     +section('Oferta e Aktivës',offerRows(suppliers,true),'offers')+'</div><div>'
-    +reviewOffers(model)+section('Oferta jonë për SPIE',offerRows(clients,true),'offers')
+    +section('Oferta jonë për SPIE',offerRows(clients,true),'offers')+reviewOffers(model)
     +section('Afati dhe pikat e hapura',currentDeadlines(model)+(model.sample?row('Ende kërkon provë','Porosia zyrtare, fillimi real i prodhimit, përfundimi i kontrollit dhe dërgimi i mostrave.'):''))
     +section('Dokumentet e projektit',fileRows(model.files.filter(f=>D.metadata(f).category==='Technical'||/3207|stückliste|werkstattzeichnung/i.test(f.title||'')).sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at))),true),'files')+'</div></div>'
     +section('Rrjedha e fundit e projektit',workflowRows(model,true),'projects')
@@ -306,16 +319,17 @@ async function renderOffers() {
     +operationErrors(model)
     +(!D.googleSession()?'<p class="muted small">Për ofertat më të reja që ende nuk janë lidhur në PPPP, <a class="evidence-link" href="../pristeel-procurement.html">lidhe Gmail në PPPP</a> dhe rihap SPIE. Ofertat e regjistruara shfaqen më poshtë.</p>':'')
     +'<div class="toolbar"><label>Pala <select id="offer-side"><option value="">Të gjitha</option><option value="supplier">Aktiva / furnitorët</option><option value="client">PriSteel → SPIE</option></select></label><label>Kërko ofertën <input id="offer-search" type="search" placeholder="DAP, DDP, data ose dokumenti"></label></div>'
-    +(model.structuredMissing?'<p class="muted small">Ofertat ekzistojnë në komunikime dhe dokumente. Vlerat e krahasueshme ende nuk janë në regjistrat e strukturuar të ofertave; shumat dhe marzhi kërkojnë verifikim.</p>':'')
-    +reviewOffers(model)+'<div id="offer-results">'+offerSections(model.offers)+'</div>'
-    +section('Krahasimi dhe lidhja mes ofertave','<p class="muted small">Kontrollo për secilin version sasinë dhe lotet, DAP/DDP, lyerjen, transportin/importin, CBAM, pagesën dhe vlefshmërinë. Shfaqja krah për krah nuk provon se dy oferta kanë të njëjtin objekt. Pa bazë të verifikuar nuk llogaritet marzh dhe nuk vendoset çmim final.</p>')
+    +(model.structuredMissing?'<p class="muted small">Regjistrat canonical të ofertave janë bosh; kjo pamje ndërtohet automatikisht nga dokumentet, attachment identity dhe evidence e analizuar e projektit. Çmimi final dhe marzhi nuk nxirren pa miratim.</p>':'')
+    +'<div id="offer-results">'+offerSections(model.offers)+'</div>'
+    +section('Krahasimi i verifikuar',comparisonTable(model.offers))
+    +reviewOffers(model)
     +footer();
 }
 function offerSections(offers) {
   return '<div class="columns"><div>'+section('Aktiva / ofertat e furnitorëve',offerRows(offers.filter(o=>o.side==='supplier')) )+'</div><div>'+section('PriSteel / ofertat për SPIE',offerRows(offers.filter(o=>o.side==='client')) )+'</div></div>';
 }
 function reviewOffers(model) {
-  return model.reviewOffers?.length ? section('Oferta të sugjeruara · lidhja kërkon shqyrtim', '<p class="muted small">Këta emaila janë në PPPP me këtë projekt të sugjeruar. Lidhja nuk është verifikuar; nuk ndryshojnë gjendjen ose rrjedhën e konfirmuar të projektit.</p>'+offerRows(model.reviewOffers,true)) : '';
+  return model.reviewOffers?.length ? section('Për shqyrtim · lidhja ende nuk është verifikuar', '<p class="muted small">Këto komunikime kanë identitet TenneT/SPIE, por nuk janë lidhur ende canonicalisht me projektin. Ato mbeten sekondare dhe nuk ndryshojnë gjendjen, krahasimin ose rrjedhën e konfirmuar.</p>'+offerRows(model.reviewOffers,true)) : '';
 }
 async function renderProjects() {
   const {data,model}=await ensureOperational();
@@ -423,6 +437,16 @@ function installFilters(name) {
     document.getElementById('email-search')?.addEventListener('input',apply);
   }
 }
+view.addEventListener('click',async event=>{
+  const button=event.target.closest('[data-document-download]');
+  if(!button)return;
+  const old=button.textContent;button.disabled=true;button.textContent='Duke hapur…';
+  try {
+    await D.downloadAttachment({gmail_message_id:button.dataset.messageId,gmail_attachment_id:button.dataset.attachmentId,title:button.dataset.fileName,attachment_mime_type:button.dataset.mime});
+    button.textContent='Dokumenti u hap';
+  } catch(error) { button.textContent=old;window.alert(error.message); }
+  finally { button.disabled=false;setTimeout(()=>{if(button.isConnected)button.textContent=old;},1800); }
+});
 async function route() {
   const requested=location.hash.slice(1).toLowerCase();
   const name=allowedViews.includes(requested)?requested:'overview';

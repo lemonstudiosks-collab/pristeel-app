@@ -89,7 +89,15 @@ export function evidenceFiles(data, rows = []) {
 }
 export const emails = () => projectRows('project_emails', 'id,project_id,gmail_message_id,gmail_thread_id,from_email,from_name,to_emails,cc_emails,subject,snippet,has_attachments,sent_at,direction,gmail_url,needs_review,review_reason', LIMITS.emails, 'sent_at.desc.nullslast,id.desc');
 export const suggestedEmails = () => read('project_emails?'+new URLSearchParams({project_id:'is.null',suggested_project_id:'eq.'+PROJECT_ID,select:'id,project_id,suggested_project_id,gmail_message_id,gmail_thread_id,from_email,from_name,to_emails,cc_emails,subject,snippet,has_attachments,sent_at,direction,gmail_url,needs_review,review_reason',limit:'12',order:'sent_at.desc.nullslast,id.desc'}));
-export const attachments = () => projectRows('project_attachment_links', 'id,project_id,attachment_name,gmail_message_id,gmail_thread_id,drive_file_id,attachment_mime_type,content_sha256,analysis_status,created_at', LIMITS.attachments, 'created_at.desc,id.desc');
+export const attachments = () => projectRows('project_attachment_links', 'id,project_id,attachment_id,attachment_name,gmail_message_id,gmail_thread_id,drive_file_id,attachment_mime_type,attachment_size_bytes,content_sha256,analysis_status,created_at', LIMITS.attachments, 'created_at.desc,id.desc');
+// A separate, tightly filtered evidence read avoids transferring extracted text for every project file.
+export const offerEvidence = () => read('project_attachment_links?'+new URLSearchParams({
+  project_id:'eq.'+PROJECT_ID,
+  select:'id,project_id,attachment_id,attachment_name,gmail_message_id,gmail_thread_id,drive_file_id,attachment_mime_type,attachment_size_bytes,content_sha256,analysis_status,analysis_confidence,analyzed_at,extracted_text,extracted_data',
+  extracted_text:'not.is.null',
+  or:'(attachment_name.ilike.*offer*,attachment_name.ilike.*angebot*,attachment_name.ilike.*quotation*,attachment_name.ilike.*ponud*,attachment_name.ilike.*tennet*bunt*dap*,attachment_name.ilike.*tennet*bunt*ddp*)',
+  limit:'40',order:'created_at.desc,id.desc'
+}));
 export const supplierOffers = () => projectRows('offers', 'id,project_id,supplier,offer_ref,created_at,currency,total_amount,total_eur,price_kg,qty_kg,delivery_weeks,incoterms,payment_terms,inclusions,exclusions,notes', 30);
 export const clientOffers = () => projectRows('documents_registry', 'id,project_id,series,doc_nr,created_at,currency,total_amount,total_eur,offer_state,payment_plan', LIMITS.documents);
 export const contacts = () => projectRows('project_contacts', 'id,project_id,email,name,company,role,source,last_seen,status,is_primary', LIMITS.contacts, 'last_seen.desc.nullslast');
@@ -159,6 +167,41 @@ export function offerKind(name) {
   if (!/offer|angebot|quotation|ponuda|ponud[ae]/i.test(name)) return '';
   return /bedingungen|terms|klarstellungen|conditions/i.test(name) ? 'terms' : 'offer';
 }
+
+function money(raw) {
+  const value=string(raw).replace(/[\s"']/g,'');
+  if(!value)return null;
+  let normalized=value;
+  if(value.includes(',')&&value.includes('.')) normalized=value.lastIndexOf('.')>value.lastIndexOf(',')?value.replace(/,/g,''):value.replace(/\./g,'').replace(',','.');
+  else if((value.match(/,/g)||[]).length>1||/,\d{3}(?:,|$)/.test(value)) normalized=value.replace(/,/g,'');
+  else normalized=value.replace(',','.');
+  const number=Number(normalized);return Number.isFinite(number)?number:null;
+}
+function excerpt(textValue,pattern,max=220) {
+  const found=string(textValue).match(pattern);return found?found[1].replace(/[,;\s]+/g,' ').trim().slice(0,max):'';
+}
+export function extractOfferFacts(row) {
+  const raw=string(row.extracted_text), name=string(row.attachment_name), text=raw.replace(/\r/g,'');
+  const lots=[];
+  for(const part of text.split(/(?=Sheet:\s*Los\s+)/i)) {
+    const lot=part.match(/^Sheet:\s*Los\s+([^\n,]+)/i);
+    const sum=part.match(/Summe\s+Pos\.\s*OHNE\s+Montage[\s\S]{0,180}?["']?([0-9]{1,3}(?:[.,][0-9]{3})+[.,][0-9]{2})/i);
+    const amount=money(sum?.[1]);
+    if(lot&&amount!==null)lots.push({name:'Los '+lot[1].trim(),amount,currency:'EUR'});
+  }
+  const amount=lots.length?lots.reduce((total,lot)=>total+lot.amount,0):null;
+  const terms=[...new Set(((name+'\n'+text.slice(0,5000)).match(/\b(?:DAP|DDP)\b/gi)||[]).map(x=>x.toUpperCase()))];
+  const dateMatch=(name+'\n'+text.slice(0,4000)).match(/(?:Angebotsdatum|Preisstand|Offer\s*date|Date)[\s:,|-]*([0-3]?\d[.\/-][01]?\d[.\/-]20\d{2})/i)
+    || name.match(/([0-3]?\d[.\/-][01]?\d[.\/-]20\d{2})/);
+  const payment=excerpt(text,/(?:Zahlungsbedingungen|Payment\s+terms?)[\s:,]*([^\n]{3,220})/i);
+  const validity=excerpt(text,/(?:bindend\s+bis|gültig\s+bis|valid\s+until|validity)[\s:,]*([^\n]{3,120})/i);
+  const transport=/Fracht[^\n]{0,180}(?:enthalten|included)/i.test(text)?'Transporti përfshihet sipas dokumentit':/transport|fracht/i.test(text)?'Shiko kushtet e transportit në dokument':'Nuk u gjet në dokument';
+  const cbam=/CBAM/i.test(text)?(/(?:buyer|SPIE|PRISTEEL|importer)[^\n]{0,160}(?:CBAM|declarant)|CBAM[^\n]{0,160}(?:buyer|SPIE|PRISTEEL|importer|declarant)/i.test(text)?'Përgjegjësia përshkruhet në dokument':'CBAM përmendet; përgjegjësia kërkon verifikim'):'Nuk u gjet në dokument';
+  const painting=/painting|beschichtung|lackier/i.test(text)?(/separat|separate|not included|nicht enthalten/i.test(text)?'Paraqitet veçmas / nuk përfshihet në bazën kryesore':'Përshkruhet në dokument'):'Nuk u gjet në dokument';
+  const customs=/customs|zoll|import/i.test(text)?'Importi/dogana përshkruhet në dokument':'Nuk u gjet në dokument';
+  return {lots,amount,currency:amount===null?null:'EUR',amount_basis:lots.length?'Shuma e loteve të nxjerra':'',terms:terms.join(' / '),offer_date:dateMatch?.[1]||'',payment_terms:payment||'',validity:validity||'',transport,cbam,painting,customs,
+    evidence_status:raw&&row.analysis_status==='analyzed'?'E nxjerrë nga dokumenti i analizuar':raw?'Evidence tekstuale në PPPP':'Pa verifikim'};
+}
 export function operationalModel(data, bundle) {
   const mails = newest(list(bundle.emails.rows).filter(m => string(m.project_id || PROJECT_ID) === PROJECT_ID));
   const trusted = mails.filter(m => m.needs_review === false && !m.association_pending);
@@ -174,18 +217,20 @@ export function operationalModel(data, bundle) {
     if (!supplier && !client) continue;
     const sent = client && mailParty(m) === 'pristeel' && /^(outgoing|outbound|out)$/i.test(m.direction);
     const drive = /^[\w-]+$/.test(a.drive_file_id || '') ? 'https://drive.google.com/file/d/'+a.drive_file_id+'/view' : '';
+    const facts=extractOfferFacts(a);
     offerRows.push({ id:'attachment:'+a.id, side:supplier?'supplier':'client', kind:offerKind(a.attachment_name), title:a.attachment_name,
       sent_at:m.sent_at, mail:m, source:a.source || 'Bashkëngjitje në PPPP', source_url:gmailLink(m), drive_url:drive,
-      state:(supplier?'Pranuar nga Aktiva':sent?'Dërguar te SPIE':'Kopje në komunikim me SPIE')+(m.association_pending?' · lidhja me projektin për shqyrtim':''), sent, amount:null, currency:null,
-      terms: (a.attachment_name.replace(/_/g,' ').match(/\b(?:DAP|DDP)\b/gi)||[]).map(x=>x.toUpperCase()).filter((v,i,all)=>all.indexOf(v)===i).join(' / '),
-      content_key:a.content_sha256 || '', attachment_id:a.id,association_pending:m.association_pending===true });
+      state:(supplier?'Pranuar nga Aktiva':sent?'Dërguar te SPIE':'Kopje në komunikim me SPIE')+(m.association_pending?' · lidhja me projektin për shqyrtim':''), sent,
+      ...facts, terms:facts.terms || (a.attachment_name.replace(/_/g,' ').match(/\b(?:DAP|DDP)\b/gi)||[]).map(x=>x.toUpperCase()).filter((v,i,all)=>all.indexOf(v)===i).join(' / '),
+      content_key:a.content_sha256 || '', link_id:a.id,gmail_attachment_id:a.attachment_id||'',attachment_mime_type:a.attachment_mime_type||'',association_pending:m.association_pending===true });
   }
   // Exact filename/content identity, with direct sent evidence taking precedence over returned copies.
   const unique = new Map();
   for (const o of newest(offerRows)) {
     const key=o.side+':'+(o.content_key || o.title.normalize('NFC').toLowerCase());
     const old=unique.get(key);
-    if (!old || (o.sent && !old.sent)) unique.set(key,o);
+    const quality=o=>(o.sent?4:0)+(o.amount!==null?2:0)+(o.evidence_status&&o.evidence_status!=='Pa verifikim'?1:0);
+    if (!old || quality(o)>quality(old)) unique.set(key,o);
   }
   const offers=[...unique.values()];
   for (const m of offerMails) {
@@ -232,9 +277,11 @@ export function operationalModel(data, bundle) {
     structuredMissing:!bundle.suppliers.error&&!bundle.clients.error&&!bundle.suppliers.rows.length&&!bundle.clients.rows.length};
 }
 export async function operational() {
-  const jobs=[['files',files],['emails',emails],['attachments',attachments],['suppliers',supplierOffers],['clients',clientOffers],['suggested',suggestedEmails]];
+  const jobs=[['files',files],['emails',emails],['attachments',attachments],['evidence',offerEvidence],['suppliers',supplierOffers],['clients',clientOffers],['suggested',suggestedEmails]];
   const settled=await Promise.allSettled(jobs.map(([,fn])=>fn()));
   const bundle=Object.fromEntries(jobs.map(([key],i)=>[key,settled[i].status==='fulfilled'?{rows:list(settled[i].value),error:null}:{rows:[],error:settled[i].reason.message}]));
+  const evidenceById=new Map(bundle.evidence.rows.map(row=>[string(row.id),row]));
+  bundle.attachments.rows=bundle.attachments.rows.map(row=>({...row,...(evidenceById.get(string(row.id))||{})}));
   // A suggestion is visible review evidence, never an assigned project email.
   for(const m of bundle.suggested.rows) {
     if(m.project_id!==null || m.suggested_project_id!==PROJECT_ID || m.needs_review!==false || !/tennet.*bunt|spie.*tennet/i.test(m.subject))continue;
@@ -303,7 +350,7 @@ async function enrichMissingOffers(bundle) {
       if(message.id!==m.gmail_message_id||message.threadId!==m.gmail_thread_id)throw new Error('Gmail: identiteti i mesazhit nuk përputhet.');
       const found=[];
       function walk(part){
-        if(part.filename && /\.(?:pdf|xlsx?|docx?|pptx?|zip|dwg|dxf|x83)$/i.test(part.filename))found.push({id:'gmail:'+m.gmail_message_id+':'+found.length,project_id:PROJECT_ID,attachment_name:part.filename,gmail_message_id:m.gmail_message_id,gmail_thread_id:m.gmail_thread_id,source:m.external_source?'Gmail · jashtë regjistrit PPPP':'Gmail · lexim i drejtpërdrejtë'});
+        if(part.filename && /\.(?:pdf|xlsx?|docx?|pptx?|zip|dwg|dxf|x83)$/i.test(part.filename))found.push({id:'gmail:'+m.gmail_message_id+':'+found.length,project_id:PROJECT_ID,attachment_id:part.body?.attachmentId||'',attachment_name:part.filename,attachment_mime_type:part.mimeType||'',attachment_size_bytes:part.body?.size||null,gmail_message_id:m.gmail_message_id,gmail_thread_id:m.gmail_thread_id,source:m.external_source?'Gmail · jashtë regjistrit PPPP':'Gmail · lexim i drejtpërdrejtë'});
         for(const child of list(part.parts))walk(child);
       }
       walk(message.payload||{});return found;
@@ -313,4 +360,16 @@ async function enrichMissingOffers(bundle) {
   // Missing metadata stays visible as a linked sent email even if Google is unavailable.
   const failures=[...settled,...external].filter(r=>r.status==='rejected');
   if(failures.length)bundle.google={rows:[],error:failures.map(r=>r.reason.message).join(' · ')};
+}
+
+export async function downloadAttachment({gmail_message_id,gmail_attachment_id,title,attachment_mime_type}) {
+  const google=googleSession();
+  if(!google)throw new Error('Lidhni Gmail në PPPP për ta hapur bashkëngjitjen drejtpërdrejt.');
+  if(!/^[a-f0-9]+$/i.test(gmail_message_id||'')||!gmail_attachment_id)throw new Error('Identiteti i bashkëngjitjes nuk është i disponueshëm.');
+  const response=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(gmail_message_id)+'/attachments/'+encodeURIComponent(gmail_attachment_id),{method:'GET',cache:'no-store',headers:{Authorization:'Bearer '+google.token}});
+  if(!response.ok)throw new Error('Gmail '+response.status+': dokumenti nuk mund të hapej.');
+  const payload=await response.json(),encoded=string(payload.data).replace(/-/g,'+').replace(/_/g,'/');
+  const bytes=Uint8Array.from(atob(encoded.padEnd(Math.ceil(encoded.length/4)*4,'=')),c=>c.charCodeAt(0));
+  const url=URL.createObjectURL(new Blob([bytes],{type:attachment_mime_type||'application/octet-stream'}));
+  const link=document.createElement('a');link.href=url;link.download=title||'document';link.rel='noopener';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }

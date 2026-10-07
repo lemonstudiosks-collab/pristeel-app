@@ -28,8 +28,12 @@ test('all new reads are bounded, scoped, cached GET requests',async()=>{
  const token='x.'+Buffer.from(JSON.stringify({ref:D.PROJECT_REF,role:'authenticated',exp:Date.now()/1000+3600})).toString('base64url')+'.x';
  globalThis.localStorage={getItem:k=>k==='pristeel_session'?JSON.stringify({access_token:token,expires_at:Date.now()+3600000}):null};
  D.invalidate();const calls=[];globalThis.fetch=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>[]};};
- await D.operational();await D.operational();assert.equal(calls.length,6);
- for(const c of calls){const u=new URL(c.url);assert.equal(c.options.method,'GET');if(u.searchParams.get('project_id')==='is.null')assert.equal(u.searchParams.get('suggested_project_id'),'eq.'+pid);else assert.equal(u.searchParams.get('project_id'),'eq.'+pid);assert(Number(u.searchParams.get('limit'))<=160);assert(!u.searchParams.get('select').includes('extracted_text'));}
+ await D.operational();await D.operational();assert.equal(calls.length,7);
+ for(const c of calls){const u=new URL(c.url);assert.equal(c.options.method,'GET');if(u.searchParams.get('project_id')==='is.null')assert.equal(u.searchParams.get('suggested_project_id'),'eq.'+pid);else assert.equal(u.searchParams.get('project_id'),'eq.'+pid);assert(Number(u.searchParams.get('limit'))<=160);if(u.searchParams.get('select')?.includes('extracted_text')){assert.equal(u.searchParams.get('limit'),'40');assert(u.searchParams.get('or').includes('attachment_name.ilike'));}}
+});
+test('analyzed quotation text produces lot totals and comparison facts without hardcoded prices',()=>{
+ const row={attachment_name:'PRISTEEL_Angebot_TenneT_BUNT_DAP_14.09.2026.xlsx',analysis_status:'analyzed',extracted_text:'Sheet: Los Gelb\nAngebotsdatum,14.09.2026\nSumme Pos. OHNE Montage,,,,,,,"10,372,749.88"\nFracht in EP enthalten; DAP Baustelle\nSheet: Los Rot\nSumme Pos. OHNE Montage,,,,,,,"12,964,252.49"'};
+ const facts=D.extractOfferFacts(row);assert.equal(facts.lots.length,2);assert.equal(facts.amount,23337002.37);assert.equal(facts.offer_date,'14.09.2026');assert.equal(facts.terms,'DAP');assert(facts.transport.includes('përfshihet'));
 });
 test('optional Gmail reads require an existing Google session and never request consent',()=>{globalThis.localStorage={getItem:()=>null};assert.equal(D.googleSession(),null);});
 test('DDP workbook without Angebot in its filename remains an offer, distinct from terms',()=>{

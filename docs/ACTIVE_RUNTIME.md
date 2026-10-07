@@ -1,3 +1,9 @@
+## 2026-10-07 — SPIE offer evidence automation
+
+The dedicated `/spie/` workspace keeps its existing PPPP visual owner and permanent left navigation. Its Offers read-model now combines canonical project emails, attachment identity and a separate bounded analyzed-evidence read. Values and commercial fields are parsed from stored extracted document text at runtime, never hardcoded. Exact content identity deduplicates copies; sent evidence is preferred, and unresolved suggested DDP communication stays review-only.
+
+The UI may download a real Gmail attachment through the already-established Google session. It performs no consent flow, persistence, assignment, business write or protected commercial action. Seven bounded Supabase reads are coalesced for five minutes; the analyzed-evidence query is project-scoped, commercial-name filtered and capped at 40 rows.
+
 ## 2026-10-07 - SPIE suggested offer review
 
 Surface up to twelve unassigned messages that explicitly suggest SPIE, as a separate review-only offer section. The 25 September DDP quotation is visible without an active Google session, while its unresolved Tier C project association remains unconfirmed. Suggested evidence never enters assigned offers, completed work, project flow or phase decisions. No email assignment or business record is changed.

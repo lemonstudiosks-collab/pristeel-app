@@ -1,3 +1,9 @@
+## 2026-10-07 — SPIE offer evidence automation
+
+The existing SPIE workspace now derives supplier and client offer cards from project-linked attachment identities plus a bounded read of analyzed commercial evidence. It extracts offer date, DAP/DDP, verified lot totals, transport, customs/import, CBAM, painting/coating, payment and validity when present; unknown fields remain explicit. Content hashes deduplicate returned copies while preserving the best sent/document evidence. The Offers route adds a source-backed comparison and keeps unassigned DDP communication in the secondary review section.
+
+Existing PPPP layout, typography and the 200px left column remain unchanged. A Google-authenticated user can open the real Gmail attachment directly; without Google, the original Gmail evidence link remains available. The adapter stays read-only, cached for five minutes and bounded to 40 analyzed commercial attachments. It does not assign suggested email, create an offer record, select a supplier, set price/margin or send email.
+
 ## 2026-10-07 - SPIE suggested offer review
 
 Surface up to twelve unassigned messages that explicitly suggest SPIE, as a separate review-only offer section. The 25 September DDP quotation is visible without an active Google session, while its unresolved Tier C project association remains unconfirmed. Suggested evidence never enters assigned offers, completed work, project flow or phase decisions. No email assignment or business record is changed.
