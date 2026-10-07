@@ -1,3 +1,13 @@
+## 2026-10-07 — SPIE operational project overview
+
+The dedicated /spie workspace preserves its existing sidebar, font scale and layout. Overview now prioritizes the current project situation, evidence-backed completed work, review-only next steps, supplier/client offers and requested sample dates. The Offers route separates supplier quotations, sent PriSteel offer versions and accompanying terms; the existing Projects route becomes a chronological communication flow with filters. Files merges existing Drive metadata and exact project-linked attachments with working source links.
+
+The read adapter uses five bounded project-scoped data reads plus its existing project snapshot, coalesced for five minutes across routes. An existing PPPP Google session can additionally read six recent commercial message identities and eight recent communication identities, hydrate at most six missing exact-reference messages, and read at most six missing attachment metadata messages. The UI marks Google-only evidence as outside the PPPP register. It never requests automatic consent, persists source facts, ingests messages, sends email, changes a task or decides a commercial commitment. No schema, worker, scheduler or shared bootstrap changes.
+
+The live source discrepancy remains explicit: PPPP has pricing while source-backed workspace context and current SPIE communication concern Samples; the sent DDP revision dated 25 September is present in Gmail but not in the project's canonical email/attachment registers. UI reads do not silently reconcile those records. Quotation values/margins remain unknown until verified structured evidence exists; document timestamps and filenames never prove acceptance, production or delivery.
+
+Validation: existing authentication/read-only/session/currency tests plus targeted offer identity/version, ambiguity, template exclusion, DDP workbook and sample-evidence regressions; browser interaction tests cover all seven routes, offer/workflow/file filters, source links, stable desktop typography/sidebar, mobile overflow, cache reuse, optional Google source absence, partial failure and logout. Browser provider responses are mocked from read-only source metadata; this does not claim authenticated production provider testing.
+
 ## 2026-10-07 - Descriptive draft subjects without automatic TED notice prefixes
 
 - Keep the published project title in Opportunity draft subjects instead of prepending a TED notice number or falling back to a notice-only subject for long titles.
@@ -722,3 +732,4 @@ Automation may read, classify, reconcile, calculate, compare and prepare drafts.
 ## 2026-10-05 · SPIE Workspace Phase 1
 
 Added the same-origin `spie/` read-only workspace for canonical TenneT project c937aea1-af5e-4807-ae1e-e36864e46794, with executive Overview, Projects, Files, Emails, Finance and Partners. Home includes the entry shortcut; the production artifact includes the dedicated assets. The workspace uses the authenticated bounded project snapshot and lazy project-filtered metadata without global bootstrap changes, new storage, migrations, polling or business writes. Samples is operator-declared and the canonical pricing discrepancy is visible. Unknown health/revisions/importer and unverified financial/contract state are preserved. Seven focused tests plus desktop/mobile browser acceptance passed with fixtures and zero real Supabase browser calls. Documentation: docs/SPIE_WORKSPACE_PHASE1.md.
+

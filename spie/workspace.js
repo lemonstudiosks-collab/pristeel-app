@@ -1,13 +1,14 @@
-import * as D from './data.mjs?v=20261006-sq2';
+import * as D from './data.mjs?v=20261007-operational1';
 
 const view = document.getElementById('view');
 const readStatus = document.getElementById('read-status');
-const allowedViews = ['overview', 'projects', 'files', 'emails', 'finance', 'partners'];
+const allowedViews = ['overview', 'offers', 'projects', 'files', 'emails', 'finance', 'partners'];
 const stages = ['RFQ', 'Offer', 'Negotiation', 'Samples', 'Contract', 'Production', 'Delivery', 'Payment'];
 let routeGeneration = 0;
 let snapshotPromise;
 let snapshotAt = 0;
 let overviewPromise;
+let operationalPromise;
 let authenticatedToken = '';
 const str = x => String(x ?? '');
 const arr = x => Array.isArray(x) ? x : [];
@@ -18,6 +19,7 @@ const labels = Object.freeze({
   "SPIE has shortlisted PriSteel for the next sourcing step and requested two samples, targeting around 12 Oct 2026 if possible. Confirm the technical basis and achievable window. The official order, production start and delivery commitment remain unverified.": "SPIE ka përfshirë PriSteel në listën e ngushtë për fazën e ardhshme të kërkimit të furnitorëve dhe ka kërkuar dy mostra, me synim rreth 12 tetorit 2026 nëse është e mundur. Konfirmoni bazën teknike dhe afatin e realizueshëm. Porosia zyrtare, fillimi i prodhimit dhe zotimi për dorëzim mbeten të paverifikuar.",
   "SPIE Samples phase and existing Drive document metadata": "Faza e mostrave SPIE dhe të dhënat e dokumenteve ekzistuese në Drive",
   "overview": "Pasqyra",
+  "offers": "Ofertat",
   "projects": "Projektet",
   "finance": "Financat",
   "partners": "Partnerët",
@@ -117,8 +119,14 @@ function ensureSnapshot() {
 }
 function ensureOverview() {
   if (Date.now() - snapshotAt > 300000) { snapshotPromise = null; overviewPromise = null; }
-  if (!overviewPromise) overviewPromise = Promise.all([ensureSnapshot(), D.latestFiles().then(rows => ({ rows }), error => ({ rows: [], error: error.message }))]);
+  if (!overviewPromise) overviewPromise = ensureOperational();
   return overviewPromise;
+}
+function ensureOperational() {
+  if (!operationalPromise || Date.now()-snapshotAt>300000) {
+    operationalPromise=Promise.all([ensureSnapshot(),D.operational()]).then(([data,bundle])=>({data,bundle,model:D.operationalModel(data,bundle)}));
+  }
+  return operationalPromise;
 }
 function phase(data) {
   const project = data.project;
@@ -126,7 +134,7 @@ function phase(data) {
   const canonical = mapping[str(project.pipeline_stage).toLowerCase()];
   if (canonical && stages.indexOf(canonical) > 3) return canonical;
   const evidence = D.workspaceEvidence(data)?.value?.workspace_phase;
-  return evidence && stages.includes(evidence.status) && evidence.evidence && D.safeLink(evidence.source_url, 'gmail') ? evidence.status : 'Samples';
+  return evidence && stages.includes(evidence.status) && evidence.evidence && D.safeLink(evidence.source_url, 'gmail') ? evidence.status : canonical || 'Unknown';
 }
 function phaseNote(data) {
   const project = data.project;
@@ -183,11 +191,11 @@ function fileRows(rows, compact = false) {
   if (!rows.length) return empty('Nuk u kthyen të dhëna për dokumentet e projektit. Kontrolloni dosjen ekzistuese në Drive për dokumentacionin e plotë.');
   if (compact) return rows.slice(0,3).map(f => {
     const m=D.metadata(f);
-    return row(f.title || f.file_name || f.doc_nr || 'Dokument', label(m.category) + ' · Rishikimi: ' + (m.revision ?? 'E panjohur'), provenance(label(f.source) || 'Të dhënat e dokumentit në PPPP', f.created_at, D.safeLink(f.drive_url, 'drive')));
+    return row(f.title || f.file_name || f.doc_nr || 'Dokument', label(m.category) + ' · Rishikimi: ' + (m.revision ?? 'E panjohur'), provenance(label(f.source) || 'Të dhënat e dokumentit në PPPP', f.created_at, D.safeLink(f.drive_url, 'drive') || D.safeLink(f.gmail_url,'gmail')));
   }).join('');
   return '<div class="table-wrap"><table><thead><tr><th style="width:40%">Dokumenti</th><th style="width:18%">Kategoria</th><th style="width:20%">Rishikimi</th><th style="width:22%">Burimi / data</th></tr></thead><tbody>' + rows.map(f => {
     const m=D.metadata(f), link=D.safeLink(f.drive_url,'drive');
-    return '<tr><td class="file-title">' + text(f.title || f.file_name || f.doc_nr || 'Dokument') + (m.documentKey ? '<div class="provenance">' + text(m.documentKey) + '</div>' : '') + '</td><td>' + escape(label(m.category)) + (m.categorySuggested ? '<div class="provenance">Propozuar nga titulli</div>' : '') + '</td><td>' + text(m.revision ?? 'E panjohur') + (m.latest ? '<div class="provenance">Rishikimi i fundit i verifikuar</div>' : '<div class="provenance">Më i fundit: I panjohur</div>') + '</td><td>' + (sourceLink(link,'Drive') || '<span class="muted">Lidhja e Drive nuk është e disponueshme</span>') + '<div class="provenance">' + date(f.doc_date || f.created_at) + (f.source_observed_at ? ' · Të dhënat u kontrolluan më ' + date(f.source_observed_at) : '') + '</div></td></tr>';
+    return '<tr><td class="file-title">' + text(f.title || f.file_name || f.doc_nr || 'Dokument') + (m.documentKey ? '<div class="provenance">' + text(m.documentKey) + '</div>' : '') + '</td><td>' + escape(label(m.category)) + (m.categorySuggested ? '<div class="provenance">Propozuar nga titulli</div>' : '') + '</td><td>' + text(m.revision ?? 'E panjohur') + (m.latest ? '<div class="provenance">Rishikimi i fundit i verifikuar</div>' : '<div class="provenance">Më i fundit: I panjohur</div>') + '</td><td>' + (sourceLink(link,'Drive') || sourceLink(D.safeLink(f.gmail_url,'gmail'),'Gmail') || '<span class="muted">Lidhja e Drive nuk është e disponueshme</span>') + '<div class="provenance">' + date(f.doc_date || f.created_at) + (f.source_observed_at ? ' · Të dhënat u kontrolluan më ' + date(f.source_observed_at) : '') + '</div></td></tr>';
   }).join('') + '</tbody></table></div>';
 }
 function communication(data) {
@@ -204,23 +212,121 @@ function milestones(data) {
   if (f) return f.value.milestones.slice(0,4).map(m=>row(m.title || m.name || 'Afati', (m.due_date ? date(m.due_date) + ' · ' : '') + label(m.status || 'Unknown'), provenance(f.subject,f.updated_at,factSource(f)))).join('');
   return empty('Pasqyra aktuale nuk përmban afate të konfirmuara. Një datë e kërkuar me email duhet të konfirmohet para se të bëhet zotim.');
 }
-function renderOverview(data, latest) {
-  const p=data.project;
-  return '<div class="hero"><p class="eyebrow">SPIE / PASQYRA E PËRGJITHSHME</p><h1>' + text(p.name) + '</h1><div class="hero-meta"><span>Faza aktuale · <strong>' + escape(label(phase(data))) + '</strong></span>' + badge(p.operational_state === 'action_required' ? 'Attention' : 'Unknown') + '<span>Gjendja në PPPP: ' + text(label(p.operational_state || p.status || 'Unknown')) + '</span></div><div class="summary">' + summary(data) + '</div>' + stageTrack(data) + phaseNote(data) + '</div>'
-  + '<div class="columns"><div>' + section('Kërkon vëmendje tani',currentActions(data)) + section('Në pritje të',waitingFor(data))
-  + section('Çfarë ka ndryshuar', '<p class="muted small">Provat më të fundit të regjistruara; pa krahasim historik.</p>' + (facts(data).length ? facts(data).slice(0,3).map(f=>row(f.subject || f.fact_key, f.fact_status === 'suggested' ? 'Propozim · kërkon shqyrtim' : 'Vëzhgim i regjistruar', provenance('Përditësim i kontekstit në PPPP',f.updated_at,factSource(f)))).join('') : empty('Nuk u kthyen prova të fundit për kontekstin.')))
-  + section('Skedarët e fundit',latest.error ? notice(latest.error,true) : fileRows(D.evidenceFiles(data,latest.rows).sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at))),true),'files')
-  + '</div><div>' + section('Financat dhe kontrata',contractSnapshot(data),'finance') + section('Afatet e ardhshme',milestones(data)) + section('Gjendja e projektit',health(data)) + section('Komunikimi i fundit',communication(data),'emails') + '</div></div>' + footer();
+function operationPhase(data,model) {
+  const canonical=phase(data);
+  return stages.indexOf(canonical)>3 ? canonical : model.sample?'Samples':canonical;
 }
-function renderProjects(data) {
-  const p=data.project;
-  return pageHeader('Projektet','Një projekt i vetëm TenneT në PPPP, pa dublikatë ose regjistër paralel.')
-    + section(p.name, '<dl class="facts"><div><dt>Klienti</dt><dd>' + text(p.client) + '</dd></div><div><dt>Faza aktuale e punës</dt><dd>' + escape(label(phase(data))) + '</dd></div><div><dt>Referenca</dt><dd>' + text(p.business_ref || p.ref || 'E panjohur') + '</dd></div><div><dt>Gjendja operative në PPPP</dt><dd>' + text(label(p.operational_state || 'Unknown')) + '</dd></div><div><dt>Faza në PPPP</dt><dd>' + text(label(p.pipeline_stage || 'Unknown')) + '</dd></div><div><dt>Emaili i fundit i lidhur</dt><dd>' + date(p.last_email_at) + '</dd></div></dl>' + stageTrack(data) + phaseNote(data))
-    + section('Burimet e projektit', '<p>' + sourceLink(D.safeLink(p.drive_folder_url,'drive'),'Dosja ekzistuese në Drive') + '</p><a class="btn" href="#overview">Pasqyra e përgjithshme →</a>') + footer();
+function operationErrors(model) {
+  const names={files:'Dokumentet',emails:'Emailat',attachments:'Bashkëngjitjet',suppliers:'Ofertat e furnitorëve',clients:'Ofertat tona'};
+  return model.errors.map(e=>notice((names[e.source]||e.source)+': '+e.error,true)).join('');
+}
+function offerRows(offers,compact=false) {
+  if(!offers.length)return empty('Nuk u kthye ofertë në burimet e lexuara. Kontrolloni komunikimin dhe dosjen e projektit.');
+  return offers.slice(0,compact?2:100).map(o=>{
+    const price=o.amount===null || o.amount===undefined ? 'Vlera dhe kushtet: në dokumentin origjinal' : 'Vlera e regjistruar: '+amount(o.amount,o.currency);
+    const meta=date(o.sent_at)+' · '+o.state+(o.terms?' · '+o.terms:'');
+    const links=(sourceLink(D.safeLink(o.drive_url,'drive'),'Hap dokumentin')||'')+' '+sourceLink(o.source_url,'Gmail');
+    const body='<div class="muted small">'+escape(meta)+'</div><p class="muted small">'+price+'</p>'+provenance(o.source,null)+(links?'<p>'+links+'</p>':'')
+      +(o.metadata_missing?'<p class="provenance">Dërgimi dhe bashkëngjitjet janë regjistruar në email; emrat e skedarëve lexohen nga Gmail kur sesioni Google është aktiv.</p>':'')
+      +(!compact?'<dl class="facts"><div><dt>Lloji</dt><dd>'+escape(o.kind==='terms'?'Kushtet e ofertës':'Oferta')+'</dd></div><div><dt>Pagesa / dorëzimi</dt><dd>'+text(o.payment_terms||'Shiko dokumentin')+(o.delivery_weeks?' · '+text(o.delivery_weeks)+' javë':'')+'</dd></div></dl>'
+      +(o.inclusions?row('Përfshirë',o.inclusions):'')+(o.exclusions?row('Përjashtuar',o.exclusions):''):'');
+    return compact?'<div class="row"><div class="row-title">'+text(o.title)+'</div>'+body+'</div>':'<details class="offer-record" data-side="'+escape(o.side)+'"><summary>'+text(o.title)+'<div class="provenance">'+escape(meta)+'</div></summary>'+body+'</details>';
+  }).join('');
+}
+function nextSteps(data,model) {
+  if(model.sample && operationPhase(data,model)==='Samples') {
+    const evidence=model.currentRequest||model.sample;
+    return row('Aktiva: konfirmo statusin real të vizatimeve dhe dy mostrave',
+      'Merr statusin e prodhimit, kontrollit teknik dhe datën e realizueshme të përfundimit. Plani i deklaruar me email nuk provon se prodhimi ka filluar.',
+      provenance('Propozim për Arianitin / koordinim me Aktivën',evidence.sent_at,D.gmailLink(model.supplierSample||evidence)))
+      +row('Koordino transportin, importin dhe afatin me SPIE',
+      'Konfirmo gatishmërinë e dokumenteve dhe dërgimit. Data e kërkuar nga SPIE mbetet synim derisa të konfirmohet afati.',
+      provenance('Propozim për Arianitin / logjistikën',evidence.sent_at,D.gmailLink(evidence)))
+      +row('Verifiko porosinë zyrtare dhe dokumentet e mostrave',
+      'Kontrollo nëse porosia është pranuar dhe nëse baza teknike është e plotë. Miratimi i mënyrës së punës me email nuk zëvendëson porosinë.',
+      provenance('Kontroll para zotimit',evidence.sent_at,D.gmailLink(model.approval||evidence)));
+  }
+  const actions=arr(data.operator_actions).filter(a=>!['mbyllur','closed','done','cancelled'].includes(str(a.status).toLowerCase()));
+  return actions.slice(0,3).map(a=>row(a.title,a.detail,provenance('Veprim i regjistruar · Afati '+date(a.due_date),a.created_at,factSource(a)))).join('')||empty('Nuk ka veprim të verifikuar në të dhënat e kthyera. Shqyrto komunikimin më të fundit.');
+}
+function projectNow(data,model) {
+  if(model.sample && operationPhase(data,model)==='Samples') {
+    return 'Projekti është te dy mostrat për SPIE. '+(model.approval?'SPIE ka konfirmuar mënyrën e propozuar të punës. ':'')+'Duhet verifikuar statusi real i përgatitjes, prodhimit dhe dorëzimit me Aktivën dhe logjistikën.'
+      +provenance('Komunikimi më i fundit për mostrat',(model.approval||model.currentRequest||model.sample).sent_at,D.gmailLink(model.approval||model.currentRequest||model.sample));
+  }
+  return summary(data);
+}
+function verifiedProgress(model) {
+  const supplier=model.offers.find(o=>o.side==='supplier'&&o.kind==='offer');
+  const sent=model.offers.find(o=>o.side==='client'&&o.sent&&o.kind==='offer');
+  return (supplier?row('Oferta e Aktivës është në dispozicion',supplier.title,provenance(supplier.state,supplier.sent_at,supplier.source_url)):'')
+    +(sent?row('Oferta jonë është dërguar te SPIE',sent.title,provenance('Prova e dërgimit',sent.sent_at,sent.source_url)):'')
+    +(model.currentRequest?row('SPIE ka kërkuar dy mostra','Kërkesa teknike dhe destinacioni në emailin origjinal.',provenance('Kërkesa e klientit',model.currentRequest.sent_at,D.gmailLink(model.currentRequest))):'')
+    +(model.approval?row('SPIE ka miratuar mënyrën e propozuar të punës','Konfirmim i procedurës; përfundimi dhe dorëzimi nuk janë të provuar.',provenance('Përgjigjja e SPIE',model.approval.sent_at,D.gmailLink(model.approval))):'')
+    ||empty('Kontrolloni rrjedhën e projektit për provat e punës së kryer.');
+}
+function workflowRows(model,compact=false) {
+  const rows=compact?model.timeline.slice(0,6):[...model.timeline].reverse();
+  if(!rows.length)return empty('Nuk u kthye komunikim i verifikuar i projektit.');
+  const parties={supplier:'Aktiva',client:'SPIE',pristeel:'PriSteel',other:'Palë tjetër'};
+  return '<div class="workflow-list">'+rows.map(m=>'<details class="workflow-event" data-party="'+escape(m.party)+'"><summary><span class="workflow-date">'+date(m.date)+'</span><span>'+text(m.title)+'<span class="provenance">'+escape(parties[m.party])+' · '+escape(label(m.direction))+'</span></span></summary>'
+    +(m.body?'<p class="message-preview">'+text(m.body,1800)+'</p>':'')
+    +(m.files.length?'<p class="provenance">Dokumente: '+m.files.map(f=>text(f.title)).join(' · ')+'</p>':'')
+    +'<p>'+sourceLink(m.source_url,'Lexo komunikimin në Gmail')+'</p></details>').join('')+'</div>';
+}
+function currentDeadlines(model) {
+  const request=model.currentRequest||model.sample;
+  if(!request)return empty('Afatet e ardhshme kërkojnë verifikim në komunikimin aktual.');
+  const body=D.messageText(request);
+  const matches=[...body.matchAll(/\b(\d{1,2})\.(\d{1,2})\.(20\d{2})\b/g)];
+  // Display explicit client-requested dates as requests, never delivery commitments.
+  return matches.length?matches.slice(0,3).map(m=>row('Synimi i kërkuar nga SPIE',m[0]+' · Afat i kërkuar, ende për t’u konfirmuar me prodhuesin dhe transportin.',provenance('Kërkesa e klientit',request.sent_at,D.gmailLink(request)))).join(''):row('Afati i mostrave','Shiko datën e kërkuar nga SPIE dhe konfirmo realizueshmërinë.',provenance('Komunikimi i SPIE',request.sent_at,D.gmailLink(request)));
+}
+function renderOverview(data,model) {
+  const p=data.project, stage=operationPhase(data,model);
+  const suppliers=model.offers.filter(o=>o.side==='supplier'&&o.kind==='offer');
+  const clients=model.offers.filter(o=>o.side==='client'&&o.kind==='offer');
+  const progress='<ol class="stage-track" aria-label="Fazat e projektit">'+stages.map(s=>'<li'+(s===stage?' aria-current="step"':'')+'>'+escape(label(s))+'</li>').join('')+'</ol>';
+  return '<div class="hero"><p class="eyebrow">SPIE / TENNET BUNT</p><h1>'+text(p.name)+'</h1><div class="hero-meta"><span>Faza e punës · <strong>'+escape(label(stage))+'</strong></span>'
+    +badge(p.operational_state==='action_required'?'Attention':'Unknown')+'<span>Komunikimi i fundit · '+date(model.trusted[0]?.sent_at||p.last_email_at)+'</span></div><div class="summary">'+projectNow(data,model)+'</div>'+progress+'</div>'
+    +operationErrors(model)
+    +'<div class="columns"><div>'+section('Çfarë duhet bërë tani',nextSteps(data,model))
+    +section('Çfarë është bërë',verifiedProgress(model))
+    +section('Oferta e Aktivës',offerRows(suppliers,true),'offers')+'</div><div>'
+    +section('Oferta jonë për SPIE',offerRows(clients,true),'offers')
+    +section('Afati dhe pikat e hapura',currentDeadlines(model)+(model.sample?row('Ende kërkon provë','Porosia zyrtare, fillimi real i prodhimit, përfundimi i kontrollit dhe dërgimi i mostrave.'):''))
+    +section('Dokumentet e projektit',fileRows(model.files.filter(f=>D.metadata(f).category==='Technical'||/3207|stückliste|werkstattzeichnung/i.test(f.title||'')).sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at))),true),'files')+'</div></div>'
+    +section('Rrjedha e fundit e projektit',workflowRows(model,true),'projects')
+    +(stage==='Samples'&&!/^(sample|samples)$/i.test(p.pipeline_stage)?'<p class="metrics-note">Faza e punës mbështetet në komunikimin e mostrave. Faza e regjistruar në PPPP: '+escape(label(p.pipeline_stage))+'. Kërkon harmonizim të regjistrit; nuk është ndryshuar automatikisht.</p>':'')
+    +footer();
+}
+async function renderOffers() {
+  const {model}=await ensureOperational();
+  return pageHeader('Ofertat','Aktiva → PriSteel → SPIE. Çdo version ruan dokumentin dhe provën e vet të komunikimit.')
+    +operationErrors(model)
+    +(!D.googleSession()?'<p class="muted small">Për ofertat më të reja që ende nuk janë lidhur në PPPP, <a class="evidence-link" href="../pristeel-procurement.html">lidhe Gmail në PPPP</a> dhe rihap SPIE. Ofertat e regjistruara shfaqen më poshtë.</p>':'')
+    +'<div class="toolbar"><label>Pala <select id="offer-side"><option value="">Të gjitha</option><option value="supplier">Aktiva / furnitorët</option><option value="client">PriSteel → SPIE</option></select></label><label>Kërko ofertën <input id="offer-search" type="search" placeholder="DAP, DDP, data ose dokumenti"></label></div>'
+    +(model.structuredMissing?'<p class="muted small">Ofertat ekzistojnë në komunikime dhe dokumente. Vlerat e krahasueshme ende nuk janë në regjistrat e strukturuar të ofertave; shumat dhe marzhi kërkojnë verifikim.</p>':'')
+    +'<div id="offer-results">'+offerSections(model.offers)+'</div>'
+    +section('Krahasimi dhe lidhja mes ofertave','<p class="muted small">Kontrollo për secilin version sasinë dhe lotet, DAP/DDP, lyerjen, transportin/importin, CBAM, pagesën dhe vlefshmërinë. Shfaqja krah për krah nuk provon se dy oferta kanë të njëjtin objekt. Pa bazë të verifikuar nuk llogaritet marzh dhe nuk vendoset çmim final.</p>')
+    +footer();
+}
+function offerSections(offers) {
+  return '<div class="columns"><div>'+section('Aktiva / ofertat e furnitorëve',offerRows(offers.filter(o=>o.side==='supplier')) )+'</div><div>'+section('PriSteel / ofertat për SPIE',offerRows(offers.filter(o=>o.side==='client')) )+'</div></div>';
+}
+async function renderProjects() {
+  const {data,model}=await ensureOperational();
+  return pageHeader('Rrjedha e projektit','Komunikimet dhe ofertat sipas datës. Ngjarjet janë prova komunikimi; përfundimi i fazave kërkon konfirmim.')
+    +operationErrors(model)
+    +'<div class="toolbar"><label>Pala <select id="workflow-party"><option value="">Të gjitha</option><option value="client">SPIE</option><option value="supplier">Aktiva</option><option value="pristeel">PriSteel</option><option value="other">Palët e tjera</option></select></label><label>Kërko <input id="workflow-search" type="search" placeholder="Mostrat, oferta, dogana..."></label></div>'
+    +'<div id="workflow-results">'+workflowRows(model)+'</div>'
+    +section('Regjistrat që kërkojnë rishikim','<details><summary>Gjendja dhe veprimet e regjistruara në PPPP</summary><p class="muted small">Faza në regjistër: '+escape(label(data.project.pipeline_stage))+'. Veprimet e vjetra automatike duhen verifikuar përballë komunikimeve më të reja.</p>'
+      +arr(data.operator_actions).map(a=>row(a.title,a.detail,provenance('Afati i regjistruar '+date(a.due_date),a.created_at))).join('')+'</details>')
+    +(model.limits.emails?notice('U arrit kufiri i emailave. Rrjedha e shfaqur mund të mos përfshijë komunikimet më të vjetra.'):'')+footer();
 }
 async function renderFiles() {
-  const [data,records] = await Promise.all([ensureSnapshot(),D.files()]);
-  const rows=D.evidenceFiles(data,records);
+  const {data,model,bundle} = await ensureOperational();
+  const records=bundle.files.rows,rows=model.files;
   const folder=D.safeLink(data.project.drive_folder_url,'drive');
   return pageHeader('Skedarët','Të dhënat dhe lidhjet e projektit. Dokumentet origjinale ruhen në dosjen ekzistuese në Google Drive.')
   + '<p>' + sourceLink(folder,'Hap dosjen e projektit në Drive') + '</p>'
@@ -240,10 +346,11 @@ function context(mail) {
   return 'General';
 }
 function emailRows(rows) {
-  return rows.length ? rows.map(m=>'<details><summary><strong>' + text(m.subject || '(Pa subjekt)') + '</strong><div class="provenance">' + text(m.from_name || m.from_email) + ' · ' + date(m.sent_at) + ' · ' + text(label(m.direction || 'Unknown')) + ' · ' + escape(label(context(m))) + (m.needs_review ? ' · Lidhja kërkon shqyrtim' : '') + '</div></summary><dl class="facts"><div><dt>Nga</dt><dd>' + text(m.from_email) + '</dd></div><div><dt>Për / CC</dt><dd>' + text(arr(m.to_emails).concat(arr(m.cc_emails)).join(', '),700) + '</dd></div></dl><p>' + sourceLink(D.gmailLink(m),'Lexo bisedën origjinale në Gmail') + '</p></details>').join('') : empty('Nuk ka emaila të lidhur që përputhen me këta filtra.');
+  return rows.length ? rows.map(m=>'<details><summary><strong>' + text(m.subject || '(Pa subjekt)') + '</strong><div class="provenance">' + text(m.from_name || m.from_email) + ' · ' + date(m.sent_at) + ' · ' + text(label(m.direction || 'Unknown')) + ' · ' + escape(label(context(m))) + (m.needs_review ? ' · Lidhja kërkon shqyrtim' : '') + '</div></summary><dl class="facts"><div><dt>Nga</dt><dd>' + text(m.from_email) + '</dd></div><div><dt>Për / CC</dt><dd>' + text(arr(m.to_emails).concat(arr(m.cc_emails)).join(', '),700) + '</dd></div></dl>'+ (m.snippet ? '<p class="message-preview">'+text(D.messageText(m),1800)+'</p>':'') +'<p>' + sourceLink(D.gmailLink(m),'Lexo bisedën origjinale në Gmail') + '</p></details>').join('') : empty('Nuk ka emaila të lidhur që përputhen me këta filtra.');
 }
 async function renderEmails() {
-  const rows=await D.emails();
+  const {model}=await ensureOperational();
+  const rows=model.mails;
   const domains=[...new Set(rows.map(m=>str(m.from_email).split('@')[1]).filter(Boolean))].sort();
   return pageHeader('Emailat','Komunikimi i lidhur me TenneT. Gmail mbetet burimi origjinal; këtu nuk dërgohen emaila.')
     + '<div class="toolbar"><label>Kompania / kontakti <select id="email-company"><option value="">Të gjithë dërguesit</option>' + domains.map(d=>'<option value="'+escape(d)+'">'+escape(d)+'</option>').join('') + '</select></label><label>Konteksti <select id="email-context"><option value="">Të gjitha kontekstet</option>' + ['Samples','Technical','Commercial','Contracts','Finance','Logistics','General'].map(c=>'<option value="'+escape(c)+'">'+escape(label(c))+'</option>').join('') + '</select></label><label>Kërko <input id="email-search" type="search" placeholder="Subjekti ose kontakti"></label></div>'
@@ -288,13 +395,27 @@ async function renderPartners() {
     + '<p class="view-footer">Deri në '+D.LIMITS.contacts+' kontakte të projektit nga PPPP; pa kërkim në të gjitha kontaktet.</p>' + footer();
 }
 function installFilters(name) {
+  if(name==='offers' || name==='projects') {
+    const prefix=name==='offers'?'offer':'workflow';
+    const selector=document.getElementById(prefix+(name==='offers'?'-side':'-party'));
+    const search=document.getElementById(prefix+'-search');
+    const results=document.getElementById(prefix+'-results');
+    const generation=routeGeneration;
+    const apply=async()=>{
+      const {model}=await ensureOperational();
+      if(generation!==routeGeneration||!results?.isConnected)return;
+      const q=search.value.trim().toLowerCase();
+      results.innerHTML=name==='offers'?offerSections(model.offers.filter(o=>(!selector.value||o.side===selector.value)&&[o.title,o.state,o.terms].join(' ').toLowerCase().includes(q))):workflowRows({...model,timeline:model.timeline.filter(m=>(!selector.value||m.party===selector.value)&&[m.title,m.body].join(' ').toLowerCase().includes(q))});
+    };
+    selector?.addEventListener('change',apply);search?.addEventListener('input',apply);
+  }
   if(name==='files') {
-    const apply=async()=>{ const [data,records]=await Promise.all([ensureSnapshot(),D.files()]); const rows=D.evidenceFiles(data,records); const category=document.getElementById('file-category'); const search=document.getElementById('file-search'); const results=document.getElementById('file-results'); if(!category||!search||!results)return; const q=search.value.toLowerCase();results.innerHTML=fileRows(rows.filter(r=> (category.value==='All'||D.metadata(r).category===category.value) && [r.title,r.file_name,r.doc_nr,D.metadata(r).revision].map(str).join(' ').toLowerCase().includes(q))); };
+    const apply=async()=>{ const {model}=await ensureOperational(); const rows=model.files; const category=document.getElementById('file-category'); const search=document.getElementById('file-search'); const results=document.getElementById('file-results'); if(!category||!search||!results)return; const q=search.value.toLowerCase();results.innerHTML=fileRows(rows.filter(r=> (category.value==='All'||D.metadata(r).category===category.value) && [r.title,r.file_name,r.doc_nr,D.metadata(r).revision].map(str).join(' ').toLowerCase().includes(q))); };
     document.getElementById('file-category')?.addEventListener('change',apply);
     document.getElementById('file-search')?.addEventListener('input',apply);
   }
   if(name==='emails') {
-    const apply=async()=>{ const rows=await D.emails(); const company=document.getElementById('email-company');const ctx=document.getElementById('email-context');const search=document.getElementById('email-search'); const results=document.getElementById('email-results');if(!company||!ctx||!search||!results)return;results.innerHTML=emailRows(rows.filter(r=>(!company.value||str(r.from_email).endsWith('@'+company.value))&&(!ctx.value||context(r)===ctx.value)&&[r.subject,r.from_name,r.from_email,...arr(r.to_emails),...arr(r.cc_emails)].map(str).join(' ').toLowerCase().includes(search.value.toLowerCase())));};
+    const apply=async()=>{ const {model}=await ensureOperational(); const rows=model.mails; const company=document.getElementById('email-company');const ctx=document.getElementById('email-context');const search=document.getElementById('email-search'); const results=document.getElementById('email-results');if(!company||!ctx||!search||!results)return;results.innerHTML=emailRows(rows.filter(r=>(!company.value||str(r.from_email).endsWith('@'+company.value))&&(!ctx.value||context(r)===ctx.value)&&[r.subject,r.from_name,r.from_email,...arr(r.to_emails),...arr(r.cc_emails)].map(str).join(' ').toLowerCase().includes(search.value.toLowerCase())));};
     ['email-company','email-context'].forEach(id=>document.getElementById(id)?.addEventListener('change',apply));
     document.getElementById('email-search')?.addEventListener('input',apply);
   }
@@ -304,7 +425,7 @@ async function route() {
   const name=allowedViews.includes(requested)?requested:'overview';
   const generation=++routeGeneration;
   const current=D.session();
-  if(current?.access_token!==authenticatedToken) { snapshotPromise=null;overviewPromise=null;authenticatedToken=current?.access_token||''; }
+  if(current?.access_token!==authenticatedToken) { snapshotPromise=null;overviewPromise=null;operationalPromise=null;authenticatedToken=current?.access_token||''; }
   document.querySelectorAll('[data-view]').forEach(a=>a.setAttribute('aria-current',a.dataset.view===name?'page':'false'));
   view.setAttribute('aria-busy','true');
   view.innerHTML='<div class="loading-surface">'+pageHeader(label(name),'Duke lexuar të dhënat e verifikuara të projektit…')+'</div>';
@@ -312,9 +433,9 @@ async function route() {
   try {
     if(!current) throw new Error('SESSION_REQUIRED: Hapni PPPP për të hyrë ose rinovuar sesionin, pastaj kthehuni te SPIE.');
     let html;
-    if(name==='overview') { const [data,latest]=await ensureOverview();html=renderOverview(data,latest);readStatus.textContent='Pasqyra · '+date(data.generated_at)+' '+time(data.generated_at); }
-    else if(name==='projects') html=renderProjects(await ensureSnapshot());
-    else html=await ({files:renderFiles,emails:renderEmails,finance:renderFinance,partners:renderPartners}[name])();
+    if(name==='overview') { const {data,model}=await ensureOverview();html=renderOverview(data,model);readStatus.textContent='Pasqyra · '+date(data.generated_at)+' '+time(data.generated_at); }
+    else if(name==='projects') html=await renderProjects();
+    else html=await ({offers:renderOffers,files:renderFiles,emails:renderEmails,finance:renderFinance,partners:renderPartners}[name])();
     if(generation!==routeGeneration || D.session()?.access_token!==authenticatedToken)return;
     view.innerHTML=html;
     if(name!=='overview') readStatus.textContent='Regjistrat e projektit · vetëm për lexim';
@@ -323,10 +444,10 @@ async function route() {
     if(generation!==routeGeneration)return;
     readStatus.textContent='Të dhënat nuk janë verifikuar';
     view.innerHTML='<div class="error-state">'+pageHeader('Të dhënat e projektit nuk janë të disponueshme','Dështimi i leximit nuk lejon përfundim për gjendjen e biznesit.')+notice(error.message,true)+'<p><a class="btn" href="../pristeel-procurement.html">Hap PPPP</a></p><button class="btn" id="retry">Riprovo këtë faqe</button></div>';
-    document.getElementById('retry')?.addEventListener('click',()=>{D.invalidate();snapshotPromise=null;overviewPromise=null;route();},{once:true});
+    document.getElementById('retry')?.addEventListener('click',()=>{D.invalidate();snapshotPromise=null;overviewPromise=null;operationalPromise=null;route();},{once:true});
   } finally { if(generation===routeGeneration)view.setAttribute('aria-busy','false'); }
 }
 window.addEventListener('hashchange',route);
-window.addEventListener('storage',event=>{if(event.key==='pristeel_session'||event.key===null)route();});
+window.addEventListener('storage',event=>{if(event.key==='pristeel_session'||event.key===null)route();else if(event.key==='pst_google_workspace_token_v2'){overviewPromise=null;operationalPromise=null;route();}});
 window.addEventListener('pageshow',event=>{if(event.persisted)route();});
 route();
