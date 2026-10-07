@@ -60,3 +60,5 @@ assert.match(security,/security invoker/i,'EU Direct read RPC must run with call
 assert.match(security,/revoke execute .*pppp_chatgpt_bridge_manifest_v28\(\).* authenticated/i,'direct authenticated execution of manifest v28 must stay revoked');
 
 console.log('EU Direct Companies v1 smoke: OK');
+
+await import('./eu-direct-decision-workbench-smoke.mjs');
