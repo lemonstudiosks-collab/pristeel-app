@@ -274,7 +274,8 @@ async function enrichMissingOffers(bundle) {
     const headers=list(m.payload?.headers),header=name=>string(headers.find(h=>h.name.toLowerCase()===name.toLowerCase())?.value);
     const address=text=>string(text).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[];
     const from=(address(header('From'))[0]||'').toLowerCase(),to=address(header('To')).map(x=>x.toLowerCase());
-    const subject=header('Subject'),incoming=/@(?:aktiva\.com\.mk|spie\.com)$/.test(from),outgoing=/@prissteel\.com$/.test(from)&&to.some(x=>/@(?:spie\.com|aktiva\.com\.mk)$/.test(x));
+    const subject=header('Subject'),incoming=/@(?:aktiva\.com\.mk|spie\.com)$/.test(from),outgoing=list(m.labelIds).includes('SENT')&&/@prissteel\.com$/.test(from)&&to.some(x=>/@(?:spie\.com|aktiva\.com\.mk)$/.test(x));
+    if(list(m.labelIds).some(label=>['DRAFT','TRASH','SPAM'].includes(label)))return null;
     if(!/tennet.*bunt|spie.*tennet/i.test(subject)||(!incoming&&!outgoing))return null;
     let plain='';function body(part){if(part.mimeType==='text/plain'&&part.body?.data&&!plain){try{const bytes=Uint8Array.from(atob(part.body.data.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));plain=new TextDecoder().decode(bytes).slice(0,2200);}catch{}}for(const child of list(part.parts))body(child);}body(m.payload||{});
     const hasDocuments=part=>/\.(?:pdf|xlsx?|docx?|pptx?|zip|dwg|dxf|x83)$/i.test(part.filename||'')||list(part.parts).some(hasDocuments);

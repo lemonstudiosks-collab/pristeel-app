@@ -37,3 +37,10 @@ test('DDP workbook without Angebot in its filename remains an offer, distinct fr
  const b=bundle([mail('aaa','arianit@prissteel.com','TenneT BUNT Angebot DDP','2026-09-25',{has_attachments:true})],[attachment(1,'PRISTEEL_Angebotsbedingungen_DDP_FINAL.pdf','aaa')]);
  const m=D.operationalModel(data,b);assert.equal(m.offers.length,2);assert(m.offers.some(o=>o.kind==='offer'&&o.metadata_missing));
 });
+test('Google-only drafts are never treated as sent offers; SENT metadata supplies source-only evidence',async()=>{
+ const values=new Map();const token='x.'+Buffer.from(JSON.stringify({ref:D.PROJECT_REF,role:'authenticated',exp:Date.now()/1000+3600})).toString('base64url')+'.x';
+ values.set('pristeel_session',JSON.stringify({access_token:token,expires_at:Date.now()+3600000}));values.set('pst_google_workspace_token_v2','google-fixture');values.set('pst_google_workspace_token_exp_v2',String(Date.now()+3600000));values.set('pst_google_workspace_scopes_v2','https://www.googleapis.com/auth/gmail.readonly');globalThis.localStorage={getItem:k=>values.get(k)||null};
+ let sent=false;const calls=[];globalThis.fetch=async(url,options)=>{calls.push({url,method:options.method});const u=new URL(url);let body=[];if(u.hostname==='gmail.googleapis.com')body=u.pathname.endsWith('/messages')?{messages:[{id:'abcdef',threadId:'abcdef'}]}:{id:'abcdef',threadId:'abcdef',labelIds:sent?['SENT']:['DRAFT'],internalDate:String(Date.now()),snippet:'Our offer',payload:{headers:[{name:'From',value:'arianit@prissteel.com'},{name:'To',value:'laura@spie.com'},{name:'Subject',value:'PRISTEEL Angebot TenneT BUNT DDP'}],parts:[{filename:'PRISTEEL_TenneT_BUNT_DDP_FINAL.xlsx'}]}};return {ok:true,json:async()=>body};};
+ D.invalidate();let b=await D.operational();assert.equal(D.operationalModel(data,b).offers.length,0);
+ sent=true;D.invalidate();b=await D.operational();const offers=D.operationalModel(data,b).offers;assert.equal(offers.length,1);assert.equal(offers[0].sent,true);assert.equal(offers[0].source,'Gmail · jashtë regjistrit PPPP');assert(calls.every(c=>c.method==='GET'));
+});
