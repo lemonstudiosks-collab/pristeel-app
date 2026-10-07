@@ -273,6 +273,22 @@
     {
       "path": "spie/bridge.mjs",
       "reason": "SPIE operational workspace: existing PPPP session, canonical evidence projections, and human-approved command-sheet writes only."
+    },
+    {
+      "path": "spie/documents.mjs",
+      "reason": "SPIE source-derived official document models and human-opened canonical editor; early guard blocks background writes."
+    },
+    {
+      "path": "spie/document-models.mjs",
+      "reason": "SPIE source-derived official document models and human-opened canonical editor; early guard blocks background writes."
+    },
+    {
+      "path": "spie/editor-host.mjs",
+      "reason": "SPIE source-derived official document models and human-opened canonical editor; early guard blocks background writes."
+    },
+    {
+      "path": "spie/editor-safety.js",
+      "reason": "SPIE source-derived official document models and human-opened canonical editor; early guard blocks background writes."
     }
   ],
   "compatibilityPublicAssets": [

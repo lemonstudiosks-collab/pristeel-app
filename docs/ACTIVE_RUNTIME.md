@@ -382,3 +382,9 @@ The workspace links canonical TenneT project `c937aea1-af5e-4807-ae1e-e36864e467
 
 No records, Gmail bodies, documents or business decisions are created or modified. Physical files remain in the permanent Drive folder and original communication remains in Gmail. See `docs/SPIE_WORKSPACE_PHASE1.md` for limitations and verification.
 
+
+## SPIE commercial documents — 2026-10-07
+
+SPIE now opens existing canonical offer/invoice/credit controllers through a guarded same-origin child editor. `spie/document-models.mjs` owns only the uploaded-source document layouts; `spie/documents.mjs` owns the project dialog and draft composer; `spie/editor-host.mjs` adapts the existing document owners. `spie/editor-safety.js` is the first direct runtime script, but returns immediately outside a human-opened `spieEditor` child frame. Within the iframe it blocks background writes and unrelated dynamic owners; authenticated role checks and server constraints remain authoritative. The shared ordered bootstrap, loader, schema, schedulers and existing project record owners are unchanged.
+
+Approved Gmail draft receipts reuse `spie/bridge.mjs` and the live context-fact protocol. They use a separate `spie.document.email.v1.*` namespace and never become shipment or sent-offer evidence. Operator verification is required after worker processing. Read/save/export boundaries and remaining pilot limitations are documented in `docs/SPIE_DOCUMENT_MODELS.md`.
