@@ -99,7 +99,9 @@ const expected = {
     { file: 'pristeel-tender-business-flow-v1.js', count: 1 }
   ],
   fetch_monkey_patch: [
-    { file: 'pristeel-drive-intelligence.js', count: 1 }
+    { file: 'pristeel-drive-intelligence.js', count: 1 },
+    // Child-frame-only SPIE approval gate; inert in normal app boot and unrelated to AI providers.
+    { file: 'spie/editor-safety.js', count: 1 }
   ],
   xhr_transport: [
     { file: 'pristeel-drive-import.js', count: 2 },

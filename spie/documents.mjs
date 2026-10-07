@@ -13,7 +13,7 @@ function attachHost(kind,c){
  if(w.__spieDocumentHostStarting)return;
  if(!D.session()){error('Sesioni PPPP nuk është aktiv. Hyr sërish në PPPP.');return;}
  w.__spieDocumentHostStarting=true;
- w.__spieDocumentContext={kind,project:c.data.project,contacts:c.data.contacts||c.contacts||[],emails:c.bundle?.emails?.rows||c.data.recent_emails||[],offers:c.bundle?.clientOffers?.rows||[]};
+ w.__spieDocumentContext={kind,project:c.data.project,contacts:c.data.contacts||c.contacts||[],emails:c.bundle?.emails?.rows||c.data.recent_emails||[],offers:c.bundle?.clients?.rows||[]};
  const script=w.document.createElement('script');script.type='module';script.src='spie/editor-host.mjs?v=20261007-models1';script.onerror=()=>error('Editorët nuk u ngarkuan.');w.document.head.append(script);
 }
 function safeClose(){if(busy){error('Prit përfundimin e veprimit.');return;}dialog?.close();}
