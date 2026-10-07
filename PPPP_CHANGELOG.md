@@ -1,3 +1,11 @@
+## 2026-10-07 — SPIE official document model integration
+
+Integrate the user's uploaded offer, invoice and credit-note models into the SPIE pilot. Commercial and Finance open the existing canonical document controllers inside a guarded same-origin project dialog. Explicit review includes buyer address, currency, tax explanation and commercial approval; save/readback verifies record identity, project, totals and projected content before PDF or Gmail is available. The accepted model survives legacy form cleanup. Transport is represented as a fixed charge; credit notes reference the immutable original invoice and validate its remaining balance after prior adjustments.
+
+The early SPIE iframe guard is inert outside that editor and stops background writes, sends and unrelated dynamic Home owners. The main ordered bootstrap is unchanged. Gmail draft creation attaches actual generated PDF bytes and selected project files, checks the draft/thread and attachment names/types/sizes, and records draft identities through the existing approved context-fact command bridge. Draft/bridge statuses remain distinct from sent email and delivery.
+
+Validation: source PDF visual inspection; synthetic layout PDFs; targeted model/MIME/write-gate tests; actual-controller browser fixtures for offer, invoice, credit, central readback, fixed transport/lump sums, prior-credit rejection, frozen amounts, PDF without repeat save, Gmail threading/attachment bytes and approved bridge receipts. Provider traffic is mocked and no real business records or emails were issued. Local shared regressions passed through 87 checks before reaching an unavailable jsdom dependency; CI runs the complete suite with the declared dependency. See docs/SPIE_DOCUMENT_MODELS.md.
+
 ## 2026-10-07 - SPIE suggested offer review
 
 Surface up to twelve unassigned messages that explicitly suggest SPIE, as a separate review-only offer section. The 25 September DDP quotation is visible without an active Google session, while its unresolved Tier C project association remains unconfirmed. Suggested evidence never enters assigned offers, completed work, project flow or phase decisions. No email assignment or business record is changed.

@@ -12,6 +12,7 @@
     "bootstrapGitBlobSha": "2be264bac25e7461fd4b44204446fcce21ee9c58"
   },
   "applicationDirectRuntime": [
+    "spie/editor-safety.js",
     "pristeel-kpi.js",
     "pristeel-search.js",
     "pristeel-drive.js",
@@ -504,9 +505,9 @@
       "entry": "spie/index.html",
       "owner": "spie/workspace.js",
       "dataAdapter": "spie/data.mjs",
-      "readOnly": true,
+      "readOnly": false,
       "canonicalProjectId": "c937aea1-af5e-4807-ae1e-e36864e46794",
-      "note": "Same-origin PPPP session, one bounded snapshot, lazy project metadata. No global runtime bootstrap changes."
+      "note": "Bounded project reads; approved operations use existing command bridge. Explicit document creation opens existing canonical controllers in a guarded same-origin iframe. Official uploaded-model renderers own only SPIE document presentation; Gmail drafts never send."
     },
     {
       "route": "druseidt/",
@@ -527,4 +528,3 @@
     }
   ]
 }
-

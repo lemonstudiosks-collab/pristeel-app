@@ -389,3 +389,9 @@ The rollout intentionally changed presentation/navigation, not backend ownership
 ## SPIE Workspace · Phase 1, 2026-10-05
 
 A dedicated same-origin document at `spie/` is now the read-only SPIE presentation over the existing canonical TenneT project c937aea1-af5e-4807-ae1e-e36864e46794. It shares the PPPP session and bounded project snapshot, lazy-loads existing metadata, and uses Drive/Gmail source links. It does not load or change global presentation owners or create another operational system. No schema, storage, business-record or protected-action changes were made. Samples is an explicit operator presentation with the canonical pricing discrepancy visible. See docs/SPIE_WORKSPACE_PHASE1.md and docs/ACTIVE_RUNTIME.md.
+
+## SPIE commercial documents — 2026-10-07
+
+SPIE now opens existing canonical offer/invoice/credit controllers through a guarded same-origin child editor. `spie/document-models.mjs` owns only the uploaded-source document layouts; `spie/documents.mjs` owns the project dialog and draft composer; `spie/editor-host.mjs` adapts the existing document owners. `spie/editor-safety.js` is the first direct runtime script, but returns immediately outside a human-opened `spieEditor` child frame. Within the iframe it blocks background writes and unrelated dynamic owners; authenticated role checks and server constraints remain authoritative. The shared ordered bootstrap, loader, schema, schedulers and existing project record owners are unchanged.
+
+Approved Gmail draft receipts reuse `spie/bridge.mjs` and the live context-fact protocol. They use a separate `spie.document.email.v1.*` namespace and never become shipment or sent-offer evidence. Operator verification is required after worker processing. Read/save/export boundaries and remaining pilot limitations are documented in `docs/SPIE_DOCUMENT_MODELS.md`.
