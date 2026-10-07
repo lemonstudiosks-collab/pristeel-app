@@ -38,7 +38,7 @@ test('project-scoped reads coalesce, never write and never request physical docu
 });
 test('logout during in-flight read discards the response', async () => {
   login(); D.invalidate(); let finish;globalThis.fetch=()=>new Promise(resolve=>{finish=resolve;});
-  const request=D.emails();storage.clear();finish(response([{subject:'private'}]));
+  const request=D.emails();await Promise.resolve();storage.clear();finish(response([{subject:'private'}]));
   await assert.rejects(request,/SESSION_CHANGED/);
 });
 test('read failures retain exact status and explicit retry can recover', async () => {
