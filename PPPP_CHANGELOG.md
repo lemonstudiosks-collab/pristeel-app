@@ -1,3 +1,9 @@
+## 2026-10-07 - Descriptive draft subjects without automatic TED notice prefixes
+
+- Keep the published project title in Opportunity draft subjects instead of prepending a TED notice number or falling back to a notice-only subject for long titles.
+- Preserve explicit project/lot/package codes, approved body text, source metadata, stable identity headers and draft/send gates.
+- Verify GC/producer subjects in DE/RS/GB, long/missing-title fallbacks, existing VOB/package subjects and delivery identity regressions. No existing Gmail drafts or emails modified.
+
 ## 2026-10-07 - Keep draft creation in PPPP and use the approved formal English greeting
 
 - Remove automatic Gmail-tab navigation after Opportunity draft creation. Keep the success confirmation and existing draft-ready event in PPPP.

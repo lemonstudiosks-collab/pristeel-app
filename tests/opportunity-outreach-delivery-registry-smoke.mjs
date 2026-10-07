@@ -29,7 +29,8 @@ const recipient={email:'einkauf@beispiel.de',name:'Max Mustermann'};
 const content=buildTedDraftContent(action,tender,recipient);
 assert.equal(content.language,'de');
 assert.equal(content.subject.includes('TED'),false);
-assert.equal(content.subject.includes('123456-2026'),true,'preserve deployed exact TED-reference subject fallback when no richer package reference exists');
+assert.equal(content.subject.includes('123456-2026'),false,'TED notice references must not prefix external subjects');
+assert.ok(content.subject.startsWith('Neubau Stahlhalle'),'prefer the descriptive project name in the subject');
 for(const value of [content.body,content.html_body]){
   assert.equal(value.includes('TED-Referenz'),false);
   assert.equal(value.includes('Auftraggeber'),false);
