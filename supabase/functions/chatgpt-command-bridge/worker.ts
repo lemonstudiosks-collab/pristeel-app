@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
 const LEGACY_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -12,7 +12,7 @@ const ADMIN_KEY = CURRENT_SECRET_KEY || LEGACY_SERVICE_KEY;
 const SA_JSON = Deno.env.get('GOOGLE_SA_JSON') || '';
 const DRIVE_USER = Deno.env.get('GMAIL_USER') || '';
 const COMMAND_SHEET_ID = '1ZoU1-aqHaN0CLI_1bcAUDXtGKdm97ixvopkusB96hZ8';
-const db = createClient(SUPABASE_URL, ADMIN_KEY);
+const db = createClient(SUPABASE_URL, LEGACY_SERVICE_KEY || ADMIN_KEY);
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -21,7 +21,7 @@ const cors = {
   'Content-Type': 'application/json',
 };
 
-const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_target_update', 'representation_relationship', 'eu_direct_target']);
+const ALLOWED_ACTIONS = new Set(['context_fact', 'task', 'create_project', 'supplier_offer', 'project_disposition', 'project_reconcile', 'dach_steel_target', 'dach_steel_outreach_draft', 'representation_target', 'representation_target_update', 'representation_relationship', 'eu_direct_target', 'druseidt_intelligence', 'druseidt_outreach_draft']);
 const ALLOWED_EVIDENCE = new Set(['unverified', 'observed', 'verbal', 'documented', 'confirmed']);
 const ALLOWED_FACT_STATUS = new Set(['observed', 'suggested']);
 const ALLOWED_BUSINESS_TYPES = new Set(['trading', 'fabrication', 'hybrid']);
@@ -743,6 +743,25 @@ async function processRepresentationRelationship(command: Record<string, string>
   return data as Record<string,unknown>;
 }
 
+async function processDruseidtIntelligence(command: Record<string,string>) {
+ let payload:any;
+ try { payload=JSON.parse(text(command.value_json,20000)||'{}'); } catch { throw new Error('Druseidt payload must be valid JSON'); }
+ if(!payload||Array.isArray(payload)||typeof payload!=='object'||Object.keys(payload).some(k=>k!=='direct_customers'))throw new Error('unsupported Druseidt operation');
+ const {data,error}=await db.rpc('pppp_chatgpt_druseidt_intelligence_v1',{p_command_id:text(command.command_id,160),p_payload:payload});
+ if(error)throw error;
+ if(data?.ok!==true||data.external_email_sent!==false||data.outbound_created!==false||data.human_email_approval_required!==true)throw new Error('Druseidt protected boundary validation failed');
+ return data;
+}
+
+async function processDruseidtOutreachDraft(command: Record<string,string>) {
+ let value:any;
+ try { value=JSON.parse(text(command.value_json,3000)||'{}'); } catch { throw new Error('Druseidt draft payload must be valid JSON'); }
+ if(!validUuid(value.lead_id)||!text(value.contact_key,320)||Object.keys(value).some(k=>!['lead_id','contact_key'].includes(k)))throw new Error('valid Druseidt lead and contact required');
+ const response=await fetch(SUPABASE_URL+'/functions/v1/pppp-druseidt-commercial',{method:'POST',headers:{Authorization:'Bearer '+LEGACY_SERVICE_KEY,apikey:LEGACY_SERVICE_KEY,'Content-Type':'application/json'},body:JSON.stringify({lead_id:value.lead_id,contact_key:value.contact_key,controlled_command_id:text(command.command_id,160),mode:'customer'})});
+ const result=await response.json();
+ if(!response.ok||result.ok!==true)throw new Error(result.error||'Druseidt draft failed');
+ return {...result,external_email_sent:false,human_send_required:true};
+}
 async function commandReceipts(commands:Record<string,string>[]){
   const ids=[...new Set(commands.filter(c=>text(c.approval,40).toLowerCase()==='approved').map(c=>text(c.command_id,160)).filter(Boolean))];
   const out=new Map<string,any>();
@@ -797,6 +816,8 @@ async function reconcile(limit = 50) {
       else if (actionType === 'representation_target') result = await processRepresentationTarget(command);
       else if (actionType === 'representation_target_update') result = await processRepresentationTargetUpdate(command);
       else if (actionType === 'representation_relationship') result = await processRepresentationRelationship(command);
+      else if (actionType === 'druseidt_outreach_draft') result = await processDruseidtOutreachDraft(command);
+      else if (actionType === 'druseidt_intelligence') result = await processDruseidtIntelligence(command);
       else if (actionType === 'eu_direct_target') result = await processEuDirectTarget(command);
       else result = await processCreateProject(command);
       resultProjectId = validUuid(result?.project_id) || resultProjectId;
@@ -823,7 +844,7 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'POST') try { body = await req.json(); } catch {}
     const limit = Number(u.searchParams.get('limit') || body.limit || 50);
     const result = await reconcile(limit);
-    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v29', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
+    return new Response(JSON.stringify({ ok: true, bridge: 'chatgpt-command-v30', sheet_id: COMMAND_SHEET_ID, ...result }), { headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: text((e as any)?.message || e, 1200) }), { status: 500, headers: cors });
   }

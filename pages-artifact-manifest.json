@@ -245,6 +245,26 @@
     {
       "path": "pristeel-spie-standard.css",
       "reason": "Shared static SPIE presentation standard for the primary PPPP document."
+    },
+    {
+      "path": "druseidt/index.html",
+      "reason": "Integrated Druseidt commercial vertical sharing PPPP session, procurement and Gmail approval gates."
+    },
+    {
+      "path": "druseidt/workspace.js",
+      "reason": "Integrated Druseidt commercial vertical sharing PPPP session, procurement and Gmail approval gates."
+    },
+    {
+      "path": "druseidt/workspace.css",
+      "reason": "Integrated Druseidt commercial vertical sharing PPPP session, procurement and Gmail approval gates."
+    },
+    {
+      "path": "druseidt/data.mjs",
+      "reason": "Integrated Druseidt commercial vertical sharing PPPP session, procurement and Gmail approval gates."
+    },
+    {
+      "path": "druseidt/commercial.mjs",
+      "reason": "Integrated Druseidt commercial vertical sharing PPPP session, procurement and Gmail approval gates."
     }
   ],
   "compatibilityPublicAssets": [
