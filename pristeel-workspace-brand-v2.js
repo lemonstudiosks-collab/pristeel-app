@@ -117,6 +117,8 @@ function applyBrandMark(root){
     mark.setAttribute('aria-label','PRISTEEL');
     mark.classList.add('pst-brand-mark');
     mark.innerHTML=STAR;
+    var parent=mark.parentElement;
+    if(parent){var name=parent.querySelector('strong');if(name&&/^pristeel$/i.test(name.textContent.trim())&&!name.querySelector('img')){name.innerHTML='<img src="assets/pristeel-logo.png" alt="PriSteel" style="width:115px;height:32px;object-fit:contain">';}}
   });
 }
 

@@ -147,13 +147,13 @@ export const clientOffers = () => projectRows('documents_registry', 'id,project_
 export const operationFacts = () => read('pppp_project_context_current_v?'+new URLSearchParams({project_id:'eq.'+PROJECT_ID,fact_key:'like.spie.*',select:'id,fact_key,value,fact_status,evidence_status,source_ref,updated_at',limit:'200',order:'updated_at.desc'}));
 export async function liveDriveFiles(folderId){
   if(!/^[\w-]+$/.test(folderId||''))return [];
-  const google=googleSession('drive');if(!google)return [];
+  const google=googleSession('drive'),identity=session()?.access_token;if(!google)return [];
   let scopes='';try{scopes=localStorage.getItem('pst_google_workspace_scopes_v2')||'';}catch{}
-  if(!/https:\/\/www.googleapis.com\/auth\/drive(?:\s|$)/.test(scopes))return [];
+  if(!/https:\/\/www.googleapis.com\/auth\/drive(?:\.readonly|\.file)?(?:\s|$)/.test(scopes))return [];
   const path='https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:"'"+folderId+"' in parents and trashed = false",fields:'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink,sha256Checksum)',pageSize:'100',orderBy:'modifiedTime desc'});
   const r=await fetch(path,{method:'GET',headers:{Authorization:'Bearer '+google.token},signal:AbortSignal.timeout(12000)});
   if(!r.ok)throw new Error('Drive '+r.status+': dokumentet nuk mund të lexoheshin.');
-  const d=await r.json();if(!session())throw new Error('SESSION_CHANGED');
+  const d=await r.json();if(session()?.access_token!==identity||googleSession('drive')?.token!==google.token)throw new Error('SESSION_CHANGED');
   return {files:d.files||[],truncated:!!d.nextPageToken};
 }
 export const contacts = () => projectRows('project_contacts', 'id,project_id,email,name,company,role,source,last_seen,status,is_primary', LIMITS.contacts, 'last_seen.desc.nullslast');
@@ -336,7 +336,7 @@ export function operationalModel(data, bundle) {
     limits:{emails:mails.length===LIMITS.emails,attachments:bundle.attachments.rows.length===LIMITS.attachments},
     structuredMissing:!bundle.suppliers.error&&!bundle.clients.error&&!bundle.suppliers.rows.length&&!bundle.clients.rows.length};
 }
-export async function operational() {
+export async function operational(facts=[]) {
   const jobs=[['files',files],['emails',emails],['attachments',attachments],['evidence',offerEvidence],['suppliers',supplierOffers],['clients',clientOffers],['suggested',suggestedEmails]];
   const settled=await Promise.allSettled(jobs.map(([,fn])=>fn()));
   const bundle=Object.fromEntries(jobs.map(([key],i)=>[key,settled[i].status==='fulfilled'?{rows:list(settled[i].value),error:null}:{rows:[],error:settled[i].reason.message}]));
@@ -348,7 +348,7 @@ export async function operational() {
     if(!bundle.emails.rows.some(e=>e.gmail_message_id===m.gmail_message_id))bundle.emails.rows.push({...m,association_pending:true});
   }
   bundle.emails.rows=newest(bundle.emails.rows);
-  await enrichMissingOffers(bundle);
+  await enrichMissingOffers(bundle,facts);
   return bundle;
 }
 // Reuse PPPP's existing Google session. No new consent, token persistence, scan or ingestion.
@@ -365,7 +365,7 @@ export function googleSession(required='gmail') {
   }
   return null;
 }
-async function enrichMissingOffers(bundle) {
+async function enrichMissingOffers(bundle,facts=[]) {
   const google=googleSession(),identity=session()?.access_token;
   if(!google || bundle.emails.error)return;
   async function googleRead(path) {
@@ -381,21 +381,29 @@ async function enrichMissingOffers(bundle) {
   // Exact business reference plus verified sender/recipient identity; external results remain display-only.
   const query='(from:aktiva.com.mk OR (in:sent to:spie.com)) subject:(TenneT) (subject:Angebot OR subject:offer OR subject:ponuda OR subject:ponude) has:attachment -in:trash -in:spam';
   const recentQuery='(from:spie.com OR to:spie.com OR from:aktiva.com.mk OR to:aktiva.com.mk) subject:TenneT (subject:BUNT OR subject:SPIE) -subject:"Automatische Antwort" -in:trash -in:spam';
-  const discovery=await Promise.all([googleRead('messages?'+new URLSearchParams({q:query,maxResults:'6'})),googleRead('messages?'+new URLSearchParams({q:recentQuery,maxResults:'8'}))]).catch(error=>{bundle.google={rows:[],error:error.message};return [];});
+  const verifiedThreads=[...new Set([
+    ...facts.filter(f=>f.fact_status==='observed'&&f.fact_key==='spie.workspace.communication_threads.v1'&&f.value?.project_id===PROJECT_ID).flatMap(f=>list(f.value.threads).map(t=>t.gmail_thread_id)),
+    ...bundle.emails.rows.filter(m=>m.project_id===PROJECT_ID&&m.needs_review===false).map(m=>m.gmail_thread_id)
+  ].filter(t=>/^[a-f0-9]+$/i.test(t||'')))].slice(0,4);
+  const discoveries=await Promise.allSettled([googleRead('messages?'+new URLSearchParams({q:recentQuery,maxResults:'8'})),googleRead('messages?'+new URLSearchParams({q:query,maxResults:'6'})),...verifiedThreads.map(t=>googleRead('threads/'+encodeURIComponent(t)+'?format=full'))]);
+  const discovery=discoveries.filter(r=>r.status==='fulfilled').map(r=>r.value),discoveryErrors=discoveries.filter(r=>r.status==='rejected');
+  if(discoveryErrors.length)bundle.google={rows:[],error:discoveryErrors.map(r=>r.reason.message).join(' · ')};
   const found=new Map(discovery.flatMap(d=>list(d.messages)).map(m=>[m.id,m]));
-  const missing=[...found.values()].filter(m=>/^[a-f0-9]+$/i.test(m.id||'')&&!bundle.emails.rows.some(r=>r.gmail_message_id===m.id)).slice(0,6);
+  const missing=[...found.values()].filter(m=>/^[a-f0-9]+$/i.test(m.id||'')&&!bundle.emails.rows.some(r=>r.gmail_message_id===m.id)).slice(0,10);
   const external=await Promise.allSettled(missing.map(async item=>{
-    const m=await googleRead('messages/'+encodeURIComponent(item.id)+'?format=full');
+    const m=item.payload?item:await googleRead('messages/'+encodeURIComponent(item.id)+'?format=full');
     if(m.id!==item.id)throw new Error('Gmail: identiteti nuk përputhet.');
     const headers=list(m.payload?.headers),header=name=>string(headers.find(h=>h.name.toLowerCase()===name.toLowerCase())?.value);
     const address=text=>string(text).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[];
     const from=(address(header('From'))[0]||'').toLowerCase(),to=address(header('To')).map(x=>x.toLowerCase());
     const subject=header('Subject'),incoming=/@(?:aktiva\.com\.mk|spie\.com)$/.test(from),outgoing=list(m.labelIds).includes('SENT')&&/@prissteel\.com$/.test(from)&&to.some(x=>/@(?:spie\.com|aktiva\.com\.mk)$/.test(x));
     if(list(m.labelIds).some(label=>['DRAFT','TRASH','SPAM'].includes(label)))return null;
-    if(!/tennet.*bunt|spie.*tennet/i.test(subject)||(!incoming&&!outgoing))return null;
-    let plain='';function body(part){if(part.mimeType==='text/plain'&&part.body?.data&&!plain){try{const bytes=Uint8Array.from(atob(part.body.data.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));plain=new TextDecoder().decode(bytes).slice(0,2200);}catch{}}for(const child of list(part.parts))body(child);}body(m.payload||{});
+    const exactThread=verifiedThreads.includes(m.threadId);
+    if(!exactThread&&(!/tennet.*bunt|spie.*tennet/i.test(subject)||(!incoming&&!outgoing)))return null;
+    if(exactThread&&!from) return null;
+    let plain='';function body(part){if(part.mimeType==='text/plain'&&part.body?.data&&!plain){try{const bytes=Uint8Array.from(atob(part.body.data.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));plain=new TextDecoder().decode(bytes).slice(0,50000);}catch{}}for(const child of list(part.parts))body(child);}body(m.payload||{});
     const hasDocuments=part=>/\.(?:pdf|xlsx?|docx?|pptx?|zip|dwg|dxf|x83)$/i.test(part.filename||'')||list(part.parts).some(hasDocuments);
-    const row={gmail_message_id:m.id,gmail_thread_id:m.threadId,from_email:from,from_name:header('From'),to_emails:to,cc_emails:address(header('Cc')),subject,snippet:plain||m.snippet,sent_at:new Date(Number(m.internalDate)).toISOString(),direction:incoming?'incoming':'outgoing',needs_review:false,has_attachments:hasDocuments(m.payload||{}),external_source:true};
+    const row={gmail_message_id:m.id,gmail_thread_id:m.threadId,from_email:from,from_name:header('From'),to_emails:to,cc_emails:address(header('Cc')),subject,snippet:(plain||m.snippet||'').slice(0,2200),body_full:plain,sent_at:new Date(Number(m.internalDate)).toISOString(),direction:list(m.labelIds).includes('SENT')?'outgoing':'incoming',needs_review:false,has_attachments:hasDocuments(m.payload||{}),external_source:true};
     return {row,message:m};
   }));
   const prefetched=new Map();
@@ -411,7 +419,7 @@ async function enrichMissingOffers(bundle) {
       if(message.id!==m.gmail_message_id||message.threadId!==m.gmail_thread_id)throw new Error('Gmail: identiteti i mesazhit nuk përputhet.');
       const found=[];
       function walk(part){
-        if(part.filename && /\.(?:pdf|xlsx?|docx?|pptx?|zip|dwg|dxf|x83)$/i.test(part.filename))found.push({id:'gmail:'+m.gmail_message_id+':'+found.length,project_id:PROJECT_ID,attachment_id:part.body?.attachmentId||'',attachment_name:part.filename,attachment_mime_type:part.mimeType||'',gmail_message_id:m.gmail_message_id,gmail_thread_id:m.gmail_thread_id,source:m.external_source?'Gmail · jashtë regjistrit PPPP':'Gmail · lexim i drejtpërdrejtë'});
+        if(part.filename && /\.(?:pdf|xlsx?|docx?|pptx?|zip|dwg|dxf|x83)$/i.test(part.filename))found.push({id:'gmail:'+m.gmail_message_id+':'+found.length,project_id:PROJECT_ID,attachment_id:part.body?.attachmentId||'',attachment_name:part.filename,attachment_mime_type:part.mimeType||'',attachment_size_bytes:part.body?.size||0,gmail_message_id:m.gmail_message_id,gmail_thread_id:m.gmail_thread_id,source:m.external_source?'Gmail · jashtë regjistrit PPPP':'Gmail · lexim i drejtpërdrejtë'});
         for(const child of list(part.parts))walk(child);
       }
       walk(message.payload||{});return found;

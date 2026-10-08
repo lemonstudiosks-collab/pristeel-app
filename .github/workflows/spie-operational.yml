@@ -2,7 +2,7 @@ name: SPIE operational workspace
 on:
   push:
     branches: [main]
-    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'tests/spie-operational-smoke.mjs', 'tests/spie-dossier-smoke.mjs', '.github/workflows/spie-operational.yml']
+    paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'tests/spie-operational-smoke.mjs', 'tests/spie-dossier-smoke.mjs', 'tests/spie-overview-smoke.mjs', 'tests/spie-document-models-smoke.mjs', '.github/workflows/spie-operational.yml']
   pull_request:
     paths: ['spie/**', 'tests/spie-workspace-smoke.mjs', 'tests/spie-operational-smoke.mjs', 'tests/spie-dossier-smoke.mjs', '.github/workflows/spie-operational.yml']
 permissions:
@@ -19,5 +19,8 @@ jobs:
       - run: node --check spie/data.mjs
       - run: node --check spie/operations.mjs
       - run: node --check spie/bridge.mjs
-      - run: node --test tests/spie-workspace-smoke.mjs tests/spie-operational-smoke.mjs tests/spie-dossier-smoke.mjs
+      - run: node --check spie/evidence.mjs
+      - run: node --check spie/documents.mjs
+      - run: node --check spie/editor-host.mjs
+      - run: node --test tests/spie-workspace-smoke.mjs tests/spie-operational-smoke.mjs tests/spie-dossier-smoke.mjs tests/spie-document-models-smoke.mjs tests/spie-overview-smoke.mjs
 

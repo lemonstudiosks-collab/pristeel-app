@@ -392,3 +392,7 @@ The workspace links canonical TenneT project `c937aea1-af5e-4807-ae1e-e36864e467
 No records, Gmail bodies, documents or business decisions are created or modified. Physical files remain in the permanent Drive folder and original communication remains in Gmail. See `docs/SPIE_WORKSPACE_PHASE1.md` for limitations and verification.
 
 
+
+## SPIE operational overview · 2026-10-08
+
+The existing workspace owner adds a unified overview, visible create-document menu, debit-note support, bridge-backed official letters and an on-demand evidence reader. Two-minute refresh runs only in an active visible tab without an open dialog. Finance/actions are read in the background. Exact verified Google thread replies are display-only until canonical ingestion. See `docs/SPIE_OPERATIONAL_OVERVIEW_20261008.md`.
