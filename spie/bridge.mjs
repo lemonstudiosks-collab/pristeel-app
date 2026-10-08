@@ -1,5 +1,5 @@
 /* Explicit UI approval -> existing append-only ChatGPT command sheet -> trusted worker. */
-import { PROJECT_ID, session, googleSession, read, invalidate } from './data.mjs?v=20261008-documents1';
+import { PROJECT_ID, session, googleSession, read, invalidate } from './data.mjs?v=20261008-overview2';
 let pending = null;
 const str = x=>String(x??'');
 const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;
@@ -23,7 +23,7 @@ export async function submitOperation({shipment_id,event_type,payload,source_url
 export async function submitDocumentReceipt({document_id,document_nr,document_type,gmail_draft_id,gmail_message_id,gmail_thread_id,attachments},explicitApproval){
  if(explicitApproval!==true)throw new Error('Kërkohet miratimi i qartë i regjistrimit të draftit.');
  if(pendingCommand())throw new Error('Ka një komandë në pritje. Verifikoje përpara regjistrimit të draftit.');
- if(!document_id||!document_nr||!gmail_draft_id||!['offer','invoice','credit_note'].includes(document_type))throw new Error('Identitetet e dokumentit dhe draftit mungojnë.');
+ if(!document_id||!document_nr||!gmail_draft_id||!['offer','invoice','credit_note','debit_note','letter'].includes(document_type))throw new Error('Identitetet e dokumentit dhe draftit mungojnë.');
  return submitRecord({shipment_id:'commercial-'+document_id,event_type:'gmail_draft',payload:{document_id,document_nr,document_type,gmail_draft_id,gmail_message_id:gmail_message_id||'',gmail_thread_id:gmail_thread_id||'',attachments:attachments||[],sent:false},source_url:'https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(gmail_message_id||gmail_draft_id)},true);
 }
 async function submitRecord({shipment_id,event_type,payload,source_url},commercial){
@@ -34,7 +34,7 @@ async function submitRecord({shipment_id,event_type,payload,source_url},commerci
  if(JSON.stringify(value).length>11000)throw new Error('Ndryshimi është shumë i madh për bridge-in.');
  const base='https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(manifest.command_sheet_id)+'/values/';
  const meta=await sheets(base+encodeURIComponent('Commands!A1:Z1'));const headers=meta.values?.[0]||[];
- const row={command_id:id,created_at:new Date().toISOString(),action_type:'context_fact',approval:'approved',project_id:PROJECT_ID,project_name:'PROJEKT TENNET · SPIE',fact_key:(commercial?'spie.document.email.v1.':'spie.operation.v1.')+shipment_id+'.'+id,category:commercial?'commercial':'logistics',subject:'SPIE · '+event_type+' · '+shipment_id,value_json:JSON.stringify(value),fact_status:'observed',evidence_status:source_url?'documented':'observed',source_ref:source_url||'pppp-ui:'+id,requested_by:session()?.user?.email||'PPPP · miratim në ndërfaqe'};
+ const row={command_id:id,created_at:new Date().toISOString(),action_type:'context_fact',approval:'approved',project_id:PROJECT_ID,project_name:'PROJEKT TENNET · SPIE',fact_key:(commercial==='letter'?'spie.document.letter.v1.':commercial?'spie.document.email.v1.':'spie.operation.v1.')+shipment_id+'.'+id,category:commercial?'commercial':'logistics',subject:'SPIE · '+event_type+' · '+shipment_id,value_json:JSON.stringify(value),fact_status:'observed',evidence_status:source_url?'documented':'observed',source_ref:source_url||'pppp-ui:'+id,requested_by:session()?.user?.email||'PPPP · miratim në ndërfaqe'};
  for(const key of ['command_id','action_type','approval','project_id','fact_key','value_json'])if(!headers.includes(key))throw new Error('Bridge: mungon kolona '+key);
  // Never retry an ambiguous append automatically. The stable command_id remains reviewable.
  pending={id,shipment_id,status:'submitting',fact_key:row.fact_key,value,session_owner:owner()};persist();
@@ -56,3 +56,9 @@ export async function verifyPending(){
  pending.status=receipt.status;pending.error=receipt.error||receipt.result?.error;persist();return pending;
 }
 
+
+export async function submitLetter(model,explicitApproval){
+ if(explicitApproval!==true||pendingCommand())throw new Error('Mirato letrën dhe verifiko komandën e mëparshme.');
+ if(!model?.nr||!model.subject||!model.body)throw new Error('Plotëso numrin, subjektin dhe tekstin.');
+ return submitRecord({shipment_id:'letter-'+crypto.randomUUID(),event_type:'letter',payload:{model},source_url:''},'letter');
+}

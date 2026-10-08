@@ -505,9 +505,10 @@
       "entry": "spie/index.html",
       "owner": "spie/workspace.js",
       "dataAdapter": "spie/data.mjs",
-      "readOnly": true,
+      "readOnly": false,
       "canonicalProjectId": "c937aea1-af5e-4807-ae1e-e36864e46794",
-      "note": "Same-origin PPPP session, one bounded snapshot, lazy project metadata. No global runtime bootstrap changes."
+      "note": "Existing SPIE owner. Visible-tab two-minute refresh; exact approved threads remain display-only until canonical ingestion. Native approved commercial editors and bridge-backed official letters; no global bootstrap change.",
+      "evidenceReader": "spie/evidence.mjs"
     },
     {
       "route": "druseidt/",

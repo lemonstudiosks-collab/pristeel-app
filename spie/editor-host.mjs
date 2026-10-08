@@ -1,8 +1,8 @@
 /* Runs only inside the human-opened SPIE editor. Reuses existing central UI controllers. */
-import * as M from './document-models.mjs?v=20261008-documents1';
+import * as M from './document-models.mjs?v=20261008-overview2';
 const C=window.__spieDocumentContext;
 if(!C||window.parent===window||C.project?.id!=='c937aea1-af5e-4807-ae1e-e36864e46794')throw new Error('SPIE_EDITOR_CONTEXT_REQUIRED');
-const kinds=new Set(['offer','invoice','credit_note']);
+const kinds=new Set(['offer','invoice','credit_note','debit_note']);
 if(!kinds.has(C.kind))throw new Error('SPIE_DOCUMENT_TYPE_INVALID');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),el=id=>document.getElementById(id),val=id=>String(el(id)?.value||'').trim();
 const notify=(type,extra={})=>parent.postMessage({channel:'spie-document-editor-v1',type,kind:C.kind,...extra},location.origin);
@@ -24,7 +24,7 @@ body.pst-spie-document-saved #of-edit-col{display:none!important}body.pst-spie-d
 @media(max-width:850px){body.pst-spie-editor #inv-view-out>div{grid-template-columns:1fr!important}.pst-model{overflow:auto}}
 `;document.head.append(style);document.body.classList.add('pst-spie-editor','pst-spie-editor-'+C.kind);
 const owners=['pristeel-document-center-stable-v2.js','pristeel-document-adjustments-v3.js','pristeel-commercial-document-builder-v1.js','pristeel-offer-position-preservation-v1.js','pristeel-offer-number-integrity-v1.js','pristeel-invoice-identity-v1.js','pristeel-invoice-project-link-v1.js','pristeel-document-currency-v1.js'];
-for(const path of owners)await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=path+'?v=20261008-documents1';script.onload=resolve;script.onerror=()=>reject(new Error('EDITOR_OWNER_NOT_LOADED: '+path));document.head.append(script);});
+for(const path of owners)await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=path+'?v=20261008-overview2';script.onload=resolve;script.onerror=()=>reject(new Error('EDITOR_OWNER_NOT_LOADED: '+path));document.head.append(script);});
  for(let i=0;i<100;i++){if(window.PSTCommercialDocumentBuilderV1&&typeof window.pstOpenAdjustment==='function'&&typeof window.collectOfferFormState==='function')break;await sleep(200);}
 if(!window.PSTCommercialDocumentBuilderV1||typeof window.pstOpenAdjustment!=='function'){notify('error',{message:'Editorët qendrorë nuk u ngarkuan.'});throw new Error('CANONICAL_EDITORS_NOT_READY');}
 window.__pstCurrentProjectId=C.project.id;window._curProjId=C.project.id;
@@ -57,14 +57,14 @@ function invoiceData(){
  const bank=[['Account holder',b.holder||x.company],['Address',b.holderAddr||x.address],['IBAN',x.iban||b.iban],['Bank',x.bankName||b.bank],['Bank address',b.bankAddr],['SWIFT / BIC',x.swift||b.swift],['Correspondent bank',b.corr],['Correspondent SWIFT',b.corrSwift],['Currency',b.cur]].filter(r=>r[1]);
  return {...company(),documentTitle,invoiceType,lang:val('iv-lang')||'de',nr:val('iv-nr'),date:val('iv-date'),project:val('iv-proj'),ref:val('iv-ref'),client:val('iv-cli'),contact:val('iv-con'),email:val('iv-em'),address:val('iv-adr'),currency:val('pst-iv-currency')||'EUR',items:items.map(x=>({desc:x.desc,qty:x.kg,unit:'kg',price:x.priceKg,amount:number(x.kg)*number(x.priceKg)})).concat(transport?[{desc:'Transport',qty:1,unit:'pauschal',price:transport,amount:transport}]:[]).concat(extra.map(x=>({desc:x.desc||x.description,qty:1,unit:'pauschal',price:x.amount,amount:x.amount}))),net,vat,gross:net+vat,vatRate,incoterms:val('iv-inc'),location:val('iv-loc'),payment:val('iv-pay'),notes:val('iv-not'),certificate:val('iv-cer'),signature:company().signature,taxNote:val('spie-tax-note'),bank,finalized:!!saved};
 }
-function creditData(r){const original=(window.PST_DOC_CENTER?.invoices||[]).find(x=>String(x.id)===String(r.original_invoice_id));return {...company(),lang:original?.lang||'de',nr:r.document_nr,date:r.document_date,project:r.project,client:r.client,address:r.address,contact:r.contact,currency:r.currency,originalNr:r.original_invoice_nr,reason:r.reason_text,items:r.items||[],net:r.net_amount,vat:r.vat_amount,gross:r.gross_amount,vatRate:r.vat_rate,taxNote:val('spie-tax-note'),finalized:!!saved};}
+function creditData(r){const original=(window.PST_DOC_CENTER?.invoices||[]).find(x=>String(x.id)===String(r.original_invoice_id));return {...company(),lang:original?.lang||'de',nr:r.document_nr,date:r.document_date,project:r.project,client:r.client,address:r.address,contact:r.contact,currency:r.currency,originalNr:r.original_invoice_nr,documentType:r.document_type,reason:r.reason_text,items:r.items||[],net:r.net_amount,vat:r.vat_amount,gross:r.gross_amount,vatRate:r.vat_rate,taxNote:val('spie-tax-note'),finalized:!!saved};}
 function render(){
 for(const node of document.querySelectorAll('#app-sidebar,.sidebar,#side-panel,.side-panel,.topbar,.floating-tools,.float-dock,.right-dock,#flow-bar,#doc-nav-bar,#modbar,#right-rail'))node.style.setProperty('display','none','important');
 for(const node of document.querySelectorAll('.main,.content')){node.style.setProperty('margin-left','0','important');node.style.setProperty('padding-left','12px','important');node.style.setProperty('width','100%','important');}
  if(saved&&savedModel){lastModel={...savedModel,finalized:true};const target=C.kind==='offer'?el('of-pre'):C.kind==='invoice'?el('iv-preview'):document.querySelector('.pst-adj-body');if(target)target.innerHTML=C.kind==='offer'?M.offer(lastModel):C.kind==='invoice'?M.invoice(lastModel):M.creditNote(lastModel);return lastModel;}
  if(C.kind==='offer'){lastModel=offerData();if(el('of-pre'))el('of-pre').innerHTML=M.offer(lastModel);}
  if(C.kind==='invoice'){lastModel=invoiceData();if(el('iv-preview'))el('iv-preview').innerHTML=M.invoice(lastModel);}
- if(C.kind==='credit_note'&&saved){lastModel=creditData(saved);const box=document.querySelector('.pst-adj-body');if(box)box.innerHTML=M.creditNote(lastModel);}
+ if(['credit_note','debit_note'].includes(C.kind)&&saved){lastModel=creditData(saved);const box=document.querySelector('.pst-adj-body');if(box)box.innerHTML=M.creditNote(lastModel);}
  return lastModel;
 }
 for(const name of ['genOfer','genInvoiceOut']){const old=window[name];window[name]=function(...args){const r=old?.apply(this,args);render();return r;};}
@@ -99,12 +99,13 @@ window.supaFetch=async function(path,method,body){
   const duplicate=await originalFetch(table+'?'+nrField+'=eq.'+encodeURIComponent(nr)+'&select=id,project_id&limit=1');
   if(duplicate?.length)throw new Error('Ky numër është regjistruar tashmë. Krijo numër të ri dhe kontrollo sërish parapamjen.');
   if(table==='commercial_adjustments'){
+   if(rows[0].document_type!==C.kind)throw new Error('Lloji i notës nuk përputhet me editorin.');
    const original=(window.PST_DOC_CENTER?.invoices||[]).find(x=>String(x.id)===String(rows[0].original_invoice_id));
    if(!original||String(original.project_id)!==C.project.id||original.currency!==rows[0].currency)throw new Error('Fatura origjinale ose valuta nuk përputhet me projektin.');
    const prior=await originalFetch('commercial_adjustments?original_invoice_id=eq.'+encodeURIComponent(original.id)+'&project_id=eq.'+C.project.id+'&select=gross_amount,document_type,status&limit=1000');
    if(prior.length===1000)throw new Error('Bilanci i notave kërkon kontroll në regjistrin qendror.');
    const balance=number(original.gross_amount??original.total_price)+prior.filter(r=>r.status!=='cancelled').reduce((s,r)=>s+(r.document_type==='credit_note'?-1:1)*number(r.gross_amount),0);
-   if(!(number(rows[0].gross_amount)>0)||number(rows[0].gross_amount)>balance+.005)throw new Error('Nota kreditore tejkalon bilancin e faturës pas notave të mëparshme.');
+   if(!(number(rows[0].gross_amount)>0)||(C.kind==='credit_note'&&number(rows[0].gross_amount)>balance+.005))throw new Error('Nota kreditore tejkalon bilancin e faturës pas notave të mëparshme.');
    rows[0].notes=JSON.stringify({pristeel_model:{version:M.MODEL_VERSION,source_file_id:M.MODEL_SOURCES.credit_note,...model}});
   }
   if(table==='invoices_out'){
@@ -146,9 +147,9 @@ window.autoLinkInvoiceToFinance=function(){throw new Error('Regjistrimi bëhet v
 window.printOfer=function(){render();notify('pdf');};
 window.printInvoiceOut=function(){render();notify('pdf');};
 window.pstPrintAdjustment=function(){render();notify('pdf');};
-const oldDetail=window.pstOpenAdjustmentDetail;window.pstOpenAdjustmentDetail=function(r){oldDetail(r);if(r.document_type==='credit_note'&&saved?.id===r.id)render();};
+const oldDetail=window.pstOpenAdjustmentDetail;window.pstOpenAdjustmentDetail=function(r){oldDetail(r);if(['credit_note','debit_note'].includes(r.document_type)&&saved?.id===r.id)render();};
 const oldSaveInv=window.saveInvoiceOut;window.saveInvoiceOut=function(...args){if(!el('spie-commercial-approved').checked||!val('spie-tax-note')){fail(new Error('Kontrollo TVSH-në dhe mirato dokumentin.'));return;}return oldSaveInv.apply(this,args);};
-if(C.kind==='credit_note'){await window.pstOpenAdjustment('credit_note','');}
+if(['credit_note','debit_note'].includes(C.kind)){await window.pstOpenAdjustment(C.kind,'');}
 else{
  window.PSTCommercialDocumentBuilderV1.fresh(C.kind,'production');await sleep(250);
  const prefix=C.kind==='offer'?'of':'iv';

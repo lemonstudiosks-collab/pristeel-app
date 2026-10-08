@@ -1,5 +1,5 @@
 /* Evidence projections over canonical PPPP. No writes, guessed commitments or parallel storage. */
-import { PROJECT_ID, safeLink, gmailLink, messageText, mailParty } from './data.mjs?v=20261008-documents1';
+import { PROJECT_ID, safeLink, gmailLink, messageText, mailParty } from './data.mjs?v=20261008-overview2';
 const arr = x => Array.isArray(x) ? x : [];
 const str = x => String(x ?? '');
 export const STAGES = [['order','Porosia'],['material','Materiali'],['production','Prodhimi'],['qa','Kontrolli / QA-QC'],['packing','Paketimi'],['documents','Dokumentet'],['ready','Gati për marrje'],['loading','Ngarkimi'],['transport','Në transport'],['customs','Dogana / importi'],['delivered','Dorëzuar']];
@@ -40,7 +40,7 @@ export function fileModel(data,bundle,liveDrive=[]){
  for(const a of arr(bundle.attachments?.rows)){
   const m=mails.get(a.gmail_message_id);
   if(!m||a.project_id!==PROJECT_ID||/^(?:image\d*\.[a-z]+|logo(?:\.[a-z]+)?|icon\.[a-z]+|PRISTEEL|https?:\/\/.*)$/i.test(a.attachment_name||''))continue;
-  raw.push({id:'attachment:'+a.id,title:a.attachment_name,gmail_message_id:a.gmail_message_id,gmail_thread_id:a.gmail_thread_id,gmail_attachment_id:a.attachment_id,attachment_mime_type:a.attachment_mime_type,drive_file_id:a.drive_file_id,drive_url:a.drive_file_id?'https://drive.google.com/file/d/'+a.drive_file_id+'/view':'',gmail_url:gmailLink(m),content_sha256:a.content_sha256,created_at:m.sent_at,party:mailParty(m),mail:m,source:a.source||'Gmail · PPPP',notes:json(a.extracted_data),analysis_status:a.analysis_status});
+  raw.push({id:'attachment:'+a.id,title:a.attachment_name,gmail_message_id:a.gmail_message_id,gmail_thread_id:a.gmail_thread_id,gmail_attachment_id:a.attachment_id,attachment_mime_type:a.attachment_mime_type,attachment_size_bytes:a.attachment_size_bytes,drive_file_id:a.drive_file_id,drive_url:a.drive_file_id?'https://drive.google.com/file/d/'+a.drive_file_id+'/view':'',gmail_url:gmailLink(m),content_sha256:a.content_sha256,created_at:m.sent_at,party:mailParty(m),mail:m,source:a.source||'Gmail · PPPP',notes:json(a.extracted_data),analysis_status:a.analysis_status});
  }
  for(const f of arr(data.context_facts))if(f.fact_status==='observed'&&/^spie\.document\.v1\./.test(f.fact_key)&&f.value?.project_id===PROJECT_ID&&f.value?.identity_verified===true)raw.push({...f.value,id:'fact:'+f.id,source:'Dokument nga ChatGPT · bridge',created_at:f.updated_at});
  // Repeated URLs belonging to different named documents are unsafe, never a fallback.
@@ -52,7 +52,7 @@ export function fileModel(data,bundle,liveDrive=[]){
   f.identity=identity(f);f.category=category(f);f.notes=json(f.notes);
   // SHA or an exact Drive ID connects sources; a filename alone never proves duplicate bytes.
   const old=result.find(x=>(f.content_sha256&&f.content_sha256===x.content_sha256)||(f.drive_file_id&&f.drive_file_id===x.drive_file_id)||f.identity===x.identity);
-  if(old){old.sources=[...new Set([...(old.sources||[old.source]),f.source])];for(const k of ['gmail_url','gmail_message_id','gmail_attachment_id','attachment_mime_type','drive_url','content_sha256','mail'])if(!old[k]&&f[k])old[k]=f[k];continue;}
+  if(old){old.sources=[...new Set([...(old.sources||[old.source]),f.source])];for(const k of ['gmail_url','gmail_message_id','gmail_attachment_id','attachment_mime_type','attachment_size_bytes','size','mimeType','drive_url','content_sha256','mail'])if(!old[k]&&f[k])old[k]=f[k];continue;}
   result.push(f);
  }
  return result.sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at)));

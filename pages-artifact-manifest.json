@@ -293,6 +293,14 @@
     {
       "path": "spie/tracker.mjs",
       "reason": "SPIE project document models, explicit canonical editor gate and authenticated private workbook viewer."
+    },
+    {
+      "path": "spie/evidence.mjs",
+      "reason": "On-demand project email and small-file reader."
+    },
+    {
+      "path": "assets/pristeel-logo.png",
+      "reason": "Existing official PriSteel logo shared by the application, SPIE workspace and official letters."
     }
   ],
   "compatibilityPublicAssets": [

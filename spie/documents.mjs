@@ -1,12 +1,12 @@
 /* Project-local entry into the existing canonical PriSteel editors. */
-import * as D from './data.mjs?v=20261008-documents1';
-import * as B from './bridge.mjs?v=20261008-documents1';
-import * as M from './document-models.mjs?v=20261008-documents1';
+import * as D from './data.mjs?v=20261008-overview2';
+import * as B from './bridge.mjs?v=20261008-overview2';
+import * as M from './document-models.mjs?v=20261008-overview2';
 const {esc}=M;
 let dialog=null,frame=null,context=null,saved=null,busy=false,draftIdentity=null,composeToken='',editorOwner='',composeParentToken='';
 function sessionOwner(){try{const s=D.session();return s?JSON.parse(atob(s.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||'':'';}catch{return '';}}
 function checkOwner(){if(!editorOwner||sessionOwner()!==editorOwner)throw new Error('Sesioni ndryshoi. Mbyll editorin dhe rihap projektin.');}
-const title={offer:'Ofertë PriSteel',invoice:'Faturë PriSteel',credit_note:'Notë kreditore PriSteel'};
+const title={offer:'Ofertë PriSteel',invoice:'Faturë PriSteel',credit_note:'Notë kreditore PriSteel',debit_note:'Notë debitore PriSteel',letter:'Letër zyrtare PriSteel'};
 function error(message){if(dialog)dialog.querySelector('[data-doc-status]').textContent=message;}
 let savedHost=null,pdfEnginePromise=null;
 function host(){return frame?.contentWindow?.PSTSpieDocumentHost||savedHost;}
@@ -14,12 +14,13 @@ export function recordAction(table,id){return `<button class="btn" data-open-sav
 function parsed(value){if(value&&typeof value==='object')return value;try{return JSON.parse(value||'{}');}catch{return {};}}
 export async function openSaved(table,id,c){
  if(dialog){dialog.focus();return;}
- const kind=({documents_registry:'offer',invoices_out:'invoice',commercial_adjustments:'credit_note'})[table];if(!kind||!id)throw new Error('Dokumenti nuk u identifikua.');
+ let kind=({documents_registry:'offer',invoices_out:'invoice',commercial_adjustments:'credit_note'})[table];if(!kind||!id)throw new Error('Dokumenti nuk u identifikua.');
  if(!(await D.ensureSession()))throw new Error('SESSION_REQUIRED');editorOwner=sessionOwner();
  const rows=await D.read(table+'?'+new URLSearchParams({id:'eq.'+id,project_id:'eq.'+D.PROJECT_ID,select:'*',limit:'1'}));checkOwner();
  if(rows?.length!==1||rows[0].project_id!==D.PROJECT_ID)throw new Error('Dokumenti nuk i përket SPIE.');
- const row=rows[0],model=(kind==='offer'?parsed(row.offer_state):parsed(row.notes)).pristeel_model,nr=row.doc_nr||row.invoice_nr||row.document_nr;
- if(!model||model.version!==M.MODEL_VERSION||model.nr!==nr||model.currency!==row.currency)throw new Error('Ky dokument nuk ka modelin e ruajtur dhe të verifikuar. Hap burimin origjinal.');
+ const row=rows[0];if(table==='commercial_adjustments')kind=row.document_type;
+ const model=(kind==='offer'?parsed(row.offer_state):parsed(row.notes)).pristeel_model,nr=row.doc_nr||row.invoice_nr||row.document_nr;
+ if(!model||!M.SUPPORTED_MODEL_VERSIONS.has(model.version)||model.nr!==nr||model.currency!==row.currency)throw new Error('Ky dokument nuk ka modelin e ruajtur dhe të verifikuar. Hap burimin origjinal.');
  const expected=kind==='offer'?model.items.reduce((total,x)=>total+Number(x.qty||0)*Number(x.price||0),0):Number(model.gross);if(!Number.isFinite(expected)||Math.abs(expected-Number(kind==='offer'?row.total_amount:row.gross_amount))>.011)throw new Error('Shuma e modelit nuk përputhet me regjistrin.');
  context=c;frame=null;draftIdentity=null;composeToken='';composeParentToken='';busy=false;saved={id,table,nr};
  dialog=document.createElement('dialog');dialog.className='commercial-document-editor';dialog.innerHTML=`<div class="document-editor-head"><h2>${esc(nr)}</h2><button class="btn" data-doc-close>Mbyll</button></div><p data-doc-status role="status">Dokumenti u lexua dhe u verifikua nga regjistri i SPIE.</p><div class="document-editor-actions"><button class="btn" data-doc-pdf>PDF</button><button class="btn" data-doc-email>Krijo draft emaili</button></div><div class="document-compose" hidden></div><div data-document-preview></div>`;
@@ -34,11 +35,13 @@ function attachHost(kind,c){
  if(!D.session()){error('Sesioni PPPP nuk është aktiv. Hyr sërish në PPPP.');return;}
  w.__spieDocumentHostStarting=true;
  w.__spieDocumentContext={kind,project:c.data.project,contacts:c.data.contacts||c.contacts||[],emails:c.bundle?.emails?.rows||c.data.recent_emails||[],offers:c.bundle?.clients?.rows||[]};
- const script=w.document.createElement('script');script.type='module';script.src='spie/editor-host.mjs?v=20261008-documents1';script.onerror=()=>error('Editorët nuk u ngarkuan.');w.document.head.append(script);
+ const script=w.document.createElement('script');script.type='module';script.src='spie/editor-host.mjs?v=20261008-overview2';script.onerror=()=>error('Editorët nuk u ngarkuan.');w.document.head.append(script);
 }
 function safeClose(){if(busy){error('Prit përfundimin e veprimit.');return;}dialog?.close();}
-export function actions(kind){return `<button class="btn" data-create-document="${esc(kind)}">Krijo ${kind==='offer'?'ofertë':kind==='invoice'?'faturë':'notë kreditore'}</button>`;}
+export function menu(){return actions('offer')+'<details class="document-create-menu"><summary class="btn">Krijo dokument</summary><div>'+['invoice','credit_note','debit_note','letter'].map(actions).join('')+'</div></details>';}
+export function actions(kind){return `<button class="btn" data-create-document="${esc(kind)}">Krijo ${kind==='offer'?'ofertë':kind==='invoice'?'faturë':kind==='debit_note'?'notë debitore':kind==='letter'?'letër zyrtare':'notë kreditore'}</button>`;}
 export async function open(kind,c){
+ if(kind==='letter')return openLetter(c);
  if(!title[kind])throw new Error('Lloji i dokumentit nuk mbështetet.');
  if(dialog){dialog.focus();return;}
  if(!(await D.ensureSession()))throw new Error('SESSION_REQUIRED');
@@ -47,7 +50,7 @@ export async function open(kind,c){
  dialog=document.createElement('dialog');dialog.className='commercial-document-editor';
  dialog.innerHTML=`<div class="document-editor-head"><h2>${title[kind]}</h2><button class="btn" data-doc-close>Mbyll</button></div><p data-doc-status role="status">Duke hapur editorin qendror për këtë projekt…</p><div class="document-editor-actions"><button class="btn" data-doc-pdf disabled>PDF</button><button class="btn" data-doc-email disabled>Krijo draft emaili</button></div><div class="document-compose" hidden></div><iframe title="${title[kind]} · SPIE" class="document-editor-frame"></iframe>`;
  document.body.append(dialog);dialog.showModal();frame=dialog.querySelector('iframe');
- const currentFrame=frame;frame.src='../pristeel-procurement.html?spieEditor='+encodeURIComponent(kind)+'&v=20261008-documents1';
+ const currentFrame=frame;frame.src='../pristeel-procurement.html?spieEditor='+encodeURIComponent(kind)+'&v=20261008-overview2';
  frame.onload=()=>{
   if(frame!==currentFrame)return;
   if(D.session()?.access_token!==session){error('Sesioni ndryshoi gjatë hapjes. Hyr sërish në PPPP.');return;}
@@ -127,7 +130,7 @@ function showComposer(){
    verifyDraftAttachments(verified.message,attachments);
    error('Drafti u krijua dhe u verifikua me PDF-në dhe '+(attachments.length-1)+' skedarë shtesë. Nuk është dërguar.');
    const a=document.createElement('a');a.className='evidence-link';a.target='_blank';a.rel='noopener';a.href='https://mail.google.com/mail/u/0/#drafts/'+encodeURIComponent(draft.message?.id||'');a.textContent='Hap draftin';box.append(a);
-   try{const command=await B.submitDocumentReceipt({document_id:saved.id,document_nr:saved.nr,document_type:saved.table==='documents_registry'?'offer':saved.table==='invoices_out'?'invoice':'credit_note',gmail_draft_id:draft.id,gmail_message_id:draft.message?.id,gmail_thread_id:draft.message?.threadId,attachments:attachments.map(a=>({name:a.name,mime:a.mime,size:a.bytes.length}))},true);error('Drafti Gmail u verifikua. Regjistrimi në projekt është në pritje: '+command.id);document.dispatchEvent(new CustomEvent('spie:document-saved'));}
+   try{const command=await B.submitDocumentReceipt({document_id:saved.id,document_nr:saved.nr,document_type:saved.table==='documents_registry'?'offer':saved.table==='invoices_out'?'invoice':saved.table==='letters'?'letter':host().getModel().documentType||'credit_note',gmail_draft_id:draft.id,gmail_message_id:draft.message?.id,gmail_thread_id:draft.message?.threadId,attachments:attachments.map(a=>({name:a.name,mime:a.mime,size:a.bytes.length}))},true);error('Drafti Gmail u verifikua. Regjistrimi në projekt është në pritje: '+command.id);document.dispatchEvent(new CustomEvent('spie:document-saved'));}
    catch(e){error('Drafti Gmail ekziston. Regjistrimi në projekt kërkon verifikim: '+e.message);}
   }catch(e){form.querySelector('[data-compose-error]').textContent=e.message;}finally{busy=false;button.disabled=!!draftIdentity;}
  };
@@ -157,3 +160,26 @@ async function projectAttachment(file,compose){
  else{if(!file.drive_file_id||file.link_conflict)throw new Error('Identiteti Drive nuk është i verifikuar.');const response=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(file.drive_file_id)+'?alt=media',{headers:{Authorization:'Bearer '+google.token}});if(!response.ok)throw new Error('Skedari Drive nuk u hap.');mime=response.headers.get('content-type')||mime;bytes=new Uint8Array(await response.arrayBuffer());}
  if(bytes.length>18000000)throw new Error('Skedari tejkalon 18 MB.');mime=String(mime).split(';')[0].trim().toLowerCase();if(!/^[\w.+-]+\/[\w.+-]+$/.test(mime))mime='application/octet-stream';return {name:file.title,mime,bytes};
 }
+
+async function openLetter(c,stored=null){
+ if(dialog){dialog.focus();return;}if(!(await D.ensureSession()))throw Error('SESSION_REQUIRED');
+ editorOwner=sessionOwner();context=c;frame=null;savedHost=null;saved=null;busy=false;draftIdentity=null;
+ dialog=document.createElement('dialog');dialog.className='commercial-document-editor';
+ dialog.innerHTML='<div class="document-editor-head"><h2>Letër zyrtare PriSteel</h2><button class="btn" data-doc-close>Mbyll</button></div><p data-doc-status role="status">Referenca e letrës vendoset dhe kontrollohet nga ti. Ruajtja bëhet në dosjen e projektit përmes bridge-it.</p><form class="letter-form"><label>Referenca<input name="nr" required maxlength="100"></label><label>Data<input type="date" name="date" required></label><label>Gjuha<select name="lang"><option value="de">Deutsch</option><option value="en">English</option><option value="sq">Shqip</option><option value="sr">Srpski</option></select></label><label>Klienti<input name="client" required maxlength="150"></label><label>Adresa e klientit<textarea name="address" required maxlength="600"></textarea></label><label>Kontakti / emaili<input name="email" type="email"></label><label>Adresa e PriSteel<textarea name="companyAddress" required maxlength="500"></textarea></label><label>Subjekti<input name="subject" required maxlength="200"></label><label>Teksti<textarea name="body" required rows="12" maxlength="7000"></textarea></label><label>Nënshkrimi<textarea name="signature" required maxlength="500"></textarea></label><label><input type="checkbox" name="approved" required> Kam kontrolluar referencën dhe përmbajtjen; miratoj ruajtjen e letrës.</label><div class="document-actions"><button class="btn" type="button" data-letter-preview>Parapamje</button><button class="btn" type="submit">Mirato dhe ruaj</button><button class="btn" type="button" data-letter-verify hidden>Verifiko ruajtjen</button></div></form><div class="document-editor-actions"><button class="btn" data-doc-pdf disabled>PDF</button><button class="btn" data-doc-email disabled>Krijo draft emaili</button></div><div class="document-compose" hidden></div><div data-document-preview></div>';
+ document.body.append(dialog);dialog.showModal();const form=dialog.querySelector('form'),preview=dialog.querySelector('[data-document-preview]');let model=stored?.value?.payload?.model||null,pending=null;
+ const readModel=()=>({...Object.fromEntries(new FormData(form)),version:M.MODEL_VERSION,project:c.data.project.name,logo:new URL('../assets/pristeel-logo.png',location.href).href,company:'PRISTEEL Sh.p.k.',finalized:false});
+ const render=()=>{if(!saved)model=readModel();preview.innerHTML=M.letter({...model,finalized:!!saved});};
+ savedHost={render,getPreview:()=>preview,getModel:()=>model};
+ const accept=(id)=>{saved={id,table:'letters',nr:model.nr};model={...model,finalized:true};form.hidden=true;dialog.querySelectorAll('[data-doc-pdf],[data-doc-email]').forEach(x=>x.disabled=false);render();error('Letra u ruajt dhe u verifikua në projekt.');document.dispatchEvent(new CustomEvent('spie:document-saved'));};
+ for(const [name,value]of Object.entries(model||{date:new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Budapest'}),client:c.data.project.client||''})){if(form.elements.namedItem(name)&&name!=='approved')form.elements.namedItem(name).value=value||'';}
+ if(stored)accept(stored.id);
+ dialog.querySelector('[data-doc-close]').onclick=safeClose;dialog.addEventListener('cancel',e=>{if(busy)e.preventDefault();});
+ dialog.onclose=()=>{const changed=!!saved;dialog.remove();dialog=null;context=null;savedHost=null;saved=null;busy=false;if(changed)document.dispatchEvent(new CustomEvent('spie:document-closed'));};
+ dialog.querySelector('[data-letter-preview]').onclick=render;
+ form.onsubmit=async e=>{e.preventDefault();busy=true;const submit=form.querySelector('[type=submit]');submit.disabled=true;try{checkOwner();render();pending=await B.submitLetter(model,true);form.querySelectorAll('input,textarea,select').forEach(x=>x.disabled=true);dialog.querySelector('[data-letter-verify]').hidden=false;error('Letra është në pritje të përpunimit: '+pending.id+'. Verifikimi mund të zgjasë deri në 10 minuta.');}catch(e){error(e.message);if(B.pendingCommand())dialog.querySelector('[data-letter-verify]').hidden=false;else submit.disabled=false;}finally{busy=false;}};
+ dialog.querySelector('[data-letter-verify]').onclick=async()=>{busy=true;try{checkOwner();const result=await B.verifyPending();if(result?.status==='verified'&&result.value.event_type==='letter'){model=result.value.payload.model;accept(result.fact_key);}else error('Ruajtja ende nuk është verifikuar: '+(result?.status||'Pa përgjigje'));}catch(e){error(e.message);}finally{busy=false;}};
+ dialog.querySelector('[data-doc-pdf]').onclick=()=>downloadPdf().catch(e=>error(e.message));dialog.querySelector('[data-doc-email]').onclick=showComposer;
+ render();
+}
+export function letterActions(c){return (c.facts||[]).filter(f=>f.fact_status==='observed'&&f.fact_key?.startsWith('spie.document.letter.v1.')&&f.value?.project_id===D.PROJECT_ID&&f.value?.payload?.model).map(f=>'<button class="btn" data-open-letter="'+esc(f.fact_key)+'">'+esc(f.value.payload.model.nr)+' · Letër zyrtare</button>').join('');}
+export async function openSavedLetter(key,c){const rows=await D.read('pppp_project_context_current_v?'+new URLSearchParams({project_id:'eq.'+D.PROJECT_ID,fact_key:'eq.'+key,select:'id,fact_key,value,fact_status',limit:'1'}));if(rows.length!==1||rows[0].fact_status!=='observed'||rows[0].value?.project_id!==D.PROJECT_ID||rows[0].value?.event_type!=='letter')throw Error('Letra nuk u verifikua në dosjen e projektit.');return openLetter(c,rows[0]);}
