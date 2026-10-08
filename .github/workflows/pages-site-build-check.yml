@@ -33,8 +33,9 @@ jobs:
           test -s ted-sales.html
           cp ted-sales.html _site/ted-sales.html
           test -s _site/ted-sales.html
-          grep -Fq '<html lang="en">' _site/ted-sales.html
-          grep -Fq 'PPPP · Opportunities · TED Award Sales' _site/ted-sales.html
+          grep -Fq '<html lang="sq">' _site/ted-sales.html
+          grep -Fq 'Kërkon vëmendjen time' _site/ted-sales.html
+          grep -Fq 'Draftet' _site/ted-sales.html
 
       - name: Serve production artifact locally
         run: |

@@ -246,7 +246,7 @@ function historicalRecord(x,registry,byTender){
  var lane=reply||x.replied===true||status==='replied'?'replied':bounce||x.bounced===true||status==='bounced'?'bounced':x.meeting===true||status==='meeting'?'meeting':sent||/^(sent(?: [123])?|waiting)$/.test(status)?'waiting':draft?'draft':'history';
  var gmailState=S(x.gmail_state||p.gmail_prepared_sync_v1&&p.gmail_prepared_sync_v1.gmail_state),meta={company:company,domain:domain,email:email,profile:S(x.company_profile_id||ready.company_profile_id),lane:lane,when:reply||bounce||sent||touch||S(x.draft_created_at||x.updated_at),gmail_state:gmailState,scheduled:lane==='draft'&&gmailState==='scheduled',thread:S(x.gmail_thread_id),source:registry?'Regjistri Gmail':S(x.source)==='ted_award_sales'?'Historiku TED':'Historiku i kontaktimit'};
  var sameBase=base&&N(w.name)===N(company),r=sameBase?Object.assign({},base):{id:'history:'+(registry?'draft:':'legacy:')+S(x.id||x.gmail_draft_id||email+':'+x.tender_watch_id),title:base&&base.title||'Kontaktim i mëparshëm',status:'watch',payload:{source:'TED',notice_phase:'award',winner:{name:company}}};
- r.__pstContactMeta=meta;r.__pstHistoryOnly=!sameBase;return r;
+ r.__pstContactMeta=meta;r.__pstTenderWatchId=S(x.tender_watch_id);r.__pstHistoryOnly=!sameBase;return r;
 }
 function contactHistory(){
  var refs=[state&&state.rows,state&&state.projectRows,state&&state.outreachRows,state&&state.contactHistoryRows,state&&state.communicationRows,state&&state.emailByThread],signature=refs.map(function(x){return Array.isArray(x)?x.length:0;}).join('|');
@@ -286,7 +286,7 @@ function fieldLabel(r){var id=fieldOf(r),f=FIELDS.find(function(x){return x.id==
 function officialUrl(r){var P=window.PSTTenderPriorityActionsV2||window.PSTTenderPriorityActionsV1,u='';try{if(P&&typeof P.officialUrl==='function')u=P.officialUrl(r)||'';}catch(e){}if(!u)u=S(r&&r.detail_url||r&&r.source_url);try{var x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:'';}catch(e){return'';}}
 function filterButton(attr,id,label,count,on,icon,asset){var visual=asset?'<img src="'+E(asset)+'" alt="">':E(icon||'•');return'<button type="button" class="pst-opp-side-item '+(on?'on':'')+'" '+attr+'="'+E(id)+'"><span class="check">'+(on?'✓':'')+'</span><span class="icon">'+visual+'</span><span class="text">'+E(label)+'</span><span class="num">'+Number(count||0)+'</span></button>';}
 function groupWorkRows(rows){
- var groups={},out=[];rows.forEach(function(r){var k=companyKey(r);if(!groups[k]){groups[k]={row:r,count:1};out.push(groups[k]);}else{groups[k].count++;if(contactRank(contactMeta(r).lane||effectiveLane(r))>contactRank(contactMeta(groups[k].row).lane||effectiveLane(groups[k].row)))groups[k].row=r;}});
+ var groups={},out=[];rows.forEach(function(r){var k=companyKey(r);var tid=S(r.__pstTenderWatchId||r.id);if(!groups[k]){groups[k]={row:r,count:1,tenders:[tid]};out.push(groups[k]);}else{if(groups[k].tenders.indexOf(tid)<0){groups[k].tenders.push(tid);groups[k].count++;}if(contactRank(contactMeta(r).lane||effectiveLane(r))>contactRank(contactMeta(groups[k].row).lane||effectiveLane(groups[k].row)))groups[k].row=r;}});
  return out;
 }
 function workRows(view){

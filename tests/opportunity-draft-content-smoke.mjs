@@ -19,7 +19,7 @@ const msDescription='Im Zug der Errichtung des Neubaus für den Fachbereich Sozi
 const msAction={route:'TED_GENERAL',target_company:'M+S Gruppe GmbH',target_email:'stahl@msgruppe24.de',tender_title:'Germany – Welding – VOB 17-25O Errichtung eines Berufsschulcampus BA 1; VE 4-3060 Haus IV Stahlbau/Schlosserarbeiten',pristeel_offer_model:'fabricated_steel_package',personalization_facts:[msDescription,'M+S Gruppe GmbH · unknown','Prepare a draft only; do not send'],payload:{company_type:'unknown',outreach_readiness_v1:{scope_evidence:msDescription,company_fact:'M+S Gruppe GmbH · unknown'}}};
 const msTender={title:msAction.tender_title,payload:{description:msDescription},winner:{name:'M+S Gruppe GmbH',country:'DEU',company_type:'unknown'}};
 const ms=buildTedDraftContent(msAction,msTender,{email:'stahl@msgruppe24.de'});
-assert.equal(ms.subject,'VOB 17-250 · VE 4-3060 – Haus IV – Stahlbau-/Schlosserarbeiten | PRISTEEL');
+assert.equal(ms.subject,'VOB 17-250 · VE 4-3060 – Haus IV – Stahlbau-/Schlosserarbeiten – Stahlpaket | PRISTEEL');
 assert.equal(ms.offer_model,'fabricated_steel_package');
 assert.equal(ms.company_role,'unknown');
 assert.equal(ms.recipient_role,'functional_procurement');
@@ -37,7 +37,7 @@ noBodyBold(ms);
 const schDescription='Im Zuge der Modernisierungsarbeiten am Haus II auf dem Berufsschulcampus Stralsund sind Innentüren Metall auszuführen: - BE, Werk- und Montageplanung, sonstiges - Abbrucharbeiten Stahlblechtüren Bestand - Innentüren - Sonstiges';
 const schAction={route:'TED_GENERAL',target_company:'Stahl- und Metallbau Schröder GmbH',target_email:'info@stahl-metallbau-schroeder.de',tender_title:'Germany – Installation of doors and windows and related components – VOB 17-25O Errichtung eines Berufsschulcampus BA 1; VE 2-3080 Haus II Innentüren Metall',pristeel_offer_model:'fabricated_steel_package',personalization_facts:[schDescription,'221187 EUR'],payload:{company_type:'unknown',outreach_readiness_v1:{scope_evidence:schDescription}}};
 const sch=buildTedDraftContent(schAction,{title:schAction.tender_title,payload:{description:schDescription},winner:{name:schAction.target_company,country:'DEU',company_type:'unknown'}},{email:schAction.target_email});
-assert.equal(sch.subject,'VOB 17-250 · VE 2-3080 – Haus II – Metall-Innentüren | PRISTEEL');
+assert.equal(sch.subject,'VOB 17-250 · VE 2-3080 – Haus II – Metall-Innentüren – gefertigtes Stahlpaket | PRISTEEL');
 assert.notEqual(sch.subject,ms.subject);
 assert.notEqual(sch.plain_body,ms.plain_body);
 assert.match(sch.plain_body,/VE 2-3080 · Haus II · Metall-Innentüren/);
