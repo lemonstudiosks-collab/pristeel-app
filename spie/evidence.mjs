@@ -46,6 +46,7 @@ function drivePreview(body,file){
 }
 export async function file(file){
  if(!file||file.link_conflict)throw Error('Dokumenti nuk ka identitet të verifikuar.');
+ file={...file,gmail_message_id:file.gmail_message_id||file.mail?.gmail_message_id};
  const dialog=open(file.title||file.file_name||'Dokument');if(!dialog)return;const body=dialog.querySelector('.evidence-body');
  try{
   if(Number(file.size||file.attachment_size_bytes)>MAX||!D.googleSession(file.gmail_attachment_id?'gmail':'drive')){drivePreview(body,file);return;}

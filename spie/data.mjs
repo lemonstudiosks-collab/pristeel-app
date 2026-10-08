@@ -382,7 +382,7 @@ async function enrichMissingOffers(bundle,facts=[]) {
   const query='(from:aktiva.com.mk OR (in:sent to:spie.com)) subject:(TenneT) (subject:Angebot OR subject:offer OR subject:ponuda OR subject:ponude) has:attachment -in:trash -in:spam';
   const recentQuery='(from:spie.com OR to:spie.com OR from:aktiva.com.mk OR to:aktiva.com.mk) subject:TenneT (subject:BUNT OR subject:SPIE) -subject:"Automatische Antwort" -in:trash -in:spam';
   const verifiedThreads=[...new Set([
-    ...facts.filter(f=>f.fact_status==='observed'&&f.fact_key==='spie.workspace.communication_threads.v1'&&f.value?.project_id===PROJECT_ID).flatMap(f=>list(f.value.threads).map(t=>t.gmail_thread_id)),
+    ...facts.filter(f=>f.fact_status==='observed'&&f.fact_key==='spie.workspace.communication_threads.v1'&&f.value?.identity_verified===true&&f.value?.project_id===PROJECT_ID).flatMap(f=>list(f.value.threads).map(t=>t.gmail_thread_id)),
     ...bundle.emails.rows.filter(m=>m.project_id===PROJECT_ID&&m.needs_review===false).map(m=>m.gmail_thread_id)
   ].filter(t=>/^[a-f0-9]+$/i.test(t||'')))].slice(0,4);
   const discoveries=await Promise.allSettled([googleRead('messages?'+new URLSearchParams({q:recentQuery,maxResults:'8'})),googleRead('messages?'+new URLSearchParams({q:query,maxResults:'6'})),...verifiedThreads.map(t=>googleRead('threads/'+encodeURIComponent(t)+'?format=full'))]);
