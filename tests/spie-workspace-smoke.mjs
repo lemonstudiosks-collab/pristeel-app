@@ -95,4 +95,3 @@ test('controlled folder metadata merges by exact Drive identity without inferrin
   data.project.drive_folder_id='folder';data.context_facts[0].fact_status='suggested';assert.equal(D.evidenceFiles(data).length,0);
 });
 
-

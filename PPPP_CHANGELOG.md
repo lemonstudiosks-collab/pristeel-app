@@ -13,7 +13,7 @@ Surface up to twelve unassigned messages that explicitly suggest SPIE, as a sepa
 
 The operational bundle now uses six bounded reads plus its existing snapshot and retains five-minute coalescing. Verified sixteen Node regressions and an authenticated-fixture browser check with no Google session, seven total requests, source links, zero errors and GET-only provider traffic. Live production review confirms source visibility; UI display does not resolve the underlying assignment.
 
-## 2026-10-07 - SPIE operational project overview
+## 2026-10-07 — SPIE operational project overview
 
 The dedicated /spie workspace preserves its existing sidebar, font scale and layout. Overview now prioritizes the current project situation, evidence-backed completed work, review-only next steps, supplier/client offers and requested sample dates. The Offers route separates supplier quotations, sent PriSteel offer versions and accompanying terms; the existing Projects route becomes a chronological communication flow with filters. Files merges existing Drive metadata and exact project-linked attachments with working source links.
 
@@ -42,14 +42,14 @@ Validation: existing authentication/read-only/session/currency tests plus target
 - Attribute consortium emails to the selected company; never inherit all notice recipients. Show generator failures directly instead of misreporting them as missing recipients.
 - Verify both preview choices against live read-only VACUSERV, CONCELEX and Amedick data, plus shared-policy, recipient, preview/cancel/approval and registry regressions. No live Gmail drafts or emails created.
 
-## 2026-10-06 - Mund�sit� reuses approved GC and steel-fabricator email texts
+## 2026-10-06 - Mundësitë reuses approved GC and steel-fabricator email texts
 
 - Remove the newly introduced role-clarification email. GC drafts now reuse the exact approved full-responsibility commercial paragraphs from `pppp-gc-outreach` body1 in German, BCS and English; steel fabricators retain the existing external-production-capacity copy.
 - Where the company role is unverified but the existing manual review policy passes, require an explicit GC/EPC or steel-fabricator template choice before preview. This choice applies only to the draft and does not verify or overwrite the company role.
 - Carry the chosen template through preview, human approval and any controlled cooldown override. Cancel/preview paths remain read-only; recipient identity, communication history and send gates remain intact.
 - Verified approved GC wording against its canonical source, both template paths, invalid/stored choices, blocked assessments and mocked preview/cancel/approval. No live Gmail draft or email was created during verification.
 
-## 2026-10-06 - Mund�sit� uses the Home / P�rfaq�sime presentation standard
+## 2026-10-06 — Mundësitë uses the Home / Përfaqësime presentation standard
 
 - Reuse the shared Inter font, 200px contextual sidebar, paper background, spacing and quiet list rows.
 - Move the existing functional Kthehu into the content header and render it as a simple white control.
@@ -57,16 +57,16 @@ Validation: existing authentication/read-only/session/currency tests plus target
 - Static CSS and font locks prevent delayed legacy typography from changing the surface after clicks; refresh CSS and desk asset versions.
 - Verified with existing workdesk interaction, complete contact history, static typography and Representation navigation tests; browser preview checked without horizontal overflow.
 
-# 2026-10-05 - Home sidebar and module navigation regression
+# 2026-10-05 — Home sidebar and module navigation regression
 
 - Preserve canonical navigation buttons during repeat repairs; legacy task/source shell and startup labels defer to Primary Navigation.
 - Queue the latest Home destination while runtime owners load; late startup completion cannot take the user back from an already selected module.
 - Restore missing EU Direct scope/contact render helpers and update the affected runtime cache versions together.
 - Verified four primary Home buttons, queued startup clicks, stable sidebar node identities, populated EU Direct list/detail and existing Home/Primary Navigation/SPIE checks using fixtures. No business writes, new polling, schema changes or added Supabase reads.
 
-## 2026-10-05 - SPIE navigation compatibility
+## 2026-10-05 — SPIE navigation compatibility
 
-## 2026-10-05 - Mund�sit� draft provenance and stable typography
+## 2026-10-05 — Mundësitë draft provenance and stable typography
 
 - Reproduced `verified_ted_winner_contact_missing` on Johann Anwander despite exact canonical TED winner email provenance. The bounded candidate RPC now accepts that evidence with the existing identity version, identifier and contact-tier gates; another winner's mailbox stays excluded.
 - Static SPIE Opportunities typography owns filter/list/detail/draft text. Legacy readability no longer adds delayed font classes in those surfaces after clicks.
@@ -77,7 +77,7 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 
 ## 2026-10-05 - SPIE evidence and tender partner context
 
-## 2026-10-05 - SPIE platform standard
+## 2026-10-05 — SPIE platform standard
 
 `pristeel-spie-standard.css` is the shared static presentation owner in `pristeel-procurement.html`. Its root flag owns stable desktop shell geometry from first paint. Home Launcher and Production Surface Owner defer imperative geometry in this mode; existing routes, canonical data, role/action gates and mobile gestures stay intact. The primary navigation exposes existing direct-client, steel-buyer, document, email, SPIE and event destinations. Home uses calm rows; Finance/Partner maps retain their original handlers in list presentation. No new Supabase reads, polling, writes, schema or migrations.
 
@@ -85,82 +85,82 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Manual tender analysis now passes up to 80 registered partner review candidates to the server assistant. Partial data never proves that no partners exist; selection remains human-approved.
 - Focused workspace, tender and redesign bootstrap checks pass. No migration, Finance core changes or protected commitments.
 
-## 2026-10-04 - Stable first paint for non-Home routes
+## 2026-10-04 — Stable first paint for non-Home routes
 
-- Fixed the shell ownership mismatch that briefly reserved the legacy sidebar width when opening Mund�sit� and other non-Home pages.
+- Fixed the shell ownership mismatch that briefly reserved the legacy sidebar width when opening Mundësitë and other non-Home pages.
 - `Global Full-width Shell` now matches the final Production Surface Owner contract from the first CSS paint: Home may keep the canonical sidebar, while non-Home routes use the full width immediately.
 - No business logic, data flow, or route handlers changed.
 
-## 2026-10-04 - Vivid Opportunities modal actions\n\n- `Dosja e plot�` now uses illustrated, high-contrast action buttons: light-blue analysis with search icon, blue Gmail primary action with the Gmail mark in a white chip, neutral official-source action with external-link icon, and a soft-red remove action with trash icon.\n- Existing action handlers and workflow gates are unchanged; this is a presentation-layer refresh only.\n- The footer remains responsive: two-column on tablets and full-width actions on narrow mobile layouts.\n\n## 2026-10-04 - Gmail draft button in Opportunities modals
+## 2026-10-04 — Vivid Opportunities modal actions\n\n- `Dosja e plotë` now uses illustrated, high-contrast action buttons: light-blue analysis with search icon, blue Gmail primary action with the Gmail mark in a white chip, neutral official-source action with external-link icon, and a soft-red remove action with trash icon.\n- Existing action handlers and workflow gates are unchanged; this is a presentation-layer refresh only.\n- The footer remains responsive: two-column on tablets and full-width actions on narrow mobile layouts.\n\n## 2026-10-04 — Gmail draft button in Opportunities modals
 
-- `Dosja e plot�` n� Mund�sit� tani e renderon drejtp�rdrejt ikon�n Gmail si SVG vektoriale dhe tekstin `Krijo draft n� Gmail`; nuk mb�shtetet m� te dekorimi i vonsh�m i presentation layer.
-- Butoni ruan handler-in ekzistues `data-pst-opp-draft`, draft engine dhe human send gate; u ndryshua vet�m prezantimi.
-- TED Action Console p�rdor t� nj�jtin Gmail-branded draft action p�r krijimin/p�rgatitjen e drafteve.
-- U shtua regression coverage p�r modalin real t� Mund�sive dhe Action Console.
+- `Dosja e plotë` në Mundësitë tani e renderon drejtpërdrejt ikonën Gmail si SVG vektoriale dhe tekstin `Krijo draft në Gmail`; nuk mbështetet më te dekorimi i vonshëm i presentation layer.
+- Butoni ruan handler-in ekzistues `data-pst-opp-draft`, draft engine dhe human send gate; u ndryshua vetëm prezantimi.
+- TED Action Console përdor të njëjtin Gmail-branded draft action për krijimin/përgatitjen e drafteve.
+- U shtua regression coverage për modalin real të Mundësive dhe Action Console.
 
-## 2026-10-04 - Canonical Gmail draft button
+## 2026-10-04 — Canonical Gmail draft button
 
-- Veprimet q� krijojn� Gmail draft paraqiten n� m�nyr� t� unifikuar si buton i bardh� me ikon� Gmail vektoriale dhe tekst t� qart� `Krijo draft n� Gmail`.
-- Ikona �sht� inline SVG, prandaj mbetet e mpreht� n� Retina/4K dhe nuk varet nga screenshot-e ose imazhe me rezolucion t� ul�t.
-- RFQ draft ruan kontekstin si `Krijo RFQ draft n� Gmail`; rigjenerimi paraqitet si `Rigjenero draft n� Gmail`.
-- Ndryshimi �sht� vet�m presentation-layer n� Operating Experience; handler-at, Gmail draft engine, human send gate dhe logjika ekzistuese nuk ndryshojn�.
-- Dekorimi �sht� event-driven dhe pa `MutationObserver`, polling, Supabase query ose write t� ri.
+- Veprimet që krijojnë Gmail draft paraqiten në mënyrë të unifikuar si buton i bardhë me ikonë Gmail vektoriale dhe tekst të qartë `Krijo draft në Gmail`.
+- Ikona është inline SVG, prandaj mbetet e mprehtë në Retina/4K dhe nuk varet nga screenshot-e ose imazhe me rezolucion të ulët.
+- RFQ draft ruan kontekstin si `Krijo RFQ draft në Gmail`; rigjenerimi paraqitet si `Rigjenero draft në Gmail`.
+- Ndryshimi është vetëm presentation-layer në Operating Experience; handler-at, Gmail draft engine, human send gate dhe logjika ekzistuese nuk ndryshojnë.
+- Dekorimi është event-driven dhe pa `MutationObserver`, polling, Supabase query ose write të ri.
 
-## 2026-10-02 - Sidebar direction fix
+## 2026-10-02 — Sidebar direction fix
 
-- Ballina tani e fsheh n� m�nyr� eksplicite kolon�n e majt�.
-- �do modul pune e rikthen n� m�nyr� eksplicite kolon�n e majt�, edhe kur nj� shtres� e vjet�r l� klas�n `active` n� Home.
-- Gjendja e sidebar-it lidhet me navigimin real, jo me klasat e vjetra/stale t� faqeve.
-- N� modulet e pun�s kolona nis pak m� posht� p�r nj� renditje m� t� qet� vizuale.
+- Ballina tani e fsheh në mënyrë eksplicite kolonën e majtë.
+- Çdo modul pune e rikthen në mënyrë eksplicite kolonën e majtë, edhe kur një shtresë e vjetër lë klasën `active` në Home.
+- Gjendja e sidebar-it lidhet me navigimin real, jo me klasat e vjetra/stale të faqeve.
+- Në modulet e punës kolona nis pak më poshtë për një renditje më të qetë vizuale.
 
-## 2026-10-02 - Ballina kthehet n� launcher t� qet� PRISTEEL
+## 2026-10-02 — Ballina kthehet në launcher të qetë PRISTEEL
 
-- Ballina nuk �sht� m� dashboard operativ. Sidebar-i fshihet vet�m n� Home dhe rikthehet automatikisht sapo hapet nj� modul pune.
-- Shiriti i sip�rm: PRISTEEL, Gmail, Gazeta PPPP, Kalkulatori, ora/data kompakte dhe moti p�r Prishtin�; ikonat kan� t� nj�jt�n madh�si vizuale.
-- N� qend�r: k�rkimi universal dhe 4 hyrjet kryesore - Mund�sit�, P�rfaq�sime, Klient� t� drejtp�rdrejt�, Bler�sit e �elikut.
-- Posht�: Projektet, Partner�t, Financa, Kursi dhe �mimet e �elikut.
-- Weather p�rdor Open-Meteo; Kursi p�rdor Frankfurter/ECB. �mimet e �elikut hapin referencat e brendshme PPPP dhe nuk paraqiten si kuotime bursiere live.
-- Pa foto, pa ilustrime dekorative dhe pa task/KPI feed n� Home. T� gjitha hyrjet delegojn� te owner-at ekzistues dhe nuk shtojn� protected actions.
+- Ballina nuk është më dashboard operativ. Sidebar-i fshihet vetëm në Home dhe rikthehet automatikisht sapo hapet një modul pune.
+- Shiriti i sipërm: PRISTEEL, Gmail, Gazeta PPPP, Kalkulatori, ora/data kompakte dhe moti për Prishtinë; ikonat kanë të njëjtën madhësi vizuale.
+- Në qendër: kërkimi universal dhe 4 hyrjet kryesore — Mundësitë, Përfaqësime, Klientë të drejtpërdrejtë, Blerësit e çelikut.
+- Poshtë: Projektet, Partnerët, Financa, Kursi dhe Çmimet e çelikut.
+- Weather përdor Open-Meteo; Kursi përdor Frankfurter/ECB. Çmimet e çelikut hapin referencat e brendshme PPPP dhe nuk paraqiten si kuotime bursiere live.
+- Pa foto, pa ilustrime dekorative dhe pa task/KPI feed në Home. Të gjitha hyrjet delegojnë te owner-at ekzistues dhe nuk shtojnë protected actions.
 
-## 2026-10-02 - Home morning-only refresh policy
+## 2026-10-02 — Home morning-only refresh policy
 
-- Ballina nuk rifreskohet m� automatikisht �do 15 minuta gjat� dit�s.
-- Home rifreskohet n� nisje t� aplikacionit dhe pastaj vet�m kur kalon n� nj� dit� t� re; n�se aplikacioni mbetet hapur, refresh-i i planifikuar b�het n� 06:35 lokale.
-- Rikthimi n� tab/fokus gjat� s� nj�jt�s dit� nuk shkakton m� re-query t� Home.
-- Refresh-i manual mbetet i disponuesh�m.
-- Backend-i vazhdon t� mbledh� t� dh�nat gjat� dit�s q� gjendja e m�ngjesit t� nes�rm t� jet� e plot�.
+- Ballina nuk rifreskohet më automatikisht çdo 15 minuta gjatë ditës.
+- Home rifreskohet në nisje të aplikacionit dhe pastaj vetëm kur kalon në një ditë të re; nëse aplikacioni mbetet hapur, refresh-i i planifikuar bëhet në 06:35 lokale.
+- Rikthimi në tab/fokus gjatë së njëjtës ditë nuk shkakton më re-query të Home.
+- Refresh-i manual mbetet i disponueshëm.
+- Backend-i vazhdon të mbledhë të dhënat gjatë ditës që gjendja e mëngjesit të nesërm të jetë e plotë.
 
-## 2026-10-02 - Home freshness + morning sync alignment
+## 2026-10-02 — Home freshness + morning sync alignment
 
-- Home tani rifreskon snapshot-in canonical kur p�rdoruesi rikthehet n� aplikacion dhe t� dh�nat jan� m� t� vjetra se 15 minuta.
-- N�se PPPP mbetet i hapur gjat� nat�s, Home b�n nj� refresh automatik ditor n� 06:35 sipas or�s lokale.
-- Morning Edition u zhvendos n� 06:30 lokale, pas ciklit ekzistues Gmail ingest  project intake  event intelligence  project memory synthesis.
-- Cron-i i Morning Edition �sht� DST-safe: ekzekutohet n� t� dy kandidat�t UTC, nd�rsa funksioni gjeneron vet�m gjat� or�s lokale 06 dhe vet�m nj� her� p�r dat�.
-- Nuk u shtua polling agresiv dhe nuk u shtuan query periodike kur Home q�ndron i hapur, p�r t� mbajtur n�n kontroll p�rdorimin e Supabase.
+- Home tani rifreskon snapshot-in canonical kur përdoruesi rikthehet në aplikacion dhe të dhënat janë më të vjetra se 15 minuta.
+- Nëse PPPP mbetet i hapur gjatë natës, Home bën një refresh automatik ditor në 06:35 sipas orës lokale.
+- Morning Edition u zhvendos në 06:30 lokale, pas ciklit ekzistues Gmail ingest → project intake → event intelligence → project memory synthesis.
+- Cron-i i Morning Edition është DST-safe: ekzekutohet në të dy kandidatët UTC, ndërsa funksioni gjeneron vetëm gjatë orës lokale 06 dhe vetëm një herë për datë.
+- Nuk u shtua polling agresiv dhe nuk u shtuan query periodike kur Home qëndron i hapur, për të mbajtur nën kontroll përdorimin e Supabase.
 
-## 2026-10-02 - Ballina readability + Pyet PPPP surface fix
+## 2026-10-02 — Ballina readability + Pyet PPPP surface fix
 
-- `Pyet PPPP` n� desktop Home tani paraqitet si nj� sip�rfaqe e vetme, pa card/shell t� dyfisht� t� mbivendosur.
-- Tipografia e Ballin�s u rrit n� KPI, header, tabela, feed, afate, pritje dhe financa q� informacioni t� lexohet normalisht n� desktop.
-- Ndryshimi �sht� vet�m presentation/cache-version; nuk shton query, polling, write apo protected action.
+- `Pyet PPPP` në desktop Home tani paraqitet si një sipërfaqe e vetme, pa card/shell të dyfishtë të mbivendosur.
+- Tipografia e Ballinës u rrit në KPI, header, tabela, feed, afate, pritje dhe financa që informacioni të lexohet normalisht në desktop.
+- Ndryshimi është vetëm presentation/cache-version; nuk shton query, polling, write apo protected action.
 
-## 2026-10-02 - Ballina b�het operator dashboard live
+## 2026-10-02 — Ballina bëhet operator dashboard live
 
-- Desktop Home nuk p�rdor m� `Vazhdo aty ku e le` ose strip-in generik `Projektet aktive`.
-- `pristeel-home-operator-dashboard-v1.js` �sht� prezantimi final desktop mbi `PSTHomeCanonicalV1`: Pyet PPPP, veprimet q� k�rkojn� v�mendje, aktivitetet e fundit, afatet, pritjet nga pal�t tjera, financat q� k�rkojn� v�mendje dhe mund�sit� e reja.
-- Canonical Home ekspozon n� snapshot vet�m t� dh�nat q� tashm� i ka ngarkuar; dashboard-i i ri nuk shton query Supabase, polling ose business-state writer.
-- Kartat, rreshtat dhe CTA-t� delegojn� te owner-at ekzistues t� Projects, Project Workflow, Inbox, Finance dhe Opportunities.
-- Pamja desktop p�rdor sfond t� ngroht�, sip�rfaqe neutrale me vij�zim t� holl� dhe PriSteel blue vet�m si accent; hover/focus ngre leht� elementin dhe shton hije subtile.
-- Protected actions mbeten t� pandryshuara dhe human-gated.
+- Desktop Home nuk përdor më `Vazhdo aty ku e le` ose strip-in generik `Projektet aktive`.
+- `pristeel-home-operator-dashboard-v1.js` është prezantimi final desktop mbi `PSTHomeCanonicalV1`: Pyet PPPP, veprimet që kërkojnë vëmendje, aktivitetet e fundit, afatet, pritjet nga palët tjera, financat që kërkojnë vëmendje dhe mundësitë e reja.
+- Canonical Home ekspozon në snapshot vetëm të dhënat që tashmë i ka ngarkuar; dashboard-i i ri nuk shton query Supabase, polling ose business-state writer.
+- Kartat, rreshtat dhe CTA-të delegojnë te owner-at ekzistues të Projects, Project Workflow, Inbox, Finance dhe Opportunities.
+- Pamja desktop përdor sfond të ngrohtë, sipërfaqe neutrale me vijëzim të hollë dhe PriSteel blue vetëm si accent; hover/focus ngre lehtë elementin dhe shton hije subtile.
+- Protected actions mbeten të pandryshuara dhe human-gated.
 
-## 2026-09-30 - KRPP authority-neutral relevance v2
+## 2026-09-30 — KRPP authority-neutral relevance v2
 
 - KRPP discovery now detail-scans the bounded actionable B05/B54 window without using title keywords as an ingestion gate.
 - The shared PRISTEEL capability model now uses title, FPP, descriptions, lots and available dossier-derived context, and classifies KRPP records into `main`, `review` or `excluded` independently of contracting authority.
 - Direct steel/material/fabrication scope enters the main decision list; plausible industrial/construction scope stays review-first; contextual false positives such as `Rruga Celik`, digital platforms, metal-cutting machines, bearings and technical gases are excluded.
 - KRPP status routing, latest-notice supersession and Home canonicalization now keep amendments/retenders current without flooding the main list. Human NO-GO and all protected commercial workflows remain unchanged.
 
-## 2026-09-30 - Mund�sit�: Arianit  Oltian RFQ & Sourcing
+## 2026-09-30 — Mundësitë: Arianit → Oltian RFQ & Sourcing
 
 - Arianiti shortlists only RFQ-ready suppliers from the existing Supplier Intelligence evidence and explicitly hands the tender Project to Oltian.
 - The handoff reuses one canonical `tasks` row with assignee/workstream metadata; it does not create a parallel workflow system.
@@ -168,36 +168,36 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - The commercial comparison now supports a human-approved multi-supplier package plan for fabrication, zinc, coating, installation and transport. It is an internal cost composition, not a supplier commitment or PO.
 - Technical documentation remains manual. External sends, supplier selection/commitment, sale price/margin, final offer and PO/contract actions remain human-gated.
 
-## 2026-09-28 - Bler�sit e �elikut: canonical identity, intelligence dhe discovery
+## 2026-09-28 — Blerësit e çelikut: canonical identity, intelligence dhe discovery
 
-- Nj� Company Master canonical lidh domenin/identitetin dhe rolet nd�rmjet Bler�sve t� �elikut, Mund�sive, Kompanive EU dhe P�rfaq�simeve; targetet aktive me t� nj�jtin domen nuk dyfishohen.
-- Profili i bler�sit ruan madh�sin�, aktivitetin, potencialin e konsumit, kapacitetin/prokurimin, faktet e verifikuara dhe boshll�qet pa i paraqitur supozimet si fakte.
-- Discovery publik kryhet nj� her� n� dit� dhe i vendos kompanit� n� radh� shqyrtimi. Vet�m veprimi njer�zor "Prano" krijon target; nuk krijohet outbound, Gmail draft ose d�rges�.
-- Preview/draft p�rdor faktet e kompanis� dhe arsyen e modelit; kur faktet mungojn� p�rdoret tekst i p�rgjithsh�m pa shpikje. Follow-up lejohet vet�m pas d�rges�s s� konfirmuar, pas afatit dhe pa reply/opt-out.
-- ChatGPT command bridge u ul nga �do 30 minuta n� tri her� n� dit�; sinkronizimi Gmail/outbound mbeti i pandryshuar.
+- Një Company Master canonical lidh domenin/identitetin dhe rolet ndërmjet Blerësve të çelikut, Mundësive, Kompanive EU dhe Përfaqësimeve; targetet aktive me të njëjtin domen nuk dyfishohen.
+- Profili i blerësit ruan madhësinë, aktivitetin, potencialin e konsumit, kapacitetin/prokurimin, faktet e verifikuara dhe boshllëqet pa i paraqitur supozimet si fakte.
+- Discovery publik kryhet një herë në ditë dhe i vendos kompanitë në radhë shqyrtimi. Vetëm veprimi njerëzor “Prano” krijon target; nuk krijohet outbound, Gmail draft ose dërgesë.
+- Preview/draft përdor faktet e kompanisë dhe arsyen e modelit; kur faktet mungojnë përdoret tekst i përgjithshëm pa shpikje. Follow-up lejohet vetëm pas dërgesës së konfirmuar, pas afatit dhe pa reply/opt-out.
+- ChatGPT command bridge u ul nga çdo 30 minuta në tri herë në ditë; sinkronizimi Gmail/outbound mbeti i pandryshuar.
 
-## 2026-09-26 - PPPP Mobile v7 data completeness and stability
+## 2026-09-26 — PPPP Mobile v7 data completeness and stability
 
 - Home now keeps the last valid canonical snapshot for a short bounded window so cards and counts do not disappear while canonical owners rehydrate.
 - Full-page rerenders preserve the vertical scroll position of Home, Projects, Discover and Inbox.
-- The Home "Pyet PPPP" card now has a stable icon/copy/spark layout and the four quick cards keep their icons visible.
+- The Home “Pyet PPPP” card now has a stable icon/copy/spark layout and the four quick cards keep their icons visible.
 - Projects uses the same card/feed visual language as Discover while retaining the existing project owner and native project detail.
-- Discover Tender� now renders the full bounded priority feed rather than a single card.
+- Discover Tenderë now renders the full bounded priority feed rather than a single card.
 - Material Trade mobile reads the existing Material Trade owner through its exposed bounded target loader.
-- P�rfaq�sime mobile distinguishes approved targets from canonical representation opportunities awaiting screening; official-source opportunity cards open the source for review.
+- Përfaqësime mobile distinguishes approved targets from canonical representation opportunities awaiting screening; official-source opportunity cards open the source for review.
 - Inbox uses Gmail live when connected and otherwise falls back to the existing canonical Gmail-synced `project_emails` data.
 - No schema changes, polling, automatic outbound, automatic target creation or protected commercial actions were introduced.
 
-## 2026-09-27 - Moduli "Kompanit� EU"
+## 2026-09-27 — Moduli “Kompanitë EU”
 
-- U shtua pipeline i ve�ant� p�r klient� t� drejtp�rdrejt� n� Evrop�: GC/GU, EPC/industrial contractors, developers, manufacturers dhe kompani t� tjera q� mund t� blejn� paketa �eliku t� fabrikuar, kapacitet prodhues ose n�nkontraktim.
-- Routing guard e mban k�t� pipeline jasht� **Mund�sive**, **Bler�sit e �elikut** dhe **P�rfaq�simeve**. Fituesit TED nuk importohen n� k�t� modul vet�m pse jan� GC; ata mbeten n� rrjedh�n e Mund�sive.
-- Operational view integron vet�m batch-in historik direct-web nga GC registry dhe ruan evidenc�n reale t� draftit/d�rgimit.
-- Outreach guard kontrollon historikun global dhe jep p�rpar�si kontaktit real t� fundit ndaj nj� drafti t� vjet�r. Asnj� email nuk d�rgohet automatikisht.
-- Ballina dhe mobile marrin hyrjen **Kompanit� EU** me UI minimal dhe tekst shqip. Nuk u shtuan butona p�r veprime t� mbrojtura.
-- ChatGPT bridge u zgjerua me `eu_direct_target` si write i kontrolluar, idempotent dhe vet�m me miratim; regjistrimi nuk krijon Project, Partner, Contact ose outbound row.
+- U shtua pipeline i veçantë për klientë të drejtpërdrejtë në Evropë: GC/GU, EPC/industrial contractors, developers, manufacturers dhe kompani të tjera që mund të blejnë paketa çeliku të fabrikuar, kapacitet prodhues ose nënkontraktim.
+- Routing guard e mban këtë pipeline jashtë **Mundësive**, **Blerësit e çelikut** dhe **Përfaqësimeve**. Fituesit TED nuk importohen në këtë modul vetëm pse janë GC; ata mbeten në rrjedhën e Mundësive.
+- Operational view integron vetëm batch-in historik direct-web nga GC registry dhe ruan evidencën reale të draftit/dërgimit.
+- Outreach guard kontrollon historikun global dhe jep përparësi kontaktit real të fundit ndaj një drafti të vjetër. Asnjë email nuk dërgohet automatikisht.
+- Ballina dhe mobile marrin hyrjen **Kompanitë EU** me UI minimal dhe tekst shqip. Nuk u shtuan butona për veprime të mbrojtura.
+- ChatGPT bridge u zgjerua me `eu_direct_target` si write i kontrolluar, idempotent dhe vetëm me miratim; regjistrimi nuk krijon Project, Partner, Contact ose outbound row.
 
-## 2026-09-26 - PPPP Mobile v6 data stability
+## 2026-09-26 — PPPP Mobile v6 data stability
 
 - Stabilized Home startup by replacing the five-pass repaint schedule with one debounced render and a debounced canonical Home refresh.
 - Fixed the `Pyet PPPP` layout so icon, title, helper text and AI action stay in their intended grid cells instead of splitting across rows.
@@ -209,32 +209,32 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Gmail/Inbox now uses live Gmail when authorized and falls back to canonical Gmail-synced `project_emails` through the Gmail owner, so the mobile Inbox is useful even when the live Google token is not present.
 - No schema changes, no polling, no direct mobile Supabase reads, and no automatic protected actions were added.
 
-## 2026-09-26 - PPPP Mobile Company / Partner Detail v5
+## 2026-09-26 — PPPP Mobile Company / Partner Detail v5
 
-- Added a native mobile Partner�t / Kompanit� secondary surface without adding a fifth primary swipe page.
-- Partner�t opens from the secondary menu and Kompani from the central + flow; both now stay inside the new mobile shell instead of jumping directly to the legacy Contacts page.
+- Added a native mobile Partnerët / Kompanitë secondary surface without adding a fifth primary swipe page.
+- Partnerët opens from the secondary menu and Kompani from the central + flow; both now stay inside the new mobile shell instead of jumping directly to the legacy Contacts page.
 - The company browser reuses `PSTContactMasterV1/V4` snapshot/state, with search and client/supplier/manufacturer filters.
 - Company detail shows relationship tags, location/business type, contacts, project counts, project-email counts, last contact, supplier/manufacturer capability tags when already available, and linked projects.
 - Linked projects open the existing native Project Detail and return naturally to the company context.
 - Weather / Convert / Steel utilities yield while a company secondary screen is open; primary Home / Projects / Discover / Inbox swipe navigation is unchanged.
 - No direct Supabase reads/writes, polling, duplicate contact engine or automatic protected actions were introduced in the mobile layer.
 
-## 2026-09-26 - PPPP Mobile native Project Detail v4
+## 2026-09-26 — PPPP Mobile native Project Detail v4
 
 - Project taps from Home and Projects now open a mobile-native project detail inside the new shell instead of jumping immediately into the legacy desktop/modal surface.
 - The detail shows the project identity, client/reference, current operating bucket, current pipeline stage, deadline when available, next action and a compact pipeline timeline.
-- Files, Emails and Suppliers remain delegated to the existing project owners for now, but open through an explicit bridge with a fixed "Kthehu n� app" control.
+- Files, Emails and Suppliers remain delegated to the existing project owners for now, but open through an explicit bridge with a fixed “Kthehu në app” control.
 - Bottom navigation remains visible with Projects active; the floating Weather/Convert/Steel utility dock yields while the project detail is open.
 - No new Supabase reads/writes, polling, automatic protected actions or duplicate business logic were introduced.
 
-## 2026-09-26 - PPPP Mobile native vertical scroll fix
+## 2026-09-26 — PPPP Mobile native vertical scroll fix
 
 - Removed the pager touchmove interception entirely on iPhone.
 - Vertical scrolling is now left fully to Safari/native page scrolling; PPPP only decides whether a horizontal page swipe happened after the finger is released.
 - A page change now requires a clearly horizontal gesture (minimum 72 px and materially larger than vertical movement).
 - This preserves Home / Projects / Discover / Inbox full-page swipe without competing with vertical scrolling.
 
-## 2026-09-26 - PPPP Mobile vertical scroll gesture fix
+## 2026-09-26 — PPPP Mobile vertical scroll gesture fix
 
 - Fixed iPhone gesture contention between full-page horizontal swipe and per-page vertical scrolling.
 - Vertical movement now locks the gesture to native page scroll; horizontal page swipe activates only after a clearly horizontal gesture.
@@ -242,7 +242,7 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Inbox may still have no visible scroll movement when its content is shorter than the viewport; that is expected until Gmail rows are loaded.
 - Primary navigation remains four pages: Home, Projects, Discover and Inbox. Detail/secondary surfaces continue as pushed pages through their existing owners.
 
-## 2026-09-26 - PPPP Mobile full-page swipe v3
+## 2026-09-26 — PPPP Mobile full-page swipe v3
 
 - Changed mobile navigation from nested card swipes to one standard full-page horizontal pager.
 - Home, Projects, Discover and Inbox now occupy four full-screen pages on one track; users can move between them with left/right swipe or the fixed bottom navigation.
@@ -252,34 +252,34 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Cache version bumped so iPhone/Safari loads the new runtime instead of a previously cached mobile shell.
 - No new Supabase reads/writes, polling, independent network fetches or automatic protected actions were introduced.
 
-## 2026-09-26 - PPPP Mobile App v2
+## 2026-09-26 — PPPP Mobile App v2
 
 - Replaced the hybrid phone Home presentation with a dedicated <=900px mobile shell while keeping existing PPPP data/action owners authoritative.
-- Primary mobile navigation is now Home, Projects, Discover and Inbox with a raised central + action. Partner�t, Financat, Material Trade, P�rfaq�sime and Sistemi remain reachable from the profile sheet.
-- Home priority cards use native horizontal swipe. Discover tender opportunities use a real touch swipe deck plus explicit Ruaj / Hulumto / Jo relevante / GO or P�rgatit kontakt actions.
+- Primary mobile navigation is now Home, Projects, Discover and Inbox with a raised central + action. Partnerët, Financat, Material Trade, Përfaqësime and Sistemi remain reachable from the profile sheet.
+- Home priority cards use native horizontal swipe. Discover tender opportunities use a real touch swipe deck plus explicit Ruaj / Hulumto / Jo relevante / GO or Përgatit kontakt actions.
 - Projects and Inbox now have dedicated mobile presentation surfaces over existing canonical caches/owners instead of exposing the desktop/table UI.
 - Weather, currency conversion and steel-market access remain fixed as compact utility icons above the bottom navigation.
 - The legacy six-tab mobile bar, old mobile dashboard and interim Control Tower presentation are suppressed while Mobile App v2 is active.
 - Mobile App v2 adds no direct Supabase reads/writes, no polling and no independent network fetches; existing human approval gates remain unchanged.
 
-## 2026-09-26 - Mobile Control Tower Home v1
+## 2026-09-26 — Mobile Control Tower Home v1
 
-- Added a new <=900px PriSteel Control Tower presentation that answers the operational question "what needs my attention now?" using the existing canonical Home snapshot.
+- Added a new <=900px PriSteel Control Tower presentation that answers the operational question “what needs my attention now?” using the existing canonical Home snapshot.
 - The first screen now composes canonical user actions, waiting-external items and active projects into one dominant priority, three compact counters and a concise activity feed.
 - `Pyet PPPP`, weather, ECB currency conversion and steel-market actions remain owned by the existing mobile Home utility provider; the new presentation delegates to it instead of duplicating network/data logic.
 - Added a persistent three-button mobile utility dock for Weather, Convert and Market above the existing bottom navigation.
 - The Control Tower adds no direct Supabase reads/writes, no polling, no network fetches, no schema changes and no outbound actions. Canonical project brief/navigation and human approval gates remain unchanged.
 - Added runtime-manifest registration and a dedicated mobile Control Tower smoke test.
 
-## 2026-09-26 - Mobile bottom navigation fix + longer Home
+## 2026-09-26 — Mobile bottom navigation fix + longer Home
 
-- Fixed the six-button mobile bottom navigation after the persistent-Home change. Tapping Mund�sit�, Projektet, Partner�t, Financat or Sistemi now releases the mobile Home owner before canonical routing, updates the business-zone marker immediately, and lets the target page render.
+- Fixed the six-button mobile bottom navigation after the persistent-Home change. Tapping Mundësitë, Projektet, Partnerët, Financat or Sistemi now releases the mobile Home owner before canonical routing, updates the business-zone marker immediately, and lets the target page render.
 - Mobile active-state sync now prefers the canonical visible route over stale body state, so the bottom bar no longer snaps back to Ballina after a tap.
 - Extended the approved mobile Home with a new `Lajme & analiza` card linking directly to current SteelOrbis, EUROMETAL and SteelRadar source pages. No copied/stale headlines are embedded.
 - Existing market prices, Pyet PPPP, live weather, Calendar, weight calculator, Incoterms, quick note, LME metals and ECB currency converter remain unchanged.
 - No new Supabase reads/writes, polling, schema changes or paid APIs were added.
 
-## 2026-09-26 - Persistent mobile Home host
+## 2026-09-26 — Persistent mobile Home host
 
 - Fixed the remaining iPhone Safari race where the approved mobile Home could render briefly and then disappear when canonical Home rewrote or switched the underlying Home page.
 - The approved mobile Home now mounts directly on the stable `.content` host instead of living inside `#page-home` / `#page-workspace-home`.
@@ -287,7 +287,7 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - When another business section is selected, the mobile Home owner releases the content area normally.
 - No polling, MutationObserver, Supabase business read/write path or paid API was added.
 
-## 2026-09-26 - Safari blank mobile Home recovery
+## 2026-09-26 — Safari blank mobile Home recovery
 
 - Fixed the iPhone Safari startup race visible as a white Home area while the six-button mobile navigation was already rendered.
 - The mobile Home can now mount temporarily into the legacy `#page-home` host when the canonical `#page-workspace-home` shell is not active yet, then moves to the canonical host when it becomes available.
@@ -295,7 +295,7 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Recovery never runs over the email/password gate or PIN gate, never hijacks another active page, and adds no Supabase read/write path or polling.
 - Added bounded 3s/6s Safari recovery attempts and an immediate rerender signal after successful mobile PIN unlock.
 
-## 2026-09-26 - iOS Home Screen app PIN bootstrap
+## 2026-09-26 — iOS Home Screen app PIN bootstrap
 
 - Fixed the iPhone Home Screen web-app case where Safari opened PPPP with PIN but a newly installed standalone app asked again for email/password.
 - Cause: iOS copies login cookies into a newly added Home Screen web app, but does not copy Safari localStorage. PPPP previously kept both the remembered Supabase session and PIN configuration only in localStorage.
@@ -304,59 +304,59 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Existing installed web apps remain storage-isolated from Safari, so a one-time remove/re-add is required to receive the new bootstrap cookie. After that, routine app re-entry remains PIN-only.
 - No PPPP business reads/writes, schema change, polling, paid API or password storage was added.
 
-## 2026-09-26 - Mobile Home final market dashboard
+## 2026-09-26 — Mobile Home final market dashboard
 
 - Restored visible steel/raw-material market references on mobile Home using dated public benchmarks with explicit market basis; every row remains clickable to its source.
-- Current references used for the 26 Sep Home are HRC Northern Europe ?740-760/t EXW (25 Sep), Romania rebar ?610-615/t ex-warehouse (25 Sep), LME Turkey 1-month steel scrap $393.50/t CFR (24 Sep), and iron ore 61% Fe $95/t (25 Sep).
-- Replaced the mminch converter with a Google Calendar shortcut under `Mjete t� dobishme`.
-- Replaced SteelBenchmarker with `�mimet e metaleve`, linked to the official LME metals page.
-- Explicitly hides the legacy `Ballina e pun�s` / morning command-center surface and the floating `K�rko` button whenever the approved mobile Home owns the active Home page.
+- Current references used for the 26 Sep Home are HRC Northern Europe €740–760/t EXW (25 Sep), Romania rebar €610–615/t ex-warehouse (25 Sep), LME Turkey 1-month steel scrap $393.50/t CFR (24 Sep), and iron ore 61% Fe $95/t (25 Sep).
+- Replaced the mm↔inch converter with a Google Calendar shortcut under `Mjete të dobishme`.
+- Replaced SteelBenchmarker with `Çmimet e metaleve`, linked to the official LME metals page.
+- Explicitly hides the legacy `Ballina e punës` / morning command-center surface and the floating `Kërko` button whenever the approved mobile Home owns the active Home page.
 - The fixed bottom navigation, `Pyet PPPP`, live weather, ECB currency converter, Incoterms, quick note and weight calculator remain intact.
 
-## 2026-09-26 - Mobile Home live interaction hardening
+## 2026-09-26 — Mobile Home live interaction hardening
 
 - `Pyet PPPP` on mobile now opens a dedicated mobile sheet and delegates directly to the existing read-only `PSTOpenAIAssistantV1` / PPPP context bridge instead of opening generic workspace search.
-- Steel-market rows no longer say "current price" when the public source may expose delayed/sample values; they now say `Hap burimin`.
+- Steel-market rows no longer say “current price” when the public source may expose delayed/sample values; they now say `Hap burimin`.
 - The SteelBenchmarker shortcut opens the latest public benchmark-history PDF directly.
 - No new Supabase path, polling or business write was added; the assistant reuses the existing authenticated PPPP AI owner.
 
-## 2026-09-26 - Trusted mobile PIN page cleanup
+## 2026-09-26 — Trusted mobile PIN page cleanup
 
 - On a phone/tablet that already has a configured PPPP PIN, the legacy email/password form and its error area are removed from the page before the PIN gate is shown.
 - The PIN screen no longer mentions email/password controls; it presents only the four-digit PIN flow.
 - First-time/untrusted-device authentication remains available only when no device PIN exists, while explicit logout still clears the trusted-device state.
 - No Supabase business reads/writes, polling, schema or workflow behavior changed.
 
-## 2026-09-26 - Mobile Home live-source dashboard + PIN-only re-entry
+## 2026-09-26 — Mobile Home live-source dashboard + PIN-only re-entry
 
 - Finalized the approved information-first mobile Home while leaving the fixed six-button bottom navigation unchanged.
-- Home keeps the PRISTEEL header/greeting, prominent `Pyet PPPP`, live Prishtina weather plus local date/time, steel-market source shortcuts, `Mjete t� dobishme` and `Burime t� tregut`.
+- Home keeps the PRISTEEL header/greeting, prominent `Pyet PPPP`, live Prishtina weather plus local date/time, steel-market source shortcuts, `Mjete të dobishme` and `Burime të tregut`.
 - Removed the dated SteelOrbis sample numbers from Home after verification showed that the public values displayed there are lagged/sample data rather than guaranteed current transaction prices. Steel rows now open the current product source instead of presenting stale numbers as live.
 - Replaced the Transport shortcut with an on-demand currency converter using the European Central Bank daily reference-rate feed. FX data is cached locally for 12 hours and labeled as reference data.
 - Weather remains a bounded Open-Meteo request cached for 30 minutes. Mobile Home adds no Supabase reads/writes, polling or service-worker caching.
 - After initial account authentication and PIN setup, normal mobile re-entry is PIN-only even when the access session expires: PIN verification restores the remembered refresh-token session and delegates renewal to the existing auth refresh path.
 - The normal PIN gate no longer exposes an email/password fallback. Five wrong PIN attempts trigger a temporary one-minute lock instead of switching to password login. Explicit logout still clears the trusted-device PIN/session state.
 
-## 2026-09-26 - PWA RBAC + PIN session hotfix
+## 2026-09-26 — PWA RBAC + PIN session hotfix
 
-- Fixed a standalone-iPhone startup race that could incorrectly label a valid writable/admin account as "Vet�m shikim".
+- Fixed a standalone-iPhone startup race that could incorrectly label a valid writable/admin account as “Vetëm shikim”.
 - RBAC now resolves the authenticated `user_id` first and uses exact authenticated email only when that user-id lookup returns no row.
 - A transient startup delay no longer becomes a permanent viewer role, and an earlier viewer lock is reversible once the real writable role resolves.
 - Mobile PIN unlock now persists for the current app session and repeated internal `startApp()` calls cannot reopen/reset the PIN gate.
 - PIN success emits a bounded startup event so unresolved RBAC can resolve immediately without polling.
 - No new background polling, cron, or recurring Supabase reads were added.
 
-## 2026-09-26 - Mobile 4-digit PIN quick unlock
+## 2026-09-26 — Mobile 4-digit PIN quick unlock
 
 - Added a device-local 4-digit PIN quick-unlock layer for phone/tablet use after one successful normal PPPP login.
 - The PIN does not replace Supabase Auth and is never sent to the server. It unlocks only when an existing remembered PPPP session is still usable.
 - PIN storage uses a random local salt plus PBKDF2/SHA-256 derivation; plaintext PIN and user password are never stored.
 - Five failed PIN attempts force a return to the full email/password login. Explicit logout clears the local PIN configuration.
-- A visible `Hyr me email dhe fjal�kalim` fallback prevents lockout.
+- A visible `Hyr me email dhe fjalëkalim` fallback prevents lockout.
 - The feature adds zero Supabase reads/writes, zero network fetches and zero polling.
 - Desktop authentication behavior is unchanged.
 
-## 2026-09-26 - Global mobile bottom-navigation hotfix
+## 2026-09-26 — Global mobile bottom-navigation hotfix
 
 - Restored the six mobile bottom-navigation buttons as a global phone/tablet control independent from Home rendering.
 - Mobile navigation now calls the canonical `PSTPrimaryNavResilienceV10.route(...)` router first instead of depending on clicks against the hidden desktop sidebar.
@@ -365,7 +365,7 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Bumped the mobile shell cache token so phones receive the corrected navigation immediately.
 - No Supabase reads/writes, polling or business workflow logic changed.
 
-## 2026-09-26 - Mobile Home canonical mount hotfix
+## 2026-09-26 — Mobile Home canonical mount hotfix
 
 - Fixed the blank mobile Home seen on a real phone: the mobile presentation no longer depends on the optional `#pst-native-home-v4` container.
 - Mobile Home now mounts directly into canonical `#page-workspace-home`, so it renders even when intermediate Home owners initialize late or are replaced during startup.
@@ -374,44 +374,44 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Added a regression guard that forbids reintroducing the optional native-container dependency.
 - No Supabase reads/writes, polling, business logic or desktop Home behavior changed.
 
-## 2026-09-26 - Mobile Home v2: richer working context
+## 2026-09-26 — Mobile Home v2: richer working context
 
 - Kept the mobile Home top intentionally compact, but added useful working context below it so the page no longer feels empty.
-- Added a visible `PRISTEEL Daily` card, `Vazhdo pun�n` with up to two active projects, and an `N� pritje` card that appears only when the existing Home snapshot contains waiting-external items.
-- Enlarged the four approved quick actions into a 2x2 layout: `Krijo projekt`, `Krijo draft`, `Shto partner`, `Shiko tender�t`.
+- Added a visible `PRISTEEL Daily` card, `Vazhdo punën` with up to two active projects, and an `Në pritje` card that appears only when the existing Home snapshot contains waiting-external items.
+- Enlarged the four approved quick actions into a 2×2 layout: `Krijo projekt`, `Krijo draft`, `Shto partner`, `Shiko tenderët`.
 - All new content is derived from already-loaded in-memory Home/Opportunities snapshots and existing route/create controls. No Supabase reads/writes, network fetches, polling or service-worker behavior were added.
 - Updated the mobile Home cache-bust token so phones receive this revision immediately after deployment.
 
-## 2026-09-25 - Compact mobile Home redesign
+## 2026-09-25 — Compact mobile Home redesign
 
 - Added `pristeel-mobile-home-v1.js` as the <=900px final Home presentation, matching the approved clean mobile mockup while leaving desktop Home unchanged.
-- Removed the desktop-style sidebar/column ownership from mobile Home and replaced it with a full-width mobile dashboard: compact PRISTEEL header, greeting, `Pyet PPPP`, three small counters, one concise `�far� t� shoh�sh sot` card and `Veprime t� shpejta`.
-- Kept the approved quick actions: `Krijo projekt`, `Krijo draft`, `Shto partner`, `Shiko tender�t`. They delegate to existing PPPP routes/create controls; no parallel business workflow was introduced.
+- Removed the desktop-style sidebar/column ownership from mobile Home and replaced it with a full-width mobile dashboard: compact PRISTEEL header, greeting, `Pyet PPPP`, three small counters, one concise `Çfarë të shohësh sot` card and `Veprime të shpejta`.
+- Kept the approved quick actions: `Krijo projekt`, `Krijo draft`, `Shto partner`, `Shiko tenderët`. They delegate to existing PPPP routes/create controls; no parallel business workflow was introduced.
 - Mobile Home reads only existing in-memory Home/Opportunities snapshots and adds zero Supabase reads/writes, zero fetches and zero polling.
 - Decorative steel/building imagery is intentionally absent.
 - Added dedicated smoke coverage and mobile CI checks for the approved layout and zero-backend-cost contract.
 
-## 2026-09-25 - Mobile role and viewport correction
+## 2026-09-25 — Mobile role and viewport correction
 
 - Fixed RBAC startup lookup so the current authenticated user's role is resolved by `user_id` (email fallback only when user id is unavailable) instead of reading an arbitrary first `user_roles` row.
 - The role fix replaces the existing single lookup and does not add extra Supabase polling or background reads.
 - Extended the mobile shell media condition to honor physical device width as well as CSS viewport width, preventing phone browsers using a desktop-style viewport from rendering the full desktop sidebar.
 - No business workflow, project, Gmail, finance or tender logic changed.
 
-## 2026-09-25 - Mobile/tablet shell v2
+## 2026-09-25 — Mobile/tablet shell v2
 
 - Extended the presentation-only bottom navigation and full-width shell from phone-only widths through 900px so tablets do not lose usable workspace to the desktop sidebar.
 - The tablet shell continues to delegate to the same canonical six PPPP routes and adds no Supabase reads/writes, polling, business-state ownership or outbound behavior.
 - Kept PWA installation metadata and the existing 192px/512px icons; no service-worker caching was added.
 - Updated smoke tests and runtime documentation so the <=900px phone/tablet contract is regression-protected.
 
-## 2026-09-25 - PWA install icon hardening
+## 2026-09-25 — PWA install icon hardening
 
-- Added 192x192 and 512x512 raster fallbacks derived from the approved PRISTEEL app icon for Chromium/PWA installation compatibility.
+- Added 192×192 and 512×512 raster fallbacks derived from the approved PRISTEEL app icon for Chromium/PWA installation compatibility.
 - Kept the canonical SVG icon and added Apple home-screen icon metadata.
 - No service worker, offline cache, Supabase read/write, polling or business-runtime change was introduced.
 
-## 2026-09-25 - Mobile responsive shell v1 (branch)
+## 2026-09-25 — Mobile responsive shell v1 (branch)
 
 - Added `pristeel-mobile-responsive-v1.js` as a presentation/navigation-only mobile shell.
 - Reuses the canonical six PPPP routes; no new business engine or Supabase data path.
@@ -421,7 +421,7 @@ The legacy Operating Experience layer now defers sidebar pruning, reordering and
 - Added an isolated smoke test and CI workflow that guard against Supabase calls, polling, MutationObserver ownership and duplicate mobile runtime loading.
 
 # PPPP CHANGELOG
-## 2026-10-06 - Manual unknown-role draft clarification
+## 2026-10-06 — Manual unknown-role draft clarification
 
 STAKO-Hallenbau exposed a mismatch: the Opportunity Desk enabled Gmail draft review with a verified company email, while a company assessment with unknown role blocked it. The explicit TED_GENERAL path may now preview a neutral role/scope clarification when the exact winner, official domain and source-confirmed tender identity and explicit steel/metalwork scope match a ready-for-review assessment. It never marks the role or assessment verified. Research/no-outreach/closed cases, recipient attribution, communication history, cooldown, preview approval and no-auto-send gates remain. The preview labels this clarification explicitly.
 
@@ -477,7 +477,7 @@ This file records material architecture/automation changes. It is not a substitu
 
 - Added the read-only, RLS-respecting `public.pppp_project_workflow_state_v1` model over existing Project, RFQ, supplier decision, supplier offer, client offer and invoice evidence.
 - Project Data Integrity now loads that state inside the isolated Project payload; Workbench V3 uses it as the primary stage/next-action source and safely falls back to the established heuristics if the optional view is unavailable.
-- The three explicit entry workflows now converge on one visible supplier/commercial flow and one shared post-award sequence: `Customer PO  Supplier PO  Procurement  Transport  Delivery  Invoice  Payment  Closed`.
+- The three explicit entry workflows now converge on one visible supplier/commercial flow and one shared post-award sequence: `Customer PO → Supplier PO → Procurement → Transport → Delivery → Invoice → Payment → Closed`.
 - Human gates remain visible for supplier approval, pricing/dossier, client offer/application, negotiation and outcome decisions. No new database writer, automatic email, financial commitment or supplier commitment was introduced.
 - Added smoke coverage for the read-only migration contract, all three lanes, canonical next-action routing and the complete post-award path.
 
@@ -501,7 +501,7 @@ This file records material architecture/automation changes. It is not a substitu
 
 ### Finance and System terminal routes isolated from shared router wrappers
 
-- Production verification after PR #388 proved that Partner�t  Financat could still block the browser before any Finance surface became active.
+- Production verification after PR #388 proved that Partnerët → Financat could still block the browser before any Finance surface became active.
 - Daily Finance and System navigation now activates its authoritative page directly and never enters the multiply decorated `pstWorkspaceGo` chain.
 - The early native Finance capture hydrates the existing Finance core directly, and its asset version is bumped so returning browsers cannot reuse the stale route owner.
 - Dynamic navigation regressions, the complete 175-check suite, runtime manifest and deterministic bootstrap guards pass. No business data, Supabase schema, automation or approval gate changed.
@@ -525,7 +525,7 @@ This file records material architecture/automation changes. It is not a substitu
 
 ### TED winner email preparation restored in Action Console
 
-- Every TED award-winner popup now exposes `P�rgatit emailin`, including rows whose company role is still unverified; those rows use neutral capacity-support wording instead of losing the email action.
+- Every TED award-winner popup now exposes `Përgatit emailin`, including rows whose company role is still unverified; those rows use neutral capacity-support wording instead of losing the email action.
 - Outreach copy follows the actual PRISTEEL messages sent on 2 September 2026: public-award context, additional fabrication capacity, PRISTEEL technical/fabrication coordination, DAP delivery, partner-plant EN 1090-2 / EXC-4 capability and a request for drawings/BOQ/BOM.
 - Language routing is deterministic: German for DACH, Serbo-Croatian for Croatia/Montenegro/Serbia and English for all other countries.
 - The editable preview remains mandatory. An explicit user click creates a Gmail draft; no message is sent automatically.
@@ -537,7 +537,7 @@ This file records material architecture/automation changes. It is not a substitu
 ### Final daily-surface polish removes the remaining visible control clutter
 
 - PR #268 tightens the already-canonical daily surfaces without replacing any business engine.
-- Projects keeps search plus `T� gjitha / Action / Waiting / Execution / Closed` and retires the remaining normal-page maintenance chrome: duplicate manager, manual refresh, board/list toggle, legacy counters/filters, sort selector and the header-level `+ Projekt i ri` button.
+- Projects keeps search plus `Të gjitha / Action / Waiting / Execution / Closed` and retires the remaining normal-page maintenance chrome: duplicate manager, manual refresh, board/list toggle, legacy counters/filters, sort selector and the header-level `+ Projekt i ri` button.
 - Manual project creation is not deleted. The exceptional `+ Krijo` path remains available, while normal project intake is expected to come increasingly from confirmed Gmail/tender/project events and existing automation.
 - System now treats `Automation Health` as the primary visible operational surface.
 - The large System app/module grid remains intact but is collapsed under `Mjete teknike` by default, instead of presenting a wall of technical tiles during normal work.
@@ -554,13 +554,13 @@ This file records material architecture/automation changes. It is not a substitu
 - Primary daily navigation is now `Home`, `Opportunities`, `Projects`, `Partners`, `Finance`, `System`.
 - Gmail, Commercial intake/review and technical automation surfaces remain connected but are moved out of primary daily navigation and remain reachable through `System` or direct contextual actions.
 - Added distinct visual color identity by business zone so location is recognizable through both text and color.
-- Project Workspace is presented as five business phases: `P�rgatitja -> Prokurimi -> Komerciale -> Ekzekutimi -> Financa`, with `Skedar�t` and `Komunikimi` treated as utilities.
-- Existing detailed project engines remain reused: `BOM -> RFQ -> Ofertat e furnitor�ve -> Krahasimi i ofertave -> �mimi i shitjes -> Oferta p�r klientin`.
+- Project Workspace is presented as five business phases: `Përgatitja -> Prokurimi -> Komerciale -> Ekzekutimi -> Financa`, with `Skedarët` and `Komunikimi` treated as utilities.
+- Existing detailed project engines remain reused: `BOM -> RFQ -> Ofertat e furnitorëve -> Krahasimi i ofertave -> Çmimi i shitjes -> Oferta për klientin`.
 - Procurement and Commercial are visually separated without creating duplicate comparison/pricing/client-offer engines.
-- `Hapi i radh�s` is now lifecycle-aware: won/execution projects route to Execution, technical review routes to preparation, pricing/client-offer states route to the commercial decision, and `wait_for_client` explicitly shows that no user action is required.
+- `Hapi i radhës` is now lifecycle-aware: won/execution projects route to Execution, technical review routes to preparation, pricing/client-offer states route to the commercial decision, and `wait_for_client` explicitly shows that no user action is required.
 - Home action surface is presented as `Duhet veprimi yt`.
 - Where a safe existing target is known, Home `Vepro` routes directly to Communication, RFQ, supplier comparison, client offer, Execution or Commercial intake review instead of forcing the user to navigate manually.
-- Opportunities now exposes clearer final decision labels: `GO � Krijo projekt`, `REVIEW`, `NO-GO`; underlying tender status/promotion gates are unchanged.
+- Opportunities now exposes clearer final decision labels: `GO · Krijo projekt`, `REVIEW`, `NO-GO`; underlying tender status/promotion gates are unchanged.
 - The new layer performs no Supabase reads/writes, no outbound actions and does not own Home/project business state.
 - Final client offer, sell price/margin, supplier commitment, external send and final financial commitment remain human-gated.
 - PR #233 merged to `main` as `48c264cab7116ee36f7c485231510e6529891ba6`.
@@ -573,8 +573,8 @@ This file records material architecture/automation changes. It is not a substitu
 ### Project Workspace becomes one canonical end-to-end workflow
 
 - Added `pristeel-project-workflow-canonical-v1.js` as the final UI-only reconciler over the existing Project-First workspace.
-- The Project Workspace now exposes six top-level areas: `P�rmbledhja`, `Prokurimi`, `Ekzekutimi`, `Financat`, `Skedar�t`, `Komunikimi`.
-- `Prokurimi` now has one explicit six-stage sequence: `BOM -> RFQ -> Ofertat e furnitor�ve -> Krahasimi i ofertave -> �mimi i shitjes -> Oferta p�r klientin`.
+- The Project Workspace now exposes six top-level areas: `Përmbledhja`, `Prokurimi`, `Ekzekutimi`, `Financat`, `Skedarët`, `Komunikimi`.
+- `Prokurimi` now has one explicit six-stage sequence: `BOM -> RFQ -> Ofertat e furnitorëve -> Krahasimi i ofertave -> Çmimi i shitjes -> Oferta për klientin`.
 - Every procurement stage is independently clickable; state badges describe what exists instead of blocking navigation.
 - Empty states now explain what is missing and what the next action is instead of leaving blank pages.
 - Existing BOM, RFQ, normalized supplier comparison, pricing calculator and client-offer engines are reused rather than duplicated.
@@ -599,7 +599,7 @@ This file records material architecture/automation changes. It is not a substitu
 
 - Retired delayed `Home Happy` timers and legacy hero counter rewrites that continued modifying Home after the canonical render.
 - `pristeel-home-command-center-v2.js` v6 is the stable presentation owner over Canonical Home data.
-- Home keeps `P�r mua tani` consistently, without switching back to `Prioritetet` after load.
+- Home keeps `Për mua tani` consistently, without switching back to `Prioritetet` after load.
 - Legacy hero counters are removed.
 - Priority cards use the same neutral white visual family as active project cards, with only a subtle top accent/category icon.
 - Home remains two-column for priorities and does not introduce business-data writes.
@@ -622,14 +622,14 @@ This file records material architecture/automation changes. It is not a substitu
 - Client offer identity is prefilled from the active project, including project name, reference, client and the best project-specific buyer contact.
 - CARINVEST reference `MARKO JOVANOVIC` therefore resolves to Marko Jovanovic / `marko@italianstyle.me`, rather than unrelated STACON demo data.
 - Supplier quantity can seed the draft quantity when the project itself has no BOM quantity.
-- A supplier quote with one coherent cost rate may be selected as procurement cost basis, but mixed-rate/review-flagged quotes are not flattened into one automatic ?/kg value.
+- A supplier quote with one coherent cost rate may be selected as procurement cost basis, but mixed-rate/review-flagged quotes are not flattened into one automatic €/kg value.
 - For mixed quotes such as CARINVEST, the offer editor shows the exact supplier line summary and total while leaving selling price/margin blank for human approval.
 - Existing/saved client offers are not overwritten.
 - Key commits: `288f4384083573877d9b783352850a9a11e48496`, `f98b23fe0c9d0c4b7c5e25ce338803939b0d1c24`, `5f5d8281e6cce2dec3948a3407261c9a78d995b1`.
 
 ### Client-offer continuation fixed after supplier quote
 
-- `pristeel-project-commercial-prefill-rescue-v1.js` upgraded to v3 after reproducing the real `Krijo / edito ofert�` failure.
+- `pristeel-project-commercial-prefill-rescue-v1.js` upgraded to v3 after reproducing the real `Krijo / edito ofertë` failure.
 - Root cause: the Commercial Document Builder deliberately reset a fresh offer again after opening it, so the earlier project prefill ran too early and was erased.
 - The project bridge now owns the explicit Project -> Client Offer handoff and waits until the builder's fresh-form reset is complete before hydrating the draft.
 - For a project with one supplier quotation, the supplier's structured quotation rows are carried into the PRISTEEL offer editor as editable sales rows with selling price `0` / pending approval, while supplier costs remain internal metadata/reference.
@@ -651,8 +651,8 @@ This file records material architecture/automation changes. It is not a substitu
 ### Home becomes an operational action engine
 
 - `pristeel-home-canonical-v1.js` upgraded from passive Home aggregation to current-state/action logic.
-- Home is now `P�r mua tani`, capped at five concrete actions.
-- Added `N� pritje` for projects where no user action is currently due.
+- Home is now `Për mua tani`, capped at five concrete actions.
+- Added `Në pritje` for projects where no user action is currently due.
 - Added Project Brief popup with current state, recent activity, missing information, source context and recommended next actions.
 - Added supplier-quote, client-reply, technical-deadline and sent-offer state handling.
 - Automatic stale-task reconciliation introduced for superseded project events.
@@ -722,31 +722,30 @@ This file records material architecture/automation changes. It is not a substitu
 ### Regression project state corrected
 
 - Dukley: revised offer `PST-OFF-2026-08-025` recognized as sent; obsolete dynamic-plan action closed; project deadline recorded as 10.10.2026; project waits for client.
-- CARINVEST: Eurosteel supplier response promotes `P�rgatit ofert�n PRISTEEL` and project pricing stage.
+- CARINVEST: Eurosteel supplier response promotes `Përgatit ofertën PRISTEEL` and project pricing stage.
 - TenneT / SPIE: concrete technical-closeout action used before 21.08.2026 offer deadline.
 
 ### Human gates retained
 
 Automation may read, classify, reconcile, calculate, compare and prepare drafts. External sends, final commercial commitments, supplier commitment, PO/contract and final financial commitments remain human-approved.
 
-# 2026-09-05 - Finance canonical click owner follow-up
+# 2026-09-05 — Finance canonical click owner follow-up
 
-- Production verification after #389 showed that the earlier Finance stability capture listener still consumed `Partner�t  Financat` before the refreshed primary navigation owner could run.
+- Production verification after #389 showed that the earlier Finance stability capture listener still consumed `Partnerët → Financat` before the refreshed primary navigation owner could run.
 - The early capture now hands Finance directly to `PSTPrimaryNavResilienceV1.openFinance()` when available and retains only a bounded local recovery fallback during bootstrap.
 - Cache identities for both the early Finance capture and the terminal primary navigation owner were advanced together so returning browsers cannot retain the stale routing behavior.
-## 2026-09-27 - Bler�sit e �elikut: rrjedha e plot�
+## 2026-09-27 — Blerësit e çelikut: rrjedha e plotë
 
-- Moduli i m�parsh�m **Material - Ofert�** quhet tani **Bler�sit e �elikut** n� desktop, Ballin�, telefon/tablet dhe kontrollet nd�rmjet moduleve.
-- Nd�rrimi i filtrit rivendos kompanin� e zgjedhur, k�shtu paneli an�sor nuk mund t� mbetet te nj� kompani jasht� list�s aktive.
-- Preview-i dhe Gmail draft p�rdorin t� nj�jtin motor V2 dhe t� nj�jtat fakte t� personalizimit.
-- Nj� kompani mund t� ket� disa kontakte t� verifikuara; �do recipient ka draft dhe histori t� ve�ant�.
-- Follow-up-i b�het i mundsh�m pas shtat� dit�sh pa reply, por krijohet vet�m me veprim njer�zor dhe nuk d�rgohet automatikisht.
-- Reply/RFQ promovohet n� Project; supplier RFQ dhe oferta komerciale vazhdojn� n� rrjedh�n canonical t� Project-it.
-- Kontrollet e domain-it sinjalizojn� p�rplasje me Mund�sit�, P�rfaq�simet dhe Kompanit� EU para outreach-it.
+- Moduli i mëparshëm **Material – Ofertë** quhet tani **Blerësit e çelikut** në desktop, Ballinë, telefon/tablet dhe kontrollet ndërmjet moduleve.
+- Ndërrimi i filtrit rivendos kompaninë e zgjedhur, kështu paneli anësor nuk mund të mbetet te një kompani jashtë listës aktive.
+- Preview-i dhe Gmail draft përdorin të njëjtin motor V2 dhe të njëjtat fakte të personalizimit.
+- Një kompani mund të ketë disa kontakte të verifikuara; çdo recipient ka draft dhe histori të veçantë.
+- Follow-up-i bëhet i mundshëm pas shtatë ditësh pa reply, por krijohet vetëm me veprim njerëzor dhe nuk dërgohet automatikisht.
+- Reply/RFQ promovohet në Project; supplier RFQ dhe oferta komerciale vazhdojnë në rrjedhën canonical të Project-it.
+- Kontrollet e domain-it sinjalizojnë përplasje me Mundësitë, Përfaqësimet dhe Kompanitë EU para outreach-it.
 
-## 2026-10-05 � SPIE Workspace Phase 1
+## 2026-10-05 · SPIE Workspace Phase 1
 
 Added the same-origin `spie/` read-only workspace for canonical TenneT project c937aea1-af5e-4807-ae1e-e36864e46794, with executive Overview, Projects, Files, Emails, Finance and Partners. Home includes the entry shortcut; the production artifact includes the dedicated assets. The workspace uses the authenticated bounded project snapshot and lazy project-filtered metadata without global bootstrap changes, new storage, migrations, polling or business writes. Samples is operator-declared and the canonical pricing discrepancy is visible. Unknown health/revisions/importer and unverified financial/contract state are preserved. Seven focused tests plus desktop/mobile browser acceptance passed with fixtures and zero real Supabase browser calls. Documentation: docs/SPIE_WORKSPACE_PHASE1.md.
-
 
 

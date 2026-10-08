@@ -42,15 +42,15 @@ export async function ensureSession(){
     const fresh=await response.json();
     const now=JSON.parse(localStorage.getItem('pristeel_session')||'null');
     if(!now||now.access_token!==before.access_token)return session();
-    if(!fresh.access_token||!fresh.refresh_token)throw new Error('PPPP auth: p�rgjigjja nuk p�rmban sesion t� vlefsh�m.');
+    if(!fresh.access_token||!fresh.refresh_token)throw new Error('PPPP auth: përgjigjja nuk përmban sesion të vlefshëm.');
     localStorage.setItem('pristeel_session',JSON.stringify({...before,...fresh,expires_at:(Number(fresh.expires_at)||Date.now()/1000+Number(fresh.expires_in))*1000}));
-    const verified=session();if(!verified){localStorage.setItem('pristeel_session',JSON.stringify(before));throw new Error('PPPP auth: identiteti i sesionit nuk p�rputhet.');}invalidate();return verified;
+    const verified=session();if(!verified){localStorage.setItem('pristeel_session',JSON.stringify(before));throw new Error('PPPP auth: identiteti i sesionit nuk përputhet.');}invalidate();return verified;
   })().finally(()=>{try{if(JSON.parse(localStorage.getItem(lockKey)||'null')?.owner===owner)localStorage.removeItem(lockKey);}catch{}refreshPromise=null;});return refreshPromise;
 }
 
 export async function read(path, { refresh = false } = {}) {
   const current = await ensureSession();
-  if (!current) { cache.clear(); cacheSession = ''; throw new Error('SESSION_REQUIRED: Hapni PPPP p�r t� hyr� ose rinovuar sesionin, pastaj kthehuni te SPIE.'); }
+  if (!current) { cache.clear(); cacheSession = ''; throw new Error('SESSION_REQUIRED: Hapni PPPP për të hyrë ose rinovuar sesionin, pastaj kthehuni te SPIE.'); }
   if (cacheSession !== current.access_token) { cache.clear(); cacheSession = current.access_token; }
   if (refresh) cache.delete(path);
   const old = cache.get(path);
@@ -68,7 +68,7 @@ export async function read(path, { refresh = false } = {}) {
     if (session()?.access_token !== current.access_token) throw new Error('SESSION_CHANGED: Kthehuni te PPPP dhe rihapni SPIE.');
     return response.json();
   }).catch(error => {
-    if (error.name === 'AbortError') throw new Error('Leximi nga PPPP tejkaloi afatin (12 sekonda). T� dh�nat nuk mund t� verifikoheshin.');
+    if (error.name === 'AbortError') throw new Error('Leximi nga PPPP tejkaloi afatin (12 sekonda). Të dhënat nuk mund të verifikoheshin.');
     throw error;
   }).finally(() => clearTimeout(timer));
   cache.set(path, { at: Date.now(), promise });
@@ -82,7 +82,7 @@ export function projectRows(table, fields, limit, order = 'created_at.desc') {
 export async function snapshot() {
   const query = new URLSearchParams({ p_project_id: PROJECT_ID, p_email_limit: '6', p_fact_limit: '8', p_task_limit: '6', p_document_limit: '3' });
   const data = await read('rpc/pppp_chatgpt_project_snapshot_v1?' + query);
-  if (data?.project?.id !== PROJECT_ID || data.read_only_snapshot !== true) throw new Error('Identiteti i pasqyr�s s� projektit n� PPPP nuk mund t� verifikohej.');
+  if (data?.project?.id !== PROJECT_ID || data.read_only_snapshot !== true) throw new Error('Identiteti i pasqyrës së projektit në PPPP nuk mund të verifikohej.');
   return data;
 }
 // The chat intelligence RPC includes the cross-project Home action projection.
@@ -97,8 +97,8 @@ export async function workspaceSnapshot() {
   if (session()?.access_token !== expectedSession) throw new Error('SESSION_CHANGED: Kthehuni te PPPP dhe rihapni SPIE.');
   if (projectResult.status !== 'fulfilled') throw projectResult.reason;
   const rows = projectResult.value;
-  if (!Array.isArray(rows) || rows.length !== 1 || rows[0]?.id !== PROJECT_ID) throw new Error('Identiteti i projektit n� PPPP nuk mund t� verifikohej.');
-  if (factResult.status === 'fulfilled' && (!Array.isArray(factResult.value) || factResult.value.some(f => f.project_id !== PROJECT_ID))) throw new Error('Identiteti i fakteve t� projektit n� PPPP nuk mund t� verifikohej.');
+  if (!Array.isArray(rows) || rows.length !== 1 || rows[0]?.id !== PROJECT_ID) throw new Error('Identiteti i projektit në PPPP nuk mund të verifikohej.');
+  if (factResult.status === 'fulfilled' && (!Array.isArray(factResult.value) || factResult.value.some(f => f.project_id !== PROJECT_ID))) throw new Error('Identiteti i fakteve të projektit në PPPP nuk mund të verifikohej.');
   return { project: rows[0], context_facts: factResult.status === 'fulfilled' ? factResult.value : [],
     operator_actions: [], read_only_snapshot: true, generated_at: new Date().toISOString(),
     read_errors: factResult.status === 'rejected' ? [{ source: 'Konteksti i projektit', error: factResult.reason.message }] : [] };
@@ -106,7 +106,7 @@ export async function workspaceSnapshot() {
 export async function workspaceActions({ refresh = false } = {}) {
   const query = new URLSearchParams({ project_id: 'eq.' + PROJECT_ID, select: 'id,project_id,title,detail,due_date,priority,status,source,source_ref,category,created_at', order: 'due_date.asc.nullslast,created_at.desc', limit: '6' });
   const rows = await read('pppp_home_current_actions_v1?' + query, { refresh });
-  if (!Array.isArray(rows) || rows.some(a => a.project_id !== PROJECT_ID)) throw new Error('Identiteti i veprimeve t� projektit n� PPPP nuk mund t� verifikohej.');
+  if (!Array.isArray(rows) || rows.some(a => a.project_id !== PROJECT_ID)) throw new Error('Identiteti i veprimeve të projektit në PPPP nuk mund të verifikohej.');
   return rows;
 }
 const fileFields = 'id,project_id,title,file_name,doc_type,doc_nr,doc_date,party,status,drive_url,notes,created_at,amount_eur';
@@ -152,7 +152,7 @@ export async function liveDriveFiles(folderId){
   if(!/https:\/\/www.googleapis.com\/auth\/drive(?:\s|$)/.test(scopes))return [];
   const path='https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:"'"+folderId+"' in parents and trashed = false",fields:'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink,sha256Checksum)',pageSize:'100',orderBy:'modifiedTime desc'});
   const r=await fetch(path,{method:'GET',headers:{Authorization:'Bearer '+google.token},signal:AbortSignal.timeout(12000)});
-  if(!r.ok)throw new Error('Drive '+r.status+': dokumentet nuk mund t� lexoheshin.');
+  if(!r.ok)throw new Error('Drive '+r.status+': dokumentet nuk mund të lexoheshin.');
   const d=await r.json();if(!session())throw new Error('SESSION_CHANGED');
   return {files:d.files||[],truncated:!!d.nextPageToken};
 }
@@ -251,14 +251,14 @@ export function extractOfferFacts(row) {
   const dateMatch=(name+'\n'+text.slice(0,4000)).match(/(?:Angebotsdatum|Preisstand|Offer\s*date|Date)[\s:,|-]*([0-3]?\d[.\/-][01]?\d[.\/-]20\d{2})/i)
     || name.match(/([0-3]?\d[.\/-][01]?\d[.\/-]20\d{2})/);
   const payment=excerpt(text,/(?:Zahlungsbedingungen|Payment\s+terms?)[\s:,]*([^\n]{3,220})/i);
-  const validity=excerpt(text,/(?:bindend\s+bis|g�ltig\s+bis|valid\s+until|validity)[\s:,]*([^\n]{3,120})/i);
-  const transport=/Fracht[^\n]{0,180}(?:enthalten|included)/i.test(text)?'Transporti p�rfshihet sipas dokumentit':/transport|fracht/i.test(text)?'Shiko kushtet e transportit n� dokument':'Nuk u gjet n� dokument';
-  const cbam=/CBAM/i.test(text)?(/(?:buyer|SPIE|PRISTEEL|importer)[^\n]{0,160}(?:CBAM|declarant)|CBAM[^\n]{0,160}(?:buyer|SPIE|PRISTEEL|importer|declarant)/i.test(text)?'P�rgjegj�sia p�rshkruhet n� dokument':'CBAM p�rmendet; p�rgjegj�sia k�rkon verifikim'):'Nuk u gjet n� dokument';
-  const painting=/painting|beschichtung|lackier/i.test(text)?(/separat|separate|not included|nicht enthalten/i.test(text)?'Paraqitet ve�mas / nuk p�rfshihet n� baz�n kryesore':'P�rshkruhet n� dokument'):'Nuk u gjet n� dokument';
-  const customs=/customs|zoll|import/i.test(text)?'Importi/dogana p�rshkruhet n� dokument':'Nuk u gjet n� dokument';
+  const validity=excerpt(text,/(?:bindend\s+bis|gültig\s+bis|valid\s+until|validity)[\s:,]*([^\n]{3,120})/i);
+  const transport=/Fracht[^\n]{0,180}(?:enthalten|included)/i.test(text)?'Transporti përfshihet sipas dokumentit':/transport|fracht/i.test(text)?'Shiko kushtet e transportit në dokument':'Nuk u gjet në dokument';
+  const cbam=/CBAM/i.test(text)?(/(?:buyer|SPIE|PRISTEEL|importer)[^\n]{0,160}(?:CBAM|declarant)|CBAM[^\n]{0,160}(?:buyer|SPIE|PRISTEEL|importer|declarant)/i.test(text)?'Përgjegjësia përshkruhet në dokument':'CBAM përmendet; përgjegjësia kërkon verifikim'):'Nuk u gjet në dokument';
+  const painting=/painting|beschichtung|lackier/i.test(text)?(/separat|separate|not included|nicht enthalten/i.test(text)?'Paraqitet veçmas / nuk përfshihet në bazën kryesore':'Përshkruhet në dokument'):'Nuk u gjet në dokument';
+  const customs=/customs|zoll|import/i.test(text)?'Importi/dogana përshkruhet në dokument':'Nuk u gjet në dokument';
   const statedIncoterm=text.match(/Delivery\s*:\s*(DAP|DDP)\b/i)?.[1]||text.match(/This offer is made\s+(DAP|DDP)\b/i)?.[1];
-  return {lots,amount,currency:amount===null?null:'EUR',amount_without_painting:money(totalTable?.[1]),painting_amount:money(totalTable?.[2]),amount_basis:lots.length?'Shuma e loteve t� nxjerra':totalTable?'Totali DAP me lyerje sipas tabel�s s� ofert�s':'',terms:statedIncoterm||terms.join(' / '),offer_date:dateMatch?.[1]||'',payment_terms:payment||'',validity:validity||'',transport,cbam,painting,customs,
-    evidence_status:raw&&row.analysis_status==='analyzed'?'E nxjerr� nga dokumenti i analizuar':raw?'Evidence tekstuale n� PPPP':'Pa verifikim'};
+  return {lots,amount,currency:amount===null?null:'EUR',amount_without_painting:money(totalTable?.[1]),painting_amount:money(totalTable?.[2]),amount_basis:lots.length?'Shuma e loteve të nxjerra':totalTable?'Totali DAP me lyerje sipas tabelës së ofertës':'',terms:statedIncoterm||terms.join(' / '),offer_date:dateMatch?.[1]||'',payment_terms:payment||'',validity:validity||'',transport,cbam,painting,customs,
+    evidence_status:raw&&row.analysis_status==='analyzed'?'E nxjerrë nga dokumenti i analizuar':raw?'Evidence tekstuale në PPPP':'Pa verifikim'};
 }
 export function operationalModel(data, bundle) {
   const mails = newest(list(bundle.emails.rows).filter(m => string(m.project_id || PROJECT_ID) === PROJECT_ID));
@@ -277,8 +277,8 @@ export function operationalModel(data, bundle) {
     const drive = /^[\w-]+$/.test(a.drive_file_id || '') ? 'https://drive.google.com/file/d/'+a.drive_file_id+'/view' : '';
     const facts=extractOfferFacts(a);
     offerRows.push({ id:'attachment:'+a.id, side:supplier?'supplier':'client', kind:offerKind(a.attachment_name), title:a.attachment_name,
-      sent_at:m.sent_at, mail:m, source:a.source || 'Bashk�ngjitje n� PPPP', source_url:gmailLink(m), drive_url:drive,
-      state:(supplier?'Pranuar nga Aktiva':sent?'D�rguar te SPIE':'Kopje n� komunikim me SPIE')+(m.association_pending?' � lidhja me projektin p�r shqyrtim':''), sent,...facts,
+      sent_at:m.sent_at, mail:m, source:a.source || 'Bashkëngjitje në PPPP', source_url:gmailLink(m), drive_url:drive,
+      state:(supplier?'Pranuar nga Aktiva':sent?'Dërguar te SPIE':'Kopje në komunikim me SPIE')+(m.association_pending?' · lidhja me projektin për shqyrtim':''), sent,...facts,
       terms:facts.terms||(a.attachment_name.replace(/_/g,' ').match(/\b(?:DAP|DDP)\b/gi)||[]).map(x=>x.toUpperCase()).filter((v,i,all)=>all.indexOf(v)===i).join(' / '),
       content_key:a.content_sha256 || '', attachment_id:a.id,gmail_attachment_id:a.attachment_id,attachment_mime_type:a.attachment_mime_type,association_pending:m.association_pending===true });
   }
@@ -289,7 +289,7 @@ export function operationalModel(data, bundle) {
     const old=unique.get(key);
     const quality=o=>(o.sent?4:0)+(o.amount!==null?2:0)+(o.evidence_status!=='Pa verifikim'?1:0);
     if (!old || quality(o)>quality(old)) unique.set(key,o);
-    if(old&&o.content_key){const best=unique.get(key),other=best===o?old:o;for(const field of ['amount','currency','lots','amount_basis','amount_without_painting','painting_amount','payment_terms','validity','transport','cbam','painting','customs'])if((best[field]===null||best[field]===undefined||best[field]===''||best[field]==='Nuk u gjet n� dokument'||Array.isArray(best[field])&&!best[field].length)&&other[field])best[field]=other[field];}
+    if(old&&o.content_key){const best=unique.get(key),other=best===o?old:o;for(const field of ['amount','currency','lots','amount_basis','amount_without_painting','painting_amount','payment_terms','validity','transport','cbam','painting','customs'])if((best[field]===null||best[field]===undefined||best[field]===''||best[field]==='Nuk u gjet në dokument'||Array.isArray(best[field])&&!best[field].length)&&other[field])best[field]=other[field];}
   }
   const offers=[...unique.values()];
   for (const m of offerMails) {
@@ -298,13 +298,13 @@ export function operationalModel(data, bundle) {
     const client=mailParty(m)==='pristeel' && recipients(m,'spie.com') && /^(outgoing|outbound|out)$/i.test(m.direction);
     if ((!supplier&&!client) || offerRows.some(o=>o.mail.gmail_message_id===m.gmail_message_id&&o.kind==='offer')) continue;
     offers.push({id:'mail:'+m.gmail_message_id,side:supplier?'supplier':'client',kind:'offer',title:m.subject,mail:m,
-      sent_at:m.sent_at,state:(supplier?'Email nga Aktiva � kontrollo bashk�ngjitjen':'D�rguar te SPIE � dokumentet n� Gmail')+(m.association_pending?' � lidhja me projektin p�r shqyrtim':''),sent:client,
-      source:m.association_pending?'PPPP � vet�m sugjerim p�r lidhjen me projektin':'Email i lidhur n� PPPP',source_url:gmailLink(m),amount:null,currency:null,terms:(m.subject.match(/\b(?:DAP|DDP)\b/gi)||[]).join(' / '),metadata_missing:true,association_pending:m.association_pending===true});
+      sent_at:m.sent_at,state:(supplier?'Email nga Aktiva · kontrollo bashkëngjitjen':'Dërguar te SPIE · dokumentet në Gmail')+(m.association_pending?' · lidhja me projektin për shqyrtim':''),sent:client,
+      source:m.association_pending?'PPPP · vetëm sugjerim për lidhjen me projektin':'Email i lidhur në PPPP',source_url:gmailLink(m),amount:null,currency:null,terms:(m.subject.match(/\b(?:DAP|DDP)\b/gi)||[]).join(' / '),metadata_missing:true,association_pending:m.association_pending===true});
   }
-  for (const r of list(bundle.suppliers.rows)) offers.push({...r,id:'supplier:'+r.id,side:'supplier',kind:'offer',title:r.offer_ref||r.supplier||'Ofert� furnitori',sent_at:r.created_at,state:'Ofert� e regjistruar',source:'Regjistri i ofertave n� PPPP',amount:r.total_amount ?? (r.currency==='EUR'?r.total_eur:null),terms:r.incoterms||'',source_url:''});
+  for (const r of list(bundle.suppliers.rows)) offers.push({...r,id:'supplier:'+r.id,side:'supplier',kind:'offer',title:r.offer_ref||r.supplier||'Ofertë furnitori',sent_at:r.created_at,state:'Ofertë e regjistruar',source:'Regjistri i ofertave në PPPP',amount:r.total_amount ?? (r.currency==='EUR'?r.total_eur:null),terms:r.incoterms||'',source_url:''});
   for (const r of list(bundle.clients.rows).filter(r=>r.series==='QUO')) {
     const status=typeof r.offer_state==='object'?r.offer_state?.status:r.offer_state;
-    offers.push({...r,id:'client:'+r.id,side:'client',kind:'offer',title:r.doc_nr,sent_at:r.created_at,state:status||'Ofert� e regjistruar',source:'Regjistri i dokumenteve n� PPPP',amount:r.total_amount ?? (r.currency==='EUR'?r.total_eur:null),source_url:''});
+    offers.push({...r,id:'client:'+r.id,side:'client',kind:'offer',title:r.doc_nr,sent_at:r.created_at,state:status||'Ofertë e regjistruar',source:'Regjistri i dokumenteve në PPPP',amount:r.total_amount ?? (r.currency==='EUR'?r.total_eur:null),source_url:''});
   }
   const sample = trusted.find(m=>mailParty(m)==='client' && !/automatische antwort|automatic reply/i.test(m.subject) && /muster|sample|anfertigung\s*2/i.test(m.subject));
   const approval = trusted.find(m=>sample && m.gmail_thread_id===sample.gmail_thread_id && mailParty(m)==='client' && /vorgehen.*(?:in ordnung|einverstanden)|so machen wir das/i.test(messageText(m)));
@@ -327,8 +327,8 @@ export function operationalModel(data, bundle) {
     if(link && seenFiles.has(link))continue;
     if(link)seenFiles.add(link);
     if(files.some(f=>f.gmail_message_id===a.gmail_message_id&&f.title===a.attachment_name))continue;
-    const technical=/werkstatt|st�ckliste|zeichnung|drawing|\.x83$|\.dwg$|korrosionsschutz/i.test(a.attachment_name);
-    files.push({project_id:PROJECT_ID,title:a.attachment_name,created_at:m.sent_at,drive_url:link,gmail_url:gmailLink(m),gmail_message_id:m.gmail_message_id,doc_type:offerKind(a.attachment_name)?'commercial':technical?'technical':'',notes:{category_verified:false},source:'Bashk�ngjitje e emailit'});
+    const technical=/werkstatt|stückliste|zeichnung|drawing|\.x83$|\.dwg$|korrosionsschutz/i.test(a.attachment_name);
+    files.push({project_id:PROJECT_ID,title:a.attachment_name,created_at:m.sent_at,drive_url:link,gmail_url:gmailLink(m),gmail_message_id:m.gmail_message_id,doc_type:offerKind(a.attachment_name)?'commercial':technical?'technical':'',notes:{category_verified:false},source:'Bashkëngjitje e emailit'});
   }
   return {offers:newest(offers.filter(o=>!o.association_pending)),reviewOffers:newest(offers.filter(o=>o.association_pending)),mails,trusted,timeline,files,sample,approval,currentRequest,supplierSample,
     errors:Object.entries(bundle).filter(([,v])=>v.error).map(([source,v])=>({source,error:v.error})),
@@ -384,7 +384,7 @@ async function enrichMissingOffers(bundle) {
   const missing=[...found.values()].filter(m=>/^[a-f0-9]+$/i.test(m.id||'')&&!bundle.emails.rows.some(r=>r.gmail_message_id===m.id)).slice(0,6);
   const external=await Promise.allSettled(missing.map(async item=>{
     const m=await googleRead('messages/'+encodeURIComponent(item.id)+'?format=full');
-    if(m.id!==item.id)throw new Error('Gmail: identiteti nuk p�rputhet.');
+    if(m.id!==item.id)throw new Error('Gmail: identiteti nuk përputhet.');
     const headers=list(m.payload?.headers),header=name=>string(headers.find(h=>h.name.toLowerCase()===name.toLowerCase())?.value);
     const address=text=>string(text).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)||[];
     const from=(address(header('From'))[0]||'').toLowerCase(),to=address(header('To')).map(x=>x.toLowerCase());
@@ -406,10 +406,10 @@ async function enrichMissingOffers(bundle) {
   const settled=await Promise.allSettled(candidates.map(async m=>{
     {
       const message=prefetched.get(m.gmail_message_id)||await googleRead('messages/'+encodeURIComponent(m.gmail_message_id)+'?format=full');
-      if(message.id!==m.gmail_message_id||message.threadId!==m.gmail_thread_id)throw new Error('Gmail: identiteti i mesazhit nuk p�rputhet.');
+      if(message.id!==m.gmail_message_id||message.threadId!==m.gmail_thread_id)throw new Error('Gmail: identiteti i mesazhit nuk përputhet.');
       const found=[];
       function walk(part){
-        if(part.filename && /\.(?:pdf|xlsx?|docx?|pptx?|zip|dwg|dxf|x83)$/i.test(part.filename))found.push({id:'gmail:'+m.gmail_message_id+':'+found.length,project_id:PROJECT_ID,attachment_id:part.body?.attachmentId||'',attachment_name:part.filename,attachment_mime_type:part.mimeType||'',gmail_message_id:m.gmail_message_id,gmail_thread_id:m.gmail_thread_id,source:m.external_source?'Gmail � jasht� regjistrit PPPP':'Gmail � lexim i drejtp�rdrejt�'});
+        if(part.filename && /\.(?:pdf|xlsx?|docx?|pptx?|zip|dwg|dxf|x83)$/i.test(part.filename))found.push({id:'gmail:'+m.gmail_message_id+':'+found.length,project_id:PROJECT_ID,attachment_id:part.body?.attachmentId||'',attachment_name:part.filename,attachment_mime_type:part.mimeType||'',gmail_message_id:m.gmail_message_id,gmail_thread_id:m.gmail_thread_id,source:m.external_source?'Gmail · jashtë regjistrit PPPP':'Gmail · lexim i drejtpërdrejtë'});
         for(const child of list(part.parts))walk(child);
       }
       walk(message.payload||{});return found;
@@ -418,13 +418,13 @@ async function enrichMissingOffers(bundle) {
   for(const result of settled)if(result.status==='fulfilled')bundle.attachments.rows.push(...result.value);
   // Missing metadata stays visible as a linked sent email even if Google is unavailable.
   const failures=[...settled,...external].filter(r=>r.status==='rejected');
-  if(failures.length)bundle.google={rows:[],error:failures.map(r=>r.reason.message).join(' � ')};
+  if(failures.length)bundle.google={rows:[],error:failures.map(r=>r.reason.message).join(' · ')};
 }
 
 export async function downloadAttachment({gmail_message_id,gmail_attachment_id,title,attachment_mime_type}) {
  const google=googleSession(),current=session();
- if(!google)throw new Error('Lidhe Gmail n� PPPP p�r t� hapur bashk�ngjitjen.');
- if(!/^[a-f0-9]+$/i.test(gmail_message_id||'')||!gmail_attachment_id)throw new Error('Mungon identiteti i bashk�ngjitjes.');
+ if(!google)throw new Error('Lidhe Gmail në PPPP për të hapur bashkëngjitjen.');
+ if(!/^[a-f0-9]+$/i.test(gmail_message_id||'')||!gmail_attachment_id)throw new Error('Mungon identiteti i bashkëngjitjes.');
  const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(gmail_message_id)+'/attachments/'+encodeURIComponent(gmail_attachment_id),{method:'GET',headers:{Authorization:'Bearer '+google.token},signal:AbortSignal.timeout(12000)});
  if(!r.ok)throw new Error('Gmail '+r.status+': dokumenti nuk u hap.');
  if(session()?.access_token!==current.access_token)throw new Error('SESSION_CHANGED');
