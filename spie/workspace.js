@@ -93,6 +93,8 @@ function hydrateFinance(c){
    if(d[key]?.error){rows.push(row(name,'Leximi dështoi: '+d[key].error));continue;}
    const groups=new Map();for(const i of items){const currency=i.currency||'Monedha e paregjistruar',g=groups.get(currency)||{paid:0,unpaid:0,unknown:0};g[i.paid===true?'paid':i.paid===false?'unpaid':'unknown']+=Number(i.gross_amount??i.amount??i.net_amount)||0;groups.set(currency,g);}
    rows.push(row(name,items.length+' regjistra'+(!items.length?' · Nuk ka fatura të regjistruara.':'')));
+   const due=items.filter(i=>i.paid===false&&i.due_date).sort((a,b)=>s(a.due_date).localeCompare(s(b.due_date))),overdue=due.filter(i=>new Date(i.due_date)<new Date(new Date().toISOString().slice(0,10))).length;
+   if(due.length)rows.push(row('Afatet e pagesës · '+name,(overdue?overdue+' fatura me afat të kaluar · ':'')+'Afati më i afërt: '+date(due[0].due_date)));
    for(const [currency,g]of groups)rows.push(row(currency,'Paguar: '+money(g.paid,currency)+' · E papaguar: '+money(g.unpaid,currency)+' · Pagesa e paverifikuar: '+money(g.unknown,currency)));
   }
   rows.push(row('Garancitë',d.guarantees?.error?'Leximi dështoi: '+d.guarantees.error:f.guarantees.length?f.guarantees.map(g=>(g.bank_name||'Banka')+' · '+money(g.amount_guaranteed,g.currency)+' · '+label(g.status)+' · '+date(g.expiry_date)).join('; '):'Nuk ka garanci të regjistruara.'));

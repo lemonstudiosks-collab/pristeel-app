@@ -38,7 +38,7 @@ function attachHost(kind,c){
  const script=w.document.createElement('script');script.type='module';script.src='spie/editor-host.mjs?v=20261008-overview2';script.onerror=()=>error('Editorët nuk u ngarkuan.');w.document.head.append(script);
 }
 function safeClose(){if(busy){error('Prit përfundimin e veprimit.');return;}dialog?.close();}
-export function menu(){return '<details class="document-create-menu"><summary class="btn">Krijo dokument</summary><div>'+['offer','invoice','credit_note','debit_note','letter'].map(actions).join('')+'</div></details>';}
+export function menu(){return actions('offer')+'<details class="document-create-menu"><summary class="btn">Krijo dokument</summary><div>'+['invoice','credit_note','debit_note','letter'].map(actions).join('')+'</div></details>';}
 export function actions(kind){return `<button class="btn" data-create-document="${esc(kind)}">Krijo ${kind==='offer'?'ofertë':kind==='invoice'?'faturë':kind==='debit_note'?'notë debitore':kind==='letter'?'letër zyrtare':'notë kreditore'}</button>`;}
 export async function open(kind,c){
  if(kind==='letter')return openLetter(c);
