@@ -147,7 +147,7 @@ export const clientOffers = () => projectRows('documents_registry', 'id,project_
 export const operationFacts = () => read('pppp_project_context_current_v?'+new URLSearchParams({project_id:'eq.'+PROJECT_ID,fact_key:'like.spie.*',select:'id,fact_key,value,fact_status,evidence_status,source_ref,updated_at',limit:'200',order:'updated_at.desc'}));
 export async function liveDriveFiles(folderId){
   if(!/^[\w-]+$/.test(folderId||''))return [];
-  const google=googleSession();if(!google)return [];
+  const google=googleSession('drive');if(!google)return [];
   let scopes='';try{scopes=localStorage.getItem('pst_google_workspace_scopes_v2')||'';}catch{}
   if(!/https:\/\/www.googleapis.com\/auth\/drive(?:\s|$)/.test(scopes))return [];
   const path='https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:"'"+folderId+"' in parents and trashed = false",fields:'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink,sha256Checksum)',pageSize:'100',orderBy:'modifiedTime desc'});
@@ -159,6 +159,7 @@ export async function liveDriveFiles(folderId){
 export const contacts = () => projectRows('project_contacts', 'id,project_id,email,name,company,role,source,last_seen,status,is_primary', LIMITS.contacts, 'last_seen.desc.nullslast');
 export async function finance() {
   const jobs = [
+    ['adjustments', () => projectRows('commercial_adjustments', 'id,project_id,document_type,document_nr,document_date,original_invoice_nr,currency,gross_amount,status,reason_text,notes', LIMITS.invoices, 'document_date.desc.nullslast')],
     ['sales', () => projectRows('invoices_out', 'id,project_id,invoice_nr,date,client,currency,gross_amount,net_amount,paid,paid_date,due_date,contract_value,attachment_url,attachment_filename,notes', LIMITS.invoices, 'date.desc.nullslast')],
     ['suppliers', () => projectRows('invoices_in', 'id,project_id,supplier,supplier_invoice_nr,date,amount,net_amount,currency,paid,paid_date,due_date,notes,file_name', LIMITS.invoices, 'date.desc.nullslast')],
     ['guarantees', () => projectRows('bank_guarantees', 'id,project_id,bank_name,guarantee_type,amount_guaranteed,expiry_date,status', LIMITS.guarantees)],
@@ -351,14 +352,15 @@ export async function operational() {
   return bundle;
 }
 // Reuse PPPP's existing Google session. No new consent, token persistence, scan or ingestion.
-export function googleSession() {
+export function googleSession(required='gmail') {
   if(!session())return null;
   for(const storage of [globalThis.localStorage,globalThis.sessionStorage]) {
     try {
       const token=storage?.getItem('pst_google_workspace_token_v2');
       const expiry=Number(storage?.getItem('pst_google_workspace_token_exp_v2'));
       const scopes=string(storage?.getItem('pst_google_workspace_scopes_v2')).split(/\s+/);
-      if(token && expiry>Date.now()+30000 && scopes.some(s=>['https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/gmail.modify','https://mail.google.com/'].includes(s)))return {token,expiry};
+      const allowed=required==='drive'?['https://www.googleapis.com/auth/drive','https://www.googleapis.com/auth/drive.readonly','https://www.googleapis.com/auth/drive.file']:['https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/gmail.modify','https://mail.google.com/'];
+      if(token && expiry>Date.now()+30000 && scopes.some(s=>allowed.includes(s)))return {token,expiry};
     }catch{}
   }
   return null;
@@ -433,5 +435,6 @@ export async function downloadAttachment({gmail_message_id,gmail_attachment_id,t
  const url=URL.createObjectURL(new Blob([bytes],{type:attachment_mime_type||'application/octet-stream'}));
  const a=document.createElement('a');a.href=url;a.download=title||'Dokument';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
+
 
 

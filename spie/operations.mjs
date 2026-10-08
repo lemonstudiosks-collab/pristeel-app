@@ -1,5 +1,5 @@
 /* Evidence projections over canonical PPPP. No writes, guessed commitments or parallel storage. */
-import { PROJECT_ID, safeLink, gmailLink, messageText, mailParty } from './data.mjs?v=20261007-dossier1';
+import { PROJECT_ID, safeLink, gmailLink, messageText, mailParty } from './data.mjs?v=20261008-documents1';
 const arr = x => Array.isArray(x) ? x : [];
 const str = x => String(x ?? '');
 export const STAGES = [['order','Porosia'],['material','Materiali'],['production','Prodhimi'],['qa','Kontrolli / QA-QC'],['packing','Paketimi'],['documents','Dokumentet'],['ready','Gati për marrje'],['loading','Ngarkimi'],['transport','Në transport'],['customs','Dogana / importi'],['delivered','Dorëzuar']];
@@ -112,3 +112,4 @@ export function financeModel(d,files,units){
  const enrich=i=>{const n=json(i.notes), matches=files.filter(f=>(n.file_identity&&f.identity===n.file_identity)||(f.notes.invoice_id===i.id)||(i.supplier_invoice_nr&&f.notes.invoice_nr===i.supplier_invoice_nr&&str(f.notes.supplier).toLowerCase()===str(i.supplier).toLowerCase()));const link=n.shipment_id&&units.find(s=>s.id===n.shipment_id);return {...i,file:matches.length===1?matches[0]:null,shipment:link||null,paymentStatus:i.paid===true?'Paguar · regjistri PPPP':i.paid===false?'Papaguar':'Pagesa e paverifikuar'};};
  return {outgoing:outgoing.map(enrich),incoming:new Map([...companies].map(([k,v])=>[k,v.map(enrich)])),guarantees:arr(d.guarantees?.rows)};
 }
+

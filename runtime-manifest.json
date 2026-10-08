@@ -12,6 +12,7 @@
     "bootstrapGitBlobSha": "2be264bac25e7461fd4b44204446fcce21ee9c58"
   },
   "applicationDirectRuntime": [
+    "spie/editor-safety.js",
     "pristeel-kpi.js",
     "pristeel-search.js",
     "pristeel-drive.js",
@@ -527,4 +528,3 @@
     }
   ]
 }
-

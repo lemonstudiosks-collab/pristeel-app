@@ -273,6 +273,26 @@
     {
       "path": "spie/bridge.mjs",
       "reason": "SPIE operational workspace: existing PPPP session, canonical evidence projections, and human-approved command-sheet writes only."
+    },
+    {
+      "path": "spie/document-models.mjs",
+      "reason": "SPIE project document models, explicit canonical editor gate and authenticated private workbook viewer."
+    },
+    {
+      "path": "spie/documents.mjs",
+      "reason": "SPIE project document models, explicit canonical editor gate and authenticated private workbook viewer."
+    },
+    {
+      "path": "spie/editor-host.mjs",
+      "reason": "SPIE project document models, explicit canonical editor gate and authenticated private workbook viewer."
+    },
+    {
+      "path": "spie/editor-safety.js",
+      "reason": "SPIE project document models, explicit canonical editor gate and authenticated private workbook viewer."
+    },
+    {
+      "path": "spie/tracker.mjs",
+      "reason": "SPIE project document models, explicit canonical editor gate and authenticated private workbook viewer."
     }
   ],
   "compatibilityPublicAssets": [

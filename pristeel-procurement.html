@@ -2,6 +2,7 @@
 <html lang="sq" id="pst-spie-platform" class="pst-first-paint pst-spie-standard">
 <head>
 <meta charset="UTF-8">
+<script src="spie/editor-safety.js?v=20261008-documents1"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PRISTEEL — Procurement Platform</title>
 <link rel="manifest" href="pristeel.webmanifest">
@@ -6759,6 +6760,7 @@ window.addEventListener('load',function(){ setTimeout(scrubAutofill,50); setTime
 function startApp(){
   document.getElementById('auth-gate').style.display='none';
   document.getElementById('app-shell-root').style.display='';
+  if(window.__pstSpieEditorSafety)return;
   var s=authGetSession();
   var foot=document.querySelector('.sidebar-footer');
   if(foot) foot.innerHTML='PRISTEEL Sh.p.k. &copy; 2026<br>'+(s&&s.email?s.email:'sales@prissteel.com')+' · <span style="cursor:pointer;text-decoration:underline" onclick="doLogout()">dil</span>';
