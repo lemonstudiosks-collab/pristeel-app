@@ -159,6 +159,7 @@ export async function liveDriveFiles(folderId){
 export const contacts = () => projectRows('project_contacts', 'id,project_id,email,name,company,role,source,last_seen,status,is_primary', LIMITS.contacts, 'last_seen.desc.nullslast');
 export async function finance() {
   const jobs = [
+    ['adjustments', () => projectRows('commercial_adjustments', 'id,project_id,document_type,document_nr,document_date,original_invoice_nr,currency,gross_amount,status,reason_text,notes', LIMITS.invoices, 'document_date.desc.nullslast')],
     ['sales', () => projectRows('invoices_out', 'id,project_id,invoice_nr,date,client,currency,gross_amount,net_amount,paid,paid_date,due_date,contract_value,attachment_url,attachment_filename,notes', LIMITS.invoices, 'date.desc.nullslast')],
     ['suppliers', () => projectRows('invoices_in', 'id,project_id,supplier,supplier_invoice_nr,date,amount,net_amount,currency,paid,paid_date,due_date,notes,file_name', LIMITS.invoices, 'date.desc.nullslast')],
     ['guarantees', () => projectRows('bank_guarantees', 'id,project_id,bank_name,guarantee_type,amount_guaranteed,expiry_date,status', LIMITS.guarantees)],
@@ -433,5 +434,6 @@ export async function downloadAttachment({gmail_message_id,gmail_attachment_id,t
  const url=URL.createObjectURL(new Blob([bytes],{type:attachment_mime_type||'application/octet-stream'}));
  const a=document.createElement('a');a.href=url;a.download=title||'Dokument';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
+
 
 
