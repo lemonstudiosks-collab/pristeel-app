@@ -32,3 +32,12 @@ test('new replies in an exact approved customs thread are display-only and need 
  const result=await D.operational(facts);assert.equal(result.emails.rows[0].gmail_message_id,'def');assert.equal(result.emails.rows[0].external_source,true);assert.equal(result.emails.rows[0].project_id,undefined);assert(calls.every(c=>!c.opts?.method||c.opts.method==='GET'));assert(!calls.some(c=>c.url.includes('threadid:')));
  D.invalidate();calls.length=0;const unknown=await D.operational([{...facts[0],value:{...facts[0].value,identity_verified:false}}]);assert.equal(unknown.emails.rows.length,0);assert(!calls.some(c=>c.url.includes('threads/abc')));
 });
+
+test('an approved thread makes an unlinked incoming reply readable while retaining every review gate',async()=>{
+ const store=new Map(),token='x.'+Buffer.from(JSON.stringify({ref:D.PROJECT_REF,role:'authenticated',exp:Math.floor(Date.now()/1000)+3600,sub:'fixture'})).toString('base64url')+'.x';
+ globalThis.localStorage={getItem:k=>store.get(k)||null};store.set('pristeel_session',JSON.stringify({access_token:token,expires_at:Date.now()+3500000}));D.invalidate();
+ globalThis.fetch=async(url)=>({ok:true,json:async()=>String(url).includes('suggested_project_id')?[{gmail_message_id:'123',gmail_thread_id:'abc',project_id:null,suggested_project_id:D.PROJECT_ID,needs_review:true,subject:'AW: customs coordination',snippet:'Please confirm the logistics partner',sent_at:new Date().toISOString()}]:[]});
+ const facts=[{fact_status:'observed',fact_key:'spie.workspace.communication_threads.v1',value:{identity_verified:true,project_id:D.PROJECT_ID,threads:[{gmail_thread_id:'abc'}]}},{fact_status:'observed',fact_key:'spie.workspace.communication_evidence.v1',value:{identity_verified:true,project_id:D.PROJECT_ID,emails:[{gmail_message_id:'123',gmail_thread_id:'abc',body_fragment:'Verified message',sent_at:new Date().toISOString()},{gmail_message_id:'456',gmail_thread_id:'foreign',body_fragment:'Foreign message',sent_at:new Date().toISOString()}]}}];
+ const bundle=await D.operational(facts),mail=bundle.emails.rows[0];assert(mail.context_thread_verified);assert(mail.association_pending);assert(mail.needs_review);assert.equal(mail.project_id,null);assert.equal(mail.body_excerpt,'Verified message');assert.equal(bundle.emails.rows.length,1);
+ assert.equal(D.operationalModel({project:{id:D.PROJECT_ID},context_facts:[]},bundle).currentRequest,undefined);
+});
