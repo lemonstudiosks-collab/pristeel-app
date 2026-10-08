@@ -51,6 +51,36 @@ assert.equal(T.workRows('excluded').some(g=>g.row.id==='transport'),true);
 assert.equal(T.groupWorkRows(deskRows.filter(r=>r.id.startsWith('free'))).length,2,'free email domains never merge two companies');
 assert.match(T.workPanel(),/Reply GmbH/);
 assert.doesNotMatch(T.workPanel(),/Draft GmbH/);
+assert.match(T.workPanel(),/<h4>Shqyrto përgjigjen<\/h4>/);
+assert.doesNotMatch(T.workPanel(),/class="pst-opp-work-row"|<table|një rresht për kompani/);
+assert.equal(T.actionItems()[0].type,'reply');
+assert.match(T.actionItems()[0].url,/from%3Ainfo%40reply.de/);
 deskState.outreachRows.push({id:'draft2',tender_watch_id:'sent',status:'draft_created',recipient_email:'other@waiting.de',recipient_company_name:'Waiting GmbH',gmail_draft_id:'d2',draft_created_at:'2026-10-04'});
 assert.equal(T.workRows('drafts').length,2,'older sent mail does not hide a second current draft');
+deskState.outreachRows.push({id:'reply2',tender_watch_id:'reply',status:'replied',recipient_email:'other@reply.de',recipient_company_name:'Reply GmbH',gmail_thread_id:'thread2',sent_at:'2026-10-01',replied_at:'2026-10-04'});
+assert.equal(T.actionItems().length,2,'two real conversations with one company remain distinct actions');
+assert.equal(T.actionItems().find(x=>x.row.__pstContactMeta.thread==='thread2').url,'https://mail.google.com/mail/u/0/#all/thread2');
+deskState.contactHistoryRows=[
+ {id:'due',tender_watch_id:'sent',company_name:'Waiting GmbH',contact_email:'info@waiting.de',status:'sent',touch_1:'2026-10-01',follow_up_date:'2000-01-01',gmail_thread_id:'followthread'},
+ {id:'future',company_name:'Future GmbH',contact_email:'info@future.de',status:'sent',touch_1:'2026-10-01',follow_up_date:'2999-01-01'},
+ {id:'closed',company_name:'Closed GmbH',contact_email:'info@closed.de',status:'replied',replied:true,closed:true,touch_1:'2026-10-01'},
+ {id:'meeting',company_name:'Meeting GmbH',contact_email:'info@meeting.de',status:'meeting',meeting:true,touch_1:'2026-10-01'}
+];
+assert.equal(T.actionItems().filter(x=>x.type==='followup').length,1);
+assert(!T.actionItems().some(x=>/Future|Closed|Meeting/.test(x.row.__pstContactMeta.company)),'waiting, closed records and a meeting without a due action do not manufacture work');
+deskState.source='KRPP';
+assert.equal(T.actionItems().length,0,'source selection applies to actions');
+assert.match(T.attentionPanel(),/Nuk ke veprime të konfirmuara tani/);
+deskState.source='all';
+const standalone={Intl,Date,document:{},window:{},URL,console};
+vm.createContext(standalone);vm.runInContext(script.replace(/loadData\(\);\s*$/,''),standalone);
+vm.runInContext('rows='+JSON.stringify([
+ {tender_watch_id:'one',company_name:'Same GmbH',replied:true,latest_gmail_url:'https://mail.google.com/mail/u/0/#all/thread1'},
+ {tender_watch_id:'two',company_name:'Same GmbH',replied:true,latest_gmail_url:'https://mail.google.com/mail/u/0/#all/thread2'},
+ {tender_watch_id:'waiting',company_name:'Waiting GmbH',touch_1:'2026-10-01'},
+ {tender_watch_id:'closed',company_name:'Closed GmbH',replied:true,closed:true},
+ {tender_watch_id:'unknown',company_name:'Unknown GmbH',human_action_required:true}
+ ])+';',standalone);
+assert.equal(vm.runInContext("workData('attention').length",standalone),2,'standalone actions are conversations, not company groups or unknown-role backlog');
+assert.match(vm.runInContext("actionMarkup(rows[0])",standalone),/Shqyrto përgjigjen/);
 console.log('Action desk executable grouping, draft/sent separation, thread specificity and default attention rendering: PASS');
