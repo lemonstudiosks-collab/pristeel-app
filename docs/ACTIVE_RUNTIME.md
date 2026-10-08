@@ -1,3 +1,12 @@
+## 2026-10-08 - Keep SPIE usable when the intelligence snapshot times out
+
+Production PostgREST logs confirmed `pppp_chatgpt_project_snapshot_v1` returning SQLSTATE 57014 during SPIE startup. The dedicated workspace now opens from a single exact project row and eight current project facts, rather than requiring the cross-project Home action calculation embedded in the chat intelligence RPC. Existing operational/file/finance reads and the five-minute session-scoped cache remain in place. The original intelligence RPC is unchanged.
+
+Canonical operator actions load separately after the project renders. Pending and failed action reads are explicit; a failure cannot be interpreted as an empty action list. Completion updates only the action region, preserving navigation, forms and file-search focus. The operator can retry the failed action query alone, or explicitly retry a failed required project read. No polling, automatic retry loop, schema/timeout changes, business writes, email sends or alteration of unfinished document-model work.
+
+Validation: 32 Node regressions; browser fixtures for unresolved actions during startup, all five routes, exact statement-timeout display, action-only retry, required-project retry, mobile overflow and logout isolation. Provider traffic is mocked; no authenticated production browser session was available. Live canonical read privileges and the project/context queries were verified, and the bounded context query used the existing project index (30 ms execution in the sampled administrator plan).
+
+
 ## 2026-10-07 - SPIE suggested offer review
 
 Surface up to twelve unassigned messages that explicitly suggest SPIE, as a separate review-only offer section. The 25 September DDP quotation is visible without an active Google session, while its unresolved Tier C project association remains unconfirmed. Suggested evidence never enters assigned offers, completed work, project flow or phase decisions. No email assignment or business record is changed.
@@ -6,7 +15,7 @@ The operational bundle now uses six bounded reads plus its existing snapshot and
 
 # PPPP Active Runtime
 
-## 2026-10-07 — SPIE operational project overview
+## 2026-10-07 - SPIE operational project overview
 
 The dedicated /spie workspace preserves its existing sidebar, font scale and layout. Overview now prioritizes the current project situation, evidence-backed completed work, review-only next steps, supplier/client offers and requested sample dates. The Offers route separates supplier quotations, sent PriSteel offer versions and accompanying terms; the existing Projects route becomes a chronological communication flow with filters. Files merges existing Drive metadata and exact project-linked attachments with working source links.
 
@@ -17,22 +26,22 @@ Keep the commercial pipeline field at pricing and read Samples from the source-b
 Validation: existing authentication/read-only/session/currency tests plus targeted offer identity/version, ambiguity, template exclusion, DDP workbook and sample-evidence regressions; browser interaction tests cover all seven routes, offer/workflow/file filters, source links, stable desktop typography/sidebar, mobile overflow, cache reuse, optional Google source absence, partial failure and logout. Browser provider responses are mocked from read-only source metadata; this does not claim authenticated production provider testing.
 
 
-## 2026-10-06 — Opportunities stage actions
+## 2026-10-06 - Opportunities stage actions
 
-The existing Opportunity Desk and Action Console expose one primary action per stage plus **Hiqe** and a native **⋯** menu. Dossier preparation delegates to the existing fetch/analysis pipeline; complete analysis replaces preparation with the explicit project-creation action. Supplier Intelligence continues after dossier readiness and reuses its result for five minutes; external discovery remains on demand. Arianit selects RFQ-ready suppliers through checkboxes. Once an existing project and shortlist are present, **Dërgo te Oltiani** replaces the console primary action and calls the existing `tasks` handoff. Oltian continues through the canonical Project RFQ surface; secondary utilities remain in its menu. The first-page Gmail draft action matches the compact white Gmail-branded console button and preserves preview/approval behavior. No scheduler, worker, Edge Function, schema or protected business gate is changed. See `docs/OPPORTUNITIES_STAGE_ACTIONS_20261006.md`.
+The existing Opportunity Desk and Action Console expose one primary action per stage plus **Hiqe** and a native **?** menu. Dossier preparation delegates to the existing fetch/analysis pipeline; complete analysis replaces preparation with the explicit project-creation action. Supplier Intelligence continues after dossier readiness and reuses its result for five minutes; external discovery remains on demand. Arianit selects RFQ-ready suppliers through checkboxes. Once an existing project and shortlist are present, **D�rgo te Oltiani** replaces the console primary action and calls the existing `tasks` handoff. Oltian continues through the canonical Project RFQ surface; secondary utilities remain in its menu. The first-page Gmail draft action matches the compact white Gmail-branded console button and preserves preview/approval behavior. No scheduler, worker, Edge Function, schema or protected business gate is changed. See `docs/OPPORTUNITIES_STAGE_ACTIONS_20261006.md`.
 
 
-## 2026-10-05 — Home navigation stability
+## 2026-10-05 - Home navigation stability
 
 Primary Navigation retains the existing sidebar DOM across repeated repairs. Task Source Actions and the Home startup label normalizer defer to that owner. Home queues the latest early module click until the ordered runtime is ready; startup completion preserves an already selected destination. EU Direct restores the missing scope/contact display helpers, without adding data reads or business writes. The bootstrap versions for the launcher, primary navigation and EU Direct are updated together.
 
 Validation: real Home-button interaction regression for four primary destinations, stable sidebar identity across late repair cycles, populated EU Direct list/detail rendering and startup destination preservation, plus existing Home/Primary Navigation/SPIE presentation smoke checks. Supabase use is limited to the initial read-only bridge manifest.
 
-## 2026-10-05 — Opportunities draft/typography regression
+## 2026-10-05 - Opportunities draft/typography regression
 
 SPIE standard CSS owns stable Opportunities list/filter/detail/draft typography. Platform Readability retains translation and legacy fallback but skips delayed font classification in these surfaces under `pst-spie-standard`. Candidate RPC accepts an exact TED-declared email for the selected canonical winner even when its brand domain differs from its legal name. Existing identity, eligibility and manual draft/send gates remain.
 
-## 2026-10-05 — SPIE platform standard
+## 2026-10-05 - SPIE platform standard
 
 `pristeel-spie-standard.css` is the shared static presentation owner in `pristeel-procurement.html`. Its root flag owns stable desktop shell geometry from first paint. Home Launcher and Production Surface Owner defer imperative geometry in this mode; existing routes, canonical data, role/action gates and mobile gestures stay intact. The primary navigation exposes existing direct-client, steel-buyer, document, email, SPIE and event destinations. Home uses calm rows; Finance/Partner maps retain their original handlers in list presentation. No new Supabase reads, polling, writes, schema or migrations.
 
@@ -51,7 +60,7 @@ For project continuity also read:
 - `PPPP_CONTINUITY_PROTOCOL.md`
 - `PPPP_CHANGELOG.md`
 
-## Mundësitë — RFQ & Sourcing handoff
+## Mund�sit� - RFQ & Sourcing handoff
 
 - `pristeel-tender-supplier-sourcing-v1.js` remains the Supplier Intelligence evidence/ranking surface. Arianiti makes the shortlist; ranking never becomes selection.
 - `pristeel-rfq-sourcing-workflow-v1.js` persists that explicit handoff in the existing `tasks` lifecycle and adds the assigned Oltian queue without replacing Projects or Workbench ownership.
@@ -59,24 +68,24 @@ For project continuity also read:
 - `pristeel-project-first-commercial-v1.js` may record one human-confirmed supplier per sourcing package and display the resulting internal cost plan. It cannot send, commit, approve price/margin or create a PO.
 - Technical documentation is manual by design.
 
-## Blerësit e çelikut — runtime canonical
+## Bler�sit e �elikut - runtime canonical
 
 - Owner UI: `pristeel-dach-steel-sales-v1.js`; data operative: `public.pppp_dach_steel_targets_v1`.
-- `public.pppp_company_identity_v1` dhe `public.pppp_company_module_roles_v1` japin identitetin e vetëm të kompanisë dhe routing ndërmjet moduleve.
-- Discovery Edge `pppp-steel-buyer-discovery` ekzekutohet një herë në ditë në 20:15 UTC. Kandidatët mbeten në review queue deri te “Prano”; ky cikël nuk krijon email/draft/outbound.
-- `pppp-dach-steel-draft-generator` mban preview, draft dhe follow-up me human gate. Preview nuk prek Gmail; drafti krijohet vetëm me klikim të përdoruesit dhe asnjë funksion nuk dërgon email automatikisht.
-- `pppp-chatgpt-command-bridge` punon në 06:15, 12:15 dhe 18:15 UTC; Gmail/outbound reconciliation ruan frekuencën ekzistuese.
+- `public.pppp_company_identity_v1` dhe `public.pppp_company_module_roles_v1` japin identitetin e vet�m t� kompanis� dhe routing nd�rmjet moduleve.
+- Discovery Edge `pppp-steel-buyer-discovery` ekzekutohet nj� her� n� dit� n� 20:15 UTC. Kandidat�t mbeten n� review queue deri te "Prano"; ky cik�l nuk krijon email/draft/outbound.
+- `pppp-dach-steel-draft-generator` mban preview, draft dhe follow-up me human gate. Preview nuk prek Gmail; drafti krijohet vet�m me klikim t� p�rdoruesit dhe asnj� funksion nuk d�rgon email automatikisht.
+- `pppp-chatgpt-command-bridge` punon n� 06:15, 12:15 dhe 18:15 UTC; Gmail/outbound reconciliation ruan frekuenc�n ekzistuese.
 
-## Kompanitë EU — zhvillim direkt në Evropë
+## Kompanit� EU - zhvillim direkt n� Evrop�
 
-- Owner i dukshëm: `pristeel-eu-companies-v1.js`.
-- Të dhënat canonical të reja ruhen në `public.pppp_eu_direct_targets_v1`; pamja operative `public.pppp_eu_direct_operational_v1` integron edhe batch-in historik direct-web pa futur fituesit TED.
-- Routing është i prerë: tenderët/projektet dhe fituesit e tyre mbeten te **Mundësitë**; blerësit e lëndës së parë te **Blerësit e çelikut**; hyrja në treg/JV/përfaqësimi te **Përfaqësime**.
-- **Blerësit e çelikut** mban disa kontakte për kompani në shared outbound, një draft të veçantë për recipient dhe një follow-up të kontrolluar pas shtatë ditësh pa reply. Preview-i dhe drafti krijohen nga i njëjti Edge copy engine; asnjë email nuk dërgohet automatikisht.
-- Pas reply/RFQ dhe konfirmimit njerëzor, targeti bëhet Project `trading`; furnitorët, RFQ-të dhe oferta vazhdojnë vetëm në rrjedhën canonical të Project-it.
-- Para regjistrimit kontrollohen domeni zyrtar dhe përplasjet ndërmjet moduleve. Para kontaktimit lexohet historiku i përbashkët i outbound-it/kontakteve.
-- Moduli nuk krijon projekt, partner, kontakt, draft ose dërgim emaili automatik. Dërgimi i jashtëm mbetet human gate.
-- Fronti është qëllimisht minimal: Kthehu, Kërko, Rifresko, listë dhe profil.
+- Owner i duksh�m: `pristeel-eu-companies-v1.js`.
+- T� dh�nat canonical t� reja ruhen n� `public.pppp_eu_direct_targets_v1`; pamja operative `public.pppp_eu_direct_operational_v1` integron edhe batch-in historik direct-web pa futur fituesit TED.
+- Routing �sht� i prer�: tender�t/projektet dhe fituesit e tyre mbeten te **Mund�sit�**; bler�sit e l�nd�s s� par� te **Bler�sit e �elikut**; hyrja n� treg/JV/p�rfaq�simi te **P�rfaq�sime**.
+- **Bler�sit e �elikut** mban disa kontakte p�r kompani n� shared outbound, nj� draft t� ve�ant� p�r recipient dhe nj� follow-up t� kontrolluar pas shtat� dit�sh pa reply. Preview-i dhe drafti krijohen nga i nj�jti Edge copy engine; asnj� email nuk d�rgohet automatikisht.
+- Pas reply/RFQ dhe konfirmimit njer�zor, targeti b�het Project `trading`; furnitor�t, RFQ-t� dhe oferta vazhdojn� vet�m n� rrjedh�n canonical t� Project-it.
+- Para regjistrimit kontrollohen domeni zyrtar dhe p�rplasjet nd�rmjet moduleve. Para kontaktimit lexohet historiku i p�rbashk�t i outbound-it/kontakteve.
+- Moduli nuk krijon projekt, partner, kontakt, draft ose d�rgim emaili automatik. D�rgimi i jasht�m mbetet human gate.
+- Fronti �sht� q�llimisht minimal: Kthehu, K�rko, Rifresko, list� dhe profil.
 
 ## The rule that matters most
 
@@ -99,25 +108,25 @@ PPPP grew through additive safety layers. A filename may describe what a module 
 
 ```text
 GitHub main HEAD
-      ↓
+      
 index.html
-      ↓
+      
 pristeel-procurement.html
-      ↓
+      
 application-direct scripts
-      ↓
+      
 pristeel-roles.js
-      ├── Home runtime owner guard
-      ├── commercial live overrides
-      ├── tender/current utility modules
-      ├── Workspace shell cleanup
-      │      └── Contact Master
-      └── pristeel-project-emails.js
-               ↓
+      ��� Home runtime owner guard
+      ��� commercial live overrides
+      ��� tender/current utility modules
+      ��� Workspace shell cleanup
+      �      ��� Contact Master
+      ��� pristeel-project-emails.js
+               
          ordered runtime modules
-               ↓
+               
          pristeel-redesign-finalizer-v1.js
-               ↓ dynamic
+                dynamic
          pristeel-operating-experience-v1.js
 ```
 
@@ -165,9 +174,9 @@ Each zone has a distinct color identity so the user can orient by both text and 
 - Home consumes `PSTHomeCanonicalV1.snapshot()`; Projects reuses existing project caches/owners; Discover delegates to Tender Priority Actions, Material Trade and Representations; Inbox delegates to Gmail Live Inbox. Mobile App v2 does not create a second business-state engine.
 - Home, Projects, Discover and Inbox share one full-screen horizontal pager. The bottom bar is the direct shortcut, while left/right touch swipe changes the entire primary page. Nested Home/Discover card swipes are not used, so there is one unambiguous horizontal gesture owner. Any status-changing opportunity action remains an explicit user gesture/button; protected commercial actions remain human gated.
 - Weather, ECB FX conversion and steel-market access remain fixed as compact utility icons and delegate to the existing mobile utility provider. No duplicate public/API fetch path is introduced by Mobile App v2.
-- Partnerët, Financat, Material Trade, Përfaqësime and Sistemi remain reachable from the profile/more sheet and open their existing canonical owners.
+- Partner�t, Financat, Material Trade, P�rfaq�sime and Sistemi remain reachable from the profile/more sheet and open their existing canonical owners.
 - Mobile App v2 adds no direct Supabase reads/writes, no polling and no independent network fetches. Existing page/detail owners continue to render when the user opens a project, opportunity or secondary module.
-- `pristeel-mobile-pin-unlock-v1.js` owns trusted-device mobile re-entry. After first-time normal authentication and PIN setup, routine re-entry — including access-token expiry — is PIN-only: PIN verification restores the remembered refresh-token session and lets the existing auth refresh path renew it. Explicit logout still clears the trusted-device PIN/session state.
+- `pristeel-mobile-pin-unlock-v1.js` owns trusted-device mobile re-entry. After first-time normal authentication and PIN setup, routine re-entry - including access-token expiry - is PIN-only: PIN verification restores the remembered refresh-token session and lets the existing auth refresh path renew it. Explicit logout still clears the trusted-device PIN/session state.
 - The linked `pristeel.webmanifest` prepares installable-app metadata. Service-worker caching remains deliberately deferred to avoid stale-runtime risk.
 
 ### Home
@@ -188,8 +197,8 @@ Current behavior:
 - Desktop Home is intentionally a calm launcher, not an operational dashboard. It does not show task backlogs, priority cards, recent-email feeds or duplicate module KPIs.
 - The left sidebar is hidden only while Home is active. As soon as a work module opens, the existing canonical sidebar returns automatically.
 - The top strip contains PRISTEEL, Gmail, Gazeta PPPP, calculator, compact local time/date and Prishtina weather. All top-strip icons use the same visual footprint.
-- Universal Search opens the existing stable PRISTEEL search owner. The four primary Home destinations are Mundësitë, Përfaqësime, Klientë të drejtpërdrejtë and Blerësit e çelikut.
-- The lower utility row exposes Projektet, Partnerët, Financa, Kursi and Çmimet e çelikut. Projects/Partners/Finance delegate to their existing canonical owners.
+- Universal Search opens the existing stable PRISTEEL search owner. The four primary Home destinations are Mund�sit�, P�rfaq�sime, Klient� t� drejtp�rdrejt� and Bler�sit e �elikut.
+- The lower utility row exposes Projektet, Partner�t, Financa, Kursi and �mimet e �elikut. Projects/Partners/Finance delegate to their existing canonical owners.
 - Weather uses Open-Meteo and currency uses Frankfurter/ECB as free, read-only public sources. The steel-price utility shows existing internal PPPP price-history references and states explicitly that they are not live exchange/commodity quotes.
 - Home itself performs no protected business action. External email sending, supplier selection/commitment, pricing/margin, contracts/POs and project won/lost decisions remain human-gated.
 - `pristeel-mobile-app-v2.js` continues to own the final <=900px mobile Home presentation.
@@ -212,7 +221,7 @@ The active KRPP cloud collector detail-scans the bounded B05/B54 feed without a 
 
 Operating Experience adds the final decision vocabulary:
 
-- **GO · Krijo projekt**
+- **GO � Krijo projekt**
 - **REVIEW**
 - **NO-GO**
 
@@ -250,30 +259,30 @@ Core data/tool owners remain:
 
 The user-facing project flow now uses the explicit PPPP V2 lane stored in `projects.workflow_type` and the read-only `public.pppp_project_workflow_state_v1` evidence model. Three entry lanes converge on one shared supplier/commercial/post-award flow:
 
-- `eu_award_sales`: Opportunity → Kontaktimi → Client RFQ
-- `self_tender`: Tenderi → Kërkesat
+- `eu_award_sales`: Opportunity  Kontaktimi  Client RFQ
+- `self_tender`: Tenderi  K�rkesat
 - `steel_trading`: Client RFQ
-- shared: Furnitorët → Krahasimi → Çmimi / dosja → Oferta / aplikimi → Won / Lost
-- post-award: Customer PO → Supplier PO → Procurement → Transport → Delivery → Invoice → Payment → Closed
+- shared: Furnitor�t  Krahasimi  �mimi / dosja  Oferta / aplikimi  Won / Lost
+- post-award: Customer PO  Supplier PO  Procurement  Transport  Delivery  Invoice  Payment  Closed
 
 Projects without a V2 classification retain the established compact five-phase fallback:
 
-`Përgatitja → Prokurimi → Komerciale → Ekzekutimi → Financa`
+`P�rgatitja  Prokurimi  Komerciale  Ekzekutimi  Financa`
 
 Utilities remain separately accessible:
 
-`Skedarët | Komunikimi`
+`Skedar�t | Komunikimi`
 
 The existing detailed flow is still reused under those phases:
 
-`BOM → RFQ → Ofertat e furnitorëve → Krahasimi i ofertave → Çmimi i shitjes → Oferta për klientin`
+`BOM  RFQ  Ofertat e furnitor�ve  Krahasimi i ofertave  �mimi i shitjes  Oferta p�r klientin`
 
 Important behavior:
 
 - Every detailed stage remains independently clickable.
 - Stage status describes available data/state and does not block navigation.
 - Procurement and Commercial are visually distinct, but they still reuse the same existing engines.
-- `Hapi i radhës` is lifecycle-aware. Execution/won projects point to Execution; technical review points to preparation; pricing/client-offer states point to their commercial decision; `wait_for_client` explicitly shows that no user action is required now.
+- `Hapi i radh�s` is lifecycle-aware. Execution/won projects point to Execution; technical review points to preparation; pricing/client-offer states point to their commercial decision; `wait_for_client` explicitly shows that no user action is required now.
 - Existing normalized supplier comparison, BOM, RFQ, calculator and client-offer engines are reused, not duplicated.
 - The old horizontal workflow ribbon remains captured back into the canonical project flow.
 - Final offer, sell price, supplier commitment and outbound communication remain human-gated.
@@ -374,11 +383,13 @@ Cross-session state is available through:
 
 The operating-experience layer does not replace Supabase automation. Cron/event engines, semantic jobs, OCR workers and human approval boundaries remain under the existing backend owners.
 
-## SPIE Workspace · Phase 1 (2026-10-05)
+## SPIE Workspace � Phase 1 (2026-10-05)
 
 `spie/index.html` is the same-origin dedicated entry at `/spie/` (under the deployment base path). `spie/workspace.js` owns only that document; `spie/data.mjs` reuses the canonical PPPP `pristeel_session` and project snapshot RPC. It does not load or wrap the global PPPP bootstrap. Home provides a SPIE Workspace shortcut and `index.html?view=spie` forwards to the dedicated entry. Public assets are included explicitly in `pages-artifact-manifest.json`.
 
 The workspace links canonical TenneT project `c937aea1-af5e-4807-ae1e-e36864e46794`, uses one bounded project snapshot plus three latest document metadata rows for Overview, and loads larger Files, Emails, Partners and Finance metadata only on navigation. Reads are cached and coalesced for five minutes in memory; there is no polling or realtime subscription. Expired or absent sessions return the user to existing PPPP authentication instead of adding another refresh/login owner. Samples is operator-declared and differences from the canonical pipeline remain visible. Health and latest drawing revisions require explicit evidence.
 
 No records, Gmail bodies, documents or business decisions are created or modified. Physical files remain in the permanent Drive folder and original communication remains in Gmail. See `docs/SPIE_WORKSPACE_PHASE1.md` for limitations and verification.
+
+
 

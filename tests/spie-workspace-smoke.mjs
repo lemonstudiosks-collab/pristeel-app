@@ -51,6 +51,28 @@ test('currencies remain separate and absent amounts/currencies are not fabricate
   const totals=D.currencyTotals([{amount:100,currency:'EUR'},{amount:5,currency:'USD'},{amount:0,currency:'EUR'},{amount:7},{amount:null,currency:'EUR'}],r=>r.amount);
   assert.deepEqual(totals,[{currency:'EUR',amount:100},{currency:'USD',amount:5},{currency:'Unknown currency',amount:7}]);
 });
+
+test('workspace startup reads only its project and bounded context, without the timed-out intelligence RPC', async () => {
+  login();D.invalidate();const calls=[];
+  globalThis.fetch=async(url,opts)=>{calls.push({url,opts});const u=new URL(url);assert.equal(opts.method,'GET');
+    if(u.pathname.includes('/rpc/'))return {ok:false,status:500,json:async()=>({message:'canceling statement due to statement timeout'})};
+    if(u.pathname.endsWith('/projects')){assert.equal(u.searchParams.get('id'),'eq.'+D.PROJECT_ID);assert.equal(u.searchParams.get('limit'),'1');return response([{id:D.PROJECT_ID,name:'SPIE'}]);}
+    assert.equal(u.searchParams.get('project_id'),'eq.'+D.PROJECT_ID);assert.equal(u.searchParams.get('limit'),'8');return response([{project_id:D.PROJECT_ID,fact_key:'fixture',fact_status:'observed'}]);};
+  const data=await D.workspaceSnapshot();assert.equal(data.project.id,D.PROJECT_ID);assert.equal(data.context_facts.length,1);assert.equal(calls.length,2);
+  await D.workspaceSnapshot();assert.equal(calls.length,2);assert.deepEqual(data.read_errors,[]);
+});
+test('context timeout is explicit partial data; missing/foreign project identities still block startup', async () => {
+  login();D.invalidate();globalThis.fetch=async url=>new URL(url).pathname.endsWith('/projects')?response([{id:D.PROJECT_ID}]):{ok:false,status:500,json:async()=>({message:'canceling statement due to statement timeout'})};
+  const data=await D.workspaceSnapshot();assert.equal(data.project.id,D.PROJECT_ID);assert.deepEqual(data.context_facts,[]);assert.match(data.read_errors[0].error,/PPPP 500: canceling statement due to statement timeout/);
+  for(const rows of [[],[{id:'foreign'}]]){D.invalidate();globalThis.fetch=async url=>response(new URL(url).pathname.endsWith('/projects')?rows:[]);await assert.rejects(D.workspaceSnapshot(),/Identiteti i projektit/);}
+  D.invalidate();globalThis.fetch=async url=>response(new URL(url).pathname.endsWith('/projects')?[{id:D.PROJECT_ID}]:[{project_id:'foreign'}]);await assert.rejects(D.workspaceSnapshot(),/Identiteti i fakteve/);
+});
+test('action failure is cached without retry loops; explicit retry recovers only that query', async () => {
+  login();D.invalidate();let calls=0;globalThis.fetch=async(url,opts)=>{calls++;const u=new URL(url);assert.equal(opts.method,'GET');assert.equal(u.searchParams.get('project_id'),'eq.'+D.PROJECT_ID);assert.equal(u.searchParams.get('limit'),'6');return {ok:false,status:500,json:async()=>({message:'canceling statement due to statement timeout'})};};
+  await assert.rejects(D.workspaceActions(),/PPPP 500/);await assert.rejects(D.workspaceActions(),/PPPP 500/);assert.equal(calls,1);
+  globalThis.fetch=async()=>{calls++;return response([{project_id:D.PROJECT_ID,title:'Canonical action'}]);};assert.equal((await D.workspaceActions({refresh:true}))[0].title,'Canonical action');assert.equal(calls,2);
+  D.invalidate();globalThis.fetch=async()=>response([{project_id:'foreign'}]);await assert.rejects(D.workspaceActions(),/Identiteti i veprimeve/);
+});
 test('unsafe links and unverified latest revisions cannot appear as verified sources', () => {
   assert.equal(D.safeLink('javascript:alert(1)','drive'),'');
   assert.equal(D.safeLink('https://drive.google.com.evil.test/x','drive'),'');
@@ -72,3 +94,5 @@ test('controlled folder metadata merges by exact Drive identity without inferrin
   data.project.drive_folder_id='other';assert.equal(D.evidenceFiles(data).length,0);
   data.project.drive_folder_id='folder';data.context_facts[0].fact_status='suggested';assert.equal(D.evidenceFiles(data).length,0);
 });
+
+
