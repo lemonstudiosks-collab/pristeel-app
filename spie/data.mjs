@@ -342,10 +342,21 @@ export async function operational(facts=[]) {
   const bundle=Object.fromEntries(jobs.map(([key],i)=>[key,settled[i].status==='fulfilled'?{rows:list(settled[i].value),error:null}:{rows:[],error:settled[i].reason.message}]));
   const evidenceById=new Map(bundle.evidence.rows.map(row=>[string(row.id),row]));
   bundle.attachments.rows=bundle.attachments.rows.map(row=>({...row,...(evidenceById.get(string(row.id))||{})}));
-  // A suggestion is visible review evidence, never an assigned project email.
+  const verifiedThreads=new Set(facts.filter(f=>f.fact_status==='observed'&&f.fact_key==='spie.workspace.communication_threads.v1'&&f.value?.identity_verified===true&&f.value?.project_id===PROJECT_ID).flatMap(f=>list(f.value.threads).map(t=>t.gmail_thread_id)).filter(t=>/^[a-f0-9]+$/i.test(t||'')));
+  // A suggestion in an approved thread is readable context, never an assigned project email.
   for(const m of bundle.suggested.rows) {
-    if(m.project_id!==null || m.suggested_project_id!==PROJECT_ID || m.needs_review!==false || !/tennet.*bunt|spie.*tennet/i.test(m.subject))continue;
-    if(!bundle.emails.rows.some(e=>e.gmail_message_id===m.gmail_message_id))bundle.emails.rows.push({...m,association_pending:true});
+    if(m.project_id!==null || m.suggested_project_id!==PROJECT_ID || (!verifiedThreads.has(m.gmail_thread_id)&&(m.needs_review!==false || !/tennet.*bunt|spie.*tennet/i.test(m.subject))))continue;
+    if(!bundle.emails.rows.some(e=>e.gmail_message_id===m.gmail_message_id))bundle.emails.rows.push({...m,association_pending:true,context_thread_verified:verifiedThreads.has(m.gmail_thread_id)});
+  }
+  for(const fact of facts){
+    if(fact.fact_status!=='observed'||fact.fact_key!=='spie.workspace.communication_evidence.v1'||fact.value?.project_id!==PROJECT_ID||fact.value?.identity_verified!==true)continue;
+    for(const evidence of list(fact.value.emails).slice(0,20)){
+      if(!verifiedThreads.has(evidence.gmail_thread_id)||!/^[a-f0-9]+$/i.test(evidence.gmail_message_id||'')||!evidence.body_fragment||!evidence.sent_at)continue;
+      const current=bundle.emails.rows.find(m=>m.gmail_message_id===evidence.gmail_message_id);
+      const excerpt=string(evidence.body_fragment).slice(0,5000);
+      if(current){current.body_excerpt=excerpt;current.context_thread_verified=true;}
+      else bundle.emails.rows.push({...evidence,body_excerpt:excerpt,snippet:excerpt,association_pending:true,context_thread_verified:true,context_evidence:true,needs_review:true});
+    }
   }
   bundle.emails.rows=newest(bundle.emails.rows);
   await enrichMissingOffers(bundle,facts);

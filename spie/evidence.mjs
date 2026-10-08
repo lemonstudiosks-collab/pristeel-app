@@ -29,7 +29,7 @@ export async function email(row){
  if(!row?.gmail_message_id)throw Error('Emaili nuk u identifikua.');
  const dialog=open(row.subject||'Email');if(!dialog)return;const body=dialog.querySelector('.evidence-body'),identity=D.session()?.access_token;
  try{
-  let text=row.body_full||'',full=!!text;
+  let text=row.body_full||row.body_excerpt||'',full=!!row.body_full;
   if(!text&&D.googleSession()){
    const result=await request('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(row.gmail_message_id)+'?format=full','gmail',2*MAX),message=JSON.parse(new TextDecoder().decode(result.bytes));
    if(message.id!==row.gmail_message_id||message.threadId!==row.gmail_thread_id)throw Error('Identiteti i emailit nuk përputhet.');
@@ -37,7 +37,7 @@ export async function email(row){
   }
   if(D.session()?.access_token!==identity)throw Error('SESSION_CHANGED');
   if(!dialog.open)return;
-  body.innerHTML='<div class="email-meta">'+esc(row.from_name||row.from_email)+' · '+esc(new Date(row.sent_at).toLocaleString('sq-AL',{timeZone:'Europe/Budapest'}))+'</div>'+(!full?'<p class="notice">Paraqitet përmbledhja e ruajtur. Teksti i plotë kërkon lidhjen Gmail dhe format tekst.</p>':'')+'<pre class="email-text">'+esc(text||row.snippet||'Emaili nuk ka tekst të lexueshëm.')+'</pre>';
+  body.innerHTML='<div class="email-meta">'+esc(row.from_name||row.from_email)+' · '+esc(new Date(row.sent_at).toLocaleString('sq-AL',{timeZone:'Europe/Budapest'}))+'</div>'+(row.body_excerpt&&!full?'<p class="notice">Tekst i verifikuar i mesazhit; historia e cituar nuk përfshihet. Origjinali ruhet në Gmail.</p>':!full?'<p class="notice">Paraqitet përmbledhja e ruajtur. Teksti i plotë kërkon lidhjen Gmail dhe format tekst.</p>':'')+'<pre class="email-text">'+esc(text||row.snippet||'Emaili nuk ka tekst të lexueshëm.')+'</pre>';
  }catch(e){if(dialog.open)body.textContent=e.message;}finally{body.setAttribute('aria-busy','false');}
 }
 function drivePreview(body,file){
