@@ -147,7 +147,7 @@ export const clientOffers = () => projectRows('documents_registry', 'id,project_
 export const operationFacts = () => read('pppp_project_context_current_v?'+new URLSearchParams({project_id:'eq.'+PROJECT_ID,fact_key:'like.spie.*',select:'id,fact_key,value,fact_status,evidence_status,source_ref,updated_at',limit:'200',order:'updated_at.desc'}));
 export async function liveDriveFiles(folderId){
   if(!/^[\w-]+$/.test(folderId||''))return [];
-  const google=googleSession();if(!google)return [];
+  const google=googleSession('drive');if(!google)return [];
   let scopes='';try{scopes=localStorage.getItem('pst_google_workspace_scopes_v2')||'';}catch{}
   if(!/https:\/\/www.googleapis.com\/auth\/drive(?:\s|$)/.test(scopes))return [];
   const path='https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({q:"'"+folderId+"' in parents and trashed = false",fields:'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink,sha256Checksum)',pageSize:'100',orderBy:'modifiedTime desc'});
@@ -352,14 +352,15 @@ export async function operational() {
   return bundle;
 }
 // Reuse PPPP's existing Google session. No new consent, token persistence, scan or ingestion.
-export function googleSession() {
+export function googleSession(required='gmail') {
   if(!session())return null;
   for(const storage of [globalThis.localStorage,globalThis.sessionStorage]) {
     try {
       const token=storage?.getItem('pst_google_workspace_token_v2');
       const expiry=Number(storage?.getItem('pst_google_workspace_token_exp_v2'));
       const scopes=string(storage?.getItem('pst_google_workspace_scopes_v2')).split(/\s+/);
-      if(token && expiry>Date.now()+30000 && scopes.some(s=>['https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/gmail.modify','https://mail.google.com/'].includes(s)))return {token,expiry};
+      const allowed=required==='drive'?['https://www.googleapis.com/auth/drive','https://www.googleapis.com/auth/drive.readonly','https://www.googleapis.com/auth/drive.file']:['https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/gmail.modify','https://mail.google.com/'];
+      if(token && expiry>Date.now()+30000 && scopes.some(s=>allowed.includes(s)))return {token,expiry};
     }catch{}
   }
   return null;
