@@ -1,3 +1,14 @@
+## 2026-10-08 — TED action desk and outreach eligibility
+The current presentation owner remains `pristeel-opportunities-filter-polish-v1.js`, backed by Project-Centric Opportunities. The default view is operator attention, with Waiting for replies, Drafts and All companies as separate routes. Companies group by profile/legal identity or business domain; public mailbox domains do not merge unrelated companies. A stored Gmail draft does not imply a send. Registry drafts remain reachable even if the company also has older sent communication. Transport/logistics exclusions and evidence gaps remain visible through separate review views. `ted-sales.html` follows the same action-first structure and retains access to its full historical register.
+
+The shared pure policy `pristeel-ted-outreach-policy-v1.js` is loaded by the existing presentation owner and imported by the draft generator, follow-up and outbound dispatcher. It requires evidenced steel scope and verified company activity, and excludes irrelevant contact functions. Warehouse keyword/category/relevance alone cannot authorize steel outreach. Explicit approval, cooldown override or manual template selection cannot bypass the scope gate. The generator is based on live v55, retaining deployed verified-name and draft-content corrections rather than reverting them to older main.
+
+Automatic sending remains OFF and human send approval remains required. No sender verification or campaign authorization was asserted. Future TED dispatch additionally requires a dated, expiring `PPPP_TED_SEND_READINESS` record for the actual sending domain with SPF/DKIM/DMARC, opt-out handling and campaign approval; the environment variable is deliberately unset. The existing daily, per-domain and recipient/domain cooldown guards remain authoritative. Dispatch stops for observed bounce/error deterioration and validates one live To recipient with no Cc/Bcc. This does not provide a spam-placement guarantee or activate automatic sending.
+
+Validation: executable transport/unknown-company/contact/readiness regressions; zero-write generator test with explicit approval and override; action-desk grouping and draft/sent/thread separation tests; existing multi-contact, registry-preservation, future-cron and dispatch guards; production Pages artifact build. Local browser verification was denied by the browser permission policy, so no authenticated browser QA is claimed. The prior live draft-copy subject differs from an older standalone copy-test expectation; the copy was retained unchanged.
+
+Rosebrock notice 628114-2026: 27 exact unsent drafts were moved to Gmail Trash and an active-draft search returned zero. No email was sent. Canonical historical business rows were not rewritten to fabricate a new lifecycle; normal Gmail reconciliation remains the source of draft-state updates.
+
 # PPPP MASTER CONTEXT
 
 ## 2026-10-05 — SPIE platform standard

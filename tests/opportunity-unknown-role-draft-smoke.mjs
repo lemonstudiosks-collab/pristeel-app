@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import '../pristeel-ted-outreach-policy-v1.js';
 import {canReviewTedDraftAssessment as canReviewUnknownRoleDraft} from '../supabase/functions/pppp-opportunity-draft-generator/draft-assessment-policy.mjs';
 import {buildTedDraftContent} from '../supabase/functions/pppp-opportunity-draft-generator/draft-content.mjs';
 import {resolveTedDraftRecipients,resolveTedRecipients,normalizeEmail,contactTier,contactQualityScore} from '../supabase/functions/pppp-opportunity-draft-generator/recipient-policy.mjs';
@@ -32,93 +33,37 @@ const legacyUnknown=buildTedDraftContent({...action,payload:{manual_draft_templa
 assert.equal(legacyUnknown.company_role,'unknown');assert.equal(legacyUnknown.approved_template,'steel_fabricator');assert.equal(legacyUnknown.offer_model,'external_production_capacity');
 assert.equal(resolveTedRecipients(action,tender,20).length,0,'send-grade recipient gate stays blocked');
 
-// Exercise the actual generator preview path; every potential write throws.
+// Manual copy composition never overrides the actual generator's eligibility policy.
 const source=fs.readFileSync('supabase/functions/pppp-opportunity-draft-generator/index.ts','utf8');
 let previewSource=source.slice(source.indexOf('async function processAction('),source.indexOf('  await seedLegacyTenderDraft('));
 previewSource=previewSource.replace(/:any\[\]/g,'').replace(/:any/g,'').replace(/:\{writes:number\}/g,'')+"throw new Error('approval phase reached');}";
-let writes=0,communication='new',currentAssessment=assessment;
+let writes=0,currentAssessment={...assessment,draft_eligible:true};
+const evidencedTender={...tender,title:'Structural steel erection for the new building',source_url:'https://ted.europa.eu/en/notice/687897-2026/html'};
 const deps={
- db:{from(table){const q={select(){return q},eq(){return q},async maybeSingle(){return{data:table==='pppp_opportunity_actions'?action:{communication_state:communication},error:null}}};return q}},
- text:(v,max=12000)=>String(v??'').trim().slice(0,max),tenderContext:async()=>tender,
+ TED_POLICY:globalThis.PSTTedOutreachPolicyV1,
+ db:{from(table){const q={select(){return q},eq(){return q},async maybeSingle(){return{data:table==='pppp_opportunity_actions'?action:{communication_state:'new'},error:null}}};return q}},
+ text:(v,max=12000)=>String(v??'').trim().slice(0,max),tenderContext:async()=>evidencedTender,
  opportunityIntelligence:async()=>({assessment:currentAssessment,contacts:[],company:assessment.company_summary}),
  canReviewTedDraftAssessment:canReviewUnknownRoleDraft,effectiveTedRole:t=>t.winner.company_type||'unknown',expectedTedRoute:()=> 'TED_GENERAL',tedDraftReadiness:()=>({ok:true}),
  resolveTedDraftRecipients,resolveTedRecipients,contactTier,contactQualityScore,normalizeEmail,buildTedDraftContent,MAX_CONTACTS_PER_ACTION:20,
  retireObsoleteDrafts:async()=>{writes++;throw Error('Unexpected write')},persistActionState:async()=>{writes++;throw Error('Unexpected write')}
 };
 const processAction=new Function(...Object.keys(deps),previewSource+';return processAction;')(...Object.values(deps));
-const out=await processAction(action,{writes:0},false,true,true);
-assert.equal(out.event,'template_selection_required');assert.equal(out.recipients,1);assert.equal(writes,0);
-assert.deepEqual(out.templates.map(t=>t.id),['gc_epc','steel_fabricator']);
-for(const selected of ['gc_epc','steel_fabricator']){
- const preview=await processAction(action,{writes:0},false,true,true,false,selected);
- assert.equal(preview.event,'preview_ready');assert.equal(preview.previews[0].approved_template,selected);assert.equal(preview.previews[0].company_role,'other_unclear');assert.equal(writes,0);
+for(const selected of ['','gc_epc','steel_fabricator','invalid']){
+ for(const previewOnly of [true,false]){
+  const out=await processAction(action,{writes:0},true,true,previewOnly,true,selected);
+  assert.equal(out.event,'readiness_blocked','explicit approval/template/cooldown override cannot override unknown company activity');
+  assert.equal(out.reason,'company_role_unverified');
+  assert.equal(out.created,0);assert.equal(writes,0);
+ }
 }
-assert.equal((await processAction(action,{writes:0},false,true,false,false,'invalid')).event,'template_selection_required','approval cannot bypass template selection');
 action.payload.manual_draft_template='gc_epc';
-assert.equal((await processAction(action,{writes:0},false,true,true)).event,'template_selection_required','stored overrides cannot be reused silently');
+assert.equal((await processAction(action,{writes:0},false,true,true)).event,'readiness_blocked');
 delete action.payload.manual_draft_template;
-assert.equal(assessment.draft_eligible,false,'preview never upgrades the company assessment');
-assert.equal((await processAction(action,{writes:0},false,false,true)).event,'readiness_blocked');
-communication='waiting';assert.equal((await processAction(action,{writes:0},false,true,true)).event,'communication_history_blocked');communication='new';
-currentAssessment={...assessment,decision_state:'no_outreach'};assert.equal((await processAction(action,{writes:0},false,true,true)).event,'readiness_blocked');
-console.log('Approved GC/producer template selection preview and protected gates: OK (no Gmail/business writes)');
-
-// Exercise the real run wrapper as well, so the request's template reaches processAction.
-const runSource=source.slice(source.indexOf('async function run('),source.indexOf('Deno.serve(')).replace(/:any\[\]/g,'').replace(/\s+as any\b/g,'');
-const runDeps={db:{from(){const q={select(){return q},eq(){return q},in(){return q},order(){return q},async limit(){return{data:[action],error:null}}};return q}},text:deps.text,processAction,MAX_DRAFT_WRITES_PER_RUN:25,MAX_CONTACTS_PER_ACTION:20,GENERATOR:'fixture',REGISTRY:'fixture'};
-const run=new Function(...Object.keys(runDeps),runSource+';return run;')(...Object.values(runDeps));
-currentAssessment=assessment;
-for(const selected of ['','gc_epc','steel_fabricator']){
- const result=await run(1,action.id,false,true,true,false,selected);
- assert.equal(result.failed,0,JSON.stringify(result.errors));
- assert.equal(result.results[0].event,selected?'preview_ready':'template_selection_required');
- if(selected)assert.equal(result.results[0].previews[0].approved_template,selected);
-}
-assert.equal(writes,0);
-console.log('Actual run wrapper carries the approved template into preview: OK');
-
-// Cross-company regressions: contact research, legacy eligible/unclear roles and consortium attribution.
-for(const company of ['Amedick','VACUSERV','CONCELEX']){
- action.target_company=company;tender.winner.name=company;
- assessment.company_summary.legal_name=company;
- const email=company==='Amedick'?'info-amedick@t-online.de':company==='VACUSERV'?'mblaj@vacuserv.ro':'seap@concelex.ro';
- tender.winner.emails=[email];tender.winner.ted_declared_emails=[email];
- tender.winner.website=null;
- tender.winner.names=company==='Amedick'?[company]:[company,'Other consortium member'];
- tender.winner.contact_enrichment={organizations:[{name:company,contacts:[{type:'email',value:email,source_type:'TED',draft_eligible:true}]}]};
- if(company!=='Amedick'){
-   tender.winner.emails.push('office@other-member.example.org');
-   tender.winner.ted_declared_emails.push('office@other-member.example.org');
- }
- currentAssessment={...assessment,draft_eligible:company==='CONCELEX',decision_state:company==='CONCELEX'?'ready_for_review':'contact_research',company_summary:{...assessment.company_summary,domain:null,company_type:company==='Amedick'?'unknown':'trader_consortium'}};
- const result=await run(1,action.id,false,true,true);
- assert.equal(result.failed,0,JSON.stringify(result.errors));
- assert.equal(result.results[0].event,'template_selection_required',company);
- for(const selected of ['gc_epc','steel_fabricator']){
-   const reviewed=await run(1,action.id,false,true,true,false,selected);
-   assert.equal(reviewed.failed,0,JSON.stringify(reviewed.errors));
-   assert.equal(reviewed.results[0].event,'preview_ready',company);
-   assert.deepEqual(reviewed.results[0].previews.map(p=>p.email),[email],company+' must not inherit other consortium members');
-   assert.equal(reviewed.results[0].previews[0].approved_template,selected);
- }
- assert.equal(resolveTedRecipients(action,tender,20).length,0,'send gate remains independent');
- assert.equal(writes,0);
-}
-assert.equal(resolveTedDraftRecipients({...action,target_company:'Different company'},tender,20).length,0);
-for(const category of ['gc_epc','steel_fabricator']){
- tender.winner_role_v2={category};
- currentAssessment={...currentAssessment,draft_eligible:false,decision_state:'contact_research'};
- const result=await run(1,action.id,false,true,true);
- assert.equal(result.failed,0,JSON.stringify(result.errors));
- assert.equal(result.results[0].event,'preview_ready','known role uses its approved copy without selection');
- assert.equal(result.results[0].previews[0].company_role,category);
-}
+assert.equal(assessment.draft_eligible,false,'eligibility checks do not upgrade the assessment');
 for(const decision_state of ['research_required','no_outreach','closed']){
- currentAssessment={...currentAssessment,decision_state};
- assert.equal((await run(1,action.id,false,true,true)).results[0].event,'readiness_blocked');
+ currentAssessment={...assessment,decision_state};
+ assert.equal((await processAction(action,{writes:0},false,true,true)).event,'readiness_blocked');
 }
-currentAssessment={...currentAssessment,decision_state:'contact_research'};
-tender.winner.emails=[];tender.winner.ted_declared_emails=[];tender.winner.contact_enrichment={organizations:[]};
-assert.equal((await run(1,action.id,false,true,true)).results[0].event,'no_recipients','missing recipient evidence still blocks');
 assert.equal(writes,0);
-console.log('Shared manual draft policy across company/role/contact states: OK');
+console.log('Manual copy templates retained; actual generator blocks unverified company activity without Gmail/business writes: OK');

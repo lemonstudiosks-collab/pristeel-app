@@ -1,12 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import "../../../pristeel-ted-outreach-policy-v1.js";
+const TED_POLICY=(globalThis as any).PSTTedOutreachPolicyV1;
 
 const SA_JSON=Deno.env.get("GOOGLE_SA_JSON")!;
 const GMAIL_USER=Deno.env.get("GMAIL_USER")||"arianit.vllahiu@prissteel.com";
 const SUPABASE_URL=Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
-const ENGINE="pppp-outbound-dispatch-v5-global-live-domain-guard";
+const ENGINE="pppp-outbound-dispatch-v6-ted-readiness";
 
 const cors={
   "Access-Control-Allow-Headers":"content-type, x-pppp-cron-secret",
@@ -113,6 +115,24 @@ async function markFailed(queueId:string,claimToken:string,error:any){
   }catch{}
 }
 
+// Existing policy and per-message human approval remain mandatory. This never enables sending.
+async function tedSendGuard(q:any){
+  if(q.source!=='TED')return;
+  let readiness:any=null;try{readiness=JSON.parse(Deno.env.get('PPPP_TED_SEND_READINESS')||'null');}catch{}
+  if(!TED_POLICY.sendReadiness(readiness))throw new Error('ted_sender_and_campaign_readiness_not_verified');
+  if(!TED_POLICY.recipient(q.recipient_email,{do_not_contact:!!q.suppression_reason,bounced:!!q.bounced_at}))throw new Error('ted_recipient_function_blocked');
+  if(!q.tender_watch_id)throw new Error('ted_exact_tender_identity_required');
+  const [t,x,health]=await Promise.all([
+    db.from('kek_tender_watch').select('title,payload,fpp,source_url,detail_url').eq('id',q.tender_watch_id).single(),
+    db.from('pppp_opportunity_company_assessments_v1').select('*,company:pppp_opportunity_company_profiles_v1(*)').eq('tender_watch_id',q.tender_watch_id).limit(2),
+    db.from('pppp_outbound_queue_v1').select('sent_at,bounced_at,dispatch_last_error').gte('updated_at',new Date(Date.now()-7*86400000).toISOString()).order('updated_at',{ascending:false}).limit(500)
+  ]);
+  if(t.error||x.error||health.error)throw t.error||x.error||health.error;
+  if(x.data?.length!==1)throw new Error('ted_company_assessment_missing_or_ambiguous');
+  const eligible=TED_POLICY.assess(t.data,{},x.data[0]);if(!eligible.ok)throw new Error('ted_outreach_blocked:'+eligible.reason);
+  const rows=health.data||[],bounce=rows.filter((r:any)=>r.bounced_at).length,failures=rows.filter((r:any)=>r.dispatch_last_error).length,sent=rows.filter((r:any)=>r.sent_at).length;
+  if(bounce>=3||failures>=3||(sent>=20&&bounce/sent>=0.05))throw new Error('outbound_delivery_health_requires_review');
+}
 Deno.serve(async(req:Request)=>{
   if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
   if(!["GET","POST"].includes(req.method))return new Response(JSON.stringify({ok:false,error:"GET_or_POST_required"}),{status:405,headers:cors});
@@ -127,6 +147,8 @@ Deno.serve(async(req:Request)=>{
     const queueId=text(body?.queue_id||u.searchParams.get("queue_id")||"",80);
     if(!queueId)return new Response(JSON.stringify({ok:false,error:"queue_id_required",dispatched:false}),{status:400,headers:cors});
 
+    const safety=await db.from('pppp_outbound_queue_v1').select('source,tender_watch_id,recipient_email,bounced_at,suppression_reason').eq('id',queueId).single();
+    if(safety.error)throw safety.error;await tedSendGuard(safety.data);
     const claimToken=crypto.randomUUID();
     const {data:claim,error:claimError}=await db.rpc("pppp_outbound_claim_for_dispatch_v1",{
       p_queue_id:queueId,
@@ -145,9 +167,10 @@ Deno.serve(async(req:Request)=>{
       const qs=new URLSearchParams({format:"metadata"});
       qs.append("metadataHeaders","To");
       qs.append("metadataHeaders","Subject");
+      qs.append("metadataHeaders","Cc");qs.append("metadataHeaders","Bcc");
       const draft=await gmail(`/drafts/${encodeURIComponent(draftId)}?${qs.toString()}`);
       const liveRecipients=emails(header(draft?.message,"To"));
-      if(!liveRecipients.includes(recipient))throw new Error(`live_draft_recipient_mismatch:${recipient}`);
+      if(liveRecipients.length!==1||liveRecipients[0]!==recipient||emails(header(draft?.message,"Cc")).length||emails(header(draft?.message,"Bcc")).length)throw new Error(`live_draft_recipient_mismatch:${recipient}`);
 
       const {data:qrow,error:qrowError}=await db.from("pppp_outbound_queue_v1").select("source,source_record_id,touch_no,company_domain").eq("id",queueId).single();
       if(qrowError)throw qrowError;
