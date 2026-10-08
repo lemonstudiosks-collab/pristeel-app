@@ -72,7 +72,7 @@ assert.equal(draftRecipients.length,4,'manual draft policy must return every ver
 assert.deepEqual(new Set(draftRecipients.map(r=>r.email)),new Set(['info@rb-impra.de','anna.beispiel@rb-impra.de','max.mustermann@rb-impra.de','procurement@rb-impra.de']));
 assert(!draftRecipients.some(r=>r.email==='procurement@other-consortium.de'),'contacts from another award/consortium company must never leak into the selected company draft set');
 assert.equal(draftRecipients.find(r=>r.email==='anna.beispiel@rb-impra.de')?.salutation,'Frau','explicit contact salutation must survive recipient resolution for personalized drafts');
-assert.equal(draftRecipients.find(r=>r.email==='max.mustermann@rb-impra.de')?.name,'Max Mustermann','person-like email local parts may supply a safe name when no explicit name field exists');
+assert.equal(draftRecipients.find(r=>r.email==='max.mustermann@rb-impra.de')?.name,'','email local parts are not verified names and must not invent a greeting');
 assert.equal(resolveTedRecipients(draftOnlyAction,draftOnlyPayload,1).length,0,'strict send-grade recipient policy must remain blocked without outreach readiness');
 
 const msAction={route:'TED_GENERAL',target_company:'M+S Gruppe GmbH',target_email:'stahl@msgruppe24.de',payload:{}};

@@ -6,7 +6,7 @@ const dom=new JSDOM('<!doctype html><html><head></head><body><section id="page-k
 const {window:w}=dom;w.scrollTo=()=>{};w.setTimeout=()=>0;w.CSS={escape:s=>String(s)};
 let email='arianit.vllahiu@prissteel.com',prepares=0,go=0,drafts=0,edgeCalls=0;
 const calls=[],alerts=[];
-const rows=[{id:'local',title:'Steel structure',status:'new',payload:{source:'KRPP',notice_phase:'opportunity'}},{id:'ted',title:'Awarded building',status:'new',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',email:'info@example.de'}}}];
+const rows=[{id:'local',title:'Steel structure',status:'new',payload:{source:'KRPP',notice_phase:'opportunity'}},{id:'ted',title:'Structural steel erection',source_url:'https://ted.europa.eu/en/notice/123456-2026/html',status:'new',payload:{source:'TED',notice_phase:'award',winner:{name:'Example GC GmbH',email:'info@example.de',company_type:'gc_epc',business_summary:'General contractor for building construction',company_classification:{confidence:'high',source_urls:['https://example.de/about']}}}}];
 let data={ok:true,tender_id:'local',project_id:null,requirements:[{id:'steel',label:'Steel',minimum_rfq_ready:2,internal:{candidates:[{name:'Alpha',email:'sales@alpha.test',strict_fit:true},{name:'Beta',email:'sales@beta.test',strict_fit:true},{name:'Review only',email:'sales@review.test',review_fit:true}]}}]};
 w.authGetSession=()=>({email,access_token:'x.'+Buffer.from(JSON.stringify({email})).toString('base64url')+'.y'});
 w._SB_URL='https://fixture.supabase.co';w._SB_KEY='fixture';
@@ -14,10 +14,11 @@ w.supaFetch=async(p,m,b)=>{calls.push({p,m,b});if(p.startsWith('kek_tender_watch
 w.fetch=async(url,opts)=>{assert(url.endsWith('/functions/v1/pppp-tender-supplier-sourcing-v1'));const payload=JSON.parse(opts.body);assert.equal(payload.discover,false,'opening/reopening never launches external discovery');edgeCalls++;return{ok:true,text:async()=>JSON.stringify(data)};};
 w.alert=x=>alerts.push(x);w.open=()=>{throw Error('No external window expected');};
 w.PSTTenderPriorityActionsV1=w.PSTTenderPriorityActionsV2={go:async()=>{go++;rows[0].project_id='project-1';return 'project-1';},review:async()=>{},noGo:async()=>{},prepareDraft:async()=>{drafts++;return{results:[{event:'preview_cancelled'}]};}};
-for(const p of ['pristeel-project-centric-workflow-v1.js','pristeel-opportunities-filter-polish-v1.js','pristeel-rfq-sourcing-workflow-v1.js','pristeel-tender-supplier-sourcing-v1.js'])w.eval(fs.readFileSync(p,'utf8'));
+for(const p of ['pristeel-ted-outreach-policy-v1.js','pristeel-project-centric-workflow-v1.js','pristeel-opportunities-filter-polish-v1.js','pristeel-rfq-sourcing-workflow-v1.js','pristeel-tender-supplier-sourcing-v1.js'])w.eval(fs.readFileSync(p,'utf8'));
 w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
 const api=w.PSTProjectCentricWorkflowV1,desk=w.PSTOpportunitiesDeskV1,sourcing=w.PSTTenderSupplierSourcingV1,rfq=w.PSTRfqSourcingWorkflowV1;
 await api.loadOpportunities(true);desk.apply();
+w.document.querySelector('[data-pst-opp-workview="companies"]').click();
 w.document.querySelector('[data-pst-opp-select="ted"]').click();
 const gmail=w.document.querySelector('[data-pst-opp-draft]');
 assert(gmail.querySelector('.pst-gmail-draft-icon'),'Gmail logo is preserved');

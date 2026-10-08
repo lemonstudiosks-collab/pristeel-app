@@ -34,7 +34,7 @@ export function inferredPersonName(email,meta={}){
   if(parts.some(p=>p.length<2||p.length>40||GENERIC_LOCAL_PARTS.has(p)||!/^[a-zà-öø-ÿ]+$/i.test(p)))return'';
   return parts.map(titleCaseNamePart).join(' ');
 }
-function contactName(row,email){return explicitName(row?.full_name||row?.contact_name||row?.person_name||row?.name||'')||inferredPersonName(email,row);}
+function contactName(row,email){return explicitName(row?.full_name||row?.contact_name||row?.person_name||row?.name||'');}
 function confidenceRank(v){const s=txt(v,40).toLowerCase();return s==='high'?3:s==='medium'?2:s==='verified'?3:s==='low'?1:0;}
 function websiteDomain(v){return normalizeDomain(v);}
 
