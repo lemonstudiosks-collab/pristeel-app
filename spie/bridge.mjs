@@ -1,5 +1,5 @@
 /* Explicit UI approval -> existing append-only ChatGPT command sheet -> trusted worker. */
-import { PROJECT_ID, session, googleSession, read, invalidate } from './data.mjs?v=20261008-overview2';
+import { PROJECT_ID, session, googleSession, read, invalidate } from './data.mjs?v=20261008-compact1';
 let pending = null;
 const str = x=>String(x??'');
 const canonical=x=>Array.isArray(x)?x.map(canonical):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):x;

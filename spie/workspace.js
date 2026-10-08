@@ -1,9 +1,9 @@
-import * as D from './data.mjs?v=20261008-overview2';
-import * as O from './operations.mjs?v=20261008-overview2';
-import * as B from './bridge.mjs?v=20261008-overview2';
-import * as Documents from './documents.mjs?v=20261008-overview2';
-import * as Tracker from './tracker.mjs?v=20261008-overview2';
-import * as Evidence from './evidence.mjs?v=20261008-overview2';
+import * as D from './data.mjs?v=20261008-compact1';
+import * as O from './operations.mjs?v=20261008-compact1';
+import * as B from './bridge.mjs?v=20261008-compact1';
+import * as Documents from './documents.mjs?v=20261008-compact1';
+import * as Tracker from './tracker.mjs?v=20261008-compact1';
+import * as Evidence from './evidence.mjs?v=20261008-compact1';
 const view=document.getElementById('view'), status=document.getElementById('read-status');
 const VIEWS={overview:'Pasqyra',commercial:'Komerciale',execution:'Porositë / Prodhimi / Dërgesat',files:'Skedarët',finance:'Financat'};
 const descriptions={overview:'Gjendja aktuale, veprimet dhe vendimet që kërkojnë vëmendjen tënde.',commercial:'Kërkesat, ofertat dhe versionet e tyre deri te porosia dhe kontrata.',execution:'Ndjekja e çdo porosie dhe dërgese, me fazat dhe dosjen për Zollcon e SPIE.',files:'Dosja reale e projektit. Një kërkim, dokumenti dhe burimi i saktë.',finance:'Ofertat, faturat dalëse dhe faturat hyrëse të ndara sipas kompanisë.'};
@@ -15,6 +15,7 @@ const link=(url,title='Hap burimin')=>url?'<a class="evidence-link" target="_bla
 const source=(url,at,note='')=>'<div class="provenance">'+esc(note)+(at?' · '+date(at):'')+(url?' · '+link(url):'')+'</div>';
 const row=(title,body='',evidence='')=>'<div class="row"><div class="row-title">'+esc(title)+'</div>'+(body?'<div class="muted">'+esc(body)+'</div>':'')+evidence+'</div>';
 const section=(title,body)=>'<section class="section"><div class="section-head"><h2>'+esc(title)+'</h2></div>'+body+'</section>';
+const fold=(title,body)=>'<details class="fold"><summary>'+esc(title)+'</summary>'+body+'</details>';
 const notice=x=>'<div class="notice" role="status">'+esc(x)+'</div>';
 const pill=x=>'<span class="pill">'+esc(label(x))+'</span>';
 const money=(x,currency)=>x===null||x===undefined||x===''?'Pa vlerë të verifikuar':Number(x).toLocaleString('sq-AL',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+esc(currency||'Monedha e paregjistruar');
@@ -35,16 +36,31 @@ function fileAction(f){
  if(!f)return '';
  const identity=f.identity||f.id,drive=D.safeLink(f.drive_url||f.attachment_url,'drive'),gmail=D.safeLink(f.gmail_url||f.source_url,'gmail');
  const canPreview=identity&&!f.link_conflict&&(f.drive_file_id||f.gmail_message_id&&f.gmail_attachment_id);
- return '<div class="document-actions">'+(canPreview?'<button class="btn" data-preview-file="'+esc(identity)+'">Hap në modul</button>':'')+
+ return '<div class="document-actions">'+(canPreview?'<button class="btn" data-preview-file="'+esc(identity)+'">'+(Evidence.fileAccess(f)==='connect_gmail'?'Lidh Gmail për ta hapur':'Hap në modul')+'</button>':'')+
  '<details class="source-menu"><summary>Burimi origjinal</summary>'+link(drive,'Drive')+link(gmail,'Gmail')+'</details>'+
  (f.link_conflict?'<span class="muted">'+esc(f.link_conflict)+'</span>':'')+(!drive&&!gmail&&!canPreview?'<span class="muted">Dokumenti nuk ka lidhje të verifikuar</span>':'')+'</div>';
 }
 
 function offerAction(o){return (o.side==='client'&&o.offer_state?.pristeel_model?Documents.recordAction('documents_registry',o.id.replace(/^client:/,'')):'')+fileAction({...o,identity:o.id,gmail_message_id:o.mail?.gmail_message_id,gmail_attachment_id:o.gmail_attachment_id,gmail_url:o.source_url});}
 function offerVersions(offers){
- return O.offerGroups(offers).map(g=>'<details class="offer-record" open><summary>'+esc(g.party)+' · '+g.versions.filter(o=>o.kind==='offer').length+' versione</summary><p class="muted small">'+(g.current?'Versioni aktual i verifikuar: '+esc(g.current.title):'Versioni aktual: i paverifikuar. '+(g.latestSent?'Dërgimi më i fundit me provë: '+date(g.latestSent.sent_at)+'.':''))+'</p>'+g.versions.map(o=>'<details><summary>'+esc(o.title)+'<div class="provenance">'+esc(o.kind==='terms'?'Kushtet komerciale':o.terms||'Incoterm-i kërkon verifikim')+' · '+date(o.sent_at)+' · '+esc(o.state||'Status i paverifikuar')+'</div></summary><p class="offer-value">'+money(o.amount,o.currency)+'</p><dl class="facts offer-facts">'+[['DAP / DDP',o.terms],['Baza e shumës',o.amount_basis],['Pa lyerje',o.amount_without_painting===null||o.amount_without_painting===undefined?'':money(o.amount_without_painting,o.currency)],['Lyerja',o.painting_amount===null||o.painting_amount===undefined?'':money(o.painting_amount,o.currency)],['Pagesa',o.payment_terms],['Vlefshmëria',o.validity],['Transporti',o.transport],['Importi / dogana',o.customs],['CBAM',o.cbam],['Lyerja / veshja',o.painting],['Përfshirë',o.inclusions],['Përjashtuar',o.exclusions]].map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v||'Nuk është nxjerrë nga dokumenti')+'</dd></div>').join('')+'</dl>'+offerAction(o)+source('',o.sent_at,o.source)+'</details>').join('')+'</details>').join('')||empty('Nuk ka oferta në regjistrin e kufizuar dhe burimet e lexuara.');
+ return O.offerGroups(offers).map(g=>'<div class="offer-group"><p class="provenance">'+esc(g.party)+' · '+g.versions.filter(o=>o.kind==='offer').length+' versione · '+(g.current?'Versioni aktual i verifikuar: '+esc(g.current.title):'Versioni aktual ende i paverifikuar')+'</p>'+g.versions.map(o=>{
+ const facts=[['DAP / DDP',o.terms],['Baza e shumës',o.amount_basis],['Pa lyerje',o.amount_without_painting==null?'':money(o.amount_without_painting,o.currency)],['Lyerja',o.painting_amount==null?'':money(o.painting_amount,o.currency)],['Pagesa',o.payment_terms],['Vlefshmëria',o.validity],['Transporti',o.transport],['Importi / dogana',o.customs],['CBAM',o.cbam],['Lyerja / veshja',o.painting],['Përfshirë',o.inclusions],['Përjashtuar',o.exclusions]].filter(([,v])=>v!==null&&v!==undefined&&v!=='');
+ return '<article class="offer-record"><div class="row-title">'+esc(o.title)+'</div><p class="provenance">'+esc(o.kind==='terms'?'Kushtet komerciale':o.terms||'Incoterm-i i paverifikuar')+' · '+date(o.sent_at)+' · '+esc(o.state||'Status i paverifikuar')+'</p><p class="offer-value">'+money(o.amount,o.currency)+'</p>'+offerAction(o)+'<details class="offer-detail"><summary>Kushtet dhe prova</summary>'+(facts.length?'<dl class="facts offer-facts">'+facts.map(([k,v])=>'<div><dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd></div>').join('')+'</dl>':empty('Kushtet ende nuk janë nxjerrë nga dokumenti.'))+source('',o.sent_at,o.source)+'</details></article>';
+ }).join('')+'</div>').join('')||empty('Nuk ka oferta të verifikuara në burimet e lexuara.');
 }
-function fileRows(files){return files.length?'<div class="table-wrap"><table><thead><tr><th>Dokumenti</th><th>Kategoria / versioni</th><th>Burimi</th></tr></thead><tbody>'+files.map(f=>'<tr><td class="file-title">'+esc(f.title||f.file_name||f.doc_nr)+fileAction(f)+'</td><td>'+esc(f.category)+'<div class="provenance">'+esc(f.notes.revision||'Revizioni i paverifikuar')+'</div></td><td>'+esc((f.sources||[f.source]).join(' / '))+'<div class="provenance">'+date(f.created_at)+'</div></td></tr>').join('')+'</tbody></table></div>':empty('Nuk ka skedarë të verifikuar në këtë kërkim.');}
+
+function fileRows(files){
+ const groups=O.fileGroups(files);
+ return groups.length?'<div class="table-wrap"><table><thead><tr><th>Dokumenti</th><th>Kategoria / versioni</th><th>Burimi</th></tr></thead><tbody>'+groups.map(g=>{
+  const f=g.files[0],copies=g.files.length>1?'<details class="file-copies"><summary>'+g.files.length+' kopje / versione · për kontroll</summary>'+g.files.map(copy=>'<div class="copy-row"><span class="provenance">'+esc((copy.sources||[copy.source]).join(' / '))+' · '+date(copy.created_at)+' · '+esc(copy.notes?.revision||'Versioni i paverifikuar')+'</span>'+fileAction(copy)+'</div>').join('')+'</details>':fileAction(f);
+  return '<tr><td class="file-title">'+esc(g.title)+copies+'</td><td>'+esc(f.category)+'<div class="provenance">'+esc(f.notes?.revision||'Versioni i paverifikuar')+'</div></td><td>'+esc((f.sources||[f.source]).join(' / '))+'<div class="provenance">'+date(f.created_at)+'</div></td></tr>';
+ }).join('')+'</tbody></table></div>':empty('Nuk ka skedarë në këtë kërkim.');
+}
+let fileQuery='',fileCategory='',fileLimit=15;
+function filteredFiles(c){return c.files.filter(f=>(!fileCategory||f.category===fileCategory)&&[f.title,f.file_name,f.doc_nr,f.category,f.notes?.revision,f.notes?.document_key].map(s).join(' ').normalize('NFC').toLowerCase().includes(fileQuery));}
+function fileResults(c){const files=filteredFiles(c),groups=O.fileGroups(files);return '<p class="provenance">'+groups.length+' dokumente të grupuara · '+files.length+' regjistra burimorë</p>'+fileRows(groups.slice(0,fileLimit).flatMap(g=>g.files))+(groups.length>fileLimit?'<button class="btn" data-more-files>Shfaq 15 të tjera</button>':'');}
+function filesView(c){return '<div class="toolbar"><label>Kërko në dosje<input id="file-search" type="search" value="'+esc(fileQuery)+'" placeholder="Emër ose referencë"></label><label>Kategoria<select id="file-category"><option value="">Të gjitha</option>'+O.CATEGORIES.map(cat=>'<option '+(cat===fileCategory?'selected ':'')+'value="'+esc(cat)+'">'+esc(cat)+'</option>').join('')+'</select></label></div><div id="file-results">'+fileResults(c)+'</div>';}
+
 function latestFact(c){return arr(c.data.context_facts).filter(f=>f.fact_status==='observed'&&f.value?.summary&&f.value?.source_email&&!f.value?.suppressed_by_canonical_state&&!f.value?.suppressed_by_operator_update).sort((a,b)=>s(b.value.source_sent_at).localeCompare(s(a.value.source_sent_at)))[0];}
 function actions(c){
  const rows=arr(c.data.operator_actions).filter(a=>!/done|closed|kryer|mbyllur/.test(s(a.status))).slice(0,3).map(a=>row(a.title,a.detail,source('',a.due_date,'Afati')));
@@ -59,29 +75,31 @@ function hydrateActions(c,refresh=false){
  const paint=()=>{if(current!==c||D.session()?.access_token!==sessionToken)return;const node=document.getElementById('operator-actions'),message=document.getElementById('action-read-status');if(node)node.innerHTML=actions(c);if(message)message.innerHTML=actionReadStatus(c);};
  paint();c.actionPromise=D.workspaceActions({refresh}).then(rows=>{if(D.session()?.access_token!==sessionToken)return;c.data.operator_actions=rows;c.actionState='ready';}).catch(error=>{c.actionState='unavailable';c.actionError=error.message;}).finally(()=>{c.actionPromise=null;paint();});
 }
+function communicationRow(m){return '<article class="communication-row"><div><b>'+esc(m.from_name||m.from_email)+'</b><span class="provenance"> · '+esc(m.direction==='outgoing'?'Dërguar':'Pranuar')+' · '+esc(new Date(m.sent_at).toLocaleString('sq-AL',{timeZone:'Europe/Budapest'}))+'</span></div><button class="message-title" data-preview-email="'+esc(m.gmail_message_id)+'">'+esc(m.subject)+'</button>'+(m.association_pending?'<span class="provenance">Lidhja me projektin ende për kontroll</span>':'')+'</article>';}
 function communications(c){
- const mails=arr(c.bundle.emails?.rows).filter(m=>m.needs_review===false&&!m.association_pending||m.context_thread_verified===true).sort((a,b)=>s(b.sent_at).localeCompare(s(a.sent_at))).slice(0,6);
- return section('Komunikimet e fundit',mails.map(m=>'<article class="communication-row"><div><b>'+esc(m.from_name||m.from_email)+'</b><span class="provenance">'+esc(m.direction==='outgoing'?' · Dërguar':' · Pranuar')+' · '+esc(new Date(m.sent_at).toLocaleString('sq-AL',{timeZone:'Europe/Budapest'}))+'</span></div><button class="message-title" data-preview-email="'+esc(m.gmail_message_id)+'">'+esc(m.subject)+'</button><p class="message-snippet">'+esc(s(m.snippet).slice(0,320))+'</p><span class="provenance">'+(m.context_evidence?'Tekst i verifikuar nga Gmail · ruajtur si provë e projektit':m.context_thread_verified?'Bisedë e verifikuar · emaili pret lidhjen në PPPP':m.external_source?'Lexuar nga Gmail · ende mungon në regjistrin PPPP':'Regjistri PPPP')+'</span></article>').join('')||empty('Nuk u lexuan komunikime të verifikuara.'))+
+ const {recent,history}=O.communicationWindow(c.bundle.emails?.rows);
+ return section('Komunikimet e fundit',recent.map(communicationRow).join('')||empty('Nuk ka komunikim të verifikuar në 48 orët e fundit.'))+(history.length?'<details class="fold"><summary>Historiku i komunikimeve · '+history.length+'</summary>'+history.map(communicationRow).join('')+'</details>':'')+
  (c.bundle.google?.error?notice('Gmail nuk u rifreskua plotësisht: '+c.bundle.google.error):'')+
- (!D.googleSession()?notice('Lidhja Gmail në PPPP duhet të jetë aktive që komunikimet e reja të lexohen menjëherë.'):'');
+ (!D.googleSession()?'<p class="provenance">Gmail joaktiv · '+link('../pristeel-procurement.html','Lidh Google në PPPP')+' për emailet dhe bashkëngjitjet e reja.</p>':'');
 }
+
 function overview(c){
  const active=c.units.filter(u=>u.stages.delivered.status!=='done'),latest=latestFact(c);
- const mail=arr(c.bundle.emails?.rows).filter(m=>m.needs_review===false&&!m.association_pending||m.context_thread_verified===true).sort((a,b)=>s(b.sent_at).localeCompare(s(a.sent_at)))[0];
- const now=mail?s(mail.snippet).slice(0,500):latest?.value.summary||'Gjendja kërkon konfirmim nga burimet e projektit.';
+ const mail=O.communicationWindow(c.bundle.emails?.rows).recent[0];
+ const now=mail?D.messageText({...mail,snippet:mail.body_excerpt||mail.snippet}).slice(0,220):latest?.value.summary||'Gjendja kërkon konfirmim nga burimet e projektit.';
  const stages=active.flatMap(u=>Object.values(u.stages).filter(r=>r.status!=='done'&&r.status!=='not_applicable').map(r=>({...r,unit:u})));
  const dates=stages.filter(r=>r.planned_date).sort((a,b)=>s(a.planned_date).localeCompare(s(b.planned_date)));
  const missing=active.flatMap(u=>O.dossier(u,c.files).filter(r=>r.required===true&&!r.checked).map(r=>({name:r.name,owner:r.owner})));
  const stateRows=active.length?active.map(u=>'<tr><td>'+esc(u.title)+'</td><td>'+esc(u.phase)+'</td><td>'+esc(Object.values(u.stages).find(r=>r.status==='in_progress')?.owner||'Përgjegjësi i pakonfirmuar')+'</td><td>'+esc(Object.values(u.stages).find(r=>r.status==='in_progress')?.note||'Kërkohet konfirmim i fazës aktuale')+'</td><td><a href="#execution">Ndjekja</a></td></tr>').join(''):'<tr><td colspan="5">Nuk ka porosi ose dërgesë të konfirmuar në ndjekje.</td></tr>';
- return '<div class="summary"><b>Komunikimi më i fundit</b><p>'+esc(now)+'</p>'+(mail?'<button class="btn" data-preview-email="'+esc(mail.gmail_message_id)+'">Lexo emailin këtu</button>'+source('',mail.sent_at,mail.context_thread_verified?'Email i sotëm · lidhja në PPPP kërkon verifikim':mail.external_source?'Gmail · mungon në PPPP':'PPPP'):source('',latest?.value.source_sent_at))+'</div>'+
+ return '<div class="summary"><b>Komunikimi më i fundit</b><p>'+esc(now)+'</p>'+(mail?'<button class="btn" data-preview-email="'+esc(mail.gmail_message_id)+'">Lexo emailin këtu</button>'+source('',mail.sent_at,mail.association_pending?'Lidhja në PPPP për kontroll':mail.external_source?'Gmail · mungon në PPPP':'PPPP'):source('',latest?.value.source_sent_at))+'</div>'+
  section('Çfarë duhet bërë tani','<div id="action-read-status" role="status">'+actionReadStatus(c)+'</div><div id="operator-actions">'+actions(c)+'</div>')+
  section('Ku qëndrojmë me porositë, prodhimin dhe dërgesat','<div class="table-wrap"><table><thead><tr><th>Porosia / dërgesa</th><th>Gjendja</th><th>Përgjegjësi</th><th>Çfarë presim</th><th></th></tr></thead><tbody>'+stateRows+'</tbody></table></div>')+
  section('Financat, pagesat dhe garancitë','<div id="overview-finance" role="status">Duke lexuar regjistrat financiarë…</div>')+
- section('Afatet dhe pengesat',dates.slice(0,5).map(r=>row(r.unit.title+' · '+r.title,date(r.planned_date)+' · '+(r.owner||'Pa përgjegjës'),source(r.source_url,r.source_date))).join('')+
+ fold('Afatet dhe pengesat'+(c.data.project.deadline&&new Date(c.data.project.deadline)<new Date()?' · afati në PPPP kërkon rikonfirmim':''),dates.slice(0,5).map(r=>row(r.unit.title+' · '+r.title,date(r.planned_date)+' · '+(r.owner||'Pa përgjegjës'),source(r.source_url,r.source_date))).join('')+
  missing.slice(0,5).map(r=>row('Mungon: '+r.name,r.owner)).join('')+(!dates.length?empty('Nuk ka afat aktiv të konfirmuar në ndjekje.'):'')+
  (c.data.project.deadline&&new Date(c.data.project.deadline)<new Date()?notice('Afati i projektit në PPPP është '+date(c.data.project.deadline)+'; kërkon rikonfirmim.'):'')+
  '<a class="evidence-link" href="#execution">Hap ndjekjen e plotë</a>')+
- communications(c)+section('Dokumentet e fundit',Documents.letterActions(c)+fileRows(c.files.slice(0,5)));
+ communications(c)+fold('Dokumentet e fundit',Documents.letterActions(c)+fileRows(c.files.slice(0,3))+'<a class="evidence-link" href="#files">Hap dosjen e plotë</a>');
 }
 function hydrateFinance(c){
  if(!financePromise)financePromise=D.finance();const identity=token;
@@ -104,7 +122,7 @@ function hydrateFinance(c){
 
 function commercial(c){
  const documents=c.files.filter(f=>['RFQ','Porosi / PO','Kontrata'].includes(f.category));
- return section('RFQ / Kërkesat nga SPIE',fileRows(documents.filter(f=>f.category==='RFQ')))+section('Aktiva dhe furnitorët e tjerë',offerVersions(c.model.offers.filter(o=>o.side==='supplier')))+section('Ofertat PriSteel → SPIE · versionet dhe kushtet',offerVersions(c.model.offers.filter(o=>o.side==='client')))+section('Porositë / PO dhe kontratat',fileRows(documents.filter(f=>f.category!=='RFQ')))+(c.model.reviewOffers.length?section('Për kontroll · lidhja me projektin',notice('Këto prova nuk janë lidhur canonicalisht me projektin dhe nuk ndryshojnë fazën ose financat.')+offerVersions(c.model.reviewOffers)):'')+'<p class="metrics-note">Data e dokumentit ose dërgimi i ofertës nuk provon pranimin. Oferta e kthyer në porosi identifikohet vetëm nga referenca e verifikuar në PO / kontratë.</p>';
+ return fold('RFQ / Kërkesat nga SPIE',fileRows(documents.filter(f=>f.category==='RFQ')))+section('Aktiva dhe furnitorët e tjerë',offerVersions(c.model.offers.filter(o=>o.side==='supplier')))+section('Ofertat PriSteel → SPIE · versionet dhe kushtet',offerVersions(c.model.offers.filter(o=>o.side==='client')))+fold('Porositë / PO dhe kontratat',fileRows(documents.filter(f=>f.category!=='RFQ')))+(c.model.reviewOffers.length?fold('Për kontroll · lidhja me projektin',notice('Këto prova nuk janë lidhur canonicalisht me projektin dhe nuk ndryshojnë fazën ose financat.')+offerVersions(c.model.reviewOffers)):'')+fold('Tabela komerciale dhe e porosive',Tracker.action())+'<p class="metrics-note">Data e dokumentit ose dërgimi i ofertës nuk provon pranimin. Oferta e kthyer në porosi identifikohet vetëm nga referenca e verifikuar në PO / kontratë.</p>';
 }
 function stageRows(u){return '<div class="table-wrap"><table><thead><tr><th>Faza</th><th>Statusi / përgjegjësi</th><th>Planifikuar / reale</th><th>Mungon / rreziku / prova</th><th></th></tr></thead><tbody>'+Object.values(u.stages).map(r=>'<tr><td>'+esc(r.title)+'</td><td>'+pill(r.status)+'<div class="provenance">'+esc(r.owner||'Pa përgjegjës të konfirmuar')+'</div></td><td>'+date(r.planned_date)+'<div class="provenance">Reale: '+date(r.actual_date)+'</div></td><td>'+esc(r.status==='done'?r.note||'':r.note||r.missing||'')+(r.risk?'<div class="risk">'+esc(r.risk)+'</div>':'')+source(r.source_url,r.source_date)+'</td><td><button class="btn" data-stage="'+esc(r.id)+'" data-unit="'+esc(u.id)+'">Konfirmo faktin</button></td></tr>').join('')+'</tbody></table></div>';}
 function checklist(u,c){const rows=O.dossier(u,c.files);return Object.entries(O.GROUPS).map(([key,name])=>section(name,'<div class="table-wrap"><table><thead><tr><th>Tick / dokumenti</th><th>Përgjegjësi</th><th>Statusi / data</th><th>Dokumenti / shënimi</th><th></th></tr></thead><tbody>'+rows.filter(r=>r.group===key).map(r=>'<tr><td><input type="checkbox" aria-label="Konfirmo '+esc(r.name)+'" data-check="'+esc(r.document_id)+'" data-unit="'+esc(u.id)+'" '+(r.checked?'checked ':'')+'>'+esc(r.name)+'<div class="provenance">'+(r.required===true?'I kërkuar':r.required===false?'Jo relevant':'Kërkesa për t’u konfirmuar')+'</div></td><td>'+esc(r.owner)+'</td><td>'+pill(r.status)+'<div class="provenance">'+date(r.date)+(r.auto?' · U gjet automatikisht':'')+'</div></td><td>'+fileAction(r.file)+source(r.source_url,r.source_date)+esc(r.conflict||r.note||'')+'</td><td><button class="btn" data-document="'+esc(r.document_id)+'" data-unit="'+esc(u.id)+'">Shëno dokumentin</button></td></tr>').join('')+'</tbody></table></div>')).join('');}
@@ -140,6 +158,7 @@ view.addEventListener('click',async e=>{
  if(t.dataset.openLetter){try{await Documents.openSavedLetter(t.dataset.openLetter,current);}catch(error){status.textContent=error.message;}return;}
  if(t.dataset.previewEmail){try{await Evidence.email(current.bundle.emails.rows.find(m=>m.gmail_message_id===t.dataset.previewEmail));}catch(error){status.textContent=error.message;}return;}
  if(t.dataset.previewFile){const f=current.files.find(f=>f.identity===t.dataset.previewFile)||current.model.offers.concat(current.model.reviewOffers).find(f=>f.id===t.dataset.previewFile);try{await Evidence.file(f);}catch(error){status.textContent=error.message;}return;}
+ if(t.hasAttribute('data-more-files')){fileLimit+=15;document.getElementById('file-results').innerHTML=fileResults(current);return;}
  if(t.hasAttribute('data-refresh-project')){reset();await route();return;}
  if(t.dataset.openSaved){t.disabled=true;try{await Documents.openSaved(t.dataset.recordTable,t.dataset.openSaved,current);}catch(error){status.textContent=error.message;}finally{t.disabled=false;}return;}
  if(t.dataset.createDocument){t.disabled=true;try{await Documents.open(t.dataset.createDocument,current);}catch(error){status.textContent=error.message;}finally{t.disabled=false;}return;}
@@ -161,11 +180,11 @@ async function route(){
   const session=await D.ensureSession();if(g!==generation)return;if(!session)throw new Error('SESSION_REQUIRED: Hap PPPP për të hyrë.');
   if(token!==session.access_token){reset();token=session.access_token;}
   const c=await load();if(g!==generation||D.session()?.access_token!==token)return;current=c;
-  const body=name==='overview'?overview(c):name==='commercial'?commercial(c):name==='execution'?execution(c):name==='finance'?await finance(c):'<div class="toolbar"><label>Kërko në dosje<input id="file-search" type="search" placeholder="Emër, referencë, kategori ose fjalë"></label></div><div id="file-results">'+fileRows(c.files)+'</div>';
+  const body=name==='overview'?overview(c):name==='commercial'?commercial(c):name==='execution'?execution(c):name==='finance'?await finance(c):filesView(c);
   if(g!==generation||D.session()?.access_token!==token)return;
   const errors=c.model.errors.concat(c.driveError?[{source:'Drive',error:c.driveError}]:[]);
-  view.innerHTML='<div class="hero"><p class="eyebrow">SPIE / TENNET BUNT</p><h1>'+esc(VIEWS[name])+'</h1><p class="muted">'+esc(c.data.project.name)+'</p></div>'+errors.map(e=>notice(e.error)).join('')+'<div id="bridge-status"></div>'+ ('<div class="project-actions">'+Documents.menu()+Tracker.action()+'<button class="btn" data-refresh-project>Rifresko tani</button></div>')+body+'<p class="view-footer">PPPP është gjendja canonical. Burimet e palidhura ose të paqarta kërkojnë kontroll. Rifreskimi bëhet automatikisht çdo 2 minuta kur kjo faqe është aktive. Burimet e palidhura nuk ndryshojnë gjendjen e projektit.</p>';
-  showPending();document.getElementById('file-search')?.addEventListener('input',e=>{const q=e.target.value.normalize('NFC').toLowerCase();document.getElementById('file-results').innerHTML=fileRows(c.files.filter(f=>[f.title,f.file_name,f.doc_nr,f.category,f.notes.revision,f.notes.document_key].map(s).join(' ').normalize('NFC').toLowerCase().includes(q)));});
+  view.innerHTML='<div class="hero"><p class="eyebrow">SPIE / TENNET BUNT</p><h1>'+esc(VIEWS[name])+'</h1><p class="muted">'+esc(c.data.project.name)+'</p></div>'+errors.map(e=>notice(e.error)).join('')+'<div id="bridge-status"></div>'+ ('<div class="project-actions">'+Documents.menu()+'</div>')+body+'<p class="view-footer">PPPP është gjendja canonical. Burimet e palidhura ose të paqarta kërkojnë kontroll. Rifreskimi bëhet automatikisht çdo 2 minuta kur kjo faqe është aktive. Burimet e palidhura nuk ndryshojnë gjendjen e projektit.</p>';
+  showPending();document.getElementById('file-search')?.addEventListener('input',e=>{fileQuery=e.target.value.normalize('NFC').toLowerCase();fileLimit=15;document.getElementById('file-results').innerHTML=fileResults(c);});document.getElementById('file-category')?.addEventListener('change',e=>{fileCategory=e.target.value;fileLimit=15;document.getElementById('file-results').innerHTML=fileResults(c);});
   status.textContent='Lexuar: '+new Date().toLocaleTimeString('sq-AL',{timeZone:'Europe/Budapest'})+(D.googleSession()?' · PPPP / Gmail':' · PPPP · Gmail joaktiv');
   hydrateActions(c);if(name==='overview')hydrateFinance(c);
  }catch(error){if(g!==generation)return;view.innerHTML=notice(error.message)+'<p><button class="btn" data-retry-read>Riprovo leximin</button> <a class="btn" href="../pristeel-procurement.html">Hap PPPP</a></p>';status.textContent='Të dhënat nuk u verifikuan';}
@@ -174,9 +193,10 @@ async function route(){
 document.addEventListener('spie:document-saved',()=>{financePromise=null;bundlePromise=null;bundleAt=0;D.invalidate();});
 document.addEventListener('spie:document-closed',()=>route());
 document.addEventListener('spie:tracker-uploaded',()=>{reset();route();});
+document.getElementById('refresh-project')?.addEventListener('click',()=>{reset();route();});
 window.addEventListener('hashchange',route);
 window.addEventListener('storage',e=>{if(e.key==='pristeel_session'||e.key===null){reset();route();}else if(e.key?.startsWith('pst_google_workspace_')){reset();route();}});
-function autoRefresh(){if(document.visibilityState==='visible'&&!document.querySelector('dialog[open]')&&view.getAttribute('aria-busy')!=='true'&&Date.now()-bundleAt>=120000){reset();route();}}
+function autoRefresh(){if(document.visibilityState==='visible'&&!document.querySelector('dialog[open],details[open]')&&!view.contains(document.activeElement)&&view.getAttribute('aria-busy')!=='true'&&Date.now()-bundleAt>=120000){reset();route();}}
 window.addEventListener('focus',autoRefresh);
 document.addEventListener('visibilitychange',autoRefresh);
 setInterval(autoRefresh,30000);

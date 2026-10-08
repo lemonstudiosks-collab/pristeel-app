@@ -1,7 +1,7 @@
 /* Project-local entry into the existing canonical PriSteel editors. */
-import * as D from './data.mjs?v=20261008-overview2';
-import * as B from './bridge.mjs?v=20261008-overview2';
-import * as M from './document-models.mjs?v=20261008-overview2';
+import * as D from './data.mjs?v=20261008-compact1';
+import * as B from './bridge.mjs?v=20261008-compact1';
+import * as M from './document-models.mjs?v=20261008-compact1';
 const {esc}=M;
 let dialog=null,frame=null,context=null,saved=null,busy=false,draftIdentity=null,composeToken='',editorOwner='',composeParentToken='';
 function sessionOwner(){try{const s=D.session();return s?JSON.parse(atob(s.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).sub||'':'';}catch{return '';}}
@@ -35,10 +35,10 @@ function attachHost(kind,c){
  if(!D.session()){error('Sesioni PPPP nuk është aktiv. Hyr sërish në PPPP.');return;}
  w.__spieDocumentHostStarting=true;
  w.__spieDocumentContext={kind,project:c.data.project,contacts:c.data.contacts||c.contacts||[],emails:c.bundle?.emails?.rows||c.data.recent_emails||[],offers:c.bundle?.clients?.rows||[]};
- const script=w.document.createElement('script');script.type='module';script.src='spie/editor-host.mjs?v=20261008-overview2';script.onerror=()=>error('Editorët nuk u ngarkuan.');w.document.head.append(script);
+ const script=w.document.createElement('script');script.type='module';script.src='spie/editor-host.mjs?v=20261008-compact1';script.onerror=()=>error('Editorët nuk u ngarkuan.');w.document.head.append(script);
 }
 function safeClose(){if(busy){error('Prit përfundimin e veprimit.');return;}dialog?.close();}
-export function menu(){return actions('offer')+'<details class="document-create-menu"><summary class="btn">Krijo dokument</summary><div>'+['invoice','credit_note','debit_note','letter'].map(actions).join('')+'</div></details>';}
+export function menu(){return '<details class="document-create-menu"><summary class="btn">Krijo dokument</summary><div>'+['offer','invoice','credit_note','debit_note','letter'].map(actions).join('')+'</div></details>';}
 export function actions(kind){return `<button class="btn" data-create-document="${esc(kind)}">Krijo ${kind==='offer'?'ofertë':kind==='invoice'?'faturë':kind==='debit_note'?'notë debitore':kind==='letter'?'letër zyrtare':'notë kreditore'}</button>`;}
 export async function open(kind,c){
  if(kind==='letter')return openLetter(c);
@@ -50,7 +50,7 @@ export async function open(kind,c){
  dialog=document.createElement('dialog');dialog.className='commercial-document-editor';
  dialog.innerHTML=`<div class="document-editor-head"><h2>${title[kind]}</h2><button class="btn" data-doc-close>Mbyll</button></div><p data-doc-status role="status">Duke hapur editorin qendror për këtë projekt…</p><div class="document-editor-actions"><button class="btn" data-doc-pdf disabled>PDF</button><button class="btn" data-doc-email disabled>Krijo draft emaili</button></div><div class="document-compose" hidden></div><iframe title="${title[kind]} · SPIE" class="document-editor-frame"></iframe>`;
  document.body.append(dialog);dialog.showModal();frame=dialog.querySelector('iframe');
- const currentFrame=frame;frame.src='../pristeel-procurement.html?spieEditor='+encodeURIComponent(kind)+'&v=20261008-overview2';
+ const currentFrame=frame;frame.src='../pristeel-procurement.html?spieEditor='+encodeURIComponent(kind)+'&v=20261008-compact1';
  frame.onload=()=>{
   if(frame!==currentFrame)return;
   if(D.session()?.access_token!==session){error('Sesioni ndryshoi gjatë hapjes. Hyr sërish në PPPP.');return;}

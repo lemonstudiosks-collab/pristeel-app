@@ -1,5 +1,5 @@
 /* Evidence projections over canonical PPPP. No writes, guessed commitments or parallel storage. */
-import { PROJECT_ID, safeLink, gmailLink, messageText, mailParty } from './data.mjs?v=20261008-overview2';
+import { PROJECT_ID, safeLink, gmailLink, messageText, mailParty } from './data.mjs?v=20261008-compact1';
 const arr = x => Array.isArray(x) ? x : [];
 const str = x => String(x ?? '');
 export const STAGES = [['order','Porosia'],['material','Materiali'],['production','Prodhimi'],['qa','Kontrolli / QA-QC'],['packing','Paketimi'],['documents','Dokumentet'],['ready','Gati për marrje'],['loading','Ngarkimi'],['transport','Në transport'],['customs','Dogana / importi'],['delivered','Dorëzuar']];
@@ -52,10 +52,26 @@ export function fileModel(data,bundle,liveDrive=[]){
   f.identity=identity(f);f.category=category(f);f.notes=json(f.notes);
   // SHA or an exact Drive ID connects sources; a filename alone never proves duplicate bytes.
   const old=result.find(x=>(f.content_sha256&&f.content_sha256===x.content_sha256)||(f.drive_file_id&&f.drive_file_id===x.drive_file_id)||f.identity===x.identity);
-  if(old){old.sources=[...new Set([...(old.sources||[old.source]),f.source])];for(const k of ['gmail_url','gmail_message_id','gmail_attachment_id','attachment_mime_type','attachment_size_bytes','size','mimeType','drive_url','content_sha256','mail'])if(!old[k]&&f[k])old[k]=f[k];continue;}
+  if(old){old.sources=[...new Set([...(old.sources||[old.source]),f.source])];for(const k of ['gmail_url','gmail_message_id','gmail_attachment_id','attachment_mime_type','attachment_size_bytes','size','mimeType','drive_url','drive_file_id','content_sha256','mail'])if(!old[k]&&f[k])old[k]=f[k];continue;}
   result.push(f);
  }
  return result.sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at)));
+}
+// Same-name copies share one presentation row, never a content identity or approval.
+export function fileGroups(files){
+ const groups=new Map();
+ for(const f of arr(files)){
+  const title=str(f.title||f.file_name||f.doc_nr),key=[title.normalize('NFC').trim().toLowerCase(),f.category||'',f.party||''].join('|');
+  const group=groups.get(key)||{key,title,category:f.category,files:[]};group.files.push(f);groups.set(key,group);
+ }
+ for(const group of groups.values())group.files.sort((a,b)=>str(b.created_at).localeCompare(str(a.created_at)));
+ return [...groups.values()].sort((a,b)=>str(b.files[0]?.created_at).localeCompare(str(a.files[0]?.created_at)));
+}
+export function communicationWindow(emails,now=Date.now()){
+ const sorted=arr(emails).filter(m=>(m.needs_review===false&&!m.association_pending||m.context_thread_verified===true)&&Number.isFinite(Date.parse(m.sent_at))&&Date.parse(m.sent_at)<=now).sort((a,b)=>str(b.sent_at).localeCompare(str(a.sent_at)));
+ const recent=[],history=[],seen=new Set();
+ for(const m of sorted){const thread=m.gmail_thread_id||m.gmail_message_id;if(Date.parse(m.sent_at)>=now-48*60*60*1000&&!seen.has(thread)&&recent.length<3){recent.push(m);seen.add(thread);}else history.push(m);}
+ return {recent,history};
 }
 export function offerGroups(offers){
  const groups=new Map();

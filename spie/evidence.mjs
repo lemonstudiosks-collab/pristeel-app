@@ -1,5 +1,6 @@
 /* On-demand, session-bound evidence reader. No ingestion and no persistent document copies. */
-import * as D from './data.mjs?v=20261008-overview2';
+import * as D from './data.mjs?v=20261008-compact1';
+import {parser,worksheetRows,tableHtml} from './tracker.mjs?v=20261008-compact1';
 const MAX=10*1024*1024,esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function decodeBody(payload){
  const parts=[];function walk(p){if(!p?.filename&&p?.mimeType==='text/plain'&&p.body?.data){const raw=p.body.data.replace(/-/g,'+').replace(/_/g,'/');parts.push(new TextDecoder().decode(Uint8Array.from(atob(raw.padEnd(Math.ceil(raw.length/4)*4,'=')),c=>c.charCodeAt(0))));}for(const child of p?.parts||[])walk(child);}walk(payload);
@@ -41,16 +42,46 @@ export async function email(row){
  }catch(e){if(dialog.open)body.textContent=e.message;}finally{body.setAttribute('aria-busy','false');}
 }
 function drivePreview(body,file){
- if(!/^[\w-]+$/.test(file.drive_file_id||''))throw Error('Ky format kërkon shkarkim nga burimi origjinal.');
+ if(!/^[\w-]+$/.test(file.drive_file_id||''))throw Error('Mungon lidhja e verifikuar Drive për këtë skedar.');
  body.innerHTML='<p class="provenance">Parapamje nga Drive; skedari qëndron në dosjen e projektit.</p><iframe title="Dokumenti në Drive" class="evidence-frame" src="https://drive.google.com/file/d/'+encodeURIComponent(file.drive_file_id)+'/preview" allow="fullscreen"></iframe>';
+}
+export function fileAccess(file){
+ if(file?.link_conflict)return 'conflict';
+ const drive=/^[\w-]+$/.test(file?.drive_file_id||''),gmail=!!(file?.gmail_attachment_id&&(file?.gmail_message_id||file?.mail?.gmail_message_id));
+ const large=Number(file?.size||file?.attachment_size_bytes)>MAX;
+ if(drive&&(large||!D.googleSession(gmail?'gmail':'drive')))return 'drive_preview';
+ if(gmail&&!D.googleSession('gmail'))return 'connect_gmail';
+ if(gmail&&large)return 'large_gmail';
+ return gmail||drive?'read':'missing';
+}
+export function fileMime(file){
+ const known=file.attachment_mime_type||file.mimeType||'';
+ if(known&&known!=='application/octet-stream')return known;
+ const extension=String(file.title||file.file_name||'').split('.').pop().toLowerCase();
+ return ({pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',txt:'text/plain',csv:'text/plain',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',xls:'application/vnd.ms-excel'})[extension]||known;
+}
+async function spreadsheet(body,bytes,identity){
+ const X=await parser(),book=X.read(bytes,{type:'array',cellFormula:false,cellStyles:false,cellHTML:false,bookVBA:false});
+ if(D.session()?.access_token!==identity)throw Error('SESSION_CHANGED');
+ let selected=0,page=0;
+ const render=()=>{
+  const name=book.SheetNames[selected],rows=worksheetRows(X,book.Sheets[name]),pages=Math.max(1,Math.ceil(rows.length/150));page=Math.min(page,pages-1);
+  body.innerHTML='<label class="provenance">Fleta <select data-evidence-sheet>'+book.SheetNames.map((n,i)=>'<option value="'+i+'" '+(i===selected?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label><p class="provenance">Vlerat e ruajtura në Excel · formulat nuk rillogariten · '+rows.length+' rreshta</p><div class="table-wrap evidence-sheet">'+tableHtml(rows.slice(page*150,(page+1)*150))+'</div><div class="document-actions"><button class="btn" data-sheet-prev '+(!page?'disabled':'')+'>Më parë</button><span class="provenance">'+(page+1)+' / '+pages+'</span><button class="btn" data-sheet-next '+(page+1>=pages?'disabled':'')+'>Më tej</button></div>';
+  body.querySelector('[data-evidence-sheet]').onchange=e=>{selected=Number(e.target.value);page=0;render();};body.querySelector('[data-sheet-prev]').onclick=()=>{page--;render();};body.querySelector('[data-sheet-next]').onclick=()=>{page++;render();};
+ };render();
 }
 export async function file(file){
  if(!file||file.link_conflict)throw Error('Dokumenti nuk ka identitet të verifikuar.');
+ if(!D.session())throw Error('SESSION_REQUIRED: Hyr në PPPP për të hapur dokumentin.');
  file={...file,gmail_message_id:file.gmail_message_id||file.mail?.gmail_message_id};
- const dialog=open(file.title||file.file_name||'Dokument');if(!dialog)return;const body=dialog.querySelector('.evidence-body');
+ const dialog=open(file.title||file.file_name||'Dokument');if(!dialog)return;const body=dialog.querySelector('.evidence-body'),identity=D.session()?.access_token;
  try{
-  if(Number(file.size||file.attachment_size_bytes)>MAX||!D.googleSession(file.gmail_attachment_id?'gmail':'drive')){drivePreview(body,file);return;}
-  let bytes,mime=file.attachment_mime_type||file.mimeType||'';
+  const access=fileAccess(file);
+  if(access==='drive_preview'){drivePreview(body,file);return;}
+  if(access==='connect_gmail'){body.innerHTML='<div class="evidence-connect"><p>Ky dokument është bashkëngjitje Gmail. Lidhja Google në PPPP është joaktive.</p><p class="muted">Pas rilidhjes, rihape këtu; skedarët e vegjël lexohen brenda modulit.</p><a class="btn" href="../pristeel-procurement.html">Lidh Google në PPPP</a></div>';return;}
+  if(access==='large_gmail'){body.innerHTML='<p>Ky skedar tejkalon 10 MB dhe nuk ka kopje të verifikuar në Drive.</p><p class="muted">Hape bashkëngjitjen në burimin Gmail.</p>';const url=D.safeLink(file.gmail_url||file.source_url,'gmail');if(url)body.innerHTML+='<a class="btn" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">Hap Gmail</a>';return;}
+  if(access==='missing')throw Error('Dokumenti nuk ka identitet Gmail ose Drive të verifikuar.');
+  let bytes,mime=fileMime(file);
   if(file.gmail_message_id&&file.gmail_attachment_id){
    const result=await request('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(file.gmail_message_id)+'/attachments/'+encodeURIComponent(file.gmail_attachment_id),'gmail',Math.ceil(MAX*1.4));
    const attachment=JSON.parse(new TextDecoder().decode(result.bytes));if(Number(attachment.size)>MAX)throw Error('Skedari tejkalon 10 MB.');
@@ -60,11 +91,12 @@ export async function file(file){
    const metadata=JSON.parse(new TextDecoder().decode((await request('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(file.drive_file_id)+'?fields=id,name,mimeType,size','drive',20000)).bytes));
    if(metadata.id!==file.drive_file_id||metadata.name.normalize('NFC')!==String(file.title||file.file_name).normalize('NFC'))throw Error('Identiteti i dokumentit në Drive nuk përputhet.');
    if(Number(metadata.size)>MAX){drivePreview(body,file);return;}mime=metadata.mimeType;
-   if(!/^(application\/pdf|image\/(png|jpeg|gif|webp)|text\/plain)$/.test(mime)){drivePreview(body,file);return;}
+   if(!/^(application\/pdf|image\/(png|jpeg|gif|webp)|text\/plain|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|application\/vnd\.ms-excel)$/.test(mime)){drivePreview(body,file);return;}
    bytes=(await request('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(file.drive_file_id)+'?alt=media','drive')).bytes;
   }
   if(bytes.length>MAX)throw Error('Skedari tejkalon 10 MB.');
   if(!dialog.open)return;
+  if(/(?:spreadsheetml|ms-excel)/.test(mime)){await spreadsheet(body,bytes,identity);return;}
   if(mime==='text/plain'){body.innerHTML='<pre class="email-text">'+esc(new TextDecoder().decode(bytes))+'</pre>';return;}
   const url=URL.createObjectURL(new Blob([bytes],{type:mime||'application/octet-stream'}));dialog.urls=[url];
   if(mime==='application/pdf')body.innerHTML='<iframe title="PDF" class="evidence-frame" src="'+url+'"></iframe>';

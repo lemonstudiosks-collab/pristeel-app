@@ -1,5 +1,5 @@
 /* Runs only inside the human-opened SPIE editor. Reuses existing central UI controllers. */
-import * as M from './document-models.mjs?v=20261008-overview2';
+import * as M from './document-models.mjs?v=20261008-compact1';
 const C=window.__spieDocumentContext;
 if(!C||window.parent===window||C.project?.id!=='c937aea1-af5e-4807-ae1e-e36864e46794')throw new Error('SPIE_EDITOR_CONTEXT_REQUIRED');
 const kinds=new Set(['offer','invoice','credit_note','debit_note']);
@@ -24,7 +24,7 @@ body.pst-spie-document-saved #of-edit-col{display:none!important}body.pst-spie-d
 @media(max-width:850px){body.pst-spie-editor #inv-view-out>div{grid-template-columns:1fr!important}.pst-model{overflow:auto}}
 `;document.head.append(style);document.body.classList.add('pst-spie-editor','pst-spie-editor-'+C.kind);
 const owners=['pristeel-document-center-stable-v2.js','pristeel-document-adjustments-v3.js','pristeel-commercial-document-builder-v1.js','pristeel-offer-position-preservation-v1.js','pristeel-offer-number-integrity-v1.js','pristeel-invoice-identity-v1.js','pristeel-invoice-project-link-v1.js','pristeel-document-currency-v1.js'];
-for(const path of owners)await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=path+'?v=20261008-overview2';script.onload=resolve;script.onerror=()=>reject(new Error('EDITOR_OWNER_NOT_LOADED: '+path));document.head.append(script);});
+for(const path of owners)await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=path+'?v=20261008-compact1';script.onload=resolve;script.onerror=()=>reject(new Error('EDITOR_OWNER_NOT_LOADED: '+path));document.head.append(script);});
  for(let i=0;i<100;i++){if(window.PSTCommercialDocumentBuilderV1&&typeof window.pstOpenAdjustment==='function'&&typeof window.collectOfferFormState==='function')break;await sleep(200);}
 if(!window.PSTCommercialDocumentBuilderV1||typeof window.pstOpenAdjustment!=='function'){notify('error',{message:'Editorët qendrorë nuk u ngarkuan.'});throw new Error('CANONICAL_EDITORS_NOT_READY');}
 window.__pstCurrentProjectId=C.project.id;window._curProjId=C.project.id;

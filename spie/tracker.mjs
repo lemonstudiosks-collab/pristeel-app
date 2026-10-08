@@ -1,6 +1,6 @@
 /* Private project workbook. Loaded only on an explicit table action, never at startup. */
-import * as D from './data.mjs?v=20261008-documents1';
-import {esc} from './document-models.mjs?v=20261008-documents1';
+import * as D from './data.mjs?v=20261008-compact1';
+import {esc} from './document-models.mjs?v=20261008-compact1';
 export const TRACKER_NAME='SPIE_TenneT_Master_Commercial_and_Order_Tracker_v2_AUDITED.xlsx';
 const SOURCE='https://chatgpt.com/api/library/files/libfile_37109f01fa188191990fe8e01e591809/download';
 const MIME='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -12,7 +12,7 @@ export function resolveTracker(files,projectFolder){
 }
 function google(){if(D.session()?.access_token!==sessionToken)throw new Error('Sesioni ndryshoi. Rihap tabelën.');const g=D.googleSession('drive');if(!g)throw new Error('Lidh Google Drive në PPPP për tabelën e projektit.');return g;}
 async function drive(path,options={}){const g=google(),r=await fetch('https://www.googleapis.com/drive/v3/'+path,{...options,headers:{Authorization:'Bearer '+g.token,...options.headers},signal:AbortSignal.timeout(25000)});if(!r.ok){const x=await r.json().catch(()=>({}));throw new Error('Drive '+r.status+': '+(x.error?.message||'Leximi nuk u konfirmua.'));}google();return r;}
-async function parser(){if(window.XLSX)return window.XLSX;if(!parserPromise)parserPromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>window.XLSX?resolve(window.XLSX):reject(new Error('Lexuesi Excel nuk u ngarkua.'));s.onerror=()=>reject(new Error('Lexuesi Excel nuk u ngarkua.'));document.head.append(s);}).catch(e=>{parserPromise=null;throw e;});return parserPromise;}
+export async function parser(){if(window.XLSX)return window.XLSX;if(!parserPromise)parserPromise=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';s.onload=()=>window.XLSX?resolve(window.XLSX):reject(new Error('Lexuesi Excel nuk u ngarkua.'));s.onerror=()=>reject(new Error('Lexuesi Excel nuk u ngarkua.'));document.head.append(s);}).catch(e=>{parserPromise=null;throw e;});return parserPromise;}
 function status(message){if(dialog)dialog.querySelector('[data-tracker-status]').textContent=message;}
 export function worksheetRows(X,worksheet){if(!worksheet)return [];const ref=worksheet['!ref'];if(!ref)return [];const range=X.utils.decode_range(ref);if(range.e.c>100||range.e.r>50000)throw new Error('Fleta tejkalon kufirin e pamjes (101 kolona / 50001 rreshta).');return X.utils.sheet_to_json(worksheet,{header:1,raw:false,defval:'',blankrows:false});}
 export function tableHtml(rows){return '<table><tbody>'+rows.map(row=>'<tr>'+row.map(value=>'<td>'+esc(value)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';}

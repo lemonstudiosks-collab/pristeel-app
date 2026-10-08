@@ -507,7 +507,7 @@
       "dataAdapter": "spie/data.mjs",
       "readOnly": false,
       "canonicalProjectId": "c937aea1-af5e-4807-ae1e-e36864e46794",
-      "note": "Existing SPIE owner. Visible-tab two-minute refresh; exact approved threads remain display-only until canonical ingestion. Native approved commercial editors and bridge-backed official letters; no global bootstrap change.",
+      "note": "Existing SPIE owner. Compact overview, bounded current thread heads and folded history; same-name file presentation preserves distinct source identities and revisions. One create-document menu reuses approved editors. On-demand PDF/image/text/Excel evidence uses the existing Google session and tracker parser; inactive Gmail is explicit. Visible-tab refresh defers while reading details or editing. No global bootstrap, schema or worker change.",
       "evidenceReader": "spie/evidence.mjs"
     },
     {
