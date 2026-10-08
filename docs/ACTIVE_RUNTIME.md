@@ -1,3 +1,12 @@
+## 2026-10-08 - Keep SPIE usable when the intelligence snapshot times out
+
+Production PostgREST logs confirmed `pppp_chatgpt_project_snapshot_v1` returning SQLSTATE 57014 during SPIE startup. The dedicated workspace now opens from a single exact project row and eight current project facts, rather than requiring the cross-project Home action calculation embedded in the chat intelligence RPC. Existing operational/file/finance reads and the five-minute session-scoped cache remain in place. The original intelligence RPC is unchanged.
+
+Canonical operator actions load separately after the project renders. Pending and failed action reads are explicit; a failure cannot be interpreted as an empty action list. Completion updates only the action region, preserving navigation, forms and file-search focus. The operator can retry the failed action query alone, or explicitly retry a failed required project read. No polling, automatic retry loop, schema/timeout changes, business writes, email sends or alteration of unfinished document-model work.
+
+Validation: 32 Node regressions; browser fixtures for unresolved actions during startup, all five routes, exact statement-timeout display, action-only retry, required-project retry, mobile overflow and logout isolation. Provider traffic is mocked; no authenticated production browser session was available. Live canonical read privileges and the project/context queries were verified, and the bounded context query used the existing project index (30 ms execution in the sampled administrator plan).
+
+
 ## 2026-10-07 - SPIE suggested offer review
 
 Surface up to twelve unassigned messages that explicitly suggest SPIE, as a separate review-only offer section. The 25 September DDP quotation is visible without an active Google session, while its unresolved Tier C project association remains unconfirmed. Suggested evidence never enters assigned offers, completed work, project flow or phase decisions. No email assignment or business record is changed.
@@ -381,4 +390,5 @@ The operating-experience layer does not replace Supabase automation. Cron/event 
 The workspace links canonical TenneT project `c937aea1-af5e-4807-ae1e-e36864e46794`, uses one bounded project snapshot plus three latest document metadata rows for Overview, and loads larger Files, Emails, Partners and Finance metadata only on navigation. Reads are cached and coalesced for five minutes in memory; there is no polling or realtime subscription. Expired or absent sessions return the user to existing PPPP authentication instead of adding another refresh/login owner. Samples is operator-declared and differences from the canonical pipeline remain visible. Health and latest drawing revisions require explicit evidence.
 
 No records, Gmail bodies, documents or business decisions are created or modified. Physical files remain in the permanent Drive folder and original communication remains in Gmail. See `docs/SPIE_WORKSPACE_PHASE1.md` for limitations and verification.
+
 

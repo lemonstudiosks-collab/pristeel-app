@@ -1,4 +1,4 @@
-import * as D from './data.mjs?v=20261007-dossier1';
+import * as D from './data.mjs?v=20261008-timeout1';
 import * as O from './operations.mjs?v=20261007-dossier1';
 import * as B from './bridge.mjs?v=20261007-dossier1';
 const view=document.getElementById('view'), status=document.getElementById('read-status');
@@ -19,12 +19,12 @@ let generation=0, token='', bundlePromise=null, bundleAt=0, financePromise=null,
 function reset(){D.invalidate();bundlePromise=null;financePromise=null;bundleAt=0;}
 async function load(){
  if(bundlePromise&&Date.now()-bundleAt<300000)return bundlePromise;
- bundleAt=Date.now();bundlePromise=Promise.all([D.snapshot(),D.operational(),D.operationFacts().then(rows=>({rows})).catch(e=>({rows:[],error:e.message}))]).then(async([data,bundle,factResult])=>{
+ bundleAt=Date.now();bundlePromise=Promise.all([D.workspaceSnapshot(),D.operational(),D.operationFacts().then(rows=>({rows})).catch(e=>({rows:[],error:e.message}))]).then(async([data,bundle,factResult])=>{
   const facts=factResult.rows;if(factResult.error)bundle.operationFacts={rows:[],error:factResult.error};
   data.context_facts=[...facts,...arr(data.context_facts).filter(f=>!facts.some(x=>x.fact_key===f.fact_key))];
   let drive=[],driveError='';try{const d=await D.liveDriveFiles(data.project.drive_folder_id);drive=d.files||[];if(d.truncated)driveError='Drive ka mbi 100 skedarë; lista e kufizuar nuk përfshin të gjithë dosjen.';}catch(e){driveError=e.message;}
-  const model=D.operationalModel(data,bundle),files=O.fileModel(data,bundle,drive);model.files=files;const units=O.shipments(data,model,facts);
-  return {data,bundle,model,files,units,facts,driveError};
+  const model=D.operationalModel(data,bundle),files=O.fileModel(data,bundle,drive);model.errors.push(...arr(data.read_errors));model.files=files;const units=O.shipments(data,model,facts);
+  return {data,bundle,model,files,units,facts,driveError,actionState:'pending',actionError:'',actionPromise:null};
  }).catch(e=>{bundlePromise=null;throw e;});return bundlePromise;
 }
 function fileAction(f){
@@ -43,7 +43,14 @@ function actions(c){
  const rows=arr(c.data.operator_actions).filter(a=>!/done|closed|kryer|mbyllur/.test(s(a.status))).slice(0,3).map(a=>row(a.title,a.detail,source('',a.due_date,'Afati')));
  if(!rows.length&&c.units.some(u=>u.stages.material.status==='in_progress'))rows.push(row('Kompleto materialin dhe konfirmo afatin me Aktiva','Pas konfirmimit të gatishmërisë, njofto SPIE për datën reale të dërgimit.'));
  if(!rows.length&&c.units.length)rows.push(row('Konfirmo fazën dhe afatin e dërgesës','Përdor burimin e porosisë dhe gjendjen nga Aktiva.'));
- return rows.join('')||empty('Nuk ka veprim të regjistruar; mungesa nuk provon se nuk ka punë të hapur.');
+ return rows.join('')||(c.actionState==='ready'?empty('Nuk ka veprim të regjistruar; mungesa nuk provon se nuk ka punë të hapur.'):empty('Veprimet e regjistruara ende nuk janë verifikuar.'));
+}
+function actionReadStatus(c){return c.actionState==='pending'?'<p class="muted small">Veprimet e regjistruara po lexohen në prapavijë.</p>':c.actionState==='unavailable'?notice('Veprimet e regjistruara nuk u verifikuan: '+c.actionError)+'<button class="btn" data-retry-actions>Riprovo veprimet</button>':'';}
+function hydrateActions(c,refresh=false){
+ if(c.actionPromise||(!refresh&&c.actionState!=='pending'))return;
+ const sessionToken=token;c.actionState='pending';c.actionError='';
+ const paint=()=>{if(current!==c||D.session()?.access_token!==sessionToken)return;const node=document.getElementById('operator-actions'),message=document.getElementById('action-read-status');if(node)node.innerHTML=actions(c);if(message)message.innerHTML=actionReadStatus(c);};
+ paint();c.actionPromise=D.workspaceActions({refresh}).then(rows=>{if(D.session()?.access_token!==sessionToken)return;c.data.operator_actions=rows;c.actionState='ready';}).catch(error=>{c.actionState='unavailable';c.actionError=error.message;}).finally(()=>{c.actionPromise=null;paint();});
 }
 function overview(c){
  const active=c.units.filter(u=>u.stages.delivered.status!=='done'),latest=latestFact(c),u=active[0];
@@ -52,7 +59,7 @@ function overview(c){
  const deadline=active.flatMap(u=>Object.values(u.stages).filter(r=>r.planned_date&&r.status!=='done')).sort((a,b)=>s(a.planned_date).localeCompare(s(b.planned_date)))[0];
  const requested=c.model.currentRequest&&D.messageText(c.model.currentRequest).match(/(?:ca\.?\s*)?(\d{1,2}\.\d{1,2}\.20\d{2})/);
  const missing=active.flatMap(u=>O.dossier(u,c.files).filter(r=>r.required===true&&!r.checked).map(r=>r.name)).slice(0,3);
- return '<div class="summary">'+esc(now)+latestSource+'</div><div class="columns"><div>'+section('Çfarë duhet bërë tani',actions(c))+section('Çfarë presim nga SPIE',row('Porosia / PO dhe konfirmimet',c.files.some(f=>f.category==='Porosi / PO')?'Dokumenti i porosisë gjendet te Komerciale; konfirmimet shtesë ndiqen nga komunikimet.':'PO formale nuk është identifikuar në burimet e lidhura që u lexuan. Kërkesa për mostra mbetet evidence e kërkesës së SPIE.')+'<a class="evidence-link" href="#commercial">Hap zinxhirin komercial</a>')+section('Çfarë presim nga furnitorët',row('Aktiva',u?.stages.material.status==='in_progress'?'Kompletimi i profileve, nisja dhe afati real i prodhimit.':'Konfirmimi i fazës reale dhe afatit.')+row('Zollcon / transportuesi','Konfirmimi i dokumenteve të nevojshme dhe procedurës së marrjes / importit.'))+'</div><div>'+section('Afati i ardhshëm',deadline?row(deadline.title,date(deadline.planned_date),source(deadline.source_url,deadline.source_date)):requested?row('Afati i kërkuar nga SPIE',requested[1]+' · Synim i kërkuar, jo zotim i konfirmuar.',source(D.gmailLink(c.model.currentRequest),c.model.currentRequest.sent_at)):empty('Nuk ka afat të planifikuar të verifikuar.'))+section('Porosia / dërgesa aktive',active.slice(0,2).map(u=>row(u.title,u.phase,source(u.source_url,u.source_date))).join('')+'<a class="evidence-link" href="#execution">Hap ndjekjen dhe dosjen e dërgesës</a>')+section('Vendimet e tua',row('Kërkesat e dokumentacionit',missing.length?'Mungojnë: '+missing.join(', '):'Konfirmo çfarë kërkohet nga Zollcon dhe SPIE; dokumentet nuk shpallen të detyrueshme pa bazë.')+(u?.stages.material.status==='in_progress'&&c.data.project.operational_state==='wait_for_client'?row('Gjendja operative për shqyrtim','PPPP: në pritje nga klienti. Emaili i fundit: kompletim i materialit. Propozim: gjendja operative kërkon veprim për materialin; faza komerciale ruhet.',source(u.stages.material.source_url,u.stages.material.source_date)):'')+(c.model.reviewOffers.length?row('Lidhja e ofertës DDP','Komunikimi ekziston si sugjerim; lidhja canonical kërkon kontroll.'):''))+'</div></div>'+section('Zhvillimi i fundit me rëndësi',u?.technical?row(u.technical.note,'',latestSource):latest?row(latest.value.summary,'',latestSource):empty());
+ return '<div class="summary">'+esc(now)+latestSource+'</div><div class="columns"><div>'+section('Çfarë duhet bërë tani','<div id="action-read-status" role="status">'+actionReadStatus(c)+'</div><div id="operator-actions">'+actions(c)+'</div>')+section('Çfarë presim nga SPIE',row('Porosia / PO dhe konfirmimet',c.files.some(f=>f.category==='Porosi / PO')?'Dokumenti i porosisë gjendet te Komerciale; konfirmimet shtesë ndiqen nga komunikimet.':'PO formale nuk është identifikuar në burimet e lidhura që u lexuan. Kërkesa për mostra mbetet evidence e kërkesës së SPIE.')+'<a class="evidence-link" href="#commercial">Hap zinxhirin komercial</a>')+section('Çfarë presim nga furnitorët',row('Aktiva',u?.stages.material.status==='in_progress'?'Kompletimi i profileve, nisja dhe afati real i prodhimit.':'Konfirmimi i fazës reale dhe afatit.')+row('Zollcon / transportuesi','Konfirmimi i dokumenteve të nevojshme dhe procedurës së marrjes / importit.'))+'</div><div>'+section('Afati i ardhshëm',deadline?row(deadline.title,date(deadline.planned_date),source(deadline.source_url,deadline.source_date)):requested?row('Afati i kërkuar nga SPIE',requested[1]+' · Synim i kërkuar, jo zotim i konfirmuar.',source(D.gmailLink(c.model.currentRequest),c.model.currentRequest.sent_at)):empty('Nuk ka afat të planifikuar të verifikuar.'))+section('Porosia / dërgesa aktive',active.slice(0,2).map(u=>row(u.title,u.phase,source(u.source_url,u.source_date))).join('')+'<a class="evidence-link" href="#execution">Hap ndjekjen dhe dosjen e dërgesës</a>')+section('Vendimet e tua',row('Kërkesat e dokumentacionit',missing.length?'Mungojnë: '+missing.join(', '):'Konfirmo çfarë kërkohet nga Zollcon dhe SPIE; dokumentet nuk shpallen të detyrueshme pa bazë.')+(u?.stages.material.status==='in_progress'&&c.data.project.operational_state==='wait_for_client'?row('Gjendja operative për shqyrtim','PPPP: në pritje nga klienti. Emaili i fundit: kompletim i materialit. Propozim: gjendja operative kërkon veprim për materialin; faza komerciale ruhet.',source(u.stages.material.source_url,u.stages.material.source_date)):'')+(c.model.reviewOffers.length?row('Lidhja e ofertës DDP','Komunikimi ekziston si sugjerim; lidhja canonical kërkon kontroll.'):''))+'</div></div>'+section('Zhvillimi i fundit me rëndësi',u?.technical?row(u.technical.note,'',latestSource):latest?row(latest.value.summary,'',latestSource):empty());
 }
 function commercial(c){
  const documents=c.files.filter(f=>['RFQ','Porosi / PO','Kontrata'].includes(f.category));
@@ -88,6 +95,8 @@ function showPending(){const node=document.getElementById('bridge-status'),p=B.p
 view.addEventListener('change',e=>{if(e.target.dataset.check){const t=e.target,u=current.units.find(x=>x.id===t.dataset.unit);t.checked=!t.checked;editor(u,'document',t.dataset.check);}});
 view.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
+ if(t.hasAttribute('data-retry-read')){reset();await route();return;}
+ if(t.hasAttribute('data-retry-actions')){if(current)hydrateActions(current,true);return;}
  if(t.dataset.stage)editor(current.units.find(x=>x.id===t.dataset.unit),'stage',t.dataset.stage);
  if(t.dataset.document)editor(current.units.find(x=>x.id===t.dataset.unit),'document',t.dataset.document);
  if(t.hasAttribute('data-new-unit'))newUnit();
@@ -109,7 +118,8 @@ async function route(){
   view.innerHTML='<div class="hero"><p class="eyebrow">SPIE / TENNET BUNT</p><h1>'+esc(VIEWS[name])+'</h1><p class="muted">'+esc(c.data.project.name)+'</p></div>'+errors.map(e=>notice(e.error)).join('')+'<div id="bridge-status"></div>'+body+'<p class="view-footer">PPPP është gjendja canonical. Burimet e palidhura ose të paqarta kërkojnë kontroll. Leximi është i kufizuar dhe ruhet për 5 minuta; pa polling.</p>';
   showPending();document.getElementById('file-search')?.addEventListener('input',e=>{const q=e.target.value.normalize('NFC').toLowerCase();document.getElementById('file-results').innerHTML=fileRows(c.files.filter(f=>[f.title,f.file_name,f.doc_nr,f.category,f.notes.revision,f.notes.document_key].map(s).join(' ').normalize('NFC').toLowerCase().includes(q)));});
   status.textContent='Gjendja: '+date(c.data.generated_at)+' · PPPP';
- }catch(error){if(g!==generation)return;view.innerHTML=notice(error.message)+'<p><a class="btn" href="../pristeel-procurement.html">Hap PPPP</a></p>';status.textContent='Të dhënat nuk u verifikuan';}
+  hydrateActions(c);
+ }catch(error){if(g!==generation)return;view.innerHTML=notice(error.message)+'<p><button class="btn" data-retry-read>Riprovo leximin</button> <a class="btn" href="../pristeel-procurement.html">Hap PPPP</a></p>';status.textContent='Të dhënat nuk u verifikuan';}
  finally{if(g===generation)view.setAttribute('aria-busy','false');}
 }
 window.addEventListener('hashchange',route);
@@ -117,3 +127,4 @@ window.addEventListener('storage',e=>{if(e.key==='pristeel_session'||e.key===nul
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-bundleAt>=300000){reset();route();}});
 window.addEventListener('pageshow',e=>{if(e.persisted)route();});
 route();
+

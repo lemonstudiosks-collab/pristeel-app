@@ -48,10 +48,11 @@ export async function ensureSession(){
   })().finally(()=>{try{if(JSON.parse(localStorage.getItem(lockKey)||'null')?.owner===owner)localStorage.removeItem(lockKey);}catch{}refreshPromise=null;});return refreshPromise;
 }
 
-export async function read(path) {
+export async function read(path, { refresh = false } = {}) {
   const current = await ensureSession();
   if (!current) { cache.clear(); cacheSession = ''; throw new Error('SESSION_REQUIRED: Hapni PPPP për të hyrë ose rinovuar sesionin, pastaj kthehuni te SPIE.'); }
   if (cacheSession !== current.access_token) { cache.clear(); cacheSession = current.access_token; }
+  if (refresh) cache.delete(path);
   const old = cache.get(path);
   if (old && Date.now() - old.at < 300000) return old.promise;
   const controller = new AbortController();
@@ -83,6 +84,30 @@ export async function snapshot() {
   const data = await read('rpc/pppp_chatgpt_project_snapshot_v1?' + query);
   if (data?.project?.id !== PROJECT_ID || data.read_only_snapshot !== true) throw new Error('Identiteti i pasqyrës së projektit në PPPP nuk mund të verifikohej.');
   return data;
+}
+// The chat intelligence RPC includes the cross-project Home action projection.
+// Do not make that global calculation a prerequisite for opening one project.
+export async function workspaceSnapshot() {
+  const expectedSession = (await ensureSession())?.access_token;
+  const projectQuery = new URLSearchParams({ id: 'eq.' + PROJECT_ID, select: 'id,ref,name,client,status,deadline,location,deal_type,work_model,origin_type,business_ref,business_type,last_email_at,pipeline_stage,last_activity_at,operational_state,operational_state_at,operational_state_source,drive_folder_id,drive_folder_url,updated_at', limit: '1' });
+  const factQuery = new URLSearchParams({ project_id: 'eq.' + PROJECT_ID, select: 'id,project_id,category,subject,fact_key,value,source_type,source_ref,evidence_status,confidence,fact_status,updated_at,created_by', fact_status: 'in.(observed,suggested)', order: 'updated_at.desc', limit: '8' });
+  const [projectResult, factResult] = await Promise.allSettled([
+    read('projects?' + projectQuery), read('pppp_project_context_current_v?' + factQuery)
+  ]);
+  if (session()?.access_token !== expectedSession) throw new Error('SESSION_CHANGED: Kthehuni te PPPP dhe rihapni SPIE.');
+  if (projectResult.status !== 'fulfilled') throw projectResult.reason;
+  const rows = projectResult.value;
+  if (!Array.isArray(rows) || rows.length !== 1 || rows[0]?.id !== PROJECT_ID) throw new Error('Identiteti i projektit në PPPP nuk mund të verifikohej.');
+  if (factResult.status === 'fulfilled' && (!Array.isArray(factResult.value) || factResult.value.some(f => f.project_id !== PROJECT_ID))) throw new Error('Identiteti i fakteve të projektit në PPPP nuk mund të verifikohej.');
+  return { project: rows[0], context_facts: factResult.status === 'fulfilled' ? factResult.value : [],
+    operator_actions: [], read_only_snapshot: true, generated_at: new Date().toISOString(),
+    read_errors: factResult.status === 'rejected' ? [{ source: 'Konteksti i projektit', error: factResult.reason.message }] : [] };
+}
+export async function workspaceActions({ refresh = false } = {}) {
+  const query = new URLSearchParams({ project_id: 'eq.' + PROJECT_ID, select: 'id,project_id,title,detail,due_date,priority,status,source,source_ref,category,created_at', order: 'due_date.asc.nullslast,created_at.desc', limit: '6' });
+  const rows = await read('pppp_home_current_actions_v1?' + query, { refresh });
+  if (!Array.isArray(rows) || rows.some(a => a.project_id !== PROJECT_ID)) throw new Error('Identiteti i veprimeve të projektit në PPPP nuk mund të verifikohej.');
+  return rows;
 }
 const fileFields = 'id,project_id,title,file_name,doc_type,doc_nr,doc_date,party,status,drive_url,notes,created_at,amount_eur';
 export const latestFiles = () => projectRows('project_docs', fileFields, 3);
@@ -408,4 +433,5 @@ export async function downloadAttachment({gmail_message_id,gmail_attachment_id,t
  const url=URL.createObjectURL(new Blob([bytes],{type:attachment_mime_type||'application/octet-stream'}));
  const a=document.createElement('a');a.href=url;a.download=title||'Dokument';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
+
 
