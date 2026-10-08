@@ -23,12 +23,12 @@ test('opening a small Gmail PDF renders it inside the module; offline reopening 
  const bodies=[],dialogs=[];globalThis.document={body:{append(){}},createElement(){const body={innerHTML:'',setAttribute(){}};bodies.push(body);const close={},handlers={};const dialog={open:false,querySelector:selector=>selector==='.evidence-body'?body:close,showModal(){this.open=true;},addEventListener(k,fn){handlers[k]=fn;},close(){this.open=false;handlers.close?.();},remove(){}};dialogs.push(dialog);return dialog;}};
  let calls=0;globalThis.fetch=async(url,opts)=>{calls++;assert.equal(opts.method,'GET');assert.match(url,/messages\/abc\/attachments\/exact$/);assert.equal(opts.headers.Authorization,'Bearer google-fixture');const bytes=Buffer.from(JSON.stringify({size:9,data:Buffer.from('%PDF-test').toString('base64url')}));return {ok:true,headers:{get:()=> 'application/json'},arrayBuffer:async()=>bytes};};
  const file={title:'Offer.pdf',gmail_message_id:'abc',gmail_attachment_id:'exact',attachment_mime_type:'application/octet-stream'};
- try{await previewFile(file);assert.match(bodies[0].innerHTML,/<iframe title="PDF"/);assert(!bodies[0].innerHTML.includes('mail.google.com'));dialogs[0].close();store.delete('pst_google_workspace_token_v2');await previewFile(file);assert.match(bodies[1].innerHTML,/Lidhja Google n� PPPP �sht� joaktive/);assert(!bodies[1].innerHTML.includes('shkarkim nga burimi'));assert.equal(calls,1);}finally{dialogs.at(-1)?.close();}
+ try{await previewFile(file);assert.match(bodies[0].innerHTML,/<iframe title="PDF"/);assert(!bodies[0].innerHTML.includes('mail.google.com'));dialogs[0].close();store.delete('pst_google_workspace_token_v2');await previewFile(file);assert.match(bodies[1].innerHTML,/Lidhja Google në PPPP është joaktive/);assert(!bodies[1].innerHTML.includes('shkarkim nga burimi'));assert.equal(calls,1);}finally{dialogs.at(-1)?.close();}
 });
 test('credit and debit corrections keep independent signs and title',()=>{
  const data={lang:'en',nr:'DN-1',originalNr:'INV-1',gross:100,net:100,vat:0,items:[],logo:'data:image/png;base64,example'};
- assert.match(M.creditNote(data),/CREDIT NOTE/);assert.match(M.creditNote(data),/-100,00/);
- const debit=M.creditNote({...data,documentType:'debit_note'});assert.match(debit,/DEBIT NOTE/);assert(!debit.includes('-100,00'));
+ assert.match(M.creditNote(data),/CREDIT NOTE/);assert.match(M.creditNote(data),/−100,00/);
+ const debit=M.creditNote({...data,documentType:'debit_note'});assert.match(debit,/DEBIT NOTE/);assert(!debit.includes('−100,00'));
 });
 test('new document branding escapes content; older source models retain the original offer header',()=>{
  const data={lang:'en',nr:'<script>x</script>',logo:'data:image/png;base64,example',items:[],body:'<img onerror=alert(1)>',subject:'<script>Letter</script>'};
@@ -36,8 +36,8 @@ test('new document branding escapes content; older source models retain the orig
  const letter=M.letter(data);assert(letter.includes('&lt;img onerror=alert(1)&gt;'));assert(!letter.includes('<script>'));
 });
 test('plain email text retains UTF-8 and never extracts attachment bodies',()=>{
- const encoded=Buffer.from('P�rsh�ndetje - Zollcon').toString('base64url');
- assert.equal(decodeBody({parts:[{mimeType:'text/plain',body:{data:encoded}},{mimeType:'text/plain',filename:'private.txt',body:{data:encoded}}]}),'P�rsh�ndetje - Zollcon');
+ const encoded=Buffer.from('Përshëndetje — Zollcon').toString('base64url');
+ assert.equal(decodeBody({parts:[{mimeType:'text/plain',body:{data:encoded}},{mimeType:'text/plain',filename:'private.txt',body:{data:encoded}}]}),'Përshëndetje — Zollcon');
 });
 test('file model retains byte-size for on-demand file limits',()=>{
  const data={project:{drive_folder_id:'folder'},context_facts:[]},bundle={emails:{rows:[{gmail_message_id:'aa',needs_review:false,project_id:D.PROJECT_ID}]},attachments:{rows:[{id:'one',project_id:D.PROJECT_ID,gmail_message_id:'aa',attachment_id:'part',attachment_name:'A.pdf',attachment_size_bytes:12000000,attachment_mime_type:'application/pdf'}]}};

@@ -7,12 +7,12 @@ export function decodeBody(payload){
  return parts.join('\n\n').slice(0,100000);
 }
 async function bounded(response,max){
- const reader=response.body?.getReader();if(!reader){const bytes=new Uint8Array(await response.arrayBuffer());if(bytes.length>max)throw Error('Skedari �sht� i madh; p�rdor burimin Drive.');return bytes;}
- const chunks=[];let length=0;try{while(true){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>max)throw Error('Skedari tejkalon 10 MB; p�rdor burimin Drive.');chunks.push(value);}}catch(e){await reader.cancel();throw e;}
+ const reader=response.body?.getReader();if(!reader){const bytes=new Uint8Array(await response.arrayBuffer());if(bytes.length>max)throw Error('Skedari është i madh; përdor burimin Drive.');return bytes;}
+ const chunks=[];let length=0;try{while(true){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>max)throw Error('Skedari tejkalon 10 MB; përdor burimin Drive.');chunks.push(value);}}catch(e){await reader.cancel();throw e;}
  const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}return bytes;
 }
 async function request(url,kind='gmail',max=MAX){
- const session=D.session(),google=D.googleSession(kind);if(!session||!google)throw Error('Lidh '+(kind==='gmail'?'Gmail':'Drive')+' n� PPPP p�r k�t� dokument.');
+ const session=D.session(),google=D.googleSession(kind);if(!session||!google)throw Error('Lidh '+(kind==='gmail'?'Gmail':'Drive')+' në PPPP për këtë dokument.');
  const response=await fetch(url,{method:'GET',cache:'no-store',headers:{Authorization:'Bearer '+google.token},signal:AbortSignal.timeout(15000)});
  if(!response.ok)throw Error('Burimi nuk u hap ('+response.status+').');
  const bytes=await bounded(response,max);
@@ -22,7 +22,7 @@ async function request(url,kind='gmail',max=MAX){
 let active=null;
 function open(title){
  if(active){active.focus();return null;}
- const dialog=document.createElement('dialog');dialog.className='evidence-reader';dialog.innerHTML='<div class="document-editor-head"><h2>'+esc(title)+'</h2><button class="btn" data-close>Mbyll</button></div><div class="evidence-body" aria-busy="true">Duke lexuar burimin.</div>';
+ const dialog=document.createElement('dialog');dialog.className='evidence-reader';dialog.innerHTML='<div class="document-editor-head"><h2>'+esc(title)+'</h2><button class="btn" data-close>Mbyll</button></div><div class="evidence-body" aria-busy="true">Duke lexuar burimin…</div>';
  document.body.append(dialog);active=dialog;dialog.showModal();dialog.querySelector('[data-close]').onclick=()=>dialog.close();
  dialog.addEventListener('close',()=>{for(const url of dialog.urls||[])URL.revokeObjectURL(url);dialog.remove();if(active===dialog)active=null;});return dialog;
 }
@@ -33,17 +33,17 @@ export async function email(row){
   let text=row.body_full||row.body_excerpt||'',full=!!row.body_full;
   if(!text&&D.googleSession()){
    const result=await request('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(row.gmail_message_id)+'?format=full','gmail',2*MAX),message=JSON.parse(new TextDecoder().decode(result.bytes));
-   if(message.id!==row.gmail_message_id||message.threadId!==row.gmail_thread_id)throw Error('Identiteti i emailit nuk p�rputhet.');
+   if(message.id!==row.gmail_message_id||message.threadId!==row.gmail_thread_id)throw Error('Identiteti i emailit nuk përputhet.');
    text=decodeBody(message.payload);full=!!text;
   }
   if(D.session()?.access_token!==identity)throw Error('SESSION_CHANGED');
   if(!dialog.open)return;
-  body.innerHTML='<div class="email-meta">'+esc(row.from_name||row.from_email)+' � '+esc(new Date(row.sent_at).toLocaleString('sq-AL',{timeZone:'Europe/Budapest'}))+'</div>'+(row.body_excerpt&&!full?'<p class="notice">Tekst i verifikuar i mesazhit; historia e cituar nuk p�rfshihet. Origjinali ruhet n� Gmail.</p>':!full?'<p class="notice">Paraqitet p�rmbledhja e ruajtur. Teksti i plot� k�rkon lidhjen Gmail dhe format tekst.</p>':'')+'<pre class="email-text">'+esc(text||row.snippet||'Emaili nuk ka tekst t� lexuesh�m.')+'</pre>';
+  body.innerHTML='<div class="email-meta">'+esc(row.from_name||row.from_email)+' · '+esc(new Date(row.sent_at).toLocaleString('sq-AL',{timeZone:'Europe/Budapest'}))+'</div>'+(row.body_excerpt&&!full?'<p class="notice">Tekst i verifikuar i mesazhit; historia e cituar nuk përfshihet. Origjinali ruhet në Gmail.</p>':!full?'<p class="notice">Paraqitet përmbledhja e ruajtur. Teksti i plotë kërkon lidhjen Gmail dhe format tekst.</p>':'')+'<pre class="email-text">'+esc(text||row.snippet||'Emaili nuk ka tekst të lexueshëm.')+'</pre>';
  }catch(e){if(dialog.open)body.textContent=e.message;}finally{body.setAttribute('aria-busy','false');}
 }
 function drivePreview(body,file){
- if(!/^[\w-]+$/.test(file.drive_file_id||''))throw Error('Mungon lidhja e verifikuar Drive p�r k�t� skedar.');
- body.innerHTML='<p class="provenance">Parapamje nga Drive; skedari q�ndron n� dosjen e projektit.</p><iframe title="Dokumenti n� Drive" class="evidence-frame" src="https://drive.google.com/file/d/'+encodeURIComponent(file.drive_file_id)+'/preview" allow="fullscreen"></iframe>';
+ if(!/^[\w-]+$/.test(file.drive_file_id||''))throw Error('Mungon lidhja e verifikuar Drive për këtë skedar.');
+ body.innerHTML='<p class="provenance">Parapamje nga Drive; skedari qëndron në dosjen e projektit.</p><iframe title="Dokumenti në Drive" class="evidence-frame" src="https://drive.google.com/file/d/'+encodeURIComponent(file.drive_file_id)+'/preview" allow="fullscreen"></iframe>';
 }
 export function fileAccess(file){
  if(file?.link_conflict)return 'conflict';
@@ -66,21 +66,21 @@ async function spreadsheet(body,bytes,identity){
  let selected=0,page=0;
  const render=()=>{
   const name=book.SheetNames[selected],rows=worksheetRows(X,book.Sheets[name]),pages=Math.max(1,Math.ceil(rows.length/150));page=Math.min(page,pages-1);
-  body.innerHTML='<label class="provenance">Fleta <select data-evidence-sheet>'+book.SheetNames.map((n,i)=>'<option value="'+i+'" '+(i===selected?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label><p class="provenance">Vlerat e ruajtura n� Excel � formulat nuk rillogariten � '+rows.length+' rreshta</p><div class="table-wrap evidence-sheet">'+tableHtml(rows.slice(page*150,(page+1)*150))+'</div><div class="document-actions"><button class="btn" data-sheet-prev '+(!page?'disabled':'')+'>M� par�</button><span class="provenance">'+(page+1)+' / '+pages+'</span><button class="btn" data-sheet-next '+(page+1>=pages?'disabled':'')+'>M� tej</button></div>';
+  body.innerHTML='<label class="provenance">Fleta <select data-evidence-sheet>'+book.SheetNames.map((n,i)=>'<option value="'+i+'" '+(i===selected?'selected':'')+'>'+esc(n)+'</option>').join('')+'</select></label><p class="provenance">Vlerat e ruajtura në Excel · formulat nuk rillogariten · '+rows.length+' rreshta</p><div class="table-wrap evidence-sheet">'+tableHtml(rows.slice(page*150,(page+1)*150))+'</div><div class="document-actions"><button class="btn" data-sheet-prev '+(!page?'disabled':'')+'>Më parë</button><span class="provenance">'+(page+1)+' / '+pages+'</span><button class="btn" data-sheet-next '+(page+1>=pages?'disabled':'')+'>Më tej</button></div>';
   body.querySelector('[data-evidence-sheet]').onchange=e=>{selected=Number(e.target.value);page=0;render();};body.querySelector('[data-sheet-prev]').onclick=()=>{page--;render();};body.querySelector('[data-sheet-next]').onclick=()=>{page++;render();};
  };render();
 }
 export async function file(file){
- if(!file||file.link_conflict)throw Error('Dokumenti nuk ka identitet t� verifikuar.');
- if(!D.session())throw Error('SESSION_REQUIRED: Hyr n� PPPP p�r t� hapur dokumentin.');
+ if(!file||file.link_conflict)throw Error('Dokumenti nuk ka identitet të verifikuar.');
+ if(!D.session())throw Error('SESSION_REQUIRED: Hyr në PPPP për të hapur dokumentin.');
  file={...file,gmail_message_id:file.gmail_message_id||file.mail?.gmail_message_id};
  const dialog=open(file.title||file.file_name||'Dokument');if(!dialog)return;const body=dialog.querySelector('.evidence-body'),identity=D.session()?.access_token;
  try{
   const access=fileAccess(file);
   if(access==='drive_preview'){drivePreview(body,file);return;}
-  if(access==='connect_gmail'){body.innerHTML='<div class="evidence-connect"><p>Ky dokument �sht� bashk�ngjitje Gmail. Lidhja Google n� PPPP �sht� joaktive.</p><p class="muted">Pas rilidhjes, rihape k�tu; skedar�t e vegj�l lexohen brenda modulit.</p><a class="btn" href="../pristeel-procurement.html">Lidh Google n� PPPP</a></div>';return;}
-  if(access==='large_gmail'){body.innerHTML='<p>Ky skedar tejkalon 10 MB dhe nuk ka kopje t� verifikuar n� Drive.</p><p class="muted">Hape bashk�ngjitjen n� burimin Gmail.</p>';const url=D.safeLink(file.gmail_url||file.source_url,'gmail');if(url)body.innerHTML+='<a class="btn" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">Hap Gmail</a>';return;}
-  if(access==='missing')throw Error('Dokumenti nuk ka identitet Gmail ose Drive t� verifikuar.');
+  if(access==='connect_gmail'){body.innerHTML='<div class="evidence-connect"><p>Ky dokument është bashkëngjitje Gmail. Lidhja Google në PPPP është joaktive.</p><p class="muted">Pas rilidhjes, rihape këtu; skedarët e vegjël lexohen brenda modulit.</p><a class="btn" href="../pristeel-procurement.html">Lidh Google në PPPP</a></div>';return;}
+  if(access==='large_gmail'){body.innerHTML='<p>Ky skedar tejkalon 10 MB dhe nuk ka kopje të verifikuar në Drive.</p><p class="muted">Hape bashkëngjitjen në burimin Gmail.</p>';const url=D.safeLink(file.gmail_url||file.source_url,'gmail');if(url)body.innerHTML+='<a class="btn" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">Hap Gmail</a>';return;}
+  if(access==='missing')throw Error('Dokumenti nuk ka identitet Gmail ose Drive të verifikuar.');
   let bytes,mime=fileMime(file);
   if(file.gmail_message_id&&file.gmail_attachment_id){
    const result=await request('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(file.gmail_message_id)+'/attachments/'+encodeURIComponent(file.gmail_attachment_id),'gmail',Math.ceil(MAX*1.4));
@@ -89,7 +89,7 @@ export async function file(file){
   }else{
    if(!/^[\w-]+$/.test(file.drive_file_id||''))throw Error('Mungon identiteti Drive.');
    const metadata=JSON.parse(new TextDecoder().decode((await request('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(file.drive_file_id)+'?fields=id,name,mimeType,size','drive',20000)).bytes));
-   if(metadata.id!==file.drive_file_id||metadata.name.normalize('NFC')!==String(file.title||file.file_name).normalize('NFC'))throw Error('Identiteti i dokumentit n� Drive nuk p�rputhet.');
+   if(metadata.id!==file.drive_file_id||metadata.name.normalize('NFC')!==String(file.title||file.file_name).normalize('NFC'))throw Error('Identiteti i dokumentit në Drive nuk përputhet.');
    if(Number(metadata.size)>MAX){drivePreview(body,file);return;}mime=metadata.mimeType;
    if(!/^(application\/pdf|image\/(png|jpeg|gif|webp)|text\/plain|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|application\/vnd\.ms-excel)$/.test(mime)){drivePreview(body,file);return;}
    bytes=(await request('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(file.drive_file_id)+'?alt=media','drive')).bytes;
@@ -102,6 +102,6 @@ export async function file(file){
   if(mime==='application/pdf')body.innerHTML='<iframe title="PDF" class="evidence-frame" src="'+url+'"></iframe>';
   else if(/^image\/(png|jpeg|gif|webp)$/.test(mime))body.innerHTML='<img class="evidence-image" alt="'+esc(file.title)+'" src="'+url+'">';
   else if(file.drive_file_id)drivePreview(body,file);
-  else body.innerHTML='<p>Ky format nuk ka parapamje n� shfletues. Skedari mund t� shkarkohet drejtp�rdrejt k�tu.</p><a class="btn" href="'+url+'" download="'+esc(file.title||'Dokument')+'">Shkarko dokumentin</a>';
+  else body.innerHTML='<p>Ky format nuk ka parapamje në shfletues. Skedari mund të shkarkohet drejtpërdrejt këtu.</p><a class="btn" href="'+url+'" download="'+esc(file.title||'Dokument')+'">Shkarko dokumentin</a>';
  }catch(e){if(dialog.open)body.textContent=e.message;}finally{body.setAttribute('aria-busy','false');}
 }
