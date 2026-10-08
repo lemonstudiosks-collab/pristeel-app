@@ -312,6 +312,7 @@ function actionItems(){
  contactHistory().rows.forEach(function(r){var tid=S(r.__pstTenderWatchId||r.id);if(!records.some(function(x){return S(x.__pstTenderWatchId||x.id)===tid;}))records.push(r);});
  records.forEach(function(r){
   var m=contactMeta(r),lane=m.lane||effectiveLane(r),tid=S(r.__pstTenderWatchId||r.id);
+  if(bt[tid]&&api&&api._test&&typeof api._test.ownedByProject==='function'&&api._test.ownedByProject(bt[tid]))return;
   if(m.closed||source!=='all'&&srcOf(r)!==source||q&&N(companyLabel(r)+' '+rowText(r)+' '+m.email).indexOf(q)<0)return;
   var type=lane==='bounced'?'bounce':lane==='replied'?'reply':lane==='waiting'&&m.follow_up_date&&m.follow_up_date<=today?'followup':'';
   if(!type)return;

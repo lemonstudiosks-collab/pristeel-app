@@ -60,6 +60,9 @@ assert.equal(T.workRows('drafts').length,2,'older sent mail does not hide a seco
 deskState.outreachRows.push({id:'reply2',tender_watch_id:'reply',status:'replied',recipient_email:'other@reply.de',recipient_company_name:'Reply GmbH',gmail_thread_id:'thread2',sent_at:'2026-10-01',replied_at:'2026-10-04'});
 assert.equal(T.actionItems().length,2,'two real conversations with one company remain distinct actions');
 assert.equal(T.actionItems().find(x=>x.row.__pstContactMeta.thread==='thread2').url,'https://mail.google.com/mail/u/0/#all/thread2');
+w.PSTProjectCentricWorkflowV1._test.ownedByProject=r=>r.id==='reply';
+assert.equal(T.actionItems().length,0,'a signal already owned by a canonical Project is not duplicated in the Opportunities action center');
+w.PSTProjectCentricWorkflowV1._test.ownedByProject=()=>false;
 deskState.contactHistoryRows=[
  {id:'due',tender_watch_id:'sent',company_name:'Waiting GmbH',contact_email:'info@waiting.de',status:'sent',touch_1:'2026-10-01',follow_up_date:'2000-01-01',gmail_thread_id:'followthread'},
  {id:'future',company_name:'Future GmbH',contact_email:'info@future.de',status:'sent',touch_1:'2026-10-01',follow_up_date:'2999-01-01'},
