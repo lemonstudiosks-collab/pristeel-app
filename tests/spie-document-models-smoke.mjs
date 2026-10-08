@@ -17,6 +17,7 @@ await assert.rejects(fetch(api+'invoices_out',{method:'POST',body:JSON.stringify
 await fetch(api+'invoices_out',{method:'POST',body:JSON.stringify({project_id:'c937aea1-af5e-4807-ae1e-e36864e46794',invoice_nr:'TEST'})});assert.equal(sent,1);
 await assert.rejects(fetch(api+'invoices_out',{method:'PATCH',body:'{}'}),/REQUIRES_EXPLICIT/);
 console.log('SPIE source-model totals, transport, pages, escaping, immutable correction and early write gate: passed.');
+assert(fs.readFileSync(new URL('../spie/editor-host.mjs',import.meta.url),'utf8').includes('body.pst-spie-editor #pst-stable-startup-shell'));
 globalThis.window={addEventListener(){}};
 const {makeMime,verifyDraftAttachments}=await import('../spie/documents.mjs');
 const mime=makeMime({to:'buyer@example.test',subject:'SPIE — TEST',body:'Fixture message',replyTo:'<fixture@example.test>',attachments:[{name:'TEST-001.pdf',mime:'application/pdf',bytes:new Uint8Array([37,80,68,70])}]});

@@ -13,6 +13,7 @@ let saved=null,locked=false,lastModel=null,savedModel=null;
 const style=document.createElement('style');style.textContent=`
 body.pst-spie-editor{min-width:0!important;background:#fff!important}body.pst-spie-editor .sidebar,body.pst-spie-editor .pst-v2-sidebar,body.pst-spie-editor .topbar,body.pst-spie-editor .pst-mobile-nav,body.pst-spie-editor #page-home,body.pst-spie-editor #pst-home-workspace,body.pst-spie-editor .pst-nav,body.pst-spie-editor .pst-v2-topbar{display:none!important}
 body.pst-spie-editor .main,body.pst-spie-editor .content{margin-left:0!important;padding:12px!important;width:100%!important;max-width:none!important}
+body.pst-spie-editor #pst-stable-startup-shell,body.pst-spie-editor #app-sidebar,body.pst-spie-editor #modbar,body.pst-spie-editor .floating-tools,body.pst-spie-editor .float-dock{display:none!important}
 body.pst-spie-editor .page{display:none!important}body.pst-spie-editor-offer #page-oferta,body.pst-spie-editor-invoice #page-invoices{display:block!important}
 body.pst-spie-editor .app-shell{display:block!important}body.pst-spie-editor .main-area{margin:0!important;width:100%!important}body.pst-spie-editor #side-panel,body.pst-spie-editor #flow-bar,body.pst-spie-editor #doc-nav-bar,body.pst-spie-editor .mobile-nav{display:none!important}
 body.pst-spie-editor #page-invoices>.card,body.pst-spie-editor #ivout-file,body.pst-spie-editor #ivout-file-status{display:none!important}
