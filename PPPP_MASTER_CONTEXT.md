@@ -1,3 +1,7 @@
+## 2026-10-09 - Preserve delivery blocks when identity evidence is missing
+
+A recovery attribution correction requires positive evidence: a distinct original declared mailbox on the same shared-provider domain, with no company-domain match. Missing or previously cleared original identity cannot clear a recorded failure. The existing worker replays its retained failure audit if a correction lacks that counter-evidence. Regression covers cleared original identity and preservation/restoration of the actual recipient block.
+
 ## 2026-10-09 - Delivery attribution correction
 
 A shared mailbox provider domain does not establish company identity. Domain-level feedback requires an evidenced company website/domain or a company-name match; an exact known recipient remains attributable. The existing worker can undo its own misattributed suppression, preserving the discarded evidence and original declared contact. It never clears a failure attributable to that recipient. Regression covers two separate companies on a shared provider and the bounded correction path.
