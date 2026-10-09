@@ -66,8 +66,11 @@ async function linkCandidate(c,projectId){
 }
 function cardIndex(el){var c=el&&el.closest&&el.closest('[id^="ppd-c-"]');return c?Number(c.id.replace('ppd-c-','')):NaN}
 function decorate(){
+  // Performance (9 Oct 2026): look for discovery cards first; parse the saved discovery
+  // data from localStorage only when there are cards to decorate.
+  var cards=document.querySelectorAll('[id^="ppd-c-"]');if(!cards.length)return;
   var d=saved(),cs=arr(d&&d.candidates),ps=arr(d&&d.projects);
-  document.querySelectorAll('[id^="ppd-c-"]').forEach(function(card){
+  cards.forEach(function(card){
     var i=Number(card.id.replace('ppd-c-','')),c=cs[i];if(!c||!supplierSignal(c))return;
     if(card.querySelector('.ppd-supplier-warning'))return;
     var match=bestProject(c,ps),tags=card.querySelector('.ppd-c-tags'),badge=document.createElement('span');
@@ -102,5 +105,6 @@ function install(){
   return true
 }
 var tries=0,t=setInterval(function(){install();decorate();if(++tries>240)clearInterval(t)},250);
-var mo=new MutationObserver(function(){decorate()});mo.observe(document.documentElement,{childList:true,subtree:true});
+// Performance (9 Oct 2026): at most one decorate per frame instead of one per mutation.
+var moPending=false;var mo=new MutationObserver(function(){if(moPending)return;moPending=true;(window.requestAnimationFrame||function(cb){return setTimeout(cb,16)})(function(){moPending=false;decorate()})});mo.observe(document.documentElement,{childList:true,subtree:true});
 })();

@@ -193,7 +193,7 @@ function wrapInvoiceDetail(){
 function apply(){injectDashboardShortcuts();injectInvoiceRowButtons();wrapInvoiceDetail();}
 function start(){
   apply();
-  observer=new MutationObserver(function(){setTimeout(apply,0);});
+  /* Performance (9 Oct 2026): one pending call instead of a new timer per DOM change. */var __pstMoPending=false;observer=new MutationObserver(function(){if(__pstMoPending)return;__pstMoPending=true;setTimeout(function(){__pstMoPending=false;apply();},0);});
   observer.observe(document.body,{childList:true,subtree:true});
   var tries=0,timer=setInterval(function(){apply();if(++tries>120)clearInterval(timer);},250);
 }

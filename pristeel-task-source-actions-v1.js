@@ -112,7 +112,10 @@ function sidebar(){
  Array.prototype.forEach.call(ws.children,function(ch){hidden(ch,!(ch===host||ch.classList.contains('pst-ws-brand')||ch.classList.contains('pst-ws-create')||ch.classList.contains('pst-ws-spacer')||ch.classList.contains('pst-ws-search')));});
  stabilizeLabels(host);activeNav(host);return true;
 }
-function hideBottomSearch(){if(!workspace())return;var ws=document.getElementById('pst-ws-sidebar');document.querySelectorAll('button,div').forEach(function(el){if(!el||el===ws||(ws&&ws.contains(el)))return;var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(!/^(Kërko|Kerko)(\s*[⌘⌃]?\s*K)?$/i.test(txt))return;var r=el.getBoundingClientRect();if(r.left<285&&r.bottom>window.innerHeight-135&&r.width<220&&r.height<80)el.classList.add('pst-ws-legacy-floating-hide');});}
+// Performance (9 Oct 2026): the old version read textContent of every div on the page
+// (the whole page text, many times over) on each pass. Same rule, but start from text
+// nodes that contain the word and walk up only while the element's text still matches.
+function hideBottomSearch(){if(!workspace())return;var ws=document.getElementById('pst-ws-sidebar'),re=/^(Kërko|Kerko)(\s*[⌘⌃]?\s*K)?$/i,seen=new Set();var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){return /k[eë]rko/i.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP;}}),n;while((n=w.nextNode())){for(var el=n.parentElement;el&&el!==document.body&&el!==document.documentElement;el=el.parentElement){if(seen.has(el))break;seen.add(el);if(el===ws||(ws&&ws.contains(el)))break;var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(!re.test(txt))break;if(el.tagName!=='BUTTON'&&el.tagName!=='DIV')continue;var r=el.getBoundingClientRect();if(r.left<285&&r.bottom>window.innerHeight-135&&r.width<220&&r.height<80)el.classList.add('pst-ws-legacy-floating-hide');}}}
 function compactSort(){var s=document.getElementById('pst-pm-sort');if(!s)return false;s.setAttribute('aria-label','Rendit projektet sipas');s.title='Rendit projektet sipas aktivitetit, afatit ose klientit';var w=s.parentElement;if(w&&!w.querySelector('.pst-pm-sort-label')){var l=document.createElement('span');l.className='pst-pm-sort-label';l.textContent='Rendit sipas';w.insertBefore(l,s);}return true;}
 function hideCounters(p){var re=/^\s*\d+\s+(prioritete?\s+aktive|projekte?\s+n[eë]\s+pun[eë]|follow-?up\s+aktiv(?:e)?)\s*$/i;p.querySelectorAll('span,div,button').forEach(function(el){var txt=S(el.textContent).replace(/\s+/g,' ').trim();if(txt.length<60&&re.test(txt))hidden(el,true);});}
 function stabilizeHome(){var p=home();if(!p)return false;var flow=document.getElementById('flow-bar');if(flow)hidden(flow,true);var a=document.getElementById('pst-ws-home-actions'),card=a&&a.closest('.pst-ws-card');if(card){var title=card.querySelector('.pst-ws-card-title'),sub=card.querySelector('.pst-ws-card-sub');if(title)title.textContent='Duhet veprimi yt';if(sub)sub.textContent='PPPP shfaq vetëm vendimet dhe veprimet që kërkojnë ndërhyrjen tënde.';}p.querySelectorAll('.pst-ws-action-tag').forEach(function(tag){var t=S(tag.textContent).trim().toUpperCase();if(t==='VEPRO TANI'||t==='VEPRIM')tag.textContent='KËRKON VEPRIM';});hideCounters(p);return true;}
@@ -127,7 +130,10 @@ function shell(){
  sidebar();hideBottomSearch();compactSort();stabilizeHome();return true;
 }
 function decorate(){shell();var p=home(),n=0;if(p)p.querySelectorAll('#pst-ws-home-actions > .pst-ws-action').forEach(function(r){if(enhanceRow(r))n++;});if(p)stabilizeHome();handoffOperatingExperience();return n;}
-function schedule(){[0,40,120,280,650,1200].forEach(function(ms){setTimeout(decorate,ms);});}
+// Performance (9 Oct 2026): several events each queue these six passes; skip a pass when
+// another one ran less than 30 ms ago (overlapping triggers ran dozens of passes).
+var lastDecorate=0;function decorateSoon(){if(Date.now()-lastDecorate<30)return;lastDecorate=Date.now();decorate();}
+function schedule(){[0,40,120,280,650,1200].forEach(function(ms){setTimeout(decorateSoon,ms);});}
 function css(){
  ['pst-task-source-actions-v10-css','pst-task-source-actions-v11-css','pst-task-source-actions-v12-css','pst-task-source-actions-v13-css','pst-task-source-actions-v14-css','pst-task-source-actions-v15-css','pst-task-source-actions-v16-css','pst-task-source-actions-v17-css','pst-task-source-actions-v18-css','pst-task-source-actions-v19-css'].forEach(function(id){var x=document.getElementById(id);if(x)x.remove();});
  if(document.getElementById('pst-task-source-actions-v20-css'))return;

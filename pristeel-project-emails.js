@@ -177,8 +177,7 @@ function load(i,attempt){
  if(i>=files.length){ready();return;}
  if(window.__pstAbortBootstrap){ready();return;}
  attempt=attempt||1;
- var base=files[i],src=base;
- if(base.indexOf('pristeel-project-open-direct-v1.js?')===0)src=base+'&pst_hotfix=20260830-navrepair2';
+ var base=files[i],src=srcFor(base);
  if(attempt>1)src=src+(src.indexOf('?')>-1?'&':'?')+'pst_retry='+Date.now();
  var el=document.createElement('script'),settled=false,timer=null;
  el.src=src;el.defer=true;el.setAttribute('data-pst-bootstrap-index',String(i));el.setAttribute('data-pst-bootstrap-attempt',String(attempt));
@@ -196,5 +195,16 @@ function load(i,attempt){
  timer=setTimeout(function(){finish('timeout','>'+timeoutMs+'ms');},timeoutMs);
  document.head.appendChild(el);
 }
+function srcFor(base){return base.indexOf('pristeel-project-open-direct-v1.js?')===0?base+'&pst_hotfix=20260830-navrepair2':base;}
+// Performance (9 Oct 2026): the modules still run one after another in the same order,
+// but the browser now downloads them all in parallel up front. Before, each of the
+// ~170 files was only requested after the previous one had finished loading, so every
+// page open paid ~170 network round trips in a row.
+(function preloadAll(){
+ try{
+  if(!document.head||!document.createElement('link').relList||!document.createElement('link').relList.supports||!document.createElement('link').relList.supports('preload'))return;
+  files.forEach(function(base){var l=document.createElement('link');l.rel='preload';l.as='script';l.href=srcFor(base);l.setAttribute('data-pst-bootstrap-preload','1');document.head.appendChild(l);});
+ }catch(e){}
+})();
 load(0,1);
 })();
