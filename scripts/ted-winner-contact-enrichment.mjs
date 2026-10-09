@@ -83,9 +83,15 @@ export function winnerDeliveryFeedback(row,failures=[]){
  const w=sourceWinner(row),orgs=w.contact_enrichment?.organizations||[],emails=unique([...winnerEmails(w),...(w.ted_declared_emails||[]),...(row.payload?.winner_contacts||[]).map(c=>c.email||c.value),...orgs.flatMap(o=>(o.contacts||[]).filter(c=>c.type==='email').map(c=>c.value))]).map(x=>x.toLowerCase()),domains=unique([...winnerWebsites(w).map(domainOfUrl),...orgs.map(o=>text(o.domain)),...emails.filter(e=>corporateEmail(e)&&winnerNames(w).some(n=>domainMatchesCompany(emailDomain(e),n))).map(emailDomain)]);
  return failures.filter(f=>{const e=text(f.contact_email||f.recipient_email||f.email).toLowerCase();return e&&(emails.includes(e)||domains.includes(emailDomain(e)));}).map(f=>({...f,email:text(f.contact_email||f.recipient_email||f.email).toLowerCase(),kind:f.kind||classifyDeliveryFailure(f.evidence)}));
 }
+function hasSharedProviderCounterEvidence(w,evidence){
+ const declared=(w.ted_declared_emails||[]).map(x=>text(x).toLowerCase());
+ return evidence.length>0&&evidence.every(f=>{const email=text(f.email).toLowerCase(),domain=emailDomain(email);return domain&&declared.some(d=>d!==email&&emailDomain(d)===domain)&&!winnerNames(w).some(name=>domainMatchesCompany(domain,name));});
+}
 export function repairMisattributedDelivery(row){
  const w=sourceWinner(row),r=w.contact_recovery,e=w.contact_enrichment;
- if(r?.version!=='ted-delivery-recovery-v1'||!r.evidence?.length||!e||winnerDeliveryFeedback(row,r.evidence).length)return null;
+ if(r?.version!=='ted-delivery-recovery-v1'||!e)return null;
+ if(r.status==='attribution_corrected'&&r.discarded_evidence?.length&&!hasSharedProviderCounterEvidence(w,r.discarded_evidence))return recoverDeliveryContacts(row,e,r.discarded_evidence);
+ if(!r.evidence?.length||winnerDeliveryFeedback(row,r.evidence).length||!hasSharedProviderCounterEvidence(w,r.evidence))return null;
  const declared=new Set((w.ted_declared_emails||[]).map(x=>text(x).toLowerCase()));
  const organizations=(e.organizations||[]).map(o=>({...o,contacts:(o.contacts||[]).map(c=>{
   if(!c.delivery_failure||!declared.has(text(c.value).toLowerCase()))return c;
