@@ -118,7 +118,9 @@ function apply(root){
   PAGE_IDS.forEach(function(id){var p=(scope.id===id?scope:null)||scope.querySelector&&scope.querySelector('#'+id)||document.getElementById(id);if(p)p.classList.add('pst-unified-module');});
 }
 css();apply(document);
-var observer=new MutationObserver(function(records){records.forEach(function(r){r.addedNodes.forEach(function(n){if(n.nodeType===1)apply(n);});});});
+// Performance (9 Oct 2026): apply() always falls back to document.getElementById, so one
+// pass per batch of mutations does the same work as one pass per added node.
+var observer=new MutationObserver(function(records){for(var i=0;i<records.length;i++){var a=records[i].addedNodes;for(var j=0;j<a.length;j++){if(a[j].nodeType===1){apply(document);return;}}}});
 function start(){if(document.body)observer.observe(document.body,{childList:true,subtree:true});apply(document);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

@@ -12,6 +12,7 @@ window.__pstPlatformReadabilityV1=true;
 
 var SKIP='svg,canvas,pre,code,#of-pre,#inv-pre,#in-pre,#oc-pre,#rfq-pre,#doc-preview,.pst-doc-preview,.pst-document-preview,.document-preview,[data-document-preview],[data-pst-document-preview],[data-pst-font-lock]';
 var CANDIDATES='button,a,label,small,p,td,th,input,select,textarea,b,strong,span,h5,h6,li,summary';
+var MEASURED=new WeakMap(),BUTTON_SIG=new WeakMap();
 var UI_SCOPES='#pst-ws-sidebar,#page-workspace-home,#page-workspace-projects,#page-workspace-project,#page-kek-tenders,#page-finance,#page-workspace-finance,#page-workspace-contacts,#page-contacts,#page-workspace-apps,#page-document-center,#page-settings,#pst-system-operating-tools,#pst-ui-recovery-clean';
 var ALBANIAN={
   'Home':'Ballina','Opportunities':'Mundësitë','Projects':'Projektet','Partners':'Partnerët','Finance':'Financat','System':'Sistemi','Workspace':'Platforma',
@@ -205,10 +206,20 @@ function hasReadableContent(el){
   return !!String(el.textContent||'').trim();
 }
 
+function markSig(el){return (el.getAttribute('class')||'')+'|'+(el.getAttribute('style')||'');}
 function mark(el){
+  // Performance (9 Oct 2026): measure an element again only when its own class or style
+  // changed since the last check. Re-rendered content is a new element and is measured
+  // again; empty elements are not recorded, so they are checked again once filled.
+  // Reading the font size of every element on every pass cost thousands of style
+  // recalculations per click.
+  if(MEASURED.get(el)===markSig(el))return;
   // SPIE typography is static; do not resize Opportunities after click/rerender.
   if(document.documentElement.classList.contains('pst-spie-standard')&&el&&el.closest&&el.closest('#page-kek-tenders,#pst-opp-modal-bg,#pst-ti-backdrop,#pst-tender-draft-modal'))return;
   if(skip(el)||!hasReadableContent(el))return;
+  try{markMeasured(el);}finally{MEASURED.set(el,markSig(el));}
+}
+function markMeasured(el){
   if(el.classList.contains('pst-rd-xxs')||el.classList.contains('pst-rd-xs')||el.classList.contains('pst-rd-sm')||el.classList.contains('pst-rd-control')||el.classList.contains('pst-rd-heading'))return;
   var px=parseFloat(window.getComputedStyle(el).fontSize)||0;
   if(!(px>0))return;
@@ -288,6 +299,15 @@ function ensureButtonContrast(root){
   var scope=root&&root.querySelectorAll?root:document;
   Array.prototype.forEach.call(scope.querySelectorAll('button,.btn,[role="button"]'),function(b){
     if(skip(b))return;
+    // Performance (9 Oct 2026): only re-check a button when its own classes/style or
+    // its parent's classes changed since the last check.
+    if(BUTTON_SIG.get(b)===buttonSig(b))return;
+    try{checkButton(b);}finally{BUTTON_SIG.set(b,buttonSig(b));}
+  });
+}
+function buttonSig(b){return String(b.className||'')+'|'+(b.getAttribute('style')||'')+'|'+String((b.parentElement&&b.parentElement.className)||'')+'|'+b.childElementCount;}
+function checkButton(b){
+  {
     var c;try{c=rgb(window.getComputedStyle(b).backgroundColor);}catch(e){c=null;}
     var dark=!!(c&&c.a>.6&&((.2126*c.r+.7152*c.g+.0722*c.b)/255)<.53);
     var brandBlue=!!(c&&c.a>.6&&c.b>=c.r+18&&c.g>=c.r+18&&c.g>=105&&c.b>=125&&c.r<=115);
@@ -310,7 +330,7 @@ function ensureButtonContrast(root){
         ch.style.removeProperty('-webkit-text-fill-color');
       });
     }
-  });
+  }
 }
 
 function removeTopOval(){
@@ -340,15 +360,21 @@ function finalApply(root){
   finalCss();translateUi();ensureButtonContrast(root||document);removeTopOval();
 }
 
+var lastFullApply=0;
 function apply(root){
   root=root&&root.querySelectorAll?root:document;
+  if(root===document)lastFullApply=Date.now();
   Array.prototype.forEach.call(root.querySelectorAll(CANDIDATES),mark);
   finalApply(root);
   return true;
 }
 
+// Performance (9 Oct 2026): clicks and render events each queued 6-7 full-page passes,
+// so overlapping triggers ran dozens of passes. A pass is skipped when another full
+// pass ran less than 120 ms ago; the timing points themselves are unchanged.
+function applySoon(ms){setTimeout(function(){if(Date.now()-lastFullApply<120)return;apply(document);},ms);}
 function schedule(){
-  [0,150,500,1000,1700,2400,3200].forEach(function(ms){setTimeout(function(){apply(document);},ms);});
+  [0,150,500,1000,1700,2400,3200].forEach(applySoon);
   setTimeout(signalCosmeticsReady,1850);
 }
 
@@ -360,7 +386,7 @@ document.addEventListener('pst:project-opened',schedule);
 window.addEventListener('pageshow',schedule,{once:true});
 document.addEventListener('click',function(e){
   var t=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[onclick*="pstWorkspaceGo"],#pst-ws-home-refresh,.pst-pi-tab,[data-pf2-tab],.pec-tab,[data-pm-open],button[data-page],button,[role="button"]'):null;
-  if(t)[0,160,520,1050,1700,2450].forEach(function(ms){setTimeout(function(){apply(document);},ms);});
+  if(t)[0,160,520,1050,1700,2450].forEach(applySoon);
 },true);
 
 window.PSTPlatformReadabilityV1={apply:apply,schedule:schedule,translateUi:translateUi,finalApply:finalApply,_test:{mark:mark,skip:skip,translateValue:translateValue,rgb:rgb}};

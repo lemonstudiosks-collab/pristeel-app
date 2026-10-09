@@ -22,7 +22,12 @@ document.head.appendChild(css);
 function str(v){return String(v==null?'':v).trim()}
 function norm(v){return str(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
 function arr(v){return Array.isArray(v)?v:[]}
-function visible(el){if(!el)return false;var s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'}
+function visible(el){if(!el)return false;
+  // Performance (9 Oct 2026): the project modal is hidden by its CSS class and shown only
+  // by openOverview setting style.display='flex'. Without an inline display it is hidden,
+  // so skip the computed-style read (it forced a full style recalculation every frame).
+  if(el.id==='ov-backdrop'&&(!el.style.display||el.style.display==='none'))return false;
+  var s=getComputedStyle(el);return s.display!=='none'&&s.visibility!=='hidden'&&s.opacity!=='0'}
 function modal(){return document.getElementById('ov-backdrop')}
 function projectTitle(){var el=document.getElementById('ov-title');return str(el&&el.textContent)}
 function projectClient(){var el=document.getElementById('ov-client');return str(el&&el.textContent).split('·')[0].trim()}
@@ -110,7 +115,12 @@ function wrap(name){
 function init(){
   wrap('openOverview');wrap('pstV2OpenProject');wrap('renderOverviewModal');
   document.addEventListener('click',function(e){var el=e.target&&e.target.closest?e.target.closest('[data-project-id],[data-project],[onclick]'):null,id=idFromElement(el);if(id)remember(id)},true);
-  var observer=new MutationObserver(function(){wrap('openOverview');wrap('pstV2OpenProject');wrap('renderOverviewModal');if(visible(modal()))schedule()});
+  // Performance (9 Oct 2026): this watcher sees every change on the page. Run the
+  // check at most once per frame instead of once per mutation; the check itself is
+  // unchanged (it forced a style recalculation on every DOM change before).
+  var pending=false;
+  function check(){pending=false;wrap('openOverview');wrap('pstV2OpenProject');wrap('renderOverviewModal');if(visible(modal()))schedule()}
+  var observer=new MutationObserver(function(){if(pending)return;pending=true;(window.requestAnimationFrame||function(cb){return setTimeout(cb,16)})(check)});
   observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['style','class']});
   if(visible(modal()))schedule()
 }
