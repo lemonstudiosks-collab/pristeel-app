@@ -68,6 +68,7 @@ function refreshSentState(){
  if(sentStateRefreshed||sentStateRefreshing||!installChunkedOpportunityEmailRead())return;
  var X=window.PSTProjectCentricWorkflowV1;if(!X||typeof X.loadOpportunities!=='function')return;
  sentStateRefreshing=true;
+ if(typeof X.invalidateOpportunities==='function')X.invalidateOpportunities();
  Promise.resolve(X.loadOpportunities(true)).then(function(ok){sentStateRefreshing=false;if(ok){sentStateRefreshed=true;schedule();}else setTimeout(refreshSentState,220);}).catch(function(){sentStateRefreshing=false;});
 }
 function mount(){

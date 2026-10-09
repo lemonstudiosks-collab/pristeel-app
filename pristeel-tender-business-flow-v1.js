@@ -120,7 +120,8 @@ function renderHomeSignal(rows){
 }
 async function refreshHomeSignal(force){
  var now=Date.now();
- if(!force&&homeSignalLastFetch&&now-homeSignalLastFetch<30000){renderHomeSignal(homeSignalCache);return homeSignalCache;}
+ // Egress guard (2026-10-09): full tender list is ~13 MB; reuse 10 min (2 min when forced).
+ if(homeSignalLastFetch&&homeSignalCache.length&&now-homeSignalLastFetch<(force?120000:600000)){renderHomeSignal(homeSignalCache);return homeSignalCache;}
  if(homeSignalLoading||typeof window.supaFetch!=='function')return homeSignalCache;
  homeSignalLoading=true;
  try{

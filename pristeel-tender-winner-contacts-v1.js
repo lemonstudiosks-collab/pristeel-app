@@ -25,7 +25,7 @@ function contactCount(r){var e=enrichment(r);if(e&&Number.isFinite(Number(e.cont
 function safeHttp(v){var s=String(v||'').trim();return /^https?:\/\//i.test(s)?s:'';}
 function rebuildMaps(){byId=new Map();byProc=new Map();rows.forEach(function(r){if(r&&r.id!=null)byId.set(String(r.id),r);if(r&&r.procurement_no)byProc.set(String(r.procurement_no),r);});}
 async function refresh(force){
- if(!force&&Date.now()-lastFetch<60000&&rows.length)return rows;
+ if(!force&&Date.now()-lastFetch<600000&&rows.length)return rows; // egress guard 2026-10-09: was 60 s
  if(loading)return loading;
  if(typeof window.supaFetch!=='function')return rows;
  loading=window.supaFetch('kek_tender_watch?select=id,procurement_no,publication_no,payload&order=published_date.desc&limit=1200').then(function(r){rows=Array.isArray(r)?r:[];lastFetch=Date.now();rebuildMaps();return rows;}).catch(function(){return rows;}).finally(function(){loading=null;});
