@@ -2,7 +2,7 @@
  * Pure classification: no requests, writes, sends or invented verification. */
 (function(root){
 'use strict';
-var version='ted-outreach-safety-20261008-v1';
+var version='ted-outreach-safety-20261009-v2';
 function text(v){return String(v==null?'':v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 function arr(v){return Array.isArray(v)?v:[];}
 function official(v){try{var u=new URL(String(v||''));return u.protocol==='https:'&&!!u.hostname;}catch(e){return false;}}
@@ -32,12 +32,19 @@ function company(t,a,assessment){
  if(!source||(!roleVerified&&!facts.some(function(f){return f.status==='confirmed'&&official(f.source_url);})))return {ok:false,state:'review',reason:'company_activity_source_missing',message:'Mungon prova e verifikuar për aktivitetin e kompanisë.'};
  return {ok:true,state:'eligible',reason:'company_activity_evidenced',offer_model:producer?'steel_fabricator':'gc_epc'};
 }
-function assess(t,a,x){var s=scope(t);if(!s.ok)return s;var c=company(t,a,x);return Object.assign({version:version},c);}
+function delivery(t,email){
+ var p=t&&t.payload||t||{},w=p.winner||{},r=w.contact_recovery||{},e=text(email).trim(),domain=e.split('@')[1]||'';
+ if(r.active===false||/^(suppressed|unreachable|research_pending)$/.test(r.status||''))return{ok:false,state:'excluded',reason:'contact_delivery_suppressed',message:'Kontaktimi është përjashtuar automatikisht pas dështimit të dorëzimit.'};
+ if(arr(r.failed_emails).concat(arr(r.restricted_emails)).some(function(x){return text(x)===e;})||arr(r.blocked_domains).some(function(x){return text(x)===domain;}))return{ok:false,state:'excluded',reason:'recipient_delivery_failed',message:'Adresa ose domeni është përjashtuar pas dështimit të dorëzimit.'};
+ var failed=arr(p.recipient_delivery_failures);if(e&&failed.some(function(x){return text(x.email||x.contact_email||x.recipient_email)===e;}))return{ok:false,state:'excluded',reason:'recipient_delivery_failed',message:'Adresa ka një dështim të konfirmuar të dorëzimit.'};
+ return{ok:true,state:'eligible'};
+}
+function assess(t,a,x){var s=scope(t);if(!s.ok)return s;var d=delivery(t);if(!d.ok)return d;var c=company(t,a,x);return Object.assign({version:version},c);}
 function recipient(email,meta){meta=meta||{};var e=text(email).trim(),local=e.split('@')[0].replace(/\+.*/,''),role=text(meta.functional_role||meta.job_title||meta.role||meta.purpose||'');
  if(!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(e))return false;
  if(meta.do_not_contact===true||meta.draft_eligible===false||meta.bounced===true)return false;
  return !/^(karriere|career|careers|jobs|recruit\w*|hr|personal\w*|bewerbung\w*|airfreight|portagency|generalcargo|umzuege|umzug|newsletter|noreply|no-reply|privacy|gdpr|dpo|billing|invoice|accounts|accounting|press|presse|media|support|webmaster)$/.test(local)&&!/(human resources|recruit|karriere|career|personalwesen|airfreight|port agency|moving services|freight forwarding|\bhr\b)/.test(role);
 }
 function sendReadiness(r,now){r=r||{};now=now||Date.now();var at=Date.parse(r.verified_at||''),until=Date.parse(r.valid_until||'');return r.domain==='prissteel.com'&&r.spf===true&&r.dkim===true&&r.dmarc===true&&r.opt_out_handling===true&&r.campaign_approved===true&&Number.isFinite(at)&&Number.isFinite(until)&&at<=now&&until>now&&now-at<=30*86400000;}
-root.PSTTedOutreachPolicyV1={version:version,scope:scope,company:company,assess:assess,recipient:recipient,sendReadiness:sendReadiness};
+root.PSTTedOutreachPolicyV1={version:version,scope:scope,company:company,assess:assess,delivery:delivery,recipient:recipient,sendReadiness:sendReadiness};
 })(typeof window!=='undefined'?window:globalThis);

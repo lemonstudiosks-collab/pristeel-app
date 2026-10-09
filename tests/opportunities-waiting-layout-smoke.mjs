@@ -11,7 +11,7 @@ const assistantEdge=fs.readFileSync('supabase/functions/pppp-openai-assistant/in
 assert.doesNotThrow(()=>new Function(desk),'Opportunities Desk must be valid JavaScript');
 assert.doesNotThrow(()=>new Function(workflow),'Project-Centric workflow must remain valid JavaScript');
 assert.match(bridge,/next==='draft'\?'waiting':next/,'legacy draft lifecycle must normalize to waiting');
-assert.match(desk,/VERSION='20261008-ted-action-desk-v2'/,'concrete action workspace revision must be active');
+assert.match(desk,/VERSION='20261009-ted-background-delivery-v3'/,'concrete action workspace revision must be active');
 assert.match(desk,/function activeRows\(/,'Desk must explicitly own the active/uncontacted list');
 assert.match(desk,/function contactedRows\(/,'Desk must explicitly own the contacted-company parking list');
 assert.match(desk,/globalContactedKeys/,'active list must globally suppress identities already drafted/contacted');

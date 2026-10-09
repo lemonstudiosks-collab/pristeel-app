@@ -37,7 +37,7 @@ function sourceContacts(row,name){
    for(const c of Array.isArray(org&&org.contacts)?org.contacts:[]){if(c&&c.source_type==='TED'&&c.type==='email'&&c.value)out.emails.push(text(c.value));if(c&&c.source_type==='TED'&&c.type==='person'&&c.value)out.points.push(text(c.value));}
   }
  }
- out.emails=unique(out.emails);out.websites=unique(out.websites);out.points=unique(out.points);return out;
+ out.emails=unique(out.emails).filter(e=>w.contact_recovery?.active!==false&&!(w.contact_recovery?.failed_emails||[]).includes(e.toLowerCase())&&!(w.contact_recovery?.blocked_domains||[]).includes(emailDomain(e)));out.websites=unique(out.websites);out.points=unique(out.points);return out;
 }
 function historicalSeedForName(row,name,historyRows){
  const currentId=String(row&&row.id||''),key=companyKey(name),emails=[],websites=[],points=[],sources=[];
@@ -51,12 +51,12 @@ function historicalSeedForName(row,name,historyRows){
  return{emails:unique(emails),websites:unique(websites),points:unique(points),sources};
 }
 export function seedWinnerFromHistory(row,historyRows,seededAt=new Date().toISOString()){
- if(!row||!isTedAward(row))return{changed:false,row};
+ if(!row||!isTedAward(row)||winner(row).contact_recovery?.active===false)return{changed:false,row};
  const p={...payload(row)},w={...winner(row)},names=winnerNames(w);if(!names.length)return{changed:false,row};
  const e=currentEnrichment(w);if(e&&e.status==='found'&&Number(e.contact_count||0)>0)return{changed:false,row};
  let emails=winnerEmails(w),websites=winnerWebsites(w),points=unique([...(Array.isArray(w.contacts)?w.contacts:[]),w.contact_point].filter(Boolean)),addedEmails=[],addedWebsites=[],addedPoints=[],sources=[];
  for(const name of names){const seed=historicalSeedForName(row,name,historyRows);const multi=names.length>1;
-  for(const value of seed.emails){if(multi&&!domainMatchesCompany(emailDomain(value),name))continue;if(!emails.some(x=>x.toLowerCase()===value.toLowerCase())){emails.push(value);addedEmails.push(value);}}
+  for(const value of seed.emails){if((w.contact_recovery?.failed_emails||[]).includes(value.toLowerCase())||(w.contact_recovery?.blocked_domains||[]).includes(emailDomain(value)))continue;if(multi&&!domainMatchesCompany(emailDomain(value),name))continue;if(!emails.some(x=>x.toLowerCase()===value.toLowerCase())){emails.push(value);addedEmails.push(value);}}
   for(const value of seed.websites){if(multi&&!domainMatchesCompany(domainOfUrl(value),name))continue;if(!websites.includes(value)){websites.push(value);addedWebsites.push(value);}}
   for(const value of seed.points){if(!points.includes(value)){points.push(value);addedPoints.push(value);}}
   sources.push(...seed.sources);

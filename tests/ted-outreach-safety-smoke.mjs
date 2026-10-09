@@ -19,6 +19,11 @@ assert.equal(P.assess(steel,{}, {company:{...company.company,business_summary:'T
 for(const e of ['hr@example.de','careers@example.de','airfreight@example.de','privacy@example.de'])assert.equal(P.recipient(e,{}),false);
 assert.equal(P.recipient('purchasing@example.de',{draft_eligible:true}),true);
 assert.equal(P.recipient('purchasing@example.de',{do_not_contact:true}),false);
+const recovered={...steel,payload:{winner:{contact_recovery:{active:true,status:'recovered',failed_emails:['old@example.de'],blocked_domains:['blocked.de']}}}};
+assert.equal(P.delivery(recovered,'old@example.de').ok,false);
+assert.equal(P.delivery(recovered,'other@blocked.de').ok,false);
+assert.equal(P.delivery(recovered,'new@example.de').ok,true);
+assert.equal(P.assess({...steel,payload:{winner:{contact_recovery:{active:false,status:'unreachable'}}}}, {},company).ok,false);
 assert.equal(P.sendReadiness(null),false);
 const now=Date.now(),ready={domain:'prissteel.com',spf:true,dkim:true,dmarc:true,opt_out_handling:true,campaign_approved:true,verified_at:new Date(now-1000).toISOString(),valid_until:new Date(now+10000).toISOString()};
 assert.equal(P.sendReadiness(ready,now),true);
@@ -49,9 +54,11 @@ assert.equal(T.workRows('waiting').length,1,'only confirmed sending enters waiti
 assert.equal(T.workRows('attention').length,1,'replied company requires attention');
 assert.equal(T.workRows('excluded').some(g=>g.row.id==='transport'),true);
 assert.equal(T.groupWorkRows(deskRows.filter(r=>r.id.startsWith('free'))).length,2,'free email domains never merge two companies');
-assert.match(T.workPanel(),/Reply GmbH/);
+assert.doesNotMatch(T.workPanel(),/Reply GmbH/);
+assert.match(T.responsePanel(),/Reply GmbH/);
 assert.doesNotMatch(T.workPanel(),/Draft GmbH/);
-assert.match(T.workPanel(),/<h4>Shqyrto përgjigjen<\/h4>/);
+assert.match(T.workPanel(),/<h4>Shqyrto përgjigjet<\/h4>/);
+assert.equal((T.workPanel().match(/data-pst-opp-summary-card="replies"/g)||[]).length,1);
 assert.doesNotMatch(T.workPanel(),/class="pst-opp-work-row"|<table|një rresht për kompani/);
 assert.equal(T.actionItems()[0].type,'reply');
 assert.match(T.actionItems()[0].url,/from%3Ainfo%40reply.de/);
@@ -59,6 +66,14 @@ deskState.outreachRows.push({id:'draft2',tender_watch_id:'sent',status:'draft_cr
 assert.equal(T.workRows('drafts').length,2,'older sent mail does not hide a second current draft');
 deskState.outreachRows.push({id:'reply2',tender_watch_id:'reply',status:'replied',recipient_email:'other@reply.de',recipient_company_name:'Reply GmbH',gmail_thread_id:'thread2',sent_at:'2026-10-01',replied_at:'2026-10-04'});
 assert.equal(T.actionItems().length,2,'two real conversations with one company remain distinct actions');
+assert.equal(T.replyGroups().length,1);assert.equal(T.replyGroups()[0].count,2);
+assert.match(T.responsePanel(),/thread2/);
+for(let i=0;i<500;i++)deskState.contactHistoryRows.push({id:'bounce'+i,company_name:'Failed '+i,contact_email:'bad'+i+'@failed.de',status:'bounced',bounced:true,follow_up_date:'2000-01-01'});
+assert.equal(T.actionItems().length,2,'500 bounces do not create operator work');
+deskState.outreachRows.push({id:'ooo',tender_watch_id:'sent',status:'sent',recipient_email:'auto@waiting.de',recipient_company_name:'Waiting GmbH',sent_at:'2026-10-01',inbound_kind:'out_of_office',last_inbound_at:'2026-10-04',gmail_thread_id:'auto-thread'});
+assert(T.actionItems().some(x=>x.row.__pstContactMeta.thread==='auto-thread'),'automatic responses are included');
+deskState.outreachRows.pop();
+assert.doesNotMatch(T.attentionPanel(),/Verifiko emailin|Failed/);
 assert.equal(T.actionItems().find(x=>x.row.__pstContactMeta.thread==='thread2').url,'https://mail.google.com/mail/u/0/#all/thread2');
 w.PSTProjectCentricWorkflowV1._test.ownedByProject=r=>r.id==='reply';
 assert.equal(T.actionItems().length,0,'a signal already owned by a canonical Project is not duplicated in the Opportunities action center');
@@ -84,6 +99,8 @@ vm.runInContext('rows='+JSON.stringify([
  {tender_watch_id:'closed',company_name:'Closed GmbH',replied:true,closed:true},
  {tender_watch_id:'unknown',company_name:'Unknown GmbH',human_action_required:true}
  ])+';',standalone);
+assert.equal(vm.runInContext("workData('replies').length",standalone),1,'reply list groups one company without dropping its conversations');
+assert.equal(vm.runInContext("workData('replies')[0].conversations.length",standalone),2);
 assert.equal(vm.runInContext("workData('attention').length",standalone),2,'standalone actions are conversations, not company groups or unknown-role backlog');
 assert.match(vm.runInContext("actionMarkup(rows[0])",standalone),/Shqyrto përgjigjen/);
 console.log('Action desk executable grouping, draft/sent separation, thread specificity and default attention rendering: PASS');

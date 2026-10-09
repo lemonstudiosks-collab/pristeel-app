@@ -130,6 +130,7 @@ async function tedSendGuard(q:any){
   if(t.error||x.error||health.error)throw t.error||x.error||health.error;
   if(x.data?.length!==1)throw new Error('ted_company_assessment_missing_or_ambiguous');
   const eligible=TED_POLICY.assess(t.data,{},x.data[0]);if(!eligible.ok)throw new Error('ted_outreach_blocked:'+eligible.reason);
+  if(!TED_POLICY.delivery(t.data,q.recipient_email).ok)throw new Error('ted_recipient_delivery_suppressed');
   const rows=health.data||[],bounce=rows.filter((r:any)=>r.bounced_at).length,failures=rows.filter((r:any)=>r.dispatch_last_error).length,sent=rows.filter((r:any)=>r.sent_at).length;
   if(bounce>=3||failures>=3||(sent>=20&&bounce/sent>=0.05))throw new Error('outbound_delivery_health_requires_review');
 }

@@ -14,7 +14,7 @@ const SERVICE_KEY=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db=createClient(SUPABASE_URL,SERVICE_KEY);
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-pppp-cron-secret','Access-Control-Allow-Methods':'POST, GET, OPTIONS','Content-Type':'application/json'};
 const text=(v:any,max=12000)=>String(v==null?'':v).replace(/\r/g,'').trim().slice(0,max);
-const GENERATOR='pppp-opportunity-draft-generator-v39-ted-eligibility';
+const GENERATOR='pppp-opportunity-draft-generator-v40-delivery-suppression';
 const REGISTRY='pppp_opportunity_outreach_registry_v1';
 const MAX_CONTACTS_PER_ACTION=20;
 const MAX_DRAFT_WRITES_PER_RUN=25;
@@ -40,13 +40,13 @@ async function tenderContext(tenderWatchId:any){
   const id=text(tenderWatchId,80);if(!id)return{};
   const [{data,error},{data:canonical,error:canonicalError}]=await Promise.all([
     db.from('kek_tender_watch').select('payload,publication_no,procurement_no,source_url,detail_url,title,authority,fpp').eq('id',id).maybeSingle(),
-    db.from('outreach_contacts').select('company_name,company_domain,contact_email').eq('tender_watch_id',id).not('contact_email','is',null).limit(MAX_CONTACTS_PER_ACTION)
+    db.from('outreach_contacts').select('company_name,company_domain,contact_email,status,bounced').eq('tender_watch_id',id).not('contact_email','is',null).order('updated_at',{ascending:false}).limit(200)
   ]);
   if(error)throw error;if(canonicalError)throw canonicalError;
   const p=data?.payload&&typeof data.payload==='object'?data.payload:{},winner=p?.winner&&typeof p.winner==='object'?{...p.winner}:{};
   const existingContacts=Array.isArray(p?.winner_contacts)?p.winner_contacts.slice():[],orgs=Array.isArray(winner?.contact_enrichment?.organizations)?winner.contact_enrichment.organizations.map((x:any)=>({...x,contacts:Array.isArray(x?.contacts)?x.contacts.slice():[]})):[];
   for(const row of canonical||[]){
-    const email=normalizeEmail(row?.contact_email);if(!email)continue;
+    const email=normalizeEmail(row?.contact_email);if(!email||row.bounced===true||text(row.status,80).toLowerCase()==='bounced')continue;
     if(!existingContacts.some((x:any)=>normalizeEmail(x?.email||x?.value)===email))existingContacts.push({email,verification_status:'verified',confidence:'high',source_type:'outreach_contacts',draft_eligible:true,company_name:row?.company_name||winner?.name||null,company_domain:row?.company_domain||null});
     const name=text(row?.company_name||winner?.name,300),domain=text(row?.company_domain,300).toLowerCase().replace(/^www\./,'');
     let org=orgs.find((x:any)=>text(x?.name,300).toLowerCase()===name.toLowerCase()||(domain&&text(x?.domain,300).toLowerCase().replace(/^www\./,'')===domain));
@@ -57,7 +57,7 @@ async function tenderContext(tenderWatchId:any){
   if(orgs.length)winner.contact_enrichment={...(winner.contact_enrichment||{}),organizations:orgs};
   const {data:roleV2,error:roleError}=await db.rpc('pppp_ted_company_role_context_v2',{p_winner:winner,p_award_role:p?.award_role||{}});
   if(roleError)throw roleError;
-  return{...p,winner,winner_role_v2:roleV2||null,winner_contacts:existingContacts,publication_no:data?.publication_no||p.publication_no||null,procurement_no:data?.procurement_no||p.procurement_no||null,source_url:data?.source_url||p.source_url||null,detail_url:data?.detail_url||p.detail_url||null,title:data?.title||p.title||null,authority:data?.authority||p.authority||null,fpp:data?.fpp||null};
+  return{...p,winner,recipient_delivery_failures:(canonical||[]).filter((x:any)=>x.bounced===true||text(x.status,80).toLowerCase()==='bounced'),winner_role_v2:roleV2||null,winner_contacts:existingContacts,publication_no:data?.publication_no||p.publication_no||null,procurement_no:data?.procurement_no||p.procurement_no||null,source_url:data?.source_url||p.source_url||null,detail_url:data?.detail_url||p.detail_url||null,title:data?.title||p.title||null,authority:data?.authority||p.authority||null,fpp:data?.fpp||null};
 }
 
 function rawFor(a:any,tender:any,recipient:any,outreachId:string,rfcId:string){
@@ -379,7 +379,7 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
     }
   }
   let recipients=(/^TED_/i.test(route)?resolveTedDraftRecipients(a,tender,MAX_CONTACTS_PER_ACTION):resolveTedRecipients(a,{winner:{email:a.target_email}},1));
-  recipients=recipients.map((r:any)=>({...r,job_title:r.job_title||a.target_role||null,name:r.name||a.target_name||null,contact_tier:contactTier(r.email,r),contact_quality_score:contactQualityScore(r.email,r)})).filter((r:any)=>Number(r.contact_quality_score||0)>=25&&TED_POLICY.recipient(r.email,r)).slice(0,MAX_CONTACTS_PER_ACTION);
+  recipients=recipients.map((r:any)=>({...r,job_title:r.job_title||a.target_role||null,name:r.name||a.target_name||null,contact_tier:contactTier(r.email,r),contact_quality_score:contactQualityScore(r.email,r)})).filter((r:any)=>Number(r.contact_quality_score||0)>=25&&TED_POLICY.recipient(r.email,r)&&TED_POLICY.delivery(tender,r.email).ok).slice(0,MAX_CONTACTS_PER_ACTION);
   const keepEmails=new Set(recipients.map((r:any)=>normalizeEmail(r.email)));
   const retired=refreshExisting&&!previewOnly?await retireObsoleteDrafts(a,keepEmails,'recipient_no_longer_preflight_eligible',budget):0;
   if(!recipients.length){
@@ -416,9 +416,9 @@ async function processAction(a:any,budget:{writes:number},refreshExisting=false,
       if(check.ownSent){row=await markSent(row,check.ownSent);sent++;continue;}
 
       const gg=check.guard;
-      if(!gg?.ok&&!cooldownOverride){
+      if(!gg?.ok&&(/bounced|suppressed/.test(String(gg?.reason||''))||!cooldownOverride)){
         row=await retireBlockedRegistryRow(row,'global_communication_guard:'+text(gg?.reason||'blocked',180),gg,budget);
-        failures.push({email:normalizeEmail(recipient.email),blocked:true,reason:text(gg?.reason||'global_guard_blocked',180),latest_contact_at:gg?.latest_contact_at||null,domain_cooldown_days:gg?.domain_cooldown_days||null,manual_override_available:true});
+        failures.push({email:normalizeEmail(recipient.email),blocked:true,reason:text(gg?.reason||'global_guard_blocked',180),latest_contact_at:gg?.latest_contact_at||null,domain_cooldown_days:gg?.domain_cooldown_days||null,manual_override_available:!/bounced|suppressed/.test(String(gg?.reason||''))});
         continue;
       }
 

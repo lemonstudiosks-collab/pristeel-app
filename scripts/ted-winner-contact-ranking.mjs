@@ -16,7 +16,7 @@ function emailDomain(email){const m=text(email).toLowerCase().match(/@([^\s>]+)$
 function placeholderEmail(email){const d=emailDomain(email);return !d||/(^|\.)(example\.(com|org|net)|yourdomain\.[a-z]{2,}|yourcompany\.[a-z]{2,}|company\.com)$/i.test(d);}
 function safeDraftContact(c){
  if(!c||c.type!=='email'||!c.value)return false;
- if(c.draft_eligible===false)return false;
+ if(c.draft_eligible===false||c.do_not_contact===true||c.delivery_failure===true)return false;
  if(String(c.company_attribution||'').toLowerCase()==='external_domain')return false;
  if(String(c.confidence||'').toLowerCase()==='low')return false;
  if(placeholderEmail(c.value))return false;
@@ -33,9 +33,9 @@ function contactRank(c){
  return score;
 }
 export function chooseBestWinnerEmail(row){
- const w=winner(row),names=winnerNames(w);if(names.length!==1)return null;
+ const w=winner(row),names=winnerNames(w);if(names.length!==1||w.contact_recovery?.active===false)return null;
  const e=w.contact_enrichment;if(!e||!Array.isArray(e.organizations)||!e.organizations.length)return null;
- const org=e.organizations[0],emails=(Array.isArray(org&&org.contacts)?org.contacts:[]).filter(safeDraftContact);
+ const org=e.organizations[0],emails=(Array.isArray(org&&org.contacts)?org.contacts:[]).filter(c=>safeDraftContact(c)&&!(w.contact_recovery?.failed_emails||[]).includes(text(c.value).toLowerCase())&&!(w.contact_recovery?.blocked_domains||[]).includes(emailDomain(c.value)));
  if(!emails.length)return null;
  return emails.map(c=>({contact:c,rank:contactRank(c)})).sort((a,b)=>b.rank-a.rank)[0]||null;
 }
