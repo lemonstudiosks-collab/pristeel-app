@@ -6,8 +6,7 @@ name: PPPP production recovery deploy
 on:
   push:
     branches: ["main"]
-  schedule:
-    - cron: '*/15 * * * *'
+  # 15-minute schedule removed 9 Oct 2026: the site only changes on merge.
   workflow_dispatch:
 
 permissions:
