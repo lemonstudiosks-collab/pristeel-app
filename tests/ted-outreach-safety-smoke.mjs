@@ -90,6 +90,7 @@ deskState.contactHistoryRows=deskState.contactHistoryRows.slice();
 assert.equal(T.actionItems().filter(x=>x.type==='followup').length,0,'excluded contacts do not return as due follow-up tasks');
 delete deskRows[1].payload.winner.contact_recovery;
 deskState.contactHistoryRows=deskState.contactHistoryRows.slice();
+assert(T.replyGroups().some(g=>g.row.__pstContactMeta.company==='Closed GmbH'),'closed or negative replies remain readable without creating an operator task');
 assert(!T.actionItems().some(x=>/Future|Closed|Meeting/.test(x.row.__pstContactMeta.company)),'waiting, closed records and a meeting without a due action do not manufacture work');
 deskState.source='KRPP';
 assert.equal(T.actionItems().length,0,'source selection applies to actions');
@@ -104,7 +105,7 @@ vm.runInContext('rows='+JSON.stringify([
  {tender_watch_id:'closed',company_name:'Closed GmbH',replied:true,closed:true},
  {tender_watch_id:'unknown',company_name:'Unknown GmbH',human_action_required:true}
  ])+';',standalone);
-assert.equal(vm.runInContext("workData('replies').length",standalone),1,'reply list groups one company without dropping its conversations');
+assert.equal(vm.runInContext("workData('replies').length",standalone),2,'reply list groups conversations and retains closed responses');
 assert.equal(vm.runInContext("workData('replies')[0].conversations.length",standalone),2);
 assert.equal(vm.runInContext("workData('attention').length",standalone),2,'standalone actions are conversations, not company groups or unknown-role backlog');
 assert.match(vm.runInContext("actionMarkup(rows[0])",standalone),/Shqyrto përgjigjen/);

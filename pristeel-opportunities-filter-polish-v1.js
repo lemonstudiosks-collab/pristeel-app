@@ -306,7 +306,7 @@ function communicationUrl(r){
  var m=contactMeta(r),thread=S(m.thread);if(/^[a-zA-Z0-9_-]+$/.test(thread))return 'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(thread);
  var email=S(m.email||A(m.emails)[0]);return email?'https://mail.google.com/mail/u/0/#search/'+encodeURIComponent('from:'+email+' OR to:'+email):'';
 }
-function actionItems(){
+function actionItems(includeClosedReplies){
  var bt={},records=[],seen={},out=[],today=workDay(),source=S(state&&state.source||'all'),q=N(state&&state.query||'');
  A(state&&state.rows).concat(A(state&&state.projectRows)).forEach(function(r){bt[S(r.id)]=r;});
  A(state&&state.outreachRows).forEach(function(x){var r=historicalRecord(x,true,bt);if(r)records.push(r);});
@@ -314,8 +314,8 @@ function actionItems(){
  contactHistory().rows.forEach(function(r){var tid=S(r.__pstTenderWatchId||r.id);if(!records.some(function(x){return S(x.__pstTenderWatchId||x.id)===tid;}))records.push(r);});
  records.forEach(function(r){
   var m=contactMeta(r),lane=m.lane||effectiveLane(r),tid=S(r.__pstTenderWatchId||r.id);
-  if(bt[tid]&&api&&api._test&&typeof api._test.ownedByProject==='function'&&api._test.ownedByProject(bt[tid]))return;
-  if(m.closed||source!=='all'&&srcOf(r)!==source||q&&N(companyLabel(r)+' '+rowText(r)+' '+m.email).indexOf(q)<0)return;
+  if(!(includeClosedReplies&&lane==='replied')&&bt[tid]&&api&&api._test&&typeof api._test.ownedByProject==='function'&&api._test.ownedByProject(bt[tid]))return;
+  if(m.closed&&!(includeClosedReplies&&lane==='replied')||source!=='all'&&srcOf(r)!==source||q&&N(companyLabel(r)+' '+rowText(r)+' '+m.email).indexOf(q)<0)return;
   var type=lane==='replied'?'reply':lane==='waiting'&&m.follow_up_date&&m.follow_up_date<=today?'followup':'';
   if(!type||type==='followup'&&W(r).contact_recovery&&W(r).contact_recovery.active===false)return;
   if(!m.thread){var comm=A(state&&state.communicationByTender&&state.communicationByTender[tid]).find(function(x){return !m.email||N(x.target_email)===N(m.email);});if(comm)m=Object.assign({},m,{thread:S(comm.communication_thread_id)});}
@@ -332,7 +332,7 @@ function actionCard(x){
 }
 function replyGroups(){
  var groups={},out=[];
- actionItems().filter(function(x){return x.type==='reply';}).forEach(function(x){var key=companyKey(x.row);if(!groups[key]){groups[key]={row:x.row,count:0,actions:[]};out.push(groups[key]);}groups[key].actions.push(x);groups[key].count++;});
+ actionItems(true).filter(function(x){return x.type==='reply';}).forEach(function(x){var key=companyKey(x.row);if(!groups[key]){groups[key]={row:x.row,count:0,actions:[]};out.push(groups[key]);}groups[key].actions.push(x);groups[key].count++;});
  return out;
 }
 function responsePanel(){
@@ -341,7 +341,7 @@ function responsePanel(){
 }
 function attentionPanel(){
  var replies=replyGroups().length,followups=actionItems().filter(function(x){return x.type==='followup';}).length;
- function card(view,title,count,copy){return '<article class="pst-opp-task-card pst-opp-summary-card" data-pst-opp-summary-card="'+view+'"><h4>'+E(title)+'</h4><strong>'+count+'</strong><p>'+E(copy)+'</p><div class="pst-opp-task-actions"><button type="button" data-pst-opp-workview="'+view+'">'+(view==='replies'?'Hap përgjigjet':'Hap rikontaktimet')+'</button></div></article>';}
+ function card(view,title,count,copy){return '<article class="pst-opp-task-card pst-opp-summary-card" data-pst-opp-summary-card="'+view+'" data-pst-opp-workview="'+view+'"><h4>'+E(title)+'</h4><strong>'+count+'</strong><p>'+E(copy)+'</p><div class="pst-opp-task-actions"><button type="button" data-pst-opp-workview="'+view+'">'+(view==='replies'?'Hap përgjigjet':'Hap rikontaktimet')+'</button></div></article>';}
  return '<section class="pst-opp-work-list pst-opp-action-workspace"><div class="pst-opp-work-head"><div><h3>Kërkon vëmendjen time</h3><small>Përgjigjet dhe vendimet e tua</small></div></div>'+(state&&state.contactHistoryError?'<p class="pst-opp-history-error" role="alert">Të dhënat nuk u ngarkuan plotësisht. Rifresko faqen para se të veprosh.</p>':'')+'<div class="pst-opp-task-grid">'+card('replies','Shqyrto përgjigjet',replies,'Kompanitë që janë përgjigjur. Hape listën për të lexuar bisedat dhe për të vendosur hapin tjetër.')+(followups?card('followups','Rikontaktime për vendim',followups,'Afate të regjistruara që kanë arritur. Nuk dërgohet email pa miratim.'):'')+'</div>'+(replies||followups?'':'<div class="pst-opp-task-empty"><h4>Nuk ke veprime të konfirmuara tani</h4><p>PPPP trajton adresat e pasakta në prapavijë. Draftet dhe pritja e përgjigjeve i gjen majtas.</p></div>')+'</section>';
 }
 function workNav(){return [['attention','Kërkon vëmendjen time'],['replies','Përgjigjet'],['tenders','Tenderët për vlerësim'],['waiting','Në pritje të përgjigjes'],['drafts','Draftet']].map(function(x){return filterButton('data-pst-opp-workview',x[0],x[1],workRows(x[0]).length,deskView===x[0],'');}).join('');}
