@@ -317,7 +317,7 @@ function actionItems(){
   if(bt[tid]&&api&&api._test&&typeof api._test.ownedByProject==='function'&&api._test.ownedByProject(bt[tid]))return;
   if(m.closed||source!=='all'&&srcOf(r)!==source||q&&N(companyLabel(r)+' '+rowText(r)+' '+m.email).indexOf(q)<0)return;
   var type=lane==='replied'?'reply':lane==='waiting'&&m.follow_up_date&&m.follow_up_date<=today?'followup':'';
-  if(!type)return;
+  if(!type||type==='followup'&&W(r).contact_recovery&&W(r).contact_recovery.active===false)return;
   if(!m.thread){var comm=A(state&&state.communicationByTender&&state.communicationByTender[tid]).find(function(x){return !m.email||N(x.target_email)===N(m.email);});if(comm)m=Object.assign({},m,{thread:S(comm.communication_thread_id)});}
   r=Object.assign({},r,{__pstContactMeta:m});
   var key=type+':'+(m.thread?'thread:'+m.thread:tid+':'+N(m.email||A(m.emails)[0]||companyLabel(r)));

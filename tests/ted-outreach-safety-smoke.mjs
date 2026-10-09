@@ -85,6 +85,11 @@ deskState.contactHistoryRows=[
  {id:'meeting',company_name:'Meeting GmbH',contact_email:'info@meeting.de',status:'meeting',meeting:true,touch_1:'2026-10-01'}
 ];
 assert.equal(T.actionItems().filter(x=>x.type==='followup').length,1);
+deskRows[1].payload.winner.contact_recovery={active:false,status:'unreachable'};
+deskState.contactHistoryRows=deskState.contactHistoryRows.slice();
+assert.equal(T.actionItems().filter(x=>x.type==='followup').length,0,'excluded contacts do not return as due follow-up tasks');
+delete deskRows[1].payload.winner.contact_recovery;
+deskState.contactHistoryRows=deskState.contactHistoryRows.slice();
 assert(!T.actionItems().some(x=>/Future|Closed|Meeting/.test(x.row.__pstContactMeta.company)),'waiting, closed records and a meeting without a due action do not manufacture work');
 deskState.source='KRPP';
 assert.equal(T.actionItems().length,0,'source selection applies to actions');
