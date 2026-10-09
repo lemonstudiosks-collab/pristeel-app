@@ -1,3 +1,5 @@
+> **HISTORICAL, frozen 9 Oct 2026.** This describes the old app; it is no longer an instruction document. Read [`AGENTS.md`](AGENTS.md) first: where they conflict, `AGENTS.md` wins. Do not append to this file.
+
 # PPPP DO NOT BREAK
 
 This is the protected-behavior checklist for PRISTEEL PPPP. It is deliberately conservative because the platform has accumulated working automation, compatibility bridges and commercial history over a long period.
