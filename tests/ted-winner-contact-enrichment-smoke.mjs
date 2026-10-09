@@ -155,4 +155,6 @@ const restore=repairMisattributedDelivery(unsafeCorrection);
 assert.equal(restore.delivery_recovery.active,false);
 assert(restore.delivery_recovery.blocked_domains.includes('inset.com'),'the original recorded block must be restored when counter-evidence is absent');
 assert.equal(repairMisattributedDelivery({payload:{winner:mergeWinnerWithEnrichment(mistaken.payload.winner,repaired)}}),null,'a positively evidenced shared-provider correction stays corrected');
+const opaqueCorporate={payload:{winner:{...missingOriginal.payload.winner,ted_declared_emails:['office@opaque-business.de'],contact_recovery:{...missingOriginal.payload.winner.contact_recovery,evidence:[{email:'sales@opaque-business.de',kind:'blocked'}]}}}};
+assert.equal(repairMisattributedDelivery(opaqueCorporate),null,'different mailboxes on an opaque corporate domain are not proof of a shared provider');
 console.log('TED winner contact enrichment and delivery recovery smoke: OK');

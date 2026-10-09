@@ -6,7 +6,7 @@ const DEFAULT_SUPABASE_URL='https://awqfpnzqwfjrjefoktgd.supabase.co';
 const VERSION='winner-contact-v6-delivery-recovery';
 const FREE_EMAIL_DOMAINS=new Set([
   'gmail.com','googlemail.com','yahoo.com','yahoo.de','outlook.com','hotmail.com','hotmail.de','live.com','icloud.com',
-  'gmx.de','gmx.net','web.de','freenet.de','t-online.de','aol.com','proton.me','protonmail.com','poczta.onet.pl'
+  'gmx.de','gmx.net','web.de','freenet.de','t-online.de','aol.com','proton.me','protonmail.com','poczta.onet.pl','pec.it'
 ]);
 const LEGAL_WORDS=new Set(['gmbh','mbh','co','kg','ag','se','srl','sro','sp','zoo','sa','sas','sasu','ltd','limited','inc','llc','bv','nv','oy','ab','aps','as','doo','d.o.o','gesellschaft','gesellschaftmbh','gruppe','group','company','unternehmen']);
 const CONTACT_WORDS=/kontakt|contact|contacts|impressum|imprint|ansprech|team|about|unternehmen|firma|contatti|contacto|contactez|nous-contacter|uber-uns|ueber-uns/i;
@@ -85,7 +85,7 @@ export function winnerDeliveryFeedback(row,failures=[]){
 }
 function hasSharedProviderCounterEvidence(w,evidence){
  const declared=(w.ted_declared_emails||[]).map(x=>text(x).toLowerCase());
- return evidence.length>0&&evidence.every(f=>{const email=text(f.email).toLowerCase(),domain=emailDomain(email);return domain&&declared.some(d=>d!==email&&emailDomain(d)===domain)&&!winnerNames(w).some(name=>domainMatchesCompany(domain,name));});
+ return evidence.length>0&&evidence.every(f=>{const email=text(f.email).toLowerCase(),domain=emailDomain(email);return domain&&FREE_EMAIL_DOMAINS.has(domain)&&declared.some(d=>d!==email&&emailDomain(d)===domain)&&!winnerNames(w).some(name=>domainMatchesCompany(domain,name));});
 }
 export function repairMisattributedDelivery(row){
  const w=sourceWinner(row),r=w.contact_recovery,e=w.contact_enrichment;
