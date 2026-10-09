@@ -489,6 +489,7 @@ async function removeOpportunity(id,button){
    await P.noGo(id);
    closeDetail();
    if(S(selectedId)===S(id))selectedId='';
+   if(api&&typeof api.invalidateOpportunities==='function')api.invalidateOpportunities();
    if(api&&typeof api.loadOpportunities==='function')await api.loadOpportunities(true);
    schedule();
    if(typeof window.pstToast==='function')window.pstToast('Mundësia u hoq nga lista.','ok');
