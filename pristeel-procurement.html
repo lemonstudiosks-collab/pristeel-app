@@ -7914,8 +7914,9 @@ var _libScope='project'; // 'project' ose 'all'
 function setLibScope(s){ _libScope=s; loadLibraryFiles(); }
 function downloadLibFile(id, name, type){
   // Merr file_base64 vetëm për këtë skedar (jo për tërë listën)
-  supaFetch('files?id=eq.'+id+'&select=file_base64&limit=1').then(function(rows){
+  supaFetch('files?id=eq.'+id+'&select=file_base64,drive_url&limit=1').then(function(rows){
     var r=(rows||[])[0];
+    if(r && r.drive_url){ window.open(r.drive_url,'_blank','noopener'); return; }
     if(!r || !r.file_base64){ alert('Skedari s\'u gjet ose është bosh.'); return; }
     viewOrDownloadFile(name, type, r.file_base64);
   }).catch(function(e){ alert('Gabim gjatë shkarkimit: '+((e&&e.message)||e)); });
@@ -8894,8 +8895,10 @@ function renderOverviewModal(id,p,bom,offs,invOut,invIn,guars,crmDeals,ourQuotes
 }
 // ── QENDRA: Gmail inbox / Agjenda / HubSpot pipeline ────
 function qOpenPdf(id){
-  supaFetch('offers_inbox?id=eq.'+id+'&select=file_base64,file_name').then(function(rows){
-    var r=rows[0]; if(!r||!r.file_base64){alert('PDF mungon.');return;}
+  supaFetch('offers_inbox?id=eq.'+id+'&select=file_base64,file_name,drive_url').then(function(rows){
+    var r=rows[0];
+    if(r&&r.drive_url){window.open(r.drive_url,'_blank','noopener');return;}
+    if(!r||!r.file_base64){alert('PDF mungon. Hape emailin në Gmail.');return;}
     var byteString=atob(r.file_base64);
     var bytes=new Uint8Array(byteString.length);
     for(var i=0;i<byteString.length;i++)bytes[i]=byteString.charCodeAt(i);
@@ -8932,8 +8935,10 @@ async function qAnalyzeOffer(inboxId, subject, sender){
   var btn=event&&event.target; var origTxt=btn?btn.textContent:'';
   if(btn){btn.textContent='Duke lexuar...';btn.disabled=true;}
   try{
-    var rows=await supaFetch('offers_inbox?id=eq.'+inboxId+'&select=file_base64,file_name');
-    var rec=rows&&rows[0]; if(!rec||!rec.file_base64){alert('Nuk u gjet file-i i bashkangjitur.');return;}
+    var rows=await supaFetch('offers_inbox?id=eq.'+inboxId+'&select=file_base64,file_name,drive_url');
+    var rec=rows&&rows[0];
+    if(rec&&!rec.file_base64&&rec.drive_url){alert('Ky PDF ruhet tani në Google Drive. Analiza automatike nuk punon për të; po e hap dokumentin.');window.open(rec.drive_url,'_blank','noopener');return;}
+    if(!rec||!rec.file_base64){alert('Nuk u gjet file-i i bashkangjitur.');return;}
     var byteChars=atob(rec.file_base64.replace(/^data:.*;base64,/,''));
     var bytes=new Uint8Array(byteChars.length);
     for(var i=0;i<byteChars.length;i++) bytes[i]=byteChars.charCodeAt(i);
