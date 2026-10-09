@@ -1,3 +1,5 @@
+> **HISTORICAL, frozen 9 Oct 2026.** This describes the old app; it is no longer an instruction document. Read [`AGENTS.md`](AGENTS.md) first: where they conflict, `AGENTS.md` wins. Do not append to this file.
+
 # PPPP CONTINUITY PROTOCOL
 
 Use this protocol whenever work continues in a new chat, agent session, browser session or after a long interruption.
