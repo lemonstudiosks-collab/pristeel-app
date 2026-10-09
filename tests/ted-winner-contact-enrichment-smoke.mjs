@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { enrichWinnerPayload, mergeWinnerWithEnrichment, classifyDeliveryFailure, winnerDeliveryFeedback, recoverDeliveryContacts } from '../scripts/ted-winner-contact-enrichment.mjs';
+import { enrichWinnerPayload, mergeWinnerWithEnrichment, classifyDeliveryFailure, winnerDeliveryFeedback, recoverDeliveryContacts, repairMisattributedDelivery } from '../scripts/ted-winner-contact-enrichment.mjs';
 
 function response(url,html,status=200){
   return {ok:status>=200&&status<300,status,url,headers:{get:()=> 'text/html; charset=utf-8'},async text(){return html;}};
@@ -139,4 +139,13 @@ assert(winnerDeliveryFeedback(failedRow,[{tender_watch_id:'wrong-linked',contact
 assert.equal(winnerDeliveryFeedback(failedRow,[{contact_email:'old@guarded.de',evidence:{snippet:'550 5.1.1'}}])[0].kind,'invalid_address');
 const thirdParty=recoverDeliveryContacts(failedRow,{organizations:[{research_completed:true,contacts:[{type:'email',value:'new@guarded.de',confidence:'high',draft_eligible:true,source_type:'TED',source_url:'https://ted.europa.eu'}]}]},failure);
 assert.equal(thirdParty.delivery_recovery.active,false,'recovery requires a replacement published by the company');
+const providerRow={payload:{winner:{name:'Edil Alta SRL',names:['Edil Alta SRL'],email:'edilalta@pec.it'}}};
+assert.equal(winnerDeliveryFeedback(providerRow,[{contact_email:'igsa@pec.it',evidence:{snippet:'550 5.7.1'}}]).length,0,'shared mailbox providers do not identify a company');
+assert.equal(winnerDeliveryFeedback(providerRow,[{contact_email:'edilalta@pec.it',evidence:{snippet:'550 5.7.1'}}]).length,1,'an exact address still identifies its owner');
+const mistaken={payload:{winner:{...providerRow.payload.winner,email:null,ted_declared_emails:['edilalta@pec.it'],contact_recovery:{version:'ted-delivery-recovery-v1',active:false,failed_emails:['igsa@pec.it'],blocked_domains:['pec.it'],evidence:[{email:'igsa@pec.it',kind:'blocked'}]},contact_enrichment:{organizations:[{name:'Edil Alta SRL',contacts:[{type:'email',value:'edilalta@pec.it',source_type:'TED',company_attribution:'ted_winner_organization',confidence:'high',do_not_contact:true,draft_eligible:false,delivery_failure:true}]}]}}}};
+const repaired=repairMisattributedDelivery(mistaken);
+assert.equal(repaired.delivery_recovery.status,'attribution_corrected');
+assert.equal(mergeWinnerWithEnrichment(mistaken.payload.winner,repaired).email,'edilalta@pec.it','undo only the wrongly attributed suppression and retain original declared contact');
+assert.equal(repaired.delivery_recovery.discarded_evidence[0].email,'igsa@pec.it','correction retains the attribution audit');
+assert.equal(repairMisattributedDelivery({payload:{winner:{...mistaken.payload.winner,ted_declared_emails:['igsa@pec.it']}}}),null,'a real owner failure must never be cleared');
 console.log('TED winner contact enrichment and delivery recovery smoke: OK');
