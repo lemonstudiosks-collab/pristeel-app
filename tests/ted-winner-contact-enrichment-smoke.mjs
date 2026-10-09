@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { enrichWinnerPayload, mergeWinnerWithEnrichment } from '../scripts/ted-winner-contact-enrichment.mjs';
+import { enrichWinnerPayload, mergeWinnerWithEnrichment, classifyDeliveryFailure, winnerDeliveryFeedback, recoverDeliveryContacts } from '../scripts/ted-winner-contact-enrichment.mjs';
 
 function response(url,html,status=200){
   return {ok:status>=200&&status<300,status,url,headers:{get:()=> 'text/html; charset=utf-8'},async text(){return html;}};
@@ -112,4 +112,31 @@ assert.equal(knapeMerged.email,'schlosserei.knape@t-online.de','repair must repl
 assert.deepEqual(knapeMerged.emails,['schlosserei.knape@t-online.de']);
 assert.equal(knapeMerged.website,null,'repair must clear the association listing from winner.website');
 
-console.log('TED winner contact enrichment smoke: OK');
+assert.equal(classifyDeliveryFailure({snippet:'550 5.1.1 unknown user'}),'invalid_address');
+assert.equal(classifyDeliveryFailure({snippet:'550 5.7.193 external senders are not permitted'}),'blocked');
+assert.equal(classifyDeliveryFailure({snippet:'550 5.4.1 Access denied'}),'blocked');
+assert.equal(classifyDeliveryFailure({snippet:'451 4.2.1 temporary error'}),'temporary');
+const failedRow={payload:{winner:{name:'Guarded GmbH',email:'old@guarded.de',website:'https://guarded.de'}}};
+const failure=[{email:'old@guarded.de',kind:'invalid_address',gmail_message_id:'dsn1'}];
+const evidence={organizations:[{name:'Guarded GmbH',research_completed:true,contacts:[
+ {type:'email',value:'old@guarded.de',confidence:'high',source_type:'official_website',source_url:'https://guarded.de/contact',draft_eligible:true},
+ {type:'email',value:'new@guarded.de',confidence:'high',source_type:'official_website',source_url:'https://guarded.de/contact',draft_eligible:true}
+]}]};
+const recovery=recoverDeliveryContacts(failedRow,evidence,failure);
+assert.equal(recovery.delivery_recovery.status,'recovered');
+assert.equal(recovery.organizations[0].contacts[0].do_not_contact,true);
+assert.equal(mergeWinnerWithEnrichment(failedRow.payload.winner,recovery).email,'new@guarded.de');
+const blocked=recoverDeliveryContacts(failedRow,evidence,[{...failure[0],kind:'blocked'}]);
+assert.equal(blocked.delivery_recovery.status,'suppressed');
+assert.equal(blocked.delivery_recovery.active,false,'recipient blocks must never be evaded using another mailbox on the same domain');
+assert.equal(mergeWinnerWithEnrichment(failedRow.payload.winner,blocked).email,null);
+const absent=recoverDeliveryContacts(failedRow,{organizations:[{research_completed:true,contacts:[]}]},failure);
+assert.equal(absent.delivery_recovery.status,'unreachable');
+const network=recoverDeliveryContacts(failedRow,{organizations:[{research_completed:false,contacts:[]}]},failure);
+assert.equal(network.delivery_recovery.status,'research_pending','network failure is not proof that no email exists');
+assert.equal(network.delivery_recovery.active,false);
+assert(winnerDeliveryFeedback(failedRow,[{tender_watch_id:'wrong-linked',contact_email:'new@other-company.de',evidence:{snippet:'550 5.1.1'}}]).length===0,'tender identity alone cannot attribute a bounced email to its winner');
+assert.equal(winnerDeliveryFeedback(failedRow,[{contact_email:'old@guarded.de',evidence:{snippet:'550 5.1.1'}}])[0].kind,'invalid_address');
+const thirdParty=recoverDeliveryContacts(failedRow,{organizations:[{research_completed:true,contacts:[{type:'email',value:'new@guarded.de',confidence:'high',draft_eligible:true,source_type:'TED',source_url:'https://ted.europa.eu'}]}]},failure);
+assert.equal(thirdParty.delivery_recovery.active,false,'recovery requires a replacement published by the company');
+console.log('TED winner contact enrichment and delivery recovery smoke: OK');

@@ -12,7 +12,7 @@ window.__pstOpportunitiesMindmapV5=true;
 window.__pstOpportunitiesMindmapV4=true;
 window.__pstOpportunitiesFilterPolishV1=true;
 
-var VERSION='20261008-ted-action-desk-v2';
+var VERSION='20261009-ted-background-delivery-v3';
 var deskView='attention',lastDeskSource='',policyLoad=null;
 function loadPolicy(){
  if(window.PSTTedOutreachPolicyV1)return Promise.resolve(window.PSTTedOutreachPolicyV1);
@@ -71,7 +71,7 @@ function filteredRows(){
  return rows;
 }
 function counts(){
- var contacted=globalContactedKeys(),rows=baseRows().filter(function(r){return effectiveLane(r)==='new'&&!contactAliases(r).some(function(k){return !!contacted[k];});}),c={total:rows.length,local:0,award:0,life:{new:0,waiting:0,replied:0},src:{},field:{},winner:{gc_epc:0,other:0,producer:0}};
+ var contacted=globalContactedKeys(),rows=baseRows().filter(function(r){return !(W(r).contact_recovery&&W(r).contact_recovery.active===false)&&effectiveLane(r)==='new'&&!contactAliases(r).some(function(k){return !!contacted[k];});}),c={total:rows.length,local:0,award:0,life:{new:0,waiting:0,replied:0},src:{},field:{},winner:{gc_epc:0,other:0,producer:0}};
  SOURCES.forEach(function(k){c.src[k]=0;});FIELDS.forEach(function(f){c.field[f.id]=0;});
  rows.forEach(function(r){var s=srcOf(r),l=lifeOf(r),f=fieldOf(r),w=winnerOf(r);if(s==='TED')c.award++;else c.local++;if(c.life[l]!=null)c.life[l]++;if(c.src[s]!=null)c.src[s]++;if(c.field[f]!=null)c.field[f]++;if(c.winner[w]!=null)c.winner[w]++;});
  return c;
@@ -81,7 +81,7 @@ function css(){
  var old=document.getElementById('pst-opportunities-filter-polish-v1-css');if(old)return;
  var s=document.createElement('style');s.id='pst-opportunities-filter-polish-v1-css';s.textContent=`
 .pst-opp-history-pages{display:flex;align-items:center;justify-content:center;gap:14px;padding:14px}.pst-opp-history-pages button{padding:8px 12px;border:1px solid #dbe5e8;border-radius:8px;background:#fff;color:#39798f;cursor:pointer}.pst-opp-history-pages button:disabled{opacity:.4;cursor:default}.pst-opp-history-error{color:#a33;padding:10px}
-.pst-opp-task-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;padding:20px}.pst-opp-task-card{border:1px solid #dfe7e9;border-radius:12px;background:#fff;padding:20px;text-align:left}.pst-opp-task-top{display:flex;justify-content:space-between;gap:12px;color:#73858b;font-size:12px}.pst-opp-task-card h4,.pst-opp-task-empty h4{margin:16px 0 8px;font-size:18px;color:#2a4551}.pst-opp-task-card p,.pst-opp-task-empty p{margin:0 0 18px;line-height:1.6;color:#617781}.pst-opp-task-context{display:block;color:#73858b}.pst-opp-task-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.pst-opp-task-actions a,.pst-opp-task-actions button{border:1px solid #dce5e8;border-radius:8px;background:#fff;padding:10px 14px;color:#39798f;font:inherit;cursor:pointer;text-decoration:none}.pst-opp-task-actions .pst-opp-task-primary{background:#eef6f7;border-color:#c6dce1;font-weight:700}.pst-opp-task-empty{padding:48px 28px;max-width:640px}.pst-opp-side summary{cursor:pointer;color:#617781;padding:12px 0}
+.pst-opp-task-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;padding:20px}.pst-opp-task-card{border:1px solid #dfe7e9;border-radius:12px;background:#fff;padding:20px;text-align:left}.pst-opp-task-top{display:flex;justify-content:space-between;gap:12px;color:#73858b;font-size:12px}.pst-opp-task-card h4,.pst-opp-task-empty h4{margin:16px 0 8px;font-size:18px;color:#2a4551}.pst-opp-task-card p,.pst-opp-task-empty p{margin:0 0 18px;line-height:1.6;color:#617781}.pst-opp-task-context{display:block;color:#73858b}.pst-opp-task-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.pst-opp-task-actions a,.pst-opp-task-actions button{border:1px solid #dce5e8;border-radius:8px;background:#fff;padding:10px 14px;color:#39798f;font:inherit;cursor:pointer;text-decoration:none}.pst-opp-task-actions .pst-opp-task-primary{background:#eef6f7;border-color:#c6dce1;font-weight:700}.pst-opp-task-empty{padding:48px 28px;max-width:640px}.pst-opp-side summary{cursor:pointer;color:#617781;padding:12px 0}.pst-opp-summary-card>strong{display:block;font-size:32px;color:#39798f;margin:12px 0}.pst-opp-reply-company{display:grid;grid-template-columns:minmax(180px,1fr) 2fr;gap:16px;padding:18px;border-bottom:1px solid #e9eef0}.pst-opp-reply-company small{display:block;color:#73858b;margin-top:6px}.pst-opp-reply-conversation{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:8px 0;color:#617781}.pst-opp-reply-conversation a{color:#39798f}.pst-opp-reply-conversation button{border:1px solid #dce5e8;background:#fff;border-radius:8px;padding:7px 10px;font:inherit;color:#617781;cursor:pointer}@media(max-width:700px){.pst-opp-reply-company{grid-template-columns:1fr}}
 
 body:has(#page-kek-tenders.active) .app-shell>.sidebar{display:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important}
 body:has(#page-kek-tenders.active) .app-shell>.main{width:100%!important;max-width:none!important;min-width:0!important}
@@ -233,19 +233,19 @@ function contactAliases(r){
  return keys.length?keys:['tender:'+S(r&&r.id)];
 }
 function historicalRecord(x,registry,byTender){
- var p=x&&x.payload||{},ready=p.outreach_readiness_v1||{},status=N(registry?rawOutreachStatus(x):x.outreach_status||x.status),sent=S(x.sent_at),reply=S(x.replied_at),bounce=S(x.bounced_at),draft=registry&&/^(draft_pending|draft_created)$/.test(status);
+ var p=x&&x.payload||{},ready=p.outreach_readiness_v1||{},status=N(registry?rawOutreachStatus(x):x.outreach_status||x.status),sent=S(x.sent_at),reply=S(x.replied_at||(['reply','out_of_office'].indexOf(x.inbound_kind)>=0?x.last_inbound_at:'')),bounce=S(x.bounced_at),draft=registry&&/^(draft_pending|draft_created)$/.test(status);
  if(registry&&!sent&&status==='sent')sent=S(x.updated_at||x.draft_created_at);
  var messages=A(state&&state.emailByThread&&state.emailByThread[S(x.gmail_thread_id)]),after=Date.parse(x.draft_created_at||x.updated_at||0)-300000;
  
- if(sent)messages.forEach(function(mail){if(N(mail.direction)==='incoming'&&Date.parse(mail.sent_at)>Date.parse(sent)&&(!reply||Date.parse(mail.sent_at)>Date.parse(reply)))reply=S(mail.sent_at);});
+ if(sent)messages.forEach(function(mail){if(N(mail.direction)==='incoming'&&!/mailer-daemon|postmaster/.test(N(mail.from_email))&&!/delivery status|undeliver|delivery failure|returned mail|message blocked/.test(N(mail.subject))&&Date.parse(mail.sent_at)>Date.parse(sent)&&(!reply||Date.parse(mail.sent_at)>Date.parse(reply)))reply=S(mail.sent_at);});
  var touch=S(x.touch_3||x.touch_2||x.touch_1),legacyConfirmed=!registry&&(!!touch||/^(sent(?: [123])?|replied|meeting|waiting|bounced|no response after [123] contacts)$/.test(status));
  if(!draft&&!sent&&!reply&&!bounce&&!legacyConfirmed)return null;
  var base=byTender[S(x.tender_watch_id)],w=base&&W(base)||{},company=S(registry?x.recipient_company_name||p.recipient_company_name||p.target_company:x.company_name);
  if(!company&&x.notes){var match=S(x.notes).match(/(?:^|\n)Firma:\s*([^\n]+)/i);if(match)company=match[1].trim();}
  var email=S(x.recipient_email||x.contact_email),domain=S(registry?x.recipient_company_domain||p.recipient_company_domain:x.company_domain)||emailDomain(email);
  company=company||S(w.name)||domain||email;if(!company)return null;
- var lane=reply||x.replied===true||status==='replied'?'replied':bounce||x.bounced===true||status==='bounced'?'bounced':x.meeting===true||status==='meeting'?'meeting':sent||/^(sent(?: [123])?|waiting)$/.test(status)?'waiting':draft?'draft':'history';
- var gmailState=S(x.gmail_state||p.gmail_prepared_sync_v1&&p.gmail_prepared_sync_v1.gmail_state),meta={company:company,domain:domain,email:email,profile:S(x.company_profile_id||ready.company_profile_id),lane:lane,when:reply||bounce||sent||touch||S(x.draft_created_at||x.updated_at),gmail_state:gmailState,scheduled:lane==='draft'&&gmailState==='scheduled',thread:S(x.gmail_thread_id),closed:x.closed===true,follow_up_date:S(x.follow_up_date).slice(0,10),source:registry?'Regjistri Gmail':S(x.source)==='ted_award_sales'?'Historiku TED':'Historiku i kontaktimit'};
+ var lane=reply||x.replied===true||status==='replied'||x.inbound_kind==='out_of_office'?'replied':bounce||x.bounced===true||status==='bounced'?'bounced':x.meeting===true||status==='meeting'?'meeting':sent||/^(sent(?: [123])?|waiting)$/.test(status)?'waiting':draft?'draft':'history';
+ var gmailState=S(x.gmail_state||p.gmail_prepared_sync_v1&&p.gmail_prepared_sync_v1.gmail_state),meta={company:company,domain:domain,email:email,profile:S(x.company_profile_id||ready.company_profile_id),lane:lane,when:reply||bounce||S(x.last_inbound_at)||sent||touch||S(x.draft_created_at||x.updated_at),gmail_state:gmailState,scheduled:lane==='draft'&&gmailState==='scheduled',thread:S(x.gmail_thread_id),reply_kind:S(x.inbound_kind)||'reply',closed:x.closed===true,follow_up_date:S(x.follow_up_date).slice(0,10),source:registry?'Regjistri Gmail':S(x.source)==='ted_award_sales'?'Historiku TED':'Historiku i kontaktimit'};
  var sameBase=base&&N(w.name)===N(company),r=sameBase?Object.assign({},base):{id:'history:'+(registry?'draft:':'legacy:')+S(x.id||x.gmail_draft_id||email+':'+x.tender_watch_id),title:base&&base.title||'Kontaktim i mëparshëm',status:'watch',payload:{source:'TED',notice_phase:'award',winner:{name:company}}};
  r.__pstContactMeta=meta;r.__pstTenderWatchId=S(x.tender_watch_id);r.__pstHistoryOnly=!sameBase;return r;
 }
@@ -292,11 +292,13 @@ function groupWorkRows(rows){
 }
 function workRows(view){
  var a=activeRows(),h=contactedRows(),source=S(state&&state.source||'all'),q=N(state&&state.query||'');
+ if(view==='replies')return replyGroups();
+ if(view==='followups')return actionItems().filter(function(x){return x.type==='followup';}).map(function(x){return{row:x.row,count:1,action:x};});
  if(view==='attention')return actionItems().map(function(x){return{row:x.row,count:1,action:x};});
  if(view==='tenders')return a.filter(function(r){return srcOf(r)!=='TED';}).map(function(r){return{row:r,count:1};});
  if(view==='drafts'){var bt={};A(state&&state.rows).concat(A(state&&state.projectRows)).forEach(function(r){bt[S(r.id)]=r;});h=A(state&&state.outreachRows).map(function(x){return historicalRecord(x,true,bt);}).filter(Boolean).concat(h.filter(function(r){return contactMeta(r).lane==='draft';}));}
  h=h.filter(function(r){return(source==='all'||srcOf(r)===source)&&(!q||N(companyLabel(r)+' '+rowText(r)+' '+contactMeta(r).email).indexOf(q)>-1);});
- var rows=view==='companies'?a.concat(h):view==='waiting'?h.filter(function(r){return contactMeta(r).lane==='waiting';}):view==='drafts'?h.filter(function(r){return contactMeta(r).lane==='draft'&&!/^(trashed|deleted|missing)$/.test(contactMeta(r).gmail_state||'');}):view==='review'||view==='excluded'?a.concat(h.filter(function(r){return contactMeta(r).lane==='draft';})).filter(function(r){return srcOf(r)==='TED'&&eligibility(r).state===view;}):[];
+ var rows=view==='companies'?a.concat(h.filter(function(r){return contactMeta(r).lane!=='bounced'&&!(W(r).contact_recovery&&W(r).contact_recovery.active===false);})):view==='waiting'?h.filter(function(r){return contactMeta(r).lane==='waiting';}):view==='drafts'?h.filter(function(r){return contactMeta(r).lane==='draft'&&!/^(trashed|deleted|missing)$/.test(contactMeta(r).gmail_state||'');}):view==='review'||view==='excluded'?a.concat(h.filter(function(r){return contactMeta(r).lane==='draft';})).filter(function(r){return srcOf(r)==='TED'&&eligibility(r).state===view;}):[];
  return groupWorkRows(rows);
 }
 function workDay(){var parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Budapest',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),p={};parts.forEach(function(x){p[x.type]=x.value;});return p.year+'-'+p.month+'-'+p.day;}
@@ -304,7 +306,7 @@ function communicationUrl(r){
  var m=contactMeta(r),thread=S(m.thread);if(/^[a-zA-Z0-9_-]+$/.test(thread))return 'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(thread);
  var email=S(m.email||A(m.emails)[0]);return email?'https://mail.google.com/mail/u/0/#search/'+encodeURIComponent('from:'+email+' OR to:'+email):'';
 }
-function actionItems(){
+function actionItems(includeClosedReplies){
  var bt={},records=[],seen={},out=[],today=workDay(),source=S(state&&state.source||'all'),q=N(state&&state.query||'');
  A(state&&state.rows).concat(A(state&&state.projectRows)).forEach(function(r){bt[S(r.id)]=r;});
  A(state&&state.outreachRows).forEach(function(x){var r=historicalRecord(x,true,bt);if(r)records.push(r);});
@@ -312,10 +314,10 @@ function actionItems(){
  contactHistory().rows.forEach(function(r){var tid=S(r.__pstTenderWatchId||r.id);if(!records.some(function(x){return S(x.__pstTenderWatchId||x.id)===tid;}))records.push(r);});
  records.forEach(function(r){
   var m=contactMeta(r),lane=m.lane||effectiveLane(r),tid=S(r.__pstTenderWatchId||r.id);
-  if(bt[tid]&&api&&api._test&&typeof api._test.ownedByProject==='function'&&api._test.ownedByProject(bt[tid]))return;
-  if(m.closed||source!=='all'&&srcOf(r)!==source||q&&N(companyLabel(r)+' '+rowText(r)+' '+m.email).indexOf(q)<0)return;
-  var type=lane==='bounced'?'bounce':lane==='replied'?'reply':lane==='waiting'&&m.follow_up_date&&m.follow_up_date<=today?'followup':'';
-  if(!type)return;
+  if(!(includeClosedReplies&&lane==='replied')&&bt[tid]&&api&&api._test&&typeof api._test.ownedByProject==='function'&&api._test.ownedByProject(bt[tid]))return;
+  if(m.closed&&!(includeClosedReplies&&lane==='replied')||source!=='all'&&srcOf(r)!==source||q&&N(companyLabel(r)+' '+rowText(r)+' '+m.email).indexOf(q)<0)return;
+  var type=lane==='replied'?'reply':lane==='waiting'&&m.follow_up_date&&m.follow_up_date<=today?'followup':'';
+  if(!type||type==='followup'&&W(r).contact_recovery&&W(r).contact_recovery.active===false)return;
   if(!m.thread){var comm=A(state&&state.communicationByTender&&state.communicationByTender[tid]).find(function(x){return !m.email||N(x.target_email)===N(m.email);});if(comm)m=Object.assign({},m,{thread:S(comm.communication_thread_id)});}
   r=Object.assign({},r,{__pstContactMeta:m});
   var key=type+':'+(m.thread?'thread:'+m.thread:tid+':'+N(m.email||A(m.emails)[0]||companyLabel(r)));
@@ -328,13 +330,25 @@ function actionCard(x){
  var r=x.row,m=contactMeta(r),action=x.url?'<a class="pst-opp-task-primary" href="'+E(x.url)+'" target="_blank" rel="noopener">'+(x.type==='reply'?'Lexo përgjigjen':x.type==='bounce'?'Shiko emailin e kthyer':'Hap bisedën')+'</a>':'';
  return '<article class="pst-opp-task-card" data-pst-opp-action-card="'+E(x.key)+'"><div class="pst-opp-task-top"><span>'+E(x.type==='reply'?'Përgjigje e marrë':x.type==='bounce'?'Kontaktim i pasuksesshëm':'Afat rikontaktimi')+'</span><time>'+E(fd(x.when))+'</time></div><h4>'+E(x.title)+'</h4><p>'+E(x.why)+'</p><small class="pst-opp-task-context">'+E(companyLabel(r))+' · '+E(LABEL[srcOf(r)]||srcOf(r))+'</small><div class="pst-opp-task-actions">'+action+'<button type="button" data-pst-opp-task-detail="'+E(x.key)+'">Shiko kontekstin</button></div></article>';
 }
-function attentionPanel(){
- var items=actionItems(),pages=Math.max(1,Math.ceil(items.length/60));activePage=Math.min(activePage,pages);
- return '<section class="pst-opp-work-list pst-opp-action-workspace"><div class="pst-opp-work-head"><div><h3>Kërkon vëmendjen time</h3><small>'+items.length+' veprime të konfirmuara</small></div></div>'+(state&&state.contactHistoryError?'<p class="pst-opp-history-error" role="alert">Të dhënat nuk u ngarkuan plotësisht. Rifresko faqen para se të veprosh.</p>':'')+(items.length?'<div class="pst-opp-task-grid">'+items.slice((activePage-1)*60,activePage*60).map(actionCard).join(''):'<div class="pst-opp-task-empty"><h4>Nuk ke veprime të konfirmuara tani</h4><p>Këtu dalin përgjigjet, emailat e kthyer dhe rikontaktimet me afat të arritur. Draftet në Gmail dhe pritja e përgjigjeve nuk kërkojnë punë prej teje këtu.</p></div>')+pageControls('active',activePage,pages)+'</section>';
+function replyGroups(){
+ var groups={},out=[];
+ actionItems(true).filter(function(x){return x.type==='reply';}).forEach(function(x){var key=companyKey(x.row);if(!groups[key]){groups[key]={row:x.row,count:0,actions:[]};out.push(groups[key]);}groups[key].actions.push(x);groups[key].count++;});
+ return out;
 }
-function workNav(){return [['attention','Kërkon vëmendjen time'],['tenders','Tenderët për vlerësim'],['waiting','Në pritje të përgjigjes'],['drafts','Draftet']].map(function(x){return filterButton('data-pst-opp-workview',x[0],x[1],workRows(x[0]).length,deskView===x[0],'');}).join('');}
+function responsePanel(){
+ var groups=replyGroups(),pages=Math.max(1,Math.ceil(groups.length/60));activePage=Math.min(activePage,pages);
+ return '<section class="pst-opp-work-list"><div class="pst-opp-work-head"><div><h3>Kompanitë që janë përgjigjur</h3><small>'+groups.length+' kompani · të gjitha përgjigjet e regjistruara</small></div><div class="pst-opp-work-tools"><button type="button" data-pst-opp-workview="attention">← Puna ime</button><label>⌕ <input data-pst-opp-search value="'+E(state&&state.query||'')+'" placeholder="Kërko në përgjigje..."></label></div></div><div class="pst-opp-reply-list">'+groups.slice((activePage-1)*60,activePage*60).map(function(g){return '<article class="pst-opp-reply-company"><div><b>'+E(companyLabel(g.row))+'</b><small>'+g.count+' përgjigje / biseda</small></div><div>'+g.actions.map(function(x){var m=contactMeta(x.row);return '<div class="pst-opp-reply-conversation"><span>'+E(m.email||A(m.emails)[0]||x.row.title||'')+' · '+E(fd(x.when))+'</span>'+(x.url?'<a href="'+E(x.url)+'" target="_blank" rel="noopener">Lexo përgjigjen</a>':'')+'<button type="button" data-pst-opp-task-detail="'+E(x.key)+'">Konteksti</button></div>';}).join('')+'</div></article>';}).join('')+'</div>'+(!groups.length?'<div class="pst-opp-work-empty">Nuk ka përgjigje të regjistruara në këtë pamje.</div>':'')+pageControls('active',activePage,pages)+'</section>';
+}
+function attentionPanel(){
+ var replies=replyGroups().length,followups=actionItems().filter(function(x){return x.type==='followup';}).length;
+ function card(view,title,count,copy){return '<article class="pst-opp-task-card pst-opp-summary-card" data-pst-opp-summary-card="'+view+'" data-pst-opp-workview="'+view+'"><h4>'+E(title)+'</h4><strong>'+count+'</strong><p>'+E(copy)+'</p><div class="pst-opp-task-actions"><button type="button" data-pst-opp-workview="'+view+'">'+(view==='replies'?'Hap përgjigjet':'Hap rikontaktimet')+'</button></div></article>';}
+ return '<section class="pst-opp-work-list pst-opp-action-workspace"><div class="pst-opp-work-head"><div><h3>Kërkon vëmendjen time</h3><small>Përgjigjet dhe vendimet e tua</small></div></div>'+(state&&state.contactHistoryError?'<p class="pst-opp-history-error" role="alert">Të dhënat nuk u ngarkuan plotësisht. Rifresko faqen para se të veprosh.</p>':'')+'<div class="pst-opp-task-grid">'+card('replies','Shqyrto përgjigjet',replies,'Kompanitë që janë përgjigjur. Hape listën për të lexuar bisedat dhe për të vendosur hapin tjetër.')+(followups?card('followups','Rikontaktime për vendim',followups,'Afate të regjistruara që kanë arritur. Nuk dërgohet email pa miratim.'):'')+'</div>'+(replies||followups?'':'<div class="pst-opp-task-empty"><h4>Nuk ke veprime të konfirmuara tani</h4><p>PPPP trajton adresat e pasakta në prapavijë. Draftet dhe pritja e përgjigjeve i gjen majtas.</p></div>')+'</section>';
+}
+function workNav(){return [['attention','Kërkon vëmendjen time'],['replies','Përgjigjet'],['tenders','Tenderët për vlerësim'],['waiting','Në pritje të përgjigjes'],['drafts','Draftet']].map(function(x){return filterButton('data-pst-opp-workview',x[0],x[1],workRows(x[0]).length,deskView===x[0],'');}).join('');}
 function workPanel(){
  if(deskView==='attention')return attentionPanel();
+ if(deskView==='replies')return responsePanel();
+ if(deskView==='followups')return '<section class="pst-opp-work-list"><div class="pst-opp-work-head"><h3>Rikontaktime për vendim</h3></div><div class="pst-opp-task-grid">'+actionItems().filter(function(x){return x.type==='followup';}).map(actionCard).join('')+'</div></section>';
  var labels={waiting:'Në pritje të përgjigjes',drafts:'Draftet',companies:'Të gjitha kompanitë',tenders:'Tenderët për vlerësim',review:'Për verifikim',excluded:'Jashtë fushës së çelikut'},rows=workRows(deskView),pages=Math.max(1,Math.ceil(rows.length/60));activePage=Math.min(activePage,pages);
  var body=rows.slice((activePage-1)*60,activePage*60).map(function(g){var r=g.row,m=contactMeta(r),lane=m.lane||effectiveLane(r),check=eligibility(r),status=lane==='replied'?'Ka përgjigje':lane==='bounced'?'Email i kthyer':lane==='meeting'?'Takim':lane==='waiting'?'Në pritje':lane==='draft'?(check.ok?'Draft në Gmail':'Draft për rishikim'):srcOf(r)==='TED'?(check.ok?'E përshtatshme':check.state==='excluded'?'Jashtë fushës':'Për verifikim'):'Për vlerësim';
  if(deskView==='tenders')return '<article class="pst-opp-task-card"><div class="pst-opp-task-top"><span>'+E(LABEL[srcOf(r)]||srcOf(r))+'</span><time>'+E(fd(r.published_date))+'</time></div><h4>Vlerëso tenderin</h4><p>'+E(r.title||'')+'</p><div class="pst-opp-task-actions"><button type="button" data-pst-opp-open="'+E(r.id)+'">Hap tenderin për vlerësim</button></div></article>';
@@ -486,7 +500,7 @@ function click(e){
  var oppPage=t.closest('#page-kek-tenders'),modal=t.closest('#pst-opp-modal-bg');if((!oppPage||!oppPage.classList.contains('active'))&&!modal)return;
  if((b=t.closest('[data-pst-opp-close]'))||t===modal){consume(e);closeDetail();return;}
  if((b=t.closest('[data-pst-opp-back]'))){consume(e);back();return;}
- if((b=t.closest('[data-pst-opp-task-detail]'))){consume(e);var item=actionItems().find(function(x){return x.key===b.dataset.pstOppTaskDetail;});if(item){closeDetail();selectedId=S(item.row.id);var taskModal=document.createElement('div');taskModal.id='pst-opp-modal-bg';taskModal.className='pst-opp-modal-bg';taskModal.setAttribute('data-pst-font-lock','1');taskModal.innerHTML=historyDetail(item.row);document.body.appendChild(taskModal);}return;}
+ if((b=t.closest('[data-pst-opp-task-detail]'))){consume(e);var item=actionItems(true).find(function(x){return x.key===b.dataset.pstOppTaskDetail;});if(item){closeDetail();selectedId=S(item.row.id);var taskModal=document.createElement('div');taskModal.id='pst-opp-modal-bg';taskModal.className='pst-opp-modal-bg';taskModal.setAttribute('data-pst-font-lock','1');taskModal.innerHTML=historyDetail(item.row);document.body.appendChild(taskModal);}return;}
  if((b=t.closest('[data-pst-opp-workview]'))){consume(e);deskView=b.dataset.pstOppWorkview||'attention';activePage=1;contactedExpanded=false;decorate();return;}
  if((b=t.closest('[data-pst-opp-reset]'))){consume(e);reset();return;}
  if((b=t.closest('[data-pst-opp-source]'))){consume(e);apply('source',b.dataset.pstOppSource||'all');return;}
@@ -514,6 +528,6 @@ function boot(){
  document.addEventListener('pst:modules-ready',schedule,{once:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-var exposed={version:VERSION,apply:decorate,reset:reset,state:function(){return{density:density,filtersOpen:filtersOpen,resultPage:resultPage,sourcePage:resultPage&&resultPage.source||''};},_test:{actionItems:actionItems,actionCard:actionCard,attentionPanel:attentionPanel,workRows:workRows,workPanel:workPanel,eligibility:eligibility,groupWorkRows:groupWorkRows,contactHistory:contactHistory,activeRows:activeRows,contactedRows:contactedRows,contactAliases:contactAliases,historicalRecord:historicalRecord,baseRows:baseRows,filteredRows:filteredRows,counts:counts,sourceOf:srcOf,fieldOf:fieldOf,winnerOf:winnerOf,lifecycleOf:lifeOf,decorate:decorate,schedule:schedule,categoryMeta:categoryMeta,openResultPage:openResultPage,closeResultPage:closeResultPage}};
+var exposed={version:VERSION,apply:decorate,reset:reset,state:function(){return{density:density,filtersOpen:filtersOpen,resultPage:resultPage,sourcePage:resultPage&&resultPage.source||''};},_test:{replyGroups:replyGroups,responsePanel:responsePanel,actionItems:actionItems,actionCard:actionCard,attentionPanel:attentionPanel,workRows:workRows,workPanel:workPanel,eligibility:eligibility,groupWorkRows:groupWorkRows,contactHistory:contactHistory,activeRows:activeRows,contactedRows:contactedRows,contactAliases:contactAliases,historicalRecord:historicalRecord,baseRows:baseRows,filteredRows:filteredRows,counts:counts,sourceOf:srcOf,fieldOf:fieldOf,winnerOf:winnerOf,lifecycleOf:lifeOf,decorate:decorate,schedule:schedule,categoryMeta:categoryMeta,openResultPage:openResultPage,closeResultPage:closeResultPage}};
 window.PSTOpportunitiesDeskV1=window.PSTOpportunitiesMindmapV6=window.PSTOpportunitiesMindmapV5=window.PSTOpportunitiesMindmapV4=exposed;
 })();

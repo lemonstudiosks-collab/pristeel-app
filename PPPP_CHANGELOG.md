@@ -1,3 +1,13 @@
+## 2026-10-09 - TED replies summary and background delivery recovery
+
+The Opportunities default center shows one “Shqyrto përgjigjet” summary card counting companies. Opening it lists every recorded reply conversation per company, including automatic replies; delivery-status notifications are not replies. Due follow-ups use one separate summary card. Bounced addresses never become operator “verify email” tasks.
+
+The existing TED winner contact enrichment worker handles delivery failures with bounded free official-site research. Failed addresses stay suppressed. Recipient/security blocks suppress the corporate domain rather than rotating mailboxes. A company returns to the active queue only with a safe replacement published on its official site. Unresolved or unverified contacts are excluded and communication history is retained. Failure attribution requires an existing winner email or company domain, never a tender ID alone. Technical research failures remain pending or unverified, rather than fabricated “no email” evidence.
+
+The existing TED monitor processes delivery recovery only on main pushes; ordinary research keeps its existing daily schedule and bounded manual workflow. No new schedule, schema, paid lookup service or email sending is added. Generator, dispatch and follow-up gates enforce delivery suppression. A cooldown override cannot bypass bounced/suppressed communication guards. Send approvals and automatic-send-disabled settings remain authoritative.
+
+Validation covers executable reply grouping and 500 bounces; official replacement, blocked domain, no-contact, technical failure and conflicting identity regressions; existing history reuse/ranking and layout checks. UI ownership, RFQ-only Project promotion and SPIE typography are preserved.
+
 ## 2026-10-08 — Concrete operator actions replace the company-list center
 
 Corrects the TED action desk presentation after operator feedback: the default center now renders action cards with a specific next step, evidence reason, event/due date and a direct link to the relevant Gmail conversation. Company identity is subordinate context. Registry/legacy reply and bounce events are read at conversation/contact granularity, so two conversations with the same company are not merged into one task. Only confirmed waiting communication with a recorded follow-up date that has arrived (Europe/Budapest) creates a follow-up review; closed records, draft preparation, ordinary waiting, unknown-role research and a meeting without a due action do not create operator work.
