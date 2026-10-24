@@ -161,7 +161,7 @@ function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
   load('pristeel-projects-modern-v1.js');
   await w.pstProjectsModernOpen();
-  assert.ok(w.document.querySelector('.ppd-row[data-ppd-open]'), 'Projects Operator Desk row did not render');
+  assert.ok(w.document.querySelector('.ppd-project-card [data-ppd-open]'), 'Projects Operator Desk row did not render');
   assert.ok(w.document.body.textContent.includes('EVOSYS Laser'), 'Projects Operator Desk lost the project');
   assert.ok(w.document.querySelectorAll('.ppd-focus').length === 5, 'Projects Operator Desk operational focus bar did not render');
   assert.ok(!w.document.querySelector('[data-pm-view="board"]'), 'Legacy Board view must not return');

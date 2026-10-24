@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261024-hubspot-home1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
+var V='20261024-connected-workspace1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -100,7 +100,7 @@ var I={
  close:svg('<path d="M6 6l12 12M18 6 6 18"/>')
 };
 function gmail(){return '<svg class="phl-gmail" viewBox="0 0 32 24"><path fill="#4285F4" d="M2 5.3 6 8.2V22H2z"/><path fill="#34A853" d="M26 8.2 30 5.3V22h-4z"/><path fill="#EA4335" d="M2 5.3 5.2 2.8 16 10.8 26.8 2.8 30 5.3 16 15.7z"/><path fill="#C5221F" d="M26.8 2.8 30 5.3 16 15.7 13.8 14.1z"/></svg>'}
-function icon(k,top){return '<span class="'+(top?'phl-top-icon':'phl-card-icon')+'">'+(k==='gmail'?gmail():(I[k]||(k==='spie'?I.projects:'')))+'</span>'}
+function icon(k,top){return '<span class="'+(top?'phl-top-icon':'phl-card-icon')+'">'+(k==='gmail'?gmail():(I[k]||I[{business:'opportunities',resources:'news',tasks:'clock',spie:'projects'}[k]]||''))+'</span>'}
 
 function clearHomeRouteState(){
  var p=document.getElementById('page-workspace-home');
@@ -124,6 +124,10 @@ function route(k){
  if(k==='druseidt'){location.assign(new URL('druseidt/',location.href).href);return true;}
  if(k==='spie'){location.assign(new URL('spie/',location.href).href);return true;}
  if(k==='daily')return openDaily();
+ if(k==='business'||k==='resources')return workspace(k);
+ if(k==='tasks'){var n=nav();if(n&&typeof n.openTasks==='function')return n.openTasks();return false;}
+ if(k==='files'){var d=window.PSTDocumentCenterStableV2;return d&&d.open?d.open():false;}
+ if(k==='emails'){if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('inbox');return true;}return false;}
  // Early Home is usable while the ordered module owners are still loading.
  // Keep the requested route and dispatch once; never hide Home into an empty page.
  if(window.__pstBootstrapDiagnostics&&!window.__pstModulesReady){pendingRoute=k;return true;}
@@ -456,12 +460,13 @@ function html(){
   +'</nav></header>'
   +'<main><section class="phl-intro"><span class="phl-eyebrow">HAPËSIRA JOTE E PUNËS</span><h1>Mirësevini në PRISTEEL</h1><p>Prioritetet, projektet dhe komunikimet në një vend.</p></section>'
   +'<section class="phl-dashboard" aria-label="Përmbledhja operative" data-dashboard></section>'
-  +'<section class="phl-module-section"><h2>Zhvillimi i biznesit</h2>'
-  +'<section class="phl-main-grid">'
-   +mainCard('opportunities','Mundësitë','Tenderë dhe lead-e për shqyrtim.')
-   +mainCard('representations','Përfaqësime','Zhvillim tregu, kontakte dhe përfaqësime.')
-   +mainCard('direct','Klientë të drejtpërdrejtë','Fabrication, kapacitet prodhues dhe nënkontraktim.')
-   +mainCard('buyers','Blerësit e çelikut','Blerës materiali, RFQ dhe furnizim çeliku.')
+  +'<section class="phl-module-section"><h2>Hapësirat e punës</h2><section class="phl-main-grid">'
+   +mainCard('business','Mundësitë & zhvillimi','Tenderë, klientë të rinj, përfaqësime dhe tregti çeliku.')
+   +mainCard('projects','Projektet','Karta sipas fazës, afate dhe rrjedha e plotë e projektit.')
+   +mainCard('partners','Kompanitë & kontaktet','Klientë, furnitorë, prodhues dhe projektet e lidhura.')
+   +mainCard('tasks','Detyrat & afatet','Detyrat ekzistuese, agjenda dhe ndjekjet.')
+   +mainCard('resources','Komunikime & dokumente','Emailat, ofertat, faturat dhe skedarët e projektit.')
+   +mainCard('finance','Financat','Fatura, pagesa, garanci dhe raportim.')
   +'</section></section>'
   +'<section class="phl-secondary"><h2>Module dhe mjete tjera</h2><div>'
    +smallCard('druseidt','Druseidt','Komponentë elektrikë, projekte, draft-e dhe RFQ.')
@@ -473,6 +478,20 @@ function html(){
    +smallCard('steel','Çmimet e çelikut','Referenca çmimesh PPPP.')
    +smallCard('events','Evente dhe Forume','Evente, forume dhe takime biznesi.')
   +'</div></section></main></div>';
+}
+function workspace(key){
+ var id='page-workspace-'+key,p=document.getElementById(id),host=document.querySelector('.content');if(!host)return false;
+ if(!p){p=document.createElement('section');p.id=id;p.className='page';host.appendChild(p);}
+ document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');x.style.display='none';});
+ p.classList.add('active');p.style.display='block';homeShell(false);
+ var business=key==='business';
+ p.innerHTML='<div class="phl-workspace"><header><span>PRISTEEL · HAPËSIRË PUNE</span><h1>'+(business?'Mundësitë & zhvillimi':'Komunikime & dokumente')+'</h1><p>'+(business?'Zgjidh rrjedhën e punës. Çdo mundësi ruan burimin dhe procesin e vet.':'Hap regjistrat e përgjithshëm ose zgjidh projektin për historikun dhe dokumentet e tij.')+'</p></header><div class="phl-main-grid">'
+ +(business?mainCard('opportunities','Mundësitë','Tenderë të zbuluar automatikisht dhe mundësi për shqyrtim.')+mainCard('representations','Përfaqësime','Prodhues, bashkëpunime dhe zhvillim tregu.')+mainCard('direct','Klientë të drejtpërdrejtë','Fabrikim dhe kapacitet prodhues për klientë të rinj.')+mainCard('buyers','Blerësit e çelikut','Kërkesa dhe tregti me materiale çeliku.'):
+ mainCard('emails','Emailat','Komunikimet dhe lidhjet e tyre me projektet.')+mainCard('files','Dokumentet','Oferta, fatura dhe dokumente tregtare.')+mainCard('projects','Dosjet e projekteve','Skedarë, komunikime dhe furnizim brenda projektit.')+mainCard('events','Evente dhe Forume','Takime biznesi, kontakte dhe dokumente të eventeve.'))
+ +'</div><div class="phl-workspace-footer">'+smallCard('projects','Projektet','Hap projektin për të vazhduar rrjedhën e punës.')+smallCard('partners','Kompanitë & kontaktet','Hap marrëdhëniet e biznesit.')+'</div></div>';
+ p.onclick=function(e){var b=e.target.closest('[data-open]');if(b)route(b.dataset.open);};
+ try{var n=nav();if(n&&n.syncSidebar)n.syncSidebar(key);if(n&&n.repairSidebar)n.repairSidebar();window.scrollTo({top:0,behavior:'auto'});}catch(e){}
+ return true;
 }
 function dashboard(){
  var root=document.getElementById('pst-home-launcher-v4'),host=root&&root.querySelector('[data-dashboard]');if(!host)return;
