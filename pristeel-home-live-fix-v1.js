@@ -26,7 +26,7 @@ function load(){
       return;
     }
     var s=document.createElement('script');
-    s.src='pristeel-home-canonical-v1.js?v=20260817-singleowner1';
+    s.src='pristeel-home-canonical-v1.js?v=20261024-evidence-home1';
     s.defer=true;
     s.setAttribute('data-pst-home-canonical-v1','1');
     s.onload=function(){resolve(canonical());};

@@ -51,7 +51,7 @@ const {JSDOM}=require('jsdom');
  const executionTask={id:'exec-task',created_at:iso,project_id:'execution',title:'Kontrollo dokumentacionin e cilësisë para ngarkimit',detail:'Projekti është në ekzekutim dhe ka një veprim real të hapur.',due_date:yesterdayDate,priority:'urgjent',status:'hapur',source:'kontrate',source_ref:'execution-quality'};
  const waitingOffer={id:88,project_id:'waiting',created_at:'2026-08-10T10:00:00Z',doc_nr:'PST-OFF-WAIT',offer_state:{pst_sent_at:'2026-08-10T11:00:00Z'}};
  const analysis={id:12,project_id:'dukley',created_at:iso,status:'complete',analysis:{event_source_ref:'gmail-dukley',recommendation:{label:'Përpuno kërkesën',decision:'vepro_tani'}}};
- const email={id:1,project_id:'dukley',subject:'Dukley',sent_at:iso,direction:'incoming',gmail_url:'https://mail.google.com/'};
+ const email={id:1,gmail_message_id:'gmail-dukley',project_id:'dukley',subject:'Dukley',sent_at:iso,direction:'incoming',gmail_url:'https://mail.google.com/'};
  const queries=[];
  w.supaFetch=async(path,method)=>{
    queries.push(String(path));
