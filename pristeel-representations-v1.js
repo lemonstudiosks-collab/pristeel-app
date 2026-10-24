@@ -522,7 +522,7 @@ function outreachLabel(v){return v==='not_authorized'?'Kontaktimi ende i paautor
 function modelLabel(v){var x=MODELS.find(function(i){return i[0]===v});return x?x[1]:sqText(v)}
 function targetTypeLabel(v){var x=TARGET_TYPES.find(function(i){return i[0]===v});return x?x[1]:sqText(v)}
 
-function render(){
+function render(){if(state.pendingRecord&&state.rows.some(function(r){return S(r.id)===state.pendingRecord;})){state.selected=state.pendingRecord;state.view='profile';state.pendingRecord='';}
  var p=ensurePage(),act=activeRows();
  var counts={};act.forEach(function(r){counts[r.stage]=(counts[r.stage]||0)+1});
  p.querySelector('[data-rep-pipeline]').innerHTML='<button class="pst-rep-pipe '+(!state.stage?'on':'')+'" data-rep-pipe=""><span>Të gjitha</span><b>'+act.length+'</b></button>'+STAGES.map(function(x){return'<button class="pst-rep-pipe '+(state.stage===x[0]?'on':'')+'" data-rep-pipe="'+x[0]+'"><span>'+E(x[1])+'</span><b>'+(counts[x[0]]||0)+'</b></button>'}).join('');
@@ -891,11 +891,14 @@ function renderHome(){
  card.innerHTML='<button class="pst-rep-home" type="button"><div class="pst-rep-home-head"><div><div class="pst-rep-home-eye">PËRFAQËSIME</div><div class="pst-rep-home-title">Prodhues ndërkombëtarë</div><div class="pst-rep-home-sub">Zhvillim tregu, kontakte dhe negocim.</div></div><span class="pst-rep-home-open">Hap →</span></div><div class="pst-rep-home-stats">'+[[act.length,'Kompani'],[contacted.length,'Kontaktuar'],[meet.length,'Takime'],[represented.length,'Aktive']].map(function(x){return'<span class="pst-rep-home-stat"><b>'+x[0]+'</b><span>'+x[1]+'</span></span>'}).join('')+'</div></button>';
 }
 function removeSystemCard(){var x=document.getElementById('pst-representations-system-card');if(x)x.remove()}
-function open(){
+function open(recordId,record){
+ state.returnToDevelopment=!!record;
+ if(record){var ri=state.rows.findIndex(function(r){return S(r.id)===S(record.id);});if(ri<0)state.rows.push(record);else state.rows[ri]=record;}
+ if(typeof recordId==='string'){state.pendingRecord=recordId;state.selected=recordId;state.view='profile';}
  var p=ensurePage(),prev=document.querySelector('.page.active');
  document.body.classList.add('pst-global-fullwidth-shell');
  if(prev&&prev!==p){state.previousPageId=prev.id||'';try{state.previousScrollY=Number(window.scrollY||0)}catch(e){state.previousScrollY=0}}
- hideOthers(p);p.style.display='block';p.classList.add('active');setRoute(true);try{window.scrollTo(0,0)}catch(e){}load(true);return true;
+ hideOthers(p);p.style.display='block';p.classList.add('active');setRoute(true);try{window.scrollTo(0,0)}catch(e){}if(record)render();else load(true);return true;
 }
 function goHome(){
  var p=document.getElementById('page-representations');
@@ -911,7 +914,7 @@ function goHome(){
  }
  return false
 }
-function back(){
+function back(){if(state.returnToDevelopment&&window.PSTHomeLauncherV4){state.returnToDevelopment=false;setRoute(false);window.PSTHomeLauncherV4.openModule('business');return;}
  if(state.view==='profile'){
   var ret=state.returnTo;state.returnTo='';state.view='list';render();
   if(ret==='opportunities'&&window.PSTRepresentationOpportunitiesV2&&typeof window.PSTRepresentationOpportunitiesV2.open==='function'){setTimeout(function(){window.PSTRepresentationOpportunitiesV2.open()},0)}
@@ -935,7 +938,7 @@ document.addEventListener('pst:home-canonical-rendered',function(){setTimeout(en
 document.addEventListener('pst:modules-ready',function(){setTimeout(boot,0)},{once:true});
 window.addEventListener('popstate',function(){if(location.hash==='#perfaqesime')open();else document.body.classList.remove('pst-global-fullwidth-shell')});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
-window.PSTRepresentationsV1={open:open,showList:showList,openTarget:function(id,returnTo){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r){toast('Kompania nuk u gjet në Përfaqësime.',true);return false}state.inlineHost=null;state.inlineOpportunityId='';state.selected=S(id);state.returnTo=S(returnTo||'');state.view='profile';render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return true},renderTargetInto:function(id,host,opportunityId){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r||!host)return false;state.selected=S(id);state.inlineHost=host;state.inlineOpportunityId=S(opportunityId||'');renderDetail(host);host.onclick=detailClick;host.onchange=detailChange;return true},clearInlineHost:function(){state.inlineHost=null;state.inlineOpportunityId=''},refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),relationships:state.relationships.slice(),opportunities:state.opportunities.slice(),opportunityLinks:state.opportunityLinks.slice(),selected:state.selected,view:state.view,returnTo:state.returnTo,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
+window.PSTRepresentationsV1={open:open,openRecord:async function(id){var found=await window.supaFetch(TABLE+'?select=*&id=eq.'+encodeURIComponent(id)+'&limit=1');var record=A(found)[0];if(!record)throw new Error('Regjistrimi nuk u gjet.');return open(S(id),record);},showList:showList,openTarget:function(id,returnTo){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r){toast('Kompania nuk u gjet në Përfaqësime.',true);return false}state.inlineHost=null;state.inlineOpportunityId='';state.selected=S(id);state.returnTo=S(returnTo||'');state.view='profile';render();try{window.scrollTo({top:0,behavior:'smooth'})}catch(_){try{window.scrollTo(0,0)}catch(__){}}return true},renderTargetInto:function(id,host,opportunityId){var r=state.rows.find(function(x){return !x.archived_at&&S(x.id)===S(id)});if(!r||!host)return false;state.selected=S(id);state.inlineHost=host;state.inlineOpportunityId=S(opportunityId||'');renderDetail(host);host.onclick=detailClick;host.onchange=detailChange;return true},clearInlineHost:function(){state.inlineHost=null;state.inlineOpportunityId=''},refresh:function(){return load(true)},loadOpportunities:function(force){return loadOpportunities(!!force)},snapshot:function(){return{rows:state.rows.slice(),relationships:state.relationships.slice(),opportunities:state.opportunities.slice(),opportunityLinks:state.opportunityLinks.slice(),selected:state.selected,view:state.view,returnTo:state.returnTo,error:state.error,loaded:state.loaded,opportunitiesLoaded:state.opportunitiesLoaded}}};
 })();
 
 
