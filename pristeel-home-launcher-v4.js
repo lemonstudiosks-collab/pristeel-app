@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261024-unified-development1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
+var V='20261024-record-detail1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -480,9 +480,9 @@ function html(){
   +'</div></section></main></div>';
 }
 // Development uses the Projects workdesk vocabulary and existing business owners.
-var development={kind:'opportunities',view:'board',query:'',stage:'',selected:'',cache:{},opening:false};
+var development={kind:'opportunities',view:'board',query:'',stage:'',selected:'',cache:{},opening:false,details:{},detailRequests:{},detailErrors:{}};
 var developmentKinds={
- opportunities:{label:'Tenderët',owner:'PSTProjectCentricWorkflowV1',path:'kek_tender_watch?select=id,title,authority,procurement_no,publication_no,deadline,published_date,status,project_id,source_url,detail_url,source_key,updated_at,source:payload->>source,notice_phase:payload->>notice_phase,winner_name:payload->winner->>name&status=in.(new,review,watch)&project_id=is.null&order=published_date.desc,id.asc'},
+ opportunities:{label:'Tenderët',owner:'PSTProjectCentricWorkflowV1',path:'kek_tender_watch?select=id,title,authority,procurement_no,publication_no,deadline,published_date,status,estimated_value,currency,project_id,source_url,detail_url,source_key,updated_at,country:payload->>country,fit:payload->>pristeel_fit,source:payload->>source,notice_phase:payload->>notice_phase,winner_name:payload->winner->>name&status=in.(new,review,watch)&project_id=is.null&order=published_date.desc,id.asc'},
  representations:{label:'Përfaqësimet',owner:'PSTRepresentationsV1',path:'pppp_representation_targets_v1?select=id,company_name,country,company_domain,stage,next_action,next_action_due,source_name,source_url,company_website,updated_at,archived_at&archived_at=is.null&target_type=eq.representation&order=updated_at.desc,id.asc'},
  direct:{label:'Klientët direkt',owner:'PSTEUCompaniesV1',path:'pppp_eu_direct_operational_v1?select=id,company_name,country,company_domain_normalized,stage,next_action,next_action_due,source_name,source_url,company_website,updated_at&archived_at=is.null&order=updated_at.desc,id.asc'},
  buyers:{label:'Blerësit e çelikut',owner:'PSTDachSteelSalesV3',path:'pppp_dach_steel_targets_v1?select=id,source_key,company_name,country,company_domain,target_status,outreach_status,next_action,next_action_due,source_name,source_url,company_website,updated_at,project_id&target_status=not.in.(closed,rejected,project_promoted)&or=(source_key.like.mt:*,source_key.like.eu:*)&project_id=is.null&order=updated_at.desc,id.asc'}
@@ -498,15 +498,78 @@ function developmentRows(){var q=S(development.query).normalize('NFD').replace(/
  return !q||[developmentName(r),developmentMeta(r),r.source_name,r.source,r.source_key,r.next_action,developmentStage(r)].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().indexOf(q)>-1;
 });}
 function developmentSafeUrl(v){try{var u=new URL(S(v));return u.protocol==='https:'||u.protocol==='http:'?u.href:'';}catch(e){return '';}}
-function developmentSummary(r){return '<dl><dt>Afati i regjistruar</dt><dd>'+E(developmentDate(r.deadline||r.next_action_due))+'</dd><dt>Përditësuar</dt><dd>'+E(developmentDate(r.updated_at||r.published_date))+'</dd></dl><strong>'+E(r.next_action||'Hap të dhënat dhe burimin')+'</strong>';}
+function developmentSummary(r){
+ var tender=development.kind==='opportunities';
+ return '<dl>'+(r.country?'<dt>Vendi</dt><dd>'+E(developmentCountry(r.country))+'</dd>':'')+'<dt>Afati</dt><dd>'+E(developmentDate(r.deadline||r.next_action_due))+'</dd>'+(tender?'<dt>Vlera</dt><dd>'+E(developmentValue(r))+'</dd>':'')+(r.fit?'<dt>Përshtatshmëria</dt><dd>'+E(developmentFit(r.fit))+'</dd>':'')+'<dt>Përditësuar</dt><dd>'+E(developmentDate(r.updated_at||r.published_date))+'</dd></dl>'+(r.next_action?'<strong>'+E(r.next_action)+'</strong>':'');
+}
+function developmentText(v){
+ if(v==null)return '';
+ if(typeof v==='string'||typeof v==='number')return S(v).trim();
+ if(Array.isArray(v))return v.map(developmentText).filter(Boolean).join(' · ');
+ if(typeof v==='object')return developmentText(v.claim||v.description||v.summary||v.label||v.text||'');
+ return '';
+}
+function developmentValue(r){
+ var value=r.estimated_value;if(value==null||value==='')return 'Nuk është regjistruar';
+ var n=Number(value);return (isFinite(n)?n.toLocaleString('sq-AL',{maximumFractionDigits:2}):S(value))+(r.currency?' '+S(r.currency):'');
+}
+function developmentFit(v){return ({low:'E ulët',medium:'Mesatare',high:'E lartë',strict_fit:'Përputhje e evidentuar',review:'Për shqyrtim'})[S(v)]||S(v||'Pa vlerësim të regjistruar');}
+function developmentCountry(v){return ({XK:'Kosovë',AL:'Shqipëri',DE:'Gjermani',AT:'Austri',CH:'Zvicër',IT:'Itali',MK:'Maqedoni e Veriut',TR:'Turqi',GR:'Greqi',RS:'Serbi',ME:'Mal i Zi',GB:'Mbretëri e Bashkuar'})[S(v)]||S(v||'Nuk është regjistruar');}
+function developmentFacts(items){return '<dl class="ppd-record-facts">'+items.map(function(x){return '<div><dt>'+E(x[0])+'</dt><dd>'+E(developmentText(x[1])||'Nuk është regjistruar')+'</dd></div>';}).join('')+'</dl>';}
+function developmentEvidence(r){
+ var rows=A(r.provenance).concat(A(r.evidence)),seen={},out=[];
+ [r.detail_url,r.source_url,r.company_website].filter(Boolean).forEach(function(url){rows.push({url:url,label:url===r.company_website?'Faqja e kompanisë':'Njoftimi / burimi zyrtar'});});
+ rows.forEach(function(x){var url=developmentSafeUrl(typeof x==='string'?x:x&&x.url||x&&x.source_url);if(!url||seen[url])return;seen[url]=true;out.push('<li><a href="'+E(url)+'" target="_blank" rel="noopener">'+E(developmentText(x.label||x.source||x.claim)||url)+' ↗</a></li>');});
+ return out.length?'<ul class="ppd-record-links">'+out.slice(0,15).join('')+'</ul>':'<p class="ppd-record-missing">Nuk ka lidhje burimi të regjistruar.</p>';
+}
+function developmentRenderRecord(base){
+ var p=document.getElementById('page-workspace-business'),key=development.kind+':'+base.id;
+ var oldFocus=document.activeElement,focusKey=p.contains(oldFocus)?['data-development-close','data-development-full','data-development-retry'].filter(function(k){return oldFocus.hasAttribute&&oldFocus.hasAttribute(k);})[0]:'';
+ var r=Object.assign({},base,development.details[key]||{}),tender=development.kind==='opportunities',busy=!!development.detailRequests[key],error=development.detailErrors[key];
+ var title=developmentName(r),scope=developmentText(r.description||r.scope||r.manufacturer_description||r.product_summary||r.business_scope||r.steel_scope||r.why_now);
+ var reason=developmentText(r.why_relevant||r.why_kosovo||r.strategic_fit_notes),matches=A(r.match_reasons),fit=developmentFit(r.fit),qual=r.qualification&&typeof r.qualification==='object'?r.qualification:{};
+ var labels={licenses:'Licenca',turnover:'Qarkullimi',experience:'Përvoja',references:'Referenca',bid_security:'Sigurimi i ofertës',consortium_allowed:'Konsorcium'};
+ var signals=Object.keys(labels).filter(function(k){return qual[k]===true;});
+ var source=developmentSafeUrl(r.detail_url||r.source_url||r.company_website),documents=A(r.documents).filter(Boolean);
+ var facts=tender?[
+ ['Autoriteti / blerësi',r.authority],['Referenca',r.procurement_no||r.publication_no],['Vendi i regjistruar',developmentCountry(r.country)],
+ ['Afati',developmentDate(r.deadline)],['Vlera e parashikuar',developmentValue(r)],['Faza e njoftimit',r.notice_phase==='award'?'Njoftim i fituesit':r.notice_phase==='opportunity'?'Mundësi / tender':r.notice_phase],['Publikuar',developmentDate(r.published_date)],['Burimi',r.source||r.source_name||r.source_key]
+ ]:[['Kompania',r.company_name],['Vendi',developmentCountry(r.country)],['Domeni',r.company_domain||r.company_domain_normalized],['Personi i kontaktit',r.contact_name||r.canonical_contact_name],['Emaili',r.contact_email||r.canonical_contact_email],['Telefoni',r.contact_phone],['Statusi i kontaktit',r.contact_status],['Afati i regjistruar',developmentDate(r.next_action_due)]];
+ var body='<section class="ppd-record-section"><h2>'+(tender?'Përmbajtja e mundësisë':'Aktiviteti dhe produktet')+'</h2>'+(scope?'<p>'+E(scope)+'</p>':'<p class="ppd-record-missing">'+(tender?'Përshkrimi teknik dhe sasitë nuk janë regjistruar në PPPP. Titulli dhe indeksi nuk mjaftojnë për vlerësim teknik; duhet lexuar njoftimi dhe dosja zyrtare.':'Përshkrimi i aktivitetit nuk është regjistruar.')+'</p>')+(r.products?'<p><b>Produktet:</b> '+E(developmentText(r.products)||'Nuk janë regjistruar')+'</p>':'')+'</section>'+
+ '<section class="ppd-record-section"><h2>'+(tender?'Përshtatshmëria për PRISTEEL':'Mundësia e bashkëpunimit')+'</h2>'+(tender?'<p><b>Vlerësimi i ruajtur:</b> '+E(fit)+'</p>':'')+(reason?'<p>'+E(reason)+'</p>':'')+(matches.length?'<h3>Sinjalet e identifikuara në indeks</h3><ul>'+matches.map(function(x){return '<li>'+E(S(x).replace('construction_civil:','Ndërtim civil:').replace('materials_equipment:','Materiale / pajisje:'))+'</li>';}).join('')+'</ul>':'<p class="ppd-record-missing">Nuk ka arsyetim të detajuar të regjistruar.</p>')+'<p class="ppd-record-note">Vlerësimi i ruajtur nuk është vendim për pjesëmarrje apo angazhim tregtar.</p></section>'+
+ (tender?'<section class="ppd-record-section"><h2>Kualifikimi dhe të dhënat që mungojnë</h2>'+(signals.length?'<p>Indeksi ka identifikuar sinjale për: <b>'+E(signals.map(function(k){return labels[k];}).join(', '))+'</b>.</p>':'<p>Nuk ka sinjale kualifikimi të regjistruara.</p>')+'<p>Kriteret e plota, pragjet, certifikatat dhe dokumentet e detyrueshme duhen verifikuar në dosjen zyrtare. Mungesa e një sinjali në indeks nuk do të thotë se kriteri nuk kërkohet.</p></section>':'')+
+ '<section class="ppd-record-section"><h2>Burimet dhe dokumentet</h2>'+developmentEvidence(r)+(documents.length?'<h3>Dokumentet e regjistruara</h3><ul>'+documents.slice(0,20).map(function(x){var u=developmentSafeUrl(x.url||x.href),name=developmentText(x.name||x.title)||'Dokument';return '<li>'+(u?'<a href="'+E(u)+'" target="_blank" rel="noopener">'+E(name)+' ↗</a>':E(name))+'</li>';}).join('')+'</ul>':'<p class="ppd-record-missing">Nuk ka dokumente të listuara në këtë regjistrim.</p>')+'</section>';
+ if(!development.details[key])body='<section class="ppd-record-section"><h2>Përmbajtja e dosjes</h2><p>'+(error?'Përmbajtja nuk u verifikua për shkak të gabimit të leximit.':busy?'Duke lexuar përmbajtjen e regjistruar…':'Përmbajtja e dosjes ende nuk është lexuar.')+'</p></section>';
+ p.innerHTML='<div class="ppd-page ppd-record-page" role="region" aria-labelledby="development-detail-title"><header class="ppd-head"><button type="button" class="ppd-back" data-development-close>← Te regjistri</button><div><span>'+E(developmentKinds[development.kind].label)+' · '+E(developmentLabel(developmentStage(r)))+'</span><h1 id="development-detail-title">'+E(title)+'</h1><p>'+E(developmentMeta(r))+'</p></div></header>'+
+ '<div class="ppd-record-actions">'+(source?'<a href="'+E(source)+'" target="_blank" rel="noopener">Hap burimin zyrtar ↗</a>':'')+'<button type="button" data-development-full '+(development.opening?'disabled':'')+'>Analiza dhe veprimet</button><button type="button" data-development-retry '+(busy?'disabled':'')+'>Rifresko dosjen</button></div>'+
+ (busy?'<p role="status" class="ppd-record-note">Duke lexuar të dhënat e regjistruara…</p>':'')+(error?'<p role="alert" class="ppd-error">'+E(error)+'</p>':'')+
+ '<div class="ppd-record-layout"><main>'+body+'</main><aside><section class="ppd-record-section"><h2>Të dhënat kryesore</h2>'+developmentFacts(facts)+'</section><section class="ppd-record-section"><h2>Vazhdimi</h2><p>'+E(r.next_action||'Shqyrto burimin dhe dosjen përpara se të vendosësh hapin e radhës.')+'</p><p class="ppd-record-note">Përditësuar: '+E(developmentDate(r.updated_at))+'</p></section><details class="ppd-record-section"><summary>Identifikimi në PPPP</summary><p>'+E(r.id)+'</p></details></aside></div></div>';
+ developmentBind(p);if(focusKey){var focusTarget=p.querySelector('['+focusKey+']');if(focusTarget)focusTarget.focus();}
+}
+async function developmentReadRecord(force){
+ var kind=development.kind,id=development.selected,key=kind+':'+id;if(!id)return false;
+ if(development.detailRequests[key])return development.detailRequests[key];if(development.details[key]&&!force)return true;
+ development.detailErrors[key]='';
+ var table=developmentKinds[kind].path.split('?')[0];
+ var fields=kind==='opportunities'?'id,title,authority,procurement_no,publication_no,deadline,published_date,status,estimated_value,currency,relevance_score,match_reasons,source_url,detail_url,source_key,updated_at,country:payload->>country,sector:payload->>sector,fit:payload->>pristeel_fit,description:payload->>description,scope:payload->>scope,qualification:payload->qualification_signals,provenance:payload->provenance,notice_phase:payload->>notice_phase,winner:payload->winner,documents:payload->documents':'*';
+ var request=Promise.resolve().then(async function(){try{var rows=await window.supaFetch(table+'?select='+fields+'&id=eq.'+encodeURIComponent(id)+'&limit=1');if(!Array.isArray(rows)||!rows[0])throw new Error('Regjistrimi nuk u gjet.');development.details[key]=rows[0];return true;}catch(e){development.detailErrors[key]='Dosja nuk u lexua: '+S(e&&e.message||e);return false;}finally{delete development.detailRequests[key];if(development.kind===kind&&development.selected===id)developmentRender();}});
+ development.detailRequests[key]=request;developmentRender();return request;
+}
+function developmentBind(p){
+ p.onclick=developmentClick;
+ p.oninput=function(e){if(!e.target.hasAttribute('data-development-search'))return;var pos=e.target.selectionStart;development.query=e.target.value;developmentRender();var x=p.querySelector('[data-development-search]');if(x){x.focus();try{x.setSelectionRange(pos,pos);}catch(_){}}};
+ p.onkeydown=function(e){if(e.key==='Escape'&&development.selected){development.selected='';developmentRender();}};
+ p.onchange=function(e){if(e.target.hasAttribute('data-development-stage')){development.stage=e.target.value;developmentRender();}};
+}
+
 function developmentRender(){
  var p=document.getElementById('page-workspace-business');if(!p)return;
- var c=developmentCache(),rows=developmentRows(),groups=[],by={},allGroups={};
+ var c=developmentCache(),chosen=c.rows.filter(function(r){return S(r.id)===development.selected;})[0];if(chosen){developmentRenderRecord(chosen);return;}
+ var rows=developmentRows(),groups=[],by={},allGroups={};
  c.rows.forEach(function(r){var s=developmentStage(r);allGroups[s]=(allGroups[s]||0)+1;});
  rows.forEach(function(r){var s=developmentStage(r);if(!by[s]){by[s]=[];groups.push(s);}by[s].push(r);});
  var body=development.view==='board'?'<div class="ppd-board" aria-label="Mundësitë me karta">'+groups.map(function(s){return '<section class="ppd-lane"><header><h2>'+E(developmentLabel(s))+'</h2><span>'+by[s].length+'</span></header><div>'+by[s].map(function(r){return '<article class="ppd-project-card"><button type="button" class="ppd-card-open" data-development-record="'+E(r.id)+'"><span class="ppd-card-state">'+E(developmentLabel(s))+'</span><h3>'+E(developmentName(r))+'</h3><p>'+E(developmentMeta(r))+'</p>'+developmentSummary(r)+'</button><footer><button type="button" data-development-record="'+E(r.id)+'">Hap dosjen</button></footer></article>';}).join('')+'</div></section>';}).join('')+'</div>':
  '<div class="ppd-table-wrap"><table class="ppd-table"><thead><tr><th>Mundësia / kompania</th><th>Faza</th><th>Hapi i regjistruar</th><th>Burimi</th><th>Afati</th></tr></thead><tbody>'+rows.map(function(r){return '<tr class="ppd-row"><td><button type="button" class="ppd-main" data-development-record="'+E(r.id)+'"><b>'+E(developmentName(r))+'</b><small>'+E(developmentMeta(r))+'</small></button></td><td>'+E(developmentLabel(developmentStage(r)))+'</td><td>'+E(r.next_action||'—')+'</td><td>'+E(r.source_name||r.source||r.source_key||'—')+'</td><td>'+E(developmentDate(r.deadline||r.next_action_due))+'</td></tr>';}).join('')+'</tbody></table></div>';
- var r=c.rows.filter(function(x){return S(x.id)===development.selected;})[0],source=r&&developmentSafeUrl(r.detail_url||r.source_url||r.company_website);
  p.innerHTML='<div class="ppd-page"><header class="ppd-head"><button type="button" class="ppd-back" data-development-home>← Kthehu</button><div><span>PPPP</span><h1>Mundësitë & zhvillimi</h1><p>Një regjistër pune: zgjidh rrjedhën, filtro, hap kartën dhe vazhdo në dosjen përkatëse. Fazat pasqyrojnë të dhënat e regjistruara.</p></div></header>'+
  '<div class="ppd-viewbar" role="group" aria-label="Rrjedha e zhvillimit">'+Object.keys(developmentKinds).map(function(k){return '<button type="button" data-development-kind="'+k+'" aria-pressed="'+(development.kind===k)+'">'+developmentKinds[k].label+'</button>';}).join('')+'</div>'+
  '<div class="ppd-toolbar"><label><span>⌕</span><input type="search" data-development-search aria-label="Kërko mundësi" placeholder="Kërko mundësi, kompani ose referencë" value="'+E(development.query)+'"></label><div class="ppd-open-count"><b>'+c.rows.length+(c.more?'+':'')+'</b><span>të ngarkuara</span></div></div>'+
@@ -515,10 +578,8 @@ function developmentRender(){
  '<div class="ppd-reset">'+(development.query||development.stage?'<button type="button" data-development-clear>Pastro filtrat</button>':'')+'</div><main class="ppd-body">'+(rows.length?body:'<div class="ppd-empty" role="status">'+(c.busy?'Duke ngarkuar regjistrin…':c.error?'Të dhënat nuk u lexuan. Përdor Rifresko.':'Nuk ka regjistrime që përputhen me këtë pamje.')+'</div>')+'</main>'+
  (c.more?'<button type="button" class="ppd-back" data-development-more '+(c.busy?'disabled':'')+'>Shfaq 250 të tjera</button>':'')+
  '<details class="ppd-advanced"><summary>Mjetet e rrjedhës</summary><button type="button" data-open="'+development.kind+'">Hap mjetet e plota për '+developmentKinds[development.kind].label+'</button></details></div>'+
- (r?'<section class="ppd-development-detail" role="dialog" aria-modal="false" aria-labelledby="development-detail-title"><header><span>Dosja e mundësisë</span><button type="button" data-development-close aria-label="Mbyll dosjen">×</button></header><h2 id="development-detail-title">'+E(developmentName(r))+'</h2><p>'+E(developmentMeta(r))+'</p><p><b>Faza e regjistruar:</b> '+E(developmentLabel(developmentStage(r)))+'</p>'+developmentSummary(r)+'<p><b>Burimi:</b> '+E(r.source_name||r.source||r.source_key||'Regjistri PPPP')+'</p><p><small>ID: '+E(r.id)+'</small></p><div class="ppd-viewbar">'+(source?'<a href="'+E(source)+'" target="_blank" rel="noopener">Hap burimin ↗</a>':'<span>Nuk ka lidhje burimi të regjistruar.</span>')+'<button type="button" data-development-full '+(development.opening?'disabled':'')+'>Hap dosjen e plotë</button></div></section>':'');
- p.onclick=developmentClick;p.oninput=function(e){if(!e.target.hasAttribute('data-development-search'))return;development.query=e.target.value;developmentRender();var x=p.querySelector('[data-development-search]');if(x)x.focus();};
- p.onkeydown=function(e){if(e.key==='Escape'&&development.selected){development.selected='';developmentRender();}};
- p.onchange=function(e){if(e.target.hasAttribute('data-development-stage')){development.stage=e.target.value;developmentRender();}};
+ '';
+ developmentBind(p);
 }
 async function developmentLoad(force,more){
  var kind=development.kind,c=developmentCache();if(c.request)return c.request;if(c.loaded&&!force&&!more){developmentRender();return true;}
@@ -536,8 +597,9 @@ function developmentClick(e){var t=e.target.closest('button');if(!t)return;
  if(t.hasAttribute('data-development-home')){var n=nav();if(n&&n.openHome)n.openHome();return;}
  if(t.dataset.developmentKind){development.kind=t.dataset.developmentKind;development.stage='';development.query='';development.selected='';developmentLoad(false);return;}
  if(t.dataset.developmentView){development.view=t.dataset.developmentView;developmentRender();return;}
- if(t.dataset.developmentRecord){development.selected=t.dataset.developmentRecord;developmentRender();return;}
- if(t.hasAttribute('data-development-close')){development.selected='';developmentRender();return;}
+ if(t.dataset.developmentRecord){development.selected=t.dataset.developmentRecord;developmentRender();developmentReadRecord(false);var back=document.querySelector('#page-workspace-business [data-development-close]');if(back)back.focus();window.scrollTo({top:0,behavior:'auto'});return;}
+ if(t.hasAttribute('data-development-close')){var previous=development.selected;development.selected='';developmentRender();var opener=Array.from(document.querySelectorAll('#page-workspace-business [data-development-record]')).filter(function(x){return x.dataset.developmentRecord===previous;})[0];if(opener)opener.focus();return;}
+ if(t.hasAttribute('data-development-retry')){developmentReadRecord(true);return;}
  if(t.hasAttribute('data-development-full')){developmentOpenFull();return;}
  if(t.hasAttribute('data-development-refresh')){developmentLoad(true);return;}
  if(t.hasAttribute('data-development-more')){developmentLoad(false,true);return;}
