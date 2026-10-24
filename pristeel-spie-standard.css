@@ -506,7 +506,7 @@ html#pst-spie-platform body .pst-eu-dialog :is(h2,p,label,input,textarea,button)
 
 
 @media(min-width:901px) {
- html#pst-spie-platform body:has(:is(#page-workspace-business.active,#page-workspace-resources.active,#page-workspace-projects.active,#page-contacts.active,#page-partners.active,#page-kek-tenders.active,#page-representations.active,#page-eu-companies.active,#page-dach-steel-sales.active)) .topbar { display:none!important; }
+ html#pst-spie-platform body:has(:is(#page-workspace-business.active,#page-workspace-resources.active,#page-workspace-projects.active,#page-workspace-contacts.active,#page-contacts.active,#page-partners.active,#page-kek-tenders.active,#page-representations.active,#page-eu-companies.active,#page-dach-steel-sales.active)) .topbar { display:none!important; }
 }
 /* Context controls remain available inside the fixed global navigation shell. */
 @media(min-width:901px) {
