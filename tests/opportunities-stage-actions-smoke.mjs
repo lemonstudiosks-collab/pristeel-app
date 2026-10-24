@@ -33,7 +33,7 @@ function dossier(complete){let p=w.document.getElementById('pst-tda-analysis');i
 w.PSTTenderDossierAnalysisV1={analyze:async()=>{prepares++;dossier(false);return true;},isReady:()=>false};
 await api.openTender('local');
 let prepare=w.document.querySelector('[data-pcw-ti="dossier"]'),create=w.document.querySelector('[data-pcw-ti="go"]');
-assert.equal(prepare.textContent,'Përgatit për vlerësim');assert(create.hidden&&create.disabled);
+assert.equal(prepare.textContent,'Lexo dosjen dhe vlerëso');assert(create.hidden&&create.disabled);
 assert(w.document.querySelector('.pst-pcw-more [data-pcw-ti="download"]'),'ZIP download stays in the menu');
 prepare.click();await new Promise(setImmediate);assert.equal(prepares,1);assert.equal(go,0);assert(create.hidden&&create.disabled,'partial analysis cannot create a project');
 w.document.dispatchEvent(new w.CustomEvent('pst:tender-dossier-ready',{detail:{tender_id:'another',analysis_ready:true,dossier_complete:true}}));assert(create.hidden,'another tender cannot unlock this tender');

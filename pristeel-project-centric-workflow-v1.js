@@ -82,7 +82,7 @@ function tenderVisible(r){
  if(src==='TED')return phase==='award'&&['new','review','watch'].indexOf(st)>-1&&!!S(tenderPayload(r).winner&&tenderPayload(r).winner.name).trim();
  return phase==='opportunity'&&['new','review'].indexOf(st)>-1;
 }
-function tenderMode(r){return tenderSource(r)==='TED'?'award':'local';}
+function tenderMode(r){return tenderPayload(r).notice_phase==='award'?'award':'local';}
 function tenderScore(r){var n=Number(r&&r.relevance_score);return isFinite(n)&&n>0?Math.round(n):0;}
 function winnerObj(r){var w=tenderPayload(r).winner;return w&&typeof w==='object'?w:{};}
 function winnerName(r){return S(winnerObj(r).name);}
@@ -394,10 +394,12 @@ function modalActionBar(r){
    if(r.project_id)tools+=comm?'<button data-pcw-ti="communication" data-id="'+id+'">'+communicationLabel+'</button>':'<button class="pst-gmail-draft-action pst-pcw-gmail-create" data-pcw-ti="draft" data-id="'+id+'">'+gmailDraftAction('Përgatit draftet në Gmail')+'</button>';
    tools+='<button data-pcw-ti="contacts" data-id="'+id+'">Shiko kontaktet</button>'+officialSourceAction(r,'Burimi TED');
  }else{
-   primary=r.project_id?'<button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap projektin</button>':'<button class="primary dossier" data-pcw-ti="dossier" data-id="'+id+'">Përgatit për vlerësim</button><button class="create" data-pcw-ti="go" data-id="'+id+'" hidden disabled title="Krijimi aktivizohet pas analizës së plotë të dosjes.">Krijo projekt</button>';
-   tools+='<button data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen ZIP</button><button data-tda-force="'+id+'">Rilexo dosjen zyrtare</button>'+officialSourceAction(r,'Burimi zyrtar');
+   var supported=['KRPP','APP_AL'].indexOf(S(tenderPayload(r).source||tenderSource(r)).toUpperCase())>=0;
+   primary=r.project_id?'<button class="primary" data-pcw-ti="open_project" data-id="'+id+'">Hap projektin</button>':(supported?'<button class="primary dossier" data-pcw-ti="dossier" data-id="'+id+'">Lexo dosjen dhe vlerëso</button><button class="create" data-pcw-ti="go" data-id="'+id+'" hidden disabled title="Krijimi aktivizohet pas analizës së plotë të dosjes.">Krijo projekt</button>':'<span class="pst-pcw-record-note">Leximi automatik i dosjes për këtë burim nuk mbështetet ende. Përdor burimin zyrtar.</span>');
+   primary+='<button data-pcw-ti="inquiry" data-id="'+id+'">Përgatit draft për sqarime</button>';
+   if(supported)tools+='<button data-pcw-ti="download" data-id="'+id+'">Shkarko dosjen ZIP</button><button data-tda-force="'+id+'">Rilexo dosjen zyrtare</button>'+officialSourceAction(r,'Burimi zyrtar');
  }
- if(!r.project_id){tools+='<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button>';remove='<button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Hiqe</button>';}
+ if(!r.project_id){primary+='<button data-pcw-ti="review" data-id="'+id+'">Lëre për më vonë</button>';remove='<button class="danger" data-pcw-ti="nogo" data-id="'+id+'">Refuzo me arsye</button>';}
  return '<div id="pst-pcw-ti-actions" data-tender-id="'+id+'">'+primary+remove+opportunityTools(tools)+'</div>';
 }
 function updateTenderStage(detail){
@@ -417,6 +419,7 @@ function ensureTenderModal(r){
  if(!modal.classList.contains('pst-pcw-modal')){
    modal.className='pst-pcw-modal';modal.removeAttribute('style');modal.innerHTML='<div id="pst-ti-card" role="dialog" aria-modal="true" aria-labelledby="pst-ti-title"><div class="pst-pcw-modal-head"><div><span>ACTION CONSOLE</span><h2 id="pst-ti-title"></h2><p id="pst-ti-meta"></p></div><button type="button" data-pcw-close-modal>Mbyll</button></div><div id="pst-ti-body"></div><div class="pst-pcw-modal-foot">PPPP nuk krijon projekt, nuk dërgon email dhe nuk merr angazhim pa veprimin tënd.</div></div>';
  }
+ var previous=document.getElementById('pst-ti-body');if(previous&&!modal.contains(previous))previous.parentNode.textContent='Veprimet janë hapur në dritaren e analizës.';
  var card=modal.querySelector('#pst-ti-card'),title=modal.querySelector('#pst-ti-title'),meta=modal.querySelector('#pst-ti-meta'),body=modal.querySelector('#pst-ti-body');
  if(!card||!title||!meta||!body)return null;
  title.textContent=S(r.title||'Mundësi');
@@ -427,7 +430,9 @@ function ensureTenderModal(r){
 }
 async function openTender(id,options){
  var r=tenderById(id);if(!r)return false;
- var b=ensureTenderModal(r);if(!b)return false;
+ var host=options&&options.container,b;
+ if(host){if(!host.isConnected)return false;var old=document.getElementById('pst-ti-backdrop');if(old)old.remove();host.innerHTML='<div id="pst-ti-body"></div>';b=host.firstElementChild;}
+ else b=ensureTenderModal(r);if(!b)return false;
  var sec=document.createElement('section');sec.id='pst-pcw-server-analysis';
  if(tenderMode(r)==='award'){
    sec.innerHTML=tenderFactsHtml(r)+winnerBriefHtml(r)+'<div id="pst-pcw-award-ai" class="pst-pcw-ai-loading">PPPP po analizon mundësinë e bashkëpunimit…</div>';b.appendChild(sec);
@@ -438,6 +443,7 @@ async function openTender(id,options){
    sec.innerHTML='<div class="pst-pcw-decision-intro"><span>RRUGA E MUNDËSISË</span><b>PPPP përgatit dosjen, kërkesat dhe kandidatët; ti vendos nëse bëhet projekt</b><small>Nuk krijohet projekt dhe nuk merret angazhim para analizës së dosjes.</small></div>';b.appendChild(sec);
    b.insertAdjacentHTML('beforeend',modalActionBar(r));
  }
+ if(host){var D=window.PSTTenderDossierAnalysisV1;if(D&&typeof D.renderSaved==='function')D.renderSaved(r,b);}
  return true;
 }
 async function exactSource(r){
@@ -451,7 +457,7 @@ function dossierReady(id){
  var panel=document.getElementById('pst-tda-analysis');return !!(panel&&S(panel.getAttribute('data-tender-id'))===S(id)&&panel.getAttribute('data-analysis-ready')==='1'&&panel.getAttribute('data-dossier-complete')==='1');
 }
 async function tenderAction(kind,id,btn){
- var P=tenderApi(),r=tenderById(id),keepHandoff=false;if(!P||!r)return false;
+ var P=tenderApi(),r=tenderById(id),keepHandoff=false,inline=!!document.getElementById('development-tender-console');if(!P||!r)return false;
  if(btn)btn.disabled=true;
  try{
    if(kind==='source')return await exactSource(r);
@@ -489,11 +495,13 @@ async function tenderAction(kind,id,btn){
      closeTenderModal();
      if(typeof window.pstReleaseOpenProject==='function')window.pstReleaseOpenProject(promoted.project_id);
      else if(typeof window.pstOpenProjectWorkspace==='function')window.pstOpenProjectWorkspace(promoted.project_id);
-   }else if(kind==='review')await P.review(id);
-   else if(kind==='draft')await P.prepareDraft(id);
-   else if(kind==='nogo')await P.noGo(id);
+   }else if(kind==='review'){if(await P.review(id)===false)return false;}
+   else if(kind==='draft'){await P.prepareDraft(id);document.dispatchEvent(new CustomEvent('pst:development-record-changed',{detail:{id:S(id)}}));return true;}
+   else if(kind==='inquiry'){if(typeof P.prepareInquiry!=='function')throw new Error('Redaktori i draftit nuk është gati. Rifresko platformën.');await P.prepareInquiry(id);return true;}
+   else if(kind==='nogo'){if(await P.noGo(id)===false)return false;}
    else return false;
-   tenderState.last=0;await loadOpportunities(true);if((kind==='nogo'||kind==='go'&&!keepHandoff||kind==='promote_award')&&window.pstTenderIntelligenceClose)window.pstTenderIntelligenceClose();return true;
+   document.dispatchEvent(new CustomEvent('pst:development-record-changed',{detail:{id:S(id),removed:kind==='nogo'}}));
+   tenderState.last=0;if(!inline)await loadOpportunities(true);if((kind==='nogo'||kind==='go'&&!keepHandoff||kind==='promote_award')&&window.pstTenderIntelligenceClose)window.pstTenderIntelligenceClose();return true;
  }catch(e){alert(e&&e.message||e);return false;}finally{if(btn&&btn.isConnected)btn.disabled=kind==='go'&&!dossierReady(id);}
 }
 
@@ -629,5 +637,6 @@ function schedule(force){
 document.addEventListener('click',click,true);document.addEventListener('keydown',keydown,true);document.addEventListener('pst:modules-ready',function(){schedule(false);},{once:true});document.addEventListener('pst:project-operator-updated',function(){schedule(true);});document.addEventListener('pst:tender-gmail-drafts-ready',function(){tenderState.last=0;if(activePage('page-kek-tenders'))loadOpportunities(true);});document.addEventListener('pst:tender-gmail-draft-created',function(){tenderState.last=0;if(activePage('page-kek-tenders'))loadOpportunities(true);});window.addEventListener('pageshow',function(){schedule(false);},{once:true});
 document.addEventListener('click',function(e){var n=e.target&&e.target.closest?e.target.closest('.pst-ws-navbtn,[data-pm-open],[data-pwf-area],[data-pwf-stage],[data-pcm-id]'):null;if(n)schedule(false);},true);
 if(document.readyState!=='loading')schedule(false);else document.addEventListener('DOMContentLoaded',function(){schedule(false);},{once:true});
-window.PSTProjectCentricWorkflowV1={version:'9',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,invalidateOpportunities:function(){tenderState.last=0;},openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,applyOpportunityFilter:applyOpportunityFilter,showMoreOpportunities:showMoreOpportunities,renderOpportunities:renderOpportunities,openRecord:async function(id){var rows=await db('kek_tender_watch?select=*&id=eq.'+encodeURIComponent(id)+'&limit=1');var row=A(rows)[0];if(!row)throw new Error('Mundësia nuk u gjet.');var at=tenderState.rows.findIndex(function(r){return S(r.id)===S(id);});if(at<0)tenderState.rows.push(row);else tenderState.rows[at]=row;return openTender(id,{analyze:false});},openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{opportunityGoHome:opportunityGoHome,tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,tenderValueLabel:tenderValueLabel,opportunityRows:opportunityRows,opportunityVisibleRows:opportunityVisibleRows,opportunityField:opportunityField,winnerGroup:winnerGroup,winnerPriority:winnerPriority,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,rebuildProjectOpportunityKeys:rebuildProjectOpportunityKeys,ownedByProject:ownedByProject,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal,applyOpportunityFilter:applyOpportunityFilter}};
+window.PSTProjectCentricWorkflowV1={version:'9',apply:apply,schedule:schedule,home:home,projects:projects,loadOpportunities:loadOpportunities,invalidateOpportunities:function(){tenderState.last=0;},openOpportunities:openOpportunities,setOpportunityContext:setOpportunityContext,applyOpportunityFilter:applyOpportunityFilter,showMoreOpportunities:showMoreOpportunities,renderOpportunities:renderOpportunities,openRecord:async function(id,options){var rows=await db('kek_tender_watch?select=*&id=eq.'+encodeURIComponent(id)+'&limit=1');var row=A(rows)[0];if(!row)throw new Error('Mundësia nuk u gjet.');var at=tenderState.rows.findIndex(function(r){return S(r.id)===S(id);});if(at<0)tenderState.rows.push(row);else tenderState.rows[at]=row;if(options&&options.container&&tenderMode(row)==='award'){try{var outreach=A(await db('pppp_opportunity_outreach_registry_v1?tender_watch_id=eq.'+encodeURIComponent(id)+'&select=id,recipient_email,status,draft_created_at,sent_at,replied_at,gmail_draft_id,gmail_thread_id&order=updated_at.desc&limit=100'));tenderState.outreachByTender[S(id)]=outreach;}catch(e){row._developmentCommunicationError=true;}}
+ var opened=await openTender(id,{analyze:false,container:options&&options.container});if(opened&&options&&options.container){var host=options.container,history=A(tenderPayload(row).development_decisions),comm=outreachRows(row);if(history.length)host.insertAdjacentHTML('beforeend','<p class="pst-pcw-record-note">Vendimi i fundit: '+E(history[history.length-1].reason)+'</p>');if(comm.length)host.insertAdjacentHTML('beforeend','<h3>Komunikimi i regjistruar</h3><ul>'+comm.map(function(x){return '<li>'+E(x.recipient_email)+' · '+E(x.status)+(x.gmail_draft_id?' · Draft i regjistruar':'')+'</li>';}).join('')+'</ul>');if(row._developmentCommunicationError)host.insertAdjacentHTML('beforeend','<p role="alert">Historiku i komunikimit nuk u lexua. Nuk mund të konfirmohet nëse ekziston një draft.</p>');}return opened;},openTender:openTender,closeTenderModal:closeTenderModal,hydrateContact:hydrateContact,ensureProjectUpdate:ensureProjectUpdate,_state:tenderState,_test:{opportunityGoHome:opportunityGoHome,tenderVisible:tenderVisible,tenderSource:tenderSource,tenderPhase:tenderPhase,tenderValueLabel:tenderValueLabel,opportunityRows:opportunityRows,opportunityVisibleRows:opportunityVisibleRows,opportunityField:opportunityField,winnerGroup:winnerGroup,winnerPriority:winnerPriority,dedupeOpportunities:dedupeOpportunities,opportunityKey:opportunityKey,rebuildProjectOpportunityKeys:rebuildProjectOpportunityKeys,ownedByProject:ownedByProject,opportunityLifecycle:opportunityLifecycle,lifecycleMeta:lifecycleMeta,winnerRole:winnerRole,winnerRoleLabel:winnerRoleLabel,winnerApproach:winnerApproach,ensureTenderModal:ensureTenderModal,applyOpportunityFilter:applyOpportunityFilter}};
 })();
