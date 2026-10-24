@@ -1,0 +1,10 @@
+import fs from 'node:fs';import assert from 'node:assert/strict';import {JSDOM} from 'jsdom';
+for(const [file,owner,table,field] of [['pristeel-representations-v1.js','PSTRepresentationsV1','pppp_representation_targets_v1','selected'],['pristeel-eu-companies-v1.js','PSTEUCompaniesV1','pppp_eu_direct_operational_v1','selected'],['pristeel-dach-steel-sales-v1.js','PSTDachSteelSalesV3','pppp_dach_steel_targets_v1','']]){
+ const dom=new JSDOM('<html class="pst-spie-standard"><head></head><body><div class="content"><section id="page-workspace-home" class="page active"></section></div></body></html>',{runScripts:'outside-only',url:'https://example.test/',pretendToBeVisual:true}),w=dom.window;const returns=[];w.PSTHomeLauncherV4={openModule:k=>returns.push(k)};w.scrollTo=()=>{};w.alert=()=>{};const reads=[];
+ const record={id:'outside-default-page',source_key:'mt:de:exact.test',company_name:'Exact company',country:'DE',company_domain:'exact.test',stage:'found',target_type:'representation',target_status:'qualified',outreach_status:'not_ready',products:[],evidence:[],capital_fit:'good'};
+ w.supaFetch=async(path,method)=>{assert(!method,'Opening a dossier must not write');reads.push(path);if(path.startsWith(table+'?')&&path.includes('id=eq.outside-default-page'))return [record];return [];};
+ w.eval(fs.readFileSync(file,'utf8'));await new Promise(r=>setTimeout(r,30));await w[owner].openRecord(record.id);await new Promise(r=>setTimeout(r,30));
+ const snap=w[owner].snapshot();if(field)assert.equal(snap[field],record.id,file+' must select exact id');else assert(w.document.querySelector('[data-dss-detail-pane]').textContent.includes('Exact company'));
+ assert(reads.some(x=>x.includes('id=eq.outside-default-page&limit=1')));w.document.querySelector('[data-rep-back],[data-eu-back],[data-dss-back]').click();assert.deepEqual(returns,['business'],'Back returns to unified register');dom.window.close();
+}
+console.log('Development dossier routing: PASS (real owners, exact row beyond default list, no writes)');

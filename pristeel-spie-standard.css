@@ -519,3 +519,20 @@ html#pst-spie-platform body .pst-eu-dialog :is(h2,p,label,input,textarea,button)
  html#pst-spie-platform body :is(#page-representations .pst-rep-brand,#page-eu-companies .pst-eu-brand,#page-dach-steel-sales .pst-dss-brand,#page-kek-tenders .pst-opp-brand) { display:none!important; }
  html#pst-spie-platform body :is(#page-representations .pst-rep-sidebar,#page-eu-companies .pst-eu-work-sidebar,#page-kek-tenders #pst-opp-desk .pst-opp-side,#page-dach-steel-sales .pst-dss-sidebar) { position:static!important; height:auto!important; min-height:0!important; background:transparent!important; }
 }
+
+/* Shared register geometry: Projects and Development use the same workdesk. */
+.ppd-page { max-width:1480px; margin:0 auto; padding:20px 24px 44px; color:var(--pst-ink); }
+.ppd-head { display:grid; grid-template-columns:auto minmax(0,1fr); gap:16px; align-items:center; margin-bottom:16px; }
+.ppd-head>div>span { font-size:10px; letter-spacing:1.5px; color:var(--pst-muted); }
+.ppd-head h1 { margin:3px 0; }.ppd-head p { max-width:820px; }
+.ppd-back { padding:9px 13px; border:1px solid var(--pst-line); background:#fff; color:var(--pst-accent); cursor:pointer; }
+.ppd-toolbar { display:flex; align-items:center; gap:12px; }
+.ppd-toolbar>label { display:flex; align-items:center; gap:8px; flex:1; padding:6px 12px; background:#fff; border:1px solid var(--pst-line); border-radius:6px; }
+.ppd-toolbar input { width:100%; min-width:0; border:0!important; padding:8px; }
+.ppd-open-count { display:flex; align-items:baseline; gap:6px; color:var(--pst-muted); font-size:12px; }.ppd-open-count b { font-size:20px; color:var(--pst-ink); }
+.ppd-reset { min-height:30px; padding:8px 0; }.ppd-reset button { border:1px solid var(--pst-line); background:#fff; color:var(--pst-accent); padding:6px 10px; cursor:pointer; }
+.ppd-empty { padding:30px; border:1px dashed var(--pst-line); color:var(--pst-muted); background:#fff; }
+.ppd-advanced { margin:24px 0; padding:14px 0; border-top:1px solid var(--pst-line); color:var(--pst-muted); }.ppd-advanced button { margin-top:12px; padding:9px 12px; cursor:pointer; }
+.ppd-development-detail { position:fixed; right:0; top:0; bottom:0; width:min(540px,calc(100vw - var(--pst-sidebar-width))); padding:28px; overflow:auto; background:var(--pst-paper); border-left:1px solid var(--pst-line); box-shadow:-12px 0 32px #17243618; z-index:80; }
+.ppd-development-detail>header { display:flex; justify-content:space-between; align-items:center; }.ppd-development-detail>header button { padding:5px 12px; cursor:pointer; }.ppd-development-detail dl { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:24px 0; }.ppd-development-detail dd { margin:0; }.ppd-development-detail strong { display:block; line-height:1.6; }.ppd-development-detail p { line-height:1.6; }
+@media(max-width:760px) { .ppd-page { padding:14px 12px 32px; }.ppd-toolbar { align-items:stretch; flex-direction:column; }.ppd-development-detail { width:100%; padding:22px; } }

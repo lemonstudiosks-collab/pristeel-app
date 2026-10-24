@@ -607,7 +607,7 @@ function detail(r){
 
 function stableHtml(el,html){if(el&&el.innerHTML!==html)el.innerHTML=html}
 function gmailIcon(){return '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24"><path fill="#4285f4" d="M3 6h3v14H3z"/><path fill="#34a853" d="M18 6h3v14h-3z"/><path fill="#ea4335" d="M3 4l9 7 9-7v4l-9 7-9-7z"/></svg>'}
-function renderPage(){
+function renderPage(){if(state.pendingRecord&&state.targets.some(function(r){return S(r.id)===state.pendingRecord;})){state.expanded=state.pendingRecord;state.pendingRecord='';}
  var page=document.getElementById('page-dach-steel-sales');if(!page)return;
  var list=page.querySelector('[data-dss-list]'),pane=page.querySelector('[data-dss-detail-pane]');
  var filters=[['action','Për kontaktim'],['ready','Gati për kontakt'],['contact','Pa kontakt'],['draft','Draft gati'],['contacted','Të kontaktuara'],['followup','Follow-up'],['replied','Përgjigje'],['all','Të gjitha']];
@@ -633,14 +633,17 @@ function renderPage(){
  stableHtml(pane,notice+'<div class="pst-dss-company-title">'+E(r.company_name)+'</div><div class="pst-dss-country">'+E(r.country||'')+' · '+E(companyStatus(r))+'</div>'+(site?'<a class="pst-dss-source" href="'+E(site)+'" target="_blank" rel="noopener">'+E(r.company_domain||'Website')+'</a>':'')+'<section class="pst-dss-detail-section"><h3>Pse është relevante</h3><p>'+E(why)+'</p><p>'+E(arrText(r.products).join(', ')||r.steel_scope||'Materialet janë në verifikim.')+'</p></section><section class="pst-dss-detail-section"><h3>Kontaktet</h3>'+contactHtml+'<small>'+E(enrich)+'</small></section><section class="pst-dss-detail-section"><h3>Komunikimi</h3><p>'+E(buyerLanguage(r)==='de'?'Gjermanisht':'Anglisht')+' · '+E(companyStatus(r))+'</p>'+(q&&q.sent_at?'<small>Kontakti i fundit: '+E(D(q.sent_at))+'</small>':'')+action+(state.error?'<p role="alert">'+E(state.error)+'</p>':'')+'</section>'+(evHtml?'<details class="pst-dss-details"><summary>Shënime dhe evidenca</summary>'+evHtml+'</details>':''));
 }
 
-function back(){
+function back(){if(state.returnToDevelopment&&window.PSTHomeLauncherV4){state.returnToDevelopment=false;chrome(false);window.PSTHomeLauncherV4.openModule('business');return;}
  chrome(false);
  try{var n=window.PSTPrimaryNavResilienceV10||window.PSTPrimaryNavResilienceV1;if(n&&typeof n.openHome==='function'){n.openHome();return}}catch(e){}
  try{if(typeof window.pstWorkspaceGo==='function'){window.pstWorkspaceGo('home');return}}catch(e){}
 }
-function open(){
+function open(recordId,record){
+ state.returnToDevelopment=!!record;
+ if(record){var ri=state.targets.findIndex(function(r){return S(r.id)===S(record.id);});if(ri<0)state.targets.push(record);else state.targets[ri]=record;}
+ if(typeof recordId==='string'){state.pendingRecord=recordId;state.filter='all';}
  var page=ensurePage();chrome(true);document.querySelectorAll('.page').forEach(function(p){if(p!==page){p.classList.remove('active');p.style.display='none'}});
- page.style.display='block';page.classList.add('active');renderPage();Promise.all([loadTargets(false),loadOutbound(false),loadDiscovery(false)]).then(function(){renderPage();syncLifecycleUi(false)});try{window.scrollTo(0,0)}catch(e){}
+ page.style.display='block';page.classList.add('active');renderPage();Promise.all([record?Promise.resolve():loadTargets(false),loadOutbound(false),loadDiscovery(false)]).then(function(){renderPage();if(!record)syncLifecycleUi(false)});try{window.scrollTo(0,0)}catch(e){}
 }
 function boot(){css();ensurePage();ensureHome()}
 
@@ -652,7 +655,7 @@ document.addEventListener('visibilitychange',syncAfterGmailReturn);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,0)},{once:true});else setTimeout(boot,0);
 
 window.PSTDachSteelSalesV1=window.PSTDachSteelSalesV2=window.PSTDachSteelSalesV3={
- source:SOURCE,open:open,
+ source:SOURCE,open:open,openRecord:async function(id){var found=await window.supaFetch('pppp_dach_steel_targets_v1'+'?select=*&id=eq.'+encodeURIComponent(id)+'&limit=1');var record=A(found)[0];if(!record)throw new Error('Regjistrimi nuk u gjet.');return open(S(id),record);},
  refresh:function(){return syncLifecycleUi(true)},
  loadSummary:function(force){return loadSummary(!!force)},
  loadTargets:function(force){return loadTargets(!!force)},

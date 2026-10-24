@@ -40,7 +40,9 @@ for(const [key,id] of Object.entries(destinations)){
  for(const p of d.querySelectorAll('.page')){p.classList.remove('active');p.style.display='none';}
  home.classList.add('active');home.style.display='block';w.PSTHomeLauncherV4.render();
  w.PSTHomeLauncherV4.openModule('business');
- d.querySelector(`#page-workspace-business [data-open="${key}"] b`).click();
+ d.querySelector(`#page-workspace-business [data-development-kind="${key}"]`).click();
+ await new Promise(r=>setTimeout(r,30));
+ d.querySelector(`#page-workspace-business [data-open="${key}"]`).click();
  assert(d.getElementById(id).classList.contains('active'),key+' must open through its real Home button');
  assert.equal(home.style.display,'none');
 }

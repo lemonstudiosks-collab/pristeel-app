@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261024-evidence-home1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
+var V='20261024-unified-development1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -479,12 +479,79 @@ function html(){
    +smallCard('events','Evente dhe Forume','Evente, forume dhe takime biznesi.')
   +'</div></section></main></div>';
 }
+// Development uses the Projects workdesk vocabulary and existing business owners.
+var development={kind:'opportunities',view:'board',query:'',stage:'',selected:'',cache:{},opening:false};
+var developmentKinds={
+ opportunities:{label:'Tenderët',owner:'PSTProjectCentricWorkflowV1',path:'kek_tender_watch?select=id,title,authority,procurement_no,publication_no,deadline,published_date,status,project_id,source_url,detail_url,source_key,updated_at,source:payload->>source,notice_phase:payload->>notice_phase,winner_name:payload->winner->>name&status=in.(new,review,watch)&project_id=is.null&order=published_date.desc,id.asc'},
+ representations:{label:'Përfaqësimet',owner:'PSTRepresentationsV1',path:'pppp_representation_targets_v1?select=id,company_name,country,company_domain,stage,next_action,next_action_due,source_name,source_url,company_website,updated_at,archived_at&archived_at=is.null&target_type=eq.representation&order=updated_at.desc,id.asc'},
+ direct:{label:'Klientët direkt',owner:'PSTEUCompaniesV1',path:'pppp_eu_direct_operational_v1?select=id,company_name,country,company_domain_normalized,stage,next_action,next_action_due,source_name,source_url,company_website,updated_at&archived_at=is.null&order=updated_at.desc,id.asc'},
+ buyers:{label:'Blerësit e çelikut',owner:'PSTDachSteelSalesV3',path:'pppp_dach_steel_targets_v1?select=id,source_key,company_name,country,company_domain,target_status,outreach_status,next_action,next_action_due,source_name,source_url,company_website,updated_at,project_id&target_status=not.in.(closed,rejected,project_promoted)&or=(source_key.like.mt:*,source_key.like.eu:*)&project_id=is.null&order=updated_at.desc,id.asc'}
+};
+function developmentCache(){return development.cache[development.kind]||(development.cache[development.kind]={rows:[],loaded:false,busy:false,error:'',request:null,more:false});}
+function developmentStage(r){return S(development.kind==='opportunities'?r.status:development.kind==='buyers'?r.target_status:r.stage)||'unknown';}
+function developmentLabel(s){return ({new:'E re',review:'Në shqyrtim',watch:'Në ndjekje',found:'E identifikuar',screened:'E shqyrtuar',qualified:'E kualifikuar',contacted:'E kontaktuar',replied:'Me përgjigje',negotiation:'Në negocim',represented:'Përfaqësim',ready:'Gati',active:'Aktive',identified:'E identifikuar',draft:'Draft',unknown:'Pa fazë të përcaktuar'})[s]||s;}
+function developmentName(r){return S(r.title||r.company_name||'Pa emër');}
+function developmentMeta(r){return [r.authority||r.country,r.procurement_no||r.company_domain||r.company_domain_normalized].filter(Boolean).join(' · ');}
+function developmentDate(v){var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
+function developmentRows(){var q=S(development.query).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return developmentCache().rows.filter(function(r){
+ if(development.stage&&developmentStage(r)!==development.stage)return false;
+ return !q||[developmentName(r),developmentMeta(r),r.source_name,r.source,r.source_key,r.next_action,developmentStage(r)].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().indexOf(q)>-1;
+});}
+function developmentSafeUrl(v){try{var u=new URL(S(v));return u.protocol==='https:'||u.protocol==='http:'?u.href:'';}catch(e){return '';}}
+function developmentSummary(r){return '<dl><dt>Afati i regjistruar</dt><dd>'+E(developmentDate(r.deadline||r.next_action_due))+'</dd><dt>Përditësuar</dt><dd>'+E(developmentDate(r.updated_at||r.published_date))+'</dd></dl><strong>'+E(r.next_action||'Hap të dhënat dhe burimin')+'</strong>';}
+function developmentRender(){
+ var p=document.getElementById('page-workspace-business');if(!p)return;
+ var c=developmentCache(),rows=developmentRows(),groups=[],by={},allGroups={};
+ c.rows.forEach(function(r){var s=developmentStage(r);allGroups[s]=(allGroups[s]||0)+1;});
+ rows.forEach(function(r){var s=developmentStage(r);if(!by[s]){by[s]=[];groups.push(s);}by[s].push(r);});
+ var body=development.view==='board'?'<div class="ppd-board" aria-label="Mundësitë me karta">'+groups.map(function(s){return '<section class="ppd-lane"><header><h2>'+E(developmentLabel(s))+'</h2><span>'+by[s].length+'</span></header><div>'+by[s].map(function(r){return '<article class="ppd-project-card"><button type="button" class="ppd-card-open" data-development-record="'+E(r.id)+'"><span class="ppd-card-state">'+E(developmentLabel(s))+'</span><h3>'+E(developmentName(r))+'</h3><p>'+E(developmentMeta(r))+'</p>'+developmentSummary(r)+'</button><footer><button type="button" data-development-record="'+E(r.id)+'">Hap dosjen</button></footer></article>';}).join('')+'</div></section>';}).join('')+'</div>':
+ '<div class="ppd-table-wrap"><table class="ppd-table"><thead><tr><th>Mundësia / kompania</th><th>Faza</th><th>Hapi i regjistruar</th><th>Burimi</th><th>Afati</th></tr></thead><tbody>'+rows.map(function(r){return '<tr class="ppd-row"><td><button type="button" class="ppd-main" data-development-record="'+E(r.id)+'"><b>'+E(developmentName(r))+'</b><small>'+E(developmentMeta(r))+'</small></button></td><td>'+E(developmentLabel(developmentStage(r)))+'</td><td>'+E(r.next_action||'—')+'</td><td>'+E(r.source_name||r.source||r.source_key||'—')+'</td><td>'+E(developmentDate(r.deadline||r.next_action_due))+'</td></tr>';}).join('')+'</tbody></table></div>';
+ var r=c.rows.filter(function(x){return S(x.id)===development.selected;})[0],source=r&&developmentSafeUrl(r.detail_url||r.source_url||r.company_website);
+ p.innerHTML='<div class="ppd-page"><header class="ppd-head"><button type="button" class="ppd-back" data-development-home>← Kthehu</button><div><span>PPPP</span><h1>Mundësitë & zhvillimi</h1><p>Një regjistër pune: zgjidh rrjedhën, filtro, hap kartën dhe vazhdo në dosjen përkatëse. Fazat pasqyrojnë të dhënat e regjistruara.</p></div></header>'+
+ '<div class="ppd-viewbar" role="group" aria-label="Rrjedha e zhvillimit">'+Object.keys(developmentKinds).map(function(k){return '<button type="button" data-development-kind="'+k+'" aria-pressed="'+(development.kind===k)+'">'+developmentKinds[k].label+'</button>';}).join('')+'</div>'+
+ '<div class="ppd-toolbar"><label><span>⌕</span><input type="search" data-development-search aria-label="Kërko mundësi" placeholder="Kërko mundësi, kompani ose referencë" value="'+E(development.query)+'"></label><div class="ppd-open-count"><b>'+c.rows.length+(c.more?'+':'')+'</b><span>të ngarkuara</span></div></div>'+
+ '<div class="ppd-viewbar" role="group" aria-label="Pamja e mundësive"><button type="button" data-development-view="board" aria-pressed="'+(development.view==='board')+'">Kartat</button><button type="button" data-development-view="table" aria-pressed="'+(development.view==='table')+'">Tabela</button><label>Faza <select data-development-stage><option value="">Të gjitha</option>'+Object.keys(allGroups).map(function(s){return '<option value="'+E(s)+'"'+(development.stage===s?' selected':'')+'>'+E(developmentLabel(s))+' ('+allGroups[s]+')</option>';}).join('')+'</select></label><button type="button" data-development-refresh '+(c.busy?'disabled':'')+'>Rifresko</button></div>'+
+ (c.error?'<div class="ppd-error" role="alert">'+E(c.error)+(c.loaded?' Po shfaqet kopja e fundit e ngarkuar.':'')+'</div>':'')+
+ '<div class="ppd-reset">'+(development.query||development.stage?'<button type="button" data-development-clear>Pastro filtrat</button>':'')+'</div><main class="ppd-body">'+(rows.length?body:'<div class="ppd-empty" role="status">'+(c.busy?'Duke ngarkuar regjistrin…':c.error?'Të dhënat nuk u lexuan. Përdor Rifresko.':'Nuk ka regjistrime që përputhen me këtë pamje.')+'</div>')+'</main>'+
+ (c.more?'<button type="button" class="ppd-back" data-development-more '+(c.busy?'disabled':'')+'>Shfaq 250 të tjera</button>':'')+
+ '<details class="ppd-advanced"><summary>Mjetet e rrjedhës</summary><button type="button" data-open="'+development.kind+'">Hap mjetet e plota për '+developmentKinds[development.kind].label+'</button></details></div>'+
+ (r?'<section class="ppd-development-detail" role="dialog" aria-modal="false" aria-labelledby="development-detail-title"><header><span>Dosja e mundësisë</span><button type="button" data-development-close aria-label="Mbyll dosjen">×</button></header><h2 id="development-detail-title">'+E(developmentName(r))+'</h2><p>'+E(developmentMeta(r))+'</p><p><b>Faza e regjistruar:</b> '+E(developmentLabel(developmentStage(r)))+'</p>'+developmentSummary(r)+'<p><b>Burimi:</b> '+E(r.source_name||r.source||r.source_key||'Regjistri PPPP')+'</p><p><small>ID: '+E(r.id)+'</small></p><div class="ppd-viewbar">'+(source?'<a href="'+E(source)+'" target="_blank" rel="noopener">Hap burimin ↗</a>':'<span>Nuk ka lidhje burimi të regjistruar.</span>')+'<button type="button" data-development-full '+(development.opening?'disabled':'')+'>Hap dosjen e plotë</button></div></section>':'');
+ p.onclick=developmentClick;p.oninput=function(e){if(!e.target.hasAttribute('data-development-search'))return;development.query=e.target.value;developmentRender();var x=p.querySelector('[data-development-search]');if(x)x.focus();};
+ p.onkeydown=function(e){if(e.key==='Escape'&&development.selected){development.selected='';developmentRender();}};
+ p.onchange=function(e){if(e.target.hasAttribute('data-development-stage')){development.stage=e.target.value;developmentRender();}};
+}
+async function developmentLoad(force,more){
+ var kind=development.kind,c=developmentCache();if(c.request)return c.request;if(c.loaded&&!force&&!more){developmentRender();return true;}
+ c.busy=true;c.error='';developmentRender();
+ c.request=(async function(){try{if(typeof window.supaFetch!=='function')throw new Error('Lidhja me PPPP nuk është gati.');var rows=await window.supaFetch(developmentKinds[kind].path+'&limit=250&offset='+(more?c.rows.length:0));if(!Array.isArray(rows))throw new Error('Përgjigje e pavlefshme.');
+ c.more=rows.length===250;var merged=more?c.rows.concat(rows):rows,seen={};c.rows=merged.filter(function(r){if(!r.id||seen[r.id])return false;seen[r.id]=true;return true;});c.loaded=true;return true;
+ }catch(e){c.error='Regjistri nuk u rifreskua: '+S(e&&e.message||e);return false;}finally{c.busy=false;c.request=null;if(development.kind===kind)developmentRender();}})();return c.request;
+}
+async function developmentOpenFull(){
+ var id=development.selected,kind=development.kind,api=window[developmentKinds[kind].owner];if(!id||development.opening)return;
+ if(!api||typeof api.openRecord!=='function'){developmentCache().error='Dosja e plotë nuk është gati. Provo pasi të ngarkohet platforma.';developmentRender();return;}
+ development.opening=true;developmentRender();try{var result=await api.openRecord(id);if(result===false)throw new Error('Regjistrimi nuk u hap.');}catch(e){developmentCache().error=S(e&&e.message||e);}finally{development.opening=false;developmentRender();}
+}
+function developmentClick(e){var t=e.target.closest('button');if(!t)return;
+ if(t.hasAttribute('data-development-home')){var n=nav();if(n&&n.openHome)n.openHome();return;}
+ if(t.dataset.developmentKind){development.kind=t.dataset.developmentKind;development.stage='';development.query='';development.selected='';developmentLoad(false);return;}
+ if(t.dataset.developmentView){development.view=t.dataset.developmentView;developmentRender();return;}
+ if(t.dataset.developmentRecord){development.selected=t.dataset.developmentRecord;developmentRender();return;}
+ if(t.hasAttribute('data-development-close')){development.selected='';developmentRender();return;}
+ if(t.hasAttribute('data-development-full')){developmentOpenFull();return;}
+ if(t.hasAttribute('data-development-refresh')){developmentLoad(true);return;}
+ if(t.hasAttribute('data-development-more')){developmentLoad(false,true);return;}
+ if(t.hasAttribute('data-development-clear')){development.query='';development.stage='';developmentRender();return;}
+ if(t.dataset.open)route(t.dataset.open);
+}
+
 function workspace(key){
  var id='page-workspace-'+key,p=document.getElementById(id),host=document.querySelector('.content');if(!host)return false;
  if(!p){p=document.createElement('section');p.id=id;p.className='page';host.appendChild(p);}
  document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');x.style.display='none';});
  p.classList.add('active');p.style.display='block';homeShell(false);
  var business=key==='business';
+ if(business){developmentRender();developmentLoad(false);try{var dn=nav();if(dn&&dn.syncSidebar)dn.syncSidebar(key);if(dn&&dn.repairSidebar)dn.repairSidebar();}catch(e){}return true;}
  p.innerHTML='<div class="phl-workspace"><header><span>PRISTEEL · HAPËSIRË PUNE</span><h1>'+(business?'Mundësitë & zhvillimi':'Komunikime & dokumente')+'</h1><p>'+(business?'Zgjidh rrjedhën e punës. Çdo mundësi ruan burimin dhe procesin e vet.':'Hap regjistrat e përgjithshëm ose zgjidh projektin për historikun dhe dokumentet e tij.')+'</p></header><div class="phl-main-grid">'
  +(business?mainCard('opportunities','Mundësitë','Tenderë të zbuluar automatikisht dhe mundësi për shqyrtim.')+mainCard('representations','Përfaqësime','Prodhues, bashkëpunime dhe zhvillim tregu.')+mainCard('direct','Klientë të drejtpërdrejtë','Fabrikim dhe kapacitet prodhues për klientë të rinj.')+mainCard('buyers','Blerësit e çelikut','Kërkesa dhe tregti me materiale çeliku.'):
  mainCard('emails','Emailat','Komunikimet dhe lidhjet e tyre me projektet.')+mainCard('files','Dokumentet','Oferta, fatura dhe dokumente tregtare.')+mainCard('projects','Dosjet e projekteve','Skedarë, komunikime dhe furnizim brenda projektit.')+mainCard('events','Evente dhe Forume','Takime biznesi, kontakte dhe dokumente të eventeve.'))
@@ -605,5 +672,5 @@ document.addEventListener('pst:modules-ready',schedule,{once:true});
 document.addEventListener('pst:modules-ready',function(){if(pendingRoute){var k=pendingRoute;pendingRoute='';route(k);}}, {once:true});
 window.addEventListener('pageshow',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.PSTHomeLauncherV5=window.PSTHomeLauncherV4={version:V,render:mount,openModule:route,openSearch:search};
+window.PSTHomeLauncherV5=window.PSTHomeLauncherV4={version:V,render:mount,openModule:route,openSearch:search,_development:{state:development,load:developmentLoad,rows:developmentRows}};
 })();

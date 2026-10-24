@@ -27,7 +27,7 @@ for(const key of ['business','projects','partners','tasks','resources','finance'
 d.querySelector('#pst-home-launcher-v4 [data-open="business"]').click();await settle();
 assert(d.querySelector('#page-workspace-business.active'));
 assert(d.querySelector('[data-key="business"].active'));
-for(const [key,expected] of [['opportunities','tenders'],['representations','representations'],['direct','direct'],['buyers','buyers']]){nav.route('business');d.querySelector('#page-workspace-business [data-open="'+key+'"]').click();assert(calls.includes(expected),key+' must delegate to its existing owner');}
+for(const [key,expected] of [['opportunities','tenders'],['representations','representations'],['direct','direct'],['buyers','buyers']]){nav.route('business');d.querySelector('#page-workspace-business [data-development-kind="'+key+'"]').click();await settle();d.querySelector('#page-workspace-business [data-open="'+key+'"]').click();assert(calls.includes(expected),key+' must delegate to its existing owner');}
 nav.route('resources');d.querySelector('#page-workspace-resources [data-open="files"]').click();assert(calls.includes('documents'));
 nav.route('tasks');assert(d.querySelector('#page-qendra.active'),'Tasks must open the existing task owner');
 nav.route('contacts');assert(calls.includes('contacts'));
