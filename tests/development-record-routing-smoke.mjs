@@ -8,3 +8,9 @@ for(const [file,owner,table,field] of [['pristeel-representations-v1.js','PSTRep
  assert(reads.some(x=>x.includes('id=eq.outside-default-page&limit=1')));w.document.querySelector('[data-rep-back],[data-eu-back],[data-dss-back]').click();assert.deepEqual(returns,['business'],'Back returns to unified register');dom.window.close();
 }
 console.log('Development dossier routing: PASS (real owners, exact row beyond default list, no writes)');
+{
+ const dom=new JSDOM('<html><head></head><body><div class="content"><section id="page-workspace-business" class="page active"></section></div></body></html>',{runScripts:'outside-only',url:'https://example.test/'}),w=dom.window;w.scrollTo=()=>{};let aiCalls=0;
+ w.PSTOpenAIAssistantV1={ask(){aiCalls++;throw Error('Opening is not AI approval')}};
+ w.supaFetch=async(path,method)=>{assert(!method);if(path.startsWith('kek_tender_watch?select=*&id=eq.exact-tender'))return [{id:'exact-tender',title:'Exact tender',status:'review',source_key:'TED',payload:{source:'TED',notice_phase:'award',winner:{name:'Exact winner'}}}];return [];};
+ w.eval(fs.readFileSync('pristeel-project-centric-workflow-v1.js','utf8'));await w.PSTProjectCentricWorkflowV1.openRecord('exact-tender');assert.equal(aiCalls,0,'Opening tender must not automatically invoke AI');assert(w.document.body.textContent.includes('Exact tender'));dom.window.close();
+}

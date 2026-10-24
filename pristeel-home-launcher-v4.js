@@ -489,7 +489,7 @@ var developmentKinds={
 };
 function developmentCache(){return development.cache[development.kind]||(development.cache[development.kind]={rows:[],loaded:false,busy:false,error:'',request:null,more:false});}
 function developmentStage(r){return S(development.kind==='opportunities'?r.status:development.kind==='buyers'?r.target_status:r.stage)||'unknown';}
-function developmentLabel(s){return ({new:'E re',review:'Në shqyrtim',watch:'Në ndjekje',found:'E identifikuar',screened:'E shqyrtuar',qualified:'E kualifikuar',contacted:'E kontaktuar',replied:'Me përgjigje',negotiation:'Në negocim',represented:'Përfaqësim',ready:'Gati',active:'Aktive',identified:'E identifikuar',draft:'Draft',unknown:'Pa fazë të përcaktuar'})[s]||s;}
+function developmentLabel(s){return ({new:'E re',review:'Në shqyrtim',watch:'Në ndjekje',found:'E identifikuar',screened:'E shqyrtuar',qualified:'E kualifikuar',contacted:'E kontaktuar',replied:'Me përgjigje',negotiation:'Në negocim',represented:'Përfaqësim',verified:'E verifikuar',contact_ready:'Kontakti gati',draft_ready:'Drafti gati',meeting:'Takim',pilot:'Bashkëpunim pilot',closed:'E mbyllur',ready:'Gati',active:'Aktive',identified:'E identifikuar',draft:'Draft',unknown:'Pa fazë të përcaktuar'})[s]||s;}
 function developmentName(r){return S(r.title||r.company_name||'Pa emër');}
 function developmentMeta(r){return [r.authority||r.country,r.procurement_no||r.company_domain||r.company_domain_normalized].filter(Boolean).join(' · ');}
 function developmentDate(v){var d=v?new Date(v):null;return d&&!isNaN(d.getTime())?d.toLocaleDateString('sq-AL',{day:'2-digit',month:'short',year:'numeric'}):'—';}
