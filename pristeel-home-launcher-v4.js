@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261005-home-nav-stable1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
+var V='20261024-hubspot-home1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -446,21 +446,23 @@ function smallCard(k,t,s){return'<button type="button" class="phl-small-card" da
 function html(){
  return'<div class="phl-shell"><header class="phl-top">'
   +'<div class="phl-brand"><span class="phl-mark">P</span><span><b>PRISTEEL</b><small>PPPP</small></span></div>'
-  +'<nav>'
+  +'<form class="phl-search" data-search-form role="search">'+I.search+'<input data-search aria-label="Kërko në PPPP" placeholder="Kërko në PPPP…"><kbd>Ctrl K</kbd><button aria-label="Kërko">'+I.arrow+'</button></form>'
+  +'<nav aria-label="Mjetet e Ballinës">'
    +'<button type="button" data-gmail>'+icon('gmail',true)+'<b>Gmail</b></button>'
    +'<button type="button" data-open="daily">'+icon('news',true)+'<b>Gazeta PPPP</b></button>'
    +'<button type="button" data-tool="calc">'+icon('calc',true)+'<b>Kalkulatori</b></button>'
    +'<div class="phl-meta">'+icon('clock',true)+'<span><b data-time>--:--</b><small data-date>—</small></span></div>'
    +'<button type="button" class="phl-meta" data-weather-refresh>'+icon('weather',true)+'<span><b data-temp>—°C</b><small data-weather>Prishtinë</small></span></button>'
   +'</nav></header>'
-  +'<main><section class="phl-intro"><h1>Mirësevini në PRISTEEL</h1><p>Zgjidh modulin ose kërko në platformë.</p></section>'
-  +'<form class="phl-search" data-search-form>'+I.search+'<input data-search placeholder="Kërko projekt, kompani, tender, ofertë, furnitor…"><kbd>Ctrl K</kbd><button>'+I.arrow+'</button></form>'
+  +'<main><section class="phl-intro"><span class="phl-eyebrow">HAPËSIRA JOTE E PUNËS</span><h1>Mirësevini në PRISTEEL</h1><p>Prioritetet, projektet dhe komunikimet në një vend.</p></section>'
+  +'<section class="phl-dashboard" aria-label="Përmbledhja operative" data-dashboard></section>'
+  +'<section class="phl-module-section"><h2>Zhvillimi i biznesit</h2>'
   +'<section class="phl-main-grid">'
    +mainCard('opportunities','Mundësitë','Tenderë dhe lead-e për shqyrtim.')
    +mainCard('representations','Përfaqësime','Zhvillim tregu, kontakte dhe përfaqësime.')
    +mainCard('direct','Klientë të drejtpërdrejtë','Fabrication, kapacitet prodhues dhe nënkontraktim.')
    +mainCard('buyers','Blerësit e çelikut','Blerës materiali, RFQ dhe furnizim çeliku.')
-  +'</section>'
+  +'</section></section>'
   +'<section class="phl-secondary"><h2>Module dhe mjete tjera</h2><div>'
    +smallCard('druseidt','Druseidt','Komponentë elektrikë, projekte, draft-e dhe RFQ.')
    +smallCard('spie','SPIE Workspace','TenneT, dokumente dhe komunikimi.')
@@ -471,6 +473,22 @@ function html(){
    +smallCard('steel','Çmimet e çelikut','Referenca çmimesh PPPP.')
    +smallCard('events','Evente dhe Forume','Evente, forume dhe takime biznesi.')
   +'</div></section></main></div>';
+}
+function dashboard(){
+ var root=document.getElementById('pst-home-launcher-v4'),host=root&&root.querySelector('[data-dashboard]');if(!host)return;
+ var api=window.PSTHomeCanonicalV1,snap=null;
+ try{if(api&&typeof api.snapshot==='function')snap=api.snapshot()}catch(e){console.warn('PPPP Home snapshot unavailable',e)}
+ var ready=!!(snap&&snap.renderedAt),actions=A(snap&&snap.actions),waiting=A(snap&&snap.waiting),projects=A(snap&&snap.projects);
+ function row(pid,title,detail,tag){return '<button type="button" class="phl-work-row" data-project-brief="'+E(pid)+'"><span class="phl-work-dot" aria-hidden="true"></span><span><b>'+E(title)+'</b><small>'+E(detail)+'</small></span>'+(tag?'<em>'+E(tag)+'</em>':'')+I.arrow+'</button>'}
+ function empty(text){return '<p class="phl-empty">'+E(ready?text:'Përmbledhja operative ende nuk është ngarkuar. Hap Gazetën PPPP ose modulin përkatës për detaje.')+'</p>'}
+ var content='<div class="phl-overview-bar"><span>'+I.clock+' Përmbledhja e punës</span><small>'+(ready?'Nga Ballina · '+E(new Date(snap.renderedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'})):'Në pritje të të dhënave')+'</small></div>'
+ +'<section class="phl-panel phl-priorities"><header><h2>Kërkon vëmendjen tënde</h2><span class="phl-count">'+(ready?actions.length:'—')+'</span></header>'
+ +(actions.length?actions.slice(0,5).map(function(a){return row(a.project_id,a.title,a.why||a.meta,a.tag)}).join(''):empty('Nuk ka veprime të sugjeruara në përmbledhjen aktuale.'))+'<footer><button type="button" data-open="daily">Hap Gazetën PPPP '+I.arrow+'</button></footer></section>'
+ +'<section class="phl-panel"><header><h2>Në pritje të palës tjetër</h2><span class="phl-count">'+(ready?waiting.length:'—')+'</span></header>'
+ +(waiting.length?waiting.slice(0,4).map(function(w){return row(w.project_id,w.name,w.text,'Në pritje')}).join(''):empty('Nuk ka projekte në pritje në përmbledhjen aktuale.'))+'</section>'
+ +'<section class="phl-panel phl-projects-panel"><header><h2>Projektet në punë</h2><button type="button" data-open="projects">Të gjitha projektet '+I.arrow+'</button></header>'
+ +(projects.length?projects.slice(0,4).map(function(p){return row(p.row&&p.row.id,p.row&&p.row.name,p.next,'')}).join(''):empty('Nuk ka projekte të tjera në punë në përmbledhjen aktuale.'))+'</section>';
+ if(host.innerHTML!==content)host.innerHTML=content;
 }
 function css(){
  if(document.getElementById('pst-home-launcher-v4-css'))return;
@@ -508,6 +526,7 @@ function css(){
 function bind(r){
  if(r.dataset.bound==='1')return;r.dataset.bound='1';
  r.addEventListener('click',function(e){
+  var brief=e.target.closest('[data-project-brief]');if(brief){var api=window.PSTHomeCanonicalV1;if(api&&typeof api.openBrief==='function'&&brief.dataset.projectBrief)api.openBrief(brief.dataset.projectBrief);return;}
   if(e.target.closest('[data-gmail]'))return void openGmail();
   var t=e.target.closest('[data-tool]');if(t&&t.dataset.tool==='calc')return void calculator();
   if(e.target.closest('[data-weather-refresh]'))return void weather(true);
@@ -554,7 +573,7 @@ function mount(){
  if(r.hasAttribute('data-pst-retired-home-owner'))r.removeAttribute('data-pst-retired-home-owner');
  if(r.style.display==='none')r.style.removeProperty('display');
  page.dataset.pstHomeVisualOwner='launcher-v4';
- bind(r);clock();weather(false);return true;
+ bind(r);dashboard();clock();weather(false);return true;
 }
 function schedule(){if(mountQueued)return;mountQueued=true;(window.requestAnimationFrame||function(f){return setTimeout(f,0)})(function(){mountQueued=false;mount()})}
 document.addEventListener('pst:home-canonical-rendered',schedule);
