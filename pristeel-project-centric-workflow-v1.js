@@ -82,7 +82,7 @@ function tenderVisible(r){
  if(src==='TED')return phase==='award'&&['new','review','watch'].indexOf(st)>-1&&!!S(tenderPayload(r).winner&&tenderPayload(r).winner.name).trim();
  return phase==='opportunity'&&['new','review'].indexOf(st)>-1;
 }
-function tenderMode(r){return tenderPayload(r).notice_phase==='award'?'award':'local';}
+function tenderMode(r){return tenderSource(r)==='TED'?'award':'local';}
 function tenderScore(r){var n=Number(r&&r.relevance_score);return isFinite(n)&&n>0?Math.round(n):0;}
 function winnerObj(r){var w=tenderPayload(r).winner;return w&&typeof w==='object'?w:{};}
 function winnerName(r){return S(winnerObj(r).name);}
