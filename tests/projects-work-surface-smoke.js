@@ -41,6 +41,9 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(projectReads===1,'Projects Operator Desk must use one bounded Projects read per open');
   assert(window.document.querySelector('.ppd-page'),'Projects Operator Desk v2 did not render');
   assert(window.document.querySelectorAll('.ppd-focus').length===5,'Operator Desk must expose five operational focus groups');
+  assert(window.document.querySelectorAll('.ppd-project-card').length===4,'Default view must show clickable project cards');
+  window.document.querySelector('[data-ppd-view="table"]').click();
+  assert(window.document.querySelector('table.ppd-table'),'Alternative view must use a real table');
   assert(window.document.querySelectorAll('.ppd-row').length===4,'Default Projects view must show four non-closed operational projects');
   assert(!window.document.querySelector('[data-ppd-event]'),'Event records must not render inside Projects');
   assert(!window.document.body.textContent.includes('German-Kosovar Economic Forum 2026'),'Forum must stay out of the standard Projects surface');
@@ -48,7 +51,7 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(!window.document.querySelector('.pst-pm-toggle'),'Board/List toggle must not exist');
   assert(!window.document.querySelector('.pst-pm-more'),'Legacy overflow action menu must not exist');
   assert(!window.document.body.textContent.includes('Dublikatat'),'Duplicates button must not remain in daily Projects UI');
-  assert(!window.document.body.textContent.includes('Rifresko'),'Manual refresh button must not remain in daily Projects UI');
+  assert(window.document.querySelector('[data-ppd-refresh]'),'Explicit refresh must be available for the cached register');
   assert(!window.document.querySelector('[data-ppd-new]'),'Projects must not duplicate the global + Krijo → Projekt i ri action');
   assert(!window.document.body.textContent.includes('+ Projekt i ri'),'Duplicate page-level project create action must stay removed');
   assert(!desk.includes("ref,reference"),'Projects query must not request nonexistent projects.reference');
@@ -84,7 +87,7 @@ function assert(ok,message){if(!ok)throw new Error(message);}
   assert(facts.length===1&&facts[0].fact_key==='supplier.price','Project context bridge must remain available for Project Detail');
 
   const bootstrap=fs.readFileSync('pristeel-project-emails.js','utf8');
-  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20261004-events-excluded1'),'Operator Desk must be cache-busted in runtime bootstrap');
+  assert(bootstrap.includes('pristeel-projects-modern-v1.js?v=20261024-connected-workspace1'),'Operator Desk must be cache-busted in runtime bootstrap');
   assert(bootstrap.includes('pristeel-project-classification-v1.js?v=20260921-projectdesk-yield2'),'Classification compatibility layer must be cache-busted');
 
   const source=desk;

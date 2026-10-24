@@ -177,6 +177,54 @@ html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card small { displa
  .phl-work-row em { display:none; }
  .phl-overview-bar { align-items:start; flex-direction:column; }
 }
+/* Connected workspace entry cards and project board belong to the existing owners. */
+.phl-workspace { max-width:1200px; margin:auto; padding:8px 0 40px; }
+.phl-workspace > header { margin-bottom:28px; }
+.phl-workspace > header > span { font-size:10px; letter-spacing:1.5px; color:#6a7b83; }
+.phl-workspace > header p { max-width:760px; font-size:14px; color:#6a7b83; }
+.phl-workspace .phl-main-grid { display:grid; width:100%; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+html#pst-spie-platform body .phl-workspace .phl-main-card { min-height:156px; border:1px solid #dce2e7; border-radius:12px!important; padding:22px; background:#fff; }
+.phl-workspace-footer { display:flex; flex-wrap:wrap; gap:12px; margin-top:24px; }
+.phl-workspace-footer .phl-small-card { flex:1; min-width:220px; }
+.phl-workspace button svg { max-width:24px; max-height:24px; }
+.ppd-viewbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:16px 0; }
+.ppd-viewbar label { display:flex; align-items:center; gap:8px; font-size:12px; color:#6a7b83; }
+html#pst-spie-platform body .ppd-viewbar button { border:1px solid #d5e0e4; padding:8px 12px; background:#fff; color:#255c55; cursor:pointer; }
+html#pst-spie-platform body .ppd-viewbar button[aria-pressed="true"] { background:#195c50!important; color:#fff!important; }
+.ppd-viewbar select { padding:8px; }
+.ppd-board { display:grid; grid-auto-flow:column; grid-auto-columns:280px; align-items:start; gap:16px; overflow-x:auto; padding:2px 2px 18px; max-width:100%; }
+.ppd-lane { min-width:0; border:1px solid #e0e6ea; border-radius:12px; background:#f1f4f6; padding:10px; }
+.ppd-lane > header { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 2px 16px; }
+html#pst-spie-platform body .ppd-lane h2 { font-size:14px!important; margin:0; }
+.ppd-lane > header > span { min-width:24px; text-align:center; border-radius:5px; background:#e0e8ec; font-size:12px; }
+.ppd-project-card { margin-bottom:12px; background:#fff; border:1px solid #dce2e7; border-radius:10px; overflow:hidden; }
+.ppd-project-card:last-child { margin-bottom:0; }
+html#pst-spie-platform body .ppd-card-open { display:block; width:100%; text-align:left; padding:16px; background:transparent; border:0; cursor:pointer; }
+html#pst-spie-platform body .ppd-card-open:hover { background:#f2f8f6; }
+html#pst-spie-platform body .ppd-card-open h3 { font-size:15px!important; margin:9px 0; color:#195c50!important; }
+.ppd-card-open p { font-size:12px; line-height:1.5; color:#6a7b83; margin:0 0 14px; }
+.ppd-card-state { display:inline-block; font-size:10px; color:#5b7280; background:#edf3f5; border-radius:5px; padding:4px 6px; }
+.ppd-card-open dl { display:grid; grid-template-columns:75px minmax(0,1fr); gap:7px; font-size:11px; margin:0 0 14px; }
+.ppd-card-open dt { color:#6a7b83; }.ppd-card-open dd { margin:0; }.ppd-card-open strong { font-size:12px; font-weight:500; }
+.ppd-project-card footer { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; border-top:1px solid #edf0f3; padding:10px; }
+html#pst-spie-platform body .ppd-project-card footer button { border:1px solid #e0e6ea; background:#fff; color:#195c50; padding:7px 5px; cursor:pointer; font-size:11px!important; }
+.ppd-error { padding:16px; margin:10px 0; background:#fff3e3; border:1px solid #dfb16e; border-radius:8px; color:#79490e; }
+.ppd-table-wrap { overflow-x:auto; max-width:100%; border:1px solid #e0e6ea; border-radius:10px; background:#fff; }
+html#pst-spie-platform body .ppd-table .ppd-row { display:table-row!important; min-height:0; }
+.ppd-table td,.ppd-table th { padding:14px; text-align:left; min-width:125px; }
+.ppd-table td:first-child { min-width:230px; }.ppd-table td small { display:block; margin-top:5px; color:#6a7b83; font-size:11px; }
+html#pst-spie-platform body .ppd-table .ppd-type { display:table-cell!important; background:transparent; border-radius:0; }
+html#pst-spie-platform body .ppd-table .ppd-main { display:block; border:0; background:transparent; text-align:left; cursor:pointer; padding:0; }
+@media(max-width:760px) { .phl-workspace .phl-main-grid { grid-template-columns:minmax(0,1fr); }.ppd-board { grid-auto-columns:min(280px,85vw); } }
+/* Company cards are a read-only projection of existing Contact Master relationships. */
+.pcm-viewbar { display:flex; gap:8px; margin-bottom:18px; }
+html#pst-spie-platform body .pcm-viewbar button { padding:8px 14px; background:#fff; color:#195c50; border:1px solid #dce2e7; cursor:pointer; }
+html#pst-spie-platform body .pcm-viewbar button[aria-pressed=true] { background:#195c50!important; color:white!important; }
+.pcm-company-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr)); gap:14px; padding:10px 0; }
+html#pst-spie-platform body .pcm-company-card { text-align:left; background:#fff; border:1px solid #dce2e7; border-radius:10px!important; padding:20px; cursor:pointer; min-height:175px; }
+html#pst-spie-platform body .pcm-company-card:hover { background:#f2f8f6; border-color:#8db8af; }
+.pcm-company-card > span { display:block; color:#6a7b83; font-size:11px; }.pcm-company-card h3 { margin:8px 0; }.pcm-company-card p { color:#6a7b83; font-size:12px; }.pcm-company-card strong,.pcm-company-card > small { display:block; margin-top:8px; font-size:12px; }
+.pcm-company-card > small { color:#195c50; }.pcm-company-details h3 { margin:22px 0 12px; }.pcm-company-source { font-size:11px; color:#6a7b83; margin-top:20px; }
 /* All canonical work surfaces share the same page/header/section vocabulary. */
 html#pst-spie-platform body .page :is(.pst-rep-page,.pst-eu-page,.pst-dss-page,.pst-ws-page,.ppd-page,.pcm-page,.pst-opp-workdesk) { width:100%!important; max-width:100%!important; padding:0!important; margin:0!important; background:transparent!important; color:var(--pst-ink)!important; }
 html#pst-spie-platform body .page :is(.pst-rep-head,.pst-eu-head,.pst-dss-head,.ppd-head,.pcm-head,.pst-pi-head,.pst-opp-desk-head) { background:transparent!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; padding:8px 0 24px!important; margin:0 0 24px!important; box-shadow:none!important; }

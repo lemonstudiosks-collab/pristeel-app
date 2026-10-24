@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "59efcb60c1b98e53577acab4e884894e0f3cdf84"
+    "bootstrapGitBlobSha": "2414909d179188e670f22d60f042649a131e2432"
   },
   "applicationDirectRuntime": [
     "spie/editor-safety.js",
@@ -76,7 +76,7 @@
         "pristeel-mobile-control-tower-v1.js",
         "pristeel-mobile-app-v2.js"
       ],
-      "note": "Desktop Home has one visual owner: pristeel-home-launcher-v4.js. Native UI and Redesign Finalizer defer legacy child retirement when the launcher is present. The launcher clears inherited hidden/aria-hidden state, hides all legacy Home children, ignores stale Home nav markers, and owns the sidebar boundary via pst-home-shell-owned. Home has no sidebar or reserved width; its four primary module routes restore canonical navigation. Global/Production shell owners defer only within this boundary, while other routes retain their existing full-width behavior. Gazeta PPPP remains an in-Home overlay and the duplicate floating Daily launcher stays hidden. Route/render events are coalesced and reuse successful weather data until explicit refresh. In SPIE standard mode the launcher keeps the same handlers but uses calm module rows with a persistent sidebar."
+      "note": "The existing Home launcher owns six connected workspace entry cards. Business and resource hubs delegate to existing module owners. Projects provides a phase board and table through the existing Projects presentation owner. No business state is changed by switching views or opening project workflow shortcuts."
     },
     {
       "area": "projects-list",

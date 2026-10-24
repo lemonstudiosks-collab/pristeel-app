@@ -21,7 +21,7 @@ w.eval(read('pristeel-home-launcher-v4.js'));
 d.dispatchEvent(new w.Event('DOMContentLoaded'));
 await new Promise(r=>setTimeout(r,50));
 const nav=d.getElementById('pst-ws-canonical-nav'),buttons=Array.from(nav.querySelectorAll('button'));
-assert.equal(buttons.length,14);
+assert.equal(buttons.length,8);
 let rebuilds=0;
 const observer=new w.MutationObserver(rs=>{rebuilds+=rs.filter(r=>r.type==='childList').length;});
 observer.observe(nav,{subtree:true,childList:true});
@@ -39,7 +39,8 @@ for(const [key,id] of Object.entries(destinations)){
  const home=d.getElementById('page-workspace-home');
  for(const p of d.querySelectorAll('.page')){p.classList.remove('active');p.style.display='none';}
  home.classList.add('active');home.style.display='block';w.PSTHomeLauncherV4.render();
- root.querySelector(`[data-open="${key}"] b`).click();
+ w.PSTHomeLauncherV4.openModule('business');
+ d.querySelector(`#page-workspace-business [data-open="${key}"] b`).click();
  assert(d.getElementById(id).classList.contains('active'),key+' must open through its real Home button');
  assert.equal(home.style.display,'none');
 }
@@ -47,8 +48,8 @@ assert.deepEqual(calls,['opportunities','representations','direct','buyers']);
 for(const p of d.querySelectorAll('.page')){p.classList.remove('active');p.style.display='none';}
 const home=d.getElementById('page-workspace-home');home.classList.add('active');home.style.display='block';w.PSTHomeLauncherV4.render();
 w.__pstModulesReady=false;w.__pstBootstrapDiagnostics={completed:false};
-root.querySelector('[data-open="opportunities"]').click();
-root.querySelector('[data-open="buyers"]').click();
+w.PSTHomeLauncherV4.openModule('opportunities');
+w.PSTHomeLauncherV4.openModule('buyers');
 assert(home.classList.contains('active'),'A startup click must keep a usable Home until its owner loads');
 assert.equal(calls.length,4);
 w.__pstModulesReady=true;d.dispatchEvent(new w.Event('pst:modules-ready'));

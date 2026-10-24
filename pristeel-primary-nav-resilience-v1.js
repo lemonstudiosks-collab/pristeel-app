@@ -44,10 +44,11 @@ var ORDER=['home','tenders','representations','projects','contacts','daily','fin
 // Reuse the established route owners. No secondary router or data fetch path.
 var SPIE_STANDARD=document.documentElement.classList.contains('pst-spie-standard');
 if(SPIE_STANDARD){
- Object.assign(KEYS,{direct:1,buyers:1,files:1,emails:1,spie:1,events:1});
- Object.assign(LABELS,{home:'Ballina',direct:'Klientë direkt',buyers:'Blerësit e çelikut',files:'Dokumentet',emails:'Emailat',spie:'SPIE Workspace',events:'Evente dhe Forume'});
+ Object.assign(KEYS,{business:1,resources:1,tasks:1,direct:1,buyers:1,files:1,emails:1,spie:1,events:1});
+ Object.assign(LABELS,{business:'Mundësitë & zhvillimi',resources:'Komunikime & dokumente',tasks:'Detyrat & afatet',contacts:'Kompanitë & kontaktet',daily:'Gazeta PPPP',home:'Ballina',direct:'Klientë direkt',buyers:'Blerësit e çelikut',files:'Dokumentet',emails:'Emailat',spie:'SPIE Workspace',events:'Evente dhe Forume'});
  Object.assign(ICONS,{direct:ICONS.contacts,buyers:ICONS.tenders,files:ICONS.tenders,emails:ICONS.daily,spie:ICONS.projects,events:ICONS.daily});
- ORDER=['home','tenders','representations','direct','buyers','projects','finance','contacts','files','emails','spie','events','daily','apps'];
+ Object.assign(ICONS,{business:ICONS.tenders,resources:ICONS.daily,tasks:ICONS.projects});
+ ORDER=['home','business','projects','contacts','tasks','resources','finance','apps'];
 }
 var repairTimer=0,polishTimer=0,tenderRenderToken=0,viewportToken=0;
 function S(v){return String(v==null?'':v);}
@@ -70,7 +71,7 @@ function stabilizeViewport(){
 }
 function currentKey(){
  if(SPIE_STANDARD){
-  var extra={'page-eu-companies':'direct','page-dach-steel-sales':'buyers','page-documents-center':'files','page-document-center':'files','page-workspace-inbox':'emails','page-workspace-events':'events'};
+  var extra={'page-workspace-business':'business','page-workspace-resources':'resources','page-qendra':'tasks','page-workspace-events-forums':'resources','page-eu-companies':'direct','page-dach-steel-sales':'buyers','page-documents-center':'files','page-document-center':'files','page-workspace-inbox':'emails','page-workspace-events':'events'};
   for(var id in extra)if(visible(document.getElementById(id)))return extra[id];
  }
 
@@ -137,7 +138,7 @@ function syncSidebar(key){
  }catch(e){}
  return true;
 }
-function mark(key){key=canon(key);syncSidebar(key);var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){var on=canon(b.dataset.key)===key;if(b.classList.contains('active')!==on)b.classList.toggle('active',on);if(on){if(b.getAttribute('aria-current')!=='page')b.setAttribute('aria-current','page');}else if(b.hasAttribute('aria-current'))b.removeAttribute('aria-current');});}
+function mark(key){key=canon(key);if(SPIE_STANDARD){if(['tenders','representations','direct','buyers'].indexOf(key)>-1)key='business';if(['files','emails','events'].indexOf(key)>-1)key='resources';}syncSidebar(key);var host=document.getElementById('pst-ws-canonical-nav');if(!host)return;host.querySelectorAll('.pst-ws-navbtn[data-key]').forEach(function(b){var on=canon(b.dataset.key)===key;if(b.classList.contains('active')!==on)b.classList.toggle('active',on);if(on){if(b.getAttribute('aria-current')!=='page')b.setAttribute('aria-current','page');}else if(b.hasAttribute('aria-current'))b.removeAttribute('aria-current');});}
 function hidePages(except){document.querySelectorAll('.page').forEach(function(p){if(p===except)return;p.classList.remove('active');p.style.display='none';});}
 function activate(id,key){var p=document.getElementById(id);if(!p)return false;hidePages(p);p.classList.add('active');p.style.display='block';mark(key);stabilizeViewport();return p;}
 function legacyShow(name){try{var L=window.__pstWorkspaceLegacy;if(L&&typeof L.showPage==='function'){L.showPage(name);return true;}}catch(e){}try{if(typeof window.showPage==='function'){window.showPage(name);return true;}}catch(e){}return false;}
@@ -204,7 +205,7 @@ function openRepresentations(){
 }
 function openPartners(){
  stabilizeViewport();
- try{var C=window.PSTContactMasterV1;if(C&&typeof C.open==='function')C.open();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('contacts');else if(!legacyShow('contacts'))activate('page-contacts','contacts');}catch(e){activate('page-contacts','contacts');}
+ try{var C=window.PSTContactMasterV1;if(C&&typeof C.openCompanies==='function')C.openCompanies();else if(C&&typeof C.open==='function')C.open();else if(typeof window.pstWorkspaceGo==='function')window.pstWorkspaceGo('contacts');else if(!legacyShow('contacts'))activate('page-contacts','contacts');}catch(e){activate('page-contacts','contacts');}
  mark('contacts');scheduleRepair();schedulePolish();return true;
 }
 function financeReady(){return visible(document.getElementById('page-finance'));}
@@ -251,9 +252,15 @@ function openDaily(){
  var tries=0,t=setInterval(function(){tries++;if(open()||tries>30)clearInterval(t);},100);
  mark('daily');return true;
 }
+function openTasks(){
+ stabilizeViewport();
+ try{if(typeof window.pstWsLegacy==='function')window.pstWsLegacy('qendra');else if(typeof window.showPage==='function')window.showPage('qendra');else return false;}catch(e){console.warn('PPPP tasks navigation',e);return false;}
+ mark('tasks');return true;
+}
 function route(key){
  key=S(key).toLowerCase();
- if(SPIE_STANDARD&&['direct','buyers','spie','events','files','emails'].indexOf(key)>-1){
+ if(SPIE_STANDARD&&key==='tasks')return openTasks();
+ if(SPIE_STANDARD&&['business','resources','direct','buyers','spie','events','files','emails'].indexOf(key)>-1){
   var ok=false;
   try{
    if(key==='files'&&window.PSTDocumentCenterStableV2)ok=window.PSTDocumentCenterStableV2.open();
@@ -316,6 +323,6 @@ document.addEventListener('pst:home-canonical-rendered',function(){scheduleRepai
 document.addEventListener('pst:project-opened',function(){scheduleRepair();schedulePolish();});
 installSidebarPersistenceGuard();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){installSidebarPersistenceGuard();scheduleRepair();schedulePolish();},{once:true});else{scheduleRepair();schedulePolish();}
 installViewportStability();
-var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openRepresentations:openRepresentations,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openOutreach:openOutreach,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,syncSidebar:syncSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature,financeReady:financeReady,stabilizeViewport:stabilizeViewport}};
+var API={route:route,go:route,openHome:openHome,openOpportunities:openOpportunities,openRepresentations:openRepresentations,openTasks:openTasks,openProjects:openProjects,openPartners:openPartners,openFinance:openFinance,openOutreach:openOutreach,openSystem:openSystem,apply:apply,repairSidebar:repairSidebar,syncSidebar:syncSidebar,renderHomeTenderDecisions:renderHomeTenderDecisions,cleanupDailyControls:cleanupDailyControls,ensureUnifiedProjectFlow:ensureUnifiedProjectFlow,ensureOperatorFlow:ensureOperatorFlow,_test:{canon:canon,currentKey:currentKey,actionSignature:actionSignature,financeReady:financeReady,stabilizeViewport:stabilizeViewport}};
 window.PSTPrimaryNavResilienceV1=window.PSTPrimaryNavResilienceV2=window.PSTPrimaryNavResilienceV3=window.PSTPrimaryNavResilienceV4=window.PSTPrimaryNavResilienceV5=window.PSTPrimaryNavResilienceV6=window.PSTPrimaryNavResilienceV7=window.PSTPrimaryNavResilienceV8=window.PSTPrimaryNavResilienceV9=window.PSTPrimaryNavResilienceV10=API;
 })();
