@@ -2,7 +2,7 @@
 :root {
   --pst-paper:#fbfcfd; --pst-sidebar:#f2f5f6; --pst-ink:#182a36;
   --pst-muted:#6a7b83; --pst-line:#e3e9eb; --pst-accent:#195c50;
-  --pst-selected:#e2ebe9; --pst-radius:6px; --pst-sidebar-width:200px;
+  --pst-selected:#e2ebe9; --pst-radius:6px; --pst-sidebar-width:236px;
 }
 /* Steel Buyers shares the Home / Representation tokens before runtime loads. */
 @media(min-width:901px) {
@@ -68,9 +68,9 @@ html#pst-spie-platform :where(.page) td { border-bottom:1px solid #edf1f2!import
 /* Shared shell is stable before any of the ordered modules have loaded. */
 @media(min-width:901px) {
  html#pst-spie-platform body .app-shell#app-shell-root:not([style*="display:none"]):not([style*="display: none"]) { display:flex!important; min-height:100dvh; }
- html#pst-spie-platform body .app-shell#app-shell-root > .sidebar#app-sidebar { display:flex!important; flex:0 0 var(--pst-sidebar-width)!important; width:var(--pst-sidebar-width)!important; min-width:var(--pst-sidebar-width)!important; max-width:var(--pst-sidebar-width)!important; visibility:visible!important; position:sticky!important; top:0!important; height:100dvh!important; padding:0!important; margin:0!important; border:0!important; border-right:1px solid var(--pst-line)!important; background:var(--pst-sidebar)!important; z-index:30!important; overflow-y:auto!important; }
- html#pst-spie-platform body #app-sidebar #pst-v2-sidebar { display:flex!important; width:100%!important; min-width:0!important; max-width:100%!important; height:100%!important; padding:0!important; visibility:visible!important; background:var(--pst-sidebar)!important; }
- html#pst-spie-platform body #app-sidebar #pst-ws-sidebar { display:flex!important; width:100%!important; min-width:0!important; max-width:100%!important; padding:30px 18px 20px!important; visibility:visible!important; background:var(--pst-sidebar)!important; overflow-y:auto!important; }
+ html#pst-spie-platform body .app-shell#app-shell-root > .sidebar#app-sidebar { display:flex!important; flex:0 0 var(--pst-sidebar-width)!important; width:var(--pst-sidebar-width)!important; min-width:var(--pst-sidebar-width)!important; max-width:var(--pst-sidebar-width)!important; visibility:visible!important; position:sticky!important; top:0!important; height:100dvh!important; padding:0!important; margin:0!important; border:0!important; border-right:1px solid var(--pst-line)!important; background:#2d3239!important; z-index:30!important; overflow-y:auto!important; }
+ html#pst-spie-platform body #app-sidebar #pst-v2-sidebar { display:flex!important; width:100%!important; min-width:0!important; max-width:100%!important; height:100%!important; padding:0!important; visibility:visible!important; background:#2d3239!important; }
+ html#pst-spie-platform body #app-sidebar #pst-ws-sidebar { display:flex!important; width:100%!important; min-width:0!important; max-width:100%!important; padding:24px 14px 20px!important; visibility:visible!important; background:#2d3239!important; overflow-y:auto!important; }
  html#pst-spie-platform body .app-shell#app-shell-root > .main { width:calc(100% - var(--pst-sidebar-width))!important; max-width:none!important; min-width:0!important; flex:1 1 0!important; padding:0!important; margin:0!important; background:var(--pst-paper)!important; }
  html#pst-spie-platform body .app-shell#app-shell-root > .main > .content { width:100%!important; max-width:1360px!important; margin:0 auto!important; padding:30px clamp(26px,4vw,58px) 70px!important; background:var(--pst-paper)!important; }
  html#pst-spie-platform body .topbar { background:var(--pst-paper)!important; border-bottom:1px solid var(--pst-line)!important; box-shadow:none!important; }
@@ -84,52 +84,99 @@ html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand :is(b,small) { display
 html#pst-spie-platform body #pst-ws-canonical-nav { width:100%!important; min-width:0!important; }
 html#pst-spie-platform body #pst-ws-canonical-nav .pst-canon-work { display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:3px!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { display:flex!important; align-items:center!important; gap:9px!important; text-align:left!important; width:100%!important; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand b { font-size:13px!important; letter-spacing:1.4px!important; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-mark { width:32px!important; height:36px!important; border-radius:7px!important; background:#193943!important; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navtitle { font-size:9px!important; font-weight:500!important; letter-spacing:1.5px!important; color:#829198!important; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { min-height:36px!important; height:auto!important; padding:8px 10px!important; margin:0 0 3px!important; border:0!important; border-radius:6px!important; background:transparent!important; color:var(--pst-muted)!important; font-family:Inter,Arial,sans-serif!important; font-size:12px!important; font-weight:400!important; box-shadow:none!important; white-space:normal!important; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:is(.active,.on,[aria-current=page]) { background:var(--pst-selected)!important; color:var(--pst-accent)!important; font-weight:400!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand b { font-size:14px!important; letter-spacing:1.4px!important; color:#fff!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-mark { width:32px!important; height:36px!important; border-radius:7px!important; background:#147d77!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navtitle { font-size:9px!important; font-weight:500!important; letter-spacing:1.5px!important; color:#a7b0ba!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { min-height:36px!important; height:auto!important; padding:8px 10px!important; margin:0 0 3px!important; border:0!important; border-radius:6px!important; background:transparent!important; color:#d4dae0!important; font-family:Inter,Arial,sans-serif!important; font-size:12px!important; font-weight:400!important; box-shadow:none!important; white-space:normal!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:is(.active,.on,[aria-current=page]) { background:#48515b!important; color:#fff!important; font-weight:400!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-nav-label { font-family:inherit!important; font-size:12px!important; font-weight:400!important; line-height:20px!important; letter-spacing:0!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-canon-work { gap:0!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { line-height:20px!important; transition:none!important; animation:none!important; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:hover { background:#e7edef!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn:hover { background:#39424c!important; color:#fff!important; }
 html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn svg { width:16px!important; height:16px!important; min-width:16px!important; fill:none!important; stroke:currentColor!important; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-html#pst-spie-platform body #pst-ws-sidebar .pst-ws-create-main { min-height:34px!important; border-radius:5px!important; background:#fff!important; color:var(--pst-accent)!important; border:1px solid #d9e4e2!important; font-size:12px!important; font-weight:500!important; }
-/* Home uses existing handlers, with quiet rows in place of a card dashboard. */
-html#pst-spie-platform body #pst-home-launcher-v4 { background:var(--pst-paper)!important; color:var(--pst-ink)!important; font-family:Inter,Arial,sans-serif!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-top { min-height:46px!important; padding:0 0 20px!important; border-bottom:1px solid var(--pst-line)!important; background:transparent!important; gap:12px!important; flex-wrap:wrap; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-create-main { min-height:36px!important; border-radius:7px!important; background:#147d77!important; color:#fff!important; border:1px solid #248e87!important; font-size:12px!important; font-weight:500!important; }
+/* HubSpot-inspired old-app shell and Home. Existing modules keep data ownership. */
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-brand small { color:#a7b0ba!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-search { color:#d4dae0!important; border-color:#53606a!important; background:#39424c!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn { border-radius:7px!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn[data-key="projects"],
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn[data-key="daily"] { margin-top:16px!important; border-top:1px solid #53606a!important; padding-top:16px!important; }
+html#pst-spie-platform body #pst-ws-sidebar .pst-ws-navbtn[data-key="home"] { margin-bottom:14px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 { background:#f3f5f7!important; color:var(--pst-ink)!important; font-family:Inter,Arial,sans-serif!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top { display:flex!important; align-items:center!important; min-height:64px!important; padding:10px 28px!important; background:#2d3239!important; border:0!important; gap:16px!important; flex-wrap:wrap; }
 html#pst-spie-platform body #pst-home-launcher-v4 .phl-brand { display:none; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav { flex-wrap:wrap; gap:4px; width:100%; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav > * { min-height:32px!important; min-width:0!important; padding:4px 9px!important; border:0!important; gap:7px!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav b { font-size:11px!important; font-weight:500!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-meta { margin-left:auto; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-meta:last-child { margin-left:0; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-top-icon { width:22px!important; height:22px!important; min-width:22px!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-top-icon svg { width:18px!important; height:18px!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-shell main { width:100%!important; max-width:100%!important; margin:0!important; padding:42px 0 0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-intro { text-align:left!important; margin:0 0 24px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav { display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-left:auto; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav > * { min-height:32px!important; min-width:0!important; padding:4px 8px!important; border:0!important; gap:7px!important; color:#f5f7fa!important; border-radius:6px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav > button:is(:hover,:focus-visible) { background:#47515c!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav b { font-size:12px!important; font-weight:500!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav small { color:#c5cdd5!important; font-size:10px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-meta { margin:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top-icon { width:20px!important; min-width:20px!important; height:24px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-top-icon > svg:not(.phl-gmail) { width:18px!important; height:18px!important; stroke:currentColor!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-search { flex:1 1 260px; width:auto!important; max-width:480px!important; height:38px!important; margin:0!important; padding:0 6px 0 12px!important; gap:8px!important; border:1px solid #697580!important; border-radius:22px!important; background:#3b424a!important; box-shadow:none!important; grid-template-columns:20px minmax(0,1fr) auto 28px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-search input { border:0!important; background:transparent!important; color:#fff!important; font-size:13px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-search input::placeholder { color:#d4dae0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-search > svg { width:18px; height:18px; stroke:#d4dae0; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-search button { width:28px; height:28px; border-radius:50%!important; background:#53606a; color:#fff; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-search kbd { color:#d4dae0; background:transparent; border-color:#697580; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-shell main { width:100%!important; max-width:1280px!important; margin:0 auto!important; padding:36px clamp(20px,3vw,44px) 48px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-intro { text-align:left!important; margin:0 0 28px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-intro h1 { margin:6px 0 8px!important; font-size:30px!important; font-weight:500!important; letter-spacing:-.7px!important; }
 html#pst-spie-platform body #pst-home-launcher-v4 .phl-intro p { font-size:14px!important; color:var(--pst-muted)!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-search { width:100%!important; max-width:770px!important; height:46px!important; margin:0 0 32px!important; border-radius:5px!important; box-shadow:none!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-search input { font-size:13px!important; border:0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-grid { width:100%!important; display:grid!important; grid-template-columns:minmax(0,1fr)!important; gap:0!important; margin:0!important; border-top:1px solid var(--pst-line); }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-card { display:grid!important; grid-template-columns:26px minmax(0,1fr) 20px!important; grid-template-rows:auto!important; align-items:center!important; gap:14px!important; min-height:84px!important; padding:18px 0!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; background:transparent!important; box-shadow:none!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-card:hover { background:#f2f6f5!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-card-icon { width:24px!important; height:28px!important; border:0!important; background:transparent!important; color:#46756c!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-card-icon svg { width:19px!important; height:19px!important; }
+.phl-eyebrow { font-size:10px; font-weight:600; letter-spacing:1.6px; color:#687b87; }
+.phl-dashboard { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:18px; margin-bottom:32px; }
+.phl-overview-bar { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:12px; color:#4b626f; }
+.phl-overview-bar > span { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; }
+.phl-overview-bar small { font-size:11px; color:#71818b; }
+.phl-overview-bar svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.7; }
+.phl-panel { min-width:0; background:#fff; border:1px solid #dce2e7; border-radius:12px; overflow:hidden; box-shadow:0 2px 4px #182a3605; }
+.phl-panel > header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 20px; border-bottom:1px solid #edf0f3; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-panel h2 { margin:0!important; font-size:15px!important; font-weight:600!important; }
+.phl-count { display:grid; place-items:center; min-width:26px; height:24px; border-radius:6px; background:#edf3f3; color:#24665f; font-size:12px; }
+.phl-work-row { display:grid; grid-template-columns:8px minmax(0,1fr) auto 14px; align-items:center; gap:12px; width:100%; text-align:left; padding:16px 20px; border:0; border-bottom:1px solid #edf0f3; background:#fff; color:#233b49; cursor:pointer; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-work-row { border-radius:0!important; }
+.phl-work-row:hover { background:#f5f9f9; }
+.phl-work-row b { display:block; font-size:13px; font-weight:600; line-height:1.5; }
+.phl-work-row small { display:block; margin-top:4px; color:#71818b; font-size:11px; line-height:1.5; }
+.phl-work-row em { padding:4px 7px; border-radius:5px; background:#f3f5f7; color:#657784; font-size:10px; font-style:normal; }
+.phl-work-row svg,.phl-panel button svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.7; }
+.phl-work-dot { width:7px; height:7px; border-radius:50%; background:#d69a39; }
+.phl-empty { padding:22px 20px; margin:0; color:#71818b; font-size:13px; line-height:1.7; }
+.phl-panel footer { padding:12px 20px; }
+.phl-panel header > button,.phl-panel footer > button { display:inline-flex; align-items:center; gap:8px; border:0; background:transparent; color:#14776e; cursor:pointer; font-weight:600; padding:4px 0; }
+.phl-projects-panel { grid-column:1/-1; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-module-section > h2,
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary > h2 { margin:0 0 14px!important; font-size:15px!important; font-weight:600!important; text-transform:none!important; color:#263d49!important; letter-spacing:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-grid { width:100%!important; display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; gap:12px!important; margin:0!important; border:0; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-card { display:grid!important; grid-template-columns:26px minmax(0,1fr) 20px!important; grid-template-rows:auto!important; align-items:center!important; gap:14px!important; min-height:92px!important; padding:18px!important; border:1px solid #dce2e7!important; border-radius:10px!important; background:#fff!important; box-shadow:none!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card):hover { background:#f1f8f7!important; border-color:#90b8b2!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-card-icon { width:24px!important; height:28px!important; border:0!important; background:transparent!important; color:#14776e!important; }
 html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-copy { align-self:center!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-copy b { font-size:16px!important; font-weight:500!important; letter-spacing:0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-copy small { font-size:12px!important; color:var(--pst-muted)!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-card > i { width:18px!important; height:20px!important; align-self:center!important; border:0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary { width:100%!important; margin:28px 0 0!important; padding:0!important; border:0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary > div { display:grid!important; grid-template-columns:repeat(2,minmax(0,1fr))!important; column-gap:35px!important; row-gap:0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card { display:grid!important; grid-template-columns:26px minmax(0,1fr) 20px!important; align-items:center!important; gap:14px!important; min-height:84px!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; background:transparent!important; padding:18px 0!important; box-shadow:none!important; transform:none!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) { font-family:Inter,Arial,sans-serif!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) b { display:block!important; font-family:inherit!important; font-size:16px!important; font-weight:500!important; line-height:1.4!important; letter-spacing:0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card b { color:#526f82!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) small { display:block!important; font-family:inherit!important; color:var(--pst-muted)!important; font-size:12px!important; font-weight:400!important; line-height:1.5!important; letter-spacing:0!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card .phl-card-icon { width:24px!important; height:28px!important; }
-html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card > i { width:18px!important; height:20px!important; align-self:center!important; border:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) b { display:block!important; font-family:inherit!important; font-size:14px!important; font-weight:600!important; line-height:1.4!important; letter-spacing:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) small { display:block!important; font-family:inherit!important; color:var(--pst-muted)!important; font-size:12px!important; font-weight:400!important; line-height:1.5!important; letter-spacing:0!important; margin-top:4px; }
+html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) > i { width:18px!important; height:20px!important; align-self:center!important; border:0!important; }
 html#pst-spie-platform body #pst-home-launcher-v4 :is(.phl-main-card,.phl-small-card) > i svg { width:12px!important; height:12px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary { width:100%!important; margin:28px 0 0!important; padding:0!important; border:0!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary > div { display:grid!important; grid-template-columns:repeat(4,minmax(0,1fr))!important; gap:10px!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card { display:grid!important; grid-template-columns:24px minmax(0,1fr) 12px!important; align-items:center!important; gap:8px!important; min-height:68px!important; border:1px solid #dce2e7!important; border-radius:8px!important; background:#fff!important; padding:12px!important; box-shadow:none!important; transform:none!important; }
+html#pst-spie-platform body #pst-home-launcher-v4 .phl-small-card small { display:none!important; }
+@media(min-width:901px) {
+ html#pst-spie-platform body.pst-home-launcher-active .app-shell#app-shell-root > .main > .content { max-width:none!important; padding:0!important; background:#f3f5f7!important; }
+}
+@media(max-width:1100px) {
+ html#pst-spie-platform body #pst-home-launcher-v4 .phl-top .phl-meta { display:none!important; }
+ html#pst-spie-platform body #pst-home-launcher-v4 .phl-secondary > div { grid-template-columns:repeat(2,minmax(0,1fr))!important; }
+}
+@media(max-width:760px) {
+ .phl-dashboard { grid-template-columns:minmax(0,1fr); }
+ html#pst-spie-platform body #pst-home-launcher-v4 .phl-main-grid { grid-template-columns:minmax(0,1fr)!important; }
+ html#pst-spie-platform body #pst-home-launcher-v4 .phl-top { padding:12px 16px!important; }
+ html#pst-spie-platform body #pst-home-launcher-v4 .phl-top nav { width:100%; margin:0; justify-content:space-between; }
+ html#pst-spie-platform body #pst-home-launcher-v4 .phl-search { max-width:none!important; }
+ .phl-work-row { grid-template-columns:7px minmax(0,1fr) 14px; padding:14px; }
+ .phl-work-row em { display:none; }
+ .phl-overview-bar { align-items:start; flex-direction:column; }
+}
 /* All canonical work surfaces share the same page/header/section vocabulary. */
 html#pst-spie-platform body .page :is(.pst-rep-page,.pst-eu-page,.pst-dss-page,.pst-ws-page,.ppd-page,.pcm-page,.pst-opp-workdesk) { width:100%!important; max-width:100%!important; padding:0!important; margin:0!important; background:transparent!important; color:var(--pst-ink)!important; }
 html#pst-spie-platform body .page :is(.pst-rep-head,.pst-eu-head,.pst-dss-head,.ppd-head,.pcm-head,.pst-pi-head,.pst-opp-desk-head) { background:transparent!important; border:0!important; border-bottom:1px solid var(--pst-line)!important; border-radius:0!important; padding:8px 0 24px!important; margin:0 0 24px!important; box-shadow:none!important; }
@@ -308,7 +355,7 @@ html#pst-spie-platform body #page-kek-tenders .pst-opp-brand b { display:block; 
 html#pst-spie-platform body #page-kek-tenders .pst-opp-brand small { display:block; color:var(--pst-muted); font-size:10px; }
 html#pst-spie-platform body #page-kek-tenders .pst-opp-side-head { display:block; padding:0 10px 10px; border:0; }
 html#pst-spie-platform body #page-kek-tenders .pst-opp-side-head b,
-html#pst-spie-platform body #page-kek-tenders .pst-opp-side h4 { display:block; font-size:9px!important; font-weight:500!important; letter-spacing:1.5px!important; text-transform:uppercase; color:#829198!important; }
+html#pst-spie-platform body #page-kek-tenders .pst-opp-side h4 { display:block; font-size:9px!important; font-weight:500!important; letter-spacing:1.5px!important; text-transform:uppercase; color:#a7b0ba!important; }
 html#pst-spie-platform body #page-kek-tenders .pst-opp-side-head button { margin-top:5px; padding:0; color:var(--pst-accent)!important; font-weight:400!important; font-size:11px!important; }
 html#pst-spie-platform body #page-kek-tenders .pst-opp-side section { padding:12px 0; border:0; }
 html#pst-spie-platform body #page-kek-tenders .pst-opp-side h4 { margin:0 10px 8px; }

@@ -50,6 +50,25 @@ await new Promise(r=>setTimeout(r,30));
 const root=document.getElementById('pst-home-launcher-v4');
 assert(root,'Home launcher must mount');
 
+// The redesigned dashboard must not turn unavailable data into an empty work queue.
+assert(root.querySelector('[data-dashboard]').textContent.includes('ende nuk është ngarkuar'));
+const briefCalls=[];
+window.PSTHomeCanonicalV1={snapshot:()=>({renderedAt:Date.now(),actions:[{project_id:'canonical-project',title:'Kontrollo <scope>',why:'Afati kërkon shqyrtim',tag:'VEPRIM'}],waiting:[{project_id:'waiting-project',name:'Në pritje',text:'Përgjigjja e klientit'}],projects:[{row:{id:'working-project',name:'Projekt në punë'},next:'Shqyrto dokumentet'}]}),openBrief:id=>briefCalls.push(id)};
+const readsBeforeDashboard=calls.supa;
+document.dispatchEvent(new window.Event('pst:home-canonical-rendered'));
+await new Promise(r=>setTimeout(r,30));
+const dashboard=root.querySelector('[data-dashboard]');
+assert(dashboard.textContent.includes('Kontrollo <scope>'),'Canonical action title must be rendered as text');
+assert.equal(dashboard.querySelector('scope'),null,'Snapshot content must be escaped');
+assert.equal(dashboard.querySelectorAll('[data-project-brief]').length,3);
+dashboard.querySelector('[data-project-brief="canonical-project"]').click();
+assert.deepEqual(briefCalls,['canonical-project'],'Dashboard must open the canonical project brief');
+assert.equal(calls.supa,readsBeforeDashboard,'Dashboard must reuse the snapshot without extra Supabase reads');
+window.PSTHomeCanonicalV1.snapshot=()=>({renderedAt:Date.now(),actions:[],waiting:[],projects:[]});
+document.dispatchEvent(new window.Event('pst:home-canonical-rendered'));
+await new Promise(r=>setTimeout(r,30));
+assert(dashboard.textContent.includes('Nuk ka veprime të sugjeruara'),'Only a loaded snapshot may show an empty work queue');
+
 root.querySelector('[data-open="daily"]').click();
 assert.equal(calls.daily,1,'Gazeta PPPP must open Daily without leaving Home');
 assert(document.getElementById('page-workspace-home').classList.contains('active'),'Daily must keep Home active');

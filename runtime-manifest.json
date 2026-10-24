@@ -9,7 +9,7 @@
     "bootstrapLoader": "pristeel-roles.js",
     "bootstrapLoaderGitBlobSha": "5aeebcb82bd56841134e0c0f0e36b23384822fc2",
     "bootstrap": "pristeel-project-emails.js",
-    "bootstrapGitBlobSha": "379a83a4fe99a9763707a644125b962116c440fc"
+    "bootstrapGitBlobSha": "59efcb60c1b98e53577acab4e884894e0f3cdf84"
   },
   "applicationDirectRuntime": [
     "spie/editor-safety.js",
