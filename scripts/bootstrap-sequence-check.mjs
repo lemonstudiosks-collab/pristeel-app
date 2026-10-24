@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 
 const BOOTSTRAP = 'pristeel-project-emails.js';
 const EXPECTED_COUNT = 166;
-const EXPECTED_DIGEST = "003ecc08912a6379a80f00bc7400574a0fa1e1984c58094e0464026f287249e2";
+const EXPECTED_DIGEST = "1ca04c19a7c3b125d5a09bf274d9f04008bc8726a0dd1bf87b11f822018671d5";
 
 function fail(message) {
   console.error(`BOOTSTRAP SEQUENCE ERROR: ${message}`);
