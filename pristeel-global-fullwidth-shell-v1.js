@@ -9,7 +9,7 @@ if(window.__pstGlobalFullwidthShellV2)return;
 window.__pstGlobalFullwidthShellV2=true;
 window.__pstGlobalFullwidthShellV1=true;
 
-var VERSION='20261005-home-final-audit2';
+var VERSION='20261024-record-detail1';
 var scheduled=false;
 
 function installStyle(){
@@ -72,7 +72,7 @@ function goHome(){
 function decorate(){
   scheduled=false;
   installStyle();
-  var page=activePage(),opportunitiesOwnsBack=!!(page&&Array.prototype.some.call(page.querySelectorAll('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],[data-pmm-back],[data-ppd-back],[data-pst-fin-home]'),isVisibleControl));
+  var page=activePage(),opportunitiesOwnsBack=!!(page&&Array.prototype.some.call(page.querySelectorAll('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],[data-pmm-back],[data-ppd-back],[data-pst-fin-home],[data-development-home],[data-development-close]'),isVisibleControl));
   document.querySelectorAll('#pst-global-page-backbar').forEach(function(bar){
     if(opportunitiesOwnsBack||!page||isHome(page)||bar.parentNode!==page)bar.remove();
   });
@@ -101,7 +101,7 @@ function observe(){
       if(r.type==='attributes'&&t&&t.nodeType===1&&(t.classList.contains('page')||String(t.id||'').indexOf('page-')===0)){schedule();return;}
       if(r.type==='childList'){
         var nodes=[].slice.call(r.addedNodes||[]).concat([].slice.call(r.removedNodes||[]));
-        for(var j=0;j<nodes.length;j++){var n=nodes[j];if(n&&n.nodeType===1&&(n.matches&&n.matches('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],[data-ppd-back],#pst-global-page-backbar')||n.querySelector&&n.querySelector('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],[data-ppd-back],#pst-global-page-backbar'))){schedule();return;}}
+        for(var j=0;j<nodes.length;j++){var n=nodes[j];if(n&&n.nodeType===1&&(n.matches&&n.matches('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],[data-ppd-back],[data-development-home],[data-development-close],#pst-global-page-backbar')||n.querySelector&&n.querySelector('[data-pst-opp-back],[data-rep-back],[data-eu-back],[data-dss-back],[data-ppd-back],[data-development-home],[data-development-close],#pst-global-page-backbar'))){schedule();return;}}
       }
     }
   });

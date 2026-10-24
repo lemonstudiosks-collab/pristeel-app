@@ -87,4 +87,11 @@ assert.equal(window.document.querySelectorAll('#pst-global-page-backbar').length
 
 
 
+opp.style.display='none';opp.classList.remove('active');
+const business=window.document.createElement('section');business.id='page-workspace-business';business.className='page active';business.style.display='block';business.innerHTML='<button data-development-home>Back</button>';window.document.body.appendChild(business);
+window.PSTGlobalFullwidthShellV2.refresh();
+assert.equal(window.document.querySelectorAll('#pst-global-page-backbar').length,0,'Development register owns its one Back');
+business.innerHTML='<button data-development-close>Te regjistri</button>';
+window.PSTGlobalFullwidthShellV2.refresh();
+assert.equal(window.document.querySelectorAll('#pst-global-page-backbar').length,0,'Full-page record must never get a duplicate Back');
 console.log('Global full-width shell smoke passed.');
