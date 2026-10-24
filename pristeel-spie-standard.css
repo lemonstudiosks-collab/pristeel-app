@@ -553,3 +553,10 @@ html#pst-spie-platform body .ppd-record-actions :is(a,button) { display:inline-f
 .ppd-record-links { padding-left:18px; }.ppd-record-links a { color:var(--pst-accent); overflow-wrap:anywhere; }
 @media(max-width:1100px) { .ppd-record-layout { grid-template-columns:minmax(0,1fr); }.ppd-record-layout>aside { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:760px) { .ppd-page { padding:14px 12px 32px; }.ppd-toolbar { align-items:stretch; flex-direction:column; }.ppd-record-layout>aside { grid-template-columns:minmax(0,1fr); }.ppd-record-section { padding:18px; } }
+
+/* The existing tender action owner is mounted in the record's normal page flow. */
+html#pst-spie-platform.pst-spie-standard #development-tender-console #pst-pcw-ti-actions { margin-top:12px; }
+html#pst-spie-platform.pst-spie-standard #development-tender-console #pst-pcw-ti-actions button { font-size:12px; }
+html#pst-spie-platform.pst-spie-standard #development-tender-console .pst-pcw-record-note { flex-basis:100%; font-size:13px; line-height:1.6; color:#667b85; }
+html#pst-spie-platform.pst-spie-standard #development-tender-console .pst-pcw-decision-intro b { font-size:14px; line-height:1.5; }
+html#pst-spie-platform.pst-spie-standard #development-tender-console .pst-pcw-decision-intro small { font-size:12px; line-height:1.5; }

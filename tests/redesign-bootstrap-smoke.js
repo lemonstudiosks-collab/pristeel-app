@@ -56,7 +56,7 @@ assert(!/messages\/send|GmailApp\.send|sendEmail\s*\(/.test(projectCentric), 'Pr
 assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(projectCentric), 'Project-centric layer must preserve commitment gates');
 
 console.log('Redesign bootstrap + OpenAI + project-centric workflow contract smoke test passed.');
-assert(projectCentric.includes('Shkarko dosjen') && projectCentric.includes('Përgatit për vlerësim') && projectCentric.includes('dossierReady(id)'), 'KRPP/APP action console must retain download access, unified preparation and the project creation gate');
+assert(projectCentric.includes('Shkarko dosjen') && projectCentric.includes('Lexo dosjen dhe vlerëso') && projectCentric.includes('dossierReady(id)'), 'KRPP/APP action console must retain download access, unified preparation and the project creation gate');
 assert(projectCentric.includes('PRODHUES / KONKURRENT') && projectCentric.includes('GC / EPC') && projectCentric.includes('Shiko kontaktet'), 'TED popup must expose winner role and contacts');
 new Function(tenderActions);
 assert(tenderActions.includes("role==='producer'") && tenderActions.includes("role==='gc_epc'") && tenderActions.includes('additional_fabrication_capacity'), 'TED outreach must branch between producer and GC/EPC approaches');
@@ -77,6 +77,6 @@ assert(!/mark.*won|mark.*lost|supplier_orders.*POST/i.test(tenderImporter), 'Ten
 
 assert(finalizer.includes('pristeel-project-control-home-v1.js?v=20260827-owner6'),'Finalizer must cache-bust the current Home owner');
 assert(finalizer.includes('data-pst-project-control-home-v6'),'Finalizer must not accept a stale Home script tag');
-assert(finalizer.includes('pristeel-tender-dossier-analysis-v1.js?v=20260918-local1'),'Finalizer must load the readable dossier generation');
+assert(finalizer.includes('pristeel-tender-dossier-analysis-v1.js?v=20261024-tender-decisions1'),'Finalizer must load the readable dossier generation');
 assert(projectCentric.includes('__pstProjectCentricWorkflowV4'),'Project-centric runtime must expose its current generation marker');
 assert(projectCentric.includes("p.setAttribute('data-pcw-opportunities-owner','2')"),'whole-card Opportunities must claim visible ownership');
