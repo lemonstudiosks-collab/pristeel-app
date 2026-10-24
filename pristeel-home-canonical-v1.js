@@ -14,7 +14,7 @@ window.__pstHomeProjectRecoveryV3=true;
 window.__pstHomeOperationalPriorityV1=true;
 
 var legacyGo=typeof window.pstWorkspaceGo==='function'?window.pstWorkspaceGo:null;
-var cache={rendering:null,actions:[],projects:[],waiting:[],contexts:{},actionStates:{},lastData:null,lastRenderAt:0};
+var cache={rendering:null,actions:[],projects:[],waiting:[],contexts:{},actionStates:{},lastData:null,lastRenderAt:0,readErrors:[]};
 
 function arr(v){return Array.isArray(v)?v:[];}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -30,7 +30,7 @@ function flat(v){return norm(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').
 function one(){for(var i=0;i<arguments.length;i++)if(arguments[i])return arguments[i];return'';}
 function money(v){var n=parseFloat(v);return isFinite(n)?n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' EUR':'';}
 function short(v,n){v=String(v||'').replace(/\s+/g,' ').trim();return v.length>(n||220)?v.slice(0,(n||220)-1)+'…':v;}
-async function q(path){try{return arr(await window.supaFetch(path));}catch(e){console.warn('PPPP canonical Home query failed:',path,e);return[];}}
+async function q(path){try{var rows=await window.supaFetch(path);if(!Array.isArray(rows))throw new Error('Përgjigje e pavlefshme');return rows;}catch(e){cache.readErrors.push(path.split('?')[0]);console.warn('PPPP canonical Home query failed:',path,e);return[];}}
 async function db(path,method,body){if(typeof window.supaFetch!=='function')throw new Error('Databaza nuk është gati.');return window.supaFetch(path,method,body);}
 function toast(text,error){try{var old=document.getElementById('pst-ws-toast');if(old)old.remove();var e=document.createElement('div');e.id='pst-ws-toast';e.className=error?'error':'';e.textContent=text;document.body.appendChild(e);setTimeout(function(){if(e.parentNode)e.remove();},4200);}catch(x){}}
 
@@ -110,53 +110,73 @@ function currentState(ctx){
  if(explicitWaiting(p))return'Në pritje të palës tjetër';
  if(explicitExecution(p))return'Në ekzekutim';
  if(explicitWork(p))return stageName(p.pipeline_stage);
- if(clientReplyAfterOffer(ctx))return'Përgjigje e re nga klienti';
+
  if(waitingAfterOffer(ctx))return'Në pritje të përgjigjes së klientit';
  if(supplierQuoteReady(ctx))return'Oferta e furnitorit është marrë';
  if(relDays(p.deadline)!==null&&relDays(p.deadline)<=3&&norm(p.pipeline_stage)==='technical_review')return'Sqarime teknike para ofertës';
  return stageName(p.pipeline_stage);
 }
 function taskAgeDays(t){var d=safeDate(t&&t.created_at);if(!d)return 999;return Math.max(0,Math.floor((Date.now()-d.getTime())/86400000));}
-function taskScore(t){
- var d=relDays(t&&t.due_date),src=norm(t&&t.source),age=taskAgeDays(t);
- if(src==='project_discovery_auto')return age<=2?970:880;
- if(src==='execution_release_readiness')return 940;
- if(src==='email_request_auto')return Math.max(820,900-Math.min(age,30)*3);
- if(d===null)return 0;
- if(d<0)return 760+Math.min(40,Math.abs(d));
- if(d===0)return 750;
- if(d<=3)return 720-d;
- return 0;
-}
-function taskWhy(t){var d=relDays(t&&t.due_date),src=norm(t&&t.source),bits=[];if(src==='project_discovery_auto')bits.push('Projekt i ri i regjistruar automatikisht; duhet përcaktuar hapi i parë');else if(src==='execution_release_readiness')bits.push('Ekzekutimi ka blocker të konfirmuar që kërkon zgjidhje');else if(src==='email_request_auto')bits.push('Kërkesë e hapur që ende kërkon vendim ose përgjigje');else if(d<0)bits.push(Math.abs(d)+' ditë vonë');else if(d===0)bits.push('Afati është sot');else if(d!==null)bits.push('Afati është pas '+d+' ditësh');if(t&&t.detail)bits.push(short(t.detail,190));return bits.join(' · ');}
-function taskTag(t){var src=norm(t&&t.source);if(src==='project_discovery_auto')return 'PROJEKT I RI';if(src==='execution_release_readiness')return 'BLLOKUES';if(src==='email_request_auto')return 'VEPRIM';return relDays(t&&t.due_date)<0?'VONUAR':'DETYRË';}
 function specificTaskTitle(ctx,t){
  var p=flat(ctx&&ctx.project&&ctx.project.name),x=flat((t&&t.title||'')+' '+(t&&t.detail||''));
  if(/tennet|spie/.test(p)&&/(galvan|en 1090|weld|ndt|bolt|toler|technical|teknik|iso)/.test(x))return'Finalizo çështjet teknike për ofertën TenneT / SPIE';
  if(/plan dinamik/.test(x))return'Aprovo planin dinamik';
  return String(t&&t.title||'Veprim i projektit').replace(/^Kërkesë e klientit\s*[—-]\s*/i,'Përpuno kërkesën: ');
 }
-function actionSourceEmail(ctx,a){if(a&&a.email)return a.email;return latestRelevantEmail(ctx)||null;}
+function actionSourceEmail(ctx,a){return a&&a.email||null;}
+// Attention is a conservative, evidence-backed queue, never a backlog ranking.
+// Old tasks remain in Tasks. Home does not infer a decision from missing evidence.
+function taskEvidence(ctx,t){
+ var src=norm(t.source),detail=String(t.detail||'').trim(),ref=String(t.source_ref||'');
+ var due=relDays(t.due_date),age=taskAgeDays(t),text=flat(t.title+' '+detail);
+ if(t.status&&norm(t.status)!=='hapur')return null;
+ if(!ms(t.created_at)||ms(t.created_at)>Date.now())return null;
+ if(!detail||!ref||due===null||due>3||due< -14)return null;
+ if(/ocr|rishiko fotogra|image\d*\.(png|jpe?g)|icon\.png|nuk ka prove|nuk u gjet|ende nuk ka pergjigje/.test(text))return null;
+ var human=['manual','user','chatgpt','chatgpt_bridge','kontrate'].indexOf(src)>-1;
+ if(human){
+  // A current human-set due date or recent instruction is positive evidence.
+  // A later canonical state transition supersedes an earlier instruction.
+  if(age>14&&due<0)return null;
+  if(ms(ctx.project.operational_state_at)>ms(t.created_at))return null;
+  return {label:'Detyrë e caktuar · '+dateText(t.created_at),ref:ref,detail:detail};
+ }
+ if(src!=='email_request_auto'||age>14)return null;
+ // The analysis must refer to the exact source message, not merely the project.
+ var analysis=arr(ctx.analyses).filter(function(x){var a=x.analysis||{},r=a.recommendation||{};return String(a.event_source_ref||'')===ref&&['vepro_tani','action_required','reply_required'].indexOf(norm(r.decision))>-1;})[0];
+ var email=arr(ctx.emails).filter(function(e){return isIncoming(e)&&(String(e.id)===ref||String(e.gmail_message_id||'')===ref);})[0];
+ if(!analysis||!email||ms(email.sent_at)<Date.now()-14*86400000)return null;
+ if(arr(ctx.emails).some(function(e){return isOutgoing(e)&&ms(e.sent_at)>ms(email.sent_at);}))return null;
+ return {label:'Kërkesë e analizuar · '+dateText(email.sent_at),ref:ref,detail:detail,email:email};
+}
 function buildActions(data,contexts){
  var candidates=[];
  Object.keys(contexts).forEach(function(pid){
-  var ctx=contexts[pid],p=ctx.project;if(!p||inactiveProject(p)||blocksHomeAction(p))return;
-  var reply=clientReplyAfterOffer(ctx);
-  if(reply){var k1=derivedKey('client_reply',pid,reply.email.id||reply.email.sent_at);if(!hiddenByState(data,k1))candidates.push({key:k1,score:1000,title:'Shqyrto përgjigjen e klientit',why:'Klienti ka dërguar përgjigje pasi u dërgua oferta jonë. Projekti kërkon vendim të ri.',meta:(p.name||'Projekt')+' · '+short(reply.email.subject||'Email i ri',110),tag:'VEPRIM',kind:'client_reply',project_id:pid,email:reply.email,route:'communication',manual:false});}
-  var sq=supplierQuoteReady(ctx);
-  if(sq){var k2=derivedKey('supplier_quote',pid,sq.email.id||sq.when);if(!hiddenByState(data,k2))candidates.push({key:k2,score:950,title:'Përgatit ofertën PRISTEEL',why:sq.supplier+' ka kthyer ofertë/përgjigje të furnitorit. Tani kemi bazë për të vazhduar ofertimin ndaj klientit.',meta:(p.name||'Projekt')+' · '+sq.supplier+' · '+dateText(sq.email.sent_at),tag:'VEPRO TANI',kind:'supplier_quote',project_id:pid,email:sq.email,route:'commercial',manual:false});}
-  var dd=relDays(p.deadline);
-  if(dd!==null&&dd<=3&&dd>=-2&&norm(p.pipeline_stage)==='technical_review'){
-   var kt=derivedKey('deadline_technical',pid,p.deadline);if(!hiddenByState(data,kt))candidates.push({key:kt,score:dd<0?990:930-dd,title:'Finalizo çështjet teknike para ofertës',why:'Afati i ofertës është '+dateText(p.deadline)+' dhe projekti ka ende sqarime teknike të hapura.',meta:(p.name||'Projekt')+' · afati '+dateText(p.deadline),tag:dd<0?'VONUAR':'AFAT',kind:'deadline_technical',project_id:pid,email:latestRelevantEmail(ctx),route:'communication',manual:false});
-  }
-  arr(ctx.tasks).forEach(function(t){if(taskIsSuperseded(ctx,t))return;var score=taskScore(t);if(!score)return;var key=actionStateKey(t);if(hiddenByState(data,key))return;candidates.push({key:key,score:score,title:specificTaskTitle(ctx,t),why:taskWhy(t),meta:(p.name||'Projekt')+' · '+taskWhy(t),tag:taskTag(t),kind:'task',id:t.id,project_id:pid,source:t.source||'',source_ref:t.source_ref||'',email:latestRelevantEmail(ctx),route:norm(t.source)==='email_request_auto'?'communication':'project',manual:norm(t.source)!=='email_request_auto'});});
+  var ctx=contexts[pid],p=ctx.project;
+  if(!p||inactiveProject(p)||blocksHomeAction(p))return;
+  arr(ctx.tasks).forEach(function(t){
+   if(taskIsSuperseded(ctx,t))return;
+   var evidence=taskEvidence(ctx,t);if(!evidence)return;
+   var key=actionStateKey(t);if(hiddenByState(data,key))return;
+   var due=relDays(t.due_date);
+   candidates.push({key:key,score:due<=0?900:800-due,title:specificTaskTitle(ctx,t),
+    why:evidence.detail,meta:p.name||'Projekt',tag:due<0?'AFAT I KALUAR':due===0?'SOT':'AFAT',
+    kind:'task',id:t.id,project_id:pid,source:t.source||'',source_ref:t.source_ref,
+    evidence:evidence,email:evidence.email||null,route:evidence.email?'communication':'project',manual:!evidence.email});
+  });
  });
- arr(data.rfqs).forEach(function(r){
-  var pid=String(r.project_id||''),ctx=contexts[pid],p=ctx&&ctx.project;if(!p||inactiveProject(p)||blocksHomeAction(p))return;var st=norm(r.status);if(['replied','won','lost','planned'].indexOf(st)>-1)return;
-  var last=safeDate(r.last_followup_at||r.sent_at);if(!last)return;var age=Math.floor((Date.now()-last.getTime())/86400000);if(age<5)return;if(pid&&candidates.some(function(x){return x.project_id===pid&&x.score>600;}))return;
-  var key='rfq_'+String(r.id||hash((r.supplier_email||'')+(r.sent_at||'')));if(hiddenByState(data,key))return;candidates.push({key:key,score:600+Math.min(age,90),title:'Ndiq furnitorin: '+(r.supplier_name||r.supplier_email||'Furnitor'),why:'RFQ është dërguar dhe nuk ka përgjigje prej '+age+' ditësh.',meta:(r.project_name||'Pa projekt')+' · '+age+' ditë pa përgjigje',tag:'FOLLOW-UP',kind:'rfq',id:r.id,project_id:pid,route:'procurement',manual:false});
+ candidates.sort(function(a,b){return b.score-a.score;});var used={},out=[];
+ candidates.forEach(function(a){if(used[a.project_id])return;used[a.project_id]=1;out.push(a);});
+ return out.slice(0,5);
+}
+function buildUpdates(contexts){
+ var updates=[];
+ Object.keys(contexts).forEach(function(pid){var ctx=contexts[pid];if(inactiveProject(ctx.project))return;
+  var e=latestRelevantEmail(ctx);if(!e||!isIncoming(e)||ms(e.sent_at)<Date.now()-7*86400000)return;
+  updates.push({project_id:pid,name:ctx.project.name,title:e.subject||'Email hyrës',when:e.sent_at,
+   text:(e.from_name||e.from_email||'Email hyrës')+' · '+dateText(e.sent_at),email:e});
  });
- candidates.sort(function(a,b){return b.score-a.score;});var used={},out=[];candidates.forEach(function(a){var k=a.project_id||a.key;if(used[k])return;used[k]=1;out.push(a);});return out.slice(0,5);
+ return updates.sort(function(a,b){return ms(b.when)-ms(a.when);}).slice(0,5);
 }
 function waitingDetail(ctx){var p=ctx.project||{},w=waitingAfterOffer(ctx);if(w){var nr=docNr(w.offer)||'Oferta jonë';var dl=p.deadline?(' · afati i projektit '+dateText(p.deadline)):'';return nr+' · dërguar '+dateText(w.sent)+dl;}var at=p.operational_state_at?dateText(p.operational_state_at):'';return at?'Gjendja operative e konfirmuar më '+at:'Gjendja operative e konfirmuar';}
 function buildWaiting(contexts){
@@ -169,18 +189,19 @@ function nextForProject(ctx,actions){
  if(explicitWork(p))return stageName(p.pipeline_stage);
  if(explicitWaiting(p))return'Në pritje të palës tjetër';
  var a=arr(actions).filter(function(x){return x.project_id===pid;})[0];if(a)return a.title;
- var w=waitingAfterOffer(ctx);if(w)return'Në pritje të përgjigjes së klientit';var sq=supplierQuoteReady(ctx);if(sq)return'Përgatit ofertën PRISTEEL';var t=latestOpenTask(ctx);if(t&&!taskIsSuperseded(ctx,t))return specificTaskTitle(ctx,t);var an=latestAnalysis(ctx.analyses);return one(recommendation(an),stageName(p.pipeline_stage));
+ return stageName(p.pipeline_stage);
 }
 function deriveProjects(data,contexts,actions,waiting){
  var occupied={};arr(actions).forEach(function(a){if(a.project_id)occupied[String(a.project_id)]=1;});arr(waiting).forEach(function(w){if(w.project_id)occupied[String(w.project_id)]=1;});
  return arr(data.projects).filter(function(p){var id=String(p.id||'');return !inactiveProject(p)&&!occupied[id];}).map(function(p){var id=String(p.id||''),ctx=contexts[id]||{project:p,emails:[],tasks:[],analyses:[],rfqs:[],supplierOffers:[],ourOffers:[],attachments:[]};var e=latest(ctx.emails,'sent_at'),t=latest(ctx.tasks,'created_at'),an=latest(ctx.analyses,'created_at'),so=latest(ctx.supplierOffers,'created_at'),oo=latest(ctx.ourOffers,'created_at');var activity=Math.max(ms(p.created_at),ms(p.last_activity_at),ms(p.operational_state_at),e&&e._when||0,t&&t._when||0,an&&an._when||0,so&&so._when||0,oo&&oo._when||0);return{row:p,activity:activity,next:nextForProject(ctx,actions),context:ctx};}).sort(function(a,b){return b.activity-a.activity;});
 }
 async function loadData(){
+ cache.readErrors=[];
  if(typeof window.supaFetch!=='function')return{projects:[],tasks:[],projectEmails:[],analyses:[],rfqs:[],supplierOffers:[],ourOffers:[],attachments:[],states:{}};
  var rows=await Promise.all([
   q('projects?select=id,created_at,updated_at,name,client,ref,location,deadline,notes,status,pipeline_stage,deal_type,business_ref,business_type,workflow_type,last_activity_at,last_email_at,operational_state,operational_state_at,operational_state_source&limit=3000'),
   q('tasks?status=eq.hapur&select=id,created_at,project_id,title,detail,due_date,priority,status,source,contact_email,category,source_ref&order=created_at.desc&limit=5000'),
-  q('project_emails?select=id,project_id,subject,snippet,sent_at,direction,gmail_url,from_email,from_name,to_emails,has_attachments&order=sent_at.desc&limit=6000'),
+  q('project_emails?select=id,project_id,subject,snippet,sent_at,direction,gmail_url,gmail_message_id,from_email,from_name,to_emails,has_attachments&order=sent_at.desc&limit=6000'),
   q('project_analyses?status=eq.complete&select=id,project_id,analysis,created_at&order=created_at.desc&limit=3000'),
   q('rfq_log?select=id,project_id,project_name,supplier_name,supplier_email,status,sent_at,last_followup_at,replied_at,offer_id,subject&order=sent_at.desc&limit=3000'),
   q('offers?select=id,project_id,created_at,supplier,total_eur,currency,offer_ref,notes,raw_text&order=created_at.desc&limit=4000'),
@@ -198,15 +219,26 @@ function waitingHtml(items){if(!items.length)return'';return'<section id="pst-ho
 function ensureWaitingSection(actionsHost,items){var old=document.getElementById('pst-home-waiting');if(old)old.remove();if(!items.length)return;var owner=actionsHost.closest('.pst-ws-card')||actionsHost.parentElement;if(owner)owner.insertAdjacentHTML('afterend',waitingHtml(items));else actionsHost.insertAdjacentHTML('afterend',waitingHtml(items));document.querySelectorAll('#pst-home-waiting .pst-home-wait-item').forEach(function(b){b.onclick=function(){openProjectBriefByProject(b.getAttribute('data-project-id'),'waiting');};});}
 function latestEvents(ctx){var ev=[];arr(ctx.emails).forEach(function(e){ev.push({t:ms(e.sent_at),kind:isOutgoing(e)?'Email dërguar':'Email marrë',title:e.subject||'(pa subjekt)',detail:(isOutgoing(e)?'Dërguar':'Nga '+(e.from_name||e.from_email||'kontakt'))+(e.has_attachments?' · me attachment':'')});});arr(ctx.supplierOffers).forEach(function(o){ev.push({t:ms(o.created_at),kind:'Ofertë furnitori',title:o.supplier||'Furnitor',detail:[money(o.total_eur),o.offer_ref].filter(Boolean).join(' · ')});});arr(ctx.ourOffers).forEach(function(o){ev.push({t:ms(o.created_at),kind:'Oferta jonë',title:o.doc_nr||'Ofertë PRISTEEL',detail:money(o.total_eur||o.total_amount)});});return ev.filter(function(x){return x.t;}).sort(function(a,b){return b.t-a.t;}).slice(0,5);}
 function briefHave(ctx){var a=[];if(ctx.project&&ctx.project.client)a.push('Klienti: '+ctx.project.client);if(ctx.attachments.length)a.push(ctx.attachments.length+' skedarë/attachment të lidhur');var so=latestSupplierOffer(ctx),sr=latestSupplierReply(ctx),oo=latestOurOffer(ctx);if(so)a.push('Ofertë furnitori: '+(so.supplier||'Furnitor')+(so.total_eur?' · '+money(so.total_eur):''));else if(sr)a.push('Përgjigje/ofertë furnitori nga '+(sr._supplier||sr.from_name||sr.from_email));if(oo)a.push('Oferta jonë: '+(oo.doc_nr||'e ruajtur')+(oo.total_eur?' · '+money(oo.total_eur):''));return a;}
-function briefMissing(ctx){var a=[],p=ctx.project||{};if(explicitWaiting(p))a.push('Përgjigjja ose konfirmimi i palës tjetër');else if(explicitExecution(p))a.push('Hapi i radhës i ekzekutimit sipas planit të projektit');else if(!explicitWork(p)){var sq=supplierQuoteReady(ctx),w=waitingAfterOffer(ctx);if(sq)a.push('Oferta PRISTEEL për klientin');if(w)a.push('Përgjigjja ose konfirmimi i klientit');if(norm(p.pipeline_stage)==='technical_review')a.push('Mbyllja e sqarimeve teknike para ofertës');}if(!a.length){var t=latestOpenTask(ctx);if(t&&!taskIsSuperseded(ctx,t))a.push(specificTaskTitle(ctx,t));}return a;}
+function briefMissing(ctx){var a=[],p=ctx.project||{};if(explicitWaiting(p))a.push('Përgjigjja ose konfirmimi i palës tjetër');else if(explicitExecution(p))a.push('Hapi i radhës i ekzekutimit sipas planit të projektit');else if(!explicitWork(p)){var sq=supplierQuoteReady(ctx),w=waitingAfterOffer(ctx);if(sq)a.push('Oferta PRISTEEL për klientin');if(w)a.push('Përgjigjja ose konfirmimi i klientit');if(norm(p.pipeline_stage)==='technical_review')a.push('Mbyllja e sqarimeve teknike para ofertës');}var action=actionForProject(String(p.id||''));if(action)a.push(action.title);return a;}
 function actionForProject(pid){return cache.actions.filter(function(a){return a.project_id===pid;})[0]||null;}
 function installBrief(){if(document.getElementById('pst-project-brief-modal'))return;var m=document.createElement('div');m.id='pst-project-brief-modal';m.innerHTML='<div class="pst-brief-backdrop"></div><div class="pst-brief-panel" role="dialog" aria-modal="true" aria-labelledby="pst-brief-title"><button type="button" class="pst-brief-close" aria-label="Mbyll">×</button><div id="pst-brief-content"></div></div>';document.body.appendChild(m);m.querySelector('.pst-brief-backdrop').onclick=closeBrief;m.querySelector('.pst-brief-close').onclick=closeBrief;document.addEventListener('keydown',function(e){if(e.key==='Escape'&&m.classList.contains('open'))closeBrief();});}
 function closeBrief(){var m=document.getElementById('pst-project-brief-modal');if(m)m.classList.remove('open');}
-function routeProject(pid,route){closeBrief();if(!pid)return;if(typeof window.pstOpenProjectWorkspace==='function'){Promise.resolve(window.pstOpenProjectWorkspace(pid)).then(function(){setTimeout(function(){try{if(window.PSTProjectFirstV2&&typeof window.PSTProjectFirstV2.render==='function'){if(route==='commercial')window.PSTProjectFirstV2.render('commercial');else if(route==='communication')window.PSTProjectFirstV2.render('communication');else if(route==='procurement')window.PSTProjectFirstV2.render('procurement');}}catch(e){}},280);});}}
+async function routeProject(pid,route){
+ closeBrief();if(!pid)return false;
+ try{
+  var open=window.pstOpenProjectDirect||window.pstOpenProjectWorkspace;
+  if(typeof open!=='function')throw new Error('Hapja e projektit nuk është gati.');
+  var result=await open(pid);if(result===false)throw new Error('Projekti nuk u hap.');
+  var workflow=window.PSTCanonicalProjectWorkflowV1;
+  if(route!=='project'){if(!workflow||typeof workflow.render!=='function')throw new Error('Seksioni i projektit nuk është gati.');var rendered=await workflow.render(route==='commercial'?'procurement':route,route==='commercial'?'client_offer':undefined);if(rendered===false)throw new Error('Seksioni i projektit nuk u hap.');}
+  return true;
+ }catch(e){toast('Projekti nuk u hap: '+(e.message||e),true);return false;}
+}
+function openUpdate(pid){var u=buildUpdates(cache.contexts).filter(function(x){return x.project_id===pid;})[0];if(!u)return;openBrief({project_id:pid,key:'',title:u.title,why:'Komunikim hyrës · '+u.text+'. Paraqitet si informacion; nuk është kërkesë automatike për veprim.',email:u.email,route:'communication'});}
 function openProjectBriefByProject(pid,reason){var a=actionForProject(pid)||{project_id:pid,key:'',title:'Përmbledhja e projektit',why:reason==='waiting'?'PPPP po pret përgjigjen e palës tjetër.':'Pamje e gjendjes aktuale.',route:'project'};openBrief(a);}
 function openBrief(a){
- installBrief();var ctx=cache.contexts[String(a.project_id||'')];if(!ctx)return routeProject(a.project_id,a.route);var p=ctx.project||{},ev=latestEvents(ctx),have=briefHave(ctx),missing=briefMissing(ctx),email=actionSourceEmail(ctx,a),deadline=p.deadline?dateText(p.deadline):'Pa afat të regjistruar';var next=[a.title];if(email&&email.subject)next.push('Kontrollo burimin: '+short(email.subject,90));next.push('Hap projektin e plotë nëse duhet verifikim më i thellë');next=next.filter(function(x,i,z){return x&&z.indexOf(x)===i;}).slice(0,3);
- var html='<div class="pst-brief-eyebrow">PROJECT BRIEF</div><h2 id="pst-brief-title">'+esc(p.name||'Projekt')+'</h2><div class="pst-brief-state">'+esc(currentState(ctx))+'</div><div class="pst-brief-grid"><section><h3>Ku jemi</h3><p>'+esc(a.why||'PPPP ka përmbledhur gjendjen aktuale nga aktiviteti i projektit.')+'</p></section><section><h3>Afati / rreziku</h3><p>'+esc(deadline)+(relDays(p.deadline)!==null&&relDays(p.deadline)<=3?' · kërkon vëmendje':'')+'</p></section></div><div class="pst-brief-grid"><section><h3>Çfarë kemi</h3><ul>'+(have.length?have.map(function(x){return'<li>'+esc(x)+'</li>';}).join(''):'<li>Nuk u gjet një element i konfirmuar për këtë seksion.</li>')+'</ul></section><section><h3>Çfarë mungon</h3><ul>'+(missing.length?missing.map(function(x){return'<li>'+esc(x)+'</li>';}).join(''):'<li>Nuk ka mungesë të qartë të identifikuar.</li>')+'</ul></section></div><section class="pst-brief-events"><h3>Çfarë ka ndodhur së fundmi</h3>'+(ev.length?ev.map(function(x){return'<div class="pst-brief-event"><span>'+esc(x.kind)+' · '+esc(dateText(x.t))+'</span><b>'+esc(short(x.title,110))+'</b><small>'+esc(short(x.detail,130))+'</small></div>';}).join(''):'<p>Nuk ka aktivitet të fundit të lexueshëm.</p>')+'</section><section><h3>Hapat e rekomanduar</h3><ol>'+next.map(function(x){return'<li>'+esc(x)+'</li>';}).join('')+'</ol></section><div class="pst-brief-why"><b>Pse po ma sugjeron këtë?</b><span>'+esc(a.why||'Bazuar në gjendjen dhe aktivitetin më të fundit të projektit.')+'</span></div><div class="pst-brief-actions"><button type="button" class="primary" data-brief-act="act">Vepro tani</button>'+(email&&email.gmail_url?'<a target="_blank" rel="noopener" href="'+esc(email.gmail_url)+'">Hap emailin</a>':'')+'<button type="button" data-brief-act="project">Hap projektin</button>'+(a.key?'<button type="button" data-brief-act="snooze">Shtyje</button><button type="button" data-brief-act="dismiss">Mos ma sugjero më</button>':'')+'</div>';
+ installBrief();var ctx=cache.contexts[String(a.project_id||'')];if(!ctx)return routeProject(a.project_id,a.route);var p=ctx.project||{},ev=latestEvents(ctx),have=briefHave(ctx),missing=briefMissing(ctx),email=actionSourceEmail(ctx,a),deadline=p.deadline?dateText(p.deadline):'Pa afat të regjistruar';var next=a.key?[a.title]:[];if(email&&email.subject)next.push('Kontrollo burimin: '+short(email.subject,90));next.push('Hap projektin e plotë nëse duhet verifikim më i thellë');next=next.filter(function(x,i,z){return x&&z.indexOf(x)===i;}).slice(0,3);
+ var html='<div class="pst-brief-eyebrow">PROJECT BRIEF</div><h2 id="pst-brief-title">'+esc(p.name||'Projekt')+'</h2><div class="pst-brief-state">'+esc(currentState(ctx))+'</div><div class="pst-brief-grid"><section><h3>Ku jemi</h3><p>'+esc(a.why||'Pamje informative; nuk është kërkesë për veprim.')+'</p></section><section><h3>Afati / rreziku</h3><p>'+esc(deadline)+(relDays(p.deadline)!==null&&relDays(p.deadline)<=3&&relDays(p.deadline)>=0?' · afat i afërt':'')+'</p></section></div><div class="pst-brief-grid"><section><h3>Çfarë kemi</h3><ul>'+(have.length?have.map(function(x){return'<li>'+esc(x)+'</li>';}).join(''):'<li>Nuk u gjet një element i konfirmuar për këtë seksion.</li>')+'</ul></section><section><h3>Çfarë mungon</h3><ul>'+(missing.length?missing.map(function(x){return'<li>'+esc(x)+'</li>';}).join(''):'<li>Nuk ka mungesë të qartë të identifikuar.</li>')+'</ul></section></div><section class="pst-brief-events"><h3>Çfarë ka ndodhur së fundmi</h3>'+(ev.length?ev.map(function(x){return'<div class="pst-brief-event"><span>'+esc(x.kind)+' · '+esc(dateText(x.t))+'</span><b>'+esc(short(x.title,110))+'</b><small>'+esc(short(x.detail,130))+'</small></div>';}).join(''):'<p>Nuk ka aktivitet të fundit të lexueshëm.</p>')+'</section><section><h3>Vazhdimi i punës</h3><ol>'+next.map(function(x){return'<li>'+esc(x)+'</li>';}).join('')+'</ol></section><div class="pst-brief-why"><b>Pse po ma sugjeron këtë?</b><span>'+esc(a.evidence?(a.evidence.label+' · '+a.evidence.ref+' · '+a.why):'Pamje informative e projektit.')+'</span></div><div class="pst-brief-actions">'+(a.key?'<button type="button" class="primary" data-brief-act="act">Hap veprimin</button>':'')+''+(email&&email.gmail_url?'<a target="_blank" rel="noopener" href="'+esc(email.gmail_url)+'">Hap emailin</a>':'')+'<button type="button" data-brief-act="project">Hap projektin</button>'+(a.key?'<button type="button" data-brief-act="snooze">Shtyje</button><button type="button" data-brief-act="dismiss">Mos ma sugjero më</button>':'')+'</div>';
  var c=document.getElementById('pst-brief-content');c.innerHTML=html;var m=document.getElementById('pst-project-brief-modal');m.classList.add('open');c.querySelectorAll('[data-brief-act]').forEach(function(b){b.onclick=function(){var what=b.getAttribute('data-brief-act');if(what==='act')routeProject(a.project_id,a.route);else if(what==='project')routeProject(a.project_id,'project');else if(what==='snooze')window.pstWsSnooze(a.key);else if(what==='dismiss'){if(window.confirm('Ta heq PPPP këtë sugjerim nga lista?'))window.pstWsActionState(a.key,'dismissed');}};});
 }
 function bindActions(host){host.querySelectorAll('.pst-canonical-action').forEach(function(row){var key=row.getAttribute('data-ws-action'),a=cache.actions.filter(function(x){return x.key===key;})[0];if(!a)return;row.onclick=function(e){if(e.target.closest('button,a'))return;openBrief(a);};row.onkeydown=function(e){if((e.key==='Enter'||e.key===' ')&&!e.target.closest('button,a')){e.preventDefault();openBrief(a);}};var open=row.querySelector('.pst-ws-action-open');if(open)open.onclick=function(e){e.stopPropagation();routeProject(a.project_id,a.route);};var snooze=row.querySelector('.pst-ws-action-snooze');if(snooze)snooze.onclick=function(e){e.stopPropagation();window.pstWsSnooze(key);};var done=row.querySelector('.pst-ws-action-done');if(done)done.onclick=function(e){e.stopPropagation();window.pstWsActionState(key,'completed');};var dismiss=row.querySelector('.pst-ws-action-dismiss');if(dismiss)dismiss.onclick=function(e){e.stopPropagation();if(window.confirm('Ta heq PPPP këtë sugjerim nga lista?'))window.pstWsActionState(key,'dismissed');};});}
@@ -233,7 +265,7 @@ function needsDailyRefresh(){return !cache.lastRenderAt||localDayKey(cache.lastR
 function go(key){key=String(key||'home').toLowerCase();if(key==='home'){activateHome();if(needsDailyRefresh())render(true);return true;}return legacyGo?legacyGo.apply(window,arguments):false;}
 window.pstWorkspaceGo=go;window.pstWsRefreshHome=function(e){if(e&&e.preventDefault)e.preventDefault();return render(true);};
 function classifyProject(ctx,actions,waiting){var p=ctx&&ctx.project||{};var id=String(p.id||'');if(explicitWaiting(p)||arr(waiting).some(function(w){return String(w.project_id)===id;}))return'waiting';if(arr(actions).some(function(a){return String(a.project_id)===id;}))return'action';return'work';}
-window.PSTHomeCanonicalV1={version:'20261002-8',render:render,refresh:function(){return render(true);},activateHome:activateHome,openBrief:openProjectBriefByProject,_test:{inactiveProject:inactiveProject,relDays:relDays,actionStateKey:actionStateKey,taskScore:taskScore,deriveProjects:deriveProjects,buildActions:buildActions,buildWaiting:buildWaiting,recommendation:recommendation,supplierQuoteReady:supplierQuoteReady,clientReplyAfterOffer:clientReplyAfterOffer,taskIsSuperseded:taskIsSuperseded,operationalState:operationalState,explicitWaiting:explicitWaiting,explicitExecution:explicitExecution,explicitWork:explicitWork,blocksHomeAction:blocksHomeAction,classifyProject:classifyProject},snapshot:function(){var d=cache.lastData||{};return{actions:cache.actions.slice(),waiting:cache.waiting.slice(),projects:cache.projects.slice(),renderedAt:cache.lastRenderAt||0,data:{projects:arr(d.projects).slice(),tasks:arr(d.tasks).slice(),projectEmails:arr(d.projectEmails).slice(),analyses:arr(d.analyses).slice(),rfqs:arr(d.rfqs).slice(),supplierOffers:arr(d.supplierOffers).slice(),ourOffers:arr(d.ourOffers).slice(),attachments:arr(d.attachments).slice()}};}};
+window.PSTHomeCanonicalV1={version:'20261024-evidence-home1',render:render,refresh:function(){return render(true);},activateHome:activateHome,openBrief:openProjectBriefByProject,openUpdate:openUpdate,_test:{inactiveProject:inactiveProject,relDays:relDays,actionStateKey:actionStateKey,deriveProjects:deriveProjects,buildActions:buildActions,taskEvidence:taskEvidence,buildUpdates:buildUpdates,routeProject:routeProject,buildWaiting:buildWaiting,recommendation:recommendation,supplierQuoteReady:supplierQuoteReady,clientReplyAfterOffer:clientReplyAfterOffer,taskIsSuperseded:taskIsSuperseded,operationalState:operationalState,explicitWaiting:explicitWaiting,explicitExecution:explicitExecution,explicitWork:explicitWork,blocksHomeAction:blocksHomeAction,classifyProject:classifyProject},snapshot:function(){var d=cache.lastData||{};return{readErrors:cache.readErrors.slice(),updates:buildUpdates(cache.contexts),actions:cache.actions.slice(),waiting:cache.waiting.slice(),projects:cache.projects.slice(),renderedAt:cache.lastRenderAt||0,data:{projects:arr(d.projects).slice(),tasks:arr(d.tasks).slice(),projectEmails:arr(d.projectEmails).slice(),analyses:arr(d.analyses).slice(),rfqs:arr(d.rfqs).slice(),supplierOffers:arr(d.supplierOffers).slice(),ourOffers:arr(d.ourOffers).slice(),attachments:arr(d.attachments).slice()}};}};
 function homeVisible(){var p=document.getElementById('page-workspace-home');return !!(p&&p.classList.contains('active')&&p.style.display!=='none');}
 var morningRefreshTimer=null;
 function scheduleMorningRefresh(){

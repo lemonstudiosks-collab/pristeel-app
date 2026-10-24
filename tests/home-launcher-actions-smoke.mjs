@@ -67,7 +67,7 @@ assert.equal(calls.supa,readsBeforeDashboard,'Dashboard must reuse the snapshot 
 window.PSTHomeCanonicalV1.snapshot=()=>({renderedAt:Date.now(),actions:[],waiting:[],projects:[]});
 document.dispatchEvent(new window.Event('pst:home-canonical-rendered'));
 await new Promise(r=>setTimeout(r,30));
-assert(dashboard.textContent.includes('Nuk ka veprime të sugjeruara'),'Only a loaded snapshot may show an empty work queue');
+assert(dashboard.textContent.includes('Nuk ka situata të verifikuara'),'Only a loaded snapshot may show an empty work queue');
 
 root.querySelector('[data-open="daily"]').click();
 assert.equal(calls.daily,1,'Gazeta PPPP must open Daily without leaving Home');

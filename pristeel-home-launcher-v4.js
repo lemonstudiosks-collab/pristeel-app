@@ -16,7 +16,7 @@ window.__pstHomeVisualCleanupV1=true;
 window.__pstHomeOperatingGridV1=true;
 window.__pstHomeMorningCommandCenterV1=true;
 window.__pstHomeOperatorDashboardV1=true;
-var V='20261024-connected-workspace1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
+var V='20261024-evidence-home1',clockTimer=0,weatherBusy=false,weatherLoaded=false,homeObserver=null,shellObserver=null,discoveryObserver=null,repairQueued=false,shellQueued=false,mountQueued=false,pendingRoute='';
 
 function S(v){return String(v==null?'':v)}
 function E(v){return S(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
@@ -497,12 +497,13 @@ function dashboard(){
  var root=document.getElementById('pst-home-launcher-v4'),host=root&&root.querySelector('[data-dashboard]');if(!host)return;
  var api=window.PSTHomeCanonicalV1,snap=null;
  try{if(api&&typeof api.snapshot==='function')snap=api.snapshot()}catch(e){console.warn('PPPP Home snapshot unavailable',e)}
- var ready=!!(snap&&snap.renderedAt),actions=A(snap&&snap.actions),waiting=A(snap&&snap.waiting),projects=A(snap&&snap.projects);
- function row(pid,title,detail,tag){return '<button type="button" class="phl-work-row" data-project-brief="'+E(pid)+'"><span class="phl-work-dot" aria-hidden="true"></span><span><b>'+E(title)+'</b><small>'+E(detail)+'</small></span>'+(tag?'<em>'+E(tag)+'</em>':'')+I.arrow+'</button>'}
- function empty(text){return '<p class="phl-empty">'+E(ready?text:'Përmbledhja operative ende nuk është ngarkuar. Hap Gazetën PPPP ose modulin përkatës për detaje.')+'</p>'}
- var content='<div class="phl-overview-bar"><span>'+I.clock+' Përmbledhja e punës</span><small>'+(ready?'Nga Ballina · '+E(new Date(snap.renderedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'})):'Në pritje të të dhënave')+'</small></div>'
+ var failed=A(snap&&snap.readErrors).length>0,ready=!!(snap&&snap.renderedAt)&&!failed,updates=A(snap&&snap.updates),actions=A(snap&&snap.actions),waiting=A(snap&&snap.waiting),projects=A(snap&&snap.projects);
+ function row(pid,title,detail,tag,update){return '<button type="button" class="phl-work-row" '+(update?'data-project-update':'data-project-brief')+'="'+E(pid)+'"><span class="phl-work-dot" aria-hidden="true"></span><span><b>'+E(title)+'</b><small>'+E(detail)+'</small></span>'+(tag?'<em>'+E(tag)+'</em>':'')+I.arrow+'</button>'}
+ function empty(text){return '<p class="phl-empty">'+E(failed?'Përmbledhja nuk u lexua plotësisht. Kontrollo modulin përkatës; kjo nuk do të thotë se nuk ka veprime.':ready?text:'Përmbledhja operative ende nuk është ngarkuar.')+'</p>'}
+ var content=(failed?'<p class="phl-empty" role="alert">Përmbledhja nuk u lexua plotësisht. Disa të dhëna mund të mungojnë.</p>':'')+'<div class="phl-overview-bar"><span>'+I.clock+' Përmbledhja e punës</span><small>'+(ready?'Nga Ballina · '+E(new Date(snap.renderedAt).toLocaleTimeString('sq-AL',{hour:'2-digit',minute:'2-digit'})):'Në pritje të të dhënave')+'</small><button type="button" data-refresh-dashboard>Rifresko</button></div>'
  +'<section class="phl-panel phl-priorities"><header><h2>Kërkon vëmendjen tënde</h2><span class="phl-count">'+(ready?actions.length:'—')+'</span></header>'
- +(actions.length?actions.slice(0,5).map(function(a){return row(a.project_id,a.title,a.why||a.meta,a.tag)}).join(''):empty('Nuk ka veprime të sugjeruara në përmbledhjen aktuale.'))+'<footer><button type="button" data-open="daily">Hap Gazetën PPPP '+I.arrow+'</button></footer></section>'
+ +(actions.length?actions.slice(0,5).map(function(a){return row(a.project_id,a.title,(a.meta?a.meta+' · ':'')+(a.why||'')+' · Prova: '+(a.evidence&&a.evidence.label||'')+' · '+(a.evidence&&a.evidence.ref||''),a.tag)}).join(''):empty('Nuk ka situata të verifikuara që kërkojnë veprimin tënd tani.'))+'<footer><button type="button" data-open="daily">Hap Gazetën PPPP '+I.arrow+'</button></footer></section>'
+ +'<section class="phl-panel"><header><h2>Komunikimet e fundit</h2><span class="phl-count">'+(ready?updates.length:'—')+'</span></header>'+(updates.length?updates.map(function(u){return row(u.project_id,u.name,u.title+' · '+u.text,'Informacion',true)}).join(''):empty('Nuk ka komunikime të reja në këtë përmbledhje.'))+'</section>'
  +'<section class="phl-panel"><header><h2>Në pritje të palës tjetër</h2><span class="phl-count">'+(ready?waiting.length:'—')+'</span></header>'
  +(waiting.length?waiting.slice(0,4).map(function(w){return row(w.project_id,w.name,w.text,'Në pritje')}).join(''):empty('Nuk ka projekte në pritje në përmbledhjen aktuale.'))+'</section>'
  +'<section class="phl-panel phl-projects-panel"><header><h2>Projektet në punë</h2><button type="button" data-open="projects">Të gjitha projektet '+I.arrow+'</button></header>'
@@ -545,6 +546,8 @@ function css(){
 function bind(r){
  if(r.dataset.bound==='1')return;r.dataset.bound='1';
  r.addEventListener('click',function(e){
+  var refresh=e.target.closest('[data-refresh-dashboard]');if(refresh){var owner=window.PSTHomeCanonicalV1;if(owner&&typeof owner.refresh==='function'){refresh.disabled=true;Promise.resolve(owner.refresh()).finally(function(){refresh.disabled=false;dashboard()});}return;}
+  var update=e.target.closest('[data-project-update]');if(update){var owner=window.PSTHomeCanonicalV1;if(owner&&typeof owner.openUpdate==='function')owner.openUpdate(update.dataset.projectUpdate);return;}
   var brief=e.target.closest('[data-project-brief]');if(brief){var api=window.PSTHomeCanonicalV1;if(api&&typeof api.openBrief==='function'&&brief.dataset.projectBrief)api.openBrief(brief.dataset.projectBrief);return;}
   if(e.target.closest('[data-gmail]'))return void openGmail();
   var t=e.target.closest('[data-tool]');if(t&&t.dataset.tool==='calc')return void calculator();

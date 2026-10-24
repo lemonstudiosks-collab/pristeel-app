@@ -6,8 +6,6 @@
 }
 /* Steel Buyers shares the Home / Representation tokens before runtime loads. */
 @media(min-width:901px) {
- html#pst-spie-platform body:has(#page-dach-steel-sales.active) .app-shell#app-shell-root > .sidebar#app-sidebar { display:none!important; width:0!important; min-width:0!important; }
- html#pst-spie-platform body:has(#page-dach-steel-sales.active) .app-shell#app-shell-root > .main { width:100%!important; }
 }
 html#pst-spie-platform body:has(#page-dach-steel-sales.active) .app-shell#app-shell-root > .main > .content { padding:0!important; margin:0!important; }
 html#pst-spie-platform body #page-dach-steel-sales [hidden] { display:none!important; }
@@ -68,10 +66,10 @@ html#pst-spie-platform :where(.page) td { border-bottom:1px solid #edf1f2!import
 /* Shared shell is stable before any of the ordered modules have loaded. */
 @media(min-width:901px) {
  html#pst-spie-platform body .app-shell#app-shell-root:not([style*="display:none"]):not([style*="display: none"]) { display:flex!important; min-height:100dvh; }
- html#pst-spie-platform body .app-shell#app-shell-root > .sidebar#app-sidebar { display:flex!important; flex:0 0 var(--pst-sidebar-width)!important; width:var(--pst-sidebar-width)!important; min-width:var(--pst-sidebar-width)!important; max-width:var(--pst-sidebar-width)!important; visibility:visible!important; position:sticky!important; top:0!important; height:100dvh!important; padding:0!important; margin:0!important; border:0!important; border-right:1px solid var(--pst-line)!important; background:#2d3239!important; z-index:30!important; overflow-y:auto!important; }
+ html#pst-spie-platform body .app-shell#app-shell-root > .sidebar#app-sidebar { display:flex!important; flex:0 0 var(--pst-sidebar-width)!important; width:var(--pst-sidebar-width)!important; min-width:var(--pst-sidebar-width)!important; max-width:var(--pst-sidebar-width)!important; visibility:visible!important; position:fixed!important; inset:0 auto 0 0!important; height:100dvh!important; padding:0!important; margin:0!important; border:0!important; border-right:1px solid var(--pst-line)!important; background:#2d3239!important; z-index:30!important; overflow-y:auto!important; }
  html#pst-spie-platform body #app-sidebar #pst-v2-sidebar { display:flex!important; width:100%!important; min-width:0!important; max-width:100%!important; height:100%!important; padding:0!important; visibility:visible!important; background:#2d3239!important; }
  html#pst-spie-platform body #app-sidebar #pst-ws-sidebar { display:flex!important; width:100%!important; min-width:0!important; max-width:100%!important; padding:24px 14px 20px!important; visibility:visible!important; background:#2d3239!important; overflow-y:auto!important; }
- html#pst-spie-platform body .app-shell#app-shell-root > .main { width:calc(100% - var(--pst-sidebar-width))!important; max-width:none!important; min-width:0!important; flex:1 1 0!important; padding:0!important; margin:0!important; background:var(--pst-paper)!important; }
+ html#pst-spie-platform body .app-shell#app-shell-root > .main { width:calc(100% - var(--pst-sidebar-width))!important; max-width:none!important; min-width:0!important; flex:1 1 0!important; padding:0!important; margin:0 0 0 var(--pst-sidebar-width)!important; background:var(--pst-paper)!important; }
  html#pst-spie-platform body .app-shell#app-shell-root > .main > .content { width:100%!important; max-width:1360px!important; margin:0 auto!important; padding:30px clamp(26px,4vw,58px) 70px!important; background:var(--pst-paper)!important; }
  html#pst-spie-platform body .topbar { background:var(--pst-paper)!important; border-bottom:1px solid var(--pst-line)!important; box-shadow:none!important; }
  html#pst-spie-platform body.pst-home-launcher-active #page-workspace-home > #pst-home-launcher-v4 { position:relative!important; inset:auto!important; width:100%!important; max-width:100%!important; height:auto!important; min-height:calc(100dvh - 70px)!important; padding:0!important; margin:0!important; overflow:visible!important; z-index:auto!important; }
@@ -315,8 +313,6 @@ html#pst-spie-platform body .page :is(.pst-rep-btn,.pst-eu-btn,.pst-dss-btn,.pwb
 /* One left column for Representation, using Home's geometry and visual tokens.
    Static selectors win before dynamically loaded legacy shell styles. */
 @media(min-width:901px) {
- html#pst-spie-platform body:has(#page-representations.active) .app-shell#app-shell-root > .sidebar#app-sidebar { display:none!important; visibility:hidden!important; flex:0 0 0!important; width:0!important; min-width:0!important; max-width:0!important; }
- html#pst-spie-platform body:has(#page-representations.active) .app-shell#app-shell-root > .main { width:100%!important; }
 }
 html#pst-spie-platform body:has(#page-representations.active) .app-shell#app-shell-root > .main > .content { padding:0!important; max-width:none!important; margin:0!important; }
 html#pst-spie-platform body #page-representations { --rep:var(--pst-accent); --rep-dark:var(--pst-accent); --rep-soft:var(--pst-selected); --rep-line:var(--pst-line); --rep-text:var(--pst-ink); overflow:visible; }
@@ -389,8 +385,6 @@ html#pst-spie-platform body #page-representations .pst-rd-lanes { padding:0; bac
 
 /* Mundësitë shares the Home / Përfaqësime shell and typography.
    Static rules take precedence over late legacy presentation layers. */
-html#pst-spie-platform body:has(#page-kek-tenders.active) .app-shell#app-shell-root > .sidebar#app-sidebar { display:none!important; visibility:hidden!important; width:0!important; min-width:0!important; max-width:0!important; flex:0 0 0!important; }
-html#pst-spie-platform body:has(#page-kek-tenders.active) .app-shell#app-shell-root > .main { width:100%!important; }
 html#pst-spie-platform body:has(#page-kek-tenders.active) .app-shell#app-shell-root > .main > .content { padding:0!important; margin:0!important; max-width:none!important; background:var(--pst-paper)!important; }
 html#pst-spie-platform body #page-kek-tenders #pst-opportunities-focus { max-width:none!important; margin:0!important; }
 html#pst-spie-platform body #page-kek-tenders #pst-opportunities-focus > header { display:none!important; }
@@ -455,8 +449,6 @@ html#pst-spie-platform body #page-kek-tenders :is(.pst-opp-work-row,.pst-opp-con
 html#pst-spie-platform body #page-kek-tenders .pst-opp-work-row > .main { display:block!important; min-height:0!important; height:auto!important; max-height:none!important; flex:none!important; width:auto!important; margin:0!important; padding:0!important; }
 
 /* Kompanitë EU: same static work-column and typography as Opportunities / Representations. */
-html#pst-spie-platform body:has(#page-eu-companies.active) .app-shell#app-shell-root > .sidebar#app-sidebar { display:none!important; visibility:hidden!important; flex:0 0 0!important; width:0!important; min-width:0!important; max-width:0!important; }
-html#pst-spie-platform body:has(#page-eu-companies.active) .app-shell#app-shell-root > .main { width:100%!important; }
 html#pst-spie-platform body:has(#page-eu-companies.active) .app-shell#app-shell-root > .main > .content { padding:0!important; max-width:none!important; margin:0!important; }
 html#pst-spie-platform body #page-eu-companies [hidden] { display:none!important; }
 html#pst-spie-platform body #page-eu-companies .pst-eu-page { display:grid!important; grid-template-columns:var(--pst-sidebar-width) minmax(0,1fr)!important; min-height:100dvh; align-items:start; font:400 13px/1.6 var(--pst-font)!important; }
@@ -512,3 +504,12 @@ html#pst-spie-platform body .pst-eu-dialog :is(h2,p,label,input,textarea,button)
  html#pst-spie-platform body #page-eu-companies .pst-eu-row { grid-template-columns:minmax(0,1fr)!important; }
 }
 
+
+@media(min-width:901px) {
+ html#pst-spie-platform body:has(:is(#page-workspace-business.active,#page-workspace-resources.active,#page-workspace-projects.active,#page-workspace-contacts.active,#page-contacts.active,#page-partners.active,#page-kek-tenders.active,#page-representations.active,#page-eu-companies.active,#page-dach-steel-sales.active)) .topbar { display:none!important; }
+}
+/* Context controls remain available inside the fixed global navigation shell. */
+@media(min-width:901px) {
+ html#pst-spie-platform body :is(#page-representations .pst-rep-brand,#page-eu-companies .pst-eu-brand,#page-dach-steel-sales .pst-dss-brand,#page-kek-tenders .pst-opp-brand) { display:none!important; }
+ html#pst-spie-platform body :is(#page-representations .pst-rep-sidebar,#page-eu-companies .pst-eu-work-sidebar,#page-kek-tenders #pst-opp-desk .pst-opp-side,#page-dach-steel-sales .pst-dss-sidebar) { position:static!important; height:auto!important; min-height:0!important; background:transparent!important; }
+}
