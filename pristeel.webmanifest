@@ -1,8 +1,8 @@
 {
   "id": "/pristeel-app/pristeel-procurement.html",
-  "name": "PRISTEEL Procurement Platform",
-  "short_name": "PRISTEEL",
-  "description": "PRISTEEL procurement, projects, communication and finance platform.",
+  "name": "PPPP Legacy — Archive / Finance",
+  "short_name": "PPPP Legacy",
+  "description": "Legacy PriSteel platform retained for historical lookup, migration reconciliation and legacy Finance. Current operations are in the new PPPP at sandbox.prissteel.com.",
   "start_url": "/pristeel-app/pristeel-procurement.html",
   "scope": "/pristeel-app/",
   "display": "standalone",
