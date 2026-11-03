@@ -1,3 +1,26 @@
+/* Visible legacy notice for the frozen PPPP app. Keep this before the SPIE iframe guard. */
+(function(){
+ 'use strict';
+ if(window.parent!==window)return;
+ function installLegacyNotice(){
+  if(document.getElementById('pppp-legacy-banner'))return;
+  document.title='PPPP Legacy — Archive / Finance';
+  var style=document.createElement('style');
+  style.id='pppp-legacy-banner-style';
+  style.textContent='#pppp-legacy-banner{position:fixed;top:0;left:0;right:0;z-index:2147483646;min-height:48px;padding:8px 14px;background:#7f1d1d;color:#fff;font:600 13px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.18)}#pppp-legacy-banner strong{font-weight:800;letter-spacing:.02em}#pppp-legacy-banner a{color:#fff;text-decoration:underline;font-weight:750}#pppp-legacy-banner-spacer{height:52px;width:100%}@media(max-width:720px){#pppp-legacy-banner{font-size:11px;min-height:58px;padding:7px 9px;flex-wrap:wrap;gap:4px}#pppp-legacy-banner-spacer{height:62px}}';
+  document.head.appendChild(style);
+  var banner=document.createElement('div');
+  banner.id='pppp-legacy-banner';
+  banner.setAttribute('role','status');
+  banner.innerHTML='<strong>LEGACY SYSTEM — NOT THE CURRENT PPPP</strong><span>Historical/migrated PriSteel data. For current projects, pipeline, inbound, drafts and operational work use <a href="https://sandbox.prissteel.com" target="_blank" rel="noopener">PPPP at sandbox.prissteel.com</a>.</span>';
+  var spacer=document.createElement('div');
+  spacer.id='pppp-legacy-banner-spacer';
+  if(document.body.firstChild)document.body.insertBefore(spacer,document.body.firstChild);else document.body.appendChild(spacer);
+  document.body.insertBefore(banner,spacer);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installLegacyNotice,{once:true});else installLegacyNotice();
+})();
+
 /* Before the shared legacy bootstrap, a SPIE iframe is read-only until an explicit editor save. */
 (function(){
  'use strict';
